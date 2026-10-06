@@ -1644,17 +1644,6 @@
     "as": "the Death Star’s trench",
     "file": "/models/universe/trench.glb"
   },
-  "wardrobe-portalgun": {
-    "title": "Portal Gun from The Rick and Morty show",
-    "author": "Bob.Ho",
-    "authorUrl": "https://sketchfab.com/Bob.Ho",
-    "license": "CC-BY-4.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
-    "source": "https://sketchfab.com/3d-models/portal-gun-from-the-rick-and-morty-show-c5f7b4a950de4002b448ac65c6b0207b",
-    "where": "c-137",
-    "as": "Rick’s portal gun, in the wardrobe",
-    "file": "/models/wardrobe/portalgun.glb"
-  },
   "xwing-hd": {
     "title": "High Poly X-Wing Fighter",
     "author": "charles.woods",

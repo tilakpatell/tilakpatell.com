@@ -10,6 +10,14 @@ const sources = (dir = 'src') =>
 describe('the 3D models that are other people’s', () => {
   const names = Object.keys(CREDITS);
 
+  it('are each named once', () => {
+    // a repeated name parses without complaint, keeping only the last copy, so read the file as text
+    const keys = [...readFileSync(at('src/data/modelCredits.json'), 'utf8').matchAll(/^ {2}"([^"]+)": \{/gm)].map((m) => m[1]);
+    expect(keys.filter((k, i) => keys.indexOf(k) !== i)).toEqual([]);
+    // (and the pattern found every one, so the check isn't passing on nothing)
+    expect(keys).toHaveLength(names.length);
+  });
+
   it('each say who made them, under which licence, and where they came from', () => {
     expect(names.length).toBeGreaterThan(0);
     for (const [name, m] of Object.entries(CREDITS)) {
