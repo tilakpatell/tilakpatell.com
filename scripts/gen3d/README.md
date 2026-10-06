@@ -22,8 +22,11 @@ node scripts/gen3d/judge.mjs cache/xwing.png cache/raw/xwing.glb public/models/g
 A picture of your own goes through **Pixal3D** (`--faithful`, on by default
 with `--image`): a TRELLIS.2 fine-tune that projects each 3D cell into the
 picture and samples it there, so the shape follows what you gave it; pass
-`--fov` if you know the camera's horizontal field of view. A prompt goes
-through TRELLIS.2 proper. Either way the model is made at full quality
+`--fov` if you know the camera's horizontal field of view. `--no-faithful`
+(`faithful: no` on an issue) sends the picture through TRELLIS.2 proper
+instead, for a three-quarter render or concept. Pixal3D writes its model Z
+up (a figure lies on its back), so the web cuts are stood up
+(`upright.mjs`). A prompt goes through TRELLIS.2 proper. Either way the model is made at full quality
 first (res 1024, ~300k triangles, 2048² PBR atlas) and only then cut down
 for the web: simplifying the raw mesh directly smears its texture (its atlas
 is thousands of tiny charts), so `bake.mjs` decimates it, unwraps the low

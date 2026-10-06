@@ -56,6 +56,21 @@ describe('following a picture closely', () => {
     expect(cmd.join(' ')).toContain('--model pixal3d --fov 52');
     expect(command('trelliscpp', 'a.png', 'b.glb').join(' ')).not.toContain('pixal3d');
   });
+  it('stands up what Pixal3D writes Z up: a figure lying face to the sky comes out standing, facing forward', async () => {
+    const { Document, getBounds } = await import('@gltf-transform/core');
+    const { upright } = await import('./upright.mjs');
+    const doc = new Document();
+    // lying along Z, head at -Z (z -0.9), the nose up at +Y
+    const pos = doc.createAccessor().setType('VEC3').setArray(new Float32Array([0, 0, -0.9, 0, 0.1, -0.8, 0.2, 0, 0.9]));
+    const prim = doc.createPrimitive().setAttribute('POSITION', pos);
+    doc.createScene().addChild(doc.createNode().setMesh(doc.createMesh().addPrimitive(prim)));
+    await upright(doc);
+    const p = prim.getAttribute('POSITION').getArray();
+    expect([...p.slice(0, 3)].map((v) => +v.toFixed(5))).toEqual([0, 0.9, 0]); // the head up
+    expect([...p.slice(3, 6)].map((v) => +v.toFixed(5))).toEqual([0, 0.8, 0.1]); // the nose forward (+Z)
+    const { min, max } = getBounds(doc.getRoot().listScenes()[0]);
+    expect(+(max[1] - min[1]).toFixed(5)).toBe(1.8);
+  });
 });
 
 describe('preparing a picture of your own', () => {
@@ -63,6 +78,26 @@ describe('preparing a picture of your own', () => {
     const { frame } = await import('./prepare.mjs');
     expect(frame(840, 400, 0.08)).toEqual([1000, 80, 300]);
     expect(frame(100, 100, 0)).toEqual([100, 0, 0]);
+  });
+  it('fits a subject bigger than the size it makes, scaled down into the square', async () => {
+    const { prepare } = await import('./prepare.mjs');
+    const { default: sharp } = await import('sharp');
+    const { mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const dir = mkdtempSync(join(tmpdir(), 'gen3d-'));
+    // a dark figure 60×110 on white, taller than the 64 asked for (a portrait concept's figure, 1154 tall, at 1024)
+    const figure = await sharp({ create: { width: 60, height: 110, channels: 3, background: '#203040' } }).png().toBuffer();
+    const given = join(dir, 'given.png');
+    await sharp({ create: { width: 100, height: 140, channels: 3, background: '#ffffff' } }).composite([{ input: figure, left: 20, top: 15 }]).png().toFile(given);
+    const out = join(dir, 'out.png');
+    await prepare(given, out, { size: 64, room: 0.1 });
+    const { data, info } = await sharp(out).raw().toBuffer({ resolveWithObject: true });
+    expect([info.width, info.height]).toEqual([64, 64]);
+    const at = (x, y) => data[(y * info.width + x) * info.channels];
+    expect(at(32, 32)).toBeLessThan(80); // the figure, in the middle
+    expect(at(32, 2)).toBeGreaterThan(240); // room above it
+    expect(at(32, 61)).toBeGreaterThan(240); // and below
   });
 });
 
@@ -119,7 +154,10 @@ describe('the runner, jobs from GitHub issues', () => {
     const job = parseIssue({ number: 8, title: 'Red Five', body: 'what: Red Five\n\n![photo](https://github.com/user-attachments/assets/abc.png)\nfov: 49' });
     expect(job).toMatchObject({ name: 'red-five', image: 'https://github.com/user-attachments/assets/abc.png', prompt: undefined, faithful: true, fov: 49 });
     expect(makeArgs(job, 'C:/c/from-issue.png')).toEqual(['red-five', '--image', 'C:/c/from-issue.png', '--what', 'Red Five', '--fov', '49', '--faithful']);
-    expect(parseIssue({ number: 9, title: 'Red Five', body: 'image: https://x.test/a.png\nfaithful: no' })).toMatchObject({ image: 'https://x.test/a.png', faithful: false });
+    const plain = parseIssue({ number: 9, title: 'Red Five', body: 'image: https://x.test/a.png\nfaithful: no' });
+    expect(plain).toMatchObject({ image: 'https://x.test/a.png', faithful: false });
+    // said out loud: make.mjs follows a lone picture with Pixal3D unless told not to
+    expect(makeArgs(plain, 'C:/c/from-issue.png')).toEqual(['red-five', '--image', 'C:/c/from-issue.png', '--what', 'Red Five', '--no-faithful']);
   });
   it('makes the title the prompt when the body says nothing, and no job from an empty title', async () => {
     const { parseIssue } = await import('./runner.mjs');

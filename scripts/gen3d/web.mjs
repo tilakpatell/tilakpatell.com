@@ -73,10 +73,11 @@ export const permissive = (tris) => async (doc) => {
 };
 
 // The three cuts of a model (budget.mjs's TIERS) from the baked GLB, each
-// simplified from it, its brightness matched to an old model's first when
-// `match` names one (colour.mjs); credited once. Returns the first cut's
+// simplified from it, stood up first when `stand` (Pixal3D writes Z up), its
+// brightness matched to an old model's first when `match` names one
+// (colour.mjs); credited once. Returns the first cut's
 // numbers, and every cut's under `cuts`.
-export async function publish(raw, name, { what, engine = 'TRELLIS.2', acrossSeams = false, match, tiers = Object.keys(TIERS), tris, tex }) {
+export async function publish(raw, name, { what, engine = 'TRELLIS.2', acrossSeams = false, match, tiers = Object.keys(TIERS), tris, tex, stand = false }) {
   const nio = await io();
   await mkdir(OUT, { recursive: true });
   const cuts = tris ? { custom: { suffix: '', faces: tris, tex: tex ?? 2048, bytes: TIERS.mid.bytes } } : Object.fromEntries(tiers.map((t) => [t, TIERS[t]]));
@@ -84,6 +85,7 @@ export async function publish(raw, name, { what, engine = 'TRELLIS.2', acrossSea
   let said = false;
   for (const [tier, cut] of Object.entries(cuts)) {
     const doc = await nio.read(raw);
+    if (stand) await (await import('./upright.mjs')).upright(doc); // Pixal3D's Z up, to the site's Y up (upright.mjs imports this file)
     if (match) {
       const { matchColour } = await import('./colour.mjs');
       const m = await matchColour(doc, await nio.read(match));

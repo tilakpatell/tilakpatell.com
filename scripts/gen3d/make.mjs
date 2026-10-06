@@ -5,7 +5,7 @@
 //   node scripts/gen3d/make.mjs x-wing --image photo.png --faithful --what "an X-wing starfighter"
 //   node scripts/gen3d/make.mjs x-wing --prompt "an X-wing starfighter" --what "an X-wing starfighter"
 //   node scripts/gen3d/make.mjs x-wing --image front.png --left left.png --back back.png --what "…"   (several sides: Hunyuan3D multi-view)
-//   options: --faces 120000 --tex 4096 (the bake, the top cut; the other two cuts come from it) --match OLD.glb --seed 42 --res 1024 --fov 49 --engine trelliscpp|trellis2 --no-bake
+//   options: --no-faithful (a lone picture through TRELLIS.2 proper) --faces 120000 --tex 4096 (the bake, the top cut; the other two cuts come from it) --match OLD.glb --seed 42 --res 1024 --fov 49 --engine trelliscpp|trellis2 --no-bake
 //
 // Everything on the way lands in scripts/gen3d/cache/<name>/; the result in
 // public/models/gen3d/<name>.glb, credited in public/games/credits.json.
@@ -61,7 +61,7 @@ export async function make(name, { image, prompt, what, faces = TIERS.hq.faces, 
     log(`baked to ${faces} faces in ${b.seconds.toFixed(0)}s`);
   } else log(noBake ? 'no bake: the web cut simplifies the raw mesh' : 'no Blender here: the web cut simplifies the raw mesh');
   const made = g.engine === 'hunyuan' ? 'Hunyuan3D-2 multi-view' : g.engine === 'trellis2' ? 'TRELLIS.2' : faithful ? 'Pixal3D (trellis.cpp)' : 'TRELLIS.2 (trellis.cpp)';
-  const w = await publish(low, name, { what: what ?? name, match, engine: low === raw ? made : `${made}, baked in Blender` });
+  const w = await publish(low, name, { what: what ?? name, match, engine: low === raw ? made : `${made}, baked in Blender`, stand: g.engine === 'trelliscpp' && faithful }); // Pixal3D writes Z up
   for (const [t, c] of Object.entries(w.cuts)) log(`${t}: ${Math.round(c.after)} triangles, ${(c.bytes / 1024).toFixed(0)} KB → ${c.out}`);
   if (process.env.CHROME) {
     const out = join(dir, 'sheet.png');
@@ -82,13 +82,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     return i >= 0 && args.splice(i, 1).length > 0;
   };
   const faithful = on('faithful');
+  const plain = on('no-faithful'); // a lone picture through TRELLIS.2 proper, not Pixal3D (a three-quarter render or concept)
   const noBake = on('no-bake');
   const [image, match, fov, left, back, right] = [flag('image'), flag('match'), flag('fov'), flag('left'), flag('back'), flag('right')];
   const sides = Object.fromEntries(Object.entries({ left, back, right }).filter(([, p]) => p).map(([k, p]) => [k, resolve(p)]));
   const opts = { image: image && (Object.keys(sides).length ? { front: resolve(image), ...sides } : resolve(image)), prompt: flag('prompt'), what: flag('what'), faces: Number(flag('faces', TIERS.hq.faces)), tex: Number(flag('tex', TIERS.hq.tex)), match: match && resolve(match), seed: Number(flag('seed', 42)), res: Number(flag('res', 1024)), fov: fov && Number(fov), engine: flag('engine'), noBake };
   const [name] = args;
-  const usage = 'usage: node scripts/gen3d/make.mjs NAME (--image FRONT [--left L --back B --right R] | --prompt "…") [--faithful] [--what "…"] [--faces N] [--tex N]';
+  const usage = 'usage: node scripts/gen3d/make.mjs NAME (--image FRONT [--left L --back B --right R] | --prompt "…") [--faithful | --no-faithful] [--what "…"] [--faces N] [--tex N]';
   if (!name || !(opts.image || opts.prompt)) throw new Error(usage);
   for (const f of typeof opts.image === 'object' ? Object.values(opts.image) : [opts.image].filter(Boolean)) if (!existsSync(f)) throw new Error(`no ${f}\n${usage}`);
-  await make(name, { ...opts, faithful: faithful || typeof opts.image === 'string' });
+  await make(name, { ...opts, faithful: faithful || (typeof opts.image === 'string' && !plain) });
 }

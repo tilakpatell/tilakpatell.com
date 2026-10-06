@@ -80,7 +80,7 @@ export function makeArgs(job, image, sides = {}) {
   } else a.push('--prompt', job.prompt);
   a.push('--what', job.what);
   for (const k of ['faces', 'tex', 'seed', 'res', 'fov', 'engine']) if (job[k] !== undefined) a.push(`--${k}`, String(job[k]));
-  if (image && job.faithful && Object.keys(sides).length <= 1) a.push('--faithful');
+  if (image && Object.keys(sides).length <= 1) a.push(job.faithful ? '--faithful' : '--no-faithful'); // make.mjs follows a lone picture with Pixal3D unless told not to
   if (job.noBake) a.push('--no-bake');
   return a;
 }
