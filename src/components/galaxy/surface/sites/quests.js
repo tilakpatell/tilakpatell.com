@@ -26,9 +26,9 @@ export const EXTRA = {
     ],
   },
   dagobah: {
-    life: [{ kind: 'yoda', id: 'master', at: [-80, 54], still: true, face: 2.4, name: 'Yoda', named: true, quest: 'lift', says: ['Do. Or do not. There is no try.'] }],
+    life: [{ kind: 'yoda', id: 'master', at: [-80, 54], still: true, face: 2.4, name: 'Yoda', named: true, quest: ['lift', 'cave'], says: ['Do. Or do not. There is no try.'] }],
     quests: [
-      { id: 'lift', name: 'Size matters not', giver: 'master', intro: [['Yoda', 'Your ship, in the swamp it is. Raise it, you will.']], steps: [{ type: 'reach', at: [40, 74], r: 12, text: 'Go to the sunken X-wing' }, { type: 'use', id: 'lift', at: [40, 74], r: 10, prompt: 'Reach out with the Force', text: 'Raise the X-wing', end: [{ shake: 0.8 }, { say: [[null, '(The swamp boils. The X-wing rises, dripping, and settles on the bank.)']] }] }, { type: 'reach', at: [-80, 54], r: 6, text: 'Go back to Yoda' }], done: [['Yoda', 'Judge me by my size, do you? Hmm?']] },
+      { id: 'lift', name: 'Size matters not', giver: 'master', intro: [['Yoda', 'Your ship, in the swamp it is. Raise it, you will.']], steps: [{ type: 'reach', at: [40, 74], r: 12, text: 'Go to the sunken X-wing' }, { type: 'use', id: 'lift', at: [40, 74], r: 10, prompt: 'Reach out with the Force', text: 'Raise the X-wing', end: [{ signal: 'raise' }, { shake: 0.8 }, { say: [[null, '(The swamp boils. The X-wing rises out of it, dripping, and hangs there over the water.)']] }] }, { type: 'reach', at: [-80, 54], r: 6, text: 'Go back to Yoda' }], done: [['Yoda', 'Judge me by my size, do you? Hmm?']] },
       { id: 'cave', name: 'The cave', giver: 'master', steps: [{ type: 'reach', at: [-70, -120], r: 10, text: 'Go into the cave' }, { type: 'shoot', tag: 'vision', n: 1, text: 'Face what’s inside', lines: [[null, '(A figure in black steps out of the dark.)']], spawn: { kind: 'vader', at: [-66, -114], still: true, hp: 3, tag: 'vision', hostile: H(12, 2, 10) } }], done: [['Yoda', 'Your weapons… you will not need them.']] },
     ],
   },
@@ -65,7 +65,7 @@ export const EXTRA = {
     ],
   },
   geonosis: {
-    life: [{ kind: 'jedi', id: 'mace', at: [-230, 170], still: true, face: -2, name: 'Mace Windu', named: true, quest: 'arena', says: ['This party’s over.'] }],
+    life: [{ kind: 'jedi', id: 'mace', at: [-230, 170], still: true, face: -2, name: 'Mace Windu', named: true, quest: ['arena', 'foundry'], says: ['This party’s over.'] }],
     quests: [
       { id: 'arena', name: 'The Petranaki arena', giver: 'mace', intro: [['Mace Windu', 'They’ve let the beasts out. Take the acklay.']], steps: [{ type: 'reach', at: [-260, 200], r: 30, text: 'Into the arena' }, { type: 'shoot', tag: 'acklay', n: 1, text: 'Bring down the acklay', spawn: { kind: 'acklay', at: [-260, 210], hp: 14, leash: 40, tag: 'acklay', hostile: { range: 40, chase: 3, melee: true, reach: 3.4, every: 1.4, damage: 25, delay: 1 } } }], done: [['Mace Windu', 'Not bad. Now the droids.']] },
       { id: 'foundry', name: 'The droid foundry', giver: 'mace', steps: [{ type: 'collect', item: 'part', n: 3, spots: [[-320, -220], [-340, -240], [-326, -246]], text: 'Find Threepio’s pieces in the foundry' }], done: [['C-3PO', 'Oh, thank the Maker. Though I do believe my head is on backwards.']] },

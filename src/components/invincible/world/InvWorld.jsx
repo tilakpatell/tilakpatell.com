@@ -5,11 +5,12 @@ import { local, prefersReducedMotion, useFrameLoop, useInView, useMediaQuery } f
 import { settle } from '../../../lib/settle';
 import { readPad, typing } from '../../games/pad';
 import { useAchievements } from '../../Achievements';
+import { useTravellers } from '../../middleearth/towns/useTravellers';
 import { FIGHT, PORTAL, newFight, startInvasion, stepFight } from './fight';
 import { FLY, newHero, stepHero } from './flight';
-import { BODIES, altitudeOf, intoSpace, outOfSpace, stepSpace } from './orbit';
+import { BODIES, SPACE, altitudeOf, intoSpace, outOfSpace, stepSpace } from './orbit';
 import { CARDS, RINGS, keepQuests, newQuests, stepQuests } from './quests';
-import { CITY, COAST, BEACH, HILLS, PLACES, RIVER, SPAWN, SUBURB, WORLD, groundAt, waterAt } from './map';
+import { CITY, COAST, BEACH, HILLS, PLACES, RIVER, SPAWN, SUBURB, WATER_Y, WORLD, groundAt, waterAt } from './map';
 import './world.css';
 
 // The Graysons' city, the world: fly about it as Invincible. The rules are
@@ -32,6 +33,41 @@ const CODES = { KeyW: 'fwd', KeyS: 'back', KeyA: 'left', KeyD: 'right', Space: '
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
+// Where he is to the other players online (middleearth/towns/travellers),
+// and where they are, back again. The room carries x and z to ±3200 m (the
+// city's edge), how fast to 45 m/s (flat out, past that) and how high to
+// 80 m; he flies to 9 km, and on out to the Moon and Mars. So in the city
+// it's x and z, and his height over the land or the water as a log (to a
+// couple of centimetres on the ground, metres up where the air runs out);
+// in space, round whichever of the Earth, the Moon and Mars he's nearest
+// (an area each: each is its own ground), the way to him from its middle as
+// two angles (×1000: π fits in 3200; to a few centimetres on the Moon) and
+// his height over it, as a log again. ./scene.js draws them where this puts them.
+const ROOM = { bound: WORLD.half, motion: true };
+const ROUND = [{ id: 'earth', c: [0, 0, 0], r: SPACE.RE }, ...BODIES];
+const DEEP = SPACE.bound * 2; // (as far over any of them as he gets)
+const upY = (y, top) => (80 * Math.log1p(Math.max(0, y) / 20)) / Math.log1p(top / 20);
+const downY = (v, top) => 20 * Math.expm1((v * Math.log1p(top / 20)) / 80);
+const over = (p, b) => Math.hypot(p[0] - b.c[0], p[1] - b.c[1], p[2] - b.c[2]) - b.r;
+function seenAs(h, speed) {
+  const face = wrap(h.face);
+  if (h.zone !== 'space') return [{ x: h.p[0], z: h.p[2], face, speed, y: upY(h.p[1] - Math.max(groundAt(h.p[0], h.p[2]), WATER_Y), WORLD.ceiling) }, 'city'];
+  const b = ROUND.reduce((a, q) => (over(h.p, q) < over(h.p, a) ? q : a));
+  const d = h.p.map((v, i) => v - b.c[i]);
+  const r = Math.hypot(...d) || 1;
+  return [{ x: Math.atan2(d[0], d[2]) * 1000, z: Math.asin(clamp(d[1] / r, -1, 1)) * 1000, face, speed, y: upY(r - b.r, DEEP) }, `space-${b.id}`];
+}
+function placeOf(p) {
+  const b = ROUND.find((q) => p.area === `space-${q.id}`);
+  if (!b) return { ...p, y: downY(p.y ?? 0, WORLD.ceiling) };
+  // (in space: where they are, which way's up there, and how high over it they are)
+  const lon = p.x / 1000;
+  const lat = p.z / 1000;
+  const up = [Math.cos(lat) * Math.sin(lon), Math.sin(lat), Math.cos(lat) * Math.cos(lon)];
+  const high = downY(p.y ?? 0, DEEP);
+  return { ...p, x: b.c[0] + up[0] * (b.r + high), y: b.c[1] + up[1] * (b.r + high), z: b.c[2] + up[2] * (b.r + high), up, over: high };
+}
+
 export default function InvWorld() {
   const three = use3D();
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
@@ -45,6 +81,8 @@ export default function InvWorld() {
 
 function World({ gl, setGl }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
+  // other players online here, as holograms (middleearth/towns/useTravellers)
+  const trav = useTravellers('invincible', gl === 'on', ROOM);
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.2 });
   const canvas = useRef(null);
   const mapRef = useRef(null);
@@ -397,6 +435,14 @@ function World({ gl, setGl }) {
         say(e.body === 'moon' ? 'The Moon. Neil Armstrong, eat your heart out. (Space or W to go.)' : 'Mars. A long way from home. (Space to go.)', 4200);
       }
     }
+    // other players: where you are to them, and where they are (in the city,
+    // or out round the same one of the Earth, the Moon and Mars)
+    const tv = trav.ref.current;
+    if (tv) {
+      const [me, area] = seenAs(h, speed);
+      tv.pose(me, { area });
+    }
+    s.travellers = tv ? tv.list().map(placeOf) : null;
     a.frame(s, dt);
     s.frame++;
 
@@ -536,6 +582,7 @@ function World({ gl, setGl }) {
           <button type="button" className="iw-btn" onClick={() => setHelp((v) => !v)} aria-expanded={help}>
             Controls
           </button>
+          <Players trav={trav} />
           <a className="iw-btn" href="#inv-game">
             Think, Mark!
           </a>
@@ -623,6 +670,23 @@ function World({ gl, setGl }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Other players online here: how many, or a way to see them (going online
+// is the site's own switch, with your callsign, as the universe's map has it).
+function Players({ trav }) {
+  if (!trav.available) return null;
+  if (!trav.on)
+    return (
+      <button type="button" className="iw-btn" onClick={trav.join} title="Go online, and see everyone else flying the city as a pale Mark with their name over him">
+        See other players
+      </button>
+    );
+  return (
+    <span className="iw-btn iw-players" data-on title="Everyone else online here shows as a pale Mark: nothing passes between you but where each of you is">
+      <b>{trav.count}</b> {trav.count === 1 ? 'player' : 'players'} here
+    </span>
   );
 }
 

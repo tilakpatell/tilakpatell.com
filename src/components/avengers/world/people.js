@@ -41,7 +41,11 @@ export function loadPerson(url) {
 // Clips to play on a model (anything whose bones the clips name): play(name,
 // { speed, loop, from }) crosses over from the clip playing; `speed` its pace,
 // `loop` false to play it once and hold the last frame, `from` where to start.
-export function clipsFor(model, clips, { fade = 0.22 } = {}) {
+// From one of the `sync` clips to another (the gaits, whose steps start on
+// the same foot) it picks up at the same point of the stride, so the feet
+// don't scramble; a looping clip taken back before it has faded out goes on
+// from where it was, rather than start over.
+export function clipsFor(model, clips, { fade = 0.22, sync = ['walk', 'run'] } = {}) {
   const mixer = new THREE.AnimationMixer(model);
   const actions = {};
   for (const clip of clips) actions[clip.name] = mixer.clipAction(clip);
@@ -53,10 +57,13 @@ export function clipsFor(model, clips, { fade = 0.22 } = {}) {
       if (!a) return false;
       a.timeScale = speed;
       if (current === a) return true;
-      a.reset();
+      const stride = current && sync.includes(name) && sync.includes(current.getClip().name) ? (current.time / current.getClip().duration) % 1 : null;
+      const fading = loop && a.isRunning() && a.getEffectiveWeight() > 0.01;
+      if (!fading) a.reset();
       a.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
       a.clampWhenFinished = !loop;
-      a.time = from;
+      if (stride !== null) a.time = stride * a.getClip().duration;
+      else if (!fading) a.time = from;
       a.enabled = true;
       a.setEffectiveWeight(1);
       a.play();

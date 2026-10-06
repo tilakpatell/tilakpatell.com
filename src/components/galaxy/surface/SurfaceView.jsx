@@ -1,25 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
-import { useScene } from '../../../lib/three/useScene';
+import { useReducedMotion } from '../../../lib/hooks';
+import { WorldHost, useWorld } from '../../../runtime';
+import surfaceModule from './module';
 
-// A world's 3D (scene.js, through useScene) and the controls over it on a
+// A world's 3D (scene.js, a world module on the world runtime:
+// ./module.js) and the controls over it on a
 // touch screen: a stick on the left to walk (pushed all the way, you run),
 // the rest of the screen to look round, and buttons for jumping and for
 // whatever's to hand (E on a keyboard). While the 3D loads the box says
 // so; without 3D, a note that the world needs it.
-const load = () => import('./scene');
 
 export default function SurfaceView({ system, mission = null, ship, loadout, build = null, found, done, compass, net = null, handle, onEvent }) {
   const events = useRef(onEvent);
   events.current = onEvent;
   const [coarse] = useState(() => (typeof window !== 'undefined' ? (window.matchMedia?.('(pointer: coarse)').matches ?? false) : false));
-  const { wrap, on, meant, view } = useScene(load, {
-    id: 'surface',
-    near: '0px',
-    props: { system, mission, ship, loadout, build, found, done, compass, net, onEvent: (e) => events.current?.(e) },
+  const reduced = useReducedMotion();
+  const { host, on, meant, rt } = useWorld(surfaceModule, {
+    props: { system, mission, ship, loadout, build, found, done, compass, net, reduced },
+    onEvent: (e) => events.current?.(e),
   });
+  // the scene itself, while it's the world on the runtime
+  const view = { get current() { return rt?.current?.module === surfaceModule ? rt.current.world.scene : null; } };
   useEffect(() => {
-    if (handle) handle.current = { live: on, input: (name, ...a) => view.current?.input?.[name]?.(...a), debug: () => view.current?.debug?.() };
-  }, [handle, on, view]);
+    if (handle) handle.current = { live: on, host: () => host.current, takeOff: () => view.current?.takeOff?.() ?? false, input: (name, ...a) => view.current?.input?.[name]?.(...a), debug: () => view.current?.debug?.() };
+  }, [handle, on]); // eslint-disable-line react-hooks/exhaustive-deps
   // (for the page's own tests, in development)
   useEffect(() => {
     if (!import.meta.env.DEV) return undefined;
@@ -29,7 +33,7 @@ export default function SurfaceView({ system, mission = null, ship, loadout, bui
       delete window.__surface;
       delete window.__surfaceDo;
     };
-  }, [view]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // the stick: where the thumb is from where it came down
   const stick = useRef({ id: null, x: 0, y: 0 });
@@ -84,7 +88,7 @@ export default function SurfaceView({ system, mission = null, ship, loadout, bui
   };
 
   return (
-    <div ref={wrap} className="surface-map">
+    <WorldHost world={{ host }} className="surface-map">
       {meant ? (
         !on && (
           <p className="surface-loading" role="status">
@@ -118,6 +122,6 @@ export default function SurfaceView({ system, mission = null, ship, loadout, bui
           </div>
         </div>
       )}
-    </div>
+    </WorldHost>
   );
 }

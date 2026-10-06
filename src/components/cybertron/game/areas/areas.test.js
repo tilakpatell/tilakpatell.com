@@ -43,7 +43,7 @@ describe.each(Object.values(AREAS))('$name', (area) => {
   });
 
   it("only has models the catalogue has", () => {
-    const kinds = [area.player.robot, area.player.vehicle, ...area.people.map((p) => p.kind), ...(area.watchers ?? []).map((w) => w.kind), ...(area.stage.parked ?? []).map((p) => p.kind), ...(area.stage.flyovers ?? []), ...(area.stage.watcher ? [area.stage.watcher.kind] : [])];
+    const kinds = [area.player.robot, ...(area.player.vehicle ? [area.player.vehicle] : []), ...area.people.map((p) => p.kind), ...(area.watchers ?? []).map((w) => w.kind), ...(area.stage.parked ?? []).map((p) => p.kind), ...(area.stage.flyovers ?? []), ...(area.stage.watcher ? [area.stage.watcher.kind] : [])];
     for (const k of kinds) expect(MODELS[k], k).toBeTruthy();
     for (const m of area.missions) for (const st of m.steps) for (const e of st.spawn ?? []) expect(Object.keys(ENEMY_KINDS)).toContain(e.kind);
   });

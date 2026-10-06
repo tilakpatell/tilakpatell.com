@@ -103,15 +103,40 @@ export function createSwing(scene, { calm = false } = {}) {
   // the web: a thin line, stretched from his hand to the anchor
   // (lit, so it's shaded down one side and reads against a white wall as well as the sky)
   const webMat = new THREE.MeshStandardMaterial({ color: 0xf4f6fa, roughness: 0.45, metalness: 0, emissive: 0x9aa6b8, emissiveIntensity: 0.25, transparent: true, opacity: 1, depthWrite: false });
-  const webGeo = new THREE.CylinderGeometry(0.034, 0.04, 1, 8, 1, true).translate(0, 0.5, 0);
+  // thicker at his hand, finer out at the anchor; in segments, so it can bend
+  const webGeo = new THREE.CylinderGeometry(0.026, 0.042, 1, 8, 28, true).translate(0, 0.5, 0);
+  // it bends as a rope does, in its own frame (x and z across it, in
+  // metres; y along it, 0 at his hand to 1 at the far end): `uSag` hangs
+  // it (most in the middle, none at the ends), and a ripple runs out along
+  // it, `uWave` big, the way `uWaveDir` points
+  const bend = { uSag: { value: new THREE.Vector2() }, uWave: { value: 0 }, uWaveDir: { value: new THREE.Vector2(1, 0) }, uRun: { value: 0 } };
+  webMat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, bend);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform vec2 uSag;\nuniform float uWave;\nuniform vec2 uWaveDir;\nuniform float uRun;').replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+      {
+        float t = position.y;
+        float bow = sin(3.14159265 * t);
+        transformed.xz += uSag * bow;
+        // the ripple: out from his hand, dying away toward the anchor
+        transformed.xz += uWaveDir * sin(t * 22.0 - uRun) * bow * (1.0 - 0.6 * t) * uWave;
+      }`,
+    );
+  };
+  webMat.customProgramCacheKey = () => 'web-rope';
   const web = new THREE.Mesh(webGeo, webMat);
   web.visible = false;
   web.frustumCulled = false;
   web.renderOrder = 3;
   group.add(web);
 
-  // a web zip's web: out ahead in a blink, and gone
-  const zipWeb = new THREE.Mesh(webGeo, webMat.clone());
+  // a web zip's web: out ahead in a blink, and gone (straight: its own
+  // material, without the bend)
+  const zipMat = webMat.clone();
+  zipMat.onBeforeCompile = () => {};
+  zipMat.customProgramCacheKey = () => 'web-zip';
+  const zipWeb = new THREE.Mesh(webGeo, zipMat);
   zipWeb.visible = false;
   zipWeb.frustumCulled = false;
   zipWeb.renderOrder = 3;
@@ -142,13 +167,17 @@ export function createSwing(scene, { calm = false } = {}) {
   perchMark.scale.setScalar(0.04);
   group.add(perchMark);
 
-  const W = { shot: 1, out: 0, at: new THREE.Vector3(), hand: new THREE.Vector3(), tip: new THREE.Vector3(), d: new THREE.Vector3(), seen: 0, markAt: new THREE.Vector3(), markK: 0, perchAt: new THREE.Vector3(), perchK: 0 };
+  const W = { since: 9, run: 0, down: new THREE.Vector3(), inv: new THREE.Quaternion(), shot: 1, out: 0, at: new THREE.Vector3(), hand: new THREE.Vector3(), tip: new THREE.Vector3(), d: new THREE.Vector3(), seen: 0, markAt: new THREE.Vector3(), markK: 0, perchAt: new THREE.Vector3(), perchK: 0 };
 
   return {
     group,
     // a web just stuck at `at`
     webbed(at) {
       W.shot = 0;
+      W.since = 0;
+      // the ripple of this web, across it some way or other
+      const a = Math.random() * Math.PI * 2;
+      bend.uWaveDir.value.set(Math.cos(a), Math.sin(a));
       W.at.set(at[0], at[1], at[2]);
       const s = splashes[nextSplash];
       nextSplash = (nextSplash + 1) % splashes.length;
@@ -169,11 +198,12 @@ export function createSwing(scene, { calm = false } = {}) {
       // the web: out from his hand in a blink, held while he swings, and slack
       // and gone a moment after he lets it go
       W.hand.copy(hand);
+      W.since += dt;
       if (h.web) {
         W.at.set(h.web.at[0], h.web.at[1], h.web.at[2]);
         W.shot = Math.min(1, W.shot + dt / (calm ? 0.02 : 0.07));
         W.out = 1;
-      } else W.out = Math.max(0, W.out - dt * 5);
+      } else W.out = Math.max(0, W.out - dt * 3.2);
       web.visible = W.out > 0;
       if (web.visible) {
         const k = h.web ? 1 - (1 - W.shot) ** 2 : 1;
@@ -186,6 +216,14 @@ export function createSwing(scene, { calm = false } = {}) {
         if (len > 1e-3) web.quaternion.setFromUnitVectors(Y, W.d.multiplyScalar(1 / len));
         web.scale.set(1, Math.max(0.01, len), 1);
         webMat.opacity = W.out;
+        // straight while it's taut, all but a little; a ripple out along it as
+        // it's shot; and slack, hanging, once he's let go of it
+        W.down.set(0, -1, 0).applyQuaternion(W.inv.copy(web.quaternion).invert());
+        const sag = h.web ? Math.min(0.25, len * 0.006) : (1 - W.out) * Math.min(5, len * 0.18) + 0.1;
+        bend.uSag.value.set(W.down.x, W.down.z).multiplyScalar(sag);
+        bend.uWave.value = calm ? 0 : h.web ? 0.3 * Math.exp(-W.since * 6) : 0.12 * (1 - W.out);
+        W.run += dt * 38;
+        bend.uRun.value = W.run;
       }
       // the zip's web: shot out over a tenth of a second, then gone in a fifth
       Z.t += dt;
@@ -233,7 +271,7 @@ export function createSwing(scene, { calm = false } = {}) {
     dispose() {
       webGeo.dispose();
       webMat.dispose();
-      zipWeb.material.dispose();
+      zipMat.dispose();
       splashTex.dispose();
       for (const s of splashes) s.material.dispose();
       mark.material.map.dispose();

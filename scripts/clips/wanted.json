@@ -1,0 +1,26 @@
+[
+  {
+    "file": "public/audio/clips/i-know.mp3",
+    "page": "https://www.myinstants.com/en/instant/han-solo-i-know/",
+    "line": "I know.",
+    "by": "Han Solo"
+  },
+  {
+    "file": "public/audio/clips/youre-goddamn-right.mp3",
+    "page": "https://www.myinstants.com/en/instant/youre-goddamn-right-breaking-bad-22260/",
+    "line": "You’re goddamn right.",
+    "by": "Walter White"
+  },
+  {
+    "file": "public/audio/clips/we-need-to-cook.mp3",
+    "page": "https://www.myinstants.com/en/instant/jesse-we-need-to-cook-88058/",
+    "line": "Jesse, we need to cook.",
+    "by": "Walter White"
+  },
+  {
+    "file": "scripts/voices/refs/rick-boos.mp3",
+    "page": "https://www.myinstants.com/en/instant/rick-sanchez-your-boos-mean-nothing-31380/",
+    "line": "Your boos mean nothing. I’ve seen what makes you cheer.",
+    "by": "Rick Sanchez (a voice reference only, not played on the site)"
+  }
+]

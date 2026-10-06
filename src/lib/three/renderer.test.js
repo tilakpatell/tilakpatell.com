@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { watchdog } from './renderer';
+import { fitRatio, watchdog } from './renderer';
 
 // Runs `seconds` of frames through a watchdog, each frame taking
 // frameMs(ratio) at the ratio it's at then; the screen shows a frame on its
@@ -63,5 +63,32 @@ describe('watchdog', () => {
     const seen = run({ ratio: 1, frameMs: (r) => 18 + 30 * r * r, beat: 0, seconds: 60 });
     expect(seen.ratio).toBe(0.75);
     expect(seen.slow).toBe(1);
+  });
+});
+
+describe('fitRatio', () => {
+  it('leaves an ordinary screen at the ratio asked', () => {
+    expect(fitRatio(1512, 900, 1.75, { side: 8192 })).toBe(1.75);
+    expect(fitRatio(2560, 1440, 2, { side: 16384 })).toBe(2);
+  });
+
+  it('keeps a very wide screen inside what the graphics chip can hold', () => {
+    // a super-ultrawide at a retina ratio: 5120 × 1.75 is 8960, past an 8192 chip
+    const r = fitRatio(5120, 900, 1.75, { side: 8192 });
+    expect(Math.floor(5120 * r)).toBeLessThanOrEqual(8192);
+    expect(r).toBeGreaterThan(1.5);
+    // and a tall one the same way
+    expect(Math.floor(5000 * fitRatio(800, 5000, 2, { side: 8192 }))).toBeLessThanOrEqual(8192);
+  });
+
+  it('draws no more pixels than the budget, all told', () => {
+    const r = fitRatio(5120, 1440, 2, { side: 16384, pixels: 12e6 });
+    expect(5120 * r * 1440 * r).toBeLessThanOrEqual(12e6 + 1);
+    expect(fitRatio(1920, 1080, 1, { side: 16384, pixels: 12e6 })).toBe(1);
+  });
+
+  it('goes under one pixel per screen pixel only when it must', () => {
+    expect(fitRatio(10000, 900, 1, { side: 8192 })).toBeCloseTo(0.8192, 4);
+    expect(fitRatio(0, 0, 1.5, { side: 8192 })).toBe(1.5);
   });
 });

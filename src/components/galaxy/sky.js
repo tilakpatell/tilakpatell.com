@@ -5,19 +5,34 @@
 // the core's bulge glowing in the direction of the galaxy's middle: huge and
 // blazing over Coruscant, small and far off over Tatooine ("the planet it's
 // farthest from"), and from the Unknown Regions the whole galaxy hangs off
-// to one side, the other side all but empty. A field of stars, thickest
-// along the band; a nebula or two; and the system's own star or stars,
-// glaring, the way the light comes from (they light the planet: bodies.js).
-// And the other systems' stars, where they really are from here (systems.js
-// courseTo), brighter the nearer: point the nose at one and you can jump to
-// it (scene.js); the one picked pulses. Everything rides with the camera, so
-// it's always as far off.
+// to one side, the other side all but empty. Three nebulae (nebulaeOf),
+// clouds of gas glowing in their own colours, with dark dust across them and
+// across the band. A field of stars, thickest along the band; and the
+// system's own star or stars, glaring, the way the light comes from (they
+// light the planet: bodies.js). And the other systems' stars, where they
+// really are from here (systems.js courseTo), brighter the nearer: point the
+// nose at one and you can jump to it (scene.js); the one picked pulses.
+// Everything rides with the camera, so it's always as far off.
 //
-// createSky({ small }) → { group, setSystem(system), update(camera, t),
-//   focus(id), beacons, sunDirs, dispose() }; beacons: [{ id, dir }] (unit
-//   vectors), the other systems' stars
+// The galaxy itself (the band, its lanes and star clouds, the core and the
+// nebulae) doesn't move, so it's drawn once a system, not every frame: bake()
+// renders it with a cube camera into a cube texture (1024 pixels a face, 512
+// on a small screen or a weaker device: bakeSize), 8 bits in sRGB with its
+// mipmaps, and the sphere you see just looks that up. Drawn once, its shader
+// can afford what it couldn't every frame: noise twisted by noise, seven
+// octaves deep. Until the first bake the sphere is black (the stars, the suns
+// and the other systems' stars are drawn live, as ever). That shader is a big
+// one (on some drivers its first link takes seconds), so prepare() starts the
+// link at startup, in the background, and the first bake waits for nothing.
+//
+// createSky({ small, renderer }) → { group, setSystem(system), bake(renderer),
+//   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
+//   setRatio(r), dispose() };
+//   setSystem then bake (with the renderer it was made with, unless given
+//   another); beacons: [{ id, dir }] (unit vectors), the other systems' stars
 
 import * as THREE from 'three';
+import { precompile } from '../../lib/three/renderer';
 import { RIM, SYSTEMS, coreBearing, courseTo, distance } from './systems';
 
 const SKY_R = 5200; // (inside the camera's far plane, outside everything else)
@@ -38,10 +53,20 @@ float vnoise(vec3 x) {
   return mix(mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x), mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
              mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x), mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
 }
-float fbm(vec3 p) {
+float fbm4(vec3 p) {
   float s = 0.0;
   float a = 0.5;
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 4; i++) {
+    s += a * vnoise(p);
+    p = p * 2.03 + vec3(1.7, 9.2, 3.4);
+    a *= 0.5;
+  }
+  return s;
+}
+float fbm7(vec3 p) {
+  float s = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 7; i++) {
     s += a * vnoise(p);
     p = p * 2.03 + vec3(1.7, 9.2, 3.4);
     a *= 0.5;
@@ -57,33 +82,68 @@ void main() {
   gl_Position = vec4(p.xy, p.w * 0.99999, p.w); // (on the far plane, whatever its distance)
 }`;
 
-const SKY_FRAG = /* glsl */ `
+// the sky as it's drawn every frame: the cube baked for the system, looked
+// up the way you're looking, with noise of half a step either way of the
+// cube's own steps (8 bits, in sRGB), against banding in the dark
+const LOOK_FRAG = /* glsl */ `
+uniform samplerCube uSky;
+varying vec3 vDir;
+void main() {
+  vec3 c = textureCube(uSky, normalize(vDir)).rgb;
+  float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+  c = sRGBTransferOETF(vec4(c, 1.0)).rgb + n / 255.0;
+  gl_FragColor = vec4(sRGBTransferEOTF(vec4(max(c, 0.0), 1.0)).rgb, 1.0);
+  #include <colorspace_fragment>
+}`;
+
+// the sky as it's baked, once a system: the band, its lanes and star clouds,
+// the core, three nebulae and the dust in front, every one of them drawn
+// through noise twisted by noise (it runs for six faces, once, so it can
+// afford to)
+const BAKE_VERT = /* glsl */ `
+varying vec3 vDir;
+void main() {
+  vDir = position;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+const BAKE_FRAG = /* glsl */ `
 uniform vec3 uCore;
 uniform float uNear;
 uniform float uSide;
 uniform float uSeed;
-uniform vec3 uNeb1;
-uniform vec3 uNeb2;
-uniform vec3 uNebCol1;
-uniform vec3 uNebCol2;
+uniform vec3 uNebDir[3];
+uniform vec3 uNebCol[3];
+uniform vec2 uNebShape[3]; // (its size, in radians, and how twisted it is)
 varying vec3 vDir;
 ${NOISE}
 void main() {
   vec3 d = normalize(vDir);
   float lat = d.y;
+  // a slow twist across the whole sky, that every cloud and lane is drawn through
+  vec3 s = d * 2.3 + uSeed;
+  vec3 twist = vec3(fbm4(s), fbm4(s + vec3(5.2, 1.3, 2.8)), fbm4(s + vec3(1.7, 9.2, 4.1))) - 0.47;
+  vec3 dw = d + twist * 0.3;
   // the band: the disc seen edge on, wider nearer the middle
   float width = mix(0.11, 0.2, uNear);
-  float band = exp(-lat * lat / (width * width));
+  float wl = lat + twist.y * 0.03;
+  float band = exp(-wl * wl / (width * width));
   vec3 level = normalize(vec3(d.x, 0.0, d.z) + vec3(1e-5, 0.0, 0.0));
   float toward = dot(level, uCore) * 0.5 + 0.5;
   // out at the rim the galaxy's all to one side
   float side = mix(1.0, 0.08 + 0.92 * pow(toward, 1.6), uSide);
-  float clouds = fbm(d * 7.0 + uSeed);
-  float fine = fbm(d * 23.0 + uSeed * 1.7);
-  float lanes = smoothstep(0.46, 0.7, fbm(d * vec3(5.0, 14.0, 5.0) + 3.1 + uSeed)) * exp(-lat * lat / (width * width * 0.18));
+  float clouds = fbm7(dw * 7.0 + uSeed);
+  float fine = fbm4(dw * 23.0 + uSeed * 1.7);
+  // its lanes of dust, and the dust drifting in front of everything (it shows
+  // against the band and the core in the disc, and against the nebulae)
+  float lanes = smoothstep(0.46, 0.7, fbm7(dw * vec3(5.0, 14.0, 5.0) + 3.1 + uSeed)) * exp(-lat * lat / (width * width * 0.18));
+  float dust = smoothstep(0.52, 0.76, fbm7(dw * vec3(7.0, 10.0, 7.0) + vec3(11.0, 4.0, 7.0) + uSeed));
+  float dustBand = dust * exp(-lat * lat / (width * width * 2.5)); // (in the disc, over the band and the core)
   vec3 bandCol = mix(vec3(0.5, 0.58, 0.85), vec3(1.0, 0.86, 0.68), toward);
   vec3 col = bandCol * band * side * (0.18 + 0.62 * clouds + 0.35 * fine * fine) * 0.32;
-  col *= 1.0 - lanes * 0.82;
+  // its star clouds: a fine grain of light down its middle, stars too many to tell apart
+  float grain = fbm4(d * 70.0 + uSeed * 2.3);
+  col += bandCol * exp(-wl * wl / (width * width * 0.45)) * side * grain * grain * grain * 0.09;
+  col *= 1.0 - max(vec3(lanes * 0.82), dustBand * vec3(0.5, 0.55, 0.62)); // (the dust takes more blue than red: it reddens what's behind)
   // the core's bulge: bigger and brighter the nearer the middle
   float ang = acos(clamp(dot(d, uCore), -1.0, 1.0));
   float size = mix(0.13, 0.95, uNear);
@@ -91,13 +151,27 @@ void main() {
   float bulge = exp(-(ang * ang) / (size * size)) * mix(1.0, squash, 0.6);
   float core = exp(-(ang * ang) / (size * size * 0.06));
   vec3 coreCol = mix(vec3(1.0, 0.78, 0.5), vec3(1.0, 0.95, 0.85), core);
-  col += coreCol * (bulge * mix(0.22, 0.9, uNear) + core * mix(0.18, 0.7, uNear)) * (1.0 - lanes * 0.55) * (0.75 + 0.25 * clouds);
-  // nebulae, here and there
-  float n1 = exp(-pow(acos(clamp(dot(d, uNeb1), -1.0, 1.0)) / 0.32, 2.0)) * smoothstep(0.35, 0.75, fbm(d * 4.0 + 7.0 + uSeed));
-  float n2 = exp(-pow(acos(clamp(dot(d, uNeb2), -1.0, 1.0)) / 0.22, 2.0)) * smoothstep(0.3, 0.8, fbm(d * 6.0 + 2.0 + uSeed));
-  col += uNebCol1 * n1 * 0.16 + uNebCol2 * n2 * 0.12;
+  col += coreCol * (bulge * mix(0.22, 0.9, uNear) + core * mix(0.18, 0.7, uNear)) * (1.0 - max(lanes * 0.55, dustBand * 0.3)) * (0.75 + 0.25 * clouds);
+  // the nebulae: gas glowing in its own colour, twisted its own amount,
+  // whiter where it's thickest, with rifts of its own and the dust across it
+  for (int i = 0; i < 3; i++) {
+    float a = acos(clamp(dot(d, uNebDir[i]), -1.0, 1.0)) / uNebShape[i].x;
+    float m = exp(-a * a);
+    if (m < 0.004) continue; // (too far out to show)
+    vec3 p = (d + twist * 0.25) * (2.0 / uNebShape[i].x) + float(i) * 7.3 + uSeed;
+    vec3 q = vec3(fbm4(p), fbm4(p + vec3(3.1, 7.7, 1.9)), fbm4(p + vec3(8.3, 2.8, 5.4))) - 0.47;
+    float gas = fbm7(p + q * 1.8 * uNebShape[i].y);
+    float rift = smoothstep(0.56, 0.8, fbm4(p * 1.9 + q * 2.0 + 17.0));
+    float body = smoothstep(0.25, 0.9, gas * (0.55 + 0.9 * m)) * sqrt(m) * (1.0 - rift * 0.75);
+    vec3 tint = mix(uNebCol[i], vec3(dot(uNebCol[i], vec3(0.45))), body * body * 0.4);
+    col += (tint * body * 0.15 + uNebCol[i] * m * 0.01) * (1.0 - dust * 0.85);
+  }
   // and the dark between
   col += vec3(0.0035, 0.005, 0.011);
+  // half a step of the cube's 8 bits either way before they round it, so
+  // its long faint gradients come out smooth, not in steps
+  float n = hash3(vec3(gl_FragCoord.xy, uSeed + 7.0)) - 0.5;
+  col = sRGBTransferEOTF(vec4(max(sRGBTransferOETF(vec4(col, 1.0)).rgb + n / 255.0, 0.0), 1.0)).rgb;
   gl_FragColor = vec4(col, 1.0);
   #include <colorspace_fragment>
 }`;
@@ -199,32 +273,76 @@ const NEBULAE = [
   ['#7a5fd0', '#d05f7a'],
 ];
 
-export function createSky({ small = false } = {}) {
+// A system's nebulae: three clouds of glowing gas, each with the way to it
+// (a unit vector, nearer the band than not), its colour, its size (radians)
+// and how twisted it is. The first two are where the sky has always had them,
+// in the pair of colours it always had: they take the system's numbers (rand)
+// just after the sky's seed, as they always did, so the stars after them stay
+// where they were too. The third, the sizes and the twists come from numbers
+// of their own.
+function nebulaeFrom(sys, rand) {
+  const more = seeded(`${sys.id}/nebulae`);
+  const toward = (r) => {
+    const v = new THREE.Vector3(r() * 2 - 1, (r() * 2 - 1) * 0.5, r() * 2 - 1).normalize();
+    return [v.x, v.y, v.z];
+  };
+  const dirs = [toward(rand), toward(rand)];
+  const k = Math.floor(rand() * NEBULAE.length);
+  const other = NEBULAE[(k + 1 + Math.floor(more() * (NEBULAE.length - 1))) % NEBULAE.length];
+  const colors = [...NEBULAE[k], other[more() < 0.5 ? 0 : 1]];
+  dirs.push(toward(more));
+  return dirs.map((dir, i) => ({ dir, color: colors[i], size: 0.18 + more() * 0.27, warp: 0.6 + more() }));
+}
+export function nebulaeOf(sys) {
+  const rand = seeded(sys.id);
+  rand(); // (the sky's seed)
+  return nebulaeFrom(sys, rand);
+}
+
+// the size of a face of the baked sky, in pixels
+export const bakeSize = ({ small = false } = {}) => (small ? 512 : 1024);
+
+export function createSky({ small = false, renderer = null } = {}) {
   const group = new THREE.Group();
   group.renderOrder = -20;
   const made = [];
+  let gone = false;
 
-  const skyMat = new THREE.ShaderMaterial({
-    vertexShader: SKY_VERT,
-    fragmentShader: SKY_FRAG,
+  // the sphere you see: it looks the baked cube up (black till there is one)
+  const skyGeo = new THREE.SphereGeometry(SKY_R, 64, 32);
+  const lookMat = new THREE.ShaderMaterial({ vertexShader: SKY_VERT, fragmentShader: LOOK_FRAG, uniforms: { uSky: { value: null } }, side: THREE.BackSide, depthWrite: false });
+  const sky = new THREE.Mesh(skyGeo, lookMat);
+  sky.renderOrder = -20;
+  sky.frustumCulled = false;
+  group.add(sky);
+  made.push(skyGeo, lookMat);
+
+  // what's baked into it, once a system (bake): the same sphere, with the
+  // galaxy's shader on it, alone in a scene of its own, seen by a cube
+  // camera from its middle
+  const bakeMat = new THREE.ShaderMaterial({
+    vertexShader: BAKE_VERT,
+    fragmentShader: BAKE_FRAG,
     uniforms: {
       uCore: { value: new THREE.Vector3(1, 0, 0) },
       uNear: { value: 0.3 },
       uSide: { value: 0.3 },
       uSeed: { value: 0 },
-      uNeb1: { value: new THREE.Vector3(0, 0.3, 1).normalize() },
-      uNeb2: { value: new THREE.Vector3(1, -0.2, 0).normalize() },
-      uNebCol1: { value: new THREE.Color('#c4508f') },
-      uNebCol2: { value: new THREE.Color('#4f7fd0') },
+      uNebDir: { value: [0, 1, 2].map(() => new THREE.Vector3(0, 0, 1)) },
+      uNebCol: { value: [0, 1, 2].map(() => new THREE.Color()) },
+      uNebShape: { value: [0, 1, 2].map(() => new THREE.Vector2(0.3, 1)) },
     },
     side: THREE.BackSide,
+    depthTest: false,
     depthWrite: false,
   });
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(SKY_R, 64, 32), skyMat);
-  sky.renderOrder = -20;
-  sky.frustumCulled = false;
-  group.add(sky);
-  made.push(sky.geometry, skyMat);
+  made.push(bakeMat);
+  const bakeScene = new THREE.Scene();
+  const bakeSphere = new THREE.Mesh(skyGeo, bakeMat);
+  bakeSphere.frustumCulled = false;
+  bakeScene.add(bakeSphere);
+  const cube = new THREE.WebGLCubeRenderTarget(bakeSize({ small }), { type: THREE.UnsignedByteType, colorSpace: THREE.SRGBColorSpace, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter });
+  const cubeCamera = new THREE.CubeCamera(1, 10000, cube);
 
   // the stars: positions made per system (setSystem), drawn in one go
   const n = small ? STARS_SMALL : STARS;
@@ -287,17 +405,17 @@ export function createSky({ small = false } = {}) {
       const rand = seeded(sys.id);
       const { dir, d } = coreBearing(sys);
       const near = Math.max(0, 1 - d / RIM);
-      const u = skyMat.uniforms;
+      // what the bake draws (bake: until then the sky is the last system's)
+      const u = bakeMat.uniforms;
       u.uCore.value.set(...dir);
       u.uNear.value = near * near * 0.85 + near * 0.15;
       u.uSide.value = Math.min(0.95, Math.max(0, (d / RIM - 0.45) * 1.6));
       u.uSeed.value = rand() * 40;
-      const pick = (v) => v.set(rand() * 2 - 1, (rand() * 2 - 1) * 0.5, rand() * 2 - 1).normalize();
-      pick(u.uNeb1.value);
-      pick(u.uNeb2.value);
-      const neb = NEBULAE[Math.floor(rand() * NEBULAE.length)];
-      u.uNebCol1.value.set(neb[0]);
-      u.uNebCol2.value.set(neb[1]);
+      nebulaeFrom(sys, rand).forEach((nb, i) => {
+        u.uNebDir.value[i].set(...nb.dir);
+        u.uNebCol.value[i].set(nb.color);
+        u.uNebShape.value[i].set(nb.size, nb.warp);
+      });
       // the stars: half anywhere, the rest along the band, thickest toward the core
       const pos = starGeo.attributes.position.array;
       const size = starGeo.attributes.aSize.array;
@@ -386,8 +504,34 @@ export function createSky({ small = false } = {}) {
       starMat.uniforms.uDpr.value = dpr;
       beaconMat.uniforms.uDpr.value = dpr;
     },
+    // the bake's shader made and linking now, as the bake will draw it (to the
+    // cube, so no tone mapping); resolves once it has. The first bake is then a
+    // draw, not a wait for a link, wherever in the game it comes
+    prepare(r = renderer) {
+      if (gone || !r) return Promise.resolve();
+      return precompile(r, bakeScene, cubeCamera.children[0], bakeScene, cube);
+    },
+    // the system's sky (setSystem's) drawn into the cube, once, and the
+    // sphere looking it up from then on; the renderer is left as it was
+    bake(r = renderer) {
+      if (gone || !r) return;
+      const was = { target: r.getRenderTarget(), face: r.getActiveCubeFace(), level: r.getActiveMipmapLevel(), autoClear: r.autoClear, toneMapping: r.toneMapping, xr: r.xr?.enabled };
+      r.autoClear = true;
+      r.toneMapping = THREE.NoToneMapping;
+      try {
+        cubeCamera.update(r, bakeScene);
+      } finally {
+        r.setRenderTarget(was.target, was.face, was.level);
+        r.autoClear = was.autoClear;
+        r.toneMapping = was.toneMapping;
+        if (r.xr) r.xr.enabled = was.xr;
+      }
+      lookMat.uniforms.uSky.value = cube.texture;
+    },
     dispose() {
+      gone = true;
       for (const x of made) x.dispose();
+      cube.dispose();
     },
   };
 }

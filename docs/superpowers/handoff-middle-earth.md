@@ -1,4 +1,4 @@
-# Handoff: Middle-earth kitchens, side games, Orthanc
+# Handoff: Middle-earth kitchens, side games, the hidden places
 
 For whoever picks this up next (another session, or the same one after a
 break). State as of 2026-10-05.
@@ -99,6 +99,15 @@ above.
   `hidden.js` has two entries now; the map's road so far counts the
   places off the road and names one only once it's found
   (`record.js`: `HIDDEN_SEALS`, `offRoad`).
+- Space and E go to the world, not to a page button that has focus
+  (`towns/keys.js` `ownButton`, in every town).
+- Edoras, the third hidden place (`towns/edoras/`, `#/middle-earth/edoras`,
+  found by clicking the golden hall on its hill on the map), played as
+  Gimli: spec `docs/superpowers/specs/2026-10-06-edoras-design.md`. Seals
+  `edoras`, `rohanwillanswer`, and `drinkinggame` on the side (a dozen
+  tankards before going under; best kept in `tp-edoras-side`). Lab:
+  `lab/ed-tour.sh` (every step shot), `lab/ed-play.mjs` (played through
+  with key presses).
 - Amon Hen's kitchen: ducks between the boats, the mist of Rauros on the water.
 - Moria's shore under the West-gate: stones, reeds, dead trees, lake mist.
 

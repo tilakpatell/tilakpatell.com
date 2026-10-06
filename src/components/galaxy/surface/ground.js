@@ -180,6 +180,7 @@ export function createMarks(size = 512) {
   texture.minFilter = THREE.LinearFilter;
   texture.generateMipmaps = false;
   let dirty = false;
+  let sent = -Infinity; // (when it last went up to the graphics chip: a 512² upload, at most four times a second)
   return {
     texture,
     // a dab at (x, z), r metres across, `k` strong (0…1)
@@ -195,9 +196,10 @@ export function createMarks(size = 512) {
       c.fillRect(u - px, v - px, px * 2, px * 2);
       dirty = true;
     },
-    flush() {
-      if (!dirty) return;
+    flush(now = performance.now()) {
+      if (!dirty || now - sent < 250) return;
       dirty = false;
+      sent = now;
       texture.needsUpdate = true;
     },
     dispose() {

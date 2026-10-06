@@ -71,9 +71,37 @@ The owner's asks:
 - A Decepticon's mission beacon is a thin shaft over his head now, not a
   column round him.
 
+- **Kaon and Megatron** (PR #252): a city, four missions and a side to
+  pick on the start screen. Megatron changes on his own clip. Optimus's
+  gun is held right; shots leave the muzzle. Hit marker, damage edge,
+  camera jolts, a key light over the hero.
+- **More of Fall of Cybertron's cast**: Starscream (Kaon, who gives the
+  Zeta Prime mission), Skywarp's and Thundercracker's jets over Kaon,
+  Ironhide, Warpath and Ratchet among Kaon's raiders, and Ultra Magnus
+  in Iacon. They're hafid.quispe's Sketchfab uploads, each holding a
+  robot and its vehicle in one file. The import script splits them by
+  node, and `skinnedOnly` drops the other form's loose parts. The High
+  Moon robots keep their rigs. Ultra Magnus is `still`, because the
+  auto-rig can't read his arm guns.
+- **Hardening** (PR #258): `fuzz.test.js` drives every area with random
+  input for 9,000 frames on three seeds. Every frame it checks the
+  invariants: values stay finite and in bounds, nobody goes into a solid,
+  and hp, boost and shots stay sane. Two bugs it led to are fixed:
+  - Crossing a bridge while down no longer carries the death across.
+  - Megatron no longer stays stuck in his tank pose after a respawn.
+
+  Hp now mends after 4 s out of the fight (`MEND`), energon heals a
+  little, and Decepticons flinch when hit.
+- **Finding more**: search the Sketchfab API (`/v3/search?type=models&
+  downloadable=true`, whose results give the licence, faces and texture
+  size) and check each candidate's thumbnail. The same uploader also has Fall of Cybertron's
+  Sideswipe, Skywarp and Thundercracker robots, Hound, Perceptor, Sludge,
+  Snarl, Swoop and the Combaticons. flotick64 has the whole Fall of
+  Cybertron multiplayer roster with vehicle forms, if more are wanted.
+
 ## Checking it
 - Dev only: `#/cybertron?quality=high&autoplay` starts playing.
-- `window.__CY__.go('base' | 'jasper' | 'iacon')` crosses to an area.
+- `window.__CY__.go('base' | 'jasper' | 'iacon' | 'kaon')` crosses to an area.
   `window.__CY__.sim` is the sim: move `sim.player`, push enemies, or set
   a mission. The camera follows `window.__CY__.ctl.current.view` (`yaw`,
   `pitch`), not the player's yaw.
@@ -82,9 +110,8 @@ The owner's asks:
   the chase camera eases in.
 
 ## Left
-- **Out of scope in the spec, still open**:
-  - Playing as Megatron (the Decepticon side), and Kaon.
-  - Online players in the world (`useTravellers`, as Avengers HQ does).
+- **Out of scope in the spec, still open**: online players in the world
+  (`useTravellers`, as Avengers HQ does).
 - Prime's Optimus stands with his upper arms a little out, because his
   shoulder armour is broad. A per-model `stand` pose in `catalog.js` would
   fix it if it bothers anyone.

@@ -375,6 +375,15 @@ export async function create(canvas, { onLost, onSlow } = {}) {
   scene.add(beamCore);
 
   const vfx = createVfx(scene, { calm, debrisMaterial: steel, ground: 0 });
+  // Delayed effects die with the scene, so none fire into a disposed vfx.
+  const timers = new Set();
+  const later = (fn, ms) => {
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
+    timers.add(id);
+  };
   const feel = createFeel({ seed: 5, calm, baseFov: 62 });
 
   // ── per frame ──
@@ -595,7 +604,7 @@ export async function create(canvas, { onLost, onSlow } = {}) {
           vfx.smoke(at, { size: 0.8, count: 3, life: 1, color: 0xf08040, to: 0xd0c0b0, opacity: 0.4 });
         } else if (e.kind === 'prime') {
           vfx.explode(at, { scale: 3 });
-          for (let i = 0; i < 5; i++) setTimeout(() => vfx.explode(at.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, Math.random() * 3, (Math.random() - 0.5) * 2)), { scale: 1.6 }), 120 + i * 140);
+          for (let i = 0; i < 5; i++) later(() => vfx.explode(at.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, Math.random() * 3, (Math.random() - 0.5) * 2)), { scale: 1.6 }), 120 + i * 140);
           feel.trauma(0.9);
           feel.punch(8);
         } else if (e.kind !== 'plate') {
@@ -658,6 +667,8 @@ export async function create(canvas, { onLost, onSlow } = {}) {
     resize,
     info: engine.info,
     dispose() {
+      for (const id of timers) clearTimeout(id);
+      timers.clear();
       vfx.dispose();
       engine.dispose();
     },

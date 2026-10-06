@@ -60,6 +60,16 @@ describe('the worlds you can land on', () => {
         for (const f of site.skyships) expect(SHIPS.has(f.kind), `skyship ${f.kind}`).toBe(true);
       });
 
+      it('can start every quest it has (its giver offers it)', () => {
+        const ids = (a) => [a.quest ?? []].flat();
+        for (const q of site.quests) {
+          if (!q.giver) continue;
+          const giver = site.life.filter((a) => a.id === q.giver);
+          expect(giver.length, `${q.id}'s giver ${q.giver}`).toBeGreaterThan(0);
+          expect(giver.some((a) => ids(a).includes(q.id)), `${q.giver} offers ${q.id}`).toBe(true);
+        }
+      });
+
       it('sets the ship down on level ground, inside the world', () => {
         if (site.noGround) {
           expect(site.floors.length + site.things_all.length).toBeGreaterThan(0);

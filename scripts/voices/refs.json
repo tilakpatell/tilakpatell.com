@@ -1,0 +1,25 @@
+{
+  "rick": {
+    "clips": ["public/audio/clips/riggity-wrecked-son.mp3", "public/audio/clips/im-in.mp3", "scripts/voices/refs/rick-boos.mp3", "public/audio/clips/pickle-rick.mp3"]
+  },
+  "morty": {
+    "clips": []
+  },
+  "luke": {
+    "clips": ["public/audio/clips/bad-feeling-luke.mp3"]
+  },
+  "han": {
+    "clips": ["public/audio/clips/dont-get-cocky.mp3", "public/audio/clips/never-tell-me-the-odds.mp3", "public/audio/clips/i-know.mp3", "public/audio/clips/may-the-force-be-with-you.mp3"]
+  },
+  "walt": {
+    "clips": ["public/audio/clips/walter-hartwell-white.mp3", "public/audio/clips/i-am-the-danger.mp3"],
+    "speed": 0.95
+  },
+  "jesse": {
+    "clips": ["public/audio/clips/private-domicile.mp3", "public/audio/clips/yeah-science.mp3"],
+    "speed": 1.05
+  },
+  "hank": {
+    "clips": []
+  }
+}

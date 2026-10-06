@@ -65,6 +65,8 @@ import {
   readPhoto,
   underPortal,
   walkable,
+  swingArc,
+  swingPose,
 } from './rules';
 import { LAWN_TREES } from './rules';
 
@@ -1292,5 +1294,44 @@ describe('The compound, the world: photo mode', () => {
     const r = readPhoto({ yaw: 2, pitch: 9, dist: 0, fov: 500 });
     expect(r).toEqual({ yaw: 2, pitch: PHOTO.pitch[1], dist: PHOTO.dist[0], fov: PHOTO.fov[1] });
     expect(newPhoto(1, -3).pitch).toBe(PHOTO.pitch[0]);
+  });
+});
+
+describe('where he is on a swing, and how he holds himself there', () => {
+  const at = (x, y, z, vx, vz, a = [0, 20, 0]) => ({ x, y, z, vx, vy: 0, vz, web: { a } });
+  it('reads the bottom of the arc as 0, behind the anchor as less, past it as more', () => {
+    expect(swingArc(at(0, 5, 0, 10, 0))).toBeCloseTo(0, 5);
+    expect(swingArc(at(-8, 8, 0, 10, 0))).toBeLessThan(-0.3);
+    expect(swingArc(at(8, 8, 0, 10, 0))).toBeGreaterThan(0.3);
+    // the same place, going the other way: behind becomes past
+    expect(swingArc(at(8, 8, 0, -10, 0))).toBeLessThan(-0.3);
+  });
+  it('keeps to -1..1, and is 0 with no way to be going', () => {
+    expect(swingArc(at(-30, 20, 0, 10, 0))).toBe(-1);
+    expect(swingArc(at(30, 21, 0, 10, 0))).toBe(1);
+    expect(swingArc(at(8, 8, 0, 0, 0))).toBe(0);
+    expect(swingArc({ x: 0, y: 0, z: 0, vx: 1, vz: 0, web: null })).toBe(0);
+  });
+  it('poses him from the arc: trailing, tucked, thrown out ahead', () => {
+    const tuck = swingPose(0);
+    const trail = swingPose(-1);
+    const out = swingPose(1);
+    // knees up through the bottom, legs behind coming in, out in front going up
+    expect(tuck.thighL[2]).toBeGreaterThan(0.5);
+    expect(trail.thighL[2]).toBeLessThan(0);
+    expect(out.calfL[2]).toBeGreaterThan(0.5);
+    // the free hand reaches up and ahead for the next web on the way up
+    expect(out.free[1]).toBeGreaterThan(tuck.free[1]);
+    // leaning back as the legs go ahead
+    expect(out.pitch).toBeLessThan(tuck.pitch);
+  });
+  it('moves smoothly between them', () => {
+    let prev = swingPose(-1);
+    for (let s = -0.95; s <= 1.001; s += 0.05) {
+      const p = swingPose(s);
+      for (const k of ['thighL', 'calfL', 'thighR', 'calfR', 'foot', 'free', 'freeFore']) for (let i = 0; i < 3; i++) expect(Math.abs(p[k][i] - prev[k][i])).toBeLessThan(0.12);
+      expect(Math.abs(p.pitch - prev.pitch)).toBeLessThan(0.05);
+      prev = p;
+    }
   });
 });

@@ -305,9 +305,18 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
     orthanc.add(reach);
     takeOver(orthanc, built, 'orthanc', orthancStone, { height: 3.9 });
   }
-  // Edoras: the golden hall on its hill
+  // Edoras: the golden hall on its hill. It can be clicked too (the way in:
+  // ./hidden.js).
+  let edoras;
   {
     const g = at(world, 418, 410);
+    g.userData.who = 'edoras';
+    edoras = g;
+    // a little wider than the hill, and never drawn, so a click near it counts
+    const reach = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.7, 2.4, 10), new THREE.MeshBasicMaterial());
+    reach.position.y = 1.1;
+    reach.visible = false;
+    g.add(reach);
     const hill = put(g, new THREE.ConeGeometry(1.5, 1.1, 10), mat(0x9ab05a), 0, 0.55, 0);
     hill.scale.y = 1;
     put(g, new THREE.BoxGeometry(0.9, 0.38, 0.5), mat(0x9a6a3a), 0, 1.25, 0);
@@ -469,7 +478,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   scene.add(fire.mesh, bombs.mesh, smoke.mesh, wisps.mesh, motes.mesh);
 
   // ── Frodo and Sam, and the people they meet ──
-  const roots = [orthanc, minasTirith]; // what a tap can land on
+  const roots = [orthanc, minasTirith, edoras]; // what a tap can land on
   const tag = (group, id) => {
     group.userData.who = id;
     roots.push(group);

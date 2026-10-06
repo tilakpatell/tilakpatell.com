@@ -49,6 +49,7 @@ export function createSolids(cell = 16) {
     return s;
   };
   const found = [];
+  const seen = new Set(); // (one for every call: near() runs many times a frame)
   return {
     all,
     circle(x, z, r, { top = null, base = null, tag = null } = {}) {
@@ -66,7 +67,7 @@ export function createSolids(cell = 16) {
     // those whose cells reach within r of (x, z)
     near(x, z, r) {
       found.length = 0;
-      const seen = new Set();
+      seen.clear();
       for (let i = Math.floor((x - r) / cell); i <= Math.floor((x + r) / cell); i++)
         for (let j = Math.floor((z - r) / cell); j <= Math.floor((z + r) / cell); j++) {
           const list = cells.get(key(i, j));

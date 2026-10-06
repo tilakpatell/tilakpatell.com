@@ -7,7 +7,11 @@
 // dish, the docking rings, the machinery in its trenches and the wide blue
 // band of its sublight engines. Their skins are painted on canvases (panel
 // lines, a little grime, the panels' own relief as a normal map: hull.js's
-// panelMaps), so nothing's downloaded, and they're crisp at any size.
+// panelMaps), so nothing's downloaded, and they're crisp at any size. How
+// fine is lib/detail's: at ultra (a strong graphics card) the skins have
+// four times the texels, with screw heads and scratches they've the room
+// for, every curve is turned with twice the segments and the paint wears a
+// clear coat; a phone's are as designed and a weak device's half that.
 //
 // Each part of one material is merged into one mesh, so a ship is a handful
 // of draws. Both point along −z, centred, built at shipModels.js's BUILT
@@ -20,6 +24,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { detail, seg as segments, texScale } from '../../lib/detail';
 import { normalCanvas, rng } from '../../lib/texture';
 import { sharpen } from '../../lib/three/textures';
 
@@ -151,12 +156,14 @@ export function loft(sections, { top = 1, bottom = 1, uvAlong = 1 } = {}) {
   return g;
 }
 
-// Turned on a lathe about z (the profile [r, z], front first), smooth, `seg` round
+// Turned on a lathe about z (the profile [r, z], front first), smooth, `seg`
+// round on a desktop (lib/detail: twice that at ultra, so no facet shows
+// along an engine's curve; fewer on a phone)
 export function turned(profile, seg = 32, { start = 0, length = Math.PI * 2 } = {}) {
   // LatheGeometry turns about y: lay it along z after (y → z)
   const g = new THREE.LatheGeometry(
     profile.map(([r, z]) => new THREE.Vector2(r, z)),
-    seg,
+    segments(seg),
     start,
     length,
   );
@@ -165,10 +172,10 @@ export function turned(profile, seg = 32, { start = 0, length = Math.PI * 2 } = 
 }
 
 // a plate from a 2D outline ([x, z]: across, and along the ship), `t` thick,
-// its edges bevelled
+// its edges bevelled (rounder at ultra, so the bevel's highlight runs smooth)
 export function plate(points, t, bevel = t * 0.45, uvScale = 6) {
   const shape = new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(x, y)));
-  const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(1e-4, t - bevel * 2), bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 2, curveSegments: 4 });
+  const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(1e-4, t - bevel * 2), bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: Math.max(1, Math.round(2 * detail().seg)), curveSegments: 4 });
   g.translate(0, 0, -(t - bevel * 2) / 2);
   g.rotateX(Math.PI / 2); // (the outline's second coordinate along z, the thickness up and down)
   const uv = g.attributes.uv;
@@ -184,7 +191,7 @@ export function strut(a, b, r0, r1, seg = 20) {
   const A = new THREE.Vector3(...a);
   const B = new THREE.Vector3(...b);
   const d = B.clone().sub(A);
-  const g = new THREE.CylinderGeometry(r1, r0, d.length(), seg); // (its top toward b)
+  const g = new THREE.CylinderGeometry(r1, r0, d.length(), segments(seg)); // (its top toward b)
   const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize());
   const e = new THREE.Euler().setFromQuaternion(q);
   return [g, A.add(B).multiplyScalar(0.5).toArray(), [e.x, e.y, e.z]];
@@ -192,21 +199,87 @@ export function strut(a, b, r0, r1, seg = 20) {
 
 // ── skins ──
 
+// Canvases for a skin designed at S texels, painted at `up` times that (lib/
+// detail's texScale for this device: four times the texels at ultra, a
+// quarter on a weak device), each context scaled so the painting below is
+// the same strokes in the same places at any size, only crisper.
+function skinCanvases(S, up, n) {
+  const list = [];
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('canvas');
+    c.width = c.height = Math.round(S * up);
+    const ctx = c.getContext('2d');
+    ctx.scale(up, up);
+    list.push([c, ctx]);
+  }
+  return list;
+}
+
+// The finest marks, for a skin painted at ultra's size where they have the
+// texels to show (screw heads, scratches, specks); a lower level hasn't the
+// room, and gets the skin as it always was. From a random source of their
+// own, so the panels themselves are laid out the same at every level.
+function fineMarks(seed, S, { cx, rx }) {
+  const r = rng(seed * 7 + 101);
+  for (let i = 0; i < 520; i++) {
+    const x = r() * S;
+    const y = r() * S;
+    const a = r() * Math.PI * 2;
+    const len = 2 + r() * 9;
+    cx.strokeStyle = r() < 0.5 ? `rgba(255,255,255,${0.05 + r() * 0.07})` : `rgba(20,18,16,${0.05 + r() * 0.08})`;
+    cx.lineWidth = 0.3 + r() * 0.25;
+    cx.beginPath();
+    cx.moveTo(x, y);
+    cx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+    cx.stroke();
+    // a scratch is polished: smoother where it runs
+    rx.strokeStyle = 'rgba(0,0,0,0.12)';
+    rx.lineWidth = cx.lineWidth;
+    rx.stroke();
+  }
+  for (let i = 0; i < 900; i++) {
+    const v = r() < 0.5 ? 255 : 0;
+    cx.fillStyle = `rgba(${v},${v},${v},${0.03 + r() * 0.05})`;
+    cx.fillRect(r() * S, r() * S, 0.5 + r() * 0.6, 0.5 + r() * 0.6);
+  }
+}
+
+// A screw head in each corner of a plate, at ultra: a raised dot with a slot.
+function screws(x, y, w, h, { cx, hx }) {
+  if (w < 10 || h < 10) return;
+  for (const [sx, sy] of [
+    [x + 2.6, y + 2.6],
+    [x + w - 2.6, y + 2.6],
+    [x + 2.6, y + h - 2.6],
+    [x + w - 2.6, y + h - 2.6],
+  ]) {
+    hx.fillStyle = '#a2a2a2';
+    hx.beginPath();
+    hx.arc(sx, sy, 0.9, 0, Math.PI * 2);
+    hx.fill();
+    cx.strokeStyle = 'rgba(24,24,26,0.45)';
+    cx.lineWidth = 0.28;
+    cx.beginPath();
+    cx.arc(sx, sy, 0.9, 0, Math.PI * 2);
+    cx.moveTo(sx - 0.6, sy);
+    cx.lineTo(sx + 0.6, sy);
+    cx.stroke();
+  }
+}
+
 // Panel lines, a few panels a shade off, rivets and a little grime, on a
 // canvas, with the lines as grooves in a normal map and the grime rougher:
-// { map, normalMap, roughnessMap }, shared by every ship of a kind.
+// { map, normalMap, roughnessMap }, shared by every ship of a kind (painted
+// once for each detail level it's asked at).
 const skins = new Map();
 export function panelMaps(kind, { base, seed, cols, rows, grime = 0.25, accent = null }) {
-  if (skins.has(kind)) return skins.get(kind);
   const S = 512;
+  const up = texScale(S);
+  const key = `${kind}@${up}`;
+  if (skins.has(key)) return skins.get(key);
   const r = rng(seed);
-  const colour = document.createElement('canvas');
-  const height = document.createElement('canvas');
-  const rough = document.createElement('canvas');
-  for (const c of [colour, height, rough]) c.width = c.height = S;
-  const cx = colour.getContext('2d');
-  const hx = height.getContext('2d');
-  const rx = rough.getContext('2d');
+  const [[colour, cx], [height, hx], [rough, rx]] = skinCanvases(S, up, 3);
+  const fine = up >= 2;
   cx.fillStyle = base;
   cx.fillRect(0, 0, S, S);
   hx.fillStyle = '#808080';
@@ -237,12 +310,17 @@ export function panelMaps(kind, { base, seed, cols, rows, grime = 0.25, accent =
         ctx.lineWidth = width;
         ctx.strokeRect(x + 0.5, y * rowH + 0.5, w, rowH);
       }
-      // a few rivets along a seam
+      if (fine) screws(x, y * rowH, w, rowH, { cx, hx });
+      // a few rivets along a seam (round: at ultra's size a square one shows)
       if (r() < 0.45) {
         cx.fillStyle = 'rgba(30,32,36,0.5)';
         hx.fillStyle = '#9a9a9a';
         for (let k = 4; k < w - 3; k += 7) {
-          for (const ctx of [cx, hx]) ctx.fillRect(x + k, y * rowH + 3, 1.6, 1.6);
+          for (const ctx of [cx, hx]) {
+            ctx.beginPath();
+            ctx.arc(x + k + 0.8, y * rowH + 3.8, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
       }
       // now and then a hatch or a vent: a raised square, or slats
@@ -278,6 +356,7 @@ export function panelMaps(kind, { base, seed, cols, rows, grime = 0.25, accent =
     rx.fillStyle = 'rgba(255,255,255,0.18)';
     rx.fillRect(x, y, 1 + r() * 3, len * 0.6);
   }
+  if (fine) fineMarks(seed, S, { cx, rx });
   const tex = (canvas, colourSpace) => {
     const t = new THREE.CanvasTexture(canvas);
     t.colorSpace = colourSpace;
@@ -286,20 +365,37 @@ export function panelMaps(kind, { base, seed, cols, rows, grime = 0.25, accent =
     t.generateMipmaps = true;
     return t;
   };
-  const maps = { map: tex(colour, THREE.SRGBColorSpace), normalMap: tex(normalCanvas(height, 2.2), THREE.NoColorSpace), roughnessMap: tex(rough, THREE.NoColorSpace) };
-  skins.set(kind, maps);
+  // (the relief is steeper per texel the finer it's painted: the normals'
+  // strength grows with it, a little, so a groove reads the same from the
+  // chase camera and crisper close up)
+  const maps = { map: tex(colour, THREE.SRGBColorSpace), normalMap: tex(normalCanvas(height, 2.2 * Math.sqrt(up)), THREE.NoColorSpace), roughnessMap: tex(rough, THREE.NoColorSpace) };
+  skins.set(key, maps);
   return maps;
+}
+
+// A painted surface's material: at ultra (lib/detail), the paint under a
+// thin clear coat, a soft second highlight over the panel lines that shows
+// the shape of the hull as it turns; a standard material everywhere else.
+export function paintMaterial(o, { coat = 0.22, coatRoughness = 0.42 } = {}) {
+  const cc = detail().clearcoat;
+  return cc > 0 ? new THREE.MeshPhysicalMaterial({ ...o, clearcoat: coat * cc, clearcoatRoughness: coatRoughness }) : new THREE.MeshStandardMaterial(o);
+}
+// Glass: at ultra a clear coat over it too, so a canopy holds a crisp
+// reflection of its own
+export function glassMaterial(o) {
+  const cc = detail().clearcoat;
+  return cc > 0 ? new THREE.MeshPhysicalMaterial({ ...o, clearcoat: cc, clearcoatRoughness: 0.04 }) : new THREE.MeshStandardMaterial(o);
 }
 
 // The materials a ship's built from (its own copies: the paint goes on per ship)
 export function materials(maps) {
-  const hull = new THREE.MeshStandardMaterial({ color: '#ffffff', map: maps.map, normalMap: maps.normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: maps.roughnessMap, roughness: 0.62, metalness: 0.18 });
+  const hull = paintMaterial({ color: '#ffffff', map: maps.map, normalMap: maps.normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: maps.roughnessMap, roughness: 0.62, metalness: 0.18 });
   const panel = hull.clone();
   panel.color.set('#9c9ea3'); // (the darker plates: shaded, and a paint's shade darker)
-  const trim = new THREE.MeshStandardMaterial({ color: '#b3261e', map: maps.map, roughness: 0.55, metalness: 0.15 }); // (red: takes a paint's trim)
+  const trim = paintMaterial({ color: '#b3261e', map: maps.map, roughness: 0.55, metalness: 0.15 }); // (red: takes a paint's trim)
   const dark = new THREE.MeshStandardMaterial({ color: '#1d2025', roughness: 0.45, metalness: 0.6 });
   const metal = new THREE.MeshStandardMaterial({ color: '#3a3e45', roughness: 0.38, metalness: 0.75 });
-  const glass = new THREE.MeshStandardMaterial({ color: '#0d1620', roughness: 0.08, metalness: 0.9, envMapIntensity: 1.6 });
+  const glass = glassMaterial({ color: '#0d1620', roughness: 0.08, metalness: 0.9, envMapIntensity: 1.6 });
   for (const m of [metal, glass, dark]) m.userData.keep = true;
   return { hull, panel, trim, dark, metal, glass };
 }
@@ -372,12 +468,12 @@ export function buildXwing() {
     [box(0.034, 0.0022, 0.0024), [0, 0.031, 0.012], [0, 0, 0]],
   );
   // Artoo, in his socket behind the cockpit: a dome, a blue band, his eye
-  const dome = new THREE.SphereGeometry(0.0115, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  const dome = new THREE.SphereGeometry(0.0115, segments(24), segments(12), 0, Math.PI * 2, 0, Math.PI / 2);
   const r2 = new THREE.MeshStandardMaterial({ color: '#dfe3e8', roughness: 0.3, metalness: 0.7 });
   const r2blue = new THREE.MeshStandardMaterial({ color: '#2a5bd7', roughness: 0.4, metalness: 0.3 });
   r2.userData.keep = r2blue.userData.keep = true;
-  const artoo = [mesh(merge([[dome, [0, 0.022, 0.05]]]), r2), mesh(merge([[new THREE.CylinderGeometry(0.01182, 0.01182, 0.003, 24, 1, true), [0, 0.0262, 0.05]], [box(0.004, 0.0035, 0.002), [0, 0.0295, 0.0393]]]), r2blue)];
-  darkParts.push([new THREE.CylinderGeometry(0.0128, 0.0128, 0.004, 24), [0, 0.0215, 0.05]]); // (his socket's rim)
+  const artoo = [mesh(merge([[dome, [0, 0.022, 0.05]]]), r2), mesh(merge([[new THREE.CylinderGeometry(0.01182, 0.01182, 0.003, segments(24), 1, true), [0, 0.0262, 0.05]], [box(0.004, 0.0035, 0.002), [0, 0.0295, 0.0393]]]), r2blue)];
+  darkParts.push([new THREE.CylinderGeometry(0.0128, 0.0128, 0.004, segments(24)), [0, 0.0215, 0.05]]); // (his socket's rim)
   // the body's top: vents and a few boxes, behind Artoo
   darkParts.push([box(0.014, 0.003, 0.03), [0, 0.022, 0.1]], [box(0.006, 0.004, 0.012), [0.014, 0.022, 0.125]], [box(0.006, 0.004, 0.012), [-0.014, 0.022, 0.125]]);
   panelParts.push([box(0.03, 0.002, 0.05), [0, -0.022, 0.07]]); // (a belly plate)
@@ -432,12 +528,12 @@ export function buildXwing() {
         ),
         [ex, ey, 0],
       ]);
-      darkParts.push([new THREE.CircleGeometry(R * 0.8, 24), [ex, ey, z0 + 0.003], [0, Math.PI, 0]]); // (the intake, facing forward)
+      darkParts.push([new THREE.CircleGeometry(R * 0.8, segments(24)), [ex, ey, z0 + 0.003], [0, Math.PI, 0]]); // (the intake, facing forward)
       metalParts.push(
-        ...[0.018, 0.024, 0.03].map((dz) => [new THREE.TorusGeometry(R * 1.005, 0.0009, 6, 28), [ex, ey, z0 + dz]]),
+        ...[0.018, 0.024, 0.03].map((dz) => [new THREE.TorusGeometry(R * 1.005, 0.0009, 6, segments(28)), [ex, ey, z0 + dz]]),
         [turned([[R * 0.84, z1 - 0.002], [R * 0.9, z1 + 0.004], [R * 0.72, z1 + 0.004], [R * 0.62, z1 - 0.004]], 24), [ex, ey, 0]], // the nozzle's lip
       );
-      glows.push([new THREE.CircleGeometry(R * 0.66, 24), [ex, ey, z1 - 0.001]]);
+      glows.push([new THREE.CircleGeometry(R * 0.66, segments(24)), [ex, ey, z1 - 0.001]]);
       // the cannon at the wingtip: a housing on the wing, the long barrel,
       // the flash suppressor at its end
       const [cx, cy] = wingAt(1);
@@ -512,18 +608,14 @@ const TRENCHES = [
 // from the leading edge, and slats round the rim; with the seams as grooves
 // and the trenches sunk in its relief.
 function falconMaps() {
-  if (skins.has('falcon-top')) return skins.get('falcon-top');
   const S = 1024;
+  const up = texScale(S); // (2048 texels across at ultra: lib/detail)
+  const key = `falcon-top@${up}`;
+  if (skins.has(key)) return skins.get(key);
   const C = S / 2;
   const k = S / 2 / FAL.map; // px per R
   const r = rng(41);
-  const colour = document.createElement('canvas');
-  const height = document.createElement('canvas');
-  const rough = document.createElement('canvas');
-  for (const c of [colour, height, rough]) c.width = c.height = S;
-  const cx = colour.getContext('2d');
-  const hx = height.getContext('2d');
-  const rx = rough.getContext('2d');
+  const [[colour, cx], [height, hx], [rough, rx]] = skinCanvases(S, up, 3);
   // (map x is the ship's x, map y is its z: the nose is up the page)
   const P = (rad, a) => [C + Math.sin(a) * rad * k, C - Math.cos(a) * rad * k];
   cx.fillStyle = '#cbc8bf';
@@ -680,8 +772,9 @@ function falconMaps() {
     sharpen(t);
     return t;
   };
-  const maps = { map: tex(colour, THREE.SRGBColorSpace), normalMap: tex(normalCanvas(height, 2.6), THREE.NoColorSpace), roughnessMap: tex(rough, THREE.NoColorSpace) };
-  skins.set('falcon-top', maps);
+  if (up >= 2) fineMarks(43, S, { cx, rx });
+  const maps = { map: tex(colour, THREE.SRGBColorSpace), normalMap: tex(normalCanvas(height, 2.6 * Math.sqrt(up)), THREE.NoColorSpace), roughnessMap: tex(rough, THREE.NoColorSpace) };
+  skins.set(key, maps);
   return maps;
 }
 // the hull map laid straight down on a geometry (from above, as the map's painted)
@@ -702,8 +795,8 @@ export function buildFalcon() {
   const generic = panelMaps('falcon', { base: '#cbc8bf', seed: 23, cols: 10, rows: 12, grime: 0.4 });
   const M = materials(generic);
   // the hull itself wears the map from above
-  M.hull = new THREE.MeshStandardMaterial({ color: '#ffffff', map: top.map, normalMap: top.normalMap, normalScale: new THREE.Vector2(0.7, 0.7), roughnessMap: top.roughnessMap, roughness: 0.66, metalness: 0.16 });
-  M.pod = new THREE.MeshStandardMaterial({ color: '#f0eee8', map: generic.map, normalMap: generic.normalMap, normalScale: new THREE.Vector2(0.5, 0.5), roughnessMap: generic.roughnessMap, roughness: 0.64, metalness: 0.16 });
+  M.hull = paintMaterial({ color: '#ffffff', map: top.map, normalMap: top.normalMap, normalScale: new THREE.Vector2(0.7, 0.7), roughnessMap: top.roughnessMap, roughness: 0.66, metalness: 0.16 }, { coat: 0.12, coatRoughness: 0.6 }); // (an old freighter: its coat worn dull)
+  M.pod = paintMaterial({ color: '#f0eee8', map: generic.map, normalMap: generic.normalMap, normalScale: new THREE.Vector2(0.5, 0.5), roughnessMap: generic.roughnessMap, roughness: 0.64, metalness: 0.16 }, { coat: 0.12, coatRoughness: 0.6 });
   M.dish = new THREE.MeshStandardMaterial({ color: '#c9c6be', roughness: 0.5, metalness: 0.3 });
   const { R } = FAL;
   const hullParts = [];
@@ -735,7 +828,7 @@ export function buildFalcon() {
     [0.03, 0.0285],
     [0.0, 0.0285],
   ];
-  hullParts.push([new THREE.LatheGeometry(profile.map(([x, y]) => new THREE.Vector2(x, y)), 96)]);
+  hullParts.push([new THREE.LatheGeometry(profile.map(([x, y]) => new THREE.Vector2(x, y)), segments(96))]);
 
   // the mandibles: two prongs out front with the slot between, chamfered,
   // sloping down to blunt ends, a groove down each inner face
@@ -766,7 +859,7 @@ export function buildFalcon() {
     const p = [0.098 + (cockpit[0] - 0.098) * t, 0.001, -0.04 + (cockpit[2] + 0.028 + 0.04) * t];
     const [g, , rot] = strut([0.098, 0.001, -0.04], [cockpit[0], cockpit[1], cockpit[2] + 0.028], 0.0124, 0.0124, 20);
     g.dispose();
-    metalParts.push([new THREE.CylinderGeometry(0.0123, 0.0123, 0.0025, 20), p, rot]);
+    metalParts.push([new THREE.CylinderGeometry(0.0123, 0.0123, 0.0025, segments(20)), p, rot]);
   }
   podParts.push([
     turned(
@@ -795,7 +888,7 @@ export function buildFalcon() {
     cockpit,
   ]);
   // the windows' frames: rings across the cone and struts along it
-  metalParts.push([new THREE.TorusGeometry(0.0092, 0.0008, 6, 32), [cockpit[0], cockpit[1], cockpit[2] - 0.0245]], [new THREE.TorusGeometry(0.0138, 0.0008, 6, 32), [cockpit[0], cockpit[1], cockpit[2] - 0.0128]]);
+  metalParts.push([new THREE.TorusGeometry(0.0092, 0.0008, 6, segments(32)), [cockpit[0], cockpit[1], cockpit[2] - 0.0245]], [new THREE.TorusGeometry(0.0138, 0.0008, 6, segments(32)), [cockpit[0], cockpit[1], cockpit[2] - 0.0128]]);
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
     metalParts.push([box(0.0012, 0.0012, 0.022), [cockpit[0] + Math.cos(a) * 0.0095, cockpit[1] + Math.sin(a) * 0.0095, cockpit[2] - 0.02], [Math.sin(a) * -0.5, Math.cos(a) * 0.5, 0]]);
@@ -804,21 +897,21 @@ export function buildFalcon() {
   // the quad guns, top and bottom: a ring, a dome and its two pairs of barrels
   for (const sy of [1, -1]) {
     const y = sy * 0.0285;
-    metalParts.push([new THREE.TorusGeometry(0.019, 0.0016, 8, 40), [0, y, 0], [Math.PI / 2, 0, 0]]);
-    metalParts.push([new THREE.SphereGeometry(0.0145, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), [0, y, 0], [sy > 0 ? 0 : Math.PI, 0, 0], [1, 0.62, 1]]);
+    metalParts.push([new THREE.TorusGeometry(0.019, 0.0016, segments(8), segments(40)), [0, y, 0], [Math.PI / 2, 0, 0]]);
+    metalParts.push([new THREE.SphereGeometry(0.0145, segments(32), segments(12), 0, Math.PI * 2, 0, Math.PI / 2), [0, y, 0], [sy > 0 ? 0 : Math.PI, 0, 0], [1, 0.62, 1]]);
     for (const bx of [-0.0055, 0.0055]) {
-      for (const by of [-0.0022, 0.0022]) metalParts.push([new THREE.CylinderGeometry(0.0012, 0.0012, 0.026, 8), [bx, y + sy * 0.0055 + by, -0.02], LAY]);
+      for (const by of [-0.0022, 0.0022]) metalParts.push([new THREE.CylinderGeometry(0.0012, 0.0012, 0.026, segments(8)), [bx, y + sy * 0.0055 + by, -0.02], LAY]);
     }
   }
   // the dish, up front to port, on its stalk, tipped forward
-  metalParts.push([new THREE.CylinderGeometry(0.0018, 0.0026, 0.012, 10), [-0.052, 0.027, -0.06]]);
-  const bowl = new THREE.SphereGeometry(0.03, 40, 6, 0, Math.PI * 2, Math.PI - 0.5, 0.5).translate(0, 0.03, 0);
+  metalParts.push([new THREE.CylinderGeometry(0.0018, 0.0026, 0.012, segments(10)), [-0.052, 0.027, -0.06]]);
+  const bowl = new THREE.SphereGeometry(0.03, segments(40), 6, 0, Math.PI * 2, Math.PI - 0.5, 0.5).translate(0, 0.03, 0);
   for (const g of [bowl, flipped(bowl.clone())]) dishParts.push([g, [-0.052, 0.033, -0.06], [-0.75, 0.35, 0]]);
-  dishParts.push([new THREE.CylinderGeometry(0.0016, 0.0016, 0.012, 8), [-0.052, 0.041, -0.066], [-0.75, 0.35, 0]]); // (its feed)
+  dishParts.push([new THREE.CylinderGeometry(0.0016, 0.0016, 0.012, segments(8)), [-0.052, 0.041, -0.066], [-0.75, 0.35, 0]]); // (its feed)
   // the docking rings, port and starboard, and their hatches
   for (const sx of [-1, 1]) {
-    metalParts.push([new THREE.CylinderGeometry(0.0078, 0.0086, 0.008, 28), [sx * (R + 0.0005), 0, 0.012], [0, 0, Math.PI / 2]]);
-    darkParts.push([new THREE.CircleGeometry(0.0058, 28), [sx * (R + 0.0047), 0, 0.012], [0, (sx * Math.PI) / 2, 0]]);
+    metalParts.push([new THREE.CylinderGeometry(0.0078, 0.0086, 0.008, segments(28)), [sx * (R + 0.0005), 0, 0.012], [0, 0, Math.PI / 2]]);
+    darkParts.push([new THREE.CircleGeometry(0.0058, segments(28)), [sx * (R + 0.0047), 0, 0.012], [0, (sx * Math.PI) / 2, 0]]);
   }
   // the machinery in the trenches: little boxes and a pipe or two, sunk in
   const rr = rng(5);
@@ -844,10 +937,10 @@ export function buildFalcon() {
   // the sublight engines: a wide band across the back of the rim, its
   // housing above and below, and slats across the glow
   const [a0, len] = [-FAL.engineArc / 2, FAL.engineArc];
-  const band = new THREE.CylinderGeometry(R + 0.0028, R + 0.0028, 0.0078, 64, 1, true, a0, len);
+  const band = new THREE.CylinderGeometry(R + 0.0028, R + 0.0028, 0.0078, segments(64), 1, true, a0, len);
   metalParts.push(
-    [new THREE.CylinderGeometry(R + 0.0045, R + 0.0045, 0.0022, 64, 1, false, a0, len), [0, 0.005, 0]],
-    [new THREE.CylinderGeometry(R + 0.0045, R + 0.0045, 0.0022, 64, 1, false, a0, len), [0, -0.005, 0]],
+    [new THREE.CylinderGeometry(R + 0.0045, R + 0.0045, 0.0022, segments(64), 1, false, a0, len), [0, 0.005, 0]],
+    [new THREE.CylinderGeometry(R + 0.0045, R + 0.0045, 0.0022, segments(64), 1, false, a0, len), [0, -0.005, 0]],
   );
   for (let i = 0; i <= 26; i++) {
     const a = a0 + (len * i) / 26;

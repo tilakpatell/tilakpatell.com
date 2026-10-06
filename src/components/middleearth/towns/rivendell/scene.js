@@ -396,7 +396,7 @@ export function createRivendellWorld(canvas, { onLost } = {}) {
   valley.add(hereRing);
 
   // ── state ──
-  const A = { t: 0, night: 0, dawn: 0, wraith: 0, shake: 0, cam: { at: V(0, 20, 50), look: V(0, 4, 0) }, mode: 'walk', leaf: 0, axe: -9, eye: 0 };
+  const A = { t: 0, night: 0, dawn: 0, wraith: 0, shake: 0, cam: { at: V(0, 20, 50), look: V(0, 4, 0) }, mode: 'walk', leaf: 0, axe: -9, axeTimer: 0, eye: 0 };
   const tmp = V();
   const tmp2 = V();
   const look = V();
@@ -704,7 +704,8 @@ export function createRivendellWorld(canvas, { onLost } = {}) {
     if (type === 'axe') {
       A.axe = A.t;
       A.shake = 0.25;
-      setTimeout(() => fx.pop(ring.group.position.clone().add(V(0, 0.3, 0)), 'white', 40, 3.4), 450);
+      clearTimeout(A.axeTimer);
+      A.axeTimer = setTimeout(() => fx.pop(ring.group.position.clone().add(V(0, 0.3, 0)), 'white', 40, 3.4), 450);
     } else if (type === 'lunge') A.shake = Math.max(A.shake, 0.15);
     else if (type === 'joined') fx.pop(tmp2.copy(frodo.group.position).add(V(0, 1.4, 0)), 'gold', 18, 1.4);
     else if (type === 'solved') fx.pop(shards.group.position.clone().add(V(0, 0.3, 0)), 'gold', 30, 1.8);
@@ -745,6 +746,7 @@ export function createRivendellWorld(canvas, { onLost } = {}) {
       return A.suggest ?? null;
     },
     dispose() {
+      clearTimeout(A.axeTimer);
       ghosts.dispose();
       disposeTree(scene);
       stage.dispose();

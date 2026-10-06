@@ -60,6 +60,10 @@
 .iw-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #000; }
 .iw-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
 .iw-btn:focus-visible { outline: 3px solid var(--iw-sky); outline-offset: 2px; }
+/* other players online here: how many (a count, not a button) */
+.iw-players { gap: 0.3rem; background: var(--iw-glass-hi); color: var(--iw-ink); cursor: default; }
+.iw-players:hover, .iw-players:active { transform: none; box-shadow: 3px 3px 0 #000; }
+.iw-players b { color: var(--iw-yellow); font-variant-numeric: tabular-nums; }
 
 .iw-compass { position: absolute; left: 50%; top: clamp(0.6rem, 2vw, 1.1rem); z-index: 2; width: min(420px, 50vw); height: 33px; transform: translateX(-50%); pointer-events: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7)); }
 @media (max-width: 640px) { .iw-compass { top: 5.2rem; } }

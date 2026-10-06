@@ -4,15 +4,20 @@ import GpuGate from '../../games/GpuGate';
 import { edges, readPad, typing } from '../../games/pad';
 import { audioContext } from '../../../lib/audio';
 import { local, prefersReducedMotion, useMediaQuery } from '../../../lib/hooks';
-import { CHAPTERS, ISLES, TIDE, UPS, bearing, choose, fitted, newGame, progress, step } from './rules';
+import { CHAPTERS, ISLES, STEP_BOUND, TIDE, UPS, bearing, choose, fitted, newGame, progress, shipStep, step } from './rules';
 import { autopilot } from './pilot';
+import { useTravellers } from '../../middleearth/towns/useTravellers';
 import '../fonts.css';
 import './tide.css';
 
 // Dead man's tide: the Pirates of the Caribbean game, in WebGL only (behind
 // the hardware acceleration gate). The rules are in ./rules.js, the drawing
 // in ./Tide3D.js, the sound in ./audio.js; this is the screen, the helm and
-// the HUD.
+// the HUD. Online (the site's own switch), everyone else sailing this sea
+// shows as a ghost ship with their name over her, and you in theirs (the
+// Middle-earth towns' travellers, a room of its own:
+// ../../middleearth/towns/useTravellers.js); off the sea (the title, paused,
+// the voyage over, sunk) you're out of their sight.
 
 const sound = () => import('./audio');
 const play = (name, ...args) => sound().then((s) => s[name]?.(...args));
@@ -48,6 +53,8 @@ const KEYS = {
   pause: ['p', 'P', 'Escape'],
 };
 const is = (k, key) => KEYS[k].includes(key);
+// the room reaches as far as the sea does (./rules.js's shipStep)
+const ROOM = { bound: STEP_BOUND };
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 export default function DeadMansTide() {
@@ -84,6 +91,9 @@ function Game({ soft, fail }) {
   const [full, setFull] = useState(false);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
+  // the other players online, as ghost ships (towns/useTravellers)
+  const trav = useTravellers('caribbean', phase !== 'loading', ROOM);
+  const travRef = trav.ref;
   const calm = prefersReducedMotion();
 
   useEffect(() => {
@@ -344,8 +354,13 @@ function Game({ soft, fail }) {
         look.current = Math.sin(now * 0.00013) * 1.3;
       }
       if (!g) return;
+      // the other players: where you are to them (in sight only while you
+      // sail, and not once she's going down), and where they are
+      const tv = travRef.current;
+      const mine = game.current;
+      if (mine) tv?.pose(shipStep(mine.p), { inside: !running || mine.p.sunk > 0 });
       try {
-        gl.current.render(g, ms, { look: look.current, side: Math.abs(look.current) > 0.5 ? Math.sign(look.current) : 0, calm, attract, wide: attract, deck: attract });
+        gl.current.render(g, ms, { look: look.current, side: Math.abs(look.current) > 0.5 ? Math.sign(look.current) : 0, calm, attract, wide: attract, deck: attract, travellers: tv ? tv.list() : null });
       } catch (err) {
         if (import.meta.env.DEV) console.error(err);
         fail('failed');
@@ -397,12 +412,19 @@ function Game({ soft, fail }) {
     };
     // fireAimed reads refs only
      
-  }, [phase, calm, touch, fail, pause, pick, drain, finish]);
+  }, [phase, calm, touch, fail, pause, pick, drain, finish, travRef]);
 
   // the sea goes quiet while paused or over
   useEffect(() => {
     if (phase !== 'running') scape.current?.set({ on: false });
   }, [phase]);
+
+  // off the sea: the others see you go at once (the loop that'd say so
+  // stops while the game's out of view)
+  useEffect(() => {
+    const g = game.current;
+    if (phase !== 'running' && g) travRef.current?.pose(shipStep(g.p), { inside: true }, { force: true });
+  }, [phase, travRef]);
 
   // ── keys, anywhere on the page while a game is on ──
   useEffect(() => {
@@ -648,6 +670,16 @@ function Game({ soft, fail }) {
         )}
 
         <div className="g3-tools">
+          {trav.available &&
+            (trav.on ? (
+              <span className="dt-players" data-on="" title="Everyone else online sailing this sea shows as a ghost ship from another world: nothing passes between you but where each of you is">
+                <b>{trav.count}</b> {trav.count === 1 ? 'player' : 'players'} here
+              </span>
+            ) : (
+              <button type="button" className="dt-players" onClick={trav.join} title="Go online, and see everyone else sailing this sea as a ghost ship from another world">
+                See other players
+              </button>
+            ))}
           {running && (
             <button type="button" className="g3-tool" onClick={() => pause(true)} aria-label="Pause">
               <RiPauseLine aria-hidden="true" />

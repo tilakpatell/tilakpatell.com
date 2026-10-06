@@ -3,7 +3,7 @@
   "date": "2026-10-05",
   "title": "The ship’s log, and the autopilot that writes it",
   "kind": "infra",
-  "summary": "The site now improves itself: a scheduled Claude session makes one change well, checks it in a browser, merges it and logs it on this page with a picture. Every pull request now runs lint, the tests and the build before it can merge, and any change here can be taken out again with one phrase.",
+  "summary": "The site now improves itself: a scheduled Claude session makes one change well, checks it in a browser, merges it and logs it here with a picture. Every pull request runs lint, tests and the build before merging, and any change here comes out again with one phrase.",
   "routes": [
     "/changes"
   ],

@@ -21,7 +21,8 @@
 // spreads them over the whole canvas (which keeps its size, so the names and
 // the HUD over it stay crisp); still too slow at the softest, the scene
 // turns the post off and draws straight to the canvas, as before there was
-// any.
+// any. Short of that, lite() drops the bloom (the costliest pass) and keeps
+// the last one, so the tone map and the grade stay.
 //
 // Bloom and the last pass both read the scene through finite(): a pixel
 // that isn't a number (some GPUs make one of a pow() just below zero, or a
@@ -175,6 +176,7 @@ export function createPost(renderer, scene, camera, { small = false } = {}) {
   composer.addPass(grade);
 
   let on = true;
+  let glow = true; // bloom, until lite() takes it off
   let sharp = 1; // a share of the renderer's pixel ratio the passes are drawn at
   const at = { w: 0, h: 0, ratio: 0 };
   return {
@@ -235,7 +237,7 @@ export function createPost(renderer, scene, camera, { small = false } = {}) {
     },
     // bloom's strength, for a moment's flare (a boost, an arrival)
     flare(k) {
-      bloom.strength = BLOOM.strength * k;
+      if (glow) bloom.strength = BLOOM.strength * k;
     },
     // the boost's rush, 0…1, out from (x, y) on the canvas (0…1, y up)
     rush(k, x = 0.5, y = 0.5) {
@@ -259,6 +261,13 @@ export function createPost(renderer, scene, camera, { small = false } = {}) {
       if (!on) return;
       on = false;
       composer.dispose();
+    },
+    // a lighter post, short of none: the bloom goes (its blur is most of the
+    // post's cost) and the grade stays, so the picture keeps its tone map and
+    // colour; flare() then does nothing. Harmless to call again.
+    lite() {
+      glow = false;
+      bloom.enabled = false;
     },
     dispose() {
       composer.dispose();

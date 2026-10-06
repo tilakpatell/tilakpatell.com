@@ -530,7 +530,7 @@ export default function ThinkMark({ fallback }) {
             <>
               <p className="hq-overlay-kicker">A flight brawler · four chapters</p>
               <p className="hq-overlay-title tm-title">Think, Mark!</p>
-              <p className="hq-overlay-text">You’re Invincible: half-Viltrumite, eighteen, and still learning to fly. Your father wants to see you try. Then the Flaxans come through, then your father turns out to be something else, and then the Grand Regent comes for the planet.</p>
+              <p className="hq-overlay-text">You’re Invincible: half-Viltrumite, eighteen, still learning to fly. Your father wants to see you try. Then the Flaxans come through, your father turns out to be something else, and the Grand Regent comes for the planet.</p>
               <div className="tm-levels" role="radiogroup" aria-label="Difficulty">
                 {Object.entries(DIFFICULTY).map(([id, d]) => (
                   <button key={id} type="button" role="radio" aria-checked={level === id} className="tm-level" onClick={() => pick(id)}>

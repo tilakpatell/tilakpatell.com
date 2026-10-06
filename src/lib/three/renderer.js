@@ -11,6 +11,25 @@ import { budget, pixelRatio } from '../device';
 // screens start lower), under the scene's own cap.
 export const maxRatio = (cap = 2) => pixelRatio(cap);
 
+// The pixel ratio a canvas of w × h CSS pixels can really be drawn at: no
+// more than `ratio`, no side past `side` (the graphics chip's limit: a
+// drawing buffer past it is cut short and a render target past it is never
+// made, so a screen as wide as three at a retina ratio got a frame of
+// strips), and no more than `pixels` pixels all told.
+export function fitRatio(w, h, ratio, { side = Infinity, pixels = Infinity } = {}) {
+  if (!(w > 0 && h > 0)) return ratio;
+  // (a hair under, so the renderer's own rounding can't step past the limit)
+  return Math.min(ratio, (side - 0.5) / w, (side - 0.5) / h, Math.sqrt(pixels / (w * h)));
+}
+
+// The longest side the graphics chip will draw or render into: its smallest
+// texture, renderbuffer and viewport limit.
+export function maxSide(renderer) {
+  const gl = renderer.getContext();
+  const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+  return Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), vp?.[0] ?? Infinity, vp?.[1] ?? Infinity) || 4096;
+}
+
 // A [r, g, b] (0-255, sRGB) from lib/three/theme as a THREE.Color.
 export const color = (rgb, target = new THREE.Color()) => target.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, THREE.SRGBColorSpace);
 
@@ -32,6 +51,12 @@ export function createRenderer(canvas, { alpha = true, antialias = true, ratio =
   let pixelRatio = maxRatio(ratio);
   renderer.setPixelRatio(pixelRatio);
   const size = { w: 1, h: 1 };
+  const side = maxSide(renderer);
+  // the watchdog's ratio, inside what the graphics chip can hold at this size
+  const fit = () => {
+    renderer.setPixelRatio(fitRatio(size.w, size.h, pixelRatio, { side }));
+    renderer.setSize(size.w, size.h, false);
+  };
 
   let lost = false;
   const onContextLost = (e) => {
@@ -45,8 +70,7 @@ export function createRenderer(canvas, { alpha = true, antialias = true, ratio =
     ratio: pixelRatio,
     set(r) {
       pixelRatio = r;
-      renderer.setPixelRatio(pixelRatio);
-      renderer.setSize(size.w, size.h, false);
+      fit();
     },
     onSlow: () => onSlow?.(),
   });
@@ -56,13 +80,14 @@ export function createRenderer(canvas, { alpha = true, antialias = true, ratio =
     get lost() {
       return lost;
     },
+    // (the ratio it draws at: the watchdog's, fitted to the chip)
     get ratio() {
-      return pixelRatio;
+      return renderer.getPixelRatio();
     },
     setSize(w, h) {
       size.w = Math.max(1, Math.round(w));
       size.h = Math.max(1, Math.round(h));
-      renderer.setSize(size.w, size.h, false);
+      fit();
     },
     size,
     // call once per drawn frame, with the frame's timestamp

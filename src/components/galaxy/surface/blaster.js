@@ -16,6 +16,22 @@ const SPEED = 140; // m/s
 const RANGE = 90;
 const POOL = 32;
 
+const scratch = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+
+// Whether the way from a to b passes within r of c across the ground, at a
+// height within h of c's (a person: c their middle, r their girth, h half
+// their height). Pure.
+export function sweptHit(a, b, c, r, h = 1) {
+  const dx = b[0] - a[0];
+  const dz = b[2] - a[2];
+  const len = dx * dx + dz * dz;
+  const t = len > 0 ? Math.max(0, Math.min(1, ((c[0] - a[0]) * dx + (c[2] - a[2]) * dz) / len)) : 0;
+  const x = a[0] + dx * t - c[0];
+  const z = a[2] + dz * t - c[2];
+  const y = a[1] + (b[1] - a[1]) * t - c[1];
+  return x * x + z * z < r * r && Math.abs(y) < h;
+}
+
 export function createBlaster({ parent, world }) {
   const group = new THREE.Group();
   group.name = 'bolts';
@@ -111,17 +127,28 @@ export function createBlaster({ parent, world }) {
     },
     // on with them; returns how hard you were hit this frame
     update(dt, you) {
+      const last = scratch[0];
+      const now = scratch[1];
+      const body = scratch[2];
       let hurt = 0;
       for (const b of bolts) {
         if (!b.m.visible) continue;
-        b.m.position.addScaledVector(b.v, dt);
+        const p = b.m.position;
+        last[0] = p.x;
+        last[1] = p.y;
+        last[2] = p.z;
+        p.addScaledVector(b.v, dt);
         b.life -= dt;
-        // theirs: close enough to you as it goes by, it's a hit
+        // theirs: through you on its way this frame (the whole of the way:
+        // a bolt goes further in a frame than you are wide), it's a hit
         if (b.theirs && you) {
-          const dx = b.m.position.x - you.x;
-          const dz = b.m.position.z - you.z;
-          const dy = b.m.position.y - (you.y + 1);
-          if (dx * dx + dz * dz < 0.3 && Math.abs(dy) < 1) {
+          body[0] = you.x;
+          body[1] = you.y + 1;
+          body[2] = you.z;
+          now[0] = p.x;
+          now[1] = p.y;
+          now[2] = p.z;
+          if (sweptHit(last, now, body, 0.55)) {
             hurt += b.damage ?? 8;
             b.life = 0;
           }

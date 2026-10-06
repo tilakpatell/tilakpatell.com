@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { local, useDocumentTitle, useReducedMotion } from '../lib/hooks';
 import { CREWS, SHIP_KEY, crewById, parseShip } from '../components/universe/crews';
+import { CONTROLS_KEY, readControls } from '../components/universe/controls';
 import { LOADOUT_KEY, loadoutOf, readLoadouts } from '../components/universe/outfit';
 import { HULL_KEY, readHulls } from '../components/universe/shipyard/build';
 import { useAchievements } from '../components/Achievements';
@@ -14,6 +15,10 @@ import { LANDABLE, siteOf } from '../components/galaxy/surface/sites';
 import { surfaceUrl } from '../components/galaxy/surface/catalog';
 import { surfaceCrew } from '../components/galaxy/surface/lines';
 import SurfaceView from '../components/galaxy/surface/SurfaceView';
+import surfaceModule from '../components/galaxy/surface/module';
+import galaxyModule from '../components/galaxy/module';
+import { FOUND_KEY, LAUNCH_KEY, QUESTS_KEY, readDone, readFound } from '../components/galaxy/travel';
+import { runtime } from '../runtime';
 import ChaseHud from '../components/galaxy/surface/ChaseHud';
 import { missionOf } from '../components/galaxy/surface/missions';
 import ModelCredits from '../components/ModelCredits';
@@ -24,22 +29,12 @@ import '../components/universe/universe.css';
 import '../components/galaxy/galaxy.css';
 import '../components/galaxy/surface/surface.css';
 
-export const FOUND_KEY = 'tp-galaxy-found'; // { [system]: [place ids] }: what you've found on each world
-export const LAUNCH_KEY = 'tp-galaxy-launch'; // (session) the world you've just taken off from
 const LANDED_KEY = 'tp-galaxy-landed'; // the worlds you've set foot on
-export const QUESTS_KEY = 'tp-galaxy-quests'; // { [system]: [quest ids] }: what you've done on each world
+const CLIMB = 3400; // ms of the climb out seen before space takes over: the ship lifting, then shooting up under the sky's glare (surface.css .surface-exit rises from 2.5 s to here)
 export const MISSIONS_KEY = 'tp-galaxy-missions'; // { 'system/id': { t, stars } }: your best at each mission played down on a world
 
-const readFound = () => {
-  const all = local.get(FOUND_KEY);
-  return all && typeof all === 'object' ? all : {};
-};
 const readBests = () => {
   const all = local.get(MISSIONS_KEY);
-  return all && typeof all === 'object' ? all : {};
-};
-const readDone = () => {
-  const all = local.get(QUESTS_KEY);
   return all && typeof all === 'object' ? all : {};
 };
 
@@ -51,6 +46,11 @@ const readDone = () => {
 // on it, what E does, who's talking, what you've just found and what it is.
 export default function GalaxySurface() {
   const navigate = useNavigate();
+  // come down from space, flown (the galaxy's page handed its world over to
+  // this one before the route changed): the air's glow going as you come out of it
+  const [entry] = useState(() => runtime().current?.module === surfaceModule);
+  // (the way back up: the galaxy page's code comes ahead, so the route changes under the glare at once)
+  useEffect(() => void import('./Galaxy').catch(() => {}), []);
   const id = parseSystem(useParams().system);
   const site = useMemo(() => (id ? siteOf(id) : null), [id]);
   const sys = systemById(id);
@@ -117,16 +117,57 @@ export default function GalaxySurface() {
   const [looks] = useLooks(); // (how the cruiser's Rick and Morty come out, for the credits)
   const talkCrew = useMemo(() => (crew && site ? surfaceCrew(galaxyCrew(crew), site) : null), [crew, site]);
 
-  const takeOff = useCallback(() => {
-    if (leaving) return;
-    setLeaving(true);
+  // Back up to the system. From the link as from E at the ship, the climb
+  // out comes first (the scene's leaving phase). With the 3D on it's flown:
+  // the galaxy's world (made with the ship climbing off this planet:
+  // LAUNCH_KEY) is built behind the climb and takes over CLIMB ms in, under
+  // the sky's glare, the route following with the glare still on
+  // (pages/Galaxy.jsx takes it off). Without, or when the world can't, the
+  // screen goes and the system's page comes.
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true; // (set here, not at first render: React's second run of an effect in development cleans up and comes back)
+    return () => void (alive.current = false);
+  }, []);
+  const leavingRef = useRef(false);
+  const markLaunch = () => {
     try {
       window.sessionStorage.setItem(LAUNCH_KEY, id);
     } catch {
       /* storage unavailable */
     }
+  };
+  const goUp = useCallback(() => {
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    setLeaving(true);
+    markLaunch();
     later('leave', 700, () => navigate(`/galaxy/${id}`));
-  }, [leaving, id, navigate]);
+  }, [id, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+  const flyOut = useCallback(() => {
+    if (leavingRef.current) return;
+    const host = view.current.live ? view.current.host?.() : null;
+    if (!host) return goUp();
+    leavingRef.current = 'fly';
+    setLeaving('fly');
+    markLaunch();
+    const props = { system: id, reduced, ship, loadout, build, controls: readControls(local.get(CONTROLS_KEY)), net: online.client, frozen: false };
+    const climb = new Promise((r) => later('climb', reduced ? 300 : CLIMB, r));
+    runtime()
+      .handover(galaxyModule, props, host, { fade: 1000, held: true, after: climb })
+      .catch(() => false)
+      .then((ok) => {
+        if (!alive.current) return; // (gone elsewhere meanwhile: not this page's to steer)
+        if (ok) return navigate(`/galaxy/${id}`);
+        // not handed over: the old way, and the page makes its own
+        setLeaving(true);
+        later('leave', 700, () => navigate(`/galaxy/${id}`));
+      });
+  }, [goUp, id, navigate, reduced, ship, loadout, build, online.client]); // eslint-disable-line react-hooks/exhaustive-deps
+  const takeOff = useCallback(() => {
+    if (leavingRef.current) return;
+    if (!(view.current.live && view.current.takeOff?.())) goUp();
+  }, [goUp]);
 
   const onEvent = useCallback(
     (e) => {
@@ -141,7 +182,10 @@ export default function GalaxySurface() {
           unlock('groundside');
           if (LANDABLE.every((w) => worlds.has(w))) unlock('wanderer');
         }
-        if (e.phase === 'leaving') comms.current?.handle({ type: 'event', id: 'surface:leave' });
+        if (e.phase === 'leaving') {
+          comms.current?.handle({ type: 'event', id: 'surface:leave' });
+          flyOut();
+        }
         if (e.phase === 'ride') comms.current?.handle({ type: 'event', id: `surface:ride` });
       } else if (e.type === 'prompt') setPrompt(e.text);
       else if (e.type === 'here') setHere(e.id);
@@ -209,7 +253,7 @@ export default function GalaxySurface() {
       } else if (e.type === 'fire') {
         setAiming(true);
         later('aim', 3000, () => setAiming(false));
-      } else if (e.type === 'leave') takeOff();
+      } else if (e.type === 'leave') goUp();
       else if (e.type === 'bump') comms.current?.handle({ type: 'bump', hard: e.hard });
       else if (e.type === 'mission') {
         for (const f of chaseFeed.current) f(e.view);
@@ -236,7 +280,7 @@ export default function GalaxySurface() {
         }
       }
     },
-    [site, id, takeOff, unlock, mission, missionKey],
+    [site, id, unlock, mission, missionKey, flyOut, goUp],
   );
   const track = (qid) => {
     view.current?.input?.('track', qid);
@@ -257,14 +301,14 @@ export default function GalaxySurface() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // the models on this world, for their credits, and what the cruiser's crew carry out (kept, so the credits aren't drawn again with every change of the page)
-  const kinds = useMemo(() => (site ? [...[...site.things_all, ...site.scatter, ...site.life, ...site.rides].map((t) => surfaceUrl(t.kind)), ...(ship === 'cruiser' ? wornFiles(looks) : [])] : []), [site, ship, looks]);
+  // the models on this world, for their credits, what the cruiser's crew carry out, and Luke, who walks out of the X-wing (kept, so the credits aren't drawn again with every change of the page)
+  const kinds = useMemo(() => (site ? [...[...site.things_all, ...site.scatter, ...site.life, ...site.rides].map((t) => surfaceUrl(t.kind)), ...(ship === 'cruiser' ? wornFiles(looks) : []), ...(ship === 'xwing' ? ['/models/galaxy/crew/luke.glb'] : [])] : []), [site, ship, looks]);
   if (!site) return <Navigate to={id ? `/galaxy/${id}` : '/galaxy'} replace />;
   const place = site.places.find((p) => p.id === here);
   const accent = { '--accent': sys.accent, '--accent-text': sys.accent, '--btn-bg': sys.accent, '--btn-ink': '#03040a' };
   const left = site.places.filter((p) => !found.includes(p.id)).length;
   return (
-    <div className="dark-scope surface-page" style={accent} data-phase={phase} data-leaving={leaving ? '' : undefined}>
+    <div className="dark-scope surface-page" style={accent} data-phase={phase} data-leaving={leaving ? (leaving === 'fly' ? 'fly' : '') : undefined}>
       <h1 className="sr-only">
         {sys.name}: {site.place}
       </h1>
@@ -392,6 +436,8 @@ export default function GalaxySurface() {
       {crew && talkCrew && <Comms control={comms} crew={talkCrew} reduced={reduced} />}
       {!leaving && <Online online={online} ship={ship} />}
       <div className="surface-fade" aria-hidden="true" />
+      {entry && <div className="surface-entry" aria-hidden="true" />}
+      {leaving === 'fly' && <div className="surface-exit" aria-hidden="true" />}
     </div>
   );
 }

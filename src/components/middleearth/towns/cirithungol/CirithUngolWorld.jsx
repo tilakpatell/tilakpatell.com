@@ -4,7 +4,8 @@ import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
 import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
 import { readPad, typing } from '../../../games/pad';
-import { Convo, QuestList, Stick } from '../TownHud';
+import { Convo, QuestList, Stick, Travellers } from '../TownHud';
+import { useTravellers } from '../useTravellers';
 import { SideList } from '../SideList';
 import { readSide, recordSide } from '../side';
 import { keyDown, keyUp, moveOf, ownButton } from '../keys';
@@ -82,6 +83,9 @@ export default function CirithUngolWorld({ onLeave }) {
 }
 
 function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
+  // other travellers online, as ghosts (../useTravellers): in the Tower's
+  // courtyard, or in Shelob's tunnels, whichever you're walking
+  const trav = useTravellers('cirith-ungol', gl === 'on');
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
   const canvas = useRef(null);
@@ -630,6 +634,11 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
     const c = s.climb;
     const ph = s.phial;
     const du = s.duel;
+    // other travellers online: where you are to them (walking the courtyard
+    // or the tunnels, each its own ground; the vale, the stairs and the fight
+    // at the pass are yours alone), and where they are
+    const tv = trav.ref.current;
+    tv?.pose(s.h, { inside: s.mode !== 'walk' || (s.zone !== 'tower' && s.zone !== 'lair'), area: s.zone });
     try {
       a.render(
         {
@@ -638,6 +647,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
           next: p.next,
           asSam: p.asSam,
           hobbit: s.h,
+          travellers: tv ? tv.list() : null,
           talking: s.talking,
           speaker: node?.who ?? null,
           line: s.talk?.at ?? null,
@@ -769,6 +779,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{prog.done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}
             </button>
+            <Travellers trav={trav} />
           </div>
         </div>
       )}

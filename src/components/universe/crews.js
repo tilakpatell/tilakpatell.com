@@ -341,7 +341,7 @@ export const CREWS = [
       ],
       twins: [
         ['morty', 'Two suns, Rick! Like in that movie!'],
-        ['rick', 'Binary star, Morty. Every system’s got one. It’s not special. Okay, the gas bridge is a little special.'],
+        ['rick', 'Binary star, Morty. Every system’s got one. Not special. Okay, the gas bridge is a little special.'],
       ],
       wanderer: [
         ['morty', 'It’s so dark out here, Rick. Where’s its sun?'],
@@ -409,7 +409,7 @@ export const CREWS = [
       ],
       music: [
         ['rick', 'Indian classical music, Morty. Ragas older than most galaxies.'],
-        ['morty', 'It’s, uh, it’s actually really relaxing, Rick.'],
+        ['morty', 'It’s, uh, it’s actually relaxing, Rick.'],
       ],
       middleearth: [
         ['morty', 'There’s a volcano with a giant eye over it, Rick!'],
@@ -449,7 +449,7 @@ export const CREWS = [
         ['rick', 'The Caribbean, Morty. Pirates. It’s just crime with better hats.'],
       ],
       invincible: [
-        ['morty', 'Rick, a guy in a cape just flew past us. Really fast.'],
+        ['morty', 'Rick, a guy in a cape just flew past us. Fast.'],
         ['rick', 'Viltrumites, Morty. Don’t make eye contact. Don’t make any contact.'],
       ],
     },
@@ -535,6 +535,7 @@ export const CREWS = [
       },
     },
     launch: [
+      ['comms', 'May the Force be with you.', 'mayTheForce'],
       ['luke', 'Red Five, standing by.'],
       ['r2', '[an eager whistle]', 'r2Whistle'],
     ],
@@ -614,6 +615,7 @@ export const CREWS = [
       ],
       // Vader himself, in his TIE Advanced
       ace: [
+        ['comms', 'The Force is strong with this one.', 'forceIsStrong'],
         ['luke', 'That TIE… it’s him. It’s Vader!'],
         ['comms', 'No, I am your father.', 'vader'],
       ],
@@ -647,6 +649,7 @@ export const CREWS = [
     destroyed: [
       ['luke', 'I’ve lost her! Artoo!'],
       ['r2', '[a long, falling whistle]'],
+      ['comms', 'The Force will be with you. Always.', 'forceAlways'],
     ],
     escaped: [
       ['luke', 'We lost them!'],
@@ -708,7 +711,7 @@ export const CREWS = [
         ['r2', '[a nervous whistle]'],
       ],
       trench: [
-        ['comms', 'Stay on target…'],
+        ['comms', 'Stay on target…', 'stayOnTarget'],
         ['luke', 'I’m in the trench! Artoo, watch our backs!'],
         ['r2', '[an alarmed shriek]'],
       ],
@@ -1041,12 +1044,13 @@ export const CREWS = [
       ['chewie', '[a mournful howl]'],
     ],
     escaped: [
-      ['han', 'Ha! Never tell me the odds.'],
+      ['han', 'Never tell me the odds.', 'neverTellOdds'],
       ['chewie', '[a happy roar]'],
     ],
     cleared: [
       ['han', 'That’s the last of them. Not bad for a hunk of junk.'],
       ['chewie', '[a triumphant roar]'],
+      ['han', 'I know.', 'hanIKnow'],
     ],
     events: {
       // friends on your wing in a long fight (wingmen.js), and going again
@@ -1262,6 +1266,7 @@ export const CREWS = [
     },
     foot: {
       land: [
+        ['walt', 'Jesse, we need to cook.', 'needToCook'],
         ['walt', 'We’re setting down, Jesse. Bring the gun.'],
         ['jesse', 'Yo, we’re landing the RV? On a planet?!'],
       ],
@@ -1334,7 +1339,7 @@ export const CREWS = [
       ['walt', 'That was a rounding error, Jesse.'],
     ],
     crash: [
-      ['jesse', 'Mr. White! We hit a planet! The RV is totally totalled!'],
+      ['jesse', 'Mr. White! We hit a planet! The RV is totalled!'],
       ['walt', 'Relax, Jesse. I’ve rebuilt this RV before.'],
     ],
     pulled: [
@@ -1405,6 +1410,7 @@ export const CREWS = [
       slave1: [
         ['jesse', 'Yo, I tagged the bounty hunter!'],
         ['walt', 'Nobody comes after this RV. Nobody.'],
+          ['walt', 'I’m the man who killed Gus Fring.', 'killedGus'],
       ],
     },
     // hunted by whoever's out (the RV is wanted in both universes)
@@ -1424,6 +1430,7 @@ export const CREWS = [
       ace: [
         ['jesse', 'Who’s the guy in the black TIE, yo?'],
         ['walt', 'Someone who thinks he’s the danger. He’s mistaken.'],
+        ['walt', 'I am the one who knocks.', 'oneWhoKnocks'],
       ],
       federation: [
         ['jesse', 'Space cops, yo! They’re shooting!'],
@@ -1624,6 +1631,7 @@ export const CREWS = [
       experience: [
         ['walt', 'Six jobs, Jesse. AWS, RTX, Bose, and every one of them done properly.'],
         ['jesse', 'Way better than working at a car wash, huh, Mr. White?'],
+        ['walt', 'You’re goddamn right.', 'goddamnRight'],
       ],
       projects: [
         ['jesse', 'Yo, he made his own Game Boy? From nothing? That’s sick!'],
@@ -1687,7 +1695,7 @@ export const CREWS = [
         ['walt', 'Smugglers with a dress code, Jesse.'],
       ],
       invincible: [
-        ['jesse', 'Yo, that dude just flew through a building. Like, through it.'],
+        ['jesse', 'Yo, that dude just flew through a building.'],
         ['walt', 'Then we do not owe him money, Jesse. Keep it that way.'],
       ],
     },

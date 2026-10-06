@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 // A module that promises 'nodes' (so it may get the WebGPU backend) must
@@ -8,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 // WebGPURenderer can't run them. Every world module under src/components
 // is read, and the fixture, so the check is known to run.
 
-const ROOT = new URL('../', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const FORBIDDEN = [/\bRawShaderMaterial\b/, /\bShaderMaterial\b/, /\bonBeforeCompile\b/, /\bEffectComposer\b/];
 
 function walk(dir, out = []) {

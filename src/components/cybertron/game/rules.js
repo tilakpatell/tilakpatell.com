@@ -17,6 +17,9 @@ const MAX_DT = 0.05; // a frame longer than this (a tab come back) counts as thi
 export const ROBOT = { radius: 1.2, height: 9.5, walk: 7, run: 15, accel: 40, jump: 13, gravity: 32, step: 1.4, turn: 10, air: 0.35 };
 export const VEHICLE = { radius: 2.6, height: 4, length: 9, top: 40, boost: 62, accel: 16, brake: 34, reverse: 12, drag: 6, grip: 9, turn: 1.7, steerRate: 3.2, boostDrain: 0.35, boostFill: 0.12, step: 1.0 };
 export const TRANSFORM = { time: 0.9 };
+// Getting his strength back: so many seconds out of the fight, then so much
+// a second; and a little with every cube of energon he picks up
+export const MEND = { after: 4, rate: 12, energon: 15 };
 export const SHOT = { speed: 140, ttl: 1.2, robotDamage: 12, vehicleDamage: 7, cooldownRobot: 0.18, cooldownVehicle: 0.09, aim: (12 * Math.PI) / 180, aimVehicle: (8 * Math.PI) / 180, reach: 120 };
 export const ENEMY_KINDS = {
   trooper: { hp: 40, speed: 6, range: 55, cooldown: 1.3, damage: 5, r: 1.2, h: 7 },
@@ -25,6 +28,9 @@ export const ENEMY_KINDS = {
   barricade: { hp: 150, speed: 7, range: 55, cooldown: 0.9, damage: 6, r: 1.3, h: 7.2 },
   // (his cannon: slow, and it hurts)
   shockwave: { hp: 420, speed: 3.5, range: 85, cooldown: 1.7, damage: 15, r: 1.6, h: 11, boss: true, name: 'Shockwave' },
+  // (Megatron's side: the Autobots' raiders, and Zeta Prime at the last)
+  autobot: { hp: 50, speed: 7.5, range: 60, cooldown: 1.1, damage: 6, r: 1.2, h: 7 },
+  zeta: { hp: 650, speed: 4.5, range: 75, cooldown: 0.55, damage: 10, r: 1.8, h: 11, boss: true, name: 'Zeta Prime' },
 };
 
 // The Decepticons who change: so long on their feet, then into their
@@ -65,7 +71,7 @@ function contains(s, x, z) {
 
 // How far a circle at (x, z) of radius r must move to be clear of a solid,
 // and which way (null if it's clear already)
-function overlap(s, x, z, r) {
+export function overlap(s, x, z, r) {
   if (s.kind === 'circle') {
     const dx = x - s.x;
     const dz = z - s.z;
@@ -206,6 +212,7 @@ export function damage(p, amount) {
   if (p.dead || amount <= 0) return [];
   p.hp = Math.max(0, p.hp - amount);
   p.hurt = 0.4;
+  p.calm = 0;
   if (p.hp > 0) return [{ type: 'hurt', amount }];
   p.dead = true;
   return [{ type: 'hurt', amount }, { type: 'dead' }];
@@ -358,6 +365,8 @@ export function stepPlayer(p, input, dt, world) {
   if (!dt) return events;
   p.cooldown = Math.max(0, p.cooldown - dt);
   p.hurt = Math.max(0, p.hurt - dt);
+  p.calm = (p.calm ?? MEND.after) + dt;
+  if (!p.dead && p.calm >= MEND.after && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + MEND.rate * dt);
   if (input.jump && p.mode === 'robot' && p.grounded && !p.shifting && !p.dead) {
     p.vy = ROBOT.jump;
     p.grounded = false;
@@ -451,7 +460,9 @@ export function fire(p, targets, aim) {
   const fz = Math.cos(p.yaw);
   const origins = vehicle
     ? [-1.2, 1.2].map((side) => [p.x + fx * 4.5 + fz * side, p.y + 1.5, p.z + fz * 4.5 - fx * side])
-    : [[p.x + Math.sin(yaw) * 1.6 + Math.cos(yaw) * 1.4, p.y + 7.5, p.z + Math.cos(yaw) * 1.6 - Math.sin(yaw) * 1.4]];
+    : // (from the gun's muzzle, where the page knows it, else off his right
+      // shoulder: +x is his left)
+      [aim.from && Math.hypot(aim.from[0] - p.x, aim.from[2] - p.z) < 9 ? aim.from : [p.x + Math.sin(yaw) * 1.6 - Math.cos(yaw) * 1.4, p.y + 7.5, p.z + Math.cos(yaw) * 1.6 + Math.sin(yaw) * 1.4]];
   // the best target: the one nearest the line, within the cone and range
   const cone = vehicle ? SHOT.aimVehicle : SHOT.aim;
   let best = null;

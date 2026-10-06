@@ -14,7 +14,7 @@
 //
 // The catalogue is src/components/cybertron/game/catalog.js (the game reads
 // it too). An entry: { uid, as, metres, along, yaw, up, tris, tex, maps,
-// gain, drop, colours, rig, node, pose, also, file, role, era }, as in
+// gain, drop, colours, rig, node, pose, also, skinnedOnly, file, role, era }, as in
 // sketchfab-surface.mjs, plus `node` (a RegExp source: keep only the scene's
 // nodes whose name, or an ancestor's, matches, for a file that holds several
 // robots side by side), `pose` (a still model from a rigged one: its bones as
@@ -447,6 +447,9 @@ async function bring(io, kind, spec) {
     };
     for (const node of root.listNodes()) if (node.getMesh() && !named(node)) node.setMesh(null);
   }
+  // (a robot whose file keeps its other form's loose parts beside it, wheels
+  // and guns that hang from nothing: only what its skeleton moves)
+  if (spec.skinnedOnly) for (const node of root.listNodes()) if (node.getMesh() && !node.getSkin()) node.setMesh(null);
   // (lines and points: nothing a world shows)
   for (const mesh of root.listMeshes()) for (const prim of mesh.listPrimitives()) if (prim.getMode() !== 4) prim.dispose();
   // (a rig's clips with the keyframes that change nothing taken out: a
@@ -492,7 +495,7 @@ async function inspect(io, uid, kind) {
     mesh: node.getMesh() ? node.getMesh().listPrimitives().length : 0,
     skin: !!node.getSkin(),
     ...(depth <= 1 ? { box: box(node) } : {}),
-    ...(depth < 4 && node.listChildren().length ? { children: node.listChildren().slice(0, 30).map((c) => tree(c, depth + 1)) } : {}),
+    ...(depth < 6 && node.listChildren().length ? { children: node.listChildren().slice(0, 30).map((c) => tree(c, depth + 1)) } : {}),
   });
   const whole = box(scene);
   const size = whole?.size ?? [0, 0, 0];

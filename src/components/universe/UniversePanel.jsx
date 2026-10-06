@@ -115,7 +115,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
     return (
       <aside ref={panel} className="universe-panel" aria-label={wonder.name}>
         {onTuck && <Tuck onTuck={toggle} />}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <div className="universe-links flex flex-wrap items-center gap-x-4 gap-y-1">
           <button type="button" className="universe-back" onClick={onWhole}>
             <RiArrowGoBackLine className="h-3.5 w-3.5" aria-hidden="true" /> The whole map
           </button>
@@ -157,7 +157,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
           <>
             <p className="mt-3 text-sm leading-relaxed">
               The stations round the sun are my pages: home, experience, projects, résumé, contact and the terminal. The planets further out are the things I love. Pick a ship and fly to any of them;
-              your crew will have something to say about each.
+              your crew has a word about each.
             </p>
             <Ships
               ship={ship}
@@ -171,7 +171,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
                 No ship, just look around
               </button>
             ) : (
-              <p className="mt-3 text-xs leading-relaxed text-muted">Or just pick a place by name, and the camera takes you there.</p>
+              <p className="mt-3 text-xs leading-relaxed text-muted">Or pick a place by name, and the camera takes you there.</p>
             )}
           </>
         ) : (
@@ -195,7 +195,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
               <li className="universe-keys-board">
                 <kbd>V</kbd> for the cockpit, or back behind the ship
               </li>
-              <li>The guns lock on to whoever comes after you, the ones coming at you first: shoot at the pip ahead of them and the shots bend home. Arrows at the edge show the ones you can’t see</li>
+              <li>The guns lock on to whoever comes after you, nearest first: shoot at the pip ahead of them and the shots bend home. Arrows at the edge show the ones you can’t see</li>
               <li className="universe-keys-board">
                 <kbd>T</kbd> for the next target (<kbd>Q</kbd> the one before), or click one; <kbd>E</kbd> to land or dock where you are
               </li>
@@ -207,7 +207,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
                 <kbd>O</kbd> for the flight settings: steering, pitch and roll, self-levelling (off, it stays upside down), drag sensitivity, aim assist, the camera, up and down the other way round, and <kbd>A</kbd> <kbd>D</kbd> to turn instead
               </li>
               <li>Out in deep space, click a wonder and the ship flies you there</li>
-              <li className="universe-keys-touch">Drag anywhere on the map to fly, hold the arrows to pull the nose up and down (all the way over, if you like), hold Boost to go fast and Fire to shoot; View puts you in the cockpit, and the sliders button in the corner sets how it all feels</li>
+              <li className="universe-keys-touch">Drag anywhere to fly, hold the arrows to pull the nose up and down (all the way over, if you like), hold Boost to go fast and Fire to shoot; View is the cockpit, and the sliders button sets how it feels</li>
               <li className="universe-keys-touch">Tap a planet, a station or a wonder to fly there, or a hunter to lock on</li>
             </ul>
             <button type="button" className="btn btn-ghost btn-sm mt-5" onClick={() => setChanging(true)}>
@@ -245,7 +245,7 @@ export default function UniversePanel({ universe, wonder = null, onFly = null, o
   return (
     <aside ref={panel} className="universe-panel" aria-label={universe.label}>
       {onTuck && <Tuck onTuck={toggle} />}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      <div className="universe-links flex flex-wrap items-center gap-x-4 gap-y-1">
         <button type="button" className="universe-back" onClick={onWhole}>
           <RiArrowGoBackLine className="h-3.5 w-3.5" aria-hidden="true" /> The whole map
         </button>

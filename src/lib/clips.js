@@ -7,7 +7,7 @@
 // (App calls stopPageClips on every route change). `keep` lets one run on
 // across pages: the theme switches, the jump to lightspeed, "say my name".
 
-import { audioContext, loadBuffer, output } from './audio';
+import { audioContext, loadBuffer, output, voiceOutput } from './audio';
 
 export const CLIPS = {
   vader: { src: '/audio/clips/i-am-your-father.mp3', line: 'No, I am your father.', by: 'Darth Vader' },
@@ -71,6 +71,7 @@ export const CLIPS = {
   almostThere: { src: '/audio/clips/almost-there.mp3', line: 'Almost there.', by: 'Red Leader' },
   itsATrap: { src: '/audio/clips/its-a-trap.mp3', line: 'It’s a trap!', by: 'Admiral Ackbar' },
   neverTellOdds: { src: '/audio/clips/never-tell-me-the-odds.mp3', line: 'Never tell me the odds.', by: 'Han Solo' },
+  hanIKnow: { src: '/audio/clips/i-know.mp3', line: 'I know.', by: 'Han Solo' },
   badFeelingLuke: { src: '/audio/clips/bad-feeling-luke.mp3', line: 'I have a very bad feeling about this.', by: 'Luke Skywalker' },
   badFeelingHan: { src: '/audio/clips/bad-feeling-han.mp3', line: 'I got a bad feeling about this.', by: 'Han Solo' },
   notTheDroids: { src: '/audio/clips/not-the-droids.mp3', line: 'These aren’t the droids you’re looking for.', by: 'Obi-Wan Kenobi' },
@@ -176,6 +177,8 @@ export const CLIPS = {
   theDanger: { src: '/audio/clips/i-am-the-danger.mp3', line: 'I am not in danger, Skyler. I am the danger.', by: 'Walter White' },
   waltAddress: { src: '/audio/clips/walter-hartwell-white.mp3', line: 'My name is Walter Hartwell White. I live at 308 Negra Arroyo Lane, Albuquerque, New Mexico.', by: 'Walter White' },
   killedGus: { src: '/audio/clips/killed-gus-fring.mp3', line: 'I’m the man who killed Gus Fring.', by: 'Walter White' },
+  goddamnRight: { src: '/audio/clips/youre-goddamn-right.mp3', line: 'You’re goddamn right.', by: 'Walter White' },
+  needToCook: { src: '/audio/clips/we-need-to-cook.mp3', line: 'Jesse, we need to cook.', by: 'Walter White' },
   domicile: { src: '/audio/clips/private-domicile.mp3', line: 'This is my own private domicile and I will not be harassed, bitch!', by: 'Jesse Pinkman' },
   gettingAway: { src: '/audio/clips/cant-keep-getting-away.mp3', line: 'He can’t keep getting away with it!', by: 'Jesse Pinkman' },
   dontDrinkDrive: { src: '/audio/clips/dont-drink-and-drive.mp3', line: 'Don’t drink and drive, but if you do, call me.', by: 'Saul Goodman' },
@@ -188,22 +191,34 @@ export function stopPageClips() {
   playing.forEach((h) => !h.keep && h.stop());
 }
 
-// Plays a clip. `offset` skips into it, `duration` cuts it short with a fade.
-// Resolves to { stop(), ended } or null if it can't play (no Web Audio, or the
-// file didn't load), so callers can fall back to something else.
-export async function playClip(id, { offset = 0, when = 0, duration, gain = 1, keep = false } = {}) {
-  const ac = audioContext(); // first, while still inside the gesture
+// Plays a clip. `offset` skips into it, `duration` cuts it short with a fade,
+// `voice` sends it through the voice tap (lib/audio.js) so a speaker's face
+// can move its mouth with it.
+// Resolves to { stop(), ended, length } (length in seconds) or null if it
+// can't play (no Web Audio, or the file didn't load), so callers can fall
+// back to something else.
+export function playClip(id, opts) {
   const clip = CLIPS[id];
-  if (!ac || !clip) return null;
+  if (!clip) {
+    audioContext();
+    return Promise.resolve(null);
+  }
+  return playFile(clip.src, opts);
+}
+
+// The same for any file: a crew's generated line (lib/voiced.js), say.
+export async function playFile(src, { offset = 0, when = 0, duration, gain = 1, keep = false, voice = false } = {}) {
+  const ac = audioContext(); // first, while still inside the gesture
+  if (!ac || !src) return null;
   let buf;
   try {
-    buf = await loadBuffer(clip.src);
+    buf = await loadBuffer(src);
   } catch {
     return null;
   }
   if (!buf) return null;
-  const src = ac.createBufferSource();
-  src.buffer = buf;
+  const node = ac.createBufferSource();
+  node.buffer = buf;
   const g = ac.createGain();
   const t = ac.currentTime + when;
   g.gain.setValueAtTime(gain, t);
@@ -211,11 +226,11 @@ export async function playClip(id, { offset = 0, when = 0, duration, gain = 1, k
     g.gain.setValueAtTime(gain, t + Math.max(0, duration - 0.35));
     g.gain.linearRampToValueAtTime(0.0001, t + duration);
   }
-  src.connect(g).connect(output());
-  src.start(t, offset, duration);
+  node.connect(g).connect(voice ? voiceOutput() : output());
+  node.start(t, offset, duration);
   let handle = null;
   const ended = new Promise((resolve) => {
-    src.onended = () => {
+    node.onended = () => {
       playing.delete(handle);
       resolve();
     };
@@ -224,6 +239,7 @@ export async function playClip(id, { offset = 0, when = 0, duration, gain = 1, k
   handle = {
     ended,
     keep,
+    length: Math.max(0, (duration ?? buf.duration - offset) || 0),
     stop() {
       if (stopped) return;
       stopped = true;
@@ -232,7 +248,7 @@ export async function playClip(id, { offset = 0, when = 0, duration, gain = 1, k
       g.gain.setValueAtTime(g.gain.value, now);
       g.gain.linearRampToValueAtTime(0.0001, now + 0.12);
       try {
-        src.stop(now + 0.14);
+        node.stop(now + 0.14);
       } catch {
         /* already stopped */
       }

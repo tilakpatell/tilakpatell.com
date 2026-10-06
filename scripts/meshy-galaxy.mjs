@@ -17,10 +17,18 @@
 // make it again. MESHY_API_KEY comes from the environment; it is never
 // printed. Concept images and thumbnails go to lab/meshy/galaxy (or
 // MESHY_REVIEW), for looking at, not shipped.
+//
+// A person can also come from a Sketchfab model (an asset with a `uid`,
+// which has no image or model step): `bake` (free; SKETCHFAB_API_TOKEN) is
+// that model downloaded, its transforms baked in so it stands upright on y = 0
+// facing +z, its maps JPEGs at 1024, no meshopt (Meshy can't read it), into
+// <review>/in/<name>.glb; `rigurl` (5 credits) is that file sent to Meshy's
+// rigger as a data: URI `model_url` (no public URL needed, nothing committed),
+// whose task id goes where `rig`'s would, for `fetch` to take from there.
 
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, getBounds, meshopt, prune, textureCompress } from '@gltf-transform/functions';
+import { dedup, flatten, getBounds, meshopt, prune, textureCompress, transformMesh } from '@gltf-transform/functions';
 import { MeshoptDecoder, MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 import { existsSync } from 'node:fs';
@@ -45,13 +53,21 @@ const CREATURE = `${LOOK} Full body, three-quarter front view, the whole creatur
 // how they look, never by name: the image step turns names down, and the
 // model step has turned down a concept that looked too much like a film's own
 // (scripts/meshy-cockpit.mjs).
+// uid: a Sketchfab model to rig instead of generating one (see `bake`)
 export const ASSETS = {
   luke: {
-    // (the first concept, in the films' outfit to the letter, was turned
-    // down at the model step twice; this one, a pilot in that kit, went through)
+    uid: '84d5ed9497b5435b9a804f956ff74927',
+    // (the prompt is for the Luke Meshy made, before this figure took his place:
+    // a pilot in the films' kit, as the first concept, to the letter, was
+    // turned down at the model step twice; its tasks are in the tasks file, as
+    // `generatedRig`)
     height: 1.72,
     prompt:
       'A young adult starfighter pilot with short wavy light sandy hair and a clean-shaven friendly face, an orange flight jumpsuit with zipped pockets, a white ribbed padded vest, dark grey gloves, black flight boots and a grey belt with a holster on the right hip.',
+  },
+  leia: {
+    uid: 'e5efdd35a5e4462cbc013db44e80d31e',
+    height: 1.5,
   },
   han: {
     height: 1.85,
@@ -181,9 +197,13 @@ async function squeeze(from, to, a) {
   return { tris, size, bones };
 }
 
+// the named ones that are made from a prompt, or from a Sketchfab model
+const made = (names) => names.filter((n) => !ASSETS[n].uid);
+const fromSketchfab = (names) => names.filter((n) => ASSETS[n].uid);
+
 const steps = {
   async images(names, s) {
-    for (const n of names) {
+    for (const n of made(names)) {
       s[n] ??= {};
       if (!s[n].image) {
         const a = ASSETS[n];
@@ -198,6 +218,7 @@ const steps = {
   },
   async models(names, s) {
     // all asked for first, then waited on (they take minutes each)
+    names = made(names);
     for (const n of names) {
       if (!s[n]?.image) throw new Error(`${n}: no image yet`);
       if (!s[n].model) {
@@ -236,7 +257,7 @@ const steps = {
     if (failed.length) console.log(`failed   ${failed.join(', ')}`);
   },
   async rig(names, s) {
-    for (const n of names.filter((n) => !ASSETS[n].still)) {
+    for (const n of made(names).filter((n) => !ASSETS[n].still)) {
       if (!s[n]?.model) throw new Error(`${n}: no model yet`);
       if (!s[n].rig) {
         const { result } = await api('POST', '/v1/rigging', { input_task_id: s[n].model, height_meters: ASSETS[n].height });
@@ -245,6 +266,53 @@ const steps = {
       }
       const t = await wait('/v1/rigging', s[n].rig, `${n} rig`);
       console.log(`rig      ${n.padEnd(10)} ${t.consumed_credits} credits`);
+    }
+  },
+  // a Sketchfab model made ready for Meshy's rigger: upright, +z, on y = 0
+  async bake(names) {
+    for (const n of fromSketchfab(names)) {
+      const token = process.env.SKETCHFAB_API_TOKEN;
+      if (!token) throw new Error('Set SKETCHFAB_API_TOKEN in the environment.');
+      const raw = join(REVIEW, 'in', `${n}-sketchfab.glb`);
+      if (!existsSync(raw)) {
+        const info = await fetch(`https://api.sketchfab.com/v3/models/${ASSETS[n].uid}/download`, { headers: { Authorization: `Token ${token}` } });
+        if (!info.ok) throw new Error(`${n}: sketchfab download ${info.status}`);
+        await download((await info.json()).glb.url, raw);
+      }
+      const io = await getIO();
+      const doc = await io.read(raw);
+      // (Sketchfab's own -90 degree turn about x, and any others, into the vertices)
+      await doc.transform(flatten());
+      for (const node of doc.getRoot().listNodes()) {
+        const mesh = node.getMesh();
+        if (!mesh) continue;
+        transformMesh(mesh, node.getWorldMatrix());
+        node.setMatrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+      }
+      await doc.transform(prune(), dedup(), textureCompress({ encoder: sharp, targetFormat: 'jpeg', resize: [TEX, TEX], quality: 92 }));
+      const b = getBounds(doc.getRoot().listScenes()[0]);
+      const out = join(REVIEW, 'in', `${n}.glb`);
+      await mkdir(dirname(out), { recursive: true });
+      await io.write(out, doc);
+      console.log(`bake     ${n.padEnd(10)} ${((await stat(out)).size / 1e6).toFixed(2)} MB, ${(b.max[1] - b.min[1]).toFixed(3)} m tall, x ${b.min[0].toFixed(2)}…${b.max[0].toFixed(2)}, z ${b.min[2].toFixed(2)}…${b.max[2].toFixed(2)}`);
+    }
+  },
+  async rigurl(names, s) {
+    for (const n of fromSketchfab(names)) {
+      s[n] ??= {};
+      if (!s[n].rig) {
+        const file = join(REVIEW, 'in', `${n}.glb`);
+        if (!existsSync(file)) throw new Error(`${n}: bake it first`);
+        const { balance } = await api('GET', '/v1/balance');
+        if (balance < 5) throw new Error(`${n}: only ${balance} credits`);
+        const model_url = `data:application/octet-stream;base64,${(await readFile(file)).toString('base64')}`;
+        const { result } = await api('POST', '/v1/rigging', { model_url, height_meters: ASSETS[n].height });
+        s[n].rig = result;
+        s[n].source = `sketchfab:${ASSETS[n].uid}`;
+        await save(s);
+      }
+      const t = await wait('/v1/rigging', s[n].rig, `${n} rig`);
+      console.log(`rigurl   ${n.padEnd(10)} ${t.consumed_credits} credits`);
     }
   },
   async fetch(names, s) {

@@ -7,15 +7,17 @@
 // arrive while you sail and appear when they land.
 //
 // render(g, ms, view) draws one frame of a game: it reads g and g.events and
-// changes neither.
+// changes neither. Everyone else online sailing this sea (view.travellers,
+// the towns' travellers.js list()) shows as a ghost ship from another world.
 
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { createStage } from '../../../lib/stage3d';
 import { SUN, createSea, loadSky } from './sea';
 import { DECAL, createBalls, createDecals, createFoam, createParticles } from './fx';
-import { ARM, CHAPTERS, ISLES, TIDE, bearing, fitted } from './rules';
+import { ARM, CHAPTERS, ISLES, SHIPS, TIDE, bearing, fitted } from './rules';
 import { gltfLoader } from '../../../lib/three/gltf';
+import { createGhosts } from '../../middleearth/towns/ghosts';
 
 const BASE = '/games/caribbean';
 const FIRST = ['pearl', 'navy', 'jack']; // what a game can't start without
@@ -287,6 +289,35 @@ export async function createTide3D(canvas, { soft = false, alive = () => true, o
       }
     }
   };
+
+  // ── the other players ──
+  // each a pale, see-through Black Pearl (the Middle-earth towns' ghosts,
+  // ../../middleearth/towns/ghosts.js) with the captain's name over her masts
+  // and a ring of light on the water round her, riding the swell; nothing
+  // here touches them, nor they anything here. (The ring floats a little over
+  // the swell, so the waves don't cut it; she sits back down into the water.)
+  const LIFT = 2.5;
+  const ghosts = createGhosts({
+    height: (x, z) => sea.height(x, z) * 0.9 + LIFT,
+    make: () => {
+      const c = copy('pearl', SHIPS.pearl.len * 1.09, SHIP.pearl.draft);
+      const tilt = new THREE.Group();
+      tilt.add(c.model);
+      const group = new THREE.Group();
+      group.add(tilt);
+      // (her geometry is your own ship's: left alone when a ghost goes)
+      return { group, tilt, top: SHIP.pearl.mast, dispose: () => {} };
+    },
+    animate: (f, t) => {
+      f.group.position.y = -LIFT;
+      f.tilt.rotation.z = Math.sin(t * 0.8) * 0.025;
+      f.tilt.rotation.x = Math.sin(t * 1.1 + 1) * 0.04;
+    },
+    tag: 4.5,
+    halo: 70,
+    snap: 60, // (a ship covers ground between steps)
+  });
+  scene.add(ghosts.group);
 
   // ── things that happen ──
   let trauma = 0;
@@ -755,6 +786,9 @@ export async function createTide3D(canvas, { soft = false, alive = () => true, o
     }
     balls.end();
 
+    // everyone else online
+    ghosts.update(view.travellers ?? [], sea.time, dt);
+
     foam.draw(dt, decals);
     decals.end();
     particles.update(dt, wind);
@@ -778,6 +812,7 @@ export async function createTide3D(canvas, { soft = false, alive = () => true, o
     disposed = true;
     caskGeo.dispose();
     caskMat.dispose();
+    ghosts.dispose();
     for (const m of models.values()) scene.add(m.root); // so the stage frees the originals too
     sea.dispose();
     stage.dispose();

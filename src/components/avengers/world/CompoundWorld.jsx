@@ -971,7 +971,7 @@ function Players({ trav }) {
       </button>
     );
   return (
-    <span className="cw-chip cw-players" title="Everyone else online here shows as a hologram: they can’t touch your games, nor you theirs">
+    <span className="cw-chip cw-players" data-on="" title="Everyone else online here shows as a hologram: they can’t touch your games, nor you theirs">
       <b>{trav.count}</b> {trav.count === 1 ? 'player' : 'players'} here
     </span>
   );

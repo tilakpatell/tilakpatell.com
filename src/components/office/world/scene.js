@@ -214,8 +214,9 @@ export async function createOfficeWorld(canvas, { onLost } = {}) {
       }
       p.group.rotation.y = Math.PI / 2; // (a ghost's face, like Jim's, is measured from +x; a figure faces +z)
       group.add(p.group);
-      // (his mesh and its materials are the cast's, shared with the real Jim: not the ghost's to dispose)
-      return { group, top: 1.9, person: p, shared: true, dispose: () => {} };
+      // (his mesh and its materials are the cast's, shared with the real Jim:
+      // not the ghost's to dispose; only his own skeleton is)
+      return { group, top: 1.9, person: p, shared: true, dispose: () => p.group.traverse((o) => o.skeleton?.dispose()) };
     },
     animate: (f, t, p, dt) => {
       if (!f.person) return;

@@ -502,7 +502,7 @@ const VIEW_ARMS = {
   jesse: { sleeve: '#a8331f', hand: '#e6b590' }, // the red hoodie
   chewie: { sleeve: '#7b5428', hand: '#5c3f24', fur: true },
   han: { sleeve: '#efede6', hand: '#dfae88' },
-  luke: { sleeve: '#e8742a', hand: '#2a2622' }, // the flight suit and gloves
+  luke: { sleeve: '#c9c3b8', hand: '#dfae88' }, // the farmboy's tunic, bare hands
 };
 // The forearms and hands for a gun seen out of your own eyes, built in the
 // gun's frame (metres; +z its muzzle, +y its sights, −x its right) so they

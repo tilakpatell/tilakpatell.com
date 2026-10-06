@@ -17,15 +17,16 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { flipped, loft, merge, plate, turned } from '../hulls';
+import { detail, seg as segments } from '../../../lib/detail';
+import { flipped, glassMaterial, loft, merge, paintMaterial, plate, turned } from '../hulls';
 import { BUILD_SLOTS, moduleById } from './parts';
 import { STOCK_BUILD } from './build';
 
 // the engines' glow, by the set fitted
 const GLOW = { twincans: '#ffb35c', quad: '#8fd3ff', ring: '#7dff5c' };
 const LAY = [Math.PI / 2, 0, 0]; // (a CylinderGeometry laid along z, its top toward +z)
-const tube = (r0, r1, len, seg = 24) => new THREE.CylinderGeometry(r1, r0, len, seg); // (r0 at −z once laid)
-const rounded = (w, h, d, r = Math.min(w, h, d) * 0.3) => new RoundedBoxGeometry(w, h, d, 3, r);
+const tube = (r0, r1, len, seg = 24) => new THREE.CylinderGeometry(r1, r0, len, segments(seg)); // (r0 at −z once laid; lib/detail: rounder at ultra)
+const rounded = (w, h, d, r = Math.min(w, h, d) * 0.3) => new RoundedBoxGeometry(w, h, d, Math.max(2, Math.round(3 * detail().seg)), r);
 
 // ── hulls ──
 
@@ -68,7 +69,7 @@ const HULLS = {
     // the spine, from behind the cockpit to the tail
     P.paint.push([plate([[-0.005, -0.04], [0.005, -0.04], [0.008, 0.1], [-0.008, 0.1]], 0.008), [0, 0.02, 0]]);
     // the back plate, round the engines
-    P.metal.push([new THREE.CircleGeometry(0.026, 24), [0, 0, 0.1202], [0, 0, 0], [1.15, 0.62, 1]]);
+    P.metal.push([new THREE.CircleGeometry(0.026, segments(24)), [0, 0, 0.1202], [0, 0, 0], [1.15, 0.62, 1]]);
     return P;
   },
   // a flying saucer's hull, Rick's way: a disc, a band round its rim, two
@@ -87,13 +88,13 @@ const HULLS = {
       [0.045, 0.022],
       [0.0, 0.024],
     ].map(([r, y]) => new THREE.Vector2(r, y));
-    P.paint.push([new THREE.LatheGeometry(profile, 64)]);
-    P.trim.push([new THREE.TorusGeometry(0.1215, 0.0028, 10, 96), [0, 0, 0], [Math.PI / 2, 0, 0]]);
-    P.dark.push([new THREE.CircleGeometry(0.045, 40), [0, -0.0241, 0], [Math.PI / 2, 0, 0]]);
+    P.paint.push([new THREE.LatheGeometry(profile, segments(64))]);
+    P.trim.push([new THREE.TorusGeometry(0.1215, 0.0028, segments(10), segments(96)), [0, 0, 0], [Math.PI / 2, 0, 0]]);
+    P.dark.push([new THREE.CircleGeometry(0.045, segments(40)), [0, -0.0241, 0], [Math.PI / 2, 0, 0]]);
     for (const sx of [-1, 1]) {
       P.metal.push([tube(0.0035, 0.0035, 0.02, 12), [sx * 0.04, 0.004, -0.112], [Math.PI / 2 + 0.25, 0, 0]]);
-      P.metal.push([new THREE.SphereGeometry(0.0085, 16, 12), [sx * 0.04, 0.008, -0.124]]);
-      P.lamp.push([new THREE.CircleGeometry(0.0062, 16), [sx * 0.04, 0.008, -0.1326], [0, Math.PI, 0]]);
+      P.metal.push([new THREE.SphereGeometry(0.0085, segments(16), segments(12)), [sx * 0.04, 0.008, -0.124]]);
+      P.lamp.push([new THREE.CircleGeometry(0.0062, segments(16)), [sx * 0.04, 0.008, -0.1326], [0, Math.PI, 0]]);
     }
     return P;
   },
@@ -146,7 +147,7 @@ const HULLS = {
     ]);
     P.trim.push([plate([[-0.0035, -0.15], [0.0035, -0.15], [0.006, 0.12], [-0.006, 0.12]], 0.0024), [0, 0.0166, 0], [0, 0, 0], [1, 1, 1]]);
     for (const sx of [-1, 1]) P.dark.push([plate([[0, -0.08], [0.006, -0.06], [0.006, 0.1], [0, 0.11]], 0.003), [sx * 0.019, -0.004, 0], [0, 0, sx * 0.2], [sx, 1, 1]]);
-    P.metal.push([new THREE.CircleGeometry(0.017, 24), [0, 0, 0.1302], [0, 0, 0], [1, 0.8, 1]]);
+    P.metal.push([new THREE.CircleGeometry(0.017, segments(24)), [0, 0, 0.1302], [0, 0, 0], [1, 0.8, 1]]);
     return P;
   },
 };
@@ -156,8 +157,8 @@ const HULLS = {
 const COCKPITS = {
   bubble() {
     const P = { glass: [], metal: [], dark: [] };
-    P.glass.push([new THREE.SphereGeometry(0.022, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), [0, 0, 0], [0, 0, 0], [1, 0.95, 1.1]]);
-    P.metal.push([new THREE.TorusGeometry(0.0222, 0.0022, 10, 48), [0, 0.0005, 0], [Math.PI / 2, 0, 0], [1, 1.1, 1]]);
+    P.glass.push([new THREE.SphereGeometry(0.022, segments(32), segments(16), 0, Math.PI * 2, 0, Math.PI / 2), [0, 0, 0], [0, 0, 0], [1, 0.95, 1.1]]);
+    P.metal.push([new THREE.TorusGeometry(0.0222, 0.0022, segments(10), segments(48)), [0, 0.0005, 0], [Math.PI / 2, 0, 0], [1, 1.1, 1]]);
     P.dark.push([rounded(0.012, 0.008, 0.01, 0.003), [0, 0.004, 0.007]]); // (the seat)
     return P;
   },
@@ -170,7 +171,7 @@ const COCKPITS = {
         { z: 0.05, w: 0.016, h: 0.008, y: -0.001, c: 0.45 },
       ]),
     ]);
-    P.glass.push([new THREE.SphereGeometry(0.014, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), [0, 0.003, 0.004], [0, 0, 0], [0.95, 1, 2.6]]);
+    P.glass.push([new THREE.SphereGeometry(0.014, segments(28), segments(14), 0, Math.PI * 2, 0, Math.PI / 2), [0, 0.003, 0.004], [0, 0, 0], [0.95, 1, 2.6]]);
     P.metal.push([plate([[-0.0012, -0.032], [0.0012, -0.032], [0.0012, 0.04], [-0.0012, 0.04]], 0.0016), [0, 0.0172, 0.004]]);
     return P;
   },
@@ -266,7 +267,7 @@ const WINGS = {
       ),
       [0.064, 0, 0],
     ]);
-    P.dark.push([new THREE.CircleGeometry(0.0062, 20), [0.064, 0, -0.0315], [0, Math.PI, 0]]);
+    P.dark.push([new THREE.CircleGeometry(0.0062, segments(20)), [0.064, 0, -0.0315], [0, Math.PI, 0]]);
     P.trim.push([tube(0.0118, 0.0118, 0.008, 28), [0.064, 0, -0.006], LAY]);
     return P;
   },
@@ -291,9 +292,9 @@ const ENGINE_UNITS = {
         32,
       ),
     ]);
-    for (const z of [0.006, 0.02]) P.dark.push([new THREE.TorusGeometry(0.0167, 0.0016, 8, 32), [0, 0, z]]);
-    P.dark.push([new THREE.CircleGeometry(0.0158, 28), [0, 0, 0.0505]]);
-    P.glow.push([new THREE.CircleGeometry(0.0122, 28), [0, 0, 0.0525]]);
+    for (const z of [0.006, 0.02]) P.dark.push([new THREE.TorusGeometry(0.0167, 0.0016, segments(8), segments(32)), [0, 0, z]]);
+    P.dark.push([new THREE.CircleGeometry(0.0158, segments(28)), [0, 0, 0.0505]]);
+    P.glow.push([new THREE.CircleGeometry(0.0122, segments(28)), [0, 0, 0.0525]]);
     return 0.054;
   },
   quad(P) {
@@ -309,21 +310,21 @@ const ENGINE_UNITS = {
         24,
       ),
     ]);
-    P.dark.push([new THREE.CircleGeometry(0.0098, 20), [0, 0, 0.0305]]);
-    P.glow.push([new THREE.CircleGeometry(0.0078, 20), [0, 0, 0.0325]]);
+    P.dark.push([new THREE.CircleGeometry(0.0098, segments(20)), [0, 0, 0.0305]]);
+    P.glow.push([new THREE.CircleGeometry(0.0078, segments(20)), [0, 0, 0.0325]]);
     return 0.034;
   },
   // a ring of portal fluid round a burning core, held off the hull by four struts
   ring(P) {
     P.metal.push([turned([[0.008, -0.016], [0.013, -0.008], [0.013, 0.02], [0.009, 0.03]], 28)]);
-    P.metal.push([new THREE.TorusGeometry(0.03, 0.0055, 14, 64), [0, 0, 0.024]]);
-    P.trim.push([new THREE.TorusGeometry(0.03, 0.0058, 14, 64, Math.PI * 2), [0, 0, 0.024], [0, 0, 0], [1, 1, 0.45]]);
+    P.metal.push([new THREE.TorusGeometry(0.03, 0.0055, segments(14), segments(64)), [0, 0, 0.024]]);
+    P.trim.push([new THREE.TorusGeometry(0.03, 0.0058, segments(14), segments(64), Math.PI * 2), [0, 0, 0.024], [0, 0, 0], [1, 1, 0.45]]);
     for (let i = 0; i < 4; i++) {
       const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
       P.dark.push([new THREE.BoxGeometry(0.0025, 0.022, 0.006), [Math.cos(a) * 0.02, Math.sin(a) * 0.02, 0.016], [0, 0, a - Math.PI / 2]]);
     }
-    P.glow.push([new THREE.CircleGeometry(0.0255, 40), [0, 0, 0.0245]]);
-    P.glow.push([new THREE.CircleGeometry(0.0095, 24), [0, 0, 0.0305]]);
+    P.glow.push([new THREE.CircleGeometry(0.0255, segments(40)), [0, 0, 0.0245]]);
+    P.glow.push([new THREE.CircleGeometry(0.0095, segments(24)), [0, 0, 0.0305]]);
     return 0.031;
   },
 };
@@ -365,7 +366,7 @@ const EXTRAS = {
     const P = { dark: [], metal: [], red: [] };
     P.dark.push([tube(0.004, 0.003, 0.004, 16), [0, 0.002, 0]]);
     P.metal.push([tube(0.0009, 0.0005, 0.07, 8), [0, 0.037, 0.004], [-0.12, 0, 0]]);
-    P.red.push([new THREE.SphereGeometry(0.0022, 12, 8), [0, 0.072, 0.0125]]);
+    P.red.push([new THREE.SphereGeometry(0.0022, segments(12), segments(8)), [0, 0.072, 0.0125]]);
     return P;
   },
   dish() {
@@ -379,8 +380,8 @@ const EXTRAS = {
 // the radar dish, on its own so it can turn
 function dishMesh(mat) {
   const g = merge([
-    [new THREE.SphereGeometry(0.02, 28, 10, 0, Math.PI * 2, 0, 0.75), [0, -0.0145, 0], [0, 0, 0], [1, 1, 1]],
-    [new THREE.SphereGeometry(0.0198, 28, 10, 0, Math.PI * 2, 0, 0.75), [0, -0.0143, 0], [Math.PI, 0, 0], [1, -1, 1]],
+    [new THREE.SphereGeometry(0.02, segments(28), segments(10), 0, Math.PI * 2, 0, 0.75), [0, -0.0145, 0], [0, 0, 0], [1, 1, 1]],
+    [new THREE.SphereGeometry(0.0198, segments(28), segments(10), 0, Math.PI * 2, 0, 0.75), [0, -0.0143, 0], [Math.PI, 0, 0], [1, -1, 1]],
     [tube(0.0008, 0.0008, 0.016, 8), [0, 0.006, 0]],
   ]);
   const m = new THREE.Mesh(g, mat);
@@ -396,11 +397,12 @@ function makeMaterials(maps, glowColor) {
   const std = (o) => new THREE.MeshStandardMaterial(o);
   const skin = maps ? { map: maps.map, normalMap: maps.normalMap, normalScale: new THREE.Vector2(0.55, 0.55), roughnessMap: maps.roughnessMap } : {};
   const M = {
-    paint: std({ color: '#ffffff', ...skin, roughness: 0.6, metalness: 0.2 }),
-    trim: std({ color: '#d9661f', ...(maps ? { map: maps.map } : {}), roughness: 0.5, metalness: 0.15 }),
+    // (at ultra, lib/detail, the paint wears a thin clear coat and the canopy a crisp one)
+    paint: paintMaterial({ color: '#ffffff', ...skin, roughness: 0.6, metalness: 0.2 }),
+    trim: paintMaterial({ color: '#d9661f', ...(maps ? { map: maps.map } : {}), roughness: 0.5, metalness: 0.15 }),
     dark: std({ color: '#1d2025', roughness: 0.45, metalness: 0.6 }),
     metal: std({ color: '#5a6069', roughness: 0.34, metalness: 0.8 }),
-    glass: std({ color: '#8fd0f0', emissive: '#0b3a52', roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.55, envMapIntensity: 1.8, depthWrite: false }),
+    glass: glassMaterial({ color: '#8fd0f0', emissive: '#0b3a52', roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.55, envMapIntensity: 1.8, depthWrite: false }),
     glow: new THREE.MeshBasicMaterial({ color: glowColor, toneMapped: false, side: THREE.DoubleSide }),
     lamp: new THREE.MeshBasicMaterial({ color: '#fff6d8', toneMapped: false }),
     red: new THREE.MeshBasicMaterial({ color: '#ff3b2e', toneMapped: false }),
@@ -468,8 +470,8 @@ export function assemble(raw = STOCK_BUILD, { maps = null } = {}) {
   const tip = moduleById('wings', build.wings).sockets.tip;
   if (build.extras === 'lights') {
     const tipAt = [wx + tip[0], wy + tip[1], wz + tip[2]];
-    bins.green.push([new THREE.SphereGeometry(0.0034, 12, 8).toNonIndexed().translate(...tipAt)]);
-    bins.red.push([new THREE.SphereGeometry(0.0034, 12, 8).toNonIndexed().translate(-tipAt[0], tipAt[1], tipAt[2])]);
+    bins.green.push([new THREE.SphereGeometry(0.0034, segments(12), segments(8)).toNonIndexed().translate(...tipAt)]);
+    bins.red.push([new THREE.SphereGeometry(0.0034, segments(12), segments(8)).toNonIndexed().translate(-tipAt[0], tipAt[1], tipAt[2])]);
   }
 
   const group = new THREE.Group();

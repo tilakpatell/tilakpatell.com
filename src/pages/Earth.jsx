@@ -25,7 +25,7 @@ const KEYS = [
   ['Esc', 'Take the controls back from the autopilot'],
   ['M (Start)', 'Up to orbit, and back down'],
   ['P (Y)', 'The passport, with the flight log'],
-  ['N', 'The sun where it really is now, or always over your shoulder'],
+  ['N', 'The sun where it is now, or always over your shoulder'],
 ];
 
 export default function Earth() {
@@ -96,8 +96,8 @@ export default function Earth() {
             <h2 id="earth-keys-title" className="title">
               Flying it
             </h2>
-            <p className="lead mt-4 max-w-[54ch]">A little plane, a long way up. It follows great circles, so the way to Europe heads north-east first; the autopilot does the same, and slows down to turn.</p>
-            <p className="mt-4 max-w-[60ch] leading-relaxed text-body">The flight log keeps the trail you’ve flown and draws the route home to every place you’ve stamped. The distance adds up over every visit, and once it comes to the Earth’s circumference, that’s an achievement.</p>
+            <p className="lead mt-4 max-w-[54ch]">A little plane, a long way up. It follows great circles, so the way to Europe heads north-east first; the autopilot does the same, and slows to turn.</p>
+            <p className="mt-4 max-w-[60ch] leading-relaxed text-body">The flight log keeps your trail and draws the route home to every place you’ve stamped. Distance adds up across visits; one Earth circumference is an achievement.</p>
           </div>
           <table className="guide-keys earth-keys">
             <tbody>
@@ -120,20 +120,20 @@ export default function Earth() {
             <h2 id="earth-how-title" className="title">
               The globe
             </h2>
-            <p className="lead mt-4 max-w-[54ch]">The sun is where it really is as you read this, so the night side is the real night side, lit by its cities.</p>
+            <p className="lead mt-4 max-w-[54ch]">The sun is where it is as you read this, so the night side is the real one, lit by its cities.</p>
           </div>
           <ul className="earth-facts">
             <li>
               <b>The day side</b> is NASA’s Blue Marble for July, with the shape of the sea floor, 8,192 pixels round on a big screen. The land’s height tilts the sunlight, so mountains cast their own shade at dawn and dusk.
             </li>
             <li>
-              <b>The night side</b> is NASA’s Black Marble, the lights of 2016. The sea catches the sun where it is open water, and the clouds cast shadows a little off to one side of themselves.
+              <b>The night side</b> is NASA’s Black Marble, the lights of 2016. The sea catches the sun on open water, and the clouds cast shadows offset to one side.
             </li>
             <li>
-              <b>The air</b> is worked out for every pixel of sky: how much of it you are looking through, and how much sunlight is on it. That makes it a thin blue rim from orbit and a sky from down low, orange at dusk.
+              <b>The air</b> is worked out per pixel: how much air you look through, and how much sun is on it. A thin blue rim from orbit, a sky from down low, orange at dusk.
             </li>
             <li>
-              <b>The flying</b> follows great circles, the way real routes do, so the way to Europe heads north-east first. The autopilot takes the same course.
+              <b>The flying</b> follows great circles, like real routes, so the way to Europe heads north-east first. The autopilot takes the same course.
             </li>
           </ul>
         </div>

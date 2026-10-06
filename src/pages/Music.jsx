@@ -271,19 +271,30 @@ function Listen() {
   const [listening, setListening] = useState(false);
   const [progress, setProgress] = useState(0);
   const el = useRef(null);
-  useEffect(() => () => el.current?.pause(), []);
+  useEffect(
+    () => () => {
+      const a = el.current;
+      if (!a) return;
+      el.current = null;
+      a.pause();
+      a.onplay = a.onpause = a.onended = a.ontimeupdate = null;
+      a.removeAttribute('src');
+      a.load(); // drops the buffered audio and any download still in flight
+    },
+    [],
+  );
   const toggle = () => {
     let a = el.current;
     if (!a) {
       a = new Audio(LISTEN_URL);
       a.preload = 'auto';
-      a.addEventListener('timeupdate', () => setProgress(a.duration ? a.currentTime / a.duration : 0));
-      a.addEventListener('ended', () => {
+      a.ontimeupdate = () => setProgress(a.duration ? a.currentTime / a.duration : 0);
+      a.onended = () => {
         setListening(false);
         setProgress(0);
-      });
-      a.addEventListener('pause', () => setListening(false));
-      a.addEventListener('play', () => setListening(true));
+      };
+      a.onpause = () => setListening(false);
+      a.onplay = () => setListening(true);
       el.current = a;
     }
     if (a.paused) a.play().catch(() => {});
@@ -393,7 +404,7 @@ export default function Music() {
               Sa, Sa, and Sa an octave down.
             </p>
             <p className="mt-4 max-w-[60ch] text-[0.95rem] leading-relaxed text-body">
-              Pa is the usual first string. Ragas that leave Pa out, like Malkauns, tune it to Ma instead; ragas built around Ni, like Marwa, tune it to Ni. Its
+              Pa is the usual first string. Ragas without Pa, like Malkauns, tune it to Ma; ragas built around Ni, like Marwa, tune it to Ni. The
               bridge is a wide curve with a thread under each string, which is what makes a tanpura shimmer: the overtones bloom after each pluck instead of
               fading.
             </p>
@@ -430,8 +441,8 @@ export default function Music() {
             Sitar
           </h2>
           <p className="lead mt-4 max-w-[60ch]">
-            Set the frets the way a player ties them on: every swara from mandra Pa to taar Ga, a regular sitar’s Sa to taar Sa, set for Darbari (its Ga
-            and Dha lower, ati komal) or Bhairavi, the raga’s own, or your own. The raga’s notes are lit. Tap a fret to pluck it. Hold and slide along the
+            Set the frets the way a player ties them: every swara from mandra Pa to taar Ga, a regular sitar’s Sa to taar Sa, Darbari’s (Ga
+            and Dha lower, ati komal), Bhairavi’s, the raga’s own, or your own. The raga’s notes are lit. Tap a fret to pluck it. Hold and slide along the
             neck to glide between frets, or pull the string across the fret to bend it: meend.
           </p>
         </div>
@@ -449,18 +460,18 @@ export default function Music() {
             <h3 className="stretch-semi text-xl font-semibold text-ink">Real strokes, on every fret</h3>
             <p className="mt-3">
               Each note is a real sitar: two strokes, the inward Da and the outward Ra, recorded and shifted along the neck so no fret is more than two
-              semitones from a recording, and the jawari’s buzz stays the instrument’s own. Play quickly and the strokes alternate, as the mizrab does. Meend
-              and krintan move the note without a new stroke, the way the left hand pulls and lets go of the string.
+              semitones from a recording, so the jawari’s buzz stays the instrument’s own. Play quickly and the strokes alternate, as the mizrab does. Meend
+              and krintan move the note without a new stroke, as the left hand does.
             </p>
             <p className="mt-3">
               Under the frets run eleven sympathetic strings, the tarab, tuned to the notes of {raga.name}. Nobody plucks them; they ring when a
-              note you play matches one, and you hear them bloom after it, a modelled string with its own jawari for each. They glow on the neck as they ring.
+              note you play matches one, each a modelled string with its own jawari. They glow on the neck as they ring.
             </p>
             <p className="mt-3">
-              Above the main string run the chikari, two high strings tuned to Sa, struck for rhythm. With Auto chikari on, the right hand strikes them by
-              itself in the rests between your notes: in your own pulse when you play alone, on the tabla’s beat when it keeps a taal (hardest on sam), and
-              never on top of a note, a slide or a meend. When your notes come evenly, it leaves the next one its beat. Set a speed of your own under the
-              neck (with the tabla it keeps to the nearest division of the beat), and how hard it’s struck. Hold Space, or hold the Chikari button, and it
+              Above the main string run the chikari, two high strings tuned to Sa, struck for rhythm. With Auto chikari on, the right hand strikes them
+              in the rests between your notes: in your own pulse when you play alone, on the tabla’s beat when it keeps a taal (hardest on sam), and
+              never over a note, a slide or a meend. Set its speed under the
+              neck (with the tabla it keeps to the nearest division of the beat), and how hard it’s struck. Hold Space, or the Chikari button, and it
               rolls on at that speed; play frets over it for a jhala.
             </p>
             <p className="mt-3">
@@ -528,7 +539,7 @@ export default function Music() {
               Tabla
             </h2>
             <p className="lead mt-4 max-w-[56ch]">
-              Every stroke has a name, a bol, and every taal is a cycle of them. These are real strokes, the right drum retuned to Sa and the left to Sa or Pa below it, so they play in tune with the tanpura.
+              Every stroke has a name, a bol, and every taal is a cycle of them. These are real strokes, the right drum tuned to Sa and the left to Sa or Pa below, in tune with the tanpura.
             </p>
           </div>
           <figure className="music-photo music-photo-wide m-0">

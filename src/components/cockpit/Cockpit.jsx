@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RiArrowRightLine } from 'react-icons/ri';
-import { local } from '../../lib/hooks';
+import { local, useReducedMotion } from '../../lib/hooks';
+import { playFile } from '../../lib/clips';
+import { useMouth } from '../../lib/mouth';
+import { preloadVoiced, voicedSrc } from '../../lib/voiced';
 import { SHIP_KEY, parseShip } from '../universe/crews';
 import { audioContext } from '../../lib/audio';
 import Hyperspace from '../Hyperspace';
@@ -68,16 +71,23 @@ export default function Cockpit({ start, onPeak, onDone }) {
     };
   }, [scene, fallback, id]);
 
-  // a line from the crew, under the picture for a few seconds (and its
-  // recording, where there is one)
+  // a line from the crew, under the picture for a few seconds, in their own
+  // voice: the recording where there is one, the line made in their voice
+  // where that's been generated (lib/voiced.js), else the universe's blips
   const say = useCallback((l) => {
     if (!l) return;
     const [who, text, clip] = l;
     setLine({ who, text, key: Math.random() });
-    if (clip) sayClip(clip);
-    else if (who === 'r2') artoo();
-    else speak(who, text); // the universe's voices for those who have one
+    (async () => {
+      if (clip && (await sayClip(clip))) return;
+      if (who === 'r2') return artoo();
+      const src = await voicedSrc(who, text);
+      if (!(src && (await playFile(src, { keep: true, voice: true })))) speak(who, text);
+    })();
   }, []);
+  useEffect(preloadVoiced, []);
+  const lineBox = useRef(null);
+  useMouth(lineBox, Boolean(line?.who), useReducedMotion());
   useEffect(() => {
     if (!line) return undefined;
     const t = setTimeout(() => setLine(null), 4200);
@@ -295,7 +305,7 @@ export default function Cockpit({ start, onPeak, onDone }) {
           </button>
         </header>
 
-        <p className="cockpit-line" aria-live="polite">
+        <p ref={lineBox} className="cockpit-line" aria-live="polite">
           {line && (
             <span key={line.key} className="cockpit-line-in">
               {line.who && <Face who={line.who} className="cockpit-face" />}

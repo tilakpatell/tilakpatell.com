@@ -2245,9 +2245,11 @@ export async function create(canvas, ctx) {
       const wd = place ? null : wonderById(goal.id);
       const at = place ? POSITIONS[goal.id] : wd.at;
       toScreen(at[0], at[1], at[2], hudAt);
-      const reach = place ? REACH[goal.id] : reachOf(wd);
+      // (the Citadel gone, the diamond is round where its core was, not round the empty reach of its arms)
+      const reach = place ? REACH[goal.id] : wd.id === 'citadel' && siegeSt.down && citadelGeo ? citadelGeo.core * 0.5 : reachOf(wd);
       const px = hudAt.z > 0 ? (reach / (hudAt.z * tanHalf)) * (size.h / 2) * 2.2 : 0;
-      placeMark(h.nav, hudAt, clamp(px, 34, 260));
+      // no bigger than a quarter of the frame's height: close in, the place itself shows the way
+      placeMark(h.nav, hudAt, clamp(px, 34, Math.min(260, size.h * 0.25)));
       h.nav.toggleAttribute('data-way', goal.way);
       setText(h, h.navName, place ? place.label : wd.name);
       setText(h, h.navDist, range(apart(at[0], at[1], at[2], s.x, s.y, s.z)));

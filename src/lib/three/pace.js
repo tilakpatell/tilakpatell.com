@@ -17,13 +17,22 @@
 // on battery capped at 30, and the first wants helping straight away; the
 // second, at worst, is drawn a little softer for its first half a minute.
 //
-// createPace({ steps, window, missed, settle, wait, longest }) →
+// At its softest with frames still late for `floorRuns` runs in a row (a
+// few seconds), it calls `onFloor` once: by default lib/detail's
+// `strained`, which holds a strong graphics card at the high detail level
+// from then on, since ultra's textures and geometry turned out to be more
+// than this machine could carry.
+//
+// createPace({ steps, window, missed, settle, wait, longest, floorRuns, onFloor }) →
 //   { frame(now) → the new scale when it changes, else null, scale, level, reset() }
 // `now` is the frame's timestamp (ms); the scale is one of `steps`, sharpest first.
 
+import { strained } from '../detail';
+
 export const STEPS = [1, 0.85, 0.72, 0.6, 0.5];
 
-export function createPace({ steps = STEPS, window = 20, missed: tooMany = 0.25, settle = 600, wait = 4000, longest = 60000 } = {}) {
+export function createPace({ steps = STEPS, window = 20, missed: tooMany = 0.25, settle = 600, wait = 4000, longest = 60000, floorRuns = 5, onFloor = strained } = {}) {
+  let stuck = 0; // runs at the last step with frames still late (floorRuns once told)
   let level = 0;
   let last = 0;
   let beat = 1000 / 60; // the display's own, as read from the frames
@@ -80,13 +89,21 @@ export function createPace({ steps = STEPS, window = 20, missed: tooMany = 0.25,
       runStart = now;
       if (share >= tooMany) {
         clean = 0;
-        if (level >= steps.length - 1 || now - changedAt < settle) return null;
+        if (level >= steps.length - 1) {
+          // as soft as it goes and still late: say so, once (lib/detail
+          // holds a strong graphics card back at high next time)
+          stuck += 1;
+          if (stuck === floorRuns) onFloor?.();
+          return null;
+        }
+        if (now - changedAt < settle) return null;
         // straight back down after going up: wait longer next time
         if (now - upAt < 5000) hold = Math.min(longest, hold * 2);
         level += 1;
         changedAt = now;
         return steps[level];
       }
+      if (stuck < floorRuns) stuck = 0;
       if (share > 0) {
         clean = 0;
         return null;

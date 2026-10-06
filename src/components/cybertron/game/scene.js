@@ -24,6 +24,7 @@ const STAGES = {
   iacon: () => import('./stage/iacon'),
   base: () => import('./stage/base'),
   jasper: () => import('./stage/jasper'),
+  kaon: () => import('./stage/kaon'),
 };
 const plainStage = () => import('./stage/plain');
 
@@ -65,6 +66,12 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
   let people = new Map(); // id → figure
   const foes = new Map(); // id → { figure, boomed }
   const matrixModel = { object: null, loading: null }; // (the Matrix, once a mission puts it down)
+  let shake = 0;
+  // the hero's light: a soft key from over the camera's shoulder, so the
+  // one you play reads against a city at night, as a third-person game lights him
+  const heroLight = tier === 'low' ? null : new THREE.PointLight('#e6eeff', 0, 46, 1.4);
+  if (heroLight) scene.add(heroLight);
+  const muzzleAt = new THREE.Vector3();
   const player = { root: new THREE.Group(), robot: null, vehicle: null, forms: { robot: null, vehicle: null }, change: null, kinds: null };
   scene.add(player.root);
   // the mission's beacon: a column of light where you're meant to go
@@ -112,13 +119,18 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     player.kinds = `${robotKind}/${vehicleKind}`;
     for (const o of [player.robot?.group, player.vehicle]) if (o) player.root.remove(o);
     player.robot?.dispose();
-    const [robot, vehicle] = await Promise.all([makeFigure(robotKind, { shadows: renderer.shadowMap.enabled }), makeThing(vehicleKind, { shadows: renderer.shadowMap.enabled })]);
+    const [robot, vehicle] = await Promise.all([makeFigure(robotKind, { shadows: renderer.shadowMap.enabled }), vehicleKind ? makeThing(vehicleKind, { shadows: renderer.shadowMap.enabled }) : null]);
     player.robot = robot;
     player.vehicle = vehicle;
-    player.root.add(robot.group, vehicle);
+    for (const o of [robot.group, vehicle]) o?.traverse((m) => m.isMesh && m.material && 'envMapIntensity' in m.material && (m.material.envMapIntensity = 1.3));
+    player.forms = { robot: null, vehicle: null };
+    player.root.add(robot.group);
+    robot.update(0.016);
+    // (a robot whose own model changes, Megatron, needs no chunks: his clip)
+    if (!vehicle || robot.spec?.clips?.toVehicle) return;
+    player.root.add(vehicle);
     vehicle.visible = false;
     // the chunks: the truck's once and for all, the robot's from how he stands
-    robot.update(0.016);
     const n = tier === 'low' ? 30 : 48;
     const vParts = bake(vehicle, vehicle);
     player.forms.vehicle = { parts: vParts, ...cluster(vParts, n, 2), kind: 'vehicle' };
@@ -137,6 +149,7 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
       // (the metal shines with the room it's in: dim at night in Iacon)
       scene.environmentIntensity = look.env ?? 0.45;
       scene.background = new THREE.Color(fog[0]);
+      effects.energon(look.energon);
       const make = (STAGES[area.id] ?? plainStage)();
       const [mod] = await Promise.all([make, loadPlayer(area.player.robot, area.player.vehicle)]);
       if (my !== generation) return;
@@ -198,6 +211,10 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
   // the change from one form to the other, as it happens
   const startChange = (to) => {
     const { robot, vehicle, forms } = player;
+    if (robot?.spec?.clips?.toVehicle && robot.hold) {
+      player.change = { clip: true, to };
+      return;
+    }
     if (!robot || !forms.robot || !forms.vehicle) return;
     // the robot as he stands right now, cut where he was cut before
     const rParts = bake(robot.group, robot.group);
@@ -212,10 +229,16 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     vehicle.visible = false;
   };
   const endChange = (mode) => {
-    if (player.change) {
+    if (player.change && !player.change.clip) {
       player.root.remove(player.change.t.group);
       player.change.t.dispose();
-      player.change = null;
+    }
+    player.change = null;
+    if (player.robot?.spec?.clips?.toVehicle) {
+      // (his own model, either way: held at its vehicle, or let go to stand)
+      player.robot.group.visible = true;
+      if (mode === 'robot') player.robot.release?.();
+      return;
     }
     if (player.robot) player.robot.group.visible = mode === 'robot';
     if (player.vehicle) player.vehicle.visible = mode === 'vehicle';
@@ -278,6 +301,17 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     cam.fov += (c.fov + speedFov - cam.fov) * Math.min(1, dt * 4);
     camera.position.copy(cam.pos);
     camera.lookAt(cam.look);
+    if (heroLight) {
+      heroLight.position.copy(cam.pos).lerp(player.root.position, 0.55);
+      heroLight.position.y += 5;
+      heroLight.intensity = sim.area.look?.hero ?? 260;
+    }
+    // (a jolt: hits taken, rams, Decepticons going up close by)
+    if (shake > 0.001) {
+      camera.position.x += (Math.random() - 0.5) * shake;
+      camera.position.y += (Math.random() - 0.5) * shake;
+      shake *= Math.exp(-dt * 9);
+    }
     if (Math.abs(camera.fov - cam.fov) > 0.01) {
       camera.fov = cam.fov;
       camera.updateProjectionMatrix();
@@ -301,7 +335,21 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     player.root.position.set(p.x, p.y, p.z);
     player.root.rotation.y = p.yaw;
     if (p.shifting > 0 && !player.change && player.robot) startChange(p.shiftTo);
-    if (player.change) {
+    const clips = player.robot?.spec?.clips?.toVehicle ? player.robot.spec.clips : null;
+    if (player.change?.clip) {
+      // Megatron changing on his own clip, a little quicker than it plays
+      const k = 1 - p.shifting / TRANSFORM.time;
+      const [a, b] = player.change.to === 'vehicle' ? clips.toVehicle : clips.toRobot;
+      player.robot.hold(clips.transform, a + (b - a) * Math.min(1, k));
+      if (Math.random() < dt * 20) effects.spark(p.x + (Math.random() - 0.5) * 7, p.y + Math.random() * 9, p.z + (Math.random() - 0.5) * 7);
+      if (!p.shifting) endChange(p.mode);
+    } else if (clips) {
+      player.robot.group.visible = true;
+      // (a tank while he's one; on his feet otherwise, whatever left him
+      // held: getting up after going down in it, or a bridge crossed)
+      if (p.mode === 'vehicle') player.robot.hold(clips.transform, clips.vehicle);
+      else player.robot.release();
+    } else if (player.change) {
       const k = 1 - p.shifting / TRANSFORM.time;
       player.change.t.set(k);
       if (Math.random() < 0.5) {
@@ -325,11 +373,12 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
       player.robot.play(state, { speed, aim: aiming ? [Math.sin(rel), Math.sin(view.pitch) + 0.05, Math.cos(rel)] : null });
       player.robot.update(dt);
     }
-    if (player.vehicle && p.mode === 'vehicle') {
-      // the truck leans into a slide and squats as it pulls away
-      player.vehicle.rotation.z = Math.max(-0.08, Math.min(0.08, -p.slide * 0.01 - p.steer * Math.min(1, Math.abs(p.speed) / 30) * 0.05));
-      player.vehicle.rotation.x = Math.max(-0.04, Math.min(0.04, -(view.throttle ?? 0) * 0.02));
-    }
+    const ride = clips ? player.robot?.group : player.vehicle;
+    if (ride && p.mode === 'vehicle' && !player.change) {
+      // the truck (or the tank) leans into a slide and squats as it pulls away
+      ride.rotation.z = Math.max(-0.08, Math.min(0.08, -p.slide * 0.01 - p.steer * Math.min(1, Math.abs(p.speed) / 30) * 0.05));
+      ride.rotation.x = Math.max(-0.04, Math.min(0.04, -(view.throttle ?? 0) * 0.02));
+    } else if (clips && player.robot) player.robot.group.rotation.set(0, 0, 0);
     // the Autobots, turning to look at him when he's near
     if (stage) {
       for (const [id, f] of people) {
@@ -379,7 +428,8 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
         }
         f.play('dead');
         f.group.visible = (e.gone ?? 0) < 3;
-      } else f.play(e.state === 'advance' ? 'walk' : 'walk', { speed: e.state === 'advance' ? 6 : 3.6, aim: [0, 0.05, 1] });
+      } else if ((entry.flinch = Math.max(0, (entry.flinch ?? 0) - dt)) > 0) f.play('hurt');
+      else f.play('walk', { speed: e.state === 'advance' ? 6 : 3.6, aim: [0, 0.05, 1] });
       f.update(dt);
     }
     for (const [id, entry] of foes) {
@@ -463,8 +513,18 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     // what just happened, as light
     events(list) {
       for (const e of list) {
-        if (e.type === 'hit') effects.hit(e.x, e.y, e.z, true);
-        else if (e.type === 'hitMe') effects.hit(e.x, e.y, e.z, false);
+        if (e.type === 'hit') {
+          effects.hit(e.x, e.y, e.z, true);
+          // (the one hit flinches)
+          const foe = foes.get(e.id);
+          if (foe) foe.flinch = 0.22;
+        }
+        else if (e.type === 'hitMe') {
+          effects.hit(e.x, e.y, e.z, false);
+          shake = Math.max(shake, 0.6);
+        } else if (e.type === 'ram') shake = Math.max(shake, 1.6);
+        else if (e.type === 'kill') shake = Math.max(shake, e.boss ? 2.4 : 0.5);
+        else if (e.type === 'fire' && e.mode === 'robot') for (const sh of e.shots) effects.spark(sh.x, sh.y, sh.z); // the muzzle's flash
         else if (e.type === 'pickup') effects.boom(e.x, (e.y ?? 0) + 1, e.z, 2.5);
       }
     },
@@ -476,11 +536,17 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
       camera.updateProjectionMatrix();
     },
     precompile: () => precompile(renderer, scene, camera),
+    // the gun's muzzle as the robot holds it now (for where his shots start)
+    muzzle: () => (player.robot?.group.visible && player.robot.muzzle?.(muzzleAt) ? [muzzleAt.x, muzzleAt.y, muzzleAt.z] : null),
     info: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, area: areaId }),
     dispose() {
       generation++;
       clearArea();
       endChange('robot');
+      if (matrixModel.object) {
+        scene.remove(matrixModel.object);
+        matrixModel.object.traverse((o) => o.isMesh && o.material?.dispose?.());
+      }
       player.robot?.dispose();
       effects.dispose();
       beaconGeo.dispose();

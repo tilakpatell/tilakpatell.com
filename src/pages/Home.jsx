@@ -346,7 +346,7 @@ export default function Home() {
           <h2 id="closing-title" className="display max-w-4xl text-[clamp(2.3rem,1.3rem+3.8vw,4.8rem)]">
             Hiring a TPM or a software engineer?
           </h2>
-          <p className="lead mt-6 max-w-2xl">I graduate in May 2027 and I’m looking for technical program management and software engineering roles. Email is the fastest way to reach me.</p>
+          <p className="lead mt-6 max-w-2xl">I graduate in May 2027 and I’m looking for technical program management and software engineering roles. Email is fastest.</p>
           <div className="mt-9 flex flex-wrap gap-3">
             <a className="btn btn-primary btn-lg" href={`mailto:${profile.email}`}>
               <RiMailLine className="h-4 w-4" aria-hidden="true" /> Email me

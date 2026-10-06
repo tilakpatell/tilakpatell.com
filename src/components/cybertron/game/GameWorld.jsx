@@ -40,14 +40,21 @@ const KEYS = {
   KeyM: 'missions',
 };
 
-export default function GameWorld({ fallback = null }) {
+export default function GameWorld({ fallback = null, side = 'autobot' }) {
   const three = use3D();
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
   const world = three.on && gl !== 'failed' && gl !== 'lost';
-  return world ? <World gl={gl} setGl={setGl} /> : fallback;
+  return world ? <World gl={gl} setGl={setGl} side={side} /> : fallback;
 }
 
-function World({ gl, setGl }) {
+// where each side's campaign is played, and who you are there
+const SIDES = {
+  autobot: { area: 'iacon', name: 'Optimus', title: 'Roll out, Optimus', lede: 'Walk Iacon at war as Optimus Prime, transform and drive, hold the line against the Decepticons, and bridge to Team Prime’s base on Earth.' },
+  decepticon: { area: 'kaon', name: 'Megatron', title: 'Decepticons, attack', lede: 'Rule Kaon as Megatron: fight in the pits, fuel the war machine, run the Autobots down in your tank and break Zeta Prime at your fortress’s gate.' },
+};
+const sideOf = (areaId) => (AREAS[areaId]?.side === 'decepticon' ? 'decepticon' : 'autobot');
+
+function World({ gl, setGl, side }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.2 });
   const canvas = useRef(null);
@@ -57,7 +64,8 @@ function World({ gl, setGl }) {
   const kept = useRef(local.get(KEPT, null) ?? {});
   const sim = useRef(null);
   if (!sim.current) {
-    const area = AREAS[kept.current.area] ? kept.current.area : 'iacon';
+    // (where you were, or your side's capital the first time)
+    const area = AREAS[kept.current.area] ? kept.current.area : SIDES[side]?.area ?? 'iacon';
     sim.current = createSim({ area, done: Array.isArray(kept.current.done) ? kept.current.done.filter((d) => typeof d === 'string') : [] });
   }
   const ctl = useRef({ held: new Set(), edges: new Set(), view: { yaw: 0, pitch: -0.12, zoom: 1, firing: false }, lastLook: -1e9, mouseFire: false, stick: { x: 0, y: 0 }, look: null, pad: null });
@@ -65,6 +73,17 @@ function World({ gl, setGl }) {
   const [playing, setPlaying] = useState(() => import.meta.env.DEV && typeof location !== 'undefined' && location.hash.includes('autoplay'));
   const [hud, setHud] = useState(() => sim.current.hud());
   const hudKey = useRef('');
+  const playingSide = sideOf(sim.current.area.id);
+  // (the crosshair's tick when a shot lands, the screen's red edge when hit:
+  // straight on the elements, every frame they happen, not through React)
+  const crossEl = useRef(null);
+  const hurtEl = useRef(null);
+  const flash = (el, cls) => {
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth; // (restarts the animation)
+    el.classList.add(cls);
+  };
   const [toast, setToast] = useState(null);
   const [fade, setFade] = useState(null); // a bridge crossed: its colour while the next place loads
   const [list, setList] = useState(false);
@@ -225,13 +244,13 @@ function World({ gl, setGl }) {
       crossing.current = true;
       const s = sim.current;
       sounds.current?.bridge();
-      setFade(to === 'iacon' || s.area.id === 'iacon' ? 'space' : 'ground');
+      setFade(to === 'iacon' || to === 'kaon' || s.area.id === 'iacon' || s.area.id === 'kaon' ? 'space' : 'ground');
       await new Promise((r) => setTimeout(r, 650));
       s.enter(to, at);
       ctl.current.view.yaw = s.player.yaw;
       save();
       await api.current?.setArea(s.area);
-      setToast({ title: s.area.name, text: to === 'iacon' ? 'Iacon, in the last days of the war' : to === 'base' ? 'Omega One, outside Jasper, Nevada' : 'The desert outside Jasper' });
+      setToast({ title: s.area.name, text: { iacon: 'Iacon, in the last days of the war', kaon: 'Kaon, the Decepticons’ capital', base: 'Omega One, outside Jasper, Nevada' }[to] ?? 'The desert outside Jasper' });
       setFade(null);
       crossing.current = false;
     },
@@ -310,6 +329,7 @@ function World({ gl, setGl }) {
         use: false,
         aimYaw: c.view.yaw,
         aimPitch: c.view.pitch + 0.08,
+        muzzle: api.current?.muzzle?.() ?? null,
       };
       c.touchJump = false;
       c.touchShift = false;
@@ -327,7 +347,11 @@ function World({ gl, setGl }) {
         else if (e.type === 'enemyFire') e.heavy ? snd?.boom(false) : snd?.blaster(false);
         else if (e.type === 'enemyShift') snd?.transform();
         else if (e.type === 'ram') snd?.boom(false);
-        else if (e.type === 'hit' || e.type === 'hitMe') snd?.hit();
+        else if (e.type === 'hit' || e.type === 'hitMe') {
+          snd?.hit();
+          if (e.type === 'hit') flash(crossEl.current, 'cyw-hitmark');
+          else flash(hurtEl.current, 'cyw-hurt-on');
+        }
         else if (e.type === 'kill') snd?.boom(e.boss);
         else if (e.type === 'transform') snd?.transform();
         else if (e.type === 'pickup') snd?.pickup();
@@ -382,7 +406,7 @@ function World({ gl, setGl }) {
   const lookRef = useRef(null);
 
   return (
-    <section ref={box} className="cyw" data-playing={playing ? '' : undefined} aria-label="Cybertron: walk and drive as Optimus Prime">
+    <section ref={box} className="cyw" data-playing={playing ? '' : undefined} aria-label={`Cybertron: walk and drive as ${SIDES[playingSide].name}`}>
       <canvas ref={canvas} className="cyw-canvas" tabIndex={-1} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onContextMenu={(e) => e.preventDefault()} />
       {gl !== 'on' && (
         <div className="cyw-loading" role="status">
@@ -393,8 +417,15 @@ function World({ gl, setGl }) {
       {gl === 'on' && !playing && (
         <div className="cyw-start">
           <p className="cyw-kicker">{hud.area}</p>
-          <h2 className="cyw-title">Roll out, Optimus</h2>
-          <p className="cyw-lede">Walk Iacon at war as Optimus Prime, transform and drive, hold the line against the Decepticons, and bridge to Team Prime&rsquo;s base on Earth.</p>
+          <h2 className="cyw-title">{SIDES[playingSide].title}</h2>
+          <p className="cyw-lede">{SIDES[playingSide].lede}</p>
+          <div className="cyw-sides" role="group" aria-label="Who you play">
+            {Object.entries(SIDES).map(([id, s]) => (
+              <button key={id} type="button" className="cyw-side" data-side={id} aria-pressed={playingSide === id} onClick={() => playingSide !== id && cross(s.area, 'start')}>
+                {s.name} <span>· {AREAS[s.area].name}</span>
+              </button>
+            ))}
+          </div>
           <button type="button" className="btn btn-primary" onClick={startPlaying}>
             {touch ? 'Play' : 'Click to play'}
           </button>
@@ -468,7 +499,8 @@ function World({ gl, setGl }) {
               </div>
             </div>
           )}
-          {playing && hud.mode === 'robot' && <span className="cyw-cross" aria-hidden="true" />}
+          {playing && hud.mode === 'robot' && <span ref={crossEl} className="cyw-cross" aria-hidden="true" />}
+          <div ref={hurtEl} className="cyw-hurt" aria-hidden="true" />
           {playing && prompt && <p className="cyw-prompt">{prompt}</p>}
           {hud.talk && (
             <div className="cyw-talk">

@@ -100,6 +100,37 @@
       "galaxy"
     ]
   },
+  "crew-leia": {
+    "title": "FN Princess Leia",
+    "author": "fhfhhf",
+    "authorUrl": "https://sketchfab.com/fhfhhf",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/fn-princess-leia-e5efdd35a5e4462cbc013db44e80d31e",
+    "where": "galaxy-surface",
+    "as": "Princess Leia, walking on the worlds",
+    "file": "/models/galaxy/crew/leia.glb",
+    "also": [
+      "galaxy"
+    ],
+    "note": "The author's mesh and textures, rigged on a humanoid skeleton with Meshy (meshy.ai) so it can walk."
+  },
+  "crew-luke": {
+    "title": "FB Luke Skywalker",
+    "author": "fhfhhf",
+    "authorUrl": "https://sketchfab.com/fhfhhf",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/fb-luke-skywalker-84d5ed9497b5435b9a804f956ff74927",
+    "where": "galaxy-surface",
+    "as": "Luke Skywalker, walking on the worlds",
+    "file": "/models/galaxy/crew/luke.glb",
+    "also": [
+      "galaxy",
+      "universe"
+    ],
+    "note": "The author's mesh and textures, rigged on a humanoid skeleton with Meshy (meshy.ai) so it can walk."
+  },
   "cybertron-arcee": {
     "title": "Arcee TFP Rigged",
     "author": "Blender user Srikanth M",
@@ -231,6 +262,17 @@
     "where": "cybertron",
     "as": "Grimlock (Fall of Cybertron)",
     "file": "/models/cybertron/grimlock.glb"
+  },
+  "cybertron-ironhide-foc": {
+    "title": "Transformers: Fall of Cybertron Ironhide",
+    "author": "hafid.quispe",
+    "authorUrl": "https://sketchfab.com/hafid.quispe",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/transformers-fall-of-cybertron-ironhide-bca7d4ec915347aaa1f4dd3ebf0c4b1c",
+    "where": "cybertron",
+    "as": "Ironhide (Fall of Cybertron), raiding Kaon",
+    "file": "/models/cybertron/ironhide-foc.glb"
   },
   "cybertron-jazz": {
     "title": "War for Cybertron: Jazz",
@@ -392,6 +434,17 @@
     "as": "Ratchet (Transformers: Prime)",
     "file": "/models/cybertron/ratchet.glb"
   },
+  "cybertron-ratchet-foc": {
+    "title": "Transformers Fall of Cybertron Ratchet",
+    "author": "hafid.quispe",
+    "authorUrl": "https://sketchfab.com/hafid.quispe",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/transformers-fall-of-cybertron-ratchet-08c5f80bb63040df8280a0bf6ac99b9e",
+    "where": "cybertron",
+    "as": "Ratchet (Fall of Cybertron), raiding Kaon",
+    "file": "/models/cybertron/ratchet-foc.glb"
+  },
   "cybertron-shockwave-foc": {
     "title": "Shockwave  (transformers fall off cybertron)",
     "author": "+\"/",
@@ -402,6 +455,17 @@
     "where": "cybertron",
     "as": "Shockwave (Fall of Cybertron)",
     "file": "/models/cybertron/shockwave-foc.glb"
+  },
+  "cybertron-skywarp-jet": {
+    "title": "Transformers Fall Of Cybertron Skywarp",
+    "author": "hafid.quispe",
+    "authorUrl": "https://sketchfab.com/hafid.quispe",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/transformers-fall-of-cybertron-skywarp-81e1de0e69324c129e4d564759d775be",
+    "where": "cybertron",
+    "as": "Skywarp's jet (Fall of Cybertron), over Kaon",
+    "file": "/models/cybertron/skywarp-jet.glb"
   },
   "cybertron-sniper": {
     "title": "Transformers Fall Of Cybertron Soldiers",
@@ -447,6 +511,28 @@
     "as": "the space bridge",
     "file": "/models/cybertron/space-bridge.glb"
   },
+  "cybertron-starscream-foc": {
+    "title": "Transformers Fall Of Cybertron Starscream",
+    "author": "hafid.quispe",
+    "authorUrl": "https://sketchfab.com/hafid.quispe",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/transformers-fall-of-cybertron-starscream-f35afcf0967a4e1bb9926b4b2866ddc1",
+    "where": "cybertron",
+    "as": "Starscream (Fall of Cybertron), in Kaon",
+    "file": "/models/cybertron/starscream-foc.glb"
+  },
+  "cybertron-thundercracker-jet": {
+    "title": "Transformers Fall Of Cybertron Thundercracker",
+    "author": "hafid.quispe",
+    "authorUrl": "https://sketchfab.com/hafid.quispe",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/transformers-fall-of-cybertron-thundercracker-b639714d67a744339190e264009a134b",
+    "where": "cybertron",
+    "as": "Thundercracker's jet (Fall of Cybertron), over Kaon",
+    "file": "/models/cybertron/thundercracker-jet.glb"
+  },
   "cybertron-trooper": {
     "title": "Transformers Fall Of Cybertron Soldiers",
     "author": "hafid.quispe",
@@ -480,6 +566,17 @@
     "as": "Trypticon (Fall of Cybertron), far off",
     "file": "/models/cybertron/trypticon.glb"
   },
+  "cybertron-ultra-magnus-foc": {
+    "title": "Transformers Fall Of Cybertron Ultra Magnus",
+    "author": "hafid.quispe",
+    "authorUrl": "https://sketchfab.com/hafid.quispe",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/transformers-fall-of-cybertron-ultra-magnus-115e3e99f69c4eae9f25f503c62c7add",
+    "where": "cybertron",
+    "as": "Ultra Magnus (Fall of Cybertron), in Iacon",
+    "file": "/models/cybertron/ultra-magnus-foc.glb"
+  },
   "cybertron-vehicon": {
     "title": "Vehicon",
     "author": "Blender user Srikanth M",
@@ -490,6 +587,17 @@
     "where": "cybertron",
     "as": "the Vehicons (Transformers: Prime)",
     "file": "/models/cybertron/vehicon.glb"
+  },
+  "cybertron-warpath-foc": {
+    "title": "Transformers Fall Of Cybertron Warpath",
+    "author": "hafid.quispe",
+    "authorUrl": "https://sketchfab.com/hafid.quispe",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/transformers-fall-of-cybertron-warpath-45b7d7e247314a3e92df394fc3057d05",
+    "where": "cybertron",
+    "as": "Warpath (Fall of Cybertron), raiding Kaon",
+    "file": "/models/cybertron/warpath-foc.glb"
   },
   "cybertron-wheeljack-car": {
     "title": "Fall of CyberTron: Wheel Jack Vehicle",
@@ -646,6 +754,48 @@
       "galaxy"
     ]
   },
+  "galaxy-ghost": {
+    "title": "Star Wars Rebels: Ghost: VCX-100 (8K Textures)",
+    "author": "CGI Tutorials",
+    "authorUrl": "https://sketchfab.com/cgitutorials",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/star-wars-rebels-ghost-vcx-100-8k-textures-8740b94179ba43a7ac6476973ca0c577",
+    "where": "galaxy",
+    "as": "the Ghost",
+    "file": "/models/galaxy/ghost.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
+  "galaxy-gozanti": {
+    "title": "Star Wars: Gozanti-Class Cruiser",
+    "author": "Daniel",
+    "authorUrl": "https://sketchfab.com/DanielAndersson",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/star-wars-gozanti-class-cruiser-6a587e545b1c48bea95480b49458ac63",
+    "where": "galaxy",
+    "as": "the Gozanti cruisers",
+    "file": "/models/galaxy/gozanti.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
+  "galaxy-lightcruiser": {
+    "title": "Crucero Ligero Imperial Arquitens",
+    "author": "doclusifer2",
+    "authorUrl": "https://sketchfab.com/doclusifer2",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/crucero-ligero-imperial-arquitens-5a5d6adf2e0444d5be94323938f6d329",
+    "where": "galaxy",
+    "as": "Moff Gideon’s light cruisers",
+    "file": "/models/galaxy/lightcruiser.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
   "galaxy-lucrehulk": {
     "title": "Lucrehulk",
     "author": "photon (that one larry)",
@@ -674,6 +824,20 @@
       "galaxy"
     ]
   },
+  "galaxy-munificent": {
+    "title": "Munificent-Class Star Frigate",
+    "author": "A308 Digital",
+    "authorUrl": "https://sketchfab.com/A308",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/munificent-class-star-frigate-44d5db77bb1342e5a6e58c24a0dcb256",
+    "where": "galaxy",
+    "as": "the Munificent frigates",
+    "file": "/models/galaxy/munificent.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
   "galaxy-n1": {
     "title": "Naboo N-1 Starfighter - Star Wars",
     "author": "Quiznos323",
@@ -698,6 +862,90 @@
     "where": "galaxy",
     "as": "the Nebulon-B frigates",
     "file": "/models/galaxy/nebulon.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
+  "galaxy-nubian": {
+    "title": "Naboo Royal Starship (J-type 327 Nubian)",
+    "author": "hobbit84",
+    "authorUrl": "https://sketchfab.com/hobbit84",
+    "license": "CC-BY-NC-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://sketchfab.com/3d-models/naboo-royal-starship-j-type-327-nubian-f631077977754b5591298ecfa201380b",
+    "where": "galaxy",
+    "as": "the Naboo royal starship",
+    "file": "/models/galaxy/nubian.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
+  "galaxy-providence": {
+    "title": "Star Wars: The Clone Wars Providence",
+    "author": "lolqeeeeeeeeee",
+    "authorUrl": "https://sketchfab.com/lolqeeeeeeeeee",
+    "license": "CC-BY-NC-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by-nc/4.0/",
+    "source": "https://sketchfab.com/3d-models/star-wars-the-clone-wars-providence-8d27764a7d254fd7948557daf6d7ccdc",
+    "where": "galaxy",
+    "as": "the Invisible Hand",
+    "file": "/models/galaxy/providence.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
+  "galaxy-shuttle": {
+    "title": "Star Wars: Lambda Shuttle",
+    "author": "Daniel",
+    "authorUrl": "https://sketchfab.com/DanielAndersson",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/star-wars-lambda-shuttle-9d160e16845a4b518a2d30a7c716f20d",
+    "where": "galaxy",
+    "as": "the Imperial shuttles",
+    "file": "/models/galaxy/shuttle.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
+  "galaxy-tie": {
+    "title": "Star Wars: TIE/ln Fighter",
+    "author": "Daniel",
+    "authorUrl": "https://sketchfab.com/DanielAndersson",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/star-wars-tieln-fighter-79d9403f15334c129ea5454daffe6b5c",
+    "where": "galaxy",
+    "as": "the TIE fighters",
+    "file": "/models/galaxy/tie.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
+  "galaxy-tieadvanced": {
+    "title": "Star Wars: TIE/x1 Advanced x1",
+    "author": "Daniel",
+    "authorUrl": "https://sketchfab.com/DanielAndersson",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/star-wars-tiex1-advanced-x1-0b3825de4fa542a893c9f9344b7e5f31",
+    "where": "galaxy",
+    "as": "Vader’s TIE Advanced",
+    "file": "/models/galaxy/tieadvanced.glb",
+    "also": [
+      "galaxy"
+    ]
+  },
+  "galaxy-tiebomber": {
+    "title": "Star Wars: TIE/sa Bomber",
+    "author": "Daniel",
+    "authorUrl": "https://sketchfab.com/DanielAndersson",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+    "source": "https://sketchfab.com/3d-models/star-wars-tiesa-bomber-03c30934651e4f5798b67e74049ec6bc",
+    "where": "galaxy",
+    "as": "the TIE bombers",
+    "file": "/models/galaxy/tiebomber.glb",
     "also": [
       "galaxy"
     ]
@@ -1653,7 +1901,12 @@
     "source": "https://sketchfab.com/3d-models/portal-gun-from-the-rick-and-morty-show-c5f7b4a950de4002b448ac65c6b0207b",
     "where": "c-137",
     "as": "Rick’s portal gun, in the wardrobe",
-    "file": "/models/wardrobe/portalgun.glb"
+    "file": "/models/wardrobe/portalgun.glb",
+    "also": [
+      "universe",
+      "galaxy",
+      "galaxy-surface"
+    ]
   },
   "xwing-hd": {
     "title": "High Poly X-Wing Fighter",
@@ -1666,22 +1919,6 @@
     "as": "the X-wing you fly",
     "also": [
       "galaxy"
-    ]
-  },
-  "wardrobe-portalgun": {
-    "title": "Portal Gun from The Rick and Morty show",
-    "author": "Bob.Ho",
-    "authorUrl": "https://sketchfab.com/Bob.Ho",
-    "license": "CC-BY-4.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
-    "source": "https://sketchfab.com/3d-models/portal-gun-from-the-rick-and-morty-show-c5f7b4a950de4002b448ac65c6b0207b",
-    "where": "c-137",
-    "as": "Rick’s portal gun, in the wardrobe",
-    "file": "/models/wardrobe/portalgun.glb",
-    "also": [
-      "universe",
-      "galaxy",
-      "galaxy-surface"
     ]
   }
 }

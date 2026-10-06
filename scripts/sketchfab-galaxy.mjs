@@ -53,18 +53,28 @@ export const MODELS = {
   ywing: { uid: 'b8bb6476b1b14ba48987c7efc7b7087a', tris: 14000, tex: 512, as: 'the Y-wings' },
   bwing: { uid: '08293253519a455483970295430b3a73', tris: 14000, tex: 512, as: 'the B-wings' },
   uwing: { uid: '8d7539ceba7142c2ab5ce296659c026d', tris: 14000, tex: 1024, as: 'the U-wings' },
+  ghost: { uid: '8740b94179ba43a7ac6476973ca0c577', tris: 30000, tex: 1024, as: 'the Ghost' },
   // the Empire's
   executor: { uid: '0e4cbb98a2ba43f2a11498061b3f21d8', tris: 50000, tex: 1024, as: 'the Executor' },
+  tie: { uid: '79d9403f15334c129ea5454daffe6b5c', tris: 8000, tex: 512, as: 'the TIE fighters' },
+  tiebomber: { uid: '03c30934651e4f5798b67e74049ec6bc', tris: 8000, tex: 512, as: 'the TIE bombers' },
+  tieadvanced: { uid: '0b3825de4fa542a893c9f9344b7e5f31', tris: 8000, tex: 512, as: 'Vader’s TIE Advanced' },
+  shuttle: { uid: '9d160e16845a4b518a2d30a7c716f20d', tris: 12000, tex: 1024, as: 'the Imperial shuttles' },
+  lightcruiser: { uid: '5a5d6adf2e0444d5be94323938f6d329', tris: 5000, tex: 1024, as: 'Moff Gideon’s light cruisers' },
+  gozanti: { uid: '6a587e545b1c48bea95480b49458ac63', tris: 20000, tex: 1024, as: 'the Gozanti cruisers' },
   // the Separatists'
   lucrehulk: { uid: '8bb11e0ad31e4b23b1783e10242c5115', tris: 20000, tex: 1024, as: 'the droid control ships' },
   coreship: { uid: '0d829115bb4d472da5d05cdf529b6694', tris: 20000, tex: 1024, as: 'the Separatist core ships' },
   vulture: { uid: '5542f951834e4032b229ebdee12d3310', tris: 10000, tex: 512, as: 'the vulture droids' },
   trifighter: { uid: '9c06ba9b24144221aa80f56192f485b6', tris: 10000, tex: 512, as: 'the droid tri-fighters' },
+  munificent: { uid: '44d5db77bb1342e5a6e58c24a0dcb256', tris: 25000, tex: 1024, as: 'the Munificent frigates' },
+  providence: { uid: '8d27764a7d254fd7948557daf6d7ccdc', tris: 10000, tex: 1024, as: 'the Invisible Hand' },
   // the Republic's
   acclamator: { uid: 'e6a2171be5c34bb68a05aba657fd8fa8', tris: 30000, tex: 1024, as: 'the Acclamators' },
   delta7: { uid: 'b4a8ad8a1e8b4e5b961cf4726d8a8646', tris: 12000, tex: 512, as: 'the Jedi starfighters' },
   arc170: { uid: 'b9407262cdf34d37b0720ca6b70469be', tris: 14000, tex: 512, as: 'the ARC-170s' },
   n1: { uid: '3cf69f6c85234aac8844e845e74ac75b', tris: 12000, tex: 512, as: 'the Naboo N-1 starfighters' },
+  nubian: { uid: 'f631077977754b5591298ecfa201380b', tris: 20000, tex: 1024, as: 'the Naboo royal starship' },
 };
 
 const token = process.env.SKETCHFAB_API_TOKEN;

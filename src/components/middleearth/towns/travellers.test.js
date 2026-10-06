@@ -31,7 +31,7 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 
 describe('steps', () => {
   it('go and come back, kept in bounds', () => {
-    expect(readStep(writeStep({ x: 3.456, z: -2, face: 1, speed: 3 }, { ring: true }))).toEqual({ x: 3.46, z: -2, face: 1, moving: true, inside: false, ring: true });
+    expect(readStep(writeStep({ x: 3.456, z: -2, face: 1, speed: 3 }, { ring: true }))).toEqual({ x: 3.46, z: -2, face: 1, moving: true, inside: false, ring: true, ride: false });
     expect(readStep([1e9, 0, 0], 50).x).toBe(50);
     expect(readStep(['a', 0, 0])).toBe(null);
   });
@@ -124,5 +124,48 @@ describe('travellers', () => {
     expect(b.list()).toHaveLength(1);
     a.leave();
     b.leave();
+  });
+
+  it('see only those in the same area of a world, each area its own ground', async () => {
+    const load = fakeRelay();
+    let t = 1000;
+    const now = () => t;
+    const a = createTravellers({ town: 'c-137', name: 'Morty', load, now });
+    const b = createTravellers({ town: 'c-137', name: 'Summer', load, now });
+    await settle();
+    await settle();
+    a.pose({ x: 1, z: 2, face: 0, speed: 0 }, { area: 'street' });
+    b.pose({ x: 5, z: 5, face: 0, speed: 0 }, { area: 'street' });
+    expect(b.list().map((p) => p.name)).toEqual(['Morty']);
+    expect(a.list().map((p) => p.name)).toEqual(['Summer']);
+    // Morty goes in: a new area goes out at once, and the street loses him
+    t += 10;
+    a.pose({ x: 1, z: 2, face: 0, speed: 0 }, { area: 'arcade' });
+    expect(b.list()).toEqual([]);
+    expect(a.list()).toEqual([]);
+    // and a world without areas sees everyone without one
+    t += 2000;
+    a.pose({ x: 1, z: 2, face: 0, speed: 0 });
+    b.pose({ x: 5, z: 5, face: 0, speed: 0 });
+    expect(b.list()).toHaveLength(1);
+    a.leave();
+    b.leave();
+  });
+});
+
+describe('steps riding something', () => {
+  it('say so (a car, a ship, a cruiser in the air), apart from the Ring', () => {
+    expect(readStep(writeStep({ x: 0, z: 0, face: 0 }, { ride: true }))).toMatchObject({ ride: true, ring: false, inside: false });
+    expect(readStep(writeStep({ x: 0, z: 0, face: 0 }, { ring: true }))).toMatchObject({ ride: false, ring: true });
+  });
+});
+
+describe('steps with an area', () => {
+  it('carry it, cleaned, and leave a step without one as it was', () => {
+    expect(readStep(writeStep({ x: 1, z: 2, face: 0, speed: 0 }, { area: 'arcade' }))).toMatchObject({ x: 1, z: 2, area: 'arcade' });
+    expect(readStep(writeStep({ x: 1, z: 2, face: 0, speed: 3, y: 4 }, { motion: true, area: 'sky' }))).toMatchObject({ speed: 3, y: 4, area: 'sky' });
+    expect(readStep([0, 0, 0, 0, 0, 0, 0, '<script>'])).not.toHaveProperty('area');
+    expect(readStep([0, 0, 0, 0, 0, 0, 0, 'x'.repeat(40)])).not.toHaveProperty('area');
+    expect(writeStep({ x: 0, z: 0, face: 0 })).toHaveLength(5);
   });
 });

@@ -147,12 +147,16 @@
 }
 /* hide (in the panel's corner) and show (the whole bar, once it's away) */
 .universe-tuck {
-  float: right;
+  /* in the panel's top corner, out of the flow: floated, it shortened the
+     first line and the title wrapped round it ("My whole / site, as a
+     universe"); the first row below leaves room for the two buttons */
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
-  margin: -0.55rem -0.55rem 0.25rem 0.5rem;
   border-radius: 999px;
   color: var(--muted);
   transition: color 0.2s, background-color 0.2s;
@@ -162,7 +166,10 @@
 .universe-untuck:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .universe-panel[data-tucked] { display: flex; overflow: hidden; padding: 0; }
 /* the guide's "?", beside the hide button (the corner one would sit over the panel) */
-.universe-guide { margin: -0.55rem 0 0.25rem 0.25rem; }
+.universe-guide { right: calc(0.7rem + 34px + 0.25rem); }
+/* the panel's first row (the eyebrow, or the back links) stops short of the buttons */
+.universe-panel > .universe-tuck ~ :is(.eyebrow, .universe-links):first-of-type { padding-right: 4.75rem; }
+.universe-panel > .universe-tuck ~ .universe-links { min-height: 34px; }
 .universe-guide-tucked { display: grid; flex: none; place-items: center; width: 48px; border-left: 1px solid var(--border); color: var(--muted); transition: color 0.15s, background-color 0.15s; }
 .universe-guide-tucked:hover { color: var(--text); background: rgb(255 255 255 / 0.06); }
 .universe-guide-tucked:focus-visible { outline: 2px solid var(--accent-text); outline-offset: -2px; }
@@ -365,7 +372,7 @@ body:has(.universe-panel) .guide-nudge { top: calc(var(--nav-h, 68px) + 14px); r
 .universe-siege {
   position: absolute;
   left: 50%;
-  top: calc(var(--nav-h, 68px) + 16px);
+  top: calc(var(--nav-h, 68px) + 76px); /* under the crew's line (.universe-comms), which sits at the top */
   display: grid;
   gap: 2px;
   max-width: min(440px, calc(100% - var(--panel-w, 0px) - 40px));
@@ -1276,7 +1283,10 @@ body:has(.universe-panel) .guide-nudge { top: calc(var(--nav-h, 68px) + 14px); r
   /* (wrapped, above the buttons, clear of the settings button on the left and
      the climb and dive ones on the right) */
   .universe-arrive { left: 16px; right: 16px; top: calc(var(--nav-h, 68px) + 24px); translate: none; max-width: none; }
-  .universe-hint { left: 116px; right: 96px; bottom: calc(var(--sheet-h) + 92px); translate: none; border-radius: 12px; white-space: normal; line-height: 1.4; }
+  /* above the whole cluster of buttons (the weapon one reaches 150px over
+     the sheet, the settings and hangar ones 110px), and clear of the climb
+     and dive buttons on the right: at 92px it sat over the weapon button */
+  .universe-hint { left: 12px; right: 90px; bottom: calc(var(--sheet-h) + 160px); max-width: none; translate: none; padding: 0.4rem 0.7rem; border-radius: 12px; white-space: normal; font-size: 0.72rem; line-height: 1.4; }
   .universe-settings-btn { left: 12px; bottom: calc(var(--sheet-h) + 66px); }
   .universe-settings { left: 12px; bottom: calc(var(--sheet-h) + 120px); width: min(312px, calc(100% - 24px)); max-height: calc(100% - var(--sheet-h) - var(--nav-h, 68px) - 136px); }
   .universe-hangar-btn { left: 62px; bottom: calc(var(--sheet-h) + 66px); }

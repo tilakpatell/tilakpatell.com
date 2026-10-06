@@ -1,0 +1,32 @@
+{
+  "theed": {
+    "image": "01a10f85-cfde-770b-9a3b-cdcd30247ae2",
+    "model": "01a10f8a-d8b5-7168-b86d-cce16cd51a6c"
+  },
+  "palace": {
+    "retexture": "01a10f8f-c9e8-72f2-b444-61c61c3bdc2e"
+  },
+  "rejected": {
+    "note": "AI concept images and the models made from them, turned down by the owner (2026-10-06): kept so they are never paid for again",
+    "theedpalace": {
+      "image": "01a10f86-13eb-75bb-94be-0ce9d3826278",
+      "model": "01a10f8a-dcb2-7059-8992-4206864fee15"
+    },
+    "wookieehouse": {
+      "image": "01a10f86-578b-72c9-af63-22effda825f5",
+      "model": "01a10f8a-dfa3-7335-9dca-6ac5d41f8c8b"
+    },
+    "mining": {
+      "image": "01a10f87-cc65-76ff-bb9f-82ec4390fa25",
+      "model": "01a10f8a-e2a0-749f-ab68-51a4f83bdd26"
+    },
+    "cloudcity": {
+      "image": "01a10f88-94f9-708c-8809-434129faa0c9",
+      "model": "01a10f8a-e656-7524-8c05-65e68d73c637"
+    },
+    "shieldgen": {
+      "image": "01a10f88-c58f-71fb-8bbe-01f366826cfa",
+      "model": "01a10f8a-e8df-751e-890c-cf29de78aa83"
+    }
+  }
+}

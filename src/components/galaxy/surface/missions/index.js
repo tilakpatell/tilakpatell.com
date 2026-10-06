@@ -16,9 +16,10 @@
 //              and `why` (a line for each way to lose: `lost` for a chase)
 //
 // Or kind 'quest': the surface's quest engine (../quests.js) runs it, from
-// `start` on `ride` to the end of `quest` (won) or a fail or going down
-// (lost: `why` 'time' or 'down'); `stars` are on the whole run, and
-// `lines` are `start`, `won` and `lost`.
+// `start` on `ride` (or on foot, with no ride) to the end of `quest` (won)
+// or a fail or going down (lost: `why` 'time' or 'down'); `stars` are on the
+// whole run, `lines` are `start`, `won` and `lost`, and `reset` is effects
+// (as a quest step's) that put the world back when it starts again.
 
 import { starsFor } from './chase';
 
@@ -141,6 +142,73 @@ export const MISSIONS = {
             text: 'Bring down Shin Hati',
             lines: [['Shin Hati', 'Give me the map, and walk away.']],
             spawn: { kind: 'shin', at: [-300, 82], hp: 8, leash: 45, roam: 3, tag: 'shin', hostile: { range: 40, chase: 3.2, melee: true, reach: 2.4, every: 1.4, damage: 16, delay: 1 } },
+          },
+        ],
+      },
+    },
+  },
+  dagobah: {
+    raise: {
+      id: 'raise',
+      system: 'dagobah',
+      kind: 'quest',
+      name: 'Do or Do Not',
+      ride: null, // (on foot, with Yoda on your back)
+      start: [-20, -52],
+      yaw: 2.63, // (toward the first gate)
+      stars: [80, 110],
+      achievement: 'dagobahraise',
+      reset: [{ signal: 'raise', on: false }, { carry: null }],
+      ends: {
+        won: 'The X-wing is out',
+        lost: 'Not yet',
+        why: { time: 'Too slow through the swamp. Again, says Yoda. Again.', down: 'The thing in the cave was too much for you. Calm, says Yoda. Calm.' },
+      },
+      lines: {
+        start: {
+          xwing: [['r2', '(A doubtful whistle, from somewhere behind you.)']],
+          falcon: [['han', 'You’re carrying him? Through that? Okay.'], ['chewie', '(A rumble that might be a laugh.)']],
+          cruiser: [['morty', 'Rick, he wants a piggyback.'], ['rick', 'Then run, Morty. Run.']],
+          rv: [['jesse', 'Yo, the little green guy’s riding you.'], ['walt', 'Just run.']],
+        },
+        won: {
+          xwing: [['r2', '(An astonished, rising whistle.)']],
+          falcon: [['han', 'I don’t believe it.'], ['chewie', '(A long, impressed roar.)']],
+          cruiser: [['rick', 'Space wizard stuff, Morty. Don’t let it go to your head.']],
+          rv: [['jesse', 'Yo, you lifted a whole plane. With your brain!']],
+        },
+        lost: {
+          xwing: [['r2', '(A sympathetic warble.)']],
+          falcon: [['han', 'Take a breath, kid. Go again.']],
+          cruiser: [['morty', 'Maybe try again, Rick?'], ['rick', 'That’s the spirit, Morty.']],
+          rv: [['walt', 'Again. From the start.']],
+        },
+      },
+      quest: {
+        id: 'mission-raise',
+        name: 'Do or Do Not',
+        steps: [
+          {
+            type: 'race',
+            // round the dry ground from the camp, to the mouth of the cave
+            gates: [[-10, -70], [20, -100], [40, -130], [0, -150], [-40, -140], [-58, -114]],
+            r: 6,
+            time: 45,
+            text: 'Run the swamp, with Yoda on your back',
+            start: [{ carry: 'yoda' }],
+            lines: [['Yoda', 'Run, you will. Through the swamp. Quickly, quickly!']],
+          },
+          { type: 'reach', at: [-70, -120], r: 9, text: 'Go into the cave: Yoda waits outside', start: [{ carry: null }], lines: [['Yoda', 'Into the cave, go. What is in there, you bring with you.']] },
+          { type: 'shoot', tag: 'vision', n: 1, text: 'Face what’s inside', lines: [[null, '(A figure in black steps out of the dark.)']], spawn: { kind: 'vader', at: [-66, -114], still: true, hp: 3, tag: 'vision', hostile: { range: 12, every: 2, damage: 10, spread: 0.06 } } },
+          {
+            type: 'use',
+            id: 'raise',
+            at: [40, 74],
+            r: 10,
+            prompt: 'Reach out with the Force',
+            text: 'Go to the bog, and raise the X-wing',
+            lines: [['Yoda', 'Your ship. In the bog it is. Lift it, you can.']],
+            end: [{ signal: 'raise' }, { shake: 0.8 }, { say: [[null, '(The swamp boils. The X-wing rises out of it, dripping, and hangs there over the water.)']] }],
           },
         ],
       },

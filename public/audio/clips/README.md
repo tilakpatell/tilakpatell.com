@@ -52,6 +52,7 @@ remove it.
 | yeah-science.mp3, one-who-knocks.mp3, walter-hartwell-white.mp3, private-domicile.mp3, dont-drink-and-drive.mp3 | Breaking Bad, from [Myinstants](https://www.myinstants.com) |
 | killed-gus-fring.mp3, cant-keep-getting-away.mp3 | Breaking Bad, from [Soundboard Guy](https://www.soundboardguy.com) |
 | i-am-the-danger.mp3 | Breaking Bad, from [Meme Sound Effects](https://www.memesoundeffects.com) |
+| i-know.mp3, youre-goddamn-right.mp3, we-need-to-cook.mp3 | Star Wars: The Empire Strikes Back and Breaking Bad, from [Myinstants](https://www.myinstants.com), fetched with `npm run clips:fetch` (scripts/clips/wanted.json) |
 
 The rest of the site's sounds are original (`src/lib/sfx.js`), or freely
 licensed recordings credited on the music page.

@@ -157,11 +157,12 @@ export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
 
   // others online in the street (RmWorld's useTravellers), as the Middle-earth
   // towns and the Avengers compound show theirs: each a Morty from another
-  // dimension, pale and shimmering, with their name over him. Out in the
-  // street only (indoors and up in the cruiser they're not shown), and
-  // nothing here touches them, nor they anything here.
+  // dimension, pale and shimmering, with their name over him. In the street
+  // or a room, whichever you're in (only those in it are listed; up in the
+  // cruiser they're not shown), and nothing here touches them, nor they
+  // anything here.
   const ghosts = createGhosts({
-    height: (x, z) => (Math.abs(z - ROAD.z) < ROAD.w / 2 ? ROAD_Y : 0),
+    height: (x, z) => (shown === 'street' && Math.abs(z - ROAD.z) < ROAD.w / 2 ? ROAD_Y : 0),
     make: () => {
       const c = cast.make('morty');
       const fig = c ?? standInMorty();
@@ -365,7 +366,6 @@ export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
     standY = jump ? stand : standY + (stand - standY) * Math.min(1, dt * 6);
     mortyY = groundY + (m.y ?? 0);
     eyeY = groundY + standY;
-    ghosts.group.visible = outdoors;
     ghosts.update(state.travellers ?? [], t, dt);
     morty.group.visible = !state.flying;
     morty.group.position.set(m.x, mortyY, m.z);

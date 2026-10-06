@@ -24,6 +24,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { seg as segments } from '../../lib/detail';
 import { sharpenMaterial } from '../../lib/three/textures';
 import { tiled } from './kit';
 import { createLivery } from './livery';
@@ -65,7 +66,7 @@ const plated = (T, color, which, repeat, extra = {}) =>
 const glowMat = (color) => new THREE.MeshBasicMaterial({ color, toneMapped: false, side: THREE.DoubleSide });
 
 // along z: CylinderGeometry stands on y, so lay it down with its top forward
-const tube = (rTop, rBottom, len, seg = 12) => new THREE.CylinderGeometry(rTop, rBottom, len, seg);
+const tube = (rTop, rBottom, len, seg = 12) => new THREE.CylinderGeometry(rTop, rBottom, len, segments(seg)); // (lib/detail: rounder at ultra)
 const LAY = [-Math.PI / 2, 0, 0];
 
 // Until the C-137 page's cruiser arrives: a little saucer car with a glass
@@ -75,17 +76,17 @@ function cruiser(T) {
   const stand = new THREE.Group();
   const body = new THREE.Mesh(
     parts([
-      [new THREE.SphereGeometry(0.1, 20, 12), [0, 0, 0], [0, 0, 0], [1, 0.38, 1.6]],
+      [new THREE.SphereGeometry(0.1, segments(20), segments(12)), [0, 0, 0], [0, 0, 0], [1, 0.38, 1.6]],
       [new THREE.BoxGeometry(0.03, 0.05, 0.06), [-0.08, 0.015, 0.1], [0, 0, 0.4]],
       [new THREE.BoxGeometry(0.03, 0.05, 0.06), [0.08, 0.015, 0.1], [0, 0, -0.4]],
     ]),
     plated(T, '#b4bfc3', 'plates', 1),
   );
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: '#bfe8ff', transparent: true, opacity: 0.6 }));
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.055, segments(16), segments(10), 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: '#bfe8ff', transparent: true, opacity: 0.6 }));
   dome.position.set(0, 0.025, -0.02);
   stand.add(body, dome);
   const glowM = glowMat('#9df06b');
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), glowM);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.03, segments(16)), glowM);
   glow.position.set(0, 0, 0.162);
   group.add(stand, glow);
   return { group, glow: [{ mat: glowM, color: new THREE.Color('#9df06b') }], stand, glowMesh: glow, nose: Math.PI }; // its model's nose (the headlights) is +z
@@ -113,7 +114,7 @@ function rv() {
     pods.push([new THREE.BoxGeometry(0.004, 0.012, 0.02), [sx * POD[0], -0.041, -0.055]]); // the pylon
     wingStripes.push([new THREE.BoxGeometry(0.014, 0.008, 0.0535), [sx * 0.14, -0.038, -0.05]]);
     for (const z of [-0.085, 0.062]) wheels.push([tube(0.015, 0.015, 0.014, 12), [sx * 0.048, -0.055, z], [0, 0, Math.PI / 2]]);
-    glows.push([new THREE.CircleGeometry(0.0095, 14), [sx * POD[0], POD[1], POD[2]]]);
+    glows.push([new THREE.CircleGeometry(0.0095, segments(14)), [sx * POD[0], POD[1], POD[2]]]);
   }
   const body = new THREE.Mesh(
     parts([

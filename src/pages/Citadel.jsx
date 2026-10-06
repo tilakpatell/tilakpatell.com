@@ -22,7 +22,7 @@ export default function Citadel() {
       </div>
       <section className="shell relative z-10 py-10 md:py-14" aria-label="About the Citadel">
         <p className="eyebrow">Dimension C-137</p>
-        <p className="lead mt-3 max-w-[62ch]">A whole city of Ricks, hidden where no Rick can find it, except all of them. Round up the day care’s Mortys, stack wafers at Simple Rick’s, face the Council, vote in the election, and get out before Candidate Morty’s Cop Ricks find you.</p>
+        <p className="lead mt-3 max-w-[62ch]">A city of Ricks, hidden where no Rick can find it, except all of them. Round up the day care’s Mortys, stack wafers at Simple Rick’s, face the Council, vote in the election, and get out before Candidate Morty’s Cop Ricks find you.</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link to="/c-137" className="btn btn-primary">
             Back to Dimension C-137

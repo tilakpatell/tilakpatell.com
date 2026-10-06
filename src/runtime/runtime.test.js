@@ -46,6 +46,7 @@ function make(overrides = {}) {
 const flush = async (n = 6) => {
   for (let i = 0; i < n; i++) await Promise.resolve();
 };
+const settled = () => new Promise((r) => setTimeout(r, 0)); // (every microtask run: a build that's done has asked for its cover)
 
 describe('createRuntime', () => {
   it('mounts: loading, ready after create, on after the first frame, in frame order', async () => {
@@ -163,11 +164,15 @@ describe('createRuntime', () => {
     await flush();
     expect(nextMod.create.mock.calls[0][1]).toEqual({ a: 1, from: { pose: 7 } });
     loop.tick(100);
-    expect(old.draw).toHaveBeenCalledTimes(2); // still the old world
+    expect(old.draw).toHaveBeenCalledTimes(2); // still the old world, and seen: no cover over it yet
     expect(next.draw).not.toHaveBeenCalled();
-    const snap = rt.gfx.snapshot.mock.results[0].value; // its frame, kept as the cover
+    expect(rt.gfx.snapshot).not.toHaveBeenCalled();
     readyNew();
-    await p;
+    await settled();
+    loop.tick(150); // the old world's last frame, kept as the cover
+    expect(old.draw).toHaveBeenCalledTimes(3);
+    const snap = rt.gfx.snapshot.mock.results[0].value;
+    expect(await p).toBe(true);
     expect(old.dispose).toHaveBeenCalled();
     expect(audio.fadeOut).toHaveBeenCalled();
     expect(assets.drop).toHaveBeenCalledWith('old');
@@ -181,6 +186,69 @@ describe('createRuntime', () => {
     loop.tick(900);
     expect(snap.remove).toHaveBeenCalled();
     expect(rt.status).toBe('on');
+  });
+
+  it('a handover says whether its world is the one drawing now', async () => {
+    const { rt, loop } = make();
+    await rt.mount({ id: 'old', create: () => fakeWorld() }, {}, fakeHost());
+    // something newer asked for while it was made: no
+    let readyNew;
+    const p = rt.handover({ id: 'next', create: () => fakeWorld({ ready: new Promise((r) => (readyNew = r)) }) }, {}, fakeHost());
+    await settled();
+    rt.unmount();
+    readyNew();
+    expect(await p).toBe(false);
+    expect(rt.current).toBe(null);
+    // failed: no, and the old world stays up with nothing over it
+    const old = fakeWorld({ wants: () => true });
+    expect(await rt.mount({ id: 'old', create: () => old }, {}, fakeHost())).toBe(true);
+    expect(await rt.handover({ id: 'bad', create: () => { throw new Error('no'); } }, {}, fakeHost())).toBe(false);
+    expect(rt.current.module.id).toBe('old');
+    expect(rt.gfx.snapshot).not.toHaveBeenCalled();
+    loop.tick(10);
+    expect(old.draw).toHaveBeenCalled();
+    // over: yes
+    expect(await rt.handover({ id: 'next', create: () => fakeWorld() }, {}, fakeHost())).toBe(true);
+    expect(rt.current.module.id).toBe('next');
+    expect(old.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('a handover off screen, where no frame comes, goes on without a cover after a moment', async () => {
+    let seen = false;
+    const { rt, loop } = make({ visible: () => seen });
+    await rt.mount({ id: 'old', create: () => fakeWorld() }, {}, fakeHost());
+    const next = fakeWorld({ wants: () => false });
+    const t0 = Date.now();
+    expect(await rt.handover({ id: 'next', create: () => next }, {}, fakeHost())).toBe(true);
+    expect(Date.now() - t0).toBeLessThan(1000);
+    expect(rt.gfx.snapshot).not.toHaveBeenCalled();
+    seen = true;
+    expect(loop.tick(10)).toBe(false); // (no cover to fade, a world at rest)
+    expect(next.draw).toHaveBeenCalledTimes(1);
+  });
+
+  it('a handover with `after` keeps the old world drawing until that is done, then takes the cover', async () => {
+    const { rt, loop } = make();
+    const old = fakeWorld({ wants: () => true });
+    await rt.mount({ id: 'old', create: () => old }, {}, fakeHost());
+    loop.tick(0);
+    let done;
+    const after = new Promise((r) => (done = r));
+    const next = fakeWorld({ wants: () => true });
+    const p = rt.handover({ id: 'next', create: () => next }, {}, fakeHost(), { fade: 600, after });
+    await settled();
+    loop.tick(100);
+    loop.tick(200);
+    expect(old.draw).toHaveBeenCalledTimes(3); // made, and still the old world's moment
+    expect(rt.gfx.snapshot).not.toHaveBeenCalled();
+    done();
+    await settled();
+    loop.tick(300); // the cover
+    expect(rt.gfx.snapshot).toHaveBeenCalledTimes(1);
+    expect(await p).toBe(true);
+    loop.tick(400);
+    expect(next.draw).toHaveBeenCalledTimes(1);
+    expect(old.draw).toHaveBeenCalledTimes(4);
   });
 
   it('a handoff that throws still hands over with from null', async () => {
@@ -256,6 +324,105 @@ describe('createRuntime', () => {
     loop.tick(16);
     expect(rt.gfx.setRatio).toHaveBeenCalledWith(1.44);
     expect(world.lowerQuality).toHaveBeenCalledWith(2);
+  });
+
+  it("a module's ratio caps the sharpness it's drawn at", async () => {
+    const quality = fakeQuality();
+    quality.ratioUnder = vi.fn((cap) => Math.min(cap ?? Infinity, 2));
+    const { rt } = make({ quality });
+    await rt.mount({ id: 'a', ratio: 1.5, create: () => fakeWorld() }, {}, fakeHost());
+    expect(rt.gfx.setRatio).toHaveBeenLastCalledWith(1.5);
+    await rt.mount({ id: 'b', create: () => fakeWorld() }, {}, fakeHost());
+    expect(rt.gfx.setRatio).toHaveBeenLastCalledWith(2);
+  });
+
+  it('a handover keeps the keys the new world bound as it was made', async () => {
+    const { rt, input } = make();
+    input.bind = vi.fn();
+    input.bindings = vi.fn(() => ({ actions: { old: ['KeyO'] }, axes: {} }));
+    await rt.mount({ id: 'old', create: () => fakeWorld() }, {}, fakeHost());
+    input.unbind.mockClear();
+    let order = [];
+    input.unbind.mockImplementation(() => order.push('unbind'));
+    const create = vi.fn(() => {
+      order.push('create');
+      rt.input.bind({ fly: ['KeyW'] });
+      return fakeWorld();
+    });
+    await rt.handover({ id: 'next', create }, {}, fakeHost());
+    expect(order).toEqual(['unbind', 'create']); // (never unbound after it bound them)
+    // and a handover that fails gives the old world its keys back
+    order = [];
+    await rt.handover({ id: 'bad', create: () => { throw new Error('no'); } }, {}, fakeHost());
+    expect(input.bind).toHaveBeenLastCalledWith({ old: ['KeyO'] }, { axes: {} });
+  });
+
+  it('a held cover waits for the page to adopt the world, then fades in its box', async () => {
+    const { rt, loop, input } = make();
+    const old = fakeWorld({ wants: () => true });
+    const host1 = fakeHost();
+    await rt.mount({ id: 'old', create: () => old }, {}, host1);
+    loop.tick(0);
+    const nextMod = { id: 'next', create: () => fakeWorld({ wants: () => true }) };
+    const p = rt.handover(nextMod, {}, host1, { fade: 600, held: true });
+    await settled();
+    loop.tick(16); // (the old world's last frame, kept as the cover)
+    await p;
+    const snap = rt.gfx.snapshot.mock.results[0].value;
+    snap.el = { parentNode: host1 };
+    loop.tick(100);
+    loop.tick(700);
+    expect(snap.set).not.toHaveBeenCalled(); // still covering: no page has it yet
+    expect(snap.remove).not.toHaveBeenCalled();
+    const host2 = fakeHost();
+    expect(rt.adopt({ id: 'other' }, host2)).toBe(false);
+    input.attach.mockClear();
+    expect(rt.adopt(nextMod, host2)).toBe(true);
+    expect(host2.prepend).toHaveBeenCalledWith(rt.gfx.canvas);
+    expect(host2.appendChild).toHaveBeenCalledWith(snap.el);
+    expect(input.attach).toHaveBeenCalledWith(expect.objectContaining({ host: host2 }));
+    expect(rt.host).toBe(host2);
+    loop.tick(800);
+    loop.tick(1100);
+    expect(snap.set).toHaveBeenLastCalledWith(0.5);
+    loop.tick(1500);
+    expect(snap.remove).toHaveBeenCalled();
+  });
+
+  it('a held cover gives up waiting after a few seconds', async () => {
+    const { rt, loop } = make();
+    await rt.mount({ id: 'old', create: () => fakeWorld({ wants: () => true }) }, {}, fakeHost());
+    loop.tick(0);
+    const p = rt.handover({ id: 'next', create: () => fakeWorld({ wants: () => true }) }, {}, fakeHost(), { fade: 600, held: true });
+    await settled();
+    loop.tick(16); // (the old world's last frame, kept as the cover)
+    await p;
+    const snap = rt.gfx.snapshot.mock.results[0].value;
+    loop.tick(100);
+    loop.tick(3200);
+    loop.tick(3300);
+    loop.tick(4000);
+    expect(snap.remove).toHaveBeenCalled();
+  });
+
+  it('says which module is being made, so a page that leaves drops only its own', async () => {
+    const { rt } = make();
+    let done;
+    const mod = { id: 'a', create: () => new Promise((r) => (done = r)) };
+    expect(rt.loading).toBe(null);
+    const p = rt.mount(mod, {}, fakeHost());
+    expect(rt.loading).toBe(mod);
+    await flush();
+    done(fakeWorld());
+    await p;
+    expect(rt.loading).toBe(null);
+    const bad = { id: 'b', create: () => { throw new Error('no'); } };
+    await rt.mount(bad, {}, fakeHost());
+    expect(rt.loading).toBe(null);
+    const slow = { id: 'c', create: () => new Promise(() => {}) };
+    rt.mount(slow, {}, fakeHost());
+    rt.unmount();
+    expect(rt.loading).toBe(null); // (dropped)
   });
 
   it('events reach the page and leave with the world', async () => {

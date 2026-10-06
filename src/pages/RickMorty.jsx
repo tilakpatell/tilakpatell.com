@@ -143,7 +143,7 @@ export default function RickMorty() {
         <h2 id="mee-title" className="title">
           Mr. Meeseeks box
         </h2>
-        <p className="lead mt-4 max-w-[56ch]">Press the button and a Mr. Meeseeks appears. Give him a task and he’ll do it to this page, then he’s gone. Keep it simple.</p>
+        <p className="lead mt-4 max-w-[56ch]">Press the button and a Mr. Meeseeks appears. Give him a task and he does it to this page, then he’s gone. Keep it simple.</p>
         <div className="mt-8">
           <MeeseeksBox />
         </div>
@@ -153,7 +153,7 @@ export default function RickMorty() {
         <h2 id="cable-title" className="title">
           Interdimensional cable
         </h2>
-        <p className="lead mt-4 max-w-[56ch]">Rick rigged the box to pick up TV from every reality. Nothing on it makes sense, and it’s the best thing on.</p>
+        <p className="lead mt-4 max-w-[56ch]">Rick rigged the box to pick up TV from every reality. Nothing on it makes sense. Best thing on.</p>
         <div className="mt-8" data-rm-jump>
           <Cable />
         </div>

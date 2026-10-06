@@ -35,3 +35,11 @@ lab/
 # the harmonium's source recording (build-harmonium.py downloads it)
 scripts/data/harmonium/
 .claude/worktrees/
+
+# the crews' lines made in their voices (scripts/voices): kept on the machine
+# that made them, never in the public repo or the Pages build
+public/audio/voiced/
+scripts/voices/cache/
+scripts/voices/refs/
+scripts/voices/lines.json
+.scratch/

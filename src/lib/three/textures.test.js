@@ -1,5 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { anisotropyFor, imageBitmapOk, variant } from './textures';
+import * as THREE from 'three';
+import { anisotropyFor, fitSize, fitTexture, imageBitmapOk, mipsOver, variant } from './textures';
+
+describe('fitting a map under a ceiling', () => {
+  it('halves until the longer side fits, keeping the shape', () => {
+    expect(fitSize(2048, 2048, 1024)).toEqual({ width: 1024, height: 1024 });
+    expect(fitSize(2048, 1024, 512)).toEqual({ width: 512, height: 256 });
+    expect(fitSize(4096, 2048, 1024)).toEqual({ width: 1024, height: 512 });
+  });
+  it('leaves a map that already fits alone', () => {
+    expect(fitSize(1024, 1024, 1024)).toBe(null);
+    expect(fitSize(512, 256, 4096)).toBe(null);
+    expect(fitSize(0, 0, 512)).toBe(null);
+  });
+  it('counts the mip levels a compressed map must lose', () => {
+    const levels = [4096, 2048, 1024, 512, 256].map((s) => ({ width: s, height: s }));
+    expect(mipsOver(levels, 1024)).toBe(2);
+    expect(mipsOver(levels, 8192)).toBe(0);
+    // (never the last level: a map too big at its smallest keeps that)
+    expect(mipsOver(levels, 64)).toBe(4);
+    expect(mipsOver([], 512)).toBe(0);
+  });
+});
+
+describe('fitting a compressed texture by dropping its top levels', () => {
+  it('starts it at the first level that fits', () => {
+    const levels = [2048, 1024, 512].map((s) => ({ data: new Uint8Array(4), width: s, height: s }));
+    const t = new THREE.CompressedTexture(levels, 2048, 2048);
+    expect(fitTexture(t, 1024)).toBe(true);
+    expect(t.mipmaps.map((m) => m.width)).toEqual([1024, 512]);
+    expect(t.image).toMatchObject({ width: 1024, height: 1024 });
+    expect(fitTexture(t, 1024)).toBe(false);
+  });
+});
 
 describe('anisotropy from the budget', () => {
   it('asks for the tier’s, no more than the chip has', () => {

@@ -38,6 +38,7 @@ const CirithUngolWorld = lazy(() => import('../components/middleearth/towns/ciri
 const DoomWorld = lazy(() => import('../components/middleearth/towns/doom/DoomWorld'));
 const OrthancWorld = lazy(() => import('../components/middleearth/towns/orthanc/OrthancWorld'));
 const MinasTirithWorld = lazy(() => import('../components/middleearth/towns/minastirith/MinasTirithWorld'));
+const EdorasWorld = lazy(() => import('../components/middleearth/towns/edoras/EdorasWorld'));
 const Rush = lazy(() => import('../components/middleearth/rush/Rush'));
 
 // New Zealand, standing in for Middle-earth.
@@ -523,6 +524,12 @@ export default function MiddleEarth() {
       {here?.id === 'minas-tirith' && (
         <Suspense fallback={<div className="shire-stage" aria-hidden="true" />}>
           <MinasTirithWorld onLeave={toMap} />
+        </Suspense>
+      )}
+
+      {here?.id === 'edoras' && (
+        <Suspense fallback={<div className="shire-stage" aria-hidden="true" />}>
+          <EdorasWorld onLeave={toMap} />
         </Suspense>
       )}
 

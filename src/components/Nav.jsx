@@ -210,7 +210,7 @@ export function ThemePicker({ nameless = false }) {
       {open && (
         <div id="theme-panel" className="card absolute right-0 top-[calc(100%+10px)] z-50 max-h-[calc(100dvh-110px)] w-[19rem] overflow-y-auto p-2" style={{ background: 'var(--surface)' }}>
           <p className="px-2.5 pb-2 pt-1.5 text-xs leading-relaxed text-muted">
-            Every color scheme comes from a company I’ve worked at. On <span className="font-semibold text-ink">Auto</span>, the site follows the
+            Every color scheme is a company I’ve worked at. On <span className="font-semibold text-ink">Auto</span>, the site follows the
             page: AWS by default, each company as you scroll Experience, and each project’s own colors on its page.
           </p>
           <ThemeOptions onPick={() => setOpen(false)} />

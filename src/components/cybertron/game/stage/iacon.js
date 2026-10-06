@@ -14,108 +14,10 @@
 
 import * as THREE from 'three';
 import { makeFigure, makeThing } from '../bots';
-import { drum, hash, makeFires, makeSky, makeStrips, merged, platedMaterial, prism, slab, wedge } from './common';
+import { buildSkyline, drum, hash, makeFires, makeSky, makeStrips, merged, platedMaterial, slab, tower } from './common';
 
 const ENERGON = '#3fd2ff';
 const FIRE = '#ff7a2a';
-
-// A tower on its footprint, the way Fall of Cybertron builds them: its
-// corners cut, buttresses up its lowest tier, ribs up the faces of the rest,
-// a collar standing proud at each setback, a crown of fins, a spire or a
-// mast. Lit at its corners, its collars and up some of its ribs. (The
-// buttresses stand inside the footprint, the wall a little behind them:
-// where you stop is where the stone is.)
-function tower(s, i, parts, strips) {
-  const seed = hash(i * 7.3);
-  const tiers = 2 + Math.floor(seed * 3);
-  const yaw = s.yaw ?? 0;
-  const c = Math.cos(yaw);
-  const sn = Math.sin(yaw);
-  const corner = (x, z) => [s.x + x * c + z * sn, s.z - x * sn + z * c];
-  const inset = 2.6;
-  let hw = s.hw - inset;
-  let hd = s.hd - inset;
-  let y = 0;
-  parts.push(prism(s.x, s.z, s.hw, s.hd, 0, 2.2, { yaw, cut: 4, seed }));
-  for (let t = 0; t < tiers; t++) {
-    const last = t === tiers - 1;
-    const share = last ? 1 : 0.35 + hash(i + t * 3.1) * 0.25;
-    const y1 = last ? s.top : y + (s.top - y) * share;
-    const cut = Math.min(hw, hd) * (0.16 + hash(i + t * 5.7) * 0.14);
-    parts.push(prism(s.x, s.z, hw, hd, y, y1, { yaw, cut, seed }));
-    if (t === 0) {
-      // buttresses up the long faces, from the footprint's edge to the wall
-      const along = hw > hd;
-      const span = (along ? hw : hd) - cut;
-      const n = 2 + Math.floor(span / 14);
-      const h = Math.min(42, (y1 - y) * (0.45 + seed * 0.2));
-      for (let k = 0; k < n; k++) {
-        const f = ((k + 0.5) / n) * 2 - 1;
-        for (const side of [-1, 1]) {
-          const [ox, oz] = along ? corner(f * span, side * (hd + inset)) : corner(side * (hw + inset), f * span);
-          const [wx, wz] = along ? corner(f * span, side * hd) : corner(side * hw, f * span);
-          parts.push(wedge(ox, oz, wx, wz, h, 1.8, seed));
-        }
-      }
-    } else {
-      // ribs up the faces
-      const ribs = 2 + Math.floor(hash(i + t * 2.3) * 3);
-      for (let r = 0; r < ribs; r++) {
-        const f = ((r + 0.5) / ribs) * 2 - 1;
-        for (const side of [-1, 1]) {
-          const [ax, az] = corner(f * (hw - cut) * 0.85, side * (hd + 0.5));
-          const [bx, bz] = corner(side * (hw + 0.5), f * (hd - cut) * 0.85);
-          parts.push(slab(ax, az, 0.7, 0.5, y + 3, y1 - 2, yaw, seed));
-          parts.push(slab(bx, bz, 0.5, 0.7, y + 3, y1 - 2, yaw, seed));
-          // energon up one rib in three
-          if (hash(i * 3.1 + t + r) < 0.34) {
-            const [lx, lz] = corner(f * (hw - cut) * 0.85, side * (hd + 1.05));
-            strips.push([lx, lz, lx + 0.01, lz, y + 4, 0.35, y1 - y - 7]);
-          }
-        }
-      }
-    }
-    // the cut corners lit, top to bottom
-    for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-      const [x, z] = corner(sx * (hw - cut / 2 + 0.2), sz * (hd - cut / 2 + 0.2));
-      strips.push([x, z, x, z + 0.01, y + 2, 0.45, y1 - y - 4]);
-    }
-    if (!last) {
-      // a collar at the setback, standing proud, lit along its faces
-      const cw = hw * 0.97 + 1.2;
-      const cd = hd * 0.97 + 1.2;
-      parts.push(prism(s.x, s.z, cw, cd, y1 - 1.8, y1 + 0.4, { yaw, cut: cut + 1, seed }));
-      for (const side of [-1, 1]) {
-        const [ax, az] = corner(-cw + cut, side * (cd + 0.15));
-        const [bx, bz] = corner(cw - cut, side * (cd + 0.15));
-        strips.push([ax, az, bx, bz, y1 - 1.2, 0.4, 0.5]);
-        const [qx, qz] = corner(side * (cw + 0.15), -cd + cut);
-        const [rx, rz] = corner(side * (cw + 0.15), cd - cut);
-        strips.push([qx, qz, rx, rz, y1 - 1.2, 0.4, 0.5]);
-      }
-    }
-    y = y1;
-    hw *= 0.72 + hash(i + t) * 0.12;
-    hd *= 0.72 + hash(i + t + 9) * 0.12;
-  }
-  // the crown: a ring of fins, a faceted spire, or a deck with a mast
-  const kind = Math.floor(hash(i * 3.3) * 3);
-  const r = Math.min(hw, hd);
-  if (kind === 0) {
-    const fins = 4 + Math.floor(seed * 3) * 2;
-    for (let f = 0; f < fins; f++) {
-      const a = (f / fins) * Math.PI * 2 + yaw;
-      parts.push(wedge(s.x + Math.sin(a) * r * 1.1, s.z + Math.cos(a) * r * 1.1, s.x + Math.sin(a) * 0.6, s.z + Math.cos(a) * 0.6, 16 + seed * 22, 1.2, seed, y));
-    }
-    parts.push(drum(s.x, s.z, 1.4, 0.3, y, y + 26 + seed * 24, 6, seed));
-  } else if (kind === 1) {
-    parts.push(prism(s.x, s.z, hw * 0.55, hd * 0.55, y, y + 18 + seed * 26, { yaw, cut: r * 0.2, taper: 0.06, seed }));
-  } else {
-    parts.push(prism(s.x, s.z, hw * 0.8, hd * 0.8, y, y + 2.4, { yaw, cut: r * 0.3, seed }));
-    parts.push(drum(s.x, s.z, 0.8, 0.4, y + 2.4, y + 30, 8, seed));
-    parts.push(drum(s.x, s.z, r * 0.5, r * 0.5, y + 14, y + 15, 16, seed));
-  }
-}
 
 // A soft round glow, for eyes and lamps seen from far off
 function glowTexture() {
@@ -323,56 +225,8 @@ export async function buildStage(area, { tier = 'high' } = {}) {
   city.receiveShadow = true;
   group.add(city);
 
-  // the megastructures beyond the city: rings stepping up round a spire,
-  // radial fins between them, every rim lit (amber where the war has got
-  // to it); out past the fog, which would only make them shadows, so they
-  // stand dark against the burning sky with their rims glowing
-  const far = [];
-  const rims = { cool: [], hot: [] };
-  for (const [n, m] of (S.skyline ?? []).entries()) {
-    const seed = hash(n * 4.1 + 0.3);
-    let y = 0;
-    for (let t = 0; t < m.tiers; t++) {
-      const r = m.r * (1 - t / (m.tiers + 0.6));
-      const h = m.r * (0.12 + 0.05 * hash(n + t * 1.9));
-      far.push(drum(m.x, m.z, r, r * 0.94, y, y + h, 64, seed));
-      // the rim, as a ring of short strips
-      const list = hash(n * 7 + t) < m.war ? rims.hot : rims.cool;
-      const rr = r * 0.94 + 0.6;
-      for (let k = 0; k < 48; k++) {
-        const a0 = (k / 48) * Math.PI * 2;
-        const a1 = ((k + 1) / 48) * Math.PI * 2;
-        list.push([m.x + Math.cos(a0) * rr, m.z + Math.sin(a0) * rr, m.x + Math.cos(a1) * rr, m.z + Math.sin(a1) * rr, y + h - 1.5, 2.2, 1.6]);
-      }
-      // fins between this ring and the next, all round
-      if (t < m.tiers - 1)
-        for (let f = 0; f < 12; f++) {
-          const a = (f / 12) * Math.PI * 2 + seed;
-          const r2 = m.r * (1 - (t + 1) / (m.tiers + 0.6));
-          far.push(wedge(m.x + Math.cos(a) * r * 0.97, m.z + Math.sin(a) * r * 0.97, m.x + Math.cos(a) * r2 * 0.95, m.z + Math.sin(a) * r2 * 0.95, h * 1.6, 6, seed, y + h));
-        }
-      y += h;
-    }
-    // the spire, and its light
-    far.push(drum(m.x, m.z, m.r * 0.08, 2, y, y + m.r * 0.9, 8, seed));
-    rims.cool.push([m.x, m.z, m.x + 0.01, m.z, y + m.r * 0.9 - 6, 5, 6]);
-  }
-  if (far.length) {
-    const farMat = keep(platedMaterial({ lights: 'slits', windows: 0.12, base: '#1a1e26', alt: '#232934', trim: '#3a4250', panel: [24, 14], glow: 1.6, metalness: 0.6, roughness: 0.6 }));
-    farMat.fog = false;
-    const skyline = new THREE.Mesh(keep(merged(far)), farMat);
-    group.add(skyline);
-    for (const [list, color, k] of [
-      [rims.cool, ENERGON, 2.2],
-      [rims.hot, '#ff8a2a', 2.6],
-    ]) {
-      const m = makeStrips(list, color, k);
-      if (!m) continue;
-      m.material.fog = false;
-      keep(m.material);
-      group.add(m);
-    }
-  }
+  // the megastructures beyond the city
+  for (const m of buildSkyline(S.skyline, { cool: ENERGON, hot: '#ff8a2a', keep })) group.add(m);
 
   // light along the towers' edges, the setbacks, the barricades' tops
   const edges = makeStrips(strips, ENERGON, 1.6);

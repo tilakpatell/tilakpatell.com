@@ -167,7 +167,7 @@ export default function Cybertron() {
       <CybertronBackdrop side={side} />
       {/* the world first: Iacon at war, walked and driven as Optimus */}
       <div className="cyw-host relative z-10">
-        <GameWorld />
+        <GameWorld side={side} />
       </div>
       <section className="shell relative z-10 grid items-center gap-10 pb-16 pt-16 md:pb-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16" aria-labelledby="cy-title">
         <figure className="cy-planet m-0" data-side={side}>

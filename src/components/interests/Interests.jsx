@@ -14,7 +14,7 @@ export default function Interests() {
         <h2 id="interests-title" className="title">
           Off the clock
         </h2>
-        <p className="lead mt-4 max-w-[52ch]">Star Wars first. Then Indian classical music, Tolkien, Transformers, Marvel, games, The Office, Breaking Bad, Rick and Morty and a lot of travel. Most of them have a world of their own on this site, with something to play, and they all sit on one map.</p>
+        <p className="lead mt-4 max-w-[52ch]">Star Wars first. Then Indian classical music, Tolkien, Transformers, Marvel, games, The Office, Breaking Bad, Rick and Morty and a lot of travel. Most have a world of their own on this site, with something to play, all on one map.</p>
         <div className="mt-6">
           <InterestDock />
         </div>

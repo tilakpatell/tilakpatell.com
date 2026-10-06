@@ -23,6 +23,7 @@ import { makeSky } from '../../shire/sky';
 import { createFx } from '../../shire/fx';
 import { makeTerrain } from '../ground';
 import { makeFolk } from '../bree/props';
+import { createGhosts } from '../ghosts';
 import { createDoomKit } from './props';
 import { BARAD, CAMP, CROSS, CROSS_START, DOOM, EDGE, EYE_AT, FOOT, MARCH_LEN, REFUGE, ROCKS, alongMarch, groundHeight } from './layout';
 import { BURSTS, CARRY, EYE, FLIGHT } from './rules';
@@ -235,6 +236,9 @@ export function createDoomWorld(canvas, { onLost } = {}) {
   scene.add(frodo.group, sam.group);
   const gollum = kit.gollum();
   scene.add(gollum.group);
+  // other travellers, online, from other worlds (../ghosts.js), out on the plain
+  const ghosts = createGhosts({ height: groundHeight });
+  world.add(ghosts.group);
   const fx = createFx(scene, { scale: many });
   const R = (a) => (Math.random() - 0.5) * 2 * a;
   const ash = createParticles(Math.round(400 * Math.max(0.4, many)), {
@@ -636,6 +640,8 @@ export function createDoomWorld(canvas, { onLost } = {}) {
       pose(sam, t + 1, { moving: h.speed > 0.3 });
     }
     if (frodo.group.rotation.z !== 0 && s.talking !== 'foot' && s.mode !== 'remember') frodo.group.rotation.z = 0;
+    // other travellers, crossing the plain
+    ghosts.update(zone === 'plain' ? (s.travellers ?? []) : [], t, dt);
 
     // ash in the air, everywhere but inside
     if (!inNaur) {
@@ -794,6 +800,7 @@ export function createDoomWorld(canvas, { onLost } = {}) {
       return null;
     },
     dispose() {
+      ghosts.dispose();
       disposeTree(scene);
       stage.dispose();
     },

@@ -16,12 +16,14 @@
 // online, the Death Star fires on Scarif for everyone at once. (The
 // battles' shots and who's hit are each pilot's own.)
 //
-// buildSystem(sys, { models, bolts, flashes, small }) → { group, solids,
+// buildSystem(sys, { models, bolts, flashes, small, ratio }) → { group, solids,
 //   goals, body, shield, tractor, update(t, dt, camera, ship) → busy,
-//   events (drained by the scene), wake(ship), dispose() }
+//   setDetail(k), setRatio(r), events (drained by the scene), wake(ship), dispose() }
 // solids: ship.js's ({ id, at, r, reach, band?, goal?, name? }), some
 // moving (their `at` is updated in place); goals: the solids the autopilot
-// can take you to, with their names.
+// can take you to, with their names. setDetail(k): how finely to draw the
+// planets (0…1, bodies.js); setRatio(r): the renderer's pixel ratio, for the
+// ships of the skylanes (the size of a point is in pixels).
 
 import * as THREE from 'three';
 import { buildBody } from './bodies';
@@ -86,12 +88,14 @@ function pointAlong(obj, dir, up = Y) {
   obj.quaternion.setFromRotationMatrix(basis);
 }
 
-export function buildSystem(sys, { models, bolts, flashes, small = false }) {
+export function buildSystem(sys, { models, bolts, flashes, small = false, ratio = 1 }) {
   const group = new THREE.Group();
   group.name = `system-${sys.id}`;
   const solids = [];
   const ticks = []; // (t, dt, camera, ship) → busy
   const disposers = [];
+  const bodies = []; // every planet and moon made, for setDetail
+  const dpr = []; // the uniforms that hold the pixel ratio, for setRatio
   const events = [];
   const capitals = []; // the big ships, for the ion cannon and the battles: { slot, side, size }
   const sunDirs = sys.suns.map((s) => new THREE.Vector3(...s.dir).normalize());
@@ -113,6 +117,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
   const body = (look, r) => {
     const b = buildBody(look, { r, small });
     b.setSuns(sunLights);
+    bodies.push(b);
     disposers.push(() => b.dispose());
     return b;
   };
@@ -198,17 +203,16 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
       const color = LASER[p.side] ?? (small ? LASER.rebel : LASER.empire);
       let cool = 0.5;
       const up = new THREE.Vector3();
+      const run = (slot, ang) => {
+        at(ang, slot.holder.position);
+        at(ang + 0.01, tmp).sub(slot.holder.position);
+        up.copy(slot.holder.position).normalize();
+        pointAlong(slot.holder, tmp, up);
+      };
       ticks.push((t, dt) => {
         const a = t * p.speed;
-        for (const [slot, ang] of [
-          [runner, a],
-          [hunter, a - lag],
-        ]) {
-          at(ang, slot.holder.position);
-          at(ang + 0.01, tmp).sub(slot.holder.position);
-          up.copy(slot.holder.position).normalize();
-          pointAlong(slot.holder, tmp, up);
-        }
+        run(runner, a);
+        run(hunter, a - lag);
         hunter.holder.position.toArray(solid.at);
         cool -= dt;
         if (cool <= 0) {
@@ -266,13 +270,14 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
             flashes.at(r.ship.holder.position, { size: p.size * 2.2, color: [1.2, 1.8, 3.2], life: 0.7 });
             events.push({ type: 'event', id: 'escaped', kind: p.kind });
           } else if (flying) r.gone = false;
-          r.escorts.forEach((e, j) => {
+          for (let j = 0; j < r.escorts.length; j++) {
+            const e = r.escorts[j];
             tmp2.set(j ? p.size * 1.4 : -p.size * 1.4, p.size * 0.4, -p.size * (1.2 + j * 0.5)).applyQuaternion(r.ship.holder.quaternion);
             e.holder.position.copy(r.ship.holder.position).add(tmp2);
             e.holder.quaternion.copy(r.ship.holder.quaternion);
             e.holder.scale.copy(r.ship.holder.scale);
             e.holder.visible = r.ship.holder.visible;
-          });
+          }
         }
         return true;
       });
@@ -448,7 +453,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
         while (fireCool <= 0) {
           fireCool += small ? 0.22 : 0.11;
           const a = sides[Math.random() < 0.5 ? 0 : 1];
-          const b = sides.find((s) => s !== a);
+          const b = sides[0] !== a ? sides[0] : sides[1];
           const from = ships[a][Math.floor(Math.random() * ships[a].length)];
           const to = ships[b][Math.floor(Math.random() * ships[b].length)];
           if (!from || !to) break;
@@ -575,13 +580,14 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
       const C = new THREE.Vector3(...p.at);
       const slots = Array.from({ length: p.count }, () => place(models.slot(p.kind, p.size), p.at));
       ticks.push((t) => {
-        slots.forEach((s, j) => {
+        for (let j = 0; j < slots.length; j++) {
+          const s = slots[j];
           const a = t * p.speed + (j / p.count) * TAU + i;
           const pos = s.holder.position.set(Math.cos(a) * p.radius, Math.sin(a * 2 + j) * p.height, Math.sin(a) * p.radius).add(C);
           tmp.set(-Math.sin(a) * p.radius, Math.cos(a * 2 + j) * 2 * p.height, Math.cos(a) * p.radius).multiplyScalar(Math.sign(p.speed) || 1);
           tmp2.copy(pos).sub(C).normalize().multiplyScalar(-0.4).add(Y).normalize();
           pointAlong(s.holder, tmp, tmp2);
-        });
+        }
         return true;
       });
     },
@@ -653,7 +659,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
             gl_Position = projectionMatrix * mv;
           }`,
         fragmentShader: `varying vec3 vColor; void main() { float d = length(gl_PointCoord - 0.5); gl_FragColor = vec4(vColor * smoothstep(0.5, 0.15, d), 1.0); }`,
-        uniforms: { uTime: { value: 0 }, uDpr: { value: Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1) } },
+        uniforms: { uTime: { value: 0 }, uDpr: { value: ratio } },
         transparent: true,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
@@ -661,6 +667,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
       const pts = new THREE.Points(geo, mat);
       pts.frustumCulled = false;
       group.add(pts);
+      dpr.push(mat.uniforms.uDpr);
       disposers.push(() => (geo.dispose(), mat.dispose()));
       ticks.push((t) => {
         mat.uniforms.uTime.value = t % 7200;
@@ -706,6 +713,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
       const solid = addSolid({ id: 'deathstar', name: 'The Death Star', at: p.from, r: 0, reach: 0 });
       const target = new THREE.Vector3(...p.at);
       const dish = new THREE.Vector3();
+      const landing = new THREE.Vector3();
       // the beam: a hot green core in a wider glow
       const beamGeo = new THREE.CylinderGeometry(1, 1, 1, 12, 1, true).rotateX(Math.PI / 2).translate(0, 0, 0.5);
       const beamMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.2, 5.5, 1.4), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
@@ -753,7 +761,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
         const w = (k - 0.13) / 0.25;
         wave.visible = w > 0 && w < 1;
         if (wave.visible) {
-          const n = target.clone().normalize();
+          const n = landing.copy(target).normalize();
           wave.position.copy(n).multiplyScalar((sys.body?.r ?? 32) + 0.25);
           wave.quaternion.setFromUnitVectors(Zf, n);
           wave.scale.setScalar(2 + w * 24);
@@ -777,6 +785,12 @@ export function buildSystem(sys, { models, bolts, flashes, small = false }) {
     if (out.dsShield) out.dsShield.mat.uniforms.uHit.value = 1;
   };
   out.sunLights = sunLights;
+  out.setDetail = (k) => {
+    for (const b of bodies) b.setDetail(k);
+  };
+  out.setRatio = (r) => {
+    for (const u of dpr) u.value = r;
+  };
   out.dispose = () => {
     dead = true;
     for (const id of timers) clearTimeout(id);

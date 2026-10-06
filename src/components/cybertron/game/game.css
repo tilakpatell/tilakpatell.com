@@ -14,6 +14,12 @@
 .cyw-keys div { display: flex; gap: 8px; align-items: baseline; }
 .cyw-keys dt { min-width: 64px; color: #7fd8ff; font-weight: 700; }
 .cyw-keys dd { margin: 0; color: #c8d6ea; font-family: var(--font-body, ui-sans-serif, system-ui); }
+.cyw-sides { display: flex; justify-content: center; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+.cyw-side { padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(127, 216, 255, 0.3); background: rgba(5, 9, 18, 0.5); color: #c8d6ea; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.cyw-side span { color: #8aa0bd; text-transform: none; letter-spacing: 0; }
+.cyw-side[aria-pressed='true'][data-side='autobot'] { border-color: #ff5a4a; color: #fff; background: rgba(160, 30, 30, 0.45); }
+.cyw-side[aria-pressed='true'][data-side='decepticon'] { border-color: #b06bff; color: #fff; background: rgba(90, 40, 150, 0.45); }
+.cyw-side:focus-visible { outline: 2px solid #7fd8ff; outline-offset: 2px; }
 .cyw-progress { margin-top: 12px; font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: #8aa0bd; }
 
 .cyw-hud { position: absolute; inset: 0; pointer-events: none; }
@@ -34,6 +40,11 @@
 .cyw-boss { position: absolute; left: 50%; top: 74px; transform: translateX(-50%); width: min(420px, 70vw); text-align: center; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9b2ff; }
 .cyw-boss .cyw-bar span { background: linear-gradient(90deg, #8a3fd8, #d27bff); }
 .cyw-cross { position: absolute; left: 50%; top: 46%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid rgba(159, 216, 255, 0.8); box-shadow: 0 0 8px rgba(63, 210, 255, 0.7); }
+.cyw-cross.cyw-hitmark { animation: cyw-hitmark 0.18s ease-out; }
+@keyframes cyw-hitmark { 0% { transform: scale(1.6) rotate(45deg); border-color: #fff; box-shadow: 0 0 14px #fff; } 100% { transform: none; } }
+.cyw-hurt { position: absolute; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 120px 30px rgba(255, 40, 30, 0.75); }
+.cyw-hurt.cyw-hurt-on { animation: cyw-hurt 0.45s ease-out; }
+@keyframes cyw-hurt { 0% { opacity: 1; } 100% { opacity: 0; } }
 .cyw-prompt { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); padding: 7px 14px; border-radius: 8px; background: rgba(5, 9, 18, 0.75); font-size: 0.78rem; letter-spacing: 0.08em; color: #ffd9a0; border: 1px solid rgba(255, 176, 58, 0.35); }
 .cyw-talk { position: absolute; left: 50%; bottom: 168px; transform: translateX(-50%); width: min(560px, 88%); padding: 12px 16px; border-radius: 12px; background: rgba(5, 9, 18, 0.82); border: 1px solid rgba(127, 216, 255, 0.25); font-family: var(--font-body, ui-sans-serif, system-ui); font-size: 0.95rem; line-height: 1.5; }
 .cyw-talk-name { font-family: 'Orbitron', ui-sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: #7fd8ff; margin-bottom: 3px; }
@@ -90,5 +101,5 @@
   .cyw-stats { right: 10px; top: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cyw-spinner, .cyw-toast, .cyw-fade { animation: none; }
+  .cyw-spinner, .cyw-toast, .cyw-fade, .cyw-cross.cyw-hitmark, .cyw-hurt.cyw-hurt-on { animation: none; }
 }

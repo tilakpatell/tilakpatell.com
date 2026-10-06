@@ -1,11 +1,15 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { linesFor } from './crews';
-import { playClip } from '../../lib/clips';
+import { playClip, playFile } from '../../lib/clips';
+import { useMouth } from '../../lib/mouth';
+import { preloadVoiced, voicedSrc } from '../../lib/voiced';
 import { alarmSound, arrivalSound, boomSound, boostSound, bumpSound, crashSound, drySound, enemyFireSound, fallSound, fireSound, flareSound, flybySound, gunSound, hitSound, impactSound, interdictSound, jumpSound, launchSound, popSound, portalSound, respawnSound, riftSound, shieldSound, speak, switchSound } from './sounds';
 import Face from './Faces';
 
 // The ship's comms: what the crew says as you fly, one line at a time with
-// the speaker's face and voice (their own recording where the line has one),
+// the speaker's face and voice (their own recording where the line has one,
+// else the line made in their voice where that's been generated (lib/voiced.js),
+// else their blips), the face's mouth moving with it,
 // over the open part of the map. Reaching a world for the first time this
 // visit plays its sound bite and then the crew's exchange about it;
 // launching, boosting, bumping into things and reaching the edge get a line
@@ -32,9 +36,11 @@ export default function Comms({ crew, reduced, control }) {
   const timer = useRef(0);
   const alive = useRef(true);
   const n = useRef(0);
+  const box = useRef(null);
 
   useEffect(() => {
     alive.current = true;
+    preloadVoiced();
     return () => {
       alive.current = false;
       clearTimeout(timer.current);
@@ -66,14 +72,19 @@ export default function Comms({ crew, reduced, control }) {
       if (!speaker) continue;
       n.current += 1;
       setLine({ who, text, n: n.current });
-      const least = 1200 + text.length * 32;
-      if (clip) {
-        // their own voice: the line stays up while it plays
-        const started = performance.now();
-        const h = await playClip(clip);
-        if (h) await Promise.race([h.ended, new Promise((r) => setTimeout(r, 7000))]);
+      const least = clip ? 1200 + text.length * 32 : 1500 + text.length * 42; // time to read it
+      const started = performance.now();
+      // their own voice: the recording, or the line made in their voice
+      let h = clip ? await playClip(clip, { voice: true }) : null;
+      if (!h && speaker.voice) {
+        const src = await voicedSrc(who, text);
+        if (src && alive.current) h = await playFile(src, { voice: true });
+      }
+      if (h) {
+        // the line stays up while it plays
+        await Promise.race([h.ended, new Promise((r) => setTimeout(r, Math.max(7000, h.length * 1000 + 500)))]);
         await wait(Math.max(300, least - (performance.now() - started)));
-      } else await wait(Math.max(speaker.voice ? speak(speaker.voice, text) : 0, 1500 + text.length * 42));
+      } else await wait(Math.max(speaker.voice ? speak(speaker.voice, text) : 0, least));
     }
     if (alive.current) {
       await wait(400);
@@ -246,8 +257,9 @@ export default function Comms({ crew, reduced, control }) {
   );
 
   const speaker = line && (line.who === 'comms' ? COMMS : crew?.speakers[line.who]);
+  useMouth(box, Boolean(speaker) && line.who !== 'comms', reduced);
   return (
-    <div className="universe-comms" aria-live="polite" data-motion={reduced ? undefined : ''}>
+    <div ref={box} className="universe-comms" aria-live="polite" data-motion={reduced ? undefined : ''}>
       {speaker && (
         <p key={line.n} className="universe-line" style={{ '--who': speaker.color }}>
           {line.who !== 'comms' && <Face who={line.who} className="universe-face" />}

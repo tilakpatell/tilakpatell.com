@@ -149,3 +149,44 @@ Achievements unlock for each mission (`Achievements.jsx`).
 
 - Playing as Megatron (the Decepticon side), and Kaon. The page's side switch still recolours the HUD and the planet.
 - Online players in the world. This is easy to add later with `useTravellers`, as Avengers HQ does.
+
+## Amendment 1 (2026-10-06): Kaon, and Megatron to play
+
+The owner asked for Kaon and for Megatron as a playable side. This moves the
+first "out of scope" item in.
+
+- **Picking a side.** The start screen offers Optimus (Iacon) or Megatron
+  (Kaon). It defaults to the page's own side switch, and the choice is
+  saved with the rest (`tp-cybertron-world`).
+- **Megatron.** He plays Fall of Cybertron's `megatron-foc`. He changes
+  with his own model's transformation clip, not the chunk effect, using
+  the same `clips.toVehicle` / `vehicle` / `toRobot` timings his boss
+  version uses, sped up to `TRANSFORM.time`. As a tank he drives with the
+  truck's rules.
+- **Kaon** (`areas/kaon.js`, `stage/kaon.js`) is the Decepticons'
+  capital:
+  - dark plating with red and violet light
+  - Megatron's fortress to the north, its spire over the city
+  - the arena (Kaon's pits) at the centre
+  - a dark-energon refinery
+  - the same megastructures on its skyline
+  It has no bridges yet: Megatron's campaign is played there.
+- **Kaon's people** are Soundwave, Shockwave, Barricade and a trooper
+  captain. **Its enemies** are Autobot raiders, played by Bumblebee and
+  Jazz (`ENEMY_KINDS.autobot`), and Zeta Prime as the boss
+  (`ENEMY_KINDS.zeta`). Which model plays an enemy can now be set per
+  area (`area.foes`).
+- **Four missions**, each with an achievement:
+  - The pits of Kaon: three waves in the arena.
+  - Fuel the war machine: dark energon against the clock.
+  - Run them down: the tank through checkpoints, then the raiders.
+  - Zeta Prime's last stand: needs the other three; ends with the boss at
+    the fortress gate.
+- **Optimus's gun.** High Moon's weapon skeletons are held as the rest
+  pose holds them (barrel along the forearm, grip at the hand) every
+  frame, whatever the arm's pose or clip does.
+- **Feel.**
+  - a muzzle flash at the gun
+  - a hit marker when your shots land
+  - a red edge on the screen when you're hit
+  - the camera shaking on heavy hits and explosions

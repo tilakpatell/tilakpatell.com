@@ -26,6 +26,7 @@ export const SIDE_SEALS = {
 export const HIDDEN_SEALS = {
   orthanc: { found: 'orthanc', end: 'windlord' },
   'minas-tirith': { found: 'minastirith', end: 'kingreturns' },
+  edoras: { found: 'edoras', end: 'rohanwillanswer' },
 };
 // The places off the road, as far as they're known: one not found yet is
 // counted but not named, so the record gives nothing away.

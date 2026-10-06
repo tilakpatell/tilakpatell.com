@@ -34,7 +34,9 @@
   "luke": {
     "image": "01a10e7a-a1af-7603-b370-6ce78271b70a",
     "model": "01a10e7d-0f47-73c3-a7de-fbaa0f90d96c",
-    "rig": "01a10e80-7ab9-7506-a4e6-7c2080f8414d"
+    "rig": "01a10e79-ccc9-7407-8d28-d0d9d0e69c53",
+    "source": "sketchfab:84d5ed9497b5435b9a804f956ff74927",
+    "generatedRig": "01a10e80-7ab9-7506-a4e6-7c2080f8414d"
   },
   "bobafett": {
     "image": "01a10cc4-f2a9-77db-b6d3-36b87c221f8c",
@@ -45,5 +47,9 @@
     "image": "01a10cc7-2fe7-744b-ab17-ec82c462ee46",
     "model": "01a10cc8-2d1e-70f1-a752-78eeb6325a42",
     "rig": "01a10ccc-eb8c-717d-94a9-4a89a9bd1f67"
+  },
+  "leia": {
+    "rig": "01a10e7a-1f00-7687-a85e-4f9f528ae872",
+    "source": "sketchfab:e5efdd35a5e4462cbc013db44e80d31e"
   }
 }

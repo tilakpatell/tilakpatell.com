@@ -167,9 +167,13 @@ function riggedFigure(kind, spec, scene, animations) {
   const fig = rigFigure({ scene }, { h: spec.metres ?? 7 });
   // High Moon's rigs give a robot's guns and blades skeletons of their own,
   // beside the body's rather than in it: put each in whichever hand it's
-  // nearest, where it is now, so it goes where the arm goes
+  // nearest. How it's held is read off the rest pose, where the model holds
+  // it right (its barrel along the forearm, its grip at the hand), and kept
+  // to every frame after: the arm's pose, or the idle clip (which still
+  // moves the gun as if it hung from the root), would turn it round
   fig.model.updateMatrixWorld(true);
   const guns = [];
+  const grips = [];
   fig.model.traverse((o) => o.isBone && /^wep_reference/i.test(o.name) && guns.push(o));
   const at = new THREE.Vector3();
   const near = new THREE.Vector3();
@@ -187,8 +191,48 @@ function riggedFigure(kind, spec, scene, animations) {
         hand = h;
       }
     }
-    if (hand) hand.attach(gun);
+    if (!hand) continue;
+    const elbow = hand.parent;
+    const H = hand.getWorldPosition(new THREE.Vector3());
+    const fore = H.clone().sub(elbow.getWorldPosition(new THREE.Vector3())).normalize();
+    const inv = gun.getWorldQuaternion(new THREE.Quaternion()).invert();
+    grips.push({
+      gun,
+      hand,
+      elbow,
+      barrel: fore.applyQuaternion(inv),
+      up: new THREE.Vector3(0, 1, 0).applyQuaternion(inv),
+      grip: gun.worldToLocal(H.clone()),
+      scale: gun.getWorldScale(new THREE.Vector3()),
+    });
+    hand.attach(gun);
   }
+  const g1 = new THREE.Vector3();
+  const g2 = new THREE.Vector3();
+  const g3 = new THREE.Vector3();
+  const mL = new THREE.Matrix4();
+  const mW = new THREE.Matrix4();
+  const qW = new THREE.Quaternion();
+  const basis = (m, f, up) => {
+    const u = g3.copy(up).addScaledVector(f, -up.dot(f));
+    if (u.lengthSq() < 1e-6) u.set(0, 0, 1).addScaledVector(f, -f.z);
+    u.normalize();
+    return m.makeBasis(f, u, f.clone().cross(u));
+  };
+  // (the gun along the forearm as it is now, gripped where it was)
+  const holdGuns = () => {
+    if (!grips.length) return;
+    fig.holder.updateMatrixWorld(true);
+    for (const g of grips) {
+      const H = g.hand.getWorldPosition(g1);
+      const F = g2.copy(H).sub(g.elbow.getWorldPosition(g3)).normalize();
+      basis(mW, F, new THREE.Vector3(0, 1, 0)).multiply(basis(mL, g.barrel.clone().normalize(), g.up).transpose());
+      qW.setFromRotationMatrix(mW);
+      const offset = g.grip.clone().multiply(g.scale).applyQuaternion(qW);
+      mW.compose(H.clone().sub(offset), qW, g.scale).premultiply(mL.copy(g.hand.matrixWorld).invert());
+      mW.decompose(g.gun.position, g.gun.quaternion, g.gun.scale);
+    }
+  };
   const group = new THREE.Group();
   group.add(fig.holder);
   fig.holder.position.y = fig.hipHeight;
@@ -229,6 +273,17 @@ function riggedFigure(kind, spec, scene, animations) {
       mixer.update(0);
       return a.getClip().duration;
     },
+    // where the gun's muzzle is (in the world), for the shots and the flash:
+    // down the forearm from the hand, a gun's length (or a fist's)
+    muzzle(out = new THREE.Vector3()) {
+      const g = grips.find((x) => x.hand === fig.bones.handR) ?? grips[0];
+      const hand = g?.hand ?? fig.bones.handR;
+      if (!hand?.parent) return null;
+      fig.holder.updateMatrixWorld(true);
+      hand.getWorldPosition(out);
+      const f = g1.copy(out).sub(hand.parent.getWorldPosition(g2)).normalize();
+      return out.addScaledVector(f, fig.height * (g ? 0.32 : 0.1));
+    },
     // back from a held clip to standing, walking and the rest
     release() {
       if (!held) return;
@@ -247,6 +302,7 @@ function riggedFigure(kind, spec, scene, animations) {
       if (blend < 0.02 && idle) {
         if (!idle.isRunning()) idle.reset().play();
         mixer.update(dt);
+        holdGuns();
         return;
       }
       idle?.stop();
@@ -261,6 +317,7 @@ function riggedFigure(kind, spec, scene, animations) {
         targets = { ...targets, armR: dir, foreR: dir, armL: [0.35, -0.3, 0.85], foreL: [-0.2, 0.15, 1], torso: { ...(targets.torso ?? {}), yaw: (targets.torso?.yaw ?? 0) * 0.3 } };
       }
       fig.pose(targets, dt, state === 'hurt' ? 20 : 12);
+      holdGuns();
     },
     tint(hex, k) {
       fig.tint(new THREE.Color(hex), k);
@@ -292,7 +349,7 @@ export async function makeFigure(kind, { shadows = false } = {}) {
     group.add(standIn(kind));
     f = stillFigure(kind, spec ?? { metres: 7 }, group, []);
     f.standIn = true;
-  } else if (!spec.rig && ROBOTS.has(spec.role)) {
+  } else if (!spec.rig && !spec.still && ROBOTS.has(spec.role)) {
     // one piece, no skeleton: given one (autorig.js), then posed like the rest
     try {
       if (!rigged.has(kind)) rigged.set(kind, autorig(loaded.scene));

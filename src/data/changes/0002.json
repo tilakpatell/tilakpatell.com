@@ -3,7 +3,7 @@
   "date": "2026-10-05",
   "title": "The ship’s log shows a before and an after, side by side",
   "kind": "infra",
-  "summary": "A change you can see now comes with two pictures: the page as it was, shot before anything was touched, and the page after, captioned side by side on this page. There’s nothing to see on this entry itself; the next visible change is the first to carry a before picture.",
+  "summary": "A visible change now comes with two pictures: the page before anything was touched, and the page after, side by side. Nothing to see on this entry itself; the next visible change is the first with a before picture.",
   "routes": [
     "/changes"
   ],

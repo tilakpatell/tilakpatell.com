@@ -1,5 +1,8 @@
 // Little heads in the show's style, for picking who to play and for the
-// family roster: flat colour, a dark line, big eyes with dot pupils.
+// family roster: flat colour, a dark line, big eyes with dot pupils. Rick's,
+// Morty's and Mr. Meeseeks's mouths can talk (Mouth.jsx).
+
+import Mouth from '../Mouth';
 
 const INK = '#1b1424';
 
@@ -22,7 +25,7 @@ export function RickFace({ className }) {
       <path d="M33 38 Q50 33 67 38" fill="none" stroke="#7d98a6" strokeWidth="4" strokeLinecap="round" />
       <Eyes y={47} gap={10} r={7} pupil={1.4} />
       <path d="M44 60 Q50 64 56 60" fill="none" stroke={INK} strokeWidth="2" />
-      <path d="M40 72 Q50 69 60 72" fill="none" stroke={INK} strokeWidth="2" />
+      <Mouth d="M40 72 Q50 69 60 72" cx={50} cy={71.5} rx={7} linecap={null} />
       <path d="M57 73 q2 6 0 9" fill="none" stroke="#9fd8ff" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
@@ -36,7 +39,7 @@ export function MortyFace({ className, shirt = '#f3d84b', patch = false }) {
       <path d="M20 46 Q22 18 50 17 Q78 18 80 46 Q66 34 50 35 Q34 34 20 46 Z" fill="#6a3d1f" stroke={INK} strokeWidth="2" />
       <Eyes y={52} gap={12} r={8} pupil={1.2} patch={patch} />
       {patch && <path d="M30 44 L78 58" stroke={INK} strokeWidth="2" />}
-      <path d="M45 68 Q50 66 55 68" fill="none" stroke={INK} strokeWidth="2" />
+      <Mouth d="M45 68 Q50 66 55 68" cx={50} cy={67.5} rx={5.5} linecap={null} />
     </svg>
   );
 }
@@ -102,7 +105,7 @@ export function MeeseeksFace({ className }) {
     <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
       <ellipse cx="50" cy="52" rx="30" ry="36" fill="#6fc6ea" stroke={INK} strokeWidth="2" />
       <Eyes y={44} gap={10} r={8} pupil={3.4} />
-      <ellipse cx="50" cy="68" rx="10" ry="7" fill="#2a1a2a" stroke={INK} strokeWidth="2" />
+      <ellipse className="face-mouth-stretch" cx="50" cy="68" rx="10" ry="7" fill="#2a1a2a" stroke={INK} strokeWidth="2" />
     </svg>
   );
 }

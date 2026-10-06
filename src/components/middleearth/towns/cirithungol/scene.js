@@ -25,6 +25,7 @@ import { createFx } from '../../shire/fx';
 import { makeTerrain } from '../ground';
 import { makeFolk } from '../bree/props';
 import { createGollum } from '../marshes/props';
+import { createGhosts } from '../ghosts';
 import { createCirithKit } from './props';
 import { BRAWL, BRIDGE, CITY_YAW, COURT, HIDE, LAIR_OUT, MORGUL_ROAD, PASS, TOWER_DOOR, TOWER_PILLARS, TUNNELS, roughHeight, stairAt } from './layout';
 import { CRUMBS, STAIRS, cloakLift } from './rules';
@@ -289,6 +290,11 @@ export function createCirithUngolWorld(canvas, { onLost } = {}) {
     zones.tower.add(o.group);
     return o;
   });
+  // other travellers, online, from other worlds (../ghosts.js), in whichever
+  // zone you're walking (the courtyard's ground and the tunnels' are flat;
+  // only those in the same zone are listed)
+  const ghosts = createGhosts();
+  zones.tower.add(ghosts.group);
 
   // ── people ──
   const blobGeo = new THREE.CircleGeometry(0.42, 20).rotateX(-Math.PI / 2);
@@ -665,6 +671,9 @@ export function createCirithUngolWorld(canvas, { onLost } = {}) {
         embers.emit(p.x + R(0.15), p.y + 0.3, p.z + R(0.15), R(0.3), 0.8 + Math.random(), R(0.3), 1.6, 0.05, 0.02, 1);
       }
     }
+    // other travellers, walking the courtyard or the tunnels
+    if (ghosts.group.parent !== zones[zone]) zones[zone].add(ghosts.group);
+    ghosts.update(zone === 'tower' || zone === 'lair' ? (s.travellers ?? []) : [], t, dt);
     embers.step(dt);
     A.hit = Math.max(0, A.hit - dt * 2);
     fx.step(dt, t, { night: 1, day: 0 });
@@ -845,6 +854,7 @@ export function createCirithUngolWorld(canvas, { onLost } = {}) {
       return null;
     },
     dispose() {
+      ghosts.dispose();
       disposeTree(scene);
       stage.dispose();
     },

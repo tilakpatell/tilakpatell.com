@@ -8,7 +8,7 @@
 // site's master volume, and only once the visitor has clicked or pressed
 // something (browsers hold sound back until then).
 
-import { audioContext, output } from '../../lib/audio';
+import { audioContext, output, voiceOutput } from '../../lib/audio';
 import { playClip } from '../../lib/clips';
 import { portalSound, shipEngine } from '../universe/sounds';
 
@@ -232,9 +232,9 @@ function siren(dur, at = 0) {
 }
 
 // Artoo: a run of quick whistles
-function chirps(at = 0, n = 6) {
+function chirps(at = 0, n = 6, voice = false) {
   const ac = audioContext();
-  const out = ac ? output() : null;
+  const out = ac ? (voice ? voiceOutput() : output()) : null;
   if (!ac || !out) return;
   let t = ac.currentTime + at;
   for (let i = 0; i < n; i++) {
@@ -345,6 +345,7 @@ export function cockpitSound(id) {
 }
 
 // The crew's lines that have a recording: played under their subtitles.
-export const sayClip = (name) => playClip(name, { keep: true });
+// (both through the voice tap, so the speaker's face moves with them)
+export const sayClip = (name) => playClip(name, { keep: true, voice: true });
 // Artoo has no recording: his whistles stand in.
-export const artoo = () => chirps(0, 6);
+export const artoo = () => chirps(0, 6, true);

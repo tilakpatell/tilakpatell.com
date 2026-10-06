@@ -71,6 +71,27 @@ describe('pace', () => {
     expect(back.changes).toEqual([STEPS[0]]);
   });
 
+  it('says once, when frames stay late with nothing left to soften', () => {
+    let told = 0;
+    const pace = createPace({ onFloor: () => (told += 1) });
+    let { t } = run(pace, 1000, 120, 16.7);
+    ({ t } = run(pace, t, 160, 50)); // down every step
+    expect(told).toBe(0);
+    run(pace, t, 600, 50); // and half a minute more at the softest
+    expect(told).toBe(1);
+  });
+
+  it('says nothing for a short while at its softest', () => {
+    let told = 0;
+    const pace = createPace({ onFloor: () => (told += 1) });
+    let { t } = run(pace, 1000, 120, 16.7);
+    while (pace.level < STEPS.length - 1) ({ t } = run(pace, t, 1, 50)); // down to the softest
+    ({ t } = run(pace, t, 60, 50)); // three seconds more
+    ({ t } = run(pace, t, 600, 16.7)); // then on time
+    run(pace, t, 60, 50); // and a later stretch starts the count again
+    expect(told).toBe(0);
+  });
+
   it('never goes past its last step', () => {
     const pace = createPace();
     const { t } = run(pace, 1000, 120, 16.7);

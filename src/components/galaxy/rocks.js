@@ -5,8 +5,16 @@
 // they are, how big, which way they turn: all from the seed, so every
 // pilot sees the same field and the big rocks the ship can hit stay put.
 //
+// The tumbling is the graphics card's: an instance's matrix is only where
+// the rock is and how big, written once, and each rock carries its axis and
+// its phase and speed as instance attributes, so the vertex shader turns it
+// (about its own middle, by phase + time * speed) before the instance
+// matrix puts it in place. A frame costs one uniform, not a matrix per rock.
+// The smaller half of the rocks, too small to show their facets, are drawn
+// with the shape one subdivision coarser; the finest is for the big rocks.
+//
 // createRocks({ kind = 'field', at = [0, 0, 0], count = 400, seed = 1, small = false, ...shape })
-//   → { group, solids, update(t, camera), dispose() }
+//   → { group, solids, update(t), dispose() }
 // kind 'ring': { inner, outer, thickness, tilt: [x, z] } round a planet at `at`
 //      'field': { radius } a loose cloud, a few huge rocks, many small
 //      'debris': { radius } a planet's remains, chunks scorched and still glowing
@@ -93,6 +101,34 @@ function rockGeometry(seed, detail, chunky) {
   return geo;
 }
 
+// A rock material that turns each instance in the vertex shader: about the
+// axis in aSpinAxis, by aSpin.x (its phase) + uTime * aSpin.y (its speed).
+// It turns the vertex and the normal in the rock's own space, before the
+// instance matrix moves and sizes it (three applies that later, in
+// project_vertex and defaultnormal_vertex). The uniform is one object the
+// rocks keep hold of, so a frame is one number.
+const SPIN = `
+attribute vec3 aSpinAxis;
+attribute vec2 aSpin;
+uniform float uTime;
+vec3 rockSpin(vec3 v, vec3 k, float a) {
+  float c = cos(a);
+  float s = sin(a);
+  return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c);
+}`;
+function spinning(material, time) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = time;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>${SPIN}`)
+      .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nfloat rockAngle = aSpin.x + uTime * aSpin.y;\nobjectNormal = rockSpin(objectNormal, aSpinAxis, rockAngle);')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed = rockSpin(transformed, aSpinAxis, rockAngle);');
+  };
+  // (its own program, whatever other materials' compile hooks look like)
+  material.customProgramCacheKey = () => 'rock-spin';
+  return material;
+}
+
 const PALETTES = {
   field: ['#5a5550', '#6b625a', '#4a4744', '#5e5a56', '#3f3b38'],
   ring: ['#7a5240', '#8a6a52', '#5e4a3e', '#9a7a60', '#6e4430'],
@@ -161,63 +197,71 @@ export function createRocks({ kind = 'field', at = [0, 0, 0], count = 400, seed 
   // the shapes, the materials
   const variants = small ? 3 : 5;
   const detail = small ? 1 : 2;
-  const geos = [];
-  for (let v = 0; v < variants; v++) geos.push(rockGeometry(seed * 13 + v, v === 0 && !small ? 3 : detail, kind === 'debris'));
-  made.push(...geos);
-  const rockMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.94, metalness: 0.04, flatShading: true });
-  const hotMat = new THREE.MeshStandardMaterial({ color: '#2a1a12', roughness: 0.8, metalness: 0, emissive: new THREE.Color('#ff9a3a'), emissiveIntensity: 3, flatShading: true });
+  const timeUniform = { value: 0 };
+  const rockMat = spinning(new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.94, metalness: 0.04, flatShading: true }), timeUniform);
+  const hotMat = spinning(new THREE.MeshStandardMaterial({ color: '#2a1a12', roughness: 0.8, metalness: 0, emissive: new THREE.Color('#ff9a3a'), emissiveIntensity: 3, flatShading: true }), timeUniform);
   made.push(rockMat, hotMat);
   const palette = (PALETTES[kind] ?? PALETTES.field).map((c) => new THREE.Color(c));
 
-  // which rock is drawn by which mesh; the hot ones (debris) apart
-  const spin = [];
+  // a rock's shape: a variant, one subdivision coarser for the small ones (never below detail 1), made once
+  const variantGeos = new Map();
+  const shapeDetail = (v, coarse) => Math.max(1, (v === 0 && !small ? 3 : detail) - (coarse ? 1 : 0));
+  const variantGeo = (v, coarse) => {
+    const key = `${v}${coarse ? 'c' : ''}`;
+    if (!variantGeos.has(key)) variantGeos.set(key, rockGeometry(seed * 13 + v, shapeDetail(v, coarse), kind === 'debris'));
+    return variantGeos.get(key);
+  };
+
+  // which rock is drawn by which mesh: the hot ones (debris) apart, and the smaller half of the rocks
+  // (where that's a coarser shape at all) apart from the bigger
+  const smaller = new Set(order.slice(n - Math.floor(n / 2)));
   const buckets = new Map();
   const tmpC = new THREE.Color();
   rocks.forEach((rk, i) => {
     const hot = kind === 'debris' && rk.size < 1.6 && rand() < 0.14;
     const v = Math.floor(rand() * variants);
-    const key = `${hot ? 'h' : 'r'}${v}`;
-    if (!buckets.has(key)) buckets.set(key, { v, hot, list: [] });
+    const coarse = smaller.has(i) && shapeDetail(v, true) < shapeDetail(v, false);
+    const key = `${hot ? 'h' : 'r'}${v}${coarse ? 'c' : ''}`;
+    if (!buckets.has(key)) buckets.set(key, { v, hot, coarse, list: [] });
     const axis = new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize();
     const speed = (0.03 + rand() * 0.25) / Math.sqrt(rk.size) * (rand() < 0.5 ? -1 : 1);
     const phase = rand() * Math.PI * 2;
     const scorched = kind === 'debris' && rand() < 0.35;
     tmpC.copy(palette[Math.floor(rand() * palette.length)]).multiplyScalar(0.8 + rand() * 0.4);
     if (scorched) tmpC.lerp(new THREE.Color('#2a221c'), 0.6);
-    const s = { i, axis, speed, phase, size: rk.size, p: rk.p, color: tmpC.clone() };
-    spin.push(s);
-    buckets.get(key).list.push(s);
+    buckets.get(key).list.push({ axis, speed, phase, size: rk.size, p: rk.p, color: tmpC.clone() });
   });
 
+  // one mesh to a bucket, each on its own copy of the shape (the instance attributes can't sit on a geometry
+  // others share), a rock's place and size written once, its axis and spin beside them
   const meshes = [];
+  const m = new THREE.Matrix4();
+  const still = new THREE.Quaternion();
+  const sc = new THREE.Vector3();
   for (const b of buckets.values()) {
-    const mesh = new THREE.InstancedMesh(geos[b.v], b.hot ? hotMat : rockMat, b.list.length);
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const geo = variantGeo(b.v, b.coarse).clone();
+    // (about its own middle, whichever way it's turned: a sphere that holds in every turn, for the culling)
+    const pos = geo.attributes.position;
+    let reach = 0;
+    for (let k = 0; k < pos.count; k++) reach = Math.max(reach, pos.getX(k) ** 2 + pos.getY(k) ** 2 + pos.getZ(k) ** 2);
+    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Math.sqrt(reach));
+    const axes = new Float32Array(b.list.length * 3);
+    const spins = new Float32Array(b.list.length * 2);
+    const mesh = new THREE.InstancedMesh(geo, b.hot ? hotMat : rockMat, b.list.length);
     b.list.forEach((s, j) => {
-      s.mesh = mesh;
-      s.j = j;
+      m.compose(s.p, still, sc.setScalar(s.size));
+      mesh.setMatrixAt(j, m);
+      axes.set([s.axis.x, s.axis.y, s.axis.z], j * 3);
+      spins.set([s.phase, s.speed], j * 2);
       if (!b.hot) mesh.setColorAt(j, s.color);
     });
-    group.add(mesh);
-    meshes.push(mesh);
-  }
-
-  const q = new THREE.Quaternion();
-  const m = new THREE.Matrix4();
-  const sc = new THREE.Vector3();
-  const place = (t) => {
-    for (const s of spin) {
-      q.setFromAxisAngle(s.axis, s.phase + t * s.speed);
-      sc.setScalar(s.size);
-      m.compose(s.p, q, sc);
-      s.mesh.setMatrixAt(s.j, m);
-    }
-    for (const mesh of meshes) mesh.instanceMatrix.needsUpdate = true;
-  };
-  place(0);
-  for (const mesh of meshes) {
+    geo.setAttribute('aSpinAxis', new THREE.InstancedBufferAttribute(axes, 3));
+    geo.setAttribute('aSpin', new THREE.InstancedBufferAttribute(spins, 2));
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.computeBoundingSphere();
+    made.push(geo);
+    group.add(mesh);
+    meshes.push(mesh);
   }
 
   // the big rocks, in the world
@@ -228,16 +272,12 @@ export function createRocks({ kind = 'field', at = [0, 0, 0], count = 400, seed 
     return { id: `rock-${k}`, at: [w.x, w.y, w.z], r, reach: r };
   });
 
-  const centre = new THREE.Vector3(...at);
-  const far = (kind === 'ring' ? shape.outer ?? 80 : shape.radius ?? 60) * 8;
   return {
     group,
     solids,
-    update(t, camera) {
+    update(t) {
+      timeUniform.value = t;
       hotMat.emissiveIntensity = 2.8 + 0.5 * Math.sin(t * 0.9) * Math.sin(t * 0.37 + 1);
-      // (too far off to see them turn: leave them)
-      if (camera && camera.position.distanceTo(centre) > far) return;
-      place(t);
     },
     dispose() {
       for (const mesh of meshes) mesh.dispose();

@@ -8,7 +8,8 @@
 //
 // What the game reads besides: `role` (player, vehicle, npc, boss, enemy,
 // landmark, prop), `era` (wfc, foc or tfp), `rig` (a skeleton kept, for
-// lib/three/rig.js to pose) and `clips` (what its own animation is: an
+// lib/three/rig.js to pose; `still`: never given a skeleton of our own,
+// for a robot whose shape the auto-rig can't read) and `clips` (what its own animation is: an
 // idle, or the High Moon rips' whole transformation, robot to vehicle and
 // back, with where in it each change is: `toVehicle` and `toRobot` from and
 // to, in seconds, and `vehicle` a moment it's all vehicle).
@@ -41,6 +42,17 @@ export const MODELS = {
   // orbit, and standing on its plating when you land)
   'optimus-orbit': { uid: '5b4d634974c240f9988ac985f3ff4c0b', as: 'Optimus Prime (War for Cybertron), on Cybertron\'s orbit in the universe map', metres: 9.5, tris: 9000, tex: 512, maps: 256, drop: 'ButterflyAxe', pose: 0, also: ['universe'], file: '/models/cybertron/optimus-orbit.glb', role: 'prop', era: 'wfc' },
   'megatron-orbit': { uid: '25ab3faed0344431a6c08652dd1a828b', as: 'Megatron (Fall of Cybertron), across Cybertron\'s orbit from him', metres: 10.5, tris: 9000, tex: 256, maps: 128, pose: 0, also: ['universe'], file: '/models/cybertron/megatron-orbit.glb', role: 'prop', era: 'foc' },
+  // more of Fall of Cybertron's cast (hafid.quispe's uploads, each with its
+  // robot and its vehicle in one file: split by node, the loose parts of the
+  // other form left off): Starscream and his seekers for Kaon, Autobots for
+  // its raiders, Ultra Magnus for Iacon
+  'starscream-foc': { uid: 'f35afcf0967a4e1bb9926b4b2866ddc1', as: 'Starscream (Fall of Cybertron), in Kaon', metres: 9.5, yaw: 1.5708, node: 'Starscream-FoC_ARM', skinnedOnly: true, tris: 20000, tex: 1024, rig: true, file: '/models/cybertron/starscream-foc.glb', role: 'npc', era: 'foc' },
+  'skywarp-jet': { uid: '81e1de0e69324c129e4d564759d775be', as: 'Skywarp\'s jet (Fall of Cybertron), over Kaon', metres: 13, along: 'max', yaw: 1.5708, node: 'Starscream-VH_ARM', tris: 8000, tex: 1024, file: '/models/cybertron/skywarp-jet.glb', role: 'vehicle', era: 'foc' },
+  'thundercracker-jet': { uid: 'b639714d67a744339190e264009a134b', as: 'Thundercracker\'s jet (Fall of Cybertron), over Kaon', metres: 13, along: 'max', yaw: 1.5708, node: 'Starscream-VH_ARM', tris: 8000, tex: 1024, file: '/models/cybertron/thundercracker-jet.glb', role: 'vehicle', era: 'foc' },
+  'ironhide-foc': { uid: 'bca7d4ec915347aaa1f4dd3ebf0c4b1c', as: 'Ironhide (Fall of Cybertron), raiding Kaon', metres: 8.5, yaw: 1.5708, node: '^(Ironhide_ARM|RB_Ironhide)', skinnedOnly: true, tris: 18000, tex: 1024, rig: true, file: '/models/cybertron/ironhide-foc.glb', role: 'enemy', era: 'foc' },
+  'warpath-foc': { uid: '45b7d7e247314a3e92df394fc3057d05', as: 'Warpath (Fall of Cybertron), raiding Kaon', metres: 8, yaw: -1.5708, node: '^RB_Warpath', skinnedOnly: true, tris: 18000, tex: 1024, rig: true, file: '/models/cybertron/warpath-foc.glb', role: 'enemy', era: 'foc' },
+  'ratchet-foc': { uid: '08c5f80bb63040df8280a0bf6ac99b9e', as: 'Ratchet (Fall of Cybertron), raiding Kaon', metres: 8.5, yaw: 1.5708, node: '^RB_Ratchet', skinnedOnly: true, tris: 18000, tex: 1024, rig: true, file: '/models/cybertron/ratchet-foc.glb', role: 'enemy', era: 'foc' },
+  'ultra-magnus-foc': { uid: '115e3e99f69c4eae9f25f503c62c7add', as: 'Ultra Magnus (Fall of Cybertron), in Iacon', metres: 11, yaw: 1.5708, node: 'qc_skeleton|^FoC_Ultra_Magnus_(R|L)_', still: true, tris: 20000, tex: 1024, file: '/models/cybertron/ultra-magnus-foc.glb', role: 'npc', era: 'foc' },
   // Team Prime's base and Jasper: Transformers: Prime
   'optimus-tfp': { uid: 'd4c02597e39541518293a95a4afeadfe', as: 'Optimus Prime (Transformers: Prime), whom you play on Earth', metres: 9.5, tris: 12000, tex: 1024, file: '/models/cybertron/optimus-tfp.glb', role: 'player', era: 'tfp' },
   'truck-tfp': { uid: 'e75947aff6ad40b498c9f77eb76d06ef', as: 'Optimus\'s truck (Transformers: Prime)', metres: 8.5, along: 'max', tris: 25000, tex: 1024, file: '/models/cybertron/truck-tfp.glb', role: 'vehicle', era: 'tfp' },

@@ -26,6 +26,8 @@
 //   message() → the wire form, active, forget(peer) }
 // readSiege(data, now) → a message, or null if it's not one.
 // citadelGeometry(w) → where its parts are, in map units.
+// blastShape(age, core) → how big each part of the blast is `age` seconds
+//   in, in map units, and how bright: kept to the Citadel's own scale.
 
 import { CITADEL_PARTS } from './deep';
 
@@ -201,6 +203,27 @@ export function citadelGeometry(w) {
     return [ax + (x + (x / l) * out) * k, ay + (y + r * 0.35) * k, az + (z + (z / l) * out) * k];
   });
   return { center, shield: 21 * k, core: 18 * k, gens, gen: 1.7 * k };
+}
+
+// The blast as it goes up, `age` seconds in, for a core of radius `core`
+// (map units): the flash's width (a sprite), the fireball's and the portal
+// fluid's radii, the shock ring's radius, and how bright the flash and the
+// ring are (0…1). Everything stays within three cores of the middle: the
+// Citadel is a station among stations, not a sun, and a blast that swelled
+// to ten times its size washed out the whole screen from anywhere nearby.
+export const BLAST_S = 4.5; // seconds the blast takes
+export function blastShape(age, core) {
+  const k = Math.min(1, Math.max(0, age) / BLAST_S);
+  const flashAlpha = age < 0.15 ? Math.min(1, age / 0.15) : Math.max(0, 1 - (age - 0.15) / 1.45);
+  return {
+    flash: core * 1.8 * (0.5 + flashAlpha * 0.5),
+    flashAlpha,
+    fire: core * (0.3 + Math.min(1, age / 0.9) * 1.1),
+    fluid: core * (0.2 + Math.min(1, age / 1.6) * 1.5),
+    shock: core * (0.5 + k * 2.5),
+    shockAlpha: (1 - k) ** 1.5,
+    done: k >= 1,
+  };
 }
 
 // Where a segment (a shot's step, from → to: [x, y, z]) first meets a

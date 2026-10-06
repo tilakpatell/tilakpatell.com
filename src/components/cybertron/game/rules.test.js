@@ -3,6 +3,7 @@ import {
   BARRICADE,
   ENEMY_KINDS,
   MEGATRON,
+  MEND,
   ROBOT,
   SHOT,
   TRANSFORM,
@@ -249,6 +250,33 @@ describe('shots', () => {
     expect(fire(p, [], { yaw: 0, pitch: 0 }).length).toBe(0);
     run(p, {}, SHOT.cooldownRobot + 0.02, world);
     expect(fire(p, [], { yaw: 0, pitch: 0 }).length).toBe(1);
+  });
+});
+
+describe('getting his strength back', () => {
+  it('mends out of the fight, and not while he is being shot', () => {
+    const world = buildWorld({ ...AREA, solids: [] });
+    const p = newPlayer(AREA);
+    settle(p, world);
+    damage(p, 60);
+    run(p, {}, MEND.after - 0.5, world);
+    expect(p.hp).toBe(40);
+    run(p, {}, 2, world);
+    expect(p.hp).toBeGreaterThan(40);
+    run(p, {}, 20, world);
+    expect(p.hp).toBe(p.maxHp);
+    // (hit again: the wait starts over)
+    damage(p, 30);
+    run(p, {}, MEND.after - 0.5, world);
+    expect(p.hp).toBe(p.maxHp - 30);
+  });
+
+  it("doesn't mend once he's down", () => {
+    const world = buildWorld({ ...AREA, solids: [] });
+    const p = newPlayer(AREA);
+    damage(p, p.maxHp);
+    run(p, {}, MEND.after + 5, world);
+    expect(p.hp).toBe(0);
   });
 });
 

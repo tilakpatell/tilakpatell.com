@@ -592,7 +592,7 @@ export default function Metherria({ at } = {}) {
                 <div className="wm-card">
                   <p className="wm-card-title">{career.served ? `Day ${career.day}. Back to work.` : 'Walt’s Metherria'}</p>
                   <p className="wm-card-text">
-                    Customers come to the hatch all shift. Take each order, then build it, cook it, break it and pack it the way the ticket says, and hand it over. Every station is scored, and so is the wait. Good work pays, and pay buys upgrades.
+                    Customers come to the hatch all shift. Take each order, then build, cook, break and pack it the way the ticket says. Every station is scored, and so is the wait. Good work pays, and pay buys upgrades.
                   </p>
                   <div className="wm-row">
                     <button type="button" className="btn btn-primary wm-big" onClick={startShift}>

@@ -1019,4 +1019,14 @@ export function step(g, dt) {
   if (goal(g)) chapterDone(g);
 }
 
+// ── the other players ──
+
+// Where your ship is, as a traveller's step for the towns' rooms
+// (middleearth/towns/travellers.js): the sea's x and y as they are for x and
+// z (the room reaches as far as the sea does, past the towns' 200), her
+// heading turned the way Tide3D turns her model (π − a) for the facing, and
+// her speed.
+export const STEP_BOUND = TIDE.R + 40;
+export const shipStep = (s) => ({ x: s.x, z: s.y, face: wrap(Math.PI - s.a), speed: s.v });
+
 export { ARM };

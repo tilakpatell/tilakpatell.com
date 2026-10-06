@@ -1,0 +1,36 @@
+/* Edoras: the Shire's HUD (../../shire/shire.css) and Minas Tirith's game
+   panels (../minastirith/minastirith.css), in the green and gold of Rohan;
+   the meters for the brawl, the drinking game and the ride. */
+
+.edoras-world { --shire-glass: rgba(16, 22, 14, 0.8); --shire-glass-hi: rgba(18, 26, 16, 0.94); --shire-gold: #f0d890; }
+.edoras-stage { background: linear-gradient(180deg, #6c88aa 0%, #d2d6cc 58%, #7a8a40 100%); }
+.edoras-stage[data-time='evening'] { background: linear-gradient(180deg, #3a4a70 0%, #e8a868 60%, #4a3a20 100%); }
+.edoras-stage[data-time='night'] { background: linear-gradient(180deg, #070b1c 0%, #1e2a48 62%, #0c1018 100%); }
+.edoras-stage[data-time='dawn'] { background: linear-gradient(180deg, #3a5080 0%, #f4b080 60%, #5a5030 100%); }
+.edoras-stage[data-zone='hall'] { background: radial-gradient(ellipse at 50% 40%, #2a1a0c 0%, #080604 72%); }
+.edoras-stage[data-mode='brawl'] .shire-canvas, .edoras-stage[data-mode='drink'] .shire-canvas, .edoras-stage[data-mode='watch'] .shire-canvas, .edoras-stage[data-mode='muster'] .shire-canvas { cursor: default; touch-action: none; }
+.edoras-stage[data-mode='brawl'] .shire-canvas { cursor: grab; }
+
+.edoras-game { border-color: rgba(240, 216, 144, 0.45); }
+.edoras-game[data-down] { border-color: rgba(255, 170, 90, 0.7); }
+
+/* a meter: Gandalf's work, the ride, how far it's gone to your head */
+.edoras-bar { position: relative; height: 0.6rem; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.edoras-bar-thin { height: 0.3rem; }
+.edoras-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; }
+.edoras-work { width: calc(var(--work, 0) * 100%); background: linear-gradient(90deg, #c8d0e0, #ffffff); box-shadow: 0 0 10px rgba(230, 240, 255, 0.7); }
+.edoras-ride { width: calc(var(--ride, 0) * 100%); background: linear-gradient(90deg, #3a6a2a, #f0d890); }
+.edoras-head { width: calc(var(--head, 0) * 100%); background: linear-gradient(90deg, #d8a040, #c0402a); }
+
+/* the swing of the tankard: your lips are the gold at the right */
+.edoras-swing { position: relative; height: 1.7rem; border-radius: 999px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.16)); overflow: hidden; }
+.edoras-swing-lips { position: absolute; inset: 0 0 0 auto; width: calc(var(--lips, 0.12) * 100%); background: linear-gradient(90deg, rgba(240, 200, 100, 0.35), rgba(255, 220, 130, 0.75)); box-shadow: inset 2px 0 0 #ffd88a; }
+.edoras-swing-mug { position: absolute; top: 50%; left: calc(var(--k, 0) * 100%); width: 0.95rem; height: 1.2rem; border-radius: 0.2rem 0.2rem 0.3rem 0.3rem; transform: translate(-50%, -50%); background: linear-gradient(180deg, #fff6dc 0 26%, #8a5a2a 26%); box-shadow: 0 0 8px rgba(255, 230, 170, 0.6); }
+
+.edoras-flowers { margin: 0; }
+.edoras-flowers span { color: #fffaf0; }
+.edoras-best { font-size: 0.85rem; opacity: 0.8; }
+
+@media (prefers-reduced-motion: reduce) {
+  .edoras-swing-mug { box-shadow: none; }
+}

@@ -54,7 +54,7 @@ export function runtime() {
   instance = createRuntime({
     makeBackend: (kind, opts) => browser().then((m) => m.makeBackend(kind, opts)),
     input: createInput(),
-    quality: createQuality(),
+    quality: createQuality({ dpr: win?.devicePixelRatio || 1 }),
     saves: createSaves({ local: store('localStorage'), session: store('sessionStorage'), win }),
     assets: createAssets({ loaders, forget }),
     audio: createAudioBus(),

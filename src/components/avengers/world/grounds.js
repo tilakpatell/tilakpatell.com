@@ -179,6 +179,36 @@ export function createFlags(scene) {
 
 // The swing tour's rings: the next one red and pulsing, the ones after it
 // faint, the ones gone through out of the way; before a tour, only the first.
+// The glow round the next ring: brightest where its tube faces you, gone at
+// its edges, so it's a soft halo, not a flat orange band beside the ring.
+function ringGlow() {
+  return new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color(0xff4b3e) }, uOpacity: { value: 0 } },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+    vertexShader: /* glsl */ `
+      varying vec3 vN;
+      varying vec3 vV;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal);
+        vV = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uColor;
+      uniform float uOpacity;
+      varying vec3 vN;
+      varying vec3 vV;
+      void main() {
+        float facing = abs(dot(normalize(vN), normalize(vV)));
+        gl_FragColor = vec4(uColor * pow(facing, 2.5) * uOpacity, 1.0);
+      }`,
+  });
+}
+
 export function createRings(scene) {
   const group = new THREE.Group();
   const geo = new THREE.TorusGeometry(RING_R, 0.14, 12, 72);
@@ -186,7 +216,7 @@ export function createRings(scene) {
   const Z = new THREE.Vector3(0, 0, 1);
   const rings = TOUR.map((r) => {
     const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, depthWrite: false, toneMapped: false });
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0xff4b3e, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+    const glowMat = ringGlow();
     const g = new THREE.Group();
     g.add(new THREE.Mesh(geo, mat), new THREE.Mesh(glowGeo, glowMat));
     g.position.set(r.x, r.y, r.z);
@@ -209,7 +239,8 @@ export function createRings(scene) {
         const pulse = 0.5 + 0.5 * Math.sin(t * 5);
         mat.color.copy(next ? red : white);
         mat.opacity = next ? 0.95 : 0.28;
-        glowMat.opacity = next ? 0.18 + pulse * 0.2 : 0;
+        glowMat.uniforms.uOpacity.value = next ? 0.3 + pulse * 0.3 : 0;
+        glowMat.visible = next;
         g.scale.setScalar(next ? 1 + pulse * 0.04 : 1);
       });
     },

@@ -8,7 +8,7 @@
 // so no key is held across a world change.
 //
 // createInput({ readPad, typing }) → { attach({ win, host }), detach(),
-//   bind(actions, { axes }), unbind(), setStick(x, y), sample(now) }
+//   bind(actions, { axes }), unbind(), bindings(), setStick(x, y), sample(now) }
 // The snapshot: { keys, pressed, pad, tapped, pointer: { x, y, down, drag },
 //   stick: { x, y }, action(name), axis(name) }
 
@@ -124,6 +124,8 @@ export function createInput({ readPad = readGamepad, typing = safeTyping, captur
       axes = {};
       bound = new Set();
     },
+    // what's bound now, to bind again later (a handover that fails gives the old world its keys back)
+    bindings: () => ({ actions: { ...actions }, axes: { ...axes } }),
     setStick(x, y) {
       stick.x = x;
       stick.y = y;

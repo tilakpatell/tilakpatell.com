@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ARM, CHAPTERS, ISLES, SHIPS, TIDE, UPS, bearing, choose, fire, fitted, newGame, progress, step, wrap } from './rules';
+import { ARM, CHAPTERS, ISLES, SHIPS, STEP_BOUND, TIDE, UPS, bearing, choose, fire, fitted, newGame, progress, shipStep, step, wrap } from './rules';
+import { readStep, writeStep } from '../../middleearth/towns/travellers';
 import { autopilot } from './pilot';
 
 const DT = 1 / 60;
@@ -340,5 +341,29 @@ describe('a voyage by the autopilot', () => {
       const { g } = voyage(21, level);
       expect(['won', 'lost']).toContain(g.status);
     }
+  });
+});
+
+describe('Dead man’s tide: the other players', () => {
+  it('sends a ship as a traveller’s step, and reads it back where she is', () => {
+    // out at the edge of the sea, after a lot of turning
+    const s = { x: TIDE.R * 0.6, y: -TIDE.R * 0.8, a: 7.4, v: 21.5 };
+    const step = shipStep(s);
+    expect(step).toMatchObject({ x: s.x, z: s.y, speed: 21.5 });
+    expect(Math.abs(step.face)).toBeLessThanOrEqual(Math.PI);
+    // the model's bow (its −x) turned by the facing points the way she's heading
+    expect(-Math.cos(step.face)).toBeCloseTo(Math.cos(s.a), 9);
+    expect(Math.sin(step.face)).toBeCloseTo(Math.sin(s.a), 9);
+    const back = readStep(writeStep(step), STEP_BOUND);
+    expect(back.x).toBeCloseTo(s.x, 2);
+    expect(back.z).toBeCloseTo(s.y, 2);
+    expect(Math.cos(back.face - step.face)).toBeGreaterThan(0.9999);
+    expect(back.moving).toBe(true);
+  });
+  it('keeps the whole sea inside the room’s bound', () => {
+    expect(STEP_BOUND).toBeGreaterThan(TIDE.R);
+    const back = readStep(writeStep(shipStep({ x: -TIDE.R, y: TIDE.R * 0.01, a: 0, v: 0 })), STEP_BOUND);
+    expect(back.x).toBe(-TIDE.R);
+    expect(back.moving).toBe(false);
   });
 });

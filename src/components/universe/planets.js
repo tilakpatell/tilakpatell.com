@@ -17,12 +17,15 @@
 // a planet whose model never arrives simply goes without. The sun is sun.js's.
 //
 // loadTextures({ small }) → the textures (any that fail are just missing)
+// mapFile(name, level) → the file for a planet map at lib/detail's level
 // buildPlanet(u, T) → { id, radius, group, update(t, camera), setState, mount }
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
 import { gltfLoader } from '../../lib/three/gltf';
 import { loadTexture } from '../../lib/three/textures';
+import { detailLevel } from '../../lib/detail';
 import { SWIRL_GLSL } from '../rickmorty/swirl';
 import { globeData } from '../travel/globe3d/data';
 import { facing, fit, glowMat, orbit, paint, rng, rounded, tiled } from './kit';
@@ -41,19 +44,35 @@ const FIXED = ['middleearth-glow', 'rickmorty-glow', 'invincible-glow'];
 const DATA = ['plates-normal', 'plates-rough', 'hull-normal', 'hull-rough', 'paper-normal', 'transformers-normal-sm', 'transformers-glow-sm', 'middleearth-normal', 'breakingbad-normal', 'invincible-normal', 'earth-rough'];
 const COLOUR = ['plates', 'hull'];
 
-export async function loadTextures({ small = false } = {}) {
+// The file for a planet map (or the sky) at a detail level (lib/detail):
+// the half-size `-sm` copy on a phone or a weak device, the standard file on
+// a desktop, and the `-hq` set (twice the texels: 2048 planets, a 4096
+// Earth, an 8192 sky, scripts/build-universe-textures.py --hq) for a strong
+// graphics card, so a planet filling the screen and the Milky Way behind it
+// stay sharp instead of going soft as the camera comes in.
+// Maps made by their own scripts (build-invincible-planet.mjs,
+// build-cybertron-planet.mjs), with no `-hq` yet: a strong card gets the
+// standard file straight away rather than asking for one that isn't there.
+const NO_HQ = new Set(['invincible', 'invincible-clouds', 'invincible-night', 'transformers']);
+export function mapFile(name, level = 'high') {
+  const suffix = level === 'ultra' ? (NO_HQ.has(name) ? '' : '-hq') : level === 'high' ? '' : '-sm';
+  return `${name}${suffix}.webp`;
+}
+
+export async function loadTextures({ small = false, level = small ? 'mid' : detailLevel() } = {}) {
   const T = { small }; // (and whether this is a phone, for the builders)
-  const get = async (name, file, colour) => {
+  const get = async (name, file, colour, fallback = null) => {
     try {
       // (decoded off the main thread, as sharp as the device's tier allows,
       // and shared with any other scene that wants the same map)
       T[name] = await loadTexture(BASE + file, { color: colour });
     } catch {
-      /* missing: whoever wanted it does without */
+      // missing: the standard file where a sharper set was asked for, else whoever wanted it does without
+      if (fallback) await get(name, fallback, colour);
     }
   };
   await Promise.all([
-    ...PLANET_MAPS.map((n) => get(n, `${n}${small ? '-sm' : ''}.webp`, !n.endsWith('-clouds'))),
+    ...PLANET_MAPS.map((n) => get(n, mapFile(n, level), !n.endsWith('-clouds'), level === 'ultra' ? mapFile(n, 'high') : null)),
     ...FIXED.map((n) => get(n, `${n}.webp`, true)),
     ...DATA.map((n) => get(n, `${n}.webp`, false)),
     ...COLOUR.map((n) => get(n, `${n}.webp`, true)),
@@ -1174,12 +1193,10 @@ export function buildPlanet(u, T = {}) {
   };
 }
 
-// One model, or null if it doesn't load.
+// One model, or null if it doesn't load: a copy of the page's one parse of it
+// (gltfCache.js), its materials its own, its geometry and textures shared.
 export function loadModel(url) {
-  return gltfLoader()
-    .loadAsync(url)
-    .then((g) => g.scene)
-    .catch(() => null);
+  return loadGLTF(url).then((g) => g && cloneScene(g));
 }
 
 // [planet, model, and which of its spots, if not its own]. The sitar is

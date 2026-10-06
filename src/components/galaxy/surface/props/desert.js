@@ -315,7 +315,7 @@ export const PROPS = {
 
   // the Stone Needle: a spire of rock standing up out of a canyon floor
   needle(k) {
-    const parts = [part(rockGeometry(31, { sharp: 0.25, flat: 1 }), { scale: [5, 22, 5], color: '#9a6a44', to: 'stone' }), part(rockGeometry(37, { sharp: 0.4 }), { scale: [9, 4, 8], color: '#8e6240', to: 'stone' })];
+    const parts = [part(rockGeometry(31, { sharp: 0.25, flat: 1 }), { scale: [5, 22, 5], color: '#9a6a44', to: 'rock' }), part(rockGeometry(37, { sharp: 0.4 }), { scale: [9, 4, 8], color: '#8e6240', to: 'rock' })];
     return { object: k.build(parts, { name: 'needle' }), solids: [{ circle: [0, 0, 2.6] }] };
   },
 

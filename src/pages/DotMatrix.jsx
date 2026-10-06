@@ -152,7 +152,7 @@ export default function DotMatrix() {
         <div>
           <p className="eyebrow">Dot Matrix · Gaming</p>
           <p className="lead mt-4 max-w-[64ch]">
-            Games got me into code. This island is drawn the way a Game Boy drew things: four shades of green and a lot of patience. Eight cartridges are hidden on it, each one something I’ve built, and the giant Game Boy in the square plays for real.
+            Games got me into code. This island is drawn the way a Game Boy drew things: four shades of green and a lot of patience. Eight cartridges are hidden on it, each something I’ve built, and the giant Game Boy in the square plays for real.
           </p>
         </div>
         <div className="flex flex-wrap gap-2.5">
@@ -208,7 +208,7 @@ export default function DotMatrix() {
               The island
             </h2>
             <p className="lead mt-4 max-w-[54ch]">From the dock in the south, a road up to the square and the giant Game Boy; the long grass and the plateau to the west, the pipe garden and the snake’s pen to the east, Block Drop tower to the north and the islet with its lighthouse off the north-east shore.</p>
-            <p className="mt-4 max-w-[60ch] leading-relaxed text-body">Four islanders walk their beats (the dotted lines) and stop to talk when you come up: each knows something about where a cartridge is. Every fifteen coins give a heart back, and the last coin of all is an achievement. The cartridges are marked where they’re found; a ? is one still hidden.</p>
+            <p className="mt-4 max-w-[60ch] leading-relaxed text-body">Four islanders walk their beats (the dotted lines) and stop to talk: each knows where a cartridge is. Every fifteen coins give a heart back, and the last coin is an achievement. Found cartridges are marked; a ? is one still hidden.</p>
             <IslandMap palette={palette} found={found} />
           </div>
           <div className="dm-how card">
@@ -238,7 +238,7 @@ export default function DotMatrix() {
             </h2>
             <p className="lead mt-4 max-w-[54ch]">The island is a real 3D scene, lit and shadowed, drawn a few hundred pixels across. A last pass turns each pixel’s brightness into one of four shades.</p>
             <p className="mt-4 max-w-[60ch] leading-relaxed text-body">
-              Between two shades, a 4 × 4 Bayer matrix decides which pixels step up: half-way gives a checkerboard, a quarter gives every fourth pixel. Edges where something stands in front of something further off come from the depth buffer and are drawn in the darkest shade, the way the sprites were outlined. The giant Game Boy’s screen is already in four shades, so it skips the pattern.
+              Between two shades, a 4 × 4 Bayer matrix decides which pixels step up: half-way gives a checkerboard, a quarter every fourth pixel. Edges where one thing stands in front of another come from the depth buffer, drawn in the darkest shade, the way sprites were outlined. The giant Game Boy’s screen is already in four shades, so it skips the pattern.
             </p>
           </div>
           <div className="dm-how card">

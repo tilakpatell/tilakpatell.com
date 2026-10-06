@@ -4,7 +4,7 @@
 // facing +z, in metres. (The script's header has what each field means;
 // `anim`, for a model kept rigged, names its clips: { idle, walk, run }.)
 export const MODELS = {
-  atat: { uid: '7eab3f41da9143d8975b9034e91f8920', as: 'the AT-AT walkers', metres: 22.5, yaw: 0, tris: 25000, tex: 1024, maps: 256 },
+  atat: { uid: '7eab3f41da9143d8975b9034e91f8920', lod: true, as: 'the AT-AT walkers', metres: 22.5, yaw: 0, tris: 25000, tex: 1024, maps: 256 },
   // a T-47 airspeeder
   snowspeeder: { uid: '983d113a8414457d9a797b9fa7425507', as: 'the snowspeeders', metres: 5.3, along: 'z', yaw: 0, tris: 11000, tex: 512, maps: 128 },
   wampa: { uid: 'fbd7530481db420ab6b6ac29f63019c9', as: 'the wampas', metres: 3, yaw: 0, tris: 12000, tex: 1024 },

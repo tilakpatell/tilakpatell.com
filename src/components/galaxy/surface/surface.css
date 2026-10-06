@@ -24,6 +24,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 .surface-map > .scene-canvas:active { cursor: grabbing; }
+/* (on the world runtime: its box and its one canvas, moved in at a landing) */
+.surface-map.world-host { position: absolute; inset: 0; }
+.surface-map > .world-canvas {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.surface-map > .world-canvas:active { cursor: grabbing; }
 .surface-loading {
   position: absolute;
   inset: 0;
@@ -215,7 +225,39 @@
 
 /* leaving: the screen goes */
 .surface-fade { position: absolute; z-index: 4; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 0.7s ease-in; }
-.surface-page[data-leaving] .surface-fade { opacity: 1; }
+.surface-page[data-leaving=''] .surface-fade { opacity: 1; }
+/* come down from space (the galaxy handed over): the air's glow round the ship, going */
+.surface-entry {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 50%, rgb(255 246 230 / 0.95), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 55%, rgb(255 140 60 / 0.8), rgb(255 80 30 / 0.4) 45%, transparent 75%),
+    #fff6e8;
+  animation: surface-entry 1.6s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
+}
+@keyframes surface-entry {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* up and out: the sky's glare coming over the climb, from 2.5 s in (the ship lifting till then) to
+   the 3.4 s space takes over at (GalaxySurface.jsx CLIMB; the galaxy's page takes it off: galaxy.css .galaxy-exit) */
+.surface-exit {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 40%, #fff, transparent 70%),
+    #dceeff;
+  opacity: 0;
+  animation: surface-exit 0.9s ease-in 2.5s forwards;
+}
+@keyframes surface-exit {
+  to { opacity: 1; }
+}
 .surface-page[data-phase='landing'] :is(.surface-where, .surface-compass, .surface-corner) { opacity: 0; }
 .surface-page :is(.surface-where, .surface-compass, .surface-corner) { transition: opacity 0.8s; }
 
@@ -291,6 +333,8 @@
 @media (prefers-reduced-motion: reduce) {
   .surface-prompt, .surface-talk, .surface-toast, .surface-title { animation: none; }
   .surface-fade { transition: none; }
+  .surface-entry { animation-duration: 0.01s; }
+  .surface-exit { animation: none; opacity: 1; }
 }
 
 /* the crew's comms (universe/Comms.jsx): along the bottom, over the stick */

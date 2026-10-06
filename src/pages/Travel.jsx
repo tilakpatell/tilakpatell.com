@@ -171,7 +171,7 @@ export default function Travel() {
         <PlacesExplorer
           title="Every trip, from Syracuse"
           titleId="globe-title"
-          intro="Drag the globe to spin it, or pick a place to fly there and see how far it is from home."
+          intro="Drag the globe to spin it, or pick a place to fly there and see its distance from home."
           selected={selected}
           onSelect={setSelected}
         />

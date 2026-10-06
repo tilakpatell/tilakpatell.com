@@ -159,7 +159,7 @@ export default function Avengers() {
         <div>
           <p className="eyebrow">The Avengers compound · Upstate New York</p>
           <p className="lead mt-4 max-w-[62ch]">
-            Marvel, all of it. Walk the compound as Spider-Man: every building belongs to someone, and each one’s game wins an Infinity Stone back. Tony’s workshop, Mjolnir on the lawn, the training center, Clint’s range, Natasha’s operations room, Bruce’s lab, and the Tesseract in the hangar. Win the Space Stone and a portal opens over the helipad. Go online and everyone else walking it shows up as a hologram.
+            Marvel, all of it. Walk the compound as Spider-Man: every building belongs to someone, and each one’s game wins back an Infinity Stone. Tony’s workshop, Mjolnir on the lawn, the training center, Clint’s range, Natasha’s operations room, Bruce’s lab, and the Tesseract in the hangar. Win the Space Stone and a portal opens over the helipad. Go online and everyone else walking it is a hologram.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -217,7 +217,7 @@ export default function Avengers() {
             <p className="lead mt-4 max-w-[46ch]">
               {heist
                 ? 'You took every stone back from the compound. Set them, and this time the snap is Tony’s: Thanos and his army turn to dust, and the page stays.'
-                : 'He has the gauntlet. Set all six stones, and the snap takes half of this page with it, for a few seconds. Win all six back in the games on the compound, and the snap is Tony’s.'}
+                : 'He has the gauntlet. Set all six stones, and the snap takes half this page for a few seconds. Win all six back on the compound, and the snap is Tony’s.'}
             </p>
             <ul className="stone-list mt-6" aria-label="Set the stones">
               {STONES.map((s) => {

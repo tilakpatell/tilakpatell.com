@@ -19,6 +19,9 @@
     "kenney": "node scripts/kenney.mjs",
     "hq-assets": "NODE_USE_ENV_PROXY=1 node --max-old-space-size=8192 scripts/hq-assets.mjs",
     "bake:abq": "node scripts/bake-floor-shadows.mjs",
+    "voices:lines": "vite-node scripts/voices/export-lines.mjs",
+    "voices": "npm run voices:lines && python scripts/voices/generate.py",
+    "clips:fetch": "node scripts/clips/fetch.mjs",
     "ktx2:hq": "node scripts/ktx2.mjs convert public/hq/models/barrel.glb public/hq/models/barrier.glb public/hq/models/crate.glb public/hq/models/lamp.glb public/hq/models/rocks.glb public/hq/models/shelves.glb public/hq/models/toolchest.glb public/hq/models/tyre.glb --slots normal"
   },
   "dependencies": {

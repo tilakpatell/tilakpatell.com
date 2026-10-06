@@ -137,7 +137,7 @@ export const PROPS = {
     const parts = [];
     for (let i = 0; i < 9; i++) {
       const a = (i / 9) * PI * 2;
-      parts.push(part(rockGeometry(i + 3), { at: [cos(a) * 0.75, -0.05, sin(a) * 0.75], scale: 0.38, color: '#5a5048', to: 'stone' }));
+      parts.push(part(rockGeometry(i + 3), { at: [cos(a) * 0.75, -0.05, sin(a) * 0.75], scale: 0.38, color: '#5a5048', to: 'rock' }));
     }
     for (let i = 0; i < 4; i++) parts.push(rod([cos(i) * 0.5, 0.05, sin(i) * 0.5], [-cos(i) * 0.4, 0.25, -sin(i) * 0.4], 0.06, 0.05, { color: '#3a2a1c', to: 'bark' }));
     const object = k.build(parts, { name: 'fire' });
@@ -167,11 +167,11 @@ export const PROPS = {
 export const SCATTER = {
   rock(k, { seed = 1, color = '#8a7a66', sharp = 0.4 } = {}) {
     const g = rockGeometry(seed, { sharp, detail: 1 });
-    return { parts: [{ geometry: k.geometry([part(g, { color, to: 'stone' })]), material: k.mats.stone }], radius: 0.42 };
+    return { parts: [{ geometry: k.geometry([part(g, { color, to: 'rock' })]), material: k.mats.rock }], radius: 0.42 };
   },
   // pebbles and small stones you walk over
   stones(k, { seed = 2, color = '#7a6c5c' } = {}) {
     const g = rockGeometry(seed, { sharp: 0.2, detail: 0, flat: 0.4 });
-    return { parts: [{ geometry: k.geometry([part(g, { color, to: 'stone' })]), material: k.mats.stone }], radius: null };
+    return { parts: [{ geometry: k.geometry([part(g, { color, to: 'rock' })]), material: k.mats.rock }], radius: null };
   },
 };

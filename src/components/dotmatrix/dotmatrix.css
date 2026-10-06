@@ -179,3 +179,4 @@ html[data-mode='dark'] .dm-shelf li[data-got] .dm-shelf-tag { color: #9bbc0f; }
 .dm-names { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .dm-name { position: absolute; left: 0; top: 0; padding: 2px 5px 3px; border: 2px solid var(--dm-0); background: var(--dm-3); color: var(--dm-0); font: 0.5rem/1.2 var(--dm-font); white-space: nowrap; opacity: 0; will-change: transform; }
 .dm-chip-online { border-style: dashed; }
+.dm-chip-online b { font-weight: inherit; }

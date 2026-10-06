@@ -66,7 +66,7 @@ export const SITES = {
       { id: 'covert', name: 'The covert’s camp', at: [-120, 220], r: 30, flat: { r: 24 }, about: 'Mandalorians, home again for the first time in years.', things: [{ kind: 'tent', at: [0, 0] }, { kind: 'tent', at: [8, -6], yaw: 1.4 }, { kind: 'fire', at: [2, 4] }] },
     ],
     life: [
-      { kind: 'mando', id: 'armorer', at: [-116, 226], still: true, face: 2, name: 'The Armorer', named: true, quest: 'waters', says: ['This is the Way.'] },
+      { kind: 'mando', id: 'armorer', at: [-116, 226], still: true, face: 2, name: 'The Armorer', named: true, quest: ['waters', 'reclaim'], says: ['This is the Way.'] },
       { kind: 'mando', n: 3, at: [-120, 220], spread: 8, roam: 6, speed: 1, name: 'Mandalorian', says: ['This is the Way.', 'For Mandalore!'] },
       { kind: 'bobafett', at: [210, 110], still: true, face: 1, name: 'A bounty hunter in green armour', says: ['(He says nothing. He doesn’t need to.)'] },
     ],

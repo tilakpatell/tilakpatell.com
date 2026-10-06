@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CORE, CORE_HP, GEN_HP, GENS, REPAIR_MS, RESPAWN_MS, citadelGeometry, createSiege, readSiege, segmentSphere } from './siege';
+import { BLAST_S, CORE, CORE_HP, GEN_HP, GENS, REPAIR_MS, RESPAWN_MS, blastShape, citadelGeometry, createSiege, readSiege, segmentSphere } from './siege';
 import { wonderById } from './deep';
 
 const T = 1_000_000_000_000;
@@ -92,5 +92,30 @@ describe('siege', () => {
     expect(segmentSphere([0, 0, -10], [0, 0, 10], [0, 0, 0], 2)).toBeCloseTo(0.4);
     expect(segmentSphere([0, 0, 0], [0, 0, 10], [0, 0, 0], 2)).toBeNull();
     expect(segmentSphere([5, 0, -10], [5, 0, 10], [0, 0, 0], 2)).toBeNull();
+  });
+
+  it('the blast stays the Citadel\u2019s own size: nothing it throws out reaches past three cores', () => {
+    const core = 45;
+    let peak = 0;
+    for (let age = 0; age <= BLAST_S; age += 0.05) {
+      const b = blastShape(age, core);
+      for (const k of ['flash', 'fire', 'fluid', 'shock']) {
+        expect(b[k]).toBeGreaterThanOrEqual(0);
+        expect(b[k]).toBeLessThanOrEqual(core * 3);
+        peak = Math.max(peak, b[k]);
+      }
+      expect(b.flashAlpha).toBeGreaterThanOrEqual(0);
+      expect(b.flashAlpha).toBeLessThanOrEqual(1);
+      expect(b.shockAlpha).toBeGreaterThanOrEqual(0);
+      expect(b.shockAlpha).toBeLessThanOrEqual(1);
+    }
+    expect(peak).toBeGreaterThan(core * 1.5); // (still a blast, not a puff)
+    // the shock ring grows outward and fades as it goes; the flash is brightest early, gone by the end
+    expect(blastShape(1, core).shock).toBeGreaterThan(blastShape(0.2, core).shock);
+    expect(blastShape(BLAST_S, core).shockAlpha).toBe(0);
+    expect(blastShape(0.15, core).flashAlpha).toBe(1);
+    expect(blastShape(2, core).flashAlpha).toBe(0);
+    expect(blastShape(BLAST_S, core).done).toBe(true);
+    expect(blastShape(1, core).done).toBe(false);
   });
 });

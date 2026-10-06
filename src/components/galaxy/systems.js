@@ -432,8 +432,10 @@ export const SYSTEMS = [
       film: 'esb',
       role: 'Luke Skywalker, in training',
       pitch: 'Run the swamp with Yoda on your back, then raise your X-wing out of the bog with the Force. Size matters not.',
-      how: 'Hold steady to lift: the more you doubt (the more you wobble), the deeper it sinks.',
-      status: 'soon',
+      how: 'Keep to the dry ground and the run is quicker; the water slows you. In the cave, what you meet is what you took in with you. Then reach out for the ship.',
+      status: 'live',
+      to: '/galaxy/dagobah/surface?mission=raise',
+      go: 'Walk it now',
     },
   },
   {
@@ -1024,17 +1026,40 @@ export function courseTo(from, to) {
 // The system whose star is nearest the way `dir` points (a unit vector, the
 // nose), from `from`, if one's within `within` radians of it: { id, angle }
 // or null. `keep` (the one already picked) wins ties of up to `stick`
-// radians, so the pick doesn't flicker between two close stars.
-export function starAhead(from, dir, { within = 0.06, keep = null, stick = 0.012 } = {}) {
-  let best = null;
-  for (const s of SYSTEMS) {
-    if (s === from) continue;
-    const c = courseTo(from, s);
-    const angle = Math.acos(Math.min(1, Math.max(-1, c[0] * dir[0] + c[1] * dir[1] + c[2] * dir[2])));
-    const score = s.id === keep ? angle - stick : angle;
-    if (angle <= within && (!best || score < best.score)) best = { id: s.id, angle, score };
+// radians, so the pick doesn't flicker between two close stars. `dirs`, the
+// bearings of the other systems from `from` already worked out ([{ id, dir }],
+// dir an [x, y, z] or anything with x, y and z: the sky keeps these), saves
+// working out all of them again for each look, as the flying does every frame.
+export function starAhead(from, dir, { within = 0.06, keep = null, stick = 0.012, dirs = null } = {}) {
+  let bestId = null;
+  let bestAngle = 0;
+  let bestScore = Infinity;
+  const n = dirs ? dirs.length : SYSTEMS.length;
+  for (let i = 0; i < n; i++) {
+    let id;
+    let c;
+    if (dirs) {
+      id = dirs[i].id;
+      c = dirs[i].dir;
+    } else {
+      const s = SYSTEMS[i];
+      if (s === from) continue;
+      id = s.id;
+      c = courseTo(from, s);
+    }
+    const flat = Array.isArray(c);
+    const cx = flat ? c[0] : c.x;
+    const cy = flat ? c[1] : c.y;
+    const cz = flat ? c[2] : c.z;
+    const angle = Math.acos(Math.min(1, Math.max(-1, cx * dir[0] + cy * dir[1] + cz * dir[2])));
+    const score = id === keep ? angle - stick : angle;
+    if (angle <= within && (bestId === null || score < bestScore)) {
+      bestId = id;
+      bestAngle = angle;
+      bestScore = score;
+    }
   }
-  return best && { id: best.id, angle: best.angle };
+  return bestId === null ? null : { id: bestId, angle: bestAngle };
 }
 
 export function coreBearing(s) {
@@ -1095,3 +1120,29 @@ export function goalsOf(s) {
   }
   return out;
 }
+
+// Whether the Death Star's model is wanted here: its own piece (Yavin's trench,
+// Alderaan's tractor beam), or Scarif's, where it arrives to fire. (Endor's second
+// is built in code, kind 'deathstar2', and loads nothing.)
+export const wantsDeathStar = (s) => s.pieces.some((p) => p.type === 'deathstar' || p.type === 'superlaser' || p.kind === 'deathstar');
+
+// The kinds of ship and station a system's pieces fly, each once: the models to
+// start loading and the built ones to make ahead of a jump to it (world.js's
+// BUILD asks for exactly these: a fleet's ships, a battle's and its fighters, a
+// chase's two, an escape's ship and its escorts, a stream's, a patrol's, a
+// departure's, the lift-off's, a station's, the Death Star's). The rocks, the
+// ion cannon, the planet's shield and the skylanes make no slots, so they say nothing.
+const FLOWN = {
+  chase: (p) => [p.runner.kind, p.hunter.kind],
+  fleet: (p) => p.ships.map((x) => x.kind),
+  battle: (p) => [...Object.values(p.sides).flatMap((ships) => ships.map((x) => x.kind)), ...Object.values(p.fighters).flat()],
+  escape: (p) => [p.kind, p.escort],
+  stream: (p) => p.kinds,
+  patrol: (p) => [p.kind],
+  depart: (p) => [p.kind],
+  liftoff: (p) => [p.kind],
+  station: (p) => [p.kind],
+  deathstar: () => ['deathstar'],
+  superlaser: () => ['deathstar'],
+};
+export const kindsIn = (s) => [...new Set(s.pieces.flatMap((p) => FLOWN[p.type]?.(p) ?? []))];

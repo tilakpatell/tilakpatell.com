@@ -91,7 +91,7 @@ export default function Welcome({ onStart, onSkip }) {
         </div>
 
         <p className="welcome-fine">
-          A fan-made tribute. Star Wars, Rick and Morty, Breaking Bad, Marvel, The Lord of the Rings, Transformers and The Office belong to their creators and studios. This is a personal, non-commercial portfolio, not affiliated with or endorsed by any of them. The characters are stylised 3D models made for this site with Meshy AI, and the audio clips are short excerpts.
+          A fan-made tribute. Star Wars, Rick and Morty, Breaking Bad, Marvel, The Lord of the Rings, Transformers and The Office belong to their creators and studios. This is a personal, non-commercial portfolio, not affiliated with or endorsed by any of them. The characters are 3D models made for this site with Meshy AI; the audio clips are short excerpts.
         </p>
       </div>
     </div>,

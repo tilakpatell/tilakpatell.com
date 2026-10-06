@@ -10,7 +10,7 @@
 //   sim.enter(areaId, spawnId)       (a bridge's other side)
 
 import { AREAS, MISSIONS, areaOf } from './areas';
-import { ENEMY_KINDS, available, buildWorld, damage, feedMission, fire, hurtEnemy, newEnemy, newMissions, newPlayer, startMission, stepEnemies, stepPickups, stepPlayer, stepShots, nearby } from './rules';
+import { ENEMY_KINDS, MEND, available, buildWorld, damage, feedMission, fire, hurtEnemy, newEnemy, newMissions, newPlayer, startMission, stepEnemies, stepPickups, stepPlayer, stepShots, nearby } from './rules';
 
 const ALL = { missions: MISSIONS }; // (feedMission looks a mission up here, wherever it's played)
 
@@ -55,7 +55,7 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     if (!step || !m || (step.area ?? m.area) !== sim.area.id) return;
     if (step.reset) for (const k of sim.pickups) if (k.kind === step.reset) k.taken = false;
     for (const [i, e] of (step.spawn ?? []).entries()) {
-      const models = MODEL[sim.area.era]?.[e.kind] ?? [e.kind];
+      const models = sim.area.foes?.[e.kind] ?? MODEL[sim.area.era]?.[e.kind] ?? [e.kind];
       const enemy = newEnemy(e.kind, e.x, e.z, { id: e.id ?? `${missions.active}-${missions.step}-${i}`, model: models[i % models.length] });
       enemy.y = sim.world.floorAt(e.x, e.z, 50, 60);
       sim.enemies.push(enemy);
@@ -83,7 +83,10 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     const at = area.spawns?.[spawnId] ?? area.spawn;
     const keep = sim.player;
     sim.player = newPlayer(area, at);
-    if (keep) Object.assign(sim.player, { hp: keep.hp, energon: keep.energon, boost: keep.boost });
+    // (his health and energon come with him; down, he comes through mended,
+    // as he would have got up, and the getting up that was coming is off)
+    if (keep) Object.assign(sim.player, { hp: keep.dead ? sim.player.maxHp : keep.hp, energon: keep.energon, boost: keep.boost });
+    sim.down = 0;
     sim.player.y = sim.world.floorAt(at.x, at.z, 50, 60);
     sim.enemies = [];
     sim.shots = [];
@@ -119,7 +122,7 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     }
     // the guns
     if (input.fire && !p.dead) {
-      const shots = fire(p, targets(), { yaw: input.aimYaw, pitch: input.aimPitch });
+      const shots = fire(p, targets(), { yaw: input.aimYaw, pitch: input.aimPitch, from: input.muzzle });
       if (shots.length) {
         sim.shots.push(...shots);
         out.push({ type: 'fire', mode: p.mode, shots });
@@ -158,7 +161,10 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     const live = sim.pickups.filter((k) => !k.mission || k.mission === missions.active);
     for (const id of stepPickups(live, p)) {
       const k = sim.pickups.find((x) => x.id === id);
-      p.energon += k.kind === 'energon' || k.kind === 'crystal' ? 1 : 0;
+      if (k.kind === 'energon' || k.kind === 'crystal') {
+        p.energon += 1;
+        p.hp = Math.min(p.maxHp, p.hp + MEND.energon);
+      }
       out.push({ type: 'pickup', id, kind: k.kind, x: k.x, y: k.y ?? 0, z: k.z });
       feed({ type: 'pickup', kind: k.kind, id }, out);
     }

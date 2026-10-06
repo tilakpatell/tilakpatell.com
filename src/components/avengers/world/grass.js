@@ -109,22 +109,33 @@ function bladeGeometry() {
   return g;
 }
 
-export function createGrass(scene, { count = 44000, patch = 30, material }) {
-  const geo = bladeGeometry();
-  // each blade's place in the patch (x, z), and two random numbers
+// Each blade's place in the patch (x, z), and two random numbers, as
+// [x, z, r1, r2] per blade. The places follow the R2 sequence (Roberts'
+// plastic-number one), a little jittered: any first part of it covers the
+// whole patch evenly, so the watchdog's thinning (drawing only the first
+// blades) leaves thinner grass everywhere, not a hard-edged strip of it
+// with bare lawn beside.
+export function bladeLayout(count, patch) {
   const offs = new Float32Array(count * 4);
   let s = 7;
   const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  // (jittered on a grid, so there are no bald patches)
-  const n = Math.ceil(Math.sqrt(count));
+  const g = 1.324717957244746;
+  const a1 = 1 / g;
+  const a2 = 1 / (g * g);
+  const jitter = 0.7 / Math.sqrt(count);
+  const frac = (v) => v - Math.floor(v);
   for (let i = 0; i < count; i++) {
-    const gx = i % n;
-    const gz = Math.floor(i / n);
-    offs[i * 4] = ((gx + rand()) / n - 0.5) * patch;
-    offs[i * 4 + 1] = ((gz + rand()) / n - 0.5) * patch;
+    offs[i * 4] = (frac(0.5 + a1 * i + (rand() - 0.5) * jitter) - 0.5) * patch;
+    offs[i * 4 + 1] = (frac(0.5 + a2 * i + (rand() - 0.5) * jitter) - 0.5) * patch;
     offs[i * 4 + 2] = rand();
     offs[i * 4 + 3] = rand();
   }
+  return offs;
+}
+
+export function createGrass(scene, { count = 44000, patch = 30, material }) {
+  const geo = bladeGeometry();
+  const offs = bladeLayout(count, patch);
   geo.setAttribute('aBlade', new THREE.InstancedBufferAttribute(offs, 4));
   geo.instanceCount = count;
 
@@ -169,10 +180,16 @@ export function createGrass(scene, { count = 44000, patch = 30, material }) {
           float grow = texture2D(uMask, muv).r;
           float d = length(wp - uCenter) / uPatch;
           float fade = 1.0 - smoothstep(0.3, 0.5, d);
-          float h = (0.07 + aBlade.z * 0.08) * grow * fade;
+          float k = grow * fade;
+          float h = (0.07 + aBlade.z * 0.08) * k;
+          // as thin as it is short: where none grows (off the lawn, past the
+          // patch's round edge) the blade is nothing, not a flat dark sliver
+          // (those speckled the drives and the helipad, and filled the
+          // patch's square corners round him)
+          float wide = smoothstep(0.0, 0.2, k);
           float a = aBlade.w * 6.2832;
           float c = cos(a), sn = sin(a);
-          vec3 p = vec3(position.x * c, position.y * h, position.x * sn);
+          vec3 p = vec3(position.x * c * wide, position.y * h, position.x * sn * wide);
           // leaning over in the breeze, more toward the tip
           float gust = sin(uTime * 1.7 + wp.x * 0.19 + wp.y * 0.13) * 0.6 + sin(uTime * 3.1 + wp.x * 0.7 - wp.y * 0.5) * 0.25;
           float lean = (0.3 + gust * 0.35) * position.y * position.y * h;

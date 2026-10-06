@@ -12,7 +12,7 @@ import { nearest } from '../../middleearth/towns/story';
 import { newTalk, talkNode, talkOn } from '../../middleearth/towns/talk';
 import { behindYaw, cameraMove, makeWalker, newWalker } from '../../middleearth/towns/walker';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
-import { CAST, COLLIDERS, DOORS, HOOP, JIM, LINES, NAMES, OFFICE_ARRIVE, P, RACKS, ROOMS, SPOTS, THINGS, WALLS, WAREHOUSE, WH_ARRIVE, WORLD, inWarehouse, rect, roomAt, seatOf, spot, validAt } from './layout';
+import { CAST, COLLIDERS, DOORS, HOOP, JIM, LINES, NAMES, OFFICE_ARRIVE, P, RACKS, ROOMS, SPOTS, THINGS, WALLS, WAREHOUSE, WH_ARRIVE, WORLD, inLot, inWarehouse, rect, roomAt, seatOf, spot, validAt } from './layout';
 import { CALL_COUNT, CHILI, CONVOS, FIRE, HOOPS, JELLO, QUESTS, SEAL, SPEAKERS, callOf, fireLeft, meterAt, newChili, newHoops, officeProgress, shoot, stepChili, stepHoops } from './story';
 import '../../middleearth/shire/shire.css';
 import '../../middleearth/towns/bree/bree.css';
@@ -83,6 +83,9 @@ export default function OfficeWorld() {
 
 // others online in the office (middleearth/towns/useTravellers), as pale Jims from another branch
 const ROOM = { bound: 160, motion: true };
+// downstairs (the warehouse, and the lot out of its dock) is a floor of its
+// own: the others are seen only on the floor you're on
+const areaOf = (h) => (inWarehouse(h.x, h.z) || inLot(h.x, h.z) ? 'warehouse' : 'office');
 
 function World({ prog, done, complete, gl, setGl, setPlace, place }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
@@ -97,6 +100,7 @@ function World({ prog, done, complete, gl, setGl, setPlace, place }) {
     sim.current = { h, keys: new Set(), stick: { x: 0, y: 0 }, yaw: behindYaw(h.face), pitch: 0.24, dragAt: -1e9, mode: 'walk', talking: null, talk: null, carry: null, chili: newChili(), chiliDone: done.includes('chili'), jelloSet: done.includes('jello'), dwight: 'desk', dwightT: 0, erinBreak: false, fire: false, fireT: 0, near: null, thing: null, person: null, moved: false, t: 0, frame: 0, padBefore: null, edgeAt: -9, room: null, wave: null, hum: null, siren: null };
   }
   const trav = useTravellers('scranton', gl === 'on', ROOM);
+  const travRef = trav.ref;
   const progRef = useRef(prog);
   progRef.current = prog;
   const doneRef = useRef(done);
@@ -177,6 +181,16 @@ function World({ prog, done, complete, gl, setGl, setPlace, place }) {
 
   const showing = usePageVisible();
   const live = gl === 'on' && inView && showing && !place;
+
+  // at the paper toss or the fact check: out of the others' sight (said
+  // every second, as the frame loop that'd say where you are is stopped)
+  useEffect(() => {
+    if (!place) return undefined;
+    const say = () => travRef.current?.pose(sim.current.h, { inside: true, area: areaOf(sim.current.h) }, { force: true });
+    say();
+    const t = setInterval(say, 1000);
+    return () => clearInterval(t);
+  }, [place, travRef]);
 
   // the office's hum: fluorescent tubes, the air, a phone now and then
   useEffect(() => {
@@ -681,7 +695,7 @@ function World({ prog, done, complete, gl, setGl, setPlace, place }) {
         const ls = LINES[person];
         let line = ls[n % ls.length];
         if (person === 'kevin' && !doneRef.current.includes('chili') && s.carry !== 'chili') line = 'Jim. Jim. My chili’s at the lift. Can you bring it to the kitchen? Careful. It’s my thing.';
-        if (person === 'erin' && !doneRef.current.includes('phones')) line = 'Jim, could you cover the phones for a minute? Please? I really, really need a break.';
+        if (person === 'erin' && !doneRef.current.includes('phones')) line = 'Jim, could you cover the phones for a minute? Please? I really need a break.';
         if (person === 'michael' && progRef.current.quests.find((q) => q.id === 'dundies')?.open && !doneRef.current.includes('dundies')) line = 'Jim! Get in here. Step into my office. Not you, Toby.';
         setBubble({ id: person, name: NAMES[person], line });
         s.wave = n === 0 ? person : null;
@@ -710,9 +724,10 @@ function World({ prog, done, complete, gl, setGl, setPlace, place }) {
               p.quests.find((q) => q.id === 'dundies')?.open && !has('dundies') && spot('dundies'),
             ].filter(Boolean);
 
-    // others online: where you are to them, and where they are
+    // others online: where you are to them (out of sight at the phones, in
+    // Michael's office and at the free throws), and where they are
     const tv = trav.ref.current;
-    tv?.pose(s.h);
+    tv?.pose(s.h, { inside: s.mode !== 'walk', area: areaOf(s.h) });
 
     try {
       a.render(

@@ -4,6 +4,15 @@
 .galaxy-page[data-leaving='fade'] .universe-fade { opacity: 1; transition: opacity 0.6s ease-in; }
 .galaxy-page:is([data-jumping='spool'], [data-jumping='tunnel']) .universe-labels { opacity: 0; transition-duration: 0.2s; }
 
+/* the galaxy on the world runtime: its box, and the one canvas moved into it */
+.galaxy-map.world-host { position: absolute; inset: 0; }
+.galaxy-map > .world-canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none; /* a drag flies the ship; the page itself never scrolls */
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* the names of what's in the system */
 .galaxy-label {
   --swatch: var(--accent-text);
@@ -476,3 +485,34 @@
   100% { opacity: 1; transform: scale(1); filter: brightness(2); }
 }
 @media (prefers-reduced-motion: reduce) { .galaxy-entry { animation: none; opacity: 1; } }
+/* up from a world's surface: the sky's glare it climbed into (surface.css .surface-exit), going as space comes */
+.galaxy-exit {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 40%, #fff, transparent 70%),
+    #dceeff;
+  animation: galaxy-exit 1.3s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+@keyframes galaxy-exit {
+  to { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .galaxy-exit { animation-duration: 0.01s; } }
+.galaxy-entry-note {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 18%;
+  margin: 0;
+  transform: translateX(-50%);
+  color: #6b3a10;
+  font: 600 0.85rem/1.2 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: galaxy-entry-note 0.4s ease-out 1.6s forwards;
+  pointer-events: none;
+}
+@keyframes galaxy-entry-note { to { opacity: 0.8; } }

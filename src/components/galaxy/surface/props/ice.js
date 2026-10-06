@@ -86,7 +86,7 @@ const iceShade = (inside = null) => (x, y, z) => {
 // snow (`smooth`)
 function blob(seed, at, s, o = {}) {
   const g = rockGeometry(seed, { sharp: o.sharp ?? 0.3, detail: o.detail ?? 2, flat: o.flat ?? 0.55 });
-  return part(o.smooth ? smoothed(g) : g, { at, scale: s, rot: [0, o.yaw ?? 0, 0], color: o.color ?? SNOW, to: o.to ?? 'stone' });
+  return part(o.smooth ? smoothed(g) : g, { at, scale: s, rot: [0, o.yaw ?? 0, 0], color: o.color ?? SNOW, to: o.to ?? (o.smooth ? 'adobe' : 'rock') }); // (snow heaps take the plaster's soft trowelled grain, ice and rock the rock's)
 }
 // a faceted geometry's corners welded, so it shades smooth (snow, not ice)
 function smoothed(g) {
@@ -1027,6 +1027,6 @@ export const SCATTER = {
   snowrock(k, { seed = 4, color = '#5e646e', snow = SNOW } = {}) {
     const g = rockGeometry(seed, { sharp: 0.55, detail: 1 });
     const cap = rockGeometry(seed, { sharp: 0.55, detail: 1 }).scale(1.04, 0.45, 1.04).translate(0, 0.24, 0);
-    return { parts: [{ geometry: k.geometry([part(g, { color, to: 'stone' }), part(cap, { color: snow, to: 'stone' })]), material: k.mats.stone }], radius: 0.42 };
+    return { parts: [{ geometry: k.geometry([part(g, { color, to: 'rock' }), part(cap, { color: snow, to: 'rock' })]), material: k.mats.rock }], radius: 0.42 };
   },
 };

@@ -25,6 +25,7 @@ import { PROPS } from './props';
 import { cloneModel, loadGlb } from './placer';
 import { rng } from './noise';
 import { groundAt, turnToward } from './walker';
+import { zoneVisibility } from './near';
 
 const TALK = 4.5; // metres: close enough to turn to you
 
@@ -148,10 +149,20 @@ export async function modelFigure(kind) {
   };
 }
 
-export function createActors({ parent, world, life = [], seed = 5, warm = (o) => Promise.resolve(o), small = false, kit = null }) {
+// How far off the fog has someone all but gone (97% fog, FogExp2's
+// 1 − e^−(density·d)²): past it a person isn't drawn or moved about in.
+export const fogCutoff = (density) => (density > 0 ? Math.sqrt(-Math.log(0.03)) / density : Infinity);
+const FAR = 60; // metres: past it, a person's legs are moved four frames at a time
+
+export function createActors({ parent, world, life = [], seed = 5, warm = (o) => Promise.resolve(o), small = false, kit = null, fog = () => 0 }) {
   const group = new THREE.Group();
   group.name = 'life';
   parent.add(group);
+  // (the people inside the zones: drawn only while you're in one)
+  const rooms = new THREE.Group();
+  rooms.name = 'life-inside';
+  rooms.visible = false;
+  parent.add(rooms);
   const r = rng(seed);
   const actors = [];
   let dead = false;
@@ -188,8 +199,8 @@ export function createActors({ parent, world, life = [], seed = 5, warm = (o) =>
       if (spec.path) b.leg = (i + 1) % spec.path.length;
       const holder = new THREE.Group();
       holder.visible = false;
-      group.add(holder);
-      const actor = { spec, b, holder, fig: null, said: 0, near: false, i, hidden: Boolean(spec.hidden) };
+      (spec.zone ? rooms : group).add(holder);
+      const actor = { spec, b, holder, fig: null, said: 0, near: false, i, hidden: Boolean(spec.hidden), culled: false, skip: i % 4 };
       actors.push(actor);
       figureOf(spec.kind, spec)
         .then((fig) => {
@@ -197,7 +208,7 @@ export function createActors({ parent, world, life = [], seed = 5, warm = (o) =>
           fig.model.scale.multiplyScalar(spec.scale ?? 1);
           holder.add(fig.model);
           actor.fig = fig;
-          return warm(holder).then(() => (holder.visible = !actor.hidden));
+          return warm(holder).then(() => (holder.visible = !actor.hidden && !actor.culled));
         })
         .catch(() => {});
     }
@@ -213,24 +224,50 @@ export function createActors({ parent, world, life = [], seed = 5, warm = (o) =>
 
   return {
     group,
+    // in a zone, its people and not the world's; out, the other way round
+    setZone(inZone) {
+      const v = zoneVisibility(inZone);
+      group.visible = v.outdoors;
+      rooms.visible = v.zones;
+    },
     actors,
     // each frame: on with what they're doing; the ones near `you` turn to you
-    update(dt, you) {
+    // (`at`: where the fog is measured from, you even when you're riding or flying)
+    update(dt, you, at = you) {
+      const cut = fogCutoff(fog());
       for (const a of actors) {
         const { b, spec } = a;
         if (a.hidden) continue;
+        // (lost in the fog: not drawn, and not walked about; they pick up
+        // where they were when you come near)
+        const d = at ? Math.hypot(at.x - b.x, at.z - b.z) : 0;
+        const culled = d > cut;
+        if (culled !== a.culled) {
+          a.culled = culled;
+          a.holder.visible = !culled && Boolean(a.fig);
+        }
+        if (culled) continue;
         const near = you && Math.hypot(you.x - b.x, you.z - b.z) < Math.max(TALK, spec.reach ?? 0) && Math.abs(you.y - a.holder.position.y) < 4 && (spec.says?.length || spec.turn || spec.quest || spec.id);
         if (near) {
           b.speed = Math.max(0, b.speed - dt * 4);
           b.yaw = turnToward(b.yaw, Math.atan2(you.x - b.x, you.z - b.z), 4 * dt);
-        } else think(b, spec, dt, r, { avoid: avoider(a) });
+        } else think(b, spec, dt, r, (a.avoiding ??= { avoid: avoider(a) })); // (made once a person, not every frame)
         a.near = Boolean(near);
         const g = groundAt(world, b.x, b.z, spec.level ?? Infinity);
         const y = spec.y != null ? g + spec.y + Math.sin(performance.now() / 700 + a.i) * 0.15 : g;
         a.holder.position.set(b.x, y, b.z);
         a.holder.rotation.y = b.yaw;
-        // (far ones are left still: nobody sees their legs)
-        if (a.fig && (!small || !you || Math.hypot(you.x - b.x, you.z - b.z) < 60)) a.fig.update(dt, Math.min(1, b.speed / 2.4));
+        // (far ones: still on a small device, every fourth frame elsewhere,
+        // four frames' worth at once: nobody sees their legs)
+        if (!a.fig) continue;
+        if (d < FAR) a.fig.update(dt, Math.min(1, b.speed / 2.4));
+        else if (!small) {
+          a.acc = (a.acc ?? 0) + dt;
+          if (++a.skip % 4 === 0) {
+            a.fig.update(a.acc, Math.min(1, b.speed / 2.4));
+            a.acc = 0;
+          }
+        }
       }
     },
     // one by its id (a quest's), where it is now
@@ -243,7 +280,7 @@ export function createActors({ parent, world, life = [], seed = 5, warm = (o) =>
       for (const a of actors)
         if (a.spec.id === id) {
           a.hidden = hidden;
-          a.holder.visible = !hidden && Boolean(a.fig);
+          a.holder.visible = !hidden && !a.culled && Boolean(a.fig);
         }
     },
     // the nearest one with something to say, within reach of (x, z)
@@ -287,6 +324,7 @@ export function createActors({ parent, world, life = [], seed = 5, warm = (o) =>
       dead = true;
       for (const a of actors) a.fig?.dispose();
       group.removeFromParent();
+      rooms.removeFromParent();
     },
   };
 }

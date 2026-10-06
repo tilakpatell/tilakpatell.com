@@ -11,10 +11,12 @@
 //   flags, bump, clouds, atmo, shield } }; the families and their slots and
 //   params are FAMILIES below
 // buildBody(look, { r = 40, small = false }) → { group, radius, reach,
-//   update(t, camera), setSuns([{ dir, color }]), set(name, value), dispose() }
+//   update(t, camera), setSuns([{ dir, color }]), setDetail(k), set(name, value), dispose() }
 //   look: an id (or a LOOKS entry); radius: the solid sphere, = r; reach:
-//   how far it shows (atmosphere, shield); set: 'shield' (Scarif's shield,
-//   0..1); anything else is ignored
+//   how far it shows (atmosphere, shield); setDetail: how many octaves of
+//   noise the ground is worked to, 0…1 from 4 up to all it was built with (9,
+//   or 5 small), for a scene that's short of frame rate; set: 'shield'
+//   (Scarif's shield, 0..1); anything else is ignored
 
 import * as THREE from 'three';
 import { SHELL_FRAG, SHELL_VERT, SHIELD_FRAG, SHIELD_VERT, SURFACE_VERT, surfaceFrag } from './bodyShaders';
@@ -196,6 +198,7 @@ export const LOOKS = {
   },
 };
 
+const MIN_OCT = 4; // the fewest octaves of noise a ground is worked to, however little detail is asked for
 const SEG = { big: [128, 96], small: [64, 48], moon: [64, 48] };
 const SHIELD_R = 1.12;
 const DUNE_DIR = new THREE.Vector3(0.62, 0.32, 0.72).normalize();
@@ -239,9 +242,10 @@ export function buildBody(look, { r = 40, small = false } = {}) {
     uAtmoP: { value: new THREE.Vector4(atmo?.top ?? 1.05, atmo?.falloff ?? 3.5, atmo?.density ?? 0, atmo?.glow ?? 0.8) },
     uSunset: { value: new THREE.Color(atmo ? atmo.sunset : '#ffffff') },
   };
+  const maxOct = small ? 5 : 9;
   const uniforms = {
     ...shared,
-    uMaxOct: { value: small ? 5 : 9 },
+    uMaxOct: { value: maxOct },
     uBump: { value: L.bump ?? 0.02 },
     uPal: { value: colors(L) },
     uP0: { value: p0 },
@@ -285,6 +289,7 @@ export function buildBody(look, { r = 40, small = false } = {}) {
 
   return {
     group,
+    surface, // (the mesh a crash lays its shockwave over)
     radius: r,
     reach,
     // (the camera needn't be passed: the shaders know where it is)
@@ -302,6 +307,9 @@ export function buildBody(look, { r = 40, small = false } = {}) {
         if (s) shared.uSunCol.value[i].copy(s.color);
         else shared.uSunCol.value[i].setRGB(0, 0, 0);
       }
+    },
+    setDetail(k) {
+      uniforms.uMaxOct.value = Math.round(MIN_OCT + (maxOct - MIN_OCT) * Math.min(1, Math.max(0, Number(k) || 0)));
     },
     set(name, value) {
       const v = Math.min(1, Math.max(0, Number(value) || 0));

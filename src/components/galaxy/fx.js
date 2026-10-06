@@ -6,7 +6,7 @@
 // a ship jumps away (a bright core that swells and cools from white through
 // orange to nothing).
 //
-// createBolts(parent, { count }) → { fire(from, to, { color, speed, width, length, onHit }), update(dt), busy, dispose() }
+// createBolts(parent, { count }) → { mesh, fire(from, to, { color, speed, width, length, onHit }), update(dt), busy, dispose() }
 // createFlashes(parent, { count }) → { at(point, { size, color, life }), update(dt, camera), busy, dispose() }
 
 import * as THREE from 'three';
@@ -29,6 +29,9 @@ export function createBolts(parent, { count = 160 } = {}) {
   const mat = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
   const mesh = new THREE.InstancedMesh(geo, mat, count);
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  // (the instance colours made now, not at the first shot: the shader is built with them or without, and a first shot would build it again)
+  mesh.setColorAt(0, new THREE.Color(1, 1, 1));
+  mesh.instanceColor.needsUpdate = true;
   mesh.frustumCulled = false;
   mesh.count = 0;
   parent.add(mesh);
@@ -39,6 +42,7 @@ export function createBolts(parent, { count = 160 } = {}) {
   const p = new THREE.Vector3();
   const s = new THREE.Vector3();
   return {
+    mesh,
     // from and to: Vector3s (copied); onHit(point) when it gets there
     fire(from, to, { color = LASER.empire, speed = 60, width = 0.05, length = 2.4, onHit = null } = {}) {
       const b = free.pop();
@@ -85,8 +89,11 @@ export function createBolts(parent, { count = 160 } = {}) {
         n += 1;
       }
       mesh.count = n;
-      mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      // (nothing to draw, nothing to send up)
+      if (n) {
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.instanceColor.needsUpdate = true;
+      }
     },
     dispose() {
       mesh.removeFromParent();
@@ -169,16 +176,25 @@ export function createFlashes(parent, { count = 48 } = {}) {
           free.push(f);
         }
       }
-      live.forEach((f, i) => {
+      for (let i = 0; i < live.length; i++) {
+        const f = live[i];
         m.makeTranslation(f.at.x, f.at.y, f.at.z);
         mesh.setMatrixAt(i, m);
-        flash.set([f.age, f.size, f.bright, 0], i * 4);
-        tint.set([f.tint.r, f.tint.g, f.tint.b], i * 3);
-      });
+        flash[i * 4] = f.age;
+        flash[i * 4 + 1] = f.size;
+        flash[i * 4 + 2] = f.bright;
+        flash[i * 4 + 3] = 0;
+        tint[i * 3] = f.tint.r;
+        tint[i * 3 + 1] = f.tint.g;
+        tint[i * 3 + 2] = f.tint.b;
+      }
       mesh.count = live.length;
-      mesh.instanceMatrix.needsUpdate = true;
-      geo.attributes.aFlash.needsUpdate = true;
-      geo.attributes.aTint.needsUpdate = true;
+      // (nothing to draw, nothing to send up)
+      if (live.length) {
+        mesh.instanceMatrix.needsUpdate = true;
+        geo.attributes.aFlash.needsUpdate = true;
+        geo.attributes.aTint.needsUpdate = true;
+      }
     },
     dispose() {
       mesh.removeFromParent();

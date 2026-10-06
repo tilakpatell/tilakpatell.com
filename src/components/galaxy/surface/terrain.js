@@ -156,16 +156,39 @@ export function heightGrid(height, { n = 256, grow = 1.08 } = {}) {
   const first = lines.indexOf(-HALF);
   const cell = (2 * HALF) / n;
   const at = (i, j) => heights[j * w + i];
+  // the line at or before v, and how far on to the next (0…1), held at the ends
+  const span = (v) => {
+    if (v <= lines[0]) return [0, 0];
+    if (v >= lines[w - 1]) return [w - 2, 1];
+    let lo = 0;
+    let hi = w - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (lines[mid] <= v) lo = mid;
+      else hi = mid;
+    }
+    return [lo, (v - lines[lo]) / (lines[lo + 1] - lines[lo])];
+  };
+  // (the cells split corner to corner as the square's are)
+  const far = (x, z) => {
+    const [I, fx] = span(x);
+    const [J, fz] = span(z);
+    if (fx + fz <= 1) return at(I, J) + (at(I + 1, J) - at(I, J)) * fx + (at(I, J + 1) - at(I, J)) * fz;
+    const h11 = at(I + 1, J + 1);
+    return h11 + (at(I, J + 1) - h11) * (1 - fx) + (at(I + 1, J) - h11) * (1 - fz);
+  };
   return {
     lines,
     heights,
     size: w,
     cell,
-    // the drawn height at (x, z); outside the walkable square, the land's own
+    // the drawn height at (x, z); outside the walkable square, read off the
+    // grid's growing lines out to the horizon (cheap: the zones' rooms, far
+    // out, ask every frame), held at its edge past them
     heightAt(x, z) {
       const gx = (x + HALF) / cell;
       const gz = (z + HALF) / cell;
-      if (gx < 0 || gz < 0 || gx >= n || gz >= n) return height(x, z);
+      if (gx < 0 || gz < 0 || gx >= n || gz >= n) return far(x, z);
       const i = Math.floor(gx);
       const j = Math.floor(gz);
       const fx = gx - i;

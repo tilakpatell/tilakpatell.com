@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { feed, start, stepTarget, stepText } from './quests';
+import { feed, nextQuest, questsOf, start, stepTarget, stepText } from './quests';
 
 const QUEST = {
   id: 'droids',
@@ -65,5 +65,17 @@ describe('a quest', () => {
     const p = start(QUEST);
     expect(feed(p, { ...QUEST, id: 'other' }, { type: 'talk', actor: 'trader' }).progress).toBe(p);
     expect(feed(null, QUEST, { type: 'talk', actor: 'trader' }).progress).toBeNull();
+  });
+});
+
+describe('someone with more than one thing to ask', () => {
+  it('offers the first not done, then the next', () => {
+    const spec = { quest: ['lift', 'cave'] };
+    expect(nextQuest(spec, new Set())).toBe('lift');
+    expect(nextQuest(spec, new Set(['lift']))).toBe('cave');
+    expect(nextQuest(spec, new Set(['lift', 'cave']))).toBe(null);
+    expect(nextQuest({ quest: 'arena' }, new Set())).toBe('arena');
+    expect(nextQuest({}, new Set())).toBe(null);
+    expect(questsOf({ quest: 'arena' })).toEqual(['arena']);
   });
 });

@@ -347,7 +347,7 @@ export default function Thwip({ fallback }) {
                   ? res.won
                     ? `${Math.round(res.time)} seconds down the avenue, ${res.got} ${res.got === 1 ? 'backpack' : 'backpacks'} back, ${res.perfects} perfect releases.`
                     : `${fmt(res.d)} m down the avenue, and the traffic had the last word. Swing before you drop too low, and carry your speed over the cross streets.`
-                  : 'Peter turned down the suit. Now he’s late for school, two kilometres away, and the quickest way is between the buildings. Hold to swing, let go to fly, and let go on the upswing for a perfect release. His backpacks are webbed up along the way: he keeps losing them.'}
+                  : 'Peter turned down the suit. Now he’s late for school, two kilometres away, and the quickest way is between the buildings. Hold to swing, let go to fly, on the upswing for a perfect release. His backpacks are webbed up along the way: he keeps losing them.'}
               </p>
               {res && (
                 <p className="hq-overlay-score">

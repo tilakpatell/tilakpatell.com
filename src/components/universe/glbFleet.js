@@ -26,8 +26,7 @@
 // buildTraffic's are.
 
 import * as THREE from 'three';
-import { gltfLoader } from '../../lib/three/gltf';
-import { sharpenTree } from '../../lib/three/textures';
+import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
 import { buildTraffic } from './trafficModels';
 
 // which way each one's nose points as it comes (turned to +z), and whether
@@ -49,7 +48,6 @@ export function createFleet({ prepare = null, build = buildTraffic, glb = GLB } 
   const stocked = {}; // kind → built ones made ahead, handed out first
   const loading = new Set();
   let dead = false;
-  const loader = gltfLoader();
   return {
     // start loading these (the ones that are models), if they aren't yet
     want(list) {
@@ -57,12 +55,12 @@ export function createFleet({ prepare = null, build = buildTraffic, glb = GLB } 
         const def = glb[kind];
         if (!def || loading.has(kind)) continue;
         loading.add(kind);
-        loader
-          .loadAsync(def.url)
+        // (the parse is the page's, shared with the galaxy's own models and the planets'
+        // models; the roughness clamp and the rest are done on this fleet's copy of it)
+        loadGLTF(def.url)
           .then((gltf) => {
-            const root = gltf.scene;
-            if (dead) return;
-            sharpenTree(root);
+            if (dead || !gltf) return;
+            const root = cloneScene(gltf);
             // centred, nose to +z, its biggest side 1 long
             const turn = new THREE.Group();
             turn.rotation.y = def.nose;
@@ -131,7 +129,8 @@ export function createFleet({ prepare = null, build = buildTraffic, glb = GLB } 
     dispose() {
       dead = true;
       for (const list of Object.values(stocked)) for (const m of list.splice(0)) m.dispose();
-      // the models' own geometry and textures (the copies only shared them)
+      // the models' own geometry and textures (the copies only shared them; the
+      // page's cached parse does too, so what else draws them uploads them again)
       for (const t of Object.values(templates)) {
         t.holder.traverse((o) => {
           if (!o.isMesh) return;

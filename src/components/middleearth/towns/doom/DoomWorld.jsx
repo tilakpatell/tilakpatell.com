@@ -4,7 +4,8 @@ import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
 import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
 import { readPad, typing } from '../../../games/pad';
-import { Convo, QuestList, Stick } from '../TownHud';
+import { Convo, QuestList, Stick, Travellers } from '../TownHud';
+import { useTravellers } from '../useTravellers';
 import { SideList } from '../SideList';
 import { readSide, recordSide } from '../side';
 import { keyDown, keyUp, moveOf, ownButton } from '../keys';
@@ -85,6 +86,9 @@ export default function DoomWorld({ onLeave }) {
 }
 
 function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
+  // other travellers online crossing Gorgoroth, as ghosts (../useTravellers);
+  // the crossing is some 760 m west of the mountain, the world's middle
+  const trav = useTravellers('doom', gl === 'on', { bound: 800 });
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
   const canvas = useRef(null);
@@ -604,6 +608,10 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
     const c = s.carry;
     const g = s.hang;
     const f = s.flight;
+    // other travellers online: where you are to them (crossing the plain;
+    // the column, the mountain and the fire are yours alone), and where they are
+    const tv = trav.ref.current;
+    tv?.pose(s.h, { inside: !(s.mode === 'walk' && s.search) });
     try {
       a.render(
         {
@@ -612,6 +620,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
           next: p.next,
           done: p.done,
           hobbit: s.h,
+          travellers: tv ? tv.list() : null,
           hidden: Boolean(s.hidden),
           talking: s.talking,
           speaker: node?.who ?? (s.mode === 'remember' ? (s.said?.who ?? null) : null),
@@ -747,6 +756,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{prog.done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}
             </button>
+            <Travellers trav={trav} />
           </div>
         </div>
       )}

@@ -12,12 +12,18 @@
 //   loadTexture(url, { renderer, color, ...sharpen's }) → Promise<Texture>
 //   variant(url, suffix, use) → the -sm / -512 file for a smaller tier
 //   warm(renderer, root | [textures]) → uploads now, not on the first frame
+//   detailCanvas(w, h, { level, max }) → { canvas, ctx, k }: a canvas to
+//       paint a texture on at the device's detail (lib/detail), drawn in
+//       its design units whatever its size
+//   fitTexture(texture, cap), fitTextures(root, cap) → no map bigger than
+//       `cap` texels a side (a phone's or a weak device's ceiling)
 //
 // Only lazily loaded scene modules import this, so a page that never draws
 // in 3D never downloads three.js.
 
 import * as THREE from 'three';
 import { budget } from '../device';
+import { modelTexCap, texScale } from '../detail';
 
 // The anisotropy to ask for: the tier's, no more than the graphics chip has
 // (16 on most; 1 where the extension is missing, which three reports as 1).
@@ -220,4 +226,105 @@ export function warm(renderer, what, { idle = false, perSlice = 2 } = {}) {
     };
     whenIdle(slice);
   });
+}
+
+// ── Detail ──
+
+// A canvas for a texture painted in code, sized for this device (lib/detail's
+// texScale: twice the texels at ultra, half on a weak device), its context
+// scaled so the painter draws in the units it was designed in: a 512 design
+// is painted by the same strokes at 1024 on an RTX 5090, crisper, not
+// smaller. A painter that works on pixels itself (getImageData) reads `k`.
+export function detailCanvas(w, h = w, { level, max } = {}) {
+  const k = texScale(Math.max(w, h), { level, max });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w * k));
+  canvas.height = Math.max(1, Math.round(h * k));
+  const ctx = canvas.getContext('2d');
+  ctx.scale(k, k);
+  return { canvas, ctx, k };
+}
+
+// The size a w × h map is halved to until its longer side is at most `cap`,
+// or null if it fits already. Pure.
+export function fitSize(width, height, cap) {
+  if (!(width > 0 && height > 0) || Math.max(width, height) <= cap) return null;
+  let w = width;
+  let h = height;
+  while (Math.max(w, h) > cap && Math.min(w, h) > 1) {
+    w = Math.max(1, Math.round(w / 2));
+    h = Math.max(1, Math.round(h / 2));
+  }
+  return { width: w, height: h };
+}
+
+// How many of a compressed map's top mip levels are over `cap`, never
+// counting its last. Pure.
+export function mipsOver(levels, cap) {
+  let n = 0;
+  while (n < levels.length - 1 && Math.max(levels[n].width, levels[n].height) > cap) n += 1;
+  return n;
+}
+
+// Something a canvas can draw: a decoded image, a bitmap, another canvas.
+const drawable = (img) =>
+  (typeof ImageBitmap !== 'undefined' && img instanceof ImageBitmap) ||
+  (typeof HTMLImageElement !== 'undefined' && img instanceof HTMLImageElement) ||
+  (typeof HTMLCanvasElement !== 'undefined' && img instanceof HTMLCanvasElement) ||
+  (typeof OffscreenCanvas !== 'undefined' && img instanceof OffscreenCanvas);
+
+// A texture brought under `cap` texels a side before it reaches the
+// graphics chip: an image halved on a canvas (the texture's source changed
+// in place, so every copy sharing it shrinks too), a compressed one started
+// at its first mip level that fits (its smaller levels were made offline,
+// so nothing is lost but the levels a phone couldn't use). A texture that
+// isn't an image (data, video) or that was already uploaded is left alone.
+// Returns whether it changed.
+export function fitTexture(texture, cap) {
+  if (!texture?.isTexture || !(cap > 0)) return false;
+  if (texture.isCompressedTexture) {
+    const drop = mipsOver(texture.mipmaps ?? [], cap);
+    if (!drop) return false;
+    texture.mipmaps = texture.mipmaps.slice(drop);
+    texture.image = { ...texture.image, width: texture.mipmaps[0].width, height: texture.mipmaps[0].height };
+    texture.needsUpdate = true;
+    return true;
+  }
+  if (texture.isDataTexture || texture.isVideoTexture || texture.isRenderTargetTexture || typeof document === 'undefined') return false;
+  const img = texture.source?.data ?? texture.image;
+  const size = fitSize(img?.width, img?.height, cap);
+  if (!size || !drawable(img)) return false;
+  const c = document.createElement('canvas');
+  c.width = size.width;
+  c.height = size.height;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, size.width, size.height);
+  texture.source.data = c;
+  texture.needsUpdate = true;
+  return true;
+}
+
+// Every map under a loaded model fitted under `cap` (lib/detail's ceiling
+// for this device: 512 on a weak one, 1024 on a phone, nothing a desktop
+// would notice), each source once. Maps on see-through materials are left
+// as they are: a canvas would darken the edges their alpha cuts out.
+export function fitTextures(root, cap = modelTexCap()) {
+  if (!root?.traverse || !(cap > 0)) return 0;
+  const seen = new Set();
+  let n = 0;
+  root.traverse((o) => {
+    const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    for (const m of mats) {
+      if (m.transparent || m.alphaTest > 0 || m.alphaMap) continue;
+      for (const slot of MAP_SLOTS) {
+        const t = m[slot];
+        if (!t?.isTexture || seen.has(t.source ?? t)) continue;
+        seen.add(t.source ?? t);
+        if (fitTexture(t, cap)) n += 1;
+      }
+    }
+  });
+  return n;
 }

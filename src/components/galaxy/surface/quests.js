@@ -114,3 +114,8 @@ export function stepTarget(step, progress, actors = null) {
   if (step.at) return step.at;
   return null;
 }
+
+// Someone's quests (a life spec's `quest`: one id, or a list of them, given
+// in turn), and the one they offer now: the first not done, or null
+export const questsOf = (spec) => [spec?.quest ?? []].flat();
+export const nextQuest = (spec, done) => questsOf(spec).find((id) => !done.has(id)) ?? null;

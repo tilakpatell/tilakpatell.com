@@ -90,7 +90,7 @@ export function createGhosts({ height = () => 0, make: build = () => makePerson(
     tag.position.y = (f.top ?? 1.6) + tagSize * 0.85;
     root.add(f.group, halo, tag);
     group.add(root);
-    return { f, mat, root, halo, tag, name: p.name, x: p.x, z: p.z, y: 0, face: p.face, fade: 0 };
+    return { f, mat, root, halo, tag, name: p.name, x: p.x, z: p.z, y: p.y ?? 0, face: p.face, fade: 0 }; // (first seen up high: there at once, not rising from the ground)
   };
 
   const drop = (id, g) => {

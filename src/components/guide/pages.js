@@ -7,7 +7,7 @@ import { GUIDES, guideKeyFor } from './routes';
 // are in routes.js. Loaded with the guide's panel, not before.
 
 // the portfolio pages run into one another (components/feed)
-const FEED_TIP = ['Keep scrolling', 'The six portfolio pages run into one another: reach the end of this one and the next begins, and the address and the menu follow. After the sixth, the end.'];
+const FEED_TIP = ['Keep scrolling', 'The six portfolio pages run into one another: reach the end of one and the next begins. After the sixth, the end.'];
 
 const FLY = [
   ['W S', 'Throttle'],
@@ -89,7 +89,7 @@ export const PAGES = {
     ],
   },
   '/universe': {
-    about: 'The whole site as places in space: the stations round the sun are its pages, the planets out in deep space its worlds. Fly a ship to any of them, or just pick one.',
+    about: 'The whole site as places in space: the stations round the sun are its pages, the planets in deep space its worlds. Fly a ship to any of them, or pick one.',
     keys: [
       { label: 'Flying', rows: [...FLY, ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['E / Enter', 'Land or dock where you are'], ['G', 'Land and step out (G again to get back in)'], ['H', 'The hangar: paint and parts'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole map']] },
       { label: 'On foot', rows: [['W A S D', 'Walk'], ['Q E', 'Step sideways'], ['Shift', 'Run'], ['Space', 'Jump'], ['F / Click', 'Fire'], ['X', 'Play the other one of your crew'], ['V', 'Out of their eyes'], ['Enter', 'Into the planet’s page']] },
@@ -105,16 +105,16 @@ export const PAGES = {
       { label: 'The buttons', rows: [['Boost', 'Hold to go fast'], ['Fire', 'Shoot'], ['View', 'The cockpit'], ['Wrench', 'The hangar'], ['Sliders', 'How it all feels']] },
     ],
     tips: [
-      ['Pick a ship', 'Rick and Morty’s space cruiser, Luke and Artoo’s X-wing, Han and Chewie’s Falcon or Walt and Jesse’s RV. Each crew has something to say about every place you reach. No ship? Pick a place and the camera flies there.'],
-      ['Getting about', 'The worlds are far apart. Boost in the open and the pulse drive takes over; it drops back as you near a place. Or open the nav map (M) and let the ship take you: hyperspeed (a jump), super speed or cruise. The galaxy’s star systems are on it too: pick one and the ship flies to the gate and on through. Tour takes you round every place in turn, nearest first, the crew talking; Escape stops it.'],
-      ['Links', 'Every place has a link that opens the map right there (/universe/aurelia, say): Copy a link here on the nav map. The terminal’s fly <place> and ⌘K’s Fly to do the same.'],
-      ['Deep space', 'Between the worlds are the wonders: a ringed gas giant, an ice giant, two other suns with worlds of their own, a black hole, two nebulae, the Citadel of Ricks, a pulsar, a binary star, a rogue planet with no sun and a wreck field round a white dwarf, with a rim of ice right round the edge of the map. The crew have a word about each as you come up on it.'],
+      ['Pick a ship', 'Rick and Morty’s cruiser, Luke and Artoo’s X-wing, Han and Chewie’s Falcon or Walt and Jesse’s RV. Each crew has a word about every place. No ship? Pick a place and the camera flies there.'],
+      ['Getting about', 'The worlds are far apart. Boost in the open and the pulse drive takes over; it drops back near a place. Or open the nav map (M) and let the ship take you: hyperspeed (a jump), super speed or cruise. Star systems are on it too: pick one and the ship flies through the gate. Tour visits every place, nearest first; Escape stops it.'],
+      ['Links', 'Every place has a link that opens the map there (/universe/aurelia, say): Copy a link here on the nav map. The terminal’s fly <place> and ⌘K’s Fly to do the same.'],
+      ['Deep space', 'Between the worlds are the wonders: a ringed gas giant, an ice giant, two other suns with their own worlds, a black hole, two nebulae, the Citadel of Ricks, a pulsar, a binary star, a rogue planet and a wreck field round a white dwarf, with a rim of ice round the edge of the map. The crew have a word about each.'],
       ['Mind the planets', 'Brush one and you bounce off; fly into one at speed and you crash into its page.'],
-      ['Hunted', 'Now and then someone comes after you, sooner if you’ve been shooting things up. The guns lock on to whoever’s coming: shoot at the pip ahead of them and the shots bend home. Lose your shields and you’re back at the nearest place.'],
+      ['Hunted', 'Now and then someone comes after you, sooner if you’ve been shooting. The guns lock on: shoot at the pip ahead of them and the shots bend home. Lose your shields and you’re back at the nearest place.'],
       ['The Citadel of Ricks', 'Knock out the four shield generators, then only heavy ordnance hurts the core. Everyone online shares the siege.'],
-      ['Happenings', 'A Star Destroyer drops out of hyperspace and launches its fighters, someone calls for help with pirates on their tail, a convoy goes by, a star flares and its shockwave rattles the ship, a rift tears open ahead (fly into it and it takes you somewhere else on the map), and something enormous swims past: purrgil, or a Cromulon with something to say. A stream of rocks crosses your path (shoot them, or steer round them), and now and then a bounty hunter comes for you alone: Boba Fett in Slave I, or Phoenixperson.'],
+      ['Happenings', 'A Star Destroyer drops out of hyperspace and launches fighters, someone calls for help with pirates on their tail, a convoy goes by, a star flares and rattles the ship, a rift opens ahead (fly in and it drops you elsewhere on the map), and something enormous swims past: purrgil, or a Cromulon. Rocks cross your path (shoot or steer round them), and now and then a bounty hunter comes for you: Boba Fett in Slave I, or Phoenixperson.'],
       ['The black hole', 'The one thing out there you don’t come back from. On its far side is a friend’s universe; Back brings you home.'],
-      ['Online', 'Multiplayer, bottom left: everyone else flying the map is there in their own ships. Fly together, or shoot each other down.'],
+      ['Online', 'Multiplayer, bottom left: everyone else on the map is there in their own ships. Fly together, or shoot each other down.'],
     ],
   },
   '/galaxy': {
@@ -122,7 +122,7 @@ export const PAGES = {
     keys: [{ label: 'Flying', rows: [...FLY, ['M', 'The galaxy map: plot a course'], ['J', 'Jump to lightspeed, to the star on your nose'], ['E / Enter', 'Land on the planet (or board the Death Star)']] }],
     touch: [{ rows: [['Drag', 'Fly'], ['Tap', 'A star’s name to plot a course'], ['Jump', 'Lightspeed, to the star on your nose']] }],
     tips: [
-      ['Jumping', 'Turn the nose toward a star and its name comes up; press J, or just fly on out of the system toward it. The galaxy map (M) filters by era or film.'],
+      ['Jumping', 'Turn the nose toward a star and its name comes up; press J, or fly out of the system toward it. The galaxy map (M) filters by era or film.'],
       ['Missions', 'Each system has one. The trench run and boarding the Death Star are playable now; the rest are briefings for games still being built. Watch for the tractor beam at Alderaan.'],
       ['Online', 'The other pilots in the same system are there with you, in their own ships. The galaxy map shows how many are where.'],
     ],
@@ -243,10 +243,10 @@ export const PAGES = {
     ],
     tips: [
       ['The city', 'Six kilometres of downtown, river, suburbs, coast and hills. Come down fast and the street cracks; hit a tower too fast and you bounce off it. The places: the Graysons’, the high school, Burger Mart, the Guardians’ hall, the GDA.'],
-      ['Things to do', 'Dad’s rings start over the street outside the house: ten of them to the Guardians’ hall, against the clock. The first season’s eight title cards are hidden round the city (one very high up). Every minute or so someone needs catching: follow the red beacon, catch them before the ground, then land to set them down. Fly alongside the airliner and your father has something to say.'],
+      ['Things to do', 'Dad’s rings start over the street outside the house: ten of them to the Guardians’ hall, against the clock. The first season’s eight title cards are hidden round the city (one high up). Every minute or so someone needs catching: follow the red beacon, catch them, land to set them down. Fly alongside the airliner and your father has something to say.'],
       ['The Flaxans', 'They come through a portal over the river, when Cecil sends you or a few minutes in on their own. Punch them out of the sky, or fly into them fast; their purple bolts knock you about. All twelve down and the portal closes.'],
-      ['Space', 'Keep climbing: the sky goes dark and the stars come out, and past 9 km you’re out of the air with the whole Earth under you. Out there you drift, and flat out you go twenty times faster. The Moon and Mars are on the gauge: land on them (Space jumps off again), and someone’s waiting at each. Dive back at the Earth and you come down through the fire over the city.'],
-      ['Think, Mark!', 'Four chapters: your father’s rings, the Flaxans, then Omni-Man and Thragg. A Viltrumite blocks and hits back unless he’s recovering from a charge: dodge as the ring closes round him, then hit him while he’s open. A dodge just in time slows everything down. A controller works too.'],
+      ['Space', 'Keep climbing: the sky goes dark, the stars come out, and past 9 km you’re out of the air with the Earth under you. Out there you drift, and flat out you go twenty times faster. The Moon and Mars are on the gauge: land on them (Space jumps off again), and someone’s waiting at each. Dive back and you come down through fire over the city.'],
+      ['Think, Mark!', 'Four chapters: your father’s rings, the Flaxans, then Omni-Man and Thragg. A Viltrumite blocks and hits back unless he’s recovering from a charge: dodge as the ring closes round him, then hit him while he’s open. A last-moment dodge slows everything down. A controller works too.'],
       ['The title card', 'Press it for the next episode. It has a rough season.'],
       ['The files', 'Drag a figure to turn him, or pick a pose: they’re the HD models the game uses.'],
       ['Things your father said', 'Every card does something.'],
@@ -410,7 +410,7 @@ export const PAGES = {
     ],
     touch: [{ rows: [['Drag', 'Turn the globe'], ['Stick', 'Fly'], ['Faster', 'Go faster']] }],
     tips: [
-      ['From orbit', 'The Earth as it is right now: the sun is where it really is, so the night side is the real night.'],
+      ['From orbit', 'The Earth right now: the sun where it is, so the night side is the real night.'],
       ['The passport', 'Fly over a place to stamp it and get its postcard. Fly here sets the autopilot along the great circle; the arrow at the bottom points at the next place.'],
       ['A controller', 'Works too.'],
     ],
@@ -430,7 +430,7 @@ export const PAGES = {
   '/travel': {
     tips: [
       ['The globe', 'Drag to spin it, and click a place to fly there.'],
-      ['Fly there yourself', 'Earth, out on the universe map, puts you in a little plane to every place on it.'],
+      ['Fly there yourself', 'Earth, on the universe map, puts you in a little plane to every place on it.'],
       FEED_TIP,
     ],
   },
@@ -444,11 +444,11 @@ export const SHORTCUTS = [
 ];
 
 export const SITE = [
-  ['Two ways round', 'The Universe and Classic switch at the top: fly through the site as a universe, or read it as plain pages. Either takes you to the same place in the other, and the site opens on the one you picked last.'],
-  ['Getting around', 'The menu at the top, or the command palette, which can take you anywhere and do most things. The Terminal page takes commands too.'],
-  ['Colors', 'The dot in the menu picks a color scheme: each company I’ve worked at, any fan theme you’ve unlocked, or your own color. Each scheme brings a background to the portfolio pages: a quiet one for the companies, a lively one for the fan themes (click on empty page). Switch them off at the bottom of the same menu.'],
+  ['Two ways round', 'The Universe and Classic switch at the top: fly the site as a universe, or read it as plain pages. Either takes you to the same place in the other, and the site remembers which you picked.'],
+  ['Getting around', 'The menu at the top, or the command palette, which goes anywhere and does most things. The Terminal page takes commands too.'],
+  ['Colors', 'The dot in the menu picks a color scheme: each company I’ve worked at, any fan theme you’ve unlocked, or your own color. Each scheme brings a background: quiet for the companies, lively for the fan themes (click on empty page). Switch them off at the bottom of the same menu.'],
   ['Languages', 'Read the whole site in Aurebesh, Cybertronian or Dwarf runes, from the Off the clock row, ⌘K, or the Death Star, Middle-earth and Cybertron pages. Back to English is always at the bottom of the screen, or type english.'],
-  ['Easter eggs', 'A small one is tucked away on each of the main pages, and one more on the page that isn’t there. Some words work if you type them anywhere: try aurebesh, rollout, mellon, snap, twss, parkour, precious, wubbalubbadubdub or say my name.'],
+  ['Easter eggs', 'One on each main page, and one more on the page that isn’t there. Some words work typed anywhere: try aurebesh, rollout, mellon, snap, twss, parkour, precious, wubbalubbadubdub or say my name.'],
   ['Achievements', 'Each egg you find is counted; the Dundies in Scranton show you where you stand.'],
 ];
 

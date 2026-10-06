@@ -57,7 +57,7 @@ describe('fromScene', () => {
     w.setVisible(false);
     w.warmUp(() => 5);
     w.setColors([0, 0, 0]);
-    expect(s.update).toHaveBeenCalledWith({ a: 1 });
+    expect(s.update).toHaveBeenCalledWith(expect.objectContaining({ a: 1, onEvent: ctx.onEvent }));
     expect(s.setVisible).toHaveBeenCalledWith(false);
     expect(s.warmUp).toHaveBeenCalled();
     expect(s.setColors).toHaveBeenCalled();
@@ -67,6 +67,27 @@ describe('fromScene', () => {
     expect(s.lowerQuality).toHaveBeenCalledTimes(2);
     w.dispose();
     expect(s.dispose).toHaveBeenCalled();
+  });
+
+  it("gives the scene the runtime, and holds what it tells the page till the page is listening", async () => {
+    const s = scene();
+    const create = vi.fn(() => s);
+    const mod = fromScene('galaxy', create, { mb: 8, ratio: 1.5, label: 'stars' });
+    expect(mod).toMatchObject({ id: 'galaxy', shading: 'glsl', mb: 8, ratio: 1.5, label: 'stars' });
+    const emitted = [];
+    const r = { ...rt(), events: { emit: (type, data) => emitted.push([type, data]) } };
+    const w = await mod.create(r, { onEvent: () => emitted.push('the old page') });
+    const [, ctx] = create.mock.calls[0];
+    expect(ctx.rt).toBe(r);
+    expect(w.scene).toBe(s);
+    ctx.onEvent({ type: 'phase', phase: 'landing' });
+    expect(emitted).toEqual([]);
+    w.attached();
+    expect(emitted).toEqual([['phase', { type: 'phase', phase: 'landing' }]]);
+    ctx.onEvent({ type: 'found', id: 'x' });
+    expect(emitted[1]).toEqual(['found', { type: 'found', id: 'x' }]);
+    w.attached(); // (twice is once)
+    expect(emitted).toHaveLength(2);
   });
 
   it('a scene without the optional methods still makes a whole world', async () => {

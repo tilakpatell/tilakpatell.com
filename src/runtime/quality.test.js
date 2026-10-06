@@ -26,6 +26,16 @@ describe('createQuality', () => {
     expect(q.ratio).toBe(1.5);
   });
 
+  it("never draws past the screen's own pixels, nor past a module's cap", () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([null]), dpr: 1 });
+    expect(q.ratio).toBe(1);
+    expect(q.ratioUnder(1.5)).toBe(1);
+    const sharp = createQuality({ tier: 'high', pace: fakePace([null]), dpr: 3 });
+    expect(sharp.ratio).toBe(2);
+    expect(sharp.ratioUnder(1.5)).toBe(1.5);
+    expect(sharp.ratioUnder(undefined)).toBe(2);
+  });
+
   it('follows the pace down and tells listeners once per change', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null, 1, null, 1, 0]) });
     const seen = [];

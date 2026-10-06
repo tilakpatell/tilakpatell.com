@@ -1,0 +1,93 @@
+{
+  "adobe": {
+    "source": "https://polyhaven.com/a/patterned_clay_plaster",
+    "id": "patterned_clay_plaster",
+    "name": "Patterned Clay Plaster",
+    "authors": [
+      "Amal Kumar"
+    ],
+    "license": "CC0 1.0",
+    "metres": 2,
+    "arm": true
+  },
+  "stone": {
+    "source": "https://polyhaven.com/a/large_sandstone_blocks_01",
+    "id": "large_sandstone_blocks_01",
+    "name": "Large Sandstone Blocks 01",
+    "authors": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0 1.0",
+    "metres": 3,
+    "arm": true
+  },
+  "metal": {
+    "source": "https://polyhaven.com/a/metal_plate_02",
+    "id": "metal_plate_02",
+    "name": "Metal Plate 02",
+    "authors": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0 1.0",
+    "metres": 2,
+    "arm": true
+  },
+  "paint": {
+    "source": "https://polyhaven.com/a/blue_metal_plate",
+    "id": "blue_metal_plate",
+    "name": "Blue Metal Plate",
+    "authors": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0 1.0",
+    "metres": 2.5,
+    "arm": true
+  },
+  "bark": {
+    "source": "https://polyhaven.com/a/bark_brown_02",
+    "id": "bark_brown_02",
+    "name": "Bark Brown 02",
+    "authors": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0 1.0",
+    "metres": 0.9999990463256836,
+    "arm": true
+  },
+  "wood": {
+    "source": "https://polyhaven.com/a/weathered_planks",
+    "id": "weathered_planks",
+    "name": "Weathered Planks",
+    "authors": [
+      "Dario Barresi",
+      "Dimitrios Savva"
+    ],
+    "license": "CC0 1.0",
+    "metres": 2,
+    "arm": true
+  },
+  "concrete": {
+    "source": "https://polyhaven.com/a/concrete_wall_008",
+    "id": "concrete_wall_008",
+    "name": "Concrete Wall 008",
+    "authors": [
+      "Dario Barresi",
+      "Charlotte Baglioni"
+    ],
+    "license": "CC0 1.0",
+    "metres": 2.7100000381469727,
+    "arm": true
+  },
+  "rock": {
+    "source": "https://polyhaven.com/a/rock_face",
+    "id": "rock_face",
+    "name": "Rock Face",
+    "authors": [
+      "Greg Zaal",
+      "Dario Barresi"
+    ],
+    "license": "CC0 1.0",
+    "metres": 2.380000114440918,
+    "arm": true
+  }
+}

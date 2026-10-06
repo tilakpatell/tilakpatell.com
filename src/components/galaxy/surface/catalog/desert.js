@@ -18,7 +18,7 @@ export const MODELS = {
   // the rancor, rigged (its one clip a breathing idle)
   rancor: { uid: '983d578002d74691a3da6a5aad700a6c', as: 'the rancor', metres: 5, yaw: 0, tris: 20000, tex: 1024, maps: 512, rig: true, anim: { idle: 'Unreal Take' } },
   // Jabba's sail barge, the Khetanna (a diecast toy's shape)
-  sailbarge: { uid: '47acb5ba43f74bba9c904c9c3bd5d83b', as: "Jabba's sail barge", metres: 30, along: 'z', yaw: -Math.PI / 2, tris: 40000, tex: 1024 },
+  sailbarge: { uid: '47acb5ba43f74bba9c904c9c3bd5d83b', lod: true, as: "Jabba's sail barge", metres: 30, along: 'z', yaw: -Math.PI / 2, tris: 40000, tex: 1024 },
   jabba: { uid: '524e1fcf8c774573b5b15496efc4f572', as: 'Jabba the Hutt', metres: 3.9, along: 'max', yaw: 0, tris: 20000, tex: 1024, maps: 512 },
   // a GNK power droid
   gonk: { uid: '99e5fe9631d74b0aaa3ff0b8223c72d3', as: 'the gonk droids', metres: 1.1, yaw: 0, tris: 12000, tex: 512 },

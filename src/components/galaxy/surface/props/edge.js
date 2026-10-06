@@ -1584,7 +1584,7 @@ export const SCATTER = {
   // a jagged spire of black rock
   spire(k, { color = '#221e1e', seed = 5, sharp = 0.9 } = {}) {
     const g = rockGeometry(seed, { sharp, detail: 1, flat: 0.9 });
-    return { parts: [{ geometry: k.geometry([part(g, { scale: [1, 3.6, 1], color, to: 'stone' })]), material: k.mats.stone }], radius: 0.42 };
+    return { parts: [{ geometry: k.geometry([part(g, { scale: [1, 3.6, 1], color, to: 'rock' })]), material: k.mats.rock }], radius: 0.42 };
   },
 };
 

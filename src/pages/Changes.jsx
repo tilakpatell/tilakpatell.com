@@ -106,8 +106,8 @@ export default function Changes() {
             <AurebeshLine>What’s changed.</AurebeshLine>
           </p>
           <p className="lead mt-6 max-w-2xl">
-            This site improves itself. On a schedule, a Claude session comes round, makes one thing better (faster, sharper, or new), checks it hasn’t broken anything, merges it and logs it here with a picture. Every change
-            is one pull request, so any of them can come out again: tell a Claude session <span className="mono text-ink">Revert change 12</span> and it does.
+            This site improves itself. On a schedule, a Claude session makes one thing better (faster, sharper, or new), checks nothing broke, merges it and logs it here with a picture. Every change
+            is one pull request, so any can come out again: tell a Claude session <span className="mono text-ink">Revert change 12</span> and it does.
           </p>
           <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4 text-sm">
             <div>
@@ -160,11 +160,11 @@ export default function Changes() {
             ))}
           </div>
         ) : (
-          <p className="card p-6 text-muted">Nothing here yet. The next run of the autopilot will be the first entry.</p>
+          <p className="card p-6 text-muted">Nothing here yet. The autopilot’s next run is the first entry.</p>
         )}
         <p className="mt-10 max-w-2xl text-sm leading-relaxed text-muted">
-          How it works: the protocol is <span className="mono">.claude/skills/autopilot</span> in the site’s repository, the checks are lint, the tests, the build and every page opened in a browser, and nothing merges
-          red. It stops on its own when the Claude plan it runs on is most of the way used.
+          How it works: the protocol is <span className="mono">.claude/skills/autopilot</span> in the site’s repository. The checks: lint, tests, the build and every page opened in a browser. Nothing merges
+          red. It stops on its own when its Claude plan is most of the way used.
         </p>
       </section>
     </div>

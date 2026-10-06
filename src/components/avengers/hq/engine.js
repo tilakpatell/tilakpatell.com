@@ -11,14 +11,15 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { loadSky } from './assets';
 import { device } from '../../../lib/device';
-import { precompile as compileFor, precompilePasses, quiet, releaseContext } from '../../../lib/three/renderer';
+import { fitRatio, maxSide, precompile as compileFor, precompilePasses, quiet, releaseContext } from '../../../lib/three/renderer';
 
 // What a device can afford. Phones and small GPUs start lower; the watchdog
-// steps down from there when frames run long.
+// steps down from there when frames run long. `pixels` caps a frame all told,
+// so a screen as wide as three doesn't draw three screens' worth.
 const TIERS = {
-  high: { dpr: 1.75, shadow: 2048, bloom: 1, samples: 4, small: false },
-  medium: { dpr: 1.35, shadow: 1024, bloom: 0.5, samples: 4, small: true },
-  low: { dpr: 1, shadow: 1024, bloom: 0, samples: 0, small: true },
+  high: { dpr: 1.75, shadow: 2048, bloom: 1, samples: 4, small: false, pixels: 12e6 },
+  medium: { dpr: 1.35, shadow: 1024, bloom: 0.5, samples: 4, small: true, pixels: 8e6 },
+  low: { dpr: 1, shadow: 1024, bloom: 0, samples: 0, small: true, pixels: 6e6 },
 };
 const ORDER = ['high', 'medium', 'low'];
 
@@ -53,6 +54,7 @@ export function createEngine(canvas, opts = {}) {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.info.autoReset = false; // count a whole frame: shadows, scene and every pass
   renderer.setPixelRatio(Math.min(tier.dpr, window.devicePixelRatio || 1));
+  const side = maxSide(renderer);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(fov, 16 / 9, near, far);
@@ -81,7 +83,8 @@ export function createEngine(canvas, opts = {}) {
   let size = { w: 1, h: 1 };
   const resize = (w, h) => {
     size = { w: Math.max(1, Math.round(w)), h: Math.max(1, Math.round(h)) };
-    const ratio = Math.min(tier.dpr, window.devicePixelRatio || 1);
+    // the screen's ratio, under the tier's, and inside what the chip can hold
+    const ratio = fitRatio(size.w, size.h, Math.min(tier.dpr, window.devicePixelRatio || 1), { side, pixels: tier.pixels });
     renderer.setPixelRatio(ratio);
     renderer.setSize(size.w, size.h, false);
     composer.setPixelRatio(ratio);

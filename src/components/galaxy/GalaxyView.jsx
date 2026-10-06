@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useScene } from '../../lib/three/useScene';
-import { local } from '../../lib/hooks';
+import { local, useReducedMotion } from '../../lib/hooks';
+import { WorldHost, useWorld } from '../../runtime';
+import galaxyModule from './module';
 import { CONTROLS_KEY, readControls } from '../universe/controls';
 import FlightSettings from '../universe/FlightSettings';
 import { SYSTEMS, goalsOf, lightYears, systemById } from './systems';
 import '../universe/universe.css';
 import GuideCue from '../guide/GuideCue';
 
-// The galaxy's 3D view (scene.js, through useScene) and everything over it:
+// The galaxy's 3D view (scene.js, a world module on the world runtime:
+// ./module.js) and everything over it:
 // the names of what's in the system you're in (buttons: a click flies you
 // there), the other systems' names over their stars as the nose comes near
 // them (a click jumps you there) and, with the nose on one, the button to
@@ -16,7 +18,6 @@ import GuideCue from '../guide/GuideCue';
 // your shields, the touch buttons, the flight settings and a line on how to
 // fly until you do. While the 3D loads the box says so; without 3D, a note
 // that the galaxy needs it, and the panel and the map still work.
-const load = () => import('./scene');
 
 export default function GalaxyView({ system, here, handle, ship, loadout, build = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onMap }) {
   const labels = useRef({});
@@ -37,11 +38,11 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
   const openSettings = useCallback((on) => setSettingsOpen(on), []);
   const events = useRef(onEvent);
   events.current = onEvent;
-  const { wrap, on, meant, view } = useScene(load, {
-    id: 'galaxy',
-    near: '0px',
+  const reduced = useReducedMotion();
+  const { host, on, meant, rt } = useWorld(galaxyModule, {
     props: {
       system,
+      reduced,
       ship,
       loadout,
       build,
@@ -57,16 +58,18 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
       onArrive,
       onAt,
       onBoard,
-      onEvent: (e) => {
-        if (e.type === 'launch') setFlown(true);
-        if (e.type === 'aim') {
-          setAim(e.id);
-          return;
-        }
-        events.current?.(e);
-      },
+    },
+    onEvent: (e) => {
+      if (e.type === 'launch') setFlown(true);
+      if (e.type === 'aim') {
+        setAim(e.id);
+        return;
+      }
+      events.current?.(e);
     },
   });
+  // the scene itself, while it's the world on the runtime: its own calls (jump, goTo, fire…)
+  const view = { get current() { return rt?.current?.module === galaxyModule ? rt.current.world.scene : null; } };
   useEffect(() => setFlown(false), [ship]);
 
   useEffect(() => {
@@ -76,8 +79,10 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
       jump: (id) => view.current?.jump?.(id) ?? false,
       goTo: (id) => view.current?.goTo?.(id) ?? false,
       escape: () => view.current?.escape?.() ?? false,
+      dive: () => view.current?.dive?.() ?? false,
+      host: () => host.current,
     };
-  }, [handle, on, view]);
+  }, [handle, on]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // the names of what's here, in the system the scene's in (`here`; `system`
   // is the one wanted, which a jump is on its way to)
@@ -99,7 +104,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
   );
 
   return (
-    <div ref={wrap} className="universe-map galaxy-map" data-ship={ship || undefined}>
+    <WorldHost world={{ host }} className="universe-map galaxy-map" data-ship={ship || undefined}>
       {meant ? (
         <>
           {!on && (
@@ -225,6 +230,6 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
           <p>The galaxy is drawn in 3D, and 3D is off here. The galaxy map still works: plot a course from the panel, and read about every system on the way.</p>
         </div>
       )}
-    </div>
+    </WorldHost>
   );
 }

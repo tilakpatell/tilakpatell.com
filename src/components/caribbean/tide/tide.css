@@ -60,6 +60,12 @@
 .dt-sail { display: inline-flex; align-items: center; gap: 0.25rem; margin-left: auto; color: #fff; }
 .dt-sail i { width: 9px; height: 11px; clip-path: polygon(0 100%, 100% 100%, 100% 0); background: rgba(239, 226, 194, 0.25); }
 .dt-sail i[data-on] { background: var(--dt-paper); }
+/* the other players online, by the tools: how many, or a way to see them */
+.dt-players { display: inline-flex; align-items: center; gap: 0.35rem; height: 36px; padding: 0 0.8rem; border: 1px solid rgba(201, 162, 90, 0.55); border-radius: 10px; background: rgba(6, 8, 14, 0.55); color: var(--dt-paper); font: 600 0.72rem/1 var(--font-mono); white-space: nowrap; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.dt-players b { color: #c9dcff; font-variant-numeric: tabular-nums; }
+button.dt-players { border-style: dashed; cursor: pointer; }
+button.dt-players:hover { background: rgba(255, 255, 255, 0.12); }
+button.dt-players:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 @media (max-width: 699px) {
   /* a phone: gold and the chart top left, the goal under the buttons top right, the hull over the fire buttons */
   .dt-top { grid-template-columns: 1fr; gap: 0.5rem; }
@@ -72,6 +78,7 @@
   .dt-guns { min-width: 0; }
   .dt-guns kbd { display: none; }
   .dt-chart { bottom: auto; top: 3.3rem; width: 80px; }
+  .dt-players { padding: 0 0.55rem; font-size: 0.64rem; }
   .dt-hud .g3-callout { top: 34%; white-space: normal; width: 90%; text-align: center; }
 }
 

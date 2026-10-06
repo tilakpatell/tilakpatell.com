@@ -204,7 +204,7 @@ export default function Caribbean() {
         <h2 id="crew-title" className="title cb-title">
           Wanted
         </h2>
-        <p className="lead mt-4 max-w-[60ch]">By order of the East India Trading Company. Every poster does something: two of them change the colours of this whole site, and one of them is cursed.</p>
+        <p className="lead mt-4 max-w-[60ch]">By order of the East India Trading Company. Every poster does something: two recolour the whole site, and one is cursed.</p>
         <ul className="cb-crew mt-10">
           {CREW.map((c) => (
             <li key={c.id} className="cb-poster">
@@ -248,7 +248,7 @@ export default function Caribbean() {
             <h2 id="code-title" className="title cb-title">
               The code
             </h2>
-            <p className="lead mt-4 max-w-[40ch]">Set down by Morgan and Bartholomew, and binding on all of the brethren. Press an article to see how binding. They’re more what you’d call guidelines.</p>
+            <p className="lead mt-4 max-w-[40ch]">Set down by Morgan and Bartholomew, binding on all the brethren. Press an article to see how binding. They’re more what you’d call guidelines.</p>
           </div>
           <ol className="cb-articles">
             {CODE.map(([rule, guideline], i) => (
@@ -308,7 +308,7 @@ export default function Caribbean() {
 
       <section className="shell relative z-10 pb-24 md:pb-28">
         <p className="cb-credits">
-          Jack, the ships, the kraken, the fort and the islands were generated for this site with Meshy and compressed for the web, and so were the wanted posters; the sky is “Evening Road 01” from Poly Haven (CC0); the lettering is Pirata One and IM Fell English (SIL Open Font License). The sea, the smoke and the guns are code; the theme is a twelve-second clip from the films. Not affiliated with Disney.
+          Jack, the ships, the kraken, the fort, the islands and the wanted posters were generated for this site with Meshy; the sky is “Evening Road 01” from Poly Haven (CC0); the lettering is Pirata One and IM Fell English (SIL Open Font License). The sea, the smoke and the guns are code; the theme is a twelve-second clip from the films. Not affiliated with Disney.
         </p>
       </section>
     </div>

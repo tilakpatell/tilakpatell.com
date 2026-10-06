@@ -18,12 +18,11 @@
 // citadelGeometry; cam: the camera in map space.
 
 import * as THREE from 'three';
-import { GENS } from './siege';
+import { BLAST_S, GENS, blastShape } from './siege';
 
 const NEAR = 1600; // map units: closer than this a change plays out, and the siege is drawn at all
 const GLOW = new THREE.Color('#5dffb0'); // the shield's and the generators' light (portal-fluid green)
 const DEBRIS = 240;
-const BLAST = 4.5; // seconds of the blast
 const REBUILD = 3.2; // seconds of the rebuilding
 
 const SHIELD_VERT = /* glsl */ `
@@ -168,7 +167,7 @@ export function createCitadelSiege({ parent, model, geo, small = false }) {
 
   // ── the blast: a flash, fire and portal fluid swelling out, a shock ring ──
   const tex = keep(radial());
-  const flash = new THREE.Sprite(keep(new THREE.SpriteMaterial({ map: tex, color: new THREE.Color(5, 4.4, 3.2), ...additive })));
+  const flash = new THREE.Sprite(keep(new THREE.SpriteMaterial({ map: tex, color: new THREE.Color(2.4, 2.1, 1.6), ...additive })));
   flash.position.copy(center);
   flash.visible = false;
   const fireMat = keep(new THREE.ShaderMaterial({ vertexShader: SHIELD_VERT, fragmentShader: BURST_FRAG, uniforms: { uColor: { value: new THREE.Color(4, 1.6, 0.5) }, uAge: { value: 0 } }, ...additive }));
@@ -315,24 +314,25 @@ export function createCitadelSiege({ parent, model, geo, small = false }) {
       for (const h of hits) if (h.w >= 0) h.w = h.w > 1.2 ? -1 : h.w + dt;
       // ── the blast ──
       if (phase === 'blast') {
-        const k = age / BLAST;
-        flash.visible = age < 1.6;
-        const f = age < 0.15 ? age / 0.15 : Math.max(0, 1 - (age - 0.15) / 1.45);
-        flash.scale.setScalar(geo.core * 7 * (0.4 + f));
-        flash.material.opacity = f;
-        fire.visible = fluid.visible = k < 1;
-        fire.scale.setScalar(geo.core * (0.3 + Math.min(1, age / 0.9) * 1.5));
+        // (its sizes are siege.js's blastShape: kept to the Citadel's own scale, tested there)
+        const b = blastShape(age, geo.core);
+        const k = age / BLAST_S;
+        flash.visible = b.flashAlpha > 0;
+        flash.scale.setScalar(b.flash);
+        flash.material.opacity = b.flashAlpha;
+        fire.visible = fluid.visible = !b.done;
+        fire.scale.setScalar(b.fire);
         fireMat.uniforms.uAge.value = Math.min(1, age / 2.4);
-        fluid.scale.setScalar(geo.core * (0.2 + Math.min(1, age / 1.6) * 2.1));
+        fluid.scale.setScalar(b.fluid);
         fluidMat.uniforms.uAge.value = Math.min(1, age / 3.2);
-        shock.visible = k < 1;
-        shock.scale.setScalar(geo.core * (0.5 + k * 9));
-        shockMat.opacity = (1 - k) ** 1.5;
+        shock.visible = !b.done;
+        shock.scale.setScalar(b.shock);
+        shockMat.opacity = b.shockAlpha;
         if (age > 0.12) setModel(0); // (gone at the flash's peak)
         debris.visible = true;
         debrisMat.emissiveIntensity = Math.max(0.3, 2.4 * (1 - k));
         placeDebris(dt, 1);
-        if (k >= 1) {
+        if (b.done) {
           hideBlast();
           phase = 'down';
           age = 0;

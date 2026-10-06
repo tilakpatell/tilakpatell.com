@@ -233,12 +233,12 @@ function World({ attempt, onStatus }) {
             )}
             {trav.available &&
               (trav.on ? (
-                <span className="earth-chip earth-chip-online" title="Everyone else online flying the Earth shows as a pale plane from another world: nothing passes between you but where each of you is">
-                  <b>{trav.count}</b> {trav.count === 1 ? 'other pilot' : 'other pilots'}
+                <span className="earth-chip earth-chip-online" data-on="" title="Everyone else online flying the Earth shows as a pale plane from another world: nothing passes between you but where each of you is">
+                  <b>{trav.count}</b> {trav.count === 1 ? 'player' : 'players'} here
                 </span>
               ) : (
                 <button type="button" className="earth-chip earth-chip-online" onClick={trav.join} title="Go online, and see everyone else flying the Earth as a pale plane from another world">
-                  See other pilots
+                  See other players
                 </button>
               ))}
           </div>

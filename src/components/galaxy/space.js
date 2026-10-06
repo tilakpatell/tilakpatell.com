@@ -83,15 +83,17 @@ export function parkBy(goal, from, solids = []) {
   return { x, y: goal.at[1], z, heading: headingTo(goal.at[0] - x, goal.at[2] - z) };
 }
 
+const gapTo = (ship, o) => Math.hypot(ship.x - o.at[0], ship.y - o.at[1], ship.z - o.at[2]) - (o.reach ?? o.r);
+
 // The goal the ship is at, if any (inside its reach and a little more);
 // once at one it stays at it until it's clearly left
 export function atGoal(ship, goals, current = null) {
-  const gap = (o) => Math.hypot(ship.x - o.at[0], ship.y - o.at[1], ship.z - o.at[2]) - (o.reach ?? o.r);
-  if (current && goals[current] && gap(goals[current]) < PARK * 3) return current;
+  if (current && goals[current] && gapTo(ship, goals[current]) < PARK * 3) return current;
   let best = null;
   let bd = PARK * 1.6;
-  for (const o of Object.values(goals)) {
-    const d = gap(o);
+  for (const id in goals) {
+    const o = goals[id];
+    const d = gapTo(ship, o);
     if (d < bd) {
       best = o.id;
       bd = d;

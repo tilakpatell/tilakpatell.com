@@ -38,7 +38,7 @@ import { createFlags, createRings, staticGrounds } from './grounds';
 import { createPacks } from './packs';
 import { createGrass } from './grass';
 import { createGhosts } from '../../middleearth/towns/ghosts';
-import { ARMOUR, BUILDINGS, CAST, CLERESTORY, CRATER, HERO, LAMPS, LAWN_TREES, MASTS, MAST_H, PARKED_CARS, PARKED_JET, PLACES, PLANTERS, PORTAL, ROADS_W, ROAD_HALF, ROOF_LIGHTS, S, SUIT, TRICK, V, aimWeb, camRoom, findPerch, floorAt, nearestEdge, photoView, samplePath, treeHeight } from './rules';
+import { ARMOUR, BUILDINGS, CAST, CLERESTORY, CRATER, HERO, LAMPS, LAWN_TREES, MASTS, MAST_H, PARKED_CARS, PARKED_JET, PLACES, PLANTERS, PORTAL, ROADS_W, ROAD_HALF, ROOF_LIGHTS, S, SUIT, TRICK, V, aimWeb, camRoom, findPerch, floorAt, gaitFor, nearestEdge, photoView, samplePath, swingArc, swingPose, treeHeight } from './rules';
 
 const SC = { s: S, v: V };
 // a plan point (x east, y south, z up, in units) in the world
@@ -237,7 +237,11 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
 
   // ── light: the airfield's late-afternoon sky, the sun a little higher than it has it ──
   await engine.setSky('airfield', { background: true, envIntensity: 0.8, bgIntensity: 0.95, sunDir: [0.79, 0.66, 0.57], sunIntensity: 3.1, sunColor: [1, 0.9, 0.76], fill: 0.1 });
-  scene.fog = new THREE.Fog(0xcdd3cf, 200, 1000);
+  // the haze the colour of the sky photo's horizon (as it's drawn, at its
+  // 0.95), so the far ground melts into the sky: a paler haze made the
+  // ground out to the fog a flat bright band, its edge a straight line
+  // across the sky from up high
+  scene.fog = new THREE.Fog(new THREE.Color(0x8c9698).multiplyScalar(0.95), 200, 1000);
   const env = scene.environment;
   const sunDir = sun.userData.dir.clone();
   const SHADOW = small ? 48 : 64;
@@ -263,7 +267,9 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
   // a fine grain fades in underfoot: lib/three/surface)
   const grain = detailNormal({ renderer: engine.renderer });
   const floorMat = antiTile(cloudy(await pbr('forest-floor', { repeat: [1 / 6, 1 / 6], small, roughness: 1, metalness: 0, color: 0x6a6a52 })), { frequency: 0.035, detail: { texture: grain, scale: 0.9, strength: 0.35, range: 30 } });
-  const floorGeo = new THREE.PlaneGeometry(3600, 3600).rotateX(-Math.PI / 2).translate(100, -0.4, 80);
+  // (round, out past where the haze is whole: from up high there's no square
+  // of ground to see the corners of)
+  const floorGeo = new THREE.CircleGeometry(1800, 96).rotateX(-Math.PI / 2).translate(100, -0.4, 80);
   {
     const uv = floorGeo.attributes.uv;
     const p = floorGeo.attributes.position;
@@ -759,6 +765,19 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
         if (e < 2 || e > (small ? 50 : 70)) continue;
         tree(px, py, woods.length);
       }
+    // and the woods going on, thinner, out to where the haze takes them: from
+    // up a mast or the top of a swing the ground beyond was bare to the sky
+    {
+      const far = small ? 11 : 7;
+      for (let y = -230; y < 340; y += far)
+        for (let x = -260; x < 400; x += far) {
+          const px = x + (rand() - 0.5) * far * 0.9;
+          const py = y + (rand() - 0.5) * far * 0.9;
+          const inside = px >= -100 && px < 240 && py >= -70 && py < 180 && nearestEdge(px, py, LAWN).d <= (small ? 50 : 70);
+          if (inside || rand() < 0.25 || inPoly(px, py, LAWN) || inPoly(px, py, RIVER)) continue;
+          tree(px, py, woods.length);
+        }
+    }
     for (const t of LAWN_TREES) woods.push([t.x, t.z, treeHeight(t), 3, t.tone * 97]);
     scene.add(await trees(woods));
     // street lamps down the drives (Poly Haven's, CC0), their arms out over the drive
@@ -974,9 +993,13 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
         d.play('jump', { loop: false, from: Math.max(0, takeoff - 0.06), speed: Math.max(0.5, Math.min(3, (land - takeoff) / AIR)) });
       }
     } else if (air) d.play(rising ? 'run' : 'walk', { speed: 0.6 });
-    else if (speed < 0.35) d.play('idle');
-    else if (speed < (HERO.walk + HERO.run) / 2.2) d.play('walk', { speed: Math.max(0.6, Math.min(2.2, speed / MOVES.speeds.walk)) });
-    else d.play('run', { speed: Math.max(0.8, Math.min(2.4, speed / MOVES.speeds.run)) });
+    else {
+      // each clip paced to his speed, so his feet keep to the ground
+      const gait = gaitFor(d.playing, speed);
+      if (gait === 'idle') d.play('idle');
+      else if (gait === 'walk') d.play('walk', { speed: Math.max(0.6, Math.min(2.2, speed / MOVES.speeds.walk)) });
+      else d.play('run', { speed: Math.max(0.8, Math.min(2.4, speed / MOVES.speeds.run)) });
+    }
   };
   const moves = MOVES && spidey ? clipsFor(spidey.model, MOVES.clips) : null;
   moves?.play('idle');
@@ -1207,7 +1230,7 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
   let portalOpen = 0; // 0..1, opening
 
   // ── the camera ──
-  const A = { at: new THREE.Vector3(), look: new THREE.Vector3(), hx: 0, hz: 0, intro: calm ? 0 : 1, gait: 0, landed: 1, flash: 0, started: false, aim: null, aimN: 0, aimed: false, perch: null, hand: new THREE.Vector3(), dist: 0, fov: 52, punch: 0, floor: 0, ly: 0, arc: 0 };
+  const A = { at: new THREE.Vector3(), look: new THREE.Vector3(), hx: 0, hz: 0, intro: calm ? 0 : 1, gait: 0, landed: 1, flash: 0, started: false, aim: null, aimN: 0, aimed: false, perch: null, hand: new THREE.Vector3(), dist: 0, fov: 52, punch: 0, floor: 0, ly: 0, arc: 0, lx: 0, lz: 0, bank: 0 };
   const swing = createSwing(scene, { calm });
   const flags = createFlags(scene);
   const rings = createRings(scene);
@@ -1215,6 +1238,7 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
   const tmp = new THREE.Vector3();
   const tmp2 = new THREE.Vector3();
   const look = new THREE.Vector3();
+  const head = new THREE.Vector3();
   const shadowAt = new THREE.Vector3();
   let clock = 0;
 
@@ -1226,7 +1250,7 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
   const bones = [];
   spidey?.model.traverse((o) => o.isBone && bones.push(o));
   const clipQ = bones.map(() => new THREE.Quaternion());
-  const R = { w: 0, arm: 'R', q: new THREE.Quaternion(), up: new THREE.Vector3(), fwd: new THREE.Vector3(), side: new THREE.Vector3(), m: new THREE.Matrix4(), yaw: new THREE.Quaternion(), tilt: new THREE.Quaternion(), bank: new THREE.Quaternion(), roll: 0, hx: null, hz: null, placed: false };
+  const R = { w: 0, arm: 'R', q: new THREE.Quaternion(), up: new THREE.Vector3(), fwd: new THREE.Vector3(), side: new THREE.Vector3(), m: new THREE.Matrix4(), yaw: new THREE.Quaternion(), tilt: new THREE.Quaternion(), bank: new THREE.Quaternion(), roll: 0, hx: null, hz: null, placed: false, arcK: 0 };
   const X = new THREE.Vector3(1, 0, 0);
   const Z = new THREE.Vector3(0, 0, 1);
   const UP = new THREE.Vector3(0, 1, 0);
@@ -1282,22 +1306,27 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
     }
     if (h.flip > 0) return POSES.guard();
     if (h.mode === 'swing') {
-      // the web arm up the line, the other out for balance, knees up through the bottom of it
+      // the web arm up the line; the rest of him through the arc: legs
+      // trailing as he drops into it, knees tucked through the bottom, legs
+      // thrown out ahead on the way up while the free hand reaches for the
+      // next web
       const a = R.arm;
       const o = a === 'R' ? 'L' : 'R';
-      const sgn = (k) => (k === 'L' ? 1 : -1);
+      const sa = a === 'L' ? 1 : -1; // (+x is his left)
+      const s = R.arcK;
+      const p = swingPose(s);
       return {
-        [`arm${a}`]: [sgn(a) * 0.08, 1, 0.06],
-        [`fore${a}`]: [sgn(a) * 0.05, 1, 0.04],
-        [`arm${o}`]: [sgn(o) * 0.95, -0.15, 0.3],
-        [`fore${o}`]: [sgn(o) * 0.7, 0.25, 0.55],
-        thighL: [0.07, -0.75, 0.55],
-        calfL: [0.04, -1, -0.3],
-        thighR: [-0.07, -0.95, 0.2],
-        calfR: [-0.04, -1, -0.45],
-        footL: [0, -0.6, 0.8],
-        footR: [0, -0.8, 0.5],
-        torso: { pitch: 0.12, yaw: 0, roll: 0 },
+        [`arm${a}`]: [sa * 0.08, 1, 0.06],
+        [`fore${a}`]: [sa * 0.05, 1, 0.04],
+        [`arm${o}`]: [-sa * p.free[0], p.free[1], p.free[2]],
+        [`fore${o}`]: [-sa * p.freeFore[0], p.freeFore[1], p.freeFore[2]],
+        thighL: p.thighL,
+        calfL: p.calfL,
+        thighR: p.thighR,
+        calfR: p.calfR,
+        footL: p.foot,
+        footR: p.foot,
+        torso: { pitch: p.pitch, yaw: 0, roll: -R.roll * 0.5 },
       };
     }
     // flying: tucked going up, a dive coming down fast, spread in between
@@ -1360,6 +1389,8 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
     R.w += ((off ? 1 : 0) - R.w) * Math.min(1, dt * (off ? 16 : 7));
     // the web hand: the one on the anchor's side
     if (h.web?.hand) R.arm = h.web.hand;
+    // where he is on the arc, eased (a new web starts a new arc: no snap)
+    R.arcK += ((h.mode === 'swing' ? swingArc(h) : 0) - R.arcK) * (1 - Math.exp(-dt * 9));
     if (moves) {
       // his own clips: the hips' rise and fall are in them
       drive(moves, speed, h.air && !off, h.vy > 0);
@@ -1392,7 +1423,7 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
     bankFor(h, dt);
     const q = holderAt(h);
     if (!R.placed || R.w < 0.01) hero.quaternion.copy(q);
-    else hero.quaternion.slerp(q, Math.min(1, dt * 12));
+    else hero.quaternion.slerp(q, 1 - Math.exp(-dt * 12));
     R.placed = true;
     // a perfect release's flip, or a trick: a flip forward about his middle, a backflip, or a twist about his height
     let rx = h.flip > 0 ? Math.PI * 2 * ease(1 - h.flip / 0.7) : 0;
@@ -1577,17 +1608,19 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
     swing.update(h.mode === 'zipto' && h.to ? { ...h, web: { at: [h.to.x, h.to.y + 0.3, h.to.z] } } : h, A.hand, A.aim, dt, A.perch);
 
     // the camera: behind him, brought in rather than go into a wall
+    // (every ease below by how long the frame was, the same at 30 fps as at 144)
+    const damp = (k) => 1 - Math.exp(-dt * k);
     const yaw = s.camYaw ?? 0;
     const speed = Math.hypot(h.vx, h.vy, h.vz);
     const flying = h.mode !== 'ground' && h.mode !== 'wall' && (h.fly || h.mode === 'swing');
     // the camera's pitch follows his arc: up over him as he drops, level as he climbs
-    A.arc += ((flying ? THREE.MathUtils.clamp(-h.vy * 0.012, -0.1, 0.28) : 0) - A.arc) * Math.min(1, dt * 3);
+    A.arc += ((flying ? THREE.MathUtils.clamp(-h.vy * 0.012, -0.1, 0.28) : 0) - A.arc) * damp(3);
     const pitch = Math.min(1.1, (s.camPitch ?? 0.2) + A.arc);
     // further back the faster he goes, and wider
-    A.dist += ((flying ? Math.min(4.5, speed * 0.11) : h.mode === 'wall' ? 2.2 : 0) - A.dist) * Math.min(1, dt * 2.5);
+    A.dist += ((flying ? Math.min(4.5, speed * 0.11) : h.mode === 'wall' ? 2.2 : 0) - A.dist) * damp(2.5);
     const dist = (s.camDist ?? 7.5) + A.dist;
     const fov = 52 + (flying ? Math.min(13, Math.max(0, speed - 11) * 0.45) : 0) + A.punch * (s.shake ?? 1);
-    A.fov += (fov - A.fov) * Math.min(1, dt * 4);
+    A.fov += (fov - A.fov) * damp(4);
     A.punch = Math.max(0, A.punch - dt * 9);
     if (Math.abs(camera.fov - A.fov) > 0.05) {
       camera.fov = A.fov;
@@ -1598,11 +1631,19 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
     if (h.mode === 'ground') A.floor = h.y;
     // (on a wall: looking up it, a little further out)
     const ly = (h.mode === 'air' && !h.fly ? A.floor + (h.y - A.floor) * 0.6 : h.y) + 1.85 + (h.mode === 'wall' ? 1.4 : 0);
-    A.ly = A.started ? A.ly + (ly - A.ly) * Math.min(1, dt * (h.mode === 'ground' ? 10 : 7)) : ly;
-    look.set(h.x, A.ly, h.z);
+    A.ly = A.started ? A.ly + (ly - A.ly) * damp(h.mode === 'ground' ? 10 : 7) : ly;
+    // swinging and flying, the view leads him a little, so it's where he's
+    // going that's in the middle of the screen
+    const lead = flying ? Math.min(2.4, Math.hypot(h.vx, h.vz) * 0.09) : 0;
+    const hs = Math.hypot(h.vx, h.vz) || 1;
+    A.lx += ((h.vx / hs) * lead - A.lx) * damp(3);
+    A.lz += ((h.vz / hs) * lead - A.lz) * damp(3);
+    look.set(h.x + A.lx, A.ly, h.z + A.lz);
     const want = tmp.set(h.x + Math.sin(yaw) * Math.cos(pitch) * dist, look.y + Math.sin(pitch) * dist, h.z + Math.cos(yaw) * Math.cos(pitch) * dist);
-    const k = camRoom(look.x, look.z, want.x, want.y, want.z);
-    if (k < 1) want.lerpVectors(look, want, Math.max(0.12, k));
+    // (brought in toward his head, not the point ahead: that can be in a wall)
+    head.set(h.x, A.ly, h.z);
+    const k = camRoom(head.x, head.z, want.x, want.y, want.z);
+    if (k < 1) want.lerpVectors(head, want, Math.max(0.12, k));
     if (want.y < 0.5) want.y = 0.5;
     // the first frame, or a jump across the compound (to a door from the
     // list, out of a building): straight there, no swing across the lawn
@@ -1616,11 +1657,13 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
     }
     A.hx = h.x;
     A.hz = h.z;
-    const e = Math.min(1, dt * 9);
-    A.at.lerp(want, e);
-    A.look.lerp(look, Math.min(1, dt * 14));
+    A.at.lerp(want, damp(9));
+    A.look.lerp(look, damp(14));
     camera.position.copy(A.at);
     camera.lookAt(A.look);
+    // and leans with him into his turns, a little
+    A.bank += ((flying ? R.roll * 0.22 : 0) - A.bank) * damp(5);
+    if (Math.abs(A.bank) > 1e-4) camera.rotateZ(-A.bank);
     if (A.intro > 0) {
       // in from the air on the first frames: high over the lawn, down behind
       // him, in three seconds however slowly the frames come

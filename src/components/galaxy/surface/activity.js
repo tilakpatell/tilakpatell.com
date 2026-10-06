@@ -139,9 +139,23 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
   let dead = false;
   const r = rng(7);
 
+  // (the pickups and gates are made here for the step, each its own
+  // geometry and materials: gone with it)
+  const release = (o) =>
+    o.traverse((m) => {
+      if (!m.isMesh) return;
+      m.geometry.dispose();
+      for (const mat of [m.material].flat()) mat.dispose();
+    });
   const clearStep = () => {
-    for (const p of pickups) p.mesh.removeFromParent();
-    for (const g of gates) g.removeFromParent();
+    for (const p of pickups) {
+      p.mesh.removeFromParent();
+      release(p.mesh);
+    }
+    for (const g of gates) {
+      g.removeFromParent();
+      release(g);
+    }
     for (const t of targets) {
       t.holder.removeFromParent();
       t.fig?.dispose?.();

@@ -35,6 +35,10 @@ async function visitor(name) {
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-universe-online', JSON.stringify('on'));
     window.localStorage.setItem('tp-universe-callsign', JSON.stringify(n));
+    // (headless Chromium draws in software: load the worlds and play anyway,
+    // as someone on a slow machine would choose to)
+    window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+    window.sessionStorage.setItem('tp-gl-anyway', 'true');
   }, name);
   // BRIDGE=1: the relays reached from here (Node, which goes through a proxy
   // with NODE_USE_ENV_PROXY=1) rather than from the browser, for a proxy
@@ -56,15 +60,28 @@ async function visitor(name) {
   return page;
 }
 
-// the number on the world's chip ("1 traveller here", "2 players here"), or null
+// the number on the world's chip ("1 traveller here", "2 other Mortys here",
+// "3 listeners here"), or null: any element reading "<n> … here" outside the
+// site's online corner (whose "· 1 here" is the page's, not the world's)
 const chip = (page) =>
   page.evaluate(() => {
-    for (const el of document.querySelectorAll('[data-on]')) {
-      const m = /^(\d+)\s+(other\s+)?(traveller|player|driver|visitor|pilot|crew|person|people)/i.exec(el.textContent.trim());
+    for (const el of document.querySelectorAll('span, p, b, div, button')) {
+      if (el.closest('.universe-online')) continue;
+      const m = /^(\d+)\s*(?:other\s+)?[a-z’']+\s+here$/i.exec(el.textContent.trim());
       if (m) return Number(m[1]);
     }
     return null;
   });
+// a world whose 3D waits to be asked for (the office's, the music room's),
+// or that puts you in it only once you start (the Caribbean's voyage, and
+// on a slow graphics chip, its "play anyway"): ask,
+// whenever the button's there
+// (a click in the page itself: the game's buttons sit below the fold of a
+// canvas Playwright never counts as settled)
+const start = (page) =>
+  page
+    .evaluate(() => [...document.querySelectorAll('button')].find((b) => /^(Load the |Weigh anchor|Play anyway)/.test(b.textContent.trim()))?.click())
+    .catch(() => {});
 // the roster's line for a callsign, opened from the corner
 async function rosterLine(page, who) {
   const pill = page.locator('.universe-online-pill').first();
@@ -90,6 +107,7 @@ for (const w of worlds) {
   await Promise.all([a.goto(BASE + w), b.goto(BASE + w)]);
   try {
     const n = await waitFor(async () => {
+      await Promise.all([start(a), start(b)]);
       const [x, y] = [await chip(a), await chip(b)];
       return x >= 1 && y >= 1 ? [x, y] : null;
     }, 150000, `${w}: each sees the other`);
@@ -103,6 +121,18 @@ for (const w of worlds) {
   } catch (e) {
     failed++;
     console.log(`FAIL ${e.message}`);
+    // what each saw: the corner, any "here" chip, the world's buttons
+    for (const [who, p] of [['Alpha', a], ['Bravo', b]]) {
+      const seen = await p
+        .evaluate(() => ({
+          corner: document.querySelector('.universe-online-pill')?.textContent ?? null,
+          here: [...document.querySelectorAll('[data-on], button')].map((el) => el.textContent.trim()).filter((t) => /here|other|online/i.test(t)).slice(0, 6),
+          buttons: [...document.querySelectorAll('button')].map((el) => el.textContent.trim()).filter(Boolean).slice(0, 12),
+        }))
+        .catch((err) => ({ error: String(err) }));
+      console.log(`     ${who}: ${JSON.stringify(seen)}`);
+      if (out) await p.screenshot({ path: `${out}/fail${w.replace(/\//g, '-')}-${who}.png` }).catch(() => {});
+    }
   }
 }
 if (then) {

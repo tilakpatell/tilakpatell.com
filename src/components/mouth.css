@@ -1,0 +1,24 @@
+/* A talking face's mouth (Mouth.jsx). --mouth, 0 to 1, is set every frame
+   while someone speaks (lib/mouth.js): the drawn line gives way to a dark
+   opening that drops open from the line and widens a little. */
+.face-mouth-open {
+  transform-box: fill-box;
+  transform-origin: 50% 25%;
+  transform: scale(calc(0.65 + 0.35 * var(--mouth, 0)), var(--mouth, 0));
+  opacity: clamp(0, calc(var(--mouth, 0) * 10 - 0.5), 1);
+}
+.face-mouth-shut { opacity: clamp(0, calc(1.5 - var(--mouth, 0) * 10), 1); }
+
+/* a mouth that's always open (Mr. Meeseeks) stretches instead */
+.face-mouth-stretch {
+  transform-box: fill-box;
+  transform-origin: 50% 20%;
+  transform: scale(calc(1 + 0.15 * var(--mouth, 0)), calc(1 + 0.9 * var(--mouth, 0)));
+}
+
+/* and Artoo, who has no mouth, flashes his light */
+.face-light {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: scale(calc(1 + 1.4 * var(--mouth, 0)));
+}

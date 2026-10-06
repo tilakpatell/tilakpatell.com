@@ -83,12 +83,34 @@ describe('the world, played', () => {
     expect(sim.missions.active).toBeFalsy();
   });
 
+  it('brings Optimus through a bridge on his feet even if he went down just before', () => {
+    const sim = createSim();
+    sim.player.hp = 1;
+    sim.shots.push({ from: 'enemy', x: sim.player.x, y: sim.player.y + 5, z: sim.player.z - 3, vx: 0, vy: 0, vz: 60, ttl: 1, damage: 20 });
+    tick(sim, {}, 0.2);
+    expect(sim.player.dead).toBe(true);
+    sim.enter('base');
+    expect(sim.player.dead).toBe(false);
+    expect(sim.player.hp).toBe(sim.player.maxHp);
+    // (and the respawn that was coming doesn't come later, in the wrong place)
+    const later = tick(sim, {}, 3.5);
+    expect(later.some((e) => e.type === 'respawn')).toBe(false);
+  });
+
   it('picks energon up and counts it', () => {
     const sim = createSim();
     const k = sim.pickups[0];
     goTo(sim, k.x, k.z);
     expect(sim.player.energon).toBe(1);
     expect(sim.pickups[0].taken).toBe(true);
+  });
+
+  it('mends Optimus a little with every energon cube', () => {
+    const sim = createSim();
+    sim.player.hp = 50;
+    const k = sim.pickups[0];
+    goTo(sim, k.x, k.z);
+    expect(sim.player.hp).toBeGreaterThanOrEqual(50 + 15);
   });
 
   it('gets Optimus back up after he goes down', () => {
@@ -128,6 +150,11 @@ describe('the world, played', () => {
           robot();
           if (sim.area.id !== m.from) {
             const x = sim.area.exits.find((e) => e.to === m.from);
+            // (the other side's capital: no bridge goes there, you pick it)
+            if (!x) {
+              sim.enter(m.from);
+              continue;
+            }
             goTo(sim, x.x + 3, x.z);
             sim.use();
             cross();

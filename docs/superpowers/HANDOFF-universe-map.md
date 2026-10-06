@@ -11,7 +11,7 @@ Branch `claude/elegant-lovelace-o6lpb0` (it carries `claude/universe` and `main`
 - **The textures** are real planetary maps and CC0 materials, built by `scripts/build-universe-textures.py` into `public/textures/universe/`:
   - Solar System Scope maps (CC BY 4.0), credited in the panel, recoloured per world.
   - Metal and paper from ambientCG.
-  - Phones get the `-sm` copies.
+  - Phones and weak devices get the `-sm` copies; a strong graphics card (lib/detail's `ultra`) gets the `-hq` set, twice the texels (2048 planets, a 4096 Earth, an 8192 sky), built with `--hq` from Solar System Scope's 8K originals; `planets.js`'s `mapFile` (tested) picks the file, and falls back to the standard one where an `-hq` is missing.
 - **Ships**: Rick and Morty's cruiser (Portal panic's model, nose −x), Luke's X-wing and the Falcon, both built in `shipModels.js`.
   - `ship.js` is the pure physics and autopilot, tested.
   - `crews.js` is each crew's lines for every place, tested.

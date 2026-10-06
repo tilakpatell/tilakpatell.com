@@ -67,19 +67,18 @@ const BEASTS = {
 
 export const FIGURES = [...Object.keys(PEOPLE), ...Object.keys(BEASTS)];
 
+// the people's materials, one of each colour and finish for the whole page
+// (every stormtrooper in the galaxy in the same white): a figure going
+// leaves them for the rest
+const MATS = new Map();
 function kitOf() {
   const owned = [];
-  const mats = new Map();
   return {
     owned,
     mat(color, o = {}) {
       const key = `${color}|${JSON.stringify(o)}`;
-      if (!mats.has(key)) {
-        const m = o.glow ? new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(o.glow), toneMapped: false }) : new THREE.MeshStandardMaterial({ color, roughness: o.roughness ?? 0.8, metalness: o.metalness ?? 0 });
-        mats.set(key, m);
-        owned.push(m);
-      }
-      return mats.get(key);
+      if (!MATS.has(key)) MATS.set(key, o.glow ? new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(o.glow), toneMapped: false }) : new THREE.MeshStandardMaterial({ color, roughness: o.roughness ?? 0.8, metalness: o.metalness ?? 0 }));
+      return MATS.get(key);
     },
     geo(g) {
       owned.push(g);

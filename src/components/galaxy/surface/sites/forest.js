@@ -152,7 +152,7 @@ export const SITES = {
         lines: {
           xwing: [['luke', 'The generator. While that was up, nothing could touch the Death Star.'], ['r2', '(An anxious whistle.)']],
           falcon: [['han', 'That’s the shuttle we stole. Tydirium. It’s an older code, sir, but it checks out.'], ['chewie', '(A nervous rumble.)']],
-          cruiser: [['morty', 'That’s a big dish, Rick.'], ['rick', 'It’s a space umbrella for a space ball, Morty. Very fragile, very load-bearing.']],
+          cruiser: [['morty', 'That’s a big dish, Rick.'], ['rick', 'It’s a space umbrella for a space ball, Morty. Fragile, and load-bearing.']],
           rv: [['jesse', 'Yo, that’s the biggest satellite dish I ever saw.'], ['walt', 'And they guarded it with a dozen men and some walkers. Sloppy.']],
         },
         things: [

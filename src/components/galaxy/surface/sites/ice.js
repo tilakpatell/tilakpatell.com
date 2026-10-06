@@ -224,7 +224,7 @@ export const SITES = {
         flat: { r: 22, edge: 18 },
         about: 'Where a wampa dragged Luke Skywalker after it brought down his tauntaun: hung upside down from the ice, he called his lightsaber out of the snow and into his hand.',
         lines: {
-          xwing: [['luke', 'I really, really don’t want to go back in there.'], ['r2', '(A frightened squeal.)']],
+          xwing: [['luke', 'I really don’t want to go back in there.'], ['r2', '(A frightened squeal.)']],
           falcon: [['han', 'This is where the kid got dragged off to. Wampa. Big. Hungry.'], ['chewie', '(A low, uneasy growl.)']],
           cruiser: [['morty', 'Th-there’s a guy hanging from the ceiling, Rick!'], ['rick', 'Wampas hang their food, Morty. Like a pantry. A pantry with screaming.']],
           rv: [['jesse', 'There’s a lightsaber just lying there, Mr. White.'], ['walt', 'Don’t touch it. We don’t know whose it is. Or what’s watching it.']],

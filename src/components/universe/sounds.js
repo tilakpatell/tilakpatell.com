@@ -8,7 +8,7 @@
 // functions: the scene drives the engine each frame and the comms box calls
 // the rest.
 
-import { audioContext, loadBuffer, output } from '../../lib/audio';
+import { audioContext, loadBuffer, output, voiceOutput } from '../../lib/audio';
 import { playClip } from '../../lib/clips';
 
 let noiseBuf = null;
@@ -130,7 +130,7 @@ const VOICES = {
 // Someone says a line. Returns about how long it takes, in ms.
 export function speak(voice, text) {
   const ac = audioContext();
-  const out = ac ? output() : null;
+  const out = ac ? voiceOutput() : null; // through the voice tap, so the speaker's mouth moves with it
   const words = text.replace(/\[|\]/g, '').split(/\s+/).filter(Boolean).length;
   if (!ac || !out) return 600 + words * 260;
   const t = ac.currentTime + 0.02;
@@ -149,7 +149,7 @@ export function speak(voice, text) {
   if (voice === 'chewie') {
     // Chewie himself: a laugh when it's a laugh, a roar the rest of the time
     const laugh = /laugh/i.test(text);
-    playClip(laugh ? 'chewieLaugh' : 'chewieRoar').then((h) => h || growl(ac, out, t));
+    playClip(laugh ? 'chewieLaugh' : 'chewieRoar', { voice: true }).then((h) => h || growl(ac, out, t));
     return laugh ? 2700 : 1700;
   }
   const v = VOICES[voice];

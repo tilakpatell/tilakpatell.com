@@ -76,7 +76,9 @@ function unmuteIOS() {
   el.setAttribute('x-webkit-airplay', 'deny');
   el.preload = 'auto';
   el.loop = true;
-  el.src = silence();
+  const url = silence();
+  el.src = url;
+  el.addEventListener('loadeddata', () => URL.revokeObjectURL(url), { once: true });
   el.play().catch(() => {
     unmuted = false;
   });
@@ -119,6 +121,38 @@ if (typeof window !== 'undefined') {
 // Where every sound should connect: the master volume, which mutes with the setting.
 export const output = () => (audioContext() ? master : null);
 
+// Where speech should connect instead: the master volume by way of a tap that
+// measures how loud the voice is, so a face on screen can move its mouth with
+// it. The tap sits before the master volume, so mouths still move with the
+// sound turned off (the subtitles are still there to read).
+let voiceBus = null;
+let voiceTap = null;
+let levelBuf = null;
+export function voiceOutput() {
+  const ac = audioContext();
+  if (!ac) return null;
+  if (!voiceBus) {
+    voiceBus = ac.createGain();
+    voiceTap = ac.createAnalyser();
+    voiceTap.fftSize = 512;
+    voiceTap.smoothingTimeConstant = 0;
+    levelBuf = new Float32Array(voiceTap.fftSize);
+    voiceBus.connect(master);
+    voiceBus.connect(voiceTap);
+  }
+  return voiceBus;
+}
+
+// How loud the voice is right now: the RMS of the last few milliseconds, 0
+// for silence (and before anything has spoken).
+export function voiceLevel() {
+  if (!voiceTap) return 0;
+  voiceTap.getFloatTimeDomainData(levelBuf);
+  let sum = 0;
+  for (let i = 0; i < levelBuf.length; i++) sum += levelBuf[i] * levelBuf[i];
+  return Math.sqrt(sum / levelBuf.length);
+}
+
 // A tap on everything the site plays, for drawing it (Soundwave's visor).
 // Created on demand, after the context exists; returns null before that.
 let tap = null;
@@ -157,6 +191,8 @@ export function loadBuffer(url) {
       prefetch(url)
         // decoding detaches the buffer it is given, so decode a copy
         .then((data) => new Promise((resolve, reject) => ac.decodeAudioData(data.slice(0), resolve, reject)))
+        // the decoded buffer is the cache now; the raw bytes would only double the memory
+        .then((buf) => (bytes.delete(url), buf))
         .catch((e) => {
           decoded.delete(url);
           throw e;

@@ -4,7 +4,8 @@
 // time a model or a texture actually carries one, so a world without them
 // downloads nothing extra. Every model that comes through gets the same
 // care (`prepare`): shadows where asked, skinned meshes never culled, every
-// map as sharp at a slant as the device's tier allows.
+// map as sharp at a slant as the device's tier allows; and as it's parsed,
+// every map no bigger than the device's detail level keeps (lib/detail).
 //
 //   gltfLoader({ renderer }) → the shared GLTFLoader, for modules with caches
 //                              of their own
@@ -21,26 +22,37 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { sharpenTree } from './textures';
+import { fitTextures, sharpenTree } from './textures';
 
 let loader = null;
 let ktx2 = null; // the KTX2Loader, once something has needed it
 let ktx2Pending = null;
 let detectedWith = null; // the renderer the KTX2 support was read from
 
-// three's loader, with one change: a file that carries GPU-compressed
+// three's loader, with two changes: a file that carries GPU-compressed
 // textures waits for the KTX2 loader (fetched then, not before) before it's
-// parsed, whichever way it was asked for (load, loadAsync or parseAsync).
+// parsed, whichever way it was asked for (load, loadAsync or parseAsync);
+// and every model's maps are brought under this device's ceiling as it's
+// parsed (lib/detail: none over 1024 on a phone, 512 on a weak device, a
+// desktop's untouched), before anything has uploaded them.
 class SiteGLTFLoader extends GLTFLoader {
   parse(data, path, onLoad, onError) {
+    const done = (gltf) => {
+      try {
+        for (const scene of gltf.scenes?.length ? gltf.scenes : [gltf.scene]) fitTextures(scene);
+      } catch {
+        // a map that can't be fitted is drawn as it came
+      }
+      onLoad(gltf);
+    };
     if (!this.ktx2Loader && usesBasisu(data)) {
       ktx2Loader().then(
-        () => super.parse(data, path, onLoad, onError),
+        () => super.parse(data, path, done, onError),
         (e) => onError?.(e),
       );
       return;
     }
-    super.parse(data, path, onLoad, onError);
+    super.parse(data, path, done, onError);
   }
 }
 

@@ -4,8 +4,9 @@
 import { BASE } from './base';
 import { IACON } from './iacon';
 import { JASPER } from './jasper';
+import { KAON } from './kaon';
 
-export const AREAS = { iacon: IACON, base: BASE, jasper: JASPER };
+export const AREAS = { iacon: IACON, base: BASE, jasper: JASPER, kaon: KAON };
 
 export const areaOf = (id) => AREAS[id] ?? IACON;
 

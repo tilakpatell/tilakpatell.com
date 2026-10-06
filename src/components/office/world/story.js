@@ -66,7 +66,7 @@ function phonesConvo() {
     if (k < CALLS.length - 1) nodes[`ok${k}`] = { who: 'jim', say: ['Transferring you now.', 'Putting you through.', 'One moment, please.', 'Connecting you.'][k % 4], next: `c${k + 1}` };
     for (const id of c.wrong) nodes[`miss${k}-${id}`] = { who: 'narrator', say: MISSED[id], next: `c${k}` };
   });
-  nodes.done = { who: 'erin', say: 'I’m back! Did anything happen? You look like you did the phones really well. Like, really, really well.', end: 'won' };
+  nodes.done = { who: 'erin', say: 'I’m back! Did anything happen? You look like you did the phones really well. Like, really well.', end: 'won' };
   return { start: 'start', nodes };
 }
 
@@ -86,10 +86,10 @@ const DUNDIES = {
       ],
     },
     stapler: { who: 'michael', say: 'What stapler? I know nothing about a stapler. Dwight is still in the kitchen trying to eat it out, by the way.', next: 'award' },
-    twss: { who: 'michael', say: 'That’s what she… no. No. That’s MY line, Jim. You can’t just… okay, that was good. That was really good.', next: 'award' },
-    everyone: { who: 'michael', say: 'Everyone does get one! Everyone always gets one! But today, this one is just for you.', next: 'award' },
+    twss: { who: 'michael', say: 'That’s what she… no. No. That’s MY line, Jim. You can’t just… okay, that was good.', next: 'award' },
+    everyone: { who: 'michael', say: 'Everyone does get one! But today, this one is just for you.', next: 'award' },
     award: { who: 'michael', say: 'And so, by the power vested in me by Dunder Mifflin and by me: the “Best Week in the Office” Dundie goes to… Jim Halpert!', next: 'thanks' },
-    thanks: { who: 'michael', say: 'Thank you. Thank you so much. No, you say thank you. We’ll practise.', end: 'won' },
+    thanks: { who: 'michael', say: 'Thank you. No, you say thank you. We’ll practise.', end: 'won' },
   },
 };
 

@@ -581,12 +581,12 @@ function World({ gl, setGl }) {
             </button>
             {trav.available &&
               (trav.on ? (
-                <span className="dm-chip dm-chip-online" title="Everyone else online on the island walks about as a pale ghost from another world: nothing passes between you but where each of you is">
-                  {trav.count} {trav.count === 1 ? 'other' : 'others'} here
+                <span className="dm-chip dm-chip-online" data-on="" title="Everyone else online on the island walks about as a pale ghost from another world: nothing passes between you but where each of you is">
+                  <b>{trav.count}</b> {trav.count === 1 ? 'player' : 'players'} here
                 </span>
               ) : (
                 <button type="button" className="dm-chip dm-chip-online" onClick={trav.join} title="Go online, and see everyone else on the island as a ghost from another world">
-                  Go online
+                  See other players
                 </button>
               ))}
             <span className="dm-turn">

@@ -145,6 +145,13 @@ export function createEffects(scene, { tier = 'high' } = {}) {
     spark(x, y, z) {
       add(x, y, z, 1.6, 2, 0.4);
     },
+    // the energon's colour where you are (Kaon's is dark energon, violet)
+    energon(hex = '#3fd2ff') {
+      const c = new THREE.Color(hex);
+      crystalMat.color.copy(c).lerp(new THREE.Color('#ffffff'), 0.25);
+      crystalMat.emissive.copy(c);
+      crystalLight?.color.copy(c);
+    },
     // the pickups still lying about, turning
     pickups(list, t) {
       let n = 0;

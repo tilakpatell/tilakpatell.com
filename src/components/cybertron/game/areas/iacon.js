@@ -138,6 +138,15 @@ export const IACON = {
       lines: ['Metroplex is asleep out east. His beacons are dark, every one of them.', 'Drive the beacons in order and he will hear you. Faster is better.'],
     },
     {
+      id: 'magnus',
+      kind: 'ultra-magnus-foc',
+      name: 'Ultra Magnus',
+      x: 112,
+      z: -214,
+      yaw: -0.9,
+      lines: ['Iacon stands as long as its walls do. Hold the gate and I will hold the city.', 'Orders are orders, Optimus. Even yours.'],
+    },
+    {
       id: 'zeta',
       kind: 'zeta-prime',
       name: 'Zeta Prime',
