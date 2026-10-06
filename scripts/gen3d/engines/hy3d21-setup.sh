@@ -17,6 +17,7 @@ cd hy3dpaint/DifferentiableRenderer && CPLUS_INCLUDE_PATH=$(python -c "import py
 pip install "huggingface_hub[hf_xet]"
 hf download tencent/Hunyuan3D-2.1 --include "hunyuan3d-paintpbr-v2-1/*"
 # the RealESRGAN upscaler the paint pipeline loads
+cd ~/Hunyuan3D-2.1
 mkdir -p hy3dpaint/ckpt && [ -f hy3dpaint/ckpt/RealESRGAN_x4plus.pth ] || wget -q -O hy3dpaint/ckpt/RealESRGAN_x4plus.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth
 python -c "import torch; print('HY3D21-OK', torch.cuda.is_available())"
 echo HY3D21-SETUP-DONE
