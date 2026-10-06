@@ -12,7 +12,8 @@ pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorc
 cd ~/Hunyuan3D-2.1
 pip install -r requirements.txt
 cd hy3dpaint/custom_rasterizer && pip install -e . --no-build-isolation && cd ../..
-cd hy3dpaint/DifferentiableRenderer && bash compile_mesh_painter.sh && cd ../..
+pip install pybind11
+cd hy3dpaint/DifferentiableRenderer && CPLUS_INCLUDE_PATH=$(python -c "import pybind11;print(pybind11.get_include())") bash compile_mesh_painter.sh && cd ../..
 pip install "huggingface_hub[hf_xet]"
 hf download tencent/Hunyuan3D-2.1 --include "hunyuan3d-paintpbr-v2-1/*"
 # the RealESRGAN upscaler the paint pipeline loads
