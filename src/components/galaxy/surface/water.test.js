@@ -26,12 +26,10 @@ describe('the water', () => {
     w.dispose();
   });
 
-  it('keeps lava and cloud on their plane', () => {
-    for (const kind of ['lava', 'clouds']) {
-      const w = createWater(site(kind), sun, '#ffffff', { heightAt: beach });
-      expect(w.mesh.geometry.attributes.position.count).toBe(4);
-      w.dispose();
-    }
+  it('keeps a sea of cloud on its plane', () => {
+    const w = createWater(site('clouds'), sun, '#ffffff', { heightAt: beach });
+    expect(w.mesh.geometry.attributes.position.count).toBe(4);
+    w.dispose();
   });
 
   it('gives the cloud sea a second, slower layer and the sun’s glints', () => {

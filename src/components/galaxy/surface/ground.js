@@ -38,7 +38,9 @@ float gHash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32
 vec4 gTex(vec2 p) { return texture2D(uNoise, p); }
 `;
 
-export function groundMaterial(site, { small = false, map = null } = {}) {
+// lava: { texture, half, reach } (lavaRules.js's field, as lava.js keeps it):
+// the bank glows by how near the lava is, the rock hot from below
+export function groundMaterial(site, { small = false, map = null, lava = null } = {}) {
   const g = site.ground;
   const p = g.palette;
   const col = (c, fallback) => new THREE.Color(c ?? fallback);
@@ -64,6 +66,7 @@ export function groundMaterial(site, { small = false, map = null } = {}) {
     uScanN: { value: null },
     uScanK: { value: new THREE.Vector4(0.5, 0, 0, 0.5) },
     uScanFade: { value: new THREE.Vector2(28, 90) },
+    ...(lava ? { uLavaField: { value: lava.texture }, uLavaK: { value: new THREE.Vector3(lava.half, lava.reach, lava.strength ?? 1.6) } } : {}),
   };
   const look = g.detailLook ?? {};
   const scan = g.detail && !small && detailLevel() !== 'low' ? scanOf(g.detail) : null;
@@ -103,6 +106,7 @@ uniform vec4 uHeights, uRipple, uWet, uScanK;
 uniform vec2 uScanFade;
 uniform sampler2D uMarks, uScan, uScanN;
 uniform float uHalf;
+${lava ? 'uniform sampler2D uLavaField;\nuniform vec3 uLavaK;' : ''}
 ${map ? GROUND_GLSL : ''}
 ${NOISE}`,
       )
@@ -183,11 +187,25 @@ ${NOISE}`,
   vec2 spot = vec2(gHash(cellP + 17.3), gHash(cellP + 41.9)) * 0.7 + 0.15;
   float pin = smoothstep(0.16, 0.0, length(fract(gq) - spot));
   float glint = step(0.986, seed) * pin;
-  totalEmissiveRadiance += vec3(glint * uGrain.y * (1.0 - smoothstep(3.0, 16.0, dist)) * 1.2);
+  totalEmissiveRadiance += vec3(glint * uGrain.y * (1.0 - smoothstep(3.0, 16.0, dist)) * 1.2);${
+    lava
+      ? `
+  // the bank by the lava, hot: a glow from its edge out, strongest in the
+  // cracks and hollows of the rock, broken up so it isn't a band
+  vec2 luv = vGround.xz / (2.0 * uLavaK.x) + 0.5;
+  if (luv.x > 0.0 && luv.x < 1.0 && luv.y > 0.0 && luv.y < 1.0) {
+    vec2 lf = texture2D(uLavaField, luv).rg;
+    float lnear = lf.g * uLavaK.y;
+    float lk = (1.0 - smoothstep(0.0, uLavaK.y, lnear)) * step(lf.r, 0.002);
+    float lbreak = 0.55 + 0.9 * gTex(vGround.xz / 5.0).a * gTex(vGround.xz / 17.0).b;
+    totalEmissiveRadiance += vec3(1.0, 0.32, 0.06) * pow(lk, 2.2) * lbreak * uLavaK.z;
+  }`
+      : ''
+  }
 }`,
       );
   };
-  mat.customProgramCacheKey = () => `galaxy-ground${map ? ':map' : ''}`;
+  mat.customProgramCacheKey = () => `galaxy-ground${map ? ':map' : ''}${lava ? ':lava' : ''}`;
   return { material: mat, uniforms };
 }
 

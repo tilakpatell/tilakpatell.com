@@ -5,9 +5,8 @@
 // colours the shallows and the sand under them, stands the swell up on the
 // beaches where it breaks, and washes foam up to the waterline. The sky in
 // it by angle, light through the crests toward the sun, the sun's road,
-// whitecaps where the waves pinch. Lava (Mustafar's rivers, glowing,
-// crusting over) and a sea of cloud (Bespin, far below the city) stay one
-// plane at the site's level; lava lights itself.
+// whitecaps where the waves pinch. A sea of cloud (Bespin, far below the
+// city) stays one plane at the site's level. Lava is lava.js's.
 //
 // Spray: where a wave runs up one of the water's legs (Kamino's stilts and
 // its pad's column, site.water.legs) it throws spray (floats.js says how
@@ -38,7 +37,7 @@ void main() {
 const PLANE_FRAG = `
 varying vec3 vWorld;
 uniform vec3 uColor, uDeep, uSun, uSunColor, uSky;
-uniform float uTime, uKind, uFoam, uGlow, uWaves, uWaves2;
+uniform float uTime, uKind, uFoam, uWaves, uWaves2;
 #include <fog_pars_fragment>
 uniform sampler2D uNoise;
 float wFbm(vec2 p) { vec4 a = texture2D(uNoise, p * 0.08); vec4 b = texture2D(uNoise, p * 0.19 + 0.37); return a.r * 0.35 + a.g * 0.3 + b.b * 0.2 + b.a * 0.15; }
@@ -47,13 +46,7 @@ void main() {
   float dist = length(vWorld - cameraPosition);
   vec3 view = normalize(cameraPosition - vWorld);
   vec3 c;
-  if (uKind > 1.5) {
-    // lava: hot channels under a crust that cracks and drifts
-    float flow = wFbm(xz * 0.05 + vec2(uTime * 0.02, uTime * 0.013));
-    float crust = smoothstep(0.42, 0.62, wFbm(xz * 0.11 - vec2(uTime * 0.03, 0.0)));
-    vec3 hot = mix(uColor, vec3(1.0, 0.85, 0.4), smoothstep(0.55, 0.8, flow));
-    c = mix(hot * uGlow * (0.8 + 0.4 * flow), uDeep, crust * 0.85);
-  } else {
+  {
     // water (or cloud): waves in the light, darker looking down into it
     float e = 0.6;
     vec2 p = xz * 0.09 * uWaves;
@@ -92,7 +85,7 @@ void main() {
   #include <fog_fragment>
 }`;
 
-const KIND = { sea: 0, swamp: 0, clouds: 1, lava: 2, salt: 0 };
+const KIND = { sea: 0, swamp: 0, clouds: 1, salt: 0 };
 
 export function createWater(site, sunDir, sunColor, opts = {}) {
   const w = site.water;
@@ -108,7 +101,6 @@ export function createWater(site, sunDir, sunColor, opts = {}) {
       uTime: { value: 0 },
       uKind: { value: KIND[w.kind] ?? 0 },
       uFoam: { value: w.foam ?? (w.kind === 'sea' ? 0.5 : 0) },
-      uGlow: { value: w.glow ?? 3 },
       uWaves: { value: w.waves ?? (w.kind === 'swamp' ? 2.2 : w.kind === 'clouds' ? 0.12 : 1) },
       uWaves2: { value: (w.waves ?? (w.kind === 'swamp' ? 2.2 : w.kind === 'clouds' ? 0.12 : 1)) * 2.3 },
       uNoise: { value: noiseTexture() },
@@ -119,11 +111,9 @@ export function createWater(site, sunDir, sunColor, opts = {}) {
   mesh.position.y = w.level;
   mesh.receiveShadow = false;
   mesh.name = 'water';
-  // lava lights what's round it
-  const glow = w.kind === 'lava' ? new THREE.HemisphereLight('#000000', '#ff6a1a', 0.9) : null;
   return {
     mesh,
-    glow,
+    glow: null,
     update(t) {
       uniforms.uTime.value = t;
     },

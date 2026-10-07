@@ -114,6 +114,19 @@ describe('on foot', () => {
     expect(Math.hypot(s.x, s.z)).toBeLessThanOrEqual(50 + 1e-6);
   });
 
+  it('wades in water whose level is a function of where you are (a pool here, dry there)', () => {
+    const pool = (x) => (x < 0 ? 0 : null);
+    const s = walker();
+    s.x = -5;
+    run(s, { x: 0, y: 0, heading: 0 }, 1, flat(-3, { water: pool }));
+    expect(s.y).toBeCloseTo(-WALK.wade, 5);
+    const t = walker();
+    t.x = 5;
+    run(t, { x: 0, y: 0, heading: 0 }, 1, flat(-3, { water: pool }));
+    expect(t.y).toBeCloseTo(-3, 5);
+    expect(t.wading).toBe(0);
+  });
+
   it('wades, slower, and no deeper than its knees', () => {
     const world = flat(-3, { water: 0 });
     const s = walker(0, 0, -3);

@@ -379,6 +379,25 @@ export function createSounds(site) {
     src.stop(now + len + 0.05);
   };
 
+  // a burn: lava's hiss, a bite of high noise falling to a crackle
+  const sizzle = () => {
+    if (!started) return;
+    const now = ac.currentTime;
+    const src = ac.createBufferSource();
+    src.buffer = noise(ac);
+    const f = ac.createBiquadFilter();
+    f.type = 'highpass';
+    f.frequency.setValueAtTime(5200, now);
+    f.frequency.exponentialRampToValueAtTime(1400, now + 0.3);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.09, now + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+    src.connect(f).connect(g).connect(out);
+    src.start(now, Math.random());
+    src.stop(now + 0.36);
+  };
+
   // a chirp or a croak (a jungle's, a swamp's), now and then
   const critter = () => {
     const now = ac.currentTime;
@@ -554,6 +573,7 @@ export function createSounds(site) {
   return {
     start,
     step,
+    sizzle,
     blast,
     saber,
     combat,

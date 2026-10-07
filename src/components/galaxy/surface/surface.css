@@ -828,6 +828,11 @@
 @keyframes surface-parry { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.8); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 100% { opacity: 0; transform: translate(-50%, -14px) scale(1); } }
 .surface-hurt { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(255, 40, 30, 0.45) 100%); animation: surface-hurt 0.45s ease-out forwards; }
 @keyframes surface-hurt { from { opacity: 1; } to { opacity: 0; } }
+/* the lava's heat: the edges glow orange, nearer the more of it there is, and flicker standing in it */
+.surface-heat { position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: var(--heat); background: radial-gradient(ellipse at center, transparent calc(78% - var(--heat) * 26%), rgba(255, 120, 30, 0.28) calc(92% - var(--heat) * 18%), rgba(255, 60, 10, 0.62) 100%); transition: opacity 0.3s; }
+.surface-heat[data-in] { animation: surface-heat 0.5s ease-in-out infinite alternate; }
+@keyframes surface-heat { from { filter: brightness(0.85); } to { filter: brightness(1.25); } }
+@media (prefers-reduced-motion: reduce) { .surface-heat[data-in] { animation: none; } }
 .surface-health:has(+ .surface-combat) { bottom: calc(154px + env(safe-area-inset-bottom, 0px)); }
 .surface-buttons-saber { grid-template-columns: repeat(3, 58px); }
 .surface-buttons-saber .surface-btn, .surface-buttons-gun .surface-btn { width: 58px; height: 58px; font-size: 0.7rem; }

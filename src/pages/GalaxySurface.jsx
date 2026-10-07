@@ -177,6 +177,8 @@ export default function GalaxySurface() {
   const [combat, setCombat] = useState(null); // the fight's numbers (scene.js's 'combat' event): guard or heat, abilities, the lock
   const [hitMark, setHitMark] = useState(null); // { n, kill }
   const [hurtFlash, setHurtFlash] = useState(0);
+  // the lava's heat where you stand, 0…1 (lavaRules.js): the screen's edges glow with it
+  const [heat, setHeat] = useState(0);
   const [parryNote, setParryNote] = useState(0);
   // the emote wheel, as the scene says it is (its 'emote' event: open, the
   // slice pointed at, the last struck, the one on); a phone has no keys to show
@@ -355,7 +357,8 @@ export default function GalaxySurface() {
         }
         lastHealth.current = e.value;
         setHealth(e.value);
-      } else if (e.type === 'combat') setCombat(e);
+      } else if (e.type === 'heat') setHeat(e.value);
+      else if (e.type === 'combat') setCombat(e);
       else if (e.type === 'emote') {
         wheelOpen.current = Boolean(e.open);
         setEmote(e);
@@ -375,7 +378,7 @@ export default function GalaxySurface() {
       else if (e.type === 'down') {
         // (in a battle the HUD's deploy card says it)
         if (mission?.kind === 'assault') return;
-        setToast((t) => ({ title: 'Knocked down', text: 'Back on your feet. Try that again.', n: (t?.n ?? 0) + 1 }));
+        setToast((t) => (e.why === 'lava' ? { title: 'Burned', text: 'The lava had you. Back on solid ground: keep your feet on the rock.', n: (t?.n ?? 0) + 1 } : { title: 'Knocked down', text: 'Back on your feet. Try that again.', n: (t?.n ?? 0) + 1 }));
         later('toast', 3500, () => setToast(null));
       } else if (e.type === 'zone') {
         setFade(1);
@@ -604,6 +607,7 @@ export default function GalaxySurface() {
         </p>
       )}
       {hurtFlash > 0 && <div key={`hurt-${hurtFlash}`} className="surface-hurt" aria-hidden="true" />}
+      {heat > 0 && <div className="surface-heat" style={{ '--heat': heat }} data-in={heat >= 1 || undefined} aria-hidden="true" />}
       {(((aiming || quest?.shoot) && phase === 'walk') || (mission?.kind === 'chase' && chase && !chase.result && phase === 'ride') || (mission?.kind === 'assault' && chase?.phase === 'run' && chase.you?.up && phase === 'walk')) && <span className="surface-crosshair" aria-hidden="true" />}
       {/* the emote wheel (B held, or the Emote button on a phone): the five
           round the middle of the view, clockwise from the top, the one pointed

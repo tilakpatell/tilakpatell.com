@@ -18,11 +18,14 @@
 // (a list: { x, z, r } discs or { x, z, hw, hd, yaw } boxes, each at `y`;
 // `tag`ged ones can be taken away, `off`: a trapdoor that's opened),
 // reach (how far from the middle you can go), water? (a level you wade
-// in and can't go under) }
+// in and can't go under; or (x, z) → a level or null, where it's in pools:
+// Nevarro's lava) }
 
 export const WALK = { walk: 3.3, run: 7.4, accel: 26, air: 5, turn: 11, jump: 5.4, gravity: 15.5, step: 0.55, steep: 0.6, radius: 0.38, wade: 0.85 };
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+// the water's level where you are (a level everywhere, or one by place)
+const waterAt = (world, x, z) => (typeof world.water === 'function' ? world.water(x, z) : world.water);
 const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 // turn `from` toward `to` by at most `max` (radians)
 export const turnToward = (from, to, max) => from + clamp(wrapAngle(to - from), -max, max);
@@ -282,9 +285,10 @@ export function walk(s, input, dt, world, rules = WALK) {
     }
   }
   // wading: how deep in the water you are
-  s.wading = world.water != null ? clamp((world.water - s.y) / rules.wade, 0, 1) : 0;
-  if (world.water != null && s.y < world.water - rules.wade) {
-    s.y = world.water - rules.wade; // (no deeper than the knees… or so)
+  const wl = waterAt(world, s.x, s.z);
+  s.wading = wl != null ? clamp((wl - s.y) / rules.wade, 0, 1) : 0;
+  if (wl != null && s.y < wl - rules.wade) {
+    s.y = wl - rules.wade; // (no deeper than the knees… or so)
     if (s.vy < 0) s.vy = 0;
   }
 
@@ -359,7 +363,8 @@ export function ride(s, input, dt, world, spec) {
   s.z = nz;
   // its height: held over the ground (or the water), eased
   let g = groundAt(world, s.x, s.z, s.y + 2, 2);
-  if (world.water != null && spec.hover > 0) g = Math.max(g, world.water);
+  const wl = waterAt(world, s.x, s.z);
+  if (wl != null && spec.hover > 0) g = Math.max(g, wl);
   const ahead = groundAt(world, s.x + Math.sin(s.yaw) * 3, s.z + Math.cos(s.yaw) * 3, s.y + 2, 2);
   s.pitch += (Math.atan2(ahead - g, 3) * 0.6 - s.pitch) * Math.min(1, dt * 6);
   const target = g + (spec.hover ?? 0);

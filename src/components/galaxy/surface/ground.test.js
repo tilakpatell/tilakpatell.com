@@ -29,3 +29,19 @@ describe('the floor', () => {
     expect(fs).not.toContain('groundColour(');
   });
 });
+
+describe('the floor by the lava', () => {
+  it('glows on the bank, by how near the lava is (the lava field’s G)', () => {
+    const tex = new THREE.DataTexture(new Uint8Array(8), 2, 2, THREE.RGFormat);
+    const m = groundMaterial(site, { small: true, lava: { texture: tex, half: 640, reach: 8 } });
+    const sh = compiled(m);
+    expect(sh.uniforms.uLavaField.value).toBe(tex);
+    expect(sh.fragmentShader).toContain('uLavaField');
+    expect(m.material.customProgramCacheKey()).toContain('lava');
+  });
+
+  it('no glow where there is no lava', () => {
+    const sh = compiled(groundMaterial(site, { small: true }));
+    expect(sh.fragmentShader).not.toContain('uLavaField');
+  });
+});

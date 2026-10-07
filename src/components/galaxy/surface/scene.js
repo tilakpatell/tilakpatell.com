@@ -72,6 +72,7 @@ import { createMarks, groundMaterial, groundMesh } from './ground';
 import { createSky } from './sky';
 import { createSkyFog } from './skyfog';
 import { createWater } from './water';
+import { createLava } from './lava';
 import { floatPose } from './floats';
 import { createWeather } from './weather';
 import { createKit } from './kit';
@@ -113,6 +114,7 @@ import { createAssaultMission } from './missions/assaultScene';
 import { RULES as ASSAULT } from './missions/assault';
 import { groundWorld } from '../../../lib/three/groundwork';
 import { garrisonAt, garrisonLife, garrisonQuest } from './garrison';
+import { bakeLavaField, burn, heatAt, lavaAt, lavaOf, safeGround } from './lavaRules';
 
 const V = THREE.Vector3;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -248,6 +250,13 @@ export async function create(canvas, ctx) {
   // (water you wade in: not lava, not cloud, and not a sea far under a
   // platform with nothing else under it, which you'd fall into)
   const wade = site.water && !site.noGround && site.water.kind !== 'clouds' && site.water.kind !== 'lava' ? site.water.level : null;
+  // (and lava, which you wade in too, knee-deep, and which burns:
+  // lavaRules.js; Mustafar's rivers, Nevarro's pools)
+  const lava = site.noGround ? null : lavaOf(site);
+  const inLava = (x, z, above = 0) => {
+    const l = lavaAt(lava, x, z);
+    return l != null && grid.heightAt(x, z) < l + above;
+  };
   // where the scattered things go (worked out before anything's placed: the
   // ground map is painted with the trees' crowns over it)
   const r = rng(site.ground.seed ?? 1);
@@ -264,6 +273,7 @@ export async function create(canvas, ctx) {
       if (avoid.some((v) => Math.hypot(x - v.at[0], z - v.at[1]) < v.r + (s.clear ?? 4))) continue;
       if (s.flat && grid.normalAt(x, z)[1] < s.flat) continue;
       if (wade != null && s.dry !== false && grid.heightAt(x, z) < wade + (s.above ?? 0.2)) continue;
+      if (lava && s.dry !== false && inLava(x, z, s.above ?? 0.2)) continue;
       const [lo, hi] = s.scale ?? [1, 1];
       items.push({ at: [x, z], yaw: r() * Math.PI * 2, scale: lo + (hi - lo) * r() ** 1.6, sink: s.sink ?? 0.1, stretch: s.stretch ? s.stretch[0] + r() * (s.stretch[1] - s.stretch[0]) : 1 });
     }
@@ -283,24 +293,29 @@ export async function create(canvas, ctx) {
     groundMap = createGroundMap({ area: mapAreaOf(), size: mapSize, heightSize: mapSize / 2, paint: painter.paint, height: painter.height });
     if (pieces.bounce) house.ground(groundMap);
   }
-  const gmat = groundMaterial(site, { small, map: groundMap });
+  // the lava (lava.js), and what it and the bank beside it draw from: how
+  // deep it is, how near (lavaRules.js's field)
+  const lavaField = lava ? bakeLavaField(grid.heightAt, (x, z) => lavaAt(lava, x, z), { n: small ? 256 : 512, reach: 7 }) : null;
+  const lavaFx = lava ? createLava({ site, lava, field: lavaField, sunDir, sunColor: site.sky.suns?.[0]?.color ?? '#ffffff', small }) : null;
+  const gmat = groundMaterial(site, { small, map: groundMap, lava: lavaFx ? { texture: lavaFx.texture, half: lavaField.half, reach: lavaField.reach } : null });
   const marks = createMarks(small ? 256 : 512);
   gmat.uniforms.uMarks.value = marks.texture;
   const ground = groundMesh(grid, gmat.material);
   if (!site.noGround) scene.add(ground);
-  const water = site.water ? createWater(site, sunDir, site.sky.suns?.[0]?.color ?? '#ffffff', { heightAt: site.noGround ? null : grid.heightAt, small, id: ctx.system }) : null;
+  const water = site.water && site.water.kind !== 'lava' ? createWater(site, sunDir, site.sky.suns?.[0]?.color ?? '#ffffff', { heightAt: site.noGround ? null : grid.heightAt, small, id: ctx.system }) : null;
   if (water) {
     scene.add(water.mesh);
     if (water.glow) scene.add(water.glow);
     if (water.spray) scene.add(water.spray);
   }
+  if (lavaFx) scene.add(lavaFx.mesh, lavaFx.glow);
   const world = {
     heightAt: site.noGround ? () => site.fall ?? -1000 : grid.heightAt,
     normalAt: site.noGround ? () => [0, 1, 0] : (x, z) => grid.normalAt(x, z),
     solids: createSolids(),
     floors: [...(site.floors ?? [])],
     reach: site.reach,
-    water: wade,
+    water: lava ? (x, z) => lavaAt(lava, x, z) ?? wade : wade,
   };
   const weather = reduced ? null : createWeather(site, { small });
   if (weather) scene.add(weather.group);
@@ -645,7 +660,7 @@ export async function create(canvas, ctx) {
       wind: kinds.has('sand') ? 0.8 : kinds.has('snow') ? 1 : 0.35,
       rain: kinds.has('rain') ? 1 : 0,
       sea: site.water?.kind === 'sea' ? 0.7 : 0,
-      lava: site.water?.kind === 'lava' || kinds.has('embers') ? 0.7 : 0,
+      lava: site.water?.kind === 'lava' || kinds.has('embers') ? 0.7 : lava ? 0.3 : 0,
       critters: kinds.has('motes') ? 0.6 : 0,
       ground: kinds.has('snow') ? 'snow' : site.water?.kind === 'swamp' ? 'mud' : 'sand',
     },
@@ -719,6 +734,8 @@ export async function create(canvas, ctx) {
     wheelKeys: false, // the keys (or the stick) that pointed at a slice, still down
     reacting: null, // { who, clip, layer, until }: a reaction of yours playing, for the next input to cut
     hitFrom: null, // { x, z }: where the last thing to hurt you came from (the way you fall)
+    lavaHeat: 0, // the lava's, where you stand (lavaRules.js's heatAt, to a tenth)
+    safeAt: null, // [x, z]: the last ground you stood on clear of the lava
     tg: null, // what E does here, as the last frame had it (what your mate looks at)
   };
   const camPos = new V();
@@ -1393,6 +1410,7 @@ export async function create(canvas, ctx) {
     // (inside, the world outside isn't drawn, and outside, no room is)
     ground.visible = !z;
     if (water?.glow) water.glow.visible = !z;
+    if (lavaFx) lavaFx.mesh.visible = lavaFx.glow.visible = !z;
     placer.setZone(Boolean(z));
     life.setZone(Boolean(z));
     // (indoors, the room's lamps and no sun to cast a shadow; outdoors, the sun's
@@ -2078,17 +2096,21 @@ export async function create(canvas, ctx) {
   }
   // `from`: where it came from ({ x, z }), for the way you flinch and fall
   // (else the last shot's at you)
-  function hurt(n, from = null) {
+  // `burnt`: the lava's (no flinch for each bite, and back on the last
+  // ground clear of it should it have you)
+  function hurt(n, from = null, { burnt = false } = {}) {
     state.health = Math.max(0, state.health - n * perks.hurt);
     state.hurtAt = state.t;
-    state.shake = Math.min(1, state.shake + 0.3);
+    state.shake = Math.min(1, state.shake + (burnt ? 0.08 : 0.3));
     if (from) state.hitFrom = from;
     emit({ type: 'health', value: state.health });
     // (a flinch, the chest or the head: on the upper layer while you move,
     // cut by what you do next; an emote's over)
     if (state.emote) endEmote();
-    if (state.health > 0 && !state.dodge) reactYou('hit', { where: Math.random() < 0.3 ? 'head' : 'chest' });
+    if (state.health > 0 && !state.dodge && !burnt) reactYou('hit', { where: Math.random() < 0.3 ? 'head' : 'chest' });
     if (state.health > 0) return;
+    const backOut = burnt && state.safeAt && !state.zone;
+    if (backOut && !assaultOn()) putAt(me().st, state.safeAt[0], state.safeAt[1]);
     // in a battle: down where you fell, and the HUD asks where to deploy
     if (assaultOn() && !state.off) {
       state.off = 'down';
@@ -2109,10 +2131,11 @@ export async function create(canvas, ctx) {
       endMission('lost', 'down');
       return;
     }
-    // down: back on your feet where the quest's step began (or by the ship)
+    // down: back on your feet where the quest's step began (or by the ship;
+    // or, the lava's, on the last ground clear of it)
     state.health = 100;
     emit({ type: 'health', value: 100 });
-    emit({ type: 'down' });
+    emit({ type: 'down', why: burnt ? 'lava' : null });
     if (state.quest) {
       state.quest = { ...state.quest, count: 0, time: 0 };
       const q = questOf(state.quest.id);
@@ -2122,8 +2145,41 @@ export async function create(canvas, ctx) {
     }
     const p = me().st;
     const step = state.quest && questOf(state.quest.id)?.steps[state.quest.step];
+    if (backOut) return;
     if (step?.respawn) putAt(p, step.respawn[0], step.respawn[1]);
     else if (!state.zone) putAt(p, spawnAt[0], spawnAt[1]);
+  }
+
+  // ── Lava (lavaRules.js) ──
+  // In it, it bites (and hisses, and throws sparks off your boots), and so
+  // for your mate; the bank beside it is hot (the HUD's glow, the 'heat'
+  // event); and where you last stood clear of it is kept, to be put back on.
+  let burnYou = null;
+  let burnMate = null;
+  function stepLava(dt) {
+    if (!lava) return;
+    const p = me().st;
+    const heat = state.zone || state.off || state.phase !== 'walk' ? 0 : heatAt(lava, grid.heightAt, p.x, p.y, p.z);
+    state.safeAt = safeGround(state.safeAt, p, heat);
+    burnYou = burn(burnYou, heat >= 1, dt);
+    if (burnYou.damage) {
+      hurt(burnYou.damage, null, { burnt: true });
+      sounds.sizzle?.();
+      for (let k = 0; k < 5; k++) fx.sparks(new V(p.x, p.y + 0.15, p.z), new V(Math.random() - 0.5, 1.4, Math.random() - 0.5).normalize(), Math.random() < 0.5 ? '#ffb040' : '#ff5a14', 3);
+    }
+    const shown = Math.round(heat * 10) / 10;
+    if (shown !== state.lavaHeat) {
+      state.lavaHeat = shown;
+      emit({ type: 'heat', value: shown });
+    }
+    const q = other().st;
+    const mateIn = !state.zone && mateFight.down === 0 && heatAt(lava, grid.heightAt, q.x, q.y, q.z) >= 1;
+    burnMate = burn(burnMate, mateIn, dt);
+    if (burnMate.damage) {
+      mateHit(burnMate.damage);
+      // (down in it: it's dragged out, onto the ground you last stood clear on)
+      if (mateFight.down > 0 && state.safeAt) putAt(q, state.safeAt[0] + 1.2, state.safeAt[1]);
+    }
   }
 
   // ── Each frame ──
@@ -2672,6 +2728,7 @@ export async function create(canvas, ctx) {
       }
       if (state.phase === 'ride') stepRide(dt);
       else stepWalk(dt);
+      stepLava(dt);
       follow(dt);
       if (state.phase === 'walk' || state.phase === 'ride') {
         const tg = target();
@@ -2938,6 +2995,7 @@ export async function create(canvas, ctx) {
     // (whatever's come into the world since, fogged in the sky's colour before it's drawn)
     skyFog.scene(scene);
     water?.update(t, camera);
+    lavaFx?.update(t);
     for (const f of floaters) {
       if (Math.hypot(camera.position.x - f.x, camera.position.z - f.z) > 400) continue;
       const pose = floatPose(water.height, f.x, f.z, f.yaw, t, f.float);
@@ -2987,7 +3045,7 @@ export async function create(canvas, ctx) {
         area: { x0: landAt[0] - R, z0: landAt[1] - R, w: R * 2, d: R * 2 },
         sun,
         // (what moves isn't baked: the folk and beasts about, the speeders)
-        skip: [sky.mesh, water?.mesh, water?.glow, water?.spray, weather?.group, weather?.mesh, camera, life.group, grass?.mesh, ...rides.map((x) => x.holder)].filter(Boolean),
+        skip: [sky.mesh, water?.mesh, water?.glow, water?.spray, lavaFx?.mesh, lavaFx?.glow, weather?.group, weather?.mesh, camera, life.group, grass?.mesh, ...rides.map((x) => x.holder)].filter(Boolean),
         movers: [...people.map((p) => ({ object: p.holder, size: [0.8, 0.8] })), ...life.actors.filter((a) => a.holder).map((a) => ({ object: a.holder, size: [1, 1] })), ...rides.map((x) => ({ object: x.holder, size: [1.4, 2.6] }))],
         shade: site.light.shade ?? site.light.ground ?? '#3a3028',
         height: world.heightAt,
@@ -3295,7 +3353,7 @@ export async function create(canvas, ctx) {
       ctx.invalidate();
     },
     // (for tests: where you are, what's going on)
-    debug: () => ({ ship: { at: shipHolder.position.toArray().map((v) => +v.toFixed(1)), y: +ship.group.position.y.toFixed(2), box: [+shipBox.w.toFixed(1), +shipBox.l.toFixed(1)], visible: ship.group.visible }, ms: state.ms, frames: state.frames, t: +state.t.toFixed(1), phase: state.phase, you: { ...me().st }, here: state.here, found: [...state.found], prompt: state.prompt, riding: state.riding?.kind ?? null, rideY: state.riding ? +state.riding.state.y.toFixed(2) : null, quest: state.quest, zone: state.zone?.id ?? null, zoneOrigin: state.zone?.origin ?? null, health: state.health, off: state.off, mission: chase?.view() ?? assault?.view() ?? run, who: me().spec.id, saber: me().saber ? { lit: me().saber.lit, busy: me().saber.busy, thrown: me().saber.thrown, stance: me().saber.stance.name } : null, guard: Math.round(state.guard.value), heat: +state.heat.value.toFixed(2), locked: state.heat.locked, lock: state.lock?.spec.kind ?? null, lockGuard: state.lock?.guard ?? null, lockHp: state.lock?.hp ?? null, lockStagger: state.lock ? +state.lock.stagger.toFixed(1) : null, weapon: me().weapon?.name ?? null, dodging: Boolean(state.dodge), bombs: state.bombs.length, powers: abilitiesOf(me().spec), jet: +state.jet.fuel.toFixed(2), sprinting: state.t < state.sprint, fight: activity.debug(), people: life.debug() }),
+    debug: () => ({ ship: { at: shipHolder.position.toArray().map((v) => +v.toFixed(1)), y: +ship.group.position.y.toFixed(2), box: [+shipBox.w.toFixed(1), +shipBox.l.toFixed(1)], visible: ship.group.visible }, ms: state.ms, frames: state.frames, t: +state.t.toFixed(1), phase: state.phase, you: { ...me().st }, here: state.here, found: [...state.found], prompt: state.prompt, riding: state.riding?.kind ?? null, rideY: state.riding ? +state.riding.state.y.toFixed(2) : null, quest: state.quest, zone: state.zone?.id ?? null, zoneOrigin: state.zone?.origin ?? null, health: state.health, off: state.off, mission: chase?.view() ?? assault?.view() ?? run, who: me().spec.id, saber: me().saber ? { lit: me().saber.lit, busy: me().saber.busy, thrown: me().saber.thrown, stance: me().saber.stance.name } : null, guard: Math.round(state.guard.value), heat: +state.heat.value.toFixed(2), locked: state.heat.locked, lavaHeat: state.lavaHeat, safeAt: state.safeAt, lock: state.lock?.spec.kind ?? null, lockGuard: state.lock?.guard ?? null, lockHp: state.lock?.hp ?? null, lockStagger: state.lock ? +state.lock.stagger.toFixed(1) : null, weapon: me().weapon?.name ?? null, dodging: Boolean(state.dodge), bombs: state.bombs.length, powers: abilitiesOf(me().spec), jet: +state.jet.fuel.toFixed(2), sprinting: state.t < state.sprint, fight: activity.debug(), people: life.debug() }),
     dispose() {
       disposed = true;
       lit?.dispose();
@@ -3344,6 +3402,7 @@ export async function create(canvas, ctx) {
       for (const f of flights) f.m.dispose?.();
       weather?.dispose();
       water?.dispose();
+      lavaFx?.dispose();
       sky.dispose();
       marks.dispose();
       puff.dispose();
