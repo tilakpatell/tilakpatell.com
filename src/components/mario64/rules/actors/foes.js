@@ -2,7 +2,8 @@
 // Goomba that loses Mario round a wall keeps after him a moment, goes to
 // look where it last saw him, and wanders on: lib/ai/perception), and are
 // squashed by a stomp. Bob-ombs light their fuse when they see Mario near
-// (the Goombas' eyes) and chase him for 4 seconds before they blow; he can pick one up and throw it. King Bob-omb
+// (not through a wall) and chase him as they believe him to be for 4
+// seconds before they blow; he can pick one up and throw it. King Bob-omb
 // walks at Mario on the summit, turning slowly enough to be got behind;
 // picked up from behind and thrown down onto the summit three times, he
 // gives up a star. The Chain Chomp lunges at the end of its chain (rearing
@@ -132,6 +133,7 @@ const bobomb = {
       if (a.t - a.since > 300) {
         Object.assign(a.pos, a.home);
         a.state = 'walk';
+        a.me = null; // (a new Bob-omb: it's seen nothing yet)
       }
       return;
     }
@@ -157,10 +159,12 @@ const bobomb = {
     }
     fall(a, g);
     if (!a.alive) return;
-    const d = distTo(a, m.pos.x, m.pos.z);
+    // what it believes of Mario, as a Goomba does: it lights only on seeing
+    // him (not through the wall he's behind), and lit it goes after him as it
+    // believes him to be, to where it last saw him once he's out of sight
+    const seen = spot(a, g, 500);
     if (a.state === 'walk') {
-      // the sight of him lights it (a Goomba's eyes: not through a wall or a hill)
-      if (d < 500 && spot(a, g, 500)?.visible) {
+      if (seen?.sure) {
         a.state = 'lit';
         a.fuse = 0;
         tell(g, 'fuse');
@@ -168,7 +172,17 @@ const bobomb = {
       if (a.t % 120 === 0) a.yaw += 2.1;
       walk(a, g, 3);
     } else if (a.state === 'lit') {
-      turn(a, toward(a, m.pos.x, m.pos.z), 0.15);
+      // the belief gone (it faded over the memory span), it walks about as
+      // it did before it saw him, its fuse still burning (a lit fuse isn't
+      // put out: it blows where it is)
+      if (!seen) {
+        if (a.t % 120 === 0) a.yaw += 2.1;
+        walk(a, g, 3);
+        return;
+      }
+      // there, and no Mario: it stands, fuse fizzing
+      if (!seen.sure && distTo(a, seen.x, seen.z) < 60) return;
+      turn(a, toward(a, seen.x, seen.z), 0.15);
       walk(a, g, 7);
     }
   },

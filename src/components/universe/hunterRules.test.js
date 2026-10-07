@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BOMB, FACTIONS, FIGHT, HOLDOFF, HUNTER_KINDS, HUNTER_SENSES, LOSE, NAMES, TRAITS, blocked, clearOf, createHunt, entryPoint, fightSpeed, hitRadius, packPlan, shipVelocity, slotsFor, turnRate, turnRateAt, turnToward } from './hunterRules';
 import { KINDS as GALAXY_KINDS, FACTIONS as GALAXY_FACTIONS } from '../galaxy/hunted';
 import { PACE, SHIP } from './ship';
+import { createTrace } from '../../lib/ai/trace';
 
 // a seeded random, so a fight is the same every time
 const seeded = (seed = 7) => () => {
@@ -947,5 +948,127 @@ describe('a pack on the toolkit', () => {
     let by = null;
     for (let t = 0; t < 30 && by === null; t += DT) for (const e of hunt.update(DT, s)) if (e.type === 'laser') by = e.by;
     expect(typeof by).toBe('number');
+  });
+});
+
+describe('on the schedule, seeded', () => {
+  it('a hunter not due keeps its steer', () => {
+    const hunt = createHunt({ rand: seeded(5) });
+    let s = start({ speed: 10 });
+    hunt.pack('empire', s, { size: 3, ace: false });
+    for (let t = 0; t < 2; t += DT) {
+      s = move(s);
+      hunt.update(DT, s);
+    }
+    const h = hunt.live[0];
+    const steer = [...h.steer];
+    const now = h.me.now;
+    const clock = h.clock;
+    const mode = h.mode;
+    const at = { ...h.pos };
+    s = move(s);
+    hunt.update(DT, s, { due: new Set() });
+    // nothing sensed, nothing chosen, the same way wanted: and still flying
+    expect([...h.steer]).toEqual(steer);
+    expect(h.me.now).toBe(now);
+    expect(h.clock).toBe(clock);
+    expect(h.mode).toBe(mode);
+    expect(Math.hypot(h.pos.x - at.x, h.pos.y - at.y, h.pos.z - at.z)).toBeGreaterThan(0);
+    // due again, it senses with all the time it missed
+    s = move(s);
+    hunt.update(DT, s, { due: new Set([h.id]) });
+    expect(h.me.now).toBeCloseTo(now + 2 * DT, 9);
+  });
+
+  it('createHunt with a seeded rand is reproducible', () => {
+    const run = () => {
+      const hunt = createHunt({ rand: seeded(11) });
+      let s = start({ speed: 10 });
+      hunt.pack('empire', s, { size: 4 });
+      for (let i = 0; i < 200; i++) {
+        s = move({ ...s, heading: s.heading + (i > 100 ? 0.02 : 0) });
+        hunt.update(DT, s);
+      }
+      return hunt.live.map((h) => [h.id, h.kind, h.pos.x, h.pos.y, h.pos.z]);
+    };
+    const a = run();
+    expect(a.length).toBeGreaterThan(0);
+    expect(run()).toEqual(a);
+  });
+
+  it('a seeded hunt on a schedule thinks at the schedule’s rate and stays reproducible', () => {
+    const run = () => {
+      const hunt = createHunt({ rand: seeded(11) });
+      let s = start({ speed: 10 });
+      hunt.pack('empire', s, { size: 4 });
+      let i = 0;
+      for (; i < 200; i++) {
+        s = move(s);
+        // every other hunter on every other frame
+        hunt.update(DT, s, { due: new Set(hunt.live.filter((h) => (h.id + i) % 2).map((h) => h.id)) });
+      }
+      return hunt.live.map((h) => [h.pos.x, h.pos.y, h.pos.z]);
+    };
+    const a = run();
+    for (const p of a) for (const v of p) expect(Number.isFinite(v)).toBe(true);
+    expect(run()).toEqual(a);
+  });
+
+  it('one paused a long while comes back with a quarter second’s step, not a backlog', () => {
+    const hunt = createHunt({ rand: seeded(5) });
+    const s = start();
+    hunt.pack('empire', s, { size: 1, ace: false });
+    const h = hunt.live[0];
+    // held near you for 30 s of frames, not due once
+    const hold = (x) => Object.assign(h.pos, { x, y: 0, z: 0 });
+    for (let t = 0; t < 30; t += DT) {
+      hold(20);
+      hunt.update(DT, s, { due: new Set() });
+    }
+    expect(hunt.live).toContain(h);
+    // it's lost you, and you're 300 off: sight takes 0.375 s at that range,
+    // so a quarter second's look is two-thirds sure (a 30 s one, certain)
+    h.me.beliefs = {};
+    hold(300);
+    const now = h.me.now;
+    const clock = h.clock;
+    hunt.update(DT, s, { due: new Set([h.id]) });
+    expect(h.me.now - now).toBeCloseTo(0.25, 9);
+    expect(h.belief.confidence).toBeCloseTo(0.25 / 0.375, 6);
+    expect(h.clock - clock).toBeLessThanOrEqual(0.25 + 1e-9);
+  });
+
+  it('one choosing at a quarter rate keeps real time: its 0.4 s step is all given it', () => {
+    const hunt = createHunt({ rand: seeded(5) });
+    const s = start();
+    hunt.pack('empire', s, { size: 1, ace: false });
+    const h = hunt.live[0];
+    const quarter = new Map([[h.id, { sense: true, think: true, dt: 0.4 }]]);
+    hunt.update(DT, s, { due: quarter });
+    const now = h.me.now;
+    for (let i = 1; i < 24; i++) hunt.update(DT, s, { due: new Set() });
+    const clock = h.clock;
+    const mode = h.mode;
+    hunt.update(DT, s, { due: quarter });
+    expect(h.me.now - now).toBeCloseTo(0.4, 9);
+    expect(h.mode).toBe(mode);
+    expect(h.clock - clock).toBeCloseTo(0.4, 9);
+  });
+
+  it('a hunter removed is taken out of the trace too', () => {
+    const trace = createTrace();
+    const hunt = createHunt({ rand: seeded(5), trace });
+    let s = start({ speed: 10 });
+    hunt.pack('empire', s, { size: 2, ace: false });
+    for (let t = 0; t < 0.5; t += DT) {
+      s = move(s);
+      hunt.update(DT, s);
+    }
+    const [a, b] = hunt.live;
+    expect(trace.agents()).toEqual(expect.arrayContaining([a.id, b.id]));
+    hunt.damage(a.id, 1e6);
+    expect(trace.agents()).not.toContain(a.id);
+    hunt.clear();
+    expect(trace.agents()).toEqual([]);
   });
 });

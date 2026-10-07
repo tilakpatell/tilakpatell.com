@@ -9,6 +9,7 @@ import { AREAS } from './areas';
 import { createSim } from './sim';
 import { createSounds } from './sounds';
 import { useVoiced } from '../../../lib/useVoiced';
+import { flags, register, unregister } from '../../../lib/ai/inspect';
 import './game.css';
 
 // Cybertron, the world: Iacon at war, and Team Prime's base and Jasper on
@@ -21,6 +22,21 @@ import './game.css';
 // before (`fallback`).
 
 const KEPT = 'tp-cybertron-world'; // { done: [mission ids], area }
+
+// The visit's seed: made once a visit and kept for it (the universe map's
+// key, so one visit is one seed everywhere), unless ?seed= pins it
+function visitSeed() {
+  try {
+    const kept = Number(sessionStorage.getItem('tp-visit-seed'));
+    if (Number.isFinite(kept) && kept !== 0) return kept;
+    const seed = Date.now() | 0;
+    sessionStorage.setItem('tp-visit-seed', String(seed));
+    return seed;
+  } catch {
+    // (private windows and blocked site data throw: a seed for this mount alone)
+    return Date.now() | 0;
+  }
+}
 const LOOK = 0.0024; // radians a pixel of mouse
 
 const KEYS = {
@@ -67,7 +83,7 @@ function World({ gl, setGl, side }) {
   if (!sim.current) {
     // (where you were, or your side's capital the first time)
     const area = AREAS[kept.current.area] ? kept.current.area : SIDES[side]?.area ?? 'iacon';
-    sim.current = createSim({ area, done: Array.isArray(kept.current.done) ? kept.current.done.filter((d) => typeof d === 'string') : [] });
+    sim.current = createSim({ area, done: Array.isArray(kept.current.done) ? kept.current.done.filter((d) => typeof d === 'string') : [], seed: flags().seed ?? visitSeed() });
   }
   const ctl = useRef({ held: new Set(), edges: new Set(), view: { yaw: 0, pitch: -0.12, zoom: 1, firing: false }, lastLook: -1e9, mouseFire: false, stick: { x: 0, y: 0 }, look: null, pad: null });
   // (in development, #…?autoplay starts it playing, for screenshots)
@@ -127,9 +143,17 @@ function World({ gl, setGl, side }) {
       });
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
     if (ro && canvas.current) ro.observe(canvas.current);
-    if (import.meta.env.DEV) window.__CY__ = { sim: s, api, ctl };
+    // the Decepticons' minds, for the AI inspector (?ai=1) and the check
+    // (scripts/cybertron-check.mjs): their trace, and what they cost a step
+    // (no schedule here: every one thinks every step, so `schedule` is the
+    // sim's own count of that)
+    const ai = { schedule: { stats: s.stats }, trace: s.trace, stats: s.stats };
+    if (import.meta.env.DEV) window.__CY__ = { sim: s, api, ctl, ai, spawn: s.spawn };
+    const inspected = import.meta.env.DEV || flags().ai;
+    if (inspected) register('cybertron', { trace: s.trace, schedule: ai.schedule, actors: s.actors, agents: () => s.enemies.filter((e) => !e.dead).map((e) => ({ id: e.id, kind: e.kind, at: { x: e.x, y: e.y, z: e.z }, mode: e.state })) });
     return () => {
       dead = true;
+      if (inspected) unregister('cybertron');
       ro?.disconnect();
       api.current?.dispose();
       api.current = null;

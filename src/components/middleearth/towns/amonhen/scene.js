@@ -540,7 +540,7 @@ export function createAmonHenWorld(canvas, { onLost } = {}) {
         u.group.position.set(w.x, height(w.x, w.z), w.z);
         turnTo(u, w.face + (w.look ?? 0), dt, 8);
         const hunting = w.mode === 'alert' || w.mode === 'chase';
-        u.animate?.(t + i, { running: w.mode === 'chase' || w.mode === 'back' || (w.mode === 'patrol' && w.wait <= 0), swing: w.mode === 'chase' ? Math.max(0, Math.sin(t * 4)) : 0, look: hunting ? 0 : (w.look ?? 0) });
+        u.animate?.(t + i, { running: w.mode === 'chase' || w.mode === 'back' || (w.mode === 'patrol' && w.wait <= 0) || (w.mode === 'search' && Boolean(w.goal)) || (w.mode === 'suspicious' && !(w.looked > 0)), swing: w.mode === 'chase' ? Math.max(0, Math.sin(t * 4)) : 0, look: hunting ? 0 : (w.look ?? 0) });
       } else if (d) {
         const k = Math.min(1, d.t / 8);
         const x = d.x + (DECOY_RUN.x - d.x) * k;

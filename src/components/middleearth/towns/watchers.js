@@ -27,6 +27,7 @@
 
 import { belief, createSenses, sense } from '../../../lib/ai/perception';
 import { createSearch } from '../../../lib/ai/search';
+import { seeded } from '../../../lib/seeded';
 import { sightClear } from './walker';
 
 const INTUITION = 2; // seconds it keeps the truth after losing sight of you
@@ -38,10 +39,13 @@ const turnTo = (face, want, k) => {
   return face + d * Math.min(1, k);
 };
 
-export function newWatchers(rounds, { spots = [] } = {}) {
+// (rand: what the shared search draws on, seeded so a town searches the
+// same way every visit; seeded(11) unless the town hands its own)
+export function newWatchers(rounds, { spots = [], rand = seeded(11) } = {}) {
   return {
     rounds,
     spots,
+    rand,
     search: null, // (made when first needed: the watchers' shared search)
     list: rounds.map((r, i) => ({ id: i, x: r[0][0], z: r[0][1], face: Math.atan2(-((r[1] ?? r[0])[1] - r[0][1]), (r[1] ?? r[0])[0] - r[0][0]), leg: 1 % r.length, mode: 'patrol', t: 0, wait: 0.5 + i * 0.4, look: 0, unseen: 0, timer: 0, me: null, searched: false })),
   };
@@ -104,7 +108,7 @@ const forget = (w) => {
 // the watchers' shared search, made for this town's rounds and spots
 const searchOf = (ws, opts) =>
   (ws.search ??= createSearch({
-    rand: Math.random,
+    rand: ws.rand ?? seeded(11),
     time: opts.search ?? 10,
     stagger: 1.5,
     spots: (b) => {

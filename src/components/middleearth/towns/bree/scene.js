@@ -589,7 +589,7 @@ export function createBreeWorld(canvas, { onLost } = {}) {
       n.group.position.set(w.x, height(w.x, w.z), w.z);
       faceTo(n.group, w.face);
       const hunting = w.mode === 'alert' || w.mode === 'chase';
-      wraithKit.animate(n, t + i * 1.7, { moving: (w.mode === 'patrol' && w.wait <= 0) || w.mode === 'chase' || w.mode === 'back', hunt: hunting ? 1 : 0, sniff: w.mode === 'patrol' ? 1 : 0, look: w.mode === 'patrol' ? (w.look ?? 0) : 0 });
+      wraithKit.animate(n, t + i * 1.7, { moving: (w.mode === 'patrol' && w.wait <= 0) || w.mode === 'chase' || w.mode === 'back' || (w.mode === 'search' && Boolean(w.goal)) || (w.mode === 'suspicious' && !(w.looked > 0)), hunt: hunting ? 1 : 0, sniff: w.mode === 'patrol' || w.mode === 'suspicious' || w.mode === 'search' ? 1 : 0, look: w.mode === 'patrol' || w.mode === 'suspicious' || w.mode === 'search' ? (w.look ?? 0) : 0 });
     });
     cones.forEach((c, i) => {
       const w = ws[i];

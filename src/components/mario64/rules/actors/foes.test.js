@@ -81,6 +81,36 @@ describe('Bob-ombs', () => {
     expect(boom).toBeDefined();
     expect(boom.z).toBeGreaterThan(400);
   });
+
+  it('a Bob-omb lights only when it sees Mario, and goes to where it last saw him', () => {
+    // a wall between x 200 and 400, the length of the field
+    const k = createKit();
+    k.box({ x: 0, y: -100, z: 0, w: 40000, h: 100, d: 40000, mat: 'g' });
+    k.box({ x: 300, y: 0, z: 450, w: 200, h: 400, d: 4000, mat: 'g' });
+    const o = k.done();
+    const g = newScene({ world: makeWorld(o.tris, o.kinds, { deathY: -3000 }), mario: newMario({ x: 450, y: 0, z: 450 }), save: { stars: {} }, area: {} });
+    g.spawn({ type: 'bobomb', x: 0, y: 0, z: 450 });
+    const b = g.actors.find((a) => a.type === 'bobomb');
+    // near enough, but behind the wall: it walks on, unlit
+    frames(g, 30);
+    expect(b.state).toBe('walk');
+    expect(events(g, 'fuse')).toHaveLength(0);
+    // in plain sight: lit
+    Object.assign(g.mario.pos, { x: b.pos.x - 300, z: b.pos.z });
+    const seenAt = { x: g.mario.pos.x, z: g.mario.pos.z };
+    frame(g);
+    expect(b.state).toBe('lit');
+    frames(g, 4);
+    // gone behind the wall: after a moment's intuition (it keeps after the
+    // truth for 2.5 s) it heads back for where it last saw him
+    Object.assign(g.mario.pos, { x: 450, z: b.pos.z });
+    frames(g, 85);
+    const d0 = Math.hypot(b.pos.x - seenAt.x, b.pos.z - seenAt.z);
+    frames(g, 15);
+    expect(b.state).toBe('lit');
+    expect(Math.hypot(b.pos.x - seenAt.x, b.pos.z - seenAt.z)).toBeLessThan(d0 - 40);
+    expect(b.pos.x).toBeLessThan(200);
+  });
 });
 
 describe('King Bob-omb', () => {

@@ -716,7 +716,7 @@ export function createMarshesWorld(canvas, { onLost } = {}) {
         if (!w) return;
         e.group.position.set(w.x, slopeHeight(w.x, w.z), w.z);
         turnTo(e, w.face + (w.look ?? 0), dt, 8);
-        e.animate?.(t + i, { marching: w.mode === 'chase' || w.mode === 'back' || (w.mode === 'patrol' && w.wait <= 0), alert: w.mode === 'alert' || w.mode === 'chase' ? 1 : 0 });
+        e.animate?.(t + i, { marching: w.mode === 'chase' || w.mode === 'back' || (w.mode === 'patrol' && w.wait <= 0) || (w.mode === 'search' && Boolean(w.goal)) || (w.mode === 'suspicious' && !(w.looked > 0)), alert: w.mode === 'alert' || w.mode === 'chase' ? 1 : 0 });
       });
       // the fires of Mordor, glowing behind the Gate
       lights.push([wpos('gate', GATE_AT.x, 40, GATE_AT.z + 30), fireCol, 30, 300]);

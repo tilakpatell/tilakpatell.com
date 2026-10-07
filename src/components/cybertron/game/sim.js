@@ -4,16 +4,23 @@
 // steps it every frame with the controls' input and scene.js draws it; it
 // knows nothing of either.
 //
-//   createSim({ area, spawn, done }) → sim
+//   createSim({ area, spawn, done, rand, seed }) → sim  (rand: the sim's own, else seed's 'sim' stream)
 //   sim.step(input, dt) → events     (move, fight, pick up, count)
 //   sim.use() → what happened        (talk, or go through a bridge)
 //   sim.enter(areaId, spawnId)       (a bridge's other side)
+//   sim.spawn(kind, x, z, { id }) → enemy  (a Decepticon there, as a mission's step brings them)
+//   sim.trace                        what each Decepticon chose and why (lib/ai/trace)
+//   sim.stats() → { agents, thought, ms, last, skipped, worst: null }  the Decepticons' cost a step
+//     (ms smoothed, last this step's; they're timed together, not one by one, so no worst)
+//   sim.actors                       Map id → actor, for the inspector
 
 import { AREAS, MISSIONS, areaOf } from './areas';
 import { createTokens } from '../../../lib/ai/squad';
+import { createTrace } from '../../../lib/ai/trace';
+import { streams } from '../../../lib/seeded';
+import { SHOTS_AT_ONCE } from './tactics';
 import { ENEMY_KINDS, MEND, available, buildWorld, damage, feedMission, fire, hurtEnemy, newEnemy, newMissions, newPlayer, startMission, stepEnemies, stepPickups, stepPlayer, stepShots, nearby } from './rules';
 
-const SHOTS_AT_ONCE = 3; // Decepticons firing at Optimus at once, at most (the rest close in and strafe)
 
 const ALL = { missions: MISSIONS }; // (feedMission looks a mission up here, wherever it's played)
 
@@ -25,8 +32,14 @@ const MODEL = {
 
 const RESPAWN = 3; // seconds down before Optimus is back on his feet
 
-export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], rand = Math.random } = {}) {
+// (the clock the cost is read by, where there is one; reading it never changes what happens)
+const clock = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : 0);
+
+export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], rand = null, seed = 1 } = {}) {
+  // the rules are seeded (a visit's, or ?seed=): the same fight from the same start
+  rand = rand ?? streams(seed).fork('sim');
   const missions = newMissions();
+  const cost = { agents: 0, thought: 0, ms: 0, last: 0, skipped: 0 };
   missions.done.push(...done);
   const sim = {
     area: null,
@@ -34,6 +47,9 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     player: null,
     enemies: [],
     tokens: createTokens({ pools: { shot: SHOTS_AT_ONCE }, timeout: 1 }), // (so many Decepticons fire at once: lib/ai/squad)
+    trace: createTrace({ size: 600 }),
+    actors: new Map(),
+    seed,
     shots: [],
     pickups: [],
     missions,
@@ -58,12 +74,16 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     const m = missionOf(missions.active);
     if (!step || !m || (step.area ?? m.area) !== sim.area.id) return;
     if (step.reset) for (const k of sim.pickups) if (k.kind === step.reset) k.taken = false;
-    for (const [i, e] of (step.spawn ?? []).entries()) {
-      const models = sim.area.foes?.[e.kind] ?? MODEL[sim.area.era]?.[e.kind] ?? [e.kind];
-      const enemy = newEnemy(e.kind, e.x, e.z, { id: e.id ?? `${missions.active}-${missions.step}-${i}`, model: models[i % models.length] });
-      enemy.y = sim.world.floorAt(e.x, e.z, 50, 60);
-      sim.enemies.push(enemy);
-    }
+    for (const [i, e] of (step.spawn ?? []).entries()) sim.spawn(e.kind, e.x, e.z, { id: e.id ?? `${missions.active}-${missions.step}-${i}`, i });
+  };
+
+  // One Decepticon (of a kind) at (x, z), on the floor there, in this place's era's model
+  sim.spawn = (kind, x, z, { id = `${kind}-${Math.round(x)}-${Math.round(z)}`, i = sim.enemies.length } = {}) => {
+    const models = sim.area.foes?.[kind] ?? MODEL[sim.area.era]?.[kind] ?? [kind];
+    const enemy = newEnemy(kind, x, z, { id, model: models[i % models.length] });
+    enemy.y = sim.world.floorAt(x, z, 50, 60);
+    sim.enemies.push(enemy);
+    return enemy;
   };
 
   const feed = (event, out) => {
@@ -93,6 +113,7 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     sim.down = 0;
     sim.player.y = sim.world.floorAt(at.x, at.z, 50, 60);
     sim.enemies = [];
+    sim.actors?.clear();
     sim.shots = [];
     sim.pickups = area.pickups.map((k) => ({ ...k, taken: false }));
     sim.talk = null;
@@ -133,7 +154,22 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
       }
     }
     // the Decepticons
-    const foe = stepEnemies(sim.enemies, p, dt, sim.world, rand, sim.tokens);
+    const t0 = clock();
+    const foe = stepEnemies(sim.enemies, p, dt, sim.world, rand, sim.tokens, { trace: sim.trace });
+    const ms = clock() - t0;
+    // (smoothed over a second or so: one frame's garbage collection isn't the AI's cost)
+    cost.last = ms;
+    cost.ms += (ms - cost.ms) * 0.1;
+    let standing = 0;
+    for (const e of sim.enemies) {
+      if (e.dead) sim.actors.delete(e.id);
+      else {
+        standing += 1;
+        if (e.actor && sim.actors.get(e.id) !== e.actor) sim.actors.set(e.id, e.actor);
+      }
+    }
+    cost.agents = standing;
+    cost.thought = standing; // (every one, every step: there's no schedule here to defer any)
     sim.shots.push(...foe.shots);
     out.push(...foe.events);
     // shots: Optimus's at them, theirs at him
@@ -161,6 +197,7 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     // the dead fall and go after a while
     for (const e of sim.enemies) if (e.dead) e.gone = (e.gone ?? 0) + dt;
     sim.enemies = sim.enemies.filter((e) => !e.dead || e.gone < 6);
+    if (sim.actors.size > standing) for (const id of sim.actors.keys()) if (!sim.enemies.some((e) => e.id === id && !e.dead)) sim.actors.delete(id);
     // energon (and a relic, while its mission is on)
     const live = sim.pickups.filter((k) => !k.mission || k.mission === missions.active);
     for (const id of stepPickups(live, p)) {
@@ -224,6 +261,8 @@ export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], 
     out.push({ type: 'talk', id: person.id, advanced: r.advanced });
     return out;
   };
+
+  sim.stats = () => ({ agents: cost.agents, thought: cost.thought, ms: cost.ms, last: cost.last, skipped: cost.skipped, worst: null });
 
   // What the HUD shows
   sim.hud = () => {

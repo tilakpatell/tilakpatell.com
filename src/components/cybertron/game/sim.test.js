@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MISSIONS, missionById } from './areas';
-import { segmentClear } from './rules';
+import { newEnemy, segmentClear } from './rules';
 import { createSim } from './sim';
 
 const still = { moveX: 0, moveZ: 0, run: false, jump: false, throttle: 0, steer: 0, boost: false, fire: false, transform: false, use: false, aimYaw: 0, aimPitch: 0 };
@@ -95,6 +95,26 @@ describe('the world, played', () => {
     // (and the respawn that was coming doesn't come later, in the wrong place)
     const later = tick(sim, {}, 3.5);
     expect(later.some((e) => e.type === 'respawn')).toBe(false);
+  });
+
+  it('is seeded: the same seed, the same fight; and it keeps a trace and its cost', () => {
+    const fight = (seed) => {
+      const sim = createSim({ seed });
+      const p = sim.player;
+      for (let i = 0; i < 3; i++) sim.enemies.push(Object.assign(newEnemy('trooper', p.x + 30 + i * 6, p.z + 30, { id: `s${i}` }), { y: sim.world.floorAt(p.x + 30 + i * 6, p.z + 30, 50, 60) }));
+      for (let k = 0; k < 200; k++) {
+        p.hp = p.maxHp;
+        sim.step(still, 1 / 30);
+      }
+      return sim;
+    };
+    const a = fight(3);
+    const b = fight(3);
+    expect(b.enemies.map((e) => [e.x, e.z, e.yaw])).toEqual(a.enemies.map((e) => [e.x, e.z, e.yaw]));
+    expect(a.trace.agents().sort()).toEqual(['s0', 's1', 's2']);
+    expect(a.trace.last('s0')).toEqual(expect.objectContaining({ mode: expect.any(String) }));
+    expect(a.stats()).toEqual(expect.objectContaining({ agents: 3, ms: expect.any(Number) }));
+    expect(a.actors.size).toBe(3);
   });
 
   it('picks energon up and counts it', () => {

@@ -11,7 +11,7 @@
 // And Dishonored 2's flood for a chase's destination on a cell grid: heat
 // from the last known cell with a barrier behind the last known direction,
 // stopping in a wide room (give up, search slowly) but running on down a
-// corridor. Pure.
+// corridor. Pure, and seeded when no rand is given (lib/ai draws nothing unseeded).
 //
 //   createSearch({ rand, spots(belief) → [{ x, y, z }], narrow: { cautious, aggressive }, time, stagger })
 //     → { start(belief, { aggressive, truth }), claim(id, at) → { at, phase } | null, arrive(id),
@@ -19,9 +19,10 @@
 //   flood(grid, from, dir, { hot, perStep, steps }) → { x, z } | null
 //     grid: { cell, walkable(x, z) → bool }; from: { x, z }; dir: { x, z } (the last known way, or null)
 
+import { seeded } from '../seeded';
 import { apart } from './vec';
 
-export function createSearch({ rand = Math.random, spots = () => [], narrow = { cautious: 1, aggressive: 3 }, time = 40, stagger = 2 } = {}) {
+export function createSearch({ rand = seeded(1), spots = () => [], narrow = { cautious: 1, aggressive: 3 }, time = 40, stagger = 2 } = {}) {
   const state = { active: false, aggressive: false, phase: 0, estimate: null, truth: null, clock: 0, spots: [], claims: {}, arrived: new Set(), released: [], releaseAt: 0 };
   const out = {
     state,

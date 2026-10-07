@@ -21,7 +21,7 @@
 // pirates on a freighter), and it shoots at that instead until you deal with
 // it, or turns on you if you shoot at it.
 //
-// createHunters(parent, { small, fleet, factions, kinds, solids, engines }) → { pack(faction, ship, { prey, size, ace, from, ahead, interdict, heat, first }) → points,
+// createHunters(parent, { small, fleet, factions, kinds, solids, engines, rand, schedule, trace }) → { pack(faction, ship, { prey, size, ace, from, ahead, interdict, heat, first }) → points,
 //   update(dt, t, ship) → events,
 //   hit(from, to, damage) → hit or null, damage(id, n) → hit or null (a hit
 //   another pilot's shot made, told to you), clear(), dispose(), count,
@@ -44,17 +44,55 @@
 // 'escaped', faction } and { type: 'cleared', faction, rescued } (rescued:
 // they were after someone else, and you saw them off).
 // Everything is in `parent`'s space (the map's).
+// They sense and choose on a schedule (lib/ai/schedule: by how near you
+// they are) and fly every frame on what they last chose; each choice is
+// noted in `trace`. `rand` is the visit's 'hunters' stream (seed.js), and
+// the schedule and trace are made here when the scene brings none; `ai`
+// ({ schedule, trace }) is what npcs.js puts beside its own on the debug hook.
 
 import * as THREE from 'three';
 import { createFleet } from './glbFleet';
 import { FACTIONS, HUNTER_KINDS, LASER, NAMES, createHunt } from './hunterRules';
+import { seedOf } from './seed';
+import { streams } from '../../lib/seeded';
+import { byDistance, createSchedule } from '../../lib/ai/schedule';
+import { createTrace } from '../../lib/ai/trace';
+import { device } from '../../lib/device';
+import { scheduleBudget } from './npcs';
 
 export { FACTIONS, HUNTER_KINDS, NAMES };
 
 // (`factions` and `kinds` are these, unless another map brings its own: the
 // galaxy's Separatists and the Imperial remnant, galaxy/hunted.js)
-export function createHunters(parent, { small = false, fleet = createFleet(), factions = FACTIONS, kinds = HUNTER_KINDS, solids = [], engines = null } = {}) {
-  const hunt = createHunt({ factions, kinds, solids, lasers: small ? 16 : 28 });
+// how far off you a hunter still counts for something to the schedule (a
+// pack gives up long before: LOSE.far)
+const VIEW_RANGE = 300;
+
+export function createHunters(parent, { small = false, fleet = createFleet(), factions = FACTIONS, kinds = HUNTER_KINDS, solids = [], engines = null, rand = null, schedule = null, trace = null } = {}) {
+  const seed = rand && schedule ? null : seedOf();
+  rand ??= streams(seed).fork('hunters');
+  // (half the tier's budget: the characters' schedule has the other half, npcs.js)
+  schedule ??= createSchedule({ significance: byDistance, seed, budget: scheduleBudget(device().tier) });
+  trace ??= createTrace();
+  const hunt = createHunt({ rand, factions, kinds, solids, lasers: small ? 16 : 28, trace });
+  const scheduled = new Set(); // the hunters the schedule has
+  const dueNow = new Map(); // id → the schedule's entry, this frame
+  const timed = (h) => schedule.done(h);
+  const enrol = () => {
+    for (const h of hunt.live) {
+      if (scheduled.has(h)) continue;
+      scheduled.add(h);
+      schedule.add(h, { id: h.id });
+    }
+  };
+  const unenrol = () => {
+    const live = new Set(hunt.live); // (once a frame: a search of the list for each would be n²)
+    for (const h of scheduled) {
+      if (h.alive && live.has(h)) continue;
+      scheduled.delete(h);
+      schedule.drop(h);
+    }
+  };
   const pool = {}; // kind → models not in use
   const shown = new Set(); // the hunters with a model out
   const laserGeo = new THREE.CylinderGeometry(0.009, 0.009, LASER.length, 5).rotateX(Math.PI / 2);
@@ -122,13 +160,20 @@ export function createHunters(parent, { small = false, fleet = createFleet(), fa
         h.view = take(h.kind);
         shown.add(h);
       }
+      enrol();
       return members.map((h) => new THREE.Vector3(h.pos.x, h.pos.y, h.pos.z));
     },
 
     // ship: yours ({ x, y, z, heading, pitch, speed, vy }) or null (not
     // flying: they all leave)
     update(dt, t, ship) {
-      const events = hunt.update(dt, ship);
+      // the ones due to sense and choose this frame, nearest you first
+      enrol();
+      const { due } = schedule.frame(dt, ship ? { at: ship, range: VIEW_RANGE } : null, t);
+      dueNow.clear();
+      for (const d of due) if (d.agent) dueNow.set(d.agent.id, d);
+      const events = hunt.update(dt, ship, { due: dueNow, done: timed, t });
+      unenrol();
       // (lookAt takes a point in the world, and the map turns under the
       // camera: each point is the map's, carried into the world first)
       parent.updateWorldMatrix(true, false);
@@ -176,6 +221,7 @@ export function createHunters(parent, { small = false, fleet = createFleet(), fa
       for (const h of [...shown]) give(h);
       hunt.clear();
       for (const m of beams) m.visible = false;
+      unenrol();
     },
 
     get count() {
@@ -192,6 +238,8 @@ export function createHunters(parent, { small = false, fleet = createFleet(), fa
       return hunt.packs;
     },
     wire: () => hunt.wire(),
+    // what they think on and what they chose (npcs.js puts it on the debug hook)
+    ai: { schedule, trace },
 
     dispose() {
       this.clear();

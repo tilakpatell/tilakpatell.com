@@ -52,12 +52,17 @@
 // when you loop. Shoot them down, or outrun them: far enough away for long
 // enough and they give up and peel away.
 //
-// createHunt({ rand, factions, kinds, solids, lasers, nerve }) → { pack(faction, ship, opts) → hunters,
-//   update(dt, ship) → events, hit(from, to, damage) → hit or null,
+// createHunt({ rand, factions, kinds, solids, lasers, nerve, trace }) → { pack(faction, ship, opts) → hunters,
+//   update(dt, ship, { due, done, t }) → events, hit(from, to, damage) → hit or null,
 //   damage(id, n) → hit or null, clear(), live, lasers, targets, count,
 //   active, packs, wire() }
 // A hunter is { id, kind, type, pack, pos, vel, prev, hp, mode, bank, grow,
 // alive, view (the drawing's to use) }; pos, vel and prev are { x, y, z }.
+// On a schedule (hunters.js's), `due` names the hunters that sense and
+// choose this frame (null: all of them); one not due flies on its last
+// choice (`steer`) and still keeps clear, fires and leaves, and when it's
+// next due it's given the time it missed. Each choice is noted in `trace`
+// (lib/ai/trace) under its id: { mode, action (its role), belief }.
 // `solids` is ship.js's ([{ at: [x, y, z], r }]) or a function giving them.
 // Events: { type: 'hunted', faction, kinds, prey, interdict }, { type:
 // 'shot', faction } (one fired at you), { type: 'laser', damage, from, bomb, by }
@@ -105,6 +110,10 @@ export const BOMB = { speed: 14, life: 2.4, damage: 30, burst: 1.2, slow: 0.6 };
 export const TRAITS = ['bomber', 'holdoff', 'quietUntilFired', 'flicker', 'spotlight'];
 export const HOLDOFF = { near: 8.75, reach: 1.4 }; // map units it keeps off; of FIGHT.range it fires from
 export const FLICKER = 2;
+// the most time one step of sensing or choosing stands for, in seconds,
+// unless the schedule's step for it is longer (a quarter-rate one's 0.4 s):
+// one paused a while comes back with this much, not the whole pause
+const CATCH_UP = 0.25;
 export const LOSE = { far: 48, after: 5 }; // they give up once you're this far away for this long
 export const SHIP_R = 0.2; // how close a laser must pass you to hit
 export const FIGHT = {
@@ -338,10 +347,21 @@ export function blocked(a, b, solids) {
   return false;
 }
 
+// which of a frame's lanes are due for one (all of them, with no schedule)
+const ALL = { sense: true, think: true };
+export function dueOf(due, id) {
+  if (!due) return ALL;
+  if (due instanceof Map) {
+    const e = due.get(id);
+    return e === undefined ? null : e && typeof e === 'object' ? e : ALL;
+  }
+  return due.has(id) ? ALL : null;
+}
+
 // (`factions` and `kinds` are these, unless another map brings its own: the
 // galaxy's Separatists and the Imperial remnant, galaxy/hunted.js)
 // (`nerve: false` for a hunt whose quarry isn't you: a skirmish's, fought to the end)
-export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KINDS = HUNTER_KINDS, solids = [], lasers: laserCount = 28, firstId = 1, nerve = true } = {}) {
+export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KINDS = HUNTER_KINDS, solids = [], lasers: laserCount = 28, firstId = 1, nerve = true, trace = null } = {}) {
   const allSolids = typeof solids === 'function' ? solids : () => solids;
   const live = []; // hunters in flight
   const packs = []; // { faction, members, lost, said, … }
@@ -405,6 +425,7 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
     h.alive = false;
     const i = live.indexOf(h);
     if (i >= 0) live.splice(i, 1);
+    trace?.clear(h.id); // (its ring with it, or the trace grows with every pack)
   };
   const result = (h, down) => ({ id: h.id, kind: h.kind, at: { x: h.pos.x, y: h.pos.y, z: h.pos.z }, size: h.type.size, down, hunter: h });
   // an ace hurt past one of its stages (its kind's `stages`: hurt to half,
@@ -614,6 +635,10 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
           me: { pos, dir: null, beliefs: { you: { id: 'you', at: { x: ship.x, y: ship.y, z: ship.z }, vel: { x: 0, y: 0, z: 0 }, seenAt: 0, heardAt: -Infinity, confidence: 1, visible: true, timer: 1, kind: null, hostile: true } }, now: 0 },
           belief: null,
           seesYou: true,
+          steer: null, // the velocity it last chose (flown on between its choices)
+          steerSpeed: 0,
+          unsensed: 0, // seconds since it last sensed, and chose
+          unthought: 0,
         };
         restation(h, [fx, 0, fz]);
         h.target = { id: h.id, at: h.pos, vel: h.vel, size: type.size, kind, hp: h.hp, hpMax: type.hp, faction, threat: 0 };
@@ -626,7 +651,10 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
 
     // ship: yours ({ x, y, z, heading, pitch, speed, vy }) or null (not
     // flying: they all leave)
-    update(dt, ship) {
+    // due: the hunters that sense and choose this frame (a Set of ids, or a
+    // Map of id → { sense, think }: the schedule's), or null for all of
+    // them; done(h) is told after each due one's frame; t, the world's time, for the trace
+    update(dt, ship, { due = null, done = null, t = null } = {}) {
       events.length = 0;
       events.push(...later.splice(0));
       if (ship) {
@@ -702,8 +730,9 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
 
       survey(Boolean(ship));
 
-      for (let i = live.length - 1; i >= 0; i--) {
-        const h = live[i];
+      // one hunter's frame: it senses and chooses its way if it's due, and
+      // flies, keeps clear and fires every frame
+      const flyOne = (h, entry) => {
         const { type, pos, vel, pack } = h;
         const trait = type.trait;
         if (h.hidden > 0) h.hidden = Math.max(0, h.hidden - dt);
@@ -714,8 +743,17 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
         const onPrey = !gone && pack.prey && !pack.angry;
         // what it knows of you this frame: the truth while it sees you (or
         // for a moment after), its guess while it doesn't
-        if (ship) {
-          sense(HUNTER_SENSES, h.me, { targets: [{ id: 'you', at: you, vel: yourVelObj, hostile: true }] }, dt, { seesThrough: (a, b) => !blocked(a, b, cover) });
+        // (on a schedule, only when it's due, with all the time since it last did)
+        // (no more than the schedule's step for it, or CATCH_UP if that's
+        // less: one paused a while comes back with a step's worth, not one
+        // glimpse that makes it certain, nor a mode clock that jumps past
+        // every timer)
+        h.unsensed += dt;
+        h.unthought += dt;
+        const most = Math.max(CATCH_UP, entry?.dt ?? 0);
+        if (ship && entry?.sense) {
+          sense(HUNTER_SENSES, h.me, { targets: [{ id: 'you', at: you, vel: yourVelObj, hostile: true }] }, Math.min(most, h.unsensed), { seesThrough: (a, b) => !blocked(a, b, cover) });
+          h.unsensed = 0;
           h.belief = belief(h.me, 'you');
           h.seesYou = Boolean(h.belief?.visible);
         }
@@ -737,7 +775,17 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
           dir[2] = vel.z / s0;
         }
         let gap = Infinity;
-        if (c) {
+        // a hunter not due to think flies on the way it last chose (kept
+        // off the others and round what's solid every frame, below)
+        const thinks = Boolean(entry?.think) || !h.steer;
+        const tdt = Math.min(most, h.unthought);
+        if (thinks) h.unthought = 0;
+        if (!thinks) {
+          want[0] = h.steer[0];
+          want[1] = h.steer[1];
+          want[2] = h.steer[2];
+          speed = h.steerSpeed;
+        } else if (c) {
           // the way the target is pointing (your nose, or along the prey's)
           if (onPrey) pack.prey.dir(L);
           else {
@@ -749,7 +797,7 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
           const ty = c.y - pos.y;
           const tz = c.z - pos.z;
           gap = Math.sqrt(tx * tx + ty * ty + tz * tz);
-          h.clock += dt;
+          h.clock += tdt;
           // the fight's pace: at yours (pirates at their floor)
           fightPace = fightSpeed(type, onPrey ? 0 : yourSpeed, gap);
           speed = fightPace;
@@ -867,6 +915,14 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
           want[1] = (dir[1] + 0.16) * speed;
           want[2] = dir[2] * speed;
         }
+        if (thinks) {
+          h.steer ??= [0, 0, 0];
+          h.steer[0] = want[0];
+          h.steer[1] = want[1];
+          h.steer[2] = want[2];
+          h.steerSpeed = speed;
+          trace?.note(h.id, t ?? h.me.now, { mode: h.mode, action: h.role, belief: h.belief ? { at: { x: h.belief.at.x, y: h.belief.at.y, z: h.belief.at.z }, confidence: h.belief.confidence, visible: Boolean(h.belief.visible) } : null });
+        }
         steerClear(h, speed);
         // the way it wants to go, and how fast: its nose comes round at its
         // own rate, and it slows into a hard turn
@@ -919,7 +975,7 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
           const dy = pos.y - you.y;
           const dz = pos.z - you.z;
           if (!ship || (pack.fade > 2 && dx * dx + dy * dy + dz * dz > 110 * 110) || pack.fade > 30) remove(h);
-          continue;
+          return;
         }
         // firing: on a run (or on your tail, or at their prey), with the
         // target in its sights, in range and nothing solid in the way
@@ -940,6 +996,12 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
             }
           }
         }
+      };
+      for (let i = live.length - 1; i >= 0; i--) {
+        const h = live[i];
+        const entry = dueOf(due, h.id);
+        flyOne(h, entry);
+        if (entry && done) done(h);
       }
 
       // lasers: on their way, into what's solid, and into you (a laser
@@ -1012,7 +1074,10 @@ export function createHunt({ rand = Math.random, factions = FACTIONS, kinds: KIN
 
     // everyone gone at once (you were shot down, or changed ship)
     clear() {
-      for (const h of live) h.alive = false;
+      for (const h of live) {
+        h.alive = false;
+        trace?.clear(h.id);
+      }
       live.length = 0;
       packs.length = 0;
       for (const m of lasers) m.on = false;

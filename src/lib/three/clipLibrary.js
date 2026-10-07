@@ -29,6 +29,7 @@
 
 import * as THREE from 'three';
 import { gltfLoader } from './gltf';
+import { checkRig } from './rigCheck';
 
 const BASE = '/games/meshy';
 const TROOPS = '/models/galaxy/troops';
@@ -298,14 +299,19 @@ export function borrowClips(names = ['idle', 'walk', 'run'], { loader = null } =
 // A copy of `clip` for a figure whose hips stand `hipsY` high (in its rig's
 // units): every bone's turn, and the hips' position scaled from `from`'s;
 // anything else (a bone's position or scale) left out, as it would stretch
-// the figure to Rick's proportions.
+// the figure to Rick's proportions. The hips are found by role (rigCheck's
+// ROLES.hips: Meshy's Hips, mixamorig:Hips, Unreal's pelvis, Character
+// Creator's hip), the role's first name the clip moves, so a clip from any
+// family keeps its root's travel.
 export function retarget(clip, hipsY, from = RICK_HIPS) {
   if (!clip) return null;
   const k = hipsY / from;
+  const at = (tr) => tr.name.slice(0, tr.name.lastIndexOf('.'));
+  const root = checkRig(clip.tracks.filter((tr) => /\.position$/.test(tr.name)).map(at)).roles.hips;
   const tracks = [];
   for (const tr of clip.tracks) {
     if (/\.quaternion$/.test(tr.name)) tracks.push(tr.clone());
-    else if (/^Hips\.position$/.test(tr.name)) {
+    else if (root != null && /\.position$/.test(tr.name) && at(tr) === root) {
       const t = tr.clone();
       for (let i = 0; i < t.values.length; i++) t.values[i] *= k;
       tracks.push(t);

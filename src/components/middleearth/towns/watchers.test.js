@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { seeded } from '../../../lib/seeded';
 import { makeWalker } from './walker';
 import { newWatchers, stepWatchers, watcherSees } from './watchers';
 
@@ -182,6 +183,27 @@ describe('a watch on the toolkit', () => {
     // you under one's nose again: it has you
     const ev = run(ws, hobbit(ws.list[0].x + 1, ws.list[0].z), 1, { ...SLOW, search: 40 }, {});
     expect(ev.map((e) => e.type)).toContain('seen');
+  });
+
+  it('the search is seeded: two towns with one seed search the same spots', () => {
+    // the same chase lost round the same corner, in two towns made with one seed
+    const town = (seed) => {
+      const ws = newWatchers([[[0, 0], [10, 0]], [[0, 4], [10, 4], [10, 14]]], { rand: seeded(seed) });
+      for (const w of ws.list) Object.assign(w, { mode: 'chase', t: 0 });
+      const you = (t) => (t < 0.3 ? hobbit(6, 2) : t < 2.3 ? hobbit(6, 25) : gone);
+      const world = (t) => ({ walls: t > 0.3 ? [[4, -6, 4, 20]] : [] });
+      const trace = [];
+      for (let t = 0; t < 20; t += 1 / 30) {
+        stepWatchers(ws, you(t), 1 / 30, { ...SLOW, search: 6 }, world(t));
+        trace.push(ws.list.map((w) => `${w.mode} ${w.goal?.join() ?? '-'} ${w.x.toFixed(3)},${w.z.toFixed(3)}`).join(' | '));
+      }
+      return trace;
+    };
+    const a = town(7);
+    expect(a.some((line) => line.includes('search'))).toBe(true);
+    expect(town(7)).toEqual(a);
+    // (and it's the seed that does it: another seed leaves the search at other moments)
+    expect(town(8)).not.toEqual(a);
   });
 
   it('the Ring shows you through anything, at once', () => {

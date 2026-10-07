@@ -167,6 +167,7 @@ export default function nemesis(npc, me, world, dt, rand) {
       m.thinkAt = me.clock + RETHINK;
       const ctx = { d, sincePass: me.clock - m.passAt, passEvery: fury ? NPC.pass * 0.5 : NPC.pass, inFront: m.inFront, jinkAt: NPC.jink * (fury ? 0.7 : 1), tailed: m.tailed, sinceBait: me.clock - m.baitAt, summon };
       const choice = pick(OPTIONS, ctx, { current: m.mode, momentum: 0.1, rank: (o) => o.rank ?? 0, rand, spread: 0.15 });
+      m.scores = choice?.scores ?? null; // (what it weighed: npcRules.js notes it in the trace)
       const id = choice?.id ?? 'orbit';
       if (id === 'pass') {
         m.mode = 'pass';

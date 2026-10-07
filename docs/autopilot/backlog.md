@@ -38,7 +38,7 @@ What the AI and model tests found when they were first run against `main`. The a
 - [ ] **Voice lines the site never plays, or no longer says.** `scripts/ai-e2e/assets/allow-orphans.json`: five mp3s the manifest doesn't list, and eleven manifest lines whose text the site no longer says (nine of Rick's). Delete them (or list them) and take them off. Done: both lists empty.
 - [ ] **Twelve speakers with lines and no voice yet** (`allow-voiceless.json`: the Cybertron bots, Merry, Erin). Needs the owner: a reference each (`scripts/voices/README.md`), then a `voices` issue. Not an autopilot job; tick it when the list is empty.
 - [ ] **The desktop runner's Claude Code isn't signed in**, so the nightly's vision judge is Qwen alone and the gating judge goes unevaluated (the night's log: "Claude Code is here but not logged in"; the doctor only says "claude on PATH (signed in? …)"). Needs the owner: `claude`, then `/login`, once, from a normal terminal (not inside the Claude app). Not an autopilot job.
-- [ ] **NPCs fire from any heading.** `src/components/universe/npcRules.js` fires whenever a target is in range; a nemesis was seen firing 171° off its own nose (measured with the brains’ harness, `npcs/brains/harness.js`). Fire only inside a forward cone (say 60°), keep the hit chance's dodge, and add the cone to the nemesis scenario. Done: no shot more than the cone off the nose over 200 seeds, and the brains' tests green.
+- [x] **NPCs fire from any heading.** `src/components/universe/npcRules.js` fires whenever a target is in range; a nemesis was seen firing 171° off its own nose (measured with the brains’ harness, `npcs/brains/harness.js`). Fire only inside a forward cone (say 60°), keep the hit chance's dodge, and add the cone to the nemesis scenario. Done: no shot more than the cone off the nose over 200 seeds, and the brains' tests green.
 
 ## Features (last, and only as whole slices)
 
@@ -50,6 +50,10 @@ What the AI and model tests found when they were first run against `main`. The a
 - [ ] **The galaxy's wars: what revision 3 left.** `docs/superpowers/HANDOFF-fleet-war.md`, "Revision 3: left": first the holder's traffic flying by (`warEffects.js`'s `traffic`, unread), Coruscant's planetary shield in a siege, an ambush in a rock field, the holder's troops in an activity's spawns, the cast's and crews' new lines voiced. One item a run; done is a browser check showing it (`scripts/galaxy-war-check.mjs` with `SIDE=` and `KIND=`, or `scripts/assault-check.mjs` on the ground), or for the lines, `npm run voices` run.
 - [ ] **The three worlds: what their PRs left.** `docs/superpowers/HANDOFF-galaxy-surfaces.md`, "The three worlds › Left": a retexture pass on the Meshy buildings if any reads flat up close, the four kinds Sketchfab had nothing for, the zone cameras at narrow doors; `voices`: the new named lines (Lando, Lobot, Fett, Vader, Dex, Elan, Jocasta, Padmé, C-3PO, Dodonna, Red Leader, Wedge, Leia, the sentry, Yoda) in `voicelines.js`.
 - [ ] **Galaxy missions still briefings.** `docs/superpowers/specs/2026-10-05-galaxy-games-design.md`: one mission a run, the smallest first, with its rules tested. (Hoth's, Geonosis's, Scarif's, Endor's, Coruscant's, Yavin's and Bespin's ground battles are the galactic assaults: `docs/superpowers/HANDOFF-galactic-assault.md` has what's left on those, a map a run: Kashyyyk's beach, Endor's bunker, Scarif's.)
+
+- [ ] **The universe's director and spawns on the visit's seed** (`universe/scene.js:910, 1036, 3168, 3229`), after PR #551: `streams(seedOf()).fork(...)` from `universe/seed.js`. Done: two visits with `?seed=4121` spawn the same skirmishes.
+- [ ] **The four fixed-step loops on `lib/sim/fixedStep.js`** (Mario 64, Portal panic, the Battlefront, Minecraft), one safe refactor each with its tests green.
+- [ ] **The galaxy surface's `?` over a searching head**, now W2's hostiles are on `MODE_BODY`: the `search` event from `activity.update` drawn in the HUD.
 
 ## Done
 

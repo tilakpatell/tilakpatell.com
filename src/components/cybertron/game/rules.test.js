@@ -25,7 +25,9 @@ import {
   stepPlayer,
   stepShots,
   nearby,
+  overlap,
 } from './rules';
+import { createSim } from './sim';
 
 // a little test yard: a tall wall at x = 10, a low platform at x = -10
 const AREA = {
@@ -87,6 +89,31 @@ describe('the robot', () => {
     settle(p, world);
     stepPlayer(p, { ...still, moveX: 1, run: true }, 30, world);
     expect(p.x).toBeLessThan(10 - 1);
+  });
+});
+
+describe('tight spots', () => {
+  it('won’t change into the truck where the truck wouldn’t fit', () => {
+    // a gap a robot fits but a truck doesn't: a wall either side
+    const world = buildWorld({ ...AREA, solids: [{ kind: 'box', x: -3.4, z: 0, hw: 1, hd: 20, top: 30 }, { kind: 'box', x: 3.4, z: 0, hw: 1, hd: 20, top: 30 }] });
+    const p = newPlayer(AREA);
+    settle(p, world);
+    expect(canTransform(p)).toBe(true);
+    const events = run(p, { transform: true }, 0.05, world);
+    expect(events.some((e) => e.type === 'transform')).toBe(false);
+    expect(p.shifting).toBe(0);
+  });
+
+  it('isn’t squeezed into a gap narrower than he is', () => {
+    // two crates, turned, 1.6 m apart at the near corners (he's 2.4 m across); he runs at the gap
+    const world = buildWorld({ ...AREA, solids: [{ kind: 'box', x: -3.3, z: 10, hw: 2.5, hd: 2.5, top: 6, yaw: 0.2 }, { kind: 'box', x: 3.3, z: 10, hw: 2.5, hd: 2.5, top: 5, yaw: -0.2 }] });
+    const p = newPlayer(AREA);
+    let worst = 0;
+    for (let t = 0; t < 4; t += 1 / 60) {
+      stepPlayer(p, { ...still, moveZ: 1, run: true }, 1 / 60, world);
+      for (const s of world.solids) worst = Math.max(worst, overlap(s, p.x, p.z, ROBOT.radius)?.depth ?? 0);
+    }
+    expect(worst).toBeLessThan(0.05);
   });
 });
 
@@ -370,6 +397,26 @@ describe('the Decepticons', () => {
     for (let t = 0; t < MEGATRON.shift - 0.1; t += 1 / 30) shots += stepEnemies([m], p, 1 / 30, world, rand).shots.length;
     expect([m.x, m.z]).toEqual(at);
     expect(shots).toBe(0);
+  });
+
+  it('stepEnemies with the same seed is reproducible', () => {
+    const run = () => {
+      const sim = createSim({ seed: 7 });
+      const p = sim.player;
+      for (let i = 0; i < 4; i++) {
+        const e = newEnemy('trooper', p.x + Math.sin(i * 1.6) * 45, p.z + Math.cos(i * 1.6) * 45, { id: `r${i}` });
+        e.y = sim.world.floorAt(e.x, e.z, 50, 60);
+        sim.enemies.push(e);
+      }
+      for (let k = 0; k < 300; k++) {
+        p.hp = p.maxHp;
+        sim.step({ ...still, fire: k % 40 < 10, aimYaw: k * 0.02 }, 1 / 30);
+      }
+      return sim.enemies.map((e) => [e.id, e.x, e.z, e.state]);
+    };
+    const a = run();
+    expect(a.length).toBe(4);
+    expect(run()).toEqual(a);
   });
 
   it("don't fire once dead", () => {

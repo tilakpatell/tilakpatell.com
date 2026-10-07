@@ -19,6 +19,8 @@ import { makeFigure, makeThing } from './bots';
 import { bake, centresOf, cluster, makeTransformer } from './chunks';
 import { createEffects } from './effects';
 import { FORMS, TRANSFORM } from './rules';
+import { bodyFrom } from '../../../lib/ai/body';
+import { MODE_BODY_CY } from './bodies';
 import { groundWorld } from '../../../lib/three/groundwork';
 import { houseOn } from '../../../lib/three/house';
 
@@ -464,6 +466,8 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
         const [a, b] = alt ? change.toVehicle : change.toRobot;
         const k = e.shift > 0 ? 1 - e.shift / (alt ? F.shift : F.back) : 1;
         f.hold(change.transform, e.shift > 0 ? a + (b - a) * k : change.vehicle);
+        f.look?.(null);
+        entry.prev = null;
         if (e.shift > 0 && Math.random() < dt * 14) effects.spark(e.x + (Math.random() - 0.5) * 8, e.y + Math.random() * e.h * 1.4, e.z + (Math.random() - 0.5) * 8);
         f.update(dt);
         if (e.dead && !entry.boomed) {
@@ -474,6 +478,13 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
         continue;
       }
       f.release?.();
+      // what it's doing, as its body shows it (lib/ai/body): its motion from
+      // where it was a frame ago, its head on its aim, crouched in cover; the
+      // actor's own body (tactics.js) over the table's row
+      const step = { x: e.x, z: e.z, yaw: e.yaw, mode: e.state, aim: p.dead ? null : { x: p.x, z: p.z }, ...(e.body ?? {}) };
+      const body = bodyFrom(entry.prev, step, dt, { table: MODE_BODY_CY });
+      const base = e.body && 'base' in e.body ? (e.body.rise && e.body.fire ? null : e.body.base) : body.base;
+      entry.prev = { x: e.x, z: e.z, yaw: e.yaw, mode: e.state };
       if (e.dead) {
         if (!entry.boomed) {
           entry.boomed = true;
@@ -482,7 +493,11 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
         f.play('dead');
         f.group.visible = (e.gone ?? 0) < 3;
       } else if ((entry.flinch = Math.max(0, (entry.flinch ?? 0) - dt)) > 0) f.play('hurt');
-      else f.play('walk', { speed: e.state === 'advance' ? 6 : 3.6, aim: [0, 0.05, 1] });
+      else {
+        const pace = Math.hypot(body.motion.speed, body.motion.side);
+        f.play(base ?? (pace > 0.2 ? 'walk' : 'idle'), { speed: pace, aim: body.look ? [0, 0.05, 1] : null });
+      }
+      f.look?.(e.dead ? null : body.look && { x: body.look.x, y: p.y + 6, z: body.look.z });
       f.update(dt);
     }
     for (const [id, entry] of foes) {

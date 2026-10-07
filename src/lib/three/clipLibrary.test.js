@@ -47,6 +47,22 @@ describe('borrowing Rick’s clips', () => {
     expect(r.tracks[1].values[1]).toBe(180);
   });
 
+  it('retarget scales a mixamorig:Hips translation (the hips by role, any family)', () => {
+    const q = [0, 0, 0, 1];
+    const c = new THREE.AnimationClip('walk', 1, [
+      new THREE.VectorKeyframeTrack('mixamorig:Hips.position', [0], [1, 90, 2]),
+      new THREE.QuaternionKeyframeTrack('mixamorig:Hips.quaternion', [0], q),
+      new THREE.VectorKeyframeTrack('mixamorig:Spine.position', [0], [0, 10, 0]),
+      // Character Creator's hip holds the pelvis: the role's first name wins, the pelvis isn't scaled twice
+      new THREE.VectorKeyframeTrack('CC_Base_Pelvis.position', [0], [0, 5, 0]),
+    ]);
+    const r = retarget(c, 180, 90);
+    expect(r.tracks.map((t) => t.name)).toEqual(['mixamorig:Hips.position', 'mixamorig:Hips.quaternion']);
+    expect([...r.tracks[0].values]).toEqual([2, 180, 4]);
+    const cc = retarget(new THREE.AnimationClip('cc', 1, [new THREE.VectorKeyframeTrack('CC_Base_Hip.position', [0], [0, 50, 0]), new THREE.VectorKeyframeTrack('CC_Base_Pelvis.position', [0], [0, 5, 0])]), 100, 50);
+    expect(cc.tracks.map((t) => [t.name, t.values[1]])).toEqual([['CC_Base_Hip.position', 100]]);
+  });
+
   it('turns a clip’s hips so it faces where the walk does', () => {
     const idle = clip(0.9);
     expect(heading(idle, Y)).toBeCloseTo(0.9, 5);

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { seeded } from '../seeded';
 import { createSearch, flood } from './search';
 
@@ -86,6 +86,26 @@ describe('the search', () => {
     expect(t.done('a')).toBe(true);
     t.stop();
     expect(t.active).toBe(false);
+  });
+});
+
+describe('the search’s own randomness', () => {
+  it('is seeded when none is given: Math.random is never drawn, and two searches stagger alike', () => {
+    const spy = vi.spyOn(Math, 'random');
+    const gaps = () => {
+      const s = createSearch({ spots: () => [], stagger: 2 });
+      s.start(lost, { aggressive: true });
+      s.claim('a', P(0, 0));
+      s.arrive('a');
+      s.done('a');
+      return s.state.releaseAt;
+    };
+    try {
+      expect(gaps()).toBe(gaps());
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 

@@ -668,7 +668,7 @@ export function createMoriaWorld(canvas, { onLost } = {}) {
       troll.group.position.set(tw.x, 0, tw.z);
       turnTo(troll, tw.face, dt, 8);
       const hunting = tw.mode === 'alert' || tw.mode === 'chase';
-      troll.animate?.(t, { walking: tw.mode !== 'patrol' || tw.wait <= 0, swing: s.swing ?? 0, roar: hunting ? 1 : 0 });
+      troll.animate?.(t, { walking: tw.mode === 'search' ? Boolean(tw.goal) : tw.mode === 'suspicious' ? !(tw.looked > 0) : tw.mode !== 'patrol' || tw.wait <= 0, swing: s.swing ?? 0, roar: hunting ? 1 : 0 });
     }
     goblins.forEach((g, i) => {
       const on = zone === 'halls' && Boolean(s.troll);

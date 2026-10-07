@@ -5,20 +5,23 @@
 // banked into its turns, and its shots are bolts in its own colour (a
 // Rebel's red, Birdperson's green, Saul's gold).
 //
-// createWingmen(parent, { fleet, solids }) → { join(kind, ship, n), update(dt, t,
+// createWingmen(parent, { fleet, solids, rand }) → { join(kind, ship, n), update(dt, t,
 //   ship, targets) → { hits, events }, active, clear(), dispose() }
-// Everything is in `parent`'s space (the map's).
+// Everything is in `parent`'s space (the map's). `rand` is the visit's
+// 'wing' stream (seed.js) unless the scene brings one.
 
 import * as THREE from 'three';
 import { createFleet } from './glbFleet';
 import { createWing } from './wingRules';
 import { alliesOf } from './sides';
+import { seedOf } from './seed';
+import { streams } from '../../lib/seeded';
 
 const BOLT = { length: 0.34, radius: 0.01 };
 const COLOUR = Object.fromEntries(Object.entries(alliesOf(null)).map(([k, a]) => [k, a.colour ?? [5.5, 0.6, 0.5]]));
 
-export function createWingmen(parent, { fleet = createFleet(), solids = [] } = {}) {
-  const wing = createWing({ solids });
+export function createWingmen(parent, { fleet = createFleet(), solids = [], rand = null } = {}) {
+  const wing = createWing({ rand: rand ?? streams(seedOf()).fork('wing'), solids });
   const pool = {}; // kind → models not in use
   const shown = new Map(); // a wingman → its model
   const boltGeo = new THREE.CylinderGeometry(BOLT.radius, BOLT.radius, BOLT.length, 5).rotateX(Math.PI / 2);

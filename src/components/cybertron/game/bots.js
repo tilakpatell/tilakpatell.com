@@ -13,8 +13,9 @@
 //   standIn(kind) → THREE.Group
 //
 // Figure: { group, kind, spec, height, rigged, play(state, { speed, aim }),
-// update(dt), hold(clip, t), tint(hex, k), dispose() }; `group` stands on
-// y = 0 facing +z, as every model does.
+// update(dt), hold(clip, t), tint(hex, k), look(point | null), dispose() };
+// `group` stands on y = 0 facing +z, as every model does. A state of
+// 'crouch' is down behind cover; look turns the head where rig.js found one.
 
 import * as THREE from 'three';
 import { loadGltf, copy } from '../../../lib/three/gltf';
@@ -162,6 +163,19 @@ function stillFigure(kind, spec, scene, animations) {
   };
 }
 
+// crouched behind cover (the figure's frame: +z ahead, +x its left): the
+// thighs forward and down, the shins back under them, hunched over the gun
+const CROUCH = {
+  ...POSES.stand,
+  thighL: [0.18, -0.45, 0.9],
+  thighR: [-0.18, -0.45, 0.9],
+  calfL: [0.05, -1, -0.45],
+  calfR: [-0.05, -1, -0.45],
+  footL: [0, -0.2, 1],
+  footR: [0, -0.2, 1],
+  torso: { pitch: 0.3, yaw: 0, roll: 0 },
+};
+
 // a figure rig.js can pose: walking, running, jumping, aiming, knocked down
 function riggedFigure(kind, spec, scene, animations) {
   const fig = rigFigure({ scene }, { h: spec.metres ?? 7 });
@@ -245,6 +259,7 @@ function riggedFigure(kind, spec, scene, animations) {
   let phase = 0;
   let clock = 0;
   let blend = 0; // 0: on its own clip, 1: posed
+  let crouch = 0; // 0: standing, 1: down behind cover
   let held = false;
   fig.snap(POSES.stand);
   const stride = (spec.metres ?? 7) * 0.75; // metres a stride (two steps)
@@ -297,7 +312,10 @@ function riggedFigure(kind, spec, scene, animations) {
       const moving = state === 'walk' || state === 'run';
       phase += moving ? (dt * speed * Math.PI * 2) / stride : 0;
       // standing about on its own clip; moving, fighting or falling, posed
-      const posed = moving || state === 'jump' || state === 'fall' || state === 'fire' || state === 'hurt' || state === 'dead' || !idle;
+      const posed = moving || state === 'jump' || state === 'fall' || state === 'fire' || state === 'hurt' || state === 'dead' || state === 'crouch' || !idle;
+      // down on its haunches behind cover: the hips lowered, the knees forward
+      crouch += ((state === 'crouch' ? 1 : 0) - crouch) * Math.min(1, dt * 8);
+      fig.holder.position.y = fig.hipHeight * (1 - 0.3 * crouch);
       blend += ((posed ? 1 : 0) - blend) * Math.min(1, dt * 8);
       if (blend < 0.02 && idle) {
         if (!idle.isRunning()) idle.reset().play();
@@ -310,6 +328,7 @@ function riggedFigure(kind, spec, scene, animations) {
       if (state === 'jump' || state === 'fall') targets = POSES.leap(state === 'jump' ? 1 : -1);
       else if (state === 'hurt') targets = POSES.hurt();
       else if (state === 'dead') targets = POSES.fall(clock);
+      else if (state === 'crouch') targets = CROUCH;
       else targets = moving ? POSES.stride(phase, Math.min(1, speed / 3), state === 'run' ? 1 : 0) : POSES.stand;
       if (aim || state === 'fire') {
         // the gun arm up and out along the aim, the other braced
@@ -373,7 +392,47 @@ export async function makeFigure(kind, { shadows = false } = {}) {
     if (o.isSkinnedMesh) o.frustumCulled = false;
   });
   f.group.userData.kind = kind;
+  f.look = f.fig?.bones?.head ? looking(f, f.fig.bones.head) : () => {};
   return f;
+}
+
+// Its head turned toward a point (in the world), as far as a neck goes, and
+// eased there; null looks ahead again. Turned after the pose (or the idle
+// clip) each frame, and undone before the next, so the turn never adds up
+// on a bone a clip doesn't move. A figure rig.js found no head on (by its
+// ROLES: a stand-in, a still model) looks with its whole body, which the
+// scene already turns, so its look is nothing.
+const NECK = 1.1; // radians either way
+function looking(f, head) {
+  let target = null;
+  let turned = 0;
+  let before = null;
+  const at = new THREE.Vector3();
+  const q = new THREE.Quaternion();
+  const parentQ = new THREE.Quaternion();
+  const up = new THREE.Vector3(0, 1, 0);
+  const update = f.update.bind(f);
+  f.update = (dt) => {
+    if (before) head.quaternion.copy(before);
+    update(dt);
+    let want = 0;
+    if (target) {
+      head.getWorldPosition(at);
+      const yaw = f.group.rotation.y;
+      const rel = Math.atan2(target.x - at.x, target.z - at.z) - yaw;
+      want = Math.max(-NECK, Math.min(NECK, Math.atan2(Math.sin(rel), Math.cos(rel))));
+    }
+    turned += (want - turned) * Math.min(1, dt * 6);
+    before = head.quaternion.clone();
+    if (Math.abs(turned) < 1e-3) return;
+    // a turn about the world's up, into the head's own frame: parent⁻¹ · R · parent
+    head.parent.getWorldQuaternion(parentQ);
+    q.setFromAxisAngle(up, turned);
+    head.quaternion.premultiply(parentQ.clone().invert().multiply(q).multiply(parentQ));
+  };
+  return (point) => {
+    target = point && Number.isFinite(point.x) && Number.isFinite(point.z) ? point : null;
+  };
 }
 
 // A vehicle (or prop) as it stands: a copy of its model, or its stand-in

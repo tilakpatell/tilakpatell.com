@@ -37,4 +37,26 @@ describe('a nemesis, flown', () => {
     expect(seen.shots.filter((s) => s.t > leftAt)).toEqual([]);
     expect(seen.me.memory.last.how).toBe('retreat');
   });
+
+  it('fires from the nose: its first shot comes after it has turned onto you', () => {
+    // it comes in from abeam of you, nose away, so it has to come round first
+    const noses = [];
+    const seen = meet({
+      npc,
+      at: { x: 12, y: 0, z: 0 },
+      ship: you({ speed: 10 }),
+      seconds: 12,
+      each: (m, s, out) => {
+        for (const e of out.events) if (e.type === 'shot' && m) noses.push({ e, vel: { ...m.vel } });
+      },
+    });
+    expect(seen.shots.length).toBeGreaterThan(0);
+    for (const { e, vel } of noses) {
+      const to = { x: e.to.x - e.from.x, y: e.to.y - e.from.y, z: e.to.z - e.from.z };
+      const along = (vel.x * to.x + vel.y * to.y + vel.z * to.z) / (Math.hypot(vel.x, vel.y, vel.z) * Math.hypot(to.x, to.y, to.z));
+      expect(along).toBeGreaterThanOrEqual(NPC.cone - 1e-9);
+    }
+    // and not on the frame it came in: it had to turn first
+    expect(seen.shots[0].t).toBeGreaterThan(DT);
+  });
 });

@@ -54,9 +54,16 @@
 // of you is on the guns from then on, like an enemy. `me.hurt` is what
 // you've hit it for this meeting.
 //
-// createBrains({ rand, firstId, memory }) → { add(npc, at) → id | null, remove(id),
-//   update(dt, world) → { events }, hit(id, damage) → { id, kind, at, down } | null,
+// createBrains({ rand, firstId, memory, trace }) → { add(npc, at) → id | null, remove(id),
+//   update(dt, world, { due, done }) → { events }, hit(id, damage) → { id, kind, at, down } | null,
 //   live, targets }
+// On a schedule (lib/ai/schedule, npcs.js's): `due` names the ones that
+// sense and think this frame (a Set of numbers, or a Map of number →
+// { sense, think }; null, all of them); one not due flies on what it last
+// chose and still fires and is let go of, and when it next senses or thinks
+// it's given all the time it missed. `done(me)` is called after each due
+// one's step. Each think is noted in `trace` (lib/ai/trace) under its
+// number: { mode, action, stage, belief, scores (a nemesis's pick), event }.
 // world: { you: { x, y, z, heading, speed } | null, hunters: [{ id, at,
 //   vel?, faction }], stations: [{ id, at, r }], solids: [{ at: [x, y, z], r }],
 //   stims: [{ type, at, radius, from: 'you', loudness }] (your shots, heard),
@@ -106,8 +113,34 @@ export const dodge = (you) => (you ? clamp(Math.abs(you.rate ?? 0) / 2.2 + Math.
 // going the way it last saw you go (heading 0 is −z, as ship.js has it)
 const guessed = (b) => ({ x: b.at.x, y: b.at.y, z: b.at.z, heading: Math.atan2(-b.vel.x, -b.vel.z), speed: Math.hypot(b.vel.x, b.vel.z), rate: 0, tipRate: 0, guessed: true });
 const GUESS_CHANCE = 0.3; // of a shot's chance, at a guess
+// the most time one step of sensing or thinking stands for, in seconds,
+// unless the schedule's step for it is longer (a quarter-rate thinker's
+// 0.4 s): one paused (far off, or past the frame's budget) for half a
+// minute comes back with this much, not the half minute
+const CATCH_UP = 0.25;
+// A fighter's guns point where it does: a shot only inside NPC.cone (the
+// cosine off its nose; 0.5 is 60° either side), so one with you abeam or
+// behind comes round before it fires (backlog 41: it fired 171° off its
+// nose). Here, with the shot's rule, rather than with the brains' numbers.
+NPC.cone = 0.5;
+// (one all but stopped can point any way it likes, as it can when it flies)
+const onNose = (me, tgt, d) => {
+  if (Math.hypot(me.vel.x, me.vel.y, me.vel.z) < 0.5) return true;
+  if (!me.nose || !(d > 1e-6)) return false;
+  return (me.nose.x * (tgt.x - me.pos.x) + me.nose.y * (tgt.y - me.pos.y) + me.nose.z * (tgt.z - me.pos.z)) / d >= NPC.cone;
+};
+// which of a frame's lanes are due for one (all of them, with no schedule)
+const ALL = { sense: true, think: true };
+const dueOf = (due, n) => {
+  if (!due) return ALL;
+  if (due instanceof Map) {
+    const e = due.get(n);
+    return e === undefined ? null : e && typeof e === 'object' ? e : ALL;
+  }
+  return due.has(n) ? ALL : null;
+};
 // (numbered well clear of the hunters' and the skirmishes': the lock follows a number)
-export function createBrains({ rand = Math.random, firstId = 900001, brains = BRAINS, memory = {} } = {}) {
+export function createBrains({ rand = Math.random, firstId = 900001, brains = BRAINS, memory = {}, trace = null } = {}) {
   const live = [];
   const targets = [];
   const later = []; // what happened between frames (a hit), told on the next
@@ -118,6 +151,7 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
   const take = (me) => {
     const i = live.indexOf(me);
     if (i >= 0) live.splice(i, 1);
+    trace?.clear(me.n); // (its ring with it, or the trace grows with every one that comes)
   };
   const say = (events, me, key) => {
     if (me.said.has(key)) return;
@@ -141,7 +175,7 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
       const hp = npc.stats?.hp ?? 4;
       const mem = remember(memory, npc.id);
       mem.met += 1;
-      live.push({ n, id: n, npc, pos: { ...at }, vel: { x: 0, y: 0, z: 0 }, hp, hpMax: hp, clock: 0, cool: 1 + rand(), far: 0, leaving: false, left: 0, delegated: false, hostile: false, hurt: 0, memory: mem, said: new Set(), mind: {}, senses: createSenses(npc.senses ?? SENSES), beliefs: {}, dir: null, met: false, sees: false, you: null, last: null, hunters: [] });
+      live.push({ n, id: n, npc, pos: { ...at }, vel: { x: 0, y: 0, z: 0 }, hp, hpMax: hp, clock: 0, cool: 1 + rand(), far: 0, leaving: false, left: 0, delegated: false, hostile: false, hurt: 0, memory: mem, said: new Set(), mind: {}, senses: createSenses(npc.senses ?? SENSES), beliefs: {}, dir: null, met: false, sees: false, you: null, last: null, hunters: [], truth: false, nose: null, intent: null, unsensed: 0, unthought: 0 });
       return n;
     },
     remove(n) {
@@ -149,7 +183,11 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
       if (me) take(me);
     },
 
-    update(dt, world) {
+    // due: which of them sense and think this frame (a Set of numbers, or a
+    // Map of number → { sense, think }: the schedule's), or null for all of
+    // them, as before there was a schedule; done(me) is told after each one
+    // due has had its step, which is how the schedule learns what each costs
+    update(dt, world, { due = null, done = null } = {}) {
       const events = later.splice(0);
       const you = world.you ?? null;
       const solids = world.solids ?? [];
@@ -157,73 +195,110 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
       const targets = [];
       if (you) targets.push({ id: 'you', at: you, vel: velocityOf(you), hostile: true });
       for (const h of world.hunters ?? []) targets.push({ id: `h:${h.id}`, at: h.at, vel: h.vel ?? null, kind: 'hunter', faction: h.faction, hostile: true });
-      for (const me of [...live]) {
+
+      // what one does in a frame: senses and thinks if it's due, then flies
+      // and fires on what it last chose, whether it thought or not
+      const step = (me, entry) => {
         const { npc } = me;
         const st = npc.stats ?? {};
         me.clock += dt;
         me.mind.clock = me.clock;
         let intent;
-        if (me.delegated) continue; // (the wing or the hunt has it now)
-        // what it knows: sent to you, it knows where you are when it comes;
-        // after that, what it perceives (and keeps, and loses)
-        if (!me.met && you) {
-          me.met = true;
-          me.beliefs.you = { id: 'you', at: { ...you }, vel: velocityOf(you), seenAt: me.clock, heardAt: -Infinity, confidence: 1, visible: true, timer: 1, kind: null, hostile: true };
+        if (me.delegated) return; // (the wing or the hunt has it now)
+        // (the time since it last sensed and thought: what its step stands
+        // for, but no more than the schedule's step for it, or CATCH_UP if
+        // that's less, so one paused a while comes back with a step's worth,
+        // not a single glimpse that makes it certain of you)
+        me.unsensed += dt;
+        me.unthought += dt;
+        const most = Math.max(CATCH_UP, entry?.dt ?? 0);
+        if (entry?.sense) {
+          const sdt = Math.min(most, me.unsensed);
+          me.unsensed = 0;
+          // what it knows: sent to you, it knows where you are when it comes;
+          // after that, what it perceives (and keeps, and loses)
+          if (!me.met && you) {
+            me.met = true;
+            me.beliefs.you = { id: 'you', at: { ...you }, vel: velocityOf(you), seenAt: me.clock, heardAt: -Infinity, confidence: 1, visible: true, timer: 1, kind: null, hostile: true };
+          }
+          const s0v = Math.hypot(me.vel.x, me.vel.y, me.vel.z);
+          me.dir = s0v > 0.5 ? unit(me.vel) : null;
+          sense(me.senses, me, { targets, stims: world.stims }, sdt, { seesThrough });
+          // (a hunter that's gone from the map, shot down or flown off, is gone from its mind too: everyone saw that)
+          for (const id of Object.keys(me.beliefs)) if (id !== 'you' && !targets.some((t) => t.id === id)) delete me.beliefs[id];
+          const b = belief(me, 'you');
+          me.sees = Boolean(b?.visible);
+          // (the truth while it sees you, and for a moment after: intuition; a guess from then on)
+          me.you = b ? (b.visible || me.now - b.seenAt <= me.senses.intuition ? you : guessed(b)) : null;
+          me.truth = Boolean(me.you) && me.you === you;
+          if (me.you) me.last = me.you;
+          me.hunters.length = 0;
+          for (const hb of Object.values(me.beliefs)) if (hb.kind === 'hunter') me.hunters.push({ id: Number(hb.id.slice(2)), at: hb.at, faction: hb.faction, seen: hb.visible });
+        } else if (me.truth && you) {
+          // (between its looks, the you it's sure of is the you that's there)
+          me.you = you;
+          me.last = you;
         }
-        const s0v = Math.hypot(me.vel.x, me.vel.y, me.vel.z);
-        me.dir = s0v > 0.5 ? unit(me.vel) : null;
-        sense(me.senses, me, { targets, stims: world.stims }, dt, { seesThrough });
-        // (a hunter that's gone from the map, shot down or flown off, is gone from its mind too: everyone saw that)
-        for (const id of Object.keys(me.beliefs)) if (id !== 'you' && !targets.some((t) => t.id === id)) delete me.beliefs[id];
-        const b = belief(me, 'you');
-        me.sees = Boolean(b?.visible);
-        // (the truth while it sees you, and for a moment after: intuition; a guess from then on)
-        me.you = b ? (b.visible || me.now - b.seenAt <= me.senses.intuition ? you : guessed(b)) : null;
-        if (me.you) me.last = me.you;
-        me.hunters.length = 0;
-        for (const hb of Object.values(me.beliefs)) if (hb.kind === 'hunter') me.hunters.push({ id: Number(hb.id.slice(2)), at: hb.at, faction: hb.faction, seen: hb.visible });
-        const view = { ...world, you: me.you, hunters: me.hunters };
-        // who it fears, near it: it's off
-        if (!me.leaving) {
-          const { it: dread } = nearest(me.hunters, me.pos, (h) => npc.relations?.fears?.includes(h.faction));
-          if (dread && apart(dread.at, me.pos) < NPC.fear) {
-            events.push({ type: 'fled', n: me.n, faction: dread.faction });
-            me.memory.last = { how: 'fled', from: sideOf(me, you) };
+        if (entry?.think) {
+          const tdt = Math.min(most, me.unthought);
+          me.unthought = 0;
+          const view = { ...world, you: me.you, hunters: me.hunters };
+          // who it fears, near it: it's off
+          if (!me.leaving) {
+            const { it: dread } = nearest(me.hunters, me.pos, (h) => npc.relations?.fears?.includes(h.faction));
+            if (dread && apart(dread.at, me.pos) < NPC.fear) {
+              events.push({ type: 'fled', n: me.n, faction: dread.faction });
+              me.memory.last = { how: 'fled', from: sideOf(me, you) };
+              leave(events, me);
+            }
+          }
+          if (me.leaving) {
+            // away from you (as far as it knows), climbing, a little quicker than it came
+            const from = me.last ?? you ?? { x: me.pos.x, y: me.pos.y, z: me.pos.z + 1 };
+            const out = unit(add(sub(me.pos, from), { x: 0, y: 0.3, z: 0 }));
+            intent = { to: add(me.pos, out, 50), speed: (st.speed ?? 16) * 1.3 };
+          } else if (brains[npc.brain].delegates) {
+            // (the wing or the hunt flies this one, relations and all: handed over at once)
+            intent = brains[npc.brain](npc, me, view, tdt, rand) ?? {};
+          } else {
+            // one it hunts, near you: after it
+            const { it: quarry } = me.you ? nearest(me.hunters, me.you, (h) => npc.relations?.hunts?.includes(h.faction)) : { it: null };
+            if (quarry && apart(quarry.at, me.you) < NPC.huntFrom) intent = { to: add(quarry.at, unit(sub(me.pos, quarry.at)), 6), fire: quarry.id };
+            else intent = brains[npc.brain](npc, me, view, tdt, rand) ?? {};
+          }
+          if (intent.delegate) {
+            me.delegated = true;
+            events.push({ type: 'delegate', n: me.n, ...intent.delegate });
+            return;
+          }
+          if (intent.hostile) me.hostile = true;
+          // (the greeting first, then the news: a tip or an offer after hello)
+          if (intent.say) say(events, me, intent.say);
+          if (intent.event) events.push({ ...intent.event, n: me.n });
+          if (intent.leave) {
+            if (intent.event?.type === 'draw') me.memory.last = { how: 'draw', from: sideOf(me, you) };
             leave(events, me);
+            intent = { to: null };
           }
-        }
-        if (me.leaving) {
-          // away from you (as far as it knows), climbing, a little quicker than it came
-          const from = me.last ?? you ?? { x: me.pos.x, y: me.pos.y, z: me.pos.z + 1 };
-          const out = unit(add(sub(me.pos, from), { x: 0, y: 0.3, z: 0 }));
-          intent = { to: add(me.pos, out, 50), speed: (st.speed ?? 16) * 1.3 };
-          if ((you && apart(me.pos, you) > NPC.leaveFar) || me.clock - me.left > NPC.leaveFor) {
-            take(me);
-            events.push({ type: 'gone', n: me.n });
-            continue;
+          // what it flies on until it next thinks (its words and events were said once, now)
+          me.intent = { to: intent.to ?? null, match: intent.match ?? null, speed: intent.speed, fire: intent.fire ?? null, fireRate: intent.fireRate };
+          if (trace) {
+            const b = belief(me, 'you');
+            trace.note(me.n, world.t ?? me.clock, {
+              mode: me.leaving ? 'leaving' : (me.mind.mode ?? npc.brain),
+              action: intent.fire != null ? 'fire' : intent.to ? 'fly' : 'hold',
+              stage: me.mind.phase ?? null,
+              belief: b ? { at: { x: b.at.x, y: b.at.y, z: b.at.z }, confidence: b.confidence, visible: Boolean(b.visible) } : null,
+              scores: me.mind.scores ?? null,
+              event: intent.event?.type ?? null,
+            });
           }
-        } else if (brains[npc.brain].delegates) {
-          // (the wing or the hunt flies this one, relations and all: handed over at once)
-          intent = brains[npc.brain](npc, me, view, dt, rand) ?? {};
-        } else {
-          // one it hunts, near you: after it
-          const { it: quarry } = me.you ? nearest(me.hunters, me.you, (h) => npc.relations?.hunts?.includes(h.faction)) : { it: null };
-          if (quarry && apart(quarry.at, me.you) < NPC.huntFrom) intent = { to: add(quarry.at, unit(sub(me.pos, quarry.at)), 6), fire: quarry.id };
-          else intent = brains[npc.brain](npc, me, view, dt, rand) ?? {};
-        }
-        if (intent.delegate) {
-          me.delegated = true;
-          events.push({ type: 'delegate', n: me.n, ...intent.delegate });
-          continue;
-        }
-        if (intent.hostile) me.hostile = true;
-        // (the greeting first, then the news: a tip or an offer after hello)
-        if (intent.say) say(events, me, intent.say);
-        if (intent.event) events.push({ ...intent.event, n: me.n });
-        if (intent.leave) {
-          if (intent.event?.type === 'draw') me.memory.last = { how: 'draw', from: sideOf(me, you) };
-          leave(events, me);
-          intent = { to: null };
+        } else intent = me.intent ?? {};
+        // one leaving is gone once it's well away (or has been going long enough), thinking or not
+        if (me.leaving && ((you && apart(me.pos, you) > NPC.leaveFar) || me.clock - me.left > NPC.leaveFor)) {
+          take(me);
+          events.push({ type: 'gone', n: me.n });
+          return;
         }
 
         // flying: its nose comes round at its own rate, and it speeds up or
@@ -244,10 +319,12 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
         }
         const want = Math.hypot(wx, wy, wz);
         const s0 = Math.hypot(me.vel.x, me.vel.y, me.vel.z);
+        let pointed = false; // (whether `dir` is this one's nose this frame)
         if (s0 > 1e-4) {
           dir[0] = me.vel.x / s0;
           dir[1] = me.vel.y / s0;
           dir[2] = me.vel.z / s0;
+          pointed = true;
         }
         if (want > 1e-4) {
           wantDir[0] = wx / want;
@@ -256,6 +333,13 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
           // (from a standstill it can point any way it likes)
           if (s0 < 0.5) [dir[0], dir[1], dir[2]] = wantDir;
           else turnToward(dir, wantDir, (st.turn ?? 2.4) * dt);
+          pointed = true;
+        }
+        if (pointed) {
+          me.nose ??= { x: 0, y: 0, z: 1 };
+          me.nose.x = dir[0];
+          me.nose.y = dir[1];
+          me.nose.z = dir[2];
         }
         const s1 = s0 + clamp(want - s0, -(st.accel ?? 14) * dt * 1.5, (st.accel ?? 14) * dt);
         me.vel.x = dir[0] * s1;
@@ -267,6 +351,7 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
         if (solids.length) clearOf(me.pos, solids, 0.5);
 
         // firing: at you or at a hunter, as it believes them to be, in range
+        // and off its nose (NPC.cone: a fighter's guns point where it does)
         // (most shots miss: a cloud, not a wall; at a guess, hardly any land)
         me.cool -= dt;
         if (intent.fire != null && !me.leaving && me.cool <= 0) {
@@ -274,7 +359,7 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
           const tgt = intent.fire === 'you' ? me.you : hb?.at;
           const guess = intent.fire === 'you' ? Boolean(me.you?.guessed) : Boolean(hb && !hb.seen);
           const d = tgt ? apart(tgt, me.pos) : Infinity;
-          if (d < NPC.range) {
+          if (d < NPC.range && onNose(me, tgt, d)) {
             me.cool = between(rand, st.fire ?? [0.8, 1.4]) * (intent.fireRate ?? 1);
             const chance = clamp(0.5 * (1 - d / NPC.range) + 0.1, 0.05, 0.45) * (intent.fire === 'you' ? 1 - dodge(you) : 1) * (guess ? GUESS_CHANCE : 1);
             events.push({ type: 'shot', n: me.n, from: { ...me.pos }, to: { x: tgt.x, y: tgt.y, z: tgt.z }, at: intent.fire, hit: rand() < chance, damage: intent.fire === 'you' ? (st.damage ?? 6) : 1 });
@@ -291,6 +376,12 @@ export function createBrains({ rand = Math.random, firstId = 900001, brains = BR
           take(me);
           events.push({ type: 'gone', n: me.n });
         }
+      };
+
+      for (const me of [...live]) {
+        const entry = dueOf(due, me.n);
+        step(me, entry);
+        if (entry && done) done(me);
       }
       return { events };
     },
