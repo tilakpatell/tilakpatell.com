@@ -8,6 +8,10 @@
 //   wants?(), update?(props), setVisible?(on), setColors?(colors),
 //   lowerQuality?(level), warmUp?(timeLeft), handoff?(), attached?(),
 //   dispose() } (`attached`: the page showing it is listening to its events).
+// A world draws only on the backend it was made on (frame.renderer is
+// rt.gfx.renderer as create found it), so a module may keep the renderer it
+// was given: a world whose context goes while it's made is disposed and made
+// again on a fresh backend (a create that throws then is made again too).
 
 import { STEPS } from '../lib/three/pace';
 

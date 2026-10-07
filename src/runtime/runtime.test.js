@@ -298,6 +298,179 @@ describe('createRuntime', () => {
     expect(rt.status).toBe('ready');
   });
 
+  it('a context lost while a world is made: made again on a fresh backend, drawn with it', async () => {
+    const { rt, loop, makeBackend } = make();
+    const first = fakeWorld();
+    const second = fakeWorld({ wants: () => true });
+    const made = [];
+    const releases = [];
+    const mod = {
+      id: 'a',
+      create: vi.fn((r) => {
+        made.push(r.gfx.renderer); // (what a module captures at create)
+        return new Promise((res) => releases.push(res));
+      }),
+    };
+    const host = fakeHost();
+    const p = rt.mount(mod, {}, host);
+    await flush();
+    const old = rt.gfx;
+    const statuses = [];
+    rt.on((s) => statuses.push(s));
+    makeBackend.mock.calls[0][1].onLost();
+    expect(rt.status).toBe('loading'); // (not lost: a page would give up on it)
+    releases[0](first);
+    await flush();
+    expect(first.dispose).toHaveBeenCalled(); // (made on a renderer that's gone)
+    expect(makeBackend).toHaveBeenCalledTimes(2);
+    expect(rt.status).toBe('loading');
+    releases[1](second);
+    expect(await p).toBe(true);
+    expect(rt.gfx).not.toBe(old);
+    expect(made).toEqual([old.renderer, rt.gfx.renderer]);
+    expect(host.prepend).toHaveBeenCalledWith(rt.gfx.canvas);
+    loop.tick(16);
+    expect(first.draw).not.toHaveBeenCalled();
+    expect(second.draw.mock.calls[0][0].renderer).toBe(rt.gfx.renderer);
+    expect(statuses).toEqual(['ready', 'on']);
+  });
+
+  it('a create that breaks on its context going is made again', async () => {
+    const { rt, loop, makeBackend } = make();
+    const world = fakeWorld({ wants: () => true });
+    let n = 0;
+    const mod = {
+      id: 'a',
+      create: async (r) => {
+        n += 1;
+        await flush(2);
+        if (n === 1) makeBackend.mock.calls[0][1].onLost();
+        const { renderer } = r.gfx; // (read after an await: null once lost)
+        return { ...world, renderer };
+      },
+    };
+    expect(await rt.mount(mod, {}, fakeHost())).toBe(true);
+    expect(n).toBe(2);
+    expect(rt.current.world.renderer).toBe(rt.gfx.renderer);
+    loop.tick(16);
+    expect(rt.status).toBe('on');
+  });
+
+  it('lost again while made again: lost, nothing drawn', async () => {
+    const { rt, makeBackend } = make();
+    const worlds = [fakeWorld(), fakeWorld()];
+    let n = 0;
+    const mod = {
+      id: 'a',
+      create: () => {
+        const w = worlds[n++];
+        return flush(2).then(() => {
+          makeBackend.mock.calls.at(-1)[1].onLost();
+          return w;
+        });
+      },
+    };
+    expect(await rt.mount(mod, {}, fakeHost())).toBe(false);
+    expect(n).toBe(2);
+    expect(worlds[0].dispose).toHaveBeenCalled();
+    expect(worlds[1].dispose).toHaveBeenCalled();
+    expect(rt.status).toBe('lost');
+    expect(rt.current).toBe(null);
+    expect(rt.loading).toBe(null);
+  });
+
+  it('two mounts at once make one backend', async () => {
+    let release;
+    const gate = new Promise((r) => (release = r));
+    const makeBackend = vi.fn(() => gate.then(() => fakeBackend()));
+    const { rt, loop } = make({ makeBackend });
+    const seen = [];
+    const mod = { id: 'a', create: (r) => (seen.push(r.gfx), fakeWorld({ wants: () => true })) };
+    const p1 = rt.mount(mod, {}, fakeHost());
+    const p2 = rt.mount(mod, {}, fakeHost()); // (React's second run of an effect, in development)
+    release();
+    expect(await p1).toBe(false);
+    expect(await p2).toBe(true);
+    expect(makeBackend).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual([rt.gfx]);
+    loop.tick(16);
+    expect(rt.current.world.draw.mock.calls[0][0].renderer).toBe(rt.gfx.renderer);
+  });
+
+  it('a backend let go losing its context leaves the one in use alone', async () => {
+    const { rt, makeBackend } = make();
+    await rt.mount({ id: 'a', create: () => fakeWorld() }, {}, fakeHost());
+    makeBackend.mock.calls[0][1].onLost();
+    await rt.mount({ id: 'a', create: () => fakeWorld() }, {}, fakeHost());
+    const now = rt.gfx;
+    makeBackend.mock.calls[0][1].onLost(); // (the old one, again)
+    expect(rt.status).toBe('ready');
+    expect(rt.gfx).toBe(now);
+    expect(now.dispose).not.toHaveBeenCalled();
+  });
+
+  it('a context lost during a handover: the new world is made again and shown', async () => {
+    const { rt, loop, makeBackend } = make();
+    const old = fakeWorld({ wants: () => true });
+    await rt.mount({ id: 'old', create: () => old }, {}, fakeHost());
+    const worlds = [fakeWorld(), fakeWorld({ wants: () => true })];
+    const releases = [];
+    let n = 0;
+    const next = { id: 'next', create: () => new Promise((res) => releases.push(() => res(worlds[n++]))) };
+    const p = rt.handover(next, {}, fakeHost());
+    await flush();
+    makeBackend.mock.calls[0][1].onLost();
+    expect(old.dispose).toHaveBeenCalled();
+    releases[0]();
+    await flush(12);
+    releases[1]();
+    expect(await p).toBe(true);
+    expect(worlds[0].dispose).toHaveBeenCalled();
+    expect(rt.current.module).toBe(next);
+    loop.tick(16);
+    expect(worlds[1].draw.mock.calls[0][0].renderer).toBe(rt.gfx.renderer);
+    expect(old.draw).not.toHaveBeenCalled();
+  });
+
+  it('a handover that ends in a lost context does not bring back the world it let go', async () => {
+    const { rt, makeBackend } = make();
+    const old = fakeWorld({ wants: () => true });
+    await rt.mount({ id: 'old', create: () => old }, {}, fakeHost());
+    const next = {
+      id: 'next',
+      create: () =>
+        flush(2).then(() => {
+          makeBackend.mock.calls.at(-1)[1].onLost();
+          return fakeWorld();
+        }),
+    };
+    expect(await rt.handover(next, {}, fakeHost())).toBe(false);
+    expect(rt.status).toBe('lost');
+    expect(rt.current).toBe(null);
+  });
+
+  it('a handover to the other backend kind: the old world is not drawn on the new backend', async () => {
+    let release;
+    const gate = new Promise((r) => (release = r));
+    let n = 0;
+    const makeBackend = vi.fn((kind) => (n++ === 0 ? fakeBackend() : gate.then(() => ({ ...fakeBackend(), backend: kind }))));
+    const { rt, loop } = make({ makeBackend, gpu: true });
+    const old = fakeWorld({ wants: () => true });
+    await rt.mount({ id: 'old', create: () => old }, {}, fakeHost());
+    loop.tick(16);
+    expect(old.draw).toHaveBeenCalledTimes(1);
+    const p = rt.handover({ id: 'gpu', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    await flush();
+    loop.tick(32); // (its backend gone, the new one not made yet)
+    expect(rt.status).toBe('on');
+    expect(old.dispose).not.toHaveBeenCalled();
+    release();
+    await flush();
+    loop.tick(48);
+    expect(old.draw).toHaveBeenCalledTimes(1);
+    expect(await p).toBe(true);
+  });
+
   it('a webgpu loss comes back on webgl', async () => {
     const { rt, makeBackend } = make({ gpu: true });
     await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());

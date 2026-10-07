@@ -4,7 +4,9 @@
 // old world draws on, keys aside, until the new one is ready; then its last
 // frame is kept over the new one and fades out); adopt() moves a world handed over already into
 // the box of the page that shows it (its canvas and the cover with it);
-// unmount() disposes the world and keeps the canvas. The browser bits (the backend, the loop's rAF, the DOM) are
+// unmount() disposes the world and keeps the canvas. A world draws only on
+// the backend it was made on: one whose context goes while it's made is made
+// again on a fresh backend, once. The browser bits (the backend, the loop's rAF, the DOM) are
 // passed in, so this runs in Node: index.js wires the real ones.
 //
 // createRuntime({ makeBackend, loop, input, quality, saves, assets, audio,
@@ -53,9 +55,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   let kind = null; // the backend asked for
   let lostWebGPU = false;
   let status = 'idle';
-  let current = null; // { module, world, host, props }
+  let current = null; // { module, world, host, props, gfx }
   let seq = 0; // the latest mount or handover: an older one arriving is dropped
   let making = null; // { module, token }: the one being made now
+  let pending = null; // a backend being made: settles when it's there (or not)
   let last = 0; // the previous frame's time
   let kicked = false;
   let shown = true; // the host on screen (setVisible)
@@ -80,6 +83,12 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     const dt = last ? Math.min(MAX_DT, (t - last) / 1000) : 0.016;
     last = t;
     const { world } = current;
+    // (a world draws only on the backend it was made on: a handover to a
+    // module of the other kind lets that one go while the old world is up)
+    if (current.gfx !== gfx) {
+      last = 0;
+      return false;
+    }
     try {
       const snapshot = input.sample(t);
       world.step?.(dt, snapshot, t);
@@ -177,7 +186,11 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   // the sharpness to draw a module at: the quality's, under the module's own cap
   const ratioFor = (mod) => (quality.ratioUnder ? quality.ratioUnder(mod?.ratio) : quality.ratio);
 
+  // one at a time: two made at once (React's second run of an effect, in
+  // development), one would be lost track of, its context held; and only the
+  // backend in use losing its context is a loss
   const backendFor = async (module) => {
+    while (pending) await pending;
     const want = pickBackend({ gpu, shading: module.shading, override, lost: lostWebGPU });
     if (gfx && kind === want && !gfx.lost) return gfx;
     // (a backend of the other kind can't share the canvas: the old one goes)
@@ -186,29 +199,65 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       gfx = null;
     }
     kind = want;
-    gfx = await makeBackend(want, { budget: quality.budget, onLost: () => rt.lost() });
+    let made = null;
+    const asked = makeBackend(want, {
+      budget: quality.budget,
+      onLost: () => {
+        if (made && made === gfx) rt.lost();
+      },
+    });
+    pending = Promise.resolve(asked).then(
+      () => {},
+      () => {},
+    );
+    try {
+      made = await asked;
+    } finally {
+      pending = null;
+    }
+    gfx = made;
     return gfx;
   };
+  const lostError = () => Object.assign(new Error('the graphics context was lost while the world was made'), { lost: true });
 
   // make a module's world; null if something newer came meanwhile
-  const build = async (module, props, host, token) => {
-    await backendFor(module);
+  const build = async (module, props, host, token, again = 1) => {
+    const on = await backendFor(module);
     if (token !== seq) return null;
     gfx.setRatio?.(ratioFor(module));
     rt.host = host;
     assets.owner?.(module.id);
-    let world = validateWorld(await module.create(rt, props));
+    let world = null;
+    try {
+      world = validateWorld(await module.create(rt, props));
+    } catch (err) {
+      if (gfx === on) throw err;
+      // (broken by its context going, rt.gfx null after an await: made again below)
+    }
     if (token !== seq) {
-      world.dispose();
+      world?.dispose();
       return null;
     }
-    if (world.ready) {
+    if (world?.ready) {
       await settle(world.ready, READY_WAIT);
       if (token !== seq) {
         world.dispose();
         return null;
       }
       world.update?.(props);
+    }
+    // the context went while the world was made (rt.lost, maybe a new
+    // backend since): made on a renderer that's gone, it would draw into a
+    // canvas off the page while it ticks on. Made again on a fresh one, once.
+    if (gfx !== on) {
+      try {
+        world?.dispose();
+      } catch (err) {
+        if (dev) console.warn(`[${module.id}] dispose failed`, err);
+      }
+      if (!again) throw lostError();
+      setStatus('loading');
+      return build(module, props, host, token, again - 1);
     }
     return world;
   };
@@ -232,7 +281,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   };
   const begin = (module, world, host, props) => {
     input.attach({ win: typeof window !== 'undefined' ? window : host, host });
-    current = { module, world, host, props };
+    current = { module, world, host, props, gfx };
     world.setVisible?.(shown);
     last = 0;
     setStatus('ready');
@@ -279,7 +328,8 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       current?.world.setVisible?.(shown);
       if (shown) loop.kick();
     },
-    // the context is gone: the world with it; the next mount makes a backend afresh
+    // the context is gone: the world with it; the next mount makes a backend
+    // afresh (a world being made now is made again on one: still loading)
     lost() {
       if (kind === 'webgpu') lostWebGPU = true;
       const was = current;
@@ -289,7 +339,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       loop.stop();
       gfx?.dispose();
       gfx = null;
-      setStatus('lost');
+      setStatus(rt.loading ? 'loading' : 'lost');
     },
     async mount(module, props = {}, host) {
       const mod = validateModule(module);
@@ -312,7 +362,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
         if (token === seq) {
           making = null;
           current = null;
-          setStatus('failed');
+          setStatus(err?.lost ? 'lost' : 'failed');
         }
         return false;
       }
@@ -369,13 +419,24 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
         if (dev) console.error(`[${mod.id}] 3D failed`, err);
         if (token === seq) {
           making = null;
-          // the old world stays up: better than black (and nothing over it)
-          current = old;
-          takeSnap = false;
-          snap?.remove();
-          snap = null;
-          if (kept) input.bind(kept.actions, { axes: kept.axes });
-          setStatus(old ? 'on' : 'failed');
+          // the old world stays up: better than black (and nothing over
+          // it), unless it went meanwhile (a thrown frame, a lost context)
+          // or its backend did (a handover to the other kind)
+          const alive = current === old && old.gfx === gfx;
+          if (alive) {
+            takeSnap = false;
+            snap?.remove();
+            snap = null;
+            if (kept) input.bind(kept.actions, { axes: kept.axes });
+            setStatus('on');
+          } else {
+            const was = current;
+            current = null;
+            clearHost();
+            letGo(was);
+            loop.stop();
+            setStatus(err?.lost ? 'lost' : 'failed');
+          }
         }
         return false;
       }
