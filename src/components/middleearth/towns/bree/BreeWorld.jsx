@@ -23,6 +23,8 @@ import '../../shire/shire.css';
 import './bree.css';
 import '../../../../styles/lazy/middleearth.css';
 import GuideCue from '../../../guide/GuideCue';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // Bree, the town: walk in from the road in the rain as Frodo, the night the
 // hobbits came to the Prancing Pony, and play the five scenes there. The
@@ -91,6 +93,7 @@ export default function BreeWorld({ onLeave }) {
 }
 
 function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   // other travellers online in Bree, as ghosts (../useTravellers)
   const trav = useTravellers('bree', gl === 'on');
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
@@ -156,7 +159,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
         if (dead || !canvas.current) return null;
         return createBreeWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -165,7 +168,9 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
         api.current = a;
         if (import.meta.env.DEV) window.__BREE__ = { api: a, sim: sim.current, complete }; // for the QA scripts
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -791,7 +796,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
   return (
     <div ref={box} className="shire-stage bree-stage" data-touch={touch || undefined} data-mode={mode} data-beat={inside ? hud.beat : undefined} data-wearing={hud.wearing || undefined} data-sky={prog.sky}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="Bree in 3D: the West Gate in the rain, tall houses down the high street, the Prancing Pony, and Frodo in the mud" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">Walking into Bree…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Walking into Bree" />
 
       {walking && (
         <div className="shire-hud shire-hud-top">

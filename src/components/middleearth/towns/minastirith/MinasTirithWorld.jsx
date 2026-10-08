@@ -16,6 +16,8 @@ import '../../shire/shire.css';
 import '../bree/bree.css';
 import './minastirith.css';
 import '../../../../styles/lazy/middleearth.css';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // Minas Tirith, found off the road: Pippin in the city of the kings. The
 // ride up through the seven gates on Shadowfax, the Court of the Fountain
@@ -90,6 +92,7 @@ const seed = () => Math.floor(Math.random() * 100000) + 1;
 const freshRide = () => newRide(seed(), { slots: SLOTS, gates: GATES.map((g) => g.s), len: ROAD_LEN });
 
 function World({ prog, complete, gl, setGl, onLeave, again }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
   const canvas = useRef(null);
@@ -148,7 +151,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
         if (dead || !canvas.current) return null;
         return createMinasWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -159,7 +162,9 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
         // (a beacon already lit stays lit)
         if (progRef.current.done.includes('beacon')) a.fx('lit');
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -708,7 +713,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
   return (
     <div ref={box} className="shire-stage minas-stage" data-touch={touch || undefined} data-mode={mode} data-zone={zone} data-day={prog.day || undefined} data-game={['ride', 'sneak', 'siege', 'chain'].includes(mode) || undefined}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="Minas Tirith in 3D: the white city of seven levels, its Citadel and White Tree, the hall of the kings, the beacon on the mountain, and the siege by night" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">To Minas Tirith…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="To Minas Tirith" />
 
       {walking && (
         <div className="shire-hud shire-hud-top">

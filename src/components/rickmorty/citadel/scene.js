@@ -225,7 +225,7 @@ export async function createCitadelWorld(canvas, { onLost, looks = null } = {}) 
           unlined.push(...district.hide);
           const lights = district.lights.map(([x, y, z, c]) => [x + TOWN.x, y + TOWN.y, z + TOWN.z, c]);
           const tracked = [...(folk?.movers ?? []), people.rick].filter((f) => f?.group).map(walker);
-          const ground = groundWorld({ renderer, scene, floor: [district.floor], sun: key, casters: [district.group], skip: [fxRoot, ...district.hide], movers: tracked, shade: 0x2a2418, blobOpacity: 0.6, tier, auto: true, clip: true });
+          const ground = groundWorld({ renderer, scene, floor: [district.floor], sun: key, casters: [district.group], skip: [fxRoot, ...district.hide], movers: tracked, shade: 0x2a2418, blobOpacity: 0.6, tier, auto: true, clip: true, cache: { world: 'citadel', place: 'mortytown' } });
           house?.adopt(district.group);
           await stage.precompile(district.group);
           district.group.visible = false;
@@ -491,6 +491,7 @@ export async function createCitadelWorld(canvas, { onLost, looks = null } = {}) 
         tier,
         auto: true,
         clip: true,
+        cache: { world: 'citadel', place: 'concourse' }, // (kept for the next visit: lib/three/bakeCache)
       })
     : null;
   const setRick = (look) => {

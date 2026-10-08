@@ -17,6 +17,7 @@ const Titan = forwardRef(function Titan({ have, onSet, fallback }, ref) {
   const canvas = useRef(null);
   const view = useRef(null);
   const buttons = useRef({});
+  const redraw = useRef(() => {});
   const [status, setStatus] = useState('idle'); // idle | loading | on | failed
   const calm = useRef(typeof window !== 'undefined' && prefersReducedMotion());
   const haveRef = useRef(have);
@@ -37,12 +38,14 @@ const Titan = forwardRef(function Titan({ have, onSet, fallback }, ref) {
       .then(async (mod) => {
         if (dead || !canvas.current) return;
         try {
-          const v = await mod.create(canvas.current, { calm: calm.current, onLost: fail });
+          // (`invalidate`: under reduced motion nothing loops, so the frame
+          // guard asks for the frame that shows what it held back)
+          const v = await mod.create(canvas.current, { calm: calm.current, onLost: fail, invalidate: () => redraw.current() });
           if (dead) {
             v.dispose();
             return;
           }
-          await warmed(v); // its shaders linked before the first frame
+          await warmed(v, () => !dead); // everything on the graphics chip before the first frame
           if (dead || v.engine?.lost) {
             v.dispose();
             return;
@@ -96,6 +99,10 @@ const Titan = forwardRef(function Titan({ have, onSet, fallback }, ref) {
       b.style.top = `${Math.round(p.y)}px`;
       b.style.visibility = p.front && !v.dusting ? 'visible' : 'hidden';
     }
+  };
+  redraw.current = () => {
+    view.current?.render(0);
+    place();
   };
   useFrameLoop(
     (dt) => {

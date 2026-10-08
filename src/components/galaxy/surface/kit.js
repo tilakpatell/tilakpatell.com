@@ -24,6 +24,7 @@ import { rng } from './noise';
 import { faceless, wind, wrapLighting } from '../../../lib/three/foliage';
 import SCANS from '../../../../public/cc0/galaxy/index.json';
 import { loadCore as loadScan, wear } from '../../../lib/three/core';
+import { nextFrame } from '../../../lib/three/gpuWork';
 
 export { part, place, rod, between, compose, mirror, ball, upright };
 
@@ -365,6 +366,39 @@ export const densityOf = (role, fallback) => (SCANS[role]?.metres ? 1 / SCANS[ro
 // a role's scan's size in metres, and the brightness its detail map is centred on
 export const scanOf = (role) => SCANS[role] ?? null;
 
+// The kit's own pictures, painted in code: each a canvas drawn stroke by
+// stroke and, for the cut-out cards, read back for its mip levels, so
+// together a long moment's work. paintKit(seed) paints them ahead, a frame
+// between each (a world being made while another draws on, at a handover,
+// doesn't hold that one's frames up); the next createKit with that seed takes
+// them instead of painting its own. Each is taken once: the kit that takes
+// it owns it.
+const PAINTERS = {
+  grime: (seed) => grimeTexture(seed),
+  needles: (seed) => needleTexture(seed),
+  foliage: (seed) => leafTexture(seed + 1),
+  fronds: (seed) => frondTexture(seed + 2),
+  broadleaf: (seed) => broadLeafTexture(seed + 3),
+  strands: (seed) => strandTexture(seed + 4),
+};
+const painted = new Map(); // `${name}:${seed}` → a picture painted ahead
+const picture = (name, seed) => {
+  const key = `${name}:${seed}`;
+  const ahead = painted.get(key);
+  if (ahead) {
+    painted.delete(key);
+    return ahead;
+  }
+  return PAINTERS[name](seed);
+};
+export async function paintKit(seed = 11, { frame = nextFrame } = {}) {
+  for (const name of Object.keys(PAINTERS)) {
+    const key = `${name}:${seed}`;
+    if (!painted.has(key)) painted.set(key, PAINTERS[name](seed));
+    await frame();
+  }
+}
+
 export function createKit({ seed = 11, scans = true, wind: blow = null, load = loadScan } = {}) {
   const owned = [];
   const own = (x) => {
@@ -372,7 +406,7 @@ export function createKit({ seed = 11, scans = true, wind: blow = null, load = l
     return x;
   };
   const r = rng(seed);
-  const grime = own(grimeTexture(seed));
+  const grime = own(picture('grime', seed));
   grime.wrapS = grime.wrapT = THREE.RepeatWrapping;
   grime.colorSpace = THREE.SRGBColorSpace;
   const plates = own(panelTexture(r, { min: 10, base: 222, spread: 16, seam: 0.55, detail: 0.35 }));
@@ -402,16 +436,16 @@ export function createKit({ seed = 11, scans = true, wind: blow = null, load = l
     // (foliage cards: needles on twigs, cut out of the light behind them)
     // (cut out by alpha to coverage, where the frame is multisampled: soft
     // edges, and leaves that don't thin away in the smaller mip levels)
-    needles: std({ roughness: 0.85, side: THREE.DoubleSide, map: own(needleTexture(seed)), alphaTest: 0.3, alphaToCoverage: true }, 1),
-    foliage: std({ roughness: 0.75, side: THREE.DoubleSide, map: own(leafTexture(seed + 1)), alphaTest: 0.3, alphaToCoverage: true }, 1),
+    needles: std({ roughness: 0.85, side: THREE.DoubleSide, map: own(picture('needles', seed)), alphaTest: 0.3, alphaToCoverage: true }, 1),
+    foliage: std({ roughness: 0.75, side: THREE.DoubleSide, map: own(picture('foliage', seed)), alphaTest: 0.3, alphaToCoverage: true }, 1),
     // (ferns' and palms' fronds, and the jungles' big leaves, on cards)
-    fronds: std({ roughness: 0.8, side: THREE.DoubleSide, map: own(frondTexture(seed + 2)), alphaTest: 0.3, alphaToCoverage: true }, 1),
-    broadleaf: std({ roughness: 0.7, side: THREE.DoubleSide, map: own(broadLeafTexture(seed + 3)), alphaTest: 0.3, alphaToCoverage: true }, 1),
+    fronds: std({ roughness: 0.8, side: THREE.DoubleSide, map: own(picture('fronds', seed)), alphaTest: 0.3, alphaToCoverage: true }, 1),
+    broadleaf: std({ roughness: 0.7, side: THREE.DoubleSide, map: own(picture('broadleaf', seed)), alphaTest: 0.3, alphaToCoverage: true }, 1),
     // (the smooth solid middle of a crown the leaf cards sit on, so the
     // light doesn't pour through it)
     crown: std({ roughness: 0.85 }, 1),
     // (moss and vines hanging; a reed's or a grass's blades, two-sided)
-    strands: std({ roughness: 0.9, side: THREE.DoubleSide, map: own(strandTexture(seed + 4)), alphaTest: 0.3, alphaToCoverage: true }, 1),
+    strands: std({ roughness: 0.9, side: THREE.DoubleSide, map: own(picture('strands', seed)), alphaTest: 0.3, alphaToCoverage: true }, 1),
     blades: std({ roughness: 0.85, side: THREE.DoubleSide }, 1),
     dark: std({ roughness: 0.55, metalness: 0.2 }, 1),
     glass: own(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.08, metalness: 0.3, transparent: true, opacity: 0.55 })),

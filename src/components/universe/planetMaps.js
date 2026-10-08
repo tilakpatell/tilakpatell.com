@@ -5,7 +5,7 @@
 //   mapFile(name, level) → the file for a planet map at lib/detail's level
 //   loadTextures({ small, level }) → the textures (any that fail are just missing)
 //   mapsOf(id), nearSet(id, level) → a planet's maps, and the finer ones it wears near
-//   mapSwapper(group, T, names) → swap(T2 | null)
+//   mapSwapper(group, T, names) → swap(T2 | null), with swap.fit(T2)
 
 import { MAP_SLOTS, loadTexture } from '../../lib/three/textures';
 import { detailLevel } from '../../lib/detail';
@@ -121,10 +121,21 @@ export async function loadTextures({ small = false, level = small ? 'mid' : deta
 // the clouds' shadows), each taking the old one's wrapping, repeat, offset,
 // colour space and anisotropy. mapSwapper(group, T, names) → swap(T2 | null);
 // null puts its own back.
+// swap.fit(T2) gives T2's maps those settings without swapping them in, so
+// a near set can be sent to the graphics chip before it's worn (three.js
+// sets a picture's wrapping and anisotropy on the chip as it sends it).
+const fitTo = (t, old) => {
+  t.wrapS = old.wrapS;
+  t.wrapT = old.wrapT;
+  t.repeat.copy(old.repeat);
+  t.offset.copy(old.offset);
+  t.colorSpace = old.colorSpace;
+  t.anisotropy = old.anisotropy;
+};
 export function mapSwapper(group, T, names) {
   const own = names.filter((n) => T[n]);
   let swapped = [];
-  return (T2) => {
+  const swap = (T2) => {
     for (const [holder, key, old] of swapped) holder[key] = old;
     swapped = [];
     if (!T2) return;
@@ -133,12 +144,7 @@ export function mapSwapper(group, T, names) {
       const old = holder?.[key];
       const t = old && by.get(old);
       if (!t) return;
-      t.wrapS = old.wrapS;
-      t.wrapT = old.wrapT;
-      t.repeat.copy(old.repeat);
-      t.offset.copy(old.offset);
-      t.colorSpace = old.colorSpace;
-      t.anisotropy = old.anisotropy;
+      fitTo(t, old);
       holder[key] = t;
       swapped.push([holder, key, old]);
     };
@@ -152,4 +158,8 @@ export function mapSwapper(group, T, names) {
       }
     });
   };
+  swap.fit = (T2) => {
+    for (const n of own) if (T2?.[n] && T2[n] !== T[n]) fitTo(T2[n], T[n]);
+  };
+  return swap;
 }

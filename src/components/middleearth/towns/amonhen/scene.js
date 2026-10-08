@@ -731,11 +731,12 @@ export function createAmonHenWorld(canvas, { onLost } = {}) {
   // ── the floor's light, baked when the town is first drawn ──
   // (the woods keep some sun on their floor: the bake's sun never reaches it
   // under the crowns, and by the sky's term alone it went black)
-  const ground = groundTown({ renderer, scene, terrain, outdoors: land, sun, height, people: movers, skip: [sky.dome, ghosts.group], tier, centre: [-25, 0], radius: 72, shade: 0x2e2a1e, sunFloor: 0.4 });
+  const ground = groundTown({ place: 'amonhen', renderer, scene, terrain, outdoors: land, sun, height, people: movers, skip: [sky.dome, ghosts.group], tier, centre: [-25, 0], radius: 72, shade: 0x2e2a1e, sunFloor: 0.4 });
   // (last, over the floor light's own tints: one shadow colour everywhere)
   houseLook.adopt(scene);
 
   return {
+    prepare: stage.prepare, // (everything sent to the graphics chip before it's seen: lib/stage3d)
     ground: import.meta.env.DEV ? ground : null, // for the QA scripts
     scene: import.meta.env.DEV ? scene : null, // for the QA scripts
     render,

@@ -1,8 +1,9 @@
 // The runtime: one renderer, one loop and the services, with a world
 // module mounted on it. mount() makes a module's world and draws it in a
 // host box; handover() lets the next module take over without a cut (the
-// old world draws on, keys aside, until the new one is ready; then its last
-// frame is kept over the new one and fades out); adopt() moves a world handed over already into
+// old world draws on until the new one is ready, its keys its own until the
+// new one is prepared; then its last frame is kept over the new one and
+// fades out); adopt() moves a world handed over already into
 // the box of the page that shows it (its canvas and the cover with it);
 // unmount() disposes the world and keeps the canvas. The browser bits (the backend, the loop's rAF, the DOM) are
 // passed in, so this runs in Node: index.js wires the real ones.
@@ -292,7 +293,11 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   // so this runs after that draw and before the browser paints, with the
   // next frame not due till after it; a new ratio set here cleared the
   // buffer, and that blank was shown for a frame.
-  const build = async (module, props, host, token, { early }) => {
+  // (`keys`, a handover's: the old world's bindings, { kept }. The new world
+  // binds its keys as it's made; the old one gets its own back from then
+  // until the new one's prepare is over, since it draws on, and is flown,
+  // all that while; then the new world's are bound again.)
+  const build = async (module, props, host, token, { early, keys = null }) => {
     const made = await backendFor(module);
     if (token !== seq || !made) return null;
     if (early) start(module);
@@ -303,6 +308,15 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       world.dispose();
       return null;
     }
+    // (the keys the new world bound as it was made, kept until it's prepared:
+    // the old world is the one flown meanwhile)
+    const fresh = keys ? (input.bindings?.() ?? null) : null;
+    if (keys?.kept) input.bind(keys.kept.actions, { axes: keys.kept.axes });
+    const ours = () => {
+      if (!keys || token !== seq) return;
+      if (fresh) input.bind(fresh.actions, { axes: fresh.axes });
+      else input.unbind();
+    };
     if (world.ready) {
       await settle(world.ready, READY_WAIT);
       if (token !== seq) {
@@ -328,6 +342,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       }
       report(1, 'first draw');
     }
+    ours();
     return world;
   };
   // How sharp it can afford to be here (lib/three/calibrate), found while
@@ -513,12 +528,14 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       } catch (err) {
         if (dev) console.warn(`[${old.module.id}] handoff failed`, err);
       }
-      // (the keys are the new world's from here, bound as it's made: the old
-      // one is on its way out, but draws on until the new one is ready)
+      // (the new world's keys are bound as it's made, from a clean slate; the
+      // old one has its own back while the new one is readied, as it draws on
+      // and is flown meanwhile, and the new world's are bound once it's
+      // prepared: build's `keys`)
       const kept = input.bindings?.() ?? null;
       input.unbind();
       try {
-        const world = await build(mod, { ...props, from }, host, token, { early: false });
+        const world = await build(mod, { ...props, from }, host, token, { early: false, keys: { kept } });
         if (!world) return false;
         try {
           onBuilt?.();

@@ -2065,6 +2065,7 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
     height: floorAt,
     tier: engine.tier,
     auto: true,
+    cache: { world: 'avengers', place: 'compound' }, // (kept for the next visit: lib/three/bakeCache)
   });
 
   return {

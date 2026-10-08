@@ -20,6 +20,8 @@ import '../../shire/shire.css';
 import '../bree/bree.css';
 import './cirithungol.css';
 import '../../../../styles/lazy/middleearth.css';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // Cirith Ungol, the ninth stretch of the road: Minas Morgul, the stairs,
 // Shelob's lair, Sam's fight, and the Tower. The places are in
@@ -84,6 +86,7 @@ export default function CirithUngolWorld({ onLeave }) {
 }
 
 function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   // other travellers online, as ghosts (../useTravellers): in the Tower's
   // courtyard, or in Shelob's tunnels, whichever you're walking
   const trav = useTravellers('cirith-ungol', gl === 'on');
@@ -144,7 +147,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
         if (dead || !canvas.current) return null;
         return createCirithUngolWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -153,7 +156,9 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
         api.current = a;
         if (import.meta.env.DEV) window.__CIRITHUNGOL__ = { api: a, sim: sim.current, complete };
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -750,7 +755,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
   return (
     <div ref={box} className="shire-stage cirith-stage" data-touch={touch || undefined} data-mode={mode} data-zone={hud.zone ?? sim.current.zone} data-game={['morgul', 'climb', 'duel', 'crumbs'].includes(mode) || (walking && hud.zone === 'lair') || undefined}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="Cirith Ungol in 3D: Minas Morgul's green light, the endless stairs, Shelob's lair, and the Tower" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">To the Morgul vale…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="To the Morgul vale" />
 
       {walking && (
         <div className="shire-hud shire-hud-top">

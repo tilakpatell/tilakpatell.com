@@ -95,7 +95,7 @@ import { plan as cockpitPlan } from '../cockpit/timeline';
 import { freeKit } from '../cockpit/kit';
 import { audioContext } from '../../lib/audio';
 import { takeArrival } from '../../lib/arrival';
-import { clamp01, createRenderer, disposeTree, easeOut, precompile, precompilePasses, singlePass, uploadTextures } from '../../lib/three/renderer';
+import { clamp01, createRenderer, disposeTree, easeOut, precompile, precompilePasses, singlePass, texturesUnder, uploadTextures } from '../../lib/three/renderer';
 import { prepareScene, uploadSlices } from '../../lib/three/gpuWork';
 import { calibrate, calibrationKey, recall, remember } from '../../lib/three/calibrate';
 import { settle as settleWithin } from '../../lib/settle';
@@ -188,7 +188,8 @@ import { wayIn } from './landings/wayin';
 import { figureVoice } from './landings/voicelines';
 import { sayVoiced, stopVoiced } from '../../lib/voiced';
 import { ENTRY, LANDABLE, airTop, entering } from './entry';
-import { createNearMaps } from './nearMaps';
+import { nearItems } from './nearMaps';
+import { createNearGrid } from './nearGrid';
 import { poseFor } from './poses';
 import { REMOVER, hitRemover, hpLeft, landingOpen, newRemover, stepRemover } from './remover';
 import { NX5_LEN, createRemoverView } from './removerView';
@@ -630,7 +631,7 @@ export async function create(canvas, ctx) {
 
   // deep space, out past the home system: its wonders, and the trench run
   // round the Death Star's middle
-  const deep = buildDeepSpace({ small, tier });
+  const deep = buildDeepSpace({ small, tier, streamed: true }); // (its models on the near grid, below)
   // what the ship can hit among the rocks (rockHits.js): the belt, the rim
   // and the debris streams, each from the same rocks its mesh draws. A rock
   // the ship's smashed is gone a while (`smashed`: field → index → when it's back)
@@ -706,7 +707,6 @@ export async function create(canvas, ctx) {
     },
   });
   const farPlaces = createFarPlaces(map, { places: FAR_PLACES.map((p) => ({ ...p, group: planetOf[p.id]?.group ?? deep.groupOf(p.id) ?? (p.id === 'sun' ? sun.group : null) })), skyFar: SKY_FAR });
-  const near = createNearMaps({ small, upload: (ts) => uploadSlices(renderer, ts, { sliceMB: 8 }) }); // (the finer maps for the two planets nearest, nearMaps.js)
   const crashFx = createCrash(map);
   // out of the ship and on foot on a planet (footScene.js)
   const foot = createFoot({ map, emit: (e) => emit(e), reduced, small, planetOf, renderer, warm: (o) => warm(o) });
@@ -813,6 +813,34 @@ export async function create(canvas, ctx) {
   // that's part of the shader made)
   const warm = (root, cam = camera, target = scene) => precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined);
   fleet.prepare = (o) => warm(o); // (the fleet's models too: none is made before the first frame)
+  // What's fetched as the ship comes near, on a grid of the map (nearGrid.js):
+  // the planets' finer maps and spheres (nearMaps.js) and deep space's models
+  // (the Citadel's). A cell ahead of the ship is fetched, its pictures sent a
+  // few megabytes at a time and its shaders made (in the house look, for the
+  // buffer the frames draw into), before any of it is shown: swapped in on a
+  // material already drawn, a picture would otherwise go up in the frame that
+  // first wears it (18 to 51 MB, frames of 0.6 to 1.7 s:
+  // docs/research/2026-10-07-frame-hitches.md). Not all of it is kept, as a
+  // world's props are: the planets' near sets are too big for that
+  // (nearGrid.js holds two). Behind the loading screen the cells round where
+  // you start are made before the first frame (prepare, below). On a low tier
+  // pictures go up as they're first seen there, as everywhere else.
+  let nearSlice = 8; // MB sent between fences (more behind the loading screen)
+  const near = createNearGrid({
+    items: [...nearItems(planets, { small }), ...deep.models],
+    prepare: async (parts) => {
+      const going = () => !disposed;
+      const roots = parts.flatMap((p) => p.roots ?? []);
+      const textures = parts.flatMap((p) => p.textures ?? []);
+      for (const root of roots) {
+        house.adopt(root);
+        textures.push(...texturesUnder(root));
+      }
+      if (tier !== 'low') await uploadSlices(renderer, textures, { sliceMB: nearSlice, alive: going });
+      for (const root of roots) if (going()) await warm(root);
+    },
+    onReady: () => !disposed && ctx.invalidate?.(),
+  });
   // who comes after you, what the director sets going, and its set pieces
   // (none of it with reduced motion)
   // whose space the ship's in (sides.js sideAt): the Rick and Morty sector's
@@ -4888,7 +4916,6 @@ export async function create(canvas, ctx) {
       const px = d > placeBound.radius ? (placeBound.radius / (d * tanHalf)) * (size.h / 2) : Infinity;
       p.update(t, camera, px > 2 && viewFrustum.intersectsSphere(placeBound));
     }
-    near.update(camera.position, planets);
     locate();
     placeLabels();
     if (state.hitMark > 0) state.hitMark = Math.max(0, state.hitMark - dt * 4);
@@ -4913,6 +4940,7 @@ export async function create(canvas, ctx) {
     // inside it up to date, once)
     map.updateWorldMatrix(true, false);
     map.worldToLocal(camLocal.copy(camera.position));
+    near.update(camLocal);
     lights(dt);
     // (the look follows the lights; what's come into the scene since is taken on every half second or so)
     house.follow({ adopt: houseFrames++ % 30 === 0 });
@@ -5424,7 +5452,7 @@ export async function create(canvas, ctx) {
 
   // in development, renderer counts and the ship, for checking from a browser
   if (import.meta.env.DEV) {
-    window.__universeDebug = { THREE, post, scene, expanse, renderer, camera, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot, travel: (id, drive) => travel(id, drive), diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, laneLook };
+    window.__universeDebug = { THREE, post, scene, expanse, renderer, camera, nearGrid: near, traffic, hunters, wingmen, skirmishes, npcs, NPCS, meetNpc: (id) => state.ship && npcs?.add(NPCS[id], skirmishSpot(state.ship) ?? { x: state.ship.x, y: state.ship.y + 5, z: state.ship.z - 40 }), director, pieces, leviathans, meteors, fleet, novae, pilots, standing, deed, wanted, law, wonders: WONDERS.map((w) => ({ id: w.id, name: w.name, at: w.at, reach: reachOf(w) })), state, foot, planets, startFoot, travel: (id, drive) => travel(id, drive), diveAt, net: () => net, siege, citadelGeo, arms, readSiegeState, rockFields, smashed, front: () => front, happen: (id) => happen(id, state.ship), mines, escort: () => escort, eclipse: () => eclipse && { ...eclipse, k: eclipseK, key: key.intensity }, remover: () => remover, removerView, laneLook };
     window.__universe = () => ({
       calls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -5447,7 +5475,7 @@ export async function create(canvas, ctx) {
       wing: wingmen?.live ?? [],
       skirmish: skirmishes?.info ?? null,
       lock: state.lock?.id ?? null,
-      near: near.resident(),
+      near: near.shown(),
       manual: Boolean(state.lock?.manual),
       controls: controls(),
       loadout: { ...state.loadout },
@@ -5481,6 +5509,7 @@ export async function create(canvas, ctx) {
   // slice at a time (lib/three/gpuWork). The draw is small: the passes'
   // buffers 64 across and one pixel of the canvas; it's what's sent that
   // counts, not the picture, and the first real frame sizes them back up.
+  const NEAR_WAIT = 6000; // ms at most what's near where you start holds up the prepare (nearGrid.js)
   const prepare = async (onProgress, { alive = () => true, frame } = {}) => {
     onProgress?.(0, 'load');
     await settleWithin(Promise.all([ready, modelsIn]), 20000);
@@ -5496,6 +5525,17 @@ export async function create(canvas, ctx) {
       frame,
       alive: () => alive() && !disposed,
     });
+    if (!alive() || disposed) return;
+    // what's near where you start fetched, sent and made before the first
+    // frame (nearGrid.js), its pictures in bigger slices while nothing's drawn
+    onProgress?.(0.94, 'pictures');
+    nearSlice = 24;
+    map.updateWorldMatrix(true, false);
+    try {
+      await near.settle(map.worldToLocal(camera.position.clone()), { alive: () => alive() && !disposed, cap: NEAR_WAIT });
+    } finally {
+      nearSlice = 8;
+    }
     if (!alive() || disposed) return;
     // how sharp this machine can afford it, found now rather than see-sawed
     // into while flying (lib/three/calibrate): the pace's ceiling from here

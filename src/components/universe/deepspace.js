@@ -47,7 +47,7 @@
 // Lit things are lit in world space from where their light is (the home sun
 // at the map's middle, or their own star), so the map can turn under them.
 //
-// buildDeepSpace({ small, tier }) → { group, update(t, camera, cam, { names }), lens(), dispose() }
+// buildDeepSpace({ small, tier, streamed }) → { group, models, update(t, camera, cam, { names }), lens(), dispose() }
 // cam is the camera's position in the map's space (the group's own).
 
 import * as THREE from 'three';
@@ -542,8 +542,9 @@ export function debrisRocks({ small = false } = {}) {
 // where the streams have drifted to at `t` (the whole of them together)
 export const DEBRIS_DRIFT = (t) => ({ x: sin(t * 0.004) * 6, y: sin(t * 0.003 + 1) * 1.5, z: cos(t * 0.0035) * 5 });
 
-export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
+export function buildDeepSpace({ small = false, tier = 'high', streamed = false } = {}) {
   const group = new THREE.Group();
+  const models = []; // what's fetched as the ship comes near (with `streamed`): { id, at, build() }
   group.name = 'deep-space';
   const owned = []; // geometries, materials and textures to free
   const own = (x) => {
@@ -1045,14 +1046,53 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
     for (const d of glass) d.dispose();
     const dome = mesh(glassGeo, shader(CITADEL_VERT, CITADEL_GLASS_FRAG, { uLight: homeW, uLightColor: { value: HOME_LIGHT }, uK: { value: k } }, { transparent: true, depthWrite: false, side: THREE.DoubleSide }), g, 1);
     // the Citadel as modelled for the site (citadelModel.js) takes over from
-    // the built one once it's loaded, fetched only when you come within a few
-    // thousand units of it
-    let fetched = false;
-    ticks.push((t, dt, cam) => {
-      if (fetched || !cam || hypot(cam.x - w.at[0], cam.y - w.at[1], cam.z - w.at[2]) > 3000) return;
-      fetched = true;
-      citadelModel(g, k, owned).then((ok) => ok && (hull.visible = dome.visible = false));
-    });
+    // the built one once it's loaded. With `streamed`, the scene's grid of
+    // what's near (nearGrid.js) fetches it ahead of the ship, sends its
+    // pictures and makes its shaders, and only then shows it; else it's
+    // fetched when you come within a few thousand units of it
+    if (streamed) {
+      models.push({
+        id: w.id,
+        at: w.at,
+        async build() {
+          const holder = new THREE.Group();
+          holder.name = 'deep-citadel-model';
+          holder.visible = false;
+          g.add(holder);
+          const mine = [];
+          if (!(await citadelModel(holder, k, mine))) {
+            g.remove(holder);
+            throw new Error('no citadel model');
+          }
+          let on = false;
+          const show = (v) => {
+            on = v;
+            holder.visible = v;
+            hull.visible = dome.visible = !v;
+          };
+          return {
+            id: w.id,
+            roots: [holder],
+            show,
+            dispose() {
+              if (on) show(false);
+              g.remove(holder);
+              // (its own materials only: the model's geometry and pictures
+              // are the GLB's, which lib/three/gltfCache keeps, so coming
+              // back to the Citadel doesn't fetch it again)
+              for (const m of mine) m.dispose();
+            },
+          };
+        },
+      });
+    } else {
+      let fetched = false;
+      ticks.push((t, dt, cam) => {
+        if (fetched || !cam || hypot(cam.x - w.at[0], cam.y - w.at[1], cam.z - w.at[2]) > 3000) return;
+        fetched = true;
+        citadelModel(g, k, owned).then((ok) => ok && (hull.visible = dome.visible = false));
+      });
+    }
     // the warm haze it hangs in, as the show paints its sky: a soft glow
     // that always faces you, behind and round it
     const haze = mesh(
@@ -1435,6 +1475,9 @@ mat3 tumble(float id) {
   let lastT = null;
   return {
     group,
+    // (with `streamed`: the models a grid fetches ahead of the ship, each
+    // build() → { id, roots, show(on), dispose() }, nearGrid.js)
+    models,
     debris: debrisField, // (the streams' rocks, for the ship to hit: rockHits.js)
     // (`names` false: the wonders' names fade, the way in through a planet's
     // air being under a sky of its own)

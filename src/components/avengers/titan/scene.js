@@ -62,8 +62,8 @@ function dusty(mat, dustU) {
   return mat;
 }
 
-export async function create(canvas, { onLost, onSlow, calm = false, meshy } = {}) {
-  const engine = createEngine(canvas, { exposure: 0.92, fov: FOV, near: 0.05, far: 3000, bloom: { strength: 0.55, radius: 0.45, threshold: 1.6 }, onLost, onSlow });
+export async function create(canvas, { onLost, onSlow, calm = false, meshy, invalidate } = {}) {
+  const engine = createEngine(canvas, { exposure: 0.92, fov: FOV, near: 0.05, far: 3000, bloom: { strength: 0.55, radius: 0.45, threshold: 1.6 }, onLost, onSlow, invalidate });
   const { scene, camera, hemi } = engine;
   const small = engine.small;
   await preload({ sets: ['rock', 'leather', 'carbon', 'concrete-worn'], skies: ['dusk'], small, backgrounds: false, renderer: engine.renderer });

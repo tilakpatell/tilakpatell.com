@@ -13,6 +13,8 @@
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { createStage } from '../../../lib/stage3d';
+import { prepareScene } from '../../../lib/three/gpuWork';
+import { settle } from '../../../lib/settle';
 import { houseOn } from '../../../lib/three/house';
 import { SUN, createSea, loadSky } from './sea';
 import { DECAL, createBalls, createDecals, createFoam, createParticles } from './fx';
@@ -162,8 +164,9 @@ export async function createTide3D(canvas, { soft = false, alive = () => true, o
     });
   };
   let disposed = false;
-  // the rest, one after another, behind the game
-  (async () => {
+  // the rest, one after another, behind the game (or, the first time, behind
+  // the loading screen: prepare, below)
+  const laterJob = (async () => {
     for (const n of LATER) {
       if (disposed) return;
       try {
@@ -869,6 +872,8 @@ export async function createTide3D(canvas, { soft = false, alive = () => true, o
     caskGeo.dispose();
     caskMat.dispose();
     ghosts.dispose();
+    // the prepare's twins in the house look: their own materials (the geometry's the models')
+    for (const twin of twins) twin.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => m.dispose()));
     for (const m of models.values()) scene.add(m.root); // so the stage frees the originals too
     sea.dispose();
     stage.dispose();
@@ -876,7 +881,54 @@ export async function createTide3D(canvas, { soft = false, alive = () => true, o
 
   placeIsles();
   onProgress?.(1, 'Ready');
+
+  // Everything sent to the graphics chip behind the page's loading screen
+  // before the first frame (lib/three/gpuWork's prepareScene): the rest of
+  // the models in (eight seconds at most), the islands placed, the passes'
+  // shaders, then every picture, shader and one draw of it all, a slice at a
+  // time. A ship's copy starts in its model's own shader and takes on the
+  // house look a moment later (house.follow), so both are made: the models as
+  // they are, and a twin of each in the look, kept so its shader is too.
+  const twins = [];
+  const prepare = async (onReport, { alive = () => true } = {}) => {
+    const on = () => alive() && !disposed && !stage.lost && !stage.disposed;
+    // (a failure here must not fail the whole game: the world stands, its
+    // shaders made as it's drawn)
+    try {
+      onReport?.(0, 'load');
+      await settle(laterJob, 8000);
+      if (!on()) return;
+      placeIsles();
+      const sources = [...models.values()].map((m) => m.root);
+      if (!twins.length)
+        for (const root of sources) {
+          const twin = cloneSkinned(root);
+          twin.traverse((o) => {
+            if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
+          });
+          house.adopt(twin);
+          twins.push(twin);
+        }
+      await settle(stage.precompile(null), 8000);
+      if (!on()) return;
+      await prepareScene({
+        renderer,
+        roots: [scene, ...sources, ...twins],
+        scene,
+        camera,
+        target: soft ? null : stage.composer.readBuffer,
+        render: () => stage.render(0),
+        onProgress: onReport,
+        alive: on,
+      });
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('Tide: prepare failed', err);
+    }
+  };
+
   return {
+    // everything onto the graphics chip behind the page's loading screen
+    prepare,
     render,
     project,
     dispose,

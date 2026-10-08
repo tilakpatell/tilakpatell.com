@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MISSIONS, missionById } from './areas';
 import { segmentClear } from './rules';
-import { createSim } from './sim';
+import { AREAS, createSim, foeModels } from './sim';
 
 const still = { moveX: 0, moveZ: 0, run: false, jump: false, throttle: 0, steer: 0, boost: false, fire: false, transform: false, use: false, aimYaw: 0, aimPitch: 0 };
 const tick = (sim, input = {}, seconds = 0.1) => {
@@ -205,5 +205,29 @@ describe('the world, played', () => {
       finished.push(m.id);
     }
     expect(finished).toHaveLength(MISSIONS.length);
+  });
+});
+
+describe('the Decepticons an area can field', () => {
+  it('lists every model the Decepticons that come there are drawn with', () => {
+    const sim = createSim();
+    const grim = sim.area.people.find((p) => p.id === 'grimlock');
+    goTo(sim, grim.x - 4, grim.z);
+    sim.use();
+    goTo(sim, 0, 300);
+    expect(sim.enemies.length).toBeGreaterThan(0);
+    const models = foeModels(sim.area);
+    for (const e of sim.enemies) expect(models).toContain(e.model);
+    expect(new Set(models).size).toBe(models.length);
+  });
+
+  it('casts the war’s troopers on Cybertron, not Earth’s Vehicons', () => {
+    const iacon = foeModels(AREAS.iacon);
+    expect(iacon).toContain('trooper');
+    expect(iacon).not.toContain('vehicon');
+  });
+
+  it('lists nothing for an area no mission fights in', () => {
+    expect(foeModels({ id: 'nowhere', era: 'foc' })).toEqual([]);
   });
 });

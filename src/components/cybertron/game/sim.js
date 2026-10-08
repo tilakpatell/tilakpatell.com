@@ -23,6 +23,19 @@ const MODEL = {
   tfp: { trooper: ['vehicon'], vehicon: ['vehicon'], megatron: ['megatron-tfp'], barricade: ['vehicon'] },
 };
 
+// Every model a Decepticon can be drawn with in `area`: the spawns of each
+// mission step played there, cast as begin() (below) casts them, so the
+// scene can have them ready before the first one comes.
+export function foeModels(area) {
+  const out = new Set();
+  for (const m of MISSIONS)
+    for (const step of m.steps ?? []) {
+      if ((step.area ?? m.area) !== area.id) continue;
+      for (const e of step.spawn ?? []) for (const k of area.foes?.[e.kind] ?? MODEL[area.era]?.[e.kind] ?? [e.kind]) out.add(k);
+    }
+  return [...out];
+}
+
 const RESPAWN = 3; // seconds down before Optimus is back on his feet
 
 export function createSim({ area: areaId = 'iacon', spawn = 'start', done = [], rand = Math.random } = {}) {

@@ -45,13 +45,15 @@ export function createEngine(canvas, opts = {}) {
     far = 600,
     onLost,
     onSlow,
+    // (asks a still view for the frame that shows what the guard held back)
+    invalidate = null,
   } = opts;
   let tierName = opts.tier ?? startTier();
   let tier = TIERS[tierName];
 
   const renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false, failIfMajorPerformanceCaveat: false }));
   // (what arrives late is held back until it's ready, not waited for: lib/three/frameGuard)
-  guard(renderer);
+  guard(renderer, { invalidate });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = toneMapping;
   renderer.toneMappingExposure = exposure;

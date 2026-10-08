@@ -737,11 +737,12 @@ export function createEdorasWorld(canvas, { onLost } = {}) {
   };
 
   // ── the floor's light, baked when the town is first drawn ──
-  const ground = groundTown({ renderer, scene, terrain, outdoors: zones.hill, sun, height: groundAt, people: movers, skip: [sky.dome, ghosts.group, flames.mesh, embers.mesh, smoke.mesh, dust.mesh, light.mesh], tier, centre: [-12, 0], radius: 115, shade: 0x3a2e1e });
+  const ground = groundTown({ place: 'edoras', renderer, scene, terrain, outdoors: zones.hill, sun, height: groundAt, people: movers, skip: [sky.dome, ghosts.group, flames.mesh, embers.mesh, smoke.mesh, dust.mesh, light.mesh], tier, centre: [-12, 0], radius: 115, shade: 0x3a2e1e });
   // (last, over the floor light's own tints: one shadow colour everywhere)
   houseLook.adopt(scene);
 
   return {
+    prepare: stage.prepare, // (everything sent to the graphics chip before it's seen: lib/stage3d)
     ground: import.meta.env.DEV ? ground : null, // for the QA scripts
     scene: import.meta.env.DEV ? scene : null, // for the QA scripts
     render,

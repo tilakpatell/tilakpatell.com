@@ -876,7 +876,7 @@ export async function createShireWorld(canvas, { onLost } = {}) {
   // (its bounce off: the house look's, from the ground map, is the bounce)
   // (the grass out of the bake: drawn from above it would wrap round the
   // bake's own camera; it reads the baked shade instead, as the floor does)
-  const ground = groundTown({ renderer, scene, terrain, outdoors, sun, height: groundY, people: movers, skip: [sky.dome, ghosts.group, water.group, grass.mesh], tier, radius: WORLD.radius + 10, shade: 0x2c3018, matcap: [rimTrees], bounce: false });
+  const ground = groundTown({ place: 'shire', renderer, scene, terrain, outdoors, sun, height: groundY, people: movers, skip: [sky.dome, ghosts.group, water.group, grass.mesh], tier, radius: WORLD.radius + 10, shade: 0x2c3018, matcap: [rimTrees], bounce: false });
   floorShadow(grass.material, ground.mask);
   // (last, over the floor light's own tints: one shadow colour everywhere)
   house.adopt(scene);

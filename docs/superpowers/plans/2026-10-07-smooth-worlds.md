@@ -10,6 +10,10 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-07-smooth-worlds-design.md`
 
+## Where this went
+
+The work ran as one PR, not one per part, and a parallel session (PR #598, `claude/world-chunk-loading-56ef2c`, plus `bdfb0a54` and `1782a93d`) implemented parts 2, 3, 4 and 6 on `main` first. `main`'s implementation stands for every overlapping concern (`gpuWork`, `frameGuard`, `calibrate`, `pace`, `renderer`, `useScene`, `LoadingVeil`, the runtime's and the universe's and the galaxy's prepares); this branch's merge keeps it and adds what it lacks — the floor-bake cache, the chunk grids (a scene's cells, the universe's near maps, a surface's things), the per-world prepares main had not done (the twelve Middle-earth towns, Cybertron, Dot Matrix, Dead man's tide, the HQ views), and the handover's keys.
+
 ## Global Constraints
 
 - Merge each part through its own GitHub PR with a merge commit after `npm test`, `npm run lint`, `npm run build` pass on the merged tree (see the repo's merge habit: sync `origin/main`, trial-merge against open branches).

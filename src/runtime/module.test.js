@@ -97,11 +97,21 @@ describe('fromScene', () => {
     expect(fromScene('x', () => scene())).not.toHaveProperty('sharpness');
   });
 
+  it("passes the scene's prepare through, with the runtime's report and alive", async () => {
+    const s = { render: () => true, resize() {}, dispose() {}, prepare: vi.fn(async () => 'done') };
+    const w = await fromScene('x', () => s).create(rt(), {});
+    const report = () => {};
+    const opts = { alive: () => true };
+    expect(await w.prepare(report, opts)).toBe('done');
+    expect(s.prepare).toHaveBeenCalledWith(report, opts);
+  });
+
   it('a scene without the optional methods still makes a whole world', async () => {
     const s = { render: () => false, resize() {}, dispose() {} };
     const w = await fromScene('x', () => s).create(rt(), {});
     expect(validateWorld(w)).toBe(w);
     expect(w.ready).toBeUndefined();
+    expect(w.prepare).toBeUndefined();
     expect(() => w.update({})).not.toThrow();
     expect(() => w.lowerQuality(1)).not.toThrow();
     expect(w.handoff()).toBe(null);

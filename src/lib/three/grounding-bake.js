@@ -30,6 +30,15 @@
 //   at the times whose channel is 0, 1, 2; A the sky)
 
 import * as THREE from 'three';
+import { fence } from './gpuWork';
+
+const lost = (renderer) => {
+  try {
+    return renderer.getContext?.()?.isContextLost?.() === true;
+  } catch {
+    return true;
+  }
+};
 
 const DEG = Math.PI / 180;
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
@@ -630,8 +639,14 @@ export async function bakeFloorTexture(renderer, scene, { area, floor = [], cast
     renderer.render(quadScene, new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1));
     renderer.setRenderTarget(kept.target);
     renderer.autoClear = kept.autoClear;
-    // (read back once, a moment's stall: where the floor is, for whatever
-    // lays a blob on it)
+    // (read back once: where the floor is, for whatever lays a blob on it.
+    // Only once the chip has done the bake, so the read never waits on it:
+    // the world before this one may still be drawing a dive meanwhile. A
+    // context gone meanwhile, or a caller that's left, gives up on the bake,
+    // as a failure does: the world stands without it.)
+    // (the fence waits at most for one queued frame)
+    await fence(renderer);
+    if (signal?.aborted || lost(renderer)) return null;
     const pixels = new Uint8Array(size * size * 4);
     renderer.readRenderTargetPixels(out, 0, 0, size, size, pixels);
     const result = out;

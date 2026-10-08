@@ -23,6 +23,8 @@ import '../bree/bree.css';
 import './marshes.css';
 import '../../../../styles/lazy/middleearth.css';
 import GuideCue from '../../../guide/GuideCue';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // The Emyn Muil, the Dead Marshes and the Black Gate: the eighth stretch
 // of the road, Frodo and Sam alone with Gollum. The places are in
@@ -100,6 +102,7 @@ export default function MarshesWorld({ onLeave }) {
 }
 
 function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const trav = useTravellers('dead-marshes', gl === 'on');
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
@@ -158,7 +161,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
         if (dead || !canvas.current) return null;
         return createMarshesWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -167,7 +170,9 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
         api.current = a;
         if (import.meta.env.DEV) window.__MARSHES__ = { api: a, sim: sim.current, complete };
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -763,7 +768,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
   return (
     <div ref={box} className="shire-stage marshes-stage" data-touch={touch || undefined} data-mode={mode} data-zone={hud.zone ?? sim.current.zone} data-game={['rope', 'creep', 'way'].includes(mode) || hud.leading || undefined} data-hiding={hud.hiding || undefined}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="The Emyn Muil, the Dead Marshes and the Black Gate in 3D: razor rock in a storm, black pools with lights in them, and the Gate of Mordor" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">Into the Emyn Muil…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Into the Emyn Muil" />
 
       {walking && (
         <div className="shire-hud shire-hud-top">

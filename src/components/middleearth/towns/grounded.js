@@ -14,13 +14,15 @@
 // extent, at most 240 m a side); `clip` for one zone of a town shown a zone at
 // a time (lib/three/groundwork); `sunFloor` how much of the sun the floor
 // keeps where the mask has none (a wood: under the canopy the mask's sun is
-// nought, and a floor lit by the sky's term alone goes black).
+// nought, and a floor lit by the sky's term alone goes black). `place` names
+// the bake (a town, or a town's zone) so it's kept for the next visit
+// (lib/three/bakeCache).
 
 import { groundWorld } from '../../../lib/three/groundwork';
 
 export const FIGURE = 0.84; // a figure's blob, across (the circles it replaces were 0.42 in radius)
 
-export function groundTown({ renderer, scene, terrain, outdoors, sun, height, people = [], skip = [], tier = 'mid', centre = [0, 0], radius = 60, shade = 0x2e2620, sunFloor = 0, matcap = [], bounce = {}, clip = false }) {
+export function groundTown({ renderer, scene, terrain, outdoors, sun, height, people = [], skip = [], tier = 'mid', centre = [0, 0], radius = 60, shade = 0x2e2620, sunFloor = 0, matcap = [], bounce = {}, clip = false, place = null }) {
   const movers = people.filter(Boolean).map((p) => (p.object ? { size: [FIGURE, FIGURE], ...p } : { object: p, size: [FIGURE, FIGURE] }));
   return groundWorld({
     renderer,
@@ -39,5 +41,6 @@ export function groundTown({ renderer, scene, terrain, outdoors, sun, height, pe
     matcap,
     auto: true,
     clip,
+    cache: place ? { world: 'middle-earth', place } : null,
   });
 }

@@ -461,6 +461,7 @@ export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
         tier,
         auto: true,
         clip: true,
+        cache: { world: 'c-137', place: 'street' }, // (kept for the next visit: lib/three/bakeCache)
       })
     : null;
 

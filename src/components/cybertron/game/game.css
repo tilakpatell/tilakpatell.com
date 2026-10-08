@@ -2,9 +2,6 @@
 .cyw { position: relative; height: calc(100svh - var(--nav-h, 0px)); min-height: min(520px, 100svh); margin-top: var(--nav-h, 0px); overflow: hidden; background: #05070c; color: #e9f1ff; font-family: 'Orbitron', ui-sans-serif, system-ui, sans-serif; }
 .cyw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
 .cyw[data-playing] .cyw-canvas { cursor: crosshair; }
-.cyw-loading { position: absolute; inset: 0; display: grid; place-content: center; gap: 14px; justify-items: center; font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; color: #9fd8ff; background: radial-gradient(60% 50% at 50% 50%, rgba(63, 210, 255, 0.12), transparent 70%), #05070c; }
-.cyw-spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(63, 210, 255, 0.2); border-top-color: #3fd2ff; animation: cyw-spin 0.9s linear infinite; }
-@keyframes cyw-spin { to { transform: rotate(360deg); } }
 
 .cyw-start { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); width: min(92%, 640px); padding: 26px 28px 22px; border: 1px solid rgba(127, 216, 255, 0.25); border-radius: 18px; background: linear-gradient(180deg, rgba(8, 14, 26, 0.86), rgba(4, 7, 13, 0.92)); /* (no blur: over a world redrawn every frame, it costs a frame) */ text-align: center; box-shadow: 0 20px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
 .cyw-kicker { font-size: 0.72rem; letter-spacing: 0.24em; text-transform: uppercase; color: #ffb36a; }
@@ -144,5 +141,5 @@
   .cyw-toast { top: calc(186px + env(safe-area-inset-top)); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cyw-spinner, .cyw-toast, .cyw-fade, .cyw-cross.cyw-hitmark, .cyw-hurt.cyw-hurt-on { animation: none; }
+  .cyw-toast, .cyw-fade, .cyw-cross.cyw-hitmark, .cyw-hurt.cyw-hurt-on { animation: none; }
 }

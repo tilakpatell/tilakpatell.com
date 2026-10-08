@@ -121,6 +121,9 @@ export function createDither(camera) {
 
   return {
     material,
+    // its own scene and camera (the quad), for compiling before the first frame
+    scene,
+    camera: ortho,
     setPalette,
     set fade(v) {
       material.uniforms.uFade.value = v;

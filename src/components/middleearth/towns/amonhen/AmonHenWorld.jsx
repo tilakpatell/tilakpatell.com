@@ -22,6 +22,8 @@ import '../bree/bree.css';
 import './amonhen.css';
 import '../../../../styles/lazy/middleearth.css';
 import GuideCue from '../../../guide/GuideCue';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // Amon Hen, the seventh town on the road: the camp at Parth Galen,
 // Boromir in the woods, the Seat of Seeing, the Uruk-hai, and Sam in the
@@ -100,6 +102,7 @@ export default function AmonHenWorld({ onLeave }) {
 }
 
 function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const trav = useTravellers('amon-hen', gl === 'on');
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
@@ -163,7 +166,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
         if (dead || !canvas.current) return null;
         return createAmonHenWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -172,7 +175,9 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
         api.current = a;
         if (import.meta.env.DEV) window.__AMONHEN__ = { api: a, sim: sim.current, complete };
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -777,7 +782,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
   return (
     <div ref={box} className="shire-stage amonhen-stage" data-touch={touch || undefined} data-mode={mode} data-ring={hud.ring || undefined} data-game={['seat', 'rescue', 'skipping'].includes(mode) || hud.ring || hud.running || undefined}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="Amon Hen in 3D: the lawn of Parth Galen by the lake, the woods and the old kings' statues, and the Seat of Seeing on the summit" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">Down the river to Parth Galen…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Down the river to Parth Galen" />
 
       {walking && (
         <div className="shire-hud shire-hud-top">

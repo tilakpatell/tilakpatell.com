@@ -17,6 +17,8 @@ import '../../shire/shire.css';
 import '../bree/bree.css';
 import './orthanc.css';
 import '../../../../styles/lazy/middleearth.css';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // Orthanc, found off the road: Gandalf's visit to Isengard. Saruman in his
 // hall, the library of lore, the palantír, the duel of the wizards, the
@@ -84,6 +86,7 @@ export default function OrthancWorld({ onLeave }) {
 }
 
 function World({ prog, complete, gl, setGl, onLeave, again }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
   const canvas = useRef(null);
@@ -144,7 +147,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
         if (dead || !canvas.current) return null;
         return createOrthancWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -153,7 +156,9 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
         api.current = a;
         if (import.meta.env.DEV) window.__ORTHANC__ = { api: a, sim: sim.current, complete };
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -734,7 +739,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
   return (
     <div ref={box} className="shire-stage orthanc-stage" data-touch={touch || undefined} data-mode={mode} data-zone={hud.zone ?? sim.current.zone} data-game={['gaze', 'duel', 'climb', 'moth', 'leap'].includes(mode) || undefined}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="Orthanc in 3D: Saruman's black hall and its palantír, the library, the long stair, and the pinnacle over Isengard" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">To Isengard…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="To Isengard" />
 
       {walking && (
         <div className="shire-hud shire-hud-top">

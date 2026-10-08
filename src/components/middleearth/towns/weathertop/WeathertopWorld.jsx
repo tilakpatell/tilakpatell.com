@@ -21,6 +21,8 @@ import '../bree/bree.css';
 import './weathertop.css';
 import '../../../../styles/lazy/middleearth.css';
 import GuideCue from '../../../guide/GuideCue';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // Weathertop, the third town on the road: walk up the hill of Amon Sûl at
 // dusk as Frodo, and play the night there as the films tell it. The land
@@ -88,6 +90,7 @@ export default function WeathertopWorld({ onLeave }) {
 }
 
 function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   // other travellers online on Weathertop, as ghosts (../useTravellers)
   const trav = useTravellers('weathertop', gl === 'on');
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
@@ -192,7 +195,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
         if (dead || !canvas.current) return null;
         return createWeathertopWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -201,7 +204,9 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
         api.current = a;
         if (import.meta.env.DEV) window.__WEATHERTOP__ = { api: a, sim: sim.current, complete }; // for the QA scripts
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -997,7 +1002,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
   return (
     <div ref={box} className="shire-stage wt-stage" data-touch={touch || undefined} data-mode={mode} data-game={(walking && (F || hud.hunt)) || undefined} data-wearing={hud.wearing || undefined} data-sky={prog.sky}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="Weathertop in 3D: the hill of Amon Sûl with the ruined watchtower on its summit, the old stair through the crags, and the dell where the hobbits camp" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">Climbing Weathertop…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Climbing Weathertop" />
 
       {(walking || mode === 'sleep') && (
         <div className="shire-hud shire-hud-top">

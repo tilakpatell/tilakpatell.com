@@ -47,7 +47,7 @@ const SEAT = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 };
 const w = (px, py) => toWorld(px, py);
 
 export async function createTour3D(canvas, { onLost, onSlow, onChange } = {}) {
-  const stage = createStage(canvas, { onLost, onSlow, fov: 36 });
+  const stage = createStage(canvas, { onLost, onSlow, fov: 36, invalidate: () => onChange?.() });
   const { scene, camera } = stage;
   // The people take their seats as their models come: the office opens
   // without waiting for them. (`onChange`: there is something new to draw.)

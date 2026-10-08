@@ -7,9 +7,11 @@ import { device } from '../../../lib/device';
 import { readPad, typing } from '../../games/pad';
 import { useAchievements } from '../../Achievements';
 import { AREAS } from './areas';
-import { createSim } from './sim';
+import { createSim, foeModels } from './sim';
 import { createSounds } from './sounds';
 import { useVoiced } from '../../../lib/useVoiced';
+import LoadingVeil from '../../worlds/LoadingVeil';
+import { throttled } from '../../worlds/loadingSteps';
 import { Exit, Menu, Prompt, Stick, Toast, TouchButton } from '../../../runtime/hud';
 import { wayOut } from '../../worlds/worlds';
 import { Keys } from '../../guide/KeyTable';
@@ -94,6 +96,7 @@ function World({ gl, setGl, side }) {
     el.classList.add(cls);
   };
   const [toast, setToast] = useState(null);
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const [fade, setFade] = useState(null); // a bridge crossed: its colour while the next place loads
   const [list, setList] = useState(false);
   const crossing = useRef(false);
@@ -134,7 +137,8 @@ function World({ gl, setGl, side }) {
         fit();
         await a.setArea(s.area);
         if (dead) return;
-        await Promise.race([a.precompile(), new Promise((r) => setTimeout(r, 4000))]);
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare(throttled(setPrep), { alive: () => !dead, foes: foeModels(s.area) });
         if (!dead) setGl('on');
       })
       .catch((e) => {
@@ -423,12 +427,7 @@ function World({ gl, setGl, side }) {
   return (
     <section ref={box} className="cyw" data-playing={playing ? '' : undefined} aria-label={`Cybertron: walk and drive as ${SIDES[playingSide].name}`}>
       <canvas ref={canvas} className="cyw-canvas" tabIndex={-1} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onContextMenu={(e) => e.preventDefault()} />
-      {gl !== 'on' && (
-        <div className="cyw-loading" role="status">
-          <span className="cyw-spinner" aria-hidden="true" />
-          Bridging to Cybertron…
-        </div>
-      )}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Bridging to Cybertron" />
       {gl === 'on' && !playing && (
         <div className="cyw-start">
           <p className="cyw-kicker">{hud.area}</p>

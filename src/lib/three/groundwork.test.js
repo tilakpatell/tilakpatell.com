@@ -105,6 +105,21 @@ describe('a world put on baked floor light', () => {
   });
 });
 
+describe('a bake whose caller has left', () => {
+  it("stops at its next chunk, and leaves the first frame to bake it afresh", async () => {
+    const w = world();
+    const g = groundWorld({ renderer: stubRenderer(true), scene: w.scene, floor: [w.floor], area, sun: w.sun, auto: true, movers: [{ object: w.walker, size: [0.8, 0.8] }] });
+    const before = w.floor.material.userData.floorShadow.uMask.value[0];
+    let going = true;
+    const done = g.bake({ alive: () => going });
+    going = false;
+    expect(await done).toBe(false);
+    expect(w.floor.material.userData.floorShadow.uMask.value[0]).toBe(before);
+    expect(g.stats.started).toBe(false);
+    expect(w.walker.visible).toBe(true);
+  });
+});
+
 describe('a sun that moves', () => {
   it('is baked again once it has turned far enough from where it was baked', () => {
     const at = new THREE.Vector3(0.3, 0.8, 0.2).normalize();

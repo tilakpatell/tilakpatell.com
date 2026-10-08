@@ -5,6 +5,8 @@ import '@fontsource/press-start-2p/400.css';
 import { useAchievements } from '../Achievements';
 import { audioContext } from '../../lib/audio';
 import { use3D } from '../../lib/gpu';
+import LoadingVeil from '../worlds/LoadingVeil';
+import { throttled } from '../worlds/loadingSteps';
 import { local, useFrameLoop, useInView, useMediaQuery } from '../../lib/hooks';
 import { capturePointer } from '../../lib/pointer';
 import { useVoiced } from '../../lib/useVoiced';
@@ -77,6 +79,7 @@ export default function DotMatrixWorld() {
 }
 
 function World({ gl, setGl }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
   const canvas = useRef(null);
@@ -157,7 +160,8 @@ function World({ gl, setGl }) {
         api.current = a;
         a.setPalette(palette);
         fit();
-        await a.warm(view());
+        // everything on the graphics chip before the island's shown, behind the loading screen
+        await a.prepare(view(), throttled(setPrep), () => !dead);
         if (dead) return undefined;
         if (import.meta.env.DEV) window.__DMG__ = { api: a, sim: sim.current }; // for the QA scripts
         setGl('on');
@@ -581,7 +585,7 @@ function World({ gl, setGl }) {
             </span>
           ))}
         </div>
-        {gl !== 'on' && <p className="dm-loading">Loading the island…</p>}
+        <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Dot Matrix island" line="Loading the island…" />
 
         <DotMatrixHud touch={touch} gl={gl} hud={hud} sim={sim} palette={palette} setPalette={setPalette} musicOn={musicOn} setMusicOn={setMusicOn} trav={trav} list={list} setList={setList} banner={banner} moved={moved} prompt={prompt} act={act} dialog={dialog} shown={shown} setShown={setShown} closeDialog={closeDialog} padRef={padRef} onPad={onPad} padUp={padUp} button={button} />
 

@@ -130,8 +130,13 @@ describe('a hostile’s body in the world', () => {
   });
   const DT = 1 / 30;
   const world = { heightAt: () => 0, solids: null };
-  const settle = async () => {
-    for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));
+  // the models load on their own ticks: twenty of them, or, given `until`,
+  // as many as it takes for that to come true (a busy machine takes more)
+  const settle = async (until = null) => {
+    for (let i = 0; i < (until ? 2000 : 20); i++) {
+      await new Promise((r) => setTimeout(r, 0));
+      if (until?.()) return;
+    }
   };
   const out = (kind, over = {}) => {
     const a = createActivity({ parent: new THREE.Group(), world });
@@ -152,7 +157,7 @@ describe('a hostile’s body in the world', () => {
 
   it('a rigged Tusken raises its rifle on you and fires from the muzzle; shot, it goes down the way the shot went, lies, and is gone', async () => {
     const a = out('tusken');
-    await settle();
+    await settle(() => a.debug()[0]?.body.rigged);
     const t = a.targets[0];
     expect(t.gp?.kind).toBe('sniper');
     const you = { x: 0, y: 0, z: 0 };
@@ -190,7 +195,7 @@ describe('a hostile’s body in the world', () => {
 
   it('a duellist holds its saber in its own hand; one built from shapes holds no gun and goes down as before, without its clip', async () => {
     const v = out('vader', { hostile: { range: 16, chase: 2, melee: true, reach: 2.6, every: 1.5, damage: 16, parry: 0.8, guard: 4, blade: { color: '#ff3b3b' } } });
-    await settle();
+    await settle(() => v.debug()[0]?.body.gun);
     expect(v.debug()[0].body.gun).toBe('saber:hand');
     const hand = v.targets[0].blade.gun.parent;
     expect(hand.isBone && hand.name).toBe('RightHand');

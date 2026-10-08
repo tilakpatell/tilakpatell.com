@@ -14,10 +14,12 @@ import { precompile as compileFor, quiet } from '../../lib/three/renderer';
 // own target smooths the edges; the canvas only ever gets a quad); `maxRatio`
 // the most device pixels a CSS pixel gets; `slowMs` the average frame that
 // starts the steps down.
-export function createStage(canvas, { onLost, onSlow, fov = 50, antialias = true, maxRatio = 2, slowMs = 40 } = {}) {
+export function createStage(canvas, { onLost, onSlow, fov = 50, antialias = true, maxRatio = 2, slowMs = 40, invalidate = null } = {}) {
   const renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias, powerPreference: 'high-performance', alpha: false }));
-  // (what arrives late is held back until it's ready, not waited for: lib/three/frameGuard)
-  guard(renderer);
+  // (what arrives late is held back until it's ready, not waited for:
+  // lib/three/frameGuard; `invalidate` asks a still scene for the frame that
+  // shows what it held back)
+  guard(renderer, { invalidate });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;

@@ -686,6 +686,48 @@ describe('createRuntime', () => {
     expect(input.bind).toHaveBeenLastCalledWith({ old: ['KeyO'] }, { axes: {} });
   });
 
+  it("a handover gives the old world its keys back while the new one prepares, and the new one's once it's prepared", async () => {
+    const { rt, input } = make();
+    let bound = { actions: {}, axes: {} };
+    input.bind = vi.fn((actions, { axes = {} } = {}) => (bound = { actions, axes }));
+    input.bindings = vi.fn(() => bound);
+    input.unbind.mockImplementation(() => (bound = { actions: {}, axes: {} }));
+    await rt.mount({ id: 'old', create: () => (rt.input.bind({ old: ['KeyO'] }), fakeWorld()) }, {}, fakeHost());
+    let finish;
+    const seen = [];
+    const next = fakeWorld({
+      prepare: () => {
+        seen.push(bound.actions);
+        return new Promise((r) => (finish = r));
+      },
+    });
+    const p = rt.handover({ id: 'next', create: () => (rt.input.bind({ fly: ['KeyW'] }), next) }, {}, fakeHost());
+    await settled();
+    expect(seen).toEqual([{ old: ['KeyO'] }]); // (the old world's, while the new one prepares)
+    finish();
+    await settled();
+    expect(bound.actions).toEqual({ fly: ['KeyW'] });
+    expect(await p).toBe(true);
+    expect(bound.actions).toEqual({ fly: ['KeyW'] });
+  });
+
+  it('a newer mount during the prepare leaves the keys to it', async () => {
+    const { rt, input } = make();
+    let bound = { actions: {}, axes: {} };
+    input.bind = vi.fn((actions, { axes = {} } = {}) => (bound = { actions, axes }));
+    input.bindings = vi.fn(() => bound);
+    input.unbind.mockImplementation(() => (bound = { actions: {}, axes: {} }));
+    await rt.mount({ id: 'old', create: () => (rt.input.bind({ old: ['KeyO'] }), fakeWorld()) }, {}, fakeHost());
+    let finish;
+    const next = fakeWorld({ prepare: () => new Promise((r) => (finish = r)) });
+    const p = rt.handover({ id: 'next', create: () => (rt.input.bind({ fly: ['KeyW'] }), next) }, {}, fakeHost());
+    await settled();
+    await rt.mount({ id: 'third', create: () => (rt.input.bind({ walk: ['KeyA'] }), fakeWorld()) }, {}, fakeHost());
+    finish();
+    expect(await p).toBe(false);
+    expect(bound.actions).toEqual({ walk: ['KeyA'] });
+  });
+
   it('a held cover waits for the page to adopt the world, then fades in its box', async () => {
     const { rt, loop, input } = make();
     const old = fakeWorld({ wants: () => true });

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import SCANS from '../../../../public/cc0/galaxy/index.json';
-import { KIT_ROLES, createKit } from './kit';
+import { KIT_ROLES, createKit, paintKit } from './kit';
 
 // (canvases that take every call and draw nothing: the kit paints its stand-ins)
 beforeAll(() => {
@@ -13,6 +13,34 @@ beforeAll(() => {
 afterAll(() => delete globalThis.document);
 
 describe('the kit', () => {
+  it('takes the pictures painted ahead for its seed (a frame between each), and paints its own once they are taken', async () => {
+    const made = () => {
+      let n = 0;
+      const was = globalThis.document.createElement;
+      globalThis.document.createElement = (...a) => (n++, was(...a));
+      return { count: () => n, done: () => (globalThis.document.createElement = was) };
+    };
+    const own = made();
+    createKit({ seed: 7, scans: false }).dispose();
+    own.done();
+    let frames = 0;
+    const ahead = made();
+    await paintKit(7, { frame: async () => frames++ });
+    ahead.done();
+    expect(frames).toBe(6);
+    const taking = made();
+    const kit = createKit({ seed: 7, scans: false });
+    taking.done();
+    expect(taking.count() + ahead.count()).toBe(own.count());
+    expect(taking.count()).toBeLessThan(own.count());
+    // (taken: the next kit paints its own)
+    const again = made();
+    createKit({ seed: 7, scans: false }).dispose();
+    again.done();
+    expect(again.count()).toBe(own.count());
+    kit.dispose();
+  });
+
   it('blows its plants and cloth in the world’s wind, and not its stone', () => {
     const kit = createKit({ seed: 1, scans: false, wind: { angle: Math.PI / 2 } });
     for (const name of ['fronds', 'foliage', 'cloth', 'strands']) {

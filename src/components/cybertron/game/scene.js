@@ -19,7 +19,9 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { budget } from '../../../lib/device';
 import { createPace } from '../../../lib/three/pace';
 import { guard } from '../../../lib/three/frameGuard';
-import { precompile, quiet, releaseContext } from '../../../lib/three/renderer';
+import { precompile, precompilePasses, quiet, releaseContext } from '../../../lib/three/renderer';
+import { prepareScene } from '../../../lib/three/gpuWork';
+import { settle } from '../../../lib/settle';
 import { createPost } from '../../universe/post';
 import { makeFigure, makeThing } from './bots';
 import { bake, centresOf, cluster, makeTransformer } from './chunks';
@@ -224,6 +226,7 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
           shade: 0x16141c,
           tier,
           auto: true,
+          cache: { world: 'cybertron', place: area.id }, // (kept for the next visit: lib/three/bakeCache)
         });
       }
       // the metal shines with the place's own sky (Iacon's fires low on
@@ -611,9 +614,78 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     post.render(size.w, size.h);
   };
 
+  // Everything on the graphics chip behind the page's loading screen, once
+  // the area's built: its floor light baked (or read back from an earlier
+  // visit's), the Decepticons it can field (`foes`, their models) fetched
+  // and stood in, hidden, the change from robot to vehicle made once (its
+  // material kept, so its shader stays made for every change after), the
+  // house look taken on, the passes' shaders linked, then lib/three/gpuWork's
+  // prepareScene. Each wait is a few seconds at most; what's later still is
+  // the frame guard's.
+  const BAKE_WAIT = 8000; // ms at most the floor's bake holds up the prepare
+  const MODELS_WAIT = 5000; // ms at most the Decepticons' models do
+  let warmChange = null; // (the change made once, kept for its shader)
+  const prepare = async (onProgress, { alive = () => true, foes: kinds = [] } = {}) => {
+    const going = () => alive() && !lost;
+    onProgress?.(0, 'load');
+    await settle(loading, MODELS_WAIT);
+    if (!going()) return;
+    if (ground && !ground.stats.started) {
+      onProgress?.(0, 'bake');
+      await settle(ground.bake(), BAKE_WAIT);
+      if (!going()) return;
+    }
+    onProgress?.(0, 'load');
+    const standIns = new THREE.Group();
+    standIns.visible = false;
+    const made = [];
+    let over = false; // (the wait's up: one arriving now is let go)
+    const fetching = Promise.all(
+      kinds.map((k) =>
+        makeFigure(k, { shadows: false })
+          .then((f) => {
+            if (over || !going()) return f.dispose();
+            made.push(f);
+            standIns.add(f.group);
+          })
+          .catch(() => {}),
+      ),
+    );
+    await settle(fetching, MODELS_WAIT);
+    over = true;
+    if (!going()) {
+      for (const f of made) f.dispose();
+      return;
+    }
+    const { forms } = player;
+    if (!warmChange && forms.robot && forms.vehicle) {
+      try {
+        warmChange = makeTransformer(forms.robot, { ...forms.vehicle, kind: 'vehicle' });
+        standIns.add(warmChange.group);
+      } catch {
+        warmChange = null; // (the first change makes it, as before)
+      }
+    }
+    scene.add(standIns);
+    lightsOf();
+    house.follow({ adopt: true });
+    try {
+      if (post.on) await settle(precompilePasses(renderer, post.composer, camera), 4000);
+      if (!going()) return;
+      await prepareScene({ renderer, roots: [scene], scene, camera, target: post.target, render: () => post.render(size.w, size.h), onProgress, alive: going });
+    } finally {
+      scene.remove(standIns);
+      if (warmChange) standIns.remove(warmChange.group);
+      // (their materials are their models' own, or clones of them, made
+      // the same way: the shaders made for these are the ones theirs use)
+      for (const f of made) f.dispose();
+    }
+  };
+
   return {
     camera,
     scene,
+    prepare,
     // (for the QA scripts: this area's floor light)
     get ground() {
       return import.meta.env.DEV ? ground : null;
@@ -679,6 +751,7 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
       room.dispose();
       skyEnv?.dispose();
       pmrem.dispose();
+      warmChange?.dispose();
       post.composer?.dispose?.();
       canvas.removeEventListener('webglcontextlost', onContextLost);
       renderer.dispose();

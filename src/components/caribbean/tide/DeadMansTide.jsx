@@ -3,6 +3,8 @@ import GpuGate from '../../games/GpuGate';
 import { edges, readPad, typing } from '../../games/pad';
 import { audioContext } from '../../../lib/audio';
 import { local, prefersReducedMotion, useMediaQuery } from '../../../lib/hooks';
+import LoadingVeil from '../../worlds/LoadingVeil';
+import { throttled } from '../../worlds/loadingSteps';
 import { sayVoiced } from '../../../lib/voiced';
 import { SUNK_BOSS, SUNK_LINE } from '../lines';
 import { CHAPTERS, STEP_BOUND, TIDE, UPS, bearing, choose, fitted, newGame, progress, shipStep, step } from './rules';
@@ -88,6 +90,7 @@ function Game({ soft, fail }) {
   });
   const [phase, setPhase] = useState('loading'); // loading | ready | running | paused | won | lost
   const [load, setLoad] = useState({ k: 0, label: 'Starting the renderer' });
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const [ui, setUi] = useState({ chapter: 0, done: null, boss: null, offer: [], sail: 2, result: null, low: false });
   const [callout, setCallout] = useState(null);
   const [full, setFull] = useState(false);
@@ -119,7 +122,7 @@ function Game({ soft, fail }) {
           onProgress: (k, label) => !dead && setLoad({ k, label }),
         }),
       )
-      .then((r) => {
+      .then(async (r) => {
         made = r;
         if (!r) return;
         if (dead) {
@@ -129,6 +132,9 @@ function Game({ soft, fail }) {
         gl.current = r;
         if (import.meta.env.DEV) window.__TIDE3D__ = r; // for the browser tests
         r.resize(el.clientWidth, el.clientHeight);
+        // everything on the graphics chip before the first frame, behind the loading screen
+        await r.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (dead) return;
         setPhase('ready');
       })
       .catch((err) => {
@@ -576,7 +582,8 @@ function Game({ soft, fail }) {
         data-phase={phase}
         data-low={ui.low && running ? '' : undefined}
       >
-        {phase === 'loading' && (
+        <LoadingVeil shown={phase === 'loading' && load.k >= 1} progress={prep.value} step={prep.step} title="Dead man’s tide" line="Rigging the ships…" />
+        {phase === 'loading' && load.k < 1 && (
           <div className="g3-loading">
             <div className="grid justify-items-center">
               <span>{load.label}…</span>

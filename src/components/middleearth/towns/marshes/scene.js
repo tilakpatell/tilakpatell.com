@@ -867,14 +867,15 @@ export function createMarshesWorld(canvas, { onLost } = {}) {
 
   // ── the floor's light, baked in each zone outdoors when it's first shown ──
   const grounds = [
-    groundTown({ renderer, scene, terrain: emynLand, outdoors: zones.emyn, sun, height: null, people: movers, skip: [sky.dome, ghosts.group], tier, radius: null, shade: 0x22261e, clip: true }),
-    groundTown({ renderer, scene, terrain: marshLand, outdoors: zones.marsh, sun, height: null, people: movers, skip: [sky.dome, ghosts.group], tier, radius: null, shade: 0x22261e, clip: true }),
-    groundTown({ renderer, scene, terrain: gateLand, outdoors: zones.gate, sun, height: null, people: movers, skip: [sky.dome, ghosts.group], tier, radius: null, shade: 0x22261e, clip: true }),
+    groundTown({ place: 'marshes-emyn', renderer, scene, terrain: emynLand, outdoors: zones.emyn, sun, height: null, people: movers, skip: [sky.dome, ghosts.group], tier, radius: null, shade: 0x22261e, clip: true }),
+    groundTown({ place: 'marshes-marsh', renderer, scene, terrain: marshLand, outdoors: zones.marsh, sun, height: null, people: movers, skip: [sky.dome, ghosts.group], tier, radius: null, shade: 0x22261e, clip: true }),
+    groundTown({ place: 'marshes-gate', renderer, scene, terrain: gateLand, outdoors: zones.gate, sun, height: null, people: movers, skip: [sky.dome, ghosts.group], tier, radius: null, shade: 0x22261e, clip: true }),
   ];
   // (last, over the floor light's own tints: one shadow colour everywhere)
   houseLook.adopt(scene);
 
   return {
+    prepare: stage.prepare, // (everything sent to the graphics chip before it's seen: lib/stage3d)
     ground: import.meta.env.DEV ? grounds[0] : null, // for the QA scripts
     scene: import.meta.env.DEV ? scene : null, // for the QA scripts
     render,

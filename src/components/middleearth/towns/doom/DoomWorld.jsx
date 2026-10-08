@@ -21,6 +21,8 @@ import '../bree/bree.css';
 import './doom.css';
 import '../../../../styles/lazy/middleearth.css';
 import GuideCue from '../../../guide/GuideCue';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // Mordor and Mount Doom, the end of the road: the orc column, across
 // Gorgoroth under the Eye, Sam carrying Frodo up the mountain, the Crack of
@@ -88,6 +90,7 @@ export default function DoomWorld({ onLeave }) {
 }
 
 function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   // other travellers online crossing Gorgoroth, as ghosts (../useTravellers);
   // the crossing is some 760 m west of the mountain, the world's middle
   const trav = useTravellers('doom', gl === 'on', { bound: 800 });
@@ -148,7 +151,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
         if (dead || !canvas.current) return null;
         return createDoomWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -157,7 +160,9 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
         api.current = a;
         if (import.meta.env.DEV) window.__DOOM__ = { api: a, sim: sim.current, complete };
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -734,7 +739,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
   return (
     <div ref={box} className="shire-stage doom-stage" data-touch={touch || undefined} data-mode={mode} data-zone={zone} data-game={['march', 'carry', 'hang', 'flight', 'remember'].includes(mode) || crossing || undefined}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="Mordor in 3D: the plain of Gorgoroth under the Eye, Mount Doom, and the fire inside it" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">Into Mordor…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Into Mordor" />
 
       {(walking || mode === 'end') && (
         <div className="shire-hud shire-hud-top">

@@ -39,10 +39,18 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
   window.__LIVE__ = { stages, get current() { return current; } };
 }
 
-// A view's shaders, linked in the background before its first frame
-// (hq/engine's precompile), so drawing it doesn't stall the page; four seconds
-// at most, and never a failure.
-export const warmed = (v) => settle(v?.engine?.precompile?.(), 4000);
+// A view's pictures sent, its shaders linked and everything drawn once
+// before its first frame (hq/engine's prepare, a slice at a time), so drawing
+// it doesn't stall the page; twelve seconds at most (a view without it: its
+// shaders, four), never a failure, and cut short once `alive()` says it's
+// been left, or the twelve seconds are up (so it never runs on alongside the
+// game's own frames).
+export const warmed = async (v, alive = () => true) => {
+  if (!v?.engine?.prepare) return settle(v?.engine?.precompile?.(), 4000);
+  let capped = false;
+  await settle(v.engine.prepare(null, { alive: () => !capped && alive() }), 12000);
+  capped = true;
+};
 
 // `active`: this one is the page's live 3D view; `visible`: it's on screen
 export function useLive(ref, { id, enabled = true, warm }) {
@@ -134,7 +142,7 @@ export function useStage(load, { enabled, id, forced = false }) {
             v.dispose();
             return;
           }
-          await warmed(v);
+          await warmed(v, () => !dead);
           if (dead || failed.current) {
             v.dispose();
             return;

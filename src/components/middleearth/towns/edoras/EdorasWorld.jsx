@@ -18,6 +18,8 @@ import '../bree/bree.css';
 import '../minastirith/minastirith.css';
 import './edoras.css';
 import '../../../../styles/lazy/middleearth.css';
+import LoadingVeil from '../../../worlds/LoadingVeil';
+import { throttled } from '../../../worlds/loadingSteps';
 
 // Edoras, found off the road: Gimli at the court of Rohan. Weapons at the
 // door of Meduseld, Théoden freed while Wormtongue's men are kept off
@@ -106,6 +108,7 @@ const seed = () => Math.floor(Math.random() * 100000) + 1;
 const near = (h, o, r) => Math.hypot(h.x - o.x, h.z - o.z) < r;
 
 function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
+  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
   const canvas = useRef(null);
@@ -165,7 +168,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
         if (dead || !canvas.current) return null;
         return createEdorasWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
-      .then((a) => {
+      .then(async (a) => {
         if (!a) return;
         if (dead) {
           a.dispose();
@@ -174,7 +177,9 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
         api.current = a;
         if (import.meta.env.DEV) window.__EDORAS__ = { api: a, sim: sim.current, complete };
         fit();
-        setGl('on');
+        // everything on the graphics chip before it's shown, behind the loading screen
+        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
+        if (!dead) setGl('on');
       })
       .catch((e) => {
         if (import.meta.env.DEV) console.error(e);
@@ -772,7 +777,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
   return (
     <div ref={box} className="shire-stage minas-stage edoras-stage" data-touch={touch || undefined} data-mode={mode} data-zone={zone} data-time={prog.time} data-game={['brawl', 'drink', 'watch', 'muster'].includes(mode) || undefined}>
       <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="Edoras in 3D: the hill in the plain of Rohan, its stockade and thatched halls, Meduseld the Golden Hall and the hall inside, the barrows of the kings, and the White Mountains" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      {gl === 'loading' && <p className="shire-loading">To Edoras…</p>}
+      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="To Edoras" />
 
       {walking && (
         <div className="shire-hud shire-hud-top">
