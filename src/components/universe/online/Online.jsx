@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiCloseLine, RiGroupLine } from 'react-icons/ri';
 import { NAME_MAX } from './names';
@@ -146,7 +146,7 @@ function Roster({ online, ship, floating, focus, onClose }) {
   // (poses come in ten times a second, not as roster news: while anyone's
   // out on the map, the regions they're in are read again now and then)
   const [, tick] = useState(0);
-  const mapped = others.some((p) => p.where === UNIVERSE);
+  const mapped = others.some((p) => isFlight(p.where)); // (and, in a system, whether anyone's out on a world)
   useEffect(() => {
     if (!mapped) return undefined;
     const t = setInterval(() => tick((n) => n + 1), WHERE_MS);
@@ -157,11 +157,12 @@ function Roster({ online, ship, floating, focus, onClose }) {
     setName(online.rename(name));
     setRenaming(false);
   };
+  const closeRecord = useCallback(() => setRecord(false), []); // (kept: Record's Escape listener hangs on it)
   if (record)
     return (
       <Card title="Online" onClose={onClose}>
         <Suspense fallback={<p className="universe-online-text">Opening the record…</p>}>
-          <Record open onClose={() => setRecord(false)} />
+          <Record open onClose={closeRecord} />
         </Suspense>
       </Card>
     );
@@ -242,6 +243,8 @@ function Pilot({ p, online, ship, mine, focus }) {
   // (flying here too, in a ship: somewhere the autopilot can take you, on
   // the universe map or in the same galaxy system)
   const flyTo = Boolean(ship && p.kind && p.where && !elsewhere && isFlight(online.where));
+  // (their crew out on a planet or a world: no ship to fly to till they're back in, so the button says so instead of trying for a minute)
+  const afoot = flyTo && Boolean(online.client?.afoot?.(p.id));
   const goTo = () => {
     if (isFlight(p.where)) online.follow(p.id); // (and after them, once the ship's in there)
     navigate(p.where === UNIVERSE ? '/universe' : p.where);
@@ -276,7 +279,7 @@ function Pilot({ p, online, ship, mine, focus }) {
               </button>
             )}
             {flyTo && (
-              <button type="button" className="universe-online-act" onClick={() => online.follow(p.id)} aria-label={`Fly to ${p.name}`}>
+              <button type="button" className="universe-online-act" onClick={() => online.follow(p.id)} aria-label={`Fly to ${p.name}`} disabled={afoot} title={afoot ? 'On foot: no ship to fly to till they’re back in' : undefined}>
                 Fly to
               </button>
             )}

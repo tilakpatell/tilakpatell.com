@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createClient } from './client';
 import { STOCK_LOADOUT } from '../outfit';
-import { PUNCH_MAX } from './protocol';
+import { PUNCH_MAX, STALE_MS } from './protocol';
 
 // An in-memory room: what one client sends, the others get straight away.
 // room(id) on its own is a pilot with no client, sending whatever it likes.
@@ -170,6 +170,26 @@ describe('createClient', () => {
     expect(p.foot).toBeNull();
     b.block('A', true);
     expect(b.peers.get('A').foot).toBeNull();
+  });
+
+  it('says whether a crew are out on foot, for the roster, until it goes stale', async () => {
+    const { a, b, tick } = await pair();
+    expect(b.afoot('A')).toBe(false);
+    expect(b.afoot('nobody')).toBe(false);
+    const w = { who: 'han', n: [0, 1, 0], f: [0, 0, 1], h: 0, speed: 0, side: 0, aim: 0 };
+    a.foot({ planet: 'marvel', kind: 'falcon', ship: { n: [0, 1, 0], f: [1, 0, 0] }, lead: w, mate: null });
+    expect(b.afoot('A')).toBe(true);
+    tick(STALE_MS + 1); // (no more word of them: as good as back in)
+    expect(b.afoot('A')).toBe(false);
+    a.foot({ planet: 'marvel', kind: 'falcon', ship: { n: [0, 1, 0], f: [1, 0, 0] }, lead: w, mate: null });
+    expect(b.afoot('A')).toBe(true);
+    a.foot(null);
+    expect(b.afoot('A')).toBe(false);
+    // and down on a world in the galaxy
+    a.walk({ world: 'tatooine', kind: 'falcon', lead: { who: 'han', x: 5, y: 3, z: -8, yaw: 0.5, speed: 3 }, mate: null, ride: null });
+    expect(b.afoot('A')).toBe(true);
+    a.walk(null);
+    expect(b.afoot('A')).toBe(false);
   });
 
   it('passes a crew down on a world in the galaxy along, and says when they take off', async () => {

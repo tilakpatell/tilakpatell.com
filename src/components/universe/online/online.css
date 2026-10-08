@@ -32,6 +32,8 @@
   cursor: pointer;
 }
 .universe-tag[data-on] { display: flex; }
+/* all but gone (tagRules.js's faint): not a spot you can click on by mistake */
+.universe-tag[data-faint] { pointer-events: none; }
 /* how they stand to you (relations.js) */
 .universe-tag[data-relation='ally'] { --relation: #8dffad; }
 .universe-tag[data-relation='friend'] { --relation: #8fc6ff; }
@@ -47,11 +49,11 @@
   padding: 0 0.35em;
   border: 1px solid currentColor;
   border-radius: 999px;
-  font-size: 0.85em;
+  font-size: 1em; /* (never under the tag's 12 px: the opacity carries the hierarchy) */
   font-style: normal;
   line-height: 1.3;
 }
-.universe-tag-rank { font-size: 0.85em; opacity: 0.8; }
+.universe-tag-rank { font-size: 1em; opacity: 0.8; }
 .universe-tag-rank:empty { display: none; }
 .universe-tag > i {
   display: none;

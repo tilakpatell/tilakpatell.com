@@ -8,12 +8,14 @@
 // under TAG.minPx on screen, a phone's included.
 //
 // tagMode(dist, { ally }) → { mode: 'near' | 'far' | null (none), scale,
-// fade, showDist }; fontPx(scale) → the type's size before the scale;
+// fade, showDist, faint (faded to all but nothing: not to be clicked on) };
+// fontPx(scale) → the type's size before the scale;
 // distText(units) → '320 m' | '1.2 km'; keepIn(x, y, w, h, boxW, boxH) →
 // where the tag goes so it's all inside the box, or null if its point is off it.
 
 export const TAG = { near: 40, mid: 140, far: 600, minPx: 12 }; // map units, and px
 const SMALLEST = 0.8;
+const FAINT = 0.15; // a fade under this is as good as gone: an invisible spot shouldn't open the roster
 const BASE_PX = 12.8; // (0.8rem: the tag's type up close)
 const METRES = 10; // a map unit, for the read-out (as the nav's distances)
 const PAD = 4; // px kept clear of the box's edge
@@ -21,6 +23,10 @@ const PAD = 4; // px kept clear of the box's edge
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 export function tagMode(dist, { ally = false } = {}) {
+  const m = rawMode(dist, ally);
+  return { ...m, faint: m.fade < FAINT };
+}
+function rawMode(dist, ally) {
   if (!Number.isFinite(dist) || dist < 0) return { mode: null, scale: 1, fade: 0, showDist: false };
   const scale = 1 - (1 - SMALLEST) * clamp01((dist - TAG.near) / (TAG.far - TAG.near));
   if (dist < TAG.near) return { mode: 'near', scale: 1, fade: 1, showDist: false };

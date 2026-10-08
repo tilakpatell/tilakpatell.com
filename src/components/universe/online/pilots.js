@@ -458,6 +458,7 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
         told.rel = rel;
         tag.toggleAttribute('data-ally', sh.ally);
         tag.toggleAttribute('data-safe', sh.safe);
+        tag.toggleAttribute('data-faint', mode.faint); // (all but gone: online.css takes its clicks away)
         tag.toggleAttribute('data-hurt', !down && s.shield < 99.5);
         tag.style.setProperty('--shield', ((down ? 100 : s.shield) / 100).toFixed(2));
         tag.style.setProperty('--fade', mode.fade.toFixed(2));
@@ -594,10 +595,11 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
       const sh = ships.get(id);
       return sh?.shown ? sh.at.clone() : null;
     },
-    // where a pilot is as of the last update, { x, y, z, heading, name }, or
-    // null for one who isn't flying here in sight (gone, hidden, stale, down
-    // on a planet, blocked): the autopilot's goal when you fly to them
-    // (pilotGoal.js). Only ever a pilot already in the room
+    // where a pilot is as of the last update, { x, y, z, heading, name },
+    // while they're flying here, near or far (a ship, a streak or a blip),
+    // or null once they're gone, hidden or stale (or down on a planet, or
+    // blocked): the autopilot's goal when you fly to them (pilotGoal.js).
+    // Only ever a pilot already in the room
     pose(id) {
       const sh = ships.get(id);
       return sh?.pose ?? null;

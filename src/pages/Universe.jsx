@@ -165,14 +165,19 @@ export default function Universe({ ask = false }) {
   // `pilot:<id>`, by the drive picked). Tried till it goes; the trip's end
   // (there, gone, or the stick taken back) or the follow's own minute
   // forgets it
-  const { followId, follow } = online;
+  const { following, follow } = online;
+  const followId = following?.id ?? null;
   const followRef = useRef(null); // the pilot whose trip is under way
+  // (keyed on the `following` object, a fresh one each press, not its id:
+  // the scene drops a trip without a word of the pilot when the ship
+  // crashes, changes, is pulled off a lane or sent somewhere else, and a
+  // second press on the same pilot has to try the travel again)
   useEffect(() => {
-    if (!followId || !ship) return undefined;
+    if (!following || !ship) return undefined;
+    const { id } = following;
     const go = () => {
-      if (followRef.current === followId) return true;
-      if (!map.current.live || !map.current.travel(`pilot:${followId}`, driveRef.current)) return false;
-      followRef.current = followId;
+      if (!map.current.live || !map.current.travel(`pilot:${id}`, driveRef.current)) return false;
+      followRef.current = id;
       stopTour();
       onward.current = null;
       setCharting(false);
@@ -181,7 +186,7 @@ export default function Universe({ ask = false }) {
     if (go()) return undefined;
     const t = setInterval(() => go() && clearInterval(t), 500);
     return () => clearInterval(t);
-  }, [followId, ship, stopTour]);
+  }, [following, ship, stopTour]);
   useEffect(() => {
     if (!followId) followRef.current = null;
   }, [followId]);

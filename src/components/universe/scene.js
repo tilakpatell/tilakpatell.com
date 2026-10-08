@@ -1562,16 +1562,20 @@ export async function create(canvas, ctx) {
   // the autopilot's trip dropped before it's done (the pilot, a rift, the
   // page): the page hears, so a tour or a trip on through the gate ends
   const dropAuto = () => {
+    const then = state.then;
     state.then = null; // (and a trip on through a portal with it)
     if (!state.auto) return;
-    const id = state.auto.id;
+    // (on the portal leg of a trip to a pilot it's their trip that's off, so
+    // the page hears their id, not the portal's, and clears its follow)
+    const id = then && pilotId(then.id) ? then.id : state.auto.id;
     state.auto = null;
     emit({ type: 'arrived', id, done: false });
   };
   const travel = (id, drive = props.drive) => {
     const s = state.ship;
     // (another pilot, `pilot:<id>`, is somewhere to go while they're flying
-    // here in sight: pilots.js's pose, and pilotGoal.js)
+    // here, near or far: pilots.js's pose, null once they're gone, hidden or
+    // stale; and pilotGoal.js)
     const pid = pilotId(id);
     const pose = pid ? pilots.pose(pid) : null;
     if (!s || state.crash || state.dive || state.jump || props.frozen || onFoot() || !(isGoal(id) || (id === 'front' && front) || pose)) return false;
@@ -1647,8 +1651,8 @@ export async function create(canvas, ctx) {
   };
   const frontSpace = () => ({ ...SPACE, goals: { ...SPACE.goals, front: front.goal() } });
   // Flying to another pilot (travel's `pilot:<id>`): there once within reach
-  // of them, the HUD says who you're with; gone (offline, hidden, down on a
-  // planet, blocked, off to another page) and the trip ends, the autopilot
+  // of them, the HUD says who you're with; gone (their pose null: offline,
+  // hidden or stale, down on a planet, blocked) and the trip ends, the autopilot
   // off and their goal with it, and the HUD says so. Their name is only
   // ever the note's text (placePrompt sets it as textContent)
   const withPilot = (name) => {
@@ -2016,12 +2020,10 @@ export async function create(canvas, ctx) {
       state.flown = true;
       emit({ type: 'launch' });
     }
-    if (state.auto) {
-      // the pilot has the stick now (and the page hears the trip's off: a tour or a trip on through the gate ends here)
-      const id = state.auto.id;
-      state.auto = null;
-      emit({ type: 'arrived', id, done: false });
-    }
+    // the pilot has the stick now: the page hears the trip's off (a tour or a
+    // trip on through the gate ends here), and a trip on through a portal
+    // goes with it, or flying through that portal later would take it up again
+    if (state.auto) dropAuto();
     if (state.view === 'map') {
       state.view = state.seat;
       retarget(700);
@@ -3995,7 +3997,9 @@ export async function create(canvas, ctx) {
       const aim = laneAim(state.auto); // (on the lanes: to the next ramp's ring, lanePilot.js)
       const a = autopilot(state.ship, aim?.id ?? state.auto.id, aim?.park ?? state.auto.park, aim?.space ?? state.auto.space ?? (state.auto.id === 'front' && front ? frontSpace() : undefined), aim ? 1 : od, hold);
       input = a.input;
-      if (a.done && !aim) {
+      // (not a trip to a pilot: their park can be a second stale, so only
+      // chasePilot's reached ends it, with the HUD's word of who you're with)
+      if (a.done && !aim && !state.auto.pilot) {
         const id = state.auto.id;
         state.auto = null;
         emit({ type: 'arrived', id, done: true }); // (the page's tour, and a trip on through the gate, go on from here)

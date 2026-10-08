@@ -1284,7 +1284,9 @@ export async function create(canvas, ctx) {
       const sp = state.auto.space ?? state.space;
       const a = autopilot(state.ship, state.auto.id, state.auto.park, sp, sp.overdriveAt ? sp.overdriveAt(state.ship.x, state.ship.y, state.ship.z) : 1);
       input = a.input;
-      if (a.done) {
+      // (not a trip to a pilot: their park can be a second stale, and the
+      // page maps no `parked` to its follow; chasePilot's reached ends it)
+      if (a.done && !state.auto.pilot) {
         state.auto = null;
         emit({ type: 'parked' });
       }
@@ -2153,7 +2155,8 @@ export async function create(canvas, ctx) {
   };
   // Flying to another pilot in this system (the roster's “Fly to”, through
   // the page): their goal, `pilot:<id>`, is a park behind them while
-  // they're flying here in sight (pilots.js's pose), worked out again every
+  // they're flying here (pilots.js's pose, null once they're gone, hidden or
+  // stale), worked out again every
   // REAIM_MS as they move (chasePilot, each frame). False if they aren't
   const flyTo = (id) => {
     const s = state.ship;

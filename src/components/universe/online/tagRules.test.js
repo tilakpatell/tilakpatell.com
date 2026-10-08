@@ -3,7 +3,7 @@ import { TAG, distText, fontPx, keepIn, tagMode } from './tagRules';
 
 describe('tagMode', () => {
   it('near under 40 with no distance', () => {
-    expect(tagMode(10, { ally: false })).toEqual({ mode: 'near', scale: 1, fade: 1, showDist: false });
+    expect(tagMode(10, { ally: false })).toEqual({ mode: 'near', scale: 1, fade: 1, showDist: false, faint: false });
     expect(tagMode(39.9, { ally: false })).toMatchObject({ mode: 'near', showDist: false });
   });
   it('distance shows from 40', () => {
@@ -16,6 +16,14 @@ describe('tagMode', () => {
     expect(tagMode(599, { ally: false }).fade).toBeGreaterThan(0);
     expect(tagMode(600, { ally: false }).mode).toBeNull();
     expect(tagMode(5000, { ally: false }).mode).toBeNull();
+  });
+  it('a stranger faded to all but nothing is faint, so not a spot to click; an ally never is', () => {
+    expect(tagMode(140, { ally: false }).faint).toBe(false);
+    expect(tagMode(370, { ally: false }).faint).toBe(false); // (half faded: still a tag)
+    expect(tagMode(530, { ally: false }).faint).toBe(false); // (fade 0.15: just not)
+    expect(tagMode(540, { ally: false }).faint).toBe(true);
+    expect(tagMode(599, { ally: false }).faint).toBe(true);
+    for (const d of [10, 300, 599, 2000]) expect(tagMode(d, { ally: true }).faint, `ally at ${d}`).toBe(false);
   });
   it('an ally never fades', () => {
     for (const d of [10, 100, 300, 599, 600, 2000]) {

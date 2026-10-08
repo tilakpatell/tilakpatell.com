@@ -213,6 +213,7 @@ export function useOnlineState(where) {
     },
     rename: keepName,
     follow, // follow(id): fly to them once the ship's in; follow(null) to forget it
+    following, // { id, at }: a fresh object each press, so the pages try the travel again on every press
     followId: following?.id ?? null,
     ally: (id, what) => client?.ally(id, what),
     block: (id, yes) => client?.block(id, yes),

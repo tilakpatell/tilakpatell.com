@@ -28,7 +28,8 @@
 //   setProfile({ name, kind, loadout, build, looks, where, level, marks }) (level: the
 //   wallet's; marks: its marks(), your standing and oath, read into factions
 //   for the side of the ship you fly: relations.js's factionsFrom), pose(ship, { hidden, boost, safe,
-//   shield, lane }), poseOf(peerId) (where they were last seen, for the roster), foot(crew | null) (your crew on foot, protocol.js's writeFoot;
+//   shield, lane }), poseOf(peerId) (where they were last seen, for the roster), afoot(peerId) (whether their crew are out
+//   on foot, for the roster), foot(crew | null) (your crew on foot, protocol.js's writeFoot;
 //   each pilot's comes in as peer.foot, with `at`), walk(crew | null) (the
 //   same down on a world in the galaxy: peer.walk), shot(at, v, weapon),
 //   hit(peerId, damage), siege(msg) (the Citadel's siege, siege.js),
@@ -52,7 +53,7 @@
 
 import { readBuildWire, writeBuild } from '../shipyard/build';
 import { EVERYONE, readLooks, writeLook } from '../../rickmorty/wardrobe/looks';
-import { APP_ID, CURSOR_MS, DAMAGE, DAMAGE_MAX, FLAG, FOOT_MS, GUARD, PACK_MS, POSE_MS, PUNCH_MAX, ROOM, allyStep, cleanName, createLimiter, hitCounts, hunterHitCounts, readCursor, readFoot, readHello, readHit, readHunterHit, readPack, readPose, readShot, writeCursor, writeFactions, writeFoot, writeLooksWire, writePack, writePose, writeShot, WALK_MS, readWalk, writeWalk } from './protocol';
+import { APP_ID, CURSOR_MS, DAMAGE, DAMAGE_MAX, FLAG, FOOT_MS, GUARD, PACK_MS, POSE_MS, PUNCH_MAX, ROOM, allyStep, cleanName, createLimiter, hitCounts, hunterHitCounts, readCursor, readFoot, readHello, readHit, readHunterHit, readPack, readPose, readShot, writeCursor, writeFactions, writeFoot, writeLooksWire, writePack, writePose, writeShot, WALK_MS, readWalk, writeWalk, STALE_MS } from './protocol';
 import { UNIVERSE, isFlight, placeName } from './where';
 import { STOCK_LOADOUT, readLoadout, writeOutfit } from '../outfit';
 import { readSiege } from '../siege';
@@ -483,6 +484,14 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     poseOf(id) {
       const p = peers.get(id)?.pose;
       return p ? { x: p.x, y: p.y, z: p.z } : null;
+    },
+    // whether a pilot's crew are out on foot (down on a planet, or on a
+    // world in the galaxy) as of their last word, so the roster doesn't
+    // offer a trip to a ship no one's in
+    afoot(id) {
+      const p = peers.get(id);
+      const at = p?.foot?.at ?? p?.walk?.at;
+      return at !== undefined && now() - at < STALE_MS;
     },
     // the hunters after you, for the others to see: get() gives them
     // (hunters.js's wire()), asked for only when it's time to send (five

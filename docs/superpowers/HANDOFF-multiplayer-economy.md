@@ -13,7 +13,8 @@ The design is `docs/superpowers/specs/2026-10-07-multiplayer-economy-design.md` 
 
 ## Left
 
-- Nothing in the plan. Not checked: `flyto-check.mjs` with two real browsers over the relays (only `--fake`, which drives the scene through `pilots.pose`), and the galaxy's tags and markers with a second pilot present. PRs B and C were merged without the separate pre-merge review pass, at the owner's request when usage ran short; a review of #570 and C's PR is still worth doing.
+- Nothing in the plan. Not checked: `flyto-check.mjs` with two real browsers over the relays (only `--fake`, which drives the scene through `pilots.pose`), and the galaxy's tags and markers with a second pilot present.
+- PRs B (#570) and C (#577) were merged without the separate pre-merge review pass, at the owner's request when usage ran short, and had a post-merge review instead. Its findings are fixed in the follow-up after #597: a second “Fly to” on the same pilot tries the travel again (the pages key their effect on useOnline's `following` object, not its id); taking the stick back on the portal leg of a pilot trip goes through `dropAuto`, which names the pilot, so the follow clears and the trip isn't taken up again through that portal later; the autopilot's own `done` no longer ends a pilot trip in either scene (only `chasePilot`'s `reached`, with the “With <name>” note); a tag's level pill and rank are the tag's own size, never under 12 px; a tag faded to all but nothing (`tagMode`'s `faint`) can't be clicked; the record's `onClose` is kept across renders; the roster's “Fly to” is disabled while their crew are out on foot (`client.afoot`); and the stale “in sight” comments on `pose` were reworded.
 
 ## Checking it
 

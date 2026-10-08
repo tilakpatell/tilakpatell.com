@@ -74,7 +74,8 @@ export default function Galaxy() {
   // scene's flyTo). Tried till it goes; the trip's end, or the follow's
   // own minute, forgets it. The HUD's line says how it ended: the name is
   // React's text, never markup
-  const { followId, follow } = online;
+  const { following, follow } = online;
+  const followId = following?.id ?? null;
   const followRef = useRef(null); // the pilot whose trip is under way
   const [pilotNote, setPilotNote] = useState(null);
   const noteTimer = useRef(0);
@@ -84,18 +85,22 @@ export default function Galaxy() {
     setPilotNote(text);
     noteTimer.current = setTimeout(() => setPilotNote(null), 3500);
   }, []);
+  // (keyed on the `following` object, a fresh one each press, not its id:
+  // the scene drops a trip without a word of the pilot on a crash, a ship
+  // change, a system change or the jump, and a second press on the same
+  // pilot has to try the travel again)
   useEffect(() => {
-    if (!followId || !ship) return undefined;
+    if (!following || !ship) return undefined;
+    const { id } = following;
     const go = () => {
-      if (followRef.current === followId) return true;
-      if (!view.current.live || !view.current.flyTo(followId)) return false;
-      followRef.current = followId;
+      if (!view.current.live || !view.current.flyTo(id)) return false;
+      followRef.current = id;
       return true;
     };
     if (go()) return undefined;
     const t = setInterval(() => go() && clearInterval(t), 500);
     return () => clearInterval(t);
-  }, [followId, ship]);
+  }, [following, ship]);
   useEffect(() => {
     if (!followId) followRef.current = null;
   }, [followId]);
