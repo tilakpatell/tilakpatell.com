@@ -40,7 +40,7 @@
 - Modify: `src/lib/three/meshyRig.fixture.js` (a `fingers: true` option that adds the canonical finger bones in the canonical frame under each hand, for every later test)
 
 **Interfaces:**
-- `familyOf(names) → 'meshy24' | 'meshy54' | 'mixamo' | 'unreal' | 'rigify' | 'highmoon' | 'none'` (pure; `meshy54` when the Meshy twelve and any `LeftHandIndex1`/`LeftHandFingers1` are present)
+- `familyOf(names) → 'meshy24' | 'meshy54' | 'mixamo' | 'unreal' | 'rigify' | 'highmoon' | 'prime' | 'none'` (pure; `prime` the Transformers: Prime game’s rig, `Humerus.l`, `Index1_Finger.l`; `meshy54` when the Meshy twelve and any `LeftHandIndex1`/`LeftHandFingers1` are present)
 - `profileOf(rest) → { height, hips, leg, arm, hand, headR, shoulders }` in metres from a rest skeleton’s world joint positions and the skinned box (pure over `{ joints: { name: [x, y, z] }, box: { min, max } }`)
 - `readRig(doc) → { file, family, joints, fingers, twists, clips, tris, textures, profile }` over a gltf-transform `Document`
 - `audit(rows) → rows sorted by family then file`; `table(rows) → Markdown`; `EXPECTED: { file: family }` (empty at first)
@@ -79,7 +79,7 @@
 - `extendHands(doc, { names = CANON }) → { L, R, forearm: bool, changed: bool }`: on a gltf-transform document, adds the finger nodes (and `LeftForeArmTwist`/`RightForeArmTwist`, Task 8) under each hand, their inverse bind matrices, extends every skin’s joint list, rewrites `JOINTS_0`/`WEIGHTS_0` on the touched vertices, writes `extras.hands`; a document already extended returns `changed: false` and writes nothing
 - CLI: `node scripts/hands-extend.mjs <file.glb> [<file.glb> …] [--dry] [--list]`; `--list` prints what each hand was read as and why one was skipped
 
-- [ ] **Step 1: Write the failing tests**: on a document built from `meshyRig.fixture.js` plus a synthetic skinned hand mesh (the fixture gains `withHandMesh()` returning positions and skin attributes for both hands): the output has 24 + 30 + 2 joints, every new bone named as `CANON` names it, every new bone’s rest quaternion is the canonical frame to within 1e-4, weights sum to one on every vertex, a second `extendHands` on the result changes nothing (`changed: false`, bytes equal after `io.writeBinary`), and the body clips’ tracks are untouched.
+- [ ] **Step 1: Write the failing tests**: on a document built from `meshyRig.fixture.js` plus a synthetic skinned hand mesh (the fixture gains `withHandMesh()` returning positions and skin attributes for both hands): the output has 24 + 28 + 2 joints (a thumb has two), every new bone named as `CANON` names it, every new bone’s rest quaternion is the canonical frame to within 1e-4, weights sum to one on every vertex, a second `extendHands` on the result changes nothing (`changed: false`, bytes equal after `io.writeBinary`), and the body clips’ tracks are untouched.
 - [ ] **Step 2: Run**; expect FAIL. **Step 3: Implement.** Meshopt: decode on read, re-encode on write as `scripts/meshy-actions.mjs` does. **Step 4: Run**; expect PASS.
 - [ ] **Step 5: Run the CLI** on `public/models/galaxy/crew/luke.glb`, `public/models/galaxy/troops/stormtrooper.glb`, `public/models/middleearth/cast/aragorn.glb`, `public/games/meshy/rick.glb`, `public/models/invincible/mark.glb` with `--list` first, then for real. Quote each file’s size before and after in the commit.
 - [ ] **Step 6: Commit** (the script, its test, the five files).

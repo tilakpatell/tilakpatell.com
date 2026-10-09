@@ -37,7 +37,7 @@ Phases 3 and 4 may run at once on separate branches after 2 (3 needs only 1, so 
 ## What done looks like, per phase
 
 - **0**: `node scripts/rig-audit.mjs` prints the table (family, joints, fingers, twists, clips, tris, textures, profile) for every figure under `public/`, tested; `audit-before.md` saved; every figure GLB carries `extras.profile`; the fixture takes `fingers: true`.
-- **1**: Luke, a stormtrooper, Aragorn, Rick and Mark carry 30 finger bones and two twist bones in the canonical frame; `hands-real.png`, `hands-toy.png`, `hands-show.png` show a grip round a pistol, a rifle and a saber (thumb on top, no tear at the wrist), a fist, an open wave and a relaxed rest; `gunplay` and `saber` hold through `hands.js` and the morph only on an unextended figure; `anim-check` on `#/galaxy/tatooine/surface`, `#/c-137`, `#/middle-earth/bree`, `#/invincible` reports the same numbers as on `main`.
+- **1**: Luke, a stormtrooper, Aragorn, Rick and Mark carry 28 finger bones (a thumb has two) and two twist bones in the canonical frame; `hands-real.png`, `hands-toy.png`, `hands-show.png` show a grip round a pistol, a rifle and a saber (thumb on top, no tear at the wrist), a fist, an open wave and a relaxed rest; `gunplay` and `saber` hold through `hands.js` and the morph only on an unextended figure; `anim-check` on `#/galaxy/tatooine/surface`, `#/c-137`, `#/middle-earth/bree`, `#/invincible` reports the same numbers as on `main`.
 - **2**: every `meshy24` figure is `meshy54` or listed in `extend-skipped.md` with why; the 118 `ual-*.glb` are re-baked with finger tracks, body tracks byte-identical, total under 5.5 MB; a talk and a sit move the hands on the sheet; the Citadel’s and Edoras’s frame time quoted before and after.
 - **3**: `C` crouches on the galaxy surface, the universe on foot, the Rick and Morty world, Invincible’s ground and Middle-earth’s towns; crouch-walking in eight directions keeps the planted toe under 0.15 m/s; the capsule shortens and standing waits for headroom; hostiles shuffle sideways in cover; ghosts crouch; the guide names the key; `anim-check --crouch` passes on each route.
 - **4**: `familyOf` sorts the cast; toy and show figures play exaggerated and snapped with the reach guard (a toy’s wave and phone call clear its head on the sheet); `real` is the identity in the test; the family numbers are on the debug panel under `figures`.
@@ -59,7 +59,7 @@ Follow the spec over the plan, the code over both. Fix the plan’s line in your
 | Phase | Session | Branch | Merged |
 |---|---|---|---|
 | design | the architecting session | `claude/npc-player-rigging-arch-7699df` | (this PR) |
-| 0 | | | |
+| 0 | the rigging session | `claude/rigging-p0` | (this PR) |
 | 1 | | | |
 | 2 | | | |
 | 3 | | | |
@@ -67,3 +67,5 @@ Follow the spec over the plan, the code over both. Fix the plan’s line in your
 | 5 | | | |
 
 Findings for the next phase go here: which hands the clustering skipped and why, the sizes before and after, the frame time on the Citadel and Edoras, which worlds took the crouch and which key was free, the family numbers as tuned.
+
+**Phase 0.** 270 figure files, 657 clip files. 225 stand on Meshy’s 24 bones (no fingers); 7 Mixamo (C-3PO, the Ithorian, the rebel pilot and tech, IG-11, Thor, and the bantha’s Mixamo-named rig), 2 Unreal (the Hulk, Spider-Man), 1 Rigify (Mario), 20 High Moon, 4 on the Transformers: Prime game’s rig (`prime`, a family the design didn’t name: Arcee, Bulkhead and his car, the Vehicon), 11 none (walkers, beasts, Black Widow’s Auto-Rig Pro, Predaking, Shockwave, the Biped Optimus). Every figure keeps `extras.profile` on its default scene now, written into the JSON chunk alone (117 bytes a file, no vertex moved). Measures to know: Meshy places `head_end` anywhere from the brow to a hand over the crown, so the head and the hand are measured from the vertices each bone mostly moves, never from the joints. The head over the height (least, median, most): Middle-earth 0.234, 0.292, 0.402; Rick and Morty 0.095, 0.141, 0.312; the office 0.081, 0.114, 0.141; the galaxy crew 0.062, 0.088, 0.149; troops, Invincible and Albuquerque under 0.12. The spec’s `toy` line (over 0.11) would take half the office and most of Rick and Morty: tune it in Phase 4. The finger count is 28 a figure (a thumb has two, as the spec’s names say), plus two twists: `meshy54`. UAL’s thumbs have three joints: Phase 2 maps two of them. The canonical frame is right-handed (+x = y × z), so +x points to the thumb on the left hand only; a curl closes about −x on both.
