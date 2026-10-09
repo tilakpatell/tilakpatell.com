@@ -47,7 +47,10 @@ import * as THREE from 'three';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-export const EXPECTED = {};
+export const EXPECTED = {
+  // phase 1: fingers by their own geometry (scripts/hands-extend.mjs)
+  ...Object.fromEntries(['public/games/meshy/rick.glb', 'public/models/galaxy/crew/luke.glb', 'public/models/galaxy/troops/stormtrooper.glb', 'public/models/invincible/mark.glb', 'public/models/middleearth/cast/aragorn.glb'].map((f) => [f, 'meshy54'])),
+};
 
 export const FAMILIES = ['meshy24', 'meshy54', 'mixamo', 'unreal', 'rigify', 'highmoon', 'prime', 'none'];
 

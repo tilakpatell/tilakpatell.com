@@ -2,90 +2,9 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { handShape } from '../../src/lib/three/grip.js';
 import { canonicalFrame, chainRadius, fingerChain, fingerGroups, fingerWeights, twistWeights } from './hand-geometry.mjs';
+import { FRAME, hand, tube } from './hand.fixture.mjs';
 
 const V = THREE.Vector3;
-
-// A right hand in its bone's space (cm): the fingers out along +y, the
-// thumb toward +z, the palm facing −x (thumb × along), so the back is +x.
-const FRAME = { along: new V(0, 1, 0), thumb: new V(0, 0, 1), normal: new V(-1, 0, 0) };
-
-// a tube round a centre line (a function of t in 0…1), `rings` rings of `m`
-// points `r` from it, with the triangles between neighbouring rings
-function tube(pts, tris, line, { r, rings = 13, m = 8, section = null }) {
-  const base = pts.length;
-  for (let i = 0; i < rings; i++) {
-    const t = i / (rings - 1);
-    const c = line(t);
-    const d = line(Math.min(1, t + 0.01)).sub(line(Math.max(0, t - 0.01))).normalize();
-    const u = new V(1, 0, 0).addScaledVector(d, -d.x).normalize();
-    const w = new V().crossVectors(d, u);
-    for (let k = 0; k < m; k++) {
-      const a = (2 * Math.PI * k) / m;
-      const [x, z] = section ? section(k / m) : [Math.cos(a) * r, Math.sin(a) * r];
-      pts.push(c.clone().addScaledVector(u, x).addScaledVector(w, z));
-    }
-  }
-  for (let i = 0; i + 1 < rings; i++)
-    for (let k = 0; k < m; k++) {
-      const a = base + i * m + k;
-      const b = base + i * m + ((k + 1) % m);
-      tris.push([a, b, a + m], [b, b + m, a + m]);
-    }
-}
-
-// the palm: a box 2…10 out, 8 wide, 2 thick, as a grid on its two faces
-function palm(pts, tris) {
-  for (const x of [-1, 1]) {
-    const base = pts.length;
-    for (let y = 2; y <= 10; y++) for (let z = -4; z <= 4; z++) pts.push(new V(x, y, z));
-    for (let y = 0; y < 8; y++)
-      for (let z = 0; z < 8; z++) {
-        const a = base + y * 9 + z;
-        tris.push([a, a + 1, a + 9], [a + 1, a + 10, a + 9]);
-      }
-  }
-}
-
-// four fingers (index at +z) of radius r, 2 apart, from the knuckles at y = 10
-function hand({ r = 0.6, thumb = true, fused = false } = {}) {
-  const pts = [];
-  const tris = [];
-  palm(pts, tris);
-  const fingers = {};
-  if (fused) {
-    // one slab past the knuckles: a mitten, or a glove sewn as one
-    const start = pts.length;
-    const per = 24;
-    const section = (f) => {
-      const s = f * 2 * (7.4 + 1.4);
-      if (s < 7.4) return [-0.7, -3.7 + s];
-      if (s < 8.8) return [-0.7 + (s - 7.4), 3.7];
-      if (s < 16.2) return [0.7, 3.7 - (s - 8.8)];
-      return [0.7 - (s - 16.2), -3.7];
-    };
-    tube(pts, tris, (t) => new V(0, 10 + 6 * t, 0), { r: 0, m: per, section });
-    fingers.slab = [...Array(pts.length - start).keys()].map((i) => start + i);
-  } else {
-    for (const [name, z, len] of [
-      ['index', 3, 6],
-      ['middle', 1, 6.5],
-      ['ring', -1, 6],
-      ['pinky', -3, 5],
-    ]) {
-      const start = pts.length;
-      tube(pts, tris, (t) => new V(0, 10 + len * t, z), { r });
-      fingers[name] = [...Array(pts.length - start).keys()].map((i) => start + i);
-    }
-  }
-  let thumbIdx = [];
-  if (thumb) {
-    const start = pts.length;
-    const dir = new V(0, 0.6, 0.8);
-    tube(pts, tris, (t) => new V(-0.4, 3, 4.6).addScaledVector(dir, 5 * t), { r: 0.8, rings: 9 });
-    thumbIdx = [...Array(pts.length - start).keys()].map((i) => start + i);
-  }
-  return { pts, tris, fingers, thumb: thumbIdx };
-}
 
 // handShape with the knuckle line at y = 10
 function shapeOf(pts) {
@@ -126,6 +45,15 @@ describe('fingerGroups', () => {
     expect(fingerGroups(slab.pts, shapeOf(slab.pts), FRAME).kind).toBe('mitten');
     const glove = hand({ r: 1 });
     expect(fingerGroups(glove.pts, shapeOf(glove.pts), FRAME).kind).toBe('mitten');
+  });
+  it('finds a thumb hung under the palm, as a relaxed hand holds it', () => {
+    const h = hand({ thumb: 'under' });
+    const g = fingerGroups(h.pts, shapeOf(h.pts), FRAME, { tris: h.tris });
+    expect(g.kind).toBe('fingers');
+    const thumb = new Set(g.thumb ?? []);
+    expect(h.thumb.filter((j) => thumb.has(j)).length).toBeGreaterThan(h.thumb.length * 0.6);
+    expect(Object.values(h.fingers).flat().some((j) => thumb.has(j))).toBe(false);
+    expect(g.fingers.flat().some((j) => h.thumb.includes(j))).toBe(false);
   });
   it('finds no thumb where none stands out', () => {
     const h = hand({ thumb: false });
@@ -267,16 +195,30 @@ describe('twistWeights', () => {
     const pts = [new V(0, 0, 0), new V(0, 12, 0), new V(0, 24, 0), new V(0, 30, 0), new V(0, 6, 0)];
     const joints = new Uint16Array([10, 9, 0, 0, 10, 0, 0, 0, 10, 11, 0, 0, 11, 0, 0, 0, 3, 0, 0, 0]);
     const weights = new Float32Array([0.5, 0.5, 0, 0, 1, 0, 0, 0, 0.6, 0.4, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
-    const out = twistWeights(pts, joints, weights, { fore: 10, twist: 60, elbow: new V(0, 0, 0), wrist: new V(0, 24, 0) });
+    const out = twistWeights(pts, joints, weights, { fore: 10, twist: 60, elbow: new V(0, 0, 0), wrist: new V(0, 24, 0), from: 0 });
     const w = (i, j) => [0, 1, 2, 3].reduce((s, k) => s + (out.joints[i * 4 + k] === j ? out.weights[i * 4 + k] : 0), 0);
     expect(w(0, 60)).toBe(0);
     expect(w(0, 10)).toBeCloseTo(0.5, 6);
     expect(w(1, 60)).toBeCloseTo(0.5, 6);
     expect(w(1, 10)).toBeCloseTo(0.5, 6);
-    expect(w(2, 60)).toBeCloseTo(0.6, 6);
-    expect(w(2, 11)).toBeCloseTo(0.4, 6);
+    // (a touched vertex's weights are put on the 16ths: 0.6 is 0.625)
+    expect(w(2, 60)).toBeCloseTo(0.625, 6);
+    expect(w(2, 11)).toBeCloseTo(0.375, 6);
     expect(w(3, 11)).toBe(1);
     expect(w(4, 3)).toBe(1);
     expect([...out.touched].sort()).toEqual([1, 2]);
+  });
+  it('by default starts half way down the forearm, where a game rig’s twist bone works', () => {
+    const pts = [new V(0, 6, 0), new V(0, 12, 0), new V(0, 18, 0), new V(0, 24, 0)];
+    const joints = new Uint16Array(16).fill(0);
+    const weights = new Float32Array(16);
+    for (let i = 0; i < 4; i++) {
+      joints[i * 4] = 10;
+      weights[i * 4] = 1;
+    }
+    const out = twistWeights(pts, joints, weights, { fore: 10, twist: 60, elbow: new V(0, 0, 0), wrist: new V(0, 24, 0) });
+    const w = (i) => [0, 1, 2, 3].reduce((s, k) => s + (out.joints[i * 4 + k] === 60 ? out.weights[i * 4 + k] : 0), 0);
+    expect([0, 1, 2, 3].map(w)).toEqual([0, 0, 0.5, 1]);
+    expect([...out.touched]).toEqual([2, 3]);
   });
 });

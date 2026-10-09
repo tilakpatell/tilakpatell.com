@@ -17,9 +17,10 @@
 //   but their skins are separate); without, k-means across from k evenly
 //   spaced seeds, and a mitten when the narrowest gap between two
 //   neighbouring clusters is under a tenth of the hand's width. The thumb:
-//   of the vertices past the fingers' thumb-side edge (shape.cEdge), the
-//   piece that stands out furthest, when it stands out a twelfth of the
-//   finger plate's width or more; else none.
+//   the largest piece of what stands out of the palm's core on the thumb's
+//   half of the hand: out of the palm's face near the palm (a relaxed
+//   thumb hangs under it), or a twelfth of the finger plate's width past
+//   the fingers' edge (a hand laid flat); none when nothing does.
 // fingerChain(points, { joints = 3, toward }) → [{ at, axis, len }…]: joints
 //   at 0, ⅓ and ⅔ of the cluster's length (0 and ½ for two), from its
 //   knuckle end (the end `toward` points away from), each the middle of the
@@ -35,7 +36,7 @@
 //   the first joint over `band` of the finger's length either side of it
 //   (the thumb's over `thumbBand`, since a thumb swung alone tears from the
 //   palm), then joint to joint over a tenth of each segment either side of
-//   the joint, smoothstepped. No vertex keeps more than four (the smallest
+//   the joint, smoothstepped, in 16ths. No vertex keeps more than four (the smallest
 //   go and the rest are scaled back to one). chains: [{ bones: [joint
 //   index…], joints: fingerChain's, thumb, radius }]; radius (chainRadius's)
 //   fades a chain's pull out between two and three of it from its line, so
@@ -43,15 +44,20 @@
 //   middle. touched: the vertices changed.
 // chainRadius(points, joints) → the median distance of a cluster's points
 //   from its chain: the finger's thickness, about.
-// twistWeights(points, joints, weights, { fore, twist, elbow, wrist }) →
-//   { joints, weights, touched }: each vertex's forearm weight shared with
-//   the twist bone in proportion to how far it is from the elbow to the
-//   wrist (none at the elbow, all at the wrist).
+// twistWeights(points, joints, weights, { fore, twist, elbow, wrist, from =
+//   0.5 }) → { joints, weights, touched }: each vertex's forearm weight
+//   shared with the twist bone by how far it is down the forearm: none
+//   `from` of the way from the elbow, all at the wrist, linearly between (a
+//   game rig's twist works the forearm's wrist half; from the elbow, every
+//   vertex of a sleeve is re-skinned for a turn the elbow end hardly shows).
 
 import * as THREE from 'three';
 
 const V = THREE.Vector3;
 const smooth = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+// a blend in steps of a 32nd: as smooth as a hand's few vertices across a
+// band can show, and it keeps the file's skin compressing as it did
+const step = (x) => Math.round(x * 16) / 16;
 const pct = (values, f) => {
   if (!values.length) return 0;
   const s = Float64Array.from(values).sort();
@@ -100,22 +106,31 @@ function kmeans(values, seeds, rounds = 10) {
 export function fingerGroups(points, shape, frame, { k = 4, tris = null } = {}) {
   const A = points.map((p) => p.dot(frame.along));
   const C = points.map((p) => p.dot(frame.thumb));
-  const thumbish = new Set();
-  C.forEach((c, i) => c > shape.cEdge && thumbish.add(i));
-  const F = [];
-  A.forEach((a, i) => a > shape.s0 && !thumbish.has(i) && F.push(i));
+  const N = points.map((p) => p.dot(frame.normal));
+  const L = shape.hi - shape.lo;
+  const reach = shape.hi - shape.s0;
+  const all = points.map((_, i) => i);
+  const plate = shape.cEdge - pct(all.filter((i) => A[i] > shape.s0).map((i) => C[i]), 0.01);
+  // the palm's face: how far out of the palm its little-finger half comes
+  // (where no thumb hangs)
+  const palm = all.filter((i) => A[i] <= shape.s0);
+  const face = pct((palm.some((i) => C[i] < shape.cMid) ? palm.filter((i) => C[i] < shape.cMid) : palm).map((i) => N[i]), 0.95);
+  // what might be the thumb: on its half of the hand, out of the palm's
+  // face (near the palm: a curled finger comes out of it further on) or well
+  // past the fingers' edge
+  const cand = new Set(all.filter((i) => C[i] > shape.cMid && ((N[i] > face + 0.08 * L && A[i] <= shape.s0 + 0.25 * reach) || C[i] > shape.cEdge + plate / 12)));
+  const edge = new Set(all.filter((i) => C[i] > shape.cEdge || cand.has(i)));
+  const F = all.filter((i) => A[i] > shape.s0 && !edge.has(i));
   const width = pct(F.map((i) => C[i]), 0.99) - pct(F.map((i) => C[i]), 0.01);
   let centres = null;
   const owner = new Map(); // a vertex the mesh put in a finger → that finger
   if (tris) {
-    const reach = shape.hi - shape.s0;
-    const past = new Set();
-    A.forEach((a, i) => a > shape.s0 && past.add(i));
+    const past = new Set(all.filter((i) => A[i] > shape.s0));
     const least = Math.max(6, 0.02 * F.length);
     for (const t of [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]) {
       const cut = shape.s0 + t * reach;
       const inside = new Set([...past].filter((i) => A[i] > cut));
-      const found = pieces(inside, tris).filter((p) => p.length >= least && p.filter((i) => thumbish.has(i)).length * 2 < p.length);
+      const found = pieces(inside, tris).filter((p) => p.length >= least && p.filter((i) => edge.has(i)).length * 2 < p.length);
       if (found.length !== k) continue;
       found.sort((a, b) => mean(b.map((i) => C[i])) - mean(a.map((i) => C[i])));
       centres = found.map((p) => mean(p.map((i) => C[i])));
@@ -133,35 +148,20 @@ export function fingerGroups(points, shape, frame, { k = 4, tris = null } = {}) 
     const spans = order.map((j) => F.filter((_, n) => label[n] === j).map((i) => C[i]));
     let gap = Infinity;
     for (let j = 0; j + 1 < spans.length; j++) gap = Math.min(gap, pct(spans[j], 0.02) - pct(spans[j + 1], 0.98));
-    if (spans.every((s) => s.length) && gap >= width / 10) centres = order.map((j) => c[j]);
+    if (spans.every((x) => x.length) && gap >= width / 10) centres = order.map((j) => c[j]);
   }
   const kind = centres ? 'fingers' : 'mitten';
   if (!centres) centres = [mean(F.map((i) => C[i]))];
+  // the thumb: the largest piece of what might be it that no finger holds
+  const free = [...cand].filter((i) => !owner.has(i));
+  let thumb = null;
+  for (const p of tris ? pieces(new Set(free), tris) : [free]) if (p.length >= 8 && p.length > (thumb?.length ?? 0)) thumb = p;
+  const thumbs = new Set(thumb ?? []);
+  // the rest past the knuckles to the nearest finger (the fingers' thumb-side
+  // edge lies past handShape's, a centile); before them, the palm's
   const groups = centres.map(() => []);
   const nearest = (c) => centres.reduce((best, x, f) => (Math.abs(c - x) < Math.abs(c - centres[best]) ? f : best), 0);
-  for (const i of F) groups[owner.get(i) ?? nearest(C[i])].push(i);
-  // the thumb-side edge of the first finger, past the knuckles, is that
-  // finger, not the thumb (handShape's edge is a centile: some of it lies past)
-  const first = groups[0].map((i) => C[i]);
-  const edge = mean(first) + 3 * Math.sqrt(mean(first.map((c) => (c - mean(first)) ** 2)));
-  const rest = [];
-  for (const i of thumbish) {
-    if (owner.has(i)) groups[owner.get(i)].push(i);
-    else if (A[i] > shape.s0 && C[i] <= edge) groups[0].push(i);
-    else rest.push(i);
-  }
-  // the thumb: the piece of what's left that stands out furthest
-  const plate = shape.cEdge - pct(F.map((i) => C[i]), 0.01);
-  const parts = tris ? pieces(new Set(rest), tris) : [rest];
-  let thumb = null;
-  let out = 0;
-  for (const p of parts) {
-    const far = Math.max(...p.map((i) => C[i])) - shape.cEdge;
-    if (p.length >= 8 && far > out && far >= plate / 12) {
-      out = far;
-      thumb = p;
-    }
-  }
+  for (const i of all) if (A[i] > shape.s0 && !thumbs.has(i)) groups[owner.get(i) ?? nearest(C[i])].push(i);
   return { kind, fingers: groups, thumb };
 }
 
@@ -231,13 +231,19 @@ export function chainRadius(points, joints) {
   );
 }
 
-// four influences, the smallest dropped, scaled back to one
+// four influences, the smallest dropped, scaled back to one, in bone
+// order (so neighbouring vertices read alike, which the file's compression
+// rewards)
 function four(pairs) {
   const merged = new Map();
   for (const [j, w] of pairs) if (w > 0) merged.set(j, (merged.get(j) ?? 0) + w);
   const top = [...merged].sort((a, b) => b[1] - a[1]).slice(0, 4);
   const sum = top.reduce((s, [, w]) => s + w, 0) || 1;
-  return top.map(([j, w]) => [j, w / sum]);
+  // on the 16ths too, the leftover to the largest (a vertex's share is a
+  // product of the hand's and the blend's, so it would land anywhere)
+  const w = top.map(([, x]) => step(x / sum));
+  w[0] += 1 - w.reduce((a, b) => a + b, 0);
+  return top.map(([j], k) => [j, w[k]]).filter(([, x]) => x > 0).sort((a, b) => a[0] - b[0]);
 }
 
 function write(out, i, pairs) {
@@ -286,7 +292,7 @@ export function fingerWeights(points, joints, weights, chains, { hand, along, s0
     const { c, n, on } = pick;
     const b = (c.thumb ? thumbBand : band) * lengths[n];
     const near = c.radius ? 1 - smooth((on.d - 2 * c.radius) / c.radius) : 1;
-    const f = smooth((on.u + b) / (2 * b)) * near;
+    const f = step(smooth((on.u + b) / (2 * b)) * near);
     if (f <= 0) return;
     // joint to joint along the finger
     const share = [];
@@ -296,7 +302,7 @@ export function fingerWeights(points, joints, weights, chains, { hand, along, s0
       if (m === c.joints.length - 1) return share.push(carry);
       at += j.len;
       const hw = j.len / 10;
-      const next = smooth((on.u - (at - hw)) / (2 * hw));
+      const next = step(smooth((on.u - (at - hw)) / (2 * hw)));
       share.push(carry * (1 - next));
       carry *= next;
     });
@@ -310,7 +316,7 @@ export function fingerWeights(points, joints, weights, chains, { hand, along, s0
   return out;
 }
 
-export function twistWeights(points, joints, weights, { fore, twist, elbow, wrist }) {
+export function twistWeights(points, joints, weights, { fore, twist, elbow, wrist, from = 0.5 }) {
   const out = { joints: Uint16Array.from(joints), weights: Float32Array.from(weights), touched: new Set() };
   const d = new V().subVectors(wrist, elbow);
   const L2 = d.lengthSq();
@@ -318,7 +324,7 @@ export function twistWeights(points, joints, weights, { fore, twist, elbow, wris
     let f = 0;
     for (let k = 0; k < 4; k++) if (joints[i * 4 + k] === fore) f += weights[i * 4 + k];
     if (f <= 0) return;
-    const x = Math.min(1, Math.max(0, p.clone().sub(elbow).dot(d) / L2));
+    const x = step(Math.min(1, Math.max(0, (p.clone().sub(elbow).dot(d) / L2 - from) / (1 - from))));
     if (x <= 0) return;
     const pairs = [];
     for (let k = 0; k < 4; k++) if (joints[i * 4 + k] !== fore) pairs.push([joints[i * 4 + k], weights[i * 4 + k]]);

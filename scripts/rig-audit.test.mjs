@@ -160,11 +160,10 @@ describe('readRig', () => {
   it('says when the file already keeps a profile', () => {
     expect(readRig(fixtureDoc({ profile: { height: 1 } })).stored).toBe(true);
   });
-  it('reads Luke at 1.72 m on 24 bones', async () => {
+  it('reads Luke at 1.72 m on Meshy’s 24 bones, his 28 finger bones and two twists', async () => {
     const doc = await (await reader()).read('public/models/galaxy/crew/luke.glb');
     const r = readRig(doc);
-    expect(r.family).toBe('meshy24');
-    expect(r.joints).toBe(24);
+    expect(r).toMatchObject({ family: 'meshy54', joints: 54, fingers: 28, twists: 2 });
     expect(Math.abs(r.profile.height - 1.72)).toBeLessThan(0.02);
     expect(r.profile.headR / r.profile.height).toBeLessThan(0.11);
   });
@@ -194,7 +193,7 @@ describe('withExtras', () => {
   it('works on a real figure file', async () => {
     const bytes = new Uint8Array(await readFile('public/models/galaxy/crew/luke.glb'));
     const back = await (await reader()).readBinary(withExtras(bytes, { profile: { height: 1.72 } }));
-    expect(back.getRoot().listSkins()[0].listJoints()).toHaveLength(24);
+    expect(back.getRoot().listSkins()[0].listJoints()).toHaveLength(54);
     expect(back.getRoot().getDefaultScene().getExtras().profile.height).toBe(1.72);
   });
 });
@@ -215,7 +214,9 @@ describe('audit, table and slipped', () => {
     expect(t).toMatch(/\| a\.glb \| mixamo .*h 2\.40 · hips 1\.30 · head 0\.20 \| no \|/);
   });
   it('names a figure whose family has slipped from what a phase set', () => {
-    expect(EXPECTED).toEqual({});
+    // (phase 1: the five figures given fingers by scripts/hands-extend.mjs)
+    expect(Object.keys(EXPECTED).sort()).toEqual(['public/games/meshy/rick.glb', 'public/models/galaxy/crew/luke.glb', 'public/models/galaxy/troops/stormtrooper.glb', 'public/models/invincible/mark.glb', 'public/models/middleearth/cast/aragorn.glb']);
+    expect(new Set(Object.values(EXPECTED))).toEqual(new Set(['meshy54']));
     expect(slipped(rows, { 'b.glb': 'meshy54', 'a.glb': 'mixamo', 'gone.glb': 'meshy54' })).toEqual([
       { file: 'b.glb', want: 'meshy54', family: 'meshy24' },
       { file: 'gone.glb', want: 'meshy54', family: 'absent' },
