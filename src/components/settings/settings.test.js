@@ -14,7 +14,7 @@ const memory = (init = {}) => {
 describe('the site’s settings', () => {
   it('start from the defaults', () => {
     expect(read(memory())).toEqual(DEFAULTS);
-    expect(DEFAULTS).toEqual({ v: 1, quality: 'auto', three: 'auto', sharpness: 1, motion: 'auto', sound: true, volume: 1, music: 1, voices: 1, askBigDownload: true, capped: null });
+    expect(DEFAULTS).toEqual({ v: 1, quality: 'auto', three: 'auto', sharpness: 1, motion: 'auto', sound: true, volume: 1, music: 1, voices: 1, voicesOn: true, askBigDownload: true, capped: null });
   });
 
   it('take in what the older keys already say', () => {
@@ -24,14 +24,15 @@ describe('the site’s settings', () => {
       'tp-sound': 'off',
       'tp-detail-cap': JSON.stringify({ renderer: 'RTX 5090', level: 'high' }),
       'tp-volume': JSON.stringify({ master: 0.5, voices: 0.25 }),
+      'tp-voices': 'off',
     });
-    expect(read(store)).toMatchObject({ quality: 'mid', three: 'off', sound: false, capped: 'high', volume: 0.5, music: 1, voices: 0.25 });
+    expect(read(store)).toMatchObject({ quality: 'mid', three: 'off', sound: false, capped: 'high', volume: 0.5, music: 1, voices: 0.25, voicesOn: false });
   });
 
   it('come back as they were written, and keep the older keys in step', () => {
     const store = memory();
-    write({ quality: 'ultra', three: 'on', sharpness: 1.5, motion: 'reduced', sound: false, volume: 0.4, music: 0.3, voices: 0.7, askBigDownload: false }, store);
-    expect(read(store)).toMatchObject({ quality: 'ultra', three: 'on', sharpness: 1.5, motion: 'reduced', sound: false, volume: 0.4, music: 0.3, voices: 0.7, askBigDownload: false });
+    write({ quality: 'ultra', three: 'on', sharpness: 1.5, motion: 'reduced', sound: false, volume: 0.4, music: 0.3, voices: 0.7, voicesOn: false, askBigDownload: false }, store);
+    expect(read(store)).toMatchObject({ quality: 'ultra', three: 'on', sharpness: 1.5, motion: 'reduced', sound: false, volume: 0.4, music: 0.3, voices: 0.7, voicesOn: false, askBigDownload: false });
     expect(JSON.parse(store.getItem(KEY)).v).toBe(1);
     expect(store.getItem('tp-quality')).toBe('ultra');
     expect(store.getItem('tp-3d')).toBe('on');
@@ -39,13 +40,15 @@ describe('the site’s settings', () => {
     expect(store.getItem('tp-sharpness')).toBe('1.5');
     expect(store.getItem('tp-motion')).toBe('reduced');
     expect(store.getItem('tp-ask-download')).toBe('off');
+    expect(store.getItem('tp-voices')).toBe('off');
     expect(JSON.parse(store.getItem('tp-volume'))).toEqual({ master: 0.4, music: 0.3, voices: 0.7 });
   });
 
   it('forget the older keys when set back to Auto', () => {
     const store = memory({ 'tp-quality': 'low', 'tp-3d': 'off', 'tp-motion': 'full' });
     write({ quality: 'auto', three: 'auto', motion: 'auto', askBigDownload: true }, store);
-    for (const k of ['tp-quality', 'tp-3d', 'tp-motion', 'tp-ask-download']) expect(store.map.has(k), k).toBe(false);
+    write({ voicesOn: true }, store);
+    for (const k of ['tp-quality', 'tp-3d', 'tp-motion', 'tp-ask-download', 'tp-voices']) expect(store.map.has(k), k).toBe(false);
   });
 
   it('follow an older key changed elsewhere (the sound toggled from ⌘K)', () => {
@@ -53,6 +56,11 @@ describe('the site’s settings', () => {
     write({ sound: true }, store);
     store.setItem('tp-sound', 'off');
     expect(read(store).sound).toBe(false);
+    store.setItem('tp-voices', 'off'); // (the voices switched off from a world’s Menu)
+    expect(read(store).voicesOn).toBe(false);
+    write({ voicesOn: false }, store);
+    store.removeItem('tp-voices'); // (and back on)
+    expect(read(store).voicesOn).toBe(true);
   });
 
   it('hold each value to what it may be', () => {

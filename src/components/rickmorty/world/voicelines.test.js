@@ -80,7 +80,7 @@ describe('C-137: the cruiser’s voice', () => {
     vi.doUnmock('../../../lib/hooks');
   });
   // the ship's voice module, with the made lines in `made` and the browser's speech recorded
-  async function ship({ made = {}, on = true } = {}) {
+  async function ship({ made = {}, on = true, voices = true } = {}) {
     const synth = [];
     const played = [];
     vi.stubGlobal('window', {
@@ -89,14 +89,16 @@ describe('C-137: the cruiser’s voice', () => {
         this.text = text;
       },
     });
-    vi.doMock('../../../lib/audio', () => ({ soundOn: () => true }));
+    vi.doMock('../../../lib/audio', () => ({ soundOn: () => true, voicesOn: () => voices, onVoicesChange: () => () => {} }));
     vi.doMock('../../../lib/hooks', () => ({ local: { get: (k, d) => (k === 'tp-c137-shipvoice' ? on : d), set: () => {} } }));
     vi.doMock('../../../lib/voiced', () => ({
       voicedSrc: async (who, text) => made[`${who}|${text}`] ?? null,
-      sayVoiced: async (who, text) => {
+      sayVoiced: (who, text) => {
         const h = { who, text, stopped: false, stop: () => (h.stopped = true) };
         played.push(h);
-        return h;
+        const said = Promise.resolve(h);
+        said.stop = () => h.stop(); // (as lib/voiced's: the promise takes it back)
+        return said;
       },
     }));
     const m = await import('./shipVoice');
@@ -129,6 +131,12 @@ describe('C-137: the cruiser’s voice', () => {
     s.stopSpeaking(); // (before it's even been looked up)
     await settle();
     expect(s.played).toEqual([]);
+    expect(s.synth).toEqual([]);
+  });
+  it('keeps quiet with the site’s voices off', async () => {
+    const s = await ship({ voices: false });
+    s.speak(SHIP_LINES.land[0]);
+    await settle();
     expect(s.synth).toEqual([]);
   });
 });

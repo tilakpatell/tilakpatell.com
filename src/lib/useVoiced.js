@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
-import { sayVoiced, stopVoiced } from './voiced';
+import { sayVoiced } from './voiced';
 
 // Say a conversation's line in its speaker's voice while it's up (lib/voiced.js):
-// a new line stops the last, and so does the conversation closing.
+// the line going (the next one, or the conversation closing) stops it, and
+// only it, said or still waiting its turn (lib/speech.js).
 export function useVoiced(who, text) {
   useEffect(() => {
     if (!who || !text) return undefined;
-    sayVoiced(who, text);
-    return stopVoiced;
+    const said = sayVoiced(who, text);
+    return () => said.stop();
   }, [who, text]);
 }

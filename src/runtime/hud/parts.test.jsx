@@ -6,6 +6,7 @@ import Objective from './Objective';
 import PlayersChip from './PlayersChip';
 import QuestList from './QuestList';
 import Toast from './Toast';
+import { VoicesItem } from './Menu';
 
 const text = (el) => renderToStaticMarkup(el).replace(/<[^>]+>/g, '');
 
@@ -74,5 +75,14 @@ describe('a toast', () => {
   it('is a status, red when bad, and nothing without words', () => {
     expect(renderToStaticMarkup(<Toast toast={{ key: 1, text: 'Saved', bad: true }} />)).toBe('<p class="hud-toast" role="status" data-bad="true">Saved</p>');
     expect(renderToStaticMarkup(<Toast toast={null} />)).toBe('');
+  });
+});
+
+describe('the voices switch in the Menu', () => {
+  it('says whether anyone speaks, and stays open when pressed', () => {
+    const html = renderToStaticMarkup(<VoicesItem />);
+    expect(text(<VoicesItem />)).toBe('Voices on');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain('data-keep');
   });
 });

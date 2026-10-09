@@ -8,8 +8,9 @@
 // functions: the scene drives the engine each frame and the comms box calls
 // the rest.
 
-import { audioContext, loadBuffer, output, voiceOutput } from '../../lib/audio';
+import { audioContext, loadBuffer, output, voiceOutput, voicesOn } from '../../lib/audio';
 import { playClip } from '../../lib/clips';
+import { speech } from '../../lib/speech';
 
 let noiseBuf = null;
 function noise(ac) {
@@ -127,12 +128,13 @@ const VOICES = {
   hank: { type: 'sawtooth', f: 98, spread: 0.2, syl: 0.08, gain: 0.05, filter: 800 },
 };
 
-// Someone says a line. Returns about how long it takes, in ms.
+// Someone says a line. Returns about how long it takes, in ms. Not over
+// someone else's voice (lib/speech.js), and not with the voices off.
 export function speak(voice, text) {
   const ac = audioContext();
   const out = ac ? voiceOutput() : null; // through the voice tap, so the speaker's mouth moves with it
   const words = text.replace(/\[|\]/g, '').split(/\s+/).filter(Boolean).length;
-  if (!ac || !out) return 600 + words * 260;
+  if (!ac || !out || speech.busy() || !voicesOn()) return 600 + words * 260;
   const t = ac.currentTime + 0.02;
   if (voice === 'r2') {
     // Artoo: a run of whistles and chirps
@@ -149,7 +151,7 @@ export function speak(voice, text) {
   if (voice === 'chewie') {
     // Chewie himself: a laugh when it's a laugh, a roar the rest of the time
     const laugh = /laugh/i.test(text);
-    playClip(laugh ? 'chewieLaugh' : 'chewieRoar', { voice: true }).then((h) => h || growl(ac, out, t));
+    playClip(laugh ? 'chewieLaugh' : 'chewieRoar', { voice: true }).then((h) => h || speech.busy() || growl(ac, out, t));
     return laugh ? 2700 : 1700;
   }
   const v = VOICES[voice];

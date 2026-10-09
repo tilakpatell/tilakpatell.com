@@ -12,7 +12,7 @@ import { bestKey } from './rush/levels';
 import { useTravellers } from './towns/useTravellers';
 import '../../styles/lazy/middleearth.css';
 
-const clip = (id) => import('../../lib/clips').then((c) => c.playClip(id)).catch(() => null);
+const clip = (id, o) => import('../../lib/clips').then((c) => c.playClip(id, o)).catch(() => null);
 
 // the map is part of a page you scroll: the page's pointers stay on it
 const MAP_ROOM = { pointers: true };
@@ -79,7 +79,7 @@ export default function MapHub({ api, hover, onHover, onGo, leaving, hidden, fra
       a.on((e) => {
         if (e.type !== 'talk') return;
         setTalk((t) => ({ ...e, n: (t?.n || 0) + 1 }));
-        if (SPOKEN[e.line]) clip(SPOKEN[e.line]);
+        if (SPOKEN[e.line]) clip(SPOKEN[e.line], { voice: true }); // (a voice, on the floor: lib/speech.js)
       });
     }
     // the speech bubble over whoever is talking

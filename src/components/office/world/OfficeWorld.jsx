@@ -188,19 +188,11 @@ function World({ prog, done, complete, gl, setGl, setPlace, place }) {
     if (!bubble || floor || heard.current === bubble) return undefined;
     heard.current = bubble;
     if (SPOKEN[bubble.line]) {
-      clip(SPOKEN[bubble.line]);
+      clip(SPOKEN[bubble.line], { voice: true }); // (a voice, on the floor: lib/speech.js)
       return undefined;
     }
-    let gone = false;
-    let h = null;
-    sayVoiced(bubble.id, bubble.line).then((x) => {
-      if (gone) x?.stop();
-      else h = x;
-    });
-    return () => {
-      gone = true;
-      h?.stop(); // (just this line: not a toast's, said since)
-    };
+    const said = sayVoiced(bubble.id, bubble.line);
+    return () => said.stop(); // (just this line: not a toast's, said since)
   }, [bubble, floor]);
 
   // the world: made once

@@ -3,6 +3,9 @@
 // manifest of which lines have one (or served from VITE_VOICED_BASE). A line
 // with none keeps its blips (universe/sounds.js), or its silence.
 
+import { voicesOn } from './audio';
+import { speech } from './speech';
+
 const BASE = (import.meta.env?.VITE_VOICED_BASE || '/audio/voiced').replace(/\/$/, '');
 
 // A line's id: FNV-1a of who says it and what they say, so the same words
@@ -18,13 +21,26 @@ export function lineId(who, text) {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
+// The manifest, fetched once. One that's not there, or not a manifest (not
+// generated here, or not signed in), means the blips; one that didn't come
+// (offline a moment, a dropped connection) is asked for again a little later,
+// rather than leave the whole visit without voices.
+const RETRY = 10_000;
 let manifest = null;
+let failedAt = -Infinity;
 function load() {
-  if (!manifest)
-    manifest = fetch(`${BASE}/manifest.json`)
+  if (!manifest || (manifest.failed && Date.now() - failedAt > RETRY)) {
+    const next = fetch(`${BASE}/manifest.json`)
       .then((r) => (r.ok ? r.json() : null))
       .then((m) => (m && typeof m.lines === 'object' ? m.lines : {}))
-      .catch(() => ({})); // not generated here (or not signed in): the blips it is
+      .catch((e) => {
+        if (e instanceof SyntaxError) return {};
+        next.failed = true;
+        failedAt = Date.now();
+        return {};
+      });
+    manifest = next;
+  }
   return manifest;
 }
 
@@ -63,31 +79,42 @@ export function spoken(text) {
   return said.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim(); // not the asides in brackets: (Beeps.)
 }
 
-let current = null;
 let turn = 0;
 
-// Say a line in its speaker's voice, if it's been made; one line at a time,
-// so it stops whatever was being said. Resolves to the playing handle, or
-// null (no voice, not made, not here, or already overtaken by the next line).
-export async function sayVoiced(who, text) {
-  stopVoiced();
+// Say a line in its speaker's voice, if it's been made, when it's its turn
+// (lib/speech.js: one voice at a time; `mode` as there, else a line set off
+// by a press cuts in and one that came by itself waits). Resolves to the
+// playing handle, or null (no voice, not made, not here, voices off, or
+// overtaken). The promise's stop() takes the line back, said or waiting.
+export function sayVoiced(who, text, { mode } = {}) {
+  const how = mode ?? speech.mode(); // decided now, in the press, not after the lookup
   const mine = turn;
-  const voice = voiceOf(who);
-  if (!voice || !text) return null;
-  const src = await voicedSrc(voice, text);
-  if (!src || mine !== turn) return null;
-  const { playFile } = await import('./clips');
-  const h = await playFile(src, { voice: true });
-  if (mine !== turn) {
-    h?.stop();
-    return null;
-  }
-  current = h;
-  return h;
+  let stopped = false;
+  let said = null;
+  const gone = () => stopped || mine !== turn;
+  const line = (async () => {
+    const voice = voiceOf(who);
+    if (!voice || !text || !voicesOn()) return null;
+    const src = await voicedSrc(voice, text);
+    if (gone()) return null;
+    if (!src) {
+      if (how === 'cut') speech.stop('voiced'); // the visitor's moved on: the last line is out of date
+      return null;
+    }
+    const { playFile } = await import('./clips');
+    if (gone()) return null;
+    said = playFile(src, { voice: true, mode: how, tag: 'voiced' });
+    return said;
+  })();
+  line.stop = () => {
+    stopped = true;
+    said?.stop?.();
+  };
+  return line;
 }
 
+// Stops every line sayVoiced has said, or has waiting (not the comms').
 export function stopVoiced() {
   turn += 1;
-  current?.stop();
-  current = null;
+  speech.stop('voiced');
 }

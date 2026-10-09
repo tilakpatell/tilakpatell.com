@@ -27,9 +27,9 @@ export async function sayInTurn(lines) {
   for (const { who, text } of lines) {
     const voice = voiceOf(who);
     if (!voice || !(await voicedSrc(voice, text))) continue;
-    const from = performance.now();
     const h = await sayVoiced(who, text);
     if (!h) return;
+    const from = performance.now(); // (once it's said: it may have waited its turn)
     await h.ended;
     if (performance.now() - from < h.length * 1000 - 100) return;
   }

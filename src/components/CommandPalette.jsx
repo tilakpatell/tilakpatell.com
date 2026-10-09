@@ -34,7 +34,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useAchievements } from './Achievements';
 import { useFun } from '../fun/FunProvider';
 import { BACK, SCRIPTS } from '../fun/scripts';
-import { audioContext, setSound, soundOn } from '../lib/audio';
+import { audioContext, setSound, setVoicesOn, soundOn, voicesOn } from '../lib/audio';
 import { useView } from './ViewSwitch';
 import { restartSite } from '../lib/restart';
 import { openGuide, openSettings } from '../lib/palette';
@@ -161,6 +161,7 @@ export default function CommandPalette({ onClose }) {
       { id: 'e-schwifty', group: 'Easter eggs', label: 'Get schwifty', keywords: 'rick and morty wubba lubba dub dub wubbalubbadubdub portal green', icon: RiSparkling2Line, run: () => fun.getSchwifty('portal') },
       { id: 'e-savvy', group: 'Easter eggs', label: 'Savvy? Hoist the colours', keywords: 'pirates of the caribbean jack sparrow black pearl flying dutchman davy jones tortuga pirate theme', icon: RiSparkling2Line, run: () => fun.savvy('pearl') },
       { id: 'a-sound', group: 'Actions', label: soundOn() ? 'Turn sound off' : 'Turn sound on', keywords: 'mute audio volume', icon: IconSound, run: () => setSound(!soundOn()) },
+      { id: 'a-voices', group: 'Actions', label: voicesOn() ? 'Mute voices' : 'Unmute voices', hint: 'What’s said still shows', keywords: 'mute voices speech talking lines dialogue quiet subtitles', icon: IconSound, run: () => setVoicesOn(!voicesOn()) },
       { id: 't-auto', group: 'Colours', label: 'Auto colours', hint: 'Follows the page you’re on', keywords: 'theme colors colours', icon: RiPaletteLine, run: () => pin(null) },
       ...THEME_ORDER.map((id) => ({ id: `t-${id}`, group: 'Colours', label: `${THEMES[id].company} colours`, keywords: 'theme colors', icon: RiPaletteLine, run: () => pin(id) })),
       ...FAN_THEMES.filter((f) => unlocked.includes(f.achievement)).map((f) => ({ id: `t-${f.id}`, group: 'Colours', label: `${THEMES[f.id].company} colours`, hint: 'Unlocked', keywords: 'theme colors fan', icon: RiPaletteLine, run: () => pin(f.id) })),

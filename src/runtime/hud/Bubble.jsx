@@ -3,8 +3,9 @@ import { sayVoiced } from '../../lib/voiced';
 
 // Who's talking, over their head: a world's frame loop moves it (through
 // the ref) to the speaker's screen position; it points down at them. In
-// their own voice where it's been made (`voice`: their id in lib/voiced.js):
-// a new line, or the bubble going, stops it, and nothing else.
+// their own voice where it's been made (`voice`: their id in lib/voiced.js),
+// when it's their turn (lib/speech.js): a new line, or the bubble going,
+// stops it (said or still waiting), and nothing else.
 // (Moved here from the towns' HUD, where fourteen worlds shared it.)
 const Bubble = forwardRef(function Bubble({ voice = null, name, line, className = '' }, ref) {
   useOwnLine(voice, line);
@@ -22,15 +23,7 @@ export default Bubble;
 function useOwnLine(who, text) {
   useEffect(() => {
     if (!who || !text) return undefined;
-    let gone = false;
-    let said = null;
-    sayVoiced(who, text).then((h) => {
-      said = h;
-      if (gone) h?.stop();
-    });
-    return () => {
-      gone = true;
-      said?.stop();
-    };
+    const said = sayVoiced(who, text);
+    return () => said.stop();
   }, [who, text]);
 }

@@ -4645,6 +4645,7 @@ export async function create(canvas, ctx) {
   };
   // the line over the map: what G does here
   let promptWas = null;
+  let figureSaid = null; // the line of whoever's near, said or waiting its turn (lib/speech.js)
   const placePrompt = () => {
     const el = props.prompt?.current;
     if (!el) return;
@@ -4688,9 +4689,9 @@ export async function create(canvas, ctx) {
     }
     if (text === promptWas) return;
     promptWas = text;
-    // what they say, in their own voice where it's been made (landings/voicelines.js); walking off stops it
-    if (say) sayVoiced(figureVoice(say), say.line);
-    else if (el.hasAttribute('data-say')) stopVoiced();
+    // what they say, in their own voice where it's been made (landings/voicelines.js); walking off stops it, and only it
+    figureSaid?.stop();
+    figureSaid = say ? sayVoiced(figureVoice(say), say.line) : null;
     // the key first, as a real cap (read with the words), unless there's no
     // key to press: a word on the HUD, someone talking
     if (text && !plain && !say) {

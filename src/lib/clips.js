@@ -7,7 +7,8 @@
 // (App calls stopPageClips on every route change). `keep` lets one run on
 // across pages: the theme switches, the jump to lightspeed, "say my name".
 
-import { audioContext, loadBuffer, output, voiceOutput } from './audio';
+import { audioContext, loadBuffer, output, voiceOutput, whenRunning } from './audio';
+import { speech } from './speech';
 
 export const CLIPS = {
   vader: { src: '/audio/clips/i-am-your-father.mp3', line: 'No, I am your father.', by: 'Darth Vader' },
@@ -185,17 +186,21 @@ export const CLIPS = {
 
 const playing = new Set();
 
-// Stops every clip that belongs to the page being left.
+// Stops every clip that belongs to the page being left, and any line still
+// waiting to be said on it.
 export function stopPageClips() {
   playing.forEach((h) => !h.keep && h.stop());
+  speech.stopPage();
 }
 
 // Plays a clip. `offset` skips into it, `duration` cuts it short with a fade,
 // `voice` sends it through the voice tap (lib/audio.js) so a speaker's face
-// can move its mouth with it.
+// can move its mouth with it, and makes it speech: it takes its turn on the
+// one floor (lib/speech.js, `mode` and `tag` as there), so no two voices
+// are ever heard at once.
 // Resolves to { stop(), ended, length } (length in seconds) or null if it
-// can't play (no Web Audio, or the file didn't load), so callers can fall
-// back to something else.
+// can't play (no Web Audio, the file didn't load, or a voice that isn't said
+// after all), so callers can fall back to something else.
 export function playClip(id, opts) {
   const clip = CLIPS[id];
   if (!clip) {
@@ -206,7 +211,13 @@ export function playClip(id, opts) {
 }
 
 // The same for any file: a crew's generated line (lib/voiced.js), say.
-export async function playFile(src, { offset = 0, when = 0, duration, gain = 1, keep = false, voice = false } = {}) {
+export function playFile(src, opts = {}) {
+  if (!opts.voice) return start(src, opts);
+  const { mode, tag, keep } = opts;
+  return speech.say(src, (alive) => start(src, opts, alive), { mode, tag, keep });
+}
+
+async function start(src, { offset = 0, when = 0, duration, gain = 1, keep = false, voice = false } = {}, alive = () => true) {
   const ac = audioContext(); // first, while still inside the gesture
   if (!ac || !src) return null;
   let buf;
@@ -216,6 +227,10 @@ export async function playFile(src, { offset = 0, when = 0, duration, gain = 1, 
     return null;
   }
   if (!buf) return null;
+  // a voice waits for the sound to be running (or isn't said), and isn't
+  // started at all once something else has the floor
+  if (voice && !(await whenRunning(ac, 1500))) return null;
+  if (!alive()) return null;
   const node = ac.createBufferSource();
   node.buffer = buf;
   const g = ac.createGain();

@@ -86,7 +86,7 @@ const SIDE_DONE = 'tp-shire-side'; // kept apart, so the story's count stays the
 const AT = 'tp-shire-at';
 const ACH = { maggot: 'mushrooms', rings: 'smokerings', party: 'fireworks', ring: 'secretsafe', rider: 'getoffroad' };
 const sounds = () => import('./sounds');
-const clip = (id) => import('../../../lib/clips').then((c) => c.playClip(id)).catch(() => null);
+const clip = (id, o) => import('../../../lib/clips').then((c) => c.playClip(id, o)).catch(() => null);
 const sfx = () => import('../../../lib/sfx');
 const PROMPT = {
   rings: { name: 'The bench at Bag End', act: 'Sit with Gandalf' },
@@ -672,7 +672,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
         const line = pool[n % pool.length];
         setBubble({ id: talk, name: c ? c.name : lob ? 'Lobelia Sackville-Baggins' : 'Gandalf', line });
         // the films' own recording, or the speaker's made voice (./voicelines.js)
-        if (SPOKEN[line]) clip(SPOKEN[line]);
+        if (SPOKEN[line]) clip(SPOKEN[line], { voice: true }); // (a voice, on the floor: lib/speech.js)
         else sayVoiced(talk, line);
       } else setBubble(null);
     }

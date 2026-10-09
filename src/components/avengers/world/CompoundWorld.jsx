@@ -30,7 +30,7 @@ import { throttled } from '../../worlds/loadingSteps';
 
 const Place = lazy(() => import('./Place'));
 const CompoundMap = lazy(() => import('../Compound'));
-const clip = (id) => import('../../../lib/clips').then((c) => c.playClip(id)).catch(() => null);
+const clip = (id, o) => import('../../../lib/clips').then((c) => c.playClip(id, o)).catch(() => null);
 const sfx = (name) => import('../../../lib/sfx').then((s) => s[name]?.()).catch(() => null);
 // a landing's thunk by how hard (lib/impact.js's law, from where it used to
 // start to a fall off the main building's roof), over a floor so every one
@@ -523,7 +523,7 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
         setBubble({ id: talk, name: person.name, line });
         // (and the line to the drawing, for the gesture they say it with)
         s.say = { id: talk, line };
-        if (SPOKEN[line]) clip(SPOKEN[line]);
+        if (SPOKEN[line]) clip(SPOKEN[line], { voice: true }); // (a voice, on the floor: lib/speech.js)
       } else {
         setBubble(null);
         s.say = null;

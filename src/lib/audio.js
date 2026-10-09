@@ -53,12 +53,43 @@ export function setVolumes(patch) {
   const v = volumes();
   master?.gain.setTargetAtTime(masterLevel(), ctx.currentTime, 0.05);
   music?.gain.setTargetAtTime(v.music, ctx.currentTime, 0.05);
-  voiceBus?.gain.setTargetAtTime(v.voices, ctx.currentTime, 0.05);
+  voiceBus?.gain.setTargetAtTime(voicesLevel(), ctx.currentTime, 0.05);
 }
 
 export function onSoundChange(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
+}
+
+// The voices on their own (the worlds' Menu, the settings panel, ⌘K): off,
+// nobody speaks (lib/speech.js says no line, the blips stay quiet) and the
+// subtitles carry on. Kept as 'tp-voices' 'off'; the Voices volume is left
+// as it was, for when they're back on.
+const VOICES_KEY = 'tp-voices';
+const voiceListeners = new Set();
+export function voicesOn() {
+  try {
+    return window.localStorage.getItem(VOICES_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+const voicesLevel = () => (voicesOn() ? volumes().voices : 0);
+
+export function setVoicesOn(on) {
+  try {
+    if (on) window.localStorage.removeItem(VOICES_KEY);
+    else window.localStorage.setItem(VOICES_KEY, 'off');
+  } catch {
+    /* storage unavailable */
+  }
+  if (voiceBus) voiceBus.gain.setTargetAtTime(voicesLevel(), ctx.currentTime, 0.05);
+  voiceListeners.forEach((fn) => fn(!!on));
+}
+
+export function onVoicesChange(fn) {
+  voiceListeners.add(fn);
+  return () => voiceListeners.delete(fn);
 }
 
 // On an iPhone, Web Audio follows the ring/silent switch, so with the switch on
@@ -137,6 +168,24 @@ export function audioContext() {
   return ctx;
 }
 
+// Resolves true once a context is running (at once if it is), or false if it
+// isn't within `ms`: a line played into a context still asleep would wait
+// there, and come out on top of everything else the moment it wakes.
+export function whenRunning(ac, ms) {
+  if (!ac) return Promise.resolve(false);
+  if (ac.state === 'running') return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const done = (ok) => {
+      clearTimeout(timer);
+      ac.removeEventListener('statechange', change);
+      resolve(ok);
+    };
+    const change = () => ac.state === 'running' && done(true);
+    const timer = setTimeout(() => done(false), ms);
+    ac.addEventListener('statechange', change);
+  });
+}
+
 // A press that starts a hold (pointerdown) isn't a gesture iOS will start audio
 // in, so any later tap, click or key wakes a context that is still asleep.
 if (typeof window !== 'undefined') {
@@ -176,7 +225,7 @@ export function voiceOutput() {
   if (!ac) return null;
   if (!voiceBus) {
     voiceBus = ac.createGain();
-    voiceBus.gain.value = volumes().voices;
+    voiceBus.gain.value = voicesLevel();
     voiceTap = ac.createAnalyser();
     voiceTap.fftSize = 512;
     voiceTap.smoothingTimeConstant = 0;

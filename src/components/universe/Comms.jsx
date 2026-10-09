@@ -86,12 +86,14 @@ export default function Comms({ crew, reduced, control }) {
       const least = clip ? 1200 + text.length * 32 : 1500 + text.length * 42; // time to read it
       const started = performance.now();
       // their own voice: the recording, or the line made in their voice (a
-      // caller on the radio's: speakers.js)
-      let h = clip ? await playClip(clip, { voice: true }) : null;
+      // caller on the radio's: speakers.js), when nobody else is talking
+      // (lib/speech.js: it waits its turn, and isn't said if it waits too long)
+      const aloud = { voice: true, mode: 'queue', tag: 'comms' };
+      let h = clip ? await playClip(clip, aloud) : null;
       const voice = voiceOf(speaker.voiced ?? who);
       if (!h && voice) {
         const src = await voicedSrc(voice, text);
-        if (src && alive.current) h = await playFile(src, { voice: true });
+        if (src && alive.current) h = await playFile(src, aloud);
       }
       if (h) {
         // the line stays up while it plays

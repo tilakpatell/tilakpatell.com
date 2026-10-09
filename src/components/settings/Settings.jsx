@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { RiCloseLine } from 'react-icons/ri';
 import { BUDGETS, LEVELS, quality, setQuality } from '../../lib/device';
 import { setMode3D } from '../../lib/gpu';
-import { setSound, setVolumes } from '../../lib/audio';
+import { setSound, setVoicesOn, setVolumes } from '../../lib/audio';
 import { applyMotion, read, write } from './settings.js';
 import DeviceReadout from './DeviceReadout';
 import '../../styles/lazy/settings.css';
@@ -122,6 +122,7 @@ export default function Settings({ onClose }) {
     }
     if ('three' in patch) setMode3D(next.three);
     if ('sound' in patch) setSound(next.sound);
+    if ('voicesOn' in patch) setVoicesOn(next.voicesOn);
     if ('volume' in patch || 'music' in patch || 'voices' in patch) setVolumes({ master: next.volume, music: next.music, voices: next.voices });
     if ('sharpness' in patch) window.dispatchEvent(new CustomEvent('tp:sharpness', { detail: next.sharpness }));
     if ('motion' in patch) applyMotion(next.motion);
@@ -185,7 +186,10 @@ export default function Settings({ onClose }) {
             </Row>
             <Slider label="Everything" value={s.volume} disabled={!s.sound} onChange={(v) => change({ volume: v })} />
             <Slider label="Music" value={s.music} disabled={!s.sound} onChange={(v) => change({ music: v })} />
-            <Slider label="Voices" value={s.voices} disabled={!s.sound} onChange={(v) => change({ voices: v })} />
+            <Row title="Voices" hint="Off, nobody speaks aloud: what they say still shows.">
+              <Segmented label="Voices" value={s.voicesOn ? 'on' : 'off'} options={[['on', 'On'], ['off', 'Off']]} onChange={(v) => change({ voicesOn: v === 'on' })} disabled={!s.sound} />
+            </Row>
+            <Slider label="Voices" value={s.voices} disabled={!s.sound || !s.voicesOn} onChange={(v) => change({ voices: v })} />
           </section>
 
           <section aria-labelledby="settings-controls">
