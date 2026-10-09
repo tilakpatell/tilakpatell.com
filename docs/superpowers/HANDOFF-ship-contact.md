@@ -61,13 +61,21 @@ In `docs/superpowers/handoff/ship-contact/`:
 
 `node scripts/autopilot-check.mjs --routes /universe --only smoke` and `--routes /galaxy --only smoke` both pass.
 
+## The follow-ups (2026-10-09)
+
+The decision is `docs/decisions/2026-10-09-ram-knocks-and-the-wire.md`.
+
+- **The other ship is knocked off its line**: `contact.js`'s `shove` and `knock`, a body's `push(dv)`, the sweep's `hit.push`. The hunters (universe, galaxy, skirmish) and the wingmen take it. On the card, a TIE Advanced rammed at cruise went from (5.8, 0.4, −3.9) to (3.2, 1.3, −0.1) a second, and was back on its line in about 0.6 s.
+- **Another pilot is told**: `protocol.js`'s `ram { v }`, `readRam`, `ramCounts`; `client.js`'s `ram(id, into)` and the `rammed` event; the scenes' `rammedBy` takes it off your shields by the law, with the note “Rammed by Han: shields −12” on the universe map. Shot down by it, the feed says “Han rammed you out of the sky”, and the rammer's kill is said as a ram.
+- **The autopilot steers round the big ships moving through**: `autopilot(…, moving)`, `clearPark`; the scenes hand it the frame's capital, sector fleet, big traffic and Interdictor, and the galaxy's `parkBy` gets the frame's solids.
+- **A ram's kill has the crew's ram line**, and so does a pack cleared by one within 2 s (`crews.js`'s `ram.kill`, `ram.cleared`; `Comms.jsx` reads `e.ram`). "Great shot, kid" is a gun's again.
+
 ## Not done (the next lane's list)
 
-- The other ship pushed off by the contact (hunters' `pull` and `breakOff` could do it).
-- Telling another pilot you rammed them (a `ram` wire action in `online/protocol.js`).
 - C-137's cruiser and the Federation ship, the cockpit page, the cruiser scroll page.
 - Hitstop, dust and sound by force on these maps (lane 2C's game feel).
-- The autopilot (and the galaxy's `parkBy`) don't know the moving solids: flying on the autopilot into a capital ship that dropped in across your way is a crash. The design keeps `state.space.solids` as it was on purpose; teaching the autopilot to steer round them is a follow-up.
+- The traffic, the battle's fighters and the characters aren't knocked by a ram (they fly on lanes or in the battle's step).
+- The crews' ram lines have no recordings yet: queue them for the voices batch.
 - A glance off a wingman flying very close in formation cuts your speed by 0.15 each time (once every 0.35 s at most); not seen in testing, worth a look in dev.
 - A Menu or HUD line for the galaxy's ram note, if wanted.
 

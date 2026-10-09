@@ -325,6 +325,40 @@ describe('createClient', () => {
     expect(seen.b.filter((e) => e.type === 'hit')).toHaveLength(1);
   });
 
+  it('a ram is told to the pilot rammed, as hard as both your speeds allow, and not between allies', async () => {
+    const { a, b, seen, tick } = await pair();
+    b.pose({ ...ship(0), speed: 4 });
+    a.pose({ ...ship(0.6), speed: 6 });
+    a.ram('B', 400);
+    const got = seen.b.filter((e) => e.type === 'rammed');
+    expect(got).toHaveLength(1);
+    expect(got[0]).toMatchObject({ from: 'A', into: 10 });
+    // not again inside the contact's cool, and never from far off
+    a.ram('B', 8);
+    expect(seen.b.filter((e) => e.type === 'rammed')).toHaveLength(1);
+    tick(400);
+    a.pose({ ...ship(30), speed: 6 });
+    a.ram('B', 8);
+    expect(seen.b.filter((e) => e.type === 'rammed')).toHaveLength(1);
+    // allies can't hurt each other
+    a.pose({ ...ship(0.6), speed: 6 });
+    a.ally('B', 'ask');
+    b.ally('A', 'accept');
+    tick(400);
+    a.ram('B', 8);
+    expect(seen.b.filter((e) => e.type === 'rammed')).toHaveLength(1);
+  });
+
+  it('a pilot rammed out of the sky is the rammer’s, and said as a ram', async () => {
+    const { a, b, seen } = await pair();
+    b.pose({ ...ship(0), speed: 4 });
+    a.pose({ ...ship(0.6), speed: 6 });
+    a.ram('B', 10);
+    b.down('A', true);
+    expect(feeds(seen.a)).toContain('You rammed Rick out of the sky');
+    expect(feeds(seen.b)).toContain('Han rammed you out of the sky');
+  });
+
   it('a heavy round hits harder, and its shot carries the weapon', async () => {
     const { a, b, seen } = await pair();
     b.pose(ship(0));

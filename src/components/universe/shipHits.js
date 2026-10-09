@@ -12,18 +12,19 @@
 //   (a missing source, or one answering null, is skipped).
 // body: { key, id, kind, at: { x, y, z }, prev?, vel?, size, r?, side:
 //   'foe' | 'friend' | 'civil' | 'law' | 'pilot', hit(punch, before, after)
-//   → { down, at, size, kind, civil? } | null }
+//   → { down, at, size, kind, civil? } | null, push?(dv) }
 //   `prev` is where it was last frame (`at` when left out); `vel` is read
 //   when given, else taken from `prev` and dt; `r` is its body, bodyRadius
 //   of its size when left out. `hit` is the system's own way of taking a
 //   ram's hits, the path a shot takes; the scene calls it, never the sweep
-//   (`before` and `after` for the systems that test a segment).
-// hit: { body, k, at, place, touch, normal, into, outcome } — `at` where you
+//   (`before` and `after` for the systems that test a segment). `push`, where
+//   a system has it, knocks the ship off its line by `dv` (the law's knock).
+// hit: { body, k, at, place, touch, normal, into, outcome, push } — `at` where you
 //   met on your way, `place` where the other was then, `touch` where your
 //   ship goes to be just touching it where it is now, `normal` the unit way
 //   from it toward you, `into` the closing speed (from the velocities, never the
-//   way over dt), `outcome` the law's contact(into, size); a friend is
-//   always a glance.
+//   way over dt), `outcome` the law's contact(into, size), a friend's
+//   always a glance; `push` the knock for the other ship, away from you.
 //
 // Only bodies within reach of where you are now are tested (the longest
 // body, your own, and the frame's way, so a long frame still finds what it
@@ -37,7 +38,7 @@
 // ramNote(name, damage) → the HUD's word on a ram ("Hit a TIE fighter:
 //   shields −14").
 
-import { CONTACT, bodyRadius, closingSpeed, contact, touchAt } from '../../lib/combat/contact';
+import { CONTACT, bodyRadius, closingSpeed, contact, shove, touchAt } from '../../lib/combat/contact';
 import { shipVelocity } from './hunterRules';
 import { SHIP } from './ship';
 
@@ -108,11 +109,12 @@ export function createShipHits({ sources = [], cool = CONTACT.cool, radius = SHI
     const gap = (best.r ?? bodyRadius(best.size)) + radius;
     const touch = { x: best.at.x + nx * gap, y: best.at.y + ny * gap, z: best.at.z + nz * gap };
     const into = closingSpeed({ x: vYou[0], y: vYou[1], z: vYou[2] }, vThem, normal);
-    const outcome = best.side === 'friend' ? { ...GLANCE } : contact(into, best.size);
+    const outcome = best.side === 'friend' ? { ...GLANCE, push: shove(into, best.size) } : contact(into, best.size);
+    const push = { x: -nx * outcome.push, y: -ny * outcome.push, z: -nz * outcome.push };
 
     if (met.size >= KEEP) for (const [old, when] of met) if (now - when >= cool) met.delete(old);
     met.set(best.key, now);
-    return { body: best, k, at, place, touch, normal, into, outcome };
+    return { body: best, k, at, place, touch, normal, into, outcome, push };
   }
 
   return { sweep, sources };

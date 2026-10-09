@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CONTACT, bodyRadius, closingSpeed, contact, keptSpeed, sweptSpheres, touchAt } from './contact';
+import { CONTACT, bodyRadius, closingSpeed, contact, keptSpeed, knock, shove, sweptSpheres, touchAt } from './contact';
 
 describe('contact', () => {
   it('is a glance under soft and a ram from it', () => {
-    expect(contact(1.29, 0.3)).toEqual({ kind: 'glance', damage: 0, punch: 0, keep: CONTACT.glance });
+    expect(contact(1.29, 0.3)).toEqual({ kind: 'glance', damage: 0, punch: 0, keep: CONTACT.glance, push: shove(1.29, 0.3) });
     const r = contact(1.31, 0.3);
     expect(r.kind).toBe('ram');
     expect(r.keep).toBe(CONTACT.slow);
@@ -21,6 +21,32 @@ describe('contact', () => {
   });
   it('bodyRadius is tighter than a laser’s hit radius', () => {
     expect(bodyRadius(0.3)).toBeCloseTo(0.23, 5);
+  });
+  it('knocks the other ship off its line by shove', () => {
+    expect(contact(10, 0.3).push).toBe(shove(10, 0.3));
+  });
+});
+
+describe('shove', () => {
+  it('is a share of the closing speed, less for a bigger ship, capped', () => {
+    expect(shove(4, 0.3)).toBeCloseTo(4 * CONTACT.shove, 6);
+    expect(shove(4, 1)).toBeCloseTo((4 * CONTACT.shove) / 2, 6);
+    expect(shove(300, 0.3)).toBe(CONTACT.shoveMost);
+    expect(shove(-2, 0.3)).toBe(0);
+  });
+});
+
+describe('knock', () => {
+  it('adds the knock to its way and rocks it, by its side', () => {
+    const o = { vel: { x: 0, y: 0, z: -5 }, bank: 0, side: -1 };
+    knock(o, { x: 2, y: 0, z: 0 });
+    expect(o.vel).toEqual({ x: 2, y: 0, z: -5 });
+    expect(o.bank).toBeCloseTo(-2 * CONTACT.rock, 6);
+  });
+  it('rocks it no further than it can bank', () => {
+    const o = { vel: { x: 0, y: 0, z: 0 }, bank: 1.5 };
+    knock(o, { x: 0, y: 0, z: 20 });
+    expect(o.bank).toBe(1.6);
   });
 });
 

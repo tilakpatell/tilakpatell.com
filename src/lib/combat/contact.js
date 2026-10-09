@@ -12,10 +12,18 @@
 //   two ships met, so the push and the closing speed are read there.
 // closingSpeed(vYou, vThem, normal) → how fast the two close along `normal`
 //   (pointing from them toward you), 0 when they part.
-// contact(into, size) → { kind: 'glance' | 'ram', damage, punch, keep }:
+// contact(into, size) → { kind: 'glance' | 'ram', damage, punch, keep, push }:
 //   under `soft` a glance (no harm, most of your speed kept); else a ram
 //   (shields lost by the other ship's size and the closing speed, capped;
-//   `punch` hits on the other ship; `keep` the share of your speed kept).
+//   `punch` hits on the other ship; `keep` the share of your speed kept);
+//   `push` how hard the other ship's knocked off its line (shove's).
+// shove(into, size) → units a second added to the other ship's way, along
+//   the contact: `shove` of the closing speed, less for a ship bigger than
+//   `shoveSize`, capped.
+// knock(o, dv): the other ship ({ vel, bank, side? }, a hunter's or a
+//   wingman's, flown by their rules) knocked: `dv` added to its way, so its
+//   nose is off its line and comes back round at its own turn rate; rocked
+//   by it.
 // keptSpeed(speed, keep, boost) → your speed after it: `keep` of it, but
 //   from twice the boost no lower than the boost (a rock's rule; between,
 //   no lower than how far past the boost you were), and never faster than
@@ -37,6 +45,10 @@ export const CONTACT = {
   glance: 0.85, // and after a glance
   punchEvery: 5, // a ram is one hit on the other ship, and one more for each of these units a second past `soft`
   punchMost: 4,
+  shove: 0.5, // the share of the closing speed the other ship's knocked off its line by
+  shoveSize: 0.5, // a ship longer than this is knocked less, by its length
+  shoveMost: 6,
+  rock: 0.3, // its bank rocked by this for each unit a second of the knock (at most 1.1)
 };
 
 // tighter than hunterRules' hitRadius, which forgives a laser
@@ -91,14 +103,28 @@ export function closingSpeed(vYou, vThem, normal) {
 }
 
 export function contact(into, size) {
-  if (into < CONTACT.soft) return { kind: 'glance', damage: 0, punch: 0, keep: CONTACT.glance };
+  const push = shove(into, size);
+  if (into < CONTACT.soft) return { kind: 'glance', damage: 0, punch: 0, keep: CONTACT.glance, push };
   const past = into - CONTACT.soft;
   return {
     kind: 'ram',
     damage: Math.min(CONTACT.most, CONTACT.base + CONTACT.perSize * size + CONTACT.perSpeed * past),
     punch: Math.min(CONTACT.punchMost, 1 + Math.floor(past / CONTACT.punchEvery)),
     keep: CONTACT.slow,
+    push,
   };
+}
+
+export function shove(into, size) {
+  return Math.min(CONTACT.shoveMost, (Math.max(0, into) * CONTACT.shove) / Math.max(1, size / CONTACT.shoveSize));
+}
+
+export function knock(o, dv) {
+  o.vel.x += dv.x;
+  o.vel.y += dv.y;
+  o.vel.z += dv.z;
+  const m = Math.sqrt(dv.x * dv.x + dv.y * dv.y + dv.z * dv.z);
+  o.bank = clamp((o.bank ?? 0) + (o.side ?? 1) * Math.min(1.1, m * CONTACT.rock), -1.6, 1.6);
 }
 
 // (the floor eases in past the boost, `s − boost` up to the boost itself: a

@@ -68,7 +68,7 @@ import { RANKS } from '../../galaxy/ranks';
 import { gltfLoader } from '../../../lib/three/gltf';
 
 const MODELS = { ...SHIP_MODELS, cruiser: '/games/meshy/saucer.glb' }; // (the cruiser the C-137 planet flies; your own is the page's, crew aboard)
-const SIZE = 0.3; // across, for the guns and for hits
+export const SIZE = 0.3; // across, for the guns, for hits and for a ram (contact.js's size)
 const HIT_R = 0.22; // how close a bolt must pass to hit
 const BOLTS = 24;
 const BOLT_LIFE = 1.1;
@@ -517,8 +517,9 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
     },
 
     // everyone here as shipHits.js's bodies: the pilots flying (not parked,
-    // their crew out; a ram on one tells nobody: protocol.js believes only
-    // a shot) and the hunters after them (a ram on one is a shot's hit)
+    // their crew out; a ram on one is told to them, client.js's ram, and
+    // they take it off their own shields) and the hunters after them (a ram
+    // on one is a shot's hit)
     get bodies() {
       const out = [];
       for (const [id, sh] of ships) {

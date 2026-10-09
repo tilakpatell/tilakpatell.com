@@ -648,6 +648,32 @@ function stopFrom(s, park, far, space = SPACE, od = 1, hold = null) {
   return Math.sqrt(v2);
 }
 
+const NO_SOLIDS = [];
+
+// A stop (`park`) out of the way of the big ships moving through
+// (`moving`, solids): one that's come down on it pushes it out level from
+// its middle (as wide as it is at the stop's height, as the autopilot reads
+// a solid), to a unit past where the autopilot steers clear of it (so it
+// can settle there); facing the way it did. The stop itself when none has.
+export function clearPark(park, moving) {
+  let p = park;
+  for (const o of moving) {
+    const py = p.y ?? SHIP.height;
+    const need = o.r + SHIP.radius + Math.max(1, o.r * 0.3) + 1;
+    const dy = py - o.at[1];
+    const rr = need * need - dy * dy;
+    if (rr <= 0) continue;
+    const dx = p.x - o.at[0];
+    const dz = p.z - o.at[2];
+    const d = Math.sqrt(dx * dx + dz * dz);
+    const wide = Math.sqrt(rr);
+    if (d >= wide) continue;
+    const [ux, uz] = d > 1e-6 ? [dx / d, dz / d] : [1, 0];
+    p = { ...p, x: o.at[0] + ux * wide, z: o.at[2] + uz * wide };
+  }
+  return p;
+}
+
 // The stick that points the nose along `dir` (a unit vector, the map's
 // axes): the turn and the tip it's off by in the ship's own frame (with a
 // touch of damping, so their inertia doesn't swing it past), and the roll
@@ -679,10 +705,16 @@ export function stickToward(s, dir) {
 // that map's to give). `od`, super speed: the overdrive it flies on (1, none).
 // `hold`, if anything holds the drive down on the way ((x, y, z) → 0 … 1: a
 // battle's, as step's input.interdicted has it), so it plans its stop with
-// the brakes it will have.
-export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), space = SPACE, od = 1, hold = null) {
+// the brakes it will have. `moving`: the big ships moving through (the
+// frame's solids past the map's own: a capital that's dropped in, the
+// sector fleet, the big traffic, the Interdictor), steered round as the
+// planets are, and its stop moved out of any that's come down on it
+// (clearPark).
+export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), space = SPACE, od = 1, hold = null, moving = NO_SOLIDS) {
   const p = space.goals[id];
   if (!p || !park) return { input: { throttle: 0, turn: 0 }, done: true };
+  park = clearPark(park, moving);
+  const solids = moving.length ? [...space.solids, ...moving] : space.solids;
   // (a hop between two of the home system's stations is no quicker on it:
   // none. Coming home on it, it fades out as the ship comes in to the home
   // system, and the stop is planned for that, not for the overdrive's brakes
@@ -719,7 +751,7 @@ export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), spa
     const rr = (o.r + SHIP.radius + 0.5) ** 2 - dy * dy;
     return rr > 0 ? Math.sqrt(rr) : 0;
   };
-  for (const o of space.solids) {
+  for (const o of solids) {
     if (o.id === id) continue;
     const r = widthAt(o);
     if (r <= 0) continue;
@@ -748,7 +780,7 @@ export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), spa
   const brakes = space.brakeAt(s.x, s.y, s.z, here) * (odHeld > 1 ? overdriveAt(here, odHeld) ** 2 : 1);
   const stopping = (s.speed * s.speed) / (2 * brakes) + 3;
   let danger = false;
-  for (const o of space.solids) {
+  for (const o of solids) {
     if (o.id === id) continue;
     const r = widthAt(o);
     if (r <= 0) continue;

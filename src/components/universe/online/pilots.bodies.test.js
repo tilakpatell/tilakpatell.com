@@ -27,7 +27,7 @@ const flown = (pilots, c, frames = 2) => {
 };
 
 describe('the pilots online, as bodies for ship contact', () => {
-  it('answers a pilot flying here, and a ram on them tells nobody', () => {
+  it('answers a pilot flying here, a ram on them no hit of the scene’s (it’s told them over the wire)', () => {
     const pilots = createPilots(new THREE.Group(), { fleet: fakeFleet(), kinds: HUNTER_KINDS });
     const c = client(peer('ann'), peer('bo', { ally: 'ally' }));
     flown(pilots, c);

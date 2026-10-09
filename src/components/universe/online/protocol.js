@@ -9,7 +9,9 @@
 // it's dropped, and a flood gets them muted), and a hit is believed only
 // from someone who isn't an ally, fired a shot that would have passed near
 // you a moment ago (aimedAt), was close enough, and isn't hitting faster
-// than the guns fire. The hunters after a pilot are theirs to fly: what they
+// than the guns fire; a ram only from someone who isn't an ally and was last
+// seen touching you, as hard as both your speeds allow (ramCounts). The
+// hunters after a pilot are theirs to fly: what they
 // say of them is only drawn, and a hit on one of yours by someone else is
 // believed only from a pilot who's here, has just fired and is close to it
 // (any pilot here can still clear your hunters for you: that's the point).
@@ -33,6 +35,10 @@
 //                                                       weapon (weapons.js's code), 0 if left off
 //   hit   { d: damage }                                  to the pilot a bolt of yours hit (up to
 //                                                       DAMAGE_MAX, a heavy round's)
+//   ram   { v: closing speed }                           to the pilot you flew into (they take it off
+//                                                       their own shields by the contact law,
+//                                                       lib/combat/contact.js, at no more than both
+//                                                       your speeds allow: ramCounts)
 //   down  { b: who shot you down }                       to everyone, when your shields go
 //   pack  [[id, kind, x, y, z, vx, vy, vz, hits left], …] five times a second while hunters are
 //                                                       after you and someone's there to see ([]: gone)
@@ -80,6 +86,7 @@ import { STANCE_IDS } from '../../galaxy/surface/combatRules';
 import { NO_FACTIONS } from './relations';
 import { motionPacket, readEmoteWire, readMotion } from '../../../lib/emote';
 import { WEAPONS, byCode } from '../weaponTable';
+import { CONTACT } from '../../../lib/combat/contact';
 
 export { NAME_MAX, cleanName, randomCallsign } from './names';
 
@@ -103,9 +110,12 @@ export const GUARD = {
   near: 2, // map units: how close a shot's path must pass you (more, the faster you go)
   killWindow: 3000, // ms: a kill is believed only this soon after the killer's shot or hit
   reach: 95, // map units: further than this from one of your hunters, they couldn't have hit it (a bolt at the boost goes 85)
+  ramNear: 1.5, // map units: how far apart a rammer's last pose and you may be (two ships touching, and a little)
+  ramLag: 0.35, // s: and more for each unit a second of your speeds together (a pose is up to 100 ms old, then the trip)
 };
+export const RAM_MAX = 600; // a closing speed, at most (two ships head on, on the pulse drive)
 // how many of each message one pilot may send: [a second, at most at once]
-export const RATES = { pose: [20, 30], foot: [20, 30], walk: [20, 30], cur: [25, 40], shot: [10, 12], hit: [10, 12], siege: [2, 6], war: [0.5, 3], fight: [2, 6], hi: [1, 4], ally: [0.5, 3], down: [0.4, 2], pack: [8, 12], hhit: [10, 12] }; // (the X-wing fires 8 a second)
+export const RATES = { pose: [20, 30], foot: [20, 30], walk: [20, 30], cur: [25, 40], shot: [10, 12], hit: [10, 12], ram: [3, 4], siege: [2, 6], war: [0.5, 3], fight: [2, 6], hi: [1, 4], ally: [0.5, 3], down: [0.4, 2], pack: [8, 12], hhit: [10, 12] }; // (the X-wing fires 8 a second)
 export const FLOOD = { denied: 60, window: 5000 }; // turned away this often in this long: muted
 export const FLAG = { hidden: 1, boost: 2, safe: 4, lane: 8 };
 // how far out a pilot can be, level, and how fast they can go: the universe
@@ -264,6 +274,27 @@ export function readShot(data, from = null) {
 export function readHit(data) {
   const d = num(data?.d, 0, DAMAGE_MAX);
   return d === null || d <= 0 ? null : d;
+}
+
+// a ram as it came in: the closing speed it says, or null
+export function readRam(data) {
+  const v = num(data?.v, 0, RAM_MAX);
+  return v === null ? null : v;
+}
+
+// Should a ram from this pilot count, and how hard? They're not blocked or
+// an ally, were last seen close enough to have touched you (more room the
+// faster you both go: their pose is a moment old), and it's not sooner after
+// their last than a contact counts again (the law's `cool`). The closing
+// speed believed is theirs (`into`), but never more than both your speeds
+// together; null when it doesn't count.
+export function ramCounts(peer, me, into, now) {
+  if (!peer || !me || peer.blocked || peer.ally === 'ally') return null;
+  const p = peer.pose;
+  if (!p || now - (peer.ramAt ?? -Infinity) < CONTACT.cool * 1000) return null;
+  const both = Math.abs(p.speed ?? 0) + Math.abs(me.speed ?? 0);
+  if (Math.hypot(p.x - me.x, p.y - me.y, p.z - me.z) > GUARD.ramNear + both * GUARD.ramLag) return null;
+  return Math.min(into, both);
 }
 
 // ── The hunters after a pilot: for the others to see, and to help with ──

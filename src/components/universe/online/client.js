@@ -46,16 +46,19 @@
 //   shield, lane }), poseOf(peerId) (where they were last seen, for the roster), foot(crew | null) (your crew on foot, protocol.js's writeFoot;
 //   each pilot's comes in as peer.foot, with `at`), walk(crew | null) (the
 //   same down on a world in the galaxy: peer.walk), shot(at, v, weapon),
-//   hit(peerId, damage), siege(msg) (the Citadel's siege, siege.js),
+//   hit(peerId, damage), ram(peerId, into) (you flew into them, at that
+//   closing speed), siege(msg) (the Citadel's siege, siege.js),
 //   war(msg) (the galaxy's war: what the players have done, a tally.js
 //   message), fight(msg) (the battle on where you are: its objectives' damage),
-//   down(byId), cursor(x, y, touch), pack(get) (get() → hunters.js's wire(),
+//   down(byId, rammed), cursor(x, y, touch), pack(get) (get() → hunters.js's wire(),
 //   asked for only when it's time to send), hunterHit(peerId, hunterId,
 //   damage), helped(peerId, what) (their shot took one of yours down),
 //   ally(peerId, 'ask' | 'accept' | 'decline' | 'end'), block(peerId, on),
 //   peers, takeShots(), leave() }
 // Events, to on(fn): { type: 'status' }, { type: 'roster' }, { type: 'feed',
-// text, tone }, { type: 'hit', from, damage }, { type: 'downed', id, by }
+// text, tone }, { type: 'hit', from, damage }, { type: 'rammed', from, into,
+// at } (they flew into you: the closing speed believed, and where they
+// were), { type: 'downed', id, by }
 // (someone was shot down: where they were, for the scene's pop; `by` is
 // whoever this browser believes did it), { type: 'hunterHit', from, id,
 // damage } (another pilot's bolt hit one of the hunters after you), { type:
@@ -67,7 +70,7 @@
 
 import { readBuildWire, writeBuild } from '../shipyard/build';
 import { EVERYONE, readLooks, writeLook } from '../../rickmorty/wardrobe/looks';
-import { APP_ID, CURSOR_MS, DAMAGE, DAMAGE_MAX, FLAG, FOOT_MS, GUARD, PACK_MS, POSE_MS, PUNCH_MAX, ROOM, allyStep, cleanName, createLimiter, hitCounts, hunterHitCounts, readAlly, readCursor, readFoot, readHello, readHit, readHunterHit, readPack, readPose, readShot, writeCursor, writeFactions, writeFoot, writeLooksWire, writePack, writePose, writeShot, WALK_MS, readWalk, writeWalk } from './protocol';
+import { APP_ID, CURSOR_MS, DAMAGE, DAMAGE_MAX, FLAG, FOOT_MS, GUARD, PACK_MS, POSE_MS, PUNCH_MAX, ROOM, allyStep, cleanName, createLimiter, hitCounts, hunterHitCounts, readAlly, readCursor, readFoot, readHello, readHit, readHunterHit, readPack, readPose, readRam, readShot, ramCounts, writeCursor, writeFactions, writeFoot, writeLooksWire, writePack, writePose, writeShot, WALK_MS, readWalk, writeWalk } from './protocol';
 import { UNIVERSE, isFlight, placeName } from './where';
 import { STOCK_LOADOUT, readLoadout, writeOutfit } from '../outfit';
 import { readSiege } from '../siege';
@@ -158,6 +161,8 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
         shotAt: -Infinity,
         hitAt: -Infinity, // their last hit on you that counted
         hitByMeAt: -Infinity, // your last hit on them
+        ramAt: -Infinity, // their last ram on you that counted
+        rammedByMeAt: -Infinity, // your last ram on them
         declinedAt: -Infinity,
         seen: now(),
         limit: createLimiter(),
@@ -246,6 +251,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     const walk = action('walk');
     const shot = action('shot');
     const hit = action('hit');
+    const ram = action('ram');
     const down = action('down');
     const ally = action('ally');
     const cur = action('cur');
@@ -263,6 +269,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
       walk: (data) => walk.send(data).catch(() => {}),
       shot: (data) => shot.send(data).catch(() => {}),
       hit: (data, to) => hit.send(data, { target: to }).catch(() => {}),
+      ram: (data, to) => ram.send(data, { target: to }).catch(() => {}),
       down: (data) => down.send(data).catch(() => {}),
       ally: (data, to) => ally.send(data, { target: to }).catch(() => {}),
       cur: (data) => cur.send(data).catch(() => {}),
@@ -373,6 +380,17 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
       p.hitAt = t;
       emit({ type: 'hit', from: peerId, damage: d });
     };
+    ram.onMessage = (data, { peerId }) => {
+      const v = readRam(data);
+      const p = v !== null && admit('ram', peerId);
+      const t = now();
+      if (!p || p.where !== self.where) return;
+      const into = ramCounts(p, me, v, t);
+      if (into === null) return;
+      p.ramAt = t;
+      p.hitAt = t; // (shot down by it, it's theirs: down's `by`)
+      emit({ type: 'rammed', from: peerId, into, at: p.pose });
+    };
     pack.onMessage = (data, { peerId }) => {
       const list = readPack(data);
       const p = list && admit('pack', peerId);
@@ -397,10 +415,10 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
       let by = null;
       if (said && said === self.id) {
         // yours, if you'd just hit them
-        if (t - p.hitByMeAt <= GUARD.killWindow) {
+        if (t - Math.max(p.hitByMeAt, p.rammedByMeAt) <= GUARD.killWindow) {
           by = said;
           self.kills += 1;
-          feed(`You shot down ${p.name ?? 'someone'}`, 'kill');
+          feed(p.rammedByMeAt >= p.hitByMeAt ? `You rammed ${p.name ?? 'someone'} out of the sky` : `You shot down ${p.name ?? 'someone'}`, 'kill');
         }
       } else if (said) {
         // someone else's, if they'd just fired and were close by
@@ -625,14 +643,23 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
       p.hitByMeAt = now();
       send.hit({ d: Math.min(DAMAGE_MAX, Math.max(1, Math.round(damage))) }, id);
     },
+    // you flew into them: tell them (they take it off their own shields, as
+    // hard as they believe it: protocol.js's ramCounts)
+    ram(id, into) {
+      const p = peers.get(id);
+      if (!send || !p || p.blocked || p.ally === 'ally') return;
+      p.rammedByMeAt = now();
+      send.ram({ v: Math.round(Math.max(0, into) * 100) / 100 }, id);
+    },
     // your shields are gone: everyone hears who did it (a pilot whose hit
-    // on you counted, so it's theirs on your list too)
-    down(by) {
+    // on you counted, so it's theirs on your list too); `rammed`: it was
+    // their ram, not a shot
+    down(by, rammed = false) {
       send?.down({ b: by ?? null });
       const p = by ? peers.get(by) : null;
       if (!p) return;
       p.kills += 1;
-      feed(`${p.name ?? 'Someone'} shot you down`, 'kill');
+      feed(rammed ? `${p.name ?? 'Someone'} rammed you out of the sky` : `${p.name ?? 'Someone'} shot you down`, 'kill');
       roster();
     },
     ally(id, what) {

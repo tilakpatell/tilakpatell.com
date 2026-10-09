@@ -12,6 +12,7 @@
 // Everything is in `parent`'s space (the map's).
 
 import * as THREE from 'three';
+import { knock } from '../../lib/combat/contact';
 import { createFleet } from './glbFleet';
 import { FACTIONS, LASER, hasTrait } from './hunterRules';
 import { createSkirmish } from './skirmish';
@@ -152,9 +153,9 @@ export function createSkirmishes(parent, { fleet = createFleet(), solids = [] } 
       const out = [];
       for (const h of sk.hunt.live) {
         if (!h.alive || h.pack.gone || h.hidden > 0 || hasTrait(h.type, 'rammer')) continue;
-        out.push({ key: `sk:h:${h.id}`, id: h.id, kind: h.kind, at: h.pos, prev: h.prev, vel: h.vel, size: h.type.size, side: 'foe', hit: (punch) => sk.hunt.damage(h.id, punch) });
+        out.push({ key: `sk:h:${h.id}`, id: h.id, kind: h.kind, at: h.pos, prev: h.prev, vel: h.vel, size: h.type.size, side: 'foe', hit: (punch) => sk.hunt.damage(h.id, punch), push: (dv) => knock(h, dv) });
       }
-      for (const w of sk.wing.live) if (w.alive) out.push({ key: `sk:w:${w.id}`, id: w.id, kind: w.kind, at: w.pos, prev: w.prev, vel: w.vel, size: w.type.size, side: 'friend', hit: () => null });
+      for (const w of sk.wing.live) if (w.alive) out.push({ key: `sk:w:${w.id}`, id: w.id, kind: w.kind, at: w.pos, prev: w.prev, vel: w.vel, size: w.type.size, side: 'friend', hit: () => null, push: (dv) => knock(w, dv) });
       const f = sk.freighter;
       if (f.on && f.alive) {
         const v = { x: -Math.sin(f.heading) * Math.cos(f.pitch) * f.speed, y: f.vy, z: -Math.cos(f.heading) * Math.cos(f.pitch) * f.speed };

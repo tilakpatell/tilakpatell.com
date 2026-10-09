@@ -433,6 +433,18 @@ export const CREWS = [
       ['rick', 'That’s what you get for messing with the smartest man in the universe!'],
       ['morty', 'I did most of the shooting, Rick.'],
     ],
+    // a ship downed by flying into it (shipHits.js), and the last of them
+    // so: their own lines, not a gun's
+    ram: {
+      kill: [
+        ['morty', 'Rick! We— we flew right into him!'],
+        ['rick', 'Ramming speed, Morty. The ship’s armoured. Mostly.'],
+      ],
+      cleared: [
+        ['morty', 'W-we rammed the last one, Rick. With the ship.'],
+        ['rick', 'Who needs guns, Morty? The ship’s the gun.'],
+      ],
+    },
     // the ship's powers (shipPowers.js): using each, the big one charged
     // and a big haul from it, and why a portal won't go
     powers: {
@@ -1208,6 +1220,17 @@ export const CREWS = [
       ['luke', 'That’s all of them!'],
       ['comms', 'Great shot, kid. That was one in a million.'],
     ],
+    // (Han on the radio, as for the cleared)
+    ram: {
+      kill: [
+        ['luke', 'I hit him! I mean, I really hit him!'],
+        ['r2', '[an indignant squeal about the paintwork]'],
+      ],
+      cleared: [
+        ['luke', 'That’s the last of them!'],
+        ['comms', 'You flew right through him, kid. Don’t make a habit of it.'],
+      ],
+    },
     // the ship's powers (shipPowers.js)
     powers: {
       focus: {
@@ -1926,6 +1949,16 @@ export const CREWS = [
       ['chewie', '[a triumphant roar]'],
       ['han', 'I know.'],
     ],
+    ram: {
+      kill: [
+        ['chewie', '[an alarmed roar]'],
+        ['han', 'Relax, she’s been through worse. I think.'],
+      ],
+      cleared: [
+        ['han', 'That’s the last of them. Rammed it. Don’t tell Lando.'],
+        ['chewie', '[a doubtful growl]'],
+      ],
+    },
     // the ship's powers (shipPowers.js)
     powers: {
       odds: { use: [['han', 'Never tell me the odds.', 'neverTellOdds']] },
@@ -2656,6 +2689,16 @@ export const CREWS = [
       ['jesse', 'We got ’em all, Mr. White!'],
       ['walt', 'Say my name.', 'sayMyName'],
     ],
+    ram: {
+      kill: [
+        ['jesse', 'Yo, we just rammed him, Mr. White!'],
+        ['walt', 'That’s not chemistry, Jesse. That’s physics. Mass times velocity.'],
+      ],
+      cleared: [
+        ['jesse', 'We rammed the last one, yo! With the RV!'],
+        ['walt', 'Mind the paint, Jesse. We still have to cook in this thing.'],
+      ],
+    },
     // the ship's powers (shipPowers.js)
     powers: {
       magnets: {
@@ -3088,7 +3131,8 @@ export const parseShip = (id) => (typeof id === 'string' && BY_ID.has(id) ? id :
 // 'power' (by the ship power's id: its use, the big one charged, a big haul,
 // a refusal),
 // 'arrive' at a place, 'traffic' going
-// past (by kind), a 'kill' (by kind, or any), 'hunted' (by who: the
+// past (by kind), a 'kill' (by kind, or any), a 'ram' (by when: 'kill' or
+// 'cleared', a ship downed by flying into it), 'hunted' (by who: the
 // faction, or 'ace'), an 'event' (by the director's id) or a 'wonder' (by
 // its id; an event's lines may be keyed by `sub`, what came: a leviathan's
 // kind), 'interdicted' (hunters cut the pulse drive), 'crashInto' (by
@@ -3101,6 +3145,7 @@ export function linesFor(crew, event, id, sub, more) {
   if (event === 'arrive') return crew.arrive[id] ?? null;
   if (event === 'traffic') return crew.traffic?.[id] ?? null;
   if (event === 'kill') return crew.kill?.[id] ?? crew.kill?.any ?? null;
+  if (event === 'ram') return crew.ram?.[id] ?? null;
   if (event === 'hunted') return crew.hunted?.[id] ?? null;
   if (event === 'crashInto') return crew.crashInto?.[id] ?? crew.crash ?? null;
   if (event === 'event') {

@@ -33,7 +33,8 @@
 //   on to: [{ id, at, vel, size, kind, hp, hpMax, faction, threat }] (targeting.js;
 //   threat is 1 for one on an attack run at you),
 //   bodies: the ones in the fight as shipHits.js's bodies (a rammer is not
-//   one: its own burst on you stands), a ram taken as damage(id, punch) }
+//   one: its own burst on you stands), a ram taken as damage(id, punch) and
+//   knocking it off its line (the law's knock) }
 // `solids` is what they fly round: ship.js's, or a function giving them (the
 // galaxy's change from system to system).
 // A pack sent in `ahead` drops in ahead of you (an ambush on the way
@@ -51,6 +52,7 @@
 // Everything is in `parent`'s space (the map's).
 
 import * as THREE from 'three';
+import { knock } from '../../lib/combat/contact';
 import { packSkill } from './difficulty';
 import { createFleet } from './glbFleet';
 import { FACTIONS, HUNTER_KINDS, LASER, NAMES, createHunt, hasTrait } from './hunterRules';
@@ -236,7 +238,7 @@ export function createHunters(parent, { small = false, fleet = createFleet(), fa
       const out = [];
       for (const h of hunt.live) {
         if (!h.alive || h.pack.gone || h.hidden > 0 || hasTrait(h.type, 'rammer')) continue;
-        out.push({ key: `h:${h.id}`, id: h.id, kind: h.kind, at: h.pos, prev: h.prev, vel: h.vel, size: h.type.size, side: 'foe', hit: (punch) => answer(hunt.damage(h.id, punch)) });
+        out.push({ key: `h:${h.id}`, id: h.id, kind: h.kind, at: h.pos, prev: h.prev, vel: h.vel, size: h.type.size, side: 'foe', hit: (punch) => answer(hunt.damage(h.id, punch)), push: (dv) => knock(h, dv) });
       }
       return out;
     },

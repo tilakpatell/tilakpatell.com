@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { CONTACT } from '../../lib/combat/contact';
+import { CONTACT, shove } from '../../lib/combat/contact';
 import { createShipHits, ramNote, solidsWith } from './shipHits';
 
 // your ship flies along −z (heading 0): `from` z to `to` z at `speed`
@@ -39,13 +39,22 @@ describe('the ship contact collector', () => {
     const hits = createShipHits({ sources: [() => [w]] });
     const h = hits.sweep(...way(0, -1, 6), 1 / 60, 0);
     expect(h.into).toBeCloseTo(20, 5);
-    expect(h.outcome).toEqual({ kind: 'glance', damage: 0, punch: 0, keep: CONTACT.glance });
+    expect(h.outcome).toEqual({ kind: 'glance', damage: 0, punch: 0, keep: CONTACT.glance, push: shove(20, 0.3) });
   });
 
   it('a ram off a foe at the same speed', () => {
     const f = body('f', -0.5, { vel: { x: 0, y: 0, z: 14 } });
     const hits = createShipHits({ sources: [() => [f]] });
     expect(hits.sweep(...way(0, -1, 6), 1 / 60, 0).outcome.kind).toBe('ram');
+  });
+
+  it('knocks the other ship away from you, along the contact, by the law’s shove', () => {
+    const f = body('f', -0.5, { vel: { x: 0, y: 0, z: 2 } });
+    const hits = createShipHits({ sources: [() => [f]] });
+    const h = hits.sweep(...way(0, -1, 6), 1 / 60, 0);
+    // you meet it head on, flying −z: it goes on along −z, away from you
+    expect(h.push.z).toBeCloseTo(-shove(8, 0.3), 5);
+    expect(Math.abs(h.push.x) + Math.abs(h.push.y)).toBeLessThan(1e-9);
   });
 
   it('finds a body in the middle of a way 40 units long', () => {

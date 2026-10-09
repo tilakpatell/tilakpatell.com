@@ -188,7 +188,8 @@ export default function Comms({ crew, reduced, control }) {
           }
         } else if (e.type === 'kill') {
           popSound();
-          if (often('kill', now)) say(linesFor(crew, 'kill', e.kind), { urgent: true });
+          // (rammed down: the crew's ram line, not a gun's)
+          if (often('kill', now)) say((e.ram && linesFor(crew, 'ram', 'kill')) || linesFor(crew, 'kill', e.kind), { urgent: true });
         } else if (e.type === 'edge') {
           if (often('edge', now)) say(linesFor(crew, 'edge'));
         } else if (e.type === 'idle') {
@@ -251,7 +252,7 @@ export default function Comms({ crew, reduced, control }) {
           crashSound();
           say(linesFor(crew, 'destroyed'), { urgent: true });
         } else if (e.type === 'escaped' || e.type === 'cleared') {
-          say(linesFor(crew, e.type), { urgent: true });
+          say((e.ram && linesFor(crew, 'ram', 'cleared')) || linesFor(crew, e.type), { urgent: true });
         } else if (e.type === 'event') {
           if (e.id === 'destroyer') jumpSound();
           else if (e.id === 'flare') flareSound();

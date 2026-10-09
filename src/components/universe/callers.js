@@ -112,6 +112,7 @@ const CALLS = {
     kill: 'redleader', // (Red Five, watch your fire)
     'crashInto.citadel': 'citadel',
     cleared: 'han', // (back for the Death Star: “Great shot, kid”)
+    'ram.cleared': 'han',
     'events.wingmen.xwing': 'redtwo',
     'events.wingmenGone': 'redtwo',
     'events.distress': 'brighthope',

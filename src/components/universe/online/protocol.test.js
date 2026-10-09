@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DAMAGE_MAX, FLAG, FLOOD, GUARD, NAME_MAX, PACK_MAX, PUNCH_MAX, RATES, STALE_MS, aimedAt, allyStep, cleanName, createLimiter, hitCounts, hunterHitCounts, randomCallsign, readAlly, readCursor, readFoot, readHello, readHit, readHunterHit, readPack, readPose, readShot, sample, writeCursor, writeFactions, writeFoot, writeLooksWire, writePack, writePose, writeShot } from './protocol';
+import { DAMAGE_MAX, FLAG, FLOOD, GUARD, NAME_MAX, PACK_MAX, PUNCH_MAX, RATES, STALE_MS, aimedAt, allyStep, cleanName, createLimiter, hitCounts, hunterHitCounts, randomCallsign, readAlly, readCursor, readFoot, readHello, readHit, readHunterHit, readPack, readPose, readRam, readShot, ramCounts, RAM_MAX, sample, writeCursor, writeFactions, writeFoot, writeLooksWire, writePack, writePose, writeShot } from './protocol';
 import { STOCK_LOADOUT, writeOutfit } from '../outfit';
+import { CONTACT } from '../../../lib/combat/contact';
 import { STOCK_BUILD, writeBuild } from '../shipyard/build';
 import { defaultLook, readLook, readLooks, writeLook } from '../../rickmorty/wardrobe/looks';
 
@@ -307,6 +308,36 @@ describe('shots', () => {
     const s = readShot(writeShot({ x: 30000, y: 0, z: -48000 }, [0, 0, -20]));
     expect(s.p).toEqual([30000, 0, -48000]);
     expect(readShot([1e9, 0, 0, 0, 0, -20]).p[0]).toBe(60000);
+  });
+});
+
+describe('rams', () => {
+  it('reads the closing speed, capped, and nothing else', () => {
+    expect(readRam({ v: 8 })).toBe(8);
+    expect(readRam({ v: 1e9 })).toBe(RAM_MAX);
+    expect(readRam({ v: -3 })).toBe(0);
+    expect(readRam({ v: 'fast' })).toBeNull();
+    expect(readRam(null)).toBeNull();
+  });
+  const me = { x: 0, y: 0, z: 0, speed: 6 };
+  const peer = (o = {}) => ({ ally: 'none', blocked: false, ramAt: -Infinity, pose: { x: 0.5, y: 0, z: 0, speed: 6 }, ...o });
+  it('counts a ram from a pilot last seen touching you, as hard as both your speeds allow', () => {
+    expect(ramCounts(peer(), me, 9, 1000)).toBe(9);
+    expect(ramCounts(peer(), me, 500, 1000)).toBe(12); // (6 and 6: no harder)
+  });
+  it('gives the touch more room the faster you both go', () => {
+    const off = (speed) => peer({ pose: { x: 4, y: 0, z: 0, speed } });
+    expect(ramCounts(off(0), { ...me, speed: 0 }, 2, 1000)).toBeNull();
+    expect(ramCounts(off(6), me, 2, 1000)).toBe(2); // (1.5 + 12 × 0.35 = 5.7)
+  });
+  it('ignores allies, the blocked, one not seen, one far off, and one too soon after the last', () => {
+    expect(ramCounts(peer({ ally: 'ally' }), me, 8, 1000)).toBeNull();
+    expect(ramCounts(peer({ blocked: true }), me, 8, 1000)).toBeNull();
+    expect(ramCounts(peer({ pose: null }), me, 8, 1000)).toBeNull();
+    expect(ramCounts(peer({ pose: { x: 40, y: 0, z: 0, speed: 6 } }), me, 8, 1000)).toBeNull();
+    expect(ramCounts(peer({ ramAt: 900 }), me, 8, 1000)).toBeNull();
+    expect(ramCounts(peer({ ramAt: 900 }), me, 8, 900 + CONTACT.cool * 1000)).toBe(8);
+    expect(ramCounts(peer(), null, 8, 1000)).toBeNull();
   });
 });
 

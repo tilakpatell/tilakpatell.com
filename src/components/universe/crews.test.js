@@ -24,6 +24,20 @@ describe('the crews', () => {
     for (const c of CREWS) if (c.jump) expect(JUMP_STYLES).toContain(c.jump);
   });
 
+  it('each say a ram’s kill, and the last of them rammed, as a ram (never a shot)', () => {
+    for (const crew of CREWS) {
+      for (const when of ['kill', 'cleared']) {
+        const exchange = linesFor(crew, 'ram', when);
+        expect(exchange?.length, `${crew.id} ${when}`).toBeGreaterThan(0);
+        for (const [who, text] of exchange) {
+          expect(who === 'comms' || crew.speakers[who], `${crew.id}: ${who}`).toBeTruthy();
+          expect(text, `${crew.id} ${when}`).not.toMatch(/\bsho(t|ot)/i);
+        }
+      }
+    }
+    expect(linesFor(crewById('xwing'), 'ram', 'nope')).toBeNull();
+  });
+
   it('have something to say everywhere, and only their own crew says it', () => {
     for (const crew of CREWS) {
       const all = [...['launch', 'boost', 'bump', 'edge', 'crash', 'pulled', 'swallowed'].map((e) => linesFor(crew, e)), ...ORDER.map((id) => linesFor(crew, 'arrive', id)), linesFor(crew, 'kill', 'any')];

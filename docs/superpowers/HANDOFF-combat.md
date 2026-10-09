@@ -175,3 +175,7 @@ The design is `docs/superpowers/specs/2026-10-08-combat-revamp-design.md`, the p
 
 - `npx vitest run src/components/universe/footAim.test.js src/lib/combat src/components/rickmorty/world/rmShots.test.js src/components/rickmorty/world/roomSolids.test.js src/components/rickmorty/world/rmLockOn.test.js src/components/rickmorty/world/dimensions/duel.test.js src/components/galaxy/surface/surfaceLockOn.test.js src/components/galaxy/surface/aimShot.test.js`.
 - In the browser (dev server), checked headless: on foot on Rick and Morty's planet (`__universeDebug.startFoot()`, a squad called as `scripts/foot-portal-check.mjs` does), a trooper on the reticle's ray is `S.aimed.target`, the reticle rings it and a shot takes a point off it; turned 20° away on a mouse, no ring, no target, the shot goes to the ground. `#/c-137`, `__C137__.rickall(7)`, `lookAt('sleepygary')`, `shoot()`: nobody is shot at once, Sleepy Gary is shot when the bolt arrives. Headless frames are slow: wait on the game's clock (`foot.debug.clock`, `__C137__.sim.t`), not the wall's.
+
+## What comes next
+
+The forms (a staff and a pair that move as such), the look of a blade, the hold on every model, more of the Force and dismemberment are designed as their own lane: `docs/superpowers/HANDOFF-saber-forms.md`, its spec `docs/superpowers/specs/2026-10-09-saber-forms-force-dismemberment-design.md` and plan `docs/superpowers/plans/2026-10-09-saber-forms-force-dismemberment.md`. Everything here stays as it is; that lane builds on it.
