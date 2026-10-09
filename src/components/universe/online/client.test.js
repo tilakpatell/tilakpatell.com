@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createClient } from './client';
+import { CHAT } from './chat/text';
 import { createAllies } from './allies';
 import { STOCK_LOADOUT } from '../outfit';
 import { PUNCH_MAX } from './protocol';
@@ -325,6 +326,111 @@ describe('createClient', () => {
     expect(seen.b.filter((e) => e.type === 'hit')).toHaveLength(1);
   });
 
+  it('a hit is not sent at a squadmate, nor taken from one', async () => {
+    const { a, b, seen, tick } = await pair();
+    const hits = () => seen.b.filter((e) => e.type === 'hit');
+    lineUp(a, b);
+    a.setSquad(['B']);
+    a.hit('B');
+    expect(hits()).toHaveLength(0);
+    // one who doesn't know you're squadmates: their hit doesn't count with you
+    a.setSquad([]);
+    b.setSquad(['A']);
+    tick(300);
+    a.shot({ x: 3, y: 0, z: 0 }, [-20, 0, 0]);
+    a.hit('B');
+    expect(hits()).toHaveLength(0);
+    // out of the squad, it's a hit again
+    b.setSquad([]);
+    tick(300);
+    a.shot({ x: 3, y: 0, z: 0 }, [-20, 0, 0]);
+    a.hit('B');
+    expect(hits()).toHaveLength(1);
+  });
+
+  it('an invite arrives once and a refusal holds 60 s', async () => {
+    const { a, b, bus, seen, tick } = await pair({ three: true });
+    const SID = 'BCDFGHJKLMNP';
+    const invites = (who) => seen[who].filter((e) => e.type === 'invite');
+    a.invite('B', SID);
+    expect(invites('b')).toEqual([{ type: 'invite', from: 'A', sid: SID }]);
+    expect(invites('c')).toEqual([]); // (to them alone)
+    // the same again: once is enough
+    tick(6000);
+    a.invite('B', SID);
+    expect(invites('b')).toHaveLength(1);
+    // turned down: not again for a minute
+    b.declineInvite('A');
+    tick(6000);
+    a.invite('B', SID);
+    expect(invites('b')).toHaveLength(1);
+    tick(55000);
+    a.invite('B', SID);
+    expect(invites('b')).toHaveLength(2);
+    // junk is no invite, from a client or anyone else
+    tick(6000);
+    a.invite('B', 'nope');
+    bus.room('X').makeAction('inv').send({ s: 'AEIOUAEIOUAE' }, { target: 'B' });
+    expect(invites('b')).toHaveLength(2);
+  });
+
+  it('your own invites go no faster than the others take them, and say whether they went', async () => {
+    const { a, seen, tick } = await pair({ three: true });
+    const SID = 'BCDFGHJKLMNP';
+    expect([a.invite('B', SID), a.invite('C', 'nope'), a.invite('Nobody', SID), a.invite('C', SID), a.invite('C', SID)]).toEqual([true, false, false, true, false]);
+    expect(seen.c.filter((e) => e.type === 'invite')).toHaveLength(1);
+    // one more each 5 s
+    tick(5000);
+    expect([a.invite('C', SID), a.invite('B', SID)]).toEqual([true, false]);
+  });
+
+  it('says a line to everyone, or to those in the same place, cleaned again on the way in', async () => {
+    const { a, b, c, bus, seen } = await pair({ three: true });
+    const says = (who) => seen[who].filter((e) => e.type === 'say');
+    expect(a.say('hello all  https://x.io/a', true)).toBe(true);
+    expect(says('b')).toEqual([{ type: 'say', from: 'A', text: 'hello all [link]', all: true }]);
+    // a line for here reaches only those in the same place
+    c.setProfile({ where: '/projects' });
+    expect(a.say('anyone here?')).toBe(true);
+    expect(says('b').at(-1)).toMatchObject({ text: 'anyone here?', all: false });
+    expect(says('c')).toHaveLength(1);
+    // a client of someone's own is read with suspicion: cleaned again, junk dropped
+    const x = bus.room('X');
+    x.makeAction('hi').send({ n: 'Spam', k: null, c: 0, w: '/universe' });
+    const say = x.makeAction('say');
+    say.send({ t: 'click‮ www.evil.example', s: 1 });
+    expect(says('b').at(-1)).toMatchObject({ from: 'X', text: 'click [link]' });
+    say.send({ t: { html: '<b>' }, s: 1 });
+    expect(says('b')).toHaveLength(3);
+    // nor heard from once blocked
+    b.block('X', true);
+    say.send({ t: 'hi again', s: 1 });
+    expect(says('b')).toHaveLength(3);
+    // nothing to say, or the owner's switch off: nothing goes, nothing's shown
+    expect(a.say('   ', true)).toBe(false);
+    CHAT.everyone = false;
+    try {
+      expect(a.say('hello?', true)).toBe(false);
+      bus.room('Y').makeAction('hi').send({ n: 'Yoda', k: null, c: 0, w: '/universe' });
+      bus.room('Y').makeAction('say').send({ t: 'hello', s: 1 });
+      expect(says('b')).toHaveLength(3);
+    } finally {
+      CHAT.everyone = true;
+    }
+  });
+
+  it('a quick-chat phrase reaches those in the same place', async () => {
+    const { a, c, seen } = await pair({ three: true });
+    c.setProfile({ where: '/projects' });
+    expect(a.quick(8)).toBe(true);
+    expect(seen.b.filter((e) => e.type === 'quick')).toEqual([{ type: 'quick', from: 'A', i: 8 }]);
+    expect(seen.c.filter((e) => e.type === 'quick')).toEqual([]);
+    expect(a.quick(16)).toBe(false);
+    expect(a.quick('8')).toBe(false);
+    // three at once, and then no faster than one a second
+    expect([a.quick(1), a.quick(2), a.quick(3)]).toEqual([true, true, false]);
+  });
+
   it('a ram is told to the pilot rammed, as hard as both your speeds allow, and not between allies', async () => {
     const { a, b, seen, tick } = await pair();
     b.pose({ ...ship(0), speed: 4 });
@@ -347,6 +453,27 @@ describe('createClient', () => {
     tick(400);
     a.ram('B', 8);
     expect(seen.b.filter((e) => e.type === 'rammed')).toHaveLength(1);
+  });
+
+  it('a ram is not sent at a squadmate, nor taken from one', async () => {
+    const { a, b, seen, tick } = await pair();
+    const rams = () => seen.b.filter((e) => e.type === 'rammed');
+    b.pose({ ...ship(0), speed: 4 });
+    a.pose({ ...ship(0.6), speed: 6 });
+    a.setSquad(['B']);
+    a.ram('B', 8);
+    expect(rams()).toHaveLength(0);
+    // one who doesn't know you're squadmates: their ram doesn't count with you
+    a.setSquad([]);
+    b.setSquad(['A']);
+    tick(400);
+    a.ram('B', 8);
+    expect(rams()).toHaveLength(0);
+    // out of the squad, it counts again
+    b.setSquad([]);
+    tick(400);
+    a.ram('B', 8);
+    expect(rams()).toHaveLength(1);
   });
 
   it('a pilot rammed out of the sky is the rammer’s, and said as a ram', async () => {

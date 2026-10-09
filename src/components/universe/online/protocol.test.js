@@ -353,8 +353,9 @@ describe('hits', () => {
   it('counts a fair hit', () => {
     expect(hitCounts(peer(), me, 1200)).toBe(true);
   });
-  it('ignores allies, the blocked, and anyone with no shot lately', () => {
+  it('ignores allies, squadmates, the blocked, and anyone with no shot lately', () => {
     expect(hitCounts(peer({ ally: 'ally' }), me, 1200)).toBe(false);
+    expect(hitCounts(peer({ squad: true }), me, 1200)).toBe(false);
     expect(hitCounts(peer({ blocked: true }), me, 1200)).toBe(false);
     expect(hitCounts(peer(), me, 1000 + GUARD.shotWindow + 1)).toBe(false);
   });

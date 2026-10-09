@@ -32,6 +32,19 @@
 // mute is for the visit: nothing's saved, no alliance ends, they're told
 // nothing.
 //
+// Your squadmates (setSquad: squad/squad.js's members) are allies for
+// everything the game asks: your hits aren't sent at them, theirs don't count
+// with you. An invite to a squad goes to one pilot (inv, wire2.js), yours no
+// faster than the others take them; theirs is told to you once (the same
+// squad again within INVITE_AGAIN_MS isn't), and one you've turned down
+// (declineInvite) holds them off as long.
+//
+// Everyone's chat is said here too (say, qc: wire2.js), only while the
+// owner's switch is on (chat/text.js's CHAT.everyone), each line cleaned
+// again as it comes in; a line for here, or a quick-chat phrase, is told
+// only from someone in the same place. The blocked aren't heard, nor anyone
+// muted for a flood; chat.js's Mute is the page's, for words alone.
+//
 // The hunters after you are yours to fly (hunters.js), and the others see
 // them: while someone's in the same place, where they are goes out a few
 // times a second (pack), each pilot's come in as peer.hunters ({ at, list })
@@ -54,7 +67,8 @@
 //   asked for only when it's time to send), hunterHit(peerId, hunterId,
 //   damage), helped(peerId, what) (their shot took one of yours down),
 //   ally(peerId, 'ask' | 'accept' | 'decline' | 'end'), block(peerId, on),
-//   peers, takeShots(), leave() }
+//   setSquad(ids), invite(peerId, sid) → sent, declineInvite(peerId),
+//   say(text, all) → sent, quick(i) → sent, peers, takeShots(), leave() }
 // Events, to on(fn): { type: 'status' }, { type: 'roster' }, { type: 'feed',
 // text, tone }, { type: 'hit', from, damage }, { type: 'rammed', from, into,
 // at } (they flew into you: the closing speed believed, and where they
@@ -66,7 +80,9 @@
 // with siege.js's readSiege), { type: 'war', from, msg } (another pilot's
 // word on the galaxy's war, from anywhere: tally.js's readTally), { type:
 // 'fight', from, msg } (another pilot's on the battle where you are), {
-// type: 'allied', id } (an alliance made with them).
+// type: 'allied', id } (an alliance made with them), { type: 'invite', from,
+// sid } (asked into their squad), { type: 'say', from, text, all }, {
+// type: 'quick', from, i }.
 
 import { readBuildWire, writeBuild } from '../shipyard/build';
 import { EVERYONE, readLooks, writeLook } from '../../rickmorty/wardrobe/looks';
@@ -77,6 +93,9 @@ import { readSiege } from '../siege';
 import { readTally } from '../tally';
 import { NO_FACTIONS, factionsFrom } from './relations';
 import { sideOf } from '../sides';
+import { CLIENT_RATES, readInvite, readQuick, readSay } from './wire2';
+import { cleanSid } from './squad/invite';
+import { CHAT, cleanText } from './chat/text';
 
 const SNAPS = 12; // poses kept per pilot
 const SHOTS = 48; // shots waiting to be drawn, at most
@@ -86,6 +105,7 @@ const PILOTS = 32; // pilots kept track of, at most (each one flying sends ten b
 const HEARTBEAT_MS = 15000; // a hello this often, so a pilot sitting still isn't dropped
 const QUIET_MS = 45000; // nothing from a pilot this long: they're gone
 const ALLY_AGAIN_MS = 60000; // after you turn someone down, how long before they may ask again
+const INVITE_AGAIN_MS = 60000; // and an invite of theirs, the same
 // your level as it goes out (the wallet's: 1 till it's loaded)
 const levelOf = (lv) => (Number.isInteger(lv) && lv >= 1 ? lv : 1);
 const loadRoom = () => import('./nostr').then((m) => ({ joinRoom: m.joinAsVisitor }));
@@ -110,6 +130,8 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
   let cursorLater = 0; // the last pointer of a quick move, sent once the gap's up
   let heartbeat = 0;
   let shots = [];
+  let squadIds = new Set(); // your squadmates (setSquad)
+  const mine = createLimiter(CLIENT_RATES); // your own words: never more than the others take
 
   const emit = (e) => {
     for (const fn of listeners) fn(e);
@@ -150,6 +172,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
         level: 1, // (theirs, as they say: it only labels them)
         factions: NO_FACTIONS,
         ally: 'none',
+        squad: squadIds.has(id), // (a squadmate: an ally for everything the game asks)
         blocked,
         snaps: [],
         pose: null,
@@ -164,8 +187,10 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
         ramAt: -Infinity, // their last ram on you that counted
         rammedByMeAt: -Infinity, // your last ram on them
         declinedAt: -Infinity,
+        invited: null, // their last invite told to you: { sid, at }
+        inviteNoAt: -Infinity, // when you last turned one of theirs down
         seen: now(),
-        limit: createLimiter(),
+        limit: createLimiter(CLIENT_RATES),
       };
       peers.set(id, p);
     }
@@ -260,6 +285,9 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     const siege = action('siege');
     const war = action('war');
     const fight = action('fight');
+    const inv = action('inv');
+    const say = action('say');
+    const qc = action('qc');
     send = {
       pack: (data) => pack.send(data).catch(() => {}),
       hhit: (data, to) => hhit.send(data, { target: to }).catch(() => {}),
@@ -276,6 +304,9 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
       siege: (data) => siege.send(data).catch(() => {}),
       war: (data) => war.send(data).catch(() => {}),
       fight: (data) => fight.send(data).catch(() => {}),
+      inv: (data, to) => inv.send(data, { target: to }).catch(() => {}),
+      say: (data) => say.send(data).catch(() => {}),
+      qc: (data) => qc.send(data).catch(() => {}),
     };
 
     r.onPeerJoin = (id) => {
@@ -456,6 +487,26 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
         return;
       }
       setAlly(p, { in: a.t });
+    };
+    inv.onMessage = (data, { peerId }) => {
+      const v = readInvite(data);
+      const p = v && admit('inv', peerId);
+      const t = now();
+      // (turned down a moment ago, or this squad's told already: not again yet)
+      if (!p || t - p.inviteNoAt < INVITE_AGAIN_MS || (p.invited?.sid === v.sid && t - p.invited.at < INVITE_AGAIN_MS)) return;
+      p.invited = { sid: v.sid, at: t };
+      emit({ type: 'invite', from: peerId, sid: v.sid });
+    };
+    say.onMessage = (data, { peerId }) => {
+      const s = readSay(data);
+      const p = s && admit('say', peerId);
+      if (!p || !CHAT.everyone || (!s.all && p.where !== self.where)) return;
+      emit({ type: 'say', from: peerId, text: s.text, all: s.all });
+    };
+    qc.onMessage = (data, { peerId }) => {
+      const i = readQuick(data);
+      const p = i !== null && admit('qc', peerId);
+      if (p && p.where === self.where) emit({ type: 'quick', from: peerId, i });
     };
 
     heartbeat = setInterval(() => {
@@ -639,7 +690,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     // a bolt of yours hit them: tell them (they take it off their own shields)
     hit(id, damage = DAMAGE) {
       const p = peers.get(id);
-      if (!send || !p || p.blocked || p.ally === 'ally') return;
+      if (!send || !p || p.blocked || p.ally === 'ally' || p.squad) return;
       p.hitByMeAt = now();
       send.hit({ d: Math.min(DAMAGE_MAX, Math.max(1, Math.round(damage))) }, id);
     },
@@ -647,7 +698,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     // hard as they believe it: protocol.js's ramCounts)
     ram(id, into) {
       const p = peers.get(id);
-      if (!send || !p || p.blocked || p.ally === 'ally') return;
+      if (!send || !p || p.blocked || p.ally === 'ally' || p.squad) return;
       p.rammedByMeAt = now();
       send.ram({ v: Math.round(Math.max(0, into) * 100) / 100 }, id);
     },
@@ -672,6 +723,41 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
       if (on) allies?.block(id, p?.name || null);
       else allies?.unblock(id);
       if (p) block(p, on);
+    },
+    // your squadmates (squad.js's members, by id): allies for everything the game asks
+    setSquad(ids) {
+      squadIds = new Set(Array.isArray(ids) ? ids : []);
+      for (const p of peers.values()) p.squad = squadIds.has(p.id);
+    },
+    // ask them into your squad (invite.js's sid): false if it can't go (they
+    // aren't here, or blocked, or too many too fast)
+    invite(id, sid) {
+      const p = peers.get(id);
+      const s = cleanSid(sid);
+      if (!send || !p || p.blocked || !s || !mine.allow('inv', now())) return false;
+      send.inv({ s }, id);
+      return true;
+    },
+    // their invite turned down: theirs held off for INVITE_AGAIN_MS
+    declineInvite(id) {
+      const p = peers.get(id);
+      if (!p) return;
+      p.invited = null;
+      p.inviteNoAt = now();
+    },
+    // a line to everyone (all) or to those here: false if it can't go (the
+    // owner's switch off, nothing left once it's cleaned, or too many too fast)
+    say(text, all = false) {
+      const t = cleanText(text, CHAT.everyoneMax);
+      if (!send || !CHAT.everyone || !t || !mine.allow('say', now())) return false;
+      send.say({ t, s: all ? 1 : 0 });
+      return true;
+    },
+    // a quick-chat phrase, by id (chat/text.js's PHRASES), to those here
+    quick(i) {
+      if (!send || readQuick(i) === null || !mine.allow('qc', now())) return false;
+      send.qc(i);
+      return true;
     },
     // the shots that came in since last asked
     takeShots() {

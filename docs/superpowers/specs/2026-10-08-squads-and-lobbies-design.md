@@ -70,10 +70,14 @@ when someone sends a friend a link. So one link has to do everything.
    pilot in a private game is still on the roster (so they can be invited,
    allied, talked to); their ship, shots and steps go to the squad's own
    instance, and the roster says “in a private game”.
-4. **The leader decides, and anyone can become the leader.** Squad state is
-   the leader's word, signed. If the leader goes quiet, the next seat takes
-   over. Nothing in a squad is trusted further than the game already
-   trusts a pilot.
+4. **One squad, whatever the network does.** A squad's state is one
+   small document with a stamp; the newest stamp wins, for everyone, so two
+   halves of a squad that lose each other always come back to one. The
+   leader isn't elected: it is the first seat that is still there. A seated
+   member is trusted with the squad (the page gives the controls to the
+   leader; the wire would take them from any member), and nobody else is
+   heard at all: the squad's room is sealed with a key made from its
+   secret.
 5. **The economy stays local-first.** Nothing a peer says moves your
    credits. Squad play pays through `earn`, from what this browser saw.
 6. **Typed words are untrusted text.** Cleaned, capped, links removed,
@@ -152,36 +156,77 @@ and hides the new work of those who stay. The stale `./net.js` comment in
 Rush alphabet (`rush/protocol.js`'s, moved to `online/squad/invite.js`).
 Its room is app `tilakpatel-portfolio-squad`, room `sq-` and the first 24
 hex digits of SHA-256 of `tp-squad-room:<sid>`, so the relays see a topic
-that doesn't give the secret away. Every message in it is
-signature-checked (none is frequent).
+that doesn't give the secret away. Everything said in it is sealed: each
+message goes out as one action, `z`, whose data is AES-GCM under a key from
+HKDF(SHA-256, `sid`, `tp-squad-room`) of the JSON `[kind, data]`
+(`chat/seal.js`, a fresh 12-byte nonce each). What can't be unsealed is
+dropped. So someone reading the relays sees that a room exists and how
+often it speaks, and nothing of who is in it or what is said; and only a
+pilot who holds the `sid` can say anything in it. Every event is still
+signed and signature-checked, so each sealed message is one pilot's.
 
-| Message | From | Carries |
+| Kind | From | Carries |
 |---|---|---|
-| `st` | the leader, every 2 s and on change | `{ e: epoch, v: version, l: leader id, m: [member ids, in seat order], x: [ids turned out], o: open 0/1, r: rally or null, lb: lobby or null, i: instance or null }` |
-| `hi` | everyone, every 3 s (1.5 s till seated) | `{ n: callsign, k: ship, w: where, sh: shields, lv: level, rd: ready 0/1 }` |
+| `doc` | every seated member, every 2 s, and whoever changes it, at once | the squad's document: `{ n: stamp, by: who wrote it, m: [member ids, in seat order], x: [ids turned out], k: locked 0/1, o: open 0/1, r: rally or null, lb: lobby or null, i: instance or null }` |
+| `hi` | everyone, every 3 s (1.5 s till seated) | `{ n: callsign, k: ship, w: where, sh: shields, lv: level, rd: ready 0/1, h: [ids heard in the last 6 s] }` |
 | `bye` | a member leaving | nothing |
-| `pg` | anyone | a ping: `{ k: 'go' / 'help' / 'foe' / 'look', w: where, p: [x, y, z, sector?], t: target id? }` |
-| `qc` | anyone | a quick-chat phrase id |
-| `ch` | anyone | sealed text (below) |
+| `pg` | a member | a ping: `{ k: 'go' / 'help' / 'foe' / 'look', w: where, p: [x, y, z, sector?], t: target id? }` |
+| `qc` | a member | a quick-chat phrase id |
+| `ch` | a member | a typed line |
 
 **The rules (`squad/squadRules.js`, pure).** `squadStep(state, event, now)`
-over events `hello`, `state`, `bye`, `tick`, and the local `invite`,
-`leave`, `kick`, `rally`, `open`.
+over events `hello`, `doc`, `bye`, `tick`, and the local `leave`, `kick`,
+`lock`, `rally`, `open`, `lobby`, `instance`. There are no epochs, claims
+or elections: one document, totally ordered by its stamp.
 
+- *The document and its stamp.* A change is a new document with `n` one
+  more than the one it changes and `by` its writer. Document A is newer
+  than B when its `n` is higher, or the same with a `by` that sorts lower
+  (as text). That order is the same for everyone, so everyone who hears
+  the same documents keeps the same one.
+- *Whose document is taken.* A seated pilot takes a newer document when
+  its writer is a member of the document the pilot holds and isn't turned
+  out in it. Nothing else is taken: not an older one, not one from a pilot
+  who isn't seated. A document whose `n` is more than a million past the
+  one held is refused, so the stamp can't be run to its end.
+- *Passing it on.* Every seated member sends the document it holds every
+  2 s, not the leader alone, so a document reaches everyone that anyone
+  can reach.
+- *Who is there.* A member is there, to a pilot, when the pilot has heard
+  them in the last 6 s, or a member who is there says so in their `hi`
+  (`h`), and so on along the chain. So two pilots who can't hear each
+  other, but both hear a third, still count each other in.
+- *The leader.* The leader is the first seat that is there (a seat not
+  there for 8 s is passed over). It is worked out, never claimed, so it
+  can't be held by two for long: once everyone hears the same pilots, it's
+  the same seat for all. Only the leader's page writes the squad's changes
+  (seating, freeing a seat, turning out, the lock, the rally, opening, the
+  lobby, the instance); any member writes their own leaving.
 - *Seating.* The leader seats a `hi` from a pilot who isn't turned out and
-  isn't blocked by the leader, while a seat is free (four at most).
-- *Away and gone.* A member quiet for 10 s is away (their seat held, shown
-  dimmed); quiet for 45 s, or a `bye`, and the leader frees the seat. A
-  reload with a kept key comes back to the same seat.
-- *Handover.* A member who hasn't heard the leader's `st` for 8 s looks at
-  the seat order: the first member heard within 6 s is the new leader. If
-  that's them, they raise the epoch and send `st`. A `st` is believed from
-  the leader on record, or from a member on record with a higher epoch
-  once the old leader has been quiet for 6 s. Two claims at one epoch: the
-  lower seat wins. A leader who comes back finds a higher epoch and is a
-  member again.
-- *Turning out.* The leader may turn a member out; their id goes in `x`
-  for the squad's life.
+  isn't blocked by the leader, while a seat is free (four at most) and the
+  squad isn't locked.
+- *Away and gone.* A member not there for 10 s is away (their seat held,
+  shown dimmed); not there for 45 s, or a `bye`, and the leader frees the
+  seat. A reload with a kept key comes back to the same seat. While the
+  squad is locked no seat is freed for being away (a locked squad keeps
+  its pilots till they leave or are turned out), so a pilot who was only
+  out of reach is never locked out.
+- *Two halves.* A squad cut in two carries on as two, each with the first
+  of its seats leading. When they hear each other again, the newer
+  document is taken by everyone who has its writer as a member; a leader
+  who hears a sealed `hi` from a pilot it has let go seats them again, and
+  then their document can be taken or theirs taken, whichever is newer. A
+  pilot left out of the document that wins is asking in again, and is
+  seated if there's room. Two halves that between them have more than four
+  pilots can't become one: those left over are told the squad is full.
+- *Turning out.* The leader may turn a member out: their id goes in `x`,
+  their words are dropped by everyone who holds that document, and the
+  squad locks (`k`), so nobody new is seated until the leader unlocks it.
+- *Asking in.* A pilot asking in takes the first document that seats them.
+  One that turns them away (turned out, full, locked) or doesn't seat them
+  is an answer that holds only if nothing seats them within 15 s; with no
+  document at all by then, “That squad has gone.” Asked in from the roster,
+  they hear only documents written by the inviter or that seat the inviter.
 
 **Getting in.**
 
@@ -237,9 +282,9 @@ over events `hello`, `state`, `bye`, `tick`, and the local `invite`,
   the pilot's tag or ghost for four seconds and as a line in the chat. To
   the squad when in one and the squad channel is picked; else to the
   site's room (`qc`, rate `[1, 3]`), shown to those in the same place.
-- *Squad text.* `ch { c }`: up to 200 characters, sealed with AES-GCM
-  under a key from HKDF(SHA-256, `sid`, `tp-squad-chat`) (`chat/seal.js`,
-  WebCrypto), a fresh 12-byte nonce each. The relays carry ciphertext.
+- *Squad text.* `ch`: a line of up to 200 characters, cleaned by the
+  sender and again by each reader. Like everything in the squad's room it
+  goes sealed, so the relays carry ciphertext.
 - *Everyone's text.* `say { t, s }` in the site's room: up to 160
   characters, `s` 0 for here (those in the same place show it) or 1 for
   all. Signature-checked, rate `[0.5, 3]`; the same words three times in
@@ -259,6 +304,29 @@ over events `hello`, `state`, `bye`, `tick`, and the local `invite`,
 
 Keys are chosen in the plan against each scene's bindings (the map already
 uses G, E, P, M, J, V, F, R, T, Q and 1 to 3) and go in the guide.
+
+**Trust.** What the squad's secret does and doesn't do, said plainly.
+
+- *Someone reading the relays* sees a room's topic and how often it
+  speaks. They can't read it, speak in it or find the `sid` from it.
+- *The `sid` gets about three ways:* the link, which goes wherever the
+  leader sends it; an invite from the roster, which travels through the
+  site's public room and can be read there by anyone listening for it; and
+  an open squad's advert, which is public on purpose.
+- *Anyone holding the `sid`* can read the room (who is in it, the rally,
+  every line) and can ask in. They're seated while a seat is free, the
+  squad isn't locked, and they aren't turned out or blocked by the leader.
+  Until they're seated nothing they say counts.
+- *A seated member is trusted with the squad.* The page gives the squad's
+  controls to the leader, but a member with a client of their own could
+  write a document that turns the others out or changes the game, and it
+  would be taken. A squad is for people you'd fly with.
+- *A pilot turned out* keeps the `sid`: they can still read the room, and
+  with a new identity they could ask in again, which is why turning
+  someone out locks the squad. To be rid of someone for good, start a new
+  squad and invite the others.
+- *The page never promises more than this.* It doesn't call a squad's
+  chat private from someone who was in the squad.
 
 ### Part 3: lobbies and private games (PR 3)
 
@@ -369,11 +437,12 @@ hello), `docs/architecture.md`, and
   the visit, and nothing throws (`saves.js` already never does).
 - A squad link with a bad `sid`, a full squad, or one whose leader turned
   you out: a toast says which, and the pilot is online with no squad.
-- No `st` heard within 15 s of joining by link: “That squad has gone.”
-- A `st` that breaks the rules (not from the leader, a member list over
-  four, an unknown activity, options outside the activity's lists) is
-  dropped whole.
-- Text that can't be unsealed, or cleans to nothing, is not shown.
+- No document heard within 15 s of joining by link: “That squad has gone.”
+- A document that breaks the rules (its writer not a member, a member
+  list over four, an unknown activity, options outside the activity's
+  lists, a stamp run far ahead) is dropped whole.
+- Anything in a squad's room that can't be unsealed is dropped; a line
+  that cleans to nothing is not shown.
 - The instance room fails to open: the squad stays, the game doesn't
   start, the lobby says “Couldn't open a private game” with Try again.
 - An arena whose leader leaves mid-game: the next seat's count becomes
@@ -389,9 +458,16 @@ hello), `docs/architecture.md`, and
 - `allies.test.js`, `client.test.js`: an alliance is saved and comes back
   on the next hello from both sides; a one-sided save asks; a block
   starts blocked; an end forgets.
-- `squadRules.test.js`: seating, full, turned out, away and gone, the
-  reload that keeps a seat, each handover case (the leader quiet, two
-  claims, the leader back), and every malformed `st`.
+- `squadRules.test.js`: the stamp's order; whose document is taken and
+  whose isn't; seating, full, locked, turned out, away and gone, the
+  reload that keeps a seat; the leader worked out as seats come and go;
+  being there by another's word; and, on a harness of several pilots with
+  links that can be cut, that every one of these ends with every pilot
+  holding one document and naming one leader: the leader cut off and back,
+  a slow reconnect, a stalled page, two halves each changing the squad, a
+  link that drops for 7 s in every 12, two pilots who hear only a third,
+  and a long split whose halves let each other go; and every malformed
+  document.
 - `invite.test.js`: links round-trip; junk reads as none; the room name
   doesn't contain the `sid`.
 - `text.test.js`: each cleaning rule, the phrase ids, the repeat rule.

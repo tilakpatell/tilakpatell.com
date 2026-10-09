@@ -9,6 +9,8 @@
 // 'grab' (I grabbed, standing here).
 
 import { KINDS, RADIUS, newPlayer, pushOut, recipesOf, solid } from './rules';
+// (no vowels, so no words, and nothing that reads as another letter: the squads' alphabet too)
+import { ALPHABET } from '../../universe/online/squad/invite';
 
 export const APP_ID = 'tilakpatel-portfolio-rush';
 export const POSE_MS = 100;
@@ -16,7 +18,6 @@ export const STATE_MS = 100;
 export const LOBBY_MS = 2000; // the lobby, again, this often
 export const QUIET_MS = 10000; // a guest not heard from this long is gone
 export const RATES = { pose: [20, 30], grab: [10, 14], hi: [1, 4] };
-const ALPHABET = 'BCDFGHJKLMNPQRSTVWXZ'; // no vowels (no words), nothing that reads as another
 export const PHASES = ['lobby', 'count', 'play', 'over'];
 
 // ── room codes ──
