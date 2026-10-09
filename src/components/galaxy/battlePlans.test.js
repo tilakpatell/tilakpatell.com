@@ -125,7 +125,7 @@ describe('planOf', () => {
     expect(hoth.runners).toMatchObject({ kind: 'transport', type: 'intercept' });
   });
 
-  it('flies each war’s own: the Separatists’ droid control relay, the Remnant’s TIE Defender, the Tantive IV boarded at Tatooine and Scarif', () => {
+  it('flies each war’s own: the Separatists’ droid control relay, Gideon’s TIE fighter, the Tantive IV boarded at Tatooine and Scarif', () => {
     const relays = new Set();
     for (let n = 0; n < 40; n++) {
       const { plan } = planAt('kashyyyk', 'republic', 'separatists', 'clone', n, 'assault');
@@ -133,7 +133,7 @@ describe('planOf', () => {
     }
     expect([...relays]).toEqual([30]);
     const remnant = planAt('nevarro', 'newrepublic', 'remnant', 'remnant').plan;
-    expect(remnant.side.find((o) => o.type === 'ace' && o.team === 1)).toMatchObject({ kind: 'tiedefender' });
+    expect(remnant.side.find((o) => o.type === 'ace' && o.team === 1)).toMatchObject({ kind: 'tie', name: 'Moff Gideon’s TIE fighter' });
     for (const sys of ['tatooine', 'scarif']) {
       let boarded = null;
       for (let n = 0; n < 40 && !boarded; n++) {

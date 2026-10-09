@@ -35,7 +35,7 @@ import { titleOf } from './battleObjectives';
 
 const NAMES = { shieldgen: 'Shield generator', bridge: 'Bridge', reactor: 'Reactor' };
 // a runner, as its marker names it (and its number in the battle)
-const RUNNERS = { transport: 'transport', corvette: 'corvette', gozanti: 'Gozanti', nubian: 'Nubian', shuttle: 'shuttle' };
+const RUNNERS = { transport: 'transport', corvette: 'corvette', gozanti: 'Gozanti', nubian: 'Nubian', shuttle: 'shuttle', coreship: 'core ship' };
 const METRES = 40; // a map unit, in metres (an X-wing's about a third of a unit; the galaxy's is 53)
 const far = (a, b, metres = METRES) => {
   const m = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) * metres;

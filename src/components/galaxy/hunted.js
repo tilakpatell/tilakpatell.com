@@ -18,16 +18,17 @@
 
 import { FACTIONS as HOME, HUNTER_KINDS, NAMES as HOME_NAMES } from '../universe/hunterRules';
 import { pacedAll } from '../universe/ship';
+import { lookOf } from './roster';
 
 export const FACTIONS = {
   empire: HOME.empire,
-  separatists: { family: 'starwars', kinds: [['vulture', 4], ['trifighter', 1]], laser: [5.5, 0.7, 0.5], size: [3, 5] },
-  remnant: { family: 'starwars', kinds: [['tie', 2], ['interceptor', 2]], laser: [0.5, 5.5, 0.9], size: [2, 4] },
-  rebellion: { family: 'starwars', kinds: [['xwing', 3], ['awing', 2], ['ywing', 1]], ace: 'redleader', laser: [5.5, 0.6, 0.5], size: [3, 5] },
-  rebelnavy: { family: 'starwars', kinds: [['xwing', 2], ['ywing', 1]], laser: [5.5, 0.6, 0.5], size: [3, 4] },
-  newrepublic: { family: 'starwars', kinds: [['xwing', 3], ['awing', 2]], ace: 'redleader', laser: [5.5, 0.6, 0.5], size: [2, 4] },
-  republic: { family: 'starwars', kinds: [['arc170', 3], ['delta7', 1]], laser: [5.8, 0.75, 0.55], size: [3, 5] },
-  republicnavy: { family: 'starwars', kinds: [['arc170', 3]], laser: [5.8, 0.75, 0.55], size: [3, 4] },
+  separatists: { family: 'starwars', kinds: [['vulture', 4], ['trifighter', 1]], laser: lookOf('separatists').laser, size: [3, 5] },
+  remnant: { family: 'starwars', kinds: [['tie', 2], ['interceptor', 2]], laser: lookOf('remnant').laser, size: [2, 4] },
+  rebellion: { family: 'starwars', kinds: [['xwing', 3], ['awing', 2], ['ywing', 1]], ace: 'redleader', laser: lookOf('rebel').laser, size: [3, 5] },
+  rebelnavy: { family: 'starwars', kinds: [['xwing', 2], ['ywing', 1]], laser: lookOf('rebel').laser, size: [3, 4] },
+  newrepublic: { family: 'starwars', kinds: [['xwing', 3], ['awing', 2]], ace: 'redleader', laser: lookOf('newrepublic').laser, size: [2, 4] },
+  republic: { family: 'starwars', kinds: [['arc170', 3], ['delta7', 1]], laser: lookOf('republic').laser, size: [3, 5] },
+  republicnavy: { family: 'starwars', kinds: [['arc170', 3]], laser: lookOf('republic').laser, size: [3, 4] },
   navy: HOME.navy,
   fett: HOME.fett,
   ig88: HOME.ig88,

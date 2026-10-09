@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { createBolts, createFlashes } from './fx';
+import { LASER, TURBO, createBolts, createFlashes } from './fx';
+import { lookOf } from './roster';
 
 describe('the bolts', () => {
   it('make their instance colours from the start, so the first shot compiles nothing', () => {
@@ -29,5 +30,18 @@ describe('the flashes', () => {
     f.update(1);
     expect(f.busy).toBe(false);
     f.dispose();
+  });
+});
+
+describe('the colours', () => {
+  it('are the roster’s, fighters’ and batteries’ apart', () => {
+    for (const side of ['republic', 'separatists', 'rebel', 'empire', 'newrepublic', 'remnant', 'hutt']) {
+      expect(LASER[side], side).toEqual(lookOf(side).laser);
+      expect(TURBO[side], side).toEqual(lookOf(side).turbo);
+    }
+    expect(LASER.separatist).toEqual(LASER.separatists);
+    // (the Republic's fighters red, its Venators blue)
+    expect(LASER.republic[0]).toBeGreaterThan(LASER.republic[2]);
+    expect(TURBO.republic[2]).toBeGreaterThan(TURBO.republic[0]);
   });
 });

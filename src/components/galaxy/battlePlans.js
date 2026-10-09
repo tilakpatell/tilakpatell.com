@@ -158,7 +158,7 @@ const persecutor = (c) => bridge(c, 'the Persecutor’s bridge');
 const gate = (c) => ({ id: 'gate', type: 'destroy', why: 'gate', crew: 'gate', objectives: [{ id: 'gate', type: 'destroy', kind: 'gate', name: 'the Shield Gate', hp: hp(c), on: { piece: 'scarif' } }] });
 const echoCannon = (c) => ({ id: 'cannon', type: 'destroy', objectives: [{ id: 'ion-cannon', type: 'destroy', kind: 'cannon', name: 'Echo Base’s ion cannon', hp: hp(c), on: { piece: 'hoth' } }] });
 
-const GIDEON = { kind: 'tiedefender', name: 'Moff Gideon’s TIE Defender', hp: 14 };
+export const GIDEON = { kind: 'tie', name: 'Moff Gideon’s TIE fighter', hp: 14 };
 
 // the second Death Star's superlaser, on the Rebel cruisers at Endor: the
 // first a minute or so in (the Liberty, as in the film, if she's there),

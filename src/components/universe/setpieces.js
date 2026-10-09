@@ -64,7 +64,8 @@ export function destroyerSpot(ship, side, solids = SOLIDS) {
   return at(10, side);
 }
 // the capital ships' turbolaser bolts, by ship
-const BOLT_COLOR = { destroyer: [0.6, 5.5, 1.0], fedcruiser: [0.6, 2.2, 6.5], madrigal: [6.0, 1.4, 0.6] };
+// (each its side's batteries': the Venator's blue and the Mon Cal's red are galaxy/roster.js's)
+const BOLT_COLOR = { destroyer: [0.6, 5.5, 1.0], venator: [0.6, 2.2, 6.5], moncal: [6.5, 1.1, 0.6], fedcruiser: [0.6, 2.2, 6.5], madrigal: [6.0, 1.4, 0.6] };
 const CHOPPER = { len: 1.6, ahead: 22, above: 0.4, stay: 45, climb: 6 }; // map units long; where it hangs; seconds it stays, and climbing away
 const FLARE_RISE = 3; // seconds the star swells before the shell leaves it
 const FLARE_SPEED = 150; // map units a second the shell runs out at

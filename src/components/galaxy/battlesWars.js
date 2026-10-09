@@ -153,7 +153,7 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
       ],
     },
   },
-  // the Siege of Mandalore: Ahsoka and Rex’s 332nd dropping on Sundari to take Maul, and an Interdictor in the sky so nobody jumps out
+  // the Siege of Mandalore: Ahsoka and Rex’s 332nd dropping on Sundari to take Maul, and Maul’s droid fleet in the sky between
   mandalore: {
     name: "The Siege of Mandalore",
     light: {
@@ -171,13 +171,13 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
         ship("munificent"),
         ship("munificent"),
         ship("munificent"),
-        ship("interdictor"),
-        ship("gozanti"),
+        ship("munificent"),
+        ship("providence"),
       ],
     },
     fighters: { light: FIGHTERS.republic, dark: FIGHTERS.separatists },
   },
-  // the Separatist Council’s last hiding place: a droid picket and an Interdictor over the lava, and the Republic come to pull it down
+  // the Separatist Council’s last hiding place: a droid picket over the lava, and the Republic come to pull it down
   mustafar: {
     name: "The Battle of Mustafar",
     light: {
@@ -194,9 +194,9 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
       escorts: [
         ship("munificent"),
         ship("munificent"),
-        ship("interdictor"),
         ship("munificent"),
-        ship("gozanti"),
+        ship("munificent"),
+        ship("providence"),
       ],
     },
     fighters: { light: FIGHTERS.republic, dark: FIGHTERS.separatists },
@@ -210,7 +210,7 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
         ship("acclamator"),
         ship("corvette"),
         ship("corvette"),
-        ship("transport"),
+        ship("corvette"),
       ],
     },
     dark: {
@@ -219,7 +219,7 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
         ship("munificent"),
         ship("munificent"),
         ship("munificent"),
-        ship("gozanti"),
+        ship("munificent"),
       ],
     },
     fighters: { light: FIGHTERS.republic, dark: FIGHTERS.separatists },
@@ -231,9 +231,9 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
       flagship: ship("venator"),
       escorts: [
         ship("acclamator"),
-        ship("transport"),
-        ship("transport"),
-        ship("transport"),
+        ship("corvette"),
+        ship("corvette"),
+        ship("acclamator"),
         ship("corvette"),
       ],
     },
@@ -255,8 +255,8 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
       flagship: ship("venator"),
       escorts: [
         ship("acclamator"),
-        ship("transport"),
-        ship("transport"),
+        ship("corvette"),
+        ship("corvette"),
         ship("corvette"),
         ship("corvette"),
       ],
@@ -279,9 +279,9 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
       flagship: ship("venator"),
       escorts: [
         ship("acclamator"),
-        ship("transport"),
-        ship("transport"),
-        ship("transport"),
+        ship("corvette"),
+        ship("corvette"),
+        ship("acclamator"),
         ship("corvette"),
       ],
     },
@@ -291,7 +291,7 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
         ship("munificent"),
         ship("munificent"),
         ship("munificent"),
-        ship("gozanti"),
+        ship("munificent"),
       ],
     },
     fighters: { light: FIGHTERS.republic, dark: FIGHTERS.separatists },
@@ -345,7 +345,7 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
     },
     fighters: { light: FIGHTERS.republic, dark: FIGHTERS.separatists },
   },
-  // no battle of its own in the war: a droid Interdictor pinning a Republic patrol in the Outer Rim’s backwaters
+  // no battle of its own in the war: a droid flotilla pinning a Republic patrol in the Outer Rim’s backwaters
   nevarro: {
     name: "The Battle of Nevarro",
     light: {
@@ -362,8 +362,8 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
       escorts: [
         ship("munificent"),
         ship("munificent"),
-        ship("interdictor"),
-        ship("gozanti"),
+        ship("munificent"),
+        ship("providence"),
       ],
     },
     fighters: { light: FIGHTERS.republic, dark: FIGHTERS.separatists },
@@ -400,7 +400,7 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
         ship("acclamator"),
         ship("corvette"),
         ship("corvette"),
-        ship("transport"),
+        ship("corvette"),
       ],
     },
     dark: {
@@ -409,7 +409,7 @@ export const cloneTemplates = ({ ship, FIGHTERS }) => ({
         ship("munificent"),
         ship("munificent"),
         ship("munificent"),
-        ship("gozanti"),
+        ship("munificent"),
       ],
     },
     fighters: { light: FIGHTERS.republic, dark: FIGHTERS.separatists },

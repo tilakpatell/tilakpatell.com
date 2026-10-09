@@ -29,6 +29,7 @@ import { widthOf } from '../universe/battleKit';
 import { cloneTemplates, remnantTemplates } from './battlesWars';
 import { seeded, warInfo } from './gcw';
 import { SIDES } from './sides';
+import { battleKindIn, lookOf, runnerOf } from './roster';
 import { systemById } from './systems';
 
 const M = 53.3; // metres to a map unit (the Star Destroyer's 1,600 m is 30)
@@ -49,12 +50,14 @@ export const SIZE = {
   munificent: m(825),
   providence: m(1088),
   lucrehulk: 45, // (3,170 m, held to this)
+  coreship: 6, // (a Lucrehulk's core ship, 900 m across, held to this to run a blockade)
 };
 const ship = (kind, name = null, size = SIZE[kind]) => ({ kind, size, ...(name ? { name } : {}) });
 
 // ── The kinds of battle ──
 // runners: whose (the attacker's or the defender's), how many go and how
-// many must get out; `kind` by the runners' stance
+// many must get out (which ship they are is the roster's: roster.js's
+// RUNNERS, by side)
 export const BATTLE_KINDS = {
   assault: { id: 'assault', name: 'Fleet assault', text: { attack: 'Bring down their flagship', defend: 'Hold the line' }, objective: 'flagship', runners: null, rocks: false, line: true },
   evacuation: {
@@ -62,7 +65,7 @@ export const BATTLE_KINDS = {
     name: 'Evacuation',
     text: { attack: 'Stop the evacuation', defend: 'Hold the evacuation' },
     objective: 'flagship',
-    runners: { side: 'defender', kind: { light: 'transport', dark: 'gozanti', hutt: 'gozanti' }, count: 8, need: 6, every: 38, speed: 8, hp: 34 },
+    runners: { side: 'defender', count: 8, need: 6, every: 38, speed: 8, hp: 34 },
     rocks: false,
     line: true,
   },
@@ -73,7 +76,7 @@ export const BATTLE_KINDS = {
     name: 'Blockade',
     text: { attack: 'Run the blockade', defend: 'Hold the blockade' },
     objective: 'flagship',
-    runners: { side: 'attacker', kind: { light: 'corvette', dark: 'gozanti', hutt: 'gozanti' }, count: 5, need: 3, every: 45, speed: 7, hp: 60 },
+    runners: { side: 'attacker', count: 5, need: 3, every: 45, speed: 7, hp: 60 },
     rocks: false,
     line: true,
   },
@@ -125,7 +128,7 @@ const DEFAULT = {
   },
   clone: {
     light: { flagship: ship('venator'), escorts: [ship('venator'), ship('acclamator'), ship('acclamator'), ship('corvette'), ship('corvette')] },
-    dark: { flagship: ship('providence'), escorts: [ship('munificent'), ship('munificent'), ship('munificent'), ship('munificent'), ship('interdictor')] },
+    dark: { flagship: ship('providence'), escorts: [ship('munificent'), ship('munificent'), ship('munificent'), ship('munificent'), ship('munificent')] },
     fighters: { light: FIGHTERS.republic, dark: FIGHTERS.separatists },
   },
   remnant: {
@@ -234,16 +237,17 @@ export function obstacles(sys) {
 // each side's look in a battle (universe/wars.js's side shape: its colour,
 // its fighters' bolts and its batteries'): the Rebellion's and the Empire's
 // the universe map's own
+// (the colours of their bolts: the roster's)
 const [REBELS, EMPIRE] = UNIVERSE_WARS.starwars.sides;
-const look = (id, laser, turbo) => ({ id, name: SIDES[id].name, short: SIDES[id].short, colour: SIDES[id].colour, laser, turbo });
+const look = (id) => ({ id, name: SIDES[id].name, short: SIDES[id].short, colour: SIDES[id].colour, ...lookOf(id) });
 const LOOKS = {
-  rebel: { ...look('rebel', REBELS.laser, REBELS.turbo), colour: REBELS.colour },
-  empire: { ...look('empire', EMPIRE.laser, EMPIRE.turbo), colour: EMPIRE.colour },
-  republic: look('republic', [5.8, 0.75, 0.55], [0.6, 2.2, 6.5]),
-  separatists: look('separatists', [6.0, 2.5, 0.5], [0.6, 5.5, 1.2]),
-  newrepublic: look('newrepublic', REBELS.laser, REBELS.turbo),
-  remnant: look('remnant', EMPIRE.laser, EMPIRE.turbo),
-  hutt: look('hutt', [6.0, 3.0, 0.6], [6.5, 3.4, 0.8]),
+  rebel: { ...look('rebel'), colour: REBELS.colour },
+  empire: { ...look('empire'), colour: EMPIRE.colour },
+  republic: look('republic'),
+  separatists: look('separatists'),
+  newrepublic: look('newrepublic'),
+  remnant: look('remnant'),
+  hutt: look('hutt'),
 };
 
 const sideOf = (base, line, fighters, escorts = line.escorts) => ({
@@ -300,7 +304,8 @@ export function layBattle(sys, battle, { now = battle.start, tier = 'high' } = {
   const warId = battle.war ?? 'gcw';
   const t = templateFor(sys.id, warId);
   // (the system's kind, unless the battle's a forced one of another: warfront.js's dev hook)
-  const kind = BATTLE_KINDS[battle.kind] ?? BATTLE_KINDS[kindFor(sys.id)];
+  // (and an interdiction needs an Interdictor: a war whose raider has none, the Clone Wars, fights it as a siege)
+  const kind = BATTLE_KINDS[battleKindIn((BATTLE_KINDS[battle.kind] ?? BATTLE_KINDS[kindFor(sys.id)]).id, warId)];
   const sides = sidesOf(battle);
   const attacker = battle.attackerTeam ?? (battle.sides ? sides.indexOf(battle.attacker) : battle.attacker === 'rebel' ? 0 : 1);
   const defender = 1 - attacker;
@@ -369,9 +374,8 @@ export function layBattle(sys, battle, { now = battle.start, tier = 'high' } = {
   let runners = null;
   if (kind.runners) {
     const team = kind.runners.side === 'defender' ? defender : attacker;
-    const stance = SIDES[sides[team]].stance;
     const r = kind.runners;
-    const k = r.kind[stance];
+    const k = runnerOf(kind.id, sides[team]);
     const route = runnerRoute({ war, attacker, team, at: chosen.at, axis: chosen.axis, lines, radius, objectivesOn, R, side: rand() < 0.5 ? 1 : -1 });
     runners = { team, kind: k, size: SIZE[k], hp: r.hp, count: r.count, need: r.need, every: r.every, speed: r.speed, route, from: route[0], to: route.at(-1), spread: 10 };
   }

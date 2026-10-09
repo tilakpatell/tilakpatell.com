@@ -13,7 +13,7 @@
 //   yours,      // the owner is your side
 //   hostile,    // unsworn: false; else not yours (the Hutts are nobody's friend)
 //   garrison,   // roamRules.js's ROLES id: who comes for you here
-//   droids,     // a Separatist world that isn't the Separatists': their leftovers, always hostile
+//   droids,     // a Separatist world that isn't the Separatists', in the Clone Wars: their leftovers, always hostile
 //   hunt,       // the director may send a hunt
 //   escort,     // your side's wing comes to meet you
 //   capital,    // what the director can drop in, or null
@@ -22,6 +22,7 @@
 //   heat,       // added to the director's heat: a front 1, an attack 2
 //   troops,     // the trooper kind on the ground (surface/hostiles.js)
 //   deserter,   // you turned your coat from this owner this campaign
+//   war,        // the war it's in (the one you fight in: what flies here is that war's)
 // }
 // piecesShown(sys, effects) → [boolean] by sys.pieces: a fleet piece only for
 // its holder, a standing battle only while the system's fought over;
@@ -29,7 +30,7 @@
 // holder's ships in orbit where the system has no fleet of theirs.
 
 import { SIZE, obstacles } from './battles';
-import { otherSide } from './sides';
+import { DEFAULT_WAR, otherSide } from './sides';
 import { systemById } from './systems';
 
 // each side's: who hunts for it (roamRules.js), what it drops in, flies,
@@ -37,7 +38,7 @@ import { systemById } from './systems';
 export const OWNERS = {
   rebel: { garrison: 'rebellion', capital: 'moncal', traffic: ['xwing', 'ywing', 'transport', 'shuttle'], troops: 'rebel', escorts: ['corvette', 'nebulon'] },
   empire: { garrison: 'empire', capital: 'destroyer', traffic: ['tie', 'shuttle', 'gozanti'], troops: 'stormtrooper', escorts: ['lightcruiser', 'gozanti'] },
-  republic: { garrison: 'republic', capital: 'venator', traffic: ['arc170', 'acclamator', 'shuttle'], troops: 'clone', escorts: ['acclamator', 'corvette'] },
+  republic: { garrison: 'republic', capital: 'venator', traffic: ['arc170', 'acclamator', 'corvette'], troops: 'clone', escorts: ['acclamator', 'corvette'] },
   separatists: { garrison: 'separatists', capital: null, traffic: ['vulture', 'munificent'], troops: 'battledroid', escorts: ['munificent', 'munificent'] },
   newrepublic: { garrison: 'newrepublic', capital: 'moncal', traffic: ['xwing', 'awing', 'shuttle'], troops: 'rebel', escorts: ['nebulon', 'corvette'] },
   remnant: { garrison: 'remnant', capital: 'destroyer', traffic: ['tie', 'gozanti'], troops: 'stormtrooper', escorts: ['lightcruiser', 'gozanti'] },
@@ -60,12 +61,14 @@ export function effectsFor(sysId, table, current) {
   // the shows' worlds the Empire holds keep Gideon's TIEs
   const garrison = owner === 'empire' && sys.faction === 'remnant' ? 'remnant' : o.garrison;
   const civil = (sys.traffic ?? []).filter((k) => !WARSHIPS.has(k));
+  const war = current?.war ?? DEFAULT_WAR;
   return {
     owner,
     yours,
     hostile,
     garrison,
-    droids: sys.faction === 'separatists' && owner !== 'separatists',
+    // (the droids' leftovers only while there are droids: the Clone Wars)
+    droids: war === 'clone' && sys.faction === 'separatists' && owner !== 'separatists',
     hunt: (hostile && owner !== 'hutt') || deserter,
     escort: yours,
     capital: o.capital,
@@ -74,6 +77,7 @@ export function effectsFor(sysId, table, current) {
     heat: row.attack ? 2 : row.front ? 1 : 0,
     troops: o.troops,
     deserter,
+    war,
   };
 }
 

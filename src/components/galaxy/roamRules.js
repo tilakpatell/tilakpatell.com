@@ -40,7 +40,7 @@ export const ROAM_EVENTS = Object.freeze({ hunt: EVENTS.hunt, destroyer: EVENTS.
 
 // each faction's factions by role (the galaxy's hunted.js rows, which carry
 // the universe map's Empire and bounty hunters)
-const ROLES = {
+export const ROLES = {
   empire: { hunt: ['empire'], capital: 'navy', capitalShip: 'destroyer', bounty: ['fett', 'ig88', 'bossk', 'dengar'], pieces: ['destroyer'] },
   remnant: { hunt: ['remnant'], capital: 'navy', capitalShip: 'destroyer', bounty: ['fett'], pieces: ['destroyer'] },
   separatists: { hunt: ['separatists'], capital: null, capitalShip: null, bounty: NO_HUNT, pieces: [] },
@@ -52,7 +52,7 @@ const ROLES = {
   hutt: { hunt: NO_HUNT, capital: null, capitalShip: null, bounty: ['fett', 'ig88', 'bossk', 'dengar'], pieces: [] },
 };
 // your side's wing, where it has one of its own (else the holder's ROLES `escort`)
-const ESCORTS = { empire: ['tie', 'interceptor'], remnant: ['tie', 'interceptor'], separatists: ['vulture', 'trifighter'] };
+export const ESCORTS = { empire: ['tie', 'interceptor'], remnant: ['tie', 'interceptor'], separatists: ['vulture', 'trifighter'] };
 const LABELS = { empire: 'The Empire’s space', remnant: 'The Imperial remnant’s space', separatists: 'The Separatists’ space', none: 'Open space', rebellion: 'The Rebellion’s space', newrepublic: 'The New Republic’s space', republic: 'The Republic’s space', hutt: 'Hutt space' };
 
 // `friendly`: your side's space (no hunt, no capital ship, an escort);
@@ -100,11 +100,16 @@ const make = (key, { friendly = false, droids = false, keen = false } = {}) => {
   return Object.freeze(side);
 };
 const BY_FACTION = { empire: make('empire'), remnant: make('remnant'), separatists: make('separatists'), none: make('none') };
+// a system out of the war is its own faction's, if that faction's in the war
+// you're in: the Empire's worlds are the Remnant's after it, and nobody's in
+// the Clone Wars; the Separatists' are theirs only then
+const FACTION_IN = { empire: { gcw: 'empire', remnant: 'remnant' }, remnant: { gcw: 'empire', remnant: 'remnant' }, separatists: { clone: 'separatists' } };
+const factionIn = (faction, war) => (!war || !FACTION_IN[faction] ? (faction ?? 'none') : (FACTION_IN[faction][war] ?? 'none'));
 const made = new Map();
 
-export function galaxySide(sys, effects = null) {
+export function galaxySide(sys, effects = null, war = null) {
   if (!sys) return null;
-  if (!effects) return BY_FACTION[sys.faction ?? 'none'] ?? BY_FACTION.none;
+  if (!effects) return BY_FACTION[factionIn(sys.faction, war)] ?? BY_FACTION.none;
   // (unsworn, the holder's garrison comes for you as it always has; sworn,
   // only if you're not on its side)
   const opts = { friendly: effects.escort && !effects.hunt, droids: effects.droids, keen: effects.owner === 'hutt' || effects.deserter };
@@ -114,3 +119,11 @@ export function galaxySide(sys, effects = null) {
   return made.get(id);
 }
 export const GALAXY_SIDES = BY_FACTION;
+
+// the bounty hunter who comes: the one picked, or (Fett, while Slave I's
+// model is still on its way) another of those who hunt here, or nobody this
+// time; never the Empire's ace in his place
+export function bountyFor(who, loaded, ids) {
+  if (who !== 'fett' || loaded('slave1')) return who;
+  return ids.find((id) => id !== 'fett') ?? null;
+}

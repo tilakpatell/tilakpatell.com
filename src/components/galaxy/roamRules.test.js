@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GALAXY_SIDES, ROAM_EVENTS, galaxySide } from './roamRules';
+import { GALAXY_SIDES, ROAM_EVENTS, bountyFor, galaxySide } from './roamRules';
 import { GCW, warTable } from './gcw';
 import { effectsFor } from './warEffects';
 import { SYSTEMS, systemById } from './systems';
@@ -108,10 +108,12 @@ describe('galaxySide, by who holds the system in the war', () => {
     expect(rep.capitalShip).toBe('venator');
     expect(pick(galaxySide(systemById('kamino'), fx('clone', 'kamino', 'separatists', 'republic')), 'hunt', seeded())).toBe('separatists');
   });
-  it('a separatist world’s droids come for you whoever holds it, your side or not', () => {
-    const side = galaxySide(systemById('geonosis'), fx('gcw', 'geonosis', 'rebel', 'rebel'));
+  it('a separatist world’s droids come for you whoever holds it, your side or not, in the Clone Wars', () => {
+    const side = galaxySide(systemById('geonosis'), fx('clone', 'geonosis', 'republic', 'republic'));
     expect(pick(side, 'hunt', seeded())).toBe('separatists');
     expect(can(side)).toContain('escort');
+    // (and none after it: a Rebel-held Geonosis in the Civil War is your own space)
+    expect(can(galaxySide(systemById('geonosis'), fx('gcw', 'geonosis', 'rebel', 'rebel')))).not.toContain('hunt');
   });
   it('Hutt space hunts nobody, but the bounty hunters come twice as keen', () => {
     const side = galaxySide(systemById('tatooine'), fx('gcw', 'tatooine', 'hutt', 'rebel'));
@@ -131,5 +133,28 @@ describe('galaxySide, by who holds the system in the war', () => {
         if (s.capitalShip) expect(Boolean(HUNTER_GLB[s.capitalShip]) || BUILT.has(s.capitalShip), `${owner} ${s.capitalShip}`).toBe(true);
         for (const [id, f] of Object.entries(s.factions)) for (const [kind] of f.kinds) expect(Boolean(HUNTER_GLB[KINDS[kind]?.model ?? kind]) || BUILT.has(KINDS[kind]?.model ?? kind), `${owner} ${id} ${kind}`).toBe(true);
       }
+  });
+});
+
+describe('galaxySide, out of the war', () => {
+  const can = (side) => Object.entries({ ...EVENTS, ...ROAM_EVENTS }).filter(([, e]) => canHave(side, e)).map(([id]) => id);
+  it('sends nobody’s hunters from a faction that isn’t in the war', () => {
+    const imperial = SYSTEMS.find((s) => s.faction === 'empire');
+    expect(galaxySide(imperial, null, 'gcw').factions.empire).toBeDefined();
+    const clone = galaxySide(imperial, null, 'clone');
+    expect(clone.factions.empire).toBeUndefined();
+    expect(clone.capitalShip).toBeNull();
+    expect(can(clone)).not.toContain('destroyer');
+    // (the Empire's world in the Remnant War is the Remnant's)
+    expect(galaxySide(imperial, null, 'remnant').factions.remnant).toBeDefined();
+  });
+});
+
+describe('the bounty hunter who comes', () => {
+  it('sends another hunter, never Vader, while Slave I is still on its way', () => {
+    expect(bountyFor('fett', () => true, ['fett', 'ig88'])).toBe('fett');
+    expect(bountyFor('fett', () => false, ['fett', 'ig88', 'bossk'])).toBe('ig88');
+    expect(bountyFor('fett', () => false, ['fett'])).toBeNull();
+    expect(bountyFor('bossk', () => false, ['fett', 'bossk'])).toBe('bossk');
   });
 });

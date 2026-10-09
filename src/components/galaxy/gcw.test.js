@@ -911,3 +911,12 @@ describe('warTable', () => {
     expect(t.clone.war).toBe('clone');
   });
 });
+
+describe('the war table’s battles, by war', () => {
+  it('names a Clone Wars interdiction world’s battle a siege, as it is laid', () => {
+    const ms = GCW.start + 30 * 60e3;
+    const ids = WAR_SYSTEMS.filter((id) => warTable('gcw', ms).systems.find((r) => r.id === id).kind === 'interdiction');
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) expect(warTable('clone', ms).systems.find((r) => r.id === id).kind, id).toBe('siege');
+  });
+});

@@ -90,6 +90,7 @@
 
 import { AREAS, DOCTRINE, SIDES, WARS, WAR_IDS, sideOfCode } from './sides';
 import { systemById } from './systems';
+import { battleKindIn } from './roster';
 import { GCW, HOURS_PER_STEP, NEIGHBOURS, WAR_SYSTEMS, areaHolders, areaOf, hash, oldKey, oldWinKey, opening, pointsKey, seeded, warInfo, winKey, within, worthOf } from './gcwRules';
 import { attackPace, frontPace, frontsFor, lean, orderOver, orderTarget, originOf, phaseAt, pointsCount, raiderOrder, reaches, soft, supplied, targetOf } from './gcwAI';
 
@@ -594,7 +595,7 @@ export function tableOf(war, ms, s) {
         cut: cut.has(id),
         decisive: s.decisive === id,
         worth: info.worth,
-        kind: info.kind,
+        kind: battleKindIn(info.kind, war), // (as it's laid: an interdiction without an Interdictor is a siege)
         area: info.area,
         battle: battleAt(s, id, ms),
       };

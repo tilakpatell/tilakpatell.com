@@ -96,9 +96,31 @@ describe('the battles’ templates', () => {
     expect(TEMPLATES.gcw.hoth.ace.dark).toMatchObject({ kind: 'tieadvanced', name: 'Darth Vader' });
     expect(TEMPLATES.gcw.lothal.ace.light).toMatchObject({ kind: 'ghost' });
   });
-  it('gives the interdiction worlds’ dark side an Interdictor', () => {
+  it('gives the interdiction worlds’ raider an Interdictor only where the war has one', () => {
     for (const war of WAR_IDS)
-      for (const id of WAR_SYSTEMS.filter((x) => kindFor(x) === 'interdiction')) expect(templateFor(id, war).dark.escorts.some((c) => c.kind === 'interdictor'), `${war} ${id}`).toBe(true);
+      for (const id of WAR_SYSTEMS.filter((x) => kindFor(x) === 'interdiction')) {
+        const has = templateFor(id, war).dark.escorts.some((c) => c.kind === 'interdictor');
+        expect(has, `${war} ${id}`).toBe(war !== 'clone');
+      }
+  });
+  it('fights a Clone Wars interdiction as a siege', () => {
+    const id = WAR_SYSTEMS.find((x) => kindFor(x) === 'interdiction');
+    const laid = layBattle(systemById(id), fake(id, 'republic', 'separatists', 7, 'clone'));
+    expect(laid.kind).toBe('siege');
+    expect(laid.objectivesOn).toBe('flagship');
+  });
+  it('runs each side’s own runners', () => {
+    // the runners' side: an evacuation's the defender, a blockade's the attacker
+    const runnersOf = (war, kindId, side) => {
+      const id = WAR_SYSTEMS.find((x) => kindFor(x) === kindId);
+      const other = WARS[war].liberator === side ? WARS[war].raider : WARS[war].liberator;
+      const [att, def] = kindId === 'evacuation' ? [other, side] : [side, other];
+      return layBattle(systemById(id), fake(id, att, def, 7, war)).runners.kind;
+    };
+    expect(runnersOf('clone', 'evacuation', 'republic')).toBe('corvette');
+    expect(runnersOf('clone', 'blockade', 'separatists')).toBe('coreship');
+    expect(runnersOf('gcw', 'evacuation', 'rebel')).toBe('transport');
+    expect(runnersOf('remnant', 'blockade', 'remnant')).toBe('gozanti');
   });
 });
 

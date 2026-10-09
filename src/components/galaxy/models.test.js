@@ -107,6 +107,8 @@ describe('the galaxy’s models', () => {
 
   it('stands a built ship in for each of the new ones that has none, and none for one that has', () => {
     expect(STAND_IN).toMatchObject({ tiebomber: 'tie', lightcruiser: 'destroyer', gozanti: 'freighter', providence: 'munificent', ghost: 'freighter' });
+    // (a Republic ship, never the Empire's: the Venator stands in as an Acclamator)
+    expect(STAND_IN.venator).toBe('acclamator');
     const built = [...BUILT_KINDS, ...GALAXY_KINDS];
     for (const kind of ['tie', 'tieadvanced', 'shuttle', 'munificent', 'nubian', 'razorcrest']) {
       expect(built, kind).toContain(kind);
@@ -159,7 +161,7 @@ describe('the galaxy’s models', () => {
       models.prebuild(['tie', 'destroyer', 'tie', 'venator', 'nowhere']); // (once each; a stand-in for the one with no built version, nothing for the one that doesn’t exist)
       expect(models.builtCount).toBe(0); // (not in this one)
       await new Promise((r) => setTimeout(r, 400));
-      expect(models.builtCount).toBe(2); // (the venator’s stand-in is the destroyer, built already)
+      expect(models.builtCount).toBe(3); // (the tie, the destroyer, and the venator’s stand-in: the Acclamator, a Republic ship)
       const slot = models.slot('tie', 1);
       expect(slot.ready).toBe(true);
       models.dispose();

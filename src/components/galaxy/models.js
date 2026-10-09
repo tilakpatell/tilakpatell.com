@@ -173,7 +173,7 @@ const BUILT = new Set([...BUILT_KINDS, ...GALAXY_KINDS]);
 // the hacienda as the cartel's lowrider). The Death Star has
 // none here: the world puts a sphere of its own in its place.
 export const STAND_IN = {
-  venator: 'destroyer',
+  venator: 'acclamator', // (a Republic ship, never the Empire's)
   slave1: 'freighter',
   falcon: 'freighter',
   tiebomber: 'tie',

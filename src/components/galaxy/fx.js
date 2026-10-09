@@ -7,20 +7,20 @@
 // orange to nothing).
 //
 // createBolts(parent, { count }) → { mesh, fire(from, to, { color, speed, width, length, onHit }), update(dt), busy, dispose() }
+// LASER / TURBO: each side's fighters' bolts and its batteries' (the roster's, roster.js), and a few more
 // createFlashes(parent, { count }) → { at(point, { size, color, life }), update(dt, camera), busy, dispose() }
 
 import * as THREE from 'three';
+import { LOOKS } from './roster';
 
-export const LASER = {
-  empire: [0.5, 5.5, 0.9], // green
-  rebel: [5.8, 0.75, 0.55], // red
-  republic: [0.7, 2.4, 6.5], // blue
-  separatist: [6.2, 0.7, 0.4], // red
-  remnant: [0.5, 5.5, 0.9], // green, as the Empire's were
+const OTHERS = {
   mandalorian: [5.6, 1.2, 0.5], // red-orange
   naboo: [5.4, 1.4, 0.5],
   ion: [7.5, 3.2, 1.2], // the ion cannon's, orange-white
 };
+const of = (which) => ({ ...Object.fromEntries(Object.entries(LOOKS).map(([side, l]) => [side, l[which]])), separatist: LOOKS.separatists[which], ...OTHERS });
+export const LASER = of('laser');
+export const TURBO = of('turbo');
 
 const Z = new THREE.Vector3(0, 0, 1);
 

@@ -315,3 +315,14 @@ describe('its hull as solids (ship.js’s), for flying into it', () => {
     expect(cap.solids).toEqual([]);
   });
 });
+
+describe('each side’s capital ship, on its own parts', () => {
+  it('lays a Venator and a Mon Cal out on their own parts, and as long as they are', () => {
+    for (const kind of ['venator', 'moncal']) {
+      expect(PARTS[kind], kind).toBeDefined();
+      expect(PARTS[kind].shields.length, kind).toBeGreaterThanOrEqual(2);
+      expect(PARTS[kind].batteries.length, kind).toBeGreaterThanOrEqual(4);
+      expect(LENGTH[kind], kind).toBeLessThan(LENGTH.destroyer);
+    }
+  });
+});

@@ -46,7 +46,7 @@ import { placesOf } from './places';
 import { createTrench } from '../universe/trench';
 import { trenchBand } from '../universe/deep';
 import { DEATHSTAR_REACH, STATION_NAMES, TRACTOR_REACH, reachOf } from './systems';
-import { LASER } from './fx';
+import { LASER, TURBO } from './fx';
 import { HULLS } from '../universe/wars';
 import { garrisonFleet, piecesShown } from './warEffects';
 
@@ -487,7 +487,7 @@ export function buildSystem(sys, { models, bolts, flashes, small = false, ratio 
           tmp2.set((Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.12, (Math.random() - 0.5) * 0.6).multiplyScalar(to.size).applyQuaternion(to.slot.holder.quaternion).add(to.slot.holder.position);
           const hit = Math.random() < 0.55;
           if (!hit) tmp2.addScaledVector(tmp3.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5), to.size * 0.8);
-          bolts.fire(tmp, tmp2, { color: LASER[a] ?? LASER.rebel, speed: 95, width: 0.11, length: 3.4, onHit: hit ? (pt) => flashes.at(pt, { size: 1.4 + Math.random() * 1.6, life: 0.6 }) : null });
+          bolts.fire(tmp, tmp2, { color: TURBO[a] ?? TURBO.rebel, speed: 95, width: 0.11, length: 3.4, onHit: hit ? (pt) => flashes.at(pt, { size: 1.4 + Math.random() * 1.6, life: 0.6 }) : null });
         }
         // the fighters
         for (let j = 0; j < fighters.length; j++) {

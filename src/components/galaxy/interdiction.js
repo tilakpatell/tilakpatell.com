@@ -22,6 +22,8 @@
 // interdictorPlace(ship, side, rand) → { at, heading, drift, hangar }: ahead and off to one side, broadside on
 // inWell(ship, at, r); holdLifts({ since, now, pack, inWell }) → why it's let go, or null
 // interdictorSolids(state, at) → the cruiser as ship.js's solids once it's here, or none
+// interdictionFor(war) → whose Interdictor waits in that war (hunted.js's faction), or null: the
+//   Empire's in the Civil War, the Remnant's after it, and none in the Clone Wars, before there were any
 
 import { forward } from '../universe/ship';
 import { EDGE } from './space';
@@ -42,6 +44,9 @@ export const INTERDICTION = {
 };
 const MIN_CUT = 1.2; // seconds: the next system's built behind the tunnel by then
 const KEEP_IN = 0.8; // of the system's edge: no dropping out beyond this
+
+const WHOSE = { gcw: 'empire', remnant: 'remnant' };
+export const interdictionFor = (war) => WHOSE[war] ?? null;
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const whole = (v) => Number.isInteger(v);

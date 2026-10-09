@@ -58,7 +58,7 @@ export const CAPITAL = {
   bridgeHp: 12,
 };
 // how long each capital ship is, in map units (a Star Destroyer's the biggest)
-export const LENGTH = { destroyer: 16, fedcruiser: 12, madrigal: 8 };
+export const LENGTH = { destroyer: 16, venator: 11.4, moncal: 12, fedcruiser: 12, madrigal: 8 };
 
 // each ship's parts, in its own frame: x and z as fractions of its length
 // (nose +z, stern −z), y as a fraction of its length below its top; r as a
@@ -85,6 +85,50 @@ export const PARTS = {
       [-0.1, 0.16, 0.08],
       [0.06, 0.18, 0.3],
       [-0.06, 0.18, 0.3],
+    ],
+  },
+  // the Republic's: its shield generators and its bridge on the twin towers aft, its batteries down the spine
+  venator: {
+    shields: [
+      { id: 'gen0', name: 'Shield generator', at: [0.075, 0.03, -0.36], r: 0.04 },
+      { id: 'gen1', name: 'Shield generator', at: [-0.075, 0.03, -0.36], r: 0.04 },
+    ],
+    bridge: { id: 'bridge', name: 'Bridge', at: [0.075, 0.05, -0.33], r: 0.05 },
+    hull: [
+      [0, 0.16, -0.34, 0.16],
+      [0, 0.18, -0.14, 0.15],
+      [0, 0.2, 0.08, 0.11],
+      [0, 0.22, 0.28, 0.07],
+    ],
+    batteries: [
+      [0.12, 0.13, -0.18],
+      [-0.12, 0.13, -0.18],
+      [0.08, 0.15, 0.06],
+      [-0.08, 0.15, 0.06],
+      [0.05, 0.16, 0.26],
+      [-0.05, 0.16, 0.26],
+    ],
+  },
+  // the Rebellion's: its shield projectors amidships, its bridge at the bow
+  moncal: {
+    shields: [
+      { id: 'proj0', name: 'Shield projector', at: [0.08, 0.02, -0.05], r: 0.05 },
+      { id: 'proj1', name: 'Shield projector', at: [-0.08, 0.02, -0.05], r: 0.05 },
+    ],
+    bridge: { id: 'bridge', name: 'Bridge', at: [0, 0.04, 0.38], r: 0.06 },
+    hull: [
+      [0, 0.12, -0.32, 0.12],
+      [0, 0.13, -0.08, 0.13],
+      [0, 0.13, 0.16, 0.12],
+      [0, 0.12, 0.36, 0.08],
+    ],
+    batteries: [
+      [0.1, 0.09, -0.25],
+      [-0.1, 0.09, -0.25],
+      [0.11, 0.1, 0.02],
+      [-0.11, 0.1, 0.02],
+      [0.08, 0.1, 0.24],
+      [-0.08, 0.1, 0.24],
     ],
   },
   fedcruiser: {

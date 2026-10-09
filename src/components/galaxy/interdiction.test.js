@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EDGE } from './space';
-import { INTERDICTION, createInterdiction, cutAt, dropPoint, holdLifts, inWell, interdictorPlace, interdictorSolids, nextWindow, pickDue, readCount } from './interdiction';
+import { INTERDICTION, createInterdiction, cutAt, dropPoint, holdLifts, interdictionFor, inWell, interdictorPlace, interdictorSolids, nextWindow, pickDue, readCount } from './interdiction';
 
 // a store over a string, as sessionStorage is
 const memory = (s = null) => {
@@ -175,5 +175,13 @@ describe('the Interdictor as a solid', () => {
   it('is nothing while it jumps in or out, or when it’s gone', () => {
     for (const state of ['in', 'out', null]) expect(interdictorSolids(state, [1, 2, 3]), String(state)).toEqual([]);
     expect(interdictorSolids('here', null)).toEqual([]);
+  });
+});
+
+describe('whose Interdictor it is', () => {
+  it('is the Empire’s in the Civil War, the Remnant’s after, and nobody’s in the Clone Wars', () => {
+    expect(interdictionFor('gcw')).toBe('empire');
+    expect(interdictionFor('remnant')).toBe('remnant');
+    expect(interdictionFor('clone')).toBeNull();
   });
 });

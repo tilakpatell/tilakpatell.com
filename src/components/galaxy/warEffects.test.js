@@ -12,9 +12,18 @@ const tableWith = (war, id, row) => {
   const t = warTable(war, MS);
   return { ...t, systems: t.systems.map((r) => (r.id === id ? { ...r, ...row } : r)) };
 };
-const KEYS = ['owner', 'yours', 'hostile', 'garrison', 'droids', 'hunt', 'escort', 'capital', 'traffic', 'fleet', 'heat', 'troops', 'deserter'];
+const KEYS = ['owner', 'yours', 'hostile', 'garrison', 'droids', 'hunt', 'escort', 'capital', 'traffic', 'fleet', 'heat', 'troops', 'deserter', 'war'];
 
 describe('effectsFor', () => {
+  it('sends the droids hunting only in the Clone Wars', () => {
+    const sep = WAR_SYSTEMS.find((id) => systemById(id).faction === 'separatists');
+    for (const war of ['gcw', 'remnant']) expect(effectsFor(sep, tableWith(war, sep, { owner: WARS[war].liberator }), sworn(war, null)).droids, war).toBe(false);
+    expect(effectsFor(sep, tableWith('clone', sep, { owner: 'republic' }), sworn('clone', null)).droids).toBe(true);
+  });
+  it('says which war it is', () => {
+    for (const war of WAR_IDS) expect(effectsFor(WAR_SYSTEMS[0], warTable(war, MS), sworn(war, null)).war).toBe(war);
+  });
+  it('flies no Lambda for the Republic', () => expect(OWNERS.republic.traffic).not.toContain('shuttle'));
   it('every war system, in every war, sworn either way or not at all, gives the full shape', () => {
     for (const war of WAR_IDS) {
       const t = warTable(war, MS);
@@ -44,11 +53,12 @@ describe('effectsFor', () => {
     expect(effectsFor('nevarro', t, sworn('gcw', 'rebel')).garrison).toBe('remnant');
     expect(effectsFor('hoth', tableWith('gcw', 'hoth', { owner: 'empire' }), sworn('gcw', 'rebel')).garrison).toBe('empire');
   });
-  it('a separatist world keeps its droids whoever holds it', () => {
-    const t = tableWith('gcw', 'geonosis', { owner: 'rebel' });
-    const e = effectsFor('geonosis', t, sworn('gcw', 'rebel'));
-    expect(e).toMatchObject({ garrison: 'rebellion', droids: true, hunt: false });
+  it('a separatist world keeps its droids whoever holds it, in the Clone Wars', () => {
+    const t = tableWith('clone', 'geonosis', { owner: 'republic' });
+    expect(effectsFor('geonosis', t, sworn('clone', 'republic'))).toMatchObject({ garrison: 'republic', droids: true, hunt: false });
     expect(effectsFor('geonosis', tableWith('clone', 'geonosis', { owner: 'separatists' }), sworn('clone', 'republic')).droids).toBe(false);
+    // (after it, the droids are gone: a Rebel-held Geonosis in the Civil War has none)
+    expect(effectsFor('geonosis', tableWith('gcw', 'geonosis', { owner: 'rebel' }), sworn('gcw', 'rebel'))).toMatchObject({ garrison: 'rebellion', droids: false, hunt: false });
   });
   it('a deserter is hunted in the space they left', () => {
     const t = tableWith('gcw', 'hoth', { owner: 'rebel' });
