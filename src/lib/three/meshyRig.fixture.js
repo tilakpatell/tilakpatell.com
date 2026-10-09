@@ -13,7 +13,8 @@
 //     (FINGER_NAMES, after the 24), straight out of the hand, each in the
 //     canonical frame: +y along the finger, +z out of the back of the hand,
 //     +x = y × z (toward the thumb on the left hand, away from it on the
-//     right: a mirror, since a turn can't flip a hand)
+//     right: a mirror, since a turn can't flip a hand); 'mitten' adds a
+//     mitten's instead (MITTEN_NAMES: the thumb's two, Fingers1..2)
 //   swingClip(rig, name, dur, swing, { hips }) → a clip in which every bone
 //     the rig has is swung swing(boneName, t) radians (or 0) about the
 //     figure's left–right axis (+ swings a leg back, an arm back), from its
@@ -69,6 +70,9 @@ const FINGERS = [
   ['Pinky', [3.2, 2, 1.7], -2.7, 8.2],
 ];
 export const FINGER_NAMES = ['Left', 'Right'].flatMap((s) => FINGERS.flatMap(([f, segs]) => segs.map((_, i) => `${s}Hand${f}${i + 1}`)));
+// a mitten: the thumb, and one group of two joints down the hand's middle
+const MITTEN = [FINGERS[0], ['Fingers', [5, 4.2], 0, 9]];
+export const MITTEN_NAMES = ['Left', 'Right'].flatMap((s) => MITTEN.flatMap(([f, segs]) => segs.map((_, i) => `${s}Hand${f}${i + 1}`)));
 
 const X = new THREE.Vector3(1, 0, 0);
 const RATE = 30; // keys a second
@@ -98,7 +102,7 @@ export function meshyRig({ without = [], fingers = false } = {}) {
     (up ? bones[up] : armature).add(b);
     bones[name] = b;
   }
-  if (fingers) for (const side of ['Left', 'Right']) if (bones[`${side}Hand`]) addFingers(bones, side);
+  if (fingers) for (const side of ['Left', 'Right']) if (bones[`${side}Hand`]) addFingers(bones, side, fingers === 'mitten' ? MITTEN : FINGERS);
   // its feet on the ground
   model.updateMatrixWorld(true);
   const toe = Math.min(...['LeftToeBase', 'RightToeBase', 'LeftFoot', 'RightFoot'].filter((n) => bones[n]).map((n) => bones[n].getWorldPosition(new THREE.Vector3()).y));
@@ -120,11 +124,11 @@ export function meshyRig({ without = [], fingers = false } = {}) {
 // the hand, +z toward the thumb, the back of the hand −x on the left and +x
 // on the right (Meshy's hands mirror). A finger's first bone turns from the
 // hand into the canonical frame; the joints past it carry on straight.
-function addFingers(bones, side) {
+function addFingers(bones, side, list) {
   const hand = bones[`${side}Hand`];
   const back = new THREE.Vector3(side === 'Left' ? -1 : 1, 0, 0);
   const m = new THREE.Matrix4();
-  for (const [f, segs, across, knuckle] of FINGERS) {
+  for (const [f, segs, across, knuckle] of list) {
     const thumb = f === 'Thumb';
     const along = thumb ? new THREE.Vector3(0, 0.6, 0.8) : new THREE.Vector3(0, 1, 0);
     const z = back.clone().addScaledVector(along, -back.dot(along)).normalize();
