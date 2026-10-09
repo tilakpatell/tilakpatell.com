@@ -60,3 +60,7 @@ scripts/ai-e2e/results/
 
 # the parity check's pictures (scripts/gpu-parity.mjs): the pull request carries the numbers
 scripts/gpu-parity/out/
+
+# keys stay out (supabase/README.md)
+.env.local
+.env.*.local

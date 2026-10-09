@@ -7,18 +7,18 @@ One page per library, engine or framework the site is built on, and this index o
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |
-| `three` | ^0.186.1 | [three.md](three.md) | 537 |
-| `react` | ^19.3.0 | [react.md](react.md) | 277 |
-| `react-router-dom` | ^7.18.4 | [react.md](react.md) | 82 |
-| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 69 |
-| `react-icons` | ^5.7.0 | [react.md](react.md) | 68 |
-| `playwright-core` | ^1.56.0 | [testing.md](testing.md) | 54 |
-| `@gltf-transform/core` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 46 |
-| `meshoptimizer` | ^1.3.0 | [assets-pipeline.md](assets-pipeline.md) | 46 |
-| `@gltf-transform/extensions` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 44 |
-| `@gltf-transform/functions` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 42 |
+| `three` | ^0.186.1 | [three.md](three.md) | 552 |
+| `react` | ^19.3.0 | [react.md](react.md) | 282 |
+| `react-router-dom` | ^7.18.4 | [react.md](react.md) | 80 |
+| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 74 |
+| `react-icons` | ^5.7.0 | [react.md](react.md) | 71 |
+| `playwright-core` | ^1.56.0 | [testing.md](testing.md) | 58 |
+| `@gltf-transform/core` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 52 |
+| `meshoptimizer` | ^1.3.0 | [assets-pipeline.md](assets-pipeline.md) | 50 |
+| `@gltf-transform/extensions` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 49 |
+| `@gltf-transform/functions` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 44 |
 | `react-dom` | ^19.3.0 | [react.md](react.md) | 24 |
-| `vite` | ^8.3.2 | [build.md](build.md) | 10 |
+| `vite` | ^8.3.2 | [build.md](build.md) | 12 |
 | `@fontsource/luckiest-guy` | ^5.3.0 | [fonts.md](fonts.md) | 6 |
 | `@fontsource/cinzel` | ^5.3.0 | [fonts.md](fonts.md) | 5 |
 | `@fontsource/press-start-2p` | ^5.3.0 | [fonts.md](fonts.md) | 4 |
@@ -38,6 +38,7 @@ One page per library, engine or framework the site is built on, and this index o
 | `watlas` | ^1.0.1 | [assets-pipeline.md](assets-pipeline.md) | 1 |
 | `@eslint/js` | ^9.39.5 | [build.md](build.md) | 0 |
 | `@fontsource/noto-sans-runic` | ^5.3.0 | [fonts.md](fonts.md) | 0 |
+| `@supabase/supabase-js` | ^2.117.3 | [supabase.md](supabase.md) | 0 |
 | `@types/react` | ^19.3.0 | [react.md](react.md) | 0 |
 | `@types/react-dom` | ^19.3.0 | [react.md](react.md) | 0 |
 | `@vitejs/plugin-react` | ^6.1.2 | [build.md](build.md) | 0 |

@@ -1,15 +1,15 @@
 {
   "date": "2026-10-09",
-  "sha": "2c568f1e",
+  "sha": "657d6757",
   "metrics": {
     "big-files": {
-      "value": 29,
+      "value": 30,
       "unit": "files",
       "label": "source files over 1500 lines",
       "detail": [
         {
           "file": "src/components/universe/scene.js",
-          "n": 5892
+          "n": 6068
         },
         {
           "file": "src/components/middleearth/towns/moria/props.js",
@@ -21,11 +21,11 @@
         },
         {
           "file": "src/components/universe/footScene.js",
-          "n": 3673
+          "n": 3714
         },
         {
           "file": "src/components/galaxy/surface/scene.js",
-          "n": 3572
+          "n": 3654
         },
         {
           "file": "src/components/middleearth/towns/doom/props.js",
@@ -44,12 +44,12 @@
           "n": 3203
         },
         {
-          "file": "src/components/rickmorty/world/roy/scene.js",
-          "n": 3163
+          "file": "src/components/universe/crews.js",
+          "n": 3180
         },
         {
-          "file": "src/components/universe/crews.js",
-          "n": 3135
+          "file": "src/components/rickmorty/world/roy/scene.js",
+          "n": 3164
         },
         {
           "file": "src/components/middleearth/towns/minastirith/props.js",
@@ -64,6 +64,10 @@
           "n": 3025
         },
         {
+          "file": "src/components/galaxy/scene.js",
+          "n": 2801
+        },
+        {
           "file": "src/components/middleearth/towns/lorien/props.js",
           "n": 2767
         },
@@ -72,32 +76,28 @@
           "n": 2668
         },
         {
-          "file": "src/components/galaxy/scene.js",
-          "n": 2553
-        },
-        {
           "file": "src/components/middleearth/towns/marshes/props.js",
           "n": 2381
+        },
+        {
+          "file": "src/components/avengers/world/scene.js",
+          "n": 2157
+        },
+        {
+          "file": "src/components/avengers/world/rules.js",
+          "n": 2143
         },
         {
           "file": "src/components/galaxy/surface/props/forest.js",
           "n": 2118
         },
         {
-          "file": "src/components/avengers/world/scene.js",
-          "n": 2110
-        },
-        {
-          "file": "src/components/avengers/world/rules.js",
-          "n": 2078
-        },
-        {
           "file": "src/lib/sfx.js",
-          "n": 2000
+          "n": 2077
         },
         {
           "file": "src/components/rickmorty/world/RmWorld.jsx",
-          "n": 1969
+          "n": 2074
         },
         {
           "file": "src/components/galaxy/surface/props/core.js",
@@ -105,12 +105,12 @@
         },
         {
           "file": "src/components/middleearth/towns/edoras/folk.js",
-          "n": 1817
+          "n": 1831
         }
       ]
     },
     "boundary-breaks": {
-      "value": 425,
+      "value": 431,
       "unit": "imports",
       "label": "imports across a line docs/health/RULES.md draws",
       "detail": [
@@ -506,7 +506,7 @@
       "detail": []
     },
     "glsl-sites": {
-      "value": 605,
+      "value": 607,
       "unit": "sites",
       "label": "GLSL sites a WebGPU port removes",
       "detail": [

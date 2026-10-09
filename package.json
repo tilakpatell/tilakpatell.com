@@ -46,6 +46,7 @@
     "@fontsource/press-start-2p": "^5.3.0",
     "@fontsource/yatra-one": "^5.3.0",
     "@noble/secp256k1": "^3.2.0",
+    "@supabase/supabase-js": "^2.117.3",
     "fflate": "^0.8.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

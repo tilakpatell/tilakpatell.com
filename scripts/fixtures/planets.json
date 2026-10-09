@@ -1,0 +1,314 @@
+{
+  "planets": [
+    {
+      "id": "tatooine",
+      "name": "Tatooine",
+      "type": "desert",
+      "seed": "8647508281676935542"
+    },
+    {
+      "id": "hoth",
+      "name": "Hoth",
+      "type": "ice",
+      "seed": "1223795395"
+    },
+    {
+      "id": "endor",
+      "name": "Endor",
+      "type": "forest",
+      "seed": "17936333477305376403"
+    },
+    {
+      "id": "yavin",
+      "name": "Yavin 4",
+      "type": "forest",
+      "seed": "1927579065696738100"
+    },
+    {
+      "id": "bespin",
+      "name": "Bespin",
+      "type": "gas",
+      "seed": "5485698255689101500"
+    },
+    {
+      "id": "dagobah",
+      "name": "Dagobah",
+      "type": "swamp",
+      "seed": "1702958522028571207"
+    },
+    {
+      "id": "mustafar",
+      "name": "Mustafar",
+      "type": "lava",
+      "seed": "1127027023069150644"
+    },
+    {
+      "id": "coruscant",
+      "name": "Coruscant",
+      "type": "city",
+      "seed": "13422630211582984297"
+    },
+    {
+      "id": "naboo",
+      "name": "Naboo",
+      "type": "temperate",
+      "seed": "13265591532015992144"
+    },
+    {
+      "id": "kashyyyk",
+      "name": "Kashyyyk",
+      "type": "forest",
+      "seed": "1526000029368774964"
+    },
+    {
+      "id": "kamino",
+      "name": "Kamino",
+      "type": "ocean",
+      "seed": "16829253035778520168"
+    },
+    {
+      "id": "geonosis",
+      "name": "Geonosis",
+      "type": "desert",
+      "seed": "7091074928947837158"
+    },
+    {
+      "id": "scarif",
+      "name": "Scarif",
+      "type": "ocean",
+      "seed": "6853207733044931143"
+    },
+    {
+      "id": "nevarro",
+      "name": "Nevarro",
+      "type": "lava",
+      "seed": "13487258476707400418"
+    },
+    {
+      "id": "mandalore",
+      "name": "Mandalore",
+      "type": "desert",
+      "seed": "13075852038549019104"
+    },
+    {
+      "id": "lothal",
+      "name": "Lothal",
+      "type": "temperate",
+      "seed": "5339334118646393569"
+    },
+    {
+      "id": "sorgan",
+      "name": "Sorgan",
+      "type": "forest",
+      "seed": "16486895930758120779"
+    },
+    {
+      "id": "gazorpazorp",
+      "name": "Gazorpazorp",
+      "type": "desert",
+      "seed": "2431803148514356742"
+    },
+    {
+      "id": "squanch",
+      "name": "Squanch",
+      "type": "stylised",
+      "seed": "9590996167492738644"
+    },
+    {
+      "id": "birdworld",
+      "name": "Bird World",
+      "type": "stylised",
+      "seed": "13643440753565578034"
+    },
+    {
+      "id": "gearworld",
+      "name": "Gear World",
+      "type": "stylised",
+      "seed": "7139150669210096398"
+    },
+    {
+      "id": "pluto",
+      "name": "Pluto",
+      "type": "ice",
+      "seed": "11588391963419968745"
+    },
+    {
+      "id": "snakeplanet",
+      "name": "Snake Planet",
+      "type": "temperate",
+      "seed": "9125054182730542529"
+    },
+    {
+      "id": "nuptia",
+      "name": "Nuptia 4",
+      "type": "stylised",
+      "seed": "1523212486951103434"
+    },
+    {
+      "id": "resort",
+      "name": "Immortality Field Resort",
+      "type": "stylised",
+      "seed": "7590726331716762136"
+    },
+    {
+      "id": "cronenberg",
+      "name": "Cronenberg World",
+      "type": "temperate",
+      "seed": "3701917680389589232"
+    },
+    {
+      "id": "purge",
+      "name": "Purge Planet",
+      "type": "temperate",
+      "seed": "9565460683774068840"
+    },
+    {
+      "id": "cybertron",
+      "name": "Cybertron",
+      "type": "metal",
+      "seed": "16057552536471276517"
+    },
+    {
+      "id": "middle-earth",
+      "name": "Middle-earth",
+      "type": "temperate",
+      "seed": "18187206293295419981"
+    },
+    {
+      "id": "caribbean",
+      "name": "The Caribbean",
+      "type": "ocean",
+      "seed": "11984462318207453812"
+    },
+    {
+      "id": "albuquerque",
+      "name": "Albuquerque",
+      "type": "desert",
+      "seed": "10048810785060841797"
+    },
+    {
+      "id": "scranton",
+      "name": "Scranton",
+      "type": "temperate",
+      "seed": "2812984397735158369"
+    },
+    {
+      "id": "avengers",
+      "name": "Avengers Compound",
+      "type": "temperate",
+      "seed": "18296028802821282410"
+    },
+    {
+      "id": "invincible",
+      "name": "Invincible",
+      "type": "temperate",
+      "seed": "17049026213794180600"
+    },
+    {
+      "id": "c-137",
+      "name": "Earth C-137",
+      "type": "temperate",
+      "seed": "16337440380819003650"
+    },
+    {
+      "id": "earth",
+      "name": "Earth",
+      "type": "temperate",
+      "seed": "6709468555492038659"
+    },
+    {
+      "id": "dot-matrix",
+      "name": "Dot Matrix",
+      "type": "stylised",
+      "seed": "11991176794051770286"
+    },
+    {
+      "id": "E:1,0:0:0",
+      "name": "Lithialsur",
+      "type": "gas",
+      "seed": "9214131500749537690"
+    },
+    {
+      "id": "E:1,0:0:1",
+      "name": "Selimo",
+      "type": "forest",
+      "seed": "9214132600261165901"
+    },
+    {
+      "id": "E:1,0:0:2",
+      "name": "Ramsaex",
+      "type": "lava",
+      "seed": "9214129301726281268"
+    },
+    {
+      "id": "E:1,0:0:3",
+      "name": "Taecle",
+      "type": "ice",
+      "seed": "9214130401237909479"
+    },
+    {
+      "id": "E:1,0:0:4",
+      "name": "Taedixa",
+      "type": "rock",
+      "seed": "9214127102703024846"
+    },
+    {
+      "id": "E:1,0:0:5",
+      "name": "Deapho",
+      "type": "ice",
+      "seed": "9214128202214653057"
+    },
+    {
+      "id": "E:1,0:0:6",
+      "name": "Vaemalo",
+      "type": "desert",
+      "seed": "9214124903679768424"
+    },
+    {
+      "id": "E:1,0:1:0",
+      "name": "Miace",
+      "type": "desert",
+      "seed": "5034333057882641216"
+    },
+    {
+      "id": "E:1,0:1:1",
+      "name": "Seritiai",
+      "type": "ocean",
+      "seed": "5034334157394269427"
+    },
+    {
+      "id": "E:1,0:1:2",
+      "name": "Tephaemom",
+      "type": "rock",
+      "seed": "5034335256905897638"
+    },
+    {
+      "id": "E:1,0:2:0",
+      "name": "Cunano",
+      "type": "gas",
+      "seed": "9427996514885272807"
+    },
+    {
+      "id": "E:1,0:2:1",
+      "name": "Nole",
+      "type": "ocean",
+      "seed": "9427995415373644596"
+    },
+    {
+      "id": "E:1,0:2:2",
+      "name": "Niathia",
+      "type": "rock",
+      "seed": "9427998713908529229"
+    }
+  ],
+  "pois": [
+    {
+      "id": "hoth:echo-base",
+      "planetId": "hoth",
+      "name": "Echo Base",
+      "x": 1200,
+      "z": -800,
+      "r": 380
+    }
+  ]
+}
