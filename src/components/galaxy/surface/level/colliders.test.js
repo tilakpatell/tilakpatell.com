@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { writeInstances } from '../../../../lib/level/instances';
 import { createSolids, groundAt, walk, walker } from '../walker';
 import { createColliders } from './colliders';
+import { packShapes } from '../../../../lib/physics/shapesBin';
 
 const pack = {
   meshes: [{ bounds: [-4, -0.3, -4, 4, 0, 4] }, { bounds: [-3, 0, -0.25, 3, 4, 0.25] }],
@@ -44,5 +45,21 @@ describe('the level’s colliders', () => {
     createColliders(walk, 'low').add('0,0', { ...pack, cull: { low: { K: 20, dropped: [1] } } }, bin);
     expect(walk.solids.all.length).toBe(0);
     expect(walk.floors.length).toBe(1);
+  });
+
+  it('a mesh with the game’s shapes stands as its hull, not its bounds; a collision mesh’s hull the same', async () => {
+    const walk = { heightAt: () => 0, solids: createSolids(), floors: [] };
+    // (the wall's own hull: a metre narrower than its drawn bounds each side, from web/collision/)
+    const hull = [];
+    for (const x of [-2, 2]) for (const y of [0, 4]) for (const z of [-0.25, 0.25]) hull.push(x, y, z);
+    const bins = { 'physics/wall.bin': packShapes([{ kind: 'hull', points: hull, part: 0, material: 0, root: 0 }]) };
+    const withShapes = { ...pack, physics: { meshes: { 1: { file: 'physics/wall.bin', collision: true } } } };
+    const c = createColliders(walk, 'high', { loadBin: async (f) => bins[f] });
+    await c.add('0,0', withShapes, bin);
+    // (the floor from the plate's bounds, as ever; the wall from its hull)
+    expect(walk.floors.length).toBe(1);
+    expect(walk.solids.all.length).toBe(1);
+    const box = walk.solids.all[0];
+    expect(box.hw ?? box.w / 2).toBeCloseTo(2, 3);
   });
 });

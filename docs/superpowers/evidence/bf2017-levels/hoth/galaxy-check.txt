@@ -1,0 +1,10 @@
+hoth       calls  166  tris  703199  geo  340  tex 323  prog 148  frame p50 3366.6 p95 4014.4 ms  ground 0.03 ms  load 12.2 s
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget hoth       calls 166/350  tris 703199/800000  models 14.8/20 MB  pass
+hoth       calls  165  tris  702918  geo  355  tex 323  prog 153  frame p50 3149.8 p95 5478.7 ms  ground 0.03 ms  load 50.1 s
+budget hoth       calls 165/274  tris 702918/1236993  models 15.2/40 MB  pass
+hoth       calls  168  tris  879978  geo  361  tex 341  prog 157  frame p50 7083.1 p95 10037.7 ms  ground 0.03 ms  load 13.7 s
+budget hoth       calls 168/274  tris 879978/1664163  models 15.7/60 MB  pass
+hoth       calls  177  tris 1755964  geo  355  tex 321  prog 155  frame p50 17865.9 p95 20188.8 ms  ground 0.05 ms  load 16.1 s
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget hoth       calls 177/1500  tris 1755964/–  models 16.2/240 MB  p95 20188.8/reported ms  pass

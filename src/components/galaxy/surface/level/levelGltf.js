@@ -7,7 +7,8 @@
 // textures.jsonl's `format`), but many of the pack's KTX2s are labelled
 // linear, and read as linear they came out washed pale (bindSlot).
 //
-//   createLevelLoader({ world, tier, renderer, fetchBytes, sizes, recipes, materialFor }) → { load(glbPath) → Promise<{ scene } | null>, dispose() }
+//   createLevelLoader({ world, tier, renderer, fetchBytes, sizes, recipes, materialFor }) → { load(glbPath) → Promise<{ scene } | null>,
+//     texture(packPath, sizes?) → Promise<Texture | null>, dispose() }
 //   (sizes: level.json's `tex`, each map's size per tier)
 //
 // With `recipes` and `materialFor` (lane Q1: a node world draws the game's
@@ -125,11 +126,12 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
   const meshes = new Map(); // glb path → Promise<{ scene } | null>
   let gone = false;
 
-  function texture(path) {
+  // (a part's own maps say their sizes beside them: `own`)
+  function texture(path, own = sizes) {
     // (after dispose nothing new is fetched, so nothing is left undisposed)
     if (gone) return Promise.resolve(null);
     if (!textures.has(path)) {
-      const local = packUrl(world, tierTexture(path, tier, sizes));
+      const local = packUrl(world, tierTexture(path, tier, own));
       textures.set(
         path,
         ktx2Loader({ renderer })
@@ -210,6 +212,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
 
   return {
     load,
+    texture,
     // (the remote name of a pack file, for the evidence)
     url: (path) => assetUrl(packUrl(world, path)),
     async dispose() {

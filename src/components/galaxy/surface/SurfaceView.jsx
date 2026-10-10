@@ -48,7 +48,8 @@ export default function SurfaceView({ system = null, site = null, mission = null
   // mission is another world, made again)
   const { host, on, meant, rt, progress } = useWorld(surfaceModule, {
     props: { system, site, mission, missionSpec, models, rides, props: built, scatter, figures, ship, hero, loadout, build, found, done, compass, net, reduced, effects },
-    rebuild: missionSpec?.id ?? mission ?? 'explore',
+    // (another of the world's maps, a district, is another world, made again)
+    rebuild: `${missionSpec?.id ?? mission ?? 'explore'}${site?.district ? `@${site.district}` : ''}`,
     onEvent: (e) => {
       if (e.type === 'lockOn') setLockOn(e.on);
       events.current?.(e);
@@ -64,8 +65,8 @@ export default function SurfaceView({ system = null, site = null, mission = null
   // (for the page's own tests, in development)
   useEffect(() => {
     if (!import.meta.env.DEV) return undefined;
-    // (the scene's effects hooks, fx and gameFx, kept on it if the scene came first)
-    window.__surface = Object.assign(() => view.current?.debug?.(), { fx: window.__surface?.fx, gameFx: window.__surface?.gameFx });
+    // (keeping a hook the scene put on it before: its `fx`)
+    window.__surface = Object.assign(() => view.current?.debug?.(), window.__surface ?? {});
     window.__surfaceDo = (name, ...a) => view.current?.[name]?.(...a);
     return () => {
       delete window.__surface;

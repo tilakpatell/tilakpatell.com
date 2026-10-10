@@ -20,10 +20,14 @@
 //             else the bucket, cached under lab/assets/bf2017/
 //   dry       read and count, write nothing
 //
+// A mesh with no Havok shape under 15 m across stands as its web/collision/
+// mesh's hull (scripts/lib/bf2017-collision.mjs; `collision: true`).
+//
 // It prints a table (meshes with shapes, hulls, mesh triangles, capsules,
 // dropped, bytes, the ten heaviest cells) and, unless dry, writes it into
 // the pack's README.md between physics markers.
 
+import { MAX_SIZE, collisionHull, collisionPath } from './lib/bf2017-collision.mjs';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -70,6 +74,7 @@ async function records(get) {
   return out;
 }
 
+const lastName = (p) => String(p).split('/').pop();
 const slug = (name) =>
   name
     .split('/')
@@ -86,7 +91,21 @@ async function readMeshes(meshes, get, recs, from) {
   for (let i = 0; i < meshes.length; i++) {
     const file = meshes[i].source ?? meshes[i].file ?? meshes[i].name;
     const rec = recs.get(physicsKey(file));
-    if (!rec) continue;
+    if (!rec) {
+      // (no Havok shape: a prop's render-cut collision mesh as one hull, lane E0)
+      const b = meshes[i].bounds;
+      if (!b || Math.max(b[3] - b[0], b[4] - b[1], b[5] - b[2]) > MAX_SIZE) continue;
+      const cbuf = await get(collisionPath(file));
+      const hull = cbuf ? collisionHull(cbuf) : null;
+      if (!hull) continue;
+      let name = `${lastName(file).replace(/_mesh\.glb$/, '')}-collision`;
+      if (names.has(name)) name = `${name}-${i}`;
+      names.add(name);
+      const bin = packShapes([hull]);
+      bins[i] = { file: `physics/${name}.bin`, bin };
+      out[i] = { bytes: bin.byteLength, file: `physics/${name}.bin`, name: collisionPath(file), collision: true, ...summarise([hull]), materials: [0] };
+      continue;
+    }
     // (a flat folder of GLBs, the fixtures', by the file's own name)
     const buf = (await get(rec.glb ?? `physics/${rec.name}.glb`)) ?? (from ? await get(`${rec.name.split('/').pop()}.glb`) : null);
     if (!buf) {
@@ -147,8 +166,8 @@ function table({ meshes, dropped, cells }) {
 const sorted = (v) =>
   Array.isArray(v) ? v.map(sorted) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sorted(v[k])])) : v;
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
+export async function main(argv = process.argv.slice(2)) {
+  const args = parseArgs(argv);
   const from = typeof args.from === 'string' ? args.from : process.env.BF2017_EXPORT || null;
   const get = source(from);
   const recs = await records(get);
@@ -182,7 +201,7 @@ async function main() {
   pack.physics = sorted({ cells, materials, meshes, version: 1 });
   await mkdir(join(dir, 'physics'), { recursive: true });
   for (const { file, bin } of Object.values(bins)) await writeFile(join(dir, file), Buffer.from(bin));
-  await writeFile(join(dir, 'level.json'), JSON.stringify(sorted(pack), null, 1) + '\n');
+  await writeFile(join(dir, 'level.json'), `${JSON.stringify(sorted(pack))}\n`);
   const readme = join(dir, 'README.md');
   const old = existsSync(readme) ? await readFile(readme, 'utf8') : '';
   const block = `<!-- physics -->\n## Physics\n\nThe game's shapes (\`node scripts/bf2017-physics.mjs\`).\n\n${report}\n<!-- /physics -->`;

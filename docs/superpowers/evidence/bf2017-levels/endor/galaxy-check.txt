@@ -1,0 +1,14 @@
+endor      calls  160  tris  914756  geo  278  tex 414  prog 123  frame p50 3901.5 p95 3999.9 ms  ground 0.02 ms  load 32.0 s
+           level calls 21  tris 179763  instances 693  lights 0  probe –
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget endor      calls 160/350  tris 914756/800000  models 13.4/20 MB  FAIL (tris 914756 > 800000)
+endor      calls  162  tris  915390  geo  289  tex 420  prog 122  frame p50 4949.7 p95 6290.8 ms  ground 0.04 ms  load 10.0 s
+           level calls 118  tris 457908  instances 1416  lights 3  probe –
+budget endor      calls 162/262  tris 915390/2241736  models 14.1/40 MB  pass  (known over the row, held to its baseline: TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over the 3M row; the far redwoods are 0.1M of it: the near full redwoods (1.1M with their shadow pass), the crew figures (0.73M), the ground (0.58M) and the built ferns (0.52M) are where it goes (docs/superpowers/HANDOFF-galaxy-asset-upgrade.md, Phase 4); trim those and take it off this list)
+endor      calls  191  tris 1464484  geo  302  tex 419  prog 127  frame p50 12783.4 p95 15132.8 ms  ground 0.04 ms  load 12.2 s
+           level calls 244  tris 655344  instances 2043  lights 2  probe –
+budget endor      calls 191/257  tris 1464484/3679784  models 15.1/60 MB  pass  (known over the row, held to its baseline: TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over the 3M row; the far redwoods are 0.1M of it: the near full redwoods (1.1M with their shadow pass), the crew figures (0.73M), the ground (0.58M) and the built ferns (0.52M) are where it goes (docs/superpowers/HANDOFF-galaxy-asset-upgrade.md, Phase 4); trim those and take it off this list)
+endor      calls  221  tris 2799576  geo  309  tex 417  prog 129  frame p50 27015.6 p95 30514.6 ms  ground 0.07 ms  load 15.8 s
+           level calls 276  tris 1146665  instances 2043  lights 3  probe –
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget endor      calls 221/1500  tris 2799576/–  models 15.7/240 MB  p95 30514.6/reported ms  pass

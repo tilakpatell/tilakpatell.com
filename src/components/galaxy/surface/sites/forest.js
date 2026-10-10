@@ -55,6 +55,12 @@ export const SITES = {
   endor: {
     // lit as the game lights its level (src/data/bf2017/light/endor.json, gameLit.js)
     gameLight: 'endor',
+    // drawn from the game's level (lane E0: /models/galaxy/bf2017/levels/endor/level.json,
+    // `node scripts/bf2017-level.mjs levels/mp/endor_01 --world endor --spot
+    // 211.8 331`: the game's bunker door on this site's, so the bunker, its
+    // trenches, the AT-AT station and the forest round them stand as the game
+    // placed them; the site's built bunker is the flight's (`game`))
+    level: 'endor',
     place: 'The forest moon',
     line: 'Redwoods older than the Empire, and something small watching you from the ferns.',
     sky: {
@@ -80,7 +86,12 @@ export const SITES = {
       // (the redwood country as filmed: the floor rises and falls, folded
       // into ravines and spurs, the village and the bunker on their own
       // level ground; the forest moon's mountains far off, in the haze)
-      layers: [
+      // (the game's own ground: Endor_01's heightmap, 0 at the landing, its
+      // edge carried on level past the 2 km the game drew)
+      layers: [{ type: 'image', pack: 'endor' }],
+      // (the flight's planet keeps the redwood country it had: the land the
+      // site drew before the level, folded into ravines and spurs)
+      flight: [
         { type: 'swell', scale: 420, height: 22 },
         { type: 'hills', scale: 130, height: 14 },
         { type: 'ridges', scale: 300, height: 8 },
@@ -145,7 +156,7 @@ export const SITES = {
         name: 'The bunker',
         at: [250, -40],
         r: 34,
-        flat: { r: 28 },
+        flat: { r: 28, game: true },
         about: 'The back door to the shield generator: an armoured entrance dug into the hillside, where the strike team went in and a stolen AT-ST came back out with an Ewok at the controls.',
         lines: {
           xwing: [['luke', 'The bunker. If Han’s team hadn’t blown it, the fleet would’ve been wiped out.']],
@@ -154,10 +165,10 @@ export const SITES = {
           rv: [['walt', 'One entrance. Armoured. Out in the middle of nowhere.'], ['jesse', 'Yo, it’s like a superlab for space Nazis.']],
         },
         things: [
-          { kind: 'bunker', at: [0, -6], yaw: 0 },
-          { kind: 'bunkerbank', at: [0, -8.5], yaw: 0 },
-          { kind: 'redwood', at: [-7, -24], model: false, opts: { seed: 21, h: 60, r: 2.2 } },
-          { kind: 'redwood', at: [9, -27], model: false, opts: { seed: 22, h: 56, r: 2.0 } },
+          { kind: 'bunker', at: [0, -6], yaw: 0, game: true },
+          { kind: 'bunkerbank', at: [0, -8.5], yaw: 0, game: true },
+          { kind: 'redwood', at: [-7, -24], model: false, opts: { seed: 21, h: 60, r: 2.2 }, game: true },
+          { kind: 'redwood', at: [9, -27], model: false, opts: { seed: 22, h: 56, r: 2.0 }, game: true },
           { kind: 'crates', at: [-10, 4] },
           { kind: 'crates', at: [9, 6] },
           { kind: 'lamp', at: [-7, 6], opts: { h: 3.2, light: '#ffe0a0' } },
@@ -283,19 +294,20 @@ export const SITES = {
       // from its middle; past the fog's reach, where a tree is a trunk in
       // the mist, the light ones, as many again)
       { kind: 'redwood', n: 320, within: [60, 280], scale: [0.75, 1.35], opts: { seed: 1, leaf: '#3a4626' } },
-      { kind: 'redwood', n: 150, within: [60, 280], scale: [0.6, 1.2], opts: { seed: 2, h: 58, r: 2.0, bark: '#7a4a32', leaf: '#3e4a28' } },
-      { kind: 'redwood', n: 100, within: [60, 200], scale: [0.7, 1.25], opts: { seed: 13, leaf: '#3c4828' } },
+      { kind: 'redwood', n: 150, within: [60, 280], scale: [0.6, 1.2], opts: { seed: 2, h: 58, r: 2.0, bark: '#7a4a32', leaf: '#3e4a28' }, game: true },
+      { kind: 'redwood', n: 100, within: [60, 200], scale: [0.7, 1.25], opts: { seed: 13, leaf: '#3c4828' }, game: true },
       { kind: 'redwood', n: 300, within: [280, 640], scale: [0.75, 1.35], opts: { seed: 14, lo: true, leaf: '#3a4626' } },
-      { kind: 'redwood', n: 140, within: [280, 640], scale: [0.6, 1.2], opts: { seed: 15, lo: true, h: 58, r: 2.0, bark: '#7a4a32', leaf: '#3e4a28' } },
+      { kind: 'redwood', n: 140, within: [280, 640], scale: [0.6, 1.2], opts: { seed: 15, lo: true, h: 58, r: 2.0, bark: '#7a4a32', leaf: '#3e4a28' }, game: true },
       { kind: 'redwood', n: 200, within: [600, 1300], scale: [1.0, 1.5], solid: false, opts: { seed: 3, lo: true, leaf: '#3a4626' } },
-      { kind: 'spruce', n: 160, within: [20, 420], scale: [0.7, 1.3], opts: { seed: 4, leaf: '#2f3e26' } },
+      // (the game's level places its own forest: the rows marked `game` are the flight's, so the frame holds its baseline)
+      { kind: 'spruce', n: 160, within: [20, 420], scale: [0.7, 1.3], opts: { seed: 4, leaf: '#2f3e26' }, game: true },
       { kind: 'fern', n: 1100, within: [6, 240], scale: [0.9, 2.1], solid: false, clear: -12, opts: { seed: 5, n: 11, color: '#56592c' } },
       // (the floor near you carpeted, as the film's is: low ferns, close set)
       { kind: 'fern', n: 1500, within: [4, 90], scale: [0.7, 1.5], solid: false, clear: -14, opts: { seed: 12, n: 7, color: '#5a5e2e' } },
-      { kind: 'fern', n: 160, within: [17, 60], scale: [0.9, 1.8], solid: false, clear: -30, opts: { seed: 9, n: 10, color: '#5e6230' } },
-      { kind: 'fern', n: 500, within: [6, 240], scale: [0.6, 1.3], solid: false, clear: -14, opts: { seed: 6, color: '#626436', n: 7, len: 1.0 } },
+      { kind: 'fern', n: 160, within: [17, 60], scale: [0.9, 1.8], solid: false, clear: -30, opts: { seed: 9, n: 10, color: '#5e6230' }, game: true },
+      { kind: 'fern', n: 500, within: [6, 240], scale: [0.6, 1.3], solid: false, clear: -14, opts: { seed: 6, color: '#626436', n: 7, len: 1.0 }, game: true },
       { kind: 'fern', n: 700, within: [240, 600], scale: [1.0, 2.2], solid: false, clear: -10, opts: { seed: 8, n: 9, color: '#52562c' } },
-      { kind: 'log', n: 70, within: [20, 560], scale: [0.8, 1.4], solid: false, opts: { seed: 7 } },
+      { kind: 'log', n: 70, within: [20, 560], scale: [0.8, 1.4], solid: false, opts: { seed: 7 }, game: true },
       // (the floor's boulders mossy, as the film's are; scrub and toadstools under the ferns)
       { kind: 'rock', n: 110, within: [14, 560], scale: [0.6, 2.4], opts: { color: '#6e7460', sharp: 0.4, to: 'mossrock' } },
       { kind: 'stones', n: 320, within: [6, 300], scale: [0.25, 0.7], solid: false, opts: { color: '#6a6e5a', to: 'mossrock' } },

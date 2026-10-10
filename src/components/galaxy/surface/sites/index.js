@@ -56,6 +56,16 @@
 //                  you go down in it; steps in a zone say `zone`, and their
 //                  spots are its
 //   reach          how far you can go (terrain.js's REACH unless said)
+//   districts      more than one of the game's maps on one world (lane E0):
+//                  [{ id, name, level (a pack: '<world>/<district>'),
+//                  land: { at, yaw }, line, ground? (in place of the
+//                  site's: an interior's flat floor), door? { at, r,
+//                  prompt } (the way back to the main map), site? (any
+//                  of the site's own rows in place: an interior's fog, no
+//                  weather) }]; the route's
+//                  ?district=<id>, a zone's door `to: { district }`, the
+//                  system panel's "Land at" rows. The default (none, or an
+//                  id the site lacks) is the site as written
 //   fall           a world with nothing under its floors (Bespin, Coruscant,
 //                  Kamino): how far down counts as falling off
 
@@ -78,6 +88,25 @@ export const SITES = { ...desert, ...ice, ...forest, yavin, ...core, coruscant, 
 // the systems with somewhere to land, in the galaxy's own order
 export const LANDABLE = SYSTEMS.filter((s) => SITES[s.id]).map((s) => s.id);
 export const canLand = (id) => Boolean(SITES[id]);
+
+// A site's district by id: one of its `districts`, else the site as it is
+// (`main`), so an unknown id lands where the world always did
+export function districtOf(site, id) {
+  const d = id && site?.districts?.find((q) => q.id === id);
+  return d ?? { id: 'main', level: site?.level, land: site?.land };
+}
+
+// The site as a district has it: its level, landing, place, line and ground
+// (a ground layer drawn from the world's pack is the district's own pack's).
+// The same site back for the default, so nothing is made again.
+export function withDistrict(site, id) {
+  const d = districtOf(site, id);
+  if (d.id === 'main') return site;
+  const layers = (site.ground?.layers ?? []).map((l) => (l.type === 'image' && l.pack === site.level ? { ...l, pack: d.level } : l));
+  // (the world's own zones are the main map's; a district's way back is its `door`)
+  const zones = d.door ? [{ id: `${d.id}-out`, name: site.place, door: d.door, to: { district: 'main' } }] : [];
+  return { ...site, ...(d.site ?? {}), district: d.id, level: d.level, land: { ...site.land, ...d.land }, place: d.name ?? site.place, line: d.line ?? site.line, zones, ground: d.ground ? { ...site.ground, ...d.ground } : { ...site.ground, layers } };
+}
 
 const turn = ([x, z], yaw = 0) => [x * Math.cos(yaw) + z * Math.sin(yaw), -x * Math.sin(yaw) + z * Math.cos(yaw)];
 const plus = (a, b) => [a[0] + b[0], a[1] + b[1]];

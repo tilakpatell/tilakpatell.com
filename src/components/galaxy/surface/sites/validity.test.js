@@ -4,7 +4,8 @@ import { ASSAULTS } from '../missions/assaults';
 import { CELL, RADIUS, TROOPS, covertFor, rosterFor, turfsOf } from '../ground/index';
 import { SIGHT } from '../ground/landing';
 import { LANDABLE } from '.';
-import { heightFor, namedTwice, spawnProblems, standable } from './validity';
+import { districtProblems, heightFor, namedTwice, spawnProblems, standable } from './validity';
+import { existsSync } from 'node:fs';
 
 describe('every world can be played as written', () => {
   for (const id of Object.keys(SITES)) {
@@ -132,3 +133,17 @@ describe('the ground war stands on every world', () => {
     });
   }
 });
+
+describe('every district stands on a pack that is there', () => {
+  const committed = (level) => existsSync(new URL(`../../../../../public/models/galaxy/bf2017/levels/${level}/level.json`, import.meta.url));
+  for (const id of Object.keys(SITES)) {
+    it(`${id}: each district's level has its level.json in git`, () => {
+      expect(districtProblems(SITES[id], committed)).toEqual([]);
+    });
+  }
+  it('names a district whose pack is missing', () => {
+    const site = { districts: [{ id: 'jabba', name: 'Jabba’s palace', level: 'tatooine/jabba', land: { at: [0, 0] } }] };
+    expect(districtProblems(site, () => false)).toEqual(['jabba: no pack at levels/tatooine/jabba/level.json']);
+  });
+});
+

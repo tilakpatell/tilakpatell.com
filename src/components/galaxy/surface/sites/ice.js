@@ -115,9 +115,30 @@ export const SITES = {
         rv: [['jesse', 'Yo, it is mad cold out here, Mr. White.'], ['walt', 'Then we work fast.']],
       },
     },
+    // the game's own Echo Base inside the glacier (lane E0: the pack
+    // /models/galaxy/bf2017/levels/hoth/base/level.json, `node scripts/bf2017-level.mjs levels/mp/hoth_01
+    // --world hoth --district base --inside --spot 205 -1540 --arena 640`:
+    // the 14,535 pieces lane L's world leaves under the ice, in the same
+    // frame as the world's), a district you walk down into from the mouth
+    districts: [
+      {
+        id: 'base',
+        name: 'Echo Base',
+        level: 'hoth/base',
+        // (on the hangar's floorboards, three metres under the mouth's snow)
+        land: { at: [5, -40], yaw: Math.PI },
+        line: 'The hangars, the halls and the command centre, cut into the glacier.',
+        // (a flat floor just under the hangar's, the game's floors over it; no weather in here)
+        ground: { layers: [], base: -3.1 },
+        site: { weather: [], fog: { color: '#9fb4ca', density: 0.012 } },
+        door: { at: [5, -28], r: 2.4, prompt: 'Back out onto the ice' },
+      },
+    ],
     // inside Echo Base: in through the hangar's back-left door (the hangar
     // stands 30 m into the place, its back wall 59 m into the hangar)
     zones: [
+      // (and beside it, the way down into the game's own halls: the base district)
+      { id: 'echohalls', name: 'Echo Base, the halls', door: { at: [-12, -32], r: 2.4, prompt: 'Walk down into the halls' }, to: { district: 'base' } },
       {
         id: 'echo',
         name: 'Echo Base',

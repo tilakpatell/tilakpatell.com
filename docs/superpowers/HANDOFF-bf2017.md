@@ -11,7 +11,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | Lane | What | Needs first | Session | Branch | Merged |
 |---|---|---|---|---|---|
 | Z | the coverage ledger: `scripts/bf2017-coverage.mjs`, the owners table, `--check` in CI, the four counts in this table | nothing | `session_018HdseSL3U68899P3D9oWmP` | `claude/bf2017-z-ledger` | #853 |
-| E0 | the level factory: packs out of git, districts and interiors, every map part beside `level.json` (lights, decals, actors, vehicles, effects, tracks, probes, far shadow, scatter table, shapes, collision solids), the detail maps; Endor on Endor_01, Echo Base's inside | nothing | | `claude/bf2017-e0-factory` | |
+| E0 | the level factory: packs out of git, districts and interiors, every map part beside `level.json` (lights, decals in Q4's shape, actors, vehicles, effects, tracks, probes, far shadow, scatter table, shapes, collision solids; the detail maps went to #844's Q1); Endor on Endor_01, Echo Base's inside | nothing | the E0 session | `claude/bf2017-e0-factory` | carried by lane G2's PR |
 | E1 | Tatooine (Mos Eisley, the dunes, Jabba's palace and its inside), Yavin | E0 | | `claude/bf2017-e1-tatooine-yavin` | |
 | E2 | Naboo (Theed under its dusk and lanterns, the hangar, the plains, the palace), Kamino | E0 | | `claude/bf2017-e2-naboo-kamino` | |
 | E3 | Kashyyyk, Geonosis, Endor's village, research station and bunker | E0 | | `claude/bf2017-e3-kashyyyk-geonosis-endor` | |
@@ -189,6 +189,69 @@ Checking it: `npx vitest run scripts/lib/bf2017-ui.test.mjs src/lib/bf2017 src/r
 | I | the Death Star interior’s cast: shadowtrooper, navy crewman, admiral, personnel, the droids; `figures.js` learns the game’s skeletons | nothing | | | |
 | T | one atlas a kind for the light and far cuts (`--atlas`); the full cut stays native | nothing; re-run after D | | | |
 | W | the tow cable and the fall; the AT-AT’s wreck; the cockpits on boarding; engine glow (after D’s sheets); the far fleet instanced | W4 after D | | | |
+### Lane E0: the level factory (`claude/bf2017-e0-factory`)
+
+**Hosting.** A pack's bytes are published to `site-assets` by `node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/<world>/*'`, never committed. `gameFiles` walks the packs, but each pack's `level.json` and `README.md` stay in git (`PACK_KEPT`), so the tests and the sites read them with no bytes on disk. `assets-upload.mjs` no longer mirrors `models/galaxy/bf2017`. `packUrl` stays the site path, and `withFallback` and `assetUrl` turn it into the published URL through `galaxyAssets.json`, as they do for a model. One loader rule, so no second lookup was added. A single manifest is fine at this size (A1 holds): Hoth, Endor and Hoth's base together are 7,200 rows.
+
+**The command.** `node scripts/bf2017-level.mjs <map> --world <id> (--spot x z | --spawn) [--district <id>] [--inside] [--subs a,b] [--arena m] [--mode FantasyBattle] [--weather sunny] [--parts] [--dry]`.
+- `--spawn`: the landing is the first team's first spawn area of the first mode the map has (Galactic Assault first), from its gameplay records in `data/`. The records are fetched and read by `bf2017-rulebook-map.mjs`'s `mapRow`, then by `bf2017-level-spots.mjs`.
+- The map's file name comes from `maps/index.json`, so a campaign map's `ds02_streamed` is found.
+- The default sub-levels are now the level's own, `Content`, `Shared_Art` and `Sunny`. Endor_01 keeps 16,341 of its pieces in `Shared_Art`; Hoth has neither, so it is unchanged.
+- A height map smaller than its world (Endor's 2 km of 8) is clamped at its edges.
+- Ground the game never painted (Endor's: 58% of its pixels at the floor value) takes its nearest painted ground (`emptyValue`, `fillEmpty`, with a margin past the blended rim).
+- `--district base` writes `levels/<world>/base/`.
+- `--inside` writes no terrain, sets `inside: true` and gives `bounds` (the pieces' extent). Where the map has ground, it keeps only what lies under it (Hoth's base, the 14,513 pieces lane L's world leaves under the ice). It has no horizon.
+- `--parts` writes only the parts below beside a pack already built.
+
+**What a pack carries beside `level.json`** (`scripts/bf2017-level-parts.mjs`; a part the map lacks is an empty file):
+
+| file | from | read by |
+|---|---|---|
+| `lights.json` | the extras' `lights[]` (`bf2017-lights.mjs`) | `level/levelLights.js`: lane R's `placed.js` on the node renderer; on GLSL, the three nearest points by screen area; none on low |
+| `actors.json` | the map's `actor` groups in the arena's subs and the mode's layer, by `crewList.js` kind; `unplaced` lists what the site lacks (the gonk droid, the kullbee) and the wind-bent skinned shrubs; `unresolved` lists the extras' runtime-dressed actors | `scene.js` (`levelPlaced`): still figures where the game stood them |
+| `vehicles.json` | `vehicleSpawns[]`: a mount is a `rides` row; a walker or gun is a `things` row of the catalogue's kinds | `scene.js` |
+| `decals.json` | lane Q4's shape, by its `decalsOf` once `scripts/lib/bf2017-decals.mjs` is on `main`; until then empty, with `waiting: 'lane Q4'` | Q4's `src/lib/three/decals/` (whichever of Q4 and E0 merges second adds the `cell`/`drop` call to `level/index.js`'s `onCell`/`onDrop`) |
+| `effects.json` | the extras' `effects[]`, the playable subs only | fidelity X (nothing draws it until X merges) |
+| `tracks.json` | `web/animtracks/` whose owner the pack places | `src/lib/three/animTracks.js` (`evalTrack` Hermite, `createTracks`); shared with lane Q. `src/lib/three/tracks.js` was already the wheels' tracks, hence the name |
+| `probes.json`, `probes/<id>.<face>.hdr` | the level's `PbrBoxReflectionVolumeEntityData` in any of `data/Levels/MP/<Map>/*`'s layers (Hoth's are in `Cloudy_VFX`), in the light record's own variant where lane G named one, at 64², clipped as lane G's are | `level/levelProbes.js`: the box you stand in goes to `gameLit.js`'s `outdoorProbe` (the weather's calibration is kept) |
+| `shadow/far.png`, `level.json`'s `shadowCache` | the `DistantShadowCacheVolumeEntityData` and its 16-bit depth PNG, with its frame | fidelity S |
+| `scatter.json` | `maps/terrain_scatter/<terrain>.json` as the bucket has it | fidelity N |
+| `physics/*.bin`, `level.json`'s `physics` | P0's `bf2017-physics.mjs`, now run by the level script; a piece under 15 m with no Havok shape gets its `web/collision/` mesh as one hull (`collision: true`; Hoth has 17, Endor 34) | `level/colliders.js`: the walker stands on the hulls (P0's `shapeSolids`), with lane L's bounds only for pieces without shapes. The engine join (P0's Left 2 and 3) is not made: it waits for P1's crowds |
+
+The detail maps are lane Q1's (`recipes.json`, `gameMaterial.js`). The design session withdrew them from E0, and E0 adds no detail path to `levelScene.js`.
+
+**Districts.**
+- `SITES[id].districts = [{ id, name, level, land, line, ground?, door?, site? }]`.
+- `districtOf(site, id)` returns the site as it is for no id or an unknown one, so `?district=nowhere` lands where the world always did.
+- `withDistrict(site, id)` puts on the site the district's level, landing, place, line, ground (an image layer becomes the district's pack), its `site` overrides, and its `door` back to the main map. A `door` is a zone with `to: { district }`.
+- The route reads `?district=`; `GalaxyPanel` has a "Land at" row per district; a zone door with `to: { district }` emits `district` and the page navigates.
+- `validity.test.js` holds every district to a committed `level.json`.
+
+**Endor** stands on Endor_01, built with `--spot 211.8 331`. The spot was chosen by hand: it puts the game's bunker door (game 461.8, 285) on the site's (250, −46), so the site's places and quests keep their meaning. The landing is on the painted ridge west of the battle, 63 m over the bunker. The site's built bunker, its bank and its two redwoods, and three of its scatter rows (spruce, a redwood row, logs), are `game: true`, so the flight still draws them. The site's other scatter keeps out of the 128 m cells the level fills (`levelBusy`: 40 pieces or more). 4,056 of the map's pieces are buried (the bunker's halls under the hill) and wait for E3's interior. Endor_01 bakes no reflection volume for its sunny layer (only 20 foggy and 20 night ones), so `probes.json` is empty for the day.
+
+**Hoth** keeps lane L's meshes; its parts were written with `--parts`. **Hoth's base** is the district `base`: `levels/hoth/base/`, 14,513 pieces, 96 MB. It lands on the hangar's floorboards (−3 m) and is reached by a second door at the mouth ("Walk down into the halls"). The site's built Echo Base zone, with its cast, stays beside it until a later lane decides.
+
+**Sizes (published):** Hoth 64 MB (with physics and parts), Hoth's base 96 MB, Endor 191 MB.
+
+**Gates.** `BUDGET=1 galaxy-check surface`:
+- Hoth: low 166 calls, 703k triangles, 14.8 MB; mid 165, 703k, 15.2 MB; high 168, 880k, 15.7 MB; ultra 177, 1.76M, 16.2 MB. All pass.
+- Endor: ENDOR_GATES.
+
+**For E1 to E5, one line a map** (build, check the README's table, then `node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/<world>/*'`). Try `--spawn` first; where the site's own places matter, put a landmark of the game's on the site's with `--spot`, as Endor did. Interiors use `--district <id> --inside` (with `--subs` where the interior is its own sub-level):
+- E1: `levels/mp/tatooine_01 --world tatooine --spawn`; `s9_3/tatooine_02 --world tatooine --district dunes --spawn`; `s2_2/levels/jabbaspalace_01 --world tatooine --district jabba --spawn`; `levels/mp/yavin_01 --world yavin --spawn`.
+- E2: `levels/mp/naboo_01 --world naboo --spawn`; `levels/mp/naboo_02 --world naboo --district hangar --spawn`; `s7_2/levels/naboo_03 --world naboo --district plains --spawn`; `levels/mp/kamino_01 --world kamino --spawn` (no terrain); `s7_1/levels/kamino_03 --world kamino --district facility --spawn`.
+- E3: `levels/mp/kashyyyk_01 --world kashyyyk --spawn`; `s7/levels/kashyyyk_02 --world kashyyyk --district second --spawn`; `s5_1/levels/mp/geonosis_01 --world geonosis --spawn`; `s6_2/geonosis_02/levels/geonosis_02 --world geonosis --district second --spawn`; `s2_1/levels/endor_02 --world endor --district village --spawn`; `s8_1/endor_04 --world endor --district station --spawn`; `levels/mp/endor_01 --world endor --district bunker --inside --spot 211.8 331`.
+- E4: `s9_3/scarif/levels/mp/scarif_02 --world scarif --spawn`; `s2/levels/cloudcity_01 --world bespin --spawn`; `levels/sp/a2/m2bes/ds02 --world bespin --district m2bes --spawn`; `s9_3/hoth_02 --world hoth --district outpost --spawn`; `levels/mp/deathstar02_01 --world deathstar --spawn`.
+- E5: `s8/felucia/levels/mp/felucia_01 --world felucia --spawn`; `s3/levels/kessel_01 --world kessel --spawn`; `levels/sp/a2/m3sul/ds02 --world sullust --spawn`; `levels/sp/a1/m3pil/ds02 --world pillio --spawn`; `levels/sp/a1/m4var/ds02 --world vardos --spawn`; `levels/sp/a1/m2fon/ds02 --world fondor --spawn`.
+
+A campaign map with no mode layers has no spawn: pass `--spot`.
+
+**Left.**
+- Decals wait on Q4 (#852, above). Its contract: `decalsOf(extras, pack, { subworlds })` returns `{ format: 1, cell, count, kinds, skipped, textures, files, cells }`. Run `scripts/bf2017-decals.mjs --fetch` from the parts writer so the KTX2s land in the pack's `tex/decals/` and are published with it. `createDecals` returns `{ cell(cx, cz, targets), drop, setVisible, stats, dispose }`, where `targets = [{ geometry, matrix }]` are the cell's static instances, so the `onCell` hook must hand over the cell's geometries and matrices from `levelScene.js`'s cell record. Decals draw on the node renderer only. Endor_01 will keep 12 of its 23: its 11 normal-only volume decals have no colour map.
+- The tracks drive nothing on Hoth or Endor: their packs hold no owner of a track, and `levelScene.js`'s instanced draws have no node to turn. Q's asteroids use `createTracks` on their own nodes.
+- Endor's bunker halls are E3's interior pack (the line above).
+- The engine join for the shapes (P0's Left).
+- The base district shows the sky over the halls (the glacier is the main world's ground, not a pack mesh). A roof or an interior light record for districts is a later lane's.
 
 ## Done
 
