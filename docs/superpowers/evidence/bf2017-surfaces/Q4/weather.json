@@ -1,0 +1,26 @@
+{
+  "size": "1200x675",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": false,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [],
+      "shots": [
+        "weather-0s-webgl.png",
+        "weather-12.5s-webgl.png",
+        "weather-30s-webgl.png"
+      ],
+      "amounts": {
+        "0": 0,
+        "30": 1,
+        "12.5": 0.5
+      },
+      "programsBefore": 35,
+      "programsAfter": 35
+    }
+  ]
+}

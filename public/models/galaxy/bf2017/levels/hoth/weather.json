@@ -1,0 +1,53 @@
+{
+ "name": "Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01",
+ "kind": "snow",
+ "objects": {
+  "25": {
+   "$type": "AccumulateOverTimeOp",
+   "TargetValue": 1,
+   "InitialValue": 0,
+   "TimeToReachTarget": 25,
+   "KeepValueWhenMaterialChanged": true
+  },
+  "27": {
+   "$type": "GlobalWeatheringParamsEntityData",
+   "Realm": "Realm_Client",
+   "OverrideEvents": [
+    {
+     "EventType": "WeatheringEnable",
+     "Id": -2095241512,
+     "OutputId": -590781299
+    }
+   ],
+   "SkyVisibilityParam": {
+    "$ref": 29
+   },
+   "GlobalParamsOverrides": [
+    {
+     "$ref": 28
+    }
+   ],
+   "Flags": 53596157
+  },
+  "28": {
+   "$type": "WeatheringParam",
+   "WeatherOperation": {
+    "$ref": 25
+   },
+   "Id": -590781299
+  },
+  "29": {
+   "$type": "WeatheringSkyVisibilityParam",
+   "SkyVisibilityRange": {
+    "x": 0.1,
+    "y": 0.9
+   },
+   "SkyVisibilityExponent": 1,
+   "IndoorThreshold": 0.5,
+   "DisableGlobalWeatheringIndoor": true,
+   "DisableMaterialWeatheringIndoor": true,
+   "DisableAddSetEventsIndoor": false,
+   "UseDefaultMaterialOpIndoor": true
+  }
+ }
+}

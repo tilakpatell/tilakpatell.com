@@ -1,0 +1,31 @@
+{
+  "size": "1200x675",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": false,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [],
+      "shots": [
+        "decals-webgl.png",
+        "decals-floor-webgl.png",
+        "decals-grazing-a-webgl.png",
+        "decals-grazing-b-webgl.png"
+      ],
+      "draws": 5,
+      "decals": 11,
+      "textures": 3,
+      "fallback": 0,
+      "count": 11,
+      "kinds": {
+        "projected": 10,
+        "volume": 1
+      },
+      "grazingFlicker": 0.08,
+      "grazingMove": 0.047
+    }
+  ]
+}

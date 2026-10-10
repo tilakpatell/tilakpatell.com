@@ -1,0 +1,104 @@
+{
+ "_from": "web/maps/levels/mp/endor_01/endor_01.extras.json (the bucket, 2026-10-10): one volume decal per template verbatim (two of its 23), with the templates, shaderTextures and textureFiles",
+ "format": "position / quaternion xyzw / scale per item, same frame as the models; see maps/README.md",
+ "decals": [
+  {
+   "type": "volume",
+   "template": "FX/Decals/VolumeDecals/Templates/DV_BumpedMetal_01",
+   "row": 0,
+   "column": 0,
+   "alpha": 1,
+   "enabled": true,
+   "sub": 8,
+   "position": [
+    458.537,
+    195.861,
+    768.045
+   ],
+   "quaternion": [
+    0.00434,
+    -0.75839,
+    -0.00338,
+    0.65178
+   ],
+   "scale": [
+    10.9039,
+    1.51,
+    10.9039
+   ]
+  },
+  {
+   "type": "volume",
+   "template": "FX/Decals/VolumeDecals/Templates/DV_DamageBurningTri_01",
+   "row": 0,
+   "column": 0,
+   "alpha": 1,
+   "enabled": true,
+   "sub": 22,
+   "position": [
+    502.776,
+    197.676,
+    820.292
+   ],
+   "quaternion": [
+    -0.00491,
+    -0.07543,
+    -0.00071,
+    0.99714
+   ],
+   "scale": [
+    16.0855,
+    11.3115,
+    18.3356
+   ]
+  }
+ ],
+ "decalTemplates": {
+  "FX/Decals/VolumeDecals/Templates/DV_BumpedMetal_01": {
+   "CullingDistance": {
+    "Low": 100,
+    "Medium": 100,
+    "High": 100,
+    "Ultra": 100,
+    "Cinematic": 250
+   },
+   "Shader": {
+    "Shader": "FX/Decals/VolumeDecals/Shaders/SS_vDecal_NormalOnly_01",
+    "SurfaceShaderName": ""
+   },
+   "MaskType": "MaskType_StaticOnly",
+   "SortingPriority": 70
+  },
+  "FX/Decals/VolumeDecals/Templates/DV_DamageBurningTri_01": {
+   "CullingDistance": {
+    "Low": 150,
+    "Medium": 150,
+    "High": 150,
+    "Ultra": 150,
+    "Cinematic": 250
+   },
+   "Shader": {
+    "Shader": "FX/Decals/VolumeDecals/Shaders/SS_vDecal_DamageBurningTri_01",
+    "SurfaceShaderName": ""
+   },
+   "MaskType": "MaskType_StaticOnly",
+   "SortingPriority": 80
+  }
+ },
+ "shaderTextures": {
+  "FX/Decals/VolumeDecals/Shaders/SS_vDecal_NormalOnly_01": [
+   "shaders/T_DefaultBlack_RGBA"
+  ],
+  "FX/Decals/VolumeDecals/Shaders/SS_vDecal_DamageBurningTri_01": [
+   "FX/StandardShaders/T_BlackBodyRamps_01_M",
+   "FX/Decals/VolumeDecals/Textures/Perlin/T_PerlinNoise_Array_01_M",
+   "FX/Decals/VolumeDecals/Textures/T_Burnt_01_RGB"
+  ]
+ },
+ "textureFiles": {
+  "FX/Decals/VolumeDecals/Textures/Perlin/T_PerlinNoise_Array_01_M": "textures/fx/decals/volumedecals/textures/perlin/t_perlinnoise_array_01_m_000.ktx2",
+  "FX/Decals/VolumeDecals/Textures/T_Burnt_01_RGB": "textures/fx/decals/volumedecals/textures/t_burnt_01_rgb.ktx2",
+  "FX/StandardShaders/T_BlackBodyRamps_01_M": "textures/fx/standardshaders/t_blackbodyramps_01_m.ktx2",
+  "shaders/T_DefaultBlack_RGBA": "textures/shaders/t_defaultblack_rgba.ktx2"
+ }
+}
