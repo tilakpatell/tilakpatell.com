@@ -10,7 +10,8 @@ import { PROPS } from '../props';
 import { siteOf } from '../sites';
 import { REACH, makeHeight } from '../terrain';
 import { createSolids } from '../walker';
-import { SYSTEMS } from '../../systems';
+import { MODE_WORLDS, SYSTEMS } from '../../systems';
+import { GROUNDS } from './arenas';
 import { ACHIEVEMENTS } from '../../../Achievements';
 
 describe('missions played as quests', () => {
@@ -25,7 +26,7 @@ describe('missions played as quests', () => {
     for (const list of Object.values(MISSIONS))
       for (const m of Object.values(list)) {
         if (m.ride) expect(RIDES[m.ride], `${m.id} ride`).toBeTruthy();
-        else expect(['quest', 'assault'], `${m.id} on foot`).toContain(m.kind);
+        else expect(['quest', 'assault', 'hvv', 'blast'], `${m.id} on foot`).toContain(m.kind);
         if (m.kind !== 'quest') continue;
         expect(m.quest.steps.length).toBeGreaterThan(0);
         for (const s of m.quest.steps) {
@@ -73,7 +74,7 @@ describe('missions played as quests', () => {
       for (const m of Object.values(list)) {
         expect(typeof m.ends.won, `${m.id} won`).toBe('string');
         expect(typeof m.ends.lost, `${m.id} lost`).toBe('string');
-        for (const why of m.kind === 'quest' ? ['time', 'down'] : m.kind === 'assault' ? ['posts', 'tickets'] : ['lost']) expect(typeof m.ends.why[why], `${m.id} ${why}`).toBe('string');
+        for (const why of m.kind === 'quest' ? ['time', 'down'] : m.kind === 'assault' ? ['posts', 'tickets'] : m.kind === 'hvv' ? ['points'] : m.kind === 'blast' ? ['kills'] : ['lost']) expect(typeof m.ends.why[why], `${m.id} ${why}`).toBe('string');
       }
   });
 
@@ -252,6 +253,28 @@ describe('the galactic assaults', () => {
           expect(b.result?.won, `${JSON.stringify(tickets)}`).toBe(won);
         }
       });
+    });
+  }
+});
+
+describe('Heroes vs Villains and Blast', () => {
+  it('runs on every world whose level has their grounds, each briefing listing them', () => {
+    expect([...GROUNDS].sort()).toEqual([...MODE_WORLDS].sort());
+    for (const w of GROUNDS) for (const id of ['hvv', 'blast']) expect(missionOf(w, id)?.kind, `${w} ${id}`).toBe(id);
+  });
+  for (const w of GROUNDS) {
+    const site = siteOf(w);
+    const h = makeHeight(site.ground);
+    it(`plays ${w}’s two grounds on dry land within reach, fielding soldiers there are figures for`, () => {
+      for (const id of ['hvv', 'blast']) {
+        const m = missionOf(w, id);
+        expect(Math.hypot(...m.start), id).toBeLessThan(REACH);
+        expect(h(...m.start), id).toBeGreaterThan((site.water?.level ?? -Infinity) + 0.2);
+        for (const when of ['start', 'won', 'lost']) for (const crew of ['xwing', 'falcon', 'cruiser', 'rv']) expect(m.lines[when][crew]?.length, `${id} ${when} ${crew}`).toBeGreaterThan(0);
+      }
+      const blast = missionOf(w, 'blast');
+      for (const side of ['attack', 'defend']) for (const [kind] of blast.sides[side].kinds) expect(Boolean(buildFigure(kind) || SURFACE_MODELS[kind] || PROPS[kind]), kind).toBe(true);
+      for (const p of blast.posts) expect(Math.hypot(...p.at) + p.r, p.id).toBeLessThan(REACH);
     });
   }
 });

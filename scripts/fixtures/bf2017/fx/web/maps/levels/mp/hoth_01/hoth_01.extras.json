@@ -1,0 +1,174 @@
+{
+ "_trimmed": "Eight of the 648 effect spawns of the game's web/maps/levels/mp/hoth_01/hoth_01.extras.json (bf2017-assets), as exported: two each of three effects, one in a subworld the site leaves out and one outside the arena.",
+ "format": "position / quaternion xyzw / scale per item, same frame as the models; see maps/README.md",
+ "effects": [
+  {
+   "effect": "FX/Ambient/Snow/FX_Arctic_Ceiling_FallingSnow",
+   "sub": 5,
+   "autoStart": false,
+   "position": [
+    209.089,
+    362.831,
+    -1577.993
+   ],
+   "quaternion": [
+    0,
+    1,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/Ambient/Snow/FX_Arctic_Ceiling_FallingSnow",
+   "sub": 5,
+   "autoStart": false,
+   "position": [
+    216.567,
+    362.773,
+    -1563.329
+   ],
+   "quaternion": [
+    0,
+    -0.70711,
+    0,
+    0.70711
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/Vehicles/EngineExhaust/FX_EngineExhaust_TransportGR75_Prim",
+   "sub": 5,
+   "autoStart": false,
+   "position": [
+    48.837,
+    365.237,
+    -1747.148
+   ],
+   "quaternion": [
+    0,
+    -0.70711,
+    0,
+    0.70711
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/Vehicles/EngineExhaust/FX_EngineExhaust_TransportGR75_Prim",
+   "sub": 5,
+   "autoStart": false,
+   "position": [
+    52.133,
+    365.224,
+    -1743.36
+   ],
+   "quaternion": [
+    0,
+    -0.70711,
+    0,
+    0.70711
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/Ambient/_MP/Hoth/FX_Snow_FallingSnow_01_Hoth",
+   "sub": 0,
+   "autoStart": true,
+   "position": [
+    266.454,
+    374.359,
+    -1761.94
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/Ambient/_MP/Hoth/FX_Snow_FallingSnow_01_Hoth",
+   "sub": 0,
+   "autoStart": true,
+   "position": [
+    138.747,
+    381.435,
+    -1754.055
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/Ambient/_MP/Hoth/FX_AmbHoth_TerrainBlowingSnow_CamProx",
+   "sub": 2,
+   "autoStart": false,
+   "position": [
+    150.535,
+    358.783,
+    -1522.051
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/BattleBeyond/FakeProjectiles/FX/FX_LaserFiringWithExp_Green",
+   "sub": 0,
+   "autoStart": false,
+   "position": [
+    223.069,
+    792.414,
+    -352.916
+   ],
+   "quaternion": [
+    0.06147,
+    0.05036,
+    -0.00311,
+    0.99683
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  }
+ ]
+}

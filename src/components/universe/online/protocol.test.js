@@ -573,9 +573,11 @@ describe('down on a world in the galaxy', () => {
 
   it('says what is in the lead’s hand: a hero’s gun, or a lit saber with its colour and stance', async () => {
     const { readWalk, writeWalk } = await import('./protocol');
-    const sent = writeWalk({ world: 'hoth', kind: 'xwing', lead: { who: 'ahsoka', x: 1, y: 2, z: 3, yaw: 0, speed: 0, aim: 1, arms: { gun: 'saber', lit: true, color: '#f4f8ff', stance: 'dual', swing: true } }, mate: { who: 'han', x: 1, y: 2, z: 3, yaw: 0, speed: 0, arms: { gun: 'shotgun' } } });
+    const sent = writeWalk({ world: 'hoth', kind: 'xwing', lead: { who: 'luke', x: 1, y: 2, z: 3, yaw: 0, speed: 0, aim: 1, arms: { gun: 'saber', lit: true, color: '#f4f8ff', stance: 'double', swing: true } }, mate: { who: 'han', x: 1, y: 2, z: 3, yaw: 0, speed: 0, arms: { gun: 'shotgun' } } });
     const got = readWalk(JSON.parse(JSON.stringify(sent)));
-    expect(got.lead.arms).toEqual({ gun: 'saber', lit: true, color: '#f4f8ff', stance: 'dual', swing: true });
+    expect(got.lead.arms).toEqual({ gun: 'saber', lit: true, color: '#f4f8ff', stance: 'double', swing: true });
+    // (an older pilot's stance the game's heroes don't hold, a pair or a crossguard: one blade)
+    expect(readWalk({ w: 'hoth', a: ['luke', 1, 2, 3, 0, 0, 0, ['saber', 1, '#4aa8ff', 'dual', 1]] }).lead.arms.stance).toBe('single');
     expect(got.mate.arms).toEqual({ gun: 'shotgun', lit: false, color: '#4aa8ff', stance: 'single', swing: false });
     expect(readWalk({ w: 'hoth', a: ['han', 1, 2, 3, 0, 0, 0] }).lead.arms).toBeNull(); // (an older pilot)
     expect(readWalk({ w: 'hoth', a: ['han', 1, 2, 3, 0, 0, 0, ['rocket', 1]] }).lead.arms).toBeNull(); // (no such gun)
@@ -590,7 +592,7 @@ describe('down on a world in the galaxy', () => {
     const got = readWalk(JSON.parse(JSON.stringify(sent)));
     expect(got.lead.arms.stroke).toBe('sword.light.b');
     // (five items, as an older pilot sends: no stroke, the rest as ever)
-    expect(readWalk({ w: 'hoth', a: ['luke', 1, 2, 3, 0, 0, 0, ['saber', 1, '#4aa8ff', 'heavy', 1]] }).lead.arms).toEqual({ gun: 'saber', lit: true, color: '#4aa8ff', stance: 'heavy', swing: true });
+    expect(readWalk({ w: 'hoth', a: ['luke', 1, 2, 3, 0, 0, 0, ['saber', 1, '#4aa8ff', 'double', 1]] }).lead.arms).toEqual({ gun: 'saber', lit: true, color: '#4aa8ff', stance: 'double', swing: true });
     // (only a sword clip's name: anything else is no stroke)
     for (const bad of ['dance', 'sword.<b>', 'x'.repeat(80), 7]) expect(readWalk({ w: 'hoth', a: ['luke', 1, 2, 3, 0, 0, 0, ['saber', 1, '#4aa8ff', 'single', 1, bad]] }).lead.arms.stroke).toBeUndefined();
     // (no stroke, nothing sent for it)

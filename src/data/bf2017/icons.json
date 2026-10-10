@@ -1,0 +1,3140 @@
+{
+  "_from": {
+    "export": "build 489592",
+    "date": "2026-10-10"
+  },
+  "rows": {
+    "AAT-1/Icon_ATT-1": [
+      "groundvehicles",
+      "aat-1-icon-att-1"
+    ],
+    "ARC_Trooper/ARC_Trooper_Ability_01": [
+      "specials",
+      "arc-trooper-arc-trooper-ability-01"
+    ],
+    "ARC_Trooper/ARC_Trooper_Ability_02": [
+      "specials",
+      "arc-trooper-arc-trooper-ability-02"
+    ],
+    "ARC_Trooper/ARC_Trooper_Ability_03": [
+      "specials",
+      "arc-trooper-arc-trooper-ability-03"
+    ],
+    "ARC_Trooper/ARC_Trooper_Ability_04": [
+      "specials",
+      "arc-trooper-arc-trooper-ability-04"
+    ],
+    "AT-AT/Abilities/Ability_01": [
+      "bossvehicles",
+      "at-at-abilities-ability-01"
+    ],
+    "AT-AT/Abilities/Ability_02": [
+      "bossvehicles",
+      "at-at-abilities-ability-02"
+    ],
+    "AT-AT/Icon_AT-AT": [
+      "bossvehicles",
+      "at-at-icon-at-at"
+    ],
+    "AT-RT/Icon_AT-RT": [
+      "specials",
+      "at-rt-icon-at-rt"
+    ],
+    "AT-ST/Abilities/Ability_01": [
+      "groundvehicles",
+      "at-st-abilities-ability-01"
+    ],
+    "AT-ST/Abilities/Ability_02": [
+      "groundvehicles",
+      "at-st-abilities-ability-02"
+    ],
+    "AT-ST/Abilities/Ability_03": [
+      "groundvehicles",
+      "at-st-abilities-ability-03"
+    ],
+    "AT-ST/Icon_AT-ST": [
+      "groundvehicles",
+      "at-st-icon-at-st"
+    ],
+    "AT-TE/Icon_AT-TE": [
+      "groundvehicles",
+      "at-te-icon-at-te"
+    ],
+    "Abilities/AAT-1_Ability_01": [
+      "groundvehicles",
+      "abilities-aat-1-ability-01"
+    ],
+    "Abilities/AAT-1_Ability_02": [
+      "groundvehicles",
+      "abilities-aat-1-ability-02"
+    ],
+    "Abilities/AAT-1_Ability_03": [
+      "groundvehicles",
+      "abilities-aat-1-ability-03"
+    ],
+    "Abilities/AT-RT_Ability_02": [
+      "specials",
+      "abilities-at-rt-ability-02"
+    ],
+    "Abilities/Abilities_Countermeasures": [
+      "hud",
+      "abilities-abilities-countermeasures"
+    ],
+    "Abilities/Ability_01": [
+      "groundvehicles",
+      "abilities-ability-01"
+    ],
+    "Abilities/Ability_02": [
+      "groundvehicles",
+      "abilities-ability-02"
+    ],
+    "Abilities/Ability_03": [
+      "groundvehicles",
+      "abilities-ability-03"
+    ],
+    "Abilities/Ability_PulseCannon": [
+      "heroes",
+      "abilities-ability-pulsecannon"
+    ],
+    "Abilities/Anakin_Ability_01": [
+      "heroes",
+      "abilities-anakin-ability-01"
+    ],
+    "Abilities/Anakin_Ability_02": [
+      "heroes",
+      "abilities-anakin-ability-02"
+    ],
+    "Abilities/Anakin_Ability_03": [
+      "heroes",
+      "abilities-anakin-ability-03"
+    ],
+    "Abilities/Anakin_Ability_04": [
+      "heroes",
+      "abilities-anakin-ability-04"
+    ],
+    "Abilities/B2BattleDroid_Ability_01": [
+      "specials",
+      "abilities-b2battledroid-ability-01"
+    ],
+    "Abilities/BobaFett_Ability_01": [
+      "heroes",
+      "abilities-bobafett-ability-01"
+    ],
+    "Abilities/BobaFett_Ability_02": [
+      "heroes",
+      "abilities-bobafett-ability-02"
+    ],
+    "Abilities/BobaFett_Ability_03": [
+      "heroes",
+      "abilities-bobafett-ability-03"
+    ],
+    "Abilities/Bosk_Ability_01": [
+      "heroes",
+      "abilities-bosk-ability-01"
+    ],
+    "Abilities/Bosk_Ability_02": [
+      "heroes",
+      "abilities-bosk-ability-02"
+    ],
+    "Abilities/Bosk_Ability_03": [
+      "heroes",
+      "abilities-bosk-ability-03"
+    ],
+    "Abilities/Chewbacca_Ability_01": [
+      "heroes",
+      "abilities-chewbacca-ability-01"
+    ],
+    "Abilities/Chewbacca_Ability_02": [
+      "heroes",
+      "abilities-chewbacca-ability-02"
+    ],
+    "Abilities/Chewbacca_Ability_03": [
+      "heroes",
+      "abilities-chewbacca-ability-03"
+    ],
+    "Abilities/CloneCommando_Ability_01": [
+      "troopers",
+      "abilities-clonecommando-ability-01"
+    ],
+    "Abilities/CloneCommando_Ability_02": [
+      "troopers",
+      "abilities-clonecommando-ability-02"
+    ],
+    "Abilities/CloneCommando_Ability_03": [
+      "troopers",
+      "abilities-clonecommando-ability-03"
+    ],
+    "Abilities/CloneJetTrooper_Ability_01": [
+      "specials",
+      "abilities-clonejettrooper-ability-01"
+    ],
+    "Abilities/Dooku_Ability_01": [
+      "heroes",
+      "abilities-dooku-ability-01"
+    ],
+    "Abilities/Dooku_Ability_02": [
+      "heroes",
+      "abilities-dooku-ability-02"
+    ],
+    "Abilities/Dooku_Ability_03": [
+      "heroes",
+      "abilities-dooku-ability-03"
+    ],
+    "Abilities/Droideka_Ability_01": [
+      "specials",
+      "abilities-droideka-ability-01"
+    ],
+    "Abilities/Droideka_Ability_02": [
+      "specials",
+      "abilities-droideka-ability-02"
+    ],
+    "Abilities/Droideka_Ability_03": [
+      "specials",
+      "abilities-droideka-ability-03"
+    ],
+    "Abilities/Ewok_Ability_01": [
+      "specials",
+      "abilities-ewok-ability-01"
+    ],
+    "Abilities/Ewok_Ability_02": [
+      "specials",
+      "abilities-ewok-ability-02"
+    ],
+    "Abilities/Ewok_Ability_03": [
+      "specials",
+      "abilities-ewok-ability-03"
+    ],
+    "Abilities/Grievous_Ability_01": [
+      "heroes",
+      "abilities-grievous-ability-01"
+    ],
+    "Abilities/Grievous_Ability_02": [
+      "heroes",
+      "abilities-grievous-ability-02"
+    ],
+    "Abilities/Grievous_Ability_03": [
+      "heroes",
+      "abilities-grievous-ability-03"
+    ],
+    "Abilities/Gunner_Ability_01": [
+      "troopers",
+      "abilities-gunner-ability-01"
+    ],
+    "Abilities/Gunner_Ability_02": [
+      "troopers",
+      "abilities-gunner-ability-02"
+    ],
+    "Abilities/Gunner_Ability_03": [
+      "troopers",
+      "abilities-gunner-ability-03"
+    ],
+    "Abilities/Han_Ability_01": [
+      "heroes",
+      "abilities-han-ability-01"
+    ],
+    "Abilities/Han_Ability_02": [
+      "heroes",
+      "abilities-han-ability-02"
+    ],
+    "Abilities/Han_Ability_03": [
+      "heroes",
+      "abilities-han-ability-03"
+    ],
+    "Abilities/ISB_Agent_Ability_01": [
+      "specials",
+      "abilities-isb-agent-ability-01"
+    ],
+    "Abilities/ISB_Agent_Ability_02": [
+      "specials",
+      "abilities-isb-agent-ability-02"
+    ],
+    "Abilities/ISB_Agent_Ability_03": [
+      "specials",
+      "abilities-isb-agent-ability-03"
+    ],
+    "Abilities/ISB_Agent_Ability_04": [
+      "specials",
+      "abilities-isb-agent-ability-04"
+    ],
+    "Abilities/Lando_Ability_01": [
+      "heroes",
+      "abilities-lando-ability-01"
+    ],
+    "Abilities/Lando_Ability_02": [
+      "heroes",
+      "abilities-lando-ability-02"
+    ],
+    "Abilities/Lando_Ability_03": [
+      "heroes",
+      "abilities-lando-ability-03"
+    ],
+    "Abilities/Leia_Ability_01": [
+      "heroes",
+      "abilities-leia-ability-01"
+    ],
+    "Abilities/Leia_Ability_02": [
+      "heroes",
+      "abilities-leia-ability-02"
+    ],
+    "Abilities/Leia_Ability_03": [
+      "heroes",
+      "abilities-leia-ability-03"
+    ],
+    "Abilities/Leia_Ability_04": [
+      "heroes",
+      "abilities-leia-ability-04"
+    ],
+    "Abilities/Luke_Ability_01": [
+      "heroes",
+      "abilities-luke-ability-01"
+    ],
+    "Abilities/Luke_Ability_02": [
+      "heroes",
+      "abilities-luke-ability-02"
+    ],
+    "Abilities/Luke_Ability_03": [
+      "heroes",
+      "abilities-luke-ability-03"
+    ],
+    "Abilities/MTT_Ability_01": [
+      "bossvehicles",
+      "abilities-mtt-ability-01"
+    ],
+    "Abilities/MTT_Ability_02": [
+      "bossvehicles",
+      "abilities-mtt-ability-02"
+    ],
+    "Abilities/Maul_Ability_01": [
+      "heroes",
+      "abilities-maul-ability-01"
+    ],
+    "Abilities/Maul_Ability_02": [
+      "heroes",
+      "abilities-maul-ability-02"
+    ],
+    "Abilities/Maul_Ability_03": [
+      "heroes",
+      "abilities-maul-ability-03"
+    ],
+    "Abilities/ObiWan_Ability_01": [
+      "heroes",
+      "abilities-obiwan-ability-01"
+    ],
+    "Abilities/ObiWan_Ability_02": [
+      "heroes",
+      "abilities-obiwan-ability-02"
+    ],
+    "Abilities/ObiWan_Ability_03": [
+      "heroes",
+      "abilities-obiwan-ability-03"
+    ],
+    "Abilities/Officer_Ability_02A": [
+      "troopers",
+      "abilities-officer-ability-02a"
+    ],
+    "Abilities/Palpatine_Ability_01": [
+      "heroes",
+      "abilities-palpatine-ability-01"
+    ],
+    "Abilities/Palpatine_Ability_02": [
+      "heroes",
+      "abilities-palpatine-ability-02"
+    ],
+    "Abilities/Palpatine_Ability_03": [
+      "heroes",
+      "abilities-palpatine-ability-03"
+    ],
+    "Abilities/Specialist_Ability_01A": [
+      "troopers",
+      "abilities-specialist-ability-01a"
+    ],
+    "Abilities/Specialist_Ability_02A": [
+      "troopers",
+      "abilities-specialist-ability-02a"
+    ],
+    "Abilities/Spy_Ability_01": [
+      "specials",
+      "abilities-spy-ability-01"
+    ],
+    "Abilities/Spy_Ability_02": [
+      "specials",
+      "abilities-spy-ability-02"
+    ],
+    "Abilities/Spy_Ability_03": [
+      "specials",
+      "abilities-spy-ability-03"
+    ],
+    "Abilities/TX-130_Ability_03": [
+      "groundvehicles",
+      "abilities-tx-130-ability-03"
+    ],
+    "Abilities/TrooperShared_Ability_04": [
+      "troopers",
+      "abilities-troopershared-ability-04"
+    ],
+    "Abilities/Vader_Ability_01": [
+      "heroes",
+      "abilities-vader-ability-01"
+    ],
+    "Abilities/Vader_Ability_02": [
+      "heroes",
+      "abilities-vader-ability-02"
+    ],
+    "Abilities/Vader_Ability_03": [
+      "heroes",
+      "abilities-vader-ability-03"
+    ],
+    "Abilities/Yoda_Ability_01": [
+      "heroes",
+      "abilities-yoda-ability-01"
+    ],
+    "Abilities/Yoda_Ability_02": [
+      "heroes",
+      "abilities-yoda-ability-02"
+    ],
+    "Abilities/Yoda_Ability_03": [
+      "heroes",
+      "abilities-yoda-ability-03"
+    ],
+    "Ability/Assault_Ability_01": [
+      "troopers",
+      "ability-assault-ability-01"
+    ],
+    "Ability/BobaFett_Ability_01": [
+      "heroes",
+      "ability-bobafett-ability-01"
+    ],
+    "Ability/BobaFett_Ability_02": [
+      "heroes",
+      "ability-bobafett-ability-02"
+    ],
+    "Ability/BobaFett_Ability_03": [
+      "heroes",
+      "ability-bobafett-ability-03"
+    ],
+    "Ability/BobaFett_Passive_01": [
+      "heroes",
+      "ability-bobafett-passive-01"
+    ],
+    "Ability/Droid_Heal_Ability": [
+      "heroes",
+      "ability-droid-heal-ability"
+    ],
+    "Ability/Droid_Scan_Ability": [
+      "heroes",
+      "ability-droid-scan-ability"
+    ],
+    "Ability/Droid_Shield_Ability": [
+      "heroes",
+      "ability-droid-shield-ability"
+    ],
+    "Ability/Droid_Shock_Ability": [
+      "heroes",
+      "ability-droid-shock-ability"
+    ],
+    "Ability/Heavy_Ability_03": [
+      "troopers",
+      "ability-heavy-ability-03"
+    ],
+    "Ability/Iden_Ability_01": [
+      "heroes",
+      "ability-iden-ability-01"
+    ],
+    "Ability/Iden_Ability_02": [
+      "heroes",
+      "ability-iden-ability-02"
+    ],
+    "Ability/Iden_Ability_03": [
+      "heroes",
+      "ability-iden-ability-03"
+    ],
+    "AbilityIcons/Ability_Fortify": [
+      "specials",
+      "abilityicons-ability-fortify"
+    ],
+    "AbilityIcons/Ability_GrenadeLauncher": [
+      "specials",
+      "abilityicons-ability-grenadelauncher"
+    ],
+    "AbilityIcons/Ability_HeadButt": [
+      "specials",
+      "abilityicons-ability-headbutt"
+    ],
+    "AbilityIcons/Ability_IncendiaryGrenade": [
+      "specials",
+      "abilityicons-ability-incendiarygrenade"
+    ],
+    "AbilityIcons/Ability_IonCharge": [
+      "specials",
+      "abilityicons-ability-ioncharge"
+    ],
+    "AbilityIcons/Ability_JumpDash": [
+      "specials",
+      "abilityicons-ability-jumpdash"
+    ],
+    "AbilityIcons/Ability_JumpPack": [
+      "specials",
+      "abilityicons-ability-jumppack"
+    ],
+    "AbilityIcons/Ability_LeadByExample": [
+      "specials",
+      "abilityicons-ability-leadbyexample"
+    ],
+    "AbilityIcons/Ability_MotionScan": [
+      "specials",
+      "abilityicons-ability-motionscan"
+    ],
+    "AbilityIcons/Ability_Overload": [
+      "specials",
+      "abilityicons-ability-overload"
+    ],
+    "AbilityIcons/Ability_RocketLauncher": [
+      "specials",
+      "abilityicons-ability-rocketlauncher"
+    ],
+    "AbilityIcons/Ability_SonicImploder": [
+      "specials",
+      "abilityicons-ability-sonicimploder"
+    ],
+    "AbilityIcons/Ability_ThermalImploder": [
+      "specials",
+      "abilityicons-ability-thermalimploder"
+    ],
+    "AbilityIcons/Ability_WristRocket": [
+      "specials",
+      "abilityicons-ability-wristrocket"
+    ],
+    "Arcade/ArcadeStar": [
+      "arcade",
+      "arcade-arcadestar"
+    ],
+    "Arcade/ArcadeStarFilled": [
+      "arcade",
+      "arcade-arcadestarfilled"
+    ],
+    "BARC/Icon_BARC": [
+      "groundvehicles",
+      "barc-icon-barc"
+    ],
+    "BX_CommandoDroid/BX_CommandoDroid_Ability_01": [
+      "specials",
+      "bx-commandodroid-bx-commandodroid-ability-01"
+    ],
+    "BX_CommandoDroid/BX_CommandoDroid_Ability_02": [
+      "specials",
+      "bx-commandodroid-bx-commandodroid-ability-02"
+    ],
+    "BX_CommandoDroid/BX_CommandoDroid_Ability_03": [
+      "specials",
+      "bx-commandodroid-bx-commandodroid-ability-03"
+    ],
+    "BobaFett/SC_Legendary_BobaFett_FlameBurst": [
+      "heroes",
+      "bobafett-sc-legendary-bobafett-flameburst"
+    ],
+    "Boosts/BobaFett_Boost_01": [
+      "heroes",
+      "boosts-bobafett-boost-01"
+    ],
+    "Boosts/BobaFett_Boost_02": [
+      "heroes",
+      "boosts-bobafett-boost-02"
+    ],
+    "Boosts/BobaFett_Boost_03": [
+      "heroes",
+      "boosts-bobafett-boost-03"
+    ],
+    "Boosts/BobaFett_Boost_04": [
+      "heroes",
+      "boosts-bobafett-boost-04"
+    ],
+    "Boosts/Han_Boost_01": [
+      "heroes",
+      "boosts-han-boost-01"
+    ],
+    "Boosts/Han_Boost_02": [
+      "heroes",
+      "boosts-han-boost-02"
+    ],
+    "Boosts/Han_Boost_03": [
+      "heroes",
+      "boosts-han-boost-03"
+    ],
+    "Boosts/Han_Boost_04": [
+      "heroes",
+      "boosts-han-boost-04"
+    ],
+    "Boosts/Maul_Boost_01": [
+      "heroes",
+      "boosts-maul-boost-01"
+    ],
+    "Boosts/Maul_Boost_02": [
+      "heroes",
+      "boosts-maul-boost-02"
+    ],
+    "Boosts/Maul_Boost_04": [
+      "heroes",
+      "boosts-maul-boost-04"
+    ],
+    "BossVehicles/Icon_AT-M6": [
+      "bossvehicles",
+      "bossvehicles-icon-at-m6"
+    ],
+    "Card/BobaFett_CardMod_01": [
+      "heroes",
+      "card-bobafett-cardmod-01"
+    ],
+    "Card/BobaFett_CardMod_02": [
+      "heroes",
+      "card-bobafett-cardmod-02"
+    ],
+    "Card/BobaFett_CardMod_03": [
+      "heroes",
+      "card-bobafett-cardmod-03"
+    ],
+    "Card/BobaFett_CardMod_04": [
+      "heroes",
+      "card-bobafett-cardmod-04"
+    ],
+    "Card/BobaFett_CardMod_05": [
+      "heroes",
+      "card-bobafett-cardmod-05"
+    ],
+    "Card/BobaFett_CardMod_06": [
+      "heroes",
+      "card-bobafett-cardmod-06"
+    ],
+    "Card/BobaFett_CardMod_07": [
+      "heroes",
+      "card-bobafett-cardmod-07"
+    ],
+    "Card/BobaFett_CardMod_08": [
+      "heroes",
+      "card-bobafett-cardmod-08"
+    ],
+    "Card/BobaFett_CardMod_09": [
+      "heroes",
+      "card-bobafett-cardmod-09"
+    ],
+    "Card/Bossk_Card_01": [
+      "heroes",
+      "card-bossk-card-01"
+    ],
+    "Card/Bossk_Card_02": [
+      "heroes",
+      "card-bossk-card-02"
+    ],
+    "Card/Bossk_Card_03": [
+      "heroes",
+      "card-bossk-card-03"
+    ],
+    "Card/Bossk_Card_04": [
+      "heroes",
+      "card-bossk-card-04"
+    ],
+    "Card/Bossk_Card_05": [
+      "heroes",
+      "card-bossk-card-05"
+    ],
+    "Card/Bossk_Card_06": [
+      "heroes",
+      "card-bossk-card-06"
+    ],
+    "Card/Bossk_Card_07": [
+      "heroes",
+      "card-bossk-card-07"
+    ],
+    "Card/Bossk_Card_08": [
+      "heroes",
+      "card-bossk-card-08"
+    ],
+    "Card/Bossk_Card_09": [
+      "heroes",
+      "card-bossk-card-09"
+    ],
+    "Card/Chewbacca_Card_01": [
+      "heroes",
+      "card-chewbacca-card-01"
+    ],
+    "Card/Chewbacca_Card_02": [
+      "heroes",
+      "card-chewbacca-card-02"
+    ],
+    "Card/Chewbacca_Card_03": [
+      "heroes",
+      "card-chewbacca-card-03"
+    ],
+    "Card/Chewbacca_Card_04": [
+      "heroes",
+      "card-chewbacca-card-04"
+    ],
+    "Card/Chewbacca_Card_05": [
+      "heroes",
+      "card-chewbacca-card-05"
+    ],
+    "Card/Chewbacca_Card_06": [
+      "heroes",
+      "card-chewbacca-card-06"
+    ],
+    "Card/Chewbacca_Card_07": [
+      "heroes",
+      "card-chewbacca-card-07"
+    ],
+    "Card/Chewbacca_Card_08": [
+      "heroes",
+      "card-chewbacca-card-08"
+    ],
+    "Card/Chewbacca_Card_09": [
+      "heroes",
+      "card-chewbacca-card-09"
+    ],
+    "Card/Emperor_Card_02": [
+      "heroes",
+      "card-emperor-card-02"
+    ],
+    "Card/Emperor_Card_03": [
+      "heroes",
+      "card-emperor-card-03"
+    ],
+    "Card/Emperor_Card_04": [
+      "heroes",
+      "card-emperor-card-04"
+    ],
+    "Card/Emperor_Card_05": [
+      "heroes",
+      "card-emperor-card-05"
+    ],
+    "Card/Emperor_Card_06": [
+      "heroes",
+      "card-emperor-card-06"
+    ],
+    "Card/Emperor_Card_07": [
+      "heroes",
+      "card-emperor-card-07"
+    ],
+    "Card/Emperor_Card_08": [
+      "heroes",
+      "card-emperor-card-08"
+    ],
+    "Card/Emperor_Card_09": [
+      "heroes",
+      "card-emperor-card-09"
+    ],
+    "Card/Han_Card_08": [
+      "heroes",
+      "card-han-card-08"
+    ],
+    "Card/Han_Card_09": [
+      "heroes",
+      "card-han-card-09"
+    ],
+    "Card/Lando_Card_01": [
+      "heroes",
+      "card-lando-card-01"
+    ],
+    "Card/Lando_Card_02": [
+      "heroes",
+      "card-lando-card-02"
+    ],
+    "Card/Lando_Card_03": [
+      "heroes",
+      "card-lando-card-03"
+    ],
+    "Card/Lando_Card_04": [
+      "heroes",
+      "card-lando-card-04"
+    ],
+    "Card/Lando_Card_05": [
+      "heroes",
+      "card-lando-card-05"
+    ],
+    "Card/Lando_Card_06": [
+      "heroes",
+      "card-lando-card-06"
+    ],
+    "Card/Lando_Card_07": [
+      "heroes",
+      "card-lando-card-07"
+    ],
+    "Card/Lando_Card_08": [
+      "heroes",
+      "card-lando-card-08"
+    ],
+    "Card/Lando_Card_09": [
+      "heroes",
+      "card-lando-card-09"
+    ],
+    "Card/Leia_Card_01": [
+      "heroes",
+      "card-leia-card-01"
+    ],
+    "Card/Leia_Card_02": [
+      "heroes",
+      "card-leia-card-02"
+    ],
+    "Card/Leia_Card_03": [
+      "heroes",
+      "card-leia-card-03"
+    ],
+    "Card/Leia_Card_04": [
+      "heroes",
+      "card-leia-card-04"
+    ],
+    "Card/Leia_Card_05": [
+      "heroes",
+      "card-leia-card-05"
+    ],
+    "Card/Leia_Card_06": [
+      "heroes",
+      "card-leia-card-06"
+    ],
+    "Card/Leia_Card_07": [
+      "heroes",
+      "card-leia-card-07"
+    ],
+    "Card/Leia_Card_08": [
+      "heroes",
+      "card-leia-card-08"
+    ],
+    "Card/Leia_Card_09": [
+      "heroes",
+      "card-leia-card-09"
+    ],
+    "Card/Luke_Card_01": [
+      "heroes",
+      "card-luke-card-01"
+    ],
+    "Card/Luke_Card_02": [
+      "heroes",
+      "card-luke-card-02"
+    ],
+    "Card/Luke_Card_03": [
+      "heroes",
+      "card-luke-card-03"
+    ],
+    "Card/Luke_Card_04": [
+      "heroes",
+      "card-luke-card-04"
+    ],
+    "Card/Luke_Card_05": [
+      "heroes",
+      "card-luke-card-05"
+    ],
+    "Card/Luke_Card_06": [
+      "heroes",
+      "card-luke-card-06"
+    ],
+    "Card/Luke_Card_07": [
+      "heroes",
+      "card-luke-card-07"
+    ],
+    "Card/Luke_Card_08": [
+      "heroes",
+      "card-luke-card-08"
+    ],
+    "Card/Luke_Card_09": [
+      "heroes",
+      "card-luke-card-09"
+    ],
+    "Card/Maul_Card_04": [
+      "heroes",
+      "card-maul-card-04"
+    ],
+    "Card/Maul_Card_05": [
+      "heroes",
+      "card-maul-card-05"
+    ],
+    "Card/Maul_Card_08": [
+      "heroes",
+      "card-maul-card-08"
+    ],
+    "Card/Maul_Card_09": [
+      "heroes",
+      "card-maul-card-09"
+    ],
+    "Card/Vader_Card_01": [
+      "heroes",
+      "card-vader-card-01"
+    ],
+    "Card/Vader_Card_02": [
+      "heroes",
+      "card-vader-card-02"
+    ],
+    "Card/Vader_Card_03": [
+      "heroes",
+      "card-vader-card-03"
+    ],
+    "Card/Vader_Card_04": [
+      "heroes",
+      "card-vader-card-04"
+    ],
+    "Card/Vader_Card_05": [
+      "heroes",
+      "card-vader-card-05"
+    ],
+    "Card/Vader_Card_06": [
+      "heroes",
+      "card-vader-card-06"
+    ],
+    "Card/Vader_Card_07": [
+      "heroes",
+      "card-vader-card-07"
+    ],
+    "Card/Vader_Card_08": [
+      "heroes",
+      "card-vader-card-08"
+    ],
+    "Card/Vader_Card_09": [
+      "heroes",
+      "card-vader-card-09"
+    ],
+    "Cards/Boost": [
+      "cards",
+      "cards-boost"
+    ],
+    "Challenges/Daily_Season2": [
+      "challenges",
+      "challenges-daily-season2"
+    ],
+    "Challenges/Icon_Challenges_Weekend": [
+      "challenges",
+      "challenges-icon-challenges-weekend"
+    ],
+    "Challenges/Weekly_Season2": [
+      "challenges",
+      "challenges-weekly-season2"
+    ],
+    "Classes/Class_Enforcer": [
+      "classes",
+      "classes-class-enforcer"
+    ],
+    "Classes/Class_Hero_Melee": [
+      "classes",
+      "classes-class-hero-melee"
+    ],
+    "Classes/Class_Hero_Ship": [
+      "classes",
+      "classes-class-hero-ship"
+    ],
+    "Classes/Class_Infiltrator": [
+      "classes",
+      "classes-class-infiltrator"
+    ],
+    "Classes/Class_JumpTrooper": [
+      "classes",
+      "classes-class-jumptrooper"
+    ],
+    "Classes/Class_Troopers_Assault_01": [
+      "classes",
+      "classes-class-troopers-assault-01"
+    ],
+    "Classes/Class_Troopers_Heavy_01": [
+      "classes",
+      "classes-class-troopers-heavy-01"
+    ],
+    "Classes/Class_Troopers_Officer_01": [
+      "classes",
+      "classes-class-troopers-officer-01"
+    ],
+    "Classes/Class_Troopers_Specialist_01": [
+      "classes",
+      "classes-class-troopers-specialist-01"
+    ],
+    "Classes/Class_Vehicle_Animal": [
+      "classes",
+      "classes-class-vehicle-animal"
+    ],
+    "Classes/Class_Vehicle_Bomber": [
+      "classes",
+      "classes-class-vehicle-bomber"
+    ],
+    "Classes/Class_Vehicle_Ground": [
+      "classes",
+      "classes-class-vehicle-ground"
+    ],
+    "Classes/Class_Vehicle_Gunship": [
+      "classes",
+      "classes-class-vehicle-gunship"
+    ],
+    "Classes/Class_Vehicle_Interceptor": [
+      "classes",
+      "classes-class-vehicle-interceptor"
+    ],
+    "Classes/Class_Vehicle_Multirole": [
+      "classes",
+      "classes-class-vehicle-multirole"
+    ],
+    "Classes/Class_Vehicle_Speeder": [
+      "classes",
+      "classes-class-vehicle-speeder"
+    ],
+    "Classes/Class_Vehicle_Stationary": [
+      "classes",
+      "classes-class-vehicle-stationary"
+    ],
+    "Classes/Hero_Icon_01": [
+      "classes",
+      "classes-hero-icon-01"
+    ],
+    "CombatBoosts/TrooperShared_CombatBoost_01": [
+      "troopers",
+      "combatboosts-troopershared-combatboost-01"
+    ],
+    "Credits/BF_Logo": [
+      "credits",
+      "credits-bf-logo"
+    ],
+    "Currency/currency-credits": [
+      "currency",
+      "currency-currency-credits"
+    ],
+    "Currency/currency-crystals": [
+      "currency",
+      "currency-currency-crystals"
+    ],
+    "Currency/currency-parts": [
+      "currency",
+      "currency-currency-parts"
+    ],
+    "Currency/currency-parts-rare": [
+      "currency",
+      "currency-currency-parts-rare"
+    ],
+    "Deco/deco_Button_LB": [
+      "eor",
+      "deco-deco-button-lb"
+    ],
+    "Deco/deco_Button_RB": [
+      "eor",
+      "deco-deco-button-rb"
+    ],
+    "Deco/deco_deco_arrow": [
+      "eor",
+      "deco-deco-deco-arrow"
+    ],
+    "Deco/deco_deco_corner": [
+      "eor",
+      "deco-deco-deco-corner"
+    ],
+    "Deco/deco_deco_indicator": [
+      "eor",
+      "deco-deco-deco-indicator"
+    ],
+    "Deco/deco_deco_side": [
+      "eor",
+      "deco-deco-deco-side"
+    ],
+    "Deco/deco_deco_title": [
+      "eor",
+      "deco-deco-deco-title"
+    ],
+    "Deco/decoration": [
+      "eor",
+      "deco-decoration"
+    ],
+    "EAAccess/ea_access_trial": [
+      "eaaccess",
+      "eaaccess-ea-access-trial"
+    ],
+    "EOR/imperialFaction-01svg": [
+      "temp",
+      "eor-imperialfaction-01svg"
+    ],
+    "EOR/rebelFaction-01svg": [
+      "temp",
+      "eor-rebelfaction-01svg"
+    ],
+    "Factions/Factions_GalacticEmpire": [
+      "factions",
+      "factions-factions-galacticempire"
+    ],
+    "Factions/Factions_GalacticRepublic": [
+      "factions",
+      "factions-factions-galacticrepublic"
+    ],
+    "Factions/Factions_RebelAlliance": [
+      "factions",
+      "factions-factions-rebelalliance"
+    ],
+    "Factions/Factions_Separatists": [
+      "factions",
+      "factions-factions-separatists"
+    ],
+    "Factions/Icon_GalacticEmpire": [
+      "factions",
+      "factions-icon-galacticempire"
+    ],
+    "Factions/Icon_GalacticRepublic": [
+      "factions",
+      "factions-icon-galacticrepublic"
+    ],
+    "Factions/Icon_RebelAlliance": [
+      "factions",
+      "factions-icon-rebelalliance"
+    ],
+    "Factions/Icon_Separatists": [
+      "factions",
+      "factions-icon-separatists"
+    ],
+    "Frontend/controller-xbox": [
+      "frontend",
+      "frontend-controller-xbox"
+    ],
+    "Gadgets/Abilities_Icon_PLACEHOLDER": [
+      "gadgets",
+      "gadgets-abilities-icon-placeholder"
+    ],
+    "Gadgets/Abilities_Icon_ProtonTorpedo_PLACEHOLDER": [
+      "gadgets",
+      "gadgets-abilities-icon-protontorpedo-placeholder"
+    ],
+    "Gadgets/HardLock_End": [
+      "gadgets",
+      "gadgets-hardlock-end"
+    ],
+    "Gadgets/ThreatLocator_Arrow": [
+      "gadgets",
+      "gadgets-threatlocator-arrow"
+    ],
+    "Gadgets/ThreatLocator_Arrow_Tagged": [
+      "gadgets",
+      "gadgets-threatlocator-arrow-tagged"
+    ],
+    "GameMode/GameMode_AT-TE": [
+      "ingame",
+      "gamemode-gamemode-at-te"
+    ],
+    "GameMode/GameMode_Attack": [
+      "ingame",
+      "gamemode-gamemode-attack"
+    ],
+    "GameMode/GameMode_Attack_AT-TE": [
+      "ingame",
+      "gamemode-gamemode-attack-at-te"
+    ],
+    "GameMode/GameMode_Checkmark": [
+      "ingame",
+      "gamemode-gamemode-checkmark"
+    ],
+    "GameMode/GameMode_Cross": [
+      "ingame",
+      "gamemode-gamemode-cross"
+    ],
+    "GameMode/GameMode_Defend": [
+      "ingame",
+      "gamemode-gamemode-defend"
+    ],
+    "GameMode/GameMode_Lock": [
+      "ingame",
+      "gamemode-gamemode-lock"
+    ],
+    "GameMode/GameMode_Soldier": [
+      "ingame",
+      "gamemode-gamemode-soldier"
+    ],
+    "GameMode/GameMode_Vehicle": [
+      "ingame",
+      "gamemode-gamemode-vehicle"
+    ],
+    "HOMINGSPIDERDROID/Icon_HOMINGSPIDERDROID": [
+      "groundvehicles",
+      "homingspiderdroid-icon-homingspiderdroid"
+    ],
+    "HUD/Nametag_Class_Autoplayer": [
+      "hud",
+      "hud-nametag-class-autoplayer"
+    ],
+    "HUD/Nametag_Class_Autoplayer_Background": [
+      "hud",
+      "hud-nametag-class-autoplayer-background"
+    ],
+    "HUD/Nametag_Class_Troopers_Assault_Background": [
+      "hud",
+      "hud-nametag-class-troopers-assault-background"
+    ],
+    "HUD/Nametag_Class_Troopers_Heavy_Background": [
+      "hud",
+      "hud-nametag-class-troopers-heavy-background"
+    ],
+    "HUD/Nametag_Class_Troopers_Officer_Background": [
+      "hud",
+      "hud-nametag-class-troopers-officer-background"
+    ],
+    "HUD/Nametag_Class_Troopers_Specialist_Background": [
+      "hud",
+      "hud-nametag-class-troopers-specialist-background"
+    ],
+    "HUD/Nametag_Hero_Background": [
+      "hud",
+      "hud-nametag-hero-background"
+    ],
+    "HUD/Nametag_Specials_Background": [
+      "hud",
+      "hud-nametag-specials-background"
+    ],
+    "HUD/Turret_Repair": [
+      "hud",
+      "hud-turret-repair"
+    ],
+    "HUD/WR_loading_icon": [
+      "hud",
+      "hud-wr-loading-icon"
+    ],
+    "Honors/RoundHonor_MostAssists": [
+      "awards",
+      "honors-roundhonor-mostassists"
+    ],
+    "Honors/RoundHonor_MostDamageDealt": [
+      "awards",
+      "honors-roundhonor-mostdamagedealt"
+    ],
+    "Honors/RoundHonor_MostKills": [
+      "awards",
+      "honors-roundhonor-mostkills"
+    ],
+    "Honors/RoundHonor_TotalScore": [
+      "awards",
+      "honors-roundhonor-totalscore"
+    ],
+    "Icon/BobaFettIcon": [
+      "heroes",
+      "icon-bobafetticon"
+    ],
+    "KillScreen/SB_Diagrams_ARC170": [
+      "killscreen",
+      "killscreen-sb-diagrams-arc170"
+    ],
+    "KillScreen/SB_Diagrams_AWing": [
+      "killscreen",
+      "killscreen-sb-diagrams-awing"
+    ],
+    "KillScreen/SB_Diagrams_BTLBYWing": [
+      "killscreen",
+      "killscreen-sb-diagrams-btlbywing"
+    ],
+    "KillScreen/SB_Diagrams_BunkerBusterTurret01": [
+      "killscreen",
+      "killscreen-sb-diagrams-bunkerbusterturret01"
+    ],
+    "KillScreen/SB_Diagrams_BunkerBusterTurret02": [
+      "killscreen",
+      "killscreen-sb-diagrams-bunkerbusterturret02"
+    ],
+    "KillScreen/SB_Diagrams_CinderTurret": [
+      "killscreen",
+      "killscreen-sb-diagrams-cinderturret"
+    ],
+    "KillScreen/SB_Diagrams_CorvetteCR90": [
+      "killscreen",
+      "killscreen-sb-diagrams-corvettecr90"
+    ],
+    "KillScreen/SB_Diagrams_DroidShipQuadTurboLaserTurret": [
+      "killscreen",
+      "killscreen-sb-diagrams-droidshipquadturbolaserturret"
+    ],
+    "KillScreen/SB_Diagrams_DroidTriFighter": [
+      "killscreen",
+      "killscreen-sb-diagrams-droidtrifighter"
+    ],
+    "KillScreen/SB_Diagrams_DryDockTurret": [
+      "killscreen",
+      "killscreen-sb-diagrams-drydockturret"
+    ],
+    "KillScreen/SB_Diagrams_GrizzlyBoat": [
+      "killscreen",
+      "killscreen-sb-diagrams-grizzlyboat"
+    ],
+    "KillScreen/SB_Diagrams_HoneyBee": [
+      "killscreen",
+      "killscreen-sb-diagrams-honeybee"
+    ],
+    "KillScreen/SB_Diagrams_HyenaBomber": [
+      "killscreen",
+      "killscreen-sb-diagrams-hyenabomber"
+    ],
+    "KillScreen/SB_Diagrams_ImperialCruiser": [
+      "killscreen",
+      "killscreen-sb-diagrams-imperialcruiser"
+    ],
+    "KillScreen/SB_Diagrams_JediCruiser": [
+      "killscreen",
+      "killscreen-sb-diagrams-jedicruiser"
+    ],
+    "KillScreen/SB_Diagrams_MC80Turret": [
+      "killscreen",
+      "killscreen-sb-diagrams-mc80turret"
+    ],
+    "KillScreen/SB_Diagrams_MilleniumFalcon": [
+      "killscreen",
+      "killscreen-sb-diagrams-milleniumfalcon"
+    ],
+    "KillScreen/SB_Diagrams_MilleniumFalconNT": [
+      "killscreen",
+      "killscreen-sb-diagrams-milleniumfalconnt"
+    ],
+    "KillScreen/SB_Diagrams_N1": [
+      "killscreen",
+      "killscreen-sb-diagrams-n1"
+    ],
+    "KillScreen/SB_Diagrams_QueenHoneyBee": [
+      "killscreen",
+      "killscreen-sb-diagrams-queenhoneybee"
+    ],
+    "KillScreen/SB_Diagrams_Scimitar": [
+      "killscreen",
+      "killscreen-sb-diagrams-scimitar"
+    ],
+    "KillScreen/SB_Diagrams_Slave1": [
+      "killscreen",
+      "killscreen-sb-diagrams-slave1"
+    ],
+    "KillScreen/SB_Diagrams_StarDestroyerTurboLaser": [
+      "killscreen",
+      "killscreen-sb-diagrams-stardestroyerturbolaser"
+    ],
+    "KillScreen/SB_Diagrams_StarDestroyerTurboLaserTurret": [
+      "killscreen",
+      "killscreen-sb-diagrams-stardestroyerturbolaserturret"
+    ],
+    "KillScreen/SB_Diagrams_TIEAdvancedX1": [
+      "killscreen",
+      "killscreen-sb-diagrams-tieadvancedx1"
+    ],
+    "KillScreen/SB_Diagrams_TIEBomber": [
+      "killscreen",
+      "killscreen-sb-diagrams-tiebomber"
+    ],
+    "KillScreen/SB_Diagrams_TIEFighter": [
+      "killscreen",
+      "killscreen-sb-diagrams-tiefighter"
+    ],
+    "KillScreen/SB_Diagrams_TIEInterceptor": [
+      "killscreen",
+      "killscreen-sb-diagrams-tieinterceptor"
+    ],
+    "KillScreen/SB_Diagrams_VWing": [
+      "killscreen",
+      "killscreen-sb-diagrams-vwing"
+    ],
+    "KillScreen/SB_Diagrams_VenatorTurrets": [
+      "killscreen",
+      "killscreen-sb-diagrams-venatorturrets"
+    ],
+    "KillScreen/SB_Diagrams_VultureDroid": [
+      "killscreen",
+      "killscreen-sb-diagrams-vulturedroid"
+    ],
+    "KillScreen/SB_Diagrams_XWingT65": [
+      "killscreen",
+      "killscreen-sb-diagrams-xwingt65"
+    ],
+    "KillScreen/SB_Diagrams_XWingT65Red5": [
+      "killscreen",
+      "killscreen-sb-diagrams-xwingt65red5"
+    ],
+    "KillScreen/SB_Diagrams_YWing": [
+      "killscreen",
+      "killscreen-sb-diagrams-ywing"
+    ],
+    "KillScreen/SB_Diagrams_YodasStarfighter": [
+      "killscreen",
+      "killscreen-sb-diagrams-yodasstarfighter"
+    ],
+    "LightVehicles/Icon_LAAT": [
+      "speeders",
+      "lightvehicles-icon-laat"
+    ],
+    "LightVehicles/Icon_U-VING": [
+      "speeders",
+      "lightvehicles-icon-u-ving"
+    ],
+    "LoadingProgressBar/LoadingProgressBar_Background": [
+      "loadingprogressbar",
+      "loadingprogressbar-loadingprogressbar-background"
+    ],
+    "LoadingProgressBar/LoadingProgressBar_Border": [
+      "loadingprogressbar",
+      "loadingprogressbar-loadingprogressbar-border"
+    ],
+    "LoadingProgressBar/LoadingProgressBar_LinesDots": [
+      "loadingprogressbar",
+      "loadingprogressbar-loadingprogressbar-linesdots"
+    ],
+    "LoadingProgressBar/LoadingProgressBar_ProgressBar": [
+      "loadingprogressbar",
+      "loadingprogressbar-loadingprogressbar-progressbar"
+    ],
+    "LoadingProgressBar/LoadingProgressBar_Text": [
+      "loadingprogressbar",
+      "loadingprogressbar-loadingprogressbar-text"
+    ],
+    "Loadout/shockAvailableBg": [
+      "hub",
+      "loadout-shockavailablebg"
+    ],
+    "Loadout/shockAvailableFill": [
+      "hub",
+      "loadout-shockavailablefill"
+    ],
+    "MTT/Icon_MTT": [
+      "bossvehicles",
+      "mtt-icon-mtt"
+    ],
+    "Milestones/Icon_Milestone_DailyNormal": [
+      "milestones",
+      "milestones-icon-milestone-dailynormal"
+    ],
+    "Milestones/Icon_Milestones_Arcade": [
+      "milestones",
+      "milestones-icon-milestones-arcade"
+    ],
+    "Milestones/Icon_Milestones_Campaign": [
+      "milestones",
+      "milestones-icon-milestones-campaign"
+    ],
+    "Milestones/Icon_Milestones_Defeat": [
+      "milestones",
+      "milestones-icon-milestones-defeat"
+    ],
+    "Milestones/Icon_Milestones_HeadShot": [
+      "milestones",
+      "milestones-icon-milestones-headshot"
+    ],
+    "Milestones/Icon_Milestones_Multplayer": [
+      "milestones",
+      "milestones-icon-milestones-multplayer"
+    ],
+    "Milestones/Icon_Milestones_S1_SeasonComplete": [
+      "milestones",
+      "milestones-icon-milestones-s1-seasoncomplete"
+    ],
+    "MillenniumFalcon/BoostTopSpeed": [
+      "spacebattles",
+      "millenniumfalcon-boosttopspeed"
+    ],
+    "MillenniumFalcon/SecondaryWeaponDamage": [
+      "spacebattles",
+      "millenniumfalcon-secondaryweapondamage"
+    ],
+    "MillenniumFalcon/SpecialModificationsActive_PrimaryWeaponDamage": [
+      "spacebattles",
+      "millenniumfalcon-specialmodificationsactive-primaryweapondamage"
+    ],
+    "MillenniumFalconLando/CoaxiumInjection": [
+      "spacebattles",
+      "millenniumfalconlando-coaxiuminjection"
+    ],
+    "MillenniumFalconLando/L337Copilot": [
+      "spacebattles",
+      "millenniumfalconlando-l337copilot"
+    ],
+    "MillenniumFalconLando/LinkedFire": [
+      "spacebattles",
+      "millenniumfalconlando-linkedfire"
+    ],
+    "PC/PC_ArrowDown_New": [
+      "buttons",
+      "pc-pc-arrowdown-new"
+    ],
+    "PC/PC_ArrowLeft_New": [
+      "buttons",
+      "pc-pc-arrowleft-new"
+    ],
+    "PC/PC_ArrowRight_New": [
+      "buttons",
+      "pc-pc-arrowright-new"
+    ],
+    "PC/PC_ArrowUp_New": [
+      "buttons",
+      "pc-pc-arrowup-new"
+    ],
+    "PC/PC_Delete_New": [
+      "buttons",
+      "pc-pc-delete-new"
+    ],
+    "PC/PC_Enter_New": [
+      "buttons",
+      "pc-pc-enter-new"
+    ],
+    "PC/PC_Mouse_Left_Button_New": [
+      "buttons",
+      "pc-pc-mouse-left-button-new"
+    ],
+    "PC/PC_Mouse_Mid_Button_New": [
+      "buttons",
+      "pc-pc-mouse-mid-button-new"
+    ],
+    "PC/PC_Mouse_Right_Button_New": [
+      "buttons",
+      "pc-pc-mouse-right-button-new"
+    ],
+    "PC/PC_Shift_New": [
+      "buttons",
+      "pc-pc-shift-new"
+    ],
+    "PC/PC_Tab_New": [
+      "buttons",
+      "pc-pc-tab-new"
+    ],
+    "Pickups/Pickup_HH-12": [
+      "pickups",
+      "pickups-pickup-hh-12"
+    ],
+    "Pickups/Pickup_Icon_01": [
+      "pickups",
+      "pickups-pickup-icon-01"
+    ],
+    "Pickups/Pickup_Icon_02": [
+      "pickups",
+      "pickups-pickup-icon-02"
+    ],
+    "Pickups/Pickup_Icon_03": [
+      "pickups",
+      "pickups-pickup-icon-03"
+    ],
+    "Pickups/Pickup_Icon_04": [
+      "pickups",
+      "pickups-pickup-icon-04"
+    ],
+    "Pickups/Pickup_Icon_05": [
+      "pickups",
+      "pickups-pickup-icon-05"
+    ],
+    "Pickups/Pickup_T-7": [
+      "pickups",
+      "pickups-pickup-t-7"
+    ],
+    "Planets/Planets_Orig_DS": [
+      "planets",
+      "planets-planets-orig-ds"
+    ],
+    "Planets/Planets_Orig_EN": [
+      "planets",
+      "planets-planets-orig-en"
+    ],
+    "Planets/Planets_Orig_HO": [
+      "planets",
+      "planets-planets-orig-ho"
+    ],
+    "Planets/Planets_Orig_KES": [
+      "planets",
+      "planets-planets-orig-kes"
+    ],
+    "Planets/Planets_Orig_MOS": [
+      "planets",
+      "planets-planets-orig-mos"
+    ],
+    "Planets/Planets_Orig_YA": [
+      "planets",
+      "planets-planets-orig-ya"
+    ],
+    "Planets/Planets_Preq_KAM": [
+      "planets",
+      "planets-planets-preq-kam"
+    ],
+    "Planets/Planets_Preq_KASH": [
+      "planets",
+      "planets-planets-preq-kash"
+    ],
+    "Planets/Planets_Preq_THEE": [
+      "planets",
+      "planets-planets-preq-thee"
+    ],
+    "Reticle/Reticle_LeadingSight_Out": [
+      "reticle",
+      "reticle-reticle-leadingsight-out"
+    ],
+    "SP/Ability_Icons_Ability_Dio": [
+      "sp",
+      "sp-ability-icons-ability-dio"
+    ],
+    "SP/BRAZ_Alongtimeago": [
+      "sp",
+      "sp-braz-alongtimeago"
+    ],
+    "SP/CH_Alongtimeago": [
+      "sp",
+      "sp-ch-alongtimeago"
+    ],
+    "SP/DroidVision_CenterDot": [
+      "sp",
+      "sp-droidvision-centerdot"
+    ],
+    "SP/Droid_InteractBg": [
+      "sp",
+      "sp-droid-interactbg"
+    ],
+    "SP/EN_AlongtimeAgo": [
+      "sp",
+      "sp-en-alongtimeago"
+    ],
+    "SP/FR_Alongtimeago": [
+      "sp",
+      "sp-fr-alongtimeago"
+    ],
+    "SP/GER_Alongtimeago": [
+      "sp",
+      "sp-ger-alongtimeago"
+    ],
+    "SP/IT_Alongtimeago": [
+      "sp",
+      "sp-it-alongtimeago"
+    ],
+    "SP/Inferno_Logo": [
+      "sp",
+      "sp-inferno-logo"
+    ],
+    "SP/JP_Alongtimeago": [
+      "sp",
+      "sp-jp-alongtimeago"
+    ],
+    "SP/POL_Alongtimeago": [
+      "sp",
+      "sp-pol-alongtimeago"
+    ],
+    "SP/RU_Alongtimeago": [
+      "sp",
+      "sp-ru-alongtimeago"
+    ],
+    "SP/SP_Alongtimeago": [
+      "sp",
+      "sp-sp-alongtimeago"
+    ],
+    "SP/collectible_completed": [
+      "sp",
+      "sp-collectible-completed"
+    ],
+    "SP/lootcrate": [
+      "sp",
+      "sp-lootcrate"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Afterburner": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-afterburner"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Astromech_Droid": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-astromech-droid"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Astromech_Droid_R2-D2": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-astromech-droid-r2-d2"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Auxiliary_Power": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-auxiliary-power"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Cloaking_Device": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-cloaking-device"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Concussion_Missile": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-concussion-missile"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Countermeasures": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-countermeasures"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Dual_Concussion_Missiles": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-dual-concussion-missiles"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Energy_Torpedo": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-energy-torpedo"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Force_Disable": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-force-disable"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Force_Evasion": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-force-evasion"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Force_Guidance": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-force-guidance"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Grizzly_Boat": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-grizzly-boat"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Hard_Lock": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-hard-lock"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Hard_Lock_Light": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-hard-lock-light"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Heatsink": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-heatsink"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Heavy_Laser": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-heavy-laser"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Ion_Cannons": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-ion-cannons"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Ion_Turret_Cannon": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-ion-turret-cannon"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Laser_Barrage": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-laser-barrage"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Missile_Barrage": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-missile-barrage"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Proton_Torpedo": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-proton-torpedo"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Seismic_Charge": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-seismic-charge"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Special_Modifications": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-special-modifications"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Speed_Boost": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-speed-boost"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Tail_Gunner": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-tail-gunner"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Tail_Gunner_ARC170": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-tail-gunner-arc170"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Tail_Gunner_TIESF": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-tail-gunner-tiesf"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Targeting_Computer": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-targeting-computer"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Twin_Proton_Torpedoes": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-twin-proton-torpedoes"
+    ],
+    "SPaceBattles/Ability_Icons_Ability_Weapon_Overcharge": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-weapon-overcharge"
+    ],
+    "SPaceBattles/Icon_HUD_SpeedBar": [
+      "spacebattles",
+      "spacebattles-icon-hud-speedbar"
+    ],
+    "SPaceBattles/IonSlowDown": [
+      "spacebattles",
+      "spacebattles-ionslowdown"
+    ],
+    "SPaceBattles/StarCard_Icons_Placeholder": [
+      "spacebattles",
+      "spacebattles-starcard-icons-placeholder"
+    ],
+    "STAP/Icon_STAP": [
+      "groundvehicles",
+      "stap-icon-stap"
+    ],
+    "Scimitar/ExtraDamageAfterDecloaking": [
+      "spacebattles",
+      "scimitar-extradamageafterdecloaking"
+    ],
+    "Settings/Settings_Credits": [
+      "settings",
+      "settings-settings-credits"
+    ],
+    "Shared/LevelBackgroundIcon": [
+      "shared",
+      "shared-levelbackgroundicon"
+    ],
+    "Shared/LevelBackgroundPrestigeIcon1": [
+      "shared",
+      "shared-levelbackgroundprestigeicon1"
+    ],
+    "Shared/LevelBackgroundPrestigeIcon2": [
+      "shared",
+      "shared-levelbackgroundprestigeicon2"
+    ],
+    "Shared/LevelBackgroundPrestigeIconBG": [
+      "shared",
+      "shared-levelbackgroundprestigeiconbg"
+    ],
+    "Shared/LevelBackgroundPrestigeIconBGfill": [
+      "shared",
+      "shared-levelbackgroundprestigeiconbgfill"
+    ],
+    "Shared/PassiveAbility_EwokRebel": [
+      "shared",
+      "shared-passiveability-ewokrebel"
+    ],
+    "Shared/PassiveAbility_Health": [
+      "shared",
+      "shared-passiveability-health"
+    ],
+    "Shared/PassiveAbility_Hover": [
+      "shared",
+      "shared-passiveability-hover"
+    ],
+    "Shared/PassiveAbility_MeleeKick": [
+      "shared",
+      "shared-passiveability-meleekick"
+    ],
+    "Shared/RankupIcon": [
+      "shared",
+      "shared-rankupicon"
+    ],
+    "Shared/battle_points": [
+      "shared",
+      "shared-battle-points"
+    ],
+    "Shared/decoration_pause": [
+      "shared",
+      "shared-decoration-pause"
+    ],
+    "Slave1/SeismicChargeRadius": [
+      "spacebattles",
+      "slave1-seismicchargeradius"
+    ],
+    "SocialHub/voip-1": [
+      "socialhub",
+      "socialhub-voip-1"
+    ],
+    "SocialHub/voip-off": [
+      "socialhub",
+      "socialhub-voip-off"
+    ],
+    "SpaceBattles/Ability_Icons_Ability_Blue_Leader": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-blue-leader"
+    ],
+    "SpaceBattles/Ability_Icons_Ability_Boosted_Accelerator_Pod": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-boosted-accelerator-pod"
+    ],
+    "SpaceBattles/Ability_Icons_Ability_Iden": [
+      "spacebattles",
+      "spacebattles-ability-icons-ability-iden"
+    ],
+    "SpaceBattles/attack_turrets": [
+      "hud",
+      "spacebattles-attack-turrets"
+    ],
+    "SpaceBattles/objective_imperialcruiser": [
+      "hud",
+      "spacebattles-objective-imperialcruiser"
+    ],
+    "SpaceBattles/objective_turrets": [
+      "hud",
+      "spacebattles-objective-turrets"
+    ],
+    "Speeders/Icon_74-Z_SpeederBike": [
+      "speeders",
+      "speeders-icon-74-z-speederbike"
+    ],
+    "Speeders/Icon_LIUV": [
+      "speeders",
+      "speeders-icon-liuv"
+    ],
+    "Speeders/Icon_SkiSpeeder": [
+      "speeders",
+      "speeders-icon-skispeeder"
+    ],
+    "Speeders/Icon_T-47_AirSpeeder": [
+      "speeders",
+      "speeders-icon-t-47-airspeeder"
+    ],
+    "Speeders/Icon_X-34_LandSpeeder": [
+      "speeders",
+      "speeders-icon-x-34-landspeeder"
+    ],
+    "StationaryWeapons/Icon_ATGAR14DFPTOWER": [
+      "stationaryweapons",
+      "stationaryweapons-icon-atgar14dfptower"
+    ],
+    "StationaryWeapons/Icon_DF9": [
+      "stationaryweapons",
+      "stationaryweapons-icon-df9"
+    ],
+    "StationaryWeapons/Icon_E-WEB": [
+      "stationaryweapons",
+      "stationaryweapons-icon-e-web"
+    ],
+    "StationaryWeapons/Icon_Markll": [
+      "stationaryweapons",
+      "stationaryweapons-icon-markll"
+    ],
+    "StationaryWeapons/Icon_StationaryGroundTurret": [
+      "stationaryweapons",
+      "stationaryweapons-icon-stationarygroundturret"
+    ],
+    "Store/EAAccess": [
+      "store",
+      "store-eaaccess"
+    ],
+    "Store/Icon_Timer": [
+      "store",
+      "store-icon-timer"
+    ],
+    "TX-130/Icon_TX130": [
+      "groundvehicles",
+      "tx-130-icon-tx130"
+    ],
+    "Tauntaun/Icon_Tauntaun": [
+      "specials",
+      "tauntaun-icon-tauntaun"
+    ],
+    "Temp/starlevel": [
+      "temp",
+      "temp-starlevel"
+    ],
+    "Tiles/Tile_Connect": [
+      "tiles",
+      "tiles-tile-connect"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_22_CombatShield": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-22-combatshield"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_27_ImpactGrenade": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-27-impactgrenade"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_33_Sentry": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-33-sentry"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_37_BattleCommand": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-37-battlecommand"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_38_BlasterTurret": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-38-blasterturret"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_49_SplitterGrenade": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-49-splittergrenade"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_52_ScoutBinoculars": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-52-scoutbinoculars"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_53_ShockGrenade": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-53-shockgrenade"
+    ],
+    "TrooperAbilityIcons/MKI_Trooper_54_Infiltration": [
+      "troopers",
+      "trooperabilityicons-mki-trooper-54-infiltration"
+    ],
+    "TrooperAbilityIcons/MKI_Troopers_12_ThermalDetonator": [
+      "troopers",
+      "trooperabilityicons-mki-troopers-12-thermaldetonator"
+    ],
+    "TrooperAbilityIcons/MKI_Troopers_13_ScanDart": [
+      "troopers",
+      "trooperabilityicons-mki-troopers-13-scandart"
+    ],
+    "TrooperAbilityIcons/MKI_Troopers_17_Vanguard": [
+      "troopers",
+      "trooperabilityicons-mki-troopers-17-vanguard"
+    ],
+    "TrooperAbilityIcons/Mode3_Trooper_FlashLight": [
+      "troopers",
+      "trooperabilityicons-mode3-trooper-flashlight"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_05_CombatHeal": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-05-combatheal"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_18_Barrage": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-18-barrage"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_22_CombatShield": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-22-combatshield"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_26_DetoniteCharge": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-26-detonitecharge"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_27_ImpactGrenade": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-27-impactgrenade"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_28_IonTorpedo": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-28-iontorpedo"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_30_RocketTurret": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-30-rocketturret"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_31_HeavySentry": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-31-heavysentry"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_32_LightSentry": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-32-lightsentry"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_33_MediumSentry": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-33-mediumsentry"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_35_BattleCommand_Hope": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-35-battlecommand-hope"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_36_BattleCommand_Cooling": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-36-battlecommand-cooling"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_37_BattleCommand_Fortitude": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-37-battlecommand-fortitude"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_38_BlasterTurret": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-38-blasterturret"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_44_Defuser": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-44-defuser"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_45_Disruption": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-45-disruption"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_46_HomingShot": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-46-homingshot"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_49_SplitterGrenade": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-49-splittergrenade"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_50_SquadShield": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-50-squadshield"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_52_ScoutBinoculars": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-52-scoutbinoculars"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_53_ShockGrenade": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-53-shockgrenade"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_54_InfiltrationScrambler": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-54-infiltrationscrambler"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_55_InfiltrationSpotter": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-55-infiltrationspotter"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_56_InfiltrationBreacher": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-56-infiltrationbreacher"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_60_PersonalShield": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-60-personalshield"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_61_ConcussionBlast": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-61-concussionblast"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_66_StingerPistol": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-66-stingerpistol"
+    ],
+    "TrooperAbilityIcons/SC_Trooper_68_TripMine": [
+      "troopers",
+      "trooperabilityicons-sc-trooper-68-tripmine"
+    ],
+    "TrooperAbilityIcons/SC_Troopers_10_AcidLauncher": [
+      "troopers",
+      "trooperabilityicons-sc-troopers-10-acidlauncher"
+    ],
+    "TrooperAbilityIcons/SC_Troopers_11_SmartIonGrenade": [
+      "troopers",
+      "trooperabilityicons-sc-troopers-11-smartiongrenade"
+    ],
+    "TrooperAbilityIcons/SC_Troopers_12_ThermalDetonator": [
+      "troopers",
+      "trooperabilityicons-sc-troopers-12-thermaldetonator"
+    ],
+    "TrooperAbilityIcons/SC_Troopers_13_ScanDart": [
+      "troopers",
+      "trooperabilityicons-sc-troopers-13-scandart"
+    ],
+    "TrooperAbilityIcons/SC_Troopers_14_FlashPistol": [
+      "troopers",
+      "trooperabilityicons-sc-troopers-14-flashpistol"
+    ],
+    "TrooperAbilityIcons/SC_Troopers_15_VanguardChain": [
+      "troopers",
+      "trooperabilityicons-sc-troopers-15-vanguardchain"
+    ],
+    "TrooperAbilityIcons/SC_Troopers_16_VanguardRefresh": [
+      "troopers",
+      "trooperabilityicons-sc-troopers-16-vanguardrefresh"
+    ],
+    "TrooperAbilityIcons/SC_Troopers_17_VanguardSlug": [
+      "troopers",
+      "trooperabilityicons-sc-troopers-17-vanguardslug"
+    ],
+    "WeaponMods/Icon_Barrel": [
+      "weaponmods",
+      "weaponmods-icon-barrel"
+    ],
+    "WeaponMods/Icon_BarrelExtension": [
+      "weaponmods",
+      "weaponmods-icon-barrelextension"
+    ],
+    "WeaponMods/Icon_CoolingCell": [
+      "weaponmods",
+      "weaponmods-icon-coolingcell"
+    ],
+    "WeaponMods/Icon_Grip": [
+      "weaponmods",
+      "weaponmods-icon-grip"
+    ],
+    "WeaponMods/Icon_RangeFinder": [
+      "weaponmods",
+      "weaponmods-icon-rangefinder"
+    ],
+    "WeaponMods/Icon_Scope": [
+      "weaponmods",
+      "weaponmods-icon-scope"
+    ],
+    "WeaponMods/Icon_SecondaryFire": [
+      "weaponmods",
+      "weaponmods-icon-secondaryfire"
+    ],
+    "WeaponMods/Icon_Stock": [
+      "weaponmods",
+      "weaponmods-icon-stock"
+    ],
+    "WeaponMods/Icon_Trigger": [
+      "weaponmods",
+      "weaponmods-icon-trigger"
+    ],
+    "Weapons/Weapons_A180": [
+      "weapons",
+      "weapons-weapons-a180"
+    ],
+    "Weapons/Weapons_A280": [
+      "weapons",
+      "weapons-weapons-a280"
+    ],
+    "Weapons/Weapons_A280C": [
+      "weapons",
+      "weapons-weapons-a280c"
+    ],
+    "Weapons/Weapons_A280CFE": [
+      "weapons",
+      "weapons-weapons-a280cfe"
+    ],
+    "Weapons/Weapons_A295": [
+      "weapons",
+      "weapons-weapons-a295"
+    ],
+    "Weapons/Weapons_AnakinLightsaber": [
+      "weapons",
+      "weapons-weapons-anakinlightsaber"
+    ],
+    "Weapons/Weapons_Blurrg-1120": [
+      "weapons",
+      "weapons-weapons-blurrg-1120"
+    ],
+    "Weapons/Weapons_Bowcaster": [
+      "weapons",
+      "weapons-weapons-bowcaster"
+    ],
+    "Weapons/Weapons_CR-2": [
+      "weapons",
+      "weapons-weapons-cr-2"
+    ],
+    "Weapons/Weapons_CyclerRifle": [
+      "weapons",
+      "weapons-weapons-cyclerrifle"
+    ],
+    "Weapons/Weapons_D-93Incinerator": [
+      "weapons",
+      "weapons-weapons-d-93incinerator"
+    ],
+    "Weapons/Weapons_DC-15": [
+      "weapons",
+      "weapons-weapons-dc-15"
+    ],
+    "Weapons/Weapons_DC-15A": [
+      "weapons",
+      "weapons-weapons-dc-15a"
+    ],
+    "Weapons/Weapons_DC-15LE": [
+      "weapons",
+      "weapons-weapons-dc-15le"
+    ],
+    "Weapons/Weapons_DC-17": [
+      "weapons",
+      "weapons-weapons-dc-17"
+    ],
+    "Weapons/Weapons_DC-17Dual": [
+      "weapons",
+      "weapons-weapons-dc-17dual"
+    ],
+    "Weapons/Weapons_DC-17M": [
+      "weapons",
+      "weapons-weapons-dc-17m"
+    ],
+    "Weapons/Weapons_DH-17": [
+      "weapons",
+      "weapons-weapons-dh-17"
+    ],
+    "Weapons/Weapons_DL-18": [
+      "weapons",
+      "weapons-weapons-dl-18"
+    ],
+    "Weapons/Weapons_DL-44": [
+      "weapons",
+      "weapons-weapons-dl-44"
+    ],
+    "Weapons/Weapons_DL44": [
+      "weapons",
+      "weapons-weapons-dl44"
+    ],
+    "Weapons/Weapons_DLT-19": [
+      "weapons",
+      "weapons-weapons-dlt-19"
+    ],
+    "Weapons/Weapons_DLT-19D": [
+      "weapons",
+      "weapons-weapons-dlt-19d"
+    ],
+    "Weapons/Weapons_DLT-19X": [
+      "weapons",
+      "weapons-weapons-dlt-19x"
+    ],
+    "Weapons/Weapons_DLT-20A": [
+      "weapons",
+      "weapons-weapons-dlt-20a"
+    ],
+    "Weapons/Weapons_Defender": [
+      "weapons",
+      "weapons-weapons-defender"
+    ],
+    "Weapons/Weapons_DookuLightsaber": [
+      "weapons",
+      "weapons-weapons-dookulightsaber"
+    ],
+    "Weapons/Weapons_DroidekaTwinBlasterCannons": [
+      "weapons",
+      "weapons-weapons-droidekatwinblastercannons"
+    ],
+    "Weapons/Weapons_E-11": [
+      "weapons",
+      "weapons-weapons-e-11"
+    ],
+    "Weapons/Weapons_E-11D": [
+      "weapons",
+      "weapons-weapons-e-11d"
+    ],
+    "Weapons/Weapons_E-5": [
+      "weapons",
+      "weapons-weapons-e-5"
+    ],
+    "Weapons/Weapons_E-5C": [
+      "weapons",
+      "weapons-weapons-e-5c"
+    ],
+    "Weapons/Weapons_E-5S": [
+      "weapons",
+      "weapons-weapons-e-5s"
+    ],
+    "Weapons/Weapons_EE-3": [
+      "weapons",
+      "weapons-weapons-ee-3"
+    ],
+    "Weapons/Weapons_EL-16": [
+      "weapons",
+      "weapons-weapons-el-16"
+    ],
+    "Weapons/Weapons_EL-16HFE": [
+      "weapons",
+      "weapons-weapons-el-16hfe"
+    ],
+    "Weapons/Weapons_EmperorForceLightning": [
+      "weapons",
+      "weapons-weapons-emperorforcelightning"
+    ],
+    "Weapons/Weapons_EwokBow": [
+      "weapons",
+      "weapons-weapons-ewokbow"
+    ],
+    "Weapons/Weapons_EwokSpear": [
+      "weapons",
+      "weapons-weapons-ewokspear"
+    ],
+    "Weapons/Weapons_EwokSpearAirbourne": [
+      "weapons",
+      "weapons-weapons-ewokspearairbourne"
+    ],
+    "Weapons/Weapons_EwokTrap": [
+      "weapons",
+      "weapons-weapons-ewoktrap"
+    ],
+    "Weapons/Weapons_F-11D": [
+      "weapons",
+      "weapons-weapons-f-11d"
+    ],
+    "Weapons/Weapons_FWMB-10": [
+      "weapons",
+      "weapons-weapons-fwmb-10"
+    ],
+    "Weapons/Weapons_FWMB-10K": [
+      "weapons",
+      "weapons-weapons-fwmb-10k"
+    ],
+    "Weapons/Weapons_Glie-44": [
+      "weapons",
+      "weapons-weapons-glie-44"
+    ],
+    "Weapons/Weapons_Glie-44_Spy": [
+      "weapons",
+      "weapons-weapons-glie-44-spy"
+    ],
+    "Weapons/Weapons_GrievousLightsaber": [
+      "weapons",
+      "weapons-weapons-grievouslightsaber"
+    ],
+    "Weapons/Weapons_Gunner": [
+      "weapons",
+      "weapons-weapons-gunner"
+    ],
+    "Weapons/Weapons_IQA-11": [
+      "weapons",
+      "weapons-weapons-iqa-11"
+    ],
+    "Weapons/Weapons_LandoX-8NightSniper": [
+      "weapons",
+      "weapons-weapons-landox-8nightsniper"
+    ],
+    "Weapons/Weapons_LukeHothLightsaber": [
+      "weapons",
+      "weapons-weapons-lukehothlightsaber"
+    ],
+    "Weapons/Weapons_LukeLightsaber": [
+      "weapons",
+      "weapons-weapons-lukelightsaber"
+    ],
+    "Weapons/Weapons_M-45": [
+      "weapons",
+      "weapons-weapons-m-45"
+    ],
+    "Weapons/Weapons_MaulCrimsonLightsaber": [
+      "weapons",
+      "weapons-weapons-maulcrimsonlightsaber"
+    ],
+    "Weapons/Weapons_MaulLightsaber": [
+      "weapons",
+      "weapons-weapons-maullightsaber"
+    ],
+    "Weapons/Weapons_Melee": [
+      "weapons",
+      "weapons-weapons-melee"
+    ],
+    "Weapons/Weapons_Melee_Kick": [
+      "weapons",
+      "weapons-weapons-melee-kick"
+    ],
+    "Weapons/Weapons_NT-242": [
+      "weapons",
+      "weapons-weapons-nt-242"
+    ],
+    "Weapons/Weapons_ObiWanLightsaber": [
+      "weapons",
+      "weapons-weapons-obiwanlightsaber"
+    ],
+    "Weapons/Weapons_Pistol": [
+      "weapons",
+      "weapons-weapons-pistol"
+    ],
+    "Weapons/Weapons_RG-4D": [
+      "weapons",
+      "weapons-weapons-rg-4d"
+    ],
+    "Weapons/Weapons_RK-3": [
+      "weapons",
+      "weapons-weapons-rk-3"
+    ],
+    "Weapons/Weapons_RK-3Dual": [
+      "weapons",
+      "weapons-weapons-rk-3dual"
+    ],
+    "Weapons/Weapons_RT-97C": [
+      "weapons",
+      "weapons-weapons-rt-97c"
+    ],
+    "Weapons/Weapons_Relby": [
+      "weapons",
+      "weapons-weapons-relby"
+    ],
+    "Weapons/Weapons_S-5": [
+      "weapons",
+      "weapons-weapons-s-5"
+    ],
+    "Weapons/Weapons_SE-44": [
+      "weapons",
+      "weapons-weapons-se-44"
+    ],
+    "Weapons/Weapons_SE-44C": [
+      "weapons",
+      "weapons-weapons-se-44c"
+    ],
+    "Weapons/Weapons_T21": [
+      "weapons",
+      "weapons-weapons-t21"
+    ],
+    "Weapons/Weapons_TL-50": [
+      "weapons",
+      "weapons-weapons-tl-50"
+    ],
+    "Weapons/Weapons_TwinE-5Blaster": [
+      "weapons",
+      "weapons-weapons-twine-5blaster"
+    ],
+    "Weapons/Weapons_VT-33D": [
+      "weapons",
+      "weapons-weapons-vt-33d"
+    ],
+    "Weapons/Weapons_VaderLightSaber": [
+      "weapons",
+      "weapons-weapons-vaderlightsaber"
+    ],
+    "Weapons/Weapons_Valken-38x": [
+      "weapons",
+      "weapons-weapons-valken-38x"
+    ],
+    "Weapons/Weapons_YodaLightSaber": [
+      "weapons",
+      "weapons-weapons-yodalightsaber"
+    ],
+    "XboxOne/XboxOne_AnalogueLeftPush_Svg": [
+      "buttons",
+      "xboxone-xboxone-analogueleftpush-svg"
+    ],
+    "XboxOne/XboxOne_AnalogueLeft_Svg": [
+      "buttons",
+      "xboxone-xboxone-analogueleft-svg"
+    ],
+    "XboxOne/XboxOne_AnalogueRightPush_Svg": [
+      "buttons",
+      "xboxone-xboxone-analoguerightpush-svg"
+    ],
+    "XboxOne/XboxOne_AnalogueRight_Svg": [
+      "buttons",
+      "xboxone-xboxone-analogueright-svg"
+    ],
+    "XboxOne/XboxOne_Button_A_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-a-svg"
+    ],
+    "XboxOne/XboxOne_Button_B_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-b-svg"
+    ],
+    "XboxOne/XboxOne_Button_LB_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-lb-svg"
+    ],
+    "XboxOne/XboxOne_Button_LT_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-lt-svg"
+    ],
+    "XboxOne/XboxOne_Button_Menu_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-menu-svg"
+    ],
+    "XboxOne/XboxOne_Button_RB_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-rb-svg"
+    ],
+    "XboxOne/XboxOne_Button_RT_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-rt-svg"
+    ],
+    "XboxOne/XboxOne_Button_Share_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-share-svg"
+    ],
+    "XboxOne/XboxOne_Button_X_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-x-svg"
+    ],
+    "XboxOne/XboxOne_Button_Y_Svg": [
+      "buttons",
+      "xboxone-xboxone-button-y-svg"
+    ],
+    "XboxOne/XboxOne_Dpad_Down_Svg": [
+      "buttons",
+      "xboxone-xboxone-dpad-down-svg"
+    ],
+    "XboxOne/XboxOne_Dpad_Left_Svg": [
+      "buttons",
+      "xboxone-xboxone-dpad-left-svg"
+    ],
+    "XboxOne/XboxOne_Dpad_Right_Svg": [
+      "buttons",
+      "xboxone-xboxone-dpad-right-svg"
+    ],
+    "XboxOne/XboxOne_Dpad_Up_Svg": [
+      "buttons",
+      "xboxone-xboxone-dpad-up-svg"
+    ]
+  },
+  "_source": [
+    "S1/UI/SVG/BossVehicles/Icon_AT-M6",
+    "S1/UI/SVG/Milestones/Icon_Milestones_S1_SeasonComplete",
+    "S1/UI/SVG/SpaceBattles/Ability_Icons_Ability_Iden",
+    "S1/UI/SVG/Speeders/Icon_SkiSpeeder",
+    "S1/UI/Vectors/KillScreen/SB_Diagrams_BunkerBusterTurret01",
+    "S1/UI/Vectors/KillScreen/SB_Diagrams_BunkerBusterTurret02",
+    "S1/UI/Vectors/KillScreen/SB_Diagrams_QueenHoneyBee",
+    "S1/UI/Vectors/SpaceBattles/Ability_Icons_Ability_Blue_Leader",
+    "S1/UI/Vectors/SpaceBattles/Ability_Icons_Ability_Boosted_Accelerator_Pod",
+    "S2/UI/SVG/Challenges/Icon_Challenges_Weekend",
+    "S2_1/UI/SVG/Customize/Specials/Ewok/Abilities/Ewok_Ability_01",
+    "S2_1/UI/SVG/Customize/Specials/Ewok/Abilities/Ewok_Ability_02",
+    "S2_1/UI/SVG/Customize/Specials/Ewok/Abilities/Ewok_Ability_03",
+    "S2_1/UI/SVG/Customize/Troopers/TrooperAbilityIcons/Mode3_Trooper_FlashLight",
+    "S2_1/UI/SVG/Weapons/Weapons_EwokSpear",
+    "S2_1/UI/SVG/Weapons/Weapons_EwokSpearAirbourne",
+    "S2_1/UI/SVG/Weapons/Weapons_EwokTrap",
+    "S2_2/UI/SVG/Challenges/Daily_Season2",
+    "S2_2/UI/SVG/Challenges/Weekly_Season2",
+    "S3/UI/SVG/SPaceBattles/MillenniumFalconLando/CoaxiumInjection",
+    "S3/UI/SVG/SpaceBattles/MillenniumFalconLando/L337Copilot",
+    "S3/UI/SVG/SpaceBattles/MillenniumFalconLando/LinkedFire",
+    "S5/UI/SVG/Customize/Heroes/Grievous/Abilities/Grievous_Ability_01",
+    "S5/UI/SVG/Customize/Heroes/Grievous/Abilities/Grievous_Ability_02",
+    "S5/UI/SVG/Customize/Heroes/Grievous/Abilities/Grievous_Ability_03",
+    "S5_1/UI/SVG/Customize/Heroes/ObiWan/Abilities/ObiWan_Ability_01",
+    "S5_1/UI/SVG/Customize/Heroes/ObiWan/Abilities/ObiWan_Ability_02",
+    "S5_1/UI/SVG/Customize/Heroes/ObiWan/Abilities/ObiWan_Ability_03",
+    "S5_1/UI/SVG/GroundVehicles/AT-TE/Abilities/Ability_01",
+    "S5_1/UI/SVG/GroundVehicles/AT-TE/Abilities/Ability_02",
+    "S5_1/UI/SVG/GroundVehicles/AT-TE/Abilities/Ability_03",
+    "S5_1/UI/SVG/GroundVehicles/AT-TE/Icon_AT-TE",
+    "S5_1/UI/SVG/GroundVehicles/BARC/Icon_BARC",
+    "S5_1/UI/SVG/GroundVehicles/HOMINGSPIDERDROID/Icon_HOMINGSPIDERDROID",
+    "S5_1/UI/SVG/GroundVehicles/STAP/Icon_STAP",
+    "S6/UI/SVG/Customize/Heroes/Dooku/Abilities/Dooku_Ability_01",
+    "S6/UI/SVG/Customize/Heroes/Dooku/Abilities/Dooku_Ability_02",
+    "S6/UI/SVG/Customize/Heroes/Dooku/Abilities/Dooku_Ability_03",
+    "S6_1/UI/SVG/Customize/Heroes/Anakin/Abilities/Anakin_Ability_01",
+    "S6_1/UI/SVG/Customize/Heroes/Anakin/Abilities/Anakin_Ability_02",
+    "S6_1/UI/SVG/Customize/Heroes/Anakin/Abilities/Anakin_Ability_03",
+    "S6_1/UI/SVG/Customize/Heroes/Anakin/Abilities/Anakin_Ability_04",
+    "S6_2/UI/SVG/Customize/Specials/ARC_Trooper/ARC_Trooper_Ability_01",
+    "S6_2/UI/SVG/Customize/Specials/ARC_Trooper/ARC_Trooper_Ability_02",
+    "S6_2/UI/SVG/Customize/Specials/ARC_Trooper/ARC_Trooper_Ability_03",
+    "S6_2/UI/SVG/Customize/Specials/ARC_Trooper/ARC_Trooper_Ability_04",
+    "S6_2/UI/SVG/Customize/Specials/BX_CommandoDroid/BX_CommandoDroid_Ability_01",
+    "S6_2/UI/SVG/Customize/Specials/BX_CommandoDroid/BX_CommandoDroid_Ability_02",
+    "S6_2/UI/SVG/Customize/Specials/BX_CommandoDroid/BX_CommandoDroid_Ability_03",
+    "UI/Art/Buttons/PC/PC_ArrowDown_New",
+    "UI/Art/Buttons/PC/PC_ArrowLeft_New",
+    "UI/Art/Buttons/PC/PC_ArrowRight_New",
+    "UI/Art/Buttons/PC/PC_ArrowUp_New",
+    "UI/Art/Buttons/PC/PC_Delete_New",
+    "UI/Art/Buttons/PC/PC_Enter_New",
+    "UI/Art/Buttons/PC/PC_Mouse_Left_Button_New",
+    "UI/Art/Buttons/PC/PC_Mouse_Mid_Button_New",
+    "UI/Art/Buttons/PC/PC_Mouse_Right_Button_New",
+    "UI/Art/Buttons/PC/PC_Shift_New",
+    "UI/Art/Buttons/PC/PC_Tab_New",
+    "UI/Art/Buttons/XboxOne/XboxOne_AnalogueLeftPush_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_AnalogueLeft_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_AnalogueRightPush_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_AnalogueRight_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_A_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_B_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_LB_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_LT_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_Menu_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_RB_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_RT_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_Share_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_X_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Button_Y_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Dpad_Down_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Dpad_Left_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Dpad_Right_Svg",
+    "UI/Art/Buttons/XboxOne/XboxOne_Dpad_Up_Svg",
+    "UI/Art/Frontend/controller-xbox",
+    "UI/Art/HUB/Loadout/shockAvailableBg",
+    "UI/Art/HUB/Loadout/shockAvailableFill",
+    "UI/Art/HUD/Abilities/Abilities_Countermeasures",
+    "UI/Art/HUD/MissionObjectives/SpaceBattles/attack_turrets",
+    "UI/Art/HUD/MissionObjectives/SpaceBattles/objective_imperialcruiser",
+    "UI/Art/HUD/MissionObjectives/SpaceBattles/objective_turrets",
+    "UI/Art/SP/Droid_InteractBg",
+    "UI/Art/SP/lootcrate",
+    "UI/Art/Temp/EOR/imperialFaction-01svg",
+    "UI/Art/Temp/EOR/rebelFaction-01svg",
+    "UI/Art/Temp/starlevel",
+    "UI/SVG/Arcade/ArcadeStar",
+    "UI/SVG/Arcade/ArcadeStarFilled",
+    "UI/SVG/Awards/Honors/RoundHonor_MostAssists",
+    "UI/SVG/Awards/Honors/RoundHonor_MostDamageDealt",
+    "UI/SVG/Awards/Honors/RoundHonor_MostKills",
+    "UI/SVG/Awards/Honors/RoundHonor_TotalScore",
+    "UI/SVG/BossVehicles/AT-AT/Abilities/Ability_01",
+    "UI/SVG/BossVehicles/AT-AT/Abilities/Ability_02",
+    "UI/SVG/BossVehicles/AT-AT/Icon_AT-AT",
+    "UI/SVG/BossVehicles/MTT/Abilities/MTT_Ability_01",
+    "UI/SVG/BossVehicles/MTT/Abilities/MTT_Ability_02",
+    "UI/SVG/BossVehicles/MTT/Icon_MTT",
+    "UI/SVG/Cards/Boost",
+    "UI/SVG/Classes/Class_Enforcer",
+    "UI/SVG/Classes/Class_Hero_Melee",
+    "UI/SVG/Classes/Class_Hero_Ship",
+    "UI/SVG/Classes/Class_Infiltrator",
+    "UI/SVG/Classes/Class_JumpTrooper",
+    "UI/SVG/Classes/Class_Troopers_Assault_01",
+    "UI/SVG/Classes/Class_Troopers_Heavy_01",
+    "UI/SVG/Classes/Class_Troopers_Officer_01",
+    "UI/SVG/Classes/Class_Troopers_Specialist_01",
+    "UI/SVG/Classes/Class_Vehicle_Animal",
+    "UI/SVG/Classes/Class_Vehicle_Bomber",
+    "UI/SVG/Classes/Class_Vehicle_Ground",
+    "UI/SVG/Classes/Class_Vehicle_Gunship",
+    "UI/SVG/Classes/Class_Vehicle_Interceptor",
+    "UI/SVG/Classes/Class_Vehicle_Multirole",
+    "UI/SVG/Classes/Class_Vehicle_Speeder",
+    "UI/SVG/Classes/Class_Vehicle_Stationary",
+    "UI/SVG/Classes/Hero_Icon_01",
+    "UI/SVG/Credits/BF_Logo",
+    "UI/SVG/Currency/currency-credits",
+    "UI/SVG/Currency/currency-crystals",
+    "UI/SVG/Currency/currency-parts",
+    "UI/SVG/Currency/currency-parts-rare",
+    "UI/SVG/Customize/Heroes/BobaFett/Abilities/BobaFett_Ability_01",
+    "UI/SVG/Customize/Heroes/BobaFett/Abilities/BobaFett_Ability_02",
+    "UI/SVG/Customize/Heroes/BobaFett/Abilities/BobaFett_Ability_03",
+    "UI/SVG/Customize/Heroes/BobaFett/Ability/BobaFett_Ability_01",
+    "UI/SVG/Customize/Heroes/BobaFett/Ability/BobaFett_Ability_02",
+    "UI/SVG/Customize/Heroes/BobaFett/Ability/BobaFett_Ability_03",
+    "UI/SVG/Customize/Heroes/BobaFett/Ability/BobaFett_Passive_01",
+    "UI/SVG/Customize/Heroes/BobaFett/Boosts/BobaFett_Boost_01",
+    "UI/SVG/Customize/Heroes/BobaFett/Boosts/BobaFett_Boost_02",
+    "UI/SVG/Customize/Heroes/BobaFett/Boosts/BobaFett_Boost_03",
+    "UI/SVG/Customize/Heroes/BobaFett/Boosts/BobaFett_Boost_04",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_01",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_02",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_03",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_04",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_05",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_06",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_07",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_08",
+    "UI/SVG/Customize/Heroes/BobaFett/Card/BobaFett_CardMod_09",
+    "UI/SVG/Customize/Heroes/BobaFett/Icon/BobaFettIcon",
+    "UI/SVG/Customize/Heroes/BobaFett/SC_Legendary_BobaFett_FlameBurst",
+    "UI/SVG/Customize/Heroes/Bossk/Abilities/Bosk_Ability_01",
+    "UI/SVG/Customize/Heroes/Bossk/Abilities/Bosk_Ability_02",
+    "UI/SVG/Customize/Heroes/Bossk/Abilities/Bosk_Ability_03",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_01",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_02",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_03",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_04",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_05",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_06",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_07",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_08",
+    "UI/SVG/Customize/Heroes/Bossk/Card/Bossk_Card_09",
+    "UI/SVG/Customize/Heroes/Chewbacca/Abilities/Chewbacca_Ability_01",
+    "UI/SVG/Customize/Heroes/Chewbacca/Abilities/Chewbacca_Ability_02",
+    "UI/SVG/Customize/Heroes/Chewbacca/Abilities/Chewbacca_Ability_03",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_01",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_02",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_03",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_04",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_05",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_06",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_07",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_08",
+    "UI/SVG/Customize/Heroes/Chewbacca/Card/Chewbacca_Card_09",
+    "UI/SVG/Customize/Heroes/Emperor/Abilities/Palpatine_Ability_01",
+    "UI/SVG/Customize/Heroes/Emperor/Abilities/Palpatine_Ability_02",
+    "UI/SVG/Customize/Heroes/Emperor/Abilities/Palpatine_Ability_03",
+    "UI/SVG/Customize/Heroes/Emperor/Card/Emperor_Card_02",
+    "UI/SVG/Customize/Heroes/Emperor/Card/Emperor_Card_03",
+    "UI/SVG/Customize/Heroes/Emperor/Card/Emperor_Card_04",
+    "UI/SVG/Customize/Heroes/Emperor/Card/Emperor_Card_05",
+    "UI/SVG/Customize/Heroes/Emperor/Card/Emperor_Card_06",
+    "UI/SVG/Customize/Heroes/Emperor/Card/Emperor_Card_07",
+    "UI/SVG/Customize/Heroes/Emperor/Card/Emperor_Card_08",
+    "UI/SVG/Customize/Heroes/Emperor/Card/Emperor_Card_09",
+    "UI/SVG/Customize/Heroes/Han/Abilities/Han_Ability_01",
+    "UI/SVG/Customize/Heroes/Han/Abilities/Han_Ability_02",
+    "UI/SVG/Customize/Heroes/Han/Abilities/Han_Ability_03",
+    "UI/SVG/Customize/Heroes/Han/Boosts/Han_Boost_01",
+    "UI/SVG/Customize/Heroes/Han/Boosts/Han_Boost_02",
+    "UI/SVG/Customize/Heroes/Han/Boosts/Han_Boost_03",
+    "UI/SVG/Customize/Heroes/Han/Boosts/Han_Boost_04",
+    "UI/SVG/Customize/Heroes/Han/Card/Han_Card_08",
+    "UI/SVG/Customize/Heroes/Han/Card/Han_Card_09",
+    "UI/SVG/Customize/Heroes/Iden/Abilities/Ability_PulseCannon",
+    "UI/SVG/Customize/Heroes/Iden/Ability/Droid_Heal_Ability",
+    "UI/SVG/Customize/Heroes/Iden/Ability/Droid_Scan_Ability",
+    "UI/SVG/Customize/Heroes/Iden/Ability/Droid_Shield_Ability",
+    "UI/SVG/Customize/Heroes/Iden/Ability/Droid_Shock_Ability",
+    "UI/SVG/Customize/Heroes/Iden/Ability/Iden_Ability_01",
+    "UI/SVG/Customize/Heroes/Iden/Ability/Iden_Ability_02",
+    "UI/SVG/Customize/Heroes/Iden/Ability/Iden_Ability_03",
+    "UI/SVG/Customize/Heroes/Lando/Abilities/Lando_Ability_01",
+    "UI/SVG/Customize/Heroes/Lando/Abilities/Lando_Ability_02",
+    "UI/SVG/Customize/Heroes/Lando/Abilities/Lando_Ability_03",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_01",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_02",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_03",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_04",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_05",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_06",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_07",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_08",
+    "UI/SVG/Customize/Heroes/Lando/Card/Lando_Card_09",
+    "UI/SVG/Customize/Heroes/Leia/Abilities/Leia_Ability_01",
+    "UI/SVG/Customize/Heroes/Leia/Abilities/Leia_Ability_02",
+    "UI/SVG/Customize/Heroes/Leia/Abilities/Leia_Ability_03",
+    "UI/SVG/Customize/Heroes/Leia/Abilities/Leia_Ability_04",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_01",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_02",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_03",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_04",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_05",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_06",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_07",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_08",
+    "UI/SVG/Customize/Heroes/Leia/Card/Leia_Card_09",
+    "UI/SVG/Customize/Heroes/Luke/Abilities/Luke_Ability_01",
+    "UI/SVG/Customize/Heroes/Luke/Abilities/Luke_Ability_02",
+    "UI/SVG/Customize/Heroes/Luke/Abilities/Luke_Ability_03",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_01",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_02",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_03",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_04",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_05",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_06",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_07",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_08",
+    "UI/SVG/Customize/Heroes/Luke/Card/Luke_Card_09",
+    "UI/SVG/Customize/Heroes/Maul/Abilities/Maul_Ability_01",
+    "UI/SVG/Customize/Heroes/Maul/Abilities/Maul_Ability_02",
+    "UI/SVG/Customize/Heroes/Maul/Abilities/Maul_Ability_03",
+    "UI/SVG/Customize/Heroes/Maul/Boosts/Maul_Boost_01",
+    "UI/SVG/Customize/Heroes/Maul/Boosts/Maul_Boost_02",
+    "UI/SVG/Customize/Heroes/Maul/Boosts/Maul_Boost_04",
+    "UI/SVG/Customize/Heroes/Maul/Card/Maul_Card_04",
+    "UI/SVG/Customize/Heroes/Maul/Card/Maul_Card_05",
+    "UI/SVG/Customize/Heroes/Maul/Card/Maul_Card_08",
+    "UI/SVG/Customize/Heroes/Maul/Card/Maul_Card_09",
+    "UI/SVG/Customize/Heroes/Vader/Abilities/Vader_Ability_01",
+    "UI/SVG/Customize/Heroes/Vader/Abilities/Vader_Ability_02",
+    "UI/SVG/Customize/Heroes/Vader/Abilities/Vader_Ability_03",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_01",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_02",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_03",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_04",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_05",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_06",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_07",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_08",
+    "UI/SVG/Customize/Heroes/Vader/Card/Vader_Card_09",
+    "UI/SVG/Customize/Heroes/Yoda/Abilities/Yoda_Ability_01",
+    "UI/SVG/Customize/Heroes/Yoda/Abilities/Yoda_Ability_02",
+    "UI/SVG/Customize/Heroes/Yoda/Abilities/Yoda_Ability_03",
+    "UI/SVG/Customize/Planets/Planets_Orig_DS",
+    "UI/SVG/Customize/Planets/Planets_Orig_EN",
+    "UI/SVG/Customize/Planets/Planets_Orig_HO",
+    "UI/SVG/Customize/Planets/Planets_Orig_KES",
+    "UI/SVG/Customize/Planets/Planets_Orig_MOS",
+    "UI/SVG/Customize/Planets/Planets_Orig_YA",
+    "UI/SVG/Customize/Planets/Planets_Preq_KAM",
+    "UI/SVG/Customize/Planets/Planets_Preq_KASH",
+    "UI/SVG/Customize/Planets/Planets_Preq_THEE",
+    "UI/SVG/Customize/Specials/AT-RT/Abilities/AT-RT_Ability_02",
+    "UI/SVG/Customize/Specials/AT-RT/Icon_AT-RT",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_Fortify",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_GrenadeLauncher",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_HeadButt",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_IncendiaryGrenade",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_IonCharge",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_JumpDash",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_JumpPack",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_LeadByExample",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_MotionScan",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_Overload",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_RocketLauncher",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_SonicImploder",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_ThermalImploder",
+    "UI/SVG/Customize/Specials/AbilityIcons/Ability_WristRocket",
+    "UI/SVG/Customize/Specials/B2BattleDroid/Abilities/B2BattleDroid_Ability_01",
+    "UI/SVG/Customize/Specials/CloneJetTrooper/Abilities/CloneJetTrooper_Ability_01",
+    "UI/SVG/Customize/Specials/Droideka/Abilities/Droideka_Ability_01",
+    "UI/SVG/Customize/Specials/Droideka/Abilities/Droideka_Ability_02",
+    "UI/SVG/Customize/Specials/Droideka/Abilities/Droideka_Ability_03",
+    "UI/SVG/Customize/Specials/ISB_Agent/Abilities/ISB_Agent_Ability_01",
+    "UI/SVG/Customize/Specials/ISB_Agent/Abilities/ISB_Agent_Ability_02",
+    "UI/SVG/Customize/Specials/ISB_Agent/Abilities/ISB_Agent_Ability_03",
+    "UI/SVG/Customize/Specials/ISB_Agent/Abilities/ISB_Agent_Ability_04",
+    "UI/SVG/Customize/Specials/Spy/Abilities/Spy_Ability_01",
+    "UI/SVG/Customize/Specials/Spy/Abilities/Spy_Ability_02",
+    "UI/SVG/Customize/Specials/Spy/Abilities/Spy_Ability_03",
+    "UI/SVG/Customize/Specials/Tauntaun/Icon_Tauntaun",
+    "UI/SVG/Customize/Troopers/Assault/Ability/Assault_Ability_01",
+    "UI/SVG/Customize/Troopers/Enforcer/CloneCommando/Abilities/CloneCommando_Ability_01",
+    "UI/SVG/Customize/Troopers/Enforcer/CloneCommando/Abilities/CloneCommando_Ability_02",
+    "UI/SVG/Customize/Troopers/Enforcer/CloneCommando/Abilities/CloneCommando_Ability_03",
+    "UI/SVG/Customize/Troopers/Enforcer/Gunner/Abilities/Gunner_Ability_01",
+    "UI/SVG/Customize/Troopers/Enforcer/Gunner/Abilities/Gunner_Ability_02",
+    "UI/SVG/Customize/Troopers/Enforcer/Gunner/Abilities/Gunner_Ability_03",
+    "UI/SVG/Customize/Troopers/Heavy/Ability/Heavy_Ability_03",
+    "UI/SVG/Customize/Troopers/Officer/Abilities/Officer_Ability_02A",
+    "UI/SVG/Customize/Troopers/Scout/Abilities/Specialist_Ability_01A",
+    "UI/SVG/Customize/Troopers/Scout/Abilities/Specialist_Ability_02A",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_22_CombatShield",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_27_ImpactGrenade",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_33_Sentry",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_37_BattleCommand",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_38_BlasterTurret",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_49_SplitterGrenade",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_52_ScoutBinoculars",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_53_ShockGrenade",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Trooper_54_Infiltration",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Troopers_12_ThermalDetonator",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Troopers_13_ScanDart",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/MKI_Troopers_17_Vanguard",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_05_CombatHeal",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_18_Barrage",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_22_CombatShield",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_26_DetoniteCharge",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_27_ImpactGrenade",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_28_IonTorpedo",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_30_RocketTurret",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_31_HeavySentry",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_32_LightSentry",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_33_MediumSentry",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_35_BattleCommand_Hope",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_36_BattleCommand_Cooling",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_37_BattleCommand_Fortitude",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_38_BlasterTurret",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_44_Defuser",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_45_Disruption",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_46_HomingShot",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_49_SplitterGrenade",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_50_SquadShield",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_52_ScoutBinoculars",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_53_ShockGrenade",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_54_InfiltrationScrambler",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_55_InfiltrationSpotter",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_56_InfiltrationBreacher",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_60_PersonalShield",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_61_ConcussionBlast",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_66_StingerPistol",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Trooper_68_TripMine",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Troopers_10_AcidLauncher",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Troopers_11_SmartIonGrenade",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Troopers_12_ThermalDetonator",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Troopers_13_ScanDart",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Troopers_14_FlashPistol",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Troopers_15_VanguardChain",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Troopers_16_VanguardRefresh",
+    "UI/SVG/Customize/Troopers/TrooperAbilityIcons/SC_Troopers_17_VanguardSlug",
+    "UI/SVG/Customize/Troopers/TrooperShared/Abilities/TrooperShared_Ability_04",
+    "UI/SVG/Customize/Troopers/TrooperShared/CombatBoosts/TrooperShared_CombatBoost_01",
+    "UI/SVG/EAAccess/ea_access_trial",
+    "UI/SVG/EoR/Deco/deco_Button_LB",
+    "UI/SVG/EoR/Deco/deco_Button_RB",
+    "UI/SVG/EoR/Deco/deco_deco_arrow",
+    "UI/SVG/EoR/Deco/deco_deco_corner",
+    "UI/SVG/EoR/Deco/deco_deco_indicator",
+    "UI/SVG/EoR/Deco/deco_deco_side",
+    "UI/SVG/EoR/Deco/deco_deco_title",
+    "UI/SVG/EoR/Deco/decoration",
+    "UI/SVG/Factions/Factions_GalacticEmpire",
+    "UI/SVG/Factions/Factions_GalacticRepublic",
+    "UI/SVG/Factions/Factions_RebelAlliance",
+    "UI/SVG/Factions/Factions_Separatists",
+    "UI/SVG/Factions/Icon_GalacticEmpire",
+    "UI/SVG/Factions/Icon_GalacticRepublic",
+    "UI/SVG/Factions/Icon_RebelAlliance",
+    "UI/SVG/Factions/Icon_Separatists",
+    "UI/SVG/Gadgets/Abilities_Icon_PLACEHOLDER",
+    "UI/SVG/Gadgets/Abilities_Icon_ProtonTorpedo_PLACEHOLDER",
+    "UI/SVG/Gadgets/HardLock_End",
+    "UI/SVG/Gadgets/ThreatLocator_Arrow",
+    "UI/SVG/Gadgets/ThreatLocator_Arrow_Tagged",
+    "UI/SVG/GroundVehicles/AAT-1/Abilities/AAT-1_Ability_01",
+    "UI/SVG/GroundVehicles/AAT-1/Abilities/AAT-1_Ability_02",
+    "UI/SVG/GroundVehicles/AAT-1/Abilities/AAT-1_Ability_03",
+    "UI/SVG/GroundVehicles/AAT-1/Icon_ATT-1",
+    "UI/SVG/GroundVehicles/AT-ST/Abilities/Ability_01",
+    "UI/SVG/GroundVehicles/AT-ST/Abilities/Ability_02",
+    "UI/SVG/GroundVehicles/AT-ST/Abilities/Ability_03",
+    "UI/SVG/GroundVehicles/AT-ST/Icon_AT-ST",
+    "UI/SVG/GroundVehicles/TX-130/Abilities/TX-130_Ability_03",
+    "UI/SVG/GroundVehicles/TX-130/Icon_TX130",
+    "UI/SVG/HUD/Nametag_Class_Autoplayer",
+    "UI/SVG/HUD/Nametag_Class_Autoplayer_Background",
+    "UI/SVG/HUD/Nametag_Class_Troopers_Assault_Background",
+    "UI/SVG/HUD/Nametag_Class_Troopers_Heavy_Background",
+    "UI/SVG/HUD/Nametag_Class_Troopers_Officer_Background",
+    "UI/SVG/HUD/Nametag_Class_Troopers_Specialist_Background",
+    "UI/SVG/HUD/Nametag_Hero_Background",
+    "UI/SVG/HUD/Nametag_Specials_Background",
+    "UI/SVG/HUD/Turret_Repair",
+    "UI/SVG/HUD/WR_loading_icon",
+    "UI/SVG/InGame/GameMode/GameMode_AT-TE",
+    "UI/SVG/InGame/GameMode/GameMode_Attack",
+    "UI/SVG/InGame/GameMode/GameMode_Attack_AT-TE",
+    "UI/SVG/InGame/GameMode/GameMode_Checkmark",
+    "UI/SVG/InGame/GameMode/GameMode_Cross",
+    "UI/SVG/InGame/GameMode/GameMode_Defend",
+    "UI/SVG/InGame/GameMode/GameMode_Lock",
+    "UI/SVG/InGame/GameMode/GameMode_Soldier",
+    "UI/SVG/InGame/GameMode/GameMode_Vehicle",
+    "UI/SVG/KillScreen/SB_Diagrams_ARC170",
+    "UI/SVG/KillScreen/SB_Diagrams_AWing",
+    "UI/SVG/KillScreen/SB_Diagrams_BTLBYWing",
+    "UI/SVG/KillScreen/SB_Diagrams_CinderTurret",
+    "UI/SVG/KillScreen/SB_Diagrams_CorvetteCR90",
+    "UI/SVG/KillScreen/SB_Diagrams_DroidShipQuadTurboLaserTurret",
+    "UI/SVG/KillScreen/SB_Diagrams_DroidTriFighter",
+    "UI/SVG/KillScreen/SB_Diagrams_DryDockTurret",
+    "UI/SVG/KillScreen/SB_Diagrams_GrizzlyBoat",
+    "UI/SVG/KillScreen/SB_Diagrams_HoneyBee",
+    "UI/SVG/KillScreen/SB_Diagrams_HyenaBomber",
+    "UI/SVG/KillScreen/SB_Diagrams_ImperialCruiser",
+    "UI/SVG/KillScreen/SB_Diagrams_JediCruiser",
+    "UI/SVG/KillScreen/SB_Diagrams_MC80Turret",
+    "UI/SVG/KillScreen/SB_Diagrams_MilleniumFalcon",
+    "UI/SVG/KillScreen/SB_Diagrams_MilleniumFalconNT",
+    "UI/SVG/KillScreen/SB_Diagrams_N1",
+    "UI/SVG/KillScreen/SB_Diagrams_Scimitar",
+    "UI/SVG/KillScreen/SB_Diagrams_Slave1",
+    "UI/SVG/KillScreen/SB_Diagrams_StarDestroyerTurboLaser",
+    "UI/SVG/KillScreen/SB_Diagrams_StarDestroyerTurboLaserTurret",
+    "UI/SVG/KillScreen/SB_Diagrams_TIEAdvancedX1",
+    "UI/SVG/KillScreen/SB_Diagrams_TIEBomber",
+    "UI/SVG/KillScreen/SB_Diagrams_TIEFighter",
+    "UI/SVG/KillScreen/SB_Diagrams_TIEInterceptor",
+    "UI/SVG/KillScreen/SB_Diagrams_VWing",
+    "UI/SVG/KillScreen/SB_Diagrams_VenatorTurrets",
+    "UI/SVG/KillScreen/SB_Diagrams_VultureDroid",
+    "UI/SVG/KillScreen/SB_Diagrams_XWingT65",
+    "UI/SVG/KillScreen/SB_Diagrams_XWingT65Red5",
+    "UI/SVG/KillScreen/SB_Diagrams_YWing",
+    "UI/SVG/KillScreen/SB_Diagrams_YodasStarfighter",
+    "UI/SVG/LoadingProgressBar/LoadingProgressBar_Background",
+    "UI/SVG/LoadingProgressBar/LoadingProgressBar_Border",
+    "UI/SVG/LoadingProgressBar/LoadingProgressBar_LinesDots",
+    "UI/SVG/LoadingProgressBar/LoadingProgressBar_ProgressBar",
+    "UI/SVG/LoadingProgressBar/LoadingProgressBar_Text",
+    "UI/SVG/Milestones/Icon_Milestone_DailyNormal",
+    "UI/SVG/Milestones/Icon_Milestones_Arcade",
+    "UI/SVG/Milestones/Icon_Milestones_Campaign",
+    "UI/SVG/Milestones/Icon_Milestones_Defeat",
+    "UI/SVG/Milestones/Icon_Milestones_HeadShot",
+    "UI/SVG/Milestones/Icon_Milestones_Multplayer",
+    "UI/SVG/Pickups/Pickup_HH-12",
+    "UI/SVG/Pickups/Pickup_Icon_01",
+    "UI/SVG/Pickups/Pickup_Icon_02",
+    "UI/SVG/Pickups/Pickup_Icon_03",
+    "UI/SVG/Pickups/Pickup_Icon_04",
+    "UI/SVG/Pickups/Pickup_Icon_05",
+    "UI/SVG/Pickups/Pickup_T-7",
+    "UI/SVG/Reticle/Reticle_LeadingSight_Out",
+    "UI/SVG/SP/Ability_Icons_Ability_Dio",
+    "UI/SVG/SP/BRAZ_Alongtimeago",
+    "UI/SVG/SP/CH_Alongtimeago",
+    "UI/SVG/SP/DroidVision_CenterDot",
+    "UI/SVG/SP/EN_AlongtimeAgo",
+    "UI/SVG/SP/FR_Alongtimeago",
+    "UI/SVG/SP/GER_Alongtimeago",
+    "UI/SVG/SP/IT_Alongtimeago",
+    "UI/SVG/SP/Inferno_Logo",
+    "UI/SVG/SP/JP_Alongtimeago",
+    "UI/SVG/SP/POL_Alongtimeago",
+    "UI/SVG/SP/RU_Alongtimeago",
+    "UI/SVG/SP/SP_Alongtimeago",
+    "UI/SVG/SP/collectible_completed",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Afterburner",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Astromech_Droid",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Astromech_Droid_R2-D2",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Auxiliary_Power",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Cloaking_Device",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Concussion_Missile",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Countermeasures",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Dual_Concussion_Missiles",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Energy_Torpedo",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Force_Disable",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Force_Evasion",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Force_Guidance",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Grizzly_Boat",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Hard_Lock",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Hard_Lock_Light",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Heatsink",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Heavy_Laser",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Ion_Cannons",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Ion_Turret_Cannon",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Laser_Barrage",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Missile_Barrage",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Proton_Torpedo",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Seismic_Charge",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Special_Modifications",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Speed_Boost",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Tail_Gunner",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Tail_Gunner_ARC170",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Tail_Gunner_TIESF",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Targeting_Computer",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Twin_Proton_Torpedoes",
+    "UI/SVG/SPaceBattles/Ability_Icons_Ability_Weapon_Overcharge",
+    "UI/SVG/SPaceBattles/Icon_HUD_SpeedBar",
+    "UI/SVG/SPaceBattles/IonSlowDown",
+    "UI/SVG/SPaceBattles/MillenniumFalcon/BoostTopSpeed",
+    "UI/SVG/SPaceBattles/MillenniumFalcon/SecondaryWeaponDamage",
+    "UI/SVG/SPaceBattles/MillenniumFalcon/SpecialModificationsActive_PrimaryWeaponDamage",
+    "UI/SVG/SPaceBattles/Scimitar/ExtraDamageAfterDecloaking",
+    "UI/SVG/SPaceBattles/Slave1/SeismicChargeRadius",
+    "UI/SVG/SPaceBattles/StarCard_Icons_Placeholder",
+    "UI/SVG/Settings/Settings_Credits",
+    "UI/SVG/Shared/LevelBackgroundIcon",
+    "UI/SVG/Shared/LevelBackgroundPrestigeIcon1",
+    "UI/SVG/Shared/LevelBackgroundPrestigeIcon2",
+    "UI/SVG/Shared/LevelBackgroundPrestigeIconBG",
+    "UI/SVG/Shared/LevelBackgroundPrestigeIconBGfill",
+    "UI/SVG/Shared/PassiveAbility_EwokRebel",
+    "UI/SVG/Shared/PassiveAbility_Health",
+    "UI/SVG/Shared/PassiveAbility_Hover",
+    "UI/SVG/Shared/PassiveAbility_MeleeKick",
+    "UI/SVG/Shared/RankupIcon",
+    "UI/SVG/Shared/battle_points",
+    "UI/SVG/Shared/decoration_pause",
+    "UI/SVG/SocialHub/voip-1",
+    "UI/SVG/SocialHub/voip-off",
+    "UI/SVG/Speeders/Icon_74-Z_SpeederBike",
+    "UI/SVG/Speeders/Icon_LIUV",
+    "UI/SVG/Speeders/Icon_T-47_AirSpeeder",
+    "UI/SVG/Speeders/Icon_X-34_LandSpeeder",
+    "UI/SVG/Speeders/Vectors/LightVehicles/Icon_LAAT",
+    "UI/SVG/Speeders/Vectors/LightVehicles/Icon_U-VING",
+    "UI/SVG/StationaryWeapons/Icon_ATGAR14DFPTOWER",
+    "UI/SVG/StationaryWeapons/Icon_DF9",
+    "UI/SVG/StationaryWeapons/Icon_E-WEB",
+    "UI/SVG/StationaryWeapons/Icon_Markll",
+    "UI/SVG/StationaryWeapons/Icon_StationaryGroundTurret",
+    "UI/SVG/Store/EAAccess",
+    "UI/SVG/Store/Icon_Timer",
+    "UI/SVG/Tiles/Tile_Connect",
+    "UI/SVG/WeaponMods/Icon_Barrel",
+    "UI/SVG/WeaponMods/Icon_BarrelExtension",
+    "UI/SVG/WeaponMods/Icon_CoolingCell",
+    "UI/SVG/WeaponMods/Icon_Grip",
+    "UI/SVG/WeaponMods/Icon_RangeFinder",
+    "UI/SVG/WeaponMods/Icon_Scope",
+    "UI/SVG/WeaponMods/Icon_SecondaryFire",
+    "UI/SVG/WeaponMods/Icon_Stock",
+    "UI/SVG/WeaponMods/Icon_Trigger",
+    "UI/SVG/Weapons/Weapons_A180",
+    "UI/SVG/Weapons/Weapons_A280",
+    "UI/SVG/Weapons/Weapons_A280C",
+    "UI/SVG/Weapons/Weapons_A280CFE",
+    "UI/SVG/Weapons/Weapons_A295",
+    "UI/SVG/Weapons/Weapons_AnakinLightsaber",
+    "UI/SVG/Weapons/Weapons_Blurrg-1120",
+    "UI/SVG/Weapons/Weapons_Bowcaster",
+    "UI/SVG/Weapons/Weapons_CR-2",
+    "UI/SVG/Weapons/Weapons_CyclerRifle",
+    "UI/SVG/Weapons/Weapons_D-93Incinerator",
+    "UI/SVG/Weapons/Weapons_DC-15",
+    "UI/SVG/Weapons/Weapons_DC-15A",
+    "UI/SVG/Weapons/Weapons_DC-15LE",
+    "UI/SVG/Weapons/Weapons_DC-17",
+    "UI/SVG/Weapons/Weapons_DC-17Dual",
+    "UI/SVG/Weapons/Weapons_DC-17M",
+    "UI/SVG/Weapons/Weapons_DH-17",
+    "UI/SVG/Weapons/Weapons_DL-18",
+    "UI/SVG/Weapons/Weapons_DL-44",
+    "UI/SVG/Weapons/Weapons_DL44",
+    "UI/SVG/Weapons/Weapons_DLT-19",
+    "UI/SVG/Weapons/Weapons_DLT-19D",
+    "UI/SVG/Weapons/Weapons_DLT-19X",
+    "UI/SVG/Weapons/Weapons_DLT-20A",
+    "UI/SVG/Weapons/Weapons_Defender",
+    "UI/SVG/Weapons/Weapons_DookuLightsaber",
+    "UI/SVG/Weapons/Weapons_DroidekaTwinBlasterCannons",
+    "UI/SVG/Weapons/Weapons_E-11",
+    "UI/SVG/Weapons/Weapons_E-11D",
+    "UI/SVG/Weapons/Weapons_E-5",
+    "UI/SVG/Weapons/Weapons_E-5C",
+    "UI/SVG/Weapons/Weapons_E-5S",
+    "UI/SVG/Weapons/Weapons_EE-3",
+    "UI/SVG/Weapons/Weapons_EL-16",
+    "UI/SVG/Weapons/Weapons_EL-16HFE",
+    "UI/SVG/Weapons/Weapons_EmperorForceLightning",
+    "UI/SVG/Weapons/Weapons_EwokBow",
+    "UI/SVG/Weapons/Weapons_F-11D",
+    "UI/SVG/Weapons/Weapons_FWMB-10",
+    "UI/SVG/Weapons/Weapons_FWMB-10K",
+    "UI/SVG/Weapons/Weapons_Glie-44",
+    "UI/SVG/Weapons/Weapons_Glie-44_Spy",
+    "UI/SVG/Weapons/Weapons_GrievousLightsaber",
+    "UI/SVG/Weapons/Weapons_Gunner",
+    "UI/SVG/Weapons/Weapons_IQA-11",
+    "UI/SVG/Weapons/Weapons_LandoX-8NightSniper",
+    "UI/SVG/Weapons/Weapons_LukeHothLightsaber",
+    "UI/SVG/Weapons/Weapons_LukeLightsaber",
+    "UI/SVG/Weapons/Weapons_M-45",
+    "UI/SVG/Weapons/Weapons_MaulCrimsonLightsaber",
+    "UI/SVG/Weapons/Weapons_MaulLightsaber",
+    "UI/SVG/Weapons/Weapons_Melee",
+    "UI/SVG/Weapons/Weapons_Melee_Kick",
+    "UI/SVG/Weapons/Weapons_NT-242",
+    "UI/SVG/Weapons/Weapons_ObiWanLightsaber",
+    "UI/SVG/Weapons/Weapons_Pistol",
+    "UI/SVG/Weapons/Weapons_RG-4D",
+    "UI/SVG/Weapons/Weapons_RK-3",
+    "UI/SVG/Weapons/Weapons_RK-3Dual",
+    "UI/SVG/Weapons/Weapons_RT-97C",
+    "UI/SVG/Weapons/Weapons_Relby",
+    "UI/SVG/Weapons/Weapons_S-5",
+    "UI/SVG/Weapons/Weapons_SE-44",
+    "UI/SVG/Weapons/Weapons_SE-44C",
+    "UI/SVG/Weapons/Weapons_T21",
+    "UI/SVG/Weapons/Weapons_TL-50",
+    "UI/SVG/Weapons/Weapons_TwinE-5Blaster",
+    "UI/SVG/Weapons/Weapons_VT-33D",
+    "UI/SVG/Weapons/Weapons_VaderLightSaber",
+    "UI/SVG/Weapons/Weapons_Valken-38x",
+    "UI/SVG/Weapons/Weapons_YodaLightSaber"
+  ]
+}

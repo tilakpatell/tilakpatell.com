@@ -188,5 +188,7 @@ describe('the asset upload', () => {
     expect(run.status, run.stderr).not.toBe(128);
     expect(run.stdout.split('\n').filter(Boolean)).toEqual([]);
     expect(execFileSync('git', ['ls-files', '.github/workflows'], { cwd: ROOT, encoding: 'utf8' })).toMatch(/deploy\.yml/);
-  });
+    // (a git grep over every tracked file: well under a second alone, past
+    // vitest's 5 s default when the full run has the machine busy)
+  }, 30000);
 });

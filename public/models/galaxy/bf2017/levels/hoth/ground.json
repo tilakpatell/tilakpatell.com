@@ -1,0 +1,147 @@
+{
+ "world": "hoth",
+ "terrain": "Levels/MP/Hoth_01/Hoth_01_Terrain/Hoth_01_Terrain",
+ "_source": "web/maps/terrain_scatter/<terrain>.json surfaceShaders (scripts/bf2017-ground.mjs); masks by src/lib/three/ground/masks.js",
+ "mask": "derived",
+ "masks": {
+  "png": "ground/masks.png",
+  "w": 1281,
+  "h": 1281,
+  "minX": -1280,
+  "minZ": -1280,
+  "metresPerPixel": 2,
+  "share": {
+   "rocky": 0.085,
+   "chunky": 0.1111,
+   "rough": 0.0037,
+   "packed": 0.8002
+  }
+ },
+ "rules": [
+  {
+   "layer": "rocky",
+   "slope": [
+    30,
+    null
+   ]
+  },
+  {
+   "layer": "chunky",
+   "slope": [
+    null,
+    15
+   ],
+   "height": [
+    null,
+    -2
+   ]
+  },
+  {
+   "layer": "rough",
+   "density": "high"
+  },
+  {
+   "layer": "packed"
+  }
+ ],
+ "rulesSource": "RULES.hoth: lane Q2’s plan, Review Focus 1 (slope from the heightmap, height against the field, the placed meshes’ density); the game’s masks undecoded",
+ "tile": {
+  "m": 4,
+  "_source": "TILE_M: judged on the shot (lane Q2); the layer shader’s tiling unread"
+ },
+ "layers": [
+  {
+   "id": "rocky",
+   "name": "T_ArcticBase_SnowRockyPacked_04_N",
+   "channel": 0,
+   "map": "tex/t_arcticbase_snowrockypacked_04_n.ktx2",
+   "size": 2048,
+   "format": "BC7_UNORM",
+   "tile": 4,
+   "combos": 47,
+   "height": true,
+   "smoothness": 0.212,
+   "roughness": {
+    "value": 0.7,
+    "_source": "ROUGHNESS.rocky: named until the layer shaders are read"
+   }
+  },
+  {
+   "id": "chunky",
+   "name": "T_ArcticBase_SnowChunkyWind_01_N",
+   "channel": 1,
+   "map": "tex/t_arcticbase_snowchunkywind_01_n.ktx2",
+   "size": 2048,
+   "format": "BC7_UNORM",
+   "tile": 4,
+   "combos": 42,
+   "height": true,
+   "smoothness": null,
+   "roughness": {
+    "value": 0.65,
+    "_source": "ROUGHNESS.chunky: named until the layer shaders are read"
+   }
+  },
+  {
+   "id": "rough",
+   "name": "T_ArcticBase_SnowRoughPacked_03_N",
+   "channel": 2,
+   "map": "tex/t_arcticbase_snowroughpacked_03_n.ktx2",
+   "size": 2048,
+   "format": "BC7_UNORM",
+   "tile": 4,
+   "combos": 70,
+   "height": true,
+   "smoothness": 0.902,
+   "roughness": {
+    "value": 0.6,
+    "_source": "ROUGHNESS.rough: named until the layer shaders are read"
+   }
+  },
+  {
+   "id": "packed",
+   "name": "T_ArcticBase_SnowPacked_04_N",
+   "channel": null,
+   "map": "tex/t_arcticbase_snowpacked_04_n.ktx2",
+   "size": 2048,
+   "format": "BC7_UNORM",
+   "tile": 4,
+   "combos": 71,
+   "height": true,
+   "smoothness": 0.446,
+   "roughness": {
+    "value": 0.55,
+    "_source": "ROUGHNESS.packed: named until the layer shaders are read"
+   }
+  }
+ ],
+ "sparkle": {
+  "name": "T_ArcticBase_SnowSparkle_03_RGBM",
+  "map": "tex/t_arcticbase_snowsparkle_03_rgbm.ktx2",
+  "tile": 1,
+  "_source": "the terrain’s defaultterrainsurfaceshader; SPARKLE_TILE_M named"
+ },
+ "macro": {
+  "color": [
+   0.547,
+   0.594,
+   0.644
+  ],
+  "_source": "VE_Sky_Arctic_Sunny_01 EnlightenComponentData.TerrainColor (spec §3)"
+ },
+ "fade": {
+  "start": 300,
+  "end": 450,
+  "_source": "FADE: the design’s 300 m (spec §4, Q2); the end judged on the shot"
+ },
+ "blend": {
+  "mode": "height",
+  "sharpness": 4,
+  "_source": "HEIGHT_SHARPNESS; mode from the layer maps’ blue channel (BLUE_FLAT), the mask alone where no map is read"
+ },
+ "channels": {
+  "_source": "the Arctic _N maps decoded: R, G the normal; B a height (the combinations’ displacement2d); A a smoothness, a constant 255 in some"
+ },
+ "combos": 105,
+ "missing": []
+}

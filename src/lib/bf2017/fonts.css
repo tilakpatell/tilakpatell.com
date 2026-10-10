@@ -1,0 +1,184 @@
+/* The 2017 game's fonts, every one in the drop (public/fonts/bf2017/, its
+   README beside them: the owner holds the licence, 2026-10-10;
+   scripts/bf2017-ui.mjs ships them as the drop has them). The HUD draws in
+   the game's own faces, as its widgets name them (src/lib/bf2017/ui/'s
+   fontFor): Univers Condensed for its labels, RaxusPrime for its numerals,
+   Univers and News Gothic for running text, Aurebesh for signage. The CJK
+   and Arabic faces load only for a glyph in their ranges. */
+@font-face {
+  font-family: 'BF Univers Condensed';
+  src: url('/fonts/bf2017/LinotypeUnivers-420Cn.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF Univers Condensed';
+  src: url('/fonts/bf2017/LinotypeUnivers-520CnMedium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF Univers Condensed';
+  src: url('/fonts/bf2017/LinotypeUnivers-620CnBold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF Univers Condensed';
+  src: url('/fonts/bf2017/LinotypeUnivers-720CnHeavy.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF Univers Condensed';
+  src: url('/fonts/bf2017/LT_UniversCond820.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF Univers';
+  src: url('/fonts/bf2017/LinotypeUnivers-430Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF Univers';
+  src: url('/fonts/bf2017/UniversLT-65Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF RaxusPrime';
+  src: url('/fonts/bf2017/RaxusPrimeNumericalMonospace_Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF RaxusPrime';
+  src: url('/fonts/bf2017/RaxusPrimeNumericalMonospace_Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF RaxusPrime';
+  src: url('/fonts/bf2017/RaxusPrimeNumericalMonospace_Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF Aurebesh';
+  src: url('/fonts/bf2017/Aurebesh.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF News Gothic';
+  src: url('/fonts/bf2017/NewsGothicRomanBT.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cuprum';
+  src: url('/fonts/bf2017/Cuprum-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cuprum';
+  src: url('/fonts/bf2017/Cuprum-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto BF';
+  src: url('/fonts/bf2017/Roboto-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto BF';
+  src: url('/fonts/bf2017/Roboto-MediumItalic.ttf') format('truetype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Kufi Arabic BF';
+  src: url('/fonts/bf2017/NotoKufiArabic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans CJK BF';
+  src: url('/fonts/bf2017/NotoSansCJKkr-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  unicode-range: U+1100-11FF, U+3130-318F, U+AC00-D7AF;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans CJK BF';
+  src: url('/fonts/bf2017/NotoSansCJKsc-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  unicode-range: U+2E80-2FDF, U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF HS Gothic';
+  src: url('/fonts/bf2017/DFPHSGothic-W5.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF HS Gothic';
+  src: url('/fonts/bf2017/DFPHSGothic-W7.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF AR Heiti';
+  src: url('/fonts/bf2017/ARYentiMediumB5_ARRGothic1Medium.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  unicode-range: U+3000-303F, U+3100-312F, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'BF AR Heiti';
+  src: url('/fonts/bf2017/ARYentiBoldB5_ARRGothic1Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  unicode-range: U+3000-303F, U+3100-312F, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  font-display: swap;
+}
+
+:root {
+  --font-bf-cjk: 'BF HS Gothic', 'BF AR Heiti', 'Noto Sans CJK BF', 'Noto Kufi Arabic BF';
+  --font-bf-hud: 'BF Univers Condensed', 'Cuprum', var(--font-bf-cjk), system-ui, sans-serif;
+  --font-bf-numerals: 'BF RaxusPrime', 'BF Univers Condensed', ui-monospace, monospace;
+  --font-bf-text: 'BF Univers', 'BF News Gothic', 'Roboto BF', var(--font-bf-cjk), system-ui, sans-serif;
+  /* the game's own Aurebesh, the site's (SilvinoR's, src/styles/extras.css) behind it */
+  --font-aurebesh: 'BF Aurebesh', 'Basic Script', var(--font-mono);
+}

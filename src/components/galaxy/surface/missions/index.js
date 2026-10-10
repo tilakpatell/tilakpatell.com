@@ -24,11 +24,18 @@
 // Or kind 'assault': a battle for a world's command posts (./assault.js
 // runs it; the maps are ./assaults.js's, merged in below).
 //
+// Or kind 'hvv' (Heroes vs Villains, ./hvv.js) or 'blast' (./blast.js): the
+// 2017 game's two modes on the level's own grounds (./arenas.js), a row each
+// on every world whose level has them (GROUNDS), merged in below.
+//
 // Any kind may carry `site: { sky?, light?, fog?, weather? }`: laid over the
 // site's while it runs (missionSite), the world being built again for it.
 
 import { starsFor } from './chase';
 import { ASSAULTS } from './assaults';
+import { GROUNDS } from './arenas';
+import { hvvMission } from './hvv';
+import { blastMission } from './blast';
 import { siteOf } from '../sites';
 
 export const MISSIONS = {
@@ -396,6 +403,12 @@ MISSIONS.sorgan = {
 
 // (the galactic assaults, a map a world, in with the rest)
 for (const [system, m] of Object.entries(ASSAULTS)) (MISSIONS[system] ??= {})[m.id] = m;
+// (Heroes vs Villains and Blast, on each world whose level has their grounds)
+for (const system of GROUNDS) {
+  const list = (MISSIONS[system] ??= {});
+  list.hvv = hvvMission(system);
+  list.blast = blastMission(system);
+}
 
 export const missionOf = (system, id) => MISSIONS[system]?.[id] ?? null;
 

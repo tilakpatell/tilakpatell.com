@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - The era rule on films (M1TAK, M4JAK, M5STA, the Crait, D'Qar, Jakku, Starkiller, Takodana, Resurgent, Paintball planet films out), icons and bitmaps (by name), strings (kept whole: a string is text, not a model; a sequel name is shown only when a sequel thing asks, which none does).
-- The fonts: only `Roboto-*`, `NotoSans*`, `NotoKufi*`, `Cuprum-*` ship, each with its licence file beside it under `public/fonts/bf2017/`; `Aurebesh.ttf` ships only if its licence can be found (the owner is asked in the PR, with the font's origin named); `LinotypeUnivers*`, `LT_Univers*`, `UniversLT*`, `DFPHSGothic*`, `ARYenti*`, `RaxusPrime*`, `NewsGothic*` are `excluded: licence` in the owners table and never copied into `public/`.
+- The fonts: all 23 ship under `public/fonts/bf2017/` (the owner holds the licence for everything in the drop, said 2026-10-10), used where the game uses them: Univers condensed for the HUD, RaxusPrime for the numerals, Aurebesh for signage; `fontAllowed` is not a gate.
 - A film is published as the drop's WebM, untouched (no re-encode), with a poster frame (`ffmpeg -ss 1 -frames:v 1` as WebP, 640 wide) committed; films load only when their card or veil is on screen, muted, and never on a saver connection (`lowData`).
 - Nothing raw reaches a visitor except through the published bucket; every file credited (`public/games/credits.json`: `bf2017-ui`, `bf2017-films`).
 - Files under 800 lines; British spelling and curly quotes; commits one plain sentence with the attribution lines.
@@ -31,7 +31,7 @@
 ### Task 1: The cut and the publish
 
 - Create: `scripts/bf2017-ui.mjs` (`node scripts/bf2017-ui.mjs films|icons|fonts|strings|bitmaps|all [--dry]`: fetches `web/movies/**`, `web/svg/**`, `web/fonts/*`, `web/strings/*`, `web/textures/ui/**` through the fetch's `web` form; films → `public/films/bf2017/<slug>.webm` (published) + `<slug>.webp` poster (committed); icons → `public/ui/bf2017/<family>.svg` sprites (`<symbol id>` per icon, families by the SVG folders' names) committed; fonts → `public/fonts/bf2017/` with licences; strings → `src/data/bf2017/strings.json` `{ [key]: text }` (lane 0's file extended, its 69 kept); bitmaps → `public/ui/bf2017/bitmaps/<name>.webp` at the widget's size), `scripts/lib/bf2017-ui.mjs` (pure: `filmRows(misc) → [{ slug, path, kind: 'planet' | 'campaign' | 'tile' | 'tutorial' | 'logo' | 'fx', system?, level?, loop }]`, `isSequelFilm`, `spriteOf(svgs)`, `fontAllowed(name)`)
-- Test: `scripts/lib/bf2017-ui.test.mjs` (`filmRows` on the fixture `misc.jsonl`: `Planet_Hoth_01` → `{ kind: 'planet', system: 'hoth' }`, `A1_M1END_DS01_S0100_FMV` → `{ kind: 'campaign', level: 'endor' }`, `Planet_Jakku_01` absent; `fontAllowed('LinotypeUnivers-420Cn.ttf')` false, `('Roboto-Regular.ttf')` true)
+- Test: `scripts/lib/bf2017-ui.test.mjs` (`filmRows` on the fixture `misc.jsonl`: `Planet_Hoth_01` → `{ kind: 'planet', system: 'hoth' }`, `A1_M1END_DS01_S0100_FMV` → `{ kind: 'campaign', level: 'endor' }`, `Planet_Jakku_01` absent; the 23 fonts all listed by `fontRows(misc)`)
 - [ ] Failing tests → FAIL → implement; run `all`; publish → PASS. Commit `The game's films, icons, fonts, strings and UI art, cut and published`.
 
 ### Task 2: The films on the galaxy
@@ -56,8 +56,8 @@
 
 ### Task 5: The strings and the fonts
 
-- Create: `src/lib/bf2017/strings.js` (`text(key, args?) → string`; `nameOf(thing)` for a rulebook row by its `_source` name through lane 0's key method), `src/lib/bf2017/fonts.css` (`@font-face` for the shipped faces; `--font-bf-hud: 'Cuprum', 'Roboto'…`, `--font-aurebesh` if shipped)
-- Modify: the HUD and loadout labels for game-sourced things (weapons, abilities, vehicles, heroes, planets) through `text`; the veil's loading tips from the strings' `LoadingTip_*` keys; the galaxy's signage decals (E0's `decals.js`) use `--font-aurebesh` where a decal is text (if shipped)
+- Create: `src/lib/bf2017/strings.js` (`text(key, args?) → string`; `nameOf(thing)` for a rulebook row by its `_source` name through lane 0's key method), `src/lib/bf2017/fonts.css` (`@font-face` for all 23; `--font-bf-hud: 'Univers Condensed'…`, `--font-bf-num: 'RaxusPrime'`, `--font-aurebesh`)
+- Modify: the HUD and loadout labels for game-sourced things (weapons, abilities, vehicles, heroes, planets) through `text`; the veil's loading tips from the strings' `LoadingTip_*` keys; the galaxy's signage decals use `--font-aurebesh` where a decal is text
 - Test: `strings.test.js` (Review Focus 4)
 - [ ] Failing tests → FAIL → implement → PASS. Commit `The game's own names and tips, in the game's open fonts`.
 
@@ -70,5 +70,5 @@
 
 ### Task 7: The hand-off and the PR
 
-- [ ] `HANDOFF-bf2017.md`'s fifth-design table: M's rows, the fonts' licence table, what lane 5 takes; `HANDOFF-battlefront.md`: lane 5 consumes `src/lib/bf2017/ui/`, `films.js`'s tiles; the ledger refreshed.
+- [ ] `HANDOFF-bf2017.md`'s fifth-design table: M's rows, one line that every font ships under the owner's licence, what lane 5 takes; `HANDOFF-battlefront.md`: lane 5 consumes `src/lib/bf2017/ui/`, `films.js`'s tiles; the ledger refreshed.
 - [ ] `npm run lint`, `npm test`, `npx vite build`; merge `origin/main`; PR titled `The game's films, icons, fonts, strings and UI art on the galaxy's screens`.

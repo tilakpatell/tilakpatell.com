@@ -1,0 +1,117 @@
+{
+ "system": "kamino",
+ "map": "levels/space/sb_kamino_01/sb_kamino_01",
+ "title": "the Republic fleet over Kamino",
+ "centre": [
+  -465.5,
+  -388.4,
+  -1391.7
+ ],
+ "radius": 64.8,
+ "models": {
+  "kamino-venator": {
+   "kind": "capital",
+   "as": "Venator-class Star Destroyer",
+   "size": 1214,
+   "url": "/models/galaxy/space/kamino-venator.glb",
+   "far": "/models/galaxy/space/kamino-venator.far.glb",
+   "tris": 32978,
+   "from": [
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_controltower_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_controltower_left_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_controltower_right_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_controltowerdetail_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_decal_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailback_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailbottom_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailbottom_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailfront_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailside_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailside_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailtop_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailtop_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_engine_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_engine_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_hanger_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_hanger_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_hangergunbase_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_hull_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_window_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/ventatorstardestroyer_turret_01_wreck_mesh"
+   ]
+  },
+  "kamino-venator-2": {
+   "kind": "capital",
+   "as": "Venator-class Star Destroyer",
+   "size": 1214,
+   "url": "/models/galaxy/space/kamino-venator-2.glb",
+   "far": "/models/galaxy/space/kamino-venator-2.far.glb",
+   "tris": 37992,
+   "from": [
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_controltower_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_controltower_left_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_controltower_right_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_controltowerdetail_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_decal_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailback_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailbottom_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailbottom_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailfront_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailside_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailside_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailtop_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_detailtop_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_hanger_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_hanger_02_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_hangergunbase_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_hull_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/venatorstardestroyer_window_01_mesh",
+    "gameplay/vehicles/capital/venatorclass_stardestroyer/ventatorstardestroyer_turret_01_wreck_mesh"
+   ]
+  },
+  "kamino-jedicruiser": {
+   "kind": "capital",
+   "as": "Arquitens-class command cruiser (the Republic’s)",
+   "size": 388,
+   "url": "/models/galaxy/space/kamino-jedicruiser.glb",
+   "far": "/models/galaxy/space/kamino-jedicruiser.far.glb",
+   "tris": 11013,
+   "from": [
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_commandbridge_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_decal_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_detailsbottom_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_detailsengine_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_detailsfront_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_detailsside_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_detailsside_02_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_detailstop_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_detailstop_02_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_engine_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_hatch_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_hull_01_mesh",
+    "gameplay/vehicles/capital/jedicruiser/jedicruiser_windows_01_mesh"
+   ]
+  },
+  "providenceclassdreadnaught-01": {
+   "kind": "capital",
+   "as": "providenceclassdreadnaught-01",
+   "size": 1085,
+   "url": "/models/galaxy/space/providenceclassdreadnaught-01.glb",
+   "far": "/models/galaxy/space/providenceclassdreadnaught-01.far.glb",
+   "tris": 22690,
+   "from": [
+    "gameplay/vehicles/capital/providenceclassdreadnaught/providenceclassdreadnaught_01_mesh"
+   ]
+  }
+ },
+ "pieces": [
+{"model":"kamino-venator","kind":"capital","at":[3.96,-2.84,26.4],"quaternion":[0,-0.7034,0,0.7108],"scale":[0.01,0.01,0.01]},
+{"model":"kamino-venator-2","kind":"capital","at":[-14.06,3.59,-27.32],"quaternion":[-0.0008,-0.9882,-0.0022,0.153],"scale":[0.01,0.01,0.01]},
+{"model":"kamino-jedicruiser","kind":"capital","at":[0.17,-1.04,-29.49],"quaternion":[0,-0.1178,0,0.993],"scale":[0.01,0.01,0.01]},
+{"model":"kamino-jedicruiser","kind":"capital","at":[-4.77,-1.1,-30.03],"quaternion":[0,-0.0852,0,0.9964],"scale":[0.01,0.01,0.01]},
+{"model":"kamino-jedicruiser","kind":"capital","at":[-2.24,0.18,-30.48],"quaternion":[0,-0.0982,0,0.9952],"scale":[0.01,0.01,0.01]},
+{"model":"providenceclassdreadnaught-01","kind":"capital","at":[2.13,0.15,59.33],"quaternion":[0,-0.0376,0,0.9993],"scale":[0.01,0.01,0.01]},
+{"model":"providenceclassdreadnaught-01","kind":"capital","at":[26.36,0.79,52.81],"quaternion":[0,-0.933,0,0.3599],"scale":[0.010001,0.01,0.010001]},
+{"model":"providenceclassdreadnaught-01","kind":"capital","at":[-11.54,0.27,-21.22],"quaternion":[0.0003,0.0992,0,0.9951],"scale":[0.01,0.01,0.01]}
+]
+}

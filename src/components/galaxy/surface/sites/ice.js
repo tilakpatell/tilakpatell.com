@@ -170,6 +170,9 @@ export const SITES = {
           { kind: 'rebel', at: [21.5, -3.6], still: true, face: 1.2, name: 'Medic', says: ['He’s in the bacta tank. Give it a few hours. He’ll be fine.', 'Frostbite, mostly. And a wampa. Mostly the wampa.'] },
           { kind: 'tauntaun', n: 2, at: [-3, -26], spread: 2, roam: 3, speed: 0.6, name: 'Tauntaun', says: ['(It snorts, and steams.)'] },
           { kind: 'hothtrooper', at: [3, -20], roam: 4, speed: 0.8, name: 'Tauntaun handler', says: ['They don’t like the cold any more than we do. Worse at night.'] },
+          // (the game's own droids about the base: a treadwell at the repairs, a gonk at the power)
+          { kind: 'treadwell', at: [24, -6], roam: 3, speed: 0.4, name: 'A treadwell droid', says: ['(Its arms whirr. It is fixing something, or taking it apart.)'] },
+          { kind: 'gonk', at: [-24, 6], roam: 2, speed: 0.2, name: 'A power droid', says: ['Gonk.', 'Gonk. Gonk.'] },
         ],
       },
     ],

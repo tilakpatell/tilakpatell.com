@@ -236,3 +236,20 @@ describe('a cut over its cap', () => {
     expect(overCaps([['plain', 12.8 * MB]], { native: true })).toEqual([]);
   });
 });
+
+describe('--textures: a map a shader graph binds', () => {
+  it('parses materials to their slots and names, and refuses a slot it has no use for', async () => {
+    const { parseTextures, overridePath } = await import('./bf2017-import.mjs');
+    const t = parseTextures('ATAT_Head_Layered=color:Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_CW,normal:Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_N;Legs_Shader=color:A/B/T_Legs_CS');
+    expect(Object.keys(t)).toEqual(['ATAT_Head_Layered', 'Legs_Shader']);
+    expect(t.ATAT_Head_Layered).toEqual([
+      { slot: 'color', name: 'Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_CW' },
+      { slot: 'normal', name: 'Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_N' },
+    ]);
+    expect(parseTextures('')).toEqual({});
+    expect(() => parseTextures('M=roughness:A/T_X')).toThrow(/--textures/);
+    // (the bucket's paths: lower case under web/textures, a normal map as the pipeline's derived __normal)
+    expect(overridePath('Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_CW', 'color')).toBe('web/textures/gameplay/vehicles/ground/at-at/texture/t_atathead_01_cw.ktx2');
+    expect(overridePath('Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_N', 'normal')).toBe('web/textures/gameplay/vehicles/ground/at-at/texture/t_atathead_01_n__normal.ktx2');
+  });
+});

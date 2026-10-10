@@ -1,0 +1,80 @@
+{
+ "FX/Textures/Debris/T_DebrisSmokeArm_01_D": [
+  "FX_Arctic_Ceiling_FallingSnow",
+  "FX_Snow_FallingSnow_01_Hoth"
+ ],
+ "FX/Textures/Debris/T_Plaster_S_2x2_256_D": [
+  "FX_Arctic_Ceiling_FallingSnow",
+  "FX_SnowDust_Falling_Ceiling"
+ ],
+ "FX/Textures/Snow/T_Snow_Mist_4x2_D": [
+  "FX_Arctic_Ceiling_FallingSnow",
+  "FX_SnowDust_Falling_Ceiling",
+  "FX_Snow_Placeable_Caverns",
+  "FX_Snow_FallingSnow_01_Hoth"
+ ],
+ "FX/Textures/Debris/T_Debris_FineDetail_01_D": [
+  "FX_Arctic_Ceiling_FallingSnow",
+  "FX_SnowDust_Falling_Ceiling"
+ ],
+ "FX/Textures/Smoke/T_ThinPuff_Gnomon_4x32_01_D": [
+  "FX_Arctic_Ceiling_FallingSnow",
+  "FX_SnowDust_Falling_Ceiling",
+  "FX_Smokevolume_Hoth_Indoor_XL",
+  "FX_SteamFallingCryo_01",
+  "FX_WreckSmokePillar_L",
+  "FX_Impact_Blaster_Snow"
+ ],
+ "FX/Textures/Smoke/T_SmokeSpikes_Gnomon_4x32_01_D": [
+  "FX_SnowDust_Falling_Ceiling",
+  "FX_Impact_Blaster_Snow"
+ ],
+ "FX/Textures/Flares/T_LightCone_01_D": [
+  "FX_Arctic_LightCone_04",
+  "FX_Arctic_LightCone_02"
+ ],
+ "FX/Textures/Exhausts/T_EngineExhaust_01_D": [
+  "FX_EngineExhaust_TransportGR75_Sec",
+  "FX_EngineExhaust_TransportGR75_Prim"
+ ],
+ "FX/Textures/Gradients/Gradient_Circle": [
+  "FX_EngineExhaust_TransportGR75_Sec",
+  "FX_EngineExhaust_TransportGR75_Prim"
+ ],
+ "FX/Textures/Trail/T_StarDestroyerTracer_01_D": [
+  "FX_LaserFiringWithExp_Green"
+ ],
+ "FX/Textures/Smoke/T_billowSmokeHi_Gnomon_8x64_01_D": [
+  "FX_LaserFiringWithExp_Green",
+  "FX_WreckFireSmoke_M_VisibleFar",
+  "FX_Impact_Blaster_Snow"
+ ],
+ "FX/Textures/Fire/T_Fire_Anim8x4o32_Loop_01_D": [
+  "FX_WreckFireSmoke_M_VisibleFar"
+ ],
+ "FX/Textures/Smoke/T_HighDetailLoop_Gnomon_8x64_01_D": [
+  "FX_RisingSteam_Thick_HothInterior",
+  "FX_DmgArea_SmokeRising"
+ ],
+ "FX/Textures/Smoke/T_SteamStream_3x8_Ratio_Gnomon_8x32_01_D": [
+  "FX_RisingSteam_Thick_HothInterior"
+ ],
+ "FX/Textures/Atmospheric/T_GodRay_4x4_01_D": [
+  "FX_Amb_Godrays_Hoth_Interior_XL"
+ ],
+ "FX/Textures/Sparks/T_Lightning_2x4_D": [
+  "FX_Electricity_Explosion_S"
+ ],
+ "FX/Textures/Sparks/T_SparksSprite_2x2_D": [
+  "FX_Impact_Blaster_Snow"
+ ],
+ "FX/Textures/Water/T_Water_Splash_01_C": [
+  "FX_Impact_Blaster_Snow"
+ ],
+ "FX/Textures/Snow/T_SnowImpact_01_D": [
+  "FX_Impact_Blaster_Snow"
+ ],
+ "FX/Textures/Trail/T_LongThinTurbTrail_01_D": [
+  "FX_ConTrail_TieFighter"
+ ]
+}

@@ -18,9 +18,12 @@
 // kind 'ring': { inner, outer, thickness, tilt: [x, z] } round a planet at `at`
 //      'field': { radius } a loose cloud, a few huge rocks, many small
 //      'debris': { radius } a planet's remains, chunks scorched and still glowing
+//      'placed': { pieces, models, tracks, keep } a game's space level's own
+//      rocks, each where its map put it, turning on its track (rocksPlaced.js)
 // solids: [{ id: 'rock-N', at: [x, y, z] (world), r, reach }], the big rocks (at most 60)
 
 import * as THREE from 'three';
+import { createPlacedRocks } from './rocksPlaced';
 
 const MAX_SOLIDS = 60;
 
@@ -165,6 +168,12 @@ function layout(kind, count, rand, shape) {
 }
 
 export function createRocks({ kind = 'field', at = [0, 0, 0], count = 400, seed = 1, small = false, ...shape } = {}) {
+  if (kind === 'placed') {
+    const placed = createPlacedRocks(shape);
+    placed.group.position.set(...at);
+    for (const x of placed.solids) x.at = x.at.map((v, k) => v + at[k]);
+    return placed;
+  }
   const rand = rng(seed);
   const group = new THREE.Group();
   group.position.set(...at);

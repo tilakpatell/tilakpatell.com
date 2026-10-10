@@ -7,15 +7,19 @@
 // it by angle, light through the crests toward the sun, the sun's road,
 // whitecaps where the waves pinch. Lava (Mustafar's rivers, glowing,
 // crusting over) and a sea of cloud (Bespin, far below the city) stay one
-// plane at the site's level; lava lights itself.
+// plane at the site's level; lava lights itself. Where the site's lava names
+// the game's film (water.video: 'volcano', Mustafar) and a texture of it is
+// handed in (lavaFilm.js: high and ultra only), the film's molten flow runs
+// over the shader's own, which stays under it at the crust.
 //
 // Spray: where a wave runs up one of the water's legs (Kamino's stilts and
 // its pad's column, site.water.legs) it throws spray (floats.js says how
 // much), and splash(x, z, k) throws a burst (an aiwha going in).
 //
 // site.water: { level, color, deep, kind, foam?, glow?, legs?: [[x, z, r]…] }
-// createWater(site, sunDir, sunColor, { heightAt, small, id, rings, depthN, foam }) →
-//   (rings, depthN: amounts.js's; foam: ultra's finer foam, shore, lava and chop)
+// createWater(site, sunDir, sunColor, { heightAt, small, id, rings, depthN, foam, flow, flipped }) →
+//   (rings, depthN: amounts.js's; foam: ultra's finer foam, shore, lava and chop;
+//   flow: the lava film's texture, flipped as the game stores it)
 //   { mesh, glow, spray, depth, update(t, camera, dt), height(x, z, t),
 //     splash(x, z, k), dispose() }
 
@@ -42,6 +46,10 @@ uniform vec3 uColor, uDeep, uSun, uSunColor, uSky;
 uniform float uTime, uKind, uFoam, uGlow, uWaves, uWaves2;
 #include <fog_pars_fragment>
 uniform sampler2D uNoise;
+#ifdef VIDEO
+uniform sampler2D uFlow;
+uniform float uFlowFlip;
+#endif
 float wFbm(vec2 p) { vec4 a = texture2D(uNoise, p * 0.08); vec4 b = texture2D(uNoise, p * 0.19 + 0.37); return a.r * 0.35 + a.g * 0.3 + b.b * 0.2 + b.a * 0.15; }
 void main() {
   vec2 xz = vWorld.xz;
@@ -54,6 +62,15 @@ void main() {
     float crust = smoothstep(0.42, 0.62, wFbm(xz * 0.11 - vec2(uTime * 0.03, 0.0)));
     vec3 hot = mix(uColor, vec3(1.0, 0.85, 0.4), smoothstep(0.55, 0.8, flow));
     c = mix(hot * uGlow * (0.8 + 0.4 * flow), uDeep, crust * 0.85);
+#ifdef VIDEO
+    // the game's lava film (MT_Volcano2), a tile every 48 m, drifting with
+    // the flow; the crust keeps its dark plates over it
+    vec2 fuv = fract(xz / 48.0 + vec2(uTime * 0.004, uTime * 0.0027));
+    if (uFlowFlip > 0.5) fuv.y = 1.0 - fuv.y;
+    vec3 molten = texture2D(uFlow, fuv).rgb;
+    // (the film is bright already: lifted a little by the glow, not by all of it)
+    c = mix(c, molten * (0.55 + 0.25 * uGlow), 0.65 * (1.0 - crust * 0.55));
+#endif
 #ifdef FINE
     // close up: the crust broken into plates, glowing at the cracks between
     // them, and a finer skin on the plates
@@ -130,7 +147,14 @@ export function createWater(site, sunDir, sunColor, opts = {}) {
       uNoise: { value: noiseTexture() },
     },
   ]);
-  const material = new THREE.ShaderMaterial({ vertexShader: PLANE_VERT, fragmentShader: PLANE_FRAG, uniforms, fog: true, defines: opts.foam ? { FINE: '' } : {} });
+  const video = w.kind === 'lava' && opts.flow ? opts.flow : null;
+  if (video) {
+    // (merge clones a uniform's value; the film's texture is shared, not copied)
+    uniforms.uFlow = { value: video };
+    uniforms.uFlowFlip = { value: opts.flipped ? 1 : 0 };
+  }
+  const defines = { ...(opts.foam ? { FINE: '' } : {}), ...(video ? { VIDEO: '' } : {}) };
+  const material = new THREE.ShaderMaterial({ vertexShader: PLANE_VERT, fragmentShader: PLANE_FRAG, uniforms, fog: true, defines });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(FAR * 2.2, FAR * 2.2, 1, 1).rotateX(-Math.PI / 2), material);
   mesh.position.y = w.level;
   mesh.receiveShadow = false;

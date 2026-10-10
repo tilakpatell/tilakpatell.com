@@ -13,12 +13,20 @@
 //   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe }) → null | { update(position), ready(), stats(), dispose() }
 //     (camera: the placed lights rank by it; light: the world's record, for their scale;
 //     onProbe: the reflection volume you stand in, for gameLit.js)
+//   packOf(world) → Promise<level.json> (fetched once)
 //     (walk: the walk world, { solids, floors }, the pack's collision goes into)
+//
+// On the node renderer (WebGPU, or the node renderer on WebGL 2) a pack with
+// a recipes.json (scripts/bf2017-recipes.mjs, lane Q1) draws its game meshes
+// with the game's own surface shader (src/lib/three/surface/); the classic
+// renderer, or a pack without one, keeps the GLB's materials. Their sun (a
+// leaf's translucency, hair's lobes, a head's scattering) follows the
+// scene's first directional light.
 
 import { withFallback } from '../../../../lib/assetBase.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
-import { createLevelLoader } from './levelGltf.js';
+import { createLevelLoader, recipesIndex } from './levelGltf.js';
 import { packUrl, wanted } from './levelPack.js';
 import { createLevelScene } from './levelScene.js';
 import { createLevelStream } from './levelStream.js';
@@ -39,7 +47,7 @@ const bytesOf = (world) => (path) =>
   )(packUrl(world, path));
 
 const packs = new Map(); // world → Promise<level.json>
-const packOf = (world) => {
+export const packOf = (world) => {
   if (!packs.has(world)) {
     packs.set(
       world,
@@ -126,6 +134,54 @@ export async function levelGround(ground) {
   return { ...ground, layers: filled, flats };
 }
 
+// The pack's recipes for the loader (null without a recipes.json)
+const recipesFor = (world, pack) =>
+  bytesOf(world)('recipes.json')
+    .then((b) => recipesIndex(pack, JSON.parse(new TextDecoder().decode(b))))
+    .catch(() => null);
+
+// The scene's sun (its first directional light) as the game material takes
+// it: a direction toward the sun and its colour; null without one
+const _a = { x: 0, y: 0, z: 0 };
+export function sunOf(scene, light = null) {
+  light ??= findSun(scene);
+  if (!light) return null;
+  light.updateMatrixWorld?.();
+  light.target?.updateMatrixWorld?.();
+  const p = light.matrixWorld.elements;
+  const t = light.target?.matrixWorld.elements ?? [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+  _a.x = p[12] - t[12];
+  _a.y = p[13] - t[13];
+  _a.z = p[14] - t[14];
+  const len = Math.hypot(_a.x, _a.y, _a.z) || 1;
+  return { direction: [_a.x / len, _a.y / len, _a.z / len], color: [light.color.r, light.color.g, light.color.b], light };
+}
+
+function findSun(scene) {
+  let found = null;
+  scene?.traverse?.((o) => {
+    if (!found && o.isDirectionalLight) found = o;
+  });
+  return found;
+}
+
+// the game material for a tier, or null on the classic renderer; its sun one
+// set of uniforms the level moves with the scene's
+async function gameMaterials(world, pack, renderer, tier, scene) {
+  // (low draws the GLB as it is: nothing to swap or fetch)
+  if (!renderer?.isWebGPURenderer || tier === 'low') return { recipes: null, materialFor: null };
+  const [recipes, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }] = await Promise.all([
+    recipesFor(world, pack),
+    import('../../../../lib/three/surface/hair.js'),
+    import('../../../../lib/three/surface/gameMaterial.js'),
+    import('../../../../lib/three/light/three.js'),
+  ]);
+  if (!recipes) return { recipes: null, materialFor: null };
+  const [make, three] = await Promise.all([loadSurfaceMaterial(), loadThree()]);
+  const sun = createSunUniforms(three, sunOf(scene) ?? {});
+  return { recipes, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
+}
+
 export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null }) {
   if (!site?.level) return null;
   const world = site.level;
@@ -137,11 +193,15 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
   let last = null;
   let lights = null;
   let probes = null;
+  let sun = null; // the game materials' shared sun, when they draw
+  let sunLight = null;
   const colliders = walk ? createColliders(walk, tier, { loadBin: fetchBytes }) : null;
   packOf(world)
-    .then((pack) => {
+    .then(async (pack) => {
+      const { recipes, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
+      sun = shared;
       if (gone) return;
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys });
       level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when
@@ -173,6 +233,12 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     // position: [x, z] in the site's frame (where you are, or the camera)
     update(position) {
       last = position;
+      if (sun) {
+        // (the scene's sun found once, again if it leaves the scene)
+        if (!sunLight?.parent) sunLight = findSun(scene);
+        const s = sunLight && sunOf(scene, sunLight);
+        if (s) sun.set(s.direction, s.color);
+      }
       stream?.update(position, tier);
       level?.update(position);
       if (camera) lights?.update(camera);

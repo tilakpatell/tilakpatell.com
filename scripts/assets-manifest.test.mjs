@@ -33,6 +33,16 @@ describe('the manifest the build bundles', () => {
     expect(made(root, '').load(join(root, 'src/data/assets-manifest.json'))).toBe('{}');
   });
 
+  // (Vite asks with forward slashes on every platform; node's join gives
+  // Windows backslashes: a Windows checkout once got '{}' for the manifest
+  // and asked the site for every bucket file)
+  it('answers the id Vite asks with, forward slashes, on a Windows root too', () => {
+    const { root } = project();
+    const id = join(root, 'src/data/assets-manifest.json').replace(/\\/g, '/');
+    expect(made(root, 'https://bucket.test').load(id)).not.toBeNull();
+    expect(made(root, 'https://bucket.test').load(`${id}?import`)).not.toBeNull();
+  });
+
   it('leaves every other file to the other plugins', () => {
     const { root } = project();
     expect(made(root, 'https://bucket.test').load(join(root, 'src/data/modelCredits.json'))).toBeNull();

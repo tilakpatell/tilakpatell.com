@@ -1,0 +1,86 @@
+{
+ "route": "/earth",
+ "clock": "2026-10-08T12:00:00.000Z",
+ "quality": "high",
+ "adapterFlag": "system",
+ "webgl": {
+  "extra": 0,
+  "backend": "nodes-webgl",
+  "onWebGPU": false,
+  "shading": "nodes",
+  "adapter": true,
+  "errors": [],
+  "skipped": null
+ },
+ "webgpu": {
+  "extra": 0,
+  "backend": "webgpu",
+  "onWebGPU": true,
+  "shading": "nodes",
+  "adapter": true,
+  "errors": [],
+  "skipped": null
+ },
+ "rows": [
+  {
+   "view": "orbit",
+   "leg": "webgl",
+   "backend": "nodes-webgl",
+   "mad": [
+    0,
+    0,
+    0
+   ],
+   "off": 0,
+   "psnr": null,
+   "pass": true,
+   "skipped": null,
+   "errors": 0
+  },
+  {
+   "view": "low",
+   "leg": "webgl",
+   "backend": "nodes-webgl",
+   "mad": [
+    0,
+    0,
+    0
+   ],
+   "off": 0,
+   "psnr": null,
+   "pass": true,
+   "skipped": null,
+   "errors": 0
+  },
+  {
+   "view": "orbit",
+   "leg": "webgpu",
+   "backend": "webgpu",
+   "mad": [
+    0.067083984375,
+    0.0695087890625,
+    0.0811767578125
+   ],
+   "off": 0.0007548828125,
+   "psnr": 50.032752325935526,
+   "pass": true,
+   "skipped": null,
+   "errors": 0
+  },
+  {
+   "view": "low",
+   "leg": "webgpu",
+   "backend": "webgpu",
+   "mad": [
+    0.1635439453125,
+    0.139138671875,
+    0.1135458984375
+   ],
+   "off": 0.002720703125,
+   "psnr": 42.69199533262566,
+   "pass": true,
+   "skipped": null,
+   "errors": 0
+  }
+ ]
+}

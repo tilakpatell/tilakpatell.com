@@ -25,6 +25,8 @@ export function bundledManifest(root, publicDir, env = process.env) {
   return { ...freshManifest(readManifest(manifestPath(root, env)), publicDir), ...Object.fromEntries(Object.entries(galaxy).map(([k, e]) => [k, { hash: e.hash, bytes: e.bytes }])) };
 }
 
+const slashed = (p) => String(p).replace(/\\/g, '/');
+
 export default function assetManifest() {
   let file = null;
   let root = null;
@@ -39,9 +41,13 @@ export default function assetManifest() {
       publicDir = c.publicDir;
       base = c.env?.VITE_ASSET_BASE ?? '';
     },
-    // (JSON text, which Vite's own JSON plugin then makes a module of)
+    // (JSON text, which Vite's own JSON plugin then makes a module of; the id
+    // Vite asks with has forward slashes whatever the platform, and node's
+    // join gives Windows its backslashes, so both are read the one way: on a
+    // Windows checkout the plugin never answered and the bundle carried an
+    // empty manifest, every bucket file asked of the site instead)
     load(id) {
-      if (id.split('?')[0] !== file) return null;
+      if (slashed(id.split('?')[0]) !== slashed(file)) return null;
       return base ? JSON.stringify(bundledManifest(root, publicDir)) : '{}';
     },
   };

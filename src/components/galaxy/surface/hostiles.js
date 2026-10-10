@@ -292,11 +292,13 @@ export function hostileStep(t, world, dt, r = Math.random) {
 //   createPosture({ seed }) → what a figure's body carries from frame to
 //     frame (one each; seed: where in its sweep its head starts)
 //   hostileBody(posture, step, dt, { t, firing, table }) → { motion, look, base,
+//     clip (the game's for that base, its row's: a figure with it plays it, bodyClip),
 //     action, scan, aim (0 or 1: the gun down or up), mark ('?' | '!' |
 //     null), alert (it has just seen you) }
 //     step: hostileStep's, plus `belief` (its belief of you, t.belief) and
 //     `sees` (whether it sees you now, t.sees); t: seconds (the world's
 //     clock); firing: it's about to fire, or just has
+//   ALERT_CLIP, bodyClip(fig, game, site) → the game's clip where fig has it, else the site's
 //   whereHit(y, ground, tall) → 'head' | 'chest': where a hit at height y lands
 //   fallOf({ push, from, at, yaw }) → { x, z }: the way it goes down, along
 //     the ground: the way the shot went (push), else away from where it
@@ -307,6 +309,9 @@ import { seeded } from '../../../lib/seeded';
 
 export const HOSTILE_BODY = {
   ...MODE_BODY,
+  // crouched behind it: the game's cover idle where the figure has the
+  // soldiers' set (lib/three/walrusSets/npc.js), else the site's crouch
+  cover: { ...MODE_BODY.cover, clip: 'cover.low.idle' },
   // holding its ground, its eyes on its mark
   hold: { look: 'aim' },
   // coming for you (a rancor, a duellist, a brawler): its eyes on where it thinks you are
@@ -358,8 +363,15 @@ export function hostileBody(posture, step, dt, { t = 0, firing = false, table = 
   if (alert) posture.startAt = t;
   const hunting = step.mode === 'look' || step.mode === 'search';
   const mark = t - posture.startAt < STARTLE ? '!' : hunting ? '?' : null;
-  return { motion, look, base, action: body.action, scan: body.scan, aim, mark, alert };
+  const clip = base ? (table[step.mode]?.clip ?? null) : null;
+  return { motion, look, base, clip, action: body.action, scan: body.scan, aim, mark, alert };
 }
+
+// the game's start on seeing you, for a figure with the soldiers' set
+export const ALERT_CLIP = 'aware.alert';
+
+// the game's clip for the moment where the figure has it (its `clips`), else the site's
+export const bodyClip = (fig, game, site) => (game && fig?.clips?.[game] ? game : site);
 
 export const whereHit = (y, ground, tall) => (Number.isFinite(y) && y - ground > tall * 0.82 ? 'head' : 'chest');
 

@@ -16,6 +16,7 @@ import { LAYERS, LAYERS_KEY, LAYER_LABEL, readLayers, warForEra } from './mapLay
 import { estimateWidth, hangOf, placeLabels, sideOf } from './labelPlace';
 import { courseOf, findSystems, mapKeyAction, pickAction, seedPick } from './mapKeys';
 import { useMapView } from './useMapView';
+import { globeUrl } from './globes';
 import { local } from '../../lib/hooks';
 import './warmap.css';
 import { CORE, ERAS, FILMS, FILM_ORDER, RIM, SYSTEMS, eraById, erasOf, filmLabel, filmShort, lightYears, systemById, yearLabel } from './systems';
@@ -603,7 +604,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
                   return (
                   <li key={s.id} style={{ left: pct(s.pos[0]), top: pct(s.pos[1]), '--c': s.accent, ...ring }} data-dim={!lit(s) || undefined} data-place={sideOf(places[s.id])} data-hang={hangOf(places[s.id])} data-badge={row ? badges[s.id] : undefined} data-held={row?.owner} data-front={(by && !row.attack) || undefined} data-attack={row?.attack ? '' : undefined} data-major={row?.major || undefined} data-decisive={row?.decisive || undefined} data-cut={row?.cut || undefined} data-fought={you || undefined}>
                     <button type="button" className="holomap-system" aria-pressed={pick === s.id} aria-current={s.id === current ? 'location' : undefined} onFocus={(e) => reveal(s, e)} onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(s.id)} onPointerLeave={() => setHover(null)} onClick={() => choose(s.id)} aria-label={row ? systemLabel(row, now, you) : undefined}>
-                      <span className="holomap-dot" aria-hidden="true">
+                      <span className="holomap-dot" aria-hidden="true" data-globe={globeUrl(s.id) ? '' : undefined} style={globeUrl(s.id) ? { '--globe': `url("${globeUrl(s.id)}")` } : undefined}>
                         {you && <i className="holomap-you" />}
                       </span>
                       <span className="holomap-name" data-id={s.id}>

@@ -1,0 +1,26 @@
+{
+ "geonosis": {
+  "url": "/models/galaxy/space/globes/geonosis.webp",
+  "from": "s5_1/objects/planets/geonosis/t_planetfrontendgeonosis_01_ca"
+ },
+ "hoth": {
+  "url": "/models/galaxy/space/globes/hoth.webp",
+  "from": "s2/objects/planets/hoth/t_planetfrontenhoth_01_ca"
+ },
+ "kashyyyk": {
+  "url": "/models/galaxy/space/globes/kashyyyk.webp",
+  "from": "s2/objects/planets/kashyyyk/t_planetfrontendkashyyyk_01_ca"
+ },
+ "scarif": {
+  "url": "/models/galaxy/space/globes/scarif.webp",
+  "from": "s9_3/scarif/objects/planets/scarif/t_planetfrontendscarif_01_ca"
+ },
+ "tatooine": {
+  "url": "/models/galaxy/space/globes/tatooine.webp",
+  "from": "s2/objects/planets/tatooine/t_planetfrontendtatooine_01_ca"
+ },
+ "yavin": {
+  "url": "/models/galaxy/space/globes/yavin.webp",
+  "from": "s2/objects/planets/yavin4/t_planetfrontendyavin4_01_ca"
+ }
+}

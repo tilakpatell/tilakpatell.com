@@ -1,0 +1,1222 @@
+{
+ "view": {
+  "vw": 1600,
+  "vh": 900,
+  "vdpr": 1
+ },
+ "quality": "",
+ "gpu": "webgl",
+ "report": {
+  "surface": {
+   "backend": "webgl",
+   "drawnOn": "webgl",
+   "rows": [
+    {
+     "phase": "load",
+     "secs": 7.6,
+     "frames": 430,
+     "fps": 56.9,
+     "p50": 17.5,
+     "p95": 18.1,
+     "p99": 18.9,
+     "max": 109,
+     "over50": 2,
+     "over100": 1,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 0,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 109,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 95,
+         "fn": "http://127.0.0.1:5294/src/main.jsx",
+         "url": "src/main.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 68,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 65,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 703
+        }
+       ]
+      },
+      {
+       "ms": 21,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 20,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 19,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "settle",
+     "secs": 4,
+     "frames": 2711,
+     "fps": 686.4,
+     "p50": 0.3,
+     "p95": 0.7,
+     "p99": 21.2,
+     "max": 657,
+     "over50": 16,
+     "over100": 5,
+     "links": 97,
+     "mid": 0,
+     "texMB": 6.6,
+     "bufMB": 0.1,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 1,
+     "worst": [
+      {
+       "ms": 657,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 433,
+         "fn": "import.then",
+         "url": "src/components/galaxy/surface/module.js",
+         "at": 496
+        },
+        {
+         "ms": 653,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 439,
+       "links": 2,
+       "tex": 4,
+       "texMB": 6.6,
+       "bufMB": 0.1,
+       "glMs": 366,
+       "drawMs": 0,
+       "slow": "getProgramParameter 72ms ",
+       "scripts": [
+        {
+         "ms": 433,
+         "fn": "import.then",
+         "url": "src/components/galaxy/surface/module.js",
+         "at": 496
+        },
+        {
+         "ms": 653,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 177,
+       "links": 2,
+       "tex": 2,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 160,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 106,
+       "links": 3,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 52,
+         "fn": "import.then",
+         "url": "src/components/galaxy/surface/knocks.js",
+         "at": 4439
+        },
+        {
+         "ms": 14,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": 1102969
+        },
+        {
+         "ms": 16,
+         "fn": "ReadableStreamDefaultReader.read.then",
+         "url": "src/lib/net/assetFetch.js",
+         "at": 4856
+        }
+       ]
+      },
+      {
+       "ms": 100,
+       "links": 3,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 22,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": 1102969
+        },
+        {
+         "ms": 11,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": 1102969
+        },
+        {
+         "ms": 19,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": 1102969
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "phase": "idle",
+     "secs": 6,
+     "frames": 14529,
+     "fps": 2439.7,
+     "p50": 0.1,
+     "p95": 2.1,
+     "p99": 4.4,
+     "max": 282,
+     "over50": 5,
+     "over100": 1,
+     "links": 142,
+     "mid": 0,
+     "texMB": 1234.1,
+     "bufMB": 63.7,
+     "draws": 7,
+     "ktris": 113,
+     "sizes": 1,
+     "worst": [
+      {
+       "ms": 282,
+       "links": 0,
+       "tex": 171,
+       "texMB": 46.9,
+       "bufMB": 17.2,
+       "glMs": 68,
+       "drawMs": 0,
+       "slow": "texSubImage2D 24ms ",
+       "scripts": [
+        {
+         "ms": 281,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 81,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 66,
+       "links": 0,
+       "tex": 43,
+       "texMB": 32.1,
+       "bufMB": 0,
+       "glMs": 1,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 64,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 66,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 51,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "move",
+     "secs": 7.6,
+     "frames": 1521,
+     "fps": 201.3,
+     "p50": 4.7,
+     "p95": 9.4,
+     "p99": 12.4,
+     "max": 77,
+     "over50": 1,
+     "over100": 0,
+     "links": 1,
+     "mid": 0,
+     "texMB": 185.6,
+     "bufMB": 16.9,
+     "draws": 301,
+     "ktris": 1881,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 77,
+       "links": 0,
+       "tex": 53,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 35,
+       "drawMs": 0,
+       "slow": "getProgramParameter 35ms ",
+       "scripts": [
+        {
+         "ms": 70,
+         "fn": "frame",
+         "url": "src/lib/three/loop.js",
+         "at": 935
+        }
+       ]
+      },
+      {
+       "ms": 27,
+       "links": 0,
+       "tex": 29,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 23,
+       "links": 0,
+       "tex": 45,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 22,
+       "links": 0,
+       "tex": 29,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 21,
+       "links": 0,
+       "tex": 29,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    }
+   ],
+   "errors": [],
+   "failed": null,
+   "secs": 26,
+   "readyS": 7.6,
+   "heapMB": 322,
+   "slips": {
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh": 3,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"PMREMGGXConvolution\" on Mesh": 1,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh \"ground\"": 1,
+    "[frameGuard] shader compiled mid-frame (off-frame): MeshDepthMaterial on Mesh \"metal\" in \"lamp\"": 2,
+    "[frameGuard] shader compiled mid-frame (off-frame): MeshDepthMaterial on Mesh in \"things\"": 2,
+    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh \"knockable-crate\"": 1,
+    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on LineSegments in \"gunfx\"": 1
+   }
+  },
+  "galaxy": {
+   "backend": "webgl",
+   "drawnOn": "webgl",
+   "rows": [
+    {
+     "phase": "load",
+     "secs": 2.7,
+     "frames": 5215,
+     "fps": 1978.8,
+     "p50": 0.3,
+     "p95": 0.5,
+     "p99": 4.1,
+     "max": 240,
+     "over50": 3,
+     "over100": 1,
+     "links": 68,
+     "mid": 0,
+     "texMB": 272.7,
+     "bufMB": 14.2,
+     "draws": 0,
+     "ktris": 1,
+     "sizes": 2,
+     "worst": [
+      {
+       "ms": 240,
+       "links": 20,
+       "tex": 10,
+       "texMB": 102,
+       "bufMB": 0.1,
+       "glMs": 40,
+       "drawMs": 0,
+       "slow": "getProgramParameter 31ms ",
+       "scripts": [
+        {
+         "ms": 237,
+         "fn": "import.then",
+         "url": "src/components/galaxy/module.js",
+         "at": 775
+        }
+       ]
+      },
+      {
+       "ms": 87,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 74,
+         "fn": "http://127.0.0.1:5294/src/main.jsx",
+         "url": "src/main.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 57,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 55,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 703
+        }
+       ]
+      },
+      {
+       "ms": 30,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 22,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "settle",
+     "secs": 4,
+     "frames": 5075,
+     "fps": 1264.9,
+     "p50": 0.7,
+     "p95": 1.2,
+     "p99": 1.6,
+     "max": 17,
+     "over50": 0,
+     "over100": 0,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 54,
+     "draws": 45,
+     "ktris": 273,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 17,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 16,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 16,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 15,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 13,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "idle",
+     "secs": 5,
+     "frames": 6671,
+     "fps": 1333.1,
+     "p50": 0.6,
+     "p95": 1.1,
+     "p99": 1.9,
+     "max": 29,
+     "over50": 0,
+     "over100": 0,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 56.7,
+     "draws": 42,
+     "ktris": 250,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 29,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 29,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 26,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 23,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 22,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "fly",
+     "secs": 6,
+     "frames": 7502,
+     "fps": 1243.4,
+     "p50": 0.7,
+     "p95": 1.2,
+     "p99": 2.2,
+     "max": 30,
+     "over50": 0,
+     "over100": 0,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 93.1,
+     "draws": 45,
+     "ktris": 235,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 30,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 27,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 26,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 21,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 20,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    }
+   ],
+   "errors": [],
+   "failed": null,
+   "secs": 19,
+   "readyS": 2.7,
+   "heapMB": 129,
+   "slips": {
+    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial \"PMREM.Background\" on Mesh": 1,
+    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh": 1,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"SphericalGaussianBlur\" on Mesh": 1,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"PMREMGGXConvolution\" on Mesh": 1
+   }
+  },
+  "earth": {
+   "backend": "webgl",
+   "drawnOn": "nodes-webgl",
+   "rows": [
+    {
+     "phase": "load",
+     "secs": 1.5,
+     "frames": 60,
+     "fps": 38.8,
+     "p50": 17.4,
+     "p95": 65.6,
+     "p99": 574,
+     "max": 574,
+     "over50": 4,
+     "over100": 1,
+     "links": 13,
+     "mid": 0,
+     "texMB": 922.7,
+     "bufMB": 3.8,
+     "draws": 2,
+     "ktris": 5,
+     "sizes": 1,
+     "worst": [
+      {
+       "ms": 574,
+       "links": 13,
+       "tex": 22,
+       "texMB": 922.7,
+       "bufMB": 3.8,
+       "glMs": 434,
+       "drawMs": 0,
+       "slow": "getProgramParameter 33ms texSubImage2D 45ms ",
+       "scripts": [
+        {
+         "ms": 536,
+         "fn": "Promise.resolve",
+         "url": "src/lib/three/textures.js",
+         "at": 7979
+        }
+       ]
+      },
+      {
+       "ms": 86,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 76,
+         "fn": "http://127.0.0.1:5294/src/main.jsx",
+         "url": "src/main.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 66,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 64,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 703
+        }
+       ]
+      },
+      {
+       "ms": 58,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 25,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "settle",
+     "secs": 4,
+     "frames": 5705,
+     "fps": 1422.2,
+     "p50": 0.6,
+     "p95": 1.2,
+     "p99": 2.5,
+     "max": 27,
+     "over50": 0,
+     "over100": 0,
+     "links": 2,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 160.4,
+     "draws": 94,
+     "ktris": 294,
+     "sizes": 1,
+     "worst": [
+      {
+       "ms": 27,
+       "links": 2,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 20,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 8,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "idle",
+     "secs": 6,
+     "frames": 10821,
+     "fps": 1802.4,
+     "p50": 0.5,
+     "p95": 0.8,
+     "p99": 2.7,
+     "max": 9,
+     "over50": 0,
+     "over100": 0,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 382.3,
+     "draws": 55,
+     "ktris": 302,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 8,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "move",
+     "secs": 7.5,
+     "frames": 15252,
+     "fps": 2023.1,
+     "p50": 0.4,
+     "p95": 0.7,
+     "p99": 2.2,
+     "max": 14,
+     "over50": 0,
+     "over100": 0,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 501.5,
+     "draws": 43,
+     "ktris": 302,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 14,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 11,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 7,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 7,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    }
+   ],
+   "errors": [],
+   "failed": null,
+   "secs": 20,
+   "readyS": 1.5,
+   "heapMB": 100,
+   "slips": {}
+  },
+  "minecraft": {
+   "backend": "webgl",
+   "drawnOn": null,
+   "rows": [
+    {
+     "phase": "load",
+     "secs": 180.2,
+     "frames": 12229,
+     "fps": 67.9,
+     "p50": 17.3,
+     "p95": 18.1,
+     "p99": 18.4,
+     "max": 78,
+     "over50": 2,
+     "over100": 0,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 0,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 78,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 75,
+         "fn": "http://127.0.0.1:5294/src/main.jsx",
+         "url": "src/main.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 65,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 63,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 703
+        }
+       ]
+      },
+      {
+       "ms": 28,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 19,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 19,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    }
+   ],
+   "errors": [],
+   "failed": "TimeoutError: page.waitForFunction: Timeout 180000ms exceeded.",
+   "secs": 181,
+   "readyS": null,
+   "heapMB": 33,
+   "slips": {}
+  }
+ }
+}

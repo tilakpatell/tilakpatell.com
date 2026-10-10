@@ -18,7 +18,9 @@
 // shoot); one of a ship's batteries (its own few hits no longer take it:
 // the director's hp does); a point by one of the defender's ships (laid in
 // its frame and moved with it, `props`); a point in the battle (`field`:
-// toward the defender's line, across it, toward the planet); on the planet
+// toward the defender's line, across it, toward the planet); a level's own
+// point, in the battle's frame (`point`: a space level's mines and
+// nodules, galaxy/surface/missions/starfighter.js); on the planet
 // below (`planet`); or a set piece's own (`piece`: the piece draws and
 // takes it). A zone's a place to hold (warfront.js counts who's in it), not
 // a target.
@@ -64,6 +66,7 @@ export function createStages(k, plan, director) {
   const dl = len(down) || 1;
   set(down, down.x / dl, down.y / dl, down.z / dl);
   const pointOf = (on) => {
+    if (on.point) return v3(...on.point);
     if (on.field) {
       const [a, s, d] = on.field;
       return v3(C.x + toward.x * a * lines + S.x * s + down.x * d, C.y + toward.y * a * lines + S.y * s + down.y * d, C.z + toward.z * a * lines + S.z * s + down.z * d);
@@ -76,7 +79,7 @@ export function createStages(k, plan, director) {
   plan.stages.forEach((stage, si) =>
     stage.objectives.forEach((o) => {
       const on = o.on ?? {};
-      const mark = { phase: si + 1, key: o.id, type: o.type, name: o.name, ...(o.verbs ? { verbs: o.verbs } : {}), hp: o.hp, hpMax: o.hp, planned: true, after: o.after ?? null, effect: o.effect ?? null };
+      const mark = { phase: si + 1, key: o.id, type: o.type, name: o.name, ...(o.verbs ? { verbs: o.verbs } : {}), hp: o.hp, hpMax: o.hp, planned: true, after: o.after ?? null, effect: o.effect ?? null, sinks: Boolean(o.sinks) };
       if (on.piece) return; // (the set piece's to draw and take)
       if (on.sub) {
         const s = ship?.subs.find((x) => x.id === on.sub);
@@ -118,8 +121,10 @@ export function createStages(k, plan, director) {
 
   const objective = (st, o) => st.objectives.find((x) => x.id === o.key);
   // an objective down, said as a subsystem is, whatever it is (a battery, a satellite…)
+  // (one that `sinks` its ship takes it with it: a space level's corvette)
   const fell = (o, mine) => {
     o.alive = false;
+    if (o.sinks && o.cap && o.cap !== ship) b.wreck?.(o.cap.id);
     return { type: 'sub', sub: o.key, kind: o.kind, phase: o.phase, at: copy(v3(), o.pos), mine };
   };
   // whether an objective's open to be taken: its stage open, and whatever it waits on down

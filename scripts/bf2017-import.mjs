@@ -77,6 +77,12 @@
 //   hull-frame  stand it where the manifest's bounds of the model (or of
 //              <hull name>) put it, not by its own cut's: a cockpit and its
 //              hull share their frame, so the seat sits in the hull
+//   sub        the folder under models/galaxy (surface by default; the object
+//              library's surface/game: scripts/bf2017-library-import.mjs),
+//              the credit `<sub with dashes>-<kind>`
+//   lod1-tex, lod1-maps  the light cut's map sizes without --full as well
+//   far-tex    the far cut's colour (256; the library's small objects 128,
+//              their KTX2 a mip further down, to keep under the far cap)
 //   keep-origin  not grounded: the model keeps the game's own origin, axes
 //              and metres (a hilt or a blaster, modelled for the Wep_Root
 //              socket with its grip at the origin and its barrel up +y)
@@ -97,7 +103,7 @@ import { fileURLToPath } from 'node:url';
 import { overCaps } from './lib/bf2017-caps.mjs';
 import { parseArgs } from './lib/args.mjs';
 import { isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
-import { glbJson, imagePath, inBucket, localPath } from './lib/bf2017-paths.mjs';
+import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-paths.mjs';
 import { resolveImage } from './lib/bf2017-textures.mjs';
 import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { writeCatalogueLine, writeCredit } from './lib/catalog-write.mjs';
@@ -138,7 +144,31 @@ async function liftSclera(png) {
 // taken off the material after), and the textures' KHR_texture_basisu
 // source becomes their plain source, so glTF-Transform never goes looking
 // for a KTX2 itself.
-export async function readLod(io, file, { root, derived, unpackDir, said, eyes = null }) {
+// --textures: a map a material's shader graph binds, which the drop's GLB
+// never names (the AT-AT's head is `SS_ATAT_Head`, its maps inside the
+// graph; the desktop's shader-depot probe lists them), given by hand:
+//   'ATAT_Head_Layered=color:Gameplay/…/T_ATATHead_01_CW,normal:Gameplay/…/T_ATATHead_01_N;Other=…'
+// parseTextures(text) → { [material]: [{ slot: 'color' | 'normal' | 'emissive', name }] }
+export function parseTextures(text) {
+  const out = {};
+  for (const part of String(text ?? '').split(';')) {
+    const [material, list] = part.split('=');
+    if (!material?.trim() || !list) continue;
+    out[material.trim()] = list.split(',').map((s) => {
+      const [slot, ...rest] = s.split(':');
+      const name = rest.join(':').trim();
+      if (!['color', 'normal', 'emissive'].includes(slot.trim()) || !name) throw new Error(`--textures: '${s}' is not <color|normal|emissive>:<texture name>`);
+      return { slot: slot.trim(), name };
+    });
+  }
+  return out;
+}
+
+// the bucket path of a named map in the slot's form: a normal map as the
+// pipeline's derived `__normal` (its z rebuilt; the KTX2 under that name)
+export const overridePath = (name, slot) => (slot === 'normal' ? mapPath(name).replace(/\.png$/, '__normal.ktx2') : mapPath(name).replace(/\.png$/, '.ktx2'));
+
+export async function readLod(io, file, { root, derived, unpackDir, said, eyes = null, textures = null }) {
   const glb = await readFile(localPath(root, inBucket(file)));
   // (the GLB read by hand: glTF-Transform's own reader will not open one whose
   // images are outside it; chunk 0 is the JSON, chunk 1 the binary buffer)
@@ -195,6 +225,21 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
     // (Frostbite's shader preset and source maps: nothing the site reads but
     // a decal's, which lib/bf2017-dressing.mjs draws as the game does)
     m.setExtras(decalOf(shader) ? { decal: decalOf(shader) } : {});
+    // a map the material's shader graph binds, given by --textures: found as
+    // any other (the PNG, else unpacked), named for the native pass
+    for (const { slot, name } of textures?.[m.getName()] ?? []) {
+      const at = overridePath(name, slot);
+      const found = await resolveImage(at, { root, derived, unpackDir });
+      if (!found) {
+        said.missing.add(at);
+        continue;
+      }
+      const t = doc.createTexture(`${NATIVE}${at}`).setImage(new Uint8Array(found.png)).setMimeType('image/png');
+      if (slot === 'color') m.setBaseColorTexture(t);
+      else if (slot === 'normal') m.setNormalTexture(t);
+      else m.setEmissiveTexture(t).setEmissiveFactor([1, 1, 1]);
+      said.found.add(`${at.split('/').pop()} ← ${found.from} (--textures ${m.getName()})`);
+    }
   }
   for (const t of doc.getRoot().listTextures()) if (t.getName() === MISSING) t.dispose();
   return doc;
@@ -316,7 +361,7 @@ const opaqueColour = () => async (doc) => {
 // Each map the game has as KTX2 on disk, in place of its decoded copy, at
 // the cut's size (colour at `tex`, the rest at `maps`) by dropping whole
 // mip levels. Returns how many it took.
-async function nativeMaps(doc, spec) {
+export async function nativeMaps(doc, spec) {
   let n = 0;
   for (const t of doc.getRoot().listTextures()) {
     const name = t.getName();
@@ -490,6 +535,8 @@ export async function importModel(name, opts) {
     native: Boolean(opts.native),
     // (a hero's own eye map, under web/textures/, for the eye shader's material)
     eyes: typeof opts.eyes === 'string' ? `web/textures/${opts.eyes.replace(/^web\/textures\//, '')}` : null,
+    // (maps a shader graph binds, by material name: --textures)
+    textures: typeof opts.textures === 'string' ? parseTextures(opts.textures) : null,
     // (WebP quality: colour, then the rest; a hero at the game's full maps takes more)
     quality: Number(opts.quality ?? 82),
     mapsQuality: Number(opts.mapsQuality ?? opts.quality ?? 80),
@@ -514,7 +561,8 @@ export async function importModel(name, opts) {
   const io = new NodeIO().setLogger(new Logger(Logger.Verbosity.ERROR)).registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'meshopt.decoder': MeshoptDecoder });
   const outRoot = resolve(opts.out ?? path(ROOT, 'public', 'models', 'galaxy'));
   // (a 2017 person on the game's rig beside the crew's own, which other worlds and tools still load)
-  const sub = opts.crew ? (rig ? 'bf2017/crew' : 'crew') : 'surface';
+  // (--sub: another folder under models/galaxy, the object library's surface/game)
+  const sub = typeof opts.sub === 'string' ? opts.sub : opts.crew ? (rig ? 'bf2017/crew' : 'crew') : 'surface';
   const dir = path(outRoot, sub);
   const made = [];
   spec.join = Boolean(opts.join);
@@ -530,7 +578,7 @@ export async function importModel(name, opts) {
     // (--lod1-tex and --lod1-maps: a kind of many parts, the Hoth trooper's
     // seven, takes smaller maps on its light cut to keep a phone's world to
     // its 20 MB of models: the design's 'a smaller map, said in the PR')
-    const lightSpec = full ? { ...spec, native: false, tex: Number(opts.lod1Tex ?? 1024), maps: Number(opts.lod1Maps ?? 512), quality: 82, mapsQuality: 80 } : { ...spec, tex: tex / 2, maps: opts.lightMaps ? Number(opts.lightMaps) : spec.native ? maps / 2 : Math.min(maps / 2, Math.max(256, maps / 4)), quality: 82, mapsQuality: 80 };
+    const lightSpec = full ? { ...spec, native: false, tex: Number(opts.lod1Tex ?? 1024), maps: Number(opts.lod1Maps ?? 512), quality: 82, mapsQuality: 80 } : { ...spec, tex: opts.lod1Tex ? Number(opts.lod1Tex) : tex / 2, maps: opts.lod1Maps ? Number(opts.lod1Maps) : opts.lightMaps ? Number(opts.lightMaps) : spec.native ? maps / 2 : Math.min(maps / 2, Math.max(256, maps / 4)), quality: 82, mapsQuality: 80 };
     const light = await makeCut(io, entry, parts, cuts.lod1, lightSpec, path(dir, `${kind}.lod1.glb`));
     if (light.bytes < 0.7 * plain.bytes) {
       made.push(['lod1', cuts.lod1, light]);
@@ -554,7 +602,7 @@ export async function importModel(name, opts) {
     made.push(['far', farLod, f]);
     far = true;
   } else if (cuts.far) {
-    const f = await makeCut(io, entry, parts, cuts.far, { ...spec, statue: true, colourOnly: true, tex: 256, maps: 256 }, path(dir, `${kind}.far.glb`));
+    const f = await makeCut(io, entry, parts, cuts.far, { ...spec, statue: true, colourOnly: true, tex: Number(opts.farTex ?? 256), maps: Number(opts.farTex ?? 256) }, path(dir, `${kind}.far.glb`));
     made.push(['far', cuts.far, f]);
     far = true;
     if (cuts.far.triangles > VEHICLE.farMax) console.log(`  the far cut is the chain's last, LOD${cuts.far.lod}: ${cuts.far.triangles} triangles, over the ${VEHICLE.farMax} it aims at`);
@@ -600,7 +648,8 @@ export async function importModel(name, opts) {
   if (full) console.log(`  the full cut: ${fullDL} MB to download, its maps ${fullMB} MB on the GPU`);
   const more = `${lod ? ', lod: true' : ''}${far ? ', far: true' : ''}${full ? `, full: true, fullMB: ${fullMB}, fullDL: ${fullDL}` : ''}`;
   if (opts.crew) console.log(`the CREW row (src/components/galaxy/surface/crewList.js):\n  ${kind}: { url: '${file}', tall: ${metres}${rig ? `, rig: 'walrus'${opts.hero ? `, pack: '${kind}'` : ''}` : ''}${more} },`);
-  else {
+  // (catalog: false, the object library's: its row is the index's, catalog/bf2017-library.js)
+  else if (opts.catalog !== false) {
     // (a vehicle's the file's own count, after its markers and normal-only decals are gone)
     const row = { made: 'bf2017', as: opts.as, metres, along: spec.along, yaw: 0, tris: opts.vehicle ? plain.tris : cuts.plain.triangles, tex };
     if (rig || spec.skeleton) row.rig = true;
@@ -615,7 +664,7 @@ export async function importModel(name, opts) {
     row.from = name;
     await writeCatalogueLine(resolve(opts.catalog ?? path(ROOT, 'src', 'components', 'galaxy', 'surface', 'catalog', 'bf2017.js')), kind, row);
   }
-  await writeCredit(resolve(opts.credits ?? path(ROOT, 'src', 'data', 'modelCredits.json')), `${opts.crew ? (rig ? 'bf2017' : 'crew') : 'surface'}-${kind}`, {
+  await writeCredit(resolve(opts.credits ?? path(ROOT, 'src', 'data', 'modelCredits.json')), `${opts.crew ? (rig ? 'bf2017' : 'crew') : sub.replace(/\//g, '-')}-${kind}`, {
     title: `Star Wars Battlefront II (2017): ${name}`,
     author: 'EA DICE',
     authorUrl: GAME,

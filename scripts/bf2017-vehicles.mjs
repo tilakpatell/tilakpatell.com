@@ -26,7 +26,8 @@ const V = 'gameplay/vehicles';
 export const CAST = [
   // (its LOD1, 61,901 triangles, a hair over the plain's 60,000: the next down is a
   // sixth of its ultra, past ultra.js's four times)
-  ['atat', 'walker', `${V}/ground/at-at/old/atat_mesh`, 'the AT-AT', ['--rig', '--hero', '--cuts', 'plain=1']],
+  // (the head's maps are bound inside its shader graph, SS_ATAT_Head, which the drop's GLB does not name: the desktop's shader-depot probe lists them)
+  ['atat', 'walker', `${V}/ground/at-at/old/atat_mesh`, 'the AT-AT', ['--rig', '--hero', '--cuts', 'plain=1', '--textures', 'ATAT_Head_Layered=color:Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_CW,normal:Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_N']],
   ['atst', 'walker', `${V}/ground/atst/atst_static_donotuse_mesh`, 'the AT-ST', ['--hero', '--bind', 'Cinematics/Objects/ATST/ATST_Ske01']],
   ['atte', 'walker', `${V}/ground/at_te/at_te_mesh`, 'the AT-TE', ['--rig', '--hero']],
   ['atrt', 'walker', `${V}/ground/atrt/atrt_mesh`, 'the AT-RT', ['--rig', '--hero']],
@@ -60,7 +61,8 @@ export const CAST = [
   ['tieadvanced', 'air', `${V}/air/tieadvancedx1/vehicle_air_tieadvancedx1_static_donotuse_mesh`, 'Vader’s TIE Advanced x1', ['--hull-frame']],
   // (the Falcon's gameplay mesh names no maps in the drop; its landmark, the
   // one parked on the game's maps, has them)
-  ['falcon', 'air', `${V}/air/millenniumfalcon/landmark/millenniumfalcon_01_landmark_mesh`, 'the Millennium Falcon', ['--hull-frame', '--hero']],
+  // (its details and legs are shader graphs of their own, SS_MillenniumFalcon_01_Landmark_Details and _Legs: the maps from the depot probe)
+  ['falcon', 'air', `${V}/air/millenniumfalcon/landmark/millenniumfalcon_01_landmark_mesh`, 'the Millennium Falcon', ['--hull-frame', '--hero', '--textures', 'Details_Shader1=color:Gameplay/Vehicles/Air/MillenniumFalcon/T_MillenniumFalconDetails_01_CS,normal:Gameplay/Vehicles/Air/MillenniumFalcon/T_MillenniumFalcon_01_N;Legs_Shader=color:Gameplay/Vehicles/Air/MillenniumFalcon/Landmark/T_MillenniumFalcon_01_Landmark_Legs_CS,normal:Gameplay/Vehicles/Air/MillenniumFalcon/Landmark/T_MillenniumFalcon_01_Landmark_Legs_NMA']],
   ['slave1', 'air', `${V}/air/slave1/vehicle_air_slave1_static_donotuse_mesh`, 'Boba Fett’s Slave I', ['--hull-frame']],
   ['laat', 'air', `${V}/air/laat/vehicle_air_laat_gunship_mesh`, 'the Republic gunships', ['--hull-frame']],
   ['arc170', 'air', `${V}/air/arc170/vehicle_air_arc170_static_donotuse_mesh`, 'the ARC-170s', ['--hull-frame']],

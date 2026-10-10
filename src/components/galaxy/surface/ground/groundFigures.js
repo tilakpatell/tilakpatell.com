@@ -137,11 +137,13 @@ export function createFigures({ parent, world, warm = (o) => Promise.resolve(o),
     const gun = ARMS[t.soldier.kind];
     if (gun && fig.model.getObjectByName('RightHand')?.isBone) {
       t.holder.updateMatrixWorld(true);
-      t.gp = createGunplay({ model: fig.model, bones: fig.bones, sockets: fig.sockets }, gun, {
+      t.gp = createGunplay({ model: fig.model, bones: fig.bones, sockets: fig.sockets, stance: fig.stance, aimAt: fig.aimAt }, gun, {
         unit: 1,
         who: t.soldier.kind,
       });
     }
+    // (arriving: the gun brought up as the game's soldiers do, where it has the soldiers' set)
+    if (fig.clips?.['spawn.deploy']) fig.play?.('spawn.deploy', { layer: 'upper' });
     warm(t.holder).then(() => {
       if (records.get(t.id) === t) t.holder.visible = true;
     });

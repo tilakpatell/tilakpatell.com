@@ -57,14 +57,24 @@ describe('the own rigs’ sets', () => {
     expect(RIG_SET('b1').idle).toContain('L_B1_3p1pLoco_StandIdleLoop_01');
   });
 
-  it('give every rig an idle, a walk and a skeleton of its own, and a pack by its name', () => {
+  it('give every rig an idle, a walk (but the ones that stay put) and a skeleton of its own, and a pack by its name', () => {
+    // (the pelikki on its rock, the Gamorrean on his bench, the gonk: the game gives them no walk)
+    const still = new Set(['pelikki', 'gamorrean', 'gonk']);
     for (const [rig, r] of Object.entries(OWN_RIGS)) {
       shaped(r.set);
       expect(r.set.idle, rig).toBeTruthy();
-      expect(r.set.walk, rig).toBeTruthy();
+      if (!still.has(rig)) expect(r.set.walk, rig).toBeTruthy();
       expect(r.skeleton, rig).toMatch(/_Ske$/);
       expect(PACKS[rig], rig).toBe(r.set);
     }
     expect(RIG_SET('nobody')).toBe(null);
+  });
+
+  it('take in the galaxy’s creatures, droids and aliens, each on its own skeleton', () => {
+    for (const rig of ['birdtheed', 'chicken', 'scurrier', 'tach', 'pelikki', 'runyip', 'profogg', 'sneep', 'stintarils', 'pillioshrimp', 'felbird', 'felripper', 'gamorrean', 'treadwell', 'gonk']) expect(RIG_SET(rig)?.idle, rig).toBeTruthy();
+    expect(OWN_RIGS.chicken.skeleton).toBe('Chicken_01_Ske');
+    expect(RIG_SET('gonk')['idle.look']).toBe('L_Gonk_Stand_Idle_02');
+    // (none of the cast left's: lane B's beasts, lane Y's heroes)
+    for (const rig of ['dewback', 'bantha', 'eopie', 'ronto', 'jawa', 'aiwha', 'yoda', 'grievous']) expect(OWN_RIGS[rig], rig).toBeUndefined();
   });
 });

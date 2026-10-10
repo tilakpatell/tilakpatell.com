@@ -3,14 +3,16 @@ import * as models from './models';
 import * as ground from './ground';
 import * as fight from './fight';
 import * as weather from './weather';
+import * as level from './level';
 
 // The galaxy's face: exactly these names and nothing else, so a world that
 // reads the galaxy through it knows what it may lean on
 const FACE = [
-  [models, ['FIGURES', 'GALAXY_KINDS', 'GROUPS', 'PROPS', 'SURFACE_MODELS', 'buildFigure', 'buildGalaxyShip', 'clusterSpecs', 'createKit', 'createPlacer', 'loadModel', 'lodUrlFor', 'modelUrlFor', 'usesModel', 'wantsLod']],
+  [models, ['FIGURES', 'GALAXY_KINDS', 'GROUPS', 'PROPS', 'SURFACE_MODELS', 'buildFigure', 'buildGalaxyShip', 'clusterSpecs', 'createKit', 'createPlacer', 'isGame', 'loadModel', 'lodUrlFor', 'modelUrlFor', 'usesModel', 'wantsLod']],
   [ground, ['SITES', 'makeHeight', 'siteOf']],
   [fight, ['sensesFor', 'startBurst', 'stepBurst', 'strafeStep']],
   [weather, ['createWeather', 'strikeAt']],
+  [level, ['createLevelLoader', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'packUrl', 'wanted']],
 ];
 
 describe('galaxy/shared', () => {

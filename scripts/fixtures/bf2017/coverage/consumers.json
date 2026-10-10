@@ -1,0 +1,21 @@
+{
+ "src/data/galaxyAssets.json": [
+  "gameplay/vehicles/air/awing/vehicle_air_awing_01_static_donotuse_mesh",
+  "characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh|lod1"
+ ],
+ "public/models/galaxy/bf2017/clips-luke.glb": [
+  "L_Luke_Stand_Idle_01",
+  "a_luke_strike1-1a2b3c4d"
+ ],
+ "src/data/bf2017/light/hoth.json": [
+  "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_C"
+ ],
+ "src/data/bf2017/ai.json": [
+  "AI/BattleAI/Templates/CloseRange_Template#AISoldierSpawnTemplateData"
+ ],
+ "public/models/galaxy/bf2017/levels/hoth/level.json": [
+  "map:levels/mp/hoth_01/hoth_01",
+  "models/characters/npc/droids/astromech/r5d4/r5d4_01_mesh.glb",
+  "terrain:Levels/MP/Hoth_01/Hoth_01_Terrain/Hoth_01_Terrain"
+ ]
+}

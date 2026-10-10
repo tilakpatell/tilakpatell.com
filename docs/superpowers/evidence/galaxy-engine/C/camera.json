@@ -1,0 +1,58 @@
+{
+  "size": "1600x900",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "shots": [
+        {
+          "name": "orbit-0.0-webgl.png",
+          "t": 0,
+          "yaw": 0,
+          "arm": 0.463
+        },
+        {
+          "name": "orbit-0.5-webgl.png",
+          "t": 0.5,
+          "yaw": 30,
+          "arm": 0.564
+        },
+        {
+          "name": "orbit-1.0-webgl.png",
+          "t": 1,
+          "yaw": 60,
+          "arm": 0.944
+        },
+        {
+          "name": "orbit-1.5-webgl.png",
+          "t": 1.5,
+          "yaw": 90,
+          "arm": 1.034
+        },
+        {
+          "name": "orbit-2.0-webgl.png",
+          "t": 2,
+          "yaw": 120,
+          "arm": 1.167
+        },
+        {
+          "name": "orbit-2.5-webgl.png",
+          "t": 2.5,
+          "yaw": 150,
+          "arm": 1.207
+        },
+        {
+          "name": "orbit-3.0-webgl.png",
+          "t": 3,
+          "yaw": 180,
+          "arm": 1.216
+        }
+      ],
+      "backend": "nodes-webgl",
+      "frames": 181,
+      "maxStepCm": 2.4,
+      "minArm": 0.463,
+      "behindWall": 0
+    }
+  ]
+}

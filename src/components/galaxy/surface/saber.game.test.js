@@ -59,14 +59,26 @@ describe('a 2017 hero’s saber', () => {
     saber.dispose();
   });
 
-  it('times a stroke by the table’s window, not the pack’s older one', async () => {
+  it('times a stroke by the table’s window, as the pack now does too', async () => {
     const { fig, world } = await figure();
     const saber = createSaber(createGunplay(fig, 'saber', { unit: 1 }), { fig, parent: world, tier: 'low' });
     const a = saber.swing(0);
     expect(a.contact).toEqual(strike('A_Luke_AttackLoop_Strike1').contact);
-    expect(a.contact).not.toEqual(a.clip.userData.contact);
+    // (the pack re-timed with the tables' measure: scripts/bf2017-clips.mjs)
+    expect(a.clip.userData.contact).toEqual(a.contact);
     const up = createSaber(createGunplay(fig, 'saber', { unit: 1 }), { fig, parent: world, tier: 'low' }).swing(0, { dir: 'left' });
     expect(up.contact).toEqual(luke.strikes.find((s) => s.name === up.name).contact);
+  });
+
+  it('takes the table’s window over a pack’s that disagrees', async () => {
+    const { fig, world } = await figure();
+    // (a pack timed some other way: its first strike's window a tenth of a second on)
+    const other = fig.clips['sword.light.a'].clone();
+    other.userData.contact = other.userData.contact.map((t) => t + 0.1);
+    fig.clips = { ...fig.clips, 'sword.light.a': other };
+    const a = createSaber(createGunplay(fig, 'saber', { unit: 1 }), { fig, parent: world, tier: 'low' }).swing(0);
+    expect(a.clip).toBe(other);
+    expect(a.contact).toEqual(strike('A_Luke_AttackLoop_Strike1').contact);
   });
 
   it('times a stroke named outright (a duellist’s, a peer’s) by that stroke’s own window', async () => {
@@ -109,5 +121,26 @@ describe('a 2017 hero’s saber', () => {
     expect(lights()).toBe(0);
     createSaber(createGunplay(fig, 'saber', { unit: 1 }), { fig, parent: world, tier: 'mid' });
     expect(lights()).toBe(0);
+  });
+
+  it('takes its light with it when thrown, and lets it go when no update reaches it', async () => {
+    const { fig, world } = await figure();
+    const saber = createSaber(createGunplay(fig, 'saber', { unit: 1 }), { fig, parent: world, tier: 'high' });
+    const light = world.children.find((o) => o.isPointLight);
+    const p = { forward: new THREE.Vector3(0, 0, 1), up: new THREE.Vector3(0, 1, 0), me: null, targets: [], eye: new THREE.Vector3(0, 1.6, -3) };
+    let now = 0;
+    const frames = (n) => {
+      for (let i = 0; i < n; i++) saber.update(1 / 30, (now += 1 / 30), p);
+    };
+    saber.light(true);
+    frames(30);
+    expect(light.intensity).toBeGreaterThan(0);
+    const held = light.position.clone();
+    expect(saber.throw(now, new THREE.Vector3(0, 0, 1))).toBe(true);
+    frames(10);
+    expect(light.position.distanceTo(held)).toBeGreaterThan(1);
+    saber.dark();
+    expect(light.intensity).toBe(0);
+    saber.dispose();
   });
 });

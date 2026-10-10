@@ -1,3 +1,4 @@
+import { readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { HQ, MODELS } from '../src/components/galaxy/models.js';
 import { FLEET, writtenTurn } from './bf2017-fleet.mjs';
@@ -16,6 +17,16 @@ describe('the fleets on the game’s ships', () => {
       expect(row.nose, file).toBeCloseTo(nose, 9);
     }
     for (const kept of ['corvette', 'interceptor']) expect(FLEET.map((r) => r[0])).not.toContain(kept);
+  });
+
+  it('writes the space levels’ kits as the war’s capitals at the fleet’s cut, credited to the game', () => {
+    const credits = JSON.parse(readFileSync(new URL('../src/data/modelCredits.json', import.meta.url), 'utf8'));
+    const rows = FLEET.filter((r) => r[3].space);
+    expect(rows.map((r) => r[0])).toEqual(['lucrehulk', 'lightcruiser']);
+    for (const [file, , key] of rows) {
+      expect(statSync(new URL(`../public/models/galaxy/${file}.glb`, import.meta.url)).size, file).toBeLessThan(2e6);
+      expect(credits[key].author, file).toBe('EA DICE');
+    }
   });
 
   it('turns a file so its row’s nose brings it back to +z', () => {

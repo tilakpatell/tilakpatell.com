@@ -1,5 +1,6 @@
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { createLevel, levelGround, levelPlaced, partOf } from './index';
+import { createLevel, levelGround, levelPlaced, partOf, sunOf } from './index';
 
 describe('the level’s entry', () => {
   it('leaves a ground without an image layer as it is (every world today)', async () => {
@@ -23,5 +24,19 @@ describe('the level’s entry', () => {
     expect(await levelPlaced({ id: 'tatooine' })).toEqual({ life: [], rides: [], things: [] });
     expect(await levelPlaced({ id: 'x', level: 'nowhere' })).toEqual({ life: [], rides: [], things: [] });
     expect(await partOf('nowhere', 'decals.json', { decals: [] })).toEqual({ decals: [] });
+  });
+});
+
+describe('sunOf', () => {
+  it('reads the scene’s sun (its first directional light) as a direction toward it and its colour', () => {
+    const scene = new THREE.Scene();
+    expect(sunOf(scene)).toBeNull();
+    const sun = new THREE.DirectionalLight(0xff8000, 3);
+    sun.position.set(0, 10, 10);
+    sun.target.position.set(0, 0, 0);
+    scene.add(sun, sun.target);
+    const s = sunOf(scene);
+    expect(s.direction.map((v) => Number(v.toFixed(4)))).toEqual([0, 0.7071, 0.7071]);
+    expect(s.color.map((v) => Number(v.toFixed(3)))).toEqual([1, Number(new THREE.Color(0xff8000).g.toFixed(3)), 0]);
   });
 });

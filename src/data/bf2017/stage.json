@@ -1,0 +1,9 @@
+{
+  "_from": { "export": "build 489592", "date": "2026-10-10", "map": "levels/frontend/frontend" },
+  "about": "The Frontend level's Backdrop_01 (sub-level 4 of frontend.bin): the hero-select stage behind the loadout. Each piece where the level places it, from the dome's foot: the dome at [0.426, -3.627, -2.799], the pill lights at [-0.25, -3.587, 6.142] turned a quarter about y and scaled [0.498, 1.562, 1.746].",
+  "pieces": {
+    "nowheredome_01": { "at": [0, 0, 0], "quat": [0, 0, 0, 1], "scale": [1, 1, 1] },
+    "nowherepilllights_01": { "at": [-0.676, 0.04, 8.941], "quat": [0, 0.7071067811865476, 0, 0.7071067811865476], "scale": [0.498, 1.562, 1.746] }
+  },
+  "_source": ["levels/frontend/objects/nowheredome_01/nowheredome_01_mesh", "levels/frontend/objects/nowherepilllights_01/nowherepilllights_01_mesh"]
+}

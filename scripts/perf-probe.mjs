@@ -26,7 +26,6 @@
 // waits on the graphics chip: a stall with no GL call named in it).
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 
 const argv = process.argv.slice(2);
 const profile = Boolean(process.env.PROFILE);
@@ -544,13 +543,13 @@ if (!base) {
   await server.listen();
   base = 'http://127.0.0.1:5294';
 }
-const chrome = process.env.CHROME ?? `${homedir()}/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing`;
-const args = process.platform === 'darwin' ? ['--use-angle=metal', '--disable-gpu-vsync', '--disable-frame-rate-limit', '--ignore-gpu-blocklist', '--enable-gpu-rasterization'] : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
-// (WebGPU on: Chromium's own chip on a desktop, SwiftShader's software
-// adapter on a Linux box with no display, whose times are software's)
-// (and Blink's experimental WebGPU IDL off, as a visitor's Chrome has it:
-// its draft texture-view swizzle throws on three's every frame)
-if (gpu === 'webgpu') args.push('--enable-unsafe-webgpu', '--disable-blink-features=WebGPUExperimentalFeatures', '--enable-features=Vulkan', ...(process.platform === 'linux' && !process.env.DISPLAY ? ['--use-webgpu-adapter=swiftshader'] : []));
+const { adapterFor, angleFor, findChromium, launchArgs } = await import('./lib/chromium.mjs');
+const chrome = findChromium();
+if (!chrome) throw new Error('no Chromium (set CHROME=/path/to/chrome)');
+// (the machine's own chip, uncapped, so a frame's time is what it cost;
+// scripts/lib/chromium.mjs)
+const args = launchArgs({ angle: angleFor(), webgpu: gpu === 'webgpu', adapter: adapterFor(), uncapped: true });
+if (process.platform === 'darwin') args.push('--enable-gpu-rasterization');
 const browser = await chromium.launch({ executablePath: chrome, args });
 const report = {};
 mkdirSync(out, { recursive: true });

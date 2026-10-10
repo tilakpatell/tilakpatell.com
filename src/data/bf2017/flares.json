@@ -1,0 +1,1331 @@
+{
+ "_from": "the bucket's data/: every LensFlareBlueprint data.tsv lists (12), read by flare.js's flareElements",
+ "flares": {
+  "FX_LF_IoN_Bomb_Explosion": {
+   "occluderSize": 0.5,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      1.65,
+      0.25
+     ],
+     "rayDistance": 0.01,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      -0.205067873,
+      -0.153527737,
+      -0.262306452,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      -12.5712471,
+      35.4252853,
+      -33.2500763,
+      10.3956442
+     ],
+     "camDistMax": [
+      100,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      3.5,
+      3.5
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      0,
+      0,
+      0.4854369,
+      0.5148544
+     ],
+     "alphaCamDist": [
+      -12.5712471,
+      35.4252853,
+      -33.2500763,
+      10.3956442
+     ],
+     "camDistMax": [
+      50,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      2.5,
+      0.5
+     ],
+     "rayDistance": 0.01,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      -0.0381469727,
+      -0.178597927,
+      -0.2613988,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      -12.5712471,
+      35.4252853,
+      -33.2500763,
+      10.3956442
+     ],
+     "camDistMax": [
+      100,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/Gadgets/WalkerAssault_IoNBomb/LensFlare/FX_LF_IoN_Bomb_Explosion#LensFlareEntityData"
+  },
+  "FX_LF_HanSolo_Sharpshooterz_Muzzle": {
+   "occluderSize": 0.2,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      0.15,
+      0.1
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -2,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "alphaCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "camDistMax": [
+      150,
+      150
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.08,
+      0.08
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -2,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      -1,
+      3,
+      -3,
+      1
+     ],
+     "alphaCamDist": [
+      6.5225563,
+      -13.0774107,
+      6.52190733,
+      0.03293726
+     ],
+     "camDistMax": [
+      100,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/Gameplay/Hero/HanSolo/LensFlare/FX_LF_HanSolo_Sharpshooterz_Muzzle#LensFlareEntityData"
+  },
+  "FX_LF_Grenade_Dioxis_Trail": {
+   "occluderSize": 1,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      0.025,
+      0.015
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      35,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.015,
+      0.005
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      35,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.04,
+      0.025
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      30,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/Lighting/Flares/FX_LF_Grenade_Dioxis_Trail#LensFlareEntityData"
+  },
+  "FX_LF_Grenade_IoNSmartGrenade_Trail": {
+   "occluderSize": 1,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      0.025,
+      0.015
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      35,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.015,
+      0.005
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      35,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.04,
+      0.025
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      30,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/Lighting/Flares/FX_LF_Grenade_IoNSmartGrenade_Trail#LensFlareEntityData"
+  },
+  "FX_LF_Grenade_Trail": {
+   "occluderSize": 1,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      0.025,
+      0.015
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      35,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.015,
+      0.005
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      35,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.04,
+      0.025
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      5.96046448e-7,
+      -0.00000107288361,
+      -1.0000062,
+      1
+     ],
+     "alphaCamDist": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "camDistMax": [
+      30,
+      100
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/Lighting/Flares/FX_LF_Grenade_Trail#LensFlareEntityData"
+  },
+  "FX_LF_StarDestroyer_Searchlight_Core_01": {
+   "occluderSize": 5,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      0.2,
+      0.2
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      0,
+      0,
+      -0.512562752,
+      0.9924371
+     ],
+     "alphaCamDist": [
+      0,
+      0.964616954,
+      -1.97385812,
+      1.03459108
+     ],
+     "camDistMax": [
+      10000,
+      10000
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.12,
+      0.12
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      0,
+      0,
+      -0.512562752,
+      0.9924371
+     ],
+     "alphaCamDist": [
+      0,
+      0.964616954,
+      -1.97385812,
+      1.03459108
+     ],
+     "camDistMax": [
+      10000,
+      10000
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    },
+    {
+     "size": [
+      0.3,
+      0.3
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      0,
+      0,
+      -0.512562752,
+      0.9924371
+     ],
+     "alphaCamDist": [
+      0,
+      0.964616954,
+      -1.97385812,
+      1.03459108
+     ],
+     "camDistMax": [
+      10000,
+      10000
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/Lighting/Flares/FX_LF_StarDestroyer_Searchlight_Core_01#LensFlareEntityData"
+  },
+  "LF_Lightsaber_Saberthrow_Impact": {
+   "occluderSize": 1,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      6,
+      0.4
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "alphaCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "camDistMax": [
+      80,
+      80
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/Weapons/LightSabers/LensFlares/LF_Lightsaber_Saberthrow_Impact#LensFlareEntityData"
+  },
+  "LF_Blasterbolt_Blocked_02": {
+   "occluderSize": 0.4,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      6,
+      4
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "alphaCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "camDistMax": [
+      40,
+      40
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/impacts/Lightsaber/LensFlares/LF_Blasterbolt_Blocked_02#LensFlareEntityData"
+  },
+  "LF_FlashPistol_Blocked": {
+   "occluderSize": 0.4,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      6,
+      4
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "alphaCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "camDistMax": [
+      40,
+      40
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/impacts/Lightsaber/LensFlares/LF_FlashPistol_Blocked#LensFlareEntityData"
+  },
+  "LF_ForceAbsorb_Blocked": {
+   "occluderSize": 0.4,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      6,
+      4
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "alphaCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "camDistMax": [
+      40,
+      40
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/impacts/Lightsaber/LensFlares/LF_ForceAbsorb_Blocked#LensFlareEntityData"
+  },
+  "LF_ForceLighting_Blocked": {
+   "occluderSize": 0.4,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      6,
+      4
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "alphaCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "camDistMax": [
+      40,
+      40
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/impacts/Lightsaber/LensFlares/LF_ForceLighting_Blocked#LensFlareEntityData"
+  },
+  "LF_Lightsaber_Blocked": {
+   "occluderSize": 0.4,
+   "dimmer": 1,
+   "elements": [
+    {
+     "size": [
+      6,
+      4
+     ],
+     "rayDistance": 0,
+     "sizeOccluder": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "alphaOccluder": [
+      0,
+      0,
+      -1,
+      1
+     ],
+     "alphaScreen": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "sizeCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "alphaCamDist": [
+      -1.00000143,
+      3.000002,
+      -3.000007,
+      1
+     ],
+     "camDistMax": [
+      40,
+      40
+     ],
+     "rotation": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "enabled": true
+    }
+   ],
+   "_source": "FX/impacts/Lightsaber/LensFlares/LF_Lightsaber_Blocked#LensFlareEntityData"
+  }
+ }
+}

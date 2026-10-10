@@ -38,6 +38,7 @@ import { frameFrom, reach, rotateWorld, setWorldQuaternion, spring } from '../..
 import { gripMorphs, ungrip } from '../../lib/three/grip';
 import { handFrame, handPoints } from '../../lib/three/held';
 import { WEAPON_FRAME } from '../../lib/three/walrusRig.js';
+import { stanceFor, weaponClassOf } from '../../lib/three/walrusSets/stance';
 
 const V = THREE.Vector3;
 const Q = THREE.Quaternion;
@@ -1040,10 +1041,16 @@ function measureHand(root, hand, hips, left, fix, unit) {
   return out;
 }
 
+// a stance's own additive aims (walrusSets/additive.js's add.aim.p.up…), by its key
+const STANCE_AIM = { p: 'p.', l: 'l.' };
+
 export function createGunplay(fig, kind, { unit = 1, who = null } = {}) {
   const spec = GUNS[kind];
   const root = fig.model;
   if (!spec || !root) return null;
+  // (a 2017 figure stands, walks and aims as the game does for this weapon's
+  // class: lib/three/walrusStance.js; the humanoid set for a saber or a gun of no class)
+  fig.stance?.(stanceFor(weaponClassOf(kind)))?.catch?.(() => {});
   const bones = {};
   for (const n of BONES) bones[n] = fig.bones?.[n] ?? root.getObjectByName(n) ?? null;
   // a 2017 figure's weapon socket (lib/three/walrus.js): the game's clips
@@ -1214,7 +1221,11 @@ export function createGunplay(fig, kind, { unit = 1, who = null } = {}) {
       const turn = want - now;
       if (Math.abs(turn) > 1e-4) spine.forEach((b, i) => b && rotateWorld(b, up, turn * SPINE_SHARE[i], 1));
     }
-    const lift = pitch * 0.4 * aim + st.up.x * 0.25;
+    // (a 2017 figure tips its chest by the game's own additive aims, up or
+    // down as far as it's aiming, its stance's where it has them; the kick
+    // stays the site's)
+    const laid = Boolean(socket && fig.aimAt?.(pitch * aim, 0, STANCE_AIM[stanceFor(weaponClassOf(kind))] ?? ''));
+    const lift = (laid ? 0 : pitch * 0.4 * aim) + st.up.x * 0.25;
     if (Math.abs(lift) > 1e-5) spine.forEach((b, i) => b && rotateWorld(b, right, lift * SPINE_SHARE[i], 1));
     // the head: the rest of the way, onto the target
     const lookW = Math.max(st.look, aim);
@@ -1401,6 +1412,7 @@ export function createGunplay(fig, kind, { unit = 1, who = null } = {}) {
       return gun;
     },
     dispose() {
+      fig.aimAt?.(0, 0); // (the additive aim let go with the gun)
       curl?.dispose();
       gun.removeFromParent();
       for (const o of owned) o.dispose?.();

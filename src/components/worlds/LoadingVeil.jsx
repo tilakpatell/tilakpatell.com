@@ -6,7 +6,10 @@
 // is busy sending the world to the graphics chip.
 //
 // <LoadingVeil shown progress={0.4} step="shaders" title="The universe" />
-// (`step` one of STEP_WORDS' keys; `className` places it in its world's box)
+// (`step` one of STEP_WORDS' keys; `className` places it in its world's box;
+// `waiting`, a line once a step has held, and `onSkip`, a "Go in anyway"
+// button: usePrepareWait.js gives both; `backdrop`, a film or a picture,
+// fills the veil behind its card)
 
 import { useEffect, useState } from 'react';
 import { STEP_WORDS } from './loadingSteps';
@@ -15,7 +18,7 @@ import './loadingVeil.css';
 
 const FADE = 450; // ms
 
-export default function LoadingVeil({ shown, progress = 0, step = 'load', title = '', line = '', className = '' }) {
+export default function LoadingVeil({ shown, progress = 0, step = 'load', title = '', line = '', waiting = '', onSkip = null, className = '', backdrop = null }) {
   // (kept up for its fade once it's done)
   const [up, setUp] = useState(shown);
   useEffect(() => {
@@ -29,7 +32,8 @@ export default function LoadingVeil({ shown, progress = 0, step = 'load', title 
   if (!up) return null;
   const k = Math.max(0, Math.min(1, Number.isFinite(progress) ? progress : 0));
   return (
-    <div className={`loading-veil ${shown ? '' : 'is-done'} ${className}`.trim()} role="status" aria-live="polite">
+    <div className={`loading-veil ${shown ? '' : 'is-done'} ${backdrop ? 'has-backdrop' : ''} ${className}`.replace(/\s+/g, ' ').trim()} role="status" aria-live="polite">
+      {backdrop && <div className="loading-veil-backdrop">{backdrop}</div>}
       <div className="loading-veil-card">
         {title && <p className="loading-veil-title">{title}</p>}
         <div className={`loading-veil-bar ${step === 'load' && k === 0 ? 'is-waiting' : ''}`.trim()} aria-hidden="true">
@@ -40,6 +44,12 @@ export default function LoadingVeil({ shown, progress = 0, step = 'load', title 
           <span className="loading-veil-pct"> {Math.round(k * 100)}%</span>
         </p>
         {line && <p className="loading-veil-line">{line}</p>}
+        {waiting && <p className="loading-veil-line loading-veil-wait">{waiting}</p>}
+        {onSkip && shown && (
+          <button type="button" className="btn loading-veil-skip" onClick={onSkip}>
+            Go in anyway
+          </button>
+        )}
       </div>
     </div>
   );

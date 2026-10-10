@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { EMOTE, EMOTES, applyEmote, createEmoteWheel, emotePacket, heardEmote, keepEmote, motionPacket, readEmote, readEmoteWire, readMotion, wheelAngle } from './emote';
+import { EMOTE, EMOTES, GAME_EMOTE, applyEmote, emoteFor, createEmoteWheel, emotePacket, heardEmote, keepEmote, motionPacket, readEmote, readEmoteWire, readMotion, wheelAngle } from './emote';
 
 describe('the emotes', () => {
   it('are the five the spec names, each a clip on a layer, with a length', () => {
@@ -212,3 +212,24 @@ describe('on a figure', () => {
     expect(applyEmote(null, null, null)).toBeNull();
   });
 });
+
+describe('a 2017 hero’s own emotes on the wheel', () => {
+  const played = [];
+  const hero = { clips: { 'emote.2': { duration: 6.25 } }, play: (clip, o) => (played.push([clip, o.layer]), Promise.resolve(true)) };
+  it('plays the hero’s game emote in a slot’s place, on the whole body, as long as it is', () => {
+    expect(GAME_EMOTE.cheer).toBe('emote.2');
+    expect(emoteFor(hero, 'cheer')).toEqual({ clip: 'emote.2', layer: 'full', length: 6.25, walk: false });
+    // (a slot the hero has no game emote for, and anyone else: the site's)
+    expect(emoteFor(hero, 'dance').clip).toBe('dance');
+    expect(emoteFor({ play() {} }, 'wave')).toMatchObject({ clip: 'wave', layer: 'upper', walk: true });
+    applyEmote(hero, { id: 'cheer', at: 0, t: 0 });
+    expect(played.at(-1)).toEqual(['emote.2', 'full']);
+  });
+  it('keeps it its own length, and cuts it when the hero moves off', () => {
+    const e = { id: 'cheer', at: 10, length: 6.25, walk: false };
+    expect(keepEmote(e, 15)).toBe(e);
+    expect(keepEmote(e, 16.3)).toBeNull();
+    expect(keepEmote({ ...e, id: 'wave' }, 11, { moving: true })).toBeNull();
+  });
+});
+

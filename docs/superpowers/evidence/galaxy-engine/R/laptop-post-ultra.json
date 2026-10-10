@@ -1,0 +1,60 @@
+{
+  "size": "1600x900",
+  "adapter": "system",
+  "rows": [
+    {
+      "leg": "webgpu",
+      "tier": "ultra",
+      "post": true,
+      "backend": "webgpu",
+      "clustered": true,
+      "passes": [
+        "render",
+        "ssgi",
+        "ao",
+        "ssr",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "lut",
+        "traa",
+        "output"
+      ],
+      "shot": "laptop-post-ultra-webgpu.png",
+      "envDiff": 2.34,
+      "programsBefore": 82,
+      "programsAfter": 82,
+      "frames": 204,
+      "mean": 5.4,
+      "median": 5.6,
+      "p95": 7.1
+    },
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": false,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "laptop-post-ultra-webgl.png",
+      "envDiff": 3.54,
+      "programsBefore": 77,
+      "programsAfter": 77,
+      "frames": 1300,
+      "mean": 2.9,
+      "median": 2.8,
+      "p95": 3.2
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{"cat":"fonts","name":"UI/Resources/Fonts/Roboto-Regular","file":"fonts/UI/Resources/Fonts/Roboto-Regular.ttf","bytes":100}
+{"cat":"fonts","name":"UI/Resources/Fonts/LinotypeUnivers","file":"fonts/UI/Resources/Fonts/LinotypeUnivers.ttf","bytes":100}
+{"cat":"svg","name":"UI/SVG/Icons/Icon_Blaster","file":"svg/UI/SVG/Icons/Icon_Blaster.svg","bytes":10}
+{"cat":"svg","name":"S1/UI/SVG/BossVehicles/Icon_AT-M6","file":"svg/S1/UI/SVG/BossVehicles/Icon_AT-M6.svg","bytes":10}
+{"cat":"keys","file":"strings/keys.json","bytes":50}
+{"cat":"strings","name":"Localization/WSLocalization_English","file":"strings/English.json","bytes":50}
+{"cat":"movies","name":"Cinematics/Planets/Hoth_Loading","file":"movies/cinematics/planets/hoth_loading.webm","bytes":1000}
+{"cat":"movies","name":"A3/Cinematics/Story/M1TAK/Intro","file":"movies/a3/cinematics/story/m1tak/intro.webm","bytes":1000}
+{"cat":"animtracks","name":"_edit/objects/props/objectsets/_galacticempire/alarmwall_s_01/animtrackdata/door_rotation","file":"animtracks/_edit/objects/props/objectsets/_galacticempire/alarmwall_s_01/animtrackdata/door_rotation.json","bytes":30}
+{"cat":"animtracks","name":"levels/space/sb_endor_01/asteroid_spin","file":"animtracks/levels/space/sb_endor_01/asteroid_spin.json","bytes":30}

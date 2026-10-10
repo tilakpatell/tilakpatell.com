@@ -1,0 +1,134 @@
+[
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "ultra",
+  "view": "field2",
+  "samples": null,
+  "frameMs": 1841.3,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 9
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "ultra",
+  "view": "field2",
+  "samples": {
+   "detail": 4,
+   "triplanar": 2,
+   "sparkle": 1,
+   "mask": 1
+  },
+  "frameMs": 3139,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 15
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "ultra",
+  "view": "field50",
+  "samples": null,
+  "frameMs": 2053.7,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 9
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "ultra",
+  "view": "field50",
+  "samples": {
+   "detail": 4,
+   "triplanar": 2,
+   "sparkle": 1,
+   "mask": 1
+  },
+  "frameMs": 2724.4,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 15
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "ultra",
+  "view": "trench",
+  "samples": null,
+  "frameMs": 2862.1,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 9
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "ultra",
+  "view": "trench",
+  "samples": {
+   "detail": 4,
+   "triplanar": 2,
+   "sparkle": 1,
+   "mask": 1
+  },
+  "frameMs": 5095.1,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 15
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "ultra",
+  "view": "ridge",
+  "samples": null,
+  "frameMs": 2659.1,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 9
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "ultra",
+  "view": "ridge",
+  "samples": {
+   "detail": 4,
+   "triplanar": 2,
+   "sparkle": 1,
+   "mask": 1
+  },
+  "frameMs": 4921.2,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 15
+  }
+ }
+]

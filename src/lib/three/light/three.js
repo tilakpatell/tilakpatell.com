@@ -5,6 +5,7 @@
 // "The light"). The modules load once and are shared.
 //
 // loadThree() → Promise<{ THREE, tsl, SunLight, SunLightNode, ClusteredLighting }>
+// loadCSM() → Promise<CSMShadowNode> (lane S's cascades)
 // registerLights(renderer) → Promise<renderer>: SunLight known to the node
 //   renderer's library, once per renderer (idempotent)
 
@@ -42,3 +43,11 @@ export async function registerLights(renderer) {
 
 // a renderer is the WebGPU kind, or the node renderer on a WebGL 2 context
 export const backendOf = (renderer) => (renderer?.backend?.isWebGLBackend ? 'nodes-webgl' : renderer?.isWebGPURenderer ? 'webgpu' : 'webgl');
+
+// Lane S: CSMShadowNode (three/addons/csm) for the sun's four cascades,
+// loaded with three the first time a sun casts through it.
+let csm = null;
+export function loadCSM() {
+  csm ??= import('three/addons/csm/CSMShadowNode.js').then((m) => m.CSMShadowNode);
+  return csm;
+}

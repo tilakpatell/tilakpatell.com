@@ -45,6 +45,15 @@
 // context (`ctx`); what they say of the ship (kept inside a tunnel, slowed,
 // caught in a blast) goes back to the scene in what update returns.
 //
+// And a space level's Starfighter Assault (surface/missions/starfighter.js,
+// the flow design's decision 4), asked for by the page (`?battle=
+// starfighter`): starfighter({ level, side, draw }) stands the war's battle
+// here aside and fights the level's in its place, laid by battles.js's
+// layStarfighter, run by its own plan on the director, on your side (the
+// oath's, or the one asked for); `draw(laid)` draws the level's pack
+// round it (dispose() when it goes). It counts nothing in the war: it's a
+// game you start, not the war's battle.
+//
 // createWarFront(scene, { models, small, reduced, tier, emit, makeScene,
 //   now, allegiance, saves }) → { enter(sys, world), update(dt, t, camera, live, you) → { busy, hurt,
 //   ship?, speedCap?, kill? },
@@ -75,7 +84,8 @@ import { holdFighters, stepBattle } from '../universe/battlePowers';
 import { GCW, battleAt, campaignAt, history, seeded, teamsOf } from './gcw';
 import { teamFor } from './allegiance';
 import { DEFAULT_WAR, WARS, otherSide, warOfSide } from './sides';
-import { layBattle } from './battles';
+import { layBattle, layStarfighter } from './battles';
+import { sideShips, starfighterPlan } from './surface/missions/starfighter';
 import { planOf } from './battlePlans';
 import { piecesFor } from './warpieces';
 import { addPoints, addWin, receiveWar, warMessage, warTally, warVersion } from './warState';
@@ -124,7 +134,8 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
   let stateKey = '';
   let solids = [];
   let pieces = []; // the set pieces of the battle on
-  let forced = false; // (a dev hook's battle, kept till the system's left)
+  let forced = false; // (a dev hook's battle, or a Starfighter Assault, kept till the system's left)
+  let level = null; // (a Starfighter Assault's pack, drawn while it's on)
   const last = { t: 0, camera: null }; // (the last frame's, for the dev hook that runs it on)
   const said = new Map(); // a set piece's line, by id: when it was last said (seconds on the battle's clock)
   const held = new Map(); // a world solid let go of (a run's way in): its r and reach
@@ -155,6 +166,11 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
   const carry = createCarry();
   const score = (n, ms = now()) => {
     if (team === null || !sys || !on) return;
+    // (a Starfighter Assault is yours, not the war's: its points are its end card's)
+    if (on.starfighter) {
+      part.points += n;
+      return;
+    }
     const v = warVersion();
     addPoints(side(), sys.id, on.step, n, ms);
     part.points += n;
@@ -289,7 +305,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
   // the shared state's stage, its objectives and what's next, for the HUD (warText.js says them)
   const stageOf = (st) => {
     const s = director.plan.stages[st.stage];
-    return { index: st.stage, count: director.plan.stages.length, open: st.open, opensIn: +st.opensIn.toFixed(1), need: s ? (s.need ?? s.objectives.length) : 0, id: s?.id ?? null, type: s?.type ?? null };
+    return { index: st.stage, count: director.plan.stages.length, open: st.open, opensIn: +st.opensIn.toFixed(1), need: s ? (s.need ?? s.objectives.length) : 0, id: s?.id ?? null, type: s?.type ?? null, ...(s?.name ? { title: attacking() ? s.name : s.nameDefend } : {}) };
   };
   const objectivesOf = (st) => {
     const s = director.plan.stages[st.stage];
@@ -312,6 +328,8 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
   };
 
   const stop = () => {
+    level?.dispose?.();
+    level = null;
     for (const p of pieces) p.dispose();
     pieces = [];
     said.clear();
@@ -345,14 +363,17 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
     }
   };
 
+  // (your team in it: a Starfighter Assault's is the side it was asked for)
+  const teamIn = (b) => (b?.starfighter ? b.sides.indexOf(b.starfighter.side) : teamFor(side(), b));
   const start = (b, ms) => {
-    laid = layBattle(sys, b, { now: ms, tier });
+    const sf = b.starfighter ?? null;
+    laid = sf ? layStarfighter(sys, b, sf.level, { now: ms, tier }) : layBattle(sys, b, { now: ms, tier });
     fight.reset(b.id);
     // (back in a battle this browser told of before a reload: the same id, and what was done)
     fight.load(saves?.get(BATTLE_KEY, null));
     version += 1;
     on = b;
-    director = createDirector({ plan: planOf(sys, b, laid), seed: b.id });
+    director = createDirector({ plan: sf ? starfighterPlan(sf.level, laid.frame, { id: b.id }) : planOf(sys, b, laid), seed: b.id });
     planned = new Set(director.keys());
     const aces = director.plan.side.filter((o) => o.type === 'ace');
     battle = createBattle({
@@ -373,7 +394,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
         if (attacking() || id.startsWith('r:') || id.startsWith('ace:')) addFight(id, damage / scale());
       },
     });
-    team = teamFor(side(), b);
+    team = teamIn(b);
     battle.setYou(team);
     // (the capital ships lost long before you came: gone already)
     for (const l of shared().losses) {
@@ -382,12 +403,20 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
     }
     draw.show(battle, laid.war);
     for (const cap of battle.capitals) if (cap.gone) draw.setVisible?.(cap, false);
+    // (a Starfighter Assault's ships the level's pack draws are drawn once: the game's)
+    // (and drawn by the battle again where the pack's tier leaves the ship out: Kamino's on low)
+    const capOf = sf ? new Map([0, 1].flatMap((t) => battle.capitals.filter((c) => c.team === t).map((cap, i) => [sideShips(sf.level, t)[i]?.id, cap]))) : null;
+    for (const s of sf?.level.ships ?? []) if (s.pack && capOf.get(s.id)) draw.setVisible?.(capOf.get(s.id), false);
     shown = true;
     world?.quiet?.(true);
+    // (and the stations a level stands in place of, its Death Star's shield with it: quiet(false) puts them back)
+    for (const k of sf?.level.hides ?? []) world?.war?.station?.(k, false);
+    if (sf?.level.hides?.includes('deathstar2')) world?.war?.holdShield?.(false);
     solids = hulls();
     onSolids(solids);
-    // (the set pieces are the films' own, the Civil War's)
-    pieces = b.war === 'gcw' ? piecesFor(sys.id).map((make) => make(ctx)) : [];
+    // (the set pieces are the films' own, the Civil War's; a Starfighter Assault's is the level's, its pack)
+    pieces = b.war === 'gcw' && !sf ? piecesFor(sys.id).map((make) => make(ctx)) : [];
+    level = sf?.draw?.(laid, { unhide: (id) => capOf.get(id) && draw.setVisible?.(capOf.get(id), true) }) ?? null;
     say('front');
     if (team === null) {
       asked = true;
@@ -450,7 +479,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
       }
       if (!battle) return { busy: false, hurt: 0 };
       // sworn (or sworn again) while it's on: in it on that side
-      const now2 = teamFor(side(), on);
+      const now2 = teamIn(on);
       if (now2 !== team) {
         team = now2;
         battle.setYou(team);
@@ -559,7 +588,8 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
         } else if (e.type === 'over' && !ended) {
           ended = true;
           if (tookPart && team !== null) {
-            if (e.winner === team) {
+            if (e.winner === team && on.starfighter) part.points += GCW.points.win;
+            else if (e.winner === team) {
               const v = warVersion();
               addWin(side(), sys.id, on.step, ms);
               part.points += GCW.points.win;
@@ -592,6 +622,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
         marks.push(...p.markers(live));
       }
       draw.update(dt, t, camera, camera?.position ?? { x: 0, y: 0, z: 0 }, events, team, marks);
+      level?.update?.(camera?.position ?? null);
       return res;
     },
 
@@ -717,6 +748,28 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
       stop();
       forced = true;
       start({ id: `dev.${war}.${sys.id}.${Math.floor(ms / 1000)}`, war, sys: sys.id, step: campaignAt(ms).step, seed: Math.floor(ms / 1000), attacker: by, defender, sides, attackerTeam: sides.indexOf(by), ...(kind ? { kind } : {}), start: ms, fightEnd: ms + GCW.fight, end: ms + GCW.step, fighting: true }, ms);
+    },
+    // a space level's Starfighter Assault here, now, in place of the war's
+    // battle: `level` (starfighter.js's levelOf), on `side` (the oath's, or
+    // the attacker's if you're nobody's), its pack drawn by `draw(laid)`
+    starfighter({ level: lv, side: want = null, draw = null, name = null }) {
+      if (!sys || !lv) return false;
+      const ms = now();
+      const sides = teamsOf(...lv.sides);
+      const pick = [want, side()].find((x) => sides.includes(x)) ?? sides[lv.attacker];
+      stop();
+      forced = true;
+      start({ id: `sf.${sys.id}.${Math.floor(ms / 1000)}`, war: warOfSide(sides[0]) ?? DEFAULT_WAR, sys: sys.id, step: campaignAt(ms).step, seed: Math.floor(ms / 1000), attacker: sides[lv.attacker], defender: sides[lv.defender], sides, attackerTeam: lv.attacker, start: ms, fightEnd: ms + 600000, end: ms + 660000, fighting: true, starfighter: { level: { ...lv, name: name ?? lv.name }, side: pick, draw } }, ms);
+      return true;
+    },
+    // whether a point's inside a level's area of its own (Kamino's storm):
+    // the scene hides the galaxy's sky and names while the camera is
+    enclosed(p) {
+      return Boolean(level?.area?.inside(p));
+    },
+    // (and the area itself: its light, its flash, for the scene's look, areaLook.js)
+    get area() {
+      return level?.area ?? null;
     },
     get pieces() {
       return pieces;

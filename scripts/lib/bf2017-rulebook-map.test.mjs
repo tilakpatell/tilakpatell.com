@@ -74,3 +74,59 @@ describe('the map row', () => {
     expect(checkSources(m)).toEqual([]);
   });
 });
+
+describe('a space level’s row (Starfighter Assault)', () => {
+  const m = mapRow(ROOT, 'sb_endor_01');
+
+  it('finds the level under Levels/Space and its mode', () => {
+    expect(m.level).toBe('Levels/Space/SB_Endor_01/SB_Endor_01');
+    expect(m.modes).toEqual(['starfighter']);
+  });
+
+  it('reads the launch points by team', () => {
+    expect(m.spawns).toHaveLength(6);
+    expect(new Set(m.spawns.map((s) => s.team))).toEqual(new Set([1, 2]));
+    expect(m.spawns.every((s) => s.layer === 'SpaceBattle_Logic' && s.mode === 'starfighter')).toBe(true);
+  });
+
+  it('reads the phases in the game’s order, and who attacks', () => {
+    const sb = m.spaceBattle;
+    expect(sb).toMatchObject({ attacker: 2, defender: 1 });
+    expect(sb.phases.map((p) => p.name)).toEqual(['Phase 1 - Corvettes', 'Phase 2 - Mines', 'Phase 3 - MC80', 'Intermission']);
+    expect(sb.phases[0].objectives.map((o) => o.name)).toEqual(['CR90_A', 'CR90_B', 'CR90_C']);
+    expect(sb.phases[1].objectives).toHaveLength(6);
+    expect(sb.phases[2].objectives).toHaveLength(8);
+    expect(sb.phases[0].objectives[0]).toMatchObject({ team: 1, metric: 'KillCount', showHealth: true });
+    // (the phases' words are the stage strings; a TIE bomber flight's are its own)
+    expect(sb.phases[0].objectives[0].attack).toBeNull();
+    const bombers = sb.secondary.filter((o) => o.icon === 'TIEBomber');
+    expect(bombers).toHaveLength(2);
+    expect(bombers[0].attack.instruction).toMatch(/^[0-9A-F]{8}$/);
+  });
+
+  it('reads the objectives’ prefabs where the level puts them', () => {
+    const mines = m.prefabs.filter((p) => p.name === 'PF_Endor_SpaceBattles_Transmitter_Objective');
+    expect(mines).toHaveLength(6);
+    expect(mines[0].at).toHaveLength(3);
+    expect(m.prefabs.filter((p) => p.name === 'PF_CorvetteCR90_01')).toHaveLength(3);
+    expect(m.strings).toContain('ID_SPACEBATTLES_OBJ_TEAM_2_ENDOR_PHASE_1');
+  });
+
+  it('reads the capital ships the mode’s sub-level places, without the end of round’s room', () => {
+    const placed = m.placed.starfighter;
+    expect(placed.some((p) => p.mesh === 'mc80_mainhull_01')).toBe(true);
+    expect(placed.some((p) => p.mesh === 'stardestroyer_hull_01_sb_endor')).toBe(true);
+    expect(placed.filter((p) => p.mesh === 'corvettecr90_01')).toHaveLength(3);
+    expect(placed.some((p) => /nowhere/.test(p.mesh))).toBe(false);
+    expect(placed[0].quat).toHaveLength(4);
+    // (the Star Destroyer, turned half round, has its bounds' middle ahead of its pivot)
+    const isd = placed.find((p) => p.mesh === 'stardestroyer_hull_01_sb_endor');
+    expect(isd.r).toBeGreaterThan(800);
+    expect(isd.centre).toHaveLength(3);
+    expect(m.terrain).toBeUndefined();
+  });
+
+  it('names every number’s source', () => {
+    expect(checkSources(m)).toEqual([]);
+  });
+});

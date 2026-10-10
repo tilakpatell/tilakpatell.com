@@ -2,7 +2,7 @@
 // under scripts/fixtures/bf2017/data (lane P1 tests its soldier beside this).
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { boneSetRow, checkSources, loadAsset, projectileRow, projectileRulebook, ragdollRow, refused, shareBodies } from './bf2017-physics-rules.mjs';
+import { BONE_SET_ROOTS, boneSetRow, checkSources, loadAsset, physicsRulebooks, projectileRow, projectileRulebook, ragdollRow, refused, shareBodies } from './bf2017-physics-rules.mjs';
 
 const ROOT = fileURLToPath(new URL('../fixtures/bf2017', import.meta.url));
 const STUN = 'Gameplay/Equipment/Shared/Projectiles/BlasterProjectile_Pistol_Sidearm_StunAltFire';
@@ -76,6 +76,20 @@ describe('the bone capsules', () => {
 
   it('sources every number', () => {
     expect(checkSources(set)).toEqual([]);
+  });
+
+  // (the tauntaun's set sits beside its own records, not under Gameplay/Characters/)
+  it('reads a creature’s set from its own folder', () => {
+    const tauntaun = boneSetRow(loadAsset(ROOT, 'Characters/NPC/Creatures/Tauntaun/Tauntaun_01/TauntaunBoneCollision'));
+    expect(tauntaun.skeleton).toBe('Characters/NPC/Creatures/Tauntaun/Tauntaun_01/Tauntaun_01_Ske');
+    expect(tauntaun.bones.map((b) => b.bone)).toEqual(['Spine', 'Neck1', 'Head', 'LeftLeg', 'RightLeg', 'LeftForeArm', 'RightForeArm', 'Tail2']);
+    expect(checkSources(tauntaun)).toEqual([]);
+  });
+
+  it('gathers the sets from every folder the game keeps them in', () => {
+    const { bones } = physicsRulebooks(ROOT);
+    expect(bones.sets.map((s) => s.id)).toEqual(expect.arrayContaining(['defaultsoldierbonecollision', 'tauntaunbonecollision']));
+    expect(BONE_SET_ROOTS).toContain('Characters/');
   });
 });
 

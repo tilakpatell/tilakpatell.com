@@ -21,7 +21,8 @@
 //
 // And the battle you're in, as warfront.js's info has it (WarHud.jsx's lines
 // under its own, BattleEnd.jsx's card): stageLine(info) → 'Stage 2 of 3 ·
-// Destroy: Bridge' (or what opens next, and when); objectiveBars(info) → up
+// Destroy: Bridge' (or what opens next, and when; a stage with a `title`,
+// the game's, says it: 'Stage 1 of 5 · Destroy the corvettes · 2 of 3 left'); objectiveBars(info) → up
 // to three [{ id, name, k, down }]; nextLine(next) → 'Bomber wave in 0:40';
 // whyLine(result) → why it ended, in words; resultTitle(result, team) →
 // 'Victory' | 'Defeat' | 'Battle over'; yoursLine(yours) → what you did in
@@ -96,10 +97,13 @@ export function oathOf(war, current, suggested) {
   return { war, sides: [w.liberator, w.raider].map((id) => ({ id, name: SIDES[id].name, colour: SIDES[id].colour, sworn: current?.side === id, suggested: suggested === id })) };
 }
 
+// (and a space level's Starfighter Assault, which is no kind of the war's: surface/missions/starfighter.js)
+const KINDS = { ...BATTLE_KINDS, starfighter: { name: 'Starfighter Assault', text: { attack: 'Starfighter Assault: attack', defend: 'Starfighter Assault: defend' } } };
+
 export function battleLine(row, now, side) {
   const b = row.battle;
   if (!b) return null;
-  const kind = BATTLE_KINDS[row.kind] ?? BATTLE_KINDS.assault;
+  const kind = KINDS[row.kind] ?? KINDS.assault;
   const role = side && side === b.attacker ? 'attack' : side && side === b.defender ? 'defend' : null;
   if (!b.fighting) return `${kind.name}: regrouping, the next in ${span(b.end - now)}`;
   return `${role ? kind.text[role] : kind.name} · ${span(b.fightEnd - now)} left`;
@@ -214,6 +218,8 @@ export function stageLine(info) {
   if (!st.open) return `${head} · ${what} opens in ${span((st.opensIn ?? 0) * 1000)}`;
   const att = attacking(info);
   if (att === null) return `${head} · ${what}`;
+  // (a stage with its own words, the game's: a Starfighter Assault's, with how many are left)
+  if (st.title) return `${head} · ${st.title}${all.length > 1 ? ` · ${left.length} of ${all.length} left` : ''}`;
   const verbs = o.verbs ?? typeOf(o).verbs;
   return `${head} · ${verbs[att ? 0 : 1]}: ${what}`;
 }

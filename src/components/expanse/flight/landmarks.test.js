@@ -8,7 +8,7 @@ import { placementsFor, siteFor, siteGround } from './landmarks';
 const NAMED = PLANETS.map((p) => p.id).filter((id) => planetSpecOf(id).pois.length);
 // (the POIs planetTables.js builds itself are the flight module's)
 const ours = (spec) => spec.pois.filter((p) => !(spec.landmarks ?? []).some((l) => l.at === p.id));
-const known = (p) => (p.model ? /^kit:[a-z0-9-]+\/\S+$/.test(p.model) : Boolean(SURFACE_MODELS[p.kind] || PROPS[p.kind]));
+const known = (p) => (typeof p.model === 'string' && p.model.startsWith('game:') ? Boolean(SURFACE_MODELS[p.model]) : p.model ? /^kit:[a-z0-9-]+\/\S+$/.test(p.model) : Boolean(SURFACE_MODELS[p.kind] || PROPS[p.kind]));
 
 describe('placementsFor', () => {
   it('stands every POI of every named world with its buildings', () => {

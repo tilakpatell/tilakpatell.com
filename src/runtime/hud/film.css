@@ -1,0 +1,23 @@
+/* A game film in its frame (Film.jsx): the poster under, the film over. */
+.film {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+.film-poster,
+.film-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.film[data-fit='contain'] .film-poster,
+.film[data-fit='contain'] .film-video {
+  object-fit: contain;
+}
+.film-video::cue {
+  font-size: 0.95rem;
+  background: rgb(0 0 0 / 0.7);
+}

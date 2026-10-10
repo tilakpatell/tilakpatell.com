@@ -72,6 +72,8 @@ describe('the published assets’ manifest', () => {
     put(pub, 'models/galaxy/surface/hilt.ultra.glb', 'hilt ultra');
     put(pub, 'models/galaxy/surface/meshy.glb', 'meshy');
     put(pub, 'models/galaxy/bf2017/clips/humanoid.glb', 'pack');
+    put(pub, 'films/bf2017/planet-hoth-01.webm', 'film');
+    put(pub, 'films/bf2017/planet-hoth-01.webp', 'poster');
     const credits = {
       'crew-luke': { title: 'Star Wars Battlefront II (2017): characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh', source: GAME, file: '/models/galaxy/crew/luke.glb' },
       'surface-hilt': { title: 'Star Wars Battlefront II (2017): gameplay/hilt_mesh', source: GAME, file: '/models/galaxy/surface/hilt.glb' },
@@ -80,6 +82,7 @@ describe('the published assets’ manifest', () => {
     };
     const got = gameFiles(credits, pub);
     expect(got.map((f) => [f.path, f.tier, f.from])).toEqual([
+      ['films/bf2017/planet-hoth-01.webm', 'film', 'films/bf2017/planet-hoth-01.webm'],
       ['models/galaxy/bf2017/clips/humanoid.glb', 'pack', 'models/galaxy/bf2017/clips/humanoid.glb'],
       ['models/galaxy/crew/luke.far.glb', 'crew', 'characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh'],
       ['models/galaxy/crew/luke.glb', 'crew', 'characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh'],
@@ -127,7 +130,7 @@ describe('the published assets’ manifest', () => {
     expect(text).not.toContain(`/public/${kept}`);
     expect([...KEPT]).toContain('models/galaxy/bf2017/walrus.glb');
   });
-  it('takes a level pack’s cuts and leaves its level.json and README in git', () => {
+  it('takes a level pack’s binaries and leaves its JSON and README in git', () => {
     const pub = scratch();
     put(pub, 'models/galaxy/bf2017/levels/hoth/level.json', '{}');
     put(pub, 'models/galaxy/bf2017/levels/hoth/README.md', '# hoth');
@@ -136,6 +139,6 @@ describe('the published assets’ manifest', () => {
     put(pub, 'models/galaxy/bf2017/levels/hoth/base/lights.json', '{}');
     // (and its credit, which names its level.json, does not publish it either)
     const got = gameFiles({ 'level-hoth-base': { source: GAME, file: '/models/galaxy/bf2017/levels/hoth/base/level.json' } }, pub).map((f) => f.path);
-    expect(got).toEqual(['models/galaxy/bf2017/levels/hoth/base/lights.json', 'models/galaxy/bf2017/levels/hoth/cells/0_0.bin']);
+    expect(got).toEqual(['models/galaxy/bf2017/levels/hoth/cells/0_0.bin']);
   });
 });

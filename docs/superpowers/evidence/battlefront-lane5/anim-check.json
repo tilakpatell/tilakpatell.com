@@ -1,0 +1,38 @@
+{
+ "route": "#/battlefront/hoth/galacticAssault",
+ "rows": [
+  {
+   "id": 0,
+   "name": "d_assault_orig_ho_01_mesh",
+   "by": "toe",
+   "drift": null,
+   "left": null,
+   "right": null,
+   "shown": 0,
+   "inView": false,
+   "dev": 32767.43943100861,
+   "bind": false,
+   "act": {
+    "clip": "idle",
+    "phase": 0.007957559721957108,
+    "loop": true,
+    "weight": 1
+   }
+  }
+ ],
+ "over": [],
+ "bind": [],
+ "locked": {
+  "count": 0,
+  "groups": []
+ },
+ "spread": [],
+ "time": {
+  "dt": [],
+  "from": "wall",
+  "total": 0
+ },
+ "fail": false,
+ "held": null,
+ "talk": null
+}

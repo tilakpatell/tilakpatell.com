@@ -4643,5 +4643,25 @@
     ],
     "license": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.",
     "use": "The game’s Walrus_HumanMale skeleton (walrus.glb) and the game’s own clips packed onto it (clips-humanoid.glb and one clips-<hero>.glb a hero), in public/models/galaxy/bf2017/, by scripts/bf2017-skeleton.mjs and scripts/bf2017-clips.mjs"
+  },
+  "bf2017-ui": {
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "id": "web/svg, web/fonts (the open-licence faces), web/strings, web/textures/ui/bitmaps",
+    "name": "Star Wars Battlefront II (2017): its icons, strings and UI art",
+    "authors": [
+      "EA DICE"
+    ],
+    "license": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.",
+    "use": "The game’s icons as sprites (public/ui/bf2017/*.svg), its English strings (src/data/bf2017/strings.json and public/ui/bf2017/strings/), its portraits and tiles (public/ui/bf2017/bitmaps/), by scripts/bf2017-ui.mjs; its open-licence fonts are their makers’ (public/fonts/bf2017/README.md)"
+  },
+  "bf2017-films": {
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "id": "web/movies (planet loading films, campaign cinematics, menu tiles, tutorials, the logo, MT_Volcano2)",
+    "name": "Star Wars Battlefront II (2017): its films",
+    "authors": [
+      "EA DICE"
+    ],
+    "license": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.",
+    "use": "The planets’ loading films on the galaxy’s cards and landing veils, the campaign’s cinematics as the briefings of the worlds they are set on, the menu tiles, tutorials and logo for the game’s world, and Mustafar’s lava (MT_Volcano2): the drop’s WebM as it is (MT_Volcano2 cut from VP6 to VP9), published to site-assets by scripts/assets-publish.mjs, the posters and captions in public/films/bf2017/, by scripts/bf2017-ui.mjs"
   }
 }

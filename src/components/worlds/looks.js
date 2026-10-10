@@ -74,6 +74,7 @@ export const LOOK_FOLDERS = [
   { folder: 'mario64', routes: ['/dot-matrix/64'] },
   { folder: 'minecraft', routes: ['/dot-matrix/minecraft'] },
   { folder: 'earth', routes: ['/earth'] },
+  { folder: 'battlefront', routes: ['/battlefront/hoth/galacticAssault'] },
   { folder: 'music/world', routes: ['/music'] },
   { folder: 'projects/cartridges', routes: ['/projects'] },
   { folder: 'contact/plane', routes: ['/contact'] },

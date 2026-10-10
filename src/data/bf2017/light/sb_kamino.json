@@ -1,0 +1,79 @@
+{
+ "world": "sb_kamino",
+ "map": "levels/space/sb_kamino_01/sb_kamino_01",
+ "main": "stormy",
+ "sky": {
+  "main": "Levels/Lighting/Kamino/Stormy_01/VE_Kamino_Stormy_SB_01",
+  "overrides": []
+ },
+ "weathers": {
+  "stormy": {
+   "sky": {
+    "luminance": 2000,
+    "panorama": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_02_Panoramic_C",
+    "gradient": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_02_Fog_C"
+   },
+   "fog": {
+    "color": [
+     1,
+     1,
+     1
+    ],
+    "start": 25,
+    "end": 8000,
+    "curve": [
+     -0.926713467,
+     1.23492956,
+     0.678956032,
+     0.0116652418
+    ],
+    "scatter": [
+     841.6666,
+     891.3942,
+     1015.958
+    ]
+   },
+   "tonemap": {
+    "compensation": 0.5,
+    "minEV": 7,
+    "maxEV": 11,
+    "auto": true,
+    "bloom": 0.133975282
+   },
+   "sun": {
+    "az": 216.246,
+    "el": 20.58
+   },
+   "wind": {
+    "dir": 146.25,
+    "strength": 5
+   },
+   "source": [
+    "Levels/Lighting/Kamino/Stormy_01/VE_Kamino_Stormy_SB_01",
+    "Levels/Lighting/Kamino/Stormy_02/VE_SB_Kamino_Stormy_02"
+   ],
+   "probe": {
+    "id": "164727d2",
+    "variant": "Art_Lighting",
+    "zenith": [
+     0,
+     0,
+     0
+    ],
+    "horizon": [
+     0,
+     0,
+     0
+    ],
+    "ground": [
+     3.574,
+     4.646,
+     5.796
+    ],
+    "open": 0,
+    "url": "textures/galaxy/bf2017/light/sb_kamino/stormy"
+   }
+  }
+ },
+ "indoor": null
+}

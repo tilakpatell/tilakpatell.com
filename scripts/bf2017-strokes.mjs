@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { isSequel, readManifest } from './lib/bf2017-manifest.mjs';
 import { inBucket, objectUrl } from './lib/bf2017-paths.mjs';
-import { BLADE, classify, clipOf, emitterOf, measure, rigOf, rodOf, tableFor } from './lib/bf2017-strokes.mjs';
+import { BLADE, classify, clipOf, emitterOf, measure, rigOf, rodOf, sourceName, tableFor } from './lib/bf2017-strokes.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUCKET = 'bf2017-assets';
@@ -126,7 +126,7 @@ async function fromPack(pack, skeleton) {
   const doc = await rw.read(pack);
   const clips = [];
   for (const anim of doc.getRoot().listAnimations()) {
-    const game = /: (.+)$/.exec(anim.getExtras()?.source ?? '')?.[1];
+    const game = sourceName(anim.getExtras()?.source);
     if (!game || !KINDS.has(classify(game).kind)) continue;
     clips.push({
       name: game,
@@ -233,6 +233,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   const skeleton = resolve(String(args.skeleton ?? join(ROOT, 'public', 'models', 'galaxy', 'bf2017', 'walrus.glb')));
   const clips = args.pack ? await fromPack(resolve(String(args.pack)), skeleton) : await fromBucket(hero, { list: Boolean(args.list) });
+  // (none of the hero's own measured writes nothing: an empty table over a
+  // hero's would take its stance away; another hero's pack measures plenty)
+  if (clips && !clips.some((k) => classify(k.name).hero === PREFIX[hero].toLowerCase())) {
+    console.error(`no ${hero} clip measured: ${relative(ROOT, join(OUT, `${hero}.json`))} left as it was`);
+    process.exit(1);
+  }
   if (clips) {
     const table = tableFor(PREFIX[hero], clips);
     const file = join(OUT, `${hero}.json`);

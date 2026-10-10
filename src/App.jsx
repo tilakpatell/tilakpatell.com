@@ -51,6 +51,7 @@ const Mario64 = lazy(() => import('./pages/Mario64'));
 const Minecraft = lazy(() => import('./pages/Minecraft'));
 const Fly = lazy(() => import('./pages/Fly')); // planet flight (scripts/flight-island.mjs removes this row)
 const Earth = lazy(() => import('./pages/Earth'));
+const Battlefront = lazy(() => import('./pages/Battlefront'));
 const Front = lazy(() => import('./pages/Front'));
 const Changes = lazy(() => import('./pages/Changes'));
 const Worlds = lazy(() => import('./pages/Worlds'));
@@ -436,6 +437,7 @@ function Shell() {
                 <Route path="/dot-matrix/64" element={<Mario64 />} />
                 <Route path="/dot-matrix/minecraft" element={<Minecraft />} />
                 <Route path="/earth" element={<Earth />} />
+                <Route path="/battlefront/:level?/:mode?" element={<Battlefront />} />
                 <Route path="/universe/:id?" element={<Front />} />
                 <Route path="/changes" element={<Changes />} />
                 <Route path="/worlds" element={<Worlds />} />
@@ -447,7 +449,7 @@ function Shell() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      {pathname !== '/terminal' && pathname !== '/deathstar' && pathname !== '/deathstar/inside' && page !== '/universe' && page !== '/galaxy' && !pathname.endsWith('/surface') && <Footer />}
+      {pathname !== '/terminal' && pathname !== '/deathstar' && pathname !== '/deathstar/inside' && page !== '/universe' && page !== '/galaxy' && !pathname.endsWith('/surface') && !pathname.startsWith('/battlefront') && <Footer />}
       <ScrollSaber />
       <Guide />
       <TourHost />

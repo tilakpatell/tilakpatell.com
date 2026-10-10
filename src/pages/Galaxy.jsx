@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { local, useDocumentTitle, useReducedMotion } from '../lib/hooks';
 import { audioContext } from '../lib/audio';
 import { SHIP_KEY, crewById, parseShip } from '../components/universe/crews';
@@ -13,11 +13,13 @@ import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
 import { FIRST, parseSystem, systemById } from '../components/galaxy/systems';
 import { SITES, canLand } from '../components/galaxy/surface/sites';
+import { starfighterAt } from '../components/galaxy/surface/missions/starfighterMaps';
 import galaxyModule from '../components/galaxy/module';
 import surfaceModule from '../components/galaxy/surface/module';
 import { prefetchSurface, surfaceProps } from '../components/galaxy/travel';
 import { runtime, usePrepareProgress } from '../runtime';
 import LoadingVeil from '../components/worlds/LoadingVeil';
+import { usePrepareWait } from '../components/worlds/usePrepareWait';
 import { galaxyCrew } from '../components/galaxy/lines';
 import { battleSay } from '../components/galaxy/warVoice';
 import { groundEffects } from '../components/galaxy/siteWar';
@@ -68,7 +70,7 @@ export default function Galaxy() {
   const sys = systemById(current);
   useDocumentTitle(`${sys.name} · A galaxy far, far away`);
   const reduced = useReducedMotion();
-  const view = useRef({ live: false, jump: () => false, goTo: () => false, flyTo: () => false, escape: () => false, dive: () => false, host: () => null });
+  const view = useRef({ live: false, jump: () => false, goTo: () => false, flyTo: () => false, starfighter: () => false, escape: () => false, dive: () => false, host: () => null });
   const comms = useRef(null);
   const [ship, setShip] = useState(() => parseShip(local.get(SHIP_KEY)));
   const crew = crewById(ship);
@@ -106,6 +108,25 @@ export default function Galaxy() {
   useEffect(() => {
     if (!followId) followRef.current = null;
   }, [followId]);
+  // a battle asked for by the link (the landing menu's Starfighter Assault,
+  // the briefing's card: /galaxy/endor?battle=starfighter&side=rebel): once
+  // the scene's in the system, the space level's battle there in place of
+  // the war's (surface/missions/starfighterMaps.js says where there's one).
+  // Tried till it goes, then dropped from the link, so a reload's the war again
+  const [query, setQuery] = useSearchParams();
+  const asked = query.get('battle');
+  const askedSide = query.get('side');
+  useEffect(() => {
+    if (asked !== 'starfighter' || !starfighterAt(current)) return undefined;
+    const go = () => {
+      if (!view.current.live || !view.current.starfighter(current, { side: askedSide })) return false;
+      setQuery({}, { replace: true });
+      return true;
+    };
+    if (go()) return undefined;
+    const t = setInterval(() => go() && clearInterval(t), 500);
+    return () => clearInterval(t);
+  }, [asked, askedSide, current, setQuery]);
   // the wallet (economy.js): the war's points and wins pay into it, and an alliance made
   const { pay, note: earned } = useEarn({ client: online.client });
   // the ship as it's fitted in the universe map's hangar: its paint and parts
@@ -278,6 +299,7 @@ export default function Galaxy() {
   }, []);
   const dove = useRef(null); // resolves the dive's end
   const landing = usePrepareProgress(surfaceModule); // (the surface's prepare, for Land's loading screen)
+  const landingWait = usePrepareWait(surfaceModule, landing, Boolean(leaving?.prep)); // (and why, once it holds)
   const land = useCallback(
     (id, district = null) => {
       if (!canLand(id) || leaving) return;
@@ -577,7 +599,7 @@ export default function Galaxy() {
       )}
       {exit && <div className="galaxy-exit" aria-hidden="true" />}
       {/* (the surface getting ready before the dive: Land's loading screen) */}
-      <LoadingVeil shown={Boolean(leaving?.prep)} progress={landing.value} step={landing.step} title={`Preparing to land on ${sys.name}`} />
+      <LoadingVeil shown={Boolean(leaving?.prep)} progress={landing.value} step={landing.step} title={`Preparing to land on ${sys.name}`} waiting={landingWait.waiting} onSkip={landingWait.onSkip} />
       {leaving?.land && <div className="galaxy-entry" aria-hidden="true" />}
       {leaving?.dive && (
         <p className="galaxy-entry-note" role="status">

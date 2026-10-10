@@ -809,3 +809,84 @@ describe('the battle, as bodies for ship contact', () => {
     expect(k.front.bodies).toEqual([]);
   });
 });
+
+describe('a space level’s Starfighter Assault in place of the war’s battle', () => {
+  it('stands the war’s battle aside, lays the level’s, draws its pack, and counts nothing in the war', async () => {
+    const { levelOf } = await import('./surface/missions/starfighter');
+    const map = (await import('../../data/bf2017/maps/sb_endor.json')).default;
+    const stages = (await import('../../data/bf2017/maps/sb_endor.stages.json')).default;
+    const level = levelOf(map, stages);
+    const k = kit(null);
+    const pack = { update: vi.fn(), dispose: vi.fn() };
+    const draw = vi.fn(() => pack);
+    const world = { quiet: vi.fn(), war: { station: vi.fn(), holdShield: vi.fn() } };
+    k.front.enter(systemById('endor'), world);
+    expect(k.front.starfighter({ level, draw })).toBe(true);
+    // (the level is the second Death Star's wreckage: the galaxy's Death Star and its shield stand aside)
+    expect(world.war.station).toHaveBeenCalledWith('deathstar2', false);
+    expect(world.war.holdShield).toHaveBeenCalledWith(false);
+    expect(world.quiet).toHaveBeenLastCalledWith(true);
+    const b = k.front.battle;
+    expect(k.front.info.laid.kind).toBe('starfighter');
+    expect(draw).toHaveBeenCalledWith(expect.objectContaining({ kind: 'starfighter', layout: expect.any(Object) }), expect.objectContaining({ unhide: expect.any(Function) }));
+    // (unsworn: you fly for the attacker, the Empire, from its Star Destroyer)
+    expect(k.front.info.team).toBe(1);
+    expect(b.attacker).toBe(1);
+    expect(k.front.director.plan.stages.map((s) => s.id)).toEqual(['corvettes', 'mines', 'top', 'beneath', 'engines']);
+    expect(k.front.info.stage.title).toBe('Destroy the corvettes');
+    expect(k.front.pieces).toEqual([]);
+    k.front.update(1 / 30, 0, camera, null);
+    expect(pack.update).toHaveBeenCalled();
+    expect(k.front.battle).toBe(b);
+    // a corvette shot down by you, the attacker: the end card's points, none of the war's
+    const o = firstOpen(b);
+    k.front.update(1 / 30, 0, camera, { x: o.pos.x, y: o.pos.y + 2, z: o.pos.z });
+    for (let i = 0; i < 400 && o.alive; i++) {
+      shoot(k.front, o.pos, 5);
+      k.front.update(1 / 30, i / 30, camera, { x: o.pos.x, y: o.pos.y + 2, z: o.pos.z });
+    }
+    expect(warTally(k.ms).keys().filter((x) => !x.startsWith('here'))).toEqual([]);
+    // (Endor's is fought in orbit: no area of its own to be inside)
+    expect(k.front.enclosed({ x: 0, y: 0, z: 0 })).toBe(false);
+    // the system left: the pack goes with it, and the world's own put back
+    k.front.enter(null);
+    expect(pack.dispose).toHaveBeenCalled();
+    expect(world.quiet).toHaveBeenLastCalledWith(false);
+  });
+
+  it('flies on the side it was asked for', async () => {
+    const { levelOf } = await import('./surface/missions/starfighter');
+    const map = (await import('../../data/bf2017/maps/sb_endor.json')).default;
+    const stages = (await import('../../data/bf2017/maps/sb_endor.stages.json')).default;
+    const k = kit('empire');
+    k.front.enter(systemById('endor'), k.world);
+    k.front.starfighter({ level: levelOf(map, stages), side: 'rebel' });
+    expect(k.front.info.team).toBe(0);
+    expect(k.front.info.stage.title).toBe('Protect the corvettes');
+  });
+});
+
+describe('a space level fought in an area of its own (Kamino’s)', () => {
+  it('is inside its area where the pack’s area says so, and not once it’s gone', async () => {
+    const { levelOf } = await import('./surface/missions/starfighter');
+    const map = (await import('../../data/bf2017/maps/sb_kamino.json')).default;
+    const stages = (await import('../../data/bf2017/maps/sb_kamino.stages.json')).default;
+    const k = kit(null);
+    const inside = vi.fn((p) => p.x === 1);
+    k.drawn.setVisible = vi.fn();
+    let unhide = null;
+    k.front.enter(systemById('kamino'), k.world);
+    k.front.starfighter({ level: levelOf(map, stages), draw: (laid, o) => ((unhide = o.unhide), { update: vi.fn(), dispose: vi.fn(), area: { inside } }) });
+    // (the ships the pack draws hidden from the battle's drawing, and given back where the pack's tier leaves one out)
+    const venator = k.front.battle.capitals.find((c) => c.kind === 'venator' && c.role === 'flagship');
+    expect(k.drawn.setVisible).toHaveBeenCalledWith(venator, false);
+    unhide('venator-return');
+    expect(k.drawn.setVisible).toHaveBeenLastCalledWith(venator, true);
+    expect(k.front.info.team).toBe(1);
+    expect(k.front.director.plan.stages.map((s) => s.id)).toEqual(['bridges', 'cruisers', 'engines', 'beam']);
+    expect(k.front.enclosed({ x: 1, y: 0, z: 0 })).toBe(true);
+    expect(k.front.enclosed({ x: 2, y: 0, z: 0 })).toBe(false);
+    k.front.enter(null);
+    expect(k.front.enclosed({ x: 1, y: 0, z: 0 })).toBe(false);
+  });
+});

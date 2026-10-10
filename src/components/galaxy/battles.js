@@ -22,6 +22,9 @@
 // layBattle(sys, battle, { now, tier }) → createBattle's options for the
 // battle gcw.js has on there (its sides by team: battleAt's `sides`), with
 // its `kind`, and no ticket end (`tickets: false`).
+// layStarfighter(sys, battle, level, { now, tier }) → the same for a space
+// level's Starfighter Assault (surface/missions/starfighter.js's levelOf),
+// with its `layout` and `frame`.
 
 import { WARS as UNIVERSE_WARS } from '../universe/wars';
 import { WIDTH, createBattle, perSide } from '../universe/battle';
@@ -30,6 +33,7 @@ import { cloneTemplates, remnantTemplates } from './battlesWars';
 import { seeded, warInfo } from './gcw';
 import { SIDES } from './sides';
 import { systemById } from './systems';
+import { METRES, frameOf, layoutOf, sideShips } from './surface/missions/starfighter';
 
 const M = 53.3; // metres to a map unit (the Star Destroyer's 1,600 m is 30)
 const m = (metres) => +(metres / M).toFixed(2);
@@ -396,5 +400,62 @@ export function layBattle(sys, battle, { now = battle.start, tier = 'high' } = {
     // (fought to its clock or its objectives: a ticket end drained the
     // attacker in a couple of minutes, decided in each pilot's own sim)
     tickets: false,
+  };
+}
+
+// A space level's Starfighter Assault laid at the planet (surface/missions/
+// starfighter.js makes the level a battle): fought where the war's battle
+// would be (layBattle's spot, clear of the planet and what's built round
+// it), its ships where the level has them round that spot (`layout`), its
+// lines and its arena the level's own size, its fighters the level's
+// classes, and the plan's objectives at the level's points. `level` is
+// levelOf's; `frame` maps its metres into the battle's units.
+// a level fought in an area of its own (Kamino's, low over Tipoca City in the
+// storm, not in orbit): well out from the planet on its night side, the
+// area's whole width clear of the planet and of everything built round it
+export function areaSpot(sys, radius) {
+  const sun = sys.suns[0].dir;
+  const h = Math.hypot(sun[0], sun[2]) || 1;
+  const dir = [-sun[0] / h, 0, -sun[2] / h];
+  const avoid = obstacles(sys);
+  let d = (sys.body?.r ?? 30) + radius * 1.6;
+  const clear = (at) => avoid.every((o) => Math.hypot(at[0] - o.c.x, at[1] - o.c.y, at[2] - o.c.z) > o.r + radius * 1.05);
+  while (!clear(dir.map((x) => x * d)) && d < 8000) d += 25;
+  return dir.map((x) => +(x * d).toFixed(3));
+}
+
+export function layStarfighter(sys, battle, level, { now = battle.start, tier = 'high' } = {}) {
+  const fought = layBattle(sys, { ...battle, kind: 'assault' }, { now, tier });
+  // (in its own area: there, with nothing of the system's to steer round)
+  const base = level.area ? { ...fought, at: areaSpot(sys, level.area.radius / METRES), avoid: [] } : fought;
+  const frame = frameOf(level, base.at);
+  const sides = sidesOf(battle);
+  const war = {
+    id: battle.war ?? 'gcw',
+    name: level.name ?? 'Starfighter Assault',
+    sides: sides.map((side, team) => {
+      const ships = sideShips(level, team);
+      const line = { flagship: ship(ships[0].kind, ships[0].name, ships[0].size), escorts: ships.slice(1).map((s) => ship(s.kind, s.name, s.size)) };
+      return sideOf(LOOKS[side], line, level.fighters[team] ?? FIGHTERS[side]);
+    }),
+  };
+  // (the lines: half the way between the flagships; the arena out past the level's launch points)
+  const flags = [0, 1].map((team) => frame(level.ships.find((s) => s.team === team && s.role === 'flagship').at));
+  const dx = flags[1][0] - flags[0][0];
+  const dz = flags[1][2] - flags[0][2];
+  const lines = Math.max(20, Math.hypot(dx, dz) / 2);
+  const reach = Math.max(...level.spawns.flat().map((s) => Math.hypot(...frame(s.at).map((x, k) => x - base.at[k]))), lines);
+  return {
+    ...base,
+    war,
+    kind: 'starfighter',
+    axis: [dx, dz].map((x) => +(x / (Math.hypot(dx, dz) || 1)).toFixed(6)),
+    lines: +lines.toFixed(2),
+    radius: +(reach + 15).toFixed(2),
+    layout: layoutOf(level, frame),
+    objectivesOn: 'flagship',
+    ace: {},
+    runners: null,
+    frame,
   };
 }

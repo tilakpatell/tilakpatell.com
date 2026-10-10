@@ -165,5 +165,25 @@ export const CREW = {
   probe: { url: '/models/galaxy/bf2017/crew/probe.glb', tall: 1.624, rig: 'own', ownRig: 'probe', lod: true, far: true, full: true, fullMB: 4, fullDL: 4 },
   r5: { url: '/models/galaxy/bf2017/crew/r5.glb', tall: 1.165, rig: 'own', ownRig: 'astromech', lod: true, full: true, fullMB: 2, fullDL: 2 },
   superdroid: { url: '/models/galaxy/bf2017/crew/superdroid.glb', tall: 1.93, rig: 'own', ownRig: 'b2', lod: true, far: true, full: true, fullMB: 36, fullDL: 19 },
-  tauntaun: { url: '/models/galaxy/bf2017/crew/tauntaun.glb', tall: 2.67, rig: 'own', ownRig: 'tauntaun', lod: true, full: true, fullMB: 27, fullDL: 12 },
+  tauntaun: { url: '/models/galaxy/bf2017/crew/tauntaun.glb', tall: 2.67, rig: 'own', ownRig: 'tauntaun', lod: true, full: true, fullMB: 27, fullDL: 12 },  // the galaxy's small creatures, droids and aliens from the game, each on
+  // its own skeleton with its own clips (lib/three/walrusSets/fauna.js;
+  // scripts/bf2017-fauna.mjs imports and packs them): Theed's birds, Mos
+  // Eisley's chickens and scurriers, Kashyyyk's tachs, Naboo's pelikki and
+  // runyips, Endor's profoggs, Jabba's Gamorrean guard, Echo Base's
+  // treadwell and gonk; Pillio's and Felucia's for when those worlds come
+birdtheed: { url: '/models/galaxy/bf2017/crew/birdtheed.glb', tall: 0.339, rig: 'own', ownRig: 'birdtheed', lod: true, far: true, full: true, fullMB: 4, fullDL: 3 },
+  chicken: { url: '/models/galaxy/bf2017/crew/chicken.glb', tall: 0.352, rig: 'own', ownRig: 'chicken', lod: true, full: true, fullMB: 1, fullDL: 1 },
+  scurrier: { url: '/models/galaxy/bf2017/crew/scurrier.glb', tall: 0.409, rig: 'own', ownRig: 'scurrier', lod: true, far: true, full: true, fullMB: 1, fullDL: 1 },
+  tach: { url: '/models/galaxy/bf2017/crew/tach.glb', tall: 1.191, rig: 'own', ownRig: 'tach', lod: true, far: true, full: true, fullMB: 4, fullDL: 3 },
+  pelikki: { url: '/models/galaxy/bf2017/crew/pelikki.glb', tall: 0.941, rig: 'own', ownRig: 'pelikki', lod: true, far: true, full: true, fullMB: 1, fullDL: 1 },
+  runyip: { url: '/models/galaxy/bf2017/crew/runyip.glb', tall: 2.107, rig: 'own', ownRig: 'runyip', lod: true, far: true, full: true, fullMB: 12, fullDL: 8 },
+  profogg: { url: '/models/galaxy/bf2017/crew/profogg.glb', tall: 0.2, rig: 'own', ownRig: 'profogg', lod: true, far: true, full: true, fullMB: 1, fullDL: 1 },
+  sneep: { url: '/models/galaxy/bf2017/crew/sneep.glb', tall: 0.403, rig: 'own', ownRig: 'sneep', lod: true, far: true, full: true, fullMB: 1, fullDL: 1 },
+  stintarils: { url: '/models/galaxy/bf2017/crew/stintarils.glb', tall: 1.274, rig: 'own', ownRig: 'stintarils', lod: true, far: true, full: true, fullMB: 1, fullDL: 1 },
+  pillioshrimp: { url: '/models/galaxy/bf2017/crew/pillioshrimp.glb', tall: 1.79, rig: 'own', ownRig: 'pillioshrimp', lod: true, far: true, full: true, fullMB: 18, fullDL: 11 },
+  felbird: { url: '/models/galaxy/bf2017/crew/felbird.glb', tall: 0.442, rig: 'own', ownRig: 'felbird', lod: true, far: true, full: true, fullMB: 11, fullDL: 8 },
+  felripper: { url: '/models/galaxy/bf2017/crew/felripper.glb', tall: 0.333, rig: 'own', ownRig: 'felripper', lod: true, far: true, full: true, fullMB: 16, fullDL: 9 },
+  gamorreanguard: { url: '/models/galaxy/bf2017/crew/gamorreanguard.glb', tall: 1.822, rig: 'own', ownRig: 'gamorrean', lod: true, full: true, fullMB: 38, fullDL: 22 },
+  treadwell: { url: '/models/galaxy/bf2017/crew/treadwell.glb', tall: 1.781, rig: 'own', ownRig: 'treadwell', lod: true, far: true, full: true, fullMB: 3, fullDL: 2 },
+  gonk: { url: '/models/galaxy/bf2017/crew/gonk.glb', tall: 1.735, rig: 'own', ownRig: 'gonk', lod: true, far: true, full: true, fullMB: 4, fullDL: 4 },
 };

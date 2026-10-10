@@ -321,6 +321,8 @@ export const SITES = {
       { kind: 'fungus', n: 240, within: [6, 200], scale: [0.8, 1.6], solid: false, clear: -12, opts: { seed: 8 } },
     ],
     life: [
+      // (the game's own: profoggs ambling in the undergrowth by the log trap)
+      { kind: 'profogg', n: 3, at: [140, 112], spread: 26, roam: 20, speed: 0.4, r: 0.2, solid: false },
       { kind: 'ewok', n: 7, at: V, spread: 6, roam: 6, speed: 0.9, name: 'Ewok', says: ['Yub nub!', 'Ee chee wa maa!', '(It dances round the fire, banging a stick on a helmet.)', '(It looks at you, then at the fire, then back at you. Thoughtfully.)', 'Gunda!'] },
       ...VILLAGE.walks.map((path, i) => ({ kind: 'ewok', n: 1, path, speed: 0.7, pause: 2.5 + i, name: 'Ewok', says: ['(It waves its spear at you from the deck.)', 'Yub yub!', '(A long, suspicious sniff.)'] })),
       { kind: 'c3po', n: 1, at: at(V, [4, -5]), still: true, face: -0.7, name: 'C-3PO', says: ['Oh my! I seem to have become something of a deity here.', '(He tells the Ewoks the whole story of the Rebellion: the Death Star, Cloud City, Han frozen in carbonite. With sound effects.)', 'It’s against my programming to impersonate a deity.', 'Oh dear. I’m afraid you’re to be the guest of honour at the banquet.'] },
@@ -588,6 +590,8 @@ export const SITES = {
       { kind: 'log', n: 20, within: [40, 520], scale: [0.9, 1.5], solid: false, opts: { seed: 7, bark: '#6a5a46' } },
     ],
     life: [
+      // (the game's own: tachs about Kachirho's roots)
+      { kind: 'tach', n: 4, at: [-120, -12], spread: 20, roam: 14, speed: 0.7, r: 0.5, solid: false },
       // the line's defenders, standing behind the barricades and facing the
       // water, a few behind each (a group stands in a disc round its `at`, so
       // one group spread along 100 m of line would put some of it in the
@@ -772,6 +776,8 @@ export const SITES = {
     // them, kept off the places (Yoda's hut, the X-wing, the cave, the camp)
     things: grove(31, 46, 30, 190, ['dagocypress', 'dagocypress', 'dagoroots'], [0.7, 1.25]).filter(({ at: [x, z] }) => [[-90, 60, 30], [40, 74, 34], [-70, -120, 30], [100, -60, 32], [-26, -46, 24], [130, 110, 30], [0, 0, 26]].every(([px, pz, r]) => Math.hypot(x - px, z - pz) > r)),
     scatter: [
+      // (the game's living world: skettos on the roots and the mud)
+      { kind: 'game', model: 'game:objects/livingworld/cavesketto_01/cavesketto_01_sitting_mesh', n: 14, within: [12, 260], scale: [0.8, 1.2], solid: false, shadow: false },
       // (Quaternius's ground cover, under the built plants: catalog/quaternius.js)
       { kind: 'qfern', n: 100, within: [5, 80], scale: [0.7, 1.4], solid: false },
       { kind: 'qmushroom', n: 30, within: [6, 80], scale: [0.6, 1.4], solid: false },
@@ -785,9 +791,12 @@ export const SITES = {
       { kind: 'gnarltree', n: 40, within: [420, 900], scale: [1.0, 1.6], dry: false, solid: false, opts: { seed: 3, lo: true } },
       { kind: 'reeds', n: 700, within: [5, 420], scale: [0.7, 1.6], solid: false, dry: false, clear: -10, opts: { seed: 4, color: '#5a5c44' } },
       { kind: 'fungus', n: 220, within: [5, 420], scale: [0.8, 2], solid: false, clear: -8, opts: { seed: 5 } },
-      { kind: 'fern', n: 200, within: [5, 420], scale: [0.7, 1.4], solid: false, clear: -8, opts: { seed: 6, color: '#474931' } },
-      { kind: 'log', n: 36, within: [20, 460], scale: [0.7, 1.3], solid: false, dry: false, opts: { seed: 7, bark: '#4c463a', moss: '#5a6a34' } },
-      { kind: 'rock', n: 40, within: [10, 460], scale: [0.6, 2], opts: { color: '#5a5a48', sharp: 0.3 } },
+      // (the drop's own where the swamp has the same, on mid and up: Kashyyyk's
+      // scheffleras for the ferns, the forest's logs and stones; the built
+      // ones on low, as before)
+      { kind: 'fern', model: 'game:objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_xs_01_mesh', n: 200, within: [5, 420], scale: [0.7, 1.4], solid: false, clear: -8, opts: { seed: 6, color: '#474931' } },
+      { kind: 'log', model: 'game:objects/nature/forest/_forestbase/forestbase_logsmall_01/forestbase_logsmall_01_mesh', n: 36, within: [20, 460], scale: [0.7, 1.3], solid: false, dry: false, opts: { seed: 7, bark: '#4c463a', moss: '#5a6a34' } },
+      { kind: 'rock', model: 'game:objects/nature/forest/_forestbase/forestbase_rocksmall_01/forestbase_rocksmall_01_mesh', n: 40, within: [10, 460], scale: [0.6, 2], opts: { color: '#5a5a48', sharp: 0.3 } },
     ],
     life: [
       { kind: 'droid', n: 1, at: [-22, -42], roam: 4, speed: 0.5, name: 'R2-D2', says: ['(An indignant whistle: he was nearly eaten, you know.)', '(He beeps, and shakes off a strand of swamp weed.)', '(A worried warble at the mist.)'] },

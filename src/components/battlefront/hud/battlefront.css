@@ -1,0 +1,307 @@
+/* The Battlefront world's skin on the HUD kit (docs/health/RULES.md, "The
+   worlds' HUDs"): the game's faces from public/battlefront/fonts/, text on
+   glass at 0.8, nothing a player reads under 0.7 rem. */
+@font-face {
+  font-family: 'LinotypeUnivers-520CnMedium';
+  src: url('/battlefront/fonts/LinotypeUnivers-520CnMedium.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'LinotypeUnivers-620CnBold';
+  src: url('/battlefront/fonts/LinotypeUnivers-620CnBold.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'RaxusPrimeNumericalMonospace_Regular';
+  src: url('/battlefront/fonts/RaxusPrimeNumericalMonospace_Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+.bf-hud {
+  --bf-font-label: 'LinotypeUnivers-520CnMedium', 'Arial Narrow', sans-serif;
+  --bf-font-bold: 'LinotypeUnivers-620CnBold', 'Arial Narrow', sans-serif;
+  --bf-font-number: 'RaxusPrimeNumericalMonospace_Regular', ui-monospace, monospace;
+  --bf-glass: rgba(8, 12, 18, 0.8);
+  --bf-ink: #f2f5f8;
+  --bf-muted: #b9c2cc;
+  --bf-friend: #2f7bff;
+  --bf-foe: #ff3b30;
+  --bf-warn: #ff7a1a;
+  --hud-key-face: var(--bf-font-bold);
+  font-family: var(--bf-font-label);
+  color: var(--bf-ink);
+  letter-spacing: 0.04em;
+}
+.bf-hud.hud {
+  /* (under the site's bar, which floats over every page) */
+  top: var(--nav-h, 68px);
+}
+.bf-glass {
+  background: var(--bf-glass);
+  border-radius: 2px;
+  padding: 0.35rem 0.6rem;
+}
+.bf-num {
+  font-family: var(--bf-font-number);
+}
+
+/* the stage: the whole viewport under the site's bar */
+.bf-stage {
+  position: relative;
+  height: 100svh;
+  overflow: hidden;
+  background: #b4c3d6;
+}
+.bf-loading {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  font-family: 'LinotypeUnivers-520CnMedium', 'Arial Narrow', sans-serif;
+  color: #f2f5f8;
+  font-size: 0.9rem;
+}
+
+/* the objective bar: top centre */
+.bf-objectives {
+  position: absolute;
+  top: var(--hud-pad, 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+.bf-stage-name {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+.bf-obj-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.bf-obj {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+}
+.bf-thirds {
+  display: flex;
+  gap: 2px;
+}
+.bf-third {
+  width: 14px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.bf-third[data-on] {
+  background: var(--bf-ink);
+}
+.bf-tickets {
+  font-size: 1rem;
+}
+
+/* the heat arc under the reticle */
+.bf-heat {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, 24px);
+  pointer-events: none;
+}
+.bf-heat[data-warn] path.bf-heat-fill {
+  stroke: var(--bf-foe);
+}
+.bf-heat-label {
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+/* the soldier's corner: health and the abilities, bottom left */
+.bf-soldier {
+  position: absolute;
+  left: var(--hud-pad, 16px);
+  bottom: var(--hud-foot, 16px);
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8rem;
+  pointer-events: none;
+}
+.bf-health {
+  min-width: 11rem;
+}
+.bf-health-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+}
+.bf-health-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--bf-ink);
+}
+.bf-health-num {
+  font-size: 1.4rem;
+}
+.bf-abilities {
+  display: flex;
+  gap: 0.5rem;
+}
+.bf-ability {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+}
+.bf-ability svg {
+  position: absolute;
+  inset: 0;
+}
+
+/* the kill log, top left under the row; the damage arcs round the middle */
+.bf-killlog {
+  position: absolute;
+  left: var(--hud-pad, 16px);
+  top: calc(var(--hud-under, 64px) + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+.bf-killlog .bf-friend {
+  color: var(--bf-friend);
+}
+.bf-killlog .bf-foe {
+  color: var(--bf-foe);
+}
+.bf-damage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.bf-damage > span {
+  position: absolute;
+  width: 90px;
+  height: 6px;
+  margin: -3px 0 0 -45px;
+  background: var(--bf-foe);
+  border-radius: 3px;
+}
+
+/* the in-world markers */
+.bf-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  pointer-events: none;
+  text-align: center;
+}
+.bf-marker b {
+  display: block;
+  font-family: var(--bf-font-bold);
+  font-size: 0.9rem;
+}
+
+/* the deploy screen, the scoreboard, the end of round: over the 3D on glass */
+.bf-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+}
+.bf-panel {
+  background: var(--bf-glass);
+  padding: 1.2rem 1.4rem;
+  min-width: min(34rem, 92vw);
+  max-height: calc(100% - 2rem);
+  overflow: auto;
+}
+.bf-panel h2 {
+  font-family: var(--bf-font-bold);
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  margin: 0 0 0.6rem;
+}
+.bf-offers {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.bf-offer {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.bf-offer[aria-pressed='true'] {
+  border-color: var(--bf-ink);
+  background: rgba(255, 255, 255, 0.1);
+}
+.bf-offer[aria-disabled='true'] {
+  color: var(--bf-muted);
+  cursor: not-allowed;
+}
+.bf-offer img {
+  width: 36px;
+  height: 36px;
+  filter: invert(1);
+}
+.bf-offer[aria-disabled='true'] img {
+  filter: invert(0.6) grayscale(1);
+}
+.bf-deploy-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.8rem;
+  font-size: 0.9rem;
+}
+.bf-table {
+  width: 100%;
+  background: transparent;
+  color: inherit;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.bf-table th,
+.bf-table td {
+  padding: 0.2rem 0.5rem;
+  text-align: left;
+}
+.bf-table td.bf-num {
+  text-align: right;
+}
+.bf-outcome {
+  font-family: var(--bf-font-bold);
+  font-size: 2rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+.bf-deathpoints {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translateX(-50%);
+  text-align: center;
+}

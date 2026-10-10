@@ -1,0 +1,27 @@
+{
+ "large": [
+  {"channel":"position.x","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true},
+  {"channel":"position.y","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true},
+  {"channel":"position.z","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true},
+  {"channel":"rotation.x","keys":[[0,45,1,0,1,0],[30.0000019,45,1,0,1,0]],"loop":true},
+  {"channel":"rotation.y","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true},
+  {"channel":"rotation.z","keys":[[0,0,1,0,0.08304548,0.996545732],[30.0000019,360,0.08304548,0.996545732,1,0]],"loop":true}
+ ],
+ "medium": [
+  {"channel":"position.x","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true},
+  {"channel":"position.y","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true},
+  {"channel":"position.z","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true},
+  {"channel":"rotation.x","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true},
+  {"channel":"rotation.y","keys":[[0,0,1,0,0.08304548,0.996545732],[30.0000019,360,0.08304548,0.996545732,1,0]],"loop":true},
+  {"channel":"rotation.z","keys":[[0,0,1,0,1,0],[30.0000019,0,1,0,1,0]],"loop":true}
+ ],
+ "small": [
+  {"channel":"position.x","keys":[[0,0,1,0,1,0],[20,0,1,0,1,0]],"loop":true},
+  {"channel":"position.y","keys":[[0,0,1,0,1,0],[20,0,1,0,1,0]],"loop":true},
+  {"channel":"position.z","keys":[[0,0,1,0,1,0],[20,0,1,0,1,0]],"loop":true},
+  {"channel":"rotation.x","keys":[[0,0,1,0,1,0],[20,0,1,0,1,0]],"loop":true},
+  {"channel":"rotation.y","keys":[[0,0,1,0,0.05547002,0.998460352],[20,360,0.05547002,0.998460352,1,0]],"loop":true},
+  {"channel":"rotation.z","keys":[[0,0,1,0,1,0],[20,0,1,0,1,0]],"loop":true}
+ ],
+ "from": {"large":"a3/objects/props/objectsets/_generic/asteroid_large_01/animtrackdata/00253dd1-8a84-49f3-97d7-7aac23f6e707_asteroid","medium":"a3/objects/props/objectsets/_generic/asteroid_medium_01/animtrackdata/72549682-60e9-496b-b687-bf937440d3af_asteroid","small":"a3/objects/props/objectsets/_generic/asteroid_small_01/animtrackdata/54a39a6f-3ff0-4972-a116-1ff325d65bd9_asteroid"}
+}

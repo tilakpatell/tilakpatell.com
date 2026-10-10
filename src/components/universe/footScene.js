@@ -73,8 +73,10 @@ import { MESHY, createMeshyCast } from '../rickmorty/portal/meshyCast';
 import { NO_CALLS, animatorCalls, seedOf } from '../../lib/three/figureCalls';
 import { preload } from '../../lib/three/clipLibrary';
 import { createAnimator } from '../../lib/three/animator';
-import { cutsToLoad, loadWalrusBody, packUrls, swapBody } from '../../lib/three/walrus';
+import { cutsToLoad, loadWalrusBody, packUrls, richClips, swapBody } from '../../lib/three/walrus';
 import { createCutter, cutUrl } from '../../lib/three/walrusCuts';
+import { withStance } from '../../lib/three/walrusStance';
+import { createAdditiveLayer } from '../../lib/three/additiveLayer';
 import { loadOwnRigBody } from '../../lib/three/ownRig';
 import { OWN_RIGS } from '../../lib/three/walrusClips';
 import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
@@ -219,8 +221,12 @@ function rigged(model, clips, tall, owned, { seed = seedFor('rigged'), key = nul
   const k = (tall * METRE) / Math.max(height, 1e-6);
   model.scale.multiplyScalar(k);
   model.position.y -= (top != null ? toes : box.min.y) * k;
-  const own = Object.fromEntries(Object.entries(clips).filter(([, clip]) => clip));
+  // (the game's additive clips are laid over the pose, never played as one: lib/three/additiveLayer.js)
+  const own = Object.fromEntries(Object.entries(clips).filter(([, clip]) => clip && !clip.userData?.additive));
+  const adds = Object.fromEntries(Object.entries(clips).filter(([, clip]) => clip?.userData?.additive));
   const anim = createAnimator(model, { clips: own, bones, hipsY, up, unit: METRE, seed, key: key == null ? null : `${key}:${tall}`, library });
+  const additive = Object.keys(adds).length ? createAdditiveLayer(model, adds) : null;
+  if (additive) anim.post((step) => additive.apply(step));
   const act = Object.fromEntries(['idle', 'walk', 'run'].filter((n) => anim.actions[n]).map((n) => [n, anim.actions[n]]));
   // (library: false, and the calls too play only the figure's own: a 2017
   // figure never takes a library clip, nor reacts with one)
@@ -242,7 +248,16 @@ function rigged(model, clips, tall, owned, { seed = seedFor('rigged'), key = nul
     stop: calls.stop,
     base: calls.base,
     look: calls.look,
-    react: calls.react,
+    // (a hit with the side it came in from: the game's additive flinch on top
+    // of whatever it's doing, where it has one; else the reaction as ever)
+    react: (event, ctx = {}) => (event === 'hit' && ctx.side && additive?.hit(ctx.side, ctx.kind) ? { event, clip: `add.hit.${ctx.side}`, layer: 'additive' } : calls.react(event, ctx)),
+    // the chest aimed by pitch and yaw through the game's additive aims (the
+    // stance's own, `prefix` 'p.' or 'l.', where it has them); false when it has none
+    aimAt: (pitch, yaw = 0, prefix = '') => {
+      if (!additive?.has('add.aim.up')) return false;
+      additive.aim(pitch, yaw, prefix);
+      return true;
+    },
     dispose() {
       anim.dispose();
       for (const o of owned) o?.dispose?.();
@@ -343,8 +358,12 @@ async function walrusFigure(spec) {
   // maps, and nobody waits that long to see Luke; on a saver connection the
   // light one only; and the full one when the light one isn't there: a
   // figure is never lost for want of a cut)
-  const packs = spec.packs ?? packUrls(spec.pack);
-  return gameFigure(spec, (url) => loadWalrusBody(url, { packs }));
+  // (past its own, the soldiers', the additive layer's and the stances'
+  // packs only where the device's level can spend them: walrus.js's richClips)
+  const rich = richClips(detailLevel());
+  const packs = spec.packs ?? packUrls(spec.pack, { extras: rich });
+  // (and the stance of the weapon it takes up: lib/three/walrusStance.js)
+  return withStance(await gameFigure(spec, (url) => loadWalrusBody(url, { packs })), { enabled: rich });
 }
 
 // A 2017 droid or beast on a skeleton of its own (lib/three/ownRig.js: the

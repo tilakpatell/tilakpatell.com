@@ -2,6 +2,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import PUBLISHED from './galaxyAssets.json';
 import { describe, expect, it } from 'vitest';
 import CREDITS from './modelCredits.json';
+import USED from './bf2017/library-used.json';
+import { gameUrl } from '../components/galaxy/surface/catalog/bf2017-library';
 
 const at = (path) => new URL(`../../${path}`, import.meta.url);
 // every .js and .jsx under src, as text
@@ -32,6 +34,7 @@ describe('the 3D models that are other people’s', () => {
   });
 
   it('are each in the site, and each used by a page that shows its credit', () => {
+    const GAME_FILES = new Set(Object.keys(USED).map((n) => gameUrl(n)));
     const code = sources().join('\n');
     const shown = { universe: 'components/universe/UniversePanel.jsx', 'middle-earth': 'components/middleearth/MapHub.jsx', invincible: 'pages/Invincible.jsx', avengers: 'pages/Avengers.jsx', earth: 'pages/Earth.jsx', galaxy: 'components/galaxy/GalaxyPanel.jsx', 'galaxy-surface': 'pages/GalaxySurface.jsx', 'c-137': 'components/rickmorty/wardrobe/Wardrobe.jsx', cybertron: 'pages/Cybertron.jsx', dickansh: 'pages/Dickansh.jsx', mario64: 'pages/Mario64.jsx' };
     for (const [name, m] of Object.entries(CREDITS)) {
@@ -39,7 +42,9 @@ describe('the 3D models that are other people’s', () => {
       // each in the site and loaded from by the code)
       if (m.paths) {
         for (const dir of m.paths) {
-          expect(existsSync(at(dir)), dir).toBe(true);
+          // (in public/, or published to the bucket: a file of it in src/data/galaxyAssets.json)
+          const published = Object.keys(PUBLISHED).some((k) => `public/${k}`.startsWith(dir));
+          expect(existsSync(at(dir)) || published, dir).toBe(true);
           expect(code.includes(dir.replace(/^public/, '')), `${name} is used`).toBe(true);
         }
         for (const page of [m.where, ...(m.also ?? [])]) expect(readFileSync(at(`src/${shown[page]}`), 'utf8'), page).toContain(`<ModelCredits where="${page}"`);
@@ -53,7 +58,9 @@ describe('the 3D models that are other people’s', () => {
       // (or a world's surface model, by the kind its catalogue names it by)
       const kind = name.replace(/^surface-/, '');
       const surface = name.startsWith('surface-') && code.includes('/models/galaxy/surface/${kind}.glb') && code.includes(`  ${kind}: {`);
-      expect(code.includes(file) || surface || (code.includes('/models/sketchfab/${name}.glb') && code.includes(`'${name}'`)), `${name} is used`).toBe(true);
+      // (or one of the drop's library objects a world asks for by name, `game:<name>`: catalog/bf2017-library.js)
+      const game = GAME_FILES.has(file);
+      expect(code.includes(file) || surface || game || (code.includes('/models/sketchfab/${name}.glb') && code.includes(`'${name}'`)), `${name} is used`).toBe(true);
       expect(shown[m.where], `${name}: ${m.where}`).toBeTruthy();
       expect(readFileSync(at(`src/${shown[m.where]}`), 'utf8'), m.where).toContain(`<ModelCredits where="${m.where}"`);
       // and every other page that shows it, its credit too
@@ -62,7 +69,9 @@ describe('the 3D models that are other people’s', () => {
         expect(readFileSync(at(`src/${shown[page]}`), 'utf8'), page).toContain(`<ModelCredits where="${page}"`);
       }
     }
-  });
+    // (it reads every source file under src: 3.5 s alone, past vitest's 5 s
+    // default when the machine is busy, so it gets a budget of its own)
+  }, 30000);
 
   it('worn in the wardrobe are credited wherever the crew wear them too', () => {
     // (the cruiser's seats in the universe and the galaxy; out of the ship on a planet)

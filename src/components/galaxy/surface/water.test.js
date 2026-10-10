@@ -34,6 +34,20 @@ describe('the water', () => {
     }
   });
 
+  it('flows the game’s lava film through the lava where it is handed one, the shader’s own lava under it', () => {
+    const flow = new THREE.Texture();
+    const w = createWater(site('lava', { video: 'volcano' }), sun, '#ffffff', { heightAt: beach, flow, flipped: true });
+    expect(w.mesh.material.defines.VIDEO).toBe('');
+    expect(w.mesh.material.uniforms.uFlow.value).toBe(flow);
+    expect(w.mesh.material.uniforms.uFlowFlip.value).toBe(1);
+    expect(w.mesh.material.fragmentShader).toContain('texture2D(uFlow');
+    w.dispose();
+    // (none handed in, on low or a saver connection: the shader's lava alone)
+    const plain = createWater(site('lava', { video: 'volcano' }), sun, '#ffffff', { heightAt: beach });
+    expect(plain.mesh.material.defines.VIDEO).toBeUndefined();
+    plain.dispose();
+  });
+
   it('gives the cloud sea a second, slower layer and the sun’s glints', () => {
     const w = createWater(site('clouds'), sun, '#ffffff', { heightAt: beach });
     const u = w.mesh.material.uniforms;

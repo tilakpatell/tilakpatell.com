@@ -1,0 +1,33 @@
+{
+  "size": "1600x900",
+  "adapter": "system",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": false,
+      "passes": [
+        "render",
+        "ssgi",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "hoth-webgl-ssgi-webgl.png",
+      "meanLum": 0.5994,
+      "envDiff": 8.85,
+      "programsBefore": 77,
+      "programsAfter": 77,
+      "frames": 239,
+      "mean": 3.1,
+      "median": 3.1,
+      "p95": 3.4
+    }
+  ]
+}

@@ -1,0 +1,384 @@
+{
+ "level": "Levels/Space/SB_Endor_01/SB_Endor_01",
+ "subworlds": [
+  "Levels/Space/SB_Endor_01/SB_Endor_01",
+  "Levels/Space/SB_Endor_01/Level_Design",
+  "Levels/Space/SB_Endor_01/Cinematics",
+  "Levels/Space/SB_Endor_01/OutroTeam2_NIS",
+  "Levels/Space/SB_Endor_01/IntroTeam1_NIS",
+  "Levels/Space/SB_Endor_01/OutroTeam1_NIS",
+  "Levels/Space/SB_Endor_01/IntroTeam2_NIS",
+  "Levels/Space/SB_Endor_01/VFX",
+  "Levels/Space/SB_Endor_01/GameModes",
+  "Levels/Space/SB_Endor_01/Mode7",
+  "Levels/Space/SB_Endor_01/Mode7_Intro",
+  "Levels/Space/SB_Endor_01/SpaceArcadeTeamBattle",
+  "Levels/Space/SB_Endor_01/SpaceBattle",
+  "Levels/Space/SB_Endor_01/Art",
+  "Levels/Space/SB_Endor_01/Art_LargeGameMode",
+  "Levels/Space/SB_Endor_01/Lobby",
+  "Levels/Space/SB_Endor_01/Splitscreen"
+ ],
+ "meshes": [
+  {
+   "file": "models/gameplay/vehicles/air/xwing_t65/vehicle_air_xwing_t65_static_donotuse_mesh.glb",
+   "lods": 6,
+   "min": [
+    -5.645,
+    -1.218,
+    -6.156
+   ],
+   "max": [
+    5.645,
+    1.218,
+    6.344
+   ]
+  },
+  {
+   "file": "models/objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_communicationstower_01_mesh.glb",
+   "lods": 6,
+   "min": [
+    -66.875,
+    -0.533,
+    -36.625
+   ],
+   "max": [
+    66.875,
+    36.188,
+    27.984
+   ]
+  },
+  {
+   "file": "models/objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_deflectorshield_01_mesh.glb",
+   "lods": 6,
+   "min": [
+    -20.719,
+    -34.25,
+    -19.672
+   ],
+   "max": [
+    20.203,
+    20.578,
+    19.859
+   ]
+  },
+  {
+   "file": "models/objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_tractorbeam_01_mesh.glb",
+   "lods": 5,
+   "min": [
+    -13.102,
+    -4.098,
+    -10.477
+   ],
+   "max": [
+    13.102,
+    4.309,
+    11.359
+   ]
+  },
+  {
+   "file": "models/objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_solarionizationreactor_01_mesh.glb",
+   "lods": 6,
+   "min": [
+    -72.188,
+    -1.682,
+    -65.875
+   ],
+   "max": [
+    67.312,
+    36.219,
+    63.375
+   ]
+  },
+  {
+   "file": "models/objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_hull_01_sb_endor_mesh.glb",
+   "lods": 3,
+   "min": [
+    -434.74,
+    -112.221,
+    -795.005
+   ],
+   "max": [
+    434.74,
+    192.781,
+    771.578
+   ]
+  },
+  {
+   "file": "models/gameplay/vehicles/corvette/corvettecr90/corvettecr90_01_mesh.glb",
+   "lods": 6,
+   "min": [
+    -21.219,
+    -14.227,
+    -65.625
+   ],
+   "max": [
+    21.156,
+    15.797,
+    66.938
+   ]
+  },
+  {
+   "file": "models/gameplay/vehicles/capital/mc80/mc80_largenodule_06_mesh.glb",
+   "lods": 6,
+   "min": [
+    -25.58,
+    -11.915,
+    -153.55
+   ],
+   "max": [
+    25.58,
+    11.634,
+    153.55
+   ]
+  },
+  {
+   "file": "models/gameplay/vehicles/capital/mc80/mc80_engine_module_02_mesh.glb",
+   "lods": 5,
+   "min": [
+    -20.266,
+    -20.266,
+    -56.406
+   ],
+   "max": [
+    20.266,
+    20.266,
+    52.938
+   ]
+  },
+  {
+   "file": "models/levels/space/sb_endor_01/objects/endor_engine_targetcollision_mesh.glb",
+   "lods": 1,
+   "min": [
+    -51,
+    -20.406,
+    -88.188
+   ],
+   "max": [
+    53.031,
+    42.75,
+    90.562
+   ]
+  },
+  {
+   "file": "models/gameplay/vehicles/capital/mc80/mc80_mainhull_01_mesh.glb",
+   "lods": 6,
+   "min": [
+    -223.771,
+    -78.977,
+    -581.914
+   ],
+   "max": [
+    224.766,
+    70.08,
+    583.019
+   ]
+  },
+  {
+   "file": "models/gameplay/vehicles/capital/resurgentclass_stardestroyer/instances/o_resurgent_scorchdecals_03_mesh.glb",
+   "lods": 1,
+   "min": [
+    -0.274,
+    0,
+    -0.212
+   ],
+   "max": [
+    0.281,
+    0,
+    0.286
+   ]
+  },
+  {
+   "file": "models/objects/architecture/_galacticempire/deathstar_debris/deathstar_debris_l_04_mesh.glb",
+   "lods": 6,
+   "min": [
+    -10.453,
+    -17.734,
+    -8.359
+   ],
+   "max": [
+    11.305,
+    19.359,
+    17.828
+   ]
+  },
+  {
+   "file": "models/levels/space/sb_endor_01/planet/moon_endor_01_mesh.glb",
+   "lods": 1,
+   "min": [
+    -1150,
+    0,
+    -1150
+   ],
+   "max": [
+    1150,
+    399.5,
+    1150
+   ]
+  },
+  {
+   "file": "models/levels/space/sb_endor_01/planet/debrisfield_02_mesh.glb",
+   "lods": 3,
+   "min": [
+    -2393.155,
+    -2428.463,
+    -3209.262
+   ],
+   "max": [
+    2393.155,
+    2428.463,
+    3209.262
+   ]
+  }
+ ],
+ "groups": [
+  {
+   "mesh": 0,
+   "sub": 3,
+   "kind": "object",
+   "offset": 0,
+   "count": 1
+  },
+  {
+   "mesh": 1,
+   "sub": 9,
+   "kind": "object",
+   "offset": 1,
+   "count": 1
+  },
+  {
+   "mesh": 2,
+   "sub": 9,
+   "kind": "object",
+   "offset": 2,
+   "count": 2
+  },
+  {
+   "mesh": 3,
+   "sub": 9,
+   "kind": "object",
+   "offset": 4,
+   "count": 2
+  },
+  {
+   "mesh": 4,
+   "sub": 9,
+   "kind": "object",
+   "offset": 6,
+   "count": 1
+  },
+  {
+   "mesh": 5,
+   "sub": 9,
+   "kind": "object",
+   "offset": 7,
+   "count": 1
+  },
+  {
+   "mesh": 6,
+   "sub": 12,
+   "kind": "object",
+   "offset": 8,
+   "count": 1
+  },
+  {
+   "mesh": 7,
+   "sub": 12,
+   "kind": "object",
+   "offset": 9,
+   "count": 1
+  },
+  {
+   "mesh": 8,
+   "sub": 12,
+   "kind": "object",
+   "offset": 10,
+   "count": 2
+  },
+  {
+   "mesh": 9,
+   "sub": 12,
+   "kind": "object",
+   "offset": 12,
+   "count": 1
+  },
+  {
+   "mesh": 10,
+   "sub": 12,
+   "kind": "object",
+   "offset": 13,
+   "count": 1
+  },
+  {
+   "mesh": 1,
+   "sub": 12,
+   "kind": "object",
+   "offset": 14,
+   "count": 1
+  },
+  {
+   "mesh": 2,
+   "sub": 12,
+   "kind": "object",
+   "offset": 15,
+   "count": 2
+  },
+  {
+   "mesh": 3,
+   "sub": 12,
+   "kind": "object",
+   "offset": 17,
+   "count": 2
+  },
+  {
+   "mesh": 4,
+   "sub": 12,
+   "kind": "object",
+   "offset": 19,
+   "count": 1
+  },
+  {
+   "mesh": 5,
+   "sub": 12,
+   "kind": "object",
+   "offset": 20,
+   "count": 1
+  },
+  {
+   "mesh": 11,
+   "sub": 12,
+   "kind": "object",
+   "offset": 21,
+   "count": 1
+  },
+  {
+   "mesh": 12,
+   "sub": 14,
+   "kind": "object",
+   "offset": 22,
+   "count": 4
+  },
+  {
+   "mesh": 13,
+   "sub": 13,
+   "kind": "static",
+   "offset": 26,
+   "count": 1
+  },
+  {
+   "mesh": 14,
+   "sub": 13,
+   "kind": "static",
+   "offset": 27,
+   "count": 1
+  }
+ ],
+ "bin": {
+  "file": "sb_endor_01.bin",
+  "count": 28,
+  "position": 0,
+  "quaternion": 336,
+  "scale": 560,
+  "bytes": 896
+ }
+}

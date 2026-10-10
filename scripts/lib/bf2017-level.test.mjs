@@ -45,6 +45,13 @@ describe('arenaOf', () => {
     const map = readMap(json, bin);
     expect(arenaOf(map, { subs: ['LOBBY'] })).toEqual([3]);
   });
+
+  it('leaves out the meshes it is told to, anywhere or in one sub only', () => {
+    const map = readMap(json, bin);
+    expect(arenaOf(map, { drop: ['crate_01'] })).toEqual([0, 1]);
+    expect(arenaOf(map, { subs: ['fixture_01', 'lobby'], drop: ['Lobby:rock_*'] })).toEqual([0, 1]);
+    expect(arenaOf(map, { subs: ['fixture_01', 'lobby'], drop: ['Content:rock_01'] })).toEqual([0, 1, 3]);
+  });
 });
 
 describe('rebase', () => {

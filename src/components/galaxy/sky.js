@@ -25,6 +25,12 @@
 // one (on some drivers its first link takes seconds), so prepare() starts the
 // link at startup, in the background, and the first bake waits for nothing.
 //
+// Under it all, where the system has one (skyPanorama.js), Battlefront II's
+// own star field for its space: Endor's, the Core's, the Outer Rim's, the
+// game's KTX2 at the quality level's width, baked in with the rest, looked
+// up at its sharpest level with the seam's wrap (no line where it joins). It
+// loads after the system's first bake, and the sky is baked again with it.
+//
 // createSky({ small, renderer, beacons }) → { group, setSystem(system), bake(renderer),
 //   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
 //   setRatio(r), dispose() };
@@ -36,6 +42,7 @@ import * as THREE from 'three';
 import { precompile } from '../../lib/three/renderer';
 import { tileFbm } from '../../lib/texture';
 import { RIM, SYSTEMS, coreBearing, courseTo, distance } from './systems';
+import { panoramaUrl } from './skyPanorama';
 
 const SKY_R = 5200; // (inside the camera's far plane, outside everything else)
 const SUN_R = 4800;
@@ -157,6 +164,8 @@ uniform float uSeed;
 uniform vec3 uNebDir[3];
 uniform vec3 uNebCol[3];
 uniform vec2 uNebShape[3]; // (its size, in radians, and how twisted it is)
+uniform sampler2D uPano;
+uniform float uPanoOn;
 varying vec3 vDir;
 ${NOISE}
 void main() {
@@ -211,6 +220,13 @@ void main() {
   }
   // and the dark between
   col += vec3(0.0035, 0.005, 0.011);
+  // the game's own star field under it all (equirectangular: u round the
+  // horizon, v up it), at its sharpest level so the seam's jump in u can't
+  // pick a blurrier one along the join
+  if (uPanoOn > 0.5) {
+    vec2 uv = vec2(atan(d.z, d.x) * 0.15915494 + 0.5, asin(clamp(d.y, -1.0, 1.0)) * 0.31830989 + 0.5);
+    col += textureLod(uPano, uv, 0.0).rgb;
+  }
   // half a step of the cube's 8 bits either way before they round it, so
   // its long faint gradients come out smooth, not in steps
   float n = hash3(vec3(gl_FragCoord.xy, uSeed + 7.0)) - 0.5;
@@ -380,6 +396,8 @@ export function createSky({ small = false, level = null, renderer = null, beacon
       uNebDir: { value: [0, 1, 2].map(() => new THREE.Vector3(0, 0, 1)) },
       uNebCol: { value: [0, 1, 2].map(() => new THREE.Color()) },
       uNebShape: { value: [0, 1, 2].map(() => new THREE.Vector2(0.3, 1)) },
+      uPano: { value: null },
+      uPanoOn: { value: 0 },
     },
     side: THREE.BackSide,
     depthTest: false,
@@ -447,12 +465,34 @@ export function createSky({ small = false, level = null, renderer = null, beacon
     [1, 0.78, 0.62],
   ];
 
-  return {
+  // the game's star field for the system, loaded once a system and baked
+  // in again when it's here (null: none, the sky as it was)
+  let baked = null;
+  let wanted = null;
+  const panoramas = new Map(); // url → Promise<texture | null>
+  const setPanorama = (sys) => {
+    const url = panoramaUrl(sys, level);
+    wanted = url;
+    bakeMat.uniforms.uPanoOn.value = 0;
+    bakeMat.uniforms.uPano.value = null;
+    if (!url) return;
+    if (!panoramas.has(url)) panoramas.set(url, loadPanorama(url, renderer));
+    panoramas.get(url).then((tex) => {
+      if (gone || !tex || wanted !== url) return;
+      bakeMat.uniforms.uPano.value = tex;
+      bakeMat.uniforms.uPanoOn.value = 1;
+      if (baked) out.bake(baked);
+    });
+  };
+  made.push({ dispose: () => panoramas.forEach((p) => p.then((t) => t?.dispose())) });
+
+  const out = {
     group,
     // the directions toward the system's suns, unit vectors (bodies.js lights by them)
     sunDirs,
     beacons,
     setSystem(sys) {
+      setPanorama(sys);
       const rand = seeded(sys.id);
       const { dir, d } = coreBearing(sys);
       const near = Math.max(0, 1 - d / RIM);
@@ -566,6 +606,7 @@ export function createSky({ small = false, level = null, renderer = null, beacon
     // sphere looking it up from then on; the renderer is left as it was
     bake(r = renderer) {
       if (gone || !r) return;
+      baked = r;
       const was = { target: r.getRenderTarget(), face: r.getActiveCubeFace(), level: r.getActiveMipmapLevel(), autoClear: r.autoClear, toneMapping: r.toneMapping, xr: r.xr?.enabled };
       r.autoClear = true;
       r.toneMapping = THREE.NoToneMapping;
@@ -585,4 +626,20 @@ export function createSky({ small = false, level = null, renderer = null, beacon
       cube.dispose();
     },
   };
+  return out;
+}
+
+// a panorama's KTX2, through the site's loader (lib/three/gltf.js's, its
+// transcoder fetched the first time) and the asset base; null if it fails
+function loadPanorama(url, renderer) {
+  return Promise.all([import('../../lib/three/gltf'), import('../../lib/assetBase')])
+    .then(([{ ktx2Loader }, { withFallback }]) => ktx2Loader({ renderer }).then((k) => withFallback((u) => k.loadAsync(u))(url)))
+    .then((tex) => {
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      return tex;
+    })
+    .catch(() => null);
 }

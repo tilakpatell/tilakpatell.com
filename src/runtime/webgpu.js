@@ -91,9 +91,30 @@ export function buildLitPost(renderer, passes) {
   };
 }
 
+// The limits a device is asked for: the adapter's own values for the ones a
+// world's chain can exceed at the defaults. Nothing when there is no WebGPU
+// (the renderer then draws on WebGL 2) or the adapter will not say.
+export const RAISED_LIMITS = ['maxColorAttachmentBytesPerSample', 'maxColorAttachments', 'maxStorageBuffersPerShaderStage'];
+export async function adapterLimits(gpu = typeof navigator !== 'undefined' ? navigator.gpu : undefined) {
+  try {
+    const adapter = await gpu?.requestAdapter?.({ powerPreference: 'high-performance' });
+    if (!adapter?.limits) return undefined;
+    const limits = {};
+    for (const k of RAISED_LIMITS) if (typeof adapter.limits[k] === 'number') limits[k] = adapter.limits[k];
+    return Object.keys(limits).length ? limits : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false } = {}) {
   const { WebGPURenderer } = await import('three/webgpu');
-  const renderer = new WebGPURenderer({ canvas, alpha, antialias: budget?.antialias ?? true, powerPreference: 'high-performance', forceWebGL });
+  // A device is made with its adapter's own limits where the defaults are
+  // tighter than the chip: a post chain's five colour targets cost more a
+  // sample than the default 32 bytes on some chains, and a chip that can
+  // take 128 should (the laptop's did not, and drew black, until asked).
+  const requiredLimits = forceWebGL ? undefined : await adapterLimits();
+  const renderer = new WebGPURenderer({ canvas, alpha, antialias: budget?.antialias ?? true, powerPreference: 'high-performance', forceWebGL, requiredLimits });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = toneMapping;
   renderer.toneMappingExposure = exposure;

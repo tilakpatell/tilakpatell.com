@@ -133,3 +133,46 @@ describe('createLevelScene', () => {
     level.dispose();
   });
 });
+
+describe('the ground in the game’s layers (lane Q2)', () => {
+  const groundJson = new TextEncoder().encode(JSON.stringify({ world: 'hoth', layers: [], rules: [], masks: { png: 'ground/masks.png', w: 2, h: 2, minX: 0, minZ: 0, metresPerPixel: 1 }, fade: { start: 300, end: 450 }, macro: { color: [0.5, 0.6, 0.7] } }));
+  const fetchBytes = (calls) => async (path) => {
+    calls.push(path);
+    if (path === 'ground.json') return groundJson.buffer;
+    throw new Error(`404 ${path}`);
+  };
+  const until = async (fn) => {
+    for (let i = 0; i < 200 && !fn(); i++) await new Promise((r) => setTimeout(r, 5));
+  };
+
+  it('a node renderer and a pack with ground.json: the ground mesh takes the layered material, and gets its own back on dispose', async () => {
+    const scene = new THREE.Scene();
+    const own = new THREE.MeshStandardMaterial();
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(), own);
+    const calls = [];
+    const level = createLevelScene({ scene, pack: { ...pack, ground: 'ground.json' }, loadGltf, tier: 'high', ground: { mesh, renderer: { backend: { isWebGLBackend: true } }, fetchBytes: fetchBytes(calls), urlOf: (p) => p } });
+    await until(() => mesh.material !== own);
+    expect(mesh.material.isNodeMaterial).toBe(true);
+    expect(mesh.material.name).toBe('layered-ground:hoth');
+    expect(calls).toContain('ground.json');
+    level.dispose();
+    expect(mesh.material).toBe(own);
+  });
+
+  it('the classic renderer, or a pack without ground.json: the ground keeps its own material and nothing is fetched', async () => {
+    for (const [renderer, p] of [
+      [{ isWebGLRenderer: true }, { ...pack, ground: 'ground.json' }],
+      [{ backend: { isWebGLBackend: true } }, pack],
+    ]) {
+      const own = new THREE.MeshStandardMaterial();
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(), own);
+      const calls = [];
+      const level = createLevelScene({ scene: new THREE.Scene(), pack: p, loadGltf, tier: 'high', ground: { mesh, renderer, fetchBytes: fetchBytes(calls), urlOf: (x) => x } });
+      await settle();
+      await settle();
+      expect(mesh.material).toBe(own);
+      expect(calls).toEqual([]);
+      level.dispose();
+    }
+  });
+});

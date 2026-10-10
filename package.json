@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "coverage:bf2017": "node scripts/bf2017-coverage.mjs --check",
     "test:ai": "vitest run --config vitest.ai.config.js",
     "test:ai:render": "vitest run --config vitest.render.config.js",
     "test:ai:gpu": "node scripts/ai-e2e/real/health.mjs && node scripts/ai-e2e/evals/run.mjs",

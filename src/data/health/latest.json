@@ -1,6 +1,6 @@
 {
   "date": "2026-10-10",
-  "sha": "2a778cd8",
+  "sha": "0fac92b0",
   "metrics": {
     "big-files": {
       "value": 30,
@@ -9,23 +9,23 @@
       "detail": [
         {
           "file": "src/components/universe/scene.js",
-          "n": 6127
+          "n": 6148
         },
         {
           "file": "src/components/middleearth/towns/moria/props.js",
           "n": 4576
         },
         {
-          "file": "src/components/middleearth/towns/rivendell/props.js",
-          "n": 3863
+          "file": "src/components/galaxy/surface/scene.js",
+          "n": 4031
         },
         {
           "file": "src/components/universe/footScene.js",
-          "n": 3714
+          "n": 3975
         },
         {
-          "file": "src/components/galaxy/surface/scene.js",
-          "n": 3657
+          "file": "src/components/middleearth/towns/rivendell/props.js",
+          "n": 3863
         },
         {
           "file": "src/components/middleearth/towns/doom/props.js",
@@ -65,7 +65,7 @@
         },
         {
           "file": "src/components/galaxy/scene.js",
-          "n": 2842
+          "n": 2878
         },
         {
           "file": "src/components/middleearth/towns/lorien/props.js",
@@ -110,67 +110,12 @@
       ]
     },
     "boundary-breaks": {
-      "value": 489,
+      "value": 470,
       "unit": "imports",
       "label": "imports across a line docs/health/RULES.md draws",
       "detail": [
         {
           "file": "src/lib/land/flats.js → src/components/galaxy/surface/noise.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/lifeTables.js → src/components/expanse/gen/sector.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/lifeTables.js → src/components/expanse/gen/seed.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/lifeTables.test.js → src/components/galaxy/fleet.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/lifeTables.test.js → src/components/galaxy/surface/catalog/index.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/lifeTables.test.js → src/components/galaxy/surface/figures.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/lifeTables.test.js → src/components/universe/trafficModels.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/planetSpec.js → src/components/expanse/gen/sector.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/planetSpec.js → src/components/expanse/gen/seed.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/planetSpec.test.js → src/components/expanse/gen/sector.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/planetSpec.test.js → src/components/expanse/gen/seed.js",
-          "n": 1,
-          "note": "lib knows no page"
-        },
-        {
-          "file": "src/lib/land/flight/planetSpec.test.js → src/components/galaxy/surface/sites/index.js",
           "n": 1,
           "note": "lib knows no page"
         },
@@ -186,6 +131,16 @@
         },
         {
           "file": "src/lib/land/rivers.js → src/components/galaxy/surface/noise.js",
+          "n": 1,
+          "note": "lib knows no page"
+        },
+        {
+          "file": "src/lib/level/shapeSolids.js → src/components/galaxy/surface/level/levelPhysics.js",
+          "n": 1,
+          "note": "lib knows no page"
+        },
+        {
+          "file": "src/lib/level/shapeSolids.test.js → src/components/galaxy/surface/walker.js",
           "n": 1,
           "note": "lib knows no page"
         },
@@ -215,6 +170,11 @@
           "note": "lib knows no page"
         },
         {
+          "file": "src/lib/three/ownRig.test.js → src/components/galaxy/surface/crewList.js",
+          "n": 1,
+          "note": "lib knows no page"
+        },
+        {
           "file": "src/lib/three/textures.coverage.test.js → src/components/galaxy/surface/kit.js",
           "n": 1,
           "note": "lib knows no page"
@@ -236,6 +196,46 @@
         },
         {
           "file": "src/components/albuquerque/casa/scene.js → src/components/office/stage3d.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/metherria/scene.js → src/components/office/people.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/metherria/scene.js → src/components/rickmorty/wardrobe/dress.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/metherria/scene.js → src/components/rickmorty/wardrobe/looks.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/metherria/scene.js → src/components/rickmorty/wardrobe/wear.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/wardrobe.js → src/components/rickmorty/wardrobe/looks.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/wardrobe.test.js → src/components/office/people.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/wardrobe.test.js → src/components/rickmorty/wardrobe/looks.js",
+          "n": 1,
+          "note": "worlds are islands"
+        },
+        {
+          "file": "src/components/albuquerque/world/AbqWorld.jsx → src/components/middleearth/towns/useTravellers.js",
           "n": 1,
           "note": "worlds are islands"
         }
@@ -506,7 +506,7 @@
       "detail": []
     },
     "glsl-sites": {
-      "value": 609,
+      "value": 621,
       "unit": "sites",
       "label": "GLSL sites a WebGPU port removes",
       "detail": [

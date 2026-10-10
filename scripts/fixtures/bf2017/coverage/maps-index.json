@@ -1,0 +1,50 @@
+[
+ {
+  "level": "Levels/MP/Hoth_01/Hoth_01",
+  "kind": "mp",
+  "file": "maps/levels/mp/hoth_01/hoth_01.json",
+  "bin": "maps/levels/mp/hoth_01/hoth_01.bin",
+  "extras": "maps/levels/mp/hoth_01/hoth_01.extras.json",
+  "instances": 10,
+  "lights": 3,
+  "effects": 2,
+  "decals": 1,
+  "bytes": 5000
+ },
+ {
+  "level": "Levels/MP/Endor_01/Endor_01",
+  "kind": "mp",
+  "file": "maps/levels/mp/endor_01/endor_01.json",
+  "bin": "maps/levels/mp/endor_01/endor_01.bin",
+  "extras": "maps/levels/mp/endor_01/endor_01.extras.json",
+  "instances": 10,
+  "lights": 3,
+  "effects": 2,
+  "decals": 1,
+  "bytes": 5000
+ },
+ {
+  "level": "Levels/MP/Takodana_01/Takodana_01",
+  "kind": "mp",
+  "file": "maps/levels/mp/takodana_01/takodana_01.json",
+  "bin": "maps/levels/mp/takodana_01/takodana_01.bin",
+  "extras": "maps/levels/mp/takodana_01/takodana_01.extras.json",
+  "instances": 10,
+  "lights": 3,
+  "effects": 2,
+  "decals": 1,
+  "bytes": 5000
+ },
+ {
+  "level": "A3/Levels/SP/RootLevel/RootLevel_A3/RootLevel_A3",
+  "kind": "menu",
+  "file": "maps/a3/levels/sp/rootlevel/rootlevel_a3/rootlevel_a3.json",
+  "bin": "maps/a3/levels/sp/rootlevel/rootlevel_a3/rootlevel_a3.bin",
+  "extras": "maps/a3/levels/sp/rootlevel/rootlevel_a3/rootlevel_a3.extras.json",
+  "instances": 10,
+  "lights": 3,
+  "effects": 2,
+  "decals": 1,
+  "bytes": 5000
+ }
+]

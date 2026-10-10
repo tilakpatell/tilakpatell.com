@@ -41,6 +41,12 @@
 //     at a part weight. loop: whether it repeats (CLIPS's say, else no);
 //     hold: kept on its last frame until stopped; at: seconds in to start
 //     from. Done when it's played through; a clip it can't have is cut.
+//   post(fn | null): fn(step) laid after the layers and before the look,
+//     on each step (the game's additive clips: additiveLayer.js)
+//   restance({ name: clip }) → [name…]: clips in place of its own by those
+//     names (a weapon's stance, walrusSets/stance.js): idle, walk and run
+//     taken over where they are, at their weight, their strides measured
+//     afresh; any other the next time it's played (one playing now plays out)
 //   stop(layer = 'full', fade): the layer's clip faded out (cut)
 //   playing(layer = 'full') → the name of the clip in the layer's slot, or null
 //   weight(layer, w?) → w: how much of a layer over the mixer is laid on
@@ -565,6 +571,9 @@ export function createAnimator(model, { clips = {}, hipsY = null, bones = null, 
     rotateWorld(head, _r, lk.p * rest);
   }
 
+  // whether a clip of that name is in a slot, or fading from one
+  const inSlot = (name) => [...SLOTS].some((l) => st.slots[l]?.name === name || st.fading[l]?.name === name);
+
   const api = {
     mixer,
     actions,
@@ -589,6 +598,33 @@ export function createAnimator(model, { clips = {}, hipsY = null, bones = null, 
     stop(layer = 'full', fade = FADE) {
       if (st.queue?.layers.has(layer)) cutQueue();
       if (SLOTS.has(layer)) cut(layer, fade);
+    },
+    post(fn) {
+      st.post = typeof fn === 'function' ? fn : null;
+    },
+    restance(set = {}) {
+      if (st.disposed) return [];
+      const done = [];
+      for (const [name, clip] of Object.entries(set)) {
+        if (!clip || got.get(name) === clip) continue;
+        got.set(name, clip);
+        const old = actions[name] ?? null;
+        if (LOCO.includes(name)) {
+          const a = mixer.clipAction(clip);
+          a.play();
+          a.setEffectiveWeight(old ? old.getEffectiveWeight() : 0);
+          if (old) {
+            a.timeScale = old.timeScale;
+            a.time = (old.time / Math.max(old.getClip().duration, 1e-6)) * clip.duration;
+            old.stop();
+          }
+          actions[name] = a;
+          act[name] = a;
+          loco.restride(name);
+        } else if (old && !inSlot(name)) delete actions[name];
+        done.push(name);
+      }
+      return done;
     },
     playing(layer = 'full') {
       return st.slots[layer]?.name ?? null;
@@ -659,6 +695,7 @@ export function createAnimator(model, { clips = {}, hipsY = null, bones = null, 
         const s = st.slots[layer];
         if (s) lay(s.parts, s.t, s.w * k);
       }
+      st.post?.(step);
       stepLook(step, frame);
     },
     dispose() {

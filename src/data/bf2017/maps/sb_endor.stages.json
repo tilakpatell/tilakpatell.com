@@ -1,0 +1,116 @@
+{
+  "source": "hand",
+  "mode": "starfighter",
+  "level": "Levels/Space/SB_Endor_01/SB_Endor_01",
+  "attackers": "dark",
+  "notes": "NOTES.md says how each id was chosen. The phases are the level's own (SpaceBattle_Gameplay's objective list: Corvettes, Mines, MC80); the MC80's phase is the game's three sub-stages by its strings (3: the top nodules, 3B: from beneath, 3C: the rear engines). Hand: which mine is A to F, which nodule is A1 to A4 and B1 to B3, the gates, the hp and the bomber flights' times.",
+  "origin": [-259, 1771, -665],
+  "sides": { "1": "rebel", "2": "empire" },
+  "hides": ["deathstar2"],
+  "ships": [
+    { "id": "mc80", "team": 1, "kind": "moncal", "role": "flagship", "name": "MC80 star cruiser", "placed": "mc80_mainhull_01" },
+    { "id": "cr90-a", "team": 1, "kind": "corvette", "role": "escort", "name": "CR90 corvette", "prefab": "SpaceBattle_SecondaryObjective_Cruisers:69" },
+    { "id": "cr90-b", "team": 1, "kind": "corvette", "role": "escort", "name": "CR90 corvette", "prefab": "SpaceBattle_SecondaryObjective_Cruisers:377" },
+    { "id": "cr90-c", "team": 1, "kind": "corvette", "role": "escort", "name": "CR90 corvette", "prefab": "SpaceBattle_SecondaryObjective_Cruisers:875" },
+    { "id": "isd", "team": 2, "kind": "destroyer", "role": "flagship", "name": "Imperial Star Destroyer", "placed": "stardestroyer_hull_01_sb_endor" }
+  ],
+  "fighters": {
+    "1": [
+      { "kind": "xwing", "role": "fighter", "weight": 3 },
+      { "kind": "awing", "role": "interceptor", "weight": 2 },
+      { "kind": "ywing", "role": "bomber", "weight": 1.5 }
+    ],
+    "2": [
+      { "kind": "tie", "role": "fighter", "weight": 3 },
+      { "kind": "interceptor", "role": "interceptor", "weight": 2 },
+      { "kind": "tiebomber", "role": "bomber", "weight": 1.5 }
+    ]
+  },
+  "stages": [
+    {
+      "id": "corvettes",
+      "phase": "Phase 1 - Corvettes",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_ENDOR_PHASE_1",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_ENDOR_PHASE_1",
+      "title": "Destroy the corvettes",
+      "titleDefend": "Protect the corvettes",
+      "opensAt": 0,
+      "hp": 210,
+      "objectives": [
+        { "id": "CR90_A", "kind": "corvette", "name": "CR90 corvette", "ship": "cr90-a", "sinks": true },
+        { "id": "CR90_B", "kind": "corvette", "name": "CR90 corvette", "ship": "cr90-b", "sinks": true },
+        { "id": "CR90_C", "kind": "corvette", "name": "CR90 corvette", "ship": "cr90-c", "sinks": true }
+      ]
+    },
+    {
+      "id": "mines",
+      "phase": "Phase 2 - Mines",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_ENDOR_PHASE_2",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_ENDOR_PHASE_2",
+      "title": "Attack the Rebel mines",
+      "titleDefend": "Protect the Rebel mines",
+      "opensAt": 150,
+      "hp": 240,
+      "objectives": [
+        { "id": "Destroy Mine A", "kind": "mine", "name": "Rebel mine", "sid": "ID_SPACEBATTLES_OBJ_NAME_REBEL_MINE", "prefab": "SpaceBattle_ScriptedEvents:17" },
+        { "id": "Destroy Mine B", "kind": "mine", "name": "Rebel mine", "sid": "ID_SPACEBATTLES_OBJ_NAME_REBEL_MINE", "prefab": "SpaceBattle_ScriptedEvents:33" },
+        { "id": "Destroy Mine C", "kind": "mine", "name": "Rebel mine", "sid": "ID_SPACEBATTLES_OBJ_NAME_REBEL_MINE", "prefab": "SpaceBattle_ScriptedEvents:44" },
+        { "id": "Destroy Mine D", "kind": "mine", "name": "Rebel mine", "sid": "ID_SPACEBATTLES_OBJ_NAME_REBEL_MINE", "prefab": "SpaceBattle_ScriptedEvents:52" },
+        { "id": "Destroy Mine E", "kind": "mine", "name": "Rebel mine", "sid": "ID_SPACEBATTLES_OBJ_NAME_REBEL_MINE", "prefab": "SpaceBattle_ScriptedEvents:78" },
+        { "id": "Destroy Mine F", "kind": "mine", "name": "Rebel mine", "sid": "ID_SPACEBATTLES_OBJ_NAME_REBEL_MINE", "prefab": "SpaceBattle_ScriptedEvents:88" }
+      ]
+    },
+    {
+      "id": "top",
+      "phase": "Phase 3 - MC80",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_ENDOR_PHASE_3",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_ENDOR_PHASE_3",
+      "title": "Attack the MC80",
+      "titleDefend": "Protect the MC80",
+      "opensAt": 270,
+      "hp": 200,
+      "objectives": [
+        { "id": "MC80 A1", "kind": "nodule", "name": "Top nodule", "sid": "ID_SPACEBATTLES_OBJ_NAME_TOP_NODULES", "placed": "mc80_largenodule_01", "prefab": "PF_SpaceBattles_MC80_target_TL01" },
+        { "id": "MC80 A2", "kind": "nodule", "name": "Top nodule", "sid": "ID_SPACEBATTLES_OBJ_NAME_TOP_NODULES", "placed": "mc80_largenodule_02", "prefab": "PF_SpaceBattles_MC80_target_TL02" },
+        { "id": "MC80 A3", "kind": "nodule", "name": "Top nodule", "sid": "ID_SPACEBATTLES_OBJ_NAME_TOP_NODULES", "placed": "mc80_largenodule_04", "prefab": "PF_SpaceBattles_MC80_target_TR01" },
+        { "id": "MC80 A4", "kind": "nodule", "name": "Top nodule", "sid": "ID_SPACEBATTLES_OBJ_NAME_TOP_NODULES", "placed": "mc80_largenodule_03", "prefab": "PF_SpaceBattles_MC80_target_TR02" }
+      ]
+    },
+    {
+      "id": "beneath",
+      "phase": "Phase 3 - MC80",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_ENDOR_PHASE_3B",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_ENDOR_PHASE_3B",
+      "title": "Attack the MC80 from beneath",
+      "titleDefend": "Protect the MC80 from beneath",
+      "opensAt": 360,
+      "hp": 170,
+      "objectives": [
+        { "id": "MC80 B1", "kind": "nodule", "name": "Bottom nodule", "sid": "ID_SPACEBATTLES_OBJ_NAME_BOTTOM_NODULES", "placed": "mc80_largenodule_05", "prefab": "PF_SpaceBattles_MC80_target_bottom_front" },
+        { "id": "MC80 B2", "kind": "nodule", "name": "Bottom nodule", "sid": "ID_SPACEBATTLES_OBJ_NAME_BOTTOM_NODULES", "placed": "mc80_largenodule_06", "prefab": "PF_SpaceBattles_MC80_target_bottom_left" },
+        { "id": "MC80 B3", "kind": "nodule", "name": "Bottom nodule", "sid": "ID_SPACEBATTLES_OBJ_NAME_BOTTOM_NODULES", "placed": "mc80_nodulehanger_01", "prefab": "PF_SpaceBattles_MC80_target_bottom_right" }
+      ]
+    },
+    {
+      "id": "engines",
+      "phase": "Phase 3 - MC80",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_ENDOR_PHASE_3C",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_ENDOR_PHASE_3C",
+      "title": "Attack the MC80’s rear engines",
+      "titleDefend": "Protect the MC80’s rear engines",
+      "opensAt": 440,
+      "hp": 160,
+      "breaks": true,
+      "objectives": [
+        { "id": "MC80 C", "kind": "engines", "name": "MC80 engine", "sid": "ID_SPACEBATTLES_OBJ_NAME_MC80ENGINE", "placed": "endor_engine_targetcollision", "prefab": "PF_SpaceBattles_MC80_Target_FinalStage_Engines" }
+      ]
+    }
+  ],
+  "bombers": [
+    { "id": "Phase 1 - TieBombers_1A", "at": 60, "n": 3 },
+    { "id": "Phase 2 - TieBombers - 1A", "at": 200, "n": 3 },
+    { "id": "Phase 3A - TieBombers - 1A", "at": 320, "n": 3 },
+    { "id": "Phase 3B - TieBombers - 1A", "at": 400, "n": 3 }
+  ],
+  "camera": { "source": "hand", "why": "the level's intro and outro cameras are Cinematics tracks (Partition_*), not CameraEntityData", "at": [640, 1990, 1560], "look": [-565, 1700, -1782] }
+}

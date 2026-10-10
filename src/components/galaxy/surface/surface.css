@@ -711,7 +711,88 @@
   .assault-ring p, .assault-feed li, .assault-card { animation: none; }
 }
 
+/* Heroes vs Villains and Blast (HvvHud.jsx, BlastHud.jsx): the game's score
+   bar at the top, each side's count filling toward the goal from the middle
+   out; HvV's two targets under the counts on the left, and the arena's
+   out-of-bounds count in the middle. The cards are the assault's. */
+.hvv-score, .blast-score {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: calc(var(--nav-h, 64px) + 12px);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem 0.9rem;
+  width: min(460px, calc(100vw - 32px));
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--glass);
+  pointer-events: none;
+}
+.hvv-score p, .blast-score p { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 0.15rem 0.5rem; margin: 0; }
+.hvv-score p[data-side='dark'], .blast-score p[data-side='defend'] { grid-template-columns: 1fr auto; text-align: right; }
+.hvv-score p[data-side='dark'] b, .blast-score p[data-side='defend'] b { order: 2; }
+.hvv-score b, .blast-score b { font: 600 1.3rem/1 ui-monospace, monospace; font-variant-numeric: tabular-nums; color: var(--side); }
+.hvv-score span, .blast-score span { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(242, 239, 232, 0.8); }
+.hvv-score p[data-mine] span::after, .blast-score p[data-mine] span::after { content: ' · you'; color: var(--side); }
+.hvv-score em, .blast-score em { grid-column: 1 / -1; display: block; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.5); overflow: hidden; }
+.hvv-score em i, .blast-score em i { display: block; height: 100%; background: var(--side); transition: width 0.2s linear; }
+.hvv-score p[data-side='dark'] em i, .blast-score p[data-side='defend'] em i { margin-left: auto; }
+.hvv-score small, .blast-score small { grid-column: 1 / -1; font-size: var(--hud-min); text-align: center; color: rgba(242, 239, 232, 0.7); }
+.hvv-targets {
+  position: absolute;
+  z-index: 2;
+  left: 16px;
+  top: calc(var(--nav-h, 64px) + 150px);
+  display: grid;
+  gap: 0.4rem;
+  width: min(240px, 46vw);
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--glass);
+  pointer-events: none;
+}
+.hvv-target { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.15rem 0.5rem; margin: 0; }
+.hvv-target > i { grid-row: span 2; width: 1rem; height: 1rem; border-radius: 50%; border: 3px solid var(--side); box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.55), inset 0 0 0 8px var(--side); }
+.hvv-target span { font-size: var(--hud-min); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--side); }
+.hvv-target b { grid-column: 2; font-size: 0.85rem; font-weight: 600; }
+.hvv-target em { grid-column: 1 / -1; display: block; height: 4px; border-radius: 2px; background: rgba(0, 0, 0, 0.5); overflow: hidden; }
+.hvv-target em i { display: block; height: 100%; background: var(--side); transition: width 0.15s linear; }
+.hvv-targets .assault-score { display: flex; align-items: baseline; gap: 0.4rem; margin: 0; }
+.hvv-targets .assault-score b { font: 600 1.05rem/1 ui-monospace, monospace; }
+.hvv-targets .assault-score span { font-size: 0.72rem; color: rgba(242, 239, 232, 0.7); }
+.hvv-you-target { margin: 0; font-size: 0.78rem; font-weight: 600; color: #ffd36a; animation: chase-warn 0.8s ease-in-out infinite alternate; }
+.hvv-out {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 38%;
+  transform: translateX(-50%);
+  padding: 0.6rem 1.1rem;
+  border: 1px solid rgba(255, 120, 90, 0.6);
+  border-radius: 8px;
+  background: var(--glass);
+  text-align: center;
+  pointer-events: none;
+}
+.hvv-out p { margin: 0 0 0.2rem; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #ff9a7a; }
+.hvv-out b { font: 600 2rem/1 ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .hvv-score, .blast-score { top: calc(var(--nav-h, 64px) + 56px); padding: 0.4rem 0.6rem; }
+  .hvv-targets { top: calc(var(--nav-h, 64px) + 140px); padding: 0.45rem 0.6rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hvv-targets .assault-score { display: flex; align-items: baseline; gap: 0.4rem; margin: 0; }
+.hvv-targets .assault-score b { font: 600 1.05rem/1 ui-monospace, monospace; }
+.hvv-targets .assault-score span { font-size: 0.72rem; color: rgba(242, 239, 232, 0.7); }
+.hvv-you-target { animation: none; }
+}
+
 /* who you play as, and what's in your hand (HeroPanel.jsx): the tabs at the
+/* who you play as, and what's in your hand (DeployPanel.jsx): the tabs at the
    top and Equip at the bottom stay put, the list between them scrolls. (Each
    rule under .surface-heroes, over .surface-list's own for its spans, lists
    and buttons.) */
@@ -773,6 +854,9 @@
 .surface-heroes .surface-hero-lean { display: flex; align-items: baseline; gap: 0.35rem; font-size: 0.66rem; line-height: 1.3; color: rgba(242, 239, 232, 0.6); }
 .surface-heroes .surface-hero-lean::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: #6ab8ff; transform: translateY(-1px); }
 .surface-heroes .surface-hero-lean[data-lean='dark']::before { background: #ff5a4a; }
+/* a hero not on the game's rig yet (heroes.js's soon): dimmed, with why */
+.surface-heroes .surface-hero[data-soon] { opacity: 0.55; }
+.surface-heroes .surface-hero-soon { font-size: 0.66rem; line-height: 1.3; color: #ffd27a; }
 .surface-saber { margin-top: 0.4rem; }
 .surface-heroes-body .surface-list-title { margin: 0.9rem 0 0.45rem; }
 .surface-swatches { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
@@ -979,3 +1063,31 @@
 .surface-heroes .surface-stats { display: flex; flex-wrap: wrap; gap: 0.15rem 0.6rem; margin-top: 0.2rem; font-size: 0.66rem; font-variant-numeric: tabular-nums; color: rgba(242, 239, 232, 0.65); }
 .surface-heroes .surface-stats i { font-style: normal; }
 .surface-heroes .surface-mods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
+
+/* the 2017 game's icons (GameIcon.jsx, src/lib/bf2017/icons.js) beside the
+   things it has: the guns, the heroes' weapons, their abilities */
+.surface-game-icon {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.2em;
+  margin-right: 0.3em;
+  fill: currentColor;
+  color: inherit;
+}
+.surface-game-icon.is-arm {
+  width: 3em;
+  height: 0.9em;
+  vertical-align: -0.1em;
+}
+.surface-power .surface-game-icon {
+  width: 1.4em;
+  height: 1.4em;
+  margin: 0;
+}
+/* the ability buttons in the game's own HUD faces (src/lib/bf2017/fonts.css):
+   Univers Condensed for their words, RaxusPrime for the cooldown's seconds */
+.surface-power span { font-family: var(--font-bf-hud, inherit); letter-spacing: 0.08em; }
+.surface-power small { font-family: var(--font-bf-numerals, inherit); font-variant-numeric: tabular-nums; }
+/* the hero on the game's hero-select stage, in the Outfit tab (HeroStage.jsx) */
+.surface-hero-stage { display: block; width: 100%; aspect-ratio: 4 / 3; max-height: 42vh; margin: 0 0 0.6rem; border-radius: 8px; background: #05070c; touch-action: pan-y; cursor: grab; }

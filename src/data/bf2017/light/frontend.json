@@ -1,0 +1,98 @@
+{
+ "world": "frontend",
+ "map": "levels/frontend/frontend",
+ "main": "sunny",
+ "sky": {
+  "main": "Levels/Frontend/Lighting/VE_FrostEnd",
+  "overrides": []
+ },
+ "weathers": {
+  "sunny": {
+   "sun": {
+    "color": [
+     0,
+     0,
+     0
+    ],
+    "lux": 0.1,
+    "az": 204.064,
+    "el": 19.756
+   },
+   "sky": {
+    "luminance": 15,
+    "sunSize": 0.002,
+    "panorama": "shaders/T_DefaultBlack_C",
+    "gradient": "shaders/T_DefaultBlack_C"
+   },
+   "fog": {
+    "start": 10,
+    "end": 500,
+    "curve": [
+     -2.8357296,
+     3.30028915,
+     0.7341604,
+     0.0565035343
+    ],
+    "heightDepth": 50,
+    "heightRange": 750,
+    "scatter": [
+     44.6786652,
+     40.7860832,
+     36.84552
+    ]
+   },
+   "tonemap": {
+    "compensation": -0.35,
+    "minEV": 8,
+    "maxEV": 8,
+    "bloom": 0.192960843
+   },
+   "grading": {
+    "contrast": 1,
+    "lut": "textures/galaxy/bf2017/light/frontend/sunny.lut.png",
+    "lutSize": 17
+   },
+   "wind": {
+    "dir": 146.25,
+    "strength": 0.2
+   },
+   "enlighten": {
+    "sky": [
+     2.22921133,
+     2.74099517,
+     3.54636669
+    ],
+    "ground": [
+     0.0494334623,
+     0.0494334623,
+     0.0494334623
+    ]
+   },
+   "source": [
+    "Levels/Frontend/Lighting/VE_FrostEnd"
+   ],
+   "probe": {
+    "id": "45fdca51",
+    "variant": "Lighting",
+    "zenith": [
+     27.144,
+     23.447,
+     24.033
+    ],
+    "horizon": [
+     73.824,
+     37.334,
+     32.16
+    ],
+    "ground": [
+     2.271,
+     1.894,
+     2.066
+    ],
+    "open": 0.54,
+    "url": "textures/galaxy/bf2017/light/frontend/sunny"
+   }
+  }
+ },
+ "indoor": null
+}

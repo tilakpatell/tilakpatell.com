@@ -10,8 +10,15 @@ const made = vi.hoisted(() => ({ n: 0 }));
 vi.mock('./crew', () => ({
   crewFigure: async (kind) => {
     if (!['tusken', 'vader'].includes(kind)) return null;
-    const { meshyRig } = await import('../../../lib/three/meshyRig.fixture');
     const { modelFigureOf } = await vi.importActual('./actors');
+    // (Vader on the game's rig: the only figure that fences)
+    if (kind === 'vader') {
+      const { walrusFigure } = await import('./walrusFigure.fixture');
+      const w = (await walrusFigure()).fig;
+      const fig = modelFigureOf(w.model, { animations: Object.values(w.clips), anim: { idle: 'idle', walk: 'walk', run: 'run' }, seed: ++made.n });
+      return { ...fig, tall: 1.8, bones: w.bones, sockets: w.sockets, rig: 'walrus', clips: w.clips };
+    }
+    const { meshyRig } = await import('../../../lib/three/meshyRig.fixture');
     const rig = meshyRig();
     const fig = modelFigureOf(rig.model, { animations: Object.values(rig.clips), anim: { idle: 'idle', walk: 'walk', run: 'run' }, seed: ++made.n });
     return { ...fig, tall: 1.8, bones: rig.bones };
@@ -193,8 +200,8 @@ describe('a hostile’s body in the world', () => {
     const v = out('vader', { hostile: { range: 16, chase: 2, melee: true, reach: 2.6, every: 1.5, damage: 16, parry: 0.8, guard: 4, blade: { color: '#ff3b3b' } } });
     await settle(v);
     expect(v.debug()[0].body.gun).toBe('saber:hand');
-    const hand = v.targets[0].blade.gun.parent;
-    expect(hand.isBone && hand.name).toBe('RightHand');
+    // (in the game's weapon socket)
+    expect(v.targets[0].blade.gun.parent).toBe(v.targets[0].blade.gp.socket);
     // it fences you (duellists.js): closes from 12 m, circles at its reach, strokes; nothing lands on the decision
     const seen = new Set();
     const fought = run(v, { x: 0, y: 0, z: 0 }, 0, 8, () => seen.add(v.debug()[0].body.duel)).shots;
@@ -214,6 +221,33 @@ describe('a hostile’s body in the world', () => {
     const { events } = run(s, { x: 0, y: 0, z: 0 }, 3, 0.4);
     expect(events.some((e) => e.type === 'kill')).toBe(true);
     s.dispose();
+  });
+
+  it('hands the camera’s position (update’s eye) to a duellist’s blade, standing and going down', async () => {
+    const v = out('vader', { hostile: { range: 16, chase: 2, melee: true, reach: 2.6, every: 1.5, damage: 16, blade: { color: '#ff3b3b' } } });
+    await settle(v);
+    const blade = v.targets[0].blade;
+    const pose = vi.spyOn(blade, 'pose');
+    const down = vi.spyOn(blade, 'out');
+    const eye = new THREE.Vector3(0, 1.6, -3);
+    const you = { x: 0, y: 0, z: 0 };
+    v.update(DT, you, 0, { eye });
+    expect(pose.mock.calls.at(-1)[2].eye).toBe(eye);
+    v.kill('foe');
+    v.update(DT, you, DT, { eye });
+    expect(down.mock.calls.at(-1)[2].eye).toBe(eye);
+    v.dispose();
+  });
+
+  it('raises a duellist’s block on the side of it your stroke comes in on (duellists.js’s blockSide)', async () => {
+    const v = out('vader', { hostile: { range: 16, chase: 2, melee: true, reach: 2.6, every: 1.5, damage: 16, parry: 1, blade: { color: '#ff3b3b' } } });
+    await settle(v);
+    const block = vi.spyOn(v.targets[0].blade, 'block');
+    // (you 2 m before it, facing it, cutting from your right: its left)
+    const you = { x: 0, y: 0, z: 10, yaw: 0 };
+    for (let i = 0; i < 3; i++) v.update(DT, you, i * DT, { swinging: { contact: [0.3, 0.5], t: i * DT, speed: 1, cut: 'right', yaw: 0 } });
+    expect(block).toHaveBeenLastCalledWith(true, 'left');
+    v.dispose();
   });
 });
 

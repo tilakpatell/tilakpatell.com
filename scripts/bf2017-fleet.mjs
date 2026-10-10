@@ -51,6 +51,11 @@ export const FLEET = [
   ['trifighter', 0, 'galaxy-trifighter', { kind: 'trifighter' }],
   ['cloudcar', -Math.PI / 2, 'galaxy-cloudcar', { kind: 'cloudcar' }],
   ['nebulon', 0, 'galaxy-nebulon', { name: 'objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh', as: 'the Nebulon-B frigates', cut: 2 }],
+  // (lane Q: a capital the space levels assemble from its kit, at the fleet's
+  // cut: scripts/bf2017-space.mjs --fleet; `turn` brings the kit's nose, along
+  // its −z as the game's capitals are, to +z)
+  ['lucrehulk', 0, 'galaxy-lucrehulk', { space: 'naboo', model: 'naboo-lucrehulk', as: 'the Lucrehulk-class droid control ships', turn: Math.PI }],
+  ['lightcruiser', -Math.PI / 2, 'galaxy-lightcruiser', { space: 'fondor', model: 'fondor-arquitens', as: 'the Arquitens-class light cruisers', turn: Math.PI }],
 ];
 
 // the turn a file is written with so that the row's `nose` turn brings it
@@ -66,6 +71,11 @@ async function io() {
 // the source file: a surface kind's light cut, or the drop's model imported
 // at its cut into lab/ (the import's own scratch: its row and credit go there)
 async function source([file, , , from]) {
+  if (from.space) {
+    const out = join(ROOT, 'lab/bf2017-fleet', `${file}.glb`);
+    execFileSync('node', ['scripts/bf2017-space.mjs', from.space, '--fleet', from.model, '--out', out], { cwd: ROOT, stdio: 'inherit' });
+    return { path: out, title: `${from.as} (${from.model}: its kit as the space level places it)`, as: from.as, turn: from.turn };
+  }
   if (from.kind) return { path: join(ROOT, 'public/models/galaxy/surface', `${from.kind}.lod1.glb`), title: SURFACE_FROM(from.kind), as: null };
   const out = join(ROOT, 'lab/bf2017-fleet', file.replace('/', '-'));
   await mkdir(out, { recursive: true });
@@ -92,7 +102,8 @@ export async function writeFleet(rows) {
     }
     const doc = await reader.read(src.path);
     const scene = doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0];
-    const turn = doc.createNode('nose').setRotation(writtenTurn(nose));
+    // (a kit's own nose turned to +z first, then the row's)
+    const turn = doc.createNode('nose').setRotation(writtenTurn(nose + (src.turn ?? 0)));
     for (const child of scene.listChildren()) {
       scene.removeChild(child);
       turn.addChild(child);

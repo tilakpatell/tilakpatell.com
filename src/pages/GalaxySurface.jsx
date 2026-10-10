@@ -9,7 +9,7 @@ import { useAchievements } from '../components/Achievements';
 import Comms from '../components/universe/Comms';
 import Online from '../components/universe/online/Online';
 import { useOnline } from '../components/universe/online/useOnline';
-import { parseSystem, systemById } from '../components/galaxy/systems';
+import { eraOf, parseSystem, systemById } from '../components/galaxy/systems';
 import { galaxyCrew } from '../components/galaxy/lines';
 import { LANDABLE, siteOf, withDistrict } from '../components/galaxy/surface/sites';
 import { surfaceUrl } from '../components/galaxy/surface/catalog';
@@ -26,9 +26,17 @@ import { thud } from '../lib/sfx';
 import { createImpacts } from '../lib/impact';
 import ChaseHud from '../components/galaxy/surface/ChaseHud';
 import AssaultHud from '../components/galaxy/surface/AssaultHud';
-import HeroPanel from '../components/galaxy/surface/HeroPanel';
+import HvvHud from '../components/galaxy/surface/HvvHud';
+import BlastHud from '../components/galaxy/surface/BlastHud';
+import DeployPanel from '../components/galaxy/surface/DeployPanel';
+import { ABILITIES, abilitiesOf } from '../components/galaxy/surface/abilityRules';
+import { GameIcon } from '../runtime/hud';
 import { HERO_KEY, heroById, heroSpec, loadoutLine, readHero, writeHero } from '../components/galaxy/heroes';
+import { standInLine } from '../components/galaxy/surface/standIn';
 import { missionOf } from '../components/galaxy/surface/missions';
+import { missionForMode } from '../components/galaxy/surface/modes';
+import { useModeMenu } from '../components/galaxy/surface/useModeMenu';
+import ModeMenu from '../components/galaxy/surface/ModeMenu';
 import { sideFor, warSideOf } from '../components/galaxy/surface/missions/assault';
 import { SIDE_KEY, current as currentOath, readAllegiance, swear } from '../components/galaxy/allegiance';
 import { GCW, campaignAt, scoresAt } from '../components/galaxy/gcw';
@@ -57,6 +65,8 @@ const bumpLaw = createImpacts();
 
 const LANDED_KEY = 'tp-galaxy-landed'; // the worlds you've set foot on
 const CLIMB = 3400; // ms of the climb out seen before space takes over: the ship lifting, then shooting up under the sky's glare (surface.css .surface-exit rises from 2.5 s to here)
+// the mission kinds fought as a battle, each with its own HUD (AssaultHud, HvvHud, BlastHud)
+const BATTLES = new Set(['assault', 'hvv', 'blast']);
 export const MISSIONS_KEY = 'tp-galaxy-missions'; // { 'system/id': { t, stars } }: your best at each mission played down on a world
 
 // the emote wheel's slices, by name (lib/emote.js's EMOTES, clockwise from the top)
@@ -82,13 +92,13 @@ export default function GalaxySurface() {
   // (the way back up: the galaxy page's code comes ahead, so the route changes under the glare at once)
   useEffect(() => void import('./Galaxy').catch(() => {}), []);
   const id = parseSystem(useParams().system);
-  // a mission played down here (?mission=chase): you start in it; another of
-  // the game's maps on this world (?district=jabba: sites/index.js's districts)
+  // a mission played down here (?mission=chase, or the mode it is: ?mode=galacticAssault, modes.js): you start in it;
+  // another of the game's maps on this world (?district=jabba: sites/index.js's districts)
   const [params] = useSearchParams();
   const district = params.get('district');
   const site = useMemo(() => (id ? withDistrict(siteOf(id), district) : null), [id, district]);
   const sys = systemById(id);
-  const mission = useMemo(() => missionOf(id, params.get('mission')), [id, params]);
+  const mission = useMemo(() => missionOf(id, params.get('mission') ?? missionForMode(id, params.get('mode'))), [id, params]);
   const missionKey = mission ? `${id}/${mission.id}` : null;
   // the scene's view of it, as the page needs it (how it stands, the count,
   // the scouts left, the result: these change now and then); the clock and
@@ -119,6 +129,8 @@ export default function GalaxySurface() {
   const heroNow = useRef(hero);
   heroNow.current = hero;
   const worn = useRef(hero);
+  const saidStood = useRef(new Set()); // (the stand-ins already told of)
+  const [stood, setStood] = useState(null); // (and the one on now, for the deploy screen's note)
   const pickHero = (next) => {
     setHero(next);
     local.set(HERO_KEY, writeHero(next));
@@ -154,6 +166,8 @@ export default function GalaxySurface() {
   const posted = useRef(false);
   const build = useMemo(() => (ship && readHulls(local.get(HULL_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]);
   const tune = useMemo(() => (ship && readTunes(local.get(TUNE_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]); // (the crew's own ship, tuned: its parts must still be ones its plant runs)
+  // (the hero's two abilities by id, for the game's icons on the HUD's buttons)
+  const powerIds = useMemo(() => abilitiesOf(hero ? heroSpec(hero) : null), [hero]);
   const loadout = useMemo(() => loadoutOf(readLoadouts(local.get(LOADOUT_KEY), CREWS.map((c) => c.id)), ship, unlocked, build, tune), [ship, unlocked, build, tune]);
   // online: the other pilots down here with you
   const online = useOnline();
@@ -163,6 +177,12 @@ export default function GalaxySurface() {
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
   const [found, setFound] = useState(() => readFound()[id] ?? []);
   const [phase, setPhase] = useState('landing');
+  // what to play, asked once you're down (modes.js, ModeMenu.jsx)
+  const modes = useModeMenu({ system: id, phase, named: Boolean(params.get('mode') || params.get('mission')) });
+  const playMode = (card, option = null) => {
+    modes.setOpen(false);
+    if (card.id !== 'free') navigate(option?.to ?? card.to);
+  };
   const [prompt, setPrompt] = useState(null);
   const [here, setHere] = useState(null);
   const [talk, setTalk] = useState(null); // { who, text, voice?, n }
@@ -394,7 +414,7 @@ export default function GalaxySurface() {
       }
       else if (e.type === 'down') {
         // (in a battle the HUD's deploy card says it)
-        if (mission?.kind === 'assault') return;
+        if (BATTLES.has(mission?.kind)) return;
         setToast((t) => ({ title: 'Knocked down', text: 'Back on your feet. Try that again.', n: (t?.n ?? 0) + 1 }));
         later('toast', 3500, () => setToast(null));
       } else if (e.type === 'zone') {
@@ -457,13 +477,23 @@ export default function GalaxySurface() {
       } else if (e.type === 'hero') {
         // a pick on in the world, or one that wouldn't load (back to what was on)
         const now = heroNow.current;
+        const name = (h) => heroById(h.id)?.name ?? '';
+        if (e.ok) setStood(e.stoodIn ?? null);
+        // (on, in another body than the game's: said once a hero, standIn.js)
+        const standIn = e.ok && e.stoodIn && !saidStood.current.has(`${e.who}:${e.stoodIn}`) ? standInLine(heroById(e.who)?.name ?? '', e.stoodIn) : null;
+        if (standIn) {
+          saidStood.current.add(`${e.who}:${e.stoodIn}`);
+          worn.current = now;
+          setToast((t) => ({ title: name(now), text: standIn, kind: 'equipped', n: (t?.n ?? 0) + 1 }));
+          later('toast', 4200, () => setToast(null));
+          return;
+        }
         if (e.ok && writeHero(now) === writeHero(worn.current)) return; // (what was on, back on)
         if (e.ok) worn.current = now;
         else {
           setHero(worn.current);
           local.set(HERO_KEY, writeHero(worn.current));
         }
-        const name = (h) => heroById(h.id)?.name ?? '';
         setToast((t) => (e.ok ? { title: name(now), text: loadoutLine(now), kind: 'equipped', n: (t?.n ?? 0) + 1 } : { title: name(now), text: `Didn’t load. Still ${name(worn.current)}: try again in a moment.`, kind: 'failed', n: (t?.n ?? 0) + 1 }));
         later('toast', 3200, () => setToast(null));
       }
@@ -548,10 +578,12 @@ export default function GalaxySurface() {
       </div>
 
       {/* the quest you're on, and the things to do here */}
-      {mission && mission.kind !== 'assault' && <ChaseHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onAgain={() => view.current?.input?.('restart')} onBack={takeOff} />}
+      {mission && !BATTLES.has(mission.kind) && <ChaseHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onAgain={() => view.current?.input?.('restart')} onBack={takeOff} />}
       {mission?.kind === 'assault' && <AssaultHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onSide={onAssaultSide} sworn={sworn} onDeploy={(id) => view.current?.input?.('deploy', id)} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
+      {mission?.kind === 'hvv' && <HvvHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} hero={hero?.id} onSide={(k) => view.current?.input?.('side', k)} onDeploy={() => view.current?.input?.('deploy')} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
+      {mission?.kind === 'blast' && <BlastHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onSide={(k) => view.current?.input?.('side', k)} onDeploy={(pid) => view.current?.input?.('deploy', pid)} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
 
-      {phase !== 'landing' && site.quests.length > 0 && !((mission?.kind === 'chase' || mission?.kind === 'assault') && chase && !chase.result) && (
+      {phase !== 'landing' && site.quests.length > 0 && !((mission?.kind === 'chase' || BATTLES.has(mission?.kind)) && chase && !chase.result) && (
         <div className={quest ? 'surface-quest surface-quest-on' : 'surface-quest'}>
           {quest ? (
             <>
@@ -599,7 +631,7 @@ export default function GalaxySurface() {
           <span style={{ width: `${health}%` }} />
         </div>
       )}
-      {/* the fight: the guard a Jedi's block spends (or a gun's heat), the abilities and their cooldowns, who you're squared up to */}
+      {/* the fight: the stamina a Jedi's block and strikes spend (the game's: lib/combat/saber2017.js) or a gun's heat, the abilities and their cooldowns, the dodge's charges, who you're squared up to */}
       {combat && phase === 'walk' && (aiming || combat.lock || combat.broken || combat.locked || (combat.heat ?? 0) > 0.02 || (combat.guard ?? 1) < 0.99) && (
         <div className="surface-combat" aria-live="off">
           {combat.lock && (
@@ -612,9 +644,9 @@ export default function GalaxySurface() {
             </p>
           )}
           {combat.saber ? (
-            <div className={combat.broken ? 'surface-meter surface-guard is-broken' : 'surface-meter surface-guard'} role="meter" aria-label="Guard" aria-valuenow={Math.round((combat.guard ?? 1) * 100)} aria-valuemin={0} aria-valuemax={100}>
-              <span style={{ width: `${(combat.guard ?? 1) * 100}%` }} />
-              <b>{combat.broken ? 'Guard broken' : combat.stance}</b>
+            <div className={combat.broken ? 'surface-meter surface-guard is-broken' : 'surface-meter surface-guard'} role="meter" aria-label="Stamina" aria-valuenow={Math.round((combat.stamina ?? combat.guard ?? 1) * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <span style={{ width: `${(combat.stamina ?? combat.guard ?? 1) * 100}%` }} />
+              <b>{combat.broken ? 'Out of stamina' : combat.stance}</b>
             </div>
           ) : (
             <div className={combat.locked ? 'surface-meter surface-heat is-locked' : combat.hot ? 'surface-meter surface-heat is-hot' : 'surface-meter surface-heat'} role="meter" aria-label="Heat" aria-valuenow={Math.round((combat.heat ?? 0) * 100)} aria-valuemin={0} aria-valuemax={100}>
@@ -626,16 +658,17 @@ export default function GalaxySurface() {
           )}
           <ul className="surface-powers">
             {[
-              ['G', combat.powers?.power ?? (combat.saber ? 'Push' : 'Detonator'), 'power'],
-              ['V', combat.powers?.second ?? (combat.saber ? 'Pull' : 'Overcharge'), 'second'],
-              ['X', 'Dodge', 'dodge'],
+              ['G', combat.powers?.power ?? (combat.saber ? 'Push' : 'Detonator'), 'power', powerIds.power],
+              ['V', combat.powers?.second ?? (combat.saber ? 'Pull' : 'Overcharge'), 'second', powerIds.second],
+              ['X', combat.dashes != null ? `Dodge ×${combat.dashes}` : 'Dodge', 'dodge'],
               ['B', 'Emote', 'emote'],
-            ].map(([key, name, slot]) => {
+            ].map(([key, name, slot, ability]) => {
               const left = combat.cool?.[slot] ?? 0;
               const full = combat.cools?.[slot] ?? 1;
               return (
                 <li key={slot} className={left > 0 ? 'surface-power is-cooling' : 'surface-power'} style={{ '--k': left > 0 ? left / full : 0 }}>
                   <kbd>{key}</kbd>
+                  {ability && ABILITIES[ability]?.name === name && <GameIcon name={`ability:${ability}`} className="surface-game-icon" />}
                   <span>{name}</span>
                   {left > 0.05 && !(slot === 'power' && combat.powers?.hold) && <small>{left.toFixed(left < 10 ? 1 : 0)}</small>}
                 </li>
@@ -655,7 +688,7 @@ export default function GalaxySurface() {
       <Reticle
         className="surface-reticle"
         state={reticleState(null, {
-          gun: ((aiming || quest?.shoot || (combat && !combat.saber)) && phase === 'walk') || (mission?.kind === 'chase' && chase && !chase.result && phase === 'ride') || (mission?.kind === 'assault' && chase?.phase === 'run' && chase.you?.up && phase === 'walk'),
+          gun: ((aiming || quest?.shoot || (combat && !combat.saber)) && phase === 'walk') || (mission?.kind === 'chase' && chase && !chase.result && phase === 'ride') || (BATTLES.has(mission?.kind) && !(mission.kind === 'hvv' && combat?.saber) && chase?.phase === 'run' && chase.you?.up && phase === 'walk'),
           sights: Boolean(combat?.ads && !combat.saber && phase === 'walk'),
           hitAt: hitMark ? 0 : null,
           lock: combat?.lock,
@@ -723,6 +756,7 @@ export default function GalaxySurface() {
           Back to orbit
         </button>
         <Menu className="surface-menu" todo={site.quests.length > 0 ? { onOpen: () => setList(true), done: done.length, total: site.quests.length } : null} way={wayOut(pathname)}>
+          <MenuItem onClick={() => modes.setOpen(true)}>Change mode</MenuItem>
           {looking && looking.mode !== 'touch' && (
             <MenuItem keep onClick={() => view.current?.input?.('lookMode', looking.mode === 'lock' ? 'drag' : 'lock')}>
               Look: {looking.mode === 'lock' ? 'Click to lock' : 'Drag'}
@@ -731,7 +765,8 @@ export default function GalaxySurface() {
         </Menu>
         <ModelCredits where="galaxy-surface" only={kinds} className="surface-credits-corner" />
       </div>
-      {picking && <HeroPanel hero={hero} onChange={pickHero} onClose={() => setPicking(false)} />}
+      {modes.open && !picking && <ModeMenu place={sys.name} cards={modes.cards} onPick={playMode} onDeploy={() => setPicking(true)} onClose={() => modes.setOpen(false)} ask={modes.ask} onAsk={modes.setAsk} />}
+      {picking && <DeployPanel hero={hero} onChange={pickHero} onClose={() => setPicking(false)} system={id} era={eraOf(sys)} stoodIn={stood} />}
       {crew && talkCrew && <Comms control={comms} crew={talkCrew} reduced={reduced} />}
       {!leaving && <Online online={online} ship={ship} />}
       <div className="surface-fade" aria-hidden="true" />

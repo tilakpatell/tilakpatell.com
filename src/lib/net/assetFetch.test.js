@@ -170,6 +170,8 @@ describe('the site’s asset pool', () => {
     const p = pool.fetch('/x', { signal: ctrl.signal, bytes: 4 }).then(got);
     await tick();
     expect(pool.progress().inFlight).toBe(1);
+    // (and which file it is, for a loading screen to name)
+    expect(pool.progress().waiting).toMatchObject({ url: '/x' });
     ctrl.abort();
     await expect(p).rejects.toMatchObject({ name: 'AbortError' });
     expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
@@ -178,6 +180,7 @@ describe('the site’s asset pool', () => {
     await tick();
     expect(got).not.toHaveBeenCalled();
     expect(pool.progress().inFlight).toBe(0);
+    expect(pool.progress().waiting).toBeNull();
   });
 
   it('keeps a shared request going while one caller still wants it', async () => {

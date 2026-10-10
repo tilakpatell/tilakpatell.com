@@ -34,7 +34,7 @@ vi.mock('../lib/three/light/passes.js', () => ({
   }),
 }));
 
-const { buildPostProcessing, createWebGPU } = await import('./webgpu');
+const { adapterLimits, buildPostProcessing, createWebGPU, RAISED_LIMITS } = await import('./webgpu');
 
 const fakeCanvas = () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() });
 
@@ -116,5 +116,18 @@ describe('buildPostProcessing', () => {
     expect(chain.pipeline.render).toHaveBeenCalledTimes(1);
     post.dispose();
     expect(chain.dispose).toHaveBeenCalled();
+  });
+});
+
+describe('adapterLimits', () => {
+  it('asks for the adapter’s own values of the limits a chain can exceed', async () => {
+    const gpu = { requestAdapter: async () => ({ limits: { maxColorAttachmentBytesPerSample: 128, maxColorAttachments: 8, maxStorageBuffersPerShaderStage: 10, maxBindGroups: 4 } }) };
+    expect(await adapterLimits(gpu)).toEqual({ maxColorAttachmentBytesPerSample: 128, maxColorAttachments: 8, maxStorageBuffersPerShaderStage: 10 });
+    expect(RAISED_LIMITS).toContain('maxColorAttachmentBytesPerSample');
+  });
+  it('is nothing without WebGPU, an adapter, or when the adapter throws', async () => {
+    expect(await adapterLimits(undefined)).toBeUndefined();
+    expect(await adapterLimits({ requestAdapter: async () => null })).toBeUndefined();
+    expect(await adapterLimits({ requestAdapter: async () => { throw new Error('no'); } })).toBeUndefined();
   });
 });

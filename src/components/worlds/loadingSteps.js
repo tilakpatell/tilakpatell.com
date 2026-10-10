@@ -19,3 +19,14 @@ export function throttled(set) {
     set(shown);
   };
 }
+
+// What a veil says once one step has held (the flow design's decision 8):
+// after WAIT_SAY ms, what it's waiting for (the file a fetch is stuck on, by
+// its name, or the step); after WAIT_SKIP ms, a way in anyway.
+export const WAIT_SAY = 10000;
+export const WAIT_SKIP = 20000;
+const fileName = (url) => String(url).split(/[?#]/)[0].split('/').filter(Boolean).pop() ?? '';
+export function waitingLine(step, file = null) {
+  const name = file ? fileName(file) : '';
+  return name ? `Waiting for ${name}` : `Still ${(STEP_WORDS[step] ?? STEP_WORDS.load).toLowerCase()}`;
+}

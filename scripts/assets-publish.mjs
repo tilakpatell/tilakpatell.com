@@ -1,8 +1,9 @@
 // The site's game-derived files to the public bucket `site-assets`, by
 // content hash, and the manifest that says so (src/data/galaxyAssets.json).
 // The files are what the 2017 pipeline made (scripts/bf2017-import.mjs: a
-// kind's GLB and its .lod1, .far and .ultra cuts, credited to the game, and
-// the clip packs under models/galaxy/bf2017/); nothing raw from the drop is
+// kind's GLB and its .lod1, .far and .ultra cuts, credited to the game, the
+// clip packs under models/galaxy/bf2017/, and the films scripts/bf2017-ui.mjs
+// cuts under films/bf2017/); nothing raw from the drop is
 // ever published, and nothing from Meshy, Sketchfab or Quaternius (those stay
 // committed). Each goes to `<hash12>/<path>` once, with a year's cache and
 // its content type; a hash the bucket already holds is not sent
@@ -42,7 +43,7 @@ export const BUCKET = 'site-assets';
 // hash is what makes the file immutable. (A HEAD there always says
 // no-cache, so assets-check.mjs asks for one byte instead.)
 export const CACHE = 'max-age=31536000';
-const TYPES = { ...KINDS, '.json': 'application/json', '.bin': 'application/octet-stream' };
+const TYPES = { ...KINDS, '.json': 'application/json', '.bin': 'application/octet-stream', '.webm': 'video/webm' };
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const mb = (n) => `${(n / 1e6).toFixed(1)} MB`;

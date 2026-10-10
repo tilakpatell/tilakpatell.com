@@ -13,6 +13,17 @@
 //   r: solid to here (0: the nebula, flown through); reach: at it within this
 // createFinds({ store }) → { found(sysId), has(sysId, id), mark(sysId, id) → new?, count(sysId) → { found, of }, total() }
 // readFound(string) → { sysId: [ids] }, believed only in shape
+//
+// And the game's space levels (lane Q: scripts/bf2017-space.mjs), set
+// pieces of a system that has one: SB_Endor_01's fleet over Endor, the
+// Fondor dry docks, SB_Kamino_01's Republic fleet, the droid battleship's
+// blockade at Naboo. SPACE_LEVELS: where each level's middle sits, set
+// clear of the places (which are as they were: a system without a level
+// keeps its set pieces as they are). Its hulls are backdrop, never the war's
+// ships: drawn by galaxy/spacePieces.js, not models.js's slots.
+// piecesFor(sysId) → Promise<[{ model, kind, at (the system's), quaternion,
+//   scale, track?, url, far, size, as }]> ([] where there's no level)
+// spaceGoals(sysId) → [{ id, name, hint, at, r: 0, reach, goal: true }]
 
 import { SYSTEMS, hazardsOf } from './systems';
 
@@ -34,8 +45,13 @@ export const PLACE_KINDS = {
   beacon: { r: 0.8, reach: 8, hint: 'A beacon', names: ['A navigation beacon', 'A hyperspace marker buoy', 'A smugglers’ beacon'] },
   outpost: { r: 5, reach: 14, hint: 'An outpost', names: ['A refuelling outpost', 'A listening post', 'An abandoned mining platform'] },
   nebula: { r: 0, reach: 40, hint: 'A nebula', names: ['A pocket of nebula', 'A drift of glowing gas', 'The remains of a nova'] },
+  // (a space level's, never drawn by placesOf: SPACE_LEVELS's)
+  capital: { r: 0, reach: 30, hint: 'A fleet', names: ['A fleet at anchor'], level: true },
+  dock: { r: 0, reach: 40, hint: 'A shipyard', names: ['An orbital dry dock'], level: true },
+  platform: { r: 0, reach: 40, hint: 'A platform', names: ['A platform in orbit'], level: true },
+  backdrop: { r: 0, reach: 60, hint: 'A battlefield', names: ['What a battle left'], level: true },
 };
-const KINDS = Object.keys(PLACE_KINDS);
+const KINDS = Object.keys(PLACE_KINDS).filter((k) => !PLACE_KINDS[k].level);
 
 // a seeded random sequence (rocks.js's)
 const rng = (seed) => {
@@ -83,6 +99,37 @@ export function placesOf(sys) {
   cache.set(sys.id, out);
   return out;
 }
+
+// the game's space levels: each one's middle in its system (clear of the
+// system's places, its moment and its planet: places.test.js holds it), how
+// far its pieces reach about it, and what it's called
+export const SPACE_LEVELS = {
+  endor: { at: [-1000, 60, 500], r: 65, name: 'The Imperial fleet over Endor, as Battlefront II has it' },
+  fondor: { at: [1000, 0, -800], r: 47, name: 'The Fondor shipyards’ dry docks' },
+  kamino: { at: [1000, 40, 600], r: 65, name: 'The Republic fleet over Kamino, as Battlefront II has it' },
+  naboo: { at: [-1150, 0, -750], r: 267, name: 'The Separatist blockade, its droid control ship and the Republic come for it' },
+};
+// (where the files are: published, src/data/galaxyAssets.json)
+export const SPACE_DIR = '/models/galaxy/space/';
+const PACKS = import.meta.glob('../../data/galaxy/space/*.json', { import: 'default' });
+
+export async function piecesFor(sysId) {
+  const level = SPACE_LEVELS[sysId];
+  const load = level && PACKS[`../../data/galaxy/space/${sysId}.json`];
+  if (!load) return [];
+  const pack = await load();
+  return pack.pieces
+    .filter((p) => pack.models[p.model])
+    .map((p) => {
+      const m = pack.models[p.model];
+      return { ...p, at: p.at.map((v, k) => v + level.at[k]), url: m.url, far: m.far ?? null, size: m.size, as: m.as };
+    });
+}
+
+export const spaceGoals = (sysId) => {
+  const level = SPACE_LEVELS[sysId];
+  return level ? [{ id: 'space-level', name: level.name, hint: 'Battlefront II', kind: 'level', at: [...level.at], r: 0, reach: Math.min(60, level.r * 0.6), goal: true }] : [];
+};
 
 // what's been found, read from the store (its JSON, or what that parsed
 // to, as lib/hooks's local.get gives it): { sysId: [ids] }, or nothing

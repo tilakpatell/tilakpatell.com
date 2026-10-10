@@ -157,6 +157,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
       jump: (id) => view.current?.jump?.(id) ?? false,
       goTo: (id) => view.current?.goTo?.(id) ?? false,
       flyTo: (id) => view.current?.flyTo?.(id) ?? false, // (another pilot here: the roster's “Fly to”)
+      starfighter: (id, o) => view.current?.starfighter?.(id, o) ?? false, // (a space level's Starfighter Assault here: ?battle=starfighter)
       escape: () => view.current?.escape?.() ?? false,
       dive: () => view.current?.dive?.() ?? false,
       host: () => host.current,

@@ -9,8 +9,9 @@
 // when it came in and played once: lib/emote.js); an older pilot's, without
 // them, walks as it always did.
 //
-// createPeers({ parent, placer, getCast, rides?, models? }) → { update(net, siteId, dt),
-// dispose() }
+// createPeers({ parent, placer, getCast, rides?, models? }) → { update(net, siteId, dt, eye),
+// dispose() } (eye: the camera's position, their lit blades' light out past
+// 12 m of it: saberLight.js)
 
 import * as THREE from 'three';
 import { PARTY, loadPartyFigure } from '../../universe/footScene';
@@ -152,7 +153,7 @@ export function createPeers({ parent, placer, getCast, rides: RIDES = GALAXY_RID
 
   return {
     group,
-    update(net, siteId, dt) {
+    update(net, siteId, dt, eye = null) {
       const now = performance.now();
       const live = new Set();
       for (const p of net?.peers?.values?.() ?? []) {
@@ -214,9 +215,9 @@ export function createPeers({ parent, placer, getCast, rides: RIDES = GALAXY_RID
                 if (s.arms?.swing && (!wk.swung || (s.arms.stroke && s.arms.stroke !== wk.stroke))) wk.saber.swing(now / 1000, { clip: s.arms.stroke ?? null });
                 wk.swung = Boolean(s.arms?.swing);
                 wk.stroke = s.arms?.stroke ?? null;
-                wk.saber.update(dt, now / 1000, { forward: fwd, up: UP, me: { x: wk.st.x, z: wk.st.z, yaw: wk.st.yaw }, targets: [] });
+                wk.saber.update(dt, now / 1000, { forward: fwd, up: UP, me: { x: wk.st.x, z: wk.st.z, yaw: wk.st.yaw }, targets: [], eye });
               }
-            }
+            } else wk.saber?.dark(); // (put away to ride: its light goes)
           }
         });
         for (let i = want.length; i < e.walkers.length; i++) {

@@ -1,0 +1,34 @@
+{
+  "size": "1600x900",
+  "adapter": "system",
+  "rows": [
+    {
+      "leg": "webgpu",
+      "tier": "ultra",
+      "post": true,
+      "backend": "webgpu",
+      "clustered": true,
+      "passes": [
+        "render",
+        "ssgi",
+        "ao",
+        "ssr",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "lut",
+        "traa",
+        "output"
+      ],
+      "shot": "hoth-fixed-ssgi-webgpu.png",
+      "meanLum": 0.6167,
+      "envDiff": 8.75,
+      "programsBefore": 82,
+      "programsAfter": 82,
+      "frames": 40,
+      "mean": 4.8,
+      "median": 4,
+      "p95": 7.1
+    }
+  ]
+}

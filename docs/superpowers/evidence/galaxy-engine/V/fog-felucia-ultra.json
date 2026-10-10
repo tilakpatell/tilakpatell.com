@@ -1,0 +1,35 @@
+{
+  "size": "1600x900",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": false,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "volumes",
+        "fog",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "smaa",
+        "output"
+      ],
+      "shot": "fog-felucia-ultra-webgl.png",
+      "volumesLit": 1,
+      "envDiff": 0.65,
+      "programsBefore": 82,
+      "programsAfter": 82,
+      "frames": 5,
+      "mean": 1083.4,
+      "median": 33.7,
+      "p95": 5282.2
+    }
+  ]
+}

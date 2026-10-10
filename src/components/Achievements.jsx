@@ -271,6 +271,8 @@ export const ACHIEVEMENTS = {
   starmapride: { name: 'The way to Ezra', desc: 'Raced the spires to the old tower on Lothal and kept the star map' },
   dagobahraise: { name: 'Size matters not', desc: 'Ran Dagobah’s swamp with Yoda on your back, faced the cave and raised the X-wing' },
   galacticassault: { name: 'Galactic assault', desc: 'Won a battle for the command posts on Hoth, Geonosis, Scarif or Endor' },
+  heroesvsvillains: { name: 'Heroes vs Villains', desc: 'Brought down ten of the other side’s targets in a hero arena on Hoth, Endor, Tatooine, Geonosis or Kashyyyk' },
+  blast: { name: 'Blast', desc: 'Got your side to a hundred kills first on a level’s own team-deathmatch ground' },
   canyonmission: { name: 'Faster than Biggs', desc: 'Ran Beggar’s Canyon both ways against the clock on Tatooine' },
   firsttransport: { name: 'The first transport is away', desc: 'Loaded the first transport off Hoth and cleared its way with the ion cannon' },
   sanctuary: { name: 'Sanctuary', desc: 'Held the krill farmers’ village on Sorgan against the raiders and their AT-ST' },

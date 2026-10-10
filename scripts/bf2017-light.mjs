@@ -6,7 +6,11 @@
 //       [--main <VE name>] [--also <VE name>,…]
 //     e.g. hoth --map levels/mp/hoth_01/hoth_01 --indoor 9c323d00
 //   --main: the level's sky when its map names none out of doors (Kamino's
-//   storm, the Death Star's space); --also: weathers the map does not name
+//   storm, the Death Star's space); --also: weathers the map does not name;
+//   --with: records of the main weather's own the game blends with it (a
+//   space level splits one storm over two: Kamino's VE_Kamino_Stormy_SB_01
+//   its sky, fog and tonemap, VE_SB_Kamino_Stormy_02 its sun and fill),
+//   merged into it in order
 //
 // Writes src/data/bf2017/light/<world>.json (one entry a weather the level
 // has: the record's sun, sky, fog, exposure, grading, wind and bounce, and
@@ -96,11 +100,16 @@ const record = async (name) => {
   if (!raw) console.log(`  missing: data/${name}.json.gz`);
   return raw ? readVE(toComponents(raw)) : null;
 };
-const mainRead = await record(main);
+let mainRead = await record(main);
 if (!mainRead) process.exit(1);
+const blended = (opt('with') ?? '').split(',').filter(Boolean);
+for (const w of blended) {
+  const r = await record(w);
+  if (r) mainRead = mergeVE(mainRead, r);
+}
 const mainWeather = weatherKey(main) ?? 'sunny';
 // (each its own copy: the LUT's path is written into each below)
-const weathers = { [mainWeather]: structuredClone({ ...mainRead, source: [main] }) };
+const weathers = { [mainWeather]: structuredClone({ ...mainRead, source: [main, ...blended] }) };
 for (const o of overrides) {
   const r = await record(o);
   const w = weatherKey(o);

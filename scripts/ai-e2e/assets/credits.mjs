@@ -59,7 +59,9 @@ export function audit(root) {
   const manifest = join(root, 'src/data/galaxyAssets.json');
   const published = existsSync(manifest) ? JSON.parse(readFileSync(manifest, 'utf8')) : {};
   const there = (file) => existsSync(join(root, file)) || Boolean(published[file.replace(/^public\//, '')]);
-  const dead = all.filter((c) => (c.file ? !there(c.file) : !files.some((f) => covers(c, f))));
+  // (a folder credited whole may be all published: the space levels' models)
+  const shipped = [...files, ...Object.keys(published).map((k) => `public/${k}`)];
+  const dead = all.filter((c) => (c.file ? !there(c.file) : !shipped.some((f) => covers(c, f))));
   const uncredited = files.filter((f) => f.startsWith('public/models/') && f.endsWith('.glb') && !all.some((c) => covers(c, f)));
   return { dead, uncredited };
 }

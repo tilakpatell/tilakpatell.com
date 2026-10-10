@@ -11,7 +11,7 @@
 //
 // createAssetFetch({ fetch, size, retries, waits, timeout, sleep })
 //   → { fetch(url, { priority, signal, bytes }) → Promise<ArrayBuffer>,
-//       progress() → { bytes, total, inFlight, queued }, abortAll(), resize(n) }
+//       progress() → { bytes, total, inFlight, queued, waiting: { url, ms } | null (the request running longest) }, abortAll(), resize(n) }
 //   a 404 rejects at once with { status: 404, missing: true }; an abort with
 //   an AbortError; anything else after three retries (0.5, 1, 2 s; a 429's
 //   Retry-After over the schedule) with the last reason
@@ -169,6 +169,7 @@ export function createAssetFetch({ fetch = globalThis.fetch?.bind(globalThis), s
       const entry = queue.shift();
       active++;
       entry.running = true;
+      entry.since = Date.now();
       run(entry).finally(() => {
         if (!entry.running) return;
         entry.running = false;
@@ -203,7 +204,11 @@ export function createAssetFetch({ fetch = globalThis.fetch?.bind(globalThis), s
         pump();
       });
     },
-    progress: () => ({ bytes: count.bytes, total: count.total, inFlight: active, queued: queue.length }),
+    progress: () => {
+      let waiting = null;
+      for (const e of entries.values()) if (e.running && (!waiting || e.since < waiting.since)) waiting = e;
+      return { bytes: count.bytes, total: count.total, inFlight: active, queued: queue.length, waiting: waiting ? { url: waiting.url, ms: Date.now() - waiting.since } : null };
+    },
     abortAll() {
       for (const entry of [...entries.values()]) cancel(entry);
     },

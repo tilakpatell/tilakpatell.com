@@ -7,7 +7,7 @@
 // (scripts/bf2017-level.mjs) fetches, reads files and writes them.
 //
 //   readMap(json, bin) → { instances, meshOf, groups, meshes, subworlds, terrain, sky, vehicleSpawns }
-//   mainSubs(map), arenaOf(map, { subs }) → instance indices
+//   mainSubs(map), arenaOf(map, { subs, drop }) → instance indices
 //   subset(instances, indices), rebase(instances, origin, yaw) → instances in the site's frame
 //   packCell(cell, instances) → { bin, draws }
 //   terrainFrame(record), heightsLayer(record, png) → the record's frame; an image layer
@@ -71,11 +71,29 @@ export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunn
 // their bind pose (the site's own people do the living)
 export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|invalidatelightplane|mistplane|lightcone/i;
 
-export function arenaOf(map, { subs = null } = {}) {
+// `drop`: meshes left out, each `<mesh name>` or `<sub>:<mesh name>` (its
+// file's last part without `_mesh.glb`, any case; `*` for any run of
+// letters): a space level's corvettes the battle draws itself, its end of
+// round's room
+const dropTest = (drop) => {
+  const rules = drop.map((d) => {
+    const [sub, mesh] = d.includes(':') ? d.split(':') : [null, d];
+    return { sub: sub?.toLowerCase() ?? null, re: new RegExp(`^${mesh.toLowerCase().replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`) };
+  });
+  return (sub, file) => {
+    const name = last(file).replace(/_mesh\.glb$/, '');
+    return rules.some((r) => (!r.sub || r.sub === sub) && r.re.test(name));
+  };
+};
+
+export function arenaOf(map, { subs = null, drop = [] } = {}) {
   const want = new Set((subs ?? mainSubs(map)).map(last));
+  const dropped = dropTest(drop);
   const out = [];
   for (const g of map.groups) {
-    if (!want.has(last(map.subworlds[g.sub])) || g.kind === 'actor' || NEVER.test(map.meshes[g.mesh]?.file ?? '')) continue;
+    const sub = last(map.subworlds[g.sub]);
+    const file = map.meshes[g.mesh]?.file ?? '';
+    if (!want.has(sub) || g.kind === 'actor' || NEVER.test(file) || dropped(sub, file)) continue;
     for (let i = 0; i < g.count; i++) out.push(g.first + i);
   }
   return out.sort((a, b) => a - b);
@@ -235,9 +253,9 @@ function farList(inst, meshOf, cell) {
   return { bin, draws };
 }
 
-export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false }) {
+export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false }) {
   // (a mesh the bucket has not got, or sequel-era, draws nothing: its instances go)
-  const idx = arenaOf(map, { subs }).filter((i) => !meshes[map.meshOf[i]].missing);
+  const idx = arenaOf(map, { subs, drop }).filter((i) => !meshes[map.meshOf[i]].missing);
   const all = rebase(subset(map.instances, idx), [spot[0], groundY, spot[1]], yaw);
   const meshOfAll = Int32Array.from(idx.map((i) => map.meshOf[i]));
   // (under the ground: the base inside the glacier, which no one outside can

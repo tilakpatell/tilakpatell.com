@@ -1,0 +1,45 @@
+{
+  "size": "1600x900",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": false,
+      "backend": "nodes-webgl",
+      "clustered": false,
+      "passes": [],
+      "shot": "particles-lit-ultra-webgl.png",
+      "parity": {
+        "frames": 120,
+        "emitters": [
+          "em_snow_fallingrocks_dust_thin_hoth",
+          "em_impact_blaster_snow_plume"
+        ],
+        "live": 1160,
+        "agree": 1,
+        "worstMetres": 0.00006103515627842171,
+        "backend": "nodes-webgl"
+      },
+      "simMode": "cpu",
+      "stats": {
+        "kinds": 6,
+        "instances": 14,
+        "running": 14,
+        "beyond": 0,
+        "culled": 0,
+        "drawn": 22,
+        "dispatches": 0,
+        "declined": 0,
+        "unknown": 0
+      },
+      "envDiff": 14.16,
+      "programsBefore": 128,
+      "programsAfter": 128,
+      "frames": 5,
+      "mean": 2953.1,
+      "median": 2963.7,
+      "p95": 3007.1
+    }
+  ]
+}

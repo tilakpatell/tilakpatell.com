@@ -1,0 +1,57 @@
+{
+  "size": "1600x900",
+  "adapter": "system (d3d11)",
+  "rows": [
+    {
+      "leg": "webgpu",
+      "tier": "high",
+      "post": true,
+      "backend": "webgpu",
+      "clustered": true,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "ssr",
+        "bloom",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "laptop-post-high-webgpu.png",
+      "envDiff": 2.72,
+      "programsBefore": 79,
+      "programsAfter": 79,
+      "frames": 208,
+      "mean": 5.4,
+      "median": 5.5,
+      "p95": 6.6
+    },
+    {
+      "leg": "webgl",
+      "tier": "high",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": false,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "bloom",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "laptop-post-high-webgl.png",
+      "envDiff": 3.52,
+      "programsBefore": 66,
+      "programsAfter": 66,
+      "frames": 585,
+      "mean": 6.6,
+      "median": 5.4,
+      "p95": 14
+    }
+  ]
+}

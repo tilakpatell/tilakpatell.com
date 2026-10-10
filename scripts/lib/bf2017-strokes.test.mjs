@@ -3,11 +3,22 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { DIRS } from '../../src/components/galaxy/surface/combatRules.js';
-import { GENERIC, classify, clipOf, emitterOf, measure, rigOf, rodOf, tableFor } from './bf2017-strokes.mjs';
+import { WAYS } from '../../src/components/galaxy/surface/stanceFromTable.js';
+import { BLOCK_AT } from '../../src/components/galaxy/surface/saberRules.js';
+import { GENERIC, HELD, classify, clipOf, emitterOf, measure, rigOf, rodOf, sourceName, strokeSide, tableFor } from './bf2017-strokes.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// (the fixtures: Luke's first strike and Obi-Wan's fourth, the socket's chain only: Reference → … → Spine2 → Wep_Root)
+// (the fixtures: Luke's first and second strikes and Obi-Wan's fourth, and two blocks, Obi-Wan's SwingLeft_03 and
+// Luke's SwingRight_01 (the cinematics' skeleton's), the socket's chain only: Reference → … → Spine2 → Wep_Root)
+
+describe('a pack clip’s source', () => {
+  // (today's packs hold the bare game name; the first ones the credit's spelling)
+  it('reads the game’s name in either spelling', () => {
+    expect(sourceName('A_Luke_AttackLoop_Strike1')).toBe('A_Luke_AttackLoop_Strike1');
+    expect(sourceName('Star Wars Battlefront II (2017): A_Luke_AttackLoop_Strike1')).toBe('A_Luke_AttackLoop_Strike1');
+    expect(sourceName(undefined)).toBe(null);
+  });
+});
 
 describe('a 2017 clip’s name', () => {
   it.each([
@@ -35,12 +46,15 @@ describe('a 2017 clip’s name', () => {
   });
 });
 
-const read = async (file) => {
-  const d = await new NodeIO().readBinary(new Uint8Array(readFileSync(join(HERE, '..', 'fixtures', 'bf2017', 'web', 'anims', 'walrus_humanmale', file))));
+const read = async (file, skel = 'walrus_humanmale') => {
+  const d = await new NodeIO().readBinary(new Uint8Array(readFileSync(join(HERE, '..', 'fixtures', 'bf2017', 'web', 'anims', skel, file))));
   return measure(clipOf(d.getRoot().listAnimations()[0]), rigOf(d));
 };
 const luke = await read('a_luke_attackloop_strike1.glb');
+const luke2 = await read('a_luke_attackloop_strike2.glb');
 const obiwan = await read('a_obiwan_attackloop_strike4.glb');
+const obiBlock = await read('a_obiwan_stand_block_swingleft_03.glb');
+const lukeBlock = await read('a_luke_stand_block_swingright_01.glb', 'walrus_nis_s0800_skeleton');
 
 describe('a strike, measured on the game’s rig', () => {
   const m = luke;
@@ -70,15 +84,66 @@ describe('a strike, measured on the game’s rig', () => {
   });
 
   it('reads the way it cuts and the plane it sweeps from the tip’s path', () => {
-    expect(Object.keys(DIRS)).toContain(m.dir);
+    expect(WAYS).toContain(m.dir);
     expect(m.dir).toBe('right');
     expect(Math.abs(m.plane[1])).toBeGreaterThan(0.9); // (a level cut)
+  });
+
+  // (measured once, the tip less the hips on the root's axes: Luke's second
+  // goes from (0.42, −1.01) in x and z at 0.174 s round the front to
+  // (−1.19, 0.29) at 0.36 s, from his left across to his right, while the
+  // hips turn from 56° to 96° round under it, so on their frame it reads
+  // 'right'; his first comes in from his right on either)
+  it('says the side a cut comes in from on the root’s axes, the line the one it meets stands on', () => {
+    expect(luke2.side).toBe('left');
+    expect(luke2.dir).toBe('right'); // (the way for the keys, on the hips' frame, as it was)
+    expect(m.side).toBe('right');
   });
 
   it('carries the trajectory’s travel as root rows, the way ual-bake writes them', () => {
     expect(m.root[0]).toEqual([0, 0, 0]);
     expect(m.root.at(-1)[2]).toBeCloseTo(2, 1);
     expect(m.duration).toBeGreaterThan(1.5);
+  });
+});
+
+describe('the side a cut comes in from', () => {
+  // (rows as the measure makes them: `rel` the tip less the hips on the root's axes, +x the figure's left)
+  const rows = (...at) => at.map((rel, i) => ({ t: i / 10, rel }));
+
+  it('is the side its tip crosses the front from, in its window', () => {
+    expect(strokeSide(rows([1, 1, -1], [1.2, 1, 0.5], [0, 1, 1.6], [-1.2, 1, 0.3]), [0.1, 0.3])).toBe('left');
+    expect(strokeSide(rows([-1, 1, 0], [0, 1.1, 1], [1, 1.2, 0]), [0, 0.2])).toBe('right');
+  });
+
+  it('is none for a cut that goes more up or down than across', () => {
+    expect(strokeSide(rows([0.3, 1.9, 0.5], [0.1, 1.2, 1], [-0.2, 0.4, 0.8]), [0, 0.2])).toBe(null);
+    expect(strokeSide(rows([0, 0.2, 0.8], [0.3, 1.6, 0.6]), [0, 0.1])).toBe(null);
+  });
+
+  // (Vader's second as measured: the window opens over his shoulder, behind,
+  // and ends low in front; between, the tip comes round his left and down across)
+  it('reads a cut wound up from behind where its tip is before the hips', () => {
+    expect(strokeSide(rows([0.58, 1.03, -0.62], [1.53, 0.47, 0.02], [1.21, -0.38, 0.99], [0.05, -0.82, 1.18]), [0, 0.3])).toBe('left');
+  });
+});
+
+describe('a block, measured on the game’s rig', () => {
+  it('reads a block at the frame the site lays it', () => {
+    expect(HELD).toBe(BLOCK_AT);
+    expect(obiBlock.held.at).toBe(+(obiBlock.duration * HELD).toFixed(3));
+    expect(obiBlock.held.at).toBe(0.373);
+  });
+
+  // (measured once: Obi-Wan's SwingLeft_03 holds the tip at (−0.789, 0.79,
+  // 1.165) from the hips, on his right; Luke's SwingRight_01 at (0.31, 1.495,
+  // 0.184), up on his left. The game's heroes stand side-on, the chest turned
+  // to the figure's left, so most of its blocks hold the blade there,
+  // whatever the name)
+  it('holds the blade on the side the measure says, not the name', () => {
+    expect(obiBlock.held.tip[0]).toBeLessThan(-0.5);
+    expect(lukeBlock.held.tip[0]).toBeGreaterThan(0.2);
+    expect(lukeBlock.held.tip[1]).toBeGreaterThan(1);
   });
 });
 
@@ -95,6 +160,26 @@ describe('the committed tables', () => {
         expect(s.settle, s.name).toBeGreaterThanOrEqual(s.contact[1]);
         expect(s.settle, s.name).toBeLessThanOrEqual(s.duration);
       }
+  });
+
+  it('block a cut with the blocks measured holding the blade on its side, each swing block on one side', () => {
+    const sideOf = (n, t) => (t.held[n].tip[0] >= 0 ? 'left' : 'right');
+    for (const t of tables) {
+      for (const side of ['left', 'right']) for (const n of t.blocks[side]) expect(sideOf(n, t), `${t.hero} ${n}`).toBe(side);
+      // (a swing block sits on the side it was measured on, never on the other: a side with none is the site's block's)
+      for (const n of Object.keys(t.held).filter((k) => classify(k).dir)) {
+        expect(t.blocks[sideOf(n, t)], `${t.hero} ${n}`).toContain(n);
+        expect(t.blocks[sideOf(n, t) === 'left' ? 'right' : 'left'], `${t.hero} ${n}`).not.toContain(n);
+      }
+    }
+  });
+
+  it('say the side each strike, dash and jump comes in from, measured on the root’s axes', () => {
+    for (const t of tables)
+      for (const s of [...t.strikes, t.dash, t.jump].filter(Boolean)) expect(['left', 'right', null], `${t.hero} ${s.name}`).toContain(s.side);
+    const luke = tables.find((t) => t.hero === 'luke');
+    expect(luke.strikes.find((s) => s.name === 'A_Luke_AttackLoop_Strike2').side).toBe(luke2.side);
+    expect(luke.strikes.find((s) => s.name === 'A_Luke_AttackLoop_Strike1').side).toBe('right');
   });
 });
 
@@ -134,13 +219,32 @@ describe('a hero’s table', () => {
     expect(t.strikes.some((s) => /BackToIdle|Vader/.test(s.name))).toBe(false);
   });
 
-  it('blocks either side with the block it has, when it has no side of its own', () => {
+  it('leaves a side with no block measured on it empty, its any apart (the site’s block meets a cut there: blockSide.js)', () => {
     expect(t.blocks).toEqual({
-      left: ['A_Luke_Block_Stagger_01'],
-      right: ['A_Luke_Block_Stagger_01'],
+      left: [],
+      right: [],
       any: 'A_Luke_Block_Stagger_01',
     });
     expect(t.blocked).toHaveLength(6);
+  });
+
+  it('sides its blocks by where each was measured holding the blade, not by the name', () => {
+    const held = (x) => ({ at: 0.3, tip: [x, 1.2, 0.4] });
+    const s = tableFor('luke', [
+      at('A_Luke_Stand_Block_SwingRight_02', { held: held(0.4) }),
+      at('A_Luke_Stand_Block_SwingRight_01', { held: held(0.5) }),
+      at('A_Luke_Stand_Block_SwingLeft_01', { held: held(-0.3) }),
+      at('A_Luke_Stand_Block_SwingLeft_02'), // (never measured: on neither side)
+      at('A_Luke_Block_Stagger_01', { held: held(0.1) }),
+    ]);
+    expect(s.blocks.left).toEqual(['A_Luke_Stand_Block_SwingRight_01', 'A_Luke_Stand_Block_SwingRight_02']);
+    expect(s.blocks.right).toEqual(['A_Luke_Stand_Block_SwingLeft_01']);
+    expect(s.blocks.any).toBe('A_Luke_Block_Stagger_01');
+    expect(s.held['A_Luke_Stand_Block_SwingLeft_01']).toEqual(held(-0.3));
+    expect(Object.keys(s.held)).not.toContain('A_Luke_Stand_Block_SwingLeft_02');
+    // (a side with none of its own is left empty, never padded with the stagger)
+    const one = tableFor('luke', [at('A_Luke_Stand_Block_SwingLeft_01', { held: held(0.2) }), at('A_Luke_Block_Stagger_01')]);
+    expect(one.blocks.right).toEqual([]);
   });
 
   it('fills what the set lacks from the game’s generic humanoid, never another library', () => {
@@ -156,6 +260,17 @@ describe('a hero’s table', () => {
   it('names the dash and the jump attack', () => {
     expect(t.dash.name).toBe('A_Luke_Stand_SaberDash_01');
     expect(t.jump.contact).toEqual([0.2, 0.3]);
+  });
+
+  it('keeps the side each stroke comes in from apart from the way it cuts', () => {
+    const s = tableFor('luke', [
+      at('A_Luke_AttackLoop_Strike2', { dir: 'right', side: 'left' }),
+      at('A_Luke_Stand_SaberDash_01', { side: 'right' }),
+      at('A_Luke_Jump_SaberAttack_Light_FH_01'),
+    ]);
+    expect(s.strikes[0]).toMatchObject({ dir: 'right', side: 'left' });
+    expect(s.dash).toMatchObject({ dir: 'up', side: 'right' });
+    expect(s.jump.side).toBe(null);
   });
 });
 

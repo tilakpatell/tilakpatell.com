@@ -243,6 +243,9 @@ describe('the battle you’re in, in words (WarHud, BattleEnd)', () => {
   it('a stage line: which stage of how many, and your side’s part in it', () => {
     expect(stageLine(fight())).toBe('Stage 1 of 3 · Destroy: Shield generator ×2');
     expect(stageLine(fight({ team: 0, side: 'rebel' }))).toBe('Stage 1 of 3 · Defend: Shield generator ×2');
+    // (a stage with the game's own words: a Starfighter Assault's, named so)
+    expect(battleLine({ kind: 'starfighter', battle: { ...fight().on, attacker: 'empire', defender: 'rebel', fighting: true } }, NOW, 'empire')).toBe('Starfighter Assault: attack · 2:05 left');
+    expect(stageLine(fight({ stage: { index: 0, count: 5, open: true, opensIn: 0, need: 2, title: 'Destroy the corvettes' } }))).toBe('Stage 1 of 5 · Destroy the corvettes · 1 of 2 left');
     expect(stageLine(fight({ stage: { index: 1, count: 3, open: false, opensIn: 70, need: 1 }, objectives: [{ id: 'bridge', name: 'Bridge', type: 'destroy', hp: 300, hpMax: 300, down: false }] }))).toBe('Stage 2 of 3 · Bridge opens in 1:10');
     // (three of four to take, a zone to hold, and the plan's own words for a boarding)
     const sats = [0, 1, 2, 3].map((n) => ({ id: `sat-${n}`, name: 'Shield projector', type: 'group', hp: 93, hpMax: 93, down: false }));

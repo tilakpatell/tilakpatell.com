@@ -1,0 +1,34 @@
+{
+  "size": "1600x900",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": false,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "volumes",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "smaa",
+        "output"
+      ],
+      "shot": "flare-sunny-ultra-webgl.png",
+      "volumesLit": 1,
+      "envDiff": 0.69,
+      "programsBefore": 82,
+      "programsAfter": 82,
+      "frames": 5,
+      "mean": 1009.1,
+      "median": 37.6,
+      "p95": 4862.6
+    }
+  ]
+}

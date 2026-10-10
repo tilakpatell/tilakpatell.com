@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { PLACES, PLACE_KINDS, createFinds, placesOf, readFound } from './places';
+import { PLACES, PLACE_KINDS, SPACE_LEVELS, createFinds, piecesFor, placesOf, readFound, spaceGoals } from './places';
 import { SYSTEMS, hazardsOf, systemById } from './systems';
 import { EDGE } from './space';
 
@@ -52,11 +53,55 @@ describe('placesOf', () => {
   });
   it('spreads the kinds about: every kind turns up somewhere', () => {
     const seen = new Set(SYSTEMS.flatMap((s) => placesOf(s).map((x) => x.kind)));
-    expect([...seen].sort()).toEqual(Object.keys(PLACE_KINDS).sort());
+    expect([...seen].sort()).toEqual(
+      Object.keys(PLACE_KINDS)
+        .filter((k) => !PLACE_KINDS[k].level)
+        .sort(),
+    );
   });
   it('names a derelict after a real ship of its era, never the sequels', () => {
     for (const sys of SYSTEMS) for (const x of placesOf(sys)) expect(x.name).not.toMatch(/Resistance|First Order|Starkiller|Supremacy|Raddus/);
     expect(placesOf(systemById('tatooine')).length).toBe(placesOf(systemById('tatooine')).length);
+  });
+});
+
+describe('the game’s space levels', () => {
+  it('leaves a system with no level as it was (Hoth’s places where they were, no pieces, no goal)', async () => {
+    expect(await piecesFor('hoth')).toEqual([]);
+    expect(spaceGoals('hoth')).toEqual([]);
+    expect(placesOf(systemById('hoth')).map((x) => [x.kind, x.at])).toEqual([
+      ['beacon', [259.1, -118, -666]],
+      ['nebula', [1750.5, -136.9, 844.6]],
+      ['wreck', [-914.6, -137, -1342.4]],
+      ['comet', [1718.1, 19.7, 132.2]],
+      ['outpost', [-1655, 171, 481.9]],
+    ]);
+  });
+  it('sets each level clear of the system’s places, its moment and its planet', () => {
+    for (const [id, level] of Object.entries(SPACE_LEVELS)) {
+      const sys = systemById(id);
+      if (!sys) continue; // (Fondor: a system lane E5 adds)
+      for (const x of placesOf(sys)) expect(dist(x.at, level.at), `${id} ${x.id}`).toBeGreaterThan(level.r + x.reach + PLACES.clear);
+      for (const p of sys.pieces ?? []) if (p.at) expect(dist(p.at, level.at), `${id} ${p.type}`).toBeGreaterThan(level.r + 300);
+      expect(Math.hypot(...level.at)).toBeGreaterThan(PLACES.inner);
+    }
+  });
+  it('places the pieces in the system, the hulls as backdrop of their own (never the war’s slots), each with its file', async () => {
+    for (const id of ['endor', 'kamino', 'naboo']) {
+      const pieces = await piecesFor(id);
+      expect(pieces.length, id).toBeGreaterThan(3);
+      const level = SPACE_LEVELS[id];
+      for (const p of pieces) {
+        expect(['capital', 'dock', 'station', 'backdrop', 'rock']).toContain(p.kind);
+        expect(p.url).toMatch(/^\/models\/galaxy\/space\/[a-z0-9-]+\.glb$/);
+        if (p.kind !== 'backdrop') expect(dist(p.at, level.at), `${id} ${p.model}`).toBeLessThan(level.r + 1);
+      }
+      expect(pieces.some((p) => p.kind === 'capital')).toBe(true);
+      // (the level's reach as its pack measures it)
+      const pack = JSON.parse(readFileSync(new URL(`../../data/galaxy/space/${id}.json`, import.meta.url), 'utf8'));
+      expect(level.r, id).toBeGreaterThanOrEqual(pack.radius);
+      expect(spaceGoals(id)[0]).toMatchObject({ id: 'space-level', goal: true, r: 0 });
+    }
   });
 });
 

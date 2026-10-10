@@ -155,6 +155,11 @@ describe('a 2017 figure on a skeleton of its own', () => {
     await expect(loadOwnRigBody('/rock.glb', { rig: 'b1', loader: loaderOfFiles(statue) })).rejects.toThrow(/no skeleton/);
   });
 
+  it('refuses a rig whose pack isn’t there yet, so the kind is skipped, never a statue in its bind pose (Review Focus 5)', async () => {
+    const body = { '/sneep.glb': { scene: droidBody(), animations: [] } };
+    await expect(loadOwnRigBody('/sneep.glb', { rig: 'sneep', loader: loaderOfFiles(body) })).rejects.toThrow(/no clips/);
+  });
+
   it('is handed the droids the walrus loader refuses: a row says which', async () => {
     // (the game's humanoid loader will not take a body without Wep_Root and the rest)
     await expect(loadWalrusBody('/b1.glb', { packs: [], loader: loaderOfFiles(files) })).rejects.toThrow(/not on the game's skeleton/);

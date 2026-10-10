@@ -1,0 +1,107 @@
+{
+  "source": "hand",
+  "mode": "starfighter",
+  "level": "Levels/Space/SB_Kamino_01/SB_Kamino_01",
+  "attackers": "dark",
+  "notes": "NOTES.md says how each id was chosen. The phases are the level's own (Venator Bridges, Cruisers, Venator Returns); the last is two stages by its strings (3: the engines, 3_A: the beam weapon). Hand: which tower is Bridge A and B, which engine is A and B, the gates, the hp and the droid bomber flights' times.",
+  "origin": [-466, -383, -1390],
+  "sides": { "1": "republic", "2": "separatists" },
+  "hides": [],
+  "area": {
+    "source": "hand",
+    "why": "the level is fought low over Tipoca City in the storm, not in orbit: an area of its own, its sky the level's panorama (Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Panoramic_C), its sea under the city's stilts (the export has no water: the endless pillars run from -1,090 m down past -2,400 m)",
+    "radius": 9000,
+    "sea": -1400,
+    "sky": { "url": "/models/galaxy/bf2017/levels/sb_kamino/sky.webp", "gain": 1.35 },
+    "light": "sb_kamino",
+    "lightWhy": "the space level's own VisualEnvironments (light/sb_kamino.json: VE_Kamino_Stormy_SB_01 its sky, fog and tonemap, VE_SB_Kamino_Stormy_02 its sun, blended): the sun at 216.2 deg, 20.6 deg up, the fog's distance from its curve, no grade",
+    "fill": { "sun": [1, 0.971, 0.914], "sky": [0.318, 0.341, 0.4], "ground": [0.05, 0.05, 0.05], "why": "VE_SB_Kamino_Stormy_02's OutdoorLightComponentData as stored (its SunColor, SkyColor, GroundColor are not among its overrides: the only fill the storm's records carry)" },
+    "probe": "kamino",
+    "probeWhy": "the space level's one probe (164727d2, Art_Lighting) sees a black sky: the shine is multiplayer Kamino's stormy probe",
+    "fog": { "color": "#203343", "density": 0.00018, "sea": "#2a3a44", "deep": "#0b141a", "why": "the colour the level's own fog gradient (T_Kamino_Stormy_02_Fog_C) has at its horizon, at the sky dome's gain; the density the record's (0.000223 a metre) where it gives one, this the fallback" }
+  },
+  "ships": [
+    { "id": "venator-return", "team": 1, "kind": "venator", "role": "flagship", "name": "Venator star destroyer", "placed": "venatorstardestroyer_hull_01#1" },
+    { "id": "venator", "team": 1, "kind": "venator", "role": "escort", "name": "Venator star destroyer", "placed": "venatorstardestroyer_hull_01#0" },
+    { "id": "cruiser-a", "team": 1, "kind": "corvette", "role": "escort", "name": "Republic cruiser", "placed": "jedicruiser_hull_01#0", "length": 318 },
+    { "id": "cruiser-b", "team": 1, "kind": "corvette", "role": "escort", "name": "Republic cruiser", "placed": "jedicruiser_hull_01#1", "length": 318 },
+    { "id": "cruiser-c", "team": 1, "kind": "corvette", "role": "escort", "name": "Republic cruiser", "placed": "jedicruiser_hull_01#2", "length": 318 },
+    { "id": "providence", "team": 2, "kind": "providence", "role": "flagship", "name": "Providence-class dreadnought", "placed": "providenceclassdreadnaught_01#0" },
+    { "id": "providence-b", "team": 2, "kind": "providence", "role": "escort", "name": "Providence-class dreadnought", "placed": "providenceclassdreadnaught_01#1" },
+    { "id": "providence-c", "team": 2, "kind": "providence", "role": "escort", "name": "Providence-class dreadnought", "placed": "providenceclassdreadnaught_01#2" }
+  ],
+  "fighters": {
+    "1": [
+      { "kind": "arc170", "role": "fighter", "weight": 3 },
+      { "kind": "delta7", "role": "interceptor", "weight": 1.2 },
+      { "kind": "ywing", "role": "bomber", "weight": 1.5 }
+    ],
+    "2": [
+      { "kind": "vulture", "role": "fighter", "weight": 4 },
+      { "kind": "trifighter", "role": "interceptor", "weight": 1.5 },
+      { "kind": "vulture", "role": "bomber", "weight": 1 }
+    ]
+  },
+  "stages": [
+    {
+      "id": "bridges",
+      "phase": "Phase  - Venator Bridges",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_KAMINO_PHASE_1",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_KAMINO_PHASE_1",
+      "title": "Attack the Venator’s bridges",
+      "titleDefend": "Protect the Venator’s bridges",
+      "opensAt": 0,
+      "hp": 220,
+      "objectives": [
+        { "id": "Bridge A", "kind": "bridge", "name": "Venator bridge", "sid": "ID_SPACEBATTLES_OBJ_NAME_VENATOR_BRIDGE", "placed": "venatorcontroltowerleft_healthstate#0" },
+        { "id": "Bridge B", "kind": "bridge", "name": "Venator bridge", "sid": "ID_SPACEBATTLES_OBJ_NAME_VENATOR_BRIDGE", "placed": "venatorcontroltowerright_healthstate#0" }
+      ]
+    },
+    {
+      "id": "cruisers",
+      "phase": "Phase 2 - Cruisers",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_KAMINO_PHASE_2",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_KAMINO_PHASE_2",
+      "title": "Destroy the Republic cruisers",
+      "titleDefend": "Protect the Republic cruisers",
+      "opensAt": 150,
+      "hp": 260,
+      "objectives": [
+        { "id": "Cruiser A", "kind": "corvette", "name": "Republic cruiser", "sid": "ID_SPACEBATTLES_OBJ_NAME_REPUBLIC_CRUISER", "ship": "cruiser-a", "sinks": true },
+        { "id": "Cruiser B", "kind": "corvette", "name": "Republic cruiser", "sid": "ID_SPACEBATTLES_OBJ_NAME_REPUBLIC_CRUISER", "ship": "cruiser-b", "sinks": true },
+        { "id": "Cruiser C", "kind": "corvette", "name": "Republic cruiser", "sid": "ID_SPACEBATTLES_OBJ_NAME_REPUBLIC_CRUISER", "ship": "cruiser-c", "sinks": true }
+      ]
+    },
+    {
+      "id": "engines",
+      "phase": "Phase 3 - Venator Returns",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_KAMINO_PHASE_3",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_KAMINO_PHASE_3",
+      "title": "Attack the Venator’s engines",
+      "titleDefend": "Protect the Venator’s engines",
+      "opensAt": 300,
+      "hp": 240,
+      "objectives": [
+        { "id": "Engine A", "kind": "engines", "name": "Venator engine", "sid": "ID_SPACEBATTLES_OBJ_NAME_VENATOR_ENGINE", "placed": "venatorstardestroyer_enginesleft_healthstate" },
+        { "id": "Engine B", "kind": "engines", "name": "Venator engine", "sid": "ID_SPACEBATTLES_OBJ_NAME_VENATOR_ENGINE", "placed": "venatorstardestroyer_enginesright_healthstate" }
+      ]
+    },
+    {
+      "id": "beam",
+      "phase": "Phase 3 - Venator Returns",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_2_KAMINO_PHASE_3_A",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_1_KAMINO_PHASE_3_A",
+      "title": "Disable the Venator’s beam weapon",
+      "titleDefend": "Protect the Venator’s beam weapon",
+      "opensAt": 420,
+      "hp": 200,
+      "breaks": true,
+      "objectives": [{ "id": "Laser", "kind": "nodule", "name": "Beam weapon", "sid": "ID_SPACEBATTLES_OBJ_NAME_VENATOR_BEAMWEAPON", "placed": "venatorlaserbase_healthstate" }]
+    }
+  ],
+  "bombers": [
+    { "id": "DroidBombers A", "at": 120, "n": 3 },
+    { "id": "DroidBombers B", "at": 330, "n": 3 }
+  ],
+  "camera": { "source": "hand", "why": "the level's intro and outro cameras are Cinematics tracks, not CameraEntityData", "at": [-253, -200, 3900], "look": [-67, -668, 1248] }
+}

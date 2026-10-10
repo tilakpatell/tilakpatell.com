@@ -1,0 +1,61 @@
+{
+  "terrain": "Levels/MP/Hoth_01/Hoth_01_Terrain/Hoth_01_Terrain",
+  "note": "what each paint layer scatters; layer masks (where) are not decoded yet, see maps/README.md",
+  "layers": [],
+  "surfaceShaders": {
+    "defaultterrainsurfaceshader": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowSparkle_03_RGBM"
+    ],
+    "103m_103f__displacement2d__d__0": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRockyPacked_04_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRocky_02_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowPacked_04_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowChunkyWind_01_N"
+    ],
+    "105m_105f__displacement2d__d__0": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRockyPacked_04_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRoughPacked_03_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRocky_02_N"
+    ],
+    "10m_10f__displacement2d__d__0": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRoughPacked_03_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowPacked_04_N"
+    ],
+    "111m_111v__2d__d__0": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowSmoothnessVirtualTexture_01_RGBM",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRockyPacked_04_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRough_03_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowDetail_01_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRoughPacked_03_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRocky_02_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRocky_02_C",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_Snow_02_N",
+      "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_BlackSootMask_01_C",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRocky_04_C",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowPacked_04_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowChunkyWind_01_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowWavey_02_N"
+    ],
+    "128m_128d__3d__d__0": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowPackedSmoothness_01_RGBM",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowSparkle_03_RGBM",
+      "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_BlowingSnowFlowMap_01_C",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowPacked_03_N"
+    ],
+    "121m_121f__displacement2d__d__0": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRockyPacked_04_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowTrampled_01_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRoughPacked_03_N",
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowRocky_02_N",
+      "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_BlackSootMask_01_C"
+    ],
+    "2m_2f__displacement2d__d__0": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowPacked_04_N"
+    ],
+    "3m_3f__displacement2d__d__0": [
+      "Objects/Nature/Arctic/_ArcticBase/_TerrainTextures/T_ArcticBase_SnowPacked_04_N"
+    ]
+  },
+  "meshes": [],
+  "meshesWithoutLayer": []
+}

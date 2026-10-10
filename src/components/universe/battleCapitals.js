@@ -83,6 +83,23 @@ export function layCapitals(k, objectivesOn) {
   });
 }
 
+// the capital ships where a level has them instead (a space level's own,
+// galaxy/surface/missions/starfighter.js): `layout[team][i]` = { at, fwd }
+// for the side's i-th ship, moved and turned there with everything on it,
+// and held there (the fleet's push leaves it be)
+export function placeCapitals(k, layout) {
+  for (const cap of k.b.capitals) {
+    const spot = layout?.[cap.team]?.[k.b.capitals.filter((c) => c.team === cap.team).indexOf(cap)];
+    if (!spot) continue;
+    shiftCapital(cap, v3(spot.at[0] - cap.pos.x, spot.at[1] - cap.pos.y, spot.at[2] - cap.pos.z));
+    const f = norm(v3(...spot.fwd));
+    const ax = cross(cap.fwd, f);
+    const angle = Math.atan2(len(ax), dot(cap.fwd, f));
+    if (angle > 1e-5) turnCapitalBy(cap, len(ax) > 1e-6 ? ax : cap.up, angle);
+    cap.held = true;
+  }
+}
+
 // ── the batteries ──
 const aimAt = v3();
 const tmp = v3();

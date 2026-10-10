@@ -974,6 +974,18 @@ const AS_SET = [
 ];
 export const SYSTEMS = AS_SET.map(fitSystem);
 
+// The 2017 game's Heroes vs Villains and Blast on each world whose level has
+// their grounds (surface/missions/arenas.js's GROUNDS; their rows are
+// missions/index.js's), as two more lines on its briefing.
+export const MODE_WORLDS = ['hoth', 'endor', 'tatooine', 'geonosis', 'kashyyyk'];
+for (const s of SYSTEMS)
+  if (MODE_WORLDS.includes(s.id))
+    s.game.also = [
+      ...(s.game.also ?? []),
+      { id: 'hvv', title: 'Heroes vs Villains', text: 'Four heroes against four villains in the level’s own hero arena. Each side has a target: bring theirs down for a point, keep yours alive. First to ten.', to: `/galaxy/${s.id}/surface?mission=hvv`, go: 'Play it now' },
+      { id: 'blast', title: 'Blast', text: 'Ten a side on the level’s team-deathmatch ground, no posts to take. The first side to a hundred kills wins.', to: `/galaxy/${s.id}/surface?mission=blast`, go: 'Play it now' },
+    ];
+
 const BY_ID = new Map(SYSTEMS.map((s) => [s.id, s]));
 export const systemById = (id) => BY_ID.get(id) ?? null;
 export const parseSystem = (raw) => (typeof raw === 'string' && BY_ID.has(raw) ? raw : null);

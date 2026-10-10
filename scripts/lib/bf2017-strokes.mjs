@@ -2,7 +2,7 @@
 // measured from the game's own clips into a stroke table: each strike in the
 // game's chain with its contact window, the way it cuts and the plane it
 // sweeps, its root travel and its way back to the guard; the blocks by the
-// side they turn a stroke to, the reactions to being blocked, the staggers,
+// side of the figure each holds the blade on, the reactions to being blocked, the staggers,
 // the dodges, the dash and the jump attack, the defeat. The table is data
 // the site's combat rules read (src/components/galaxy/surface/stanceFromTable.js):
 // nothing in it is typed by hand but the generic names a hero's set falls
@@ -24,17 +24,28 @@
 // rule, 0.15 m along +z, does: Luke's Strike1 at [0.05, 0.093]; along the
 // hips' own facing does worse, the game's guard holding them 50° to 170°
 // round). `settle` is when the blade comes to rest after the cut: the game
-// holds the pose there for the chain's next input, so the clip runs on.
+// holds the pose there for the chain's next input, so the clip runs on. A
+// strike's `side` is the side of the striker it comes in from, on the root's
+// axes (the line the one it meets stands on), apart from its `dir` (the way
+// for the keys, read on the hips' facing, which a strike turns as it cuts). A
+// block's side is where it holds the blade at HELD of the clip (the frame
+// the site lays), on the root's axes too: the game's heroes stand side-on,
+// the chest to the figure's left, and most of the blocks named SwingRight
+// hold the blade there too.
 //
 //   classify(name) → { hero, kind, index, variant, dir? }  (kind: strike | return | block | blocked | stagger | dodge |
 //                    dash | jump | force | defeat | locomotion | other)
 //   rigOf(doc) → { scene, objs }: a clip document's skeleton (gltf-transform) as three.js objects at rest
 //   clipOf(anim) → { name, channels, end, traj, extras }: its channels by node name, the trajectory kept apart
-//   measure(clip, rig, { fps, blade, ahead }) → { duration, contact, settle, dir, plane, root, tipPath ([t, x, y, z, ahead?]) }
-//   tableFor(hero, clips) → the stroke table (clips: [{ name, site?, duration?, contact?, dir?, plane?, root? }])
+//   measure(clip, rig, { fps, blade, ahead }) → { duration, contact, settle, dir, side, plane, root, held ({ at, tip: [x, y, z] }:
+//                    the tip at HELD of the clip, less the hips, on the root's axes), tipPath ([t, x, y, z, ahead?]) }
+//   tableFor(hero, clips) → the stroke table (clips: [{ name, site?, duration?, contact?, dir?, side?, plane?, root?, held? }]);
+//                    its blocks { left, right (each only the blocks measured there), any } by the side each holds the
+//                    blade on, held { name: { at, tip } }
+//   strokeSide(rows, window) → 'left' | 'right' | null: the side of the striker a cut comes in from (rows' `rel`)
 //   settleAfter(rows, after, end) → seconds
 //   emitterOf(points, { near }) → { top, bottom }: a hilt's emitters on its axis; rodOf(points) → { radius, from }
-//   AHEAD, BLADE, GENERIC, SETTLE
+//   AHEAD, BLADE, GENERIC, HELD, SETTLE
 
 import * as THREE from 'three';
 import { contactWindow, rootTravel } from '../ual-bake.mjs';
@@ -42,6 +53,7 @@ import { contactWindow, rootTravel } from '../ual-bake.mjs';
 export const BLADE = 1; // metres out of the socket the tip is timed at (ual-bake's: a blade's length)
 export const AHEAD = 0; // metres before the hips (along +z) the tip must be for a frame to count toward the window
 export const SETTLE = 2; // m/s: the tip slower than this for a tenth of a second after the cut is at rest
+export const HELD = 0.32; // of a block clip, where the site holds the raised blade (saberRules.js's BLOCK_AT): the pose its side is read at
 // the game's helpers no measure reads, moved apart from the body: the
 // trajectory carries the figure (root travel, measured on its own), the rest
 // are cameras and targets
@@ -107,6 +119,9 @@ export function classify(name) {
   if (/(Stand_)?(Walk|Run|Sprint|TinySteps|Idle|IdleLoop)|StandTurn|Stand_Turn|Jump_Fwd/.test(rest)) return out('locomotion');
   return out('other');
 }
+
+// a pack's `extras.source`: the bare game name, or the older `… (2017): <name>`
+export const sourceName = (source) => (source ? (/: (.+)$/.exec(source)?.[1] ?? source) : null);
 
 // ── the skeleton and a clip, read ──
 
@@ -202,6 +217,7 @@ function tipRows(clip, rig, { fps, blade, ahead, from = 0 }) {
       hand: tip.toArray(),
       base: base.toArray(),
       body: [rel.dot(left), rel.y, rel.dot(fwd)],
+      rel: rel.toArray(), // (on the root's axes, as `held` is)
       ahead: action.time > from + 1e-6 && rel.z > ahead,
     });
   }
@@ -210,20 +226,48 @@ function tipRows(clip, rig, { fps, blade, ahead, from = 0 }) {
   for (let i = rows.length - 1; i > 0; i--) rows[i].ahead = rows[i].ahead && rows[i - 1].ahead;
   action.stop();
   mixer.uncacheRoot(scene);
-  // (back to rest, so the next clip starts from the skeleton, not this one's end)
+  rest(rig);
+  return rows;
+}
+
+// (back to rest, so the next clip starts from the skeleton, not this one's end)
+function rest({ objs }) {
   for (const [, o] of objs) {
     const r = o.userData.rest;
     o.position.copy(r.p);
     o.quaternion.copy(r.q);
     o.scale.copy(r.s);
   }
-  return rows;
+}
+
+// where a clip holds the blade at `at`: the tip `blade` up the socket, less
+// the hips, on the root's axes (+x the figure's left, +z the way it faces,
+// the line a cut comes in along), not the hips' own, which the game's guard
+// turns 50° to 170° round (and the site turns a figure by its root)
+function heldAt(clip, rig, at, blade) {
+  const tracks = clip.channels
+    .filter((c) => rig.objs.has(c.node))
+    .map((c) => new (c.path === 'rotation' ? THREE.QuaternionKeyframeTrack : THREE.VectorKeyframeTrack)(`${c.node}.${PATHS[c.path]}`, c.times, c.values));
+  const mixer = new THREE.AnimationMixer(rig.scene);
+  const action = mixer.clipAction(new THREE.AnimationClip(clip.name ?? 'm', clip.end, tracks)).play();
+  action.time = Math.min(clip.end, at);
+  mixer.update(0);
+  rig.scene.updateMatrixWorld(true);
+  const wep = rig.objs.get('Wep_Root');
+  const tip = new THREE.Vector3(0, blade, 0)
+    .applyQuaternion(wep.getWorldQuaternion(new THREE.Quaternion()))
+    .add(wep.getWorldPosition(new THREE.Vector3()))
+    .sub(rig.objs.get('Hips').getWorldPosition(new THREE.Vector3()));
+  action.stop();
+  mixer.uncacheRoot(rig.scene);
+  rest(rig);
+  return { at, tip: tip.toArray().map((v) => round(v)) };
 }
 
 const sub = (a, b) => a.map((v, i) => v - b[i]);
 const round = (v, k = 3) => +v.toFixed(k);
 
-// the way a cut goes inside its window, as the site's DIRS name it: down
+// the way a cut goes inside its window, as the stances' ways name it (stanceFromTable.js's WAYS): down
 // from overhead ('up'), up from below ('rise'), or from a side (the
 // figure's own, by the hips' facing, so a strike that turns the body still
 // reads as it cuts: a tip moving to its left cuts from the right)
@@ -233,6 +277,26 @@ export function strokeDir(rows, [t0, t1]) {
   const [dx, dy] = sub(span.at(-1).body, span[0].body);
   if (Math.abs(dy) > Math.abs(dx)) return dy < 0 ? 'up' : 'rise';
   return dx > 0 ? 'right' : 'left';
+}
+
+// the side of the striker a cut comes in from: the tip's travel across its
+// window, less the hips, on the root's axes (the site turns a figure by its
+// root, so the one it meets stands on its +z, and a block's `held` is read
+// on them too), +x its left; none when it goes more up or down than across.
+// Not `dir`'s frame: a strike turns the hips as it cuts (Luke's second, 56°
+// to 96° round in its window, reads 'right' there, though it comes round
+// the front from his left). A cut wound up from behind the shoulder opens its
+// window there and ends it low in front, so its ends read as a drop: then
+// it's read where the tip is before the hips (Vader's first, second and fourth)
+export function strokeSide(rows, [t0, t1], ahead = AHEAD) {
+  const inside = rows.filter((r) => r.t >= t0 && r.t <= t1);
+  const across = (span) => {
+    const [dx, dy] = sub(span.at(-1).rel, span[0].rel);
+    if (Math.abs(dy) > Math.abs(dx)) return null;
+    return dx > 0 ? 'right' : 'left';
+  };
+  const before = inside.filter((r) => r.rel[2] > ahead);
+  return across(inside.length > 1 ? inside : rows) ?? (before.length > 1 ? across(before) : null);
 }
 
 // the plane the blade sweeps in its window: the normal of the turn from
@@ -313,8 +377,10 @@ export function measure(clip, rig, { fps = 30, blade = BLADE, ahead = AHEAD } = 
     contact,
     settle: settleAfter(moving, contact[1], clip.end),
     dir: strokeDir(rows, contact),
+    side: strokeSide(rows, contact),
     plane: sweepPlane(rows, contact),
     root: root && root.map(([t, x, z]) => [round(t), round(x), round(z)]),
+    held: heldAt(clip, rig, round(clip.end * HELD), blade),
     tipPath: rows.map((r) => [round(r.t), ...r.hand.map((v) => round(v)), r.ahead ? 1 : 0]),
   };
 }
@@ -364,6 +430,7 @@ export function tableFor(hero, clips) {
       contact: k.contact ?? null,
       settle: k.settle ?? null,
       dir: k.dir ?? null,
+      side: k.side ?? null,
       plane: k.plane ?? null,
       root: k.root ?? null,
       return: back ? back.k.name : null,
@@ -372,12 +439,16 @@ export function tableFor(hero, clips) {
     };
   });
   const names = (kind, f) => of(kind, f).map(({ k }) => k.name);
-  // a block turns a stroke to one side; a hero without the side blocks with what it has
+  // a block meets a cut on the side of the figure it holds the blade on, as
+  // measured (held: +x its left), never as its name says; a side with none
+  // measured there stays empty (the site's block meets a cut there,
+  // blockSide.js: `any` is mostly the parry's stagger, held low)
   const anyBlock = names('block', (c) => !c.dir)[0] ?? names('block')[0] ?? names('blocked')[0] ?? null;
-  const side = (d) => {
-    const own = names('block', (c) => c.dir === d);
-    return own.length ? own : anyBlock ? [anyBlock] : [];
-  };
+  const sideOf = (k) => (k.held ? (k.held.tip[0] >= 0 ? 'left' : 'right') : null);
+  const side = (d) =>
+    of('block', (c) => c.dir)
+      .filter(({ k }) => sideOf(k) === d)
+      .map(({ k }) => k.name);
   const blocked = [1, 2, 3, 4, 5, 6].map((i) => names('blocked', (c) => c.index === i)[0] ?? names('blocked')[0] ?? anyBlock);
   const staggers = {
     front: names('stagger', (c) => c.dir === 'front'),
@@ -395,6 +466,7 @@ export function tableFor(hero, clips) {
           duration: hit.k.duration ?? null,
           contact: hit.k.contact ?? null,
           dir: hit.k.dir ?? null,
+          side: hit.k.side ?? null,
           root: hit.k.root ?? null,
         }
       : null;
@@ -403,6 +475,7 @@ export function tableFor(hero, clips) {
     hero: low(hero),
     strikes,
     blocks: { left: side('left'), right: side('right'), any: anyBlock },
+    held: Object.fromEntries(of('block').filter(({ k }) => k.held).map(({ k }) => [k.name, k.held])),
     blocked,
     staggers,
     dodges,
