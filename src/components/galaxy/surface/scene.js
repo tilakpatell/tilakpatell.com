@@ -157,6 +157,7 @@ import { gameSite } from '../../../lib/three/gameLight';
 import { gameLightOf } from '../../../data/bf2017/light/index';
 import { createGameLit } from './gameLit';
 import { createPlayerBody } from './playerBody';
+import { segmentRay } from '../../../lib/physics/blast';
 import CAMERAS from '../../../data/bf2017/cameras.json';
 import { createSoldierMemo, soldierPose } from '../../../lib/three/camera/soldier';
 import { zoomLevel } from '../../../lib/three/camera/aim';
@@ -443,7 +444,25 @@ export async function create(canvas, ctx) {
   const shadowPhase = sun.castShadow ? createShadowPhase(scene, sun) : null;
   const placer = createPlacer({ parent: scene, kit, world, warm, shadowOnly: shadowPhase?.only ?? null, seated: amounts.seat, house, kitTint: floraTint(site), models, props: PROPS, scatter: SCATTER });
   // the game's own level, cell by cell round you (lane L; null for a world without one)
-  const gameLevel = createLevel({ scene, site, tier: level, renderer, walk: world });
+  // (its engine, when the pack has the game's shapes and this isn't a phone or
+  // the low tier: the player onto the soldier's body, the bolts onto its ray,
+  // your own capsule left out of it)
+  let levelEngine = null;
+  let takeEngine = null;
+  const gameLevel = createLevel({
+    scene,
+    site,
+    tier: level,
+    renderer,
+    walk: world,
+    small: device().phone,
+    heightAt: (x, z) => world.heightAt(x, z),
+    // (kept till the body below exists: the engine can come during an await before it)
+    onPhysics: (physics) => {
+      levelEngine = physics;
+      takeEngine?.(physics);
+    },
+  });
   // (things that float, a bongo on Lake Paonga, ride the waves: floats.js)
   const floaters = [];
   for (const t of site.things_all) {
@@ -904,6 +923,33 @@ export async function create(canvas, ctx) {
   let bodyPhysics = null;
   let bodyDrives = true;
   let soldierBook = null;
+  // a level's physics engine (or a promise of it): the player onto the 2017
+  // soldier's body (drive: this body steps it; false when its owner does),
+  // the camera's arm through it; null back to the walker
+  async function attachPhysics(physics, { drive = true } = {}) {
+    if (!physics) {
+      body?.dispose();
+      body = null;
+      bodyPhysics = null;
+      if (gameCam) gameCam.rays = null;
+      return;
+    }
+    soldierBook ??= (await import('../../../data/bf2017/physics/soldier.json')).default;
+    if (disposed) return;
+    bodyPhysics = physics;
+    bodyDrives = drive;
+    body = bodyFor(me().st);
+    // (the camera's arm cast through the same world, once it has come)
+    if (gameCam) Promise.resolve(physics).then((p) => bodyPhysics === physics && p && (gameCam.rays = createQueries(p)), () => {});
+  }
+  // the level's engine, when it has come (now, or once it does)
+  takeEngine = (physics) => {
+    if (disposed) return;
+    const ray = segmentRay(physics);
+    world.physicsRay = (a, b, exclude) => ray(a, b, exclude ?? (body?.character ? { body: body.character.body.body } : null));
+    attachPhysics(physics);
+  };
+  if (levelEngine) takeEngine(levelEngine);
   const bodyFor = (st) => {
     body?.dispose();
     return createPlayerBody({ physics: bodyPhysics, state: st, row: soldierBook.rows[soldierBook.default], world, drive: bodyDrives });
@@ -3508,6 +3554,7 @@ export async function create(canvas, ctx) {
     });
   if (import.meta.env.DEV)
     window.__surfaceScene = {
+      physics: () => gameLevel?.stats().physics ?? null,
       scene,
       post,
       renderer,
@@ -3932,22 +3979,7 @@ export async function create(canvas, ctx) {
     // a level's physics engine (or a promise of it), from the level's stream:
     // the player onto the 2017 soldier's body (drive: this body steps it; false
     // when its owner does); null back to the walker
-    async usePhysics(physics, { drive = true } = {}) {
-      if (!physics) {
-        body?.dispose();
-        body = null;
-        bodyPhysics = null;
-        if (gameCam) gameCam.rays = null;
-        return;
-      }
-      soldierBook ??= (await import('../../../data/bf2017/physics/soldier.json')).default;
-      if (disposed) return;
-      bodyPhysics = physics;
-      bodyDrives = drive;
-      body = bodyFor(me().st);
-      // (the camera's arm cast through the same world, once it has come)
-      if (gameCam) Promise.resolve(physics).then((p) => bodyPhysics === physics && p && (gameCam.rays = createQueries(p)), () => {});
-    },
+    usePhysics: (physics, opts) => attachPhysics(physics, opts),
     zone(id = null) {
       const z = id && site.zones.find((o) => o.id === id);
       if (z) enterZone(z);
