@@ -18,8 +18,8 @@ export function useViewport() {
 // its texts by id.
 export function useTree(name, data = null) {
   const viewport = useViewport();
+  // (data goes through its JSON: a fresh object each render must not resolve the tree again)
   const key = JSON.stringify(data);
-  // (data is read through its JSON: a fresh object a render must not resolve the tree again)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(() => screen(name, { viewport, data }), [name, viewport.width, viewport.height, key]);
+  const { width, height } = viewport;
+  return useMemo(() => screen(name, { viewport: { width, height }, data: JSON.parse(key ?? 'null') }), [name, width, height, key]);
 }
