@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { createLevel, levelGround, sunOf } from './index';
+import { createLevel, levelGround, levelPlaced, partOf, sunOf } from './index';
 
 describe('the level’s entry', () => {
   it('leaves a ground without an image layer as it is (every world today)', async () => {
@@ -18,6 +18,12 @@ describe('the level’s entry', () => {
 
   it('is nothing for a site with no level', () => {
     expect(createLevel({ scene: null, site: { id: 'tatooine' }, tier: 'high' })).toBe(null);
+  });
+
+  it('places nothing of a map for a site with no level, and a pack without the part gives the empty one', async () => {
+    expect(await levelPlaced({ id: 'tatooine' })).toEqual({ life: [], rides: [], things: [] });
+    expect(await levelPlaced({ id: 'x', level: 'nowhere' })).toEqual({ life: [], rides: [], things: [] });
+    expect(await partOf('nowhere', 'decals.json', { decals: [] })).toEqual({ decals: [] });
   });
 });
 

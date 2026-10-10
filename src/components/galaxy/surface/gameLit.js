@@ -6,7 +6,7 @@
 //
 //   createGameLit({ light, state, scene, sun, hemi, sky, house, post, … })
 //     → null for a world without a record; else { zone(z), weather(state,
-//       { fade }), step(dt), debug(), dispose() }
+//       { fade }), step(dt), outdoorProbe({ id, url }), debug(), dispose() }
 //
 // One probe alive at a time (probeEnv.js): going in loads the room's and
 // lets the outdoor one go, coming out the other way round. The scene's dome
@@ -98,9 +98,12 @@ export function createGameLit({
   // (each show and regrade asks again; one that lands after a newer ask is late)
   let shown = 0;
   let graded = 0;
+  let override = null; // (the level pack's probe, { id, url })
 
   async function show() {
-    const probe = inZone ? light.indoor : entry?.probe;
+    // (out of doors, the level's own reflection volume where you stand, once
+    // the pack says which: levelProbes.js; the weather's calibration stays)
+    const probe = inZone ? light.indoor : entry?.probe && override ? { ...entry.probe, ...override } : entry?.probe;
     if (!probe?.url) return;
     const share = inZone ? envShare.in : envShare.out;
     const mine = ++shown;
@@ -206,7 +209,13 @@ export function createGameLit({
       }
       if (k >= 1) fade = null;
     },
-    debug: () => ({ weather: Object.keys(light.weathers).find((w) => light.weathers[w] === entry) ?? null, zone: inZone, fading: Boolean(fade), probe: inZone ? light.indoor?.id ?? null : entry?.probe?.id ?? null, sun: +sun.intensity.toFixed(2), exposure: d.exposure }),
+    // the level's reflection volume you stand in (levelProbes.js): shown out of doors
+    outdoorProbe(p) {
+      if (override?.url === p?.url) return;
+      override = p ? { id: p.id, url: p.url } : null;
+      if (!inZone) show();
+    },
+    debug: () => ({ weather: Object.keys(light.weathers).find((w) => light.weathers[w] === entry) ?? null, zone: inZone, fading: Boolean(fade), probe: inZone ? light.indoor?.id ?? null : override?.id ?? entry?.probe?.id ?? null, sun: +sun.intensity.toFixed(2), exposure: d.exposure }),
     dispose() {
       disposed = true;
       holder.dispose();

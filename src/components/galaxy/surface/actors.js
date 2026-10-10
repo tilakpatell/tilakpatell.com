@@ -509,6 +509,7 @@ export async function anyFigure(kind, spec = {}, kit = null, i = 0, models = SUR
 // 1 − e^−(density·d)²): past it a person isn't drawn or moved about in.
 export const fogCutoff = (density) => (density > 0 ? Math.sqrt(-Math.log(0.03)) / density : Infinity);
 const FAR = 60; // metres: past it, a person's legs are moved four frames at a time
+export const PLACED_CUT = 150; // metres: how far a level pack's placed figures are drawn (surface/level, actors.json)
 const LIVELY = 45; // metres: nearer, a person's head turns and its hands go (further, nobody'd see)
 const MINGLE = 70; // metres from you: past it, nobody's company is worked out
 const COMPANY = 70; // seconds for one who likes company to want it from none
@@ -800,7 +801,9 @@ export function createActors({ parent, world, life = [], wants = [], talk = null
         // (lost in the fog: not drawn, and not walked about; they pick up
         // where they were when you come near)
         const d = at ? Math.hypot(at.x - b.x, at.z - b.z) : 0;
-        const culled = d > cut;
+        // (a figure the game's map placed, standing still: drawn out to
+        // PLACED_CUT only, so a battle's worth of them far off costs nothing)
+        const culled = d > (spec.placed ? Math.min(cut, PLACED_CUT) : cut);
         if (culled !== a.culled) {
           a.culled = culled;
           a.holder.visible = !culled && Boolean(a.fig);

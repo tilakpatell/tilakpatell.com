@@ -1,0 +1,81 @@
+http://127.0.0.1:5188/#/galaxy/endor/surface in chrome, in software
+  the world's up in 31 s, 72 figures drawn; settling 4 s
+note: only 16 frames in 70 s (asked for 20): the world drew slowly, or stopped drawing
+#/galaxy/endor/surface: 72 figures in 2 scenes, 1 in view; 17 frames, 70.2 s on the wall, 1.6 s in the world (by the wall clock)
+  drift m/s  left   right  view  playing         figure
+     0.000  0.000  0.000  in    idle 0.18       ewok_01_mesh#9
+     0.000  0.000  0.000  out   idle 0.57       ewok_01_mesh#0
+     0.000  0.000  0.000  out   idle 0.30       ewok_01_mesh#1
+     0.000  0.000  0.000  out   idle 0.46       ewok_01_mesh#2
+     0.000  0.000  0.000  out   idle 0.57       ewok_01_mesh#3
+     0.000  0.000  0.000  out   idle 0.13       ewok_01_mesh#4
+     0.000  0.000  0.000  out   idle 0.57       ewok_01_mesh#5
+     0.000  0.000  0.000  out   idle 0.28       ewok_01_mesh#6
+     0.000  0.000  0.000  out   idle 0.03       ewok_01_mesh#7
+     0.000  0.000  0.000  out   idle 0.76       ewok_01_mesh#8
+     0.000  0.000  0.000  out   idle 0.90       ewok_01_mesh#10
+     0.000  0.000  0.000  out   idle 0.52       ewok_01_mesh#11
+     0.000  0.000  0.000  out   idle 0.57       c3p0_mesh#12
+     0.000  0.000  0.000  out   idle 0.28       imperial_stormtrooper_male_01_mesh#13
+     0.000  0.000  0.000  out   idle 0.56       imperial_stormtrooper_male_01_mesh#14
+     0.000  0.000  0.000  out   idle 0.53       imperial_stormtrooper_male_01_mesh#15
+     0.000  0.000  0.000  out   idle 0.76       GLTF_created_0#16
+     0.000  0.000  0.000  out   idle 0.06       ewok_01_mesh#17
+     0.000  0.000  0.000  out   idle 0.83       ewok_01_mesh#18
+     0.000  0.000  0.000  out   idle 0.07       ewok_01_mesh#19
+     0.000  0.000  0.000  out   idle 0.83       ewok_01_mesh#20
+     0.000  0.000  0.000  out   idle 0.76       ewok_01_mesh#21
+     0.000  0.000  0.000  out   idle 0.97       ewok_01_mesh#22
+     0.000  0.000  0.000  out   idle 0.67       ewok_01_mesh#23
+     0.000  0.000  0.000  out   idle 0.67       imperial_scoutrooper_male_01_mesh#24
+     0.000  0.000  0.000  out   idle 0.74       imperial_scoutrooper_male_01_mesh#25
+     0.000  0.000  0.000  out   idle 0.44       imperial_stormtrooper_male_01_mesh#26
+     0.000  0.000  0.000  out   idle 0.06       imperial_stormtrooper_male_01_mesh#27
+     0.000  0.000  0.000  out   idle 0.89       imperial_stormtrooper_male_01_mesh#28
+     0.000  0.000  0.000  out   idle 0.38       imperial_stormtrooper_male_01_mesh#29
+     0.000  0.000  0.000  out   idle 0.05       imperial_stormtrooper_male_01_mesh#30
+     0.000  0.000  0.000  out   idle 0.69       rebel_pilot_male_02_mesh#31
+     0.000  0.000  0.000  out   idle 0.19       imperial_scoutrooper_male_01_mesh#32
+     0.000  0.000  0.000  out   idle 0.27       imperial_scoutrooper_male_01_mesh#33
+     0.000  0.000  0.000  out   idle 0.08       l_assault_orig_ds_01_mesh#36
+     0.000  0.000  0.000  out   idle 0.93       l_assault_orig_ds_01_mesh#37
+         -      -      -  out   idle 0.11       imperial_scoutrooper_male_01_mesh#34
+         -      -      -  out   idle 0.04       imperial_scoutrooper_male_01_mesh#35
+         -      -      -  out   idle 0.08       ewok_01_mesh#38
+         -      -      -  out   idle 0.57       ewok_01_mesh#39
+         -      -      -  out   idle 0.38       ewok_01_mesh#40
+         -      -      -  out   idle 0.61       ewok_01_mesh#41
+         -      -      -  out   idle 0.76       ewok_01_mesh#42
+         -      -      -  out   idle 0.19       ewok_01_mesh#43
+         -      -      -  out   idle 0.82       ewok_01_mesh#44
+         -      -      -  out   idle 0.27       ewok_01_mesh#45
+         -      -      -  out   idle 0.79       ewok_01_mesh#46
+         -      -      -  out   idle 0.38       ewok_01_mesh#47
+         -      -      -  out   idle 0.19       ewok_01_mesh#48
+         -      -      -  out   idle 0.50       ewok_01_mesh#49
+         -      -      -  out   idle 0.18       ewok_01_mesh#50
+         -      -      -  out   idle 0.64       ewok_01_mesh#51
+         -      -      -  out   idle 0.71       ewok_01_mesh#52
+         -      -      -  out   idle 0.26       ewok_01_mesh#53
+         -      -      -  out   idle 0.15       ewok_01_mesh#54
+         -      -      -  out   idle 0.22       ewok_01_mesh#55
+         -      -      -  out   idle 0.19       ewok_01_mesh#56
+         -      -      -  out   idle 0.84       ewok_01_mesh#57
+         -      -      -  out   idle 0.32       ewok_01_mesh#58
+         -      -      -  out   idle 0.03       ewok_01_mesh#59
+         -      -      -  out   idle 0.62       ewok_01_mesh#60
+         -      -      -  out   idle 0.21       ewok_01_mesh#61
+         -      -      -  out   idle 0.45       ewok_01_mesh#62
+         -      -      -  out   idle 0.95       ewok_01_mesh#63
+         -      -      -  out   idle 0.06       ewok_01_mesh#64
+         -      -      -  out   idle 0.77       ewok_01_mesh#65
+         -      -      -  out   idle 0.32       ewok_01_mesh#66
+         -      -      -  out   idle 0.57       ewok_01_mesh#67
+         -      -      -  out   idle 0.02       ewok_01_mesh#68
+         -      -      -  out   idle 0.83       ewok_01_mesh#69
+         -      -      -  out   idle 0.25       ewok_01_mesh#70
+         -      -      -  out   idle 0.01       ewok_01_mesh#71
+bind pose: 0
+in step: 14 idle [ewok_01_mesh#56, ewok_01_mesh#48]; idle [imperial_stormtrooper_male_01_mesh#29, ewok_01_mesh#47]; idle [ewok_01_mesh#5, ewok_01_mesh#0, ewok_01_mesh#67]; idle [ewok_01_mesh#39, c3p0_mesh#12, ewok_01_mesh#3]; idle [ewok_01_mesh#8, ewok_01_mesh#21]; idle [ewok_01_mesh#18, ewok_01_mesh#20]
+phase spread (1 in unison, 0 spread round): idle ×72 0.06
+ok   every figure in view under 0.15 m/s

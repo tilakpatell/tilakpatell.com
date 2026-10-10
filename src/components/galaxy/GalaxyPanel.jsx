@@ -164,7 +164,7 @@ function Quote({ quote }) {
   );
 }
 
-export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null, onMap, onGo, onLeave, onBoard, onLand, tucked, onTuck, jumping, held = null, balked = false, oath = null, suggested = null, onSwear, found = [] }) {
+export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null, onMap, onGo, onLeave, onBoard, onLand, districts = [], tucked, onTuck, jumping, held = null, balked = false, oath = null, suggested = null, onSwear, found = [] }) {
   const crew = crewById(ship);
   const panel = useRef(null);
   const refocus = useRef(false);
@@ -243,10 +243,17 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
 
       <div className="mt-4 flex flex-wrap gap-2">
         {crew && onLand && (
-          <button type="button" className="btn btn-primary" onClick={onLand}>
+          <button type="button" className="btn btn-primary" onClick={() => onLand()}>
             <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Land on {system.id === 'bespin' ? 'Cloud City' : system.name}
           </button>
         )}
+        {crew &&
+          onLand &&
+          districts.map((d) => (
+            <button key={d.id} type="button" className="btn btn-ghost" onClick={() => onLand(d.id)}>
+              <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Land at {d.name}
+            </button>
+          ))}
         {/* (what's played down there: the landing's menu, surface/modes.js) */}
         {crew && onLand && landLine(system) && <p className="w-full text-xs text-muted">Down there: {landLine(system)} · Free roam</p>}
         <button type="button" className={crew && onLand ? 'btn btn-ghost' : 'btn btn-primary'} onClick={onMap}>

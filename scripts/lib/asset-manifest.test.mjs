@@ -130,4 +130,15 @@ describe('the published assets’ manifest', () => {
     expect(text).not.toContain(`/public/${kept}`);
     expect([...KEPT]).toContain('models/galaxy/bf2017/walrus.glb');
   });
+  it('takes a level pack’s cuts and leaves its level.json and README in git', () => {
+    const pub = scratch();
+    put(pub, 'models/galaxy/bf2017/levels/hoth/level.json', '{}');
+    put(pub, 'models/galaxy/bf2017/levels/hoth/README.md', '# hoth');
+    put(pub, 'models/galaxy/bf2017/levels/hoth/cells/0_0.bin', 'cell');
+    put(pub, 'models/galaxy/bf2017/levels/hoth/base/level.json', '{}');
+    put(pub, 'models/galaxy/bf2017/levels/hoth/base/lights.json', '{}');
+    // (and its credit, which names its level.json, does not publish it either)
+    const got = gameFiles({ 'level-hoth-base': { source: GAME, file: '/models/galaxy/bf2017/levels/hoth/base/level.json' } }, pub).map((f) => f.path);
+    expect(got).toEqual(['models/galaxy/bf2017/levels/hoth/base/lights.json', 'models/galaxy/bf2017/levels/hoth/cells/0_0.bin']);
+  });
 });
