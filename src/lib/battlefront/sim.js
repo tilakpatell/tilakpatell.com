@@ -104,7 +104,7 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
   };
   if (mode === 'galacticAssault') {
     sim.ga = createAssault({ rulebook: rb, level });
-    sim.bp = createPoints({ rulebook: rb, teams: sides });
+    sim.bp = createPoints({ rulebook: rb, teams: sides, level, mode });
     sim.deploying = new Map();
     sim.aimScale = AIM_SCALE;
   } else if (mode) throw new Error(`mode ${mode}: not built`);

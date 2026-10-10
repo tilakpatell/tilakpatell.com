@@ -48,7 +48,9 @@ describe('the Battlefront rulebooks', () => {
   });
 
   it('a hand file says so', () => {
-    expect(rb.points.source).toBe('hand');
+    // (points.json is the record's now: only what it lacks is by hand)
+    expect(rb.points.source).toBeUndefined();
+    for (const k of ['earn', 'limits', 'bpRate']) expect(rb.points[k].source, k).toBe('hand');
     expect(rb['maps/hoth.stages'].source).toBe('hand');
     expect(rb['maps/sb_endor.stages'].source).toBe('hand');
     expect(rb['maps/sb_kamino.stages'].source).toBe('hand');
@@ -112,8 +114,11 @@ describe('the Battlefront rulebooks', () => {
     expect(bad).toEqual([]);
   });
 
-  it('every Battle Point cost names a vehicle the rulebook holds', () => {
-    const bad = Object.keys(rb.points.cost.vehicles).filter((id) => id !== 'default' && !rows('vehicles')[id]);
+  it('every Battle Point price names a hero, reinforcement or vehicle the rulebooks hold', () => {
+    const ids = (o) => Object.keys(o ?? {}).filter((k) => !k.endsWith('_source'));
+    const bad = ids(rb.points.cost.heroes).filter((id) => id !== 'default' && !rows('heroes')[id]);
+    const units = [rb.points.cost.units, ...Object.values(rb.points.cost.byMode).flatMap((m) => Object.values(m).map((t) => t.units))];
+    for (const u of units) for (const id of ids(u)) if (!rows('vehicles')[id] && !rows('reinforcements')[id]) bad.push(`unit ${id}`);
     for (const stage of rb['maps/hoth.stages'].stages) for (const id of [...stage.vehicles, ...stage.objectives.map((o) => o.vehicle).filter(Boolean)]) if (!rows('vehicles')[id]) bad.push(`${stage.id}: ${id}`);
     expect(bad).toEqual([]);
   });

@@ -21,8 +21,11 @@ import ui from '../../data/bf2017/ui.json';
 import vehicles from '../../data/bf2017/vehicles.json';
 import weapons from '../../data/bf2017/weapons.json';
 
-// A level's short name (`hoth`) and the export's (`hoth_01`).
-const LEVELS = { hoth: 'hoth_01' };
+// The game's level key (`hoth_01`) for a short name the older readers use
+// (`hoth`, and lane H's `endor`, `tatooine`, `geonosis`, `kashyyyk`).
+export const ALIASES = { hoth: 'hoth_01', endor: 'endor_01', tatooine: 'tatooine_01', geonosis: 'geonosis_01', kashyyyk: 'kashyyyk_01' };
+export const levelKey = (level) => ALIASES[String(level).toLowerCase()] ?? String(level).toLowerCase();
+const LEVELS = ALIASES;
 
 function freeze(v) {
   if (v && typeof v === 'object' && !Object.isFrozen(v)) {
