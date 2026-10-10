@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom';
-import { COC, NODE_PASSES, ORDER, SSGI, arrange, dofParams, motionBlurOf, passesFor, raysLight, shed } from './post';
+import { COC, NODE_PASSES, ORDER, SSGI, arrange, dofParams, headroom, motionBlurOf, passesFor, raysLight, shed, upscaleKind, upscaled } from './post';
 import hoth from './fixtures/hoth.ve.json';
 
 const kinds = (ps) => ps.map((p) => p.kind);
@@ -140,5 +140,53 @@ describe('shed', () => {
     expect(kinds(shed(ultra, 4))).toEqual(['render', 'bloom', 'motionBlur', 'lut', 'traa', 'output']);
     // (high's denoise goes with its SSGI)
     expect(kinds(shed(passesFor('high', hoth.sunny, 'webgpu', refs), 1))).not.toContain('denoise');
+  });
+});
+
+describe('upscale (lane U)', () => {
+  const ultra = () => passesFor('ultra', hoth.sunny, 'webgpu', refs);
+  it('is the last pass before the output', () => {
+    expect(ORDER.slice(-2)).toEqual(['upscale', 'output']);
+    const p = upscaled(passesFor('high', hoth.sunny, 'webgpu', refs), { kind: 'fsr1', scale: 0.67 });
+    expect(kinds(p).slice(-3)).toEqual(['smaa', 'upscale', 'output']);
+    expect(p.at(-2)).toMatchObject({ upscaler: 'fsr1', scale: 0.67, sharpness: 0.2 });
+  });
+  it('keeps TAAU alone with TRAA: it anti-aliases as it upscales', () => {
+    expect(upscaleKind(ultra())).toBe('taau');
+    const p = upscaled(ultra(), { scale: 0.77 });
+    expect(kinds(p)).not.toContain('traa');
+    expect(kinds(p)).not.toContain('smaa');
+    expect(p.at(-2)).toMatchObject({ kind: 'upscale', upscaler: 'taau', scale: 0.77, camera: refs.camera });
+    // (no TRAA left: SSGI takes its plain preset and its denoise)
+    expect(p.find((x) => x.kind === 'ssgi')).toMatchObject({ temporal: false, ...SSGI.plain.high });
+    expect(kinds(p)).toContain('denoise');
+    // (a TAAU asked for beside an SMAA chain drops the SMAA)
+    expect(kinds(upscaled(passesFor('high', hoth.sunny, 'webgpu', refs), { kind: 'taau', scale: 0.67 }))).not.toContain('smaa');
+  });
+  it('pairs FSR1 with SMAA, in TRAA’s place when the chain had TRAA', () => {
+    const p = upscaled(ultra(), { kind: 'fsr1', scale: 0.77 });
+    expect(kinds(p).slice(-4)).toEqual(['lut', 'smaa', 'upscale', 'output']);
+    expect(kinds(p)).not.toContain('traa');
+    expect(upscaleKind(passesFor('ultra', hoth.sunny, 'nodes-webgl', refs))).toBe('fsr1');
+  });
+  it('is no pass at scale 1, or of an unknown kind, and replaces an earlier one', () => {
+    expect(kinds(upscaled(ultra(), { scale: 1 }))).toEqual(kinds(ultra()));
+    expect(kinds(arrange([...ultra(), { kind: 'upscale', upscaler: 'dlss', scale: 0.5 }]))).toEqual(kinds(ultra()));
+    const twice = upscaled(upscaled(ultra(), { scale: 0.77 }), { scale: 0.5 });
+    expect(twice.filter((x) => x.kind === 'upscale')).toHaveLength(1);
+    expect(twice.find((x) => x.kind === 'upscale').scale).toBe(0.5);
+  });
+  it('comes from passesFor’s refs on the node renderer, never on the classic one', () => {
+    expect(passesFor('high', hoth.sunny, 'nodes-webgl', { ...refs, upscale: { scale: 0.67 } }).at(-2)).toMatchObject({ upscaler: 'fsr1', scale: 0.67 });
+    expect(kinds(passesFor('high', hoth.sunny, 'webgl', { ...refs, upscale: { scale: 0.67 } }))).not.toContain('upscale');
+  });
+  it('lowers the resolution before any pass is shed (headroom)', () => {
+    const full = kinds(shed(ultra(), 0)).filter((k) => k !== 'traa');
+    const under = headroom(ultra(), { scale: 0.67, shed: 0 });
+    expect(kinds(under).filter((k) => k !== 'upscale' && k !== 'denoise')).toEqual(full);
+    const shedToo = headroom(ultra(), { scale: 0.5, shed: 2 });
+    expect(kinds(shedToo)).not.toContain('ssgi');
+    expect(kinds(shedToo)).not.toContain('ssr');
+    expect(shedToo.at(-2)).toMatchObject({ upscaler: 'taau', scale: 0.5 });
   });
 });

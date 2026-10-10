@@ -7,7 +7,8 @@ import { field } from './fixtures/field.js';
 import { hothFlatNav } from './fixtures/hothFlat.js';
 import { createBolts, fire, step as stepBolts } from './bolts.js';
 import { OOB_SECONDS, addPlayer, createSim, deploy, step, view } from './sim.js';
-import { earn } from './battlePoints.js';
+import { balance, earn } from './battlePoints.js';
+import { squadOf } from './ai/squad.js';
 import { TIME_FOR_CORPSE } from './soldier.js';
 import { WAVE, isProtected } from './spawn.js';
 
@@ -108,5 +109,52 @@ describe('the deploy screen in the view', () => {
     expect(d.offers.find((o) => o.kind === 'hero')).toMatchObject({ affordable: false });
     expect(d.offers.find((o) => o.id === 'JumpTrooper')).toMatchObject({ affordable: true, cost: 1000 });
     expect(view(sim).deploy.open).toBe(false);
+  });
+});
+
+describe('the player’s squad', () => {
+  const sim = createSim({ rulebook: rb, nav: hoth, seed: 5, bots: { 1: 8, 2: 8 }, mode: 'galacticAssault' });
+  const anyMate = () => [...sim.entities.values()].find((e) => e.team === 2 && e.bot);
+  const me = addPlayer(sim, { team: 2, classId: 'd-orig-assault', at: [anyMate().at[0] + 6, 0, anyMate().at[2]], id: 'you' });
+  const mates = () => squadOf(sim.brains.squads, me).members.filter((m) => m !== me).map((m) => sim.entities.get(m));
+
+  it('takes the player into a squad of four by the id given, the bot it displaced into a squad the commander orders', () => {
+    expect(me).toBe('you');
+    const sq = squadOf(sim.brains.squads, me);
+    expect(sq.members).toHaveLength(4);
+    const team = sim.brains.squads.list.filter((q) => q.team === 2);
+    expect(team).toHaveLength(3);
+    expect(sim.commanders[2].squads).toContain(team[2]);
+  });
+
+  it('lists the squad in the player’s view: the player first, then three mates with their classes', () => {
+    const v = view(sim, { player: me });
+    expect(v.squad.letter).toBe('A');
+    expect(v.squad.members[0]).toMatchObject({ id: me, local: true, alive: true, cls: 'assault' });
+    expect(v.squad.members.slice(1).map((m) => m.local)).toEqual([false, false, false]);
+    expect(v.squad.members.slice(1).every((m) => m.cls)).toBe(true);
+    expect(v.entities.find((e) => e.id === me).cls).toBe('assault');
+  });
+
+  it('marks the shooter and the one hit in combat', () => {
+    const target = mates()[0];
+    const by = [...sim.entities.values()].find((e) => e.kind === 'soldier' && e.team === 1);
+    target.safeUntil = -Infinity;
+    fire(sim.bolts, { from: [target.at[0], target.at[1] + 1.2, target.at[2] - 1], dir: [0, 0, 1], speed: 700, team: 1, owner: by.id, weapon: by.weapon, now: sim.time });
+    expect(until(sim, () => target.combatAt != null, 1)).toBe(true);
+    expect(by.combatAt).toBe(target.combatAt);
+  });
+
+  it('deploys the player on a mate out of combat, behind them, and pays the mate for it', () => {
+    sim.entities.delete(me);
+    sim.deploying.set(me, { id: me, team: 2, bot: false, since: sim.time });
+    const hit = mates().find((m) => m?.combatAt != null);
+    expect(deploy(sim, me, { kind: 'class', id: 'd-orig-heavy', spawn: 'squad', mate: hit.id })).toEqual({ ok: false, why: 'combat' });
+    const mate = mates().find((m) => m?.alive && m.combatAt == null);
+    const before = balance(sim.bp, mate.id);
+    expect(deploy(sim, me, { kind: 'class', id: 'd-orig-heavy', spawn: 'squad', mate: mate.id })).toEqual({ ok: true });
+    const s = sim.entities.get(me);
+    expect(Math.hypot(s.at[0] - mate.at[0], s.at[2] - mate.at[2])).toBeLessThan(8);
+    expect(balance(sim.bp, mate.id) - before).toBe(rb.points.earn.squadSpawn);
   });
 });

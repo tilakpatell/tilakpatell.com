@@ -14,3 +14,25 @@ From `levels/mp/hoth_01` (Star Wars Battlefront II, 2017, EA DICE; used with per
 | worst place: triangles, calls | 716k, 141 | 1347k, 154 | 1573k, 169 |
 | texture bytes (every map the level has) | 8.83 MB | 28.71 MB | 28.71 MB |
 
+<!-- physics -->
+## Physics
+
+The game's shapes (`node scripts/bf2017-physics.mjs`).
+
+| meshes with shapes | hulls | mesh triangles | capsules | spheres | dropped | bytes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 432 | 3539 | 236905 | 3 | 23 | 0 | 5249252 |
+
+| heaviest cells | colliders | trimesh triangles |
+| --- | --- | --- |
+| -3,0 | 2019 | 51276 |
+| -1,2 | 1832 | 39165 |
+| -1,1 | 1828 | 40933 |
+| -2,0 | 1777 | 47988 |
+| 0,1 | 1460 | 34112 |
+| -2,2 | 1454 | 36500 |
+| 0,0 | 1453 | 35558 |
+| -2,-1 | 1448 | 32368 |
+| -1,0 | 1447 | 34187 |
+| -2,3 | 1414 | 28516 |
+<!-- /physics -->
