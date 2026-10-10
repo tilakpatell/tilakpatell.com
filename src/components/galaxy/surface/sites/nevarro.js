@@ -349,6 +349,9 @@ export const nevarro = {
       flat: { r: 46, h: BASE.top },
       about: 'An Imperial Remnant base built into the lip of a lava canyon, its coolant tanks hanging out over the drop. Still running. Still guarding something.',
       things: [
+        // (the Remnant's cargo, the game's Imperial containers)
+        { kind: 'impcontainer', model: 'game:objects/props/objectsets/_galacticempire/container_xl_02/container_xl_02_a_mesh', at: [-30, 26], yaw: 0.4 },
+        { kind: 'impcontainer', model: 'game:objects/props/objectsets/_galacticempire/container_xl_02/container_xl_02_a_mesh', at: [-34, 16], yaw: 0.5 },
         // (half in the cliff, half out over the canyon, its roof nine metres over the plateau)
         { kind: 'nevarrobase', at: bt(44, 4), yaw: OUT, scale: 1.6, abs: true, y: BASE.top - 6 },
         { kind: 'bunkerash', at: bt(-8, 26), yaw: OUT + PI / 2 },
@@ -443,7 +446,8 @@ export const nevarro = {
     { kind: 'lavarock', n: 40, within: [140, 820], scale: [2, 6], sink: 0.6 },
     { kind: 'lavacrack', n: 420, within: [40, 600], scale: [1.4, 3.2], solid: false },
     { kind: 'basalt', n: 60, within: [60, 560], scale: [0.8, 2.0], flat: 0.85 },
-    { kind: 'stones', n: 220, within: [10, 420], scale: [0.25, 0.8], solid: false, opts: { color: '#2a2a2e' } },
+    // (the sulphur flats' stones, the drop's, on mid and up)
+    { kind: 'stones', model: 'game:objects/nature/volcanic/_volcanicsulfur/_meshscatter/ms_volcanicsulfur_rockfrailsmall_01/ms_volcanicsulfur_rockfrailsmall_01_mesh', n: 220, within: [10, 420], scale: [0.25, 0.8], solid: false, opts: { color: '#2a2a2e' } },
   ],
   sound: { wind: 0.4, rain: 0, sea: 0, lava: 0.45, critters: 0, city: 0.3, ground: 'sand' },
   zones: [

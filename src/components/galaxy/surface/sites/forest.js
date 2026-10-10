@@ -762,6 +762,8 @@ export const SITES = {
     // them, kept off the places (Yoda's hut, the X-wing, the cave, the camp)
     things: grove(31, 46, 30, 190, ['dagocypress', 'dagocypress', 'dagoroots'], [0.7, 1.25]).filter(({ at: [x, z] }) => [[-90, 60, 30], [40, 74, 34], [-70, -120, 30], [100, -60, 32], [-26, -46, 24], [130, 110, 30], [0, 0, 26]].every(([px, pz, r]) => Math.hypot(x - px, z - pz) > r)),
     scatter: [
+      // (the game's living world: skettos on the roots and the mud)
+      { kind: 'game', model: 'game:objects/livingworld/cavesketto_01/cavesketto_01_sitting_mesh', n: 14, within: [12, 260], scale: [0.8, 1.2], solid: false, shadow: false },
       // (Quaternius's ground cover, under the built plants: catalog/quaternius.js)
       { kind: 'qfern', n: 100, within: [5, 80], scale: [0.7, 1.4], solid: false },
       { kind: 'qmushroom', n: 30, within: [6, 80], scale: [0.6, 1.4], solid: false },
@@ -775,9 +777,12 @@ export const SITES = {
       { kind: 'gnarltree', n: 40, within: [420, 900], scale: [1.0, 1.6], dry: false, solid: false, opts: { seed: 3, lo: true } },
       { kind: 'reeds', n: 700, within: [5, 420], scale: [0.7, 1.6], solid: false, dry: false, clear: -10, opts: { seed: 4, color: '#5a5c44' } },
       { kind: 'fungus', n: 220, within: [5, 420], scale: [0.8, 2], solid: false, clear: -8, opts: { seed: 5 } },
-      { kind: 'fern', n: 200, within: [5, 420], scale: [0.7, 1.4], solid: false, clear: -8, opts: { seed: 6, color: '#474931' } },
-      { kind: 'log', n: 36, within: [20, 460], scale: [0.7, 1.3], solid: false, dry: false, opts: { seed: 7, bark: '#4c463a', moss: '#5a6a34' } },
-      { kind: 'rock', n: 40, within: [10, 460], scale: [0.6, 2], opts: { color: '#5a5a48', sharp: 0.3 } },
+      // (the drop's own where the swamp has the same, on mid and up: Kashyyyk's
+      // scheffleras for the ferns, the forest's logs and stones; the built
+      // ones on low, as before)
+      { kind: 'fern', model: 'game:objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_xs_01_mesh', n: 200, within: [5, 420], scale: [0.7, 1.4], solid: false, clear: -8, opts: { seed: 6, color: '#474931' } },
+      { kind: 'log', model: 'game:objects/nature/forest/_forestbase/forestbase_logsmall_01/forestbase_logsmall_01_mesh', n: 36, within: [20, 460], scale: [0.7, 1.3], solid: false, dry: false, opts: { seed: 7, bark: '#4c463a', moss: '#5a6a34' } },
+      { kind: 'rock', model: 'game:objects/nature/forest/_forestbase/forestbase_rocksmall_01/forestbase_rocksmall_01_mesh', n: 40, within: [10, 460], scale: [0.6, 2], opts: { color: '#5a5a48', sharp: 0.3 } },
     ],
     life: [
       { kind: 'droid', n: 1, at: [-22, -42], roam: 4, speed: 0.5, name: 'R2-D2', says: ['(An indignant whistle: he was nearly eaten, you know.)', '(He beeps, and shakes off a strand of swamp weed.)', '(A worried warble at the mist.)'] },

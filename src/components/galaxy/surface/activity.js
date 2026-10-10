@@ -14,8 +14,8 @@
 // model, still, face, y, level (the height it's on, where there are
 // floors over floors: a pit under a throne room), leash, hostile: { range, every, spread, damage,
 // burst, strafe, shield (hostiles.js's: bursts of fire, circling you, a shield that soaks hits),
-// blade ({ color, hilt?, stance? }: a lit saber in its hand, and it fences: duellists.js), parry (the share of your strokes a
-// duellist blocks), riposte (the share of those it parries), guard (strokes it turns before its guard breaks and it reels),
+// blade ({ color, hilt?, stance? }: a lit saber in its hand, and on the 2017 game's rig it fences: duellists.js), parry (the
+// share of your strikes a duellist holds its block for: the game's rules decide the rest), guard (a brawler's: strokes it turns),
 // delay (before its first shot), chase (m/s: it comes for you), melee,
 // reach (how close it has to be to hit), cone, far, smell, memory (what it
 // perceives: hostiles.js's sensesFor), force ({ every, push }: a duellist's
@@ -140,9 +140,10 @@ import { fallTurn } from '../../../lib/three/locomotion';
 import { preload } from '../../../lib/three/clipLibrary';
 import { createGunplay } from '../../universe/gunplay';
 import { SHOW_KILLS } from './weaponRules';
-import { bladeInHand } from './heldBlade';
+import { bladeInHand, heldBlade } from './heldBlade';
 import { blastClass } from './walkers';
-import { asTarget, clashes, duelFor, fence, landed, reeling, stun, turnOf } from './duellists';
+import { asTarget, duelFor, fence, landed, recoiled, reeling, stun } from './duellists';
+import { GAME_HP } from './abilityRules';
 import { onHit } from '../../../lib/combat/duel';
 import { sharpen } from '../../../lib/three/textures';
 import { ARMS } from './ground/troops';
@@ -342,6 +343,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
       t.show?.dispose();
       t.bar?.dispose();
       t.blade?.dispose();
+      t.prop?.dispose();
       t.gp?.dispose();
     }
     for (const p of pickups) {
@@ -401,6 +403,12 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     if (kind === 'saber') {
       t.blade = bladeInHand(fig, s.hostile.blade, { parent: group, stance: s.hostile.blade.stance ?? 'single', who: s.kind });
       if (t.blade) t.duel = duelFor(s, Math.round(t.home[0] * 13) * 31 + Math.round(t.home[1] * 17) + targets.indexOf(t) * 7919 + 1);
+      else {
+        // (off the game's rig nothing fences: its blade lit in its hand, and it swipes as a brawler does)
+        const h = heldBlade(s.hostile.blade, fig.tall ?? 1.8);
+        t.holder.add(h.arm);
+        t.prop = { dispose: () => (h.arm.removeFromParent(), h.owned.forEach((o) => o.dispose?.())) };
+      }
       return;
     }
     if (fig.model?.getObjectByName('RightHand')?.isBone) t.gp = createGunplay({ model: fig.model, bones: fig.bones, sockets: fig.sockets, stance: fig.stance, aimAt: fig.aimAt }, kind, { unit: 1, who: s.kind });
@@ -489,13 +497,6 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     if (t.fig?.react?.('hit', { where: whereHit(at?.y, t.holder.position.y, tall), side, moving: true })) t.reacted = true;
   };
 
-  // its guard broken by a heavy stroke, or spent: it reels 2 s
-  const broke = (t) => {
-    t.stagger = Math.max(t.stagger, 2);
-    stun(t, t.stagger);
-    flinched(t);
-  };
-
   // the line from its chest to a point (y: the point's height, else level)
   const lineTo = (t, p) => {
     const tall = (t.fig?.tall ?? 1.8) * (t.spec.scale ?? 1);
@@ -511,12 +512,18 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     preload(['die.fwd', 'die.back', 'die.blown', 'hit.chest', 'hit.head', 'crouch', 'shoot.pistol', 'aim.pistol', 'jab', 'cheer']).catch(() => {});
   };
 
-  // a duellist's blade through someone: you, for the scene (shooters hands
-  // it on, and your block decides it); a friend of yours, as any hit
+  // a duellist's strike on someone, as its engine landed it (the game's
+  // damage): you, for the scene (shooters hands it on); a friend of yours, as
+  // any hit, in the site's hit points; met on your block or in a clash, the
+  // scene's sparks
   const struckBy = (t, x, damage, at, o) => {
     const c = landed(t, x, damage, at, o);
     if (c) t.contacts.push(c);
-    else if (!x.down && targets.includes(x)) api.hit(x, damage, { at });
+    else if (!x.down && targets.includes(x)) api.hit(x, damage / GAME_HP, { at });
+  };
+  const metBy = (how) => (t, x, at) => {
+    const c = recoiled(t, x, at, how);
+    if (c) t.contacts.push(c);
   };
   const youT = asTarget();
 
@@ -564,7 +571,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     if (t.blade) {
       // (its stroke's root travel and its turn to its lock write into its own walk: b)
       t.blade.block(t.blocking, t.blockSide);
-      t.blade.pose(dt, time, { forward: _fwd, up: UP, me: b, dir, eye, targets: t.duelMark ? [t.duelMark] : [], hit: (x, damage, at, o) => struckBy(t, x, damage, at, o) });
+      t.blade.pose(dt, time, { forward: _fwd, up: UP, me: b, dir, eye, targets: t.duelMark ? [t.duelMark] : [], hit: (x, damage, at, o) => struckBy(t, x, damage, at, o), blocked: (x, at) => metBy('block')(t, x, at), clash: (x, at) => metBy('clash')(t, x, at) });
     }
     // the pistol's aim, held on its upper half since its last shot (a rigged
     // one with no gun of its own to raise), let down a while after
@@ -682,23 +689,6 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
         flinched(t, at);
       }
     },
-    // your stroke on a duellist: turned by its blade when it's up (its mind's
-    // block or parry, raised as your stroke began: duellists.js's turnOf);
-    // its guard gone, it reels. Returns { parried, broke, perfect }
-    parry(t, { heavy = false } = {}) {
-      const turn = turnOf(t, { heavy });
-      if (turn.broke) broke(t);
-      return turn;
-    },
-    // its stroke parried by you: it reels (a duellist PARRY's 0.6 s, then
-    // comes again; anything else `secs`)
-    parried(t, secs) {
-      if (t.down) return;
-      if (t.duel) stun(t, 0.6, 'attack');
-      t.stagger = Math.max(t.stagger, t.duel ? 0.6 : secs);
-      t.burst = null;
-      flinched(t);
-    },
     // shoved (the Force, a blast): off its feet along `v` ({ vx, vz, vy })
     knock(t, v) {
       if (t.down) return;
@@ -720,8 +710,9 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     kill(tag) {
       for (const t of targets) if (t.tag === tag && !t.down) fell(t);
     },
-    // swinging: your stroke (duellists.js's swingingOf), for the duellists to read; eye: the camera's position (their blades' light: saberLight.js)
-    update(dt, you, time, { actors, door, swinging = null, eye = null } = {}) {
+    // swinging: your strike (duellists.js's swingingOf), for the duellists to read; mine: your saber's engine (theirs meet
+    // yours in it: lib/combat/saber2017.js); eye: the camera's position (their blades' light: saberLight.js)
+    update(dt, you, time, { actors, door, swinging = null, mine = null, eye = null } = {}) {
       const events = [];
       const { quest, progress } = shown;
       const step = quest?.steps[progress?.step];
@@ -756,7 +747,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
       });
       // targets: about their business, or going down
       lastYou = you ? { x: you.x, z: you.z } : lastYou;
-      if (you) youT.at(you);
+      if (you) youT.at(you, mine);
       let downed = false; // (a hostile counted down this frame)
       for (const t of targets) {
         const b = t.b;
@@ -824,7 +815,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
           t.victim = t.hostile && aim?.victim ? aim.victim : null;
           const seen = t.victim ? { x: aim.x, z: aim.z } : you ? { x: you.x, z: you.z, vel: Number.isFinite(you.vx) ? { x: you.vx, z: you.vz } : null } : null;
           // a duellist with its mark near fences it (duellists.js); otherwise it hunts as the rest do
-          const fenced = fence(t, aim, { you: youT, swinging }, dt, time, world);
+          const fenced = fence(t, aim, { you: youT, swinging, out: Boolean(mine?.state.out) }, dt, time, world);
           // (squaring up to its mark the first time: its entrance from the game, lib/three/scenePlayer.js)
           if (fenced != null && !t.introduced) {
             t.introduced = true;
@@ -985,8 +976,6 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
       return out;
     },
     clear: clearStep,
-    // your blade crossing a duellist's (duellists.js's clashes)
-    clashes: (saber, now) => clashes(saber, targets, now),
     // (for tests: who's out, and what each is at)
     // (body: how it's drawn, crouched, its gun up, its mark, what it carries, the clip it went down on)
     debug: () => targets.map((t) => ({ tag: t.tag, side: t.spec.side ?? null, hp: t.hp, down: t.down > 0, fig: Boolean(t.fig), aim: Boolean(t.aim), victim: t.victim?.tag ?? null, mode: t.mind?.mode ?? null, at: [+t.b.x.toFixed(1), +t.b.z.toFixed(1)], body: { base: t.pose?.base ?? null, gun: t.gp ? t.gp.kind : t.blade ? 'saber:hand' : null, duel: t.duel?.state ?? null, up: t.gp ? +t.gp.aim.toFixed(2) : null, mark: t.pose?.mark ?? null, rigged: Boolean(t.fig?.anim), death: t.death?.clip ?? null } })),

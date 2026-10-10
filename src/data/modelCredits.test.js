@@ -2,6 +2,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import PUBLISHED from './galaxyAssets.json';
 import { describe, expect, it } from 'vitest';
 import CREDITS from './modelCredits.json';
+import USED from './bf2017/library-used.json';
+import { gameUrl } from '../components/galaxy/surface/catalog/bf2017-library';
 
 const at = (path) => new URL(`../../${path}`, import.meta.url);
 // every .js and .jsx under src, as text
@@ -32,6 +34,7 @@ describe('the 3D models that are other people’s', () => {
   });
 
   it('are each in the site, and each used by a page that shows its credit', () => {
+    const GAME_FILES = new Set(Object.keys(USED).map((n) => gameUrl(n)));
     const code = sources().join('\n');
     const shown = { universe: 'components/universe/UniversePanel.jsx', 'middle-earth': 'components/middleearth/MapHub.jsx', invincible: 'pages/Invincible.jsx', avengers: 'pages/Avengers.jsx', earth: 'pages/Earth.jsx', galaxy: 'components/galaxy/GalaxyPanel.jsx', 'galaxy-surface': 'pages/GalaxySurface.jsx', 'c-137': 'components/rickmorty/wardrobe/Wardrobe.jsx', cybertron: 'pages/Cybertron.jsx', dickansh: 'pages/Dickansh.jsx', mario64: 'pages/Mario64.jsx' };
     for (const [name, m] of Object.entries(CREDITS)) {
@@ -55,7 +58,9 @@ describe('the 3D models that are other people’s', () => {
       // (or a world's surface model, by the kind its catalogue names it by)
       const kind = name.replace(/^surface-/, '');
       const surface = name.startsWith('surface-') && code.includes('/models/galaxy/surface/${kind}.glb') && code.includes(`  ${kind}: {`);
-      expect(code.includes(file) || surface || (code.includes('/models/sketchfab/${name}.glb') && code.includes(`'${name}'`)), `${name} is used`).toBe(true);
+      // (or one of the drop's library objects a world asks for by name, `game:<name>`: catalog/bf2017-library.js)
+      const game = GAME_FILES.has(file);
+      expect(code.includes(file) || surface || game || (code.includes('/models/sketchfab/${name}.glb') && code.includes(`'${name}'`)), `${name} is used`).toBe(true);
       expect(shown[m.where], `${name}: ${m.where}`).toBeTruthy();
       expect(readFileSync(at(`src/${shown[m.where]}`), 'utf8'), m.where).toContain(`<ModelCredits where="${m.where}"`);
       // and every other page that shows it, its credit too

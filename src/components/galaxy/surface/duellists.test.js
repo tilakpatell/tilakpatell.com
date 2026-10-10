@@ -1,40 +1,25 @@
-// A duel, headless: two figures on the Meshy skeleton (meshyRig.fixture.js),
-// each with a saber in its hand (gunplay, saber.js) playing the baked sword
-// clips off disk, run frame by frame as the scene runs them. What lands is
-// what a blade sweeps; what meets it is the other's block, as the scene
-// decides it (duellists.js's met and turnOf).
-import { readFileSync } from 'node:fs';
+// A duel, headless, on the game's rules: two figures on the game's rig
+// (walrusFigure.fixture.js), each its saber and its saber's engine
+// (lib/combat/saber2017.js). Their strike at you lands the game's damage
+// unless your block meets it from the front (your stamina pays, they
+// recoil); yours at them the same; a brawler's swipe is the AI's melee
+// projectile, which your block's shield turns from the front.
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { beforeAll, describe, expect, it } from 'vitest';
-import { createDuellist, duelStep } from '../../../lib/combat/duel';
-import { meshyRig } from '../../../lib/three/meshyRig.fixture';
+import { describe, expect, it } from 'vitest';
+import { saberOf } from '../../../lib/combat/saber2017';
 import { createGunplay } from '../../universe/gunplay';
-import { GUARD, PARRY, STANCES } from './combatRules';
-import { asTarget, landed, met, swingingOf, turnOf } from './duellists';
+import { asTarget, landed, met, recoiled, swingingOf } from './duellists';
 import { createSaber } from './saber';
+import { walrusFigure } from './walrusFigure.fixture';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const DT = 1 / 60;
-const clips = {};
-beforeAll(async () => {
-  for (const name of new Set([...STANCES.single.strokes.map((k) => k.clip), 'sword.block'])) {
-    const buf = readFileSync(`public/games/meshy/ual-${name}.glb`);
-    const g = await new Promise((r, j) => new GLTFLoader().parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), '', r, j));
-    clips[name] = g.animations[0];
-  }
-});
 
 // a figure with a lit saber at x, z, facing yaw
-function fighter(x, z, yaw) {
-  const rig = meshyRig();
-  const scene = new THREE.Group();
-  const holder = new THREE.Group();
-  scene.add(holder);
-  holder.add(rig.model);
-  scene.updateMatrixWorld(true);
-  const gp = createGunplay({ model: rig.model, bones: rig.bones }, 'saber', { unit: 1 });
-  const saber = createSaber(gp, { stance: 'single', parent: scene, fig: { bones: rig.bones, hipsY: rig.hipsY }, clips });
+async function fighter(x, z, yaw, hero = 'luke') {
+  const { fig, scene, holder } = await walrusFigure();
+  const gp = createGunplay(fig, 'saber', { unit: 1 });
+  const saber = createSaber(gp, { parent: scene, fig, hero, tier: 'low' });
   saber.light(true);
   const me = { x, z, yaw };
   return {
@@ -43,130 +28,119 @@ function fighter(x, z, yaw) {
     holder,
     fig: { tall: 1.8 },
     spec: {},
-    // a frame: placed, gunplay's pose, the saber's over it
-    frame(now, targets = [], hit = null) {
+    b: me,
+    get blocking() {
+      return saber.sim.deflecting;
+    },
+    blade: { saber },
+    frame(now, p = {}) {
       holder.position.set(me.x, 0, me.z);
       holder.rotation.y = me.yaw;
       scene.updateMatrixWorld(true);
       const forward = new THREE.Vector3(Math.sin(me.yaw), 0, Math.cos(me.yaw));
       gp.set(DT, { aim: 0.75, look: 0, dir: null, forward, up: UP });
-      saber.update(DT, now, { forward, up: UP, me, targets, hit });
+      saber.update(DT, now, { forward, up: UP, me, ...p });
     },
   };
 }
 
-// they at the origin facing +z, you 1.8 m ahead facing them; both lit at guard a moment
-function duel() {
-  const them = fighter(0, 0, 0);
-  const you = fighter(0, 1.8, Math.PI);
-  const youT = asTarget().at({ x: 0, y: 0, z: 1.8 });
+// they at the origin facing +z, you 2.2 m ahead facing them; both lit a moment
+async function duel() {
+  const them = await fighter(0, 0, 0, 'vader');
+  const you = await fighter(0, 2.2, Math.PI);
+  const youT = asTarget();
   let now = 0;
-  const step = (fn) => {
-    now += DT;
-    fn?.(now);
-  };
+  const step = (fn) => fn((now += DT));
   for (let i = 0; i < 20; i++) step((t) => (them.frame(t), you.frame(t)));
-  // a duellist as activity.js has one, for landed and turnOf
-  const t = { blade: { saber: them.saber }, hostile: { damage: 16, guard: 3 }, b: them.me, holder: them.holder, fig: them.fig, guard: 3, stagger: 0, duel: null };
+  // a duellist as activity.js has one
+  const t = { blade: { saber: them.saber }, hostile: {}, b: them.me, holder: them.holder, fig: them.fig };
   return { them, you, youT, t, step, get now() {
     return now;
   } };
 }
 
-// their stroke at you, frame by frame to its end; `block(now, sw)` raises yours when it says to.
-// Each contact goes through the scene's rule (met) as it lands.
-function theirStroke(d, block = () => false) {
-  const sw = d.them.saber.swing(d.now, { clip: STANCES.single.strokes[0].clip, lock: d.youT });
+// their strike at you to its end; what reached you, as the scene hears it
+function theirStrike(d) {
+  const sw = d.them.saber.swing(d.now, { lock: d.youT });
   expect(sw).toBeTruthy();
   const out = [];
-  let blockAt = null;
-  let guard = { value: GUARD.max, hitAt: null, brokenAt: null };
-  for (let i = 0; i < 120 && d.them.saber.swinging; i++)
+  for (let i = 0; i < 120 && (d.them.saber.swinging || out.length === 0) && i < 120; i++)
     d.step((now) => {
-      if (blockAt == null && block(now, sw)) {
-        blockAt = now;
-        d.you.saber.block(true);
-      }
+      d.youT.at(d.you.me, d.you.saber.sim);
       d.you.frame(now);
-      d.them.frame(now, [d.youT], (x, damage, at, o) => {
-        const c = landed(d.t, x, damage, at, o);
-        const m = met(c, { saber: d.you.saber, blockAt, now, window: PARRY.window, guard });
-        guard = m.guard;
-        out.push({ ...m, c });
+      d.them.frame(now, {
+        targets: [d.youT],
+        hit: (x, damage, at, o) => out.push(landed(d.t, x, damage, at, o)),
+        blocked: (x, at) => out.push(recoiled(d.t, x, at, 'block')),
       });
     });
-  return { out, guard, sw };
+  return out.filter(Boolean);
 }
 
-describe('a duellist’s stroke at you', () => {
-  it('lands its damage through its blade’s sweep, inside its contact window, with no block', () => {
-    const d = duel();
-    const { out, sw } = theirStroke(d);
-    expect(out).toHaveLength(1);
-    expect(out[0].how).toBe('hit');
-    expect(out[0].damage).toBe(16);
-    // (its contact began where the clip says, in the world's time)
-    expect(out[0].c.contactAt).toBeCloseTo(sw.t0 + sw.contact[0] / sw.speed, 6);
-    expect(out[0].c.point[1]).toBeGreaterThan(0.3);
+describe('a duellist’s strike at you', () => {
+  it('lands the game’s damage with no block, the engine’s', async () => {
+    const d = await duel();
+    const [c] = theirStrike(d);
+    expect(c).toMatchObject({ melee: true, blade: true, game: saberOf('vader').damage.hit.damage, behind: false });
   });
 
-  it('into your held block spends your guard and deals nothing', () => {
-    const d = duel();
+  it('into your held block from the front: nothing lands, your stamina pays, they recoil', async () => {
+    const d = await duel();
     d.you.saber.block(true);
-    for (let i = 0; i < 20; i++) d.step((now) => d.you.frame(now));
-    const { out, guard } = theirStroke(d);
-    expect(out).toHaveLength(1);
-    expect(out[0].how).toBe('block');
-    expect(out[0].damage).toBe(0);
-    expect(guard.value).toBeLessThan(GUARD.max);
-  });
-
-  it('into a block begun within the parry window before its contact is a parry', () => {
-    const d = duel();
-    const { out, guard } = theirStroke(d, (now, sw) => now >= sw.t0 + sw.contact[0] / sw.speed - PARRY.window * 0.6);
-    expect(out).toHaveLength(1);
-    expect(out[0].how).toBe('parry');
-    expect(out[0].damage).toBe(0);
-    expect(guard.value).toBe(GUARD.max);
+    const out = theirStrike(d);
+    expect(out.map((c) => c.met ?? 'hit')).toEqual(['block']);
+    expect(d.you.saber.view().stamina).toBeCloseTo(1 - saberOf('luke').stamina.blocked / 100);
+    expect(d.them.saber.swinging).toBe(null);
   });
 });
 
-describe('your stroke at a duellist', () => {
-  // you strike; its mind reads your stroke each frame and raises its blade (or doesn't)
-  function yourStroke(d, rates) {
-    d.t.duel = createDuellist({ reach: 2.2, ...rates });
-    d.t.duel.at = [0, 0];
-    d.t.duel.state = 'circle';
-    d.t.duel.timer = 5;
-    const sw = d.you.saber.swing(d.now, { clip: STANCES.single.strokes[0].clip, lock: { holder: d.them.holder, fig: d.them.fig } });
-    expect(sw).toBeTruthy();
-    const out = [];
-    for (let i = 0; i < 120 && d.you.saber.swinging; i++)
+describe('your strike at a duellist', () => {
+  const yours = (d, them) => {
+    const hits = [];
+    const met = [];
+    d.you.saber.swing(d.now);
+    for (let i = 0; i < 90; i++)
       d.step((now) => {
-        const o = duelStep(d.t.duel, { pos: [d.you.me.x, d.you.me.z], swinging: swingingOf(d.you.saber, now) }, DT, () => 0);
-        d.them.saber.block(o.block);
         d.them.frame(now);
-        d.you.frame(now, [d.them], () => out.push(turnOf(d.t, {})));
+        d.you.frame(now, { targets: [them], hit: (x, n) => hits.push(n), blocked: (x) => met.push(x) });
       });
-    return out;
-  }
+    return { hits, met };
+  };
 
-  it('into its held block is turned, and its guard counts down', () => {
-    const d = duel();
-    const out = yourStroke(d, { guard: 1, parry: 0 });
-    expect(out).toEqual([{ parried: true, broke: false, perfect: false }]);
-    expect(d.t.guard).toBe(2);
+  it('is met on its held block from the front, and its stamina pays', async () => {
+    const d = await duel();
+    d.them.saber.block(true);
+    const { hits, met: m } = yours(d, d.them);
+    expect(hits).toEqual([]);
+    expect(m).toHaveLength(1);
+    expect(d.them.saber.view().stamina).toBeCloseTo(1 - saberOf('vader').stamina.blocked / 100);
   });
 
-  it('into its parry is turned, and you’re the one who reels', () => {
-    const d = duel();
-    const out = yourStroke(d, { guard: 1, parry: 1 });
-    expect(out).toEqual([{ parried: true, broke: false, perfect: true }]);
+  it('lands when its block isn’t up', async () => {
+    const d = await duel();
+    const { hits } = yours(d, d.them);
+    expect(hits).toEqual([saberOf('luke').damage.hit.damage]);
   });
 
-  it('lands when its blade isn’t up', () => {
-    const d = duel();
-    const out = yourStroke(d, { guard: 0, parry: 0 });
-    expect(out).toEqual([{ parried: false, broke: false, perfect: false }]);
+  it('is read by its mind with the way it cuts, where you face and your rules’ query', async () => {
+    const d = await duel();
+    d.you.saber.swing(d.now);
+    const sw = swingingOf(d.you.saber, d.now + 0.05, Math.PI);
+    expect(sw).toMatchObject({ yaw: Math.PI, query: saberOf('luke').query });
+    expect(sw.t).toBeCloseTo(0.05, 5);
+  });
+});
+
+describe('a brawler’s swipe', () => {
+  it('is turned by your block’s shield from the front, costing the AI’s melee damage; from behind it lands', async () => {
+    const you = await fighter(0, 0, 0);
+    you.saber.block(true);
+    you.frame(0.1);
+    const front = met({ damage: 14, from: [0, 0, 2] }, { saber: you.saber, me: you.me, now: 0.1 });
+    expect(front).toMatchObject({ how: 'block', damage: 0 });
+    const ai = saberOf('luke').ai.melee;
+    expect(you.saber.view().stamina).toBeCloseTo(1 - (saberOf('luke').stamina.bolt * ai.damage) / saberOf('luke').stamina.standardBolt / 100);
+    const back = met({ damage: 14, from: [0, 0, -2] }, { saber: you.saber, me: you.me, now: 0.1 });
+    expect(back).toMatchObject({ how: 'hit', damage: 14 });
   });
 });

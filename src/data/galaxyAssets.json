@@ -6137,6 +6137,510 @@
     "from": "gameplay/vehicles/air/millenniumfalcon/vehicle_air_millenniumfalcon_ot_cockpit_mesh",
     "tier": "surface"
   },
+  "models/galaxy/surface/game/barrelplastic0114nct05.far.glb": {
+    "hash": "ade88da0732d",
+    "bytes": 39464,
+    "from": "objects/props/objectsets/tatooine/barrelplastic_01/barrelplastic_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/barrelplastic0114nct05.glb": {
+    "hash": "1d798110f010",
+    "bytes": 651808,
+    "from": "objects/props/objectsets/tatooine/barrelplastic_01/barrelplastic_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/barrelplastic0114nct05.lod1.glb": {
+    "hash": "a4b4c37244a6",
+    "bytes": 445060,
+    "from": "objects/props/objectsets/tatooine/barrelplastic_01/barrelplastic_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm0200lg876.far.glb": {
+    "hash": "90a5e3ea57b1",
+    "bytes": 56040,
+    "from": "objects/props/objectsets/_rebelalliance/box_m_02/box_m_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm0200lg876.glb": {
+    "hash": "494d2ab7d3a3",
+    "bytes": 1207044,
+    "from": "objects/props/objectsets/_rebelalliance/box_m_02/box_m_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm0200lg876.lod1.glb": {
+    "hash": "5c7ec49ba7d3",
+    "bytes": 755420,
+    "from": "objects/props/objectsets/_rebelalliance/box_m_02/box_m_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm040rjr5fv.far.glb": {
+    "hash": "8c79aa21cb06",
+    "bytes": 29676,
+    "from": "objects/props/objectsets/_galacticempire/box_m_04/box_m_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm040rjr5fv.glb": {
+    "hash": "1f8f2a1952b3",
+    "bytes": 628628,
+    "from": "objects/props/objectsets/_galacticempire/box_m_04/box_m_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm040rjr5fv.lod1.glb": {
+    "hash": "7fc9cfb1af44",
+    "bytes": 437684,
+    "from": "objects/props/objectsets/_galacticempire/box_m_04/box_m_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm0511wbd3d.far.glb": {
+    "hash": "5eacd60c74b8",
+    "bytes": 31436,
+    "from": "objects/props/objectsets/_galacticempire/box_m_05/box_m_05_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm0511wbd3d.glb": {
+    "hash": "9fe4777811be",
+    "bytes": 2541928,
+    "from": "objects/props/objectsets/_galacticempire/box_m_05/box_m_05_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm0511wbd3d.lod1.glb": {
+    "hash": "4a3057f5d3c8",
+    "bytes": 445560,
+    "from": "objects/props/objectsets/_galacticempire/box_m_05/box_m_05_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm060n9ycs3.far.glb": {
+    "hash": "1a06d11c8222",
+    "bytes": 55128,
+    "from": "objects/props/objectsets/_galacticempire/box_m_06/box_m_06_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm060n9ycs3.glb": {
+    "hash": "6dd878fcc23c",
+    "bytes": 600688,
+    "from": "objects/props/objectsets/_galacticempire/box_m_06/box_m_06_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxm060n9ycs3.lod1.glb": {
+    "hash": "a115183b5039",
+    "bytes": 305668,
+    "from": "objects/props/objectsets/_galacticempire/box_m_06/box_m_06_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxs040td2gva.far.glb": {
+    "hash": "85233e5d9b6d",
+    "bytes": 56720,
+    "from": "objects/props/objectsets/_rebelalliance/box_s_04/box_s_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxs040td2gva.glb": {
+    "hash": "3e4d0eec3358",
+    "bytes": 1316508,
+    "from": "objects/props/objectsets/_rebelalliance/box_s_04/box_s_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/boxs040td2gva.lod1.glb": {
+    "hash": "7e5ae50d2079",
+    "bytes": 846076,
+    "from": "objects/props/objectsets/_rebelalliance/box_s_04/box_s_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/bucketsmeltingxlbucket010irh9vj.far.glb": {
+    "hash": "163c98f1103a",
+    "bytes": 30004,
+    "from": "objects/props/objectsets/sullust/bucketsmelting_xl_01/bucketsmelting_xl_bucket_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/bucketsmeltingxlbucket010irh9vj.glb": {
+    "hash": "1eb69a6eb435",
+    "bytes": 6513616,
+    "from": "objects/props/objectsets/sullust/bucketsmelting_xl_01/bucketsmelting_xl_bucket_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/bucketsmeltingxlbucket010irh9vj.lod1.glb": {
+    "hash": "ae0c62cb244f",
+    "bytes": 197100,
+    "from": "objects/props/objectsets/sullust/bucketsmelting_xl_01/bucketsmelting_xl_bucket_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/cavesketto01sitting0a2adms.far.glb": {
+    "hash": "190be52de8e6",
+    "bytes": 24556,
+    "from": "objects/livingworld/cavesketto_01/cavesketto_01_sitting_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/cavesketto01sitting0a2adms.glb": {
+    "hash": "ac3d654c1d1c",
+    "bytes": 170136,
+    "from": "objects/livingworld/cavesketto_01/cavesketto_01_sitting_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/container01l0jjxi4c.far.glb": {
+    "hash": "81643d93c851",
+    "bytes": 40752,
+    "from": "objects/props/objectsets/_galacticrepublic/container_01/container_01_l_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/container01l0jjxi4c.glb": {
+    "hash": "a4d8eb7f1508",
+    "bytes": 7778932,
+    "from": "objects/props/objectsets/_galacticrepublic/container_01/container_01_l_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/container01l0jjxi4c.lod1.glb": {
+    "hash": "1fcbcfd47f92",
+    "bytes": 156668,
+    "from": "objects/props/objectsets/_galacticrepublic/container_01/container_01_l_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/containersullustanxl011bbh0ga.far.glb": {
+    "hash": "ba21916444e5",
+    "bytes": 19900,
+    "from": "objects/props/objectsets/sullust/containersullustan_xl_01/containersullustan_xl_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/containersullustanxl011bbh0ga.glb": {
+    "hash": "be0676bec457",
+    "bytes": 5903640,
+    "from": "objects/props/objectsets/sullust/containersullustan_xl_01/containersullustan_xl_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/containersullustanxl011bbh0ga.lod1.glb": {
+    "hash": "873ed9dfd0bd",
+    "bytes": 153076,
+    "from": "objects/props/objectsets/sullust/containersullustan_xl_01/containersullustan_xl_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/containerxl02a0hh0o1d.far.glb": {
+    "hash": "f6c1048e626b",
+    "bytes": 16820,
+    "from": "objects/props/objectsets/_galacticempire/container_xl_02/container_xl_02_a_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/containerxl02a0hh0o1d.glb": {
+    "hash": "e829d6cbef13",
+    "bytes": 6308128,
+    "from": "objects/props/objectsets/_galacticempire/container_xl_02/container_xl_02_a_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/containerxl02a0hh0o1d.lod1.glb": {
+    "hash": "53255413da3e",
+    "bytes": 178968,
+    "from": "objects/props/objectsets/_galacticempire/container_xl_02/container_xl_02_a_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/convor01sitting1t8vjr0.far.glb": {
+    "hash": "b012a07c66ef",
+    "bytes": 30548,
+    "from": "objects/livingworld/convor_01/convor_01_sitting_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/convor01sitting1t8vjr0.glb": {
+    "hash": "0b498ecc4ea4",
+    "bytes": 631528,
+    "from": "objects/livingworld/convor_01/convor_01_sitting_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/crate02s08kdpnf.far.glb": {
+    "hash": "6d9c73fbeded",
+    "bytes": 57264,
+    "from": "objects/props/objectsets/_galacticrepublic/crate_02_s/crate_02_s_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/crate02s08kdpnf.glb": {
+    "hash": "7d57e4fdda2d",
+    "bytes": 2516500,
+    "from": "objects/props/objectsets/_galacticrepublic/crate_02_s/crate_02_s_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/crate02s08kdpnf.lod1.glb": {
+    "hash": "74bb6cf5e243",
+    "bytes": 356976,
+    "from": "objects/props/objectsets/_galacticrepublic/crate_02_s/crate_02_s_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/cratem010e694s7.far.glb": {
+    "hash": "516867b53dc2",
+    "bytes": 65668,
+    "from": "objects/props/objectsets/tatooine/crate_m_01/crate_m_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/cratem010e694s7.glb": {
+    "hash": "f278560ea29b",
+    "bytes": 1444880,
+    "from": "objects/props/objectsets/tatooine/crate_m_01/crate_m_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/cratem010e694s7.lod1.glb": {
+    "hash": "313333562d14",
+    "bytes": 872160,
+    "from": "objects/props/objectsets/tatooine/crate_m_01/crate_m_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/cratemetal010tqifvz.far.glb": {
+    "hash": "11191bd60339",
+    "bytes": 33344,
+    "from": "objects/props/objectsets/tatooine/cratemetal_01/cratemetal_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/cratemetal010tqifvz.glb": {
+    "hash": "744ce01f36b1",
+    "bytes": 595836,
+    "from": "objects/props/objectsets/tatooine/cratemetal_01/cratemetal_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/cratemetal010tqifvz.lod1.glb": {
+    "hash": "442363c15e2b",
+    "bytes": 381088,
+    "from": "objects/props/objectsets/tatooine/cratemetal_01/cratemetal_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/desertbaserockmudrockmedium0104oa7z9.far.glb": {
+    "hash": "adb809f3aecf",
+    "bytes": 26028,
+    "from": "objects/nature/desert/_desertbase/desertbase_rockmudrockmedium_01/desertbase_rockmudrockmedium_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/desertbaserockmudrockmedium0104oa7z9.glb": {
+    "hash": "67353698a024",
+    "bytes": 331176,
+    "from": "objects/nature/desert/_desertbase/desertbase_rockmudrockmedium_01/desertbase_rockmudrockmedium_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/desertbaserockmudrockmedium0104oa7z9.lod1.glb": {
+    "hash": "a8435878d8ea",
+    "bytes": 151876,
+    "from": "objects/nature/desert/_desertbase/desertbase_rockmudrockmedium_01/desertbase_rockmudrockmedium_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/forestbaselogsmall011y9w8zv.far.glb": {
+    "hash": "8e409c4336f6",
+    "bytes": 92508,
+    "from": "objects/nature/forest/_forestbase/forestbase_logsmall_01/forestbase_logsmall_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/forestbaselogsmall011y9w8zv.glb": {
+    "hash": "817700b0ec99",
+    "bytes": 678436,
+    "from": "objects/nature/forest/_forestbase/forestbase_logsmall_01/forestbase_logsmall_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/forestbaserockmedium020zxwjnf.far.glb": {
+    "hash": "ac0913bdac74",
+    "bytes": 25892,
+    "from": "objects/nature/forest/_forestbase/forestbase_rockmedium_02/forestbase_rockmedium_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/forestbaserockmedium020zxwjnf.glb": {
+    "hash": "5e49d80d7d05",
+    "bytes": 638780,
+    "from": "objects/nature/forest/_forestbase/forestbase_rockmedium_02/forestbase_rockmedium_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/forestbaserockmedium020zxwjnf.lod1.glb": {
+    "hash": "6e9f9f10a669",
+    "bytes": 402800,
+    "from": "objects/nature/forest/_forestbase/forestbase_rockmedium_02/forestbase_rockmedium_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/forestbaserocksmall011x2jkd9.far.glb": {
+    "hash": "e8b5b6aa5dcd",
+    "bytes": 26028,
+    "from": "objects/nature/forest/_forestbase/forestbase_rocksmall_01/forestbase_rocksmall_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/forestbaserocksmall011x2jkd9.glb": {
+    "hash": "6aa16e0fcb04",
+    "bytes": 171032,
+    "from": "objects/nature/forest/_forestbase/forestbase_rocksmall_01/forestbase_rocksmall_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/gasflask010almg1g.far.glb": {
+    "hash": "89e22b4bd71f",
+    "bytes": 27160,
+    "from": "objects/props/objectsets/_rebelalliance/gasflask_01/gasflask_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/gasflask010almg1g.glb": {
+    "hash": "ef9063ebbaa3",
+    "bytes": 545944,
+    "from": "objects/props/objectsets/_rebelalliance/gasflask_01/gasflask_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/gasflask010almg1g.lod1.glb": {
+    "hash": "9d0db8140dce",
+    "bytes": 221076,
+    "from": "objects/props/objectsets/_rebelalliance/gasflask_01/gasflask_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/lanternbird01sitting0me7hcs.far.glb": {
+    "hash": "144db676b534",
+    "bytes": 24492,
+    "from": "objects/livingworld/lanternbird_01/lanternbird_01_sitting_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/lanternbird01sitting0me7hcs.glb": {
+    "hash": "4db1689b74f4",
+    "bytes": 221424,
+    "from": "objects/livingworld/lanternbird_01/lanternbird_01_sitting_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/machinel051cx8j0c.far.glb": {
+    "hash": "1d0ac1144485",
+    "bytes": 25480,
+    "from": "objects/props/objectsets/sullust/machine_l_05/machine_l_05_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/machinel051cx8j0c.glb": {
+    "hash": "c7104c965d57",
+    "bytes": 1839420,
+    "from": "objects/props/objectsets/sullust/machine_l_05/machine_l_05_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/machinel051cx8j0c.lod1.glb": {
+    "hash": "682dfb9aa46c",
+    "bytes": 294136,
+    "from": "objects/props/objectsets/sullust/machine_l_05/machine_l_05_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/moisturevaporator020p3i7wn.far.glb": {
+    "hash": "fd6feba6312f",
+    "bytes": 56840,
+    "from": "objects/props/objectsets/tatooine/moisturevaporator_02/moisturevaporator_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/moisturevaporator020p3i7wn.glb": {
+    "hash": "63985e4d7803",
+    "bytes": 1332748,
+    "from": "objects/props/objectsets/tatooine/moisturevaporator_02/moisturevaporator_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/moisturevaporator020p3i7wn.lod1.glb": {
+    "hash": "b0cb4a48b118",
+    "bytes": 904540,
+    "from": "objects/props/objectsets/tatooine/moisturevaporator_02/moisturevaporator_02_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/msdesertcanyonrock031tt294q.far.glb": {
+    "hash": "246f1cc5601a",
+    "bytes": 22576,
+    "from": "objects/nature/desert/desertcanyon/_meshscattering/ms_desertcanyon_rock_03/ms_desertcanyon_rock_03_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/msdesertcanyonrock031tt294q.glb": {
+    "hash": "e457e1a7fa44",
+    "bytes": 442956,
+    "from": "objects/nature/desert/desertcanyon/_meshscattering/ms_desertcanyon_rock_03/ms_desertcanyon_rock_03_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/mskashyyykbaseschefflerabushs011nxbo38.far.glb": {
+    "hash": "2b4820207b28",
+    "bytes": 27928,
+    "from": "objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_s_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/mskashyyykbaseschefflerabushs011nxbo38.glb": {
+    "hash": "d4f2a810624f",
+    "bytes": 2499340,
+    "from": "objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_s_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/mskashyyykbaseschefflerabushs011nxbo38.lod1.glb": {
+    "hash": "cf344e413998",
+    "bytes": 394924,
+    "from": "objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_s_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/mskashyyykbaseschefflerabushxs011rq7qlu.far.glb": {
+    "hash": "066d0af4aeb8",
+    "bytes": 26172,
+    "from": "objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_xs_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/mskashyyykbaseschefflerabushxs011rq7qlu.glb": {
+    "hash": "37a7c3887332",
+    "bytes": 2497580,
+    "from": "objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_xs_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/mskashyyykbaseschefflerabushxs011rq7qlu.lod1.glb": {
+    "hash": "9a0d47da9d9d",
+    "bytes": 393620,
+    "from": "objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_xs_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/msvolcanicsulfurrockfrailsmall011alxniu.far.glb": {
+    "hash": "1c490892ede2",
+    "bytes": 26552,
+    "from": "objects/nature/volcanic/_volcanicsulfur/_meshscatter/ms_volcanicsulfur_rockfrailsmall_01/ms_volcanicsulfur_rockfrailsmall_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/msvolcanicsulfurrockfrailsmall011alxniu.glb": {
+    "hash": "2d35cbc05059",
+    "bytes": 647260,
+    "from": "objects/nature/volcanic/_volcanicsulfur/_meshscatter/ms_volcanicsulfur_rockfrailsmall_01/ms_volcanicsulfur_rockfrailsmall_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/msvolcanicsulfurrockfrailsmall011alxniu.lod1.glb": {
+    "hash": "ce4ba81953c2",
+    "bytes": 403448,
+    "from": "objects/nature/volcanic/_volcanicsulfur/_meshscatter/ms_volcanicsulfur_rockfrailsmall_01/ms_volcanicsulfur_rockfrailsmall_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/msyavinbasesmallbush071s34dyg.far.glb": {
+    "hash": "c9bfcf0ee9bf",
+    "bytes": 24904,
+    "from": "objects/nature/yavin/_yavinbase/_meshscattering/ms_yavinbase_smallbush_07/ms_yavinbase_smallbush_07_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/msyavinbasesmallbush071s34dyg.glb": {
+    "hash": "8c02c01a20da",
+    "bytes": 1795984,
+    "from": "objects/nature/yavin/_yavinbase/_meshscattering/ms_yavinbase_smallbush_07/ms_yavinbase_smallbush_07_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/msyavinbasesmallbush071s34dyg.lod1.glb": {
+    "hash": "40710539fd59",
+    "bytes": 352420,
+    "from": "objects/nature/yavin/_yavinbase/_meshscattering/ms_yavinbase_smallbush_07/ms_yavinbase_smallbush_07_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/rancorpitcaverockmedium041jc5x8i.far.glb": {
+    "hash": "483e5ec564a9",
+    "bytes": 30148,
+    "from": "objects/nature/desert/jabbaspalace/rancorpit_rocks_01/rancorpit_cave_rockmedium_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/rancorpitcaverockmedium041jc5x8i.glb": {
+    "hash": "24d28db0c595",
+    "bytes": 1238828,
+    "from": "objects/nature/desert/jabbaspalace/rancorpit_rocks_01/rancorpit_cave_rockmedium_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/rancorpitcaverockmedium041jc5x8i.lod1.glb": {
+    "hash": "8940b693bfbf",
+    "bytes": 317268,
+    "from": "objects/nature/desert/jabbaspalace/rancorpit_rocks_01/rancorpit_cave_rockmedium_04_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/volcaniccraterrockmedium010thluor.far.glb": {
+    "hash": "d141fbc94cf3",
+    "bytes": 27844,
+    "from": "objects/nature/volcanic/sullustan/volcaniccrater_rockmedium_01/volcaniccrater_rockmedium_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/volcaniccraterrockmedium010thluor.glb": {
+    "hash": "8316e58ba440",
+    "bytes": 376920,
+    "from": "objects/nature/volcanic/sullustan/volcaniccrater_rockmedium_01/volcaniccrater_rockmedium_01_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/game/volcaniccraterrockmedium010thluor.lod1.glb": {
+    "hash": "9606a8932cf2",
+    "bytes": 170288,
+    "from": "objects/nature/volcanic/sullustan/volcaniccrater_rockmedium_01/volcaniccrater_rockmedium_01_mesh",
+    "tier": "surface"
+  },
   "models/galaxy/surface/hiltanakin.glb": {
     "hash": "e14d0e8a71fd",
     "bytes": 577924,

@@ -10,7 +10,7 @@
 //   landmarkFiles(spec, { level, kits }) → url[] (sorted, each once)
 //     kits: { [pack]: manifest } (public/kit/<pack>/index.json's)
 
-import { SURFACE_MODELS, lodUrlFor, modelUrlFor, wantsLod } from '../../galaxy/shared/models';
+import { SURFACE_MODELS, isGame, lodUrlFor, modelUrlFor, wantsLod } from '../../galaxy/shared/models';
 import { planetField } from '../../../lib/land/flight/field';
 import { clutterKitOf } from '../../../lib/land/flight/landmarkTables';
 import { placementsFor } from './landmarks';
@@ -40,6 +40,8 @@ export function landmarkFiles(spec, { level = 'mid', kits }) {
     for (const p of placementsFor(spec, poi, { heightAt }).list) {
       const ref = KIT.exec(p.model ?? '');
       if (ref) kit(ref[1], ref[2]);
+      // (one of the drop's library objects: its row is under its `game:` name)
+      else if (isGame(p.model)) kind(p.model);
       else if (p.model !== false) kind(p.kind);
     }
   }
