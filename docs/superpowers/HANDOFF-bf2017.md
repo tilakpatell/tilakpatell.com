@@ -22,7 +22,6 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 
 All nine sessions started 2026-10-10 20:15 UTC from `claude/bf2017-accuracy`; lane U's prompt leaves its PR for the owner (the classifier refused the self-merge wording once). Seams (the spec's §5): E0 keeps the `variations` slot; lane 5 and the screens and picture lanes share `src/components/battlefront/` (merge `origin/main` before the PR, keep both sides); lane M's fonts PR may land under the screens lane; lane S's saber engine is not touched by the bots lane. The desktop's part (§4): the per-instance variation hashes into the maps' `.bin`; the UI bitmaps and the sound stay lane D's.
 
-<<<<<<< HEAD
 ## The colours, everywhere (2026-10-10, night; `claude/bf2017-colours-everywhere`, session_01282C5tuJnxtHN4SCrT1kct)
 
 `docs/superpowers/specs/2026-10-10-bf2017-colours-everywhere-design.md` and its plan. The owner asked that the drop's textures reach the pipeline with every colour correct and be applied to every Star Wars world. The session had no bucket key (`SUPABASE_URL`, `SUPA_KEY` absent from its environment), so it measured what `main` holds, fixed what needs no network, and left the bucket-bound steps as commands (the plan's tasks 5 to 8).
@@ -52,11 +51,10 @@ node scripts/bf2017-colour-check.mjs --check                 # every pack's map 
 npx vitest run scripts/lib/ktx2-colour.test.mjs scripts/lib/bf2017-shader-names.test.mjs src/components/galaxy/surface/level/levelGltf.test.js src/components/galaxy/surface/sites/sites.test.js
 SCANS=game QUALITY=high OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,endor,naboo   # no cc0 fetch on a Star Wars world
 ```
-=======
+
 ## The overhaul's sessions (2026-10-10, 23:45 UTC)
 
 Spawned by session_01282C5tuJnxtHN4SCrT1kct from `claude/bf2017-e0-factory-on-main` (E0 merged with `main`, PR #888) once its checks were green: E1 (`session_01NKhQZ93euwjJ5jaEre3jSY`), E2 (`session_01HrTPmQ9wFUvFYfdVLHxZ2q`), E3 (`session_0151EsRE5Sioz8bZWPSEzYeo`), E4 (`session_015ZTef1tZABeSq9E86wZKwv`), and the colour chain (`session_016MqzdEYrPgLbWg1mrpw1kG`, `claude/bf2017-colour-chain`, from `claude/bf2017-colours-everywhere` merged with E0), all Opus 5.5, each told to stop at once if the environment lacks `SUPABASE_URL` and `SUPA_KEY`. The bots lane is brought up to `main` by the same session (`claude/bf2017-bots-on-main`). Not spawned yet, in this order when the above land: E5 (the six new systems), the screens, fighters, maps and picture lanes of the sixth design, Q6, N, U.
->>>>>>> origin/claude/bf2017-e0-factory-on-main
 
 ## The fifth design: every object in the drop, used (2026-10-10, night)
 
