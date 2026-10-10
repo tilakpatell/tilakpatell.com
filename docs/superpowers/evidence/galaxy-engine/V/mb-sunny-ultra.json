@@ -1,0 +1,35 @@
+{
+  "size": "1600x900",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": false,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "volumes",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "motionBlur",
+        "smaa",
+        "output"
+      ],
+      "shot": "mb-sunny-ultra-webgl.png",
+      "volumesLit": 4,
+      "envDiff": 32.12,
+      "programsBefore": 85,
+      "programsAfter": 85,
+      "frames": 5,
+      "mean": 3081.8,
+      "median": 34.1,
+      "p95": 15281.1
+    }
+  ]
+}

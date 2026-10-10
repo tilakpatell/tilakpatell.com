@@ -1,0 +1,223 @@
+{
+ "_from": "two FogComponentData records from the bucket (data/<name>.json.gz), trimmed of their transform and flags: Felucia's day (the forward light scattering at presence 0.956) and the one VE of 417 whose participating media are not zero (Bespin S0600, ParticipatingMediaEnable false)",
+ "felucia": {
+  "name": "S8/Felucia/Levels/MP/Felucia_01/Lighting/Felucia_01/VE_PV_Felucia_Day_01",
+  "FogComponentData": [
+   {
+    "$type": "FogComponentData",
+    "DepthFogParticipatingMedia": {
+     "Scattering": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "Albedo": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "Emissive": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "SpecificationMode": "ParticipatingMediaSpecificationMode_AbsorptionScattering",
+     "Absorption": 0,
+     "Exctinction": 0,
+     "Phase": 0
+    },
+    "HeightFogParticipatingMedia": {
+     "Scattering": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "Albedo": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "Emissive": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "SpecificationMode": "ParticipatingMediaSpecificationMode_AbsorptionScattering",
+     "Absorption": 0,
+     "Exctinction": 0,
+     "Phase": 0
+    },
+    "Curve": {
+     "x": 0.8036032,
+     "y": -2.6056335,
+     "z": 2.57009816,
+     "w": -0.0138877537
+    },
+    "FogColor": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    },
+    "FogColorCurve": {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 0
+    },
+    "TransparencyFadeCurve": {
+     "x": -2,
+     "y": 3,
+     "z": 0,
+     "w": 0
+    },
+    "ForwardLightScatteringColor": {
+     "x": 16.3729038,
+     "y": 9.892888,
+     "z": 3.411619
+    },
+    "FogDistanceMultiplier": 1,
+    "Start": 20,
+    "End": 1000,
+    "FadeStart": 20000,
+    "FadeEnd": 45000,
+    "FogColorStart": 0,
+    "FogColorEnd": 5000,
+    "TransparencyFadeStart": 0,
+    "TransparencyFadeEnd": 100,
+    "TransparencyFadeClamp": 0,
+    "ForwardLightScatteringRotationX": 0,
+    "ForwardLightScatteringRotationY": 60,
+    "ForwardLightScatteringPhaseG": 0.979,
+    "ForwardLightScatteringStrength": 3,
+    "ForwardLightScatteringPresence": 0.956,
+    "ForwardLightScatteringMaxBlurLength": 0.4,
+    "ForwardLightScatteringExtinction": 3.741,
+    "ForwardLightScatteringSmoothness": 12,
+    "ForwardLightScatteringAttenuationType": "ForwardLightScatteringAttenuation_None",
+    "HeightFogFollowCamera": 0,
+    "HeightFogAltitude": 240,
+    "HeightFogDepth": 50,
+    "HeightFogVisibilityRange": 200,
+    "FogVolumeStrength": 1,
+    "Enable": true,
+    "FogGradientEnable": true,
+    "FogGradientHeightFadeEnable": true,
+    "FogColorEnable": false,
+    "ForwardLightScatteringEnabled": true,
+    "ForwardLightScatteringUseSunPosition": true,
+    "HeightFogEnable": false,
+    "ParticipatingMediaEnable": false
+   }
+  ]
+ },
+ "bespin": {
+  "name": "Levels/SP/A2/M2BES/DS02/Lighting/VE_Bespin_S0600",
+  "FogComponentData": [
+   {
+    "$type": "FogComponentData",
+    "DepthFogParticipatingMedia": {
+     "Scattering": {
+      "x": 1.70171388e-05,
+      "y": 0.000314253179,
+      "z": 0.000792235951
+     },
+     "Albedo": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "Emissive": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "SpecificationMode": "ParticipatingMediaSpecificationMode_AbsorptionScattering",
+     "Absorption": 4.938,
+     "Exctinction": 0,
+     "Phase": 0
+    },
+    "HeightFogParticipatingMedia": {
+     "Scattering": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "Albedo": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "Emissive": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "SpecificationMode": "ParticipatingMediaSpecificationMode_AbsorptionScattering",
+     "Absorption": 0,
+     "Exctinction": 0,
+     "Phase": 0
+    },
+    "Curve": {
+     "x": 0.481540442,
+     "y": -3.46934938,
+     "z": 3.24662447,
+     "w": 0
+    },
+    "FogColor": {
+     "x": 0.4868724,
+     "y": 0.625448,
+     "z": 1
+    },
+    "FogColorCurve": {
+     "x": -1.78891492,
+     "y": 0.3391781,
+     "z": 2.04303861,
+     "w": -0.0133674853
+    },
+    "TransparencyFadeCurve": {
+     "x": -2,
+     "y": 3,
+     "z": 0,
+     "w": 0
+    },
+    "ForwardLightScatteringColor": {
+     "x": 0.115177684,
+     "y": 0.224561334,
+     "z": 0.5184879
+    },
+    "FogDistanceMultiplier": 0.679,
+    "Start": 750,
+    "End": 2500,
+    "FadeStart": 5000,
+    "FadeEnd": 5000,
+    "FogColorStart": 650,
+    "FogColorEnd": 10000,
+    "TransparencyFadeStart": 0,
+    "TransparencyFadeEnd": 200,
+    "TransparencyFadeClamp": 0.5,
+    "ForwardLightScatteringRotationX": 0,
+    "ForwardLightScatteringRotationY": 60,
+    "ForwardLightScatteringPhaseG": 0.9,
+    "ForwardLightScatteringStrength": 3.3,
+    "ForwardLightScatteringPresence": 0.5,
+    "ForwardLightScatteringMaxBlurLength": 0.5,
+    "ForwardLightScatteringExtinction": 12,
+    "ForwardLightScatteringSmoothness": 6,
+    "ForwardLightScatteringAttenuationType": "ForwardLightScatteringAttenuation_None",
+    "HeightFogFollowCamera": 0,
+    "HeightFogAltitude": 2330,
+    "HeightFogDepth": 100,
+    "HeightFogVisibilityRange": 4000,
+    "FogVolumeStrength": 1,
+    "Enable": true,
+    "FogGradientEnable": true,
+    "FogGradientHeightFadeEnable": false,
+    "FogColorEnable": true,
+    "ForwardLightScatteringEnabled": true,
+    "ForwardLightScatteringUseSunPosition": true,
+    "HeightFogEnable": true,
+    "ParticipatingMediaEnable": false
+   }
+  ]
+ }
+}

@@ -51,3 +51,47 @@ One lane per session. R and T run at once and own different files (`src/lib/thre
 - `GPU=webgpu node scripts/perf-probe.mjs` and `GPU=webgl …` on the galaxy journeys.
 - `node scripts/galaxy-check.mjs surface hoth,endor,tatooine,kamino` and `space endor,hoth,geonosis`.
 - `node scripts/health/measure.mjs`: `glsl-sites` lower after each port; the closure guard green.
+
+## Fidelity: shadows, volumetrics, particles, cameras, scatter, headroom
+
+The design: `docs/superpowers/specs/2026-10-10-battlefront-fidelity-design.md` (what is not yet robust on `main`, measured from lane R's fixture and the records; what three r186 ships for each; six lanes). Each lane adds one file family to the stack and proves it on `scripts/light-fixture.mjs` with a flag of its own, on both backend kinds (the WebGPU leg on the owner's laptop: the cloud's software device dies on the fixture).
+
+| Lane | Plan | What | Starts from | Blocked by |
+|---|---|---|---|---|
+| **S** | `2026-10-10-bf-fidelity-laneS-shadows.md` | calibration to the game's Hoth; four soft cascades (`CSMShadowNode`, PCSS from the sun's angular radius); the record's shadow sun; cloud and contact shadows; the shadow term shared with the particles | `main` | nothing |
+| **V** | `2026-10-10-bf-fidelity-laneV-volumetrics.md` | the placed volumetric cones and the light-cone effects ray-marched; fog with the record's participating media; god rays off the real sun; the sun's and the explosions' flares from the records; motion blur and depth of field as data | `main` | S's cascade light for the god rays (reads its branch; `rays` until then). **Built** on `claude/fidelity-v-volumetrics`: see "Lane V" below |
+| **X** | `2026-10-10-bf-fidelity-laneX-particles.md` | the emitter reader (`ScalableEmitterDocument` → `src/data/bf2017/fx/`); particles on the GPU (compute) or the CPU (instanced) from the tables; a level's `effects.json` with its cells; exhaust and contrails on ships | `main` | nothing (the export on the desktop or the bucket by key) |
+| **C** | `2026-10-10-bf-fidelity-laneC-cameras.md` | the soldier, aim, vehicle, overview and cinematic cameras from `cameras.json`, one rig with recoil and shake; Hoth's walker on it behind `site.level` | `main` | P0's ray for the arm's cast (reads its branch; a height cast until then) |
+| N | `2026-10-10-bf-fidelity-laneN-scatter.md` | grass, ferns, rocks and backdrop trees from the game's scatter tables, the mask derived until the export solves it | `main` after L (#831) and T's `foliageNodes` | L, T |
+| U | `2026-10-10-bf-fidelity-laneU-headroom.md` | FSR1/TAAU upscaling as the pace's first step; `BatchedMesh` and bundles for the level's statics; occlusion | `main` after L | L; the owner's laptop for the tables |
+
+S, V, X and C run at once on disjoint files (`light/{calibrate,shadows,clouds,contact}.js` and `sun.js`; `light/{volumetrics,flare}.js` and `fog.js`, `post.js`, `passes.js`; `src/lib/three/particles/` and `scripts/bf2017-emitters.mjs`; `src/lib/three/camera/`). `light/apply.js` is touched by S and V (each additive): merge `origin/main` before the PR and keep both sides. `surface/scene.js` is touched by C (one call site) and by lanes L, T, P0 and P1: the same rule.
+
+### Lane V: done and left
+
+Done (branch `claude/fidelity-v-volumetrics`, the plan's five tasks):
+
+- **`volumes.json` from the game's own data.** `node scripts/bf2017-volumes.mjs hoth` wrote `public/models/galaxy/bf2017/levels/hoth/volumes.json`: 130 volumes, the 56 `SimpleVolumetricsEntityData` glows (boxes, from `hoth.lighting.json`) and the 74 light cones (62 `FX_Arctic_LightCone_04`, 12 `_02`, all in the Content subworld, at the hangar's floor). Each cone's size, colour, falloff and fade come from its own `ScalableEmitterDocument`, read from the bucket: the game draws each cone as one direction-aligned quad, `_04` 2 m wide and 5 m tall in a grey of (0.24, 0.25, 0.22), `_02` 1.5 m in a blue of (0.59, 1.07, 1.82), alpha exponent 2.113, faded from 17 m to 20 m. The bucket keeps each folder in the case it was first uploaded in (`data/FX/Lighting/Emitters/` holds `fx/lighting/emitters/em_*`), so the script matches folders without case.
+- **`light/volumetrics.js`**: the volumes as `VolumeNodeMaterial` boxes on their own layer, marched at a quarter of the resolution, dithered, blurred, brought up over the depth by a joint bilateral upsample (so no halo round a figure), added before the bloom. On ultra the nearest 12 by screen area are drawn, on high 6, none below. A volume with a placed spot within 1 m of its apex is lit by a shadow-casting spot of its own on the volume layer, at the placed spot's place, colour and strength; a volume without one glows by its record's emission. `applyGameLight` takes it as `volumetrics` (the `volumes` argument already names the probe volumes).
+- **Fog (`fog.js`'s `fogMedia` and `fogVolume`, the `fog` pass).** The participating media are zero in every one of the 417 VisualEnvironment records in the export except one, and that one has `ParticipatingMediaEnable false`. The scattering the game uses is `ForwardLightScattering`, which 105 of the 176 records with a fog turn on (Hoth's interior at Presence 0.714, its sunset at 0.765, its day at 0). So the pass always draws the forward glow round the sun and marches the media only where a record enables them. Hoth has no Blizzard record (only its LUT), so the fixture shows Hoth's day (no glow: nothing darkens at the horizon) and Felucia's day's fog record (Presence 0.956) on Hoth's sky.
+- **God rays (B2).** No: `GodraysNode` marches only a `DirectionalLight` or `PointLight` with its own shadow map, and `CSMShadowNode`'s cascades are `LwLight`s (plain `Object3D`s), so lane S's four-cascade light cannot feed it. `post.js`'s `raysLight(sun)` keeps lane R's `rays` helper and would take a plain shadow-casting `DirectionalLight` sun. A shim exposing cascade 0 as a `DirectionalLight` is the way to try it once S lands.
+- **Flares (`flare.js`).** The sun's `SunFlareComponentData` (five elements) sets `LensflareNode`'s ghosts and scales the flare by the record's occluder and screen-position curves. The occluder's coverage is measured in the shader from 16 depth taps over the sun's disc. `node scripts/bf2017-volumes.mjs --flares` wrote the game's 12 `LensFlareBlueprint`s to `src/data/bf2017/flares.json` for `eventFlare(name)`.
+- **Motion blur and depth of field as data.** `motionBlur` comes from the weather's `MotionBlurComponentData` (Hoth's day: on, scale 1) on ultra and high, and blurs the camera's motion only (the depth reprojected through the previous frame's camera, `MotionBlurCentered false`). `dof` is built only when given lane C's `{ focus, aperture, focalLength, maxblur }`, with a thin-lens range.
+- The fixture: `node scripts/light-fixture.mjs --volume` (a hangar, six of Hoth's cones, three of them under Hoth's hangar spot, a figure walking through one; `--volume off`, `--weather interior|sunny|felucia`, `--view wide|edge|sun`, `--pan`), shots in `docs/superpowers/evidence/galaxy-engine/V/`, WebGL 2 leg only.
+
+Left:
+
+- **The WebGPU leg and the real frame table**, on the owner's laptop (B5): `node scripts/light-fixture.mjs --volume --tier ultra` and `--tier high`, with and without `--volume off`. SwiftShader's numbers measure the CPU only (medians, ms: ultra 37.8 with the volumes and 33.5 without; high 32.5 with and 43.3 without, which is noise). The budget is 2.5 ms for the pass at 1600 × 900; if the laptop exceeds it, `VOLUME_STEPS` and `FOG_STEPS` are shed first.
+- **Exposure.** The shots are washed out by the uncalibrated exposure (lane S's calibration); `SCATTER` in `volumetrics.js` should be judged again on the calibrated picture.
+- **Hoth's `lights.json` is not written on `main`.** Run `node scripts/bf2017-lights.mjs hoth` (the keys are in the cloud), and the cones under the hangar's ceiling spots will find them. The fixture builds its own.
+- **The god rays off lane S's cascade**: a shim exposing cascade 0 as a `DirectionalLight` once S lands (B2 above).
+- **What a weather crossfade does not reach.** The fog and flare passes are built from the weather's record when the chain is built, so a crossfade does not ease them; rebuild the chain on `setWeather`, or move their numbers into uniforms.
+- **What this lane did not do.** The light cones are drawn as volumes, not as the game's textured quads (`T_LightCone_01_D`): lane X's sprites can draw them too, and one of the two should give way. The flares' own sprite textures (their `ShaderGraph`s) are not drawn: `LensflareNode` draws ghosts of the bloom.
+
+### What the other work must know
+
+- **The Battlefront game, lane 5** (not started): its Task 4 (the cameras) is lane C's `src/lib/three/camera/`; its effects come from lane X's `createEffects`; its lighting from `applyGameLight` as before. Lane 5 writes none of these.
+- **Lane F of #802** (effects' look, `src/lib/three/fx/gameLook.js`, not started): lane X reads the game's emitters themselves, so F's sprite-sheet resolution is X's task 1 and F's lane is not needed as planned; its sound map (task 4) stands on its own.
+- **Lane P4** (hit effects by material, #821): calls lane X's `spawn(name)` with the material grid's effect names once X is on `main`; until then its own look.
+- **Lane L** (#831): lanes V, X and N write `volumes.json`, `effects.json` and `scatter.json` beside the pack, never in `level.json`.
+- **Lane T** (#826, draft): the twins are what lanes N and X's sprites build on (`foliageNodes`); T's flip is unaffected.

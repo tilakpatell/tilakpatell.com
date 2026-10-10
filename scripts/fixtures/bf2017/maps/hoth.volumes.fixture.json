@@ -1,0 +1,177 @@
+{
+ "_from": "hoth_01: three of hoth.lighting.json rows.volumetrics (lane L's reading of the SimpleVolumetricsEntityData), and three of hoth_01.extras.json effects[] (a FX_Arctic_LightCone_04, a _02, and a blowing-snow spawn the reader leaves to lane X), with hoth_01.json's subworlds",
+ "subworlds": [
+  "Levels/MP/Hoth_01/Hoth_01",
+  "Levels/MP/Hoth_01/Hoth_012",
+  "Levels/MP/Hoth_01/Cloudy",
+  "Levels/MP/Hoth_01/Sunset",
+  "Levels/MP/Hoth_01/HighEnd",
+  "Levels/MP/Hoth_01/Content",
+  "Levels/MP/Hoth_01/GameModes",
+  "Levels/MP/Hoth_01/PlanetaryMissions",
+  "Levels/MP/Hoth_01/Mode6",
+  "Levels/MP/Hoth_01/Mode6_Intro",
+  "Levels/MP/Hoth_01/Mode9",
+  "Levels/MP/Hoth_01/FantasyBattle",
+  "Levels/MP/Hoth_01/HeroArena",
+  "Levels/MP/Hoth_01/HvsVIntro",
+  "Levels/MP/Hoth_01/GameModes_Automation",
+  "Levels/MP/Hoth_01/TeamDeathmatch",
+  "Levels/MP/Hoth_01/TeamDeathmatch_Skirmish",
+  "Levels/MP/Hoth_01/TeamDeathmatch_Online",
+  "Levels/MP/Hoth_01/Lobby",
+  "Levels/MP/Hoth_01/LobbySplitScreen",
+  "Levels/MP/Hoth_01/EOR",
+  "Levels/MP/Hoth_01/Cinematics",
+  "Levels/MP/Hoth_01/Outro_Team1",
+  "Levels/MP/Hoth_01/Outro_Team2"
+ ],
+ "volumetrics": [
+  {
+   "id": "Default_Lighting:117",
+   "at": [
+    126.7969,
+    317.7125,
+    -1191.5994
+   ],
+   "yaw": -0.4582,
+   "size": [
+    7.204,
+    7.204,
+    7.204
+   ],
+   "emission": [
+    0.8952,
+    1.2139,
+    1.5
+   ],
+   "exponent": 2,
+   "scale": 0.2,
+   "fade": [
+    -1,
+    -1
+   ],
+   "layer": "Default_Lighting",
+   "_source": "Levels/MP/Hoth_01/Default_Lighting#SimpleVolumetricsEntityData"
+  },
+  {
+   "id": "Default_Lighting:118",
+   "at": [
+    151.2254,
+    369.5427,
+    -1581.8235
+   ],
+   "yaw": 0,
+   "size": [
+    43.6195,
+    43.6195,
+    43.6195
+   ],
+   "emission": [
+    0.1542,
+    0.4338,
+    1
+   ],
+   "exponent": 2,
+   "scale": 0.5,
+   "fade": [
+    -1,
+    -1
+   ],
+   "layer": "Default_Lighting",
+   "_source": "Levels/MP/Hoth_01/Default_Lighting#SimpleVolumetricsEntityData"
+  },
+  {
+   "id": "Default_Lighting:122",
+   "at": [
+    233.343,
+    399.8485,
+    -1787.0597
+   ],
+   "yaw": 0,
+   "size": [
+    67.1868,
+    67.1868,
+    67.1868
+   ],
+   "emission": [
+    0.4869,
+    0.7499,
+    1
+   ],
+   "exponent": 1.36,
+   "scale": 4,
+   "fade": [
+    -1,
+    -1
+   ],
+   "layer": "Default_Lighting",
+   "_source": "Levels/MP/Hoth_01/Default_Lighting#SimpleVolumetricsEntityData"
+  }
+ ],
+ "effects": [
+  {
+   "effect": "FX/Lighting/FX_Arctic_LightCone_04",
+   "sub": 5,
+   "autoStart": true,
+   "position": [
+    207.36,
+    362.427,
+    -1576.96
+   ],
+   "quaternion": [
+    0,
+    1,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/Lighting/FX_Arctic_LightCone_02",
+   "sub": 5,
+   "autoStart": true,
+   "position": [
+    217.558,
+    362.727,
+    -1576.965
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "effect": "FX/Ambient/_MP/Hoth/FX_AmbHoth_TerrainBlowingSnow_CamProx",
+   "sub": 2,
+   "autoStart": false,
+   "position": [
+    150.535,
+    358.783,
+    -1522.051
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  }
+ ]
+}

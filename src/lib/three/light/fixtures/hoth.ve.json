@@ -1,5 +1,5 @@
 {
- "_from": "web/maps/levels/mp/hoth_01/hoth_01.extras.json, environments; the fields readEntry reads, trimmed",
+ "_from": "web/maps/levels/mp/hoth_01/hoth_01.extras.json, environments; the fields readEntry reads, trimmed; the fog's ForwardLightScattering fields from src/data/bf2017/maps/hoth.lighting.json (lane V); the day's SunFlareComponentData (its elements, shaders left out) from the bucket's data/Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01; its MotionBlurComponentData's switches and scale",
  "sunny": {
   "name": "Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01",
   "record": {
@@ -33,9 +33,9 @@
       1
      ],
      "RayleighScatteringCoefficient": [
-      0.00001,
-      0.00001,
-      0.00003
+      1e-05,
+      1e-05,
+      3e-05
      ],
      "LuminanceScale": 35000,
      "SunSize": 0.004,
@@ -65,7 +65,18 @@
      "HeightFogDepth": 50,
      "HeightFogVisibilityRange": 3000,
      "Enable": true,
-     "HeightFogEnable": true
+     "HeightFogEnable": true,
+     "ForwardLightScatteringColor": [
+      0.423267663,
+      0.5967023,
+      1
+     ],
+     "ForwardLightScatteringPhaseG": 0.883,
+     "ForwardLightScatteringStrength": 3.741,
+     "ForwardLightScatteringPresence": 0,
+     "ForwardLightScatteringExtinction": 2.239,
+     "ForwardLightScatteringRotationX": 0,
+     "ForwardLightScatteringRotationY": 60
     }
    ],
    "TonemapComponentData": [
@@ -86,6 +97,214 @@
     {
      "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunny_01/T_CC_Hoth_Sunny_01",
      "ColorGradingMaxHdrValue": 1
+    }
+   ],
+   "SunFlareComponentData": [
+    {
+     "Element1SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": -0.5,
+      "w": 1
+     },
+     "Element1SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element1AlphaOccluderCurve": {
+      "x": 0.434081852,
+      "y": 0.149560273,
+      "z": -1.58364689,
+      "w": 1
+     },
+     "Element1AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element1RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element2SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": -0.5,
+      "w": 1
+     },
+     "Element2SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element2AlphaOccluderCurve": {
+      "x": 0.434081852,
+      "y": 0.149560273,
+      "z": -1.58364689,
+      "w": 1
+     },
+     "Element2AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element2RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element3SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": -0.5,
+      "w": 1
+     },
+     "Element3SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element3AlphaOccluderCurve": {
+      "x": 0.434081852,
+      "y": 0.149560273,
+      "z": -1.58364689,
+      "w": 1
+     },
+     "Element3AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0.25
+     },
+     "Element3RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element4SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0.9549999
+     },
+     "Element4SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element4AlphaOccluderCurve": {
+      "x": 0.434081852,
+      "y": 0.149560273,
+      "z": -1.58364689,
+      "w": 1
+     },
+     "Element4AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element4RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element5SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element5SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element5AlphaOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": -1,
+      "w": 1
+     },
+     "Element5AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element5RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element1Size": {
+      "x": 2,
+      "y": 2
+     },
+     "Element2Size": {
+      "x": 0.5,
+      "y": 0.5
+     },
+     "Element3Size": {
+      "x": 2,
+      "y": 2
+     },
+     "Element4Size": {
+      "x": 2.5,
+      "y": 0.075
+     },
+     "Element5Size": {
+      "x": 0.25,
+      "y": 0.25
+     },
+     "OccluderSize": 4000,
+     "Element1RayDistance": 0,
+     "Element1RotationLocal": 0,
+     "Element1RotationDistMultiplier": 1,
+     "Element2RayDistance": 0.8,
+     "Element2RotationLocal": 0,
+     "Element2RotationDistMultiplier": 1,
+     "Element3RayDistance": 0.9,
+     "Element3RotationLocal": 0,
+     "Element3RotationDistMultiplier": 1,
+     "Element4RayDistance": 0,
+     "Element4RotationLocal": 0,
+     "Element4RotationDistMultiplier": 1,
+     "Element5RayDistance": 0,
+     "Element5RotationLocal": 0,
+     "Element5RotationDistMultiplier": 1,
+     "Element1Enable": true,
+     "Element1RotationAlignedToRay": false,
+     "Element2Enable": true,
+     "Element2RotationAlignedToRay": true,
+     "Element3Enable": true,
+     "Element3RotationAlignedToRay": true,
+     "Element4Enable": true,
+     "Element4RotationAlignedToRay": false,
+     "Element5Enable": false,
+     "Element5RotationAlignedToRay": false
+    }
+   ],
+   "MotionBlurComponentData": [
+    {
+     "MotionBlurEnable": true,
+     "MotionBlurScale": 1,
+     "MotionBlurCentered": false,
+     "RadialBlurEnable": false
     }
    ]
   }
@@ -123,9 +342,9 @@
       1
      ],
      "RayleighScatteringCoefficient": [
-      0.00001,
-      0.00001,
-      0.00003
+      1e-05,
+      1e-05,
+      3e-05
      ],
      "LuminanceScale": 3000,
      "SunSize": 0.004,
@@ -155,7 +374,18 @@
      "HeightFogDepth": 65,
      "HeightFogVisibilityRange": 500,
      "Enable": true,
-     "HeightFogEnable": true
+     "HeightFogEnable": true,
+     "ForwardLightScatteringColor": [
+      0.9818974,
+      0.283554882,
+      0.114725284
+     ],
+     "ForwardLightScatteringPhaseG": 0.984,
+     "ForwardLightScatteringStrength": 3.676,
+     "ForwardLightScatteringPresence": 0.765,
+     "ForwardLightScatteringExtinction": 1.471,
+     "ForwardLightScatteringRotationX": 0,
+     "ForwardLightScatteringRotationY": 60
     }
    ],
    "TonemapComponentData": [
@@ -224,7 +454,18 @@
      "HeightFogDepth": 50,
      "HeightFogVisibilityRange": 3000,
      "Enable": true,
-     "HeightFogEnable": true
+     "HeightFogEnable": true,
+     "ForwardLightScatteringColor": [
+      0.423267663,
+      0.5967023,
+      1
+     ],
+     "ForwardLightScatteringPhaseG": 0.883,
+     "ForwardLightScatteringStrength": 3.741,
+     "ForwardLightScatteringPresence": 0.714,
+     "ForwardLightScatteringExtinction": 2.239,
+     "ForwardLightScatteringRotationX": 0,
+     "ForwardLightScatteringRotationY": 60
     }
    ],
    "TonemapComponentData": [

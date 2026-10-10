@@ -5,6 +5,7 @@
 //
 //   node scripts/light-fixture.mjs [--tier ultra] [--post on|off] [--sky on|off]
 //     [--grid] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
+//     [--volume [on|off]] [--weather interior|sunny|felucia] [--view wide|edge|sun] [--pan]
 //
 // For each leg (?gpu=webgpu, and ?gpu=webgl: the node renderer on a WebGL 2
 // context) it opens scripts/light-fixture/index.html on a Vite dev server
@@ -22,6 +23,14 @@
 //   the wait for the rest);
 // - with --grid (A3): an arena-sized probe grid baked, the bake's time to
 //   the GPU's end, a shot with it and the frame time again.
+// - with --volume (lane V): the hangar of scripts/light-fixture/volumeWorld.js
+//   instead, its shots and numbers into galaxy-engine/V/, a second shot at
+//   the figure's edge inside a lit cone (<label>-<leg>-edge.png) and the
+//   volumes drawn; `--volume off` is the same hangar without them, the
+//   before to compare with; --weather and --view pick the hangar's weather
+//   (lane V's fog with media) and its first view; --pan shoots the walk
+//   toward the wall that covers the sun (<label>-<leg>-pan<t>.png at t 0,
+//   0.5, 0.75, 1: the sun flare's occluder curve).
 // The numbers go to <label>.json beside the shots and to stdout as a table.
 //
 // On Linux without a display both legs draw on SwiftShader (CPU): the
@@ -37,22 +46,24 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = join(ROOT, 'docs/superpowers/evidence/galaxy-engine/R');
 const argv = process.argv.slice(2);
+const volumeAt = argv.indexOf('--volume');
+const volume = volumeAt < 0 ? null : argv[volumeAt + 1] !== 'off';
+const OUT = join(ROOT, 'docs/superpowers/evidence/galaxy-engine', volume == null ? 'R' : 'V');
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 const tier = arg('tier', 'ultra');
-const post = arg('post', 'off') === 'on';
-const label = arg('label', post ? `post-${tier}` : `lit-${tier}`);
+const post = volume != null ? arg('post', 'on') === 'on' : arg('post', 'off') === 'on';
+const label = arg('label', volume != null ? `${volume ? 'volume' : 'novolume'}-${tier}` : post ? `post-${tier}` : `lit-${tier}`);
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
 const sky = arg('sky', 'on') === 'on';
 const grid = argv.includes('--grid');
 const only = arg('only', null)?.split(',');
-const fixture = { tier, post, sky, env: true, only };
+const fixture = { tier, post, sky, env: true, only, ...(volume != null ? { volume, weather: arg('weather', 'interior'), view: arg('view', 'wide') } : {}) };
 
 const { chromium } = await import('playwright-core');
 const sharp = (await import('sharp')).default;
@@ -109,6 +120,18 @@ for (const leg of legs) {
     const png = await shot();
     writeFileSync(join(OUT, `${label}-${leg}.png`), png);
     row.shot = `${label}-${leg}.png`;
+    if (volume != null) {
+      row.volumesLit = await page.evaluate(() => window.__lit.probe.lit());
+      await page.evaluate(() => (window.__lit.probe.view('edge'), window.__lit.draw(8)));
+      writeFileSync(join(OUT, `${label}-${leg}-edge.png`), await shot());
+      if (argv.includes('--pan')) {
+        for (const t of [0, 0.5, 0.75, 1]) {
+          await page.evaluate((x) => (window.__lit.probe.pan(x), window.__lit.draw(6)), t);
+          writeFileSync(join(OUT, `${label}-${leg}-pan${t}.png`), await shot());
+        }
+      }
+      await page.evaluate((v) => (window.__lit.probe.view(v), window.__lit.draw(4)), fixture.view);
+    }
     // A2: with and without the environment
     await page.evaluate(() => (window.__lit.probe.setEnv(false), window.__lit.draw(8)));
     const without = await raw(await shot());
@@ -149,11 +172,11 @@ await browser.close();
 await server.close();
 
 writeFileSync(join(OUT, `${label}.json`), `${JSON.stringify({ size: `${W}x${H}`, adapter: swift ? 'swiftshader' : 'system', rows }, null, 2)}\n`);
-console.log(`| leg | backend | passes | clustered | env diff | programs before → after | mean ms | median ms | p95 ms | grid bake ms | mean with grid |`);
-console.log(`|---|---|---|---|---|---|---|---|---|---|---|`);
+console.log(`| leg | backend | passes | clustered | env diff | programs before → after | mean ms | median ms | p95 ms | grid bake ms | mean with grid | volumes lit |`);
+console.log(`|---|---|---|---|---|---|---|---|---|---|---|---|`);
 for (const r of rows) {
   if (r.error) console.log(`| ${r.leg} | failed: ${r.error} |`);
-  else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ') || 'none'} | ${r.clustered} | ${r.envDiff} | ${r.programsBefore} → ${r.programsAfter} | ${r.mean} | ${r.median} | ${r.p95} | ${r.gridBakeMs ?? '–'} | ${r.gridMean ?? '–'} |`);
+  else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ') || 'none'} | ${r.clustered} | ${r.envDiff} | ${r.programsBefore} → ${r.programsAfter} | ${r.mean} | ${r.median} | ${r.p95} | ${r.gridBakeMs ?? '–'} | ${r.gridMean ?? '–'} | ${r.volumesLit ?? '–'} |`);
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
 }
 process.exit(rows.some((r) => r.error && r.leg !== 'webgpu') ? 1 : 0);

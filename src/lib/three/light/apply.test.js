@@ -21,7 +21,7 @@ describe('applyGameLight', () => {
     expect(scene.fogNode).toBeTruthy();
     expect(renderer.shadowMap.enabled).toBe(true);
     expect(renderer.lighting.maxLights).toBe(1024);
-    expect(light.passes.map((p) => p.kind)).toEqual(['render', 'ssgi', 'ao', 'ssr', 'bloom', 'godrays', 'lensflare', 'traa', 'output']);
+    expect(light.passes.map((p) => p.kind)).toEqual(['render', 'ssgi', 'ao', 'ssr', 'bloom', 'godrays', 'lensflare', 'motionBlur', 'traa', 'output']);
     expect(light.passes.find((p) => p.kind === 'godrays').light).toBe(light.parts.sun.rays);
     light.update(1 / 60, camera);
     // the placed lights in the game's candela times the weather's factor
@@ -47,6 +47,22 @@ describe('applyGameLight', () => {
     expect(light.parts.sun.light.intensity).toBeCloseTo(day);
     expect(light.passes).toEqual([]);
     light.dispose();
+  });
+  it('a level’s volumes.json: marched on ultra into the chain, its volumes updated, taken away', async () => {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+    camera.position.set(4, 2, 4);
+    const volumetrics = { cells: { '0,0': [{ kind: 'cone', pos: [4, 0, 4], quat: [0, 0, 0, 1], scale: [2, 5, 2], color: [1, 1, 1], exponent: 2, emission: 1 }] } };
+    const light = await applyGameLight(scene, fakeRenderer(), hoth.sunny, { tier: 'ultra', camera, lights, volumetrics });
+    expect(light.passes.map((p) => p.kind)).toContain('volumes');
+    light.update(1 / 60, camera);
+    expect(light.parts.volumetrics.lit).toBe(1);
+    // (the spot at (4, 5, 4) is the cone's apex: the cone is lit by it)
+    expect(light.parts.volumetrics.slots[0].u.lit.value).toBe(1);
+    light.dispose();
+    expect(scene.getObjectByName('volumetrics')).toBeFalsy();
+    const mid = await applyGameLight(new THREE.Scene(), fakeRenderer(), hoth.sunny, { tier: 'mid', camera, volumetrics });
+    expect(mid.parts.volumetrics).toBe(null);
   });
   it('on low: no shadow, render and bloom only', async () => {
     const renderer = fakeRenderer();
