@@ -2,23 +2,23 @@
    per cent of its parent, as the tree places it; the faces and colours are
    the tree's, inline. The kit's rules weigh (0,0,1), so a world's own
    classes win. */
-:where(.bf-screen):not(hud-none) { position: absolute; inset: 0; overflow: hidden; color: var(--hud-ink, #f6f3ea); pointer-events: auto; }
-:where(.bf-screen-box):not(hud-none) { position: absolute; box-sizing: border-box; }
-:where(.bf-screen-box[hidden]):not(hud-none) { display: none; }
-:where(.bf-screen-passive):not(hud-none) { pointer-events: none; }
-:where(.bf-screen-text):not(hud-none) { display: flex; width: 100%; height: 100%; align-items: inherit; justify-content: inherit; white-space: nowrap; line-height: 1; text-transform: none; }
-:where(.bf-screen-box[data-type='text']):not(hud-none) { display: flex; overflow: visible; }
-:where(.bf-screen-box[data-type='text'][style*='text-align: center'], .bf-screen-box[data-type='text'][style*='text-align:center']):not(hud-none) { justify-content: center; }
-:where(.bf-screen-box[data-type='text'][style*='text-align: right'], .bf-screen-box[data-type='text'][style*='text-align:right']):not(hud-none) { justify-content: flex-end; }
-:where(.bf-screen-shape, .bf-screen-icon, .bf-screen-film):not(hud-none) { position: absolute; inset: 0; width: 100%; height: 100%; }
+:where(.hud-screen):not(hud-none) { position: absolute; inset: 0; overflow: hidden; color: var(--hud-ink, #f6f3ea); pointer-events: auto; }
+:where(.hud-screen-box):not(hud-none) { position: absolute; box-sizing: border-box; }
+:where(.hud-screen-box[hidden]):not(hud-none) { display: none; }
+:where(.hud-screen-passive):not(hud-none) { pointer-events: none; }
+:where(.hud-screen-text):not(hud-none) { display: flex; width: 100%; height: 100%; align-items: inherit; justify-content: inherit; white-space: nowrap; line-height: 1; text-transform: none; }
+:where(.hud-screen-box[data-type='text']):not(hud-none) { display: flex; overflow: visible; }
+:where(.hud-screen-box[data-type='text'][style*='text-align: center'], .hud-screen-box[data-type='text'][style*='text-align:center']):not(hud-none) { justify-content: center; }
+:where(.hud-screen-box[data-type='text'][style*='text-align: right'], .hud-screen-box[data-type='text'][style*='text-align:right']):not(hud-none) { justify-content: flex-end; }
+:where(.hud-screen-shape, .hud-screen-icon, .hud-screen-film):not(hud-none) { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* a cell is a button with nothing of a button's own look: its widget draws it */
-:where(.bf-screen-cell):not(hud-none) { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
-:where(.bf-screen-label):not(hud-none) { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--font-bf-hud, inherit); font-weight: 700; letter-spacing: 0.04em; }
+:where(.hud-screen-cell):not(hud-none) { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+:where(.hud-screen-label):not(hud-none) { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--font-bf-hud, inherit); font-weight: 700; letter-spacing: 0.04em; }
 /* the game's highlight layers ("Selected…") show on the focused or hovered cell only */
-:where(.bf-screen-cell [data-id*='Selected']):not(hud-none) { opacity: 0; transition: opacity var(--t-fast, 120ms) ease; }
-:where(.bf-screen-cell:is(:focus-visible, :hover) [data-id*='Selected']):not(hud-none) { opacity: 1; }
-:where(.bf-screen-cell:focus-visible):not(hud-none) { outline: 2px solid var(--hud-accent, #ffd34d); outline-offset: 2px; }
-:where(.bf-screen-cell[data-coming]):not(hud-none) { cursor: default; filter: grayscale(1); color: var(--muted, #9a9a9a); }
+:where(.hud-screen-cell [data-id*='Selected']):not(hud-none) { opacity: 0; transition: opacity var(--t-fast, 120ms) ease; }
+:where(.hud-screen-cell:is(:focus-visible, :hover) [data-id*='Selected']):not(hud-none) { opacity: 1; }
+:where(.hud-screen-cell:focus-visible):not(hud-none) { outline: 2px solid var(--hud-accent, #ffd34d); outline-offset: 2px; }
+:where(.hud-screen-cell[data-coming]):not(hud-none) { cursor: default; filter: grayscale(1); color: var(--muted, #9a9a9a); }
 @media (prefers-reduced-motion: reduce) {
-  :where(.bf-screen *):not(hud-none) { transition: none !important; animation: none !important; }
+  :where(.hud-screen *):not(hud-none) { transition: none !important; animation: none !important; }
 }

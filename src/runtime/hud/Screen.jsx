@@ -28,7 +28,7 @@ function ShapeBox({ name, colour }) {
   const s = shapeOf(name);
   if (!s) return null;
   return (
-    <svg className="bf-screen-shape" viewBox={s.viewBox} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+    <svg className="hud-screen-shape" viewBox={s.viewBox} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
       {s.paths.map((p, i) => (
         <path key={i} d={p.d} fill={p.stroke ? 'none' : (colour ?? p.fill)} fillRule={p.fillRule} stroke={p.stroke ? (colour ?? p.stroke) : undefined} strokeWidth={p.strokeWidth} strokeLinecap={p.strokeLinecap} opacity={p.opacity} />
       ))}
@@ -62,7 +62,7 @@ function Box({ box, parent, k, ctx }) {
     const cells = box.children ?? [];
     const horizontal = cells.length > 1 ? cells[1].x !== cells[0].x : true;
     return (
-      <div {...common} className="bf-screen-box bf-screen-list" role="list">
+      <div {...common} className="hud-screen-box hud-screen-list" role="list">
         {cells.map((c, i) => (
           <Cell key={c.id} cell={c} parent={box} k={k} ctx={ctx} index={i} cells={cells} horizontal={horizontal} />
         ))}
@@ -70,13 +70,13 @@ function Box({ box, parent, k, ctx }) {
     );
   }
   return (
-    <div {...common} className={`bf-screen-box${PASSIVE.has(box.type) ? ' bf-screen-passive' : ''}`}>
+    <div {...common} className={`hud-screen-box${PASSIVE.has(box.type) ? ' hud-screen-passive' : ''}`}>
       {own ?? (
         <>
-          {box.type === 'text' && box.text ? <span className="bf-screen-text">{box.text}</span> : null}
+          {box.type === 'text' && box.text ? <span className="hud-screen-text">{box.text}</span> : null}
           {box.shape ? <ShapeBox name={box.shape} colour={box.type === 'vectorShape' && box.colour !== 'rgb(255 255 255)' ? box.colour : null} /> : null}
-          {box.svg ? <GameIcon name={box.svg.split('/').pop()} className="bf-screen-icon" /> : null}
-          {film ? <Film film={film} className="bf-screen-film" /> : null}
+          {box.svg ? <GameIcon name={box.svg.split('/').pop()} className="hud-screen-icon" /> : null}
+          {film ? <Film film={film} className="hud-screen-film" /> : null}
           {kids}
         </>
       )}
@@ -97,7 +97,7 @@ function Cell({ cell, parent, k, ctx, index, cells, horizontal }) {
     <button
       type="button"
       role="listitem"
-      className="bf-screen-box bf-screen-cell"
+      className="hud-screen-box hud-screen-cell"
       data-id={cell.id}
       data-link={cell.link}
       data-coming={cell.coming || undefined}
@@ -109,7 +109,7 @@ function Cell({ cell, parent, k, ctx, index, cells, horizontal }) {
       aria-disabled={cell.coming || undefined}
     >
       {cell.children?.length ? <Boxes boxes={cell.children} parent={cell} k={k} ctx={ctx} /> : null}
-      {hasText(cell) ? null : <span className="bf-screen-label">{cell.label}</span>}
+      {hasText(cell) ? null : <span className="hud-screen-label">{cell.label}</span>}
     </button>
   );
 }
@@ -128,7 +128,7 @@ export default function Screen({ tree, label = '', modal = false, onLink = null,
   return (
     <div
       ref={ref}
-      className={`bf-screen ${states} ${className}`.trim()}
+      className={`hud-screen ${states} ${className}`.trim()}
       role={modal ? 'dialog' : 'region'}
       aria-modal={modal || undefined}
       aria-label={label || undefined}
