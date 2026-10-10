@@ -72,6 +72,8 @@ describe('the published assets’ manifest', () => {
     put(pub, 'models/galaxy/surface/hilt.ultra.glb', 'hilt ultra');
     put(pub, 'models/galaxy/surface/meshy.glb', 'meshy');
     put(pub, 'models/galaxy/bf2017/clips/humanoid.glb', 'pack');
+    put(pub, 'films/bf2017/planet-hoth-01.webm', 'film');
+    put(pub, 'films/bf2017/planet-hoth-01.webp', 'poster');
     const credits = {
       'crew-luke': { title: 'Star Wars Battlefront II (2017): characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh', source: GAME, file: '/models/galaxy/crew/luke.glb' },
       'surface-hilt': { title: 'Star Wars Battlefront II (2017): gameplay/hilt_mesh', source: GAME, file: '/models/galaxy/surface/hilt.glb' },
@@ -80,6 +82,7 @@ describe('the published assets’ manifest', () => {
     };
     const got = gameFiles(credits, pub);
     expect(got.map((f) => [f.path, f.tier, f.from])).toEqual([
+      ['films/bf2017/planet-hoth-01.webm', 'film', 'films/bf2017/planet-hoth-01.webm'],
       ['models/galaxy/bf2017/clips/humanoid.glb', 'pack', 'models/galaxy/bf2017/clips/humanoid.glb'],
       ['models/galaxy/crew/luke.far.glb', 'crew', 'characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh'],
       ['models/galaxy/crew/luke.glb', 'crew', 'characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh'],

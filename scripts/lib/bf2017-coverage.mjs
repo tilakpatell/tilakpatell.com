@@ -3,9 +3,11 @@
 // order:
 //
 //   used          a site file names it (the consumer is `by`)
-//   excluded      a rule keeps it out: the sequel era (`isSequel`), or the
-//                 uploader's scaffolding and notes (the owner holds the
-//                 licence for everything else, the fonts included)
+//   excluded      a rule keeps it out: the sequel era (`isSequel`; for the
+//                 films, lane M's `isSequelFilm`, which also knows the
+//                 campaign's mission codes and act 3), the uploader's
+//                 scaffolding and notes, or a licence the owner does not
+//                 hold (the fonts licensed to EA: lane M's `fontAllowed`)
 //   not-uploaded  a manifest lists it and the bucket's listing has none of
 //                 its files (`by`: the lane that uploads it, D for textures)
 //   owned         the owners table (bf2017-owners.mjs) names a lane for it
@@ -24,6 +26,7 @@
 // summarise(classified) → { byPart, byLane, totals }; ledgerMarkdown(summary, { at, unowned })
 
 import { isSequel } from './bf2017-manifest.mjs';
+import { fontAllowed, isSequelFilm } from './bf2017-ui.mjs';
 
 export const STATES = ['used', 'owned', 'excluded', 'not-uploaded', 'unowned'];
 export const PARTS = ['models', 'collision', 'anims', 'textures', 'physics', 'terrain', 'maps', 'maps.lights', 'maps.decals', 'maps.actors', 'maps.vehicles', 'maps.effects', 'scatter', 'animtracks', 'movies', 'fonts', 'svg', 'strings', 'data', 'index', 'test', 'other'];
@@ -183,6 +186,8 @@ export function classify(row, { consumers, listing = null, owners = [] }) {
   const used = row.keys.find((k) => consumers.names.has(k));
   if (used) return { state: 'used', by: consumers.by.get(used) };
   if (row.part !== 'data' && hit(row, isSequel)) return { state: 'excluded', by: 'era' };
+  if (row.part === 'movies' && isSequelFilm(row.name)) return { state: 'excluded', by: 'era' };
+  if (row.part === 'fonts' && !fontAllowed(row.name)) return { state: 'excluded', by: 'licence' };
   if (hit(row, (s) => EXCLUDED_PREFIXES.some((p) => (p.endsWith('/') ? s.startsWith(p) : s.includes(p))))) return { state: 'excluded', by: 'scaffolding' };
   if (DOCS.test(lower(row.name))) return { state: 'excluded', by: 'scaffolding' };
   if (listing && row.files.length && !row.files.some((f) => listing.has(pathKey(f)))) return { state: 'not-uploaded', by: row.part === 'textures' ? 'D' : 'listing' };

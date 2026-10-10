@@ -979,3 +979,30 @@
 .surface-heroes .surface-stats { display: flex; flex-wrap: wrap; gap: 0.15rem 0.6rem; margin-top: 0.2rem; font-size: 0.66rem; font-variant-numeric: tabular-nums; color: rgba(242, 239, 232, 0.65); }
 .surface-heroes .surface-stats i { font-style: normal; }
 .surface-heroes .surface-mods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
+
+/* the 2017 game's icons (GameIcon.jsx, src/lib/bf2017/icons.js) beside the
+   things it has: the guns, the heroes' weapons, their abilities */
+.surface-game-icon {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.2em;
+  margin-right: 0.3em;
+  fill: currentColor;
+  color: inherit;
+}
+.surface-game-icon.is-arm {
+  width: 3em;
+  height: 0.9em;
+  vertical-align: -0.1em;
+}
+.surface-power .surface-game-icon {
+  width: 1.4em;
+  height: 1.4em;
+  margin: 0;
+}
+/* the ability buttons' words in the game's open HUD face (Cuprum, for the
+   game's Univers Condensed: src/lib/bf2017/fonts.css) */
+.surface-power span { font-family: var(--font-bf-hud, inherit); letter-spacing: 0.08em; }
+/* the hero on the game's hero-select stage, in the Outfit tab (HeroStage.jsx) */
+.surface-hero-stage { display: block; width: 100%; aspect-ratio: 4 / 3; max-height: 42vh; margin: 0 0 0.6rem; border-radius: 8px; background: #05070c; touch-action: pan-y; cursor: grab; }

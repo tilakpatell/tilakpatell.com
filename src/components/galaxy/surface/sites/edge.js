@@ -48,7 +48,8 @@ export const SITES = {
         mark: '#120e0d',
       },
     },
-    water: { level: 2.5, color: '#ff3c06', deep: '#240703', kind: 'lava', glow: 2.1 },
+    // (video: the game's lava film flows in the rivers on high and ultra, lavaFilm.js)
+    water: { level: 2.5, color: '#ff3c06', deep: '#240703', kind: 'lava', glow: 2.1, video: 'volcano' },
     weather: [
       { kind: 'ash', count: 2600, color: '#3a3030' },
       { kind: 'embers', count: 900 },

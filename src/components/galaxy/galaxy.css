@@ -723,3 +723,49 @@
 @media (max-width: 767px) { .galaxy-battleend { top: max(34%, calc(var(--nav-h, 68px) + 200px)); } }
 @media (prefers-reduced-motion: no-preference) { .galaxy-battleend { animation: galaxy-end-in 0.45s ease-out both; } }
 @keyframes galaxy-end-in { from { opacity: 0; transform: translate(-50%, -0.6rem) scale(0.96); } }
+
+/* the game's loading film of the system, at the top of its card (Film.jsx) */
+.galaxy-film-card {
+  aspect-ratio: 16 / 9;
+  margin: 0.6rem 0 0.4rem;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+/* a mode the galaxy has here, on the game's own menu tile (GalaxyPanel's ModeTile) */
+.galaxy-mode-tile {
+  position: relative;
+  display: block;
+  margin-top: 0.75rem;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: #fff;
+  text-decoration: none;
+}
+.galaxy-mode-tile-film {
+  aspect-ratio: 504 / 408;
+  max-height: 200px;
+  width: 100%;
+}
+.galaxy-mode-tile-text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / 0.8));
+}
+.galaxy-mode-tile-text b {
+  display: block;
+  font-family: var(--font-bf-hud);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent, #7fd4ff);
+}
+.galaxy-mode-tile:focus-visible {
+  outline: 2px solid var(--accent, #7fd4ff);
+  outline-offset: 2px;
+}

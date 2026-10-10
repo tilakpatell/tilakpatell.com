@@ -72,6 +72,17 @@ describe('classify', () => {
     expect(c('data:AI/SoldierBlueprint')).toEqual({ state: 'used', by: 'src/data/bf2017/ai.json' });
     expect(c('maps:levels/mp/hoth_01/hoth_01').state).toBe('used');
   });
+  it('keeps the sequel era’s films and act 3 out, and the fonts licensed to EA', () => {
+    const film = (name) => ({ id: `movies:${name.toLowerCase()}`, part: 'movies', name, files: [], bytes: 0, keys: [normalise(name)] });
+    const font = (name) => ({ id: `fonts:${name.toLowerCase()}`, part: 'fonts', name, files: [], bytes: 0, keys: [normalise(name)] });
+    const none = { consumers: consumersOf({}), owners: OWNERS };
+    expect(classify(film('Cinematics/Story/A2/M1TAK/game/A2_M1TAK_DS01_S0100_FMV'), none)).toEqual({ state: 'excluded', by: 'era' });
+    expect(classify(film('Cinematics/Story/A3/M1PIL/game/A3_M1PIL_DS01_S0100_FMV'), none)).toEqual({ state: 'excluded', by: 'era' });
+    expect(classify(film('Cinematics/Story/A1/M1END/game/A1_M1END_DS01_S0100_FMV'), none).state).toBe('owned');
+    expect(classify(font('UI/Resources/Fonts/LinotypeUnivers-420Cn'), none)).toEqual({ state: 'excluded', by: 'licence' });
+    expect(classify(font('UI/Resources/Fonts/Aurebesh'), none)).toEqual({ state: 'excluded', by: 'licence' });
+    expect(classify(font('UI/Resources/Fonts/Roboto-Regular'), none).state).toBe('owned');
+  });
   it('keeps the sequel era out', () => {
     expect(c('models:characters/hero/kyloren/kyloren_01/kyloren_01_mesh')).toEqual({ state: 'excluded', by: 'era' });
     expect(c('maps.lights:levels/mp/takodana_01/takodana_01')).toEqual({ state: 'excluded', by: 'era' });
@@ -82,8 +93,8 @@ describe('classify', () => {
     expect(c('test:test/web/models/test_cube.glb')).toEqual({ state: 'excluded', by: 'scaffolding' });
     expect(c('maps:a3/levels/sp/rootlevel/rootlevel_a3/rootlevel_a3').by).toBe('scaffolding');
   });
-  it('excludes nothing by licence: the owner holds it for every font', () => {
-    expect(c('fonts:ui/resources/fonts/linotypeunivers')).toEqual({ state: 'owned', by: 'M' });
+  it('excludes the fonts licensed to EA, not the owner (the spec’s A5; lane M’s fontAllowed)', () => {
+    expect(c('fonts:ui/resources/fonts/linotypeunivers')).toEqual({ state: 'excluded', by: 'licence' });
   });
   it('keeps the uploader’s notes out as scaffolding', () => {
     expect(c('index:readme.md')).toEqual({ state: 'excluded', by: 'scaffolding' });

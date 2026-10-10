@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path';
 import { deref, follow, isSequel, numbersOf, objectsOf, readWebJson, rootOf, shortName, transformOf, webFile } from './bf2017-ebx.mjs';
 import { indexOf } from './bf2017-rulebook.mjs';
 import { levelName } from './bf2017-rulebook-map.mjs';
+import { fontAllowed } from './bf2017-ui.mjs';
 
 const where = (asset, obj, path = '') => `${asset.name}#${obj.$type}${path ? `.${path}` : ''}`;
 const v3 = (p) => (p ? [p.x, p.y, p.z] : null);
@@ -265,7 +266,8 @@ export function uiRow(root, widgetNames, { files = [], depth = 3 } = {}) {
   };
 }
 
-// The in-game icons and the HUD fonts the web build has, under `out`.
+// The in-game icons and the HUD fonts the web build has, under `out` (the
+// fonts only where their licence lets them ship: none of the HUD's).
 export function copyUiAssets(root, out, ui) {
   const copied = { icons: 0, fonts: 0, missing: [] };
   const copy = (rel, to) => {
@@ -276,6 +278,9 @@ export function copyUiAssets(root, out, ui) {
     return true;
   };
   for (const s of ui.inGame) if (copy(`svg/${s}`, join(out, 'icons', s))) copied.icons++;
-  for (const f of ui.fonts.filter((x) => x.hud)) if (copy(`fonts/${f.file}`, join(out, 'fonts', f.file.split('/').pop()))) copied.fonts++;
+  // (the HUD's faces are Linotype's and the game's own, licensed to EA and not
+  // to this site: none is copied; src/lib/bf2017/fonts.css draws the HUD in
+  // the drop's open faces, which scripts/bf2017-ui.mjs ships)
+  for (const f of ui.fonts.filter((x) => x.hud && fontAllowed(x.file))) if (copy(`fonts/${f.file}`, join(out, 'fonts', f.file.split('/').pop()))) copied.fonts++;
   return copied;
 }

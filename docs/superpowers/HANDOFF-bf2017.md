@@ -19,7 +19,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | E5 | Felucia, Kessel, Sullust, Pillio, Vardos, Fondor as systems with skins and surfaces | E0 | | `claude/bf2017-e5-new-systems` | |
 | O | the object library (every placeable set indexed), the seven mapless worlds dressed by biome, `GAME_FOR` props, the game's clouds, the living world | nothing | | `claude/bf2017-o-library` | |
 | Q | the space levels as set pieces, the capitals, the asteroids on their tracks, the sky panoramas, the map's globes | nothing (#793 read) | | `claude/bf2017-q-space` | |
-| M | the films on the cards, veils and briefings; the tiles and tutorials for the game's world; the lava film; the open fonts, the icons, the strings, the UI widgets, the hero stage | nothing | | `claude/bf2017-m-frontend` | |
+| M | the films on the cards, veils and briefings; the tiles and tutorials for the game's world; the lava film; the open fonts, the icons, the strings, the UI widgets, the hero stage | nothing | `session_017cZLBzaqCrPFfg6zezARLt` | `claude/bf2017-m-frontend` | done, below |
 | A | every clip: stances, additive aims and hits, cover and awareness, emotes and end of round, the cinematics player, first person, riders and crews, the band, the fauna rigs | nothing (#839's B, Y, W kept off) | | `claude/bf2017-a-clips` | |
 
 Coverage (from lane Z's ledger, `docs/superpowers/evidence/bf2017-coverage/`, refreshed by every lane's PR): used · owned · excluded · not-uploaded · unowned =
@@ -64,6 +64,36 @@ The rule is the owners table's `finding: true` entries, first match wins: a fold
 A lane that merges sets its `merged` in `LANES`; from then `npm run coverage:bf2017` fails on every row it still owns and has not used, which is the next design's finding.
 
 **Corrections to this file**, in the spec's §7: lane L's "then Endor" is E0's; the placed lights are drawable today and E runs `bf2017-lights.mjs` per world; the fonts, icons and strings are lane M's for the whole site, the game's lane 5 consumes `src/lib/bf2017/ui/`; the collision meshes and the animation tracks had no consumer in any design and have one now (E0, Q).
+
+### Lane M: the films, the front end, the fonts, the icons, the strings and the UI (done)
+
+One script cuts all of it, `node scripts/bf2017-ui.mjs films|icons|fonts|strings|bitmaps|all [--dry]` (pure parts and tests in `scripts/lib/bf2017-ui.mjs`); the site reads it through `src/lib/bf2017/{films,icons,strings}.js`, `fonts.css` and `ui/`, and two kit parts, `src/runtime/hud/Film.jsx` and `GameIcon.jsx`.
+
+- **Films**: 83 of the drop's 116 published to `site-assets` as the drop's WebM, untouched (2.6 GB; `tier: 'film'` in `galaxyAssets.json`, through `assets-publish.mjs`'s `gameFiles`, which now walks `public/films/bf2017/`), each with a committed poster (`ffmpeg -ss 1`, WebP, 640 wide) and, for the 26 campaign films, the game's English lines as WebVTT captions (the `.ssa` scripts name string keys; 248 of 249 resolve). `src/data/bf2017/films.json` lists only what is published. The planets' 22 loading films play on the system card (`GalaxyPanel`) and the landing veil (`SurfaceView`'s `LoadingVeil`, which takes a `backdrop` now, with one of the game's loading hints); a system with none (Nevarro, Mandalore, Sorgan, Lothal, Coruscant, Dagobah, Mustafar, Alderaan) keeps its card as it was. The campaign's cinematics are the briefings on `/galaxy/<world>/mission` (`Briefing.jsx`: Endor 7 scenes, Naboo 5, Bespin 3; Fondor, Pillio, Vardos and Sullust's wait for lane E5's systems and light up by their `level`), muted, captioned, skippable. The 24 menu tiles, 8 tutorials and the logo are `tilesFor`, `tutorials()` and `logo()` for the game's world; the galaxy card shows the multiplayer tile where a world has a galactic assault. A film plays only while on screen, muted, never on a saver connection or with reduced motion (`mayPlay`).
+- **Not published** (33): the era rule's (M1TAK, M4JAK, M5STA and its NIS, the Crait, D'Qar, Jakku, Starkiller, Takodana, Resurgent and Paintball films) and **the whole of act 3, Resurrection** (A3_*: thirty years on, the First Order's rise; stricter than the plan's list, by the autopilot's rule); the two VP6 effect textures nothing asks for (`MT_CapitalShipDestruction`, the Death Star II explosion). `films.json`'s `excluded` names each with its reason.
+- **The one re-encode**: `MT_Volcano2` is VP6 in Matroska, which no browser decodes, so it is cut once to VP9 (same 1024² frames, 30 fps, 60 s, 9.8 MB). It flows in Mustafar's lava rivers on high and ultra (`lavaFilm.js` → `water.js`'s `flow`; `sites/edge.js`'s `water.video: 'volcano'`), the shader's own lava under it, flipped as the game stores it.
+- **Icons**: 626 of 702 in 39 sprites (`public/ui/bf2017/<family>.svg`, white made `currentColor`), 76 of the sequel era left out; `icon(name)` by the game's name or the site's (`ICON_FOR`: guns, heroes' weapons, their abilities by the game's slot, classes, sides, vehicles); null where the game has none. The loadout's cards and gun list and the HUD's ability buttons draw them. The galaxy map's markers are drawn in 3D and still use their own.
+- **Strings**: `src/data/bf2017/strings.json` holds lane 0's 69 and the families the galaxy reads (1,043); the whole English table (19,482) is under `public/ui/bf2017/strings/<family>.json` (`loadFamily`). `text(key, args)` fills `{0}`, `{0:d}`, `{0:f.2}`, `%s`; a missing key gives the key.
+- **UI bitmaps**: none in the bucket (`web/textures/ui/` has `art/buttons` and `resources/cube` only): the 111 the site would cut (portraits, mode and side tiles, the HUD's art) are the desktop's never-queued textures (`not-uploaded` in the ledger). `bf2017-ui.mjs bitmaps` cuts them the day they land; `bitmaps.json` says how many are missing.
+- **The hero stage**: lane E0's `--inside` is not on `main`, so the stage is a kit (`node scripts/bf2017-kit.mjs frontendstage --pieces 'levels/frontend/objects/nowhere*'`, 2 pieces, 336 KB, published): the Frontend level's Backdrop_01 dome and pill lights, placed as `frontend.bin` places them, lit by `VE_FrostEnd` (`node scripts/bf2017-light.mjs frontend --map levels/frontend/frontend --main Levels/Frontend/Lighting/VE_FrostEnd`). The Outfit tab stands the hero on it (`heroStage.js`, `HeroStage.jsx`) in lane A's `frontend.idle` when its packs carry it, else its idle; on low, or for a hero not on the game's skeleton, the flat panel as before. Lane A's branch had not landed.
+- **Removed**: lane 0's four HUD fonts under `public/battlefront/fonts/` (Linotype Univers and RaxusPrime, which are EA's licences, not the site's); `copyUiAssets` copies only open faces now.
+
+**The fonts' licences** (`public/fonts/bf2017/README.md`, each licence's text beside the files):
+
+| face | files | licence (as each file's name table states it) | ships |
+| --- | --- | --- | --- |
+| Roboto | `Roboto-Regular`, `Roboto-MediumItalic` | Apache 2.0 (Google) | yes |
+| Noto Sans CJK | `NotoSansCJKsc-Regular`, `NotoSansCJKkr-Regular` | SIL OFL 1.1 (Adobe, for Google's Noto) | yes, loaded only for CJK glyphs |
+| Noto Kufi Arabic | `NotoKufiArabic-Regular` | SIL OFL 1.1 (Google) | yes, loaded only for Arabic glyphs |
+| Cuprum | `Cuprum-Regular`, `Cuprum-Bold` | SIL OFL 1.1 (Jovanny Lemonad) | yes: the HUD's face, in Univers Condensed's place |
+| Aurebesh (the game's) | `Aurebesh.ttf` | none in the file; fsType 1 (restricted embedding); made in Fontographer 3.5, origin unknown | no: the site's own OFL Aurebesh (SilvinoR's, `public/fonts/aurebesh/`) is `--font-aurebesh`. The owner may know its maker. |
+| Linotype Univers | `LinotypeUnivers-*` (5), `LT_UniversCond820`, `UniversLT-65Bold` | commercial (Linotype, Monotype) | no |
+| DFP HS Gothic | `DFPHSGothic-W5`, `-W7` | commercial (DynaComware) | no |
+| AR Yenti | `ARYenti*` (2) | commercial (Arphic) | no |
+| News Gothic | `NewsGothicRomanBT` | commercial (Bitstream) | no |
+| RaxusPrime | `RaxusPrimeNumericalMonospace_*` (3) | none in the file; the game's own | no |
+
+Checking it: `npx vitest run scripts/lib/bf2017-ui.test.mjs src/lib/bf2017 src/runtime/hud/film.test.jsx src/components/galaxy/Briefing.test.jsx src/components/galaxy/surface/lavaFilm.test.js src/components/galaxy/surface/water.test.js src/components/galaxy/surface/heroStage.test.js src/components/galaxy/surface/HeroStage.test.jsx`; shots in `docs/superpowers/evidence/bf2017-frontend/`.
 
 ## Done
 

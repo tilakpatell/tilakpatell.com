@@ -51,6 +51,16 @@ The mod archives already on the owner's machine are listed in the design (Expand
 
 `HANDOFF-bf2017.md` is the assets' hand-off and its status table is theirs. What this game takes from them, so nobody builds it twice: lane 1's `walrus.js` (figures on the game's skeleton), lane L's level pack and loader (run on the whole map with `--frame map --no-fit`, spec decision 15), lane G's light from the level's sky records, lane X's stroke tables for the heroes, lane V's vehicle models, lane S's fetch pool. What this game adds that they do not: the rules, the modes, the bots, the Battle Points, the HUD, the route.
 
+## From the assets' lane M (the front end)
+
+The fonts, icons and strings are not this game's lane 5's to import: lane M (`HANDOFF-bf2017.md`, "Lane M") imported them for the whole site, and lane 5 consumes them:
+
+- **The HUD's widgets**: `src/lib/bf2017/ui/` (`widget(name)` with its tree, layout and words in the game's text; `placeWidget`; `colour(index)` from the game's palette; `fontFor(gameFont)`; `bitmap`, `portrait` once the bucket has `UI/Bitmaps`).
+- **The fonts**: `src/lib/bf2017/fonts.css` (`--font-bf-hud`, `--font-bf-text`, `--font-aurebesh`). Lane 5's plan names `LinotypeUnivers-520CnMedium` and `RaxusPrimeNumericalMonospace_Regular`: those are EA's licences, not the site's, and were taken out of `public/battlefront/fonts/`; `fontFor` maps the widgets' Univers and RaxusPrime faces onto Cuprum and Roboto.
+- **The icons**: `src/lib/bf2017/icons.js` and `src/runtime/hud/GameIcon.jsx` (the sprites under `public/ui/bf2017/`), in place of lane 0's copies under `public/battlefront/icons/`.
+- **The strings**: `src/lib/bf2017/strings.js` (`text`, `nameOf`, `loadFamily` for the whole table), beside `rulebook.js`'s `stringOf`.
+- **The films**: `src/lib/bf2017/films.js`'s `tilesFor(mode)`, `tutorials()`, `logo()` for the menu and the help, and `src/runtime/hud/Film.jsx` to play them.
+
 ## For the streaming session (the other account)
 
 The game reads assets through one adapter, `src/components/battlefront/assets.js` (spec section 7): `loadModel(name, { lod })`, `loadClip(name)`, `loadMap(level)`, `loadTerrain(level)`, `loadPhysics(name)`, `loadStrings()`. Lane 5 writes the `dev` backend (Vite serves the local export's `web_opt/` at `/bf2/` from `BF2_ROOT`). The `bucket` backend is yours: the authenticated Supabase Storage loader (`web_opt/README.md` shows the headers), the cache headers and service worker from your asset-hosting design, and the gate in front of `/battlefront`. Build to the adapter's shapes and the game needs no change to switch. The names the game asks for are the export's own: model names from `models.jsonl`, clip names from `anims.jsonl`, level paths like `levels/mp/hoth_01/hoth_01`.

@@ -7,6 +7,7 @@ import { FILMS, SYSTEMS, eraById, eraOf, filmLabel, parseSystem, systemById, yea
 import { canLand } from '../components/galaxy/surface/sites';
 import { starfighterAt } from '../components/galaxy/surface/missions/starfighterMaps';
 import { CRAWLS } from '../components/galaxy/crawls';
+import Briefing from '../components/galaxy/Briefing';
 import '../components/galaxy/galaxy.css';
 import '../components/galaxy/mission.css';
 
@@ -16,9 +17,10 @@ const OpeningCrawl = lazy(() => import('../components/experience/OpeningCrawl'))
 // galaxy is going to be, as a holotable briefing: its opening crawl (a
 // button plays it, with the main title), who you play, what you're up
 // against, the three things to do and how it'll fly; then where it is and
-// what's there now. Most are still being built ('soon'); the ones that are
-// already here (the Death Star's trench run, and boarding it) go straight
-// in. From here: back to the system (out of hyperspace there), on to the
+// what's there now; and, for a world the 2017 game's campaign went to, its
+// cinematics as the briefing (Briefing.jsx). Most are still being built
+// ('soon'); the ones that are already here (the Death Star's trench run,
+// and boarding it) go straight in. From here: back to the system (out of hyperspace there), on to the
 // next briefing, or the whole galaxy map.
 export default function GalaxyMission() {
   const navigate = useNavigate();
@@ -114,6 +116,8 @@ export default function GalaxyMission() {
             <span className="mission-target mission-target-3" />
           </div>
         </header>
+
+        <Briefing system={sys.id} name={sys.name} />
 
         <div className="mission-grid">
           <section className="mission-card" aria-labelledby="mission-objectives">

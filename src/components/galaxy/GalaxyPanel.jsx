@@ -12,9 +12,13 @@ import { FILMS, eraById, eraOf, filmLabel, filmsOf, goalsOf, systemById, yearLab
 import { placesOf } from './places';
 import { Oath, SystemWar } from './WarCard';
 import { useWar } from './useWar';
+import { Film } from '../../runtime/hud';
+import { filmFor, tilesFor } from '../../lib/bf2017/films';
+import '../../lib/bf2017/fonts.css';
 
 // Beside the galaxy (a bottom sheet on a phone): the system you're in, as
-// its card: where it is in the galaxy, its era and the films it's in, the
+// its card: the game's loading film of it (Battlefront II's, where the game
+// went there), where it is in the galaxy, its era and the films it's in, the
 // moment it's shown at, what it is, a line from the films (with the
 // recording, where there is one, or else the line made in the speaker's
 // voice), its facts, and its mission (a briefing
@@ -45,6 +49,22 @@ function Ships({ ship, onShip }) {
   );
 }
 
+// the game's menu tile for a mode the galaxy has here: a galactic assault
+// plays as the 2017 game's own multiplayer tile does
+function ModeTile({ game }) {
+  const assault = [game, ...(game.also ?? [])].find((x) => x.to?.includes('mission=assault'));
+  const tile = assault ? tilesFor('assault')[0] : null;
+  if (!tile) return null;
+  return (
+    <Link to={assault.to} className="galaxy-mode-tile">
+      <Film film={tile} className="galaxy-mode-tile-film" />
+      <span className="galaxy-mode-tile-text">
+        <b>Galactic Assault</b> {assault.title}
+      </span>
+    </Link>
+  );
+}
+
 function Mission({ system }) {
   const g = system.game;
   const live = g.status === 'live';
@@ -63,6 +83,7 @@ function Mission({ system }) {
         {g.role} · {FILMS[g.film].title}
       </p>
       <p className="galaxy-mission-pitch">{g.pitch}</p>
+      <ModeTile game={g} />
       <div className="mt-3 flex flex-wrap gap-2">
         {live ? (
           <Link to={g.to} className="btn btn-primary">
@@ -201,6 +222,7 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
           )}
         </p>
       )}
+      <Film film={filmFor({ system: system.id })} className="galaxy-film-card" label={`${system.name}, from Star Wars Battlefront II’s loading film`} />
       <h2 className="universe-title galaxy-title">{system.name}</h2>
       <p className="galaxy-where">
         {[system.region, system.sector, system.grid && `Grid ${system.grid}`].filter(Boolean).join(' · ')}

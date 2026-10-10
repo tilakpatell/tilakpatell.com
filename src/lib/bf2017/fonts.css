@@ -1,0 +1,57 @@
+/* The 2017 game's open-licence faces (public/fonts/bf2017/, its README and
+   licences beside them; scripts/bf2017-ui.mjs ships them as the drop has
+   them). The game's HUD is drawn in Linotype Univers and RaxusPrime, which are
+   licensed to EA and not to this site: Cuprum (a condensed sans, the game's
+   own second HUD face) stands in for Univers Condensed, Roboto for the rest.
+   The CJK and Arabic faces load only for a glyph in their ranges. */
+@font-face {
+  font-family: 'Cuprum';
+  src: url('/fonts/bf2017/Cuprum-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cuprum';
+  src: url('/fonts/bf2017/Cuprum-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto BF';
+  src: url('/fonts/bf2017/Roboto-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto BF';
+  src: url('/fonts/bf2017/Roboto-MediumItalic.ttf') format('truetype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Kufi Arabic BF';
+  src: url('/fonts/bf2017/NotoKufiArabic-Regular.ttf') format('truetype');
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans CJK BF';
+  src: url('/fonts/bf2017/NotoSansCJKkr-Regular.ttf') format('truetype');
+  unicode-range: U+1100-11FF, U+3130-318F, U+AC00-D7AF;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans CJK BF';
+  src: url('/fonts/bf2017/NotoSansCJKsc-Regular.ttf') format('truetype');
+  unicode-range: U+2E80-2FDF, U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  font-display: swap;
+}
+:root {
+  --font-bf-hud: 'Cuprum', 'Roboto BF', 'Noto Kufi Arabic BF', 'Noto Sans CJK BF', system-ui, sans-serif;
+  --font-bf-text: 'Roboto BF', 'Noto Kufi Arabic BF', 'Noto Sans CJK BF', system-ui, sans-serif;
+  /* the site's own Aurebesh (SilvinoR's, OFL; src/styles/extras.css): the
+     game's file carries no licence and is marked restricted */
+  --font-aurebesh: 'Basic Script', var(--font-mono);
+}

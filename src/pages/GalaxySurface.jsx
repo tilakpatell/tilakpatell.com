@@ -27,6 +27,8 @@ import { createImpacts } from '../lib/impact';
 import ChaseHud from '../components/galaxy/surface/ChaseHud';
 import AssaultHud from '../components/galaxy/surface/AssaultHud';
 import HeroPanel from '../components/galaxy/surface/HeroPanel';
+import { ABILITIES, abilitiesOf } from '../components/galaxy/surface/abilityRules';
+import { GameIcon } from '../runtime/hud';
 import { HERO_KEY, heroById, heroSpec, loadoutLine, readHero, writeHero } from '../components/galaxy/heroes';
 import { missionOf } from '../components/galaxy/surface/missions';
 import { sideFor, warSideOf } from '../components/galaxy/surface/missions/assault';
@@ -152,6 +154,8 @@ export default function GalaxySurface() {
   const posted = useRef(false);
   const build = useMemo(() => (ship && readHulls(local.get(HULL_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]);
   const tune = useMemo(() => (ship && readTunes(local.get(TUNE_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]); // (the crew's own ship, tuned: its parts must still be ones its plant runs)
+  // (the hero's two abilities by id, for the game's icons on the HUD's buttons)
+  const powerIds = useMemo(() => abilitiesOf(hero ? heroSpec(hero) : null), [hero]);
   const loadout = useMemo(() => loadoutOf(readLoadouts(local.get(LOADOUT_KEY), CREWS.map((c) => c.id)), ship, unlocked, build, tune), [ship, unlocked, build, tune]);
   // online: the other pilots down here with you
   const online = useOnline();
@@ -623,16 +627,17 @@ export default function GalaxySurface() {
           )}
           <ul className="surface-powers">
             {[
-              ['G', combat.powers?.power ?? (combat.saber ? 'Push' : 'Detonator'), 'power'],
-              ['V', combat.powers?.second ?? (combat.saber ? 'Pull' : 'Overcharge'), 'second'],
+              ['G', combat.powers?.power ?? (combat.saber ? 'Push' : 'Detonator'), 'power', powerIds.power],
+              ['V', combat.powers?.second ?? (combat.saber ? 'Pull' : 'Overcharge'), 'second', powerIds.second],
               ['X', 'Dodge', 'dodge'],
               ['B', 'Emote', 'emote'],
-            ].map(([key, name, slot]) => {
+            ].map(([key, name, slot, ability]) => {
               const left = combat.cool?.[slot] ?? 0;
               const full = combat.cools?.[slot] ?? 1;
               return (
                 <li key={slot} className={left > 0 ? 'surface-power is-cooling' : 'surface-power'} style={{ '--k': left > 0 ? left / full : 0 }}>
                   <kbd>{key}</kbd>
+                  {ability && ABILITIES[ability]?.name === name && <GameIcon name={`ability:${ability}`} className="surface-game-icon" />}
                   <span>{name}</span>
                   {left > 0.05 && !(slot === 'power' && combat.powers?.hold) && <small>{left.toFixed(left < 10 ? 1 : 0)}</small>}
                 </li>
