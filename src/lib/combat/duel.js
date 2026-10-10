@@ -1,43 +1,44 @@
-// A duellist's mind: a small state machine that fences. It closes to its
-// reach, circles you there a moment, strokes, recovers; when you start a
-// stroke within reach of it, it rolls to block (its `guard` rate) and,
-// blocking, to parry (its `parry` rate). A parry is a block raised within
-// the parry window before your blade's contact (anchored to your contact,
-// not your stroke's start, which is what makes a parry read as one: the
-// research's §2); it turns your stroke and it ripostes. Pure: numbers in,
-// numbers out, so the same seed fences the same way. What it decides is
-// drawn by galaxy/surface/duellists.js on a saber (saber.js), whose blade's
-// sweep is what lands a stroke.
+// A duellist's mind: a small state machine that fences on the 2017 game's
+// rules. It closes to its reach, circles you there a moment, strikes,
+// recovers; when you start a strike whose query would reach it (your lunge's
+// or your strike's: lib/combat/saber2017.js), it rolls to hold its block (its
+// `guard` rate) as long as its stamina lasts, and lets it down once your
+// contact has passed; when your stamina is spent it comes at you at once. The
+// game has no parry: a block met from the front simply holds (the engine
+// drains it and stops your stroke). Pure: numbers in, numbers out, so the same
+// seed fences the same way. What it decides is drawn by
+// galaxy/surface/duellists.js on a saber (saber.js), whose engine lands it.
 //
-//   DUEL                 the timings: circle [min, max] s, recover [min, max] s, attack (a stroke's
-//                        seconds until swung says), combo (the chance it strokes again at once),
-//                        window (the parry window, s: combatRules.js's PARRY.window), jump (metres you
-//                        may move in a stroke before it's at air), near (how far past its reach it guards),
-//                        stagger { hit, heavy, parried, broken } (seconds)
-//   createDuellist({ reach, guard, parry, stance, strokes, cadence, seed }) → d (d.at = [x, z]: the caller keeps it);
-//                        cadence { stroke: { dur, back } } (a 2017 hero's, stanceFromTable.js's): a stroke held `dur`
-//                        (whatever swung says), and the recovery after it its return's `back` seconds, in place of DUEL's
+//   DUEL                 the timings: circle [min, max] s, recover [min, max] s, attack (a strike's seconds until swung
+//                        says), combo (the chance it strikes again at once), jump (metres you may move in a strike before
+//                        it's at air), near (how far past its reach it guards): the site's own, the records having none
+//                        for the AI's sabers; stagger { hit (HitByLightSaber's), broken (the rulebook's hand.broken) }
+//   createDuellist({ reach, guard, stance, strokes, cadence, seed }) → d (d.at = [x, z]: the caller keeps it);
+//                        cadence { stroke: { dur, back } } (the stroke table's, stanceFromTable.js's): a strike held
+//                        `dur` (whatever swung says), and the recovery after it its return's `back` seconds
 //   duelStep(d, you, dt, rng = d's own) → { state, move: [dx, dz] (0…1 of its pace, world axes), face (yaw to you),
-//                        stroke (the clip while it attacks, else null), begin (the frame a stroke starts), block }
-//     you: { pos: [x, z], swinging: { contact: [t0, t1], t, speed? } | null (your stroke, t seconds into its clip),
-//            dist?, dead? } or null; states approach | circle | attack | recover | block | parry | stagger | dead
-//   swung(d, secs)       how long the stroke it began takes (its clip's, at its speed)
-//   guarding(d)          'parry' | 'block' | null: what meets your stroke now
-//   onHit(d, { heavy, dead }), onParried(d) (stagger 0.6 s, then attack), onGuardBroken(d) (stagger 2 s),
+//                        stroke (the clip while it attacks, else null), begin (the frame a strike starts), block }
+//     you: { pos: [x, z], swinging: { contact: [t0, t1], t, speed?, reaches? } | null (your strike, t seconds into its
+//            clip; reaches: whether its query would find this one), out? (your stamina spent), tired? (its own),
+//            dist?, dead? } or null; states approach | circle | attack | recover | block | stagger | dead
+//   swung(d, secs)       how long the strike it began takes (its clip's, at its speed)
+//   guarding(d)          'block' | null: what meets your strike now
+//   onHit(d, { heavy, dead }), onGuardBroken(d) (its block broken at no stamina),
 //   onStagger(d, secs, next) (shoved, struck hard: reeling `secs`, then `next` or approach)
+
+import BOOK from '../../data/bf2017/saber.json';
 
 export const DUEL = {
   circle: [1, 2],
   recover: [0.35, 0.6],
   attack: 0.9,
   combo: 0.3,
-  window: 0.25,
   jump: 6,
   near: 1.5,
-  stagger: { hit: 0.3, heavy: 1.2, parried: 0.6, broken: 2 },
+  stagger: { hit: BOOK.heroes.luke.react.hit, broken: BOOK.hand.broken },
 };
 
-// (a single blade's strokes, by name, when none are given: combatRules.js's table has the stance's own)
+// (the pack's strokes, by name, when none are given: a stroke table gives the game's)
 const STROKES = ['sword.light.a', 'sword.light.b', 'sword.light.c', 'sword.a'];
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const within = ([a, b], k) => a + (b - a) * k;
@@ -50,11 +51,10 @@ const roller = (seed) => {
   };
 };
 
-export function createDuellist({ reach = 2.2, guard = 0.6, parry = 0.35, stance = 'single', strokes = null, cadence = null, seed = 1 } = {}) {
+export function createDuellist({ reach = 2.2, guard = 0.6, stance = 'single', strokes = null, cadence = null, seed = 1 } = {}) {
   return {
     reach,
     guard,
-    parry,
     stance,
     strokes: strokes?.length ? strokes : STROKES,
     cadence, // { stroke: { dur, back } }: the game's, where its strokes are (null: DUEL's)
@@ -67,13 +67,13 @@ export function createDuellist({ reach = 2.2, guard = 0.6, parry = 0.35, stance 
     stroke: null, // the clip it's in
     youAt: null, // where you were when its stroke began
     next: null, // what a stagger gives way to
-    plan: null, // for your stroke: 'block' | 'parry' | null
+    plan: null, // for your strike: 'block' | null
     seen: -1, // your stroke's clip time last frame (a smaller one is a new stroke)
     rng: roller(seed),
   };
 }
 
-const out = (d, move, extra = {}) => ({ state: d.state, move, face: d.face, stroke: d.stroke, begin: false, block: d.state === 'block' || d.state === 'parry', ...extra });
+const out = (d, move, extra = {}) => ({ state: d.state, move, face: d.face, stroke: d.stroke, begin: false, block: d.state === 'block', ...extra });
 const STILL = [0, 0];
 
 function attack(d, you) {
@@ -118,38 +118,29 @@ export function duelStep(d, you, dt, rng = d.rng) {
     enter(d, 'approach');
   }
 
-  // your stroke: seen as it starts (a clip time smaller than last frame's is a new one)
+  // your strike: seen as it starts (a clip time smaller than last frame's is a new one)
   const sw = you.swinging;
   if (!sw) d.seen = -1;
   else {
     const fresh = d.seen < 0 || sw.t < d.seen - 1e-6;
     d.seen = sw.t;
     const free = d.state === 'approach' || d.state === 'circle' || d.state === 'recover';
-    if (fresh) {
-      d.plan = null;
-      if (free && dist <= d.reach + DUEL.near && rng() < d.guard) {
-        // (too late for a parry once your blade's already in its contact)
-        const lead = (sw.contact[0] - sw.t) / (sw.speed ?? 1);
-        d.plan = lead >= 0 && rng() < d.parry ? 'parry' : 'block';
-      }
-    }
-    const lead = (sw.contact[0] - sw.t) / (sw.speed ?? 1);
+    // (the game's deflect: up for a strike that would reach it, while its stamina lasts)
+    if (fresh) d.plan = free && !you.tired && (sw.reaches ?? dist <= d.reach + DUEL.near) && rng() < d.guard ? 'block' : null;
     const past = sw.t > sw.contact[1];
-    if (d.plan === 'block' && !past && d.state !== 'block') enter(d, 'block');
-    // (a parry waits for the window, then goes up)
-    if (d.plan === 'parry' && !past && lead <= DUEL.window && d.state !== 'parry') enter(d, 'parry');
+    if (d.plan === 'block' && !past && !you.tired && d.state !== 'block') enter(d, 'block');
   }
-  // the block let down once your contact's passed: a parry ripostes at once
-  if ((d.state === 'block' || d.state === 'parry') && (!sw || sw.t > sw.contact[1])) {
-    const parried = d.state === 'parry';
+  // the block let down once your contact's passed, or its stamina's gone
+  if (d.state === 'block' && (!sw || sw.t > sw.contact[1] || you.tired)) {
     d.plan = null;
-    if (parried) {
-      attack(d, you);
-      return out(d, STILL, { begin: true });
-    }
     enter(d, 'circle', within(DUEL.circle, rng()) * 0.4);
   }
-  if (d.state === 'block' || d.state === 'parry') return out(d, STILL);
+  if (d.state === 'block') return out(d, STILL);
+  // (your stamina spent: it comes at you now)
+  if (you.out && (d.state === 'circle' || d.state === 'recover') && dist <= d.reach * 1.3) {
+    attack(d, you);
+    return out(d, STILL, { begin: true });
+  }
 
   if (d.state === 'attack') {
     // you went somewhere it can't follow inside a stroke: it's at air, so it stops
@@ -198,7 +189,7 @@ export function swung(d, secs) {
   if (d.state === 'attack' && secs > 0) d.timer = d.cadence?.[d.stroke]?.dur ?? secs;
 }
 
-export const guarding = (d) => (d.state === 'parry' ? 'parry' : d.state === 'block' ? 'block' : null);
+export const guarding = (d) => (d.state === 'block' ? 'block' : null);
 
 export function onHit(d, { heavy = false, dead = false } = {}) {
   if (d.state === 'dead') return;
@@ -206,9 +197,9 @@ export function onHit(d, { heavy = false, dead = false } = {}) {
     enter(d, 'dead');
     return;
   }
-  // (a light hit doesn't stop a stroke it's in; a heavy one does)
+  // (a hit doesn't stop a strike it's in; a heavy one does)
   if (d.state === 'attack' && !heavy) return;
-  onStagger(d, heavy ? DUEL.stagger.heavy : DUEL.stagger.hit);
+  onStagger(d, DUEL.stagger.hit);
 }
 
 export function onStagger(d, secs, next = null) {
@@ -218,5 +209,4 @@ export function onStagger(d, secs, next = null) {
   d.plan = null;
 }
 
-export const onParried = (d) => onStagger(d, DUEL.stagger.parried, 'attack');
 export const onGuardBroken = (d) => onStagger(d, DUEL.stagger.broken);

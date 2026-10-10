@@ -1,0 +1,883 @@
+{
+ "_from": {
+  "export": "build 489592",
+  "date": "2026-10-10"
+ },
+ "query": {
+  "anchor": -1.5,
+  "anchor_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#TransformMultiplierEntityData[18].In1.trans.z",
+  "hit": {
+   "radius": 3,
+   "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#SphereQueryEntityData[14].Radius",
+   "near": 1.5,
+   "near_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[4].InputData.FilterOutDistance",
+   "cone": 35,
+   "cone_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[4].InputData.FilterOutAngle",
+   "apex": 5,
+   "apex_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#TransformMultiplierEntityData[17].In1.trans.z",
+   "gate": 45,
+   "gate_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[2].InputData.FilterOutAngle",
+   "behind": 70,
+   "behind_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[6].InputData.MaxTargetAngleFromForwardDirection"
+  },
+  "lunge": {
+   "radius": 8,
+   "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#ConditionalFloatEntityData[66].ValueIfTrue",
+   "tired": 2,
+   "tired_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#ConditionalFloatEntityData[66].ValueIfFalse",
+   "near": 1.8,
+   "near_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[3].InputData.FilterOutDistance",
+   "nearCone": 60,
+   "nearCone_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[3].InputData.FilterOutAngle",
+   "apex": 8.5,
+   "apex_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#TransformMultiplierEntityData[19].In1.trans.z",
+   "gate": 45,
+   "gate_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[8].InputData.FilterOutAngle",
+   "pick": 40,
+   "pick_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[11].InputData.FilterOutAngle",
+   "weights": {
+    "distance": 0.2,
+    "angle": 2,
+    "_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#DynamicQueryFilterEntityData[11].InputData.{DistanceMultiplier,AngleMultiplier}"
+   },
+   "lift": 1.3,
+   "lift_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#Vector3EntityData[23].DefaultVec3.y"
+  },
+  "props": {
+   "radius": 2,
+   "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical#SphereQueryEntityData[15].Radius"
+  }
+ },
+ "stagger": {
+  "blocked": 0.5,
+  "blocked_source": "Gameplay/Kits/Hero/PF_BlockStaggerAffectors#AffectorApplyEntityData(BlockedLightSaber).Duration",
+  "flash": 0.1,
+  "flash_source": "Gameplay/Kits/Hero/PF_BlockStaggerAffectors#AffectorApplyEntityData(BlockedLightSaberVFX).Duration"
+ },
+ "evading": {
+  "taken": 0.8,
+  "taken_source": "Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier#DamageMultiplierAffectorAsset.RankData.0.DamageMultiplier"
+ },
+ "ai": {
+  "melee": {
+   "damage": 75,
+   "damage_source": "AI/BattleAI/Weapons/AIMeleeProjectile#WSGrenadeEntityData.CollisionDamage",
+   "speed": 150,
+   "speed_source": "AI/BattleAI/Weapons/AIMeleeProjectile#WSGrenadeEntityData.InitialSpeed",
+   "life": 0.1,
+   "life_source": "AI/BattleAI/Weapons/AIMeleeProjectile#WSGrenadeEntityData.TimeToLive"
+  }
+ },
+ "heroes": {
+  "luke": {
+   "records": {
+    "saber": "Gameplay/Kits/Hero/Luke/Prefabs/PF_Lightsaber_Luke",
+    "deflect": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Luke",
+    "evade": "Gameplay/Kits/Hero/Ability_Evade_CharacterState",
+    "camera": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P",
+    "costs": "LIGHTSABER_COSTS_*_LUKE"
+   },
+   "health": 750,
+   "health_source": "Gameplay/Kits/Hero/Luke/Affector_Health_Luke#MaxHealthAffectorAsset.MaxHealth",
+   "damage": {
+    "hit": {
+     "damage": 130,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Luke/Prefabs/PF_Lightsaber_Luke#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "kick": {
+     "damage": 100,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Kick_Luke#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Kick_Luke#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Luke/Prefabs/PF_Lightsaber_Luke#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Kick_Luke#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "behind": {
+     "damage": 30,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke_FromBehind#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke_FromBehind#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Luke/Prefabs/PF_Lightsaber_Luke#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke_FromBehind#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    }
+   },
+   "react": {
+    "hit": 0.7,
+    "hit_source": "Gameplay/Kits/Hero/Luke/Prefabs/PF_Lightsaber_Luke#AffectorApplyEntityData(HitByLightSaber).Duration"
+   },
+   "shield": {
+    "radius": 1.2,
+    "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Luke#ShieldControllerEntityData.ShieldRadius",
+    "offset": 0.45,
+    "offset_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Luke#ShieldControllerEntityData.OffsetTransform.trans.z",
+    "box": {
+     "min": [
+      -0.64,
+      0.056,
+      -0.53
+     ],
+     "max": [
+      0.64,
+      2.03,
+      0.396
+     ],
+     "_source": "Characters/Imperial/HeroShield/HeroShield#StaticModelEntityData.PartBoundingBoxes.0"
+    }
+   },
+   "stamina": {
+    "max": 100,
+    "max_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Luke#AbilityResourceEntityData.MaxValue",
+    "out": 1,
+    "out_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Luke#MathEntityData[317].Assembly (stamina < k)",
+    "strike": 10,
+    "strike_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.8.Cost / 10",
+    "blocked": 10,
+    "blocked_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.28.Cost / 10",
+    "bolt": 4,
+    "bolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.18.Cost / 10",
+    "standardBolt": 45,
+    "standardBolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.68.Cost",
+    "regen": 33.3,
+    "regen_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.38.Cost / 10",
+    "delay": 1,
+    "delay_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.48.Cost / 100",
+    "spread": 0.45,
+    "spread_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.58.Cost / 100"
+   },
+   "evade": {
+    "cost": 0.5,
+    "cost_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.TriggerCost",
+    "charges": 2,
+    "charges_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RetriggerCount",
+    "active": 0.4,
+    "active_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.ActiveTime",
+    "recharge": 2.2,
+    "recharge_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RechargeTime"
+   },
+   "camera": {
+    "arm": 2.25,
+    "arm_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[4].DefaultValue",
+    "a": -0.1,
+    "a_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[1].DefaultValue",
+    "b": 0.45,
+    "b_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[3].DefaultValue",
+    "c": -0.6,
+    "c_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[2].DefaultValue"
+   }
+  },
+  "vader": {
+   "records": {
+    "saber": "Gameplay/Kits/Hero/DarthVader/Prefabs/PF_Lightsaber_DarthVader",
+    "deflect": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Vader",
+    "evade": "Gameplay/Kits/Hero/Ability_Evade_CharacterState",
+    "camera": "Gameplay/Kits/Hero/Hero_Lightsaber_Vader_Camera_3P",
+    "costs": "LIGHTSABER_COSTS_*_VADER"
+   },
+   "health": 800,
+   "health_source": "Gameplay/Kits/Hero/DarthVader/Affector_Health_DarthVader#MaxHealthAffectorAsset.MaxHealth",
+   "damage": {
+    "hit": {
+     "damage": 130,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Vader#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Vader#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/DarthVader/Prefabs/PF_Lightsaber_DarthVader#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Vader#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "behind": {
+     "damage": 30,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Vader_FromBehind#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Vader_FromBehind#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/DarthVader/Prefabs/PF_Lightsaber_DarthVader#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Vader_FromBehind#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    }
+   },
+   "react": {
+    "hit": 0.7,
+    "hit_source": "Gameplay/Kits/Hero/DarthVader/Prefabs/PF_Lightsaber_DarthVader#AffectorApplyEntityData(HitByLightSaber).Duration"
+   },
+   "shield": {
+    "radius": 1.2,
+    "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Vader#ShieldControllerEntityData.ShieldRadius",
+    "offset": 0.45,
+    "offset_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Vader#ShieldControllerEntityData.OffsetTransform.trans.z",
+    "box": {
+     "min": [
+      -0.694,
+      0.061,
+      -0.575
+     ],
+     "max": [
+      0.694,
+      2.199,
+      0.429
+     ],
+     "_source": "S7/Gameplay/Equipment/Abilities/HeroShield_DarthVader/HeroShieldDarthVader#StaticModelEntityData.PartBoundingBoxes.0"
+    }
+   },
+   "stamina": {
+    "max": 100,
+    "max_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Vader#AbilityResourceEntityData.MaxValue",
+    "out": 1,
+    "out_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Vader#MathEntityData[310].Assembly (stamina < k)",
+    "strike": 10,
+    "strike_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.9.Cost / 10",
+    "blocked": 7.1,
+    "blocked_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.29.Cost / 10",
+    "bolt": 2.1,
+    "bolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.19.Cost / 10",
+    "standardBolt": 45,
+    "standardBolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.68.Cost",
+    "regen": 33.3,
+    "regen_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.39.Cost / 10",
+    "delay": 2.25,
+    "delay_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.49.Cost / 100",
+    "spread": 0.2,
+    "spread_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.59.Cost / 100"
+   },
+   "evade": {
+    "cost": 0.5,
+    "cost_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.TriggerCost",
+    "charges": 2,
+    "charges_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RetriggerCount",
+    "active": 0.4,
+    "active_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.ActiveTime",
+    "recharge": 2.2,
+    "recharge_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RechargeTime"
+   },
+   "camera": {
+    "a": 0.17,
+    "a_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Vader_Camera_3P#FloatEntityData[3].DefaultValue",
+    "b": 0.45,
+    "b_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Vader_Camera_3P#FloatEntityData[4].DefaultValue",
+    "c": -0.6,
+    "c_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Vader_Camera_3P#FloatEntityData[2].DefaultValue",
+    "arm": 2.25,
+    "arm_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Vader_Camera_3P#FloatInterpolatorEntityData[6].DefaultValue"
+   }
+  },
+  "obiwan": {
+   "records": {
+    "saber": "Gameplay/Kits/Hero/ObiWan/Prefabs/Lightsaber/PF_Lightsaber_ObiWan",
+    "deflect": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_ObiWan",
+    "evade": "Gameplay/Kits/Hero/Ability_Evade_CharacterState",
+    "camera": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P",
+    "costs": "LIGHTSABER_COSTS_*_OBI"
+   },
+   "health": 750,
+   "health_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Health/Affector_ObiWan_Health#MaxHealthAffectorAsset.MaxHealth",
+   "damage": {
+    "behind": {
+     "damage": 20,
+     "damage_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_Lightsaber_ObiWan_FromBehind#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_Lightsaber_ObiWan_FromBehind#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/ObiWan/Prefabs/Lightsaber/PF_Lightsaber_ObiWan#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_Lightsaber_ObiWan_FromBehind#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "hit": {
+     "damage": 130,
+     "damage_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_ObiWan_Lightsaber#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_ObiWan_Lightsaber#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/ObiWan/Prefabs/Lightsaber/PF_Lightsaber_ObiWan#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_ObiWan_Lightsaber#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "kick": {
+     "damage": 120,
+     "damage_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_Kick_ObiWan#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_Kick_ObiWan#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/ObiWan/Prefabs/Lightsaber/PF_Lightsaber_ObiWan#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/ObiWan/Affectors/Lightsaber/Affector_Damage_Kick_ObiWan#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    }
+   },
+   "react": {
+    "hit": 0.7,
+    "hit_source": "Gameplay/Kits/Hero/ObiWan/Prefabs/Lightsaber/PF_Lightsaber_ObiWan#AffectorApplyEntityData(HitByLightSaber).Duration"
+   },
+   "shield": {
+    "radius": 1.2,
+    "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_ObiWan#ShieldControllerEntityData.ShieldRadius",
+    "offset": 0.45,
+    "offset_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_ObiWan#ShieldControllerEntityData.OffsetTransform.trans.z",
+    "box": {
+     "min": [
+      -0.64,
+      0.056,
+      -0.53
+     ],
+     "max": [
+      0.64,
+      2.03,
+      0.396
+     ],
+     "_source": "Characters/Imperial/HeroShield/HeroShield#StaticModelEntityData.PartBoundingBoxes.0"
+    }
+   },
+   "stamina": {
+    "max": 100,
+    "max_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_ObiWan#AbilityResourceEntityData.MaxValue",
+    "out": 1,
+    "out_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_ObiWan#MathEntityData[276].Assembly (stamina < k)",
+    "strike": 10,
+    "strike_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.15.Cost / 10",
+    "blocked": 4,
+    "blocked_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.35.Cost / 10",
+    "bolt": 2.1,
+    "bolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.25.Cost / 10",
+    "standardBolt": 45,
+    "standardBolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.68.Cost",
+    "regen": 33.3,
+    "regen_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.45.Cost / 10",
+    "delay": 1,
+    "delay_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.55.Cost / 100",
+    "spread": 0.2,
+    "spread_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.65.Cost / 100"
+   },
+   "evade": {
+    "cost": 0.5,
+    "cost_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.TriggerCost",
+    "charges": 2,
+    "charges_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RetriggerCount",
+    "active": 0.4,
+    "active_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.ActiveTime",
+    "recharge": 2.2,
+    "recharge_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RechargeTime"
+   },
+   "camera": {
+    "arm": 2.25,
+    "arm_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[4].DefaultValue",
+    "a": -0.1,
+    "a_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[1].DefaultValue",
+    "b": 0.45,
+    "b_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[3].DefaultValue",
+    "c": -0.6,
+    "c_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[2].DefaultValue"
+   }
+  },
+  "anakin": {
+   "records": {
+    "saber": "Gameplay/Kits/Hero/Anakin/Prefabs/Lightsaber/PF_Lightsaber_Anakin",
+    "deflect": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Anakin",
+    "evade": "Gameplay/Kits/Hero/Ability_Evade_CharacterState",
+    "camera": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P",
+    "costs": "LIGHTSABER_COSTS_*_ANAKIN"
+   },
+   "health": 800,
+   "health_source": "Gameplay/Kits/Hero/Anakin/Affectors/Health/Affector_Anakin_Health#MaxHealthAffectorAsset.MaxHealth",
+   "damage": {
+    "hit": {
+     "damage": 130,
+     "damage_source": "Gameplay/Kits/Hero/Anakin/Affectors/Lightsaber/Affector_Damage_Anakin_Lightsaber#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/Anakin/Affectors/Lightsaber/Affector_Damage_Anakin_Lightsaber#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Anakin/Prefabs/Lightsaber/PF_Lightsaber_Anakin#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/Anakin/Affectors/Lightsaber/Affector_Damage_Anakin_Lightsaber#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "behind": {
+     "damage": 40,
+     "damage_source": "Gameplay/Kits/Hero/Anakin/Affectors/Lightsaber/Affector_Damage_Lightsaber_Anakin_FromBehind#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/Anakin/Affectors/Lightsaber/Affector_Damage_Lightsaber_Anakin_FromBehind#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Anakin/Prefabs/Lightsaber/PF_Lightsaber_Anakin#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/Anakin/Affectors/Lightsaber/Affector_Damage_Lightsaber_Anakin_FromBehind#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    }
+   },
+   "react": {
+    "hit": 0.7,
+    "hit_source": "Gameplay/Kits/Hero/Anakin/Prefabs/Lightsaber/PF_Lightsaber_Anakin#AffectorApplyEntityData(HitByLightSaber).Duration"
+   },
+   "shield": {
+    "radius": 1.2,
+    "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Anakin#ShieldControllerEntityData.ShieldRadius",
+    "offset": 0.45,
+    "offset_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Anakin#ShieldControllerEntityData.OffsetTransform.trans.z",
+    "box": {
+     "min": [
+      -0.64,
+      0.056,
+      -0.53
+     ],
+     "max": [
+      0.64,
+      2.03,
+      0.396
+     ],
+     "_source": "Characters/Imperial/HeroShield/HeroShield#StaticModelEntityData.PartBoundingBoxes.0"
+    }
+   },
+   "stamina": {
+    "max": 100,
+    "max_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Anakin#AbilityResourceEntityData.MaxValue",
+    "out": 1,
+    "out_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Anakin#MathEntityData[278].Assembly (stamina < k)",
+    "strike": 8.3,
+    "strike_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.16.Cost / 10",
+    "blocked": 10,
+    "blocked_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.36.Cost / 10",
+    "bolt": 3.2,
+    "bolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.26.Cost / 10",
+    "standardBolt": 45,
+    "standardBolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.68.Cost",
+    "regen": 60.6,
+    "regen_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.46.Cost / 10",
+    "delay": 2,
+    "delay_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.56.Cost / 100",
+    "spread": 0.3,
+    "spread_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.66.Cost / 100"
+   },
+   "evade": {
+    "cost": 0.5,
+    "cost_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.TriggerCost",
+    "charges": 2,
+    "charges_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RetriggerCount",
+    "active": 0.4,
+    "active_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.ActiveTime",
+    "recharge": 2.2,
+    "recharge_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RechargeTime"
+   },
+   "camera": {
+    "arm": 2.25,
+    "arm_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[4].DefaultValue",
+    "a": -0.1,
+    "a_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[1].DefaultValue",
+    "b": 0.45,
+    "b_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[3].DefaultValue",
+    "c": -0.6,
+    "c_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[2].DefaultValue"
+   }
+  },
+  "maul": {
+   "records": {
+    "saber": "Gameplay/Kits/Hero/Maul/Prefabs/PF_Lightsaber_Maul",
+    "deflect": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Maul",
+    "evade": "Gameplay/Kits/Hero/Ability_Evade_CharacterState",
+    "camera": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P",
+    "costs": "LIGHTSABER_COSTS_*_MAUL"
+   },
+   "health": 700,
+   "health_source": "Gameplay/Kits/Hero/Maul/Affector_Health_Maul#MaxHealthAffectorAsset.MaxHealth",
+   "damage": {
+    "hit": {
+     "damage": 120,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Maul#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Maul#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Maul/Prefabs/PF_Lightsaber_Maul#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Maul#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "behind": {
+     "damage": 30,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Maul_FromBehind#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Maul_FromBehind#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Maul/Prefabs/PF_Lightsaber_Maul#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Maul_FromBehind#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    }
+   },
+   "react": {
+    "hit": 0.7,
+    "hit_source": "Gameplay/Kits/Hero/Maul/Prefabs/PF_Lightsaber_Maul#AffectorApplyEntityData(HitByLightSaber).Duration"
+   },
+   "shield": {
+    "radius": 1.2,
+    "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Maul#ShieldControllerEntityData.ShieldRadius",
+    "offset": 0.45,
+    "offset_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Maul#ShieldControllerEntityData.OffsetTransform.trans.z",
+    "box": {
+     "min": [
+      -0.64,
+      0.056,
+      -0.53
+     ],
+     "max": [
+      0.64,
+      2.03,
+      0.396
+     ],
+     "_source": "Characters/Imperial/HeroShield/HeroShield#StaticModelEntityData.PartBoundingBoxes.0"
+    }
+   },
+   "stamina": {
+    "max": 100,
+    "max_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Maul#AbilityResourceEntityData.MaxValue",
+    "out": 1,
+    "out_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Maul#MathEntityData[317].Assembly (stamina < k)",
+    "strike": 7.1,
+    "strike_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.13.Cost / 10",
+    "blocked": 10,
+    "blocked_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.33.Cost / 10",
+    "bolt": 5.5,
+    "bolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.23.Cost / 10",
+    "standardBolt": 45,
+    "standardBolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.68.Cost",
+    "regen": 47.6,
+    "regen_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.43.Cost / 10",
+    "delay": 2,
+    "delay_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.53.Cost / 100",
+    "spread": 0.45,
+    "spread_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.63.Cost / 100"
+   },
+   "evade": {
+    "cost": 0.5,
+    "cost_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.TriggerCost",
+    "charges": 2,
+    "charges_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RetriggerCount",
+    "active": 0.4,
+    "active_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.ActiveTime",
+    "recharge": 2.2,
+    "recharge_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RechargeTime"
+   },
+   "camera": {
+    "arm": 2.25,
+    "arm_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[4].DefaultValue",
+    "a": -0.1,
+    "a_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[1].DefaultValue",
+    "b": 0.45,
+    "b_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[3].DefaultValue",
+    "c": -0.6,
+    "c_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[2].DefaultValue"
+   }
+  },
+  "dooku": {
+   "records": {
+    "saber": "Gameplay/Kits/Hero/Dooku/Prefabs/Lightsaber/PF_DefaultAbility_Lightsaber_Dooku",
+    "deflect": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_CountDooku",
+    "evade": "Gameplay/Kits/Hero/Ability_Evade_CharacterState_Dooku",
+    "camera": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P",
+    "costs": "LIGHTSABER_COSTS_*_DOOKU"
+   },
+   "health": 750,
+   "health_source": "Gameplay/Kits/Hero/Dooku/Affectors/BaseAffectors/Affector_Health_Dooku#MaxHealthAffectorAsset.MaxHealth",
+   "damage": {
+    "behind": {
+     "damage": 30,
+     "damage_source": "Gameplay/Kits/Hero/Dooku/Affectors/Lightsaber/Affector_Damage_Dooku_Lightsaber_Behind#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/Dooku/Affectors/Lightsaber/Affector_Damage_Dooku_Lightsaber_Behind#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Dooku/Prefabs/Lightsaber/PF_DefaultAbility_Lightsaber_Dooku#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/Dooku/Affectors/Lightsaber/Affector_Damage_Dooku_Lightsaber_Behind#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "hit": {
+     "damage": 130,
+     "damage_source": "Gameplay/Kits/Hero/Dooku/Affectors/Lightsaber/Affector_Damage_Dooku_Lightsaber#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/Dooku/Affectors/Lightsaber/Affector_Damage_Dooku_Lightsaber#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Dooku/Prefabs/Lightsaber/PF_DefaultAbility_Lightsaber_Dooku#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/Dooku/Affectors/Lightsaber/Affector_Damage_Dooku_Lightsaber#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    }
+   },
+   "react": {
+    "hit": 0.7,
+    "hit_source": "Gameplay/Kits/Hero/Dooku/Prefabs/Lightsaber/PF_DefaultAbility_Lightsaber_Dooku#AffectorApplyEntityData(HitByLightSaber).Duration"
+   },
+   "shield": {
+    "radius": 1.2,
+    "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_CountDooku#ShieldControllerEntityData.ShieldRadius",
+    "offset": 0.45,
+    "offset_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_CountDooku#ShieldControllerEntityData.OffsetTransform.trans.z",
+    "box": {
+     "min": [
+      -0.64,
+      0.056,
+      -0.53
+     ],
+     "max": [
+      0.64,
+      2.03,
+      0.396
+     ],
+     "_source": "Characters/Imperial/HeroShield/HeroShield#StaticModelEntityData.PartBoundingBoxes.0"
+    }
+   },
+   "stamina": {
+    "max": 100,
+    "max_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_CountDooku#AbilityResourceEntityData.MaxValue",
+    "out": 1,
+    "out_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_CountDooku#MathEntityData[328].Assembly (stamina < k)",
+    "strike": 7.1,
+    "strike_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.17.Cost / 10",
+    "blocked": 7.1,
+    "blocked_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.37.Cost / 10",
+    "bolt": 4,
+    "bolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.27.Cost / 10",
+    "standardBolt": 45,
+    "standardBolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.68.Cost",
+    "regen": 47.6,
+    "regen_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.47.Cost / 10",
+    "delay": 2,
+    "delay_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.57.Cost / 100",
+    "spread": 0.45,
+    "spread_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.67.Cost / 100"
+   },
+   "evade": {
+    "cost": 0.33,
+    "cost_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState_Dooku#CharacterStatePlayerAbilityAsset.TriggerCost",
+    "charges": 3,
+    "charges_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState_Dooku#CharacterStatePlayerAbilityAsset.RetriggerCount",
+    "active": 0.4,
+    "active_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState_Dooku#CharacterStatePlayerAbilityAsset.ActiveTime",
+    "recharge": 2.2,
+    "recharge_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState_Dooku#CharacterStatePlayerAbilityAsset.RechargeTime"
+   },
+   "camera": {
+    "arm": 2.25,
+    "arm_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[4].DefaultValue",
+    "a": -0.1,
+    "a_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[1].DefaultValue",
+    "b": 0.45,
+    "b_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[3].DefaultValue",
+    "c": -0.6,
+    "c_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[2].DefaultValue"
+   }
+  },
+  "yoda": {
+   "records": {
+    "saber": "Gameplay/Kits/Hero/Yoda/Prefabs/PF_Lightsaber_Yoda",
+    "deflect": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Yoda",
+    "evade": "Gameplay/Kits/Hero/Ability_Evade_CharacterState",
+    "camera": "Gameplay/Kits/Hero/Hero_Lightsaber_Yoda_Camera_3P",
+    "costs": "LIGHTSABER_COSTS_*_YODA"
+   },
+   "health": 700,
+   "health_source": "Gameplay/Kits/Hero/Yoda/Affector_Health_Yoda#MaxHealthAffectorAsset.MaxHealth",
+   "damage": {
+    "hit": {
+     "damage": 125,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Yoda#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Yoda#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Yoda/Prefabs/PF_Lightsaber_Yoda#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Yoda#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "behind": {
+     "damage": 25,
+     "damage_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Yoda_FromBehind#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Yoda_FromBehind#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Yoda/Prefabs/PF_Lightsaber_Yoda#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Yoda_FromBehind#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    }
+   },
+   "react": {
+    "hit": 0.7,
+    "hit_source": "Gameplay/Kits/Hero/Yoda/Prefabs/PF_Lightsaber_Yoda#AffectorApplyEntityData(HitByLightSaber).Duration"
+   },
+   "shield": {
+    "radius": 1.2,
+    "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Yoda#ShieldControllerEntityData.ShieldRadius",
+    "offset": 0.45,
+    "offset_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Yoda#ShieldControllerEntityData.OffsetTransform.trans.z",
+    "box": {
+     "min": [
+      -1,
+      -1,
+      0
+     ],
+     "max": [
+      1,
+      1,
+      1
+     ],
+     "_source": "Gameplay/Kits/Hero/Yoda/Shield/Shield_Yoda#StaticModelEntityData.PartBoundingBoxes.0"
+    }
+   },
+   "stamina": {
+    "max": 100,
+    "max_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Yoda#AbilityResourceEntityData.MaxValue",
+    "out": 1,
+    "out_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Yoda#MathEntityData[337].Assembly (stamina < k)",
+    "strike": 8.3,
+    "strike_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.10.Cost / 10",
+    "blocked": 10,
+    "blocked_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.30.Cost / 10",
+    "bolt": 2.1,
+    "bolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.20.Cost / 10",
+    "standardBolt": 45,
+    "standardBolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.68.Cost",
+    "regen": 47.6,
+    "regen_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.40.Cost / 10",
+    "delay": 1,
+    "delay_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.50.Cost / 100",
+    "spread": 0.2,
+    "spread_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.60.Cost / 100"
+   },
+   "evade": {
+    "cost": 0.5,
+    "cost_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.TriggerCost",
+    "charges": 2,
+    "charges_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RetriggerCount",
+    "active": 0.4,
+    "active_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.ActiveTime",
+    "recharge": 2.2,
+    "recharge_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RechargeTime"
+   },
+   "camera": {
+    "arm": 2.2,
+    "arm_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Yoda_Camera_3P#FloatEntityData[2].DefaultValue",
+    "a": 0.1,
+    "a_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Yoda_Camera_3P#FloatEntityData[3].DefaultValue",
+    "b": 0.45,
+    "b_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Yoda_Camera_3P#FloatEntityData[1].DefaultValue",
+    "c": -0.3,
+    "c_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Yoda_Camera_3P#FloatEntityData[4].DefaultValue"
+   }
+  },
+  "grievous": {
+   "records": {
+    "saber": "Gameplay/Kits/Hero/Grievous/Prefabs/Lightsaber/PF_DefaultAbility_Grievous_Lightsaber",
+    "deflect": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Grievous",
+    "evade": "Gameplay/Kits/Hero/Ability_Evade_CharacterState",
+    "camera": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P",
+    "costs": "LIGHTSABER_COSTS_*_GRIEVOUS"
+   },
+   "health": 800,
+   "health_source": "Gameplay/Kits/Hero/Grievous/Affectors/Health/Affector_Grievous_Health#MaxHealthAffectorAsset.MaxHealth",
+   "damage": {
+    "behind": {
+     "damage": 30,
+     "damage_source": "Gameplay/Kits/Hero/Grievous/Affectors/Lightsaber/Affector_Damage_Grievous_Lightsaber_Back#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/Grievous/Affectors/Lightsaber/Affector_Damage_Grievous_Lightsaber_Back#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Grievous/Prefabs/Lightsaber/PF_DefaultAbility_Grievous_Lightsaber#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/Grievous/Affectors/Lightsaber/Affector_Damage_Grievous_Lightsaber_Back#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    },
+    "hit": {
+     "damage": 130,
+     "damage_source": "Gameplay/Kits/Hero/Grievous/Affectors/Lightsaber/Affector_Damage_Grievous_Lightsaber#DamageAffectorAsset.RankData.0.InitialDamage",
+     "delay": 0.09,
+     "delay_source": "Gameplay/Kits/Hero/Grievous/Affectors/Lightsaber/Affector_Damage_Grievous_Lightsaber#DamageAffectorAsset.RankData.0.DelayInitialDamageTime",
+     "applied": 0.3,
+     "applied_source": "Gameplay/Kits/Hero/Grievous/Prefabs/Lightsaber/PF_DefaultAbility_Grievous_Lightsaber#AffectorApplyEntityData.Duration",
+     "gate": 17,
+     "gate_source": "Gameplay/Kits/Hero/Grievous/Affectors/Lightsaber/Affector_Damage_Grievous_Lightsaber#CharacterStateIntRequiredChannelValueData.AllowedValues.0"
+    }
+   },
+   "react": {
+    "hit": 0.7,
+    "hit_source": "Gameplay/Kits/Hero/Grievous/Prefabs/Lightsaber/PF_DefaultAbility_Grievous_Lightsaber#AffectorApplyEntityData(HitByLightSaber).Duration"
+   },
+   "shield": {
+    "radius": 1.2,
+    "radius_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Grievous#ShieldControllerEntityData.ShieldRadius",
+    "offset": 0.5,
+    "offset_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Grievous#ShieldControllerEntityData.OffsetTransform.trans.z",
+    "box": {
+     "min": [
+      -0.901,
+      0.061,
+      -0.573
+     ],
+     "max": [
+      0.911,
+      2.146,
+      0.453
+     ],
+     "_source": "S7_3/Gameplay/Equipment/Abilities/HeroShield_Grievous/HeroShield_Grievous#StaticModelEntityData.PartBoundingBoxes.0"
+    }
+   },
+   "stamina": {
+    "max": 100,
+    "max_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Grievous#AbilityResourceEntityData.MaxValue",
+    "out": 1,
+    "out_source": "Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Grievous#MathEntityData[285].Assembly (stamina < k)",
+    "strike": 8.3,
+    "strike_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.12.Cost / 10",
+    "blocked": 10,
+    "blocked_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.32.Cost / 10",
+    "bolt": 20,
+    "bolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.22.Cost / 10",
+    "standardBolt": 45,
+    "standardBolt_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.68.Cost",
+    "regen": 33.3,
+    "regen_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.42.Cost / 10",
+    "delay": 2,
+    "delay_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.52.Cost / 100",
+    "spread": 20,
+    "spread_source": "Online/BattlepointCostData#BattlepointCostData.UnitCostConfig.28.BattlepointUnitCostEntries.62.Cost / 100"
+   },
+   "evade": {
+    "cost": 0.5,
+    "cost_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.TriggerCost",
+    "charges": 2,
+    "charges_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RetriggerCount",
+    "active": 0.4,
+    "active_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.ActiveTime",
+    "recharge": 2.2,
+    "recharge_source": "Gameplay/Kits/Hero/Ability_Evade_CharacterState#CharacterStatePlayerAbilityAsset.RechargeTime"
+   },
+   "camera": {
+    "arm": 2.25,
+    "arm_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[4].DefaultValue",
+    "a": -0.1,
+    "a_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[1].DefaultValue",
+    "b": 0.45,
+    "b_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[3].DefaultValue",
+    "c": -0.6,
+    "c_source": "Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P#FloatEntityData[2].DefaultValue"
+   }
+  }
+ },
+ "hand": {
+  "broken": 1.2,
+  "broken_source": "hand",
+  "combo": 0.45,
+  "combo_source": "hand",
+  "roll": {
+   "dist": 3.5,
+   "dur": 0.63,
+   "_source": "hand"
+  },
+  "standIn": "luke"
+ },
+ "names": {
+  "luke": "PF_Lightsaber_Luke",
+  "vader": "PF_Lightsaber_DarthVader",
+  "obiwan": "PF_Lightsaber_ObiWan",
+  "anakin": "PF_Lightsaber_Anakin",
+  "maul": "PF_Lightsaber_Maul",
+  "dooku": "PF_DefaultAbility_Lightsaber_Dooku",
+  "yoda": "PF_Lightsaber_Yoda",
+  "grievous": "PF_DefaultAbility_Grievous_Lightsaber"
+ }
+}

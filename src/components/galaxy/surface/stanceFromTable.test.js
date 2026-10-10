@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import luke from '../../../data/bf2017/strokes/luke.json';
 import palpatine from '../../../data/bf2017/strokes/palpatine.json';
-import { DIRS, HEAVY, STANCES, strokeFor } from './combatRules';
 import { duelFor } from './duellists';
-import { stanceFromTable } from './stanceFromTable';
+import { strokeFor } from './gameStance';
+import { WAYS, stanceFromTable } from './stanceFromTable';
 
-const of = (table, base = STANCES.single) => stanceFromTable(table, { base, dirs: DIRS, heavy: HEAVY });
+const of = (table) => stanceFromTable(table);
 
 describe('a 2017 hero’s stance, from its stroke table', () => {
   const st = of(luke);
 
-  it('has every field a stance has, so the saber reads it as one', () => {
-    for (const k of Object.keys(STANCES.single)) expect(st).toHaveProperty(k);
+  it('has a name and its strokes, each a clip at its speed (what lands is the engine’s, not the stance’s)', () => {
+    expect(st.name).toBe('One blade');
     for (const s of st.strokes) {
       expect(typeof s.clip).toBe('string');
       expect(s.speed).toBeGreaterThan(0);
-      expect(s.damage).toBeGreaterThan(0);
+      expect(s).not.toHaveProperty('damage');
     }
   });
 
@@ -44,7 +44,7 @@ describe('a 2017 hero’s stance, from its stroke table', () => {
   });
 
   it('cuts each way with a strike that cuts that way, read from the tip', () => {
-    for (const k of Object.keys(DIRS)) expect(st.dirs[k].clip).toMatch(/^A_Luke_/);
+    for (const k of WAYS) expect(st.dirs[k].clip).toMatch(/^A_Luke_/);
     expect(luke.strikes.find((s) => s.name === st.dirs.left.clip).dir).toBe('left');
   });
 
@@ -55,7 +55,7 @@ describe('a 2017 hero’s stance, from its stroke table', () => {
     expect(s1.settle).toBeLessThan(s1.duration);
   });
 
-  it('is nothing for a set with no strikes (Palpatine’s): the caller keeps its own', () => {
+  it('is nothing for a set with no strikes (Palpatine’s): gameStance.js stands Luke’s in', () => {
     expect(of(palpatine)).toBe(null);
   });
 });
@@ -80,10 +80,6 @@ describe('strokeFor on the game’s stance', () => {
     expect(strokeFor(st, { heavy: true, last: { ...h, endedAt: 1 }, now: 1.1 }).clip).toBe('A_Luke_Stand_SaberDash_01');
   });
 
-  it('leaves the site’s own stances as they were', () => {
-    expect(strokeFor(STANCES.single, { heavy: true }).clip).toBe(HEAVY.clips[0]);
-    expect(strokeFor(STANCES.single, { dir: 'rise' }).clip).toBe(DIRS.rise.clip);
-  });
 });
 
 describe('a 2017 duellist', () => {
@@ -95,10 +91,8 @@ describe('a 2017 duellist', () => {
     expect(d.cadence['A_Luke_AttackLoop_Strike1'].back).toBe(one('A_Luke_AttackLoop_Strike1').returnDuration);
   });
 
-  it('is the site’s duellist for a figure on another rig', () => {
-    // (Luke's crew row is the game's own figure since phase 1: no hero here is the site's rig)
+  it('has no strokes of the game’s for a figure on another rig (it doesn’t fence: activity.js gives it no saber)', () => {
     const d = duelFor(spec, 1, null);
-    expect(d.strokes).toEqual(STANCES.single.strokes.map((k) => k.clip));
     expect(d.cadence).toBe(null);
   });
 

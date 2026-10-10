@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import luke from '../../../data/bf2017/strokes/luke.json';
-import { SIDE_ON, blockClipFor, cutOf, incomingSide } from './blockSide';
-import { BLOCK_CLIP, DIRS, HEAVY, STANCES } from './combatRules';
+import { BLOCK_CLIP, SIDE_ON, blockClipFor, cutOf, incomingSide } from './blockSide';
 import { stanceFromTable } from './stanceFromTable';
 
 describe('the way a stroke cuts', () => {
-  const st = stanceFromTable(luke, { base: STANCES.single, dirs: DIRS, heavy: HEAVY });
+  const st = stanceFromTable(luke);
 
   it('cuts a 2017 hero’s stroke from the side the game’s tip was measured coming in from, on the root’s axes', () => {
     for (const s of luke.strikes) expect(cutOf(st, s.name), s.name).toBe(s.side);
@@ -20,11 +19,10 @@ describe('the way a stroke cuts', () => {
     expect(incomingSide(cutOf(st, 'A_Luke_AttackLoop_Strike2'), { from: Math.PI, to: 0 })).toBe('right');
   });
 
-  it('cuts the site’s strokes the way DIRS plays them', () => {
-    for (const [way, d] of Object.entries(DIRS)) expect(cutOf(STANCES.single, d.clip), d.clip).toBe(way);
-    // (a combo stroke has no way of its own; nor does no stroke)
-    expect(cutOf(STANCES.single, STANCES.single.strokes[0].clip)).toBe(null);
-    expect(cutOf(STANCES.single, null)).toBe(null);
+  it('gives no side for a stroke it doesn’t know, nor for none', () => {
+    expect(cutOf(st, 'sword.light.a')).toBe(null);
+    expect(cutOf(st, null)).toBe(null);
+    expect(cutOf(null, 'A_Luke_AttackLoop_Strike1')).toBe(null);
   });
 });
 

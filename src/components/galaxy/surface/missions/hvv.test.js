@@ -3,6 +3,7 @@ import { GUNS, HVV_HEROES, RULES, canDeploy, chooseSide, deploy, hitFighter, hvv
 import { GROUNDS, groundFor, inside } from './arenas';
 import WEAPONS from '../../../../data/bf2017/weapons.json';
 import ABILITIES from '../../../../data/bf2017Abilities.json';
+import { saberOf } from '../../../../lib/combat/saber2017';
 
 const hoth = () => groundFor('hoth', 'hvv');
 const target = (b, side) => b.fighters[b.targets[side]];
@@ -107,6 +108,28 @@ describe('Heroes vs Villains', () => {
     }
   });
 
+  it('fences its saber bots on the saber engine: what a strike lands is the hero’s own rule, and blocks are met', () => {
+    const b = newHvv(hoth(), { seed: 4 });
+    chooseSide(b, null, null);
+    const hits = [];
+    let blocks = 0;
+    let turned = 0;
+    while (!b.result && b.t < 300)
+      for (const e of stepHvv(b, 0.1)) {
+        if (e.type === 'block') blocks += 1;
+        if (e.turned) turned += 1;
+        const f = b.fighters[e.id];
+        if (e.type === 'hit' && e.melee && f?.saber) hits.push({ hero: f.hero, damage: e.damage });
+      }
+    expect(hits.length).toBeGreaterThan(2);
+    expect(blocks + turned).toBeGreaterThan(0);
+    for (const h of hits) {
+      const d = saberOf(h.hero).damage;
+      const can = [d.hit.damage, d.hit.damage + (d.behind?.damage ?? 0)].flatMap((n) => [n, n * saberOf('luke').evading.taken]);
+      expect(can.some((n) => Math.abs(n - h.damage) < 1e-6), `${h.hero} ${h.damage}`).toBe(true);
+    }
+  });
+
   it('has a mission on each world with both grounds', () => {
     for (const w of GROUNDS) expect(hvvMission(w)).toMatchObject({ id: 'hvv', kind: 'hvv', system: w, achievement: 'heroesvsvillains' });
   });
@@ -129,7 +152,8 @@ describe('Heroes vs Villains', () => {
     const mine = (r) => r.shots.filter((e) => e.atYou || e.you);
     expect(mine(plain).length).toBeGreaterThan(0);
     expect(mine(easy).length).toBeGreaterThan(0);
-    for (const e of mine(easy)) expect(e.damage).toBe(Math.round((e.melee ? RULES.saber.damage : e.full) * 0.75));
-    for (const e of mine(plain)) expect(e.damage).toBe(e.melee ? RULES.saber.damage : e.full);
+    // (`full` is the hero's own strike or the gun's shot, the engine's number, before the scaling)
+    for (const e of mine(easy)) expect(e.damage).toBe(Math.round(e.full * 0.75));
+    for (const e of mine(plain)) expect(e.damage).toBe(e.full);
   });
 });

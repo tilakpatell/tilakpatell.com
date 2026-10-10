@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { HEROES, HILTS, SABER_COLORS, heroById, heroSpec, leanText, loadoutLine, skinsOf } from '../heroes';
-import { STANCES, STANCE_IDS } from './combatRules';
+import { STANCE_NAMES } from './combatRules';
 import { MAX_MODS, MODS, MOD_IDS, PICKABLE, WEAPONS, withMods } from './weaponRules';
 import { MAX_PERKS, PERKS, PERK_IDS } from '../perks';
 import { ABILITIES, abilitiesOf } from './abilityRules';
@@ -14,8 +14,8 @@ import './flow.css';
 // The deploy screen (the flow design's decision 2): which side of this
 // world's war (its era's two: troopers.js's sidesOf) or the crews from
 // elsewhere, then who: that side's heroes and the game's four trooper
-// classes in the world's own kit (troopers.js), as cards; for a Jedi the blade's colour, the hilt and the
-// stance (combatRules.js); a 2017 hero's outfit, the game's own (heroes.js's
+// classes in the world's own kit (troopers.js), as cards; for a Jedi the blade's colour and the hilt
+// (the strokes are the hero's own, the game's: gameStance.js); a 2017 hero's outfit, the game's own (heroes.js's
 // SKINS); for the others the gun (weaponRules.js, the
 // galaxy's and the ones from elsewhere, with their numbers) and up to two
 // mods on it. Equip keeps the choice (pages/GalaxySurface.jsx writes it) and
@@ -24,6 +24,8 @@ import './flow.css';
 // choice so far spelt out by it, however far down the list you are. The
 // 2017 game's own icons for the guns, the heroes' weapons and their
 // abilities, and its names for its heroes (src/lib/bf2017/), where it has them.
+// A hero not on the game's rig yet (heroes.js's `soon`) shows with why, and
+// can't be equipped.
 
 const ARM = { saber: 'Lightsaber', bowcaster: 'Bowcaster', rifle: 'Blaster rifle', ee3: 'EE-3 carbine', blaster: 'DL-44', portal: 'Portal gun', laser: 'Laser pistol', revolver: 'Revolver', pistol: 'Pistol' };
 const CLASS_ICON = { assault: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Assault_01.svg', heavy: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Heavy_01.svg', officer: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Officer_01.svg', specialist: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Specialist_01.svg' };
@@ -140,7 +142,7 @@ export default function DeployPanel({ hero, onChange, onClose, system = null, er
                 const ab = abilitiesOf(x);
                 return (
                   <li key={x.id}>
-                    <button type="button" className={x.id === pick.id ? 'surface-hero is-picked' : 'surface-hero'} onClick={() => choose(x.id)} aria-pressed={x.id === pick.id}>
+                    <button type="button" className={x.id === pick.id ? 'surface-hero is-picked' : 'surface-hero'} onClick={() => choose(x.id)} aria-pressed={x.id === pick.id} data-soon={x.soon ? true : undefined} title={x.soon ?? undefined}>
                       <span className="surface-hero-top">
                         <span className="surface-hero-name">{gameName(`hero:${x.id}`, x.name)}</span>
                         {x.id === hero.id && <span className="surface-hero-on">On</span>}
@@ -154,6 +156,7 @@ export default function DeployPanel({ hero, onChange, onClose, system = null, er
                         <span><kbd>V</kbd> <GameIcon name={`ability:${ab.second}`} className="surface-game-icon" /> {ABILITIES[ab.second].name}</span>
                       </span>
                       <span className="surface-hero-blurb">{x.blurb}</span>
+                      {x.soon && <span className="surface-hero-soon">{x.soon}</span>}
                       {leanText(x.lean) && (
                         <span className="surface-hero-lean" data-lean={x.lean}>
                           {leanText(x.lean)}
@@ -190,22 +193,8 @@ export default function DeployPanel({ hero, onChange, onClose, system = null, er
                 <button key={c.id} type="button" role="radio" aria-checked={c.id === pick.color} aria-label={c.name} title={c.name} className={c.id === pick.color ? 'surface-swatch is-picked' : 'surface-swatch'} style={{ '--blade': c.hex }} onClick={() => setPick({ ...pick, color: c.id })} />
               ))}
             </div>
-            <p className="surface-list-title">Stance</p>
-            <ul className="surface-hilts">
-              {STANCE_IDS.map((id) => (
-                <li key={id}>
-                  <button type="button" className={id === pick.stance ? 'surface-hilt is-picked' : 'surface-hilt'} onClick={() => setPick({ ...pick, stance: id })} aria-pressed={id === pick.stance}>
-                    <span className="surface-hero-name">{STANCES[id].name}</span>
-                    <span className="surface-hero-blurb">{STANCES[id].about}</span>
-                    <span className="surface-stats">
-                      <i>{STANCES[id].strokes.length} strokes</i>
-                      <i>reach {num(STANCES[id].reach, 1)} m</i>
-                      <i>{STANCES[id].strokes.reduce((a, s) => a + s.damage, 0)} hits a combo</i>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <p className="surface-list-title">Strokes</p>
+            <p className="surface-hero-keys">{STANCE_NAMES[h?.saber?.stance] ?? STANCE_NAMES.single}: {h?.name}’s own strikes, blocks and dodges, the game’s, on its rules (the strike’s reach, the block’s stamina, two dodges a bar).</p>
             <p className="surface-list-title">Hilt</p>
             <ul className="surface-hilts">
               {HILTS.map((x) => (
@@ -305,8 +294,8 @@ export default function DeployPanel({ hero, onChange, onClose, system = null, er
         <button type="button" className="surface-help-btn" onClick={onClose}>
           {changed ? 'Cancel' : 'Close'}
         </button>
-        <button type="button" className="surface-help-btn surface-hero-play" onClick={() => onChange(pick)} disabled={!changed}>
-          {changed ? 'Equip' : 'Equipped'}
+        <button type="button" className="surface-help-btn surface-hero-play" onClick={() => onChange(pick)} disabled={!changed || Boolean(h?.soon)} title={h?.soon ?? undefined}>
+          {h?.soon ? 'Soon' : changed ? 'Equip' : 'Equipped'}
         </button>
       </div>
     </div>
