@@ -2,6 +2,26 @@
 
 The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-design.md` (the pipeline: fetch, import, the rig, the phases; PR #802) and `docs/superpowers/specs/2026-10-10-bf2017-levels-lighting-sabers-design.md` (the levels, the light, the planet skins, the sabers, and the review of the first design). The bucket’s numbers, `docs/superpowers/evidence/bf2017-assets/inventory.md`; the drop and its credit, `docs/assets/battlefront-2017.md`.
 
+
+## The fourth design: what is left of the cast (2026-10-10, evening)
+
+`docs/superpowers/specs/2026-10-10-bf2017-cast-left-design.md`, with seven plans `docs/superpowers/plans/2026-10-10-bf2017-cast-left-lane{D,B,Y,I,T,W,H}-*.md`. Written from the desktop export and `origin/main` at `dc64fc27` (#834). It corrects this file in four places:
+
+1. **Nothing is "waiting on uploads".** `web_optimize.py` lists only the maps a packed LOD0 GLB binds, so a map reached through an `ObjectVariation` (markings, palettes), a shader parameter (the eye map), an LOD cap (Leia’s braids) or an effect graph (the sheets) was never queued: 11,101 of the 17,511 textures in `textures.jsonl` have no row in `upload_state.tsv` and none is encoded on disk. The encoder did not crash on them: its last pass read `ok=10684 failed=1` and exited 1 for that one file. Lane D (the desktop) computes the list from the data and runs the encoder and uploader on it; the re-imports in the spec’s §5 follow.
+2. **The sound is chunks the exporter never read**, not a missing upload: 3,231 `SoundPatchAsset` records name 4,588 `SoundWaveAsset`s; `EbxDump.cs` skipped them as media and no sound pass exists. Lane D2 adds one through Frosty’s own `Plugins/SoundEditorPlugin.dll`.
+3. **The Ewok and the tauntaun have hurtbox sets in the game’s data** (`Characters/Hero/Ewok/Ewok_01/HeroEwokBoneCollision`, `Characters/NPC/Creatures/Tauntaun/Tauntaun_01/TauntaunBoneCollision`), and so does the AT-RT; the extractor scanned `Gameplay/Characters/` only. Lane H.
+4. **The walkers fall**: lane W wires the tow cable (the game’s `RopeData` and 50 m query; three laps, the film’s, since the game’s count is in a logic graph), `die.cable`, and the `Leftover_*` wreck skeletons.
+
+| Lane | What | Needs first | Session | Branch | Merged |
+|---|---|---|---|---|---|
+| D | the desktop: the texture list and pass; the sound export, encode and upload | the desktop | | | |
+| H | hurtboxes: the game’s three more sets; fitted sets for the rest | nothing | the design session (task 1) | `claude/bf2017-h-game-sets` | #840 (task 1: the tauntaun’s, the Ewok’s and the AT-RT’s sets in `bones.json`) |
+| B | phase 3: dewback, bantha, eopie, ronto, Jawa, aiwha; the tauntaun’s rider on the game’s clips and seat bones; the ronto’s Jawa | nothing (the Ewok’s hood and the lodcaps after D) | | | |
+| Y | phase 10: Yoda and Grievous as own-rig heroes, the second blade in `Wep2_Root`, their powers | H for Grievous’s set | | | |
+| I | the Death Star interior’s cast: shadowtrooper, navy crewman, admiral, personnel, the droids; `figures.js` learns the game’s skeletons | nothing | | | |
+| T | one atlas a kind for the light and far cuts (`--atlas`); the full cut stays native | nothing; re-run after D | | | |
+| W | the tow cable and the fall; the AT-AT’s wreck; the cockpits on boarding; engine glow (after D’s sheets); the far fleet instanced | W4 after D | | | |
+
 ## Done
 
 - **The design, the inventory and the plans** (PR #802, carried by the phase 0 PR).
