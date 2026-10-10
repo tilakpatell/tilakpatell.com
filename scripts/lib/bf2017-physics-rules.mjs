@@ -531,16 +531,25 @@ export function soldierRulebook(root, names = SOLDIER_RECORDS) {
 
 // ── all three, for scripts/bf2017-bolts-data.mjs ──
 
+// Where the game keeps its bone-capsule sets: most under Gameplay/Characters/,
+// but a creature's or a hero's beside its own records (the tauntaun's under
+// Characters/NPC/Creatures/Tauntaun/, the Ewok's under Characters/Hero/Ewok/)
+// and a mount's under its vehicle (the AT-RT's). The ragdolls are all under
+// Gameplay/Characters/.
+export const BONE_SET_ROOTS = ['Gameplay/Characters/', 'Characters/', 'Gameplay/Vehicles/'];
+
 export function physicsRulebooks(root) {
   const projectiles = projectileRulebook(root);
   const bones = { sets: [], refused: [] };
   const ragdoll = { rows: [], refused: [] };
-  for (const name of assetNames(root, 'Gameplay/Characters/')) {
+  const names = new Set(BONE_SET_ROOTS.flatMap((under) => assetNames(root, under)));
+  for (const name of names) {
     if (name.endsWith('_class_schematics')) continue;
     const file = indexOf(root).get(name);
     const raw = file.endsWith('.gz') ? zlib.gunzipSync(fs.readFileSync(file)).toString('utf8') : fs.readFileSync(file, 'utf8');
     const isBones = raw.includes('"SkeletonCollisionData"');
-    const isRag = raw.includes('"WSEACharacterPhysicsComponentData"');
+    // (a ragdoll is read from the soldier blueprints under Gameplay/Characters/ only)
+    const isRag = name.startsWith('gameplay/characters/') && raw.includes('"WSEACharacterPhysicsComponentData"');
     if (!isBones && !isRag) continue;
     const asset = JSON.parse(raw);
     if (refused(asset.name)) {
