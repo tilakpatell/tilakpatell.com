@@ -22,6 +22,8 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 
 All nine sessions started 2026-10-10 20:15 UTC from `claude/bf2017-accuracy`; lane U's prompt leaves its PR for the owner (the classifier refused the self-merge wording once). Seams (the spec's §5): E0 keeps the `variations` slot; lane 5 and the screens and picture lanes share `src/components/battlefront/` (merge `origin/main` before the PR, keep both sides); lane M's fonts PR may land under the screens lane; lane S's saber engine is not touched by the bots lane. The desktop's part (§4): the per-instance variation hashes into the maps' `.bin`; the UI bitmaps and the sound stay lane D's.
 
+**The bots lane, brought up to `main`** (2026-10-10, 23:50 UTC, session_01282C5tuJnxtHN4SCrT1kct, branch `claude/bf2017-bots-on-main`): its session stopped at 21:17 UTC with no PR. The merge met lane S's saber engine in Heroes vs Villains (#875): the difficulty's aim scale still divides a blaster bot's chance to hit, and its damage scale applies to the engine's own strike damage (`full` on a hit to you carries the hero's number before the scaling); the fixture index and `NOTES.md` take both lanes' rows.
+
 ## The fifth design: every object in the drop, used (2026-10-10, night)
 
 `docs/superpowers/specs/2026-10-10-bf2017-every-asset-design.md`, with eleven plans `docs/superpowers/plans/2026-10-10-bf2017-every-asset-lane{Z,E0,E1,E2,E3,E4,E5,O,Q,M,A}-*.md`. Written from a census of the desktop export's manifests, a live listing of the bucket and `origin/main` at `ff7bee49` (#842). The owner asked that every asset on the bucket be used by the site, added to all the worlds where it fits, and implemented by Opus 5.5.
