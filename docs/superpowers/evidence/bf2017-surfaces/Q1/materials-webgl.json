@@ -1,0 +1,81 @@
+{
+  "leg": "webgl",
+  "adapter": "swiftshader",
+  "shots": {
+    "row-glb": "fixture-glb-webgl.png",
+    "wall-glb": "wall-glb-webgl.png",
+    "row-low": "fixture-low-webgl.png",
+    "wall-low": "wall-low-webgl.png",
+    "row-mid": "fixture-mid-webgl.png",
+    "wall-mid": "wall-mid-webgl.png",
+    "row-high": "fixture-high-webgl.png",
+    "wall-high": "wall-high-webgl.png",
+    "row-ultra": "fixture-ultra-webgl.png",
+    "wall-ultra": "wall-ultra-webgl.png"
+  },
+  "features": [
+    {
+      "label": "props",
+      "features": [
+        "detail"
+      ]
+    },
+    {
+      "label": "vehicle",
+      "features": [
+        "detail",
+        "grunge",
+        "paint",
+        "metal"
+      ]
+    },
+    {
+      "label": "character",
+      "features": [
+        "weathering"
+      ]
+    },
+    {
+      "label": "vegetation",
+      "features": [
+        "reflectance",
+        "translucency",
+        "alphaTest",
+        "doubleSided"
+      ]
+    },
+    {
+      "label": "emissive",
+      "features": [
+        "emissive",
+        "alphaTest"
+      ]
+    },
+    {
+      "label": "hair",
+      "features": [
+        "melanin",
+        "tipTint",
+        "kajiyaKay",
+        "doubleSided"
+      ]
+    },
+    {
+      "label": "head",
+      "features": []
+    }
+  ],
+  "lowVsGlb": {
+    "row": {
+      "mean": 0,
+      "max": 17,
+      "overOne": 30
+    },
+    "wall": {
+      "mean": 0,
+      "max": 0,
+      "overOne": 0
+    }
+  },
+  "errors": []
+}

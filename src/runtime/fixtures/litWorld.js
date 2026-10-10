@@ -12,7 +12,13 @@
 // environment under ClusteredLighting (A2), the programs before and after a
 // light moves (no recompile), the frame time.
 //
-// rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only }
+// rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only, materials }
+//
+// `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
+// 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
+// the ring and its things set aside, a cube per recipe wearing the game
+// material over the GLB's own (mode 'glb': the GLB's material as it is) and
+// a wall under the first recipe, seen from probe.view('row' | 'wall').
 
 import * as THREE from 'three';
 
@@ -149,7 +155,21 @@ export default {
       },
     };
 
+    let row = null;
+    if (opts.materials) {
+      for (const o of [...scene.children]) if (o !== ground) o.visible = false;
+      row = recipeRow(scene, renderer, opts.materials, opts.tier, made);
+      probe.view = (name) => {
+        const v = VIEWS[name];
+        camera.position.set(...v.from);
+        camera.lookAt(...v.at);
+      };
+      probe.view('row');
+      probe.recipes = () => row.then((r) => r.map((c) => ({ label: c.label, features: c.features })));
+    }
+
     const ready = (async () => {
+      await row;
       const { applyGameLight } = await import('../../lib/three/light/apply.js');
       light = await applyGameLight(scene, renderer, ENTRY, { tier: opts.tier, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: gradeLut() });
       probe.light = { clustered: light.parts.placed?.clustered ?? null };
@@ -198,6 +218,73 @@ export default {
     };
   },
 };
+
+// ---- lane Q1's recipe cubes and wall
+
+// (both from the sun's side: ENTRY's sun is at az 210°, toward −z)
+const VIEWS = {
+  row: { from: [0, 1.9, -7], at: [0, 0.6, 0] },
+  // the wall at 2 m, a little off square so the grain catches the sun
+  wall: { from: [0.4, 1.3, 4], at: [0, 1.2, 6] },
+};
+// ENTRY's sun (az 210°, el 24°) as a direction toward it, for the
+// translucency and the hair's lobes
+const SUN = { direction: [Math.sin((210 * Math.PI) / 180) * Math.cos((24 * Math.PI) / 180), Math.sin((24 * Math.PI) / 180), Math.cos((210 * Math.PI) / 180) * Math.cos((24 * Math.PI) / 180)], color: [1, 0.93, 0.82] };
+const CUBE = 1.1; // m
+const SPACING = 1.6; // m
+const WALL = [4, 2.5]; // m
+
+// the GLB's material whose shader the recipe names (the export's extras),
+// else its first
+function glbMaterial(gltf, recipe) {
+  let first = null;
+  let match = null;
+  gltf.scene.traverse((o) => {
+    for (const m of o.isMesh ? [o.material].flat() : []) {
+      first ??= m;
+      if (!match && recipe.shader && m.userData?.shader === recipe.shader) match = m;
+    }
+  });
+  return match ?? first ?? new THREE.MeshStandardMaterial({ color: 0x808080 });
+}
+
+async function recipeRow(scene, renderer, { mode = 'game', list = [] }, tier, made) {
+  const [{ gltfLoader, ktx2Loader }, { loadSurfaceMaterial }] = await Promise.all([import('../../lib/three/gltf.js'), import('../../lib/three/surface/hair.js')]);
+  const ktx2 = await ktx2Loader({ renderer });
+  const make = await loadSurfaceMaterial();
+  const box = new THREE.BoxGeometry(CUBE, CUBE, CUBE);
+  made.push(box);
+  const out = [];
+  const x0 = -((list.length - 1) * SPACING) / 2;
+  for (const [i, entry] of list.entries()) {
+    const gltf = entry.glb ? await gltfLoader().loadAsync(entry.glb) : null;
+    const glb = gltf ? glbMaterial(gltf, entry.recipe) : new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.6 });
+    const maps = { glb };
+    for (const [k, url] of Object.entries(entry.maps ?? {})) maps[k] = url ? await ktx2.loadAsync(url) : null;
+    const material = mode === 'glb' ? glb : make(entry.recipe, maps, { tier, sun: SUN });
+    made.push(material);
+    const cube = new THREE.Mesh(box, material);
+    cube.position.set(x0 + i * SPACING, CUBE / 2 + 0.05, 0);
+    cube.rotation.y = Math.PI / 6;
+    cube.castShadow = cube.receiveShadow = true;
+    scene.add(cube);
+    if (i === 0) {
+      const plane = new THREE.PlaneGeometry(...WALL);
+      made.push(plane);
+      // (its UVs a unit a metre, as a panel set's wall repeats its sheet)
+      const uvs = plane.attributes.uv;
+      for (let k = 0; k < uvs.count; k++) uvs.setXY(k, uvs.getX(k) * WALL[0], uvs.getY(k) * WALL[1]);
+      const wall = new THREE.Mesh(plane, material);
+      // (facing −z, the sun's side)
+      wall.position.set(0, WALL[1] / 2, 6);
+      wall.rotation.y = Math.PI;
+      wall.receiveShadow = true;
+      scene.add(wall);
+    }
+    out.push({ label: entry.label, features: material.userData?.game?.features ?? [] });
+  }
+  return out;
+}
 
 // how many render pipelines the node renderer has built: a recompile adds one
 function countPrograms(renderer) {

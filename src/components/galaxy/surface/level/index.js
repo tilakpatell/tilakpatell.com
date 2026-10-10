@@ -9,11 +9,16 @@
 //     fetched and decoded (before the ground's grid is made)
 //   createLevel({ scene, site, tier, renderer, walk }) → null | { update(position), ready(), stats(), dispose() }
 //     (walk: the walk world, { solids, floors }, the pack's collision goes into)
+//
+// On the node renderer (WebGPU, or the node renderer on WebGL 2) a pack with
+// a recipes.json (scripts/bf2017-recipes.mjs, lane Q1) draws its game meshes
+// with the game's own surface shader (src/lib/three/surface/); the classic
+// renderer, or a pack without one, keeps the GLB's materials.
 
 import { withFallback } from '../../../../lib/assetBase.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
-import { createLevelLoader } from './levelGltf.js';
+import { createLevelLoader, recipesIndex } from './levelGltf.js';
 import { packUrl, wanted } from './levelPack.js';
 import { createLevelScene } from './levelScene.js';
 import { createLevelStream } from './levelStream.js';
@@ -76,6 +81,22 @@ export async function levelGround(ground) {
   return { ...ground, layers: filled, flats };
 }
 
+// The pack's recipes for the loader (null without a recipes.json)
+const recipesFor = (world, pack) =>
+  bytesOf(world)('recipes.json')
+    .then((b) => recipesIndex(pack, JSON.parse(new TextDecoder().decode(b))))
+    .catch(() => null);
+
+// the game material for a tier, or null on the classic renderer
+async function gameMaterials(world, pack, renderer, tier) {
+  // (low draws the GLB as it is: nothing to swap or fetch)
+  if (!renderer?.isWebGPURenderer || tier === 'low') return { recipes: null, materialFor: null };
+  const [recipes, { loadSurfaceMaterial }, { TIER_MAPS }] = await Promise.all([recipesFor(world, pack), import('../../../../lib/three/surface/hair.js'), import('../../../../lib/three/surface/gameMaterial.js')]);
+  if (!recipes) return { recipes: null, materialFor: null };
+  const make = await loadSurfaceMaterial();
+  return { recipes, materialFor: (recipe, maps) => make(recipe, maps, { tier }), mapKeys: TIER_MAPS[tier] ?? null };
+}
+
 export function createLevel({ scene, site, tier, renderer = null, walk = null }) {
   if (!site?.level) return null;
   const world = site.level;
@@ -87,9 +108,10 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null })
   let last = null;
   const colliders = walk ? createColliders(walk, tier) : null;
   packOf(world)
-    .then((pack) => {
+    .then(async (pack) => {
+      const { recipes, materialFor, mapKeys } = await gameMaterials(world, pack, renderer, tier).catch(() => ({ recipes: null, materialFor: null }));
       if (gone) return;
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys });
       level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when

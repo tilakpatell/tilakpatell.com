@@ -5,6 +5,18 @@
 //
 //   node scripts/light-fixture.mjs [--tier ultra] [--post on|off] [--sky on|off]
 //     [--grid] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
+//   node scripts/light-fixture.mjs --materials [--legs webgl]
+//
+// --materials (lane Q1, docs/superpowers/plans/2026-10-10-bf2017-surfaces-laneQ1-materials.md):
+// the seven fixture rows' recipes (the five families, hair and a head) (scripts/fixtures/bf2017/materials/), each
+// on a cube over its mesh's own GLB material, and a wall under the first,
+// their maps fetched from the bucket by name into lab/assets/bf2017/ (the
+// keys from the environment; NODE_USE_ENV_PROXY=1 in a cloud session). Shot
+// at the GLB's own material and at each tier into
+// docs/superpowers/evidence/bf2017-surfaces/Q1/fixture-<tier>-<leg>.png and
+// wall-<tier>-<leg>.png; the low tier against the GLB's (the design's
+// "low equals the GLB": mean and largest difference, 0…255) and each cube's
+// features into materials-<leg>.json.
 //
 // For each leg (?gpu=webgpu, and ?gpu=webgl: the node renderer on a WebGL 2
 // context) it opens scripts/light-fixture/index.html on a Vite dev server
@@ -89,6 +101,13 @@ const pct = (xs, p) => {
   return s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : null;
 };
 
+if (argv.includes('--materials')) {
+  const code = await materialsRun();
+  await browser.close();
+  await server.close();
+  process.exit(code);
+}
+
 mkdirSync(OUT, { recursive: true });
 const rows = [];
 for (const leg of legs) {
@@ -157,3 +176,111 @@ for (const r of rows) {
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
 }
 process.exit(rows.some((r) => r.error && r.leg !== 'webgpu') ? 1 : 0);
+
+// ---- --materials (lane Q1)
+
+async function materialList() {
+  const { readFileSync } = await import('node:fs');
+  const { spawnSync } = await import('node:child_process');
+  const { candidatesOf, recipeOf } = await import('./lib/bf2017-recipes.mjs');
+  const { MAP_KINDS } = await import('../src/lib/three/surface/families.js');
+  const { keys, getObject } = await import('./bf2017-fetch.mjs');
+  const env = keys();
+  const cache = join(ROOT, 'lab/assets/bf2017');
+  const list = [];
+  // (each row's material shown: the head's is its second, the face; the first is its eyes)
+  for (const [label, index] of [
+    ['props', 0],
+    ['vehicle', 0],
+    ['character', 0],
+    ['vegetation', 0],
+    ['emissive', 0],
+    ['hair', 0],
+    ['head', 1],
+  ]) {
+    const row = JSON.parse(readFileSync(join(ROOT, 'scripts/fixtures/bf2017/materials', `${label}.jsonl`), 'utf8').trim());
+    const recipe = recipeOf(row, index);
+    const glbFile = join(cache, 'web/models', `${row.mesh}.glb`);
+    if (!existsSync(glbFile)) spawnSync(process.execPath, [join(ROOT, 'scripts/bf2017-fetch.mjs'), row.mesh, '--lod', '0'], { stdio: 'inherit', env: process.env });
+    const maps = {};
+    const flat = { ...recipe.maps, breakupColor: recipe.maps.breakup?.color, breakupNormal: recipe.maps.breakup?.normal };
+    for (const [key, name] of Object.entries(flat)) {
+      if (typeof name !== 'string' || !MAP_KINDS[key]) continue;
+      const into = key === 'detailArray' ? 'detail' : key;
+      maps[into] = null;
+      for (const c of candidatesOf(name, MAP_KINDS[key])) {
+        const got = await getObject(env, cache, `web/${c}`);
+        if (got.state === 'fetched' || got.state === 'kept') {
+          maps[into] = `/lab/assets/bf2017/web/${c}`;
+          break;
+        }
+      }
+      if (!maps[into]) console.log(`missing: ${label} ${key} ${name}`);
+    }
+    // (the URL carries the recipe: its sources stay behind)
+    const lean = { ...recipe, _source: undefined };
+    list.push({ label, recipe: lean, glb: existsSync(glbFile) ? `/lab/assets/bf2017/web/models/${row.mesh}.glb` : null, maps });
+  }
+  return list;
+}
+
+async function materialsRun() {
+  const out = join(ROOT, 'docs/superpowers/evidence/bf2017-surfaces/Q1');
+  mkdirSync(out, { recursive: true });
+  const list = await materialList();
+  const configs = [
+    ['glb', 'low'],
+    ['game', 'low'],
+    ['game', 'mid'],
+    ['game', 'high'],
+    ['game', 'ultra'],
+  ];
+  let failed = false;
+  for (const leg of legs) {
+    const result = { leg, adapter: swift ? 'swiftshader' : 'system', shots: {}, features: null, lowVsGlb: {}, errors: [] };
+    const raws = {};
+    for (const [mode, t] of configs) {
+      const name = mode === 'glb' ? 'glb' : t;
+      const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+      page.setDefaultTimeout(240000);
+      page.on('pageerror', (e) => result.errors.push(e.message.split('\n')[0]));
+      try {
+        const f = { tier: t, post: false, sky: true, env: true, materials: { mode, list } };
+        await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}&fixture=${encodeURIComponent(JSON.stringify(f))}`, { waitUntil: 'domcontentloaded', timeout: 240000 });
+        await page.waitForFunction(() => window.__lit?.ready || window.__lit?.error, null, { timeout: 300000 });
+        const err = await page.evaluate(() => window.__lit.error);
+        if (err) throw new Error(err);
+        if (name === 'ultra') result.features = await page.evaluate(() => window.__lit.probe.recipes());
+        for (const view of ['row', 'wall']) {
+          await page.evaluate((v) => (window.__lit.probe.view(v), window.__lit.draw(60)), view);
+          const png = await page.locator('canvas').screenshot();
+          const file = `${view === 'row' ? 'fixture' : 'wall'}-${name}-${leg}.png`;
+          writeFileSync(join(out, file), png);
+          result.shots[`${view}-${name}`] = file;
+          raws[`${view}-${name}`] = await raw(png);
+        }
+      } catch (e) {
+        result.errors.push(`${name}: ${String(e.message ?? e).split('\n')[0]}`);
+        if (leg !== 'webgpu') failed = true;
+      }
+      await page.close();
+    }
+    for (const view of ['row', 'wall']) {
+      const a = raws[`${view}-glb`];
+      const b = raws[`${view}-low`];
+      if (!a || !b) continue;
+      let max = 0;
+      let over = 0;
+      for (let i = 0; i < a.length; i++) {
+        const d = Math.abs(a[i] - b[i]);
+        if (d > max) max = d;
+        if (d > 1) over++;
+      }
+      result.lowVsGlb[view] = { mean: Number(meanDiff(a, b).toFixed(3)), max, overOne: over };
+    }
+    writeFileSync(join(out, `materials-${leg}.json`), `${JSON.stringify(result, null, 2)}\n`);
+    console.log(`${leg}: low vs the GLB ${JSON.stringify(result.lowVsGlb)}; ${Object.keys(result.shots).length} shots${result.errors.length ? `; errors: ${[...new Set(result.errors)].slice(0, 4).join(' / ')}` : ''}`);
+    for (const c of result.features ?? []) console.log(`  ${c.label.padEnd(11)} ${c.features.join(', ') || '(none)'}`);
+  }
+  return failed ? 1 : 0;
+}
