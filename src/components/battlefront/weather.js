@@ -6,7 +6,11 @@
 //
 //   unflatten(raw) → { Field: number | [x, y, z(, w)] }: a record's flat
 //     `Field.x` keys folded back, its transform and source left out
-//   entryFor(lighting, name) → { name, record }
+//   entryFor(lighting, name) → { name, record }: every component the stack
+//     reads (the sun, sky, fog, exposure, grade and AO; the shadows' view
+//     distances by tier, lane S's; the sun's flare, lane V's; the wind the
+//     cloud shadows drift on; the motion blur, lane C's)
+//   windOf(entry) → [x, y, z] m/s: the record's wind, for the effects' drift
 //   readLightRow(row) → { kind: 'point' | 'spot', pos, color, candela, range, cone?, dir? } | null
 //   lightsJsonOf(rows, { cell }) → { format: 1, cell, cells }
 
@@ -31,9 +35,22 @@ export function unflatten(raw = {}) {
   return out;
 }
 
+// a weather's component: lane 0 keeps some as { raw }, some flat
+const fieldsOf = (c) => unflatten(c?.raw ?? c);
+const has = (c) => c && Object.keys(c.raw ?? c).length > 0;
+
 export function entryFor(lighting, name) {
   const w = lighting.weathers[name] ?? lighting.weathers[lighting.default];
   const tone = unflatten(w.bloom?.raw);
+  const more = {};
+  for (const [key, type] of [
+    ['shadows', 'ShadowsComponentData'],
+    ['flare', 'SunFlareComponentData'],
+    ['wind', 'WindComponentData'],
+    ['motionBlur', 'MotionBlurComponentData'],
+  ]) {
+    if (has(w[key])) more[type] = [fieldsOf(w[key])];
+  }
   return {
     name: w.ve,
     record: {
@@ -45,8 +62,16 @@ export function entryFor(lighting, name) {
       TonemapComponentData: [{ ...tone, EV: w.exposure?.ev ?? tone.EV, ExposureCompensation: w.exposure?.compensation ?? tone.ExposureCompensation, MinEV: w.exposure?.minEv ?? tone.MinEV, MaxEV: w.exposure?.maxEv ?? tone.MaxEV, AutomaticExposure: true }],
       ColorCorrectionComponentData: [{ ColorGradingMaxHdrValue: w.grading?.maxHdr ?? 1 }],
       ...(w.ao?.raw ? { DynamicAOComponentData: [unflatten(w.ao.raw)] } : {}),
+      ...more,
     },
   };
+}
+
+export function windOf(entry) {
+  const w = entry?.record?.WindComponentData?.[0];
+  const s = Number(w?.WindStrength ?? 0);
+  const a = (Number(w?.WindDirection ?? 0) * Math.PI) / 180;
+  return [Math.sin(a) * s, 0, Math.cos(a) * s];
 }
 
 // the row's forward (lane 0: yaw = atan2(f.x, f.z), pitch = asin(f.y))

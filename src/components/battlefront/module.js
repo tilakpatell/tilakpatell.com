@@ -11,12 +11,13 @@
 // through world.do. `window.__battlefront` is the same door for
 // scripts/battlefront-check.mjs: { view(), do(action, arg) } with 'deploy'
 // { classId }, 'pick' id, 'advance' seconds, 'win', 'lose', 'weather' name,
-// 'gpu'.
+// 'gpu', 'shoulder' (the camera to the other shoulder), 'spot' name | null
+// (the camera pinned at one of the gallery's spots, spots.js).
 
 import * as THREE from 'three';
-import { camerasOf, lightingOf, loadRulebook, mapOf } from '../../lib/battlefront/rulebook.js';
+import { camerasOf, lightingOf, loadRulebook, mapOf, stagesOf } from '../../lib/battlefront/rulebook.js';
 import { createLook } from '../../runtime/look.js';
-import { overviewPose, soldierPose } from './camera.js';
+import { overviewPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
 import { createFigures } from './figures/figures.js';
 import { createBolts } from './fx/bolts.js';
@@ -24,7 +25,9 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
-import { entryFor, lightsJsonOf } from './weather.js';
+import { createWorldEffects, levelVolumes } from './passes.js';
+import { spotsOf } from './spots.js';
+import { entryFor, lightsJsonOf, windOf } from './weather.js';
 
 export const HUD_HZ = 8; // snapshots a second to the page
 export const PLAYER_TEAM = 2; // the attackers on Hoth, the Empire (maps/hoth.stages.json)
@@ -49,10 +52,11 @@ export default {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0.7, 0.78, 0.88);
     const camera = new THREE.PerspectiveCamera(70, 1, 0.1, FAR);
-    const level = createLevel({ scene, tier, renderer, world: levelName });
+    // (the ground's layers take the weather's sun and sky: lane Q2)
+    const level = createLevel({ scene, tier, renderer, world: levelName, entry: entryFor(lighting, lighting.default) });
     const figures = createFigures({ scene });
     const bolts = createBolts(scene);
-    const rig = createCameraRig(camera);
+    const rig = createCameraRig(camera, cams);
     const input = createInput({ maxPitch: (cams.soldier.maxPitch * Math.PI) / 180 });
     input.attach();
     // (the navgrid is built from the ground the world draws: the pack's
@@ -70,6 +74,9 @@ export default {
     let sinceHud = Infinity;
     let scoreboard = false;
     let weather = lighting.default;
+    // the gallery's spots (spots.js); one pinned holds the camera there
+    const spots = spotsOf(map, stagesOf(rb, levelName, mode));
+    let pinned = null;
 
     const look = createLook({
       host: rt.gfx.canvas,
@@ -80,7 +87,9 @@ export default {
     });
     look.attach();
 
-    // the camera's arm against the ground: march back from the shoulder
+    // the camera's arm against the ground (lane C's wall blend takes the
+    // hit; the world has no physics world to cast through): march out from
+    // the pivot
     const castArm = (from, dir, len) => {
       for (let d = ARM_STEP; d <= len; d += ARM_STEP) {
         const x = from[0] + dir[0] * d;
@@ -106,8 +115,19 @@ export default {
 
     // the light: lane R's stack on the level's records (await: the passes
     // need the sun and the sky before the chain is built)
+    // (the level's glows and light cones marched on high and ultra: lane V;
+    // the sun's soft shadow, cloud shadows and flare come with the entry)
     const { applyGameLight } = await import('../../lib/three/light/apply.js');
-    const light = await applyGameLight(scene, renderer, entryFor(lighting, weather), { tier, camera, lights: lightsJsonOf(lighting.lights) });
+    const volumetrics = await levelVolumes(level, tier);
+    const light = await applyGameLight(scene, renderer, entryFor(lighting, weather), { tier, camera, lights: lightsJsonOf(lighting.lights), volumetrics });
+    // the level's effects (lane X), lit by the stack, on high and ultra; not
+    // awaited by the world's ready: a sheet still coming draws as its
+    // placeholder, and a background tab never waits on them
+    let wind = windOf(entryFor(lighting, weather));
+    let effects = null;
+    const effectsReady = createWorldEffects({ scene, renderer, tier, level, light })
+      .then((fx) => (effects = fx))
+      .catch((e) => console.warn('battlefront: effects', e));
     // (?post=off in the address: the scene drawn with no chain, for a check)
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
     const post = light.passes.length && asked !== 'off' ? rt.gfx.post(light.passes) : null;
@@ -127,6 +147,8 @@ export default {
         showScoreboard: scoreboard,
         markers,
         level: { loaded: level.loaded(), progress: level.progress(), ...level.stats() },
+        // (the passes on, for the checks: lane 5's chain and what came after it)
+        passes: { post: post ? light.passes.map((p) => p.kind) : [], volumes: !!light.parts.volumetrics, clouds: !!light.parts.clouds, effects: effects ? { ...effects.stats } : null },
         backend: rt.gfx.backend,
         weather,
       };
@@ -155,14 +177,17 @@ export default {
           step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]);
         }
         const p = body();
-        if (sim.player.state === 'alive' && p) {
+        if (pinned) {
+          pose = pinned;
+          level.update(pinned.at);
+        } else if (sim.player.state === 'alive' && p) {
           const look = input.look();
           // (the body as it is drawn, between the last two steps, so the
           // camera does not jump at the sim's 20 Hz while the figure glides)
           const k = Math.min(1, acc / STEP);
           const from = lastAt ?? p.at;
           const drawn = { ...p, at: p.at.map((v, i) => from[i] + (v - from[i]) * k) };
-          pose = soldierPose(drawn, cams, { yaw: look.yaw, pitch: look.pitch, aiming: read.aim, weaponId: p.weapon, dt, prev: pose, castArm });
+          pose = rig.soldier(drawn, look, { aiming: read.aim, weaponId: p.weapon, dt, castArm, floorAt: (x, z) => level.heightAt(x, z) });
           level.update(p.at);
         } else {
           const towards = sim.objectives[0]?.at ?? [0, 0, 0];
@@ -174,6 +199,7 @@ export default {
         figures.update(v.entities, dt, Math.min(1, acc / STEP));
         bolts.update(v.bolts);
         light.update(dt, camera);
+        effects?.update(dt, camera, wind);
         sinceHud += dt;
         if (sinceHud >= 1 / HUD_HZ) {
           sinceHud = 0;
@@ -206,9 +232,25 @@ export default {
             if (!lighting.weathers[arg]) return { ok: false, why: `no weather ${arg}` };
             weather = arg;
             light.setWeather(entryFor(lighting, arg), 0);
+            wind = windOf(entryFor(lighting, arg));
             return { ok: true };
           case 'gpu':
             return rt.gfx.backend;
+          case 'spot': {
+            // (null lets the camera go; a spot's weather is set at once)
+            if (arg == null) return (pinned = null), { ok: true };
+            const spot = spots.find((x) => x.name === arg);
+            if (!spot) return { ok: false, why: `no spot ${arg}`, spots: spots.map((x) => x.name) };
+            pinned = spot;
+            if (spot.weather && lighting.weathers[spot.weather]) {
+              weather = spot.weather;
+              light.setWeather(entryFor(lighting, weather), 0);
+              wind = windOf(entryFor(lighting, weather));
+            }
+            return { ok: true, spot };
+          }
+          case 'shoulder':
+            return { ok: true, side: rig.swapShoulder() };
           default:
             return { ok: false, why: `no action ${action}` };
         }
@@ -218,6 +260,7 @@ export default {
         look.detach();
         input.detach();
         post?.dispose?.();
+        effectsReady.then(() => effects?.dispose());
         light.dispose();
         bolts.dispose();
         figures.dispose();
@@ -225,7 +268,7 @@ export default {
         if (typeof window !== 'undefined' && window.__battlefront?.world === world) delete window.__battlefront;
       },
     };
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x) };
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), renderer };
     return world;
   },
 };

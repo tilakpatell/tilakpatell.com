@@ -4,7 +4,9 @@ import { readEntry } from '../../lib/three/light/entry.js';
 import { validateLook } from '../worlds/looks.js';
 import ve from '../../lib/three/light/fixtures/hoth.ve.json';
 import { LOOK } from './look.js';
-import { entryFor, lightsJsonOf, readLightRow, unflatten } from './weather.js';
+import { flareElements } from '../../lib/three/light/flare.js';
+import { readShadowRecord } from '../../lib/three/light/sun.js';
+import { entryFor, lightsJsonOf, readLightRow, unflatten, windOf } from './weather.js';
 
 const lighting = lightingOf(loadRulebook(), 'hoth');
 
@@ -22,6 +24,20 @@ describe('the game’s weather, for lane R’s light', () => {
     expect(ours.exposure).toBeCloseTo(pinned.exposure, 5);
     // the record's own Rayleigh coefficients, not the pinned file's rounding
     expect(ours.sky.rayleigh[0]).toBeCloseTo(5.8e-6, 9);
+  });
+
+  it('carries every record the stack reads: the shadows’ distances, the sun’s flare, the wind, the motion blur', () => {
+    const e = entryFor(lighting, 'sunny');
+    const r = e.record;
+    expect(r.ShadowsComponentData[0]['SunShadowmapViewDistance.High']).toBeGreaterThan(0);
+    expect(readShadowRecord(e).viewDistance.high).toBe(r.ShadowsComponentData[0]['SunShadowmapViewDistance.High']);
+    expect(flareElements(r.SunFlareComponentData[0]).elements.length).toBeGreaterThan(0);
+    expect(r.WindComponentData[0].WindStrength).toBe(5);
+    expect(r.MotionBlurComponentData[0].MotionBlurScale).toBeTypeOf('number');
+    // (the cloud shadows drift on the record's wind, not the fallback)
+    expect(windOf(e)).toHaveLength(3);
+    expect(Math.hypot(...windOf(e))).toBeCloseTo(5, 6);
+    for (const k of Object.keys(r)) for (const c of r[k]) expect(Object.keys(c).some((f) => f.startsWith('Transform.') || f.startsWith('_'))).toBe(false);
   });
 
   it('falls to the level’s default weather for a name it has not got', () => {
