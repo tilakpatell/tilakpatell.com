@@ -64,6 +64,78 @@ let source = 'level';
 if (process.env.FIXTURE) source = 'fixture';
 else await page.waitForFunction(() => window.__surfaceDo('debug')?.body?.ready, null, { timeout: levelWait }).catch(() => (source = 'fixture'));
 
+// ── on the level's own engine: the game's shapes as they stand ──
+// (stood on the ground drawn while walking; stopped by the nearest wall of
+// the game's that rays from where you stand find; the stream's numbers)
+if (source === 'level') {
+  const checks = [];
+  const check = (name, ok, seen) => checks.push({ name, ok: Boolean(ok), seen });
+  await page.mouse.click(640, 300);
+  await page.keyboard.press('Escape');
+  // (the near cells' bodies in, the queue empty)
+  await page.waitForFunction(() => { const s = window.__surfaceScene.physics?.(); return s && s.bodies > 0 && s.queued === 0; }, null, { timeout: 120000, polling: 500 }).catch(() => {});
+  const me = () =>
+    page.evaluate(() => {
+      const d = window.__surfaceDo('debug');
+      return { x: d.you.x, y: d.you.y, z: d.you.z, grounded: d.you.grounded, ground: window.__surfaceScene.heightAt(d.you.x, d.you.z), pose: d.body?.pose ?? null };
+    });
+  // walking the snow: three seconds, the feet on the ground drawn throughout
+  const start = await me();
+  await page.evaluate(({ x, z }) => window.__surfaceDo('teleport', x, z, 0, null), start);
+  await page.waitForTimeout(600);
+  const off = [];
+  await page.keyboard.down('KeyW');
+  for (let i = 0; i < 12; i++) {
+    await page.waitForTimeout(250);
+    const m = await me();
+    if (m.grounded) off.push(+(m.y - m.ground).toFixed(3));
+  }
+  await page.keyboard.up('KeyW');
+  const walked = await me();
+  check('walking the snow, the feet stay on the ground drawn (within 0.5 m)', off.length >= 6 && off.every((d) => Math.abs(d) < 0.5) && Math.hypot(walked.x - start.x, walked.z - start.z) > 3, { off, moved: +Math.hypot(walked.x - start.x, walked.z - start.z).toFixed(2) });
+  await page.screenshot({ path: join(out, `${world}-level-snow.jpg`), type: 'jpeg', quality: 72 });
+  // the nearest wall: rays at the chest round you, a face near upright, 6 to 60 m off
+  const wall = await page.evaluate(async () => {
+    const eng = window.__surfaceScene.engine?.();
+    const d = window.__surfaceDo('debug');
+    if (!eng) return null;
+    const { RAPIER, world } = eng;
+    let best = null;
+    for (let i = 0; i < 32; i++) {
+      const a = (i / 32) * Math.PI * 2;
+      const dir = { x: Math.sin(a), y: 0, z: Math.cos(a) };
+      const from = { x: d.you.x, y: d.you.y + 1.2, z: d.you.z };
+      const hit = world.castRayAndGetNormal(new RAPIER.Ray(from, dir), 60, true, RAPIER.QueryFilterFlags.EXCLUDE_KINEMATIC);
+      if (!hit || hit.timeOfImpact < 6 || Math.abs(hit.normal.y) > 0.3) continue;
+      if (!best || hit.timeOfImpact < best.dist) best = { dist: hit.timeOfImpact, yaw: a, at: [from.x + dir.x * hit.timeOfImpact, from.z + dir.z * hit.timeOfImpact] };
+    }
+    return best;
+  });
+  if (!wall) check('a wall of the game’s within 60 m stops you', false, 'no upright face found');
+  else {
+    const dir = [Math.sin(wall.yaw), Math.cos(wall.yaw)];
+    const from = [wall.at[0] - dir[0] * 4, wall.at[1] - dir[1] * 4];
+    await page.evaluate(({ from, yaw }) => window.__surfaceDo('teleport', from[0], from[1], yaw, null), { from, yaw: wall.yaw });
+    await page.waitForTimeout(800);
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(3000);
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(300);
+    const m = await me();
+    // (how far along the way to the wall you got: short of its face by about the capsule's radius)
+    const along = (m.x - from[0]) * dir[0] + (m.z - from[1]) * dir[1];
+    check('a wall of the game’s stops you short of its face', along < 4 - 0.2 && along > 2.5, { along: +along.toFixed(3), wallAt: 4, y: +(m.y - m.ground).toFixed(2) });
+    await page.screenshot({ path: join(out, `${world}-level-wall.jpg`), type: 'jpeg', quality: 72 });
+  }
+  const stats = await page.evaluate(() => window.__surfaceScene.physics?.() ?? null);
+  const report = { world, source, angle, checks, stats, errors, note: 'the level’s own engine: Hoth’s game shapes streamed by cell (levelPhysics.js), the player on the soldier’s body' };
+  writeFileSync(join(out, `${world}-level.json`), `${JSON.stringify(report, null, 2)}\n`);
+  for (const c of checks) console.log(`${c.ok ? 'ok  ' : 'FAIL'} ${c.name} ${JSON.stringify(c.seen)}`);
+  console.log(`source: level; physics: ${JSON.stringify(stats)}; errors: ${errors.length}`);
+  await browser.close();
+  process.exit(checks.every((c) => c.ok) ? 0 : 1);
+}
+
 // the course's lanes, side by side along x from where you stand, each run along +z
 const first = await debug();
 if (!first?.you) {

@@ -3555,6 +3555,7 @@ export async function create(canvas, ctx) {
   if (import.meta.env.DEV)
     window.__surfaceScene = {
       physics: () => gameLevel?.stats().physics ?? null,
+      engine: () => gameLevel?.physics() ?? null, // (the level's Rapier world: the QA scripts' rays)
       scene,
       post,
       renderer,

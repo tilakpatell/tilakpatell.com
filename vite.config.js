@@ -18,7 +18,10 @@ export default defineConfig({
   // scripts/bf2-dev.mjs; nothing when it is unset)
   plugins: [iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
   // (the icons' modules import react-icons' own GenIcon: bundled up front in dev)
-  optimizeDeps: { include: ['react-icons/lib'] },
+  // (scanned from the site's own page only: the tool pages under scripts/ and
+  // .claude/ import aliases and packages the site doesn't, and a failed scan
+  // leaves react-dom bundled twice, the page blank)
+  optimizeDeps: { entries: ['index.html'], include: ['react-icons/lib'] },
   base: '/',
   // the skills and the other branches' worktrees under .claude, and the
   // scratch checkouts under lab/, bring their own tests; the AI tiers are
