@@ -35,7 +35,7 @@ export default function BattlefrontHud({ view, mine = 2, words, markers = [], sc
       {!deploying && !mode?.result && p && p.state === 'alive' && (
         <>
           <Markers markers={markers} />
-          {reticle && <Reticle state={{ shown: true, hit: p.hits?.length ? p.hits[p.hits.length - 1].id : null }} shape={reticle} />}
+          {reticle && <Reticle state={{ shown: true }} shape={reticle} />}
           <Heat heat={p.heat ?? 0} warning={p.warning ?? 0.75} overheated={Boolean(p.overheated)} window={p.coolWindow ?? null} />
           <div className="bf-soldier">
             <Health hp={p.hp} hpMax={p.hpMax} />

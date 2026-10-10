@@ -14,7 +14,7 @@ export default function Reticle({ state, shape = null, className = '' }) {
       <div className={`hud-reticle hud-reticle-shape ${className}`.trim()} style={{ '--tight': state.tight ?? 0 }} {...flags} data-shape={shape.name} aria-hidden="true">
         <svg viewBox={shape.viewBox} focusable="false">
           {shape.paths.map((p, i) => (
-            <path key={i} d={p.d} transform={p.transform} fill={p.stroke ? 'none' : p.fill === 'currentColor' || /^rgb\(255 255 255\)$/.test(p.fill) ? 'currentColor' : p.fill} fillRule={p.fillRule} stroke={p.stroke ? 'currentColor' : undefined} strokeWidth={p.strokeWidth} opacity={p.opacity} />
+            <path key={i} d={p.d} transform={p.transform} fill={p.stroke ? 'none' : p.fill === 'currentColor' || /^rgb\(255 255 255\)$/.test(p.fill) ? 'currentColor' : p.fill} fillRule={p.fillRule} stroke={p.stroke ? 'currentColor' : undefined} strokeWidth={p.strokeWidth} strokeLinecap={p.strokeLinecap} opacity={p.opacity} />
           ))}
         </svg>
         <b />

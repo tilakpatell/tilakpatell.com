@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { readIndex, stringHash } from './bf2017-ebx.mjs';
-import { cornersToPath, infoOf, linkTable, loadingOf, screensOf, shapesOf } from './bf2017-rulebook-ui.mjs';
+import { cornersToPath, infoOf, isEra, linkTable, loadingOf, screensOf, shapesOf } from './bf2017-rulebook-ui.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
 const S = (o) => ({
@@ -234,3 +234,14 @@ describe('the loading screens and hints', () => {
     expect(k.hints.HintsBundleMpInfantryModes_OT.tips).toHaveLength(l.hints.HintsBundleMpInfantryModes_OT.tips.length - 1);
   });
 });
+
+describe('the era rule', () => {
+  it('refuses the sequel seasons’ and act 3’s folders wherever they sit, and act 3’s assets by name', () => {
+    expect(isEra('UI/Frontend/Screens/S1/S1_SelectSide')).toBe(true);
+    expect(isEra('S9_2/UI/Data/GameModes/Levels/Jakku_02')).toBe(true);
+    expect(isEra('UI/LoadingScreens/SPLoadLevel/SPLoadLevelScreenAsset_A3M1PIL')).toBe(true);
+    expect(isEra('UI/Frontend/Screens/Start/MainMenuScreen')).toBe(false);
+    expect(isEra('UI/LoadingScreens/SPLoadLevel/SPLoadLevelScreenAsset_A1M2FON')).toBe(false);
+  });
+});
+

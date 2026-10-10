@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import BattlefrontHud from '../hud/BattlefrontHud.jsx';
-import { loadScreens } from '../useGameScreens.js';
+import { loadScreens, wantsMenu } from '../useGameScreens.js';
 import { levelCards, menuItems, MODE_LISTS, pressStart } from './cards';
-import { EOR_STEPS, findBox, stepAt } from './tree';
+import { EOR_STEPS, findBox, skipTo, stepAt } from './tree';
 import { screen } from '../../../lib/bf2017/ui/screens';
 import EndOfRound from './EndOfRound.jsx';
 import InGameMenu from './InGameMenu.jsx';
@@ -104,6 +104,12 @@ describe('the end of round, on the clock', () => {
     expect(stepAt(999).done).toBe(true);
   });
 
+  it('skips to the start of the next step from anywhere in this one', () => {
+    const into = EOR_STEPS[0].seconds + 1;
+    expect(stepAt(into + skipTo(into)).step.id).toBe('top');
+    expect(stepAt(0 + skipTo(0)).step.id).toBe('scoreboard');
+  });
+
   it('reads the time, not frames: a tab that slept a minute is at the end', () => {
     let calls = 0;
     const now = () => (calls++ === 0 ? 0 : 60000);
@@ -133,3 +139,21 @@ describe('with no screens (a failed import)', () => {
     expect(s.reticle.viewBox).toBe('-20 -20 40 40');
   });
 });
+
+describe('the pause menu’s way in', () => {
+  it('opens on Escape, and on the pointer let go (the browser takes the first Escape to end the lock)', () => {
+    expect(wantsMenu({ type: 'keydown', key: 'Escape' }, null)).toBe(true);
+    expect(wantsMenu({ type: 'keydown', key: 'Escape', defaultPrevented: true }, null)).toBe(false);
+    expect(wantsMenu({ type: 'pointerlockchange' }, null)).toBe(true);
+    expect(wantsMenu({ type: 'pointerlockchange' }, {})).toBe(false);
+    expect(wantsMenu({ type: 'keydown', key: 'Tab' }, null)).toBe(false);
+  });
+
+  it('draws no hit flash on the crosshair from the player’s own wounds', () => {
+    const view = { deploy: { open: false, offers: [] }, points: 0, player: { state: 'alive', team: 2, hp: 50, hpMax: 100, hits: [{ id: 'x', angle: 0, age: 0 }] }, mode: null, killLog: [] };
+    const h = html(<BattlefrontHud view={view} words={{ title: 'Hoth', deploy: 'Deploy', offer: (o) => o.id, outcome: {} }} reticle={{ name: 'c', viewBox: '0 0 4 4', paths: [] }} />);
+    expect(h).toContain('hud-reticle-shape');
+    expect(h).not.toContain('data-hit');
+  });
+});
+

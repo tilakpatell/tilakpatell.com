@@ -38,7 +38,7 @@ const asset = (v) => v?.$asset ?? null;
 // The era rule: the sequel's names, and its seasons' and act 3's folders
 // (S1's Crait, the S9 sequel levels, A3's Resurrection, and "Paintball", the
 // sequel's codename that lane M's films leave out too).
-export const isEra = (n) => isSequel(n) || /^(S1|S9[^/]*|A3)\//i.test(n) || /paintball/i.test(n);
+export const isEra = (n) => isSequel(n) || /(^|\/)(S1|S9[^/]*|A3)\//i.test(n) || /(^|[/_])A3M\d/i.test(n) || /paintball/i.test(n);
 
 // ── strings ──────────────────────────────────────────────────────────────
 

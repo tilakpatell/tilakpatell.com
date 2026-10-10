@@ -6,7 +6,7 @@ import { useMediaQuery } from '../../lib/hooks';
 import { wayOut } from '../worlds/worlds';
 import BattlefrontHud from './hud/BattlefrontHud.jsx';
 import battlefrontModule from './module.js';
-import { useGameScreens } from './useGameScreens.js';
+import { useGameScreens, wantsMenu } from './useGameScreens.js';
 import './hud/battlefront.css';
 
 // The Battlefront world's page body: the module on the runtime, the game's
@@ -55,12 +55,16 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   const loading = !snap || !snap.level?.loaded;
   const alive = snap?.player?.state === 'alive';
   const result = snap?.mode?.result ?? null;
-  // Escape opens the in-game menu while the player is up (the menu's own Escape resumes)
+  // Escape, or the pointer let go, opens the in-game menu while the player is up (the menu's own Escape resumes)
   useEffect(() => {
     if (!screens || !alive || result) return undefined;
-    const on = (e) => e.key === 'Escape' && !e.defaultPrevented && setMenu(true);
+    const on = (e) => wantsMenu(e, document.pointerLockElement) && setMenu(true);
     window.addEventListener('keydown', on);
-    return () => window.removeEventListener('keydown', on);
+    document.addEventListener('pointerlockchange', on);
+    return () => {
+      window.removeEventListener('keydown', on);
+      document.removeEventListener('pointerlockchange', on);
+    };
   }, [screens, alive, result]);
   const Loading = screens?.Loading;
   const InGameMenu = screens?.InGameMenu;

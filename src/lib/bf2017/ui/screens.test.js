@@ -17,7 +17,7 @@ describe("a screen's tree, resolved", () => {
   it('holds the front end and the in-game screens the era rule allows', () => {
     expect(SCREENS).toContain('UI/Frontend/Screens/Start/MainMenuScreen');
     expect(SCREENS).toContain('UI/InGame/InGameMenu/IngameMenuMPScreen');
-    expect(SCREENS.some((n) => /^(S1|S9|A3)\//.test(n))).toBe(false);
+    expect(SCREENS.some((n) => /(^|\/)(S1|S9[^/]*|A3)\//.test(n))).toBe(false);
   });
 
   it("places the main menu's cell list within a pixel of the record at 1920 × 1080", () => {

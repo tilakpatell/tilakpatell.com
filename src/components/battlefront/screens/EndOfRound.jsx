@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { word } from '../../../lib/bf2017/ui/screens';
-import { EOR_STEPS, stepAt } from './tree';
+import { skipTo, stepAt } from './tree';
 import { useTree } from './useTree';
 import GameScreen from './GameScreen.jsx';
 import Scoreboard from './Scoreboard.jsx';
@@ -15,13 +15,16 @@ import Scoreboard from './Scoreboard.jsx';
 // <EndOfRound result={{ winner }} mine={team} teams={…} words={{ won, lost, draw }} now={() => ms} />
 export default function EndOfRound({ result, mine, teams = {}, words = {}, now = () => Date.now() }) {
   const [start] = useState(now);
-  const [skip, setSkip] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [, tick] = useState(0);
+  const gone = (now() - start) / 1000 + offset;
+  const at = stepAt(gone);
+  const done = Boolean(at.done);
   useEffect(() => {
+    if (done) return undefined;
     const id = setInterval(() => tick((n) => n + 1), 250);
     return () => clearInterval(id);
-  }, []);
-  const at = stepAt((now() - start) / 1000 + EOR_STEPS.slice(0, skip).reduce((s, x) => s + x.seconds, 0));
+  }, [done]);
   const outcome = result?.winner == null ? (words.draw ?? '') : result.winner === mine ? word('#36B45EAB') : word('#48A7E354');
   const tree = useTree(at.step.screen ?? 'RoundOutcomeDeclarationScreenWidget');
   if (!result) return null;
@@ -47,7 +50,7 @@ export default function EndOfRound({ result, mine, teams = {}, words = {}, now =
             ))}
           </ol>
         )}
-        <button type="button" className="bf-eor-next" onClick={() => setSkip((s) => Math.min(EOR_STEPS.length - 1, s + 1))}>
+        <button type="button" className="bf-eor-next" onClick={() => setOffset((o) => o + skipTo(gone))}>
           Next
         </button>
       </div>

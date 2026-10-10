@@ -22,3 +22,10 @@ export function useGameScreens(load = LOAD) {
   }, [load]);
   return screens;
 }
+
+// Whether an event opens the pause menu: Escape (unless something already
+// took it), or the pointer let go, since while the look holds the pointer
+// the browser spends the first Escape on ending the lock and the page never
+// hears the key. `locked` is document.pointerLockElement.
+export const wantsMenu = (e, locked) => (e.type === 'keydown' ? e.key === 'Escape' && !e.defaultPrevented : e.type === 'pointerlockchange' && !locked);
+

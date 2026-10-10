@@ -22,10 +22,11 @@ export const SHAPES = Object.keys(ROWS);
 export function shape(name, { colour = null } = {}) {
   const s = ROWS[name];
   if (!s) return null;
-  const [x, y, w, h] = s.rect;
+  // (LayoutRect is the shape's two corners, x0 y0 x1 y1)
+  const [x, y, x1, y1] = s.rect;
   return {
     name,
-    viewBox: `${x} ${y} ${w} ${h}`,
+    viewBox: `${x} ${y} ${x1 - x} ${y1 - y}`,
     paths: s.paths.map((p) => {
       const ink = colour ?? css(p.colour) ?? 'currentColor';
       const d = [p.d, ...(p.inner ?? [])].join('');

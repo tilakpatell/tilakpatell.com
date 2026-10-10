@@ -59,3 +59,10 @@ export function stepAt(seconds, steps = EOR_STEPS) {
   }
   return { index: steps.length - 1, step: steps[steps.length - 1], left: 0, done: true };
 }
+
+// the seconds to add to go from `seconds` gone to the start of the next step
+export function skipTo(seconds, steps = EOR_STEPS) {
+  const { index } = stepAt(seconds, steps);
+  const start = steps.slice(0, Math.min(index + 1, steps.length - 1)).reduce((s, x) => s + x.seconds, 0);
+  return Math.max(0, start - seconds);
+}

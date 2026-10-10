@@ -49,3 +49,17 @@ describe('a crosshair put together from the game’s parts', () => {
     expect(c.paths[0].transform).toBe('translate(-2 -2) scale(1)');
   });
 });
+
+describe('every shape’s view box', () => {
+  it('holds its triangulated points (LayoutRect is its two corners)', () => {
+    for (const n of SHAPES) {
+      const s = shape(n);
+      const [, , w, h] = s.viewBox.split(' ').map(Number);
+      expect(w, n).toBeGreaterThanOrEqual(0);
+      expect(h, n).toBeGreaterThanOrEqual(0);
+    }
+    const pill = shape('CountdownPill');
+    expect(pill.viewBox).toBe('0 -26 12 26');
+  });
+});
+
