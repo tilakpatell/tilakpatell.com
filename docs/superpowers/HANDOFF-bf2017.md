@@ -2,6 +2,34 @@
 
 The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-design.md` (the pipeline: fetch, import, the rig, the phases; PR #802) and `docs/superpowers/specs/2026-10-10-bf2017-levels-lighting-sabers-design.md` (the levels, the light, the planet skins, the sabers, and the review of the first design). The bucket’s numbers, `docs/superpowers/evidence/bf2017-assets/inventory.md`; the drop and its credit, `docs/assets/battlefront-2017.md`.
 
+## The fifth design: every object in the drop, used (2026-10-10, night)
+
+`docs/superpowers/specs/2026-10-10-bf2017-every-asset-design.md`, with eleven plans `docs/superpowers/plans/2026-10-10-bf2017-every-asset-lane{Z,E0,E1,E2,E3,E4,E5,O,Q,M,A}-*.md`. Written from a census of the desktop export's manifests, a live listing of the bucket and `origin/main` at `ff7bee49` (#842). The owner asked that every asset on the bucket be used by the site, added to all the worlds where it fits, and implemented by Opus 5.5.
+
+**What the census found.** The bucket holds 13,871 models (about 750 used), 74 maps (one used; 44 usable under the era rule), 39 terrains (one used), 10,530 Havok sets and 12,941 collision meshes (Hoth's cells; the collision meshes never), 10,270 clips on 59 skeletons (eleven skeletons in part), 61 animation tracks (none), 116 films, 23 fonts, 702 icons and 19,482 strings (none on the site), every map's placed lights, decals, actors, vehicle spawns and effect spawns (none drawn; lane R's `placed.js` can draw `lights.json` but no world has one), the other levels' probes and far shadows, the sky panoramas, the UI bitmaps and the shader presets' detail maps (none). The design makes "all" a number: a ledger that gives every object a consumer, an owner lane or a rule, and a CI check that fails while any object has none.
+
+| Lane | What | Needs first | Session | Branch | Merged |
+|---|---|---|---|---|---|
+| Z | the coverage ledger: `scripts/bf2017-coverage.mjs`, the owners table, `--check` in CI, the four counts in this table | nothing | `session_018HdseSL3U68899P3D9oWmP` (Opus 5.5, env Website, 2026-10-10 14:50 UTC) | `claude/bf2017-z-ledger` | |
+| E0 | the level factory: packs out of git, districts and interiors, every map part beside `level.json` (lights, decals, actors, vehicles, effects, tracks, probes, far shadow, scatter table, shapes, collision solids), the detail maps; Endor on Endor_01, Echo Base's inside | nothing | `session_01GqoaTfsCCpwaYmpgkHm364` (Opus 5.5, env Website, 2026-10-10 14:50 UTC) | `claude/bf2017-e0-factory` | |
+| E1 | Tatooine (Mos Eisley, the dunes, Jabba's palace and its inside), Yavin | E0 | | `claude/bf2017-e1-tatooine-yavin` | |
+| E2 | Naboo (Theed under its dusk and lanterns, the hangar, the plains, the palace), Kamino | E0 | | `claude/bf2017-e2-naboo-kamino` | |
+| E3 | Kashyyyk, Geonosis, Endor's village, research station and bunker | E0 | | `claude/bf2017-e3-kashyyyk-geonosis-endor` | |
+| E4 | Scarif, Cloud City, Hoth's outpost, the Death Star inside on DeathStar02_01 | E0 | | `claude/bf2017-e4-scarif-bespin-deathstar` | |
+| E5 | Felucia, Kessel, Sullust, Pillio, Vardos, Fondor as systems with skins and surfaces | E0 | | `claude/bf2017-e5-new-systems` | |
+| O | the object library (every placeable set indexed), the seven mapless worlds dressed by biome, `GAME_FOR` props, the game's clouds, the living world | nothing | `session_01HvykTJCK7Bb4cFUjiKN1jW` (Opus 5.5, env Website, 2026-10-10 14:50 UTC) | `claude/bf2017-o-library` | |
+| Q | the space levels as set pieces, the capitals, the asteroids on their tracks, the sky panoramas, the map's globes | nothing (#793 read) | `session_01CiUP7QfUtHM1EEqgBJpKew` (Opus 5.5, env Website, 2026-10-10 14:50 UTC) | `claude/bf2017-q-space` | |
+| M | the films on the cards, veils and briefings; the tiles and tutorials for the game's world; the lava film; the open fonts, the icons, the strings, the UI widgets, the hero stage | nothing | `session_017cZLBzaqCrPFfg6zezARLt` (Opus 5.5, env Website, 2026-10-10 14:50 UTC) | `claude/bf2017-m-frontend` | |
+| A | every clip: stances, additive aims and hits, cover and awareness, emotes and end of round, the cinematics player, first person, riders and crews, the band, the fauna rigs | nothing (#839's B, Y, W kept off) | `session_01QccAxs3jKMzL4TsXJm5U3c` (Opus 5.5, env Website, 2026-10-10 14:50 UTC) | `claude/bf2017-a-clips` | |
+
+Coverage (from lane Z's ledger, refreshed by every lane's PR): used · owned · excluded · not-uploaded · unowned = (Z writes the first row).
+
+Lanes E1 to E5 are spawned the same way once E0 is on `main` (the session's prompt: read the spec, the lane's plan and this section; branch `claude/bf2017-e<n>-…`; executing-plans; the gates; the PR; merge when green). The design PR is #848. Written the same night, in parallel and unseen until after the sessions were spawned: the surfaces design #844 (`HANDOFF-bf2017-surfaces.md`, lanes Q1 to Q6, three running). Its Q1 owns the materials' recipes and detail maps, its Q4 the placed decals' renderer, its Q6 the surface sky's panorama; lanes E0, Z and the space lane were told so by message at 14:55 UTC and the spec's §3 and owned-rows table say it. "No lightmaps exist" in lane L's notes below is wrong: #844 found the Enlighten atlases.
+
+The owner holds the licence for everything in the drop, the fonts included (2026-10-10): no asset is excluded for a licence; only the era rule and the uploader's scaffolding exclude anything.
+
+**Corrections to this file**, in the spec's §7: lane L's "then Endor" is E0's; the placed lights are drawable today and E runs `bf2017-lights.mjs` per world; the fonts, icons and strings are lane M's for the whole site, the game's lane 5 consumes `src/lib/bf2017/ui/`; the collision meshes and the animation tracks had no consumer in any design and have one now (E0, Q).
+
 ## Done
 
 - **The design, the inventory and the plans** (PR #802, carried by the phase 0 PR).
