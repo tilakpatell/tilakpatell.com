@@ -22,7 +22,9 @@
 //     pointer's or the stick's offset from the wheel's middle (−1…1, y down
 //     the screen, as both give it); a release over the middle picks nothing
 //   wheelAngle(i) → where slice i sits: radians clockwise from the top
-//   keepEmote(e, t, { moving, acted }) → e | null   your emote ({ id, at }), or
+//   GAME_EMOTE, emoteFor(fig, id) → { clip, layer, length, walk }: a slot on
+//     this figure (a 2017 hero's own game emote where it has one)
+//   keepEmote(e, t, { moving, acted }) → e | null   your emote ({ id, at, length?, walk? }), or
 //     none once it's over or the input's cut it
 //   emotePacket(e, t) → [id, age] | null   what goes out (age in seconds, a tenth)
 //   readEmoteWire(v) → { id, age } | null   what came in, cleaned
@@ -49,6 +51,22 @@ export const EMOTE = {
   taunt: { clip: 'taunt', layer: 'full', length: 4.9 },
   sit: { clip: 'sit.floor', layer: 'full', length: Infinity, loop: true, fade: 0.5, rise: 0.4 },
 };
+
+// A 2017 hero plays its own four emotes from the game in four of the
+// wheel's slots (lib/three/walrusSets/emotes.js's emote.1 to emote.4), on
+// the whole body and for as long as each is; the sit stays the site's. The
+// wire still says the slot's id, so a stranger sees the same slot played.
+export const GAME_EMOTE = { wave: 'emote.4', cheer: 'emote.2', dance: 'emote.3', taunt: 'emote.1' };
+
+// what a slot plays on this figure: { clip, layer, length, walk }
+export function emoteFor(fig, id) {
+  const row = EMOTE[id];
+  if (!row) return null;
+  const game = GAME_EMOTE[id];
+  const clip = game ? fig?.clips?.[game] : null;
+  if (clip) return { clip: game, layer: 'full', length: clip.duration, walk: false };
+  return { clip: row.clip, layer: row.layer, length: row.length, walk: Boolean(row.walk) };
+}
 
 const AGE_MAX = 600; // seconds: as old as the wire says one is
 const SAME = 0.5; // seconds: heard again within this of its start, the same one
@@ -122,8 +140,9 @@ export function createEmoteWheel({ hold = 0.22, dead = 0.35, first = 'wave' } = 
 // ── yours ──
 export function keepEmote(e, t, { moving = false, acted = false } = {}) {
   if (!e || !known(e.id) || acted) return null;
-  if (t - e.at >= EMOTE[e.id].length) return null;
-  if (moving && !EMOTE[e.id].walk) return null;
+  // (a figure's own length and walk, a game emote's: emoteFor's, kept on it)
+  if (t - e.at >= (e.length ?? EMOTE[e.id].length)) return null;
+  if (moving && !(e.walk ?? EMOTE[e.id].walk)) return null;
   return e;
 }
 
@@ -172,8 +191,10 @@ const settle = (r) => {
   if (r && typeof r.catch === 'function') r.catch(() => {});
 };
 function end(fig, shown) {
-  const row = EMOTE[shown.id];
-  if (!row || !fig) return;
+  const site = EMOTE[shown.id];
+  if (!site || !fig) return;
+  const row = { ...site, ...emoteFor(fig, shown.id) };
+  if (row.clip !== site.clip) row.rise = null;
   // only if it's still the one playing: a one-shot that played out leaves what came after alone
   const a = fig.anim;
   if (a?.stop) {
@@ -194,6 +215,8 @@ export function applyEmote(fig, e, shown = null) {
   if (!fig || typeof fig.play !== 'function') return null;
   const row = EMOTE[e.id];
   if (!row) return null;
-  settle(fig.play(row.clip, { layer: row.layer, at: e.t ?? 0, ...(row.loop ? { loop: true } : {}), ...(row.fade ? { fade: row.fade } : {}) }));
+  const got = emoteFor(fig, e.id);
+  const own = got.clip !== row.clip;
+  settle(fig.play(got.clip, { layer: got.layer, at: e.t ?? 0, ...(row.loop && !own ? { loop: true } : {}), ...(row.fade && !own ? { fade: row.fade } : {}) }));
   return e;
 }

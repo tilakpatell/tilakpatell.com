@@ -30,6 +30,8 @@
 // quantisation.
 //
 //   node scripts/bf2017-clips.mjs <pack> [--fps 24] [--only <site name>,…]
+//   node scripts/bf2017-clips.mjs --scene <id> [--cast <role>=<game clip>,…]   (scenes/<id>.glb)
+//   node scripts/bf2017-clips.mjs --census   (docs/superpowers/evidence/bf2017-coverage/clips.md)
 //     [--out public/models/galaxy/bf2017] [--root lab/assets/bf2017] [--skeleton public/models/galaxy/bf2017/walrus.glb]
 //
 //   pack      a key of walrusClips.js's PACKS (humanoid, luke, vader, obiwan…,
@@ -53,9 +55,12 @@ import { mkdir, readFile, stat } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
-import { OWN_RIGS, PACKS, candidates } from '../src/lib/three/walrusClips.js';
+import { OWN_RIGS, PACKS, PACK_OPTS, candidates } from '../src/lib/three/walrusClips.js';
 import { parseArgs } from './lib/args.mjs';
+import { RIGS } from '../src/lib/three/rigSets.js';
+import { EVENT_RIGS } from '../src/lib/three/walrusSets/events.js';
 import { animEntry, animPath } from './lib/bf2017-anims.mjs';
+import { censusMarkdown, censusRows } from './lib/bf2017-clip-census.mjs';
 import { isSequel, readManifest } from './lib/bf2017-manifest.mjs';
 import { clipOf, measure, rigOf } from './lib/bf2017-strokes.mjs';
 import { rootTravel } from './ual-bake.mjs';
@@ -72,11 +77,34 @@ const TRAJ = 'AITrajectory';
 const SKELETONS = /\/(Walrus_HumanMale|Walrus_NIS_S0800_Skeleton)$/;
 // the skeleton a pack's clips must be on: an own rig's (walrusClips.js's
 // OWN_RIGS: the B1's D_Assault_Preq_01_Ske…) for its pack, else the humanoid's
-export const skeletonsFor = (pack) => (OWN_RIGS[pack] ? new RegExp(`/${OWN_RIGS[pack].skeleton}$`) : SKELETONS);
+export const skeletonsFor = (pack) => (PACK_OPTS[pack]?.skeletons ? new RegExp(PACK_OPTS[pack].skeletons) : OWN_RIGS[pack] ? new RegExp(`/${OWN_RIGS[pack].skeleton}$`) : SKELETONS);
 // the file a pack reads its skeleton from: the humanoid's own, or an own
 // rig's body as imported (its light cut, which is committed; its meshes are
 // taken off before the pack is written)
-export const skeletonFileFor = (pack, root) => (OWN_RIGS[pack] ? join(root, 'public', 'models', 'galaxy', 'bf2017', 'crew', `${OWN_RIGS[pack].body}.lod1.glb`) : join(root, 'public', 'models', 'galaxy', 'bf2017', 'walrus.glb'));
+// (a small creature's light cut may not exist: its plain one, then)
+export const skeletonFileFor = (pack, root) => {
+  if (!OWN_RIGS[pack]) return join(root, 'public', 'models', 'galaxy', 'bf2017', 'walrus.glb');
+  const crew = join(root, 'public', 'models', 'galaxy', 'bf2017', 'crew', OWN_RIGS[pack].body);
+  return existsSync(`${crew}.lod1.glb`) || !existsSync(`${crew}.glb`) ? `${crew}.lod1.glb` : `${crew}.glb`;
+};
+// the game's clips a pack takes: an additive one only into a pack made of them
+export const takes = (pack, e) => Boolean(e) && !isSequel(e.name) && skeletonsFor(pack).test(e.skeleton ?? '') && Boolean(e.additive) === Boolean(PACK_OPTS[pack]?.additive);
+
+// every game clip the site's packs carry: each site name's first spelling
+// the drop has on the pack's skeleton (as makePack picks it), and every
+// walker's and droid's (rigSets.js, bf2017-rigclips.mjs's packs)
+export function usedSources(anims) {
+  const used = new Set();
+  for (const [pack, map] of Object.entries(PACKS))
+    for (const site of Object.keys(map)) {
+      const e = candidates(map, site)
+        .map((g) => animEntry(anims, g))
+        .find((x) => takes(pack, x));
+      if (e) used.add(e.name);
+    }
+  for (const r of [...Object.values(RIGS), ...Object.values(EVENT_RIGS)]) for (const g of Object.values(r.set)) if (animEntry(anims, g)) used.add(animEntry(anims, g).name);
+  return used;
+}
 
 async function io() {
   await MeshoptEncoder.ready;
@@ -139,6 +167,17 @@ export function atRest(node, path, values) {
   return true;
 }
 
+// an additive channel that adds nothing all through (the identity turn, no move)
+export function atIdentity(path, values) {
+  const size = SIZES[path];
+  const id = size === 4 ? [0, 0, 0, 1] : [0, 0, 0];
+  for (let i = 0; i < values.length; i += size) {
+    const d = (sign) => Math.max(...id.map((r, k) => Math.abs(values[i + k] - sign * r)));
+    if (Math.min(d(1), size === 4 ? d(-1) : Infinity) > 1e-4) return false;
+  }
+  return true;
+}
+
 // ── one clip, read ──
 
 // its channels by node name, the trajectory's kept apart; `timed`, the clip
@@ -172,13 +211,13 @@ export async function makePack(pack, { fps = 24, only = null, out, root, skeleto
   if (isSequel(pack)) throw new Error(`${pack} is sequel-era; the site shows none of it`);
   const map = PACKS[pack];
   if (!map) throw new Error(`${pack}: no such pack (${Object.keys(PACKS).join(', ')})`);
+  const additive = Boolean(PACK_OPTS[pack]?.additive);
   const rw = await io();
   const anims = readManifest(await readFile(join(root, 'web', 'anims.jsonl'), 'utf8'));
   const doc = await rw.read(skeleton);
   // (an own rig's skeleton comes in its body: the meshes go, the bones stay)
   for (const n of doc.getRoot().listNodes()) n.setMesh(null).setSkin(null);
   for (const x of [...doc.getRoot().listMeshes(), ...doc.getRoot().listSkins(), ...doc.getRoot().listMaterials(), ...doc.getRoot().listTextures()]) x.dispose();
-  const allowed = skeletonsFor(pack);
   const skel = rigOf(doc);
   const rootHips = restHips(skel);
   const nodes = new Map(doc.getRoot().listNodes().map((n) => [n.getName(), n]));
@@ -196,7 +235,7 @@ export async function makePack(pack, { fps = 24, only = null, out, root, skeleto
     let game = null;
     for (const g of candidates(map, site)) {
       const e = animEntry(anims, g);
-      if (!e || e.additive || isSequel(g) || !allowed.test(e.skeleton ?? '')) continue;
+      if (!takes(pack, e)) continue;
       const f = join(root, animPath(e));
       if (!existsSync(f) && fetchClip) await fetchClip(e.name);
       if (existsSync(f)) {
@@ -228,7 +267,7 @@ export async function makePack(pack, { fps = 24, only = null, out, root, skeleto
       const node = nodes.get(c.node);
       if (!node) continue;
       const r = resampleChannel(c.times, c.values, SIZES[c.path], fps, end);
-      if (atRest(node, c.path, r.values)) continue;
+      if (additive ? atIdentity(c.path, r.values) : atRest(node, c.path, r.values)) continue;
       keys += r.times.length;
       const input = inputOf(r.times);
       const output = doc
@@ -243,7 +282,9 @@ export async function makePack(pack, { fps = 24, only = null, out, root, skeleto
     // that reads the game's logic by it; the credit is the pack's, in
     // public/games/credits.json)
     const extras = { source: game, fps, loop: Boolean(clip.extras?.loop) };
-    if (clip.traj) {
+    // (an additive's deltas are laid over a pose, never played as one: lib/three/additiveLayer.js)
+    if (additive) extras.additive = true;
+    if (clip.traj && !additive) {
       const rows = clip.traj.times.map((t, i) => ({ t, at: clip.traj.values.slice(i * 3, i * 3 + 3) }));
       // (at the pack's rate: a row every 1/fps)
       const step = Math.max(1, Math.round(rows.length / Math.max(1, end * fps)));
@@ -255,14 +296,16 @@ export async function makePack(pack, { fps = 24, only = null, out, root, skeleto
     }
     // (timed as the stroke tables are, on the game's own keys at the
     // measure's own rate, not --fps's: a pack's window is its table's)
-    if (site.startsWith('sword.') && !site.endsWith('.rec')) extras.contact = measure(clip.timed, skel).contact;
+    if (!additive && site.startsWith('sword.') && !site.endsWith('.rec')) extras.contact = measure(clip.timed, skel).contact;
     anim.setExtras(extras);
     made.push({ site, game, frames: Math.round(end * fps) + 1, keys, duration: end });
   }
   doc.getRoot().listScenes()[0].setExtras({ pack, aliases });
   await doc.transform(prune({ keepLeaves: true, keepAttributes: true }), meshopt({ encoder: MeshoptEncoder, level: 'high' }));
-  const file = join(out, `clips-${pack}.glb`);
-  await mkdir(out, { recursive: true });
+  // (a scene's to scenes/<id>.glb: lib/three/scenePlayer.js's scenePath)
+  const scene = PACK_OPTS[pack]?.scene;
+  const file = scene ? join(out, 'scenes', `${scene}.glb`) : join(out, `clips-${pack}.glb`);
+  await mkdir(dirname(file), { recursive: true });
   await rw.write(file, doc);
   const bytes = (await stat(file)).size;
   for (const m of made) log(`${m.site.padEnd(22)} ${m.game.padEnd(50)} ${String(m.frames).padStart(4)} frames`);
@@ -275,7 +318,26 @@ export async function makePack(pack, { fps = 24, only = null, out, root, skeleto
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = parseArgs(process.argv.slice(2));
   const [pack] = args._;
-  if (!pack) {
+  if (args.census) {
+    const { writeFile } = await import('node:fs/promises');
+    const root = resolve(args.root ?? join(ROOT, 'lab', 'assets', 'bf2017'));
+    const anims = readManifest(await readFile(join(root, 'web', 'anims.jsonl'), 'utf8'));
+    const rows = censusRows(anims, usedSources(anims));
+    const file = join(ROOT, 'docs', 'superpowers', 'evidence', 'bf2017-coverage', 'clips.md');
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, censusMarkdown(rows, { date: new Date().toISOString().slice(0, 10) }));
+    console.log(`${relative(ROOT, file)}: ${Object.entries(rows.totals).map(([k, v]) => `${v} ${k}`).join(', ')}`);
+    process.exit(0);
+  }
+  // --scene <id> [--cast role=clip,…]: a scene's pack (walrusSets/scenes.js's, or one cast here)
+  if (typeof args.scene === 'string') {
+    if (typeof args.cast === 'string') {
+      PACKS[`scene-${args.scene}`] = Object.fromEntries(args.cast.split(',').map((rc) => rc.split('=')));
+      PACK_OPTS[`scene-${args.scene}`] = { scene: args.scene };
+    }
+    args._[0] = `scene-${args.scene}`;
+  }
+  if (!args._[0]) {
     console.error(`usage: node scripts/bf2017-clips.mjs <pack> [--fps 24] [--only a,b] (packs: ${Object.keys(PACKS).join(', ')})`);
     process.exit(1);
   }
@@ -286,7 +348,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const manifest = readManifest(await readFile(join(root, 'web', 'anims.jsonl'), 'utf8'));
     await anims.fetch(null, root, manifest, name);
   };
-  await makePack(pack, {
+  await makePack(args._[0], {
     fps: Number(args.fps ?? 24),
     only: typeof args.only === 'string' ? args.only.split(',') : null,
     out: resolve(args.out ?? join(ROOT, 'public', 'models', 'galaxy', 'bf2017')),

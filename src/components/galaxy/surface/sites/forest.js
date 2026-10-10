@@ -307,6 +307,8 @@ export const SITES = {
       { kind: 'fungus', n: 240, within: [6, 200], scale: [0.8, 1.6], solid: false, clear: -12, opts: { seed: 8 } },
     ],
     life: [
+      // (the game's own: profoggs ambling in the undergrowth by the log trap)
+      { kind: 'profogg', n: 3, at: [140, 112], spread: 26, roam: 20, speed: 0.4, r: 0.2, solid: false },
       { kind: 'ewok', n: 7, at: V, spread: 6, roam: 6, speed: 0.9, name: 'Ewok', says: ['Yub nub!', 'Ee chee wa maa!', '(It dances round the fire, banging a stick on a helmet.)', '(It looks at you, then at the fire, then back at you. Thoughtfully.)', 'Gunda!'] },
       ...VILLAGE.walks.map((path, i) => ({ kind: 'ewok', n: 1, path, speed: 0.7, pause: 2.5 + i, name: 'Ewok', says: ['(It waves its spear at you from the deck.)', 'Yub yub!', '(A long, suspicious sniff.)'] })),
       { kind: 'c3po', n: 1, at: at(V, [4, -5]), still: true, face: -0.7, name: 'C-3PO', says: ['Oh my! I seem to have become something of a deity here.', '(He tells the Ewoks the whole story of the Rebellion: the Death Star, Cloud City, Han frozen in carbonite. With sound effects.)', 'It’s against my programming to impersonate a deity.', 'Oh dear. I’m afraid you’re to be the guest of honour at the banquet.'] },
@@ -574,6 +576,8 @@ export const SITES = {
       { kind: 'log', n: 20, within: [40, 520], scale: [0.9, 1.5], solid: false, opts: { seed: 7, bark: '#6a5a46' } },
     ],
     life: [
+      // (the game's own: tachs about Kachirho's roots)
+      { kind: 'tach', n: 4, at: [-120, -12], spread: 20, roam: 14, speed: 0.7, r: 0.5, solid: false },
       // the line's defenders, standing behind the barricades and facing the
       // water, a few behind each (a group stands in a disc round its `at`, so
       // one group spread along 100 m of line would put some of it in the

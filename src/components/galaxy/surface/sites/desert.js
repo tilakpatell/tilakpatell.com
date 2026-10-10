@@ -350,6 +350,9 @@ export const SITES = {
       { kind: 'dewback', n: 2, at: [-80, -300], spread: 10, roam: 14, speed: 0.7, r: 1.2 },
       { kind: 'sullustan', n: 1, at: [284, -244], roam: 8, speed: 1.0, name: 'A Sullustan pilot', says: ['(A string of chattering Sullustese, and a grin.)', 'Freighter’s in Bay 86. Cargo? Don’t ask.'] },
       { kind: 'ronto', n: 1, at: [330, -250], roam: 10, speed: 0.4, r: 1.3 },
+      // (the game's own: Mos Eisley's chickens and scurriers under the stalls)
+      { kind: 'chicken', n: 5, at: [298, -224], spread: 12, roam: 8, speed: 0.5, r: 0.2, solid: false },
+      { kind: 'scurrier', n: 4, at: [278, -252], spread: 18, roam: 12, speed: 0.9, r: 0.2, solid: false },
       { kind: 'villager', n: 5, at: [300, -230], spread: 40, roam: 25, speed: 1.1, needs: ['food'], name: 'Mos Eisley local', says: ['Watch yourself. This place can be a little rough.', 'Chalmun’s got a band in tonight. No droids, though.', 'If you’re looking for a pilot, try the cantina.', 'Hutt business. Don’t ask.'] },
       { kind: 'droid', n: 1, at: [-160, 140], roam: 10, speed: 0.6, name: 'An R5 unit', says: ['(A cheerful whistle. Its motivator sounds fine… for now.)'] },
       // who has something for you to do
@@ -432,6 +435,8 @@ export const SITES = {
           { kind: 'gamorrean', at: [1.6, 25], still: true, face: -PI / 2, name: 'Gamorrean guard', says: ['(Snort.)'] },
           { kind: 'gamorrean', at: [-4.6, -5.4], still: true, face: 0, name: 'Gamorrean guard', says: ['(It watches the trapdoor, and grins.)'] },
           { kind: 'gamorrean', at: [4.6, -5.4], still: true, face: 0, name: 'Gamorrean guard', says: ['(Grunt.)'] },
+          // (off duty, sat on the floor by the wall: the game's own guard, on its own rig, lib/three/walrusSets/fauna.js)
+          { kind: 'gamorreanguard', at: [-8.6, 14], roam: 0, speed: 0, face: PI / 2, name: 'Gamorrean guard', says: ['(It grunts, and doesn’t get up.)'] },
           { kind: 'bith', at: [8, 3.1], still: true, face: 0, name: 'The organist', says: ['(A slow, greasy riff. Jabba likes it slow.)'] },
           { kind: 'twilek', n: 2, at: [6, 8.5], spread: 1.5, roam: 2, speed: 0.6, name: 'Twi’lek dancer', says: ['(She glances at the trapdoor, and keeps well clear of it.)'] },
           { kind: 'jawa', n: 2, at: [-5, 10], spread: 2, roam: 3, speed: 0.8, name: 'Jawa', says: ['Utinni!'] },

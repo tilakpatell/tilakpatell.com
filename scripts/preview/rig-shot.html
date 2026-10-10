@@ -40,7 +40,7 @@
         load,
         loadPack: load,
       });
-      const names = q.get('clips') ? q.get('clips').split(',') : Object.keys(RIG_SET(rig));
+      const names = q.get('clips') ? q.get('clips').split(',') : Object.keys(RIG_SET(rig) ?? {});
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
         preserveDrawingBuffer: true,
@@ -64,7 +64,7 @@
       const info = [];
       const feet = fig.feet.map((n) => fig.bones[n]).filter(Boolean);
       names.forEach((name, row) => {
-        const game = RIG_SET(rig)[name] ?? name;
+        const game = (RIG_SET(rig) ?? {})[name] ?? name; // (a crew kind's own rig packs its clips by the site's names)
         const clip = clips.find((c) => c.name === game);
         if (!clip) return info.push(`${name}: none`);
         mixer.stopAllAction();

@@ -117,7 +117,7 @@ import { snapToTexel } from './shadow';
 import { createShadowPhase } from './near';
 import { createBlaster } from './blaster';
 import { createBoltPlay } from './boltPlay';
-import { applyEmote, createEmoteWheel, emotePacket, keepEmote, readEmote } from '../../../lib/emote';
+import { applyEmote, createEmoteWheel, emoteFor, emotePacket, keepEmote, readEmote } from '../../../lib/emote';
 import { preload } from '../../../lib/three/clipLibrary';
 import { fallTurn } from '../../../lib/three/locomotion';
 import { createSaber } from './saber';
@@ -154,6 +154,10 @@ import { gameLightOf } from '../../../data/bf2017/light/index';
 import { createGameLit } from './gameLit';
 import { createPlayerBody } from './playerBody';
 import { assetPool, worldScope } from '../../../lib/assetLoad';
+import { victoryFor } from '../../../lib/three/walrusSets/emotes';
+import { createFirstView } from './firstView';
+import { rideClip } from '../../../lib/three/walrusSets/vehicles';
+import { richClips } from '../../../lib/three/walrus';
 
 const V = THREE.Vector3;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -170,7 +174,7 @@ const LEAVE = { lift: 3.2, away: 3.4 };
 const CAM = { dist: 4.8, up: 1.55, pitch: [-0.45, 1.15], far: 14, near: 2.2 };
 const REACH = 3.2; // metres: close enough to use something
 const ROLL_PIVOT = 0.55; // metres up from the feet: where a dodge's roll turns about (a tucked body's middle)
-const KEYS = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', shift: 'run', z: 'crouch', ' ': 'jump', e: 'act', enter: 'act', f: 'fire', r: 'throw', c: 'block', x: 'dodge', g: 'power', v: 'second', b: 'emote' };
+const KEYS = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', shift: 'run', z: 'crouch', ' ': 'jump', e: 'act', enter: 'act', f: 'fire', r: 'throw', c: 'block', x: 'dodge', g: 'power', v: 'second', b: 'emote', p: 'view' };
 const FIRE_EVERY = 0.24; // seconds between shots
 const SABER_IDLE = 8; // seconds without a stroke before the blade goes out
 const LOCK = { range: 14, cone: 0.9 }; // metres and radians: what a stroke homes on
@@ -1033,6 +1037,7 @@ export async function create(canvas, ctx) {
   // (the emote wheel, B: lib/emote.js's; the pointer's where it is, and
   // where it was when the wheel opened, to point at a slice by)
   const emotes = createEmoteWheel();
+  const firstView = createFirstView({ camera, phone: device().phone });
   const pointer = { x: 0, y: 0, x0: 0, y0: 0, id: null };
   const onKey = (down) => (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1059,6 +1064,8 @@ export async function create(canvas, ctx) {
       if (k === 'block') state.blockAt = state.t;
       if (k === 'fire' && me().saber) state.pressAt = state.t;
       if (k === 'emote') emoteDown();
+      // (out of your own eyes, and back: firstView.js)
+      if (k === 'view') firstView.toggle(me().fig, { seated: state.phase !== 'walk' });
     }
     if (!down && k === 'emote') emoteUp();
     if (!down && k === 'fire' && state.pressAt != null) {
@@ -1160,6 +1167,7 @@ export async function create(canvas, ctx) {
     // (what you were doing stops with you; a mate who's down gets up to be
     // you, and the one you were starts as your mate afresh)
     endEmote();
+    firstView.leave(me().fig);
     mateUp();
     mateFight.foe = null;
     mateFight.aim = 0;
@@ -1191,6 +1199,15 @@ export async function create(canvas, ctx) {
   }
   // both of you, on something won (a quest done, a post taken): yours cut
   // by input as ever; nobody who's down
+  function endPose(won) {
+    const f = me().fig;
+    if (state.fallen > 0 || !f?.clips) return;
+    const clip = won ? victoryFor(f.clips, Math.floor(state.t)) : f.clips.defeat ? 'defeat' : null;
+    if (!clip) return;
+    f.play?.(clip, { hold: 8 });
+    // (cut by what you do, as any reaction on the whole body is)
+    state.reacting = { who: me(), clip, layer: 'full', until: state.t + 8 };
+  }
   function cheer() {
     if (!(state.fallen > 0)) reactYou('win');
     if (mateFight.down <= 0) other().fig?.react?.('win', { yaw: other().st.yaw });
@@ -1210,7 +1227,9 @@ export async function create(canvas, ctx) {
   function startEmote(id) {
     if (state.phase !== 'walk' || state.off || state.dodge || state.fallen > 0) return;
     cutReaction();
-    state.emote = { id, at: state.t };
+    // (a 2017 hero's own emote in the slot's place, as long as it is: lib/emote.js's emoteFor)
+    const got = emoteFor(me().fig, id);
+    state.emote = { id, at: state.t, length: got?.length, walk: got?.walk };
   }
   let emoteShown = null;
   let emoteFig = null; // (whose figure it's on: a swap leaves it with them)
@@ -1679,6 +1698,8 @@ export async function create(canvas, ctx) {
     emit(e);
     const ev = e?.type === 'mission' ? e.event : null;
     if ((ev?.type === 'capture' && ev.you) || ev?.type === 'won') cheer();
+    // (the battle's end: a 2017 hero in the game's own victory pose, or its defeat)
+    if (ev?.type === 'won' || ev?.type === 'lost') endPose(ev.type === 'won');
   };
   const assault = mission?.kind === 'assault' ? createAssaultMission({ parent: scene, world, blaster, mission, emit: battleSaid, say, sounds, kit, warm, tier: small ? 'mid' : tier, reduced, only: site.cast === 'models' }) : null;
   const assaultOn = () => Boolean(assault?.running());
@@ -2658,6 +2679,13 @@ export async function create(canvas, ctx) {
         if (r === 'cut' && pp.seat === seat && name === 'drive' && pp.fig.anim) sat('sit');
       }, () => {});
     sat(seat.base);
+    // (a 2017 figure on the game's own ride: the game's driver or rider, the
+    // `vehicles` pack taken as it gets on: lib/three/walrusSets/vehicles.js)
+    const game = rideClip(ride.kind);
+    if (game && pp.fig.takePack && richClips(detailLevel()))
+      pp.fig.takePack('vehicles').then(() => {
+        if (pp.seat === seat && pp.fig.clips?.[game]) pp.fig.anim?.base(game);
+      });
   }
   // a ride's frame in the world, as its seat's points are measured in: its
   // holder, and a beast's step (its model's sway, actors.js) under you
@@ -2878,6 +2906,11 @@ export async function create(canvas, ctx) {
     camLook.lerp(focus, 1 - Math.exp(-dt * 14));
     camera.position.copy(camPos);
     camera.lookAt(camLook);
+    // (out of your own eyes on foot, its arms in the game's first-person poses: firstView.js)
+    if (firstView.on) {
+      if (state.phase !== 'walk') firstView.leave(me().fig);
+      else if (firstView.place(me().fig, c.yaw, c.pitch)) firstView.pose(me().fig, { gun: me().gp?.kind ?? null, ads: state.ads, sprint: Boolean(state.keys.run) });
+    }
     if (Math.abs(state.kick.x) > 1e-4) camera.rotateX(state.kick.x * 0.04); // your own shot's kick
     // every knock this frame, as trauma (the k each had is its trauma)
     if (state.shake > 0) feel.trauma(state.shake);

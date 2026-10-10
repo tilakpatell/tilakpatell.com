@@ -266,5 +266,9 @@ export async function loadOwnRigBody(url, { rig, packs: given, bones: named = {}
   const lacks = Object.values(named).filter((n) => !names.has(n));
   if (lacks.length) throw new Error(`${url} lacks the bones its row names: ${lacks.join(', ')}`);
   if (!boneCount) throw new Error(`${url} has no skeleton: a statue is the catalogue's, not this loader's`);
-  return { model, clips: walrusClipsFor(model, clips), bones: findBones(model, named).bones, rig };
+  // (its pack not built or not there yet: refused, so the kind is skipped
+  // as a pooled one is, rather than stood in its bind pose)
+  const own = walrusClipsFor(model, clips);
+  if (!Object.keys(own).length) throw new Error(`${url}: no clips for the rig ${rig} (is ${packs.join(', ')} built?)`);
+  return { model, clips: own, bones: findBones(model, named).bones, rig };
 }

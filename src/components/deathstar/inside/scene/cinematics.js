@@ -24,6 +24,9 @@
 //     ship: name 'falcon' | 'lambda'; how 'in' (from out past its spot down onto it) | 'out' (off it
 //       and away) | 'down' (from above onto its pad) | 'up' (off its pad and away); near: the place
 //       whose ship it is, where there are more than one
+//     clips?, cast?: a scene of the game's own clips (lib/three/scenePlayer.js's, by id) and
+//       { role: tag } who plays each role; a role nobody here plays is skipped, as is anyone
+//       on another rig than the game's (none of the inside's people are on it yet)
 //     flash: { t, at: place, ahead?, colour, size }   a flare of light (and, with size, an explosion)
 //     beam: { t0, t1, at: place, from, to, colour, width }   a shaft of light from and to [right, up, back]
 //       in the place's frame, lit from t0 to t1 seconds in, flickering (the superlaser)
@@ -38,6 +41,7 @@
 //     pose: { pos, look } the camera’s this frame while a scene plays, null otherwise
 
 import * as THREE from 'three';
+import { loadScene, playScene } from '../../../../lib/three/scenePlayer';
 
 const EYE = 1.5; // metres over a spot or a person a shot looks at, unless it says
 const SHIP_RISE = 14; // metres a ship comes down from or goes up to
@@ -326,7 +330,16 @@ export function createCinematics({ people, layout, show = null, fx = null, scene
   function begin(id, g) {
     const spec = SCENES[id];
     const near = spec?.ship?.near ? where(spec.ship.near, g) : null;
-    playing = spec ? { id, spec, t: 0, done: new Set(), flashes: new Set(), beams: new Map(), swings: [], ship: spec.ship ? shipOf(spec.ship.name, near) : null, lit: null } : null;
+    playing = spec ? { id, spec, t: 0, done: new Set(), flashes: new Set(), beams: new Map(), swings: [], ship: spec.ship ? shipOf(spec.ship.name, near) : null, lit: null, film: null } : null;
+    // (a scene of the game's own clips, played on its cast by role: lib/three/scenePlayer.js)
+    if (spec?.clips) {
+      const run = playing;
+      loadScene(spec.clips).then((sc) => {
+        if (!sc || playing !== run) return;
+        const cast = Object.fromEntries(Object.entries(spec.cast ?? {}).map(([role, tag]) => [role, figuresOf(tag, g)[0]?.fig ?? null]));
+        run.film = playScene(sc, cast);
+      });
+    }
   }
 
   function end(g) {
@@ -340,6 +353,7 @@ export function createCinematics({ people, layout, show = null, fx = null, scene
       ship.object.updateMatrixWorld(true);
     }
     if (playing.lit) show?.lightning?.(playing.lit.from, playing.lit.to, false);
+    playing.film?.stop();
     dropBeams();
     dropRopes();
     swungYou = null;

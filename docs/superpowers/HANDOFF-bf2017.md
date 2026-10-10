@@ -20,7 +20,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | O | the object library (every placeable set indexed), the seven mapless worlds dressed by biome, `GAME_FOR` props, the game's clouds, the living world | nothing | | `claude/bf2017-o-library` | |
 | Q | the space levels as set pieces, the capitals, the asteroids on their tracks, the sky panoramas, the map's globes | nothing (#793 read) | | `claude/bf2017-q-space` | |
 | M | the films on the cards, veils and briefings; the tiles and tutorials for the game's world; the lava film; the open fonts, the icons, the strings, the UI widgets, the hero stage | nothing | | `claude/bf2017-m-frontend` | |
-| A | every clip: stances, additive aims and hits, cover and awareness, emotes and end of round, the cinematics player, first person, riders and crews, the band, the fauna rigs | nothing (#839's B, Y, W kept off) | | `claude/bf2017-a-clips` | |
+| A | every clip: stances, additive aims and hits, cover and awareness, emotes and end of round, the cinematics player, first person, riders and crews, the band, the fauna rigs | nothing (#839's B, Y, W kept off) | lane A's session | `claude/bf2017-a-clips` | (this PR) |
 
 Coverage (from lane Z's ledger, `docs/superpowers/evidence/bf2017-coverage/`, refreshed by every lane's PR): used · owned · excluded · not-uploaded · unowned =
 
@@ -62,6 +62,31 @@ The rule is the owners table's `finding: true` entries, first match wins: a fold
 | `characters/heads` | T | 455 |
 
 A lane that merges sets its `merged` in `LANES`; from then `npm run coverage:bf2017` fails on every row it still owns and has not used, which is the next design's finding.
+
+### Lane A: every clip, every skeleton (done)
+
+**The census** (`node scripts/bf2017-clips.mjs --census`, `docs/superpowers/evidence/bf2017-coverage/clips.md`; lane Z's ledger was on no branch, so the page stands alone): of the 10,141 clips the manifest names once each, **838 used · 467 owned · 668 excluded · 8,168 unowned** (before this lane: 457 used). Every skeleton the drop has is used, owned or excluded but five with one or two clips each (the B1's first person, Bossk's own two, the weapon skeleton's, the flying droids' single joint, the Felucian's). The humanoid's families left wholly unowned are the camera's (`Spawn_Camera_*`, the `CameraPose*` poses), the additive looks (`Awareness_*`) and leans (`Loco_*`), the humanoid's own `Cover_*` (mostly additive poses: the cover set is the cinematics skeleton's full clips), the run-ups (`PB_*`) and the campaign's one-offs.
+
+**What plays now**, by the site's names (`src/lib/three/walrusSets/`, re-exported by `walrusClips.js`'s `PACKS` and `PACK_OPTS`):
+
+| set | file | where it plays | pack |
+| --- | --- | --- | ---: |
+| stances by weapon (`stance.<p\|t\|l>.*`: the game's `HM_Pistol`, `HM_Rifle`, `HM_Lmg` families; P, T, L in the drop are pose, transition and loop, not the weapons) | `stance.js`, `lib/three/walrusStance.js` | a 2017 figure taking up a gun (`createGunplay` calls `fig.stance`; the animator's `restance` swaps idle, walk and run where they are, strides measured afresh) | 488 · 472 · 396 KB |
+| the additive layer (`add.aim.*`, `add.hit.<side>`, leans, the X-34 driver's, the sights' sway, the fire kicks) | `additive.js`, `lib/three/additiveLayer.js` | laid by hand after the animator's layers (`animator.post`); a hit by the side a bolt came in from (`activity.js`'s `hitSide`), the chest's pitch through the aims (`gunplay.js`) | 556 KB |
+| the soldiers' (`cover.low.*`, `cover.high.*`, `aware.*`, `spawn.*`, `loco.*`, `officer.*`, the soldiers' victories) | `npc.js` | `hostiles.js`'s `HOSTILE_BODY.cover.clip`, `ALERT_CLIP`, `bodyClip`; the cover's way in and out as the animator's `cover.enter`/`.exit`; `spawn.deploy` as a ground soldier arrives | 1,124 KB |
+| a hero's emotes, victories, defeat and stage idle (`emote.1`–`4`, `victory.n`, `defeat`, `frontend.idle`) | `emotes.js` | the surface's emote wheel (B; `lib/emote.js`'s `GAME_EMOTE`), the battle's end (`endPose`, the soldiers' `victoryFor`), lane M's stage (`frontend.idle`) | 13 packs, 5.2 MB (219 to 469 KB) |
+| scenes (`intro-<hero>`, `hoth-outro`) | `scenes.js`, `lib/three/scenePlayer.js` | a duellist squaring up (its entrance), the Battle of Hoth held (four Rebels' outro); `cinematics.js` takes `clips` and `cast` for when the inside's people are on the game's rig | 14 files, 1.5 MB |
+| first person (`fp.<p\|t\|l>.*`) | `firstPerson.js`, `lib/three/firstPerson.js`, `surface/firstView.js` | P on the surface (refused on a phone and on a ride) | 368 KB |
+| riders and crews (`ride.landspeeder`, `ride.speederbike`, the BARC, the AAL's and Lambda's deploys, the gunner) | `vehicles.js` | the X-34's driver and the 74-Z's rider (`scene.js`'s `seatOn`, the pack taken as one gets on) | 572 KB |
+| the band (`band.1`–`3`, `band.pipes`, `band.drums`) | `band.js` | lane E1's cantina places the players (a life row's clip) | 376 KB |
+| the fauna, on their own rigs (`OWN_RIGS` rows from `fauna.js`; `scripts/bf2017-fauna.mjs`) | `fauna.js` | Theed's birds, pelikki and runyips on Naboo; chickens and scurriers in Mos Eisley; a Gamorrean on the palace bench; tachs at Kachirho; profoggs on Endor; a treadwell and a gonk in Echo Base; the sneep, stintarils, shrimp-moths, Felucia's birds and rippers for lane E5 | 15 packs, 16 to 312 KB |
+| the set pieces (`event.*`) | `events.js` (`bf2017-rigclips.mjs --pack trident\|kaminoevent24\|theedevent19`) | lane E0's tracks | 256 · 284 · 68 KB |
+
+The humanoid pack is unchanged (1.0 MB). Past the figure's own, the soldiers', additive, stance, emote and vehicle packs load at high and ultra only (`walrus.js`'s `richClips`): Hoth at a phone's level is at its `WORLD_MB`. The full cuts of the fifteen fauna (85 MB with the packs) are in `site-assets`; their `.lod1` and `.far` are committed.
+
+**Left**: the Bith, the Kaminoan and the beldon have no clips on their own rigs (the band plays on the humanoid; E1 chooses its players); the AT-AT's and AT-ST's crews (no seat on a game walker: the owner's rule); the inside's throne room waits for its people on the game's rig; the aims' yaw and the awareness poses are packed but the chest's yaw stays `gunplay.js`'s; lane C's camera stack takes `firstView.js` as its first-person pose when it lands.
+
+**Checking it**: `node scripts/bf2017-clips.mjs <pack>` (stance-p, stance-t, stance-l, additive, npc, 1p, vehicles, band, emotes-<hero>), `node scripts/bf2017-clips.mjs --scene <id>`, `node scripts/bf2017-fauna.mjs`, `node scripts/bf2017-rigclips.mjs --pack trident`; the sheets in `docs/superpowers/evidence/bf2017-clips/`; `anim-check.mjs` on Hoth, Tatooine, Naboo, Kashyyyk and Kamino.
 
 **Corrections to this file**, in the spec's §7: lane L's "then Endor" is E0's; the placed lights are drawable today and E runs `bf2017-lights.mjs` per world; the fonts, icons and strings are lane M's for the whole site, the game's lane 5 consumes `src/lib/bf2017/ui/`; the collision meshes and the animation tracks had no consumer in any design and have one now (E0, Q).
 

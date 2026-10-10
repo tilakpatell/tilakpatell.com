@@ -40,6 +40,17 @@ const DRESSED = new Set(EVERYONE);
 const UP = new THREE.Vector3(0, 1, 0);
 const _q = new THREE.Quaternion();
 
+// a kind its loader refuses (an own rig whose pack isn't built yet): skipped,
+// with one line for the kind
+const said = new Set();
+const refused = (kind, e) => {
+  if (!said.has(kind)) {
+    said.add(kind);
+    console.warn(`[surface] ${kind} skipped: ${e?.message ?? e}`);
+  }
+  return null;
+};
+
 export async function crewFigure(kind, i = 0) {
   if (!CREW[kind]) return null;
   const c = faceOf(CREW[kind], i);
@@ -69,7 +80,7 @@ export async function crewFigure(kind, i = 0) {
   const fig =
     how === 'shared'
       ? await loadSharedFigure(fileOf(c), c.tall, { seed }).catch(() => null)
-      : await loadPartyFigure({ id: kind, name: kind, tall: c.tall, src: { url: fileOf(c) }, rig: c.rig, pack: c.pack, ownRig: c.ownRig, bones: c.bones, cuts: cutsOf(c) }, null).catch(() => null);
+      : await loadPartyFigure({ id: kind, name: kind, tall: c.tall, src: { url: fileOf(c) }, rig: c.rig, pack: c.pack, ownRig: c.ownRig, bones: c.bones, cuts: cutsOf(c) }, null).catch((e) => refused(kind, e));
   if (!fig) return null;
   const model = new THREE.Group();
   model.scale.setScalar(1 / METRE);
@@ -87,6 +98,10 @@ export async function crewFigure(kind, i = 0) {
     // (a 2017 figure's: the game's skeleton, its sockets and its clips, for the saber and the gun)
     rig: fig.rig ?? null,
     sockets: fig.sockets ?? null,
+    // (a 2017 figure's weapon stance: lib/three/walrusStance.js)
+    stance: fig.stance ?? null,
+    // (and its chest aimed by the game's additive aims: footScene's rigged)
+    aimAt: fig.aimAt ?? null,
     // (a droid's or a beast's own skeleton, by the game's name: its hit capsules)
     skeleton: fig.skeleton ?? null,
     clips: fig.clips ?? null,

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { atRest, makePack, resampleChannel } from './bf2017-clips.mjs';
+import { atIdentity, atRest, makePack, resampleChannel } from './bf2017-clips.mjs';
 import { clipOf, measure, rigOf } from './lib/bf2017-strokes.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -73,6 +73,12 @@ describe('a pack of the game’s clips', () => {
     expect(odd.values.slice(-3)).toEqual([1, 0, 0]);
   });
 
+  it('knows an additive channel that adds nothing (the identity turn, no move)', () => {
+    expect(atIdentity('rotation', [0, 0, 0, 1, 0, 0, 0, -1])).toBe(true);
+    expect(atIdentity('rotation', [0, 0, 0, 1, 0.1, 0, 0, 0.995])).toBe(false);
+    expect(atIdentity('translation', [0, 0, 0, 0, 0, 0])).toBe(true);
+    expect(atIdentity('translation', [0, 0.01, 0])).toBe(false);
+  });
   it('knows a channel that only holds its rest (a turn or its negation)', () => {
     const node = new Document().createNode('x').setRotation([0, 0, 0, 1]);
     expect(atRest(node, 'rotation', [0, 0, 0, 1, 0, 0, 0, -1])).toBe(true);
@@ -158,5 +164,47 @@ describe('an own rig’s pack', () => {
     expect(skeletonsFor('humanoid').test('Characters/Rigs/Humanoids/Walrus_HumanMale')).toBe(true);
     expect(skeletonFileFor('b1', '/r')).toBe('/r/public/models/galaxy/bf2017/crew/battledroid.lod1.glb');
     expect(skeletonFileFor('luke', '/r')).toBe('/r/public/models/galaxy/bf2017/walrus.glb');
+  });
+});
+
+describe('the clips’ census', () => {
+  const e = (name, skeleton, extra = {}) => [name, { name, skeleton, ...extra }];
+  const anims = new Map([
+    e('A_Luke_AttackLoop_Strike1', 'Characters/Rigs/Humanoids/Walrus_HumanMale'),
+    e('P_Stand_Idle_01', 'Characters/Rigs/Humanoids/Walrus_HumanMale'),
+    e('A_TauntaunRider_Walk_01', 'Characters/Rigs/Humanoids/Walrus_HumanMale'),
+    e('C_Dewback_Walk_Fwd_01', 'Characters/NPC/Creatures/Dewback/Dewback_01_Ske'),
+    e('A_Yoda_Defeated_01', 'Characters/Hero/Yoda/Yoda_01_Ske'),
+    e('ATAT_Destruction_01_Leftover_Body_Anim01', 'X/ATAT_Destruction_01_Leftover_Body_Ske'),
+    e('BB8_Roll_01', 'Characters/Droids/BB8/BB8_Ske'),
+    e('C_Sneep_Walk_01', 'Characters/NPC/Creatures/Sneep/Sneep_01_Ske'),
+  ]);
+  it('names a clip’s family by its first part', async () => {
+    const { familyOf } = await import('./lib/bf2017-clip-census.mjs');
+    expect(familyOf('A_Luke_AttackLoop_Strike1')).toBe('A');
+    expect(familyOf('P_Stand_Idle_01')).toBe('P');
+    expect(familyOf('Cover_Left_Medium_FirePeek')).toBe('Cover');
+  });
+  it('marks the cast left’s rigs owned and the sequel’s excluded', async () => {
+    const { ownerOf } = await import('./lib/bf2017-clip-census.mjs');
+    expect(ownerOf(anims.get('C_Dewback_Walk_Fwd_01'))).toEqual({ state: 'owned', by: 'B' });
+    expect(ownerOf(anims.get('A_TauntaunRider_Walk_01'))).toEqual({ state: 'owned', by: 'B' });
+    expect(ownerOf(anims.get('A_Yoda_Defeated_01'))).toEqual({ state: 'owned', by: 'Y' });
+    expect(ownerOf(anims.get('ATAT_Destruction_01_Leftover_Body_Anim01'))).toEqual({ state: 'owned', by: 'W' });
+    expect(ownerOf(anims.get('BB8_Roll_01')).state).toBe('excluded');
+    expect(ownerOf(anims.get('C_Sneep_Walk_01'))).toBe(null);
+  });
+  it('counts by skeleton and by the humanoid’s family, a used clip used', async () => {
+    const { censusRows } = await import('./lib/bf2017-clip-census.mjs');
+    const rows = censusRows(anims, new Set(['A_Luke_AttackLoop_Strike1']));
+    expect(rows.totals).toEqual({ used: 1, owned: 4, excluded: 1, unowned: 2 });
+    expect(rows.byFamily.A).toEqual({ used: 1, owned: 1, excluded: 0, unowned: 0 });
+    expect(rows.bySkeleton.Sneep_01_Ske.unowned).toBe(1);
+  });
+  it('reads the used clips off the site’s sets, the first spelling the drop has on the right skeleton', async () => {
+    const { usedSources } = await import('./bf2017-clips.mjs');
+    const used = usedSources(new Map([e('L_Luke_Stand_Unarmed_Idle_01', 'Characters/Rigs/Humanoids/Walrus_HumanMale'), e('C_ATAT_Stand_Idle', 'Gameplay/Vehicles/Ground/AT-AT/ATAT_Ske')]));
+    expect(used.has('L_Luke_Stand_Unarmed_Idle_01')).toBe(true);
+    expect(used.has('C_ATAT_Stand_Idle')).toBe(true);
   });
 });

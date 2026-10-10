@@ -25,8 +25,13 @@
 //                                rigSets.js), each pack's clips
 //                                taken from that skeleton only (ownRig.js)
 //   RIG_SET(rig)                 → its set
+//   PACK_OPTS                    { pack: { additive?, skeletons? } } for the
+//                                family packs (walrusSets/: stances, the
+//                                additive layer, the NPCs', the emotes…)
 
 import { CLIP_FALLBACK } from './walrusRig.js';
+import { FAUNA } from './walrusSets/fauna.js';
+import { SET_PACKS } from './walrusSets/index.js';
 
 const one = (xs) => (xs.length === 1 ? xs[0] : xs);
 const unique = (xs) => [...new Set(xs)];
@@ -284,6 +289,8 @@ export const OWN_RIGS = {
     },
   },
 };
+// (and the galaxy's small creatures, droids and aliens: walrusSets/fauna.js)
+for (const [rig, row] of Object.entries(FAUNA)) OWN_RIGS[rig] = { skeleton: row.skeleton, body: row.body, set: row.set };
 export const RIG_SET = (rig) => OWN_RIGS[rig]?.set ?? null;
 
 export const PACKS = {
@@ -302,4 +309,8 @@ export const PACKS = {
   han: gunHero(['HanSolo', 'Han']),
   leia: gunHero('Leia'),
   lando: gunHero('Lando'),
+  ...Object.fromEntries(Object.entries(SET_PACKS).map(([k, p]) => [k, p.set])),
 };
+
+// how a pack is taken from the drop: { additive?, skeletons? } (walrusSets/index.js)
+export const PACK_OPTS = Object.fromEntries(Object.entries(SET_PACKS).map(([k, p]) => [k, p.opts ?? {}]));

@@ -43,6 +43,7 @@ import { parseArgs } from './lib/args.mjs';
 import { isSequel, readManifest } from './lib/bf2017-manifest.mjs';
 import { localPath, objectUrl } from './lib/bf2017-paths.mjs';
 import { channelFate, folded, resample, travel } from './lib/rig-clips.mjs';
+import { EVENT_RIGS } from '../src/lib/three/walrusSets/events.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TRAJ = 'AITrajectory';
@@ -140,8 +141,9 @@ export function clipChannels(anim, { fps, additive }) {
 }
 
 export async function packRig(rig, { fps = 24, root, out, anims }) {
-  const spec = RIGS[rig];
-  if (!spec) throw new Error(`--pack: ${rig}? (${Object.keys(RIGS).join(', ')})`);
+  // (a walker's, or a world's set piece: walrusSets/events.js)
+  const spec = RIGS[rig] ?? EVENT_RIGS[rig];
+  if (!spec) throw new Error(`--pack: ${rig}? (${[...Object.keys(RIGS), ...Object.keys(EVENT_RIGS)].join(', ')})`);
   if (isSequel(spec.skeleton)) throw new Error(`${spec.skeleton} is sequel-era; the site shows none of it`);
   const reader = await io();
   const byName = new Map([...anims.values()].map((e) => [e.name, e]));

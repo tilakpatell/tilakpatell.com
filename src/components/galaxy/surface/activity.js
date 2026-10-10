@@ -129,7 +129,7 @@ export function fallen(down, len = null) {
   const lain = (len ?? DEATH.fall) + DEATH.lie;
   return { k: Math.min(1, down / DEATH.fall), sink: down > lain ? Math.min(1, (down - lain) / DEATH.sink) * DEATH.deep : 0, gone: down > lain + DEATH.sink };
 }
-import { absorb, createPosture, fallOf, hostileBody, hostileStep, startBurst, stepBurst, whereHit } from './hostiles';
+import { absorb, ALERT_CLIP, bodyClip, createPosture, fallOf, hostileBody, hostileStep, startBurst, stepBurst, whereHit } from './hostiles';
 import { lineClear } from './walker';
 import { createTokens } from '../../../lib/ai/squad';
 import { createSearch } from '../../../lib/ai/search';
@@ -146,6 +146,11 @@ import { asTarget, clashes, duelFor, fence, landed, reeling, stun, turnOf } from
 import { onHit } from '../../../lib/combat/duel';
 import { sharpen } from '../../../lib/three/textures';
 import { ARMS } from './ground/troops';
+import { hitSide } from '../../../lib/three/walrusSets/additive';
+import { detailLevel } from '../../../lib/detail';
+import { loadScene, playScene } from '../../../lib/three/scenePlayer';
+import { richClips } from '../../../lib/three/walrus';
+import { introScene } from '../../../lib/three/walrusSets/scenes';
 
 const SHOTS = 3; // enemies firing at you at once, across a world (the rest move)
 const UP = new THREE.Vector3(0, 1, 0);
@@ -398,7 +403,13 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
       if (t.blade) t.duel = duelFor(s, Math.round(t.home[0] * 13) * 31 + Math.round(t.home[1] * 17) + targets.indexOf(t) * 7919 + 1);
       return;
     }
-    if (fig.model?.getObjectByName('RightHand')?.isBone) t.gp = createGunplay({ model: fig.model, bones: fig.bones, sockets: fig.sockets }, kind, { unit: 1, who: s.kind });
+    if (fig.model?.getObjectByName('RightHand')?.isBone) t.gp = createGunplay({ model: fig.model, bones: fig.bones, sockets: fig.sockets, stance: fig.stance, aimAt: fig.aimAt }, kind, { unit: 1, who: s.kind });
+  };
+
+  // a duellist's entrance, the game's own for its kind, on a device that loads the extras
+  const entrance = (t) => {
+    const id = t.fig?.anim && richClips(detailLevel()) ? introScene(t.spec.kind) : null;
+    if (id) loadScene(id).then((sc) => sc && t.fig && !t.down && playScene(sc, { [t.spec.kind]: t.fig }));
   };
 
   // the step's own things, put out
@@ -473,7 +484,9 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
   const flinched = (t, at = null) => {
     if (t.down) return;
     const tall = (t.fig?.tall ?? 1.8) * (t.spec.scale ?? 1);
-    if (t.fig?.react?.('hit', { where: whereHit(at?.y, t.holder.position.y, tall), moving: true })) t.reacted = true;
+    // (and the side it came in from, round the way it faces: a 2017 figure's additive flinch, lib/three/additiveLayer.js)
+    const side = at ? hitSide([at.x - t.b.x, at.z - t.b.z], t.b.yaw) : null;
+    if (t.fig?.react?.('hit', { where: whereHit(at?.y, t.holder.position.y, tall), side, moving: true })) t.reacted = true;
   };
 
   // its guard broken by a heavy stroke, or spent: it reels 2 s
@@ -516,7 +529,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     // crouched in cover (a base state: only ever while its feet are still)
     if (pose.base !== t.based) {
       t.based = pose.base;
-      fig.base?.(pose.base);
+      fig.base?.(bodyClip(fig, pose.clip, pose.base));
     }
     // where its head goes: its mark at the height it stands (you, or a
     // friend of yours), else a spot at its own eyes' height
@@ -534,7 +547,8 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
       if (start && fig.play) {
         t.startUntil = time + start.for;
         fig.play(start.clip, { layer: 'upper' }).then((ok) => !ok && (t.startUntil = 0));
-      } else fig.react?.('alert', { target: want });
+      } else if (fig.clips?.[ALERT_CLIP] && fig.play) fig.play(ALERT_CLIP, { layer: 'upper' });
+      else fig.react?.('alert', { target: want });
     }
     // its feet on the ground the step covers (and, on a figure that lays
     // them in its update, the bones over its clips: crew.js's)
@@ -811,6 +825,11 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
           const seen = t.victim ? { x: aim.x, z: aim.z } : you ? { x: you.x, z: you.z, vel: Number.isFinite(you.vx) ? { x: you.vx, z: you.vz } : null } : null;
           // a duellist with its mark near fences it (duellists.js); otherwise it hunts as the rest do
           const fenced = fence(t, aim, { you: youT, swinging }, dt, time, world);
+          // (squaring up to its mark the first time: its entrance from the game, lib/three/scenePlayer.js)
+          if (fenced != null && !t.introduced) {
+            t.introduced = true;
+            entrance(t);
+          }
           if (fenced != null) moving = fenced;
           else {
             const step = hostileStep(t, { you: t.spec.side === 'yours' && !mark ? null : seen, allies, seesThrough, tokens: t.hostile ? tokens : null, who: t, search: t.hostile ? searchFor(tag) : null, stims }, dt, r);

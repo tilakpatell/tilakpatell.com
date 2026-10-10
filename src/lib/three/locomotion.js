@@ -158,6 +158,14 @@ export function createLocomotion(fig, { mixer = null, act = null, root = null, u
     },
     rig,
     strides,
+    // a clip of its own put in by hand (animator.js's restance): its stride measured afresh
+    restride(k) {
+      const a = act?.[k];
+      if (!mixer || !root || !a || !b.LeftToeBase || !b.RightToeBase || (k !== 'walk' && k !== 'run')) return;
+      const s = strideOf(root, mixer, Object.values(act).filter(Boolean), a, [b.LeftToeBase, b.RightToeBase]);
+      if (s) strides[k] = s;
+      else delete strides[k];
+    },
     // before the mixer: which clips, how fast, and where in their stride
     update(dt, m = {}) {
       dt = Math.min(dt, 0.1);

@@ -11,6 +11,18 @@
     "from": "gameplay/vehicles/air/awing/vehicle_air_awing_01_static_donotuse_mesh",
     "tier": "surface"
   },
+  "models/galaxy/bf2017/clips-1p.glb": {
+    "hash": "89b81f854dc0",
+    "bytes": 373328,
+    "from": "models/galaxy/bf2017/clips-1p.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-additive.glb": {
+    "hash": "482890c2f8fa",
+    "bytes": 566932,
+    "from": "models/galaxy/bf2017/clips-additive.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/clips-anakin.glb": {
     "hash": "0c84f1562fea",
     "bytes": 1291592,
@@ -41,6 +53,18 @@
     "from": "models/galaxy/bf2017/clips-atte.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/clips-band.glb": {
+    "hash": "8c7f3b525bef",
+    "bytes": 381412,
+    "from": "models/galaxy/bf2017/clips-band.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-birdtheed.glb": {
+    "hash": "3482288cbb0e",
+    "bytes": 40076,
+    "from": "models/galaxy/bf2017/clips-birdtheed.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/clips-bobafett.glb": {
     "hash": "4e0c74629169",
     "bytes": 144828,
@@ -59,6 +83,12 @@
     "from": "models/galaxy/bf2017/clips-chewie.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/clips-chicken.glb": {
+    "hash": "dbd5acf1b054",
+    "bytes": 53468,
+    "from": "models/galaxy/bf2017/clips-chicken.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/clips-dooku.glb": {
     "hash": "504b6d795d2d",
     "bytes": 1240920,
@@ -71,6 +101,108 @@
     "from": "models/galaxy/bf2017/clips-droideka.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/clips-emotes-anakin.glb": {
+    "hash": "bebcf16e1d1d",
+    "bytes": 408168,
+    "from": "models/galaxy/bf2017/clips-emotes-anakin.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-bobafett.glb": {
+    "hash": "17652a8b5546",
+    "bytes": 376636,
+    "from": "models/galaxy/bf2017/clips-emotes-bobafett.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-bossk.glb": {
+    "hash": "dacc1b64e1ad",
+    "bytes": 422656,
+    "from": "models/galaxy/bf2017/clips-emotes-bossk.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-chewie.glb": {
+    "hash": "8919b289eca9",
+    "bytes": 479800,
+    "from": "models/galaxy/bf2017/clips-emotes-chewie.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-dooku.glb": {
+    "hash": "32c20ce19c22",
+    "bytes": 445804,
+    "from": "models/galaxy/bf2017/clips-emotes-dooku.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-han.glb": {
+    "hash": "4057ef1adc8a",
+    "bytes": 413912,
+    "from": "models/galaxy/bf2017/clips-emotes-han.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-lando.glb": {
+    "hash": "75b209f57d09",
+    "bytes": 419760,
+    "from": "models/galaxy/bf2017/clips-emotes-lando.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-leia.glb": {
+    "hash": "39bfe34400f3",
+    "bytes": 418116,
+    "from": "models/galaxy/bf2017/clips-emotes-leia.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-luke.glb": {
+    "hash": "f072d613e796",
+    "bytes": 431172,
+    "from": "models/galaxy/bf2017/clips-emotes-luke.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-maul.glb": {
+    "hash": "13e040dfab28",
+    "bytes": 461624,
+    "from": "models/galaxy/bf2017/clips-emotes-maul.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-obiwan.glb": {
+    "hash": "cd200a343c4f",
+    "bytes": 425264,
+    "from": "models/galaxy/bf2017/clips-emotes-obiwan.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-palpatine.glb": {
+    "hash": "a38cbcc32d79",
+    "bytes": 224160,
+    "from": "models/galaxy/bf2017/clips-emotes-palpatine.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-emotes-vader.glb": {
+    "hash": "c2c7f0887725",
+    "bytes": 374260,
+    "from": "models/galaxy/bf2017/clips-emotes-vader.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-felbird.glb": {
+    "hash": "352a2e770b2b",
+    "bytes": 58340,
+    "from": "models/galaxy/bf2017/clips-felbird.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-felripper.glb": {
+    "hash": "c3bd0f1b7ca7",
+    "bytes": 35200,
+    "from": "models/galaxy/bf2017/clips-felripper.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-gamorrean.glb": {
+    "hash": "20e2709aed7b",
+    "bytes": 317188,
+    "from": "models/galaxy/bf2017/clips-gamorrean.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-gonk.glb": {
+    "hash": "102a09e3586c",
+    "bytes": 15684,
+    "from": "models/galaxy/bf2017/clips-gonk.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/clips-han.glb": {
     "hash": "31f66dcc2e78",
     "bytes": 94152,
@@ -81,6 +213,12 @@
     "hash": "6d9ff1254a22",
     "bytes": 863976,
     "from": "models/galaxy/bf2017/clips-humanoid.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-kaminoevent24.glb": {
+    "hash": "3ff0a7d4bde8",
+    "bytes": 287024,
+    "from": "models/galaxy/bf2017/clips-kaminoevent24.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/clips-lando.glb": {
@@ -107,6 +245,12 @@
     "from": "models/galaxy/bf2017/clips-maul.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/clips-npc.glb": {
+    "hash": "b90a478d267f",
+    "bytes": 1148108,
+    "from": "models/galaxy/bf2017/clips-npc.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/clips-obiwan.glb": {
     "hash": "1e10d9344036",
     "bytes": 1095224,
@@ -119,10 +263,100 @@
     "from": "models/galaxy/bf2017/clips-palpatine.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/clips-pelikki.glb": {
+    "hash": "203e8be6b68e",
+    "bytes": 15432,
+    "from": "models/galaxy/bf2017/clips-pelikki.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-pillioshrimp.glb": {
+    "hash": "8bd0afff70fb",
+    "bytes": 256668,
+    "from": "models/galaxy/bf2017/clips-pillioshrimp.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-profogg.glb": {
+    "hash": "4e319865989b",
+    "bytes": 55660,
+    "from": "models/galaxy/bf2017/clips-profogg.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-runyip.glb": {
+    "hash": "06710c3fe8f3",
+    "bytes": 76112,
+    "from": "models/galaxy/bf2017/clips-runyip.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-scurrier.glb": {
+    "hash": "0a122f3e46a6",
+    "bytes": 56680,
+    "from": "models/galaxy/bf2017/clips-scurrier.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-sneep.glb": {
+    "hash": "1bdad493ec22",
+    "bytes": 31560,
+    "from": "models/galaxy/bf2017/clips-sneep.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-stance-l.glb": {
+    "hash": "7905878e4f2f",
+    "bytes": 404896,
+    "from": "models/galaxy/bf2017/clips-stance-l.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-stance-p.glb": {
+    "hash": "7d2a74ac8629",
+    "bytes": 495672,
+    "from": "models/galaxy/bf2017/clips-stance-p.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-stance-t.glb": {
+    "hash": "e4a1923ddfb6",
+    "bytes": 481028,
+    "from": "models/galaxy/bf2017/clips-stance-t.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-stintarils.glb": {
+    "hash": "7a1536f06ebb",
+    "bytes": 55896,
+    "from": "models/galaxy/bf2017/clips-stintarils.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-tach.glb": {
+    "hash": "91ee8def77e9",
+    "bytes": 111000,
+    "from": "models/galaxy/bf2017/clips-tach.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-theedevent19.glb": {
+    "hash": "5645dfea3441",
+    "bytes": 65560,
+    "from": "models/galaxy/bf2017/clips-theedevent19.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-treadwell.glb": {
+    "hash": "03e3ed04e5f1",
+    "bytes": 25708,
+    "from": "models/galaxy/bf2017/clips-treadwell.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-trident.glb": {
+    "hash": "b61898cdff19",
+    "bytes": 260004,
+    "from": "models/galaxy/bf2017/clips-trident.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/clips-vader.glb": {
     "hash": "ab441e7ad0e9",
     "bytes": 1391588,
     "from": "models/galaxy/bf2017/clips-vader.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/clips-vehicles.glb": {
+    "hash": "2e38f74951ca",
+    "bytes": 581684,
+    "from": "models/galaxy/bf2017/clips-vehicles.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/crew/anakin.glb": {
@@ -183,6 +417,12 @@
     "hash": "4aa88f301a1e",
     "bytes": 18618772,
     "from": "characters/npc/droids/astromech/r2d2/r2d2_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/birdtheed.glb": {
+    "hash": "122de85b16cc",
+    "bytes": 2875272,
+    "from": "characters/npc/creatures/birdtheed/birdtheed_02/birdtheed_02_b_mesh",
     "tier": "crew"
   },
   "models/galaxy/bf2017/crew/bobafett.glb": {
@@ -262,6 +502,12 @@
     "bytes": 35055780,
     "from": "characters/hero/chewbacca/chewbacca_goggles_01/chewbacca_goggles_01_mesh",
     "tier": "ultra"
+  },
+  "models/galaxy/bf2017/crew/chicken.glb": {
+    "hash": "f9afce318a76",
+    "bytes": 706244,
+    "from": "characters/npc/creatures/chicken/chicken_01/chicken_01_mesh",
+    "tier": "crew"
   },
   "models/galaxy/bf2017/crew/civcity1.glb": {
     "hash": "89efea4f2b3e",
@@ -357,6 +603,30 @@
     "hash": "2c643e6ee6ed",
     "bytes": 8661632,
     "from": "characters/hero/ewok/ewok_01/ewok_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/felbird.glb": {
+    "hash": "4bf4dd7b6038",
+    "bytes": 7348052,
+    "from": "characters/npc/creatures/fel_bird/fel_bird_01/fel_bird_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/felripper.glb": {
+    "hash": "c7737fd0105a",
+    "bytes": 9133440,
+    "from": "characters/npc/creatures/fel_ripper/fel_ripper_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/gamorreanguard.glb": {
+    "hash": "57bd879acb95",
+    "bytes": 22434028,
+    "from": "characters/npc/aliens/gamorreanguard/gamorreanguard_01/lw_gamorreanguard_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/gonk.glb": {
+    "hash": "349d6338da27",
+    "bytes": 3555068,
+    "from": "characters/npc/droids/droidgonk/droidgonk_01/droidgonk_01_mesh",
     "tier": "crew"
   },
   "models/galaxy/bf2017/crew/han.glb": {
@@ -857,10 +1127,28 @@
     "from": "characters/hero/palpatine/palpatine_01/palpatine_01_mesh",
     "tier": "ultra"
   },
+  "models/galaxy/bf2017/crew/pelikki.glb": {
+    "hash": "369b1bdd9bdd",
+    "bytes": 739588,
+    "from": "characters/npc/creatures/pelikki/pelikki_01/pelikki_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/pillioshrimp.glb": {
+    "hash": "778207c1b6ab",
+    "bytes": 11204824,
+    "from": "characters/npc/creatures/pillioshrimp/pillioshrimp_01/pillioshrimp_01_mesh",
+    "tier": "crew"
+  },
   "models/galaxy/bf2017/crew/probe.glb": {
     "hash": "962627e76100",
     "bytes": 3574028,
     "from": "characters/npc/droids/viper_01/viper_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/profogg.glb": {
+    "hash": "6e215d6238ed",
+    "bytes": 154552,
+    "from": "characters/npc/creatures/profogg/profogg_01/profogg_01_mesh",
     "tier": "crew"
   },
   "models/galaxy/bf2017/crew/r5.glb": {
@@ -887,6 +1175,12 @@
     "from": "characters/npc/humans/rebel_technician_orig/rebel_technician_orig_01/rebel_technician_orig_01_mesh",
     "tier": "crew"
   },
+  "models/galaxy/bf2017/crew/runyip.glb": {
+    "hash": "80928845bf2d",
+    "bytes": 7478844,
+    "from": "characters/npc/creatures/runyip/runyip_01/runyip_01_mesh",
+    "tier": "crew"
+  },
   "models/galaxy/bf2017/crew/sandtrooper.glb": {
     "hash": "4d7b67bfa719",
     "bytes": 17689964,
@@ -899,16 +1193,34 @@
     "from": "characters/imperial/imperial_scoutrooper/imperial_scoutrooper_male_01/imperial_scoutrooper_male_01_mesh",
     "tier": "crew"
   },
+  "models/galaxy/bf2017/crew/scurrier.glb": {
+    "hash": "f29fd846d948",
+    "bytes": 229860,
+    "from": "characters/npc/creatures/scurrier/scurrier_01/scurrier_01_mesh",
+    "tier": "crew"
+  },
   "models/galaxy/bf2017/crew/shoretrooper.glb": {
     "hash": "a2687ab6af5b",
     "bytes": 12927828,
     "from": "characters/imperial/imperial_beachtrooper/imperial_beachtrooper_mesh",
     "tier": "crew"
   },
+  "models/galaxy/bf2017/crew/sneep.glb": {
+    "hash": "b9eb801f4da3",
+    "bytes": 555152,
+    "from": "characters/npc/creatures/sneep/sneep_01/sneep_01_mesh",
+    "tier": "crew"
+  },
   "models/galaxy/bf2017/crew/snowtrooper.glb": {
     "hash": "0dd3c8472eae",
     "bytes": 18274380,
     "from": "characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/stintarils.glb": {
+    "hash": "e878a630e56d",
+    "bytes": 698292,
+    "from": "characters/npc/creatures/stintarils/stintarils_01/stintarils_01_mesh",
     "tier": "crew"
   },
   "models/galaxy/bf2017/crew/stormtrooper.glb": {
@@ -923,10 +1235,22 @@
     "from": "characters/hero/b2/b2_01/b2_01_mesh",
     "tier": "crew"
   },
+  "models/galaxy/bf2017/crew/tach.glb": {
+    "hash": "70e6bb310437",
+    "bytes": 2975888,
+    "from": "characters/npc/creatures/tach/tach_01/tach_01_mesh",
+    "tier": "crew"
+  },
   "models/galaxy/bf2017/crew/tauntaun.glb": {
     "hash": "58474f0e3b04",
     "bytes": 11944440,
     "from": "characters/npc/creatures/tauntaun/tauntaun_01/tauntaun_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/treadwell.glb": {
+    "hash": "e5f5e39f26c5",
+    "bytes": 1761672,
+    "from": "characters/npc/droids/wed_15septoidtreadwell_01/wed_15septoidtreadwell_01_mesh",
     "tier": "crew"
   },
   "models/galaxy/bf2017/crew/vader.glb": {
@@ -981,6 +1305,90 @@
     "hash": "4717164cc22a",
     "bytes": 146633,
     "from": "models/galaxy/bf2017/fx/scorch.metal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/hoth-outro.glb": {
+    "hash": "201417ead22b",
+    "bytes": 230272,
+    "from": "models/galaxy/bf2017/scenes/hoth-outro.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-anakin.glb": {
+    "hash": "61971e3f781a",
+    "bytes": 163688,
+    "from": "models/galaxy/bf2017/scenes/intro-anakin.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-bobafett.glb": {
+    "hash": "f5feb65a92dc",
+    "bytes": 97728,
+    "from": "models/galaxy/bf2017/scenes/intro-bobafett.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-bossk.glb": {
+    "hash": "b53798763b15",
+    "bytes": 99860,
+    "from": "models/galaxy/bf2017/scenes/intro-bossk.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-chewie.glb": {
+    "hash": "13cb44f14cbf",
+    "bytes": 92476,
+    "from": "models/galaxy/bf2017/scenes/intro-chewie.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-dooku.glb": {
+    "hash": "031bed13745c",
+    "bytes": 160672,
+    "from": "models/galaxy/bf2017/scenes/intro-dooku.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-han.glb": {
+    "hash": "36758b5a3d18",
+    "bytes": 78840,
+    "from": "models/galaxy/bf2017/scenes/intro-han.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-lando.glb": {
+    "hash": "bcff2181d48a",
+    "bytes": 113084,
+    "from": "models/galaxy/bf2017/scenes/intro-lando.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-leia.glb": {
+    "hash": "be99b95ac022",
+    "bytes": 77540,
+    "from": "models/galaxy/bf2017/scenes/intro-leia.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-luke.glb": {
+    "hash": "47b54105caaf",
+    "bytes": 85432,
+    "from": "models/galaxy/bf2017/scenes/intro-luke.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-maul.glb": {
+    "hash": "d75cecef3c51",
+    "bytes": 113692,
+    "from": "models/galaxy/bf2017/scenes/intro-maul.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-obiwan.glb": {
+    "hash": "565c1a984a08",
+    "bytes": 101424,
+    "from": "models/galaxy/bf2017/scenes/intro-obiwan.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-palpatine.glb": {
+    "hash": "733c3714b951",
+    "bytes": 81068,
+    "from": "models/galaxy/bf2017/scenes/intro-palpatine.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/scenes/intro-vader.glb": {
+    "hash": "aa4cb2918df5",
+    "bytes": 84288,
+    "from": "models/galaxy/bf2017/scenes/intro-vader.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/walrus.glb": {

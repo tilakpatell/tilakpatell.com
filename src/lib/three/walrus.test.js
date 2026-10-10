@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { afterEach, describe, expect, it } from 'vitest';
 import { clearGLTFCache } from './gltfCache';
-import { clipsFor, cutFor, cutsToLoad, loadWalrusBody, loadWalrusPacks, packUrls, socketsOf, swapBody } from './walrus';
+import { clipsFor, cutFor, cutsToLoad, loadWalrusBody, loadWalrusPacks, packUrls, richClips, socketsOf, swapBody } from './walrus';
 import { BODY, SOCKETS } from './walrusRig.js';
 
 // a body by name: the game's (BODY and the sockets) or Meshy's
@@ -96,8 +96,13 @@ describe('a figure on the game’s skeleton', () => {
   });
 
   it('loads the humanoid pack first and a hero’s over it', () => {
-    expect(packUrls('luke')).toEqual(['/models/galaxy/bf2017/clips-humanoid.glb', '/models/galaxy/bf2017/clips-luke.glb']);
-    expect(packUrls()).toEqual(['/models/galaxy/bf2017/clips-humanoid.glb']);
+    expect(packUrls('luke')).toEqual(['/models/galaxy/bf2017/clips-humanoid.glb', '/models/galaxy/bf2017/clips-luke.glb', '/models/galaxy/bf2017/clips-emotes-luke.glb', '/models/galaxy/bf2017/clips-additive.glb']);
+    expect(packUrls()).toEqual(['/models/galaxy/bf2017/clips-humanoid.glb', '/models/galaxy/bf2017/clips-npc.glb', '/models/galaxy/bf2017/clips-additive.glb']);
+    // (a phone's levels: the figure's own alone)
+    expect(packUrls('luke', { extras: false })).toEqual(['/models/galaxy/bf2017/clips-humanoid.glb', '/models/galaxy/bf2017/clips-luke.glb']);
+    expect(packUrls(null, { extras: false })).toEqual(['/models/galaxy/bf2017/clips-humanoid.glb']);
+    expect(richClips('low') || richClips('mid')).toBe(false);
+    expect(richClips('high') && richClips('ultra')).toBe(true);
   });
 
   it('loads the game’s full maps at ultra, the plain figure at high, the light one at low and mid', () => {

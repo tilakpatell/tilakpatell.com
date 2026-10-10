@@ -30,6 +30,8 @@ export const EXPECTED = {
   // droids and beasts on their own (docs/superpowers/evidence/bf2017-phase2/cast.md)
   ...Object.fromEntries(['c3po', 'clone', 'clonephase1', 'deathtrooper', 'hothtrooper', 'rebel', 'rebelpilot', 'rebeltech', 'sandtrooper', 'scouttrooper', 'shoretrooper', 'snowtrooper', 'stormtrooper', 'wookiee'].map((k) => [k, 'walrus'])),
   ...Object.fromEntries(['astromech', 'droid', 'ewok', 'probe', 'r5', 'superdroid', 'tauntaun'].map((k) => [k, 'own-rig'])),
+  // the fifth design's lane A: the creatures, droids and aliens on their own rigs
+  ...Object.fromEntries(['birdtheed', 'chicken', 'scurrier', 'tach', 'pelikki', 'runyip', 'profogg', 'gamorreanguard', 'treadwell', 'gonk'].map((k) => [k, 'own-rig'])),
 };
 
 const HOWS = ['walker', 'walrus', 'own-rig', 'crew', 'crew-still', 'own-clips', 'legs', 'rig-noanim', 'still', 'built', 'none'];

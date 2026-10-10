@@ -165,6 +165,8 @@ export const PAGES = {
           ['Q', 'Things to do'],
           ['Tab', 'Swap to your crewmate'],
           ['L', 'Lock on: the camera stays on the one you’re squared up to (L again lets go)'],
+          ['B', 'Hold for the emote wheel (a hero from the 2017 game does its own four)'],
+          ['P', 'Out of your own eyes, and back (a figure from the 2017 game, on foot, on a computer)'],
         ],
       },
     ],

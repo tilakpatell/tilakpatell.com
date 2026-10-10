@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOSTILE_BODY, SCAN, STEP, absorb, createPosture, fallOf, hostileBody, hostileStep, startBurst, startBurst as sb, stepBurst, strafeStep, whereHit } from './hostiles';
+import { ALERT_CLIP, HOSTILE_BODY, SCAN, STEP, absorb, bodyClip, createPosture, fallOf, hostileBody, hostileStep, startBurst, startBurst as sb, stepBurst, strafeStep, whereHit } from './hostiles';
 import { MODE_BODY } from '../../../lib/ai/body';
 import { seeded } from '../../../lib/seeded';
 import { createSearch } from '../../../lib/ai/search';
@@ -178,10 +178,20 @@ describe('an enemy’s body', () => {
   it('the table: the site’s rows, with the hostiles’ own modes', () => {
     for (const mode of Object.keys(MODE_BODY)) expect(HOSTILE_BODY[mode]).toBeDefined();
     expect(HOSTILE_BODY.cover.base).toBe('crouch');
+    // (the game's own, for a figure that has the soldiers' set: walrusSets/npc.js)
+    expect(HOSTILE_BODY.cover.clip).toBe('cover.low.idle');
+    expect(ALERT_CLIP).toBe('aware.alert');
     expect(HOSTILE_BODY.cover.rise).toBe(true);
     expect(HOSTILE_BODY.strafe.look).toBe('aim');
     expect(HOSTILE_BODY.search.scan).toBe(true);
     for (const mode of ['hold', 'close', 'flank', 'look', 'wander']) expect(HOSTILE_BODY[mode]).toBeDefined();
+  });
+
+  it('plays the game’s clip where the figure has it, else the site’s', () => {
+    expect(bodyClip({ clips: { 'cover.low.idle': {} } }, 'cover.low.idle', 'crouch')).toBe('cover.low.idle');
+    expect(bodyClip({ clips: { idle: {} } }, 'cover.low.idle', 'crouch')).toBe('crouch');
+    expect(bodyClip({}, 'cover.low.idle', 'crouch')).toBe('crouch');
+    expect(bodyClip({ clips: { 'cover.low.idle': {} } }, null, null)).toBe(null);
   });
 
   it('a strafer’s feet go across while its chest, its head and its gun stay on you', () => {
@@ -214,6 +224,7 @@ describe('an enemy’s body', () => {
     expect(b.base).toBe(null);
     for (let i = 0; i < 15; i++) b = hostileBody(p, there, DT, { t: (t += DT) });
     expect(b.base).toBe('crouch');
+    expect(b.clip).toBe('cover.low.idle');
     expect(b.aim).toBe(0);
     expect(b.look).toEqual({ x: 0, z: 20 });
     // about to fire: up, the gun up
