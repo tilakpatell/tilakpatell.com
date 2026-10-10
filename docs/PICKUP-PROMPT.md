@@ -158,6 +158,15 @@ All four open PRs had green CI on 6 October. Each lane below is one session.
 - **GOAL:** its handoff's next item.
 - **MERGE:** yes
 
+### 9. Beyond WebGL: the WebGPU foundation
+- **START FROM:** `main`, once the spec's PR is merged and the owner has approved the spec
+- **READ FIRST:**
+  - `docs/superpowers/HANDOFF-webgpu-worlds.md`
+  - `docs/superpowers/specs/2026-10-06-webgpu-worlds-and-living-worlds-design.md`
+  - `docs/superpowers/plans/2026-10-06-webgpu-foundation.md`
+- **GOAL:** Foundation A, task by task: `/lab/gpu` drawing on both backends, `scripts/gpu-check.mjs` green, `src/lib/tsl/` tested.
+- **MERGE:** yes
+
 ## Where the lanes stand (6 October, evening)
 
 - **Merged:** lane 2 (#246, then #249), lane 3 (#242), lane 6's Step 1.
