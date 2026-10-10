@@ -20,6 +20,9 @@
 :where(.hud-screen-cell:is(:focus-visible, :hover) [data-id*='Selected']):not(hud-none) { opacity: 1; }
 :where(.hud-screen-cell:focus-visible):not(hud-none) { outline: 2px solid var(--hud-accent, #ffd34d); outline-offset: 2px; }
 :where(.hud-screen-cell[data-coming]):not(hud-none) { cursor: default; filter: grayscale(1); color: var(--muted, #9a9a9a); }
+/* a game's enter animation: the box fades in (still under reduced motion) */
+:where(.hud-screen-box[data-reveal]):not(hud-none) { animation: hud-screen-reveal var(--t-slow, 320ms) ease both; }
+@keyframes hud-screen-reveal { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) {
   :where(.hud-screen *):not(hud-none) { transition: none !important; animation: none !important; }
 }

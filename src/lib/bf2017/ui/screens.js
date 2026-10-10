@@ -31,6 +31,16 @@ export const WIDGETS_IN_SCREENS = Object.keys(ROWS.widgets);
 const TABLE = { ...STRINGS, ...ROWS.strings, ...LOADING.rows.strings };
 const MAX_DEPTH = 16;
 
+// A text's face: lane M's fontFor for the faces it maps (Univers, RaxusPrime,
+// Roboto); the game's Aurebesh on the site's own open Aurebesh; any other
+// (News Gothic, the EULA's Asian fix) on the text face.
+export function faceFor(name) {
+  const n = String(name ?? '');
+  if (/^(Univers|RaxusPrime|Roboto)/.test(n)) return fontFor(n);
+  const size = Number(n.match(/(\d+)(?:px)?$/)?.[1] ?? 18);
+  return { family: /^Aurebesh/i.test(n) ? 'var(--font-aurebesh)' : 'var(--font-bf-text)', size, weight: 400 };
+}
+
 const findScreen = (name) => ROWS.screens[name] ?? ROWS.screens[SCREENS.find((n) => n.endsWith(`/${name}`))] ?? null;
 const fullName = (name) => (ROWS.screens[name] ? name : SCREENS.find((n) => n.endsWith(`/${name}`)));
 
@@ -49,13 +59,16 @@ function boxOf(el, at, path, ctx, slots) {
   const box = { id: `${path}/${el.id}`, type: el.type, x: at.x, y: at.y, w: at.w, h: at.h };
   const ink = typeof el.palette === 'number' ? colour(el.palette) : el.colour ? css(el.colour) : null;
   if (ink) box.colour = ink;
-  if (el.alpha !== undefined) box.alpha = el.alpha;
+  // (an enter animation's container is recorded at alpha 0, the game
+  // fading it in: drawn as a reveal, not as nothing)
+  if (el.alpha === 0 && /^Anim/i.test(el.id)) box.reveal = true;
+  else if (el.alpha !== undefined) box.alpha = el.alpha;
   if (el.visible === false) box.hidden = true;
   if (el.type === 'text') {
     const key = slots[el.id] ?? el.text ?? null;
     if (key) box.key = key;
     box.text = ctx.data?.[el.id] ?? (key ? say(key, ctx) : (el.literal ?? ''));
-    if (el.font) box.font = fontFor(el.font);
+    if (el.font) box.font = faceFor(el.font);
     if (el.align) box.align = el.align;
     if (el.wrap) box.wrap = true;
   }

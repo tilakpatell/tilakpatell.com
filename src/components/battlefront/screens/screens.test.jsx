@@ -65,6 +65,10 @@ describe("the game's screens, each from its tree", () => {
     expect(h).toContain('data-screen="UI/Customize/Screens/SpawnOverlayScreen"');
     expect(h).toContain('D-ORIG-ASSAULT');
     expect(h).toMatch(/data-kind="hero"[^>]*aria-disabled="true"/);
+    const squad = html(<Spawn deploy={{ open: true, offers: OFFERS, spawns: [{ id: 'hq', kind: 'hq', name: 'HQ' }, { id: 'm1', kind: 'mate', name: 'Trooper 2', blocked: true, reason: 'IN COMBAT' }] }} points={0} />);
+    expect(squad).toContain('aria-label="Where to deploy"');
+    expect(squad).toMatch(/data-spawn="mate"[^>]*aria-disabled="true"/);
+    expect(squad).toContain('IN COMBAT');
     const fallback = html(<Spawn screen="NoSuchScreen" deploy={{ open: true, offers: OFFERS }} points={0} />);
     expect(fallback).toContain('bf-offers');
     expect(fallback).toContain('id="bf-deploy-title"');

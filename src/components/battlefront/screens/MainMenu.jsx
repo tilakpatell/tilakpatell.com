@@ -7,7 +7,8 @@ import GameScreen from './GameScreen.jsx';
 // Store) as its tree lays them, on the multiplayer tile's film. Play goes
 // on; the tabs this world does not have yet say so (`onComing`).
 export default function MainMenu({ onPlay, onStart, onComing }) {
-  const tree = prune(useTree('MainMenuScreen'), OFFLINE);
+  // (a tab the game names at run time, the store's, is left out)
+  const tree = prune(useTree('MainMenuScreen'), (b) => OFFLINE(b) || (b.type === 'cell' && !b.key));
   const onLink = (to, cell) => {
     if (/\/PlayScreen$/.test(to ?? '')) onPlay?.();
     else if (/\/StartScreen$/.test(to ?? '')) onStart?.();

@@ -13,7 +13,11 @@ import GameScreen from './GameScreen.jsx';
 // one (the page's input hears Enter too, as before). With no tree it is lane
 // 5's DeployScreen, which takes the same props.
 //
-// <Spawn deploy={{ open, offers }} points={n} name={(o) => text} title="Deploy" onDeploy={(o) => …} onPick={(o) => …} />
+// Under them, where to deploy (lane 5's squad strip: `deploy.spawns`, the
+// side's HQ then each squadmate, one that cannot be spawned on greyed with
+// the game's reason); choosing one calls `onSpawn(spawn)` as lane 5's does.
+//
+// <Spawn deploy={{ open, offers, spawns }} points={n} name={(o) => text} title="Deploy" onDeploy={(o) => …} onPick={(o) => …} onSpawn={(s) => …} />
 const PRE_ROUND = /^(PreroundText|Game Starting In: |Players Needed|BreadcrumbList)$/;
 
 export default function Spawn({ screen = 'SpawnOverlayScreen', ...props }) {
@@ -22,7 +26,10 @@ export default function Spawn({ screen = 'SpawnOverlayScreen', ...props }) {
   return <SpawnTree tree={prune(raw, (b) => PRE_ROUND.test(b.id.split('/').pop()) || /FooterBar/.test(b.id))} {...props} />;
 }
 
-function SpawnTree({ tree, deploy, points = 0, name = (o) => o.id, title = 'Deploy', onDeploy, onPick }) {
+function SpawnTree({ tree, deploy, points = 0, name = (o) => o.id, title = 'Deploy', onDeploy, onPick, onSpawn }) {
+  const spawns = deploy?.spawns ?? [];
+  const [at, setAt] = useState('hq');
+  const where = spawns.find((c) => c.id === at && !c.blocked) ?? spawns[0] ?? null;
   const rows = offerRows(deploy?.offers ?? [], points);
   const first = rows.find((r) => r.affordable) ?? null;
   const [picked, setPicked] = useState(first?.id ?? null);
@@ -46,19 +53,43 @@ function SpawnTree({ tree, deploy, points = 0, name = (o) => o.id, title = 'Depl
     }
   };
   return (
-    <GameScreen tree={tree} label={title} keys={[['↑↓', 'Choose'], ['Enter', title]]} className="bf-spawn">
-      <ul ref={list} className="bf-spawn-list" onKeyDown={onKeyDown}>
+    <GameScreen tree={tree} label={title} keys={[['↑↓', 'Choose'], ['Enter', title]]} className="bf-spawn-screen">
+      <ul ref={list} className="bf-spawn-screen-list" onKeyDown={onKeyDown}>
         {rows.map((o) => (
           <li key={`${o.kind}:${o.id}`}>
-            <button type="button" className="bf-spawn-cell" data-kind={o.kind} aria-pressed={chosen?.id === o.id} aria-disabled={!o.affordable || undefined} onFocus={() => pick(o)} onClick={() => (o.affordable ? onDeploy?.(o) : null)}>
+            <button type="button" className="bf-spawn-screen-cell" data-kind={o.kind} aria-pressed={chosen?.id === o.id} aria-disabled={!o.affordable || undefined} onFocus={() => pick(o)} onClick={() => (o.affordable ? onDeploy?.(o) : null)}>
               <img src={offerIcon(o)} alt="" width="40" height="40" />
-              <span className="bf-spawn-name">{name(o)}</span>
+              <span className="bf-spawn-screen-name">{name(o)}</span>
               <span className="bf-num">{o.cost ? o.cost.toLocaleString('en-GB') : ''}</span>
             </button>
           </li>
         ))}
       </ul>
-      <p className="bf-spawn-points">
+      {spawns.length > 1 && (
+        <ul className="bf-spawn-screen-where" aria-label="Where to deploy">
+          {spawns.map((c) => (
+            <li key={c.id}>
+              <button
+                type="button"
+                className="bf-spawn-screen-cell"
+                data-spawn={c.kind ?? c.id}
+                aria-pressed={where?.id === c.id}
+                aria-disabled={c.blocked ? true : undefined}
+                onClick={() => {
+                  if (c.blocked) return;
+                  setAt(c.id);
+                  onSpawn?.(c);
+                }}
+              >
+                <span />
+                <span className="bf-spawn-screen-name">{c.name}</span>
+                <span className="bf-num">{c.reason ?? ''}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="bf-spawn-screen-points">
         Battle Points <span className="bf-num">{points.toLocaleString('en-GB')}</span>
       </p>
     </GameScreen>

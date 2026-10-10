@@ -11,7 +11,7 @@ import GameScreen from './GameScreen.jsx';
 // click goes on to the main menu.
 
 export default function Start({ onNext }) {
-  const tree = prune(useTree('StartScreen'), (b) => /FooterBar|TimedChallenges|LootBox|Tiles/.test(b.id.split('/').pop()));
+  const tree = prune(useTree('StartScreen'), (b) => /FooterBar|TimedChallenges|LootBox|Tiles/.test(b.id.split('/').pop()) || /CONNECTING/.test(b.text ?? ''));
   useEffect(() => {
     const on = (e) => {
       if (e.key === 'Tab' || e.key === 'Shift' || e.metaKey || e.ctrlKey || e.altKey) return;

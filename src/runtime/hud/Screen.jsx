@@ -57,7 +57,7 @@ function Box({ box, parent, k, ctx }) {
   if (box.type === 'circle') style.borderRadius = '50%';
   const kids = box.children?.length ? <Boxes boxes={box.children} parent={box} k={k} ctx={ctx} /> : null;
   const film = box.film ? filmNamed(box.film) : null;
-  const common = { 'data-id': box.id, 'data-type': box.type, 'data-wrap': box.wrap || undefined, hidden: box.hidden || undefined, style };
+  const common = { 'data-id': box.id, 'data-type': box.type, 'data-wrap': box.wrap || undefined, 'data-reveal': box.reveal || undefined, hidden: box.hidden || undefined, style };
   if (box.type === 'staticList' || box.type === 'staticTabList') {
     const cells = box.children ?? [];
     const horizontal = cells.length > 1 ? cells[1].x !== cells[0].x : true;

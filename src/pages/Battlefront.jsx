@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
 import { LEVELS, MODES, routeFor } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
@@ -18,13 +18,15 @@ const playable = (level, mode) => LEVELS.includes(level) && MODES.includes(mode)
 export default function Battlefront() {
   const { level, mode } = useParams();
   const navigate = useNavigate();
+  // (the address's knobs, ?gpu= and ?post=, go on with the player into the battle)
+  const { search } = useLocation();
   useDocumentTitle(level ? 'Battlefront · Hoth' : 'Battlefront');
   if (!level)
     return (
       <main className="bf-page">
         <h1 className="sr-only">Star Wars Battlefront II</h1>
         <Suspense fallback={null}>
-          <FrontEnd playable={playable} onPlay={(l, m) => navigate(routeFor(l, m))} />
+          <FrontEnd playable={playable} onPlay={(l, m) => navigate(`${routeFor(l, m)}${search}`)} />
         </Suspense>
       </main>
     );

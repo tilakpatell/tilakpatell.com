@@ -44,15 +44,16 @@
 .bf-loading-line { position: absolute; left: 6%; bottom: 3.5%; margin: 0; font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
 
 /* spawn */
-.bf-spawn { background: linear-gradient(90deg, rgba(4, 7, 10, 0.82) 0%, rgba(4, 7, 10, 0.15) 45%, transparent 70%); }
-.bf-spawn .bf-game-backdrop { display: none; }
-.bf-spawn-list { position: absolute; left: 5%; top: 17.8%; width: min(22rem, 40vw); max-height: 70%; margin: 0; padding: 0; overflow: auto; list-style: none; }
-.bf-spawn-cell { display: grid; grid-template-columns: 2.5rem 1fr auto; align-items: center; gap: 0.75rem; width: 100%; min-height: 3.5rem; padding: 0.4rem 1rem; border: 0; border-left: 2px solid transparent; background: rgba(8, 12, 18, 0.78); color: inherit; font: inherit; font-size: 1.1rem; letter-spacing: 0.05em; text-align: left; cursor: pointer; }
-.bf-spawn-cell + .bf-spawn-cell, li + li .bf-spawn-cell { margin-top: 2px; }
-.bf-spawn-cell[aria-pressed='true'], .bf-spawn-cell:focus-visible { border-left-color: var(--bf-ink, #f2f5f8); background: rgba(40, 52, 66, 0.86); outline: none; }
-.bf-spawn-cell[aria-disabled] { color: var(--bf-muted, #b9c2cc); cursor: default; }
-.bf-spawn-cell img { filter: invert(1); }
-.bf-spawn-points { position: absolute; left: 5%; bottom: 8%; margin: 0; letter-spacing: 0.08em; }
+.bf-spawn-screen { background: linear-gradient(90deg, rgba(4, 7, 10, 0.82) 0%, rgba(4, 7, 10, 0.15) 45%, transparent 70%); }
+.bf-spawn-screen .bf-game-backdrop { display: none; }
+.bf-spawn-screen-list { position: absolute; left: 5%; top: 17.8%; width: min(22rem, 40vw); max-height: 70%; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.bf-spawn-screen-cell { display: grid; grid-template-columns: 2.5rem 1fr auto; align-items: center; gap: 0.75rem; width: 100%; min-height: 3.5rem; padding: 0.4rem 1rem; border: 0; border-left: 2px solid transparent; background: rgba(8, 12, 18, 0.78); color: inherit; font: inherit; font-size: 1.1rem; letter-spacing: 0.05em; text-align: left; cursor: pointer; }
+.bf-spawn-screen-cell + .bf-spawn-screen-cell, li + li .bf-spawn-screen-cell { margin-top: 2px; }
+.bf-spawn-screen-cell[aria-pressed='true'], .bf-spawn-screen-cell:focus-visible { border-left-color: var(--bf-ink, #f2f5f8); background: rgba(40, 52, 66, 0.86); outline: none; }
+.bf-spawn-screen-cell[aria-disabled] { color: var(--bf-muted, #b9c2cc); cursor: default; }
+.bf-spawn-screen-cell img { filter: invert(1); }
+.bf-spawn-screen-where { position: absolute; left: calc(5% + min(22rem, 40vw) + 1rem); top: 17.8%; width: min(16rem, 30vw); margin: 0; padding: 0; list-style: none; }
+.bf-spawn-screen-points { position: absolute; left: 5%; bottom: 8%; margin: 0; letter-spacing: 0.08em; }
 
 /* the in-game menu's items: a button over each of the tree's boxes */
 .bf-menu-item { position: absolute; padding: 0; border: 0; background: transparent; cursor: pointer; pointer-events: auto; }

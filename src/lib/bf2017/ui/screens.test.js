@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { info, infoList } from './info';
-import { loading, screen, SCREENS } from './screens';
+import { faceFor, loading, screen, SCREENS } from './screens';
 
 // every box in a resolved tree, flat
 const flat = (boxes, out = []) => {
@@ -74,6 +74,12 @@ describe("a screen's tree, resolved", () => {
     const t = flat(s.boxes).find((b) => b.type === 'text' && b.font);
     expect(t.font.family).toMatch(/var\(--font-bf/);
     expect(flat(s.boxes).some((b) => /^rgb\(/.test(b.colour ?? ''))).toBe(true);
+  });
+
+  it('puts a face the open fonts lack on the text face, and Aurebesh on the site’s own', () => {
+    expect(faceFor('NewsGothicRomanBT80px')).toEqual({ family: 'var(--font-bf-text)', size: 80, weight: 400 });
+    expect(faceFor('Aurebesh14px').family).toBe('var(--font-aurebesh)');
+    expect(faceFor('Univers620BoldCondensed30px').family).toBe('var(--font-bf-hud)');
   });
 
   it('returns null for a screen it does not hold', () => {

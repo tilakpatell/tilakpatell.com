@@ -1,10 +1,19 @@
 #!/usr/bin/env node
-/* global window, requestAnimationFrame */
+/* global window, document, getComputedStyle, requestAnimationFrame */
 // The Battlefront world in headless Chromium, through its dev door
 // (window.__battlefront: src/components/battlefront/module.js), on one or
 // both of the node renderer's kinds:
 //
 //   node scripts/battlefront-check.mjs [--gpu webgl|webgpu|both] [--out dir] [--size 1280x720] [--wait 900000] [--ms 10000] [--quality low|mid|high|ultra]
+//   node scripts/battlefront-check.mjs --screens [--gpu webgl] [--out docs/superpowers/evidence/bf2017-screens] …
+//
+// --screens walks the game's own screens instead (the sixth design's lane
+// screens): /battlefront → Start → the main menu → Play → Multiplayer → the
+// multiplayer modes → Galactic Assault's levels → the Hoth card → the
+// loading screen → the spawn screen → deploy → the HUD → Escape → the
+// in-game menu → Resume → do('die') → the kill screen → do('win') → the end
+// of round, a shot of each; three screens' boxes read from the DOM against
+// the resolver's (src/lib/bf2017/ui/screens.js) within 1 px; no console error.
 //
 // Each leg opens /battlefront/hoth/galacticAssault?gpu=<leg> on a Vite dev
 // server, waits for the level's far list (the map whole), then shoots the
@@ -31,14 +40,15 @@ const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
-const gpu = arg('gpu', 'both');
+const gpu = arg('gpu', argv.includes('--screens') ? 'webgl' : 'both');
 const legs = gpu === 'both' ? ['webgl', 'webgpu'] : [gpu];
-const OUT = join(ROOT, arg('out', 'docs/superpowers/evidence/battlefront-lane5'));
+const OUT = join(ROOT, arg('out', argv.includes('--screens') ? 'docs/superpowers/evidence/bf2017-screens' : 'docs/superpowers/evidence/battlefront-lane5'));
 const [W, H] = arg('size', '1280x720').split('x').map(Number);
 const WAIT = Number(arg('wait', process.env.PHASE_WAIT ?? 900000));
 const MS = Number(arg('ms', 10000));
 const QUALITY = arg('quality', null); // a tier forced through tp-quality (low on a software GL), else the device's
 const ROUTE = '/battlefront/hoth/galacticAssault';
+const SCREENS = argv.includes('--screens');
 mkdirSync(OUT, { recursive: true });
 
 const { chromium } = await import('playwright-core');
@@ -140,8 +150,120 @@ async function leg(kind) {
   return { ...out, field };
 }
 
+// ── the screens' walk ────────────────────────────────────────────────────
+
+// Every drawn box of a screen in the page against the resolver's at the same
+// size: the worst difference in pixels, over the boxes both have.
+async function measure(page, name) {
+  const { screen } = await server.ssrLoadModule('/src/lib/bf2017/ui/screens.js');
+  const tree = screen(name, { viewport: { width: W, height: H } });
+  const want = new Map();
+  const walk = (bs) => bs.forEach((b) => (want.has(b.id) || want.set(b.id, b), walk(b.children ?? [])));
+  walk(tree.boxes);
+  const got = await page.evaluate((full) => {
+    const root = document.querySelector(`[data-screen="${full}"]`);
+    return [...(root?.querySelectorAll('[data-id]') ?? [])].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { id: el.dataset.id, x: r.x, y: r.y, w: r.width, h: r.height, shown: r.width > 0 && getComputedStyle(el).display !== 'none' };
+    });
+  }, tree.name);
+  let worst = 0;
+  let compared = 0;
+  for (const g of got) {
+    const b = want.get(g.id);
+    if (!b || !g.shown) continue;
+    compared++;
+    worst = Math.max(worst, Math.abs(g.x - b.x), Math.abs(g.y - b.y), Math.abs(g.w - b.w), Math.abs(g.h - b.h));
+  }
+  return { screen: tree.name, compared, worst: +worst.toFixed(2), within: worst <= 1 };
+}
+
+async function walkScreens(kind) {
+  const ctx = await browser.newContext({ viewport: { width: W, height: H } });
+  await ctx.addInitScript((q) => {
+    window.localStorage.setItem('tp-intro', '1');
+    window.localStorage.setItem('tp-start', '"universe"');
+    window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+    if (q) window.localStorage.setItem('tp-quality', q);
+  }, QUALITY);
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  const out = { leg: kind, walk: 'screens', quality: QUALITY ?? 'device', errors, shots: {}, boxes: [], steps: [] };
+  const shoot = async (name) => {
+    const file = join(OUT, `${name}.png`);
+    await page.screenshot({ path: file, timeout: WAIT });
+    out.shots[name] = file.slice(ROOT.length + 1);
+  };
+  const at = async (name, sel, timeout = 60000) => {
+    await page.waitForSelector(sel, { timeout, state: 'visible' });
+    await page.waitForTimeout(400);
+    out.steps.push(name);
+    await shoot(name);
+  };
+  // (the world's modules once first: the dev server finds three's node
+  // build late and re-bundles it, which breaks an import already under way)
+  await page.goto(`${base}/#${ROUTE}?gpu=${kind}`, { waitUntil: 'domcontentloaded', timeout: WAIT });
+  await page.waitForFunction(() => Boolean(window.__battlefront), null, { timeout: WAIT, polling: 1000 }).catch(() => {});
+  errors.length = 0;
+  await page.goto(`${base}/#/battlefront?gpu=${kind}`, { waitUntil: 'domcontentloaded', timeout: WAIT });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: WAIT });
+  await at('start', '.bf-start .bf-start-press');
+  await page.keyboard.press('Enter');
+  await at('main-menu', '[data-screen$="/MainMenuScreen"]');
+  out.boxes.push(await measure(page, 'MainMenuScreen'));
+  await page.click('[data-link$="/PlayScreen"]');
+  await at('play', '[data-tile="Multiplayer"]');
+  out.boxes.push(await measure(page, 'PlayScreen'));
+  await page.click('[data-tile="Multiplayer"]');
+  await at('multiplayer-category', '[data-tile="Assault Cat"]');
+  await page.click('[data-tile="Assault Cat"]');
+  await at('multiplayer', '[data-mode="PlanetaryBattles"]');
+  out.boxes.push(await measure(page, 'PlayMultiplayerScreen'));
+  await page.click('[data-mode="PlanetaryBattles"]');
+  await at('levels', '[data-level="hoth"]');
+  await page.click('[data-level="hoth"]');
+  await at('loading', '[data-game-screen$="/LoadingScreenWrapperWidget"]', WAIT);
+  for (const until = Date.now() + WAIT; ; ) {
+    const failed = errors.find((e) => /3D failed|device.*lost/i.test(e));
+    if (failed) throw new Error(failed.split('\n')[0]);
+    if (await page.evaluate(() => Boolean(window.__battlefront?.view?.().level?.loaded))) break;
+    if (Date.now() > until) throw new Error('the world never came up');
+    await page.waitForTimeout(1000);
+  }
+  await frames(page, 4);
+  await at('spawn', '[data-screen$="/SpawnOverlayScreen"]', WAIT);
+  out.deploy = await page.evaluate(() => window.__battlefront.do('deploy', { classId: 'd-orig-assault' }));
+  out.advance = await page.evaluate(() => window.__battlefront.do('advance', 5));
+  await page.waitForFunction(() => window.__battlefront.view().level.loaded, null, { timeout: WAIT, polling: 1000 });
+  await frames(page, 6);
+  await at('hud', '.bf-hud .hud-reticle-shape', WAIT);
+  await page.keyboard.press('Escape');
+  await at('ingame-menu', '[data-screen$="/IngameMenuMPScreen"]', WAIT);
+  await page.click('[data-item="RESUME"]');
+  await page.waitForSelector('[data-screen$="/IngameMenuMPScreen"]', { state: 'detached', timeout: WAIT });
+  await page.evaluate(() => window.__battlefront.do('die'));
+  await frames(page, 3);
+  await at('kill-screen', '.bf-kill-screen', WAIT);
+  await page.evaluate(() => window.__battlefront.do('win'));
+  await frames(page, 3);
+  await at('end-of-round', '.bf-eor [data-step="outcome"]', WAIT);
+  await ctx.close();
+  return out;
+}
+
 const results = [];
-for (const kind of legs) {
+if (SCREENS) {
+  for (const kind of legs) {
+    try {
+      results.push(await walkScreens(kind));
+    } catch (e) {
+      results.push({ leg: kind, walk: 'screens', failed: String(e).split('\n')[0], gates: true });
+    }
+  }
+}
+for (const kind of SCREENS ? [] : legs) {
   try {
     results.push(await leg(kind));
   } catch (e) {
@@ -161,10 +283,10 @@ if (done.length === 2) {
   results.push({ diff: { share: +(differ / px).toFixed(4), bound: 0.02 } });
 }
 for (const r of results) delete r.field;
-writeFileSync(join(OUT, 'check.json'), `${JSON.stringify({ route: ROUTE, size: [W, H], swiftshader: swift, results }, null, 2)}\n`);
+writeFileSync(join(OUT, 'check.json'), `${JSON.stringify({ route: SCREENS ? '/battlefront' : ROUTE, size: [W, H], swiftshader: swift, results }, null, 2)}\n`);
 console.log(JSON.stringify(results, null, 2));
 
 await browser.close();
 await server.close();
-const bad = results.some((r) => (r.failed && r.gates) || r.errors?.length);
+const bad = results.some((r) => (r.failed && r.gates) || r.errors?.length || r.boxes?.some((b) => !b.within));
 process.exit(bad ? 1 : 0);
