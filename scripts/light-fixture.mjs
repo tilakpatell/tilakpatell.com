@@ -5,6 +5,14 @@
 //
 //   node scripts/light-fixture.mjs [--tier ultra] [--post on|off] [--sky on|off]
 //     [--grid] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
+//   node scripts/light-fixture.mjs --camera [--size 1600x900] [--legs webgpu,webgl]
+//
+// --camera (lane C): scripts/light-fixture/camera.html instead, a figure
+// with a wall behind it and a corner beside it through the soldier camera
+// on the rig, a scripted 3 s orbit shot every half second into
+// docs/superpowers/evidence/galaxy-engine/C/orbit-<t>-<leg>.png, with the
+// orbit's largest frame-to-frame step, its shortest arm and the frames the
+// camera spent behind a wall's face (none, or it clipped) in camera.json.
 //
 // For each leg (?gpu=webgpu, and ?gpu=webgl: the node renderer on a WebGL 2
 // context) it opens scripts/light-fixture/index.html on a Vite dev server
@@ -77,6 +85,47 @@ const server = await createServer({ root: ROOT, configFile: join(ROOT, 'vite.con
 await server.listen();
 const base = `http://127.0.0.1:${server.httpServer.address().port}`;
 const browser = await chromium.launch({ executablePath: exe, args });
+
+if (argv.includes('--camera')) {
+  const out = join(ROOT, 'docs/superpowers/evidence/galaxy-engine/C');
+  mkdirSync(out, { recursive: true });
+  const rows = [];
+  for (const leg of legs) {
+    const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message.split('\n')[0]));
+    page.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && errors.push(m.text().slice(0, 300)));
+    const row = { leg, shots: [] };
+    try {
+      await page.goto(`${base}/scripts/light-fixture/camera.html?gpu=${leg}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+      await page.waitForFunction(() => window.__cam?.ready || window.__cam?.error, null, { timeout: 240000 });
+      const err = await page.evaluate(() => window.__cam.error);
+      if (err) throw new Error(err);
+      row.backend = await page.evaluate(() => window.__cam.backend);
+      for (let i = 0; i <= 6; i++) {
+        const s = i / 2;
+        const at = await page.evaluate((x) => window.__cam.to(x), s);
+        const name = `orbit-${s.toFixed(1)}-${leg}.png`;
+        writeFileSync(join(out, name), await page.locator('canvas').screenshot());
+        row.shots.push({ name, t: Number(at.t.toFixed(2)), yaw: Number(at.yaw.toFixed(1)), arm: Number(at.arm.toFixed(3)) });
+      }
+      const log = await page.evaluate(() => window.__cam.log());
+      Object.assign(row, { frames: log.frames, maxStepCm: Number((log.maxStep * 100).toFixed(2)), minArm: Number(log.minArm.toFixed(3)), behindWall: log.behindWall });
+    } catch (e) {
+      row.error = String(e.message ?? e).split('\n')[0];
+    }
+    if (errors.length) row.errors = [...new Set(errors)].slice(0, 5);
+    rows.push(row);
+    await page.close();
+  }
+  await browser.close();
+  await server.close();
+  writeFileSync(join(out, 'camera.json'), `${JSON.stringify({ size: `${W}x${H}`, adapter: swift ? 'swiftshader' : 'system', rows }, null, 2)}\n`);
+  console.log('| leg | backend | frames | largest step cm | shortest arm m | frames behind a wall |');
+  console.log('|---|---|---|---|---|---|');
+  for (const r of rows) console.log(r.error ? `| ${r.leg} | failed: ${r.error} |` : `| ${r.leg} | ${r.backend} | ${r.frames} | ${r.maxStepCm} | ${r.minArm} | ${r.behindWall} |`);
+  process.exit(rows.some((r) => (r.error && r.leg !== 'webgpu') || r.behindWall > 0) ? 1 : 0);
+}
 
 const raw = async (png) => sharp(png).raw().toBuffer();
 const meanDiff = (a, b) => {

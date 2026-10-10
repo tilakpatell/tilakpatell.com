@@ -51,3 +51,44 @@ One lane per session. R and T run at once and own different files (`src/lib/thre
 - `GPU=webgpu node scripts/perf-probe.mjs` and `GPU=webgl …` on the galaxy journeys.
 - `node scripts/galaxy-check.mjs surface hoth,endor,tatooine,kamino` and `space endor,hoth,geonosis`.
 - `node scripts/health/measure.mjs`: `glsl-sites` lower after each port; the closure guard green.
+
+## Fidelity: shadows, volumetrics, particles, cameras, scatter, headroom
+
+The design: `docs/superpowers/specs/2026-10-10-battlefront-fidelity-design.md` (what is not yet robust on `main`, measured from lane R's fixture and the records; what three r186 ships for each; six lanes). Each lane adds one file family to the stack and proves it on `scripts/light-fixture.mjs` with a flag of its own, on both backend kinds (the WebGPU leg on the owner's laptop: the cloud's software device dies on the fixture).
+
+| Lane | Plan | What | Starts from | Blocked by |
+|---|---|---|---|---|
+| **S** | `2026-10-10-bf-fidelity-laneS-shadows.md` | calibration to the game's Hoth; four soft cascades (`CSMShadowNode`, PCSS from the sun's angular radius); the record's shadow sun; cloud and contact shadows; the shadow term shared with the particles | `main` | nothing |
+| **V** | `2026-10-10-bf-fidelity-laneV-volumetrics.md` | the placed volumetric cones and the light-cone effects ray-marched; fog with the record's participating media; god rays off the real sun; the sun's and the explosions' flares from the records; motion blur and depth of field as data | `main` | S's cascade light for the god rays (reads its branch; `rays` until then) |
+| **X** | `2026-10-10-bf-fidelity-laneX-particles.md` | the emitter reader (`ScalableEmitterDocument` → `src/data/bf2017/fx/`); particles on the GPU (compute) or the CPU (instanced) from the tables; a level's `effects.json` with its cells; exhaust and contrails on ships | `main` | nothing (the export on the desktop or the bucket by key) |
+| **C** (done, `claude/fidelity-c-cameras`) | `2026-10-10-bf-fidelity-laneC-cameras.md` | the soldier, aim, vehicle, overview and cinematic cameras from `cameras.json`, one rig with recoil and shake; Hoth's walker on it behind `site.level` | `main` | nothing: P0's `queries.ray` is on `main` (#834) and the arm casts through it |
+| N | `2026-10-10-bf-fidelity-laneN-scatter.md` | grass, ferns, rocks and backdrop trees from the game's scatter tables, the mask derived until the export solves it | `main` after L (#831) and T's `foliageNodes` | L, T |
+| U | `2026-10-10-bf-fidelity-laneU-headroom.md` | FSR1/TAAU upscaling as the pace's first step; `BatchedMesh` and bundles for the level's statics; occlusion | `main` after L | L; the owner's laptop for the tables |
+
+S, V, X and C run at once on disjoint files (`light/{calibrate,shadows,clouds,contact}.js` and `sun.js`; `light/{volumetrics,flare}.js` and `fog.js`, `post.js`, `passes.js`; `src/lib/three/particles/` and `scripts/bf2017-emitters.mjs`; `src/lib/three/camera/`). `light/apply.js` is touched by S and V (each additive): merge `origin/main` before the PR and keep both sides. `surface/scene.js` is touched by C (one call site) and by lanes L, T, P0 and P1: the same rule.
+
+### Lane C: done
+
+- **`src/lib/three/camera/`**: `soldier.js` (`soldierPose(state, rows, { yaw, pitch, stance, aiming, weaponId, level, side, height, dt, castArm, floorAt, memo })` → `{ at, lookAt, fov, roll, arm, pitch, cull }`; `armFor`, `cullFor`, `createSoldierMemo`), `aim.js` (`aimFov(state, rows, dt, { aiming, weaponId, level })`, `zoomLevel`), `vehicle.js` (`vehicleLook`, `vehiclePose`, `redirect`, `redirectFor`, `createVehicleMemo`), `overview.js` (`overviewPose(cameras, objective, { mode })`, `cameraForward`), `cinematic.js` (`lensToFov`, `lensToDof`, `motionBlurFor`, `dofFor`, `postFor`), `rig.js` (`createCameraRig(camera, { recoil, shake, listener })` → `set`, `kick`, `shake`, `update`, `listener`, `state`). The five pose files import no three.js; `rig.js` calls only the camera's own methods. Every number from `cameras.json` (and `maps/hoth.json`'s `cameras`, `hoth.lighting.json`'s `motionBlur`); the ones the records lack are named with a comment (`FOV_DEFAULT 70`, `ZOOM_TIME 0.2`, `PIVOT`, `SHOULDER 0.35`, `WALL_CLEAR 0.02`, `TICK 30`, `LIMIT_SETTLE 6`, `VEHICLE_ARM 8`, `RECOIL_SPRING`, `SHAKE_*`, `FOCUS_DEFAULT 1000`, `MAXBLUR 0.01`).
+- **Readings of the records** worth checking against the game: `reducedArm.length` is metres (the arm reaches 0.5 m at `ReduceMaxPitch` 70, so 0.66 m at the clamp of 55), and the reduction is on looking up (the camera low); a zoom speed of 1 is `ZOOM_TIME`; a seat's `Inertia` is the share of the look's rate kept per 30 Hz tick; each `RedirectData` entry converts one motion the caller names, in the record's order, at its `ConversionRate`.
+- **The wall**: the arm is cast past the camera by the padding (so a wall coming into reach is met at full length, not snapped to), blended to the hit less 0.17 at 5 per second in and 3 out, and never past the hit less `WALL_CLEAR`. A hard limit of the near plane's 0.12 passed the body's flutter against a wall straight to the camera at grazing angles (2.6 cm steps in the corner test); 0.02 m gives 1.4 cm.
+- **Hoth**: `surface/scene.js`'s `follow()` hands the walk to `gameFollow` where `site.level` is set (not on a ride, not in a zone); the arm casts through `createQueries(physics)` once `usePhysics` hands the level's world over, else down the land's height in 0.25 m steps; the walker's own kick and trauma (`feel`) stay on top. `sceneCamera.test.js` holds `follow()` byte for byte to its hash before the lane, less the one guard line.
+- **Tests**: 35 in `src/lib/three/camera/` (7 files; `camera.test.js` the robustness set: a wall at 0.6 m, the floor, the pole through a 720° sweep at ±55 with the right vector level to under 0.001, a walker pressed into a 90° corner for 10 s at a 10°/s orbit with no step over 2 cm, the AT-AT driver-to-gunner change mid-swing settling under ±37.5° within 1 s with no step over 1°, a zoom released at 0.1 s easing back from where it was) and 2 in `sceneCamera.test.js`.
+- **Shots** (`docs/superpowers/evidence/galaxy-engine/C/`): `node scripts/light-fixture.mjs --camera` (a figure, a wall 0.6 m behind, a corner, a 3 s orbit over 180°; webgl leg: 181 frames, largest step 2.4 cm at 60°/s, shortest arm 0.463 m, no frame behind a wall); Hoth on foot before (the walker's 4.8 m arm at 60°) and after (1.2 m on the shoulder at 70°), `hoth-walk-*`.
+
+### Lane C: left
+
+- The WebGPU leg of `--camera` on the owner's laptop (the cloud's device is lost, as for lane R).
+- A 10 s walk into the hangar's corner on Hoth with the level's physics up: the cloud run walked open snow at about 1.5 frames a second, too slow to read jitter from; the corner is held by the pure test and the fixture.
+- Lane V's `passesFor` to take `postFor`'s `{ kind: 'dof' }` and `{ kind: 'motionBlur' }` (data only here; V's branch was not pushed when this lane closed).
+- The surface's look-up limit is still the walker's (`CAM.pitch`, 26° up); the pose clamps the look-down to the game's 55°. The vehicles' rides keep the walker's ride camera until lane 5 or P3 seats them on `vehiclePose`.
+- `cull` is returned (the record's distances by stance) and not yet used to fade the player's body: at 1.8 m standing it would fade the body at the arm's full 1.2 m, so its meaning wants the game's own check.
+- **Lane 5's Task 4**: its cameras are these; lane 5 writes `input.js` only and imports `soldierPose`, `vehiclePose`, `overviewPose`, `createCameraRig` from here.
+
+### What the other work must know
+
+- **The Battlefront game, lane 5** (not started): its Task 4 (the cameras) is lane C's `src/lib/three/camera/`; its effects come from lane X's `createEffects`; its lighting from `applyGameLight` as before. Lane 5 writes none of these.
+- **Lane F of #802** (effects' look, `src/lib/three/fx/gameLook.js`, not started): lane X reads the game's emitters themselves, so F's sprite-sheet resolution is X's task 1 and F's lane is not needed as planned; its sound map (task 4) stands on its own.
+- **Lane P4** (hit effects by material, #821): calls lane X's `spawn(name)` with the material grid's effect names once X is on `main`; until then its own look.
+- **Lane L** (#831): lanes V, X and N write `volumes.json`, `effects.json` and `scatter.json` beside the pack, never in `level.json`.
+- **Lane T** (#826, draft): the twins are what lanes N and X's sprites build on (`foliageNodes`); T's flip is unaffected.

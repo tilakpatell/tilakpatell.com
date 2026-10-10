@@ -153,6 +153,12 @@ import { gameSite } from '../../../lib/three/gameLight';
 import { gameLightOf } from '../../../data/bf2017/light/index';
 import { createGameLit } from './gameLit';
 import { createPlayerBody } from './playerBody';
+import CAMERAS from '../../../data/bf2017/cameras.json';
+import { createSoldierMemo, soldierPose } from '../../../lib/three/camera/soldier';
+import { zoomLevel } from '../../../lib/three/camera/aim';
+import { createCameraRig } from '../../../lib/three/camera/rig';
+import { createQueries } from '../../../lib/physics/queries';
+import { filterOf } from '../../../lib/physics/groups';
 import { assetPool, worldScope } from '../../../lib/assetLoad';
 
 const V = THREE.Vector3;
@@ -2830,6 +2836,7 @@ export async function create(canvas, ctx) {
     // down the sights: in close over the shoulder, the field narrowed by the weapon's zoom
     const adsWant = state.ads && !riding && state.phase === 'walk' && !me().saber ? 1 : 0;
     state.adsK += (adsWant - state.adsK) * (1 - Math.exp(-dt * 10));
+    if (gameCam && !riding && !state.zone) return gameFollow(dt, p, adsWant);
     const zoom = me().weapon?.zoom ?? 1.4;
     const fov = rideFov(baseFov, riding ? state.riding.state.speed : 0, riding ? state.riding.spec : null, { calm: reduced }) / (1 + (zoom - 1) * state.adsK);
     if (Math.abs(camera.fov - fov) > 0.01) {
@@ -2883,6 +2890,37 @@ export async function create(canvas, ctx) {
     if (state.shake > 0) feel.trauma(state.shake);
     state.shake = 0;
     feel.setBaseFov(fov);
+    feel.update(dt, camera);
+  }
+
+  // ── The game's camera (lib/three/camera): the walker on a world with a
+  // level pack is seen through the 2017 soldier's (cameras.json): the arm,
+  // its pitch limits and its wall blend, the aim's field. The arm is cast
+  // through the level's physics world where it has one (lane P0's), else
+  // down the land's height alone. A world without a level keeps follow().
+  const CAM_RAY = filterOf('floor', 'object');
+  // (a weapon the rows don't name zooms as the trooper's E-11)
+  const AIM_FALLBACK = 'e11';
+  const gameCam = site.level ? { memo: createSoldierMemo(), rig: createCameraRig(camera, { listener: CAMERAS.rows.soldier.listener, shake: { factor: CAMERAS.rows.soldier.shake } }), rays: null } : null;
+  // the land's height only: the first step down the arm under the ground
+  const heightCast = (from, dir, len) => {
+    for (let t = 0.25; t <= len + 1e-6; t += 0.25) if (from[1] + dir[1] * t < world.heightAt(from[0] + dir[0] * t, from[2] + dir[2] * t)) return t;
+    return null;
+  };
+  const armCast = (from, dir, len) => (gameCam.rays ? gameCam.rays.ray(from, dir, len, { groups: CAM_RAY }) : heightCast(from, dir, len));
+  function gameFollow(dt, p, aiming) {
+    const weaponId = me().weapon?.id;
+    const pose = soldierPose(p, CAMERAS.rows, { yaw: state.cam.yaw, pitch: -state.cam.pitch, stance: body?.pose ?? 'stand', aiming: Boolean(aiming), weaponId: zoomLevel(CAMERAS.rows, weaponId) ? weaponId : AIM_FALLBACK, dt, castArm: armCast, floorAt: (x, z) => groundAt(world, x, z, p.y + 0.6, 0), memo: gameCam.memo });
+    gameCam.rig.set(pose);
+    gameCam.rig.update(dt);
+    // (so follow() takes over from here, with no jump, on a ride or in a zone)
+    camPos.copy(camera.position);
+    camLook.set(...pose.lookAt);
+    camInit = true;
+    if (Math.abs(state.kick.x) > 1e-4) camera.rotateX(state.kick.x * 0.04); // your own shot's kick
+    if (state.shake > 0) feel.trauma(state.shake);
+    state.shake = 0;
+    feel.setBaseFov(pose.fov);
     feel.update(dt, camera);
   }
 
@@ -3769,6 +3807,7 @@ export async function create(canvas, ctx) {
         body?.dispose();
         body = null;
         bodyPhysics = null;
+        if (gameCam) gameCam.rays = null;
         return;
       }
       soldierBook ??= (await import('../../../data/bf2017/physics/soldier.json')).default;
@@ -3776,6 +3815,8 @@ export async function create(canvas, ctx) {
       bodyPhysics = physics;
       bodyDrives = drive;
       body = bodyFor(me().st);
+      // (the camera's arm cast through the same world, once it has come)
+      if (gameCam) Promise.resolve(physics).then((p) => bodyPhysics === physics && p && (gameCam.rays = createQueries(p)), () => {});
     },
     zone(id = null) {
       const z = id && site.zones.find((o) => o.id === id);
