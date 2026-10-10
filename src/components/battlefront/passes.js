@@ -14,6 +14,17 @@
 //
 // A pack without the file skips its pass with one log line.
 //
+// The picture lanes not yet on main when this was written (2026-10-10), and
+// where each lands here (the sixth design's picture lane, task 4):
+// - Q6 (the LUT after a linear tonemap, the five-Gaussian bloom, the HBAO
+//   numbers, the painted sky): its passes come through applyGameLight's
+//   `passes` into rt.gfx.post (module.js) with nothing to add; the record's
+//   grade must stay one application (the stack's lut pass, not a second).
+// - N (the scatter): a levelScatter(level, tier) beside levelVolumes on the
+//   pack's scatter.json, its masks from Q2's ground (moved by packFrame.js).
+// - U (FSR1/TAAU, BatchedMesh, occlusion): the upscale as the pace's first
+//   step in rt.gfx; the statics as lane L's levelScene draws them.
+//
 //   EFFECT_TIERS, VOLUME_TIERS
 //   createWorldEffects({ scene, renderer, tier, level, light, deps })
 //     → Promise<null | { update(dt, camera, wind), stats, dispose() }>
