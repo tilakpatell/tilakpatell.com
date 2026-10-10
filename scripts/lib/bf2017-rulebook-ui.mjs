@@ -25,23 +25,14 @@
 // The era rule (isEra): a widget, screen, mode, level or planet of the sequel is
 // left out and listed in `_skipped`.
 
-import {
-  deref,
-  follow,
-  isSequel,
-  rootOf,
-  shortName,
-  stringHash,
-} from "./bf2017-ebx.mjs";
-import { typeOf } from "./bf2017-rulebook-look.mjs";
+import { deref, follow, isSequel, rootOf, shortName, stringHash } from './bf2017-ebx.mjs';
+import { typeOf } from './bf2017-rulebook-look.mjs';
 
 const r2 = (v) => Math.round(v * 100) / 100;
 const r4 = (v) => Math.round(v * 10000) / 10000;
 const v3 = (p) => (p ? [r4(p.x), r4(p.y), r4(p.z)] : null);
-const xy = (p, a = "X", b = "Y") =>
-  p && typeof p[a] === "number" ? [r2(p[a]), r2(p[b])] : null;
-export const hashKey = (n) =>
-  `#${(n >>> 0).toString(16).toUpperCase().padStart(8, "0")}`;
+const xy = (p, a = 'X', b = 'Y') => (p && typeof p[a] === 'number' ? [r2(p[a]), r2(p[b])] : null);
+export const hashKey = (n) => `#${(n >>> 0).toString(16).toUpperCase().padStart(8, '0')}`;
 const GUIDISH = /^[0-9A-F]{8}-[0-9A-F]{4}-/i;
 const asset = (v) => v?.$asset ?? null;
 // The era rule: the sequel's names, and its seasons' and act 3's folders
@@ -54,7 +45,7 @@ export const isEra = (n) => isSequel(n) || /^(S1|S9[^/]*|A3)\//i.test(n);
 export function englishOf(key, strings) {
   const table = strings?.strings ?? strings ?? {};
   if (!key) return undefined;
-  return key.startsWith("#") ? table[key.slice(1)] : table[stringHash(key)];
+  return key.startsWith('#') ? table[key.slice(1)] : table[stringHash(key)];
 }
 
 function stringsFor(keys, strings) {
@@ -68,14 +59,12 @@ function stringsFor(keys, strings) {
 
 // A LocalizedStringId / LocalizedString / CheckedLocalizedString's key.
 function keyOfString(a, v, keys) {
-  const o = v && typeof v.$ref === "number" ? deref(a, v) : v;
+  const o = v && typeof v.$ref === 'number' ? deref(a, v) : v;
   if (!o) return null;
   let k = null;
-  if (o.$type === "LocalizedStringId" && o.StringHash)
-    k = hashKey(o.StringHash);
+  if (o.$type === 'LocalizedStringId' && o.StringHash) k = hashKey(o.StringHash);
   else if (o.Sid) k = o.Sid;
-  else if (o.$type === "LocalizedString" && o.String)
-    return { literal: o.String };
+  else if (o.$type === 'LocalizedString' && o.String) return { literal: o.String };
   if (k) keys.add(k);
   return k;
 }
@@ -86,12 +75,12 @@ function keyOfString(a, v, keys) {
 // field, which cell's event goes to which link.
 function wiring(a) {
   const r = rootOf(a);
-  const idx = (ref) => (ref && typeof ref.$ref === "number" ? ref.$ref : -1);
+  const idx = (ref) => (ref && typeof ref.$ref === 'number' ? ref.$ref : -1);
   const strings = new Map(); // target object index → [{ field, key }]
   const gotos = new Map(); // source object index → [link]
   for (const c of r.PropertyConnections ?? []) {
     const s = a.objects[idx(c.Source)];
-    if (s?.$type === "CheckedLocalizedStringEntityData" && s.Sid) {
+    if (s?.$type === 'CheckedLocalizedStringEntityData' && s.Sid) {
       const t = idx(c.Target);
       if (!strings.has(t)) strings.set(t, []);
       strings.get(t).push({ field: c.TargetField, key: s.Sid });
@@ -102,7 +91,7 @@ function wiring(a) {
     if (!feeds.has(idx(c.Source))) feeds.set(idx(c.Source), new Set());
     feeds.get(idx(c.Source)).add(idx(c.Target));
     const t = a.objects[idx(c.Target)];
-    if (t?.$type === "GotoUILinkTargetEntityData" && asset(t.LinkTarget)) {
+    if (t?.$type === 'GotoUILinkTargetEntityData' && asset(t.LinkTarget)) {
       const s = idx(c.Source);
       if (!gotos.has(s)) gotos.set(s, []);
       gotos.get(s).push(asset(t.LinkTarget));
@@ -114,8 +103,7 @@ function wiring(a) {
   for (const c of r.PropertyConnections ?? []) {
     if (iface && a.objects[idx(c.Source)] === iface) {
       const el = a.objects[idx(c.Target)];
-      if (el?.$type === "TextElementData")
-        (slots[c.SourceField] ??= []).push(elementId(a, idx(c.Target)));
+      if (el?.$type === 'TextElementData') (slots[c.SourceField] ??= []).push(elementId(a, idx(c.Target)));
     }
   }
   return { strings, gotos, slots, feeds };
@@ -132,46 +120,35 @@ function elementOf(a, i, ctx, w, depth = 0) {
   if (!o || depth > 24) return null;
   const el = { id: elementId(a, i), type: typeOf(o.$type) };
   if (o.Anchor) el.anchor = xy(o.Anchor);
-  if (o.Size) el.size = xy(o.Size, "x", "y");
+  if (o.Size) el.size = xy(o.Size, 'x', 'y');
   if (o.Offset) el.offset = xy(o.Offset);
-  if (o.LayoutMode === "UILayoutMode_PositionExpansion")
+  if (o.LayoutMode === 'UILayoutMode_PositionExpansion')
     el.layout = {
       fill: true,
-      expansion: [
-        o.Expansion?.X ?? 0,
-        o.Expansion?.Y ?? 0,
-        o.Expansion?.Width ?? 0,
-        o.Expansion?.Height ?? 0,
-      ].map(r2),
+      expansion: [o.Expansion?.X ?? 0, o.Expansion?.Y ?? 0, o.Expansion?.Width ?? 0, o.Expansion?.Height ?? 0].map(r2),
       position: xy(o.Position),
     };
-  if (o.Color && (o.Color.x !== 1 || o.Color.y !== 1 || o.Color.z !== 1))
-    el.colour = v3(o.Color);
-  if (typeof o.PaletteIndex === "number" && o.PaletteIndex)
-    el.palette = o.PaletteIndex;
-  if (typeof o.Alpha === "number" && o.Alpha !== 1) el.alpha = r4(o.Alpha);
+  if (o.Color && (o.Color.x !== 1 || o.Color.y !== 1 || o.Color.z !== 1)) el.colour = v3(o.Color);
+  if (typeof o.PaletteIndex === 'number' && o.PaletteIndex) el.palette = o.PaletteIndex;
+  if (typeof o.Alpha === 'number' && o.Alpha !== 1) el.alpha = r4(o.Alpha);
   if (o.Visible === false) el.visible = false;
-  if (o.$type === "TextElementData") {
+  if (o.$type === 'TextElementData') {
     el.font = asset(o.FontStyle) ? shortName(asset(o.FontStyle)) : null;
-    if (typeof o.FontPaletteIndex === "number" && o.FontPaletteIndex)
-      el.fontPalette = o.FontPaletteIndex;
+    if (typeof o.FontPaletteIndex === 'number' && o.FontPaletteIndex) el.fontPalette = o.FontPaletteIndex;
     el.align = [o.HorizontalAlignment, o.VerticalAlignment].map((s) =>
-      String(s ?? "")
-        .replace(/^UIText(Horizontal|Vertical)Alignment_/, "")
+      String(s ?? '')
+        .replace(/^UIText(Horizontal|Vertical)Alignment_/, '')
         .toLowerCase(),
     );
     const bound = w.strings.get(i)?.[0]?.key;
-    const literal = o.LocalizedString
-      ? keyOfString(a, o.LocalizedString, ctx.keys)
-      : null;
+    const literal = o.LocalizedString ? keyOfString(a, o.LocalizedString, ctx.keys) : null;
     if (bound) {
       el.text = bound;
       ctx.keys.add(bound);
     } else if (o.StaticStringIdHash) {
       el.text = hashKey(o.StaticStringIdHash);
       ctx.keys.add(el.text);
-    } else if (o.LocalizedStringId)
-      el.text = keyOfString(a, o.LocalizedStringId, ctx.keys);
+    } else if (o.LocalizedStringId) el.text = keyOfString(a, o.LocalizedStringId, ctx.keys);
     else if (literal?.literal) el.literal = literal.literal;
     else if (o.Text) el.literal = o.Text;
   }
@@ -180,30 +157,27 @@ function elementOf(a, i, ctx, w, depth = 0) {
     el.shape = shortName(shape);
     ctx.shapes.add(shape);
   }
-  if (asset(o.Image)) el.svg = asset(o.Image).replace(/^UI\/SVG\//, "");
+  if (asset(o.Image)) el.svg = asset(o.Image).replace(/^UI\/SVG\//, '');
   if (asset(o.Movie)) el.film = shortName(asset(o.Movie));
-  if (o.$type === "RectangleElementData" || o.$type === "CircleElementData") {
+  if (o.$type === 'RectangleElementData' || o.$type === 'CircleElementData') {
     el.fill =
-      String(o.FillMode ?? "")
-        .replace(/^WSUIFillMode_/, "")
+      String(o.FillMode ?? '')
+        .replace(/^WSUIFillMode_/, '')
         .toLowerCase() || null;
     if (o.LineWidth) el.line = o.LineWidth;
     if (o.Radius) el.radius = o.Radius;
   }
-  if (o.$type === "LineElementData" && o.StaticPoints)
+  if (o.$type === 'LineElementData' && o.StaticPoints)
     Object.assign(el, {
       points: o.StaticPoints.map((p) => [r2(p.x), r2(p.y)]),
       line: o.LineWidth,
     });
-  if (o.$type === "StackingContainerData")
+  if (o.$type === 'StackingContainerData')
     el.stack = {
-      direction: String(o.Direction ?? "").replace(
-        /^StackingContainerDirection_/,
-        "",
-      ),
+      direction: String(o.Direction ?? '').replace(/^StackingContainerDirection_/, ''),
       spacing: o.Spacing ?? 0,
     };
-  if (o.$type === "UIElementWidgetReferenceEntityData" && asset(o.Blueprint)) {
+  if (o.$type === 'UIElementWidgetReferenceEntityData' && asset(o.Blueprint)) {
     const name = asset(o.Blueprint);
     if (isEra(name)) {
       ctx.skipped.add(name);
@@ -227,19 +201,10 @@ function elementOf(a, i, ctx, w, depth = 0) {
       spacing: o.Spacing ?? 0,
       cells: [],
     };
-    const all = a.objects
-      .map((c, ci) => (c?.$type === "StaticListCellEntityData" ? ci : -1))
-      .filter((ci) => ci >= 0);
+    const all = a.objects.map((c, ci) => (c?.$type === 'StaticListCellEntityData' ? ci : -1)).filter((ci) => ci >= 0);
     const mine = all.filter((ci) => w.feeds.get(ci)?.has(i));
-    const order = new Map(
-      (deref(a, rootOf(a).Object)?.Components ?? []).map((c, k) => [
-        c?.$ref,
-        k,
-      ]),
-    );
-    const cells = (mine.length ? mine : all).sort(
-      (x, y) => (order.get(x) ?? 1e9 + x) - (order.get(y) ?? 1e9 + y),
-    );
+    const order = new Map((deref(a, rootOf(a).Object)?.Components ?? []).map((c, k) => [c?.$ref, k]));
+    const cells = (mine.length ? mine : all).sort((x, y) => (order.get(x) ?? 1e9 + x) - (order.get(y) ?? 1e9 + y));
     cells.forEach((ci) => {
       const c = a.objects[ci];
       const bp = asset(c.Blueprint);
@@ -283,18 +248,8 @@ function treeOf(root, name, ctx) {
       .filter(Boolean),
   );
   const links = [];
-  w.gotos.forEach((targets, from) =>
-    targets.forEach((to) => links.push({ from: elementId(a, from), to })),
-  );
-  const states = [
-    ...new Set(
-      a.objects
-        .filter(
-          (o) => o?.$type === "UIStateValueReaderData" && asset(o.StateGroup),
-        )
-        .map((o) => shortName(asset(o.StateGroup))),
-    ),
-  ];
+  w.gotos.forEach((targets, from) => targets.forEach((to) => links.push({ from: elementId(a, from), to })));
+  const states = [...new Set(a.objects.filter((o) => o?.$type === 'UIStateValueReaderData' && asset(o.StateGroup)).map((o) => shortName(asset(o.StateGroup))))];
   const out = {
     type: top ? typeOf(top.$type) : null,
     size: xy(top?.Size),
@@ -303,9 +258,9 @@ function treeOf(root, name, ctx) {
   if (Object.keys(w.slots).length) out.slots = w.slots;
   if (links.length) out.links = links;
   if (states.length) out.states = states;
-  if (top?.$type === "NavigationFrameWidgetData")
-    out.navigation = String(top.NavigationLevel ?? "")
-      .replace(/^NavigationFrameLevel_/, "")
+  if (top?.$type === 'NavigationFrameWidgetData')
+    out.navigation = String(top.NavigationLevel ?? '')
+      .replace(/^NavigationFrameLevel_/, '')
       .toLowerCase();
   links.forEach((l) => ctx.links.add(l.to));
   return out;
@@ -314,8 +269,7 @@ function treeOf(root, name, ctx) {
 // The screens the site draws: the front end's, and the in-game ones the
 // battle uses (the spawn overlay, the in-game menu, the end of round, the
 // scoreboard and the kill card).
-export const SCREEN_GLOB =
-  /^UI\/(Frontend\/Screens\/.+|InGame\/(Spawn|InGameMenu|EndOfRound|Scoreboard|Death)\/.+|Customize\/Screens\/SpawnOverlayScreen)$/;
+export const SCREEN_GLOB = /^UI\/(Frontend\/Screens\/.+|InGame\/(Spawn|InGameMenu|EndOfRound|Scoreboard|Death)\/.+|Customize\/Screens\/SpawnOverlayScreen)$/;
 
 export function screensOf(root, { names, strings = null, depth = 6 } = {}) {
   const ctx = {
@@ -338,9 +292,7 @@ export function screensOf(root, { names, strings = null, depth = 6 } = {}) {
   }
   // the widgets the trees reference, breadth first to `depth`
   for (let d = 0; d < depth; d++) {
-    const next = [...ctx.want].filter(
-      (n) => !(n in widgets) && !(n in screens),
-    );
+    const next = [...ctx.want].filter((n) => !(n in widgets) && !(n in screens));
     if (!next.length) break;
     ctx.want.clear();
     for (const n of next) widgets[n] = treeOf(root, n, ctx);
@@ -360,9 +312,7 @@ export function screensOf(root, { names, strings = null, depth = 6 } = {}) {
 // A link target → the screen of the same short name (the game pairs them in
 // its screen logic prefabs, which the export does not resolve), else null.
 export function linkTable(links, screenNames) {
-  const byShort = new Map(
-    screenNames.map((n) => [shortName(n).toLowerCase(), n]),
-  );
+  const byShort = new Map(screenNames.map((n) => [shortName(n).toLowerCase(), n]));
   return Object.fromEntries(
     links
       .filter((l) => !isEra(l))
@@ -382,15 +332,12 @@ const pt = ([x, y]) => `${fmt(x)} ${fmt(y)}`;
 export function cornersToPath(corners) {
   const P = corners.map((c) => [c.Position.x, c.Position.y]);
   const n = P.length;
-  if (n < 2) return "";
+  if (n < 2) return '';
   const parts = [];
   for (let i = 0; i < n; i++) {
     const c = corners[i];
     const p = P[i];
-    const kind = String(c.CornerType ?? "").replace(
-      /^DiceUIVectorPathCornerType_/,
-      "",
-    );
+    const kind = String(c.CornerType ?? '').replace(/^DiceUIVectorPathCornerType_/, '');
     const a = P[(i - 1 + n) % n];
     const b = P[(i + 1) % n];
     const da = [a[0] - p[0], a[1] - p[1]];
@@ -398,37 +345,34 @@ export function cornersToPath(corners) {
     const la = Math.hypot(...da);
     const lb = Math.hypot(...db);
     const r = c.Radius ?? 0;
-    if (kind === "Miter" || !r || !la || !lb || n < 3) {
-      parts.push(`${i ? "L" : "M"}${pt(p)}`);
+    if (kind === 'Miter' || !r || !la || !lb || n < 3) {
+      parts.push(`${i ? 'L' : 'M'}${pt(p)}`);
       continue;
     }
-    const cos = Math.max(
-      -1,
-      Math.min(1, (da[0] * db[0] + da[1] * db[1]) / (la * lb)),
-    );
+    const cos = Math.max(-1, Math.min(1, (da[0] * db[0] + da[1] * db[1]) / (la * lb)));
     const theta = Math.acos(cos);
     if (theta < 1e-3 || Math.PI - theta < 1e-3) {
-      parts.push(`${i ? "L" : "M"}${pt(p)}`);
+      parts.push(`${i ? 'L' : 'M'}${pt(p)}`);
       continue;
     }
     const tan = Math.tan(theta / 2);
-    const cut = Math.min(kind === "Bevel" ? r : r / tan, la / 2, lb / 2);
+    const cut = Math.min(kind === 'Bevel' ? r : r / tan, la / 2, lb / 2);
     const p1 = [p[0] + (da[0] / la) * cut, p[1] + (da[1] / la) * cut];
     const p2 = [p[0] + (db[0] / lb) * cut, p[1] + (db[1] / lb) * cut];
-    parts.push(`${i ? "L" : "M"}${pt(p1)}`);
-    if (kind === "Bevel") parts.push(`L${pt(p2)}`);
+    parts.push(`${i ? 'L' : 'M'}${pt(p1)}`);
+    if (kind === 'Bevel') parts.push(`L${pt(p2)}`);
     else {
       const sweep = da[0] * db[1] - da[1] * db[0] < 0 ? 1 : 0;
       parts.push(`A${fmt(cut * tan)} ${fmt(cut * tan)} 0 0 ${sweep} ${pt(p2)}`);
     }
   }
-  return `${parts.join("")}Z`;
+  return `${parts.join('')}Z`;
 }
 
 const STYLE = {
-  DiceUIVectorShapeDrawStyle_Filled: "fill",
-  DiceUIVectorShapeDrawStyle_Lines: "lines",
-  DiceUIVectorShapeDrawStyle_Outline: "outline",
+  DiceUIVectorShapeDrawStyle_Filled: 'fill',
+  DiceUIVectorShapeDrawStyle_Lines: 'lines',
+  DiceUIVectorShapeDrawStyle_Outline: 'outline',
 };
 
 export function shapeOf(a) {
@@ -445,25 +389,16 @@ export function shapeOf(a) {
       maxX = Math.max(maxX, p.x);
       maxY = Math.max(maxY, p.y);
     }
-    const style = STYLE[s.DrawStyle] ?? "fill";
+    const style = STYLE[s.DrawStyle] ?? 'fill';
     const corners = s.Path?.Corners ?? [];
-    const d =
-      style === "lines"
-        ? corners
-            .map(
-              (c, i) => `${i ? "L" : "M"}${pt([c.Position.x, c.Position.y])}`,
-            )
-            .join("")
-        : cornersToPath(corners);
+    const d = style === 'lines' ? corners.map((c, i) => `${i ? 'L' : 'M'}${pt([c.Position.x, c.Position.y])}`).join('') : cornersToPath(corners);
     const out = { colour: v3(s.Color), alpha: r4(s.Alpha ?? 1), style, d };
-    const inner = (s.InnerPaths ?? [])
-      .map((p) => cornersToPath(p.Corners ?? []))
-      .filter(Boolean);
+    const inner = (s.InnerPaths ?? []).map((p) => cornersToPath(p.Corners ?? [])).filter(Boolean);
     if (inner.length) out.inner = inner;
-    if (style !== "fill" && s.LineWidth) out.line = r2(s.LineWidth);
-    if (style !== "fill" && s.StartCapType)
+    if (style !== 'fill' && s.LineWidth) out.line = r2(s.LineWidth);
+    if (style !== 'fill' && s.StartCapType)
       out.cap = String(s.StartCapType)
-        .replace(/^DiceUIVectorShapeCapType_/, "")
+        .replace(/^DiceUIVectorShapeCapType_/, '')
         .toLowerCase();
     return out;
   });
@@ -508,8 +443,8 @@ function modeRow(root, name, keys) {
     vehicles: Boolean(r.HasVehicles),
     heroes: Boolean(r.HasHeroes),
     complexity:
-      String(r.Complexity ?? "")
-        .replace(/^GameModeInformationComplexity_/, "")
+      String(r.Complexity ?? '')
+        .replace(/^GameModeInformationComplexity_/, '')
         .toLowerCase() || null,
     _source: `${name}#GameModeInformationAsset`,
   };
@@ -520,9 +455,7 @@ function levelRow(root, name, keys) {
   if (!a) return null;
   const r = rootOf(a);
   const overrides = {};
-  for (const o of r.LevelDescriptionOverrides ?? [])
-    if (o.GameModeId)
-      overrides[o.GameModeId] ??= keyOfString(a, o.LevelDescription, keys);
+  for (const o of r.LevelDescriptionOverrides ?? []) if (o.GameModeId) overrides[o.GameModeId] ??= keyOfString(a, o.LevelDescription, keys);
   const aur = keyOfString(a, r.LevelAurebesh, keys);
   return {
     key: r.Key,
@@ -552,27 +485,14 @@ function planetRow(root, name, keys) {
   };
 }
 
-export function infoOf(
-  root,
-  { index, strings = null, list = "UI/Data/GameModes/GameModes" } = {},
-) {
+export function infoOf(root, { index, strings = null, list = 'UI/Data/GameModes/GameModes' } = {}) {
   const keys = new Set();
-  const names = (type) =>
-    [...index.entries()].filter(([, e]) => e.type === type).map(([n]) => n);
+  const names = (type) => [...index.entries()].filter(([, e]) => e.type === type).map(([n]) => n);
   const la = follow(root, list);
-  const order = (la ? (rootOf(la).GameModes ?? []) : [])
-    .map(asset)
-    .filter(Boolean);
+  const order = (la ? (rootOf(la).GameModes ?? []) : []).map(asset).filter(Boolean);
   const skipped = new Set();
   const modes = {};
-  const allModes = [
-    ...new Set([
-      ...order,
-      ...names("GameModeInformationAsset").filter((n) =>
-        /\/GameModes\//.test(n),
-      ),
-    ]),
-  ];
+  const allModes = [...new Set([...order, ...names('GameModeInformationAsset').filter((n) => /\/GameModes\//.test(n))])];
   for (const n of allModes) {
     if (isEra(n)) {
       skipped.add(n);
@@ -583,20 +503,16 @@ export function infoOf(
   }
   const levels = {};
   const planets = {};
-  for (const n of names("LevelInformationAsset").filter((x) =>
-    /\/GameModes\/Levels\//.test(x),
-  )) {
+  for (const n of names('LevelInformationAsset').filter((x) => /\/GameModes\/Levels\//.test(x))) {
     if (isEra(n)) {
       skipped.add(n);
       continue;
     }
     const row = levelRow(root, n, keys);
-    if (row && !isEra(row.levelId ?? "")) levels[shortName(n)] = row;
+    if (row && !isEra(row.levelId ?? '')) levels[shortName(n)] = row;
     else if (row) skipped.add(n);
   }
-  for (const n of names("PlanetInformationAsset").filter((x) =>
-    /\/GameModes\/Planets\//.test(x),
-  )) {
+  for (const n of names('PlanetInformationAsset').filter((x) => /\/GameModes\/Planets\//.test(x))) {
     if (isEra(n)) {
       skipped.add(n);
       continue;
@@ -604,14 +520,18 @@ export function infoOf(
     const row = planetRow(root, n, keys);
     if (row) planets[row.id] = row;
   }
-  const strs = new Set([...keys].filter((k) => typeof k === "string"));
+  // (a mode lists only the levels the era rule keeps)
+  const refusedShort = new Set([...skipped].map(shortName));
+  for (const m of Object.values(modes)) {
+    const gone = m.levels.filter((l) => !levels[l] && refusedShort.has(l));
+    m.levels = m.levels.filter((l) => !gone.includes(l));
+    m.refused = [...m.refused, ...gone].sort();
+  }
+  const strs = new Set([...keys].filter((k) => typeof k === 'string'));
   return {
     order: order
       .filter((n) => !isEra(n))
-      .map(
-        (n) =>
-          modes[Object.keys(modes).find((id) => modes[id].asset === n)]?.id,
-      )
+      .map((n) => modes[Object.keys(modes).find((id) => modes[id].asset === n)]?.id)
       .filter(Boolean),
     modes,
     levels,
@@ -623,13 +543,15 @@ export function infoOf(
 
 // ── loading screens and hints ────────────────────────────────────────────
 
+// (a hint about the sequel's people and places, by its words)
+const SEQUEL_TEXT = /\b(first order|resistance|kylo|rey|finn|phasma|bb-8|bb-9e|starkiller|jakku|crait|takodana|poe|black one|tie silencer)\b/i;
+
 export function loadingOf(root, { index, strings = null } = {}) {
   const keys = new Set();
-  const names = (type) =>
-    [...index.entries()].filter(([, e]) => e.type === type).map(([n]) => n);
+  const names = (type) => [...index.entries()].filter(([, e]) => e.type === type).map(([n]) => n);
   const skipped = [];
   const screens = {};
-  for (const n of names("WSUILoadingScreenAsset")) {
+  for (const n of names('WSUILoadingScreenAsset')) {
     if (isEra(n)) {
       skipped.push(n);
       continue;
@@ -650,7 +572,7 @@ export function loadingOf(root, { index, strings = null } = {}) {
     };
   }
   const hints = {};
-  for (const n of names("TipsBundle")) {
+  for (const n of names('TipsBundle')) {
     if (isEra(n)) {
       skipped.push(n);
       continue;
@@ -660,22 +582,11 @@ export function loadingOf(root, { index, strings = null } = {}) {
     const r = rootOf(a);
     const filter = { modes: [], maps: [], planets: [] };
     for (const f of (r.Filters ?? []).map((x) => deref(a, x)).filter(Boolean)) {
-      if (f.$type === "GameModeTipFilter")
-        filter.modes.push(
-          ...(f.GameModes ?? []).map(asset).filter(Boolean).map(shortName),
-        );
-      if (f.$type === "MapTipFilter")
-        filter.maps.push(
-          ...(f.Maps ?? []).map(asset).filter(Boolean).map(shortName),
-        );
-      if (f.$type === "PlanetTipFilter")
-        filter.planets.push(
-          ...(f.Planets ?? []).map(asset).filter(Boolean).map(shortName),
-        );
+      if (f.$type === 'GameModeTipFilter') filter.modes.push(...(f.GameModes ?? []).map(asset).filter(Boolean).map(shortName));
+      if (f.$type === 'MapTipFilter') filter.maps.push(...(f.Maps ?? []).map(asset).filter(Boolean).map(shortName));
+      if (f.$type === 'PlanetTipFilter') filter.planets.push(...(f.Planets ?? []).map(asset).filter(Boolean).map(shortName));
     }
-    const tips = (r.Tips ?? [])
-      .map((x) => deref(a, x)?.TextSid)
-      .filter((k) => k && !isEra(k.replace(/_/g, "/")));
+    const tips = (r.Tips ?? []).map((x) => deref(a, x)?.TextSid).filter((k) => k && !SEQUEL_TEXT.test(englishOf(k, strings) ?? ''));
     tips.forEach((k) => keys.add(k));
     hints[shortName(n)] = {
       tips,
@@ -683,9 +594,7 @@ export function loadingOf(root, { index, strings = null } = {}) {
         .map(asset)
         .filter((s) => s && !isEra(s))
         .map(shortName),
-      ...(filter.modes.length || filter.maps.length || filter.planets.length
-        ? { filter }
-        : {}),
+      ...(filter.modes.length || filter.maps.length || filter.planets.length ? { filter } : {}),
       ...(r.Enabled === false ? { enabled: false } : {}),
     };
   }
