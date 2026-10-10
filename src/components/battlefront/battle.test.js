@@ -63,4 +63,13 @@ describe('the battle on lane 1’s sim, with the deploy screen lane 2 will own',
     b.force('win', 2);
     expect(view(b).mode.result).toEqual({ winner: 2, why: 'forced' });
   });
+
+  it('puts the player down when told, for the kill screen', () => {
+    const b = make({ 1: 1, 2: 1 });
+    addPlayer(b, { team: 2 });
+    deploy(b, 'player', {});
+    b.force('die', 2);
+    step(b, []);
+    expect(view(b).player.state).toBe('down');
+  });
 });

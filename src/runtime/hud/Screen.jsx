@@ -30,7 +30,7 @@ function ShapeBox({ name, colour }) {
   return (
     <svg className="hud-screen-shape" viewBox={s.viewBox} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
       {s.paths.map((p, i) => (
-        <path key={i} d={p.d} fill={p.stroke ? 'none' : (colour ?? p.fill)} fillRule={p.fillRule} stroke={p.stroke ? (colour ?? p.stroke) : undefined} strokeWidth={p.strokeWidth} strokeLinecap={p.strokeLinecap} opacity={p.opacity} />
+        <path key={i} d={p.d} transform={p.transform} fill={p.stroke ? 'none' : (colour ?? p.fill)} fillRule={p.fillRule} stroke={p.stroke ? (colour ?? p.stroke) : undefined} strokeWidth={p.strokeWidth} strokeLinecap={p.strokeLinecap} opacity={p.opacity} />
       ))}
     </svg>
   );
@@ -57,7 +57,7 @@ function Box({ box, parent, k, ctx }) {
   if (box.type === 'circle') style.borderRadius = '50%';
   const kids = box.children?.length ? <Boxes boxes={box.children} parent={box} k={k} ctx={ctx} /> : null;
   const film = box.film ? filmNamed(box.film) : null;
-  const common = { 'data-id': box.id, 'data-type': box.type, hidden: box.hidden || undefined, style };
+  const common = { 'data-id': box.id, 'data-type': box.type, 'data-wrap': box.wrap || undefined, hidden: box.hidden || undefined, style };
   if (box.type === 'staticList' || box.type === 'staticTabList') {
     const cells = box.children ?? [];
     const horizontal = cells.length > 1 ? cells[1].x !== cells[0].x : true;

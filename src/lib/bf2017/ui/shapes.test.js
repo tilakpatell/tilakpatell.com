@@ -38,3 +38,14 @@ describe("the game's vector shapes", () => {
     expect(svg).toContain('fill-rule="evenodd"');
   });
 });
+
+describe('a crosshair put together from the game’s parts', () => {
+  it('places the dot in the middle and a notch on each side, each by a transform', async () => {
+    const { blasterCrosshair } = await import('./shapes');
+    const c = blasterCrosshair();
+    expect(c.viewBox).toBe('-20 -20 40 40');
+    expect(c.paths).toHaveLength(2 + 4);
+    expect(c.paths.filter((p) => /rotate\(90 /.test(p.transform))).toHaveLength(1);
+    expect(c.paths[0].transform).toBe('translate(-2 -2) scale(1)');
+  });
+});

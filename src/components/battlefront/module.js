@@ -10,8 +10,8 @@
 // snapshot a few times a second, and sends the deploy screen's choices
 // through world.do. `window.__battlefront` is the same door for
 // scripts/battlefront-check.mjs: { view(), do(action, arg) } with 'deploy'
-// { classId }, 'pick' id, 'advance' seconds, 'win', 'lose', 'weather' name,
-// 'gpu'.
+// { classId }, 'pick' id, 'advance' seconds, 'win', 'lose', 'die' (the
+// player down: the kill screen), 'weather' name, 'gpu'.
 
 import * as THREE from 'three';
 import { camerasOf, lightingOf, loadRulebook, mapOf } from '../../lib/battlefront/rulebook.js';
@@ -199,6 +199,7 @@ export default {
           }
           case 'win':
           case 'lose':
+          case 'die':
             sim.force(action, PLAYER_TEAM);
             rt.events.emit('hud', snapshot());
             return { ok: true };

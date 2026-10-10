@@ -1,4 +1,4 @@
-import { Hud, Menu, Toast } from '../../../runtime/hud';
+import { Hud, Menu, Reticle, Toast } from '../../../runtime/hud';
 import Abilities from './Abilities.jsx';
 import DamageIndicator from './DamageIndicator.jsx';
 import DeathPoints from './DeathPoints.jsx';
@@ -20,7 +20,11 @@ import './battlefront.css';
 //
 //   <BattlefrontHud view={snapshot} mine={team} words={…} markers={[…]} scoreboard={bool}
 //     onDeploy={(offer) => …} readRadar={() => …} way={{ label, to }} touch={bool} />
-export default function BattlefrontHud({ view, mine = 2, words, markers = [], scoreboard = false, onDeploy, onPick, readRadar, way = null, toast = null, touch = false }) {
+// The game's own screens (../screens/, lane screens) come in as parts:
+// `deployAs` (the spawn screen in place of DeployScreen, same props),
+// `roundAs` (null when the page draws the end of round itself), `reticle`
+// (the weapon's crosshair, one of the game's shapes, for the kit's Reticle).
+export default function BattlefrontHud({ view, mine = 2, words, markers = [], scoreboard = false, onDeploy, onPick, readRadar, way = null, toast = null, touch = false, deployAs: Deploy = DeployScreen, roundAs: Round = EndOfRound, reticle = null }) {
   const p = view?.player ?? null;
   const deploying = Boolean(view?.deploy?.open);
   const mode = view?.mode ?? null;
@@ -31,6 +35,7 @@ export default function BattlefrontHud({ view, mine = 2, words, markers = [], sc
       {!deploying && !mode?.result && p && p.state === 'alive' && (
         <>
           <Markers markers={markers} />
+          {reticle && <Reticle state={{ shown: true, hit: p.hits?.length ? p.hits[p.hits.length - 1].id : null }} shape={reticle} />}
           <Heat heat={p.heat ?? 0} warning={p.warning ?? 0.75} overheated={Boolean(p.overheated)} window={p.coolWindow ?? null} />
           <div className="bf-soldier">
             <Health hp={p.hp} hpMax={p.hpMax} />
@@ -42,9 +47,9 @@ export default function BattlefrontHud({ view, mine = 2, words, markers = [], sc
       )}
       <KillLog entries={view?.killLog ?? []} mine={mine} />
       {p && p.state !== 'alive' && !deploying && <DeathPoints earned={p.earned ?? 0} total={view?.points ?? 0} label={words.earned} totalLabel={words.total} />}
-      {deploying && <DeployScreen deploy={view.deploy} points={view.points ?? 0} name={words.offer} title={words.deploy} onDeploy={onDeploy} onPick={onPick} />}
+      {deploying && <Deploy deploy={view.deploy} points={view.points ?? 0} name={words.offer} title={words.deploy} onDeploy={onDeploy} onPick={onPick} />}
       {scoreboard && !mode?.result && <Scoreboard teams={view?.scoreboard ?? {}} />}
-      {mode?.result && <EndOfRound result={mode.result} mine={mine} words={words.outcome} teams={view?.scoreboard ?? {}} />}
+      {mode?.result && Round && <Round result={mode.result} mine={mine} words={words.outcome} teams={view?.scoreboard ?? {}} />}
     </Hud>
   );
 }

@@ -15,6 +15,7 @@
 //   (data.args)
 // loading(mode, level, { seed }) → { screen, film, hint, loadTime }: the
 //   site's mode ('galacticAssault') and world ('hoth') or the game's ids
+// word(key, args) → one of the game's words the screens rulebook carries
 // SCREENS, WIDGETS_IN_SCREENS: the names there are
 
 import BOOK from '../../../data/bf2017/screens.json';
@@ -56,6 +57,7 @@ function boxOf(el, at, path, ctx, slots) {
     box.text = ctx.data?.[el.id] ?? (key ? say(key, ctx) : (el.literal ?? ''));
     if (el.font) box.font = fontFor(el.font);
     if (el.align) box.align = el.align;
+    if (el.wrap) box.wrap = true;
   }
   for (const k of ['shape', 'svg', 'film', 'fill', 'line', 'points']) if (el[k] !== undefined) box[k] = el[k];
   return box;
@@ -191,3 +193,7 @@ export function loading(mode, level, { seed = 0 } = {}) {
   const tips = keys.map((k) => text(k, [], { strings: TABLE })).filter((t) => t && !/[{%]/.test(t) && !/^ID_/.test(t));
   return { screen: name, film, hint: tips.length ? pick(tips, seed) : null, loadTime: row?.loadTime ?? null, bar: row?.bar ?? true };
 }
+
+// One of the game's words the screens carry, by its key ('ID_…' or
+// '#XXXXXXXX'), its {0} filled; the key itself where the table lacks it.
+export const word = (key, args = []) => text(key, args, { strings: TABLE });

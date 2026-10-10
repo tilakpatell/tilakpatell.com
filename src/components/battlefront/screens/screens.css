@@ -1,0 +1,80 @@
+/* The 2017 game's screens in the Battlefront world (./*.jsx): each fills
+   the view over its backdrop; the tree is drawn by the kit's Screen, the
+   cards and lists a screen lays over it here, in the game's faces
+   (src/lib/bf2017/fonts.css) and the world's ink (../hud/battlefront.css). */
+.bf-game-screen { position: fixed; inset: 0; z-index: var(--z-dialog); /* over the world's canvas and HUD */ color: var(--bf-ink, #f2f5f8); font-family: var(--font-bf-hud, sans-serif); background: radial-gradient(120% 90% at 30% 20%, #18222e 0%, #070a0e 70%); overflow: hidden; }
+.bf-game-screen:focus-visible { outline: none; }
+.bf-game-backdrop { position: absolute; inset: 0; }
+.bf-game-film { position: absolute; inset: 0; opacity: 0.7; }
+.bf-game-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4, 7, 10, 0.86) 0%, rgba(4, 7, 10, 0.35) 55%, rgba(4, 7, 10, 0.6) 100%); }
+.bf-game-keys { position: absolute; left: 5%; bottom: 3%; display: flex; gap: 1.5rem; margin: 0; font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
+
+/* start */
+.bf-start-press { position: absolute; left: 50%; top: 60%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 1.25rem; padding: 1rem 2rem; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.bf-start-title { font-size: clamp(1.6rem, 4vw, 3.4rem); font-weight: 800; letter-spacing: 0.18em; }
+.bf-start-line { font-size: 1rem; letter-spacing: 0.3em; animation: bf-breathe 2.4s ease-in-out infinite; }
+@keyframes bf-breathe { 50% { opacity: 0.55; } }
+
+/* cards: a tile, a mode, a level */
+.bf-cards, .bf-menu-items { position: absolute; inset: 0; pointer-events: none; }
+.bf-card { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.35rem; width: 100%; height: 100%; padding: 1.25rem; border: 1px solid rgba(242, 245, 248, 0.28); background: rgba(8, 12, 18, 0.62); color: inherit; font: inherit; text-align: left; overflow: hidden; cursor: pointer; pointer-events: auto; transition: border-color var(--t-fast, 120ms) ease, background var(--t-fast, 120ms) ease; }
+.bf-cards .bf-card { position: absolute; width: auto; height: auto; }
+.bf-card:is(:hover, :focus-visible) { border-color: var(--bf-ink, #f2f5f8); background: rgba(20, 28, 38, 0.72); outline: none; box-shadow: inset 0 3px 0 var(--bf-ink, #f2f5f8); }
+.bf-card[data-coming] { cursor: default; color: var(--bf-muted, #b9c2cc); }
+.bf-card[data-coming] .bf-card-film { filter: grayscale(1) brightness(0.6); }
+.bf-card-film { position: absolute; inset: 0; z-index: 0; }
+.bf-card-plain { background: linear-gradient(160deg, #1c2733, #0b1016); }
+.bf-card-title, .bf-card-blurb, .bf-card-coming { position: relative; z-index: 1; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
+.bf-card-title { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.06em; }
+.bf-card-large .bf-card-title { font-size: 2rem; }
+.bf-card-blurb { max-width: 40ch; font-family: var(--font-bf-text, sans-serif); font-size: 0.95rem; line-height: 1.35; }
+.bf-card-coming { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.bf-level-list { position: absolute; left: 5%; right: 5%; top: 20%; bottom: 10%; overflow: auto; }
+.bf-level-head { margin: 0 0 1rem; font-size: 2rem; font-weight: 800; letter-spacing: 0.08em; }
+.bf-level-head span { margin-left: 1rem; font-size: 1rem; color: var(--bf-muted, #b9c2cc); }
+.bf-level-list ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.bf-level-list .bf-card { min-height: 8rem; }
+
+/* loading */
+.bf-loading-name { position: absolute; left: 6%; top: 14%; display: grid; gap: 0.4rem; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
+.bf-loading-mode { font-size: 1rem; letter-spacing: 0.3em; color: var(--bf-muted, #b9c2cc); }
+.bf-loading-level { font-size: clamp(2rem, 4.5vw, 4rem); font-weight: 800; letter-spacing: 0.06em; }
+.bf-loading-bar { position: absolute; left: 6%; right: 6%; bottom: 8%; height: 4px; background: rgba(242, 245, 248, 0.18); }
+.bf-loading-bar i { display: block; height: 100%; background: var(--bf-ink, #f2f5f8); transition: width 400ms linear; }
+.bf-loading-line { position: absolute; left: 6%; bottom: 3.5%; margin: 0; font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
+
+/* spawn */
+.bf-spawn { background: linear-gradient(90deg, rgba(4, 7, 10, 0.82) 0%, rgba(4, 7, 10, 0.15) 45%, transparent 70%); }
+.bf-spawn .bf-game-backdrop { display: none; }
+.bf-spawn-list { position: absolute; left: 5%; top: 17.8%; width: min(22rem, 40vw); max-height: 70%; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.bf-spawn-cell { display: grid; grid-template-columns: 2.5rem 1fr auto; align-items: center; gap: 0.75rem; width: 100%; min-height: 3.5rem; padding: 0.4rem 1rem; border: 0; border-left: 2px solid transparent; background: rgba(8, 12, 18, 0.78); color: inherit; font: inherit; font-size: 1.1rem; letter-spacing: 0.05em; text-align: left; cursor: pointer; }
+.bf-spawn-cell + .bf-spawn-cell, li + li .bf-spawn-cell { margin-top: 2px; }
+.bf-spawn-cell[aria-pressed='true'], .bf-spawn-cell:focus-visible { border-left-color: var(--bf-ink, #f2f5f8); background: rgba(40, 52, 66, 0.86); outline: none; }
+.bf-spawn-cell[aria-disabled] { color: var(--bf-muted, #b9c2cc); cursor: default; }
+.bf-spawn-cell img { filter: invert(1); }
+.bf-spawn-points { position: absolute; left: 5%; bottom: 8%; margin: 0; letter-spacing: 0.08em; }
+
+/* the in-game menu's items: a button over each of the tree's boxes */
+.bf-menu-item { position: absolute; padding: 0; border: 0; background: transparent; cursor: pointer; pointer-events: auto; }
+.bf-menu-item:is(:hover, :focus-visible) { outline: 2px solid var(--bf-ink, #f2f5f8); outline-offset: -2px; background: rgba(242, 245, 248, 0.08); }
+
+/* end of round, scoreboard, kill screen */
+.bf-eor-step { position: absolute; inset: 15% 10% 12%; display: grid; place-items: center; }
+.bf-eor .bf-outcome { margin: 0; font-size: clamp(3rem, 9vw, 8rem); font-weight: 800; letter-spacing: 0.2em; }
+.bf-eor-next { position: absolute; right: 0; bottom: -2rem; padding: 0.4rem 1rem; border: 1px solid rgba(242, 245, 248, 0.4); background: rgba(8, 12, 18, 0.7); color: inherit; font: inherit; letter-spacing: 0.1em; cursor: pointer; }
+.bf-top-players { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; font-size: 1.5rem; }
+.bf-top-players li { display: grid; grid-template-columns: 5rem 1fr auto; gap: 1.5rem; padding: 0.6rem 1.2rem; background: rgba(8, 12, 18, 0.78); }
+.bf-top-rank { color: var(--bf-muted, #b9c2cc); }
+.bf-roster { position: absolute; overflow: auto; }
+.bf-kill-screen { background: radial-gradient(80% 60% at 50% 50%, rgba(80, 0, 0, 0.35), rgba(0, 0, 0, 0.7)); }
+.bf-kill-screen .bf-game-backdrop { display: none; }
+.bf-kill-card { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); display: grid; justify-items: center; gap: 0.6rem; padding: 1.2rem 2.4rem; background: rgba(8, 12, 18, 0.8); text-align: center; }
+.bf-kill-head { margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.16em; }
+.bf-kill-by { display: flex; align-items: center; gap: 0.75rem; margin: 0; font-size: 1.15rem; }
+.bf-kill-icon { width: 2.5rem; height: 2.5rem; }
+.bf-kill-points { margin: 0; color: var(--bf-muted, #b9c2cc); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-start-line { animation: none; }
+  .bf-card, .bf-loading-bar i { transition: none; }
+}

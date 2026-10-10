@@ -136,6 +136,7 @@ function elementOf(a, i, ctx, w, depth = 0) {
   if (o.$type === 'TextElementData') {
     el.font = asset(o.FontStyle) ? shortName(asset(o.FontStyle)) : null;
     if (typeof o.FontPaletteIndex === 'number' && o.FontPaletteIndex) el.fontPalette = o.FontPaletteIndex;
+    if (o.WordWrap) el.wrap = true;
     el.align = [o.HorizontalAlignment, o.VerticalAlignment].map((s) =>
       String(s ?? '')
         .replace(/^UIText(Horizontal|Vertical)Alignment_/, '')
@@ -275,11 +276,16 @@ function treeOf(root, name, ctx) {
 // The screens the site draws: the front end's, and the in-game ones the
 // battle uses (the spawn overlay, the in-game menu, the end of round, the
 // scoreboard and the kill card).
-export const SCREEN_GLOB = /^UI\/(Frontend\/Screens\/.+|InGame\/(Spawn|InGameMenu|EndOfRound|Scoreboard|Death)\/.+|Customize\/Screens\/SpawnOverlayScreen)$/;
+export const SCREEN_GLOB = /^UI\/(Frontend\/Screens\/.+|LoadingScreens\/MPLoadLevel\/.+|InGame\/(Spawn|InGameMenu|EndOfRound|Scoreboard|Death)\/.+|Customize\/Screens\/SpawnOverlayScreen)$/;
+
+// The words the site's front end says that no tree names (the trees fill
+// them at run time): the Play screen's tiles, press-start, the outcome and
+// the death screen's lines, the map list's title.
+export const FRONT_END_KEYS = ['ID_PLAY_SCR_MULTIPLAYER', 'ID_PLAY_SCR_CAMPAIGN', 'ID_PLAY_SCR_SKIRMISH', 'ID_PLAY_SCR_MULTIPLAYER_PLAY', '#19A64FB1', '#615832FF', '#8A053560', '#36B45EAB', '#48A7E354', '#05A0B377', '#73CD3EA7', '#C726953C', '#DFBEEAD5'];
 
 export function screensOf(root, { names, strings = null, depth = 6 } = {}) {
   const ctx = {
-    keys: new Set(),
+    keys: new Set(FRONT_END_KEYS),
     shapes: new Set(),
     links: new Set(),
     want: new Set(),
