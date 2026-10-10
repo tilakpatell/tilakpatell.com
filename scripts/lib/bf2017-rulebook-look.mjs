@@ -199,8 +199,8 @@ export function camerasRow(root, { soldier = 'Gameplay/Characters/StormTrooperSh
 
 // ── the HUD ──────────────────────────────────────────────────────────────
 
-const ELEMENT_TYPES = { TextElementData: 'text', RectangleElementData: 'rectangle', VectorShapeElementData: 'vectorShape', FillElementData: 'fill', BitmapElementData: 'bitmap', UIElementWidgetReferenceEntityData: 'widget', StackingContainerData: 'stack', ScanlineRegularPolygonElementData: 'polygon' };
-const typeOf = (t) => ELEMENT_TYPES[t] ?? (/Container/.test(t) ? 'container' : t.replace(/(Element)?(Entity)?Data$/, '').replace(/^./, (c) => c.toLowerCase()));
+export const ELEMENT_TYPES = { TextElementData: 'text', RectangleElementData: 'rectangle', VectorShapeElementData: 'vectorShape', FillElementData: 'fill', BitmapElementData: 'bitmap', UIElementWidgetReferenceEntityData: 'widget', StackingContainerData: 'stack', ScanlineRegularPolygonElementData: 'polygon' };
+export const typeOf = (t) => ELEMENT_TYPES[t] ?? (/Container/.test(t) ? 'container' : t.replace(/(Element)?(Entity)?Data$/, '').replace(/^./, (c) => c.toLowerCase()));
 const hex = (n) => (n >>> 0).toString(16).toUpperCase().padStart(8, '0');
 const xy = (p, a = 'X', b = 'Y') => (p ? [p[a], p[b]] : null);
 
