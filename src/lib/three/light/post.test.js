@@ -50,9 +50,9 @@ describe('passesFor', () => {
     expect(kinds(passesFor('ultra', hoth.sunny, 'webgl', refs))).toEqual(['render', 'bloom', 'output']);
     for (const k of NODE_PASSES) expect(kinds(passesFor('ultra', hoth.sunny, 'webgl', refs))).not.toContain(k);
   });
-  it('on the node renderer over WebGL 2: no SSR, and SMAA for TRAA, so SSGI is denoised', () => {
-    expect(kinds(passesFor('ultra', hoth.sunny, 'nodes-webgl', refs))).toEqual(['render', 'ssgi', 'denoise', 'ao', 'bloom', 'godrays', 'lensflare', 'lut', 'smaa', 'output']);
-    expect(kinds(passesFor('high', hoth.sunny, 'nodes-webgl', refs))).toEqual(['render', 'ssgi', 'denoise', 'ao', 'bloom', 'lut', 'smaa', 'output']);
+  it('on the node renderer over WebGL 2: no SSR, no SSGI (lane S’s shot), and SMAA for TRAA', () => {
+    expect(kinds(passesFor('ultra', hoth.sunny, 'nodes-webgl', refs))).toEqual(['render', 'ao', 'bloom', 'godrays', 'lensflare', 'lut', 'smaa', 'output']);
+    expect(kinds(passesFor('high', hoth.sunny, 'nodes-webgl', refs))).toEqual(['render', 'ao', 'bloom', 'lut', 'smaa', 'output']);
   });
   it('no light and no LUT given: ultra goes without god rays and the grade', () => {
     expect(kinds(passesFor('ultra', hoth.sunny, 'webgpu', { scene: {}, camera: {} }))).toEqual(['render', 'ssgi', 'ao', 'ssr', 'bloom', 'lensflare', 'traa', 'output']);

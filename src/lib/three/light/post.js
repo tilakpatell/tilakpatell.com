@@ -37,8 +37,12 @@ export const NODE_PASSES = new Set(['ssgi', 'denoise', 'ao', 'ssr', 'godrays', '
 // What each backend cannot build. On 'nodes-webgl' the lit fixture
 // (scripts/light-fixture.mjs, pass by pass) drew SSR as white smears below
 // every pillar and TRAA as a flat grey frame, so both are left out there
-// and SMAA takes TRAA's place; the rest drew as on the design.
-export const CANNOT = { webgpu: new Set(), 'nodes-webgl': new Set(['ssr', 'traa']), webgl: NODE_PASSES };
+// and SMAA takes TRAA's place; the rest drew as on the design. Lane S's
+// calibration shot (--hoth) found SSGI the same: the chain render → ssgi →
+// output lifts the frame's mean luminance from 0.320 to 0.787 whatever its
+// GI intensity (0, 0.1, 0.25 and 1 gave the same frame), so it is the node
+// on this backend, not the bounce; it is left out there too.
+export const CANNOT = { webgpu: new Set(), 'nodes-webgl': new Set(['ssr', 'traa', 'ssgi']), webgl: NODE_PASSES };
 // SSGINode's presets, from its own doc: with TRAA, and without
 export const SSGI = {
   temporal: { low: { slices: 1, steps: 12 }, medium: { slices: 2, steps: 8 }, high: { slices: 3, steps: 16 } },

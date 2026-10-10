@@ -1,0 +1,32 @@
+{
+  "size": "1600x900",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [
+        "render",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "shadows-lightsun-post-ultra-webgl.webp",
+      "meanLum": 0.3207,
+      "envDiff": 15.86,
+      "programsBefore": 89,
+      "programsAfter": 89,
+      "frames": 20,
+      "mean": 300.2,
+      "median": 31.5,
+      "p95": 5417.1
+    }
+  ]
+}

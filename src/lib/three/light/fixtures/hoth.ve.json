@@ -1,5 +1,5 @@
 {
- "_from": "web/maps/levels/mp/hoth_01/hoth_01.extras.json, environments; the fields readEntry reads, trimmed",
+ "_from": "web/maps/levels/mp/hoth_01/hoth_01.extras.json, environments; the fields readEntry reads, trimmed; lane S added the shadow, PCSS and cloud fields from src/data/bf2017/maps/hoth.lighting.json (rows.weathers.<w>.sun.raw, .shadows and .wind.raw)",
  "sunny": {
   "name": "Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01",
   "record": {
@@ -22,7 +22,27 @@
      ],
      "SunRotationX": 265.61,
      "SunRotationY": 32.943,
-     "SunIntensity": 128000
+     "SunIntensity": 128000,
+     "ShadowSunRotationX": 284.42,
+     "ShadowSunRotationY": 82.044,
+     "SunAngularRadius": 0.29,
+     "SunPcssInitialSampleCount": 8,
+     "SunPcssMaximumSampleCount": 256,
+     "SunPcssFilterErrorThresholdPct": 0.05,
+     "SunPenumbraSize": 4,
+     "SunPcssShadowFilterScale": 1,
+     "CloudShadowSize": 8192,
+     "CloudShadowCoverage": 1,
+     "CloudShadowExponent": 1,
+     "SecondaryCloudShadowSize": 500,
+     "SecondaryCloudShadowCoverage": 0.3,
+     "SecondaryCloudShadowExponent": 8,
+     "CloudShadowSpeed.x": 0,
+     "CloudShadowSpeed.y": 0,
+     "SecondaryCloudShadowSpeed.x": 0,
+     "SecondaryCloudShadowSpeed.y": 0,
+     "ParticleSunShadowFactor": 1,
+     "ParticleSunShadowSmoothing": 0.5
     }
    ],
    "SkyComponentData": [
@@ -33,9 +53,9 @@
       1
      ],
      "RayleighScatteringCoefficient": [
-      0.00001,
-      0.00001,
-      0.00003
+      1e-05,
+      1e-05,
+      3e-05
      ],
      "LuminanceScale": 35000,
      "SunSize": 0.004,
@@ -87,6 +107,21 @@
      "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunny_01/T_CC_Hoth_Sunny_01",
      "ColorGradingMaxHdrValue": 1
     }
+   ],
+   "ShadowsComponentData": [
+    {
+     "SunShadowmapViewDistance.Low": 30,
+     "SunShadowmapViewDistance.Medium": 30,
+     "SunShadowmapViewDistance.High": 30,
+     "SunShadowmapViewDistance.Ultra": 70,
+     "SunShadowmapViewDistance.Cinematic": -1
+    }
+   ],
+   "WindComponentData": [
+    {
+     "WindDirection": 0,
+     "WindStrength": 5
+    }
    ]
   }
  },
@@ -112,7 +147,27 @@
      ],
      "SunRotationX": 110,
      "SunRotationY": 10.25,
-     "SunIntensity": 22500
+     "SunIntensity": 22500,
+     "ShadowSunRotationX": 284.42,
+     "ShadowSunRotationY": 82.044,
+     "SunAngularRadius": 0.29,
+     "SunPcssInitialSampleCount": 8,
+     "SunPcssMaximumSampleCount": 256,
+     "SunPcssFilterErrorThresholdPct": 0.05,
+     "SunPenumbraSize": 4,
+     "SunPcssShadowFilterScale": 1,
+     "CloudShadowSize": 8192,
+     "CloudShadowCoverage": 1,
+     "CloudShadowExponent": 5,
+     "SecondaryCloudShadowSize": 500,
+     "SecondaryCloudShadowCoverage": 0.3,
+     "SecondaryCloudShadowExponent": 8,
+     "CloudShadowSpeed.x": 0,
+     "CloudShadowSpeed.y": 0,
+     "SecondaryCloudShadowSpeed.x": 0,
+     "SecondaryCloudShadowSpeed.y": 0,
+     "ParticleSunShadowFactor": 1,
+     "ParticleSunShadowSmoothing": 0.5
     }
    ],
    "SkyComponentData": [
@@ -123,9 +178,9 @@
       1
      ],
      "RayleighScatteringCoefficient": [
-      0.00001,
-      0.00001,
-      0.00003
+      1e-05,
+      1e-05,
+      3e-05
      ],
      "LuminanceScale": 3000,
      "SunSize": 0.004,
@@ -176,6 +231,21 @@
     {
      "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunset_01/T_CC_Hoth_Sunset_01",
      "ColorGradingMaxHdrValue": 1
+    }
+   ],
+   "ShadowsComponentData": [
+    {
+     "SunShadowmapViewDistance.Low": 30,
+     "SunShadowmapViewDistance.Medium": 30,
+     "SunShadowmapViewDistance.High": 30,
+     "SunShadowmapViewDistance.Ultra": 70,
+     "SunShadowmapViewDistance.Cinematic": -1
+    }
+   ],
+   "WindComponentData": [
+    {
+     "WindDirection": 0,
+     "WindStrength": 5
     }
    ]
   }

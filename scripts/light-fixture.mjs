@@ -5,6 +5,23 @@
 //
 //   node scripts/light-fixture.mjs [--tier ultra] [--post on|off] [--sky on|off]
 //     [--grid] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
+//     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
+//
+// Lane S (docs/superpowers/plans/2026-10-10-bf-fidelity-laneS-shadows.md):
+// --hoth draws the fixture under Hoth Sunny's record on snow at the house's
+// exposure (1.4, the classic stack's), its lamps off, and writes the frame's
+// mean linear luminance (`meanLum`, as lane G's README measures it) beside
+// the shot; lane S's runs write to evidence/galaxy-engine/S/.
+// --shadows draws lane S's shadow scene under Hoth's record (figures at 2,
+// 20 and 60 m, a wall, a post row to 200 m) and shoots it twice: the near
+// view (<label>-<leg>.png) and the cascades' far edge (<label>-<leg>-seam.png);
+// --light-sun casts along the light instead of the record's shadow sun;
+// the pen1 and pen10 shots frame a board's shadow 1 m and 10 m under it.
+// --filter pcf forces three's PCF on the sun (the PCSS cost's baseline).
+// The contact view frames the 2 m figure's feet, with its contact shadow
+// and without (-contact-off); --clouds adds the strip from 70 m up under
+// cloud shadows (the fixture's test layer: litWorld.js's CLOUD_TEST), and
+// again after 60 s of drift on Hoth's wind.
 //
 // For each leg (?gpu=webgpu, and ?gpu=webgl: the node renderer on a WebGL 2
 // context) it opens scripts/light-fixture/index.html on a Vite dev server
@@ -37,7 +54,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = join(ROOT, 'docs/superpowers/evidence/galaxy-engine/R');
+const argvEarly = process.argv.slice(2);
+const laneS = ['--hoth', '--shadows', '--clouds'].some((f) => argvEarly.includes(f));
+const OUT = join(ROOT, `docs/superpowers/evidence/galaxy-engine/${laneS ? 'S' : 'R'}`);
 const argv = process.argv.slice(2);
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
@@ -45,14 +64,18 @@ const arg = (k, d) => {
 };
 const tier = arg('tier', 'ultra');
 const post = arg('post', 'off') === 'on';
-const label = arg('label', post ? `post-${tier}` : `lit-${tier}`);
+const label = arg('label', `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`);
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
 const sky = arg('sky', 'on') === 'on';
 const grid = argv.includes('--grid');
 const only = arg('only', null)?.split(',');
-const fixture = { tier, post, sky, env: true, only };
+const shadows = argv.includes('--shadows');
+const hoth = argv.includes('--hoth') || shadows;
+// the house tone mapper's exposure (src/lib/three/house.js LOOK.exposure): the classic stack's
+const HOUSE_EXPOSURE = 1.4;
+const fixture = { tier, post, sky, env: true, only, ...(hoth ? { hoth: true, exposure: HOUSE_EXPOSURE } : {}), ...(shadows ? { shadows: true, lightSun: argv.includes('--light-sun'), clouds: argv.includes('--clouds') } : {}), ...(arg('filter', null) ? { filter: arg('filter', null) } : {}) };
 
 const { chromium } = await import('playwright-core');
 const sharp = (await import('sharp')).default;
@@ -79,6 +102,15 @@ const base = `http://127.0.0.1:${server.httpServer.address().port}`;
 const browser = await chromium.launch({ executablePath: exe, args });
 
 const raw = async (png) => sharp(png).raw().toBuffer();
+// the mean linear luminance of a shot (sRGB decoded, Rec. 709 weights)
+const lin = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+const meanLum = async (png) => {
+  const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const LUT = Array.from({ length: 256 }, (_, i) => lin(i / 255));
+  let s = 0;
+  for (let i = 0; i < data.length; i += info.channels) s += 0.2126 * LUT[data[i]] + 0.7152 * LUT[data[i + 1]] + 0.0722 * LUT[data[i + 2]];
+  return s / (data.length / info.channels);
+};
 const meanDiff = (a, b) => {
   let s = 0;
   for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
@@ -109,6 +141,24 @@ for (const leg of legs) {
     const png = await shot();
     writeFileSync(join(OUT, `${label}-${leg}.png`), png);
     row.shot = `${label}-${leg}.png`;
+    row.meanLum = Number((await meanLum(png)).toFixed(4));
+    if (shadows) {
+      for (const v of ['seam', 'pen1', 'pen10', 'contact']) {
+        await page.evaluate((name) => (window.__lit.probe.view(name), window.__lit.draw(8)), v);
+        writeFileSync(join(OUT, `${label}-${leg}-${v}.png`), await shot());
+      }
+      await page.evaluate(() => (window.__lit.probe.contact(false), window.__lit.draw(4)));
+      writeFileSync(join(OUT, `${label}-${leg}-contact-off.png`), await shot());
+      await page.evaluate(() => (window.__lit.probe.contact(true), window.__lit.draw(4)));
+      if (argv.includes('--clouds')) {
+        // the cloud shadows, then 60 s of drift on the weather's wind
+        await page.evaluate(() => (window.__lit.probe.view('clouds'), window.__lit.draw(8)));
+        writeFileSync(join(OUT, `${label}-${leg}-clouds.png`), await shot());
+        await page.evaluate(() => (window.__lit.probe.advance(60), window.__lit.draw(8)));
+        writeFileSync(join(OUT, `${label}-${leg}-clouds-60s.png`), await shot());
+      }
+      await page.evaluate(() => (window.__lit.probe.view('near'), window.__lit.draw(8)));
+    }
     // A2: with and without the environment
     await page.evaluate(() => (window.__lit.probe.setEnv(false), window.__lit.draw(8)));
     const without = await raw(await shot());
@@ -149,11 +199,11 @@ await browser.close();
 await server.close();
 
 writeFileSync(join(OUT, `${label}.json`), `${JSON.stringify({ size: `${W}x${H}`, adapter: swift ? 'swiftshader' : 'system', rows }, null, 2)}\n`);
-console.log(`| leg | backend | passes | clustered | env diff | programs before → after | mean ms | median ms | p95 ms | grid bake ms | mean with grid |`);
-console.log(`|---|---|---|---|---|---|---|---|---|---|---|`);
+console.log(`| leg | backend | passes | clustered | mean lum | env diff | programs before → after | mean ms | median ms | p95 ms | grid bake ms | mean with grid |`);
+console.log(`|---|---|---|---|---|---|---|---|---|---|---|---|`);
 for (const r of rows) {
   if (r.error) console.log(`| ${r.leg} | failed: ${r.error} |`);
-  else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ') || 'none'} | ${r.clustered} | ${r.envDiff} | ${r.programsBefore} → ${r.programsAfter} | ${r.mean} | ${r.median} | ${r.p95} | ${r.gridBakeMs ?? '–'} | ${r.gridMean ?? '–'} |`);
+  else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ') || 'none'} | ${r.clustered} | ${r.meanLum} | ${r.envDiff} | ${r.programsBefore} → ${r.programsAfter} | ${r.mean} | ${r.median} | ${r.p95} | ${r.gridBakeMs ?? '–'} | ${r.gridMean ?? '–'} |`);
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
 }
 process.exit(rows.some((r) => r.error && r.leg !== 'webgpu') ? 1 : 0);

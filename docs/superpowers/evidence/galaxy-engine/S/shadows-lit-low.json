@@ -1,0 +1,23 @@
+{
+  "size": "1600x900",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "low",
+      "post": false,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [],
+      "shot": "shadows-lit-low-webgl.webp",
+      "meanLum": 0.2931,
+      "envDiff": 15.99,
+      "programsBefore": 18,
+      "programsAfter": 18,
+      "frames": 11,
+      "mean": 547.7,
+      "median": 539,
+      "p95": 616.5
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 // (src/runtime/fixtures/litWorld.js) on the node renderer, WebGPU or
 // (?gpu=webgl) the same renderer on WebGL 2, drawn frame by frame when the
 // script asks, so it can draw a set number of frames and time them.
-// ?fixture=<json> passes the fixture's options (tier, env, post, sky).
+// ?fixture=<json> passes the fixture's options (tier, env, post, sky, exposure, …).
 
 import { createWebGPU } from '../../src/runtime/webgpu.js';
 import world from '../../src/runtime/fixtures/litWorld.js';
@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => (state.error ??= String(e.r
 
 try {
   // (TRAA wants no multisampling, and the post chain draws into its own targets)
-  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false });
+  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1 });
   gfx.setSize(innerWidth, innerHeight);
   gfx.setRatio(1);
   const w = world.create({ gfx, fixture });

@@ -25,11 +25,17 @@
 // bright scene clamps there). Hoth's sunny 128,000 lux becomes 9.2, its
 // sunset's 22,500 lux 28 (at EV 10.4: the game opens up at dusk). The
 // placed lights take the same factor (`gameToSite`), so a lamp is as bright
-// against the sun as the game made it. Lane G's calibration on Hoth, once
-// it lands as `entry.gameToSite`, replaces the factor.
+// against the sun as the game made it. Where the record has a tone map the
+// factor is lane G's calibration (calibrate.js: the meter and GAME_TO_SITE
+// of src/lib/three/gameLight.js), so the node stack's Hoth Sunny sun is the
+// classic stack's 0.79 and its sky and fill lane G's 0.61; `exposureOf`
+// below is the uncalibrated factor, kept for a tone map calibrate.js cannot
+// read. `entry.gameToSite` still wins over both.
 //
 // readEntry(entry, { origin }) → { sun, ambient, sky, fog, shadow, exposure, bloom, ao, grade, gameToSite }
 // lerpEntry(a, b, t) → the same shape, a weather crossfade at t in 0…1
+
+import { bloomThreshold, calibrate } from './calibrate.js';
 
 // Earth's sea-level scattering, per metre: the Rayleigh coefficients for
 // 680, 550 and 440 nm, and a clear day's Mie (the record's own replace them)
@@ -87,7 +93,10 @@ export function readEntry(entry = {}, { origin = [0, 0, 0] } = {}) {
   const fogRec = comp(r, 'Fog');
   const tone = comp(r, 'Tonemap');
   const grade = comp(r, 'ColorCorrection');
-  const k = num(e.gameToSite, exposureOf(tone) ?? 1);
+  const cal = calibrate(r);
+  const k = num(e.gameToSite, cal?.gameToSite ?? exposureOf(tone) ?? 1);
+  // the sky's own rate: lane G's SKY_TO_SITE where calibrated, else the sun's
+  const skyK = e.gameToSite == null && cal ? cal.sky / Math.max(1e-12, num(skyRec.LuminanceScale, 0)) : k;
 
   const s0 = e.sky?.suns?.[0];
   const sunLight = e.light?.sun;
@@ -104,7 +113,8 @@ export function readEntry(entry = {}, { origin = [0, 0, 0] } = {}) {
   const ambient = {
     sky: rgb(lit(outdoor.SkyColor) ?? lightSky?.color ?? lightSky, AMBIENT.sky),
     ground: rgb(lit(outdoor.GroundColor) ?? lightGround?.color ?? lightGround, AMBIENT.ground),
-    intensity: num(typeof e.light?.ambient === 'number' ? e.light.ambient : e.light?.ambient?.intensity, AMBIENT.intensity),
+    // (lane G's fill is the sky's level: calibrated, the record's LuminanceScale at the site's)
+    intensity: num(typeof e.light?.ambient === 'number' ? e.light.ambient : e.light?.ambient?.intensity, cal && skyRec.LuminanceScale != null ? skyRec.LuminanceScale * skyK : AMBIENT.intensity),
   };
   const rayleigh = rgb(skyRec.RayleighScatteringCoefficient, RAYLEIGH).map((c) => c * num(skyRec.RayleighScatteringCoefficientScale, 1));
   const sky = {
@@ -113,10 +123,10 @@ export function readEntry(entry = {}, { origin = [0, 0, 0] } = {}) {
     mieG: num(skyRec.MieG, MIE_G),
     heightR: num(skyRec.ScaleHeightRayleigh, 8) * 1000, // m (the record's are km)
     heightM: num(skyRec.ScaleHeightMie, 1.2) * 1000,
-    luminance: skyRec.LuminanceScale != null ? skyRec.LuminanceScale * k : sun.intensity * SKY_TO_SUN,
+    luminance: skyRec.LuminanceScale != null ? skyRec.LuminanceScale * skyK : sun.intensity * SKY_TO_SUN,
     sunSize: num(skyRec.SunSize, 0.004), // rad: the disc's angular radius
     // the disc's luminance (the record's SunScale, Hoth's day 120,000 nits)
-    sunScale: skyRec.SunScale != null ? skyRec.SunScale * k : (skyRec.LuminanceScale != null ? skyRec.LuminanceScale * k : sun.intensity * SKY_TO_SUN) * SUN_TO_SKY,
+    sunScale: skyRec.SunScale != null ? skyRec.SunScale * skyK : (skyRec.LuminanceScale != null ? skyRec.LuminanceScale * skyK : sun.intensity * SKY_TO_SUN) * SUN_TO_SKY,
     zenith: rgb(e.sky?.zenith, [0.24, 0.42, 0.78]),
     horizon: rgb(e.sky?.horizon, [0.7, 0.78, 0.88]),
     cloud: rgb(skyRec.CloudLayer1Color ?? e.sky?.hazeColor, [1, 1, 1]),
@@ -159,7 +169,7 @@ export function readEntry(entry = {}, { origin = [0, 0, 0] } = {}) {
     // record's is kept as a ratio to the day's)
     bloom: { scale: bloomScale != null ? bloomScale / 0.1 : num(typeof e.bloom === 'number' ? e.bloom : e.bloom?.scale, 1) },
     ao: { ...AO, ...(e.ao ?? {}) },
-    grade: { maxHdr: num(grade.ColorGradingMaxHdrValue, 1), lutName: grade.HdrColorGradingLut ?? null, lut: e.lut ?? null },
+    grade: { maxHdr: num(grade.ColorGradingMaxHdrValue, 1), bloomThreshold: bloomThreshold(grade), lutName: grade.HdrColorGradingLut ?? null, lut: e.lut ?? null },
     gameToSite: k,
   };
 }
