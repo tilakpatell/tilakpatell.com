@@ -24,6 +24,7 @@ import hothStages from '../../data/bf2017/maps/hoth.stages.json';
 import modes from '../../data/bf2017/modes.json';
 import points from '../../data/bf2017/points.json';
 import reinforcements from '../../data/bf2017/reinforcements.json';
+import squads from '../../data/bf2017/squads.json';
 import strings from '../../data/bf2017/strings.json';
 import teams from '../../data/bf2017/teams.json';
 import ui from '../../data/bf2017/ui.json';
@@ -71,6 +72,7 @@ export function loadRulebook() {
     maps: { hoth_01: { map: hoth.rows, lighting: hothLighting.rows, stages: { [hothStages.mode]: hothStages } } },
     points,
     reinforcements: reinforcements.rows,
+    squads: squads.rows,
     strings: strings.rows,
     teams: teams.rows,
     ui: ui.rows,
@@ -144,7 +146,9 @@ export const camerasOf = (rb) => rb.cameras;
 export const uiOf = (rb) => rb.ui;
 export const aiOf = (rb) => rb.ai;
 export const pointsOf = (rb) => rb.points;
-export const stringOf = (rb, id) => rb.strings[id] ?? id;
+export const squadsOf = (rb) => rb.squads;
+// (the squad strip's words travel with squads.json, beside the strings rulebook)
+export const stringOf = (rb, id) => rb.strings[id] ?? rb.squads?.strings?.[id] ?? id;
 
 // A mode's spawn points and spawn areas, by team or by id.
 export function spawnsFor(map, { mode, team = null, ids = null }) {

@@ -13,7 +13,7 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles }
+//   materials, weather, decals, particles, upscale }
 //
 // `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
 // 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
@@ -246,7 +246,9 @@ export default {
       light.update(0, camera);
       if (light.passes.length) {
         // (`only`: the passes kept, for finding which one breaks)
-        const passes = opts.only ? light.passes.filter((p) => opts.only.includes(p.kind)) : light.passes;
+        let passes = opts.only ? light.passes.filter((p) => opts.only.includes(p.kind)) : light.passes;
+        // (`upscale`, fidelity lane U: { kind, scale }, the picture drawn under the screen and brought up)
+        if (opts.upscale) passes = (await import('../../lib/three/light/post.js')).upscaled(passes, opts.upscale);
         post = rt.gfx.post(passes);
         probe.passes = passes.map((p) => p.kind);
         await post.ready;

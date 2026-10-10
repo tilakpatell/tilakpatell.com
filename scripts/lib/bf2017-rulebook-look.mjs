@@ -15,15 +15,14 @@
 //   uiRow → ui.json: the named widgets' element trees (UIWidgetBlueprint →
 //     UIElementLayerEntityData → elements, a widget reference resolved into the
 //     widget it names), their string ids, the colour palette, the icons and
-//     fonts the web build holds; copyUiAssets copies the in-game icons and the
-//     HUD fonts under public/battlefront/.
+//     fonts the web build holds; copyUiAssets copies the in-game icons under
+//     public/battlefront/ (the fonts are scripts/bf2017-ui.mjs's).
 
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { deref, follow, isSequel, numbersOf, objectsOf, readWebJson, rootOf, shortName, transformOf, webFile } from './bf2017-ebx.mjs';
 import { indexOf } from './bf2017-rulebook.mjs';
 import { levelName } from './bf2017-rulebook-map.mjs';
-import { fontAllowed } from './bf2017-ui.mjs';
 
 const where = (asset, obj, path = '') => `${asset.name}#${obj.$type}${path ? `.${path}` : ''}`;
 const v3 = (p) => (p ? [p.x, p.y, p.z] : null);
@@ -266,8 +265,8 @@ export function uiRow(root, widgetNames, { files = [], depth = 3 } = {}) {
   };
 }
 
-// The in-game icons and the HUD fonts the web build has, under `out` (the
-// fonts only where their licence lets them ship: none of the HUD's).
+// The in-game icons the web build has, under `out` (the fonts are
+// scripts/bf2017-ui.mjs's).
 export function copyUiAssets(root, out, ui) {
   const copied = { icons: 0, fonts: 0, missing: [] };
   const copy = (rel, to) => {
@@ -278,9 +277,7 @@ export function copyUiAssets(root, out, ui) {
     return true;
   };
   for (const s of ui.inGame) if (copy(`svg/${s}`, join(out, 'icons', s))) copied.icons++;
-  // (the HUD's faces are Linotype's and the game's own, licensed to EA and not
-  // to this site: none is copied; src/lib/bf2017/fonts.css draws the HUD in
-  // the drop's open faces, which scripts/bf2017-ui.mjs ships)
-  for (const f of ui.fonts.filter((x) => x.hud && fontAllowed(x.file))) if (copy(`fonts/${f.file}`, join(out, 'fonts', f.file.split('/').pop()))) copied.fonts++;
+  // (the HUD's faces ship once, with every other face of the game's, under
+  // public/fonts/bf2017/: scripts/bf2017-ui.mjs fonts, src/lib/bf2017/fonts.css)
   return copied;
 }
