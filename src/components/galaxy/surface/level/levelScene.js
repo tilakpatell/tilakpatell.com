@@ -6,7 +6,7 @@
 // few metres walked; a mesh's LOD file is fetched the first time it is
 // wanted, so the detail comes in round you as you go.
 //
-//   createLevelScene({ scene, pack, loadGltf, tier }) → {
+//   createLevelScene({ scene, pack, loadGltf, tier, ground? }) → {
 //     setTable(bin), setHorizon(bin), update([x, z]), stats() → { tris, calls, instances },
 //     rebuilds(), dispose() }
 //
@@ -15,10 +15,17 @@
 // its faces face out and its normals, mirrored by the instance matrix, light
 // it as the game does. (A back-side material would draw the right faces but
 // flip the normals again.)
+//
+// On a node renderer, a pack with ground.json draws the ground's mesh in the
+// game's own terrain layers (lane Q2, src/lib/three/ground/layeredGround.js):
+// `ground` is { mesh, renderer, fetchBytes, urlOf, entry }; the classic
+// renderer keeps the ground's own material.
 
 import * as THREE from 'three';
 import { readInstances } from '../../../../lib/level/instances.js';
 import { MIN_RADIUS, lodAt, seenAt } from '../../../../lib/level/lod.js';
+import { attachLayeredGround } from '../../../../lib/three/ground/layeredGround.js';
+import { backendOf } from '../../../../lib/three/light/three.js';
 
 const _m = new THREE.Matrix4();
 const _p = new THREE.Vector3();
@@ -53,7 +60,7 @@ function rowsOf(pack, draws, bin) {
   return rows;
 }
 
-export function createLevelScene({ scene, pack, loadGltf, tier }) {
+export function createLevelScene({ scene, pack, loadGltf, tier, ground = null }) {
   const root = new THREE.Group();
   root.name = 'level';
   scene.add(root);
@@ -65,6 +72,7 @@ export function createLevelScene({ scene, pack, loadGltf, tier }) {
   let last = null;
   let sorts = 0;
   let disposed = false;
+  const layered = ground?.mesh && pack.ground && backendOf(ground.renderer) !== 'webgl' ? attachLayeredGround({ ...ground, pack, tier }) : null;
 
   // the first shipped LOD at or past n (a pack built without --ultra holds
   // no files under the high tier's cap)
@@ -190,6 +198,7 @@ export function createLevelScene({ scene, pack, loadGltf, tier }) {
     },
     dispose() {
       disposed = true;
+      layered?.dispose();
       for (const p of pools.values()) {
         for (const part of p.parts ?? []) {
           part.mesh?.dispose();

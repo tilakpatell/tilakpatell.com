@@ -1,0 +1,200 @@
+[
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "high",
+  "view": "field2",
+  "samples": null,
+  "frameMs": 2277.3,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 9
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "high",
+  "view": "field2",
+  "samples": {
+   "detail": 4,
+   "triplanar": 2,
+   "sparkle": 1,
+   "mask": 1
+  },
+  "frameMs": 3634.3,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 15
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "high",
+  "view": "ridge",
+  "samples": null,
+  "frameMs": 2749.3,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 9
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "high",
+  "view": "ridge",
+  "samples": {
+   "detail": 4,
+   "triplanar": 2,
+   "sparkle": 1,
+   "mask": 1
+  },
+  "frameMs": 4888.1,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 15
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "mid",
+  "view": "field2",
+  "samples": null,
+  "frameMs": 2028.4,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 9
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "mid",
+  "view": "field2",
+  "samples": {
+   "detail": 2,
+   "triplanar": 0,
+   "sparkle": 0,
+   "mask": 1
+  },
+  "frameMs": 1944.9,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 12
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "mid",
+  "view": "ridge",
+  "samples": null,
+  "frameMs": 1310.2,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 9
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "mid",
+  "view": "ridge",
+  "samples": {
+   "detail": 2,
+   "triplanar": 0,
+   "sparkle": 0,
+   "mask": 1
+  },
+  "frameMs": 1763.6,
+  "info": {
+   "calls": 51,
+   "triangles": 6844461,
+   "textures": 12
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "low",
+  "view": "field2",
+  "samples": null,
+  "frameMs": 1062.2,
+  "info": {
+   "calls": 49,
+   "triangles": 6844461,
+   "textures": 7
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "low",
+  "view": "field2",
+  "samples": {
+   "detail": 0,
+   "triplanar": 0,
+   "sparkle": 0,
+   "mask": 0
+  },
+  "frameMs": 1026.3,
+  "info": {
+   "calls": 49,
+   "triangles": 6844461,
+   "textures": 7
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "flat",
+  "tier": "low",
+  "view": "ridge",
+  "samples": null,
+  "frameMs": 1194.4,
+  "info": {
+   "calls": 49,
+   "triangles": 6844461,
+   "textures": 7
+  }
+ },
+ {
+  "ready": true,
+  "gpu": "webgl",
+  "mat": "layered",
+  "tier": "low",
+  "view": "ridge",
+  "samples": {
+   "detail": 0,
+   "triplanar": 0,
+   "sparkle": 0,
+   "mask": 0
+  },
+  "frameMs": 1161.6,
+  "info": {
+   "calls": 49,
+   "triangles": 6844461,
+   "textures": 7
+  }
+ }
+]
