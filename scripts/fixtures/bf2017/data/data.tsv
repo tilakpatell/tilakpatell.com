@@ -4,6 +4,7 @@ AI/BattleAI/Templates/Rifleman_Template	AISoldierSpawnTemplateData	data/AI/Battl
 AI/BattleAI/Weapons/AIFiringPatterns	FiringPatternCollectionData	data/AI/BattleAI/Weapons/AIFiringPatterns.json	28528
 AI/BattleAI/Weapons/AIMeleeProjectile	ProjectileBlueprint	data/AI/BattleAI/Weapons/AIMeleeProjectile.json	7660
 Characters/Imperial/HeroShield/HeroShield	ObjectBlueprint	data/Characters/Imperial/HeroShield/HeroShield.json	8230
+Characters/Rigs/Weapon/WeaponSke01	SkeletonAsset	data/Characters/Rigs/Weapon/WeaponSke01.json	40687
 Gameplay/Characters/StormTrooperShared	SoldierBlueprint	data/Gameplay/Characters/StormTrooperShared.json	249777
 Gameplay/Equipment/Abilities/Ability_AssaultTraining/SC_Trooper_01_AssaultTraining	PassivePlayerAbilityAsset	data/Gameplay/Equipment/Abilities/Ability_AssaultTraining/SC_Trooper_01_AssaultTraining.json	3320
 Gameplay/Equipment/Grenades/ThermalDetonator/DefaultAbility_Assault_ThermalDetonator	InactiveSoldierWeaponPlayerAbilityAsset	data/Gameplay/Equipment/Grenades/ThermalDetonator/DefaultAbility_Assault_ThermalDetonator.json	6412
@@ -18,6 +19,7 @@ Gameplay/Equipment/Rifles/A280C/WeaponSway_A280C	DataContainerAsset	data/Gamepla
 Gameplay/Equipment/Shared/Projectiles/BlasterProjectile_BlasterRifle_A295	GameDataContainerAsset	data/Gameplay/Equipment/Shared/Projectiles/BlasterProjectile_BlasterRifle_A295.json	3113
 Gameplay/Equipment/ShortRange/Hunter/DefaultAbility_Assault_Vanguard	SoldierWeaponPlayerAbilityAsset	data/Gameplay/Equipment/ShortRange/Hunter/DefaultAbility_Assault_Vanguard.json	2839
 Gameplay/Factions/MP/Faction_Light_Orig	WSFactionAsset	data/Gameplay/Factions/MP/Faction_Light_Orig.json	288
+Gameplay/GameModes/Shared/SpawnManager_Shared_MP	SpatialPrefabBlueprint	data/Gameplay/GameModes/Shared/SpawnManager_Shared_MP.json	52901
 Gameplay/Kits/Hero/Ability_Evade_CharacterState	CharacterStatePlayerAbilityAsset	data/Gameplay/Kits/Hero/Ability_Evade_CharacterState.json	7123
 Gameplay/Kits/Hero/Affector_Hero_DarkSide	BasicAffectorAsset	data/Gameplay/Kits/Hero/Affector_Hero_DarkSide.json	406
 Gameplay/Kits/Hero/Affector_Hero_Sith	BasicAffectorAsset	data/Gameplay/Kits/Hero/Affector_Hero_Sith.json	398
@@ -56,6 +58,7 @@ Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical	LogicPrefabB
 Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke	DamageAffectorAsset	data/Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke.json	1653
 Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke_FromBehind	DamageAffectorAsset	data/Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke_FromBehind.json	1675
 Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier	DamageMultiplierAffectorAsset	data/Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier.json	575
+Gameplay/Profiles/ui/OptionHUDSquadListVisibility	ProfileOptionDataEnum	data/Gameplay/Profiles/ui/OptionHUDSquadListVisibility.json	537
 Gameplay/Teams/MP/Heroes_Dark	WSSoldierCustomizationKitList	data/Gameplay/Teams/MP/Heroes_Dark.json	1947
 Gameplay/Teams/MP/Heroes_Light	WSSoldierCustomizationKitList	data/Gameplay/Teams/MP/Heroes_Light.json	1923
 Gameplay/Teams/MP/Orig/Specials_Light_Orig_HO	WSSoldierCustomizationKitList	data/Gameplay/Teams/MP/Orig/Specials_Light_Orig_HO.json	823
@@ -79,9 +82,21 @@ Levels/Space/SB_Endor_01/SpaceBattle_Logic	LayerData	data/Levels/Space/SB_Endor_
 Levels/Space/SB_Endor_01/SpaceBattle_ScriptedEvents	LayerData	data/Levels/Space/SB_Endor_01/SpaceBattle_ScriptedEvents.json	156926
 Levels/Space/SB_Endor_01/SpaceBattle_SecondaryObjective_Cruisers	LayerData	data/Levels/Space/SB_Endor_01/SpaceBattle_SecondaryObjective_Cruisers.json	471471
 Online/BattlepointCostData	BattlepointCostData	data/Online/BattlepointCostData.json	24029
+Online/Killswitches/SquadSpawn_InCombat_WhenAffectorAppliedToMe	KillswitchData	data/Online/Killswitches/SquadSpawn_InCombat_WhenAffectorAppliedToMe.json	375
+Online/Killswitches/SquadSpawn_InCombat_WhenAppliedAffectorToOpponent	KillswitchData	data/Online/Killswitches/SquadSpawn_InCombat_WhenAppliedAffectorToOpponent.json	393
+Online/Killswitches/SquadSpawn_InCombat_WhenNearGrenade	KillswitchData	data/Online/Killswitches/SquadSpawn_InCombat_WhenNearGrenade.json	351
 UI/Customize/Screens/SpawnOverlayScreen	UIWidgetBlueprint	data/UI/Customize/Screens/SpawnOverlayScreen.json	54772
+UI/Data/GameModes/PlanetaryBattles	GameModeInformationAsset	data/UI/Data/GameModes/PlanetaryBattles.json	2846
+UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget	UIWidgetBlueprint	data/UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget.json	41771
+UI/InGame/Hud/SquadMemberList/SquadMemberList	UIWidgetBlueprint	data/UI/InGame/Hud/SquadMemberList/SquadMemberList.json	5789
+UI/InGame/Hud/SquadMemberList/SquadMemberListCell	UIWidgetBlueprint	data/UI/InGame/Hud/SquadMemberList/SquadMemberListCell.json	12875
+UI/InGame/Hud/SquadMemberList/SquadMemberListContent	UIWidgetBlueprint	data/UI/InGame/Hud/SquadMemberList/SquadMemberListContent.json	27735
+UI/InGame/Hud/SquadMemberList/SquadMemberListLocalPlayer	UIWidgetBlueprint	data/UI/InGame/Hud/SquadMemberList/SquadMemberListLocalPlayer.json	8807
 UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatBar	UIWidgetBlueprint	data/UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatBar.json	42447
 UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatProgress	UIWidgetBlueprint	data/UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatProgress.json	48581
+UI/InGame/Spawn/FastSpawnScreen	UIWidgetBlueprint	data/UI/InGame/Spawn/FastSpawnScreen.json	46412
+UI/Shapes/InGame/HUD/SquadList/SquadIconBG	DiceUIVectorShapeAsset	data/UI/Shapes/InGame/HUD/SquadList/SquadIconBG.json	2304
+UI/Shapes/InGame/HUD/SquadList/SquadListBG	DiceUIVectorShapeAsset	data/UI/Shapes/InGame/HUD/SquadList/SquadListBG.json	2228
 UI/Styles/Colors/UIColorPalette	UIColorPalette	data/UI/Styles/Colors/UIColorPalette.json	24816
 levels/lighting/hoth/prefabs/pf_lightceiling_m_01_hoth_lit_nongroupable_autogen_gen4	SpatialPrefabBlueprint	data/levels/lighting/hoth/prefabs/pf_lightceiling_m_01_hoth_lit_nongroupable_autogen_gen4.json	1975
 levels/lighting/hoth/prefabs/pf_lightwall_s_01_hoth_lit_nongroupable_autogen_gen4	SpatialPrefabBlueprint	data/levels/lighting/hoth/prefabs/pf_lightwall_s_01_hoth_lit_nongroupable_autogen_gen4.json	1975

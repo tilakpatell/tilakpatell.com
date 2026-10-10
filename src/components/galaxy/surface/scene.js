@@ -109,6 +109,7 @@ import { floorShadow } from '../../../lib/three/grounding';
 import { PROPS as GALAXY_PROPS, SCATTER as GALAXY_SCATTER } from './props';
 import { createPlacer } from './placer';
 import { createLevel, levelGround } from './level';
+import { createLevelScatter } from './level/levelScatter.js';
 import { anyFigure, createActors, modelFigure } from './actors';
 import { RIDES as GALAXY_RIDES } from './rides';
 import { SEATS, poseRider } from './riders';
@@ -463,6 +464,8 @@ export async function create(canvas, ctx) {
       takeEngine?.(physics);
     },
   });
+  // its terrain's scatter, from the game's tables, in the world's wind (fidelity lane N; null without one)
+  const gameScatter = createLevelScatter({ scene, site, tier: level, renderer, groundAt: (x, z) => groundAt(world, x, z), wind, small });
   // (things that float, a bongo on Lake Paonga, ride the waves: floats.js)
   const floaters = [];
   for (const t of site.things_all) {
@@ -3402,6 +3405,7 @@ export async function create(canvas, ctx) {
     life.update(dt, state.phase === 'walk' ? me().st : null, state.phase === 'walk' || state.phase === 'ride' ? me().st : camera.position);
     placer.update(t, dt, me().st);
     gameLevel?.update([me().st.x, me().st.z]);
+    gameScatter?.update([me().st.x, me().st.z], dt);
     if (!reduced) kit.tick(dt);
     grass?.update(me().st);
     wind.update(dt);
@@ -4016,6 +4020,7 @@ export async function create(canvas, ctx) {
     dispose() {
       disposed = true;
       gameLevel?.dispose();
+      gameScatter?.dispose();
       net.end();
       body?.dispose();
       body = null;

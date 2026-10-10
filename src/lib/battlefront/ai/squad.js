@@ -1,5 +1,6 @@
 // A team's bots in squads (spec catalogue 7, on `lib/ai/squad`): four to a
-// squad by spawn order, as the game deploys them; a leader (the first alive),
+// squad by spawn order, as the game deploys them; a player joins one
+// (`joinSquad`); a leader (the first bot alive, else the first alive),
 // a centre, a confidence from what the squad believes it faces and so a
 // posture (press, hold, retreat); and alerts, which spread from the one who
 // saw to the squadmates at the template's `AlertPropagationSpeed`, a belief
@@ -8,11 +9,14 @@
 //   createSquads(sim) → squads       update(squads, sim) (every SQUAD s)
 //   alert(squads, from, { id, at }, now)      deliver(squads, sim, now) → alerts that arrived
 //   squadOf(squads, id) → squad | null
+//   joinSquad(squads, sim, id, team?) → { squad, created: squad | null }
+//   squadRows(squads, sim, id, { names, nameOf, letterOf }) → { id, letter, members: [{ id, name, cls, alive, local, order }] } | null
 
 import { confidence, posture } from '../../ai/squad.js';
+import SQUADS from '../../../data/bf2017/squads.json';
 
-// Bots a squad: the game's (its squad spawn and Instant Action squads), by observation.
-export const SQUAD_SIZE = 4;
+// Soldiers a squad: the game's (squads.json: TacticalSpawnManagerEntityData.MaxPlayersPerSquad).
+export const SQUAD_SIZE = SQUADS.rows.size;
 // How far round a squad's centre its fight is weighed (friends and believed
 // enemies): the tactics' engage distance and a half, by hand.
 export const REACH = 60;
@@ -35,10 +39,61 @@ export function createSquads(sim) {
 
 export const squadOf = (squads, id) => squads.by.get(id) ?? null;
 
+const fresh = (id, team, members) => ({ id, team, members, leader: null, centre: null, level: 'neutral', posture: 'hold' });
+
+function add(squads, sq) {
+  squads.list.push(sq);
+  for (const id of sq.members) squads.by.set(id, sq);
+  return sq;
+}
+
+// A player into the team's first squad with room; with every squad full, into
+// the first, whose last bot moves to a squad with room or a new one (`created`,
+// for the commander to take on). The game's own parties are native code: this
+// rule is by hand.
+export function joinSquad(squads, sim, id, team = sim.entities.get(id)?.team) {
+  const had = squadOf(squads, id);
+  if (had) return { squad: had, created: null };
+  const mine = squads.list.filter((q) => q.team === team);
+  const room = mine.find((q) => q.members.length < SQUAD_SIZE);
+  if (room) {
+    room.members.push(id);
+    squads.by.set(id, room);
+    update(squads, sim);
+    return { squad: room, created: null };
+  }
+  if (!mine.length) {
+    const sq = add(squads, fresh(`${team}.1`, team, [id]));
+    update(squads, sim);
+    return { squad: sq, created: sq };
+  }
+  const first = mine[0];
+  const out = [...first.members].reverse().find((m) => sim.entities.get(m)?.bot) ?? first.members.at(-1);
+  first.members[first.members.indexOf(out)] = id;
+  squads.by.set(id, first);
+  const created = add(squads, fresh(`${team}.${mine.length + 1}`, team, [out]));
+  update(squads, sim);
+  return { squad: first, created };
+}
+
+// The squad list's rows for one soldier's squad: that soldier first, then
+// the others in the squad's order; its letter is its place in the team.
+export function squadRows(squads, sim, id, { names = [], nameOf = (m) => m, letterOf = () => null } = {}) {
+  const sq = squadOf(squads, id);
+  if (!sq) return null;
+  const index = squads.list.filter((q) => q.team === sq.team).indexOf(sq);
+  const row = (m) => {
+    const e = sim.entities.get(m);
+    return { id: m, name: nameOf(m), cls: e?.cls?.cls ?? null, alive: Boolean(e?.alive), local: m === id, order: e?.alive ? letterOf(e.brain?.task ?? null) : null };
+  };
+  return { id: sq.id, letter: names[index] ?? null, members: [id, ...sq.members.filter((m) => m !== id)].map(row) };
+}
+
 export function update(squads, sim) {
   for (const sq of squads.list) {
     const alive = sq.members.map((id) => sim.entities.get(id)).filter((m) => m?.alive);
-    sq.leader = alive[0]?.id ?? null;
+    // (a bot leads while one lives, by hand: the bots keep to the commander's order, not the player's)
+    sq.leader = (alive.find((m) => m.bot) ?? alive[0])?.id ?? null;
     if (!alive.length) {
       sq.centre = null;
       sq.posture = 'retreat';

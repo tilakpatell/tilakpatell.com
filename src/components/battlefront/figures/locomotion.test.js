@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CROSSFADE, deathFor, packClip, resolveFamilies, stateFor, transition } from './locomotion.js';
+import { CROSSFADE, deathFor, packClip, packFallback, resolveFamilies, stateFor, transition } from './locomotion.js';
 
 // a cut of anims.jsonl's names, as the export spells them
 const NAMES = ['P_HM_Rifle_StandIdle_01', 'C_HM_Rifle_Walk_Fwd_01', 'C_HM_Rifle_Run_Fwd_01', 'C_HM_Rifle_Walk_Left1_01', 'A_HM_Death_Stand_Front_Upperbody_BlasterFire_01', 'A_HM_Death_Stand_Back_Upperbody_BlasterFire_01', 'A_HM_Death_Stand_Left_Upperbody_BlasterFire_01', 'T_HM_Rifle_RunToStand_Fwd_01', 'Stand_Combat_Flinch01'];
@@ -45,6 +45,30 @@ describe('the game’s clips, by family', () => {
     expect(packClip({ state: 'aim', speed: 0, dir8: 0 })).toBe('aim.rifle');
     expect(packClip({ state: 'run', speed: 4, dir8: 4 })).toBe('walk.back');
     expect(packClip({ state: 'death', side: 'back' })).toBe('die.back');
+  });
+
+  it('plays the held weapon’s stance pack where it has the clip: the idle armed, never Luke’s unarmed one', () => {
+    expect(packClip({ state: 'idle', speed: 0, dir8: 0 }, { stance: 't' })).toBe('stance.t.idle');
+    expect(packClip({ state: 'aim', speed: 0, dir8: 0 }, { stance: 'p' })).toBe('stance.p.aim');
+    expect(packClip({ state: 'crouchIdle', speed: 0, dir8: 0 }, { stance: 't' })).toBe('stance.t.crouch');
+    expect(packClip({ state: 'crouchWalk', speed: 1, dir8: 0 }, { stance: 'l' })).toBe('stance.l.crouch.run');
+    expect(packClip({ state: 'run', speed: 4, dir8: 0 }, { stance: 'l' })).toBe('stance.l.run');
+    expect(packClip({ state: 'aim', speed: 2, dir8: 6 }, { stance: 'p' })).toBe('stance.p.walk.left');
+    // (the deaths, hits and rolls have no stance clips: the humanoid's)
+    expect(packClip({ state: 'death', side: 'front' }, { stance: 't' })).toBe('die.fwd');
+    expect(packClip({ state: 'roll', speed: 4, dir8: 0 }, { stance: 'p' })).toBe('dodge.front');
+  });
+
+  it('falls back from a stance clip the pack lacks to the humanoid’s armed one', () => {
+    // (the idle to a held pose, by the weapon: a pistol's, else a rifle's)
+    expect(packFallback('stance.t.idle')).toBe('aim.rifle');
+    expect(packFallback('stance.l.idle')).toBe('aim.rifle');
+    expect(packFallback('stance.p.idle')).toBe('aim.pistol');
+    expect(packFallback('stance.p.aim')).toBe('aim.pistol');
+    expect(packFallback('stance.l.aim')).toBe('aim.rifle');
+    expect(packFallback('stance.l.crouch')).toBe('crouch');
+    expect(packFallback('stance.t.walk.left')).toBe('walk.left');
+    expect(packFallback('walk')).toBe(null);
   });
 });
 

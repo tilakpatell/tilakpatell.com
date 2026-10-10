@@ -12,9 +12,9 @@
 // colour(index) → 'rgb(…)' from the game's palette (linear, as the record
 //   keeps it, made sRGB), or null
 // fontFor(gameFont) → { family, size, weight }: the game's face and size by
-//   its name ('Univers620BoldCondensed30px'), on the open face in its place
-//   (Cuprum for Univers Condensed, Roboto for Roboto, a monospace figure
-//   face for RaxusPrime: the commercial faces never ship)
+//   its name ('Univers620BoldCondensed30px'), on the game's own file
+//   (src/lib/bf2017/fonts.css: Univers Condensed by its grade, RaxusPrime
+//   for the numerals, Roboto)
 // placeWidget(element, viewport) → { x, y, w, h }: an element's box on the
 //   game's 1920 × 1080 reference, scaled to the viewport's shorter side
 // bitmap(name) → url | null; portrait(who) → url | null
@@ -37,11 +37,13 @@ export function colour(index, palette = ROWS.palette) {
 export function fontFor(name) {
   const n = String(name ?? '');
   const size = Number(n.match(/(\d+)(?:px)?$/)?.[1] ?? 18);
-  if (/^RaxusPrime/.test(n)) return { family: 'var(--font-bf-hud)', size, weight: /Bold/.test(n) ? 700 : 400, numeric: 'tabular-nums' };
-  if (/^Roboto/.test(n)) return { family: 'var(--font-bf-text)', size, weight: 400 };
-  // (Univers' grades: 520 medium, 620 bold, 720 heavy)
+  if (/^RaxusPrime/.test(n)) return { family: 'var(--font-bf-numerals)', size, weight: /Bold/.test(n) ? 700 : /Light/.test(n) ? 300 : 400, numeric: 'tabular-nums' };
+  if (/^Roboto/.test(n)) return { family: "'Roboto BF', var(--font-bf-text)", size, weight: 400 };
+  // (Univers' grades, as fonts.css weighs them: 420 regular, 520 medium,
+  // 620 bold, 720 heavy, 820 black)
   const grade = Number(n.match(/^Univers(\d{3})/)?.[1] ?? 520);
-  return { family: 'var(--font-bf-hud)', size, weight: grade >= 620 ? 700 : 500 };
+  const weight = { 420: 400, 520: 500, 620: 700, 720: 800, 820: 900 }[grade] ?? 500;
+  return { family: 'var(--font-bf-hud)', size, weight };
 }
 
 export function placeWidget(el, { width, height }) {

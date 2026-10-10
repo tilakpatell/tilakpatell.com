@@ -305,3 +305,147 @@
   transform: translateX(-50%);
   text-align: center;
 }
+
+/* the squad list (SquadList.jsx), right of the soldier's corner: a row a
+   member, the pin and the class icon, the name on a bar of glass that fades
+   out past the record's solid part (SquadListBG: solid to 40 of 64), no blur
+   (docs/health/RULES.md: text over the 3D sits on glass, never blurred) */
+.bf-squad {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: var(--bf-squad-w);
+  pointer-events: none;
+}
+.bf-squad-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--bf-squad-row);
+}
+.bf-squad-icon {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--bf-squad-box);
+  height: var(--bf-squad-box);
+}
+.bf-squad-icon > * {
+  grid-area: 1 / 1;
+}
+/* the pin (SquadIconBG: a disc with its top right corner square) in the name's colour */
+.bf-squad-pin {
+  width: var(--bf-squad-pin);
+  height: var(--bf-squad-pin);
+  border-radius: 50% 0 50% 50%;
+  background: var(--bf-squad-in);
+  /* an order turns it 45°, Expo EaseOut over 0.5 s (SquadMemberListContent, by hand from its hashed fields) */
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bf-squad-row[data-order] .bf-squad-pin {
+  transform: rotate(45deg);
+}
+.bf-squad-class {
+  width: var(--bf-squad-svg);
+  height: var(--bf-squad-svg);
+  background: var(--bf-squad-out);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+.bf-squad-letter {
+  color: var(--bf-squad-out);
+  font-family: var(--bf-font-bold);
+  font-size: 0.9rem;
+  opacity: 0;
+}
+/* with an order the icon and the letter take turns: 2 s round, each fade 0.15 s */
+.bf-squad-row[data-order] .bf-squad-class {
+  animation: bf-squad-icon 2s linear infinite;
+}
+.bf-squad-row[data-order] .bf-squad-letter {
+  /* (the icon's curve half a round on: in as the icon goes out, out as it comes back) */
+  animation: bf-squad-icon 2s linear infinite;
+  animation-delay: -1s;
+}
+@keyframes bf-squad-icon {
+  0% {
+    opacity: 1;
+  }
+  7.5%,
+  50% {
+    opacity: 0;
+  }
+  57.5%,
+  100% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bf-squad-pin {
+    transition: none;
+  }
+  .bf-squad-row[data-order] .bf-squad-class {
+    animation: none;
+    opacity: 0;
+  }
+  .bf-squad-row[data-order] .bf-squad-letter {
+    animation: none;
+    opacity: 1;
+  }
+}
+.bf-squad-name {
+  position: absolute;
+  left: calc(var(--bf-squad-box) / 2);
+  padding: 0.1rem var(--bf-squad-bar-tail) 0.1rem calc(var(--bf-squad-name-x) - var(--bf-squad-box) / 2);
+  background: linear-gradient(to right, var(--bf-glass) calc(100% - var(--bf-squad-bar-fade)), transparent);
+  font-size: 1.125rem; /* the widget's Univers520MediumCondensed18px, 16 px at least */
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.bf-squad-row[data-local] .bf-squad-name {
+  font-family: var(--bf-font-bold);
+}
+
+/* where to deploy, under the offers: the HQ, then the squadmates */
+.bf-spawns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+}
+.bf-spawn {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0 0.5rem;
+  min-width: 8rem;
+  min-height: 44px;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.bf-spawn img {
+  grid-row: span 2;
+  filter: invert(1);
+}
+.bf-spawn[aria-pressed='true'] {
+  border-color: var(--bf-ink);
+  background: rgba(255, 255, 255, 0.1);
+}
+.bf-spawn[aria-disabled='true'] {
+  color: var(--bf-muted);
+  cursor: not-allowed;
+}
+.bf-spawn-why {
+  font-size: 0.75rem;
+  color: var(--bf-warn);
+}
