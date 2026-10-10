@@ -1,0 +1,14 @@
+{
+ "format": 1,
+ "world": "hoth",
+ "terrain": "Levels/MP/Hoth_01/Hoth_01_Terrain/Hoth_01_Terrain",
+ "_source": "web/maps/terrain_scatter/<terrain>.json (scripts/bf2017-scatter.mjs); the mask derived by scripts/lib/bf2017-scatter.mjs",
+ "mask": "derived",
+ "masks": null,
+ "rules": [],
+ "rulesSource": "Hoth_01_Terrain: no TerrainMeshScatteringType in any layer",
+ "layers": [],
+ "tex": {},
+ "tableFrom": "the pack’s scatter.json (lane E0)",
+ "mapsMissing": []
+}
