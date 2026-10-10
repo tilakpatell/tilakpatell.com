@@ -91,7 +91,7 @@ G1, G3, G4a and G6 start at once; G2 when E0 is on main; G4b after G3; G5 after 
 The fonts, icons and strings are not this game's lane 5's to import: lane M (`HANDOFF-bf2017.md`, "Lane M") imported them for the whole site, and lane 5 consumes them:
 
 - **The HUD's widgets**: `src/lib/bf2017/ui/` (`widget(name)` with its tree, layout and words in the game's text; `placeWidget`; `colour(index)` from the game's palette; `fontFor(gameFont)`; `bitmap`, `portrait` once the bucket has `UI/Bitmaps`).
-- **The fonts**: `src/lib/bf2017/fonts.css` (`--font-bf-hud`, `--font-bf-text`, `--font-aurebesh`). Lane 5's plan names `LinotypeUnivers-520CnMedium` and `RaxusPrimeNumericalMonospace_Regular`: those are EA's licences, not the site's, and were taken out of `public/battlefront/fonts/`; `fontFor` maps the widgets' Univers and RaxusPrime faces onto Cuprum and Roboto.
+- **The fonts**: `src/lib/bf2017/fonts.css` (`--font-bf-hud`: the game's Univers Condensed; `--font-bf-numerals`: RaxusPrime; `--font-bf-text`; `--font-aurebesh`), every face of the drop under `public/fonts/bf2017/` (the owner holds the licence). `fontFor` maps each widget's font name onto the game's own file by family and weight; nothing is copied under `public/battlefront/fonts/`.
 - **The icons**: `src/lib/bf2017/icons.js` and `src/runtime/hud/GameIcon.jsx` (the sprites under `public/ui/bf2017/`), in place of lane 0's copies under `public/battlefront/icons/`.
 - **The strings**: `src/lib/bf2017/strings.js` (`text`, `nameOf`, `loadFamily` for the whole table), beside `rulebook.js`'s `stringOf`.
 - **The films**: `src/lib/bf2017/films.js`'s `tilesFor(mode)`, `tutorials()`, `logo()` for the menu and the help, and `src/runtime/hud/Film.jsx` to play them.
