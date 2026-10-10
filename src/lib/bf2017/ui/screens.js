@@ -69,7 +69,7 @@ function expand(elements, parent, path, ctx, slots = {}, seen = new Set(), depth
   for (const el of elements ?? []) {
     let at;
     if (parent.stack) {
-      const size = (el.size ?? [0, 0]).map((v) => v * ctx.k);
+      const size = (widgetSized(el).size ?? [0, 0]).map((v) => v * ctx.k);
       const down = /TopDown|BottomUp/i.test(parent.stack.direction);
       const free = placeIn(el, parent, ctx.k);
       at = down ? { x: free.x, y: parent.y + cursor, w: size[0], h: size[1] } : { x: parent.x + cursor, y: free.y, w: size[0], h: size[1] };
@@ -95,18 +95,43 @@ function expand(elements, parent, path, ctx, slots = {}, seen = new Set(), depth
 function widgetSized(el) {
   if (!el.widget || el.useElementSize) return el;
   const w = ROWS.widgets[el.widget];
-  return w?.size ? { ...el, size: w.size } : el;
+  if (w?.size) return { ...el, size: w.size };
+  // (a widget with no size of its own is as big as what it holds)
+  const ext = extent(w?.elements);
+  return ext ? { ...el, size: ext } : el;
+}
+
+function extent(elements) {
+  let w = 0;
+  let h = 0;
+  for (const e of elements ?? []) {
+    if (!e.size) continue;
+    w = Math.max(w, (e.anchor?.[0] ? 0 : (e.offset?.[0] ?? 0)) + e.size[0]);
+    h = Math.max(h, (e.anchor?.[1] ? 0 : (e.offset?.[1] ?? 0)) + e.size[1]);
+  }
+  return w && h ? [w, h] : null;
+}
+
+// A cell the game sizes to its text (its widget a placeholder of a pixel or
+// two): about 0.6 em a letter at the 24 px the cells write in, padded.
+const CELL_EM = 0.6;
+const CELL_TEXT = 24;
+function cellSize(w, label) {
+  const [cw, ch] = w?.size ?? [0, 0];
+  if (cw > 8 && ch > 8) return [cw, ch];
+  return [Math.max(64, Math.round(String(label).length * CELL_EM * CELL_TEXT + 32)), ch > 8 ? ch : 48];
 }
 
 function cellsOf(list, at, path, ctx, seen, depth) {
   let cursor = 0;
   return list.cells.map((c) => {
     const w = ROWS.widgets[c.widget];
-    const [cw, ch] = (w?.size ?? [190, 48]).map((v) => v * ctx.k);
+    const key = Object.values(c.binds ?? {})[0];
+    const label = key ? say(key, ctx) : c.id;
+    const [cw, ch] = cellSize(w, label).map((v) => v * ctx.k);
     const box = list.horizontal ? { x: at.x + cursor, y: at.y, w: cw, h: Math.min(ch, at.h || ch) } : { x: at.x, y: at.y + cursor, w: Math.min(cw, at.w || cw), h: ch };
     cursor += (list.horizontal ? cw : ch) + list.spacing * ctx.k;
-    const key = Object.values(c.binds ?? {})[0];
-    const cell = { id: `${path}/${c.id}`, type: 'cell', ...box, label: key ? say(key, ctx) : c.id, ...(key ? { key } : {}) };
+    const cell = { id: `${path}/${c.id}`, type: 'cell', ...box, label, ...(key ? { key } : {}) };
     if (c.link) {
       cell.link = c.link;
       cell.screen = ROWS.links[c.link] ?? null;

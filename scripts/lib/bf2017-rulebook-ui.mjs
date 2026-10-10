@@ -36,8 +36,9 @@ export const hashKey = (n) => `#${(n >>> 0).toString(16).toUpperCase().padStart(
 const GUIDISH = /^[0-9A-F]{8}-[0-9A-F]{4}-/i;
 const asset = (v) => v?.$asset ?? null;
 // The era rule: the sequel's names, and its seasons' and act 3's folders
-// (S1's Crait, the S9 sequel levels, A3's Resurrection).
-export const isEra = (n) => isSequel(n) || /^(S1|S9[^/]*|A3)\//i.test(n);
+// (S1's Crait, the S9 sequel levels, A3's Resurrection, and "Paintball", the
+// sequel's codename that lane M's films leave out too).
+export const isEra = (n) => isSequel(n) || /^(S1|S9[^/]*|A3)\//i.test(n) || /paintball/i.test(n);
 
 // ── strings ──────────────────────────────────────────────────────────────
 
@@ -203,8 +204,13 @@ function elementOf(a, i, ctx, w, depth = 0) {
     };
     const all = a.objects.map((c, ci) => (c?.$type === 'StaticListCellEntityData' ? ci : -1)).filter((ci) => ci >= 0);
     const mine = all.filter((ci) => w.feeds.get(ci)?.has(i));
+    // (cells no event ties to a list go to the widget's first list, once:
+    // the export does not say which list holds them)
+    const lists = new Set(a.objects.map((x, xi) => (/^Static(Tab)?ListElementData$/.test(x?.$type ?? '') ? xi : -1)).filter((xi) => xi >= 0));
+    const loose = all.filter((ci) => ![...(w.feeds.get(ci) ?? [])].some((t) => lists.has(t)));
+    const take = mine.length ? mine : w.claimed ? [] : ((w.claimed = true), loose);
     const order = new Map((deref(a, rootOf(a).Object)?.Components ?? []).map((c, k) => [c?.$ref, k]));
-    const cells = (mine.length ? mine : all).sort((x, y) => (order.get(x) ?? 1e9 + x) - (order.get(y) ?? 1e9 + y));
+    const cells = take.sort((x, y) => (order.get(x) ?? 1e9 + x) - (order.get(y) ?? 1e9 + y));
     cells.forEach((ci) => {
       const c = a.objects[ci];
       const bp = asset(c.Blueprint);

@@ -19,7 +19,7 @@ const TABLE = { ...STRINGS, ...ROWS.strings };
 const say = (key) => (key ? text(key, [], { strings: TABLE }) : null);
 
 // the site's modes and worlds → the game's
-export const MODE_IDS = { galacticAssault: 'PlanetaryBattles', assault: 'PlanetaryBattles', starfighter: 'SpaceBattle', hvv: 'HeroesVersusVillains', heroes: 'HeroesVersusVillains', blast: 'Blast', strike: 'Domination', extraction: 'DominationExtraction', ewokHunt: 'Mode6', coop: 'ModeDefend', supremacy: 'Mode1', skirmish: 'SkirmishBlast' };
+export const MODE_IDS = { galacticAssault: 'PlanetaryBattles', assault: 'PlanetaryBattles', starfighter: 'SpaceBattle', hvv: 'HeroesVersusVillains', heroes: 'HeroesVersusVillains', blast: 'Blast', strike: 'PlanetaryMissions', extraction: 'Mode5', ewokHunt: 'Mode3', heroShowdown: 'Mode6', coop: 'ModeDefend', supremacy: 'Mode1', skirmish: 'SkirmishBlast' };
 export const LEVEL_KEYS = { hoth: 'Hoth_01', endor: 'Endor_01', tatooine: 'Tatooine_01', naboo: 'Naboo_01', kashyyyk: 'Kashyyyk_01', kamino: 'Kamino_01', geonosis: 'Geonosis_01', yavin: 'Yavin_01', jabba: 'JabbasPalace_01', bespin: 'Bespin_01', felucia: 'Felucia_01', scarif: 'Scarif_01', deathstar: 'DeathStar02_01', kessel: 'Kessel_01' };
 
 export const modeFor = (site) => MODE_IDS[site] ?? site;
