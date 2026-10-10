@@ -711,7 +711,7 @@
   .assault-ring p, .assault-feed li, .assault-card { animation: none; }
 }
 
-/* who you play as, and what's in your hand (HeroPanel.jsx): the tabs at the
+/* who you play as, and what's in your hand (DeployPanel.jsx): the tabs at the
    top and Equip at the bottom stay put, the list between them scrolls. (Each
    rule under .surface-heroes, over .surface-list's own for its spans, lists
    and buttons.) */

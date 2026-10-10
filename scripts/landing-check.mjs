@@ -11,9 +11,14 @@
 // biome that was; --name tags the screenshots; --look orodruin turns to face
 // a thing by its name for a shot of its own. Headless Chromium draws in
 // software, slowly: the waits are long.
+// --surface [hoth …] times a galaxy world's landing instead: scripts/lib/landing-surface.mjs.
 import { chromium } from 'playwright-core';
 
 const args = process.argv.slice(2);
+if (args[0] === '--surface') {
+  const { run } = await import('./lib/landing-surface.mjs');
+  process.exit(await run(args.slice(1)));
+}
 const flag = (name, dflt) => {
   const i = args.indexOf(name);
   return i >= 0 ? args.splice(i, 2)[1] : dflt;

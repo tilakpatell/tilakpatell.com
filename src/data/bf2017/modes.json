@@ -1,0 +1,632 @@
+{
+ "_from": {
+  "export": "build 489592",
+  "date": "2026-10-10"
+ },
+ "names": {
+  "modes": {
+   "galacticAssault": {
+    "id": "ID_RP_GAMEMODE_PLANETARYBATTLES",
+    "text": "Galactic Assault"
+   },
+   "starfighter": {
+    "id": "ID_RP_GAMEMODE_SPACEBATTLES",
+    "text": "Starfighter Assault"
+   },
+   "hvv": {
+    "id": "ID_RP_GAMEMODE_HEROESVSVILLAINS",
+    "text": "Heroes vs Villains"
+   },
+   "blast": {
+    "id": "ID_RP_GAMEMODE_BLAST",
+    "text": "Blast"
+   },
+   "supremacy": {
+    "id": "ID_RP_GAMEMODE_MODE1",
+    "text": "Supremacy"
+   },
+   "extraction": {
+    "id": "ID_RP_GAMEMODE_MODE5",
+    "text": "Extraction"
+   },
+   "showdown": {
+    "id": "ID_RP_GAMEMODE_MODE6",
+    "text": "Hero Showdown"
+   },
+   "ewokHunt": {
+    "id": "ID_RP_GAMEMODE_MODE3",
+    "text": "Ewok Hunt"
+   },
+   "heroStarfighters": {
+    "id": "ID_RP_GAMEMODE_MODE7",
+    "text": "Hero Starfighters"
+   },
+   "jetpackCargo": {
+    "id": "ID_RP_GAMEMODE_MODEC",
+    "text": "Jetpack Cargo"
+   },
+   "coop": {
+    "id": "ID_RP_GAMEMODE_MODE9",
+    "text": "Co-op missions"
+   },
+   "arcade": {
+    "id": "ID_PLAY_SCR_SKIRMISH",
+    "text": "Arcade"
+   }
+  },
+  "worlds": {
+   "bespin": {
+    "id": "ID_RP_LEVEL_BESPIN",
+    "text": "Bespin"
+   },
+   "deathstar": {
+    "id": "ID_RP_LEVEL_DEATHSTARII",
+    "text": "Death Star II"
+   },
+   "endor": {
+    "id": "ID_RP_LEVEL_ENDOR",
+    "text": "Endor"
+   },
+   "felucia": {
+    "id": "ID_RP_LEVEL_FELUCIA",
+    "text": "Felucia"
+   },
+   "fondor": {
+    "id": "ID_RP_LEVEL_FONDOR",
+    "text": "Fondor"
+   },
+   "geonosis": {
+    "id": "ID_RP_LEVEL_GEONOSIS",
+    "text": "Geonosis"
+   },
+   "hoth": {
+    "id": "ID_RP_LEVEL_HOTH",
+    "text": "Hoth"
+   },
+   "kamino": {
+    "id": "ID_RP_LEVEL_KAMINO",
+    "text": "Kamino"
+   },
+   "kashyyyk": {
+    "id": "ID_RP_LEVEL_KASHYYYK",
+    "text": "Kashyyyk"
+   },
+   "kessel": {
+    "id": null,
+    "text": null
+   },
+   "naboo": {
+    "id": "ID_RP_LEVEL_NABOO",
+    "text": "Naboo"
+   },
+   "ryloth": {
+    "id": "ID_RP_LEVEL_DROIDBATTLESHIP",
+    "text": "Ryloth"
+   },
+   "scarif": {
+    "id": null,
+    "text": null
+   },
+   "tatooine": {
+    "id": "ID_RP_LEVEL_TATOOINE",
+    "text": "Tatooine"
+   },
+   "yavin": {
+    "id": "ID_RP_LEVEL_YAVIN",
+    "text": "Yavin 4"
+   }
+  }
+ },
+ "levels": {
+  "cloudcity_01": {
+   "level": "S2/Levels/CloudCity_01/CloudCity_01",
+   "world": "bespin",
+   "modes": [
+    "hvv",
+    "blast",
+    "extraction",
+    "showdown",
+    "jetpackCargo"
+   ]
+  },
+  "deathstar02_01": {
+   "level": "Levels/MP/DeathStar02_01/DeathStar02_01",
+   "world": "deathstar",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "coop",
+    "arcade"
+   ]
+  },
+  "endor_01": {
+   "level": "Levels/MP/Endor_01/Endor_01",
+   "world": "endor",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "showdown",
+    "coop",
+    "arcade"
+   ]
+  },
+  "endor_02": {
+   "level": "S2_1/Levels/Endor_02/Endor_02",
+   "world": "endor",
+   "modes": [
+    "blast",
+    "ewokHunt"
+   ]
+  },
+  "endor_04": {
+   "level": "S8_1/Endor_04/Endor_04",
+   "world": "endor",
+   "modes": [
+    "blast",
+    "ewokHunt"
+   ]
+  },
+  "felucia_01": {
+   "level": "S8/Felucia/Levels/MP/Felucia_01/Felucia_01",
+   "world": "felucia",
+   "modes": [
+    "hvv",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "geonosis_01": {
+   "level": "S5_1/Levels/MP/Geonosis_01/Geonosis_01",
+   "world": "geonosis",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "geonosis_02": {
+   "level": "S6_2/Geonosis_02/Levels/Geonosis_02/Geonosis_02",
+   "world": "geonosis",
+   "modes": [
+    "hvv",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "hoth_01": {
+   "level": "Levels/MP/Hoth_01/Hoth_01",
+   "world": "hoth",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "showdown",
+    "coop",
+    "arcade"
+   ]
+  },
+  "hoth_02": {
+   "level": "S9_3/Hoth_02/Hoth_02",
+   "world": "hoth",
+   "modes": [
+    "supremacy"
+   ]
+  },
+  "jabbaspalace_01": {
+   "level": "S2_2/Levels/JabbasPalace_01/JabbasPalace_01",
+   "world": "tatooine",
+   "modes": [
+    "hvv",
+    "blast",
+    "extraction",
+    "showdown",
+    "coop"
+   ],
+   "name": {
+    "id": "ID_RP_LEVEL_JABBASPALACE",
+    "text": "Jabba's Palace"
+   }
+  },
+  "kamino_01": {
+   "level": "Levels/MP/Kamino_01/Kamino_01",
+   "world": "kamino",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "showdown",
+    "coop",
+    "arcade"
+   ]
+  },
+  "kamino_03": {
+   "level": "S7_1/Levels/Kamino_03/Kamino_03",
+   "world": "kamino",
+   "modes": [
+    "supremacy",
+    "coop"
+   ]
+  },
+  "kashyyyk_01": {
+   "level": "Levels/MP/Kashyyyk_01/Kashyyyk_01",
+   "world": "kashyyyk",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "showdown",
+    "arcade"
+   ]
+  },
+  "kashyyyk_02": {
+   "level": "S7/Levels/Kashyyyk_02/Kashyyyk_02",
+   "world": "kashyyyk",
+   "modes": [
+    "supremacy",
+    "coop"
+   ]
+  },
+  "kessel_01": {
+   "level": "S3/Levels/Kessel_01/Kessel_01",
+   "world": "kessel",
+   "modes": [
+    "hvv",
+    "blast",
+    "extraction",
+    "showdown",
+    "coop"
+   ]
+  },
+  "naboo_01": {
+   "level": "Levels/MP/Naboo_01/Naboo_01",
+   "world": "naboo",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy"
+   ]
+  },
+  "naboo_02": {
+   "level": "Levels/MP/Naboo_02/Naboo_02",
+   "world": "naboo",
+   "modes": [
+    "hvv",
+    "blast",
+    "showdown"
+   ]
+  },
+  "naboo_03": {
+   "level": "S7_2/Levels/Naboo_03/Naboo_03",
+   "world": "naboo",
+   "modes": [
+    "hvv",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "sb_droidbattleship_01": {
+   "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
+   "world": "ryloth",
+   "space": true,
+   "modes": [
+    "starfighter",
+    "heroStarfighters",
+    "arcade"
+   ]
+  },
+  "sb_endor_01": {
+   "level": "Levels/Space/SB_Endor_01/SB_Endor_01",
+   "world": "endor",
+   "space": true,
+   "modes": [
+    "starfighter",
+    "heroStarfighters",
+    "arcade"
+   ]
+  },
+  "sb_fondor_01": {
+   "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
+   "world": "fondor",
+   "space": true,
+   "modes": [
+    "starfighter",
+    "heroStarfighters",
+    "arcade"
+   ]
+  },
+  "sb_kamino_01": {
+   "level": "Levels/Space/SB_Kamino_01/SB_Kamino_01",
+   "world": "kamino",
+   "space": true,
+   "modes": [
+    "starfighter",
+    "heroStarfighters",
+    "arcade"
+   ]
+  },
+  "scarif_02": {
+   "level": "S9_3/Scarif/Levels/MP/Scarif_02/Scarif_02",
+   "world": "scarif",
+   "modes": [
+    "hvv",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "tatooine_01": {
+   "level": "Levels/MP/Tatooine_01/Tatooine_01",
+   "world": "tatooine",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "jetpackCargo",
+    "coop",
+    "arcade"
+   ]
+  },
+  "tatooine_02": {
+   "level": "S9_3/Tatooine_02/Tatooine_02",
+   "world": "tatooine",
+   "modes": [
+    "supremacy"
+   ]
+  },
+  "yavin_01": {
+   "level": "Levels/MP/Yavin_01/Yavin_01",
+   "world": "yavin",
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "jetpackCargo",
+    "coop",
+    "arcade"
+   ]
+  }
+ },
+ "worlds": {
+  "bespin": {
+   "ground": [
+    "cloudcity_01"
+   ],
+   "space": [],
+   "modes": [
+    "hvv",
+    "blast",
+    "extraction",
+    "showdown",
+    "jetpackCargo"
+   ]
+  },
+  "deathstar": {
+   "ground": [
+    "deathstar02_01"
+   ],
+   "space": [],
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "coop",
+    "arcade"
+   ]
+  },
+  "endor": {
+   "ground": [
+    "endor_01",
+    "endor_02",
+    "endor_04"
+   ],
+   "space": [
+    "sb_endor_01"
+   ],
+   "modes": [
+    "galacticAssault",
+    "starfighter",
+    "hvv",
+    "blast",
+    "showdown",
+    "ewokHunt",
+    "heroStarfighters",
+    "coop",
+    "arcade"
+   ]
+  },
+  "felucia": {
+   "ground": [
+    "felucia_01"
+   ],
+   "space": [],
+   "modes": [
+    "hvv",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "fondor": {
+   "ground": [],
+   "space": [
+    "sb_fondor_01"
+   ],
+   "modes": [
+    "starfighter",
+    "heroStarfighters",
+    "arcade"
+   ]
+  },
+  "geonosis": {
+   "ground": [
+    "geonosis_01",
+    "geonosis_02"
+   ],
+   "space": [],
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "hoth": {
+   "ground": [
+    "hoth_01",
+    "hoth_02"
+   ],
+   "space": [],
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "coop",
+    "arcade"
+   ]
+  },
+  "kamino": {
+   "ground": [
+    "kamino_01",
+    "kamino_03"
+   ],
+   "space": [
+    "sb_kamino_01"
+   ],
+   "modes": [
+    "galacticAssault",
+    "starfighter",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "heroStarfighters",
+    "coop",
+    "arcade"
+   ]
+  },
+  "kashyyyk": {
+   "ground": [
+    "kashyyyk_01",
+    "kashyyyk_02"
+   ],
+   "space": [],
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "coop",
+    "arcade"
+   ]
+  },
+  "kessel": {
+   "ground": [
+    "kessel_01"
+   ],
+   "space": [],
+   "modes": [
+    "hvv",
+    "blast",
+    "extraction",
+    "showdown",
+    "coop"
+   ]
+  },
+  "naboo": {
+   "ground": [
+    "naboo_01",
+    "naboo_02",
+    "naboo_03"
+   ],
+   "space": [],
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "ryloth": {
+   "ground": [],
+   "space": [
+    "sb_droidbattleship_01"
+   ],
+   "modes": [
+    "starfighter",
+    "heroStarfighters",
+    "arcade"
+   ]
+  },
+  "scarif": {
+   "ground": [
+    "scarif_02"
+   ],
+   "space": [],
+   "modes": [
+    "hvv",
+    "supremacy",
+    "showdown",
+    "coop"
+   ]
+  },
+  "tatooine": {
+   "ground": [
+    "tatooine_01",
+    "jabbaspalace_01",
+    "tatooine_02"
+   ],
+   "space": [],
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "extraction",
+    "showdown",
+    "jetpackCargo",
+    "coop",
+    "arcade"
+   ]
+  },
+  "yavin": {
+   "ground": [
+    "yavin_01"
+   ],
+   "space": [],
+   "modes": [
+    "galacticAssault",
+    "hvv",
+    "blast",
+    "supremacy",
+    "showdown",
+    "jetpackCargo",
+    "coop",
+    "arcade"
+   ]
+  }
+ }
+}

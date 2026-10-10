@@ -1,6 +1,6 @@
 // What a hero can do on G and V besides shoot or swing: the abilities, each
 // a card of numbers, and which two a hero carries. Pure, so it's tested in
-// Node; heroes.js names a hero's pair, scene.js plays them and HeroPanel.jsx
+// Node; heroes.js names a hero's pair, scene.js plays them and DeployPanel.jsx
 // and the HUD name them.
 //
 //   ABILITIES              by id: { name, about, cool (seconds), hold? (held, not pressed), kind? (how it plays: the id's own when there's none) and the kind's own numbers }

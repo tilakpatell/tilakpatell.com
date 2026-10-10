@@ -19,6 +19,7 @@ import surfaceModule from '../components/galaxy/surface/module';
 import { prefetchSurface, surfaceProps } from '../components/galaxy/travel';
 import { runtime, usePrepareProgress } from '../runtime';
 import LoadingVeil from '../components/worlds/LoadingVeil';
+import { usePrepareWait } from '../components/worlds/usePrepareWait';
 import { galaxyCrew } from '../components/galaxy/lines';
 import { battleSay } from '../components/galaxy/warVoice';
 import { groundEffects } from '../components/galaxy/siteWar';
@@ -298,6 +299,7 @@ export default function Galaxy() {
   }, []);
   const dove = useRef(null); // resolves the dive's end
   const landing = usePrepareProgress(surfaceModule); // (the surface's prepare, for Land's loading screen)
+  const landingWait = usePrepareWait(surfaceModule, landing, Boolean(leaving?.prep)); // (and why, once it holds)
   const land = useCallback(
     (id) => {
       if (!canLand(id) || leaving) return;
@@ -595,7 +597,7 @@ export default function Galaxy() {
       )}
       {exit && <div className="galaxy-exit" aria-hidden="true" />}
       {/* (the surface getting ready before the dive: Land's loading screen) */}
-      <LoadingVeil shown={Boolean(leaving?.prep)} progress={landing.value} step={landing.step} title={`Preparing to land on ${sys.name}`} />
+      <LoadingVeil shown={Boolean(leaving?.prep)} progress={landing.value} step={landing.step} title={`Preparing to land on ${sys.name}`} waiting={landingWait.waiting} onSkip={landingWait.onSkip} />
       {leaving?.land && <div className="galaxy-entry" aria-hidden="true" />}
       {leaving?.dive && (
         <p className="galaxy-entry-note" role="status">

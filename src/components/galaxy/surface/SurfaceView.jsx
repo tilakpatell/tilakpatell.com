@@ -6,6 +6,7 @@ import surfaceModule from './module';
 import { heroById, heroSpec } from '../heroes';
 import { ABILITIES, abilitiesOf, kindOf } from './abilityRules';
 import LoadingVeil from '../../worlds/LoadingVeil';
+import { usePrepareWait } from '../../worlds/usePrepareWait';
 
 // (shorter names for the thumbs)
 // (a touch button's word: by the card, else by the kind it plays as)
@@ -42,6 +43,8 @@ export default function SurfaceView({ system = null, site = null, mission = null
       events.current?.(e);
     },
   });
+  // (a step that holds: the veil says why, then offers the way in)
+  const patience = usePrepareWait(surfaceModule, progress, meant && !on);
   // the scene itself, while it's the world on the runtime
   const view = { get current() { return rt?.current?.module === surfaceModule ? rt.current.world.scene : null; } };
   useEffect(() => {
@@ -132,7 +135,7 @@ export default function SurfaceView({ system = null, site = null, mission = null
     <WorldHost world={{ host }} className="surface-map">
       {meant ? (
         // (until it's drawing: on a flown landing it's up before the page is, so this is a direct visit's)
-        <LoadingVeil shown={!on} progress={progress.value} step={progress.step} title="Coming down through the atmosphere" />
+        <LoadingVeil shown={!on} progress={progress.value} step={progress.step} title="Coming down through the atmosphere" waiting={patience.waiting} onSkip={patience.onSkip} />
       ) : (
         <p className="surface-loading" role="status">
           Landing needs 3D, and this browser has it turned off.

@@ -4,9 +4,14 @@ import { STANCES, STANCE_IDS } from './combatRules';
 import { MAX_MODS, MODS, MOD_IDS, PICKABLE, WEAPONS, withMods } from './weaponRules';
 import { MAX_PERKS, PERKS, PERK_IDS } from '../perks';
 import { ABILITIES, abilitiesOf } from './abilityRules';
+import { sidesOf, troopersFor } from './troopers';
+import { standInLine } from './standIn';
+import './flow.css';
 
-// Who you play as down here, and what's in your hand: the roster
-// (heroes.js) as cards; for a Jedi the blade's colour, the hilt and the
+// The deploy screen (the flow design's decision 2): which side of this
+// world's war (its era's two: troopers.js's sidesOf) or the crews from
+// elsewhere, then who: that side's heroes and the game's four trooper
+// classes in the world's own kit (troopers.js), as cards; for a Jedi the blade's colour, the hilt and the
 // stance (combatRules.js); a 2017 hero's outfit, the game's own (heroes.js's
 // SKINS); for the others the gun (weaponRules.js, the
 // galaxy's and the ones from elsewhere, with their numbers) and up to two
@@ -16,20 +21,23 @@ import { ABILITIES, abilitiesOf } from './abilityRules';
 // choice so far spelt out by it, however far down the list you are.
 
 const ARM = { saber: 'Lightsaber', bowcaster: 'Bowcaster', rifle: 'Blaster rifle', ee3: 'EE-3 carbine', blaster: 'DL-44', portal: 'Portal gun', laser: 'Laser pistol', revolver: 'Revolver', pistol: 'Pistol' };
-const SIDES = [
-  ['galaxy', 'From the galaxy'],
-  ['elsewhere', 'From elsewhere'],
-];
+const CLASS_ICON = { assault: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Assault_01.svg', heavy: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Heavy_01.svg', officer: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Officer_01.svg', specialist: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Specialist_01.svg' };
 const num = (v, d = 0) => (Math.round(v * 10 ** d) / 10 ** d).toString();
 
-export default function HeroPanel({ hero, onChange, onClose }) {
+export default function DeployPanel({ hero, onChange, onClose, system = null, era = 'empire', stoodIn = null }) {
   const [pick, setPick] = useState(hero);
   const [tab, setTab] = useState('hero');
   const h = heroById(pick.id);
   const saber = h?.weapon === 'saber';
+  // (the side the pick is on: a trooper's own, a hero's lean, or elsewhere)
+  const sides = sidesOf(era);
+  const sideOf = (x) => (x?.trooper ? (sides.find((s) => s.id === x.trooper.side)?.id ?? sides[0].id) : x?.side === 'elsewhere' ? 'elsewhere' : (sides.find((s) => s.stance === x?.lean)?.id ?? sides[0].id));
+  const [side, setSide] = useState(() => sideOf(h));
+  const here = side === 'elsewhere' ? [] : troopersFor(side, system);
+  const roster = side === 'elsewhere' ? HEROES.filter((x) => x.side === 'elsewhere') : HEROES.filter((x) => x.side === 'galaxy' && x.lean === sides.find((s) => s.id === side)?.stance);
   const choose = (id) => {
-    const next = heroById(id);
-    setPick({ ...pick, id, skin: skinsOf(id)[0]?.id ?? null, color: next?.saber?.color ?? pick.color, hilt: next?.saber?.hilt ?? pick.hilt, stance: next?.saber?.stance ?? pick.stance ?? 'single', gun: next?.weapon === 'saber' ? 'saber' : next?.weapon, mods: [] });
+    const next = here.find((x) => x.id === id) ?? heroById(id);
+    setPick({ ...pick, id, skin: skinsOf(id)[0]?.id ?? null, color: next?.saber?.color ?? pick.color, hilt: next?.saber?.hilt ?? pick.hilt, stance: next?.saber?.stance ?? pick.stance ?? 'single', gun: next?.weapon === 'saber' ? 'saber' : next?.weapon, mods: [], ...(next?.trooper ? { kind: next.trooper.kind } : { kind: undefined }) });
   };
   const toggleMod = (id) => {
     const has = pick.mods?.includes(id);
@@ -48,7 +56,7 @@ export default function HeroPanel({ hero, onChange, onClose }) {
   // (the middle tab is the blade or the gun, whichever the pick carries; a
   // hero with outfits has a tab for them after their card)
   const tabs = [
-    ['hero', 'Hero'],
+    ['hero', 'Who'],
     ...(looks.length > 1 ? [['look', 'Outfit']] : []),
     ['arms', saber ? 'Lightsaber' : 'Weapon'],
     ['perks', 'Perks'],
@@ -79,10 +87,10 @@ export default function HeroPanel({ hero, onChange, onClose }) {
     e.currentTarget.parentNode?.querySelector(`#surface-tab-${next}`)?.focus();
   };
   return (
-    <div className="surface-list surface-heroes" role="dialog" aria-label="Loadout">
+    <div className="surface-list surface-heroes" role="dialog" aria-label="Deploy">
       <div className="surface-heroes-head">
-        <p className="surface-list-title">Loadout</p>
-        <div className="surface-tabs" role="tablist" aria-label="Loadout">
+        <p className="surface-list-title">Deploy</p>
+        <div className="surface-tabs" role="tablist" aria-label="Deploy">
           {tabs.map(([id, name]) => (
             <button key={id} id={`surface-tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls="surface-heroes-body" tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} onKeyDown={tabKey}>
               {name}
@@ -93,37 +101,61 @@ export default function HeroPanel({ hero, onChange, onClose }) {
       <div className="surface-heroes-body" id="surface-heroes-body" role="tabpanel" aria-labelledby={`surface-tab-${tab}`} ref={body}>
         {tab === 'hero' && (
           <>
-            {SIDES.map(([side, title]) => (
-              <div key={side}>
-                <p className="surface-weapon-side">{title}</p>
+            <div className="deploy-sides" role="radiogroup" aria-label="Side">
+              {[...sides, { id: 'elsewhere', short: 'From elsewhere', icon: null }].map((s) => (
+                <button key={s.id} type="button" role="radio" aria-checked={side === s.id} className={side === s.id ? 'surface-hilt deploy-side is-picked' : 'surface-hilt deploy-side'} onClick={() => setSide(s.id)}>
+                  {s.icon && <img src={s.icon} alt="" width="28" height="28" />}
+                  <span className="surface-hero-name">{s.short}</span>
+                </button>
+              ))}
+            </div>
+            {here.length > 0 && (
+              <>
+                <p className="surface-weapon-side">Troopers</p>
                 <ul className="surface-hero-cards">
-                  {HEROES.filter((x) => x.side === side).map((x) => {
-                    const ab = abilitiesOf(x);
-                    return (
-                      <li key={x.id}>
-                        <button type="button" className={x.id === pick.id ? 'surface-hero is-picked' : 'surface-hero'} onClick={() => choose(x.id)} aria-pressed={x.id === pick.id}>
-                          <span className="surface-hero-top">
-                            <span className="surface-hero-name">{x.name}</span>
-                            {x.id === hero.id && <span className="surface-hero-on">On</span>}
-                          </span>
-                          <span className="surface-hero-arm">{ARM[x.weapon] ?? 'Blaster'}</span>
-                          <span className="surface-hero-powers">
-                            <span><kbd>G</kbd> {ABILITIES[ab.power].name}</span>
-                            <span><kbd>V</kbd> {ABILITIES[ab.second].name}</span>
-                          </span>
-                          <span className="surface-hero-blurb">{x.blurb}</span>
-                          {leanText(x.lean) && (
-                            <span className="surface-hero-lean" data-lean={x.lean}>
-                              {leanText(x.lean)}
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
+                  {here.map((x) => (
+                    <li key={x.id}>
+                      <button type="button" className={x.id === pick.id ? 'surface-hero deploy-class is-picked' : 'surface-hero deploy-class'} onClick={() => choose(x.id)} aria-pressed={x.id === pick.id}>
+                        <span className="surface-hero-top">
+                          <img src={CLASS_ICON[x.trooper.cls]} alt="" width="28" height="28" />
+                          <span className="surface-hero-name">{x.name}</span>
+                          {x.id === hero.id && <span className="surface-hero-on">On</span>}
+                        </span>
+                        <span className="surface-hero-arm">{WEAPONS[x.weapon]?.name ?? 'Blaster'}</span>
+                        <span className="surface-hero-blurb">{x.blurb}</span>
+                      </button>
+                    </li>
+                  ))}
                 </ul>
-              </div>
-            ))}
+              </>
+            )}
+            <p className="surface-weapon-side">{side === 'elsewhere' ? 'From elsewhere' : 'Heroes'}</p>
+            <ul className="surface-hero-cards">
+              {roster.map((x) => {
+                const ab = abilitiesOf(x);
+                return (
+                  <li key={x.id}>
+                    <button type="button" className={x.id === pick.id ? 'surface-hero is-picked' : 'surface-hero'} onClick={() => choose(x.id)} aria-pressed={x.id === pick.id}>
+                      <span className="surface-hero-top">
+                        <span className="surface-hero-name">{x.name}</span>
+                        {x.id === hero.id && <span className="surface-hero-on">On</span>}
+                      </span>
+                      <span className="surface-hero-arm">{ARM[x.weapon] ?? 'Blaster'}</span>
+                      <span className="surface-hero-powers">
+                        <span><kbd>G</kbd> {ABILITIES[ab.power].name}</span>
+                        <span><kbd>V</kbd> {ABILITIES[ab.second].name}</span>
+                      </span>
+                      <span className="surface-hero-blurb">{x.blurb}</span>
+                      {leanText(x.lean) && (
+                        <span className="surface-hero-lean" data-lean={x.lean}>
+                          {leanText(x.lean)}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </>
         )}
         {tab === 'look' && looks.length > 1 && (
@@ -257,6 +289,8 @@ export default function HeroPanel({ hero, onChange, onClose }) {
         <p className="surface-hero-summary" aria-live="polite">
           <b>{h?.name}</b>
           <span>{loadoutLine(pick)}</span>
+          {/* (the body that came: Equip is never refused for a missing file, standIn.js) */}
+          {stoodIn && pick.id === hero.id && <span className="deploy-note">{standInLine(h?.name ?? '', stoodIn)}</span>}
         </p>
         <button type="button" className="surface-help-btn" onClick={onClose}>
           {changed ? 'Cancel' : 'Close'}

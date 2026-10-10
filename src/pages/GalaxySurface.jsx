@@ -9,7 +9,7 @@ import { useAchievements } from '../components/Achievements';
 import Comms from '../components/universe/Comms';
 import Online from '../components/universe/online/Online';
 import { useOnline } from '../components/universe/online/useOnline';
-import { parseSystem, systemById } from '../components/galaxy/systems';
+import { eraOf, parseSystem, systemById } from '../components/galaxy/systems';
 import { galaxyCrew } from '../components/galaxy/lines';
 import { LANDABLE, siteOf } from '../components/galaxy/surface/sites';
 import { surfaceUrl } from '../components/galaxy/surface/catalog';
@@ -26,9 +26,13 @@ import { thud } from '../lib/sfx';
 import { createImpacts } from '../lib/impact';
 import ChaseHud from '../components/galaxy/surface/ChaseHud';
 import AssaultHud from '../components/galaxy/surface/AssaultHud';
-import HeroPanel from '../components/galaxy/surface/HeroPanel';
+import DeployPanel from '../components/galaxy/surface/DeployPanel';
 import { HERO_KEY, heroById, heroSpec, loadoutLine, readHero, writeHero } from '../components/galaxy/heroes';
+import { standInLine } from '../components/galaxy/surface/standIn';
 import { missionOf } from '../components/galaxy/surface/missions';
+import { missionForMode } from '../components/galaxy/surface/modes';
+import { useModeMenu } from '../components/galaxy/surface/useModeMenu';
+import ModeMenu from '../components/galaxy/surface/ModeMenu';
 import { sideFor, warSideOf } from '../components/galaxy/surface/missions/assault';
 import { SIDE_KEY, current as currentOath, readAllegiance, swear } from '../components/galaxy/allegiance';
 import { GCW, campaignAt, scoresAt } from '../components/galaxy/gcw';
@@ -84,9 +88,9 @@ export default function GalaxySurface() {
   const id = parseSystem(useParams().system);
   const site = useMemo(() => (id ? siteOf(id) : null), [id]);
   const sys = systemById(id);
-  // a mission played down here (?mission=chase): you start in it
+  // a mission played down here (?mission=chase, or the mode it is: ?mode=galacticAssault, modes.js): you start in it
   const [params] = useSearchParams();
-  const mission = useMemo(() => missionOf(id, params.get('mission')), [id, params]);
+  const mission = useMemo(() => missionOf(id, params.get('mission') ?? missionForMode(id, params.get('mode'))), [id, params]);
   const missionKey = mission ? `${id}/${mission.id}` : null;
   // the scene's view of it, as the page needs it (how it stands, the count,
   // the scouts left, the result: these change now and then); the clock and
@@ -117,6 +121,8 @@ export default function GalaxySurface() {
   const heroNow = useRef(hero);
   heroNow.current = hero;
   const worn = useRef(hero);
+  const saidStood = useRef(new Set()); // (the stand-ins already told of)
+  const [stood, setStood] = useState(null); // (and the one on now, for the deploy screen's note)
   const pickHero = (next) => {
     setHero(next);
     local.set(HERO_KEY, writeHero(next));
@@ -161,6 +167,12 @@ export default function GalaxySurface() {
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
   const [found, setFound] = useState(() => readFound()[id] ?? []);
   const [phase, setPhase] = useState('landing');
+  // what to play, asked once you're down (modes.js, ModeMenu.jsx)
+  const modes = useModeMenu({ system: id, phase, named: Boolean(params.get('mode') || params.get('mission')) });
+  const playMode = (card, option = null) => {
+    modes.setOpen(false);
+    if (card.id !== 'free') navigate(option?.to ?? card.to);
+  };
   const [prompt, setPrompt] = useState(null);
   const [here, setHere] = useState(null);
   const [talk, setTalk] = useState(null); // { who, text, voice?, n }
@@ -454,13 +466,23 @@ export default function GalaxySurface() {
       } else if (e.type === 'hero') {
         // a pick on in the world, or one that wouldn't load (back to what was on)
         const now = heroNow.current;
+        const name = (h) => heroById(h.id)?.name ?? '';
+        if (e.ok) setStood(e.stoodIn ?? null);
+        // (on, in another body than the game's: said once a hero, standIn.js)
+        const standIn = e.ok && e.stoodIn && !saidStood.current.has(`${e.who}:${e.stoodIn}`) ? standInLine(heroById(e.who)?.name ?? '', e.stoodIn) : null;
+        if (standIn) {
+          saidStood.current.add(`${e.who}:${e.stoodIn}`);
+          worn.current = now;
+          setToast((t) => ({ title: name(now), text: standIn, kind: 'equipped', n: (t?.n ?? 0) + 1 }));
+          later('toast', 4200, () => setToast(null));
+          return;
+        }
         if (e.ok && writeHero(now) === writeHero(worn.current)) return; // (what was on, back on)
         if (e.ok) worn.current = now;
         else {
           setHero(worn.current);
           local.set(HERO_KEY, writeHero(worn.current));
         }
-        const name = (h) => heroById(h.id)?.name ?? '';
         setToast((t) => (e.ok ? { title: name(now), text: loadoutLine(now), kind: 'equipped', n: (t?.n ?? 0) + 1 } : { title: name(now), text: `Didn’t load. Still ${name(worn.current)}: try again in a moment.`, kind: 'failed', n: (t?.n ?? 0) + 1 }));
         later('toast', 3200, () => setToast(null));
       }
@@ -720,6 +742,7 @@ export default function GalaxySurface() {
           Back to orbit
         </button>
         <Menu className="surface-menu" todo={site.quests.length > 0 ? { onOpen: () => setList(true), done: done.length, total: site.quests.length } : null} way={wayOut(pathname)}>
+          <MenuItem onClick={() => modes.setOpen(true)}>Change mode</MenuItem>
           {looking && looking.mode !== 'touch' && (
             <MenuItem keep onClick={() => view.current?.input?.('lookMode', looking.mode === 'lock' ? 'drag' : 'lock')}>
               Look: {looking.mode === 'lock' ? 'Click to lock' : 'Drag'}
@@ -728,7 +751,8 @@ export default function GalaxySurface() {
         </Menu>
         <ModelCredits where="galaxy-surface" only={kinds} className="surface-credits-corner" />
       </div>
-      {picking && <HeroPanel hero={hero} onChange={pickHero} onClose={() => setPicking(false)} />}
+      {modes.open && !picking && <ModeMenu place={sys.name} cards={modes.cards} onPick={playMode} onDeploy={() => setPicking(true)} onClose={() => modes.setOpen(false)} ask={modes.ask} onAsk={modes.setAsk} />}
+      {picking && <DeployPanel hero={hero} onChange={pickHero} onClose={() => setPicking(false)} system={id} era={eraOf(sys)} stoodIn={stood} />}
       {crew && talkCrew && <Comms control={comms} crew={talkCrew} reduced={reduced} />}
       {!leaving && <Online online={online} ship={ship} />}
       <div className="surface-fade" aria-hidden="true" />

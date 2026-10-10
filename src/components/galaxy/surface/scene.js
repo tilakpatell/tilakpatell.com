@@ -67,6 +67,7 @@ import { paintById } from '../../universe/paint';
 import { readLoadout, STOCK_LOADOUT } from '../../universe/outfit';
 import { flybySound, gadgetSound, gunSound, impactSound, popSound, portalSound, shipEngine } from '../../universe/sounds';
 import { PARTY, loadPartyFigure } from '../../universe/footScene';
+import { bodiesFor, firstBody } from './standIn';
 import { GUNS, createGunplay } from '../../universe/gunplay';
 import { createGameFx } from '../../../lib/three/fx/gameFx';
 import { createGunFx } from '../../universe/gunfx';
@@ -754,7 +755,10 @@ export async function create(canvas, ctx) {
     }
     // (one of the crew with a model of their own here: that, in metres)
     const own = CREW_MODELS[spec.id] ? await modelFigure(CREW_MODELS[spec.id]).catch(() => null) : null;
-    const fig = own ?? (await loadPartyFigure(spec, cast).catch(() => null));
+    // (a 2017 body that can't be fetched: the site's own figure of them, else
+    // a trooper of their side; the pick stands either way, standIn.js)
+    const got = own ? { fig: own, stoodIn: null } : await firstBody(bodiesFor(spec, heroById(spec.id)), (s) => loadPartyFigure(s, cast)).catch(() => null);
+    const fig = got?.fig;
     if (!fig) return null;
     const inner = new THREE.Group();
     if (!own) inner.scale.setScalar(1 / METRE);
@@ -765,7 +769,7 @@ export async function create(canvas, ctx) {
     inner.updateMatrixWorld(true);
     // (a model of their own reads its motion in metres a second, as the
     // world's people do; a party figure in the map's units)
-    const body = { spec, fig, inner, own: Boolean(own), ...armsFor(spec, fig, own) };
+    const body = { spec, fig, inner, own: Boolean(own), stoodIn: got.stoodIn, ...armsFor(spec, fig, own) };
     if (!disposed) await warm(inner).catch(() => {});
     return body;
   }
@@ -782,7 +786,7 @@ export async function create(canvas, ctx) {
     shed(p);
     p.holder.add(body.inner);
     // (a seat, a fall and a turn are the old body's: the new one takes them up afresh)
-    Object.assign(p, { spec: body.spec, fig: body.fig, inner: body.inner, own: body.own, gp: body.gp, saber: body.saber, weapon: body.weapon, seat: null, downed: null, prevYaw: null });
+    Object.assign(p, { spec: body.spec, fig: body.fig, inner: body.inner, own: body.own, stoodIn: body.stoodIn, gp: body.gp, saber: body.saber, weapon: body.weapon, seat: null, downed: null, prevYaw: null });
   }
   const dropBody = (body) => {
     if (!body) return;
@@ -820,11 +824,13 @@ export async function create(canvas, ctx) {
   }
   (async () => {
     await Promise.all(people.map((p) => fit(p, p.spec)));
+    // (the lead stood in by another body: the page says so once)
+    if (!disposed && people[0].stoodIn && people[0].spec.hero) emit({ type: 'hero', who: people[0].spec.id, ok: true, stoodIn: people[0].stoodIn });
     // (the clips the two of you react with, fetched now, so a roll or a
     // flinch starts on the frame it's asked for, not a fetch later)
     if (!disposed && people.some((p) => p.fig?.anim)) preload(['roll', 'hit.chest', 'hit.head', ...(mission?.kind === 'assault' ? ['die.fwd', 'die.back', 'die.blown'] : [])]).catch(() => {});
   })();
-  // another hero picked (the page's HeroPanel): who you are now walks where
+  // another hero picked (the page's DeployPanel): who you are now walks where
   // you were, and your mate is whoever of the crew isn't them; the guard as
   // full as it was, of the new perks' most (a swap mid-fight refills
   // nothing); a mission, your health and where you are kept
@@ -838,10 +844,11 @@ export async function create(canvas, ctx) {
     guardMax = GUARD.max * perks.guard;
     state.guard = { ...state.guard, value: share * guardMax };
     const [lead1, mate1] = partyFor(hero, crewOf).map(withAbilities);
-    // (the page hears once they're on: `ok` false when the body wouldn't load)
+    // (the page hears once they're on: `ok` false only when no body at all
+    // would load; `stoodIn` when another stands in for theirs, standIn.js)
     const was = picked;
     fit(me(), lead1).then((ok) => {
-      if (!disposed && picked === was) emit({ type: 'hero', who: lead1.id, ok });
+      if (!disposed && picked === was) emit({ type: 'hero', who: lead1.id, ok, stoodIn: ok ? (me().stoodIn ?? null) : null });
     });
     fit(other(), mate1);
     ctx.invalidate();
@@ -3464,21 +3471,41 @@ export async function create(canvas, ctx) {
   // draw of it all, a slice at a time (lib/three/gpuWork). Drawn as it
   // was, the bake held a frame for seconds on landing and the passes'
   // shaders were compiled mid-frame.
+  // (it says what it's waiting for, once a second, the fetch running
+  // longest, for the veil to name; and the veil's "Go in anyway" stops it
+  // where it is: the world shown as far as it got, the rest sent up as it's
+  // first drawn, the figures stood in, standIn.js)
   const prepare = async (onProgress, { alive = () => true } = {}) => {
-    const on = () => alive() && !disposed;
-    onProgress?.(0, 'load');
-    await settleWithin(ready, 20000);
-    if (!on()) return;
-    if (lit && !lit.stats.started) {
-      onProgress?.(0, 'bake');
-      sun.target.position.set(landAt[0], world.heightAt(landAt[0], landAt[1]) ?? 0, landAt[1]);
-      sun.position.copy(sun.target.position).addScaledVector(sunDir, 300);
-      await settleWithin(lit.bake(), 20000);
+    const events = ctx.rt?.events;
+    let skip = false;
+    let skipped = null;
+    const skipping = new Promise((r) => (skipped = r));
+    const offSkip = events?.on?.('prepare-skip', (e) => {
+      if (e?.module !== 'galaxy-surface') return;
+      skip = true;
+      skipped();
+    });
+    const telling = setInterval(() => events?.emit?.('prepare-wait', { module: 'galaxy-surface', file: assetPool().progress().waiting?.url ?? null }), 1000);
+    const on = () => alive() && !disposed && !skip;
+    const within = (p, ms) => Promise.race([settleWithin(p, ms), skipping]);
+    try {
+      onProgress?.(0, 'load');
+      await within(ready, 20000);
       if (!on()) return;
+      if (lit && !lit.stats.started) {
+        onProgress?.(0, 'bake');
+        sun.target.position.set(landAt[0], world.heightAt(landAt[0], landAt[1]) ?? 0, landAt[1]);
+        sun.position.copy(sun.target.position).addScaledVector(sunDir, 300);
+        await within(lit.bake(), 20000);
+        if (!on()) return;
+      }
+      if (post.composer) await within(precompilePasses(renderer, post.composer, camera), 20000);
+      if (!on()) return;
+      await within(prepareScene({ renderer, roots: [scene], scene, camera, target: post.target, render: () => post.render(64, 64), onProgress, alive: on }), 600000);
+    } finally {
+      clearInterval(telling);
+      offSkip?.();
     }
-    if (post.composer) await precompilePasses(renderer, post.composer, camera);
-    if (!on()) return;
-    await prepareScene({ renderer, roots: [scene], scene, camera, target: post.target, render: () => post.render(64, 64), onProgress, alive: on });
   };
 
   return {

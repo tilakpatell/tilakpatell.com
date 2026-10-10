@@ -185,3 +185,20 @@ describe('prepareScene', () => {
     expect(r.compiled.length).toBe(0);
   });
 });
+
+describe('a frame in a tab that gets none', () => {
+  it('comes anyway, after FRAME_WAIT: a background tab never holds a prepare', async () => {
+    const { nextFrame, FRAME_WAIT } = await import('./gpuWork');
+    const was = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = () => 0; // (never fires, as in a hidden tab)
+    try {
+      const t0 = Date.now();
+      await nextFrame();
+      expect(Date.now() - t0).toBeGreaterThanOrEqual(FRAME_WAIT - 5);
+      expect(Date.now() - t0).toBeLessThan(FRAME_WAIT * 5);
+    } finally {
+      if (was) globalThis.requestAnimationFrame = was;
+      else delete globalThis.requestAnimationFrame;
+    }
+  });
+});

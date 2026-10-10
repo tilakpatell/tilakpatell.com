@@ -8,6 +8,7 @@
 //   node scripts/bf2017-data.mjs all --root <dir> [--level hoth_01] [--era Orig] [--out src/data/bf2017] [--only <id,…>] [--dry]
 //   node scripts/bf2017-data.mjs <rulebook> --root <dir> …        one rulebook (and what it needs, unwritten)
 //   node scripts/bf2017-data.mjs fixture <record name> [--cut root] [--root <dir>]
+//   node scripts/bf2017-data.mjs modes [--root <dir>] [--out src/data/bf2017]   the levels' mode layers (scripts/lib/bf2017-modes.mjs): web/maps/index.json and each level's manifest
 //
 //   root   the export: data.tsv and data/<Name>.json(.gz), with the web build
 //          under web/ (the bucket's layout: lab/assets/bf2017 after
@@ -27,6 +28,7 @@ import { abilityRow, cardRow, classRow, heroRow, indexOf, reinforcementRow, team
 import { aiRulebook } from './lib/bf2017-rulebook-ai.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
+import { LEVEL_WORLDS, modesRulebook } from './lib/bf2017-modes.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'build 489592';
@@ -212,10 +214,34 @@ export function fixture(root, name, { cut = null, out = join(ROOT, 'scripts', 'f
   return { file, bytes: statSync(file).size, objects: kept.objects.length };
 }
 
+// The modes rulebook from the web build's maps: every multiplayer and space
+// level's manifest (bf2017-fetch.mjs --raw <its file>), read for its subworlds.
+export function modes(root, { strings = readWebJson(root, 'strings/English.json') } = {}) {
+  const index = readWebJson(root, 'maps/index.json') ?? [];
+  const levels = [];
+  const missing = [];
+  for (const m of index) {
+    if (m.kind !== 'multiplayer' && m.kind !== 'space') continue;
+    if (isSequel(m.level)) continue;
+    const man = readWebJson(root, m.file);
+    if (man) levels.push({ level: m.level, subworlds: man.subworlds ?? [] });
+    else if (LEVEL_WORLDS[m.file.split('/').pop().replace(/\.json$/, '')]) missing.push(m.file);
+  }
+  return { book: modesRulebook(levels, strings), missing };
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const argv = process.argv.slice(2);
   try {
-    if (argv[0] === 'fixture') {
+    if (argv[0] === 'modes') {
+      const args = parseArgs(argv.slice(1));
+      const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
+      const { book, missing } = modes(root);
+      for (const f of missing) console.log(`  missing: ${f}`);
+      const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'modes.json');
+      writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }, null, 1) + '\n');
+      console.log(`modes: ${Object.keys(book.levels).length} levels on ${Object.keys(book.worlds).length} worlds; wrote ${relative(ROOT, to)}`);
+    } else if (argv[0] === 'fixture') {
       const args = parseArgs(argv.slice(1));
       const r = fixture(typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017'), args._[0], { cut: args.cut });
       console.log(`${relative(ROOT, r.file)}  ${r.bytes} bytes, ${r.objects} objects${r.bytes > 40000 ? '  (over 40 KB: cut it, or keep it gzipped)' : ''}`);

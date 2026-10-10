@@ -1,6 +1,6 @@
 // Perks: what a hero carries into a fight besides the weapon, Battlefront
 // II's star cards in spirit (three slots, each bending one number). Pure
-// and tested; heroes.js keeps the choice with the hero, HeroPanel.jsx
+// and tested; heroes.js keeps the choice with the hero, DeployPanel.jsx
 // offers it, surface/scene.js multiplies by `perkEffects` where each
 // number is used.
 //
