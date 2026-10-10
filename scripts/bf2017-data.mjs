@@ -9,6 +9,7 @@
 //   node scripts/bf2017-data.mjs <rulebook> --root <dir> …        one rulebook (and what it needs, unwritten)
 //   node scripts/bf2017-data.mjs fixture <record name> [--cut root] [--root <dir>]
 //   node scripts/bf2017-data.mjs modes [--root <dir>] [--out src/data/bf2017]   the levels' mode layers (scripts/lib/bf2017-modes.mjs): web/maps/index.json and each level's manifest
+//   node scripts/bf2017-data.mjs saber [--root <dir>] [--out src/data/bf2017]   the lightsaber's rulebook (scripts/lib/bf2017-rulebook-saber.mjs): saber.json
 //
 //   root   the export: data.tsv and data/<Name>.json(.gz), with the web build
 //          under web/ (the bucket's layout: lab/assets/bf2017 after
@@ -29,6 +30,7 @@ import { aiRulebook } from './lib/bf2017-rulebook-ai.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
 import { LEVEL_WORLDS, modesRulebook } from './lib/bf2017-modes.mjs';
+import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'build 489592';
@@ -241,6 +243,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'modes.json');
       writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }, null, 1) + '\n');
       console.log(`modes: ${Object.keys(book.levels).length} levels on ${Object.keys(book.worlds).length} worlds; wrote ${relative(ROOT, to)}`);
+    } else if (argv[0] === 'saber') {
+      const args = parseArgs(argv.slice(1));
+      const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
+      const { missing, ...book } = saberRulebook(root);
+      for (const m of missing) console.log(`  missing: ${m}`);
+      const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'saber.json');
+      writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }, null, 1) + '\n');
+      console.log(`saber: ${Object.keys(book.heroes).length} heroes; wrote ${relative(ROOT, to)} (${Math.round(statSync(to).size / 1024)} KB)`);
     } else if (argv[0] === 'fixture') {
       const args = parseArgs(argv.slice(1));
       const r = fixture(typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017'), args._[0], { cut: args.cut });

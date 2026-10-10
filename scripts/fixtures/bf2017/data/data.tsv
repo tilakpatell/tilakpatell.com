@@ -2,6 +2,8 @@ AI/BattleAI/Cover/CoverConstants	CoverConstantData	data/AI/BattleAI/Cover/CoverC
 AI/BattleAI/Tactics/AIRebelSoldierTactics	SoldierTactics	data/AI/BattleAI/Tactics/AIRebelSoldierTactics.json	7857
 AI/BattleAI/Templates/Rifleman_Template	AISoldierSpawnTemplateData	data/AI/BattleAI/Templates/Rifleman_Template.json	2011
 AI/BattleAI/Weapons/AIFiringPatterns	FiringPatternCollectionData	data/AI/BattleAI/Weapons/AIFiringPatterns.json	28528
+AI/BattleAI/Weapons/AIMeleeProjectile	ProjectileBlueprint	data/AI/BattleAI/Weapons/AIMeleeProjectile.json	7660
+Characters/Imperial/HeroShield/HeroShield	ObjectBlueprint	data/Characters/Imperial/HeroShield/HeroShield.json	8230
 Gameplay/Characters/StormTrooperShared	SoldierBlueprint	data/Gameplay/Characters/StormTrooperShared.json	249777
 Gameplay/Equipment/Abilities/Ability_AssaultTraining/SC_Trooper_01_AssaultTraining	PassivePlayerAbilityAsset	data/Gameplay/Equipment/Abilities/Ability_AssaultTraining/SC_Trooper_01_AssaultTraining.json	3320
 Gameplay/Equipment/Grenades/ThermalDetonator/DefaultAbility_Assault_ThermalDetonator	InactiveSoldierWeaponPlayerAbilityAsset	data/Gameplay/Equipment/Grenades/ThermalDetonator/DefaultAbility_Assault_ThermalDetonator.json	6412
@@ -16,6 +18,7 @@ Gameplay/Equipment/Rifles/A280C/WeaponSway_A280C	DataContainerAsset	data/Gamepla
 Gameplay/Equipment/Shared/Projectiles/BlasterProjectile_BlasterRifle_A295	GameDataContainerAsset	data/Gameplay/Equipment/Shared/Projectiles/BlasterProjectile_BlasterRifle_A295.json	3113
 Gameplay/Equipment/ShortRange/Hunter/DefaultAbility_Assault_Vanguard	SoldierWeaponPlayerAbilityAsset	data/Gameplay/Equipment/ShortRange/Hunter/DefaultAbility_Assault_Vanguard.json	2839
 Gameplay/Factions/MP/Faction_Light_Orig	WSFactionAsset	data/Gameplay/Factions/MP/Faction_Light_Orig.json	288
+Gameplay/Kits/Hero/Ability_Evade_CharacterState	CharacterStatePlayerAbilityAsset	data/Gameplay/Kits/Hero/Ability_Evade_CharacterState.json	7123
 Gameplay/Kits/Hero/Affector_Hero_DarkSide	BasicAffectorAsset	data/Gameplay/Kits/Hero/Affector_Hero_DarkSide.json	406
 Gameplay/Kits/Hero/Affector_Hero_Sith	BasicAffectorAsset	data/Gameplay/Kits/Hero/Affector_Hero_Sith.json	398
 Gameplay/Kits/Hero/DarthVader/Ability_DarthVader_ForceChoke_02	BasicPlayerAbilityAsset	data/Gameplay/Kits/Hero/DarthVader/Ability_DarthVader_ForceChoke_02.json	4112
@@ -31,6 +34,10 @@ Gameplay/Kits/Hero/DarthVader/Class_Hero_DarthVader	WSSoldierCustomizationClassA
 Gameplay/Kits/Hero/DarthVader/GP_Hero_DarthVader	WSSoldierCustomizationGameplayAsset	data/Gameplay/Kits/Hero/DarthVader/GP_Hero_DarthVader.json	13348
 Gameplay/Kits/Hero/DarthVader/Kit_Hero_DarthVader	WSSoldierCustomizationKitAsset	data/Gameplay/Kits/Hero/DarthVader/Kit_Hero_DarthVader.json	4246
 Gameplay/Kits/Hero/DarthVader/U_Lightsaber_Deflect_Vader	WeaponUnlockAsset	data/Gameplay/Kits/Hero/DarthVader/U_Lightsaber_Deflect_Vader.json	535
+Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P	LogicPrefabBlueprint	data/Gameplay/Kits/Hero/Hero_Lightsaber_Default_Camera_3P.json	2905
+Gameplay/Kits/Hero/Luke/Affector_Health_Luke	MaxHealthAffectorAsset	data/Gameplay/Kits/Hero/Luke/Affector_Health_Luke.json	472
+Gameplay/Kits/Hero/Luke/Prefabs/PF_Lightsaber_Luke	LogicPrefabBlueprint	data/Gameplay/Kits/Hero/Luke/Prefabs/PF_Lightsaber_Luke.json	64908
+Gameplay/Kits/Hero/PF_BlockStaggerAffectors	LogicPrefabBlueprint	data/Gameplay/Kits/Hero/PF_BlockStaggerAffectors.json	3589
 Gameplay/Kits/MP/Assault/Ability_Assault_CombatRoll_CharacterState	CharacterStatePlayerAbilityAsset	data/Gameplay/Kits/MP/Assault/Ability_Assault_CombatRoll_CharacterState.json	6396
 Gameplay/Kits/MP/Assault/Affector_AssaultHealth	MaxHealthAffectorAsset	data/Gameplay/Kits/MP/Assault/Affector_AssaultHealth.json	479
 Gameplay/Kits/MP/Assault/Affector_AssaultHealthRegen	SoldierHealthRegenerationAffectorAsset	data/Gameplay/Kits/MP/Assault/Affector_AssaultHealthRegen.json	609
@@ -44,6 +51,11 @@ Gameplay/Kits/Specials/RebelJumpTrooper/Affector_Special_Health_RebelJumpTrooper
 Gameplay/Kits/Specials/RebelJumpTrooper/GP_Special_RebelJumpTrooper	WSSoldierCustomizationGameplayAsset	data/Gameplay/Kits/Specials/RebelJumpTrooper/GP_Special_RebelJumpTrooper.json	8148
 Gameplay/Kits/Specials/RebelJumpTrooper/Kit_Special_RebelJumpTrooper	WSSoldierCustomizationKitAsset	data/Gameplay/Kits/Specials/RebelJumpTrooper/Kit_Special_RebelJumpTrooper.json	4667
 Gameplay/Kits/Vehicle/ATRT/Kit_Vehicle_ATRT_Rebel	WSVehicleCustomizationKitAsset	data/Gameplay/Kits/Vehicle/ATRT/Kit_Vehicle_ATRT_Rebel.json	930
+Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Luke	LogicPrefabBlueprint	data/Gameplay/Prefabs/Abilities/Gameplay/PF_DeflectAbility_Gameplay_Luke.json	287625
+Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical	LogicPrefabBlueprint	data/Gameplay/Prefabs/Abilities/Gameplay/PF_Lightsaber_Gameplay_Physical.json	85328
+Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke	DamageAffectorAsset	data/Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke.json	1653
+Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke_FromBehind	DamageAffectorAsset	data/Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke_FromBehind.json	1675
+Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier	DamageMultiplierAffectorAsset	data/Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier.json	575
 Gameplay/Teams/MP/Heroes_Dark	WSSoldierCustomizationKitList	data/Gameplay/Teams/MP/Heroes_Dark.json	1947
 Gameplay/Teams/MP/Heroes_Light	WSSoldierCustomizationKitList	data/Gameplay/Teams/MP/Heroes_Light.json	1923
 Gameplay/Teams/MP/Orig/Specials_Light_Orig_HO	WSSoldierCustomizationKitList	data/Gameplay/Teams/MP/Orig/Specials_Light_Orig_HO.json	823
@@ -66,6 +78,7 @@ Levels/Space/SB_Endor_01/SpaceBattle_Gameplay	LayerData	data/Levels/Space/SB_End
 Levels/Space/SB_Endor_01/SpaceBattle_Logic	LayerData	data/Levels/Space/SB_Endor_01/SpaceBattle_Logic.json	28203
 Levels/Space/SB_Endor_01/SpaceBattle_ScriptedEvents	LayerData	data/Levels/Space/SB_Endor_01/SpaceBattle_ScriptedEvents.json	156926
 Levels/Space/SB_Endor_01/SpaceBattle_SecondaryObjective_Cruisers	LayerData	data/Levels/Space/SB_Endor_01/SpaceBattle_SecondaryObjective_Cruisers.json	471471
+Online/BattlepointCostData	BattlepointCostData	data/Online/BattlepointCostData.json	24029
 UI/Customize/Screens/SpawnOverlayScreen	UIWidgetBlueprint	data/UI/Customize/Screens/SpawnOverlayScreen.json	54772
 UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatBar	UIWidgetBlueprint	data/UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatBar.json	42447
 UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatProgress	UIWidgetBlueprint	data/UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatProgress.json	48581

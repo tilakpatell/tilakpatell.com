@@ -854,6 +854,9 @@
 .surface-heroes .surface-hero-lean { display: flex; align-items: baseline; gap: 0.35rem; font-size: 0.66rem; line-height: 1.3; color: rgba(242, 239, 232, 0.6); }
 .surface-heroes .surface-hero-lean::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: #6ab8ff; transform: translateY(-1px); }
 .surface-heroes .surface-hero-lean[data-lean='dark']::before { background: #ff5a4a; }
+/* a hero not on the game's rig yet (heroes.js's soon): dimmed, with why */
+.surface-heroes .surface-hero[data-soon] { opacity: 0.55; }
+.surface-heroes .surface-hero-soon { font-size: 0.66rem; line-height: 1.3; color: #ffd27a; }
 .surface-saber { margin-top: 0.4rem; }
 .surface-heroes-body .surface-list-title { margin: 0.9rem 0 0.45rem; }
 .surface-swatches { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem; }

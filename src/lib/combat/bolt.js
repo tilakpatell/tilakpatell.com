@@ -20,7 +20,8 @@
 // world: { solids(a, b) → { at, normal, surface? } | null (b: as far as it's
 // to look, short of the step's end where a body or a blade is in the way),
 // bodies: [{ id, a, b, r, side, allies?, ref }], blades: [{ id, base, tip, r,
-// side, ref }] }
+// side, ref, test? }] } (`test(a, b)` → { t, at } | null: a guard of a shape
+// of its own, the 2017 game's deflect shield, in place of the segment's capsule)
 // (`allies`: the sides whose bolts pass a body by, as a rebel's pass you).
 // events: { type: 'hit', bolt, body, at } | { type: 'solid', bolt, at,
 // normal, surface (what the solids said it struck, for its material) } | { type: 'deflect', bolt, blade, at } | { type: 'gone', bolt }.
@@ -184,7 +185,7 @@ export function createBolts({ pool = 48 } = {}) {
           if (b.deflect) {
             for (const bl of blades) {
               if (bl.side === b.side) continue;
-              const k = segCapsule(a, e, bl.base, bl.tip, bl.r);
+              const k = bl.test ? bl.test(a, e) : segCapsule(a, e, bl.base, bl.tip, bl.r);
               if (k && k.t < t) {
                 t = k.t;
                 what = { type: 'deflect', bolt: b, blade: bl, at: k.at };

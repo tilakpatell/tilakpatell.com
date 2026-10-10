@@ -9,12 +9,16 @@
 // drawing is hvvScene.js and the surface scene runs it.
 //
 // The bots: a saber hero fences with a duellist's mind (lib/combat/duel,
-// through duellists.js's duelFor: the game's strokes at its cadence), its
-// stroke landing at RULES.saber.contact unless its mark is guarding; a
-// blaster hero strafes its mark at a distance (hostiles.js's strafeStep)
-// and fires its own gun's bursts at its gun's damage and fall-off
-// (weapons.json, GUNS below), a saber hero's guard turning half of what it
-// sees. A bot's mark is the nearest enemy, the enemy's target weighed
+// through duellists.js's duelFor: the game's strokes at its cadence) on the
+// saber engine (lib/combat/saber2017.js, its own sim of its hero's rules, as
+// yours and the quests' duellists have): a strike lunges by its clip's root
+// travel (the stroke table's), stopped short of its mark as the saber on
+// screen is, and lands what the game's query finds, the game's damage, a
+// block met from the front draining the blocker's stamina; a blaster hero
+// strafes its mark at a distance (hostiles.js's strafeStep) and fires its own
+// gun's bursts at its gun's damage and fall-off (weapons.json, GUNS below),
+// a saber hero's raised block turning those that meet its shield from the
+// front. A bot's mark is the nearest enemy, the enemy's target weighed
 // RULES.pull metres nearer. Hit points are the game's (bf2017Abilities.json,
 // abilityRules.js's gameHealth), healing after the game's delay at its rate
 // (bf2017/heroes.json's regen).
@@ -25,7 +29,7 @@
 //                                          (null: nobody plays, the bots fight it out)
 //   stepHvv(b, dt, you, env)               → events: { type: 'stroke' | 'shot' | 'hit' |
 //                                          'block' | 'down' | 'score' | 'target' | 'spawn' |
-//                                          'oob' | 'end', … }; you: { x, z, swinging? } | null
+//                                          'oob' | 'end', … }; you: { x, z, yaw?, swinging?, sim? (your saber's engine) } | null
 //   hitFighter(b, id, damage, by)          one of yours lands: → the `down` event, or null
 //   canDeploy(b), deploy(b)                → you back on the field: { x, z, yaw } | null
 //   youDown(b), endHvv(b, won, why), hvvView(b)
@@ -35,7 +39,12 @@ import { HEROES } from '../../heroes';
 import { gameHealth } from '../abilityRules';
 import { duelFor } from '../duellists';
 import { strafeStep } from '../hostiles';
-import { guarding, duelStep, onHit, swung } from '../../../../lib/combat/duel';
+import { duelStep, onHit, swung } from '../../../../lib/combat/duel';
+import { createSaberSim, saberOf, shieldHit } from '../../../../lib/combat/saber2017';
+import { strokeTable } from '../../../../data/bf2017/strokes';
+import { stanceFor } from '../gameStance';
+import { rootAt } from '../saberRoot';
+import { CREW } from '../crewList';
 import { rng } from '../noise';
 import { starsFor } from './chase';
 import { pushOut } from '../walker';
@@ -50,8 +59,8 @@ export const RULES = {
   look: 1, // seconds between a bot's looks for its mark
   step: 0.1,
   spacing: 1.3, // metres between fighters
-  saber: { reach: 2.4, pace: 3.4, damage: 150, contact: 0.35, through: 0.15, stroke: 0.9, guard: 0.5, riposte: 0.3 }, // (hand: a stroke's damage, its contact and how long it takes)
-  blaster: { keep: 14, range: 60, pace: 3, strafe: 2.6, every: 1.2, accuracy: [0.75, 0.3], deflect: 0.7 }, // (hand: a bot fires a burst at its gun's rate but no more often than `every` seconds, the guns' trigger rates being a player's; a saber's guard turns 0.7 of what it sees)
+  saber: { reach: 2.4, pace: 3.4, guard: 0.5 }, // (hand: where a saber bot stands off, how fast it goes, and how often it holds its block for a strike; what a strike does is the engine's, the game's)
+  blaster: { keep: 14, range: 60, pace: 3, strafe: 2.6, every: 1.2, accuracy: [0.75, 0.3] }, // (hand: a bot fires a burst at its gun's rate but no more often than `every` seconds, the guns' trigger rates being a player's)
   yours: 100, // what one of your strokes or bolts takes off a hero (hand)
   heal: { delay: 5, rate: 50 }, // (the game's most common; a hero's own from heroes.json)
 };
@@ -88,7 +97,12 @@ function fighter(b, hero, side, you = false) {
   const h = heroOf(hero);
   const max = gameHealth(hero) ?? 700;
   const f = { id: b.fighters.length, hero, side, you, saber: h?.weapon === 'saber', x: 0, z: 0, yaw: 0, hp: max, max, up: false, down: 0, hurtAt: -99, mark: null, lookIn: 0, cool: 1 + b.r() * 2, burst: 0, burstWait: 0, stroke: null, kills: 0, deaths: 0, out: 0, regen: regenOf(hero), mind: null };
-  if (f.saber && !you) f.mind = duelFor({ kind: hero, hostile: { reach: RULES.saber.reach, parry: RULES.saber.guard, riposte: RULES.saber.riposte, blade: { stance: h.saber?.stance ?? 'single' } } }, b.seed * 131 + f.id * 7919 + 1);
+  if (f.saber && !you) {
+    f.mind = duelFor({ kind: hero, hostile: { reach: RULES.saber.reach, parry: RULES.saber.guard, blade: { stance: h.saber?.stance ?? 'single' } } }, b.seed * 131 + f.id * 7919 + 1);
+    f.sim = createSaberSim(saberOf(hero), { id: f.id });
+    f.stance = stanceFor(h.saber?.stance ?? 'single', CREW[hero] ?? { rig: 'walrus', pack: hero });
+    f.table = strokeTable(CREW[hero]?.pack ?? hero) ?? strokeTable('luke');
+  }
   b.fighters.push(f);
   return f;
 }
@@ -115,6 +129,7 @@ function place(b, f, spot) {
   f.mark = null;
   f.lookIn = 0;
   f.hurtAt = -99;
+  if (f.sim) f.sim = createSaberSim(f.sim.rules, { id: f.id });
 }
 
 // a side's target drawn: one of its fighters up (not `not`, if another is), else any of them
@@ -217,8 +232,10 @@ function markOf(b, f) {
   return best;
 }
 
-// a stroke's swing as the other blade's mind reads it (duel.js's `swinging`)
-const swingOf = (b, f) => (f.stroke ? { contact: [RULES.saber.contact, RULES.saber.contact + RULES.saber.through], t: b.t - f.stroke.at } : null);
+// a strike's swing as the other blade's mind reads it (duel.js's `swinging`)
+const swingOf = (b, f) => (f.stroke ? { contact: f.stroke.contact, t: b.t - f.stroke.at } : null);
+// a fighter as the engine sees it (you: your saber's engine, where the scene hands it)
+const asEngine = (t) => ({ id: t.id, x: t.x, z: t.z, yaw: t.yaw, sim: t.sim ?? null, dead: !t.up });
 
 function move(b, f, x, z, env) {
   for (const sol of env.solids?.near(x, z, 2) ?? []) {
@@ -244,29 +261,54 @@ function move(b, f, x, z, env) {
 function saberStep(b, f, m, h, env, out) {
   f.mind.at[0] = f.x;
   f.mind.at[1] = f.z;
-  const o = duelStep(f.mind, m && { pos: [m.x, m.z], swinging: m.you ? (m.swinging ?? null) : swingOf(b, m) }, h);
-  if (o.begin) {
-    swung(f.mind, RULES.saber.stroke);
-    f.stroke = { at: b.t, mark: m.id, clip: o.stroke, landed: false };
-    out.push({ type: 'stroke', id: f.id, clip: o.stroke, mark: m.id });
+  const o = duelStep(f.mind, m && { pos: [m.x, m.z], swinging: m.you ? (m.swinging ?? null) : swingOf(b, m), out: Boolean(m.sim?.state.out), tired: f.sim.state.out }, h);
+  if (o.begin && m) {
+    // (the hero's strike by its table: its window, how long it holds, its root's travel)
+    const k = f.stance?.strokes.find((x) => x.clip === o.stroke) ?? f.stance?.strokes[0];
+    const row = f.table?.strikes.find((x) => x.name === o.stroke);
+    const contact = k?.contact ?? [0.2, 0.4];
+    const dur = f.stance?.cadence?.[o.stroke]?.dur ?? row?.duration ?? 0.6;
+    f.yaw = o.face;
+    if (f.sim.strike(b.t, { contact, dur })) {
+      swung(f.mind, dur);
+      f.stroke = { at: b.t, mark: m.id, clip: o.stroke, contact, root: row?.root ?? null, was: [0, 0] };
+      out.push({ type: 'stroke', id: f.id, clip: o.stroke, mark: m.id });
+    }
   }
-  if (!o.stroke && f.stroke && b.t - f.stroke.at > RULES.saber.contact + RULES.saber.through) f.stroke = null;
-  // its blade's contact: on the mark if it's still in reach and not guarding
-  if (f.stroke && !f.stroke.landed && b.t - f.stroke.at >= RULES.saber.contact) {
-    f.stroke.landed = true;
-    const t = b.fighters[f.stroke.mark];
-    if (t?.up && dist(f, t) <= RULES.saber.reach + 0.8) {
-      if (t.you) out.push({ type: 'hit', id: f.id, you: true, melee: true, damage: RULES.saber.damage, from: [f.x, f.z] });
-      else if (t.mind && guarding(t.mind)) out.push({ type: 'block', id: t.id, by: f.id });
+  if (f.stroke && !f.sim.state.striking) f.stroke = null;
+  // (its block: up for a strike that would reach it, and while it's shot at and not striking, as the game's AI deflects)
+  const fired = b.t - (f.firedAt ?? -99) < 1.5;
+  f.sim.block(o.block || (fired && !f.stroke), b.t);
+  // (the lunge: its clip's root, unscaled, no nearer its mark than the middle of the query's ring: saber.js's)
+  const q = f.sim.rules.query;
+  if (f.stroke?.root && m?.up) {
+    const [x, z] = rootAt(f.stroke.root, b.t - f.stroke.at);
+    const lx = x - f.stroke.was[0];
+    let lz = z - f.stroke.was[1];
+    f.stroke.was = [x, z];
+    if (lz > 0) lz = Math.min(lz, Math.max(0, dist(f, m) - ((q.hit.radius + q.hit.near) / 2 + q.anchor)));
+    move(b, f, f.x + Math.cos(f.yaw) * lx + Math.sin(f.yaw) * lz, f.z - Math.sin(f.yaw) * lx + Math.cos(f.yaw) * lz, env);
+  }
+  // what its strike's query finds, the game's: the enemies up
+  const foes = b.fighters.filter((x) => x.up && x.side !== f.side).map(asEngine);
+  for (const e of f.sim.step(h, b.t, { me: { x: f.x, z: f.z, yaw: f.yaw }, targets: foes })) {
+    const t = b.fighters[e.id];
+    if (!t?.up) continue;
+    if (e.type === 'blocked' || e.type === 'clash') out.push({ type: 'block', id: t.id, by: f.id, clash: e.type === 'clash' });
+    else if (e.type === 'hit') {
+      if (t.you) out.push({ type: 'hit', id: f.id, you: true, melee: true, damage: e.damage, behind: e.behind, from: [f.x, f.z] });
       else {
-        out.push({ type: 'hit', id: f.id, target: t.id, melee: true, damage: RULES.saber.damage });
-        hurt(b, t, RULES.saber.damage, f.id, out);
+        const n = t.sim ? t.sim.taken(e.damage, b.t) : e.damage;
+        out.push({ type: 'hit', id: f.id, target: t.id, melee: true, damage: n });
+        hurt(b, t, n, f.id, out);
       }
     }
   }
   if (!m) return;
-  f.yaw = o.face;
-  move(b, f, f.x + o.move[0] * RULES.saber.pace * h, f.z + o.move[1] * RULES.saber.pace * h, env);
+  if (!f.stroke) {
+    f.yaw = o.face;
+    move(b, f, f.x + o.move[0] * RULES.saber.pace * h, f.z + o.move[1] * RULES.saber.pace * h, env);
+  }
 }
 
 function blasterStep(b, f, m, h, env, out) {
@@ -298,11 +340,15 @@ function blasterStep(b, f, m, h, env, out) {
       out.push({ type: 'shot', id: f.id, from: [f.x, f.z], to: [m.x, m.z], atYou: true, damage });
       continue;
     }
+    if (m.saber) m.firedAt = b.t;
     const [a0, a1] = R.accuracy;
     let hit = b.r() < a0 + (a1 - a0) * Math.min(1, d / R.range);
-    // (a saber hero facing it turns half of what it sees)
-    const turned = hit && m.saber && m.mind?.state !== 'attack' && b.r() < R.deflect;
-    if (turned) hit = false;
+    // (a saber hero's raised block turns what meets its shield from the front: its stamina pays)
+    const turned = hit && Boolean(m.sim?.deflecting) && Boolean(shieldHit(m.sim.rules, m, [f.x, 1.3, f.z], [m.x, 1.3, m.z]));
+    if (turned) {
+      hit = false;
+      m.sim.takeBolt(damage, b.t);
+    }
     out.push({ type: 'shot', id: f.id, from: [f.x, f.z], to: [m.x, m.z], atYou: false, hit, turned, target: m.id });
     if (hit) hurt(b, m, damage, f.id, out);
   }
@@ -315,7 +361,9 @@ function step(b, h, you, env, out) {
     if (you) {
       me.x = you.x;
       me.z = you.z;
+      me.yaw = you.yaw ?? me.yaw;
       me.swinging = you.swinging ?? null;
+      me.sim = you.sim ?? null;
     }
     // out of the arena: ten seconds and it's over for you
     if (you && !inside(b.ground.points, me.x, me.z)) {

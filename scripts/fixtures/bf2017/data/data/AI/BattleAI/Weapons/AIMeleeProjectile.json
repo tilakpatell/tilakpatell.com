@@ -1,0 +1,1 @@
+{"name":"AI/BattleAI/Weapons/AIMeleeProjectile","type":"ProjectileBlueprint","guid":"f6056833-a065-4e56-9e19-ec51286bb897","root":0,"objects":[{"$type":"ProjectileBlueprint","Name":"AI/BattleAI/Weapons/AIMeleeProjectile"},{"$type":"WSGrenadeEntityData","CollisionDamage":75,"InitialSpeed":150,"TimeToLive":0.1,"AmmunitionType":"Melee"}]}
