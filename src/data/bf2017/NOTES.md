@@ -1,6 +1,6 @@
 # The Battlefront rulebooks: the hand values
 
-Everything under `src/data/bf2017/` is written by `node scripts/bf2017-data.mjs all --root <export> --level hoth_01 --era Orig` from the 2017 game’s data, each number with a `_source` naming its record, except the two files below, which carry `"source": "hand"`. One line per hand value: what it is, why it is by hand, and where to look to replace it.
+Everything under `src/data/bf2017/` is written by `node scripts/bf2017-data.mjs all --root <export> --level hoth_01 --era Orig` from the 2017 game’s data, each number with a `_source` naming its record, except the hand files and hand values below, which carry `"source": "hand"`. One line per hand value: what it is, why it is by hand, and where to look to replace it.
 
 ## `maps/hoth.stages.json`
 
@@ -15,15 +15,22 @@ The stage order and objectives of Hoth’s Galactic Assault are a logic graph in
 
 ## `points.json`
 
-Battle Points are a logic graph too (`Prefabs/GameplaySupply/PF_Gameplay_BattlePoints_Local`: an `IntEntityData` default 1000 and an `EventToInt` of 1 to 4). Until that graph is read:
+Written by `node scripts/bf2017-data.mjs points` from `Online/BattlepointCostData` (lane G3; it was lane 0's hand table). The record holds the prices, not the earnings:
 
-- `earn.kill` 100, `assist` 50, `vehicleKill` 150, `heroKill` 250: the game as played.
-- `earn.objectiveTick` 10 a second on an objective, `objectiveDamage` 1 a point of damage to one, `squadSpawn` 25: the game as played.
-- `cost.aerial` 1000, `enforcer` 2000, `infiltrator` 2000: the deploy screen as played (the three kinds are the data’s `Class_Special_*`).
-- `cost.vehicles.default` 500, the AT-ST (`Kit_Vehicle_ATST`) 1500, the AT-AT (`Vehicle_Ground_AT-AT_MP`, the map’s walker) 0 since the mode gives it: as played. Keys are `vehicles.json` row ids.
-- `cost.heroes.default` 4000: as played.
-- `limits.heroesPerTeam` 1, `reinforcementsPerTeam` 4: as played.
-- `bpRate` 1: the Instant Action option `InstantActionBPRate`’s default (“DEFAULT” of SLOW, DEFAULT, FAST; `ai.json`’s `instantAction`) as a multiplier.
+- **Read**: `cost.heroes` (`HeroCostConfig`, `EraCost`; every hero 4,000; `default` is the most common), `cost.units` (the default price list, `UnitCostConfig` with `PLANETARY_BATTLES` and an empty `Map`; keyed by the rulebooks' ids where they hold the unit), `cost.other` (OT and PT units the rulebooks do not hold yet, by the record's names), `cost.byMode.<mode>.<level key>` (each map's own table: Hoth's A-wing 200 and AT-ST 800, the Ewok 1,500 on every OT map; Kessel's and Jabba's Palace's Extraction tables), `settings.<mode>` (the names that are no unit of the default list: spawn times, round times, HvV's 35 tickets and `HvV_ENABLE_*`, Strike's bomb timers, the sabers' stamina costs under `global`). The sequel era's 25 names (heroes, units, maps) are refused.
+- **A reading**: the record's `ATAT` (400 on Hoth) is priced on `Kit_Vehicle_ATAT_Objective`, the team's AT-AT kit (the walker's guns a player takes); the escort walker (`Vehicle_Ground_AT-AT_MP`) is the mode's, not bought.
+- **By hand** (`source: "hand"`), the record holding none: `earn` (`kill` 100, `assist` 50, `vehicleKill` 150, `heroKill` 250, `objectiveTick` 10 a second, `objectiveDamage` 1, `squadSpawn` 25: the game as played; `Prefabs/GameplaySupply/PF_Gameplay_BattlePoints_Local` is the graph to read them from), `limits` (`heroesPerTeam` 1, `reinforcementsPerTeam` 4; `kits.json` holds the graph's own per-kit limits), `bpRate` (1: `InstantActionBPRate`'s default).
+
+## `kits.json`
+
+Written by `node scripts/bf2017-data.mjs kits` from `PF_KitLimitations_PlanetaryBattles`, `_HeroesVSVillains`, `_TrooperModes`, `_Skirmish`, `_Skirmish_Space` (lane G3). Each `KitLimitationEntityData` row's `KitId` is the `Identifier` of the kit's gameplay asset (`GP_*`: `GP_Hero_DarthVader` is 518018118), so a row is named by fetching every `*CustomizationGameplayAsset` record. Its `MaxCount`, `Price` and `EnabledAtStage` are field ids the prefab's `PropertyConnections` bind; each is read back up the graph (`bf2017-rulebook-costs.mjs` says how: interface defaults, `PF_HeroKitMaxCount` (a bool cast to 1), `PF_SpecialsKitMaxCount` (its `Int32 4` through an `IntHub`), the `MathEntityData` select, the record's prices). **Resolved**: Galactic Assault 69 of 70 limits and 70 of 70 prices (81 rows, 11 the sequel era's); all prefabs 117 limits and 129 prices of 187 rows (32 sequel rows left out).
+
+- A debug override (`DynamicDebugVariableEntityData`) is read as unset (true).
+- **By hand**, where the chain ends in a node not read (Skirmish's limits come from the Arcade's settings through a `MathEntityData` input; `SelectIntEntityData`): `{ source: "hand", value, hash }` with the game as played (a hero 1, a reinforcement 4) and `null` for a vehicle (no as-played number); the hash is the field to follow.
+
+## `arcade.json`
+
+Written by `node scripts/bf2017-data.mjs arcade` (lane G3, `bf2017-arcade.mjs`): the battle scenarios (`PF_Skirmish_BattleScenario_Teams_Scenario_*`, 18 of 24 kept: the six with a NewEra side are refused), each side's team record, faction, era, heroes and specials (team records' names: `teams.json` holds no Skirmish team); the 22 `SkirmishParam_*` (choices and the default; `DefaultIntValue` is read as an index, since `Team1ScoreLimit`'s 0 is none of its values); `SkirmishBaseParameters`' order; the bots' names (Empire, Republic, Separatists, and the Rebels' list, which the Resistance shares; the First Order's refused). Every scenario's planet list is empty in the data. Onslaught's and Duel's limits are not records: `PF_Skirmish_GameModeText_*` are the HUD's announcements (`LAST STAND`, `ONE KILL REMAINING`); the limits are the settings (`GameModePreset`, the score and time limits).
 
 ## Read, not by hand, but worth knowing
 
