@@ -51,3 +51,26 @@ One lane per session. R and T run at once and own different files (`src/lib/thre
 - `GPU=webgpu node scripts/perf-probe.mjs` and `GPU=webgl …` on the galaxy journeys.
 - `node scripts/galaxy-check.mjs surface hoth,endor,tatooine,kamino` and `space endor,hoth,geonosis`.
 - `node scripts/health/measure.mjs`: `glsl-sites` lower after each port; the closure guard green.
+
+## Fidelity: shadows, volumetrics, particles, cameras, scatter, headroom
+
+The design: `docs/superpowers/specs/2026-10-10-battlefront-fidelity-design.md` (what is not yet robust on `main`, measured from lane R's fixture and the records; what three r186 ships for each; six lanes). Each lane adds one file family to the stack and proves it on `scripts/light-fixture.mjs` with a flag of its own, on both backend kinds (the WebGPU leg on the owner's laptop: the cloud's software device dies on the fixture).
+
+| Lane | Plan | What | Starts from | Blocked by |
+|---|---|---|---|---|
+| **S** | `2026-10-10-bf-fidelity-laneS-shadows.md` | calibration to the game's Hoth; four soft cascades (`CSMShadowNode`, PCSS from the sun's angular radius); the record's shadow sun; cloud and contact shadows; the shadow term shared with the particles | `main` | nothing |
+| **V** | `2026-10-10-bf-fidelity-laneV-volumetrics.md` | the placed volumetric cones and the light-cone effects ray-marched; fog with the record's participating media; god rays off the real sun; the sun's and the explosions' flares from the records; motion blur and depth of field as data | `main` | S's cascade light for the god rays (reads its branch; `rays` until then) |
+| **X** | `2026-10-10-bf-fidelity-laneX-particles.md` | the emitter reader (`ScalableEmitterDocument` → `src/data/bf2017/fx/`); particles on the GPU (compute) or the CPU (instanced) from the tables; a level's `effects.json` with its cells; exhaust and contrails on ships | `main` | nothing (the export on the desktop or the bucket by key) |
+| **C** | `2026-10-10-bf-fidelity-laneC-cameras.md` | the soldier, aim, vehicle, overview and cinematic cameras from `cameras.json`, one rig with recoil and shake; Hoth's walker on it behind `site.level` | `main` | P0's ray for the arm's cast (reads its branch; a height cast until then) |
+| N | `2026-10-10-bf-fidelity-laneN-scatter.md` | grass, ferns, rocks and backdrop trees from the game's scatter tables, the mask derived until the export solves it | `main` after L (#831) and T's `foliageNodes` | L, T |
+| U | `2026-10-10-bf-fidelity-laneU-headroom.md` | FSR1/TAAU upscaling as the pace's first step; `BatchedMesh` and bundles for the level's statics; occlusion | `main` after L | L; the owner's laptop for the tables |
+
+S, V, X and C run at once on disjoint files (`light/{calibrate,shadows,clouds,contact}.js` and `sun.js`; `light/{volumetrics,flare}.js` and `fog.js`, `post.js`, `passes.js`; `src/lib/three/particles/` and `scripts/bf2017-emitters.mjs`; `src/lib/three/camera/`). `light/apply.js` is touched by S and V (each additive): merge `origin/main` before the PR and keep both sides. `surface/scene.js` is touched by C (one call site) and by lanes L, T, P0 and P1: the same rule.
+
+### What the other work must know
+
+- **The Battlefront game, lane 5** (not started): its Task 4 (the cameras) is lane C's `src/lib/three/camera/`; its effects come from lane X's `createEffects`; its lighting from `applyGameLight` as before. Lane 5 writes none of these.
+- **Lane F of #802** (effects' look, `src/lib/three/fx/gameLook.js`, not started): lane X reads the game's emitters themselves, so F's sprite-sheet resolution is X's task 1 and F's lane is not needed as planned; its sound map (task 4) stands on its own.
+- **Lane P4** (hit effects by material, #821): calls lane X's `spawn(name)` with the material grid's effect names once X is on `main`; until then its own look.
+- **Lane L** (#831): lanes V, X and N write `volumes.json`, `effects.json` and `scatter.json` beside the pack, never in `level.json`.
+- **Lane T** (#826, draft): the twins are what lanes N and X's sprites build on (`foliageNodes`); T's flip is unaffected.
