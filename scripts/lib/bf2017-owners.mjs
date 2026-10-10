@@ -132,10 +132,10 @@ export const OWNERS = [
   // X's; the logic and schematics the game's lane 6
   { match: /^objects\/objectblueprint$/, part: 'data', lane: 'O' },
   { match: /^objects\/(shadergraph|objectvariation|surfaceshaderpreset|externalshaderbooleandescription|vertexshaderfragmentasset)$/, part: 'data', lane: 'surfaces-Q1' },
-  { match: /^objects\/(meshlodgroup|spatialprefabblueprint|layerdata|clothasset|clothobjectblueprint)$/, part: 'data', lane: 'E' },
+  { match: /^objects\/(meshlodgroup|spatialprefabblueprint|layerdata|clothasset|clothobjectblueprint|clothwrappingasset)$/, part: 'data', lane: 'E' },
   { match: /^objects\/vehicleblueprint$/, part: 'data', lane: '4' },
   { match: /^objects\/(skeletonasset|antanimationsetasset)$/, part: 'data', lane: 'A' },
-  { match: /^objects\/(effectblueprint|meshemitterasset)$/, part: 'data', lane: 'X' },
+  { match: /^objects\/(effectblueprint|meshemitterasset|scalableemitterdocument)$/, part: 'data', lane: 'X' },
   { match: /^objects\/(logicprefabblueprint|schematicchannelasset|schematicsasset|gamedatacontainerasset)$/, part: 'data', lane: '6' },
   // lane O: every placeable object
   { match: 'objects/', lane: 'O' },
