@@ -1,0 +1,242 @@
+{
+ "objects/livingworld/cavesketto_01/cavesketto_01_sitting_mesh": {
+  "set": "livingworld",
+  "kind": "life",
+  "size": "small",
+  "tris": 470,
+  "as": "cavesketto sitting (Livingworld life)",
+  "metres": 0.129
+ },
+ "objects/livingworld/convor_01/convor_01_sitting_mesh": {
+  "set": "livingworld",
+  "kind": "life",
+  "size": "medium",
+  "tris": 696,
+  "as": "convor sitting (Livingworld life)",
+  "metres": 0.547
+ },
+ "objects/livingworld/lanternbird_01/lanternbird_01_sitting_mesh": {
+  "set": "livingworld",
+  "kind": "life",
+  "size": "medium",
+  "tris": 210,
+  "as": "lanternbird sitting (Livingworld life)",
+  "metres": 1.001
+ },
+ "objects/nature/desert/_desertbase/desertbase_rockmudrockmedium_01/desertbase_rockmudrockmedium_01_mesh": {
+  "set": "desert",
+  "kind": "nature",
+  "size": "medium",
+  "tris": 496,
+  "as": "desertbase rockmudrockmedium (Desert nature)",
+  "metres": 0.745
+ },
+ "objects/nature/desert/desertcanyon/_meshscattering/ms_desertcanyon_rock_03/ms_desertcanyon_rock_03_mesh": {
+  "set": "desert",
+  "kind": "nature",
+  "size": "medium",
+  "tris": 134,
+  "as": "ms desertcanyon rock (Desert nature)",
+  "metres": 0.858
+ },
+ "objects/nature/desert/jabbaspalace/rancorpit_rocks_01/rancorpit_cave_rockmedium_04_mesh": {
+  "set": "desert",
+  "kind": "nature",
+  "size": "medium",
+  "tris": 1610,
+  "as": "rancorpit rocks cave rockmedium (Desert nature)",
+  "metres": 0.843
+ },
+ "objects/nature/forest/_forestbase/forestbase_logsmall_01/forestbase_logsmall_01_mesh": {
+  "set": "forest",
+  "kind": "nature",
+  "size": "large",
+  "tris": 688,
+  "as": "forestbase logsmall (Forest nature)",
+  "metres": 0.558
+ },
+ "objects/nature/forest/_forestbase/forestbase_rockmedium_02/forestbase_rockmedium_02_mesh": {
+  "set": "forest",
+  "kind": "nature",
+  "size": "medium",
+  "tris": 196,
+  "as": "forestbase rockmedium (Forest nature)",
+  "metres": 1.102
+ },
+ "objects/nature/forest/_forestbase/forestbase_rocksmall_01/forestbase_rocksmall_01_mesh": {
+  "set": "forest",
+  "kind": "nature",
+  "size": "medium",
+  "tris": 180,
+  "as": "forestbase rocksmall (Forest nature)",
+  "metres": 0.743
+ },
+ "objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_s_01_mesh": {
+  "set": "kashyyyk",
+  "kind": "nature",
+  "size": "medium",
+  "tris": 263,
+  "as": "ms kashyyykbase schefflerabush (Kashyyyk nature)",
+  "metres": 1.579
+ },
+ "objects/nature/kashyyyk/_kashyyykbase/_meshscattering/ms_kashyyykbase_schefflerabush_01/ms_kashyyykbase_schefflerabush_xs_01_mesh": {
+  "set": "kashyyyk",
+  "kind": "nature",
+  "size": "medium",
+  "tris": 139,
+  "as": "ms kashyyykbase schefflerabush (Kashyyyk nature)",
+  "metres": 1.158
+ },
+ "objects/nature/volcanic/_volcanicsulfur/_meshscatter/ms_volcanicsulfur_rockfrailsmall_01/ms_volcanicsulfur_rockfrailsmall_01_mesh": {
+  "set": "volcanic",
+  "kind": "nature",
+  "size": "small",
+  "tris": 210,
+  "as": "ms volcanicsulfur rockfrailsmall (Volcanic nature)",
+  "metres": 0.272
+ },
+ "objects/nature/volcanic/sullustan/volcaniccrater_rockmedium_01/volcaniccrater_rockmedium_01_mesh": {
+  "set": "volcanic",
+  "kind": "nature",
+  "size": "medium",
+  "tris": 2124,
+  "as": "volcaniccrater rockmedium (Volcanic nature)",
+  "metres": 0.918
+ },
+ "objects/nature/yavin/_yavinbase/_meshscattering/ms_yavinbase_smallbush_07/ms_yavinbase_smallbush_07_mesh": {
+  "set": "yavin",
+  "kind": "nature",
+  "size": "small",
+  "tris": 88,
+  "as": "ms yavinbase smallbush (Yavin nature)",
+  "metres": 0.494
+ },
+ "objects/props/objectsets/_galacticempire/box_m_04/box_m_04_mesh": {
+  "set": "_galacticempire",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 448,
+  "as": "box (the Empire’s prop)",
+  "metres": 0.526
+ },
+ "objects/props/objectsets/_galacticempire/box_m_05/box_m_05_mesh": {
+  "set": "_galacticempire",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 352,
+  "as": "box (the Empire’s prop)",
+  "metres": 0.367
+ },
+ "objects/props/objectsets/_galacticempire/box_m_06/box_m_06_mesh": {
+  "set": "_galacticempire",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 3944,
+  "as": "box (the Empire’s prop)",
+  "metres": 0.642
+ },
+ "objects/props/objectsets/_galacticempire/container_xl_02/container_xl_02_a_mesh": {
+  "set": "_galacticempire",
+  "kind": "prop",
+  "size": "large",
+  "tris": 7105,
+  "as": "container (the Empire’s prop)",
+  "metres": 2.38
+ },
+ "objects/props/objectsets/_galacticrepublic/container_01/container_01_l_mesh": {
+  "set": "_galacticrepublic",
+  "kind": "prop",
+  "size": "large",
+  "tris": 726,
+  "as": "container (the Republic’s prop)",
+  "metres": 2.839
+ },
+ "objects/props/objectsets/_galacticrepublic/crate_02_s/crate_02_s_mesh": {
+  "set": "_galacticrepublic",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 848,
+  "as": "crate (the Republic’s prop)",
+  "metres": 0.56
+ },
+ "objects/props/objectsets/_rebelalliance/box_m_02/box_m_02_mesh": {
+  "set": "_rebelalliance",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 2234,
+  "as": "box (the Rebellion’s prop)",
+  "metres": 0.64
+ },
+ "objects/props/objectsets/_rebelalliance/box_s_04/box_s_04_mesh": {
+  "set": "_rebelalliance",
+  "kind": "prop",
+  "size": "small",
+  "tris": 970,
+  "as": "box (the Rebellion’s prop)",
+  "metres": 0.508
+ },
+ "objects/props/objectsets/_rebelalliance/gasflask_01/gasflask_01_mesh": {
+  "set": "_rebelalliance",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 2186,
+  "as": "gasflask (the Rebellion’s prop)",
+  "metres": 1.255
+ },
+ "objects/props/objectsets/sullust/bucketsmelting_xl_01/bucketsmelting_xl_bucket_01_mesh": {
+  "set": "sullust",
+  "kind": "prop",
+  "size": "large",
+  "tris": 2144,
+  "as": "bucketsmelting bucket (Sullust prop)",
+  "metres": 4.232
+ },
+ "objects/props/objectsets/sullust/containersullustan_xl_01/containersullustan_xl_01_mesh": {
+  "set": "sullust",
+  "kind": "prop",
+  "size": "large",
+  "tris": 2012,
+  "as": "containersullustan (Sullust prop)",
+  "metres": 4.071
+ },
+ "objects/props/objectsets/sullust/machine_l_05/machine_l_05_mesh": {
+  "set": "sullust",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 1990,
+  "as": "machine (Sullust prop)",
+  "metres": 3
+ },
+ "objects/props/objectsets/tatooine/barrelplastic_01/barrelplastic_01_mesh": {
+  "set": "tatooine",
+  "kind": "prop",
+  "size": "small",
+  "tris": 922,
+  "as": "barrelplastic (Tatooine prop)",
+  "metres": 0.64
+ },
+ "objects/props/objectsets/tatooine/crate_m_01/crate_m_01_mesh": {
+  "set": "tatooine",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 1736,
+  "as": "crate (Tatooine prop)",
+  "metres": 0.639
+ },
+ "objects/props/objectsets/tatooine/cratemetal_01/cratemetal_01_mesh": {
+  "set": "tatooine",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 1312,
+  "as": "cratemetal (Tatooine prop)",
+  "metres": 0.653
+ },
+ "objects/props/objectsets/tatooine/moisturevaporator_02/moisturevaporator_02_mesh": {
+  "set": "tatooine",
+  "kind": "prop",
+  "size": "medium",
+  "tris": 2252,
+  "as": "moisturevaporator (Tatooine prop)",
+  "metres": 3.73
+ }
+}

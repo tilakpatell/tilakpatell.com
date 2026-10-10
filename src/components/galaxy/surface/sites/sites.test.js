@@ -14,6 +14,10 @@ import { CREW } from '../crew';
 import { talkTree } from '../talk';
 import { CLIPS } from '../../../../lib/three/clipLibrary';
 import { floraNames } from '../flora';
+import { RECIPES, recipeNames } from '../gameFlora';
+import { isGame } from '../catalog/bf2017-library';
+import LIBRARY from '../../../../data/bf2017/library.json';
+import USED from '../../../../data/bf2017/library-used.json';
 
 const SHIPS = new Set([...GALAXY_KINDS, ...BUILT_KINDS]);
 const placeable = (kind) => Boolean(PROPS[kind] || SURFACE_MODELS[kind]);
@@ -61,10 +65,12 @@ describe('the worlds you can land on', () => {
       });
 
       it('has everything it places built or brought in', () => {
-        for (const t of site.things_all) expect(placeable(t.kind), `${t.kind}`).toBe(true);
+        // (one of the drop's library objects, `game:<name>`: imported and published)
+        for (const t of site.things_all) expect(isGame(t.model) ? Boolean(SURFACE_MODELS[t.model]) : placeable(t.kind), `${t.kind} ${t.model ?? ''}`).toBe(true);
         for (const s of site.scatter) {
           const kit = kitName(s.model);
-          if (kit) expect(Boolean(KIT[kit]), `scatter ${s.model}`).toBe(true);
+          if (isGame(s.model)) expect(Boolean(SURFACE_MODELS[s.model]), `scatter ${s.model}`).toBe(true);
+          else if (kit) expect(Boolean(KIT[kit]), `scatter ${s.model}`).toBe(true);
           else expect(Boolean(SCATTER[s.kind] || placeable(s.kind)), `scatter ${s.kind}`).toBe(true);
         }
         // (a person may be a crew figure, which actors.js tries first)
@@ -219,5 +225,37 @@ describe('siteFrom', () => {
     expect(site.id).toBe('elsewhere');
     expect(site.name).toBe('elsewhere');
     expect(site.accent).toBe('#ffffff');
+  });
+});
+
+// The seven worlds with no game map, dressed from the drop's library (the
+// fifth design, lane O: gameFlora.js's recipes and the sites' `game:` things)
+describe('the worlds without a map, dressed from the drop', () => {
+  const INDEX = new Set(LIBRARY.map((r) => r.name));
+  const MAPLESS = ['dagobah', 'mustafar', 'nevarro', 'mandalore', 'sorgan', 'lothal', 'coruscant'];
+
+  it('gives each of the seven a recipe or the game’s things', () => {
+    for (const id of MAPLESS) {
+      const site = siteOf(id);
+      const game = [...site.scatter, ...site.things_all].filter((t) => isGame(t.model));
+      expect(game.length, id).toBeGreaterThan(0);
+    }
+  });
+
+  it('scatters none of the drop’s rigged objects until lane A’s clips are there (Review Focus 5)', () => {
+    for (const id of LANDABLE)
+      for (const r of siteOf(id).scatter.filter((q) => isGame(q.model))) {
+        const name = r.model.slice('game:'.length);
+        expect(USED[name]?.rig ?? false, `${id}: ${name}`).toBe(false);
+        expect(LIBRARY.find((q) => q.name === name)?.rig, `${id}: ${name}`).toBe(false);
+      }
+  });
+
+  it('names in each recipe only objects the library has and the bucket holds (Review Focus 3)', () => {
+    for (const recipe of Object.keys(RECIPES))
+      for (const name of recipeNames(recipe)) {
+        expect(INDEX.has(name.slice('game:'.length)), `${recipe}: ${name}`).toBe(true);
+        expect(Boolean(SURFACE_MODELS[name]), `${recipe}: ${name} is not published`).toBe(true);
+      }
   });
 });

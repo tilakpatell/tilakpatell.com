@@ -27,8 +27,11 @@
 //     lib/three/kit's tint, a multiplier or a recolour)
 //   floraNames(rows) → the kit models a row list names (the sites test
 //     holds every one to the manifest)
+//   `flora.game`: a recipe of the drop's own objects (gameFlora.js), laid
+//     after the kit's (biome 'none' for a world that wants only those)
 
 import { REACH } from './terrain';
+import { gameRows } from './gameFlora';
 
 const PACK = 'kit:naturemega/';
 
@@ -161,7 +164,8 @@ export function floraRows(site) {
       return { solid: true, clear: CLEAR, ...(canopy ? { canopy } : {}) };
     });
   }
-  return rows;
+  // (and the drop's own, by the site's `game` recipe: gameFlora.js)
+  return [...rows, ...gameRows(site).map((r) => ({ ...r, ...wet, ...(r.band === 'trees' ? { clear: CLEAR } : {}) }))];
 }
 
 export function floraTint(site) {

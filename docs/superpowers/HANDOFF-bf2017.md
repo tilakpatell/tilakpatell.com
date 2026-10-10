@@ -37,7 +37,7 @@ Seams (the spec's §5): E0 keeps the `variations` slot; lane 5 and the screens a
 | E3 | Kashyyyk, Geonosis, Endor's village, research station and bunker | E0 | | `claude/bf2017-e3-kashyyyk-geonosis-endor` | |
 | E4 | Scarif, Cloud City, Hoth's outpost, the Death Star inside on DeathStar02_01 | E0 | | `claude/bf2017-e4-scarif-bespin-deathstar` | |
 | E5 | Felucia, Kessel, Sullust, Pillio, Vardos, Fondor as systems with skins and surfaces | E0 | | `claude/bf2017-e5-new-systems` | |
-| O | the object library (every placeable set indexed), the seven mapless worlds dressed by biome, `GAME_FOR` props, the game's clouds, the living world | nothing | | `claude/bf2017-o-library` | |
+| O | the object library (every placeable set indexed), the seven mapless worlds dressed by biome, `GAME_FOR` props, the game's clouds, the living world | nothing | `session_01HvykTJCK7Bb4cFUjiKN1jW` | `claude/bf2017-o-library` | #876 |
 | Q (the space lane) | the space levels as set pieces, the capitals, the asteroids on their tracks, the sky panoramas, the map's globes | nothing (#793 read) | session_01CiUP7QfUtHM1EEqgBJpKew | `claude/bf2017-q-space` | (this PR) |
 | M | the films on the cards, veils and briefings; the tiles and tutorials for the game's world; the lava film; the open fonts, the icons, the strings, the UI widgets, the hero stage | nothing | `session_017cZLBzaqCrPFfg6zezARLt` | `claude/bf2017-m-frontend` | done, below |
 | A | every clip: stances, additive aims and hits, cover and awareness, emotes and end of round, the cinematics player, first person, riders and crews, the band, the fauna rigs | nothing (#839's B, Y, W kept off) | lane A's session | `claude/bf2017-a-clips` | (this PR) |
@@ -49,6 +49,7 @@ Coverage (from lane Z's ledger, `docs/superpowers/evidence/bf2017-coverage/`, re
 | 2026-10-10, lane Z (the bucket: 113,463 objects listed, 83,983 records) | 80,837 | 2,428 | 59,904 | 13,837 | 4,668 | 0 |
 | 2026-10-10, lane M (films 83 used, 31 excluded; fonts 7 used, 16 excluded (licence-pending); icons 626 used; strings used) | 80,837 | 3,525 | 58,602 | 14,066 | 4,644 | 0 |
 | 2026-10-10, the space lane (on main after lane M; the space lane's own owned rows: 894 models and 564 maps before, 450 and 157 now) | 80,837 | 4,651 | 57,498 | 14,060 | 4,628 | 0 |
+| 2026-10-10, lane O (the index’s 8,503 objects consumed by `src/data/bf2017/library.json`; lane O owns 970 rows still: the levels’ own meshes and the nature sets’ textures no model of the index names) | 80,837 | 17,485 | 45,207 | 13,925 | 4,220 | 0 |
 
 **The first finding: what no lane named.** When the ledger was first written, 18,377 of its rows were `unowned`: no plan of this design or the running ones named them, and none of the merged lanes (K, L, G, V, F, P0, P1, P2, P4, R, 0, the sabers' X, the game's 1 and 2) had consumed them. None is hidden: each is given in `scripts/lib/bf2017-owners.mjs` to the lane that takes it, marked `finding: true`, and counted apart in `ledger.md`. By lane and part:
 
@@ -190,6 +191,35 @@ One script cuts all of it, `node scripts/bf2017-ui.mjs films|icons|fonts|strings
 | RaxusPrime | `RaxusPrimeNumericalMonospace_*` (3) | none in the file; the game's own | no |
 
 Checking it: `npx vitest run scripts/lib/bf2017-ui.test.mjs src/lib/bf2017 src/runtime/hud/film.test.jsx src/components/galaxy/Briefing.test.jsx src/components/galaxy/surface/lavaFilm.test.js src/components/galaxy/surface/water.test.js src/components/galaxy/surface/heroStage.test.js src/components/galaxy/surface/HeroStage.test.jsx`; shots in `docs/superpowers/evidence/bf2017-frontend/`.
+
+### Lane O: the object library, and the worlds without a map (done, PR #876)
+
+**Done.**
+
+- **The index**: `src/data/bf2017/library.json`, 8,503 rows (architecture 4,390, nature 1,673, props 2,029, landmarks 315, the front end 24, the living world 67, clouds 5), one an object, with its set, biome, size class, triangles, LOD count, rig and tags. It is written by `scripts/bf2017-library.mjs` over `scripts/lib/bf2017-library.mjs`, from the manifest, sorted by name, 1.9 MiB, and the site never loads it whole. The era rule holds by name and by set: no `takodana`, `jakku`, `jak`, `starkiller`, `crait`, `firstorder`, `resistance` or `paintball` row. The seasons’ objects are filed as the main folders file them (`s3/objects/kessel/architecture/…` is Kessel’s architecture), the later seasons’ sets with them (s6_2 Geonosis, s7_2 Naboo, s8 Felucia). Lane Z’s ledger reads the index as the consumer of every object in it.
+- **Any object placeable by name**: `model: 'game:<manifest name>'` on a thing or a scatter row. The rows come from `catalog/bf2017-library.js`, the catalogue’s last group (`library2017`), made from `src/data/bf2017/library-used.json` and the published manifest. A row not imported yet, or rigged, draws nothing and says so once. `scripts/bf2017-library-import.mjs <name>… | --set <set> | --from <file> [--publish]` fetches each object, cuts it with `bf2017-import.mjs --native --far` into `public/models/galaxy/surface/game/<slug>.glb` with `.lod1` and `.far`, and publishes it. The plain cut keeps the game’s KTX2 untouched (`--tex 4096`), the light cut takes the same maps at 512/256 with their top mips dropped, and the far cut at 128. Nothing is re-encoded, and each object is credited by the import (`surface-game-<slug>`). New import flags: `--sub`, `catalog: false`, `--lod1-tex`/`--lod1-maps` without `--full`, `--far-tex`.
+- **`GAME_FOR`** (`catalog/bf2017-game-for.js`): ten kinds are the game’s on mid and up, and the site’s own model on low: vaporator, barrel, barrels, rusty, bevelled, Imperial and long crates, empire crate, Hoth crate, ammo can. The lamp posts stay each world’s own, since one game lamp doesn’t suit Theed and Mos Eisley alike. The Sketchfab rows these replace stay, because they are the low tier’s.
+- **The seven worlds without a map**:
+  - Dagobah’s ferns, logs and rocks are Kashyyyk’s scheffleras and the forest’s logs and stones, with Dagobah’s skettos on high.
+  - Mustafar’s rocks and stones are Sullust’s crater rocks and the sulphur flats’ stones, with Sullust’s slag container, smelting bucket and pump machine at the mining works.
+  - Nevarro’s stones are the sulphur flats’, with two Imperial containers at the Remnant’s base.
+  - Mandalore gets the badlands recipe: the desert’s mud rocks, the canyon’s stones and the rancor pit’s boulders.
+  - Sorgan’s rocks are the forest’s, and the woods recipe adds Yavin’s small bushes, Kashyyyk’s scheffleras and lanternbirds.
+  - Lothal gets the Imperial plains recipe (the desert’s mud rocks) and convors. Its Imperial dressing is the game’s crates; two Imperial containers and the rancor pit’s boulder came off again to keep it within its 60 MB at high.
+  - Coruscant gets the Republic’s container and a crate at the Works.
+  - Where a world is near its budget, the game’s model goes on the site’s own row, which costs no draw and keeps the built one on low. What only adds (`gameFlora.js`’s recipes, the creatures) draws on high and up.
+- **Imported**: 30 objects (the 10 props of `GAME_FOR`, 11 nature pieces, Sullust’s 3 mining props, the Imperial container, the Republic’s container and crate, 3 creatures), 84 files published to `site-assets`.
+
+**Corrections to the spec** (§3, lane O):
+
+1. `levels/clouds` is Cloud City’s level (53 meshes: plazas, gangways), not the sky. The index files it as `cloudcity` architecture; it is E4’s Bespin pack’s to place.
+2. The drop’s cloud meshes are five `backdropcloud` cards of 45 to 65 triangles with no maps; the game’s shader draws them. `textures/levels/clouds` holds only Cloud City’s lighting. So there are no cloud sheets to draw, and task 5 (the sky’s clouds) was not done. The cards are in the index as `cloud`.
+3. Many nature meshes (roots, ferns, bones, scrap, crater rubble, the deflector dish’s wreck panels) carry no maps; the game’s terrain shades them. Imported, they draw bare, so no recipe uses them.
+4. The living world has no skeletons (the 18 rigged rows in the index are the skinned trees and bushes and two Sullust robot arms), so lane A has nothing to give it. The creatures elsewhere (crabs on Scarif, geejaws on Yavin and Endor, skitters on Tatooine) belong in the mapped worlds’ files, which are E0’s and E1 to E5’s; they are imported by name when those lanes want them.
+
+**Left**: the other 8,473 objects in the index, imported on demand by any world that names them; the 970 rows the ledger still gives lane O (the maps’ own meshes under `levels/`, the season 1 sets, the nature sets’ textures no indexed model names), so its owners row stays open (no `merged` in `scripts/lib/bf2017-owners.mjs`); the mapped worlds’ creatures, for E0 to E5; and the sky’s clouds, if the desktop exporter ever exports the cloud sheets.
+
+**Checking it**: `npx vitest run scripts/lib/bf2017-library.test.mjs scripts/bf2017-library-import.test.mjs src/components/galaxy/surface/catalog src/components/galaxy/surface/gameFlora.test.js src/components/galaxy/surface/sites`. The worlds’ before and after budget tables are in the PR; the shots are in `docs/superpowers/evidence/bf2017-library/`.
 
 ## The fourth design: what is left of the cast (2026-10-10, evening)
 
