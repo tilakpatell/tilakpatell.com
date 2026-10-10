@@ -16,17 +16,18 @@ describe('the bones a stroke lays over the guard', () => {
   });
 });
 
-describe('a saber in a Meshy figure’s hand', () => {
-  it('keeps the built hilt, never the game’s, whatever hilt it picked', () => {
+describe('a Meshy figure', () => {
+  it('has no saber, and asks for no hilt nor clip (one path: the game’s rig)', () => {
     const rig = meshyRig();
     new THREE.Group().add(rig.model);
     const gp = createGunplay({ model: rig.model, bones: rig.bones }, 'saber', { unit: 1 });
     asked.glb.length = 0;
+    asked.clips.length = 0;
     const hilt = HILTS.find((h) => h.id === 'luke');
     expect(hilt.model).toBeTruthy();
-    const saber = createSaber(gp, { hilt, fig: { bones: rig.bones, hipsY: rig.hipsY } });
+    expect(createSaber(gp, { hilt, fig: { bones: rig.bones, hipsY: rig.hipsY } })).toBe(null);
     expect(asked.glb).toEqual([]);
-    saber.dispose();
+    expect(asked.clips).toEqual([]);
   });
   it('keeps the built hilts’ lengths and names as they were', () => {
     const was = { skywalker: [0.28, 'Skywalker'], luke: [0.26, 'Luke’s own'], dooku: [0.27, 'Curved'], temple: [0.3, 'Temple guard'], ahsoka: [0.24, 'Ahsoka’s'] };

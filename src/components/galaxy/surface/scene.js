@@ -122,14 +122,14 @@ import { createBoltPlay } from './boltPlay';
 import { applyEmote, createEmoteWheel, emoteFor, emotePacket, keepEmote, readEmote } from '../../../lib/emote';
 import { preload } from '../../../lib/three/clipLibrary';
 import { fallTurn } from '../../../lib/three/locomotion';
-import { createSaber } from './saber';
-import { DODGE, FORCE, GUARD, HEAVY, PARRY, dodgeStep, forceAt, guardHit, guardStep, hitStop, pushVelocity } from './combatRules';
-import { DUEL } from '../../../lib/combat/duel';
+import { createSaber, rootAt } from './saber';
+import { FORCE, forceAt, hitStop, pushVelocity } from './combatRules';
+import { createSaberSim, saberOf } from '../../../lib/combat/saber2017';
 import { incomingAt, met, swingingOf } from './duellists';
 import { heatShot, heatStep, spreadAt, vent, ventSpot, withMods } from './weaponRules';
 import { heroById, heroSpec, partyFor, refitOf, writeHero } from '../heroes';
 import { perkEffects } from '../perks';
-import { ABILITIES, JET, SABER_THROWS, abilitiesOf, forceOf, hitOf, holdOf, jetStep, kindOf, newJet, takenOf, throwOf } from './abilityRules';
+import { ABILITIES, GAME_HP, JET, SABER_THROWS, abilitiesOf, forceOf, hitOf, holdOf, jetStep, kindOf, newJet, takenOf, throwOf } from './abilityRules';
 import { createPowers } from './powers';
 import { SABER } from './saberRules';
 import { feed, isOffered, nextQuest, questsOf, start as startQuest, stepTarget, stepText } from './quests';
@@ -196,6 +196,7 @@ const SABER_IDLE = 8; // seconds without a stroke before the blade goes out
 const LOCK = { range: 14, cone: 0.9 }; // metres and radians: what a stroke homes on
 const HUD_EVERY = 0.1; // seconds between the combat HUD's updates
 const HOLD_FULL = 1; // (a held ability's tank, on the HUD, as a cooldown of one second)
+const HOLD = 0.35; // seconds F is held for the heavy strike (the hero's jump or dash attack): the keys', not a rule
 const BIKE_FIRE_EVERY = 0.3; // (a bike's cannon: a touch slower)
 // your mate in a fight: how far it'll shoot (m), the seconds between its
 // shots, the share that land (a hit is one), how long after your last shot
@@ -726,7 +727,7 @@ export async function create(canvas, ctx) {
   let picked = ctx.hero ? writeHero(ctx.hero) : null; // (the choice as kept, to know a new one)
   let hero = ctx.hero ? heroSpec(ctx.hero) : null;
   let perks = perkEffects(hero?.perks ?? []); // (galaxy/perks.js: the multipliers the hero's perks give)
-  let guardMax = GUARD.max * perks.guard;
+  let spareSim = null; // (the dodge's engine for a hero with no saber: dodge())
   // (your mate carries their own two abilities too, where they're on the roster)
   const withAbilities = (s) => (s.abilities || !heroById(s.id)?.abilities ? s : { ...s, abilities: heroById(s.id).abilities });
   const party = partyFor(hero, crewOf).map(withAbilities);
@@ -760,7 +761,9 @@ export async function create(canvas, ctx) {
   const armsFor = (spec, fig, own) => {
     if (!spec.gun || own) return { gp: null, saber: null, weapon: null };
     const gp = createGunplay(fig, fig.gun ?? spec.gun, { unit: 1, who: fig.built ? 'built' : spec.id });
-    const saber = spec.saber && gp ? createSaber(gp, { color: spec.saber.color, hilt: spec.saber.hilt, stance: spec.saber.stance, parent: scene, sound: (what) => sounds.saber?.(what) ?? sounds.combat?.(what), fig }) : null;
+    const saber = spec.saber && gp ? createSaber(gp, { color: spec.saber.color, hilt: spec.saber.hilt, stance: spec.saber.stance, parent: scene, sound: (what) => sounds.saber?.(what) ?? sounds.combat?.(what), fig, hero: spec.id }) : null;
+    // (the hero's perks on the engine's numbers: a blocked strike's cost, the dodge's recharge)
+    if (saber) saber.sim.scale = { blocked: 1 / perks.guard, recharge: perks.dodge };
     return { gp, saber, weapon: weaponOf(spec, fig) };
   };
   const unarm = (a) => {
@@ -861,9 +864,8 @@ export async function create(canvas, ctx) {
     picked = kept;
     hero = heroSpec(choice);
     perks = perkEffects(hero.perks ?? []);
-    const share = state.guard.value / guardMax;
-    guardMax = GUARD.max * perks.guard;
-    state.guard = { ...state.guard, value: share * guardMax };
+    if (me().saber) me().saber.sim.scale = { blocked: 1 / perks.guard, recharge: perks.dodge };
+    spareSim = null;
     const [lead1, mate1] = partyFor(hero, crewOf).map(withAbilities);
     // (the page hears once they're on: `ok` false only when no body at all
     // would load; `stoodIn` when another stands in for theirs, standIn.js)
@@ -929,9 +931,7 @@ export async function create(canvas, ctx) {
     secondQueued: false,
     saberAt: -99, // when the saber last did something (it goes out after SABER_IDLE)
     // ── the fight (combatRules.js, weaponRules.js) ──
-    guard: { value: guardMax, hitAt: null, brokenAt: null }, // what blocking spends
-    blockAt: null, // when C went down (their blade's contact just after is parried: blockOutcome)
-    reelUntil: -99, // till when you reel, your stroke parried (no stroke, no block)
+    blockAt: null, // when C went down (a press inside one frame still raises the block)
     pressAt: null, // when F went down with a saber (held, it's the heavy stroke)
     dodge: null, // { t0, dx, dz }
     dodgedAt: -99,
@@ -1094,7 +1094,7 @@ export async function create(canvas, ctx) {
     if (!down && k === 'emote') emoteUp();
     if (!down && k === 'fire' && state.pressAt != null) {
       // a saber's F let go: a stroke, or the heavy one if it was held
-      state.swingQueued = state.t - state.pressAt >= HEAVY.hold ? 'heavy' : 'light';
+      state.swingQueued = state.t - state.pressAt >= HOLD ? 'heavy' : 'light';
       state.pressAt = null;
     }
     state.keys[k] = down;
@@ -1879,11 +1879,11 @@ export async function create(canvas, ctx) {
   // a while after ──
   function swing(heavy = false) {
     const p = me();
-    if (state.guard.brokenAt != null || state.dodge || state.t < state.reelUntil) return;
+    if (state.dodge) return;
     camera.getWorldDirection(camDir);
-    // homing on the one you're facing: the stroke turns you to them over its
+    // homing on the one you're facing: the strike turns you to them over its
     // wind-up and its own step carries you in (saber.js); with no one, you
-    // face where the camera looks
+    // face where the camera looks and the game's aim assist picks one
     const t = state.lock && !state.lock.down ? state.lock : null;
     if (!t) p.st.yaw = Math.atan2(camDir.x, camDir.z);
     state.aim = 1;
@@ -1892,14 +1892,20 @@ export async function create(canvas, ctx) {
     // the way held at the click: W overhead, A or D a cut from that side, S rising
     const inp = input();
     const dir = Math.abs(inp.y) >= Math.abs(inp.x) ? (inp.y > 0.5 ? 'up' : inp.y < -0.5 ? 'rise' : null) : inp.x > 0.5 ? 'right' : inp.x < -0.5 ? 'left' : null;
-    const sw = p.saber.swing(state.t, { heavy, dir, lock: t, lunge: perks.lunge });
+    const sw = p.saber.swing(state.t, { heavy, dir, lock: t });
     if (!sw) return;
     emit({ type: 'fire' });
   }
-  // the dodge (X): a roll the way you're going (back, if you're still),
-  // nothing landing through its first moments
+  // the dodge (X): the game's evade (Ability_Evade's charges, the engine's:
+  // lib/combat/saber2017.js), the way you're going (back, if you're still).
+  // A body on the game's rig plays its own dodge clip for that way and goes
+  // as far as the clip's root travels; any other rolls the clip library's
+  // `roll` as far as the rulebook's hand.roll. While it's on, what lands is
+  // the evading share of it (hurt)
+  const evader = () => me().saber?.sim ?? (spareSim ??= Object.assign(createSaberSim(saberOf('luke')), { scale: { blocked: 1, recharge: perks.dodge } }));
   function dodge() {
-    if (state.phase !== 'walk' || state.dodge || state.t - state.dodgedAt < DODGE.cool * perks.dodge || state.off) return;
+    if (state.phase !== 'walk' || state.dodge || state.off) return;
+    if (!evader().dash(state.t)) return;
     const inp = input();
     const p = me().st;
     let dx = Math.sin(inp.heading) * inp.y + Math.cos(inp.heading) * inp.x;
@@ -1909,22 +1915,39 @@ export async function create(canvas, ctx) {
       dz = -Math.cos(p.yaw);
     }
     const m = Math.hypot(dx, dz);
-    const d = { t0: state.t, dx: dx / m, dz: dz / m, d: 0 };
+    const d = { t0: state.t, dx: dx / m, dz: dz / m, d: 0, was: [0, 0], yaw: p.yaw };
     state.dodge = d;
     state.dodgedAt = state.t;
     me().saber?.block(false);
     sounds.combat?.('dodge');
-    // a body on the library rolls by its clip (the library's `roll`, paced
-    // to the dodge, over the dodge's own way across the ground), turned to
-    // the way it goes, and the holder stays upright; going back (or a body
-    // that can't have it) tumbles as it always has
     const fig = me().fig;
-    if (fig?.anim && fig.play && d.dx * Math.sin(p.yaw) + d.dz * Math.cos(p.yaw) > -0.5) {
+    // (the way, on its own axes: ahead, behind, its left, its right)
+    const ahead = d.dx * Math.sin(p.yaw) + d.dz * Math.cos(p.yaw);
+    const left = d.dx * Math.cos(p.yaw) - d.dz * Math.sin(p.yaw);
+    const way = Math.abs(ahead) >= Math.abs(left) ? (ahead >= 0 ? 'front' : 'back') : left >= 0 ? 'left' : 'right';
+    const own = fig?.clips?.[`dodge.${way}`];
+    if (fig?.play && own?.userData?.root?.length) {
+      cutReaction();
+      d.root = own.userData.root;
+      const last = d.root.at(-1);
+      d.dur = d.root.find((r) => Math.hypot(r[1] - last[1], r[2] - last[2]) < 0.01)?.[0] ?? last[0];
+      d.clip = true;
+      fig.play(`dodge.${way}`, { layer: 'full', fade: 0.05 }).then((ok) => {
+        if (!ok) d.clip = false;
+      }, () => (d.clip = false));
+      return;
+    }
+    // a body on the library rolls by its clip, paced to the roll, turned to the
+    // way it goes; going back (or a body that can't have it) tumbles
+    const roll = saberOf('luke').hand.roll;
+    d.dur = roll.dur;
+    d.dist = roll.dist;
+    if (fig?.anim && fig.play && ahead > -0.5) {
       cutReaction();
       p.yaw = Math.atan2(d.dx, d.dz);
       d.clip = true;
       fig
-        .play('roll', { layer: 'full', at: ROLL.at, speed: (ROLL.length - ROLL.at) / (DODGE.dur + ROLL.over) })
+        .play('roll', { layer: 'full', at: ROLL.at, speed: (ROLL.length - ROLL.at) / (d.dur + ROLL.over) })
         .then((ok) => {
           if (!ok) d.clip = false;
         }, () => (d.clip = false));
@@ -1933,22 +1956,34 @@ export async function create(canvas, ctx) {
   function stepDodge() {
     const d = state.dodge;
     if (!d) return false;
-    const k = (state.t - d.t0) / DODGE.dur;
-    if (k >= 1) {
+    const t = state.t - d.t0;
+    if (t >= d.dur) {
       state.dodge = null; // (and place() stands you back up)
       return false;
     }
-    const at = dodgeStep(k);
-    const step = at.d - d.d;
-    d.d = at.d;
     const p = me().st;
+    if (d.root) {
+      // (the clip's own travel, on the axes you faced as it began: +x your left, +z ahead)
+      const [x, z] = rootAt(d.root, t);
+      const lx = x - d.was[0];
+      const lz = z - d.was[1];
+      d.was = [x, z];
+      p.x += Math.cos(d.yaw) * lx + Math.sin(d.yaw) * lz;
+      p.z += -Math.sin(d.yaw) * lx + Math.cos(d.yaw) * lz;
+      return false;
+    }
+    // (rolled: quick out of the blocks, slowing at the end)
+    const k = t / d.dur;
+    const at = d.dist * (1 - (1 - k) * (1 - k));
+    const step = at - d.d;
+    d.d = at;
     p.x += d.dx * step;
     p.z += d.dz * step;
     // (a roll: head over heels along the way, once, head first the way
     // you're going; kept here for place(), which sets the body's turn
     // afresh every frame)
     d.roll = Math.PI * 2 * k * (d.dx * Math.sin(p.yaw) + d.dz * Math.cos(p.yaw) >= 0 ? 1 : -1);
-    return at.safe;
+    return false;
   }
   // the ring over the one you're squared up to: a thin additive ring at
   // their chest, facing you, breathing; in your blade's (or bolt's) colour
@@ -2218,43 +2253,45 @@ export async function create(canvas, ctx) {
     }
     emit({ type: 'fire' });
   }
-  // the blade through one of them: their blade turns it (sparks, a clash)
-  // or it lands
-  function saberHit(t, damage, at, { heavy = false, thrown = false } = {}) {
-    // their blade on yours: turned while it's up (each turned stroke drains
-    // their guard, a heavy one breaks it and they reel); parried, you reel
-    const turn = thrown ? { parried: false, broke: false } : on(t).parry(t, { heavy });
-    fx.sparks(at, UP, turn.parried ? '#ffffff' : (me().spec.bolt ?? '#ffffff'), turn.parried ? 16 : heavy ? 22 : 10);
+  // your strike on one of them, as the engine landed it (the game's damage,
+  // in the site's hit points: abilityRules.js's GAME_HP; a thrown blade's
+  // already the site's), on the capsule the blade met
+  const exact = (n) => n * perks.damage;
+  function saberHit(t, damage, at, { behind = false, thrown = false } = {}) {
+    fx.sparks(at, UP, me().spec.bolt ?? '#ffffff', behind ? 18 : 10);
     sounds.saber?.('clash');
-    if (turn.broke) {
-      sounds.combat?.('parry');
-      emit({ type: 'parry', theirs: true });
-      state.hitstop = Math.max(state.hitstop, 0.1);
-    }
-    if (turn.parried) {
-      t.flinch = 0.2;
-      // your guard takes some of it
-      state.guard = guardHit(state.guard, 12, state.t);
-      state.hitstop = Math.max(state.hitstop, turn.perfect ? 0.12 : 0.04);
-      if (turn.perfect) {
-        // (theirs a parry: your stroke stopped, you reeling, open to their riposte)
-        me().saber.cancel();
-        state.reelUntil = state.t + DUEL.stagger.parried;
-        state.shake = Math.min(1, state.shake + 0.3);
-        sounds.combat?.('parry');
-      }
+    // (a battle's own: Heroes vs Villains' fighters count the game's hit points, missions/hvvScene.js; the
+    // assault's and Blast's soldiers their own, a hit of yours their rule's)
+    if (assaultOn() && !t.ground) {
+      assault.hit(t, mission?.kind === 'hvv' && !thrown ? damage : undefined);
+      emit({ type: 'hit', kill: false, behind });
+      sounds.combat?.('hit');
       return;
     }
     const was = t.hp;
-    // (an exposed weakness, Dooku's: the game's more from every stroke while it lasts)
-    on(t).hit(t, Math.round(dealt(damage) * takenOf(t, state.t)), { breaks: heavy, at });
-    if (heavy) on(t).stagger(t, 1.2);
+    const n = thrown ? damage : damage / GAME_HP;
+    // (an exposed weakness, Dooku's: the game's more from every strike while it lasts)
+    on(t).hit(t, exact(n) * takenOf(t, state.t), { at });
     const killed = was > 0 && t.hp <= 0;
-    emit({ type: 'hit', kill: killed });
+    emit({ type: 'hit', kill: killed, behind });
     sounds.combat?.(killed ? 'kill' : 'hit');
-    state.hitstop = Math.max(state.hitstop, hitStop(damage, killed));
-    state.shake = Math.min(1, state.shake + (heavy ? 0.2 : 0.08));
+    state.hitstop = Math.max(state.hitstop, hitStop(n, killed));
+    state.shake = Math.min(1, state.shake + (behind ? 0.14 : 0.08));
   }
+  // your strike met on their block, or theirs in the same moment (a clash): sparks, nothing lands
+  const saberMet = (how) => (t, at) => {
+    fx.sparks(at, UP, '#ffffff', how === 'clash' ? 18 : 14);
+    if (t) t.flinch = 0.2;
+    state.hitstop = Math.max(state.hitstop, how === 'clash' ? 0.06 : 0.04);
+    state.shake = Math.min(1, state.shake + 0.15);
+  };
+  // your block broken at no stamina: you reel
+  const blockBroken = () => {
+    sounds.combat?.('broken');
+    state.shake = Math.min(1, state.shake + 0.5);
+  };
+  // the game's damage on you, in your health (out of 100, your hero's whole health the game's)
+  const onYou = (n) => (n * 100) / (me().saber?.rules.health ?? saberOf('luke').health);
   // the blade lit while there's fighting, out again once it's quiet; held up while C is
   function stepSaber(dt) {
     const p = me();
@@ -2267,21 +2304,15 @@ export async function create(canvas, ctx) {
       if (state.throwQueued) ventGun();
       return;
     }
-    // the guard: regrowing, or staggered while it's broken
-    const wasBroken = state.guard.brokenAt != null;
-    state.guard = guardStep(state.guard, dt, state.t, guardMax);
-    if (!wasBroken && state.guard.brokenAt != null) {
-      sounds.combat?.('broken');
-      state.shake = Math.min(1, state.shake + 0.5);
-    }
-    const broken = state.guard.brokenAt != null;
-    // (a press that went down and up inside one frame, a quick click, still raises it: saber.js holds it up for the parry window)
+    // the block: up while C is held, as long as the engine holds it (stamina lasting, not recoiling)
+    // (a press that went down and up inside one frame, a quick click, still raises it)
     const tapped = state.blockAt != null && state.t - state.blockAt <= dt;
-    const blocking = Boolean(state.keys.block || state.buttons.block || tapped) && state.phase === 'walk' && !broken && !state.dodge && state.t >= state.reelUntil;
-    sab.block(blocking, blocking ? incomingAt(activity.targets, p.st) : null); // (on the side the nearest duellist's cut comes in on)
+    const want = Boolean(state.keys.block || state.buttons.block || tapped) && state.phase === 'walk' && !state.dodge;
+    sab.block(want, want ? incomingAt(activity.targets, p.st) : null); // (on the side the nearest duellist's cut comes in on)
+    const blocking = sab.sim.deflecting;
     if (blocking) state.saberAt = state.t;
     // F held: the heavy stroke winding up; let go: the stroke
-    if (state.pressAt != null && !sab.busy) sab.setCharge(Math.min(1, (state.t - state.pressAt) / HEAVY.hold));
+    if (state.pressAt != null && !sab.busy) sab.setCharge(Math.min(1, (state.t - state.pressAt) / HOLD));
     else sab.setCharge(0);
     if (state.swingQueued) {
       swing(state.swingQueued === 'heavy');
@@ -2290,7 +2321,7 @@ export async function create(canvas, ctx) {
     // (touch: the Swing button held past the hold is the heavy one too)
     if (state.buttons.fire && state.pressAt == null) state.pressAt = state.t;
     if (!state.buttons.fire && !state.keys.fire && state.pressAt != null && state.touchPress) {
-      swing(state.t - state.pressAt >= HEAVY.hold);
+      swing(state.t - state.pressAt >= HOLD);
       state.pressAt = null;
       state.touchPress = false;
     }
@@ -2306,22 +2337,27 @@ export async function create(canvas, ctx) {
     const w = p.saber ? null : weapon();
     const ab = abilitiesOf(p.spec);
     const lock = state.lock && !state.lock.down ? state.lock : null;
+    // (the stamina the block and the strikes spend, and the dodge's charges: the engine's)
+    const v = evader().view(state.t);
+    const ev = evader().rules.evade;
     looker.send();
     emit({
       type: 'combat',
       saber: Boolean(p.saber),
-      stance: p.saber ? p.saber.stance.name : null,
+      stance: p.saber ? (p.saber.stance?.name ?? null) : null,
       weapon: w ? w.name : null,
-      guard: p.saber ? state.guard.value / guardMax : null,
-      broken: state.guard.brokenAt != null,
+      stamina: p.saber ? v.stamina : null,
+      guard: p.saber ? v.stamina : null,
+      broken: Boolean(p.saber && v.out),
+      dashes: v.dashes,
       heat: w ? state.heat.value : null,
       locked: state.heat.locked,
       vent: w ? ventSpot(state.heat, state.t) : null,
       hot: state.t < state.overcharge,
       // (the abilities: named, their cooldowns, and a held one's tank as how much is spent)
       powers: { power: ABILITIES[ab.power].name, second: ABILITIES[ab.second].name, hold: Boolean(ABILITIES[ab.power].hold) },
-      cool: { power: ABILITIES[ab.power].hold ? Math.max(0, 1 - state.jet.fuel / holdOf(ABILITIES[ab.power]).tank) * HOLD_FULL : Math.max(0, state.cool.power - state.t), second: Math.max(0, state.cool.second - state.t), dodge: Math.max(0, state.dodgedAt + DODGE.cool * perks.dodge - state.t) },
-      cools: { power: ABILITIES[ab.power].hold ? HOLD_FULL : ABILITIES[ab.power].cool * perks.cooldown, second: ABILITIES[ab.second].cool * perks.cooldown, dodge: DODGE.cool * perks.dodge },
+      cool: { power: ABILITIES[ab.power].hold ? Math.max(0, 1 - state.jet.fuel / holdOf(ABILITIES[ab.power]).tank) * HOLD_FULL : Math.max(0, state.cool.power - state.t), second: Math.max(0, state.cool.second - state.t), dodge: v.dashes > 0 ? 0 : Math.max(0, (ev.cost - v.dashBar) * ev.recharge) },
+      cools: { power: ABILITIES[ab.power].hold ? HOLD_FULL : ABILITIES[ab.power].cool * perks.cooldown, second: ABILITIES[ab.second].cool * perks.cooldown, dodge: ev.cost * ev.recharge },
       lock: lock ? { name: lock.spec.kind, hp: Math.max(0, lock.hp), max: lock.spec.hp ?? 1, shield: lock.shield } : null,
       ads: state.ads,
     });
@@ -2389,8 +2425,8 @@ export async function create(canvas, ctx) {
         fx.sparks(new V(...e.at), UP, '#ffffff', 10);
         sounds.saber?.('deflect');
         state.saberAt = state.t;
-        // (each bolt turned costs a little guard)
-        if (me().saber) state.guard = guardHit(state.guard, 7 * me().saber.stance.cost * perks.deflect, state.t);
+        // (each bolt turned costs stamina by its damage, the game's)
+        me().saber?.deflected(((e.bolt.damage ?? 8) * (me().saber.rules.health ?? 750) * perks.deflect) / 100, state.t);
       },
       landed(e) {
         if (e.bolt.tag?.yours) impacts.push({ t: state.t, at: new V(...e.at), dir: new V(...e.bolt.dir), ground: (e.normal?.[1] ?? 1) > 0.7, normal: e.normal ? new V(...e.normal) : null, surface: e.surface, speed: e.bolt.speed });
@@ -2434,7 +2470,8 @@ export async function create(canvas, ctx) {
   // `from`: where it came from ({ x, z }), for the way you flinch and fall
   // (else the last shot's at you)
   function hurt(n, from = null) {
-    // (in a rage: its shield takes it first, the rest by the game's multiplier)
+    // (dodging: the evading share of it; in a rage: its shield takes it first, the rest by the game's multiplier)
+    n = evader().taken(n, state.t);
     if (state.rage) n = powers.soaked(n);
     state.health = Math.max(0, state.health - n * perks.hurt);
     state.hurtAt = state.t;
@@ -2862,7 +2899,7 @@ export async function create(canvas, ctx) {
           const dir = mine ? (state.aim > 0 ? state.aimDir : null) : mateFight.foe && mateFight.aim > 0 ? chestOf(mateFight.foe, _mateDir).sub(_mateFrom.set(st.x, st.y + 1.35, st.z)).normalize() : null;
           const aimK = mine ? (pp.saber?.lit ? Math.max(state.aim, 0.75) : state.aim) : mateFight.aim;
           if (!lying && !(mine && emoteShown)) pp.gp.set(dt, { aim: aimK, look: mine ? state.aim : mateFight.aim, dir, forward: fwdV.set(Math.sin(st.yaw), 0, Math.cos(st.yaw)), up: UP });
-          pp.saber?.update(dt, state.t, { forward: fwdV.set(Math.sin(st.yaw), 0, Math.cos(st.yaw)), up: UP, me: st, targets: mine ? activity.targets : [], hit: saberHit, eye: camera.position });
+          pp.saber?.update(dt, state.t, { forward: fwdV.set(Math.sin(st.yaw), 0, Math.cos(st.yaw)), up: UP, me: st, targets: mine ? (assaultOn() ? assault.targets : activity.targets) : [], hit: saberHit, blocked: saberMet('block'), clash: saberMet('clash'), broken: blockBroken, capsules: boltPlay.capsules, eye: camera.position });
           if (!mine && mateFight.shoot && !lying) mateShot(pp);
         } else pp.saber?.dark(); // (put away to ride: no update reaches it, so its light goes)
       }
@@ -3176,26 +3213,24 @@ export async function create(canvas, ctx) {
     }
     // the battle: on with it, and their bolts at you
     if (assault && state.phase === 'walk') {
-      const { atYou } = assault.update(dt, state.off ? null : me().st);
+      const { atYou } = assault.update(dt, state.off ? null : me().st, { sim: me().saber?.sim ?? null, swinging: swingingOf(me().saber, state.t, me().st.yaw) });
       for (const s of atYou) {
         // (a blade's stroke, or the arena's edge: on you, not a bolt)
         if (s.melee) {
           if (state.off) continue;
           const from = s.from ? { x: s.from[0], z: s.from[1] } : null;
-          // (a blade's stroke meets your guard as a duellist's does: a parry staggers it, a block spends the guard)
-          const m = s.oob ? null : met(s, { saber: me().saber, blockAt: state.blockAt, now: state.t, window: PARRY.window * perks.parry, guard: state.guard, cost: me().saber?.stance.cost });
-          if (m && m.how !== 'hit') {
-            const p = me().st;
-            fx.sparks(new V(p.x, p.y + 1.2, p.z), UP, '#ffffff', m.how === 'parry' ? 26 : 14);
-            if (m.how === 'parry') {
-              sounds.combat?.('parry');
-              s.parried?.();
-              state.blockAt = null;
-              emit({ type: 'parry' });
-            } else {
-              sounds.saber?.('clash');
-              state.guard = m.guard;
-            }
+          // (a blade's strike was decided by its engine and yours, your block's shield and stamina with it: what
+          // reaches here lands; met on your block, sparks; a swipe meets your block's shield)
+          const p = me().st;
+          if (s.met) {
+            saberMet(s.met)(null, new V(p.x, p.y + 1.2, p.z));
+            sounds.saber?.('clash');
+            continue;
+          }
+          const m = s.oob || s.blade ? null : met(s, { saber: me().saber, me: p, now: state.t });
+          if (m?.how === 'block') {
+            fx.sparks(new V(p.x, p.y + 1.2, p.z), UP, '#ffffff', 14);
+            sounds.saber?.('clash');
             continue;
           }
           hurt(s.damage, from);
@@ -3223,14 +3258,7 @@ export async function create(canvas, ctx) {
       questEvent({ type: 'tick', dt });
       questEvent({ type: 'at', x: p.x, z: p.z, riding: state.riding?.kind ?? null });
     }
-    for (const ev of activity.update(dt, state.phase === 'walk' || state.phase === 'ride' ? me().st : null, state.t, { actors: actorAt, door: doorFor, swinging: swingingOf(me().saber, state.t, me().st.yaw), eye: camera.position })) questEvent(ev);
-    // your blade crossing a duellist's as either strokes: sparks and the clash
-    if (state.phase === 'walk')
-      for (const c of activity.clashes(me().saber, state.t)) {
-        fx.sparks(new V(...c.at), UP, '#ffffff', 18);
-        sounds.saber?.('clash');
-        state.hitstop = Math.max(state.hitstop, 0.05);
-      }
+    for (const ev of activity.update(dt, state.phase === 'walk' || state.phase === 'ride' ? me().st : null, state.t, { actors: actorAt, door: doorFor, swinging: swingingOf(me().saber, state.t, me().st.yaw), mine: me().saber?.sim ?? null, eye: camera.position })) questEvent(ev);
     const groundShots = groundWar.update(dt, state.phase === 'walk' || state.phase === 'ride' ? me().st : null, state.t, { mate: other().st, camera });
     for (const e of groundWar.news()) if (e.text) emit({ type: 'war', what: e.type, side: e.side, text: e.text }); // (the ground war's news, for the HUD's toast)
     if (state.phase === 'walk' || state.phase === 'ride')
@@ -3259,29 +3287,19 @@ export async function create(canvas, ctx) {
           else if (Math.random() < 0.8) on(s.victim).hit(s.victim, s.damage);
           continue;
         }
-        if (state.safe) continue; // (through the dodge's first moments nothing lands)
-        // a melee contact (a duellist's blade swept you; a brawler's swipe
-        // lands as it's decided): your block shown at their contact turns it
-        // and spends your guard; begun within the window before it, a parry
-        const m = s.melee ? met(s, { saber: me().saber, blockAt: state.blockAt, now: state.t, window: PARRY.window * perks.parry, guard: state.guard, cost: me().saber?.stance.cost }) : null;
-        const how = m?.how ?? 'hit';
+        // a duellist's strike met on your block or in a clash (its engine and yours decided it): sparks, nothing lands
         const p = me().st;
         const spot = s.point ? new V(...s.point) : new V(p.x, p.y + 1.2, p.z);
-        if (how === 'parry') {
-          fx.sparks(spot, UP, '#ffffff', 26);
-          sounds.combat?.('parry');
-          if (s.who) on(s.who).parried?.(s.who, PARRY.stagger);
-          state.hitstop = Math.max(state.hitstop, 0.12);
-          state.shake = Math.min(1, state.shake + 0.3);
-          state.blockAt = null;
-          emit({ type: 'parry' });
+        if (s.met) {
+          saberMet(s.met)(null, spot);
+          sounds.saber?.('clash');
           continue;
         }
-        if (how === 'block') {
-          // their blade on your raised one: a clash, and nothing lands, but it costs your guard
+        // a brawler's swipe: the AI's melee projectile, which your block's shield turns from the front
+        const m = s.melee && !s.blade ? met(s, { saber: me().saber, me: p, now: state.t }) : null;
+        if (m?.how === 'block') {
           fx.sparks(spot, UP, '#ffffff', 14);
           sounds.saber?.('clash');
-          state.guard = m.guard;
           state.shake = Math.min(1, state.shake + 0.2);
           state.hitstop = Math.max(state.hitstop, 0.04);
           continue;
@@ -3297,7 +3315,7 @@ export async function create(canvas, ctx) {
           state.shake = s.blade ? 0.6 : 1;
           if (s.blade) fx.sparks(spot, UP, '#ff8a5a', 12);
           else sounds.roar?.();
-          hurt(s.damage, { x: s.from[0], z: s.from[2] });
+          hurt(s.blade ? onYou(s.game ?? 0) : s.damage, { x: s.from[0], z: s.from[2] });
           if (!s.blade) swiped(s); // (and your mate, if it's in reach of it too: a blade cuts only what it swept)
         } else {
           // (at what it believes: a guess goes wide; none through a wall; a raised blade turns it: boltPlay)
@@ -3900,6 +3918,15 @@ export async function create(canvas, ctx) {
       activity.show({ id: 'dev-duel', steps: [{ type: 'shoot', tag: 'devduel', n: 1, text: 'Duel', spawn }] }, { id: 'dev-duel', step: 0 });
       ctx.invalidate();
     },
+    // (dev: a trooper's bolt at your chest from `far` metres off, `turn`
+    // radians round from where you face: the block's shield turns one from
+    // the front and not from behind, the duel's browser check)
+    bolt({ far = 14, turn = 0, damage = 8 } = {}) {
+      if (!import.meta.env.DEV) return null;
+      const p = me().st;
+      const from = [p.x + Math.sin(p.yaw + turn) * far, p.y + 1.3, p.z + Math.cos(p.yaw + turn) * far];
+      return Boolean(boltPlay.enemy({ from, to: [p.x, p.z], spread: 0, damage, side: 'them' }, p, state.t));
+    },
     // (for tests: put you somewhere, facing somewhere)
     // (dev: into a zone by its id, or out of the one you're in)
     // a level's physics engine (or a promise of it), from the level's stream:
@@ -3952,7 +3979,7 @@ export async function create(canvas, ctx) {
       ctx.invalidate();
     },
     // (for tests: where you are, what's going on)
-    debug: () => ({ surfaces: { level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }, sky: { zenith: '#' + sky.uniforms.uZenith.value.getHexString(), horizon: '#' + sky.uniforms.uHorizon.value.getHexString() }, site: site.id, ship: { at: shipHolder.position.toArray().map((v) => +v.toFixed(1)), y: +ship.group.position.y.toFixed(2), box: [+shipBox.w.toFixed(1), +shipBox.l.toFixed(1)], visible: ship.group.visible }, ms: state.ms, frames: state.frames, t: +state.t.toFixed(1), phase: state.phase, you: { ...me().st }, body: body ? { ready: body.ready, pose: body.pose } : null, here: state.here, found: [...state.found], prompt: state.prompt, riding: state.riding?.kind ?? null, rideY: state.riding ? +state.riding.state.y.toFixed(2) : null, quest: state.quest, zone: state.zone?.id ?? null, zoneOrigin: state.zone?.origin ?? null, health: state.health, off: state.off, mission: chase?.view() ?? assault?.view() ?? run, who: me().spec.id, saber: me().saber ? { lit: me().saber.lit, busy: me().saber.busy, thrown: me().saber.thrown, stance: me().saber.stance.name, color: me().spec.saber?.color ?? null } : null, mate: other().spec.id, mods: me().spec.mods ?? [], guard: Math.round(state.guard.value), heat: +state.heat.value.toFixed(2), locked: state.heat.locked, lock: state.lock?.spec.kind ?? null, lockGuard: state.lock?.guard ?? null, lockHp: state.lock?.hp ?? null, lockStagger: state.lock?.stagger != null ? +state.lock.stagger.toFixed(1) : null, weapon: me().weapon?.name ?? null, dodging: Boolean(state.dodge), bombs: state.bombs.length, powers: abilitiesOf(me().spec), force: powers.debug(), jet: +state.jet.fuel.toFixed(2), sprinting: state.t < state.sprint, fight: activity.debug(), people: life.debug(), net: { ...net.progress(), pool: assetPool().progress() }, rides: rides.map((x) => ({ kind: x.kind, at: [+x.state.x.toFixed(1), +x.state.z.toFixed(1)], built: Boolean(x.fig || x.body?.children.length) })) }),
+    debug: () => ({ surfaces: { level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }, sky: { zenith: '#' + sky.uniforms.uZenith.value.getHexString(), horizon: '#' + sky.uniforms.uHorizon.value.getHexString() }, site: site.id, ship: { at: shipHolder.position.toArray().map((v) => +v.toFixed(1)), y: +ship.group.position.y.toFixed(2), box: [+shipBox.w.toFixed(1), +shipBox.l.toFixed(1)], visible: ship.group.visible }, ms: state.ms, frames: state.frames, t: +state.t.toFixed(1), phase: state.phase, you: { ...me().st }, body: body ? { ready: body.ready, pose: body.pose } : null, here: state.here, found: [...state.found], prompt: state.prompt, riding: state.riding?.kind ?? null, rideY: state.riding ? +state.riding.state.y.toFixed(2) : null, quest: state.quest, zone: state.zone?.id ?? null, zoneOrigin: state.zone?.origin ?? null, health: state.health, off: state.off, mission: chase?.view() ?? assault?.view() ?? run, who: me().spec.id, saber: me().saber ? { lit: me().saber.lit, busy: me().saber.busy, thrown: me().saber.thrown, stance: me().saber.stance?.name ?? null, color: me().spec.saber?.color ?? null, ...me().saber.view(state.t) } : null, mate: other().spec.id, mods: me().spec.mods ?? [], heat: +state.heat.value.toFixed(2), locked: state.heat.locked, lock: state.lock?.spec.kind ?? null, lockGuard: state.lock?.guard ?? null, lockHp: state.lock?.hp ?? null, lockStagger: state.lock?.stagger != null ? +state.lock.stagger.toFixed(1) : null, weapon: me().weapon?.name ?? null, dodging: Boolean(state.dodge), bombs: state.bombs.length, powers: abilitiesOf(me().spec), force: powers.debug(), jet: +state.jet.fuel.toFixed(2), sprinting: state.t < state.sprint, fight: activity.debug(), people: life.debug(), net: { ...net.progress(), pool: assetPool().progress() }, rides: rides.map((x) => ({ kind: x.kind, at: [+x.state.x.toFixed(1), +x.state.z.toFixed(1)], built: Boolean(x.fig || x.body?.children.length) })) }),
     dispose() {
       disposed = true;
       gameLevel?.dispose();

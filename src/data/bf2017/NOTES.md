@@ -80,20 +80,15 @@ Kamino’s space level (`Levels/Space/SB_Kamino_01`), read the same way: the Sep
 - **Blast, the game as played**: **100 kills**, 10 a side (the tier's soldiers cap it). Tuning: a soldier's hit takes 14 more than the assault's (three hits down, not four), they roam within 0.3 of the ground's size round the point halfway between the two sides' spawns, and come back at the level's spawn nearest that point with no enemy within 30 m.
 
 ## The Battlefront world's collision with buildings (`levels/hoth/nav.bin`, `lib/battlefront/navMask.js`, `battlefront/map/collision.js`)
-
 The game's navmesh (`PathfindingBlobAsset`) is opaque, so the navgrid's mask is built from the game's own Havok shapes (the pack's `physics/*.bin`) by `scripts/bf2017-nav.mjs`: a cell is blocked when the soldier's capsule meets a shape at its middle. The capsule is the records' (`DefaultSoldierPhysics#CharacterPhysicsData.PhysicalRadius` 0.3, from `Poses[0].StepHeight` 0.4 to `Poses[0].Height` 1.7, read from `physics/soldier.json` and written into the file's header with their sources); what is by hand:
-
 - **The fine grid's 0.5 m** (the walkable test's): four to a navgrid cell. The game's `CoverConstants.TerrainHeightSamplingStep` is 0.25; half as fine measured clean (22 of 22 paths a side) at an eighth of the bytes.
 - **Where the fine grid is sampled**: only in a cell whose middle a capsule grown to the cell's corners (2 m × √½ + 0.3) meets, so a wall thinner than a cell between two middles is still in the fine grid.
 - **A blocked cell's top** (for the line of sight and the cover slots) is a ray down from 25 m over the ground (`TOP_REACH`: a byte of decimetres); where the ray misses though the capsule met a shape, the capsule's height, 1.7 m.
 - **The mask's cover slots** come one to a navgrid cell along its edges (2 m apart, not `SlotSpacing`'s 2.2: the mask has no faces longer than a cell), set back `OcclusionCheckDist` 0.7 from the face, crouch or stand by `CrouchHeight` 0.94 and `StandHeight` 1.7 as the box slots are. The game's `CoverZones` are not exported.
 - **The camera's sweep radius** is `StormTrooperShared#SoldierCameraComponentData.CameraCullSphereRadius` 0.15, read as the ball swept along the arm; the records name no camera collision radius beyond `SoldierThirdPersonCameraData.CollisionWidthPadding` 0.17, which `camera.js` already takes off the hit. The ground march's 0.2 m step and 0.25 m clearance are the page's own, as before.
 - **A box solid blocks only above a step** (`nav.js`'s `STEP_UP`, the record's `StepHeight` 0.4): a box whose top is under the ground plus a step (13,000 of Hoth's 47,000 hull boxes are buried) blocks nothing.
-
 ## Squads (`squads.json`, read by `lib/battlefront/ai/squad.js` and `spawn.js`)
-
 `squads.json` is read from the game (`scripts/lib/bf2017-rulebook-squads.mjs`); what the code around it adds by hand:
-
 - `IN_COMBAT` 5 s (`spawn.js`): how long a soldier hit, or hitting, cannot be spawned on. The game names what puts a soldier in combat (the killswitches `Online/Killswitches/SquadSpawn_InCombat_When*`, kept as `inCombat`) but keeps no time for it.
 - `SQUAD_SAFE` (`spawn.js`) is the record’s `safeEnemyDistance` 50 m (`SpawnLocationFinderEntityData.SpawnSafeEnemyDistance`); that an enemy that near makes a mate “in combat” (`ID_SQUAD_SPAWN_BLOCK_REASON_IN_COMBAT`) is by hand. `pickSpawn`’s `SAFE` 30 m for spawn points stays by hand, as before.
 - The block reasons by hand (`blocked`, `spawn.js`): a mate in the air (`'airborne'`) and a rolling mate show `ID_SQUAD_SPAWN_BLOCK_REASON_OTHER` (“UNAVAILABLE”), as the game has no airborne or rolling string.
@@ -102,3 +97,9 @@ The game's navmesh (`PathfindingBlobAsset`) is opaque, so the navgrid's mask is 
 - The squad-spawn Battle Points stay `points.json`’s `earn.squadSpawn` 25: `UI/MetaData/ScoreUIMetaData` has the award “SQUAD SPAWN ON YOU” (identifier 2793359391) but `Persistence/Scoring/MPScoring` holds no score for it.
 - The palette picks’ roles (`hud.palette`): the picks are the records’, in order; which feeds the name and which the icon is read by hand from the cell’s hashed graph (`docs/superpowers/evidence/battlefront-lane5b/research-squad.md`).
 - An order’s letter is the objective’s place (A for the first), as the page names its objectives.
+## `saber.json`
+Written by `node scripts/bf2017-data.mjs saber` (`scripts/lib/bf2017-rulebook-saber.mjs`, which says how each record is read). One block carries `"_source": "hand"`:
+- **`hand.broken`** 1.2 s: how long a hero reels when its block breaks at no stamina. The deflect prefab sets the state machine’s `OutOfStamina` channel when the `AbilityResource` falls under 1 (`stamina.out`, read), but the reaction it plays and its length are the Ant state machine’s, which the export doesn’t hold. Replace it with the length of the hero’s guard-break clip if one is measured into the stroke tables.
+- **`hand.standIn`** `luke`: a figure on the game’s rig with no saber of its own in the game (the Emperor, a clone) fences by Luke’s row, so there is one set of rules.
+- **`hand.combo`** 0.45 s: after a strike ends, how long the next continues the chain rather than starting it again. The chain is the Ant state machine’s (`HeroMelee_Attack_StrikeIndex` counts it), not exported; this is the site’s number from before, kept.
+- **`hand.roll`** 3.5 m over 0.63 s: the dodge of a figure with no dodge clip of the game’s (the crews from elsewhere, on the clip library’s `roll`). Every figure on the game’s rig dodges by its own pack’s `dodge.<way>` clip and that clip’s root travel (Luke’s: 3.3–3.5 m by 0.6–0.7 s); this is Luke’s `dodge.front`, measured from `clips-luke.glb`, so the others dodge as far.

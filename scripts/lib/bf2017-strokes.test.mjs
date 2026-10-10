@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { DIRS } from '../../src/components/galaxy/surface/combatRules.js';
+import { WAYS } from '../../src/components/galaxy/surface/stanceFromTable.js';
 import { BLOCK_AT } from '../../src/components/galaxy/surface/saberRules.js';
 import { GENERIC, HELD, classify, clipOf, emitterOf, measure, rigOf, rodOf, sourceName, strokeSide, tableFor } from './bf2017-strokes.mjs';
 
@@ -84,7 +84,7 @@ describe('a strike, measured on the game’s rig', () => {
   });
 
   it('reads the way it cuts and the plane it sweeps from the tip’s path', () => {
-    expect(Object.keys(DIRS)).toContain(m.dir);
+    expect(WAYS).toContain(m.dir);
     expect(m.dir).toBe('right');
     expect(Math.abs(m.plane[1])).toBeGreaterThan(0.9); // (a level cut)
   });

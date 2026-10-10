@@ -628,7 +628,7 @@ export default function GalaxySurface() {
           <span style={{ width: `${health}%` }} />
         </div>
       )}
-      {/* the fight: the guard a Jedi's block spends (or a gun's heat), the abilities and their cooldowns, who you're squared up to */}
+      {/* the fight: the stamina a Jedi's block and strikes spend (the game's: lib/combat/saber2017.js) or a gun's heat, the abilities and their cooldowns, the dodge's charges, who you're squared up to */}
       {combat && phase === 'walk' && (aiming || combat.lock || combat.broken || combat.locked || (combat.heat ?? 0) > 0.02 || (combat.guard ?? 1) < 0.99) && (
         <div className="surface-combat" aria-live="off">
           {combat.lock && (
@@ -641,9 +641,9 @@ export default function GalaxySurface() {
             </p>
           )}
           {combat.saber ? (
-            <div className={combat.broken ? 'surface-meter surface-guard is-broken' : 'surface-meter surface-guard'} role="meter" aria-label="Guard" aria-valuenow={Math.round((combat.guard ?? 1) * 100)} aria-valuemin={0} aria-valuemax={100}>
-              <span style={{ width: `${(combat.guard ?? 1) * 100}%` }} />
-              <b>{combat.broken ? 'Guard broken' : combat.stance}</b>
+            <div className={combat.broken ? 'surface-meter surface-guard is-broken' : 'surface-meter surface-guard'} role="meter" aria-label="Stamina" aria-valuenow={Math.round((combat.stamina ?? combat.guard ?? 1) * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <span style={{ width: `${(combat.stamina ?? combat.guard ?? 1) * 100}%` }} />
+              <b>{combat.broken ? 'Out of stamina' : combat.stance}</b>
             </div>
           ) : (
             <div className={combat.locked ? 'surface-meter surface-heat is-locked' : combat.hot ? 'surface-meter surface-heat is-hot' : 'surface-meter surface-heat'} role="meter" aria-label="Heat" aria-valuenow={Math.round((combat.heat ?? 0) * 100)} aria-valuemin={0} aria-valuemax={100}>
@@ -657,7 +657,7 @@ export default function GalaxySurface() {
             {[
               ['G', combat.powers?.power ?? (combat.saber ? 'Push' : 'Detonator'), 'power', powerIds.power],
               ['V', combat.powers?.second ?? (combat.saber ? 'Pull' : 'Overcharge'), 'second', powerIds.second],
-              ['X', 'Dodge', 'dodge'],
+              ['X', combat.dashes != null ? `Dodge ×${combat.dashes}` : 'Dodge', 'dodge'],
               ['B', 'Emote', 'emote'],
             ].map(([key, name, slot, ability]) => {
               const left = combat.cool?.[slot] ?? 0;
