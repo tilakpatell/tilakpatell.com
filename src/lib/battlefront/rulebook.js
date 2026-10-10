@@ -3,16 +3,25 @@
 // data, the hand files beside them; NOTES.md says which values are by hand).
 // Every accessor throws on an id that is not there: a rulebook typo is a bug
 // to see at once, not a case for the rules to handle.
+//
+// Levels are keyed by the game's level key (`hoth_01`); the short names older
+// readers use (`hoth`, lane H's `endor`…) are aliases. A level's files are
+// named as the maps rulebooks name them: the world, then `.n` past its first
+// level (`hoth.json`, `hoth.2.json`, `hoth.stages.json`, `hoth.<mode>.json`).
+// Hoth is bundled; every other level is fetched when asked (`loadLevel`).
 
 import abilities from '../../data/bf2017/abilities.json';
 import ai from '../../data/bf2017/ai.json';
+import arcade from '../../data/bf2017/arcade.json';
 import cameras from '../../data/bf2017/cameras.json';
 import cards from '../../data/bf2017/cards.json';
 import classes from '../../data/bf2017/classes.json';
 import heroes from '../../data/bf2017/heroes.json';
+import kits from '../../data/bf2017/kits.json';
 import hoth from '../../data/bf2017/maps/hoth.json';
 import hothLighting from '../../data/bf2017/maps/hoth.lighting.json';
 import hothStages from '../../data/bf2017/maps/hoth.stages.json';
+import modes from '../../data/bf2017/modes.json';
 import points from '../../data/bf2017/points.json';
 import reinforcements from '../../data/bf2017/reinforcements.json';
 import strings from '../../data/bf2017/strings.json';
@@ -25,7 +34,19 @@ import weapons from '../../data/bf2017/weapons.json';
 // (`hoth`, and lane H's `endor`, `tatooine`, `geonosis`, `kashyyyk`).
 export const ALIASES = { hoth: 'hoth_01', endor: 'endor_01', tatooine: 'tatooine_01', geonosis: 'geonosis_01', kashyyyk: 'kashyyyk_01' };
 export const levelKey = (level) => ALIASES[String(level).toLowerCase()] ?? String(level).toLowerCase();
-const LEVELS = ALIASES;
+
+// `hoth_01` → `hoth`, `hoth_02` → `hoth.2`
+export function fileOfLevel(level) {
+  const key = levelKey(level);
+  const m = key.match(/^(.*)_0*(\d+)$/);
+  if (!m) return key;
+  return Number(m[2]) === 1 ? m[1] : `${m[1]}.${Number(m[2])}`;
+}
+
+// The maps the bundle leaves out, each its own chunk, fetched when asked
+const FILES = import.meta.glob(['../../data/bf2017/maps/*.json', '!**/sb_*', '!**/arenas.json', '!**/hoth.json', '!**/hoth.lighting.json', '!**/hoth.stages.json'], { import: 'default' });
+const fileAt = (name) => FILES[`../../data/bf2017/maps/${name}.json`] ?? null;
+const loaded = new Map();
 
 function freeze(v) {
   if (v && typeof v === 'object' && !Object.isFrozen(v)) {
@@ -45,7 +66,9 @@ export function loadRulebook() {
     cards: cards.rows,
     classes: classes.rows,
     heroes: heroes.rows,
-    maps: { hoth: { map: hoth.rows, lighting: hothLighting.rows, stages: { [hothStages.mode]: hothStages } } },
+    kits,
+    arcade,
+    maps: { hoth_01: { map: hoth.rows, lighting: hothLighting.rows, stages: { [hothStages.mode]: hothStages } } },
     points,
     reinforcements: reinforcements.rows,
     strings: strings.rows,
@@ -71,16 +94,52 @@ export const vehicleOf = (rb, id) => pick(rb.vehicles, id, 'vehicle');
 export const abilityOf = (rb, id) => pick(rb.abilities, id, 'ability');
 export const cardOf = (rb, id) => pick(rb.cards, id, 'star card');
 
-const levelOf = (rb, level) => pick(rb.maps, level, 'level');
+// A level's rulebooks ({ map, lighting, stages: { [mode]: file } }), bundled or loaded
+export function levelOf(rb, level) {
+  const key = levelKey(level);
+  const lv = rb.maps[key] ?? loaded.get(key);
+  if (lv) return lv;
+  if (fileAt(fileOfLevel(key))) throw new Error(`level ${key}: not loaded yet (await loadLevel('${key}'))`);
+  throw new Error(`level ${key}: not in the rulebook`);
+}
+
+// Fetches a level's map, its lighting and its mode files once
+export async function loadLevel(level) {
+  const key = levelKey(level);
+  if (key === 'hoth_01') return levelOf(loadRulebook(), key);
+  if (loaded.has(key)) return loaded.get(key);
+  const name = fileOfLevel(key);
+  const at = fileAt(name);
+  if (!at) throw new Error(`level ${key}: not in the rulebook`);
+  const map = (await at()).rows;
+  const lighting = fileAt(`${name}.lighting`) ? (await fileAt(`${name}.lighting`)()).rows : null;
+  const stages = {};
+  for (const [path, load] of Object.entries(FILES)) {
+    const mode = path.slice(path.lastIndexOf('/') + 1).match(new RegExp(`^${name.replace('.', '\\.')}\\.([a-zA-Z]+)\\.json$`))?.[1];
+    if (!mode || mode === 'lighting') continue;
+    const file = await load();
+    stages[file.mode ?? (mode === 'stages' ? 'galacticAssault' : mode)] = file;
+  }
+  const lv = freeze({ map, lighting, stages });
+  loaded.set(key, lv);
+  return lv;
+}
+
+// The game's levels on a galaxy system and a level's modes: modes.json's
+// (lane F's) until G1's frontend.json, read from the inclusion options, lands
+export const levelsFor = (system) => [...(modes.worlds[system]?.ground ?? [])];
+export const modesOf = (rb, level) => [...(modes.levels[levelKey(level)]?.modes ?? [])];
 
 export function teamsFor(rb, level, era = 'Orig') {
-  const t = pick(rb.teams, `${era}:${LEVELS[level] ?? level}`, 'teams');
+  const t = pick(rb.teams, `${era}:${levelKey(level)}`, 'teams');
   return { light: t.light, dark: t.dark };
 }
 
 export const mapOf = (rb, level) => levelOf(rb, level).map;
 export const lightingOf = (rb, level) => levelOf(rb, level).lighting;
 export const stagesOf = (rb, level, mode) => levelOf(rb, level).stages[mode] ?? null;
+export const kitsOf = (rb) => rb.kits;
+export const arcadeOf = (rb) => rb.arcade;
 export const camerasOf = (rb) => rb.cameras;
 export const uiOf = (rb) => rb.ui;
 export const aiOf = (rb) => rb.ai;
