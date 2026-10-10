@@ -1,0 +1,23 @@
+{
+  "$type": "EffectBlueprint",
+  "_fixture": "Built from the field list in docs/superpowers/specs/2026-10-10-battlefront-fidelity-design.md (\"Where the light stands\", item 5): the export was not reachable from the cloud session that wrote it. Shaped as the export's web/data/FX/**/<Effect>.json; the numbers are the spec's (MaxSpawnDistance 55, ParticleCullingFactor 0.8, gravity 9.8, HDR 12.7 on the powder) or plausible.",
+  "Name": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth",
+  "CullDistance": 120,
+  "MaxActiveInstanceCount": 24,
+  "SpawnProbability": 1,
+  "NearbyRadius": 20,
+  "MaxNearbyInstanceCount": 6,
+  "AutoStart": true,
+  "Object": {
+    "$type": "EffectEntityData",
+    "Components": [
+      { "$type": "EmitterEntityData", "Emitter": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth" },
+      { "$type": "EmitterEntityData", "Emitter": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth" }
+    ]
+  },
+  "Low": { "$type": "EffectVariantData", "Emitters": ["FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth"], "MaxCountScale": 0.25 },
+  "Medium": { "$type": "EffectVariantData", "Emitters": ["FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth"], "MaxCountScale": 0.5 },
+  "High": { "$type": "EffectVariantData", "Emitters": ["FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth", "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth"], "MaxCountScale": 0.75 },
+  "Ultra": { "$type": "EffectVariantData", "Emitters": ["FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth", "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth"], "MaxCountScale": 1 },
+  "SoundOnStart": "Sound/Ambient/Wind_Indoor_01"
+}

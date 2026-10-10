@@ -1,0 +1,421 @@
+{
+ "format": 1,
+ "name": "FX_Snow_FallingSnow_01_Hoth",
+ "path": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth",
+ "cull": 120,
+ "maxActive": 24,
+ "probability": 1,
+ "nearby": {
+  "radius": 20,
+  "max": 6
+ },
+ "autoStart": true,
+ "graph": false,
+ "variants": {
+  "low": {
+   "emitters": [
+    0
+   ],
+   "scale": 0.25,
+   "from": "Low"
+  },
+  "mid": {
+   "emitters": [
+    0
+   ],
+   "scale": 0.5,
+   "from": "Medium"
+  },
+  "high": {
+   "emitters": [
+    0,
+    1
+   ],
+   "scale": 0.75,
+   "from": "High"
+  },
+  "ultra": {
+   "emitters": [
+    0,
+    1
+   ],
+   "scale": 1,
+   "from": "Ultra"
+  }
+ },
+ "emitters": [
+  {
+   "name": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth",
+   "kind": "quad",
+   "maxCount": 400,
+   "lifetime": 6,
+   "duration": null,
+   "loop": true,
+   "spawn": {
+    "rate": {
+     "poly": [
+      60,
+      0,
+      0,
+      0
+     ],
+     "scale": 1
+    },
+    "burst": 0,
+    "size": {
+     "random": [
+      0.025,
+      0.05
+     ]
+    },
+    "speed": {
+     "random": [
+      0.2,
+      0.6
+     ]
+    },
+    "direction": {
+     "dir": [
+      0,
+      -1,
+      0
+     ],
+     "spread": 25
+    },
+    "position": {
+     "box": {
+      "center": [
+       0,
+       0,
+       0
+      ],
+      "size": [
+       12,
+       0.5,
+       12
+      ]
+     }
+    }
+   },
+   "gravity": {
+    "g": 9.8,
+    "random": 0.3
+   },
+   "drag": 2.2,
+   "color": [
+    {
+     "poly": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "scale": 1.6
+    },
+    {
+     "poly": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "scale": 1.7
+    },
+    {
+     "poly": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "scale": 1.9
+    }
+   ],
+   "size": 1,
+   "alpha": {
+    "exponent": 1,
+    "curve": {
+     "poly": [
+      0,
+      8,
+      -16,
+      8
+     ],
+     "scale": 1.25
+    }
+   },
+   "rotation": 0,
+   "transparency": 1,
+   "uv": {
+    "frames": 4,
+    "grid": [
+     4,
+     1
+    ],
+    "fps": 0,
+    "randomStart": true
+   },
+   "alignment": "motionStretchScreen",
+   "stretch": {
+    "mult": 0.06,
+    "min": 1,
+    "max": 6
+   },
+   "lightWrap": 0.5,
+   "soft": null,
+   "texture": "FX/Textures/Snow/T_SnowFlake_4x1_01_D",
+   "additive": false,
+   "maxSpawnDistance": 55,
+   "cullingFactor": 0.8,
+   "follow": {
+    "source": false,
+    "velocity": false
+   },
+   "mesh": null,
+   "ribbon": null,
+   "graph": false,
+   "raw": {
+    "EmitterTemplateData": {
+     "SortPriority": 2
+    }
+   },
+   "_source": {
+    "maxCount": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.MaxCount",
+    "lifetime": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.Lifetime",
+    "kind": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.Emittable",
+    "alignment": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.Alignment",
+    "stretch.mult": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.MotionStretchMultiplier",
+    "stretch.min": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.MotionStretchMinLength",
+    "stretch.max": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.MotionStretchMaxLength",
+    "lightWrap": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.LightWrapAroundFactor",
+    "maxSpawnDistance": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.MaxSpawnDistance",
+    "cullingFactor": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.ParticleCullingFactor",
+    "texture": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.Texture",
+    "additive": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.BlendMode",
+    "follow.source": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.FollowSpawnSource",
+    "follow.velocity": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#EmitterTemplateData.FollowSpawnSourceVelocity",
+    "spawn.rate": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#SpawnRateData.SpawnRate",
+    "spawn.position": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#SpawnPositionData.Evaluator",
+    "spawn.size": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#SpawnSizeData.Size",
+    "spawn.speed": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#SpawnSpeedData.Speed",
+    "spawn.direction.dir": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#SpawnDirectionData.Direction",
+    "spawn.direction.spread": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#SpawnDirectionData.Spread",
+    "gravity.g": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#GravityData.Gravity",
+    "gravity.random": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#GravityData.PerParticleRandomness",
+    "drag": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#DragData.Drag",
+    "color": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#UpdateColorData.Color",
+    "alpha.exponent": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#UpdateAlphaLevelScaleData.Exponent",
+    "alpha.curve": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#UpdateAlphaLevelScaleData.AlphaLevelScale",
+    "uv.frames": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#UpdateTextureCoordsData.FrameCount",
+    "uv.fps": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#UpdateTextureCoordsData.FramesPerSecond",
+    "uv.randomStart": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth#UpdateTextureCoordsData.RandomStartFrame"
+   }
+  },
+  {
+   "name": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth",
+   "kind": "quad",
+   "maxCount": 40,
+   "lifetime": {
+    "random": [
+     3,
+     5
+    ]
+   },
+   "duration": null,
+   "loop": true,
+   "spawn": {
+    "rate": {
+     "poly": [
+      8,
+      0,
+      0,
+      0
+     ],
+     "scale": 1
+    },
+    "burst": 0,
+    "size": {
+     "random": [
+      1.5,
+      2.5
+     ]
+    },
+    "speed": {
+     "random": [
+      0.1,
+      0.3
+     ]
+    },
+    "direction": {
+     "dir": [
+      0,
+      -1,
+      0
+     ],
+     "spread": 60
+    },
+    "position": {
+     "box": {
+      "center": [
+       0,
+       -2,
+       0
+      ],
+      "size": [
+       10,
+       1,
+       10
+      ]
+     }
+    }
+   },
+   "gravity": null,
+   "drag": 0,
+   "color": [
+    {
+     "poly": [
+      1,
+      -0.6,
+      0,
+      0
+     ],
+     "scale": 12.7
+    },
+    {
+     "poly": [
+      1,
+      -0.6,
+      0,
+      0
+     ],
+     "scale": 12.7
+    },
+    {
+     "poly": [
+      1,
+      -0.5,
+      0,
+      0
+     ],
+     "scale": 12.7
+    }
+   ],
+   "size": {
+    "poly": [
+     1,
+     1.2,
+     -0.4,
+     0
+    ],
+    "scale": 1
+   },
+   "alpha": {
+    "exponent": 2,
+    "curve": {
+     "poly": [
+      0,
+      4,
+      -4,
+      0
+     ],
+     "scale": 0.08
+    }
+   },
+   "rotation": {
+    "poly": [
+     0,
+     40,
+     0,
+     0
+    ],
+    "scale": 1
+   },
+   "transparency": {
+    "poly": [
+     1,
+     0,
+     0,
+     0
+    ],
+    "scale": 1
+   },
+   "uv": {
+    "frames": 32,
+    "grid": [
+     4,
+     8
+    ],
+    "fps": 8,
+    "randomStart": false
+   },
+   "alignment": "screen",
+   "stretch": null,
+   "lightWrap": 0.5,
+   "soft": 0.8,
+   "texture": "FX/Textures/Smoke/T_ThinPuff_Gnomon_4x32_NoAtlas_01_D",
+   "additive": false,
+   "maxSpawnDistance": 55,
+   "cullingFactor": 0.8,
+   "follow": {
+    "source": false,
+    "velocity": false
+   },
+   "mesh": null,
+   "ribbon": null,
+   "graph": false,
+   "raw": {
+    "TurbulenceData": {
+     "Strength": 0.4,
+     "Frequency": 0.2
+    }
+   },
+   "_source": {
+    "maxCount": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.MaxCount",
+    "lifetime": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.Lifetime",
+    "kind": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.Emittable",
+    "alignment": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.Alignment",
+    "lightWrap": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.LightWrapAroundFactor",
+    "soft": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.SoftParticleDistance",
+    "maxSpawnDistance": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.MaxSpawnDistance",
+    "cullingFactor": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.ParticleCullingFactor",
+    "texture": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.Texture",
+    "additive": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#EmitterTemplateData.BlendMode",
+    "spawn.rate": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#SpawnRateData.SpawnRate",
+    "spawn.position": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#SpawnPositionData.Evaluator",
+    "spawn.size": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#SpawnSizeData.Size",
+    "spawn.speed": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#SpawnSpeedData.Speed",
+    "spawn.direction.dir": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#SpawnDirectionData.Direction",
+    "spawn.direction.spread": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#SpawnDirectionData.Spread",
+    "color": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#UpdateColorData.Color",
+    "size": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#UpdateSizeData.Size",
+    "rotation": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#UpdateRotationData.Rotation",
+    "alpha.exponent": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#UpdateAlphaLevelScaleData.Exponent",
+    "alpha.curve": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#UpdateAlphaLevelScaleData.AlphaLevelScale",
+    "uv.frames": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#UpdateTextureCoordsData.FrameCount",
+    "uv.fps": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#UpdateTextureCoordsData.FramesPerSecond",
+    "transparency": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth#UpdateTransparencyData.Transparency"
+   }
+  }
+ ],
+ "textures": [
+  "FX/Textures/Snow/T_SnowFlake_4x1_01_D",
+  "FX/Textures/Smoke/T_ThinPuff_Gnomon_4x32_NoAtlas_01_D"
+ ],
+ "missing": [],
+ "raw": {
+  "SoundOnStart": "Sound/Ambient/Wind_Indoor_01"
+ },
+ "_source": {
+  "cull": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.CullDistance",
+  "maxActive": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.MaxActiveInstanceCount",
+  "probability": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.SpawnProbability",
+  "nearby.radius": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.NearbyRadius",
+  "nearby.max": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.MaxNearbyInstanceCount",
+  "autoStart": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.AutoStart",
+  "variants.low": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.Low",
+  "variants.mid": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.Medium",
+  "variants.high": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.High",
+  "variants.ultra": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth#EffectBlueprint.Ultra"
+ },
+ "fixture": true
+}

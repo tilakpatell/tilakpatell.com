@@ -12,7 +12,11 @@
 // environment under ClusteredLighting (A2), the programs before and after a
 // light moves (no recompile), the frame time.
 //
-// rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only }
+// rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only, particles }
+//
+// `particles` (fidelity lane X): the game's effects from their emitter
+// tables over the ring, and the GPU twin's parity (particleProbe.js), read
+// by scripts/light-fixture.mjs --particles as `probe.particles`.
 
 import * as THREE from 'three';
 
@@ -81,6 +85,12 @@ export default {
     const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 800);
     camera.position.set(0, 7, 24);
     camera.lookAt(0, 1, 0);
+    // (closer for the particles: a flake is 3 to 5 cm)
+    if (opts.particles) {
+      camera.position.set(0, 2.2, 7);
+      camera.lookAt(0, 2.4, 0);
+    }
+    const camVel = new THREE.Vector3();
 
     const made = [];
     const mat = (o) => {
@@ -159,6 +169,15 @@ export default {
         scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
         pmrem.dispose();
       }
+      if (opts.particles) {
+        const { createParticleProbe } = await import('./particleProbe.js');
+        probe.particles = await createParticleProbe({ scene, renderer, camera, light, tier: opts.tier });
+        probe.particles.warm(6);
+        // a pan for the streaks: the camera moved sideways at `speed` m/s
+        probe.pan = (speed) => {
+          camVel.set(speed, 0, 0);
+        };
+      }
       envTex = scene.environment;
       probe.setEnv(opts.env);
       light.update(0, camera);
@@ -181,6 +200,8 @@ export default {
       },
       step(dt) {
         cube.rotation.y += dt;
+        if (camVel.x) camera.position.addScaledVector(camVel, dt);
+        probe.particles?.step(dt);
         light?.update(dt, camera);
       },
       draw({ renderer: r }) {
@@ -191,6 +212,7 @@ export default {
       dispose() {
         post?.dispose();
         grid?.dispose();
+        probe.particles?.dispose();
         light?.dispose();
         if (!opts.sky) envTex?.dispose();
         for (const m of made) m.dispose();

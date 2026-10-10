@@ -1,0 +1,14 @@
+{
+  "_fixture": "A trimmed map extras in the shape the export's README gives (effects[]: the spawn's transform and its EffectBlueprint name, per subworld), written from the spec in the cloud; not the game's Hoth.",
+  "subworlds": ["levels/mp/fixture_01/fixture_01", "levels/mp/fixture_01/fixture_01_lobby"],
+  "effects": [
+    { "blueprint": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth", "position": [210, 380, -1545], "quaternion": [0, 0, 0, 1], "sub": 0 },
+    { "blueprint": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth", "position": [222, 380, -1545], "quaternion": [0, 0, 0, 1], "sub": 0 },
+    { "blueprint": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth", "position": [1400, 380, -1545], "quaternion": [0, 0, 0, 1], "sub": 0 },
+    { "blueprint": "FX/Vehicles/GR75/FX_Veh_GR75_Engine_Exhaust_01", "position": [180, 370, -1500], "quaternion": [0, 0.7071068, 0, 0.7071068], "scale": [2, 2, 2], "sub": 0 },
+    { "blueprint": "FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01", "position": [205, 362.3, -1540], "quaternion": [0, 0, 0, 1], "autoStart": false, "sub": 0 },
+    { "blueprint": "FX/Ambient/Steam/FX_Steam_Rising_01", "position": [200, 364, -1530], "quaternion": [0, 0, 0, 1], "sub": 0 },
+    { "blueprint": "FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth", "position": [0, 0, 0], "quaternion": [0, 0, 0, 1], "sub": 1 },
+    { "position": [0, 0, 0], "sub": 0 }
+  ]
+}

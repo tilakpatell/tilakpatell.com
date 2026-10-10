@@ -1,0 +1,12 @@
+name	type	path
+FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth	EffectBlueprint	data/FX/Ambient/Snow/FX_Snow_FallingSnow_01_Hoth.json
+FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth	ScalableEmitterDocument	data/fx/ambient/snow/emitters/em_snow_fallingsnow_01_hoth.json
+FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth	ScalableEmitterDocument	data/fx/ambient/snow/emitters/em_snow_powder_01_hoth.json
+FX/Vehicles/GR75/FX_Veh_GR75_Engine_Exhaust_01	EffectBlueprint	data/FX/Vehicles/GR75/FX_Veh_GR75_Engine_Exhaust_01.json
+FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01	ScalableEmitterDocument	data/fx/vehicles/gr75/emitters/em_gr75_engine_glow_01.json
+FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01	ScalableEmitterDocument	data/fx/vehicles/gr75/emitters/em_gr75_engine_trail_01.json
+FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01	EffectBlueprint	data/FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01.json
+FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01	ScalableEmitterDocument	data/fx/impacts/blaster/emitters/em_impact_blaster_snow_sparks_01.json
+FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01	ScalableEmitterDocument	data/fx/impacts/blaster/emitters/em_impact_blaster_snow_puff_01.json
+FX/Impacts/Smoke/Emitters/eg_Impact_Smoke_Big_01	EmitterGraph	data/fx/impacts/smoke/emitters/eg_impact_smoke_big_01.json
+FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01	ScalableEmitterDocument	data/fx/impacts/smoke/emitters/em_impact_smoke_01.json

@@ -77,6 +77,22 @@ node scripts/bf2017-data.mjs all --root lab/assets/bf2017 --level hoth_01 --era 
 - **A fixture**: `node scripts/bf2017-data.mjs fixture <record name> [--cut root]` copies one record into `scripts/fixtures/bf2017/data/` (keep it under 40 KB: cut it, or keep it gzipped) and adds its index row. The parsers and builders are tested on those alone, without the network.
 - The sequel era is refused as everywhere else (`isSequel`): a refused team kit is counted in `teams.json`’s `refused`.
 
+## Effects (fidelity lane X)
+
+The game's effects are read from their own records, not drawn by hand: each `EffectBlueprint` (`web/data/FX/**/<Effect>.json`) and the `ScalableEmitterDocument`s it names (`web/data/**/emitters/em_*.json`) become `src/data/bf2017/fx/<Effect>.json`, which `src/lib/three/particles/` plays (one draw per emitter of an effect, on the GPU where the browser has WebGPU).
+
+```
+node scripts/bf2017-emitters.mjs --level hoth --root C:/Users/tilak/Downloads/BF2_Extract [--sheets]
+node scripts/bf2017-emitters.mjs FX_Snow_FallingSnow_01_Hoth … --root <export> | --bucket
+node scripts/bf2017-effects.mjs hoth [--root <export>]
+node scripts/assets-upload.mjs --dry
+```
+
+- **The tables**: every number keeps where it came from (`_source`, leaf by leaf); a field or object type the reader does not know is kept under `raw` and listed by the run; an `EmitterGraph` (a compiled GPU graph, 166 in the game, opaque in the export) is replaced by the nearest document of its family and marked `graph: true`. The reader's reading of each type is in `scripts/lib/bf2017-emitters.mjs`'s header.
+- **The sheets** (`--sheets`, from the export: the master PNG under `web/textures/fx/`, else the KTX2 under `web_opt/textures/fx/` unpacked by `bf2017-textures.mjs`): WebP at 512, 1024 and 2048 on the longer side in `public/models/galaxy/bf2017/fx/<stem>.<size>.webp`, each under 256 KB, and `fx.json` listing them (grid, sizes, bytes, additive). Low and mid load 512, high 1024, ultra 2048; a level's set stays under 6 MB a tier (the run says by how much otherwise), loaded once a visit through `src/lib/assetBase.js`. The sheet names sit beside lane F's KTX2 (`glow.256.ktx2` …) in the same folder without clashing: lane F's are `<site name>.<size>.ktx2`, these the game's own texture names.
+- **A level's spawns**: `effects.json` beside lane L's pack (`public/models/galaxy/bf2017/levels/<world>/`), rebased into the pack's frame and binned by its cells like `lights.json`; it names the effects the level spawns that have no table yet.
+- **The fixtures** (`scripts/fixtures/bf2017/fx/`, 18 KB, the export's layout): three effects (the hangar's falling snow with its HDR powder and four tier variants, a GR-75's engine glow and contrail, a blaster bolt into snow with an `EmitterGraph`) and a map's extras. They were written in the cloud from the field list in `docs/superpowers/specs/2026-10-10-battlefront-fidelity-design.md` (the export is on the desktop), so the tables made from them say `fixture: true`; the desktop run replaces them.
+
 ## Credit
 
 Every model: `author` EA DICE, `license: 'permission'`, and the permission text “From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.” The import writes it; never by hand. No sequel-era model ships: the import refuses those folders.

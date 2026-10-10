@@ -1,0 +1,14 @@
+{
+  "$type": "EffectBlueprint",
+  "_fixture": "Built from the spec's field list (the export was not reachable from the cloud): a blaster bolt into snow, a burst of sparks, a puff, and a smoke EmitterGraph (opaque) the reader replaces by the nearest document of its family.",
+  "Name": "FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01",
+  "CullDistance": 150,
+  "MaxActiveInstanceCount": 12,
+  "SpawnProbability": 1,
+  "AutoStart": false,
+  "Object": { "$type": "EffectEntityData", "Components": [
+    { "$type": "EmitterEntityData", "Emitter": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01" },
+    { "$type": "EmitterEntityData", "Emitter": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01" },
+    { "$type": "EmitterEntityData", "Emitter": "FX/Impacts/Smoke/Emitters/eg_Impact_Smoke_Big_01" }
+  ] }
+}

@@ -1,0 +1,317 @@
+{
+ "format": 1,
+ "name": "FX_Veh_GR75_Engine_Exhaust_01",
+ "path": "FX/Vehicles/GR75/FX_Veh_GR75_Engine_Exhaust_01",
+ "cull": 1500,
+ "maxActive": 16,
+ "probability": 1,
+ "nearby": null,
+ "autoStart": true,
+ "graph": false,
+ "variants": {
+  "low": {
+   "emitters": [
+    0,
+    1
+   ],
+   "scale": 0.25,
+   "from": "tier rule"
+  },
+  "mid": {
+   "emitters": [
+    0,
+    1
+   ],
+   "scale": 0.5,
+   "from": "tier rule"
+  },
+  "high": {
+   "emitters": [
+    0,
+    1
+   ],
+   "scale": 0.75,
+   "from": "tier rule"
+  },
+  "ultra": {
+   "emitters": [
+    0,
+    1
+   ],
+   "scale": 1,
+   "from": "tier rule"
+  }
+ },
+ "emitters": [
+  {
+   "name": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01",
+   "kind": "quad",
+   "maxCount": 24,
+   "lifetime": 0.6,
+   "duration": null,
+   "loop": true,
+   "spawn": {
+    "rate": 40,
+    "burst": 0,
+    "size": {
+     "random": [
+      3,
+      4
+     ]
+    },
+    "speed": 1.5,
+    "direction": {
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "spread": 5
+    },
+    "position": {
+     "sphere": {
+      "radius": 0.4
+     }
+    }
+   },
+   "gravity": null,
+   "drag": 0,
+   "color": [
+    {
+     "poly": [
+      0.6,
+      0,
+      0,
+      0
+     ],
+     "scale": 6
+    },
+    {
+     "poly": [
+      0.8,
+      0,
+      0,
+      0
+     ],
+     "scale": 6
+    },
+    {
+     "poly": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "scale": 8
+    }
+   ],
+   "size": {
+    "poly": [
+     1,
+     -0.7,
+     0,
+     0
+    ],
+    "scale": 1
+   },
+   "alpha": {
+    "exponent": 1,
+    "curve": {
+     "poly": [
+      1,
+      -1,
+      0,
+      0
+     ],
+     "scale": 1
+    }
+   },
+   "rotation": 0,
+   "transparency": 1,
+   "uv": {
+    "frames": 1,
+    "grid": [
+     1,
+     1
+    ],
+    "fps": 0,
+    "randomStart": false
+   },
+   "alignment": "screen",
+   "stretch": null,
+   "lightWrap": 0,
+   "soft": null,
+   "texture": "FX/Lensflare/Textures/T_Box_SoftEdge_02",
+   "additive": true,
+   "maxSpawnDistance": 800,
+   "cullingFactor": 1,
+   "follow": {
+    "source": true,
+    "velocity": true
+   },
+   "mesh": null,
+   "ribbon": null,
+   "graph": false,
+   "raw": {},
+   "_source": {
+    "maxCount": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.MaxCount",
+    "lifetime": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.Lifetime",
+    "kind": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.Emittable",
+    "alignment": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.Alignment",
+    "lightWrap": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.LightWrapAroundFactor",
+    "maxSpawnDistance": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.MaxSpawnDistance",
+    "cullingFactor": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.ParticleCullingFactor",
+    "texture": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.Texture",
+    "additive": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.BlendMode",
+    "follow.source": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.FollowSpawnSource",
+    "follow.velocity": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#EmitterTemplateData.FollowSpawnSourceVelocity",
+    "spawn.rate": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#SpawnRateData.SpawnRate",
+    "spawn.position": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#SpawnPositionData.Evaluator",
+    "spawn.size": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#SpawnSizeData.Size",
+    "spawn.speed": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#SpawnSpeedData.Speed",
+    "spawn.direction.dir": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#SpawnDirectionData.Direction",
+    "spawn.direction.spread": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#SpawnDirectionData.Spread",
+    "color": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#UpdateColorData.Color",
+    "size": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#UpdateSizeData.Size",
+    "alpha.exponent": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#UpdateAlphaLevelScaleData.Exponent",
+    "alpha.curve": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01#UpdateAlphaLevelScaleData.AlphaLevelScale"
+   }
+  },
+  {
+   "name": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01",
+   "kind": "ribbon",
+   "maxCount": 48,
+   "lifetime": 2.5,
+   "duration": null,
+   "loop": true,
+   "spawn": {
+    "rate": 20,
+    "burst": 0,
+    "size": 1.2,
+    "speed": 0,
+    "direction": {
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "spread": 0
+    },
+    "position": null
+   },
+   "gravity": null,
+   "drag": 0,
+   "color": [
+    {
+     "poly": [
+      0.5,
+      0,
+      0,
+      0
+     ],
+     "scale": 2
+    },
+    {
+     "poly": [
+      0.6,
+      0,
+      0,
+      0
+     ],
+     "scale": 2
+    },
+    {
+     "poly": [
+      0.8,
+      0,
+      0,
+      0
+     ],
+     "scale": 2
+    }
+   ],
+   "size": {
+    "poly": [
+     1,
+     2,
+     0,
+     0
+    ],
+    "scale": 1
+   },
+   "alpha": {
+    "exponent": 1,
+    "curve": {
+     "poly": [
+      0.6,
+      -0.6,
+      0,
+      0
+     ],
+     "scale": 1
+    }
+   },
+   "rotation": 0,
+   "transparency": 1,
+   "uv": {
+    "frames": 1,
+    "grid": [
+     1,
+     1
+    ],
+    "fps": 0,
+    "randomStart": false
+   },
+   "alignment": "screen",
+   "stretch": null,
+   "lightWrap": 0.2,
+   "soft": null,
+   "texture": "FX/Textures/Trail/T_SmokeTrail_NoAtlas_01_D",
+   "additive": true,
+   "maxSpawnDistance": 1200,
+   "cullingFactor": 1,
+   "follow": {
+    "source": false,
+    "velocity": false
+   },
+   "mesh": null,
+   "ribbon": {
+    "segment": 2
+   },
+   "graph": false,
+   "raw": {},
+   "_source": {
+    "maxCount": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.MaxCount",
+    "lifetime": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.Lifetime",
+    "kind": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.Emittable",
+    "alignment": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.Alignment",
+    "lightWrap": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.LightWrapAroundFactor",
+    "maxSpawnDistance": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.MaxSpawnDistance",
+    "cullingFactor": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.ParticleCullingFactor",
+    "texture": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.Texture",
+    "additive": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.BlendMode",
+    "follow.source": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.FollowSpawnSource",
+    "ribbon.segment": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#EmitterTemplateData.RibbonSegmentLength",
+    "spawn.rate": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#SpawnRateData.SpawnRate",
+    "spawn.size": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#SpawnSizeData.Size",
+    "color": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#UpdateColorData.Color",
+    "size": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#UpdateSizeData.Size",
+    "alpha.exponent": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#UpdateAlphaLevelScaleData.Exponent",
+    "alpha.curve": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01#UpdateAlphaLevelScaleData.AlphaLevelScale"
+   }
+  }
+ ],
+ "textures": [
+  "FX/Lensflare/Textures/T_Box_SoftEdge_02",
+  "FX/Textures/Trail/T_SmokeTrail_NoAtlas_01_D"
+ ],
+ "missing": [],
+ "raw": {},
+ "_source": {
+  "cull": "FX/Vehicles/GR75/FX_Veh_GR75_Engine_Exhaust_01#EffectBlueprint.CullDistance",
+  "maxActive": "FX/Vehicles/GR75/FX_Veh_GR75_Engine_Exhaust_01#EffectBlueprint.MaxActiveInstanceCount",
+  "probability": "FX/Vehicles/GR75/FX_Veh_GR75_Engine_Exhaust_01#EffectBlueprint.SpawnProbability",
+  "autoStart": "FX/Vehicles/GR75/FX_Veh_GR75_Engine_Exhaust_01#EffectBlueprint.AutoStart"
+ },
+ "fixture": true
+}

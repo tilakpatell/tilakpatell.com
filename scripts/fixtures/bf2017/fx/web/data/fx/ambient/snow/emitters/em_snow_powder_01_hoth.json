@@ -1,0 +1,19 @@
+{
+  "$type": "ScalableEmitterDocument",
+  "Name": "FX/Ambient/Snow/Emitters/em_Snow_Powder_01_Hoth",
+  "Objects": [
+    { "$type": "EmitterTemplateData", "MaxCount": 40, "Lifetime": { "$type": "RandomEvaluatorData", "Min": 3, "Max": 5 }, "Emittable": "EmittableType_Quad", "Alignment": "EmittableAlignment_Screen", "LightWrapAroundFactor": 0.5, "MaxSpawnDistance": 55, "ParticleCullingFactor": 0.8, "Texture": "FX/Textures/Smoke/T_ThinPuff_Gnomon_4x32_NoAtlas_01_D", "BlendMode": "EmitterBlendMode_Alpha", "SoftParticleDistance": 0.8 },
+    { "$type": "SpawnRateData", "SpawnRate": { "$type": "PolynomialData", "Coefficients": { "x": 8, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "SpawnPositionData", "Evaluator": { "$type": "BoxEvaluatorData", "Center": { "x": 0, "y": -2, "z": 0 }, "Size": { "x": 10, "y": 1, "z": 10 } } },
+    { "$type": "SpawnSizeData", "Size": { "$type": "RandomEvaluatorData", "Min": 1.5, "Max": 2.5 } },
+    { "$type": "SpawnSpeedData", "Speed": { "$type": "RandomEvaluatorData", "Min": 0.1, "Max": 0.3 } },
+    { "$type": "SpawnDirectionData", "Direction": { "x": 0, "y": -1, "z": 0 }, "Spread": 60 },
+    { "$type": "UpdateColorData", "Color": { "x": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": -0.6, "z": 0, "w": 0 }, "ScaleValue": 12.7 }, "y": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": -0.6, "z": 0, "w": 0 }, "ScaleValue": 12.7 }, "z": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": -0.5, "z": 0, "w": 0 }, "ScaleValue": 12.7 } } },
+    { "$type": "UpdateSizeData", "Size": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 1.2, "z": -0.4, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "UpdateRotationData", "Rotation": { "$type": "PolynomialData", "Coefficients": { "x": 0, "y": 40, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "UpdateAlphaLevelScaleData", "Exponent": 2, "AlphaLevelScale": { "$type": "PolynomialData", "Coefficients": { "x": 0, "y": 4, "z": -4, "w": 0 }, "ScaleValue": 0.08 } },
+    { "$type": "UpdateTextureCoordsData", "FrameCount": 32, "FramesPerSecond": 8 },
+    { "$type": "UpdateTransparencyData", "Transparency": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "TurbulenceData", "Strength": 0.4, "Frequency": 0.2 }
+  ]
+}

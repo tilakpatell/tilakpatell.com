@@ -1,0 +1,17 @@
+{
+  "$type": "ScalableEmitterDocument",
+  "Name": "FX/Ambient/Snow/Emitters/em_Snow_FallingSnow_01_Hoth",
+  "Objects": [
+    { "$type": "EmitterTemplateData", "MaxCount": 400, "Lifetime": 6, "Emittable": "EmittableType_Quad", "Alignment": "EmittableAlignment_MotionStretchScreen", "MotionStretchMultiplier": 0.06, "MotionStretchMinLength": 1, "MotionStretchMaxLength": 6, "LightWrapAroundFactor": 0.5, "MaxSpawnDistance": 55, "ParticleCullingFactor": 0.8, "Texture": "FX/Textures/Snow/T_SnowFlake_4x1_01_D", "BlendMode": "EmitterBlendMode_Alpha", "FollowSpawnSource": false, "FollowSpawnSourceVelocity": false, "SortPriority": 2 },
+    { "$type": "SpawnRateData", "SpawnRate": { "$type": "PolynomialData", "Coefficients": { "x": 60, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "SpawnPositionData", "Evaluator": { "$type": "BoxEvaluatorData", "Center": { "x": 0, "y": 0, "z": 0 }, "Size": { "x": 12, "y": 0.5, "z": 12 } } },
+    { "$type": "SpawnSizeData", "Size": { "$type": "RandomEvaluatorData", "Min": 0.025, "Max": 0.05 } },
+    { "$type": "SpawnSpeedData", "Speed": { "$type": "RandomEvaluatorData", "Min": 0.2, "Max": 0.6 } },
+    { "$type": "SpawnDirectionData", "Direction": { "x": 0, "y": -1, "z": 0 }, "Spread": 25 },
+    { "$type": "GravityData", "Gravity": 9.8, "PerParticleRandomness": 0.3 },
+    { "$type": "DragData", "Drag": 2.2 },
+    { "$type": "UpdateColorData", "Color": { "x": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1.6 }, "y": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1.7 }, "z": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1.9 } } },
+    { "$type": "UpdateAlphaLevelScaleData", "Exponent": 1, "AlphaLevelScale": { "$type": "PolynomialData", "Coefficients": { "x": 0, "y": 8, "z": -16, "w": 8 }, "ScaleValue": 1.25 } },
+    { "$type": "UpdateTextureCoordsData", "FrameCount": 4, "FramesPerSecond": 0, "RandomStartFrame": true }
+  ]
+}

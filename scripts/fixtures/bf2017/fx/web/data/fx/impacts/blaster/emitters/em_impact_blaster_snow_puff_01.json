@@ -1,0 +1,17 @@
+{
+  "$type": "ScalableEmitterDocument",
+  "Name": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01",
+  "Objects": [
+    { "$type": "EmitterTemplateData", "MaxCount": 8, "Lifetime": { "$type": "RandomEvaluatorData", "Min": 0.8, "Max": 1.4 }, "Duration": 0.1, "Loop": false, "Emittable": "EmittableType_Quad", "Alignment": "EmittableAlignment_Screen", "LightWrapAroundFactor": 0.5, "MaxSpawnDistance": 150, "ParticleCullingFactor": 1, "Texture": "FX/Textures/Footstep/T_FootstepSoldierSnow_01_H", "BlendMode": "EmitterBlendMode_Alpha" },
+    { "$type": "SpawnRateData", "SpawnRate": 0, "BurstCount": 6 },
+    { "$type": "SpawnPositionData", "Evaluator": { "$type": "SphereEvaluatorData", "Radius": 0.15 } },
+    { "$type": "SpawnSizeData", "Size": { "$type": "RandomEvaluatorData", "Min": 0.4, "Max": 0.8 } },
+    { "$type": "SpawnSpeedData", "Speed": { "$type": "RandomEvaluatorData", "Min": 0.5, "Max": 1.5 } },
+    { "$type": "SpawnDirectionData", "Direction": { "x": 0, "y": 1, "z": 0 }, "Spread": 45 },
+    { "$type": "GravityData", "Gravity": 2, "PerParticleRandomness": 0.2 },
+    { "$type": "DragData", "Drag": 3 },
+    { "$type": "UpdateColorData", "Color": { "x": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 2.4 }, "y": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 2.5 }, "z": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 2.7 } } },
+    { "$type": "UpdateSizeData", "Size": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 1.5, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "UpdateAlphaLevelScaleData", "Exponent": 1, "AlphaLevelScale": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": -1, "z": 0, "w": 0 }, "ScaleValue": 0.9 } }
+  ]
+}

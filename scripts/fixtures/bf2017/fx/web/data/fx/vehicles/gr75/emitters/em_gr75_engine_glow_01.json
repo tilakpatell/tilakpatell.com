@@ -1,0 +1,15 @@
+{
+  "$type": "ScalableEmitterDocument",
+  "Name": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Glow_01",
+  "Objects": [
+    { "$type": "EmitterTemplateData", "MaxCount": 24, "Lifetime": 0.6, "Emittable": "EmittableType_Quad", "Alignment": "EmittableAlignment_Screen", "LightWrapAroundFactor": 0, "MaxSpawnDistance": 800, "ParticleCullingFactor": 1, "Texture": "FX/Lensflare/Textures/T_Box_SoftEdge_02", "BlendMode": "EmitterBlendMode_Additive", "FollowSpawnSource": true, "FollowSpawnSourceVelocity": true },
+    { "$type": "SpawnRateData", "SpawnRate": 40 },
+    { "$type": "SpawnPositionData", "Evaluator": { "$type": "SphereEvaluatorData", "Radius": 0.4 } },
+    { "$type": "SpawnSizeData", "Size": { "$type": "RandomEvaluatorData", "Min": 3, "Max": 4 } },
+    { "$type": "SpawnSpeedData", "Speed": 1.5 },
+    { "$type": "SpawnDirectionData", "Direction": { "x": 0, "y": 0, "z": -1 }, "Spread": 5 },
+    { "$type": "UpdateColorData", "Color": { "x": { "$type": "PolynomialData", "Coefficients": { "x": 0.6, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 6 }, "y": { "$type": "PolynomialData", "Coefficients": { "x": 0.8, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 6 }, "z": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 8 } } },
+    { "$type": "UpdateSizeData", "Size": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": -0.7, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "UpdateAlphaLevelScaleData", "Exponent": 1, "AlphaLevelScale": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": -1, "z": 0, "w": 0 }, "ScaleValue": 1 } }
+  ]
+}

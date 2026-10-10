@@ -1,0 +1,502 @@
+{
+ "format": 1,
+ "name": "FX_Impact_Blaster_Snow_01",
+ "path": "FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01",
+ "cull": 150,
+ "maxActive": 12,
+ "probability": 1,
+ "nearby": null,
+ "autoStart": false,
+ "graph": true,
+ "variants": {
+  "low": {
+   "emitters": [
+    0,
+    1,
+    2
+   ],
+   "scale": 0.25,
+   "from": "tier rule"
+  },
+  "mid": {
+   "emitters": [
+    0,
+    1,
+    2
+   ],
+   "scale": 0.5,
+   "from": "tier rule"
+  },
+  "high": {
+   "emitters": [
+    0,
+    1,
+    2
+   ],
+   "scale": 0.75,
+   "from": "tier rule"
+  },
+  "ultra": {
+   "emitters": [
+    0,
+    1,
+    2
+   ],
+   "scale": 1,
+   "from": "tier rule"
+  }
+ },
+ "emitters": [
+  {
+   "name": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01",
+   "kind": "quad",
+   "maxCount": 30,
+   "lifetime": {
+    "random": [
+     0.3,
+     0.7
+    ]
+   },
+   "duration": 0.1,
+   "loop": false,
+   "spawn": {
+    "rate": 0,
+    "burst": 24,
+    "size": {
+     "random": [
+      0.02,
+      0.05
+     ]
+    },
+    "speed": {
+     "random": [
+      3,
+      9
+     ]
+    },
+    "direction": {
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "spread": 70
+    },
+    "position": {
+     "sphere": {
+      "radius": 0.05
+     }
+    }
+   },
+   "gravity": {
+    "g": 9.8,
+    "random": 0.1
+   },
+   "drag": 0,
+   "color": [
+    {
+     "poly": [
+      1,
+      -0.5,
+      0,
+      0
+     ],
+     "scale": 20
+    },
+    {
+     "poly": [
+      0.5,
+      -0.4,
+      0,
+      0
+     ],
+     "scale": 20
+    },
+    {
+     "poly": [
+      0.2,
+      -0.2,
+      0,
+      0
+     ],
+     "scale": 20
+    }
+   ],
+   "size": 1,
+   "alpha": {
+    "exponent": 1,
+    "curve": {
+     "poly": [
+      1,
+      0,
+      -1,
+      0
+     ],
+     "scale": 1
+    }
+   },
+   "rotation": 0,
+   "transparency": 1,
+   "uv": {
+    "frames": 1,
+    "grid": [
+     1,
+     1
+    ],
+    "fps": 0,
+    "randomStart": false
+   },
+   "alignment": "motionStretchScreen",
+   "stretch": {
+    "mult": 0.04,
+    "min": 1,
+    "max": 8
+   },
+   "lightWrap": 0,
+   "soft": null,
+   "texture": "FX/Lensflare/Textures/T_Box_SoftEdge_02",
+   "additive": true,
+   "maxSpawnDistance": 150,
+   "cullingFactor": 1,
+   "follow": {
+    "source": false,
+    "velocity": false
+   },
+   "mesh": null,
+   "ribbon": null,
+   "graph": false,
+   "raw": {},
+   "_source": {
+    "maxCount": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.MaxCount",
+    "lifetime": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.Lifetime",
+    "duration": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.Duration",
+    "loop": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.Loop",
+    "kind": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.Emittable",
+    "alignment": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.Alignment",
+    "stretch.mult": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.MotionStretchMultiplier",
+    "stretch.min": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.MotionStretchMinLength",
+    "stretch.max": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.MotionStretchMaxLength",
+    "lightWrap": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.LightWrapAroundFactor",
+    "maxSpawnDistance": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.MaxSpawnDistance",
+    "cullingFactor": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.ParticleCullingFactor",
+    "texture": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.Texture",
+    "additive": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#EmitterTemplateData.BlendMode",
+    "spawn.rate": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#SpawnRateData.SpawnRate",
+    "spawn.burst": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#SpawnRateData.BurstCount",
+    "spawn.position": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#SpawnPositionData.Evaluator",
+    "spawn.size": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#SpawnSizeData.Size",
+    "spawn.speed": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#SpawnSpeedData.Speed",
+    "spawn.direction.dir": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#SpawnDirectionData.Direction",
+    "spawn.direction.spread": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#SpawnDirectionData.Spread",
+    "gravity.g": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#GravityData.Gravity",
+    "gravity.random": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#GravityData.PerParticleRandomness",
+    "color": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#UpdateColorData.Color",
+    "alpha.exponent": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#UpdateAlphaLevelScaleData.Exponent",
+    "alpha.curve": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Sparks_01#UpdateAlphaLevelScaleData.AlphaLevelScale"
+   }
+  },
+  {
+   "name": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01",
+   "kind": "quad",
+   "maxCount": 8,
+   "lifetime": {
+    "random": [
+     0.8,
+     1.4
+    ]
+   },
+   "duration": 0.1,
+   "loop": false,
+   "spawn": {
+    "rate": 0,
+    "burst": 6,
+    "size": {
+     "random": [
+      0.4,
+      0.8
+     ]
+    },
+    "speed": {
+     "random": [
+      0.5,
+      1.5
+     ]
+    },
+    "direction": {
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "spread": 45
+    },
+    "position": {
+     "sphere": {
+      "radius": 0.15
+     }
+    }
+   },
+   "gravity": {
+    "g": 2,
+    "random": 0.2
+   },
+   "drag": 3,
+   "color": [
+    {
+     "poly": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "scale": 2.4
+    },
+    {
+     "poly": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "scale": 2.5
+    },
+    {
+     "poly": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "scale": 2.7
+    }
+   ],
+   "size": {
+    "poly": [
+     1,
+     1.5,
+     0,
+     0
+    ],
+    "scale": 1
+   },
+   "alpha": {
+    "exponent": 1,
+    "curve": {
+     "poly": [
+      1,
+      -1,
+      0,
+      0
+     ],
+     "scale": 0.9
+    }
+   },
+   "rotation": 0,
+   "transparency": 1,
+   "uv": {
+    "frames": 1,
+    "grid": [
+     1,
+     1
+    ],
+    "fps": 0,
+    "randomStart": false
+   },
+   "alignment": "screen",
+   "stretch": null,
+   "lightWrap": 0.5,
+   "soft": null,
+   "texture": "FX/Textures/Footstep/T_FootstepSoldierSnow_01_H",
+   "additive": false,
+   "maxSpawnDistance": 150,
+   "cullingFactor": 1,
+   "follow": {
+    "source": false,
+    "velocity": false
+   },
+   "mesh": null,
+   "ribbon": null,
+   "graph": false,
+   "raw": {},
+   "_source": {
+    "maxCount": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.MaxCount",
+    "lifetime": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.Lifetime",
+    "duration": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.Duration",
+    "loop": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.Loop",
+    "kind": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.Emittable",
+    "alignment": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.Alignment",
+    "lightWrap": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.LightWrapAroundFactor",
+    "maxSpawnDistance": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.MaxSpawnDistance",
+    "cullingFactor": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.ParticleCullingFactor",
+    "texture": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.Texture",
+    "additive": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#EmitterTemplateData.BlendMode",
+    "spawn.rate": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#SpawnRateData.SpawnRate",
+    "spawn.burst": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#SpawnRateData.BurstCount",
+    "spawn.position": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#SpawnPositionData.Evaluator",
+    "spawn.size": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#SpawnSizeData.Size",
+    "spawn.speed": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#SpawnSpeedData.Speed",
+    "spawn.direction.dir": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#SpawnDirectionData.Direction",
+    "spawn.direction.spread": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#SpawnDirectionData.Spread",
+    "gravity.g": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#GravityData.Gravity",
+    "gravity.random": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#GravityData.PerParticleRandomness",
+    "drag": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#DragData.Drag",
+    "color": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#UpdateColorData.Color",
+    "size": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#UpdateSizeData.Size",
+    "alpha.exponent": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#UpdateAlphaLevelScaleData.Exponent",
+    "alpha.curve": "FX/Impacts/Blaster/Emitters/em_Impact_Blaster_Snow_Puff_01#UpdateAlphaLevelScaleData.AlphaLevelScale"
+   }
+  },
+  {
+   "name": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01",
+   "kind": "quad",
+   "maxCount": 6,
+   "lifetime": {
+    "random": [
+     1.5,
+     2.5
+    ]
+   },
+   "duration": 0.1,
+   "loop": false,
+   "spawn": {
+    "rate": 0,
+    "burst": 4,
+    "size": {
+     "random": [
+      0.6,
+      1
+     ]
+    },
+    "speed": 0.6,
+    "direction": {
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "spread": 30
+    },
+    "position": null
+   },
+   "gravity": null,
+   "drag": 0,
+   "color": [
+    {
+     "poly": [
+      0.3,
+      0,
+      0,
+      0
+     ],
+     "scale": 1
+    },
+    {
+     "poly": [
+      0.3,
+      0,
+      0,
+      0
+     ],
+     "scale": 1
+    },
+    {
+     "poly": [
+      0.32,
+      0,
+      0,
+      0
+     ],
+     "scale": 1
+    }
+   ],
+   "size": {
+    "poly": [
+     1,
+     2,
+     0,
+     0
+    ],
+    "scale": 1
+   },
+   "alpha": {
+    "exponent": 1,
+    "curve": {
+     "poly": [
+      0.7,
+      -0.7,
+      0,
+      0
+     ],
+     "scale": 1
+    }
+   },
+   "rotation": 0,
+   "transparency": 1,
+   "uv": {
+    "frames": 32,
+    "grid": [
+     4,
+     8
+    ],
+    "fps": 16,
+    "randomStart": false
+   },
+   "alignment": "screen",
+   "stretch": null,
+   "lightWrap": 0.5,
+   "soft": null,
+   "texture": "FX/Textures/Smoke/T_ThinPuff_Gnomon_4x32_NoAtlas_01_D",
+   "additive": false,
+   "maxSpawnDistance": 150,
+   "cullingFactor": 1,
+   "follow": {
+    "source": false,
+    "velocity": false
+   },
+   "mesh": null,
+   "ribbon": null,
+   "graph": true,
+   "raw": {},
+   "_source": {
+    "maxCount": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.MaxCount",
+    "lifetime": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.Lifetime",
+    "duration": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.Duration",
+    "loop": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.Loop",
+    "kind": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.Emittable",
+    "alignment": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.Alignment",
+    "lightWrap": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.LightWrapAroundFactor",
+    "maxSpawnDistance": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.MaxSpawnDistance",
+    "cullingFactor": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.ParticleCullingFactor",
+    "texture": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.Texture",
+    "additive": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#EmitterTemplateData.BlendMode",
+    "spawn.rate": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#SpawnRateData.SpawnRate",
+    "spawn.burst": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#SpawnRateData.BurstCount",
+    "spawn.size": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#SpawnSizeData.Size",
+    "spawn.speed": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#SpawnSpeedData.Speed",
+    "spawn.direction.dir": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#SpawnDirectionData.Direction",
+    "spawn.direction.spread": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#SpawnDirectionData.Spread",
+    "color": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#UpdateColorData.Color",
+    "size": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#UpdateSizeData.Size",
+    "alpha.exponent": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#UpdateAlphaLevelScaleData.Exponent",
+    "alpha.curve": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#UpdateAlphaLevelScaleData.AlphaLevelScale",
+    "uv.frames": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#UpdateTextureCoordsData.FrameCount",
+    "uv.fps": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01#UpdateTextureCoordsData.FramesPerSecond"
+   },
+   "graphOf": "FX/Impacts/Smoke/Emitters/eg_Impact_Smoke_Big_01"
+  }
+ ],
+ "textures": [
+  "FX/Lensflare/Textures/T_Box_SoftEdge_02",
+  "FX/Textures/Footstep/T_FootstepSoldierSnow_01_H",
+  "FX/Textures/Smoke/T_ThinPuff_Gnomon_4x32_NoAtlas_01_D"
+ ],
+ "missing": [],
+ "raw": {},
+ "_source": {
+  "cull": "FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01#EffectBlueprint.CullDistance",
+  "maxActive": "FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01#EffectBlueprint.MaxActiveInstanceCount",
+  "probability": "FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01#EffectBlueprint.SpawnProbability",
+  "autoStart": "FX/Impacts/Blaster/FX_Impact_Blaster_Snow_01#EffectBlueprint.AutoStart"
+ },
+ "fixture": true
+}

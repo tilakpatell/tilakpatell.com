@@ -1,0 +1,15 @@
+{
+  "$type": "ScalableEmitterDocument",
+  "Name": "FX/Impacts/Smoke/Emitters/em_Impact_Smoke_01",
+  "Objects": [
+    { "$type": "EmitterTemplateData", "MaxCount": 6, "Lifetime": { "$type": "RandomEvaluatorData", "Min": 1.5, "Max": 2.5 }, "Duration": 0.1, "Loop": false, "Emittable": "EmittableType_Quad", "Alignment": "EmittableAlignment_Screen", "LightWrapAroundFactor": 0.5, "MaxSpawnDistance": 150, "ParticleCullingFactor": 1, "Texture": "FX/Textures/Smoke/T_ThinPuff_Gnomon_4x32_NoAtlas_01_D", "BlendMode": "EmitterBlendMode_Alpha" },
+    { "$type": "SpawnRateData", "SpawnRate": 0, "BurstCount": 4 },
+    { "$type": "SpawnSizeData", "Size": { "$type": "RandomEvaluatorData", "Min": 0.6, "Max": 1 } },
+    { "$type": "SpawnSpeedData", "Speed": 0.6 },
+    { "$type": "SpawnDirectionData", "Direction": { "x": 0, "y": 1, "z": 0 }, "Spread": 30 },
+    { "$type": "UpdateColorData", "Color": { "x": { "$type": "PolynomialData", "Coefficients": { "x": 0.3, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1 }, "y": { "$type": "PolynomialData", "Coefficients": { "x": 0.3, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1 }, "z": { "$type": "PolynomialData", "Coefficients": { "x": 0.32, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 1 } } },
+    { "$type": "UpdateSizeData", "Size": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 2, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "UpdateAlphaLevelScaleData", "Exponent": 1, "AlphaLevelScale": { "$type": "PolynomialData", "Coefficients": { "x": 0.7, "y": -0.7, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "UpdateTextureCoordsData", "FrameCount": 32, "FramesPerSecond": 16 }
+  ]
+}

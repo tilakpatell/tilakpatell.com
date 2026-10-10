@@ -1,0 +1,12 @@
+{
+  "$type": "ScalableEmitterDocument",
+  "Name": "FX/Vehicles/GR75/Emitters/em_GR75_Engine_Trail_01",
+  "Objects": [
+    { "$type": "EmitterTemplateData", "MaxCount": 48, "Lifetime": 2.5, "Emittable": "EmittableType_Ribbon", "Alignment": "EmittableAlignment_Screen", "LightWrapAroundFactor": 0.2, "MaxSpawnDistance": 1200, "ParticleCullingFactor": 1, "Texture": "FX/Textures/Trail/T_SmokeTrail_NoAtlas_01_D", "BlendMode": "EmitterBlendMode_Additive", "FollowSpawnSource": false, "RibbonSegmentLength": 2 },
+    { "$type": "SpawnRateData", "SpawnRate": 20 },
+    { "$type": "SpawnSizeData", "Size": 1.2 },
+    { "$type": "UpdateColorData", "Color": { "x": { "$type": "PolynomialData", "Coefficients": { "x": 0.5, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 2 }, "y": { "$type": "PolynomialData", "Coefficients": { "x": 0.6, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 2 }, "z": { "$type": "PolynomialData", "Coefficients": { "x": 0.8, "y": 0, "z": 0, "w": 0 }, "ScaleValue": 2 } } },
+    { "$type": "UpdateSizeData", "Size": { "$type": "PolynomialData", "Coefficients": { "x": 1, "y": 2, "z": 0, "w": 0 }, "ScaleValue": 1 } },
+    { "$type": "UpdateAlphaLevelScaleData", "Exponent": 1, "AlphaLevelScale": { "$type": "PolynomialData", "Coefficients": { "x": 0.6, "y": -0.6, "z": 0, "w": 0 }, "ScaleValue": 1 } }
+  ]
+}
