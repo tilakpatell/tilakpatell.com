@@ -27,6 +27,7 @@ import { parseArgs } from './lib/args.mjs';
 import { cutAsset, isSequel, loadAsset, readWebJson, resolveStrings, rootOf, webFile } from './lib/bf2017-ebx.mjs';
 import { abilityRow, cardRow, classRow, heroRow, indexOf, reinforcementRow, teamRow, vehicleRow, weaponRow } from './lib/bf2017-rulebook.mjs';
 import { aiRulebook } from './lib/bf2017-rulebook-ai.mjs';
+import { airRulebook } from './lib/bf2017-rulebook-air.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
 import { squadsRow } from './lib/bf2017-rulebook-squads.mjs';
@@ -245,6 +246,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'modes.json');
       writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }, null, 1) + '\n');
       console.log(`modes: ${Object.keys(book.levels).length} levels on ${Object.keys(book.worlds).length} worlds; wrote ${relative(ROOT, to)}`);
+    } else if (argv[0] === 'air') {
+      // the air vehicles' rulebook (lane fighters): src/data/bf2017/air.json
+      const args = parseArgs(argv.slice(1));
+      const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
+      const book = airRulebook(root);
+      for (const m of book._missing) console.log(`  missing: ${m}`);
+      const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'air.json');
+      writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }) + '\n');
+      console.log(`air: ${Object.keys(book.vehicles).length} vehicles, ${book.refused.length} refused, ${book._missing.length} missing; wrote ${relative(ROOT, to)} (${Math.round(statSync(to).size / 1024)} KB)`);
     } else if (argv[0] === 'saber') {
       const args = parseArgs(argv.slice(1));
       const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
