@@ -30,7 +30,10 @@ describe('the effects and the volumes on the game’s world', () => {
     expect(EFFECT_TIERS).toEqual(['high', 'ultra']);
     const { seen, make } = fakeEffects();
     const fx = await createWorldEffects({ scene: 'scene', renderer: 'r', tier: 'high', level: levelOf({ 'effects.json': EFFECTS }), light: { shadowTerm: 'shadow' }, deps: { createEffects: make, sheets: async () => null } });
-    expect(seen.made.opts).toMatchObject({ tier: 'high', light: { shadowTerm: 'shadow' }, shadow: 'shadow' });
+    expect(seen.made.opts).toMatchObject({ tier: 'high', light: { shadowTerm: 'shadow' } });
+    // (X's sprites take the sun's shadow as a function of the corner; the
+    // stack's term reads the fragment's own place)
+    expect(seen.made.opts.shadow([1, 2, 3])).toBe('shadow');
     expect(typeof seen.made.opts.load).toBe('function');
     const all = Object.values(seen.placed.cells).flat();
     expect(all.map((e) => e.name).sort()).toEqual(['FX_Arctic_Ceiling_FallingSnow', 'FX_Snow_FallingSnow_01_Hoth']);

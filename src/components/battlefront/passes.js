@@ -52,7 +52,10 @@ export async function createWorldEffects({ scene, renderer, tier, level, light =
     return null;
   }
   const sheets = await d.sheets();
-  const effects = await d.createEffects(scene, renderer, { tier, load: loadTable, sheets, light, shadow: light?.shadowTerm ?? null, loadTexture: d.loadTexture });
+  // (X's sprites ask the sun's shadow as a function of a corner; the
+  // stack's term, apply.js's sunShadowNode, reads the fragment's own place)
+  const term = light?.shadowTerm ?? null;
+  const effects = await d.createEffects(scene, renderer, { tier, load: loadTable, sheets, light, shadow: term ? () => term : null, loadTexture: d.loadTexture });
   const spawns = rebaseCells(file, level.pack);
   const placed = effects.place(spawns);
   for (const key of Object.keys(spawns.cells)) placed.enter(key);
