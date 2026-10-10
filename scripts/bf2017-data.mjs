@@ -34,7 +34,8 @@ import { aiRulebook } from './lib/bf2017-rulebook-ai.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
 import { LEVEL_WORLDS, modesRulebook } from './lib/bf2017-modes.mjs';
-import { pointsRulebook } from './lib/bf2017-rulebook-costs.mjs';
+import { kitsRulebook, pointsRulebook } from './lib/bf2017-rulebook-costs.mjs';
+import { arcadeRulebook } from './lib/bf2017-arcade.mjs';
 import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -222,8 +223,13 @@ export function fixture(root, name, { cut = null, out = join(ROOT, 'scripts', 'f
 }
 
 // The rulebooks one record (or one family of them) makes, each written whole
+// (the kits name their rows by the rulebooks already written)
+const booksIn = (out) => Object.fromEntries(['heroes', 'reinforcements', 'vehicles'].map((b) => [b, JSON.parse(readFileSync(join(ROOT, out, `${b}.json`), 'utf8')).rows]));
 export const RECORDS = {
   points: (root) => pointsRulebook(root),
+  kits: (root, { out = join('src', 'data', 'bf2017') } = {}) =>
+    kitsRulebook(root, { books: booksIn(out), gameplay: [...indexOf(root)].filter(([, e]) => /CustomizationGameplayAsset$/.test(e.type)).map(([n]) => n) }),
+  arcade: (root, { out = join('src', 'data', 'bf2017') } = {}) => arcadeRulebook(root, { books: booksIn(out) }),
 };
 
 export function record(what, root, { write, log = console.log }) {

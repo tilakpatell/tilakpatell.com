@@ -185,3 +185,225 @@ export function pointsRulebook(root) {
   out.refused = [...refused].sort();
   return out;
 }
+
+// ── the kit limits ───────────────────────────────────────────────────────
+//
+// A PF_KitLimitations_* prefab (LogicPrefabBlueprint) holds
+// KitLimitationEntityData rows: { KitId, MaxCountProperty, PriceProperty,
+// EnabledAtStageProperty }. KitId is the Identifier of the kit's gameplay
+// asset (GP_*, WSSoldier/VehicleCustomizationGameplayAsset); each *Property
+// is a field id the prefab's PropertyConnections bind (TargetFieldId), and
+// the value is read back up the graph from that connection's source:
+//
+//   InterfaceDescriptorData      the prefab's own field: its default (`Int32 6`,
+//                                `Boolean True` as 1), or what the prefab that
+//                                holds this one binds to it
+//   LogicPrefabReferenceObjectData  another prefab (PF_HeroKitMaxCount…): its
+//                                output field, read inside it
+//   PropertyCast, SyncedBool/Int, And, IntHub   passed through (IntHub: the
+//                                input its InputSelect picks, HashedInput[1 + n])
+//   MathEntityData               its little assembly (inputs, constants, `>`,
+//                                the select function)
+//   BattlepointUnit/HeroCostEntityData   the price, from Online/BattlepointCostData
+//   DynamicDebugVariableEntityData   a debug override, unset: true
+//
+// Where the chain ends anywhere else (a SelectInt, a Math whose input is
+// the Arcade's setting), the value is unread and the row says so.
+
+export const KIT_PREFABS = {
+  planetaryBattles: 'Gameplay/GameModes/Shared/PF_KitLimitations_PlanetaryBattles',
+  hvv: 'Gameplay/GameModes/Shared/PF_KitLimitations_HeroesVSVillains',
+  trooperModes: 'Gameplay/GameModes/Shared/PF_KitLimitations_TrooperModes',
+  skirmish: 'Gameplay/GameModes/Shared/PF_KitLimitations_Skirmish',
+  skirmishSpace: 'Gameplay/GameModes/Shared/PF_KitLimitations_Skirmish_Space',
+};
+const FIELDS = { maxCount: 'MaxCountProperty', price: 'PriceProperty', stage: 'EnabledAtStageProperty' };
+// the game as played, where the graph gives no number (NOTES.md)
+const PLAYED = { hero: 1, special: 4 };
+
+const u32 = (n) => n >>> 0;
+const SELECT = 193418243; // (MathEntityData's select function: cond ? a : b)
+
+function fieldValue(v) {
+  const [type, x] = String(v ?? '').split(' ');
+  if (/^U?Int/.test(type) || /^Float/.test(type)) return Number(x);
+  if (type === 'Boolean') return x === 'True' ? 1 : 0;
+  return null;
+}
+
+// The value a graph puts out on (object, field): { value, source } or null
+function valueOf(root, ctx, i, field, record, depth = 0) {
+  if (depth > 24) return null;
+  const { asset } = ctx;
+  const o = asset.objects[i];
+  const pcs = rootOf(asset).PropertyConnections ?? [];
+  const into = (t, f) => pcs.filter((c) => c.Target?.$ref === t && (f == null || u32(c.TargetFieldId) === u32(f)));
+  const from = (c) => valueOf(root, ctx, c.Source.$ref, c.SourceFieldId, record, depth + 1);
+  // (a field bound more than once: the first binding that reads)
+  const first = (cs) => {
+    for (const c of cs) {
+      const v = from(c);
+      if (v) return v;
+    }
+    return null;
+  };
+  const at = (path) => `${asset.name}#${o.$type}.${path}`;
+  switch (o?.$type) {
+    case 'InterfaceDescriptorData': {
+      const f = (o.Fields ?? []).find((x) => u32(x.Id) === u32(field));
+      if (!f) return null;
+      // (a field the holding prefab binds wins over its default)
+      if (ctx.outer) {
+        for (const c of (rootOf(ctx.outer.asset).PropertyConnections ?? []).filter((x) => x.Target?.$ref === ctx.ref && u32(x.TargetFieldId) === u32(field))) {
+          const v = valueOf(root, ctx.outer, c.Source.$ref, c.SourceFieldId, record, depth + 1);
+          if (v) return v;
+        }
+      }
+      const v = fieldValue(f.Value);
+      if (v != null) return { value: v, source: at(`Fields.${o.Fields.indexOf(f)}.Value`) };
+      // (an output field: what the prefab binds to it inside)
+      return first(into(i, field));
+    }
+    case 'LogicPrefabReferenceObjectData': {
+      const inner = loadAsset(root, o.Blueprint?.$asset);
+      if (!inner) return null;
+      const face = inner.objects.findIndex((x) => x?.$type === 'InterfaceDescriptorData');
+      return face < 0 ? null : valueOf(root, { asset: inner, outer: ctx, ref: i }, face, field, record, depth + 1);
+    }
+    case 'PropertyCastEntityData':
+    case 'SyncedBoolEntityData':
+    case 'SyncedIntEntityData':
+      return first(into(i));
+    case 'AndEntityData': {
+      const ins = into(i).map(from);
+      if (ins.some((x) => !x)) return null;
+      return { value: ins.every((x) => x.value) ? 1 : 0, source: ins.find((x) => !/DynamicDebug/.test(x.source))?.source ?? at('Inputs') };
+    }
+    case 'DynamicDebugVariableEntityData':
+      return { value: 1, source: at('VariableType') };
+    case 'IntHubEntityData': {
+      const hashes = o.HashedInput ?? [];
+      const want = hashes.length > (o.InputCount ?? 0) ? hashes[1 + (o.InputSelect ?? 0)] : hashes[o.InputSelect ?? 0];
+      return first(into(i, want));
+    }
+    case 'MathEntityData':
+      return mathOf(o, (f) => first(into(i, f)), at);
+    case 'BattlepointUnitCostEntityData':
+    case 'BattlepointHeroCostEntityData':
+      return record(o);
+    default:
+      return null;
+  }
+}
+
+// MathEntityData's assembly: int and bool registers, as the export writes it
+function mathOf(o, input, at) {
+  const I = [];
+  const B = [];
+  const fns = o.Assembly?.FunctionCalls ?? [];
+  let used = null;
+  for (const ins of o.Assembly?.Instructions ?? []) {
+    switch (ins.Code) {
+      case 'MathOpCode_InputI': {
+        const v = input(ins.Param1);
+        if (!v) return null;
+        I[ins.Result] = v.value;
+        used = v.source;
+        break;
+      }
+      case 'MathOpCode_ConstI':
+        I[ins.Result] = ins.Param1;
+        break;
+      case 'MathOpCode_GreaterI':
+        B[ins.Result] = I[ins.Param1] > I[ins.Param2];
+        break;
+      case 'MathOpCode_Func': {
+        const [c, a, b] = fns[ins.Param2]?.Parameters ?? [];
+        if (ins.Param1 !== SELECT) return null;
+        I[ins.Result] = B[c] ? I[a] : I[b];
+        break;
+      }
+      case 'MathOpCode_Return':
+        return { value: I[ins.Result], source: used ?? at('Assembly') };
+      default:
+        return null;
+    }
+  }
+  return null;
+}
+
+// The record's price a cost entity names
+function recordPrice(root) {
+  const asset = loadAsset(root, RECORD);
+  const r = asset ? rootOf(asset) : null;
+  return (o) => {
+    if (!r) return null;
+    if (o.$type === 'BattlepointHeroCostEntityData') {
+      for (const [c, cfg] of (r.HeroCostConfig ?? []).entries()) {
+        if (cfg.GameMode !== o.GameMode) continue;
+        const k = (cfg.BattlepointHeroCostEntries ?? []).findIndex((e) => e.Hero === o.Hero);
+        if (k >= 0) return { value: cfg.BattlepointHeroCostEntries[k][o.EraAppropriate ? 'EraCost' : 'NoneEraCost'], source: `${RECORD}#${r.$type}.HeroCostConfig.${c}.BattlepointHeroCostEntries.${k}.${o.EraAppropriate ? 'EraCost' : 'NoneEraCost'}` };
+      }
+      return null;
+    }
+    // (the map's own table, else the default list)
+    for (const map of [o.Map ?? '', '']) {
+      for (const [c, cfg] of (r.UnitCostConfig ?? []).entries()) {
+        if (cfg.GameMode !== o.GameMode || (cfg.Map ?? '') !== map) continue;
+        const k = (cfg.BattlepointUnitCostEntries ?? []).findIndex((e) => e.Character === o.Character);
+        if (k >= 0) return { value: cfg.BattlepointUnitCostEntries[k].Cost, source: `${RECORD}#${r.$type}.UnitCostConfig.${c}.BattlepointUnitCostEntries.${k}.Cost` };
+      }
+    }
+    return null;
+  };
+}
+
+// A gameplay asset → the rulebooks' id: a hero's or reinforcement's by its
+// kit's folder, a vehicle's `Kit_Vehicle_<name>`
+function idOf(gp, books) {
+  if (!gp) return null;
+  const folder = gp.replace(/^S\d+(_\d+)?\//, '').split('/').slice(0, 4).join('/') + '/';
+  for (const book of ['heroes', 'reinforcements']) for (const row of Object.values(books[book] ?? {})) if (row.kit?.startsWith(folder)) return row.id;
+  const v = `Kit_Vehicle_${gp.split('/').pop().replace(/^GP_Vehicle_/, '')}`;
+  return books.vehicles?.[v] ? v : null;
+}
+const kindOf = (gp) => (/\/Hero(Vehicle)?\//.test(gp ?? '') ? 'hero' : /\/Specials\//.test(gp ?? '') ? 'special' : /Vehicle/.test(gp ?? '') ? 'vehicle' : null);
+
+export function kitsRulebook(root, { books = {}, gameplay = [] } = {}) {
+  const gp = new Map();
+  for (const n of gameplay) {
+    const a = loadAsset(root, n);
+    if (a && rootOf(a).Identifier != null) gp.set(u32(rootOf(a).Identifier), n);
+  }
+  const record = recordPrice(root);
+  const out = {};
+  const counts = { rows: 0, named: 0, maxCount: 0, price: 0, refused: 0 };
+  for (const [mode, name] of Object.entries(KIT_PREFABS)) {
+    const asset = loadAsset(root, name);
+    if (!asset) continue;
+    const rows = [];
+    asset.objects.forEach((k, i) => {
+      if (k?.$type !== 'KitLimitationEntityData') return;
+      (k.LimitationGroups ?? []).forEach((g, gi) =>
+        (g.Limitations ?? []).forEach((l, li) => {
+          const kit = gp.get(u32(l.KitId)) ?? null;
+          if (kit && isSequel(kit)) return void counts.refused++;
+          counts.rows++;
+          if (kit) counts.named++;
+          const row = { kit, kitId: u32(l.KitId), id: idOf(kit, books), kind: kindOf(kit), _source: `${name}#KitLimitationEntityData.LimitationGroups.${gi}.Limitations.${li}` };
+          for (const [key, prop] of Object.entries(FIELDS)) {
+            const c = (rootOf(asset).PropertyConnections ?? []).find((x) => x.Target?.$ref === i && u32(x.TargetFieldId) === u32(l[prop]));
+            const v = c ? valueOf(root, { asset }, c.Source.$ref, c.SourceFieldId, record) : null;
+            if (v && Number.isFinite(v.value)) {
+              set(row, key, v.value, v.source);
+              if (key !== 'stage') counts[key]++;
+            } else if (key !== 'stage') row[key] = { source: 'hand', value: key === 'maxCount' ? (PLAYED[row.kind] ?? null) : null, hash: `0x${u32(l[prop]).toString(16).padStart(8, '0')}` };
+          }
+          rows.push(row);
+        }),
+      );
+    });
+    out[mode] = { prefab: name, rows };
+  }
+  return { ...out, counts: { ...counts, _source: 'derived: the rows above, counted (refused: the sequel era’s kits, left out)' } };
+}

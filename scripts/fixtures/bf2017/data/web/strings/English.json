@@ -1,7 +1,7 @@
 {
  "language": "English",
  "asset": "Localization/WSLocalization_English",
- "count": 16,
+ "count": 19,
  "id": "id = hash of the string key: h = 0xFFFFFFFF; for each character c: h = (c + 33*h) mod 2^32; written as 8 upper-case hex digits",
  "strings": {
   "B2823EBD": "TAKE OUT THE WALKERS",
@@ -19,6 +19,9 @@
   "579726DC": "A280",
   "6CFC2974": "ASSAULT",
   "B912C5CD": "Darth Vader",
-  "D35AB2F9": "Luke Skywalker"
+  "D35AB2F9": "Luke Skywalker",
+  "1714B1A6": "TK-610",
+  "1714B18A": "TK-118",
+  "1714B18D": "TK-709"
  }
 }

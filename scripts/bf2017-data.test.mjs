@@ -65,3 +65,14 @@ describe('the records’ rulebooks', () => {
     expect(written['points.json'].refused).toBeUndefined();
   });
 });
+
+describe('the Arcade and the kits’ rulebooks', () => {
+  it('writes arcade.json and kits.json, each with where it came from', () => {
+    const written = {};
+    for (const what of ['arcade', 'kits']) record(what, ROOT, { write: (f, j) => (written[f] = j), log: () => {} });
+    expect(written['arcade.json'].params.Team1AISize.values).toContain(20);
+    expect(written['arcade.json'].refused).toBeUndefined();
+    expect(written['kits.json'].planetaryBattles.rows.length).toBeGreaterThan(70);
+    expect(written['kits.json']._from.export).toBe('build 489592');
+  });
+});

@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { checkSources } from './bf2017-rulebook.mjs';
-import { pointsRulebook } from './bf2017-rulebook-costs.mjs';
+import { kitsRulebook, pointsRulebook } from './bf2017-rulebook-costs.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
 
@@ -52,5 +52,35 @@ describe('the Battle Points from Online/BattlepointCostData', () => {
     expect(p.limits).toMatchObject({ source: 'hand', heroesPerTeam: 1, reinforcementsPerTeam: 4 });
     expect(p.bpRate).toMatchObject({ source: 'hand', value: 1 });
     expect(checkSources(p)).toEqual([]);
+  });
+});
+
+describe('the kit limits from the PF_KitLimitations_* prefabs', () => {
+  const k = kitsRulebook(ROOT, { books: { heroes: { darthvader: { id: 'darthvader', kit: 'Gameplay/Kits/Hero/DarthVader/Kit_Hero_DarthVader' } } }, gameplay: ['Gameplay/Kits/Hero/DarthVader/GP_Hero_DarthVader'] });
+  const rows = k.planetaryBattles.rows;
+
+  it('names each row’s kit by its gameplay asset’s Identifier', () => {
+    const vader = rows.find((r) => r.kit === 'Gameplay/Kits/Hero/DarthVader/GP_Hero_DarthVader');
+    expect(vader).toMatchObject({ id: 'darthvader', kind: 'hero', kitId: 518018118 });
+  });
+
+  it('reads a hero’s limit through PF_HeroKitMaxCount and its price from the record', () => {
+    const vader = rows.find((r) => r.id === 'darthvader');
+    expect(vader.maxCount).toBe(1);
+    expect(vader.maxCount_source).toMatch(/PF_HeroKitMaxCount|PF_KitLimitations_PlanetaryBattles/);
+    expect(vader.price).toBe(4000);
+    expect(vader.price_source).toMatch(/^Online\/BattlepointCostData#/);
+  });
+
+  it('reads a unit’s limit from the prefab’s own field', () => {
+    const six = rows.filter((r) => r.maxCount === 6);
+    expect(six.length).toBeGreaterThan(10);
+    expect(six[0].maxCount_source).toMatch(/InterfaceDescriptorData\.Fields\.\d+\.Value$/);
+  });
+
+  it('counts what resolved, and every number names its source', () => {
+    expect(k.counts.rows).toBeGreaterThan(70);
+    expect(k.counts.maxCount).toBeGreaterThan(60);
+    expect(checkSources(k)).toEqual([]);
   });
 });

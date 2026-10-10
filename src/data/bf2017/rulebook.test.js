@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const DIR = import.meta.dirname;
-const FILES = ['teams', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'cameras', 'ui', 'strings', 'points', 'maps/hoth', 'maps/hoth.lighting', 'maps/hoth.stages', 'maps/sb_endor', 'maps/sb_endor.stages', 'maps/sb_kamino', 'maps/sb_kamino.stages', 'maps/sb_fondor', 'maps/sb_droidbattleship'];
+const FILES = ['teams', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'cameras', 'ui', 'strings', 'points', 'kits', 'arcade', 'maps/hoth', 'maps/hoth.lighting', 'maps/hoth.stages', 'maps/sb_endor', 'maps/sb_endor.stages', 'maps/sb_kamino', 'maps/sb_kamino.stages', 'maps/sb_fondor', 'maps/sb_droidbattleship'];
 const read = (name) => JSON.parse(readFileSync(join(DIR, `${name}.json`), 'utf8'));
 const rb = Object.fromEntries(FILES.map((f) => [f, read(f)]));
 const rows = (f) => rb[f].rows ?? rb[f];
@@ -38,9 +38,21 @@ const isSequel = (name) => name.toLowerCase().split('/').some((seg) => TESTS.som
 describe('the Battlefront rulebooks', () => {
   it('stay small', () => {
     // (a space level's map is fetched only when its Starfighter Assault is flown: starfighterMaps.js; each map is held to its own)
-    const bytes = FILES.filter((f) => !f.startsWith('maps/sb_')).reduce((n, f) => n + readFileSync(join(DIR, `${f}.json`)).length, 0);
+    // (the costs, the kits and the Arcade have their own budget, below)
+    const bytes = FILES.filter((f) => !f.startsWith('maps/sb_') && !['points', 'kits', 'arcade'].includes(f)).reduce((n, f) => n + readFileSync(join(DIR, `${f}.json`)).length, 0);
     expect(bytes).toBeLessThan(2 * 1024 * 1024);
     for (const f of FILES.filter((x) => x.startsWith('maps/') && !x.includes('.'))) expect(readFileSync(join(DIR, `${f}.json`)).length, f).toBeLessThan(600 * 1024);
+  });
+
+  it('keeps the costs, the kits and the Arcade under 200 KB together', () => {
+    expect(['points', 'kits', 'arcade'].reduce((n, f) => n + readFileSync(join(DIR, `${f}.json`)).length, 0)).toBeLessThan(200 * 1024);
+  });
+
+  it('names most kit limits from the graph, and says by hand where it could not', () => {
+    const rows = rb.kits.planetaryBattles.rows;
+    expect(rows.filter((r) => typeof r.maxCount === 'number').length).toBeGreaterThan(60);
+    for (const r of rows) if (typeof r.maxCount !== 'number') expect(r.maxCount.source, r.kit).toBe('hand');
+    expect(Object.keys(rb.arcade.params)).toHaveLength(22);
   });
 
   it.each(FILES)('%s names the source of every number', (f) => {
@@ -135,7 +147,8 @@ describe('the Battlefront rulebooks', () => {
     const bad = [];
     const walk = (v, path) => {
       if (typeof v === 'string') return isSequel(v) && bad.push(`${path}: ${v}`);
-      if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'refused') walk(x, `${path}.${k}`);
+      // (a source names the record a value came from: the Rebels' bot names sit in the list the Resistance shares)
+      if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'refused' && !k.endsWith('_source')) walk(x, `${path}.${k}`);
     };
     for (const f of FILES) if (!['ui', 'ai', 'strings', 'maps/hoth.lighting'].includes(f)) walk(rows(f), f);
     walk(Object.keys(rows('ui').icons), 'ui.icons');
