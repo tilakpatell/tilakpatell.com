@@ -2,6 +2,8 @@
 // is coruscant.js's).
 // (sites/index.js has what a site is.)
 
+import { ownMap } from './ownMap';
+
 // level ground stepping evenly from a to b (a road up a slope): flats
 const ramp = (a, b, h0, h1, n = 12, r = 8) =>
   Array.from({ length: n + 1 }, (_, i) => ({ at: [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n], r, edge: r, h: h0 + ((h1 - h0) * i) / n }));
@@ -576,6 +578,30 @@ export const SITES = {
   geonosis: {
     // lit as the game lights its level (src/data/bf2017/light/geonosis.json, gameLit.js)
     gameLight: 'geonosis',
+    // drawn from the game's level (lane E3: /models/galaxy/bf2017/levels/geonosis/level.json,
+    // `node scripts/bf2017-level.mjs s5_1/levels/mp/geonosis_01 --world
+    // geonosis --spawn --subs geonosis_01,world_content,world_factory,content`:
+    // the strike's first team-one spawn, in the canyon by the game's arena
+    // pillars; the map keeps its pieces in World_Content, so the subs). The
+    // places' flats are the flight's (`game`), so the canyon, the plateau and
+    // the basin stand as the game cut them; the foundry stands on the game's
+    // factory doors, and the built foundry, spires and near hives are the
+    // flight's: the game's rock stands.
+    level: 'geonosis',
+    // (Geonosis_02, the Capital Supremacy map's ground, its dunes and the
+    // crash site: its first team-one spawn, from Mode1_Logic, as the
+    // rulebook reads no season map's records)
+    districts: [
+      {
+        id: 'second',
+        name: 'The dunes of Geonosis',
+        level: 'geonosis/second',
+        land: { at: [0, 0], yaw: 0 },
+        line: 'Dunes, a crashed Venator, and the droid foundries’ smoke on the horizon.',
+        door: { at: [0, 6], r: 2.4, prompt: 'Back to the Plains of Geonosis' },
+        ...ownMap('geonosis/second'),
+      },
+    ],
     place: 'The Plains of Geonosis',
     line: 'Red rock, hive spires and a ringed, rust-coloured sky.',
     sky: {
@@ -596,7 +622,10 @@ export const SITES = {
     ground: { detail: 'redsoil', detailLook: { color: 0.75, normal: 0.8 },
       seed: 33,
       wind: 1.1,
-      layers: [
+      // (the game's own ground: Geonosis_01's heightmap, 0 at the spot)
+      layers: [{ type: 'image', pack: 'geonosis' }],
+      // (the flight's planet keeps the plains the site drew before the level)
+      flight: [
         { type: 'swell', scale: 420, height: 7 },
         { type: 'hills', scale: 160, height: 6 },
         { type: 'mesas', scale: 480, height: 34, cover: 0.3, cliff: 0.05 },
@@ -636,7 +665,7 @@ export const SITES = {
         name: 'The Petranaki arena',
         at: [-260, 200],
         r: 100,
-        flat: { r: 92, edge: 24 },
+        flat: { r: 92, edge: 24, game: true },
         about: 'The execution arena, where Obi-Wan, Anakin and Padmé were chained to the pillars for the reek, the acklay and the nexu; and where two hundred Jedi came to save them.',
         lines: {
           xwing: [['luke', 'The arena. Ben was chained up in there with my father. And my mother.'], ['r2', '(A frantic, remembering whistle: Artoo flew in there.)']],
@@ -656,7 +685,7 @@ export const SITES = {
         name: 'The first battle',
         at: [260, 170],
         r: 70,
-        flat: { r: 62, edge: 26 },
+        flat: { r: 62, edge: 26, game: true },
         about: 'Where the Republic’s gunships came down out of the sky with the clone army, and the Clone Wars began: AT-TEs against spider droids, clones against droids, in the dust.',
         lines: {
           xwing: [['luke', 'This is where the clones fought the droids. The first battle of the whole war.'], ['r2', '(A soft, sad tune.)']],
@@ -678,7 +707,7 @@ export const SITES = {
         name: 'The forward command post',
         at: [120, 330],
         r: 26,
-        flat: { r: 20, edge: 14 },
+        flat: { r: 20, edge: 14, game: true },
         about: 'Yoda’s command post on a ridge over the battle, the fight drawn in blue light on the holotable. Begun, the Clone War has.',
         lines: {
           xwing: [['luke', 'Master Yoda was here? Commanding clones?'], ['r2', '(A confirming beep, and a holo-flicker of a tiny green Jedi.)']],
@@ -691,9 +720,10 @@ export const SITES = {
       {
         id: 'foundry',
         name: 'The droid foundry',
-        at: [-330, -230],
+        // (the game's factory doors, geo_factoryentranceblast_01)
+        at: [1, -342],
         r: 60,
-        flat: { r: 50, edge: 24 },
+        flat: { r: 50, edge: 24, game: true },
         about: 'Where the Geonosians stamp out battle droids by the million in furnace light: Anakin and Padmé nearly went through the presses, and Threepio’s head ended up on a droid’s body.',
         lines: {
           xwing: [['luke', 'A droid factory. Artoo, stay away from those conveyors.'], ['r2', '(A very, very firm beep.)']],
@@ -702,7 +732,7 @@ export const SITES = {
           rv: [['walt', 'An assembly line. Efficient. Terrible quality control.'], ['jesse', 'Yo, they put the gold guy’s head on a robot. That’s messed up.']],
         },
         things: [
-          { kind: 'foundry', at: [0, -6], yaw: 0.8 },
+          { kind: 'foundry', at: [0, -6], yaw: 0.8, game: true },
           { kind: 'droideka', at: [14, 22], yaw: 0.8 },
         ],
       },
@@ -711,7 +741,7 @@ export const SITES = {
         name: 'Count Dooku’s hangar',
         at: [300, -300],
         r: 40,
-        flat: { r: 34, edge: 18 },
+        flat: { r: 34, edge: 18, game: true },
         about: 'Dooku’s secret hangar, where Yoda caught up with him, and the old Count dropped a pillar on Obi-Wan and Anakin to get away in his solar sailer.',
         lines: {
           xwing: [['luke', 'Yoda fought here. Ben told me. Yoda, with a lightsaber!'], ['r2', '(An awed warble.)']],
@@ -722,7 +752,7 @@ export const SITES = {
         things: [
           { kind: 'geohangar', at: [0, -10], yaw: -0.7 },
           // (the mesa it's cut into)
-          { kind: 'geohive', at: [19, -33], yaw: -0.7, scale: 0.3, sink: 1.2 },
+          { kind: 'geohive', at: [19, -33], yaw: -0.7, scale: 0.3, sink: 1.2, game: true },
           { kind: 'solarsailer', at: [-6, 2], yaw: 2.4, y: 0.4 },
         ],
       },
@@ -738,8 +768,8 @@ export const SITES = {
           cruiser: [['rick', 'Eusocial insectoids, Morty. One queen, a billion workers, zero unions.'], ['morty', 'They’re kind of looking at us, Rick.']],
         },
         things: [
-          { kind: 'geohive', at: [-10, -75], yaw: 0.4, scale: 0.55, sink: 2.2 },
-          { kind: 'geohive', at: [70, 10], yaw: 2.2, scale: 0.28, sink: 1.1 },
+          { kind: 'geohive', at: [-10, -75], yaw: 0.4, scale: 0.55, sink: 2.2, game: true },
+          { kind: 'geohive', at: [70, 10], yaw: 2.2, scale: 0.28, sink: 1.1, game: true },
         ],
       },
       {
@@ -747,7 +777,7 @@ export const SITES = {
         name: 'The core ships',
         at: [470, -120],
         r: 70,
-        flat: { r: 50, edge: 24 },
+        flat: { r: 50, edge: 24, game: true },
         about: 'The Separatists’ great spherical starships, set down on the plain to load the droid army; when the battle turned, they lifted off and ran for space.',
         lines: {
           xwing: [['luke', 'Those spheres are the hearts of Trade Federation battleships. Big enough to carry an army.'], ['r2', '(A long, impressed whistle.)']],
@@ -787,13 +817,14 @@ export const SITES = {
       { kind: 'geohive', at: [650, 300], yaw: 5.64, scale: 0.73, sink: 2.9, solid: false },
       { kind: 'geohive', at: [-200, 640], yaw: 0.66, scale: 0.87, sink: 3.5, solid: false },
       { kind: 'geohive', at: [180, -640], yaw: 1.96, scale: 1, sink: 4, solid: false },
-      { kind: 'geohive', at: [-120, 140], yaw: 3.26, scale: 0.3, sink: 1.2 },
-      { kind: 'geohive', at: [140, -120], yaw: 4.56, scale: 0.25, sink: 1 },
-      { kind: 'geohive', at: [-160, -60], yaw: 5.86, scale: 0.35, sink: 1.4 },
+      { kind: 'geohive', at: [-120, 140], yaw: 3.26, scale: 0.3, sink: 1.2, game: true },
+      { kind: 'geohive', at: [140, -120], yaw: 4.56, scale: 0.25, sink: 1, game: true },
+      { kind: 'geohive', at: [-160, -60], yaw: 5.86, scale: 0.35, sink: 1.4, game: true },
     ],
     scatter: [
-      { kind: 'spire', n: 110, within: [70, 900], scale: [0.35, 1.2], stretch: [0.7, 1.4] },
-      { kind: 'spire', n: 90, within: [50, 600], scale: [0.2, 0.6], opts: { seed: 5, color: '#9a5a38' } },
+      // (the game's level stands its own spires and rock: these are the flight's)
+      { kind: 'spire', n: 110, within: [70, 900], scale: [0.35, 1.2], stretch: [0.7, 1.4], game: true },
+      { kind: 'spire', n: 90, within: [50, 600], scale: [0.2, 0.6], opts: { seed: 5, color: '#9a5a38' }, game: true },
       // (the plain's red boulders and stones, wearing the red rock scan)
       { kind: 'rock', n: 240, within: [16, 580], scale: [0.6, 3], opts: { color: '#94583a', sharp: 0.55, to: 'redrock' } },
       { kind: 'rock', n: 120, within: [12, 300], scale: [0.3, 1.1], opts: { seed: 9, color: '#a0623e', sharp: 0.4, to: 'redrock' } },
@@ -808,8 +839,8 @@ export const SITES = {
       { kind: 'reek', n: 1, at: [-274, 206], roam: 18, speed: 1.3, r: 1.8 },
       { kind: 'jedi', n: 2, at: [-256, 202], spread: 6, roam: 8, speed: 1.0, name: 'Jedi', says: ['This party’s over.', 'Hold on. This whole operation’s about to get a lot more interesting.', 'I’ve a bad feeling about this.'] },
       { kind: 'geonosian', n: 6, path: [[-80, -360], [10, -400], [-10, -435], [-100, -430]], y: 18, speed: 5, name: 'Geonosian drone', says: ['(A buzzing dive past your head.)'] },
-      { kind: 'geonosian', n: 4, at: [-320, -210], spread: 24, roam: 14, speed: 1.1, name: 'Geonosian worker', says: ['(It clicks irritably and hauls a droid torso past you.)', '(Click. Click-click. Back to work.)'] },
-      { kind: 'c3po', n: 1, at: [-312, -206], still: true, name: 'C-3PO', says: ['Oh, this is such a drag.', 'Die, Jedi dogs! …Oh, what did I say?', 'I’m terribly sorry about all this.', 'Machines making machines. How perverse.'] },
+      { kind: 'geonosian', n: 4, at: [11, -322], spread: 24, roam: 14, speed: 1.1, name: 'Geonosian worker', says: ['(It clicks irritably and hauls a droid torso past you.)', '(Click. Click-click. Back to work.)'] },
+      { kind: 'c3po', n: 1, at: [19, -318], still: true, name: 'C-3PO', says: ['Oh, this is such a drag.', 'Die, Jedi dogs! …Oh, what did I say?', 'I’m terribly sorry about all this.', 'Machines making machines. How perverse.'] },
       { kind: 'clonephase1', n: 4, at: [-20, 10], spread: 5, still: true, face: -0.6, name: 'Clone trooper', says: ['Forward post, sir. The droids pulled back to the spires.', 'First day of the war, and we’re already winning.', 'Gunships inbound. Keep clear of the pad.'] },
       { kind: 'dwarfspider', n: 2, path: [[40, 50], [70, 40], [84, 60], [60, 76]], speed: 0.9, r: 1.0, name: 'Dwarf spider droid', says: ['(It clicks. Its cannon finds you, then loses interest.)'] },
       { kind: 'battledroid', n: 4, at: [56, -20], spread: 10, roam: 8, speed: 1.2, name: 'Battle droid', says: ['Roger, roger.', 'The spider droid is… down. Uh-oh.', 'Fall back! Fall back!'] },

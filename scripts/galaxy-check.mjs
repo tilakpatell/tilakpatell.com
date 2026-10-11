@@ -12,6 +12,7 @@
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
 //   PHASE_WAIT=900000 … (ms for the world to come up: a level pack in software GL takes minutes)
 //   DIAG=1 … (each of the scene's top groups' share of the calls, hidden in turn)
+//   DISTRICT=<id> … surface: the world's district (?district=) instead of its main map
 //   BUDGET=1 … (or BUDGET=path/to/baseline.json): each world held to its
 //     quality level's row of the budget table (src/lib/budgets.js, the
 //     quality modes design: docs/superpowers/specs/2026-10-07-quality-modes-
@@ -98,7 +99,8 @@ for (const id of list.split(',')) {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
-  const path = mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
+  // (DISTRICT=village: the world's district, sites/index.js's, held to the world's row)
+  const path = mode === 'surface' ? `/galaxy/${id}/surface${process.env.DISTRICT ? `?district=${process.env.DISTRICT}` : ''}` : `/galaxy/${id}`;
   await page.goto(`${base}/?quality=${quality}&calibrate=off#${path}`, { waitUntil: 'domcontentloaded' });
   const ready = mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
   try {
@@ -120,6 +122,9 @@ for (const id of list.split(',')) {
   // outlast the settle wait. Measured before, it drew nothing of itself, and
   // the gate fails it)
   await page.waitForFunction(() => !window.__RUNTIME__ || window.__RUNTIME__.status === 'on', null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the world never came up (runtime status not on)'));
+  // (and a game level's cells round you in: a district's pack, smaller than
+  // its world's, can be measured before its first cells land otherwise)
+  if (mode === 'surface') await page.waitForFunction(() => (window.__surfaceScene.level?.()?.progress ?? 1) >= 1, null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the level never came in round you'));
   // (in space, the ship put in one place, the same for every run: off the
   // planet on its sun side, facing it, stopped. The seeded randomness alone
   // can't hold it there: three.js draws on Math.random for every object's
