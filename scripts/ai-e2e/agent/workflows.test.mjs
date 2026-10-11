@@ -21,7 +21,7 @@ describe('the workflows that use the desktop’s GPU', () => {
   const jobs = Object.entries(FLOWS).flatMap(([f, w]) => Object.entries(w.jobs).filter(([, j]) => gpu(j)).map(([name, j]) => [`${f} ${name}`, j, w]));
 
   it('are the ones expected', () => {
-    expect(jobs.map(([n]) => n).sort()).toEqual(['ai-health.yml gpu', 'bf2017-desktop.yml make', 'desktop-doctor.yml doctor', 'gen3d.yml make', 'motion.yml make', 'voices.yml make']);
+    expect(jobs.map(([n]) => n).sort()).toEqual(['ai-health.yml gpu', 'bf2017-desktop.yml make', 'bf2017-desktop.yml stream', 'desktop-doctor.yml doctor', 'gen3d.yml make', 'motion.yml make', 'voices.yml make']);
   });
 
   it.each(jobs)('%s runs only on the self-hosted gpu runner, with a time limit', (name, job) => {

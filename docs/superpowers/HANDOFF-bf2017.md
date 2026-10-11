@@ -29,6 +29,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | `uastc` | Q5: the packs’ 220 colour maps as UASTC q4 at 2,048, PSNR against the BC7 master and the served ETC1S, kept at 3 dB or better as each pack’s `ultra` row | `winget install KhronosGroup.KTX-Software` |
 | `depots` | the probe through `bf2017-shader-names.mjs --depots`, the share of all and of the rest | the probe at `maps_work\shaderdepots.jsonl` |
 | `gate` | every world at ultra on the chip (ANGLE d3d11, then WebGPU), 16.7 ms p95, shots; the first run makes `lab/baseline/surface-ultra.json` | Chrome |
+| `stream` | lane R2’s sender (PR #908) with its README’s arguments: a world at ultra (`stream_world`) or the game’s own window (`stream_source: game`), for `stream_minutes`; the numbers as the run’s artifact; not in `all` | #908 merged (until then the job says so and stops); `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the runner’s `.env`; a phone |
 
 The keys are the runner’s `.env` (`~\actions-runner\.env`: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`), never the repository’s; `gh workflow run desktop-doctor.yml` shows each need under `bf2017`.
 
