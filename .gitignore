@@ -3633,6 +3633,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_02_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_02_cs__orm_37cd9aa3.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_02_cs__orm_37cd9aa3.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_03_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_03_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_04_cs.1024.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_04_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_04_cs.256.ktx2
@@ -3891,6 +3893,23 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/tex/t_endorbase_wall_column_01_nam__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_endorbase_wall_column_01_nam__orm_5ae9d5a8.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_endorbase_wall_column_01_nam__orm_5ae9d5a8.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_01_lod_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_01_lod_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_02_lod_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_02_lod_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_03_lod_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_03_lod_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_smallplateau_01_lod_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_smallplateau_01_lod_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_02_lod_cs.1024.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_02_lod_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_02_lod_cs.512.ktx2
@@ -4330,6 +4349,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_beams_a_nam__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_beams_a_nam__orm_197a52a7.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_beams_a_nam__orm_197a52a7.512.ktx2
+/public/models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_beamslod_a_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_lights_a_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_lights_a_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_lights_a_cs.512.ktx2
@@ -7291,6 +7311,9 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_02_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_02_cs__orm_37cd9aa3.1024.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_02_cs__orm_37cd9aa3.128.ktx2
+/public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_04_cs.1024.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_04_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_04_cs.256.ktx2
@@ -14445,6 +14468,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_engine_n__orm_68e244f1.2048.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_engine_n__orm_68e244f1.256.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_engine_n__orm_68e244f1.512.ktx2
+/public/models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_lod5_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_lod5_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_roof_cs.1024.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_roof_cs.2048.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_roof_cs.512.ktx2
@@ -14740,6 +14765,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__normal.2048.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__normal.512.ktx2
+/public/models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__orm_0c7a7f7c.1024.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__orm_0c7a7f7c.2048.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__orm_0c7a7f7c.256.ktx2
 /public/models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__orm_0c7a7f7c.512.ktx2

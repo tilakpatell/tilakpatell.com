@@ -5214,8 +5214,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/cells/1_0.bin": {
-    "hash": "b89ed4338dfd",
-    "bytes": 26176,
+    "hash": "a899b77694fe",
+    "bytes": 26144,
     "from": "models/galaxy/bf2017/levels/endor/cells/1_0.bin",
     "tier": "pack"
   },
@@ -5292,8 +5292,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/cells/2_3.bin": {
-    "hash": "06bd65410fa2",
-    "bytes": 38368,
+    "hash": "3af901a6a6e0",
+    "bytes": 38336,
     "from": "models/galaxy/bf2017/levels/endor/cells/2_3.bin",
     "tier": "pack"
   },
@@ -5394,8 +5394,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/far.bin": {
-    "hash": "394544c9c7d6",
-    "bytes": 428288,
+    "hash": "7d3009eb2824",
+    "bytes": 428224,
     "from": "models/galaxy/bf2017/levels/endor/far.bin",
     "tier": "pack"
   },
@@ -21389,6 +21389,18 @@
     "from": "models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_02_cs__orm_37cd9aa3.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_03_cs.1024.ktx2": {
+    "hash": "0c7744997953",
+    "bytes": 63162,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_03_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_03_cs.512.ktx2": {
+    "hash": "a8a3ec79503c",
+    "bytes": 26201,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_03_cs.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/tex/t_catwalksystem_imperial_04_cs.1024.ktx2": {
     "hash": "9ad71f584476",
     "bytes": 1048275,
@@ -22935,6 +22947,108 @@
     "hash": "a77f60e4680d",
     "bytes": 247199,
     "from": "models/galaxy/bf2017/levels/endor/tex/t_endorbase_wall_column_01_nam__orm_5ae9d5a8.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_01_lod_cs.1024.ktx2": {
+    "hash": "24d2528fd698",
+    "bytes": 227212,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_01_lod_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_01_lod_cs.512.ktx2": {
+    "hash": "05bccc3f1a4c",
+    "bytes": 95099,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_01_lod_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_02_lod_cs.1024.ktx2": {
+    "hash": "e3e5251da52e",
+    "bytes": 233215,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_02_lod_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_02_lod_cs.512.ktx2": {
+    "hash": "9c8da0948193",
+    "bytes": 96850,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_02_lod_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_03_lod_cs.1024.ktx2": {
+    "hash": "90658b51c7cf",
+    "bytes": 204801,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_03_lod_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_03_lod_cs.512.ktx2": {
+    "hash": "066a46ff8d33",
+    "bytes": 91610,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_03_lod_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.1024.ktx2": {
+    "hash": "ae769e213a2c",
+    "bytes": 217015,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.256.ktx2": {
+    "hash": "13a1054847cd",
+    "bytes": 55324,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.512.ktx2": {
+    "hash": "01e69d634924",
+    "bytes": 90057,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_platform_04_lod_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_smallplateau_01_lod_cs.256.ktx2": {
+    "hash": "4ab613a5f3b7",
+    "bytes": 46637,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_smallplateau_01_lod_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_smallplateau_01_lod_cs.512.ktx2": {
+    "hash": "effa5390ac39",
+    "bytes": 83594,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_smallplateau_01_lod_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.1024.ktx2": {
+    "hash": "6d639024d876",
+    "bytes": 263836,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.256.ktx2": {
+    "hash": "6a6146e371fc",
+    "bytes": 58625,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.512.ktx2": {
+    "hash": "4ff367405fa0",
+    "bytes": 103081,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillage_spiralstairs_01_lod_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.1024.ktx2": {
+    "hash": "f5483d442d26",
+    "bytes": 177548,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.256.ktx2": {
+    "hash": "052fdf29220d",
+    "bytes": 52969,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.512.ktx2": {
+    "hash": "5c59b8cc8b14",
+    "bytes": 85045,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_01_lod_cs.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/tex/t_ewokvillagebridge_02_lod_cs.1024.ktx2": {
@@ -25569,6 +25683,12 @@
     "hash": "153b29ca69c7",
     "bytes": 221881,
     "from": "models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_beams_a_nam__orm_197a52a7.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_beamslod_a_cs.128.ktx2": {
+    "hash": "5a4526418882",
+    "bytes": 15261,
+    "from": "models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_beamslod_a_cs.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/tex/t_lightpole_xl_01_lights_a_cs.128.ktx2": {
@@ -43337,6 +43457,24 @@
     "from": "models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_02_cs__orm_37cd9aa3.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.1024.ktx2": {
+    "hash": "0c7744997953",
+    "bytes": 63162,
+    "from": "models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.256.ktx2": {
+    "hash": "de74300e767c",
+    "bytes": 17279,
+    "from": "models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.512.ktx2": {
+    "hash": "a8a3ec79503c",
+    "bytes": 26201,
+    "from": "models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_03_cs.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/base/tex/t_catwalksystem_imperial_04_cs.1024.ktx2": {
     "hash": "9ad71f584476",
     "bytes": 1048275,
@@ -47556,8 +47694,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/cells/-1_-2.bin": {
-    "hash": "22ca21ead1d7",
-    "bytes": 224,
+    "hash": "0493177a4c32",
+    "bytes": 192,
     "from": "models/galaxy/bf2017/levels/hoth/cells/-1_-2.bin",
     "tier": "pack"
   },
@@ -48492,8 +48630,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/far.bin": {
-    "hash": "952192f556e4",
-    "bytes": 186080,
+    "hash": "c5950e66a085",
+    "bytes": 186048,
     "from": "models/galaxy/bf2017/levels/hoth/far.bin",
     "tier": "pack"
   },
@@ -79368,31 +79506,31 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod0.glb": {
-    "hash": "4f49587bc625",
+    "hash": "30651a541960",
     "bytes": 84340,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod1.glb": {
-    "hash": "a614afe520c6",
+    "hash": "cbcf8c762640",
     "bytes": 53556,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod1.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod2.glb": {
-    "hash": "9fce477c11d0",
+    "hash": "93bf40a05f0b",
     "bytes": 33668,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod3.glb": {
-    "hash": "2427936a374a",
+    "hash": "f8f8a6aa5d98",
     "bytes": 19900,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod4.glb": {
-    "hash": "e7e1156419f8",
+    "hash": "d5ca8302f89a",
     "bytes": 11840,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_mainturret_mesh.lod4.glb",
     "tier": "pack"
@@ -79434,31 +79572,31 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod0.glb": {
-    "hash": "0aaf49a66da2",
+    "hash": "96323fe46568",
     "bytes": 22756,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod1.glb": {
-    "hash": "61e530f4ab6d",
+    "hash": "14aad74d753e",
     "bytes": 15932,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod1.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod2.glb": {
-    "hash": "746cbeefb15d",
+    "hash": "668b8af84f52",
     "bytes": 10604,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod3.glb": {
-    "hash": "fd37cfd67c4c",
+    "hash": "3f3c92eec502",
     "bytes": 7404,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod4.glb": {
-    "hash": "313b6798f77d",
+    "hash": "c3ceaecc2ad4",
     "bytes": 5408,
     "from": "models/galaxy/bf2017/levels/sb_fondor/meshes/mc80_recessed_detail_01_mesh.lod4.glb",
     "tier": "pack"
@@ -86261,6 +86399,18 @@
     "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_engine_n__orm_68e244f1.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_lod5_cs.1024.ktx2": {
+    "hash": "0af0f60ba2e5",
+    "bytes": 356804,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_lod5_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_lod5_cs.512.ktx2": {
+    "hash": "d587dcc178e1",
+    "bytes": 130542,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_lod5_cs.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/sb_fondor/tex/t_drydock_shuttleship_roof_cs.1024.ktx2": {
     "hash": "b0f609392916",
     "bytes": 458327,
@@ -88031,6 +88181,12 @@
     "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__normal.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__orm_0c7a7f7c.1024.ktx2": {
+    "hash": "ebebc94dfab9",
+    "bytes": 911960,
+    "from": "models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__orm_0c7a7f7c.1024.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/sb_fondor/tex/t_stardestroyer_detailsside_01_nam__orm_0c7a7f7c.2048.ktx2": {
     "hash": "213fc2be09f7",
     "bytes": 3276523,
@@ -88644,8 +88800,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-10_0.bin": {
-    "hash": "1a3093a098f6",
-    "bytes": 6592,
+    "hash": "22d9e1bcd71e",
+    "bytes": 6528,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-10_0.bin",
     "tier": "pack"
   },
@@ -88704,8 +88860,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-10_28.bin": {
-    "hash": "9f303c27dab6",
-    "bytes": 6784,
+    "hash": "d16c2f7363ec",
+    "bytes": 6752,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-10_28.bin",
     "tier": "pack"
   },
@@ -88968,8 +89124,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-12_7.bin": {
-    "hash": "316f4f191adb",
-    "bytes": 224,
+    "hash": "4f225d745591",
+    "bytes": 192,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-12_7.bin",
     "tier": "pack"
   },
@@ -89148,8 +89304,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-14_9.bin": {
-    "hash": "29a79f5fd805",
-    "bytes": 6464,
+    "hash": "986e16efc35f",
+    "bytes": 6400,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-14_9.bin",
     "tier": "pack"
   },
@@ -89166,8 +89322,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-15_1.bin": {
-    "hash": "4c9d335d107b",
-    "bytes": 3488,
+    "hash": "16201131d3c1",
+    "bytes": 3456,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-15_1.bin",
     "tier": "pack"
   },
@@ -89460,8 +89616,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-2_24.bin": {
-    "hash": "012e0f9bc0cf",
-    "bytes": 5888,
+    "hash": "3a55182e7524",
+    "bytes": 5856,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-2_24.bin",
     "tier": "pack"
   },
@@ -89694,8 +89850,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-4_9.bin": {
-    "hash": "da89652671c0",
-    "bytes": 2720,
+    "hash": "23920c0ff0ce",
+    "bytes": 2688,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-4_9.bin",
     "tier": "pack"
   },
@@ -89730,8 +89886,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-5_19.bin": {
-    "hash": "99133d196619",
-    "bytes": 8416,
+    "hash": "350209f615a3",
+    "bytes": 8384,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-5_19.bin",
     "tier": "pack"
   },
@@ -89838,8 +89994,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-6_16.bin": {
-    "hash": "8d11c2dac921",
-    "bytes": 480,
+    "hash": "1f1ee5a2bc16",
+    "bytes": 448,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-6_16.bin",
     "tier": "pack"
   },
@@ -89886,8 +90042,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-6_24.bin": {
-    "hash": "4c5343a0ede5",
-    "bytes": 3360,
+    "hash": "85dc49de828e",
+    "bytes": 3328,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-6_24.bin",
     "tier": "pack"
   },
@@ -90138,8 +90294,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-8_13.bin": {
-    "hash": "8616ad629e73",
-    "bytes": 6464,
+    "hash": "60409fb471be",
+    "bytes": 6400,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-8_13.bin",
     "tier": "pack"
   },
@@ -90378,8 +90534,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/-9_5.bin": {
-    "hash": "845a4b68da43",
-    "bytes": 9728,
+    "hash": "f921619d48f0",
+    "bytes": 9696,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/-9_5.bin",
     "tier": "pack"
   },
@@ -90678,8 +90834,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/11_19.bin": {
-    "hash": "3ec2ac72bb97",
-    "bytes": 3328,
+    "hash": "fe7c31a917ed",
+    "bytes": 3296,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/11_19.bin",
     "tier": "pack"
   },
@@ -90714,8 +90870,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/11_25.bin": {
-    "hash": "2571894cca05",
-    "bytes": 3488,
+    "hash": "f09b50b509d1",
+    "bytes": 3456,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/11_25.bin",
     "tier": "pack"
   },
@@ -90822,8 +90978,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/12_28.bin": {
-    "hash": "f25e5d162b29",
-    "bytes": 608,
+    "hash": "6878fa0f4130",
+    "bytes": 576,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/12_28.bin",
     "tier": "pack"
   },
@@ -90930,8 +91086,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/13_32.bin": {
-    "hash": "ebac0edc7bff",
-    "bytes": 9664,
+    "hash": "ceedb695f5de",
+    "bytes": 9632,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/13_32.bin",
     "tier": "pack"
   },
@@ -91236,8 +91392,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/2_2.bin": {
-    "hash": "25a574059a96",
-    "bytes": 3520,
+    "hash": "bda9d2a370df",
+    "bytes": 3488,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/2_2.bin",
     "tier": "pack"
   },
@@ -91260,8 +91416,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/2_24.bin": {
-    "hash": "49a56b2f4094",
-    "bytes": 192,
+    "hash": "3767ab7e501f",
+    "bytes": 160,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/2_24.bin",
     "tier": "pack"
   },
@@ -91284,8 +91440,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/2_28.bin": {
-    "hash": "6fbbb7fe223a",
-    "bytes": 6624,
+    "hash": "bd80e37a73f3",
+    "bytes": 6592,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/2_28.bin",
     "tier": "pack"
   },
@@ -91380,8 +91536,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/3_11.bin": {
-    "hash": "bd3053fb25c4",
-    "bytes": 8736,
+    "hash": "6348352d1d84",
+    "bytes": 8704,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/3_11.bin",
     "tier": "pack"
   },
@@ -91710,8 +91866,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/5_-7.bin": {
-    "hash": "b976ab2983b7",
-    "bytes": 3520,
+    "hash": "44c7bc5614f8",
+    "bytes": 3488,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/5_-7.bin",
     "tier": "pack"
   },
@@ -91860,8 +92016,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/6_-3.bin": {
-    "hash": "fc58ad031247",
-    "bytes": 224,
+    "hash": "788fb8657be6",
+    "bytes": 192,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/6_-3.bin",
     "tier": "pack"
   },
@@ -91956,8 +92112,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/6_24.bin": {
-    "hash": "93ca3bc327b7",
-    "bytes": 9440,
+    "hash": "18f112a71ca4",
+    "bytes": 9376,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/6_24.bin",
     "tier": "pack"
   },
@@ -91992,8 +92148,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/6_4.bin": {
-    "hash": "d54a5d251cb7",
-    "bytes": 640,
+    "hash": "f47b91774e2e",
+    "bytes": 608,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/6_4.bin",
     "tier": "pack"
   },
@@ -92184,8 +92340,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/8_0.bin": {
-    "hash": "e5d4ce66d817",
-    "bytes": 3808,
+    "hash": "e46bcdbba18e",
+    "bytes": 3776,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/8_0.bin",
     "tier": "pack"
   },
@@ -92226,8 +92382,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/8_17.bin": {
-    "hash": "3c34492cd240",
-    "bytes": 384,
+    "hash": "563b43a39dd1",
+    "bytes": 352,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/8_17.bin",
     "tier": "pack"
   },
@@ -92262,8 +92418,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/cells/8_22.bin": {
-    "hash": "e71b12eab5e6",
-    "bytes": 544,
+    "hash": "453e272fdd62",
+    "bytes": 512,
     "from": "models/galaxy/bf2017/levels/sb_kamino/cells/8_22.bin",
     "tier": "pack"
   },
@@ -92454,8 +92610,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_kamino/far.bin": {
-    "hash": "fe544b47a93c",
-    "bytes": 442816,
+    "hash": "007c3a54bf4b",
+    "bytes": 441824,
     "from": "models/galaxy/bf2017/levels/sb_kamino/far.bin",
     "tier": "pack"
   },

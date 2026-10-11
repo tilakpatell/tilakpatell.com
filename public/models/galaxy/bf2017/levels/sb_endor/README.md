@@ -4,6 +4,7 @@ From `levels/space/sb_endor_01` (Star Wars Battlefront II, 2017, EA DICE; used w
 
 - 2331 instances in the arena (±4096 m), 184 beyond it (the horizon), no terrain: no ground layer, the instances alone, 658 cells of 128 m
 - left out: SpaceBattle:corvettecr90_01, nowhere*, starcard*, Art:planet_*, Art:moon_*
+- never drawn as themselves (the NEVER rule: lighting proxies, light blockers, occluders, invisible collision, shadow-only meshes, destruction stages): deathstar_debris_l_03_mc80_destruction ×4
 - fitted to a share of the tiers' rows: low 0.5, mid 0.5, high 0.5, ultra 0.5
 - 210 meshes (2 left out), 551 LOD files, 46.57 MB
 - the far list 0.07 MB; terrain none; the spot's ground 0.00 m in the game

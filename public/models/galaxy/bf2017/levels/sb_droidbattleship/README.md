@@ -4,6 +4,7 @@ From `levels/space/sb_droidbattleship_01` (Star Wars Battlefront II, 2017, EA DI
 
 - 1732 instances in the arena (±6000 m), 146 beyond it (the horizon), no terrain: no ground layer, the instances alone, 153 cells of 128 m
 - left out: SpaceBattle:jedicruiser_*, nowhere*, starcard*, Art:planet_*, Art:moon_*
+- never drawn as themselves (the NEVER rule: lighting proxies, light blockers, occluders, invisible collision, shadow-only meshes, destruction stages): none
 - fitted to a share of the tiers' rows: low 0.5, mid 0.5, high 0.5, ultra 0.5
 - 183 meshes (0 left out), 470 LOD files, 56.31 MB
 - the far list 0.05 MB; terrain none; the spot's ground 0.00 m in the game

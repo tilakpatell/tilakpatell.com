@@ -2,8 +2,9 @@
 
 From `levels/mp/hoth_01` (Star Wars Battlefront II, 2017, EA DICE; used with permission on this non-commercial fan project). Written by `node scripts/bf2017-level.mjs levels/mp/hoth_01 --world hoth --spot 205 -1540 --ultra`; do not edit by hand.
 
-- 5815 instances in the arena (±1024 m), 236 beyond it (the horizon), 14535 left out under the ground (an interior: its own pack, `--inside`), 155 cells of 128 m
-- 602 meshes (4 left out), 490 LOD files, 14.31 MB
+- 5814 instances in the arena (±1024 m), 236 beyond it (the horizon), 14535 left out under the ground (an interior: its own pack, `--inside`), 155 cells of 128 m
+- never drawn as themselves (the NEVER rule: lighting proxies, light blockers, occluders, invisible collision, shadow-only meshes, destruction stages): arcticbase_snowpile_medium_enlighten_08 ×1680, mesh_light_cone_00 ×764, arcticbase_snowpile_medium_enlighten_07 ×209, mesh_enlightenproxy_02 ×29, arcticbase_mistplane_01 ×14, hangarwall_s_512_cablebottom_01_enlighten ×5, arcticbase_corridormistplane_01 ×3, hangarwall_s_256_cablebottomtotop_02_enlighten ×3, hangarwall_s_512_cabletop_01_enlighten ×3, arcticbase_shadowplane_01 ×2, hangarwall_s_256_cablebottomtotop_01_enlighten ×2, hangarwall_s_256_cabletop_01_enlighten ×2, hangarwall_s_256_cabletoptofloor_01_enlighten ×2, invalidatelightplane_01 ×2, corridor_01_s_256x512x512_a_cabletop_01_enlighten ×1, hangarmediumlightcone_02 ×1, hangarmediumlightcone_cables_01 ×1, hangarmediumlightcone_window_01 ×1, hangarsmallpillars_01_768x512_cablebottom_01_enlighten ×1, hangarsnowcave_01_cables_13_enlighten ×1, hangarwall_s_256_cablebottom_01_enlighten ×1, hangarwall_s_256_cablebottomtofloor_01_enlighten ×1, hangarwall_s_256_cablebottomtofloor_02_enlighten ×1, hothinterior_lightblocker_01 ×1, lightconecave_cables_01 ×1, lightconecave_cables_02 ×1, lightconecave_cables_03 ×1, lightconecave_cables_04 ×1
+- 602 meshes (4 left out), 489 LOD files, 14.29 MB
 - the far list 0.18 MB; terrain near 2.50 MB, far 2.20 MB; the spot's ground 362.30 m in the game
 - textures missing from the bucket: 4
 - ultra's maps held to 256.00 MB (lod.js's TEX_MB): 234.86 MB as the table gives them, 0 stepped down a size or more toward high's, normal and ORM first
@@ -12,9 +13,9 @@ From `levels/mp/hoth_01` (Star Wars Battlefront II, 2017, EA DICE; used with per
 |---|---|---|---|---|
 | drawn out to (radii: a 1 m thing, a 20 m one) | 35 (35 m, 700 m) | 137 (137 m, 2740 m) | 1000 (1000 m, 20000 m) | 1000 (1000 m, 20000 m) |
 | meshes dropped (instances) | 0 (0) | 0 (0) | 0 (0) | 0 (0) |
-| worst place: triangles, calls | 716k, 141 | 1347k, 154 | 1573k, 169 | 2198k, 193 |
+| worst place: triangles, calls | 715k, 140 | 1346k, 153 | 1572k, 168 | 2197k, 192 |
 | texture bytes (every map the level has) | 8.87 MB | 28.84 MB | 28.84 MB | 223.98 MB |
-| mesh bytes a tier can draw (its LODs, its meshes) | 4.03 MB | 6.29 MB | 8.80 MB | 14.31 MB |
+| mesh bytes a tier can draw (its LODs, its meshes) | 4.01 MB | 6.27 MB | 8.78 MB | 14.29 MB |
 
 ## The map's other parts
 
