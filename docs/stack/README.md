@@ -10,8 +10,8 @@ WebAssembly is the browser’s own, not a package, and so has no row; its page i
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |
-| `three` | ^0.186.1 | [three.md](three.md) | 678 |
-| `react` | ^19.3.0 | [react.md](react.md) | 311 |
+| `three` | ^0.186.1 | [three.md](three.md) | 679 |
+| `react` | ^19.3.0 | [react.md](react.md) | 312 |
 | `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 88 |
 | `react-router-dom` | ^7.18.4 | [react.md](react.md) | 84 |
 | `playwright-core` | ^1.56.0 | [testing.md](testing.md) | 81 |
@@ -26,13 +26,13 @@ WebAssembly is the browser’s own, not a package, and so has no row; its page i
 | `@fontsource/cinzel` | ^5.3.0 | [fonts.md](fonts.md) | 5 |
 | `@supabase/supabase-js` | ^2.117.3 | [supabase.md](supabase.md) | 5 |
 | `@fontsource/press-start-2p` | ^5.3.0 | [fonts.md](fonts.md) | 4 |
+| `@dimforge/rapier3d` | 0.21.0 | [physics-rapier.md](physics-rapier.md) | 2 |
+| `@dimforge/rapier3d-simd` | 0.21.0 | [physics-rapier.md](physics-rapier.md) | 2 |
 | `@fontsource/bebas-neue` | ^5.3.0 | [fonts.md](fonts.md) | 2 |
 | `@fontsource/courier-prime` | ^5.3.0 | [fonts.md](fonts.md) | 2 |
 | `@fontsource/orbitron` | ^5.3.0 | [fonts.md](fonts.md) | 2 |
 | `@noble/secp256k1` | ^3.2.0 | [multiplayer-nostr.md](multiplayer-nostr.md) | 2 |
 | `fflate` | ^0.8.3 | [assets-pipeline.md](assets-pipeline.md) | 2 |
-| `@dimforge/rapier3d-compat` | 0.21.0 | [physics-rapier.md](physics-rapier.md) | 1 |
-| `@dimforge/rapier3d-simd-compat` | 0.21.0 | [physics-rapier.md](physics-rapier.md) | 1 |
 | `@fontsource-variable/archivo` | ^5.3.0 | [fonts.md](fonts.md) | 1 |
 | `@fontsource/cinzel-decorative` | ^5.3.0 | [fonts.md](fonts.md) | 1 |
 | `@fontsource/jetbrains-mono` | ^5.3.0 | [fonts.md](fonts.md) | 1 |

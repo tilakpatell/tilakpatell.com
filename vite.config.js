@@ -6,6 +6,7 @@ import prerender from './scripts/prerender.mjs'
 import packs from './scripts/packs.mjs'
 import assetManifest from './scripts/assets-manifest.mjs'
 import bf2Dev from './scripts/bf2-dev.mjs'
+import rapierWasm from './scripts/rapier-wasm.mjs'
 
 export default defineConfig({
   // each react-icons icon a module of its own, so the entry chunk carries
@@ -16,7 +17,9 @@ export default defineConfig({
   // still true of public/ (scripts/assets-manifest.mjs)
   // (and, in dev with BF2_ROOT set, the local Battlefront export at /bf2/:
   // scripts/bf2-dev.mjs; nothing when it is unset)
-  plugins: [iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
+  // (and Rapier's wasm import sent to the shim that streams the binary:
+  // scripts/rapier-wasm.mjs, lane X3)
+  plugins: [rapierWasm(), iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
   // (the icons' modules import react-icons' own GenIcon: bundled up front in dev)
   // (scanned from the site's own page only: the tool pages under scripts/ and
   // .claude/ import aliases and packages the site doesn't, and a failed scan
@@ -24,8 +27,17 @@ export default defineConfig({
   // found only as a browser asks for it, each a re-bundle and a "504
   // (Outdated Optimize Dep)" reload, which took CI's Multiplayer check's page
   // from under it, 2026-10-10)
-  optimizeDeps: { entries: ['index.html'], include: ['react-icons/lib'] },
+  // (Rapier's two packages left out of the optimizer: prebundled, their wasm
+  // import would be met before scripts/rapier-wasm.mjs could send it to the
+  // shim; both are plain ES modules and serve as they are)
+  optimizeDeps: { entries: ['index.html'], include: ['react-icons/lib'], exclude: ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'] },
   base: '/',
+  // Rapier's packages carry only a `module` entry, which Node's own
+  // resolution (what Vite's SSR uses for a dependency it leaves external)
+  // does not read: the tests and scripts/x2-profile.mjs load them through
+  // Vite instead, so scripts/rapier-wasm.mjs meets their wasm import there
+  // too (lane X3)
+  ssr: { noExternal: ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'] },
   // workers as ES modules, so one that loads a module dynamically shares its
   // chunk with the page (the physics worker's Rapier: as an iife, both
   // builds were inlined into one 9 MB worker); every worker is made with
