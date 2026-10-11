@@ -13,7 +13,16 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles, debris, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry }
+//   materials, weather, decals, particles, debris, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry,
+//   trails, sharpen }
+//
+// `trails` (GPU-first lane N2, scripts/light-fixture.mjs --trails): the
+// ring set aside, a grey wall, and trails.js's movers (a crate, a skinned
+// figure, an instanced row, an alpha-tested card, a panning banner) in
+// front of it; they move once probe.trailsGo(true) says, a step a frame,
+// and probe.trails({ width, height }) gives each one's box on the screen
+// and its travel a frame, for the trail check; `temporal: 'none'` draws
+// it without a temporal pass (else TAAU at 0.77 where TRAA cannot draw).
 //
 // `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
 // 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
@@ -70,6 +79,7 @@
 import * as THREE from 'three';
 import hothWeather from '../../lib/three/surface/fixtures/hoth.weather.json';
 import hothVe from '../../lib/three/light/fixtures/hoth.ve.json';
+import { createTrails } from './trails';
 
 // the snow's albedo under --hoth (fresh snow reflects 0.8 to 0.9; Hoth's
 // ice field, worn, a little under)
@@ -403,6 +413,20 @@ export default {
       probe.recipes = () => row.then((r) => r.map((c) => ({ label: c.label, features: c.features })));
     }
 
+    let trails = null;
+    let trailsOn = false;
+    if (opts.trails) {
+      for (const o of [...scene.children]) if (o !== ground) o.visible = false;
+      const wall = new THREE.Mesh(geo(new THREE.PlaneGeometry(14, 8)), mat({ color: 0x8a8f96, roughness: 0.7 }));
+      wall.position.set(0, 1.5, -1.2);
+      scene.add(wall);
+      trails = createTrails(scene, camera, THREE);
+      camera.position.set(0, 1.5, 6);
+      camera.lookAt(0, 1.5, 0);
+      probe.trails = (size) => trails.screen(size);
+      probe.trailsGo = (on) => (trailsOn = on);
+    }
+
     const ready = (async () => {
       await row;
       const { applyGameLight } = await import('../../lib/three/light/apply.js');
@@ -444,9 +468,20 @@ export default {
         // (`only`: the passes kept, for finding which one breaks)
         let passes = opts.only ? light.passes.filter((p) => opts.only.includes(p.kind)) : light.passes;
         // (`upscale`, fidelity lane U: { kind, scale }, the picture drawn under the screen and brought up)
-        if (opts.upscale) passes = (await import('../../lib/three/light/post.js')).upscaled(passes, opts.upscale);
+        const chain = await import('../../lib/three/light/post.js');
+        if (opts.upscale) passes = chain.upscaled(passes, opts.upscale);
+        // (lane N2's trails: under a temporal pass, TAAU at 0.77 where TRAA
+        // cannot draw (nodes-webgl); `temporal: 'none'` the picture without one)
+        if (opts.trails && opts.temporal === 'none') passes = chain.arrange(passes.filter((p) => p.kind !== 'traa' && !(p.kind === 'upscale' && p.upscaler === 'taau')));
+        else if (opts.trails && !chain.temporal(passes)) passes = chain.upscaled(passes, { kind: 'taau', scale: 0.77 });
+        // (lane N2: `sharpen: false` is lane U's picture, for the before shot: no sharpen pass, no mip bias)
+        if (opts.sharpen === false) passes = passes.filter((p) => p.kind !== 'sharpen');
+        const bias = await import('../../lib/three/mipBias.js');
+        bias.setMipState({ scale: opts.upscale?.scale ?? 1, classic: false });
         post = rt.gfx.post(passes);
+        if (opts.sharpen === false) bias.setMipBias(0);
         probe.passes = passes.map((p) => p.kind);
+        probe.bias = bias.mipBias();
         await post.ready;
       }
       await rt.gfx.compile(scene, camera);
@@ -460,6 +495,7 @@ export default {
         camera.updateProjectionMatrix();
       },
       step(dt) {
+        if (trailsOn) trails.step();
         cube.rotation.y += dt;
         if (camVel.x) camera.position.addScaledVector(camVel, dt);
         probe.particles?.step(dt);

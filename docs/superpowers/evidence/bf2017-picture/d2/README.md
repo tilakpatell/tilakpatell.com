@@ -110,3 +110,69 @@ Nothing draws Endor’s 11 yet: their shader binds `T_DefaultBlack` alone, and t
 - The textures missing from the bucket are as before: Hoth 4, Hoth’s base 6, Endor 27, the droid battleship 2.
 - Probes: Hoth and Hoth’s base have 6 each at 128² with the sun kept for ultra, beside the 64² clipped ones, and Fondor has 6. Endor_01 bakes no sunny reflection volume, and the other space levels none at all.
 - LUTs: every light record’s 24 LUTs re-cut at 33³ (`scripts/bf2017-lut.mjs`). The 17³ nodes are identical (maximum difference 0).
+
+## E1’s packs
+
+Lane U-packs (`claude/bf2017-upacks-e1`, from `origin/main` at f6511872, after #926): the four packs lane E1 built, re-run on 2026-10-11 between 14:55 and 15:12 UTC with each README’s own command and `--ultra` added (Tatooine keeps its `--subs tatooine_01,content,content_024`, Yavin its `--subs yavin_01,yavin_012,streamed_in_props,sunny`; Yavin’s old `--drop lightblocker,*occluder*,*invisiblecollision*` is gone, since the factory’s `NEVER` rule now takes them). Every number below is the README each run wrote; the “before” figures are the same READMEs on `main` at f6511872. “LOD0 shipped” counts the meshes whose LOD0 is over 12,000 triangles and whose LOD0 file is in the pack (`level.json`’s `meshes[].glb[0]`), the way the per-pack table above counts it (Hoth gives 10 by the same count).
+
+| pack | tier | dropped (before → after) | worst triangles, calls | texture MB (before → after) | mesh MB | LOD0 shipped (of those over 12k) |
+| --- | --- | --: | --: | --: | --: | --: |
+| tatooine | high | 0 → 0 | 1,053k, 629 | 81.9 → 84.0 | 41.1 | 0 |
+| tatooine | ultra | (none) → 0 | 3,643k, 901 | (none) → 243.9 | 52.4 | 28 (of 39) |
+| tatooine/jabba | high | 0 → 0 | 1,400k, 555 | 54.9 → 55.0 | 19.2 | 0 |
+| tatooine/jabba | ultra | (none) → 0 | 1,570k, 603 | (none) → 244.1 | 20.4 | 10 (of 18) |
+| tatooine/jabba-inside | high | 0 → 0 | 170k, 117 | 8.6 → 8.6 | 3.7 | 0 |
+| tatooine/jabba-inside | ultra | (none) → 0 | 264k, 120 | (none) → 49.3 | 4.4 | 3 (of 18) |
+| yavin | high | 342 → 275 | 2,561k, 630 | 96.6 → 119.2 | 28.9 | 0 |
+| yavin | ultra | (none) → 0 | 6,509k, 1,348 | (none) → 244.0 | 90.7 | 66 (of 88) |
+
+Low and mid moved too, with `main`’s fit weights: Tatooine drops 103 meshes at low where it dropped 110 (63 at mid, 65 before), the palace 14 where it dropped 16, Yavin 373 where it dropped 463 (365 at mid, 436 before). Yavin’s arena grew from 13,808 to 14,278 instances: its 470 wind-bent bushes and small trees (`yavinbase_bush_*_skinned`, `yavinbase_tree_small_*_skinned`) are in the pack as rigid bind-pose instances (`STILL_SKINNED`), where E1’s run listed them under “not placed”. The pit is the one pack whose ultra maps fit under the contract as built (51.7 MB); Yavin’s ultra draws out to 493 m, not the 1,000 m of the others, because its fit holds the worst place to 90 % of the 1,500-call row (1,348).
+
+Ultra’s maps, held to 256 MB (`lod.js`’s `fitMaps`): Tatooine 407.7 MB as the table gave them, 136 stepped down a size or more; the palace 359.0 MB, 54 stepped; the pit 51.7 MB, 0 stepped; Yavin 624.8 MB, 270 stepped. Sizes of maps at each tier, out of every map the pack ships (from `level.json`’s `tex`, as the table above):
+
+| pack | high: 2048 / 1024 / 512 / 256 / ≤128 | ultra: 2048 / 1024 / 512 / 256 / ≤128 |
+| --- | --- | --- |
+| tatooine | 0 / 33 / 129 / 288 / 363 | 22 / 117 / 394 / 208 / 70 (2 rows with no size: the maps the bucket lacks) |
+| tatooine/jabba | 0 / 17 / 103 / 210 / 238 | 23 / 159 / 280 / 79 / 27 |
+| tatooine/jabba-inside | 0 / 0 / 18 / 52 / 60 | 7 / 25 / 53 / 39 / 6 |
+| yavin | 0 / 61 / 234 / 209 / 139 | 43 / 101 / 267 / 199 / 33 |
+
+### What stays out, and why
+
+- Ultra drops nothing in any of the four. The palace’s `palace_01_shadowmesh` is left out by its shader (`SS_Shadowmesh`, a shadow proxy); Tatooine’s 44 and Yavin’s 5 meshes left out are the sequel-era rows the era rule refuses (Jakku’s engines and barrels, the Resistance transport, Takodana’s chest), as before.
+- Never drawn as themselves (the `NEVER` rule): Tatooine’s 45 Enlighten proxies, light cones and light plane; the palace’s 20 light cones, 7 proxies and the shadow mesh; Yavin’s 93 light cones, 144 Enlighten light meshes, 19 invisible collision shapes, the 336 m `lightblocker`, two occluders, 9 proxies and a light plane. E1 had dropped Yavin’s by name; the rule now names them in every README.
+- Textures missing from the bucket: Tatooine 2 (3 before), the palace 1 (2 before), the pit 0, Yavin 7 (15 before). The bucket gained maps between E1’s run and this one; the rest are the desktop’s (lane W’s not-uploaded job).
+- Decals: Tatooine keeps its one (its colour map now fetched into `tex/decals/`, 1.07 MB); the palace, the pit and Yavin have none in their subs (Yavin skips the ones in sub 7, not an arena sub).
+- Probes at 128² with the sun for ultra: 65 for the palace and the pit (beside their 64² clipped ones, 31.3 MB in all), 2 for Yavin; Tatooine_01 bakes no reflection volume.
+- Yavin’s skinned creatures (4 gonk droids, 4 stintarils, 14 woolamanders) and its spawned fighters stay the site’s to place (`actors.json`, `vehicles.json`), as in every pack.
+
+### The colour check
+
+`bf2017-colour-check.mjs --packs --fix` after the four runs: 4,728 files under the packs, 1,858 colour maps sRGB, 2,828 data maps linear, 42 unknown, 0 wrong; the four packs’ rows stamped by the game’s word (Tatooine 765 of 813, the palace 560 of 568, the pit 130 of 130, Yavin 638 of 643). It would also re-stamp ten rows in packs that are not this lane’s (`sb_fondor/level.json`: 4 rows gaining a word; `kamino/recipes.json`: 6, four of them flipping between sRGB and linear) because `textures.jsonl` now knows those maps. Those rows were put back: their published files are not in this checkout to take the same stamp, and a row that disagrees with its file is what `--published` is for. A finding for the colour lane or those packs’ next run.
+
+### The recipes
+
+Asked for by the orchestrating session on the way (lane T2 tests Tatooine’s level on the node renderer, where a mesh with no recipe keeps its raw GLB material and builds its own program): lane Q1’s `bf2017-recipes.mjs --level <pack> --fetch` over the cached `materials.jsonl`, for each of the four. Maps the recipes want, in the pack: Tatooine 13 of 13, the palace 22 of 22, the pit 12 of 12, Yavin 34 of 36 (two character detail arrays, `TA_CharacterDetail_01_NS` and `_07_NS`, the bucket lacks). The colour check stamped each `recipes.json`’s rows (4,897 files under the packs after the fetch, none wrong).
+
+### Published
+
+`assets-publish.mjs --only 'models/galaxy/bf2017/levels/tatooine/**,models/galaxy/bf2017/levels/yavin/**'`, twice: the packs, 4,575 files sent (3,375 new, 1,200 changed, 983.2 MB), none there already, none failed; then the recipes’ maps, 169 files (45.2 MB). The manifest and `.gitignore`’s block rewritten each time, so the packs’ binaries stay out of git (level.json, the parts’ JSON, the new `variations.json` and `recipes.json`, and the READMEs are in).
+
+`assets-check` after the second publish: 52,035 of 52,035 right, 0 retried, 1,064 s. Three of them are the empty `horizon.bin` files of the interiors (Hoth’s base, Kamino’s Venator, the pit), which every earlier run reported as “HTTP 416”: the checker had the rule for an empty file’s 416 (`content-range: bytes */0`), but `scripts/lib/pool.mjs` called every 4xx `failed` before the verdict read it. The pool now keeps a failed answer’s headers and the verdict reads the empty file’s 416 first (`scripts/assets-check.test.mjs` covers both shapes).
+
+### The gates (software GL, the node renderer)
+
+`BUDGET=1 BUDGET_REPORT=1 QUALITY=<tier> SCANS=game PHASE_WAIT=1500000 node scripts/galaxy-check.mjs surface tatooine,yavin` on this branch at 8c597ff9, through a dev server with `VITE_ASSET_BASE` at the public bucket (as the gate above), headless Chromium on SwiftShader, 2026-10-11. The surface draws on `nodes-webgl` (lane T’s flip; `galaxy-check` on this branch is `main`’s at f6511872, before #903’s `SHOT_WAIT`). Yavin’s pack is not wired into `yavin.js` (E1 left the temple to be seen on a real GPU first), so Yavin’s lines measure the site’s own Yavin without its level; Tatooine’s lines are the pack’s.
+
+The first pass ran both tiers side by side, 15:32 to 17:32 UTC. High: Yavin came up and was counted; Tatooine never did (“the world never came up”, the deploy dialog over a black world in its screenshot, an `ERR_HTTP2_PROTOCOL_ERROR` on one bucket fetch, and the second publish’s manifest hot-reloaded the surface pages at 15:42, ten minutes into its load). Ultra: Tatooine came up and the run was killed at the two-hour limit inside the frame count (`galaxy-check.mjs:246`), with no line written. Second pass, one world at a time, below.
+
+| world | tier | calls (row) | triangles (row) | models MB (bucket row) | frame p50, p95 (reported) | result |
+| --- | --- | --: | --: | --: | --: | --- |
+| yavin | high (first pass) | 281 (700; baseline 78 +10 % = 86) | 1,576,948 (1,900,234) | 76.7 (160) | 7,333, 7,443 ms | rows pass; over its baseline |
+| tatooine | high | 292 (700; baseline 183 +10 % = 201) | 1,058,961 (3,000,000; baseline 835,469 +10 % = 919,016) | 132.5 (160) | 68,747, 81,280 ms | rows pass; over its baseline; one `ERR_HTTP2_PROTOCOL_ERROR` on a fetch |
+| tatooine | ultra | 264 (1,500) | 3,671,094 (none) | 429.2 (285) | 27,399, 29,082 ms | calls pass; models over: recorded, not held; one `ERR_HTTP2_PROTOCOL_ERROR` on a fetch |
+| yavin | ultra | 323 (1,500) | 3,881,994 (none) | 200.5 (285) | 35,465, 39,749 ms | pass; one `ERR_HTTP2_PROTOCOL_ERROR` on a fetch (the proxy cut a transfer), so the check exits 1 on the page error |
+
+Tatooine at ultra, alone, came up in 18 minutes and drew the whole pack: 692 level calls, 2,668,051 level triangles, 14,976 instances (every one the arena has, against 1,212 at high), 102 physics bodies with 827 colliders; the screenshot, from the landing, has the dunes, the game’s props and vaporators out to the horizon and the town’s edge at the right, as high’s does: what ultra adds from this spot is in the counts, not in this view. Its models are 429.2 MB against the 285 MB bucket row, as D2’s Hoth (472.6) and Endor (475.7) were: ultra’s pack maps (243.9 MB after the 256 MB contract) and the LOD0 files (52.4 MB of mesh) come on top of what high fetches. The plan holds ultra to its numbers being recorded; the frame time and the memory at ultra are the laptop’s gate (lane G, the desktop’s `gate` job). No row was raised.
+
+Tatooine at high, alone, came up in 14 minutes and its level is what E1 measured: 222 level calls, 347,351 triangles, 1,212 instances, 1,232 physics bodies dropped; the whole world is 292 calls and 1.06M triangles against E1’s 183 and 835k on the classic renderer, for the same reason as Yavin’s. Its models (132.5 MB, every `.glb`, `.ktx2` and `.bin` the bucket served) hold under the 160 MB bucket row. Yavin’s baseline (`lab/baseline/surface-high.json`, 78 calls, lane E1’s refresh on the classic renderer) is before lane T’s flip to the node renderer and before the game’s light: the world draws 281 calls now without its level, so the +10 % rule fails it while every row passes. That is the baseline wanting remaking with the node renderer and the levels in (D2’s task 7, left to the GPU), not a row to raise.

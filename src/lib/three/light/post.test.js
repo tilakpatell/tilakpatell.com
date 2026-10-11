@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom';
-import { COC, NODE_PASSES, ORDER, SSGI, SSR_ROUGHNESS, arrange, dofParams, headroom, motionBlurOf, passesFor, raysLight, shed, upscaleKind, upscaled } from './post';
+import { antialias, arrange, COC, dofParams, headroom, motionBlurOf, NODE_PASSES, ORDER, passesFor, raysLight, SHARPEN, sharpenFor, shed, SSGI, SSR_ROUGHNESS, temporal, upscaled, upscaleKind } from './post';
 import hoth from './fixtures/hoth.ve.json';
 import { gradeOf } from './grade';
 
@@ -177,7 +177,8 @@ describe('the record’s picture (lane Q6, refs.grade)', () => {
 describe('upscale (lane U)', () => {
   const ultra = () => passesFor('ultra', hoth.sunny, 'webgpu', refs);
   it('is the last pass before the output', () => {
-    expect(ORDER.slice(-2)).toEqual(['upscale', 'output']);
+    expect(ORDER.slice(-2)).toEqual(['sharpen', 'output']); // (the sharpen after TAAU is the one pass after it: lane N2)
+    expect(ORDER.at(-3)).toBe('upscale');
     const p = upscaled(passesFor('high', hoth.sunny, 'webgpu', refs), { kind: 'fsr1', scale: 0.67 });
     expect(kinds(p).slice(-3)).toEqual(['smaa', 'upscale', 'output']);
     expect(p.at(-2)).toMatchObject({ upscaler: 'fsr1', scale: 0.67, sharpness: 0.2 });
@@ -187,7 +188,7 @@ describe('upscale (lane U)', () => {
     const p = upscaled(ultra(), { scale: 0.77 });
     expect(kinds(p)).not.toContain('traa');
     expect(kinds(p)).not.toContain('smaa');
-    expect(p.at(-2)).toMatchObject({ kind: 'upscale', upscaler: 'taau', scale: 0.77, camera: refs.camera });
+    expect(p.find((x) => x.kind === 'upscale')).toMatchObject({ kind: 'upscale', upscaler: 'taau', scale: 0.77, camera: refs.camera });
     // (no TRAA left: SSGI takes its plain preset and its denoise)
     expect(p.find((x) => x.kind === 'ssgi')).toMatchObject({ temporal: false, ...SSGI.plain.high });
     expect(kinds(p)).toContain('denoise');
@@ -214,11 +215,42 @@ describe('upscale (lane U)', () => {
   it('lowers the resolution before any pass is shed (headroom)', () => {
     const full = kinds(shed(ultra(), 0)).filter((k) => k !== 'traa');
     const under = headroom(ultra(), { scale: 0.67, shed: 0 });
-    expect(kinds(under).filter((k) => k !== 'upscale' && k !== 'denoise')).toEqual(full);
+    expect(kinds(under).filter((k) => k !== 'upscale' && k !== 'sharpen' && k !== 'denoise')).toEqual(full);
     const shedToo = headroom(ultra(), { scale: 0.5, shed: 2 });
     expect(kinds(shedToo)).not.toContain('ssgi');
     expect(kinds(shedToo)).not.toContain('ssr');
-    expect(shedToo.at(-2)).toMatchObject({ upscaler: 'taau', scale: 0.5 });
+    expect(shedToo.find((x) => x.kind === 'upscale')).toMatchObject({ upscaler: 'taau', scale: 0.5 });
+  });
+});
+
+describe('sharpen after TAAU, and the samples rule (lane N2)', () => {
+  const ultra = () => passesFor('ultra', hoth.sunny, 'webgpu', refs);
+  it('follows TAAU as the last pass before the output, strength 0.2 + 0.4 × (1 − scale) to at most 0.4', () => {
+    expect(ORDER.slice(-3)).toEqual(['upscale', 'sharpen', 'output']);
+    const p = upscaled(ultra(), { scale: 0.77 });
+    expect(kinds(p).slice(-3)).toEqual(['upscale', 'sharpen', 'output']);
+    expect(p.at(-2).strength).toBeCloseTo(0.2 + 0.4 * 0.23, 6);
+    expect(upscaled(ultra(), { scale: 0.5 }).at(-2).strength).toBe(0.4);
+    expect(sharpenFor(0.67)).toBeCloseTo(0.332, 6);
+    expect(SHARPEN._source).toMatch(/spec/);
+  });
+  it('gives RCAS its sharpness in stops, so the lobe’s weight is the strength (2^−sharpness)', () => {
+    const s = upscaled(ultra(), { scale: 0.5 }).at(-2);
+    expect(2 ** -s.sharpness).toBeCloseTo(s.strength, 6);
+  });
+  it('is no pass under FSR1 (its RCAS is its own sharpen), nor at native', () => {
+    expect(kinds(upscaled(ultra(), { kind: 'fsr1', scale: 0.77 }))).not.toContain('sharpen');
+    expect(kinds(ultra())).not.toContain('sharpen');
+    expect(kinds(upscaled(upscaled(ultra(), { scale: 0.77 }), { scale: 1 }))).not.toContain('sharpen');
+    expect(kinds(arrange([...ultra(), { kind: 'sharpen', strength: 0.3 }]))).not.toContain('sharpen');
+  });
+  it('a temporal chain draws its scene with no multisampling; any other keeps it', () => {
+    expect(temporal(ultra())).toBe(true);
+    expect(antialias(ultra())).toBe(false);
+    expect(antialias(upscaled(ultra(), { scale: 0.77 }))).toBe(false);
+    expect(antialias(upscaled(ultra(), { kind: 'fsr1', scale: 0.77 }))).toBe(true);
+    expect(antialias(passesFor('high', hoth.sunny, 'webgpu', refs))).toBe(true);
+    expect(antialias(passesFor('ultra', hoth.sunny, 'nodes-webgl', refs))).toBe(true);
   });
 });
 

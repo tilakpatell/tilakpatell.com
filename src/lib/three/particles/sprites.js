@@ -54,6 +54,7 @@
 import { evalCurve } from './curves.js';
 import { trailPoint } from './emitter.js';
 import { loadThree } from '../light/three.js';
+import { holdOut } from '../light/velocity.js';
 
 export function curveNode(tsl, c, t, r) {
   const { float, uniformArray, clamp, floor, min } = tsl;
@@ -198,6 +199,9 @@ export async function createSpriteMesh(em, sim, { shared, map = null, geometry =
   material.positionNode = corner;
   material.colorNode = rgb;
   material.opacityNode = alpha;
+  // (its corners are placed here, which three's velocity cannot follow: the
+  // still velocity instead, so TAA takes it as new colour, lane N2)
+  holdOut(material, { THREE, tsl });
   material.blending = em.additive ? THREE.AdditiveBlending : THREE.NormalBlending;
   // (fog would add its colour to a glow: the additive ones go without)
   material.fog = !em.additive;
@@ -278,6 +282,7 @@ export async function createRibbonMesh(em, trails, { shared, map = null } = {}) 
   const material = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
   material.colorNode = rgb;
   material.opacityNode = alpha;
+  holdOut(material, { THREE, tsl });
   material.blending = em.additive ? THREE.AdditiveBlending : THREE.NormalBlending;
   material.fog = !em.additive;
   const mesh = new THREE.Mesh(geometry, material);

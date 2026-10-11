@@ -53,12 +53,25 @@
 //   resolved at the screen's size, the anti-aliasing too) brings the
 //   picture up to the drawing buffer. Lane V's volumes and fog keep their
 //   own quarter of the screen.
+// - sharpen (GPU-first lane N2): SharpenNode, RCAS at the pass's
+//   `sharpness` (stops: post.js's sharpenFor), on TAAU's picture at the
+//   screen's size.
+// Under a reversed depth buffer (renderer.reversedDepthBuffer: lane N2,
+// WebGPU), the depth every screen-space pass reads is the standard one,
+// drawn once into a 32-bit float target as 1 − depth (the two are exact
+// complements): r186's SSGI, GTAO, SSR, the denoiser, getViewPosition, the
+// fog and the flare all take 1 as the sky. TRAA and TAAU read the reversed
+// buffer themselves and get it as it is.
+// A chain with TRAA or TAAU draws its scene pass single-sampled (post.js's
+// antialias): the pass otherwise takes the renderer's 4 samples, which
+// neither temporal pass wants.
 //
 // buildChain(renderer, passes) → Promise<{ pipeline, nodes, parts: { scenePass, bloom }, dispose }>
 
 import { BLOOM } from '../bloom.js';
 import { OCCLUDER_DISC, OCCLUDER_TAPS } from './flare.js';
 import { fogVolume } from './fog.js';
+import { antialias } from './post.js';
 import { loadThree } from './three.js';
 
 const ADDONS = {
@@ -76,6 +89,7 @@ const ADDONS = {
   fsr1: () => import('three/addons/tsl/display/FSR1Node.js'),
   taau: () => import('three/addons/tsl/display/TAAUNode.js'),
   smaa: () => import('three/addons/tsl/display/SMAANode.js'),
+  sharpen: () => import('three/addons/tsl/display/SharpenNode.js'),
 };
 
 // The record's sun flare's alpha at the sun's screen disc: OCCLUDER_TAPS
@@ -138,6 +152,15 @@ function cameraVelocity(tsl, THREE, depth, camera) {
   const ndc = clip.xy.div(clip.w.max(1e-6));
   const was = vec2(ndc.x.mul(0.5).add(0.5), ndc.y.mul(-0.5).add(0.5));
   return screenUV.sub(was);
+}
+
+// The standard depth from a reversed buffer: 1 − depth, each texel as it
+// is (nearest, 32 bits: a half float would band the far half of a 2 km
+// map), at the scene pass's own resolution.
+export function standardDepth(tsl, THREE, raw, under = 1) {
+  const n = tsl.rtt(raw.sample(tsl.screenUV).r.oneMinus(), null, null, { type: THREE.FloatType, format: THREE.RedFormat, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false, resolutionScale: under });
+  n.isStandardDepth = true;
+  return n;
 }
 
 // What a scene pass's colour targets cost a sample on WebGPU, by the spec's
@@ -212,7 +235,7 @@ export async function buildChain(renderer, passes) {
     if (p.kind !== 'render' && !node) throw new Error(`a ${p.kind} pass needs a render pass first`);
     switch (p.kind) {
       case 'render': {
-        const scenePass = keep(pass(p.scene, p.camera));
+        const scenePass = keep(pass(p.scene, p.camera, antialias(passes) ? {} : { samples: 0 }));
         if (under < 1) scenePass.setResolutionScale(under);
         const outs = { output };
         if (needs.normal) outs.normal = directionToColor(normalView);
@@ -235,7 +258,8 @@ export async function buildChain(renderer, passes) {
         }
         g.camera = p.camera;
         g.color = scenePass.getTextureNode('output');
-        g.depth = scenePass.getTextureNode('depth');
+        g.rawDepth = scenePass.getTextureNode('depth');
+        g.depth = renderer.reversedDepthBuffer === true ? keep(standardDepth(tsl, THREE, g.rawDepth, under)) : g.rawDepth;
         if (outs.normal) {
           const packed = scenePass.getTextureNode('normal');
           g.normal = sample((uv) => colorToDirection(packed.sample(uv)));
@@ -366,7 +390,7 @@ export async function buildChain(renderer, passes) {
         break;
       }
       case 'traa':
-        node = keep(mods.traa.traa(node, g.depth, g.velocity, p.camera ?? g.camera));
+        node = keep(mods.traa.traa(node, g.rawDepth, g.velocity, p.camera ?? g.camera));
         break;
       case 'smaa':
         node = keep(lower(mods.smaa.smaa(display(node))));
@@ -377,10 +401,13 @@ export async function buildChain(renderer, passes) {
         // it; TAAU on the scene's depth and velocity, before the output
         // transform unless a LUT came first, as TRAA)
         const src = toTexture(node);
-        if (p.upscaler === 'taau') node = keep(mods.taau.taau(src, g.depth, g.velocity, p.camera ?? g.camera));
+        if (p.upscaler === 'taau') node = keep(mods.taau.taau(src, g.rawDepth, g.velocity, p.camera ?? g.camera));
         else node = keep(mods.fsr1.fsr1(src, tsl.float(p.sharpness ?? 0.2)));
         break;
       }
+      case 'sharpen':
+        node = keep(mods.sharpen.sharpen(node, tsl.uniform(p.sharpness ?? 2)));
+        break;
       case 'output':
         // (the output transform is the pipeline's own)
         break;
