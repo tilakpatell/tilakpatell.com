@@ -31,13 +31,16 @@
 // Euler at a fixed dt, the same sum on both sides.
 //
 // createPool(em, n, { seed }) → pool
-// stepPool(pool, dt, { batches, batchCount, owners, wind }) → spawned
+// stepPool(pool, dt, { batches, batchCount, owners, wind, collide }) → spawned
+//   (collide: collide.js's options, last frame's depth: each live slot is
+//   put back on the surface it went behind, after its move)
 // spawnCount(state, em, dt, { scale, factor }) → how many this instance spawns
 // spawnFactor(distance, em) → 0…1 (MaxSpawnDistance, ParticleCullingFactor)
 // stretchLength(size, speed, stretch) → the quad's length along its motion
 // wrapLight(nDotL, w) → the sun's term wrapped by LightWrapAroundFactor
 // lifeMax(em) ; aliveCount(pool)
 
+import { collideParticle } from './collide.js';
 import { curveRange, evalCurve, rnd } from './curves.js';
 
 export const OWNER = 16; // floats an owner: 4 vec4s
@@ -192,7 +195,7 @@ export function spawnParticle(pool, slot, serial, o, owners) {
 // Spawn the batches into the ring, then step every live slot. Returns how
 // many were spawned (batches past MAX_BATCHES, and counts past the pool, are
 // dropped: the GPU drops the same).
-export function stepPool(pool, dt, { batches = [], batchCount = batches.length, owners, wind = null } = {}) {
+export function stepPool(pool, dt, { batches = [], batchCount = batches.length, owners, wind = null, collide = null } = {}) {
   const { n, em } = pool;
   let total = 0;
   const nb = Math.min(batchCount, MAX_BATCHES);
@@ -219,6 +222,7 @@ export function stepPool(pool, dt, { batches = [], batchCount = batches.length, 
     p[i + 1] += v[i + 1] * dt + follows * owners[ob + 1];
     p[i + 2] += v[i + 2] * dt + follows * owners[ob + 2];
     p[i + 3] += dt;
+    if (collide) collideParticle(p, v, s, collide, dt);
   }
   pool.head = (pool.head + total) % n;
   pool.serial = (pool.serial + total) >>> 0;

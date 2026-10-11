@@ -129,16 +129,26 @@ export function sharpenPack(tex, tier, renderer = null) {
 // the slots whose texture is a colour, in sRGB (the rest are data: normals, roughness and metal)
 export const COLOUR_SLOTS = new Set(['map', 'emissiveMap']);
 
+// DICE's colour suffixes (_cs, _c, _ca, _cw, numbered or not), a derived
+// __orm or __normal map never one
+const COLOUR_NAME = /_(cs|c|ca|cw)(_\d+)?$/i;
+export const colourByName = (slug) => COLOUR_NAME.test(String(slug));
+
 // The game's own word on a map, carried in the pack's `tex` row (`srgb`:
 // true or false, from textures.jsonl, written by the pipeline): a texture
-// so marked is read as the game reads it, and nothing below overrules it. A
-// row without the word leaves the slot rules to decide (a colour slot sRGB
-// whatever the file says, since many of the drop's files were tagged wrong).
+// so marked is read as the game reads it. A row without the word leaves the
+// slot rules to decide (a colour slot sRGB whatever the file says, since many
+// of the drop's files were tagged wrong). The one exception (the decision's
+// 2026-10-11 amendment): a map whose name says colour, in a colour slot, is
+// sRGB whatever the word, since a colour map the game stores UNORM (Theed's
+// brick, t_naboo_bricks_05_cs) is decoded by its own shader and read linear
+// here drew near black; the texture is marked so the slot rules know it.
 export function gameWordOf(tex, sizes, path) {
   const slug = String(path).split('/').pop().replace(/\.ktx2$/, '');
   const said = sizes?.[slug]?.srgb;
   if (typeof said !== 'boolean' || !tex?.isTexture) return tex;
   tex.userData.gameSrgb = said;
+  if (colourByName(slug)) tex.userData.colourName = true;
   const want = said ? SRGBColorSpace : NoColorSpace;
   if (tex.colorSpace !== want) {
     tex.colorSpace = want;
@@ -147,11 +157,15 @@ export function gameWordOf(tex, sizes, path) {
   return tex;
 }
 
+// a texture a colour slot reads as sRGB: one without the game's word, or one
+// whose name says colour (gameWordOf)
+const slotColour = (tex) => typeof tex.userData?.gameSrgb !== 'boolean' || tex.userData.colourName === true;
+
 // a colour map read as sRGB whatever its file says (bindSlot's rule, for a
 // recipe's maps too: the crew's and a pack's emissive maps come this way),
-// unless the pack carries the game's word on it
+// unless the pack's word says linear on a map no colour suffix names
 export function asColour(tex, colour) {
-  if (colour && tex?.isTexture && typeof tex.userData?.gameSrgb !== 'boolean' && tex.colorSpace !== SRGBColorSpace) {
+  if (colour && tex?.isTexture && slotColour(tex) && tex.colorSpace !== SRGBColorSpace) {
     tex.colorSpace = SRGBColorSpace;
     tex.needsUpdate = true;
   }
@@ -159,9 +173,10 @@ export function asColour(tex, colour) {
 }
 
 // a pack texture bound to a material's slot, the colour ones read as sRGB
-// unless the pack's word says the game reads that map linear
+// unless the pack's word says the game reads that map linear and its name
+// does not say colour
 export function bindSlot(mat, slot, tex) {
-  if (COLOUR_SLOTS.has(slot) && typeof tex.userData?.gameSrgb !== 'boolean' && tex.colorSpace !== SRGBColorSpace) {
+  if (COLOUR_SLOTS.has(slot) && slotColour(tex) && tex.colorSpace !== SRGBColorSpace) {
     tex.colorSpace = SRGBColorSpace;
     tex.needsUpdate = true;
   }

@@ -1,7 +1,7 @@
 import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { asColour, BARE, bareGlb, bindSlot, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
+import { asColour, BARE, bareGlb, bindSlot, colourByName, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
 
 // a GLB with one mesh of two primitives, their materials naming the game's
 // shaders in their extras as the export writes them
@@ -63,7 +63,7 @@ describe('recipeMaps', () => {
 });
 
 describe('the pack’s word on a map', () => {
-  const sizes = { t_kam_wall_01_cs: { high: 1024, srgb: false }, t_crate_01_cs: { high: 512, srgb: true }, t_old_01_c: { high: 512 } };
+  const sizes = { t_kam_wall_01_cs: { high: 1024, srgb: false }, t_crate_01_cs: { high: 512, srgb: true }, t_old_01_c: { high: 512 }, t_lamp_01_m: { high: 256, srgb: false } };
 
   it('reads a map as the game reads it, sRGB or linear, and marks the texture so', () => {
     const wall = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
@@ -77,17 +77,35 @@ describe('the pack’s word on a map', () => {
     expect(gameWordOf(null, sizes, 'tex/t_old_01_c.ktx2')).toBeNull();
   });
 
-  it('is never overruled by the slot rule or a recipe’s colour key', () => {
-    const wall = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+  it('is overruled in a colour slot only for a map whose name says colour (the 2026-10-11 amendment)', () => {
+    // (Theed’s brick, t_naboo_bricks_05_cs, the game stores BC7_UNORM: read
+    // linear in the map slot it drew the palace near black, 30 32 31, and
+    // read sRGB its cream stone, 210 217 213)
+    const brick = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+    expect(brick.colorSpace).toBe(THREE.NoColorSpace);
     const mat = new THREE.MeshStandardMaterial();
-    bindSlot(mat, 'map', wall);
-    expect(mat.map).toBe(wall);
-    expect(wall.colorSpace).toBe(THREE.NoColorSpace);
-    expect(asColour(wall, true).colorSpace).toBe(THREE.NoColorSpace);
+    bindSlot(mat, 'map', brick);
+    expect(mat.map).toBe(brick);
+    expect(brick.colorSpace).toBe(THREE.SRGBColorSpace);
+    expect(asColour(gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2'), true).colorSpace).toBe(THREE.SRGBColorSpace);
+    // (in a data slot the word stands)
+    const data = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+    bindSlot(mat, 'normalMap', data);
+    expect(data.colorSpace).toBe(THREE.NoColorSpace);
+    expect(asColour(gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2'), false).colorSpace).toBe(THREE.NoColorSpace);
+    // (a map no colour suffix names keeps the word, in a colour slot too: a mask the emissive slot holds)
+    const mask = gameWordOf(new THREE.Texture(), sizes, 'tex/t_lamp_01_m.ktx2');
+    bindSlot(mat, 'emissiveMap', mask);
+    expect(mask.colorSpace).toBe(THREE.NoColorSpace);
     // (a map without the word still takes the slot rule)
     const old = gameWordOf(new THREE.Texture(), sizes, 'tex/t_old_01_c.ktx2');
     bindSlot(mat, 'emissiveMap', old);
     expect(old.colorSpace).toBe(THREE.SRGBColorSpace);
+  });
+
+  it('knows a colour map by DICE’s suffixes, a numbered one and a derived map apart', () => {
+    for (const slug of ['t_kam_wall_01_cs', 't_x_c', 't_x_ca', 't_x_cw', 't_nabboocopperroof_cs_01']) expect(colourByName(slug), slug).toBe(true);
+    for (const slug of ['t_x_cs__orm_04e5dd3e', 't_x_n__normal', 't_x_m', 't_x_nam', 't_concrete', 't_x_e']) expect(colourByName(slug), slug).toBe(false);
   });
 });
 

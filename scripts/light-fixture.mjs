@@ -4,7 +4,7 @@
 // proof (docs/superpowers/plans/2026-10-10-galaxy-engine-laneR-light.md).
 //
 //   node scripts/light-fixture.mjs [--tier ultra] [--post on|off] [--sky on|off]
-//     [--grid] [--particles] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
+//     [--grid] [--particles] [--debris [off]] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
 //     [--volume [on|off]] [--weather interior|sunny|felucia] [--view wide|edge|sun] [--pan]
 //     [--weather] [--decals] [--seconds 0,12.5,30]   (lane Q4: the weathering and the placed decals, without --volume)
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
@@ -135,6 +135,10 @@ const volumeAt = argv.indexOf('--volume');
 const volume = volumeAt < 0 ? null : argv[volumeAt + 1] !== 'off';
 const q4Flags = volume == null && (argv.includes('--weather') || argv.includes('--decals'));
 const particles = volume == null && !q4Flags && argv.includes('--particles');
+// (GPU-first lane N5: a hundred breaks a minute, the CPU step timed; `--debris off`
+// the same scene and camera without them, the frame's before)
+const debrisAt = argv.indexOf('--debris');
+const debris = volume == null && !q4Flags && !particles && debrisAt >= 0 ? (argv[debrisAt + 1] === 'off' ? 'off' : true) : null;
 const pictureAt = argv.indexOf('--picture');
 const picture = volume == null && !q4Flags && pictureAt >= 0 ? argv[pictureAt + 1] !== 'off' : null;
 const laneS = volume == null && ['--hoth', '--shadows', '--clouds'].some((f) => argv.includes(f));
@@ -146,7 +150,7 @@ const laneN3 = volume == null && (n3.baked != null || n3.cadence);
 const upscaleArg = argv.includes('--upscale') ? argv[argv.indexOf('--upscale') + 1] : null;
 const upscale = upscaleArg && !upscaleArg.startsWith('--') ? (([a, b]) => (b == null ? { scale: Number(a) } : { kind: a, scale: Number(b) }))(upscaleArg.split(':')) : null;
 const world = picture != null && argv.includes('--world') ? argv[argv.indexOf('--world') + 1] : null;
-const OUT = join(ROOT, laneN3 ? 'docs/superpowers/evidence/gpu-first/N3' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : world ? 'docs/superpowers/evidence/bf2017-picture/p' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
+const OUT = join(ROOT, laneN3 ? 'docs/superpowers/evidence/gpu-first/N3' : debris ? 'docs/superpowers/evidence/gpu-first/N5' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : world ? 'docs/superpowers/evidence/bf2017-picture/p' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
@@ -165,7 +169,7 @@ const baseLabel = arg(
           ? `${picture ? 'picture' : 'nopicture'}-${post ? `post-${tier}` : `lit-${tier}`}`
         : `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`,
 );
-const label = laneN3 && arg('label', null) == null ? `${n3.baked != null ? (n3.baked ? 'baked-' : 'nobaked-') : ''}${n3.cadence ? 'cadence-' : ''}${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : world && arg('label', null) == null ? `${world}-${baseLabel}` : baseLabel;
+const label = laneN3 && arg('label', null) == null ? `${n3.baked != null ? (n3.baked ? 'baked-' : 'nobaked-') : ''}${n3.cadence ? 'cadence-' : ''}${baseLabel}` : debris && arg('label', null) == null ? `${debris === 'off' ? 'nodebris' : 'debris'}-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : world && arg('label', null) == null ? `${world}-${baseLabel}` : baseLabel;
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
@@ -209,6 +213,7 @@ const fixture = {
   env: true,
   only,
   ...(particles ? { particles } : {}),
+  ...(debris ? { debris } : {}),
   ...(volume != null ? { volume, weather: arg('weather', 'interior'), view: arg('view', 'wide') } : {}),
   ...(q4 ? { placed: false } : {}),
   ...(weather ? { weather: seconds[0] } : {}),
@@ -458,6 +463,12 @@ for (const leg of legs) {
         await page.evaluate(() => (window.__lit.probe.pan(0), window.__lit.draw(1)));
         row.stats = await page.evaluate(() => window.__lit.probe.particles.stats?.() ?? null);
       }
+      if (debris) {
+        // a minute of breaks undrawn (the CPU step's row), then drawn, mid-break
+        row.debris = await page.evaluate(() => ({ mode: window.__lit.probe.debris.mode, ...window.__lit.probe.debris.run(60) }));
+        await page.evaluate(() => window.__lit.draw(45));
+        writeFileSync(join(OUT, `${label}-${leg}-breaks.png`), await shot());
+      }
       row.meanLum = Number((await meanLum(png)).toFixed(4));
       if (picture != null) {
         row.picture = await page.evaluate(() => window.__lit.probe.grade && { tonemap: window.__lit.probe.grade.tonemap, lut: window.__lit.probe.grade.lut?.name ?? null });
@@ -579,6 +590,7 @@ for (const r of rows) {
   if (r.baked !== undefined) console.log(`  baked: ${JSON.stringify(r.baked)}`);
   if (r.cadence) console.log(`  cadence: ${r.cadence.checked} figure-frames whose shadow the reference shows, ${r.cadence.missed} without it on the cadence; draws a cascade over ${r.cadence.frames} frames ${r.cadence.draws.join(', ')} (every frame: ${r.cadence.referenceDraws.join(', ')})${r.cadence.misses.length ? `; first misses ${JSON.stringify(r.cadence.misses)}` : ''}`);
   if (r.budgetGrid) console.log(`  budgeted grid: spread ${r.budgetGrid.spread} (worst ${r.budgetGrid.worst}) over ${r.budgetGrid.frames} frames, ${r.budgetGrid.probesPerFrame} probes a frame, ${r.budgetGrid.ms} ms, ${r.budgetGrid.sweeps} sweeps${r.budgetGrid.error ? `; failed: ${r.budgetGrid.error}` : ''}`);
+  if (r.debris) console.log(`  debris (${r.debris.mode}): ${r.debris.breaks} breaks in ${r.debris.seconds} s; the step p50 ${r.debris.stepMs.p50} ms, p95 ${r.debris.stepMs.p95} ms, worst ${r.debris.stepMs.max} ms; particles p95 ${r.debris.particlesMs.p95} ms; ${JSON.stringify(r.debris.debris)}`);
   if (r.parity) console.log(`  particles (${r.simMode}): parity ${JSON.stringify(r.parity)}${r.stats ? `; stats ${JSON.stringify(r.stats)}` : ''}`);
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
 }

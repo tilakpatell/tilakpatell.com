@@ -13,7 +13,7 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry }
+//   materials, weather, decals, particles, debris, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry }
 //
 // `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
 // 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
@@ -24,6 +24,11 @@
 // `particles` (fidelity lane X): the game's effects from their emitter
 // tables over the ring, and the GPU twin's parity (particleProbe.js), read
 // by scripts/light-fixture.mjs --particles as `probe.particles`.
+//
+// `debris` (GPU-first lane N5): a hundred breaks a minute round the ring,
+// Rapier hulls and GPU bursts on the depth buffer (debrisProbe.js), read by
+// scripts/light-fixture.mjs --debris as `probe.debris`; 'off', the same
+// scene and camera with nothing broken (the frame's before).
 //
 // `weather` (lane Q4, seconds into Hoth's day): three crates at the front
 // under the snow contributor of src/lib/three/surface/weather.js, composed
@@ -154,6 +159,11 @@ export default {
     if (opts.particles) {
       camera.position.set(0, 2.2, 7);
       camera.lookAt(0, 2.4, 0);
+    }
+    // (over the breaks, which land 3 to 7 m round a point 2 m behind the centre)
+    if (opts.debris) {
+      camera.position.set(0, 9, 14);
+      camera.lookAt(0, 0, -2);
     }
     const camVel = new THREE.Vector3();
 
@@ -360,6 +370,10 @@ export default {
       }
       if (opts.weather != null) snow = await weatherCrates(scene, made, opts.weather);
       if (opts.decals) decals = await decalWall(scene, made, renderer, ground, opts.decals, opts.tier);
+      if (opts.debris) {
+        const { createDebrisProbe } = await import('./debrisProbe.js');
+        probe.debris = await createDebrisProbe({ scene, renderer, camera, light, tier: opts.tier, breaks: opts.debris !== 'off' });
+      }
       if (opts.particles) {
         const { createParticleProbe } = await import('./particleProbe.js');
         probe.particles = await createParticleProbe({ scene, renderer, camera, light, tier: opts.tier });
@@ -396,11 +410,13 @@ export default {
         if (camVel.x) camera.position.addScaledVector(camVel, dt);
         probe.particles?.step(dt);
         n3?.step(dt);
+        probe.debris?.step(dt);
         light?.update(dt, camera);
       },
       draw({ renderer: r }) {
         if (post && opts.post) post.render();
         else r.render(scene, camera);
+        probe.debris?.draw(r);
       },
       wants: () => true,
       dispose() {
@@ -410,6 +426,7 @@ export default {
         light?.dispose();
         decals?.dispose();
         probe.particles?.dispose();
+        probe.debris?.dispose();
         if (!opts.sky) envTex?.dispose();
         for (const m of made) m.dispose();
       },
