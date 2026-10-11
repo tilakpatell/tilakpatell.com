@@ -6,7 +6,7 @@
 export const SITE = {
   // lit as the game lights its level (src/data/bf2017/light/bespin.json, gameLit.js)
   gameLight: 'bespin',
-  // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/bespin/,
+  // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/bespin/level.json,
   // `node scripts/bf2017-level.mjs s2/levels/cloudcity_01 --world bespin
   // --spot 20 0 --floor 199 --walk 192 --arena 256 --subs
   // CloudCity_01,StreamedLevel`): CloudCity_01's walkways, platforms and
@@ -160,7 +160,7 @@ export const SITE = {
       },
     },
   ],
-  // the campaign's Bespin (lane E4: /models/galaxy/bf2017/levels/bespin/m2bes/,
+  // the campaign's Bespin (lane E4: /models/galaxy/bf2017/levels/bespin/m2bes/level.json,
   // `node scripts/bf2017-level.mjs levels/sp/a2/m2bes/ds02 --world bespin
   // --district m2bes --spot -2531 2912 --floor 2366.25 --walk 256 --arena 384
   // --subs AdministratorsPalace,A2_M2BES_DS02_S0600_GP,A2_M2BES_DS02_S0700_GP,BespinAtmosphere`):

@@ -133,7 +133,7 @@ export const SITES = {
         site: { weather: [], fog: { color: '#9fb4ca', density: 0.012 } },
         door: { at: [5, -28], r: 2.4, prompt: 'Back out onto the ice' },
       },
-      // the game's Hoth_02 (lane E4: /models/galaxy/bf2017/levels/hoth/outpost/,
+      // the game's Hoth_02 (lane E4: /models/galaxy/bf2017/levels/hoth/outpost/level.json,
       // `node scripts/bf2017-level.mjs s9_3/hoth_02 --world hoth --district
       // outpost --spot 90 -1250 --subs Hoth_02,Content,Mode1`): the season's
       // outpost on its floorboards, drawn on Hoth_01's own terrain, so it

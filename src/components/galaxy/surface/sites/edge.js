@@ -299,7 +299,7 @@ export const SITES = {
   scarif: {
     // lit as the game lights its level (src/data/bf2017/light/scarif.json, gameLit.js)
     gameLight: 'scarif',
-    // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/scarif/,
+    // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/scarif/level.json,
     // `node scripts/bf2017-level.mjs s9_3/scarif/levels/mp/scarif_02 --world
     // scarif --spawn --subs Scarif_02,Phase_02,Phase_02_Unique`: the ground
     // fight's beach base, its palms, bunkers and stores; the site's built pads,
@@ -326,6 +326,16 @@ export const SITES = {
       // (the game's own ground: Scarif_02's heightmap, 0 at the landing on
       // the base's shore, the lagoon round it a hand's depth under the sea)
       layers: [{ type: 'image', pack: 'scarif' }],
+      // (the flight's planet keeps the islands it had: the land the site
+      // drew before the level)
+      flight: [
+        { type: 'island', at: [0, 0], r: 480, height: 9, core: 0.45, ragged: 0.35 },
+        { type: 'island', at: [90, 460], r: 230, height: 9, core: 0.5, ragged: 0.25 },
+        { type: 'island', at: [-420, 180], r: 190, height: 8, core: 0.4 },
+        { type: 'island', at: [380, -330], r: 190, height: 8, core: 0.4 },
+        { type: 'swell', scale: 160, height: 1.4 },
+        { type: 'dunes', scale: 26, height: 0.6, wind: 0.6 },
+      ],
       palette: {
         // (white sand to the trees, the islands' insides scrub and grass)
         low: '#ece6d0',

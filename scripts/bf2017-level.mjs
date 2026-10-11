@@ -516,11 +516,12 @@ async function main(args) {
     license: 'permission',
     licenseUrl: GAME,
     source: GAME,
-    // (a space level's is drawn in the galaxy's flight, not on a surface)
-    where: record ? 'galaxy-surface' : 'galaxy',
+    // (a space level's, sb_<world>, is drawn in the galaxy's flight, not on
+    // a surface; a world with no terrain stood on its deck, Cloud City, is a surface's)
+    where: record || !world.startsWith('sb_') ? 'galaxy-surface' : 'galaxy',
     as: `${packId}: the game's level`,
     file: `/models/galaxy/bf2017/levels/${packId}/level.json`,
-    also: record ? ['galaxy'] : [],
+    also: record || !world.startsWith('sb_') ? ['galaxy'] : [],
     permission: PERMISSION,
   });
   await writePhysics([out]);
