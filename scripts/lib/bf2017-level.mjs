@@ -27,7 +27,7 @@ import { CELL, INSTANCE_BYTES, cellKey, cellOf } from '../../src/lib/level/insta
 import { decodePng16 } from '../../src/lib/level/png16.js';
 import { cutsFor } from './bf2017-manifest.mjs';
 import { glbJson } from './bf2017-paths.mjs';
-import { cellsOf, weightOf } from './level-cells.mjs';
+import { cellsOf } from './level-cells.mjs';
 
 export const TIERS = ['low', 'mid', 'high', 'ultra'];
 export const KMIN = { low: 20, mid: 30, high: 40, ultra: 60 };
@@ -85,6 +85,29 @@ const dropTest = (drop) => {
     return rules.some((r) => (!r.sub || r.sub === sub) && r.re.test(name));
   };
 };
+
+// What a mesh weighs to the fit, which drops the lightest first: its
+// largest face times its largest extent, so a floor plate or a wall panel
+// (thin, but what you stand on and see) weighs the solid it reads as, and
+// the clutter goes before them. Bounding volume alone took Cloud City's and
+// the Death Star's floors before their vases.
+export function seenWeight(mesh) {
+  const [x0, y0, z0, x1, y1, z1] = mesh.bounds;
+  const [x, y, z] = [x1 - x0, y1 - y0, z1 - z0].map((d) => Math.max(d, 0.01));
+  return Math.max(x * y, y * z, x * z) * Math.max(x, y, z);
+}
+
+// What you could walk on or over (the fit keeps it on every tier: a mesh
+// not drawn has no collision): a plate (half a metre thick at most, a metre
+// wide), or anything 3 m wide each way and no taller than it is wide. A floor
+// plate, a catwalk, a gangway with its rails, a flight of stairs, a landing
+// platform; not a wall panel, a pillar, a crate or a rock.
+export function standsOn(mesh) {
+  const [x0, y0, z0, x1, y1, z1] = mesh.bounds;
+  const wide = Math.min(x1 - x0, z1 - z0);
+  const tall = y1 - y0;
+  return (tall <= 0.5 && wide >= 1) || (wide >= 3 && tall <= wide);
+}
 
 export function arenaOf(map, { subs = null, drop = [] } = {}) {
   const want = new Set((subs ?? mainSubs(map)).map(last));
@@ -295,10 +318,11 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
   // per tier: how far out things are drawn (K radii) and what goes, held to
   // the row everywhere you can stand (a 64 m grid over the walkable square)
   const tiers = Object.keys(rows);
-  const vol = (m) => weightOf({ indices: [0] }, meshes[m]);
+  const vol = (m) => seenWeight(meshes[m]);
   const weight = new Float64Array(meshes.length);
   for (let i = 0; i < arenaInst.count; i++) weight[arenaMesh[i]] += vol(arenaMesh[i]);
-  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing }));
+  // (a mesh you stand on is kept on every tier: one not drawn has no floor)
+  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing, keep: standsOn(m) }));
   const flat = {
     x: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3]),
     z: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3 + 2]),
