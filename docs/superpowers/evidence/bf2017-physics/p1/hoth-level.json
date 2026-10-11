@@ -8,29 +8,29 @@
       "ok": true,
       "seen": {
         "off": [
-          0,
-          0.005,
-          0.01,
-          0.007,
-          0.005,
-          0.001,
-          0.008,
-          0.006,
           0.002,
           0.009,
-          0.002,
-          0.007
+          0.005,
+          0.001,
+          0.006,
+          0.004,
+          0.007,
+          0.005,
+          0.003,
+          0.009,
+          0.004,
+          0
         ],
-        "moved": 12.33
+        "moved": 11.59
       }
     },
     {
       "name": "a wall of the game’s stops you short of its face",
       "ok": true,
       "seen": {
-        "along": 3.541,
+        "along": 3.37,
         "wallAt": 4,
-        "y": 0.01
+        "y": 0.28
       }
     }
   ],
@@ -242,156 +242,6 @@
         "triangles": 714
       },
       {
-        "cell": "-1,-1",
-        "mesh": 88,
-        "hulls": 14,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 262,
-        "hulls": 1,
-        "triangles": 3134
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 279,
-        "hulls": 3,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 280,
-        "hulls": 10,
-        "triangles": 455
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 282,
-        "hulls": 36,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 283,
-        "hulls": 10,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 284,
-        "hulls": 28,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 286,
-        "hulls": 10,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 287,
-        "hulls": 7,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 288,
-        "hulls": 14,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 289,
-        "hulls": 34,
-        "triangles": 15624
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 291,
-        "hulls": 1,
-        "triangles": 405
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 292,
-        "hulls": 0,
-        "triangles": 6615
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 293,
-        "hulls": 0,
-        "triangles": 1178
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 294,
-        "hulls": 0,
-        "triangles": 2460
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 295,
-        "hulls": 0,
-        "triangles": 4384
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 301,
-        "hulls": 1,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 316,
-        "hulls": 2,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 320,
-        "hulls": 0,
-        "triangles": 1332
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 321,
-        "hulls": 0,
-        "triangles": 274
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 323,
-        "hulls": 3,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 327,
-        "hulls": 10,
-        "triangles": 0
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 461,
-        "hulls": 19,
-        "triangles": 228
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 473,
-        "hulls": 28,
-        "triangles": 1581
-      },
-      {
-        "cell": "-1,-1",
-        "mesh": 516,
-        "hulls": 2,
-        "triangles": 1142
-      },
-      {
         "cell": "-1,0",
         "mesh": 17,
         "hulls": 29,
@@ -552,6 +402,156 @@
         "mesh": 473,
         "hulls": 28,
         "triangles": 1581
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 88,
+        "hulls": 14,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 262,
+        "hulls": 1,
+        "triangles": 3134
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 279,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 280,
+        "hulls": 10,
+        "triangles": 455
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 282,
+        "hulls": 36,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 283,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 284,
+        "hulls": 28,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 286,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 287,
+        "hulls": 7,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 288,
+        "hulls": 14,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 289,
+        "hulls": 34,
+        "triangles": 15624
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 291,
+        "hulls": 1,
+        "triangles": 405
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 292,
+        "hulls": 0,
+        "triangles": 6615
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 293,
+        "hulls": 0,
+        "triangles": 1178
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 294,
+        "hulls": 0,
+        "triangles": 2460
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 295,
+        "hulls": 0,
+        "triangles": 4384
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 301,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 316,
+        "hulls": 2,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 320,
+        "hulls": 0,
+        "triangles": 1332
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 321,
+        "hulls": 0,
+        "triangles": 274
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 323,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 327,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 461,
+        "hulls": 19,
+        "triangles": 228
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 473,
+        "hulls": 28,
+        "triangles": 1581
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 516,
+        "hulls": 2,
+        "triangles": 1142
       },
       {
         "cell": "0,1",
