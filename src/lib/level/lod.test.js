@@ -41,14 +41,30 @@ describe('a level’s LOD by screen size', () => {
 });
 
 describe('a map’s size', () => {
-  it('follows the biggest thing that wears it, halved on low, doubled on ultra', () => {
-    expect(texSizeFor(20, 'high')).toBe(1024);
+  // the whole table (lane D2: the caps a step up): [radius, tier, colour, normal or ORM]
+  const TABLE = [
+    [20, 'ultra', 2048, 2048],
+    [4, 'ultra', 2048, 2048],
+    [0.3, 'ultra', 1024, 1024],
+    [20, 'high', 2048, 2048],
+    [4, 'high', 1024, 1024],
+    [0.3, 'high', 512, 512],
+    [20, 'mid', 1024, 512],
+    [4, 'mid', 512, 256],
+    [0.3, 'mid', 256, 128],
+    [20, 'low', 512, 256],
+    [4, 'low', 256, 128],
+    [0.3, 'low', 128, 128],
+  ];
+  it.each(TABLE)('a %s m wearer on %s: colour %i, data %i', (r, tier, colour, data) => {
+    expect(texSizeFor(r, tier)).toBe(colour);
+    expect(texSizeFor(r, tier, true)).toBe(data);
+  });
+
+  it('steps at 8 m and 2 m from the middle to the edge', () => {
+    expect(texSizeFor(8, 'high')).toBe(2048);
+    expect(texSizeFor(7.9, 'high')).toBe(1024);
     expect(texSizeFor(2, 'mid')).toBe(512);
-    expect(texSizeFor(0.3, 'high')).toBe(256);
-    expect(texSizeFor(0.3, 'low')).toBe(128);
-    expect(texSizeFor(20, 'ultra')).toBe(2048);
-    // a normal or ORM map a step under its colour
-    expect(texSizeFor(20, 'high', true)).toBe(512);
-    expect(texSizeFor(0.3, 'high', true)).toBe(128);
+    expect(texSizeFor(1.9, 'mid')).toBe(256);
   });
 });

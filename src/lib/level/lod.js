@@ -44,17 +44,20 @@ export function lodAt(chain, d, r, tier) {
 
 export const seenAt = (d, r, K) => d <= K * Math.max(MIN_RADIUS, r);
 
-// A map is sized by the biggest thing that wears it, as its LODs are: on
-// high and mid 1024 for a thing 8 m from its middle to its edge or more, 512
-// from 2 m, 256 below; a normal or ORM map one step under its colour (the
-// uploader's derived `__normal` and `__orm` maps: shading detail reads at
-// half the colour's size); low half all that (128 at least), ultra double
-// (2048 at most). Measured on Hoth against the GPU-memory contract (256 MB
-// desktop, 128 MB phone): most of a level's maps dress small things.
+// A map is sized by the biggest thing that wears it, as its LODs are (lane
+// D2 put the caps a step up, the picture-everywhere design §3.4): on mid
+// 1024 for a thing 8 m from its middle to its edge or more, 512 from 2 m,
+// 256 below, a normal or ORM map a step under its colour (the uploader's
+// derived `__normal` and `__orm` maps: shading detail reads at half the
+// colour's size where memory is short); high a step over mid with its
+// normal and ORM at the colour's size (2048, 1024, 512); ultra a step over
+// high (2048 at most); low half of mid (128 at least). A tier over its row
+// is cut by fitCull, never by a lower cap; the GPU-memory contract (256 MB
+// desktop, 128 MB phone) is fitTextures' at load.
 export function texSizeFor(r, tier, data = false) {
-  const colour = r >= 8 ? 1024 : r >= 2 ? 512 : 256;
-  const high = data ? Math.max(128, colour / 2) : colour;
-  if (tier === 'low') return Math.max(128, high / 2);
-  if (tier === 'ultra') return Math.min(2048, high * 2);
-  return high;
+  const mid = r >= 8 ? 1024 : r >= 2 ? 512 : 256;
+  if (tier === 'low') return Math.max(128, (data ? mid / 2 : mid) / 2);
+  if (tier === 'mid') return data ? Math.max(128, mid / 2) : mid;
+  if (tier === 'ultra') return Math.min(2048, mid * 4);
+  return mid * 2;
 }
