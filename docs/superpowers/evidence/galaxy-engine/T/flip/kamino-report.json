@@ -1,0 +1,54 @@
+{
+ "route": "/galaxy/kamino/surface",
+ "clock": "2026-10-08T12:00:00.000Z",
+ "quality": "high",
+ "adapterFlag": "swiftshader",
+ "before": {
+  "ref": "origin/main",
+  "sha": "9fc4fce9",
+  "extra": 0,
+  "backend": "webgl",
+  "onWebGPU": false,
+  "shading": "glsl",
+  "adapter": true,
+  "errors": [],
+  "views": [
+   "open"
+  ]
+ },
+ "webgl": {
+  "extra": 0,
+  "backend": "nodes-webgl",
+  "onWebGPU": false,
+  "shading": "nodes",
+  "adapter": true,
+  "errors": [],
+  "skipped": null
+ },
+ "webgpu": {
+  "failed": "webgpu: the world never came on"
+ },
+ "rows": [
+  {
+   "view": "open",
+   "leg": "webgl",
+   "backend": "nodes-webgl",
+   "mad": [
+    0.270853515625,
+    0.2707021484375,
+    0.27116015625
+   ],
+   "off": 0.000197265625,
+   "psnr": 51.5888344436011,
+   "pass": true,
+   "skipped": null,
+   "errors": 0
+  },
+  {
+   "view": "open",
+   "leg": "webgpu",
+   "backend": "?",
+   "note": "failed: webgpu: the world never came on"
+  }
+ ]
+}

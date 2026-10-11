@@ -7,7 +7,7 @@
 // Vader, the shoretroopers, K-2SO, Mustafarians, Lando.
 
 import * as THREE from 'three';
-import { box, cyl, part, place, ring, rod, rockGeometry } from '../kit';
+import { box, cyl, part, place, ring, rod, rockGeometry } from '../kitCore';
 import { canvasTexture, loft, trap8, upright } from '../../../universe/trafficKit';
 
 const { PI, cos, sin, abs, max } = Math;

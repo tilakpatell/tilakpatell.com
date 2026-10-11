@@ -4,7 +4,7 @@ import { createPeers } from './peers';
 
 // (their figures, guns and sabers stood in for: what's asked of the saber each frame is what's read)
 const seen = vi.hoisted(() => ({ updates: [] }));
-vi.mock('../../universe/footScene', async () => {
+vi.mock('./nodes/figures', async () => {
   const THREE = await import('three');
   return { PARTY: {}, loadPartyFigure: async () => ({ model: new THREE.Group(), update() {}, dispose() {} }) };
 });

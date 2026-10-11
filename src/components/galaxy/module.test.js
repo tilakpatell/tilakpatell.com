@@ -23,8 +23,9 @@ const fakeRt = () => {
 };
 
 describe('the galaxy and its surfaces as world modules', () => {
-  it('are glsl modules, as heavy as the galaxy says, capped at 1.5×', () => {
-    for (const m of [galaxy, surface]) expect(m).toMatchObject({ shading: 'glsl', mb: WORLD_MB['/galaxy'], ratio: 1.5 });
+  it('the galaxy a glsl module and its surfaces a nodes one, as heavy as the galaxy says, capped at 1.5×', () => {
+    expect(galaxy).toMatchObject({ shading: 'glsl', mb: WORLD_MB['/galaxy'], ratio: 1.5 });
+    expect(surface).toMatchObject({ shading: 'nodes', mb: WORLD_MB['/galaxy'], ratio: 1.5 });
     expect(galaxy.id).toBe('galaxy');
     expect(surface.id).toBe('galaxy-surface');
   });
