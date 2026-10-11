@@ -159,6 +159,61 @@ export const CRAWLS = {
       'Now Sabine must race her speeder across the plains to her home in the old tower, unlock the map that points the way to Ezra, and keep it out of the hands of the dark Jedi Shin Hati, who is already on her way…',
     ],
   },
+  // (lane E5: the 2017 game's own worlds; their missions are the game's campaign and modes, so the crawl opens on the film the campaign is set after)
+  felucia: {
+    episode: 'Episode III',
+    title: 'Supremacy on Felucia',
+    paragraphs: [
+      'The Clone Wars are ending. On Felucia, a jungle world of giant fungi far out in the Thanium sector, the Separatist Alliance has dug in among the villages and the wrecks of its own dreadnoughts, and the Republic has sent the 327th Star Corps to root them out.',
+      'Both sides have brought their capital ships into the fight. A crashed Venator lies in the forest and a Separatist dreadnought hangs over it, and whichever side can fill its ranks on the ground will board the other and strike at its heart.',
+      'Now the clones and the droids fight for the posts between the mushrooms, from the village to the Venator, and the first side to break into the other ship and bring its systems down will take Felucia for good…',
+    ],
+  },
+  kessel: {
+    episode: 'Episode IV',
+    title: 'Extraction on Kessel',
+    paragraphs: [
+      'The Empire runs the spice mines of Kessel with prisoners, droids and Wookiees in chains, and the spice they dig is worth more than any of them. Smugglers run it out past the Maw to the cartels, and the garrison is paid to stop them.',
+      'A crew has landed on the salt flats with a buyer waiting and a ship with room for one load. The spice is deep in the mine behind doors the Empire holds, and the only way out is the corridor the guard knows best.',
+      'Now the smugglers must push their payload out through the mine while the stormtroopers hold every door against them, and the side that still stands by the spice when it reaches the flats will leave Kessel with it…',
+    ],
+  },
+  sullust: {
+    episode: 'Episode VI',
+    title: 'Inferno on Sullust',
+    paragraphs: [
+      'The Emperor is dead, and the Empire will not say so. Inferno Squad, his finest special forces, has been sent to Sullust, a volcanic world whose factories the Rebellion is reaching for, to secure an Imperial facility cut into the lava before the Alliance can take it.',
+      'Iden Versio and Del Meeko land on the platforms above the sulphur flats with the Corvus waiting at the far side. Between them and their ship lie the halls of the facility, its hangars and its garrison, and the Rebels are already on their way.',
+      'Now Inferno must fight its way through the facility from the landing platforms to the launch bay, keep to the walkways over the lava, and get the Corvus off the ground before the Alliance closes the sky over Sullust…',
+    ],
+  },
+  pillio: {
+    episode: 'Episode VI',
+    title: 'The Observatory',
+    paragraphs: [
+      'After the Battle of Endor, Luke Skywalker follows a pull in the Force to Pillio, an ocean world of cliffs and coral far out in the Jinata sector, where the Emperor hid one of his observatories and the treasures he gathered from across the galaxy.',
+      'The Empire has sent Del Meeko of Inferno Squad to empty the vault before the Rebellion finds it, and he has gone in alone. Luke lands on the shore above the cave with only his lightsaber, and the shrimp in the dark are hungry.',
+      'Now Luke must find the way down through the cave, cut through the doors the Emperor sealed, and decide, with an Imperial soldier at his side, what the galaxy should do with what a Sith lord kept hidden…',
+    ],
+  },
+  vardos: {
+    episode: 'Episode VI',
+    title: 'Operation Cinder',
+    paragraphs: [
+      'The Emperor is dead, and his last order has reached his fleet. Operation Cinder will burn the worlds he chose, loyal or not, and the first on the list is Vardos, the model Imperial world in the Jinata sector where Iden Versio of Inferno Squad was born.',
+      'The satellites are rising over Kestro and the storms are coming down on the streets Iden grew up in. Her father, Admiral Versio, has ordered the city left to burn, and Inferno Squad has been told to leave with the Empire and look away.',
+      'Now Iden and Del must turn on their own stormtroopers, get the people of Kestro through the plazas to the Corvus under the lightning, and hold the landing pad until the ship can lift off with everyone it can carry…',
+    ],
+  },
+  fondor: {
+    episode: 'Episode VI',
+    title: 'Starfighter Assault: Fondor',
+    paragraphs: [
+      'The Empire builds its Star Destroyers at Fondor, in dry docks that ring the planet above its factories and smog. After Endor, the Rebellion has come for the shipyards, and the Imperial fighters of Inferno Squad have been sent up to hold them.',
+      'A Star Destroyer sits in its dock with its shield up and its guns live, and a Rebel cruiser has jumped in to take it before it can leave the yard. The X-wings come in through the scaffolding, and the TIEs come out to meet them.',
+      'Now the Rebels must bring down the dock guns and the shield and cripple the Star Destroyer where it lies, while the Empire holds the yard long enough to get its newest ship out of Fondor and into the war…',
+    ],
+  },
   sorgan: {
     episode: 'The Mandalorian, Chapter 4',
     title: 'Sanctuary',

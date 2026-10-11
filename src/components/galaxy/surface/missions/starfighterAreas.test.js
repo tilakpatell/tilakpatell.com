@@ -13,7 +13,7 @@ import { METRES, levelOf, shipsClear, starfighterPlan } from './starfighter';
 import { STARFIGHTER, starfighterAt } from './starfighterMaps';
 
 const LEVELS = {
-  fondor: { sys: 'coruscant', sides: ['rebel', 'empire'], war: 'gcw', stages: ['cruisers', 'shields', 'clamps', 'reactor'], light: ['xwing65', 'awing', 'ywing'] },
+  fondor: { sys: 'fondor', sides: ['rebel', 'empire'], war: 'gcw', stages: ['cruisers', 'shields', 'clamps', 'reactor'], light: ['xwing65', 'awing', 'ywing'] },
   droidbattleship: { sys: 'naboo', sides: ['republic', 'separatists'], war: 'clone', stages: ['tractors', 'generators', 'towers', 'core'], light: ['arc170', 'vwing', 'ywing'] },
 };
 

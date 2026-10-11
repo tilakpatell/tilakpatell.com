@@ -5,9 +5,9 @@
 // orbit, Kamino's in an area of its own over Tipoca City's sea; Fondor's
 // shipyard and the droid battleship over Ryloth (the sixth design's lane
 // fighters) each in an area of its own as well, entered from the systems
-// the galaxy has nearest them until it has theirs: Fondor from Coruscant
-// (the E5 lane adds Fondor's system; its row's key moves then), the droid
-// battleship from Naboo, where the space lane set the level's blockade
+// the galaxy has nearest them until it has theirs: Fondor from its own
+// system (lane E5's), the droid battleship from Naboo, where the space lane
+// set the level's blockade
 // (docs/superpowers/HANDOFF-battlefront.md).
 
 // a level's rulebook and stages, with the air rulebook (the fighters' kits and handling: starfighterKits.js)
@@ -33,7 +33,7 @@ export const STARFIGHTER = {
     name: 'Starfighter Assault: Kamino',
     load: () => loadLevel(import('../../../../data/bf2017/maps/sb_kamino.json'), import('../../../../data/bf2017/maps/sb_kamino.stages.json')),
   },
-  coruscant: {
+  fondor: {
     level: 'sb_fondor_01',
     // (the pack: /models/galaxy/bf2017/levels/sb_fondor/level.json, the dry dock,
     // its Star Destroyer and the MC80 without the Gladiator cruisers or the

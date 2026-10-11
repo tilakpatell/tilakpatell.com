@@ -140,7 +140,7 @@ describe('labelPlace', () => {
   });
   it('puts every system clear of every name and dot on a phone-sized map, with the controls over it', () => {
     // the names' widths on a phone (11.2 px type), the war's board, the Layers chip and the key chip as they sit on the map
-    const W = { tatooine: 89, hoth: 48, endor: 54, yavin: 46, alderaan: 55, bespin: 45, dagobah: 56, mustafar: 54, coruscant: 94, naboo: 57, kashyyyk: 59, kamino: 62, geonosis: 59, scarif: 39, nevarro: 50, mandalore: 64, lothal: 41, sorgan: 47 };
+    const W = { tatooine: 89, hoth: 48, endor: 54, yavin: 46, alderaan: 55, bespin: 45, dagobah: 56, mustafar: 54, coruscant: 94, naboo: 57, kashyyyk: 59, kamino: 62, geonosis: 59, scarif: 39, nevarro: 50, mandalore: 64, lothal: 41, sorgan: 47, felucia: 50, kessel: 44, sullust: 48, pillio: 40, vardos: 47, fondor: 47 };
     const blocks = [{ x0: 16, y0: 43, x1: 170, y1: 130 }, { x0: 6, y0: 236, x1: 102, y1: 272 }, { x0: 6, y0: 274, x1: 79, y1: 310 }];
     const worst = [];
     for (let box = 331; box <= 560; box += 3) {

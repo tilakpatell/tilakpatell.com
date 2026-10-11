@@ -186,6 +186,56 @@ export const LOOKS = {
     p: { bands: 7, turb: 0.5, flow: 0.003, fine: 1, stormSize: 0, stormLat: 0, stormLon: 0 },
     atmo: air('#ffc8a0', 2.6, 1.035, '#ff8a6a'),
   },
+  // ── The 2017 game's worlds (lane E5): each wears the game's skin from orbit
+  // on mid and up (scripts/lib/bf2017-planets.mjs's SKINS); these are the
+  // procedural grounds under them, and what low draws ──
+  // Felucia: a fungus forest in every colour, little open water, a humid green haze
+  felucia: {
+    name: 'Felucia', swatch: '#6a9a3a', family: 'lush', bump: 0.02, flags: ['RIVERS'], detail: ['leaves', 'rock'],
+    pal: { deep: '#1a3a3a', shallow: '#2e6a5a', forest: '#4a7a2c', grass: '#8aa43a', rock: '#7a6a4a', snow: '#e8ecd8', beach: '#b8a860', murk: '#2a3a24' },
+    p: { sea: -0.3, forest: 1.3, mountains: 0.35, caps: 0, islands: 0, swamp: 0.2, rivers: 0.5, scale: 2.4 },
+    clouds: sky(0.36, '#f4f8e8', 1.6, 4.4),
+    atmo: air('#a8d8a0', 2.4, 1.065, '#ffb070'),
+  },
+  // Kessel: white salt flats and dark spice rock, a thin yellow air
+  kessel: {
+    name: 'Kessel', swatch: '#c8bca0', family: 'desert', bump: 0.024, flags: ['CRATERS'], detail: ['gravel', 'rock'],
+    pal: { sand: '#c4b898', sand2: '#9a8c70', rock: '#5a4e46', dark: '#2e2824', salt: '#efeae0', crest: '#d8d0b8' },
+    p: { dunes: 0.3, rock: 0.2, craters: 0.5, salt: 0.9, scars: 0, duneFreq: 30, canyons: 0.7, mesas: 0.4 },
+    atmo: air('#e0d0a0', 1.2, 1.04, '#ffb060', 4),
+  },
+  // Sullust: black rock and sulphur, lava in the cracks, a brown-yellow haze
+  sullust: {
+    name: 'Sullust', swatch: '#4a3a30', family: 'lava', bump: 0.024,
+    pal: { crust: '#2a2624', ash: '#6a645e', hot: '#ffc870', lava: '#ff6a20', ember: '#8a2a10' },
+    p: { rivers: 0.5, lakes: 0.3, glow: 0.8, pulse: 0.6 },
+    clouds: sky(0.3, '#8a7a66', 1, 3, 0.003),
+    atmo: air('#c8b090', 2, 1.055, '#ff8a50'),
+  },
+  // Pillio: an ocean world, cliffs and coral islands under white cloud
+  pillio: {
+    name: 'Pillio', swatch: '#3a9ac8', family: 'lush', bump: 0.02, flags: ['ISLANDS'],
+    pal: { deep: '#0c3a6a', shallow: '#2a9ab8', forest: '#3a7a44', grass: '#7aa860', rock: '#6a6a60', snow: '#f4f8fa', beach: '#e8dcb8', murk: '#2a3a3a' },
+    p: { sea: 0.42, forest: 0.5, mountains: 0.5, caps: 0.06, islands: 0.8, swamp: 0, rivers: 0, scale: 2.2 },
+    clouds: sky(0.38, '#ffffff', 1.8, 4.8),
+    atmo: air('#8ac0ff', 2.3, 1.065),
+  },
+  // Vardos: grey-green, a terraced coast of cities under a cool haze
+  vardos: {
+    name: 'Vardos', swatch: '#6a7a6a', family: 'lush', bump: 0.018, flags: ['RIVERS'], detail: ['gravel', 'rock'],
+    pal: { deep: '#1a3448', shallow: '#3a6a7a', forest: '#3a5a44', grass: '#7a8a6a', rock: '#6a6a66', snow: '#eef0f0', beach: '#a8a898', murk: '#2a3a34' },
+    p: { sea: 0.1, forest: 0.6, mountains: 0.7, caps: 0.1, islands: 0, swamp: 0, rivers: 0.4, scale: 2.1 },
+    clouds: sky(0.34, '#e8ecee', 1.4, 4.2),
+    atmo: air('#9ab0c8', 2.4, 1.065, '#e0a080'),
+  },
+  // Fondor: an industrial world, grey and brown under its own smog, the yards' lights at night
+  fondor: {
+    name: 'Fondor', swatch: '#8a8278', family: 'city', bump: 0.01,
+    pal: { steel: '#80807e', brown: '#7a6a58', dark: '#36363a', plaza: '#b8b4aa', warm: '#ffa848', white: '#ffe0b0' },
+    p: { lights: 1.6, grid: 0.8, districts: 0.7, plazas: 0.6 },
+    clouds: sky(0.3, '#c8c4bc', 1, 3, 0.003),
+    atmo: air('#b0a898', 2.4, 1.06, '#ff9a60'),
+  },
   // ── Moons ──
   'moon-grey': {
     name: 'Moon', swatch: '#8a8a88', family: 'moon', bump: 0.03,

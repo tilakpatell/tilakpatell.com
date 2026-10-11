@@ -24,6 +24,12 @@ export const SYSTEM_NAMES = {
   mandalore: 'Mandalore',
   lothal: 'Lothal',
   sorgan: 'Sorgan',
+  felucia: 'Felucia',
+  kessel: 'Kessel',
+  sullust: 'Sullust',
+  pillio: 'Pillio',
+  vardos: 'Vardos',
+  fondor: 'Fondor',
 };
 
 // Where each system sits on the galaxy's disc, for the universe map's
@@ -50,6 +56,12 @@ export const SYSTEM_MARKS = {
   mandalore: [0.241, -0.426, '#c3b8f0'],
   lothal: [0.713, -0.093, '#d8dc84'],
   sorgan: [-0.639, 0.333, '#86d6a6'],
+  felucia: [0.537, -0.444, '#c7e86a'],
+  kessel: [0.648, -0.028, '#e8d8a0'],
+  sullust: [0.324, 0.907, '#f0a060'],
+  pillio: [0.481, 0.769, '#7fd0e8'],
+  vardos: [0.5, 0.889, '#a8c8e0'],
+  fondor: [0.222, 0.111, '#c8c0b0'],
 };
 
 // a galaxy path's system ('/galaxy/hoth' and '/galaxy/hoth/mission' are

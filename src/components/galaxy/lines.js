@@ -101,6 +101,30 @@ export const GALAXY_LINES = {
         ['morty', 'It’s so peaceful, Rick. Just forests and little ponds.'],
         ['rick', 'Krill farms, Morty. Peaceful till the raiders show up with a walker. Then it’s Seven Samurai.'],
       ],
+      felucia: [
+        ['morty', 'Rick, the mushrooms are taller than the ship! And they’re… purple?'],
+        ['rick', 'Felucia, Morty. Everything here is either a fungus or eating one. Don’t lick anything.'],
+      ],
+      kessel: [
+        ['morty', 'It’s all white, Rick. Like salt. Is that spice?'],
+        ['rick', 'Kessel, Morty. Spice mines, prison labour, black holes next door. Terrible place to get caught.'],
+      ],
+      sullust: [
+        ['morty', 'Rick, the ground’s glowing! Is it supposed to glow?'],
+        ['rick', 'Sullust, Morty. Volcanic. The locals live in the lava tubes and build better ships than most people with lungs.'],
+      ],
+      pillio: [
+        ['morty', 'Oh wow, Rick, it’s all ocean and cliffs. It’s beautiful.'],
+        ['rick', 'Pillio, Morty. Beautiful, remote, and the kind of place a dead emperor hides his stuff. Don’t open anything.'],
+      ],
+      vardos: [
+        ['morty', 'Rick, this one’s all clean streets and big grey buildings.'],
+        ['rick', 'Vardos, Morty. The Empire’s show home. Ask what happened to it after the boss died and watch everybody change the subject.'],
+      ],
+      fondor: [
+        ['morty', 'Rick, there’s like a ring of giant… scaffolding things around the planet!'],
+        ['rick', 'Dry docks, Morty. Fondor builds Star Destroyers. We are very small and very flammable here, so smile and keep moving.'],
+      ],
     },
     events: {
       jump: [
@@ -361,6 +385,30 @@ export const GALAXY_LINES = {
         ['luke', 'Sorgan. Forests, ponds, a little village. Somewhere you could hide a child.'],
         ['r2', '[a knowing beep: he knows a desert where someone did]'],
       ],
+      felucia: [
+        ['luke', 'Felucia. The Clone Wars ended here for a lot of people. The jungle doesn’t look like it noticed.'],
+        ['r2', '[a low, wary whistle: something big just moved under the mushrooms]'],
+      ],
+      kessel: [
+        ['luke', 'Kessel. Han always made the run sound like a joke. It isn’t one from up here.'],
+        ['r2', '[a sharp warble: the Maw is pulling on the sensors]'],
+      ],
+      sullust: [
+        ['luke', 'Sullust. The fleet gathered here before Endor. I keep expecting to see it still waiting.'],
+        ['r2', '[a hopeful chirp: Nien Nunb might be down there]'],
+      ],
+      pillio: [
+        ['luke', 'Pillio. Something brought me here once, after Endor. It’s still here, whatever it is.'],
+        ['r2', '[a quiet, puzzled beep: nothing on the scope but water]'],
+      ],
+      vardos: [
+        ['luke', 'Vardos. The Empire’s model world. Whatever they promised these people, they didn’t keep it.'],
+        ['r2', '[a grim electronic mutter: storm readings on the surface]'],
+      ],
+      fondor: [
+        ['luke', 'Fondor. Every Star Destroyer we ever ran from was built down there. Keep your eyes on the docks.'],
+        ['r2', '[an alarmed string of beeps: a great many turbolasers]'],
+      ],
     },
     events: {
       jump: [
@@ -597,6 +645,30 @@ export const GALAXY_LINES = {
       sorgan: [
         ['han', 'Sorgan. Quiet little backwater. Just where I’d park if somebody was after me.'],
         ['chewie', '[a knowing rumble: somebody always is]'],
+      ],
+      felucia: [
+        ['han', 'Felucia. Never cargo here that wasn’t alive and angry about it. Chewie, keep the ramp shut.'],
+        ['chewie', '[a wary growl: something in the mushrooms growled back]'],
+      ],
+      kessel: [
+        ['han', 'Kessel. Twelve parsecs, kid. Don’t let anybody tell you different.'],
+        ['chewie', '[a long, pointed moan: the chains in the mines were for Wookiees]'],
+      ],
+      sullust: [
+        ['han', 'Sullust. Nien Nunb’s people. Best mechanics in the Rim, and they’ll tell you so.'],
+        ['chewie', '[an approving rumble: the hyperdrive could use them]'],
+      ],
+      pillio: [
+        ['han', 'Pillio. Nothing out here but water and cliffs. Which usually means somebody’s hiding something.'],
+        ['chewie', '[a curious bark: shrimp, a lot of them]'],
+      ],
+      vardos: [
+        ['han', 'Vardos. Imperial as it gets. Everybody down there has a uniform, even the kids.'],
+        ['chewie', '[a low, unhappy growl: the sky is the wrong colour]'],
+      ],
+      fondor: [
+        ['han', 'Fondor. They build Star Destroyers here, Chewie. We are not stopping for parts.'],
+        ['chewie', '[a worried moan: that is a great many Star Destroyers]'],
       ],
     },
     events: {
@@ -838,6 +910,30 @@ export const GALAXY_LINES = {
       sorgan: [
         ['jesse', 'Yo, a little farm village by a pond. Mr. White, can we just… live here?'],
         ['walt', 'Krill, Jesse. A small, honest product. It never lasts. Somebody always comes for the farm.'],
+      ],
+      felucia: [
+        ['jesse', 'Yo, Mr. White, those are mushrooms! Giant, like, trippy mushrooms!'],
+        ['walt', 'Fungi, Jesse. An entire biosphere of them. Don’t breathe deeply and don’t touch the pink ones.'],
+      ],
+      kessel: [
+        ['jesse', 'Spice mines, Mr. White. It’s like… a whole planet that cooks.'],
+        ['walt', 'Mined, Jesse, not cooked. Slave labour and a monopoly. Say what you like about the Empire, it understands distribution.'],
+      ],
+      sullust: [
+        ['jesse', 'The ground’s on fire, yo. Like actually on fire.'],
+        ['walt', 'Volcanic, Jesse. They build starships in the lava tubes. The chemistry down there is remarkable.'],
+      ],
+      pillio: [
+        ['jesse', 'Beach planet, Mr. White. Cliffs and ocean and nobody around. We could just stay.'],
+        ['walt', 'Nobody is ever around a place like this by accident, Jesse. Somebody buried something here.'],
+      ],
+      vardos: [
+        ['jesse', 'It’s all grey and clean down there. Like a hospital, but a whole city.'],
+        ['walt', 'Vardos, Jesse. The Empire built it to be looked at. Look at what it did to it when it was done.'],
+      ],
+      fondor: [
+        ['jesse', 'Mr. White, there’s giant ships in giant cages all the way round the planet!'],
+        ['walt', 'Shipyards, Jesse. Star Destroyers. We are a camper van in a gun factory. Drive carefully.'],
       ],
     },
     events: {
