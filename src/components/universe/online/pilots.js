@@ -61,7 +61,7 @@ import { POSITIONS } from '../layout';
 import { byId } from '../universes';
 import { STALE_MS, sample } from './protocol';
 import { UNIVERSE } from './where';
-import { howToDraw } from './pilotsRules';
+import { holdPose, howToDraw } from './pilotsRules';
 import { distText, fontPx, keepIn, tagMode } from './tagRules';
 import { relation } from './relations';
 import { RANKS } from '../../galaxy/ranks';
@@ -315,8 +315,11 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
         const on = sh.mode === 'ship';
         const was = sh.shown;
         sh.shown = on;
-        // (for flying to them: where they are now, while they're flying here, near or far)
-        sh.pose = flying ? { x: s.x, y: s.y, z: s.z, heading: s.heading, name: p.name } : null;
+        // (for flying to them: where they are now, while they're flying here, near or far;
+        // through a gap in their poses, where they last were for HOLD_MS, pilotsRules.js.
+        // Hidden, down on a planet or shot down, with no poses left: none at once)
+        const newest = p.snaps[p.snaps.length - 1];
+        sh.pose = holdPose(sh.pose, flying ? { x: s.x, y: s.y, z: s.z, heading: s.heading, name: p.name } : null, now, { gone: Boolean(down) || !newest || Boolean(newest.hidden) });
         if (flying) {
           sh.seen.x = s.x;
           sh.seen.z = s.z;
@@ -565,10 +568,11 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
       const sh = ships.get(id);
       return sh?.shown ? sh.at.clone() : null;
     },
-    // where a pilot is as of the last update, { x, y, z, heading, name }, or
-    // null for one who isn't flying here in sight (gone, hidden, stale, down
-    // on a planet, blocked): the autopilot's goal when you fly to them
-    // (pilotGoal.js). Only ever a pilot already in the room
+    // where a pilot is as of the last update, { x, y, z, heading, name, at }, or
+    // null for one who isn't flying here in sight (gone, hidden, down on a
+    // planet, blocked, or stale past HOLD_MS: a shorter gap holds where they
+    // last were): the autopilot's goal when you fly to them (pilotGoal.js).
+    // Only ever a pilot already in the room
     pose(id) {
       const sh = ships.get(id);
       return sh?.pose ?? null;

@@ -26,6 +26,7 @@
 // the time is ignored, by callsign.
 import { chromium } from 'playwright-core';
 import { fakeRelays } from './lib/fake-relays.mjs';
+import { warmRoute } from './lib/warm-route.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, dflt) => {
@@ -37,7 +38,7 @@ const fake = args.includes('--fake');
 const system = flag('--system', 'yavin');
 const out = process.env.OUT ?? null;
 const PORT = process.env.PORT ?? '5173';
-const BASE = `http://localhost:${PORT}/?quality=low#`;
+const BASE = process.env.BASE ?? `http://localhost:${PORT}/?quality=low#`;
 const PATH = galaxy ? `/galaxy/${system}` : '/universe';
 const DEBUG = galaxy ? '__galaxyDebug' : '__universeDebug';
 // (tagged per run, so a pilot from an earlier run still in the relays' memory isn't the one flown to)
@@ -133,6 +134,12 @@ const trip = (page, id) =>
         crash: Boolean(g.state.crash),
         dive: Boolean(g.state.dive),
         foot: g.foot?.phase ?? null,
+        // (and Bravo as the link has them: poses kept, the newest's age in ms, hidden, where)
+        peer: (() => {
+          const q = g.net?.()?.peers?.get(id);
+          const n = q?.snaps?.at(-1);
+          return q ? { n: q.snaps?.length ?? 0, age: n ? Math.round(performance.now() - n.at) : null, hidden: n?.hidden ?? null, where: q.where ?? null } : null;
+        })(),
       };
     },
     [DEBUG, id],
@@ -164,6 +171,10 @@ const park = (page, where) =>
     },
     [DEBUG, galaxy ? null : where],
   );
+// till the park's done: out of the jump (or the trip at super speed it took
+// instead, the hyperdrive still charging), the autopilot off
+const landed = (page, who) =>
+  waitFor(() => page.evaluate((d) => !window[d].state.jump && !window[d].state.auto, DEBUG), 120000, `${who} parked`).catch((e) => console.log(`note ${e.message}`));
 
 
 // ── --fake: the scene alone, with a made-up pilot ──
@@ -286,34 +297,55 @@ if (fake) {
   process.exit(failed ? 1 : 0);
 }
 
+// the dev server warmed first (lib/warm-route.mjs: no re-bundle reloads mid-check; WARM=0 skips it)
+if (!galaxy) await warmRoute(browser, BASE, PATH, () => typeof window.__universe === 'function' && Boolean(window.__universe().ship));
 const a = await visitor(ALPHA, 'xwing', { width: 640, height: 400 });
 const b = await visitor(BRAVO, 'falcon', { width: 320, height: 240 });
 try {
   await Promise.all([a.goto(BASE + PATH), b.goto(BASE + PATH)]);
   await Promise.all([ready(a), ready(b)]);
   const bravoId = await waitFor(() => selfId(b), 60000, 'Bravo online');
-  // Bravo parked at a world (and Alpha somewhere else near it), still
+  // Bravo parked at a world (and Alpha somewhere else near it), still: both
+  // out of their jumps before anything else. (A jump comes round onto the
+  // place, spools and flashes, many seconds in software; one still under way
+  // when Alpha's put by Bravo carried Alpha back off to Résumé when it
+  // flashed, hundreds of units off, a trip the 90 s never covered: CI's
+  // “Alpha never got within 8”, with “Coming round to jump” in the HUD.)
   await park(b, 'home');
   await park(a, 'resume');
-  await a.waitForTimeout(8000);
+  await Promise.all([landed(a, ALPHA), landed(b, BRAVO)]);
+  await a.waitForTimeout(3000);
   const seen = await waitFor(async () => {
     const r = await trip(a, bravoId);
     return r.dist !== null ? r : null;
   }, 120000, 'Alpha sees Bravo flying');
   ok(true, `Alpha sees ${BRAVO} (${bravoId.slice(0, 8)}…), ${seen.dist.toFixed(0)} units off`);
   // (Alpha put 40 units behind Bravo, side on, so the trip is a short one:
-  // in software a frame can take a second, and the scene's clock goes by frames)
+  // in software a frame can take a second, and the scene's clock goes by
+  // frames. Behind where Bravo's own page has Bravo, once Alpha's view of
+  // them has caught up with it: the poses Bravo sent out of the jump come in
+  // a bunch, and one from mid-flash put Alpha hundreds of units off)
+  const bravoAt = await b.evaluate((d) => {
+    const s = window[d].state.ship;
+    return { x: s.x, y: s.y, z: s.z, heading: s.heading };
+  }, DEBUG);
+  const agreed = await waitFor(async () => {
+    const r = await trip(a, bravoId);
+    return r.bravo && Math.hypot(r.bravo.x - bravoAt.x, r.bravo.z - bravoAt.z) < 2 ? r : null;
+  }, 60000, ).catch(async (e) => (console.log(), null));
   const near = await a.evaluate(
-    ([d, id]) => {
+    ([d, p]) => {
       const g = window[d];
-      const p = g.pilots.pose(id);
-      if (!p) return false;
+      // (and nothing of the autopilot's left to carry it off again)
+      g.state.jump = null;
+      g.state.auto = null;
+      g.state.then = null;
       g.state.ship = { ...g.state.ship, x: p.x + Math.sin(p.heading) * 40, y: p.y, z: p.z + Math.cos(p.heading) * 40, heading: p.heading + Math.PI / 2, speed: 0, vy: 0 };
       return true;
     },
-    [DEBUG, bravoId],
+    [DEBUG, bravoAt],
   );
-  if (near) console.log('note Alpha put 40 units behind Bravo');
+  if (near) console.log();
 
   // 1. Fly to: there within 90 s. (On public relays a pilot's poses can stop
   // coming for longer than STALE_MS while they're still online, and the trip

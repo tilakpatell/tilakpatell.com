@@ -5,7 +5,9 @@
 // A pilot's goal is `pilot:<their id>`. It's in the space only while their
 // pose is (pilots.js's pose(id): sampled, in this place, not hidden), so a
 // pilot who goes offline or out of sight takes their goal with them and the
-// trip ends; nothing of theirs is kept that they aren't sending now.
+// trip ends; nothing of theirs is kept that they aren't sending now, but for
+// a gap of a few seconds in their poses (online/pilotsRules.js's HOLD_MS: a
+// slow frame on their side, packets late), which goes on to where they last were.
 //
 // pilotId(goal) → their id, or null for any other goal
 // parkBehind(pose, { back }) → { x, y, z, heading }: `back` units behind

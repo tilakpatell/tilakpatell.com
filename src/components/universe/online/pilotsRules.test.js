@@ -1,5 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { DRAW, howToDraw } from './pilotsRules';
+import { DRAW, HOLD_MS, holdPose, howToDraw } from './pilotsRules';
+
+describe('holdPose', () => {
+  const live = { x: 1, y: 2, z: 3, heading: 0.5, name: 'Bravo' };
+  it('takes the pose they send now, stamped with when', () => {
+    expect(holdPose(null, live, 1000)).toEqual({ ...live, at: 1000 });
+    expect(holdPose({ ...live, x: 9, at: 0 }, live, 1000)).toEqual({ ...live, at: 1000 });
+  });
+  it('holds where they last were through a gap shorter than HOLD_MS (a slow frame on their side, late packets)', () => {
+    const held = holdPose(null, live, 1000);
+    expect(holdPose(held, null, 1000 + HOLD_MS - 1)).toBe(held);
+    expect(holdPose(held, null, 1000 + HOLD_MS)).toBe(held);
+  });
+  it('lets go past HOLD_MS, and at once when they have gone (hidden, down, shot down)', () => {
+    const held = holdPose(null, live, 1000);
+    expect(holdPose(held, null, 1000 + HOLD_MS + 1)).toBeNull();
+    expect(holdPose(held, null, 1001, { gone: true })).toBeNull();
+    expect(holdPose(null, null, 1001)).toBeNull();
+    expect(holdPose(held, null, 1100, { hold: 50 })).toBeNull();
+  });
+});
 
 // a pose where they are (`lane`: what an old client still says when it rode a hyperlane)
 const pose = (x, y, z, lane = false) => ({ x, y, z, lane });
