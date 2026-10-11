@@ -42,9 +42,17 @@ The chain built for Hoth at high over WebGL 2: render, SSGI, denoise, GTAO, volu
 - `hoth-high-nodes-webgl.webp`: as it stands (the house's exposure under the record's linear tone map, as lane Q6 drew Hoth).
 - `hoth-high-nodes-webgl-exposure1.webp`: before that, at the site's exposure alone, a stop and a half dark. (The first render, before the record's own rate was let stand, was white.)
 
+## Tatooine in software GL (2026-10-11)
+
+Since lane E1’s pack (#910), Tatooine on the node renderer holds the page for minutes at a time in SwiftShader, on main as on this branch (main at `59191ed5` served alone: no answer from the page for 120 s, then 50 s, from half a minute after the scene came up). The classic renderer on the same world answers in 0.2 s.
+
+- **Where the time goes.** A CPU profile over 330 s at mid, the level’s lights off: 272 s in WebGL’s `getProgramParameter` and 30 s in `getUniformBlockIndex`, both the synchronous end of a program’s link (three’s `_completeCompile`, from `compileAsync` and from drawing). At high a single query to the page took 34 minutes, and the profiler could not stop.
+- **Why so many links.** After 8 minutes at mid, Tatooine had 379 materials and 369 fragment programs: nearly one each. Hoth had 564 materials sharing 141. Tatooine’s pack has no `recipes.json`, so its meshes keep their own GLB materials; the level lights are not it (off, the stall stays), nor the level’s draws (none yet when it starts). What makes each of Tatooine’s programs its own is E1’s to find.
+- **What CI does.** Tatooine has a worlds shard of its own (shard 3), so the other sixteen worlds are measured. `galaxy-check.mjs` records a screenshot that never comes as that world’s error and goes on. On a GPU, a link takes milliseconds; the laptop’s run is the frame number.
+
 ## CI
 
-`ci.yml`'s worlds job boots the seventeen worlds at high on the node renderer over a runner's software GL, in two shards. It fails when a world does not come up or says an error (less the noise `scripts/lib/noise.mjs` lists: a browser with no WebGPU says so, and the runtime draws on WebGL 2). Its rows (calls, triangles, models) are reported against the baseline, not held (`BUDGET_REPORT=1`): the baseline was made on the classic renderer, a frame through the node renderer's whole chain takes minutes in software, and the cascades' share of the frame cannot be counted there. The frame numbers are the laptop's run below, and a node-renderer baseline is made from it.
+`ci.yml`'s worlds job boots the seventeen worlds at high on the node renderer over a runner's software GL, in three shards (Tatooine alone in the third, above). It fails when a world does not come up or says an error (less the noise `scripts/lib/noise.mjs` lists: a browser with no WebGPU says so, and the runtime draws on WebGL 2). Its rows (calls, triangles, models) are reported against the baseline, not held (`BUDGET_REPORT=1`): the baseline was made on the classic renderer, a frame through the node renderer's whole chain takes minutes in software, and the cascades' share of the frame cannot be counted there. The frame numbers are the laptop's run below, and a node-renderer baseline is made from it.
 
 ## Left for the owner's laptop
 

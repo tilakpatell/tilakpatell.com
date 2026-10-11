@@ -63,7 +63,7 @@
    },
    "grading": {
     "lut": "textures/galaxy/bf2017/light/hoth/sunny.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 0,
@@ -164,7 +164,7 @@
    },
    "grading": {
     "lut": "textures/galaxy/bf2017/light/hoth/sunset.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 0,
@@ -266,7 +266,7 @@
    },
    "grading": {
     "lut": "textures/galaxy/bf2017/light/hoth/interior.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 0,

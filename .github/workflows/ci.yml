@@ -74,9 +74,16 @@ jobs:
       matrix:
         include:
           - shard: 1
-            worlds: tatooine,hoth,endor,yavin,bespin,dagobah,mustafar,coruscant,naboo
+            worlds: hoth,endor,yavin,bespin,dagobah,mustafar,coruscant,naboo
           - shard: 2
             worlds: kashyyyk,kamino,geonosis,scarif,nevarro,mandalore,lothal,sorgan
+          # (Tatooine alone: since its pack (#910) nearly every one of its
+          # materials compiles its own program, 369 for 379 against Hoth's 141
+          # for 564, each a synchronous link in SwiftShader, so its frame holds
+          # the page for minutes; on its own it cannot keep the others from
+          # being measured. docs/superpowers/evidence/bf2017-picture/t2/README.md)
+          - shard: 3
+            worlds: tatooine
     steps:
       - uses: actions/checkout@v7
 

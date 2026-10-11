@@ -31,6 +31,7 @@ import * as THREE from 'three';
 import { siteLightFrom, weatherEntry } from '../../lib/three/gameLight';
 import { dirOf } from './surface/sky';
 import { createAreaWeather } from './areaWeather';
+import { withFallback } from '../../lib/assetBase.js';
 
 const DOME_VERT = `
 varying vec3 vDir;
@@ -173,8 +174,9 @@ export function createLevelArea(scene, { at, radius, sea = null, sky = null, fog
   // the level's lamps, beacons, lightning, backlit clouds and rain (its area.json)
   let rained = null;
   let gone = false;
+  // (through the asset base: a level pack's files but its level.json are published, lane D2)
   if (weather && frame)
-    fetch(weather)
+    withFallback((u) => fetch(u))(weather)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data || gone) return;
