@@ -75,6 +75,8 @@ export function runtime() {
     visible: () => !(typeof document !== 'undefined' && document.hidden) && !covered(),
     // (?calibrate=off: the QA scripts measure at the sharpest step, not a chip's own)
     calibrate: !/[?&]calibrate=off\b/.test(`${win?.location.search ?? ''}&${win?.location.hash ?? ''}`),
+    // (the renderer tier, lib/gpuProbe: probed once on the first 'nodes' world)
+    tier: (gfx) => browser().then((m) => m.rendererTier(gfx)),
   });
   // a world's install (install.js): the same one the gate and /worlds use
   instance.install = installer();

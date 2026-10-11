@@ -10,11 +10,21 @@ The owner’s word, fixed on 2026-10-11: no engine switch, no pixel streaming, e
 - The design (eight lanes) and a plan a lane, written against `origin/main` at `6e18a9c5` and lane T2’s branch.
 - No code.
 
+## Lane G1 (2026-10-11, `session_01LAx1qXT387hkeFARZ34j6d`, `claude/gpu-g1-reference`, #919)
+
+**Done.** `src/lib/three/gpuTime.js` (the frame’s GPU time from three’s render timestamps, a ring of 32, `null` without `timestamp-query`); `src/lib/gpuProbe.js` (the tier `T0`/`T1`/`T2` from the adapter’s features and a one-second draw of the lit fixture’s new `probeScene()`, kept as `tp-tier` with the chip’s vendor and architecture, `?tier=` pinning), asked once a page by the runtime before the first `'nodes'` world on a WebGPU device (`rt.tier`, `lib/device`’s `rendererTier()`); `src/lib/three/jitter.js` and `gfx.jitter(i)` with development’s `?traa=off`; `scripts/reference-frames.mjs` (eight Halton-jittered shots averaged in linear light, `--plain` for the candidate), `scripts/frame-score.mjs` (FLIP through `flip-evaluator` 1.7 where installed, PSNR and SSIM in Node), `scripts/gpu-clock.mjs` (the clock against the frame), the perf probe’s `stdev` column. Cloud numbers (SwiftShader, `nodes-webgl`): the fixture’s reference run twice agrees to 63.42 dB; its frame scores FLIP 0.0258 against it; the GPU clock reads 0.998 of the frame. Evidence: `docs/superpowers/evidence/gpu-first/G1/README.md` and `reference/README.md`.
+
+**Where the code and the plan differed.** r186 reads `trackTimestamp` on the backend, not the renderer (the stack pages say so); `perf-probe.mjs` has no `hothWalk` (the laptop row uses `surface`); `src/lib` may not import `lib/three`, so the probe takes its scene and clock passed in.
+
+**Left.** The laptop’s table (the G1 README’s commands, written out): the WebGPU clock against the frame, the references and candidates of the fixture, Hoth, Endor and Kashyyyk at 1,600 × 900 and 3,840 × 2,160 with their FLIP baselines, the `stdev` on a walk, the laptop’s tier. The Star Wars references in the cloud are not possible (the packs are not in a cloud checkout). The settings line gains the tier in N6 or once T2’s line is on main. When T2 lands: merge main, shoot again.
+
+**Checking it.** `npx vitest run src/lib/three/gpuTime.test.js src/lib/gpuProbe.test.js src/lib/three/jitter.test.js src/runtime/runtime.tier.test.js scripts/frame-score.test.mjs scripts/lib/frame-metrics.test.mjs scripts/lib/perf-stats.test.mjs`; `node scripts/reference-frames.mjs litWorld --size 800x450 --gpu webgl` twice and `frame-score.mjs` (≥ 50 dB); `node scripts/gpu-clock.mjs --gpu webgl --size 800x450 --ms 3000`.
+
 ## The lanes
 
 | lane | plan | what | starts | session | branch | PR |
 | --- | --- | --- | --- | --- | --- | --- |
-| G1 | `…-laneG1-reference.md` | the GPU clock (`timestamp-query`), the renderer tier from a probe, the reference frames and FLIP scores, the variance column | now | `session_01LAx1qXT387hkeFARZ34j6d` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-g1-reference` | |
+| G1 | `…-laneG1-reference.md` | the GPU clock (`timestamp-query`), the renderer tier from a probe, the reference frames and FLIP scores, the variance column | now | `session_01LAx1qXT387hkeFARZ34j6d` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-g1-reference` | #919 (draft) |
 | N1 | `…-laneN1-gpu-scene.md` | the GPU scene: instances in a storage buffer, compute culling with the LOD cut and a depth pyramid, indirect draws a material group, bundles | now | `session_01LJWah8w91QsWaqjvBuukhu` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n1-scene` | |
 | N2 | `…-laneN2-picture.md` | the dynamic-resolution controller on GPU time, sharpen after the upscaler, mip bias, velocity everywhere, reversed depth, specular anti-aliasing, the 30 fps cadence | now | `session_01C7wedSXsaKtR2ce8rN4e17` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n2-picture` | |
 | N3 | `…-laneN3-light.md` | the Enlighten atlases as the baked bounce, the budgeted probe grid, SSR’s roughness cut, cached far cascades over the far shadow cache | now | `session_018TWXtVyrnGi8eHtVLYkiwK` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n3-light` | #921 (draft) |
