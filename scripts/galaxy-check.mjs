@@ -294,7 +294,12 @@ for (const id of list.split(',')) {
           window.__RUNTIME__?.invalidate();
           times.push(now - last);
           last = now;
-          frame = { calls: info.render.calls, triangles: info.render.triangles, points: info.render.points, lines: info.render.lines };
+          // (the frame's draws: on the node renderer, three's renderers/common/Info.js,
+          // `render.calls` is the render passes since the page started, never reset,
+          // and `render.drawCalls` the draws since the last reset; WebGLRenderer's
+          // `calls` is its draws, and it has no `drawCalls`. sea-shot.mjs and
+          // starfighter-check.mjs read them the same way.)
+          frame = { calls: info.render.drawCalls ?? info.render.calls, triangles: info.render.triangles, points: info.render.points, lines: info.render.lines };
           info.reset();
           if (now - t0 < 4000 || times.length < 3) requestAnimationFrame(tick);
           else {
@@ -334,7 +339,7 @@ for (const id of list.split(',')) {
           window.__RUNTIME__?.invalidate();
           info.autoReset = false;
           info.reset();
-          requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.calls, tris: info.render.triangles })));
+          requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.drawCalls ?? info.render.calls, tris: info.render.triangles })));
         });
       const all = await frame();
       const out = [];
