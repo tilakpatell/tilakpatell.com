@@ -103,3 +103,33 @@ describe('the site’s physics on the engine', () => {
     physics.dispose();
   });
 });
+
+describe('the site’s physics in the game’s materials', () => {
+  it('each collider carries the material index the site names, with the grid’s friction and bounce', async () => {
+    const { frictionOf, loadMaterials } = await import('../../../lib/physics/materials');
+    const book = await loadMaterials('hoth_01');
+    const materials = { level: 'hoth_01', ground: 28, box: 14, circle: 91 };
+    const p = fakePhysics();
+    const solids = createSolids();
+    solids.box(3, 3, 1, 1);
+    solids.circle(-3, 3, 1);
+    const site = createSitePhysics({ physics: p, world: { heightAt: flat, solids, floors: [] }, materials, book });
+    site.update([0, 0]);
+    const by = (shape) => [...p.live].find((b) => b.desc.colliders[0].shape === shape);
+    expect(by('cuboid').desc.colliders[0].tag).toBe(14);
+    expect(by('cylinder').desc.colliders[0].tag).toBe(91);
+    expect(by('heightfield').desc.colliders[0].tag).toBe(28);
+    expect(by('cuboid').desc).toMatchObject(frictionOf(book, 14));
+    expect(by('heightfield').desc).toMatchObject(frictionOf(book, 28));
+  });
+
+  it('the engine’s own where the world has no grid', () => {
+    const p = fakePhysics();
+    const solids = createSolids();
+    solids.box(3, 3, 1, 1);
+    createSitePhysics({ physics: p, world: { heightAt: flat, solids, floors: [] } }).update([0, 0]);
+    const box = [...p.live].find((b) => b.desc.colliders[0].shape === 'cuboid');
+    expect(box.desc.friction).toBeUndefined();
+    expect(box.desc.colliders[0].tag).toBe(null);
+  });
+});

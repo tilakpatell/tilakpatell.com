@@ -244,3 +244,17 @@ describe('the quality mode the visitor chose', () => {
     expect(worldCheck(10, phone, 5).ask).toBe(true);
   });
 });
+
+describe('an Apple silicon Mac (not a GeForce, but a strong chip)', () => {
+  const MAC_CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36';
+  it('is a laptop or desktop in every browser, graded by its chip where the browser names it', () => {
+    // Chrome names the chip through ANGLE's Metal renderer
+    expect(classifyDevice({ ua: MAC_CHROME, memory: 8, cores: 8, screen: 1512, renderer: 'ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)' })).toMatchObject({ tier: 'high', phone: false, grade: 'high', detail: 'ultra' });
+    expect(classifyDevice({ ua: MAC_CHROME, memory: 8, cores: 8, screen: 1512, renderer: 'ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)' })).toMatchObject({ tier: 'high', grade: 'ultra', detail: 'ultra' });
+    // a plain M1 is a good chip, held at high
+    expect(classifyDevice({ ua: MAC_CHROME, memory: 8, cores: 8, screen: 1440, renderer: 'ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Unspecified Version)' })).toMatchObject({ tier: 'high', grade: 'high', detail: 'ultra' });
+    // Safari says "Apple GPU" and no memory; Firefox rounds the name: a desktop either way
+    expect(classifyDevice({ ua: IPAD_DESKTOP, touchPoints: 0, screen: 1512, renderer: 'Apple GPU' })).toMatchObject({ tier: 'high', phone: false, detail: 'ultra' });
+    expect(classifyDevice({ ua: MAC_CHROME, screen: 1512, renderer: 'Apple M1, or similar' })).toMatchObject({ tier: 'high', grade: null, detail: 'ultra' });
+  });
+});

@@ -275,6 +275,16 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       },
       (err) => {
         if (coming === asked) coming = null; // (the next mount tries again)
+        // WebGPU that would not start (an adapter refused, a device the
+        // browser would not make: Safari's on some Macs, an old driver):
+        // counted as lost, once, and the world made on the next kind down
+        // (backend.js: the node renderer over WebGL 2, or the classic one)
+        if (want === 'webgpu' && !lostWebGPU) {
+          if (dev) console.warn('WebGPU did not start: the next renderer down', err);
+          lostWebGPU = true;
+          if (kind === want) kind = null;
+          return backendFor(module);
+        }
         throw err;
       },
     );

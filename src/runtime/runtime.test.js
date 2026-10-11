@@ -564,6 +564,26 @@ describe('createRuntime', () => {
     expect(makeBackend.mock.calls.at(-1)[0]).toBe('webgpu');
   });
 
+  it('WebGPU that will not start falls to the next renderer down, once, and the world still comes', async () => {
+    const makeBackend = vi.fn((kind) => (kind === 'webgpu' ? Promise.reject(new Error('no adapter')) : fakeBackend()));
+    const { rt } = make({ gpu: true, makeBackend });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu', 'nodes-webgl']);
+    expect(rt.status).toBe('ready');
+    // and the next mount does not ask for it again
+    await rt.mount({ id: 'n2', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu', 'nodes-webgl']);
+  });
+
+  it('a surface with a classic path whose WebGPU will not start at mid draws on the classic renderer', async () => {
+    const quality = { ...fakeQuality(), detail: 'mid' };
+    const makeBackend = vi.fn((kind) => (kind === 'webgpu' ? Promise.reject(new Error('no device')) : fakeBackend()));
+    const { rt } = make({ gpu: true, quality, makeBackend });
+    await rt.mount({ id: 's', shading: 'nodes', classic: true, create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu', 'webgl']);
+    expect(rt.status).toBe('ready');
+  });
+
   it('a create that throws fails the mount', async () => {
     const { rt } = make();
     await rt.mount({ id: 'a', create: () => { throw new Error('nope'); } }, {}, fakeHost());

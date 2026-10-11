@@ -15,6 +15,10 @@ WebGPU, the node renderer, is the default for everything where the browser has i
 
 `src/runtime/backend.test.js` pins every cell; `src/runtime/runtime.test.js` that a quality change wanting the other renderer reloads the world on it. The settings panel's readout says “Drawn with WebGPU”, “WebGL 2, node renderer” or “classic”, and the `?gpu=` asked.
 
+**Apple silicon.** A Mac's chip is no GeForce but a strong one, and is drawn as one: Chrome names it through ANGLE's Metal renderer (`Apple M2 Pro`), graded by generation and class (`lib/gpuGrade.js`: an M1 a good chip, a Max or an Ultra the top grade), Safari says only “Apple GPU” and Firefox rounds the name, and either way a Mac is a laptop or desktop with Auto at ultra (`lib/device.test.js` pins each). WebGPU that will not start (an adapter refused, a device the browser will not make) is counted as lost once and the world made on the next renderer down (`src/runtime/runtime.test.js`), never a failed mount.
+
+**The game's physics books.** The surface reads the 2017 soldier (`soldier.json`, the body's speeds and capsule), the bone capsules for hits (`bones.json`, `boltPlay.js`) and the level's material grid (`materials.json`: impacts and footprints, and now the Rapier world's colliders' tags, friction and bounce where the site names its materials). Only Hoth's grid and Hoth's Havok shapes are in the repo; another world's take the same paths the day its pack and grid are built (lanes E1 to E4).
+
 ## Hoth at high, node renderer over WebGL 2 (1280 × 720)
 
 | | calls | triangles | |

@@ -12,9 +12,10 @@
 // No three.js, no DOM.
 //
 //   addHeightfield(physics, { heights, n = 65, size = 64, x, z, friction =
-//     0.2, restitution = 0.15 }) → Body (remove it with physics.remove)
+//     0.2, restitution = 0.15, tag = null }) → Body (remove it with physics.remove)
+//   (tag: the ground's material index, lib/physics/materials.js's, for the queries)
 
-export function addHeightfield(physics, { heights, n = 65, size = 64, x = 0, z = 0, friction = 0.2, restitution = 0.15 }) {
+export function addHeightfield(physics, { heights, n = 65, size = 64, x = 0, z = 0, friction = 0.2, restitution = 0.15, tag = null }) {
   if (!heights || heights.length !== n * n) throw new Error(`physics: a heightfield of ${n} × ${n} needs ${n * n} heights, not ${heights?.length}`);
   for (let i = 0; i < heights.length; i++) if (!Number.isFinite(heights[i])) throw new Error(`physics: heights[${i}] is ${heights[i]}`);
   const cols = new Float32Array(n * n);
@@ -25,6 +26,6 @@ export function addHeightfield(physics, { heights, n = 65, size = 64, x = 0, z =
     group: 'floor',
     friction,
     restitution,
-    colliders: [{ shape: 'heightfield', args: [n - 1, n - 1, cols, [size, 1, size], physics.RAPIER.HeightFieldFlags.FIX_INTERNAL_EDGES] }],
+    colliders: [{ shape: 'heightfield', args: [n - 1, n - 1, cols, [size, 1, size], physics.RAPIER.HeightFieldFlags.FIX_INTERNAL_EDGES], ...(tag != null ? { tag } : {}) }],
   });
 }

@@ -14,15 +14,21 @@
 //   SLAB thick under their top, a floor that `moves` a kinematic one
 //   following its height.
 // What is placed after a cell came (the placer's later props) joins it at
-// the next update. No three.js, no DOM.
+// the next update. Where the world has the 2017 game's material grid (the
+// site's `materials`: its level's book, lib/physics/materials.js, and the
+// indices its ground, boxes and circles stand for), each collider carries
+// its material index as its tag (what a bolt meets, as on a level) and the
+// grid's friction and bounce; else the engine's own. No three.js, no DOM.
 //
-//   solidBody(solid, heightAt) → desc | null   (pure: physics.add's desc)
-//   floorBody(floor) → desc | null             (pure)
+//   solidBody(solid, heightAt, surface?) → desc | null   (pure: physics.add's desc)
+//   floorBody(floor, surface?) → desc | null             (pure)
+//   surfaceOf(materials, book, hit) → { tag, friction, restitution } | null   (pure)
 //   cellsAround([x, z], cell, ring) → Set<"cx,cz">   (pure)
-//   createSitePhysics({ physics, world, cell = CELL, ring = RING }) →
+//   createSitePhysics({ physics, world, materials, book, cell = CELL, ring = RING }) →
 //     { update([x, z]), stats() → { cells, heightfields, solids, floors }, dispose() }
 
 import { addHeightfield } from '../../../lib/physics/heightfield';
+import { frictionOf, tagOf } from '../../../lib/physics/materials';
 
 export const CELL = 64; // m: a heightfield's side, the level's terrain cell
 export const RING = 1; // cells either side of yours: 192 m square round you
@@ -31,10 +37,23 @@ export const BURY = 1; // m: a solid with no base goes this far under the ground
 export const SLAB = 0.3; // m: a floor's thickness under its top
 
 const yawQuat = (yaw) => [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)];
+
+// what a collider is made of: its material index and the grid's friction
+// and bounce; null without the world's grid (the engine's own then)
+export function surfaceOf(materials, book, hit) {
+  const tag = tagOf(materials, hit);
+  if (tag == null) return null;
+  return { tag, ...frictionOf(book, tag) };
+}
+const dressed = (desc, surface) => {
+  if (!desc || !surface) return desc;
+  const { tag, friction, restitution } = surface;
+  return { ...desc, friction, restitution, colliders: desc.colliders.map((c) => ({ ...c, tag: c.tag ?? tag })) };
+};
 const keyOf = (cx, cz) => `${cx},${cz}`;
 const cellOf = (x, cell) => Math.floor(x / cell);
 
-export function solidBody(s, heightAt) {
+export function solidBody(s, heightAt, surface = null) {
   if (!s || !Number.isFinite(s.x) || !Number.isFinite(s.z)) return null;
   const ground = heightAt(s.x, s.z);
   const base = Number.isFinite(s.base) ? s.base : ground - BURY;
@@ -44,20 +63,20 @@ export function solidBody(s, heightAt) {
   const position = [s.x, base + half, s.z];
   if (s.type === 'circle') {
     if (!(s.r > 0)) return null;
-    return { type: 'fixed', position, group: 'object', colliders: [{ shape: 'cylinder', args: [half, s.r], tag: s.tag ?? null }] };
+    return dressed({ type: 'fixed', position, group: 'object', colliders: [{ shape: 'cylinder', args: [half, s.r], tag: s.tag ?? null }] }, surface);
   }
   if (!(s.hw > 0 && s.hd > 0)) return null;
   // (walker.js keeps cos and sin of the yaw, as three.js turns a thing about y)
-  return { type: 'fixed', position, rotation: yawQuat(Math.atan2(s.s ?? 0, s.c ?? 1)), group: 'object', colliders: [{ shape: 'cuboid', args: [s.hw, half, s.hd], tag: s.tag ?? null }] };
+  return dressed({ type: 'fixed', position, rotation: yawQuat(Math.atan2(s.s ?? 0, s.c ?? 1)), group: 'object', colliders: [{ shape: 'cuboid', args: [s.hw, half, s.hd], tag: s.tag ?? null }] }, surface);
 }
 
-export function floorBody(f) {
+export function floorBody(f, surface = null) {
   if (!f || !Number.isFinite(f.x) || !Number.isFinite(f.z) || !Number.isFinite(f.y)) return null;
   const type = f.moves ? 'kinematicPositionBased' : 'fixed';
   const position = [f.x, f.y - SLAB / 2, f.z];
-  if (f.r != null) return f.r > 0 ? { type, position, group: 'floor', colliders: [{ shape: 'cylinder', args: [SLAB / 2, f.r] }] } : null;
+  if (f.r != null) return f.r > 0 ? dressed({ type, position, group: 'floor', colliders: [{ shape: 'cylinder', args: [SLAB / 2, f.r] }] }, surface) : null;
   if (!(f.hw > 0 && f.hd > 0)) return null;
-  return { type, position, rotation: yawQuat(f.yaw ?? 0), group: 'floor', colliders: [{ shape: 'cuboid', args: [f.hw, SLAB / 2, f.hd] }] };
+  return dressed({ type, position, rotation: yawQuat(f.yaw ?? 0), group: 'floor', colliders: [{ shape: 'cuboid', args: [f.hw, SLAB / 2, f.hd] }] }, surface);
 }
 
 export function cellsAround([x, z], cell = CELL, ring = RING) {
@@ -68,7 +87,9 @@ export function cellsAround([x, z], cell = CELL, ring = RING) {
   return out;
 }
 
-export function createSitePhysics({ physics, world, cell = CELL, ring = RING }) {
+export function createSitePhysics({ physics, world, materials = null, book = null, cell = CELL, ring = RING }) {
+  const surface = (hit) => (materials ? surfaceOf(materials, book, hit) : null);
+  const groundSurface = surface({ ground: true });
   const cells = new Map(); // key → { heightfields: Body[] }
   const solids = new Map(); // solid → Body (its cell's while the cell is in)
   const floors = new Map(); // floor → Body
@@ -92,8 +113,8 @@ export function createSitePhysics({ physics, world, cell = CELL, ring = RING }) 
     const body = add(make(thing));
     if (body) map.set(thing, body);
   };
-  const putSolid = (s) => put(solids, s, (x) => solidBody(x, heightAt));
-  const putFloor = (f) => put(floors, f, floorBody);
+  const putSolid = (s) => put(solids, s, (x) => solidBody(x, heightAt, surface({ solid: x, tag: x.tag })));
+  const putFloor = (f) => put(floors, f, (x) => floorBody(x, groundSurface));
 
   function addCell(key) {
     const [cx, cz] = key.split(',').map(Number);
@@ -105,7 +126,7 @@ export function createSitePhysics({ physics, world, cell = CELL, ring = RING }) 
     for (let iz = 0; iz < n; iz++) for (let ix = 0; ix < n; ix++) heights[iz * n + ix] = heightAt(x + ix * step, z + iz * step);
     let field = null;
     try {
-      field = addHeightfield(physics, { heights, n, size: cell, x, z });
+      field = addHeightfield(physics, { heights, n, size: cell, x, z, ...(groundSurface ?? {}) });
     } catch {
       field = null;
     }

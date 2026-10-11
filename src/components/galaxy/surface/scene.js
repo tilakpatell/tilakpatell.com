@@ -968,12 +968,13 @@ export async function create(canvas, ctx, set) {
   if (!site.level)
     import('../../../lib/physics/world.js')
       .then(async ({ createPhysics, preload }) => {
-        await preload();
-        return createPhysics({ gravity: -15.5 });
+        // (the world's material grid with it, where the game has one: its colliders' tags, friction and bounce)
+        const [book] = await Promise.all([loadMaterials(site.materials?.level).catch(() => null), preload()]);
+        return { physics: await createPhysics({ gravity: -15.5 }), book };
       })
-      .then((physics) => {
+      .then(({ physics, book }) => {
         if (disposed) return physics.dispose();
-        sitePhys = { physics, cells: createSitePhysics({ physics, world }) };
+        sitePhys = { physics, cells: createSitePhysics({ physics, world, materials: site.materials ?? null, book }) };
         sitePhys.cells.update([landAt[0], landAt[1]]);
         takeEngine(physics);
       })
