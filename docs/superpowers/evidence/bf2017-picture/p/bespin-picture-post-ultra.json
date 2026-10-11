@@ -1,0 +1,48 @@
+{
+  "size": "960x540",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "fog",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "motionBlur",
+        "tonemap",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "bespin-picture-post-ultra-webgl.png",
+      "canvas": {
+        "css": [
+          960,
+          540
+        ],
+        "buffer": [
+          960,
+          540
+        ]
+      },
+      "meanLum": 0.9668,
+      "picture": {
+        "tonemap": "linear",
+        "lut": "Levels/Lighting/Global/T_Walrus_BaseGrade_01"
+      },
+      "horizon": {
+        "meet": 0.1381,
+        "painted": 0.21
+      }
+    }
+  ]
+}

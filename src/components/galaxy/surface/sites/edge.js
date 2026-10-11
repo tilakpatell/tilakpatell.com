@@ -306,6 +306,8 @@ export const SITES = {
     // bunkers, lamps and scatter are the flight's (`game`). The Citadel stays
     // built: the game's stands 3 km west, past the arena, on the horizon)
     level: 'scarif',
+    // the record's picture on the node renderer (src/data/bf2017/light/scarif.picture.json, applyGameLight)
+    picture: 'scarif.picture.json',
     place: 'The beaches of Scarif',
     line: 'White sand, palms and turquoise lagoons, under the shield, with the Citadel over all of it.',
     sky: {

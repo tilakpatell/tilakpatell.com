@@ -18,6 +18,8 @@ export const SITE = {
   // The built deck, towers, bridges and lamps are the flight's (`game`);
   // the carbon-freezing chamber stays built, the map has none
   level: 'bespin',
+  // the record's picture on the node renderer (src/data/bf2017/light/bespin.picture.json, applyGameLight)
+  picture: 'bespin.picture.json',
   // the look (look.js): rose shade, gold hour; the haze below the horizon
   // nearly the sky's own, so the cloud sea and the sky meet without a seam
   look: { shadow: '#c07a8a', edge: [0.1, 0.78], halo: '#ffb070', fogBelow: 0.95 },

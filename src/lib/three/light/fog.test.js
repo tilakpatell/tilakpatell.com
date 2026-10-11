@@ -46,6 +46,9 @@ describe('createFog', () => {
     expect(painted.node).not.toBe(plain.node);
     // the same uniforms either way: a weather crossfade moves both alike
     expect(Object.keys(painted.uniforms)).toEqual(Object.keys(plain.uniforms));
+    // a weather's next gradient in its place, no new shader; none to swap without one
+    expect(painted.setGradient({ texture: new Texture(), rotation: 0.5 })).toBe(true);
+    expect(plain.setGradient({ texture: new Texture() })).toBe(false);
   });
 });
 
