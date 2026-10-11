@@ -19,7 +19,7 @@
 //   indirect  the draws' arguments, five u32 a slot (camera slots, then shadow): three.js's IndirectStorageBufferAttribute
 //
 // createCull(renderer, { scene, table, hzb, three, slots }) → {
-//   nodes: { rows, visible, state } (for draws.js's vertex pull), indirect,
+//   nodes: { rows, visible, state, visibleRead, stateRead } (draws.js's vertex pull), uniforms, indirect,
 //   setSlot(s, { key, indexCount, firstIndex, baseVertex }), slotCount,
 //   run(camera, { now, width, height, occlude }), stats() → { tested, culled, occluded, drawn } (read every 30 frames),
 //   read() → Promise<every buffer as u32> (the parity check's),
@@ -204,7 +204,9 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
   const _f = new THREE.Frustum();
 
   return {
-    nodes: { rows, visible, state },
+    // (the vertex stage reads storage read-only: views of the same buffers)
+    nodes: { rows, visible, state, visibleRead: storage(visibleAttr, 'uint', Math.max(1, table.room * 2)).toReadOnly(), stateRead: storage(stateAttr, 'uvec2', cap).toReadOnly() },
+    uniforms: u,
     indirect,
     slots,
     keys,

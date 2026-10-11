@@ -14,6 +14,7 @@ import { cameraOf, cullCpu, meshTable, NONE, sphereRect } from '../../src/lib/th
 import { createCull } from '../../src/lib/three/gpuScene/cullPass.js';
 import { createHzb, reduceDepth } from '../../src/lib/three/gpuScene/hzb.js';
 import { loadGpuThree } from '../../src/lib/three/gpuScene/three.js';
+import { drawParity } from './drawParity.js';
 
 const W = 256;
 const H = 144;
@@ -143,6 +144,8 @@ async function main() {
   const z = sphereRect(v.toArray(), 1e-6, plane30)?.near ?? depthOf;
   out.wallDepth = z;
   await frame('a wall at 30 m', 3, { mips: reduceDepth(new Float32Array(W * H).fill(z), W, H) });
+  cull.dispose();
+  out.draws = await drawParity(three, renderer);
   window.__parity = out;
 }
 
