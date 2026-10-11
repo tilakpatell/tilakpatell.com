@@ -232415,6 +232415,42 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_controlpanelsmall_03_nw__orm_42587b7d.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_c.1024.ktx2": {
+    "hash": "075846a22cf2",
+    "bytes": 1037419,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_c.256.ktx2": {
+    "hash": "7ac0d09d0804",
+    "bytes": 70195,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_c.512.ktx2": {
+    "hash": "6ac810cceca6",
+    "bytes": 272896,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_n__normal.1024.ktx2": {
+    "hash": "e8744be9acce",
+    "bytes": 898101,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_n__normal.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_n__normal.256.ktx2": {
+    "hash": "d2de093829c8",
+    "bytes": 66244,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_n__normal.512.ktx2": {
+    "hash": "299c96ef81ad",
+    "bytes": 244107,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_copper_01_n__normal.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_doorcorridor_01_cs.1024.ktx2": {
     "hash": "68d9c1d27b9a",
     "bytes": 1229102,
@@ -232739,6 +232775,18 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_lightwall_s_03_nam__orm_acb7fc70.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_lightwallsmall_01_cs.128.ktx2": {
+    "hash": "55f10bd60873",
+    "bytes": 11839,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_lightwallsmall_01_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_lightwallsmall_01_nw.256.ktx2": {
+    "hash": "49d450d3362c",
+    "bytes": 48524,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_lightwallsmall_01_nw.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_m_corridor_01_a_512x512x512_cs.1024.ktx2": {
     "hash": "fc4e1e819880",
     "bytes": 1271213,
@@ -232835,6 +232883,42 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_machinewallmedium_01_nw__orm_08d05765.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_01_ns.1024.ktx2": {
+    "hash": "773fffb190d5",
+    "bytes": 1043319,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_01_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_01_ns.256.ktx2": {
+    "hash": "f141bb63174a",
+    "bytes": 57595,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_01_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_01_ns.512.ktx2": {
+    "hash": "635d7ff2757a",
+    "bytes": 251173,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_01_ns.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_03_ns.1024.ktx2": {
+    "hash": "a4c4d24da0f7",
+    "bytes": 773316,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_03_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_03_ns.256.ktx2": {
+    "hash": "5c92427811aa",
+    "bytes": 48261,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_03_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_03_ns.512.ktx2": {
+    "hash": "f87923bf11d5",
+    "bytes": 190267,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metaldetail_03_ns.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metalgrate_01_a_n__normal.128.ktx2": {
     "hash": "2391eb1f8d36",
     "bytes": 16570,
@@ -232851,6 +232935,24 @@
     "hash": "6f0c15623f8a",
     "bytes": 47598,
     "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metalgrate_01_a_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metalgrate_02_h.1024.ktx2": {
+    "hash": "77d3ffddcbb3",
+    "bytes": 124778,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metalgrate_02_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metalgrate_02_h.256.ktx2": {
+    "hash": "66ac83781a45",
+    "bytes": 23611,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metalgrate_02_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metalgrate_02_h.512.ktx2": {
+    "hash": "e72943c49d98",
+    "bytes": 52680,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_metalgrate_02_h.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_miscprop_s_01_cs.128.ktx2": {
@@ -233157,6 +233259,42 @@
     "hash": "837b9142dfd5",
     "bytes": 60496,
     "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancordead_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_c.1024.ktx2": {
+    "hash": "b086f2b3f654",
+    "bytes": 454143,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_c.256.ktx2": {
+    "hash": "26db4d45d824",
+    "bytes": 68595,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_c.512.ktx2": {
+    "hash": "7b73c7921779",
+    "bytes": 145787,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_na.1024.ktx2": {
+    "hash": "9ec7a2b67e23",
+    "bytes": 1305495,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_na.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_na.256.ktx2": {
+    "hash": "7c309886092e",
+    "bytes": 84535,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_na.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_na.512.ktx2": {
+    "hash": "5c281f0c264d",
+    "bytes": 331602,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_na.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_rancorpit_rocklarge_01_cs.2048.ktx2": {
@@ -233487,6 +233625,60 @@
     "hash": "f0b93d343c28",
     "bytes": 81543,
     "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_speargamorrean_01_nam__orm_ce9e22ee.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_c.1024.ktx2": {
+    "hash": "692cf42cfbb6",
+    "bytes": 229547,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_c.256.ktx2": {
+    "hash": "bd5b5e1b024c",
+    "bytes": 51517,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_c.512.ktx2": {
+    "hash": "9771c9c19bca",
+    "bytes": 85290,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_n.1024.ktx2": {
+    "hash": "f6106bafab3a",
+    "bytes": 1017595,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_n.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_n.256.ktx2": {
+    "hash": "a1d25bcd185e",
+    "bytes": 47821,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_n.512.ktx2": {
+    "hash": "c596781a9459",
+    "bytes": 217663,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_stairs_01_n.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_trim_text_01_h.1024.ktx2": {
+    "hash": "c57f40cb88d5",
+    "bytes": 53932,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_trim_text_01_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_trim_text_01_h.256.ktx2": {
+    "hash": "b3b5d2423e0c",
+    "bytes": 11686,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_trim_text_01_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_trim_text_01_h.512.ktx2": {
+    "hash": "7fb372820449",
+    "bytes": 26525,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_trim_text_01_h.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/jabba-inside/tex/t_trl_arch_01_a_1024x512x128_c.256.ktx2": {
@@ -251651,6 +251843,24 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_jabbasdais_01_n__orm_e25afa29.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_jabbaspalace_sandparallax_h.1024.ktx2": {
+    "hash": "08b96dd460ab",
+    "bytes": 693783,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_jabbaspalace_sandparallax_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_jabbaspalace_sandparallax_h.256.ktx2": {
+    "hash": "1b6241a0f0b4",
+    "bytes": 68888,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_jabbaspalace_sandparallax_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_jabbaspalace_sandparallax_h.512.ktx2": {
+    "hash": "676c84380fbc",
+    "bytes": 212473,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_jabbaspalace_sandparallax_h.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_jerba_hair_01_ca.128.ktx2": {
     "hash": "6442a51c8ab5",
     "bytes": 21520,
@@ -251879,6 +252089,18 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwall_s_03_nam__orm_acb7fc70.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_01_cs.128.ktx2": {
+    "hash": "55f10bd60873",
+    "bytes": 11839,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_01_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_01_nw.256.ktx2": {
+    "hash": "49d450d3362c",
+    "bytes": 48524,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_01_nw.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_cs.1024.ktx2": {
     "hash": "06607e216568",
     "bytes": 1238528,
@@ -251895,6 +252117,24 @@
     "hash": "3c21980158c3",
     "bytes": 309786,
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_h.1024.ktx2": {
+    "hash": "d0a3641defa7",
+    "bytes": 433802,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_h.256.ktx2": {
+    "hash": "133865df48da",
+    "bytes": 49561,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_h.512.ktx2": {
+    "hash": "a3cea9209105",
+    "bytes": 147995,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_h.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_a_nw__normal.128.ktx2": {
@@ -251951,6 +252191,24 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_cs.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_h.1024.ktx2": {
+    "hash": "0f951a0d1e11",
+    "bytes": 437357,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_h.256.ktx2": {
+    "hash": "455bf0045b44",
+    "bytes": 48232,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_h.512.ktx2": {
+    "hash": "52b616e2c479",
+    "bytes": 147114,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_h.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_nw__normal.128.ktx2": {
     "hash": "23eb4ff91fde",
     "bytes": 21076,
@@ -251987,6 +252245,24 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_b_nw__orm_b568479f.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_c_h.1024.ktx2": {
+    "hash": "087d22c21a5f",
+    "bytes": 351739,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_c_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_c_h.256.ktx2": {
+    "hash": "d4e2758fc829",
+    "bytes": 35596,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_c_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_c_h.512.ktx2": {
+    "hash": "961849c3981e",
+    "bytes": 110656,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_c_h.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_cs.1024.ktx2": {
     "hash": "07c8777be1c7",
     "bytes": 1278042,
@@ -252003,6 +252279,24 @@
     "hash": "61a440a0a374",
     "bytes": 312425,
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_h.1024.ktx2": {
+    "hash": "a440684df27a",
+    "bytes": 331663,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_h.256.ktx2": {
+    "hash": "a60c96cae879",
+    "bytes": 36694,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_h.512.ktx2": {
+    "hash": "fbfd25865e28",
+    "bytes": 113135,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_h.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_lightwallsmall_02_d_nw__normal.1024.ktx2": {
@@ -252701,6 +252995,60 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_maintunnel_01_n__normal.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_01_ns.1024.ktx2": {
+    "hash": "773fffb190d5",
+    "bytes": 1043319,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_01_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_01_ns.256.ktx2": {
+    "hash": "f141bb63174a",
+    "bytes": 57595,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_01_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_01_ns.512.ktx2": {
+    "hash": "635d7ff2757a",
+    "bytes": 251173,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_01_ns.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_03_ns.1024.ktx2": {
+    "hash": "a4c4d24da0f7",
+    "bytes": 773316,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_03_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_03_ns.256.ktx2": {
+    "hash": "5c92427811aa",
+    "bytes": 48261,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_03_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_03_ns.512.ktx2": {
+    "hash": "f87923bf11d5",
+    "bytes": 190267,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_03_ns.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_06_ns.1024.ktx2": {
+    "hash": "96fa13d2dd48",
+    "bytes": 785644,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_06_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_06_ns.256.ktx2": {
+    "hash": "84af6275bf0d",
+    "bytes": 24048,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_06_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_06_ns.512.ktx2": {
+    "hash": "93e1e66594e4",
+    "bytes": 156555,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metaldetail_06_ns.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalgrate_01_a_n__normal.1024.ktx2": {
     "hash": "a744db75271d",
     "bytes": 596402,
@@ -252717,6 +253065,24 @@
     "hash": "6f0c15623f8a",
     "bytes": 47598,
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalgrate_01_a_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalgrate_02_h.1024.ktx2": {
+    "hash": "77d3ffddcbb3",
+    "bytes": 124778,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalgrate_02_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalgrate_02_h.256.ktx2": {
+    "hash": "66ac83781a45",
+    "bytes": 23611,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalgrate_02_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalgrate_02_h.512.ktx2": {
+    "hash": "e72943c49d98",
+    "bytes": 52680,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalgrate_02_h.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_metalplate_floor_01_c.1024.ktx2": {
@@ -253859,6 +254225,42 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_r1_g4astromech_01_nam__orm_3dfd11d0.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_c.1024.ktx2": {
+    "hash": "b086f2b3f654",
+    "bytes": 454143,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_c.256.ktx2": {
+    "hash": "26db4d45d824",
+    "bytes": 68595,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_c.512.ktx2": {
+    "hash": "7b73c7921779",
+    "bytes": 145787,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_na.1024.ktx2": {
+    "hash": "9ec7a2b67e23",
+    "bytes": 1305495,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_na.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_na.256.ktx2": {
+    "hash": "7c309886092e",
+    "bytes": 84535,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_na.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_na.512.ktx2": {
+    "hash": "5c281f0c264d",
+    "bytes": 331602,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_na.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_rancorpit_rocklarge_01_cs.2048.ktx2": {
     "hash": "32f2b0874741",
     "bytes": 1510894,
@@ -254151,6 +254553,12 @@
     "hash": "0fcd0a088f97",
     "bytes": 6847,
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_sewerset_01_floor_nw__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_sewerset_01_floor_nw__normal.512.ktx2": {
+    "hash": "debf8774d801",
+    "bytes": 30326,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_sewerset_01_floor_nw__normal.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_sewerset_01_floor_nw__orm_e668a25d.1024.ktx2": {
@@ -255947,6 +256355,24 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_torch_s_01_nam__orm_2c682086.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_trim_text_01_h.1024.ktx2": {
+    "hash": "c57f40cb88d5",
+    "bytes": 53932,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_trim_text_01_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_trim_text_01_h.256.ktx2": {
+    "hash": "b3b5d2423e0c",
+    "bytes": 11686,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_trim_text_01_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_trim_text_01_h.512.ktx2": {
+    "hash": "7fb372820449",
+    "bytes": 26525,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_trim_text_01_h.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_trl_arch_01_a_1024x512x128_c.256.ktx2": {
     "hash": "2321ca35ff50",
     "bytes": 74649,
@@ -256421,6 +256847,12 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_vase_s_03_nam__normal.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_vase_s_03_nam__normal.256.ktx2": {
+    "hash": "413cabd62a65",
+    "bytes": 61950,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_vase_s_03_nam__normal.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_vase_s_03_nam__normal.512.ktx2": {
     "hash": "a86cd2020c93",
     "bytes": 193834,
@@ -256577,6 +257009,42 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_vasesmall_07_nw__orm_41b9b5d5.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_c.1024.ktx2": {
+    "hash": "76bc322442d5",
+    "bytes": 420584,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_c.256.ktx2": {
+    "hash": "4bd91414f491",
+    "bytes": 65112,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_c.512.ktx2": {
+    "hash": "c4ee7e5c0361",
+    "bytes": 133196,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_n.1024.ktx2": {
+    "hash": "9c0b36cb29b0",
+    "bytes": 1267242,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_n.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_n.256.ktx2": {
+    "hash": "24880b48ecc4",
+    "bytes": 61355,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_n.512.ktx2": {
+    "hash": "25399516f33c",
+    "bytes": 289372,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_velvet_01_n.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_ventsmall_01_cs.128.ktx2": {
     "hash": "bacd647105ca",
     "bytes": 21339,
@@ -256667,6 +257135,24 @@
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wallpattern_01_n__normal.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_c.1024.ktx2": {
+    "hash": "ad7a5b2b09de",
+    "bytes": 380581,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_c.256.ktx2": {
+    "hash": "261d6fe40121",
+    "bytes": 56217,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_c.512.ktx2": {
+    "hash": "c70f4893f6ac",
+    "bytes": 122667,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_c.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_cs.1024.ktx2": {
     "hash": "a38dd90ae4d6",
     "bytes": 1285077,
@@ -256677,6 +257163,24 @@
     "hash": "a9d74356b347",
     "bytes": 317147,
     "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_n__normal.1024.ktx2": {
+    "hash": "e34c5d5816ce",
+    "bytes": 1202390,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_n__normal.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_n__normal.256.ktx2": {
+    "hash": "112e95774f3f",
+    "bytes": 78174,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_n__normal.512.ktx2": {
+    "hash": "1592724ba674",
+    "bytes": 304703,
+    "from": "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_n__normal.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/jabba/tex/t_wood_01_nw__normal.1024.ktx2": {
@@ -273683,6 +274187,18 @@
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_bazaar_dome_01_n__orm_6fd0b6a8.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_bbq_01_canopy_alpha_cs.32.ktx2": {
+    "hash": "d6e2656412ef",
+    "bytes": 982,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_bbq_01_canopy_alpha_cs.32.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_bbq_01_canopy_alpha_na.32.ktx2": {
+    "hash": "b63dd9fe003c",
+    "bytes": 1600,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_bbq_01_canopy_alpha_na.32.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/tex/t_bbq_01_canopy_cs.1024.ktx2": {
     "hash": "eecadcda4a87",
     "bytes": 1182061,
@@ -274721,6 +275237,12 @@
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_cantina_floor_01_nam__orm_7d672cbe.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_cantina_floor_01_rgba.256.ktx2": {
+    "hash": "81d30d60350c",
+    "bytes": 59532,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_cantina_floor_01_rgba.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/tex/t_cantinadispenser_cs_01.128.ktx2": {
     "hash": "01e1fd2a95d9",
     "bytes": 20300,
@@ -275661,6 +276183,18 @@
     "hash": "e4bcca85516a",
     "bytes": 72268,
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_cupcantina_03_nam__orm_c5f22c46.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_dirtridge_01_cs.256.ktx2": {
+    "hash": "f5de46f04ea6",
+    "bytes": 30740,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_dirtridge_01_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_dirtridge_01_cs.512.ktx2": {
+    "hash": "45ec62b92a8d",
+    "bytes": 48527,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_dirtridge_01_cs.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/tex/t_displaymarket_01_cs.128.ktx2": {
@@ -277307,6 +277841,30 @@
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_landspeeder_03_nam__orm_ac9fff5a.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteadcircle_01_door_01_c.256.ktx2": {
+    "hash": "1bef3fcf1d3e",
+    "bytes": 57604,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteadcircle_01_door_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteadcircle_01_door_01_c.512.ktx2": {
+    "hash": "6bcecbbc9e62",
+    "bytes": 109404,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteadcircle_01_door_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteadcircle_01_door_01_n.256.ktx2": {
+    "hash": "4538691e2468",
+    "bytes": 57537,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteadcircle_01_door_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteadcircle_01_door_01_n.512.ktx2": {
+    "hash": "049b2a8fac7c",
+    "bytes": 218486,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteadcircle_01_door_01_n.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/tex/t_larshomesteaddoor_01_128x224_a_cs.1024.ktx2": {
     "hash": "771e7f1202ff",
     "bytes": 2492878,
@@ -278141,10 +278699,40 @@
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metal_02_nam__orm_847862f6.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metalbaredetail_01_ns.1024.ktx2": {
+    "hash": "29d54b96533d",
+    "bytes": 1143245,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metalbaredetail_01_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metalbaredetail_01_ns.256.ktx2": {
+    "hash": "b1f8a79365bc",
+    "bytes": 18108,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metalbaredetail_01_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metalbaredetail_01_ns.512.ktx2": {
+    "hash": "e1bb2674fa8b",
+    "bytes": 203918,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metalbaredetail_01_ns.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_02_ns__normal.1024.ktx2": {
+    "hash": "e9ab3ecc918a",
+    "bytes": 547358,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_02_ns__normal.1024.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_02_ns__normal.128.ktx2": {
     "hash": "2c6597d84445",
     "bytes": 10043,
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_02_ns__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_02_ns__normal.256.ktx2": {
+    "hash": "27dab5bf1c77",
+    "bytes": 40162,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_02_ns__normal.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_02_ns__normal.512.ktx2": {
@@ -278175,6 +278763,24 @@
     "hash": "279619f1dc36",
     "bytes": 221389,
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_02_ns__orm_808bbbc5.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_03_ns.1024.ktx2": {
+    "hash": "a4c4d24da0f7",
+    "bytes": 773316,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_03_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_03_ns.256.ktx2": {
+    "hash": "5c92427811aa",
+    "bytes": 48261,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_03_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_03_ns.512.ktx2": {
+    "hash": "f87923bf11d5",
+    "bytes": 190267,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metaldetail_03_ns.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/tex/t_metalgratefloor_01_cs.1024.ktx2": {
@@ -278229,6 +278835,24 @@
     "hash": "bb8f60e9aaa3",
     "bytes": 249825,
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metalgratefloor_01_nam__orm_6d43b1f4.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metalweatheredpaintdetail_01_ns.1024.ktx2": {
+    "hash": "782b9a290ec3",
+    "bytes": 1118729,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metalweatheredpaintdetail_01_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metalweatheredpaintdetail_01_ns.256.ktx2": {
+    "hash": "edc8b233e6d2",
+    "bytes": 64729,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metalweatheredpaintdetail_01_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_metalweatheredpaintdetail_01_ns.512.ktx2": {
+    "hash": "3c6535c48f33",
+    "bytes": 284174,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_metalweatheredpaintdetail_01_ns.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/tex/t_miscprop_s_02_cs.128.ktx2": {
@@ -278903,6 +279527,24 @@
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_clothhangingwall_02_ns__orm_47fe2d3e.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_colormap_01_c.1024.ktx2": {
+    "hash": "3273d39cd5b2",
+    "bytes": 272706,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_colormap_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_colormap_01_c.256.ktx2": {
+    "hash": "3c085aafd78e",
+    "bytes": 56752,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_colormap_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_colormap_01_c.512.ktx2": {
+    "hash": "469308869d93",
+    "bytes": 100276,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_colormap_01_c.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_dockingbay_01a_cs.512.ktx2": {
     "hash": "72c4ba6e64ce",
     "bytes": 316733,
@@ -279489,6 +280131,30 @@
     "hash": "86a4f2feaa21",
     "bytes": 236825,
     "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisley_tower_09a_n__orm_1af1f99a.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_01_ca.1024.ktx2": {
+    "hash": "d6407cfb20e2",
+    "bytes": 294376,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_01_ca.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_01_ca.256.ktx2": {
+    "hash": "2ae0212af210",
+    "bytes": 68631,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_01_ca.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_01_ca.512.ktx2": {
+    "hash": "758b1efdd824",
+    "bytes": 121117,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_01_ca.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_01_n.256.ktx2": {
+    "hash": "e0b37f0a96ee",
+    "bytes": 83272,
+    "from": "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_01_n.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/tatooine/tex/t_moseisleywallposters_02_ca.1024.ktx2": {
@@ -300593,6 +301259,42 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_briefingroomwall_nam__orm_21250e86.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_c.1024.ktx2": {
+    "hash": "90f65b6a73e9",
+    "bytes": 1045234,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_c.256.ktx2": {
+    "hash": "e8a3cedec0a1",
+    "bytes": 80667,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_c.512.ktx2": {
+    "hash": "203cf9ba32bf",
+    "bytes": 290927,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_n.1024.ktx2": {
+    "hash": "8c763212230a",
+    "bytes": 954083,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_n.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_n.256.ktx2": {
+    "hash": "50edb7d9b34d",
+    "bytes": 76104,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_n.512.ktx2": {
+    "hash": "29c1e4ac03c8",
+    "bytes": 270045,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_bushsmall_01_n.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_cableaccessories_01_c.1024.ktx2": {
     "hash": "ad7b6ddcc34a",
     "bytes": 948710,
@@ -300606,7 +301308,7 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_cableaccessories_01_c.256.ktx2": {
-    "hash": "542d3d426498",
+    "hash": "317fa2927208",
     "bytes": 84189,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_cableaccessories_01_c.256.ktx2",
     "tier": "pack"
@@ -300615,6 +301317,12 @@
     "hash": "c6491541d0e8",
     "bytes": 324764,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_cableaccessories_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_cableaccessories_01_n__normal.1024.ktx2": {
+    "hash": "ac0f845bd5ec",
+    "bytes": 1116490,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_cableaccessories_01_n__normal.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_cableaccessories_01_n__normal.128.ktx2": {
@@ -301751,6 +302459,18 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_glass_01_cs__orm_08c3d535.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_headgear_05_aosl.256.ktx2": {
+    "hash": "763fc4fb5bcb",
+    "bytes": 30791,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_headgear_05_aosl.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_headgear_05_aosl.512.ktx2": {
+    "hash": "fff4f0db0a99",
+    "bytes": 85156,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_headgear_05_aosl.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_headgear_05_cs.128.ktx2": {
     "hash": "aaa2f87c3cb0",
     "bytes": 19343,
@@ -301791,6 +302511,18 @@
     "hash": "b14866ecf3a3",
     "bytes": 69294,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_headgear_05_nm__orm_381efe3e.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_headgear_05_w.256.ktx2": {
+    "hash": "befe885364dd",
+    "bytes": 59460,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_headgear_05_w.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_headgear_12_w.256.ktx2": {
+    "hash": "ee1e75925c0f",
+    "bytes": 67860,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_headgear_12_w.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_hologrambase_01_a.128.ktx2": {
@@ -302543,6 +303275,12 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_maindoor_nam__orm_7e578156.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_02_ns__normal.1024.ktx2": {
+    "hash": "e9ab3ecc918a",
+    "bytes": 547358,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_02_ns__normal.1024.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_02_ns__normal.128.ktx2": {
     "hash": "2c6597d84445",
     "bytes": 10043,
@@ -302583,6 +303321,24 @@
     "hash": "22bd93e6360f",
     "bytes": 57366,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_02_ns__orm_808bbbc5.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_06_ns.1024.ktx2": {
+    "hash": "96fa13d2dd48",
+    "bytes": 785644,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_06_ns.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_06_ns.256.ktx2": {
+    "hash": "84af6275bf0d",
+    "bytes": 24048,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_06_ns.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_06_ns.512.ktx2": {
+    "hash": "93e1e66594e4",
+    "bytes": 156555,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_metaldetail_06_ns.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_millenniumfalcon_01_cs.1024.ktx2": {
@@ -302645,10 +303401,28 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_c.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_c.512.ktx2": {
+    "hash": "2b5124f15c94",
+    "bytes": 119773,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_n__normal.1024.ktx2": {
+    "hash": "a985fdf3e44d",
+    "bytes": 294231,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_n__normal.1024.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_n__normal.128.ktx2": {
     "hash": "846842e82448",
     "bytes": 9783,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_n__normal.256.ktx2": {
+    "hash": "add61f8bbb25",
+    "bytes": 29978,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_n__normal.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_ms_yavinbase_grass_large_01_n__normal.512.ktx2": {
@@ -303017,6 +303791,18 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_railingconveyor_cable_n__normal.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_rebelpilot_helm_aosl.256.ktx2": {
+    "hash": "3817e7af7c0d",
+    "bytes": 46829,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_rebelpilot_helm_aosl.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_rebelpilot_helm_aosl.512.ktx2": {
+    "hash": "bce3a817face",
+    "bytes": 141271,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_rebelpilot_helm_aosl.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_rebelpilot_helm_cs.1024.ktx2": {
     "hash": "b232499f8aa2",
     "bytes": 770977,
@@ -303087,6 +303873,18 @@
     "hash": "3c2836df339a",
     "bytes": 328692,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_smalldoor_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_smalldoor_01_em.256.ktx2": {
+    "hash": "bf687e6917ce",
+    "bytes": 10493,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_smalldoor_01_em.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_smalldoor_01_em.512.ktx2": {
+    "hash": "8ac25e0fe079",
+    "bytes": 21279,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_smalldoor_01_em.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_smalldoor_01_nam__normal.128.ktx2": {
@@ -304277,6 +305075,24 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yav_box_01_a_nam__orm_afa6e58e.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_backdropcloud_01_c.1024.ktx2": {
+    "hash": "57fe48c62164",
+    "bytes": 145371,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_backdropcloud_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_backdropcloud_01_c.256.ktx2": {
+    "hash": "ead39e6836a0",
+    "bytes": 39129,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_backdropcloud_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_backdropcloud_01_c.512.ktx2": {
+    "hash": "601de512cfd1",
+    "bytes": 64821,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_backdropcloud_01_c.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_burl_01_c.128.ktx2": {
     "hash": "2b6810a1db9b",
     "bytes": 9693,
@@ -304421,10 +305237,22 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_bushsmall_01_c.1024.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_bushsmall_01_c.256.ktx2": {
+    "hash": "cf1fee82ee2b",
+    "bytes": 78569,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_bushsmall_01_c.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_bushsmall_01_c.512.ktx2": {
     "hash": "bb41eb536de1",
     "bytes": 288480,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_bushsmall_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_bushsmall_01_n__normal.1024.ktx2": {
+    "hash": "322506b4e133",
+    "bytes": 764944,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_bushsmall_01_n__normal.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_bushsmall_01_n__normal.256.ktx2": {
@@ -304575,6 +305403,42 @@
     "hash": "9b30b3b56bc6",
     "bytes": 71454,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_groundshrub_01_ns__orm_9bf17d45.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_c.1024.ktx2": {
+    "hash": "db60a9e47bc5",
+    "bytes": 1251387,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_c.256.ktx2": {
+    "hash": "fd01f2059177",
+    "bytes": 85141,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_c.512.ktx2": {
+    "hash": "45eb714b24e0",
+    "bytes": 326287,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_n.1024.ktx2": {
+    "hash": "53ca7094ef03",
+    "bytes": 1308917,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_n.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_n.256.ktx2": {
+    "hash": "59e52150e69b",
+    "bytes": 84673,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_n.512.ktx2": {
+    "hash": "c314ae806be9",
+    "bytes": 330195,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_leaves_02_n.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_logs_ground_01_co.1024.ktx2": {
@@ -304901,10 +305765,22 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_tree_distant_backdrop_01_c.2048.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_tree_distant_backdrop_01_c.256.ktx2": {
+    "hash": "213e8c2b8184",
+    "bytes": 24073,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_tree_distant_backdrop_01_c.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_tree_distant_backdrop_01_c.512.ktx2": {
     "hash": "c4c67506398c",
     "bytes": 79672,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_tree_distant_backdrop_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_tree_distant_backdrop_01_n__normal.1024.ktx2": {
+    "hash": "c5475b1c4537",
+    "bytes": 656675,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_tree_distant_backdrop_01_n__normal.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_tree_distant_backdrop_01_n__normal.256.ktx2": {
@@ -305261,6 +306137,66 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_treestem_03_nss__orm_97c87bf0.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vinebush_small_01_c.128.ktx2": {
+    "hash": "fdd702d9d2cc",
+    "bytes": 17818,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vinebush_small_01_c.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vinebush_small_01_n.256.ktx2": {
+    "hash": "d1ffafaecc93",
+    "bytes": 143985,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vinebush_small_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_c.1024.ktx2": {
+    "hash": "95159e1b3dc8",
+    "bytes": 331158,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_c.256.ktx2": {
+    "hash": "7a77139cf734",
+    "bytes": 70847,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_c.512.ktx2": {
+    "hash": "45aa4ed6f79d",
+    "bytes": 140676,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_n.256.ktx2": {
+    "hash": "4acdcd1d67f4",
+    "bytes": 89119,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_n.512.ktx2": {
+    "hash": "1bdcf3eaf09d",
+    "bytes": 289070,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_01_n.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_lush_01_c.256.ktx2": {
+    "hash": "376de084ac0f",
+    "bytes": 50130,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_lush_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_lush_01_n.256.ktx2": {
+    "hash": "f699c3f94175",
+    "bytes": 134852,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_lush_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_lush_01_n.512.ktx2": {
+    "hash": "9ec0df158fbe",
+    "bytes": 490238,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_lush_01_n.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavinbase_vines_thick_01_co.32.ktx2": {
     "hash": "8a29de94ab7c",
     "bytes": 4705,
@@ -305397,6 +306333,24 @@
     "hash": "7b93327b27f0",
     "bytes": 284319,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_aqueducttemple_interiorroom_01_nss__orm_ff08a98c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_backgroundtemple_cs.1024.ktx2": {
+    "hash": "e403add8af67",
+    "bytes": 259335,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_backgroundtemple_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_backgroundtemple_cs.256.ktx2": {
+    "hash": "73518ab2e9e0",
+    "bytes": 58048,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_backgroundtemple_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_backgroundtemple_cs.512.ktx2": {
+    "hash": "8001427fc548",
+    "bytes": 98649,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_backgroundtemple_cs.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_barrier_01_c.128.ktx2": {
@@ -306125,6 +307079,12 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_mainpyramid_entrance_01_n__normal.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_maintemple_01_c.256.ktx2": {
+    "hash": "19328f79112c",
+    "bytes": 75475,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_maintemple_01_c.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_maintemple_01_c.512.ktx2": {
     "hash": "71b20f0837f6",
     "bytes": 284663,
@@ -306807,6 +307767,24 @@
     "hash": "13bb68af24e7",
     "bytes": 75201,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_stonepile_medium_01_nss__orm_41853a94.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_tarmacdetail_01_cs.1024.ktx2": {
+    "hash": "1e55b280e54f",
+    "bytes": 1246585,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_tarmacdetail_01_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_tarmacdetail_01_cs.256.ktx2": {
+    "hash": "18656b8ac2a2",
+    "bytes": 72279,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_tarmacdetail_01_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_tarmacdetail_01_cs.512.ktx2": {
+    "hash": "d45196eb9de0",
+    "bytes": 294379,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_tarmacdetail_01_cs.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_temple_01_platform_01_c.2048.ktx2": {
@@ -307511,6 +308489,12 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_temple_underground_grate_01_n__normal.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_temple_underground_grate_01_n__normal.512.ktx2": {
+    "hash": "b33776047b1c",
+    "bytes": 79234,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_temple_underground_grate_01_n__normal.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_temple_underground_grate_02_cs.1024.ktx2": {
     "hash": "14bc409f380f",
     "bytes": 910002,
@@ -307949,6 +308933,12 @@
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_trim_tile_04_nss__orm_8be9c318.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_vines_splintermoss_01_ca.256.ktx2": {
+    "hash": "ec2fb83285b4",
+    "bytes": 78370,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_vines_splintermoss_01_ca.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_vines_splintermoss_01_ca.512.ktx2": {
     "hash": "fbbc5a4f98d9",
     "bytes": 298494,
@@ -308193,6 +309183,24 @@
     "hash": "bd3d32222f4a",
     "bytes": 157817,
     "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_wall_tile_03_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_wall_tile_03_h.1024.ktx2": {
+    "hash": "9cea466317af",
+    "bytes": 435118,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_wall_tile_03_h.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_wall_tile_03_h.256.ktx2": {
+    "hash": "6e628d7db5ec",
+    "bytes": 37543,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_wall_tile_03_h.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_wall_tile_03_h.512.ktx2": {
+    "hash": "819e6b25add8",
+    "bytes": 130051,
+    "from": "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_wall_tile_03_h.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/tex/t_yavintemple_wall_tile_03_n__normal.256.ktx2": {
