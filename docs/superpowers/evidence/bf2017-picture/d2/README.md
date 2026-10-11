@@ -8,22 +8,22 @@ Triangles and calls are at the worst place you can stand, and the README’s fit
 
 | pack | tier | dropped (before → after) | worst triangles, calls | texture MB (before → after) | mesh MB | LOD0 over 12k triangles |
 | --- | --- | --: | --: | --: | --: | --: |
-| hoth | high | 0 → 0 | 1,573k, 169 | 28.7 → 28.8 | 8.8 | 0 |
-| hoth | ultra | (none) → 0 | 2,198k, 193 | (none) → 224.0 | 14.3 | 10 |
-| hoth/base | high | 54 → 54 | 1,286k, 630 | 40.1 → 42.0 | 28.4 | 0 |
-| hoth/base | ultra | (none) → 0 | 3,639k, 889 | (none) → 243.3 | 49.1 | 31 |
-| endor | high | 169 → 170 | 2,339k, 630 | 107.2 → 112.3 | 36.3 | 0 |
-| endor | ultra | (none) → 0 | 5,642k, 1,267 | (none) → 242.7 | 54.1 | 34 |
-| sb_endor | high | 24 → 24 | 1,151k, 311 | 32.5 → 35.5 | 22.0 | 0 |
+| hoth | high | 0 → 0 | 1,572k, 168 | 28.7 → 28.8 | 8.8 | 0 |
+| hoth | ultra | (none) → 0 | 2,197k, 192 | (none) → 224.0 | 14.3 | 10 |
+| hoth/base | high | 54 → 49 | 1,293k, 630 | 40.1 → 42.1 | 28.1 | 0 |
+| hoth/base | ultra | (none) → 0 | 3,639k, 889 | (none) → 243.4 | 49.1 | 31 |
+| endor | high | 169 → 156 | 2,318k, 630 | 107.2 → 113.4 | 33.2 | 0 |
+| endor | ultra | (none) → 0 | 5,642k, 1,265 | (none) → 244.1 | 54.1 | 34 |
+| sb_endor | high | 24 → 23 | 1,101k, 314 | 32.5 → 35.5 | 21.3 | 0 |
 | sb_endor | ultra | (none) → 0 | 2,639k, 377 | (none) → 241.6 | 46.6 | 28 |
-| sb_fondor | high | 154 → 154 | 535k, 307 | 31.6 → 56.9 | 12.4 | 0 |
-| sb_fondor | ultra | (none) → 19 | 2,222k, 674 | (none) → 244.0 | 66.9 | 67 |
-| sb_kamino | high | 134 → 134 | 1,169k, 119 | 40.6 → 57.3 | 8.5 | 0 |
-| sb_kamino | ultra | (none) → 0 | 9,500k, 736 | (none) → 244.0 | 44.1 | 31 |
+| sb_fondor | high | 154 → 140 | 563k, 306 | 31.6 → 55.6 | 14.1 | 0 |
+| sb_fondor | ultra | (none) → 20 | 2,241k, 671 | (none) → 243.1 | 67.0 | 67 |
+| sb_kamino | high | 134 → 109 | 1,837k, 142 | 40.6 → 57.3 | 9.1 | 0 |
+| sb_kamino | ultra | (none) → 0 | 9,500k, 735 | (none) → 244.0 | 44.1 | 31 |
 | sb_droidbattleship | high | 0 → 0 | 1,022k, 218 | 32.0 → 32.0 | 22.6 | 0 |
 | sb_droidbattleship | ultra | (none) → 0 | 2,178k, 222 | (none) → 242.7 | 56.3 | 49 |
 
-Low and mid are as they were: low and mid drop the same meshes, and their worst places are within 1 % of before. The two that moved are Endor’s 425 skinned shrubs, now in the pack, and its mid calls, 436 → 434.
+Low, mid and high moved with `main`’s fit weights (E4’s `seenWeight` and `standsOn`, merged at 972217197), which keep floors and walkable plates over clutter: Hoth’s base drops 49 meshes at high where it dropped 54, Endor 156 where it dropped 169, and Kamino 109 where it dropped 134. Endor also gains its 425 skinned shrubs, which are now in the pack. Each README has all four tiers.
 
 High’s “every map” grew where a mesh that high drops is kept on ultra (Fondor, Kamino, Endor). The factory writes such a mesh’s maps at every tier’s size, but high does not draw the mesh, so it never fetches them. The fetched figures are in the gate below.
 
@@ -38,7 +38,7 @@ Sizes of maps at each tier, out of every map in the pack (from the table script 
 
 ## Ultra’s maps: held to the GPU contract
 
-The plan’s table, with ultra at 2048 / 2048 / 1024 and its normal and ORM maps at the colour’s size, gave these totals as built: Hoth 234.9 MB, Hoth’s base 385.2, Endor 685.8, sb_endor 269.6, Fondor 368.6, Kamino 420.7, the droid battleship 254.5. A pack’s maps are bound after its GLB is parsed, so `fitTextures` never sees them. `lod.js`’s `fitMaps` now holds ultra to `TEX_MB.ultra`, 256 MB (the desktop GPU-memory contract). Normal and ORM maps step down first, the biggest first, and never below high’s size. Maps stepped: Hoth 0, the droid battleship 0, sb_endor 5, Fondor 41, Hoth’s base 63, Kamino 65, Endor 335.
+The plan’s table, with ultra at 2048 / 2048 / 1024 and its normal and ORM maps at the colour’s size, gave these totals as built: Hoth 234.9 MB, Hoth’s base 385.2, Endor 685.8, sb_endor 269.6, Fondor 368.6, Kamino 420.7, the droid battleship 254.5. A pack’s maps are bound after its GLB is parsed, so `fitTextures` never sees them. `lod.js`’s `fitMaps` now holds ultra to `TEX_MB.ultra`, 256 MB (the desktop GPU-memory contract). Normal and ORM maps step down first, the biggest first, and never below high’s size. Maps stepped: Hoth 0, the droid battleship 0, sb_endor 5, Fondor 38, Hoth’s base 63, Kamino 65, Endor 335.
 
 ## The caps: why high kept main’s
 
@@ -105,7 +105,7 @@ Nothing draws Endor’s 11 yet: their shader binds `T_DefaultBlack` alone, and t
 
 ## What stays out, and why
 
-- Ultra keeps every mesh but Fondor’s 19 (584 instances). That pack takes half the ultra row (`--share 0.5`, beside the flight page), so its calls cut them.
+- Ultra keeps every mesh but Fondor’s 20 (400 instances). That pack takes half the ultra row (`--share 0.5`, beside the flight page), so its calls cut them.
 - Endor’s 425 wind-bent shrubs are in the pack as rigid bind-pose instances (`STILL_SKINNED`). Every other skinned actor is the site’s to place (`actors.json`).
 - The textures missing from the bucket are as before: Hoth 4, Hoth’s base 6, Endor 27, the droid battleship 2.
 - Probes: Hoth and Hoth’s base have 6 each at 128² with the sun kept for ultra, beside the 64² clipped ones, and Fondor has 6. Endor_01 bakes no sunny reflection volume, and the other space levels none at all.

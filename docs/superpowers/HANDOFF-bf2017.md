@@ -24,7 +24,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 
 The numbers: `docs/superpowers/evidence/bf2017-picture/d2/README.md`.
 
-- **Every pack has its ultra cut.** All seven (hoth, hoth/base, endor, and the four space packs) were rebuilt with `--ultra` and published by hash: LOD0 above 12,000 triangles is in ultra’s row, its maps are up to 2048, and ultra drops nothing but Fondor’s 19 meshes (it takes half the row). E1 to E4: run your packs’ commands again with `--ultra` once this lands.
+- **Every pack has its ultra cut.** All seven (hoth, hoth/base, endor, and the four space packs) were rebuilt with `--ultra` and published by hash: LOD0 above 12,000 triangles is in ultra’s row, its maps are up to 2048, and ultra drops nothing but Fondor’s 20 meshes (it takes half the row). E1 to E4: run your packs’ commands again with `--ultra` once this lands.
 - **The caps.** The step up is ultra’s alone (2048 / 2048 / 1024, normal and ORM at the colour’s size), held to 256 MB by `fitMaps` (`lod.js`’s `TEX_MB`). High and mid keep main’s 1024 / 512 / 256 with data a step under. As the plan wrote it, high would have fetched about 290 MB on Hoth against the 160 MB bucket row, and the evidence has the sums. If the owner wants high a step up, the bucket row has to move with a reason.
 - **Anisotropy.** Pack and crew maps take the tier’s value (16, 4 or 1) through `levelGltf.js`’s `sharpenPack`.
 - **Decals.** The parts writer fetches each colour map into `tex/decals/`. Normal-only decals are kept with `texture: null` and not drawn: Endor’s 11 bumped-metal plates need the template’s normal map, a desktop ask.
