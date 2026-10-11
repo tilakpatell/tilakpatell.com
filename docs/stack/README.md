@@ -3,8 +3,7 @@
 One page per library, engine or framework the site is built on, and this index of every package in `package.json`: its version, the page it belongs to, and how many files under `src/` and `scripts/` import it (tests left out). To add a dependency, give it a row in `PAGES` in `scripts/stack-census.mjs` and a page made from `_template.md`, then run `node scripts/stack-census.mjs --write`; the measure’s `stack-pages` fails until the package has a row here.
 
 `three/webgpu` and `three/tsl` ship inside `three` and so have no row; their page is [webgpu-tsl.md](webgpu-tsl.md).
-
-WebAssembly is the browser’s own, not a package, and so has no row; its page is [webassembly.md](webassembly.md) (Rapier’s two builds, the Basis transcoder, the meshopt decoder).
+The WebAssembly modules (Rapier, the Basis transcoder, meshopt) and lane X2’s Rust ports have their page at [webassembly.md](webassembly.md).
 
 <!-- census:start -->
 | package | version | page | files |

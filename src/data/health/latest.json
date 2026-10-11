@@ -1,6 +1,6 @@
 {
   "date": "2026-10-11",
-  "sha": "308b42ca",
+  "sha": "7989f4909",
   "metrics": {
     "big-files": {
       "value": 30,
@@ -17,7 +17,11 @@
         },
         {
           "file": "src/components/galaxy/surface/scene.js",
-          "n": 4169
+          "n": 4096
+        },
+        {
+          "file": "src/components/universe/footScene.js",
+          "n": 3975
         },
         {
           "file": "src/components/middleearth/towns/rivendell/props.js",
@@ -34,10 +38,6 @@
         {
           "file": "src/components/middleearth/towns/cirithungol/props.js",
           "n": 3340
-        },
-        {
-          "file": "src/components/universe/footScene.js",
-          "n": 3300
         },
         {
           "file": "src/components/middleearth/towns/amonhen/props.js",
@@ -89,7 +89,7 @@
         },
         {
           "file": "src/components/galaxy/surface/props/forest.js",
-          "n": 2090
+          "n": 2118
         },
         {
           "file": "src/lib/sfx.js",
@@ -101,7 +101,7 @@
         },
         {
           "file": "src/components/galaxy/surface/props/core.js",
-          "n": 1883
+          "n": 1894
         },
         {
           "file": "src/components/middleearth/towns/edoras/folk.js",
@@ -110,7 +110,7 @@
       ]
     },
     "boundary-breaks": {
-      "value": 482,
+      "value": 475,
       "unit": "imports",
       "label": "imports across a line docs/health/RULES.md draws",
       "detail": [
@@ -632,7 +632,7 @@
         {
           "file": "src/components/galaxy",
           "n": 1,
-          "scan": "src/components/galaxy/surface/kit.js",
+          "scan": "src/components/galaxy/surface/detail.js",
           "ramp": "src/components/cockpit/vehicles/cruiser.js"
         },
         {
@@ -645,18 +645,18 @@
           "file": "src/components/albuquerque/world",
           "n": 1,
           "scan": "src/components/albuquerque/casa/scene.js",
-          "ramp": "src/components/rickmorty/portal/toonCore.js"
+          "ramp": "src/components/rickmorty/portal/meshyCast.js"
         },
         {
           "file": "src/components/albuquerque/metherria",
           "n": 1,
           "scan": "src/components/albuquerque/metherria/scene.js",
-          "ramp": "src/components/rickmorty/portal/toonCore.js"
+          "ramp": "src/components/rickmorty/portal/meshyCast.js"
         },
         {
           "file": "src/components/rickmorty",
           "n": 1,
-          "scan": "src/components/galaxy/surface/kit.js",
+          "scan": "src/components/galaxy/surface/detail.js",
           "ramp": "src/components/rickmorty/portal/meshyCast.js"
         }
       ]
