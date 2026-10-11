@@ -1,0 +1,15 @@
+seed  winner  why  stage  minutes  kills1  kills2  heroes1  heroes2  ms
+1       Rebels  reinforcements  0       3.1     43      47      0       0       21319 
+2       Rebels  reinforcements  0       3.8     44      39      0       0       26206 
+3       Rebels  reinforcements  0       3.8     46      48      0       0       27799 
+4       Empire  reinforcements  0       3.9     40      59      0       0       14135 
+5       Rebels  reinforcements  0       3.3     43      44      0       0       11035 
+6       Empire  reinforcements  0       4.1     47      50      0       0       14146 
+7       Rebels  reinforcements  0       3       43      39      0       0       6193  
+8       Rebels  reinforcements  0       3.6     32      51      0       0       7199  
+9       Rebels  reinforcements  0       3.7     43      58      0       0       5811  
+10      Rebels  reinforcements  0       4       46      58      0       0       6375  
+11      Rebels  reinforcements  0       4.6     63      62      0       0       6410  
+12      Rebels  reinforcements  0       3.6     45      35      0       0       5716  
+
+12 rounds of supremacy (the Rebels attack first): Rebels reinforcements 10, Empire reinforcements 2; no result in 25 min 0; median 3.75 min; kills 44.6 (Rebels) to 49.2 (Empire); stuck 0, off the navgrid 0; 12695.3 ms a round

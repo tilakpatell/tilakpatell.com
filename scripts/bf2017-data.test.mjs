@@ -23,7 +23,11 @@ describe('the data CLI', () => {
 
   it('names each rulebook’s file by its level', () => {
     expect(fileOf('map', 'hoth_01')).toBe('maps/hoth.json');
+    expect(fileOf('map', 'hoth_02')).toBe('maps/hoth.2.json');
+    expect(fileOf('map', 'a1_m0lib_ds02')).toBe('maps/a1_m0lib_ds02.json');
+    expect(fileOf('map', 'sb_kamino_01')).toBe('maps/sb_kamino.json');
     expect(fileOf('lighting', 'hoth_01')).toBe('maps/hoth.lighting.json');
+    expect(fileOf('lighting', 'hoth_02')).toBe('maps/hoth.2.lighting.json');
     expect(fileOf('weapons', 'hoth_01')).toBe('weapons.json');
     expect(fileOf('aiNames', 'hoth_01')).toBe('ai.names.json');
     expect(fileOf('aiCreatures', 'hoth_01')).toBe('ai.creatures.json');

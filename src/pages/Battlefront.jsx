@@ -1,13 +1,13 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
-import { LEVELS, MODES, routeFor } from '../components/battlefront';
+import { LEVEL_MODES, LEVELS, MODES, routeFor } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
 
 // The game's own front end (its Start, main menu and Play screens), loaded
 // with the page only when it is asked for.
 const FrontEnd = lazy(() => import('../components/battlefront/screens/FrontEnd.jsx'));
-const playable = (level, mode) => LEVELS.includes(level) && MODES.includes(mode);
+const playable = (level, mode) => LEVELS.includes(level) && MODES.includes(mode) && (LEVEL_MODES[level]?.includes(mode) ?? true);
 
 // Battlefront: the 2017 game's Galactic Assault on its own maps
 // (docs/superpowers/specs/2026-10-10-battlefront-game-design.md).

@@ -10,6 +10,7 @@
 //   STARFIGHTER                  system → where its Starfighter Assault is flown (the starfighter lane's rows)
 //   BATTLEFRONT                  system → the Battlefront game's own route for its Galactic Assault, once it has one
 //   modesFor(system, ctx)        → [{ ...MODES row, state: 'live' | 'soon' | 'none', why, to, options? }]
+//                                  (a `where` card, lane 6's Strike, Extraction, Ewok Hunt and Supremacy, only where the game fights it)
 //   missionForMode(system, mode, missions) → the mission id the surface runs for it (null: free roam)
 //   liveLine(system, ctx)        the names of what's live there, in a line (the Land button's)
 //   MODE_ASK_KEY, readAsk(raw)   whether the menu asks on landing ('ask' | 'never')
@@ -32,6 +33,11 @@ export const MODES = [
   { id: 'starfighter', name: name('starfighter', 'Starfighter Assault'), about: about('starfighter', 'Up in the fighters over the world, for the capital ships and what they guard.'), icon: `${ICONS}/Classes/Class_Vehicle_Interceptor.svg` },
   { id: 'hvv', name: name('hvv', 'Heroes vs Villains'), about: about('hvv', 'Four heroes against four villains, each side guarding its target.'), icon: `${ICONS}/Classes/Hero_Icon_01.svg` },
   { id: 'blast', name: name('blast', 'Blast'), about: about('blast', 'Ten troopers a side, no objectives: first to a hundred eliminations.'), icon: `${ICONS}/Classes/Class_Troopers_Assault_01.svg` },
+  // (the other modes, lane 6's: a card only where the game fights them, `where`)
+  { id: 'strike', name: name('strike', 'Strike'), about: about('strike', 'Eight a side, one objective: the attackers blow it or carry it out, then the sides swap.'), icon: `${ICONS}/InGame/GameMode/GameMode_Attack.svg`, where: true },
+  { id: 'extraction', name: name('extraction', 'Extraction'), about: about('extraction', 'Carry the cargo through the checkpoints before the clock runs out; the other side stops you.'), icon: `${ICONS}/InGame/GameMode/GameMode_Vehicle.svg`, where: true },
+  { id: 'ewokHunt', name: name('ewokHunt', 'Ewok Hunt'), about: about('ewokHunt', 'Survive a night on Endor: stormtroopers against the Ewoks, every trooper lost one more Ewok.'), icon: `${ICONS}/InGame/GameMode/GameMode_Defend.svg`, where: true },
+  { id: 'supremacy', name: name('supremacy', 'Supremacy'), about: about('supremacy', 'Twenty a side for five command posts: the side holding fewer bleeds its reinforcements.'), icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg`, where: true },
   { id: 'story', name: 'Story', about: 'This world’s own missions, from the films.', icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg` },
   { id: 'free', name: 'Free roam', about: 'The world as it is: walk, ride, talk and find things.', icon: `${ICONS}/Classes/Class_Vehicle_Speeder.svg` },
 ];
@@ -44,7 +50,7 @@ export const STARFIGHTER = Object.fromEntries(Object.keys(FLOWN).map((sys) => [s
 export const BATTLEFRONT = {};
 
 // a mission's kind → the mode it is
-const KIND_MODE = { assault: 'galacticAssault', hvv: 'hvv', blast: 'blast', chase: 'story', quest: 'story' };
+const KIND_MODE = { assault: 'galacticAssault', hvv: 'hvv', blast: 'blast', chase: 'story', quest: 'story', strike: 'strike', extraction: 'extraction', ewokHunt: 'ewokHunt', supremacy: 'supremacy' };
 const missionsOf = (system, missions = MISSIONS) => Object.values(missions[system] ?? {});
 const ofMode = (system, mode, missions) => missionsOf(system, missions).filter((m) => KIND_MODE[m.kind] === mode);
 
@@ -59,7 +65,7 @@ export function modesFor(system, { missions = MISSIONS, book = BOOK, starfighter
   const game = book.worlds?.[system]?.modes ?? [];
   const place = book.names?.worlds?.[system]?.text ?? systemById(system)?.name ?? 'this world';
   const brief = systemById(system)?.game ?? null;
-  return MODES.map((m) => {
+  return MODES.filter((m) => !m.where || game.includes(m.id)).map((m) => {
     const card = { ...m, state: 'none', why: null, to: null };
     if (m.id === 'free') return { ...card, state: 'live', to: surface(system, 'mode=free') };
     if (m.id === 'story') {

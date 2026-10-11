@@ -1,0 +1,15 @@
+seed  winner  why  stage  minutes  kills1  kills2  heroes1  heroes2  ms
+1       Empire  extracted   0       8.2     10      74      0       0       15205 
+2       Empire  extracted   0       8.2     1       83      0       0       16873 
+3       Empire  extracted   0       8.2     2       80      0       0       15622 
+4       Empire  extracted   0       8.2     6       64      0       0       9438  
+5       Rebels  wiped       0       7       15      50      0       0       10106 
+6       Rebels  wiped       0       8       15      88      0       0       11041 
+7       Rebels  wiped       0       7.3     15      75      0       0       8287  
+8       Rebels  wiped       0       5.1     15      70      0       0       4967  
+9       Rebels  wiped       0       5.9     15      43      0       0       6511  
+10      Rebels  wiped       0       7.3     15      66      0       0       6858  
+11      Empire  extracted   0       8.2     1       92      0       0       7523  
+12      Rebels  timer       0       8.2     0       70      0       0       5929  
+
+12 rounds of ewokHunt (the Empire attack first): Empire extracted 5, Rebels wiped 6, Rebels timer 1; no result in 25 min 0; median 8.1 min; kills 9.2 (Rebels) to 71.3 (Empire); stuck 0, off the navgrid 0; 9863.3 ms a round

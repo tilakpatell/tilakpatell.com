@@ -1,8 +1,8 @@
-import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mapRow } from './bf2017-rulebook-map.mjs';
+import { djb, mapRow } from './bf2017-rulebook-map.mjs';
 import { checkSources } from './bf2017-rulebook.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
@@ -128,5 +128,59 @@ describe('a space level’s row (Starfighter Assault)', () => {
 
   it('names every number’s source', () => {
     expect(checkSources(m)).toEqual([]);
+  });
+});
+
+// A fixture level with Strike's layer (Domination, the game's own id for it):
+// the carried objective, its drop-off, the two sides' spawns, and a bomb the
+// layer names without a transform (Review Focus 2)
+function strikeLevel() {
+  const dir = mkdtempSync(join(tmpdir(), 'bf2017-'));
+  cpSync(ROOT, dir, { recursive: true });
+  const tf = (x, z) => ({ right: { x: 1, y: 0, z: 0 }, up: { x: 0, y: 1, z: 0 }, forward: { x: 0, y: 0, z: 1 }, trans: { x, y: 10, z } });
+  const at = (p) => join(dir, 'data', `Levels/MP/Fixture_02/${p}.json`);
+  mkdirSync(join(dir, 'data', 'Levels/MP/Fixture_02'), { recursive: true });
+  writeFileSync(at('Fixture_02'), JSON.stringify({ objects: [{ $type: 'LevelData' }] }));
+  writeFileSync(at('Domination'), JSON.stringify({ objects: [{ $type: 'SubWorldData' }] }));
+  const bp = (n, logic = false) => ({ $type: logic ? 'LogicPrefabReferenceObjectData' : 'SpatialPrefabReferenceObjectData', Blueprint: { $asset: `Gameplay/GameModes/Domination/${n}` } });
+  writeFileSync(
+    at('Domination_Logic'),
+    JSON.stringify({
+      objects: [
+        { $type: 'LayerData' },
+        { $type: 'AlternateSpawnEntityData', Team: 'Team1', Priority: 1, Enabled: true, Transform: tf(-50, 0) },
+        { $type: 'AlternateSpawnEntityData', Team: 'Team2', Priority: 1, Enabled: true, Transform: tf(50, 0) },
+        { ...bp('PF_Strike_CTF'), Transform: tf(0, 20) },
+        { ...bp('Pf_FlagDropOff'), Transform: tf(-60, 5) },
+        bp('PF_Strike_Bombs', true),
+      ],
+    }),
+  );
+  const tsv = join(dir, 'data.tsv');
+  writeFileSync(tsv, readFileSync(tsv, 'utf8') + ['Fixture_02\tLevelData', 'Domination\tSubWorldData', 'Domination_Logic\tLayerData'].map((r) => { const [n, t] = r.split('\t'); return `Levels/MP/Fixture_02/${n}\t${t}\tdata/Levels/MP/Fixture_02/${n}.json\t100`; }).join('\n') + '\n');
+  return dir;
+}
+
+describe('a level with Strike', () => {
+  const m = mapRow(strikeLevel(), 'Levels/MP/Fixture_02/Fixture_02');
+
+  it('reads Strike from its Domination layer: the two sides’ spawns, the objective and its drop-off', () => {
+    expect(m.modes).toEqual(['strike']);
+    expect(m.spawns.map((s) => [s.mode, s.team, s.at[0]])).toEqual([['strike', 1, -50], ['strike', 2, 50]]);
+    expect(m.prefabs.filter((p) => p.at).map((p) => [p.name, p.at[0], p.at[2]])).toEqual([['PF_Strike_CTF', 0, 20], ['Pf_FlagDropOff', -60, 5]]);
+  });
+
+  it('lists the objective it cannot place under unplaced (Review Focus 2)', () => {
+    expect(m.unplaced).toEqual([expect.objectContaining({ mode: 'strike', layer: 'Domination_Logic', name: 'PF_Strike_Bombs' })]);
+  });
+});
+
+describe('the mode prefabs’ input names', () => {
+  it('are the graphs’ djb2-xor hashes of the names', () => {
+    // (the hashes Naboo's Strike and Jabba's palace's Extraction wire)
+    expect(djb('BombALocation').toString(16)).toBe('97ae711b');
+    expect(djb('CP1Overtime').toString(16)).toBe('965d909c');
+    expect(djb('CheckpointPosition1').toString(16)).toBe('c7a11ce7');
+    expect(djb('CaptureDuration').toString(16)).toBe('8ae4eedf');
   });
 });

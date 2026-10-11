@@ -2,7 +2,7 @@
 // game's data, and the hand files beside them): every file parses, every
 // number names its source, every id a file names exists where it should, and
 // nothing of the sequel era got in.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -42,7 +42,8 @@ describe('the Battlefront rulebooks', () => {
     // (a space level's map is fetched only when its Starfighter Assault is flown: starfighterMaps.js; each map is held to its own)
     // (the costs, the kits and the Arcade have their own budget, below)
     const bytes = FILES.filter((f) => !f.startsWith('maps/sb_') && !['points', 'kits', 'arcade'].includes(f)).reduce((n, f) => n + readFileSync(join(DIR, `${f}.json`)).length, 0);
-    expect(bytes).toBeLessThan(2 * 1024 * 1024);
+    // (4 MiB: the maps lane added a rulebook for every usable map and the bots lane the AI names, creatures and squadron tables; 2.1 MB after both)
+    expect(bytes).toBeLessThan(4 * 1024 * 1024);
     for (const f of FILES.filter((x) => x.startsWith('maps/') && !x.includes('.'))) expect(readFileSync(join(DIR, `${f}.json`)).length, f).toBeLessThan(600 * 1024);
   });
 
@@ -79,7 +80,8 @@ describe('the Battlefront rulebooks', () => {
   it('every space level has its Starfighter Assault’s phases, and refuses the sequel era’s', () => {
     for (const l of ['sb_endor', 'sb_kamino', 'sb_fondor', 'sb_droidbattleship']) {
       const map = rows(`maps/${l}`);
-      expect(map.modes, l).toEqual(['starfighter']);
+      // (and the level's other space modes, Hero Starfighters and the arcade, read beside it)
+      expect(map.modes, l).toEqual(['heroStarfighters', 'arcade', 'starfighter']);
       expect(map.spaceBattle.phases.filter((p) => p.objectives.length).length, l).toBe(3);
       expect(map.spawns.length, l).toBeGreaterThan(0);
       expect(isSequel(map.level), l).toBe(false);
@@ -89,7 +91,7 @@ describe('the Battlefront rulebooks', () => {
   it.each(['sb_endor', 'sb_kamino'])('%s’s Starfighter Assault follows the level’s own phases, on things the level places', (l) => {
     const map = rows(`maps/${l}`);
     const st = rb[`maps/${l}.stages`];
-    expect(map.modes).toEqual(['starfighter']);
+    expect(map.modes).toContain('starfighter');
     expect(st.level).toBe(map.level);
     // (the stages in the game's phase order, each phase's objectives all bound, and no more)
     const phases = map.spaceBattle.phases.filter((p) => p.objectives.length);
@@ -161,5 +163,27 @@ describe('the Battlefront rulebooks', () => {
     for (const f of FILES) if (!['ui', 'ai', 'strings', 'maps/hoth.lighting'].includes(f)) walk(rows(f), f);
     walk(Object.keys(rows('ui').icons), 'ui.icons');
     expect(bad).toEqual([]);
+  });
+});
+
+// Every map rulebook on disk (the 44 usable maps': scripts/bf2017-data.mjs map --level <key>)
+describe('every map rulebook', () => {
+  const books = readdirSync(join(DIR, 'maps')).filter((f) => f.endsWith('.json') && !/\.(stages|lighting)\.json$/.test(f) && f !== 'arenas.json');
+
+  it('covers the 44 usable maps', () => {
+    expect(books.length).toBe(44);
+  });
+
+  it.each(books)('%s loads, its unplaced rows as many as its header says, nothing of the sequel era', (f) => {
+    const book = JSON.parse(readFileSync(join(DIR, 'maps', f), 'utf8'));
+    expect(book._from.unplaced).toBe(book.rows.unplaced.length);
+    expect(isSequel(book.rows.level ?? '')).toBe(false);
+    for (const k of ['spawns', 'polygons', 'volumes', 'prefabs', 'vehicleSpawns']) for (const r of book.rows[k] ?? []) expect(isSequel(r.blueprint ?? r.name ?? ''), `${f} ${k} ${r.id ?? r.blueprint}`).toBe(false);
+    expect(checkSources(book), f).toEqual([]);
+    expect(readFileSync(join(DIR, 'maps', f)).length, f).toBeLessThan(600 * 1024);
+  });
+
+  it('a hand stage file says so', () => {
+    for (const f of readdirSync(join(DIR, 'maps')).filter((x) => x.endsWith('.stages.json'))) expect(JSON.parse(readFileSync(join(DIR, 'maps', f), 'utf8')).source, f).toBe('hand');
   });
 });

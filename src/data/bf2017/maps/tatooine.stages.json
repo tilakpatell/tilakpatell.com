@@ -1,0 +1,39 @@
+{
+  "source": "hand",
+  "mode": "galacticAssault",
+  "level": "Levels/MP/Tatooine_01/Tatooine_01",
+  "attackers": "dark",
+  "notes": "NOTES.md says how this was made: the stages in the order the level’s own stage strings number them, each team’s line; the attackers the side whose first line does not defend; the objectives are not yet chosen (empty), as no route plays this map’s Galactic Assault",
+  "stages": [
+    {
+      "id": "stage1",
+      "team1": "ID_FANTASYBATTLES_TATOOINE_STAGE1_TEAM1",
+      "team2": "ID_FANTASYBATTLES_TATOOINE_STAGE1_TEAM2",
+      "text": {
+        "team1": "STOP THE ADVANCING IMPERIALS",
+        "team2": "PURGE THE OUTSKIRTS OF ANY REBEL PRESENCE"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage2",
+      "team1": "ID_FANTASYBATTLES_TATOOINE_STAGE2_TEAM1",
+      "team2": "ID_FANTASYBATTLES_TATOOINE_STAGE2_TEAM2",
+      "text": {
+        "team1": "DON'T LET THE MARKET AREA FALL",
+        "team2": "CONTINUE ADVANCING INTO THE MARKET AREA"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage3",
+      "team1": "ID_FANTASYBATTLES_TATOOINE_STAGE3_TEAM1",
+      "team2": "ID_FANTASYBATTLES_TATOOINE_STAGE3_TEAM2",
+      "text": {
+        "team1": "HOLD THE IMPERIALS BACK UNTIL WE CAN EXTRACT",
+        "team2": "STOP THE REBELS FROM ESCAPING"
+      },
+      "objectives": []
+    }
+  ]
+}

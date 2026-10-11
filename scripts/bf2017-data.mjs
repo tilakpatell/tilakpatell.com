@@ -39,6 +39,7 @@ import { squadsRow } from './lib/bf2017-rulebook-squads.mjs';
 import { LEVEL_WORLDS, modesRulebook } from './lib/bf2017-modes.mjs';
 import { kitsRulebook, pointsRulebook } from './lib/bf2017-rulebook-costs.mjs';
 import { arcadeRulebook } from './lib/bf2017-arcade.mjs';
+import { USABLE, levelKey, rulebookFile } from './lib/bf2017-map-audit.mjs';
 import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -58,10 +59,12 @@ const NEEDS = {
   strings: RULEBOOKS.filter((r) => r !== 'strings'),
 };
 
+// A level by its key (hoth_02, a1_m0lib_ds02: the 44 usable maps, scripts/lib/bf2017-map-audit.mjs) or its path
+export const levelPath = (level) => USABLE.find((l) => levelKey(l) === String(level).toLowerCase()) ?? level;
+
 export function fileOf(step, level) {
-  const map = level.toLowerCase().replace(/_\d+$/, '');
-  if (step === 'map') return `maps/${map}.json`;
-  if (step === 'lighting') return `maps/${map}.lighting.json`;
+  if (step === 'map') return `maps/${rulebookFile(levelKey(levelPath(level)))}`;
+  if (step === 'lighting') return `maps/${rulebookFile(levelKey(levelPath(level))).replace(/\.json$/, '')}.lighting.json`;
   if (step === 'aiNames') return 'ai.names.json';
   if (step === 'aiCreatures') return 'ai.creatures.json';
   if (step === 'aiSquadron') return 'ai.squadron.json';
@@ -135,7 +138,7 @@ const WIDGETS = /^UI\/(InGame\/(Hud\/(Weapons\/Widgets\/WeaponHeat\/WeaponHeat(W
 
 const BUILD = {
   teams: (p) => ({ [`${p.era}:${p.level}`]: teamRow(p.root, p.era, p.level) }),
-  map: (p) => mapRow(p.root, p.level),
+  map: (p) => mapRow(p.root, levelPath(p.level)),
   classes: (p, ctx) =>
     byId(
       sides(ctx).flatMap((s) =>
@@ -224,7 +227,8 @@ export function run(p, { write, log = console.log, copy = (root, out, ui) => cop
     if (step === 'ui' && !p.dry) counts.ui.copied = copy(p.root, join(ROOT, 'public', 'battlefront'), rows);
     log(`${step.padEnd(15)} ${String(counts[step].rows).padStart(5)} rows${counts[step].refused ? `, ${counts[step].refused} refused` : ''}${missing.length ? `, ${missing.length} missing` : ''}`);
     for (const m of missing) log(`  missing: ${m}`);
-    if (!p.dry && p.write.includes(step)) write(fileOf(step, p.level), { _from: from, rows });
+    // (a map rulebook's header says how many of its rows it could not place: the ledger's check holds it to that)
+    if (!p.dry && p.write.includes(step)) write(fileOf(step, p.level), { _from: step === 'map' ? { ...from, unplaced: rows.unplaced?.length ?? 0 } : from, rows });
   }
   return counts;
 }
@@ -274,7 +278,10 @@ export function modes(root, { strings = readWebJson(root, 'strings/English.json'
     if (m.kind !== 'multiplayer' && m.kind !== 'space') continue;
     if (isSequel(m.level)) continue;
     const man = readWebJson(root, m.file);
-    if (man) levels.push({ level: m.level, subworlds: man.subworlds ?? [] });
+    // (the level's rulebook says which modes it holds, where it has one; else its manifest's sub-levels)
+    const book = join(ROOT, 'src/data/bf2017', fileOf('map', levelKey(m.level)));
+    const given = existsSync(book) ? JSON.parse(readFileSync(book, 'utf8')).rows.modes : null;
+    if (man || given) levels.push({ level: m.level, subworlds: man?.subworlds ?? [], modes: given });
     else if (LEVEL_WORLDS[m.file.split('/').pop().replace(/\.json$/, '')]) missing.push(m.file);
   }
   return { book: modesRulebook(levels, strings), missing };

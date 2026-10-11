@@ -1,0 +1,49 @@
+{
+  "source": "hand",
+  "mode": "galacticAssault",
+  "level": "Levels/MP/Yavin_01/Yavin_01",
+  "attackers": "dark",
+  "notes": "NOTES.md says how this was made: the stages in the order the level’s own stage strings number them, each team’s line; the attackers the side whose first line does not defend; the objectives are not yet chosen (empty), as no route plays this map’s Galactic Assault",
+  "stages": [
+    {
+      "id": "stage1",
+      "team1": "ID_FANTASYBATTLES_YAVIN_STAGE1_TEAM1",
+      "team2": "ID_FANTASYBATTLES_YAVIN_STAGE1_TEAM2",
+      "text": {
+        "team1": "DEFEND OUR AIR DEFENSES",
+        "team2": "NEUTRALIZE THE REBEL AIR DEFENSES"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage2",
+      "team1": "ID_FANTASYBATTLES_YAVIN_STAGE2_TEAM1",
+      "team2": "ID_FANTASYBATTLES_YAVIN_STAGE2_TEAM2",
+      "text": {
+        "team1": "DETAIN THE IMPERIALS IN THE FOREST",
+        "team2": "CLEAR THE REBELS OUT OF THE FOREST"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage3",
+      "team1": "ID_FANTASYBATTLES_YAVIN_STAGE3_TEAM1",
+      "team2": "ID_FANTASYBATTLES_YAVIN_STAGE3_TEAM2",
+      "text": {
+        "team1": "KEEP THE TEMPLE GATES CLOSED",
+        "team2": "OPEN THE TEMPLE GATES AND PROCEED INTO THE TEMPLE"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage4",
+      "team1": "ID_FANTASYBATTLES_YAVIN_STAGE4_TEAM1",
+      "team2": "ID_FANTASYBATTLES_YAVIN_STAGE4_TEAM2",
+      "text": {
+        "team1": "STOP THE IMPERIALS FROM GETTING OUR DATA",
+        "team2": "RETRIEVE THE DATA FILES AND EXTRACT "
+      },
+      "objectives": []
+    }
+  ]
+}

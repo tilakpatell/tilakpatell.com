@@ -8,6 +8,7 @@
 //   uplink.create({ at, name }) → o                  uplink.tick(o, dt, { interactions, open })
 //   escort.create({ path, health, name }) → o        escort.tick(o, dt, { near })   (o.walker is the walker's body)
 //   hold.create({ volume, seconds, name }) → o       hold.tick(o, dt, { inside })
+//   carry.create({ at, to, radius, returns, name }) → o   carry.tick(o, dt, { carriers: [{ id, at: [x, z] }] })   (Strike's objective, Extraction's cargo)
 //   each kind's view(o) → the HUD's row
 //   insidePolygon(points, x, z)    centroid(points)
 
@@ -203,4 +204,44 @@ export const hold = {
   view: (o) => ({ type: o.type, name: o.name, meter: o.held / o.seconds, owner: o.done ? 'attack' : 'defend', contested: false, armed: false, fuse: 0, progress: o.held / o.seconds }),
 };
 
-export const KINDS = { capture, arm, uplink, escort, hold };
+// -- carry: an attacker within reach picks it up and it rides with them; their
+// death drops it where they fell; left lying, it goes home after `returns`
+// seconds (never, when null); carried into its drop-off, it is done --
+
+// How near the drop-off the carrier must bring it, by hand (Pf_FlagDropOff's marker has no radius in the export).
+export const DROP_RADIUS = 4;
+
+const close = (a, b, r) => Math.hypot(a[0] - b[0], a[1] - b[1]) <= r;
+
+export const carry = {
+  create({ at, to, radius = DROP_RADIUS, returns = null, name = null }) {
+    return { type: 'carry', name, home: [...at], at: [...at], to, radius, returns, carrier: null, lying: 0, done: false };
+  },
+  tick(o, dt, { carriers = [] }) {
+    if (o.done) return;
+    const held = o.carrier && carriers.find((c) => c.id === o.carrier);
+    if (o.carrier && !held) {
+      // (the carrier down: it lies at the last place they carried it)
+      o.carrier = null;
+      o.lying = 0;
+    }
+    if (held) o.at = [held.at[0], held.at[1]];
+    else {
+      const by = carriers.find((c) => close(c.at, o.at, INTERACT_REACH));
+      if (by) {
+        o.carrier = by.id;
+        o.at = [by.at[0], by.at[1]];
+      } else if (o.returns != null && (o.at[0] !== o.home[0] || o.at[1] !== o.home[1])) {
+        o.lying += dt;
+        if (o.lying >= o.returns - 1e-9) {
+          o.at = [...o.home];
+          o.lying = 0;
+        }
+      }
+    }
+    if (o.carrier && close(o.at, o.to, o.radius)) o.done = true;
+  },
+  view: (o) => ({ type: o.type, name: o.name, meter: o.returns && !o.carrier ? o.lying / o.returns : 0, owner: o.carrier ? 'attack' : 'defend', contested: false, armed: Boolean(o.carrier), fuse: o.returns && !o.carrier ? o.returns - o.lying : 0, progress: o.carrier ? 1 : 0 }),
+};
+
+export const KINDS = { capture, arm, uplink, escort, hold, carry };

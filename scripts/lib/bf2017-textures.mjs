@@ -146,3 +146,19 @@ export async function resolveImage(bucketPath, { root, derived, unpackDir }) {
   }
   return null;
 }
+
+// A mesh variation database binds a material's maps by the shader's
+// parameter names (lane colour, task 6): which glTF slot each fills. The
+// packed maps (`_RGB`, `Mask`, `RSSSAO`, `MSR`, `RM`) are the roughness,
+// metal and occlusion the pipeline derives (parseDerived); `F90ColorTexture`
+// (the Fresnel colour) is noted and not bound, as is any name not here.
+//   slotOfParameter(name) → 'color' | 'normal' | 'packed' | 'emissive' | null
+const SLOT_OF = [
+  ['color', /^_?(Colou?r|CS|CA|CW|C|Base[Cc]olou?r)$/],
+  ['normal', /^_?(NS|NAM|NA|N|NM|NW|Normals?)(_texcoord\d)?$/],
+  ['packed', /^_?(RGB|Mask|RSSSAO|MSR|MSW|RM|RGBM)$/],
+  ['emissive', /^_?(Emissive|EM|E)$/],
+];
+export function slotOfParameter(name) {
+  return SLOT_OF.find(([, re]) => re.test(String(name ?? '')))?.[0] ?? null;
+}

@@ -117,6 +117,29 @@ describe('createLevelLoader', () => {
     expect(mats.map((m) => m.name)).toEqual(['Shaders/SS_A', 'game']);
   });
 
+  it("draws each mesh in the game's variation: its recipe takes the variation and its own colour map", async () => {
+    const materialFor = vi.fn(() => new THREE.MeshBasicMaterial());
+    const recipes = { forGlb: () => [{ family: 'props', shader: 'Shaders/SS_A', maps: {} }, { family: 'props', shader: 'Shaders/SS_B', maps: {} }], maps: {}, tex: {} };
+    const variation = {
+      name: 'Container_L_01_Red',
+      defaults: [{ textures: { _CS: 'textures/a_cs.ktx2' } }, { textures: {} }],
+      materials: [{ textures: { _CS: 'textures/a_red_cs.ktx2' } }, { textures: {}, vectors: { PaintColour: [1, 0, 0, 1] } }],
+    };
+    const variations = { forGlb: (path) => (path === 'meshes/v.lod0.glb' ? variation : null), maps: { 'textures/a_red_cs.ktx2': null } };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes, recipes, materialFor, variations });
+    await loader.load('meshes/v.lod0.glb');
+    const byShader = Object.fromEntries(materialFor.mock.calls.map(([r, maps]) => [r.shader, { r, maps }]));
+    expect(byShader['Shaders/SS_A'].r.variation.name).toBe('Container_L_01_Red');
+    expect(byShader['Shaders/SS_A'].r.maps.color).toBe('textures/a_red_cs.ktx2');
+    // (a map the pack has not got comes as null: the GLB's own colour is drawn)
+    expect(byShader['Shaders/SS_A'].maps.color).toBeNull();
+    expect(byShader['Shaders/SS_B'].r.variation.vectors.PaintColour).toEqual([1, 0, 0, 1]);
+    // (another mesh draws its recipes as they are)
+    materialFor.mockClear();
+    await loader.load('meshes/w.lod0.glb');
+    for (const [r] of materialFor.mock.calls) expect(r.variation).toBeUndefined();
+  });
+
   it('hands hair and heads their strand and scattering maps', async () => {
     const materialFor = vi.fn(() => new THREE.MeshBasicMaterial());
     const recipes = { forGlb: () => [{ shader: 'Shaders/SS_A', maps: { hairStrand: 'T_H', sss: 'T_S' } }], maps: { T_H: null, T_S: null }, tex: {} };
