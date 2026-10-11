@@ -29,6 +29,7 @@ import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
 import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
+import { litWith, picturesOf } from './picture.js';
 
 export const HUD_HZ = 8; // snapshots a second to the page
 export const PLAYER_TEAM = 2; // the attackers on Hoth, the Empire (maps/hoth.stages.json)
@@ -124,11 +125,29 @@ export default {
 
     // the light: lane R's stack on the level's records (await: the passes
     // need the sun and the sky before the chain is built)
+    // (with the record's picture, lane P: the painted sky, the fog gradient,
+    // the cloud texture, the 33³ LUT and the five Gaussians; a weather's
+    // change carries them, the chain built again once it lands)
     const { applyGameLight } = await import('../../lib/three/light/apply.js');
-    const light = await applyGameLight(scene, renderer, entryFor(lighting, weather), { tier, camera, lights: lightsJsonOf(lighting.lights) });
+    const pictures = await picturesOf(levelName);
+    const lit = (w) => litWith(pictures, entryFor(lighting, w), w);
+    const first = lit(weather);
+    const light = await applyGameLight(scene, renderer, first.entry, { tier, camera, lights: lightsJsonOf(lighting.lights), picture: first.picture, onChain: (passes) => swapPost(passes) });
     // (?post=off in the address: the scene drawn with no chain, for a check)
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
-    const post = light.passes.length && asked !== 'off' ? rt.gfx.post(light.passes) : null;
+    let post = light.passes.length && asked !== 'off' ? rt.gfx.post(light.passes) : null;
+    // (the old chain draws until the new one is built, then is let go)
+    function swapPost(passes) {
+      if (!post) return;
+      const next = rt.gfx.post(passes);
+      Promise.resolve(next.ready).then(() => {
+        // (the world left while it was built)
+        if (!post) return next.dispose?.();
+        const was = post;
+        post = next;
+        was.dispose?.();
+      });
+    }
 
     const physicsStats = () => {
       const s = collision?.stats();
@@ -234,11 +253,13 @@ export default {
             sim.force(action, PLAYER_TEAM);
             rt.events.emit('hud', snapshot());
             return { ok: true };
-          case 'weather':
+          case 'weather': {
             if (!lighting.weathers[arg]) return { ok: false, why: `no weather ${arg}` };
             weather = arg;
-            light.setWeather(entryFor(lighting, arg), 0);
+            const next = lit(arg);
+            light.setWeather(next.entry, 0, { picture: next.picture });
             return { ok: true };
+          }
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':
@@ -252,6 +273,7 @@ export default {
         look.detach();
         input.detach();
         post?.dispose?.();
+        post = null;
         light.dispose();
         bolts.dispose();
         figures.dispose();
