@@ -1,0 +1,64 @@
+{
+  "route": "/battlefront",
+  "size": [
+    1280,
+    720
+  ],
+  "swiftshader": true,
+  "results": [
+    {
+      "leg": "webgl",
+      "walk": "screens",
+      "quality": "low",
+      "errors": [],
+      "shots": {
+        "start": "docs/superpowers/evidence/bf2017-screens/start.png",
+        "main-menu": "docs/superpowers/evidence/bf2017-screens/main-menu.png",
+        "play": "docs/superpowers/evidence/bf2017-screens/play.png",
+        "multiplayer-category": "docs/superpowers/evidence/bf2017-screens/multiplayer-category.png",
+        "multiplayer": "docs/superpowers/evidence/bf2017-screens/multiplayer.png",
+        "levels": "docs/superpowers/evidence/bf2017-screens/levels.png",
+        "loading": "docs/superpowers/evidence/bf2017-screens/loading.png",
+        "spawn": "docs/superpowers/evidence/bf2017-screens/spawn.png"
+      },
+      "boxes": [
+        {
+          "screen": "UI/Frontend/Screens/Start/MainMenuScreen",
+          "compared": 108,
+          "worst": 0.04,
+          "within": true
+        },
+        {
+          "screen": "UI/Frontend/Screens/Play/PlayScreen",
+          "compared": 6,
+          "worst": 0.03,
+          "within": true
+        },
+        {
+          "screen": "UI/Frontend/Screens/Play/PlayMultiplayerScreen",
+          "compared": 16,
+          "worst": 0.07,
+          "within": true
+        }
+      ],
+      "steps": [
+        "start",
+        "main-menu",
+        "play",
+        "multiplayer-category",
+        "multiplayer",
+        "levels",
+        "loading",
+        "spawn"
+      ],
+      "deploy": {
+        "ok": true
+      },
+      "advance": {
+        "ok": true,
+        "time": 5.45
+      },
+      "inWorld": "not reached in software GL: TimeoutError: page.waitForSelector: Timeout 300000ms exceeded."
+    }
+  ]
+}

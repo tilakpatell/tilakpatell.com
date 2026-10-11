@@ -98,7 +98,15 @@ Online/Killswitches/SquadSpawn_InCombat_WhenAffectorAppliedToMe	KillswitchData	d
 Online/Killswitches/SquadSpawn_InCombat_WhenAppliedAffectorToOpponent	KillswitchData	data/Online/Killswitches/SquadSpawn_InCombat_WhenAppliedAffectorToOpponent.json	393
 Online/Killswitches/SquadSpawn_InCombat_WhenNearGrenade	KillswitchData	data/Online/Killswitches/SquadSpawn_InCombat_WhenNearGrenade.json	351
 UI/Customize/Screens/SpawnOverlayScreen	UIWidgetBlueprint	data/UI/Customize/Screens/SpawnOverlayScreen.json	54772
+UI/Data/GameModes/GameModes	GameModesListInformationAsset	data/UI/Data/GameModes/GameModes.json	3213
+UI/Data/GameModes/Levels/EchoBase	LevelInformationAsset	data/UI/Data/GameModes/Levels/EchoBase.json	2935
+UI/Data/GameModes/Levels/SB_Endor_01	LevelInformationAsset	data/UI/Data/GameModes/Levels/SB_Endor_01.json	1525
 UI/Data/GameModes/PlanetaryBattles	GameModeInformationAsset	data/UI/Data/GameModes/PlanetaryBattles.json	2846
+UI/Data/GameModes/Planets/Hoth	PlanetInformationAsset	data/UI/Data/GameModes/Planets/Hoth.json	411
+UI/Data/GameModes/SpaceBattles	GameModeInformationAsset	data/UI/Data/GameModes/SpaceBattles.json	1843
+UI/Frontend/Screens/Start/MainMenuScreen	UIWidgetBlueprint	data/UI/Frontend/Screens/Start/MainMenuScreen.json	9405
+UI/Frontend/Widgets/MainMenu/MainMenuButtonCell	UIWidgetBlueprint	data/UI/Frontend/Widgets/MainMenu/MainMenuButtonCell.json	51507
+UI/Frontend/Widgets/MainMenu/MainMenuWidget	UIWidgetBlueprint	data/UI/Frontend/Widgets/MainMenu/MainMenuWidget.json	52257
 UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget	UIWidgetBlueprint	data/UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget.json	41771
 UI/InGame/Hud/SquadMemberList/SquadMemberList	UIWidgetBlueprint	data/UI/InGame/Hud/SquadMemberList/SquadMemberList.json	5789
 UI/InGame/Hud/SquadMemberList/SquadMemberListCell	UIWidgetBlueprint	data/UI/InGame/Hud/SquadMemberList/SquadMemberListCell.json	12875
@@ -107,6 +115,10 @@ UI/InGame/Hud/SquadMemberList/SquadMemberListLocalPlayer	UIWidgetBlueprint	data/
 UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatBar	UIWidgetBlueprint	data/UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatBar.json	42447
 UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatProgress	UIWidgetBlueprint	data/UI/InGame/Hud/Weapons/Widgets/WeaponHeat/WeaponHeatProgress.json	48581
 UI/InGame/Spawn/FastSpawnScreen	UIWidgetBlueprint	data/UI/InGame/Spawn/FastSpawnScreen.json	46412
+UI/LoadingScreens/MPLoadLevel/MPLoadLevelHothAsset	WSUILoadingScreenAsset	data/UI/LoadingScreens/MPLoadLevel/MPLoadLevelHothAsset.json	991
+UI/LoadingScreens/hints/HintsBundleMpInfantryModes_OT	TipsBundle	data/UI/LoadingScreens/hints/HintsBundleMpInfantryModes_OT.json	2194
+UI/Shapes/Icons/Shared/Checkmark	DiceUIVectorShapeAsset	data/UI/Shapes/Icons/Shared/Checkmark.json	3512
+UI/Shapes/InGame/HUD/Crosshairs/Crosshairs_Ability_Dooku	DiceUIVectorShapeAsset	data/UI/Shapes/InGame/HUD/Crosshairs/Crosshairs_Ability_Dooku.json	3224
 UI/Shapes/InGame/HUD/SquadList/SquadIconBG	DiceUIVectorShapeAsset	data/UI/Shapes/InGame/HUD/SquadList/SquadIconBG.json	2304
 UI/Shapes/InGame/HUD/SquadList/SquadListBG	DiceUIVectorShapeAsset	data/UI/Shapes/InGame/HUD/SquadList/SquadListBG.json	2228
 UI/Styles/Colors/UIColorPalette	UIColorPalette	data/UI/Styles/Colors/UIColorPalette.json	24816

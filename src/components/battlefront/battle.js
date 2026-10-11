@@ -21,6 +21,7 @@ import { buildNav } from '../../lib/battlefront/nav.js';
 import { STEP, addPlayer as addSoldier, createSim, removeEntity, squadBlocks, squadSpot, step as stepSim, view as viewSim } from '../../lib/battlefront/sim.js';
 import { joinSquad, squadRows } from '../../lib/battlefront/ai/squad.js';
 import { earn } from '../../lib/battlefront/battlePoints.js';
+import { hurt } from '../../lib/battlefront/soldier.js';
 
 export { STEP };
 export const BOTS = 8; // bots a side on the page (the arena runs 20; the page draws each as a figure)
@@ -103,6 +104,9 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
     awards: new Map(), // Battle Points the bots earn here, until the page runs lane 2's mode (squad spawns on them)
     force(what, team) {
       if (what === 'win' || what === 'lose') this.result = { winner: what === 'win' ? team : 3 - team, why: 'forced' };
+      // (the player down, for the kill screen's check: the next step sees it)
+      const me = what === 'die' && this.player?.id ? this.sim.entities.get(this.player.id) : null;
+      if (me) hurt(me, { damage: me.hp + 1, now: this.sim.time });
     },
     out: null,
   };

@@ -30,6 +30,7 @@ import { aiCreatures, aiNames, aiRulebook, aiSquadron } from './lib/bf2017-ruleb
 import { airRulebook } from './lib/bf2017-rulebook-air.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
+import { SCREEN_GLOB, infoOf, loadingOf, screensOf, shapesOf } from './lib/bf2017-rulebook-ui.mjs';
 import { squadsRow } from './lib/bf2017-rulebook-squads.mjs';
 import { LEVEL_WORLDS, modesRulebook } from './lib/bf2017-modes.mjs';
 import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
@@ -38,7 +39,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'build 489592';
 
 // In the order they are built: each reads what an earlier one found.
-export const RULEBOOKS = ['teams', 'map', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'aiNames', 'aiCreatures', 'aiSquadron', 'lighting', 'cameras', 'ui', 'squads', 'strings'];
+export const RULEBOOKS = ['teams', 'map', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'aiNames', 'aiCreatures', 'aiSquadron', 'lighting', 'cameras', 'ui', 'squads', 'screens', 'shapes', 'info', 'loading', 'strings'];
 const NEEDS = {
   classes: ['teams'],
   heroes: ['teams'],
@@ -162,6 +163,12 @@ const BUILD = {
       [...indexOf(p.root).keys()].filter((n) => WIDGETS.test(n) && indexOf(p.root).get(n).type === 'UIWidgetBlueprint' && !isSequel(n)),
       { files: webFiles(p.root), depth: 2 },
     ),
+  // the game's screens (lane screens): every screen's tree, the shapes they
+  // and the HUD draw, the modes' cards, the loading screens and hints
+  screens: (p, ctx) => screensOf(p.root, { names: [...indexOf(p.root).keys()].filter((n) => SCREEN_GLOB.test(n) && indexOf(p.root).get(n).type === 'UIWidgetBlueprint'), strings: ctx.$strings }),
+  shapes: (p) => shapesOf(p.root, [...indexOf(p.root).entries()].filter(([, e]) => e.type === 'DiceUIVectorShapeAsset').map(([n]) => n)),
+  info: (p, ctx) => infoOf(p.root, { index: indexOf(p.root), strings: ctx.$strings }),
+  loading: (p, ctx) => loadingOf(p.root, { index: indexOf(p.root), strings: ctx.$strings }),
   strings: (p, ctx) => {
     const ids = new Set();
     const walk = (v, key) => {
@@ -184,6 +191,10 @@ const COUNT = {
   lighting: (l) => ({ rows: l.lights.length + l.prefabs.length }),
   cameras: (c) => ({ rows: Object.keys(c.vehicles).length + Object.keys(c.aim).length + (c.soldier ? 1 : 0) }),
   ui: (u) => ({ rows: Object.keys(u.widgets).length }),
+  screens: (s) => ({ rows: Object.keys(s.screens).length + Object.keys(s.widgets).length, refused: s._skipped.length }),
+  shapes: (s) => ({ rows: Object.keys(s.shapes).length }),
+  info: (i) => ({ rows: Object.keys(i.modes).length + Object.keys(i.levels).length + Object.keys(i.planets).length, refused: i._skipped.length }),
+  loading: (l) => ({ rows: Object.keys(l.screens).length + Object.keys(l.hints).length, refused: l._skipped.length }),
 };
 
 // Every `_missing` link under a value, once.
