@@ -12,7 +12,8 @@ describe('the modes on a world', () => {
   it('every landable world has a menu, free roam always live and a story card', () => {
     for (const id of LANDABLE) {
       const cards = modesFor(id);
-      expect(cards.map((c) => c.id)).toEqual(MODES.map((m) => m.id));
+      // (the other modes' cards only where the game fights them)
+      expect(cards.map((c) => c.id)).toEqual(MODES.filter((m) => !m.where || (BOOK.worlds[id]?.modes ?? []).includes(m.id)).map((m) => m.id));
       expect(card(id, 'free').state).toBe('live');
       expect(card(id, 'story')).toBeTruthy();
       // (anything not live says why)
@@ -62,5 +63,34 @@ describe('the modes on a world', () => {
   });
   it('the galaxy panel’s light line says what the menu would', () => {
     for (const id of LANDABLE) expect(landLine(systemById(id)), id).toBe(liveLine(id));
+  });
+});
+
+describe('the other modes on the menus (lane 6)', () => {
+  it('Strike, Extraction, Ewok Hunt and Supremacy in the game’s words, coming where a level holds them and no pack plays it yet', () => {
+    expect(MODES.filter((m) => m.where).map((m) => [m.id, m.name])).toEqual([
+      ['strike', BOOK.names.modes.strike.text],
+      ['extraction', BOOK.names.modes.extraction.text],
+      ['ewokHunt', BOOK.names.modes.ewokHunt.text],
+      ['supremacy', BOOK.names.modes.supremacy.text],
+    ]);
+    expect(card('naboo', 'strike')).toMatchObject({ state: 'soon' });
+    expect(card('naboo', 'strike').why).toMatch(/Naboo/);
+    expect(card('kessel', 'extraction')?.state ?? 'not landable').not.toBe('live');
+    expect(card('endor', 'ewokHunt')).toMatchObject({ state: 'soon' });
+    expect(card('hoth', 'supremacy')).toMatchObject({ state: 'soon' });
+    // (and no card where the game has none: Hoth has no Strike)
+    expect(card('hoth', 'strike')).toBe(undefined);
+  });
+  it('a mission of the mode on a world makes its card live', () => {
+    const missions = { naboo: { strike: { id: 'strike', kind: 'strike', name: 'Strike' } } };
+    expect(card('naboo', 'strike', { missions })).toMatchObject({ state: 'live', to: '/galaxy/naboo/surface?mode=strike', mission: 'strike' });
+  });
+});
+
+describe('the Land button’s line (lane 6)', () => {
+  it('names a briefing’s Strike, Extraction, Ewok Hunt or Supremacy in the menu’s order', () => {
+    const sys = { id: 'fixture', game: { status: 'soon', also: [{ to: '/galaxy/fixture/surface?mission=supremacy' }, { to: '/galaxy/fixture/surface?mission=strike' }] } };
+    expect(landLine(sys)).toBe('Strike · Supremacy');
   });
 });

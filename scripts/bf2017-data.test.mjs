@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { RULEBOOKS, fileOf, plan, run } from './bf2017-data.mjs';
+import { RULEBOOKS, fileOf, plan, record, run } from './bf2017-data.mjs';
 
 const ROOT = join(import.meta.dirname, 'fixtures', 'bf2017', 'data');
 
@@ -23,8 +23,15 @@ describe('the data CLI', () => {
 
   it('names each rulebook’s file by its level', () => {
     expect(fileOf('map', 'hoth_01')).toBe('maps/hoth.json');
+    expect(fileOf('map', 'hoth_02')).toBe('maps/hoth.2.json');
+    expect(fileOf('map', 'a1_m0lib_ds02')).toBe('maps/a1_m0lib_ds02.json');
+    expect(fileOf('map', 'sb_kamino_01')).toBe('maps/sb_kamino.json');
     expect(fileOf('lighting', 'hoth_01')).toBe('maps/hoth.lighting.json');
+    expect(fileOf('lighting', 'hoth_02')).toBe('maps/hoth.2.lighting.json');
     expect(fileOf('weapons', 'hoth_01')).toBe('weapons.json');
+    expect(fileOf('aiNames', 'hoth_01')).toBe('ai.names.json');
+    expect(fileOf('aiCreatures', 'hoth_01')).toBe('ai.creatures.json');
+    expect(fileOf('aiSquadron', 'hoth_01')).toBe('ai.squadron.json');
   });
 
   it('a dry run writes nothing and still counts', () => {
@@ -53,5 +60,26 @@ describe('the data CLI', () => {
     run(plan(['all', '--root', ROOT, '--dry']), { write: () => {}, log: (l) => lines.push(l), copy: () => ({ icons: 0, fonts: 0, missing: [] }) });
     const luke = lines.filter((l) => /missing: .*Kit_Hero_Luke$/.test(l));
     expect(luke).toHaveLength(1);
+  });
+});
+
+describe('the records’ rulebooks', () => {
+  it('writes points.json from Online/BattlepointCostData, with where it came from', () => {
+    const written = {};
+    record('points', ROOT, { write: (f, j) => (written[f] = j), log: () => {} });
+    expect(written['points.json']._from).toMatchObject({ export: 'build 489592' });
+    expect(written['points.json'].cost.heroes.luke).toBe(4000);
+    expect(written['points.json'].refused).toBeUndefined();
+  });
+});
+
+describe('the Arcade and the kits’ rulebooks', () => {
+  it('writes arcade.json and kits.json, each with where it came from', () => {
+    const written = {};
+    for (const what of ['arcade', 'kits']) record(what, ROOT, { write: (f, j) => (written[f] = j), log: () => {} });
+    expect(written['arcade.json'].params.Team1AISize.values).toContain(20);
+    expect(written['arcade.json'].refused).toBeUndefined();
+    expect(written['kits.json'].planetaryBattles.rows.length).toBeGreaterThan(70);
+    expect(written['kits.json']._from.export).toBe('build 489592');
   });
 });

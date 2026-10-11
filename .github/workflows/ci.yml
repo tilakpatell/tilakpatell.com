@@ -33,6 +33,7 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run coverage:bf2017
+      - run: npm run maps:bf2017
       # the build as the deploy makes it with the asset bucket set (a stand-in
       # URL: nothing is fetched), then as it is without, which the checks read
       - run: npm run build
@@ -42,6 +43,8 @@ jobs:
       - run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # the build's WebAssembly binaries valid and all there, as the deploy checks
+      - run: node scripts/wasm-check.mjs dist
       # the codebase's health against docs/health/budgets.json: a number over
       # its budget is a red check, the same as a failing test (docs/health)
       - run: node scripts/health.mjs --check --skip build

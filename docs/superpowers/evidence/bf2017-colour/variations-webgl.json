@@ -1,0 +1,35 @@
+{
+  "leg": "webgl",
+  "adapter": "swiftshader",
+  "shots": {
+    "row-high": "crate-high-webgl.png",
+    "row-ultra": "crate-ultra-webgl.png"
+  },
+  "features": [
+    {
+      "label": "crate",
+      "features": []
+    },
+    {
+      "label": "crate:Box_M_01_A_Snow",
+      "features": [
+        "overlay:fn"
+      ]
+    }
+  ],
+  "lowVsGlb": {},
+  "errors": [],
+  "mesh": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+  "by": "mixed",
+  "uses": {
+    "default": 2,
+    "Box_M_01_A_Snow": 107
+  },
+  "drawn": "Box_M_01_A_Snow",
+  "variations": {
+    "applied": 20,
+    "rule": 0,
+    "mixed": 24,
+    "missing": 105
+  }
+}

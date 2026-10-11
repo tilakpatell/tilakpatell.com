@@ -16,7 +16,12 @@
 //   (src/lib/bf2017/fonts.css: Univers Condensed by its grade, RaxusPrime
 //   for the numerals, Roboto)
 // placeWidget(element, viewport) → { x, y, w, h }: an element's box on the
-//   game's 1920 × 1080 reference, scaled to the viewport's shorter side
+//   game's 1920 × 1080 reference, scaled to the viewport's shorter side;
+//   placeIn(element, parentBox, k) the same inside a parent's box
+// css([r, g, b]) → 'rgb(…)': a record's linear colour, made sRGB
+// (a screen's whole tree, the shapes, the modes' cards and the loading
+// screens are ./screens.js, ./shapes.js and ./info.js: the battlefront
+// world's, not every page's)
 // bitmap(name) → url | null; portrait(who) → url | null
 
 import UI from '../../../data/bf2017/ui.json';
@@ -27,12 +32,13 @@ const ROWS = UI.rows;
 export const WIDGETS = Object.keys(ROWS.widgets);
 
 const toSrgb = (c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
-export function colour(index, palette = ROWS.palette) {
-  const c = palette?.[index];
-  if (!c) return null;
+// a linear colour as the records keep it ([r, g, b], 0…1) → 'rgb(…)'
+export function css(c) {
+  if (!Array.isArray(c)) return null;
   const [r, g, b] = c.map((v) => Math.round(255 * Math.min(1, Math.max(0, toSrgb(v)))));
   return `rgb(${r} ${g} ${b})`;
 }
+export const colour = (index, palette = ROWS.palette) => css(palette?.[index]);
 
 export function fontFor(name) {
   const n = String(name ?? '');
@@ -46,12 +52,21 @@ export function fontFor(name) {
   return { family: 'var(--font-bf-hud)', size, weight };
 }
 
-export function placeWidget(el, { width, height }) {
-  const k = Math.min(width, height) / 1080;
-  const [ax, ay] = el.anchor ?? [0, 0];
+export const placeWidget = (el, { width, height }) => placeIn(el, { x: 0, y: 0, w: width, h: height }, Math.min(width, height) / 1080);
+
+// an element's box inside its parent's, at scale k (the viewport's shorter
+// side over the reference's 1080): anchored as the game anchors (the
+// element's own point at its anchor on the parent's), offset in the
+// reference's pixels; a PositionExpansion element from the parent's corner
+export function placeIn(el, parent, k) {
   const [w, h] = (el.size ?? [0, 0]).map((v) => v * k);
+  if (el.layout?.fill) {
+    const [px, py] = (el.layout.position ?? [0, 0]).map((v) => v * k);
+    return { x: parent.x + px, y: parent.y + py, w, h };
+  }
+  const [ax, ay] = el.anchor ?? [0, 0];
   const [ox, oy] = (el.offset ?? [0, 0]).map((v) => v * k);
-  return { x: ax * width - ax * w + ox, y: ay * height - ay * h + oy, w, h };
+  return { x: parent.x + ax * parent.w - ax * w + ox, y: parent.y + ay * parent.h - ay * h + oy, w, h };
 }
 
 const textsOf = (node, out = {}) => {

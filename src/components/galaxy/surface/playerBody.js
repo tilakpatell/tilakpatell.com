@@ -23,6 +23,9 @@
 //     pose (stand | crouch), ready (the engine is in), state, eye(), dispose() }
 //   input: walk()'s ({ x, y, run, jump, heading }) and `crouch` (held)
 //   drive: this body steps the physics world (false when its owner does)
+//   (a fall out of the engine's world, past the edge of the cells it has
+//   streamed, is caught: falling fast and 2 m under the walker's ground,
+//   you're set back on it; a tunnel under a ridge, walked, never trips it)
 
 import { CHARACTER, createCharacter } from '../../../lib/physics/character';
 import { filterOf } from '../../../lib/physics/groups';
@@ -252,6 +255,10 @@ export function createPlayerBody({ physics, state, row, world, drive = true, onE
     landed = 0;
     if (drive) phys.step(dt);
     sync(dt, vx, vz);
+    if (world?.heightAt && !state.grounded && state.vy < -10) {
+      const floor = world.heightAt(state.x, state.z);
+      if (Number.isFinite(floor) && state.y < floor - 2) teleport([state.x, floor, state.z], state.yaw);
+    }
     return { landed, jumped: Boolean(it.jump), bumped: bumped || c.blocked };
   }
 

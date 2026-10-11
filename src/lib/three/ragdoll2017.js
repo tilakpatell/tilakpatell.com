@@ -20,6 +20,13 @@
 //     rigRagdoll's { step(dt), settled, point(name), body } and kick(impulse
 //     [x, y, z] N·s) → the impulse taken, centre() → [x, y, z], mass
 //     (push and speed as rigRagdoll's, the speed held under maxImpulse / mass)
+//     kickAt(bone, impulse [x, y, z] N·s) → taken: the same allowance, given
+//     to that bone's point alone (n·J/M there, so the whole body's centre
+//     still moves at J/M: the points weigh alike in the Verlet body), the
+//     bone a body's (else nothing is taken); momentum() → Σ mᵢ|vᵢ| (kg·m/s,
+//     each body's mass at its point's speed); with `settle` (the row's
+//     SettleMomentum unless given) the body is settled, and stops, once its
+//     momentum is under it after CALM seconds since it was last kicked
 //   floorCollide(floorAt) → collide(p, r): floorAt(x, z, y) → the height
 //     under a point (a number, or { y }, or null for none): a physics world's
 //     floorAt when there is one, the surface's height function when not
@@ -31,6 +38,8 @@ const AIM = { LeftArm: 'LeftForeArm', RightArm: 'RightForeArm', LeftForeArm: 'Le
 const FRAMES = { Hips: ['LeftUpLeg', 'RightUpLeg', 'Hips', 'Spine'], Spine: ['LeftArm', 'RightArm', 'Spine', 'Head'] };
 const THINNEST = 0.04; // m: no point narrower (a hand's box is 4 cm thick)
 const FALLBACK = 'stormtroopershared';
+const SUB = 1 / 60; // s: ragdollPhysics' step (a point's velocity is its last step's move over it)
+const CALM = 1.2; // s after the last kick before SettleMomentum may stop it (ragdollPhysics' CALM)
 
 export function ragdollOf(book, id) {
   const rows = book?.rows ?? [];
@@ -58,7 +67,7 @@ export function floorCollide(floorAt) {
   };
 }
 
-export function rig2017(bones, row, { collide = null, push = { x: 0, y: 0, z: 0 }, speed = 2, velocity = null, gravity = -9.8 } = {}) {
+export function rig2017(bones, row, { collide = null, push = { x: 0, y: 0, z: 0 }, speed = 2, velocity = null, gravity = -9.8, settle = row?.settleMomentum ?? 0 } = {}) {
   const bodies = (row?.bodies ?? []).filter((b) => bones[b.bone]);
   const mass = bodies.reduce((s, b) => s + (b.mass ?? 0), 0) || 80;
   const most = row?.maxImpulse > 0 ? row.maxImpulse : Infinity;
@@ -76,18 +85,46 @@ export function rig2017(bones, row, { collide = null, push = { x: 0, y: 0, z: 0 
   const rag = rigRagdoll(bones, { collide, push, speed: capped, velocity, gravity, table });
   let spent = Math.min(most, capped * mass); // (the push it fell by came out of the allowance)
   const step0 = rag.step;
+  // each point's body mass, for the momentum
+  const masses = rag.names.map((n) => bodies.find((b) => b.bone === n)?.mass ?? 0);
+  let age = 0; // s since the last kick
   rag.mass = mass;
+  rag.momentum = () => {
+    const { pos, prev } = rag.body;
+    let sum = 0;
+    for (let i = 0; i < masses.length; i++) sum += masses[i] * Math.hypot(pos[i * 3] - prev[i * 3], pos[i * 3 + 1] - prev[i * 3 + 1], pos[i * 3 + 2] - prev[i * 3 + 2]);
+    return sum / SUB;
+  };
   rag.step = (dt) => {
     if (life > 0 && dt > 0) spent = Math.max(0, spent - (most / life) * dt);
+    if (rag.body.settled) return;
     step0(dt);
+    age += dt > 0 ? dt : 0;
+    if (settle > 0 && age >= CALM && rag.momentum() < settle) rag.body.settled = true;
   };
-  rag.kick = (impulse) => {
+  // what of an impulse the allowance lets through, as a fraction of it
+  const spend = (impulse) => {
     const j = Math.hypot(impulse[0], impulse[1], impulse[2]);
     const take = Math.min(j, Math.max(0, most - spent));
     if (!(take > 0)) return 0;
     spent += take;
-    const k = take / j / mass;
+    age = 0;
+    return take;
+  };
+  rag.kick = (impulse) => {
+    const take = spend(impulse);
+    if (!take) return 0;
+    const k = take / Math.hypot(impulse[0], impulse[1], impulse[2]) / mass;
     rag.body.push({ x: impulse[0] * k, y: impulse[1] * k, z: impulse[2] * k });
+    return take;
+  };
+  rag.kickAt = (bone, impulse) => {
+    const i = rag.indexOf(bone);
+    if (i < 0) return 0;
+    const take = spend(impulse);
+    if (!take) return 0;
+    const k = (take / Math.hypot(impulse[0], impulse[1], impulse[2]) / mass) * rag.body.n;
+    rag.body.kick(i, { x: impulse[0] * k, y: impulse[1] * k, z: impulse[2] * k });
     return take;
   };
   rag.centre = () => {

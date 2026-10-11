@@ -5705,6 +5705,12 @@
     "from": "models/galaxy/space/stardestroyerdestructionfront-01-endor.glb",
     "tier": "pack"
   },
+  "models/galaxy/surface/a280.glb": {
+    "hash": "48f984133df4",
+    "bytes": 288820,
+    "from": "gameplay/equipment/rifles/a280/a280_mesh3p_mesh",
+    "tier": "surface"
+  },
   "models/galaxy/surface/aat.far.glb": {
     "hash": "5a716d07ef9b",
     "bytes": 50848,
@@ -6011,10 +6017,34 @@
     "from": "gameplay/vehicles/air/cloudcar/vehicle_air_cloudcar_cockpit_mesh",
     "tier": "surface"
   },
+  "models/galaxy/surface/dh17.glb": {
+    "hash": "0a8b66df713f",
+    "bytes": 895568,
+    "from": "gameplay/equipment/pistols/dh17/dh17_mesh3p_mesh",
+    "tier": "surface"
+  },
   "models/galaxy/surface/dl44.glb": {
     "hash": "5a8d806e2025",
     "bytes": 3542676,
     "from": "gameplay/equipment/heroes/dl44/dl44_mesh3p_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/dlt19.glb": {
+    "hash": "bf78aa5ca738",
+    "bytes": 298812,
+    "from": "gameplay/equipment/heavy/dlt19/dlt19_mesh3p_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/dlt19x.glb": {
+    "hash": "27a694fd48a2",
+    "bytes": 438420,
+    "from": "gameplay/equipment/longrange/dlt19x/dlt19x_mesh3p_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/dlt20a.glb": {
+    "hash": "dcbdb3a4046d",
+    "bytes": 313748,
+    "from": "gameplay/equipment/longrange/dlt20a/dlt20a_mesh3p_mesh",
     "tier": "surface"
   },
   "models/galaxy/surface/droideka.far.glb": {
@@ -6064,6 +6094,12 @@
     "bytes": 3808500,
     "from": "gameplay/vehicles/ground/dwarfspiderdroid/dwarfspiderdroid_skinned_mesh",
     "tier": "ultra"
+  },
+  "models/galaxy/surface/e11.glb": {
+    "hash": "5b559565be61",
+    "bytes": 263804,
+    "from": "gameplay/equipment/rifles/e11/e11_3p_mesh",
+    "tier": "surface"
   },
   "models/galaxy/surface/ee3.glb": {
     "hash": "863b445523c2",
@@ -6916,6 +6952,18 @@
     "bytes": 26797004,
     "from": "gameplay/vehicles/air/xwing_red5/xwing_red5_landing_mesh",
     "tier": "ultra"
+  },
+  "models/galaxy/surface/rk3.glb": {
+    "hash": "76f0e8600bcd",
+    "bytes": 207992,
+    "from": "gameplay/equipment/pistols/rk3/rk3_mesh3p_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/rt97c.glb": {
+    "hash": "3469f18f6445",
+    "bytes": 347680,
+    "from": "gameplay/equipment/heavy/rt97c/rt97c_mesh3p_mesh",
+    "tier": "surface"
   },
   "models/galaxy/surface/slave1.far.glb": {
     "hash": "a3ea856e07ce",

@@ -133,4 +133,26 @@ describe('Heroes vs Villains', () => {
   it('has a mission on each world with both grounds', () => {
     for (const w of GROUNDS) expect(hvvMission(w)).toMatchObject({ id: 'hvv', kind: 'hvv', system: w, achievement: 'heroesvsvillains' });
   });
+
+  it('takes a difficulty: its aim and its damage to you, and nothing else of the bots changes', () => {
+    // (the difficulty row as lib/battlefront/ai/difficulty.js gives it: rookie's numbers)
+    const rookie = { key: 'multiplayer:rookie', aim: { scale: 1.5 }, damage: 0.75 };
+    const run = (difficulty) => {
+      const b = newHvv(hoth(), { seed: 4, difficulty });
+      chooseSide(b, 'dark', 'vader');
+      deploy(b);
+      const shots = [];
+      // (you stand beside the light side's first hero, in their fight)
+      for (let i = 0; i < 1200 && shots.length < 12; i++) for (const e of stepHvv(b, 0.05, { x: b.fighters[0].x + 3, z: b.fighters[0].z })) if (e.type === 'shot' || (e.type === 'hit' && e.you)) shots.push(e);
+      return { b, shots };
+    };
+    const plain = run(null);
+    const easy = run(rookie);
+    expect(easy.b.difficulty).toBe(rookie);
+    const mine = (r) => r.shots.filter((e) => e.atYou || e.you);
+    expect(mine(plain).length).toBeGreaterThan(0);
+    expect(mine(easy).length).toBeGreaterThan(0);
+    for (const e of mine(easy)) expect(e.damage).toBe(Math.round(e.full * 0.75));
+    for (const e of mine(plain)) expect(e.damage).toBe(e.full);
+  });
 });

@@ -6,6 +6,7 @@ import BattlefrontHud from './BattlefrontHud.jsx';
 import DeployScreen from './DeployScreen.jsx';
 import Heat from './Heat.jsx';
 import ObjectiveBar from './ObjectiveBar.jsx';
+import SquadList from './SquadList.jsx';
 
 const rb = loadRulebook();
 const words = {
@@ -63,4 +64,50 @@ describe('the game’s HUD on the kit', () => {
     expect(html).toContain('ROUND WON');
     expect(html).toContain('EMPIRE');
   });
+
+  const squad = {
+    letter: 'A',
+    members: [
+      { id: 'p0', name: 'You', cls: 'heavy', alive: true, local: true, order: null },
+      { id: 'b1', name: 'Trooper 1', cls: 'assault', alive: true, local: false, order: 'B' },
+      { id: 'b2', name: 'Trooper 2', cls: 'officer', alive: false, local: false, order: null },
+      { id: 'b3', name: 'Trooper 3', cls: 'specialist', alive: true, local: false, order: null },
+    ],
+  };
+
+  it('lists the squad: the player and three mates, a fallen one marked, an order’s letter beside its icon', () => {
+    const html = renderToStaticMarkup(<SquadList squad={squad} />);
+    expect(html.match(/<li/g)).toHaveLength(4);
+    expect(html.match(/data-dead/g)).toHaveLength(1);
+    expect(html.match(/data-local/g)).toHaveLength(1);
+    expect(html).toContain('Trooper 1');
+    expect(html).toMatch(/data-order[^>]*>[\s\S]*?>B</);
+    expect(html).toContain('aria-label="Squad A"');
+    expect(renderToStaticMarkup(<SquadList squad={squad} option="Off" />)).toBe('');
+    expect(renderToStaticMarkup(<SquadList squad={squad} option="NoOutline" />)).not.toContain('Trooper 1');
+  });
+
+  it('shows the squad list with the soldier’s parts', () => {
+    const view = { deploy: { open: false }, player: { state: 'alive', hp: 100, hpMax: 150 }, mode: null, squad };
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BattlefrontHud view={view} words={words} />
+      </MemoryRouter>,
+    );
+    expect(html).toContain('bf-squad');
+  });
+
+  it('offers the HQ and each squadmate on the deploy screen, a blocked one with the game’s reason', () => {
+    const spawns = [
+      { kind: 'hq', id: 'hq', name: 'IMPERIAL HQ' },
+      { kind: 'mate', id: 'b1', name: 'Trooper 1', cls: 'assault', blocked: 'combat', reason: 'IN COMBAT' },
+      { kind: 'mate', id: 'b3', name: 'Trooper 3', cls: 'specialist', blocked: null, reason: null },
+    ];
+    const html = renderToStaticMarkup(<DeployScreen deploy={{ open: true, offers, spawns }} points={0} />);
+    expect(html).toContain('IMPERIAL HQ');
+    expect(html).toContain('IN COMBAT');
+    expect(html.match(/class="bf-spawn"/g)).toHaveLength(3);
+    expect(html).toMatch(/aria-disabled="true"[^>]*>[\s\S]*?Trooper 1/);
+  });
 });
+

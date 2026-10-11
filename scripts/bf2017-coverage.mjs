@@ -125,6 +125,12 @@ export async function readConsumers(root, { fetchPack = null } = {}) {
     names.push(...Object.keys(pack.tex ?? {}));
     names.push(...strings(pack.physics ?? {}, ['name', 'shapes', 'source']).map((s) => `physics:${s}`));
     add(file, names);
+    // (its variations.json, lane colour: the variation databases and object variations it read)
+    const vfile = join(dirname(file), 'variations.json');
+    if (existsSync(vfile)) {
+      const v = readJson(vfile);
+      add(vfile, [...(v._source?.mvdb ?? []), ...Object.values(v.meshes ?? {}).flatMap((m) => Object.values(m._source?.variations ?? {}))]);
+    }
   }
 
   // the space levels' set pieces (scripts/bf2017-space.mjs): the map, each

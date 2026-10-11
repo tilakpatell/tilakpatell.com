@@ -8,9 +8,11 @@
 // launch it; and a floating origin (onOrigin) for an endless land.
 //
 // The engine is the -compat build (its wasm inlined: no bundler plugin, and
-// it loads in Node for the tests), imported here only, and only when
-// createPhysics is first called, so no page but the one driving pays for it.
-// A load that fails (offline) isn't kept: the next call tries again.
+// it loads in Node for the tests), its SIMD build where the browser has it
+// (engine.js, the only importer), and only when createPhysics is first
+// called, so no page but the one driving pays for it. A load that fails
+// (offline) or never comes is a named WasmError and isn't kept: the next
+// call tries again.
 // No three.js, no DOM.
 //
 // Round planets: gravity { centre, g } pulls every awake body toward the
@@ -81,27 +83,17 @@
 // substep, and every SWEEP substeps a body the engine turned off, not one
 // turned off on purpose, is put back.)
 
-import { GROUPS } from './groups';
+import { loadEngine } from './engine.js';
+import { GROUPS } from './groups.js';
 
 export { GROUPS };
 export const STEP = 1 / 60;
 const SWEEP = 60; // substeps between looks for bodies the engine turned off
 const TYPES = new Set(['dynamic', 'fixed', 'kinematicPositionBased', 'kinematicVelocityBased']);
 
-let engine = null;
-async function load() {
-  engine ??= import('@dimforge/rapier3d-compat')
-    .then(async (m) => {
-      const RAPIER = m.default ?? m;
-      await RAPIER.init();
-      return RAPIER;
-    })
-    .catch((err) => {
-      engine = null;
-      throw err;
-    });
-  return engine;
-}
+// (engine.js: the SIMD build where the browser has it, the plain one else;
+// a load that fails or never comes is a named WasmError, and not kept)
+const load = () => loadEngine();
 
 // the engine, and a little world stepped in it so its first real step is
 // as quick as its others

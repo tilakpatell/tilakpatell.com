@@ -56,6 +56,7 @@ const Front = lazy(() => import('./pages/Front'));
 const Changes = lazy(() => import('./pages/Changes'));
 const Worlds = lazy(() => import('./pages/Worlds'));
 const Dickansh = lazy(() => import('./pages/Dickansh'));
+const StreamView = lazy(() => import('./components/stream/StreamView.jsx')); // lane R2's spike: a dev route, linked from nowhere
 const NotFound = lazy(() => import('./pages/NotFound'));
 const CommandPalette = lazy(() => import('./components/CommandPalette'));
 const Hyperspace = lazy(() => import('./components/Hyperspace'));
@@ -442,6 +443,7 @@ function Shell() {
                 <Route path="/changes" element={<Changes />} />
                 <Route path="/worlds" element={<Worlds />} />
                 <Route path="/dickansh" element={<Dickansh />} />
+                <Route path="/stream" element={<StreamView />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </WorldGate>

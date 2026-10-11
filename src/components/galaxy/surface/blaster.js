@@ -44,7 +44,9 @@ export function capsuleOf(t) {
 export function createBlaster({ parent, world, pool = POOL, ballistic = null }) {
   const bolts = createBolts({ pool });
   const draw = createBoltMeshes(parent, { pool });
-  const solids = world.physicsRay ?? boltSolids(world);
+  // (read each time: a level's engine comes after the blaster is made)
+  const walkerSolids = boltSolids(world);
+  const solids = (a, b, exclude) => (world.physicsRay ?? walkerSolids)(a, b, exclude);
   const flat = { solids, bodies: [], blades: [] };
 
   // the first thing along a ray: a target's body or a solid (the aim point)

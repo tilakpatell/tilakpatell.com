@@ -13,7 +13,12 @@
 //
 // fogAt(fog, d, y) → 0…1    (pure: the same sum, for the tests and a CPU
 //   reading such as a HUD's visibility)
-// createFog(entry, { origin }) → Promise<{ node, uniforms, set(params) }>
+// createFog(entry, { origin, gradient }) → Promise<{ node, uniforms, set(params) }>
+//   gradient (lane Q6): the record's SkyGradientTexture { texture, rotation,
+//   gain }, the fog's colour by the view's direction (grade.js's gradientUV,
+//   mirrored here: the whole sphere as an equirect) times FogColor and the panorama's gain (sky.js's
+//   uniform, shared: the gradient is the same painted sky, blurred);
+//   without one the colour is FogColor as before
 //
 // The record's participating media and its forward light scattering (lane
 // V, the fidelity design), for the `fog` post pass (`mode: 'volume'`):
@@ -92,9 +97,9 @@ const values = (fog) => ({
   visibility: fog.height?.visibility ?? 1,
 });
 
-export async function createFog(entry, { origin } = {}) {
+export async function createFog(entry, { origin, gradient = null } = {}) {
   const { THREE, tsl } = await loadThree();
-  const { uniform, float, clamp, exp, max, mix, positionView, positionWorld, fog } = tsl;
+  const { uniform, float, clamp, exp, max, mix, positionView, positionWorld, fog, cameraPosition, normalize, asin, atan, fract, vec2, texture } = tsl;
   const v = values(readEntry(entry, { origin }).fog);
   const u = {
     color: uniform(new THREE.Color(...v.color)),
@@ -115,7 +120,15 @@ export async function createFog(entry, { origin } = {}) {
   const distance = mix(expo, cubic, u.useCurve);
   const h = clamp(u.altitude.add(u.depth).sub(positionWorld.y).div(u.depth), 0, 1);
   const height = h.mul(float(1).sub(exp(d.mul(-3).div(u.visibility)))).mul(u.useHeight);
-  const node = fog(u.color, max(distance, height));
+  let color = u.color;
+  if (gradient?.texture) {
+    const dir = normalize(positionWorld.sub(cameraPosition));
+    const up = asin(clamp(dir.y, -1, 1)).div(Math.PI / 2);
+    const uv = vec2(fract(float(gradient.rotation ?? 0).sub(atan(dir.x, dir.z).div(Math.PI * 2))), up.mul(-0.5).add(0.5));
+    const gain = gradient.gain?.isNode ? gradient.gain : float(gradient.gain ?? 1);
+    color = u.color.mul(texture(gradient.texture, uv).level(0).rgb).mul(gain);
+  }
+  const node = fog(color, max(distance, height));
   return {
     node,
     uniforms: u,

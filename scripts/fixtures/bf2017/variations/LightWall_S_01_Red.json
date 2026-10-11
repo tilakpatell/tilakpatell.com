@@ -1,0 +1,51 @@
+{
+ "name": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/LightWall_S_01_Red",
+ "type": "ObjectVariation",
+ "guid": "817577cd-780d-4a22-8d5a-a60b3e603c90",
+ "root": 0,
+ "objects": [
+  {
+   "$type": "ObjectVariation",
+   "$guid": "35e77de0-5054-49f5-b693-9c4a6cd42f40",
+   "NameHash": 71417493,
+   "Name": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/LightWall_S_01_Red"
+  },
+  {
+   "$type": "MeshMaterialVariation",
+   "$guid": "8bdbf133-0fb8-4ee3-afde-15f3fa5963c4",
+   "Shader": {
+    "Shader": null,
+    "BoolParameters": [],
+    "VectorParameters": [
+     {
+      "Value": {
+       "x": 196608.0,
+       "y": 0.0,
+       "z": 0.0,
+       "w": 1.0
+      },
+      "ParameterName": "EmissiveIntensety",
+      "ParameterType": "ShaderParameterType_Color"
+     }
+    ],
+    "VectorArrayParameters": [],
+    "TextureParameters": [],
+    "ConditionalParameters": [],
+    "SurfaceShaderName": ""
+   }
+  },
+  {
+   "$type": "MeshMaterialVariation",
+   "$guid": "dc1dc3dd-969d-419d-9b95-eff65667cc21",
+   "Shader": {
+    "Shader": null,
+    "BoolParameters": [],
+    "VectorParameters": [],
+    "VectorArrayParameters": [],
+    "TextureParameters": [],
+    "ConditionalParameters": [],
+    "SurfaceShaderName": ""
+   }
+  }
+ ]
+}

@@ -1,0 +1,57 @@
+{
+ "name": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/Box_M_01_A_Snow",
+ "type": "ObjectVariation",
+ "guid": "6a42b61e-9ed3-11e7-864b-9f60f15c1a73",
+ "root": 0,
+ "objects": [
+  {
+   "$type": "ObjectVariation",
+   "$guid": "8584d58e-cd12-1fc6-b39b-89a1a362e763",
+   "NameHash": 2773463200,
+   "Name": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/Box_M_01_A_Snow"
+  },
+  {
+   "$type": "MeshMaterialVariation",
+   "$guid": "470b9b0a-084b-470b-b60b-fc2471a66004",
+   "Shader": {
+    "Shader": null,
+    "BoolParameters": [],
+    "VectorParameters": [],
+    "VectorArrayParameters": [],
+    "TextureParameters": [],
+    "ConditionalParameters": [],
+    "SurfaceShaderName": ""
+   }
+  },
+  {
+   "$type": "MeshMaterialVariation",
+   "$guid": "ec9f2c3f-cd2b-4fad-bbd9-0d74363eaadf",
+   "Shader": {
+    "Shader": {
+     "$asset": "Shaders/Presets/SS_PropsMetallicPreset_2UV_TextureArray_SnowMask_01",
+     "$assetType": "ShaderGraph",
+     "$class": "93fcec36-e708-4baf-a890-edbe2424dca1"
+    },
+    "BoolParameters": [],
+    "VectorParameters": [],
+    "VectorArrayParameters": [],
+    "TextureParameters": [],
+    "ConditionalParameters": [],
+    "SurfaceShaderName": ""
+   }
+  },
+  {
+   "$type": "MeshMaterialVariation",
+   "$guid": "35f22f6b-d40f-43d2-8b86-4901304c4e38",
+   "Shader": {
+    "Shader": null,
+    "BoolParameters": [],
+    "VectorParameters": [],
+    "VectorArrayParameters": [],
+    "TextureParameters": [],
+    "ConditionalParameters": [],
+    "SurfaceShaderName": ""
+   }
+  }
+ ]
+}

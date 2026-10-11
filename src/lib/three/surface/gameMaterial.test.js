@@ -212,4 +212,46 @@ describe('createGameMaterial', () => {
     make(PROPS, {}, { tier: 'low', overlays: [snowOverlay] });
     expect(seen).toHaveLength(0);
   });
+
+  // ---- lane colour: a mesh's variation (variations.json) over its recipe
+  it('a recipe without a variation draws exactly as before', () => {
+    const plain = make(PROPS);
+    const same = make({ ...PROPS, variation: undefined });
+    // (each makes its own sun uniforms)
+    const bare = (m) => ({ ...m.userData.game, sun: undefined });
+    expect(bare(same)).toEqual(bare(plain));
+    expect(features(same)).toEqual(features(plain));
+  });
+
+  it("tints by the variation's paint colour, through the recipe's parameter names", () => {
+    expect(features(make(PROPS))).not.toContain('paint');
+    const m = make({ ...PROPS, variation: { name: 'Box_White', vectors: { PaintColour: [1, 1, 1, 1] } } });
+    expect(features(m)).toContain('paint');
+    expect(m.userData.game.variation).toBe('Box_White');
+  });
+
+  it('lights a lit variation: its colour-typed intensity as the emissive', () => {
+    const recipe = { family: 'emissive', maps: {}, params: { alphaTest: true, alphaCutoff: 0.5, doubleSided: false } };
+    expect(features(make(recipe))).not.toContain('emissive');
+    expect(features(make({ ...recipe, variation: { name: 'LightCeiling_M_01_Lit', vectors: { EmissiveIntensety: [3813.773, 4442.85, 6144, 1] } } }))).toContain('emissive');
+  });
+
+  it('draws a variation’s own colour and normal maps in place of the GLB’s', () => {
+    const color = tex();
+    const normal = tex();
+    const m = make({ ...PROPS, variation: { name: 'Container_L_01_Red' } }, { color, normal });
+    expect(m.map).toBe(color);
+    expect(m.normalMap).toBe(normal);
+    // (the GLB's own material is not changed)
+    const plain = make(PROPS);
+    expect(plain.map).not.toBe(color);
+  });
+
+  it('snows a snow variation from the start: the snow overlay at its whole amount', () => {
+    const m = make({ ...PROPS, variation: { name: 'Box_M_01_A_Snow', snow: true } });
+    expect(features(m)).toContain('overlay:snow');
+    expect(m.userData.game.snow).toBe(true);
+    expect(make(PROPS).userData.game.snow).toBeUndefined();
+  });
 });
+

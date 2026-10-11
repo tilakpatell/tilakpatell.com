@@ -8,6 +8,8 @@
 
 **Spec:** `2026-10-10-bf2017-galaxy-on-the-game-design.md`, decision 5 and the mode catalogue; the game design's section 6; lane H's `hvv.js`/`blast.js` hand rules and numbers (`NOTES.md`) as the first reading, to be replaced by the graphs' where they say otherwise.
 
+**Narrowed beside PR #877 (read the spec's "Beside the accuracy design" first):** #877's maps lane (`claude/bf2017-maps`) owns Strike. **Do not do Task 5**; the `Carry.jsx` HUD part in Task 6 goes with it. Blast, Heroes vs Villains and Hero Showdown are yours. The maps lane also brings the other levels' map rulebooks: build on Hoth's rows now and merge its branch for the rest.
+
 ## Global constraints
 
 - Start from `main`. Own: `src/lib/battlefront/modes/{blast,hvv,showdown,strike}.js` and tests, `src/lib/battlefront/arena.test.js` (additive cases), `scripts/battlefront-balance.mjs` (`--mode`), `src/components/battlefront/battle.js` (the mode switch and each mode's view: additive), `src/components/battlefront/hud/{ScoreBar,Targets,Rounds,Carry}.jsx` (new), `src/components/battlefront/index.js`'s `BUILT` set (G1's: add ids; if G1 is not merged, `MODES`).

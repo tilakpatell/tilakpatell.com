@@ -18,11 +18,15 @@
 // material is disposed (its maps are the cache's and stay).
 //   recipes: { forGlb(glbPath) → recipe[] | null, maps: { name → 'tex/x.ktx2' | null }, tex: sizes }
 //   mapKeys: the recipe maps the tier draws (gameMaterial.js's TIER_MAPS), the rest never fetched
+//   variations: levelVariations.js's index (lane colour: the pack's
+//     variations.json): a varied mesh's recipes go through applyVariation
+//     first, its own maps (color, normal) found in the index's `maps`
 
 import { SRGBColorSpace } from 'three';
 import { gltfLoader, ktx2Loader } from '../../../../lib/three/gltf.js';
 import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
 import { packUrl, splitTextures, tierTexture } from './levelPack.js';
+import { applyVariation } from './levelVariations.js';
 
 // '../tex/a.ktx2' named by meshes/x.glb → 'tex/a.ktx2' in the pack
 const inPack = (glbPath, uri) => {
@@ -68,6 +72,8 @@ export function recipesIndex(pack, json) {
 
 // a recipe's map keys as the material takes them
 const MAP_KEYS = [
+  ['color', (m) => m.color],
+  ['normal', (m) => m.normal],
   ['detail', (m) => m.detail ?? m.detailArray],
   ['grunge', (m) => m.grunge],
   ['breakupColor', (m) => m.breakup?.color],
@@ -118,9 +124,11 @@ export async function recipeMaps(recipe, { maps = {}, texture, keys = null }) {
   return out;
 }
 
-export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null }) {
+export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null }) {
   // (mapKeys: the recipe maps the tier draws; null, all of them)
   if (recipes?.tex) sizes = { ...sizes, ...recipes.tex };
+  if (variations?.tex) sizes = { ...sizes, ...variations.tex };
+  const mapsOf = { ...(recipes?.maps ?? {}), ...(variations?.maps ?? {}) };
   const textures = new Map(); // pack path → Promise<Texture | null>
   const meshes = new Map(); // glb path → Promise<{ scene } | null>
   let gone = false;
@@ -151,7 +159,8 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
   }
 
   async function gameMaterials(gltf, glbPath) {
-    const list = recipes.forGlb(glbPath);
+    const v = variations?.forGlb(glbPath) ?? null;
+    const list = v ? recipes.forGlb(glbPath)?.map((r, i) => applyVariation(r, v, i)) : recipes.forGlb(glbPath);
     if (!list?.length) return;
     const glbMats = await gltf.parser.getDependencies('material');
     const chosen = matchRecipes(
@@ -169,8 +178,13 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     const swap = new Map();
     await Promise.all(
       [...used].map(async ([glb, recipe]) => {
-        const maps = { glb, ...(await recipeMaps(recipe, { maps: recipes.maps ?? {}, texture, keys: mapKeys })) };
+        const maps = { glb, ...(await recipeMaps(recipe, { maps: mapsOf, texture, keys: mapKeys })) };
         if (gone) return;
+        // (a variation's colour map is sRGB, as the GLB's is: bindSlot)
+        if (maps.color && maps.color.colorSpace !== SRGBColorSpace) {
+          maps.color.colorSpace = SRGBColorSpace;
+          maps.color.needsUpdate = true;
+        }
         // (a recipe the material cannot be made of keeps the GLB's material)
         try {
           swap.set(glb, materialFor(recipe, maps));
