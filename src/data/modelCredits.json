@@ -2353,6 +2353,45 @@
       "galaxy"
     ]
   },
+  "galaxy-far-interceptor": {
+    "title": "Star Wars Battlefront II (2017): gameplay/vehicles/air/tieinterceptor/vehicle_air_tieinterceptor_static_donotuse_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy",
+    "as": "the TIE interceptors, far off (the far copy of surface/tieinterceptor.glb, scripts/galaxy-lod.mjs)",
+    "file": "/models/galaxy/lod/interceptor.glb",
+    "also": [],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "galaxy-far-scimitar": {
+    "title": "Star Wars Battlefront II (2017): gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy",
+    "as": "Maul’s Scimitar, far off (the far copy of surface/scimitar.glb, scripts/galaxy-lod.mjs)",
+    "file": "/models/galaxy/lod/scimitar.glb",
+    "also": [],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "galaxy-far-tiestriker": {
+    "title": "Star Wars Battlefront II (2017): gameplay/vehicles/air/tiestriker/tiestriker_01_static_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy",
+    "as": "the TIE strikers, far off (the far copy of surface/tiestriker.glb, scripts/galaxy-lod.mjs)",
+    "file": "/models/galaxy/lod/tiestriker.glb",
+    "also": [],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
   "galaxy-freighter": {
     "title": "Star Wars: YT-2400 Light Freighter",
     "author": "Daniel",
