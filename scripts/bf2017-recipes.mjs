@@ -6,7 +6,10 @@
 // recipe (scripts/lib/bf2017-recipes.mjs) and writes recipes.json beside the
 // pack's level.json; lists the maps the recipes want and which the bucket
 // has; with --fetch, takes each one there into the pack's tex/ at the tier's
-// sizes, as lane L's pack takes its own.
+// sizes, as lane L's pack takes its own. A material the dump binds no
+// texture on whose surface shader holds its maps (Theed's copper roofs) takes
+// the shader's own colour and normal by name from web/textures.jsonl, kept to
+// the pack's world (shaderMapsOf).
 //
 //   node scripts/bf2017-recipes.mjs --level hoth [--fetch]
 //   node scripts/bf2017-recipes.mjs <mesh>            (one mesh's recipes, printed)
@@ -34,7 +37,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
-import { candidatesOf, colourIndex, countFamilies, crewRecipes, mapsWanted, recipesOf } from './lib/bf2017-recipes.mjs';
+import { candidatesOf, colourIndex, countFamilies, crewRecipes, mapsWanted, recipesOf, shaderMapIndex } from './lib/bf2017-recipes.mjs';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
 
@@ -65,6 +68,19 @@ async function readDump() {
     rows.set(r.mesh, r);
   }
   return rows;
+}
+
+// the game's texture names (web/textures.jsonl): a surface shader's own maps
+// are found among them (shaderMapsOf)
+async function readShaderMaps() {
+  const path = join(CACHE, 'web', 'textures.jsonl');
+  if (!existsSync(path)) {
+    console.error(`No texture index at ${path}: run node scripts/bf2017-fetch.mjs --raw textures.jsonl first.`);
+    process.exit(2);
+  }
+  const names = [];
+  for (const line of (await readFile(path, 'utf8')).split('\n')) if (line.trim()) names.push(JSON.parse(line).name);
+  return shaderMapIndex(names);
 }
 
 async function bucketHas(env, listFolder) {
@@ -111,6 +127,8 @@ async function level(world, { fetch: doFetch }) {
   const packDir = join(ROOT, 'public/models/galaxy/bf2017/levels', world);
   const pack = JSON.parse(await readFile(join(packDir, 'level.json'), 'utf8'));
   const rows = await readDump();
+  // (a district's pack is its world's: naboo/hangar keeps to Naboo's maps)
+  const opts = { shaderMaps: await readShaderMaps(), world: world.split('/')[0] };
   const meshes = {};
   const all = [];
   let unknown = 0;
@@ -120,7 +138,7 @@ async function level(world, { fetch: doFetch }) {
     if (Array.isArray(m.glb) && !m.glb.some(Boolean)) return;
     const row = rows.get(meshOf(m.name));
     if (!row) return unknown++;
-    meshes[i] = recipesOf(row);
+    meshes[i] = recipesOf(row, opts);
     all.push(...meshes[i]);
   });
   const families = {};
