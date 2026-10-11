@@ -240,3 +240,56 @@ export function step(cmd, argv, { cwd, env, log = console.log } = {}) {
   log(`$ ${[cmd, ...argv].map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ')}`);
   execFileSync(cmd, argv, { cwd, env, stdio: ['ignore', 'inherit', 'inherit'], windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
 }
+
+// The export's encoder's class for a texture (lane D's rule, web_optimize.py's):
+// a derived normal → normal, a derived ORM → attrib, colour (sRGB by the
+// index or the format, or listed in web_opt/ktx2_color.txt) → color, else attrib.
+export function encodeClass(t, colourSet = new Set()) {
+  const f = String(t.file ?? '').toLowerCase();
+  if (f.includes('__normal')) return 'normal';
+  if (f.includes('__orm_')) return 'attrib';
+  if (t.srgb || /_SRGB$/i.test(t.format ?? '') || colourSet.has(f) || colourSet.has(String(t.name ?? '').toLowerCase())) return 'color';
+  return 'attrib';
+}
+
+export const ktxOf = (file) => file.replace(/\.png$/i, '.ktx2');
+
+// Encode a list of the export's textures with its own encoder and send the
+// KTX2 to the bucket with its own uploader, as lane D's pass did:
+//   python tool/ktx2_encode.py --list <tsv> --max N --workers W --tmp web_opt/_ktxtmp
+//   python tool/upload_supabase.py --root web_opt --list <txt> --project P --bucket bf2017-assets --prefix web/
+// `rows`: index rows ({ name, file, srgb, format }). → { made: [row], failed: [row] }
+export function encodeAndUpload(rows, { d, env, log, list, max = 2048, workers = 14, extra = [] }) {
+  const colourFile = join(d.webOpt, 'ktx2_color.txt');
+  const colours = new Set(existsSync(colourFile) ? readFileSync(colourFile, 'utf8').split(/\r?\n/).map((l) => l.trim().toLowerCase()).filter(Boolean) : []);
+  const tsv = join(d.webOpt, `_${list}_list.tsv`);
+  writeFileSync(tsv, `${rows.map((t) => `${join(d.web, t.file)}\t${encodeClass(t, colours)}`).join('\n')}\n`);
+  try {
+    step(d.python, [join(d.tool, 'ktx2_encode.py'), '--list', tsv, '--max', String(max), '--workers', String(workers), '--tmp', join(d.webOpt, '_ktxtmp'), ...extra], { env, log });
+  } catch (e) {
+    // (the encoder exits 1 for one failed file; what landed is counted below)
+    log(`ktx2_encode.py: ${e.message.split('\n')[0]}`);
+  }
+  const made = rows.filter((t) => existsSync(join(d.webOpt, ktxOf(t.file))));
+  const failed = rows.filter((t) => !made.includes(t));
+  if (made.length) {
+    const up = join(d.webOpt, `_${list}_upload.txt`);
+    writeFileSync(up, `${made.map((t) => ktxOf(t.file)).join('\n')}\n`);
+    const project = keyState(env).project;
+    step(d.python, [join(d.tool, 'upload_supabase.py'), '--root', d.webOpt, '--list', up, ...(project ? ['--project', project] : []), '--bucket', 'bf2017-assets', '--prefix', 'web/'], { env, log });
+  }
+  return { made, failed };
+}
+
+// The coverage ledger again from the uploader's own record (no key: the
+// export's web_opt/upload_state.tsv is the listing), so the PR carries the
+// rows that moved; then its check, said in the report (red is the owner's to read).
+export function ledgerAgain(root, d, { env, log }) {
+  step(process.execPath, ['scripts/bf2017-coverage.mjs', '--root', d.webOpt], { cwd: root, env, log });
+  try {
+    step(process.execPath, ['scripts/bf2017-coverage.mjs', '--check'], { cwd: root, env, log });
+    return 'The coverage check passes on the new ledger.';
+  } catch {
+    return '**The coverage check fails on the new ledger**: rows that moved need an owner in `scripts/lib/bf2017-owners.mjs` (the log lists the first twenty).';
+  }
+}

@@ -76,7 +76,8 @@ export function withIndex(items, index) {
   return items.map((i) => {
     const t = byName.get(i.name.toLowerCase());
     const native = t ? { width: t.width, height: t.height } : null;
-    const sizes = i.kind === 'panorama' ? PANORAMA_SIZES : [{ tier: 'all', ...(native ?? { width: 512, height: 256 }) }];
+    // (never above the source: Endor's foggy sky is 4,096 wide to begin with)
+    const sizes = i.kind === 'panorama' ? PANORAMA_SIZES.filter((s) => !native || s.width <= native.width) : [{ tier: 'all', ...(native ?? { width: 512, height: 256 }) }];
     return { ...i, file: t?.file ?? null, format: t?.format ?? null, native: native ? `${native.width}×${native.height}` : null, sizes: sizes.map((s) => `${s.width}×${s.height}`).join(', '), out: sizes };
   });
 }
