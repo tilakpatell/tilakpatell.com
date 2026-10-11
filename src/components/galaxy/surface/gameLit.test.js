@@ -102,7 +102,10 @@ describe('a world under the game’s light, running', () => {
 });
 
 describe('the worlds the game has no record for', () => {
-  it('keep their own sky and light exactly', async () => {
+  // (the import of every site's module, 1 to 2 s on the CI runner, 5 to 6 s in
+  // a cloud container running the whole suite, over vitest's 5 s; the time is
+  // the import's, not a hang: lane S1, 2026-10-11, as #916 did for the search)
+  it('keep their own sky and light exactly', { timeout: 30_000 }, async () => {
     const { siteOf } = await import('./sites/index');
     const { gameSite } = await import('../../../lib/three/gameLight');
     const { gameLightOf } = await import('../../../data/bf2017/light/index');

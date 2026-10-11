@@ -14,7 +14,7 @@ const profile = {
     { id: 4, callFrame: frame('hypot'), children: [] },
     { id: 5, callFrame: frame('(idle)'), children: [] },
     { id: 6, callFrame: frame('(garbage collector)'), children: [] },
-    { id: 7, callFrame: frame('step', 'http://127.0.0.1:5188/node_modules/.vite/deps/@dimforge_rapier3d-simd-compat.js?v=1', 9), children: [] },
+    { id: 7, callFrame: frame('step', 'http://127.0.0.1:5188/node_modules/.vite/deps/@dimforge_rapier3d-simd.js?v=1', 9), children: [] },
   ],
   // each sample is on the stack for the next delta: 1 ms apart
   samples: [3, 4, 4, 7, 5, 5, 6, 2, 3, 3],
@@ -25,7 +25,7 @@ describe('moduleOf', () => {
   it('names the site’s files by path and a dependency by package', () => {
     expect(moduleOf('http://127.0.0.1:5188/src/lib/level/lod.js?t=2')).toBe('src/lib/level/lod.js');
     expect(moduleOf('http://x/node_modules/.vite/deps/three.js?v=1')).toBe('three');
-    expect(moduleOf('http://x/node_modules/.vite/deps/@dimforge_rapier3d-compat.js')).toBe('rapier');
+    expect(moduleOf('http://x/node_modules/.vite/deps/@dimforge_rapier3d.js')).toBe('rapier');
     expect(moduleOf('http://x/node_modules/three/examples/jsm/loaders/GLTFLoader.js')).toBe('three');
     expect(moduleOf('')).toBe('(native)');
   });

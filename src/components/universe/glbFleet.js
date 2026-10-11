@@ -1,6 +1,8 @@
-// The ships that are models rather than built: the site owner's Meshy X-wing
-// and Slave I, and the Star Wars models they sent for the map: a TIE
-// interceptor, a Star Destroyer and a Corellian corvette (the Tantive IV)
+// The ships that are models rather than built: the game's X-wing in its light
+// cut (Battlefront II (2017), lane V's import; lane S1 put it here over the
+// gen3d one), the site owner's Meshy Slave I, and the Star Wars models they
+// sent for the map: a TIE interceptor, a Star Destroyer and a Corellian
+// corvette (the Tantive IV)
 // (scripts/build-universe.py cuts them down for it); and the galaxy's
 // Y-wing, A-wing and TIE bomber, each over a built one. Each is loaded the
 // first time it's wanted, then copied, sharing its geometry and textures,
@@ -37,7 +39,11 @@ import { buildTraffic } from './trafficModels';
 // which way each one's nose points as it comes (turned to +z), and whether
 // there's a built one to fly until it's here
 export const GLB = {
-  xwing: { url: gen3dUrl('x-wing'), nose: 0, built: true }, // made here (scripts/gen3d), the trench run's, in this device's cut
+  // (the game's T-65 in lane V's light cut, 7,000 triangles and 512 maps,
+  // `_source`: catalog/bf2017-vehicles.js's xwing row: a fighter on this map
+  // is a few pixels long, as its Y-wing and A-wing below are their far copies;
+  // the galaxy flies the plain cut, galaxy/models.js)
+  xwing: { url: '/models/galaxy/surface/xwing.lod1.glb', nose: 0, built: true },
   slave1: { url: '/models/universe/slave1.glb', nose: 0, built: false },
   interceptor: { url: gen3dUrl('tie-interceptor'), nose: 0, built: true }, // made here from the old one's render
   destroyer: { url: '/models/universe/star-destroyer.glb', nose: Math.PI, built: true },

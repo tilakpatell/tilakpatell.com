@@ -195,10 +195,13 @@ const HULL_FIT = {
   falcon: { mid: 0.55, marks: [0.45, 0.65], dark: [0.14, 0.22, 1], keep: 0.03 },
 };
 // which way each model's nose points, as a turn about y that brings it to −z
+// (the game's files face +z, as every surface model does)
 const NOSE = { xwing: Math.PI, falcon: Math.PI };
 // the materials a model's hull is made of, which take a paint job (its
-// cockpit, glass, lights and engines' glow are left as they come)
-const PAINTABLE = { xwing: /^xwing(Fuselage|Engines|Nurnies|Nose)$/, falcon: /^Tex_0095_[12]\.dds$/ };
+// cockpit, glass, lights and engines' glow are left as they come): the
+// game's names, lane V's import keeps them (the X-wing's fuselage, wings and
+// gear; the Falcon's hull and its details, not its windows)
+export const PAINTABLE = { xwing: /^Mat_XWing_(Fuselage|Wings|LandingGear)_LOD$/, falcon: /^(Main|Details)_Shader1$/ };
 // a model's own engine glow, which takes over from the stand-in's (its
 // emissive maps too, as the Falcon's sublight band is): lit with the throttle
 const LIGHTS = { xwing: /EngineGlow/ };
@@ -221,9 +224,11 @@ const finish = (kind, model) =>
 
 // the models that take over from the built ships, when they load (the
 // cruiser is built by the C-137 page's own code instead; see scene.js): the
-// X-wing and the Falcon are others' (Sketchfab, CC BY: scripts/sketchfab-batch.mjs,
-// credited in data/modelCredits.json), and their stand-ins are built whole (hulls.js)
-export const SHIP_MODELS = { xwing: '/models/sketchfab/xwing-hd.glb', falcon: '/models/sketchfab/falcon-hd.glb', rv: '/models/universe/rv-wings.glb' };
+// X-wing and the Falcon are Star Wars Battlefront II (2017)'s, as lane V
+// imported them (surface/, native, credited in data/modelCredits.json; lane
+// S1 put them here over the Sketchfab xwing-hd and falcon-hd), the RV the
+// site owner's Meshy one, and their stand-ins are built whole (hulls.js)
+export const SHIP_MODELS = { xwing: '/models/galaxy/surface/xwing.glb', falcon: '/models/galaxy/falcon.glb', rv: '/models/universe/rv-wings.glb' }; // (the Falcon gear up: galaxy/models.js's row)
 
 // the garage builds' panel skin (made once, in the browser)
 const buildMaps = () => (typeof document === 'undefined' ? null : panelMaps('build', { base: '#c4c8ce', seed: 11, cols: 5, rows: 9, grime: 0.18 }));

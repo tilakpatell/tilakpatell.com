@@ -10,7 +10,7 @@ Code compiled ahead to a compact bytecode the browser runs near native speed, wi
 
 | module | what it does | build(s) | loaded by | when |
 | --- | --- | --- | --- | --- |
-| Rapier ([physics-rapier.md](physics-rapier.md)) | the physics | SIMD and plain, inlined in their `-compat` packages | `src/lib/physics/engine.js` | the first `createPhysics` or `preload` (a world that drives or has the engine) |
+| Rapier ([physics-rapier.md](physics-rapier.md)) | the physics | SIMD and plain, each a hashed `.wasm` asset streamed by the shim under `src/lib/physics/raw/` through `src/lib/wasm/instantiate.js` (lane X3) | `src/lib/physics/engine.js` | the first `createPhysics` or `preload` (a world that drives or has the engine) |
 | Basis transcoder (three’s `examples/jsm/libs/basis/`) | KTX2 → the GPU’s own compressed format | one (no SIMD build is published) | `src/lib/three/gltf.js`’s `ktx2Loader`, through `src/lib/three/wasmDecoders.js`’s `basisUp` | the first texture or model that carries KTX2, or a world’s `preloadDecoders({ basis: true })` |
 | meshopt decoder (three’s `examples/jsm/libs/meshopt_decoder.module.js`) | a GLB’s compressed buffers | SIMD and plain, inlined, picked by the module itself on the same probe | `src/lib/three/gltf.js`, through `meshoptUp` | the first GLB parsed, or `preloadDecoders()` |
 
@@ -20,6 +20,7 @@ Code compiled ahead to a compact bytecode the browser runs near native speed, wi
 - **Every module comes up through `load`** (`src/lib/wasm/load.js`): once, the same promise to every caller; a failure is a `WasmError` naming the module and the reason (`unsupported`, `load`, `timeout`), and isn’t kept, so the next ask tries again; a load that neither finishes nor fails within its time (20 s; meshopt 10 s) rejects rather than leaving a world on its loading screen. `status()` says each module’s state, its build and how long it took (`window.__wasm` in development).
 - **The fallbacks.** Rapier: the SIMD build where the probe passes, the plain one where it doesn’t or where the SIMD one won’t come up; neither, and the Battlefront goes on without its engine (the navgrid’s collision, `src/components/battlefront/module.js`). meshopt: its plain build where SIMD isn’t; no WebAssembly at all, and a model fails by name. Basis: the binary is compiled once on the main thread before any worker is handed it (a worker whose instantiation fails never answers, and the textures it holds would wait for good); one that can’t be had is a `WasmError`, and a level’s map that can’t be had is drawn without it (`levelGltf.js`’s catch).
 - **A failed world says why.** The runtime keeps `rt.failure` (`{ world, name, message, module }`), so a world that failed for a module says which (`src/runtime/runtime.js`).
+- **The physics worker loads through `load.js` too** (GPU-first lane N5). `src/lib/physics/worker.js` imports `world.js`, so inside the worker Rapier comes up by the same road as on the page: `engine.js`’s SIMD probe, `lib/wasm/load`’s one try at a time, a named `WasmError` within 20 s. A worker whose engine fails says so (`failed`), and `createPhysics({ worker: true })` takes the main thread’s engine instead; one that never answers is let go after 5 s the same way. It is off everywhere (`docs/stack/physics-rapier.md`). Its poses cross by transfer, not shared memory (`threads` below).
 - **Preloaded with the world’s chunk.** A world that draws a level calls `preloadDecoders({ renderer, basis: true })` as its build starts (`src/components/battlefront/module.js`), so the decoders come up beside the level’s first fetches, not behind its first model; Rapier is preloaded and warmed where the world wants its engine (`preload()`).
 
 ## The ports (lane X2)
@@ -37,11 +38,13 @@ Nothing else in the Battlefront’s step came near the plan’s threshold (1.5 m
 - **Threads** (shared memory, `wasm-bindgen-rayon`): they need a cross-origin-isolated page, and GitHub Pages sends no COOP or COEP header; a service-worker shim that adds them breaks the site’s cross-origin assets (the bucket, the fonts).
 - **`wasm-feature-detect`** (the package): three probes are a dozen lines; the bytes are its, credited in `features.js`.
 - **A port of a game engine**: there is no source to compile; the design’s §7 says why the records are read directly instead.
-- **A Vite plugin for WebAssembly**: Rapier’s and meshopt’s wasm is inlined in their JavaScript; the Basis binary is fetched as an asset by three’s own URL.
+- **A third-party Vite plugin for WebAssembly**: meshopt’s wasm is inlined in its JavaScript; the Basis binary is fetched as an asset by three’s own URL; Rapier’s binaries are hashed assets through the site’s own `scripts/rapier-wasm.mjs`, which resolves one import to a shim and nothing else.
+- **The `-compat` Rapier builds**: they inline 2.9 to 3.1 MB of wasm as base64 and compile from bytes after the whole download; the bare builds, streamed, cost about 0.5 MB less gzipped and overlap the compile with the download (the audit `docs/research/2026-10-11-frostbite-gap-audit.md`, §2.1).
 
 ## Rules
 
 - A module comes up through `src/lib/wasm/load.js`, never a bare `WebAssembly.instantiate` a world awaits (`src/lib/wasm/load.test.js`, `src/lib/physics/engine.test.js`, `src/lib/three/wasmDecoders.test.js`; nothing measures a new caller).
+- A binary the site instantiates itself goes through `src/lib/wasm/instantiate.js`: streamed where `instantiateStreaming` exists and the type is `application/wasm`, the bytes where the type is wrong (a `TypeError`), the file in Node; a bad module rejects with the engine’s `CompileError` (`instantiate.test.js`).
 - Every path is tested: the SIMD build, the plain one, a failure, a timeout (the same tests).
 - A port keeps its JavaScript as the fallback, behind the same interface, and is run by the same tests.
 - A port ships only with its own before-and-after in the evidence.

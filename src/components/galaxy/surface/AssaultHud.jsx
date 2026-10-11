@@ -1,22 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { clockOf } from './missions/chase';
+import { warSideOf } from './missions/assault';
+import { SIDE_ICONS } from './troopers';
+import AssaultSpawn from './AssaultSpawn';
 
 // What's over a galactic assault (missions/assault.js): first the choose
-// card (which side you fight for), then the deploy card (which of your
-// side's posts you come onto the field at, now and whenever you're down;
-// the side you swore to in the galaxy's war marked, `sworn`, and picking
-// the other the same oath as in the sky);
+// card (which side you fight for, under its emblem; the side you swore to
+// in the galaxy's war marked, `sworn`, and picking the other the same oath
+// as in the sky), then the deploy card, the game's spawn screen
+// (AssaultSpawn.jsx: who you come on as, a class or for your Battle Points
+// an enforcer or a hero, and at which of your side's posts, now and
+// whenever you're down: onDeploy(offer, postId); `kept` is the hero id
+// you're kept as, the class it starts on);
 // on the field, the phase and its posts as chips filling with their
 // meters, the reinforcements both sides have left, what's happening at the
-// post you're in, the last few things that happened and your kills; at the
-// end, how it went. `view` is the scene's battleView as the page last drew
-// it; `feed` brings the same ten times a second, for the meters, the
-// tickets and the clock alone, so only this is drawn again for them.
+// post you're in, the last few things that happened, your kills and your
+// Battle Points; at the end, how it went. `view` is the scene's battleView
+// as the page last drew it; `feed` brings the same ten times a second, for
+// the meters, the tickets, the points and the clock alone, so only this is
+// drawn again for them.
 
 const ROLE = { attack: 'Attack', defend: 'Defend' };
 const STATE = { taking: 'Taking', holding: 'Holding', losing: 'Losing', contested: 'Contested' };
 
-export default function AssaultHud({ view, feed, mission, best, fresh, onSide, onDeploy, onAgain, onBack, sworn = null }) {
+export default function AssaultHud({ view, feed, mission, best, fresh, onSide, onDeploy, onAgain, onBack, sworn = null, kept = null }) {
   const [shut, setShut] = useState(false);
   const [live, setLive] = useState(null);
   const first = useRef(null);
@@ -45,7 +52,7 @@ export default function AssaultHud({ view, feed, mission, best, fresh, onSide, o
   return (
     <>
       <p className="sr-only" aria-live="polite">
-        {card === 'choose' ? 'Choose your side' : card === 'deploy' ? 'Choose where to deploy' : result ? (result.won ? mission.ends.won : mission.ends.lost) : view.phase === 'run' ? phaseLabel : ''}
+        {card === 'choose' ? 'Choose your side' : card === 'deploy' ? 'Choose who to deploy as, and where' : result ? (result.won ? mission.ends.won : mission.ends.lost) : view.phase === 'run' ? phaseLabel : ''}
       </p>
 
       {card === 'choose' && (
@@ -56,6 +63,7 @@ export default function AssaultHud({ view, feed, mission, best, fresh, onSide, o
           <div className="assault-sides">
             {['attack', 'defend'].map((side, i) => (
               <button key={side} ref={(sworn ? side === sworn : i === 0) ? first : null} type="button" className="assault-side" data-sworn={side === sworn ? '' : undefined} style={{ '--side': sides[side].colour }} onClick={() => onSide(side)}>
+                {SIDE_ICONS[warSideOf(mission, side)] && <img className="assault-side-emblem" src={SIDE_ICONS[warSideOf(mission, side)]} alt="" width="40" height="40" />}
                 <b>{sides[side].name}</b>
                 <span>{side === sworn ? `${ROLE[side]} · the side you swore to` : sworn ? `${ROLE[side]} · a turncoat’s oath` : ROLE[side]}</span>
               </button>
@@ -69,39 +77,7 @@ export default function AssaultHud({ view, feed, mission, best, fresh, onSide, o
         </div>
       )}
 
-      {card === 'deploy' && (
-        <div className="assault-card" role="dialog" aria-label="Deploy">
-          <p className="chase-result-kicker" style={{ color: colourOf(me) }}>
-            {sides[me].name}
-          </p>
-          <h2 className="chase-result-title">{view.you.deaths ? 'Deploy again' : 'Deploy'}</h2>
-          <p className="chase-result-text">
-            {phaseLabel}. Reinforcements: <b style={{ color: colourOf('attack') }}>{now.tickets.attack}</b> {sides.attack.short}, <b style={{ color: colourOf('defend') }}>{now.tickets.defend}</b> {sides.defend.short}.
-          </p>
-          <ul className="assault-posts">
-            {view.posts
-              .filter((p) => p.fixed === me || p.owner === me)
-              .map((p, i) => (
-                <li key={p.id}>
-                  <button ref={i === 0 ? first : null} type="button" className="assault-post" disabled={!p.can || now.tickets[me] <= 0} onClick={() => onDeploy(p.id)} style={{ '--side': colourOf(p.owner) }}>
-                    <i>{p.letter || '◆'}</i>
-                    <b>{p.name}</b>
-                    <span>{p.fixed ? 'Yours to hold' : !p.live ? 'Behind the line' : p.can ? 'Held' : 'Under attack'}</span>
-                  </button>
-                </li>
-              ))}
-          </ul>
-          {now.tickets[me] <= 0 && <p className="chase-result-text">No reinforcements left: the battle goes on without you.</p>}
-          <div className="chase-result-actions">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={restart}>
-              Start over
-            </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={onBack}>
-              Back to the system
-            </button>
-          </div>
-        </div>
-      )}
+      {card === 'deploy' && <AssaultSpawn view={view} now={now} mission={mission} kept={kept} emblem={SIDE_ICONS[warSideOf(mission, me)] ?? null} phaseLabel={phaseLabel} colourOf={colourOf} onDeploy={onDeploy} onRestart={restart} onBack={onBack} />}
 
       {view.phase === 'run' && !result && (
         <>
@@ -118,18 +94,25 @@ export default function AssaultHud({ view, feed, mission, best, fresh, onSide, o
                 ))}
             </div>
           </div>
-          <div className="assault-tickets" role="status" aria-label="Reinforcements">
-            {['attack', 'defend'].map((side) => (
-              <p key={side} data-mine={side === me || undefined} style={{ '--side': colourOf(side) }}>
-                <b>{now.tickets[side]}</b>
-                <span>{sides[side].short}</span>
+          {/* (the spawn screen says the tickets and the points itself, where the feed would be under it) */}
+          {card !== 'deploy' && (
+            <div className="assault-tickets" role="status" aria-label="Reinforcements">
+              {['attack', 'defend'].map((side) => (
+                <p key={side} data-mine={side === me || undefined} style={{ '--side': colourOf(side) }}>
+                  <b>{now.tickets[side]}</b>
+                  <span>{sides[side].short}</span>
+                </p>
+              ))}
+              <p className="assault-score">
+                <b>{view.you.kills}</b>
+                <span>{view.you.kills === 1 ? 'kill' : 'kills'} · {clockOf(now.t)}</span>
               </p>
-            ))}
-            <p className="assault-score">
-              <b>{view.you.kills}</b>
-              <span>{view.you.kills === 1 ? 'kill' : 'kills'} · {clockOf(now.t)}</span>
-            </p>
-          </div>
+              <p className="assault-points">
+                <b>{(now.you.points ?? 0).toLocaleString('en-GB')}</b>
+                <span>Battle Points</span>
+              </p>
+            </div>
+          )}
           {view.you.up && now.you.in && (
             <div className="assault-ring" role="status" style={{ '--side': colourOf(now.posts.find((p) => p.id === now.you.in)?.owner ?? now.posts.find((p) => p.id === now.you.in)?.taking) }} data-state={now.you.state}>
               <p>
@@ -140,7 +123,7 @@ export default function AssaultHud({ view, feed, mission, best, fresh, onSide, o
               </span>
             </div>
           )}
-          {view.feed.length > 0 && (
+          {view.feed.length > 0 && card !== 'deploy' && (
             <ul className="assault-feed" aria-live="polite">
               {view.feed.slice(-3).map((f, i) => (
                 <li key={`${f.t}-${i}`} data-kind={f.kind}>

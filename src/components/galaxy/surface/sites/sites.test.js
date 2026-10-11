@@ -330,6 +330,8 @@ describe('the worlds drawn from the game’s levels', () => {
       ['village', 'endor/village'],
       ['station', 'endor/station'],
       ['bunker', 'endor/bunker'],
+      // (and lane E4's: DeathStar02_01, up the shuttle)
+      ['deathstar', 'endor/deathstar'],
     ]);
     // (the village's walkways are the pack's floors in the air: a fall off them puts you back)
     const village = ownMap('endor', 'village');
@@ -438,12 +440,31 @@ describe('the worlds drawn from the game’s levels', () => {
     expect(withDistrict(hoth, 'outpost').ground.layers).toEqual([{ type: 'image', pack: 'hoth/outpost' }]);
   });
 
+  it('the second Death Star’s inside is DeathStar02_01, an Endor district up the shuttle, with none of the forest in it', () => {
+    const endor = siteOf('endor');
+    const zone = endor.zones.find((z) => z.to?.district === 'deathstar');
+    // (the Lambda on the shield generator's pad)
+    const pad = endor.places.find((p) => p.id === 'generator').things.find((t) => t.kind === 'lambda').at;
+    expect(Math.hypot(zone.door.at[0] - pad[0], zone.door.at[1] - pad[1])).toBeLessThan(zone.door.r);
+    const ds = withDistrict(endor, 'deathstar');
+    expect(ds.level).toBe('endor/deathstar');
+    const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/endor/deathstar/level.json', import.meta.url), 'utf8'));
+    // (landed on the game's first team-one spawn point, on the spawn deck at the pack's 0)
+    expect(pack.inside).toBe(true);
+    expect(ds.land.at).toEqual([2.1, 35.9]);
+    expect([ds.noGround, ds.fall]).toEqual([true, -60]);
+    expect([ds.places, ds.life, ds.quests, ds.scatter, ds.weather]).toEqual([[], [], [], [], []]);
+    expect(ds.gameLight).toBeNull();
+    // (and back down by the same shuttle)
+    expect(ds.zones.find((z) => z.to?.district === 'main')).toBeTruthy();
+  });
+
   it('Scarif stands on Scarif_02’s beach, its sea the game’s, its built base left to the level', () => {
     const scarif = SITES.scarif;
     const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/scarif/level.json', import.meta.url), 'utf8'));
     expect(scarif.level).toBe('scarif');
     expect(scarif.ground.layers).toEqual([{ type: 'image', pack: 'scarif' }]);
-    // (the game's sea, WaterSurfaceEntityData at 212.03 m, under the landing's 213.10: you come down on the shore)
+    // (the game's sea, WaterSurfaceEntityData at 212.03 m, under the landing's 212.95: you come down on the shore)
     expect(scarif.water.level).toBeCloseTo(212.03 - pack.origin[1], 1);
     expect(scarif.water.level).toBeLessThan(0);
     for (const t of scarif.things) if (['bunker', 'pad', 'lamp'].includes(t.kind)) expect(t.game, t.kind).toBe(true);

@@ -18,3 +18,8 @@ Shots by `scripts/space-shots.mjs` (headless Chromium, software GL, the page’s
 | ultra | 57 · 272,809 | 48 · 252,869 | 61 · 320,799 | 1,500 · none |
 
 The levels sit 1,100 to 1,400 units from their planets, so from the check’s pose they’re mostly past the frustum or far copies; a level in full view at high (the near shot) adds its hulls’ plain cuts (36,000 to 60,000 triangles each) and, at Endor, half the debris (about 1,100 instances in about 30 draws).
+
+## Lane S1: the fleet on the game’s hulls
+
+`fleet-2017.webp`: the sheet re-shot, each kind the galaxy drew before (left) beside the game’s (right), `scripts/glb-shot.mjs`’s `three` view, with the triangles. `s1/README.md` has the gate output, the Starfighter Assault checks and the cockpit shots.
+
