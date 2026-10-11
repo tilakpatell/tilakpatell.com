@@ -10,27 +10,28 @@
 // snapshot a few times a second, and sends the deploy screen's choices
 // through world.do. `window.__battlefront` is the same door for
 // scripts/battlefront-check.mjs: { view(), do(action, arg) } with 'deploy'
-// { classId }, 'pick' id, 'advance' seconds, 'win', 'lose', 'weather' name,
-// 'gpu'.
+// { classId }, 'pick' id, 'spawn' a squadmate's id (null for the HQ),
+// 'advance' seconds, 'win', 'lose', 'weather' name, 'gpu', 'ragdolls' (how
+// many bodies fall, lie and wait: figures/ragdolls.js).
 
 import * as THREE from 'three';
-import { camerasOf, lightingOf, loadRulebook, mapOf } from '../../lib/battlefront/rulebook.js';
+import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf } from '../../lib/battlefront/rulebook.js';
 import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
 import { createFigures } from './figures/figures.js';
+import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
+import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
 import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 
 export const HUD_HZ = 8; // snapshots a second to the page
 export const PLAYER_TEAM = 2; // the attackers on Hoth, the Empire (maps/hoth.stages.json)
 export const FAR = 12000; // m: the camera's far plane (the record's ViewDistance is 10,000 on Hoth's day)
-const ARM_STEP = 0.2; // m the camera's ray marches along the arm
-const ARM_CLEAR = 0.25; // m above the ground the camera keeps
 const MAX_STEPS = 10; // the sim's steps at most a frame (a tab back from the background)
 
 export default {
@@ -49,8 +50,15 @@ export default {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0.7, 0.78, 0.88);
     const camera = new THREE.PerspectiveCamera(70, 1, 0.1, FAR);
-    const level = createLevel({ scene, tier, renderer, world: levelName });
-    const figures = createFigures({ scene });
+    // (the level's shapes round the player, for the camera's arm: lane P0's
+    // engine where the tier and the screen take it, the cells as the stream
+    // brings them)
+    let collision = null;
+    let physics = null;
+    const level = createLevel({ scene, tier, renderer, world: levelName, onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
+    // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
+    const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
+    const figures = createFigures({ scene, ragdolls });
     const bolts = createBolts(scene);
     const rig = createCameraRig(camera);
     const input = createInput({ maxPitch: (cams.soldier.maxPitch * Math.PI) / 180 });
@@ -58,11 +66,23 @@ export default {
     // (the navgrid is built from the ground the world draws: the pack's
     // heightmaps first; lane 1's bots walk it, the player too)
     await level.ready;
-    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z) });
+    const small = typeof window !== 'undefined' && Math.min(window.innerWidth, window.innerHeight) < 600;
+    const engine = async () => {
+      if (!level.pack || !wantsEngine({ pack: level.pack, tier, small })) return;
+      // (preloaded: the engine's first step is otherwise 50–107 ms, mid-play)
+      const { createPhysics, preload } = await import('../../lib/physics/world.js');
+      await preload();
+      physics = await createPhysics();
+      collision = createLevelCollision({ pack: level.pack, loadBin: level.loadBin, physics, tier });
+    };
+    // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
+    const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
+    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask });
     const me = addPlayer(sim, { team: PLAYER_TEAM });
     // the player's soldier in lane 1's sim, once deployed
     const body = () => (sim.player?.id ? sim.sim.entities.get(sim.player.id) : null);
     let picked = null;
+    let mate = null; // the squadmate the deploy screen would spawn the player on (null: the HQ)
     let lastAt = null; // the player's place before the last step
     let pose = null;
     let acc = 0;
@@ -70,6 +90,7 @@ export default {
     let sinceHud = Infinity;
     let scoreboard = false;
     let weather = lighting.default;
+    let clock = 0; // s the world has drawn: a drawn bolt's age
 
     const look = createLook({
       host: rt.gfx.canvas,
@@ -80,23 +101,19 @@ export default {
     });
     look.attach();
 
-    // the camera's arm against the ground: march back from the shoulder
-    const castArm = (from, dir, len) => {
-      for (let d = ARM_STEP; d <= len; d += ARM_STEP) {
-        const x = from[0] + dir[0] * d;
-        const y = from[1] + dir[1] * d;
-        const z = from[2] + dir[2] * d;
-        if (y < level.heightAt(x, z) + ARM_CLEAR) return d;
-      }
-      return null;
-    };
+    // the camera's arm against the ground and the level's shapes (the navgrid's with no engine)
+    const castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
 
     const doDeploy = (classId = picked) => {
-      const r = deploy(sim, me, classId ? { classId } : {});
+      const base = classId ? { classId } : {};
+      let r = deploy(sim, me, mate ? { ...base, spawn: 'squad', mate } : base);
+      // (a mate who cannot be spawned on by now: the HQ, as the game falls back, SpawnOnSpawnEntityIfSpawnOnPlayerFails)
+      if (!r.ok && mate && squadsOf(rb).fallbackToPoint) r = deploy(sim, me, base);
       if (r.ok) {
         input.setLook(body().yaw, 0);
         // (the next life's deploy screen starts from its own highlight)
         picked = null;
+        mate = null;
         lastAt = null;
         input.swallow(false);
         pose = null;
@@ -112,13 +129,19 @@ export default {
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
     const post = light.passes.length && asked !== 'off' ? rt.gfx.post(light.passes) : null;
 
+    const physicsStats = () => {
+      const s = collision?.stats();
+      return s ? { cells: s.cells, bodies: s.bodies, colliders: s.colliders, queued: s.queued, mask: Boolean(sim.nav.mask) } : { mask: Boolean(sim.nav.mask) };
+    };
+
     const snapshot = () => {
       const v = view(sim);
       const p = v.player;
       const markers = p?.state === 'alive' ? (v.mode?.objectives ?? []).map((o) => ({ id: o.id, label: o.name, dist: Math.hypot(o.at[0] - p.at[0], o.at[2] - p.at[2]), ...markerProjection(o.at, camera, size) })) : [];
       return {
         time: v.time,
-        deploy: { open: v.deploy.open, offers: v.deploy.offers, team: v.deploy.team },
+        deploy: { open: v.deploy.open, offers: v.deploy.offers, team: v.deploy.team, spawns: v.deploy.spawns },
+        squad: v.squad,
         points: v.points,
         player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, abilities: [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })) },
         mode: v.mode && { stageName: v.mode.stageName, objectives: v.mode.objectives.map((o) => ({ id: o.id, name: o.name, meter: o.meter, at: o.at })), tickets: v.mode.tickets, result: v.mode.result },
@@ -126,7 +149,7 @@ export default {
         scoreboard: v.scoreboard,
         showScoreboard: scoreboard,
         markers,
-        level: { loaded: level.loaded(), progress: level.progress(), ...level.stats() },
+        level: { loaded: level.loaded(), progress: level.progress(), ...level.stats(), physics: physicsStats() },
         backend: rt.gfx.backend,
         weather,
       };
@@ -154,6 +177,7 @@ export default {
           first = false;
           step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]);
         }
+        collision?.update(4);
         const p = body();
         if (sim.player.state === 'alive' && p) {
           const look = input.look();
@@ -171,8 +195,11 @@ export default {
         }
         if (pose) rig.set(pose);
         rig.update(dt);
-        figures.update(v.entities, dt, Math.min(1, acc / STEP));
-        bolts.update(v.bolts);
+        figures.update(v.entities, dt, Math.min(1, acc / STEP), camera.position);
+        ragdolls.update(dt);
+        clock += dt;
+        // (each bolt leaves its owner's gun: fx/bolts.js)
+        bolts.update(v.bolts, { muzzleOf: figures.muzzleOf, now: clock });
         light.update(dt, camera);
         sinceHud += dt;
         if (sinceHud >= 1 / HUD_HZ) {
@@ -192,6 +219,9 @@ export default {
           case 'pick':
             picked = arg;
             return { ok: true };
+          case 'spawn':
+            mate = arg ?? null;
+            return { ok: true };
           case 'advance': {
             const n = Math.round((arg ?? 1) / STEP);
             for (let i = 0; i < n; i++) step(sim, [{ id: me, move: [0, 0] }]);
@@ -209,6 +239,8 @@ export default {
             return { ok: true };
           case 'gpu':
             return rt.gfx.backend;
+          case 'ragdolls':
+            return ragdolls.count();
           default:
             return { ok: false, why: `no action ${action}` };
         }
@@ -221,7 +253,10 @@ export default {
         light.dispose();
         bolts.dispose();
         figures.dispose();
+        ragdolls.dispose();
         level.dispose();
+        collision?.dispose();
+        physics?.dispose();
         if (typeof window !== 'undefined' && window.__battlefront?.world === world) delete window.__battlefront;
       },
     };

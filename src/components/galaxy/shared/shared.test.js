@@ -12,7 +12,7 @@ const FACE = [
   [ground, ['SITES', 'makeHeight', 'siteOf']],
   [fight, ['sensesFor', 'startBurst', 'stepBurst', 'strafeStep']],
   [weather, ['createWeather', 'strikeAt']],
-  [level, ['createLevelLoader', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'packUrl', 'wanted']],
+  [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'packUrl', 'wantsEngine', 'wanted']],
 ];
 
 describe('galaxy/shared', () => {

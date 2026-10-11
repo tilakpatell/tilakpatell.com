@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three/webgpu';
 import { ATTACHMENT_LIMIT, attachmentCost, buildChain } from './passes';
 import { createVolumetrics } from './volumetrics';
-import { passesFor } from './post';
+import { passesFor, upscaled } from './post';
 import hoth from './fixtures/hoth.ve.json';
 
 // Every kind builds into a node graph in Node (no GPU: the graph is made,
@@ -58,6 +58,28 @@ describe('buildChain', () => {
     const chain = await buildChain(renderer, passes);
     expect(chain.pipeline.outputNode).toBeTruthy();
     chain.dispose();
+  });
+  it('builds the upscale under the screen: TAAU on ultra, FSR1 after SMAA on high (lane U)', async () => {
+    const refs = { scene, camera, light, lut };
+    const sizes = (chain) => chain.nodes.map((n) => n.constructor.name);
+    const taau = await buildChain(renderer, upscaled(passesFor('ultra', hoth.sunny, 'webgpu', refs), { scale: 0.77 }));
+    expect(sizes(taau)).toContain('TAAUNode');
+    expect(sizes(taau)).not.toContain('TRAANode');
+    const scenePass = taau.nodes.find((n) => n.isPassNode);
+    expect(scenePass.getResolutionScale()).toBe(0.77);
+    // (TAAU reads the scene's velocity: the pass writes it)
+    expect(Object.keys(scenePass.getMRT().outputNodes)).toContain('velocity');
+    taau.dispose();
+    const fsr = await buildChain(renderer, passesFor('high', hoth.sunny, 'webgpu', { ...refs, upscale: { scale: 0.67 } }));
+    const names = sizes(fsr);
+    expect(names.indexOf('FSR1Node')).toBeGreaterThan(names.indexOf('SMAANode'));
+    // (SMAA sizes itself from the drawing buffer: held at the scale)
+    const smaa = fsr.nodes.find((n) => n.constructor.name === 'SMAANode');
+    smaa.setSize(1000, 500);
+    expect(smaa._renderTargetEdges.width).toBe(670);
+    expect(fsr.nodes.find((n) => n.constructor.name === 'GTAONode').resolutionScale).toBeCloseTo(0.335);
+    expect(fsr.pipeline.outputNode).toBe(fsr.nodes.find((n) => n.constructor.name === 'FSR1Node'));
+    fsr.dispose();
   });
   it('a shader pass still needs the webgl backend; an unknown kind is refused', async () => {
     await expect(buildChain(renderer, [{ kind: 'render', scene, camera }, { kind: 'shader' }])).rejects.toThrow('needs the webgl backend');

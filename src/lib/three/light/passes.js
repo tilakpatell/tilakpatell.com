@@ -30,6 +30,14 @@
 //   encoded picture;
 // - traa or smaa: the anti-aliasing; SMAA on the picture as shown, TRAA
 //   before the output transform unless a LUT came first.
+// - upscale (fidelity lane U): with one in the chain, the scene pass and
+//   every pass that sizes itself from the drawing buffer (SSGI, GTAO, SSR,
+//   bloom, god rays, the flare, SMAA) draw at its `scale` of the screen,
+//   and a composite a pass must read as a texture is drawn at that scale
+//   too; then FSR1Node (EASU and RCAS) or TAAUNode (the jittered history
+//   resolved at the screen's size, the anti-aliasing too) brings the
+//   picture up to the drawing buffer. Lane V's volumes and fog keep their
+//   own quarter of the screen.
 //
 // buildChain(renderer, passes) → Promise<{ pipeline, nodes, dispose }>
 
@@ -50,6 +58,8 @@ const ADDONS = {
   motionBlur: () => import('three/addons/tsl/display/MotionBlur.js'),
   dof: () => import('three/addons/tsl/display/DepthOfFieldNode.js'),
   traa: () => import('three/addons/tsl/display/TRAANode.js'),
+  fsr1: () => import('three/addons/tsl/display/FSR1Node.js'),
+  taau: () => import('three/addons/tsl/display/TAAUNode.js'),
   smaa: () => import('three/addons/tsl/display/SMAANode.js'),
 };
 
@@ -127,6 +137,10 @@ export async function buildChain(renderer, passes) {
   const kinds = new Set(passes.map((p) => p.kind));
   // (GTAO without TRAA is filtered by DenoiseNode, as three's AO example does)
   if (kinds.has('ao') && !kinds.has('traa')) kinds.add('denoise');
+  // the internal resolution: the upscale's scale, else the screen's
+  const up = passes.find((p) => p.kind === 'upscale' && p.enabled !== false && p.scale < 1) ?? null;
+  const under = up ? up.scale : 1;
+  if (up) kinds.add(up.upscaler);
   const { THREE, tsl } = await loadThree();
   const mods = {};
   await Promise.all([...kinds].filter((k) => ADDONS[k]).map(async (k) => (mods[k] = await ADDONS[k]())));
@@ -138,7 +152,7 @@ export async function buildChain(renderer, passes) {
   const needs = {
     normal: ['ssgi', 'denoise', 'ao', 'ssr'].some((k) => kinds.has(k)),
     diffuse: kinds.has('ssgi'),
-    velocity: kinds.has('traa'),
+    velocity: kinds.has('traa') || up?.upscaler === 'taau',
     metalRough: kinds.has('ssr'),
   };
   const aoFollows = kinds.has('ao');
@@ -163,6 +177,17 @@ export async function buildChain(renderer, passes) {
   // (Read as one texture, the node is its first attachment, the occlusion,
   // and the "bounce" was the diffuse added back whole: the laptop's Hoth
   // shot lifted from 0.52 to 0.75 mean luminance whatever the GI strength.)
+  // A node that sizes itself from the drawing buffer, held at `under` of it;
+  // and a composite read as a texture, drawn at `under` (convertToTexture's
+  // target is the screen's size).
+  const lower = (n) => {
+    if (under < 1) {
+      const set = n.setSize.bind(n);
+      n.setSize = (w, h) => set(Math.max(1, Math.floor(w * under)), Math.max(1, Math.floor(h * under)));
+    }
+    return n;
+  };
+  const toTexture = (n) => (under < 1 && !n.isTextureNode && !n.isSampleNode && !n.isPassNode ? keep(tsl.rtt(n, null, null, { resolutionScale: under })) : tsl.convertToTexture(n));
   const composeGI = (base, { ao, gi }) => vec4(aoFollows ? base.rgb : base.rgb.mul(ao), base.a).add(vec4(g.diffuse.rgb.mul(gi.rgb), 0));
 
   for (const p of passes) {
@@ -171,6 +196,7 @@ export async function buildChain(renderer, passes) {
     switch (p.kind) {
       case 'render': {
         const scenePass = keep(pass(p.scene, p.camera));
+        if (under < 1) scenePass.setResolutionScale(under);
         const outs = { output };
         if (needs.normal) outs.normal = directionToColor(normalView);
         if (needs.diffuse) outs.diffuse = diffuseColor;
@@ -205,7 +231,7 @@ export async function buildChain(renderer, passes) {
         break;
       }
       case 'ssgi': {
-        const gi = keep(mods.ssgi.ssgi(node, g.depth, g.normal, p.camera ?? g.camera));
+        const gi = keep(lower(mods.ssgi.ssgi(node, g.depth, g.normal, p.camera ?? g.camera)));
         gi.sliceCount.value = p.slices ?? 2;
         gi.stepCount.value = p.steps ?? 8;
         if (p.radius != null) gi.radius.value = p.radius;
@@ -225,7 +251,7 @@ export async function buildChain(renderer, passes) {
       }
       case 'ao': {
         const ao = keep(mods.ao.ao(g.depth, g.normal, p.camera ?? g.camera));
-        ao.resolutionScale = p.resolutionScale ?? 0.5;
+        ao.resolutionScale = (p.resolutionScale ?? 0.5) * under;
         if (p.radius != null) ao.radius.value = p.radius;
         if (p.power != null) ao.distanceExponent.value = p.power;
         const occlusion = kinds.has('traa') ? ao.getTextureNode() : keep(mods.denoise.denoise(ao.getTextureNode(), g.depth, g.normal, p.camera ?? g.camera));
@@ -234,8 +260,8 @@ export async function buildChain(renderer, passes) {
       }
       case 'ssr': {
         // (SSRNode samples its colour as a texture; what comes before it is a composite)
-        const s = keep(mods.ssr.ssr(tsl.convertToTexture(node), g.depth, g.normal, { metalnessNode: g.metalRough.r, roughnessNode: g.metalRough.g, camera: p.camera ?? g.camera }));
-        s.resolutionScale = p.resolutionScale ?? 0.5;
+        const s = keep(mods.ssr.ssr(toTexture(node), g.depth, g.normal, { metalnessNode: g.metalRough.r, roughnessNode: g.metalRough.g, camera: p.camera ?? g.camera }));
+        s.resolutionScale = (p.resolutionScale ?? 0.5) * under;
         if (p.maxDistance != null) s.maxDistance.value = p.maxDistance;
         if (p.thickness != null) s.thickness.value = p.thickness;
         // (SSRNode's alpha is the hit's ray length, not a weight: its rgb is
@@ -255,6 +281,7 @@ export async function buildChain(renderer, passes) {
       }
       case 'bloom': {
         const b = keep(mods.bloom.bloom(node, p.strength ?? BLOOM.strength, p.radius ?? BLOOM.radius, p.threshold ?? BLOOM.threshold));
+        if (under < 1) b.setResolutionScale(b.getResolutionScale() * under);
         g.bloom = b;
         node = node.add(b);
         break;
@@ -263,6 +290,7 @@ export async function buildChain(renderer, passes) {
         const gr = keep(mods.godrays.godrays(g.depth, p.camera ?? g.camera, p.light));
         if (p.density != null) gr.density.value = p.density;
         if (p.maxDensity != null) gr.maxDensity.value = p.maxDensity;
+        gr.resolutionScale *= under;
         // (the haze is the lit share of the air along the view, 0…maxDensity,
         // wherever one looks: added faintly in the sun's colour, not mixed)
         const haze = gr.getTextureNode().r;
@@ -271,7 +299,7 @@ export async function buildChain(renderer, passes) {
       }
       case 'lensflare': {
         if (!g.bloom) break;
-        const flare = keep(mods.lensflare.lensflare(g.bloom, { threshold: p.threshold, ghostSamples: p.ghostSamples, ghostSpacing: p.ghostSpacing }));
+        const flare = keep(lower(mods.lensflare.lensflare(g.bloom, { threshold: p.threshold, ghostSamples: p.ghostSamples, ghostSpacing: p.ghostSpacing })));
         let ghosts = keep(mods.lensflare.gaussianBlur(flare, null, 8));
         if (p.flare) ghosts = ghosts.mul(flareAlpha(tsl, THREE, p, g.depth, p.camera ?? g.camera));
         node = node.add(ghosts);
@@ -279,12 +307,12 @@ export async function buildChain(renderer, passes) {
       }
       case 'dof': {
         const viewZ = g.scenePass.getViewZNode();
-        node = keep(mods.dof.dof(tsl.convertToTexture(node), viewZ, tsl.uniform(p.focusDistance), tsl.uniform(p.range), tsl.uniform(p.bokehScale)));
+        node = keep(mods.dof.dof(toTexture(node), viewZ, tsl.uniform(p.focusDistance), tsl.uniform(p.range), tsl.uniform(p.bokehScale)));
         break;
       }
       case 'motionBlur': {
         const vel = cameraVelocity(tsl, THREE, g.depth, p.camera ?? g.camera).mul(p.scale ?? 1);
-        node = mods.motionBlur.motionBlur(tsl.convertToTexture(node), vel, tsl.int(p.samples ?? 16));
+        node = mods.motionBlur.motionBlur(toTexture(node), vel, tsl.int(p.samples ?? 16));
         break;
       }
       case 'lut': {
@@ -296,8 +324,18 @@ export async function buildChain(renderer, passes) {
         node = keep(mods.traa.traa(node, g.depth, g.velocity, p.camera ?? g.camera));
         break;
       case 'smaa':
-        node = keep(mods.smaa.smaa(display(node)));
+        node = keep(lower(mods.smaa.smaa(display(node))));
         break;
+      case 'upscale': {
+        if (!(p.scale < 1)) break;
+        // (FSR1 on what came before, the picture as shown when SMAA took
+        // it; TAAU on the scene's depth and velocity, before the output
+        // transform unless a LUT came first, as TRAA)
+        const src = toTexture(node);
+        if (p.upscaler === 'taau') node = keep(mods.taau.taau(src, g.depth, g.velocity, p.camera ?? g.camera));
+        else node = keep(mods.fsr1.fsr1(src, tsl.float(p.sharpness ?? 0.2)));
+        break;
+      }
       case 'output':
         // (the output transform is the pipeline's own)
         break;
