@@ -35,6 +35,7 @@ vi.mock('../lib/three/light/passes.js', () => ({
 }));
 
 const { adapterLimits, buildPostProcessing, createWebGPU, RAISED_LIMITS } = await import('./webgpu');
+const { mipBias, setMipState } = await import('../lib/three/mipBias');
 
 const fakeCanvas = () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() });
 
@@ -55,6 +56,27 @@ describe('createWebGPU', () => {
     expect(made[0].toneMapping).toBe(THREE.NeutralToneMapping);
     await createWebGPU(fakeCanvas(), { toneMapping: THREE.NoToneMapping });
     expect(made[1].toneMapping).toBe(THREE.NoToneMapping);
+  });
+
+  it('draws on a reversed depth buffer on a WebGPU device, and on the standard one over WebGL 2 or when asked (lane N2)', async () => {
+    const was = globalThis.navigator;
+    Object.defineProperty(globalThis, 'navigator', { value: { gpu: { requestAdapter: async () => ({ limits: { maxColorAttachments: 8 } }) } }, configurable: true });
+    try {
+      const gfx = await createWebGPU(fakeCanvas());
+      expect(made.at(-1).options.reversedDepthBuffer).toBe(true);
+      expect(gfx.reversedDepth).toBe(true);
+      await createWebGPU(fakeCanvas(), { reversedDepth: false });
+      expect(made.at(-1).options.reversedDepthBuffer).toBe(false);
+      expect((await createWebGPU(fakeCanvas(), { forceWebGL: true })).reversedDepth).toBe(false);
+      expect(made.at(-1).options.reversedDepthBuffer).toBe(false);
+      // (asked outright over WebGL 2: the fixture's measurement)
+      expect((await createWebGPU(fakeCanvas(), { forceWebGL: true, reversedDepth: true })).reversedDepth).toBe(true);
+    } finally {
+      Object.defineProperty(globalThis, 'navigator', { value: was, configurable: true });
+    }
+    // (no adapter: three falls back to WebGL 2 by itself, so the standard buffer, until measured there)
+    await createWebGPU(fakeCanvas());
+    expect(made.at(-1).options.reversedDepthBuffer).toBe(false);
   });
 
   it('without it the kind is webgpu', async () => {
@@ -116,6 +138,13 @@ describe('buildPostProcessing', () => {
     expect(chain.pipeline.render).toHaveBeenCalledTimes(1);
     post.dispose();
     expect(chain.dispose).toHaveBeenCalled();
+  });
+  it('says whether the chain is temporal, for the mip bias at native (lane N2)', () => {
+    setMipState({ scale: 1, classic: false });
+    buildPostProcessing({}, [{ kind: 'render' }, { kind: 'traa' }, { kind: 'output' }]).dispose();
+    expect(mipBias()).toBe(-0.5);
+    buildPostProcessing({}, [{ kind: 'render' }, { kind: 'smaa' }, { kind: 'output' }]).dispose();
+    expect(mipBias()).toBe(0);
   });
 });
 
