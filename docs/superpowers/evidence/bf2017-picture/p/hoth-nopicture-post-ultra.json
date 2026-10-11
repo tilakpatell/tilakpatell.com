@@ -1,0 +1,43 @@
+{
+  "size": "960x540",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "motionBlur",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "hoth-nopicture-post-ultra-webgl.png",
+      "canvas": {
+        "css": [
+          960,
+          540
+        ],
+        "buffer": [
+          960,
+          540
+        ]
+      },
+      "meanLum": 0.3638,
+      "picture": null,
+      "horizon": {
+        "meet": 0.4415,
+        "painted": 0.4069
+      }
+    }
+  ]
+}

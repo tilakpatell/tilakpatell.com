@@ -9,6 +9,8 @@
 //     [--weather] [--decals] [--seconds 0,12.5,30]   (lane Q4: the weathering and the placed decals, without --volume)
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
 //     [--picture [on|off]]   (lane Q6: Hoth's record's picture, or the same frame without it)
+//     [--world <w>]          (lane P: with --picture, <w>'s own main weather and picture in Hoth's place)
+//     [--frame]              (the shots and the mean luminance alone: no environment pair, recompile count or timing)
 //     [--upscale [fsr1|taau:]0.77]   (lane U: the picture drawn under the screen and upscaled)
 //     [--baked [on|off]] [--cadence]   (GPU-first lane N3: scripts/light-fixture/n3.mjs)
 //   node scripts/light-fixture.mjs --materials [--legs webgl] [--variations]
@@ -44,6 +46,15 @@
 // chain off (`meet`: 1°–2°, inside the fade; `painted`: 3.5°–6°, the
 // panorama alone), which a --picture run sets beside the --picture off
 // run's: the ratio is Review Focus 2's (within 10 %).
+//
+// --world <w> (lane P, docs/superpowers/plans/2026-10-11-bf2017-picture-laneP-picture.md):
+// with --picture [off], the same frame under <w>'s main weather (src/data/
+// bf2017/light/<w>.json's `main`): its VE records from the bucket's
+// data/<name>.json.gz (cached under lab/assets/bf2017/, the keys from the
+// environment) as the fixture's entry, its picture from <w>.picture.json;
+// the snow, the ring and the house's exposure stay Hoth's, so the worlds
+// compare. Into docs/superpowers/evidence/bf2017-picture/p/ as
+// <w>-picture-… and <w>-nopicture-….
 //
 // --camera (lane C): scripts/light-fixture/camera.html instead, a figure
 // with a wall behind it and a corner beside it through the soldier camera
@@ -134,7 +145,8 @@ const laneN3 = volume == null && (n3.baked != null || n3.cadence);
 // --upscale [kind:]scale (lane U)
 const upscaleArg = argv.includes('--upscale') ? argv[argv.indexOf('--upscale') + 1] : null;
 const upscale = upscaleArg && !upscaleArg.startsWith('--') ? (([a, b]) => (b == null ? { scale: Number(a) } : { kind: a, scale: Number(b) }))(upscaleArg.split(':')) : null;
-const OUT = join(ROOT, laneN3 ? 'docs/superpowers/evidence/gpu-first/N3' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
+const world = picture != null && argv.includes('--world') ? argv[argv.indexOf('--world') + 1] : null;
+const OUT = join(ROOT, laneN3 ? 'docs/superpowers/evidence/gpu-first/N3' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : world ? 'docs/superpowers/evidence/bf2017-picture/p' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
@@ -153,7 +165,7 @@ const baseLabel = arg(
           ? `${picture ? 'picture' : 'nopicture'}-${post ? `post-${tier}` : `lit-${tier}`}`
         : `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`,
 );
-const label = laneN3 && arg('label', null) == null ? `${n3.baked != null ? (n3.baked ? 'baked-' : 'nobaked-') : ''}${n3.cadence ? 'cadence-' : ''}${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
+const label = laneN3 && arg('label', null) == null ? `${n3.baked != null ? (n3.baked ? 'baked-' : 'nobaked-') : ''}${n3.cadence ? 'cadence-' : ''}${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : world && arg('label', null) == null ? `${world}-${baseLabel}` : baseLabel;
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
@@ -169,13 +181,27 @@ const GRAZE_JITTER = 0.003;
 const shadows = volume == null && argv.includes('--shadows');
 const hoth = volume == null && (argv.includes('--hoth') || shadows || picture != null);
 // (lane Q6) the record's picture's urls, from the dev server's root
+const worldLight = world ? JSON.parse(readFileSync(join(ROOT, 'src/data/bf2017/light', `${world}.json`), 'utf8')) : null;
 const pictureUrls = () => {
-  const w = JSON.parse(readFileSync(join(ROOT, 'src/data/bf2017/light/hoth.picture.json'), 'utf8')).weathers.sunny;
-  const at = (o) => o && { ...o, url: `/${o.url}` };
+  const w = JSON.parse(readFileSync(join(ROOT, 'src/data/bf2017/light', `${world ?? 'hoth'}.picture.json`), 'utf8')).weathers[worldLight?.main ?? 'sunny'];
+  // (the numbers the stack reads; the sources stay in the file)
+  const at = (o) => o && { ...o, _source: undefined, url: `/${o.url}` };
   return { lut: at(w.lut), panorama: at(w.panorama), gradient: at(w.gradient), cloudShadow: at(w.cloudShadow) };
+};
+// (lane P) the world's main weather as the light stack's entry, from its records
+const worldEntry = async () => {
+  const { bucketFile } = await import('./lib/bf2017-bucket.mjs');
+  const { entryOf } = await import('./lib/bf2017-picture.mjs');
+  const { gunzipSync } = await import('node:zlib');
+  const sources = worldLight.weathers[worldLight.main].source;
+  const raws = [];
+  for (const n of sources) raws.push(JSON.parse(gunzipSync(readFileSync(await bucketFile(join(ROOT, 'lab/assets/bf2017'), `data/${n}.json.gz`))).toString('utf8')));
+  return entryOf(sources.at(-1), ...raws);
 };
 // the house tone mapper's exposure (src/lib/three/house.js LOOK.exposure): the classic stack's
 const HOUSE_EXPOSURE = 1.4;
+// (handed to the page by an init script: too long for its URL)
+const entry = world ? await worldEntry() : null;
 const fixture = {
   tier,
   post,
@@ -191,6 +217,7 @@ const fixture = {
   ...(shadows ? { shadows: true, lightSun: argv.includes('--light-sun'), clouds: argv.includes('--clouds') } : {}),
   ...(arg('filter', null) ? { filter: arg('filter', null) } : {}),
   ...(picture ? { picture: pictureUrls() } : {}),
+
   ...(upscale ? { upscale } : {}),
   ...n3Fixture(n3),
 };
@@ -363,6 +390,7 @@ for (const leg of legs) {
   page.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && errors.push(m.text().slice(0, 300)));
   const row = { leg, tier, post };
   try {
+    if (entry) await page.addInitScript((e) => (window.__fixtureEntry = e), entry);
     await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}&fixture=${encodeURIComponent(JSON.stringify(fixture))}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
     await page.waitForFunction(() => window.__lit?.ready || window.__lit?.error, null, { timeout: 240000 });
     const err = await page.evaluate(() => window.__lit.error);
@@ -477,6 +505,9 @@ for (const leg of legs) {
         }
         await page.evaluate((v) => (window.__lit.probe.view(v), window.__lit.draw(4)), fixture.view);
       }
+      // (--frame: a sweep over many worlds in software GL, where each of
+      // these costs minutes and none is the question)
+      if (argv.includes('--frame')) throw Object.assign(new Error('frame'), { frameOnly: true });
       // A2: with and without the environment
       await page.evaluate(() => (window.__lit.probe.setEnv(false), window.__lit.draw(8)));
       const without = await raw(await shot());
@@ -513,7 +544,7 @@ for (const leg of legs) {
       }
     }
   } catch (e) {
-    row.error = String(e.message ?? e).split('\n')[0];
+    if (!e?.frameOnly) row.error = String(e.message ?? e).split('\n')[0];
   }
   if (errors.length) row.errors = [...new Set(errors)].slice(0, 5);
   rows.push(row);
@@ -525,7 +556,7 @@ await server.close();
 writeFileSync(join(OUT, `${label}.json`), `${JSON.stringify({ size: `${W}x${H}`, adapter: swift ? 'swiftshader' : 'system', rows }, null, 2)}\n`);
 if (picture) {
   // Review Focus 2: the painted sky against the model's at the same bands, from the --picture off run
-  const before = join(OUT, `${label.replace(/^picture/, 'nopicture')}.json`);
+  const before = join(OUT, `${label.replace(/(^|-)picture-/, '$1nopicture-')}.json`);
   if (existsSync(before)) {
     const b = JSON.parse(readFileSync(before, 'utf8')).rows;
     for (const r of rows) {
@@ -687,7 +718,8 @@ async function materialsRun() {
       page.on('pageerror', (e) => result.errors.push(e.message.split('\n')[0]));
       try {
         const f = { tier: t, post: false, sky: true, env: true, materials: { mode, list } };
-        await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}&fixture=${encodeURIComponent(JSON.stringify(f))}`, { waitUntil: 'domcontentloaded', timeout: 240000 });
+        if (entry) await page.addInitScript((e) => (window.__fixtureEntry = e), entry);
+    await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}&fixture=${encodeURIComponent(JSON.stringify(f))}`, { waitUntil: 'domcontentloaded', timeout: 240000 });
         await page.waitForFunction(() => window.__lit?.ready || window.__lit?.error, null, { timeout: 300000 });
         const err = await page.evaluate(() => window.__lit.error);
         if (err) throw new Error(err);

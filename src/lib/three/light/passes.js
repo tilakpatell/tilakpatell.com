@@ -29,7 +29,8 @@
 //   reprojected through last frame's view and projection), times the
 //   record's MotionBlurScale;
 // - tonemap (the record's, lane Q6): the picture tone-mapped by the pass's
-//   method ('linear': the renderer's exposure, then a clamp to 0…1), still
+//   method ('linear': the renderer's exposure, then a clamp to 0…1;
+//   'neutral': three's Neutral at the renderer's exposure), still
 //   linear; what follows is then encoded only (no second tone map), the
 //   pipeline's own transform off;
 // - lut: the grading LUT (a Data3DTexture) applied to the tone-mapped,
@@ -340,9 +341,11 @@ export async function buildChain(renderer, passes) {
         break;
       }
       case 'tonemap':
-        // (linear: three's LinearToneMapping, kept linear; only 'linear' is read from the records)
-        if (shown || p.method !== 'linear') break;
-        node = vec4(tsl.clamp(node.rgb.mul(tsl.toneMappingExposure), 0, 1), node.a);
+        // (linear: three's LinearToneMapping, kept linear; neutral: three's
+        // Neutral for the records' FilmicNeutral, grade.js's TONEMAPS; any
+        // other is not read)
+        if (shown || !['linear', 'neutral'].includes(p.method)) break;
+        node = vec4(tsl.clamp(p.method === 'neutral' ? tsl.neutralToneMapping(node.rgb, tsl.toneMappingExposure) : node.rgb.mul(tsl.toneMappingExposure), 0, 1), node.a);
         toned = true;
         pipeline.outputColorTransform = false;
         break;

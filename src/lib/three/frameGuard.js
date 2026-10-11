@@ -61,7 +61,8 @@
 // heldBack() → what every live guard is still readying, the sum of their
 // pending(); in development it's window.__tpGuardPending too, for the
 // scripts that shoot a world (scripts/gpu-parity.mjs) to know it's all on
-// screen.
+// screen. holdNone() (window.__tpGuardOff): no guard holds anything back
+// from then on, for the scripts that count a world's draws.
 
 import { fence, knownLinked, markLinked, nextFrame, picturesIn, textureBytes, uploaded, warming } from './gpuWork';
 
@@ -408,7 +409,24 @@ export const heldBack = () => {
   }
   return n;
 };
-if (import.meta.env?.DEV && typeof window !== 'undefined') window.__tpGuardPending = heldBack;
+// holdNone() → every live guard stops holding things back: each frame drawn
+// whole, compiling what it must as it goes, as three alone would. For the
+// scripts that measure a world (scripts/galaxy-check.mjs): in software GL
+// the guard readies about one shader a frame at seconds a frame, so a level
+// pack's hundreds of materials were still held when the frame was counted,
+// and its draws were left out of the count. In development it's
+// window.__tpGuardOff.
+export const holdNone = () => {
+  for (const ref of live) {
+    const g = ref.deref();
+    if (g) g.enabled = false;
+    else live.delete(ref);
+  }
+};
+if (import.meta.env?.DEV && typeof window !== 'undefined') {
+  window.__tpGuardPending = heldBack;
+  window.__tpGuardOff = holdNone;
+}
 
 // The guard on `renderer`, if it has one.
 export const guardOf = (renderer) => guards.get(renderer) ?? null;
