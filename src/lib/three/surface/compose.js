@@ -43,3 +43,9 @@ export function composeOverlays(base, overlays, ctx) {
 }
 
 export const overlayName = (fn) => fn.overlayName ?? (fn.name || 'overlay');
+
+// The diffuse indirect term (GPU-first lane N3): the level's baked atlas
+// (light/baked.js) where the mesh has a second uv set and a known chart,
+// else the probe term the material already has. Pure, as above.
+//   indirectDiffuse({ baked, uv1, chart, probe }) → baked.node(uv1, chart) | probe
+export const indirectDiffuse = ({ baked, uv1, chart, probe = null }) => (baked && uv1 && chart ? baked.node(uv1, chart) : probe);

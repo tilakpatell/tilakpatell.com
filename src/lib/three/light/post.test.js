@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom';
-import { COC, NODE_PASSES, ORDER, SSGI, arrange, dofParams, headroom, motionBlurOf, passesFor, raysLight, shed, upscaleKind, upscaled } from './post';
+import { COC, NODE_PASSES, ORDER, SSGI, SSR_ROUGHNESS, arrange, dofParams, headroom, motionBlurOf, passesFor, raysLight, shed, upscaleKind, upscaled } from './post';
 import hoth from './fixtures/hoth.ve.json';
 import { gradeOf } from './grade';
 
@@ -219,5 +219,13 @@ describe('upscale (lane U)', () => {
     expect(kinds(shedToo)).not.toContain('ssgi');
     expect(kinds(shedToo)).not.toContain('ssr');
     expect(shedToo.at(-2)).toMatchObject({ upscaler: 'taau', scale: 0.5 });
+  });
+});
+
+describe('SSR’s roughness cut (lane N3)', () => {
+  it('the ssr row reflects only under Lumen’s 0.4; rougher is the material’s environment', () => {
+    expect(SSR_ROUGHNESS).toBe(0.4);
+    const ssr = passesFor('ultra', hoth.sunny, 'webgpu', refs).find((p) => p.kind === 'ssr');
+    expect(ssr.roughnessCutoff).toBe(0.4);
   });
 });

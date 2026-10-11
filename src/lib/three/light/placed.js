@@ -21,8 +21,16 @@
 // cellOf([x, , z], size = 128) → "cx,cz"       (pure)
 // cellsNear(pos, size, ring = 1) → keys        (pure)
 // lightsFor(json, cells, camera, { max, cull, fade }) → [{ cell, i, weight, area }]   (pure)
+// appendLights(placed, particle, max) → the list the point pool takes   (pure)
 // createPlacedLights(scene, renderer, { points, spots, clustered, scale, source })
-//   → Promise<{ set(list), update(camera), setScale(k), lit, pools, clustered, dispose }>
+//   → Promise<{ set(list), update(camera, extra), setScale(k), lit, pools, clustered, dispose }>
+//
+// Particle lights (the GPU-first design's N5: effects.js's `lights()`, a
+// spark's or an explosion's glow) join ClusteredLighting's list each frame
+// after the placed lights, oldest first, and past the pool the newest are
+// dropped, never a placed lamp: the level's light is the record's, and a
+// burst's flash is the first thing to go (Review Focus 5). They are points
+// only (the cluster takes no spot), in the same pool, so nothing recompiles.
 
 import { backendOf, loadThree } from './three.js';
 
@@ -44,6 +52,12 @@ export const CLUSTERED = true;
 export function lumensToCandela(lm, kind = 'point', outer = Math.PI) {
   if (kind === 'spot') return lm / (2 * Math.PI * (1 - Math.cos(outer / 2)));
   return lm / (4 * Math.PI);
+}
+
+export function appendLights(placed, particle, max) {
+  const out = placed.length > max ? placed.slice(0, max) : [...placed];
+  for (let i = 0; i < particle.length && out.length < max; i++) if (particle[i].kind !== 'spot') out.push(particle[i]);
+  return out;
 }
 
 export const cellOf = (pos, size = CELL) => `${Math.floor(pos[0] / size)},${Math.floor(pos[2] / size)}`;
@@ -115,6 +129,7 @@ export async function createPlacedLights(scene, renderer, { points, spots = SPOT
 
   let lit = 0;
   let last = [];
+  let extraLast = false; // (particle lights last frame: a frame without them puts them out)
   // list: [{ kind, pos, color, candela, range, cone: [inner, outer], dir, weight? }]
   function set(list) {
     last = list;
@@ -153,12 +168,14 @@ export async function createPlacedLights(scene, renderer, { points, spots = SPOT
 
   return {
     set,
-    // the lights of the cells round the camera, best first, into the pools
-    update(camera) {
-      if (!source || !camera) return lit;
-      const cells = cellsNear(xyz(camera.position), cell);
-      const pick = (kind, max) => lightsFor(source, cells, camera, { max, kind }).map((p) => ({ ...source.cells[p.cell][p.i], weight: p.weight }));
-      return set([...pick('point', pointPool.length), ...pick('spot', spotPool.length)]);
+    // the lights of the cells round the camera, best first, into the pools,
+    // and `extra` (particle lights, oldest first) in what the points leave
+    update(camera, extra = null) {
+      if (!camera || (!source && !extra?.length && !extraLast)) return lit;
+      extraLast = !!extra?.length;
+      const cells = source ? cellsNear(xyz(camera.position), cell) : [];
+      const pick = (kind, max) => (source ? lightsFor(source, cells, camera, { max, kind }).map((p) => ({ ...source.cells[p.cell][p.i], weight: p.weight })) : []);
+      return set([...appendLights(pick('point', pointPool.length), extra ?? [], pointPool.length), ...pick('spot', spotPool.length)]);
     },
     get lit() {
       return lit;
