@@ -12,7 +12,7 @@ import { FILMS, eraById, eraOf, filmLabel, filmsOf, goalsOf, systemById, yearLab
 import { placesOf } from './places';
 import { Oath, SystemWar } from './WarCard';
 import { useWar } from './useWar';
-import { Film } from '../../runtime/hud';
+import { Film, GameIcon } from '../../runtime/hud';
 import { filmFor, tilesFor } from '../../lib/bf2017/films';
 import '../../lib/bf2017/fonts.css';
 import { landLine } from './surface/landLine';
@@ -26,7 +26,10 @@ import { landLine } from './surface/landLine';
 // for the game it's going to be, or the way into the one that's here
 // already); what's here to fly to; and the way on (the galaxy map) and out
 // (back to the universe map). With no ship yet, the ships to fly first. Put
-// away (tucked), a slim bar naming where you are.
+// away (tucked), a slim bar naming where you are. The system's name wears
+// the 2017 game's planet icon where its front end has one (lib/bf2017/
+// icons.js's `planet:*`), and the way to the Death Star its icon; the other
+// buttons keep the site's glyphs, the game having none of their meaning.
 
 function Ships({ ship, onShip }) {
   return (
@@ -224,7 +227,10 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
         </p>
       )}
       <Film film={filmFor({ system: system.id })} className="galaxy-film-card" label={`${system.name}, from Star Wars Battlefront II’s loading film`} />
-      <h2 className="universe-title galaxy-title">{system.name}</h2>
+      <h2 className="universe-title galaxy-title">
+        <GameIcon name={`planet:${system.id}`} className="galaxy-title-icon" />
+        {system.name}
+      </h2>
       <p className="galaxy-where">
         {[system.region, system.sector, system.grid && `Grid ${system.grid}`].filter(Boolean).join(' · ')}
       </p>
@@ -263,7 +269,7 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
           .filter((g) => g.board)
           .map((g) => (
             <button key={g.id} type="button" className="btn btn-ghost" onClick={() => (at === g.id ? onBoard(g.board) : onGo(g.id))}>
-              {at === g.id ? 'Board the Death Star' : 'Fly to the Death Star'}
+              <GameIcon name="planet:deathstar" className="h-4 w-4 galaxy-btn-icon" /> {at === g.id ? 'Board the Death Star' : 'Fly to the Death Star'}
             </button>
           ))}
       </div>

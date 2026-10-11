@@ -2,12 +2,14 @@ import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { RiArrowGoBackLine, RiRocket2Fill } from 'react-icons/ri';
 import WarCard, { SystemWar } from './WarCard';
+import { GameIcon } from '../../runtime/hud';
 import { jumpTime, viaLanes } from './routes';
 import { FILMS, eraById, eraOf, gridAt, jumpSeconds, lightYears } from './systems';
 
 // The galaxy map's side panel (HoloMap.jsx): with a system picked, its name, the jump first, how far and how long and the route, then
 // the rest folded (era, films, mission, its place in the war, who's online there); with none, where you are and the war's own card.
-// A memo: a pan or a zoom of the map, which changes none of what it shows, doesn't draw it again.
+// A system's name wears the 2017 game's planet icon where its front end has one (lib/bf2017/icons.js's `planet:*`: eight worlds), in
+// the system's colour. A memo: a pan or a zoom of the map, which changes none of what it shows, doesn't draw it again.
 const HoloSide = memo(function HoloSide({ picked, here, route, war, pickedWar, view, now, oath, viewOath, pilots, wide, seen, suggested, record, current, jumpBtn, onJump, onClose, onLeave, onSwear, onTheatre, onPick, onBack }) {
   const away = picked && picked.id !== current;
   return (
@@ -17,6 +19,7 @@ const HoloSide = memo(function HoloSide({ picked, here, route, war, pickedWar, v
           <div aria-live="polite">
             <p className="holomap-kicker">{away ? 'Course plotted' : 'You are here'}</p>
             <h3 className="holomap-sys" style={{ color: picked.accent }}>
+              <GameIcon name={`planet:${picked.id}`} className="holomap-sys-icon" />
               {picked.name}
             </h3>
           </div>
@@ -86,6 +89,7 @@ const HoloSide = memo(function HoloSide({ picked, here, route, war, pickedWar, v
         <>
           <p className="holomap-kicker">You are here</p>
           <h3 className="holomap-sys" style={{ color: here.accent }}>
+            <GameIcon name={`planet:${here.id}`} className="holomap-sys-icon" />
             {here.name}
           </h3>
           <p className="holomap-meta">

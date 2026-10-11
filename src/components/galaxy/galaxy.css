@@ -460,7 +460,11 @@
   border-radius: 50%;
   background: radial-gradient(circle, var(--c) 0 3px, color-mix(in srgb, var(--c) 30%, transparent) 4px, transparent 7px);
 }
-/* a world the game's front end drew a globe of (globes.js): that globe for its dot, ringed faintly in its colour */
+/* a world the game's front end has a planet icon of (lib/bf2017/icons.js's `planet:*`): it leads the system's name in the side
+   panel and on its card, in the name's colour, the height of a capital */
+.holomap-sys-icon, .galaxy-title-icon { display: inline-block; width: 0.9em; height: 0.9em; margin-right: 0.28em; vertical-align: -0.08em; fill: currentColor; }
+.galaxy-btn-icon { fill: currentColor; }
+/* a world the game's front end drew a globe of, or one rendered from its skin (globes.js): that globe for its dot, ringed faintly in its colour */
 .holomap-dot[data-globe] { inset: -2px; background: var(--globe) center / contain no-repeat; box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
 /* a name sits in the place round its dot that HoloMap.jsx gave it, to the pixel (labelPlace.js's boxAt: right by default; a
    corner's box is 5.4 px, CORNER, off the dot's middle each way; above or below it can hang from the dot's left or right
