@@ -12,6 +12,7 @@
 //     [--world <w>]          (lane P: with --picture, <w>'s own main weather and picture in Hoth's place)
 //     [--frame]              (the shots and the mean luminance alone: no environment pair, recompile count or timing)
 //     [--upscale [fsr1|taau:]0.77]   (lane U: the picture drawn under the screen and upscaled)
+//     [--gpuscene]   (GPU-first lane N1: 3,000 pillars and crates through the GPU scene, into evidence/gpu-first/N1/)
 //     [--sharpen off]   (GPU-first lane N2: lane U's picture, without the sharpen after TAAU and the mip bias)
 //     [--evidence gpu-first/N2]   (the shots and the JSON under docs/superpowers/evidence/<that> instead)
 //     [--trails] [--temporal taau|none]   (GPU-first lane N2: the trail check; below)
@@ -148,6 +149,8 @@ const volumeAt = argv.indexOf('--volume');
 const volume = volumeAt < 0 ? null : argv[volumeAt + 1] !== 'off';
 const q4Flags = volume == null && (argv.includes('--weather') || argv.includes('--decals'));
 const particles = volume == null && !q4Flags && argv.includes('--particles');
+// (GPU-first lane N1) the GPU scene's 3,000 pillars and crates round the ring
+const gpuscene = volume == null && !q4Flags && argv.includes('--gpuscene');
 // (GPU-first lane N5: a hundred breaks a minute, the CPU step timed; `--debris off`
 // the same scene and camera without them, the frame's before)
 const debrisAt = argv.indexOf('--debris');
@@ -164,7 +167,7 @@ const upscaleArg = argv.includes('--upscale') ? argv[argv.indexOf('--upscale') +
 const upscale = upscaleArg && !upscaleArg.startsWith('--') ? (([a, b]) => (b == null ? { scale: Number(a) } : { kind: a, scale: Number(b) }))(upscaleArg.split(':')) : null;
 const world = picture != null && argv.includes('--world') ? argv[argv.indexOf('--world') + 1] : null;
 const evidenceAt = argv.indexOf('--evidence');
-const OUT = evidenceAt >= 0 ? join(ROOT, 'docs/superpowers/evidence', argv[evidenceAt + 1]) : argv.includes('--trails') ? join(ROOT, 'docs/superpowers/evidence/gpu-first/N2') : join(ROOT, laneN3 ? 'docs/superpowers/evidence/gpu-first/N3' : debris ? 'docs/superpowers/evidence/gpu-first/N5' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : world ? 'docs/superpowers/evidence/bf2017-picture/p' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
+const OUT = evidenceAt >= 0 ? join(ROOT, 'docs/superpowers/evidence', argv[evidenceAt + 1]) : argv.includes('--trails') ? join(ROOT, 'docs/superpowers/evidence/gpu-first/N2') : join(ROOT, gpuscene ? 'docs/superpowers/evidence/gpu-first/N1' : laneN3 ? 'docs/superpowers/evidence/gpu-first/N3' : debris ? 'docs/superpowers/evidence/gpu-first/N5' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : world ? 'docs/superpowers/evidence/bf2017-picture/p' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
@@ -187,7 +190,7 @@ const sharpenOff = arg('sharpen', 'on') === 'off';
 const trailsRun = argv.includes('--trails');
 const temporalArg = arg('temporal', null);
 const reversedArg = arg('reversed', null);
-const label0 = laneN3 && arg('label', null) == null ? `${n3.baked != null ? (n3.baked ? 'baked-' : 'nobaked-') : ''}${n3.cadence ? 'cadence-' : ''}${baseLabel}` : debris && arg('label', null) == null ? `${debris === 'off' ? 'nodebris' : 'debris'}-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : world && arg('label', null) == null ? `${world}-${baseLabel}` : baseLabel;
+const label0 = gpuscene && arg('label', null) == null ? `gpuscene-${baseLabel}` : laneN3 && arg('label', null) == null ? `${n3.baked != null ? (n3.baked ? 'baked-' : 'nobaked-') : ''}${n3.cadence ? 'cadence-' : ''}${baseLabel}` : debris && arg('label', null) == null ? `${debris === 'off' ? 'nodebris' : 'debris'}-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : world && arg('label', null) == null ? `${world}-${baseLabel}` : baseLabel;
 const label1 = sharpenOff && arg('label', null) == null ? `${label0}-nosharpen` : label0;
 const label = arg('label', null) ?? (argv.includes('--trails') ? `trails${arg('temporal', null) === 'none' ? '-none' : ''}` : arg('reversed', null) ? `${label1}-reversed-${arg('reversed', null)}` : label1);
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
@@ -235,6 +238,7 @@ const fixture = {
   env: true,
   only,
   ...(particles ? { particles } : {}),
+  ...(gpuscene ? { gpuscene: true } : {}),
   ...(debris ? { debris } : {}),
   ...(volume != null ? { volume, weather: arg('weather', 'interior'), view: arg('view', 'wide') } : {}),
   ...(q4 ? { placed: false } : {}),
@@ -501,6 +505,14 @@ for (const leg of legs) {
         const c = document.querySelector('canvas');
         return { css: [c.clientWidth, c.clientHeight], buffer: [c.width, c.height] };
       });
+      if (gpuscene) {
+        // (its stats are read back every 30 frames: 60 drawn above)
+        row.gpuScene = await page.evaluate(() => window.__lit.probe.gpuScene?.() ?? null);
+        await page.evaluate(() => (window.__lit.probe.view('field'), window.__lit.draw(60)));
+        writeFileSync(join(OUT, `${label}-${leg}-field.png`), await shot());
+        row.gpuSceneField = await page.evaluate(() => window.__lit.probe.gpuScene?.() ?? null);
+        await page.evaluate(() => (window.__lit.probe.view('wide'), window.__lit.draw(4)));
+      }
       if (particles) {
         row.parity = await page.evaluate(() => window.__lit.probe.particles.parity(120));
         row.simMode = await page.evaluate(() => window.__lit.probe.particles.mode);
@@ -650,6 +662,7 @@ for (const r of rows) {
   if (r.budgetGrid) console.log(`  budgeted grid: spread ${r.budgetGrid.spread} (worst ${r.budgetGrid.worst}) over ${r.budgetGrid.frames} frames, ${r.budgetGrid.probesPerFrame} probes a frame, ${r.budgetGrid.ms} ms, ${r.budgetGrid.sweeps} sweeps${r.budgetGrid.error ? `; failed: ${r.budgetGrid.error}` : ''}`);
   if (r.debris) console.log(`  debris (${r.debris.mode}): ${r.debris.breaks} breaks in ${r.debris.seconds} s; the step p50 ${r.debris.stepMs.p50} ms, p95 ${r.debris.stepMs.p95} ms, worst ${r.debris.stepMs.max} ms; particles p95 ${r.debris.particlesMs.p95} ms; ${JSON.stringify(r.debris.debris)}`);
   if (r.parity) console.log(`  particles (${r.simMode}): parity ${JSON.stringify(r.parity)}${r.stats ? `; stats ${JSON.stringify(r.stats)}` : ''}`);
+  if (r.gpuScene) console.log(`  gpu scene: the ring ${JSON.stringify(r.gpuScene)}; over the field ${JSON.stringify(r.gpuSceneField)}`);
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
 }
 process.exit(rows.some((r) => r.error && r.leg !== 'webgpu') ? 1 : 0);

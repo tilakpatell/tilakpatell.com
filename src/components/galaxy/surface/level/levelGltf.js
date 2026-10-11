@@ -114,6 +114,8 @@ const MAP_KEYS = [
   ['hairStrand', (m) => m.hairStrand],
   ['sss', (m) => m.sss],
   ['aoSlice', (m) => m.aoSlice],
+  ['nea', (m) => m.nea],
+  ['idMap', (m) => m.idMap],
 ];
 
 // A pack map's anisotropy, the tier's (lib/device's BUDGETS: 16 on high and

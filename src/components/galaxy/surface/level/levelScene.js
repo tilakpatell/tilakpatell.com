@@ -6,7 +6,7 @@
 // few metres walked; a mesh's LOD file is fetched the first time it is
 // wanted, so the detail comes in round you as you go.
 //
-//   createLevelScene({ scene, pack, loadGltf, tier, ground?, batch?, Bundle?, bundled?, occlude? }) → {
+//   createLevelScene({ scene, pack, loadGltf, tier, ground?, batch?, Bundle?, bundled?, occlude?, gpuScene?, renderer? }) → {
 //     setTable(bin), setHorizon(bin), update([x, z]), stats() → { tris, calls, instances },
 //     afterRender(camera), rebuilds(), dispose() }
 //
@@ -36,6 +36,14 @@
 //   invisible in their batches until its proxy is seen again. Call
 //   `afterRender(camera)` after each frame (the queries are read then).
 //   stats() gains { batches, bands, instanced, blocks, hidden }.
+//
+// GPU-first lane N1 (the GPU scene; the two paths above untouched):
+// - `gpuScene: true` with `renderer` a WebGPU renderer that draws indirect:
+//   levelGpu.js draws the level, its rows in one storage buffer culled by a
+//   compute pass and drawn one indirect draw a material group, with this
+//   face and beforeRender(camera) to call each frame before the scene is
+//   drawn; on any other renderer (the node renderer over WebGL 2, the
+//   classic one) the flag is ignored and the paths above draw.
 
 import * as THREE from 'three';
 import { readInstances } from '../../../../lib/level/instances.js';
@@ -44,6 +52,7 @@ import { attachLayeredGround } from '../../../../lib/three/ground/layeredGround.
 import { backendOf } from '../../../../lib/three/light/three.js';
 import { batchable, createBatches } from './levelBatch.js';
 import { blockOf, boundsOf, createOcclusion } from './occlusion.js';
+import { canDrawGpuScene, createLevelGpu } from './levelGpu.js';
 
 const _m = new THREE.Matrix4();
 const _p = new THREE.Vector3();
@@ -96,7 +105,8 @@ function rowsOf(pack, draws, bin) {
   return rows;
 }
 
-export function createLevelScene({ scene, pack, loadGltf, tier, ground = null, batch = false, Bundle = null, bundled = ['horizon'], occlude = null }) {
+export function createLevelScene({ scene, pack, loadGltf, tier, ground = null, batch = false, Bundle = null, bundled = ['horizon'], occlude = null, gpuScene = false, renderer = null }) {
+  if (gpuScene && canDrawGpuScene(renderer)) return gpuLevel({ scene, pack, loadGltf, tier, renderer, ground });
   const root = new THREE.Group();
   root.name = 'level';
   scene.add(root);
@@ -317,4 +327,16 @@ export function createLevelScene({ scene, pack, loadGltf, tier, ground = null, b
       root.clear();
     },
   };
+}
+
+// (lane N1) the GPU scene's level, the layered ground under it as above
+function gpuLevel({ scene, pack, loadGltf, tier, renderer, ground }) {
+  const level = createLevelGpu({ scene, pack, loadGltf, tier, renderer });
+  const layered = ground?.mesh && pack.ground ? attachLayeredGround({ ...ground, pack, tier }) : null;
+  const dispose = level.dispose;
+  level.dispose = () => {
+    layered?.dispose();
+    dispose();
+  };
+  return level;
 }

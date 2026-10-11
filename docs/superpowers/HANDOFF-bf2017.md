@@ -8,10 +8,67 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 
 | lane | branch | session | PR |
 | --- | --- | --- | --- |
-| S1 | `claude/bf2017-s1-fleet` | | |
+| S1 | `claude/bf2017-s1-fleet` | `session_01Lir8B5LnJzj9qRka8oq94o` (spawned 2026-10-11 16:50 UTC from `claude/bf2017-space-design`) | PR #936 (draft) |
 | S2 | `claude/bf2017-s2-space-picture` | | |
 | S3 | `claude/bf2017-s3-map-hud` | | |
 | E5 | `claude/bf2017-e5-new-systems` | `session_01QrcPrerTbhxxZoKTnYgFQA` (spawned 2026-10-11 16:36 UTC from `main`) | |
+
+### Lane S1: the fleet on the game’s hulls (`claude/bf2017-s1-fleet`, PR #936)
+
+The numbers, the gate output and the shots: `docs/superpowers/evidence/bf2017-space/s1/README.md`; the sheet re-shot, `docs/superpowers/evidence/bf2017-space/fleet-2017.webp` (each kind the galaxy drew before beside the game’s, the same camera, `scripts/glb-shot.mjs`’s `three` view).
+
+**Done.**
+
+- **The war’s capitals from the kits.** `scripts/bf2017-fleet.mjs` gains five `space` rows beside the space lane’s two: the Star Destroyer from `endor-isd`, the MC80 from `endor-mc80`, the Venator from `kamino-venator`, the CR90 from `corvettecr90-01` and the Providence from `providenceclassdreadnaught-01`, each written by `bf2017-space.mjs --fleet` at the fleet’s cut (24,000 triangles, colour 256, the rest 128: `FLEET_CUT`), bow to +z, committed at `public/models/galaxy/<kind>.glb` as lane V’s fleet is (the Star Destroyer 2,049 KB with its 50 maps, the Venator 1,054, the MC80 691, the Providence 308, the corvette 281) and published by hash too. Each row’s `ultra: true` writes its ultra cut beside it (`--fleet --ultra`: `fleetUltra`, the capital’s cap by its length as the space levels draw it and every map at the game’s own 1,024) to the bucket alone: the Star Destroyer 21.6 MB (60,000 triangles), the Venator 8.2, the MC80 6.7, the corvette 1.9, the Providence 1.0. `galaxy/models.js`’s rows name the files, nose 0; `ULTRA` lays the ultra cuts over them at ultra only (`withHq`), the same far copies (`scripts/galaxy-lod.mjs`, remade). The kits’ noses are not one way: the Star Destroyer’s and the corvette’s hull meshes have their bows along +z, the Venator’s along −z, the Providence’s along +x; each row’s `turn` was read off a shot of the written file (the first pass, with every turn π, put the Star Destroyer and the corvette stern first and the Providence sideways).
+- **The close-up Nebulon-B is the game’s.** The `hq/nebulon` row writes the drop’s `frigatenebulonb_01_mesh` at its first LOD (16,029 triangles, with its engine and its lights: `--parts`, which the fleet script now fetches too) with 1,024 maps, 465 KB, committed, over Daniel Andersson’s. `HQ` keeps only the Nebulon-B: the Star Destroyer’s close-up row, Daniel Andersson’s too, is the kit’s ultra cut since; `hq/destroyer.glb` and `lod/hq/destroyer.glb` are gone with its credit.
+- **The fighters, the Falcon and Slave I native.** `xwing` ← `surface/xwing.glb` (the T-65’s plain cut, 33,998 triangles), `interceptor` ← `surface/tieinterceptor.glb`, `falcon` ← `surface/falcon.glb`, `slave1` ← `surface/slave1.glb`, nose 0 (the surface files face +z); `LIGHT_CUTS` gives low and mid lane V’s `.lod1` cuts (the X-wing’s 672 KB against the plain’s 3,147; the interceptor’s 638 against 2,164), as the surfaces do. `MADE` is empty: the gen3d X-wing is out of the galaxy (the Death Star’s trench run keeps it), and the universe map’s `GLB.xwing` is the game’s light cut. The far copies are remade from the native files (the game’s maps unpacked to PNG for their colours: a scratch import of the four kinds, `lab/s1-tools/unpack-natives.mjs`’s way).
+- **The Scimitar and the TIE striker from the drop.** Two `air` rows in `scripts/bf2017-vehicles.mjs`’s `CAST` (lane V’s path: native, `--far --ultra`), imported and published (the Scimitar 715 KB plain, 173 light, 5,044 ultra; the striker 909 / 171 / 3,050). The Scimitar’s hull, nose, grid and line are the game’s cloaking materials, which the drop’s GLB binds no map to (the first sheet showed it white): the row binds the uncloaked materials’ own maps to them by hand (`--textures`, as the Falcon’s details were), `T_Scimitar_01` to the hull, `_02` to the nose, the grid’s and the line’s to theirs; its cloaked glass stays bare, as glass. Each is their catalogue rows in `catalog/bf2017-vehicles.js`, their folders moved from lane 4 to `space` in `bf2017-owners.mjs` with the reason; `models.js` names `surface/scimitar.glb` and `surface/tiestriker.glb` (light cuts on low and mid); the Meshy files, far copies and credits are gone. `npm run coverage:bf2017`: 0 unowned.
+- **The Starfighter Assault’s stand-ins.** Nothing in `warfront.js` changed: a hull the pack’s tier leaves out is drawn by the battle from `models.js`’s row, which is the game’s kit since. `warfront.test.js` holds every ship the four levels name to the game’s file and credit, Endor’s three corvettes to the battle at every tier and the flagships to the pack until `unhide`.
+- **The player flies the game’s ship from the game’s cockpit.** `universe/shipModelsCore.js`’s `SHIP_MODELS` takes `surface/xwing.glb` and `surface/falcon.glb` (the Sketchfab `xwing-hd` and `falcon-hd` files and credits retired; the RV stays Meshy’s, the cruiser built), `PAINTABLE` names the game’s hull materials (`Mat_XWing_{Fuselage,Wings,LandingGear}_LOD`; `Main_Shader1`, `Details_Shader1`) so the livery and the finish still take. The cockpit view: `galaxy/cabs.js` (`CABS`, out of `scene.js`) gives the X-wing and the Falcon `cockpit/vehicles/game.js`, which loads lane V’s `surface/<kind>cockpit.glb` through the page’s cache, turns it to face −z as the built cabs do, leaves out the game’s fake-AO quad, draws its glass last and puts the pilot’s eye at `EYE` (1.02 up); the RV and the cruiser keep the intro’s built cabs. `galaxy-check.mjs` takes `SEAT=cockpit` for the shot.
+- **The MC80’s hull in its own colour.** The MC80’s main hull materials (`MC_80_Met`, `MC_80_Met_lods`, `MC_80_light_Met`) bind their colour inside the shader graph, which the drop’s GLB does not name, so the kit drew white. `scripts/lib/bf2017-space.mjs`’s `GRAPH_MAPS` gives them the hull’s own tiling panel map, `mc80_paneltile_breakup_02_rgba` (the game’s KTX2 as it is; the hull atlas `t_mc80_hull_01_combine_rgba` is its shade, occlusion and masks, not a colour, read channel by channel), and `bf2017-space.mjs` passes it to the part reader: tan panels with the scorch at the bow, as Home One is. Any other material the export left bare is drawn hull grey by `models.js`’s `tune` (`HULL`, spaceLevel.js’s), not white.
+- **The Falcon in flight, gear up.** The fleet script’s `falcon` row writes the drop’s landmark Falcon at lane V’s plain cut (its LOD2, 48,567 triangles; 38,633 once its legs are out) with its details’ colour map bound and its landing legs, a material of their own in the drop (`Legs_Shader`), left out (`drop`): `public/models/galaxy/falcon.glb`, 1,987 KB, committed and published, the far copy remade. The galaxy’s row and the Falcon you fly (`SHIP_MODELS`) take it at every tier; the surfaces keep lane V’s, gear down.
+- **The page errors at ultra, and the Starfighter Assault’s, fixed at their root** (both in shared code, both pinned by a test that fails without the fix):
+  - `src/lib/three/gltf.js`: the loader ran the parse in a promise’s callback, out of `load()`’s `try`, so a file that is not a model threw there as an unhandled rejection (`SyntaxError: Unexpected token '<', "<!doctype "…`, the page the dev server answers for a file a checkout lacks). It now fails the load through its error path.
+  - `src/lib/assetBase.js` and `assetLoad.js`: the bucket’s first answer was given 12 s, the whole download; at ultra the first file asked was the Star Destroyer’s 21.6 MB ultra cut (or the 4.4 MB sky), which took longer in a cloud container, so a healthy bucket was marked down and every later file asked of the site, which has no copy of a published file. `waitFor(bytes)` now gives the first ask a slow link’s time for its size (half a megabyte a second, never under 12 s).
+  - The install’s `/packs/index.json` miss on the dev server, first suspected, was never one: `install.js` already catches a bad index.
+- **The credits.** New EA DICE rows `galaxy-destroyer`, `galaxy-venator`, `galaxy-corvette`, `galaxy-providence`; `galaxy-moncal` and `galaxy-nebulonhq` rewritten to the game; `galaxy-destroyerhq`, `xwing-hd`, `falcon-hd` gone with their files; `meshy/corvette`, `meshy/interceptor`, `meshy/providence`, `meshy/scimitar`, `meshy/tiestriker` gone from `games/credits.json`; the universe map’s `star-destroyer` no longer lists the galaxy. `surface-scimitar` and `surface-tiestriker` list it.
+
+**Where the code and the plan differed.**
+
+- The Scimitar’s and the striker’s rows live in `bf2017-vehicles.mjs`’s `CAST`, where lane V’s fighters are, not in `bf2017-import.mjs`; their test is in `bf2017-import.vehicles.test.mjs` as the plan named it.
+- `KITS` needed no new row: the corvette and the Providence are loose models in the packs (one mesh each), which `--fleet` takes by slug.
+- The kits’ noses vary (above); “along −z as the game’s capitals are” held for the Lucrehulk and the Arquitens only.
+- The game’s cockpit GLBs carry no camera node, and lane V’s hand-off has no eye row: the eye is a share of the cockpit’s box (`EYE_AT`: the X-wing’s 0.74 of its height, 0.34 of its depth from the back; the Falcon’s left seat at 0.66 of its width), checked by the cockpit shots in the evidence folder.
+- The fighters take no ultra cut: lane V’s `xwing.ultra.glb` is 27 MB with 4,096 maps for a hunter a dozen units off; the plain cut on high and ultra, the light one below.
+- The MC80’s hull map is bound by hand from the drop’s own maps (above), not from the shader-depot probe’s list; the probe (lane W) may name a better combination (the panel tile’s scale, the hull atlas’s occlusion in the shader), and its row then replaces `GRAPH_MAPS.mc80`. The space levels’ own MC80 packs (`space/endor-mc80`, `fondor-mc80`) take the binding the next time the space lane runs `bf2017-space.mjs`.
+- Eleven of the Star Destroyer kit’s derived `_nam__orm` maps and two of the Nebulon-B’s are not in the bucket (`not-uploaded`, the desktop’s): those parts carry colour and normal, no roughness or metal.
+- Slave I flies in its landed pose, upright, as the site’s always has (`shipFit.js`’s `BY_SPAN`). The Falcon is the landmark mesh (lane V: the gameplay Falcon names no maps), its legs left out for flight (above).
+- `bf2017-fleet.test.mjs`’s 2 MB file cap is 2.5 MB (the Star Destroyer’s 50 maps, 2,049 KB); `models.test.js`’s 3 MB arrival cap is by tier, 4 / 4 / 9 / 40 MB, with the measured bytes beside it (3.76 / 7.86 / 29.1 MB).
+- Fondor is not a system on `main` (lane E5): not gated here.
+
+**Left.**
+
+- **Not in the drop** (no game model: they stay the site’s, named here): the Executor, the Acclamator, the Gozanti, the Lambda shuttle, the Coreship, the B-wing, the Ghost, the IG-2000, the Delta-7, the Nubian, the Munificent, the Death Stars, the Interdictor, the Razor Crest (the surfaces’ own) and the Mandalorian era’s Meshy ships (the Hound’s Tooth, the Punishing One, the Hammerhead, the Gauntlet, the Twilight, the TIE Defender, the Eta-2, the Sentinel, the Zeta, the Fang, the Naboo yacht); the universe map’s own Star Destroyer, Venator, Falcon and Slave I (`/models/universe/`) are the universe’s, not the galaxy’s.
+- The Star Destroyer’s eleven not-uploaded ORM maps and the Nebulon-B’s two (above): the desktop’s upload, then `bf2017-fleet.mjs destroyer,hq/nebulon` again.
+- **The budget: no row breached.** `BUDGET=1 BUDGET_REPORT=1 QUALITY=<tier> galaxy-check space endor,kamino,naboo,hoth,tatooine,yavin` passes every row at low, mid, high and ultra (the table in the evidence README; Endor at high 50 calls and 99,980 triangles, 33.8 MB from the bucket against the row’s 700, 3M and 160; at ultra 50 calls, 173,548 triangles, 112.1 MB against 1,500, none and 285). The kits at the fleet’s cut draw fewer triangles from the check’s pose than the close-up Sketchfab hulls did (Endor at high was 199,337 on 2026-10-10). The two page errors that made the ultra run and Endor’s first Starfighter Assault check exit 1 are fixed at their root (above); the reruns are in the evidence README.
+- Fondor’s gate once E5 lands; lane S2 merges `models.js` (its materials) over these rows.
+
+**Checking it.**
+
+```
+node scripts/bf2017-fetch.mjs manifest
+node scripts/bf2017-fetch.mjs --all 'objects/props/landmarks/_galacticempire/stardestroyer_01/*' --no-collision   # and the mc80, venatorclass_stardestroyer, corvettecr90 and providenceclassdreadnaught folders: one fetch a part trips over the proxy
+node scripts/bf2017-fleet.mjs destroyer,moncal,venator,corvette,providence,hq/nebulon
+node scripts/bf2017-vehicles.mjs scimitar,tiestriker --fetch
+node scripts/galaxy-lod.mjs destroyer moncal venator corvette providence hq/nebulon xwing interceptor falcon slave1 scimitar tiestriker
+node scripts/assets-publish.mjs --only 'models/galaxy/destroyer*,models/galaxy/moncal*,models/galaxy/venator*,models/galaxy/corvette*,models/galaxy/providence*,models/galaxy/surface/scimitar*,models/galaxy/surface/tiestriker*,models/galaxy/hq/nebulon.glb'
+VITE_ASSET_BASE=<the public bucket> npx vite --port 5188 --strictPort --host 127.0.0.1 &
+BUDGET=1 BUDGET_REPORT=1 QUALITY=<low|mid|high|ultra> node scripts/galaxy-check.mjs space endor,kamino,naboo,hoth,tatooine,yavin
+node scripts/starfighter-check.mjs endor high && node scripts/starfighter-check.mjs kamino high
+SEAT=cockpit SHIP=xwing QUALITY=high node scripts/galaxy-check.mjs space tatooine     # and SHIP=falcon
+```
+
+The tests need no keys: `npx vitest run scripts/bf2017-fleet.test.mjs scripts/bf2017-import.vehicles.test.mjs scripts/lib/bf2017-coverage.test.mjs src/components/galaxy/models.test.js src/components/galaxy/warfront.test.js src/components/galaxy/cabs.test.js src/components/cockpit/vehicles/game.test.js src/components/universe/shipModels.test.js src/data/modelCredits.test.js`.
 
 ## The picture-everywhere design: every world on the node renderer, every layer on (2026-10-11, early)
 
@@ -493,6 +550,32 @@ session_015ZTef1tZABeSq9E86wZKwv, from `claude/bf2017-e0-factory-on-main` at `af
 - The site's own dune grass (`scarif.grass`) still grows over the game's ground, and stands taller than the game's scrub in places; a later pass may thin it where the level's cells are busy, as Endor's scatter keeps out of them.
 - The districts are not gated (`galaxy-check` lands on the main map); E0's base was not either.
 - Hoth's row breaches and the baselines (above).
+
+### Lane E4’s follow-ups (`claude/bf2017-e4-followups`)
+
+session_015ZTef1tZABeSq9E86wZKwv, after #911, at the owner’s ask (the E4 hand-off’s Left) and the parent’s (D2’s factory, #926, on every E4 pack). Evidence: `docs/superpowers/evidence/bf2017-levels/e4-followups/` (its README has the gate tables and the shots).
+
+**The Death Star interior’s master shader** (`src/lib/three/surface/dsi.js`; a `dsi` family in `families.js` and `scripts/lib/bf2017-recipes.mjs`). `SS_DSI_Master_*` has no colour map: the paint, the anodised aluminium and the rubberised plastic, the dirt and the soot are the row’s numbers (the defaults, `DSI_*`, the dump’s most common); the packed map (`__NormalEmissiveAO`, `T_DSI_01_RGBA`) is the normal in red and green, the light strips in blue, the AO in alpha; the wear map (`__WearMap`, `T_DSI_01_M`) is the inset plates, the dirt, the soot and the scratched edges, read off the map (the graph is opaque: `DSI_WEAR`); the two-UV kind’s id map is four stripes picked by the second UV. Low draws the paint flat; mid the packed map; high and ultra the masks. The recipe step had dropped the packed map (its `_RGBA` suffix read as no emissive) and read the wear map as metal. The wall tiling (`SS_DSI_WallTiling_*`) is drawn as the master too: its lit strips are its emissive mask’s, `T_DSI_WallTiling_Panel_01_E_M`, not in the bucket, and without it the reactor’s pillars glowed whole.
+
+**The second Death Star, inside: an Endor district** (`sites/deathstar2.js`; the owner’s choice of 11 October over re-skinning or re-laying `/deathstar/inside`, whose rooms and stories stay as they are). `endor/deathstar`, `node scripts/bf2017-level.mjs levels/mp/deathstar02_01 --world endor --district deathstar --inside --spawn --floor 586.4 --ultra` (the spawn area’s deck, 586.4 m in the game, at 0; 19,728 pieces; 173 materials on the DSI master; published by hash). Up by the shuttle on the shield generator’s pad ([390, −189]); landed on the game’s first team-one spawn point (the area’s middle is over a gap); none of the forest in it (lane E3’s `ownMap.js`, a byte-identical copy so E3’s add/add merges clean); no sun, and no sun shadow (`light.shadow: false`, a site’s word for a world lit from within: the shadow pass over the whole level took the frame over 3M triangles); a shaft’s foot at −60 puts you back where you landed. A `--share high=0.5` fit was tried and undone: the fit drops by what is seen, and in an interior that is the walls.
+
+**Cloud City’s drift** (the E4 Left): a teleport (`__surfaceDo` and the dev `teleport`) and a fall’s respawn kept the run’s velocity, and in the air almost nothing slows it (`inAir` deceleration 0.01): both now set you down still. The level’s engine puts the cell under you in first (`levelPhysics.update(ms, at)`), so the deck is solid before the far side of the map. On a real GPU still to be walked.
+
+**The palace in its own frame**: `bespin/m2bes` took Cloud City’s places, people and scatter onto its terraces (420 draws); `ownMap` clears them, as E3’s districts do.
+
+**On D2’s factory**: Scarif, Cloud City, the palace, the outpost and the Death Star again with `--ultra`, the NEVER rule leaving out their light cones, occluders and light blockers; recipes and variations again, the colour words written, published by hash, the stale rows pruned. Scarif’s landing’s ground is now 212.95 m, so its sea is −0.92 (`edge.js`, `planetTables.js`). The palace’s variations script fails on the campaign map’s file name (`web/maps/levels/sp/a2/m2bes/ds02/ds02.json` is not where the index puts it); its `variations.json` is the factory’s empty one.
+
+**The gate counted passes, not draws** (`scripts/galaxy-check.mjs`): on the node renderer `info.render.calls` is the render passes since the page began, never reset (`Renderer.js`’s `info.render.calls ++` per `render()`), and the frame’s draws are `info.render.drawCalls`. The gate now reads `drawCalls ?? calls`. **A finding for lane D2’s rows** (its session closed): the task-7 calls rows and the `nodes-webgl` baselines were measured with the running pass count and want measuring again; the triangle and megabyte columns stand. The same read is in `sea-shot.mjs`, `starfighter-check.mjs` and `bf2017-fx-shots.mjs` (the parent fixes them on `main`). `SHOT_WAIT` is lane E3’s commit, cherry-picked.
+
+**Gates** (the evidence README’s tables): at high every world is inside its row (Scarif 291 calls, 1.46M, 120 MB; Cloud City 412, 1.63M, 130; the palace 517, 2.68M, 82; the outpost 332, 2.79M, 156; the Death Star 90, 373k, 66), Scarif and Cloud City over their pre-level baselines; at ultra the Death Star passes (106, 556k, 126 MB) and Scarif (460 MB), Cloud City (367), the palace (333) and the outpost (506) are over the 285 MB models row with their ultra maps beside the crew’s full cuts.
+
+**Left.**
+- The Death Star inside reads dark and sparse: the game lights it with its Enlighten atlases (lane W’s `atlases` job) and high leaves out 191 of its 613 meshes; its reactor’s strips want `T_DSI_WallTiling_Panel_01_E_M` (lane W’s `textures` job, which plans it among its 3,295).
+- The ultra models row against the packs’ ultra maps and the crew’s full cuts (four worlds over 285 MB).
+- D2’s calls rows and baselines on `nodes-webgl`, measured again (above).
+- Walking Cloud City and the Death Star on a real GPU.
+- The palace’s variations (the script’s map path).
+- `assets-check`’s two empty `horizon.bin` misses (Kamino’s Venator, Jabba’s inside) as of the morning; D2’s #926 says it passes them now.
 
 ### The space lane (the fifth design's Q)
 

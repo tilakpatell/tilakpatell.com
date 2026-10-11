@@ -72,6 +72,12 @@ export const CAST = [
   ['trifighter', 'air', `${V}/air/droidtrifighter/vehicle_air_droidtrifighter_static_donotuse_mesh`, 'the droid tri-fighters'],
   ['hyena', 'air', `${V}/air/hyenabomber/vehicle_air_hyenabomber_static_donotuse_mesh`, 'the Hyena bombers'],
   ['cloudcar', 'air', `${V}/air/cloudcar/vehicle_air_cloudcar_static_donotuse_mesh`, 'Bespin’s cloud cars', ['--hull-frame']],
+  // (lane S1, the galaxy's fleet: Maul's Scimitar and the TIE striker, which
+  // the space layer flew as Meshy remakes; drawn by galaxy/models.js's rows,
+  // not placed on a surface)
+  // (its hull is the game's cloaking material, which the drop's GLB binds no map to: the hull's own T_Scimitar_01 maps, the nose's T_Scimitar_02 and the grid's and line's, the ones its uncloaked materials carry, bound by hand as the Falcon's were)
+  ['scimitar', 'air', `${V}/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh`, 'Maul’s Scimitar', ['--hull-frame', '--textures', 'M_Vehicle_Air_Scimitar_lods_Cloak=color:Gameplay/Vehicles/Air/Scimitar/T_Scimitar_01_CS,normal:Gameplay/Vehicles/Air/Scimitar/T_Scimitar_01_NMA;M_Vehicle_Air_Scimitar_nose_lods_Cloak=color:Gameplay/Vehicles/Air/Scimitar/T_Scimitar_02_CS,normal:Gameplay/Vehicles/Air/Scimitar/T_Scimitar_02_NMA;M_grid_lods_Cloak=color:Gameplay/Vehicles/Air/Scimitar/T_Scimitar_01_Grid_CS,normal:Gameplay/Vehicles/Air/Scimitar/T_Scimitar_01_Grid_NMA;M_line_lods_Cloak=color:Gameplay/Vehicles/Air/Scimitar/T_Scimitar_01_Line_CS,normal:Gameplay/Vehicles/Air/Scimitar/T_Scimitar_01_Line_N']],
+  ['tiestriker', 'air', `${V}/air/tiestriker/tiestriker_01_static_mesh`, 'the TIE strikers'],
 
   // the cockpits: the game's own interiors, each in its hull's frame, loaded
   // only when someone boards (the rides, the space layer's cockpit view)

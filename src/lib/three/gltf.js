@@ -94,8 +94,17 @@ class SiteGLTFLoader extends GLTFLoader {
     // (the decoders up first, so one that can't come up fails the model
     // with its name, lib/three/wasmDecoders.js, rather than the parser's words)
     const decoders = !this.ktx2Loader && usesBasisu(data) ? Promise.all([meshopt(), ktx2Loader()]) : meshopt();
+    // (the parse runs in the promise's callback, out of load()'s try: a file
+    // that is not a model, a page answered in its place, would throw there
+    // and reach nothing but the page as an unhandled rejection, lane S1)
     decoders.then(
-      () => super.parse(data, path, done, onError),
+      () => {
+        try {
+          super.parse(data, path, done, onError);
+        } catch (e) {
+          onError?.(e);
+        }
+      },
       (e) => onError?.(e),
     );
   }

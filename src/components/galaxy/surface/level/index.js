@@ -341,7 +341,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       }
       stream?.update(position, tier);
       level?.update(position);
-      bodies?.update(4);
+      bodies?.update(4, position);
       if (camera) lights?.update(camera);
       probes?.update([position[0], camera?.position.y ?? 1.6, position[1]]);
     },

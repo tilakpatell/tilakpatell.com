@@ -105,7 +105,7 @@ export const SITE_GROUND = {
   geonosis: { detail: 'redsoil', detailLook: { color: 0.75, normal: 0.8 }, wind: 1.1, palette: { low: '#b46c44', high: '#c98b5c', rock: '#8a4a2e', accent: '#d49c66', deep: '#9c5a36', hLow: -2, hHigh: 18, rockAt: 0.34, accentCover: 0.24, ripple: { strength: 0.06, scale: 2.6, wind: 1.1 }, grain: 0.7, mark: '#8a4a2e' } },
   coruscant: { palette: { low: '#4a3a3e', high: '#4a3a3e', rock: '#3a2e30', hLow: -340, hHigh: -320, grain: 0.2 } },
   mustafar: { detail: 'ash', detailLook: { color: 0.8, normal: 0.8 }, wind: 0.8, palette: { low: '#3a322e', high: '#564a43', rock: '#191515', accent: '#5a3424', deep: '#221c1a', hLow: -6, hHigh: 14, rockAt: 0.34, accentCover: 0.18, grain: 0.8, roughness: 0.9, wet: { level: 2.5, band: 3, color: '#8a2208' }, mark: '#120e0d' } },
-  scarif: { detail: 'beach', detailLook: { color: 0.7, normal: 0.7, metres: 6 }, wind: 0.6, palette: { low: '#ece6d0', high: '#c4c39c', rock: '#8e8a78', accent: '#7f8f5a', deep: '#dccb9e', hLow: 1.1, hHigh: 4, rockAt: 0.4, accentCover: 0.38, ripple: { strength: 0.05, scale: 2.6, wind: 0.6 }, grain: 0.45, sparkle: 0.04, wet: { level: -1.07, band: 1.3, color: '#b8a682' }, mark: '#c8b896' } },
+  scarif: { detail: 'beach', detailLook: { color: 0.7, normal: 0.7, metres: 6 }, wind: 0.6, palette: { low: '#ece6d0', high: '#c4c39c', rock: '#8e8a78', accent: '#7f8f5a', deep: '#dccb9e', hLow: 1.1, hHigh: 4, rockAt: 0.4, accentCover: 0.38, ripple: { strength: 0.05, scale: 2.6, wind: 0.6 }, grain: 0.45, sparkle: 0.04, wet: { level: -0.92, band: 1.3, color: '#b8a682' }, mark: '#c8b896' } },
   bespin: { palette: { low: '#e8d8c8', high: '#f0e2d2', rock: '#c8b8a8' } },
   nevarro: { detail: 'ash', detailLook: { color: 0.7, normal: 0.8 }, palette: { low: '#26282e', high: '#3a3b40', rock: '#1b1f21', accent: '#6e6b62', deep: '#1b1f21', hLow: -3, hHigh: 34, rockAt: 0.36, accentCover: 0.3, ripple: { strength: 0.02, scale: 3, wind: 0.5 }, grain: 0.5, roughness: 0.9, wet: { level: -3, band: 2.2, color: '#7a1e06' }, mark: '#18191c' } },
   mandalore: { detail: 'gravel', detailLook: { color: 0.6, normal: 0.7 }, wind: 0.8, palette: { low: '#b9ab8e', high: '#d0c6b2', rock: '#3a4344', accent: '#5f6a66', deep: '#4a4f4c', hLow: -4, hHigh: 14, rockAt: 0.4, accentCover: 0.25, ripple: { strength: 0.02, scale: 3, wind: 0.5 }, grain: 0.5, mark: '#7a7466' } },
@@ -119,7 +119,7 @@ export const SITE_WATER = {
   naboo: { kind: 'sea', level: -2.06 },
   kamino: { kind: 'sea', level: 0 },
   mustafar: { kind: 'lava', level: 2.5 },
-  scarif: { kind: 'sea', level: -1.07 },
+  scarif: { kind: 'sea', level: -0.92 },
   bespin: { kind: 'clouds', level: -380 },
   nevarro: { kind: 'lava', level: -3 },
 };
