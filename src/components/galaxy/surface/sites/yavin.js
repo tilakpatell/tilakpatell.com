@@ -6,6 +6,13 @@
 export const SITE = {
   // lit as the game lights its level (src/data/bf2017/light/yavin.json, gameLit.js)
   gameLight: 'yavin',
+  // drawn from the game's level (lane E1: /models/galaxy/bf2017/levels/yavin/level.json,
+  // `node scripts/bf2017-level.mjs levels/mp/yavin_01 --world yavin --spot
+  // 160 661 --subs yavin_01,yavin_012,streamed_in_props,sunny`: the base's
+  // courtyard at the site's middle, the Great Temple west of it with its
+  // hangar opening east, at the courtyard's level; the site's built temple,
+  // its hangar and the landing's dressing are the flight's (`game`))
+  level: 'yavin',
   // the look (look.js): green-grey shade under the canopy, a warm halo
   // through it; the grass on the ground map (groundPaint.js), thin under
   // the trees' crowns and thick in the clearings
@@ -35,7 +42,11 @@ export const SITE = {
     seed: 14,
     wind: 0.8,
     base: 0,
-    layers: [
+    // (the game's own ground: Yavin_01's heightmap, 0 at the hangar's floor)
+    layers: [{ type: 'image', pack: 'yavin' }],
+    // (the flight's moon keeps the jungle it had: the land the site drew
+    // before the level)
+    flight: [
       { type: 'swell', scale: 380, height: 8 },
       { type: 'hills', scale: 140, height: 10 },
       { type: 'channels', scale: 700, depth: 12, width: 0.05 },
@@ -57,7 +68,8 @@ export const SITE = {
     },
   },
   weather: [{ kind: 'motes', count: 500, color: '#f0f8c0' }],
-  land: { at: [0, 0], yaw: 3.0 },
+  // (in the base's courtyard, facing the hangar's mouth, 26 m west)
+  land: { at: [-60, 0], yaw: -Math.PI / 2 },
   lines: {
     out: {
       xwing: [['luke', 'Yavin 4. Home, for a while. Artoo, remember the medals?'], ['r2', '(A proud, happy whistle.)']],
@@ -70,9 +82,10 @@ export const SITE = {
     {
       id: 'temple',
       name: 'The Great Temple',
-      at: [0, -240],
+      // (the game's temple, its hangar running west under it from the mouth)
+      at: [-150, 0],
       r: 92,
-      flat: { r: 74, h: 9 }, // (the hangar's floor at 9: its life stands on it, under the temple's roof)
+      flat: { r: 74, h: 9, game: true }, // (the flight's: the hangar's floor at 9 under the built temple's roof)
       about: 'The Great Temple of Massassi, raised for the Sith thousands of years ago and overgrown ever since: the Rebel Alliance’s base, its hangar at the foot, its war room deep inside.',
       lines: {
         xwing: [['luke', 'The Massassi temple. Every fighter we had took off from in there.'], ['r2', '(An excited, nostalgic burble.)']],
@@ -81,17 +94,18 @@ export const SITE = {
         rv: [['walt', 'A secret base inside a thousand-year-old temple. Clever.'], ['jesse', 'Yo, I bet there’s like, booby traps.']],
       },
       things: [
-        { kind: 'massassi', at: [0, 0], yaw: 0 },
-        { kind: 'massassiplugs', at: [0, 0], yaw: 0 },
-        { kind: 'lamp', at: [-14, 49], opts: { h: 5, light: '#ffe0a0' } },
-        { kind: 'lamp', at: [14, 49], opts: { h: 5, light: '#ffe0a0' } },
+        { kind: 'massassi', at: [0, 0], yaw: 0, game: true },
+        { kind: 'massassiplugs', at: [0, 0], yaw: 0, game: true },
+        { kind: 'lamp', at: [-14, 49], opts: { h: 5, light: '#ffe0a0' }, game: true },
+        { kind: 'lamp', at: [14, 49], opts: { h: 5, light: '#ffe0a0' }, game: true },
       ],
     },
     {
       id: 'hangar',
       name: 'The hangar',
-      at: [0, -218],
-      r: 16,
+      // (the game's hangar: its X-wings in a row 115 m in from the mouth)
+      at: [-180, 0],
+      r: 30,
       about: 'Under the temple, where Red and Gold squadrons waited for the Death Star to come round Yavin: X-wings, Y-wings, fuel lines, astromechs being loaded aboard. Thirty went up; three came home.',
       lines: {
         xwing: [['luke', 'This is where Biggs and I took off together. He didn’t come back.'], ['r2', '(A long, low, sad note.)']],
@@ -101,24 +115,26 @@ export const SITE = {
       things: [
         // (the temple model's tunnel is x ±10.4, from its back wall at -10.5
         // out to the mouth at 26: the X-wings one behind the other on the
-        // right, the Y-wing down the left)
-        { kind: 'hangarfloor', at: [0, 0], y: 0.57, solid: false }, // (just over the temple model's own floor)
-        { kind: 'parked', at: [4.8, -1], y: 0.55, yaw: 0.05, opts: { kind: 'xwing', metres: 12.5 } },
-        { kind: 'parked', at: [4.8, 13], y: 0.55, yaw: -0.05, opts: { kind: 'xwing', metres: 12.5 } },
-        { kind: 'ywing', at: [-6, 11], y: 0.55, yaw: 0.02 },
-        { kind: 'yavinramp', at: [8.6, -3], y: 0.55, yaw: 0 },
-        { kind: 'crates', at: [-7, 23.5], y: 0.55 },
-        { kind: 'ammocan', at: [-4.4, 23.8], y: 0.55, yaw: 0.3 },
-        { kind: 'ammocan', at: [-4.6, 22.8], y: 0.55, yaw: 0.2 },
-        { kind: 'ammocan', at: [8.6, 4.8], y: 0.55, yaw: 1.4 },
-        { kind: 'welderrack', at: [8.4, 21.5], y: 0.55, yaw: -2.4 },
-        { kind: 'yavinspeeder', at: [-6.4, -7.2], y: 0.55, yaw: 1.4 },
+        // right, the Y-wing down the left; the flight's now: the game's hangar
+        // has its own)
+        { kind: 'hangarfloor', at: [0, 0], y: 0.57, solid: false, game: true }, // (just over the temple model's own floor)
+        { kind: 'parked', at: [4.8, -1], y: 0.55, yaw: 0.05, opts: { kind: 'xwing', metres: 12.5 }, game: true },
+        { kind: 'parked', at: [4.8, 13], y: 0.55, yaw: -0.05, opts: { kind: 'xwing', metres: 12.5 }, game: true },
+        { kind: 'ywing', at: [-6, 11], y: 0.55, yaw: 0.02, game: true },
+        { kind: 'yavinramp', at: [8.6, -3], y: 0.55, yaw: 0, game: true },
+        { kind: 'crates', at: [-7, 23.5], y: 0.55, game: true },
+        { kind: 'ammocan', at: [-4.4, 23.8], y: 0.55, yaw: 0.3, game: true },
+        { kind: 'ammocan', at: [-4.6, 22.8], y: 0.55, yaw: 0.2, game: true },
+        { kind: 'ammocan', at: [8.6, 4.8], y: 0.55, yaw: 1.4, game: true },
+        { kind: 'welderrack', at: [8.4, 21.5], y: 0.55, yaw: -2.4, game: true },
+        { kind: 'yavinspeeder', at: [-6.4, -7.2], y: 0.55, yaw: 1.4, game: true },
       ],
     },
     {
       id: 'summit',
       name: 'The temple summit',
-      at: [0, -251],
+      // (the temple's top, over the hangar)
+      at: [-181, -21],
       r: 6,
       about: 'The top of the Great Temple, high over the canopy, where Rebel lookouts watched the sky for the Death Star. On a clear day, the jungle goes on forever, and Yavin fills the horizon.',
       lines: {
@@ -131,9 +147,10 @@ export const SITE = {
     {
       id: 'field',
       name: 'The landing field',
-      at: [0, -112],
-      r: 36,
-      flat: { r: 32 },
+      // (the base's courtyard, between the mouth and the landing)
+      at: [-66, 6],
+      r: 20,
+      flat: { r: 32, game: true },
       about: 'The clearing in front of the temple, where the Falcon set down with the stolen plans, and where Rogue One’s U-wing left for Scarif without orders.',
       lines: {
         xwing: [['luke', 'The Falcon landed right here, with the princess and the plans.']],
@@ -141,11 +158,11 @@ export const SITE = {
         rv: [['jesse', 'A U-wing. Rogue One, yo. They didn’t come back either.'], ['walt', 'Some jobs you don’t come back from, Jesse.']],
       },
       things: [
-        { kind: 'parked', at: [-14, 2], yaw: 0.6, opts: { kind: 'uwing', metres: 24, lift: 1.4 } },
-        { kind: 'crates', at: [10, -8] },
-        { kind: 'crates', at: [16, 6] },
-        { kind: 'crates', at: [-4, 18] },
-        { kind: 'lamp', at: [6, 14], opts: { h: 5, light: '#ffe0a0' } },
+        { kind: 'parked', at: [-14, 2], yaw: 0.6, opts: { kind: 'uwing', metres: 24, lift: 1.4 }, game: true },
+        { kind: 'crates', at: [10, -8], game: true },
+        { kind: 'crates', at: [16, 6], game: true },
+        { kind: 'crates', at: [-4, 18], game: true },
+        { kind: 'lamp', at: [6, 14], opts: { h: 5, light: '#ffe0a0' }, game: true },
       ],
     },
     {
@@ -203,16 +220,17 @@ export const SITE = {
   ],
   things: [
     // where you set down: Gold Squadron's dispersal on the field's edge, a
-    // Y-wing under its ramp, the ground crew's gear
-    { kind: 'ywing', at: [28, -22], yaw: 2.7 },
-    { kind: 'yavinramp', at: [20, -14], yaw: 2.7 },
-    { kind: 'ammocan', at: [12, -6], yaw: 0.3 },
-    { kind: 'ammocan', at: [13.1, -5.4], yaw: 1.1 },
-    { kind: 'cratecube', at: [-14, -10], yaw: 0.6 },
-    { kind: 'barrel', at: [-12.6, -8.4], yaw: 0.2 },
-    { kind: 'welderrack', at: [-10, -14], yaw: 2.2 },
-    { kind: 'lamp', at: [-16, -2], opts: { h: 5, light: '#ffe0a0' } },
-    { kind: 'lamp', at: [16, -30], opts: { h: 5, light: '#ffe0a0' } },
+    // Y-wing under its ramp, the ground crew's gear (the flight's: the game's
+    // courtyard has its own)
+    { kind: 'ywing', at: [28, -22], yaw: 2.7, game: true },
+    { kind: 'yavinramp', at: [20, -14], yaw: 2.7, game: true },
+    { kind: 'ammocan', at: [12, -6], yaw: 0.3, game: true },
+    { kind: 'ammocan', at: [13.1, -5.4], yaw: 1.1, game: true },
+    { kind: 'cratecube', at: [-14, -10], yaw: 0.6, game: true },
+    { kind: 'barrel', at: [-12.6, -8.4], yaw: 0.2, game: true },
+    { kind: 'welderrack', at: [-10, -14], yaw: 2.2, game: true },
+    { kind: 'lamp', at: [-16, -2], opts: { h: 5, light: '#ffe0a0' }, game: true },
+    { kind: 'lamp', at: [16, -30], opts: { h: 5, light: '#ffe0a0' }, game: true },
   ],
   scatter: [
     // (Quaternius's ground cover, under the built plants: catalog/quaternius.js)
@@ -236,22 +254,22 @@ export const SITE = {
   // where the people go (needs.js): the techs between the landing (knelt at
   // a ship's works), the hangar mouth (at its panels) and the field
   wants: [
-    { id: 'landing', kind: 'work', at: [8, -6], slots: 2, clip: 'kneel.fix', pause: 8 },
-    { id: 'hangarmouth', kind: 'work', at: [0, -196], slots: 2, clip: 'interact', pause: 10 },
-    { id: 'field', kind: 'rest', at: [0, -112], pause: 6 },
+    { id: 'landing', kind: 'work', at: [-52, -6], slots: 2, clip: 'kneel.fix', pause: 8 },
+    { id: 'hangarmouth', kind: 'work', at: [-86, 1], slots: 2, clip: 'interact', pause: 10 },
+    { id: 'field', kind: 'rest', at: [-66, 6], pause: 6 },
   ],
   life: [
-    { kind: 'rebelpilot', id: 'redleader', at: [7, -195], level: 9, still: true, face: 1.2, name: 'Red Leader', named: true, quest: 'scramble', says: { when: { done: ['scramble'] }, lines: ['Red Leader, standing by. Good run out there.', 'All wings report in.'], else: ['Red Leader, standing by.', 'All wings report in.', 'Lock S-foils in attack position.'] } },
-    { kind: 'rebelpilot', n: 1, at: [18, -16], still: true, face: 2.4, name: 'Gold Squadron pilot', says: ['Gold Leader, standing by.', 'Y-wings take the first run at the trench. Keep the fighters off us.'] },
-    { kind: 'rebeltech', n: 2, at: [6, -12], spread: 8, roam: 8, speed: 0.9, needs: ['work', 'rest'], name: 'Rebel technician', says: ['Proton torpedoes loaded. Both of them.', 'She’s old, but she flies.', 'Don’t stand under the ramp.'] },
-    { kind: 'astromech', n: 1, at: [20, -26], roam: 5, speed: 0.6, name: 'Astromech', says: ['(A low, grumbling whistle: the Y-wing’s deflector is shot again.)'] },
-    { kind: 'rebel', n: 6, at: [0, -112], spread: 18, roam: 12, speed: 1.1, name: 'Rebel trooper', says: ['They got the plans out! The princess brought them herself.', 'The Death Star’s coming round the planet. Thirty minutes, they say.', 'Massassi built this place. Who they were, nobody knows.', 'May the Force be with you.'] },
-    { kind: 'rebelpilot', n: 4, at: [0, -222], level: 9, spread: 8, roam: 6, speed: 1.0, name: 'X-wing pilot', says: ['Red Five standing by.', 'Look at the size of that thing!', 'Stay on target… stay on target…', 'I used to bullseye womp rats in my T-16 back home. They’re not much bigger than two metres.'] },
-    { kind: 'droid', n: 3, at: [0, -216], level: 9, spread: 8, roam: 6, speed: 0.6, name: 'Astromech', says: ['(A brisk, busy whistle.)', '(It plugs into a fuel line and beeps happily.)'] },
-    { kind: 'c3po', n: 1, at: [0, -225.5], level: 9, still: true, face: 3.4, name: 'C-3PO', says: { when: { done: ['scramble'] }, lines: ['Oh, I do hope Artoo comes back in one piece.', 'You wouldn’t want my life to get boring, would you?'], else: ['Hang on tight, Artoo. You’ve got to come back.', 'You wouldn’t want my life to get boring, would you?', 'Oh, I do hope they know what they’re doing.'] } },
+    { kind: 'rebelpilot', id: 'redleader', at: [-88, 4], level: 2, still: true, face: Math.PI / 2, name: 'Red Leader', named: true, quest: 'scramble', says: { when: { done: ['scramble'] }, lines: ['Red Leader, standing by. Good run out there.', 'All wings report in.'], else: ['Red Leader, standing by.', 'All wings report in.', 'Lock S-foils in attack position.'] } },
+    { kind: 'rebelpilot', n: 1, at: [-42.4, -16.9], still: true, face: -2.4, name: 'Gold Squadron pilot', says: ['Gold Leader, standing by.', 'Y-wings take the first run at the trench. Keep the fighters off us.'] },
+    { kind: 'rebeltech', n: 2, at: [-51, -12], spread: 8, roam: 8, speed: 0.9, needs: ['work', 'rest'], name: 'Rebel technician', says: ['Proton torpedoes loaded. Both of them.', 'She’s old, but she flies.', 'Don’t stand under the ramp.'] },
+    { kind: 'astromech', n: 1, at: [-40, -26], roam: 5, speed: 0.6, name: 'Astromech', says: ['(A low, grumbling whistle: the Y-wing’s deflector is shot again.)'] },
+    { kind: 'rebel', n: 6, at: [-66, 6], spread: 12, roam: 12, speed: 1.1, name: 'Rebel trooper', says: ['They got the plans out! The princess brought them herself.', 'The Death Star’s coming round the planet. Thirty minutes, they say.', 'Massassi built this place. Who they were, nobody knows.', 'May the Force be with you.'] },
+    { kind: 'rebelpilot', n: 4, at: [-175, 0], level: 2, spread: 8, roam: 6, speed: 1.0, name: 'X-wing pilot', says: ['Red Five standing by.', 'Look at the size of that thing!', 'Stay on target… stay on target…', 'I used to bullseye womp rats in my T-16 back home. They’re not much bigger than two metres.'] },
+    { kind: 'droid', n: 3, at: [-170, 0], level: 2, spread: 8, roam: 6, speed: 0.6, name: 'Astromech', says: ['(A brisk, busy whistle.)', '(It plugs into a fuel line and beeps happily.)'] },
+    { kind: 'c3po', n: 1, at: [-185.4, 5.3], level: 2, still: true, face: 1.8, name: 'C-3PO', says: { when: { done: ['scramble'] }, lines: ['Oh, I do hope Artoo comes back in one piece.', 'You wouldn’t want my life to get boring, would you?'], else: ['Hang on tight, Artoo. You’ve got to come back.', 'You wouldn’t want my life to get boring, would you?', 'Oh, I do hope they know what they’re doing.'] } },
     { kind: 'rebel', n: 1, at: [-200, -120], still: true, face: 0.3, name: 'Rebel sentry', says: { when: { rank: 2 }, lines: ['(He straightens up.) Sir. All quiet up here. Just the jungle, and Yavin.', '(He lowers his macrobinoculars.) Ship coming in. It’s the Falcon!'], else: ['(He lowers his macrobinoculars.) Ship coming in. It’s the Falcon!', 'All quiet up here. Just the jungle, and Yavin.'] } },
     { kind: 'rebel', n: 2, at: [-284, -270], spread: 6, roam: 6, speed: 0.9, group: true, name: 'Rebel scout', says: ['Fresh water, and plenty of it. Just don’t go in past your knees.', 'Something big came down to drink last night. We didn’t stay to find out what.'] },
-    { kind: 'rebel', n: 2, path: [[-30, -190], [30, -190], [30, -186], [-30, -186]], speed: 1.1, name: 'Rebel guard', says: ['Halt. Who goes there? …Oh, it’s you. Go on in.', 'Keep an eye on the sky.'] },
+    { kind: 'rebel', n: 2, path: [[-88, -6], [-88, 6], [-86, 6], [-86, -6]], speed: 1.1, name: 'Rebel guard', says: ['Halt. Who goes there? …Oh, it’s you. Go on in.', 'Keep an eye on the sky.'] },
   ],
   rides: [],
 
@@ -260,8 +278,8 @@ export const SITE = {
     {
       id: 'warroom',
       name: 'the war room',
-      door: { at: [-4, -227.6], r: 3, prompt: 'Go down to the war room' },
-      back: [-4, -226],
+      door: { at: [-97, 0], r: 2.4, prompt: 'Go down to the war room' },
+      back: [-94, -4],
       inside: {
         build: 'warroom',
         spawn: [0, 8.2],
@@ -285,8 +303,9 @@ export const SITE = {
     {
       id: 'stair',
       name: 'the temple stair',
-      door: { at: [4, -227.6], r: 2.6, prompt: 'Climb the inner stair' },
-      back: [0, -250],
+      door: { at: [-99, -8], r: 2.4, prompt: 'Climb the inner stair' },
+      // (out by the throne room's door: the game's temple top is no place to stand)
+      back: [-88, 4],
       inside: {
         build: 'templestair',
         spawn: [0, 10.5],
@@ -302,8 +321,8 @@ export const SITE = {
     {
       id: 'ceremony',
       name: 'the throne room',
-      door: { at: [0, -250], r: 3, prompt: 'Go into the throne room' },
-      back: [0, -248],
+      door: { at: [-88, 6], r: 2.4, prompt: 'Go into the throne room' },
+      back: [-86, 6],
       inside: {
         build: 'ceremonyhall',
         spawn: [0, 20],
@@ -348,8 +367,8 @@ export const SITE = {
       about: 'The station is in range in minutes. Through the hangar to your fighter, and up.',
       intro: [['Red Leader', 'Pilots, to your ships. The station clears the planet in thirty minutes. Go!']],
       steps: [
-        { type: 'race', gates: [[0, -212], [0, -195], [0, -178], [0, -160], [0, -140]], r: 8, time: 40, text: 'Run the taxi line to your fighter', lines: [['Red Leader', 'Red Five, you’re with me. Move!']] },
-        { type: 'reach', at: [0, -130], r: 10, text: 'Lift off', end: [{ say: [['Red Leader', 'Lock S-foils in attack position.']] }, { go: '/deathstar' }] },
+        { type: 'race', gates: [[-175, 0], [-150, 0], [-120, 0], [-97, 0], [-75, 0]], r: 8, time: 40, text: 'Run the taxi line to your fighter', lines: [['Red Leader', 'Red Five, you’re with me. Move!']] },
+        { type: 'reach', at: [-55, 0], r: 10, text: 'Lift off', end: [{ say: [['Red Leader', 'Lock S-foils in attack position.']] }, { go: '/deathstar' }] },
       ],
       done: [['Red Leader', 'All wings report in.'], [null, '(Up through the canopy, and the Death Star is coming round Yavin.)']],
     },
@@ -364,7 +383,7 @@ export const SITE = {
       steps: [{ type: 'reach', zone: 'ceremony', at: [0, -16], r: 3, text: 'Walk the aisle to the dais' }],
       done: [[null, '(The medal goes round your neck. Chewie roars. The whole Rebellion is cheering, and it doesn’t stop.)']],
     },
-    { id: 'remotes', name: 'Blast shield down', giver: 'dodonna', intro: [['General Dodonna', 'Pilots warm up on the remotes by the lookout. Your turn.']], steps: [{ type: 'shoot', tag: 'remote', n: 6, text: 'Hit the training remotes', spawn: { kind: 'remote', n: 6, at: [-200, -120], spread: 8, roam: 6, speed: 2, hp: 1, tag: 'remote' } }, { type: 'reach', at: [0, -251], r: 5, text: 'Climb to the throne room for the ceremony' }], done: [[null, '(The doors open. The whole Rebellion is standing there, and they’re cheering for you.)']] },
+    { id: 'remotes', name: 'Blast shield down', giver: 'dodonna', intro: [['General Dodonna', 'Pilots warm up on the remotes by the lookout. Your turn.']], steps: [{ type: 'shoot', tag: 'remote', n: 6, text: 'Hit the training remotes', spawn: { kind: 'remote', n: 6, at: [-200, -120], spread: 8, roam: 6, speed: 2, hp: 1, tag: 'remote' } }, { type: 'reach', at: [-88, 6], r: 5, text: 'Climb to the throne room for the ceremony' }], done: [[null, '(The doors open. The whole Rebellion is standing there, and they’re cheering for you.)']] },
   ],
   flyovers: [
     { kind: 'xwing', n: 3, metres: 12.5, alt: 80, speed: 120, every: 45 },
