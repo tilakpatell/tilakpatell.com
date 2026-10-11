@@ -2,6 +2,8 @@ import { SIDES } from './sides';
 import { systemById } from './systems';
 import { afterLine, battleLine, nextLine, objectiveBars, stageLine } from './warText';
 import { useWar } from './useWar';
+import { GameIcon } from '../../runtime/hud';
+import '../../lib/bf2017/fonts.css';
 
 // One line over the galaxy's view while the war's battle is on in the system
 // you're in (gcw.js's battleAt, in the war you fight in): what kind of battle
@@ -18,6 +20,14 @@ import { useWar } from './useWar';
 // clear of the crew's line under it. A battle decided early keeps its window
 // (gcw.js's twelve minutes): the line says who won here, and when the next
 // battle's on, till it is.
+//
+// The stage row is laid out as the game's objective bar is (lane S3; the
+// Starfighter Assault widgets the screens lane recorded,
+// surface/missions/starfighterHud.js's tree, HUD_ObjectivesScreen_AttackBar_
+// V03): the bar's mark first (the game's attack or defend shape by your
+// side, its lock while the stage has not opened), the words in the game's
+// faces and colour, each objective's bar in the game's proportions and
+// alphas (galaxy.css). The words are the site's own, as they were.
 export default function WarHud({ sys, oath, front = null }) {
   const { now, table } = useWar(oath?.war);
   const row = table.systems.find((r) => r.id === sys);
@@ -34,11 +44,15 @@ export default function WarHud({ sys, oath, front = null }) {
   const stage = b.fighting && !ended && info ? stageLine(info) : null;
   const next = stage ? nextLine(info.next) : null;
   const bars = stage ? objectiveBars(info) : [];
+  // (the bar's mark: attack or defend by your team against the battle's attacker, as the game's bar chooses its shape; nobody's side has none)
+  const att = info && info.team !== null && info.team !== undefined ? info.team === info.laid?.attacker : null;
+  const mark = stage && att !== null ? (info.stage.open ? (att ? 'objective:attack' : 'objective:defend') : 'objective:locked') : null;
   return (
     <div className="galaxy-warhud" role="status" style={{ '--side': SIDES[oath?.side]?.colour ?? '#9fb0d0' }} data-ended={ended || undefined} data-sf={info?.laid?.kind === 'starfighter' || undefined}>
       <p className="galaxy-warhud-line">{line}</p>
       {stage && (
         <p className="galaxy-warhud-stage">
+          {mark && <GameIcon name={mark} className={`galaxy-warhud-mark galaxy-warhud-mark-${mark.split(':')[1]}`} />}
           <span className="galaxy-warhud-text">
             {stage}
             {next && <span className="galaxy-warhud-next"> · {next}</span>}

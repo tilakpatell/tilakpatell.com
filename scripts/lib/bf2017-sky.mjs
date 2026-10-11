@@ -80,3 +80,111 @@ export function normalise(faces, mean = 0.8) {
     return { ...f, data };
   });
 }
+
+// A planet's globe from its skin (lane S3: the galaxy map's disc for a world
+// the game gave whole-planet maps and no front-end picture): the colour map
+// (equirectangular, once round and pole to pole) laid on a sphere seen
+// head-on, lit from the upper left as the front end's own globes are, with
+// the clouds over it (the site's cut keeps their coverage in red, and
+// bodySkin.js takes smoothstep(cloudCut, 1, red) of it: the same here) and
+// the air's colour at the limb where the skin names one. Drawn
+// `over` times the size asked and brought down by the caller, so the edge is
+// smooth.
+//
+// renderGlobe({ colour, clouds, cloudCut, atmo, size, over }) → { data: Uint8
+//   RGBA, width, height } (width = height = size × over)
+//   colour, clouds: { data: Uint8 RGBA, width, height }; atmo: [r, g, b] 0…255
+//   or null
+
+const srgbToLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+const linearToSrgb = (c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
+
+// a map's texel at (u, v) in 0…1, bilinear, wrapping round in u
+function sample(map, u, v, out) {
+  const { data, width, height } = map;
+  const x = (((u % 1) + 1) % 1) * width - 0.5;
+  const y = clamp01(v) * (height - 1);
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = x - x0;
+  const fy = y - y0;
+  const xa = ((x0 % width) + width) % width;
+  const xb = (xa + 1) % width;
+  const yb = Math.min(height - 1, y0 + 1);
+  for (let c = 0; c < 4; c++) {
+    const a = data[(y0 * width + xa) * 4 + c] * (1 - fx) + data[(y0 * width + xb) * 4 + c] * fx;
+    const b = data[(yb * width + xa) * 4 + c] * (1 - fx) + data[(yb * width + xb) * 4 + c] * fx;
+    out[c] = (a * (1 - fy) + b * fy) / 255;
+  }
+  return out;
+}
+
+export function renderGlobe({ colour, clouds = null, cloudCut = 0.5, atmo = null, size = 96, over = 4 }) {
+  const n = size * over;
+  const data = new Uint8ClampedArray(n * n * 4);
+  // the sun: up and to the left of the viewer, a little in front (the front end's globes are lit so)
+  const L = [-0.5, 0.42, 0.76];
+  const lLen = Math.hypot(...L);
+  const [lx, ly, lz] = L.map((v) => v / lLen);
+  const air = atmo ? atmo.map((c) => srgbToLinear(c / 255)) : null;
+  const tex = [0, 0, 0, 0];
+  const cld = [0, 0, 0, 0];
+  const halo = 1.07; // (how far past the limb the air glows, in radii)
+  for (let py = 0; py < n; py++) {
+    for (let px = 0; px < n; px++) {
+      const x = ((px + 0.5) / n) * 2 - 1;
+      const y = 1 - ((py + 0.5) / n) * 2;
+      const r2 = x * x + y * y;
+      const i = (py * n + px) * 4;
+      if (r2 > halo * halo) continue;
+      if (r2 > 1) {
+        // the air past the limb, fading out, lit as the limb there is lit
+        if (!air) continue;
+        const r = Math.sqrt(r2);
+        const fade = (halo - r) / (halo - 1);
+        const lit = clamp01(((x / r) * lx + (y / r) * ly) * 0.5 + 0.55);
+        for (let c = 0; c < 3; c++) data[i + c] = Math.round(255 * linearToSrgb(air[c]));
+        data[i + 3] = Math.round(255 * fade * fade * 0.55 * lit);
+        continue;
+      }
+      const z = Math.sqrt(1 - r2);
+      const lon = Math.atan2(x, z);
+      const lat = Math.asin(y);
+      const u = lon / (2 * Math.PI) + 0.5;
+      const v = 0.5 - lat / Math.PI;
+      sample(colour, u, v, tex);
+      let rr = srgbToLinear(tex[0]);
+      let gg = srgbToLinear(tex[1]);
+      let bb = srgbToLinear(tex[2]);
+      if (clouds) {
+        sample(clouds, u, v, cld);
+        // (coverage in red, from the cut up to 1 as bodySkin.js's smoothstep takes it)
+        const t = clamp01((cld[0] - cloudCut) / (1 - cloudCut));
+        const a = t * t * (3 - 2 * t) * 0.92;
+        const cw = 0.92; // (a cloud's own light: near white)
+        rr += (cw - rr) * a;
+        gg += (cw - gg) * a;
+        bb += (cw - bb) * a;
+      }
+      // the light: Lambert with a soft terminator, and a little of the night side kept
+      const ndl = x * lx + y * ly + z * lz;
+      const lit = 0.06 + 0.94 * clamp01((ndl + 0.12) / 0.62);
+      rr *= lit;
+      gg *= lit;
+      bb *= lit;
+      if (air) {
+        // the air at the limb: more of it the flatter the view, brightest where the sun is
+        const rim = (1 - z) ** 2.4 * (0.25 + 0.75 * clamp01(ndl + 0.3));
+        rr += air[0] * rim;
+        gg += air[1] * rim;
+        bb += air[2] * rim;
+      }
+      data[i] = Math.round(255 * linearToSrgb(clamp01(rr)));
+      data[i + 1] = Math.round(255 * linearToSrgb(clamp01(gg)));
+      data[i + 2] = Math.round(255 * linearToSrgb(clamp01(bb)));
+      data[i + 3] = 255;
+    }
+  }
+  return { data, width: n, height: n };
+}

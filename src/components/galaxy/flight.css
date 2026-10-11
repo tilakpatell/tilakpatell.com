@@ -56,6 +56,10 @@
 .fc-target[data-on] .fc-none { display: none; }
 .fc-none { color: rgb(217 243 255 / 0.85); font-size: 0.74rem; }
 .fc-shield-icon { display: none; }
+/* the speed line's mark: the game's own speed-bar icon (GameIcon), in the cluster's ink, the line's height, one item with the
+   number so the line's space-between keeps the number at the start and the kills at the end */
+.fc-speed-lead { display: inline-flex; align-items: center; gap: 4px; }
+.fc-speed-icon { flex: none; width: 12px; height: 12px; fill: currentColor; color: #9ef3ff; }
 .fc-radar { width: 132px; height: 132px; border: 1px solid var(--fc-line); border-radius: 50%; background: radial-gradient(circle, rgb(10 30 50 / 0.82), rgb(3 6 14 / 0.86)); }
 /* the pickups' effects, a chip each over the row (cluster.js's buffs): the bar along its foot is the time left, or the bubble's points */
 .fc-buffs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
