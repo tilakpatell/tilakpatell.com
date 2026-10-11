@@ -5,13 +5,15 @@ One page per library, engine or framework the site is built on, and this index o
 `three/webgpu` and `three/tsl` ship inside `three` and so have no row; their page is [webgpu-tsl.md](webgpu-tsl.md).
 The WebAssembly modules (Rapier, the Basis transcoder, meshopt) and lane X2’s Rust ports have their page at [webassembly.md](webassembly.md).
 
+WebAssembly is the browser’s own, not a package, and so has no row; its page is [webassembly.md](webassembly.md) (Rapier’s two builds, the Basis transcoder, the meshopt decoder).
+
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |
-| `three` | ^0.186.1 | [three.md](three.md) | 649 |
+| `three` | ^0.186.1 | [three.md](three.md) | 675 |
 | `react` | ^19.3.0 | [react.md](react.md) | 311 |
 | `react-router-dom` | ^7.18.4 | [react.md](react.md) | 84 |
-| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 82 |
+| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 84 |
 | `playwright-core` | ^1.56.0 | [testing.md](testing.md) | 77 |
 | `react-icons` | ^5.7.0 | [react.md](react.md) | 72 |
 | `@gltf-transform/core` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 65 |
