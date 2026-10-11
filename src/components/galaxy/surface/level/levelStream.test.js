@@ -312,6 +312,25 @@ describe('the heading’s prefetch (lane N4)', () => {
 });
 
 describe('the budgets (lane N4)', () => {
+  it('ends the boot short of its bytes, so what is in flight lands under them', async () => {
+    const f = fakeFetch();
+    // (each answer 32 bytes; the budget 100: the boot ends at 95 of them, the third file)
+    const s = createLevelStream({ pack, fetch: f.fetch, wanted, tier: 'high', parallel: 1, budgets: () => ({ bootMB: 100e-6, visitMB: Infinity }), onFar: () => {}, onCell: () => {} });
+    s.update([10, 10], 'high');
+    f.give('far.bin');
+    await tick();
+    f.give(f.asked.at(-1));
+    await tick();
+    s.update([10, 10], 'high');
+    expect(s.ready()).toBe(false);
+    f.give(f.asked.at(-1));
+    await tick();
+    s.update([10, 10], 'high');
+    expect(s.ready()).toBe(true);
+    expect(s.status().bytes).toBeLessThanOrEqual(128);
+    s.dispose();
+  });
+
   it('ends the boot at its bytes, whatever is left of it', async () => {
     const f = fakeFetch();
     const s = createLevelStream({ pack, fetch: f.fetch, wanted, tier: 'high', parallel: 1, budgets: () => ({ bootMB: 32 * 3 * 1e-6, visitMB: Infinity }), onFar: () => {}, onCell: () => {} });

@@ -45,6 +45,10 @@ const RETRY_MS = 10000;
 // metres walked before the heading is read again (a step's jitter is not a turn)
 const STRIDE = 8;
 const LO = new Set(['low', 'mid']);
+// The boot ends at this share of its bytes, so what is in flight then lands
+// under them. _source: Hoth on high at 20 Mbit/s ended its boot 0.02 MB past
+// 12 MB with the files in flight (docs/superpowers/evidence/gpu-first/n4/README.md)
+const BOOT_SHARE = 0.95;
 const rowBudgets = (t) => {
   const r = budget(t);
   return { bootMB: r.bootMB ?? Infinity, visitMB: r.visitMB ?? Infinity };
@@ -122,7 +126,7 @@ export function createLevelStream({
   function check() {
     if (bootDone || !alive()) return;
     const bytes = queue.bytes();
-    const over = bytes >= budgets(tier).bootMB * 1e6;
+    const over = bytes >= budgets(tier).bootMB * 1e6 * BOOT_SHARE;
     const cellsIn = [...boot].every((k) => bins.has(k) || failed.has(k));
     if (over || (coarseDone && farDone && cellsIn && !queue.pending('boot') && !queue.pending('coarse') && !busy())) bootDone = true;
   }

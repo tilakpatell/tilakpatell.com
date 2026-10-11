@@ -45,7 +45,8 @@
 //   --bytes (lane N4, a surface with a level pack): the line held to 20 Mbit/s
 //     down, 20 ms (CDP Network.emulateNetworkConditions), and for each world:
 //     the time to its first frame and to its level's boot slice (`walkable`:
-//     the stream's bootDone), the level's bytes then and after the settle
+//     the stream's bootDone; and on the line's own clock, when its bytes were
+//     in, which a software GL's slow frames do not hold back), the level's bytes then and after the settle
 //     (the stream's own count) and the page's bytes over the wire, held to
 //     the quality level's bootMB and visitMB (src/lib/budgets.js); a line a
 //     world, <out>/bytes-<quality>.json, and exit 1 past either.
@@ -174,13 +175,28 @@ for (const id of list.split(',')) {
     glbBytes += sizes?.responseBodySize ?? 0;
   });
   // (--bytes: the line throttled, and every byte over the wire counted)
-  const wire = { bytes: 0 };
+  // (and each level-pack file's arrival on the line's own clock, so the time
+  // its boot bytes were in is read apart from a software GL's slow frames)
+  const wire = { bytes: 0, t0: null, urls: new Map(), level: [] };
   if (bytesRun) {
     const cdp = await ctx.newCDPSession(page);
     await cdp.send('Network.enable');
     await cdp.send('Network.emulateNetworkConditions', LINE);
-    cdp.on('Network.loadingFinished', (e) => (wire.bytes += e.encodedDataLength ?? 0));
+    cdp.on('Network.requestWillBeSent', (e) => {
+      wire.t0 ??= e.timestamp;
+      wire.urls.set(e.requestId, e.request.url);
+    });
+    cdp.on('Network.loadingFinished', (e) => {
+      wire.bytes += e.encodedDataLength ?? 0;
+      if (/\/levels\//.test(wire.urls.get(e.requestId) ?? '')) wire.level.push({ t: e.timestamp - (wire.t0 ?? e.timestamp), bytes: e.encodedDataLength ?? 0 });
+    });
   }
+  // the line's time at which this many level bytes had arrived
+  const wireAt = (bytes) => {
+    let sum = 0;
+    for (const f of [...wire.level].sort((a, b) => a.t - b.t)) if ((sum += f.bytes) >= bytes) return +f.t.toFixed(1);
+    return null;
+  };
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -204,7 +220,7 @@ for (const id of list.split(',')) {
       .waitForFunction(() => window.__surfaceScene?.level?.()?.stream?.bootDone && window.__surfaceScene.level().stream, null, { timeout: Number(process.env.BOOT_WAIT ?? 600000), polling: 250 })
       .then((h) => h.jsonValue())
       .catch(() => null);
-    boot = got ? { s: +((Date.now() - t0) / 1000).toFixed(1), levelMB: +(got.bytes / 1e6).toFixed(2), wireMB: +(wire.bytes / 1e6).toFixed(2) } : { s: null, error: 'the boot slice never came in' };
+    boot = got ? { s: +((Date.now() - t0) / 1000).toFixed(1), wireS: wireAt(got.bytes * 0.98), levelMB: +(got.bytes / 1e6).toFixed(2), wireMB: +(wire.bytes / 1e6).toFixed(2) } : { s: null, error: 'the boot slice never came in' };
   }
   // (on the surface, the floor's light baked first: the bake's passes are a
   // one-off, not a frame anyone plays. A world with no ground, cloud-borne,
@@ -318,7 +334,7 @@ for (const id of list.split(',')) {
     console.log(`${''.padEnd(10)} diag all ${parts.all.calls} calls: ${parts.out.map((o) => `${o.name} ${o.calls} (${Math.round(o.tris / 1000)}k)`).join(', ')}`);
   }
   const name = `${mode}-${id}-${quality}`;
-  await page.screenshot({ path: `${out}/${name}.png`, timeout: 120000 });
+  await page.screenshot({ path: `${out}/${name}.png`, timeout: Number(process.env.SHOT_WAIT ?? 120000) });
   const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
   if (bytesRun && mode === 'surface') {
     const after = stats.level?.stream ?? null;
@@ -327,7 +343,7 @@ for (const id of list.split(',')) {
     const over = [boot?.levelMB > row.bootMB && 'boot', r.visitMB > row.visitMB && 'visit', !boot?.s && 'never walkable'].filter(Boolean);
     r.pass = !over.length;
     byteRows.push(r);
-    console.log(`bytes  ${id.padEnd(10)} first frame ${r.firstFrameS} s  walkable ${boot?.s ?? '–'} s  boot ${boot?.levelMB ?? '–'}/${row.bootMB} MB  visit ${r.visitMB ?? '–'}/${row.visitMB} MB  wire ${r.wireMB} MB  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}`);
+    console.log(`bytes  ${id.padEnd(10)} first frame ${r.firstFrameS} s  walkable ${boot?.s ?? '–'} s (on the line ${boot?.wireS ?? '–'} s)  boot ${boot?.levelMB ?? '–'}/${row.bootMB} MB  visit ${r.visitMB ?? '–'}/${row.visitMB} MB  wire ${r.wireMB} MB  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}`);
     if (over.length) process.exitCode = 1;
   }
   results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
