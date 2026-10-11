@@ -228,7 +228,7 @@ const finish = (kind, model) =>
 // imported them (surface/, native, credited in data/modelCredits.json; lane
 // S1 put them here over the Sketchfab xwing-hd and falcon-hd), the RV the
 // site owner's Meshy one, and their stand-ins are built whole (hulls.js)
-export const SHIP_MODELS = { xwing: '/models/galaxy/surface/xwing.glb', falcon: '/models/galaxy/surface/falcon.glb', rv: '/models/universe/rv-wings.glb' };
+export const SHIP_MODELS = { xwing: '/models/galaxy/surface/xwing.glb', falcon: '/models/galaxy/falcon.glb', rv: '/models/universe/rv-wings.glb' }; // (the Falcon gear up: galaxy/models.js's row)
 
 // the garage builds' panel skin (made once, in the browser)
 const buildMaps = () => (typeof document === 'undefined' ? null : panelMaps('build', { base: '#c4c8ce', seed: 11, cols: 5, rows: 9, grime: 0.18 }));

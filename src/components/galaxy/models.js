@@ -45,7 +45,7 @@ export const MODELS = {
   // Slave I stands as it lands, the way it flies here (shipFit.js's BY_SPAN)
   xwing: { url: '/models/galaxy/surface/xwing.glb', nose: 0 },
   interceptor: { url: '/models/galaxy/surface/tieinterceptor.glb', nose: 0 },
-  falcon: { url: '/models/galaxy/surface/falcon.glb', nose: 0 },
+  falcon: { url: '/models/galaxy/falcon.glb', nose: 0 }, // (the game's landmark Falcon with its legs left out, in flight: scripts/bf2017-fleet.mjs)
   slave1: { url: '/models/galaxy/surface/slave1.glb', nose: 0 },
   scimitar: { url: '/models/galaxy/surface/scimitar.glb', nose: 0 },
   tiestriker: { url: '/models/galaxy/surface/tiestriker.glb', nose: 0 },
@@ -137,7 +137,6 @@ for (const [kind, name] of Object.entries(MADE)) if (MODELS[kind]) MODELS[kind] 
 export const LIGHT_CUTS = {
   xwing: '/models/galaxy/surface/xwing.lod1.glb',
   interceptor: '/models/galaxy/surface/tieinterceptor.lod1.glb',
-  falcon: '/models/galaxy/surface/falcon.lod1.glb',
   slave1: '/models/galaxy/surface/slave1.lod1.glb',
   scimitar: '/models/galaxy/surface/scimitar.lod1.glb',
   tiestriker: '/models/galaxy/surface/tiestriker.lod1.glb',

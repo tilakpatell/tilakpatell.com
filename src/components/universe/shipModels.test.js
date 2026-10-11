@@ -12,9 +12,11 @@ const onSite = (path) => existsSync(at(path)) || Boolean(PUBLISHED[path.slice(1)
 // game's ship; the RV stays the site owner's Meshy one, the cruiser is built)
 describe('the ships you fly', () => {
   it('are the game’s X-wing and Falcon as lane V imported them, and Meshy’s RV, each in the site', () => {
-    expect(SHIP_MODELS).toEqual({ xwing: '/models/galaxy/surface/xwing.glb', falcon: '/models/galaxy/surface/falcon.glb', rv: '/models/universe/rv-wings.glb' });
+    // (the Falcon in flight, gear up: scripts/bf2017-fleet.mjs's falcon row, the landmark Falcon without its legs)
+    expect(SHIP_MODELS).toEqual({ xwing: '/models/galaxy/surface/xwing.glb', falcon: '/models/galaxy/falcon.glb', rv: '/models/universe/rv-wings.glb' });
     for (const [kind, url] of Object.entries(SHIP_MODELS)) expect(onSite(url), kind).toBe(true);
-    for (const kind of ['xwing', 'falcon']) expect(CREDITS[`surface-${kind}`]?.author, kind).toBe('EA DICE');
+    expect(CREDITS['surface-xwing']?.author).toBe('EA DICE');
+    expect(CREDITS['galaxy-falcon']?.author).toBe('EA DICE');
     // (the Sketchfab ones retired with their files)
     for (const name of ['xwing-hd', 'falcon-hd']) {
       expect(CREDITS[name], name).toBeUndefined();

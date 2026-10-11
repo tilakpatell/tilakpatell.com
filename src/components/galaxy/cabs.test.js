@@ -12,7 +12,7 @@ describe('the cockpit each ship shows', () => {
       expect(typeof mod.build).toBe('function');
       expect(game.COCKPITS[kind], kind).toMatch(/cockpit\.glb$/);
       // (the ship flown is the game's too: the cockpit matches its hull)
-      expect(SHIP_MODELS[kind], kind).toMatch(/^\/models\/galaxy\/surface\//);
+      expect(SHIP_MODELS[kind], kind).toMatch(/^\/models\/galaxy\//);
     }
     for (const kind of ['rv', 'cruiser']) {
       const mod = await CABS[kind]();

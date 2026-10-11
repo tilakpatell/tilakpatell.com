@@ -23,6 +23,9 @@ describe('the fleets on the game’s ships', () => {
       expect([`/models/galaxy/${file}.glb`, `/models/galaxy/hq/${file}.glb`], file).toContain(row.url);
       expect(row.nose, file).toBeCloseTo(nose, 9);
     }
+    // (the Falcon in flight is the drop's landmark Falcon without its legs)
+    expect(FLEET.find((r) => r[0] === 'falcon')[3]).toMatchObject({ cut: 2, drop: /^Legs_Shader/ });
+    expect(FLEET.find((r) => r[0] === 'falcon')[3].drop.test('Legs_Shader')).toBe(true);
     // (the Meshy remakes are gone: the interceptor is lane V's native file, galaxy/models.js)
     expect(FLEET.map((r) => r[0])).not.toContain('interceptor');
     expect(MODELS.interceptor.url).toBe('/models/galaxy/surface/tieinterceptor.glb');

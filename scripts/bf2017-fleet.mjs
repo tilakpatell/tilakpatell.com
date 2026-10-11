@@ -63,6 +63,11 @@ export const FLEET = [
   // (lane S1: the close-up Nebulon-B is the game's own at its first LOD,
   // 16,029 triangles with its engine and its lights, over Daniel Andersson's;
   // `_source`: lab/assets/bf2017/web/models.jsonl)
+  // (lane S1: the Falcon in flight, gear up: the landmark Falcon at the plain
+  // cut lane V took (its LOD2, 48,567 triangles; LOD1 is 101,207), its details' maps bound as
+  // lane V's row binds them, and its landing legs, a material of their own in
+  // the drop (`Legs_Shader`), left out; the surfaces keep lane V's, gear down)
+  ['falcon', 0, 'galaxy-falcon', { name: 'gameplay/vehicles/air/millenniumfalcon/landmark/millenniumfalcon_01_landmark_mesh', as: 'the Millennium Falcon in flight', cut: 2, drop: /^Legs_Shader/, textures: 'Details_Shader1=color:Gameplay/Vehicles/Air/MillenniumFalcon/T_MillenniumFalconDetails_01_CS,normal:Gameplay/Vehicles/Air/MillenniumFalcon/T_MillenniumFalcon_01_N' }],
   ['hq/nebulon', 0, 'galaxy-nebulonhq', { name: 'objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh', as: 'the Nebulon-B frigates, close up', cut: 0, parts: '*_engine_01_mesh,*_emissive_01_mesh' }],
   // (lane Q: a capital the space levels assemble from its kit, at the fleet's
   // cut: scripts/bf2017-space.mjs --fleet; `turn` brings the kit's nose, along
@@ -109,7 +114,7 @@ async function source([file, , , from], { ultra = false } = {}) {
   await writeFile(join(out, 'credits.json'), '{}\n');
   const kind = file.replace(/[^a-z0-9]/g, '');
   execFileSync('node', ['scripts/bf2017-fetch.mjs', from.name, ...(from.parts ? ['--parts', from.parts] : [])], { cwd: ROOT, stdio: 'ignore' });
-  execFileSync('node', ['scripts/bf2017-import.mjs', from.name, '--kind', kind, '--as', from.as, '--asis', '--native', '--cuts', `plain=${from.cut}`, '--tex', String(from.tex ?? 1024), '--maps', String(from.tex ?? 1024), ...(from.parts ? ['--parts', from.parts] : []), '--out', out, '--catalog', join(out, 'cat.js'), '--credits', join(out, 'credits.json')], { cwd: ROOT, stdio: 'inherit' });
+  execFileSync('node', ['scripts/bf2017-import.mjs', from.name, '--kind', kind, '--as', from.as, '--asis', '--native', '--cuts', `plain=${from.cut}`, '--tex', String(from.tex ?? 1024), '--maps', String(from.tex ?? 1024), ...(from.parts ? ['--parts', from.parts] : []), ...(from.textures ? ['--textures', from.textures] : []), '--out', out, '--catalog', join(out, 'cat.js'), '--credits', join(out, 'credits.json')], { cwd: ROOT, stdio: 'inherit' });
   return { path: join(out, 'surface', `${kind}.glb`), title: from.name, as: from.as };
 }
 let SURFACE_FROM = () => null;
@@ -120,8 +125,13 @@ export async function writeFleet(rows) {
   const { MODELS } = await import('../src/components/galaxy/surface/catalog/bf2017-vehicles.js');
   SURFACE_FROM = (kind) => MODELS[kind]?.from ?? null;
   // the file turned so the row's nose brings it to +z (a kit's own nose first, then the row's)
-  const turned = async (src, nose, out) => {
+  const turned = async (src, nose, out, drop = null) => {
     const doc = await reader.read(src.path);
+    // (a row's `drop`: the primitives of the materials it names left out, the Falcon's legs)
+    if (drop) {
+      for (const mesh of doc.getRoot().listMeshes()) for (const prim of mesh.listPrimitives()) if (drop.test(prim.getMaterial()?.getName() ?? '')) prim.dispose();
+      for (const m of doc.getRoot().listMaterials()) if (drop.test(m.getName())) m.dispose();
+    }
     const scene = doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0];
     const turn = doc.createNode('nose').setRotation(writtenTurn(nose + (src.turn ?? 0)));
     for (const child of scene.listChildren()) {
@@ -141,7 +151,7 @@ export async function writeFleet(rows) {
       continue;
     }
     const out = join(ROOT, 'public/models/galaxy', `${file}.glb`);
-    await turned(src, nose, out);
+    await turned(src, nose, out, row[3].drop ?? null);
     // (the ultra cut beside it, the same turn: galaxy/models.js's ULTRA row, loaded at ultra alone)
     if (row[3].ultra) {
       const big = await source(row, { ultra: true });

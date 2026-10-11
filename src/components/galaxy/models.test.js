@@ -92,8 +92,11 @@ describe('the galaxy’s models', () => {
       }
     });
 
-    it('flies the X-wing, the TIE interceptor, the Falcon, Slave I, the Scimitar and the TIE striker as lane V imported them, native', () => {
-      const native = { xwing: 'xwing', interceptor: 'tieinterceptor', falcon: 'falcon', slave1: 'slave1', scimitar: 'scimitar', tiestriker: 'tiestriker' };
+    it('flies the X-wing, the TIE interceptor, Slave I, the Scimitar and the TIE striker as lane V imported them, native, and the Falcon gear up', () => {
+      // (the Falcon: the landmark Falcon with its legs, a material of their own, left out: scripts/bf2017-fleet.mjs)
+      expect(HIGH.falcon).toEqual({ url: '/models/galaxy/falcon.glb', nose: 0 });
+      for (const detail of ['low', 'mid', 'high', 'ultra']) expect(modelsAt(detail).falcon.url, detail).toBe('/models/galaxy/falcon.glb');
+      const native = { xwing: 'xwing', interceptor: 'tieinterceptor', slave1: 'slave1', scimitar: 'scimitar', tiestriker: 'tiestriker' };
       for (const [kind, file] of Object.entries(native)) {
         expect(HIGH[kind], kind).toEqual({ url: `/models/galaxy/surface/${file}.glb`, nose: 0 });
         expect(LIGHT_CUTS[kind], kind).toBe(`/models/galaxy/surface/${file}.lod1.glb`);
