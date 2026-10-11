@@ -10,6 +10,13 @@ describe('the bucket held to its manifest', () => {
     expect(verdict(e, got(200, { 'content-length': '500', 'cache-control': 'max-age=31536000' }))).toBeNull();
   });
 
+  it('passes an empty file, which answers a one-byte range with 416 and its size, 0', () => {
+    const empty = { hash: 'e3b0c44298fc', bytes: 0 };
+    expect(verdict(empty, got(416, { 'content-range': 'bytes */0' }))).toBeNull();
+    expect(verdict(empty, got(416, {}))).toMatch(/416/);
+    expect(verdict(e, got(416, { 'content-range': 'bytes */0' }))).toMatch(/HTTP 416/);
+  });
+
   it('fails a file that is not there, the wrong size, or cached for less than a year', () => {
     expect(verdict(e, { status: 'missing', http: 400 })).toMatch(/not in the bucket/);
     expect(verdict(e, got(206, { 'content-range': 'bytes 0-0/499', 'cache-control': 'max-age=31536000' }))).toMatch(/499 bytes, the manifest says 500/);
