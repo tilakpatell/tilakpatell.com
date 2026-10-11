@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-11",
-  "sha": "1ddd309f",
+  "date": "2026-10-10",
+  "sha": "0fac92b0",
   "metrics": {
     "big-files": {
       "value": 30,
@@ -17,7 +17,7 @@
         },
         {
           "file": "src/components/galaxy/surface/scene.js",
-          "n": 4096
+          "n": 4031
         },
         {
           "file": "src/components/universe/footScene.js",
@@ -65,7 +65,7 @@
         },
         {
           "file": "src/components/galaxy/scene.js",
-          "n": 2889
+          "n": 2878
         },
         {
           "file": "src/components/middleearth/towns/lorien/props.js",
@@ -110,7 +110,7 @@
       ]
     },
     "boundary-breaks": {
-      "value": 475,
+      "value": 470,
       "unit": "imports",
       "label": "imports across a line docs/health/RULES.md draws",
       "detail": [
