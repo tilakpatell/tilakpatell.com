@@ -10,7 +10,7 @@
 //   partOf(world, file, empty) → Promise<the part's JSON, or empty>
 //   levelPlaced(site) → Promise<{ life, rides, things }> (the map's actors and vehicles)
 //   levelBusy(site) → Promise<Set of cell keys the level fills>
-//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics })
+//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics, texTier })
 //     → null | { update(position), ready(), progress(), stats(), physics(), dispose() }
 //     (camera: the placed lights rank by it; light: the world's record, for their scale;
 //     onProbe: the reflection volume you stand in, for gameLit.js)
@@ -205,7 +205,7 @@ async function gameMaterials(world, pack, renderer, tier, scene) {
   return { recipes, variations, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
 }
 
-export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null }) {
+export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null, texTier = null }) {
   if (!site?.level) return null;
   const world = site.level;
   const fetchBytes = bytesOf(world);
@@ -257,7 +257,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       const { recipes, variations = null, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
       sun = shared;
       if (gone) return;
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations, texTier });
       level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when

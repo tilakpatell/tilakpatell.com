@@ -4,8 +4,12 @@
 // whole campaigns. Apart from `npm test` so that one stays fast; `npm run
 // test:ai` runs this.
 import { configDefaults, defineConfig } from 'vitest/config'
+import librarySlice from './scripts/library-slice.mjs'
 
 export default defineConfig({
+  // the object library imports `virtual:bf2017-published`, which only this
+  // plugin serves (lane D3); the galaxy's scenario tests reach the library
+  plugins: [librarySlice()],
   test: {
     include: ['scripts/ai-e2e/**/*.test.mjs', 'src/**/*.fuzz.test.js', 'src/components/universe/npcs/brains/*.scenario.test.js', 'src/components/universe/battle*.scenario.test.js', 'src/components/galaxy/*.scenario.test.js', 'src/components/galaxy/surface/ground/*.scenario.test.js', 'src/lib/battlefront/**/arena.test.js'],
     // tier 3's renders need a browser: `npm run test:ai:render` runs them (vitest.render.config.js)

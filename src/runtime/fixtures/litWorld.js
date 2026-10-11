@@ -438,7 +438,7 @@ export default {
       await row;
       const { applyGameLight } = await import('../../lib/three/light/apply.js');
       // (Hoth's own LUT comes with `picture`: the cool test grade only without it)
-      light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null, cadence: opts.cadence ? true : null });
+      light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, video: rt?.video ?? null, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null, cadence: opts.cadence ? true : null });
       probe.light = { clustered: light.parts.placed?.clustered ?? null };
       probe.grade = light.parts.grade ?? null;
       // (lane S's shadow figures: the contact pass follows them)
