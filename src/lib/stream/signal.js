@@ -11,12 +11,16 @@
 //   role 'receiver' | 'sender'; pc an RTCPeerConnection (or its shape)
 import { isSignal, signal, streamId } from './protocol';
 
+const REOFFER_MS = 5000;
+const now = () => (globalThis.performance ?? Date).now();
+
 export function connect({ role, channel, pc, session = role === 'receiver' ? streamId() : null, helloMs = 1000, onState = () => {} }) {
   let current = session;
   let described = false;
   let held = [];
   let hello = null;
   let closed = false;
+  let offeredAt = -Infinity;
   const send = (kind, body) => channel.send(signal(kind, role, { session: current, ...body }));
 
   const addIce = async (c) => {
@@ -34,14 +38,18 @@ export function connect({ role, channel, pc, session = role === 'receiver' ? str
     if (e.candidate && current) send('ice', { candidate: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate });
   };
 
-  const off = channel.onMessage(async (m) => {
+  const off = channel.onMessage((m) => handle(m).catch((e) => onState(`error: ${e.message}`)));
+  async function handle(m) {
     if (closed || !isSignal(m) || m.from === role) return;
     if (role === 'sender' && m.kind === 'hello') {
       // a new receiver only when there is none, or the last one is gone
       const gone = ['failed', 'closed', 'disconnected'].includes(pc.connectionState);
       if (current && current !== m.session && !gone) return onState('busy');
-      if (current === m.session && described) return;
+      // the same receiver’s hellos keep coming until our offer lands: offer
+      // again only if it has had REOFFER_MS to answer and hasn’t
+      if (current === m.session && (described || now() - offeredAt < REOFFER_MS)) return;
       current = m.session;
+      offeredAt = now();
       onState('offering');
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -70,7 +78,7 @@ export function connect({ role, channel, pc, session = role === 'receiver' ? str
         described = false;
       }
     }
-  });
+  }
 
   if (role === 'receiver') {
     send('hello', {});

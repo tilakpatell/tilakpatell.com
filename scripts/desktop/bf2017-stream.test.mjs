@@ -3,8 +3,11 @@ import { lanAddresses, parseArgs, receiverPath, replayCalls, streamEnv } from '.
 
 describe('the stream sender’s plumbing', () => {
   it('reads its flags, with the desktop’s defaults and the dry run’s', () => {
-    expect(parseArgs([])).toMatchObject({ world: 'hoth', minutes: 30, dry: false, angle: 'd3d11', width: 1920, height: 1080, fps: 60, mbps: 25 });
-    expect(parseArgs(['--dry', '--seconds', '45', '--size', '1280x720', '--world', 'endor'])).toMatchObject({ dry: true, seconds: 45, width: 1280, height: 720, world: 'endor', angle: 'swiftshader' });
+    expect(parseArgs([])).toMatchObject({ world: 'hoth', minutes: 30, dry: false, angle: 'd3d11', width: 1920, height: 1080, fps: 60, mbps: 25, quality: 'ultra' });
+    expect(parseArgs(['--dry', '--seconds', '45', '--size', '1280x720', '--world', 'endor'])).toMatchObject({ dry: true, seconds: 45, width: 1280, height: 720, world: 'endor', angle: 'swiftshader', quality: 'low' });
+    expect(() => parseArgs(['--quality', 'max'])).toThrow();
+    expect(parseArgs(['--path', '/stream-plumbing']).path).toBe('/stream-plumbing');
+    expect(() => parseArgs(['--path', 'javascript:x'])).toThrow();
     expect(() => parseArgs(['--size', 'big'])).toThrow();
     expect(() => parseArgs(['--world', '../etc'])).toThrow();
     expect(() => parseArgs(['--nope'])).toThrow();

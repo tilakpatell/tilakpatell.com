@@ -30,7 +30,7 @@ export async function startSender({ url, key, id, width = THRESHOLDS.width, heig
   const comp = document.createElement('canvas');
   comp.width = width;
   comp.height = height;
-  const g = comp.getContext('2d', { alpha: false, desynchronized: true });
+  const g = comp.getContext('2d', { alpha: false });
   const cell = cellSize(width);
   let last = performance.now();
   let running = true;
@@ -44,8 +44,14 @@ export async function startSender({ url, key, id, width = THRESHOLDS.width, heig
     const src = worldCanvas();
     if (src && src.width) g.drawImage(src, 0, 0, width, height);
     else {
+      // no world on the page (the cloud’s plumbing check): moving bars, so
+      // the encoder has motion to spend its bits on
       g.fillStyle = '#202830';
       g.fillRect(0, 0, width, height);
+      for (let i = 0; i < 12; i++) {
+        g.fillStyle = `hsl(${(i * 30 + now / 20) % 360} 60% 50%)`;
+        g.fillRect(((i * width) / 12 + now / 4) % width, height * 0.3, width / 24, height * 0.4);
+      }
     }
     stampCells(state.stamp).forEach((on, i) => {
       g.fillStyle = on ? '#ffffff' : '#000000';
@@ -63,7 +69,9 @@ export async function startSender({ url, key, id, width = THRESHOLDS.width, heig
   if (caps && tx.setCodecPreferences) tx.setCodecPreferences(preferCodecs(caps.codecs));
   const params = tx.sender.getParameters();
   params.encodings = [{ ...(params.encodings?.[0] ?? {}), maxBitrate: maxMbps * 1e6, maxFramerate: fps }];
-  params.degradationPreference = 'maintain-framerate';
+  // the size held and the rate given up under load: a shrunk frame would
+  // shrink the stamp past reading, and the decision’s line is 1080p
+  params.degradationPreference = 'maintain-resolution';
   await tx.sender.setParameters(params).catch((e) => log(`parameters refused: ${e.message}`));
   pc.onconnectionstatechange = () => {
     state.connection = pc.connectionState;
@@ -91,7 +99,7 @@ export async function startSender({ url, key, id, width = THRESHOLDS.width, heig
       state.stamp = n;
     },
     async stats() {
-      const report = await pc.getStats(tx.sender);
+      const report = await tx.sender.getStats();
       let out = null;
       report.forEach((s) => {
         if (s.type === 'outbound-rtp' && s.kind === 'video') out = s;

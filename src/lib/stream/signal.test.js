@@ -107,6 +107,35 @@ describe('the stream’s handshake', () => {
     expect(tx.sent.filter((m) => m.kind === 'offer').map((m) => m.session)).toEqual(['first', 'second']);
   });
 
+  it('offers once to a receiver’s repeated hellos, and again only if no answer comes', async () => {
+    const make = bus();
+    const [tx, rx] = [make(), make()];
+    const spc = fakePc('s');
+    const states = [];
+    connect({ role: 'sender', channel: tx, pc: spc, onState: (s) => states.push(s) });
+    const hello = signal('hello', 'receiver', { session: 'again' });
+    rx.send(hello);
+    rx.send(hello);
+    await settle();
+    rx.send(hello);
+    await settle();
+    expect(tx.sent.filter((m) => m.kind === 'offer')).toHaveLength(1);
+    const real = performance.now;
+    performance.now = () => real.call(performance) + 6000;
+    rx.send(hello);
+    await settle();
+    performance.now = real;
+    expect(tx.sent.filter((m) => m.kind === 'offer')).toHaveLength(2);
+    // a description the peer refuses is a state, not an unhandled rejection
+    spc.setRemoteDescription = async () => {
+      throw new Error('wrong state');
+    };
+    rx.send(signal('answer', 'receiver', { session: 'again', sdp: 'a' }));
+    await settle();
+    await settle();
+    expect(states).toContain('error: wrong state');
+  });
+
   it('says bye on close and stops listening', async () => {
     const make = bus();
     const [rx, tx] = [make(), make()];

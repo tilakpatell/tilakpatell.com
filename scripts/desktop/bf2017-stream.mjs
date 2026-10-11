@@ -1,3 +1,4 @@
+/* global window */
 // Lane R2’s sender: a world’s ultra picture drawn by Chromium on this
 // machine’s GPU and streamed over WebRTC to a browser at #/stream, the
 // input coming back and replayed as real keys and pointer moves. A spike:
@@ -21,7 +22,9 @@
 // Flags: --world <id> (hoth) · --id <stream id> (drawn) · --minutes <n> (30) ·
 // --dry · --seconds <n> (dry: 60) · --size 1920x1080 · --fps 60 · --mbps 25 ·
 // --angle d3d11|vulkan|metal|swiftshader (d3d11; dry: swiftshader) ·
-// --port 5188 · --base <url> (a server already up) · --headed · --name <file stem>
+// --quality low|mid|high|ultra (ultra; dry: low) · --path <route> (no world:
+// the sender’s test pattern, for the plumbing alone) · --port 5188 · --base <url>
+// (a server already up) · --headed · --name <file stem>
 
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -33,7 +36,7 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const OUT = join(REPO, 'docs/superpowers/evidence/bf2017-picture/r2');
 
 export function parseArgs(argv) {
-  const o = { world: 'hoth', id: null, minutes: 30, dry: false, seconds: 60, width: 1920, height: 1080, fps: 60, mbps: 25, angle: null, port: 5188, base: null, headed: false, name: null };
+  const o = { world: 'hoth', id: null, minutes: 30, dry: false, seconds: 60, width: 1920, height: 1080, fps: 60, mbps: 25, angle: null, port: 5188, base: null, headed: false, name: null, quality: null, path: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -49,6 +52,8 @@ export function parseArgs(argv) {
     else if (a === '--port') o.port = Number(next());
     else if (a === '--base') o.base = next();
     else if (a === '--name') o.name = next();
+    else if (a === '--quality') o.quality = next();
+    else if (a === '--path') o.path = next();
     else if (a === '--size') {
       const m = /^(\d+)x(\d+)$/.exec(next() ?? '');
       if (!m) throw new Error('--size is WIDTHxHEIGHT');
@@ -57,6 +62,11 @@ export function parseArgs(argv) {
   }
   if (!/^[a-z0-9-]+$/.test(o.world)) throw new Error('--world is a galaxy world id');
   o.angle ??= o.dry ? 'swiftshader' : 'd3d11';
+  // the dry run’s picture is not the point: software GL at ultra draws a
+  // frame in seconds, too few to time anything by, so it runs at low
+  o.quality ??= o.dry ? 'low' : 'ultra';
+  if (o.path != null && !/^\/[a-z0-9/-]*$/.test(o.path)) throw new Error('--path is a route, like /stream-plumbing');
+  if (!['low', 'mid', 'high', 'ultra'].includes(o.quality)) throw new Error('--quality is low, mid, high or ultra');
   return o;
 }
 
@@ -92,6 +102,7 @@ export function replayCalls(e, { width, height }) {
   return [];
 }
 
+const pct = (xs, p) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.max(0, Math.ceil(p * xs.length) - 1))];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitFor(url, ms = 90000) {
@@ -136,13 +147,14 @@ async function main() {
   try {
     await waitFor(base);
     const chrome = process.env.CHROME ?? (o.dry ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined);
-    const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY, bypass: '127.0.0.1,localhost' } : undefined;
+    // a proxy (the cloud’s) for the signalling only: given as Chromium’s own
+    // flags, since Playwright’s proxy option sends loopback through it too
+    const proxy = process.env.HTTPS_PROXY ? [`--proxy-server=${process.env.HTTPS_PROXY}`, '--proxy-bypass-list=127.0.0.1;localhost'] : null;
     const launch = (args = []) =>
       chromium.launch({
         ...(chrome ? { executablePath: chrome } : { channel: 'chrome' }),
         headless: !o.headed,
-        proxy,
-        args: ['--use-gl=angle', `--use-angle=${o.angle}`, '--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', ...(o.angle === 'swiftshader' ? ['--enable-unsafe-swiftshader'] : []), ...args],
+        args: [...(proxy ?? []), '--use-gl=angle', `--use-angle=${o.angle}`, '--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', ...(o.angle === 'swiftshader' ? ['--enable-unsafe-swiftshader'] : []), ...args],
       });
     // the LAN’s own addresses as candidates: a phone can’t resolve the .local names Chromium hides them behind
     const browser = await launch(['--disable-features=WebRtcHideLocalIpsWithMdns']);
@@ -156,23 +168,33 @@ async function main() {
     const reports = [];
     const replayed = { key: 0, pointer: 0, ping: 0 };
     let chain = Promise.resolve();
+    const hops = [];
     await page.exposeFunction('__streamInput', (e) => {
       if (e.t === 'report') return void reports.push({ at: new Date().toISOString(), ...e });
       replayed[e.t] = (replayed[e.t] ?? 0) + 1;
-      chain = chain.then(async () => {
-        if (e.t === 'ping') return page.evaluate((n) => window.__stream?.stamp(n), e.n);
-        for (const [call, ...args] of replayCalls(e, o)) {
-          const [obj, fn] = call.split('.');
-          await page[obj][fn](...args);
-        }
-      }).catch(() => {});
+      const at = performance.now();
+      chain = chain
+        .then(async () => {
+          if (e.t === 'ping') await page.evaluate((n) => window.__stream?.stamp(n), e.n);
+          for (const [call, ...args] of replayCalls(e, o)) {
+            const [obj, fn] = call.split('.');
+            await page[obj][fn](...args);
+          }
+          // the replay’s own hop, from the binding to the page having it
+          hops.push(performance.now() - at);
+          if (hops.length > 2000) hops.shift();
+        })
+        .catch(() => {});
     });
 
     const t0 = Date.now();
-    await page.goto(`${base}/?quality=ultra&calibrate=off#/galaxy/${o.world}/surface`, { waitUntil: 'domcontentloaded' });
-    const ready = await page.waitForFunction(() => Boolean(window.__surfaceScene?.renderer), null, { timeout: o.dry ? 240000 : 120000 }).then(() => true, () => false);
+    await page.goto(`${base}/?quality=${o.quality}&calibrate=off#${o.path ?? `/galaxy/${o.world}/surface`}`, { waitUntil: 'domcontentloaded' });
+    const ready = !o.path && (await page.waitForFunction(() => Boolean(window.__surfaceScene?.renderer), null, { timeout: o.dry ? 240000 : 120000 }).then(() => true, () => false));
+    // and shown: a world is prepared out of sight, its canvas made only when
+    // the runtime says 'on' (galaxy-check.mjs waits the same)
+    const shown = ready && (await page.waitForFunction(() => !window.__RUNTIME__ || window.__RUNTIME__.status === 'on', null, { timeout: o.dry ? 600000 : 180000, polling: 1000 }).then(() => true, () => false));
     const loadS = Math.round((Date.now() - t0) / 100) / 10;
-    console.log(ready ? `${o.world} up in ${loadS} s` : `${o.world} not up after ${loadS} s; streaming what the page draws`);
+    console.log(o.path ? `${o.path} open: no world, the test pattern` : shown ? `${o.world} up in ${loadS} s` : `${o.world} not up after ${loadS} s; streaming what the page draws`);
     const backend = await page.evaluate(() => window.__RUNTIME__?.backend ?? window.__surfaceScene?.renderer?.backend?.constructor?.name ?? null).catch(() => null);
     await page.evaluate(async (opts) => {
       const m = await import('/src/components/stream/send.js');
@@ -222,14 +244,17 @@ async function main() {
     const result = {
       when: new Date().toISOString(),
       kind: o.dry ? 'cloud dry run: plumbing only' : 'desktop run',
-      world: o.world,
-      ready,
+      world: o.path ? null : o.world,
+      path: o.path,
+      ready: shown,
       loadS,
       backend,
       angle: o.angle,
+      quality: o.quality,
       asked: { width: o.width, height: o.height, fps: o.fps, maxMbps: o.mbps },
       sender,
       replayed,
+      replayHopMs: hops.length ? { n: hops.length, p50: Math.round(pct(hops, 0.5) * 10) / 10, p95: Math.round(pct(hops, 0.95) * 10) / 10 } : null,
       receiver: rx?.numbers ?? reports.at(-1) ?? null,
       reports: reports.slice(-24),
       latencies: rx?.raw.latencies ?? null,
@@ -239,6 +264,7 @@ async function main() {
       _source: {
         sender: 'send.js stats(): the outbound video’s RTCStats (encoderImplementation, totalEncodeTime ÷ framesEncoded) and requestAnimationFrame intervals on the sending page',
         receiver: 'receive.js numbers(): inbound video RTCStats deltas each second (stats.js rates) and the frame stamp’s input-to-picture times (stamp.js), p50 and p95 by nearest rank',
+        replayHopMs: 'performance.now() from the binding call to the replayed call resolving, in this script',
         replayed: 'the inputs that reached this script over the data channel and were replayed with Playwright (keys, pointer moves, pings)',
         loadS: 'from page.goto to window.__surfaceScene.renderer',
       },

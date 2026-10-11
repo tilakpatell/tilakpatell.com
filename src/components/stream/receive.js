@@ -43,8 +43,8 @@ export async function startReceiver({ client, id, video, where = 'lan', onState 
   const ping = setInterval(() => {
     if (dc?.readyState !== 'open') return;
     const now = performance.now();
-    // a ping not seen in two seconds counts as lost
-    for (const [k, at] of sent) if (now - at > 2000) sent.delete(k) && lost++;
+    // a ping not seen in five seconds counts as lost
+    for (const [k, at] of sent) if (now - at > 5000) sent.delete(k) && lost++;
     n = (n + 1) % 65536;
     sent.set(n, now);
     sendInput({ t: 'ping', n, at: now });

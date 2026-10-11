@@ -6,6 +6,7 @@
 // durable world’s (src/lib/durable/supabase.js): the stream signals and
 // stores nothing. Decision: docs/decisions/2026-10-11-the-stream-from-the-desktop.md.
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useDocumentTitle } from '../../lib/hooks';
 import { verdict } from '../../lib/stream/stats';
@@ -88,13 +89,15 @@ export default function StreamView() {
     };
   }, [id, where]);
 
-  return (
+  // on the body, over the shell (the route's own layer sits under the footer)
+  return createPortal(
     <div className="stream-view">
       <video ref={video} muted playsInline autoPlay tabIndex={0} aria-label="The world streamed from the desktop" />
       <div className="stream-glass" role="status">
         <div>{status}</div>
         <div ref={glass} style={{ whiteSpace: 'pre-line' }} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
