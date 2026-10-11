@@ -166,6 +166,29 @@ export const SITES = {
         ],
       },
       {
+        id: 'falls',
+        name: 'The falls of Theed',
+        // (on the gorge's edge south-west of the palace, over the lake: the
+        // game's falls are under it, so the site's built ones are the flight's)
+        at: [-300, -250],
+        r: 44,
+        flat: { r: 28, edge: 5, game: true },
+        about: 'Theed is built on the edge of a cliff, and the river falls out from under the city in sheets of white, a hundred metres down into the gorge.',
+        lines: {
+          xwing: [['luke', 'Look at that, Artoo. Water, just… falling off the edge. On Tatooine they’d have a war over this.'], ['r2', '(An awed whistle.)']],
+          falcon: [['chewie', '(A long, happy howl at the falls.)'], ['han', 'Yeah, yeah. It’s not Kashyyyk, pal.']],
+          cruiser: [['morty', 'It’s beautiful, Rick.'], ['rick', 'It’s erosion, Morty. With a tourism board.']],
+        },
+        things: [
+          { kind: 'waterfall', at: [23.4, -12.4], yaw: 2.06, opts: { h: 46, w: 10, out: 13 }, game: true },
+          { kind: 'waterfall', at: [26.5, 0], yaw: Math.PI / 2, opts: { h: 46, w: 14, out: 13 }, game: true },
+          { kind: 'waterfall', at: [23.4, 12.4], yaw: 1.08, opts: { h: 46, w: 10, out: 13 }, game: true },
+          { kind: 'theed', at: [-44, 2], yaw: Math.PI / 2, opts: { style: 'rotunda' }, game: true },
+          { kind: 'lamp', at: [4, -18], opts: { h: 4.5, light: '#ffe2a8' }, game: true },
+          { kind: 'lamp', at: [4, 20], opts: { h: 4.5, light: '#ffe2a8' }, game: true },
+        ],
+      },
+      {
         id: 'hangar',
         name: 'The Theed Royal Hangar',
         // (on the plateau west of the palace; the game's own hangar is the
