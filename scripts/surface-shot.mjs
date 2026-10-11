@@ -40,6 +40,7 @@ await ctx.addInitScript(() => {
   localStorage.setItem('tp-galaxy-panel', '"tucked"');
   sessionStorage.setItem('tp-galaxy-intro', '1');
   localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking)
+  localStorage.setItem('tp-galaxy-mode-ask', JSON.stringify('never')); // (free roam, without the battle menu over the view)
   const held = Date.UTC(2026, 9, 5, 12);
   Date.now = () => held;
   let seed = 7;
@@ -60,6 +61,10 @@ for (let i = 0; i < 4 && (await page.evaluate(() => window.__surface?.()?.phase)
   await page.waitForTimeout(2000);
 }
 console.log('phase', await page.evaluate(() => window.__surface?.()?.phase));
+// (nothing held back by the frame guard: in software GL it readies about a
+// shader a frame, and a level pack's materials would still be waiting when
+// the shot is taken; lib/three/frameGuard's holdNone)
+await page.evaluate(() => window.__tpGuardOff?.());
 // (the floor's light baked, if the world has one: a shot before it lands is
 // the world without its shadows; one with no ground runs out the clock)
 await page.waitForFunction(() => Boolean(window.__surfaceScene?.api?.ground?.stats?.baked), null, { timeout: Number(process.env.BAKE_WAIT ?? 150000), polling: 1000 }).catch(() => {});
