@@ -65,8 +65,8 @@ export default function SurfaceView({ system = null, site = null, mission = null
   // (for the page's own tests, in development)
   useEffect(() => {
     if (!import.meta.env.DEV) return undefined;
-    // (keeping a hook the scene put on it before: its `fx`)
-    window.__surface = Object.assign(() => view.current?.debug?.(), window.__surface ?? {});
+    // (the scene's effects hooks, fx and gameFx, kept on it if the scene came first)
+    window.__surface = Object.assign(() => view.current?.debug?.(), { fx: window.__surface?.fx, gameFx: window.__surface?.gameFx });
     window.__surfaceDo = (name, ...a) => view.current?.[name]?.(...a);
     return () => {
       delete window.__surface;

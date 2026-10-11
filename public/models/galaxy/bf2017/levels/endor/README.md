@@ -29,14 +29,14 @@ Written beside level.json by `scripts/bf2017-level-parts.mjs` (lane E0); a part 
 | lights.json | 1319 | 188.3 KB | lane R's placed.js |
 | actors.json | 34 | 3.4 KB | the scene's life rows |
 | vehicles.json | 11 | 0.7 KB | the scene's rides and things |
-| decals.json | 0 (lane Q4 fills it) | 0.1 KB | lane Q4's src/lib/three/decals/ |
-| effects.json | 1019 | 157.6 KB | fidelity X (nothing until it merges) |
+| decals.json | 0 | 0.1 KB | lane Q4's src/lib/three/decals/ |
+| effects.json | 1130 | 134.9 KB | fidelity X's effects |
 | tracks.json | 8 | 7.6 KB | src/lib/three/animTracks.js |
 | probes.json and probes/ | 0 | 0.0 KB | levelProbes.js, lane R's grid |
 | shadow/far.png | 1 | 832.5 KB | fidelity S (level.json's shadowCache) |
 | scatter.json | 1 | 249.8 KB | fidelity N |
 
-Not placed (no kind on the site yet, or scenery): forestbase_shrublarge_01_skinned ×222, forestbase_shrubmedium_01_skinned ×168, forestbase_shrubsmall_01_skinned ×35. Decals skipped: none. Tracks of owners the pack lacks: 22.
+Not placed (no kind on the site yet, or scenery): forestbase_shrublarge_01_skinned ×222, forestbase_shrubmedium_01_skinned ×168, forestbase_shrubsmall_01_skinned ×35. Decals skipped: texture 11, sub 12. Tracks of owners the pack lacks: 22.
 
 <!-- physics -->
 ## Physics

@@ -247,6 +247,8 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
             <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Land on {system.id === 'bespin' ? 'Cloud City' : system.name}
           </button>
         )}
+        {/* (what's played down there: the landing's menu, surface/modes.js) */}
+        {crew && onLand && landLine(system) && <p className="w-full text-xs text-muted">Down there: {landLine(system)} · Free roam</p>}
         {crew &&
           onLand &&
           districts.map((d) => (
@@ -254,8 +256,6 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
               <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Land at {d.name}
             </button>
           ))}
-        {/* (what's played down there: the landing's menu, surface/modes.js) */}
-        {crew && onLand && landLine(system) && <p className="w-full text-xs text-muted">Down there: {landLine(system)} · Free roam</p>}
         <button type="button" className={crew && onLand ? 'btn btn-ghost' : 'btn btn-primary'} onClick={onMap}>
           <RiCompass3Line className="h-4 w-4" aria-hidden="true" /> Plot a course
         </button>

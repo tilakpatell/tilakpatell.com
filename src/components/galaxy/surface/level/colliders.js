@@ -8,7 +8,8 @@
 // with none, its web/collision/ mesh's hull, lane E0) and a loadBin: the
 // pieces that have shapes stop you at their hulls (lib/level/shapeSolids.js:
 // each hull's footprint a box, a thin wide one a floor, a capsule a circle),
-// read once a mesh; the rest by their bounds as before. That cell's add is then a promise; a cell dropped while its
+// read once a mesh; the rest by their bounds as before. That cell's add is
+// then a promise; a cell dropped while its
 // shapes are read comes in switched off.
 //
 //   createColliders({ solids, floors }, tier, { loadBin }) → { add(key, pack, bin) → undefined | Promise, drop(key), dispose() }
