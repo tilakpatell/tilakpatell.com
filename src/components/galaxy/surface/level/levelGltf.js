@@ -89,6 +89,8 @@ const MAP_KEYS = [
   ['hairStrand', (m) => m.hairStrand],
   ['sss', (m) => m.sss],
   ['aoSlice', (m) => m.aoSlice],
+  ['nea', (m) => m.nea],
+  ['idMap', (m) => m.idMap],
 ];
 
 // the slots whose texture is a colour, in sRGB (the rest are data: normals, roughness and metal)

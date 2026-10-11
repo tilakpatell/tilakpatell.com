@@ -98,6 +98,62 @@ describe('recipeOf', () => {
   });
 });
 
+describe('recipeOf: the Death Star interior’s master', () => {
+  // two rows of web/materials.jsonl, as dumped
+  const wall = {
+    mesh: 'objects/architecture/_galacticempire/deathstar_interior/_stackable/dsi_wall_02_384_a_mesh',
+    materials: [
+      {
+        shader: 'Objects/Architecture/_GalacticEmpire/_Shaders/SS_DSI_Master_1UV',
+        textures: { __NormalEmissiveAO: 'Objects/Architecture/_GalacticEmpire/_Textures/T_DSI_01_RGBA', __WearMap: 'Objects/Architecture/_GalacticEmpire/_Textures/T_DSI_01_M' },
+        vectors: { ___DetailTile: [4, 4, 0, 0] },
+      },
+    ],
+  };
+  const lit = {
+    mesh: 'levels/mp/endor_01/objects/endorbase/dsi_wall_02_384_endor_01_mesh',
+    materials: [
+      {
+        shader: 'Objects/Architecture/_GalacticEmpire/_Shaders/SS_DSI_Master_1UV_Emissive',
+        textures: { __NormalEmissiveAO: 'Objects/Architecture/_GalacticEmpire/_Textures/T_DSI_01_RGBA', __WearMap: 'Objects/Architecture/_GalacticEmpire/_Textures/T_DSI_01_M' },
+        vectors: { Color: [0.117, 0.117, 0.117, 1], EmissiveIntensity: [3000, 0, 0, 0], EmissiveColor: [1, 1, 1, 1] },
+      },
+    ],
+  };
+
+  it('is the dsi family, its packed map kept (not dropped as an emissive) and its wear map', () => {
+    const x = recipeOf(wall, 0);
+    expect(x.family).toBe('dsi');
+    expect(x.maps.nea).toBe('Objects/Architecture/_GalacticEmpire/_Textures/T_DSI_01_RGBA');
+    expect(x.maps.wear).toBe('Objects/Architecture/_GalacticEmpire/_Textures/T_DSI_01_M');
+    expect(x.maps.emissive).toBeUndefined();
+  });
+
+  it('takes its colours from the row, else the named defaults', () => {
+    const x = recipeOf(wall, 0);
+    expect(x.params.dsi.color).toEqual([0.509, 0.509, 0.509]);
+    expect(x._source['params.dsi.color']).toBe('families.js:DSI_COLOR');
+    expect(x.params.dsi.metal).toBe('layers');
+    expect(x.params.emissive).toBeUndefined();
+    const y = recipeOf(lit, 0);
+    expect(y.params.dsi.color).toEqual([0.117, 0.117, 0.117]);
+    expect(y._source['params.dsi.color']).toBe(src(lit, 0, 'Color'));
+  });
+
+  it('lights the strips from the packed map’s blue only on an emissive master', () => {
+    const y = recipeOf(lit, 0);
+    expect(y.params.emissive.mode).toBe('nea');
+    expect(y.params.emissive.intensity).toBe(3000);
+  });
+
+  it('wants the packed map as a mask', () => {
+    expect(mapsWanted(recipesOf(wall)).map((m) => [m.name.split('/').pop(), m.kind])).toEqual([
+      ['T_DSI_01_M', 'overlay'],
+      ['T_DSI_01_RGBA', 'mask'],
+    ]);
+  });
+});
+
 describe('mapsWanted', () => {
   it('names each wanted map once with its kind', () => {
     const all = ['props', 'vehicle', 'character', 'vegetation', 'emissive', 'glb'].flatMap((n) => recipesOf(row(n)));

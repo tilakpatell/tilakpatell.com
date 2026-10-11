@@ -31,6 +31,15 @@ import {
   DETAIL_SMOOTHNESS,
   DETAIL_STRENGTH,
   DETAIL_TILING,
+  DSI_ALUMINIUM,
+  DSI_ALUMINIUM_SMOOTHNESS,
+  DSI_COLOR,
+  DSI_DIRT,
+  DSI_PLASTIC,
+  DSI_PLASTIC_SMOOTHNESS,
+  DSI_SCRATCH_TIGHTNESS,
+  DSI_SMOOTHNESS,
+  DSI_SOOT,
   FLAGS,
   GRUNGE_INTENSITY,
   MAP_KINDS,
@@ -184,6 +193,41 @@ export function recipeOf(row, i) {
     else set('params.emissive.mode', 'baseColor', 'families.js:MAPS');
     orDefault('params.emissive.color', [1, 1, 1], 'EMISSIVE_WHITE');
     orDefault('params.emissive.intensity', 1, 'EMISSIVE_ONE');
+  }
+
+  // the Death Star interior's master: its colours are numbers, its one
+  // packed map the normal, the light strips and the AO (families.js's DSI_*)
+  if (family === 'dsi') {
+    const short = (m.shader ?? '').split('/').pop();
+    set('params.dsi.metal', /MetalOnly/i.test(short) ? 'only' : /NonMetal/i.test(short) ? 'none' : 'layers', at('shader'));
+    const dsi = [
+      ['color', DSI_COLOR, 'DSI_COLOR'],
+      ['aluminium', DSI_ALUMINIUM, 'DSI_ALUMINIUM'],
+      ['plastic', DSI_PLASTIC, 'DSI_PLASTIC'],
+      ['dirt', DSI_DIRT, 'DSI_DIRT'],
+      ['soot', DSI_SOOT, 'DSI_SOOT'],
+    ];
+    for (const [k, value, name] of dsi) {
+      rgb(`dsi.${k}`);
+      orDefault(`params.dsi.${k}`, value, name);
+    }
+    const one = [
+      ['smoothness', DSI_SMOOTHNESS, 'DSI_SMOOTHNESS'],
+      ['aluminiumSmoothness', DSI_ALUMINIUM_SMOOTHNESS, 'DSI_ALUMINIUM_SMOOTHNESS'],
+      ['plasticSmoothness', DSI_PLASTIC_SMOOTHNESS, 'DSI_PLASTIC_SMOOTHNESS'],
+      ['scratch', DSI_SCRATCH_TIGHTNESS, 'DSI_SCRATCH_TIGHTNESS'],
+    ];
+    for (const [k, value, name] of one) {
+      scalar(`dsi.${k}`);
+      orDefault(`params.dsi.${k}`, value, name);
+    }
+    // (the light strips glow only where the shader is an emissive one: the
+    // plain master's blue is the strips' place, dark)
+    if (recipe.maps.nea && (ei || /Emissive/i.test(short)) && !/NonMetal_01_MetalMaterialOnly/i.test(short)) {
+      set('params.emissive.mode', 'nea', recipe._source['maps.nea']);
+      orDefault('params.emissive.color', [1, 1, 1], 'EMISSIVE_WHITE');
+      orDefault('params.emissive.intensity', 1, 'EMISSIVE_ONE');
+    }
   }
 
   // colours

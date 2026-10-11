@@ -50,12 +50,47 @@ export const AOSLICE_LEVELS = [0, 105 / 255, 170 / 255, 1];
 // the tiers and what each draws (the spec's "Tiers")
 export const PARALLAX_STEPS = { ultra: 16, high: 8, mid: 0, low: 0 };
 
+// ---- the Death Star interior's master shader (SS_DSI_Master_*): no colour
+// map at all. Its colour is numbers (Color, AluminiumAnodizedAlbedo,
+// PlasticRubberizedAlbedo, Dirt, Soot); one packed map carries the normal
+// (red and green), the light strips (blue) and the AO (alpha)
+// (__NormalEmissiveAO, T_DSI_01_RGBA); a wear map carries four masks
+// (__WearMap, T_DSI_01_M); the two-UV kind picks its layer from a 32 × 32
+// id map of four stripes (__IdMap, T_DSI_RGBA_ID: red, green, blue, black).
+// The defaults are the dump's most common values on SS_DSI_Master_1UV.
+export const DSI_COLOR = [0.509, 0.509, 0.509];
+export const DSI_ALUMINIUM = [0.147, 0.147, 0.147];
+export const DSI_PLASTIC = [0.178, 0.178, 0.178];
+export const DSI_DIRT = [0.184, 0.165, 0.144];
+export const DSI_SOOT = [0.058, 0.058, 0.058];
+export const DSI_SMOOTHNESS = 1;
+export const DSI_ALUMINIUM_SMOOTHNESS = 1;
+export const DSI_PLASTIC_SMOOTHNESS = 2.5;
+export const DSI_SCRATCH_TIGHTNESS = 2;
+// The wear map's channels, read off T_DSI_01_M (the graph is opaque): red
+// the inset plates (flat 0.5 where a plate is: the anodised layer), green the
+// dirt in the recesses (soft, round the panels' edges), blue the soot
+// (blotches), alpha the scratched edges (thin lines on every raised edge)
+export const DSI_WEAR = { layer: 'r', dirt: 'g', soot: 'b', scratch: 'a' };
+// red's value where a plate is wholly the anodised layer
+export const DSI_LAYER_FULL = 0.5;
+// The game's smoothness numbers are the graph's own weights (0.7 to 3); the
+// site's roughness is 1 − DSI_SMOOTH_WEIGHT × smoothness, no glossier than
+// DSI_ROUGHNESS_MIN (the decks' mirror shine at 2.5 to 3)
+export const DSI_SMOOTH_WEIGHT = 0.3;
+export const DSI_ROUGHNESS_MIN = 0.12;
+// a scratched edge: bare steel
+export const DSI_SCRATCH_COLOR = [0.62, 0.62, 0.64];
+export const DSI_SCRATCH_ROUGHNESS = 0.35;
+
 // ---- families
 
 // By shader name, first match wins (the order settles overlaps: an emissive
 // alpha-tested prop is `emissive`, not `propsNonMetallic`).
 export const FAMILIES = [
   { name: 'hair', shaderRe: /Hair/i },
+  // (the Death Star interior's master and its kin: SS_DSI_Master_*, the Venator's and the Star Destroyer's copies)
+  { name: 'dsi', shaderRe: /DSI_Master|_Int_DSI_/i },
   { name: 'head', shaderRe: /Characters?Head|HeadPreset/i },
   { name: 'character', shaderRe: /SS_Characters?Preset/i },
   { name: 'creature', shaderRe: /Creature/i },
@@ -121,6 +156,8 @@ export const MAPS = {
   weathering: ['WeatheringMask', '_WeatheringMask'],
   emissive: ['_E', '_Emissive', 'NormalEmissive', '__NormalEmissiveAO'],
   idMap: ['__IdMap'],
+  // the DSI master's packed normal (rg), light strips (b) and AO (a)
+  nea: ['__NormalEmissiveAO'],
   tintSwatch: ['TintSwatchTexture'],
   mask: ['UniqueMask_01', 'RGBAUnique', 'UniqueMap', 'RGBA_Mask', '_Mask'],
   // hair's strand flow (rg) and a head's reflectance, scattering and AO
@@ -151,6 +188,7 @@ export const MAP_KINDS = {
   weathering: 'mask',
   emissive: 'emissive',
   idMap: 'mask',
+  nea: 'mask',
   tintSwatch: 'mask',
   mask: 'mask',
   hairStrand: 'mask',
@@ -191,6 +229,15 @@ export const PARAMS = {
   'hair.tipMax': ['TintTipColorMax'],
   'hair.smoothness': ['Smoothness'],
   'hair.normalScale': ['HairNormalScale'],
+  'dsi.color': ['Color'],
+  'dsi.aluminium': ['AluminiumAnodizedAlbedo'],
+  'dsi.aluminiumSmoothness': ['AluminiumAnodizedSmoothness'],
+  'dsi.plastic': ['PlasticRubberizedAlbedo'],
+  'dsi.plasticSmoothness': ['PlasticRubberizedSmoothness'],
+  'dsi.dirt': ['Dirt'],
+  'dsi.soot': ['Soot'],
+  'dsi.smoothness': ['Smoothness'],
+  'dsi.scratch': ['EdgeScratchTightness'],
 };
 
 // the conditionals and bools the recipe reads (Shaders/ExternalConditionals/<name>)
