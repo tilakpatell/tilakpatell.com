@@ -90,7 +90,7 @@ describe('the other modes on the menus (lane 6)', () => {
 
 describe('the Land button’s line (lane 6)', () => {
   it('names a briefing’s Strike, Extraction, Ewok Hunt or Supremacy in the menu’s order', () => {
-    const sys = { id: 'naboo', game: { status: 'soon', also: [{ to: '/galaxy/naboo/surface?mission=supremacy' }, { to: '/galaxy/naboo/surface?mission=strike' }] } };
+    const sys = { id: 'fixture', game: { status: 'soon', also: [{ to: '/galaxy/fixture/surface?mission=supremacy' }, { to: '/galaxy/fixture/surface?mission=strike' }] } };
     expect(landLine(sys)).toBe('Strike · Supremacy');
   });
 });
