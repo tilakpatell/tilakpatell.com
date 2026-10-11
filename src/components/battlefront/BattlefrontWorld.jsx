@@ -7,6 +7,7 @@ import { wayOut } from '../worlds/worlds';
 import BattlefrontHud from './hud/BattlefrontHud.jsx';
 import battlefrontModule from './module.js';
 import { useGameScreens, wantsMenu } from './useGameScreens.js';
+import { offerNameOf } from './hud/widgets.js';
 import './hud/battlefront.css';
 
 // The Battlefront world's page body: the module on the runtime, the game's
@@ -17,13 +18,8 @@ import './hud/battlefront.css';
 // player is down, the end of round) stand over it; if they fail to load,
 // lane 5's deploy screen, loading line and end of round stand as before.
 const rb = loadRulebook();
-const NAMES = { 'd-orig-assault': 'ID_C_ASSAULT_TROOPER', 'l-orig-assault': 'ID_C_ASSAULT_TROOPER', 'd-orig-heavy': 'ID_C_HEAVY_TROOPER', 'l-orig-heavy': 'ID_C_HEAVY_TROOPER', 'd-orig-officer': 'ID_C_OFFICER', 'l-orig-officer': 'ID_C_OFFICER' };
-// the game's word for an offer where its strings have one, else its own name
-const offerName = (o) => {
-  if (o.kind === 'class') return NAMES[o.id] ? stringOf(rb, NAMES[o.id]) : String(o.cls ?? o.id).toUpperCase();
-  if (o.kind === 'hero') return rb.heroes[o.id]?.name ? stringOf(rb, rb.heroes[o.id].name) : o.id.toUpperCase();
-  return o.id.replace(/([a-z])([A-Z])/g, '$1 $2').toUpperCase();
-};
+// the game's word for an offer (hud/widgets.js's offerNameOf: its strings, in its capitals)
+const offerName = (o) => offerNameOf(rb, o);
 const WORDS = {
   title: 'Hoth · Galactic Assault',
   deploy: 'Deploy',
