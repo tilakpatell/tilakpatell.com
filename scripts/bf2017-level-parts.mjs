@@ -10,7 +10,8 @@
 // scripts/lib/bf2017-level-*.mjs; this fetches, cuts and writes. Called by
 // scripts/bf2017-level.mjs after the meshes, or alone with --parts.
 //
-//   writeParts({ env, cache, mapName, base (the map's files' stem under web/), map, json, out, subs, mode, weather, dry, log })
+//   writeParts({ env, cache, mapName, base (the map's files' stem under web/), map, json, out, subs, mode, weather, dry, layers, log })
+//     (layers: each actor and vehicle row names its sub-level, `layer`: a whole level's modes stand their own)
 //     → { counts, lines (the README's section) }
 
 import { existsSync } from 'node:fs';
@@ -41,7 +42,7 @@ async function bytes(env, cache, path) {
   return HAVE.has(r.state) ? readFile(r.file) : null;
 }
 
-export async function writeParts({ env, cache, mapName, base = `web/maps/${mapName}/${lastOf(mapName)}`, map, json, out, subs = null, mode = 'FantasyBattle', weather = 'sunny', dry = false, log = console.log }) {
+export async function writeParts({ env, cache, mapName, base = `web/maps/${mapName}/${lastOf(mapName)}`, map, json, out, subs = null, mode = 'FantasyBattle', weather = 'sunny', dry = false, layers: byLayer = false, log = console.log }) {
   const extrasBuf = await bytes(env, cache, `${base}.extras.json`);
   const extras = extrasBuf ? JSON.parse(extrasBuf.toString('utf8')) : {};
   if (!extrasBuf) log(`${mapName}: no extras in the bucket; the parts are empty`);
@@ -58,10 +59,10 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
   counts.lights = lights.count;
 
   // the creatures, droids and civilians; the vehicles
-  const actors = actorsJson(map, json, { kinds: new Set(Object.keys(CREW)), subs: placedSubs });
+  const actors = actorsJson(map, json, { kinds: new Set(Object.keys(CREW)), subs: placedSubs, layers: byLayer });
   actors.unresolved = extras.unresolvedObjects ?? {};
   put('actors.json', actors);
-  const vehicles = vehiclesJson(map, json, { rides: new Set(Object.keys(RIDES)), things: new Set(Object.keys(VEHICLES)), subs: placedSubs });
+  const vehicles = vehiclesJson(map, json, { rides: new Set(Object.keys(RIDES)), things: new Set(Object.keys(VEHICLES)), subs: placedSubs, layers: byLayer });
   put('vehicles.json', vehicles);
   counts.actors = actors.life.length;
   counts.vehicles = vehicles.rides.length + vehicles.things.length;

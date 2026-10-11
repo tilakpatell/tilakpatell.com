@@ -40,7 +40,8 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
     <WorldHost world={world} className="bf-stage">
       {loading && (
         <p className="bf-loading bf-glass" role="status">
-          Bringing Hoth in{snap?.level ? ` · ${Math.round((snap.level.progress ?? 0) * 100)} per cent` : ''}
+          Bringing {snap?.level?.key ?? level} in{snap?.level ? ` · ${Math.round((snap.level.progress ?? 0) * 100)} per cent` : ''}
+          {snap?.level?.note ? ` · ${snap.level.note}` : ''}
         </p>
       )}
       {snap && (

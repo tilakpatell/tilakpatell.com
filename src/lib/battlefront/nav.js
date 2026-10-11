@@ -13,6 +13,7 @@
 // at the nearest open cell and walks the last metre straight.
 //
 //   buildNav({ heightAt, bounds, cell, solids, maxSlope, cover, radius }) → nav
+//   toBin(nav) → ArrayBuffer; fromBin(buffer) → nav (nav.bin, built at pack time)
 //   cellAt(nav, x, z) → [c, r] | null      heightAt(nav, x, z) → y (bilinear)
 //   walkable(nav, x, z) → bool             nearestWalkable(nav, x, z) → [x, z] | null
 //   findPath(nav, from, to, { blocked }) → [[x, z]] | null
@@ -41,17 +42,9 @@ function toWorld(sol, lx, lz) {
   return [sol.at[0] + lx * sol.c + lz * sol.s, sol.at[2] - lx * sol.s + lz * sol.c];
 }
 
-export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0.9, cover = {}, radius = 0.3 }) {
-  const origin = [bounds.min[0], bounds.min[1]];
-  const cols = Math.ceil((bounds.max[0] - bounds.min[0]) / cell);
-  const rows = Math.ceil((bounds.max[1] - bounds.min[1]) / cell);
-  const n = cols * rows;
-  const height = new Float32Array(n);
-  const walk = new Uint8Array(n);
-  const solid = new Uint8Array(n);
-  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) height[r * cols + c] = heightAt(origin[0] + (c + 0.5) * cell, origin[1] + (r + 0.5) * cell);
-  const boxes = solids.map(prepSolid);
-  // which solids touch each cell, for the line tests and the exact walkable
+// which solids touch each cell, for the line tests and the exact walkable;
+// `solid` (when given) marks the cells a solid stands in
+function touching(boxes, { cols, rows, origin, cell, height, solid = null }) {
   const near = new Map();
   for (const b of boxes) {
     const reach = Math.hypot(b.half[0], b.half[2]) + cell * 2;
@@ -65,7 +58,7 @@ export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0
         const i = r * cols + c;
         // the cell touches the footprint (a solid only blocks walking where it stands on the ground)
         if (Math.abs(lx) < b.half[0] + cell / 2 && Math.abs(lz) < b.half[2] + cell / 2) {
-          if (b.bottom <= height[i] + 0.5) solid[i] = 1;
+          if (solid && b.bottom <= height[i] + 0.5) solid[i] = 1;
           if (!near.has(i)) near.set(i, []);
           near.get(i).push(b);
         } else if (Math.abs(lx) < b.half[0] + cell * 1.5 && Math.abs(lz) < b.half[2] + cell * 1.5) {
@@ -74,6 +67,20 @@ export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0
         }
       }
   }
+  return near;
+}
+
+export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0.9, cover = {}, radius = 0.3 }) {
+  const origin = [bounds.min[0], bounds.min[1]];
+  const cols = Math.ceil((bounds.max[0] - bounds.min[0]) / cell);
+  const rows = Math.ceil((bounds.max[1] - bounds.min[1]) / cell);
+  const n = cols * rows;
+  const height = new Float32Array(n);
+  const walk = new Uint8Array(n);
+  const solid = new Uint8Array(n);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) height[r * cols + c] = heightAt(origin[0] + (c + 0.5) * cell, origin[1] + (r + 0.5) * cell);
+  const boxes = solids.map(prepSolid);
+  const near = touching(boxes, { cols, rows, origin, cell, height, solid });
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++) {
       const i = r * cols + c;
@@ -94,13 +101,79 @@ export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0
       walk[i] = ok;
     }
   const nav = { cell, cols, rows, origin, height, walk, solid, boxes, near, radius, slots: [], buckets: new Map(), scratch: null };
-  nav.slots = findSlots(nav, cover);
+  return withSlots(nav, findSlots(nav, cover));
+}
+
+function withSlots(nav, slots) {
+  nav.slots = slots;
   for (const s of nav.slots) {
     const k = bucketKey(s.at[0], s.at[2]);
     if (!nav.buckets.has(k)) nav.buckets.set(k, []);
     nav.buckets.get(k).push(s);
   }
   return nav;
+}
+
+// The navgrid as bytes (lane G2: built at pack time, scripts/lib/bf2017-nav.mjs,
+// and read back by the game world in place of building it): 'NAV1', the
+// header's length, its JSON ({ cell, cols, rows, origin, radius, boxes,
+// slots }), then the heights (Float32 × cells), the walk and solid flags
+// (Uint8 × cells each), the solids (Float32 × 7: at, half, yaw) and the
+// cover slots (Float32 × 9: at, facing, normal, stand, protected width,
+// solid), each block on a 4-byte boundary. fromBin(toBin(nav)) is the nav.
+const MAGIC = 0x3156414e; // 'NAV1', little-endian
+const BOX = 7;
+const SLOT = 9;
+const align = (n) => (n + 3) & ~3;
+
+export function toBin(nav) {
+  const n = nav.cols * nav.rows;
+  const head = new TextEncoder().encode(JSON.stringify({ cell: nav.cell, cols: nav.cols, rows: nav.rows, origin: nav.origin, radius: nav.radius, boxes: nav.boxes.length, slots: nav.slots.length }));
+  const at = { head: 8 };
+  at.height = align(at.head + head.length);
+  at.walk = at.height + n * 4;
+  at.solid = at.walk + n;
+  at.boxes = align(at.solid + n);
+  at.slots = at.boxes + nav.boxes.length * BOX * 4;
+  const out = new ArrayBuffer(at.slots + nav.slots.length * SLOT * 4);
+  const v = new DataView(out);
+  v.setUint32(0, MAGIC, true);
+  v.setUint32(4, head.length, true);
+  new Uint8Array(out, at.head, head.length).set(head);
+  new Float32Array(out, at.height, n).set(nav.height);
+  new Uint8Array(out, at.walk, n).set(nav.walk);
+  new Uint8Array(out, at.solid, n).set(nav.solid);
+  const boxes = new Float32Array(out, at.boxes, nav.boxes.length * BOX);
+  nav.boxes.forEach((b, i) => boxes.set([...b.at, ...b.half, b.yaw], i * BOX));
+  const slots = new Float32Array(out, at.slots, nav.slots.length * SLOT);
+  nav.slots.forEach((s, i) => slots.set([...s.at, s.facing, ...s.normal, s.height === 'stand' ? 1 : 0, s.protectedWidth, s.solid], i * SLOT));
+  return out;
+}
+
+export function fromBin(buffer) {
+  const buf = buffer instanceof ArrayBuffer ? buffer : buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+  const v = new DataView(buf);
+  if (v.getUint32(0, true) !== MAGIC) throw new Error('nav.bin: not a navgrid');
+  const len = v.getUint32(4, true);
+  const h = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 8, len)));
+  const n = h.cols * h.rows;
+  const at = { height: align(8 + len) };
+  at.walk = at.height + n * 4;
+  at.solid = at.walk + n;
+  at.boxes = align(at.solid + n);
+  at.slots = at.boxes + h.boxes * BOX * 4;
+  const height = new Float32Array(buf.slice(at.height, at.height + n * 4));
+  const walk = new Uint8Array(buf.slice(at.walk, at.walk + n));
+  const solid = new Uint8Array(buf.slice(at.solid, at.solid + n));
+  const fb = new Float32Array(buf, at.boxes, h.boxes * BOX);
+  const boxes = Array.from({ length: h.boxes }, (_, i) => prepSolid({ at: [fb[i * BOX], fb[i * BOX + 1], fb[i * BOX + 2]], half: [fb[i * BOX + 3], fb[i * BOX + 4], fb[i * BOX + 5]], yaw: fb[i * BOX + 6] }, i));
+  const near = touching(boxes, { cols: h.cols, rows: h.rows, origin: h.origin, cell: h.cell, height });
+  const fs = new Float32Array(buf, at.slots, h.slots * SLOT);
+  const slots = Array.from({ length: h.slots }, (_, i) => {
+    const o = i * SLOT;
+    return { at: [fs[o], fs[o + 1], fs[o + 2]], facing: fs[o + 3], normal: [fs[o + 4], fs[o + 5]], height: fs[o + 6] ? 'stand' : 'crouch', protectedWidth: fs[o + 7], solid: fs[o + 8] };
+  });
+  return withSlots({ cell: h.cell, cols: h.cols, rows: h.rows, origin: h.origin, height, walk, solid, boxes, near, radius: h.radius, slots: [], buckets: new Map(), scratch: null }, slots);
 }
 
 const bucketKey = (x, z) => `${Math.floor(x / BUCKET)},${Math.floor(z / BUCKET)}`;

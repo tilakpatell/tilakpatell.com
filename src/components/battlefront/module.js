@@ -23,6 +23,7 @@ import { createBolts } from './fx/bolts.js';
 import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
+import { levelKeyOf } from './map/levels.js';
 import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 
@@ -49,16 +50,19 @@ export default {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0.7, 0.78, 0.88);
     const camera = new THREE.PerspectiveCamera(70, 1, 0.1, FAR);
-    const level = createLevel({ scene, tier, renderer, world: levelName });
+    // (the level by the game's key, its whole pack in the map's frame where it
+    // is published, else the world's roam pack: map/level.js, lane G2)
+    const level = createLevel({ scene, tier, renderer, level: levelKeyOf(levelName) ?? levelName, world: levelName, mode });
     const figures = createFigures({ scene });
     const bolts = createBolts(scene);
     const rig = createCameraRig(camera);
     const input = createInput({ maxPitch: (cams.soldier.maxPitch * Math.PI) / 180 });
     input.attach();
-    // (the navgrid is built from the ground the world draws: the pack's
-    // heightmaps first; lane 1's bots walk it, the player too)
+    // (the navgrid: the whole pack's nav.bin, built at pack time over its
+    // ground and its pieces' collision; else built here from the ground the
+    // world draws; lane 1's bots walk it, the player too)
     await level.ready;
-    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z) });
+    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), nav: level.nav });
     const me = addPlayer(sim, { team: PLAYER_TEAM });
     // the player's soldier in lane 1's sim, once deployed
     const body = () => (sim.player?.id ? sim.sim.entities.get(sim.player.id) : null);
@@ -107,7 +111,8 @@ export default {
     // the light: lane R's stack on the level's records (await: the passes
     // need the sun and the sky before the chain is built)
     const { applyGameLight } = await import('../../lib/three/light/apply.js');
-    const light = await applyGameLight(scene, renderer, entryFor(lighting, weather), { tier, camera, lights: lightsJsonOf(lighting.lights) });
+    // (the pack's placed lights and reflection volumes where it has them, else the rulebook's lights)
+    const light = await applyGameLight(scene, renderer, entryFor(lighting, weather), { tier, camera, lights: level.parts.lights ?? lightsJsonOf(lighting.lights), volumes: level.parts.volumes, loadCube: level.parts.loadCube });
     // (?post=off in the address: the scene drawn with no chain, for a check)
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
     const post = light.passes.length && asked !== 'off' ? rt.gfx.post(light.passes) : null;
@@ -126,7 +131,7 @@ export default {
         scoreboard: v.scoreboard,
         showScoreboard: scoreboard,
         markers,
-        level: { loaded: level.loaded(), progress: level.progress(), ...level.stats() },
+        level: { key: level.key, whole: level.whole, note: level.note, loaded: level.loaded(), progress: level.progress(), ...level.stats() },
         backend: rt.gfx.backend,
         weather,
       };

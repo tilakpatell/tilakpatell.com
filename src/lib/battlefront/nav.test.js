@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { aiOf, loadRulebook } from './rulebook.js';
 import { CRATE, HILL, WALL, field, fieldHeight } from './fixtures/field.js';
-import { buildNav, cellAt, coverSlots, findPath, firstSolid, heightAt, lineClear, nearestMainland, nearestSlot, walkable } from './nav.js';
+import { buildNav, cellAt, coverSlots, findPath, firstSolid, fromBin, heightAt, lineClear, nearestMainland, nearestSlot, toBin, walkable } from './nav.js';
 
 const cover = aiOf(loadRulebook()).cover.constants;
 const nav = buildNav({ ...field(), cover });
@@ -105,5 +107,42 @@ describe('the navgrid', () => {
     expect(Math.max(Math.abs(p[0] - 40), Math.abs(p[1] + 40))).toBeGreaterThan(4);
     expect(findPath(n, p, [0, 0])).not.toBe(null);
     expect(nearestMainland(n, 0, 0)).toEqual([0, 0]);
+  });
+});
+
+describe('nav.bin (built at pack time, lane G2)', () => {
+  const same = (a, b) => {
+    expect([b.cell, b.cols, b.rows, b.radius]).toEqual([a.cell, a.cols, a.rows, a.radius]);
+    expect(b.origin).toEqual(a.origin);
+    expect(Array.from(b.height)).toEqual(Array.from(a.height));
+    expect(Array.from(b.walk)).toEqual(Array.from(a.walk));
+    expect(Array.from(b.solid)).toEqual(Array.from(a.solid));
+    expect(b.boxes.length).toBe(a.boxes.length);
+    expect(b.slots.length).toBe(a.slots.length);
+    b.slots.forEach((s, i) => {
+      expect(s.height).toBe(a.slots[i].height);
+      expect(s.solid).toBe(a.slots[i].solid);
+      s.at.forEach((v, k) => expect(v).toBeCloseTo(a.slots[i].at[k], 4));
+    });
+    expect([...b.near.keys()].sort()).toEqual([...a.near.keys()].sort());
+  };
+
+  it('reads back what it wrote: the grid, the solids, the cover slots', () => {
+    const back = fromBin(toBin(nav));
+    same(nav, back);
+    // (and answers as the built one does)
+    expect(findPath(back, [-80, -80], [80, 80])?.length).toBe(findPath(nav, [-80, -80], [80, 80])?.length);
+    expect(walkable(back, 0, 20)).toBe(false);
+    expect(lineClear(back, [0, 1, 10], [0, 1, 30])).toBe(lineClear(nav, [0, 1, 10], [0, 1, 30]));
+    expect(nearestSlot(back, [0, 0, 14], [0, 40])?.at.map((v) => Math.round(v))).toEqual(nearestSlot(nav, [0, 0, 14], [0, 40])?.at.map((v) => Math.round(v)));
+  });
+
+  it('holds the committed fixture to buildNav on the same heights (a pack’s nav.bin is the built grid)', () => {
+    const file = readFileSync(join(import.meta.dirname, 'fixtures', 'field.nav.bin'));
+    same(nav, fromBin(file));
+  });
+
+  it('refuses a file that is not a navgrid', () => {
+    expect(() => fromBin(new ArrayBuffer(16))).toThrow(/navgrid/);
   });
 });

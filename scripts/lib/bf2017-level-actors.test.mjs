@@ -78,4 +78,10 @@ describe('the map’s vehicle spawns', () => {
     expect(j.things).toEqual([{ kind: 'atat', at: [40, 60], yaw: 0, placed: true }]);
     expect(j.unplaced).toEqual([{ blueprint: 'Vehicle_Objective_Bomb', count: 1, why: 'no kind on the site' }]);
   });
+
+  it('names each row’s layer for a whole level, whose modes stand their own (lane G2)', () => {
+    const j = vehiclesJson(map, pack, { rides: new Set(['tauntaun']), things: new Set(['atat', 'eweb']), subs: ['fixture_01', 'fantasybattle'], layers: true });
+    expect(j.rides.map((r) => r.layer)).toEqual([expect.any(String)]);
+    expect(j.things[0].layer).toBe('fantasybattle');
+  });
 });

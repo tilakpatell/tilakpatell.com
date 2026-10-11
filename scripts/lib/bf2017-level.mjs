@@ -15,6 +15,8 @@
 //   buildPack({ world, mapName, map, spot, groundY, meshes, groundAt, … }) → { json, files, table, counts }
 //     (groundAt(x, z): the pack's ground in the site's frame; what is under it is left out,
 //     but for what stands in the game's holes, holeAt(x, z))
+//     (whole: { extent, cull, modeOnly, weather }: a whole level, lane G2's
+//     --whole: nothing buried left out, nothing fitted, scripts/lib/bf2017-level-whole.mjs)
 //   meshCuts(entry, { ultra }) → { far, lod1, plain, ultra } LOD entries
 //   rewriteImageUris(glb, fn) → the GLB with its images' URIs mapped
 //   glbTriangles(glb), lodFile(file, n), mergeHeights(fine, coarse, hole, inside), fillHoles(data, w, h)
@@ -253,7 +255,7 @@ function farList(inst, meshOf, cell) {
   return { bin, draws };
 }
 
-export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false }) {
+export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false, whole = null }) {
   // (a mesh the bucket has not got, or sequel-era, draws nothing: its instances go)
   const idx = arenaOf(map, { subs, drop }).filter((i) => !meshes[map.meshOf[i]].missing);
   const all = rebase(subset(map.instances, idx), [spot[0], groundY, spot[1]], yaw);
@@ -261,8 +263,9 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
   // (under the ground: the base inside the glacier, which no one outside can
   // see; the site's own interior zone stands for it. Top under the pack's
   // ground by more than half a metre, its mouth's floor included)
+  // (a whole level keeps its insides: the game world walks them)
   const under = (i) => {
-    if (!groundAt) return false;
+    if (!groundAt || whole) return false;
     const m = meshes[meshOfAll[i]];
     const top = all.position[i * 3 + 1] + Math.max(m.bounds[1] * all.scale[i * 3 + 1], m.bounds[4] * all.scale[i * 3 + 1]);
     const [x, z] = [all.position[i * 3], all.position[i * 3 + 2]];
@@ -308,14 +311,16 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
   };
   const positions = [];
   const reachOut = Math.min(walk, arena);
-  for (let x = -reachOut; x <= reachOut; x += 64) for (let z = -reachOut; z <= reachOut; z += 64) positions.push([x, z]);
+  // (a whole level is measured over its pieces' extent, a place every 128 m: nothing is fitted)
+  if (whole) for (let x = whole.extent.min[0]; x <= whole.extent.max[0]; x += 128) for (let z = whole.extent.min[1]; z <= whole.extent.max[1]; z += 128) positions.push([x, z]);
+  else for (let x = -reachOut; x <= reachOut; x += 64) for (let z = -reachOut; z <= reachOut; z += 64) positions.push([x, z]);
   const cull = {};
   const table = {};
   // (the nearest reach a tier takes before meshes go instead: a 1 m thing
   // stays in view this many metres, so the base never thins to a ring)
   for (const tier of tiers) {
-    const f = fitCull(flat, fitMeshes, rows[tier], tier, { positions, kMin: KMIN[tier] ?? 40 });
-    cull[tier] = { K: f.K, dropped: f.dropped };
+    const f = fitCull(flat, fitMeshes, rows[tier], tier, { positions, kMin: KMIN[tier] ?? 40, ...(whole ? { kMax: whole.cull[tier].K } : {}) });
+    cull[tier] = whole ? whole.cull[tier] : { K: f.K, dropped: f.dropped };
     table[tier] = { K: f.K, dropped: f.dropped.map((m) => ({ name: meshes[m].name, count: arenaMesh.filter((x) => x === m).length })), worst: f.worst };
   }
 
@@ -328,7 +333,7 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
     jsonCells[key] = { bin: path, bytes: bin.byteLength, bounds: c.bounds.map((v) => Math.round(v * 100) / 100), count: bin.byteLength / INSTANCE_BYTES, draws };
   }
   files.set('far.bin', far.bin);
-  files.set('horizon.bin', horizon.bin);
+  if (!whole) files.set('horizon.bin', horizon.bin);
   const json = sortKeys({
     world,
     map: mapName,
@@ -338,7 +343,7 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
     arena,
     cells: jsonCells,
     far: { bin: 'far.bin', bytes: far.bin.byteLength, draws: far.draws },
-    horizon: { bin: 'horizon.bin', bytes: horizon.bin.byteLength, draws: horizon.draws.map(({ mesh, mirrored, offset, count }) => ({ mesh, mirrored, offset, count })) },
+    horizon: whole ? null : { bin: 'horizon.bin', bytes: horizon.bin.byteLength, draws: horizon.draws.map(({ mesh, mirrored, offset, count }) => ({ mesh, mirrored, offset, count })) },
     meshes: meshes.map((m) => ({ name: m.name, radius: Math.round(radius(m) * 100) / 100, glb: m.glb ?? m.lods.map((_, n) => `meshes/${slug(m.name)}.lod${n}.glb`), lods: m.lods, bounds: m.bounds, mats: m.mats ?? 1 })),
     cull,
     tex,
@@ -347,6 +352,9 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
     bounds: inside ? extentOf(arenaInst, arenaMesh, meshes) : null,
     shadowCache: null,
     physics,
+    // (a whole level: the map's frame, its mode layers' own meshes, the
+    // extent its ground is fine over; null on a roam pack)
+    ...(whole ? { whole: true, modeOnly: whole.modeOnly, extent: whole.extent, weather: whole.weather ?? null } : {}),
   });
   return { json, files, table, counts: { arena: arenaInst.count, horizon: horizonInst.count, buried, cells: cells.size } };
 }

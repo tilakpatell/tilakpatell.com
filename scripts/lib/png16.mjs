@@ -5,6 +5,7 @@
 // src/lib/level/png16.js reads it in the browser.
 //
 //   encodePng16(data: Uint16Array, w, h) → Buffer
+//   encodePngRgb(data: Uint8Array (r, g, b a pixel), w, h) → Buffer (a picture: lane G2's nav maps)
 //   crc32(bytes) → the PNG chunk's CRC
 
 import { deflateSync } from 'node:zlib';
@@ -46,5 +47,20 @@ export function encodePng16(data, w, h) {
   ihdr.writeUInt32BE(w, 0);
   ihdr.writeUInt32BE(h, 4);
   ihdr[8] = 16;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(rows, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
+}
+
+export function encodePngRgb(data, w, h) {
+  const stride = w * 3;
+  const rows = Buffer.alloc(h * (stride + 1));
+  for (let y = 0; y < h; y++) {
+    rows[y * (stride + 1)] = 0;
+    rows.set(data.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 2; // truecolour
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(rows, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
 }

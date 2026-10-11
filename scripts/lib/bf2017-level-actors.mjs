@@ -8,8 +8,8 @@
 //
 //   kindOfActor(meshFile) → a crew kind | null (a part, or nothing the site has)
 //   kindOfVehicle(blueprint) → a ride or catalogue kind | null
-//   actorsJson(map, pack, { kinds, subs }) → { life: [{ kind, n, at, face, still, placed }], unplaced }
-//   vehiclesJson(map, pack, { rides, things, subs }) → { rides, things, unplaced }
+//   actorsJson(map, pack, { kinds, subs, layers }) → { life: [{ kind, n, at, face, still, placed, layer? }], unplaced }
+//   vehiclesJson(map, pack, { rides, things, subs, layers }) → { rides, things, unplaced } (layers: each row's sub-level, a whole level's)
 //   frameOf(pack) → (position, quaternion) → { at: [x, z], yaw } | null (beyond the arena)
 
 // the game's mesh (its folder and name) → the site's crew kind
@@ -82,7 +82,7 @@ const tally = (list) =>
     .sort((a, b) => (a.blueprint < b.blueprint ? -1 : 1));
 const note = (map, blueprint, why) => map.set(blueprint, { why, count: (map.get(blueprint)?.count ?? 0) + 1 });
 
-export function actorsJson(map, pack, { kinds, subs }) {
+export function actorsJson(map, pack, { kinds, subs, layers = false }) {
   const want = new Set(subs.map((s) => s.toLowerCase()));
   const toPack = frameOf(pack);
   const life = [];
@@ -108,13 +108,13 @@ export function actorsJson(map, pack, { kinds, subs }) {
       const p = Array.from(map.instances.position.subarray(i * 3, i * 3 + 3));
       const q = Array.from(map.instances.quaternion.subarray(i * 4, i * 4 + 4), (v) => v * Q);
       const f = toPack(p, q);
-      if (f) life.push({ kind, n: 1, at: f.at, face: f.yaw, still: true, placed: true });
+      if (f) life.push({ kind, n: 1, at: f.at, face: f.yaw, still: true, placed: true, ...(layers ? { layer: subName(map.subworlds[g.sub]) } : {}) });
     }
   }
   return { life, unplaced: tally(unplaced) };
 }
 
-export function vehiclesJson(map, pack, { rides, things, subs }) {
+export function vehiclesJson(map, pack, { rides, things, subs, layers = false }) {
   const want = new Set(subs.map((s) => s.toLowerCase()));
   const toPack = frameOf(pack);
   const out = { rides: [], things: [] };
@@ -128,7 +128,7 @@ export function vehiclesJson(map, pack, { rides, things, subs }) {
       continue;
     }
     const f = toPack(v.position, v.quaternion ?? [0, 0, 0, 1]);
-    if (f) list.push({ kind, at: f.at, yaw: f.yaw, placed: true });
+    if (f) list.push({ kind, at: f.at, yaw: f.yaw, placed: true, ...(layers ? { layer: subName(map.subworlds[v.sub]) } : {}) });
   }
   return { ...out, unplaced: tally(unplaced) };
 }

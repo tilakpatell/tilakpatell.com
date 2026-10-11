@@ -32,4 +32,13 @@ describe('the bucket held to its manifest', () => {
     expect(asked).toContainEqual(['https://b/site-assets/abcdef123456/models/ok.glb', 'bytes=0-0']);
     expect(said.join('\n')).toMatch(/models\/bad\.glb: not in the bucket/);
   });
+
+  it('holds a whole level’s folder row by its level.json under the folder’s hash (lane G2)', async () => {
+    const asked = [];
+    const pool = { run: async (job) => (asked.push(job.url), got(206, { 'content-range': 'bytes 0-0/40', 'cache-control': 'max-age=31536000' })) };
+    const row = { hash: 'abcdef123456', bytes: 9000, files: 12, check: { file: 'level.json', bytes: 40 } };
+    const bad = await check({ base: 'https://b/site-assets', entries: { 'models/galaxy/bf2017/levels/hoth/game/hoth_01/': row }, pool, log: () => {} });
+    expect(bad).toEqual([]);
+    expect(asked).toEqual(['https://b/site-assets/abcdef123456/models/galaxy/bf2017/levels/hoth/game/hoth_01/level.json']);
+  });
 });

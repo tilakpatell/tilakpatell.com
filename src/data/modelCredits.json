@@ -4972,7 +4972,9 @@
     "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
     "where": "galaxy",
     "as": "sb_endor: the game's level",
-    "paths": ["public/models/galaxy/bf2017/levels/sb_endor/"],
+    "paths": [
+      "public/models/galaxy/bf2017/levels/sb_endor/"
+    ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
   "level-sb_kamino": {
@@ -4984,7 +4986,9 @@
     "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
     "where": "galaxy",
     "as": "sb_kamino: the game's level, its storm sky the level's own panorama",
-    "paths": ["public/models/galaxy/bf2017/levels/sb_kamino/"],
+    "paths": [
+      "public/models/galaxy/bf2017/levels/sb_kamino/"
+    ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
   "space-endor": {
@@ -6032,6 +6036,21 @@
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
+  "level-endor-game-endor_01": {
+    "title": "Star Wars Battlefront II (2017): levels/mp/endor_01 (whole)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "endor/game/endor_01: the game's level",
+    "file": "/models/galaxy/bf2017/levels/endor/game/endor_01/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
   "level-hoth-base": {
     "title": "Star Wars Battlefront II (2017): levels/mp/hoth_01 (base)",
     "author": "EA DICE",
@@ -6042,6 +6061,21 @@
     "where": "galaxy-surface",
     "as": "hoth/base: the game's level",
     "file": "/models/galaxy/bf2017/levels/hoth/base/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "level-hoth-game-hoth_01": {
+    "title": "Star Wars Battlefront II (2017): levels/mp/hoth_01 (whole)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "hoth/game/hoth_01: the game's level",
+    "file": "/models/galaxy/bf2017/levels/hoth/game/hoth_01/level.json",
     "also": [
       "galaxy"
     ],

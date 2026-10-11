@@ -40,8 +40,10 @@ export async function check({ base, entries, pool, log = console.log }) {
   const bad = [];
   await Promise.all(
     Object.entries(entries).map(async ([path, e]) => {
-      const url = `${base.replace(/\/+$/, '')}/${publishedPath(path, e.hash)}`;
-      const why = verdict(e, await pool.run({ url, headers: { range: 'bytes=0-0' } }));
+      // (a whole level's folder row, lane G2: held by its level.json under the folder's hash)
+      const [at, want] = path.endsWith('/') && e.check ? [`${path}${e.check.file}`, { ...e, bytes: e.check.bytes }] : [path, e];
+      const url = `${base.replace(/\/+$/, '')}/${publishedPath(at, e.hash)}`;
+      const why = verdict(want, await pool.run({ url, headers: { range: 'bytes=0-0' } }));
       if (why) {
         bad.push(path);
         log(`  ${path}: ${why}`);

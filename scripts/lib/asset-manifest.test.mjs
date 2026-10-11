@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { GAME, KEPT, bytesOf, diff, freshGalaxy, gameFiles, hashOf, ignoreBlock, onSite, publishedPath, readManifest, writeManifest } from './asset-manifest.mjs';
+import { GAME, KEPT, bytesOf, diff, folderOf, freshGalaxy, gameFiles, hashOf, ignoreBlock, onSite, publishedPath, readManifest, wholeFolder, writeManifest } from './asset-manifest.mjs';
+import { remotePath } from '../../src/lib/assetPath.js';
 
 const dirs = [];
 const scratch = () => {
@@ -140,5 +141,57 @@ describe('the published assets’ manifest', () => {
     // (and its credit, which names its level.json, does not publish it either)
     const got = gameFiles({ 'level-hoth-base': { source: GAME, file: '/models/galaxy/bf2017/levels/hoth/base/level.json' } }, pub).map((f) => f.path);
     expect(got).toEqual(['models/galaxy/bf2017/levels/hoth/base/lights.json', 'models/galaxy/bf2017/levels/hoth/cells/0_0.bin']);
+  });
+});
+
+describe('a whole level’s pack, published as one folder (lane G2)', () => {
+  const W = 'models/galaxy/bf2017/levels/hoth/game/hoth_01/';
+  const pack = () => {
+    const pub = scratch();
+    put(pub, `${W}level.json`, '{"whole":true}\n');
+    put(pub, `${W}README.md`, '# hoth_01\n');
+    put(pub, `${W}cells/0_0.bin`, 'cell');
+    put(pub, `${W}nav.bin`, 'nav');
+    put(pub, 'models/galaxy/bf2017/levels/hoth/cells/0_0.bin', 'roam');
+    return pub;
+  };
+
+  it('is one row for the folder: its files, their bytes, one hash over them all, held by its level.json', () => {
+    const pub = pack();
+    const f = wholeFolder(pub, W);
+    expect(f.path).toBe(W);
+    expect(f.files.map((x) => x.path.slice(W.length))).toEqual(['README.md', 'cells/0_0.bin', 'level.json', 'nav.bin']);
+    expect(f.row).toMatchObject({ files: 4, bytes: 15 + 10 + 4 + 3, tier: 'whole', check: { file: 'level.json', bytes: 15, hash: hashOf(Buffer.from('{"whole":true}\n')) } });
+    // (a file changed is a new folder)
+    put(pub, `${W}nav.bin`, 'nav2');
+    expect(wholeFolder(pub, W).row.hash).not.toBe(f.row.hash);
+    expect(() => wholeFolder(pub, 'models/galaxy/bf2017/levels/hoth/game/none/')).toThrow(/level\.json/);
+  });
+
+  it('is never in the per-file publish: the roam pack’s files are, the whole pack’s are not', () => {
+    const got = gameFiles({}, pack()).map((f) => f.path);
+    expect(got).toEqual(['models/galaxy/bf2017/levels/hoth/cells/0_0.bin']);
+  });
+
+  it('sends a file under it to the folder’s hash, and finds the row a file is under', () => {
+    const manifest = { [W]: { hash: 'abcdef123456', bytes: 32 }, 'kit/crate.glb': { hash: 'aaaaaaaaaaaa', bytes: 1 } };
+    expect(remotePath(`/${W}cells/0_0.bin`, 'https://cdn.test/b', manifest)).toBe(`https://cdn.test/b/abcdef123456/${W}cells/0_0.bin`);
+    expect(remotePath('/kit/crate.glb', 'https://cdn.test/b', manifest)).toBe('https://cdn.test/b/aaaaaaaaaaaa/kit/crate.glb');
+    expect(remotePath('/models/galaxy/bf2017/levels/hoth/level.json', 'https://cdn.test/b', manifest)).toBe('/models/galaxy/bf2017/levels/hoth/level.json');
+    expect(folderOf(manifest, `${W}tex/a.512.ktx2`)).toBe(manifest[W]);
+    expect(onSite(`${W}tex/a.512.ktx2`, { publicDir: scratch(), manifest })).toBe(true);
+  });
+
+  it('hides the folder from git but its level.json and README, and a build drops it when its level.json was made again', () => {
+    const text = ignoreBlock('', [W, 'models/x.glb']);
+    expect(text).toContain(`/public/${W}*\n!/public/${W}level.json\n!/public/${W}README.md`);
+    expect(text).toContain('/public/models/x.glb');
+    const pub = pack();
+    const row = wholeFolder(pub, W).row;
+    expect(Object.keys(freshGalaxy({ [W]: row }, pub))).toEqual([W]);
+    put(pub, `${W}level.json`, '{"whole":true,"again":1}\n');
+    expect(Object.keys(freshGalaxy({ [W]: row }, pub))).toEqual([]);
+    // (and a checkout without the folder takes the manifest's word)
+    expect(Object.keys(freshGalaxy({ [W]: row }, scratch()))).toEqual([W]);
   });
 });

@@ -5,6 +5,7 @@ import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
 import { arenaOf, buildPack, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
+import { WHOLE_ROWS, modeOnlyOf, wholeArena, wholeCull, wholeExtent, wholeSubs } from './bf2017-level-whole.mjs';
 import { cellsOf } from './level-cells.mjs';
 
 const FIX = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'web');
@@ -256,3 +257,72 @@ describe('the ground a map never painted', () => {
   });
 });
 
+
+describe('a whole level (lane G2, --whole)', () => {
+  const meshes = [
+    { name: 'rock', lods: [8, 4, 2], bounds: [-1, 0, -1, 1, 1, 1], mats: 1 },
+    { name: 'hangar', lods: [900, 400, 100, 50], bounds: [-20, 0, -20, 20, 10, 20], mats: 2 },
+    { name: 'crate', lods: [12, 2], bounds: [-0.5, 0, -0.5, 0.5, 1, 0.5], mats: 1 },
+    { name: 'tauntaun', lods: [500, 100], bounds: [-1, 0, -1, 1, 2, 1], mats: 1 },
+    { name: 'proxy', lods: [10], bounds: [-2, 0, -2, 2, 1, 2], mats: 1 },
+  ];
+  const map = readMap(json, bin);
+  const subs = ['fixture_01', 'content'];
+  const idx = arenaOf(map, { subs });
+  const extent = wholeExtent(map, idx, { pad: 0 });
+  const whole = { extent, cull: wholeCull(['low', 'mid', 'high', 'ultra']), modeOnly: {}, weather: null };
+  const pack = buildPack({ world: 'fixture/game/fixture_01', mapName: 'levels/mp/fixture_01', map, spot: [0, 0], groundY: 0, meshes, arena: wholeArena(map, idx), rows: WHOLE_ROWS, subs, whole, groundAt: () => 1000 });
+
+  it('is in the map’s own frame: origin 0, yaw 0, every piece kept (none buried), no horizon', () => {
+    const j = pack.json;
+    expect(j.origin).toEqual([0, 0, 0]);
+    expect(j.yaw).toBe(0);
+    expect(j.whole).toBe(true);
+    expect(j.horizon).toBe(null);
+    expect(pack.files.has('horizon.bin')).toBe(false);
+    expect(pack.counts).toMatchObject({ buried: 0, horizon: 0, arena: 3 });
+    // (the positions are the map's: the rock at the map's 110, 5, 210)
+    const cellKey = Object.keys(j.cells).find((k) => j.cells[k].draws.some((d) => d.mesh === 0));
+    const inst = readInstances(pack.files.get(j.cells[cellKey].bin));
+    expect(Array.from(inst.position.subarray(0, 3))).toEqual(Array.from(map.instances.position.subarray(0, 3)));
+  });
+
+  it('fits nothing: a 1 m thing drawn out to a kilometre, low to 400 m, no mesh dropped', () => {
+    expect(pack.json.cull).toEqual({ low: { K: 400, dropped: [] }, mid: { K: 1000, dropped: [] }, high: { K: 1000, dropped: [] }, ultra: { K: 1000, dropped: [] } });
+    expect(pack.table.high.worst.tris).toBeGreaterThan(0);
+  });
+
+  it('keeps every sub-level but the lobby’s, the end of round’s, the outros and the other times of day', () => {
+    const m = { subworlds: ['L/Hoth_01', 'L/Content', 'L/Lobby', 'L/LobbySplitScreen', 'L/EOR', 'L/Outro_Team1', 'L/FantasyBattle', 'L/Mode9', 'L/Mode6_Intro', 'L/HvsVIntro', 'L/Sunny', 'L/Night', 'L/Hoth_Automation'], groups: [] };
+    const got = wholeSubs(m, { weather: 'sunny' });
+    expect(got.subs).toEqual(['hoth_01', 'content', 'fantasybattle', 'mode9', 'sunny']);
+    expect(got.weather).toBe('sunny');
+    expect(got.skipped.sort()).toEqual(['eor', 'hoth_automation', 'hvsvintro', 'lobby', 'lobbysplitscreen', 'mode6_intro', 'night', 'outro_team1']);
+    // (a level with no layer of the asked weather keeps its first: Naboo's cloudy)
+    expect(wholeSubs({ subworlds: ['L/Art', 'L/Cloudy', 'L/Dusk'] }, { weather: 'sunny' })).toMatchObject({ subs: ['art', 'cloudy'], weather: 'cloudy' });
+    expect(wholeSubs({ subworlds: ['L/Art', 'L/Lighting_Sunny', 'L/Lighting_Night'] }).weather).toBe('lighting_sunny');
+  });
+
+  it('lists the meshes only a mode layer places, by layer', () => {
+    const m = {
+      subworlds: ['L/Content', 'L/FantasyBattle', 'L/HeroArena'],
+      groups: [
+        { mesh: 0, sub: 0, kind: 'static' },
+        { mesh: 0, sub: 1, kind: 'static' },
+        { mesh: 1, sub: 1, kind: 'object' },
+        { mesh: 2, sub: 2, kind: 'static' },
+        { mesh: 3, sub: 2, kind: 'actor' },
+      ],
+    };
+    expect(modeOnlyOf(m, ['content', 'fantasybattle', 'heroarena'])).toEqual({ fantasybattle: [1], heroarena: [2] });
+  });
+
+  it('takes its arena round the map’s 0 and its extent from the pieces’ middle mass', () => {
+    expect(wholeArena(map, idx)).toBeGreaterThanOrEqual(Math.max(...idx.map((i) => Math.max(Math.abs(map.instances.position[i * 3]), Math.abs(map.instances.position[i * 3 + 2])))));
+    const e = wholeExtent(map, idx, { trim: 0, pad: 10 });
+    for (const i of idx) {
+      expect(map.instances.position[i * 3]).toBeGreaterThanOrEqual(e.min[0]);
+      expect(map.instances.position[i * 3 + 2]).toBeLessThanOrEqual(e.max[1]);
+    }
+  });
+});

@@ -13,12 +13,15 @@
 // published files leave git.
 //
 //   node scripts/assets-publish.mjs [--dry] [--only '<glob over site paths>'] [--bucket site-assets]
-//     [--manifest <file>] [--files '<glob>']
+//     [--manifest <file>] [--files '<glob>'] [--whole <world>/game/<key>,…]
 //
 //   dry       what would go, and nothing sent
 //   only      just the files whose path matches one of these globs,
 //             comma-separated (a star crosses folders)
 //   manifest  another manifest to write (a check's, not the site's)
+//   whole     a whole level's pack (lane G2: models/galaxy/bf2017/levels/<world>/game/<key>/)
+//             as one folder: every file under the folder's one hash, one
+//             manifest row (scripts/lib/asset-manifest.mjs's wholeFolder)
 //   files     publish these paths under public/ (globs, comma-separated) instead of the game's
 //             (a check that wants something in the bucket before phase 1's
 //             heroes are there; never for the site's manifest)
@@ -33,7 +36,7 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { globMatch } from './lib/bf2017-paths.mjs';
-import { MANIFEST, diff, gameFiles, hashOf, publishedPath, readManifest, writeManifest } from './lib/asset-manifest.mjs';
+import { MANIFEST, diff, gameFiles, hashOf, publishedPath, readManifest, wholeFolder, writeManifest } from './lib/asset-manifest.mjs';
 import { KINDS } from './assets-upload.mjs';
 import { createPool } from './lib/pool.mjs';
 
@@ -113,6 +116,41 @@ export async function publish({ files, manifest, pool, url, bucket = BUCKET, hea
   return { sent, there, failed, manifest: next };
 }
 
+// --whole: each folder's files under the folder's one hash, then its one row
+// (the files' own rows never reach the manifest)
+async function publishWhole({ args, publicDir, bucket, manifestFile }) {
+  const manifest = readManifest(manifestFile);
+  const folders = String(args.whole)
+    .split(',')
+    .filter(Boolean)
+    .map((w) => wholeFolder(publicDir, `models/galaxy/bf2017/levels/${w.replace(/^\/+|\/+$/g, '')}/`));
+  for (const f of folders) console.log(`${f.path}: ${f.files.length} files, ${mb(f.row.bytes)}, hash ${f.row.hash}${manifest[f.path]?.hash === f.row.hash ? ' (published already)' : ''}`);
+  if (args.dry) return 0;
+  const url = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+  const key = process.env.SUPA_KEY || process.env.BF2017_KEY;
+  if (!url || !key) {
+    console.error('Set SUPABASE_URL and SUPA_KEY (the project’s secret key, for the upload only) in the environment.');
+    return 2;
+  }
+  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+  await ensureBucket(url, headers, bucket);
+  const pool = createPool({ size: 8, missing: [400, 404] });
+  let failed = 0;
+  for (const f of folders) {
+    if (manifest[f.path]?.hash === f.row.hash) continue;
+    const r = await publish({ files: f.files.map((x) => ({ ...x, hash: f.row.hash, from: f.path, tier: 'whole' })), manifest: {}, pool, url, bucket, headers, publicDir, log: () => {} });
+    console.log(`${f.path}: sent ${r.sent} · there already ${r.there} · failed ${r.failed.length}`);
+    if (r.failed.length) {
+      failed += r.failed.length;
+      continue;
+    }
+    manifest[f.path] = f.row;
+  }
+  writeManifest(manifestFile, manifest);
+  if (manifestFile === join(ROOT, MANIFEST)) (await import('./assets-ignore.mjs')).ignoreFile(ROOT);
+  return failed ? 1 : 0;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const publicDir = join(ROOT, 'public');
@@ -123,6 +161,7 @@ async function main() {
     console.error('assets-publish: --files is for a check’s manifest (--manifest), never the site’s');
     return 1;
   }
+  if (typeof args.whole === 'string') return publishWhole({ args, publicDir, bucket, manifestFile });
   let files = typeof args.files === 'string' ? anyFiles(publicDir, args.files) : gameFiles(JSON.parse(readFileSync(join(ROOT, 'src/data/modelCredits.json'), 'utf8')), publicDir);
   if (typeof args.only === 'string') files = files.filter((f) => onlyMatch(args.only)(f.path));
   const manifest = readManifest(manifestFile);

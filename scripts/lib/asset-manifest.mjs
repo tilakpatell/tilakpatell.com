@@ -20,6 +20,8 @@
 // ignoreBlock(gitignore, paths) → the text with its marked block rewritten
 // bytesOf(path, { publicDir, manifest }) → a file's size, on disk or published
 // onSite(path, { publicDir, manifest }) → whether the site has it, on disk or published
+// folderOf(manifest, path) → the whole level's folder row a file is under, or null
+// wholeFolder(publicDir, folder) → { path, files, row }: a whole level's pack as one row
 // KEPT: the published files git keeps as well
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -42,6 +44,13 @@ const CUTS = ['lod1', 'far', 'ultra'];
 // A level pack's own text stays in git (the tests and the sites read it, and
 // it is small); every other file of the pack is published (lane E0)
 export const PACK_KEPT = /^models\/galaxy\/bf2017\/levels\/.+\/(level\.json|README\.md)$/;
+// A whole level's pack (lane G2: levels/<world>/game/<key>/) is published as
+// one folder: its files go up under one hash, `<hash12>/<folder><file>`, and
+// the manifest holds one row for the folder (its key ends in a slash; the
+// URL rule, src/lib/assetPath.js, finds a file's folder), so thirty thousand
+// files across the game's levels are not thirty thousand rows in every
+// visitor's bundle. Its level.json and README stay in git, as a pack's do.
+export const WHOLE = /^models\/galaxy\/bf2017\/levels\/[^/]+\/game\/[^/]+\//;
 
 const bare = (path) => path.replace(/^\/+/, '');
 export const publishedPath = (path, hash) => keyOf({ hash, path: bare(path) });
@@ -99,7 +108,7 @@ export function gameFiles(credits, publicDir) {
   }
   for (const abs of PACKS.flatMap((dir) => walk(join(publicDir, dir)))) {
     const path = abs.slice(publicDir.length + 1).split('\\').join('/');
-    if (PACK_KEPT.test(path)) continue;
+    if (PACK_KEPT.test(path) || WHOLE.test(path)) continue;
     if (!out.has(path)) out.set(path, { path, ...measure(publicDir, path), from: path, tier: 'pack' });
   }
   for (const abs of walk(join(publicDir, FILMS)).filter((f) => f.endsWith('.webm'))) {
@@ -116,6 +125,11 @@ export function gameFiles(credits, publicDir) {
 export function freshGalaxy(manifest, publicDir) {
   return Object.fromEntries(
     Object.entries(manifest).filter(([path, e]) => {
+      // (a folder: its level.json here, made again and not published, wins)
+      if (path.endsWith('/')) {
+        const own = join(publicDir, path, e.check?.file ?? 'level.json');
+        return !existsSync(own) || !e.check?.hash || hashOf(readFileSync(own)) === e.check.hash;
+      }
       const abs = join(publicDir, path);
       if (!existsSync(abs)) return true;
       return statSync(abs).size === e.bytes && hashOf(readFileSync(abs)) === e.hash;
@@ -130,8 +144,18 @@ export const IGNORE_END = '# end galaxy assets';
 // under 3 MB together), which a checkout without the bucket must still have
 export const KEPT = new Set(['models/galaxy/bf2017/walrus.glb', 'models/galaxy/bf2017/clips-humanoid.glb', 'models/galaxy/bf2017/clips-luke.glb']);
 
+// (a folder's line hides what is in it but its level.json and README)
+const ignoreLines = (p) => (p.endsWith('/') ? [`/public/${p}*`, `!/public/${p}level.json`, `!/public/${p}README.md`] : [`/public/${p}`]);
 export function ignoreBlock(text, paths) {
-  const block = [IGNORE_START, ...[...paths].filter((p) => !KEPT.has(bare(p))).sort().map((p) => `/public/${bare(p)}`), IGNORE_END].join('\n');
+  const block = [
+    IGNORE_START,
+    ...[...paths]
+      .map(bare)
+      .filter((p) => !KEPT.has(p))
+      .sort()
+      .flatMap(ignoreLines),
+    IGNORE_END,
+  ].join('\n');
   const a = text.indexOf(IGNORE_START);
   const b = text.indexOf(IGNORE_END);
   if (a >= 0 && b > a) return text.slice(0, a) + block + text.slice(b + IGNORE_END.length);
@@ -140,7 +164,32 @@ export function ignoreBlock(text, paths) {
 
 // Whether the site has a file: in public/, or published (a checkout
 // without the bucket's files, as CI's is, takes the manifest's word)
-export const onSite = (path, { publicDir, manifest }) => existsSync(join(publicDir, bare(path))) || Boolean(manifest[bare(path)]);
+export const onSite = (path, { publicDir, manifest }) => existsSync(join(publicDir, bare(path))) || Boolean(manifest[bare(path)] ?? folderOf(manifest, bare(path)));
+
+// the folder row a whole level's file is published under, or null
+export function folderOf(manifest, path) {
+  for (let i = path.lastIndexOf('/'); i > 0; i = path.lastIndexOf('/', i - 1)) {
+    const row = manifest[path.slice(0, i + 1)];
+    if (row) return row;
+  }
+  return null;
+}
+
+// A whole level's folder as one row: its files (but nothing hidden), their
+// bytes, and one hash over every file's path and hash, so a file changed is a
+// new folder; `check` is the level.json the build and assets-check hold it by
+export function wholeFolder(publicDir, folder) {
+  const dir = bare(folder).replace(/\/*$/, '/');
+  const files = walk(join(publicDir, dir))
+    .map((abs) => abs.slice(publicDir.length + 1).split('\\').join('/'))
+    .filter((p) => !p.split('/').pop().startsWith('.'))
+    .sort()
+    .map((path) => ({ path, ...measure(publicDir, path) }));
+  const json = files.find((f) => f.path === `${dir}level.json`);
+  if (!json) throw new Error(`${dir}: no level.json (not a level pack)`);
+  const hash = hashOf(Buffer.from(files.map((f) => `${f.path} ${f.hash}`).join('\n')));
+  return { path: dir, files, row: { hash, bytes: files.reduce((a, f) => a + f.bytes, 0), files: files.length, from: dir, tier: 'whole', check: { file: 'level.json', bytes: json.bytes, hash: json.hash } } };
+}
 
 // A file's size for a test that caps it: on disk where it is, else as
 // published, else an error naming it (a test that can't measure a file says

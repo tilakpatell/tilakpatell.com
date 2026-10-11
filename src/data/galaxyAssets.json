@@ -41045,6 +41045,18 @@
     "from": "models/galaxy/bf2017/levels/hoth/far.bin",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/game/hoth_01/": {
+    "hash": "05378e68a2c9",
+    "bytes": 421204656,
+    "files": 4356,
+    "from": "models/galaxy/bf2017/levels/hoth/game/hoth_01/",
+    "tier": "whole",
+    "check": {
+      "file": "level.json",
+      "bytes": 746472,
+      "hash": "091e1d9e59f4"
+    }
+  },
   "models/galaxy/bf2017/levels/hoth/horizon.bin": {
     "hash": "781a29233336",
     "bytes": 7552,
