@@ -235,6 +235,42 @@ describe('createLevelLoader', () => {
   });
 });
 
+describe('the baked bounce on the game materials (lane N3)', () => {
+  // two primitives: the first with a second uv set (TEXCOORD_1), the second without
+  async function glbUv1() {
+    const doc = new Document();
+    const buf = doc.createBuffer();
+    const pos = doc.createAccessor().setType('VEC3').setArray(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0])).setBuffer(buf);
+    const uv = doc.createAccessor().setType('VEC2').setArray(new Float32Array([0, 0, 1, 0, 0, 1])).setBuffer(buf);
+    const mesh = doc.createMesh();
+    for (const [shader, uv1] of [['Shaders/SS_A', true], ['Shaders/SS_B', false]]) {
+      const prim = doc.createPrimitive().setAttribute('POSITION', pos).setAttribute('TEXCOORD_0', uv).setMaterial(doc.createMaterial(shader).setExtras({ shader, textures: {} }));
+      if (uv1) prim.setAttribute('TEXCOORD_1', uv);
+      mesh.addPrimitive(prim);
+    }
+    doc.createScene().addChild(doc.createNode().setMesh(mesh));
+    return (await new NodeIO().writeBinary(doc)).buffer;
+  }
+  const recipes = { forGlb: () => [{ shader: 'Shaders/SS_A', maps: {} }, { shader: 'Shaders/SS_B', maps: {} }], maps: {}, tex: {} };
+  const materialFor = (recipe) => Object.assign(new THREE.MeshBasicMaterial({ name: recipe.shader }), { isNodeMaterial: true });
+
+  it('only a mesh with TEXCOORD_1 and a chart takes the atlas; the one without keeps the probe term', async () => {
+    const applied = [];
+    const baked = { chartOf: (glb) => (glb === 'meshes/x.lod0.glb' ? [1, 1, 0, 0] : null) };
+    const applyBaked = async (m, chart) => applied.push([m.name, chart]);
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked, applyBaked });
+    await loader.load('meshes/x.lod0.glb');
+    expect(applied).toEqual([['Shaders/SS_A', [1, 1, 0, 0]]]);
+  });
+  it('no chart for the mesh (lane Q3’s probe has not found them), or no atlas: nothing is applied', async () => {
+    const applied = [];
+    const applyBaked = async (m) => applied.push(m.name);
+    await createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked: { chartOf: () => null }, applyBaked }).load('meshes/x.lod0.glb');
+    await createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked: null, applyBaked }).load('meshes/y.lod0.glb');
+    expect(applied).toEqual([]);
+  });
+});
+
 describe('a level pack’s textures bound to their materials', () => {
   it('reads a colour or emissive map as sRGB, whatever its file says (the game’s colour maps are BC7_SRGB)', () => {
     const mat = new THREE.MeshStandardMaterial();

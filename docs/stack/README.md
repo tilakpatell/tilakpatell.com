@@ -12,7 +12,7 @@ WebAssembly is the browser’s own, not a package, and so has no row; its page i
 | --- | --- | --- | --- |
 | `three` | ^0.186.1 | [three.md](three.md) | 677 |
 | `react` | ^19.3.0 | [react.md](react.md) | 311 |
-| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 86 |
+| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 87 |
 | `react-router-dom` | ^7.18.4 | [react.md](react.md) | 84 |
 | `playwright-core` | ^1.56.0 | [testing.md](testing.md) | 80 |
 | `react-icons` | ^5.7.0 | [react.md](react.md) | 72 |

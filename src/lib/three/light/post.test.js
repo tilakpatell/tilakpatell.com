@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom';
-import { COC, NODE_PASSES, ORDER, SHARPEN, SSGI, antialias, arrange, dofParams, headroom, motionBlurOf, passesFor, raysLight, sharpenFor, shed, temporal, upscaleKind, upscaled } from './post';
+import { antialias, arrange, COC, dofParams, headroom, motionBlurOf, NODE_PASSES, ORDER, passesFor, raysLight, SHARPEN, sharpenFor, shed, SSGI, SSR_ROUGHNESS, temporal, upscaled, upscaleKind } from './post';
 import hoth from './fixtures/hoth.ve.json';
 import { gradeOf } from './grade';
 
@@ -251,5 +251,13 @@ describe('sharpen after TAAU, and the samples rule (lane N2)', () => {
     expect(antialias(upscaled(ultra(), { kind: 'fsr1', scale: 0.77 }))).toBe(true);
     expect(antialias(passesFor('high', hoth.sunny, 'webgpu', refs))).toBe(true);
     expect(antialias(passesFor('ultra', hoth.sunny, 'nodes-webgl', refs))).toBe(true);
+  });
+});
+
+describe('SSR’s roughness cut (lane N3)', () => {
+  it('the ssr row reflects only under Lumen’s 0.4; rougher is the material’s environment', () => {
+    expect(SSR_ROUGHNESS).toBe(0.4);
+    const ssr = passesFor('ultra', hoth.sunny, 'webgpu', refs).find((p) => p.kind === 'ssr');
+    expect(ssr.roughnessCutoff).toBe(0.4);
   });
 });

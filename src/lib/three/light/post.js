@@ -127,6 +127,12 @@ export const MOTION_SAMPLES = 16; // MotionBlur's default
 // m: how far SSGI gathers (SSGINode's 12 suits a hall; on open ground it
 // reaches the sky's pixels above every surface that faces up)
 export const SSGI_RADIUS = 4;
+// SSR only under this roughness; above it the material's own environment
+// (the probes, or the atlas) gives the reflection (_source: Lumen's cut,
+// the research note's Lumen section; lane N3). three r186's SSRNode has no
+// cut of its own (no roughnessCutoff nor maxRoughness): passes.js masks its
+// metalness, so a rougher pixel is skipped by SSRNode's own non-metal test.
+export const SSR_ROUGHNESS = 0.4;
 // FSR1Node's RCAS strength (0 the most, 2 none): its own default
 export const FSR_SHARPNESS = 0.2;
 export const UPSCALERS = ['fsr1', 'taau'];
@@ -199,7 +205,7 @@ export function passesFor(tier, entry, backend = 'webgpu', refs = {}) {
     render: () => ({ kind: 'render', scene: refs.scene, camera: refs.camera }),
     ssgi: (preset) => ({ kind: 'ssgi', preset, temporal: tier === 'ultra', ...SSGI[tier === 'ultra' ? 'temporal' : 'plain'][preset], radius: SSGI_RADIUS, gi: GI, camera: refs.camera }),
     ao: () => ({ kind: 'ao', radius: p.ao.radius, bias: p.ao.bias, power: p.ao.power, ...(hbao ? { radius: hbao.radius, scale: hbao.exponent, falloff: hbao.attenuation, blur: hbao.blur, hbao } : {}), camera: refs.camera }),
-    ssr: () => ({ kind: 'ssr', maxDistance: 40, thickness: 0.1, camera: refs.camera }),
+    ssr: () => ({ kind: 'ssr', maxDistance: 40, thickness: 0.1, roughnessCutoff: SSR_ROUGHNESS, camera: refs.camera }),
     volumes: () => ({ kind: 'volumes', volumetrics: refs.volumetrics ?? null, camera: refs.camera }),
     fog: () => ({ kind: 'fog', mode: 'volume', media: fogMedia(entry?.record), fog: p.fog, sun: { dir: p.sun.dir.slice(), color: p.sun.color.slice(), intensity: p.sun.intensity }, steps: FOG_STEPS[tier] ?? FOG_STEPS.high, camera: refs.camera }),
     bloom: () => (grade?.bloom ? { kind: 'bloom', ...bloomTints(grade.bloom), radius: 0, gaussians: true } : { kind: 'bloom', strength: BLOOM.strength * p.bloom.scale, radius: BLOOM.radius, threshold: BLOOM.threshold }),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadThree } from '../light/three.js';
 import { setMipBias } from '../mipBias.js';
-import { CHANNELS, SPECULAR_AA, biasedTexture, composeOverlays, mipBiasUniform, overlayName, specularAA, specularAAValue } from './compose.js';
+import { biasedTexture, CHANNELS, composeOverlays, indirectDiffuse, mipBiasUniform, overlayName, SPECULAR_AA, specularAA, specularAAValue } from './compose.js';
 
 describe('composeOverlays', () => {
   const base = { color: 'c0', roughness: 'r0', metalness: 'm0', normal: 'n0', emissive: 'e0' };
@@ -70,5 +70,16 @@ describe('the picture’s two nodes (GPU-first lane N2)', () => {
     expect(u.value).toBe(-1.5);
     setMipBias(0);
     expect(u.value).toBe(0);
+  });
+});
+
+describe('indirectDiffuse (lane N3: the baked term)', () => {
+  const baked = { node: (uv1, chart) => `atlas(${uv1},${chart.join(' ')})` };
+  it('the atlas where there is one, a uv1 and a chart; else the probe term', () => {
+    expect(indirectDiffuse({ baked, uv1: 'uv1', chart: [1, 1, 0, 0], probe: 'probe' })).toBe('atlas(uv1,1 1 0 0)');
+    expect(indirectDiffuse({ baked: null, uv1: 'uv1', chart: [1, 1, 0, 0], probe: 'probe' })).toBe('probe');
+    expect(indirectDiffuse({ baked, uv1: null, chart: [1, 1, 0, 0], probe: 'probe' })).toBe('probe');
+    expect(indirectDiffuse({ baked, uv1: 'uv1', chart: null, probe: 'probe' })).toBe('probe');
+    expect(indirectDiffuse({ baked, uv1: 'uv1', chart: null })).toBe(null);
   });
 });
