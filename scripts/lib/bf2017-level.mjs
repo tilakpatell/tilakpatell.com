@@ -99,14 +99,15 @@ export function seenWeight(mesh) {
 
 // What you could walk on or over (the fit keeps it on every tier: a mesh
 // not drawn has no collision): a plate (half a metre thick at most, a metre
-// wide), or anything 3 m wide each way and no taller than it is wide. A floor
-// plate, a catwalk, a gangway with its rails, a flight of stairs, a landing
-// platform; not a wall panel, a pillar, a crate or a rock.
+// wide), or anything 3 m wide each way, no taller than it is wide and no
+// more than a storey (4 m). A floor plate, a catwalk, a gangway with its
+// rails, a flight of stairs, a landing platform; not a wall panel, a pillar,
+// a crate, a rock, or a building (Cloud City's backdrop towers).
 export function standsOn(mesh) {
   const [x0, y0, z0, x1, y1, z1] = mesh.bounds;
   const wide = Math.min(x1 - x0, z1 - z0);
   const tall = y1 - y0;
-  return (tall <= 0.5 && wide >= 1) || (wide >= 3 && tall <= wide);
+  return (tall <= 0.5 && wide >= 1) || (wide >= 3 && tall <= Math.min(wide, 4));
 }
 
 export function arenaOf(map, { subs = null, drop = [] } = {}) {

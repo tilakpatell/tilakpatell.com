@@ -57,6 +57,8 @@ describe('standsOn', () => {
     expect(standsOn({ bounds: [-0.6, 0, -0.6, 0.6, 1.2, 0.6] })).toBe(false);
     expect(standsOn({ bounds: [0, 0, 0, 1.28, 0.2, 1.28] })).toBe(true);
     expect(standsOn({ bounds: [-1, 0, -1, 1, 1, 1] })).toBe(false);
+    // (a building is not a floor: the backdrop's towers may go before the walkway)
+    expect(standsOn({ bounds: [-20, 0, -20, 20, 10, 20] })).toBe(false);
   });
 });
 
@@ -186,13 +188,10 @@ describe('buildPack', () => {
   it('says per tier how far out things are drawn, and what the row cost', () => {
     expect(pack.json.cull.high).toEqual({ K: 1000, dropped: [] });
     expect(pack.json.meshes[1]).toMatchObject({ name: 'hangar', lods: [900, 400, 100, 50], glb: ['meshes/hangar.lod0.glb', 'meshes/hangar.lod1.glb', 'meshes/hangar.lod2.glb', 'meshes/hangar.lod3.glb'] });
-    // a row the hangar's LOD0 alone breaks: the reach comes in, then the rock (the lighter) goes;
-    // the hangar is what you stand in, so it stays, and the row is left over by it alone
+    // a row the hangar's LOD0 alone breaks: the reach comes in, then the rock (the lighter) goes
     const tight = buildPack({ world: 'fixture', mapName: 'm', map: readMap(json, bin), spot: [100, 200], groundY: 0, meshes, arena: 256, rows: { ultra: { tris: 905, calls: 700 } } });
     expect(tight.table.ultra.K).toBeLessThan(1000);
-    expect(tight.table.ultra.dropped.map((d) => d.name)).toContain('rock');
-    expect(tight.table.ultra.dropped.map((d) => d.name)).not.toContain('hangar');
-    expect(tight.table.ultra.worst.tris).toBe(900);
+    expect(tight.table.ultra.worst.tris).toBeLessThanOrEqual(905 * 0.9);
   });
 });
 

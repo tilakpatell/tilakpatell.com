@@ -1,18 +1,21 @@
 # scarif: the game's level
 
-From `s9_3/scarif/levels/mp/scarif_02` (Star Wars Battlefront II, 2017, EA DICE; used with permission on this non-commercial fan project). Written by `node scripts/bf2017-level.mjs s9_3/scarif/levels/mp/scarif_02 --world scarif --spawn --subs Scarif_02,Phase_02,Phase_02_Unique`; do not edit by hand.
+From `s9_3/scarif/levels/mp/scarif_02` (Star Wars Battlefront II, 2017, EA DICE; used with permission on this non-commercial fan project). Written by `node scripts/bf2017-level.mjs s9_3/scarif/levels/mp/scarif_02 --world scarif --spawn --subs Scarif_02,Phase_02,Phase_02_Unique --share low=0.6`; do not edit by hand.
 
 - 4380 instances in the arena (±1024 m), 118 beyond it (the horizon), 22 left out under the ground (an interior: its own pack, `--inside`), 64 cells of 128 m
+- fitted to low=0.6 of the tiers' triangles and calls (the site's own things spend the rest)
 - 538 meshes (152 left out), 749 LOD files, 14.72 MB
 - the far list 0.13 MB; terrain near 0.73 MB, far 0.16 MB; the spot's ground 213.10 m in the game
 - textures missing from the bucket: 8
 
 | | low | mid | high |
 |---|---|---|---|
-| drawn out to (radii: a 1 m thing, a 20 m one) | 169 (169 m, 3380 m) | 1000 (1000 m, 20000 m) | 1000 (1000 m, 20000 m) |
-| meshes dropped (instances) | 0 (0) | 0 (0) | 0 (0) |
-| worst place: triangles, calls | 658k, 315 | 771k, 335 | 837k, 340 |
+| drawn out to (radii: a 1 m thing, a 20 m one) | 20 (20 m, 400 m) | 1000 (1000 m, 20000 m) | 1000 (1000 m, 20000 m) |
+| meshes dropped (instances) | 9 (35) | 0 (0) | 0 (0) |
+| worst place: triangles, calls | 215k, 189 | 771k, 335 | 837k, 340 |
 | texture bytes (every map the level has) | 14.03 MB | 43.97 MB | 43.97 MB |
+
+Dropped on low: controlroom_01_floorbeam_01_384x16x16 ×2, hosefolding_01 ×1, hangarcablefloor_s_512_02 ×1, boxmedium_06_stack_01 ×10, boxmedium_06_stack_04 ×2, beachbase_palmburnt_06 ×1, fueltank_01 ×14, trainstation_01_door_02_b ×2, trainstation_01_door_02_a ×2
 
 ## The map's other parts
 
