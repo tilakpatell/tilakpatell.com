@@ -3,6 +3,7 @@
 // (sites/index.js has what a site is.)
 
 import { grove } from './stand';
+import { DEATHSTAR, DEATHSTAR_ZONE } from './deathstar2';
 import { ownMap } from './ownMap';
 
 // Endor's sun, for its sky and the light slanting through its trees
@@ -146,9 +147,15 @@ export const SITES = {
           fog: { color: '#1a2024', density: 0.012 },
         },
       },
+      DEATHSTAR,
     ],
     // (the way into the bunker's halls, at the game's bunker door)
-    zones: [{ id: 'bunkerhalls', name: 'The bunker, inside', door: { at: [250, -44], r: 2.4, prompt: 'Go in through the bunker’s door' }, to: { district: 'bunker' } }],
+    zones: [
+      { id: 'bunkerhalls', name: 'The bunker, inside', door: { at: [250, -44], r: 2.4, prompt: 'Go in through the bunker’s door' }, to: { district: 'bunker' } },
+      // (and overhead, the second Death Star's inside, the game's own: up by
+      // the shuttle on the shield generator's pad, deathstar2.js)
+      DEATHSTAR_ZONE,
+    ],
     place: 'The forest moon',
     line: 'Redwoods older than the Empire, and something small watching you from the ferns.',
     sky: {

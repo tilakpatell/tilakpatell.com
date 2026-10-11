@@ -549,6 +549,32 @@ session_015ZTef1tZABeSq9E86wZKwv, from `claude/bf2017-e0-factory-on-main` at `af
 - The districts are not gated (`galaxy-check` lands on the main map); E0's base was not either.
 - Hoth's row breaches and the baselines (above).
 
+### Lane E4’s follow-ups (`claude/bf2017-e4-followups`)
+
+session_015ZTef1tZABeSq9E86wZKwv, after #911, at the owner’s ask (the E4 hand-off’s Left) and the parent’s (D2’s factory, #926, on every E4 pack). Evidence: `docs/superpowers/evidence/bf2017-levels/e4-followups/` (its README has the gate tables and the shots).
+
+**The Death Star interior’s master shader** (`src/lib/three/surface/dsi.js`; a `dsi` family in `families.js` and `scripts/lib/bf2017-recipes.mjs`). `SS_DSI_Master_*` has no colour map: the paint, the anodised aluminium and the rubberised plastic, the dirt and the soot are the row’s numbers (the defaults, `DSI_*`, the dump’s most common); the packed map (`__NormalEmissiveAO`, `T_DSI_01_RGBA`) is the normal in red and green, the light strips in blue, the AO in alpha; the wear map (`__WearMap`, `T_DSI_01_M`) is the inset plates, the dirt, the soot and the scratched edges, read off the map (the graph is opaque: `DSI_WEAR`); the two-UV kind’s id map is four stripes picked by the second UV. Low draws the paint flat; mid the packed map; high and ultra the masks. The recipe step had dropped the packed map (its `_RGBA` suffix read as no emissive) and read the wear map as metal. The wall tiling (`SS_DSI_WallTiling_*`) is drawn as the master too: its lit strips are its emissive mask’s, `T_DSI_WallTiling_Panel_01_E_M`, not in the bucket, and without it the reactor’s pillars glowed whole.
+
+**The second Death Star, inside: an Endor district** (`sites/deathstar2.js`; the owner’s choice of 11 October over re-skinning or re-laying `/deathstar/inside`, whose rooms and stories stay as they are). `endor/deathstar`, `node scripts/bf2017-level.mjs levels/mp/deathstar02_01 --world endor --district deathstar --inside --spawn --floor 586.4 --ultra` (the spawn area’s deck, 586.4 m in the game, at 0; 19,728 pieces; 173 materials on the DSI master; published by hash). Up by the shuttle on the shield generator’s pad ([390, −189]); landed on the game’s first team-one spawn point (the area’s middle is over a gap); none of the forest in it (lane E3’s `ownMap.js`, a byte-identical copy so E3’s add/add merges clean); no sun, and no sun shadow (`light.shadow: false`, a site’s word for a world lit from within: the shadow pass over the whole level took the frame over 3M triangles); a shaft’s foot at −60 puts you back where you landed. A `--share high=0.5` fit was tried and undone: the fit drops by what is seen, and in an interior that is the walls.
+
+**Cloud City’s drift** (the E4 Left): a teleport (`__surfaceDo` and the dev `teleport`) and a fall’s respawn kept the run’s velocity, and in the air almost nothing slows it (`inAir` deceleration 0.01): both now set you down still. The level’s engine puts the cell under you in first (`levelPhysics.update(ms, at)`), so the deck is solid before the far side of the map. On a real GPU still to be walked.
+
+**The palace in its own frame**: `bespin/m2bes` took Cloud City’s places, people and scatter onto its terraces (420 draws); `ownMap` clears them, as E3’s districts do.
+
+**On D2’s factory**: Scarif, Cloud City, the palace, the outpost and the Death Star again with `--ultra`, the NEVER rule leaving out their light cones, occluders and light blockers; recipes and variations again, the colour words written, published by hash, the stale rows pruned. Scarif’s landing’s ground is now 212.95 m, so its sea is −0.92 (`edge.js`, `planetTables.js`). The palace’s variations script fails on the campaign map’s file name (`web/maps/levels/sp/a2/m2bes/ds02/ds02.json` is not where the index puts it); its `variations.json` is the factory’s empty one.
+
+**The gate counted passes, not draws** (`scripts/galaxy-check.mjs`): on the node renderer `info.render.calls` is the render passes since the page began, never reset (`Renderer.js`’s `info.render.calls ++` per `render()`), and the frame’s draws are `info.render.drawCalls`. The gate now reads `drawCalls ?? calls`. **A finding for lane D2’s rows** (its session closed): the task-7 calls rows and the `nodes-webgl` baselines were measured with the running pass count and want measuring again; the triangle and megabyte columns stand. The same read is in `sea-shot.mjs`, `starfighter-check.mjs` and `bf2017-fx-shots.mjs` (the parent fixes them on `main`). `SHOT_WAIT` is lane E3’s commit, cherry-picked.
+
+**Gates** (the evidence README’s tables): at high every world is inside its row (Scarif 291 calls, 1.46M, 120 MB; Cloud City 412, 1.63M, 130; the palace 517, 2.68M, 82; the outpost 332, 2.79M, 156; the Death Star 90, 373k, 66), Scarif and Cloud City over their pre-level baselines; at ultra the Death Star passes (106, 556k, 126 MB) and Scarif (460 MB), Cloud City (367), the palace (333) and the outpost (506) are over the 285 MB models row with their ultra maps beside the crew’s full cuts.
+
+**Left.**
+- The Death Star inside reads dark and sparse: the game lights it with its Enlighten atlases (lane W’s `atlases` job) and high leaves out 191 of its 613 meshes; its reactor’s strips want `T_DSI_WallTiling_Panel_01_E_M` (lane W’s `textures` job, which plans it among its 3,295).
+- The ultra models row against the packs’ ultra maps and the crew’s full cuts (four worlds over 285 MB).
+- D2’s calls rows and baselines on `nodes-webgl`, measured again (above).
+- Walking Cloud City and the Death Star on a real GPU.
+- The palace’s variations (the script’s map path).
+- `assets-check`’s two empty `horizon.bin` misses (Kamino’s Venator, Jabba’s inside) as of the morning; D2’s #926 says it passes them now.
+
 ### The space lane (the fifth design's Q)
 
 The plan is `docs/superpowers/plans/2026-10-10-bf2017-every-asset-laneQ-space.md`; the shots, `docs/superpowers/evidence/bf2017-space/`. Called “the space lane” here and in the owners table (`space`), apart from #844's `surfaces-Q1` to `Q6`.
