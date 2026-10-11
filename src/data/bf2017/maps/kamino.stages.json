@@ -1,0 +1,49 @@
+{
+  "source": "hand",
+  "mode": "galacticAssault",
+  "level": "Levels/MP/Kamino_01/Kamino_01",
+  "attackers": "dark",
+  "notes": "NOTES.md says how this was made: the stages in the order the level’s own stage strings number them, each team’s line; the attackers the side whose first line does not defend; the objectives are not yet chosen (empty), as no route plays this map’s Galactic Assault",
+  "stages": [
+    {
+      "id": "stage1",
+      "team1": "ID_FANTASYBATTLES_KAMINO_STAGE1_TEAM1",
+      "team2": "ID_FANTASYBATTLES_KAMINO_STAGE1_TEAM2",
+      "text": {
+        "team1": "STOP THE SEPARATISTS FROM REACHING THE ARCHIVES",
+        "team2": "ENTER ARCHIVES AND SLICE CLONE DNA BANK"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage2",
+      "team1": "ID_FANTASYBATTLES_KAMINO_STAGE2_TEAM1",
+      "team2": "ID_FANTASYBATTLES_KAMINO_STAGE2_TEAM2",
+      "text": {
+        "team1": "KEEP THOSE LANDING PADS OPEN FOR REINFORCEMENTS",
+        "team2": "SEIZE LANDING PADS TO SECURE OUR ADVANCE"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage3",
+      "team1": "ID_FANTASYBATTLES_KAMINO_STAGE3_TEAM1",
+      "team2": "ID_FANTASYBATTLES_KAMINO_STAGE3_TEAM2",
+      "text": {
+        "team1": "STOP THE SEPARATISTS FROM ENTERING THE FUSION CORE DOME",
+        "team2": "CONTINUE ATTACK TO REACH FUSION CORE"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage4",
+      "team1": "ID_FANTASYBATTLES_KAMINO_STAGE4_TEAM1",
+      "team2": "ID_FANTASYBATTLES_KAMINO_STAGE4_TEAM2",
+      "text": {
+        "team1": "STOP THE SEPARATISTS FROM DISABLING THE FUSION CORE",
+        "team2": "SHUT DOWN FUSION CORE"
+      },
+      "objectives": []
+    }
+  ]
+}

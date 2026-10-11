@@ -2,13 +2,17 @@
 // src/data/bf2017/ (spec section 8): the teams a level's era fields, their
 // classes, heroes, reinforcements and vehicles, every weapon, ability and
 // star card they carry, the AI's tuning, the level's map, lighting and
-// cameras, the HUD's widgets, and the strings all of them name. Every number
+// cameras, the HUD's widgets, the squads, and the strings all of them name. Every number
 // carries the record it came from (`<key>_source`); see scripts/lib/bf2017-*.
 //
 //   node scripts/bf2017-data.mjs all --root <dir> [--level hoth_01] [--era Orig] [--out src/data/bf2017] [--only <id,…>] [--dry]
 //   node scripts/bf2017-data.mjs <rulebook> --root <dir> …        one rulebook (and what it needs, unwritten)
 //   node scripts/bf2017-data.mjs fixture <record name> [--cut root] [--root <dir>]
 //   node scripts/bf2017-data.mjs modes [--root <dir>] [--out src/data/bf2017]   the levels' mode layers (scripts/lib/bf2017-modes.mjs): web/maps/index.json and each level's manifest
+//   node scripts/bf2017-data.mjs points | kits | arcade [--root <dir>] [--out src/data/bf2017] [--dry]
+//          the costs and the Arcade from their records (scripts/lib/bf2017-rulebook-costs.mjs,
+//          bf2017-arcade.mjs): Online/BattlepointCostData, the PF_KitLimitations_* prefabs,
+//          the Skirmish scenarios and parameters
 //   node scripts/bf2017-data.mjs saber [--root <dir>] [--out src/data/bf2017]   the lightsaber's rulebook (scripts/lib/bf2017-rulebook-saber.mjs): saber.json
 //
 //   root   the export: data.tsv and data/<Name>.json(.gz), with the web build
@@ -26,17 +30,23 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { cutAsset, isSequel, loadAsset, readWebJson, resolveStrings, rootOf, webFile } from './lib/bf2017-ebx.mjs';
 import { abilityRow, cardRow, classRow, heroRow, indexOf, reinforcementRow, teamRow, vehicleRow, weaponRow } from './lib/bf2017-rulebook.mjs';
-import { aiRulebook } from './lib/bf2017-rulebook-ai.mjs';
+import { aiCreatures, aiNames, aiRulebook, aiSquadron } from './lib/bf2017-rulebook-ai.mjs';
+import { airRulebook } from './lib/bf2017-rulebook-air.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
+import { SCREEN_GLOB, infoOf, loadingOf, screensOf, shapesOf } from './lib/bf2017-rulebook-ui.mjs';
+import { squadsRow } from './lib/bf2017-rulebook-squads.mjs';
 import { LEVEL_WORLDS, modesRulebook } from './lib/bf2017-modes.mjs';
+import { kitsRulebook, pointsRulebook } from './lib/bf2017-rulebook-costs.mjs';
+import { arcadeRulebook } from './lib/bf2017-arcade.mjs';
+import { USABLE, levelKey, rulebookFile } from './lib/bf2017-map-audit.mjs';
 import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'build 489592';
 
 // In the order they are built: each reads what an earlier one found.
-export const RULEBOOKS = ['teams', 'map', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'lighting', 'cameras', 'ui', 'strings'];
+export const RULEBOOKS = ['teams', 'map', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'aiNames', 'aiCreatures', 'aiSquadron', 'lighting', 'cameras', 'ui', 'squads', 'screens', 'shapes', 'info', 'loading', 'strings'];
 const NEEDS = {
   classes: ['teams'],
   heroes: ['teams'],
@@ -49,10 +59,15 @@ const NEEDS = {
   strings: RULEBOOKS.filter((r) => r !== 'strings'),
 };
 
+// A level by its key (hoth_02, a1_m0lib_ds02: the 44 usable maps, scripts/lib/bf2017-map-audit.mjs) or its path
+export const levelPath = (level) => USABLE.find((l) => levelKey(l) === String(level).toLowerCase()) ?? level;
+
 export function fileOf(step, level) {
-  const map = level.toLowerCase().replace(/_\d+$/, '');
-  if (step === 'map') return `maps/${map}.json`;
-  if (step === 'lighting') return `maps/${map}.lighting.json`;
+  if (step === 'map') return `maps/${rulebookFile(levelKey(levelPath(level)))}`;
+  if (step === 'lighting') return `maps/${rulebookFile(levelKey(levelPath(level))).replace(/\.json$/, '')}.lighting.json`;
+  if (step === 'aiNames') return 'ai.names.json';
+  if (step === 'aiCreatures') return 'ai.creatures.json';
+  if (step === 'aiSquadron') return 'ai.squadron.json';
   return `${step}.json`;
 }
 
@@ -123,7 +138,7 @@ const WIDGETS = /^UI\/(InGame\/(Hud\/(Weapons\/Widgets\/WeaponHeat\/WeaponHeat(W
 
 const BUILD = {
   teams: (p) => ({ [`${p.era}:${p.level}`]: teamRow(p.root, p.era, p.level) }),
-  map: (p) => mapRow(p.root, p.level),
+  map: (p) => mapRow(p.root, levelPath(p.level)),
   classes: (p, ctx) =>
     byId(
       sides(ctx).flatMap((s) =>
@@ -145,6 +160,10 @@ const BUILD = {
   abilities: (p, ctx) => rowsOf(ctx, uniq([...Object.values(ctx.classes), ...Object.values(ctx.heroes), ...Object.values(ctx.reinforcements)].flatMap((k) => (k.abilities ?? []).map((a) => a.asset))), (n) => abilityRow(p.root, n)),
   cards: (p, ctx) => rowsOf(ctx, uniq(Object.values(ctx.classes).flatMap((k) => k.cardAssets ?? [])), (n) => cardRow(p.root, n)),
   ai: (p) => aiRulebook(p.root),
+  aiNames: (p, ctx) => aiNames(p.root, ctx.$strings),
+  aiCreatures: (p) => aiCreatures(p.root),
+  aiSquadron: (p) => aiSquadron(p.root),
+  squads: (p, ctx) => squadsRow(p.root, { strings: ctx.$strings }),
   lighting: (p) => lightingRow(p.root, p.level),
   cameras: (p, ctx) => camerasRow(p.root, { weapons: Object.values(ctx.weapons), vehicles: uniq(Object.values(ctx.vehicles).map((v) => v.blueprint)).filter((b) => indexOf(p.root).has(`${b}_Camera`)) }),
   ui: (p) =>
@@ -153,6 +172,12 @@ const BUILD = {
       [...indexOf(p.root).keys()].filter((n) => WIDGETS.test(n) && indexOf(p.root).get(n).type === 'UIWidgetBlueprint' && !isSequel(n)),
       { files: webFiles(p.root), depth: 2 },
     ),
+  // the game's screens (lane screens): every screen's tree, the shapes they
+  // and the HUD draw, the modes' cards, the loading screens and hints
+  screens: (p, ctx) => screensOf(p.root, { names: [...indexOf(p.root).keys()].filter((n) => SCREEN_GLOB.test(n) && indexOf(p.root).get(n).type === 'UIWidgetBlueprint'), strings: ctx.$strings }),
+  shapes: (p) => shapesOf(p.root, [...indexOf(p.root).entries()].filter(([, e]) => e.type === 'DiceUIVectorShapeAsset').map(([n]) => n)),
+  info: (p, ctx) => infoOf(p.root, { index: indexOf(p.root), strings: ctx.$strings }),
+  loading: (p, ctx) => loadingOf(p.root, { index: indexOf(p.root), strings: ctx.$strings }),
   strings: (p, ctx) => {
     const ids = new Set();
     const walk = (v, key) => {
@@ -168,10 +193,17 @@ const BUILD = {
 const COUNT = {
   teams: (rows) => ({ rows: Object.keys(rows).length, refused: Object.values(rows).reduce((n, t) => n + t.refused.length, 0) }),
   map: (m) => ({ rows: m.spawns.length + m.polygons.length + m.volumes.length + m.waypoints.length }),
-  ai: (a) => ({ rows: Object.keys(a.tactics).length + Object.keys(a.templates).length + a.patterns.length }),
+  ai: (a) => ({ rows: Object.keys(a.tactics).length + Object.keys(a.templates).length + a.patterns.length + Object.keys(a.coverQueries).length + Object.keys(a.difficulties).length }),
+  aiNames: (n) => ({ rows: Object.values(n).reduce((k, f) => k + Object.keys(f).length, 0) }),
+  aiCreatures: (c) => ({ rows: Object.keys(c.settings).length + Object.keys(c.actors).length + Object.keys(c.prefabs).length }),
+  aiSquadron: (q) => ({ rows: Object.keys(q.trees).length }),
   lighting: (l) => ({ rows: l.lights.length + l.prefabs.length }),
   cameras: (c) => ({ rows: Object.keys(c.vehicles).length + Object.keys(c.aim).length + (c.soldier ? 1 : 0) }),
   ui: (u) => ({ rows: Object.keys(u.widgets).length }),
+  screens: (s) => ({ rows: Object.keys(s.screens).length + Object.keys(s.widgets).length, refused: s._skipped.length }),
+  shapes: (s) => ({ rows: Object.keys(s.shapes).length }),
+  info: (i) => ({ rows: Object.keys(i.modes).length + Object.keys(i.levels).length + Object.keys(i.planets).length, refused: i._skipped.length }),
+  loading: (l) => ({ rows: Object.keys(l.screens).length + Object.keys(l.hints).length, refused: l._skipped.length }),
 };
 
 // Every `_missing` link under a value, once.
@@ -195,7 +227,8 @@ export function run(p, { write, log = console.log, copy = (root, out, ui) => cop
     if (step === 'ui' && !p.dry) counts.ui.copied = copy(p.root, join(ROOT, 'public', 'battlefront'), rows);
     log(`${step.padEnd(15)} ${String(counts[step].rows).padStart(5)} rows${counts[step].refused ? `, ${counts[step].refused} refused` : ''}${missing.length ? `, ${missing.length} missing` : ''}`);
     for (const m of missing) log(`  missing: ${m}`);
-    if (!p.dry && p.write.includes(step)) write(fileOf(step, p.level), { _from: from, rows });
+    // (a map rulebook's header says how many of its rows it could not place: the ledger's check holds it to that)
+    if (!p.dry && p.write.includes(step)) write(fileOf(step, p.level), { _from: step === 'map' ? { ...from, unplaced: rows.unplaced?.length ?? 0 } : from, rows });
   }
   return counts;
 }
@@ -216,6 +249,25 @@ export function fixture(root, name, { cut = null, out = join(ROOT, 'scripts', 'f
   return { file, bytes: statSync(file).size, objects: kept.objects.length };
 }
 
+// The rulebooks one record (or one family of them) makes, each written whole
+// (the kits name their rows by the rulebooks already written)
+const booksIn = (out) => Object.fromEntries(['heroes', 'reinforcements', 'vehicles'].map((b) => [b, JSON.parse(readFileSync(join(ROOT, out, `${b}.json`), 'utf8')).rows]));
+export const RECORDS = {
+  points: (root) => pointsRulebook(root),
+  kits: (root, { out = join('src', 'data', 'bf2017') } = {}) =>
+    kitsRulebook(root, { books: booksIn(out), gameplay: [...indexOf(root)].filter(([, e]) => /CustomizationGameplayAsset$/.test(e.type)).map(([n]) => n) }),
+  arcade: (root, { out = join('src', 'data', 'bf2017') } = {}) => arcadeRulebook(root, { books: booksIn(out) }),
+};
+
+export function record(what, root, { write, log = console.log }) {
+  const head = readFileSync(join(root, 'data.tsv')).subarray(0, 65536);
+  const book = RECORDS[what](root);
+  const { refused = [], ...rows } = book;
+  log(`${what.padEnd(15)} ${JSON.stringify(rows).length} bytes${refused.length ? `, ${refused.length} refused (sequel era)` : ''}`);
+  write(`${what}.json`, { _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10), root: createHash('sha1').update(head).digest('hex') }, ...rows });
+  return book;
+}
+
 // The modes rulebook from the web build's maps: every multiplayer and space
 // level's manifest (bf2017-fetch.mjs --raw <its file>), read for its subworlds.
 export function modes(root, { strings = readWebJson(root, 'strings/English.json') } = {}) {
@@ -226,7 +278,10 @@ export function modes(root, { strings = readWebJson(root, 'strings/English.json'
     if (m.kind !== 'multiplayer' && m.kind !== 'space') continue;
     if (isSequel(m.level)) continue;
     const man = readWebJson(root, m.file);
-    if (man) levels.push({ level: m.level, subworlds: man.subworlds ?? [] });
+    // (the level's rulebook says which modes it holds, where it has one; else its manifest's sub-levels)
+    const book = join(ROOT, 'src/data/bf2017', fileOf('map', levelKey(m.level)));
+    const given = existsSync(book) ? JSON.parse(readFileSync(book, 'utf8')).rows.modes : null;
+    if (man || given) levels.push({ level: m.level, subworlds: man?.subworlds ?? [], modes: given });
     else if (LEVEL_WORLDS[m.file.split('/').pop().replace(/\.json$/, '')]) missing.push(m.file);
   }
   return { book: modesRulebook(levels, strings), missing };
@@ -235,7 +290,18 @@ export function modes(root, { strings = readWebJson(root, 'strings/English.json'
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const argv = process.argv.slice(2);
   try {
-    if (argv[0] === 'modes') {
+    if (RECORDS[argv[0]]) {
+      const args = parseArgs(argv.slice(1));
+      const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
+      record(argv[0], root, {
+        write: (file, json) => {
+          if (args.dry) return;
+          const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), file);
+          writeFileSync(to, JSON.stringify(json) + '\n');
+          console.log(`  wrote ${relative(ROOT, to)} (${Math.round(statSync(to).size / 1024)} KB)`);
+        },
+      });
+    } else if (argv[0] === 'modes') {
       const args = parseArgs(argv.slice(1));
       const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
       const { book, missing } = modes(root);
@@ -243,6 +309,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'modes.json');
       writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }, null, 1) + '\n');
       console.log(`modes: ${Object.keys(book.levels).length} levels on ${Object.keys(book.worlds).length} worlds; wrote ${relative(ROOT, to)}`);
+    } else if (argv[0] === 'air') {
+      // the air vehicles' rulebook (lane fighters): src/data/bf2017/air.json
+      const args = parseArgs(argv.slice(1));
+      const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
+      const book = airRulebook(root);
+      for (const m of book._missing) console.log(`  missing: ${m}`);
+      const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'air.json');
+      writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }) + '\n');
+      console.log(`air: ${Object.keys(book.vehicles).length} vehicles, ${book.refused.length} refused, ${book._missing.length} missing; wrote ${relative(ROOT, to)} (${Math.round(statSync(to).size / 1024)} KB)`);
     } else if (argv[0] === 'saber') {
       const args = parseArgs(argv.slice(1));
       const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');

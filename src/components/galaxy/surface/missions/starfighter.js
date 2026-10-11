@@ -25,7 +25,10 @@
 //   five stages (the corvettes, the mines, the MC80's top, beneath and its
 //   engines), each opening no sooner than its gate, the MC80 breaking up at
 //   the last; the TIE bomber flights as the attacker's waves; the final push
-//   and the defender's reserve as the galaxy's battles have them.
+//   and the defender's reserve as the galaxy's battles have them; and each
+//   side's pilots (`pilots[team]`), twenty names from the game's space-battle
+//   lists (lib/battlefront/ai/names.js) in the battle's seed's order, for the
+//   flights and the mode's HUD.
 // - shipsClear(battle, avoid) → the capital ships that stand inside one
 //   another or inside the planet's, the station's or the shield's solids
 //   (the starfighter test holds it empty).
@@ -35,6 +38,8 @@
 // fights it in place of the war's own while it's on.
 
 import { PLAN } from '../../../universe/battlePlan';
+import { namesFor } from '../../../../lib/battlefront/ai/names.js';
+import { eraOf, fightersOf, heroesOf, kitsOf } from './starfighterKits';
 
 export const METRES = 53.3; // a battle unit in metres (galaxy/battles.js's M)
 
@@ -52,7 +57,8 @@ function turn([x, y, z, w], [vx, vy, vz]) {
 // the game's Team1 and Team2 as the battle's teams (the sides' order: the light side's 0, the dark side's 1, as gcw.js's teamsOf)
 const teamOf = (gameTeam) => gameTeam - 1;
 
-export function levelOf(map, stages) {
+// (`air`, src/data/bf2017/air.json, when given: the sides' fighters are the game's kits, starfighterKits.js)
+export function levelOf(map, stages, air = null) {
   const rows = map.rows ?? map;
   const placed = rows.placed?.starfighter ?? [];
   const prefabs = new Map(rows.prefabs.map((p) => [p.id, p]));
@@ -77,13 +83,15 @@ export function levelOf(map, stages) {
   const ships = stages.ships.map((s) => ({ id: s.id, team: teamOf(s.team), kind: s.kind, role: s.role, name: s.name, pack: Boolean(s.placed), ...(s.placed ? { mesh: s.placed.split('#')[0] } : {}), ...(s.length ? { size: +(s.length / METRES).toFixed(2) } : {}), ...spotOf(s) }));
   const shipOf = new Map(ships.map((s) => [s.id, s]));
   const attacker = teamOf(rows.spaceBattle?.attacker ?? 2);
+  const sides = [stages.sides['1'], stages.sides['2']];
+  const kits = air ? kitsOf(air, rows, { sides }) : null;
   return {
     level: rows.level,
     origin: stages.origin,
     attacker,
     defender: 1 - attacker,
     // (the sides by team: the game's Team1 is the light side's, as the battle's team 0 is)
-    sides: [stages.sides['1'], stages.sides['2']],
+    sides,
     // (the galaxy's stations the level stands in place of: Endor's is the second Death Star's wreckage)
     hides: stages.hides ?? [],
     // (an area of its own, for a level not fought in space: Kamino's, over Tipoca City's sea; levelArea.js)
@@ -99,7 +107,13 @@ export function levelOf(map, stages) {
       }),
     })),
     spawns: [0, 1].map((team) => rows.spawns.filter((s) => s.mode === 'starfighter' && teamOf(s.team) === team && s.enabled).map((s) => ({ at: s.at, yaw: s.yaw }))),
-    fighters: [0, 1].map((team) => stages.fighters[team + 1]),
+    fighters: [0, 1].map((team) => (kits?.[team]?.length ? fightersOf(kits[team]) : stages.fighters[team + 1])),
+    // (the game's kits by side, their hero ships, and the era they're of: null without the air rulebook)
+    kits,
+    heroes: air ? [0, 1].map((team) => heroesOf(air, team)) : null,
+    era: eraOf({ sides }),
+    // (the bots' names by side: the game's AINames_*_SpaceBattles, through the air rulebook; the scene may hand the bots lane's in their place)
+    pilots: sides.map((side) => air?.names?.[side] ?? []),
     bombers: stages.bombers,
     camera: stages.camera,
   };
@@ -114,8 +128,14 @@ export function layoutOf(level, frame) {
   return Object.fromEntries([0, 1].map((team) => [team, sideShips(level, team).map((s) => ({ at: frame(s.at), fwd: s.fwd }))]));
 }
 
+// the level's side names → the name lists' factions
+const FACTION = { rebel: 'rebels', rebels: 'rebels', empire: 'empire', republic: 'republic', separatists: 'separatists' };
+// a battle's id as a seed for its pilots' order
+const seedOf = (id) => [...String(id ?? '')].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 7);
+
 export function starfighterPlan(level, frame, { id, length = PLAN.length } = {}) {
   const { attacker, defender } = level;
+  const pilots = Object.fromEntries([0, 1].map((team) => [team, namesFor(FACTION[level.sides?.[team]] ?? 'empire', 'spaceBattles', seedOf(id), 20)]));
   const fleet = sideShips(level, defender).map((s) => s.id);
   const stages = level.stages.map((st) => ({
     id: st.id,
@@ -124,6 +144,8 @@ export function starfighterPlan(level, frame, { id, length = PLAN.length } = {})
     need: st.objectives.length,
     name: st.title,
     nameDefend: st.titleDefend,
+    // (the game's own words for it, its strings' ids: the mode's panel reads them)
+    ...(st.name ? { sid: st.name, sidDefend: st.nameDefend } : {}),
     ...(st.breaks ? { breaks: true, why: 'flagship' } : {}),
     objectives: st.objectives.map((o) => ({
       id: o.id,
@@ -145,7 +167,7 @@ export function starfighterPlan(level, frame, { id, length = PLAN.length } = {})
   ]
     .filter((e) => e.at <= length)
     .sort((p, q) => p.at - q.at);
-  return { id, kind: 'starfighter', length, attacker, defender, ai: { tAi: PLAN.tAi }, stages, runners: null, side, losses: [], pinned: 'starfighter', escalations };
+  return { id, kind: 'starfighter', length, attacker, defender, ai: { tAi: PLAN.tAi }, stages, runners: null, side, losses: [], pinned: 'starfighter', escalations, pilots };
 }
 
 // the capital ships standing inside one another, or inside a solid round the planet

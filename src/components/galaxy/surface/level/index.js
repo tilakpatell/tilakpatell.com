@@ -7,14 +7,21 @@
 //
 //   levelGround(ground) → Promise<ground>: its `image` layers' heightmaps
 //     fetched and decoded (before the ground's grid is made)
-//   createLevel({ scene, site, tier, renderer, walk }) → null | { update(position), ready(), stats(), dispose() }
+//   createLevel({ scene, site, tier, renderer, walk, small, heightAt, onPhysics }) → null | { update(position), ready(), stats(), physics(), dispose() }
+//     (a pack with the game's shapes, off a phone and the low tier
+//     (levelPhysics.js's wantsEngine): a Rapier world of its own, the cells'
+//     shapes streamed into it beside the walk world's boxes, the ground under
+//     them a heightfield from heightAt; onPhysics(engine) once it's up: the
+//     scene puts the player on the 2017 soldier's body, playerBody.js)
 //   packOf(world) → Promise<level.json> (fetched once)
 //     (walk: the walk world, { solids, floors }, the pack's collision goes into)
 //
 // On the node renderer (WebGPU, or the node renderer on WebGL 2) a pack with
 // a recipes.json (scripts/bf2017-recipes.mjs, lane Q1) draws its game meshes
 // with the game's own surface shader (src/lib/three/surface/); the classic
-// renderer, or a pack without one, keeps the GLB's materials. Their sun (a
+// renderer, or a pack without one, keeps the GLB's materials. A pack with a
+// variations.json (lane colour) draws each varied mesh in the game's
+// variation for this level. Their sun (a
 // leaf's translucency, hair's lobes, a head's scattering) follows the
 // scene's first directional light.
 
@@ -23,9 +30,11 @@ import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
 import { packUrl, wanted } from './levelPack.js';
+import { variationsIndex } from './levelVariations.js';
 import { createLevelScene } from './levelScene.js';
 import { createLevelStream } from './levelStream.js';
 import { createColliders } from './colliders.js';
+import { createLevelPhysics, wantsEngine } from './levelPhysics.js';
 
 // A pack file's bytes, from the bucket where it has it, else the site.
 // (No abort signal on the request: assetBase reads any failure as the bucket
@@ -90,6 +99,13 @@ const recipesFor = (world, pack) =>
     .then((b) => recipesIndex(pack, JSON.parse(new TextDecoder().decode(b))))
     .catch(() => null);
 
+// The pack's variations for the loader (null without a variations.json:
+// scripts/bf2017-variations.mjs, lane colour)
+const variationsFor = (world, pack) =>
+  bytesOf(world)('variations.json')
+    .then((b) => variationsIndex(pack, JSON.parse(new TextDecoder().decode(b))))
+    .catch(() => null);
+
 // The scene's sun (its first directional light) as the game material takes
 // it: a direction toward the sun and its colour; null without one
 const _a = { x: 0, y: 0, z: 0 };
@@ -120,8 +136,9 @@ function findSun(scene) {
 async function gameMaterials(world, pack, renderer, tier, scene) {
   // (low draws the GLB as it is: nothing to swap or fetch)
   if (!renderer?.isWebGPURenderer || tier === 'low') return { recipes: null, materialFor: null };
-  const [recipes, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }] = await Promise.all([
+  const [recipes, variations, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }] = await Promise.all([
     recipesFor(world, pack),
+    variationsFor(world, pack),
     import('../../../../lib/three/surface/hair.js'),
     import('../../../../lib/three/surface/gameMaterial.js'),
     import('../../../../lib/three/light/three.js'),
@@ -129,10 +146,10 @@ async function gameMaterials(world, pack, renderer, tier, scene) {
   if (!recipes) return { recipes: null, materialFor: null };
   const [make, three] = await Promise.all([loadSurfaceMaterial(), loadThree()]);
   const sun = createSunUniforms(three, sunOf(scene) ?? {});
-  return { recipes, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
+  return { recipes, variations, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
 }
 
-export function createLevel({ scene, site, tier, renderer = null, walk = null }) {
+export function createLevel({ scene, site, tier, renderer = null, walk = null, small = false, heightAt = null, onPhysics = null }) {
   if (!site?.level) return null;
   const world = site.level;
   const fetchBytes = bytesOf(world);
@@ -143,18 +160,51 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null })
   let last = null;
   let sun = null; // the game materials' shared sun, when they draw
   let sunLight = null;
-  const colliders = walk ? createColliders(walk, tier) : null;
+  const colliders = walk ? createColliders(walk, tier, { loadBin: fetchBytes }) : null;
+  // the engine's side: its world, the cells' bodies, and the cells the
+  // stream brought before the engine was up (added once it is)
+  let engine = null;
+  let bodies = null;
+  const early = new Map(); // key → bin
+  const onCell = (key, bin) => {
+    colliders?.add(key, pack0, bin);
+    if (bodies) bodies.add(key, bin);
+    else early.set(key, bin);
+  };
+  const onDrop = (key) => {
+    colliders?.drop(key);
+    early.delete(key);
+    bodies?.drop(key);
+  };
+  let pack0 = null;
+  async function startEngine(pack) {
+    if (!wantsEngine({ pack, small, tier })) return;
+    const { createPhysics } = await import('../../../../lib/physics/world.js');
+    const physics = await createPhysics({ gravity: -15.5 });
+    if (gone) return physics.dispose();
+    engine = physics;
+    bodies = createLevelPhysics({ physics, pack, loadBin: fetchBytes, tier });
+    if (heightAt) bodies.setTerrain(heightAt);
+    for (const [key, bin] of early) bodies.add(key, bin);
+    early.clear();
+    onPhysics?.(physics);
+  }
   packOf(world)
     .then(async (pack) => {
-      const { recipes, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
+      pack0 = pack;
+      // (the engine loads beside the materials; a failure leaves the walker as it was)
+      startEngine(pack).catch((e) => {
+        if (import.meta.env?.DEV) console.warn('level physics failed', world, e);
+      });
+      const { recipes, variations = null, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
       sun = shared;
       if (gone) return;
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations });
       level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when
       // a cell goes)
-      stream = createLevelStream({ pack, fetch: (path) => fetchBytes(path), wanted, tier, onFar: level.setTable, onHorizon: level.setHorizon, onCell: (key, bin) => colliders?.add(key, pack, bin), onDrop: (key) => colliders?.drop(key) });
+      stream = createLevelStream({ pack, fetch: (path) => fetchBytes(path), wanted, tier, onFar: level.setTable, onHorizon: level.setHorizon, onCell, onDrop });
       if (last) {
         stream.update(last, tier);
         level.update(last);
@@ -175,13 +225,18 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null })
       }
       stream?.update(position, tier);
       level?.update(position);
+      bodies?.update(4);
     },
     ready: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,
-    stats: () => level?.stats() ?? { tris: 0, calls: 0, instances: 0 },
+    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), physics: bodies?.stats() ?? null }),
+    // the level's engine, once it's up (null on a phone, the low tier, a pack without shapes)
+    physics: () => engine,
     dispose() {
       gone = true;
       colliders?.dispose();
+      bodies?.dispose();
+      engine?.dispose();
       stream?.dispose();
       level?.dispose();
       loader?.dispose();

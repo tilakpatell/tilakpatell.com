@@ -1,0 +1,100 @@
+{
+ "name": "levels/mp/hoth_01/content/MeshVariationDb_Win32",
+ "type": "MeshVariationDatabase",
+ "objects": [
+  {
+   "$type": "MeshVariationDatabase",
+   "Entries": [
+    {
+     "Mesh": {
+      "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+      "$assetType": "CompositeMeshAsset",
+      "$class": "4d888469-bc6f-434f-784f-3d7db3fb8202"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "309f7fd5-559d-805d-75c6-d8257e92bbc6"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -4660632450724550991,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/T_Box_M_01_A_CS",
+          "$assetType": "TextureAsset",
+          "$class": "6860ea8e-cb33-6b7f-5386-1d456034615a"
+         },
+         "ParameterName": "_CS"
+        },
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/T_Box_M_01_A_NAM",
+          "$assetType": "TextureAsset",
+          "$class": "f6f63969-c000-7c23-38fa-ed45f38221a9"
+         },
+         "ParameterName": "_NAM_texcoord0"
+        }
+       ],
+       "SurfaceShaderGuid": "943997d0-0838-48ac-acfe-09d7bf578581",
+       "SurfaceShaderId": 2612997987
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "4a70849e-cf4a-3b90-244c-dcd394398992"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 4807327068585634827,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_Glass_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "d3403a88-08ee-4b4e-d240-ad54edacf757"
+         },
+         "ParameterName": "CS"
+        }
+       ],
+       "SurfaceShaderGuid": "5e3bae45-4298-4e05-99ae-d2d0aeaa763a",
+       "SurfaceShaderId": 3200948114
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "f14b6fda-1cc3-4dcd-b3af-5c026ad4de7d"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 8122808864205787588,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_Glass_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "d3403a88-08ee-4b4e-d240-ad54edacf757"
+         },
+         "ParameterName": "CS"
+        },
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_GlassDamage_01_RGBM",
+          "$assetType": "TextureAsset",
+          "$class": "cbfd8922-6dbc-a920-40bc-77787cb1b89a"
+         },
+         "ParameterName": "DestructionRGBA"
+        }
+       ],
+       "SurfaceShaderGuid": "5e3bae45-4298-4e05-99ae-d2d0aeaa763a",
+       "SurfaceShaderId": 3200948114
+      }
+     ],
+     "VariationAssetNameHash": 0
+    }
+   ]
+  }
+ ]
+}

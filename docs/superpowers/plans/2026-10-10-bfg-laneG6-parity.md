@@ -8,6 +8,8 @@
 
 **Spec:** `2026-10-10-bf2017-galaxy-on-the-game-design.md`, decision 8.
 
+**Narrowed beside PR #877 (read the spec's "Beside the accuracy design" first):** #877's maps lane (`claude/bf2017-maps`) writes a per-map ledger (`scripts/lib/bf2017-map-audit.mjs`, `scripts/bf2017-map-audit.mjs`, `docs/superpowers/evidence/bf2017-maps/ledger.md`, a CI check). **One ledger, not two:** Task 1's rows become the **mode columns** of that ledger (rules, sim, HUD, kits, prices, check, score per level × mode) added to its module and page once it lands (merge its branch; if it has not landed when you reach Task 1, write your module so its rows join by level key and tell the hand-off). Tasks 2 and 3 (the compare harness, the gizmo overlay) are yours alone.
+
 ## Global constraints
 
 - Start from `main`. Own: `scripts/bf2017-parity.mjs` and its test, `scripts/bf2017-compare.mjs`, `scripts/lib/bf2017-parity.mjs` (pure, tested), `src/components/battlefront/gizmos.js` (and the one line in `module.js` that mounts it on `?gizmos=1`), `docs/superpowers/evidence/bf2017-parity/**`, the CI step (`.github/workflows/ci.yml`: `node scripts/bf2017-parity.mjs --check`), `HANDOFF-battlefront.md`'s status table (the ledger's summary).

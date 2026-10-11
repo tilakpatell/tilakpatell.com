@@ -65,6 +65,8 @@ export function createCommander({ team, side, ga, squads, bp, rand = Math.random
 // where on an objective a bot stands: its middle, or the walkable spot nearest an interact prop
 function pointOf(o) {
   if (o.type === 'escort') return xz(o.walker);
+  // (a carried objective: to it while it lies, to its drop-off once someone has it)
+  if (o.type === 'carry') return o.carrier ? o.to : o.at;
   return o.at;
 }
 
@@ -105,6 +107,7 @@ function orders(c, o, role) {
   const at = pointOf(o);
   const i = c.ga.objectives.indexOf(o);
   if (role === 'escort') return task(c, `o${i}`, { at, role, radius: ESCORT_RADIUS });
+  if (o.type === 'carry') return task(c, `o${i}:${role}:${o.carrier ? 'to' : 'at'}`, { at, spot: at, role, radius: role === 'take' && !o.carrier ? 0 : HOLD_RADIUS });
   if (o.type === 'arm' || o.type === 'uplink') {
     const interact = role === 'take';
     return task(c, `o${i}:${role}`, { at, spot: spotOf(c, o), role, interact, radius: interact ? 0 : HOLD_RADIUS + INTERACT_REACH });
@@ -121,6 +124,7 @@ function attackPlan(c, live, alive) {
     } else if (o.type === 'capture') options.push({ o, w: o.done ? WEIGHTS.guard : WEIGHTS.capture, role: o.done ? 'hold' : 'take' });
     else if (o.type === 'arm' && !o.done) options.push({ o, w: o.armed ? WEIGHTS.guard : WEIGHTS.arm, role: o.armed ? 'hold' : 'take' });
     else if (o.type === 'hold' && !o.done) options.push({ o, w: WEIGHTS.capture, role: 'take' });
+    else if (o.type === 'carry' && !o.done) options.push({ o, w: WEIGHTS.arm, role: 'take' });
     else if (o.type === 'uplink') options.push({ o, w: WEIGHTS.uplink, role: 'hold' });
   }
   const plan = new Map();
@@ -155,7 +159,7 @@ function defendPlan(c, live, enemies) {
     const sq = free.shift();
     plan.set(sq.id, { objective: c.ga.objectives.indexOf(o), role, task: orders(c, o, role) });
   };
-  const points = live.filter((o) => o.type === 'capture' || o.type === 'hold' || (o.type === 'arm' && !o.done));
+  const points = live.filter((o) => o.type === 'capture' || o.type === 'hold' || o.type === 'carry' || (o.type === 'arm' && !o.done));
   const threatened = points.map((o) => ({ o, t: threatOn(o, enemies) + (o.armed ? 100 : 0) })).filter((x) => x.t > 0);
   threatened.sort((a, b) => b.t - a.t);
   for (const { o } of threatened) give(o, o.armed ? 'take' : 'hold');

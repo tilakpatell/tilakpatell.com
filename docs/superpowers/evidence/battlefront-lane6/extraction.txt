@@ -1,0 +1,15 @@
+seed  winner  why  stage  minutes  kills1  kills2  heroes1  heroes2  ms
+1       Rebels  objectives  0       1.7     12      6       0       0       6675  
+2       Rebels  objectives  0       1.2     9       1       0       0       5970  
+3       Rebels  objectives  0       2.5     8       12      0       0       8609  
+4       Rebels  objectives  0       2.3     16      15      0       0       5035  
+5       Rebels  objectives  0       1.6     13      4       0       0       3875  
+6       Rebels  objectives  0       2.6     18      14      0       0       4880  
+7       Rebels  objectives  0       1.6     12      6       0       0       2570  
+8       Rebels  objectives  0       3.3     14      16      0       0       6085  
+9       Rebels  objectives  0       8       57      70      0       0       11339 
+10      Rebels  objectives  0       5.5     38      44      0       0       8166  
+11      Rebels  objectives  0       5.8     29      45      0       0       8126  
+12      Rebels  objectives  0       4.9     30      19      0       0       5923  
+
+12 rounds of extraction (the Rebels attack first): Rebels objectives 12; no result in 25 min 0; median 2.55 min; kills 21.3 (Rebels) to 21.0 (Empire); stuck 0, off the navgrid 0; 6437.8 ms a round

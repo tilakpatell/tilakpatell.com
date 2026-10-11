@@ -22,3 +22,10 @@ Dropped on mid: sb_dirtdecals_03 ×2, sb_dirtdecals_01 ×6, decalmesh_hitscorch_
 
 Dropped on high: sb_dirtdecals_03 ×2, sb_dirtdecals_01 ×6, decalmesh_hitscorch_01 ×19, sb_dirtdecals_02 ×7, sb_dirtdecals_05 ×13, sb_dirtdecals_06 ×10, sb_dirtdecals_04 ×21, deathstar_debris_m_03 ×8, turretturbolaser_01 ×23, stardestroyer_hangarprimary_door_01 ×1, stardestroyer_tractorbeam_01 ×2, stardestroyer_hangarprimaryentrance_01 ×1, stardestroyer_detailsside_01_right_d ×1, stardestroyer_detailsside_01_d ×1, mc80_largenodule_01 ×1, mc80_engine_module_03 ×2, mc80_mainturret ×1, debris_pipe_xl_01 ×12, stardestroyer_detailshulltop_02 ×1, stardestroyer_detailsfront_01 ×1, stardestroyer_hangarsecondary_01 ×1, stardestroyer_detailshulltop_04 ×1, stardestroyer_detailshulltop_01 ×1, debris_sdreactorpipe_s1024_a_01 ×37
 
+## Variations
+
+Written by `node scripts/bf2017-variations.mjs sb_endor` from the level's 13 mesh variation databases (variations.json, 0.22 MB).
+
+| meshes | with variations | applied by instances | by the level rule | mixed (default drawn) | textures missing from the bucket | maps not in the pack |
+|---|---|---|---|---|---|---|
+| 210 | 15 | 2 | 0 | 3 | 51 | 0 |

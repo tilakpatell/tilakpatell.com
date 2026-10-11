@@ -1,95 +1,99 @@
-// The shader depots' parameter names, hashed and resolved. Frostbite's
-// compiled materials (maps_work/shaderdepots.jsonl on the desktop, from
-// `bf2export sbdprobe`) carry each live parameter block under a hashed name:
-// the hash is djb2-xor of the lower-cased name (h = ((h << 5) + h) ^ c from
-// 5381, 32 bits). A dictionary of the names the readable records use (the
-// materials dump's texture, vector and bool keys, the ObjectVariation
-// records' ParameterNames, the SurfaceShaderPreset records' parameters)
-// names a depot's blocks again, so a vehicle's or a kit's live tints and
-// switches can be read by name instead of a hand table (the colour lane:
-// docs/superpowers/plans/2026-10-10-bf2017-accuracy-lane-colour.md, task 1).
+// The shader depots' hashed parameter names, named (lane colour:
+// docs/superpowers/specs/2026-10-10-bf2017-accuracy-design.md, §1.1). The
+// depots (`maps_work/shaderdepots.jsonl`, the desktop's `bf2export
+// sbdprobe`) keep each compiled material's parameter blocks with hashed
+// names: the hash is djb2-xor (`h = ((h << 5) + h) ^ c` from 5381, 32-bit)
+// of the lower-cased name, so a dictionary of the names the export does
+// spell out (the material dump's keys, the object variations' parameter
+// names, the shader presets' parameters) names them. The mesh variation
+// databases' `VariationAssetNameHash` is the same hash of the variation's
+// lower-cased asset path. Pure.
 //
-//   hashName(name) → 'xxxxxxxx'         (lower-cased, the depots' rule)
-//   hashExact(name) → 'xxxxxxxx'        (as written: the type names `Vec` and `Boolean` hash this way)
+//   djb2(text) → 'xxxxxxxx' (as written: the depots' type names are hashed so)
+//   hashName(name) → 'xxxxxxxx' (lower-cased first: the dictionary's hash)
 //   namesFrom({ materials, variations, presets }) → Set of names
-//   dictionary(names) → { byHash: Map(hash → name), names: { name: hash } }
-//   resolveDepot(row, dict) → { params: [{ name | hash, type, value }], resolved, unresolved: { hash: count } }
-//   vecOf(hex) → [x, y, z, w]           (16 bytes of little-endian floats)
+//   resolveDepot(rows, names) → { params: [{ name | hash, type, value }], resolved, unresolved: { hash: count } }
+//   resolveHashes(names) → Map(numeric hash → name)
 
-const hash32 = (s) => {
+// the depots' type hashes, as the sbdprobe rows show them (Vec is djb2 of
+// 'Vec'; Boolean's is the probe's as observed, the spelling unknown)
+export const TYPES = { '0b87fa95': 'Vec', '0d1cfa1b': 'Boolean' };
+
+const utf8 = new TextEncoder();
+
+export function djb2(text) {
   let h = 5381;
-  for (const c of Buffer.from(String(s), 'utf8')) h = ((((h << 5) + h) >>> 0) ^ c) >>> 0;
+  for (const c of utf8.encode(text)) h = (((h << 5) + h) ^ c) >>> 0;
   return h.toString(16).padStart(8, '0');
-};
-export const hashExact = (name) => hash32(name);
-export const hashName = (name) => hash32(String(name).toLowerCase());
-
-// the type hashes the depot probe writes on each block
-export const TYPES = { [hashExact('Vec')]: 'Vec', [hashName('vec')]: 'Vec', [hashExact('Boolean')]: 'Boolean', [hashName('boolean')]: 'Boolean', [hashExact('Texture')]: 'Texture', [hashName('texture')]: 'Texture', [hashExact('Float')]: 'Float', [hashName('float')]: 'Float' };
-
-// every name the readable records use: the materials dump's slots and
-// parameters (one JSON a line, or parsed rows), the ObjectVariation
-// records' ParameterName fields (walked wherever they sit), the presets'
-// parameter lists
-export function namesFrom({ materials = [], variations = [], presets = [] } = {}) {
-  const names = new Set();
-  const add = (n) => {
-    if (typeof n === 'string' && n.trim()) names.add(n.trim());
-  };
-  const rows = (x) => (typeof x === 'string' ? x.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l)) : x);
-  for (const m of rows(materials)) for (const mat of m.materials ?? [m]) for (const key of ['textures', 'vectors', 'bools', 'conditionals']) for (const n of Object.keys(mat[key] ?? {})) add(n);
-  const walk = (v) => {
-    if (Array.isArray(v)) return v.forEach(walk);
-    if (!v || typeof v !== 'object') return;
-    for (const [k, x] of Object.entries(v)) {
-      if (/^(ParameterName|Name)$/.test(k) && typeof x === 'string') add(x);
-      else walk(x);
-    }
-  };
-  for (const v of rows(variations)) walk(v);
-  for (const p of rows(presets)) walk(p);
-  return names;
 }
 
-export function dictionary(names) {
-  const byHash = new Map();
-  const out = {};
-  for (const n of names) {
-    const h = hashName(n);
-    if (!byHash.has(h)) byHash.set(h, n);
-    out[n] = h;
+export const hashName = (name) => djb2(String(name).toLowerCase());
+
+// every parameter name a record spells out, wherever it sits: an object's
+// `ParameterName`, a preset's `Name` in a `Parameters` list
+function walkNames(node, out) {
+  if (Array.isArray(node)) {
+    for (const v of node) walkNames(v, out);
+    return;
   }
-  return { byHash, names: out };
+  if (!node || typeof node !== 'object') return;
+  if (typeof node.ParameterName === 'string' && node.ParameterName) out.add(node.ParameterName);
+  for (const [k, v] of Object.entries(node)) {
+    if (k === 'Parameters' && Array.isArray(v)) for (const p of v) if (typeof p?.Name === 'string' && p.Name) out.add(p.Name);
+    if (v && typeof v === 'object') walkNames(v, out);
+  }
 }
 
-// four little-endian floats from a block's 16-byte hex
-export function vecOf(hex) {
-  const b = Buffer.from(String(hex).replace(/^0x/, ''), 'hex');
-  if (b.length < 16) return null;
-  return [0, 4, 8, 12].map((i) => +b.readFloatLE(i).toPrecision(7));
+export function namesFrom({ materials = [], variations = [], presets = [] } = {}) {
+  const out = new Set();
+  for (const row of materials) {
+    for (const m of row.materials ?? []) {
+      for (const group of ['textures', 'vectors', 'bools']) for (const k of Object.keys(m[group] ?? {})) out.add(k);
+      // (the conditionals are keyed by path: Shaders/ExternalConditionals/<name>)
+      for (const k of Object.keys(m.conditionals ?? {})) out.add(k.split('/').pop());
+    }
+  }
+  for (const r of [...variations, ...presets]) walkNames(r, out);
+  return out;
 }
 
-const hashOf = (v) => String(v ?? '').toLowerCase().replace(/^0x/, '').padStart(8, '0');
+// a Vec's 16 bytes as four little-endian floats
+function vecOf(hex) {
+  if (typeof hex !== 'string' || hex.length !== 32) return hex;
+  const b = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) b[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  const v = new DataView(b.buffer);
+  return [0, 4, 8, 12].map((o) => Math.round(v.getFloat32(o, true) * 1e6) / 1e6);
+}
 
-// A depot row's blocks named: each `{ name: <hash>, type: <hash>, value }`
-// becomes `{ name | hash, type, value }` (a Vec's value as four floats); a
-// hash the dictionary lacks is left as it is and counted, never guessed
-export function resolveDepot(row, dict) {
+export function resolveDepot(rows, names) {
+  const byHash = new Map();
+  for (const n of names) byHash.set(hashName(n), n);
   const params = [];
   const unresolved = {};
   let resolved = 0;
-  for (const block of row.blocks ?? row.params ?? []) {
-    const h = hashOf(block.name ?? block.hash);
-    const type = TYPES[hashOf(block.type)] ?? block.type ?? null;
-    const name = dict.byHash.get(h) ?? null;
-    const value = type === 'Vec' && typeof block.value === 'string' ? (vecOf(block.value) ?? block.value) : block.value;
-    if (name) {
-      resolved++;
-      params.push({ name, type, value });
-    } else {
-      unresolved[h] = (unresolved[h] ?? 0) + 1;
-      params.push({ hash: h, type, value });
+  for (const row of rows) {
+    for (const block of row.blocks ?? []) {
+      for (const p of block.params ?? []) {
+        const hash = String(p.hash ?? p.nameHash ?? '').toLowerCase();
+        const type = TYPES[String(p.type ?? '').toLowerCase()] ?? p.type ?? null;
+        const value = type === 'Vec' ? vecOf(p.value) : p.value;
+        const name = byHash.get(hash);
+        if (name) {
+          resolved++;
+          params.push({ name, type, value });
+        } else {
+          unresolved[hash] = (unresolved[hash] ?? 0) + 1;
+          params.push({ hash, type, value });
+        }
+      }
     }
   }
   return { params, resolved, unresolved };
+}
+
+export function resolveHashes(names) {
+  const out = new Map();
+  for (const n of names) out.set(parseInt(hashName(n), 16), n);
+  return out;
 }

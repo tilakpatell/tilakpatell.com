@@ -15,7 +15,8 @@ const MARK = /^(<{7}|>{7})(?: \S.*)?$/;
 export const markedLines = (text) => text.split('\n').flatMap((line, i) => (MARK.test(line) ? [i + 1] : []));
 
 export function scan(root = process.cwd()) {
-  const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
+  // (the listing passed Node's 1 MB default with the space levels' packs: room to grow)
+  const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8', maxBuffer: 64 << 20 }).split('\0').filter(Boolean);
   const out = [];
   for (const f of files) {
     if (/\.(png|jpe?g|webp|gif|glb|ktx2|bin|mp3|ogg|wav|woff2?|ttf|pdf|zip|ico)$/i.test(f)) continue;
