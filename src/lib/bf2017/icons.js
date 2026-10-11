@@ -74,6 +74,10 @@ export const ICON_FOR = {
   'side:dark': 'Factions/Icon_GalacticEmpire',
   'side:republic': 'Factions/Icon_GalacticRepublic',
   'side:separatists': 'Factions/Icon_Separatists',
+  // (the galaxy's wars name the same two sides by who they are, sides.js;
+  // the New Republic, the Remnant and the Hutts have no icon in the game)
+  'side:rebel': 'Factions/Icon_RebelAlliance',
+  'side:empire': 'Factions/Icon_GalacticEmpire',
   'vehicle:speeder': 'Speeders/Icon_74-Z_SpeederBike',
   'vehicle:snowspeeder': 'Speeders/Icon_T-47_AirSpeeder',
   'vehicle:landspeeder': 'Speeders/Icon_X-34_LandSpeeder',
