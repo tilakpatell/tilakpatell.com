@@ -24,7 +24,9 @@
 //                                   here: the LUT strip through gameLut.js, the rest through the stack's
 //                                   KTX2 loader; one that fails to load is left out and named in
 //                                   parts.picture.missing). None: nothing here changes.
-// }) → Promise<{ update(dt, camera), setWeather(entry, seconds), track(object), untrack(object),
+//   onChain,                        (passes) => …: the chain built again when a weather's picture
+//                                   lands at a crossfade's end (its LUT and Gaussians), for rt.gfx.post
+// }) → Promise<{ update(dt, camera), setWeather(entry, seconds, { picture }), track(object), untrack(object),
 //   setParticleLights(list) (effects.js's lights(): after the placed ones, the newest dropped past
 //   the pool; placed.js), shadowTerm, passes, params, parts, dispose }>
 //
@@ -50,15 +52,32 @@ import { backendOf, loadThree, registerLights } from './three.js';
 export const WEATHER_FADE = 20; // s: lane G's crossfade between two weathers
 const ENV_EVERY = 2; // s: the sky's environment re-baked this often while a weather fades
 
-// The picture's textures, loaded; each that fails is named, not thrown
-async function loadPicture(pic, renderer, THREE) {
-  const out = { lut: null, panorama: null, gradient: null, cloudShadow: null, missing: [] };
+// (the picture's loaders, imported once, when a picture is first asked for)
+let lutModule = null;
+let gltfModule = null;
+const gameLut = () => (lutModule ??= import('../gameLut.js'));
+const gltf = () => (gltfModule ??= import('../gltf.js'));
+
+// The picture's textures, loaded; each that fails is named, not thrown. A
+// url already in `have` (the weather before's, a texture two weathers share)
+// is that texture again, not a second load. Each goes through the asset base
+// (published by hash: src/data/galaxyAssets.json), the site's copy its fallback.
+async function loadPicture(pic, renderer, THREE, have = null) {
+  const out = { lut: null, panorama: null, gradient: null, cloudShadow: null, missing: [], urls: {} };
   if (!pic) return out;
+  // (one loader for the three textures, asked for once)
   let ktx2 = null;
+  const loader = () => (ktx2 ??= gltf().then((m) => m.ktx2Loader({ renderer })));
+  const { withFallback } = await import('../../assetBase.js');
   const load = async (key, url) => {
+    out.urls[key] = url;
+    if (have?.urls?.[key] === url && have[key]) {
+      out[key] = have[key];
+      return;
+    }
     try {
-      ktx2 ??= await (await import('../gltf.js')).ktx2Loader({ renderer });
-      const t = await ktx2.loadAsync(url);
+      const k = await loader();
+      const t = await withFallback((u) => k.loadAsync(u))(site(url));
       t.colorSpace = THREE.NoColorSpace;
       t.wrapS = THREE.RepeatWrapping;
       t.wrapT = key === 'cloudShadow' ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
@@ -69,25 +88,34 @@ async function loadPicture(pic, renderer, THREE) {
     }
   };
   const jobs = [];
-  if (pic.lut)
+  if (pic.lut && have?.urls?.lut === pic.lut.url && have.lut) {
+    out.urls.lut = pic.lut.url;
+    out.lut = have.lut;
+  } else if (pic.lut) {
+    out.urls.lut = pic.lut.url;
     jobs.push(
-      import('../gameLut.js')
-        .then(({ loadLut }) => loadLut(pic.lut.url, pic.lut.size))
+      gameLut()
+        .then(({ loadLut }) => withFallback((u) => loadLut(u, pic.lut.size))(site(pic.lut.url)))
         .then((t) => (out.lut = t))
         .catch(() => out.missing.push(pic.lut.url)),
     );
+  }
   for (const k of ['panorama', 'gradient', 'cloudShadow']) if (pic[k]) jobs.push(load(k, pic[k].url));
   await Promise.all(jobs);
   return out;
 }
 
-export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null } = {}) {
+// (the picture files' urls are the site's paths without the leading slash)
+const site = (url) => (/^(\/|[a-z]+:)/i.test(url) ? url : `/${url}`);
+const lerp3 = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+
+export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null, onChain = null } = {}) {
   const { THREE } = await loadThree();
   const backend = backendOf(renderer);
   await registerLights(renderer);
   // (the record's picture, lane Q6: only where asked and only on the node renderer)
-  const pic = backend !== 'webgl' ? pictureOf(entry, picture) : null;
-  const tex = await loadPicture(pic, renderer, THREE);
+  let pic = backend !== 'webgl' ? pictureOf(entry, picture) : null;
+  let tex = await loadPicture(pic, renderer, THREE);
   const was = { shadows: renderer.shadowMap?.enabled, shadowType: renderer.shadowMap?.type, environment: scene.environment, fogNode: scene.fogNode };
   if (renderer.shadowMap) renderer.shadowMap.enabled = tier !== 'low';
   let params = readEntry(entry, { origin });
@@ -135,10 +163,34 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
 
   // (the volumes draw only through the post chain)
   const vols = post && volumetrics && CONES_LIT[tier] && backend !== 'webgl' ? await createVolumetrics(scene, renderer, { tier, source: volumetrics, lights, scale: params.gameToSite }) : null;
-  const passes = post ? passesFor(tier, entry, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, volumetrics: vols, grade: pic?.grade ?? null }) : [];
-  // (the bloom's threshold from the record's grade: calibrate.js; the
-  // record's own Gaussians have none)
-  for (const p of passes) if (p.kind === 'bloom' && !p.gaussians) p.threshold = params.grade.bloomThreshold;
+  const chainFor = (e) => {
+    const out = post ? passesFor(tier, e, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, volumetrics: vols, grade: pic?.grade ?? null }) : [];
+    // (the bloom's threshold from the record's grade: calibrate.js; the
+    // record's own Gaussians have none)
+    for (const p of out) if (p.kind === 'bloom' && !p.gaussians) p.threshold = params.grade.bloomThreshold;
+    return out;
+  };
+  let passes = chainFor(entry);
+
+  // The next weather's picture, at a crossfade's end: its painted sky, fog
+  // gradient and cloud texture in place of the first's (no new shader), and
+  // the chain built again once for its LUT and Gaussians (onChain hands it
+  // to whoever draws it). Textures neither weather shares are let go.
+  const turnPicture = (nextPic, got, e) => {
+    const was = tex;
+    if (got.panorama) sky?.setPanorama({ texture: got.panorama, rotation: nextPic.panorama?.rotation, horizon: nextPic.panorama?.horizon });
+    if (got.gradient) fog?.setGradient({ texture: got.gradient, rotation: nextPic.gradient?.rotation });
+    if (got.cloudShadow) clouds?.setTexture?.(got.cloudShadow);
+    // (a texture the shader could not take, the first weather having none, stays unloaded)
+    for (const k of ['panorama', 'gradient', 'cloudShadow']) if (!got[k] && was[k]) got[k] = was[k];
+    pic = nextPic;
+    tex = got;
+    for (const k of ['panorama', 'gradient', 'cloudShadow', 'lut']) if (was[k] && was[k] !== tex[k] && !(k === 'lut' && was[k] === lut)) was[k].dispose();
+    if (post) {
+      passes = chainFor(e);
+      onChain?.(passes);
+    }
+  };
 
   const show = (p) => {
     sun.set(p);
@@ -151,11 +203,25 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
     vols?.setScale(p.gameToSite);
   };
 
-  let fade = null; // { from, to, t, seconds, since }
+  let fade = null; // { from, to, t, seconds, since, picture }
+  let turned = 0; // (each weather asked; a picture that lands after a newer ask is late)
   const pos = [0, 0, 0];
   let sparks = null; // (the particles' lights for the next update: setParticleLights)
+  const finish = (f) => {
+    if (!f.picture) return;
+    const mine = f.picture.ask;
+    f.picture.ahead.then((got) => {
+      if (mine !== turned) {
+        for (const k of ['panorama', 'gradient', 'cloudShadow', 'lut']) if (got[k] && got[k] !== tex[k] && got[k] !== lut) got[k].dispose();
+        return;
+      }
+      turnPicture(f.picture.pic, got, f.picture.entry);
+    });
+  };
   return {
-    passes,
+    get passes() {
+      return passes;
+    },
     get params() {
       return params;
     },
@@ -178,20 +244,29 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       grid: probeGrid,
       gridBake,
       volumetrics: vols,
-      grade: pic?.grade ?? null,
-      picture: pic ? { lut: Boolean(tex.lut), panorama: Boolean(tex.panorama), gradient: Boolean(tex.gradient), cloudShadow: Boolean(tex.cloudShadow), gain: sky?.uniforms.panoramaGain?.value ?? null, missing: tex.missing } : null,
+      get grade() {
+        return pic?.grade ?? null;
+      },
+      get picture() {
+        return pic ? { lut: Boolean(tex.lut), panorama: Boolean(tex.panorama), gradient: Boolean(tex.gradient), cloudShadow: Boolean(tex.cloudShadow), gain: sky?.uniforms.panoramaGain?.value ?? null, missing: tex.missing, urls: { ...tex.urls } } : null;
+      },
     },
     update(dt, cam = camera) {
       if (fade) {
         fade.t = Math.min(1, fade.t + dt / fade.seconds);
         params = lerpEntry(fade.from, fade.to, fade.t);
+        // (the painted sky's gain eased toward the next panorama's horizon)
+        if (fade.horizon) sky?.setHorizon(lerp3(fade.horizon[0], fade.horizon[1], fade.t));
         show(params);
         fade.since += dt;
         if (sky && canDraw && (fade.since >= ENV_EVERY || fade.t >= 1)) {
           fade.since = 0;
           env = sky.envTexture(renderer);
         }
-        if (fade.t >= 1) fade = null;
+        if (fade.t >= 1) {
+          finish(fade);
+          fade = null;
+        }
       }
       clouds?.update(dt);
       if (!cam) return;
@@ -207,19 +282,29 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
         probes.update(pos, dt);
       }
     },
-    // the next weather, eased in over `seconds` (0: at once)
-    setWeather(next, seconds = WEATHER_FADE) {
+    // the next weather, eased in over `seconds` (0: at once); with its
+    // `picture` (as applyGameLight's), its textures are loaded now, ahead,
+    // the painted sky's gain eased across, and at the fade's end the
+    // textures swapped and the chain built again once (onChain)
+    setWeather(next, seconds = WEATHER_FADE, { picture: nextAsk = null } = {}) {
       const to = readEntry(next, { origin });
-      // (the shadow sun turns at once; the clouds stay the first weather's: lane S's Left)
+      // (the shadow sun turns at once; the cloud layers' numbers stay the first weather's: lane S's Left)
       sun.setShadowSun(readShadowRecord(next).shadowSun);
+      const nextPic = pic && backend !== 'webgl' ? pictureOf(next, nextAsk) : null;
+      const ask = ++turned;
+      const picture = nextPic ? { pic: nextPic, entry: next, ask, ahead: loadPicture(nextPic, renderer, THREE, tex) } : null;
+      const from = pic?.panorama?.horizon ?? null;
+      const horizon = from && nextPic?.panorama?.horizon ? [from, nextPic.panorama.horizon] : null;
       if (!(seconds > 0)) {
         fade = null;
         params = to;
+        if (horizon) sky?.setHorizon(horizon[1]);
         show(params);
         if (sky && canDraw) env = sky.envTexture(renderer);
+        if (picture) finish({ picture });
         return;
       }
-      fade = { from: params, to, t: 0, seconds, since: 0 };
+      fade = { from: params, to, t: 0, seconds, since: 0, picture, horizon };
     },
     dispose() {
       contact.dispose();

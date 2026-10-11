@@ -6,6 +6,20 @@
 export const SITE = {
   // lit as the game lights its level (src/data/bf2017/light/bespin.json, gameLit.js)
   gameLight: 'bespin',
+  // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/bespin/level.json,
+  // `node scripts/bf2017-level.mjs s2/levels/cloudcity_01 --world bespin
+  // --spot 20 0 --floor 199 --walk 192 --arena 1024 --share
+  // low=0.35,mid=0.6,high=0.4 --subs CloudCity_01,StreamedLevel`): CloudCity_01's walkways, platforms and
+  // halls at the game's 199 m, the city's plazas 204 m below as its
+  // backdrop. Each place stands on the game's own: Platform 327 on the great
+  // landing platform, the chamber by the Tibanna generators and the
+  // Tydirium's pad, the reactor shaft's door in Leia's tower, the east
+  // platform where the game parks Slave I, the vane off the X-wing's pad.
+  // The built deck, towers, bridges and lamps are the flight's (`game`);
+  // the carbon-freezing chamber stays built, the map has none
+  level: 'bespin',
+  // the record's picture on the node renderer (src/data/bf2017/light/bespin.picture.json, applyGameLight)
+  picture: 'bespin.picture.json',
   // the look (look.js): rose shade, gold hour; the haze below the horizon
   // nearly the sky's own, so the cloud sea and the sky meet without a seam
   look: { shadow: '#c07a8a', edge: [0.1, 0.78], halo: '#ffb070', fogBelow: 0.95 },
@@ -37,7 +51,7 @@ export const SITE = {
   },
   water: { level: -380, color: '#f6c4a6', deep: '#c27c78', kind: 'clouds' },
   weather: [{ kind: 'motes', count: 400, color: '#ffe2c8' }],
-  land: { at: [0, -255], yaw: 0 },
+  land: { at: [-81, 151], yaw: Math.PI },
   lines: {
     out: {
       xwing: [['luke', 'Cloud City. Han and Leia are here somewhere, Artoo. I can feel it.'], ['r2', '(A nervous warble.)']],
@@ -50,7 +64,7 @@ export const SITE = {
     {
       id: 'platform327',
       name: 'Platform 327',
-      at: [0, -255],
+      at: [-81, 151],
       r: 30,
       about: 'Where the Falcon set down, limping in with no hyperdrive, and Lando came out with his guards to meet his old friend.',
       lines: {
@@ -63,7 +77,7 @@ export const SITE = {
     {
       id: 'plaza',
       name: 'The Administrator’s plaza',
-      at: [0, 20],
+      at: [0, -10],
       r: 40,
       about: 'The heart of the city, under the Baron Administrator’s tower: Ugnaughts, gas miners, merchants and Wing Guards, and cloud cars parked on the pads.',
       lines: {
@@ -76,7 +90,7 @@ export const SITE = {
     {
       id: 'dining',
       name: 'The dining room',
-      at: [-95, 95],
+      at: [-81, 93],
       r: 18,
       about: 'Lando opened the doors and there he was, at the end of the table. “We would be honoured if you would join us.”',
       lines: {
@@ -85,12 +99,13 @@ export const SITE = {
         cruiser: [['morty', 'It’s a dinner party, Rick, with D-Darth Vader!'], ['rick', 'Worst dinner party in the galaxy, Morty, and I’ve been to your mom’s work thing.']],
         rv: [['jesse', 'He just… blocked the blaster? With his hand?'], ['walt', 'Never walk into a room you didn’t check first, Jesse.']],
       },
-      things: [{ kind: 'diningroom', at: [0, 0], yaw: 2.356, abs: true, y: 0 }],
+      // (the game's hotel tower stands for the dining room's outside)
+      things: [{ kind: 'diningroom', at: [0, 0], yaw: 2.356, abs: true, y: 0, game: true }],
     },
     {
       id: 'carbon',
       name: 'The carbon-freezing chamber',
-      at: [95, -85],
+      at: [68, -99],
       r: 22,
       about: 'Built for freezing Tibanna gas, borrowed by Vader to freeze Han Solo, to see if a man could survive it. “I love you.” “I know.”',
       lines: {
@@ -108,7 +123,7 @@ export const SITE = {
     {
       id: 'reactor',
       name: 'The reactor shaft',
-      at: [-185, 0],
+      at: [68, 8],
       r: 16,
       about: 'A gantry out over the city’s core, nothing below but the wind. Where Vader took Luke’s hand, and told him the truth.',
       lines: {
@@ -121,7 +136,7 @@ export const SITE = {
     {
       id: 'eastplatform',
       name: 'The east platform',
-      at: [255, 0],
+      at: [-18, -140],
       r: 24,
       about: 'Where Boba Fett loaded his prize aboard Slave I and was gone, the carbonite slab on its sled, Leia and Chewie and Lando too late.',
       lines: {
@@ -137,7 +152,7 @@ export const SITE = {
     {
       id: 'vane',
       name: 'The weather vane',
-      at: [141, -141],
+      at: [-130, 59],
       r: 14,
       about: 'Look down: the long vane under the city, where Luke hung on, out of strength, and called for Leia, and she heard him.',
       lines: {
@@ -147,15 +162,34 @@ export const SITE = {
       },
     },
   ],
+  // the campaign's Bespin (lane E4: /models/galaxy/bf2017/levels/bespin/m2bes/level.json,
+  // `node scripts/bf2017-level.mjs levels/sp/a2/m2bes/ds02 --world bespin
+  // --district m2bes --spot -2531 2912 --floor 2366.25 --walk 256 --arena 1024
+  // --share low=0.5,mid=0.6,high=0.7 --subs AdministratorsPalace,
+  // A2_M2BES_DS02_S0600_GP,A2_M2BES_DS02_S0700_GP,BespinAtmosphere`):
+  // the Administrator's palace, where the campaign's AT-STs and E-Web
+  // stand, the other floating cities round it on the horizon
+  districts: [
+    {
+      id: 'm2bes',
+      name: 'The Administrator’s palace',
+      level: 'bespin/m2bes',
+      land: { at: [0, 0], yaw: 0 },
+      line: 'The palace’s terraces, the Empire’s walkers on them, and the other mines floating off in the gold.',
+      door: { at: [0, -8], r: 2.5, prompt: 'Take a cloud car back to the platforms' },
+    },
+  ],
   // the places you go into: the dining room, the freezing chamber, the
   // reactor shaft (nothing under its gantries: fall, and you're back in the
   // control room) and the corridor out to the platforms
   zones: [
+    // (from the great landing platform's far edge, a cloud car out to the palace: the m2bes district)
+    { id: 'palace', name: 'The Administrator’s palace', door: { at: [-81, 168], r: 4, prompt: 'Take a cloud car to the palace' }, to: { district: 'm2bes' } },
     {
       id: 'dining',
       name: 'the dining room',
-      door: { at: [-95, 95], r: 4, prompt: 'Go in to dinner' },
-      back: [-91, 99],
+      door: { at: [-81, 93], r: 4, prompt: 'Go in to dinner' },
+      back: [-81, 99],
       inside: {
         build: 'dininginside',
         spawn: [0, 12.5],
@@ -177,8 +211,8 @@ export const SITE = {
     {
       id: 'carbon',
       name: 'the carbon-freezing chamber',
-      door: { at: [95, -85], r: 5, prompt: 'Go down into the chamber' },
-      back: [99, -80],
+      door: { at: [68, -99], r: 5, prompt: 'Go down into the chamber' },
+      back: [68, -94],
       inside: {
         build: 'carboninside',
         spawn: [0, 13],
@@ -201,8 +235,8 @@ export const SITE = {
     {
       id: 'reactor',
       name: 'the reactor shaft',
-      door: { at: [-185, 0], r: 5, prompt: 'Go into the control room' },
-      back: [141, -141],
+      door: { at: [68, 8], r: 5, prompt: 'Go into the control room' },
+      back: [-130, 59],
       inside: {
         build: 'reactorinside',
         spawn: [0, 19.5],
@@ -223,8 +257,8 @@ export const SITE = {
     {
       id: 'corridor',
       name: 'the corridor to the platforms',
-      door: { at: [14, -162], r: 4, prompt: 'Take the corridor to Platform 327' },
-      back: [8, -180],
+      door: { at: [-20, -100], r: 4, prompt: 'Take the corridor to Platform 327' },
+      back: [-20, -106],
       inside: {
         build: 'corridorinside',
         spawn: [0, 27],
@@ -249,7 +283,7 @@ export const SITE = {
       about: 'Vader has Han, and Boba Fett means to take him to Jabba. Find out where they’ve taken him, and get to the east platform before Slave I lifts off.',
       intro: [['Lando Calrissian', 'I had no choice. They arrived right before you did. They’ve taken Han to the carbon-freezing chamber. Hurry!']],
       steps: [
-        { type: 'reach', at: [95, -85], r: 12, text: 'Get to the carbon-freezing chamber' },
+        { type: 'reach', at: [68, -99], r: 12, text: 'Get to the carbon-freezing chamber' },
         { type: 'talk', actor: 'chewie', text: 'Find Chewbacca', lines: [['Lando Calrissian', 'Chewie’s in there somewhere. If anyone knows where Fett took him…']] },
         { type: 'race', gates: [[150, -55], [200, 0], [245, 0]], r: 9, time: 45, text: 'Run for the east platform before Slave I lifts off', lines: [['Chewbacca', '(A roar: the east platform! Fett’s ship!)']] },
       ],
@@ -340,58 +374,60 @@ export const SITE = {
   ],
   things: [
     // the city: its deck, its tower, its towers, its bridges and platforms
-    { kind: 'bespindeck', at: [0, 0], abs: true, y: 0, opts: { r: 170, gaps: [Math.PI, Math.PI / 2, -Math.PI / 2, 2.356] } },
-    { kind: 'cloudcity', at: [0, 0], abs: true, y: 0, scale: 2.2, model: false },
+    // (the flight's: the game's walkways and platforms stand for them)
+    { kind: 'bespindeck', at: [0, 0], abs: true, y: 0, opts: { r: 170, gaps: [Math.PI, Math.PI / 2, -Math.PI / 2, 2.356] }, game: true },
+    { kind: 'cloudcity', at: [0, 0], abs: true, y: 0, scale: 2.2, model: false, game: true },
     // the plaza's terraces, north of the plaza before the tower (the Meshy model)
-    { kind: 'cloudplaza', at: [0, 72], abs: true, y: 0, yaw: Math.PI },
-    { kind: 'bespinplatform', at: [0, -255], abs: true, y: 0, opts: { r: 28, gap: 0 } },
-    { kind: 'bespinbridge', at: [0, -199], abs: true, y: 0, opts: { len: 62, w: 7 } },
-    { kind: 'bespinplatform', at: [255, 0], abs: true, y: 0, opts: { r: 22, gap: -Math.PI / 2 } },
-    { kind: 'bespinbridge', at: [201, 0], yaw: Math.PI / 2, abs: true, y: 0, opts: { len: 66, w: 6 } },
-    { kind: 'reactorshaft', at: [-195, 0], yaw: -Math.PI / 2, abs: true, y: 0 },
-    { kind: 'bespinbridge', at: [-174.5, 0], yaw: Math.PI / 2, abs: true, y: 0, opts: { len: 13, w: 6 } },
-    { kind: 'bespinplatform', at: [141, -141], abs: true, y: 0, opts: { r: 12, gap: -Math.PI / 4 } },
-    { kind: 'bespinbridge', at: [126.6, -126.6], yaw: 2.356, abs: true, y: 0, opts: { len: 26, w: 5 } },
-    { kind: 'weathervane', at: [0, 0], abs: true, y: -262, solid: false },
+    { kind: 'cloudplaza', at: [0, 72], abs: true, y: 0, yaw: Math.PI, game: true },
+    { kind: 'bespinplatform', at: [0, -255], abs: true, y: 0, opts: { r: 28, gap: 0 }, game: true },
+    { kind: 'bespinbridge', at: [0, -199], abs: true, y: 0, opts: { len: 62, w: 7 }, game: true },
+    { kind: 'bespinplatform', at: [255, 0], abs: true, y: 0, opts: { r: 22, gap: -Math.PI / 2 }, game: true },
+    { kind: 'bespinbridge', at: [201, 0], yaw: Math.PI / 2, abs: true, y: 0, opts: { len: 66, w: 6 }, game: true },
+    { kind: 'reactorshaft', at: [-195, 0], yaw: -Math.PI / 2, abs: true, y: 0, game: true },
+    { kind: 'bespinbridge', at: [-174.5, 0], yaw: Math.PI / 2, abs: true, y: 0, opts: { len: 13, w: 6 }, game: true },
+    { kind: 'bespinplatform', at: [141, -141], abs: true, y: 0, opts: { r: 12, gap: -Math.PI / 4 }, game: true },
+    { kind: 'bespinbridge', at: [126.6, -126.6], yaw: 2.356, abs: true, y: 0, opts: { len: 26, w: 5 }, game: true },
+    // (the vane under the X-wing's pad, over the city's plazas below)
+    { kind: 'weathervane', at: [-130, 59], abs: true, y: -40, solid: false },
     // the platform where you land: a cloud car down for a refit, its
     // crew's cargo, and the lamps round the rim
-    { kind: 'cloudcar', at: [-16, -268], yaw: 2.4, abs: true, y: 1.2 },
-    { kind: 'barrel', at: [16, -266], yaw: 0.3, abs: true, y: 0 },
-    { kind: 'barrel', at: [17.1, -265.2], yaw: 1.2, abs: true, y: 0 },
-    { kind: 'cooler', at: [18.5, -267.5], yaw: 0.8, abs: true, y: 0 },
-    { kind: 'bevelcrate', at: [15, -268.5], yaw: 0.4, abs: true, y: 0 },
-    { kind: 'lamp', at: [-20, -248], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' } },
-    { kind: 'lamp', at: [20, -248], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' } },
+    { kind: 'cloudcar', at: [-97, 138], yaw: 2.4, abs: true, y: 1.2 },
+    { kind: 'barrel', at: [-65, 140], yaw: 0.3, abs: true, y: 0 },
+    { kind: 'barrel', at: [-63.9, 140.8], yaw: 1.2, abs: true, y: 0 },
+    { kind: 'cooler', at: [-62.5, 138.5], yaw: 0.8, abs: true, y: 0 },
+    { kind: 'bevelcrate', at: [-66, 137.5], yaw: 0.4, abs: true, y: 0 },
+    { kind: 'lamp', at: [-20, -248], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' }, game: true },
+    { kind: 'lamp', at: [20, -248], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' }, game: true },
     // cloud cars parked by the plaza, lamps along the way in
-    { kind: 'cloudcar', at: [-26, 30], yaw: 0.5, abs: true, y: 1.2 },
-    { kind: 'cloudcar', at: [-34, 18], yaw: 0.8, abs: true, y: 1.2 },
-    { kind: 'lamp', at: [-8, -150], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' } },
-    { kind: 'lamp', at: [8, -150], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' } },
-    { kind: 'lamp', at: [-8, -110], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' } },
-    { kind: 'lamp', at: [8, -110], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' } },
-    { kind: 'lamp', at: [150, -8], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' } },
-    { kind: 'lamp', at: [150, 8], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' } },
+    { kind: 'cloudcar', at: [-26, 0], yaw: 0.5, abs: true, y: 1.2 },
+    { kind: 'cloudcar', at: [-34, -12], yaw: 0.8, abs: true, y: 1.2 },
+    { kind: 'lamp', at: [-8, -150], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' }, game: true },
+    { kind: 'lamp', at: [8, -150], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' }, game: true },
+    { kind: 'lamp', at: [-8, -110], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' }, game: true },
+    { kind: 'lamp', at: [8, -110], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' }, game: true },
+    { kind: 'lamp', at: [150, -8], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' }, game: true },
+    { kind: 'lamp', at: [150, 8], abs: true, y: 0, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4' }, game: true },
   ],
   scatter: [
     // the skyline: towers stood on the deck (lifted from the fall to it)
     // Cloud City's towers and domed halls round the deck (the Meshy models:
     // the towers the audit lane's, the halls scripts/meshy-galaxy-three.mjs's),
     // sunk into it as the built city's were
-    { kind: 'cloudcity', n: 14, within: [52, 158], scale: [0.35, 0.8], sink: -30, clear: 24 },
-    { kind: 'cloudtower2', n: 10, within: [60, 158], scale: [0.4, 0.8], sink: -30, clear: 24 },
-    { kind: 'cloudblock', n: 40, within: [36, 150], scale: [0.6, 1.3], sink: -40, clear: 12 },
-    { kind: 'lamp', n: 50, within: [24, 160], scale: [1, 1], sink: -40, clear: 6, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4', radius: 0.2 } },
+    { kind: 'cloudcity', n: 14, within: [52, 158], scale: [0.35, 0.8], sink: -30, clear: 24, game: true },
+    { kind: 'cloudtower2', n: 10, within: [60, 158], scale: [0.4, 0.8], sink: -30, clear: 24, game: true },
+    { kind: 'cloudblock', n: 40, within: [36, 150], scale: [0.6, 1.3], sink: -40, clear: 12, game: true },
+    { kind: 'lamp', n: 50, within: [24, 160], scale: [1, 1], sink: -40, clear: 6, opts: { h: 4.5, light: '#ffe0b0', color: '#d8d0c4', radius: 0.2 }, game: true },
   ],
   // where the people go (needs.js): the Ugnaughts between the plaza, the
   // chamber's door (kneeling at its works, fixing them) and the landing
   // platform (at its controls), the Wing Guard after them
   wants: [
-    { id: 'plaza', kind: 'rest', at: [0, 20], pause: 6 },
-    { id: 'carbondoor', kind: 'work', at: [88, -78], slots: 2, clip: 'kneel.fix', pause: 9 },
-    { id: 'platform', kind: 'work', at: [0, -232], slots: 2, clip: 'interact', pause: 8 },
+    { id: 'plaza', kind: 'rest', at: [0, -10], pause: 6 },
+    { id: 'carbondoor', kind: 'work', at: [68, -92], slots: 2, clip: 'kneel.fix', pause: 9 },
+    { id: 'platform', kind: 'work', at: [-81, 135], slots: 2, clip: 'interact', pause: 8 },
   ],
   life: [
-    { kind: 'lando', id: 'lando', quest: 'han', at: [2, -233], face: 3.1, still: true, name: 'Lando Calrissian', named: true, says: {
+    { kind: 'lando', id: 'lando', quest: 'han', at: [-79, 134], face: 3.1, still: true, name: 'Lando Calrissian', named: true, says: {
       when: { owner: 'empire' },
       lines: {
         when: { done: ['han'] },
@@ -404,22 +440,22 @@ export const SITE = {
         else: ['Hello, what have we here? Welcome. I’m Lando Calrissian. I’m the administrator of this facility.', 'We’re a small operation. We don’t fall into the jurisdiction of the Empire.', 'You look absolutely beautiful. You truly belong here with us among the clouds.'],
       },
     } },
-    { kind: 'lobot', id: 'lobot', quest: 'lobot', at: [5, -235], face: 3.1, still: true, name: 'Lobot', named: true, says: { when: { done: ['lobot'] }, lines: ['(He says nothing. The lights on his headband blink, slow and steady. The doors are open.)'], else: ['(He says nothing. He never does. The lights on his headband blink.)'] } },
-    { kind: 'wingguard', n: 3, path: [[-2.5, -236], [-2.5, -172], [2.5, -172], [2.5, -236]], speed: 1.3, name: 'Wing Guard', says: ['Welcome to Cloud City.', 'Keep to the walkways, please. It’s a long way down.', 'The Baron Administrator will see you now.'] },
-    { kind: 'wingguard', id: 'guardreactor', quest: 'duel', at: [-176, 5], face: 2.2, still: true, name: 'Wing Guard', says: ['He went into the reactor control room. He said he was waiting for you.', 'Nobody goes out on that gantry. Nobody who comes back.'] },
-    { kind: 'wingguard', n: 2, at: [0, 40], spread: 20, roam: 20, speed: 1.1, chases: ['ugnaught'], name: 'Wing Guard', says: ['Move along, citizen.', 'Imperial business. Don’t ask.'] },
-    { kind: 'villager', n: 6, at: [10, 40], spread: 45, roam: 30, speed: 1.0, name: 'Cloud City citizen', says: ['Tibanna gas prices are up again. Good for us.', 'Have you seen the sunsets from the east platform?', 'Imperials? Here? The Baron says it’s just business.', 'Mind the edges. They never did put rails on the platforms.'] },
-    { kind: 'ugnaught', n: 2, at: [-14, -264], spread: 4, roam: 5, speed: 0.8, name: 'Ugnaught mechanic', says: ['(It squeals at the cloud car’s open engine, and then at you.)', '(It hands you a part, takes it back, and grunts.)'] },
-    { kind: 'astromech', n: 1, at: [14, -262], roam: 5, speed: 0.6, name: 'Astromech', says: ['(A tidy beep. The platform is its responsibility.)'] },
-    { kind: 'ugnaught', n: 4, at: [95, -85], spread: 10, roam: 9, speed: 0.8, name: 'Ugnaught', says: ['(It squeals at you and waves you away from the pit.)', '(Grumbling, it shovels carbonite flakes off the platform.)', '(It snorts, and points at the slab, and laughs.)'] },
-    { kind: 'ugnaught', n: 3, at: [-20, 60], spread: 20, roam: 14, speed: 0.8, needs: ['work', 'rest'], fears: ['stormtrooper', 'wingguard'], name: 'Ugnaught', says: ['(It is very busy, and would like you to know it.)', '(It offers to sell you a slightly used protocol droid head.)'] },
-    { kind: 'wookiee', id: 'chewie', quest: 'freezing', at: [100, -72], roam: 6, speed: 1, name: 'Chewbacca', named: true, says: ['(A furious, heartbroken roar at the Ugnaughts and the stormtroopers.)', '(He has C-3PO strapped to his back, in pieces. Threepio is complaining.)'] },
-    { kind: 'stormtrooper', n: 4, path: [[-70, 70], [-110, 70], [-110, 110], [-70, 110]], speed: 1.3, name: 'Stormtrooper', says: ['Move along.', 'This area is off limits.', 'Lord Vader has ordered this section sealed.'] },
-    { kind: 'bobafett', at: [262, 2], face: -1.6, still: true, name: 'Boba Fett', named: true, says: { when: { done: ['freezing'] }, lines: ['He’s alive. And in perfect hibernation. He’s mine now.', '(The helmet turns, slowly, to follow you. He says nothing.)'], else: ['He’s no good to me dead.', 'What if he doesn’t survive? He’s worth a lot to me.', '(The helmet turns, slowly, to follow you. He says nothing.)'] } },
-    { kind: 'stormtrooper', n: 2, at: [250, -6], spread: 6, roam: 5, speed: 1, name: 'Stormtrooper', says: ['Put Captain Solo in the cargo hold.', 'Stand clear of the sled.'] },
-    { kind: 'vader', at: [-183.5, 0], face: -1.5708, still: true, name: 'Darth Vader', named: true, says: { when: { hero: 'luke' }, lines: ['Luke, you do not yet realise your importance.', 'Obi-Wan never told you what happened to your father.', 'No. I am your father.', 'Search your feelings. You know it to be true.', 'Join me, and together we can rule the galaxy as father and son.'], else: ['The Force is strong with this one.', 'You are not a Jedi. You are nothing to me.', 'Bring me Skywalker.'] } },
-    { kind: 'luke', at: [-191, 0], face: 1.5708, still: true, name: 'Luke Skywalker', named: true, says: ['He told me enough! He told me you killed him.', 'No. No. That’s not true. That’s impossible!', 'I’ll never join you!'] },
-    { kind: 'c3po', at: [-84, 120], roam: 5, speed: 0.6, name: 'C-3PO', named: true, says: { when: { done: ['han'] }, lines: ['Oh! They’ve taken Captain Solo! What are we going to do?', 'If only you’d attached my legs, I wouldn’t be in this ridiculous position.'], else: ['Oh! Stormtroopers? Here? We’re in danger. I must tell the others.', 'Oh, no! I’ve been shot!', 'If only you’d attached my legs, I wouldn’t be in this ridiculous position.'] } },
+    { kind: 'lobot', id: 'lobot', quest: 'lobot', at: [-76, 132], face: 3.1, still: true, name: 'Lobot', named: true, says: { when: { done: ['lobot'] }, lines: ['(He says nothing. The lights on his headband blink, slow and steady. The doors are open.)'], else: ['(He says nothing. He never does. The lights on his headband blink.)'] } },
+    { kind: 'wingguard', n: 3, path: [[-83, 133], [-83, 100], [-79, 100], [-79, 133]], speed: 1.3, name: 'Wing Guard', says: ['Welcome to Cloud City.', 'Keep to the walkways, please. It’s a long way down.', 'The Baron Administrator will see you now.'] },
+    { kind: 'wingguard', id: 'guardreactor', quest: 'duel', at: [64, 12], face: 2.2, still: true, name: 'Wing Guard', says: ['He went into the reactor control room. He said he was waiting for you.', 'Nobody goes out on that gantry. Nobody who comes back.'] },
+    { kind: 'wingguard', n: 2, at: [0, -10], spread: 20, roam: 20, speed: 1.1, chases: ['ugnaught'], name: 'Wing Guard', says: ['Move along, citizen.', 'Imperial business. Don’t ask.'] },
+    { kind: 'villager', n: 6, at: [0, -10], spread: 30, roam: 20, speed: 1.0, name: 'Cloud City citizen', says: ['Tibanna gas prices are up again. Good for us.', 'Have you seen the sunsets from the east platform?', 'Imperials? Here? The Baron says it’s just business.', 'Mind the edges. They never did put rails on the platforms.'] },
+    { kind: 'ugnaught', n: 2, at: [-95, 140], spread: 4, roam: 5, speed: 0.8, name: 'Ugnaught mechanic', says: ['(It squeals at the cloud car’s open engine, and then at you.)', '(It hands you a part, takes it back, and grunts.)'] },
+    { kind: 'astromech', n: 1, at: [-67, 142], roam: 5, speed: 0.6, name: 'Astromech', says: ['(A tidy beep. The platform is its responsibility.)'] },
+    { kind: 'ugnaught', n: 4, at: [68, -99], spread: 10, roam: 9, speed: 0.8, name: 'Ugnaught', says: ['(It squeals at you and waves you away from the pit.)', '(Grumbling, it shovels carbonite flakes off the platform.)', '(It snorts, and points at the slab, and laughs.)'] },
+    { kind: 'ugnaught', n: 3, at: [4, -30], spread: 20, roam: 14, speed: 0.8, needs: ['work', 'rest'], fears: ['stormtrooper', 'wingguard'], name: 'Ugnaught', says: ['(It is very busy, and would like you to know it.)', '(It offers to sell you a slightly used protocol droid head.)'] },
+    { kind: 'wookiee', id: 'chewie', quest: 'freezing', at: [73, -86], roam: 6, speed: 1, name: 'Chewbacca', named: true, says: ['(A furious, heartbroken roar at the Ugnaughts and the stormtroopers.)', '(He has C-3PO strapped to his back, in pieces. Threepio is complaining.)'] },
+    { kind: 'stormtrooper', n: 4, path: [[-75, 89], [-87, 89], [-87, 105], [-75, 105]], speed: 1.3, name: 'Stormtrooper', says: ['Move along.', 'This area is off limits.', 'Lord Vader has ordered this section sealed.'] },
+    { kind: 'bobafett', at: [-11, -138], face: -1.6, still: true, name: 'Boba Fett', named: true, says: { when: { done: ['freezing'] }, lines: ['He’s alive. And in perfect hibernation. He’s mine now.', '(The helmet turns, slowly, to follow you. He says nothing.)'], else: ['He’s no good to me dead.', 'What if he doesn’t survive? He’s worth a lot to me.', '(The helmet turns, slowly, to follow you. He says nothing.)'] } },
+    { kind: 'stormtrooper', n: 2, at: [-23, -146], spread: 6, roam: 5, speed: 1, name: 'Stormtrooper', says: ['Put Captain Solo in the cargo hold.', 'Stand clear of the sled.'] },
+    { kind: 'vader', at: [69.5, 8], face: -1.5708, still: true, name: 'Darth Vader', named: true, says: { when: { hero: 'luke' }, lines: ['Luke, you do not yet realise your importance.', 'Obi-Wan never told you what happened to your father.', 'No. I am your father.', 'Search your feelings. You know it to be true.', 'Join me, and together we can rule the galaxy as father and son.'], else: ['The Force is strong with this one.', 'You are not a Jedi. You are nothing to me.', 'Bring me Skywalker.'] } },
+    { kind: 'luke', at: [62, 10], face: 1.5708, still: true, name: 'Luke Skywalker', named: true, says: ['He told me enough! He told me you killed him.', 'No. No. That’s not true. That’s impossible!', 'I’ll never join you!'] },
+    { kind: 'c3po', at: [-81, 115], roam: 5, speed: 0.6, name: 'C-3PO', named: true, says: { when: { done: ['han'] }, lines: ['Oh! They’ve taken Captain Solo! What are we going to do?', 'If only you’d attached my legs, I wouldn’t be in this ridiculous position.'], else: ['Oh! Stormtroopers? Here? We’re in danger. I must tell the others.', 'Oh, no! I’ve been shot!', 'If only you’d attached my legs, I wouldn’t be in this ridiculous position.'] } },
     { kind: 'cloudcar', n: 2, path: [[300, 0], [212, 212], [0, 300], [-212, 212], [-300, 0], [-212, -212], [0, -300], [212, -212]], pause: 0, speed: 16, y: 72, solid: false },
     { kind: 'cloudcar', n: 1, path: [[0, -360], [-255, -255], [-360, 0], [-255, 255], [0, 360], [255, 255], [360, 0], [255, -255]], pause: 0, speed: 18, y: 55, solid: false },
   ],

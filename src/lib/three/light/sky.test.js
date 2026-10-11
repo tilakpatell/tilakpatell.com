@@ -38,6 +38,18 @@ const HORIZON = [0.734, 0.837, 0.962];
 const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 
 describe('the painted panorama (lane Q6)', () => {
+  it('takes the next weather’s panorama in place, its gain then measured against the new horizon', async () => {
+    const day = await createSky(hoth.sunny, { panorama: { ...panoramaOf(hoth.sunny.record), texture: new THREE.Texture(), horizon: HORIZON } });
+    const p = readEntry(hoth.sunset);
+    expect(day.setPanorama({ texture: new THREE.Texture(), rotation: 0.25, horizon: [0.157, 0.0909, 0.0708] })).toBe(true);
+    day.set(p);
+    expect(day.uniforms.panoramaGain.value).toBeCloseTo(panoramaGain(p, [0.157, 0.0909, 0.0708]), 6);
+    // (a sky built without one has no panorama in its shader to swap)
+    const bare = await createSky(hoth.sunny);
+    expect(bare.setPanorama({ texture: new THREE.Texture(), horizon: HORIZON })).toBe(false);
+    day.dispose();
+    bare.dispose();
+  });
   it('skyRadiance is the shader’s sky: the zenith at its share of the record’s luminance, the ground below', () => {
     const v = skyUniforms(readEntry(hoth.sunny));
     const zenith = skyRadiance([0, 1, 0], v);

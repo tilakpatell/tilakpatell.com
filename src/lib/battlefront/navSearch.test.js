@@ -54,7 +54,10 @@ describe('the A* port against the JavaScript', () => {
     expect(same(nav, seeded(1), 300)).toBeGreaterThan(200);
   });
 
-  it('finds the same cells on Hoth’s arena grid, with blocked cells', () => {
+  // (300 searches of the arena, each run twice, in JavaScript and in the port:
+  // 2 s on the CI runner, 5.5 to 7 s in a cloud container running the whole
+  // suite, over vitest's 5 s; the time is the search's, not a hang)
+  it('finds the same cells on Hoth’s arena grid, with blocked cells', { timeout: 30_000 }, () => {
     const nav = hothFlatNav(rb);
     expect(same(nav, seeded(2), 200)).toBeGreaterThan(100);
     same(nav, seeded(3), 100, { blockedShare: 0.002 });
