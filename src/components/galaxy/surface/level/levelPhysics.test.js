@@ -51,6 +51,16 @@ describe('createLevelPhysics', () => {
     expect(lp.stats().bodies).toBe(3);
   });
 
+  it('puts the cell nearest you in first', async () => {
+    const lp = createLevelPhysics({ physics, pack, loadBin, cellSize: 128 });
+    await lp.addCell('0,0', [at(0, 10, 10)]);
+    await lp.addCell('3,0', [at(0, 400, 10)]);
+    // (one a call: the far cell's, where you stand)
+    lp.update(-1, [400, 10]);
+    expect(down(400, 10)).toBeGreaterThan(0.5);
+    expect(down(10, 10)).toBeNull();
+  });
+
   it('drops the lightest over the budget, and says which', async () => {
     const lp = createLevelPhysics({ physics, pack, loadBin, budget: { colliders: 3, triangles: Infinity } });
     // (the decal plane's detail mesh goes first: it has hulls over the same thing)

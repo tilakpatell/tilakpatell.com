@@ -301,7 +301,9 @@ export async function create(canvas, ctx) {
   scene.add(sky.mesh);
   const sunDir = sky.sunDirs[0] ?? new V(0.3, 0.8, 0.4).normalize();
   const sun = new THREE.DirectionalLight(site.sky.suns?.[0]?.color ?? '#ffffff', site.light.sun ?? 3);
-  sun.castShadow = !small;
+  // (a site lit from within, `light.shadow: false`: no sun to cast one, and
+  // no shadow pass over a whole interior level, the Death Star's)
+  sun.castShadow = !small && site.light?.shadow !== false;
   if (sun.castShadow) {
     sun.shadow.mapSize.set(2048, 2048);
     const sc = sun.shadow.camera;
@@ -2722,7 +2724,8 @@ export async function create(canvas, ctx) {
       p.x = bx;
       p.z = bz;
       p.y = z ? groundAt(world, bx, bz, z.origin[1] + (z.inside.bounds?.[2] ?? 30), 0) : groundAt(world, bx, bz);
-      p.vy = 0;
+      // (still: the run you fell with does not carry on from the respawn)
+      p.vx = p.vz = p.vy = 0;
       if (z) p.yaw = z.inside.yaw ?? 0;
       emit({ type: 'fell' });
     }
@@ -4043,6 +4046,11 @@ export async function create(canvas, ctx) {
       // (the highest floor there, or the one nearest a height given: the
       // hangar's floor under the temple's roof)
       p.y = y == null ? groundAt(world, x, z, 1e4, 1e4) : groundAt(world, x, z, y, 2);
+      // (set down still, on your feet: a run or a fall kept through it
+      // carried you on through the air, tens of metres on Cloud City)
+      p.vx = p.vz = p.vy = 0;
+      p.grounded = true;
+      p.air = 0;
       if (yaw != null) {
         p.yaw = yaw;
         state.cam.yaw = yaw;
