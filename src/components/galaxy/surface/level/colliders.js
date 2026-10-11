@@ -4,11 +4,12 @@
 // comes back (the walk world's shapes have no remove: `off` is how a gate
 // or a trapdoor goes, walker.js), so nothing is added twice.
 //
-// A pack with the game's shapes (its `physics` section, lane P0) and a
-// loadBin: the pieces that have shapes stop you at their hulls
-// (lib/level/shapeSolids.js: each hull's footprint a box, a thin wide one
-// a floor, a capsule a circle), read once a mesh; the rest by their bounds
-// as before. That cell's add is then a promise; a cell dropped while its
+// A pack with the game's shapes (its `physics` section, lane P0; a prop
+// with none, its web/collision/ mesh's hull, lane E0) and a loadBin: the
+// pieces that have shapes stop you at their hulls (lib/level/shapeSolids.js:
+// each hull's footprint a box, a thin wide one a floor, a capsule a circle),
+// read once a mesh; the rest by their bounds as before. That cell's add is
+// then a promise; a cell dropped while its
 // shapes are read comes in switched off.
 //
 //   createColliders({ solids, floors }, tier, { loadBin }) → { add(key, pack, bin) → undefined | Promise, drop(key), dispose() }

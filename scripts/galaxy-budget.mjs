@@ -12,6 +12,11 @@ export const KNOWN_OVER = {
   endor: 'TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over the 3M row; the far redwoods are 0.1M of it: the near full redwoods (1.1M with their shadow pass), the crew figures (0.73M), the ground (0.58M) and the built ferns (0.52M) are where it goes (docs/superpowers/HANDOFF-galaxy-asset-upgrade.md, Phase 4); trim those and take it off this list',
 };
 
+// The baseline a run is held to: the world's own for its main map; none for a
+// district (?district=: another of the game's maps on the world, which the
+// world's baseline never measured), so the row's ceilings alone and no floor
+export const baselineOf = (list, id, district = null) => (district ? null : (list.find((x) => x.id === id) ?? null));
+
 // What a world's models are counted as: every .glb, .ktx2 and .bin it
 // fetches (lane D2: a level pack's maps and cells weigh as its meshes do),
 // and whether the public bucket served any of them.

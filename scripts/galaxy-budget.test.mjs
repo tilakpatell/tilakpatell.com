@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { budget } from '../src/lib/budgets.js';
-import { BUCKET_MB, BUCKET_SOURCE, BUCKET_URL, KNOWN_OVER, MODEL_FILE, limitsFor, overBy } from './galaxy-budget.mjs';
+import { BUCKET_MB, BUCKET_SOURCE, BUCKET_URL, KNOWN_OVER, MODEL_FILE, baselineOf, limitsFor, overBy } from './galaxy-budget.mjs';
 
 describe('what the galaxy check holds a world to', () => {
   it('holds a world to its baseline +10%, under its level’s row', () => {
@@ -64,5 +64,18 @@ describe('what the galaxy check holds a world to', () => {
     expect(MODEL_FILE.test('/a/level.json')).toBe(false);
     expect(BUCKET_URL.test('https://x.supabase.co/storage/v1/object/public/site-assets/abc/models/a.glb')).toBe(true);
     expect(BUCKET_URL.test('http://127.0.0.1:5188/models/a.glb')).toBe(false);
+  });
+});
+
+describe('baselineOf: what a run is held to beside its row', () => {
+  const list = [{ id: 'endor', calls: 234, triangles: 3345258 }];
+  it('is the world’s own baseline for its main map', () => {
+    expect(baselineOf(list, 'endor')).toEqual(list[0]);
+    expect(baselineOf(list, 'naboo')).toBe(null);
+  });
+  it('is none for a district: another map, which the world’s baseline never measured (the row alone, and no floor)', () => {
+    expect(baselineOf(list, 'endor', 'village')).toBe(null);
+    const l = limitsFor({ id: 'endor', quality: 'high', row: budget('high'), base: baselineOf(list, 'endor', 'village') });
+    expect(l).toMatchObject({ calls: 700, tris: 3e6, floor: 0 });
   });
 });
