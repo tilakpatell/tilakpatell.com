@@ -12,9 +12,10 @@
 //                      frames at a fixed camera, the pixel spread after frame 20
 //                      (Review Focus 3: under 1/255), its probes a frame
 //   --cadence          with --shadows: the far cascades on their cadence, the
-//                      figures running out of the near cascades (WALK), every
-//                      frame checked: each figure's shadow darker than the open
-//                      snow beside it (Review Focus 4), and the cascades' draws
+//                      figures running out of the near cascades (WALK), twice:
+//                      every cascade every frame, then cached; no frame where
+//                      the first shows a figure's shadow and the second does
+//                      not (Review Focus 4), and the cascades' draws
 //
 // n3Flags(argv) → { baked, cadence }
 // n3Fixture(flags) → the fixture's options
@@ -93,8 +94,12 @@ export async function gridSpread({ browser, base, fixture, leg, W, H, sharp, OUT
   return out;
 }
 
-// The figures run out of the near cascades; every frame, each figure on
-// screen has its shadow darker than the open snow beside it
+// The figures run out of the near cascades twice from the same start: every
+// cascade drawn every frame (the reference), then on the cadence. A miss is
+// a figure-frame where the reference shows the figure's shadow (darker than
+// the open snow beside it) and the cached run does not. (On SwiftShader only
+// the nearest cascades show a cast shadow at all, on main too, so the cloud
+// judges the cadence against its own reference; the laptop sees every one.)
 export async function cadenceRun({ page, sharp, OUT, label, leg, writeFileSync, join }) {
   const lum = (px, w, [x, y]) => {
     let s = 0;
@@ -109,32 +114,40 @@ export async function cadenceRun({ page, sharp, OUT, label, leg, writeFileSync, 
     }
     return n ? s / n : null;
   };
-  await page.evaluate(() => (window.__lit.probe.n3.look(), window.__lit.draw(4)));
-  const before = await page.evaluate(() => window.__lit.probe.n3.draws());
-  await page.evaluate(() => window.__lit.probe.n3.walk(true));
-  let missed = 0;
+  const run = async (cached) => {
+    await page.evaluate((on) => (window.__lit.probe.n3.cadence(on), window.__lit.probe.n3.reset(), window.__lit.probe.n3.look(), window.__lit.draw(4)), cached);
+    const before = await page.evaluate(() => window.__lit.probe.n3.draws());
+    await page.evaluate(() => window.__lit.probe.n3.walk(true));
+    const frames = [];
+    for (let f = 0; f < CADENCE_FRAMES; f++) {
+      await page.evaluate(() => window.__lit.draw(1));
+      const png = await page.locator('canvas').screenshot();
+      if (cached && (f === 0 || f === CADENCE_FRAMES - 1)) writeFileSync(join(OUT, `${label}-${leg}-run${f}.png`), png);
+      const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      const feet = await page.evaluate(([w, h]) => window.__lit.probe.n3.feet(w, h), [info.width, info.height]);
+      const ok = (p) => p[2] && p[0] > 1 && p[1] > 1 && p[0] < info.width - 2 && p[1] < info.height - 2;
+      frames.push(feet.map((ft) => (ok(ft.shadow) && ok(ft.open) ? { z: ft.z, shadow: lum(data, info.width, ft.shadow), open: lum(data, info.width, ft.open) } : null)));
+    }
+    await page.evaluate(() => window.__lit.probe.n3.walk(false));
+    const after = await page.evaluate(() => window.__lit.probe.n3.draws());
+    return { frames, draws: after.map((v, i) => v - (before?.[i] ?? 0)) };
+  };
+  const ref = await run(false);
+  const got = await run(true);
+  const shows = (s) => s && s.shadow < s.open * DARKER;
   let checked = 0;
+  let missed = 0;
   const misses = [];
   for (let f = 0; f < CADENCE_FRAMES; f++) {
-    await page.evaluate(() => window.__lit.draw(1));
-    const png = await page.locator('canvas').screenshot();
-    if (f === 0 || f === CADENCE_FRAMES - 1) writeFileSync(join(OUT, `${label}-${leg}-run${f}.png`), png);
-    const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-    const feet = await page.evaluate(([w, h]) => window.__lit.probe.n3.feet(w, h), [info.width, info.height]);
-    for (const ft of feet) {
-      const ok = (p) => p[2] && p[0] > 1 && p[1] > 1 && p[0] < info.width - 2 && p[1] < info.height - 2;
-      if (!ok(ft.shadow) || !ok(ft.open)) continue;
+    for (let i = 0; i < ref.frames[f].length; i++) {
+      if (!shows(ref.frames[f][i])) continue;
       checked++;
-      const a = lum(data, info.width, ft.shadow);
-      const b = lum(data, info.width, ft.open);
-      if (!(a < b * DARKER)) {
+      if (!shows(got.frames[f][i])) {
         missed++;
-        if (misses.length < 5) misses.push({ frame: f, z: Number(ft.z.toFixed(1)), shadow: Math.round(a), open: Math.round(b) });
+        const g = got.frames[f][i];
+        if (misses.length < 5) misses.push({ frame: f, z: Number(ref.frames[f][i].z.toFixed(1)), shadow: g && Math.round(g.shadow), open: g && Math.round(g.open) });
       }
     }
   }
-  const after = await page.evaluate(() => window.__lit.probe.n3.draws());
-  await page.evaluate(() => window.__lit.probe.n3.walk(false));
-  const draws = after.map((v, i) => v - (before?.[i] ?? 0));
-  return { frames: CADENCE_FRAMES, checked, missed, misses, draws, pass: checked > 0 && missed === 0 };
+  return { frames: CADENCE_FRAMES, checked, missed, misses, draws: got.draws, referenceDraws: ref.draws, pass: checked > 0 && missed === 0 };
 }

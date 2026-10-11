@@ -106,6 +106,11 @@ export async function setupN3({ scene, renderer, camera, light, ground, figures,
     for (const f of figures) light.track(f);
     let walking = false;
     probe.walk = (on) => (walking = on);
+    // the cadence off (every cascade every frame: the reference run) or on, and the figures back where they stood
+    const pace = sun.csm?.cadence ?? null;
+    const home = figures.map((f) => f.position.z);
+    probe.cadence = (on) => sun.csm && (sun.csm.cadence = on ? pace : null);
+    probe.reset = () => figures.forEach((f, i) => (f.position.z = home[i]));
     probe.look = () => {
       camera.position.set(...RUN_VIEW.pos);
       camera.lookAt(...RUN_VIEW.at);
