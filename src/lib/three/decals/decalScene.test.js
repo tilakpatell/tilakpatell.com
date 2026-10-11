@@ -101,4 +101,16 @@ describe('createDecals', () => {
     decals.dispose();
     expect(scene.children).toHaveLength(0);
   });
+
+  it('a normal-only decal (no colour) is passed over: no draw, no texture asked for', async () => {
+    const three = await loadDecalThree();
+    const scene = new three.THREE.Scene();
+    const loader = vi.fn(async () => new three.THREE.Texture());
+    const bump = { kind: 'volume', position: [0, 0, 0], quaternion: [0, 0, 0, 1], size: [10, 1.5, 10], normal: [0, 1, 0], texture: null, normalOnly: true, opacity: 1 };
+    const decals = createDecals({ scene, pack: { ...PACK, cells: { '0,0': [bump, at('a', [0, 0, 0])] } }, loader, three, backend: 'webgpu' });
+    await decals.cell(0, 0, [{ geometry: new three.THREE.PlaneGeometry(40, 40).rotateX(-Math.PI / 2), matrix: new three.THREE.Matrix4() }]);
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(loader.mock.calls[0][0]).toBe('a');
+    expect(decals.stats()).toMatchObject({ draws: 1, decals: 1 });
+  });
 });

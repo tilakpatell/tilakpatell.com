@@ -53,7 +53,7 @@
    "grading": {
     "contrast": 1.05,
     "lut": "textures/galaxy/bf2017/light/tatooine/sunny.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,
@@ -124,7 +124,7 @@
    "grading": {
     "contrast": 1.05,
     "lut": "textures/galaxy/bf2017/light/tatooine/interior.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,
