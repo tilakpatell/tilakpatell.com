@@ -308,7 +308,8 @@ for (const id of list.split(',')) {
             window.__RUNTIME__?.invalidate();
             times.push(now - last);
             last = now;
-            frame = { calls: info.render.calls, triangles: info.render.triangles, points: info.render.points, lines: info.render.lines };
+            // (the node renderer's render.calls counts passes since the page began; drawCalls is the frame's. The classic renderer has no drawCalls)
+            frame = { calls: info.render.drawCalls ?? info.render.calls, triangles: info.render.triangles, points: info.render.points, lines: info.render.lines };
             info.reset();
             if (now - t0 < 4000 || times.length < 3) requestAnimationFrame(tick);
             else {
@@ -348,7 +349,7 @@ for (const id of list.split(',')) {
             window.__RUNTIME__?.invalidate();
             info.autoReset = false;
             info.reset();
-            requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.calls, tris: info.render.triangles })));
+            requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.drawCalls ?? info.render.calls, tris: info.render.triangles })));
           });
         const all = await frame();
         const out = [];
