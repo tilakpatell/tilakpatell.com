@@ -33,7 +33,7 @@
 
 import { Session } from 'node:inspector/promises';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { summarise } from './cpu-profile.mjs';
@@ -46,7 +46,7 @@ const arg = (k, d) => {
 };
 const SECONDS = Number(arg('seconds', 60));
 const TIER = arg('tier', 'high');
-const OUT = join(ROOT, arg('out', 'docs/superpowers/evidence/bf2017-picture/x2'));
+const OUT = resolve(ROOT, arg('out', 'docs/superpowers/evidence/bf2017-picture/x2'));
 const SEED = Number(arg('seed', 1));
 const SEARCH = arg('search', 'js');
 const FPS = 60;

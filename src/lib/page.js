@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { setSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 // A page in the feed (components/feed) is one of several on the screen at
 // once, and only one of them is on the address. This is how a page knows
@@ -10,13 +10,13 @@ export const PageContext = createContext({ active: true, remember: null });
 
 export const usePageActive = () => useContext(PageContext).active;
 
-// setSearchParams for a page that may be in the feed. While the page is the
+// useSearchParams for a page that may be in the feed. While the page is the
 // active one, the address is the truth. While it is not, the page keeps the
 // params it had (so the page above the boundary doesn't snap to its defaults
 // as the address moves on), and a change made to it there is kept for the
 // feed to put back, instead of landing on another page's address.
 export function usePageParams() {
-  const [live, setLive] = setSearchParams();
+  const [live, setLive] = useSearchParams();
   const { active, remember } = useContext(PageContext);
   const [own, setOwn] = useState(live);
   if (active && own !== live) setOwn(live);

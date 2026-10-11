@@ -1325,3 +1325,4 @@ scripts/twin-parity/out/
 
 # the Rust ports’ build folders (lane X2: scripts/wasm-build.mjs writes the .wasm into src/lib/wasm/<name>/)
 /wasm/*/target
+/tmp
