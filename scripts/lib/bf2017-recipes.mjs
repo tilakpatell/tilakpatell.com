@@ -246,6 +246,11 @@ export function recipeOf(row, i, { shaderMaps = null, world = null } = {}) {
       set('params.emissive.mode', 'nea', recipe._source['maps.nea']);
       orDefault('params.emissive.color', [1, 1, 1], 'EMISSIVE_WHITE');
       orDefault('params.emissive.intensity', 1, 'EMISSIVE_ONE');
+    } else if (recipe.params.emissive) {
+      // (no packed map, or its mask not in the bucket: nothing says where the
+      // strips are, and the base colour would glow whole)
+      delete recipe.params.emissive;
+      for (const k of Object.keys(recipe._source)) if (k.startsWith('params.emissive')) delete recipe._source[k];
     }
   }
 

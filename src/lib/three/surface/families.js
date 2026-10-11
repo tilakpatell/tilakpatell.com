@@ -89,8 +89,12 @@ export const DSI_SCRATCH_ROUGHNESS = 0.35;
 // alpha-tested prop is `emissive`, not `propsNonMetallic`).
 export const FAMILIES = [
   { name: 'hair', shaderRe: /Hair/i },
-  // (the Death Star interior's master and its kin: SS_DSI_Master_*, the Venator's and the Star Destroyer's copies)
-  { name: 'dsi', shaderRe: /DSI_Master|_Int_DSI_/i },
+  // (the Death Star interior's master and its kin: SS_DSI_Master_*, the
+  // Venator's and the Star Destroyer's copies; and its wall tiling, whose
+  // lit strips are its emissive mask's (T_DSI_WallTiling_Panel_01_E_M), not
+  // in the bucket: without it the whole reactor pillar glowed, so it is
+  // drawn as plated wall until the mask lands, its light strips dark)
+  { name: 'dsi', shaderRe: /DSI_Master|_Int_DSI_|DSI_WallTiling/i },
   { name: 'head', shaderRe: /Characters?Head|HeadPreset/i },
   { name: 'character', shaderRe: /SS_Characters?Preset/i },
   { name: 'creature', shaderRe: /Creature/i },

@@ -146,6 +146,22 @@ describe('recipeOf: the Death Star interior’s master', () => {
     expect(y.params.emissive.intensity).toBe(3000);
   });
 
+  it('draws the wall tiling as the master, its strips dark without their mask', () => {
+    const pillar = {
+      mesh: 'objects/architecture/_galacticempire/deathstar_interior/_backdrop/dsi_backdrop_core_pillar_02_a_mesh',
+      materials: [
+        {
+          shader: 'Objects/Architecture/_GalacticEmpire/_Shaders/SS_DSI_WallTiling_01',
+          textures: { ParallaxOcclusionHeightmap: 'Objects/Architecture/_GalacticEmpire/_Textures/T_DSI_WallTiling_Panel_01_E_H' },
+          vectors: { EmissiveIntensity: [15000, 0, 0, 0], EmissiveColor: [0.23, 1, 0.12, 1] },
+        },
+      ],
+    };
+    const x = recipeOf(pillar, 0);
+    expect(x.family).toBe('dsi');
+    expect(x.params.emissive).toBeUndefined();
+  });
+
   it('wants the packed map as a mask', () => {
     expect(mapsWanted(recipesOf(wall)).map((m) => [m.name.split('/').pop(), m.kind])).toEqual([
       ['T_DSI_01_M', 'overlay'],
