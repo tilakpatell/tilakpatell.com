@@ -274,7 +274,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       if (onProbe)
         partOf(world, 'probes.json', { probes: [] }).then((j) => {
           if (gone || !j.probes?.length) return;
-          probes = createLevelProbes({ world, list: j.probes, onProbe });
+          probes = createLevelProbes({ world, list: j.probes, onProbe, tier });
         });
     })
     .catch((e) => {

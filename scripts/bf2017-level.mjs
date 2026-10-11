@@ -296,7 +296,7 @@ async function main(args) {
   // (--parts: the map's other parts beside a pack already built, its frame from its level.json)
   if (args.parts) {
     const json = JSON.parse(await readFile(join(out, 'level.json'), 'utf8'));
-    const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny', dry });
+    const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny', ultra, dry });
     if (dry) return;
     json.shadowCache = parts.shadowCache;
     await writeFile(join(out, 'level.json'), `${JSON.stringify(json)}\n`);
@@ -493,7 +493,7 @@ async function main(args) {
   console.log(lines.join('\n'));
   if (dry) return;
 
-  const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json: pack.json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny' });
+  const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json: pack.json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny', ultra });
   pack.json.shadowCache = parts.shadowCache;
   lines.push(...parts.lines);
   await mkdir(join(out, 'cells'), { recursive: true });

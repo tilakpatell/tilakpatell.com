@@ -58,7 +58,7 @@
     "contrast": 1.05,
     "saturation": 0.848088264,
     "lut": "textures/galaxy/bf2017/light/endor/sunny.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,
@@ -128,7 +128,7 @@
     "contrast": 1.05,
     "saturation": 0.848088264,
     "lut": "textures/galaxy/bf2017/light/endor/night.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,
@@ -224,7 +224,7 @@
     "contrast": 1.05,
     "saturation": 0.848088264,
     "lut": "textures/galaxy/bf2017/light/endor/foggy.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,
@@ -315,7 +315,7 @@
     "contrast": 1.05,
     "saturation": 0.848088264,
     "lut": "textures/galaxy/bf2017/light/endor/interior.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,
