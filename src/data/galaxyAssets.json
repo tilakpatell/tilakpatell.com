@@ -171395,6 +171395,18 @@
     "from": "models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_02_cs.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_03_cs.128.ktx2": {
+    "hash": "8445be28ee8c",
+    "bytes": 15028,
+    "from": "models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_03_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_03_cs.256.ktx2": {
+    "hash": "de74300e767c",
+    "bytes": 17279,
+    "from": "models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_03_cs.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/kamino/tex/t_container_03_light_cs.128.ktx2": {
     "hash": "32c8f8439596",
     "bytes": 19627,
@@ -189603,6 +189615,18 @@
     "hash": "12df00521b31",
     "bytes": 16860,
     "from": "models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_02_cs__orm_37cd9aa3.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_03_cs.256.ktx2": {
+    "hash": "de74300e767c",
+    "bytes": 17279,
+    "from": "models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_03_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_03_cs.512.ktx2": {
+    "hash": "a8a3ec79503c",
+    "bytes": 26201,
+    "from": "models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_03_cs.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kamino/venator/tex/t_chair_03_cs.128.ktx2": {
@@ -239579,6 +239603,18 @@
     "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_ms_orange_01_cs.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_01_a_combined_01_cs.512.ktx2": {
+    "hash": "5a08d7be9df7",
+    "bytes": 96123,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_01_a_combined_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_01_b_combined_01_cs.512.ktx2": {
+    "hash": "15311c107e03",
+    "bytes": 97911,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_01_b_combined_01_cs.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_backdropbuildings_01_ca.1024.ktx2": {
     "hash": "fc30235253bc",
     "bytes": 235507,
@@ -239619,6 +239655,66 @@
     "hash": "a836c76f48ef",
     "bytes": 13712,
     "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_bollard_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_12_cs.1024.ktx2": {
+    "hash": "8d074e8a753c",
+    "bytes": 338332,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_12_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_12_cs.512.ktx2": {
+    "hash": "9424ad4d79b0",
+    "bytes": 118840,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_12_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_15_b_combined_01_cs.512.ktx2": {
+    "hash": "9b5849eca2b5",
+    "bytes": 100062,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_15_b_combined_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_19_a_combined_01_cs.512.ktx2": {
+    "hash": "dc837526c6ff",
+    "bytes": 114267,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_19_a_combined_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildinground_01_cs.1024.ktx2": {
+    "hash": "8981915826c0",
+    "bytes": 216574,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildinground_01_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildinground_01_cs.512.ktx2": {
+    "hash": "4885c9e4425b",
+    "bytes": 90015,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildinground_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingstreet_01_cs.1024.ktx2": {
+    "hash": "876ac73a61ec",
+    "bytes": 268527,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingstreet_01_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingstreet_01_cs.512.ktx2": {
+    "hash": "c4568aa45178",
+    "bytes": 103653,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingstreet_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_01_cs.1024.ktx2": {
+    "hash": "d338f07c7f6a",
+    "bytes": 238784,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_01_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_01_cs.512.ktx2": {
+    "hash": "c2ddb8f1cd3f",
+    "bytes": 96282,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_01_cs.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_02_ornaments_02_h.256.ktx2": {
@@ -240917,6 +241013,18 @@
     "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_03_n__orm_a32bd6d4.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_04_cs.256.ktx2": {
+    "hash": "f7d587195f42",
+    "bytes": 52209,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_04_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_04_cs.512.ktx2": {
+    "hash": "e25e8b8992d8",
+    "bytes": 91321,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_04_cs.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stonetiles_03_cs.1024.ktx2": {
     "hash": "7fca30f0b9c2",
     "bytes": 1219567,
@@ -241293,6 +241401,12 @@
     "hash": "e34a4aedbc68",
     "bytes": 14366,
     "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treebases_01_nao__orm_5f6c2b50.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treepoplarbillboard_01_ca.512.ktx2": {
+    "hash": "9b464b4bfb90",
+    "bytes": 55980,
+    "from": "models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treepoplarbillboard_01_ca.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treepoplarbranch_01_ca.1024.ktx2": {
@@ -253949,6 +254063,18 @@
     "from": "models/galaxy/bf2017/levels/naboo/tex/t_ms_orange_01_cs.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_01_a_combined_01_cs.512.ktx2": {
+    "hash": "5a08d7be9df7",
+    "bytes": 96123,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_01_a_combined_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_01_b_combined_01_cs.512.ktx2": {
+    "hash": "15311c107e03",
+    "bytes": 97911,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_01_b_combined_01_cs.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/naboo/tex/t_nab_awning_01_a_cs.256.ktx2": {
     "hash": "fa0abd79eb5f",
     "bytes": 156910,
@@ -254061,6 +254187,66 @@
     "hash": "80eccb1e435c",
     "bytes": 16451,
     "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_boxmarketstand_01_nam__orm_10e77ab2.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_building_10_a_cs.512.ktx2": {
+    "hash": "1f36f60d10c8",
+    "bytes": 101824,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_building_10_a_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_building_12_cs.1024.ktx2": {
+    "hash": "8d074e8a753c",
+    "bytes": 338332,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_building_12_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_building_12_cs.512.ktx2": {
+    "hash": "9424ad4d79b0",
+    "bytes": 118840,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_building_12_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_building_19_a_combined_01_cs.512.ktx2": {
+    "hash": "dc837526c6ff",
+    "bytes": 114267,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_building_19_a_combined_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildinground_01_cs.1024.ktx2": {
+    "hash": "8981915826c0",
+    "bytes": 216574,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildinground_01_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildinground_01_cs.512.ktx2": {
+    "hash": "4885c9e4425b",
+    "bytes": 90015,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildinground_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingstreet_01_cs.1024.ktx2": {
+    "hash": "876ac73a61ec",
+    "bytes": 268527,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingstreet_01_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingstreet_01_cs.512.ktx2": {
+    "hash": "c4568aa45178",
+    "bytes": 103653,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingstreet_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_01_cs.1024.ktx2": {
+    "hash": "d338f07c7f6a",
+    "bytes": 238784,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_01_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_01_cs.512.ktx2": {
+    "hash": "c2ddb8f1cd3f",
+    "bytes": 96282,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_01_cs.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_02_ornaments_02_h.256.ktx2": {
@@ -255389,6 +255575,18 @@
     "from": "models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_03_n__orm_a32bd6d4.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_04_cs.128.ktx2": {
+    "hash": "961a503c6507",
+    "bytes": 42441,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_04_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_04_cs.256.ktx2": {
+    "hash": "f7d587195f42",
+    "bytes": 52209,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_04_cs.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/naboo/tex/t_naboo_stonetiles_03_cs.1024.ktx2": {
     "hash": "7fca30f0b9c2",
     "bytes": 1219567,
@@ -255729,6 +255927,12 @@
     "hash": "e34a4aedbc68",
     "bytes": 14366,
     "from": "models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treebases_01_nao__orm_5f6c2b50.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treepoplarbillboard_01_ca.512.ktx2": {
+    "hash": "9b464b4bfb90",
+    "bytes": 55980,
+    "from": "models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treepoplarbillboard_01_ca.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treepoplarbranch_01_ca.1024.ktx2": {

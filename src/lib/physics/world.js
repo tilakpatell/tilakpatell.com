@@ -43,8 +43,12 @@
 //     ten times its others), once; call it while the ship comes down
 //   createPhysics({ gravity = -9.81 | { centre: [x, y, z], g = 9.81 },
 //     timeScale = 1, maxSubsteps = 4, maxSpeed = 200, lost(position) → bool,
-//     onError(err) }) (a timeScale, maxSubsteps or maxSpeed that isn't a
-//     sensible number is its default)
+//     onError(err), worker = false, makeWorker, workerTimeoutMs = 5000 })
+//     (a timeScale, maxSubsteps or maxSpeed that isn't a sensible number is
+//     its default; worker: true runs the engine in a module Worker behind
+//     the same face, workerClient.js, where one can be made and its engine
+//     comes up, and this main-thread engine where not: off everywhere until
+//     a world's step is measured over 2 ms a frame, worker.js's header)
 //     → Promise<{ RAPIER, world, step(dt) → substeps taken, add(desc) → Body,
 //       remove(body), tagOf(collider), onSubstep(fn(dt)) → off, awake(fn(Body)) (every awake
 //       body), alpha (how far into the next step the clock is, 0…1, to draw
@@ -52,7 +56,7 @@
 //       centre, moved by −shift, velocities kept), onOriginShift(fn(shift))
 //       → off, sleepOutside([x, y, z], r) (r along the ground; on a round
 //       planet, straight-line; never a body that can't sleep), disposed,
-//       dispose() }>
+//       status() → { worker, hopMs }, dispose() }>
 //   desc: { type: 'dynamic' | 'fixed' | 'kinematicPositionBased' |
 //     'kinematicVelocityBased', position, rotation ([x, y, z, w]), canSleep,
 //     sleeping, enabled, linearDamping = 0.1, angularDamping = 0.1, mass,
@@ -85,6 +89,7 @@
 
 import { loadEngine } from './engine.js';
 import { GROUPS } from './groups.js';
+import { createWorkerPhysics, makePhysicsWorker } from './workerClient.js';
 
 export { GROUPS };
 export const STEP = 1 / 60;
@@ -187,7 +192,14 @@ function describe(RAPIER, c, desc, share) {
   return cd;
 }
 
-export async function createPhysics({ gravity = -9.81, timeScale = 1, maxSubsteps = 4, maxSpeed = 200, lost = null, onError = (err) => console.error('physics:', err) } = {}) {
+export async function createPhysics({ gravity = -9.81, timeScale = 1, maxSubsteps = 4, maxSpeed = 200, lost = null, onError = (err) => console.error('physics:', err), worker = false, makeWorker = makePhysicsWorker, workerTimeoutMs = 5000 } = {}) {
+  // (the worker where asked and one can be made and its engine comes up;
+  // the main thread otherwise, and always where `lost` is a function, which
+  // can't cross to it)
+  if (worker && !lost) {
+    const off = await createWorkerPhysics({ make: makeWorker, timeoutMs: workerTimeoutMs, gravity, timeScale, maxSubsteps, maxSpeed, onError });
+    if (off) return off;
+  }
   const RAPIER = await load();
   const scale = sane(timeScale, (v) => v >= 0, 1);
   const most = Math.floor(sane(maxSubsteps, (v) => v >= 1, 4));
@@ -588,6 +600,7 @@ export async function createPhysics({ gravity = -9.81, timeScale = 1, maxSubstep
     add,
     remove,
     tagOf: (collider) => (collider ? (tags.get(collider.handle) ?? null) : null),
+    status: () => ({ worker: false, hopMs: 0 }),
     get disposed() {
       return disposed || dying;
     },

@@ -28634,6 +28634,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kamino/tex/t_blankets_05_nam__orm_bb12127e.128.ktx2
 /public/models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_02_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_02_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_03_cs.128.ktx2
+/public/models/galaxy/bf2017/levels/kamino/tex/t_catwalksystem_imperial_03_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/kamino/tex/t_container_03_light_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/kamino/tex/t_container_03_light_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/kamino/tex/t_container_03_nam__normal.128.ktx2
@@ -31669,6 +31671,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_02_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_02_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_02_cs__orm_37cd9aa3.128.ktx2
+/public/models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_03_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/kamino/venator/tex/t_catwalksystem_imperial_03_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/kamino/venator/tex/t_chair_03_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/kamino/venator/tex/t_chair_03_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/kamino/venator/tex/t_chair_03_nam__normal.128.ktx2
@@ -39998,6 +40002,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_ms_naboobase_groundleaves_01_n.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_ms_orange_01_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_ms_orange_01_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_01_a_combined_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_01_b_combined_01_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_backdropbuildings_01_ca.1024.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_backdropbuildings_01_ca.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_backdropbuildings_01_ca.512.ktx2
@@ -40005,6 +40011,16 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_backdropbuildings_01_n.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_backdropbuildings_01_n.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_bollard_01_n__normal.128.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_12_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_12_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_15_b_combined_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_building_19_a_combined_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildinground_01_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildinground_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingstreet_01_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingstreet_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_01_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_01_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_02_ornaments_02_h.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_02_ornaments_02_nw__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nab_buildingtower_02_ornaments_02_nw__normal.512.ktx2
@@ -40221,6 +40237,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_03_n__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_03_n__orm_a32bd6d4.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_03_n__orm_a32bd6d4.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_04_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stair_04_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stonetiles_03_cs.1024.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stonetiles_03_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_naboo_stonetiles_03_cs__orm_0b19f791.256.ktx2
@@ -40284,6 +40302,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treebases_01_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treebases_01_nao__normal.128.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treebases_01_nao__orm_5f6c2b50.128.ktx2
+/public/models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treepoplarbillboard_01_ca.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treepoplarbranch_01_ca.1024.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treepoplarbranch_01_ca.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/market/tex/t_nat_nab_treepoplarbranch_01_nts__normal.256.ktx2
@@ -42393,6 +42412,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/naboo/tex/t_ms_naboobase_groundleaves_01_n.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_ms_orange_01_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_ms_orange_01_cs.256.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_01_a_combined_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_01_b_combined_01_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_awning_01_a_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_awning_01_a_nam__normal.128.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_awning_01_a_nam__orm_58bdc22e.128.ktx2
@@ -42412,6 +42433,16 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_boxmarketstand_01_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_boxmarketstand_01_nam__normal.128.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_boxmarketstand_01_nam__orm_10e77ab2.128.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_building_10_a_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_building_12_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_building_12_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_building_19_a_combined_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildinground_01_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildinground_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingstreet_01_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingstreet_01_cs.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_01_cs.1024.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_01_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_02_ornaments_02_h.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_02_ornaments_02_nw__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nab_buildingtower_02_ornaments_02_nw__normal.512.ktx2
@@ -42633,6 +42664,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_03_n__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_03_n__orm_a32bd6d4.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_03_n__orm_a32bd6d4.512.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_04_cs.128.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_naboo_stair_04_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_naboo_stonetiles_03_cs.1024.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_naboo_stonetiles_03_cs.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_naboo_stonetiles_03_cs__orm_0b19f791.256.ktx2
@@ -42690,6 +42723,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treebases_01_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treebases_01_nao__normal.128.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treebases_01_nao__orm_5f6c2b50.128.ktx2
+/public/models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treepoplarbillboard_01_ca.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treepoplarbranch_01_ca.1024.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treepoplarbranch_01_ca.512.ktx2
 /public/models/galaxy/bf2017/levels/naboo/tex/t_nat_nab_treepoplarbranch_01_nts__normal.256.ktx2

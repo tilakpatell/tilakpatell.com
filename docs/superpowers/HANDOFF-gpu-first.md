@@ -19,11 +19,19 @@ The owner’s word, fixed on 2026-10-11: no engine switch, no pixel streaming, e
 | N2 | `…-laneN2-picture.md` | the dynamic-resolution controller on GPU time, sharpen after the upscaler, mip bias, velocity everywhere, reversed depth, specular anti-aliasing, the 30 fps cadence | now | `session_01C7wedSXsaKtR2ce8rN4e17` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n2-picture` | |
 | N3 | `…-laneN3-light.md` | the Enlighten atlases as the baked bounce, the budgeted probe grid, SSR’s roughness cut, cached far cascades over the far shadow cache | now | `session_018TWXtVyrnGi8eHtVLYkiwK` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n3-light` | |
 | N4 | `…-laneN4-stream.md` | the coarse horizon grid first, the boot slice, priority by size along the heading, low mip first, UASTC data rows, the cache, the byte budgets | now | `session_01M3zvYcbcXu7nBwoLQTvyZ3` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n4-stream` | |
-| N5 | `…-laneN5-sim.md` | Rapier in a worker behind the same face (off until measured), GPU debris on the depth buffer, particle lights in the clustered list | now | `session_012ehUtVgawMKAYhGQL7fUVS` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n5-sim` | |
+| N5 | `…-laneN5-sim.md` | Rapier in a worker behind the same face (off until measured), GPU debris on the depth buffer, particle lights in the clustered list | now | `session_012ehUtVgawMKAYhGQL7fUVS` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n5-sim` | #924 (draft) |
 | N6 | `…-laneN6-tiers.md` | the tier table, the iOS self-test, the phone preset, the settings line, every world on every tier | after G1, N1, N2 | | `claude/gpu-n6-tiers` | |
 | N7 | `…-laneN7-clusters.md` | the cluster tier spike: meshlets, a visibility buffer, a compute rasteriser on `T2`; kept only where it pays | after N1, N6, on the laptop | | `claude/gpu-n7-clusters` | |
 
 Each lane fills its row (session, PR) in its own PR and merges `origin/main` before it, keeping both sides.
+
+## Lane N5 (2026-10-11, #924)
+
+**Done.** Rapier in a module worker behind `createPhysics`'s face (`src/lib/physics/worker.js`, `workerClient.js`, `poses.js`), off everywhere (`worker: false`). It falls back to the main thread when no Worker can be made, its engine fails, or it doesn't answer within 5 s, and it checks out in real Chromium: the main thread's share of a step is 0.1 ms, the round trip 1.5 ms p50. Debris (`src/lib/physics/breaks.js`, `src/lib/three/particles/debris.js`): hulls for pieces over 0.5 m (8 a break, 64 live, ragdoll points counted), a 200 to 2,000 particle burst landing on last frame's depth (`collide.js`, the kernel's term in `gpu.js`), and hulls asleep or still for 2 s turned to static instances. Particle lights go after the placed lamps in the cluster, the newest dropped first. Hoth with 100 breaks a minute: the step p95 0.93 to 1.39 ms with the debris in its own world, the same battle (0 differ, hash `8b0ff052`). Workers build as ES modules.
+
+**Left.** The laptop's rows (the README's last section): the WebGPU leg with the kernel on a GPU, the frame within 1 ms of `--debris off`, the step and the hop. A world's breakables wired to `debris.break`. The worker stays off: the only step measured over 2 ms is the level's collision stepped every frame (p95 5.7 ms here), which no world does; turn it on for one that does once the laptop measures it.
+
+**Checking it.** `npx vitest run src/lib/physics src/lib/three/particles src/lib/three/light`; `node scripts/x2-profile.mjs --seconds 60 --tier ultra --breaks 100`; `node scripts/light-fixture.mjs --debris --legs webgl`; `node scripts/physics-worker.mjs`. Gotchas: Hoth's Rapier collision holds no terrain (debris lays a floor with `groundAt`); Rapier 0.21 costs about 0.3 µs a fixed collider a step whether anything moves or not; Rapier keeps a hull rocking on an edge awake for good (debris counts one under 0.1 m/s as resting).
 
 ## What the other work must know
 

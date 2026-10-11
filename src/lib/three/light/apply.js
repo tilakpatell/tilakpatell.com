@@ -26,7 +26,9 @@
 //                                   parts.picture.missing). None: nothing here changes.
 //   onChain,                        (passes) => …: the chain built again when a weather's picture
 //                                   lands at a crossfade's end (its LUT and Gaussians), for rt.gfx.post
-// }) → Promise<{ update(dt, camera), setWeather(entry, seconds, { picture }), track(object), untrack(object), shadowTerm, passes, params, parts, dispose }>
+// }) → Promise<{ update(dt, camera), setWeather(entry, seconds, { picture }), track(object), untrack(object),
+//   setParticleLights(list) (effects.js's lights(): after the placed ones, the newest dropped past
+//   the pool; placed.js), shadowTerm, passes, params, parts, dispose }>
 //
 // sunShadowNode(lit) → the sun's shadow term as a node (the cascades × the
 //   clouds, eased by the record's ParticleSunShadowFactor) for a material
@@ -204,6 +206,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   let fade = null; // { from, to, t, seconds, since, picture }
   let turned = 0; // (each weather asked; a picture that lands after a newer ask is late)
   const pos = [0, 0, 0];
+  let sparks = null; // (the particles' lights for the next update: setParticleLights)
   const finish = (f) => {
     if (!f.picture) return;
     const mine = f.picture.ask;
@@ -224,6 +227,9 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
     },
     shadowTerm,
     track: (object) => contact.track(object),
+    setParticleLights(list) {
+      sparks = list;
+    },
     untrack: (object) => contact.untrack(object),
     parts: {
       sun,
@@ -267,7 +273,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       sun.update(cam);
       contact.update(cam);
       sky?.update(cam);
-      placed?.update(cam);
+      placed?.update(cam, sparks);
       vols?.update(cam);
       if (probes) {
         pos[0] = cam.position.x;
