@@ -53,6 +53,14 @@ const _s = new THREE.Vector3();
 const STEP = 8;
 // (lane U) the bands a batch is per: the far table's arena and the horizon's
 const BANDS = ['arena', 'horizon'];
+// m: how near a thing must be to cast into the sun's shadow. The node
+// renderer's sun casts through up to four cascades (lib/three/light/sun.js),
+// reaching ULTRA_SHADOW_FAR (140 m) at most plus its LIGHT_MARGIN (120 m)
+// sunward; an InstancedMesh is culled whole, so a pool with nothing within
+// this casts nothing, and the far table and the horizon are not drawn into
+// every cascade (Hoth at high: 4.12M triangles a frame, 1.5M of them the
+// cascades, over the 3M row)
+export const SHADOW_REACH = 260;
 
 function flipped(geometry) {
   const g = geometry.clone();
@@ -205,10 +213,10 @@ export function createLevelScene({ scene, pack, loadGltf, tier, ground = null, b
         const cap = Math.max(8, 2 ** Math.ceil(Math.log2(Math.max(1, p.rows.length))));
         part.mesh = new THREE.InstancedMesh(part.geometry, part.material, cap);
         part.mesh.userData = { glb: p.glb, mirrored: p.mirrored };
-        part.mesh.castShadow = true;
         part.mesh.receiveShadow = true;
         root.add(part.mesh);
       }
+      part.mesh.castShadow = p.casts !== false;
       p.rows.forEach((row, i) => part.mesh.setMatrixAt(i, _m.multiplyMatrices(row.matrix, part.local)));
       part.mesh.count = p.rows.length;
       part.mesh.instanceMatrix.needsUpdate = true;
@@ -219,6 +227,7 @@ export function createLevelScene({ scene, pack, loadGltf, tier, ground = null, b
   function sort([x, z]) {
     sorts++;
     const next = new Map();
+    const casting = new Set(); // the pools with something within SHADOW_REACH
     for (const row of rows) {
       if (dropped.has(row.mesh)) continue;
       const d = Math.hypot(row.x - x, row.z - z);
@@ -237,11 +246,13 @@ export function createLevelScene({ scene, pack, loadGltf, tier, ground = null, b
       row.at = key;
       if (!next.has(key)) next.set(key, []);
       next.get(key).push(row);
+      if (!row.horizon && d - row.r <= SHADOW_REACH) casting.add(key);
     }
     for (const [key, p] of pools) if (!next.has(key) && p.rows.length) (p.rows = []), build(p);
     for (const [key, list] of next) {
       const p = pools.get(key);
       p.rows = list;
+      p.casts = casting.has(key);
       build(p);
     }
   }
