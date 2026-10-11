@@ -81,7 +81,7 @@ function leafGeometry(leaf) {
           pos.getElement(i, el);
           transform(m, el[0], el[1], el[2], out, i * 3);
         }
-        // (a loop, not a spread: a big collision mesh's points overflow the stack as arguments)
+        // (a loop, not a spread: a big mesh has more points than a call takes arguments)
         for (const v of out) pts.push(v);
         const ind = prim.getIndices();
         if (ind) for (const v of ind.getArray()) idx.push(base + v);

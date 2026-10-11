@@ -16,12 +16,19 @@
 //   crewRecipes(glbJson, index) → { <material name>: recipe }: a crew pack's
 //     materials (scripts/bf2017-import.mjs keeps the game's names and names
 //     each image after its game texture), each found by its colour map
+//   shaderMapIndex(textureNames) → the game's colour and normal maps, for
+//     shaderMapsOf(shader, index, world) → { color, normal? } | null: a
+//     surface shader's own maps (below)
 //
 // Every leaf of `maps` and `params` has a `_source` keyed by its path:
 // 'materials.jsonl:<mesh>#<i>.<slot or parameter>' when it is the dump's, or
 // 'families.js:<CONSTANT>' when it is a named default. A material with no
 // texture slots (the game bound it through its variation database; the GLB
-// already carries its maps) is `family: 'glb'` with nothing on top.
+// already carries its maps) is `family: 'glb'` with nothing on top, unless
+// its shader holds its maps: with `{ shaderMaps, world }`, a texture-less
+// material whose surface shader names its own maps (shaderMapsOf) is
+// `family: 'instance'` with `maps.color` and `maps.normal`, sourced
+// 'textures.jsonl:shader <SS_name>'.
 
 import {
   ALPHA_CUTOFF,
@@ -49,7 +56,7 @@ const MAP_PATHS = {
 };
 // families whose detail vectors carry one component per array slice
 const PER_SLICE = new Set(['character', 'head', 'creature']);
-const KIND_ORDER = ['detail', 'array', 'height', 'overlay', 'emissive', 'mask'];
+const KIND_ORDER = ['color', 'normal', 'detail', 'array', 'height', 'overlay', 'emissive', 'mask'];
 
 function setPath(obj, path, value) {
   const keys = path.split('.');
@@ -66,7 +73,7 @@ function flagOf(m, name) {
   return undefined;
 }
 
-export function recipeOf(row, i) {
+export function recipeOf(row, i, { shaderMaps = null, world = null } = {}) {
   const m = row.materials[i];
   const at = (p) => `materials.jsonl:${row.mesh}#${i}.${p}`;
   const slots = slotsOf(m.textures);
@@ -78,7 +85,19 @@ export function recipeOf(row, i) {
     params: {},
     _source: {},
   };
-  if (family === 'glb') return recipe;
+  if (family === 'glb') {
+    // (no slots: the shader may hold the maps the GLB was exported without)
+    const own = !slots.length && shaderMaps ? shaderMapsOf(m.shader, shaderMaps, world) : null;
+    if (own) {
+      recipe.family = 'instance';
+      const from = `textures.jsonl:shader ${m.shader.split('/').pop()}`;
+      for (const [k, name] of Object.entries(own)) {
+        recipe.maps[k] = name;
+        recipe._source[`maps.${k}`] = from;
+      }
+    }
+    return recipe;
+  }
   const set = (path, value, source) => {
     setPath(recipe, path, value);
     recipe._source[path] = source;
@@ -259,11 +278,13 @@ export function recipeOf(row, i) {
   return recipe;
 }
 
-export const recipesOf = (row) => row.materials.map((_, i) => recipeOf(row, i));
+export const recipesOf = (row, opts) => row.materials.map((_, i) => recipeOf(row, i, opts));
 
 export function mapsWanted(recipes) {
   const seen = new Map();
   for (const r of recipes) {
+    // (a shader's own colour and normal, in place of the GLB's: shaderMapsOf)
+    for (const key of ['color', 'normal']) if (typeof r.maps?.[key] === 'string' && !seen.has(r.maps[key])) seen.set(r.maps[key], key);
     for (const [key, path] of Object.entries(MAPS).map(([k]) => [k, MAP_PATHS[k] ?? k])) {
       const name = getPath(r.maps, path);
       if (typeof name === 'string' && !seen.has(name)) seen.set(name, MAP_KINDS[key]);
@@ -285,7 +306,7 @@ export function countFamilies(rows) {
 export function candidatesOf(name, kind) {
   const base = `textures/${name.toLowerCase()}`;
   if (kind === 'array') return [`${base}_000__normal.ktx2`, `${base}_000.ktx2`];
-  if (kind === 'detail') return [`${base}__normal.ktx2`, `${base}.ktx2`];
+  if (kind === 'detail' || kind === 'normal') return [`${base}__normal.ktx2`, `${base}.ktx2`];
   return [`${base}.ktx2`];
 }
 
@@ -324,4 +345,73 @@ export function crewRecipes(glb, index) {
     if (hit) out[m.name] = recipeOf(hit.row, hit.i);
   }
   return out;
+}
+
+// ---- a surface shader's own maps (lane E2's finding 8). The game binds no
+// texture on a material whose surface shader holds its maps (Theed's copper
+// roofs, its concrete, the backdrop's buildings), and the export dumped no
+// shaders, so the GLB comes without them and draws white. Its maps are the
+// game's under the shader's name: SS_Naboo_CopperRoof_01 wears
+// T_NabooCopperRoof_CS_01 and _NAM_01. Found by the shader's name stem among
+// the world's own maps, else (a shader of the world's own) the colour map in
+// its folder whose name shares most of its own words; never another world's
+// (a bare stem match takes SS_BackdropBuildings_01 to Bespin's backdrop).
+// What is not a surface (shadow meshes, the terrain's virtual texture, the
+// invisible and the placeholders, decals, glow, glass) is the NEVER rule's
+// and the terrain's, and finds nothing here.
+
+const NOT_SURFACE = /Shadowmesh|VirtualTexture|Invisible|Placeholder|_Shadow_\d*$|Decal|OilPuddle|TireTracks|EmissiveOnly|Atmosphere|ForceField|Glass/i;
+const COLOUR_SUFFIX = /_(CS|CA|C|BaseColou?r)$/i;
+// (not _NS: the game's detail normal, not a surface's own)
+const NORMAL_SUFFIX = /_(N|NM|NAM|NA|NW|NMR)$/i;
+// a texture's leaf without T_, its trailing number and its suffix: T_NabooCopperRoof_CS_01 → NabooCopperRoof, its kind 'color'
+function texStem(name) {
+  let leaf = name.split('/').pop().replace(/^T_/i, '');
+  let kind = null;
+  for (let pass = 0; pass < 2; pass++) {
+    leaf = leaf.replace(/_\d+$/, '');
+    if (COLOUR_SUFFIX.test(leaf)) (kind = 'color'), (leaf = leaf.replace(COLOUR_SUFFIX, ''));
+    else if (NORMAL_SUFFIX.test(leaf)) (kind = 'normal'), (leaf = leaf.replace(NORMAL_SUFFIX, ''));
+  }
+  return { stem: leaf.toLowerCase().replace(/[^a-z0-9]/g, ''), kind };
+}
+const GENERIC = new Set(['backdrop', 'set', 'base', 'preset', 'shader', 'objects', 'level', 'levels']);
+const words = (s) => s.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2);
+
+export function shaderMapIndex(names) {
+  const maps = [];
+  for (const name of names) {
+    const { stem, kind } = texStem(name);
+    if (kind) maps.push({ name, stem, kind, dir: name.slice(0, name.lastIndexOf('/')), lower: name.toLowerCase() });
+  }
+  return maps;
+}
+
+export function shaderMapsOf(shader, index, world) {
+  if (!shader || !index || NOT_SURFACE.test(shader)) return null;
+  const leaf = shader.split('/').pop().replace(/^SS_/i, '').replace(/_\d+$/, '');
+  const stem = leaf.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const dir = shader.slice(0, shader.lastIndexOf('/'));
+  const w = String(world ?? '').toLowerCase();
+  // (the world's own maps: its name in the path, or its three-letter mark, Naboo's O_NAB_)
+  const mark = new RegExp(`(^|[/_])${w.slice(0, 3)}_`);
+  const ours = (m) => Boolean(w) && (m.lower.includes(w) || mark.test(m.lower));
+  const colours = index.filter((m) => m.kind === 'color');
+  let color =
+    colours.filter((m) => ours(m) && m.stem === stem)[0] ??
+    colours.filter((m) => ours(m) && stem.length > 8 && m.stem.includes(stem)).sort((a, b) => a.stem.length - b.stem.length)[0];
+  if (!color && ours({ lower: shader.toLowerCase() })) {
+    // (a word of its own, not the folder's or the world's: a backdrop
+    // building is not the backdrop's 64-texel window strip)
+    const want = new Set(words(leaf).filter((x) => !GENERIC.has(x) && x !== w && x !== w.slice(0, 3)));
+    const share = (m) => words(m.name.split('/').pop()).filter((x) => want.has(x)).length;
+    color = colours
+      .filter((m) => m.dir === dir)
+      .map((m) => [m, share(m)])
+      .filter(([, n]) => n > 0)
+      .sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name))[0]?.[0];
+  }
+  if (!color) return null;
+  const normal = index.find((m) => m.kind === 'normal' && m.dir === color.dir && m.stem === color.stem);
+  return { color: color.name, ...(normal && { normal: normal.name }) };
 }

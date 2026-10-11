@@ -91,3 +91,25 @@ describe('fitCull', () => {
     expect(fitCull(inst, meshes, { tris: Infinity, calls: 1500 }, 'ultra', { positions: [[0, 0]], kMax: 1000 }).K).toBe(1000);
   });
 });
+
+describe('fitCull on ultra (lane D2)', () => {
+  it('holds to the ultra row’s calls alone: no triangle row, so a mesh high drops comes back', () => {
+    // a heavy hangar and a thousand pieces of debris at the spot: far over high's triangles
+    const heavy = [{ lods: [5e6, 4e6, 3.5e6], mats: 1, weight: 1000 }, ...meshes.slice(1)];
+    const inst = at([[1, 0, 10, 0], ...Array.from({ length: 50 }, (_, i) => [i, 1, 1, 1])]);
+    const high = fitCull(inst, heavy, { tris: 3e6, calls: 700 }, 'high', { positions: [[0, 0]], kMin: 40 });
+    expect(high.dropped.length).toBeGreaterThan(0);
+    const ultra = fitCull(inst, heavy, { tris: Infinity, calls: 1500 }, 'ultra', { positions: [[0, 0]], kMin: 60 });
+    expect(ultra.dropped).toEqual([]);
+    expect(ultra.K).toBe(1000);
+    expect(ultra.worst.tris).toBeGreaterThan(3e6);
+  });
+
+  it('still cuts on ultra where the calls are over its row', () => {
+    const many = Array.from({ length: 30 }, (_, m) => ({ lods: [10], mats: 100, weight: m + 1 }));
+    const inst = at(many.map((_, m) => [m, 0, 1, m]));
+    const f = fitCull(inst, many, { tris: Infinity, calls: 1500 }, 'ultra', { positions: [[0, 0]], kMin: 60 });
+    expect(f.worst.calls).toBeLessThanOrEqual(1350);
+    expect(f.dropped.length).toBeGreaterThan(0);
+  });
+});

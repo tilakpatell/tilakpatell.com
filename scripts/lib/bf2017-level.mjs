@@ -67,10 +67,48 @@ export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunn
 // What the game places and never draws as itself: Enlighten's lighting
 // proxies, the fake light cones, destruction stages waiting their turn
 // (despawn and leftover pieces), the planes that fake shadow, mist and
-// light, the shadow casters, occluders and blockers (levelPack.js's PROXY,
-// for the packs built before); and the skinned actors, which stand in
-// their bind pose (the site's own people do the living)
-export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|shadowmesh|_shadow_mesh|(?<!no)occluder|lightblocker|blockercsg|invalidatelightplane|mistplane|lightcone/i;
+// light, the light blockers and occluders that only stop light or sight
+// (a `…nooccluder` cliff is a cliff), the shadow casters, the invisible
+// collision and shadow-only meshes (lane E1 found Yavin's and Hoth's
+// hothinterior_lightblocker_01 drawn solid; levelPack.js's PROXY for the
+// packs built before); and the skinned actors but the still ones
+// (STILL_SKINNED), whose living the site's own people do
+export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|shadowmesh|_shadow_mesh|invalidatelightplane|mistplane|lightcone|lightblocker|blockercsg|(?<!no)occluder|invisiblecollision/i;
+
+// The meshes whose every material is a proxy's shader, from the material
+// manifest (web/materials.jsonl): SS_Shadowmesh and its kin cast shadows
+// and never draw (lane E2: Naboo's 47), and SS_VirtualTextureOnly pieces
+// only paint the terrain's virtual texture, a decal the site's ground does
+// not have, so drawn they stand as solid slabs. Keyed by the mesh's file
+// as the maps name it, lower case, without .glb.
+//   PROXY_SHADER, proxyMeshes(lines) → Map(mesh → 'shadow proxy' | 'virtual texture only')
+export const PROXY_SHADER = /shadowmesh|virtualtextureonly/i;
+export function proxyMeshes(lines) {
+  const out = new Map();
+  for (const line of lines) {
+    if (!PROXY_SHADER.test(line)) continue;
+    const j = JSON.parse(line);
+    const shaders = (j.materials ?? []).map((m) => String(m.shader ?? ''));
+    if (!shaders.length || !shaders.every((x) => PROXY_SHADER.test(x))) continue;
+    out.set(`models/${j.mesh}`.toLowerCase(), shaders.some((x) => /virtualtextureonly/i.test(x)) ? 'virtual texture only' : 'shadow proxy');
+  }
+  return out;
+}
+export const proxyKey = (file) => String(file).toLowerCase().replace(/\.glb$/, '');
+
+// What NEVER keeps out of a map's arena, by mesh: [{ name, count }], the
+// most first (each pack's README lists them)
+export function neverOf(map, { subs = null } = {}) {
+  const want = new Set((subs ?? mainSubs(map)).map(last));
+  const out = new Map();
+  for (const g of map.groups) {
+    const file = map.meshes[g.mesh]?.file ?? '';
+    if (!want.has(last(map.subworlds[g.sub])) || !NEVER.test(file)) continue;
+    const name = last(file).replace(/_mesh\.glb$/, '');
+    out.set(name, (out.get(name) ?? 0) + g.count);
+  }
+  return [...out].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || (a.name < b.name ? -1 : 1));
+}
 
 // `drop`: meshes left out, each `<mesh name>` or `<sub>:<mesh name>` (its
 // file's last part without `_mesh.glb`, any case; `*` for any run of
@@ -115,6 +153,13 @@ const dropTest = (drop) => {
   };
 };
 
+// The skinned actors that are scenery, not figures: the wind-bent shrubs
+// (Endor_01's 425 forestbase_shrub*_skinned), skinned for the wind with no
+// clip of their own, so their bind pose is how they stand. They go in the
+// pack as rigid instances (lane D2); every other actor is the site's to
+// place (actorsJson).
+export const STILL_SKINNED = /objects\/nature\/.*_skinned/;
+
 // What a mesh weighs to the fit, which drops the lightest first: its
 // largest face times its largest extent, so a floor plate or a wall panel
 // (thin, but what you stand on and see) weighs the solid it reads as, and
@@ -150,7 +195,7 @@ export function arenaOf(map, { subs = null, drop = [] } = {}) {
   for (const g of map.groups) {
     const sub = last(map.subworlds[g.sub]);
     const file = map.meshes[g.mesh]?.file ?? '';
-    if (!want.has(sub) || g.kind === 'actor' || NEVER.test(file) || dropped(sub, file)) continue;
+    if (!want.has(sub) || (g.kind === 'actor' && !STILL_SKINNED.test(file)) || NEVER.test(file) || dropped(sub, file)) continue;
     for (let i = 0; i < g.count; i++) out.push(g.first + i);
   }
   return out.sort((a, b) => a - b);

@@ -17,7 +17,27 @@ export const KNOWN_OVER = {
 // world's baseline never measured), so the row's ceilings alone and no floor
 export const baselineOf = (list, id, district = null) => (district ? null : (list.find((x) => x.id === id) ?? null));
 
-export function limitsFor({ id, quality, row, base, scale = 1, realGpu = false }) {
+// What a world's models are counted as: every .glb, .ktx2 and .bin it
+// fetches (lane D2: a level pack's maps and cells weigh as its meshes do),
+// and whether the public bucket served any of them.
+export const MODEL_FILE = /\.(glb|ktx2|bin)(\?|$)/;
+export const BUCKET_URL = /\/storage\/v1\/object\/public\//;
+
+// The models row when the bucket serves the world, as a visitor gets it
+// (VITE_ASSET_BASE set): the row's megabytes were written for a dev server
+// with no base, where the native figures' full cuts and the published packs
+// are never fetched. Measured, not guessed: main's Hoth (00843045b, #890),
+// the heaviest world, through a dev server pointed at the bucket, software
+// GL, every .glb, .ktx2 and .bin counted, 2026-10-11: low 39.1, mid 60.7,
+// high 142.4, ultra 258.6 MB; each row that +10% (the calls' and
+// triangles' rule), rounded up to 5 MB.
+export const BUCKET_MB = { low: 45, mid: 70, high: 160, ultra: 285 };
+export const BUCKET_SOURCE = {
+  _source: "lane D2: BUDGET=1 QUALITY=<tier> galaxy-check surface hoth on origin/main 00843045b with VITE_ASSET_BASE at the public bucket, 2026-10-11 (docs/superpowers/evidence/bf2017-picture/d2/README.md)",
+  measured: { low: 39.1, mid: 60.7, high: 142.4, ultra: 258.6 },
+};
+
+export function limitsFor({ id, quality, row, base, scale = 1, realGpu = false, bucket = false }) {
   const known = base ? (KNOWN_OVER[id] ?? null) : null;
   const calls = Math.min(row.calls, (base?.calls ?? row.calls) * 1.1) * scale;
   const ownTris = (base?.triangles ?? row.tris) * 1.1;
@@ -25,7 +45,8 @@ export function limitsFor({ id, quality, row, base, scale = 1, realGpu = false }
   const frame = quality === 'ultra' && realGpu ? 16.7 * scale : Infinity;
   // (a quarter of the baseline's calls: fewer is a world held back while
   // measured, the frame guard or a cover, not one made lighter)
-  return { calls, tris, mb: row.modelsMB * scale, frame, known, baseCalls: base?.calls ?? null, floor: base ? base.calls * 0.25 : 0 };
+  const mb = (bucket && BUCKET_MB[quality]) || row.modelsMB;
+  return { calls, tris, mb: mb * scale, bucket: Boolean(bucket && BUCKET_MB[quality]), frame, known, baseCalls: base?.calls ?? null, floor: base ? base.calls * 0.25 : 0 };
 }
 
 // What a run went over, as short phrases; none means it passes. A run that

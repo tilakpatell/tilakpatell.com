@@ -12,6 +12,8 @@
 //   vehiclesJson(map, pack, { rides, things, subs }) → { rides, things, unplaced }
 //   frameOf(pack) → (position, quaternion) → { at: [x, z], yaw } | null (beyond the arena)
 
+import { STILL_SKINNED } from './bf2017-level.mjs';
+
 // the game's mesh (its folder and name) → the site's crew kind
 // (crewList.js); an Ewok is three meshes, its fur and hood are its body's
 const ACTOR = [
@@ -22,8 +24,8 @@ const ACTOR = [
   [/droids\/(r2d2|astromech)/, 'astromech'],
   [/droids\/viper|probedroid/, 'probe'],
 ];
-// (the wind-bent shrubs are skinned for the wind, not alive: scenery)
-const SCENERY = /objects\/nature\/.*_skinned/;
+// (the wind-bent shrubs are skinned for the wind, not alive: scenery, which
+// the pack itself draws in their bind pose, bf2017-level.mjs's STILL_SKINNED)
 // (a destruction stage waiting for its turn: never a figure)
 const NEVER = /despawn|leftover|_destruction_|gameplay\/equipment/;
 
@@ -93,10 +95,7 @@ export function actorsJson(map, pack, { kinds, subs }) {
     const file = map.meshes[g.mesh].file;
     if (NEVER.test(file)) continue;
     const blueprint = lastName(file).replace(/_mesh\.glb$/, '');
-    if (SCENERY.test(file)) {
-      for (let i = 0; i < g.count; i++) note(unplaced, blueprint, 'scenery (skinned, wind-bent)');
-      continue;
-    }
+    if (STILL_SKINNED.test(file)) continue;
     const kind = kindOfActor(file);
     if (kind === null && /creatures\/ewok\//.test(file)) continue; // (a part of an Ewok)
     for (let k = 0; k < g.count; k++) {

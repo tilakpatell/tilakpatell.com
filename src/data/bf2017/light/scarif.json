@@ -61,7 +61,7 @@
    },
    "grading": {
     "lut": "textures/galaxy/bf2017/light/scarif/sunset.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 0,

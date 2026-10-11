@@ -4,10 +4,6 @@
 
 import { ownMap } from './ownMap';
 
-// level ground stepping evenly from a to b (a road up a slope): flats
-const ramp = (a, b, h0, h1, n = 12, r = 8) =>
-  Array.from({ length: n + 1 }, (_, i) => ({ at: [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n], r, edge: r, h: h0 + ((h1 - h0) * i) / n }));
-
 // a skybridge from a to b, its ends just inside the platforms there (ra,
 // rb: how far from each middle its edge is, along the way)
 export const span = (a, b, ra, rb, w = 6, style = 'coruscant', y = 0) => {
@@ -24,8 +20,55 @@ export const tower = (at, style, h, w = 26) => ({ kind: 'skyscraper', at, abs: t
 
 export const SITES = {
   naboo: {
-    place: 'The Great Grass Plains',
-    line: 'Green hills, still lakes, and Theed’s domes over the falls.',
+    // (not lit as the game lights its level: src/data/bf2017/light/naboo.json's
+    // dusk, wired here with the level's placed lights on, turned the plaza to
+    // white fog, its mean luminance twice the site's own light's (0.62
+    // against 0.31, lane E2's hand-off), past the 15 % the plan allows, so
+    // the record stays unwired and Naboo keeps its own sky)
+    // drawn from the game's level (lane E2: /models/galaxy/bf2017/levels/naboo/level.json,
+    // `node scripts/bf2017-level.mjs levels/mp/naboo_01 --world naboo --spot
+    // 689 -96 --subs Naboo_01,Art_Exterior,Dusk --weather dusk --share low=0.5`: the landing on
+    // the palace's plaza, its doors 48 m south, Theed's canals running north
+    // from it. The game's spawn is 800 m south, on the gorge floor, so the spot
+    // is the plaza's; the site's places stand on the plateau round the city)
+    level: 'naboo',
+    // the game's other maps of Naboo: Theed's hangar, and its market street
+    // as the Clone Wars' Capital Supremacy has it (lane E2)
+    districts: [
+      {
+        // (/models/galaxy/bf2017/levels/naboo/hangar/level.json, `node
+        // scripts/bf2017-level.mjs levels/mp/naboo_02 --world naboo --district
+        // hangar --spawn --share low=0.5`)
+        id: 'hangar',
+        name: 'The Theed Royal Hangar',
+        level: 'naboo/hangar',
+        // (the game's spawn is on the canyon floor, 319 m under the hangar,
+        // which is cut into the cliff: the landing is on the hangar's own
+        // floor, a flat at its height for the ship to set down on)
+        land: { at: [10, 50], yaw: 0 },
+        line: 'Bravo Squadron’s hangar in the cliff under the palace, its doors open on the canyon.',
+        ground: { flats: [{ at: [10, 50], r: 12, edge: 6, h: 319 }] },
+        // (Naboo_02's own ground, lower than Theed's canals round the
+        // hangar: no water of its own, so the canyon isn't drowned)
+        site: { water: null },
+        door: { at: [10, 40], r: 2.4, prompt: 'Back out into Theed' },
+      },
+      {
+        // (/models/galaxy/bf2017/levels/naboo/market/level.json, `node
+        // scripts/bf2017-level.mjs s7_2/levels/naboo_03 --world naboo --district
+        // market --spot 655 40 --subs Naboo_03,Art_Exterior,Dusk,FB_Art_MainStreet_StreamOut,Mode9
+        // --weather dusk --share low=0.5`: Naboo_03 is Theed's market street,
+        // not the plains its plan named; it has no team-one spawn)
+        id: 'market',
+        name: 'Theed’s market street',
+        level: 'naboo/market',
+        land: { at: [0, 0], yaw: Math.PI },
+        line: 'The market under the bridges, its stalls left where the war found them.',
+        door: { at: [0, 8], r: 2.4, prompt: 'Back to the palace plaza' },
+      },
+    ],
+    place: 'Theed',
+    line: 'Canals, domes and colonnades, and the palace over them, at dusk.',
     sky: {
       zenith: '#3f82cf',
       horizon: '#cfe4ef',
@@ -43,20 +86,19 @@ export const SITES = {
     ground: { detail: 'grass', detailLook: { color: 0.7, normal: 0.6 },
       seed: 21,
       wind: 0.3,
-      layers: [
+      // (the game's own ground: Naboo_01's heightmap, 0 at the plaza, the
+      // plateau Theed stands on and the gorge 200 m under its south and east)
+      layers: [{ type: 'image', pack: 'naboo' }],
+      // (the flight's planet keeps a land of its own, drawn after the game's:
+      // Theed's plateau under the city, the palace, the hangar and the sacred
+      // place, and the lake in the gorge to the south)
+      flight: [
         { type: 'swell', scale: 520, height: 6 },
         { type: 'hills', scale: 240, height: 14 },
-        // Theed's plateau, its east edge a cliff over the lake
-        { type: 'island', at: [-330, 300], r: 250, height: 30, core: 0.9, ragged: 0.1 },
-        // the lake, and Padmé's island in it
-        { type: 'island', at: [100, 330], r: 290, height: -38, core: 0.5, ragged: 0.25 },
-        { type: 'island', at: [300, 420], r: 56, height: 43, core: 0.55, ragged: 0.3 },
-        // the swamp round the Gungans' sacred place
-        { type: 'island', at: [-360, -280], r: 70, height: -16, core: 0.4, ragged: 0.4 },
+        { type: 'island', at: [-150, 50], r: 450, height: 30, core: 0.9, ragged: 0.1 },
+        { type: 'island', at: [100, -560], r: 300, height: -38, core: 0.5, ragged: 0.25 },
         { type: 'mountains', from: 800, to: 3200, height: 460, scale: 1200 },
       ],
-      // the road up to Theed
-      flats: ramp([-104, 38], [-196, 148], 15, 39.5, 16, 7),
       // (the Great Grass Plains as filmed: a warm, yellow-leaning green)
       palette: {
         low: '#5f7034',
@@ -64,16 +106,19 @@ export const SITES = {
         rock: '#8a8270',
         accent: '#8f9a48',
         deep: '#4a5a2e',
-        hLow: 0,
-        hHigh: 30,
+        hLow: -8,
+        hHigh: 18,
         rockAt: 0.3,
         accentCover: 0.3,
         ripple: { strength: 0.03, scale: 1.6, wind: 0.3 },
         grain: 0.7,
-        wet: { level: 0.5, band: 2.5, color: '#6a6248' },
+        wet: { level: -1.6, band: 2.5, color: '#6a6248' },
       },
     },
-    water: { level: 0, color: '#3c7f88', deep: '#1f4a58', kind: 'sea', foam: 0.12 },
+    // (at Theed's canals: the game's lilies float at 432.81 m, 2.06 m under
+    // the plaza. One plane, so the gorge under the city is a lake brimful to
+    // the canals, and the game's falls, 150 m down it, are under the water)
+    water: { level: -2.06, color: '#3c7f88', deep: '#1f4a58', kind: 'sea', foam: 0.12 },
     // the meadow round you, yellow flowers in it here and there
     grass: { h: [0.22, 0.5], w: 0.05, root: '#55693a', mid: '#7a903e', tip: '#a9b656', dry: '#aaa45c', cover: 0.8, scale: 120, wind: 0.5 },
     // the kit's meadow over it (flora.js): clumps, clover and flowers, bushes,
@@ -81,7 +126,7 @@ export const SITES = {
     flora: { biome: 'plains', trees: true },
     weather: [{ kind: 'motes', count: 260, color: '#fffbe0' }],
     dust: '#a8b878',
-    edge: 'Grass and gentle hills, all the way to the mountains. The Gungans’ swamps are that way; Theed’s behind you.',
+    edge: 'Grass and gentle hills, all the way to the mountains. The gorge is that way, and the lake; Theed’s behind you.',
     lines: {
       out: {
         xwing: [['luke', 'Naboo. I never thought anywhere could be this green.'], ['r2', '(A happy, rising whistle: Artoo’s been here before.)']],
@@ -90,15 +135,16 @@ export const SITES = {
         rv: [['jesse', 'Yo, this is like the nicest place we’ve ever parked the RV.'], ['walt', 'Don’t get comfortable. Nice places have the worst neighbours.']],
       },
     },
-    land: { at: [0, 0], yaw: 2.3 },
+    // (on the palace's plaza, its doors to the south)
+    land: { at: [0, 0], yaw: Math.PI },
     places: [
       {
         id: 'palace',
         name: 'The Royal Palace of Theed',
-        at: [-235, 300],
+        // (the game's palace: its doors at [0, -48], the throne room behind them)
+        at: [0, -124],
         yaw: 2.2,
         r: 75,
-        flat: { r: 66, h: 39.5 },
         about: 'Queen Amidala’s palace, high over the falls: green domes, colonnades and the throne room the Trade Federation took, and the Queen took back.',
         lines: {
           xwing: [['luke', 'The palace. Leia said our mother was a queen here, once.'], ['r2', '(A soft, knowing beep.)']],
@@ -106,26 +152,29 @@ export const SITES = {
           cruiser: [['rick', 'Classical revival, Morty. A whole planet LARPing the Renaissance.'], ['morty', 'I think it’s pretty, Rick.']],
           rv: [['walt', 'An elected queen. Fourteen years old.'], ['jesse', 'Dude, at fourteen I couldn’t elect what to have for lunch.']],
         },
+        // (the site's built palace is the flight's: the level draws the game's)
         things: [
-          { kind: 'theedpalace', at: [0, 0] },
-          { kind: 'plaza', at: [0, 60], opts: { w: 72, d: 48, fountain: false } },
+          { kind: 'theedpalace', at: [0, 0], game: true },
+          { kind: 'plaza', at: [0, 60], opts: { w: 72, d: 48, fountain: false }, game: true },
           // (robed statues along the plaza, in front of the palace's façade)
-          { kind: 'statue', at: [-30, 52], scale: 0.32 },
-          { kind: 'statue', at: [-18, 52], scale: 0.32 },
-          { kind: 'statue', at: [18, 52], scale: 0.32 },
-          { kind: 'statue', at: [30, 52], scale: 0.32 },
-          { kind: 'lamp', at: [-14, 50], opts: { h: 5, light: '#ffe2a8' } },
-          { kind: 'lamp', at: [14, 50], opts: { h: 5, light: '#ffe2a8' } },
-          { kind: 'lamp', at: [-14, 56], opts: { h: 5, light: '#ffe2a8' } },
-          { kind: 'lamp', at: [14, 56], opts: { h: 5, light: '#ffe2a8' } },
+          { kind: 'statue', at: [-30, 52], scale: 0.32, game: true },
+          { kind: 'statue', at: [-18, 52], scale: 0.32, game: true },
+          { kind: 'statue', at: [18, 52], scale: 0.32, game: true },
+          { kind: 'statue', at: [30, 52], scale: 0.32, game: true },
+          { kind: 'lamp', at: [-14, 50], opts: { h: 5, light: '#ffe2a8' }, game: true },
+          { kind: 'lamp', at: [14, 50], opts: { h: 5, light: '#ffe2a8' }, game: true },
+          { kind: 'lamp', at: [-14, 56], opts: { h: 5, light: '#ffe2a8' }, game: true },
+          { kind: 'lamp', at: [14, 56], opts: { h: 5, light: '#ffe2a8' }, game: true },
         ],
       },
       {
         id: 'falls',
         name: 'The falls of Theed',
-        at: [-130, 300],
+        // (on the gorge's edge south-west of the palace, over the lake: the
+        // game's falls are under it, so the site's built ones are the flight's)
+        at: [-300, -250],
         r: 44,
-        flat: { r: 28, h: 38, edge: 5 },
+        flat: { r: 28, edge: 5, game: true },
         about: 'Theed is built on the edge of a cliff, and the river falls out from under the city in sheets of white, a hundred metres down into the gorge.',
         lines: {
           xwing: [['luke', 'Look at that, Artoo. Water, just… falling off the edge. On Tatooine they’d have a war over this.'], ['r2', '(An awed whistle.)']],
@@ -133,21 +182,23 @@ export const SITES = {
           cruiser: [['morty', 'It’s beautiful, Rick.'], ['rick', 'It’s erosion, Morty. With a tourism board.']],
         },
         things: [
-          { kind: 'waterfall', at: [23.4, -12.4], yaw: 2.06, opts: { h: 46, w: 10, out: 13 } },
-          { kind: 'waterfall', at: [26.5, 0], yaw: Math.PI / 2, opts: { h: 46, w: 14, out: 13 } },
-          { kind: 'waterfall', at: [23.4, 12.4], yaw: 1.08, opts: { h: 46, w: 10, out: 13 } },
-          { kind: 'theed', at: [-44, 2], yaw: Math.PI / 2, opts: { style: 'rotunda' } },
-          { kind: 'lamp', at: [4, -18], opts: { h: 4.5, light: '#ffe2a8' } },
-          { kind: 'lamp', at: [4, 20], opts: { h: 4.5, light: '#ffe2a8' } },
+          { kind: 'waterfall', at: [23.4, -12.4], yaw: 2.06, opts: { h: 46, w: 10, out: 13 }, game: true },
+          { kind: 'waterfall', at: [26.5, 0], yaw: Math.PI / 2, opts: { h: 46, w: 14, out: 13 }, game: true },
+          { kind: 'waterfall', at: [23.4, 12.4], yaw: 1.08, opts: { h: 46, w: 10, out: 13 }, game: true },
+          { kind: 'theed', at: [-44, 2], yaw: Math.PI / 2, opts: { style: 'rotunda' }, game: true },
+          { kind: 'lamp', at: [4, -18], opts: { h: 4.5, light: '#ffe2a8' }, game: true },
+          { kind: 'lamp', at: [4, 20], opts: { h: 4.5, light: '#ffe2a8' }, game: true },
         ],
       },
       {
         id: 'hangar',
         name: 'The Theed Royal Hangar',
-        at: [-300, 180],
+        // (on the plateau west of the palace; the game's own hangar is the
+        // `hangar` district, through the door at its mouth)
+        at: [-200, -60],
         yaw: 2.4,
         r: 55,
-        flat: { r: 48, h: 39.5 },
+        flat: { r: 48 },
         about: 'Where the N-1 starfighters of Bravo Squadron wait, yellow and chrome. A boy hid in one of their cockpits, and flew it to the droid control ship.',
         lines: {
           xwing: [['luke', 'N-1s. Look at the lines on those, Artoo. Somebody built these to be beautiful.'], ['r2', '(A smug little trill. Artoo knows these.)']],
@@ -174,7 +225,8 @@ export const SITES = {
       {
         id: 'paonga',
         name: 'Lake Paonga',
-        at: [70, 120],
+        // (the lake in the gorge under the city)
+        at: [-100, -460],
         r: 60,
         about: 'Under the lake lies Otoh Gunga, the Gungans’ city of glowing bubbles. Go down in a bongo, and mind the opee sea killers. There’s always a bigger fish.',
         lines: {
@@ -184,14 +236,15 @@ export const SITES = {
           rv: [['jesse', 'Yo, there’s glowing bubbles in the lake. Like, actual lava lamps, Mr. White.'], ['walt', 'Bioluminescence. Or a containment field. Either way: don’t touch it.']],
         },
         things: [
-          { kind: 'otohgunga', at: [40, 110], abs: true, y: 0, solid: false },
-          { kind: 'bongo', at: [-6, 24], yaw: 2.8, abs: true, y: -0.9, float: { len: 13, beam: 6, draft: 0.9 } },
+          { kind: 'otohgunga', at: [0, -70], abs: true, y: -2.06, solid: false },
+          { kind: 'bongo', at: [-6, 30], yaw: 2.8, abs: true, y: -2.96, float: { len: 13, beam: 6, draft: 0.9 } },
         ],
       },
       {
         id: 'varykino',
         name: 'Varykino',
-        at: [372, 330],
+        // (on the plateau's east edge, over the gorge's lake)
+        at: [470, -30],
         yaw: -1.75,
         r: 40,
         flat: { r: 26, edge: 14 },
@@ -206,7 +259,7 @@ export const SITES = {
       {
         id: 'sacred',
         name: 'The Gungan sacred place',
-        at: [-320, -230],
+        at: [-450, 300],
         r: 50,
         flat: { r: 30, edge: 16 },
         about: 'Ruins in the swamp forest, great stone heads half sunk in the moss: where the Gungans hid from the droid army, and where the Queen knelt to ask Boss Nass for help.',
@@ -232,7 +285,7 @@ export const SITES = {
       {
         id: 'battle',
         name: 'The Gungan shield',
-        at: [260, -250],
+        at: [380, 250],
         r: 70,
         flat: { r: 60, edge: 30 },
         about: 'The Great Grass Plains, where the Gungan Grand Army raised its shield and stood against the droid army, to buy the Queen time to take back her palace.',
@@ -253,7 +306,7 @@ export const SITES = {
       {
         id: 'droids',
         name: 'The droid army',
-        at: [400, -380],
+        at: [330, 430],
         r: 55,
         flat: { r: 50, edge: 30 },
         about: 'The Trade Federation’s army, marching on the Gungans in their thousands: tanks, transports and battle droids, all run from the control ship up in orbit. Until a boy blew it up.',
@@ -275,77 +328,77 @@ export const SITES = {
       },
     ],
     things: [
-      // where you set down: a farm's cart and its cargo on the road to
-      // Theed, a stand of trees by the lake side
+      // where you set down: a farm's cart and its cargo in the palace's
+      // plaza, come up to Theed for market day
       { kind: 'speedertruck', at: [-24, 18], yaw: 2.3 },
       { kind: 'barrel', at: [-20, 22], yaw: 0.3 },
       { kind: 'barrel', at: [-19, 23.2], yaw: 1.1 },
       { kind: 'bevelcrate', at: [-21.5, 24], yaw: 0.6 },
       { kind: 'crates', at: [18, -10] },
       { kind: 'lamp', at: [-28, 14], opts: { h: 4.5, light: '#ffe2a8' } },
-      { kind: 'grove', at: [70, 60], opts: { n: 7, r: 20, seed: 27 } },
-      // Theed: its houses and halls along the plateau
-      { kind: 'theed', at: [-300, 250], yaw: 2.6, opts: { style: 'hall' } },
-      { kind: 'theed', at: [-345, 300], yaw: 2.0, opts: { style: 'tower' } },
-      { kind: 'theed', at: [-180, 380], yaw: 2.6, opts: { style: 'tower' } },
-      { kind: 'theed', at: [-250, 400], yaw: 2.4, opts: { style: 'rotunda' } },
-      { kind: 'theed', at: [-350, 220], yaw: 2.2, opts: { style: 'rotunda' } },
-      { kind: 'theed', at: [-205, 215], yaw: 2.2, opts: { style: 'hall' } },
-      { kind: 'theed', at: [-400, 350], yaw: 2.0, opts: { style: 'hall' } },
-      { kind: 'theed', at: [-320, 420], yaw: 2.6, opts: { style: 'hall' } },
-      { kind: 'theed', at: [-420, 260], yaw: 1.8, opts: { style: 'tower' } },
-      { kind: 'theed', at: [-260, 470], yaw: 2.8, opts: { style: 'rotunda' } },
-      { kind: 'theed', at: [-160, 470], yaw: 2.8, opts: { style: 'hall' } },
-      { kind: 'theed', at: [-470, 420], yaw: 2.2, opts: { style: 'hall' } },
+      // Theed's houses and halls as the site built them, round the palace as
+      // they stood (the flight's: the level draws the game's city)
+      { kind: 'theed', at: [-65, -174], yaw: 2.6, opts: { style: 'hall' }, game: true },
+      { kind: 'theed', at: [-110, -124], yaw: 2.0, opts: { style: 'tower' }, game: true },
+      { kind: 'theed', at: [55, -44], yaw: 2.6, opts: { style: 'tower' }, game: true },
+      { kind: 'theed', at: [-15, -24], yaw: 2.4, opts: { style: 'rotunda' }, game: true },
+      { kind: 'theed', at: [-115, -204], yaw: 2.2, opts: { style: 'rotunda' }, game: true },
+      { kind: 'theed', at: [30, -209], yaw: 2.2, opts: { style: 'hall' }, game: true },
+      { kind: 'theed', at: [-165, -74], yaw: 2.0, opts: { style: 'hall' }, game: true },
+      { kind: 'theed', at: [-85, -4], yaw: 2.6, opts: { style: 'hall' }, game: true },
+      { kind: 'theed', at: [-185, -164], yaw: 1.8, opts: { style: 'tower' }, game: true },
+      { kind: 'theed', at: [-25, 46], yaw: 2.8, opts: { style: 'rotunda' }, game: true },
+      { kind: 'theed', at: [75, 46], yaw: 2.8, opts: { style: 'hall' }, game: true },
+      { kind: 'theed', at: [-235, -4], yaw: 2.2, opts: { style: 'hall' }, game: true },
       // the Royal Starship, on the apron before the hangar
-      { kind: 'royalship', at: [-240, 140], yaw: 2.6 },
-      // lamps up the road to Theed
-      { kind: 'lamp', at: [-118, 46], opts: { h: 4.5, light: '#ffe2a8' } },
-      { kind: 'lamp', at: [-138, 76], opts: { h: 4.5, light: '#ffe2a8' } },
-      { kind: 'lamp', at: [-158, 100], opts: { h: 4.5, light: '#ffe2a8' } },
-      { kind: 'lamp', at: [-176, 124], opts: { h: 4.5, light: '#ffe2a8' } },
-      // the forest out past the sacred place, and along the lake
+      { kind: 'royalship', at: [-250, 10], yaw: 2.6 },
+      // the forest out past the sacred place, and along the plateau's edge
       { kind: 'grove', at: [-470, -120], opts: { n: 16, r: 34, seed: 21 } },
-      { kind: 'grove', at: [-200, -400], opts: { n: 14, r: 30, seed: 22 } },
-      { kind: 'grove', at: [-460, -360], opts: { n: 16, r: 34, seed: 23 } },
       { kind: 'grove', at: [-110, -300], opts: { n: 10, r: 24, seed: 24 } },
       { kind: 'grove', at: [480, 120], opts: { n: 12, r: 30, seed: 25 } },
-      { kind: 'grove', at: [-60, 120], opts: { n: 8, r: 20, seed: 26 } },
+      { kind: 'grove', at: [-560, 420], opts: { n: 14, r: 30, seed: 22 } },
+      { kind: 'grove', at: [-330, 470], opts: { n: 12, r: 26, seed: 23 } },
+    ],
+    // the doors into the game's other maps of Naboo: the hangar's mouth, and
+    // the market street where Naboo_03 has it, under the bridges north of the plaza
+    zones: [
+      { id: 'theedhangar', name: 'The Theed Royal Hangar', door: { at: [-200, -90], r: 2.4, prompt: 'Walk into the Royal Hangar' }, to: { district: 'hangar' } },
+      { id: 'theedmarket', name: 'Theed’s market street', door: { at: [-29, 116], r: 2.4, prompt: 'Walk on into the market street' }, to: { district: 'market' } },
     ],
     scatter: [
       { kind: 'nabootree', n: 80, within: [50, 600], scale: [0.7, 1.4], flat: 0.9 },
       { kind: 'rock', n: 50, within: [40, 560], scale: [0.6, 2.4], opts: { color: '#8e8a78', sharp: 0.3 } },
     ],
     life: [
-      { kind: 'gungan', n: 10, at: [250, -235], spread: 40, roam: 14, speed: 1.1, name: 'Gungan soldier', says: ['Wesa ready to do are-sa part!', 'Da shield up! Da droids no getting in here!', 'Boomas! Get da boomas!', 'Yousa stay behind da shield, okeyday?'] },
-      { kind: 'kaadu', n: 5, at: [230, -220], spread: 30, roam: 18, speed: 1.4, r: 0.8 },
-      // (the game's own: Theed's birds about the palace plaza, the pelikki on the falls' rocks, runyips on the plains)
-      { kind: 'birdtheed', n: 6, at: [-232, 318], spread: 16, roam: 10, speed: 0.6, r: 0.2, solid: false },
-      { kind: 'pelikki', n: 3, at: [-128, 286], spread: 8, roam: 0, speed: 0, r: 0.4, solid: false },
-      { kind: 'runyip', n: 3, at: [140, -40], spread: 30, roam: 16, speed: 0.7, r: 1 },
+      { kind: 'gungan', n: 10, at: [370, 265], spread: 40, roam: 14, speed: 1.1, name: 'Gungan soldier', says: ['Wesa ready to do are-sa part!', 'Da shield up! Da droids no getting in here!', 'Boomas! Get da boomas!', 'Yousa stay behind da shield, okeyday?'] },
+      { kind: 'kaadu', n: 5, at: [350, 280], spread: 30, roam: 18, speed: 1.4, r: 0.8 },
+      // (the game's own: Theed's birds about the palace plaza, the pelikki on the canals' edge, runyips on the plains)
+      { kind: 'birdtheed', n: 6, at: [0, -20], spread: 16, roam: 10, speed: 0.6, r: 0.2, solid: false },
+      { kind: 'pelikki', n: 3, at: [90, 190], spread: 8, roam: 0, speed: 0, r: 0.4, solid: false },
+      { kind: 'runyip', n: 3, at: [300, 100], spread: 30, roam: 16, speed: 0.7, r: 1 },
       // (the army's fambaas, which carried the shield generators)
-      { kind: 'fambaa', n: 2, at: [262, -262], spread: 30, roam: 10, speed: 0.5, r: 3.5 },
-      { kind: 'gungan', n: 1, at: [40, 30], roam: 20, speed: 1.2, name: 'Jar Jar Binks', says: ['Meesa Jar Jar Binks!', 'Exsqueeze me, but de mostest safest place would be Gunga City.', 'How wude!', 'Mesa day startin’ pretty okee-day, with a brisky morning munchy. Den BOOM!', 'Mesa called Jar Jar Binks. Mesa your humble servant.'] },
-      { kind: 'gungan', n: 1, at: [-320, -238], still: true, scale: 1.35, r: 0.7, name: 'Boss Nass', says: ['Wesa no like da Naboo. Un dey no like uss-en.', 'Yousa tinkin’ yousa people ganna die?', 'Mesa like dis. Maybe wesa bein’ friends.'] },
-      { kind: 'gungan', n: 4, at: [-322, -226], spread: 14, roam: 8, speed: 0.9, name: 'Gungan', says: ['Dis a sacred place. Yousa be quiet, okeyday?', 'Da Naboo tink dey so smarty. Dey tink dey brainses so big.', 'Boss Nass say we hide here till da droids go.'] },
-      { kind: 'battledroid', n: 9, path: [[360, -330], [420, -360], [450, -420], [390, -440], [340, -400]], speed: 1.3, name: 'Battle droid', says: ['Roger, roger.', 'Halt! Who goes there?', 'Uh-oh.', 'Move along. Move along.'] },
-      { kind: 'battledroid', n: 6, at: [380, -400], spread: 20, roam: 6, speed: 1, name: 'Battle droid', says: ['Roger, roger.', 'They’re still coming through! Er… roger, roger.'] },
-      { kind: 'shaak', n: 7, at: [150, -60], spread: 40, roam: 30, speed: 0.6, r: 1.1 },
-      { kind: 'shaak', n: 3, at: [50, 20], spread: 16, roam: 20, speed: 0.5, r: 1.1 },
+      { kind: 'fambaa', n: 2, at: [392, 238], spread: 30, roam: 10, speed: 0.5, r: 3.5 },
+      { kind: 'gungan', n: 1, at: [30, 30], roam: 20, speed: 1.2, name: 'Jar Jar Binks', says: ['Meesa Jar Jar Binks!', 'Exsqueeze me, but de mostest safest place would be Gunga City.', 'How wude!', 'Mesa day startin’ pretty okee-day, with a brisky morning munchy. Den BOOM!', 'Mesa called Jar Jar Binks. Mesa your humble servant.'] },
+      { kind: 'gungan', n: 1, at: [-450, 292], still: true, scale: 1.35, r: 0.7, name: 'Boss Nass', says: ['Wesa no like da Naboo. Un dey no like uss-en.', 'Yousa tinkin’ yousa people ganna die?', 'Mesa like dis. Maybe wesa bein’ friends.'] },
+      { kind: 'gungan', n: 4, at: [-452, 304], spread: 14, roam: 8, speed: 0.9, name: 'Gungan', says: ['Dis a sacred place. Yousa be quiet, okeyday?', 'Da Naboo tink dey so smarty. Dey tink dey brainses so big.', 'Boss Nass say we hide here till da droids go.'] },
+      { kind: 'battledroid', n: 9, path: [[290, 480], [350, 450], [380, 390], [320, 370], [270, 410]], speed: 1.3, name: 'Battle droid', says: ['Roger, roger.', 'Halt! Who goes there?', 'Uh-oh.', 'Move along. Move along.'] },
+      { kind: 'battledroid', n: 6, at: [310, 410], spread: 20, roam: 6, speed: 1, name: 'Battle droid', says: ['Roger, roger.', 'They’re still coming through! Er… roger, roger.'] },
+      { kind: 'shaak', n: 7, at: [300, 120], spread: 40, roam: 30, speed: 0.6, r: 1.1 },
+      { kind: 'shaak', n: 3, at: [260, 40], spread: 16, roam: 20, speed: 0.5, r: 1.1 },
       { kind: 'farmer', n: 2, at: [-20, 14], spread: 6, roam: 8, speed: 0.9, name: 'Naboo farmer', says: ['Shaak herd’s restless today. Something in the sky.', 'Theed’s up the road. Mind the Gungans in the long grass.', 'Milk, cheese, and more milk. That’s a shaak farm.'] },
       { kind: 'astromech', n: 1, at: [-16, 24], roam: 6, speed: 0.6, name: 'Astromech', says: ['(A cheerful whistle at the cart. It is in charge of the cart.)'] },
-      { kind: 'shaak', n: 4, at: [-120, -140], spread: 30, roam: 25, speed: 0.6, r: 1.1 },
-      { kind: 'villager', n: 6, at: [-250, 260], spread: 40, roam: 24, speed: 1.0, name: 'Theed citizen', says: ['The Queen will speak from the palace steps at noon.', 'Have you seen the falls from the plaza? The whole city hums with them.', 'Our Senator Palpatine is from Theed, you know. Such a kind, patient man.', 'They say the Gungans and the Queen are friends now. Imagine that.'] },
-      { kind: 'rebel', n: 3, at: [-245, 255], spread: 12, roam: 10, speed: 1.1, name: 'Palace guard', says: ['The palace is open to visitors today. Stay on the paths.', 'Royal Naboo Security Forces. Keep moving, please.'] },
-      { kind: 'rebel', n: 1, at: [-292, 200], roam: 8, speed: 1.1, name: 'Captain Panaka', says: ['Your Highness, we have a problem: the Federation has landed its army.', 'We’ll take the hangar first. Then the throne room.', 'Our people are dying. We must act.'] },
-      { kind: 'rebelpilot', n: 3, at: [-300, 188], spread: 14, roam: 10, speed: 1.2, name: 'Bravo Squadron pilot', says: ['We’re going after the droid control ship. Who’s with us?', 'Bravo Flight, fly with me!', 'There was a kid in one of the fighters. He blew the control ship from the inside!'] },
-      { kind: 'droid', n: 1, at: [-296, 176], roam: 6, speed: 0.7, name: 'R2-D2', says: ['(A proud whistle. It was the only droid to get the Queen’s ship through the blockade.)', '(A cheeky beep, and a look at the N-1’s astromech socket.)'] },
-      { kind: 'quigon', n: 1, at: [60, 170], roam: 10, speed: 0.9, name: 'Qui-Gon Jinn', says: ['There’s always a bigger fish.', 'The ability to speak does not make you intelligent.', 'Feel, don’t think. Use your instincts.'] },
-      { kind: 'villager', n: 1, at: [366, 336], roam: 5, speed: 0.8, name: 'Padmé', says: ['When I was in the Legislative Youth Program, we came here for school retreat. We’d swim to that island every day.', 'I love the water. We’d lie on the sand and let the sun dry us.', 'It’s so peaceful here.'] },
-      { kind: 'anakin', n: 1, at: [376, 324], still: true, name: 'Anakin', says: ['I don’t like sand. It’s coarse and rough and irritating, and it gets everywhere. Not like here.', 'Here, everything is soft and smooth.'] },
+      { kind: 'shaak', n: 4, at: [-350, -20], spread: 30, roam: 25, speed: 0.6, r: 1.1 },
+      { kind: 'villager', n: 6, at: [20, 80], spread: 40, roam: 24, speed: 1.0, name: 'Theed citizen', says: ['The Queen will speak from the palace steps at noon.', 'Have you seen the falls from the plaza? The whole city hums with them.', 'Our Senator Palpatine is from Theed, you know. Such a kind, patient man.', 'They say the Gungans and the Queen are friends now. Imagine that.'] },
+      { kind: 'rebel', n: 3, at: [0, -40], spread: 12, roam: 10, speed: 1.1, name: 'Palace guard', says: ['The palace is open to visitors today. Stay on the paths.', 'Royal Naboo Security Forces. Keep moving, please.'] },
+      { kind: 'rebel', n: 1, at: [-192, -40], roam: 8, speed: 1.1, name: 'Captain Panaka', says: ['Your Highness, we have a problem: the Federation has landed its army.', 'We’ll take the hangar first. Then the throne room.', 'Our people are dying. We must act.'] },
+      { kind: 'rebelpilot', n: 3, at: [-200, -52], spread: 14, roam: 10, speed: 1.2, name: 'Bravo Squadron pilot', says: ['We’re going after the droid control ship. Who’s with us?', 'Bravo Flight, fly with me!', 'There was a kid in one of the fighters. He blew the control ship from the inside!'] },
+      { kind: 'droid', n: 1, at: [-196, -64], roam: 6, speed: 0.7, name: 'R2-D2', says: ['(A proud whistle. It was the only droid to get the Queen’s ship through the blockade.)', '(A cheeky beep, and a look at the N-1’s astromech socket.)'] },
+      { kind: 'quigon', n: 1, at: [60, 120], roam: 10, speed: 0.9, name: 'Qui-Gon Jinn', says: ['There’s always a bigger fish.', 'The ability to speak does not make you intelligent.', 'Feel, don’t think. Use your instincts.'] },
+      { kind: 'villager', n: 1, at: [464, -24], roam: 5, speed: 0.8, name: 'Padmé', says: ['When I was in the Legislative Youth Program, we came here for school retreat. We’d swim to that island every day.', 'I love the water. We’d lie on the sand and let the sun dry us.', 'It’s so peaceful here.'] },
+      { kind: 'anakin', n: 1, at: [474, -36], still: true, name: 'Anakin', says: ['I don’t like sand. It’s coarse and rough and irritating, and it gets everywhere. Not like here.', 'Here, everything is soft and smooth.'] },
     ],
     rides: [
-      { kind: 'kaadu', at: [214, -196], yaw: 2.2 },
+      { kind: 'kaadu', at: [334, 304], yaw: 2.2 },
       { kind: 'kaadu', at: [24, -10], yaw: 1.4 },
     ],
     flyovers: [
@@ -358,6 +411,34 @@ export const SITES = {
   kamino: {
     // lit as the game lights its level (src/data/bf2017/light/kamino.json, gameLit.js)
     gameLight: 'kamino',
+    // drawn from the game's level (lane E2: /models/galaxy/bf2017/levels/kamino/level.json,
+    // `node scripts/bf2017-level.mjs levels/mp/kamino_01 --world kamino --spot
+    // -252 -222 --share low=0.5`: the landing on the city's south pad, its deck 26.19 m under
+    // the game's 0, the sea 296.42 m under it. The map has no ground, so the
+    // site's y is the game's; the game's spawn is a kilometre west, on another
+    // platform, so the spot is the pad's)
+    level: 'kamino',
+    // the game's other map of Kamino: Capital Supremacy's Venator, high over
+    // the sea (Kamino_03's city is this one's without its cloning facility,
+    // so its ship is what the district takes)
+    districts: [
+      {
+        // (/models/galaxy/bf2017/levels/kamino/venator/level.json, `node
+        // scripts/bf2017-level.mjs s7_1/levels/kamino_03 --world kamino --district
+        // venator --spot -726 300 --subs Venator,Venator_Hangar,Venator_CargoBay,
+        // Venator_ControlRoom,Venator_ReactorCore,Venator_Logic,Venator_Lighting --share low=0.5`)
+        id: 'venator',
+        name: 'The Venator over Kamino',
+        level: 'kamino/venator',
+        land: { at: [0, 0], yaw: Math.PI },
+        line: 'A Republic Star Destroyer’s hangar, its doors open on the storm.',
+        // (the hangar deck stands 239.5 m up: a column, a hand under the deck, for
+        // the ship to set down on, the sea far under the rest)
+        ground: { layers: [{ type: 'level', height: -340 }, { type: 'island', at: [0, 0], r: 14, height: 579.4, core: 0.85, ragged: 0 }] },
+        site: { weather: [], lightning: null },
+        door: { at: [0, 12], r: 2.4, prompt: 'Fly back down to Tipoca City' },
+      },
+    ],
     // the record's picture on the node renderer (src/data/bf2017/light/kamino.picture.json, applyGameLight)
     picture: 'kamino.picture.json',
     place: 'Tipoca City',
@@ -375,23 +456,40 @@ export const SITES = {
     light: { sun: 1.3, sky: '#9aa8b8', ground: '#3a4650', ambient: 1.15 },
     ground: {
       seed: 9,
-      // (the sea floor, and the footing under the landing platform's column)
-      layers: [{ type: 'level', height: -40 }, { type: 'island', at: [0, 0], r: 14, height: 45, core: 0.85, ragged: 0 }],
+      // (the sea floor, and the footing under the landing pad's deck: the
+      // game's floors are the level's, its platforms over open sea)
+      layers: [{ type: 'level', height: -340 }, { type: 'island', at: [0, 0], r: 14, height: 313.7, core: 0.85, ragged: 0 }],
+      // (the flight's planet keeps the land it had, its sea at 0: the
+      // game's ocean is under the flight's lowest ground)
+      flight: [{ type: 'level', height: -40 }, { type: 'island', at: [0, 0], r: 14, height: 45, core: 0.85, ragged: 0 }],
       palette: { low: '#2a343c', high: '#2a343c', rock: '#22282e', hLow: -50, hHigh: -30, grain: 0.2 },
     },
     water: {
-      level: 0,
+      // (the game's ocean, Shared_Art's WaterSurfaceEntityData, 296.42 m down)
+      level: -296.42,
       color: '#3e525c',
       deep: '#16262e',
       kind: 'sea',
       foam: 0.7,
       waves: 1.4,
-      // (where the storm breaks on the city, [x, z, r]: the pad's column, the domes' and towers' stilts)
-      legs: [[0, 0, 12], [-130, 270, 12], [130, 330, 15.6], [-320, 240, 12], [-330, -210, 14.4], [340, -120, 12], [-80, -330, 12], [390, 160, 16.8], [-430, 40, 12], [210, -390, 12], [20, 470, 19.2], [520, -320, 12], [-520, 380, 15.6], [640, 60, 12], [-640, -260, 18], [300, 520, 12], [-240, -520, 12], [-180, 420, 14], [420, -40, 14], [-420, -120, 14]],
+      // (where the storm breaks on the city, [x, z, r]: the pad's column, and
+      // the game's support pillars where they go into the sea)
+      legs: [[0, 0, 12], [231, 167, 11], [230, 300, 11], [-161, 181, 11], [-311, 418, 11], [-126, 484, 11], [510, 209, 11], [787, 257, 11], [520, 405, 11], [656, -452, 11], [495, -681, 11], [787, -598, 11], [-583, -880, 27], [-971, -509, 27], [-237, 1242, 11], [-383, 1111, 11], [-466, 1404, 11]],
     },
     weather: [{ kind: 'rain', count: 4200, speed: 1.3 }, { kind: 'spray', count: 900 }],
     lightning: { every: 9, strength: 3.2 },
-    fall: 12,
+    // (10 m under the city's lowest floors: off a platform is into the sea)
+    fall: -45,
+    // the decks the site's people stand on, walkable whatever a tier's fit
+    // leaves out: the factory drops a mesh's collision with its drawing, and
+    // at low it drops the landing pad's deck itself (lane E2's hand-off)
+    floors: [
+      { x: 0, z: 0, y: -26.19, r: 26 },
+      { x: 231, z: 167, y: -22.77, r: 19 },
+      { x: 230, z: 300, y: -22.77, r: 19 },
+    ],
+    // the way up to the Venator: a gunship's ride from the landing pad's edge
+    zones: [{ id: 'venatorup', name: 'The Venator over Kamino', door: { at: [12, -18], r: 2.4, prompt: 'Take the gunship up to the Venator' }, to: { district: 'venator' } }],
     dust: '#c8d4dc',
     edge: 'Ocean, and storm, and nothing else for a thousand kilometres. Even the Jedi Archives lost this place.',
     lines: {
@@ -407,7 +505,8 @@ export const SITES = {
       {
         id: 'facility',
         name: 'The cloning facility',
-        at: [0, 150],
+        // (the game's: its walk tubes and growth chambers)
+        at: [-130, 280],
         r: 40,
         about: 'Where the Kaminoans grow the Republic’s army: a hundred thousand clones in their tubes, ordered ten years ago by a Jedi Master the Jedi say never ordered it.',
         lines: {
@@ -417,14 +516,15 @@ export const SITES = {
           rv: [['walt', 'One product. Perfect consistency. Every unit the same.'], ['jesse', 'Yo, why do you sound jealous right now?']],
         },
         things: [
-          { kind: 'kpad', at: [0, -30], abs: true, y: 22, opts: { r: 24 } },
-          { kind: 'tipocadome', at: [0, 24], yaw: Math.PI, abs: true, y: 0, scale: 1.5, solid: { r: 29 } },
+          { kind: 'kpad', at: [0, -30], abs: true, y: 22, opts: { r: 24 }, game: true },
+          { kind: 'tipocadome', at: [0, 24], yaw: Math.PI, abs: true, y: 0, scale: 1.5, solid: { r: 29 }, game: true },
         ],
       },
       {
         id: 'parade',
         name: 'The parade ground',
-        at: [200, 50],
+        // (the game's east landing pad, by the barracks)
+        at: [231, 167],
         r: 40,
         about: 'Clone troopers drilling in the rain, rank on rank of Jango Fett’s face behind white helmets. The Republic’s Grand Army, waiting for someone to give the order.',
         lines: {
@@ -433,12 +533,13 @@ export const SITES = {
           cruiser: [['morty', 'Rick, they all look the same. They all ARE the same.'], ['rick', 'Welcome to the military-industrial complex, Morty. It just has better hygiene here.']],
           rv: [['jesse', 'Dude, it’s like a whole army of the same guy. That guy’s gotta have a big ego.'], ['walt', 'He got paid, Jesse. And he got one for himself.']],
         },
-        things: [{ kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 40 } }],
+        things: [{ kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 40 }, game: true }],
       },
       {
         id: 'slave1',
         name: 'Jango Fett’s landing platform',
-        at: [-170, -50],
+        // (the game's north-east landing pad, its deck 22.77 m down)
+        at: [230, 300],
         r: 32,
         about: 'Where Slave I stood in the rain, and where Obi-Wan fought Jango Fett, rocket pack and all, to the very edge of the platform. Then Jango got away, with a tracker on his ship.',
         lines: {
@@ -448,14 +549,14 @@ export const SITES = {
           rv: [['jesse', 'Yo, that ship looks like a flat iron.'], ['walt', 'That ship belongs to a man who kills for money. Keep walking.']],
         },
         things: [
-          { kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 28 } },
-          { kind: 'slave1', at: [2, 4], yaw: 0.6, abs: true, y: 22.3 },
+          { kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 28 }, game: true },
+          { kind: 'slave1', at: [2, 4], yaw: 0.6, abs: true, y: -22.47 },
         ],
       },
       {
         id: 'quarters',
         name: 'Jango Fett’s quarters',
-        at: [-200, 116],
+        at: [160, 300],
         r: 22,
         about: 'Where Jango Fett lived with his “son”, Boba, the one clone he kept for himself, unaltered: his payment, as well as his money.',
         lines: {
@@ -464,14 +565,15 @@ export const SITES = {
           cruiser: [['morty', 'He raised his own clone as his son, Rick. That’s kind of sweet?'], ['rick', 'That’s a mid-life crisis with extra steps, Morty.']],
         },
         things: [
-          { kind: 'kpad', at: [0, -6], abs: true, y: 22, opts: { r: 16 } },
-          { kind: 'tipocadome', at: [0, 22], yaw: Math.PI, abs: true, y: 0, scale: 0.7, solid: { r: 14 } },
+          { kind: 'kpad', at: [0, -6], abs: true, y: 22, opts: { r: 16 }, game: true },
+          { kind: 'tipocadome', at: [0, 22], yaw: Math.PI, abs: true, y: 0, scale: 0.7, solid: { r: 14 }, game: true },
         ],
       },
       {
         id: 'mast',
         name: 'The storm platform',
-        at: [70, -230],
+        // (the game's antenna array, beside the landing pad)
+        at: [-47, -32],
         r: 26,
         about: 'Out at the edge of Tipoca City, a weather mast in the wind: from here you can watch the aiwhas glide in over the waves, under the lightning.',
         lines: {
@@ -481,14 +583,15 @@ export const SITES = {
           rv: [['jesse', 'Mr. White. Mr. White. There’s a flying whale.'], ['walt', 'Of course there is.']],
         },
         things: [
-          { kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 22 } },
-          { kind: 'kdischarge', at: [-6, 6], abs: true, y: 22, opts: { h: 24, seed: 7, every: 10 } },
+          { kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 22 }, game: true },
+          { kind: 'kdischarge', at: [-6, 6], abs: true, y: -23, opts: { h: 24, seed: 7, every: 10 }, game: true },
         ],
       },
       {
         id: 'primeminister',
         name: 'The Prime Minister’s tower',
-        at: [230, 220],
+        // (the game's reception hall)
+        at: [360, 265],
         r: 24,
         about: 'Lama Su’s tower. He showed Obi-Wan the army, and told him how pleased the Republic would be. Nobody there thought to mention who was paying.',
         lines: {
@@ -498,77 +601,79 @@ export const SITES = {
           rv: [['walt', 'A man who sells armies. He’ll want to know who we’re working for.'], ['jesse', 'Tell him we’re independent contractors, yo.']],
         },
         things: [
-          { kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 18 } },
-          { kind: 'tipoca', at: [30, 36], abs: true, y: 0, opts: { style: 'tower' } },
+          { kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 18 }, game: true },
+          { kind: 'tipoca', at: [30, 36], abs: true, y: 0, opts: { style: 'tower' }, game: true },
         ],
       },
     ],
     things: [
-      { kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 30 } },
-      // the pad's stores, under tarps against the rain
-      { kind: 'cratecube', at: [-16, 12], yaw: 0.3, abs: true, y: 22 },
-      { kind: 'cratecube', at: [-14.7, 12.6], yaw: 1.0, abs: true, y: 22 },
-      { kind: 'barrel', at: [-17.5, 10.5], yaw: 0.2, abs: true, y: 22 },
-      { kind: 'barrel', at: [-16.3, 9.8], yaw: 1.7, abs: true, y: 22 },
-      { kind: 'empirecrate', at: [18, -12], yaw: 2.4, abs: true, y: 22 },
-      { kind: 'lamp', at: [-20, 16], abs: true, y: 22, opts: { h: 5, light: '#cfe8ff', color: '#e8ecf0' } },
-      { kind: 'lamp', at: [22, -8], abs: true, y: 22, opts: { h: 5, light: '#cfe8ff', color: '#e8ecf0' } },
-      span([0, 0], [0, 120], 30, 24, 7, 'kamino', 22),
-      span([0, 0], [200, 50], 30, 40, 7, 'kamino', 22),
-      span([0, 0], [-170, -50], 30, 28, 6, 'kamino', 22),
-      span([-170, -50], [-200, 110], 28, 16, 5, 'kamino', 22),
-      span([0, 0], [70, -230], 30, 22, 5, 'kamino', 22),
-      span([200, 50], [230, 220], 40, 18, 5, 'kamino', 22),
+      // (the site's built city is the flight's: the level draws the game's)
+      { kind: 'kpad', at: [0, 0], abs: true, y: 22, opts: { r: 30 }, game: true },
+      // the pad's stores, under tarps against the rain, on the game's deck
+      { kind: 'cratecube', at: [-16, 12], yaw: 0.3, abs: true, y: -26.19 },
+      { kind: 'cratecube', at: [-14.7, 12.6], yaw: 1.0, abs: true, y: -26.19 },
+      { kind: 'barrel', at: [-17.5, 10.5], yaw: 0.2, abs: true, y: -26.19 },
+      { kind: 'barrel', at: [-16.3, 9.8], yaw: 1.7, abs: true, y: -26.19 },
+      { kind: 'empirecrate', at: [18, -12], yaw: 2.4, abs: true, y: -26.19 },
+      { kind: 'lamp', at: [-20, 16], abs: true, y: -26.19, opts: { h: 5, light: '#cfe8ff', color: '#e8ecf0' } },
+      { kind: 'lamp', at: [22, -8], abs: true, y: -26.19, opts: { h: 5, light: '#cfe8ff', color: '#e8ecf0' } },
+      { ...span([0, 0], [0, 120], 30, 24, 7, 'kamino', 22), game: true },
+      { ...span([0, 0], [200, 50], 30, 40, 7, 'kamino', 22), game: true },
+      { ...span([0, 0], [-170, -50], 30, 28, 6, 'kamino', 22), game: true },
+      { ...span([-170, -50], [-200, 110], 28, 16, 5, 'kamino', 22), game: true },
+      { ...span([0, 0], [70, -230], 30, 22, 5, 'kamino', 22), game: true },
+      { ...span([200, 50], [230, 220], 40, 18, 5, 'kamino', 22), game: true },
       // the static discharge towers, taking the storm's lightning: two on the
-      // pad's rim, the rest on their own stilts out among the domes
-      { kind: 'kdischarge', at: [24, -14], abs: true, y: 22, opts: { h: 16, seed: 1, every: 9 } },
-      { kind: 'kdischarge', at: [-20, -20], abs: true, y: 22, opts: { h: 16, seed: 2, every: 13 } },
-      { kind: 'kdischarge', at: [-100, 300], abs: true, y: 0, solid: false, opts: { h: 64, seed: 3, every: 10 } },
-      { kind: 'kdischarge', at: [170, 290], abs: true, y: 0, solid: false, opts: { h: 70, seed: 4, every: 12 } },
-      { kind: 'kdischarge', at: [370, -160], abs: true, y: 0, solid: false, opts: { h: 60, seed: 5, every: 8 } },
-      { kind: 'kdischarge', at: [-360, -170], abs: true, y: 0, solid: false, opts: { h: 66, seed: 6, every: 11 } },
-      // the rest of the city, out in the storm
-      { kind: 'tipocadome', at: [-130, 270], yaw: 0.5, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [130, 330], yaw: 2.1, abs: true, y: 0, solid: false, scale: 1.3 },
-      { kind: 'tipocadome', at: [-320, 240], yaw: 1.2, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [-330, -210], yaw: 0.1, abs: true, y: 0, solid: false, scale: 1.2 },
-      { kind: 'tipocadome', at: [340, -120], yaw: 2.6, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [-80, -330], yaw: 1.9, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [390, 160], yaw: 0.4, abs: true, y: 0, solid: false, scale: 1.4 },
-      { kind: 'tipocadome', at: [-430, 40], yaw: 1.4, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [210, -390], yaw: 0.9, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [20, 470], yaw: 2.8, abs: true, y: 0, solid: false, scale: 1.6 },
-      { kind: 'tipocadome', at: [520, -320], yaw: 0.2, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [-520, 380], yaw: 1.1, abs: true, y: 0, solid: false, scale: 1.3 },
-      { kind: 'tipocadome', at: [640, 60], yaw: 2.2, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [-640, -260], yaw: 0.7, abs: true, y: 0, solid: false, scale: 1.5 },
-      { kind: 'tipocadome', at: [300, 520], yaw: 1.6, abs: true, y: 0, solid: false },
-      { kind: 'tipocadome', at: [-240, -520], yaw: 2.4, abs: true, y: 0, solid: false },
-      { kind: 'tipoca', at: [-180, 420], abs: true, y: 0, solid: false, opts: { style: 'tower' } },
-      { kind: 'tipoca', at: [420, -40], abs: true, y: 0, solid: false, opts: { style: 'tower' } },
-      { kind: 'tipoca', at: [-420, -120], abs: true, y: 0, solid: false, opts: { style: 'tower' } },
-      { kind: 'kpad', at: [-260, 330], abs: true, y: 22, solid: false, opts: { r: 22 } },
-      { kind: 'kpad', at: [460, 260], abs: true, y: 22, solid: false, opts: { r: 26 } },
+      // game's pad, the rest on their own stilts out among the domes (the flight's)
+      { kind: 'kdischarge', at: [16, -10], abs: true, y: -26.19, opts: { h: 16, seed: 1, every: 9 } },
+      { kind: 'kdischarge', at: [-14, -14], abs: true, y: -26.19, opts: { h: 16, seed: 2, every: 13 } },
+      { kind: 'kdischarge', at: [-100, 300], abs: true, y: 0, solid: false, opts: { h: 64, seed: 3, every: 10 }, game: true },
+      { kind: 'kdischarge', at: [170, 290], abs: true, y: 0, solid: false, opts: { h: 70, seed: 4, every: 12 }, game: true },
+      { kind: 'kdischarge', at: [370, -160], abs: true, y: 0, solid: false, opts: { h: 60, seed: 5, every: 8 }, game: true },
+      { kind: 'kdischarge', at: [-360, -170], abs: true, y: 0, solid: false, opts: { h: 66, seed: 6, every: 11 }, game: true },
+      // the rest of the city, out in the storm (the flight's: the level has the game's)
+      { kind: 'tipocadome', at: [-130, 270], yaw: 0.5, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [130, 330], yaw: 2.1, abs: true, y: 0, solid: false, scale: 1.3, game: true },
+      { kind: 'tipocadome', at: [-320, 240], yaw: 1.2, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [-330, -210], yaw: 0.1, abs: true, y: 0, solid: false, scale: 1.2, game: true },
+      { kind: 'tipocadome', at: [340, -120], yaw: 2.6, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [-80, -330], yaw: 1.9, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [390, 160], yaw: 0.4, abs: true, y: 0, solid: false, scale: 1.4, game: true },
+      { kind: 'tipocadome', at: [-430, 40], yaw: 1.4, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [210, -390], yaw: 0.9, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [20, 470], yaw: 2.8, abs: true, y: 0, solid: false, scale: 1.6, game: true },
+      { kind: 'tipocadome', at: [520, -320], yaw: 0.2, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [-520, 380], yaw: 1.1, abs: true, y: 0, solid: false, scale: 1.3, game: true },
+      { kind: 'tipocadome', at: [640, 60], yaw: 2.2, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [-640, -260], yaw: 0.7, abs: true, y: 0, solid: false, scale: 1.5, game: true },
+      { kind: 'tipocadome', at: [300, 520], yaw: 1.6, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipocadome', at: [-240, -520], yaw: 2.4, abs: true, y: 0, solid: false, game: true },
+      { kind: 'tipoca', at: [-180, 420], abs: true, y: 0, solid: false, opts: { style: 'tower' }, game: true },
+      { kind: 'tipoca', at: [420, -40], abs: true, y: 0, solid: false, opts: { style: 'tower' }, game: true },
+      { kind: 'tipoca', at: [-420, -120], abs: true, y: 0, solid: false, opts: { style: 'tower' }, game: true },
+      { kind: 'kpad', at: [-260, 330], abs: true, y: 22, solid: false, opts: { r: 22 }, game: true },
+      { kind: 'kpad', at: [460, 260], abs: true, y: 22, solid: false, opts: { r: 26 }, game: true },
     ],
-    // (lifted from the sea floor to the waves: sink below nothing)
+    // (lifted from the sea floor to the waves: sink below nothing; the
+    // domes are the flight's, the level's horizon has the game's)
     scatter: [
-      { kind: 'tipocadome', n: 30, within: [360, 1000], scale: [0.8, 1.5], sink: -40, dry: false, solid: false },
-      { kind: 'tipoca', n: 10, within: [360, 1000], scale: [0.8, 1.3], sink: -40, dry: false, solid: false, opts: { style: 'tower' } },
-      { kind: 'buoy', n: 40, within: [80, 640], scale: [0.8, 1.2], sink: -40.6, dry: false, solid: false },
+      { kind: 'tipocadome', n: 30, within: [360, 1000], scale: [0.8, 1.5], sink: -43.58, dry: false, solid: false, game: true },
+      { kind: 'tipoca', n: 10, within: [360, 1000], scale: [0.8, 1.3], sink: -43.58, dry: false, solid: false, opts: { style: 'tower' }, game: true },
+      { kind: 'buoy', n: 40, within: [80, 640], scale: [0.8, 1.2], sink: -44.18, dry: false, solid: false },
     ],
     life: [
-      { kind: 'clone', n: 20, path: [[188, 36], [194, 36], [200, 36], [206, 36], [212, 36], [188, 43], [194, 43], [200, 43], [206, 43], [212, 43], [188, 50], [194, 50], [200, 50], [206, 50], [212, 50], [188, 57], [194, 57], [200, 57], [206, 57], [212, 57]], still: true, face: Math.PI, name: 'Clone trooper', says: ['Sir!', 'Yes, sir.', 'We’re ready to ship out, sir. Just waiting on the order.', 'Training’s over when the Kaminoans say it’s over.'] },
-      { kind: 'clone', n: 6, path: [[176, 22], [224, 22], [226, 78], [174, 78]], speed: 1.5, name: 'Clone cadet', says: ['Left, right, left. Sir!', 'Excuse us, sir. Drill.'] },
-      { kind: 'clone', n: 2, at: [6, -12], spread: 8, roam: 10, speed: 1.1, name: 'Clone trooper', says: ['Welcome to Tipoca City, sir.', 'Mind the edge. It’s a long way down in this weather.'] },
-      { kind: 'clonephase1', n: 4, at: [-8, -6], spread: 4, still: true, face: 2.6, name: 'Clone trooper', says: ['Sir.', 'Phase One armour, sir. Heavy, but it keeps the rain out.', 'The cadets drill on the far pad. We stand here.'] },
-      { kind: 'r5', n: 1, at: [16, 8], roam: 6, speed: 0.6, name: 'An R5 unit', says: ['(A damp, miserable beep.)'] },
-      { kind: 'kaminoan', n: 3, at: [0, 112], spread: 10, roam: 7, speed: 0.7, name: 'Kaminoan', says: ['The clones are bred for combat. They show much less independence than the original host.', 'Ten years ago a Jedi Master placed the order. We have been working ever since.', 'Please, this way. The weather is most inclement today.'] },
-      { kind: 'kaminoan', n: 1, at: [228, 216], still: true, scale: 1.08, name: 'Lama Su', says: ['I trust you are going to stay for a while?', 'You will be delighted to hear we are on schedule. Two hundred thousand units are ready, with a million more well on the way.', 'Magnificent, aren’t they?'] },
-      { kind: 'jango', n: 1, at: [-164, -44], roam: 6, speed: 0.9, name: 'Jango Fett', named: true, says: ['I’m just a simple man, trying to make my way in the universe.', 'Ever make your way as far into the interior as Coruscant?', 'Boba, pack your things. We’re leaving.'] },
-      { kind: 'villager', n: 1, at: [-198, 108], roam: 4, speed: 1.0, scale: 0.68, name: 'Boba Fett', voice: 'youngboba', says: ['My dad’s the best bounty hunter in the galaxy.', 'Dad! There’s a Jedi on the landing platform!', 'Get him, Dad! Get him!'] },
-      // (gliding over the storm, and now and then down into the sea and out)
-      { kind: 'aiwha', n: 2, path: [[300, -150], [430, -260], [300, -400], [170, -300]], y: 72, speed: 9, solid: false, dive: { high: 32, low: -4, every: 46 } },
-      { kind: 'aiwha', n: 2, path: [[-300, -140], [-440, -40], [-380, 180], [-260, 40]], y: 66, speed: 8, solid: false, dive: { high: 26, low: -4, every: 38 } },
+      { kind: 'clone', n: 20, path: [[219, 153], [225, 153], [231, 153], [237, 153], [243, 153], [219, 160], [225, 160], [231, 160], [237, 160], [243, 160], [219, 167], [225, 167], [231, 167], [237, 167], [243, 167], [219, 174], [225, 174], [231, 174], [237, 174], [243, 174]], level: -22.6, still: true, face: Math.PI, name: 'Clone trooper', says: ['Sir!', 'Yes, sir.', 'We’re ready to ship out, sir. Just waiting on the order.', 'Training’s over when the Kaminoans say it’s over.'] },
+      { kind: 'clone', n: 6, path: [[213, 151], [249, 151], [249, 183], [213, 183]], level: -22.6, speed: 1.5, name: 'Clone cadet', says: ['Left, right, left. Sir!', 'Excuse us, sir. Drill.'] },
+      { kind: 'clone', n: 2, at: [6, -12], level: -26, spread: 8, roam: 10, speed: 1.1, name: 'Clone trooper', says: ['Welcome to Tipoca City, sir.', 'Mind the edge. It’s a long way down in this weather.'] },
+      { kind: 'clonephase1', n: 4, at: [-8, -6], level: -26, spread: 4, still: true, face: 2.6, name: 'Clone trooper', says: ['Sir.', 'Phase One armour, sir. Heavy, but it keeps the rain out.', 'The cadets drill on the far pad. We stand here.'] },
+      { kind: 'r5', n: 1, at: [16, 8], level: -26, roam: 6, speed: 0.6, name: 'An R5 unit', says: ['(A damp, miserable beep.)'] },
+      { kind: 'kaminoan', n: 3, at: [-130, 242], level: -22, spread: 10, roam: 7, speed: 0.7, name: 'Kaminoan', says: ['The clones are bred for combat. They show much less independence than the original host.', 'Ten years ago a Jedi Master placed the order. We have been working ever since.', 'Please, this way. The weather is most inclement today.'] },
+      { kind: 'kaminoan', n: 1, at: [358, 261], level: -22, still: true, scale: 1.08, name: 'Lama Su', says: ['I trust you are going to stay for a while?', 'You will be delighted to hear we are on schedule. Two hundred thousand units are ready, with a million more well on the way.', 'Magnificent, aren’t they?'] },
+      { kind: 'jango', n: 1, at: [236, 306], level: -22.6, roam: 6, speed: 0.9, name: 'Jango Fett', named: true, says: ['I’m just a simple man, trying to make my way in the universe.', 'Ever make your way as far into the interior as Coruscant?', 'Boba, pack your things. We’re leaving.'] },
+      { kind: 'villager', n: 1, at: [160, 300], level: -21, roam: 4, speed: 1.0, scale: 0.68, name: 'Boba Fett', voice: 'youngboba', says: ['My dad’s the best bounty hunter in the galaxy.', 'Dad! There’s a Jedi on the landing platform!', 'Get him, Dad! Get him!'] },
+      // (gliding over the storm by the city's decks, and now and then down into the sea and out)
+      { kind: 'aiwha', n: 2, path: [[300, -150], [430, -260], [300, -400], [170, -300]], y: 324, speed: 9, solid: false, dive: { high: 280, low: -4, every: 46 } },
+      { kind: 'aiwha', n: 2, path: [[-300, -140], [-440, -40], [-380, 180], [-260, 40]], y: 318, speed: 8, solid: false, dive: { high: 274, low: -4, every: 38 } },
     ],
     flyovers: [
       { kind: 'delta7', n: 1, metres: 8, alt: 80, speed: 120, every: 60 },
