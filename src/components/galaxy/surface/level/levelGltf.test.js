@@ -1,7 +1,7 @@
 import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { bindSlot, createLevelLoader, matchRecipes, recipeMaps, recipesIndex } from './levelGltf.js';
+import { bindSlot, createLevelLoader, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
 
 // a GLB with one mesh of two primitives, their materials naming the game's
 // shaders in their extras as the export writes them
@@ -191,5 +191,27 @@ describe('a level pack’s textures bound to their materials', () => {
     expect(mat.roughnessMap).toBe(orm);
     expect(mat.metalnessMap).toBe(orm);
     expect(orm.colorSpace).toBe(THREE.NoColorSpace);
+  });
+});
+
+describe('sharpenPack', () => {
+  const chip = (max) => ({ capabilities: { getMaxAnisotropy: () => max } });
+
+  it('gives a pack map the tier’s anisotropy: 16 on high and ultra, 4 on mid, 1 on low', () => {
+    expect(sharpenPack(new THREE.Texture(), 'ultra', chip(16)).anisotropy).toBe(16);
+    expect(sharpenPack(new THREE.Texture(), 'high', chip(16)).anisotropy).toBe(16);
+    expect(sharpenPack(new THREE.Texture(), 'mid', chip(16)).anisotropy).toBe(4);
+    expect(sharpenPack(new THREE.Texture(), 'low', chip(16)).anisotropy).toBe(1);
+  });
+
+  it('asks no more than the chip has, and reads an unknown tier as high', () => {
+    expect(sharpenPack(new THREE.Texture(), 'ultra', chip(8)).anisotropy).toBe(8);
+    expect(sharpenPack(new THREE.Texture(), 'nowhere', null).anisotropy).toBe(16);
+    // (the node renderer says it on itself, not on capabilities)
+    expect(sharpenPack(new THREE.Texture(), 'high', { getMaxAnisotropy: () => 4 }).anisotropy).toBe(4);
+  });
+
+  it('passes a missing texture through', () => {
+    expect(sharpenPack(null, 'high')).toBe(null);
   });
 });
