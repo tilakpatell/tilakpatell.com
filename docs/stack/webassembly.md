@@ -26,9 +26,11 @@ Code compiled ahead to a compact bytecode the browser runs near native speed, wi
 
 A Rust crate under `wasm/<name>/` stands behind the same interface as the JavaScript it would replace, the JavaScript kept as the fallback, the same tests run against both, and it is kept only when its own before-and-after says it pays. The profile, each candidate’s numbers and the verdicts are in `docs/superpowers/evidence/bf2017-picture/x2/README.md`; this page lists only what shipped.
 
-| port | replaces | kept? |
-| --- | --- | --- |
-| (filled in by the profile; see the evidence) | | |
+| port | replaces | loaded by | before → after | kept? |
+| --- | --- | --- | --- | --- |
+| `wasm/navsearch` → `src/lib/wasm/navsearch/` (20 KB) | the navgrid’s A*, `searchJs` in `src/lib/battlefront/navSearch.js` | `src/lib/battlefront/navWasm.js`’s `loadNavSearch()`, as the Battlefront’s build starts | 153.6 → 51.2 µs a search, the same cells for all 2,946 of a minute’s searches | yes |
+
+Nothing else in the Battlefront’s step came near the plan’s threshold (1.5 ms a frame): the whole step is about 0.5 ms a frame on the lane’s container. A new port follows the same shape: a crate under `wasm/<name>/` with its own `cargo test`, built by `node scripts/wasm-build.mjs <name>` into `src/lib/wasm/<name>/` (the glue and the `.wasm` committed: CI has no Rust), loaded through `lib/wasm/load`, swapped in behind the JavaScript’s interface, and a test file that runs the JavaScript’s tests again through it.
 
 ## What the site does not use, and why
 
@@ -43,6 +45,7 @@ A Rust crate under `wasm/<name>/` stands behind the same interface as the JavaSc
 - Every path is tested: the SIMD build, the plain one, a failure, a timeout (the same tests).
 - A port keeps its JavaScript as the fallback, behind the same interface, and is run by the same tests.
 - A port ships only with its own before-and-after in the evidence.
+- The generated glue under `src/lib/wasm/<name>/` is left out of the lint (`eslint.config.js`) and never edited by hand; `scripts/wasm-check.mjs` (CI and the deploy) fails a published `.wasm` that doesn’t validate or a chunk that names one the build lacks.
 
 ## Upgrading
 
@@ -54,4 +57,6 @@ The Rust toolchain: `rustup target add wasm32-unknown-unknown`, `cargo install w
 
 - **A worker that fails to instantiate never answers.** three’s KTX2 loader hands each worker the transcoder’s binary; one that fails waits for good, and so does every texture it was given. Hence the main-thread compile (`wasmDecoders.js`’s header).
 - **Vitest keeps node_modules in Node’s own module cache**: `vi.resetModules` doesn’t make a new meshopt decoder; the test imports it by a URL with a query (`wasmDecoders.test.js`).
+- **A name that starts with `use` is a React hook to the lint**: the search’s setter is `setSearch`, not `useSearch`. (A rename across `src` once caught `useSearchParams` too; rename in the files you mean.)
+- **The generated glue keeps its first instance**: `initSync` on a module already made does nothing, so a test of a failed load imports a fresh copy by a query (`navSearch.test.js`).
 - **The SIMD probe is a validate, not an instantiate**: a browser that validates SIMD but fails to instantiate the SIMD build (none known) falls to the plain one through `engine.js`’s catch.
