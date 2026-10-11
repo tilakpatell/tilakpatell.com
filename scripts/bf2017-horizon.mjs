@@ -2,7 +2,7 @@
 // §4 "N4", World Partition's HLOD grid): node scripts/bf2017-horizon.mjs <world>
 // writes public/models/galaxy/bf2017/levels/<world>/horizon/:
 //
-//   index.json            the cells (key → { glb, bytes, tris, impostors: { mesh: [x, y, z, yaw, size] … } })
+//   index.json            the cells (key → { plain, lo: { glb, bytes, tris }, meshes, impostors: { mesh: [x, y, z, yaw, size] … } })
 //                         and the atlases (mesh → { albedo, normal, rows, radius, centre })
 //   <key>.glb, <key>.lo.glb
 //                         a 512 m cell's things merged at their last LODs, each
@@ -400,8 +400,11 @@ async function main() {
     total += bytes;
     totalLo += cuts.lo?.bytes ?? 0;
     if (cuts.lo === cuts.plain) cuts.lo = { ...cuts.plain };
+    // (the meshes it stands in for: the stream hides the cell once the fine path has every one: lib/level/priority.js's coarseHidden)
+    const meshes = [...new Set([...c.proxies, ...c.impostors].map((p) => p.mesh))].sort((a, b) => a - b);
     index.cells[key] = {
       ...cuts,
+      meshes,
       things: c.proxies.length,
       ...(Object.keys(imp).length ? { impostors: imp } : {}),
     };

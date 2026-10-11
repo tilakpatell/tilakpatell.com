@@ -8,8 +8,12 @@
 // linear, and read as linear they came out washed pale (bindSlot).
 //
 //   createLevelLoader({ world, tier, renderer, fetchBytes, sizes, recipes, materialFor }) → { load(glbPath) → Promise<{ scene } | null>,
-//     texture(packPath, sizes?) → Promise<Texture | null>, dispose() }
-//   (sizes: level.json's `tex`, each map's size per tier)
+//     parse(bytes, glbPath) → Promise<{ scene } | null>, texture(packPath, sizes?) → Promise<Texture | null>,
+//     has(glbPath), busy(), dispose() }
+//   (sizes: level.json's `tex`, each map's size per tier; fetchBytes(path,
+//   { glb }) is told which GLB a file is for, so the stream can rank it
+//   (lane N4); parse: a file the stream fetched itself, a coarse cell; has:
+//   a GLB loaded; busy: the loads not yet bound, which the boot waits for)
 //
 // With `recipes` and `materialFor` (lane Q1: a node world draws the game's
 // own surface shader), each GLB material is matched to its recipe by the
@@ -234,31 +238,50 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     for (const glb of swap.keys()) glb.dispose();
   }
 
+  // a GLB's bytes to a scene: parsed without its textures, its maps bound
+  // from the cache, its materials the game's where the pack has recipes
+  async function fromBytes(bytes, glbPath) {
+    const { buffer, slots } = splitTextures(bytes);
+    const gltf = await gltfLoader().parseAsync(buffer, '');
+    await bind(gltf, slots, glbPath);
+    if (recipes && materialFor) await gameMaterials(gltf, glbPath);
+    return gltf;
+  }
+
+  const loaded = new Set(); // glb paths whose scene is up
+  let pending = 0;
+  function track(glbPath, p) {
+    pending++;
+    return p
+      .then((gltf) => {
+        if (gltf) loaded.add(glbPath);
+        return gltf;
+      })
+      .catch((e) => {
+        if (import.meta.env?.DEV) console.warn('level mesh failed', glbPath, e);
+        return null;
+      })
+      .finally(() => pending--);
+  }
+
   function load(glbPath) {
     if (gone) return Promise.resolve(null);
-    if (!meshes.has(glbPath)) {
-      meshes.set(
-        glbPath,
-        fetchBytes(glbPath)
-          .then(async (bytes) => {
-            const { buffer, slots } = splitTextures(bytes);
-            const gltf = await gltfLoader().parseAsync(buffer, '');
-            await bind(gltf, slots, glbPath);
-            if (recipes && materialFor) await gameMaterials(gltf, glbPath);
-            return gltf;
-          })
-          .catch((e) => {
-            if (import.meta.env?.DEV) console.warn('level mesh failed', glbPath, e);
-            return null;
-          }),
-      );
-    }
+    if (!meshes.has(glbPath)) meshes.set(glbPath, track(glbPath, Promise.resolve(fetchBytes(glbPath, { glb: glbPath })).then((bytes) => fromBytes(bytes, glbPath))));
+    return meshes.get(glbPath);
+  }
+
+  function parse(bytes, glbPath) {
+    if (gone) return Promise.resolve(null);
+    if (!meshes.has(glbPath)) meshes.set(glbPath, track(glbPath, fromBytes(bytes, glbPath)));
     return meshes.get(glbPath);
   }
 
   return {
     load,
+    parse,
     texture,
+    has: (glbPath) => loaded.has(glbPath),
+    busy: () => pending,
     // (the remote name of a pack file, for the evidence)
     url: (path) => assetUrl(packUrl(world, path)),
     async dispose() {

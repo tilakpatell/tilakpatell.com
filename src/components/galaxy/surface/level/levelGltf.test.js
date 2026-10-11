@@ -217,6 +217,36 @@ describe('createLevelLoader', () => {
   });
 });
 
+describe('the loader under the stream (lane N4)', () => {
+  it('tells the stream which mesh a GLB is for, and how many loads are not yet bound', async () => {
+    const hints = [];
+    let give = null;
+    const fetchBytes = (path, hint) => {
+      hints.push([path, hint]);
+      return new Promise((r) => (give = r));
+    };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes: {} });
+    const p = loader.load('meshes/a.lod1.glb');
+    expect(hints[0]).toEqual(['meshes/a.lod1.glb', { glb: 'meshes/a.lod1.glb' }]);
+    expect(loader.busy()).toBe(1);
+    expect(loader.has('meshes/a.lod1.glb')).toBe(false);
+    give(await glbBytes());
+    await p;
+    expect(loader.busy()).toBe(0);
+    expect(loader.has('meshes/a.lod1.glb')).toBe(true);
+  });
+
+  it('parses a coarse cell’s bytes the stream fetched, as it would a mesh', async () => {
+    const fetchBytes = vi.fn();
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes: {} });
+    const gltf = await loader.parse(await glbBytes(), 'horizon/0_0.glb');
+    let n = 0;
+    gltf.scene.traverse((o) => o.isMesh && n++);
+    expect(n).toBe(2);
+    expect(fetchBytes).not.toHaveBeenCalled();
+  });
+});
+
 describe('a level pack’s textures bound to their materials', () => {
   it('reads a colour or emissive map as sRGB, whatever its file says (the game’s colour maps are BC7_SRGB)', () => {
     const mat = new THREE.MeshStandardMaterial();

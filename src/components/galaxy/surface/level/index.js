@@ -45,6 +45,7 @@ import { createColliders } from './colliders.js';
 import { createLevelLights, lightScale } from './levelLights.js';
 import { createLevelProbes } from './levelProbes.js';
 import { createLevelPhysics, wantsEngine } from './levelPhysics.js';
+import { seenAt } from '../../../../lib/level/lod.js';
 
 // A pack file's bytes, from the bucket where it has it, else the site.
 // (No abort signal on the request: assetBase reads any failure as the bucket
@@ -244,6 +245,44 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     early.clear();
     onPhysics?.(physics);
   }
+  // (lane N4) the horizon grid's layer: its impostors on the node renderer
+  // only (lib/three/impostor.js, TSL), the proxies alone on the classic one
+  let coarse = null;
+  let coarseArgs = null;
+  let coarseUp = null;
+  let ticks = 0;
+  const impostorsMod = renderer?.isWebGPURenderer ? import('../../../../lib/three/impostor.js').catch(() => null) : Promise.resolve(null);
+  async function startCoarse(index) {
+    const mod = await impostorsMod;
+    if (gone) return;
+    coarseArgs = { index, makeImpostors: mod?.createImpostors ?? null };
+    coarse = level.setHorizon({ coarse: coarseArgs, key: null });
+    if (!mod) return;
+    for (const [mesh, a] of Object.entries(index.atlases ?? {})) {
+      const rows = (path) => ({ [path.split('/').pop().replace(/\.ktx2$/, '')]: a.rows });
+      Promise.all([loader.texture(a.albedo, rows(a.albedo), { coarse: true }), loader.texture(a.normal, rows(a.normal), { coarse: true })]).then(([albedo, normal]) => {
+        if (!gone && albedo) coarse?.setAtlas(mesh, { albedo, normal });
+      });
+    }
+  }
+  // a coarse cell stands in until the fine path has each of its meshes it
+  // draws from here (not dropped on the tier, and seen at the cell's
+  // nearest point: lod.js's seenAt with the pack's K)
+  function coarseUpdate([x, z]) {
+    if (!coarse || !pack0 || ticks++ % 15) return;
+    const cull = pack0.cull?.[tier] ?? pack0.cull?.high ?? { K: Infinity, dropped: [] };
+    const dropped = new Set(cull.dropped ?? []);
+    const size = pack0.coarse?.cell ?? 512;
+    coarse.update({
+      loaded: (m) => (pack0.meshes[m]?.glb ?? []).some((g) => g && loader?.has(g)),
+      drawn: (m, key) => {
+        if (dropped.has(m)) return false;
+        const [cx, cz] = key.split(',').map(Number);
+        const d = Math.hypot(Math.max(cx * size - x, 0, x - (cx + 1) * size), Math.max(cz * size - z, 0, z - (cz + 1) * size));
+        return seenAt(d, pack0.meshes[m]?.radius ?? 1, cull.K);
+      },
+    });
+  }
   packOf(world)
     .then(async (pack) => {
       pack0 = pack;
@@ -254,12 +293,29 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       const { recipes, variations = null, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
       sun = shared;
       if (gone) return;
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations });
-      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
-      // the far list is the whole arena's table; the cells round you bring
+      // (lane N4) the stream first: every file the loader wants goes through
+      // its queue, ranked; the coarse grid's cells and atlases come first.
+      // The far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when
       // a cell goes)
-      stream = createLevelStream({ pack, fetch: (path) => fetchBytes(path), wanted, tier, onFar: level.setTable, onHorizon: level.setHorizon, onCell, onDrop });
+      stream = createLevelStream({
+        pack,
+        fetch: (path) => fetchBytes(path),
+        wanted,
+        tier,
+        onFar: (bin) => level.setTable(bin),
+        onHorizon: (bin) => level.setHorizon(bin),
+        onCell,
+        onDrop,
+        busy: () => loader?.busy() ?? 0,
+        onCoarse: (index) => (coarseUp = startCoarse(index)),
+        onHorizonCell: (key, bin, entry) =>
+          Promise.all([coarseUp, loader.parse(bin, entry.glb)]).then(([, gltf]) => {
+            if (!gone && gltf) level.setHorizon({ coarse: coarseArgs, key, gltf });
+          }),
+      });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes: (path, hint) => stream.fetch(path, hint), sizes: pack.tex, recipes, materialFor, mapKeys, variations });
+      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       if (last) {
         stream.update(last, tier);
         level.update(last);
@@ -294,13 +350,15 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       }
       stream?.update(position, tier);
       level?.update(position);
+      coarseUpdate(position);
       bodies?.update(4);
       if (camera) lights?.update(camera);
       probes?.update([position[0], camera?.position.y ?? 1.6, position[1]]);
     },
     ready: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,
-    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null }),
+    // (stream: lane N4's phase, bytes, boot and pause; coarse: the horizon grid's cells and cards)
+    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null, stream: stream?.status() ?? null, coarse: coarse?.stats() ?? null }),
     // the level's engine, once it's up (null on a phone, the low tier, a pack without shapes)
     physics: () => engine,
     dispose() {
@@ -310,6 +368,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       bodies?.dispose();
       engine?.dispose();
       stream?.dispose();
+      coarse?.dispose();
       level?.dispose();
       loader?.dispose();
     },
