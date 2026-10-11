@@ -1,0 +1,12 @@
+endor      calls  166  tris  918194  geo  293  tex 420  prog 127  frame p50 3799.8 p95 4199.9 ms  ground 0.04 ms  load 62.2 s
+           level calls 21  tris 179763  instances 693  lights 0  probe –
+budget endor      calls 166/350  tris 918194/800000  models 14.4/20 MB  FAIL (tris 918194 > 800000)
+endor      calls  167  tris  925230  geo  297  tex 404  prog 125  frame p50 4849.8 p95 5933 ms  ground 0.04 ms  load 11.1 s
+           level calls 118  tris 457908  instances 1416  lights 2  probe –
+budget endor      calls 167/262  tris 925230/2241736  models 14.6/40 MB  pass  (known over the row, held to its baseline: TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over th
+endor      calls  191  tris 1464484  geo  311  tex 407  prog 130  frame p50 12432.9 p95 13516.1 ms  ground 0.02 ms  load 10.5 s
+           level calls 243  tris 655212  instances 2042  lights 2  probe –
+budget endor      calls 191/257  tris 1464484/3679784  models 15.6/60 MB  pass  (known over the row, held to its baseline: TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over t
+endor      calls  222  tris 2795317  geo  316  tex 407  prog 130  frame p50 29222.2 p95 29748.8 ms  ground 0.06 ms  load 15.3 s
+           level calls 275  tris 1146533  instances 2042  lights 2  probe –
+budget endor      calls 222/1500  tris 2795317/–  models 16.2/240 MB  p95 29748.8/reported ms  pass

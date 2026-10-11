@@ -13,6 +13,7 @@
 //   GPU=webgpu … (or webgl: the runtime's ?gpu= override, for a 'nodes' world; each
 //     result says the backend that drew it: webgl, nodes-webgl or webgpu)
 //   PHASE_WAIT=900000 … (ms for the world to come up: a level pack in software GL takes minutes)
+//   DIAG=1 … (each of the scene's top groups' share of the calls, hidden in turn)
 //   PROFILE=60 … (lane X2: the main thread's CPU profile over that many
 //     seconds of play, after the counts: the Battlefront's player deployed
 //     and walking, a surface's camera turning; <name>.cpuprofile for
@@ -252,6 +253,7 @@ for (const id of list.split(',')) {
               // (the ground war's update, smoothed: ground/groundScene.js's ms)
               ground: surface && window.__surfaceScene?.groundWar ? +window.__surfaceScene.groundWar.ms.toFixed(2) : null,
               // (a level world's collision: surface/level/levelPhysics.js's stats, when it has an engine)
+              level: surface && typeof window.__surfaceScene?.level === 'function' ? window.__surfaceScene.level() : null,
               physics: surface && typeof window.__surfaceScene?.physics === 'function' ? (({ dropped, ...rest }) => ({ ...rest, dropped: dropped?.length ?? 0 }))(window.__surfaceScene.physics() ?? {}) : null,
             });
           }
@@ -260,11 +262,42 @@ for (const id of list.split(',')) {
       }),
     bf ? 'battlefront' : mode === 'surface',
   );
+  // (DIAG=1: what each of the scene's top groups costs, by drawing a frame
+  // with it hidden: the calls and triangles it takes, largest first)
+  if (process.env.DIAG && mode === 'surface') {
+    const parts = await page.evaluate(async () => {
+      const { scene, renderer } = window.__surfaceScene;
+      const info = renderer.info;
+      const frame = () =>
+        new Promise((r) => {
+          window.__RUNTIME__?.invalidate();
+          info.autoReset = false;
+          info.reset();
+          requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.calls, tris: info.render.triangles })));
+        });
+      const all = await frame();
+      const out = [];
+      for (const [i, c] of scene.children.entries()) {
+        if (!c.visible) continue;
+        c.visible = false;
+        const f = await frame();
+        c.visible = true;
+        out.push({ name: `${c.name || c.type}#${i}`, calls: all.calls - f.calls, tris: all.tris - f.tris });
+      }
+      info.autoReset = true;
+      return { all, out: out.filter((o) => o.calls > 0).sort((a, b) => b.calls - a.calls) };
+    });
+    console.log(`${''.padEnd(10)} diag all ${parts.all.calls} calls: ${parts.out.map((o) => `${o.name} ${o.calls} (${Math.round(o.tris / 1000)}k)`).join(', ')}`);
+  }
   const name = `${mode}-${id}-${quality}`;
   await page.screenshot({ path: `${out}/${name}.png`, timeout: 120000 });
   const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
   results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
   console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
+  if (stats.level) {
+    const l = stats.level;
+    console.log(`${''.padEnd(10)} level calls ${l.calls}  tris ${l.tris}  instances ${l.instances}  lights ${l.lights ?? 0}  probe ${l.probe ?? '–'}`);
+  }
   if (mode === 'surface' && process.env.SCANS === 'game' && scans.cc0) {
     console.log(`scans  ${id.padEnd(10)} FAIL: ${scans.cc0} of the site's own scans fetched; a Star Wars world wears the game's: ${scans.cc0Paths.join(' ')}`);
     process.exitCode = 1;
