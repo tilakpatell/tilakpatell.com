@@ -41,6 +41,8 @@ describe('the 2017 drop’s paths', () => {
   it('reads the manifest’s paths as bucket paths', () => {
     expect(inBucket('models/a/b.glb')).toBe('web/models/a/b.glb');
     expect(inBucket('web/models/a/b.glb')).toBe('web/models/a/b.glb');
+    // (the records sit beside web/, keyed with their case: a level's MVDBs)
+    expect(inBucket('data/Levels/MP/Hoth_01/content/MeshVariationDb_Win32.json.gz')).toBe('data/Levels/MP/Hoth_01/content/MeshVariationDb_Win32.json.gz');
     expect(mapPath('Gameplay/Heroes/X/T_X_3p_NAM')).toBe('web/textures/gameplay/heroes/x/t_x_3p_nam.png');
   });
 

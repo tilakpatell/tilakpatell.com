@@ -38,7 +38,8 @@ export function textureSources(bucketPath) {
 // A manifest path (`models/…glb`, relative to the bucket's web/) as a bucket
 // path, and a `derived` recipe's map (`Gameplay/…/T_…_NAM`, the source
 // texture's Frostbite name) as the bucket path of its PNG.
-export const inBucket = (file) => (file.startsWith('web/') ? file : `web/${file}`);
+// (a record under data/ is the bucket's own path already: `--folder 'data/Levels/MP/Hoth_01/*'`)
+export const inBucket = (file) => (file.startsWith('web/') || file.startsWith('data/') ? file : `web/${file}`);
 export const mapPath = (map) => `web/textures/${map.toLowerCase()}.png`;
 
 export const localPath = (root, bucketPath) => join(root, bucketPath);
