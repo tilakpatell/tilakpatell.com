@@ -596,7 +596,8 @@ export const SITES = {
         id: 'second',
         name: 'The dunes of Geonosis',
         level: 'geonosis/second',
-        land: { at: [0, 0], yaw: 0 },
+        // (facing the dunes and the crash site, north-west)
+        land: { at: [0, 0], yaw: -0.78 },
         line: 'Dunes, a crashed Venator, and the droid foundries’ smoke on the horizon.',
         door: { at: [0, 6], r: 2.4, prompt: 'Back to the Plains of Geonosis' },
         ...ownMap('geonosis/second'),

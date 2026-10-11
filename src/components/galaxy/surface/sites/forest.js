@@ -432,11 +432,15 @@ export const SITES = {
         id: 'second',
         name: 'The Kashyyyk front',
         level: 'kashyyyk/second',
-        land: { at: [0, 0], yaw: 0 },
+        // (facing the map's pieces, 318 m west)
+        land: { at: [0, 0], yaw: -1.55 },
         line: 'The Republic’s line under the wroshyrs, and a droid dreadnought overhead.',
         // (the way back: a gunship's ride to the beach, a step from where you land)
         door: { at: [0, 6], r: 2.4, prompt: 'Back to the beach at Kachirho' },
         ...ownMap('kashyyyk/second'),
+        // (the same sea as Kashyyyk_01's, its foam at 134.2 m in the game:
+        // 38.9 m under this spot, up on the shore)
+        site: { ...ownMap('kashyyyk/second').site, water: { level: -38.9, color: '#7b8575', deep: '#3a4a40', kind: 'sea', foam: 0.2, wadeMax: 1.2 } },
       },
     ],
     place: 'The shore at Kachirho',
