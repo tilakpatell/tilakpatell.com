@@ -5,7 +5,7 @@ The code is measured, the numbers may not rise, and a scheduled session makes on
 ## The measure
 
 ```bash
-node scripts/health.mjs                  # the table, and src/data/health/latest.json
+node scripts/health.mjs                  # the table, and src/data/health/latest.json (`--check` leaves the file)
 node scripts/health.mjs --check          # exit 1 when a number is over its budget (CI, on every pull request)
 node scripts/health.mjs --ratchet        # lower the budgets to today's numbers; a line in history.jsonl
 node scripts/health.mjs --only big-files --json
