@@ -22,14 +22,18 @@
 // Lane colour's variations ride Q1's recipes (a recipe gains `variation`
 // in levelGltf.js), so nothing here reads variations.json.
 //
-//   createLevel({ scene, tier, renderer, world = 'hoth', ground = true, entry, deps })
+//   createLevel({ scene, tier, renderer, world = 'hoth', ground = true, entry, onCell, onDrop, deps })
 //     → { ready: Promise, group, origin, pack, file(name), update([x, y, z]),
-//         heightAt(x, z), progress(), loaded(), stats(), dispose() }
-//   (file(name): a file beside the pack as JSON, null where it has none)
+//         heightAt(x, z), loadBin(path), navOf() → Promise<mask | null>,
+//         progress(), loaded(), stats(), dispose() }
+//   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
+//   and go, for the collision; navOf: the pack's nav.bin, navMask.js's;
+//   file(name): a file beside the pack as JSON, null where it has none)
 //   toPack(pack, [x, y, z]) → [x, z] in the pack's frame (pure)
 
 import * as THREE from 'three';
 import { LAYERS } from '../../../lib/land/layers.js';
+import { inflateMask } from '../../../lib/battlefront/navMask.js';
 import { readInstances } from '../../../lib/level/instances.js';
 import { backendOf } from '../../../lib/three/light/three.js';
 import * as laneL from '../../galaxy/shared/level.js';
@@ -110,9 +114,10 @@ const DEPS = {
   createLevelLoader: laneL.createLevelLoader,
   createLevelScene: laneL.createLevelScene,
   createLevelStream: laneL.createLevelStream,
+  navOf: (world) => bytes(world)('nav.bin').then(inflateMask),
 };
 
-export function createLevel({ scene, tier = 'high', renderer = null, world = 'hoth', ground = true, entry = null, deps = {} }) {
+export function createLevel({ scene, tier = 'high', renderer = null, world = 'hoth', ground = true, entry = null, onCell: cellIn = () => {}, onDrop: cellOut = () => {}, deps = {} }) {
   const d = { ...DEPS, ...deps };
   const group = new THREE.Group();
   group.name = `level:${world}`;
@@ -156,13 +161,17 @@ export function createLevel({ scene, tier = 'high', renderer = null, world = 'ho
     return make({ scene: group, pack: file, tier, backend, loader: (name, path) => ktx.loadAsync(laneL.packUrl(world, path ?? name)) });
   }
   const cellOf = (key) => key.split(',').map(Number);
-  const onCell = (key, bin) => {
+  const onCell = (key, bin, band) => {
+    cellIn(key, bin, band);
     if (!decals) return;
     cellTargets(pack, key, bin, cutLoad, tier)
       .then((targets) => !gone && decals?.cell(...cellOf(key), targets))
       .catch((e) => console.warn('battlefront: decals', key, e));
   };
-  const onDrop = (key) => decals?.drop(...cellOf(key));
+  const onDrop = (key) => {
+    cellOut(key);
+    decals?.drop(...cellOf(key));
+  };
 
   const ready = (async () => {
     const [p, img] = await Promise.all([d.packOf(world), d.imageLayer(world).catch(() => null)]);
@@ -239,6 +248,11 @@ export function createLevel({ scene, tier = 'high', renderer = null, world = 'ho
     get pack() {
       return pack;
     },
+    loadBin: fetchBytes,
+    navOf: () =>
+      Promise.resolve()
+        .then(() => d.navOf(world))
+        .catch(() => null),
     file: (name) =>
       fetchBytes(name)
         .then(json)

@@ -2,13 +2,14 @@
 // src/data/bf2017/ (spec section 8): the teams a level's era fields, their
 // classes, heroes, reinforcements and vehicles, every weapon, ability and
 // star card they carry, the AI's tuning, the level's map, lighting and
-// cameras, the HUD's widgets, and the strings all of them name. Every number
+// cameras, the HUD's widgets, the squads, and the strings all of them name. Every number
 // carries the record it came from (`<key>_source`); see scripts/lib/bf2017-*.
 //
 //   node scripts/bf2017-data.mjs all --root <dir> [--level hoth_01] [--era Orig] [--out src/data/bf2017] [--only <id,…>] [--dry]
 //   node scripts/bf2017-data.mjs <rulebook> --root <dir> …        one rulebook (and what it needs, unwritten)
 //   node scripts/bf2017-data.mjs fixture <record name> [--cut root] [--root <dir>]
 //   node scripts/bf2017-data.mjs modes [--root <dir>] [--out src/data/bf2017]   the levels' mode layers (scripts/lib/bf2017-modes.mjs): web/maps/index.json and each level's manifest
+//   node scripts/bf2017-data.mjs saber [--root <dir>] [--out src/data/bf2017]   the lightsaber's rulebook (scripts/lib/bf2017-rulebook-saber.mjs): saber.json
 //
 //   root   the export: data.tsv and data/<Name>.json(.gz), with the web build
 //          under web/ (the bucket's layout: lab/assets/bf2017 after
@@ -26,15 +27,18 @@ import { parseArgs } from './lib/args.mjs';
 import { cutAsset, isSequel, loadAsset, readWebJson, resolveStrings, rootOf, webFile } from './lib/bf2017-ebx.mjs';
 import { abilityRow, cardRow, classRow, heroRow, indexOf, reinforcementRow, teamRow, vehicleRow, weaponRow } from './lib/bf2017-rulebook.mjs';
 import { aiRulebook } from './lib/bf2017-rulebook-ai.mjs';
+import { airRulebook } from './lib/bf2017-rulebook-air.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
+import { squadsRow } from './lib/bf2017-rulebook-squads.mjs';
 import { LEVEL_WORLDS, modesRulebook } from './lib/bf2017-modes.mjs';
+import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'build 489592';
 
 // In the order they are built: each reads what an earlier one found.
-export const RULEBOOKS = ['teams', 'map', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'lighting', 'cameras', 'ui', 'strings'];
+export const RULEBOOKS = ['teams', 'map', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'lighting', 'cameras', 'ui', 'squads', 'strings'];
 const NEEDS = {
   classes: ['teams'],
   heroes: ['teams'],
@@ -143,6 +147,7 @@ const BUILD = {
   abilities: (p, ctx) => rowsOf(ctx, uniq([...Object.values(ctx.classes), ...Object.values(ctx.heroes), ...Object.values(ctx.reinforcements)].flatMap((k) => (k.abilities ?? []).map((a) => a.asset))), (n) => abilityRow(p.root, n)),
   cards: (p, ctx) => rowsOf(ctx, uniq(Object.values(ctx.classes).flatMap((k) => k.cardAssets ?? [])), (n) => cardRow(p.root, n)),
   ai: (p) => aiRulebook(p.root),
+  squads: (p, ctx) => squadsRow(p.root, { strings: ctx.$strings }),
   lighting: (p) => lightingRow(p.root, p.level),
   cameras: (p, ctx) => camerasRow(p.root, { weapons: Object.values(ctx.weapons), vehicles: uniq(Object.values(ctx.vehicles).map((v) => v.blueprint)).filter((b) => indexOf(p.root).has(`${b}_Camera`)) }),
   ui: (p) =>
@@ -241,6 +246,23 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'modes.json');
       writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }, null, 1) + '\n');
       console.log(`modes: ${Object.keys(book.levels).length} levels on ${Object.keys(book.worlds).length} worlds; wrote ${relative(ROOT, to)}`);
+    } else if (argv[0] === 'air') {
+      // the air vehicles' rulebook (lane fighters): src/data/bf2017/air.json
+      const args = parseArgs(argv.slice(1));
+      const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
+      const book = airRulebook(root);
+      for (const m of book._missing) console.log(`  missing: ${m}`);
+      const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'air.json');
+      writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }) + '\n');
+      console.log(`air: ${Object.keys(book.vehicles).length} vehicles, ${book.refused.length} refused, ${book._missing.length} missing; wrote ${relative(ROOT, to)} (${Math.round(statSync(to).size / 1024)} KB)`);
+    } else if (argv[0] === 'saber') {
+      const args = parseArgs(argv.slice(1));
+      const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
+      const { missing, ...book } = saberRulebook(root);
+      for (const m of missing) console.log(`  missing: ${m}`);
+      const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'saber.json');
+      writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }, null, 1) + '\n');
+      console.log(`saber: ${Object.keys(book.heroes).length} heroes; wrote ${relative(ROOT, to)} (${Math.round(statSync(to).size / 1024)} KB)`);
     } else if (argv[0] === 'fixture') {
       const args = parseArgs(argv.slice(1));
       const r = fixture(typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017'), args._[0], { cut: args.cut });

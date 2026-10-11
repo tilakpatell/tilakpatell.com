@@ -1,40 +1,9 @@
-import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import book from '../../data/bf2017/physics/ragdoll.json';
+import { skeleton } from './fixtures/gameSkeleton';
 import { floorCollide, ragdollOf, rig2017 } from './ragdoll2017';
 
 const TROOPER = ragdollOf(book, 'stormtroopershared');
-
-// a figure on the game's skeleton, standing (facing +z, its left on +x): the fifteen bodies'
-// bones and the ones between them the ragdoll skips (the upper spine, the neck, the shoulders)
-function skeleton() {
-  const root = new THREE.Object3D();
-  const bones = {};
-  const add = (name, parent, x, y, z = 0) => {
-    const b = new THREE.Bone();
-    b.name = name;
-    b.position.set(x, y, z);
-    (parent ? bones[parent] : root).add(b);
-    bones[name] = b;
-  };
-  add('Hips', null, 0, 1, 0);
-  add('Spine', 'Hips', 0, 0.1);
-  add('Spine1', 'Spine', 0, 0.15);
-  add('Spine2', 'Spine1', 0, 0.15);
-  add('Neck', 'Spine2', 0, 0.12);
-  add('Head', 'Neck', 0, 0.1);
-  for (const [s, k] of [['Left', 1], ['Right', -1]]) {
-    add(`${s}Shoulder`, 'Spine2', 0.05 * k, 0.08);
-    add(`${s}Arm`, `${s}Shoulder`, 0.12 * k, 0);
-    add(`${s}ForeArm`, `${s}Arm`, 0.28 * k, 0);
-    add(`${s}Hand`, `${s}ForeArm`, 0.25 * k, 0);
-    add(`${s}UpLeg`, 'Hips', 0.1 * k, -0.05);
-    add(`${s}Leg`, `${s}UpLeg`, 0, -0.43, 0.01);
-    add(`${s}Foot`, `${s}Leg`, 0, -0.43, -0.01);
-  }
-  root.updateMatrixWorld(true);
-  return bones;
-}
 
 const flat = floorCollide(() => 0);
 const run = (rag, seconds, dt = 1 / 60) => {
@@ -100,6 +69,64 @@ describe('rig2017', () => {
     expect(rag.settled).toBe(true);
     for (let i = 0; i < rag.body.n; i++) expect(rag.body.pos[i * 3 + 1]).toBeGreaterThanOrEqual(-1e-6);
     expect(rag.centre()[1]).toBeLessThan(0.4);
+  });
+});
+
+describe('rig2017’s hit at a bone', () => {
+  const centroid = (rag) => {
+    const c = [0, 0, 0];
+    for (let i = 0; i < rag.body.n; i++) for (let k = 0; k < 3; k++) c[k] += rag.body.pos[i * 3 + k] / rag.body.n;
+    return c;
+  };
+
+  it('kicks the bone it is given: the head moves more than the feet in the first step', () => {
+    const rag = rig2017(skeleton(), TROOPER, { speed: 0, gravity: 0 });
+    const head0 = rag.point('Head').x;
+    const foot0 = rag.point('LeftFoot').x;
+    expect(rag.kickAt('Head', [50, 0, 0])).toBe(50);
+    rag.step(1 / 60);
+    expect(rag.point('Head').x - head0).toBeGreaterThan(Math.abs(rag.point('LeftFoot').x - foot0) * 3);
+  });
+
+  it('moves the whole body at the impulse over its mass (50 N·s on the trooper’s 94 kg)', () => {
+    const rag = rig2017(skeleton(), TROOPER, { speed: 0, gravity: 0 });
+    const c0 = centroid(rag);
+    rag.kickAt('Spine', [50, 0, 0]);
+    run(rag, 0.2);
+    const c1 = centroid(rag);
+    const speed = (c1[0] - c0[0]) / 0.2;
+    expect(speed).toBeGreaterThan((50 / rag.mass) * 0.75);
+    expect(speed).toBeLessThan((50 / rag.mass) * 1.25);
+  });
+
+  it('spends the same allowance as kick, and takes nothing at a bone it has not got', () => {
+    const rag = rig2017(skeleton(), TROOPER, { speed: 0 });
+    rag.kick([1000, 0, 0]);
+    expect(rag.kickAt('Head', [50, 0, 0])).toBe(0);
+    const fresh = rig2017(skeleton(), TROOPER, { speed: 0 });
+    expect(fresh.kickAt('Spine2', [50, 0, 0])).toBe(0);
+  });
+
+  it('weighs its momentum by the bodies’ masses', () => {
+    const rag = rig2017(skeleton(), TROOPER, { speed: 0, gravity: 0 });
+    expect(rag.momentum()).toBeCloseTo(0, 9);
+    rag.body.push({ x: 1, y: 0, z: 0 });
+    expect(rag.momentum()).toBeCloseTo(rag.mass, 6);
+  });
+
+  it('settles by the game’s SettleMomentum on a flat floor, the hips over it', () => {
+    const rag = rig2017(skeleton(), TROOPER, { collide: flat, speed: 0 });
+    rag.kickAt('Head', [0, 0, 50]);
+    let t = 0;
+    while (!rag.settled && t < 7) {
+      rag.step(1 / 60);
+      t += 1 / 60;
+    }
+    expect(rag.settled).toBe(true);
+    expect(t).toBeLessThan(6);
+    const hips = TROOPER.bodies.find((b) => b.bone === 'Hips');
+    expect(rag.point('Hips').y).toBeGreaterThanOrEqual(hips.radius - 1e-6);
+    expect(rag.momentum()).toBeLessThan(TROOPER.settleMomentum * 2);
   });
 });
 

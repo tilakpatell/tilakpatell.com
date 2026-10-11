@@ -1,8 +1,8 @@
 // The block by the side a cut comes in on, headless: a 2017 hero (the
 // committed skeleton, walrus.glb, with Luke's committed clip pack) lays the
 // game's block measured holding the blade on that side (luke.json's
-// `blocks`, by `held`); a figure on the Meshy skeleton (meshyRig.fixture.js,
-// the baked clips off disk) keeps its one block, whatever the side.
+// `blocks`, by `held`); one with none measured on that side, its pack's own
+// block. (A figure on any other rig has no saber to block with: saber.test.js.)
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -10,9 +10,8 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { beforeAll, describe, expect, it } from 'vitest';
 import luke from '../../../data/bf2017/strokes/luke.json';
 import { socketsOf } from '../../../lib/three/walrus';
-import { meshyRig } from '../../../lib/three/meshyRig.fixture';
 import { createGunplay } from '../../universe/gunplay';
-import { BLOCK_CLIP, STANCES } from './combatRules';
+import { BLOCK_CLIP } from './blockSide';
 import { createSaber } from './saber';
 import { BLOCK_AT } from './saberRules';
 
@@ -25,11 +24,9 @@ const parse = async (file) => {
 };
 
 let pack;
-const ual = {};
 beforeAll(async () => {
   await MeshoptDecoder.ready;
   pack = await parse('public/models/galaxy/bf2017/clips-luke.glb');
-  for (const name of new Set([...STANCES.single.strokes.map((k) => k.clip), 'sword.heavy.a', BLOCK_CLIP])) ual[name] = (await parse(`public/games/meshy/ual-${name}.glb`)).animations[0];
 });
 // (what the pack carries, by the game's names)
 const packHas = (n) => pack.animations.some((c) => c.userData.source === n);
@@ -51,22 +48,6 @@ async function hero(more = {}) {
   return { saber, gp, frame };
 }
 
-function meshy() {
-  const rig = meshyRig();
-  const scene = new THREE.Group();
-  scene.add(rig.model);
-  scene.updateMatrixWorld(true);
-  const gp = createGunplay({ model: rig.model, bones: rig.bones }, 'saber', { unit: 1 });
-  const saber = createSaber(gp, { stance: 'single', parent: scene, fig: { bones: rig.bones, hipsY: rig.hipsY }, clips: ual });
-  let now = 0;
-  const frame = () => {
-    now += 1 / 60;
-    scene.updateMatrixWorld(true);
-    gp.set(1 / 60, { aim: 0.75, look: 0, dir: null, forward: FWD, up: UP });
-    saber.update(1 / 60, now, { forward: FWD, up: UP, me: { x: 0, z: 0, yaw: 0 }, targets: [] });
-  };
-  return { saber, gp, rig, frame };
-}
 
 describe('a 2017 hero’s block, by the side a cut comes in on', () => {
   it('meets a cut from its left with the game’s blocks measured there, one a raise in turn', async () => {
@@ -165,25 +146,5 @@ describe('a 2017 hero’s block, by the side a cut comes in on', () => {
     expect(q.angleTo(b)).toBeGreaterThan(0.01);
     for (let i = 0; i < 10; i++) frame();
     expect(gp.socket.quaternion.clone().normalize().angleTo(b)).toBeLessThan(1e-3);
-  });
-});
-
-describe('a figure on another rig', () => {
-  it('keeps its one block, whatever the side', () => {
-    const a = meshy();
-    const b = meshy();
-    a.saber.block(true);
-    b.saber.block(true, 'left');
-    for (let i = 0; i < 20; i++) {
-      a.frame();
-      b.frame();
-    }
-    expect(a.saber.blockClip).toBe(BLOCK_CLIP);
-    expect(b.saber.blockClip).toBe(BLOCK_CLIP);
-    // (component by component: the hand's turn comes out of the IK a hair off unit length, which angleTo misreads)
-    const qa = a.rig.bones.RightHand.quaternion.toArray();
-    b.rig.bones.RightHand.quaternion.toArray().forEach((v, i) => expect(Math.abs(v - qa[i])).toBeLessThan(1e-9));
-    const at = (s) => s.gp.gun.getWorldPosition(new THREE.Vector3()).toArray();
-    expect(at(b)).toEqual(at(a));
   });
 });

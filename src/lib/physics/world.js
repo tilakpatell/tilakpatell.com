@@ -81,7 +81,7 @@
 // substep, and every SWEEP substeps a body the engine turned off, not one
 // turned off on purpose, is put back.)
 
-import { GROUPS } from './groups';
+import { GROUPS } from './groups.js';
 
 export { GROUPS };
 export const STEP = 1 / 60;

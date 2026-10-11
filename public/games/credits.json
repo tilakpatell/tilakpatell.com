@@ -3536,15 +3536,6 @@
     ],
     "license": "Meshy paid-plan output, owned by the site owner"
   },
-  "meshy/hyena": {
-    "source": "https://www.meshy.ai",
-    "id": "01a114e3-e5c5-7662-9a80-6233eb164447",
-    "name": "the Hyena bomber, generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s picture of it)",
-    "authors": [
-      "Tilak Patel, with Meshy AI"
-    ],
-    "license": "Meshy paid-plan output, owned by the site owner"
-  },
   "meshy/naboocruiser": {
     "source": "https://www.meshy.ai",
     "id": "01a114e3-f2a2-72d6-953c-d81a1a949f8f",
@@ -3594,15 +3585,6 @@
     "source": "https://www.meshy.ai",
     "id": "01a114e3-d5e8-775a-90e8-642b55028723",
     "name": "the Twilight, generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s picture of it)",
-    "authors": [
-      "Tilak Patel, with Meshy AI"
-    ],
-    "license": "Meshy paid-plan output, owned by the site owner"
-  },
-  "meshy/vwing": {
-    "source": "https://www.meshy.ai",
-    "id": "01a114e3-df76-74de-be16-9e883678197f",
-    "name": "the V-wing, generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s picture of it)",
     "authors": [
       "Tilak Patel, with Meshy AI"
     ],

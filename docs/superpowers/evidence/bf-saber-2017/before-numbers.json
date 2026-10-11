@@ -1,0 +1,167 @@
+{
+ "start": {
+  "phase": "walk",
+  "saber": {
+   "lit": false,
+   "busy": false,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": []
+ },
+ "duel": {
+  "phase": "walk",
+  "saber": {
+   "lit": false,
+   "busy": false,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": [
+   {
+    "tag": "devduel",
+    "hp": 99,
+    "duel": "approach",
+    "gun": "saber:hand"
+   }
+  ]
+ },
+ "strikes": {
+  "phase": "walk",
+  "saber": {
+   "lit": false,
+   "busy": false,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": [
+   {
+    "tag": "devduel",
+    "hp": 99,
+    "duel": "approach",
+    "gun": "saber:hand"
+   }
+  ]
+ },
+ "blocking": {
+  "phase": "walk",
+  "saber": {
+   "lit": true,
+   "busy": true,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": [
+   {
+    "tag": "devduel",
+    "hp": 97,
+    "duel": "stagger",
+    "gun": "saber:hand"
+   }
+  ]
+ },
+ "afterFront": {
+  "phase": "walk",
+  "saber": {
+   "lit": true,
+   "busy": true,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": [
+   {
+    "tag": "devduel",
+    "hp": 97,
+    "duel": "stagger",
+    "gun": "saber:hand"
+   }
+  ]
+ },
+ "afterBack": {
+  "phase": "walk",
+  "saber": {
+   "lit": true,
+   "busy": true,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": [
+   {
+    "tag": "devduel",
+    "hp": 97,
+    "duel": "stagger",
+    "gun": "saber:hand"
+   }
+  ]
+ },
+ "dodge1": {
+  "phase": "walk",
+  "saber": {
+   "lit": true,
+   "busy": true,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": [
+   {
+    "tag": "devduel",
+    "hp": 97,
+    "duel": "circle",
+    "gun": "saber:hand"
+   }
+  ]
+ },
+ "dodge2": {
+  "phase": "walk",
+  "saber": {
+   "lit": true,
+   "busy": true,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": [
+   {
+    "tag": "devduel",
+    "hp": 97,
+    "duel": "circle",
+    "gun": "saber:hand"
+   }
+  ]
+ },
+ "dodge3": {
+  "phase": "walk",
+  "saber": {
+   "lit": true,
+   "busy": true,
+   "thrown": false,
+   "stance": "Single blade",
+   "color": "#5cff6a"
+  },
+  "health": 100,
+  "fight": [
+   {
+    "tag": "devduel",
+    "hp": 97,
+    "duel": "circle",
+    "gun": "saber:hand"
+   }
+  ]
+ },
+ "errors": []
+}

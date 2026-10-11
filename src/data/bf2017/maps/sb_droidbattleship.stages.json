@@ -1,0 +1,94 @@
+{
+  "source": "hand",
+  "mode": "starfighter",
+  "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
+  "attackers": "light",
+  "notes": "NOTES.md says how each id was chosen. The phases are the level's own (SpaceBattle_Gameplay's objective list: Tractor Beams, Generators, Towers & Reactor); the Republic (Team1) attacks the Separatists' Lucrehulk over Ryloth. The last phase is two stages by its strings (3: the control towers, 3A: the core). Hand: which beam is A and B, which generator is A to D, the gates, the hp and the BTL Y-wing flights' times; the Venators and dreadnoughts kept are the ones within 8 km of the battle (the level's others are its backdrop, 18 to 25 km out); the Republic cruiser the tractor beams hold inside the Lucrehulk's ring (jedicruiser_hull_01#1) is left out, the battle's hull spheres round the ring would hold it.",
+  "origin": [47, 404, 44],
+  "sides": { "1": "republic", "2": "separatists" },
+  "hides": [],
+  "area": {
+    "source": "hand",
+    "why": "the battle over Ryloth is no system of the galaxy's: fought in an area of its own off Naboo's system (where the space lane set the level's set piece), its sky the level's own star field (t_space_no_large_stars_01_c), no sea, no fog (space)",
+    "radius": 10000,
+    "sea": null,
+    "sky": { "url": "/models/galaxy/bf2017/levels/sb_droidbattleship/sky.webp", "gain": 2.5, "full": true },
+    "fog": null
+  },
+  "ships": [
+    { "id": "venator", "team": 1, "kind": "venator", "role": "flagship", "name": "Venator star destroyer", "placed": "venatorstardestroyer_hull_01#1" },
+    { "id": "venator-b", "team": 1, "kind": "venator", "role": "escort", "name": "Venator star destroyer", "placed": "venatorstardestroyer_hull_01#0" },
+    { "id": "cruiser-a", "team": 1, "kind": "corvette", "role": "escort", "name": "Republic cruiser", "placed": "jedicruiser_hull_01#0", "length": 318 },
+    { "id": "cruiser-c", "team": 1, "kind": "corvette", "role": "escort", "name": "Republic cruiser", "placed": "jedicruiser_hull_01#2", "length": 318 },
+    { "id": "lucrehulk", "team": 2, "kind": "lucrehulk", "role": "flagship", "name": "Lucrehulk-class droid control ship", "placed": "lucrehulkclass_droidbattleship_centersphere_exterior_01", "length": 3170 },
+    { "id": "providence", "team": 2, "kind": "providence", "role": "escort", "name": "Providence-class dreadnought", "placed": "providenceclassdreadnaught_01#3" },
+    { "id": "providence-b", "team": 2, "kind": "providence", "role": "escort", "name": "Providence-class dreadnought", "placed": "providenceclassdreadnaught_01#2" }
+  ],
+  "fighters": {
+    "1": [{ "kind": "arc170", "role": "fighter", "weight": 3 }, { "kind": "delta7", "role": "interceptor", "weight": 1.2 }, { "kind": "ywing", "role": "bomber", "weight": 1.5 }],
+    "2": [{ "kind": "vulture", "role": "fighter", "weight": 4 }, { "kind": "trifighter", "role": "interceptor", "weight": 1.5 }, { "kind": "vulture", "role": "bomber", "weight": 1 }]
+  },
+  "stages": [
+    {
+      "id": "tractors",
+      "phase": "Phase 1 - Tractor Beams",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_1_DROIDBATTLESHIP_PHASE_1",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_2_DROIDBATTLESHIP_PHASE_1",
+      "title": "Destroy the tractor beams",
+      "titleDefend": "Protect the tractor beams",
+      "opensAt": 0,
+      "hp": 220,
+      "objectives": [
+        { "id": "TractorBeam A", "kind": "nodule", "name": "Tractor beam", "sid": "ID_SPACEBATTLES_OBJ_TRACTORBEAMS", "placed": "lucrehulkclass_droidbattleship_tractor_01_base#0" },
+        { "id": "TractorBeam B", "kind": "nodule", "name": "Tractor beam", "sid": "ID_SPACEBATTLES_OBJ_TRACTORBEAMS", "placed": "lucrehulkclass_droidbattleship_tractor_01_base#1" }
+      ]
+    },
+    {
+      "id": "generators",
+      "phase": "Phase 2 - Generators",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_1_DROIDBATTLESHIP_PHASE_2",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_2_DROIDBATTLESHIP_PHASE_2",
+      "title": "Destroy the power generators",
+      "titleDefend": "Protect the power generators",
+      "opensAt": 150,
+      "hp": 240,
+      "objectives": [
+        { "id": "PowerGenerator A", "kind": "nodule", "name": "Power generator", "sid": "ID_SPACEBATTLES_OBJ_POWERGENERATOR", "placed": "lucrehulkclass_droidbattleship_transmissiontowerpowergenerator_01#0" },
+        { "id": "PowerGenerator B", "kind": "nodule", "name": "Power generator", "sid": "ID_SPACEBATTLES_OBJ_POWERGENERATOR", "placed": "lucrehulkclass_droidbattleship_transmissiontowerpowergenerator_01#1" },
+        { "id": "PowerGenerator C", "kind": "nodule", "name": "Power generator", "sid": "ID_SPACEBATTLES_OBJ_POWERGENERATOR", "placed": "lucrehulkclass_droidbattleship_transmissiontowerpowergenerator_01#2" },
+        { "id": "PowerGenerator D", "kind": "nodule", "name": "Power generator", "sid": "ID_SPACEBATTLES_OBJ_POWERGENERATOR", "placed": "lucrehulkclass_droidbattleship_transmissiontowerpowergenerator_01#3" }
+      ]
+    },
+    {
+      "id": "towers",
+      "phase": "Phase 3 - Towers & Reactor",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_1_DROIDBATTLESHIP_PHASE_3",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_2_DROIDBATTLESHIP_PHASE_3",
+      "title": "Destroy the control towers",
+      "titleDefend": "Protect the control towers",
+      "opensAt": 300,
+      "hp": 240,
+      "objectives": [
+        { "id": "ControlTowerLeft", "kind": "nodule", "name": "Control tower", "sid": "ID_SPACEBATTLES_OBJ_CONTROLTOWER", "placed": "lucrehulkclass_droidbattleship_controlbridgetower_01_left" },
+        { "id": "ControlTowerRight", "kind": "nodule", "name": "Control tower", "sid": "ID_SPACEBATTLES_OBJ_CONTROLTOWER", "placed": "lucrehulkclass_droidbattleship_controlbridgetower_01_right" }
+      ]
+    },
+    {
+      "id": "core",
+      "phase": "Phase 3 - Towers & Reactor",
+      "name": "ID_SPACEBATTLES_OBJ_TEAM_1_DROIDBATTLESHIP_PHASE_3A",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_TEAM_2_DROIDBATTLESHIP_PHASE_3A",
+      "title": "Destroy the battleship’s core",
+      "titleDefend": "Protect the battleship’s core",
+      "opensAt": 420,
+      "hp": 220,
+      "breaks": true,
+      "objectives": [{ "id": "Reactor", "kind": "engines", "name": "Battleship core", "sid": "ID_SPACEBATTLES_OBJ_BATTLESHIPCORE", "placed": "lucrehulkclass_droidbattleship_thecore_conceptobjective_01" }]
+    }
+  ],
+  "bombers": [
+    { "id": "BTL Y-wing flight A", "at": 120, "n": 3 },
+    { "id": "BTL Y-wing flight B", "at": 330, "n": 3 }
+  ],
+  "camera": { "source": "hand", "why": "the level's intro and outro cameras are Cinematics tracks, not CameraEntityData", "at": [3800, 900, -2400], "look": [1, 10, 0] }
+}

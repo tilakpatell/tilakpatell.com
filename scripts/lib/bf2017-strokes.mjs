@@ -267,7 +267,7 @@ function heldAt(clip, rig, at, blade) {
 const sub = (a, b) => a.map((v, i) => v - b[i]);
 const round = (v, k = 3) => +v.toFixed(k);
 
-// the way a cut goes inside its window, as the site's DIRS name it: down
+// the way a cut goes inside its window, as the stances' ways name it (stanceFromTable.js's WAYS): down
 // from overhead ('up'), up from below ('rise'), or from a side (the
 // figure's own, by the hips' facing, so a strike that turns the body still
 // reads as it cuts: a tip moving to its left cuts from the right)

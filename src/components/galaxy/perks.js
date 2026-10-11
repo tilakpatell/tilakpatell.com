@@ -8,28 +8,29 @@
 //   PERK_IDS, MAX_PERKS
 //   readPerks(list)  the ids that are perks, no twice, at most MAX_PERKS
 //   perkEffects(ids) every multiplier, 1 where no perk touches it:
-//     { hurt (damage taken), guard (the guard's size), parry (the window),
-//       lunge, heat, cool, cycle (seconds between shots), cooldown (the
-//       abilities'), deflect (guard a turned bolt costs), regen (health a
-//       second), dodge (its cooldown), damage (dealt) }
+//     { hurt (damage taken), guard (the stamina a blocked strike costs, as
+//       one over it: lib/combat/saber2017.js's), heat, cool, cycle (seconds
+//       between shots), cooldown (the abilities'), deflect (stamina a turned
+//       bolt costs), regen (health a second), dodge (the dodge's recharge),
+//       damage (dealt) }
+// (the game has no parry, and a strike's lunge is its animation's: the
+// perks that bent those are gone, and a kept choice drops them)
 
 export const MAX_PERKS = 3;
 
 export const PERKS = {
   survivor: { name: 'Survivor', about: 'Take a quarter less from everything.', hurt: 0.75 },
-  ironguard: { name: 'Iron guard', about: 'A guard half again as deep.', guard: 1.5 },
-  riposte: { name: 'Riposte', about: 'A wider window to parry in.', parry: 1.7 },
-  longreach: { name: 'Long reach', about: 'Strokes step further in to their mark.', lunge: 1.6 },
+  ironguard: { name: 'Iron guard', about: 'A blocked strike costs a third less stamina.', guard: 1.5 },
   heatsink: { name: 'Heat sink', about: 'The gun heats slower and cools faster.', heat: 0.75, cool: 1.35 },
   quicktrigger: { name: 'Quick trigger', about: 'A faster cycle between shots.', cycle: 0.85 },
   focus: { name: 'Focus', about: 'The abilities come back sooner.', cooldown: 0.65 },
   secondwind: { name: 'Second wind', about: 'Health comes back twice as fast.', regen: 2 },
-  deflector: { name: 'Deflector', about: 'Turning a bolt costs half the guard.', deflect: 0.5 },
-  nimble: { name: 'Nimble', about: 'Dodge again sooner.', dodge: 0.5 },
+  deflector: { name: 'Deflector', about: 'Turning a bolt costs half the stamina.', deflect: 0.5 },
+  nimble: { name: 'Nimble', about: 'The dodges come back twice as fast.', dodge: 0.5 },
   heavyhands: { name: 'Heavy hands', about: 'Every hit lands a quarter harder.', damage: 1.25 },
 };
 export const PERK_IDS = Object.keys(PERKS);
-const KEYS = ['hurt', 'guard', 'parry', 'lunge', 'heat', 'cool', 'cycle', 'cooldown', 'deflect', 'regen', 'dodge', 'damage'];
+const KEYS = ['hurt', 'guard', 'heat', 'cool', 'cycle', 'cooldown', 'deflect', 'regen', 'dodge', 'damage'];
 
 export const readPerks = (list) => (Array.isArray(list) ? [...new Set(list.filter((p) => PERKS[p]))].slice(0, MAX_PERKS) : []);
 

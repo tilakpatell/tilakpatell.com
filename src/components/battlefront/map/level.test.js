@@ -12,10 +12,12 @@ function fakes() {
     imageLayer: async () => ({ type: 'image', near: { data: new Float32Array([2, 2, 2, 2]), w: 2, h: 2, minX: -10, minZ: -10, metresPerPixel: 20 }, far: null }),
     createLevelLoader: () => ({ load: async () => null, dispose() {} }),
     createLevelScene: ({ scene }) => ((deps.into = scene), { setTable: () => log.push('far'), setHorizon() {}, update: (p) => log.push(['scene', ...p]), stats: () => ({ tris: 0, calls: 0, instances: 0 }), dispose() {} }),
-    createLevelStream: ({ onFar }) => ({
+    createLevelStream: ({ onFar, onCell, onDrop }) => ({
       update: (p) => {
         log.push(['stream', ...p]);
         onFar(new ArrayBuffer(0));
+        onCell('0,0', new ArrayBuffer(32), 'near');
+        onDrop('1,0');
       },
       ready: () => true,
       progress: () => 1,
@@ -48,6 +50,29 @@ describe('the whole map from lane L’s pack', () => {
     expect(log[0]).toEqual(['stream', 10, 10]);
     expect(log[1]).toBe('far');
     expect(log[2]).toEqual(['scene', 10, 10]);
+  });
+
+  it('hands the stream’s cells on, with their band, and what it drops', async () => {
+    const { deps } = fakes();
+    const cells = [];
+    const level = createLevel({ scene: new THREE.Scene(), tier: 'high', deps, ground: false, onCell: (k, b, band) => cells.push(['add', k, b.byteLength, band]), onDrop: (k) => cells.push(['drop', k]) });
+    await level.ready;
+    level.update([215, 380, -1530]);
+    expect(cells).toEqual([
+      ['add', '0,0', 32, 'near'],
+      ['drop', '1,0'],
+    ]);
+    expect(level.pack).toBe(PACK);
+    expect(typeof level.loadBin).toBe('function');
+  });
+
+  it('reads the nav mask the pack carries, or none', async () => {
+    const mask = { cols: 1 };
+    const { deps } = fakes();
+    const level = createLevel({ scene: new THREE.Scene(), tier: 'high', deps: { ...deps, navOf: async (world) => (world === 'hoth' ? mask : null) }, ground: false });
+    expect(await level.navOf()).toBe(mask);
+    const broken = createLevel({ scene: new THREE.Scene(), tier: 'high', deps: { ...deps, navOf: async () => Promise.reject(new Error('404')) }, ground: false });
+    expect(await broken.navOf()).toBeNull();
   });
 
   it('reads the ground from the image layer, in the export’s heights', async () => {
