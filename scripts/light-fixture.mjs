@@ -10,6 +10,7 @@
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
 //     [--picture [on|off]]   (lane Q6: Hoth's record's picture, or the same frame without it)
 //     [--upscale [fsr1|taau:]0.77]   (lane U: the picture drawn under the screen and upscaled)
+//     [--gpuscene]   (GPU-first lane N1: 3,000 pillars and crates through the GPU scene, into evidence/gpu-first/N1/)
 //   node scripts/light-fixture.mjs --materials [--legs webgl] [--variations]
 //   node scripts/light-fixture.mjs --camera [--size 1600x900] [--legs webgpu,webgl]
 //
@@ -123,13 +124,15 @@ const volumeAt = argv.indexOf('--volume');
 const volume = volumeAt < 0 ? null : argv[volumeAt + 1] !== 'off';
 const q4Flags = volume == null && (argv.includes('--weather') || argv.includes('--decals'));
 const particles = volume == null && !q4Flags && argv.includes('--particles');
+// (GPU-first lane N1) the GPU scene's 3,000 pillars and crates round the ring
+const gpuscene = volume == null && !q4Flags && argv.includes('--gpuscene');
 const pictureAt = argv.indexOf('--picture');
 const picture = volume == null && !q4Flags && pictureAt >= 0 ? argv[pictureAt + 1] !== 'off' : null;
 const laneS = volume == null && ['--hoth', '--shadows', '--clouds'].some((f) => argv.includes(f));
 // --upscale [kind:]scale (lane U)
 const upscaleArg = argv.includes('--upscale') ? argv[argv.indexOf('--upscale') + 1] : null;
 const upscale = upscaleArg && !upscaleArg.startsWith('--') ? (([a, b]) => (b == null ? { scale: Number(a) } : { kind: a, scale: Number(b) }))(upscaleArg.split(':')) : null;
-const OUT = join(ROOT, q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
+const OUT = join(ROOT, gpuscene ? 'docs/superpowers/evidence/gpu-first/N1' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
@@ -148,7 +151,7 @@ const baseLabel = arg(
           ? `${picture ? 'picture' : 'nopicture'}-${post ? `post-${tier}` : `lit-${tier}`}`
         : `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`,
 );
-const label = particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
+const label = gpuscene && arg('label', null) == null ? `gpuscene-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
@@ -178,6 +181,7 @@ const fixture = {
   env: true,
   only,
   ...(particles ? { particles } : {}),
+  ...(gpuscene ? { gpuscene: true } : {}),
   ...(volume != null ? { volume, weather: arg('weather', 'interior'), view: arg('view', 'wide') } : {}),
   ...(q4 ? { placed: false } : {}),
   ...(weather ? { weather: seconds[0] } : {}),
@@ -416,6 +420,14 @@ for (const leg of legs) {
         const c = document.querySelector('canvas');
         return { css: [c.clientWidth, c.clientHeight], buffer: [c.width, c.height] };
       });
+      if (gpuscene) {
+        // (its stats are read back every 30 frames: 60 drawn above)
+        row.gpuScene = await page.evaluate(() => window.__lit.probe.gpuScene?.() ?? null);
+        await page.evaluate(() => (window.__lit.probe.view('field'), window.__lit.draw(60)));
+        writeFileSync(join(OUT, `${label}-${leg}-field.png`), await shot());
+        row.gpuSceneField = await page.evaluate(() => window.__lit.probe.gpuScene?.() ?? null);
+        await page.evaluate(() => (window.__lit.probe.view('wide'), window.__lit.draw(4)));
+      }
       if (particles) {
         row.parity = await page.evaluate(() => window.__lit.probe.particles.parity(120));
         row.simMode = await page.evaluate(() => window.__lit.probe.particles.mode);
@@ -532,6 +544,7 @@ for (const r of rows) {
   if (r.error) console.log(`| ${r.leg} | failed: ${r.error} |`);
   else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ') || 'none'} | ${r.clustered} | ${r.meanLum} | ${r.envDiff} | ${r.programsBefore} → ${r.programsAfter} | ${r.mean} | ${r.median} | ${r.p95} | ${r.gridBakeMs ?? '–'} | ${r.gridMean ?? '–'} | ${r.volumesLit ?? '–'} |`);
   if (r.parity) console.log(`  particles (${r.simMode}): parity ${JSON.stringify(r.parity)}${r.stats ? `; stats ${JSON.stringify(r.stats)}` : ''}`);
+  if (r.gpuScene) console.log(`  gpu scene: the ring ${JSON.stringify(r.gpuScene)}; over the field ${JSON.stringify(r.gpuSceneField)}`);
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
 }
 process.exit(rows.some((r) => r.error && r.leg !== 'webgpu') ? 1 : 0);
