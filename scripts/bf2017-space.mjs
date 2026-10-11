@@ -45,7 +45,7 @@ import { PERMISSION, nativeMaps, readLod } from './bf2017-import.mjs';
 import { readMap } from './lib/bf2017-level.mjs';
 import { readManifest } from './lib/bf2017-manifest.mjs';
 import { inBucket, localPath } from './lib/bf2017-paths.mjs';
-import { SPACE, piecesOf } from './lib/bf2017-space.mjs';
+import { GRAPH_MAPS, SPACE, piecesOf } from './lib/bf2017-space.mjs';
 import { channelsOf } from './lib/bf2017-level-tracks.mjs';
 import { atlasUVs } from './lib/bf2017-uv.mjs';
 import { dressed } from './lib/bf2017-dressing.mjs';
@@ -112,7 +112,7 @@ async function build(reader, model, entries, cut, cap, opts, file = path(ROOT, '
       console.log(`  not fetched: ${file} LOD${cut}`);
       continue;
     }
-    const doc = await readLod(reader, lod.file, { root: opts.root, derived: entry.derived, unpackDir: path(opts.root, 'unpacked'), said });
+    const doc = await readLod(reader, lod.file, { root: opts.root, derived: entry.derived, unpackDir: path(opts.root, 'unpacked'), said, textures: GRAPH_MAPS[model.kit] ?? null });
     for (const mesh of doc.getRoot().listMeshes()) for (const prim of mesh.listPrimitives()) if (prim.getMode() !== 4) prim.dispose();
     await doc.transform(atlasUVs(), dressed({ sharp }), dequantize(), unskinned(), metalRough(), prune(), bareWhereUntextured(), weld(), flatten(), join({ keepNamed: false }));
     const map = mergeDocuments(out, doc);
