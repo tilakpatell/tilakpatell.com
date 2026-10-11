@@ -18,6 +18,7 @@ import { RECIPES, recipeNames } from '../gameFlora';
 import { isGame } from '../catalog/bf2017-library';
 import LIBRARY from '../../../../data/bf2017/library.json';
 import USED from '../../../../data/bf2017/library-used.json';
+import { LIGHTS, PICTURED, gamePictureOf } from '../../../../data/bf2017/light/index';
 
 const SHIPS = new Set([...GALAXY_KINDS, ...BUILT_KINDS]);
 const placeable = (kind) => Boolean(PROPS[kind] || SURFACE_MODELS[kind]);
@@ -49,6 +50,24 @@ describe('the worlds you can land on', () => {
         for (const k of ['low', 'high', 'rock']) expect(site.ground.palette[k], k).toBeTruthy();
         expect(Math.hypot(...site.land.at)).toBeLessThan(REACH - 40);
         for (const w of site.weather) expect(WEATHER, w.kind).toContain(w.kind);
+      });
+
+      it('passes its record’s picture where the game lights it, a row for every weather', async () => {
+        if (!site.gameLight) {
+          expect(site.picture, 'picture without a record').toBeUndefined();
+          return;
+        }
+        expect(PICTURED, 'a picture file for its record').toContain(site.gameLight);
+        expect(site.picture).toBe(`${site.gameLight}.picture.json`);
+        const pic = await gamePictureOf(site);
+        expect(pic.world).toBe(site.gameLight);
+        for (const w of Object.keys(LIGHTS[site.gameLight].weathers)) {
+          const row = pic.weathers[w];
+          expect(row, w).toBeTruthy();
+          // (the picture's LUT is the game's whole 33³, read after the linear tone map)
+          expect(row.lut?.size, `${w} lut`).toBe(33);
+          expect(row.panorama === null || row.panorama.url.endsWith('.ktx2'), `${w} panorama`).toBe(true);
+        }
       });
 
       it('has places to find, each one somewhere you can get to', () => {

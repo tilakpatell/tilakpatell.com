@@ -55,6 +55,8 @@ export const SITES = {
   endor: {
     // lit as the game lights its level (src/data/bf2017/light/endor.json, gameLit.js)
     gameLight: 'endor',
+    // the record's picture on the node renderer (src/data/bf2017/light/endor.picture.json, applyGameLight)
+    picture: 'endor.picture.json',
     place: 'The forest moon',
     line: 'Redwoods older than the Empire, and something small watching you from the ferns.',
     sky: {
@@ -343,6 +345,8 @@ export const SITES = {
   kashyyyk: {
     // lit as the game lights its level (src/data/bf2017/light/kashyyyk.json, gameLit.js)
     gameLight: 'kashyyyk',
+    // the record's picture on the node renderer (src/data/bf2017/light/kashyyyk.picture.json, applyGameLight)
+    picture: 'kashyyyk.picture.json',
     place: 'The shore at Kachirho',
     line: 'Wroshyr trees as tall as mountains, and a lagoon full of trouble.',
     sky: {
