@@ -251,7 +251,8 @@ export async function create(canvas, ctx, set) {
   const camera = new THREE.PerspectiveCamera(60, 1, 0.12, 16000);
   scene.add(camera);
   canvas.setAttribute('aria-hidden', 'true');
-  const post = createPost(renderer, scene, camera, { small });
+  // (on the node renderer the game's chain for the level, nodes/chain.js; the classic post ignores the level)
+  const post = createPost(renderer, scene, camera, { small, tier: level, backend: rt.gfx.backend });
   // the house look (lib/three/house: shade is a colour, never grey) over
   // everything lit, from the site's look (look.js); the fog stays the
   // surface's own (skyfog.js: the dome's very colour), so the house leaves
@@ -295,6 +296,21 @@ export async function create(canvas, ctx, set) {
     sun.shadow.normalBias = 0.05;
   }
   scene.add(sun, sun.target);
+  // the game's light under it on the node renderer, from mid up (nodes/stack.js:
+  // the sun's cascades, contact shadows, the level's volumes, the chain's
+  // record); none on the classic renderer. Awaited before the first draw.
+  let stack = null;
+  const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, backend: rt.gfx.backend, post, picture: ctx.picture ?? site.picture ?? null, volumes: site.level ? L.levelJson(site.level, 'volumes.json') : null })
+    .then((made) => {
+      if (disposed) return made?.dispose();
+      stack = made;
+      // (the stack draws the sun's shadow wherever the level does: a phone's too)
+      if (stack?.parts.cascades) renderer.shadowMap.enabled = true;
+      for (const p of people) stack?.track(p.holder);
+    })
+    .catch((e) => {
+      if (import.meta.env.DEV) console.warn('surface light stack failed', e);
+    });
   // the shadow camera's right and up (it looks down the sun's way, up as three
   // turns it), for its focus to be snapped to whole texels along them (shadow.js)
   const SHADOW = { extent: 42, map: 2048 };
@@ -450,6 +466,8 @@ export async function create(canvas, ctx, set) {
       levelEngine = physics;
       takeEngine?.(physics);
     },
+    // (its terrain layers on the surface's ground, lane Q2: the node renderer's)
+    ground: site.noGround ? null : ground,
   });
   // its terrain's scatter, from the game's tables, in the world's wind (fidelity lane N; null without one)
   const gameScatter = createLevelScatter({ scene, site, tier: level, renderer, groundAt: (x, z) => groundAt(world, x, z), wind, small });
@@ -3171,6 +3189,8 @@ export async function create(canvas, ctx, set) {
     }
     state.t += dt;
     gameLit?.step(dt);
+    stack?.update(dt, camera);
+    gameLevel?.step(dt);
     // the jump's clock: whether you stood (or your ride did) as this step began
     state.jumpPress.ground(state.phase === 'ride' ? Boolean(state.riding?.state.grounded) : state.phase === 'walk' && me().st.grounded, dt);
     const t = state.t;
@@ -3587,8 +3607,10 @@ export async function create(canvas, ctx, set) {
   const ready = (async () => {
     // (the props' scanned surfaces on before their shaders are made, so
     // they're made once)
-    await Promise.all([placer.ready.catch(() => {}), kit.ready.catch(() => {})]);
-    if (!disposed && !site.noGround) {
+    await Promise.all([placer.ready.catch(() => {}), kit.ready.catch(() => {}), stacking]);
+    // (the floor's baked light is the classic renderer's, the low level's:
+    // the node renderer's sun casts through its cascades, nodes/stack.js)
+    if (!disposed && !site.noGround && !stack?.parts.cascades) {
       const R = 170;
       lit = groundWorld({
         renderer,
@@ -4013,6 +4035,7 @@ export async function create(canvas, ctx, set) {
       body = null;
       lit?.dispose();
       gameLit?.dispose();
+      stack?.dispose();
       knocks?.dispose();
       knockHits.dispose();
       scene.remove(knockDust.mesh);

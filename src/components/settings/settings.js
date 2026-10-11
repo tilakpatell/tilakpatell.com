@@ -16,7 +16,11 @@
 //   capped         read only: the level this chip was held at after it struggled ('tp-detail-cap')
 //
 // read(store?) → settings; write(patch, store?) → settings; subscribe(fn) → stop.
+// rendererLine({ backend, override }) → what the panel says the world
+//   draws with (runtime/backend.js's kinds): null with no world up
 // Pure but for the storage it's handed (the page's localStorage by default).
+
+import { RENDERER_NAMES } from '../../runtime/backend.js';
 
 export const KEY = 'tp-settings';
 const LEVELS = ['low', 'mid', 'high', 'ultra'];
@@ -135,4 +139,14 @@ export function applyMotion(motion, doc = typeof document !== 'undefined' ? docu
   if (!doc) return;
   if (motion === 'reduced') doc.documentElement.dataset.motion = 'reduced';
   else delete doc.documentElement.dataset.motion;
+}
+
+// The renderer the world up draws with, in the panel's words, and the
+// ?gpu= it honours (runtime/backend.js: the node renderer from mid up on the
+// Star Wars worlds, the classic at low; ?gpu=webgl keeps the node renderer
+// on WebGL 2 where it would take WebGPU)
+export function rendererLine({ backend = null, override = null } = {}) {
+  const name = RENDERER_NAMES[backend];
+  if (!name) return null;
+  return override ? `${name} (?gpu=${override} asked)` : name;
 }

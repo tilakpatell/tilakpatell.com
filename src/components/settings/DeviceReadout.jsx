@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { device, storageFree } from '../../lib/device';
 import { gpu } from '../../lib/gpu';
+import { rendererLine } from './settings.js';
 
 // What Auto sees here (the graphics chip and its grade, the tier, the
 // memory, whether hardware acceleration is on) and, while a world is up on
 // the runtime, what it costs: the frame time, the draw calls and the
-// triangles of the last frame (its renderer's info), read twice a second.
+// triangles of the last frame (its renderer's info), read twice a second,
+// and which renderer it draws with (WebGPU, WebGL 2 through the node
+// renderer, or the classic one: runtime/backend.js), with the ?gpu= asked.
 
 const GRADE = { ultra: 'Strong', high: 'Good', mid: 'Modest' };
 const TIER = { high: 'Laptop or desktop', mid: 'Phone, tablet or small computer', low: 'Weak device' };
@@ -39,7 +42,8 @@ function useLive() {
       const ms = count ? sum / count : null;
       sum = 0;
       count = 0;
-      setLive(info ? { ms, calls: info.render.calls, triangles: info.render.triangles } : ms != null ? { ms } : null);
+      const renderer = rt?.current ? rendererLine({ backend: rt.gfx?.backend, override: rt.override }) : null;
+      setLive(info ? { ms, calls: info.render.calls, triangles: info.render.triangles, renderer } : ms != null ? { ms } : null);
     }, 500);
     return () => {
       alive = false;
@@ -92,6 +96,11 @@ export default function DeviceReadout() {
           <b>{live?.triangles != null ? millions(live.triangles) : '–'}</b> triangles
         </span>
       </div>
+      {live?.renderer && (
+        <p className="settings-note">
+          Drawn with <b>{live.renderer}</b>
+        </p>
+      )}
       {live && live.calls == null && <p className="settings-note">Draw calls and triangles show while a 3D world is open behind this panel.</p>}
     </div>
   );

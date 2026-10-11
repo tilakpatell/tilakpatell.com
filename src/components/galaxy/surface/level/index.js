@@ -7,7 +7,10 @@
 //
 //   levelGround(ground) → Promise<ground>: its `image` layers' heightmaps
 //     fetched and decoded (before the ground's grid is made)
-//   createLevel({ scene, site, tier, renderer, walk, small, heightAt, onPhysics }) → null | { update(position), ready(), stats(), physics(), dispose() }
+//   createLevel({ scene, site, tier, renderer, walk, small, heightAt, onPhysics, ground }) → null | { update(position), step(dt), ready(), stats(), physics(), dispose() }
+//     (ground: the surface's ground mesh, which a pack with a ground.json
+//     draws in the game's terrain layers on the node renderer, lane Q2)
+//   packJson(world, path) → Promise<object>: a JSON file beside the pack
 //     (a pack with the game's shapes, off a phone and the low tier
 //     (levelPhysics.js's wantsEngine): a Rapier world of its own, the cells'
 //     shapes streamed into it beside the walk world's boxes, the ground under
@@ -21,11 +24,13 @@
 // with the game's own surface shader (src/lib/three/surface/); the classic
 // renderer, or a pack without one, keeps the GLB's materials. A pack with a
 // variations.json (lane colour) draws each varied mesh in the game's
-// variation for this level. Their sun (a
+// variation for this level, and wears its weathering (weather.json, lane
+// Q4: snow, sand or rain over the materials whose recipe takes it, grown
+// over its record's seconds; step(dt) runs its clock). Their sun (a
 // leaf's translucency, hair's lobes, a head's scattering) follows the
 // scene's first directional light.
 
-import { withFallback } from '../../../../lib/assetBase.js';
+import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
@@ -47,6 +52,8 @@ const bytesOf = (world) => (path) =>
       return r.arrayBuffer();
     }),
   )(packUrl(world, path));
+
+export const packJson = (world, path) => bytesOf(world)(path).then((b) => JSON.parse(new TextDecoder().decode(b)));
 
 const packs = new Map(); // world → Promise<level.json>
 export const packOf = (world) => {
@@ -136,20 +143,25 @@ function findSun(scene) {
 async function gameMaterials(world, pack, renderer, tier, scene) {
   // (low draws the GLB as it is: nothing to swap or fetch)
   if (!renderer?.isWebGPURenderer || tier === 'low') return { recipes: null, materialFor: null };
-  const [recipes, variations, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }] = await Promise.all([
+  const [recipes, variations, weather, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }, { overlaysFor, weatherClock }] = await Promise.all([
     recipesFor(world, pack),
     variationsFor(world, pack),
+    packJson(world, 'weather.json').catch(() => null),
     import('../../../../lib/three/surface/hair.js'),
     import('../../../../lib/three/surface/gameMaterial.js'),
     import('../../../../lib/three/light/three.js'),
+    import('../../../../lib/three/surface/weather.js'),
   ]);
   if (!recipes) return { recipes: null, materialFor: null };
   const [make, three] = await Promise.all([loadSurfaceMaterial(), loadThree()]);
   const sun = createSunUniforms(three, sunOf(scene) ?? {});
-  return { recipes, variations, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
+  // (the level's weathering, its own kind: one set of contributors every material shares, one clock)
+  const overlays = weather ? overlaysFor(weather, undefined, three) : [];
+  const clock = overlays.length ? weatherClock(overlays) : null;
+  return { recipes, variations, sun, clock, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun, overlays }), mapKeys: TIER_MAPS[tier] ?? null };
 }
 
-export function createLevel({ scene, site, tier, renderer = null, walk = null, small = false, heightAt = null, onPhysics = null }) {
+export function createLevel({ scene, site, tier, renderer = null, walk = null, small = false, heightAt = null, onPhysics = null, ground = null }) {
   if (!site?.level) return null;
   const world = site.level;
   const fetchBytes = bytesOf(world);
@@ -159,6 +171,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, s
   let gone = false;
   let last = null;
   let sun = null; // the game materials' shared sun, when they draw
+  let clock = null; // their weathering's clock
   let sunLight = null;
   const colliders = walk ? createColliders(walk, tier, { loadBin: fetchBytes }) : null;
   // the engine's side: its world, the cells' bodies, and the cells the
@@ -196,11 +209,14 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, s
       startEngine(pack).catch((e) => {
         if (import.meta.env?.DEV) console.warn('level physics failed', world, e);
       });
-      const { recipes, variations = null, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
+      const { recipes, variations = null, materialFor, mapKeys, sun: shared = null, clock: weathering = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
       sun = shared;
+      clock = weathering;
       if (gone) return;
       loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations });
-      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
+      // (the ground in the game's layers where the pack has them: the node renderer's, lane Q2)
+      const layered = ground && renderer?.isWebGPURenderer ? { mesh: ground, renderer, fetchBytes, urlOf: (path) => assetUrl(packUrl(world, path)), entry: null } : null;
+      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier, ground: layered });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when
       // a cell goes)
@@ -226,6 +242,10 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, s
       stream?.update(position, tier);
       level?.update(position);
       bodies?.update(4);
+    },
+    // the weathering's clock (lane Q4's accumulation), each frame
+    step(dt) {
+      clock?.update(dt);
     },
     ready: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,

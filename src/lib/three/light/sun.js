@@ -36,6 +36,8 @@
 // splitsFor(near, far, n, lambda = 0.5) → n + 1 distances  (pure)
 // biasFor(texel, { bias, normalBias }) → { bias, normalBias }   (pure)
 // createSun(entry, { tier, rays, filter, farShadow, cloud }) → Promise<{ light, rays, csm, shadowDir, set(params), setShadowSun([x, y] | null), update(camera), dispose }>
+// castCascades(light, entry, { tier, filter, farShadow, cloud }) → Promise<null | { csm, shadowDir, setShadowSun, follow(), update(camera), dispose }>
+//   (the same cascades on a light a world already has: the galaxy surface's)
 
 import { readEntry, sunDir } from './entry.js';
 import { loadCSM, loadThree } from './three.js';
@@ -174,14 +176,16 @@ async function sunCSM() {
   return SunCSM;
 }
 
-export async function createSun(entry, { tier = 'high', rays = false, filter = null, farShadow = null, cloud = null } = {}) {
+// The cascades on a DirectionalLight a world already has (the galaxy
+// surface's sun, which its weather, rooms and day move): the same cascades,
+// filter, clouds and shadow sun as createSun's, its colour, strength and
+// direction left to the world. No cascades on low (null).
+export async function castCascades(light, entry, { tier = 'high', filter = null, farShadow = null, cloud = null } = {}) {
   const { THREE } = await loadThree();
   const record = readShadowRecord(entry);
   const { n, far, map } = cascadesFor(tier, record.viewDistance);
+  if (!(n > 0)) return null;
   const params = readEntry(entry);
-  const light = new THREE.DirectionalLight(new THREE.Color(...params.sun.color), params.sun.intensity);
-  light.name = 'sun';
-  light.castShadow = n > 0;
   const shadowDir = new THREE.Vector3();
   let lockShadow = false;
   // the record's shadow sun, or (null) cast along the light
@@ -191,18 +195,53 @@ export async function createSun(entry, { tier = 'high', rays = false, filter = n
     else shadowDir.copy(light.position).sub(light.target.position).normalize();
   };
   setShadowSun(record.shadowSun);
-  let csm = null;
-  if (light.castShadow) {
-    const size = Math.min(map, params.shadow.mapSize);
-    light.shadow.mapSize.set(size, size);
-    light.shadow.bias = params.shadow.bias;
-    light.shadow.normalBias = params.shadow.normalBias;
-    Object.assign(light.shadow.camera, { near: 0.5, far: LIGHT_MARGIN * 2 + far * 2 });
-    const Csm = await sunCSM();
-    csm = new Csm(light, { cascades: n, maxFar: Math.min(far, params.shadow.far ?? far), mode: 'practical', lightMargin: LIGHT_MARGIN }, { shadowDir, filter, farShadow, cloud, base: { bias: params.shadow.bias, normalBias: params.shadow.normalBias } });
-    csm.fade = true;
-    light.shadow.shadowNode = csm;
-  }
+  light.castShadow = true;
+  const size = Math.min(map, params.shadow.mapSize);
+  light.shadow.mapSize.set(size, size);
+  light.shadow.bias = params.shadow.bias;
+  light.shadow.normalBias = params.shadow.normalBias;
+  Object.assign(light.shadow.camera, { near: 0.5, far: LIGHT_MARGIN * 2 + far * 2 });
+  const Csm = await sunCSM();
+  const csm = new Csm(light, { cascades: n, maxFar: Math.min(far, params.shadow.far ?? far), mode: 'practical', lightMargin: LIGHT_MARGIN }, { shadowDir, filter, farShadow, cloud, base: { bias: params.shadow.bias, normalBias: params.shadow.normalBias } });
+  csm.fade = true;
+  light.shadow.shadowNode = csm;
+  let projection = '';
+  return {
+    csm,
+    shadowDir,
+    setShadowSun,
+    get locked() {
+      return lockShadow;
+    },
+    // (cast along the light: its direction, each frame, unless the record's shadow sun holds it)
+    follow() {
+      if (!lockShadow) shadowDir.copy(light.position).sub(light.target.position).normalize();
+    },
+    // (the cascades follow the view's pose each frame by themselves; a new
+    // projection, a resize or a zoom, refits their splits and sizes)
+    update(camera) {
+      if (csm.camera && camera?.isCamera) {
+        const key = `${camera.fov},${camera.aspect},${camera.near},${camera.far},${camera.zoom}`;
+        if (projection && key !== projection) csm.updateFrustums();
+        projection = key;
+      }
+    },
+    dispose() {
+      csm.dispose();
+      if (light.shadow.shadowNode === csm) light.shadow.shadowNode = null;
+    },
+  };
+}
+
+export async function createSun(entry, { tier = 'high', rays = false, filter = null, farShadow = null, cloud = null } = {}) {
+  const { THREE } = await loadThree();
+  const params = readEntry(entry);
+  const light = new THREE.DirectionalLight(new THREE.Color(...params.sun.color), params.sun.intensity);
+  light.name = 'sun';
+  light.castShadow = false;
+  const cascades = await castCascades(light, entry, { tier, filter, farShadow, cloud });
+  const csm = cascades?.csm ?? null;
+  const shadowDir = cascades?.shadowDir ?? new THREE.Vector3();
   let raysLight = null;
   if (rays && light.castShadow) {
     raysLight = new THREE.DirectionalLight(0xffffff, 0);
@@ -215,29 +254,22 @@ export async function createSun(entry, { tier = 'high', rays = false, filter = n
   const dir = new THREE.Vector3();
   const set = (p) => {
     dir.set(...p.sun.dir).normalize();
-    if (!lockShadow) shadowDir.copy(dir);
+    if (cascades && !cascades.locked) shadowDir.copy(dir);
     light.position.copy(light.target.position).addScaledVector(dir, SUN_DISTANCE);
     light.color.setRGB(...p.sun.color);
     light.intensity = p.sun.intensity;
     light.updateMatrixWorld();
   };
   set(params);
-  let projection = '';
   return {
     light,
     rays: raysLight,
     csm,
     shadowDir,
     set,
-    setShadowSun,
-    // (the cascades follow the view's pose each frame by themselves; a new
-    // projection, a resize or a zoom, refits their splits and sizes)
+    setShadowSun: (rot) => cascades?.setShadowSun(rot),
     update(camera) {
-      if (csm?.camera && camera?.isCamera) {
-        const key = `${camera.fov},${camera.aspect},${camera.near},${camera.far},${camera.zoom}`;
-        if (projection && key !== projection) csm.updateFrustums();
-        projection = key;
-      }
+      cascades?.update(camera);
       if (!raysLight || !camera) return;
       raysLight.target.position.copy(camera.position);
       raysLight.position.copy(camera.position).addScaledVector(dir, RAYS_FAR / 2);
@@ -245,7 +277,7 @@ export async function createSun(entry, { tier = 'high', rays = false, filter = n
       raysLight.updateMatrixWorld();
     },
     dispose() {
-      csm?.dispose();
+      cascades?.dispose();
       light.removeFromParent();
       light.target.removeFromParent();
       light.dispose();

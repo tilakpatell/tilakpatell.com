@@ -40,6 +40,10 @@ export const PMREMGenerator = THREE.PMREMGenerator;
 // (the classic fog is three's own chunks, patched)
 export const createSkyFog = (sky) => skyFogOf(sky, THREE.ShaderChunk);
 export const loadCruiser = () => import('../../../rickmorty/cruiser3d');
+// (the game's light stack is the node renderer's: the classic keeps the
+// surface's own sun, its baked floor and its post)
+export const createStack = async () => null;
+export const levelJson = async () => null;
 
 // a root's programs made before it is shown, against the post's buffer
 export function compile(root, { renderer, camera, scene, post }) {

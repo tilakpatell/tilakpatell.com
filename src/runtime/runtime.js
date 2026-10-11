@@ -421,6 +421,8 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     get gfx() {
       return gfx;
     },
+    // the ?gpu= the visitor asked for (backend.js's readOverride), for the settings panel
+    override,
     input,
     quality,
     saves,

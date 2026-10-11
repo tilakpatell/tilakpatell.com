@@ -28,6 +28,11 @@
 // - motionBlur: MotionBlur over the camera's own motion (the depth
 //   reprojected through last frame's view and projection), times the
 //   record's MotionBlurScale;
+// - grade: a world's own grade (the galaxy surface's FINAL: its exposure,
+//   shoulder, encoding, vignette and the rest), a node the pass makes from
+//   the picture so far as a texture (`node(texture)`); it shows the picture
+//   (encoded), so what follows is shown as it is and the pipeline's own
+//   transform is off;
 // - tonemap (the record's, lane Q6): the picture tone-mapped by the pass's
 //   method ('linear': the renderer's exposure, then a clamp to 0…1), still
 //   linear; what follows is then encoded only (no second tone map), the
@@ -48,7 +53,7 @@
 //   picture up to the drawing buffer. Lane V's volumes and fog keep their
 //   own quarter of the screen.
 //
-// buildChain(renderer, passes) → Promise<{ pipeline, nodes, dispose }>
+// buildChain(renderer, passes) → Promise<{ pipeline, nodes, parts: { scenePass, bloom }, dispose }>
 
 import { BLOOM } from '../bloom.js';
 import { OCCLUDER_DISC, OCCLUDER_TAPS } from './flare.js';
@@ -336,6 +341,12 @@ export async function buildChain(renderer, passes) {
         node = mods.motionBlur.motionBlur(toTexture(node), vel, tsl.int(p.samples ?? 16));
         break;
       }
+      case 'grade':
+        if (shown || typeof p.node !== 'function') break;
+        node = p.node(toTexture(node));
+        shown = true;
+        pipeline.outputColorTransform = false;
+        break;
       case 'tonemap':
         // (linear: three's LinearToneMapping, kept linear; only 'linear' is read from the records)
         if (shown || p.method !== 'linear') break;
@@ -379,6 +390,8 @@ export async function buildChain(renderer, passes) {
   return {
     pipeline,
     nodes,
+    // (what a world's own controls reach: the scene pass, and the bloom's strength)
+    parts: { scenePass: g.scenePass ?? null, bloom: g.bloom ?? null },
     dispose() {
       for (const n of nodes) n.dispose?.();
       pipeline.dispose?.();

@@ -221,3 +221,17 @@ describe('upscale (lane U)', () => {
     expect(shedToo.at(-2)).toMatchObject({ upscaler: 'taau', scale: 0.5 });
   });
 });
+
+describe('a world’s own grade', () => {
+  it('sits after the motion blur and before the anti-aliasing, and stands for the tone map and the LUT', () => {
+    const node = () => null;
+    const out = arrange([{ kind: 'render' }, { kind: 'smaa' }, { kind: 'lut', texture: {} }, { kind: 'tonemap', method: 'linear' }, { kind: 'grade', node }, { kind: 'bloom' }, { kind: 'output' }]);
+    expect(out.map((p) => p.kind)).toEqual(['render', 'bloom', 'grade', 'smaa', 'output']);
+  });
+
+  it('is dropped without its node, and is a node pass the classic backend cannot build', () => {
+    expect(arrange([{ kind: 'render' }, { kind: 'grade' }, { kind: 'output' }]).map((p) => p.kind)).toEqual(['render', 'output']);
+    expect(NODE_PASSES.has('grade')).toBe(true);
+    expect(ORDER.indexOf('grade')).toBe(ORDER.indexOf('motionBlur') + 1);
+  });
+});

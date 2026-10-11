@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULTS, KEY, read, subscribe, write } from './settings.js';
+import { DEFAULTS, KEY, read, rendererLine, subscribe, write } from './settings.js';
 
 const memory = (init = {}) => {
   const m = new Map(Object.entries(init));
@@ -115,5 +115,19 @@ describe('the motion setting on the page', () => {
     expect(doc.documentElement.dataset.motion).toBe('reduced');
     applyMotion('auto', doc);
     expect(doc.documentElement.dataset.motion).toBeUndefined();
+  });
+});
+
+describe('the renderer line', () => {
+  it('names the renderer the world draws with, and the ?gpu= it honours', () => {
+    expect(rendererLine({ backend: 'webgpu' })).toBe('WebGPU');
+    expect(rendererLine({ backend: 'nodes-webgl' })).toBe('WebGL 2, node renderer');
+    expect(rendererLine({ backend: 'webgl' })).toBe('classic');
+    expect(rendererLine({ backend: 'nodes-webgl', override: 'webgl' })).toBe('WebGL 2, node renderer (?gpu=webgl asked)');
+  });
+
+  it('says nothing with no world up', () => {
+    expect(rendererLine({})).toBe(null);
+    expect(rendererLine()).toBe(null);
   });
 });

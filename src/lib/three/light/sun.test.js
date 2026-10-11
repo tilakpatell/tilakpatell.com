@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three/webgpu';
-import { BLEND, REF_TEXEL, ULTRA_SHADOW_FAR, biasFor, cascadesFor, createSun, readShadowRecord, splitsFor } from './sun';
+import { BLEND, REF_TEXEL, ULTRA_SHADOW_FAR, biasFor, cascadesFor, castCascades, createSun, readShadowRecord, splitsFor } from './sun';
 import { sunDir } from './entry';
 import { raysLight } from './post';
 import hoth from './fixtures/hoth.ve.json';
@@ -137,5 +137,34 @@ describe('createSun', () => {
     expect(raysLight(sun)).toBe(sun.rays);
     sun.update({ position: { x: 10, y: 2, z: -5 } });
     expect(sun.rays.target.position.x).toBe(10);
+  });
+});
+
+describe('castCascades', () => {
+  it('the cascades on a light a world already has, its colour and strength its own', async () => {
+    const light = new THREE.DirectionalLight(0xffeedd, 2.5);
+    light.position.set(0, 10, 10);
+    const c = await castCascades(light, hoth.sunny, { tier: 'high' });
+    expect(light.castShadow).toBe(true);
+    expect(light.shadow.shadowNode).toBe(c.csm);
+    expect(c.csm.cascades).toBe(4);
+    expect(light.intensity).toBe(2.5);
+    expect(light.color.getHex()).toBe(0xffeedd);
+    // (Hoth's record has a shadow sun: it holds against the light's own way)
+    expect(c.locked).toBe(true);
+    c.dispose();
+    expect(light.shadow.shadowNode).toBe(null);
+  });
+
+  it('none on low; along the light where the record has no shadow sun, following it', async () => {
+    expect(await castCascades(new THREE.DirectionalLight(), {}, { tier: 'low' })).toBe(null);
+    const light = new THREE.DirectionalLight();
+    light.position.set(0, 1, 0);
+    const c = await castCascades(light, {}, { tier: 'mid' });
+    expect(c.csm.cascades).toBe(2);
+    expect(c.shadowDir.y).toBeCloseTo(1);
+    light.position.set(1, 0, 0);
+    c.follow();
+    expect(c.shadowDir.x).toBeCloseTo(1);
   });
 });
