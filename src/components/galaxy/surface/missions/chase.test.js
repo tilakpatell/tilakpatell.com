@@ -268,7 +268,9 @@ describe('the missions on the surface', () => {
         expect(m.waypoints.length).toBeGreaterThanOrEqual(2);
         expect(m.stars[0]).toBeLessThan(m.stars[1]);
       }
-  });
+    // (the first test here pays the missions index's import, 7.5 to 7.8 s in a
+    // cloud container, over vitest's 5 s: given 30 s as the flight island's test is)
+  }, 30000);
   it('only puts a mission on a world you can land on', async () => {
     const { MISSIONS } = await import('./index');
     const { siteOf } = await import('../sites');
