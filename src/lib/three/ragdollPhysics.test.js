@@ -179,4 +179,13 @@ describe('rigRagdoll', () => {
     const p = rag.point('Hips');
     expect(hips.distanceTo(new THREE.Vector3(p.x, p.y, p.z))).toBeLessThan(1e-4);
   });
+
+  it('names its points: indexOf a bone, -1 for one it has not', () => {
+    const { bones } = figure();
+    const rag = rigRagdoll(bones, { collide: flatFloor(0), speed: 0 });
+    expect(rag.indexOf('Hips')).toBe(0);
+    expect(rag.indexOf('Nobody')).toBe(-1);
+    expect(rag.names).toHaveLength(rag.body.n);
+    expect(rag.names[rag.indexOf('Head')]).toBe('Head');
+  });
 });

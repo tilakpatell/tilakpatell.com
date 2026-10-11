@@ -7,7 +7,8 @@
 // chevron in its side's colour, and over each side's target the target
 // mark, larger; the arena's edge as a soft wall of light on the ground.
 // Its interface is assaultScene.js's, so the surface scene runs either the
-// same way: begin, restart, update(dt, you) → { atYou }, targets, hit,
+// same way: begin, restart, update(dt, you, { sim, swinging }) → { atYou } (sim: your saber's engine, swinging: your
+// strike as their minds read it, duellists.js's swingingOf), targets, hit,
 // running, started, view, target, chooseSide, deploy, youDown, force,
 // dispose. A saber's stroke on you comes back in atYou as `melee` (met by
 // your guard as a duellist's is, then the scene's hurt, not a bolt; parried,
@@ -21,7 +22,7 @@ import * as THREE from 'three';
 import { disposeTree } from '../../../../lib/three/renderer';
 import { turn } from '../../../../lib/three/gait';
 import { sharpen } from '../../../../lib/three/textures';
-import { DUEL, guarding, onStagger } from '../../../../lib/combat/duel';
+import { guarding } from '../../../../lib/combat/duel';
 import { createGunplay } from '../../../universe/gunplay';
 import { crewFigure } from '../crew';
 import { bladeInHand } from '../heldBlade';
@@ -262,12 +263,12 @@ export function createHvvMission({ parent, world, blaster, mission, emit, say, s
       seed += 1;
       begin();
     },
-    update(dt, you) {
+    update(dt, you, { sim = null, swinging = null } = {}) {
       t += dt;
       wall.material.uniforms.uTime.value = t;
       const atYou = [];
       if (!b) return { atYou };
-      const events = stepHvv(b, dt, you ? { x: you.x, z: you.z } : null, env);
+      const events = stepHvv(b, dt, you ? { x: you.x, z: you.z, yaw: you.yaw, swinging, sim } : null, env);
       for (const e of events) {
         if (e.type === 'shot') {
           const f = b.fighters[e.id];
@@ -286,9 +287,8 @@ export function createHvvMission({ parent, world, blaster, mission, emit, say, s
           const body = bodies.get(e.id);
           if (body?.blade && body.ready) body.blade.swing(t, { clip: e.clip, lock: null });
         } else if (e.type === 'hit' && e.you) {
-          // (parried: it reels, as a duellist does, its stroke turned)
-          const f = b.fighters[e.id];
-          atYou.push({ melee: true, blade: true, damage: yours(e.damage), from: e.from, parried: () => f.mind && onStagger(f.mind, DUEL.stagger.parried) });
+          // (its engine and yours decided it: it lands)
+          atYou.push({ melee: true, blade: true, damage: yours(e.damage), from: e.from });
         }
         else if (e.type === 'down') fell(e.id, e.from);
         else if (e.type === 'spawn') back(e.id);
@@ -335,19 +335,21 @@ export function createHvvMission({ parent, world, blaster, mission, emit, say, s
         if (!f.up || f.you || f.side === b.you.side) continue;
         const body = bodies.get(f.id);
         if (!body?.holder.visible) continue;
-        out.push({ id: f.id, holder: body.holder, fig: { tall: body.fig?.tall ?? 1.8 }, spec: { kind: f.hero } });
+        // (with its saber's engine and its facing: your strike's meets its block there, saber.js)
+        out.push({ id: f.id, holder: body.holder, fig: { tall: body.fig?.tall ?? 1.8 }, spec: { kind: f.hero }, sim: f.sim ?? null, b: { x: f.x, z: f.z, yaw: f.yaw } });
       }
       return out;
     },
-    // one of yours landed: on a raised guard it's turned
-    hit(target) {
+    // one of yours landed: a bolt on a raised guard turned; a strike as your
+    // saber's engine landed it, the game's damage (its block decided there)
+    hit(target, damage = null) {
       const f = b?.fighters[target.id];
       if (!f?.up) return;
-      if (f.mind && guarding(f.mind)) {
+      if (damage == null && f.mind && guarding(f.mind)) {
         tell({ type: 'block', id: f.id });
         return;
       }
-      const ev = hitFighter(b, f.id, RULES.yours);
+      const ev = hitFighter(b, f.id, damage != null ? (f.sim ? f.sim.taken(damage, b.t) : damage) : RULES.yours);
       bodies.get(f.id)?.fig?.react?.('hit', { where: 'chest' });
       if (ev) {
         fell(ev.id, ev.from);

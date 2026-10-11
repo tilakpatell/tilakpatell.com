@@ -82,9 +82,11 @@ describe('the heroes', () => {
     expect(heroSpec({ id: 'bobafett' })).toMatchObject({ gun: 'ee3', abilities: { power: 'jetpack', second: 'bobaRocket' } });
     expect(readHero('{bad json', 'xwing').id).toBe('luke');
     expect(readHero({ id: 'greedo' }).id).toBe(defaultHeroId('xwing'));
-    expect(readHero(writeHero({ id: 'ahsoka', color: 'purple', hilt: 'dooku' }))).toMatchObject({ id: 'ahsoka', color: 'purple', hilt: 'dooku' });
+    expect(readHero(writeHero({ id: 'obiwan', color: 'purple', hilt: 'dooku' }))).toMatchObject({ id: 'obiwan', color: 'purple', hilt: 'dooku' });
     // a colour or hilt that isn't one goes back to the hero's own
-    expect(readHero({ id: 'ahsoka', color: 'plaid', hilt: 'x' })).toMatchObject({ id: 'ahsoka', color: 'white', hilt: 'ahsoka' });
+    expect(readHero({ id: 'obiwan', color: 'plaid', hilt: 'x' })).toMatchObject({ id: 'obiwan', color: 'blue', hilt: 'temple' });
+    // (a hero not on the game's rig yet, kept from before: the ship's lead instead)
+    expect(readHero({ id: 'ahsoka', color: 'purple' }, 'xwing').id).toBe('luke');
     // a gun hero keeps a saber colour for when they pick one up
     expect(readHero({ id: 'han' })).toMatchObject({ id: 'han', color: 'blue', hilt: 'skywalker' });
   });
@@ -105,16 +107,17 @@ describe('the heroes', () => {
 
 describe('the stance, the gun and the mods', () => {
   it('reads a Jedi’s stance and a gunslinger’s gun and mods, and makes nonsense good', () => {
-    expect(readHero({ id: 'luke', stance: 'double' }).stance).toBe('double');
+    // (the stance is the hero's own: one blade, or Maul's staff)
+    expect(readHero({ id: 'luke', stance: 'double' }).stance).toBe('single');
     expect(readHero({ id: 'luke', stance: 'nope' }).stance).toBe('single');
-    expect(readHero({ id: 'ahsoka' }).stance).toBe('dual');
+    expect(readHero({ id: 'maul' }).stance).toBe('double');
     expect(readHero({ id: 'han', gun: 'sniper', mods: ['scope', 'scope', 'nope', 'cooling', 'choke'] })).toMatchObject({ gun: 'sniper', mods: ['scope', 'cooling'] });
     expect(readHero({ id: 'han', gun: 'saber' }).gun).toBe('blaster');
     expect(readHero({ id: 'luke', gun: 'sniper' }).gun).toBe('saber');
     expect(readHero({ id: 'chewie' }).gun).toBe('bowcaster');
   });
   it('the spec carries them: the saber’s stance, the picked gun and its mods, a yellow bolt from elsewhere', () => {
-    expect(heroSpec(readHero({ id: 'ahsoka', stance: 'double' })).saber.stance).toBe('double');
+    expect(heroSpec(readHero({ id: 'maul', stance: 'single' })).saber.stance).toBe('double');
     const han = heroSpec(readHero({ id: 'han', gun: 'shotgun', mods: ['choke'] }));
     expect(han.gun).toBe('shotgun');
     expect(han.mods).toEqual(['choke']);
@@ -150,7 +153,7 @@ describe('a change of hero down on a world (applied there and then, not on the n
     expect(refitOf(luke, spec({ id: 'luke', color: 'green', hilt: 'luke', stance: 'single', perks: ['survivor'] }))).toBe('same');
     expect(refitOf(luke, spec({ id: 'luke', color: 'red', hilt: 'luke', stance: 'single' }))).toBe('arms');
     expect(refitOf(luke, spec({ id: 'luke', color: 'green', hilt: 'temple', stance: 'single' }))).toBe('arms');
-    expect(refitOf(luke, spec({ id: 'luke', color: 'green', hilt: 'luke', stance: 'dual' }))).toBe('arms');
+    expect(refitOf(luke, spec({ id: 'luke', color: 'green', hilt: 'luke', stance: 'double' }))).toBe('same');
     expect(refitOf(luke, spec({ id: 'han' }))).toBe('body');
     const han = spec({ id: 'han' });
     expect(refitOf(han, spec({ id: 'han', gun: 'ee3' }))).toBe('arms');
@@ -163,7 +166,7 @@ describe('a change of hero down on a world (applied there and then, not on the n
 
 describe('the loadout in a line (the panel’s summary, the note when it goes on)', () => {
   it('a Jedi: the blade’s colour, the hilt and the stance', () => {
-    expect(loadoutLine(readHero({ id: 'luke', color: 'green', hilt: 'luke', stance: 'single' }))).toBe('Green blade · Luke’s own hilt · Single blade');
+    expect(loadoutLine(readHero({ id: 'luke', color: 'green', hilt: 'luke', stance: 'single' }))).toBe('Green blade · Luke’s own hilt · One blade');
   });
   it('a gunslinger: the gun and its mods', () => {
     expect(loadoutLine(readHero({ id: 'han', gun: 'ee3', mods: ['scope', 'barrel'] }))).toBe('EE-3 · Scope, Long barrel');
@@ -205,5 +208,16 @@ describe('the outfits', () => {
     // (another outfit is another body)
     expect(refitOf(heroSpec(readHero({ id: 'luke' })), spec)).toBe('body');
     expect(loadoutLine(readHero({ id: 'luke', skin: other.id }))).toContain(other.name);
+  });
+});
+
+describe('one saber path', () => {
+  it('fields no saber hero who isn’t on the game’s rig: one not yet is `soon`, with why, and isn’t picked', () => {
+    const off = HEROES.filter((h) => h.weapon === 'saber' && h.rig !== 'walrus');
+    expect(off.map((h) => h.id)).toEqual(['ahsoka']);
+    for (const h of off) {
+      expect(h.soon).toMatch(/game’s rig/);
+      expect(readHero({ id: h.id }).id).not.toBe(h.id);
+    }
   });
 });

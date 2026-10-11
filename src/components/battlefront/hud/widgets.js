@@ -9,8 +9,12 @@
 //   offerRows(offers, points) → the deploy screen's rows in order, each `affordable`
 //   markerProjection(at, camera, { w, h }) → { x, y, onScreen, edgeAngle }
 //   teamColour(team, mine, palette) → '#rrggbb'
+//   squadListRows(squad, { option }) → the squad list's rows (SquadMemberListCell's colours, the option's names)
 
 import { Vector3 } from 'three';
+import { colour } from '../../../lib/bf2017/ui/index.js';
+import { loadRulebook, squadsOf } from '../../../lib/battlefront/rulebook.js';
+import { CLASS_ICON, iconSrc } from './icons.js';
 
 export const REF = [1920, 1080];
 const THIRDS = [0, 1 / 3, 2 / 3];
@@ -70,3 +74,30 @@ export function markerProjection(at, camera, { w, h }) {
 
 const hex = (c) => `#${c.map((x) => Math.round(Math.min(1, Math.max(0, x)) ** (1 / 2.2) * 255).toString(16).padStart(2, '0')).join('')}`;
 export const teamColour = (team, mine, palette) => hex(palette[team === mine ? FRIEND : FOE] ?? [1, 1, 1]);
+
+// The squad list's rows: the player (SquadMemberListLocalPlayer's picks), then
+// up to the list's MaxRows mates (SquadMemberListCell's: grey when down, else
+// orange; green is for a real party, which offline nobody is); the option
+// 'NoOutline' leaves the icons, 'Off' nothing (OptionHUDSquadListVisibility).
+export function squadListRows(squad, { option = 'Default', hud = squadsOf(loadRulebook()).hud } = {}) {
+  if (!squad || option === 'Off') return [];
+  const p = hud.palette;
+  const local = squad.members.filter((m) => m.local).slice(0, 1);
+  const mates = squad.members.filter((m) => !m.local).slice(0, hud.maxRows);
+  return [...local, ...mates].map((m) => {
+    const dead = !m.alive;
+    return {
+      id: m.id,
+      name: m.name,
+      local: m.local,
+      dead,
+      nameColour: colour(m.local ? p.local : dead ? p.dead : p.other),
+      iconColour: colour(m.local ? p.localIcon : dead ? p.iconDead : p.icon),
+      icon: iconSrc(CLASS_ICON[m.cls] ?? CLASS_ICON.assault),
+      letter: m.order ?? null,
+      turn: Boolean(m.order),
+      showName: option !== 'NoOutline',
+    };
+  });
+}
+

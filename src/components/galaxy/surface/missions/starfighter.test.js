@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import air from '../../../../data/bf2017/air.json';
 import map from '../../../../data/bf2017/maps/sb_endor.json';
 import stages from '../../../../data/bf2017/maps/sb_endor.stages.json';
 import { createBattle } from '../../../universe/battle';
@@ -10,7 +11,8 @@ import { METRES, frameOf, levelOf, shipsClear, starfighterPlan } from './starfig
 import { STARFIGHTER, starfighterAt } from './starfighterMaps';
 
 const sys = systemById('endor');
-const level = levelOf(map, stages);
+// (on the game's kits: the air rulebook's, starfighterKits.js)
+const level = levelOf(map, stages, air);
 const on = (seed) => {
   const sides = teamsOf('empire', 'rebel');
   return { id: `sf.endor.${seed}`, war: 'gcw', sys: 'endor', step: 0, seed, attacker: 'empire', defender: 'rebel', sides, attackerTeam: sides.indexOf('empire'), start: 0, fightEnd: 600000, end: 600000, fighting: true };
@@ -123,7 +125,7 @@ describe('Starfighter Assault over Endor, from the game’s level', () => {
 describe('Starfighter Assault over Kamino, from the game’s level, in an area of its own over Tipoca City', async () => {
   const kmap = (await import('../../../../data/bf2017/maps/sb_kamino.json')).default;
   const kstages = (await import('../../../../data/bf2017/maps/sb_kamino.stages.json')).default;
-  const kamino = levelOf(kmap, kstages);
+  const kamino = levelOf(kmap, kstages, air);
   const sides = teamsOf('separatists', 'republic');
   const battleOf = (seed) => ({ id: `sf.kamino.${seed}`, war: 'clone', sys: 'kamino', step: 0, seed, attacker: 'separatists', defender: 'republic', sides, attackerTeam: sides.indexOf('separatists'), start: 0, fightEnd: 600000, end: 600000, fighting: true });
 

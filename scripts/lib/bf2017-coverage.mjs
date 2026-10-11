@@ -6,9 +6,8 @@
 //   excluded      a rule keeps it out: the sequel era (`isSequel`; for the
 //                 films, lane M's `isSequelFilm`, which also knows the
 //                 campaign's mission codes and act 3), the uploader's
-//                 scaffolding and notes, or `licence-pending` (the fonts
-//                 licensed to EA, lane M's `fontAllowed`, until the owner
-//                 confirms a licence for them on the PR; then lifted), or
+//                 scaffolding and notes (the owner holds the licence for
+//                 everything else, the fonts included: 2026-10-10), or
 //                 `helper`: a mesh the game never draws (its occluders,
 //                 shadow meshes, colliders, light blockers, dummies)
 //   not-uploaded  a manifest lists it and the bucket's listing has none of
@@ -29,7 +28,7 @@
 // summarise(classified) → { byPart, byLane, totals }; ledgerMarkdown(summary, { at, unowned })
 
 import { isSequel } from './bf2017-manifest.mjs';
-import { fontAllowed, isSequelFilm } from './bf2017-ui.mjs';
+import { isSequelFilm } from './bf2017-ui.mjs';
 
 export const STATES = ['used', 'owned', 'excluded', 'not-uploaded', 'unowned'];
 export const PARTS = ['models', 'collision', 'anims', 'textures', 'physics', 'terrain', 'maps', 'maps.lights', 'maps.decals', 'maps.actors', 'maps.vehicles', 'maps.effects', 'scatter', 'animtracks', 'movies', 'fonts', 'svg', 'strings', 'data', 'index', 'test', 'other'];
@@ -195,7 +194,6 @@ export function classify(row, { consumers, listing = null, owners = [] }) {
   if (used) return { state: 'used', by: consumers.by.get(used) };
   if (row.part !== 'data' && hit(row, isSequel)) return { state: 'excluded', by: 'era' };
   if (row.part === 'movies' && isSequelFilm(row.name)) return { state: 'excluded', by: 'era' };
-  if (row.part === 'fonts' && !fontAllowed(row.name)) return { state: 'excluded', by: 'licence-pending' };
   if (hit(row, (s) => EXCLUDED_PREFIXES.some((p) => (p.endsWith('/') ? s.startsWith(p) : s.includes(p))))) return { state: 'excluded', by: 'scaffolding' };
   if (DOCS.test(lower(row.name))) return { state: 'excluded', by: 'scaffolding' };
   if (row.part === 'models' && HELPER.test(lower(row.name).split('/').pop())) return { state: 'excluded', by: 'helper' };

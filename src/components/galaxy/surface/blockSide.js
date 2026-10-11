@@ -1,37 +1,35 @@
 // The side of you a cut comes in on, and the block that meets it there. A
-// stroke cuts a way (combatRules.js's DIRS: 'left' and 'right' a cut from
-// that side of the one who makes it; a 2017 hero's from the side the game's
-// tip was measured coming in from, on the root's axes, its stance's `cuts`);
+// stroke cuts a way ('left' and 'right' a cut from that side of the one who
+// makes it: the side the game's tip was measured coming in from, on the
+// root's axes, its stance's `cuts`);
 // facing each other the striker's left is your right, so a side cut comes
 // in mirrored, from behind as it was, and side-on from neither. A 2017 hero
 // meets it with the game's blocks measured holding the blade on that side
 // (the stroke table's `blocks`, by `held`), and a cut with no side, or one
-// on a side it has none for, with the site's block, as anyone else meets
-// every cut (the table's `any` is mostly the parry's stagger, held low).
+// on a side it has none for, with its pack's block (BLOCK_CLIP: the table's
+// `any` is mostly a stagger, held low).
 // Pure, and nothing here reads a table, so the flight pages don't pay for it.
 //
-//   cutOf(stance, clip) → the way the stroke `clip` cuts ('up' | 'left' | 'right' | 'rise'; a 2017 hero's 'left' |
-//                         'right'), or null (a combo stroke of the site's, a 2017 cut more up or down than across,
-//                         no stroke)
+//   cutOf(stance, clip) → the side the stroke `clip` cuts from ('left' | 'right'), or null (a cut more up or down
+//                         than across, no stroke)
 //   incomingSide(cut, { from, to }) → 'left' | 'right' (of the struck) | null: from, to the striker's yaw and the
 //                         struck's (facing (sin yaw, cos yaw)); either missing, facing each other
 //   blockClipFor(blocks, side, has, n) → the block to lay: the side's own the figure has (`has(name)`), the n-th in
-//                         turn, else null (the site's BLOCK_CLIP then: saber.js), blocks.any only for a figure
-//                         without BLOCK_CLIP
+//                         turn, else null (BLOCK_CLIP then: saber.js), blocks.any only for a figure without BLOCK_CLIP
+//   BLOCK_CLIP            a pack's own block, under the name the clip packs give it (walrusClips.js)
 //   SIDE_ON               |cos| of the turn between the two facings under which a cut has no side
 
-import { BLOCK_CLIP, DIRS } from './combatRules';
+export const BLOCK_CLIP = 'sword.block';
 
 export const SIDE_ON = 0.25;
 // (a cut from the striker's left starts at its +x; a figure's left is (cos
 // yaw, 0, −sin yaw), so the struck sees it at sign(way × cos(from − to)) of
 // its own +x: −1 facing each other, the mirror)
 const WAY = { left: 1, right: -1 };
-const UAL_WAYS = Object.fromEntries(Object.entries(DIRS).map(([way, d]) => [d.clip, way]));
 
 export function cutOf(stance, clip) {
   if (!clip) return null;
-  return (stance?.cuts ? stance.cuts[clip] : UAL_WAYS[clip]) ?? null;
+  return stance?.cuts?.[clip] ?? null;
 }
 
 export function incomingSide(cut, { from = null, to = null } = {}) {

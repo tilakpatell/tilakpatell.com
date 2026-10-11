@@ -1,0 +1,105 @@
+{
+ "up": {
+  "t": 40.3,
+  "health": 100,
+  "saber": {
+   "lit": true,
+   "busy": false,
+   "thrown": false,
+   "stance": "One blade",
+   "color": "#5cff6a",
+   "stamina": 1,
+   "out": false,
+   "dashBar": 1,
+   "dashes": 2,
+   "blocking": true,
+   "evading": false
+  }
+ },
+ "front": {
+  "t": 41.4,
+  "health": 100,
+  "saber": {
+   "lit": true,
+   "busy": false,
+   "thrown": false,
+   "stance": "One blade",
+   "color": "#5cff6a",
+   "stamina": 0.9466666666666668,
+   "out": false,
+   "dashBar": 1,
+   "dashes": 2,
+   "blocking": true,
+   "evading": false
+  }
+ },
+ "back": {
+  "t": 42.5,
+  "health": 92,
+  "saber": {
+   "lit": true,
+   "busy": false,
+   "thrown": false,
+   "stance": "One blade",
+   "color": "#5cff6a",
+   "stamina": 1,
+   "out": false,
+   "dashBar": 1,
+   "dashes": 2,
+   "blocking": true,
+   "evading": false
+  }
+ },
+ "dodge1": {
+  "t": 42.8,
+  "health": 92,
+  "saber": {
+   "lit": true,
+   "busy": false,
+   "thrown": false,
+   "stance": "One blade",
+   "color": "#5cff6a",
+   "stamina": 1,
+   "out": false,
+   "dashBar": 0.5,
+   "dashes": 1,
+   "blocking": false,
+   "evading": true
+  }
+ },
+ "dodge2": {
+  "t": 43,
+  "health": 92,
+  "saber": {
+   "lit": true,
+   "busy": false,
+   "thrown": false,
+   "stance": "One blade",
+   "color": "#5cff6a",
+   "stamina": 1,
+   "out": false,
+   "dashBar": 0.5,
+   "dashes": 1,
+   "blocking": false,
+   "evading": true
+  }
+ },
+ "dodge3": {
+  "t": 43.2,
+  "health": 92,
+  "saber": {
+   "lit": true,
+   "busy": false,
+   "thrown": false,
+   "stance": "One blade",
+   "color": "#5cff6a",
+   "stamina": 1,
+   "out": false,
+   "dashBar": 0.5454545454545454,
+   "dashes": 1,
+   "blocking": false,
+   "evading": false
+  }
+ },
+ "errors": []
+}
