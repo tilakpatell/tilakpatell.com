@@ -12,11 +12,14 @@
 //   levelBusy(site) → Promise<Set of cell keys the level fills>
 //   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics, ground })
 //     → null | { update(position), step(dt), ready(), progress(), stats(), physics(), dispose() }
+//     (stats().skipped: the pack files that failed to load, the first said as an error)
 //     (camera: the placed lights rank by it; light: the world's record, for their scale;
 //     onProbe: the reflection volume you stand in, for gameLit.js; ground: the
 //     surface's ground mesh, which a pack with a ground.json draws in the
 //     game's terrain layers on the node renderer, lane Q2)
 //   packJson(world, path) → Promise<object>: a JSON file beside the pack
+//   countedBytes(load, { live, onFirst }) → load counting its failures
+//     (load.skipped()), the first handed to onFirst(path, error)
 //   packBytes(response, url) → Promise<ArrayBuffer>: a pack file's bytes, a
 //     404 or a page in its place (a dev server's index.html) thrown
 //     (a pack with the game's shapes, on every tier and on a phone
@@ -62,6 +65,18 @@ export function packBytes(r, u) {
   if (!r.ok) throw new Error(`${r.status} ${u}`);
   if (/text\/html/i.test(r.headers?.get?.('content-type') ?? '')) throw new Error(`not a pack file (a page) ${u}`);
   return r.arrayBuffer();
+}
+// A loader that counts its failures (an abort, or one after the level is
+// gone, not counted) and says the first: → load, with load.skipped()
+export function countedBytes(load, { live = () => true, onFirst = () => {} } = {}) {
+  let skipped = 0;
+  const counted = (path) =>
+    load(path).catch((e) => {
+      if (e?.name !== 'AbortError' && live() && !skipped++) onFirst(path, e);
+      throw e;
+    });
+  counted.skipped = () => skipped;
+  return counted;
 }
 const bytesOf = (world) => (path) => withFallback((u) => fetch(u).then((r) => packBytes(r, u)))(packUrl(world, path));
 
@@ -219,7 +234,13 @@ async function gameMaterials(world, pack, renderer, tier, scene) {
 export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null, ground = null }) {
   if (!site?.level) return null;
   const world = site.level;
-  const fetchBytes = bytesOf(world);
+  // (a pack file that fails, the bucket slow or a page in its place, leaves
+  // the level incomplete: counted in stats().skipped, and said once as an
+  // error, so a check never passes a hollow world)
+  const fetchBytes = countedBytes(bytesOf(world), {
+    live: () => !gone,
+    onFirst: (path, e) => console.error(`the ${world} level is incomplete: ${path} did not load (${e?.message ?? e})`),
+  });
   let level = null;
   let stream = null;
   let loader = null;
@@ -325,7 +346,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     },
     ready: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,
-    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null }),
+    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), skipped: fetchBytes.skipped(), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null }),
     // the level's engine, once it's up (null on a phone, the low tier, a pack without shapes)
     physics: () => engine,
     dispose() {

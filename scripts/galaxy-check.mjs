@@ -326,7 +326,7 @@ for (const id of list.split(',')) {
   console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
   if (stats.level) {
     const l = stats.level;
-    console.log(`${''.padEnd(10)} level calls ${l.calls}  tris ${l.tris}  instances ${l.instances}  lights ${l.lights ?? 0}  probe ${l.probe ?? '–'}`);
+    console.log(`${''.padEnd(10)} level calls ${l.calls}  tris ${l.tris}  instances ${l.instances}  lights ${l.lights ?? 0}  probe ${l.probe ?? '–'}${l.skipped ? `  skipped ${l.skipped} files` : ''}`);
   }
   if (mode === 'surface' && process.env.SCANS === 'game' && scans.cc0) {
     console.log(`scans  ${id.padEnd(10)} FAIL: ${scans.cc0} of the site's own scans fetched; a Star Wars world wears the game's: ${scans.cc0Paths.join(' ')}`);
