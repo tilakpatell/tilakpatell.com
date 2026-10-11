@@ -6,6 +6,7 @@ import prerender from './scripts/prerender.mjs'
 import packs from './scripts/packs.mjs'
 import assetManifest from './scripts/assets-manifest.mjs'
 import bf2Dev from './scripts/bf2-dev.mjs'
+import librarySlice from './scripts/library-slice.mjs'
 
 export default defineConfig({
   // each react-icons icon a module of its own, so the entry chunk carries
@@ -16,7 +17,10 @@ export default defineConfig({
   // still true of public/ (scripts/assets-manifest.mjs)
   // (and, in dev with BF2_ROOT set, the local Battlefront export at /bf2/:
   // scripts/bf2-dev.mjs; nothing when it is unset)
-  plugins: [iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
+  // (and the object library's slice of the asset manifest as a virtual
+  // module, so the galaxy's chunk carries a few paths and not 16 MB:
+  // scripts/library-slice.mjs, lane D3)
+  plugins: [librarySlice(), iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
   // (the icons' modules import react-icons' own GenIcon: bundled up front in dev)
   // (scanned from the site's own page only: the tool pages under scripts/ and
   // .claude/ import aliases and packages the site doesn't, and a failed scan
