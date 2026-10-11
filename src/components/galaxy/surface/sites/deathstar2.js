@@ -44,7 +44,8 @@ export const DEATHSTAR = {
     gameLight: null,
     picture: null,
     sky: { zenith: '#050608', horizon: '#0c0e12', haze: 1, hazeColor: '#0c0e12', suns: [{ az: 0.9, el: 1.35, color: '#e8eef8', size: 0, glow: 0 }], clouds: null, bodies: [], stars: 0 },
-    light: { sun: 0.5, sky: '#5a6270', ground: '#1c1e22', ambient: 0.9 },
+    // (lit from within: the station's lamps, no sun and none of its shadow)
+    light: { sun: 0.5, sky: '#5a6270', ground: '#1c1e22', ambient: 0.9, shadow: false },
     fog: { color: '#0c0e12', density: 0.006 },
   },
 };

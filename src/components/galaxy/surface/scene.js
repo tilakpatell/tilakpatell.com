@@ -301,7 +301,9 @@ export async function create(canvas, ctx) {
   scene.add(sky.mesh);
   const sunDir = sky.sunDirs[0] ?? new V(0.3, 0.8, 0.4).normalize();
   const sun = new THREE.DirectionalLight(site.sky.suns?.[0]?.color ?? '#ffffff', site.light.sun ?? 3);
-  sun.castShadow = !small;
+  // (a site lit from within, `light.shadow: false`: no sun to cast one, and
+  // no shadow pass over a whole interior level, the Death Star's)
+  sun.castShadow = !small && site.light?.shadow !== false;
   if (sun.castShadow) {
     sun.shadow.mapSize.set(2048, 2048);
     const sc = sun.shadow.camera;
