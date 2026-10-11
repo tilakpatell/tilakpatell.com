@@ -71,6 +71,24 @@ D2’s branch at 7535bb89 and its packs as published, measured the same way: `BU
 
 High holds on both, Endor with 2.3 MB to spare. Ultra fetches about 470 MB, against 258.6 MB on main: ultra’s pack maps (up to 256 MB a pack, against main’s high sizes) and the LOD0 meshes come on top of what main fetches. The plan holds ultra to its numbers being recorded; the frame time and memory at ultra are the laptop’s gate (lane G, the desktop’s `gate` job, PR #906). In software GL, Hoth’s level at ultra comes up about 150 s in, after the check’s settle, so its counts there are the world without the level (a probe of the page polled every 20 s: 0 calls to 120 s, 57 at 140 s, 206 at 160 s). The ultra rows therefore want a longer settle, or the desktop’s GPU, before they can be held.
 
+### Counted whole, after the merge with main (lane E4's frame-guard switch, PR #911, ported)
+
+The earlier counts left part of each level out: in software GL `lib/three/frameGuard` readies about one shader a frame, so a level pack's hundreds of materials were still held back when the frame was counted. These counts come from the merged branch (ef7161e7a, its packs republished) with the guard off and three frames drawn before the counted one.
+
+| world | tier | calls (row) | triangles (row) | of which the level | models MB (bucket row) | result |
+| --- | --- | --: | --: | --: | --: | --- |
+| hoth | low | 286 (350) | 1,390,850 (800,000) | 156 calls, 703,404 tris | 40.1 (45) | triangles over |
+| endor | low | 238 (350) | 1,103,954 (800,000) | 21 calls, 179,763 tris | 24.8 (45) | triangles over |
+
+**A finding for fitCull on low, not a budget.** The pack itself is where its fit put it: Hoth's level draws 703k triangles at low, against the README's worst place of 716k, which is 90 % of the 0.8M row. What breaks the row is everything else on the page, about 690k on Hoth and 924k on Endor: the ground, the figures, the site's own dressing. `fitCull` holds a pack to a share of the row that it does not know is already spent. Endor's `--share low=0.5` was the first patch for that, and it is not enough: Endor's site things alone are over the row. The fix belongs to the factory and the site, not this lane's caps:
+
+- measure each world at low without its pack, and give the pack what is left as its `--share` (Hoth would take about 0.14);
+- or trim the site's own low-tier things.
+
+Either way it changes what low looks like, so the decision is the owner's. No row was raised.
+
+Mid and high, counted whole, cannot be run here in time. Since lane T's #887 the surface draws mid and up on the node renderer, and `?gpu=webgl` now picks `nodes-webgl`, still the node renderer. In software GL the high run outlasts a 40-minute limit with two worlds. [HIGH] The earlier high runs, which held back some materials as described above, put Hoth at 146.1 MB and Endor at 157.7 MB of models, within the 160 MB bucket row. Downloads do not depend on the frame guard, so those megabyte figures stand.
+
 ## Decals
 
 The parts writer fetches each decal’s colour KTX2 into the pack’s `tex/decals/`. Normal-only volume decals are kept in `decals.json`, with `texture: null` and `normalOnly: true`.
