@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTROLS, EVENT, PRESETS, anisotropyOf, presetValues, read, resolve, samplesFor, textureTier, write } from './video.js';
+import { CONTROLS, EVENT, PRESETS, anisotropyOf, hdrWanted, presetValues, read, resolve, samplesFor, textureTier, write } from './video.js';
 
 const fakeStore = (init = {}) => {
   const m = new Map(Object.entries(init));
@@ -105,5 +105,20 @@ describe('the small readers', () => {
     expect(samplesFor({})).toBe(null);
     expect(anisotropyOf({ anisotropy: 16 })).toBe(16);
     expect(anisotropyOf(undefined)).toBe(null);
+  });
+});
+
+describe('HDR output (lane H1)', () => {
+  it('is off in every preset, shown on an HDR display only, and wanted when on there', () => {
+    const hdr = CONTROLS.find((c) => c.id === 'hdr');
+    for (const p of PRESETS) expect(hdr.defaults[p]).toBe('off');
+    const high = { matchMedia: () => ({ matches: true }) };
+    const low = { matchMedia: () => ({ matches: false }) };
+    expect(hdr.shown(high)).toBe(true);
+    expect(hdr.shown(low)).toBe(false);
+    expect(hdr.shown({})).toBe(false);
+    expect(hdrWanted({ hdr: 'on' }, high)).toBe(true);
+    expect(hdrWanted({ hdr: 'on' }, low)).toBe(false);
+    expect(hdrWanted({ hdr: 'off' }, high)).toBe(false);
   });
 });

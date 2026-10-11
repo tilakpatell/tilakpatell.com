@@ -28,6 +28,10 @@ On `nodes-webgl` (no TRAA) high keeps SMAA and the denoiser, as before. The FLIP
 
 `npm run lint`; `npx vitest run src/lib/video.test.js src/lib/device.test.js src/lib/three/light src/runtime src/components/settings src/components/battlefront src/lib/level src/components/galaxy/surface/level` (every suite green on the way); `npm test`; `npx vite build`; `node scripts/health.mjs --check --skip build`; `npm run coverage:bf2017`; `npm run maps:bf2017`.
 
+## HDR output (lane H1, folded in)
+
+The design’s H1 is one control of this menu, so it rides here: `hdr` (Display group, off in every preset) is shown only where `matchMedia('(dynamic-range: high)')` matches, and on asks the runtime’s backend for a half-float canvas (`createWebGPU`’s `hdr`: `outputType: HalfFloatType`), which three r186 configures with the `'extended'` tone-mapping mode (`node_modules/three/src/renderers/webgpu/WebGPUBackend.js:356`). The record’s chain is unchanged: its linear tone map and LUT already end in linear. It takes effect on the next mount (a reload), since the canvas is configured once. No cloud leg: SwiftShader has no HDR canvas; the laptop’s HDR display shoots it beside the SDR frame.
+
 ## Not in this slice
 
-N2’s knobs (the upscaler, the sharpen pass, the frame cap), H1’s HDR switch, the geometry and effects groups (draw distance, scatter density, far copies, the particle and ragdoll caps): the second slice, after N2 and N5 land, each as one more row of `lib/video.js`’s schema and one reader.
+N2’s knobs (the upscaler, the sharpen pass, the frame cap), the geometry and effects groups (draw distance, scatter density, far copies, the particle and ragdoll caps): the second slice, after N2 and N5 land, each as one more row of `lib/video.js`’s schema and one reader.

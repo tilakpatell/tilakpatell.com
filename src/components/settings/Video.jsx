@@ -21,7 +21,7 @@ export default function Video({ onNeedsReload = null }) {
   };
   return (
     <>
-      {groupsOf(CONTROLS).map(({ group, controls }) => (
+      {groupsOf(CONTROLS.filter((c) => !c.shown || c.shown())).map(({ group, controls }) => (
         <section key={group} aria-labelledby={`${hintId}-${group}`}>
           <h3 id={`${hintId}-${group}`}>{group}</h3>
           {controls.map((c) => {

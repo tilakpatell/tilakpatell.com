@@ -38,7 +38,11 @@ const choice = (id, group, label, hint, values, defaults, live, reader, cost = r
 const range = (id, group, label, hint, values, defaults, live, reader) => ({ id, group, label, hint, kind: 'range', values, defaults, live, cost: (v) => Number(v), reader });
 const row = (low, mid, high, ultra) => ({ low, mid, high, ultra });
 
+// (whether a control is shown: `shown(env)`, an HDR display for `hdr`)
+const hdrDisplay = (env = globalThis) => Boolean(env?.matchMedia?.('(dynamic-range: high)')?.matches);
+
 export const CONTROLS = Object.freeze([
+  { ...choice('hdr', 'Display', 'HDR output', 'The record’s linear tone map and grade on an HDR display, in HDR.', [['off', 'Off'], ['on', 'On']], row('off', 'off', 'off', 'off'), false, 'runtime/webgpu.js', onOff), shown: hdrDisplay },
   choice('aa', 'Anti-aliasing', 'Method', 'TRAA integrates the shadows’ and the fog’s noise over frames; SMAA smooths edges only.', [['off', 'Off'], ['smaa', 'SMAA'], ['traa', 'TRAA']], row('off', 'smaa', 'traa', 'traa'), true, 'light/post.js'),
   choice('msaa', 'Anti-aliasing', 'Multisampling (classic renderer)', 'Samples a pixel’s edges on the classic renderer; the node renderer’s chain does without.', [['0', 'Off'], ['2', '2×'], ['4', '4×'], ['8', '8×']], row('0', '2', '4', '8'), false, 'lib/device.js'),
   choice('shadows', 'Shadows', 'Quality', 'How many cascades the sun casts, how big each map is and how soft the edges are filtered.', [['off', 'Off'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['ultra', 'Ultra']], row('off', 'low', 'medium', 'ultra'), false, 'light/sun.js, light/shadows.js'),
@@ -172,6 +176,9 @@ export function write(patch = {}, store = pageStore()) {
   return next;
 }
 
+// whether the renderer draws to a half-float canvas (lane H1, folded into V1):
+// the control on, on an HDR display
+export const hdrWanted = (values, env = globalThis) => values?.hdr === 'on' && hdrDisplay(env);
 export const textureTier = (level, values) => (values?.textures && PRESETS.includes(values.textures) ? values.textures : level);
 const number = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
 export const samplesFor = (values) => number(values?.msaa);

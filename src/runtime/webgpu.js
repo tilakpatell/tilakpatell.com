@@ -122,7 +122,9 @@ export async function adapterLimits(gpu = typeof navigator !== 'undefined' ? nav
   }
 }
 
-export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false, reversedDepth = null, temporal = true } = {}) {
+// (hdr, lane H1: a half-float canvas, which three configures with the
+// 'extended' tone-mapping mode, so an HDR display shows the chain's range)
+export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false, reversedDepth = null, temporal = true, hdr = false } = {}) {
   const { WebGPURenderer } = await import('three/webgpu');
   // A device is made with its adapter's own limits where the defaults are
   // tighter than the chip: a post chain's five colour targets cost more a
@@ -132,7 +134,7 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   // (no adapter, no limits: three would fall back to WebGL 2 by itself, so the standard buffer there)
   // (asked for outright, it is honoured over WebGL 2 too: the fixture's measurement there)
   const asked = Boolean(reversedDepth ?? (!forceWebGL && requiredLimits !== undefined));
-  const renderer = new WebGPURenderer({ canvas, alpha, antialias: budget?.antialias ?? true, powerPreference: 'high-performance', forceWebGL, requiredLimits, reversedDepthBuffer: asked });
+  const renderer = new WebGPURenderer({ canvas, alpha, antialias: budget?.antialias ?? true, powerPreference: 'high-performance', forceWebGL, requiredLimits, reversedDepthBuffer: asked, ...(hdr ? { outputType: THREE.HalfFloatType } : {}) });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = toneMapping;
   renderer.toneMappingExposure = exposure;

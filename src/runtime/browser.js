@@ -2,6 +2,7 @@
 // three.js with them): the backends and the loaders.
 
 import { loadTexture, forgetTexture } from '../lib/three/textures';
+import { hdrWanted } from '../lib/video.js';
 import { loadGltf, forgetGltf } from '../lib/three/gltf';
 import { loadBuffer } from '../lib/audio';
 import { createWebGL } from './webgl';
@@ -14,7 +15,8 @@ export function makeBackend(kind, opts) {
   // (?traa=off, development's: the reference shots' chain without its
   // temporal pass, scripts/reference-frames.mjs)
   const temporal = !(import.meta.env?.DEV && /[?&]traa=off\b/.test(`${window.location.search}&${window.location.hash}`));
-  return kind === 'webgl' ? createWebGL(canvas, opts) : createWebGPU(canvas, { ...opts, forceWebGL: kind === 'nodes-webgl', temporal });
+  // (HDR output only where the display has the range: lib/video.js's hdrWanted)
+  return kind === 'webgl' ? createWebGL(canvas, opts) : createWebGPU(canvas, { ...opts, forceWebGL: kind === 'nodes-webgl', temporal, hdr: hdrWanted({ hdr: opts.hdr ? 'on' : 'off' }) });
 }
 
 export const loaders = {

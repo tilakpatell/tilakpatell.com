@@ -5,8 +5,8 @@ import { groupsOf, optionsFor } from './video.js';
 describe('groupsOf', () => {
   it('keeps the schema’s order of groups and of controls within each', () => {
     const groups = groupsOf(CONTROLS);
-    expect(groups.map((g) => g.group)).toEqual(['Anti-aliasing', 'Shadows', 'Lighting', 'Post', 'Textures']);
-    expect(groups[1].controls.map((c) => c.id)).toEqual(['shadows', 'shadowDistance', 'contactShadows', 'cloudShadows']);
+    expect(groups.map((g) => g.group)).toEqual(['Display', 'Anti-aliasing', 'Shadows', 'Lighting', 'Post', 'Textures']);
+    expect(groups.find((g) => g.group === 'Shadows').controls.map((c) => c.id)).toEqual(['shadows', 'shadowDistance', 'contactShadows', 'cloudShadows']);
   });
 });
 

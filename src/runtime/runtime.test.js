@@ -937,6 +937,16 @@ describe('the quality level changed while a world is up', () => {
     expect(rt.revideo({ aa: 'off' })).toBe('reload');
   });
 
+  it('asks the backend for HDR when the video settings say so (lane H1)', async () => {
+    const { rt, makeBackend } = make({ video: { hdr: 'on' } });
+    await rt.mount({ id: 'a', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend).toHaveBeenCalledWith('webgl', expect.objectContaining({ hdr: true }));
+    rt.unmount();
+    const { rt: rt2, makeBackend: mb2 } = make();
+    await rt2.mount({ id: 'b', create: () => fakeWorld() }, {}, fakeHost());
+    expect(mb2).toHaveBeenCalledWith('webgl', expect.objectContaining({ hdr: false }));
+  });
+
   it('sets the sharpness and draws again', async () => {
     const { rt, quality } = make();
     quality.setSharpness = vi.fn();

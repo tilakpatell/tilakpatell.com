@@ -45,6 +45,15 @@ describe('createWebGPU', () => {
     fallBack = false;
   });
 
+  it('hdr asks for a half-float canvas, and nothing else does (lane H1)', async () => {
+    const plain = await createWebGPU(fakeCanvas(), { forceWebGL: true });
+    expect(plain.renderer.options.outputType).toBeUndefined();
+    plain.dispose();
+    const hdr = await createWebGPU(fakeCanvas(), { forceWebGL: true, hdr: true });
+    expect(hdr.renderer.options.outputType).toBe(THREE.HalfFloatType);
+    hdr.dispose();
+  });
+
   it('forceWebGL makes the nodes-webgl kind on a WebGL 2 context', async () => {
     const gfx = await createWebGPU(fakeCanvas(), { forceWebGL: true });
     expect(gfx.backend).toBe('nodes-webgl');

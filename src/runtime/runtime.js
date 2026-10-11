@@ -288,7 +288,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     kind = want;
     const asked = { kind: want, promise: null };
     coming = asked;
-    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: () => rt.lost() }))).then(
+    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: () => rt.lost(), hdr: rt.video?.hdr === 'on' }))).then(
       (made) => {
         // another kind asked for since (or the runtime let go): this one goes too
         if (coming !== asked) {
