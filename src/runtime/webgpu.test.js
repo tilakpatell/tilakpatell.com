@@ -139,12 +139,18 @@ describe('buildPostProcessing', () => {
     post.dispose();
     expect(chain.dispose).toHaveBeenCalled();
   });
-  it('says whether the chain is temporal, for the mip bias at native (lane N2)', () => {
+  it('says whether the chain is temporal, for the mip bias at native (lane N2)', async () => {
     setMipState({ scale: 1, classic: false });
-    buildPostProcessing({}, [{ kind: 'render' }, { kind: 'traa' }, { kind: 'output' }]).dispose();
+    // (each built before it is let go: a chain's import left resolving past
+    // the file's end reached the real passes.js, its mock gone)
+    const traa = buildPostProcessing({}, [{ kind: 'render' }, { kind: 'traa' }, { kind: 'output' }]);
     expect(mipBias()).toBe(-0.5);
-    buildPostProcessing({}, [{ kind: 'render' }, { kind: 'smaa' }, { kind: 'output' }]).dispose();
+    await traa.ready;
+    traa.dispose();
+    const smaa = buildPostProcessing({}, [{ kind: 'render' }, { kind: 'smaa' }, { kind: 'output' }]);
     expect(mipBias()).toBe(0);
+    await smaa.ready;
+    smaa.dispose();
   });
 });
 
