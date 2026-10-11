@@ -9,7 +9,7 @@
 // BOUNDS is each one's [hw, hd, h].
 
 import * as THREE from 'three';
-import { box, cyl, part, rod } from '../kit';
+import { box, cyl, part, rod } from '../kitCore';
 
 const { PI, sin, cos } = Math;
 const lit = (c, k = 2.2) => new THREE.Color(c).multiplyScalar(k);

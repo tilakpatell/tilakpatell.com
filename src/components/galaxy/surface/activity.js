@@ -134,7 +134,8 @@ import { lineClear } from './walker';
 import { createTokens } from '../../../lib/ai/squad';
 import { createSearch } from '../../../lib/ai/search';
 import { candidates } from '../../../lib/ai/spatial';
-import { createPortalFx, meshyJoints } from '../../../lib/three/portalFx';
+import { createPortalFx, meshyJoints } from '../../../lib/three/portalFxNodes';
+import { beamMaterial } from './nodes/activity';
 import { createGadgetFx } from '../../../lib/three/gadgetFx';
 import { fallTurn } from '../../../lib/three/locomotion';
 import { preload } from '../../../lib/three/clipLibrary';
@@ -161,23 +162,11 @@ const _from = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _yq = new THREE.Quaternion();
 
-const BEAM_VERT = `
-varying vec2 vUv;
-void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const BEAM_FRAG = `
-varying vec2 vUv;
-uniform vec3 uColor;
-uniform float uTime;
-void main() {
-  float edge = 1.0 - abs(vUv.x - 0.5) * 2.0;
-  float a = pow(edge, 2.0) * (1.0 - vUv.y) * (0.55 + 0.25 * sin(uTime * 3.0 - vUv.y * 12.0));
-  gl_FragColor = vec4(uColor * 2.2, a);
-}`;
 
 // a beam of light standing on a spot, and a ring round it on the ground
 function beam(color) {
   const g = new THREE.Group();
-  const mat = new THREE.ShaderMaterial({ vertexShader: BEAM_VERT, fragmentShader: BEAM_FRAG, uniforms: { uColor: { value: new THREE.Color(color) }, uTime: { value: 0 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const mat = beamMaterial(color);
   const geo = new THREE.CylinderGeometry(1.1, 1.1, 60, 20, 1, true).translate(0, 30, 0);
   const m = new THREE.Mesh(geo, mat);
   m.renderOrder = 6;

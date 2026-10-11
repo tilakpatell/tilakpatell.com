@@ -12,7 +12,7 @@ import { useOnline } from '../components/universe/online/useOnline';
 import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
 import { FIRST, parseSystem, systemById } from '../components/galaxy/systems';
-import { canLand } from '../components/galaxy/surface/sites';
+import { SITES, canLand } from '../components/galaxy/surface/sites';
 import { starfighterAt } from '../components/galaxy/surface/missions/starfighterMaps';
 import galaxyModule from '../components/galaxy/module';
 import surfaceModule from '../components/galaxy/surface/module';
@@ -301,13 +301,14 @@ export default function Galaxy() {
   const landing = usePrepareProgress(surfaceModule); // (the surface's prepare, for Land's loading screen)
   const landingWait = usePrepareWait(surfaceModule, landing, Boolean(leaving?.prep)); // (and why, once it holds)
   const land = useCallback(
-    (id) => {
+    (id, district = null) => {
       if (!canLand(id) || leaving) return;
       audioContext();
       prefetchSurface();
-      const to = `/galaxy/${id}/surface`;
+      const to = `/galaxy/${id}/surface${district ? `?district=${encodeURIComponent(district)}` : ''}`;
       const host = view.current.live ? view.current.host?.() : null;
-      if (!host) {
+      // (another of the world's maps lands by the route: the handed-over world is the main one)
+      if (!host || district) {
         leave(to, { land: true });
         return;
       }
@@ -567,7 +568,8 @@ export default function Galaxy() {
         onLeave={() => leave('/universe/starwars', { jump: true })}
         found={found}
         onBoard={(path) => leave(path)}
-        onLand={canLand(sys.id) ? () => land(sys.id) : null}
+        onLand={canLand(sys.id) ? (district) => land(sys.id, district) : null}
+        districts={SITES[sys.id]?.districts ?? []}
         tucked={tucked}
         onTuck={tuck}
         jumping={jumping}

@@ -90,3 +90,10 @@ export function namedTwice(site) {
   }
   return out;
 }
+
+// A site's districts whose pack has no level.json (`has(level)` says whether
+// public/models/galaxy/bf2017/levels/<level>/level.json is committed)
+export function districtProblems(site, has) {
+  return (site.districts ?? []).filter((d) => !d.level || !has(d.level)).map((d) => `${d.id}: no pack at levels/${d.level}/level.json`);
+}
+

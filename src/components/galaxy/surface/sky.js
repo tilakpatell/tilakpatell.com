@@ -18,11 +18,9 @@
 
 import * as THREE from 'three';
 import { noiseTexture } from './noiseTex';
+import { MAX_BODIES, MAX_SUNS, dirOf, skyDome } from './skyDome';
 
-const MAX_SUNS = 2;
-const MAX_BODIES = 3;
-
-export const dirOf = (az, el) => new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
+export { dirOf };
 
 const VERT = `
 varying vec3 vDir;
@@ -178,34 +176,13 @@ export function createSky(site, { clouds = 0 } = {}) {
   };
   // (ultra: finer clouds, their own shade and a high veil: CLOUDS_HQ)
   const material = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms, side: THREE.BackSide, depthWrite: false, fog: false, defines: clouds ? { CLOUDS_HQ: '' } : {} });
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1000, 48, 24), material);
-  mesh.frustumCulled = false;
-  mesh.renderOrder = -10;
-  mesh.name = 'sky';
-
-  return {
-    mesh,
-    sunDirs,
-    suns,
-    // (the dome's own uniforms: the fog reads them, skyfog.js)
+  return skyDome(site, {
+    material,
     uniforms,
-    update(camera, t, flash = 0) {
-      mesh.position.copy(camera.position);
-      uniforms.uTime.value = t;
-      uniforms.uFlash.value = flash;
-    },
-    // the sky alone (no clouds), for the shiny things to reflect
-    envScene() {
-      const scene = new THREE.Scene();
+    cloudless: () => {
       const m = material.clone();
       m.uniforms.uWithClouds = { value: 0 };
-      const dome = new THREE.Mesh(mesh.geometry, m);
-      scene.add(dome);
-      return { scene, dispose: () => m.dispose() };
+      return m;
     },
-    dispose() {
-      mesh.geometry.dispose();
-      material.dispose();
-    },
-  };
+  });
 }

@@ -39,7 +39,7 @@ node scripts/bf2017-kit.mjs hothwalls --pieces 'objects/architecture/hoth/wallsy
 
 A piece keeps the game's origin, a corner or an edge; the materials are kept apart by name (`M_Wall` and `M_Floor` are alike in all else). Some systems' maps are bound by their shader preset, not the mesh: Hoth's large hangar shells have no maps in the GLB or the records.
 
-The surfaces' roles on the game's maps: `node scripts/bf2017-textures.mjs [role …]` makes them from `scripts/lib/bf2017-roles.mjs`'s sources; a site's `look.scanned: 'bf2017'` wears them.
+The surfaces' roles on the game's maps: `node scripts/bf2017-textures.mjs [role …]` makes them from `scripts/lib/bf2017-roles.mjs`'s sources; every galaxy site wears them (`siteOf`'s default `look.scanned: 'bf2017'`; a site says `'cc0'` to keep the photo scans).
 
 A level's light is one of its reflection volumes' probes, six 128² Radiance faces under `web/textures/levels/mp/<level>/reflectionvolumetexture/<lighting>/`, published for the owner's lighting lane (this pipeline builds no lighting); look at them first, then `node scripts/bf2017-sky.mjs <folder> <probe id> --name <world>`, and write what it is in `docs/superpowers/evidence/bf2017-<world>/skies.md`. The levels' panoramic skies (`Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_01_Panoramic_C`, 8192 × 2048) are in `web/textures.jsonl` but were not in the bucket on 2026-10-10.
 
@@ -56,6 +56,8 @@ Read from the uploader’s test PNGs (`inventory.md`, “What a texture is”):
 | `_RGBA`, `_RGB`, `_M`, `_ID`, `_E`, `_H`, `_AOSL` | masks, IDs, emissive, height, AO slices: the Frostbite shaders’ extras, unused |
 
 The uploader’s derived maps, `<map>__normal.ktx2` and `<map>__orm_<hash>.ktx2`, are already split for glTF; when only the raw PNG is there, the import rebuilds them from `derived` (`scripts/lib/bf2017-textures.mjs`).
+
+**Colour space.** The game stores its colour maps as sRGB (`textures.jsonl`’s `format`, BC7_SRGB) and the rest linear, but the desktop’s UASTC encode tagged many colour maps linear in the KTX2’s data format descriptor, which three’s KTX2Loader believes (washed pale). So every writer here stamps the transfer function as it writes (`scripts/lib/ktx2-colour.mjs`): the game’s own format from `web/textures.jsonl` first (fetched with `--raw textures.jsonl` into `lab/assets/bf2017/`, where every writer reads it; BC7_SRGB is sRGB, BC7_UNORM linear; the file’s `srgb` field is false on every row and is ignored), DICE’s suffix as the fallback for a map the game does not list (`_cs`, `_c`, `_co`, `_ca`, `_cw`, `_e`, `_em` colour; a normal, a packed mask, an `_aosl`, `_rgb`, `__normal` or `__orm_` map linear), the glTF slot for a native cut. The word is written into each pack’s `tex` rows (`srgb` per slug) and the loaders read a map as the game does; a map without the word takes the slot rule (a colour slot sRGB). `node scripts/bf2017-colour-check.mjs --check` holds every pack to it before a PR (`--fix` stamps in place, `--packs` writes the rows, `--published` reads the published maps’ headers). The decision: `docs/decisions/2026-10-10-game-maps-say-their-colour-space.md`.
 
 ## The rig
 

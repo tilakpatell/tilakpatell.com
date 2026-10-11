@@ -8,7 +8,7 @@ import { FIGURES } from '../figures';
 import { PROPS, SCATTER } from '../props';
 import { RIDES } from '../rides';
 import { LAYER_TYPES, REACH, heightGrid, makeHeight } from '../terrain';
-import { LANDABLE, SITES, siteFrom, siteOf } from '.';
+import { LANDABLE, SITES, districtOf, siteFrom, siteOf, withDistrict } from '.';
 import { EXTRA } from './quests';
 import { CREW } from '../crew';
 import { talkTree } from '../talk';
@@ -37,6 +37,10 @@ describe('the worlds you can land on', () => {
   for (const id of Object.keys(SITES)) {
     describe(id, () => {
       const site = siteOf(id);
+
+      it('wears the game’s own maps for its props’ trims and its ground’s grain (the owner’s rule: every texture in a Star Wars world is the game’s)', () => {
+        expect(site.look?.scanned).toBe('bf2017');
+      });
 
       it('has its sky, its light, its land and where to come down', () => {
         expect(site.place, 'place').toBeTruthy();
@@ -211,12 +215,13 @@ describe('siteFrom', () => {
 
   it('makes a raw site whole exactly as siteOf does', () => {
     expect(EXTRA.bespin).toBeUndefined();
-    expect(siteFrom(SITES.bespin, 'bespin', named('bespin'))).toEqual(siteOf('bespin'));
+    // (with the galaxy's own default, the game's maps, which siteOf gives every one of its sites)
+    expect(siteFrom({ ...SITES.bespin, look: { scanned: 'bf2017', ...SITES.bespin.look } }, 'bespin', named('bespin'))).toEqual(siteOf('bespin'));
   });
 
   it('gives siteOf’s result once the extra quests are folded in', () => {
     const more = EXTRA.endor;
-    const raw = { ...SITES.endor, life: [...(SITES.endor.life ?? []), ...more.life], quests: [...(SITES.endor.quests ?? []), ...more.quests] };
+    const raw = { ...SITES.endor, look: { scanned: 'bf2017' }, life: [...(SITES.endor.life ?? []), ...more.life], quests: [...(SITES.endor.quests ?? []), ...more.quests] };
     expect(siteFrom(raw, 'endor', named('endor'))).toEqual(siteOf('endor'));
   });
 
@@ -225,6 +230,38 @@ describe('siteFrom', () => {
     expect(site.id).toBe('elsewhere');
     expect(site.name).toBe('elsewhere');
     expect(site.accent).toBe('#ffffff');
+  });
+});
+
+describe('districts: more than one of the game’s maps on a world', () => {
+  const site = { level: 'tatooine', land: { at: [0, 0], yaw: 0 }, place: 'Mos Eisley', ground: { layers: [{ type: 'image', pack: 'tatooine' }] }, districts: [{ id: 'jabba', name: 'Jabba’s palace', level: 'tatooine/jabba', land: { at: [10, 0], yaw: 1 }, line: 'The palace.' }] };
+
+  it('finds a district by its id, and the world as it is for none or an unknown one', () => {
+    expect(districtOf(site, 'jabba').level).toBe('tatooine/jabba');
+    expect(districtOf(site, null)).toEqual({ id: 'main', level: 'tatooine', land: site.land });
+    expect(districtOf(site, 'nowhere').id).toBe('main');
+    expect(districtOf({ land: { at: [0, 0] } }, 'jabba')).toEqual({ id: 'main', level: undefined, land: { at: [0, 0] } });
+  });
+
+  it('puts a district’s level, landing and ground on the site, and leaves the site alone without one', () => {
+    const d = withDistrict(site, 'jabba');
+    expect(d).toMatchObject({ level: 'tatooine/jabba', land: { at: [10, 0], yaw: 1 }, place: 'Jabba’s palace', line: 'The palace.', district: 'jabba' });
+    // (the ground's own heightmap is the district's pack's)
+    expect(d.ground.layers).toEqual([{ type: 'image', pack: 'tatooine/jabba' }]);
+    expect(withDistrict({ ...site, weather: [{ kind: 'snow' }], districts: [{ ...site.districts[0], site: { weather: [] } }] }, 'jabba').weather).toEqual([]);
+    expect(withDistrict(site, 'nowhere')).toBe(site);
+    expect(withDistrict(site, null)).toBe(site);
+  });
+});
+
+describe('the worlds drawn from the game’s levels', () => {
+  it('Endor stands on Endor_01, its ground the pack’s, its built bunker left to the level', () => {
+    const endor = SITES.endor;
+    expect(endor.level).toBe('endor');
+    expect(endor.ground.layers).toEqual([{ type: 'image', pack: 'endor' }]);
+    const bunker = endor.places.find((p) => p.id === 'bunker');
+    expect(bunker.flat.game).toBe(true);
+    expect(bunker.things.filter((t) => t.kind === 'bunker' || t.kind === 'bunkerbank').every((t) => t.game)).toBe(true);
   });
 });
 

@@ -28,8 +28,9 @@ export const BUCKET = 'site-assets';
 // (textures/galaxy/bf2017/<role>/ and textures/galaxy/sky/: lane W's, the
 // game's ground and trim maps and the levels' skies, mirrored once they land;
 // textures/galaxy/planets/: lane K's planet skins)
-// models/galaxy/bf2017/: lane L's level packs)
-export const REMOTE = ['hq/models', 'hq/tex', 'cc0/galaxy', 'models/gen3d', 'kit', 'textures/galaxy/bf2017', 'textures/galaxy/sky', 'textures/galaxy/planets', 'models/galaxy/bf2017'];
+// (the level packs under models/galaxy/bf2017/ are published by
+// scripts/assets-publish.mjs, not mirrored here: lane E0)
+export const REMOTE = ['hq/models', 'hq/tex', 'cc0/galaxy', 'models/gen3d', 'kit', 'textures/galaxy/bf2017', 'textures/galaxy/sky', 'textures/galaxy/planets'];
 // (each one whole in itself: a .gltf's sidecars would not sit beside it under one hash)
 export const KINDS = { '.glb': 'model/gltf-binary', '.ktx2': 'image/ktx2', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.hdr': 'image/vnd.radiance', '.exr': 'image/x-exr' };
 export const MIN_BYTES = 64 * 1024;

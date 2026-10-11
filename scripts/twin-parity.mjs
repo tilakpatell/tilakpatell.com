@@ -49,7 +49,7 @@ const server = await createServer({
   root: HERE,
   publicDir: join(ROOT, 'public'),
   server: { port: PORT, strictPort: true, fs: { allow: [ROOT] } },
-  resolve: { alias: { '@src': join(ROOT, 'src') }, dedupe: ['three'] },
+  resolve: { dedupe: ['three'] },
   logLevel: 'error',
 });
 await server.listen();

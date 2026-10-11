@@ -30,7 +30,8 @@ describe('a KTX2 decoded', () => {
   it("reads a pack's map as RGBA8 at its size", async () => {
     const { readFileSync } = await import('node:fs');
     const { decodeKtx2 } = await import('./ktx2-psnr.mjs');
-    const k = await decodeKtx2(readFileSync(new URL('../../public/models/galaxy/bf2017/levels/sb_kamino/tex/t_baseplastic_white_01_nam__normal.128.ktx2', import.meta.url)));
+    // (one of SB_Kamino's maps, 566 bytes, kept beside the test: the packs' binaries are published, not in git)
+    const k = await decodeKtx2(readFileSync(new URL('./fixtures/t_baseplastic_white_01_nam__normal.128.ktx2', import.meta.url)));
     expect([k.width, k.height]).toEqual([128, 128]);
     expect(k.rgba.length).toBe(128 * 128 * 4);
   });

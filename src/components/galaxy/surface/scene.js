@@ -53,42 +53,44 @@ import { PLACES } from '../battleLines';
 import { systemById } from '../systems';
 import { readBuildWire, writeBuild } from '../../universe/shipyard/build';
 import * as THREE from 'three';
-import { disposeTree, precompile, precompilePasses, singlePass } from '../../../lib/three/renderer';
-import { nextFrame as breathe, prepareScene } from '../../../lib/three/gpuWork';
+import { PMREMGenerator } from 'three/webgpu';
+import { disposeTree, singlePass } from '../../../lib/three/renderer';
+import { nextFrame as breathe } from '../../../lib/three/gpuWork';
+import { twinScene } from '../../../lib/three/hookNodes';
 import { STEPS } from '../../../lib/three/pace';
 import { settle as settleWithin } from '../../../lib/settle';
 import { dropTransmission } from '../../../lib/three/glass';
 import { device } from '../../../lib/device';
 import { detailLevel } from '../../../lib/detail';
-import { createPost } from '../../universe/post';
-import { SHIP_MODELS, buildShip, LENGTH } from '../../universe/shipModels';
+import { createPost } from './nodes/post';
+import { SHIP_MODELS, buildShip, LENGTH } from '../../universe/shipModelsNodes';
 import { cloneScene, loadGLTF } from '../../../lib/three/gltfCache';
 import { paintById } from '../../universe/paint';
 import { readLoadout, STOCK_LOADOUT } from '../../universe/outfit';
 import { flybySound, gadgetSound, gunSound, impactSound, popSound, portalSound, shipEngine } from '../../universe/sounds';
-import { PARTY, loadPartyFigure } from '../../universe/footScene';
+import { PARTY, loadPartyFigure } from './nodes/figures';
 import { bodiesFor, firstBody } from './standIn';
 import { GUNS, createGunplay } from '../../universe/gunplay';
-import { createGameFx } from '../../../lib/three/fx/gameFx';
+import { createGameFx } from '../../../lib/three/fx/gameFxNodes';
 import { createGunFx } from '../../universe/gunfx';
 import { spring } from '../../../lib/three/ik';
 import { METRE } from '../../universe/foot';
-import { createMeshyCast } from '../../rickmorty/portal/meshyCast';
-import { withWardrobe } from '../../rickmorty/wardrobe/wear';
+import { createMeshyCast } from '../../rickmorty/portal/meshyCastNodes';
+import { withWardrobe } from '../../rickmorty/wardrobe/wearNodes';
 import { buildGalaxyShip } from '../fleet';
 import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
 import { heightGrid, makeHeight } from './terrain';
 import { createMarks, groundMaterial, groundMesh } from './ground';
-import { createSky } from './sky';
-import { wearScanSet } from '../../../lib/three/scans';
-import { createSkyFog } from './skyfog';
-import { createWater } from './water';
+import { createSky } from './nodes/sky';
+import { wearScanSet } from '../../../lib/three/scansNodes';
+import { createSkyFog } from './nodes/skyfog';
+import { createWater } from './nodes/water';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
-import { createWeather } from './weather';
-import { createKit } from './kit';
-import { createHouse } from '../../../lib/three/house';
+import { createWeather } from './nodes/weather';
+import { createKit } from './nodes/kit';
+import { createHouse } from '../../../lib/three/houseNodes';
 import { adoptLater, exposureOf, groundPieces, lookOf } from './look';
 import { surfaceTuning, siteCode } from './tune';
 import { debugOn, debugPanel } from '../../../lib/debugPanel';
@@ -99,16 +101,16 @@ import { downAt } from './respawn';
 import { createSquash } from './squash';
 import { createKnocks, loosePlaces } from './knocks';
 import { wireImpacts } from '../../../lib/three/impacts';
-import { createDust } from '../../../lib/three/dust';
-import { createGrass } from '../../../lib/three/grass';
+import { createDust } from '../../../lib/three/dustNodes';
+import { createGrass } from '../../../lib/three/grassNodes';
 import { amountsFor } from './amounts';
-import { createWind } from '../../../lib/three/wind';
-import { createGroundMap } from '../../../lib/three/groundmap';
+import { createWind } from '../../../lib/three/windNodes';
+import { createGroundMap } from '../../../lib/three/groundmapNodes';
 import { groundPainter, mapAreaOf } from './groundPaint';
-import { floorShadow } from '../../../lib/three/grounding';
+import { floorShadow } from '../../../lib/three/groundingNodes';
 import { PROPS as GALAXY_PROPS, SCATTER as GALAXY_SCATTER } from './props';
 import { createPlacer } from './placer';
-import { createLevel, levelGround } from './level';
+import { createLevel, levelBusy, levelGround, levelPlaced } from './level';
 import { createLevelScatter } from './level/levelScatter.js';
 import { anyFigure, createActors, modelFigure } from './actors';
 import { RIDES as GALAXY_RIDES } from './rides';
@@ -147,7 +149,7 @@ import { createAssaultMission } from './missions/assaultScene';
 import { createHvvMission } from './missions/hvvScene';
 import { createBlastMission } from './missions/blastScene';
 import { RULES as ASSAULT } from './missions/assault';
-import { groundWorld } from '../../../lib/three/groundwork';
+import { groundWorld } from '../../../lib/three/groundworkNodes';
 import { garrisonLife, garrisonProbe } from './garrison';
 import { createGround, landingFor } from './ground/index';
 import { standable } from './sites/validity';
@@ -280,15 +282,19 @@ export async function create(canvas, ctx) {
   post.exposure(exposureOf(site));
   // (fogged in the sky's colour and in the look before its shaders are
   // made, so they're made once)
+  // (on the node renderer: a classic material with a hook on it swapped for
+  // the twin that holds the hook, lib/three/hookNodes, then the programs
+  // made through the runtime's compileAsync)
   const warm = (root) => {
     skyFog.scene(root);
     adoptLater(house, root);
-    return precompile(renderer, singlePass(root), camera, scene, post.on ? post.composer.readBuffer : undefined);
+    twinScene(root);
+    return rt.gfx.compile ? Promise.resolve(rt.gfx.compile(singlePass(root), camera, scene)).catch(() => {}) : Promise.resolve();
   };
 
   const sky = createSky(site, { clouds: amounts.clouds });
   // (the fog the sky's colour that way: everything fogged with it, as it's put in the world)
-  const skyFog = createSkyFog(sky, THREE.ShaderChunk);
+  const skyFog = createSkyFog(sky);
   // (the look's halo round the sun, and its haze below the horizon where the
   // site says: the fog is the surface's, so they go on it)
   skyFog.look({ halo: siteLook.halo, below: typeof site.look?.fogBelow === 'number' ? siteLook.fogBelow : null });
@@ -333,7 +339,7 @@ export async function create(canvas, ctx) {
   house.sky({ low: sky.uniforms.uHorizon.value, high: sky.uniforms.uZenith.value, sunDir });
   house.light({ sun, hemi });
   // what shiny things reflect: the sky
-  const pmrem = new THREE.PMREMGenerator(renderer);
+  const pmrem = new PMREMGenerator(renderer);
   const envSky = sky.envScene();
   const env = pmrem.fromScene(envSky.scene, 0, 1, 2000);
   envSky.dispose();
@@ -351,6 +357,11 @@ export async function create(canvas, ctx) {
   // (a world on the game's level: its heightmaps decoded first, so the grid
   // is the game's ground; any other world's ground is as it was)
   const height = makeHeight(await levelGround(site.ground), { relief: amounts.relief });
+  // (and what the map itself places: its creatures, droids and vehicles where the game stood them)
+  const placed = await levelPlaced(site);
+  // (and the cells its pieces fill, which the world's own solid scatter keeps out of)
+  const busy = await levelBusy(site);
+  const inBusy = (x, z) => busy.size > 0 && busy.has(`${Math.floor(x / 128)},${Math.floor(z / 128)}`);
   const grid = heightGrid(height, amounts.grid);
   // (water you wade in: not lava, not cloud, and not a sea far under a
   // platform with nothing else under it, which you'd fall into)
@@ -370,6 +381,7 @@ export async function create(canvas, ctx) {
       const x = Math.cos(a) * d;
       const z = Math.sin(a) * d;
       if (avoid.some((v) => Math.hypot(x - v.at[0], z - v.at[1]) < v.r + (s.clear ?? 4))) continue;
+      if (s.solid !== false && inBusy(x, z)) continue;
       if (s.flat && grid.normalAt(x, z)[1] < s.flat) continue;
       if (wade != null && s.dry !== false && grid.heightAt(x, z) < wade + (s.above ?? 0.2)) continue;
       const [lo, hi] = s.scale ?? [1, 1];
@@ -463,12 +475,16 @@ export async function create(canvas, ctx) {
       levelEngine = physics;
       takeEngine?.(physics);
     },
+    // (the map's placed lights rank by the camera; its probes go to the game light)
+    camera,
+    light: gameLight,
+    onProbe: gameLit ? (p) => gameLit.outdoorProbe(p) : null,
   });
   // its terrain's scatter, from the game's tables, in the world's wind (fidelity lane N; null without one)
   const gameScatter = createLevelScatter({ scene, site, tier: level, renderer, groundAt: (x, z) => groundAt(world, x, z), wind, small });
   // (things that float, a bongo on Lake Paonga, ride the waves: floats.js)
   const floaters = [];
-  for (const t of site.things_all) {
+  for (const t of [...site.things_all, ...placed.things]) {
     if (site.level && t.game) continue;
     const put = placer.put(t);
     if (t.float && water?.height) put.then((o) => o && floaters.push({ o, x: o.position.x, z: o.position.z, yaw: t.yaw ?? 0, float: t.float }));
@@ -495,12 +511,13 @@ export async function create(canvas, ctx) {
   // → (kind, spec, i) → figure | null: the Rick and Morty planets' people);
   // otherwise made when it's first wanted, as it always was
   let cast = ctx.figures ? createMeshyCast(withWardrobe()) : null;
-  const life = createActors({ parent: scene, world, life: [...garrisonLife(site.life, ctx.effects?.troops, site.uniforms ?? null), ...garrisonProbe(site, ctx.effects, systemById(site.id)?.faction ?? null)], wants: site.wants, talk: () => ({ era: PLACES[site.id] ?? null, owner: ctx.effects?.owner ?? null, side: ctx.effects?.side ?? null, hero: ctx.hero?.id ?? ctx.hero ?? null, done: state.done, rank: ctx.effects?.rank ?? 0 }), seed: (site.ground.seed ?? 1) + 7, warm, small, kit, fog: () => scene.fog.density, water, models, figure: ctx.figures?.(cast) ?? null, only: site.cast === 'models', place: site.id });
+  const life = createActors({ parent: scene, world, life: [...garrisonLife([...site.life, ...placed.life], ctx.effects?.troops, site.uniforms ?? null), ...garrisonProbe(site, ctx.effects, systemById(site.id)?.faction ?? null)], wants: site.wants, talk: () => ({ era: PLACES[site.id] ?? null, owner: ctx.effects?.owner ?? null, side: ctx.effects?.side ?? null, hero: ctx.hero?.id ?? ctx.hero ?? null, done: state.done, rank: ctx.effects?.rank ?? 0 }), seed: (site.ground.seed ?? 1) + 7, warm, small, kit, fog: () => scene.fog.density, water, models, figure: ctx.figures?.(cast) ?? null, only: site.cast === 'models', place: site.id });
 
   await breathe();
   // ── The places you go into (zones): built high over the world, out of
   // sight, each with its own lamps ──
   for (const z of site.zones) {
+    if (!z.inside) continue; // (a door to another of the world's maps: nothing built)
     placer.put({ kind: z.inside.build, at: [z.origin[0], z.origin[2]], y: z.origin[1], abs: true, model: false, opts: z.inside.opts, zone: true });
     for (const t of z.things) placer.put(t);
   }
@@ -582,7 +599,7 @@ export async function create(canvas, ctx) {
   })(), depthWrite: false, transparent: true });
 
   // what you can ride, where it's parked
-  const rides = [...site.rides, ...(mission?.ride ? [{ kind: mission.ride, at: mission.start, yaw: mission.yaw }] : [])]
+  const rides = [...site.rides, ...placed.rides, ...(mission?.ride ? [{ kind: mission.ride, at: mission.start, yaw: mission.yaw }] : [])]
     .filter((x) => RIDES[x.kind])
     .map((x) => {
       const spec = RIDES[x.kind];
@@ -721,7 +738,7 @@ export async function create(canvas, ctx) {
       })
       .catch(() => {});
   } else if (shipKind === 'cruiser') {
-    import('../../rickmorty/cruiser3d')
+    import('../../rickmorty/cruiser3dNodes')
       .then((mod) => mod.buildCruiser({ ink: 0.36 / 2.7 }))
       .then((c) => {
         if (!c) return;
@@ -1642,6 +1659,8 @@ export async function create(canvas, ctx) {
         else if (q && state.done.has(q.id)) say(q.again ?? [[spec.name, 'Thanks again.']]);
       }
     } else if (tg.kind === 'use') questEvent({ type: 'use', id: tg.id });
+    // (a door to another of the world's maps: the page goes there, as the ship's leave does)
+    else if (tg.kind === 'enter' && tg.zone.to?.district) emit({ type: 'district', id: tg.zone.to.district });
     else if (tg.kind === 'enter') enterZone(tg.zone);
     else if (tg.kind === 'leave') leaveZone();
     else if (tg.kind === 'mount') {
@@ -3572,6 +3591,8 @@ export async function create(canvas, ctx) {
       put: (x, z) => (state.phase === 'landing' || state.phase === 'out' ? (state.phase = 'walk') : null, putAt(me().st, x, z)), // (you, set down somewhere, out of the ship: the ground war's QA)
       you: () => ({ x: me().st.x, z: me().st.z, health: state.health, phase: state.phase }),
       // (a bolt of yours from one point at another, [x, y, z] each, for the QA scripts: where it lands is debug().surfaces; and the solids near a spot to aim at)
+      // (the game's level's own share of the frame: its calls, triangles, lights and probe)
+      level: () => (gameLevel ? { ...gameLevel.stats(), ready: gameLevel.ready(), progress: gameLevel.progress() } : null),
       surfaces: () => ({ level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }),
       solidsNear: (x, z, r = 60) => world.solids.near(x, z, r).map(({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag }) => ({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag })),
       shoot: (from, to) => blaster.fire(new V(...from), new V(...to).sub(new V(...from)).normalize(), [], boltOf(me()), 90, null, { yours: true, push: new V() }),
@@ -3681,9 +3702,15 @@ export async function create(canvas, ctx) {
         await within(lit.bake(), 20000);
         if (!on()) return;
       }
-      if (post.composer) await within(precompilePasses(renderer, post.composer, camera), 20000);
+      // (the node renderer's: every program made, compileAsync, then one
+      // small draw through the post, so its passes are made too)
+      twinScene(scene);
+      onProgress?.(0.35, 'shaders');
+      if (rt.gfx.compile) await within(rt.gfx.compile(scene, camera, scene), 600000);
       if (!on()) return;
-      await within(prepareScene({ renderer, roots: [scene], scene, camera, target: post.target, render: () => post.render(64, 64), onProgress, alive: on }), 600000);
+      onProgress?.(0.8, 'first draw');
+      post.render(64, 64);
+      onProgress?.(1, 'first draw');
     } finally {
       clearInterval(telling);
       offSkip?.();

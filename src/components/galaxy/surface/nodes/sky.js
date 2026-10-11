@@ -8,6 +8,7 @@
 //
 //   skyUniforms(site) → the uniforms (sky.js's block)
 //   skyMaterial(site, { clouds, uniforms }) → { material, uniforms }
+//   createSky(site, { clouds }) → sky.js's createSky, on this material
 //     (`uniforms` given: those, so the cloudless copy for the reflections
 //     shares every one but its own uWithClouds)
 //
@@ -22,11 +23,9 @@ import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { Fn, If, abs, acos, cameraPosition, clamp, cos, cross, dot, exp, float, floor, fract, max, min, mix, modelWorldMatrix, normalize, positionLocal, pow, select, sin, smoothstep, sqrt, step, texture, uniform, vec2, vec3, vec4 } from 'three/tsl';
 import { noiseTexture } from '../noiseTex';
 import { held, onFar, rev } from './common';
+import { MAX_BODIES, MAX_SUNS, dirOf, skyDome } from '../skyDome';
 
-export const MAX_SUNS = 2;
-export const MAX_BODIES = 3;
-
-const dirOf = (az, el) => new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
+export { MAX_BODIES, MAX_SUNS, dirOf };
 
 export function skyUniforms(site) {
   const s = site.sky;
@@ -172,4 +171,11 @@ export function skyMaterial(site, { clouds = 0, uniforms = skyUniforms(site) } =
   material.colorNode = colour();
   onFar(material);
   return { material, uniforms };
+}
+
+// sky.js's createSky on the node renderer: the same dome (../skyDome.js),
+// this material on it, and the reflections' copy without its clouds
+export function createSky(site, { clouds = 0 } = {}) {
+  const { material, uniforms } = skyMaterial(site, { clouds });
+  return skyDome(site, { material, uniforms, cloudless: () => skyMaterial(site, { clouds, uniforms: { ...uniforms, uWithClouds: uniform(0) } }).material });
 }

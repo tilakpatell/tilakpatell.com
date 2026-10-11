@@ -1,52 +1,29 @@
-# The surface's closure with lane T's twins in place
+# The surface's closure at the flip
 
-What `src/components/galaxy/surface/module.js` would still reach at the flip if every import of an original with a twin were moved to its twin and the surface's own ported files (sky, skyfog, water, weather, props/windows, props/core's shield, props/forest's shafts, activity's beam, the assault's posts) imported their `nodes/` materials, and `universe/post.js` were `nodes/post.js`. Worked out by following the imports with each original read as its twin (`shadingClosure.js`'s `importsOf` and `resolveImport`, `shading.test.js`'s exempt files left out). 55 files with GLSL at the start; 30 on the branch alone; 34 after `origin/main` was merged in on the evening of 2026-10-10 (main brought the game's effects, `lib/three/fx/marks.js` and `push.js` through `fx/gameFx.js`, the bolts' `lib/three/combat/bolts.js` through `blaster.js`, and the landings' `litter.js`), every one reached through these imports:
+What `src/components/galaxy/surface/module.js` reaches now that it says `shading: 'nodes'`, by `shading.test.js`'s own measure (`shadingClosure.js`'s `closure` and `glslSites`, the test's exempt files left out): **401 files, none with GLSL**. `shading.test.js` passes with the module on `'nodes'`.
 
-| Reached through | Files with GLSL behind it | What the surface takes from it |
+| | Files reached | With GLSL |
 |---|---|---|
-| `universe/planets.js` | 11 (planets, stations, rmWorlds, planetShading, props, gateway, atmosphere, keySun, Cybertron's skin and war) | `loadModel`: `loadGLTF` and `cloneScene` from `lib/three/gltfCache`, which has no GLSL. Imported from there, the eleven go. |
-| `universe/footScene.js` | 15 (footScene, portalFx, the landings' sky and reentry, furnish's worlds: Middle-earth, the office, Rick and Morty, Caribbean, Invincible, Cybertron, stage3d) | `PARTY`, `loadPartyFigure`, `loadSharedFigure`: the crew's figures. Needs the figure-loading slice of footScene as a GLSL-free file. |
-| `rickmorty/portal/meshyCast.js` | 3 (meshyCast, toon, wardrobe/dress) | `createMeshyCast`, `MESHY`: the Rick and Morty cast figures. Needs twins of meshyCast's toon look and dress's recolour. |
-| `rickmorty/cruiser3d.js` (dynamic) | 1 | `buildCruiser`: Rick's ship. Its ink is \`inkNodes\`'; its own patch needs a twin. |
-| `universe/shipModels.js` | 1 (livery) | `buildShip`: the ships' paint. Needs a twin of `livery.js`. |
-| `universe/landings/models.js` | 1 | `sizeFor` (placer.js): a pure function. |
-| `lib/three/fx/gameFx.js` (marks, push), `lib/three/combat/bolts.js` (via blaster.js) | 3 | the game's effects and bolts, on main since this branch began: twins. |
-| `lib/three/portalFx.js` | (in footScene's) | `createPortalFx`, `meshyJoints` (activity.js). Needs a twin. |
+| Before lane T (`closure-before.md`) | 371 | 55 |
+| Every twin in place, before this round (main merged in, 2026-10-10 evening) | 435 | 34 |
+| At the flip (rebased on main, 2026-10-10 night) | 401 | 0 |
 
-```
-src/components/universe/planets.js [ShaderMaterial] via galaxy/surface/scene.js
-src/components/universe/footScene.js [ShaderMaterial,onBeforeCompile] via galaxy/surface/scene.js
-src/components/rickmorty/portal/meshyCast.js [onBeforeCompile] via galaxy/surface/scene.js
-src/components/rickmorty/cruiser3d.js [onBeforeCompile] via galaxy/surface/scene.js
-src/components/universe/livery.js [onBeforeCompile] via galaxy/surface/scene.js > universe/shipModels.js
-src/components/universe/stations.js [ShaderMaterial,onBeforeCompile] via galaxy/surface/scene.js > universe/planets.js
-src/components/universe/rmWorlds.js [ShaderMaterial,onBeforeCompile] via galaxy/surface/scene.js > universe/planets.js
-src/components/galaxy/gateway.js [ShaderMaterial] via galaxy/surface/scene.js > universe/planets.js
-src/components/cybertron/skin.js [onBeforeCompile] via galaxy/surface/scene.js > universe/planets.js
-src/lib/three/atmosphere.js [ShaderMaterial] via galaxy/surface/scene.js > universe/planets.js
-src/components/cybertron/war.js [ShaderMaterial] via galaxy/surface/scene.js > universe/planets.js
-src/components/universe/props.js [onBeforeCompile] via galaxy/surface/scene.js > universe/planets.js
-src/lib/three/keySun.js [onBeforeCompile] via galaxy/surface/scene.js > universe/planets.js
-src/components/universe/planetShading.js [ShaderMaterial,onBeforeCompile] via galaxy/surface/scene.js > universe/planets.js
-src/lib/three/portalFx.js [ShaderMaterial] via galaxy/surface/scene.js > universe/footScene.js
-src/components/universe/landings/sky.js [ShaderMaterial] via galaxy/surface/scene.js > universe/footScene.js
-src/components/universe/landings/litter.js [onBeforeCompile] via galaxy/surface/scene.js > universe/footScene.js
-src/components/universe/reentry.js [ShaderMaterial] via galaxy/surface/scene.js > universe/footScene.js
-src/lib/three/fx/marks.js [ShaderMaterial] via galaxy/surface/scene.js > lib/three/fx/gameFx.js
-src/lib/three/fx/push.js [ShaderMaterial] via galaxy/surface/scene.js > lib/three/fx/gameFx.js
-src/components/rickmorty/portal/toon.js [ShaderMaterial] via galaxy/surface/scene.js > rickmorty/portal/meshyCast.js
-src/components/rickmorty/wardrobe/dress.js [onBeforeCompile] via galaxy/surface/scene.js > rickmorty/wardrobe/wear.js
-src/components/universe/landings/models.js [onBeforeCompile] via galaxy/surface/scene.js > galaxy/surface/placer.js
-src/lib/three/combat/bolts.js [ShaderMaterial] via galaxy/surface/scene.js > galaxy/surface/blaster.js
-src/components/universe/landings/beacon.js [ShaderMaterial] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js
-src/components/universe/landings/rickmorty.js [ShaderMaterial] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js
-src/components/universe/landings/caribbean.js [onBeforeCompile] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js
-src/components/middleearth/shire/props.js [onBeforeCompile] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js > universe/landings/middleearth.js
-src/components/middleearth/kit.js [ShaderMaterial] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js > universe/landings/middleearth.js
-src/components/cybertron/rollout/kaon.js [onBeforeCompile] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js > universe/landings/transformers.js
-src/lib/three/facade.js [onBeforeCompile] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js > universe/landings/invincible.js
-src/lib/stage3d.js [EffectComposer,ShaderPass,UnrealBloomPass,RenderPass,OutputPass] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js > universe/landings/middleearth.js > middleearth/shire/props.js
-src/components/office/world/scenery.js [ShaderMaterial] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js > universe/landings/office.js > office/world/outside.js
-src/components/office/world/windows.js [ShaderMaterial] via galaxy/surface/scene.js > universe/footScene.js > universe/landings/furnish.js > universe/landings/office.js > office/world/outside.js > office/world/scenery.js
-435 files, 34 with GLSL
-```
+## How the last 34 went
+
+| Reached through | Files with GLSL behind it | What was done |
+|---|---|---|
+| `universe/planets.js` | 11 | The surface took only `loadModel`, which is `lib/three/gltfCache`'s `loadGLTF` and `cloneScene`; scene.js imports those directly. |
+| `universe/footScene.js` | 15 | The figure loading moved, unchanged, to `universe/footFigures.js` (GLSL-free, the wardrobe injected: `figuresWith({ bodyAsset, bodyKind, dress })`). footScene binds it with the classic wardrobe and keeps every export; the surface's `nodes/figures.js` binds it with `wearNodes`. |
+| `lib/three/portalFx.js` | (in footScene's) | `portalFxCore.js` (the swallow) and the GLSL disc in `portalFx.js`; `portalFxNodes.js` is the disc in TSL. |
+| `rickmorty/portal/meshyCast.js`, `toon.js`, `wardrobe/dress.js`, `wear.js` | 3 | Each split into a GLSL-free core (`meshyCastCore`, `toonCore`, `dressCore`, `wearCore`) and its GLSL looks; the `Nodes` files wrap the same cores. `gear.js` takes `toon` from `toonCore`, so the wardrobe doesn't reach `InkPass`. |
+| `rickmorty/cruiser3d.js` | 1 | `cruiser3dCore.js` and `cruiser3dNodes.js` (the glass dome as hooks). |
+| `universe/shipModels.js`, `livery.js` | 1 | `shipModelsCore.js` and `liveryCore.js`, with `shipModelsNodes.js` and `liveryNodes.js`. |
+| `universe/landings/models.js` | 1 | `sizeFor` moved to `landings/sizing.js`, which models.js re-exports. |
+| `lib/three/fx/gameFx.js` (`marks`, `push`), `lib/three/combat/bolts.js` | 3 | Cores and `Nodes` files for each. |
+| The surface's own: sky, water, weather, skyfog, windows, kit | (counted in 55) | `skyDome.js` and `waterCore.js` hold the workings; `sky.js` and `water.js` wrap them in their shaders as before (twin-parity's reference), `nodes/sky.js` and `nodes/water.js` in node materials. `kit.js` splits into `kitCore.js` and its looks (`nodes/kit.js` on the node renderer); the props take their parts from `kitCore`. The beam, the command posts, the hvv wall, the Gungans' shield and the canopy's shafts use their `nodes/` makers in place. |
+
+The imports were moved by one rewrite over the surface's files, each imported name checked against the twin's exports. The GLSL originals other worlds use keep every export and behave as before.
+
+## On the node renderer, a hook on a classic material
+
+A node hook (`wear`, `wind`, `litWindows`…) given a classic material hands back its node twin. `hookNodes.asNode` keeps one twin per classic material, so the hook lands on the twin that the house's `adopt` or `twinScene` later puts on the object; scene.js swaps (`twinScene`) as things are warmed and before the first draw. The kit makes its materials as node materials from the start (`nodes/kit.js`'s `material: asNode`).
