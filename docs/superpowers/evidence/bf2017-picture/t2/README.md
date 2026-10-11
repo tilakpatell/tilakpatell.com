@@ -19,6 +19,10 @@ WebGPU, the node renderer, is the default for everything where the browser has i
 
 **The game's physics books.** The surface reads the 2017 soldier (`soldier.json`, the body's speeds and capsule), the bone capsules for hits (`bones.json`, `boltPlay.js`) and the level's material grid (`materials.json`: impacts and footprints, and now the Rapier world's colliders' tags, friction and bounce where the site names its materials). Only Hoth's grid and Hoth's Havok shapes are in the repo; another world's take the same paths the day its pack and grid are built (lanes E1 to E4).
 
+**Hoth in its own picture.** On the node renderer the surface draws Hoth under its weather's whole VisualEnvironment record (`src/data/bf2017/light/hoth.ve.json`) and picture (`hoth.picture.json`): the linear tone map with the `T_CC_Hoth` LUT read before the encoding, the five Gaussians as the bloom, the HBAO numbers, the sun flare and the motion blur in the chain; the painted panorama over the dome; the record's fog with its gradient; the cloud texture in the sun's shadow; the level's 104 placed lights clustered (`surface/nodes/picture.js`, `surface/nodes/stack.js`). A weather change fades the surface's own light, not the picture (the first weather's stays, as lane Q6 left it). Whether it matches the game's frames is the owner's laptop's to judge: no game frame is in the repo, and the panorama is the bucket's 2,048 × 512 LDR copy of the game's 8,192 × 2,048 HDR (the desktop's re-encode is listed).
+
+**Ragdolls.** The Battlefront world's fallen (`lib/three/ragdolls2017.js`, `lib/combat/fall.js`) fall on every galaxy surface: the hostiles (`activity.js`), the assault's soldiers (`missions/assaultScene.js`), and the ground war's, which now take the game's fifteen bodies where the figure is on the game's skeleton (`ground/groundFigures.js`). The heroes-versus-villains fighters, who stand again, and you and your crewmate, who get back up, keep their falls.
+
 ## Hoth at high, node renderer over WebGL 2 (1280 × 720)
 
 | | calls | triangles | |
