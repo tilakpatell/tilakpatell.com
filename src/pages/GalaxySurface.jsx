@@ -33,11 +33,14 @@ import { ABILITIES, abilitiesOf } from '../components/galaxy/surface/abilityRule
 import { GameIcon } from '../runtime/hud';
 import { HERO_KEY, heroById, heroSpec, loadoutLine, readHero, writeHero } from '../components/galaxy/heroes';
 import { standInLine } from '../components/galaxy/surface/standIn';
+import HitMarker from '../components/galaxy/surface/HitMarker';
+import { reticleLock, reticleShape } from '../components/galaxy/surface/reticleFor';
 import { missionOf } from '../components/galaxy/surface/missions';
 import { missionForMode } from '../components/galaxy/surface/modes';
 import { useModeMenu } from '../components/galaxy/surface/useModeMenu';
 import ModeMenu from '../components/galaxy/surface/ModeMenu';
 import { sideFor, warSideOf } from '../components/galaxy/surface/missions/assault';
+import { deployPick } from '../components/galaxy/surface/missions/deployPick';
 import { SIDE_KEY, current as currentOath, readAllegiance, swear } from '../components/galaxy/allegiance';
 import { GCW, campaignAt, scoresAt } from '../components/galaxy/gcw';
 import { SIDES, warOfSide } from '../components/galaxy/sides';
@@ -160,6 +163,19 @@ export default function GalaxySurface() {
       }
     }
     view.current?.input?.('side', k);
+  };
+  // who you come on as, from the spawn screen (deployPick.js): a class or an
+  // enforcer kept as your loadout, as a Loadout pick is; a hero bought for
+  // Battle Points worn for that life only, the last class back on after
+  const lastClass = useRef(null);
+  const onLoan = useRef(false);
+  const onAssaultDeploy = (offer, postId) => {
+    const { next, keep } = deployPick(offer, heroNow.current, ship);
+    setHero(next);
+    if (keep) local.set(HERO_KEY, writeHero(next));
+    if (keep) lastClass.current = next;
+    onLoan.current = !keep;
+    view.current?.input?.('deploy', postId, offer);
   };
   // the ground battle's result, counted in the war once: the posts your side
   // took while you were up, and the battle if you won it
@@ -413,7 +429,9 @@ export default function GalaxySurface() {
         }
       }
       else if (e.type === 'down') {
-        // (in a battle the HUD's deploy card says it)
+        // (in a battle the HUD's deploy card says it; a hero bought for that life goes, the class you were back on)
+        if (onLoan.current && lastClass.current) setHero(lastClass.current);
+        onLoan.current = false;
         if (BATTLES.has(mission?.kind)) return;
         setToast((t) => ({ title: 'Knocked down', text: 'Back on your feet. Try that again.', n: (t?.n ?? 0) + 1 }));
         later('toast', 3500, () => setToast(null));
@@ -579,7 +597,7 @@ export default function GalaxySurface() {
 
       {/* the quest you're on, and the things to do here */}
       {mission && !BATTLES.has(mission.kind) && <ChaseHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onAgain={() => view.current?.input?.('restart')} onBack={takeOff} />}
-      {mission?.kind === 'assault' && <AssaultHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onSide={onAssaultSide} sworn={sworn} onDeploy={(id) => view.current?.input?.('deploy', id)} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
+      {mission?.kind === 'assault' && <AssaultHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onSide={onAssaultSide} sworn={sworn} kept={hero.id} onDeploy={onAssaultDeploy} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
       {mission?.kind === 'hvv' && <HvvHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} hero={hero?.id} onSide={(k) => view.current?.input?.('side', k)} onDeploy={() => view.current?.input?.('deploy')} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
       {mission?.kind === 'blast' && <BlastHud view={chase} feed={chaseFeed} mission={mission} best={best} fresh={fresh} onSide={(k) => view.current?.input?.('side', k)} onDeploy={(pid) => view.current?.input?.('deploy', pid)} onAgain={() => view.current?.input?.('restart')} onBack={goUp} />}
 
@@ -677,21 +695,22 @@ export default function GalaxySurface() {
           </ul>
         </div>
       )}
-      {hitMark && <span key={`hit-${hitMark.n}`} className={hitMark.kill ? 'surface-hitmark is-kill' : 'surface-hitmark'} aria-hidden="true" />}
+      {hitMark && <HitMarker key={`hit-${hitMark.n}`} kill={hitMark.kill} />}
       {parryNote > 0 && (
         <p key={`parry-${parryNote}`} className="surface-parry" role="status">
           Perfect
         </p>
       )}
       {hurtFlash > 0 && <div key={`hurt-${hurtFlash}`} className="surface-hurt" aria-hidden="true" />}
-      {/* the reticle (the world kit's): up whenever a gun is, or the sights, or a shot's just gone */}
+      {/* the reticle (the world kit's, in the game's shape for a blaster: reticleFor.js): up whenever a gun is, or the sights, or a shot's just gone */}
       <Reticle
         className="surface-reticle"
+        shape={reticleShape(hero)}
         state={reticleState(null, {
           gun: ((aiming || quest?.shoot || (combat && !combat.saber)) && phase === 'walk') || (mission?.kind === 'chase' && chase && !chase.result && phase === 'ride') || (BATTLES.has(mission?.kind) && !(mission.kind === 'hvv' && combat?.saber) && chase?.phase === 'run' && chase.you?.up && phase === 'walk'),
           sights: Boolean(combat?.ads && !combat.saber && phase === 'walk'),
           hitAt: hitMark ? 0 : null,
-          lock: combat?.lock,
+          lock: reticleLock(hero, combat),
         })}
       />
       {looking?.prompt && phase === 'walk' && !leaving && !emote?.open && <Prompt k="" verb={looking.prompt} className="surface-look" onClick={() => view.current?.input?.('lookLock')} />}

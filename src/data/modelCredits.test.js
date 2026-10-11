@@ -60,7 +60,10 @@ describe('the 3D models that are other people’s', () => {
       const surface = name.startsWith('surface-') && code.includes('/models/galaxy/surface/${kind}.glb') && code.includes(`  ${kind}: {`);
       // (or one of the drop's library objects a world asks for by name, `game:<name>`: catalog/bf2017-library.js)
       const game = GAME_FILES.has(file);
-      expect(code.includes(file) || surface || game || (code.includes('/models/sketchfab/${name}.glb') && code.includes(`'${name}'`)), `${name} is used`).toBe(true);
+      // (or a far copy under galaxy/lod/, which galaxy/models.js's lodUrl builds for the kind whose row names the original: lane S1's native fighters)
+      const far = /^\/models\/galaxy\/lod\/(\w+)\.glb$/.exec(file);
+      const farUsed = Boolean(far) && code.includes('/models/galaxy/lod/') && code.includes(`  ${far[1]}: {`);
+      expect(code.includes(file) || surface || game || farUsed || (code.includes('/models/sketchfab/${name}.glb') && code.includes(`'${name}'`)), `${name} is used`).toBe(true);
       expect(shown[m.where], `${name}: ${m.where}`).toBeTruthy();
       expect(readFileSync(at(`src/${shown[m.where]}`), 'utf8'), m.where).toContain(`<ModelCredits where="${m.where}"`);
       // and every other page that shows it, its credit too

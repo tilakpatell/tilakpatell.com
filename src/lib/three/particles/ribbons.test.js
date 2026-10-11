@@ -136,3 +136,19 @@ describe('trails that follow their ship', () => {
     expect(fx.stats.running).toBe(30);
   });
 });
+
+describe('held out of the temporal history (lane N2)', () => {
+  it('sprites, mesh particles and ribbons write the still velocity, not one three cannot follow', async () => {
+    const em = SNOW.emitters.find((e) => e.kind === 'mesh');
+    const sim = await createSim(em, 4, { mode: 'cpu' });
+    const shared = await createShared();
+    const mesh = await createSpriteMesh(em, sim, { shared });
+    expect(mesh.material.userData.history).toBe('still');
+    expect(Object.keys(mesh.material.mrtNode.outputNodes)).toContain('velocity');
+    const quad = SNOW.emitters.find((e) => e.kind !== 'mesh');
+    const sprite = await createSpriteMesh(quad, await createSim(quad, 4, { mode: 'cpu' }), { shared });
+    expect(sprite.material.userData.history).toBe('still');
+    const rib = await createRibbonMesh(trailEm, createTrails(trailEm, 1), { shared });
+    expect(rib.mesh.material.userData.history).toBe('still');
+  });
+});

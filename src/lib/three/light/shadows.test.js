@@ -1,6 +1,8 @@
+import { Buffer } from 'node:buffer';
+import { deflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three/webgpu';
-import { FILTER_HOOK, PCSS_SAMPLES, earlyOut, filterFor, pcssFilter, penumbraWidth, readPcss, vogelDisk, vsmFallback } from './shadows';
+import { FAR_STEPS, FILTER_HOOK, PCSS_SAMPLES, boxUv, createFarCache, depthConvention, earlyOut, farShadowAt, farShadowOf, filterFor, pcssFilter, penumbraWidth, readPcss, vogelDisk, vsmFallback } from './shadows';
 import hoth from './fixtures/hoth.ve.json';
 
 describe('readPcss', () => {
@@ -79,5 +81,81 @@ describe('vsmFallback', () => {
     vsmFallback(renderer, light, 8);
     expect(renderer.shadowMap.type).toBe(THREE.VSMShadowMap);
     expect(light.shadow.blurSamples).toBe(8);
+  });
+});
+
+describe('the far shadow cache (lane N3)', () => {
+  // Hoth's level.json shadowCache (lane E0): the box's axes each its full size
+  const hoth = { centre: [-20.36, 22.72, 197.52], forward: [0, 0, 1111.48], png: 'shadow/far.png', resolution: 4096, right: [650.64, 0, 0], size: [2048, 2048], tiles: 8, up: [0, 202.43, 0], variant: 'Cloudy_VFX' };
+  it('farShadowOf reads the pack’s row (shadowCache), or none', () => {
+    expect(farShadowOf({ shadowCache: hoth })).toMatchObject({ png: 'shadow/far.png', size: [2048, 2048] });
+    expect(farShadowOf({ farShadow: hoth, shadowCache: null }).png).toBe('shadow/far.png');
+    expect(farShadowOf({ shadowCache: null })).toBe(null);
+    expect(farShadowOf({ shadowCache: { ...hoth, right: [0, 0, 0] } })).toBe(null);
+    expect(farShadowOf(null)).toBe(null);
+  });
+  it('boxUv: a world point into the box’s map (u along right, v along forward) and its height in the box (0 bottom, 1 top)', () => {
+    const c = farShadowOf({ shadowCache: hoth });
+    expect(boxUv(c, hoth.centre)).toEqual([0.5, 0.5, 0.5]);
+    const corner = boxUv(c, [hoth.centre[0] + 650.64 / 2, hoth.centre[1] + 202.43 / 2, hoth.centre[2] - 1111.48 / 2]);
+    expect(corner.map((v) => Math.round(v * 1e6) / 1e6)).toEqual([1, 0, 1]);
+  });
+  it('depthConvention: which end of the 16-bit depth is the top, from where the ground lies', () => {
+    const c = farShadowOf({ shadowCache: hoth });
+    // the ground (y = 0) sits 0.612 of the box down from its top: a map whose
+    // median is 0.612 counts from the top, one whose median is 0.388 from the bottom
+    const groundDown = (hoth.centre[1] + 202.43 / 2) / 202.43;
+    expect(depthConvention(c, Array(9).fill(groundDown), 0)).toBe('top');
+    expect(depthConvention(c, Array(9).fill(1 - groundDown), 0)).toBe('bottom');
+  });
+  it('farShadowAt: lit with no cache, or where the map is open; shadowed under an occluder along the sun', () => {
+    const c = farShadowOf({ shadowCache: hoth });
+    const sun = [0, 1, 0];
+    // a map all at the ground (y = 0), counted from the top
+    const groundDown = (hoth.centre[1] + 202.43 / 2) / 202.43;
+    const flat = () => groundDown;
+    expect(farShadowAt(null, flat, [0, 0, 200], sun)).toBe(1);
+    expect(farShadowAt(c, flat, [0, 0.5, 200], sun, { zero: 'top' })).toBe(1);
+    // a 20 m block over the point
+    const block = (u, v) => (Math.abs(u - 0.5) < 0.02 && Math.abs(v - 0.5) < 0.02 ? groundDown - 20 / 202.43 : groundDown);
+    expect(farShadowAt(c, block, [hoth.centre[0], 0.5, hoth.centre[2]], sun, { zero: 'top' })).toBe(0);
+    // outside the box: the record's distant term, lit
+    expect(farShadowAt(c, block, [5000, 0, 5000], sun, { zero: 'top' })).toBe(1);
+    expect(FAR_STEPS).toBe(8);
+  });
+});
+
+// a 16-bit grey PNG, filter 0 every row (png16.test.js holds the reader to the rest)
+function png16(w, h, values) {
+  const raw = Buffer.alloc(h * (w * 2 + 1));
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) raw.writeUInt16BE(values[y * w + x], y * (w * 2 + 1) + 1 + x * 2);
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    return Buffer.concat([len, Buffer.from(type, 'ascii'), data, Buffer.alloc(4)]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 16;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+
+describe('createFarCache', () => {
+  const row = { png: 'shadow/far.png', size: [4, 4], centre: [0, 50, 0], right: [100, 0, 0], up: [0, 100, 0], forward: [0, 0, 100] };
+  it('the map loaded as a half-float texture, its convention read from it, its node made', async () => {
+    // the ground (y = 0) is half the box down from its top: 0.5 in either convention; a map at 0.6 from the top is under it
+    const values = Array(16).fill(Math.round(0.55 * 65535));
+    const cache = await createFarCache(row, { loadPng: async () => Uint8Array.from(png16(4, 4, values)).buffer, groundY: 0 });
+    expect(cache).not.toBe(null);
+    expect(cache.zero).toBe('top');
+    expect(cache.sample(0.5, 0.5)).toBeCloseTo(0.55, 3);
+    expect(cache.node).toBeTruthy();
+    cache.dispose();
+  });
+  it('no row, or a map that does not load or decode: none (the record’s distant term)', async () => {
+    expect(await createFarCache(null, { loadPng: async () => new ArrayBuffer(8) })).toBe(null);
+    expect(await createFarCache(row, { loadPng: async () => new ArrayBuffer(8) })).toBe(null);
+    expect(await createFarCache(row, { loadPng: async () => { throw new Error('404'); } })).toBe(null);
   });
 });

@@ -19,15 +19,19 @@
 //     side() → unit }]: the middle point m kept on the `side` of the line from a to b (a knee in
 //     front, an elbow behind); radii: a radius a point, else `radius`; settled: still for long
 //     enough to stop (step does nothing more)
-//   rigRagdoll(bones, { collide, push, speed, velocity, gravity, table }) → { step(dt), settled, point(name), body,
-//     names (the bones that are points, in the body's order), indexOf(name) → i | -1 }
+//   rigRagdoll(bones, { collide, push, speed, velocity, gravity, table, cap }) → { step(dt), settled, point(name), body,
+//     names (the bones that are points, in the body's order), indexOf(name) → i | -1, release() }
 //     bones: { name: Bone } on Meshy's skeleton, posed as the body is to fall from (its clip's pose);
 //     push: the way it was shot (unit-ish, in the world), speed: how hard (m/s at the chest);
 //     velocity: how the whole body was already moving (m/s, in the world);
 //     table: which bones are points, for another skeleton (ragdoll2017.js's, the game's fifteen
 //     bodies): { torso, limbs, radius: { name: m }, aim: { name: child }, frames: { name: [left,
 //     right, low, high] }, parents?: { name: parent } (the sticks' tree, when it is not the
-//     skeleton's own: the game's bodies skip the shoulders and the upper spine) }; Meshy's by default
+//     skeleton's own: the game's bodies skip the shoulders and the upper spine) }; Meshy's by default;
+//     cap: src/lib/physics/breaks.js's live-hull cap: a falling body's points are counted on it
+//     (held, never refused: a body always falls) until it rests or release() is called, so a
+//     break during a fall gets only the room left and the frame's step stays under its budget
+//     (the GPU-first design's N5)
 
 import * as THREE from 'three';
 
@@ -209,7 +213,7 @@ function basis(across, up, out) {
   return out.setFromRotationMatrix(_m.makeBasis(x, y, z));
 }
 
-export function rigRagdoll(bones, { collide = null, push = { x: 0, y: 0, z: 0 }, speed = 2, velocity = null, gravity = -9.8, table = MESHY } = {}) {
+export function rigRagdoll(bones, { collide = null, push = { x: 0, y: 0, z: 0 }, speed = 2, velocity = null, gravity = -9.8, table = MESHY, cap = null } = {}) {
   const { torso: TORSO, limbs: LIMBS, radius: RADIUS, aim: AIM, frames: FRAMES, parents = null } = table;
   const names = [...TORSO, ...LIMBS].filter((n) => bones[n]);
   const index = new Map(names.map((n, i) => [n, i]));
@@ -318,6 +322,7 @@ export function rigRagdoll(bones, { collide = null, push = { x: 0, y: 0, z: 0 },
     }
   }
 
+  const release = cap ? cap.hold(names.length) : () => {};
   const rag = {
     body,
     names,
@@ -329,7 +334,9 @@ export function rigRagdoll(bones, { collide = null, push = { x: 0, y: 0, z: 0 },
       if (body.settled) return;
       body.step(dt);
       pose();
+      if (body.settled) release();
     },
+    release,
     point(name) {
       const i = index.get(name);
       return i === undefined ? null : { x: body.pos[i * 3], y: body.pos[i * 3 + 1], z: body.pos[i * 3 + 2] };

@@ -8,8 +8,9 @@
 // passed in, so this runs in Node: index.js wires the real ones.
 //
 // createRuntime({ makeBackend, loop, input, quality, saves, assets, audio,
-//   workers, origin, events, now, gpu, override, visible, calibrate, debug }) → rt
-// rt: { gfx, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
+//   workers, origin, events, now, gpu, override, visible, calibrate, debug,
+//   gpuClock, fps, tier }) → rt
+// rt: { gfx, tier, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
 //   failure, current, loading, on(fn), invalidate(), resize(w, h), setVisible(on), lost(),
 //   mount(module, props, host) → shown, handover(module, props, host, { fade, held, after }) → shown,
 //   adopt(module, host), unmount(), dispose(), requality(level) → 'tuned' |
@@ -30,8 +31,21 @@
 // panel under its module's id; the world let go closes it.
 // (`shown`: true once the module's world is the one drawing; false when it
 // failed, or something newer was asked for meanwhile)
+// The picture (GPU-first lane N2): a `'nodes'` world drawn on WebGPU takes
+// its internal resolution from the chip's own time (`gpuClock(renderer)`,
+// lane G1's createGpuTime, made once a renderer; none, or one without
+// `timestamp-query`, keeps the pace) through quality.setSource; a world on
+// the GPU clock never has its canvas resized by it (the output size
+// never changes: TAA's history). The loop's cadence is cadence.js's: every
+// second beat for a visitor who pins 30 (`fps`) or on lane N6's T0.
+// `tier` (gfx) → Promise<'T0' | 'T1' | 'T2' | null>: the device's renderer
+// tier (lib/gpuProbe, the GPU-first design's G1), asked once a page, before
+// the first 'nodes' world is made, so its one-second probe runs under the
+// loading screen and never in a world's frames; `rt.tier` holds the answer
+// (null until then, or when it could not say). A classic world never asks.
 
 import { createLoop } from '../lib/three/loop';
+import { cadenceFor } from './cadence';
 import { settle } from '../lib/settle';
 import { pickBackend } from './backend';
 import { createHandover } from './handover';
@@ -67,8 +81,9 @@ export function createEvents() {
   };
 }
 
-export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug() }) {
+export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null }) {
   let gfx = null;
+  const clocks = new WeakMap(); // a renderer's GPU clock, made once (it turns on its timestamps)
   let kind = null; // the backend asked for
   let coming = null; // { kind, promise }: a backend still being made, for every mount that asks meanwhile
   let lostWebGPU = false;
@@ -92,6 +107,8 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   let holdSince = null;
   let fresh = null; // the box of a mount not yet drawn, marked data-fresh
   let resized = null; // { w, h }: the box's new size, for the next frame to take
+  let tier = null; // the renderer tier, once asked (decideTier)
+  let tiering = null; // its one asking, shared by every mount meanwhile
   const listeners = new Set();
   const dev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
 
@@ -145,7 +162,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
         // (a module that draws through passes of its own sets its own
         // sharpness inside them, `sharpness: 'own'`: the canvas keeps its size,
         // whose every change waits on the graphics chip)
-        if (current.module.sharpness !== 'own') gfx.setRatio(ratioFor(current.module));
+        if (current.module.sharpness !== 'own' && quality.source !== 'gpu') gfx.setRatio(ratioFor(current.module));
         world.lowerQuality?.(level);
       }
       const at = world.anchor?.();
@@ -294,6 +311,15 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   // to its arrival's hitches for a moment, and before the ratio's set, so
   // that's the sharpest (not the last world's softened one)
   const start = (module) => {
+    const nodes = module.shading === 'nodes' && gfx.backend !== 'webgl';
+    const onGpu = nodes && gfx.backend === 'webgpu' && typeof gpuClock === 'function' && gfx.renderer;
+    if (onGpu && !clocks.has(gfx.renderer)) clocks.set(gfx.renderer, gpuClock(gfx.renderer) ?? null);
+    // (lane G1's renderer tier, T0…T2, where the runtime has one: rt.tier)
+    const tier = rt.tier ?? null;
+    // (the drawing buffer's pixels: the 4K start the world's headroomAt takes)
+    const pixels = Math.round((gfx.size?.w ?? 0) * (gfx.size?.h ?? 0) * ratioFor(module) ** 2);
+    quality.setSource?.(onGpu ? 'gpu' : nodes ? 'cpu' : 'classic', { gpuTime: onGpu ? clocks.get(gfx.renderer) : null, fps, tier, pixels });
+    loop.setCadence?.(cadenceFor({ tier: tier ?? quality.tier, fps }));
     quality.reset?.();
     quality.hold?.(WARM_UP);
     gfx.setRatio?.(ratioFor(module));
@@ -309,6 +335,18 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   const build = async (module, props, host, token, { early }) => {
     const made = await backendFor(module);
     if (token !== seq || !made) return null;
+    if (module.shading === 'nodes' && decideTier) {
+      tiering ??= Promise.resolve()
+        .then(() => decideTier(made))
+        .then(
+          (t) => (tier = t ?? null),
+          (err) => {
+            if (dev) console.warn('the renderer tier could not be decided', err);
+          },
+        );
+      await tiering;
+      if (token !== seq) return null;
+    }
     if (early) start(module);
     rt.host = host;
     assets.owner?.(module.id);
@@ -443,6 +481,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     host: null,
     get status() {
       return status;
+    },
+    get tier() {
+      return tier;
     },
     get failure() {
       return failure;

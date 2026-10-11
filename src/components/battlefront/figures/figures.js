@@ -3,7 +3,10 @@
 // pack: the game's own clips under the site's names) as locomotion.js says
 // from what the sim says. One figure an entity, made when it first appears
 // in the view and freed when it leaves; placed between the sim's last two
-// steps by `alpha`.
+// steps by `alpha`. A walking clip plays at the pace that puts its feet on
+// the ground the body crosses (locomotion.js's rateFor over its clipSpeed):
+// the pack's clips play in place while the sim moves the body, so a clip at
+// its own pace under a body moved at another slides.
 //
 // Bodies: Hoth's Galactic Assault puts the Empire (team 2, the attackers:
 // maps/hoth.stages.json) in snowtroopers and the Rebels (team 1) in Hoth
@@ -34,7 +37,7 @@ import { stancePackUrl } from '../../../lib/three/walrusStance.js';
 import { stanceClips } from '../../../lib/three/walrusSets/stance.js';
 import { faceAlongZ } from './facing.js';
 import { createHeld, heldOf } from './held.js';
-import { CROSSFADE, packClip, packFallback, stateFor } from './locomotion.js';
+import { CROSSFADE, clipSpeed, packClip, packFallback, rateFor, stateFor } from './locomotion.js';
 
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
 export const KINDS = { dark: 'snowtrooper', light: 'hothtrooper' };
@@ -60,7 +63,7 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
   let gone = false;
 
   function make(e) {
-    const f = { model: null, mixer: null, clips: null, sockets: null, actions: new Map(), clip: null, last: null, cur: null, weapon: null, stance: null };
+    const f = { model: null, mixer: null, clips: null, sockets: null, actions: new Map(), speeds: new Map(), clip: null, last: null, cur: null, weapon: null, stance: null };
     figs.set(e.id, f);
     const kind = kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
     loadBody(bodyUrl(kind))
@@ -109,11 +112,23 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
       .catch(() => {});
   }
 
-  function play(f, name) {
+  // (the clip's own pace read once: the clip does not change, the speed does)
+  const paceOf = (f, clip) => {
+    if (!f.speeds.has(clip)) f.speeds.set(clip, clipSpeed(f.clips[clip]));
+    return f.speeds.get(clip);
+  };
+
+  // s: stateFor's { state, speed }, the speed setting the pace every frame
+  function play(f, name, s) {
     const has = (n) => Boolean(f.clips[n]);
     const fallback = packFallback(name);
     const clip = resolveClip(name, has) ?? (fallback && resolveClip(fallback, has)) ?? (has('idle') ? 'idle' : null);
-    if (!clip || clip === f.clip) return;
+    if (!clip) return;
+    if (clip !== f.clip) start(f, clip);
+    f.actions.get(clip).timeScale = rateFor(s.state, s.speed, paceOf(f, clip));
+  }
+
+  function start(f, clip) {
     let a = f.actions.get(clip);
     if (!a) {
       a = f.mixer.clipAction(f.clips[clip]);
@@ -169,7 +184,8 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
         f.model.rotation.y = lerpAngle(f.last.yaw, f.cur.yaw, alpha);
         f.model.visible = e.visible !== false;
         arm(f, e.weapon ?? null);
-        play(f, packClip(stateFor(e), { stance: f.stance }));
+        const s = stateFor(e);
+        play(f, packClip(s, { stance: f.stance }), s);
         f.mixer.update(dt);
       }
       for (const [id, f] of figs) {

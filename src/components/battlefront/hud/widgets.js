@@ -10,10 +10,11 @@
 //   markerProjection(at, camera, { w, h }) → { x, y, onScreen, edgeAngle }
 //   teamColour(team, mine, palette) → '#rrggbb'
 //   squadListRows(squad, { option }) → the squad list's rows (SquadMemberListCell's colours, the option's names)
+//   offerNameOf(rb, offer) → the spawn screen's name for an offer, in the game's capitals
 
 import { Vector3 } from 'three';
 import { colour } from '../../../lib/bf2017/ui/index.js';
-import { loadRulebook, squadsOf } from '../../../lib/battlefront/rulebook.js';
+import { loadRulebook, squadsOf, stringOf } from '../../../lib/battlefront/rulebook.js';
 import { CLASS_ICON, iconSrc } from './icons.js';
 
 export const REF = [1920, 1080];
@@ -101,3 +102,21 @@ export function squadListRows(squad, { option = 'Default', hud = squadsOf(loadRu
   });
 }
 
+// The spawn screen's name for an offer, as the game's screen writes it (in
+// capitals, SpawnOverlayScreen's cells): a class by its string; a hero by
+// its row's string, or the string the row leaves out (the export's heroes
+// rows name no string for Boba Fett, Han Solo, Obi-Wan and Anakin; the
+// first three are in the strings table under other keys); a reinforcement
+// by hand (the export's strings carry no ID_C_* row for the six: source
+// hand, the game's own words for them), else its id spaced at its capitals.
+const CLASS_NAMES = { assault: 'ID_C_ASSAULT_TROOPER', heavy: 'ID_C_HEAVY_TROOPER', officer: 'ID_C_OFFICER', specialist: 'ID_C_SPECIALIST' };
+const HERO_NAMES = { bobafett: 'ID_CHAR_BOBA_FETT', hansolo: 'ID_CHAR_HAN_SOLO', obiwan: 'ID_H_OBIWAN_NAME' };
+const HAND_NAMES = { anakin: 'Anakin Skywalker', WookieWarrior: 'Wookiee Warrior', RebelJumpTrooper: 'Rebel Jump Trooper', EwokRebel: 'Ewok Hunter', DeathTrooper: 'Death Trooper', JumpTrooper: 'Jump Trooper', ISBAgent: 'ISB Agent' };
+export function offerNameOf(rb, o) {
+  const said = (key) => (key && rb.strings[key] !== undefined ? stringOf(rb, key) : null);
+  let name = null;
+  if (o.kind === 'class') name = said(CLASS_NAMES[o.cls]) ?? said(CLASS_NAMES[String(o.id).split('-').pop()]) ?? String(o.cls ?? o.id);
+  else if (o.kind === 'hero') name = said(rb.heroes[o.id]?.name) ?? said(HERO_NAMES[o.id]) ?? HAND_NAMES[o.id] ?? String(o.id);
+  else name = HAND_NAMES[o.id] ?? String(o.id).replace(/([a-z])([A-Z])/g, '$1 $2');
+  return name.toUpperCase();
+}

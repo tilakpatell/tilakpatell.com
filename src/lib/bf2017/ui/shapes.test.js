@@ -63,3 +63,16 @@ describe('every shape’s view box', () => {
   });
 });
 
+describe('the hit and kill markers put together from the game’s parts', () => {
+  it('sets four ticks on the diagonals round the middle, each turned to point out', async () => {
+    const { hitMarker, killMarker } = await import('./shapes');
+    for (const m of [hitMarker(), killMarker()]) {
+      expect(m.viewBox).toBe('-20 -20 40 40');
+      // (each part is the game's two paths: its dark edge and its white)
+      expect(m.paths).toHaveLength(2 * 4);
+      for (const turn of [45, -45, 135, -135]) expect(m.paths.filter((p) => new RegExp(`rotate\\(${turn} `).test(p.transform))).toHaveLength(2);
+      // (the white path takes the ink the HUD gives it: rgb(255 255 255), which the kit maps to currentColor)
+      expect(m.paths.filter((p) => p.fill === 'rgb(255 255 255)')).toHaveLength(4);
+    }
+  });
+});

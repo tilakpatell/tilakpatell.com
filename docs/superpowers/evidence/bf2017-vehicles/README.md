@@ -11,7 +11,7 @@ The cast is [`cast.md`](cast.md). Every picture here was looked at before the la
   Each row puts the earlier WebP cut (left) beside the native one (right). The patchwork of the left column was the pipeline's, not the game's.
 - [`xwing-uv-sets.webp`](xwing-uv-sets.webp): the X-wing's maps read through its first UV set (top) and through its second (bottom), the one the game's vehicle shader reads its atlas through.
 - [`sheet-ground-turrets.webp`](sheet-ground-turrets.webp), [`sheet-fighters.webp`](sheet-fighters.webp), [`sheet-cockpits.webp`](sheet-cockpits.webp): the first WebP sheets, before the UV and decal fixes.
-- [`fleet.webp`](fleet.webp): the space layer's ships, old on the left and the game's on the right. Rows: the close-up Star Destroyer, the Nebulon-B, the MC80, the TIE fighter. The game's Nebulon-B and TIE went in. The close-up Star Destroyer and the MC80 stayed, and so did the close-up Nebulon-B: the game's are 16,000-triangle backdrops.
+- [`fleet.webp`](fleet.webp): the space layer's ships, old on the left and the game's on the right. Rows: the close-up Star Destroyer, the Nebulon-B, the MC80, the TIE fighter. The game's Nebulon-B and TIE went in. The close-up Star Destroyer and the MC80 stayed, and so did the close-up Nebulon-B: the game's are 16,000-triangle backdrops. (Lane S1 of the galaxy-in-space design put the space levels' kits in their place, by the owner's rule: `../bf2017-space/fleet-2017.webp`, the sheet re-shot with the kits.)
 
 ## The walkers on their own rigs
 

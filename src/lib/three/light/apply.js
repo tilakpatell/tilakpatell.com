@@ -17,6 +17,8 @@
 //   arena, grid,                    { min, max } and true: the probe grid on ultra (off until measured, A3)
 //   sky = true, post = true, lut,   the sky and fog; the post chain; the grade as a Data3DTexture
 //   filter,                         'pcf' forces three's PCF on the sun (else shadows.js's by tier)
+//   cadence, farCache,              lane N3: the far cascades cached on sun.js's cadence (true, or its rows), and
+//                                   shadows.js's createFarCache as the last cascade's distant term (none: a lit 1)
 //   picture,                        the record's picture (lane Q6, grade.js's pictureOf; else entry.picture):
 //                                   true for its tone map, five Gaussians and HBAO numbers alone, or
 //                                   { lut: { url, size }, panorama: { url, horizon }, gradient: { url }, cloudShadow: { url } }
@@ -26,7 +28,9 @@
 //                                   parts.picture.missing). None: nothing here changes.
 //   onChain,                        (passes) => …: the chain built again when a weather's picture
 //                                   lands at a crossfade's end (its LUT and Gaussians), for rt.gfx.post
-// }) → Promise<{ update(dt, camera), setWeather(entry, seconds, { picture }), track(object), untrack(object), shadowTerm, passes, params, parts, dispose }>
+// }) → Promise<{ update(dt, camera), setWeather(entry, seconds, { picture }), track(object), untrack(object),
+//   setParticleLights(list) (effects.js's lights(): after the placed ones, the newest dropped past
+//   the pool; placed.js), shadowTerm, passes, params, parts, dispose }>
 //
 // sunShadowNode(lit) → the sun's shadow term as a node (the cascades × the
 //   clouds, eased by the record's ParticleSunShadowFactor) for a material
@@ -107,7 +111,7 @@ async function loadPicture(pic, renderer, THREE, have = null) {
 const site = (url) => (/^(\/|[a-z]+:)/i.test(url) ? url : `/${url}`);
 const lerp3 = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 
-export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null, onChain = null } = {}) {
+export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null, onChain = null, cadence = null, farCache = null } = {}) {
   const { THREE } = await loadThree();
   const backend = backendOf(renderer);
   await registerLights(renderer);
@@ -123,7 +127,9 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   const soft = forced === 'pcf' && tier !== 'low' ? { kind: 'pcf' } : filterFor(tier, readPcss(entry));
   const filter = soft.kind === 'pcss' ? await pcssFilter(soft) : null;
   const clouds = tier !== 'low' ? await cloudShadowNode(entry, null, tex.cloudShadow ? { texture: tex.cloudShadow, offset: pic.cloudShadow.offset, rgbm: pic.cloudShadow.rgbm } : {}) : null;
-  const sun = await createSun(entry, { tier, rays, filter, cloud: clouds?.node ?? null });
+  const sun = await createSun(entry, { tier, rays, filter, cloud: clouds?.node ?? null, cadence, farShadow: farCache?.node ?? null });
+  // (the far cache's march follows the sun's shadow direction, the one vector)
+  if (farCache?.uniforms) farCache.uniforms.sun.value = sun.shadowDir;
   // (before the first frame: the cascades clone the light's shadow then)
   if (soft.kind === 'vsm') vsmFallback(renderer, sun.light, soft.samples);
   scene.add(sun.light);
@@ -204,6 +210,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   let fade = null; // { from, to, t, seconds, since, picture }
   let turned = 0; // (each weather asked; a picture that lands after a newer ask is late)
   const pos = [0, 0, 0];
+  let sparks = null; // (the particles' lights for the next update: setParticleLights)
   const finish = (f) => {
     if (!f.picture) return;
     const mine = f.picture.ask;
@@ -223,8 +230,11 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       return params;
     },
     shadowTerm,
-    track: (object) => contact.track(object),
-    untrack: (object) => contact.untrack(object),
+    track: (object) => (sun.track(object), contact.track(object)),
+    setParticleLights(list) {
+      sparks = list;
+    },
+    untrack: (object) => (sun.untrack(object), contact.untrack(object)),
     parts: {
       sun,
       soft,
@@ -267,7 +277,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       sun.update(cam);
       contact.update(cam);
       sky?.update(cam);
-      placed?.update(cam);
+      placed?.update(cam, sparks);
       vols?.update(cam);
       if (probes) {
         pos[0] = cam.position.x;

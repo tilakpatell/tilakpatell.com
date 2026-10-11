@@ -151,8 +151,12 @@ describe('missions played as quests', () => {
         // which the briefing shows whether or not its own game is live yet)
         const also = (sys.game.also ?? []).map((a) => a.to);
         const links = [sys.game.to, ...also];
-        expect(links, `${system} ${m.id}`).toContain(`/galaxy/${system}/surface?mission=${m.id}`);
-        if (!also.includes(`/galaxy/${system}/surface?mission=${m.id}`)) expect(sys.game.status, `${system} ${m.id}`).toBe('live');
+        const own = `/galaxy/${system}/surface?mission=${m.id}`;
+        // (a galactic assault the Battlefront world plays on the game's own
+        // level is linked there instead: Hoth's, 2026-10-11's deploy-flow design)
+        const game = m.kind === 'assault' ? links.find((l) => new RegExp(`^/battlefront/${system}/galacticAssault`).test(l ?? '')) : null;
+        if (!game) expect(links, `${system} ${m.id}`).toContain(own);
+        if (!also.includes(own) && !also.includes(game)) expect(sys.game.status, `${system} ${m.id}`).toBe('live');
         if (m.achievement) expect(ACHIEVEMENTS[m.achievement], `${m.id} achievement`).toBeTruthy();
       }
   });
