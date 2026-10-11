@@ -59,6 +59,7 @@ import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs'
 import { buildPack, neverOf, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
 import { LOD, TEX_MB, capIndex, fitMaps, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
+import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
 import { encodePng16 } from './lib/png16.mjs';
 import { writeParts } from './bf2017-level-parts.mjs';
 import { main as writePhysics } from './bf2017-physics.mjs';
@@ -199,6 +200,9 @@ async function writeTerrain(env, record, { spot, groundY: givenY, arena, out, dr
 // tex/<slug>.<size>.ktx2, one file a distinct size. The meshes name
 // tex/<slug>.ktx2; level.json's `tex` says which size each tier takes.
 async function writeTextures(env, uris, radiusOf, { out, tiers, dry }) {
+  // (the game's own word on each map's colour space, textures.jsonl's srgb
+  // flag, when it has been fetched; the suffix rule otherwise)
+  const word = loadGameWord(CACHE);
   const slugs = new Map();
   const sizes = {}; // slug → { tier: size }
   const bytes = Object.fromEntries(tiers.map((t) => [t, 0]));
@@ -250,17 +254,23 @@ async function writeTextures(env, uris, radiusOf, { out, tiers, dry }) {
   await pool([...found], 8, async ([uri, f]) => {
     const slug = slugs.get(uri);
     const buf = await readFile(f.file);
-    const written = new Set();
+    const written = new Map();
+    // (and told what it is: the game's word, else a colour map sRGB and a
+    // data map linear by suffix, whatever the encode wrote; the row says
+    // it too, for the loader: ktx2-colour.mjs)
+    const want = wantedTransfer(uri, { word });
+    if (want) sizes[slug].srgb = want === 'srgb';
     for (const tier of tiers) {
       const size = sizes[slug][tier];
       if (!written.has(size)) {
-        written.add(size);
+        const k = withTransfer(dropMips(buf, Math.min(mipsToFit(f.width, size), f.levels - 1)), want ?? 'linear');
+        written.set(size, k.length);
         if (!dry) {
           await mkdir(join(out, 'tex'), { recursive: true });
-          await writeFile(join(out, 'tex', `${slug}.${size}.ktx2`), dropMips(buf, Math.min(mipsToFit(f.width, size), f.levels - 1)));
+          await writeFile(join(out, 'tex', `${slug}.${size}.ktx2`), k);
         }
       }
-      bytes[tier] += f.lengths[size] ?? 0;
+      bytes[tier] += written.get(size);
     }
   });
   return { slugs, sizes, bytes, missing, fitted };
@@ -468,7 +478,7 @@ async function main(args) {
   // ground layers, is another lane's and stays)
   if (!dry) {
     const kept = new Set(execFileSync('git', ['ls-files', relative(ROOT, join(out, 'tex'))], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean).map((f) => f.split('/').pop()));
-    const want = new Set(Object.entries(tex.sizes).flatMap(([slug, by]) => Object.values(by).map((n) => `${slug}.${n}.ktx2`)));
+    const want = new Set(Object.entries(tex.sizes).flatMap(([slug, by]) => tiers.map((t) => `${slug}.${by[t]}.ktx2`)));
     for (const f of existsSync(join(out, 'tex')) ? await readdir(join(out, 'tex')) : []) {
       const slug = f.replace(/\.\d+\.ktx2$/, '');
       if (slug !== f && tex.sizes[slug] && !want.has(f) && !kept.has(f)) await rm(join(out, 'tex', f));

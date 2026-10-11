@@ -8,7 +8,7 @@
 // floor for every step). BOUNDS is each one's [hw, hd, h].
 
 import * as THREE from 'three';
-import { box, cyl, part, ring } from '../kit';
+import { box, cyl, part, ring } from '../kitCore';
 
 const { PI } = Math;
 const lit = (c, k = 2.2) => new THREE.Color(c).multiplyScalar(k);

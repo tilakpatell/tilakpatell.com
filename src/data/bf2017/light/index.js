@@ -1,6 +1,9 @@
 // The worlds the game lights (scripts/bf2017-light.mjs writes each one's
 // JSON): a site names its entry by `gameLight`; a site that names none, or
-// one not here, keeps its own sky and light.
+// one not here, keeps its own sky and light. A site names its record's
+// picture by `picture` (scripts/bf2017-picture.mjs's <world>.picture.json:
+// each weather's panorama, fog gradient, cloud shadow and 33³ LUT, the shape
+// applyGameLight's `picture` takes a weather of), loaded only when asked.
 
 import bespin from './bespin.json';
 import endor from './endor.json';
@@ -18,3 +21,12 @@ import yavin from './yavin.json';
 export const LIGHTS = { bespin, endor, geonosis, hoth, kamino, kashyyyk, naboo, sb_kamino: sbKamino, scarif, tatooine, yavin };
 
 export const gameLightOf = (site) => (site?.gameLight ? (LIGHTS[site.gameLight] ?? null) : null);
+
+const PICTURES = import.meta.glob('./*.picture.json', { import: 'default' });
+export const PICTURED = Object.keys(PICTURES).map((k) => k.slice(2, -'.picture.json'.length));
+
+// the site's picture manifest, or null (no `picture`, or none by that name)
+export const gamePictureOf = async (site) => {
+  const load = site?.picture ? PICTURES[`./${site.picture}`] : null;
+  return load ? load() : null;
+};

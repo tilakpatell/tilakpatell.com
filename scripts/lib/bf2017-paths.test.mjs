@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { dataPath, globDir, globMatch, globRegExp, imageUris, inBucket, isCurrent, jobsFor, localPath, mapPath, objectUrl, readIndex, summaryLine, textureSources, writeIndex } from './bf2017-paths.mjs';
+import { dataPath, globDir, globMatch, globRegExp, imageUris, inBucket, isCurrent, jobsFor, localPath, mapPath, objectUrl, readIndex, summaryLine, textureSources, writeIndex, namesOfType } from './bf2017-paths.mjs';
 
 // a GLB of just a JSON chunk, the way gltfpack's start
 function glbOf(json) {
@@ -41,6 +41,8 @@ describe('the 2017 drop’s paths', () => {
   it('reads the manifest’s paths as bucket paths', () => {
     expect(inBucket('models/a/b.glb')).toBe('web/models/a/b.glb');
     expect(inBucket('web/models/a/b.glb')).toBe('web/models/a/b.glb');
+    // (the records' folder is at the bucket's root: `--folder data/Levels/…` lists it)
+    expect(inBucket('data/Levels/MP/Hoth_01.json.gz')).toBe('data/Levels/MP/Hoth_01.json.gz');
     expect(mapPath('Gameplay/Heroes/X/T_X_3p_NAM')).toBe('web/textures/gameplay/heroes/x/t_x_3p_nam.png');
   });
 
@@ -122,5 +124,14 @@ describe('the 2017 drop’s paths', () => {
     expect(globDir('AI/**')).toBe('AI');
     expect(globDir('Settings')).toBe('');
     expect(dataPath('Gameplay/Kits/MP/Assault/Class_Assault')).toBe('data/Gameplay/Kits/MP/Assault/Class_Assault.json.gz');
+  });
+});
+
+describe('namesOfType', () => {
+  it('names the records of one type from data.tsv, whatever they are called', () => {
+    const tsv = 'A_ShaderParameterVariation\tObjectVariation\tdata/A_ShaderParameterVariation.json\t4765\nCharacters/Luke/Luke_Default\tObjectVariation\tdata/Characters/Luke/Luke_Default.json\t900\nShaders/P\tSurfaceShaderPreset\tdata/Shaders/P.json\t12\n\n';
+    expect(namesOfType(tsv, 'ObjectVariation')).toEqual(['A_ShaderParameterVariation', 'Characters/Luke/Luke_Default']);
+    expect(namesOfType(tsv, 'surfaceshaderpreset')).toEqual(['Shaders/P']);
+    expect(namesOfType(tsv, 'Nope')).toEqual([]);
   });
 });

@@ -18,7 +18,7 @@
 //
 // readClouds(entry, wind) → { on, layers: [{ size, coverage, exponent, speed: [x, z] }] }  (pure)
 // cloudDensity(noise01), cloudTerm(density, coverage, exponent), drift(layer, seconds)    (pure)
-// cloudShadowNode(entry, wind, { texture }) → Promise<{ node, offsets, update(dt), dispose } | null>
+// cloudShadowNode(entry, wind, { texture }) → Promise<{ node, offsets, update(dt), setTexture(texture), dispose } | null>
 //
 // Where the record names a CloudShadowTexture (lane Q6: grade.js's
 // cloudShadowOf, Hoth's T_Arctic_01_CloudShadow_RGBM, its loaded texture as
@@ -78,10 +78,12 @@ export async function cloudShadowNode(entry, wind = null, { texture: map = null,
   // an object-group uniform is not refreshed per frame)
   const offsets = layers.map(() => uniform(new THREE.Vector2()).setGroup(renderGroup));
   let node = float(1);
+  let mapNode = null;
   layers.forEach((l, i) => {
     const p = positionWorld.xz.sub(offsets[i]).div(l.size);
     if (map && l === c.layers[0]) {
       const t = texture(map, p.add(offset[0] / l.size, offset[1] / l.size));
+      mapNode = t;
       const lit = rgbm ? clamp(t.rgb.mul(t.a).mul(RGBM_RANGE).r, 0, 1) : t.r;
       node = node.mul(float(1).sub(lit.oneMinus().pow(l.exponent).mul(l.coverage)));
       return;
@@ -99,6 +101,13 @@ export async function cloudShadowNode(entry, wind = null, { texture: map = null,
     update(dt) {
       t += dt;
       layers.forEach((l, i) => offsets[i].value.set(...drift(l, t)));
+    },
+    // the next weather's cloud texture in place of this one's (same layer,
+    // same decode); false where the first layer is the noise
+    setTexture(next) {
+      if (!mapNode || !next) return false;
+      mapNode.value = next;
+      return true;
     },
     dispose() {},
   };

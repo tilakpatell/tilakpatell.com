@@ -169,8 +169,8 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
   counts.shadow = shadowCache ? 1 : 0;
 
   // the colour lane's slot (#877): the variations' texture bindings and
-  // tints, empty until that lane writes it
-  put('variations.json', { format: 1, meshes: {}, instances: null });
+  // tints, empty until that lane writes it (and never over what it wrote)
+  if (!existsSync(join(out, 'variations.json'))) put('variations.json', { format: 1, meshes: {}, instances: null });
 
   // the terrain's scatter table, as the bucket has it
   const scatterPath = map.terrain?.scatter;

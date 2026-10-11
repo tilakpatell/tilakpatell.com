@@ -7,10 +7,9 @@
 // catalog/core.js), and what there's no model of at all.
 
 import * as THREE from 'three';
-import { box, cyl, dome, part, ring, rod, upright } from '../kit';
+import { box, cyl, dome, part, ring, rod, upright } from '../kitCore';
 import { canvasTexture, loft, trap8, turned } from '../../../universe/trafficKit';
 import { rng } from '../noise';
-import { litWindows } from './windows';
 import { canopy } from './forest';
 import { boltPath, strikeAt } from '../storm';
 
@@ -152,11 +151,12 @@ function n1Parts(H = 1.25) {
 }
 
 // the towers' body: the kit's paint, with its windows lit in the shader
-// (windows.js), one material for every tower in the world
+// (the kit's looks: windows.js or nodes/props.js), one material for every
+// tower in the world
 const towerMat = (k) => {
   if (!k.mats.tower) {
     k.mats.tower = k.own(k.mats.paint.clone());
-    litWindows(k.mats.tower, { seed: 11, density: 0.55, cell: [3, 4] });
+    k.looks.litWindows(k.mats.tower, { seed: 11, density: 0.55, cell: [3, 4] });
   }
   return 'tower';
 };
@@ -529,19 +529,8 @@ export const PROPS = {
   // the Gungan Grand Army's shield: a shimmering dome, thrown up from the
   // generator on a fambaa's back in the middle of it
   shield(k, { r: R = 64 } = {}) {
-    const uniforms = { uTime: { value: 0 }, uColor: { value: new THREE.Color('#9ad6ff') } };
-    const mat = k.own(
-      new THREE.ShaderMaterial({
-        uniforms,
-        transparent: true,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-        vertexShader: 'varying vec3 vN; varying vec3 vW; void main() { vN = normalize(mat3(modelMatrix) * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
-        fragmentShader:
-          'uniform float uTime; uniform vec3 uColor; varying vec3 vN; varying vec3 vW; void main() { vec3 v = normalize(cameraPosition - vW); float f = 1.0 - abs(dot(normalize(vN), v)); float band = 0.5 + 0.5 * sin(vW.y * 0.5 - uTime * 2.2 + sin(vW.x * 0.04 + uTime * 0.7) * 3.0 + vW.z * 0.03); float a = 0.07 + pow(f, 2.2) * 0.75 + band * band * 0.08; gl_FragColor = vec4(uColor * (0.7 + band * 0.5) * a, 1.0); }',
-      }),
-    );
+    const mat = k.own(k.looks.shield());
+    const { uniforms } = mat;
     const bubble = new THREE.Mesh(k.own(new THREE.SphereGeometry(R, 56, 22, 0, PI * 2, 0, PI / 2)), mat);
     bubble.renderOrder = 4;
     // the fambaa, and the generator on its back

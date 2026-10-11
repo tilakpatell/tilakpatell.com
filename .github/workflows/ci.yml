@@ -43,6 +43,8 @@ jobs:
       - run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # the build's WebAssembly binaries valid and all there, as the deploy checks
+      - run: node scripts/wasm-check.mjs dist
       # the codebase's health against docs/health/budgets.json: a number over
       # its budget is a red check, the same as a failing test (docs/health)
       - run: node scripts/health.mjs --check --skip build

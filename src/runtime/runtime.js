@@ -10,10 +10,13 @@
 // createRuntime({ makeBackend, loop, input, quality, saves, assets, audio,
 //   workers, origin, events, now, gpu, override, visible, calibrate, debug }) → rt
 // rt: { gfx, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
-//   current, loading, on(fn), invalidate(), resize(w, h), setVisible(on), lost(),
+//   failure, current, loading, on(fn), invalidate(), resize(w, h), setVisible(on), lost(),
 //   mount(module, props, host) → shown, handover(module, props, host, { fade, held, after }) → shown,
 //   adopt(module, host), unmount(), dispose(), requality(level) → 'tuned' |
 //   'reload' | 'idle', reload() → shown, sharpen(k) }
+// (`failure`: why the last world failed, { world, name, message, module }:
+// a WebAssembly module that couldn't come up is a WasmError naming it,
+// lib/wasm/load.js, so a failed world says which; null once one comes up)
 // (a quality level picked while a world is up: `requality` hands it to the
 // world's `onQuality(level)`, or its module's `onQuality(level, world, rt)`,
 // for a world that can retune without being built again (the pixel ratio,
@@ -70,6 +73,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   let coming = null; // { kind, promise }: a backend still being made, for every mount that asks meanwhile
   let lostWebGPU = false;
   let status = 'idle';
+  let failure = null; // { world, name, message, module }: why the last world failed
+  const failed = (mod, err) => {
+    failure = { world: mod?.id ?? null, name: err?.name ?? 'Error', message: String(err?.message ?? err), module: err?.module ?? null };
+  };
   let current = null; // { module, world, host, props }
   let seq = 0; // the latest mount or handover: an older one arriving is dropped
   let making = null; // { module, token }: the one being made now
@@ -151,6 +158,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       world.draw({ dt, now: t, renderer: gfx.renderer, quality });
     } catch (err) {
       if (dev) console.error(`[${current.module.id}] frame failed`, err);
+      failed(current.module, err);
       fail();
       return false;
     }
@@ -164,6 +172,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     }
     if (status === 'ready') {
       unmark(); // (drawn: the canvas fades in from here)
+      failure = null;
       setStatus('on');
     }
     if (snap && timeline && holding) {
@@ -435,6 +444,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     get status() {
       return status;
     },
+    get failure() {
+      return failure;
+    },
     // the module being made (a mount or a handover still on its way), or null
     get loading() {
       return making && making.token === seq ? making.module : null;
@@ -502,6 +514,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       } catch (err) {
         if (dev) console.error(`[${mod.id}] 3D failed`, err);
         if (token === seq) {
+          failed(mod, err);
           making = null;
           current = null;
           unmark();
@@ -571,6 +584,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       } catch (err) {
         if (dev) console.error(`[${mod.id}] 3D failed`, err);
         if (token === seq) {
+          failed(mod, err);
           making = null;
           // the old world stays up: better than black (and nothing over it)
           current = old;
