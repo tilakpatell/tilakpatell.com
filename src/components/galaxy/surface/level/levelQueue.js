@@ -20,7 +20,9 @@
 // An ask that has not answered in `timeout()` (the site's pool's: 20 s, a
 // second more a megabyte, lib/net/assetFetch.js) fails and frees its slot,
 // so one stalled request (the bucket's HTTP/2 resets, seen on Hoth) does
-// not hold the whole level back; its late answer is dropped.
+// not hold the whole level back; its late answer is dropped. A timer that
+// fires well past its time (the page held by a long frame, as a software
+// GL's 17 to 38 s ones are) says nothing of the request: it waits again.
 //
 //   createFetchQueue({ fetch, parallel, signal, timeout }) → { get(path, { cls, rank, tag }) → Promise<ArrayBuffer | null>,
 //     hold(classes), abandon(test) → n, pending(cls?), bytes(), dispose() }
@@ -28,10 +30,13 @@
 
 import { TIMEOUT } from '../../../../lib/net/assetFetch.js';
 
+// (how far past its time a timer may fire and still be the request's own)
+const LATE_MS = 1000;
+
 export const CLASSES = ['coarse', 'boot', 'cell', 'detail', 'prefetch'];
 const ORDER = Object.fromEntries(CLASSES.map((c, i) => [c, i]));
 
-export function createFetchQueue({ fetch, parallel = 4, signal = null, timeout = TIMEOUT, setTimer = setTimeout, clearTimer = clearTimeout }) {
+export function createFetchQueue({ fetch, parallel = 4, signal = null, timeout = TIMEOUT, setTimer = setTimeout, clearTimer = clearTimeout, now = () => performance.now() }) {
   const ctl = new AbortController();
   signal?.addEventListener('abort', () => dispose());
   const waiting = new Map(); // path → item
@@ -63,12 +68,20 @@ export function createFetchQueue({ fetch, parallel = 4, signal = null, timeout =
       waiting.delete(item.path);
       flying.set(item.path, item);
       let late = false;
-      const timer = setTimer(() => {
-        late = true;
-        flying.delete(item.path);
-        item.fail(new Error(`${item.path} did not answer`));
-        pump();
-      }, timeout(0));
+      let timer = null;
+      const wait = timeout(0);
+      // (a timer more than a second past its time was held by the page, not the request: wait again)
+      const arm = () => {
+        const at = now() + wait;
+        timer = setTimer(() => {
+          if (now() - at > LATE_MS) return arm();
+          late = true;
+          flying.delete(item.path);
+          item.fail(new Error(`${item.path} did not answer`));
+          pump();
+        }, wait);
+      };
+      arm();
       fetch(item.path, { signal: ctl.signal }).then(
         (buf) => {
           clearTimer(timer);

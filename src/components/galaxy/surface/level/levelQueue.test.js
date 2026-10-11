@@ -146,8 +146,10 @@ describe('a fetch that never answers (lane N4)', () => {
       fire = fn;
       return 1;
     };
-    const q = createFetchQueue({ fetch: f.fetch, parallel: 1, timeout: () => 1000, setTimer: timer, clearTimer: () => {} });
+    let t = 0;
+    const q = createFetchQueue({ fetch: f.fetch, parallel: 1, timeout: () => 1000, setTimer: timer, clearTimer: () => {}, now: () => t });
     const stuck = q.get('stuck', { cls: 'coarse' });
+    t = 1000;
     q.get('next', { cls: 'boot' });
     expect(f.asked).toEqual(['stuck']);
     fire();
@@ -157,5 +159,21 @@ describe('a fetch that never answers (lane N4)', () => {
     f.give('stuck');
     await tick();
     expect(q.bytes()).toBe(0);
+  });
+});
+
+describe('a main thread too busy to hear the answer (lane N4)', () => {
+  it('gives an ask whose timer fired late (the page was drawing) another full wait, not a failure', async () => {
+    const f = fakeFetch();
+    const fires = [];
+    let t = 0;
+    const q = createFetchQueue({ fetch: f.fetch, parallel: 1, timeout: () => 1000, setTimer: (fn) => fires.push(fn), clearTimer: () => {}, now: () => t });
+    const slow = q.get('slow', { cls: 'boot' });
+    // (the timer meant for 1 s fires at 18 s: a software GL's frame held the thread)
+    t = 18000;
+    fires.shift()();
+    expect(fires).toHaveLength(1);
+    f.give('slow');
+    expect(await slow).toBeInstanceOf(ArrayBuffer);
   });
 });
