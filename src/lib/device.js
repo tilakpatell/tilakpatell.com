@@ -41,6 +41,7 @@
 // address pins one for that visit, over what is kept.
 
 import { gpuGrade } from './gpuGrade';
+import { anisotropyOf, read as readVideo, resolve as resolveVideo, samplesFor } from './video.js';
 
 const KEY = 'tp-quality';
 const CAP_KEY = 'tp-detail-cap';
@@ -181,6 +182,7 @@ export function noteGpu(info) {
 // Look again from scratch (the tests; a mode just changed).
 export function resetDevice() {
   cached = null;
+  videoCache = null;
 }
 
 // The mode the visitor chose ('auto' or a level; the address's ?quality=
@@ -231,13 +233,32 @@ export function capDetail(level = 'high') {
 
 // The renderer's numbers. With no tier given, this device's: the ultra row
 // for a strong card, otherwise its tier's.
-export const budget = (tier) => {
+export const budget = (tier, video = videoValues()) => {
   if (tier == null) {
     const d = device();
     tier = d.detail === 'ultra' ? 'ultra' : d.tier;
   }
-  return BUDGETS[tier] ?? BUDGETS.high;
+  const row = BUDGETS[tier] ?? BUDGETS.high;
+  // (the video settings, lib/video.js: multisampling and anisotropy under
+  // the row's own, never over it)
+  const samples = samplesFor(video);
+  const aniso = anisotropyOf(video);
+  if (samples == null && aniso == null) return row;
+  return { ...row, ...(samples != null ? { samples: Math.min(row.samples, samples) } : {}), ...(aniso != null ? { aniso: Math.min(row.aniso, aniso) } : {}) };
 };
+
+// The visitor's video overrides as this device may draw them (lib/video.js
+// resolve's `overridden`, the ceiling this device's detail): only what the
+// visitor turned, so a row asked for by its tier keeps its own numbers
+// otherwise. Read once and again after a change ('tp:video') or a reset.
+let videoCache = null;
+export function videoValues() {
+  return (videoCache ??= resolveVideo(readVideo(), { ceiling: device().detail }).overridden);
+}
+export function resetVideo() {
+  videoCache = null;
+}
+if (typeof window !== 'undefined') window.addEventListener('tp:video', resetVideo);
 
 // The sharpest pixel ratio worth drawing at: the tier's, under the scene's
 // own cap, never above the screen's (except at high and ultra, which draw at

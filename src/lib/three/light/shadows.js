@@ -40,6 +40,8 @@ import { loadThree } from './three.js';
 
 export const FILTER_HOOK = true; // ShadowNode reads shadow.filterNode on r186
 export const PCSS_SAMPLES = { ultra: 256, high: 32 }; // the filter's samples (ultra: the record's maximum)
+// the video setting's shadow quality (lib/video.js `shadows`): the filter and its samples
+export const VIDEO_SAMPLES = { medium: 32, high: 128, ultra: 256 };
 const SEARCH_DEPTH = 20; // m: the tallest blocker above a receiver the search looks for (a walker's legs)
 const MIN_TEXELS = 1.5; // the narrowest penumbra, in texels, so a contact edge is still filtered
 const VSM_SHADOW_MAP = 3; // three's VSMShadowMap
@@ -61,11 +63,13 @@ export function readPcss(entry) {
   };
 }
 
-export function filterFor(tier, pcss = HOTH, { hook = FILTER_HOOK } = {}) {
-  if (tier === 'low') return { kind: 'none' };
-  if (tier === 'mid' || !PCSS_SAMPLES[tier]) return { kind: 'pcf' };
+export function filterFor(tier, pcss = HOTH, { hook = FILTER_HOOK, video = null } = {}) {
+  const asked = video?.shadows;
+  if (asked === 'off' || (!asked && tier === 'low')) return { kind: 'none' };
+  if (asked === 'low' || (!asked && (tier === 'mid' || !PCSS_SAMPLES[tier]))) return { kind: 'pcf' };
   if (!hook) return { kind: 'vsm', samples: pcss.initial };
-  return { kind: 'pcss', ...pcss, max: Math.min(pcss.max, PCSS_SAMPLES[tier]) };
+  const max = asked && VIDEO_SAMPLES[asked] ? VIDEO_SAMPLES[asked] : PCSS_SAMPLES[tier] ?? PCSS_SAMPLES.high;
+  return { kind: 'pcss', ...pcss, max: Math.min(pcss.max, max) };
 }
 
 // three's vogelDiskSample: the i-th of n points, radius √((i + ½)/n)

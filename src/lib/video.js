@@ -13,9 +13,11 @@
 //     'range', values, defaults by preset, live, cost(value), reader)
 //   presetValues(preset) → { [id]: value }
 //   resolve({ preset, overrides }, { ceiling = 'ultra' }) → { values,
-//     custom, held }: the preset's row under the overrides, a value whose
-//     cost is above the ceiling preset's default held at that default and
-//     named in `held`; no preset reads as high
+//     custom, held, overridden }: the preset's row under the overrides, a
+//     value whose cost is above the ceiling preset's default held at that
+//     default and named in `held`; `overridden` the overrides that stand,
+//     for a reader that overlays a row of its own (device.js's budget); no
+//     preset reads as high
 //   read(store) → { preset, overrides }; write(patch, store) → the same (a
 //     `preset` in the patch sets 'tp-quality' and drops every override; a
 //     control written back to its preset's value drops its override);
@@ -75,6 +77,7 @@ export function resolve({ preset: p = null, overrides = {} } = {}, { ceiling = '
   const top = presetValues(ceiling);
   const values = { ...base };
   const held = {};
+  const overridden = {};
   let custom = false;
   for (const [id, raw] of Object.entries(overrides ?? {})) {
     const c = byId.get(id);
@@ -85,9 +88,12 @@ export function resolve({ preset: p = null, overrides = {} } = {}, { ceiling = '
       held[id] = v;
       values[id] = top[id];
     } else values[id] = v;
-    if (values[id] !== base[id]) custom = true;
+    if (values[id] !== base[id]) {
+      custom = true;
+      overridden[id] = values[id];
+    }
   }
-  return { values, custom, held };
+  return { values, custom, held, overridden };
 }
 
 const pageStore = () => {

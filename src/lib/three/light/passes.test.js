@@ -78,7 +78,7 @@ describe('buildChain', () => {
       chain.dispose();
     }
   });
-  it('builds the upscale under the screen: TAAU on ultra, FSR1 after SMAA on high (lane U)', async () => {
+  it('builds the upscale under the screen: TAAU on ultra, FSR1 after SMAA on mid (lane U; high took TRAA in lane V1, so its upscale is TAAU too)', async () => {
     const refs = { scene, camera, light, lut };
     const sizes = (chain) => chain.nodes.map((n) => n.constructor.name);
     const taau = await buildChain(renderer, upscaled(passesFor('ultra', hoth.sunny, 'webgpu', refs), { scale: 0.77 }));
@@ -89,7 +89,7 @@ describe('buildChain', () => {
     // (TAAU reads the scene's velocity: the pass writes it)
     expect(Object.keys(scenePass.getMRT().outputNodes)).toContain('velocity');
     taau.dispose();
-    const fsr = await buildChain(renderer, passesFor('high', hoth.sunny, 'webgpu', { ...refs, upscale: { scale: 0.67 } }));
+    const fsr = await buildChain(renderer, passesFor('mid', hoth.sunny, 'webgpu', { ...refs, upscale: { scale: 0.67 } }));
     const names = sizes(fsr);
     expect(names.indexOf('FSR1Node')).toBeGreaterThan(names.indexOf('SMAANode'));
     // (SMAA sizes itself from the drawing buffer: held at the scale)

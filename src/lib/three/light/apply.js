@@ -26,7 +26,10 @@
 //                                   parts.picture.missing). None: nothing here changes.
 //   onChain,                        (passes) => …: the chain built again when a weather's picture
 //                                   lands at a crossfade's end (its LUT and Gaussians), for rt.gfx.post
-// }) → Promise<{ update(dt, camera), setWeather(entry, seconds, { picture }), track(object), untrack(object), shadowTerm, passes, params, parts, dispose }>
+//   video,                          lib/video.js's resolved values (lane V1): the shadows' quality and
+//                                   distance, the contact and cloud shadows, the volumetric quality, the
+//                                   lights' pool and the chain's fields, each over the tier's; none, the tier's
+// }) → Promise<{ update(dt, camera), setWeather(entry, seconds, { picture }), setVideo(values) → passes, track(object), untrack(object), shadowTerm, passes, params, parts, dispose }>
 //
 // sunShadowNode(lit) → the sun's shadow term as a node (the cascades × the
 //   clouds, eased by the record's ParticleSunShadowFactor) for a material
@@ -37,7 +40,7 @@ import { lerpEntry, readEntry } from './entry.js';
 import { cloudShadowNode } from './clouds.js';
 import { createContactShadows } from './contact.js';
 import { createFog } from './fog.js';
-import { createPlacedLights } from './placed.js';
+import { POINT_FALLBACK, createPlacedLights } from './placed.js';
 import { passesFor, raysLight } from './post.js';
 import { createProbeGrid, createProbes } from './probes.js';
 import { filterFor, pcssFilter, readPcss, vsmFallback } from './shadows.js';
@@ -107,7 +110,7 @@ async function loadPicture(pic, renderer, THREE, have = null) {
 const site = (url) => (/^(\/|[a-z]+:)/i.test(url) ? url : `/${url}`);
 const lerp3 = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 
-export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null, onChain = null } = {}) {
+export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null, onChain = null , video = null } = {}) {
   const { THREE } = await loadThree();
   const backend = backendOf(renderer);
   await registerLights(renderer);
@@ -115,20 +118,23 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   let pic = backend !== 'webgl' ? pictureOf(entry, picture) : null;
   let tex = await loadPicture(pic, renderer, THREE);
   const was = { shadows: renderer.shadowMap?.enabled, shadowType: renderer.shadowMap?.type, environment: scene.environment, fogNode: scene.fogNode };
-  if (renderer.shadowMap) renderer.shadowMap.enabled = tier !== 'low';
+  // (the video settings, lib/video.js: each reader takes its field over the tier's)
+  let vid = video;
+  if (renderer.shadowMap) renderer.shadowMap.enabled = vid?.shadows ? vid.shadows !== 'off' : tier !== 'low';
   let params = readEntry(entry, { origin });
   const rays = post && tier === 'ultra';
 
   // the sun's soft shadow by tier (shadows.js): PCSS on ultra and high, PCF on mid
-  const soft = forced === 'pcf' && tier !== 'low' ? { kind: 'pcf' } : filterFor(tier, readPcss(entry));
+  const soft = forced === 'pcf' && tier !== 'low' ? { kind: 'pcf' } : filterFor(tier, readPcss(entry), { video: vid });
   const filter = soft.kind === 'pcss' ? await pcssFilter(soft) : null;
-  const clouds = tier !== 'low' ? await cloudShadowNode(entry, null, tex.cloudShadow ? { texture: tex.cloudShadow, offset: pic.cloudShadow.offset, rgbm: pic.cloudShadow.rgbm } : {}) : null;
-  const sun = await createSun(entry, { tier, rays, filter, cloud: clouds?.node ?? null });
+  const cloudsOn = vid?.cloudShadows ? vid.cloudShadows === 'on' : tier !== 'low';
+  const clouds = cloudsOn ? await cloudShadowNode(entry, null, tex.cloudShadow ? { texture: tex.cloudShadow, offset: pic.cloudShadow.offset, rgbm: pic.cloudShadow.rgbm } : {}) : null;
+  const sun = await createSun(entry, { tier, rays, filter, cloud: clouds?.node ?? null, video: vid });
   // (before the first frame: the cascades clone the light's shadow then)
   if (soft.kind === 'vsm') vsmFallback(renderer, sun.light, soft.samples);
   scene.add(sun.light);
   if (sun.rays) scene.add(sun.rays, sun.rays.target);
-  const contact = await createContactShadows(scene, renderer, { tier });
+  const contact = await createContactShadows(scene, renderer, { tier, video: vid });
   // the particles' share of the sun's shadow (ParticleSunShadowFactor, 1 on Hoth)
   const particleFactor = Number(entry?.record?.OutdoorLightComponentData?.[0]?.ParticleSunShadowFactor ?? 1);
   let shadowTerm = null;
@@ -139,7 +145,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   const hemi = new THREE.HemisphereLight(new THREE.Color(...params.ambient.sky), new THREE.Color(...params.ambient.ground), params.ambient.intensity);
   hemi.name = 'sky-light';
   scene.add(hemi);
-  const placed = lights ? await createPlacedLights(scene, renderer, { source: lights, scale: params.gameToSite, clustered }) : null;
+  const placed = lights ? await createPlacedLights(scene, renderer, { source: lights, scale: params.gameToSite, clustered, ...(vid?.localLights === 'nearest' ? { points: POINT_FALLBACK } : {}) }) : null;
 
   // (a renderer that cannot draw, a test's, gets no baked environment)
   const canDraw = typeof renderer.setRenderTarget === 'function';
@@ -160,9 +166,13 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   }
 
   // (the volumes draw only through the post chain)
-  const vols = post && volumetrics && CONES_LIT[tier] && backend !== 'webgl' ? await createVolumetrics(scene, renderer, { tier, source: volumetrics, lights, scale: params.gameToSite }) : null;
+  // (the video's volumetric quality: low marches as high did, high as ultra; off none)
+  const volTier = vid?.volumetric ? { off: null, low: 'high', high: 'ultra' }[vid.volumetric] ?? tier : tier;
+  const vols = post && volumetrics && volTier && CONES_LIT[volTier] && backend !== 'webgl' ? await createVolumetrics(scene, renderer, { tier: volTier, source: volumetrics, lights, scale: params.gameToSite }) : null;
+  let lastEntry = entry;
   const chainFor = (e) => {
-    const out = post ? passesFor(tier, e, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, volumetrics: vols, grade: pic?.grade ?? null }) : [];
+    lastEntry = e;
+    const out = post ? passesFor(tier, e, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, volumetrics: vols, grade: pic?.grade ?? null, video: vid }) : [];
     // (the bloom's threshold from the record's grade: calibrate.js; the
     // record's own Gaussians have none)
     for (const p of out) if (p.kind === 'bloom' && !p.gaussians) p.threshold = params.grade.bloomThreshold;
@@ -216,6 +226,16 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
     });
   };
   return {
+    // the video settings changed while the world is up (lane V1): the chain
+    // built again for the live fields; the rest (the cascades, the contact
+    // and cloud shadows, the lights' pool) are set at mount and take a reload
+    setVideo(values) {
+      vid = values ?? null;
+      if (!post) return passes;
+      passes = chainFor(lastEntry);
+      onChain?.(passes);
+      return passes;
+    },
     get passes() {
       return passes;
     },

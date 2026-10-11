@@ -43,10 +43,13 @@ describe('resolve', () => {
     expect(out.values.gi).toBe('low');
     expect(out.custom).toBe(true);
     expect(out.held).toEqual({});
+    expect(out.overridden).toEqual({ gi: 'low' });
   });
 
   it('an override equal to the preset is not custom', () => {
-    expect(resolve({ preset: 'high', overrides: { gi: 'medium' } }).custom).toBe(false);
+    const out = resolve({ preset: 'high', overrides: { gi: 'medium' } });
+    expect(out.custom).toBe(false);
+    expect(out.overridden).toEqual({});
   });
 
   it('no preset reads as high', () => {

@@ -81,3 +81,14 @@ describe('vsmFallback', () => {
     expect(light.shadow.blurSamples).toBe(8);
   });
 });
+
+describe('filterFor with the video settings (lane V1)', () => {
+  it('the shadow quality picks the filter and its samples, under the record’s maximum', () => {
+    expect(filterFor('high', undefined, { video: { shadows: 'ultra' } })).toMatchObject({ kind: 'pcss', max: 256 });
+    expect(filterFor('ultra', undefined, { video: { shadows: 'high' } })).toMatchObject({ kind: 'pcss', max: 128 });
+    expect(filterFor('ultra', undefined, { video: { shadows: 'medium' } })).toMatchObject({ kind: 'pcss', max: 32 });
+    expect(filterFor('ultra', undefined, { video: { shadows: 'low' } })).toEqual({ kind: 'pcf' });
+    expect(filterFor('ultra', undefined, { video: { shadows: 'off' } })).toEqual({ kind: 'none' });
+    expect(filterFor('high', undefined, { video: {} })).toEqual(filterFor('high'));
+  });
+});

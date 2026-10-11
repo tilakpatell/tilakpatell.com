@@ -208,7 +208,8 @@ export function bareGlb(scene, indexOf, named) {
   return out.length;
 }
 
-export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null }) {
+// (texTier: the video setting's texture quality, lib/video.js's textureTier, over the tier for the maps' sizes alone)
+export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null, texTier = null }) {
   // (mapKeys: the recipe maps the tier draws; null, all of them)
   if (recipes?.tex) sizes = { ...sizes, ...recipes.tex };
   if (variations?.tex) sizes = { ...sizes, ...variations.tex };
@@ -222,7 +223,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     // (after dispose nothing new is fetched, so nothing is left undisposed)
     if (gone) return Promise.resolve(null);
     if (!textures.has(path)) {
-      const local = packUrl(world, tierTexture(path, tier, own));
+      const local = packUrl(world, tierTexture(path, texTier ?? tier, own));
       textures.set(
         path,
         ktx2Loader({ renderer })
