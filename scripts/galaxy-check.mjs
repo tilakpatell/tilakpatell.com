@@ -7,6 +7,7 @@
 // Chromium where Playwright keeps it:
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs space endor,coruscant
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,hoth
+//   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine@jabba (a district: ?district=jabba)
 //   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, JSON=1 …
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
@@ -167,7 +168,9 @@ for (const id of list.split(',')) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
   const bf = mode === 'battlefront';
-  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
+  // (`world@district`: a district of a world, its own pack, held to the row alone)
+  const [world, district] = id.split('@');
+  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
   await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
   const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
   try {

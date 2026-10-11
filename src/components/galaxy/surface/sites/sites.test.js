@@ -271,6 +271,14 @@ describe('districts: more than one of the game’s maps on a world', () => {
     expect(withDistrict(site, 'nowhere')).toBe(site);
     expect(withDistrict(site, null)).toBe(site);
   });
+
+  it('gives a district its own doors, and a way back to another district than the main map', () => {
+    const below = { id: 'pit', name: 'The pit', level: 'tatooine/pit', land: { at: [5, 5] }, door: { at: [4, 4], r: 2, prompt: 'Back up', to: 'jabba' } };
+    const palace = { ...site.districts[0], door: { at: [1, 1], r: 2, prompt: 'Back to town' }, zones: [{ id: 'down', name: 'The pit', door: { at: [2, 2], r: 2, prompt: 'Down' }, to: { district: 'pit' } }] };
+    const two = { ...site, districts: [palace, below] };
+    expect(withDistrict(two, 'jabba').zones.map((z) => [z.id, z.to.district])).toEqual([['down', 'pit'], ['jabba-out', 'main']]);
+    expect(withDistrict(two, 'pit').zones).toEqual([{ id: 'pit-out', name: 'Jabba’s palace', door: below.door, to: { district: 'jabba' } }]);
+  });
 });
 
 describe('the worlds drawn from the game’s levels', () => {
@@ -322,6 +330,29 @@ describe('the worlds drawn from the game’s levels', () => {
       for (const z of doors) expect(ids.has(z.to.district), `${id}: ${z.id}`).toBe(true);
       for (const d of site.districts) expect(withDistrict(site, d.id).zones.map((z) => z.to.district), `${id}/${d.id}`).toEqual(['main']);
     }
+  });
+
+  it('Tatooine stands on Tatooine_01, Mos Eisley’s built town left to the level, its palace and pit districts in their own frame', () => {
+    const t = siteOf('tatooine');
+    expect(t.level).toBe('tatooine');
+    expect(t.ground.layers).toEqual([{ type: 'image', pack: 'tatooine' }]);
+    // (the flight keeps the desert it drew)
+    expect(t.ground.flight.map((l) => l.type)).toEqual(['swell', 'dunes', 'mesas', 'mountains']);
+    const mos = t.places.find((p) => p.id === 'moseisley');
+    expect(mos.flat.game).toBe(true);
+    expect(mos.things.every((x) => x.game)).toBe(true);
+    // (the stalls' people stand at the game's own stalls, none at a built one the level leaves out)
+    const built = t.things_all.filter((x) => x.kind === 'stall' && !x.game);
+    for (const w of t.wants.filter((q) => q.id.startsWith('stall'))) for (const at of w.spots) expect(built.every((x) => Math.hypot(at[0] - x.at[0], at[1] - x.at[1]) > 4), w.id).toBe(true);
+    // (the palace's road leads to the game's palace; its pit's way back is to the palace, not the town)
+    expect(t.zones.find((z) => z.id === 'jabbaroad').to).toEqual({ district: 'jabba' });
+    const palace = withDistrict(t, 'jabba');
+    expect(palace).toMatchObject({ level: 'tatooine/jabba', district: 'jabba', places: [], things_all: [] });
+    expect(palace.ground.layers).toEqual([{ type: 'image', pack: 'tatooine/jabba' }]);
+    expect(palace.zones.map((z) => z.to.district)).toEqual(['jabba-inside', 'main']);
+    const pit = withDistrict(t, 'jabba-inside');
+    expect(pit).toMatchObject({ level: 'tatooine/jabba-inside', weather: [], life: [] });
+    expect(pit.zones).toEqual([expect.objectContaining({ to: { district: 'jabba' } })]);
   });
 
   it('Bespin stands on CloudCity_01’s walkways, its fall above the city below, the campaign’s palace a district (Review Focus 3)', () => {
