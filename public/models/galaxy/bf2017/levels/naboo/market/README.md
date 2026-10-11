@@ -6,7 +6,7 @@ From `s7_2/levels/naboo_03` (Star Wars Battlefront II, 2017, EA DICE; used with 
 - fitted to low=0.5 of the tiers' triangles and calls (the site's own things spend the rest)
 - 1357 meshes (11 left out), 991 LOD files, 24.65 MB
 - the far list 0.44 MB; terrain near 1.94 MB, far 2.01 MB; the spot's ground 434.87 m in the game
-- textures missing from the bucket: 24
+- textures missing from the bucket: 14
 
 | | low | mid | high |
 |---|---|---|---|

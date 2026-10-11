@@ -6,7 +6,9 @@
 // Pure data, tested in Node; ModeMenu.jsx draws it, pages/GalaxySurface.jsx
 // and GalaxyMission.jsx follow it.
 //
-//   MODES                        the cards, in order: { id, name, about, icon }
+//   MODES                        the cards, in order: { id, name, about, icon, film }
+//                                  (film: the game's menu film for the mode, src/lib/bf2017/films.js's
+//                                  tilesFor, or null where the game has none or it isn't published)
 //   STARFIGHTER                  system → where its Starfighter Assault is flown (the starfighter lane's rows)
 //   BATTLEFRONT                  system → the Battlefront game's own route for its Galactic Assault, once it has one
 //   modesFor(system, ctx)        → [{ ...MODES row, state: 'live' | 'soon' | 'none', why, to, options? }]
@@ -17,6 +19,7 @@
 
 import BOOK from '../../../data/bf2017/modes.json';
 import { info } from '../../../lib/bf2017/ui/info';
+import { tilesFor } from '../../../lib/bf2017/films';
 import { MISSIONS } from './missions';
 import { systemById } from '../systems';
 import { STARFIGHTER as FLOWN } from './missions/starfighterMaps';
@@ -27,19 +30,23 @@ const name = (id, own) => BOOK.names?.modes?.[id]?.text ?? own;
 // GameModeInformationAsset), so the cards say what the game's do
 const GAME_MODE = { galacticAssault: 'PlanetaryBattles', starfighter: 'SpaceBattle', hvv: 'HeroesVersusVillains', blast: 'Blast' };
 const about = (id, own) => info('mode', GAME_MODE[id])?.blurb ?? own;
+// the game's menu film for a mode (its multiplayer screen's tiles: Galactic
+// Assault's AT-AT, the heroes' versus, the arcade's skirmish), null where the
+// game has none or it isn't published; the menu's large tile plays its own
+const film = (mode) => tilesFor(mode)[0] ?? null;
 
 export const MODES = [
-  { id: 'galacticAssault', name: name('galacticAssault', 'Galactic Assault'), about: about('galacticAssault', 'The big battle: attackers push objective by objective, defenders hold each as long as they can.'), icon: `${ICONS}/InGame/GameMode/GameMode_Attack_AT-TE.svg` },
-  { id: 'starfighter', name: name('starfighter', 'Starfighter Assault'), about: about('starfighter', 'Up in the fighters over the world, for the capital ships and what they guard.'), icon: `${ICONS}/Classes/Class_Vehicle_Interceptor.svg` },
-  { id: 'hvv', name: name('hvv', 'Heroes vs Villains'), about: about('hvv', 'Four heroes against four villains, each side guarding its target.'), icon: `${ICONS}/Classes/Hero_Icon_01.svg` },
-  { id: 'blast', name: name('blast', 'Blast'), about: about('blast', 'Ten troopers a side, no objectives: first to a hundred eliminations.'), icon: `${ICONS}/Classes/Class_Troopers_Assault_01.svg` },
+  { id: 'galacticAssault', name: name('galacticAssault', 'Galactic Assault'), about: about('galacticAssault', 'The big battle: attackers push objective by objective, defenders hold each as long as they can.'), icon: `${ICONS}/InGame/GameMode/GameMode_Attack_AT-TE.svg`, film: film('assault') },
+  { id: 'starfighter', name: name('starfighter', 'Starfighter Assault'), about: about('starfighter', 'Up in the fighters over the world, for the capital ships and what they guard.'), icon: `${ICONS}/Classes/Class_Vehicle_Interceptor.svg`, film: null },
+  { id: 'hvv', name: name('hvv', 'Heroes vs Villains'), about: about('hvv', 'Four heroes against four villains, each side guarding its target.'), icon: `${ICONS}/Classes/Hero_Icon_01.svg`, film: film('heroes') },
+  { id: 'blast', name: name('blast', 'Blast'), about: about('blast', 'Ten troopers a side, no objectives: first to a hundred eliminations.'), icon: `${ICONS}/Classes/Class_Troopers_Assault_01.svg`, film: film('skirmish') },
   // (the other modes, lane 6's: a card only where the game fights them, `where`)
-  { id: 'strike', name: name('strike', 'Strike'), about: about('strike', 'Eight a side, one objective: the attackers blow it or carry it out, then the sides swap.'), icon: `${ICONS}/InGame/GameMode/GameMode_Attack.svg`, where: true },
-  { id: 'extraction', name: name('extraction', 'Extraction'), about: about('extraction', 'Carry the cargo through the checkpoints before the clock runs out; the other side stops you.'), icon: `${ICONS}/InGame/GameMode/GameMode_Vehicle.svg`, where: true },
-  { id: 'ewokHunt', name: name('ewokHunt', 'Ewok Hunt'), about: about('ewokHunt', 'Survive a night on Endor: stormtroopers against the Ewoks, every trooper lost one more Ewok.'), icon: `${ICONS}/InGame/GameMode/GameMode_Defend.svg`, where: true },
-  { id: 'supremacy', name: name('supremacy', 'Supremacy'), about: about('supremacy', 'Twenty a side for five command posts: the side holding fewer bleeds its reinforcements.'), icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg`, where: true },
-  { id: 'story', name: 'Story', about: 'This world’s own missions, from the films.', icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg` },
-  { id: 'free', name: 'Free roam', about: 'The world as it is: walk, ride, talk and find things.', icon: `${ICONS}/Classes/Class_Vehicle_Speeder.svg` },
+  { id: 'strike', name: name('strike', 'Strike'), about: about('strike', 'Eight a side, one objective: the attackers blow it or carry it out, then the sides swap.'), icon: `${ICONS}/InGame/GameMode/GameMode_Attack.svg`, film: null, where: true },
+  { id: 'extraction', name: name('extraction', 'Extraction'), about: about('extraction', 'Carry the cargo through the checkpoints before the clock runs out; the other side stops you.'), icon: `${ICONS}/InGame/GameMode/GameMode_Vehicle.svg`, film: null, where: true },
+  { id: 'ewokHunt', name: name('ewokHunt', 'Ewok Hunt'), about: about('ewokHunt', 'Survive a night on Endor: stormtroopers against the Ewoks, every trooper lost one more Ewok.'), icon: `${ICONS}/InGame/GameMode/GameMode_Defend.svg`, film: null, where: true },
+  { id: 'supremacy', name: name('supremacy', 'Supremacy'), about: about('supremacy', 'Twenty a side for five command posts: the side holding fewer bleeds its reinforcements.'), icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg`, film: film('supremacy'), where: true },
+  { id: 'story', name: 'Story', about: 'This world’s own missions, from the films.', icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg`, film: null },
+  { id: 'free', name: 'Free roam', about: 'The world as it is: walk, ride, talk and find things.', icon: `${ICONS}/Classes/Class_Vehicle_Speeder.svg`, film: null },
 ];
 const BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m]));
 
@@ -47,7 +54,8 @@ const BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m]));
 // Battlefront game's own route for a Galactic Assault, flipped here alone
 // when lane 5's lands)
 export const STARFIGHTER = Object.fromEntries(Object.keys(FLOWN).map((sys) => [sys, `/galaxy/${sys}?battle=starfighter`]));
-export const BATTLEFRONT = {};
+// (Hoth's is the game's own level, screens and spawn flow: the 2026-10-11 deploy-flow design, decision 1; its `from` is the way back)
+export const BATTLEFRONT = { hoth: '/battlefront/hoth/galacticAssault?from=%2Fgalaxy%2Fhoth' };
 
 // a mission's kind → the mode it is
 const KIND_MODE = { assault: 'galacticAssault', hvv: 'hvv', blast: 'blast', chase: 'story', quest: 'story', strike: 'strike', extraction: 'extraction', ewokHunt: 'ewokHunt', supremacy: 'supremacy' };

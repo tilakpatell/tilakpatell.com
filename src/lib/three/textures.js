@@ -7,7 +7,12 @@
 // weak one) instead of whatever number the file that made them happened to
 // pick.
 //
-//   sharpen(texture, { renderer, color, repeat, wrap, mipmaps, aniso })
+//   sharpen(texture, { renderer, color, repeat, wrap, mipmaps, aniso, bias })
+//       (`bias`: a mip bias of this texture's own on top of the post
+//       chain's, which the game material reads at its samples; three r186's
+//       Texture has none, so it rides in userData.mipBias: GPU-first lane N2,
+//       lib/three/mipBias, surface/compose.js's biasedTexture)
+//   setMipBias(b): the chain's bias for every game material (lib/three/mipBias)
 //   sharpenMaterial(material, opts), sharpenTree(root, opts)
 //   loadTexture(url, { renderer, color, ...sharpen's }) → Promise<Texture>
 //   variant(url, suffix, use) → the -sm / -512 file for a smaller tier
@@ -31,6 +36,8 @@ import { budget } from '../device';
 import { modelTexCap, texScale } from '../detail';
 import { loadBytes } from '../assetLoad';
 
+export { setMipBias } from './mipBias';
+
 const TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif', ktx2: 'image/ktx2' };
 const imageType = (url) => TYPES[/\.([a-z0-9]+)(?:[?#]|$)/i.exec(url)?.[1]?.toLowerCase()] ?? '';
 
@@ -48,8 +55,9 @@ export const MAP_SLOTS = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'a
 // renderer's maximum when one is given), colour space (`color: true` for
 // sRGB, false for a data map, undefined leaves it), wrapping and repeat.
 // Mipmaps stay on unless `mipmaps: false` (a sky always seen magnified).
-export function sharpen(texture, { renderer = null, color, repeat = null, wrap = null, mipmaps = true, aniso = null } = {}) {
+export function sharpen(texture, { renderer = null, color, repeat = null, wrap = null, mipmaps = true, aniso = null, bias = null } = {}) {
   if (!texture?.isTexture) return texture;
+  if (Number.isFinite(bias)) texture.userData.mipBias = bias;
   const max = renderer?.capabilities?.getMaxAnisotropy?.() ?? 16;
   texture.anisotropy = anisotropyFor(max, aniso ?? undefined);
   if (color === true) texture.colorSpace = THREE.SRGBColorSpace;

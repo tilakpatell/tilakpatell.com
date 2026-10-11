@@ -230,3 +230,49 @@ describe('the gun when the ragdoll has the body', () => {
     expect(guns).toEqual([weaponUrl('e11'), weaponUrl('e11')]);
   });
 });
+
+// a clip that walks: its root `metres` along (+z ahead, +x left) over its second, as the pack writes it
+const walking = (name, [dx, dz]) => Object.assign(clip(name), { userData: { root: [[0, 0, 0], [1, dx, dz]], loop: false } });
+
+describe('a soldier’s stride against the ground', () => {
+  const paced = (clips) => createFigures({ scene: new THREE.Scene(), loadBody: async () => ({ ...body(), clips }) });
+  // (unarmed: no gun or stance pack to fetch)
+  const runner = (over = {}) => ({ ...soldier, id: 4, weapon: null, ...over });
+
+  it('plays the run clip at the body’s speed over the clip’s own, kept so as the speed changes under it', async () => {
+    const run = walking('run', [0, 3]);
+    const figs = paced({ idle: clip('idle'), run, 'walk.left': walking('walk.left', [2, 0]) });
+    figs.update([runner({ vel: [0, 3.8] })], 0.1);
+    await settle();
+    figs.update([runner({ vel: [0, 3.8] })], 0.1);
+    const f = figs.figure(4);
+    const a = f.actions.get('run');
+    expect(f.clip).toBe('run');
+    expect(a.timeScale).toBeCloseTo(3.8 / 3, 6);
+    // (the feet a tenth of a second on, at the ground's pace)
+    expect(a.time).toBeCloseTo(0.1 * (3.8 / 3), 6);
+    expect(f.speeds.get('run')).toBeCloseTo(3, 9);
+    figs.update([runner({ vel: [0, 3], t: 1 })], 0.1);
+    expect(f.clip).toBe('run');
+    expect(a.timeScale).toBeCloseTo(1, 6);
+    // (a strafe, aiming to the left, is paced as the run is)
+    figs.update([runner({ vel: [2.4, 0], aim: true, t: 2 })], 0.1);
+    expect(f.clip).toBe('walk.left');
+    expect(f.actions.get('walk.left').timeScale).toBeCloseTo(1.2, 6);
+    // (stood still: the idle as made)
+    figs.update([runner({ t: 3 })], 0.1);
+    expect(f.clip).toBe('idle');
+    expect(f.actions.get('idle').timeScale).toBe(1);
+  });
+
+  it('plays a run clip with no root travel at its own pace', async () => {
+    const figs = paced({ idle: clip('idle'), run: clip('run') });
+    figs.update([runner({ vel: [0, 3.8] })], 0.1);
+    await settle();
+    figs.update([runner({ vel: [0, 3.8] })], 0.1);
+    const f = figs.figure(4);
+    expect(f.clip).toBe('run');
+    expect(f.speeds.get('run')).toBe(null);
+    expect(f.actions.get('run').timeScale).toBe(1);
+  });
+});

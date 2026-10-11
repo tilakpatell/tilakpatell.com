@@ -947,6 +947,10 @@ export async function create(canvas, ctx) {
   let bodyPhysics = null;
   let bodyDrives = true;
   let soldierBook = null;
+  // (you, once the people are made below: an engine that comes during an
+  // await before them, a small pack's, waits for you)
+  let youMade = null;
+  const youReady = new Promise((done) => (youMade = done));
   // a level's physics engine (or a promise of it): the player onto the 2017
   // soldier's body (drive: this body steps it; false when its owner does),
   // the camera's arm through it; null back to the walker
@@ -959,6 +963,7 @@ export async function create(canvas, ctx) {
       return;
     }
     soldierBook ??= (await import('../../../data/bf2017/physics/soldier.json')).default;
+    await youReady;
     if (disposed) return;
     bodyPhysics = physics;
     bodyDrives = drive;
@@ -1271,6 +1276,7 @@ export async function create(canvas, ctx) {
     emit({ type: 'swap', who: people[lead].spec.id });
   }
   const me = () => people[lead];
+  youMade();
   const other = () => people[1 - lead];
 
   // ── Your body: reactions and emotes ──
@@ -1834,8 +1840,8 @@ export async function create(canvas, ctx) {
     assault?.chooseSide(id);
     ctx.invalidate();
   }
-  function deployAt(id) {
-    const at = assault?.deploy(id);
+  function deployAt(id, offer = null) {
+    const at = assault?.deploy(id, offer);
     if (!at) return;
     leaveZone();
     putAt(me().st, at.x, at.z, at.yaw);
@@ -2057,8 +2063,8 @@ export async function create(canvas, ctx) {
     d.roll = Math.PI * 2 * k * (d.dx * Math.sin(p.yaw) + d.dz * Math.cos(p.yaw) >= 0 ? 1 : -1);
     return false;
   }
-  // the ring over the one you're squared up to: a thin additive ring at
-  // their chest, facing you, breathing; in your blade's (or bolt's) colour
+  // the ring over the one you're squared up to, with a blade in hand: a thin
+  // additive ring at their chest, facing you, breathing; in your blade's colour
   const lockRing = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.5, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, side: THREE.DoubleSide, toneMapped: false }));
   lockRing.visible = false;
   lockRing.renderOrder = 6;
@@ -2067,7 +2073,9 @@ export async function create(canvas, ctx) {
   lockRing.add(lockTicks);
   function stepLockRing(dt) {
     const t = state.lock;
-    if (!t || t.down || state.phase !== 'walk') {
+    // (a blade's ring alone: a blaster fight has the game's crosshair and its
+    // hit markers on the HUD, never a circle on the target: reticleFor.js)
+    if (!t || t.down || state.phase !== 'walk' || !me().saber) {
       lockRing.visible = false;
       return;
     }

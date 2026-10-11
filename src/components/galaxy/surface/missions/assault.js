@@ -46,8 +46,13 @@
 // like, a `down` event says where the killing shot came `from` ([x, z]) and
 // a soldier's shot at another names its `target`. They read the battle and
 // never change it.
+//
+// And your Battle Points (`b.you.points`, kept through your deaths; what a
+// deed earns and the spawn screen's prices are ./points.js's), spent by
+// deploy(b, post, offer) on whoever the offer is (`b.you.as`, null while down).
 
 import { pushOut, turnToward } from '../walker';
+import { canAfford, earnFor, onObjective, whole } from './points';
 import { rng } from '../noise';
 import { starsFor } from './chase';
 import { advance, confidence, createSquads, createTokens, flankers, frontline, posture, withdraw } from '../../../../lib/ai/squad';
@@ -134,7 +139,7 @@ export function newBattle(mission, { n = SOLDIERS.high, seed = 1 } = {}) {
   const soldiers = [];
   for (const side of ['attack', 'defend'])
     for (let i = 0; i < n; i++) soldiers.push({ id: soldiers.length, side, kind: pickKind(mission.sides[side].kinds, kr), x: 0, z: 0, yaw: 0, hp: RULES.hp, up: false, down: 0, post: null, spot: null, cool: 1 + r() * 2, wait: 0, target: null, move: 0, detour: 0, suppress: 0, cover: null, coverAt: -99, inCover: false, dug: false });
-  return { mission, r, t: 0, phase: 'choose', phaseIndex: 0, result: null, posts, soldiers, tickets: { ...mission.tickets }, waveAt: { attack: 0, defend: 0 }, you: { side: null, up: false, x: 0, z: 0, kills: 0, captures: 0, deaths: 0, in: null, state: null }, feed: [], squads: { attack: createSquads({ reach: TACTICS.reach }), defend: createSquads({ reach: TACTICS.reach }) }, tactics: { attack: {}, defend: {} }, losses: { attack: [], defend: [] }, tacticsAt: 0, tokens: createTokens({ pools: { shot: RULES.atYouMax }, timeout: RULES.every }), taken: { attack: new Set(), defend: new Set() } };
+  return { mission, r, t: 0, phase: 'choose', phaseIndex: 0, result: null, posts, soldiers, tickets: { ...mission.tickets }, waveAt: { attack: 0, defend: 0 }, you: { side: null, up: false, x: 0, z: 0, kills: 0, captures: 0, deaths: 0, in: null, state: null, points: 0, as: null }, feed: [], squads: { attack: createSquads({ reach: TACTICS.reach }), defend: createSquads({ reach: TACTICS.reach }) }, tactics: { attack: {}, defend: {} }, losses: { attack: [], defend: [] }, tacticsAt: 0, tokens: createTokens({ pools: { shot: RULES.atYouMax }, timeout: RULES.every }), taken: { attack: new Set(), defend: new Set() } };
 }
 
 const feed = (b, kind, text) => {
@@ -312,6 +317,7 @@ function hurt(b, s, damage, by, out) {
   out.push({ type: 'kill', victim: s.id, side: s.side, by: ev.by });
   if (by === 'you') {
     b.you.kills += 1;
+    earnFor(b, 'kill');
     feed(b, 'kill', `You brought one of ${sideName(b, s.side) === 'Empire' ? 'the Empire’s' : `the ${sideName(b, s.side)}’s`} down`);
   }
   return ev;
@@ -466,6 +472,7 @@ function step(b, h, you, env, out) {
     p.youIn = youOn && inPost(p, b.you.x, b.you.z);
     if (p.youIn) p.inside[b.you.side] += 1;
     if (p.fixed || !isLive(b, p.id)) continue;
+    if (p.youIn && onObjective(b, p)) earnFor(b, 'objectiveTick', h);
     const A = p.inside.attack;
     const D = p.inside.defend;
     if (p.owner) {
@@ -494,6 +501,7 @@ function step(b, h, you, env, out) {
         p.taking = null;
         const yours = p.youIn && b.you.side === side;
         if (yours) b.you.captures += 1;
+        if (yours) earnFor(b, 'capture');
         // (for the galaxy's war: a post its side took while you were up)
         if (youOn) b.taken[side].add(p.id);
         out.push({ type: 'capture', post: p.id, side, you: yours });
@@ -726,16 +734,18 @@ export function stepBattle(b, dt, you = null, env = { solids: { near: () => [] }
 // Whether you may come onto the field at a post: your side's, and no enemy in it
 export const canDeploy = (b, p) => Boolean(p && b.you.side && (p.fixed === b.you.side || (p.owner === b.you.side && p.inside[other(b.you.side)] === 0)));
 
-// You, onto the field at a post of yours, for a ticket: where you stand and
-// which way you face (toward your side's objective), or null
-export function deploy(b, postId) {
+// You, onto the field at a post of yours, for a ticket (and as an offer of
+// the spawn screen's, points.js's, for its Battle Points): where you stand
+// and which way you face (toward your side's objective), or null
+export function deploy(b, postId, offer = null) {
   const p = b.posts.find((o) => o.id === postId);
-  if (!canDeploy(b, p) || b.tickets[b.you.side] <= 0) return null;
+  if (!canDeploy(b, p) || b.tickets[b.you.side] <= 0 || (offer && !canAfford(b.you.points, offer))) return null;
   b.tickets[b.you.side] -= 1;
+  b.you.points -= offer?.cost ?? 0;
   const [x, z] = spotIn(b, p, 0.6);
   const o = objectiveFor(b, b.you.side, x, z);
   const yaw = o ? Math.atan2(o[0] - x, o[1] - z) : 0;
-  Object.assign(b.you, { up: true, x, z });
+  Object.assign(b.you, { up: true, x, z, as: offer?.id ?? null });
   return { x, z, yaw };
 }
 
@@ -743,6 +753,7 @@ export function youDown(b) {
   if (!b.you.up) return;
   b.you.up = false;
   b.you.deaths += 1;
+  b.you.as = null;
 }
 
 // how a post stands for you, when you're in it
@@ -755,11 +766,12 @@ function youState(b, p) {
 }
 
 // The battle as the HUD draws it. `key` changes when something the page
-// draws changes (not with the meters: those come through the feed).
+// draws changes (not with the meters, nor your Battle Points, whole ones,
+// which tick by the second: those come through the feed).
 export function battleView(b) {
   let letter = 0;
   const inPostNow = b.you.up ? b.posts.find((p) => p.youIn) : null;
-  const you = { side: b.you.side, up: b.you.up, kills: b.you.kills, captures: b.you.captures, deaths: b.you.deaths, in: inPostNow?.id ?? null, state: inPostNow ? youState(b, inPostNow) : null, meter: inPostNow?.meter ?? 0 };
+  const you = { side: b.you.side, up: b.you.up, kills: b.you.kills, captures: b.you.captures, deaths: b.you.deaths, in: inPostNow?.id ?? null, state: inPostNow ? youState(b, inPostNow) : null, meter: inPostNow?.meter ?? 0, points: whole(b.you.points), as: b.you.as };
   const posts = b.posts.map((p) => ({ id: p.id, name: p.name, letter: p.fixed ? '' : String.fromCharCode(65 + letter++), owner: p.owner, meter: p.meter, taking: p.taking, inside: { ...p.inside }, live: isLive(b, p.id), fixed: p.fixed, can: canDeploy(b, p) }));
   const ph = b.mission.phases[b.phaseIndex];
   return {
@@ -773,6 +785,6 @@ export function battleView(b) {
     you,
     feed: b.feed.slice(),
     result: b.result,
-    key: [b.result ? 'end' : b.phase, b.phaseIndex, posts.map((p) => `${p.owner?.[0] ?? '-'}${p.taking?.[0] ?? ''}${p.can ? '+' : ''}`).join(''), b.tickets.attack, b.tickets.defend, you.up ? 1 : 0, you.in ?? '', you.state ?? '', b.feed.length, you.kills, b.result ? 1 : 0].join('|'),
+    key: [b.result ? 'end' : b.phase, b.phaseIndex, posts.map((p) => `${p.owner?.[0] ?? '-'}${p.taking?.[0] ?? ''}${p.can ? '+' : ''}`).join(''), b.tickets.attack, b.tickets.defend, you.up ? 1 : 0, you.in ?? '', you.state ?? '', b.feed.length, you.kills, you.as ?? '', b.result ? 1 : 0].join('|'),
   };
 }

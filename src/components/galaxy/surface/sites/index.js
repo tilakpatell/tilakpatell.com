@@ -84,6 +84,7 @@ import { SITE as bespin } from './bespin';
 import { SITES as edge } from './edge';
 import { SITES as outer } from './outer';
 import { EXTRA } from './quests';
+import { turnSite } from './turnSite';
 
 export const SITES = { ...desert, ...ice, ...forest, yavin, ...core, coruscant, ...edge, bespin, ...outer };
 
@@ -139,6 +140,8 @@ export function siteOf(id) {
 // book of sites outside the galaxy (the Rick and Morty planets) is made
 // whole by the same rules the scene was built for.
 export function siteFrom(raw, id, { name, accent } = {}) {
+  // (a site laid out another way than its game map turns to it: turnSite.js)
+  raw = turnSite(raw, raw.turn);
   const places = (raw.places ?? []).map((p) => ({
     ...p,
     things: (p.things ?? []).map((t) => ({ ...t, at: plus(p.at, turn(t.at, p.yaw)), yaw: (t.yaw ?? 0) + (p.yaw ?? 0), place: p.id })),

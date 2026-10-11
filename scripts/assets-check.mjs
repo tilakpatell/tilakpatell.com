@@ -25,10 +25,11 @@ const YEAR = /max-age=31536000\b/;
 
 // what one answer says about one entry: null when it's right, else why not
 export function verdict(entry, got) {
+  // (an empty file has no first byte to give: the range is refused, and the answer names its size, 0;
+  // the pool calls that 416 failed, so it is read first)
+  if (got.http === 416 && entry.bytes === 0 && got.headers?.get('content-range') === 'bytes */0') return null;
   if (got.status === 'missing') return `not in the bucket (HTTP ${got.http})`;
   if (got.status !== 'fetched') return got.error ?? 'failed';
-  // (an empty file has no first byte to give: the range is refused, and the answer names its size, 0)
-  if (got.http === 416 && entry.bytes === 0 && got.headers.get('content-range') === 'bytes */0') return null;
   if (got.http !== 206 && got.http !== 200) return `HTTP ${got.http}`;
   const range = got.headers.get('content-range');
   const total = range ? Number(range.split('/')[1]) : Number(got.headers.get('content-length'));

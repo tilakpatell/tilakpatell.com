@@ -4,6 +4,7 @@
 
 import { grove } from './stand';
 import { DEATHSTAR, DEATHSTAR_ZONE } from './deathstar2';
+import { ownMap } from './ownMap';
 
 // Endor's sun, for its sky and the light slanting through its trees
 const ENDOR_SUN = { az: 0.9, el: 1.02 };
@@ -52,6 +53,26 @@ const VILLAGE = (() => {
 const at = (o, [x, z]) => [o[0] + x, o[1] + z];
 const V = [-210, 150]; // the village
 
+// Endor's districts (lane E3): where the bunker's halls are walked, and the
+// village's fall. Under Endor_01's hill (the inside pack, read from its own
+// cells) are two places: the control room round (215, −40), its walls,
+// pillars, computers and floors 60 to 62 m under the landing's ground, and a
+// cave round (330, 210) of roots and cave rock down to 95 m under it. The
+// district's ground is a level 98 m down, under the cave, with a flat at the
+// control room's floor (its own floors stand on it); you land in the control
+// room, facing its consoles.
+const BUNKER_LAND = { at: [232, -45], yaw: -Math.PI / 2 };
+// (the halls' floor stone, not the forest's: a dark gravel, no grass)
+const BUNKER_GROUND = {
+  layers: [],
+  base: -98,
+  flats: [{ at: [222, -45], r: 66, edge: 22, h: -62.1 }],
+  pits: [],
+  detail: 'gravel',
+  palette: { low: '#3a3632', high: '#46413b', rock: '#2e2b28', accent: '#3a3632', deep: '#24211f', hLow: -98, hHigh: -60, rockAt: 0.5, accentCover: 0.2, grain: 0.6 },
+};
+const VILLAGE_FALL = -60;
+
 export const SITES = {
   endor: {
     // lit as the game lights its level (src/data/bf2017/light/endor.json, gameLit.js)
@@ -64,10 +85,77 @@ export const SITES = {
     // trenches, the AT-AT station and the forest round them stand as the game
     // placed them; the site's built bunker is the flight's (`game`))
     level: 'endor',
-    // (and overhead, the second Death Star's inside, the game's own: up by
-    // the shuttle on the shield generator's pad, deathstar2.js)
-    districts: [DEATHSTAR],
-    zones: [DEATHSTAR_ZONE],
+    // (lane E3: the game's other Endor maps, and the bunker's halls under
+    // Endor_01's hill. Endor_02 and Endor_04 land on their first team-one
+    // spawns, from Mode3_Logic, as the rulebook reads no season map's
+    // records; the village's on its walkways in the trees.)
+    districts: [
+      {
+        id: 'village',
+        name: 'Bright Tree Village',
+        level: 'endor/village',
+        // (/models/galaxy/bf2017/levels/endor/village/level.json,
+        // `node scripts/bf2017-level.mjs s2_1/levels/endor_02 --world endor
+        // --district village --spot -386 71 --subs endor_02,art,content`;
+        // facing its huts and walkways, 120 m west and 126 m south)
+        land: { at: [0, 0], yaw: -2.38 },
+        line: 'The Ewoks’ village, its walkways and huts high in the redwoods.',
+        door: { at: [0, 6], r: 2.4, prompt: 'Back down to the forest floor' },
+        ...ownMap('endor/village'),
+        // (the walkways are the pack's floors in the air: off them, and down
+        // past the forest floor's lowest, you're put back where you landed)
+        site: { ...ownMap('endor/village').site, fall: VILLAGE_FALL },
+      },
+      {
+        id: 'station',
+        name: 'The research station',
+        level: 'endor/station',
+        // (/models/galaxy/bf2017/levels/endor/station/level.json,
+        // `node scripts/bf2017-level.mjs s8_1/endor_04 --world endor
+        // --district station --spot 446 299`; facing its decks, 183 m north)
+        land: { at: [0, 0], yaw: 0.25 },
+        line: 'An Imperial research station in the forest, long after the battle.',
+        door: { at: [0, 6], r: 2.4, prompt: 'Back to the forest moon' },
+        ...ownMap('endor/station'),
+      },
+      {
+        id: 'bunker',
+        name: 'The bunker, inside',
+        level: 'endor/bunker',
+        // (/models/galaxy/bf2017/levels/endor/bunker/level.json,
+        // `node scripts/bf2017-level.mjs levels/mp/endor_01 --world endor
+        // --district bunker --inside --spot 211.8 331`: the 4,098 pieces
+        // under the hill, in the main map's frame)
+        land: BUNKER_LAND,
+        line: 'The shield generator’s halls, under the hill behind the bunker’s door.',
+        door: { at: BUNKER_LAND.at.map((v, i) => v + [0, 4][i]), r: 2.4, prompt: 'Back out through the bunker’s door' },
+        // (the same frame as the forest's, but none of it in here: its
+        // trees, places and people are under the sky, and so is the Death Star)
+        ground: BUNKER_GROUND,
+        // (and under the hill: the game's cave roof is its terrain, which the
+        // inside pack does not carry, so no day's sky either: a dark dome, the
+        // halls' lamps from above, their haze; the game's day light off)
+        site: {
+          ...ownMap('endor/bunker').site,
+          skyships: [],
+          flyovers: [],
+          weather: [],
+          gameLight: null,
+          grass: null,
+          sky: { zenith: '#0b0e10', horizon: '#1a2024', haze: 1, hazeColor: '#1a2024', suns: [{ az: 0.9, el: 1.35, color: '#ffe2b8', size: 0, glow: 0 }], clouds: null, bodies: [], stars: 0 },
+          light: { sun: 0.7, sky: '#56646c', ground: '#2a2622', ambient: 0.9 },
+          fog: { color: '#1a2024', density: 0.012 },
+        },
+      },
+      DEATHSTAR,
+    ],
+    // (the way into the bunker's halls, at the game's bunker door)
+    zones: [
+      { id: 'bunkerhalls', name: 'The bunker, inside', door: { at: [250, -44], r: 2.4, prompt: 'Go in through the bunker’s door' }, to: { district: 'bunker' } },
+      // (and overhead, the second Death Star's inside, the game's own: up by
+      // the shuttle on the shield generator's pad, deathstar2.js)
+      DEATHSTAR_ZONE,
+    ],
     place: 'The forest moon',
     line: 'Redwoods older than the Empire, and something small watching you from the ferns.',
     sky: {
@@ -362,6 +450,38 @@ export const SITES = {
   kashyyyk: {
     // lit as the game lights its level (src/data/bf2017/light/kashyyyk.json, gameLit.js)
     gameLight: 'kashyyyk',
+    // drawn from the game's level (lane E3: /models/galaxy/bf2017/levels/kashyyyk/level.json,
+    // `node scripts/bf2017-level.mjs levels/mp/kashyyyk_01 --world kashyyyk
+    // --spot 260 -211`: the sand 64 m up the beach from the droids' first
+    // spawn, its ground 0.27 m over the surf's foam; `--spawn` is the
+    // gunships', 470 m up). The game's sea is at −x, this site's lagoon at
+    // +z, so the site turns a quarter to the map and moves 24 m up the beach
+    // (turnSite.js): its landing on the game's sand, its line and shallows
+    // on the game's surf. The site's own Kachirho, great trees and tree
+    // rows are the flight's (`game`): the game's stand.
+    level: 'kashyyyk',
+    turn: { yaw: -Math.PI / 2, by: [24, 0] },
+    // (Kashyyyk_02, the Capital Supremacy map's ground:
+    // /models/galaxy/bf2017/levels/kashyyyk/second/level.json, `node
+    // scripts/bf2017-level.mjs s7/levels/kashyyyk_02 --world kashyyyk
+    // --district second --spot 1166 -271`, its first team-one spawn, from
+    // Mode1_Logic, as the rulebook reads no season map's records)
+    districts: [
+      {
+        id: 'second',
+        name: 'The Kashyyyk front',
+        level: 'kashyyyk/second',
+        // (facing the map's pieces, 318 m west)
+        land: { at: [0, 0], yaw: -1.55 },
+        line: 'The Republic’s line under the wroshyrs, and a droid dreadnought overhead.',
+        // (the way back: a gunship's ride to the beach, a step from where you land)
+        door: { at: [0, 6], r: 2.4, prompt: 'Back to the beach at Kachirho' },
+        ...ownMap('kashyyyk/second'),
+        // (the same sea as Kashyyyk_01's, its foam at 134.2 m in the game:
+        // 38.9 m under this spot, up on the shore)
+        site: { ...ownMap('kashyyyk/second').site, water: { level: -38.9, color: '#7b8575', deep: '#3a4a40', kind: 'sea', foam: 0.2, wadeMax: 1.2 } },
+      },
+    ],
     // the record's picture on the node renderer (src/data/bf2017/light/kashyyyk.picture.json, applyGameLight)
     picture: 'kashyyyk.picture.json',
     place: 'The shore at Kachirho',
@@ -377,16 +497,19 @@ export const SITES = {
     },
     fog: { color: '#c4cebe', density: 0.0017 },
     light: { sun: 3.0, sky: '#c8dcea', ground: '#6a7a48', ambient: 0.8 },
-    // (Kachirho's lagoon as filmed: milky olive-grey, not a tropical blue)
+    // (Kachirho's lagoon as filmed: milky olive-grey, not a tropical blue;
+    // its level the game's sea: the foam on its surf, 0.27 m under the spot's sand)
     // (wadeMax: how deep you can wade before the lagoon turns you back)
-    water: { level: 0, color: '#7b8575', deep: '#3a4a40', kind: 'sea', foam: 0.2, wadeMax: 1.2 },
+    water: { level: -0.27, color: '#7b8575', deep: '#3a4a40', kind: 'sea', foam: 0.2, wadeMax: 1.2 },
     dust: '#bca880',
     edge: 'Beyond here the forest drops away into the Shadowlands. Even Wookiees don’t go down there.',
     ground: { detail: 'leaves', detailLook: { color: 0.7, normal: 0.7 },
       seed: 21,
       wind: -0.6,
-      base: -10,
-      layers: [
+      // (the game's own ground: Kashyyyk_01's heightmap, 0 at the spot)
+      layers: [{ type: 'image', pack: 'kashyyyk' }],
+      // (the flight's planet keeps the island the site drew before the level)
+      flight: [
         { type: 'island', at: [-40, -560], r: 820, height: 26, core: 0.42, ragged: 0.25 },
         { type: 'swell', scale: 300, height: 3 },
         { type: 'hills', scale: 110, height: 6 },
@@ -401,8 +524,9 @@ export const SITES = {
       // one big enough to reach both ends of the beach would flood the beach's
       // middle or bury the shallows' (one circle can't make a straight shore).
       flats: [
-        { at: [25, 96], r: 38, edge: 14, h: -0.45 },
-        { at: [95, 96], r: 38, edge: 14, h: -0.45 },
+        // (knee-deep under the game's sea, −0.27)
+        { at: [25, 96], r: 38, edge: 14, h: -0.72 },
+        { at: [95, 96], r: 38, edge: 14, h: -0.72 },
         ...[-10, 30, 70, 110].map((x) => ({ at: [x, 38], r: 34, edge: 14, h: 1.0 })),
       ],
       palette: {
@@ -421,7 +545,9 @@ export const SITES = {
       },
     },
     weather: [{ kind: 'motes', count: 400 }],
-    land: { at: [0, -40], yaw: -1.1 },
+    // (facing up the beach to the game's battle, once turned: its pieces'
+    // middle 500 m east and a little north of the landing)
+    land: { at: [0, -40], yaw: 3.44 },
     lines: {
       out: {
         xwing: [['luke', 'Kashyyyk. Chewie’s home. Everything here is enormous, Artoo.'], ['r2', '(An awed, rising whistle.)']],
@@ -436,7 +562,7 @@ export const SITES = {
         name: 'Kachirho',
         at: [-140, -30],
         r: 60,
-        flat: { r: 46 },
+        flat: { r: 46, game: true },
         about: 'The Wookiee city on the lagoon: a single wroshyr tree, its trunk ringed with decks and houses, its crown lost in the sky. Clones and Wookiees held its shore together against the droid army.',
         lines: {
           xwing: [['luke', 'A whole city in one tree.'], ['r2', '(A long, impressed whistle.)']],
@@ -445,7 +571,7 @@ export const SITES = {
           rv: [['walt', 'A single structure, housing thousands. Built entirely by hand.'], ['jesse', 'Treehouse goals, man.']],
         },
         things: [
-          { kind: 'kachirho', at: [0, 0], yaw: 0.15 },
+          { kind: 'kachirho', at: [0, 0], yaw: 0.15, game: true },
           { kind: 'fire', at: [14, 38] },
           { kind: 'crates', at: [-16, 40] },
         ],
@@ -544,7 +670,9 @@ export const SITES = {
         name: 'A Wookiee village',
         at: [-370, -170],
         r: 40,
-        flat: { r: 32 },
+        // (the game's huts stand past the site's reach, 740 m out: this one
+        // keeps its own, on a flat over the game's surf)
+        flat: { r: 32, h: 0.6 },
         about: 'Wookiee homes on stilts among the roots of the wroshyrs: curved wooden pods with round doors, built by hand, lit by lanterns at night.',
         lines: {
           xwing: [['luke', 'Wookiees live for hundreds of years. Some of these houses must be older than the Republic.']],
@@ -579,22 +707,24 @@ export const SITES = {
       { kind: 'karst', at: [320, 250], opts: { w: 28, h: 20, seed: 7 } },
       { kind: 'karst', at: [-260, 330], opts: { w: 22, h: 15, seed: 8 } },
       // the great wroshyrs, as tall as the city's tree
-      { kind: 'wroshyrgreat', at: [60, -150], yaw: 0.4, sink: 2, solid: { r: 28 } },
-      { kind: 'wroshyrgreat', at: [-300, -300], yaw: 2.1, scale: 1.1, sink: 2, solid: { r: 31 } },
-      { kind: 'wroshyrgreat', at: [330, -260], yaw: 3.6, scale: 0.9, sink: 2, solid: { r: 25 } },
+      { kind: 'wroshyrgreat', at: [60, -150], yaw: 0.4, sink: 2, solid: { r: 28 }, game: true },
+      { kind: 'wroshyrgreat', at: [-300, -300], yaw: 2.1, scale: 1.1, sink: 2, solid: { r: 31 }, game: true },
+      { kind: 'wroshyrgreat', at: [330, -260], yaw: 3.6, scale: 0.9, sink: 2, solid: { r: 25 }, game: true },
     ],
+    // (the game's level places its own wroshyrs, rock and ground cover, its
+    // meshscattering's lush and dry beds and tall grass: these are the flight's)
     scatter: [
       // (Quaternius's ground cover, under the built plants: catalog/quaternius.js)
-      { kind: 'qfern', n: 100, within: [8, 120], scale: [0.8, 1.5], solid: false },
-      { kind: 'wroshyr', n: 110, within: [50, 640], scale: [0.7, 1.4], opts: { seed: 1, leaf: '#354832', bark: '#50554e' } },
-      { kind: 'wroshyr', n: 70, within: [640, 1400], scale: [1.0, 1.8], solid: false, opts: { seed: 2, lo: true, leaf: '#354832', bark: '#50554e' } },
-      { kind: 'karst', n: 30, within: [200, 900], scale: [7, 16], stretch: [1.0, 1.8], dry: false, opts: { seed: 3 } },
-      { kind: 'karst', n: 40, within: [900, 2000], scale: [14, 30], stretch: [1.0, 1.6], dry: false, solid: false, opts: { seed: 4 } },
-      { kind: 'plant', n: 600, within: [8, 500], scale: [0.8, 1.8], solid: false, clear: -8, opts: { seed: 5, color: '#57695d' } },
-      { kind: 'plant', n: 120, within: [16, 60], scale: [0.9, 1.9], solid: false, clear: -30, opts: { seed: 8, color: '#5e7262' } },
-      { kind: 'fern', n: 300, within: [8, 500], scale: [0.8, 1.6], solid: false, clear: -8, opts: { seed: 6, color: '#4f6250' } },
-      { kind: 'rock', n: 60, within: [10, 560], scale: [0.6, 2.4], opts: { color: '#9a9686', sharp: 0.5 } },
-      { kind: 'log', n: 20, within: [40, 520], scale: [0.9, 1.5], solid: false, opts: { seed: 7, bark: '#6a5a46' } },
+      { kind: 'qfern', n: 100, within: [8, 120], scale: [0.8, 1.5], solid: false, game: true },
+      { kind: 'wroshyr', n: 110, within: [50, 640], scale: [0.7, 1.4], opts: { seed: 1, leaf: '#354832', bark: '#50554e' }, game: true },
+      { kind: 'wroshyr', n: 70, within: [640, 1400], scale: [1.0, 1.8], solid: false, opts: { seed: 2, lo: true, leaf: '#354832', bark: '#50554e' }, game: true },
+      { kind: 'karst', n: 30, within: [200, 900], scale: [7, 16], stretch: [1.0, 1.8], dry: false, opts: { seed: 3 }, game: true },
+      { kind: 'karst', n: 40, within: [900, 2000], scale: [14, 30], stretch: [1.0, 1.6], dry: false, solid: false, opts: { seed: 4 }, game: true },
+      { kind: 'plant', n: 600, within: [8, 500], scale: [0.8, 1.8], solid: false, clear: -8, opts: { seed: 5, color: '#57695d' }, game: true },
+      { kind: 'plant', n: 120, within: [16, 60], scale: [0.9, 1.9], solid: false, clear: -30, opts: { seed: 8, color: '#5e7262' }, game: true },
+      { kind: 'fern', n: 300, within: [8, 500], scale: [0.8, 1.6], solid: false, clear: -8, opts: { seed: 6, color: '#4f6250' }, game: true },
+      { kind: 'rock', n: 60, within: [10, 560], scale: [0.6, 2.4], opts: { color: '#9a9686', sharp: 0.5 }, game: true },
+      { kind: 'log', n: 20, within: [40, 520], scale: [0.9, 1.5], solid: false, opts: { seed: 7, bark: '#6a5a46' }, game: true },
     ],
     life: [
       // (the game's own: tachs about Kachirho's roots)
