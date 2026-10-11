@@ -25,7 +25,10 @@
 //   five stages (the corvettes, the mines, the MC80's top, beneath and its
 //   engines), each opening no sooner than its gate, the MC80 breaking up at
 //   the last; the TIE bomber flights as the attacker's waves; the final push
-//   and the defender's reserve as the galaxy's battles have them.
+//   and the defender's reserve as the galaxy's battles have them; and each
+//   side's pilots (`pilots[team]`), twenty names from the game's space-battle
+//   lists (lib/battlefront/ai/names.js) in the battle's seed's order, for the
+//   flights and the mode's HUD.
 // - shipsClear(battle, avoid) → the capital ships that stand inside one
 //   another or inside the planet's, the station's or the shield's solids
 //   (the starfighter test holds it empty).
@@ -35,6 +38,7 @@
 // fights it in place of the war's own while it's on.
 
 import { PLAN } from '../../../universe/battlePlan';
+import { namesFor } from '../../../../lib/battlefront/ai/names.js';
 import { eraOf, fightersOf, heroesOf, kitsOf } from './starfighterKits';
 
 export const METRES = 53.3; // a battle unit in metres (galaxy/battles.js's M)
@@ -124,8 +128,14 @@ export function layoutOf(level, frame) {
   return Object.fromEntries([0, 1].map((team) => [team, sideShips(level, team).map((s) => ({ at: frame(s.at), fwd: s.fwd }))]));
 }
 
+// the level's side names → the name lists' factions
+const FACTION = { rebel: 'rebels', rebels: 'rebels', empire: 'empire', republic: 'republic', separatists: 'separatists' };
+// a battle's id as a seed for its pilots' order
+const seedOf = (id) => [...String(id ?? '')].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 7);
+
 export function starfighterPlan(level, frame, { id, length = PLAN.length } = {}) {
   const { attacker, defender } = level;
+  const pilots = Object.fromEntries([0, 1].map((team) => [team, namesFor(FACTION[level.sides?.[team]] ?? 'empire', 'spaceBattles', seedOf(id), 20)]));
   const fleet = sideShips(level, defender).map((s) => s.id);
   const stages = level.stages.map((st) => ({
     id: st.id,
@@ -157,7 +167,7 @@ export function starfighterPlan(level, frame, { id, length = PLAN.length } = {})
   ]
     .filter((e) => e.at <= length)
     .sort((p, q) => p.at - q.at);
-  return { id, kind: 'starfighter', length, attacker, defender, ai: { tAi: PLAN.tAi }, stages, runners: null, side, losses: [], pinned: 'starfighter', escalations };
+  return { id, kind: 'starfighter', length, attacker, defender, ai: { tAi: PLAN.tAi }, stages, runners: null, side, losses: [], pinned: 'starfighter', escalations, pilots };
 }
 
 // the capital ships standing inside one another, or inside a solid round the planet

@@ -41,7 +41,10 @@
 //   (actor kinds it runs from, or goes after, when it has seen them),
 //   group (the entry's figures walk as a band, the first in front), sit
 //   (sat where it stands: a booth's), hears / greets / chats (needs.js's
-//   manner, where its kind's isn't right) }]
+//   manner, where its kind's isn't right), creature (the game's creature
+//   settings it walks by: an actor entity's name, `Actor_Jawa_01`, or the
+//   settings', `CLS_Jawa`; lib/battlefront/ai/creature.js: its path or its
+//   wander at its own speed, and its reaction to you) }]
 // site.wants: [{ id, kind, at: [x, z], pause?, slots?, spots?, clip?, base?,
 //   face? }] (where the people go, and what they do there: needs.js)
 //
@@ -80,6 +83,7 @@ import { atPriority } from '../../../lib/assetLoad';
 import { device } from '../../../lib/device';
 import { detailLevel } from '../../../lib/detail';
 import { firstCut, wantsUpgrade } from '../../../lib/net/progressive';
+import { createCreatureMind, settingsFor } from '../../../lib/battlefront/ai/creature.js';
 
 const TALK = 4.5; // metres: close enough to turn to you
 const THERE = 0.6; // metres from where it's going: there
@@ -89,7 +93,7 @@ const ARRIVED = 0.12; // metres from a spot social.js gives it: there
 
 // a brain: where it's going and what it's doing (pure)
 export function brain(spec, home, r) {
-  return {
+  const b = {
     x: home[0],
     z: home[1],
     yaw: spec.face ?? r() * Math.PI * 2,
@@ -101,6 +105,10 @@ export function brain(spec, home, r) {
     visited: {}, // when it was last at each want (needs.js)
     last: null,
   };
+  // (the game's creature settings, where it names them)
+  const cls = spec.creature ? settingsFor(spec.creature) : null;
+  if (cls) b.creature = createCreatureMind(cls, { home, get at() { return [b.x, b.z]; } });
+  return b;
 }
 
 // a place it was using, or going to, given up (its slot freed)
@@ -114,11 +122,23 @@ function leave(b) {
 const faceAt = (want, spot) => want.face ?? (Math.hypot(want.at[0] - spot[0], want.at[1] - spot[1]) > 0.05 ? Math.atan2(want.at[0] - spot[0], want.at[1] - spot[1]) : null);
 
 // a step of it: on to where it's going, or a pause, or somewhere new
-export function think(b, spec, dt, r, { avoid = null, wants = null, t = 0 } = {}) {
+export function think(b, spec, dt, r, { avoid = null, wants = null, t = 0, you = null } = {}) {
   let pace = spec.speed ?? 1.2;
   if (spec.still) {
     b.speed = 0;
     return;
+  }
+  // on the game's creature settings: its mind says where and how fast (a fear or a chase still wins)
+  if (b.creature && !b.flee && !b.chase && b.hold == null) {
+    const c = b.creature.step(dt, { player: you ? [you.x, you.z] : null, waypoints: spec.path ?? null, rand: r });
+    if (c.face != null) b.yaw = turnToward(b.yaw, c.face, 4 * dt);
+    if (!c.to) {
+      b.speed = Math.max(0, b.speed - dt * 6);
+      return;
+    }
+    b.to = [...c.to];
+    b.wait = 0;
+    pace = c.speed;
   }
   // stood a while (startled by a shot, turned to look at one, getting up
   // off a seat): slowing to a stop, turning as it was told
@@ -822,6 +842,7 @@ export function createActors({ parent, world, life = [], wants = [], talk = null
           }
           const w = ways(a);
           w.t = clock;
+          w.you = you;
           think(b, spec, dt, r, w);
         }
         a.near = Boolean(near);
