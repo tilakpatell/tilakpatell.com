@@ -7,6 +7,7 @@
 // Chromium where Playwright keeps it:
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs space endor,coruscant
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,hoth
+//   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine@jabba (a district: ?district=jabba)
 //   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, JSON=1 …
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
@@ -168,9 +169,12 @@ for (const id of list.split(',')) {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
-  // (DISTRICT=village: the world's district, sites/index.js's, held to the world's row)
   const bf = mode === 'battlefront';
-  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${id}/surface${process.env.DISTRICT ? `?district=${process.env.DISTRICT}` : ''}` : `/galaxy/${id}`;
+  // (`world@district`: a district of a world, its own pack, held to the row
+  // alone; or DISTRICT=village for every world asked for)
+  const [world, atDistrict] = id.split('@');
+  const district = atDistrict ?? process.env.DISTRICT ?? null;
+  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
   await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
   const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
   try {
@@ -199,7 +203,7 @@ for (const id of list.split(',')) {
   // landing's watch: its ship held 320 m up by the held clock, the camera
   // sees the sky. You set down 8 m off the ship's right, facing the
   // district's landing heading, as the walk begins.)
-  if (mode === 'surface' && process.env.DISTRICT) {
+  if (mode === 'surface' && district) {
     await page.evaluate(() => {
       const s = window.__surfaceScene;
       const yaw = s.landing?.yaw ?? 0;
