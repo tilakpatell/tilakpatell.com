@@ -4,9 +4,11 @@
 // smallest that holds you; outside all, the nearest centre within reach.
 //
 //   probeAt(list, [x, y, z], reach = 150) → probe | null (pure)
-//   createLevelProbes({ world, list, onProbe }) → { update([x, y, z]), current() }
+//   createLevelProbes({ world, list, onProbe, tier }) → { update([x, y, z]), current() }
 //     onProbe({ id, url, … }) when the probe changes; url the faces' stem,
-//     as gameLit.js's probes name theirs
+//     as gameLit.js's probes name theirs: on ultra a probe's `ultra` stem
+//     where the pack has one (128², the sun kept: lane D2), else its 64²
+//   facesOf(probe, tier) → the faces' stem in the pack
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
@@ -36,14 +38,16 @@ export function probeAt(list, p, reach = 150) {
   return inside ?? near;
 }
 
-export function createLevelProbes({ world, list, onProbe }) {
+export const facesOf = (probe, tier) => (tier === 'ultra' && probe.ultra ? probe.ultra : probe.faces);
+
+export function createLevelProbes({ world, list, onProbe, tier = 'high' }) {
   let now = null;
   return {
     update(p) {
       const next = probeAt(list, p);
       if (!next || next === now) return;
       now = next;
-      onProbe?.({ ...next, url: `models/galaxy/bf2017/levels/${world}/${next.faces}` });
+      onProbe?.({ ...next, url: `models/galaxy/bf2017/levels/${world}/${facesOf(next, tier)}` });
     },
     current: () => now,
   };

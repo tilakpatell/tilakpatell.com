@@ -59,13 +59,11 @@ describe('the map’s placed actors', () => {
     expect(j.life).toHaveLength(2);
   });
 
-  it('lists a kind the site lacks and never places it (a kullbee before lane A), and a shrub as the scenery it is', () => {
+  it('lists a kind the site lacks and never places it (a kullbee before lane A); a shrub is the pack’s, not a figure', () => {
     const j = actorsJson(map, pack, { kinds, subs: ['fixture_01', 'fantasybattle'] });
     expect(j.life.some((a) => a.kind === 'kullbee')).toBe(false);
-    expect(j.unplaced).toEqual([
-      { blueprint: 'forestbase_shrublarge_01_skinned', count: 1, why: 'scenery (skinned, wind-bent)' },
-      { blueprint: 'kullbee_01', count: 1, why: 'no kind on the site' },
-    ]);
+    // (the wind-bent shrub stands in the pack as a rigid instance: arenaOf's STILL_SKINNED)
+    expect(j.unplaced).toEqual([{ blueprint: 'kullbee_01', count: 1, why: 'no kind on the site' }]);
   });
 });
 

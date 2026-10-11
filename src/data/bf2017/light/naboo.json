@@ -49,7 +49,7 @@
    },
    "grading": {
     "lut": "textures/galaxy/bf2017/light/naboo/dusk.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 145.946,

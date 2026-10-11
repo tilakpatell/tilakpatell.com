@@ -7,6 +7,7 @@
 // Chromium where Playwright keeps it:
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs space endor,coruscant
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,hoth
+//   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine@jabba (a district: ?district=jabba)
 //   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, JSON=1 …
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
@@ -26,8 +27,10 @@
 //     quality modes design: docs/superpowers/specs/2026-10-07-quality-modes-
 //     design.md §2), against that level's baseline, lab/baseline/surface-
 //     <QUALITY>.json: draw calls and triangles no more than the baseline's
-//     +10% and never over the row's ceiling, its models (every .glb it
-//     fetched) no more than the row's megabytes; a line per world, and exit
+//     +10% and never over the row's ceiling, its models (every .glb, .ktx2
+//     and .bin it fetched) no more than the row's megabytes, or the bucket
+//     row's where the public bucket served any (galaxy-budget.mjs's
+//     BUCKET_MB); a line per world, and exit
 //     1 on a breach (BUDGET_SCALE=0.5 tightens it, to see it fail).
 //     QUALITY=ultra has no triangle ceiling: its triangles are reported, and
 //     it is held to the draw calls and the megabytes, and, drawn on a real
@@ -62,7 +65,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { budget } from '../src/lib/budgets.js';
 import { summarise } from './cpu-profile.mjs';
-import { limitsFor, overBy } from './galaxy-budget.mjs';
+import { BUCKET_URL, MODEL_FILE, limitsFor, overBy } from './galaxy-budget.mjs';
 
 const [mode = 'space', list = 'tatooine'] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const bytesRun = process.argv.includes('--bytes');
@@ -156,11 +159,15 @@ for (const id of list.split(',')) {
     });
   }
   const page = await ctx.newPage();
-  // what its models weigh: every .glb it fetched (a fresh context: nothing cached)
+  // what its models weigh: every .glb, .ktx2 and .bin it fetched (a fresh
+  // context: nothing cached), a level pack's maps and cells with its meshes
+  // (lane D2), and whether the bucket served any of it (galaxy-budget.mjs's
+  // bucket row)
   let glbBytes = 0;
   // (and whose scans it wears: the site's photo scans, or the game's roles.
   // A Star Wars world is on the game's (sites/index.js's default), so a cc0
   // fetch on a surface is a world that slipped back; SCANS=game fails it)
+  let fromBucket = false;
   const scans = { cc0: 0, game: 0, cc0Paths: [] };
   page.on('requestfinished', async (req) => {
     // (the maps themselves: the dev server also serves the set's index.json as a module)
@@ -170,7 +177,8 @@ for (const id of list.split(',')) {
       if (scans.cc0Paths.length < 8) scans.cc0Paths.push(new URL(req.url()).pathname);
     }
     else if (/\/textures\/galaxy\/bf2017\/.*\.(webp|ktx2|png|jpg|avif|hdr)(\?|$)/.test(req.url())) scans.game++;
-    if (!/\.glb(\?|$)/.test(req.url())) return;
+    if (!MODEL_FILE.test(req.url())) return;
+    if (BUCKET_URL.test(req.url())) fromBucket = true;
     const sizes = await req.sizes().catch(() => null);
     glbBytes += sizes?.responseBodySize ?? 0;
   });
@@ -202,7 +210,9 @@ for (const id of list.split(',')) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
   const bf = mode === 'battlefront';
-  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
+  // (`world@district`: a district of a world, its own pack, held to the row alone)
+  const [world, district] = id.split('@');
+  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
   await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
   const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
   try {
@@ -262,6 +272,25 @@ for (const id of list.split(',')) {
     });
     await page.waitForTimeout(2500);
   }
+  // (the whole world in the count: the frame guard, lib/three/frameGuard,
+  // readies about a shader a frame, and in software GL a frame takes seconds,
+  // so a level pack's hundreds of materials were still held back when the
+  // frame was counted and its draws left out. Held back no longer, and three
+  // frames drawn, compiling all of it, before the frames that are counted:
+  // lane E4's, PR #911)
+  await page.evaluate(
+    () =>
+      new Promise((done) => {
+        window.__tpGuardOff?.();
+        let n = 0;
+        const tick = () => {
+          window.__RUNTIME__?.invalidate();
+          if (++n < 3) requestAnimationFrame(tick);
+          else done();
+        };
+        requestAnimationFrame(tick);
+      }),
+  );
   // one whole frame's counts (every pass), and the frame times over 4 s
   const stats = await page.evaluate(
     (surface) =>
@@ -351,7 +380,7 @@ for (const id of list.split(',')) {
     console.log(`bytes  ${id.padEnd(10)} first frame ${r.firstFrameS} s  walkable ${boot?.s ?? '–'} s (on the line ${boot?.wireS ?? '–'} s, the level's own ${boot?.levelS ?? '–'} s)  boot ${boot?.levelMB ?? '–'}/${row.bootMB} MB  visit ${r.visitMB ?? '–'}/${row.visitMB} MB  wire ${r.wireMB} MB  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}`);
     if (over.length) process.exitCode = 1;
   }
-  results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
+  results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), fromBucket, scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
   console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
   if (stats.level) {
     const l = stats.level;
@@ -381,10 +410,10 @@ if (process.env.BUDGET) {
   const k = Number(process.env.BUDGET_SCALE ?? 1);
   for (const r of results) {
     if (r.error) continue;
-    const l = limitsFor({ id: r.id, quality, row, base: base.find((x) => x.id === r.id) ?? null, scale: k, realGpu });
+    const l = limitsFor({ id: r.id, quality, row, base: base.find((x) => x.id === r.id) ?? null, scale: k, realGpu, bucket: r.fromBucket });
     const over = overBy(r, l);
     const say = (v) => (v === Infinity ? '–' : Math.round(v));
-    console.log(`budget ${r.id.padEnd(10)} calls ${r.calls}/${say(l.calls)}  tris ${r.triangles}/${say(l.tris)}  models ${r.glbMB}/${l.mb} MB${quality === 'ultra' ? `  p95 ${r.p95}/${realGpu ? l.frame.toFixed(1) : 'reported'} ms` : ''}  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}${l.known ? `  (known over the row, held to its baseline: ${l.known})` : ''}`);
+    console.log(`budget ${r.id.padEnd(10)} calls ${r.calls}/${say(l.calls)}  tris ${r.triangles}/${say(l.tris)}  models ${r.glbMB}/${l.mb} MB${l.bucket ? ' (from the bucket)' : ''}${quality === 'ultra' ? `  p95 ${r.p95}/${realGpu ? l.frame.toFixed(1) : 'reported'} ms` : ''}  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}${l.known ? `  (known over the row, held to its baseline: ${l.known})` : ''}`);
     if (over.length) process.exitCode = 1;
   }
 }

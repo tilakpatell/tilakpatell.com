@@ -31,7 +31,7 @@ import { CELL, INSTANCE_BYTES, cellKey, cellOf } from '../../src/lib/level/insta
 import { decodePng16 } from '../../src/lib/level/png16.js';
 import { cutsFor } from './bf2017-manifest.mjs';
 import { glbJson } from './bf2017-paths.mjs';
-import { cellsOf, weightOf } from './level-cells.mjs';
+import { cellsOf } from './level-cells.mjs';
 
 export const TIERS = ['low', 'mid', 'high', 'ultra'];
 export const KMIN = { low: 20, mid: 30, high: 40, ultra: 60 };
@@ -71,9 +71,47 @@ export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunn
 // What the game places and never draws as itself: Enlighten's lighting
 // proxies, the fake light cones, destruction stages waiting their turn
 // (despawn and leftover pieces), the planes that fake shadow, mist and
-// light; and the skinned actors, which stand in
-// their bind pose (the site's own people do the living)
-export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|invalidatelightplane|mistplane|lightcone/i;
+// light; and the skinned actors but the still ones (STILL_SKINNED), whose
+// living the site's own people do
+// light, the light blockers and occluders that only stop light or sight,
+// and the invisible collision and shadow-only meshes (lane E1 found Yavin's
+// and Hoth's hothinterior_lightblocker_01 drawn solid)
+export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|shadowmesh|invalidatelightplane|mistplane|lightcone|lightblocker|occluder|invisiblecollision/i;
+
+// The meshes whose every material is a proxy's shader, from the material
+// manifest (web/materials.jsonl): SS_Shadowmesh and its kin cast shadows
+// and never draw (lane E2: Naboo's 47), and SS_VirtualTextureOnly pieces
+// only paint the terrain's virtual texture, a decal the site's ground does
+// not have, so drawn they stand as solid slabs. Keyed by the mesh's file
+// as the maps name it, lower case, without .glb.
+//   PROXY_SHADER, proxyMeshes(lines) → Map(mesh → 'shadow proxy' | 'virtual texture only')
+export const PROXY_SHADER = /shadowmesh|virtualtextureonly/i;
+export function proxyMeshes(lines) {
+  const out = new Map();
+  for (const line of lines) {
+    if (!PROXY_SHADER.test(line)) continue;
+    const j = JSON.parse(line);
+    const shaders = (j.materials ?? []).map((m) => String(m.shader ?? ''));
+    if (!shaders.length || !shaders.every((x) => PROXY_SHADER.test(x))) continue;
+    out.set(`models/${j.mesh}`.toLowerCase(), shaders.some((x) => /virtualtextureonly/i.test(x)) ? 'virtual texture only' : 'shadow proxy');
+  }
+  return out;
+}
+export const proxyKey = (file) => String(file).toLowerCase().replace(/\.glb$/, '');
+
+// What NEVER keeps out of a map's arena, by mesh: [{ name, count }], the
+// most first (each pack's README lists them)
+export function neverOf(map, { subs = null } = {}) {
+  const want = new Set((subs ?? mainSubs(map)).map(last));
+  const out = new Map();
+  for (const g of map.groups) {
+    const file = map.meshes[g.mesh]?.file ?? '';
+    if (!want.has(last(map.subworlds[g.sub])) || !NEVER.test(file)) continue;
+    const name = last(file).replace(/_mesh\.glb$/, '');
+    out.set(name, (out.get(name) ?? 0) + g.count);
+  }
+  return [...out].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || (a.name < b.name ? -1 : 1));
+}
 
 // `drop`: meshes left out, each `<mesh name>` or `<sub>:<mesh name>` (its
 // file's last part without `_mesh.glb`, any case; `*` for any run of
@@ -90,6 +128,41 @@ const dropTest = (drop) => {
   };
 };
 
+// The skinned actors that are scenery, not figures: the wind-bent shrubs
+// (Endor_01's 425 forestbase_shrub*_skinned), skinned for the wind with no
+// clip of their own, so their bind pose is how they stand. They go in the
+// pack as rigid instances (lane D2); every other actor is the site's to
+// place (actorsJson).
+export const STILL_SKINNED = /objects\/nature\/.*_skinned/;
+
+// What a mesh weighs to the fit, which drops the lightest first: its
+// largest face times its largest extent, so a floor plate or a wall panel
+// (thin, but what you stand on and see) weighs the solid it reads as, and
+// the clutter goes before them. Bounding volume alone took Cloud City's and
+// the Death Star's floors before their vases.
+export function seenWeight(mesh) {
+  const [x0, y0, z0, x1, y1, z1] = mesh.bounds;
+  const [x, y, z] = [x1 - x0, y1 - y0, z1 - z0].map((d) => Math.max(d, 0.01));
+  return Math.max(x * y, y * z, x * z) * Math.max(x, y, z);
+}
+
+// What you could walk on or over (the fit keeps it on every tier: a mesh
+// not drawn has no collision): a plate (half a metre thick at most, a metre
+// wide), or anything 3 m wide each way, no taller than it is wide and no
+// more than a storey (4 m). A floor plate, a catwalk, a gangway with its
+// rails, a flight of stairs, a landing platform; not a wall panel, a pillar,
+// a crate, a rock, or a building (Cloud City's backdrop towers).
+// (the deck's band: a piece whose top is between a stair's foot below the
+// deck and a storey or three above it is one you may stand on)
+export const DECK_BAND = [-1.5, 12];
+
+export function standsOn(mesh) {
+  const [x0, y0, z0, x1, y1, z1] = mesh.bounds;
+  const wide = Math.min(x1 - x0, z1 - z0);
+  const tall = y1 - y0;
+  return (tall <= 0.5 && wide >= 1) || (wide >= 3 && tall <= Math.min(wide, 4));
+}
+
 export function arenaOf(map, { subs = null, drop = [] } = {}) {
   const want = new Set((subs ?? mainSubs(map)).map(last));
   const dropped = dropTest(drop);
@@ -97,7 +170,7 @@ export function arenaOf(map, { subs = null, drop = [] } = {}) {
   for (const g of map.groups) {
     const sub = last(map.subworlds[g.sub]);
     const file = map.meshes[g.mesh]?.file ?? '';
-    if (!want.has(sub) || g.kind === 'actor' || NEVER.test(file) || dropped(sub, file)) continue;
+    if (!want.has(sub) || (g.kind === 'actor' && !STILL_SKINNED.test(file)) || NEVER.test(file) || dropped(sub, file)) continue;
     for (let i = 0; i < g.count; i++) out.push(g.first + i);
   }
   return out.sort((a, b) => a - b);
@@ -257,7 +330,7 @@ function farList(inst, meshOf, cell) {
   return { bin, draws };
 }
 
-export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false }) {
+export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false, deck = false }) {
   // (a mesh the bucket has not got, or sequel-era, draws nothing: its instances go)
   const idx = arenaOf(map, { subs, drop }).filter((i) => !meshes[map.meshOf[i]].missing);
   const all = rebase(subset(map.instances, idx), [spot[0], groundY, spot[1]], yaw);
@@ -299,10 +372,25 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
   // per tier: how far out things are drawn (K radii) and what goes, held to
   // the row everywhere you can stand (a 64 m grid over the walkable square)
   const tiers = Object.keys(rows);
-  const vol = (m) => weightOf({ indices: [0] }, meshes[m]);
+  const vol = (m) => seenWeight(meshes[m]);
   const weight = new Float64Array(meshes.length);
   for (let i = 0; i < arenaInst.count; i++) weight[arenaMesh[i]] += vol(arenaMesh[i]);
-  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing }));
+  // (a mesh you stand on is kept on every tier: one not drawn has no floor;
+  // on a map stood on its deck, `deck`, the meshes are the only ground, so
+  // every broad piece with a top at the deck is kept: Cloud City's
+  // platforms with their undersides, its narrow gangways, its stair blocks)
+  const atDeck = new Uint8Array(meshes.length);
+  if (deck)
+    for (let i = 0; i < arenaInst.count; i++) {
+      const m = meshes[arenaMesh[i]];
+      const top = arenaInst.position[i * 3 + 1] + m.bounds[4] * Math.abs(arenaInst.scale[i * 3 + 1]);
+      if (top >= DECK_BAND[0] && top <= DECK_BAND[1]) atDeck[arenaMesh[i]] = 1;
+    }
+  const broad = (m) => {
+    const [x0, y0, z0, x1, y1, z1] = m.bounds;
+    return Math.min(x1 - x0, z1 - z0) >= 2.5 && y1 - y0 <= Math.max(x1 - x0, z1 - z0);
+  };
+  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing, keep: standsOn(m) || Boolean(atDeck[i] && broad(m)) }));
   const flat = {
     x: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3]),
     z: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3 + 2]),
