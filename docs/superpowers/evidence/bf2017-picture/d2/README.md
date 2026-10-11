@@ -110,3 +110,46 @@ Nothing draws Endor’s 11 yet: their shader binds `T_DefaultBlack` alone, and t
 - The textures missing from the bucket are as before: Hoth 4, Hoth’s base 6, Endor 27, the droid battleship 2.
 - Probes: Hoth and Hoth’s base have 6 each at 128² with the sun kept for ultra, beside the 64² clipped ones, and Fondor has 6. Endor_01 bakes no sunny reflection volume, and the other space levels none at all.
 - LUTs: every light record’s 24 LUTs re-cut at 33³ (`scripts/bf2017-lut.mjs`). The 17³ nodes are identical (maximum difference 0).
+
+## E1’s packs
+
+Lane U-packs (`claude/bf2017-upacks-e1`, from `origin/main` at f6511872, after #926): the four packs lane E1 built, re-run on 2026-10-11 between 14:55 and 15:12 UTC with each README’s own command and `--ultra` added (Tatooine keeps its `--subs tatooine_01,content,content_024`, Yavin its `--subs yavin_01,yavin_012,streamed_in_props,sunny`; Yavin’s old `--drop lightblocker,*occluder*,*invisiblecollision*` is gone, since the factory’s `NEVER` rule now takes them). Every number below is the README each run wrote; the “before” figures are the same READMEs on `main` at f6511872. “LOD0 shipped” counts the meshes whose LOD0 is over 12,000 triangles and whose LOD0 file is in the pack (`level.json`’s `meshes[].glb[0]`), the way the per-pack table above counts it (Hoth gives 10 by the same count).
+
+| pack | tier | dropped (before → after) | worst triangles, calls | texture MB (before → after) | mesh MB | LOD0 shipped (of those over 12k) |
+| --- | --- | --: | --: | --: | --: | --: |
+| tatooine | high | 0 → 0 | 1,053k, 629 | 81.9 → 84.0 | 41.1 | 0 |
+| tatooine | ultra | (none) → 0 | 3,643k, 901 | (none) → 243.9 | 52.4 | 28 (of 39) |
+| tatooine/jabba | high | 0 → 0 | 1,400k, 555 | 54.9 → 55.0 | 19.2 | 0 |
+| tatooine/jabba | ultra | (none) → 0 | 1,570k, 603 | (none) → 244.1 | 20.4 | 10 (of 18) |
+| tatooine/jabba-inside | high | 0 → 0 | 170k, 117 | 8.6 → 8.6 | 3.7 | 0 |
+| tatooine/jabba-inside | ultra | (none) → 0 | 264k, 120 | (none) → 49.3 | 4.4 | 3 (of 18) |
+| yavin | high | 342 → 275 | 2,561k, 630 | 96.6 → 119.2 | 28.9 | 0 |
+| yavin | ultra | (none) → 0 | 6,509k, 1,348 | (none) → 244.0 | 90.7 | 66 (of 88) |
+
+Low and mid moved too, with `main`’s fit weights: Tatooine drops 103 meshes at low where it dropped 110 (63 at mid, 65 before), the palace 14 where it dropped 16, Yavin 373 where it dropped 463 (365 at mid, 436 before). Yavin’s arena grew from 13,808 to 14,278 instances: its 470 wind-bent bushes and small trees (`yavinbase_bush_*_skinned`, `yavinbase_tree_small_*_skinned`) are in the pack as rigid bind-pose instances (`STILL_SKINNED`), where E1’s run listed them under “not placed”. The pit is the one pack whose ultra maps fit under the contract as built (51.7 MB); Yavin’s ultra draws out to 493 m, not the 1,000 m of the others, because its fit holds the worst place to 90 % of the 1,500-call row (1,348).
+
+Ultra’s maps, held to 256 MB (`lod.js`’s `fitMaps`): Tatooine 407.7 MB as the table gave them, 136 stepped down a size or more; the palace 359.0 MB, 54 stepped; the pit 51.7 MB, 0 stepped; Yavin 624.8 MB, 270 stepped. Sizes of maps at each tier, out of every map the pack ships (from `level.json`’s `tex`, as the table above):
+
+| pack | high: 2048 / 1024 / 512 / 256 / ≤128 | ultra: 2048 / 1024 / 512 / 256 / ≤128 |
+| --- | --- | --- |
+| tatooine | 0 / 33 / 129 / 288 / 363 | 22 / 117 / 394 / 208 / 70 (2 rows with no size: the maps the bucket lacks) |
+| tatooine/jabba | 0 / 17 / 103 / 210 / 238 | 23 / 159 / 280 / 79 / 27 |
+| tatooine/jabba-inside | 0 / 0 / 18 / 52 / 60 | 7 / 25 / 53 / 39 / 6 |
+| yavin | 0 / 61 / 234 / 209 / 139 | 43 / 101 / 267 / 199 / 33 |
+
+### What stays out, and why
+
+- Ultra drops nothing in any of the four. The palace’s `palace_01_shadowmesh` is left out by its shader (`SS_Shadowmesh`, a shadow proxy); Tatooine’s 44 and Yavin’s 5 meshes left out are the sequel-era rows the era rule refuses (Jakku’s engines and barrels, the Resistance transport, Takodana’s chest), as before.
+- Never drawn as themselves (the `NEVER` rule): Tatooine’s 45 Enlighten proxies, light cones and light plane; the palace’s 20 light cones, 7 proxies and the shadow mesh; Yavin’s 93 light cones, 144 Enlighten light meshes, 19 invisible collision shapes, the 336 m `lightblocker`, two occluders, 9 proxies and a light plane. E1 had dropped Yavin’s by name; the rule now names them in every README.
+- Textures missing from the bucket: Tatooine 2 (3 before), the palace 1 (2 before), the pit 0, Yavin 7 (15 before). The bucket gained maps between E1’s run and this one; the rest are the desktop’s (lane W’s not-uploaded job).
+- Decals: Tatooine keeps its one (its colour map now fetched into `tex/decals/`, 1.07 MB); the palace, the pit and Yavin have none in their subs (Yavin skips the ones in sub 7, not an arena sub).
+- Probes at 128² with the sun for ultra: 65 for the palace and the pit (beside their 64² clipped ones, 31.3 MB in all), 2 for Yavin; Tatooine_01 bakes no reflection volume.
+- Yavin’s skinned creatures (4 gonk droids, 4 stintarils, 14 woolamanders) and its spawned fighters stay the site’s to place (`actors.json`, `vehicles.json`), as in every pack.
+
+### The colour check
+
+`bf2017-colour-check.mjs --packs --fix` after the four runs: 4,728 files under the packs, 1,858 colour maps sRGB, 2,828 data maps linear, 42 unknown, 0 wrong; the four packs’ rows stamped by the game’s word (Tatooine 765 of 813, the palace 560 of 568, the pit 130 of 130, Yavin 638 of 643). It would also re-stamp ten rows in packs that are not this lane’s (`sb_fondor/level.json`: 4 rows gaining a word; `kamino/recipes.json`: 6, four of them flipping between sRGB and linear) because `textures.jsonl` now knows those maps. Those rows were put back: their published files are not in this checkout to take the same stamp, and a row that disagrees with its file is what `--published` is for. A finding for the colour lane or those packs’ next run.
+
+### Published
+
+`assets-publish.mjs --only 'models/galaxy/bf2017/levels/tatooine/**,models/galaxy/bf2017/levels/yavin/**'`: 4,575 files sent (3,375 new, 1,200 changed, 983.2 MB), none there already, none failed; the manifest and `.gitignore`’s block rewritten, so the packs’ binaries stay out of git (level.json, the parts’ JSON, the new `variations.json` and the READMEs are in).

@@ -72,7 +72,8 @@ export function createPool({ size = 6, retries = 3, waits = WAITS, timeout = TIM
       }
       if (!res.ok) {
         const text = await res.text().catch(() => '');
-        return { final: { status: 'failed', bytes: 0, http: res.status, error: `HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ''}` } };
+        // (the headers kept: a 416 on an empty file names its size, 0, in content-range, and assets-check reads it)
+        return { final: { status: 'failed', bytes: 0, http: res.status, headers: res.headers, error: `HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ''}` } };
       }
       if ((job.method ?? 'GET') === 'HEAD') return { final: { status: 'fetched', bytes: 0, http: res.status, headers: res.headers } };
       const buf = Buffer.from(await res.arrayBuffer());
