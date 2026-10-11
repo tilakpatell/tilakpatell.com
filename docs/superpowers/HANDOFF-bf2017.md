@@ -70,7 +70,7 @@ Coverage (from lane Z's ledger, `docs/superpowers/evidence/bf2017-coverage/`, re
 | 2026-10-10, lane M's fonts (all 23 used, the owner holding the licence) | 80,837 | 4,667 | 57,498 | 14,044 | 4,628 | 0 |
 | 2026-10-10, the space lane (on main after lane M; the space lane's own owned rows: 894 models and 564 maps before, 450 and 157 now) | 80,837 | 4,651 | 57,498 | 14,060 | 4,628 | 0 |
 | 2026-10-10, lane O (the index’s 8,503 objects consumed by `src/data/bf2017/library.json`; lane O owns 970 rows still: the levels’ own meshes and the nature sets’ textures no model of the index names) | 80,837 | 17,485 | 45,207 | 13,925 | 4,220 | 0 |
-| 2026-10-11, lane E4 (on main with E0's latest: Scarif_02, CloudCity_01, M2BES and Hoth_02 packed and drawn; DeathStar02_01 packed, not yet drawn) | 80,837 | 20,404 | 43,015 | 13,290 | 4,128 | 0 |
+| 2026-10-11, lane E4 (on main with E0's latest: Scarif_02, CloudCity_01, M2BES and Hoth_02 packed and drawn; DeathStar02_01 packed, not yet drawn). Measured, not committed: a refresh an hour later found the bucket at 80,838 rows with 6 new objects no lane owns (two terrain dynamic decals, two camera DOF maps, the space set's cloud normal map, `textures_texgap.jsonl`), for lane Z; the committed ledger stays `main`'s | 80,837 | 20,404 | 43,015 | 13,290 | 4,128 | 0 |
 
 **The first finding: what no lane named.** When the ledger was first written, 18,377 of its rows were `unowned`: no plan of this design or the running ones named them, and none of the merged lanes (K, L, G, V, F, P0, P1, P2, P4, R, 0, the sabers' X, the game's 1 and 2) had consumed them. None is hidden: each is given in `scripts/lib/bf2017-owners.mjs` to the lane that takes it, marked `finding: true`, and counted apart in `ledger.md`. By lane and part:
 
