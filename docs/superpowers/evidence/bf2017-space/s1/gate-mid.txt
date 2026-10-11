@@ -1,0 +1,14 @@
+endor      calls   50  tris   72475  geo  138  tex 151  prog  81  frame p50 855.7 p95 966.6 ms  load 9.8 s
+kamino     calls   40  tris   52470  geo  100  tex  58  prog  73  frame p50 833.4 p95 949.7 ms  load 8.6 s
+naboo      calls   54  tris   83879  geo  109  tex  81  prog  74  frame p50 828.1 p95 866.6 ms  load 8.6 s
+hoth       calls   43  tris   81986  geo  171  tex  93  prog  73  frame p50 813.2 p95 833.2 ms  load 8.7 s
+tatooine   calls   79  tris   89588  geo  116  tex 101  prog  66  frame p50 833.3 p95 850 ms  load 7.6 s
+yavin      calls   43  tris   83299  geo   81  tex  70  prog  70  frame p50 783.3 p95 933.2 ms  load 8.2 s
+budget: no baseline at lab/baseline/space-mid.json; holding to the mid row alone
+budget endor      calls 50/500  tris 72475/1500000  models 18.4/70 MB (from the bucket)  pass
+budget kamino     calls 40/500  tris 52470/1500000  models 18.9/70 MB (from the bucket)  pass
+budget naboo      calls 54/500  tris 83879/1500000  models 12.4/70 MB (from the bucket)  pass
+budget hoth       calls 43/500  tris 81986/1500000  models 15/70 MB (from the bucket)  pass
+budget tatooine   calls 79/500  tris 89588/1500000  models 8.1/70 MB (from the bucket)  pass
+budget yavin      calls 43/500  tris 83299/1500000  models 13.9/70 MB (from the bucket)  pass
+exit 0

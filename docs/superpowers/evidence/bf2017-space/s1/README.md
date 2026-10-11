@@ -1,0 +1,30 @@
+# Lane S1’s evidence: the fleet on the game’s hulls
+
+The plan is `docs/superpowers/plans/2026-10-11-bf2017-space-laneS1-fleet.md`; the hand-off section, `docs/superpowers/HANDOFF-bf2017.md` (“Lane S1”). Everything here was measured on 2026-10-11 in a cloud container (four cores, headless Chromium in software GL, the page’s clock held as `galaxy-check.mjs` holds it, the dev server with the public bucket as its asset base), at the lane’s head before `origin/main` (`d78da3d2`) was merged in; the merge brought nothing the space layer draws.
+
+## The sheet
+
+`../fleet-2017.webp`: each kind the galaxy drew before (left) beside the game’s (right), the same camera (`scripts/glb-shot.mjs`’s `three` view), with the triangles. Rows: the Star Destroyer (Daniel Andersson’s close-up cut, 83,657 triangles → the kit at the fleet’s cut, 24,300; then the kit’s ultra cut, 36,781), the MC80 (17,102 → 19,892: its main hull is white there, its maps bound in a shader graph the drop’s GLB does not name; the galaxy draws it hull grey), the Venator (14,079 → 24,038), the CR90 (12,219 → 11,937), the Providence (15,999 → 22,690), the close-up Nebulon-B (100,383 → 16,515), the X-wing (gen3d’s 19,879 → 33,998), the TIE interceptor (9,278 → 58,368), the Falcon (23,887 → 48,567), Slave I (12,014 → 40,536), the Scimitar (15,785 → 34,238; the sheet was shot before its cloaked materials took the hull’s maps), the TIE striker (16,000 → 45,482), and the two ships you fly (Sketchfab’s xwing-hd 133,795 → 33,998; falcon-hd 60,840 → 48,567).
+
+## The gate
+
+`BUDGET=1 BUDGET_REPORT=1 QUALITY=<tier> JSON=1 node scripts/galaxy-check.mjs space endor,kamino,naboo,hoth,tatooine,yavin`, the ship off each planet on its sun side (the check’s own pose; the war’s capitals and the level sit past the frustum or as far copies from there). No space baseline exists under `lab/baseline/`, so each tier is held to its row alone (`src/lib/budgets.js`; the models column to `galaxy-budget.mjs`’s bucket row, since the bucket served files). The whole output is in `gate-<tier>.txt`; the shots at high and ultra beside this file.
+
+| tier | endor calls · tris · MB | kamino | naboo | hoth | tatooine | yavin | row (calls · tris · MB) | result |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| low | 49 · 72,451 · 33.6 | 40 · 52,448 · 29.9 | 53 · 83,843 · 30.7 | 43 · 81,784 · 14.5 | 77 · 89,528 · 7.8 | 42 · 83,265 · 13.7 | 350 · 0.8M · 45 | pass |
+| mid | 50 · 72,475 · 18.4 | 40 · 52,470 · 18.9 | 54 · 83,879 · 12.4 | 43 · 81,986 · 15 | 79 · 89,588 · 8.1 | 43 · 83,299 · 13.9 | 500 · 1.5M · 70 | pass |
+| high | 50 · 99,980 · 33.8 | 41 · 80,162 · 30.1 | 54 · 111,321 · 32.6 | 49 · 142,278 · 14.5 | 78 · 117,010 · 9.7 | 44 · 150,742 · 13.5 | 700 · 3M · 160 | pass |
+| ultra | 50 · 173,548 · 112.1 | 42 · 153,754 · 92.1 | 54 · 221,497 · 92 | 49 · 252,550 · 69.7 | 80 · 199,910 · 58.9 | 44 · 297,780 · 67.2 | 1,500 · none · 285 | pass (exit 1, below) |
+
+Against the space lane’s table of 2026-10-10 (`../README.md`: Endor at high 57 calls and 199,337 triangles, at ultra 57 and 272,809), every tier draws the same or fewer calls and fewer triangles from the check’s pose: the kits at the fleet’s cut are lighter than the close-up Sketchfab hulls were. The megabytes at low and mid carry the Star Destroyer’s kit (2,049 KB with its 50 maps, the heaviest file an arrival loads) and at ultra its 21.6 MB ultra cut with the corvette’s 1.9 MB; all within the bucket rows.
+
+**Ultra’s exit 1 is not a breach.** Every row passes; the run exits 1 because Endor logged two console errors, both `SyntaxError: Unexpected token '<', "<!doctype "… is not valid JSON`: the install’s fetch of `/packs/index.json` (`src/runtime/install.js`), a file `scripts/packs.mjs` writes into `dist/` at build time, which the dev server has no copy of and answers with its page. Reproduced with `lab/s1-tools/missing.mjs`’s request log on the same page: the one failing request. Not this lane’s, and not the gate’s rows.
+
+## The Starfighter Assault
+
+`node scripts/starfighter-check.mjs endor high` and `kamino high`: the pack’s hull drawn once (the hidden-pack box test), the fallbacks on the game’s rows. S1SF
+
+## The cockpit
+
+`SEAT=cockpit SHIP=xwing QUALITY=high node scripts/galaxy-check.mjs space tatooine` (`cockpit-xwing.webp`): the game’s X-wing cockpit from the pilot’s seat over Tatooine, the keys card over it as the check leaves it. S1CAB
