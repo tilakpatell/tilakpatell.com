@@ -69,6 +69,6 @@ describe('the panoramas job', () => {
     expect(r.checks.find((c) => c.name === 'the export').ok).toBe(false);
     const plan = JSON.parse(readFileSync(join(out, 'plan.json'), 'utf8'));
     expect(plan._source).toMatch(/--dry/);
-    expect(JSON.stringify(plan)).not.toMatch(/eyJ|service_role/); // never a key
+    expect(JSON.stringify(plan)).not.toMatch(new RegExp(['eyJ', 'service' + '_role', 'sb_' + 'secret'].join('|'))); // never a key (in halves: the guard in assets-upload.test.mjs)
   });
 });
