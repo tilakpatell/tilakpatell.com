@@ -19,6 +19,34 @@ export const TEX = { low: 512, mid: 1024, high: 1024, ultra: 2048 };
 // as they do a model's. A district's pack is `<world>/<district>`.
 export const packUrl = (world, path) => `/models/galaxy/bf2017/levels/${world}/${path}`;
 
+// What the game places and never draws as itself, the render's helpers: the
+// shadow casters (Endor_01's 144 m bunker shadow mesh, the caves'), the
+// occlusion meshes (`…occluder…`; a cliff `…nooccluder` is the cliff itself)
+// and the light and grenade blockers. Packs built before the factory's NEVER
+// knew them still place them; they drop on every tier, from the draw, the
+// walk world's solids and the engine alike (each reads `cull[tier].dropped`).
+export const PROXY = /shadowmesh|_shadow_mesh|(?<!no)occluder|lightblocker|blockercsg/i;
+const TIERS = ['low', 'mid', 'high', 'ultra'];
+
+export function withoutProxies(pack) {
+  const proxies = (pack.meshes ?? []).flatMap((m, i) => (PROXY.test(m.name ?? '') ? [i] : []));
+  if (!proxies.length) return pack;
+  const cull = Object.fromEntries(
+    TIERS.map((t) => {
+      const c = pack.cull?.[t] ?? pack.cull?.high ?? { K: Infinity, dropped: [] };
+      return [t, { ...c, dropped: [...new Set([...(c.dropped ?? []), ...proxies])] }];
+    }),
+  );
+  return { ...pack, cull };
+}
+
+// What a pack stands of the map's creatures and vehicles (actors.json,
+// vehicles.json): all of them on a world's own map; none in an interior
+// (`inside`: its parts are the whole map's, the battle out under the sky,
+// and carry no height to tell the halls' own from it: Endor_01's bunker
+// would have stood the AT-AT station's walker and its Ewoks in its halls)
+export const placedOf = (pack, a, v) => (pack?.inside ? { life: [], rides: [], things: [] } : { life: a.life ?? [], rides: v.rides ?? [], things: v.things ?? [] });
+
 // A key's band in a `wanted` answer: 'near', 'mid', or null (not wanted)
 export const bandOf = (w, key) => (w.near.includes(key) ? 'near' : w.mid.includes(key) ? 'mid' : null);
 

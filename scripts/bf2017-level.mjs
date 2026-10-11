@@ -6,7 +6,7 @@
 // those two; .gitignore's block hides the rest). The work is in scripts/lib/bf2017-level.mjs (pure,
 // tested); this fetches, reads and writes.
 //
-//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share 1 | low=0.5,…] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]
+//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--keep m] [--share 1 | low=0.5,…] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]
 //
 //   map     the map's folder under web/maps/ (levels/mp/hoth_01)
 //   world   the site's world (hoth): the pack's folder and its credit
@@ -26,6 +26,9 @@
 //   drop    meshes left out, `<mesh>` or `<sub>:<mesh>` (`*` for any run): what the
 //           site draws itself (a space level's corvettes, the battle's), the end
 //           of round's room
+//   keep    meshes the fit drops only after every other at its worst place,
+//           `<mesh>` (`*` for any run): the map's own buildings, lighter by
+//           volume than the trees round them (Endor_02's ewokvillage_*)
 //   share   the part of each tier's budget row the pack is fitted to (1): a
 //           space level is drawn on the galaxy's flight page, beside the system
 //           and the battle, so it takes a share; or tier by tier (low=0.5),
@@ -60,7 +63,7 @@ import { parseArgs } from './lib/args.mjs';
 import { writeCredit } from './lib/catalog-write.mjs';
 import { isSequel } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs';
-import { buildPack, neverOf, proxyKey, proxyMeshes, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, keepRows, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
+import { keepRows, buildPack, mapsUpTo, neverOf, proxyKey, proxyMeshes, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
 import { LOD, TEX_MB, capIndex, fitMaps, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -68,7 +71,7 @@ import { encodePng16 } from './lib/png16.mjs';
 import { writeParts } from './bf2017-level-parts.mjs';
 import { main as writePhysics } from './bf2017-physics.mjs';
 
-const USAGE = 'node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share low=0.5 | 0.5] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]';
+const USAGE = 'node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--keep m] [--share low=0.5 | 0.5] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = join(ROOT, 'lab', 'assets', 'bf2017');
 const PERMISSION = 'From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.';
@@ -311,6 +314,7 @@ async function main(args) {
   const packId = district === 'main' ? world : `${world}/${district}`;
   const out = join(ROOT, 'public', 'models', 'galaxy', 'bf2017', 'levels', ...packId.split('/'));
   const drop = typeof args.drop === 'string' ? args.drop.split(',') : [];
+  const keep = typeof args.keep === 'string' ? args.keep.split(',') : [];
   // (each tier's row, its triangles and calls taken in its share: one share
   // for every tier, `--share 0.5`, or tier by tier, `--share low=0.5`)
   const shareOf = (t) => share[t] ?? share.all ?? 1;
@@ -381,6 +385,13 @@ async function main(args) {
     }
     return files.get(path);
   };
+  // (whether the bucket has a map, asked once a map: its bytes kept for the textures' pass)
+  const maps = new Map();
+  const mapThere = (uri) => {
+    if (!maps.has(uri)) maps.set(uri, getObject(env, CACHE, uri).then((r) => HAVE.has(r.state)));
+    return maps.get(uri);
+  };
+  const cutChains = [];
   const slugs = new Set();
   const NONE = { lods: [0], files: [] };
   const meshes = await pool(map.meshes, 8, async (m) => {
@@ -402,11 +413,25 @@ async function main(args) {
       }
     }
     if (!chain.length) return { ...base, ...NONE, missing: 'not in the bucket' };
+    // (as far as the bucket has its maps: a far LOD whose own LOD maps were
+    // never uploaded would draw white; the mesh stops being drawn there)
+    let upTo = null;
+    if (!dry) {
+      const has = await Promise.all(chain.map(async (l) => {
+        const buf = await getGlb(l.file);
+        if (!buf) return false;
+        const there = await Promise.all(imageUris(buf, inBucket(l.file)).map(mapThere));
+        return there.every(Boolean);
+      }));
+      upTo = mapsUpTo(chain, (l) => has[chain.indexOf(l)]);
+      if (upTo !== null) cutChains.push(`${lastOf(m.file)} (LOD ${upTo} on)`);
+    }
     return {
       ...base,
       lods: chain.map((l) => l.tris),
       files: chain.map((l) => l.file),
       mats: entry?.sections ?? 1,
+      upTo,
     };
   });
   // (the LODs below the high tier's cap are drawn on ultra only: shipped with --ultra)
@@ -418,8 +443,11 @@ async function main(args) {
     if (slugs.has(slug)) slug = `${slug}_${slugs.size}`;
     slugs.add(slug);
     const from = ultra ? 0 : capIndex(m.lods, LOD.high.cap);
-    m.glb = m.lods.map((_, n) => (m.missing || n < from ? null : `meshes/${slug}.lod${n}.glb`));
+    // (and a mesh whose first LOD shipped already lacks its maps draws as it did: hidden whole would be worse)
+    if (m.upTo != null && m.upTo <= from) m.upTo = null;
+    m.glb = m.lods.map((_, n) => (m.missing || n < from || (m.upTo != null && n >= m.upTo) ? null : `meshes/${slug}.lod${n}.glb`));
   });
+  if (cutChains.length) console.log(`${cutChains.length} meshes drawn only as far as their LODs’ maps go (the bucket lacks the rest): ${cutChains.slice(0, 5).join(', ')}${cutChains.length > 5 ? ' …' : ''}`);
   const absent = meshes.filter((m) => m.missing);
   if (absent.length)
     console.log(
@@ -439,13 +467,14 @@ async function main(args) {
     map,
     spot,
     groundY,
-    meshes: meshes.map(({ name, glb, lods, bounds, mats, missing }) => ({
+    meshes: meshes.map(({ name, glb, lods, bounds, mats, missing, upTo }) => ({
       name,
       glb,
       lods,
       bounds,
       mats,
       missing: Boolean(missing),
+      ...(upTo != null ? { upTo } : {}),
     })),
     arena,
     // (--walk: the square you can stand in, where the fit holds the row; a
@@ -456,6 +485,7 @@ async function main(args) {
     rows: rowsOf(ultra ? BUDGET_ROWS : { low: BUDGET_ROWS.low, mid: BUDGET_ROWS.mid, high: BUDGET_ROWS.high }),
     subs,
     drop,
+    keep,
     terrain: terrain?.json ?? null,
     groundAt: terrain ? (x, z) => LAYERS.image(x, z, terrain.layer) : null,
     holeAt: terrain?.holeAt ?? null,

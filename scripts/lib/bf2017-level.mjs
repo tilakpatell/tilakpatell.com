@@ -71,12 +71,13 @@ export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunn
 // What the game places and never draws as itself: Enlighten's lighting
 // proxies, the fake light cones, destruction stages waiting their turn
 // (despawn and leftover pieces), the planes that fake shadow, mist and
-// light; and the skinned actors but the still ones (STILL_SKINNED), whose
-// living the site's own people do
-// light, the light blockers and occluders that only stop light or sight,
-// and the invisible collision and shadow-only meshes (lane E1 found Yavin's
-// and Hoth's hothinterior_lightblocker_01 drawn solid)
-export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|shadowmesh|invalidatelightplane|mistplane|lightcone|lightblocker|occluder|invisiblecollision/i;
+// light, the light blockers and occluders that only stop light or sight
+// (a `…nooccluder` cliff is a cliff), the shadow casters, the invisible
+// collision and shadow-only meshes (lane E1 found Yavin's and Hoth's
+// hothinterior_lightblocker_01 drawn solid; levelPack.js's PROXY for the
+// packs built before); and the skinned actors but the still ones
+// (STILL_SKINNED), whose living the site's own people do
+export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|shadowmesh|_shadow_mesh|invalidatelightplane|mistplane|lightcone|lightblocker|blockercsg|(?<!no)occluder|invisiblecollision/i;
 
 // The meshes whose every material is a proxy's shader, from the material
 // manifest (web/materials.jsonl): SS_Shadowmesh and its kin cast shadows
@@ -117,6 +118,34 @@ export function neverOf(map, { subs = null } = {}) {
 // file's last part without `_mesh.glb`, any case; `*` for any run of
 // letters): a space level's corvettes the battle draws itself, its end of
 // round's room
+// The thing a mesh is a part of, for the fit to drop whole: the game builds a
+// tree of a trunk (`_bottom`), a crown (`_top`, `_top_clear_01`) and addons, a
+// log of its addons; a burnt trunk has no crown and stands alone. null for a
+// mesh that is a thing by itself.
+export const groupOf = (file) => {
+  const name = last(String(file)).replace(/_mesh\.glb$/, '');
+  if (/_burnt$/.test(name) || !/_(top|bottom|addons)(_|$)/.test(name)) return null;
+  return name.replace(/_(top|bottom|addons)(_.*)?$/, '');
+};
+
+// How far a mesh's LOD chain is drawn: the far LODs of the drop's props often
+// name LOD maps of their own (Endor_02's decks' `t_ewokvillage_platform_01_lod_cs`,
+// Kashyyyk's tree-city addons') that the export never uploaded, and a LOD drawn
+// without its maps is white. The first such LOD past the first is where the
+// mesh stops being drawn (`upTo`: the scene finds no file from it on, and the
+// fit counts nothing there); null when every LOD has its maps. Drawing the LOD
+// before it farther instead costs the fit the city round it. Pure.
+export function mapsUpTo(chain, hasMaps) {
+  const i = chain.findIndex((l, k) => k > 0 && !hasMaps(l));
+  return i < 0 ? null : i;
+}
+
+// --keep's globs over a mesh's name (no folder, no _mesh.glb), as --drop's
+export const keepTest = (keep) => {
+  const res = keep.map((k) => new RegExp(`^${k.toLowerCase().replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`));
+  return (file) => res.some((re) => re.test(last(String(file)).toLowerCase().replace(/_mesh\.glb$/, '')));
+};
+
 const dropTest = (drop) => {
   const rules = drop.map((d) => {
     const [sub, mesh] = d.includes(':') ? d.split(':') : [null, d];
@@ -330,7 +359,7 @@ function farList(inst, meshOf, cell) {
   return { bin, draws };
 }
 
-export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false, deck = false }) {
+export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], keep = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false, deck = false }) {
   // (a mesh the bucket has not got, or sequel-era, draws nothing: its instances go)
   const idx = arenaOf(map, { subs, drop }).filter((i) => !meshes[map.meshOf[i]].missing);
   const all = rebase(subset(map.instances, idx), [spot[0], groundY, spot[1]], yaw);
@@ -390,7 +419,9 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
     const [x0, y0, z0, x1, y1, z1] = m.bounds;
     return Math.min(x1 - x0, z1 - z0) >= 2.5 && y1 - y0 <= Math.max(x1 - x0, z1 - z0);
   };
-  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing, keep: standsOn(m) || Boolean(atDeck[i] && broad(m)) }));
+  // (--keep: the map's own buildings, which the fit drops only after every other mesh at its worst place: `last`)
+  const kept = keepTest(keep);
+  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing, keep: standsOn(m) || Boolean(atDeck[i] && broad(m)), last: kept(m.name), group: groupOf(m.name), upTo: m.upTo ?? undefined }));
   const flat = {
     x: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3]),
     z: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3 + 2]),

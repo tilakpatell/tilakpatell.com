@@ -62,6 +62,30 @@ describe('fitCull', () => {
     expect(f.dropped).toEqual([0]);
   });
 
+  it('a mesh the map keeps last (its own buildings: `last`) goes only after every other at the worst place', () => {
+    const inst = at([[1, 0, 10, 0], [1, 0, 1, 1], [1.2, 0, 1, 1], [1.4, 0, 1, 1]]);
+    const kept = [meshes[0], { ...meshes[1], last: true }];
+    const f = fitCull(inst, kept, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 });
+    expect(f.dropped).toEqual([0]);
+    // (and when only kept ones are left, the lightest of them, as before)
+    const all = [{ ...meshes[0], last: true }, { ...meshes[1], last: true }];
+    expect(fitCull(inst, all, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 }).dropped).toEqual([1]);
+  });
+
+  it('the parts of one thing (a tree’s trunk and crown: one `group`) go together', () => {
+    const parts = [meshes[0], { ...meshes[1], group: 'tree' }, { ...meshes[1], weight: 5000, group: 'tree' }];
+    const inst = at([[1, 0, 10, 0], [1, 0, 1, 1], [1.2, 0, 1, 1], [1.4, 0, 1, 2]]);
+    const f = fitCull(inst, parts, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 });
+    expect(f.dropped.sort()).toEqual([1, 2]);
+  });
+
+  it('a mesh drawn only up to a LOD (`upTo`: its far LODs’ maps missing) costs nothing past it', () => {
+    const inst = at([[40, 0, 10, 0]]);
+    // (at 40 m the hangar would draw its LOD2; drawn up to LOD 2, it is not drawn there at all)
+    expect(costAt(inst, [{ ...meshes[0], upTo: 2 }, meshes[1]], [0, 0], 'high', 60)).toEqual({ tris: 0, calls: 0 });
+    expect(costAt(inst, [{ ...meshes[0], upTo: 3 }, meshes[1]], [0, 0], 'high', 60)).toEqual({ tris: 100, calls: 1 });
+  });
+
   it('ultra has no triangle ceiling: only the calls hold it', () => {
     const inst = at([[1, 0, 10, 0], [1, 0, 1, 1]]);
     expect(fitCull(inst, meshes, { tris: Infinity, calls: 1500 }, 'ultra', { positions: [[0, 0]], kMax: 1000 }).K).toBe(1000);

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
-import { NEVER, STILL_SKINNED, arenaOf, buildPack, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, keepRows, lodFile, mainSubs, mergeHeights, meshCuts, neverOf, packCell, proxyKey, proxyMeshes, readMap, rebase, rewriteImageUris, seenWeight, standsOn, subset, terrainFrame } from './bf2017-level.mjs';
+import { keepRows, NEVER, STILL_SKINNED, arenaOf, buildPack, groupOf, mapsUpTo, keepTest, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mainSubs, mergeHeights, meshCuts, neverOf, packCell, proxyKey, proxyMeshes, readMap, rebase, rewriteImageUris, seenWeight, standsOn, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
@@ -359,5 +359,37 @@ describe('keepRows (lane N4)', () => {
   it('is the new pack as it is without a previous one', () => {
     const json = { far: { bytes: 1 }, tex: {} };
     expect(keepRows(json, null)).toBe(json);
+  });
+});
+
+describe('keepTest: the map’s own buildings, for the fit', () => {
+  it('matches a mesh by its name, without its folder or _mesh.glb, a star any run', () => {
+    const kept = keepTest(['ewokvillage*', 'controlroom_01_floor']);
+    expect(kept('models/objects/props/objectsets/endor/ewokvillage_01/ewokvillage_hut_01_mesh.glb')).toBe(true);
+    expect(kept('models/levels/endor/controlroom_01_floor_mesh.glb')).toBe(true);
+    expect(kept('models/nature/forestbase_treemedium_01_bottom_mesh.glb')).toBe(false);
+    expect(keepTest([])('anything_mesh.glb')).toBe(false);
+  });
+});
+
+describe('groupOf: the thing a mesh is part of, dropped whole', () => {
+  it('puts a tree’s trunk, crowns and addons together, and a burnt trunk alone', () => {
+    const g = (n) => groupOf(`models/nature/${n}_mesh.glb`);
+    expect(g('forestbase_treelarge_01_bottom')).toBe('forestbase_treelarge_01');
+    expect(g('forestbase_treelarge_01_top_clear_01')).toBe('forestbase_treelarge_01');
+    expect(g('forestbase_treelarge_01_addons_01')).toBe('forestbase_treelarge_01');
+    expect(g('forestbase_treemedium_01_bottom_nosound')).toBe('forestbase_treemedium_01');
+    expect(g('forestbase_treemedium_01_bottom_burnt')).toBe(null);
+    expect(g('ewokvillage_hut_01')).toBe(null);
+  });
+});
+
+describe('mapsUpTo: how far a mesh’s LODs are drawn, as the bucket has their maps', () => {
+  it('is the first LOD past the first whose maps are not all there, or null', () => {
+    const chain = [{ n: 0 }, { n: 1 }, { n: 2 }, { n: 3 }];
+    expect(mapsUpTo(chain, (l) => l.n < 2)).toBe(2);
+    expect(mapsUpTo(chain, () => true)).toBe(null);
+    // (the first is drawn whatever its maps: a mesh with none of its maps still stands, as before)
+    expect(mapsUpTo(chain, () => false)).toBe(1);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { writeInstances } from '../../../../lib/level/instances';
 import { assetUrl } from '../../../../lib/assetBase';
-import { bandOf, cutFor, firstTexture, isDataMap, packUrl, readInstances, splitTextures, tierTexture, wanted } from './levelPack';
+import { firstTexture, isDataMap, bandOf, cutFor, packUrl, readInstances, splitTextures, tierTexture, placedOf, wanted, withoutProxies } from './levelPack';
 
 const S = Math.SQRT1_2;
 
@@ -126,5 +126,42 @@ describe('low mip first and the UASTC rows (lane N4)', () => {
     expect(isDataMap(null, { srgb: false })).toBe(true);
     expect(isDataMap(null, { srgb: true })).toBe(false);
     expect(isDataMap(null, null, 't_x_n__normal')).toBe(true);
+  });
+});
+
+describe('withoutProxies: what the game places and never draws as itself', () => {
+  const pack = {
+    meshes: [
+      { name: 'models/levels/endor/endorbase/endor_01_atat_station_bunker_shadowmesh_01_mesh.glb' },
+      { name: 'models/levels/endor/endor_terrainoccluder_01_mesh.glb' },
+      { name: 'models/levels/hoth/hangarsnowcave_01_shadow_mesh.glb' },
+      { name: 'models/levels/hoth/hothinterior_lightblocker_01_mesh.glb' },
+      { name: 'models/levels/geonosis/desertcanyon_clifflarge_01_nooccluder_mesh.glb' },
+      { name: 'models/levels/endor/controlroom_01_floor2ways_01_mesh.glb' },
+      { name: 'models/levels/kashyyyk/grenadeblockercsg_mesh.glb' },
+    ],
+    cull: { low: { K: 20, dropped: [5] }, high: { K: 40, dropped: [] } },
+  };
+  it('drops the shadow casters, occluders and blockers on every tier, and keeps the real cliffs and floors', () => {
+    const p = withoutProxies(pack);
+    expect(p.cull.low.dropped.sort()).toEqual([0, 1, 2, 3, 5, 6]);
+    expect(p.cull.high.dropped.sort()).toEqual([0, 1, 2, 3, 6]);
+    expect(p.cull.mid.dropped.sort()).toEqual([0, 1, 2, 3, 6]);
+    expect(pack.cull.high.dropped).toEqual([]);
+  });
+  it('leaves a pack with none as it is', () => {
+    const plain = { meshes: [{ name: 'a_mesh.glb' }], cull: { high: { K: 40, dropped: [] } } };
+    expect(withoutProxies(plain)).toBe(plain);
+  });
+});
+
+describe('placedOf: the map’s creatures and vehicles a pack stands', () => {
+  const a = { life: [{ kind: 'ewok', at: [331, -198] }] };
+  const v = { rides: [{ kind: 'speederbike', at: [0, 0] }], things: [{ kind: 'atat', at: [231, 0] }] };
+  it('stands them on a world’s own map', () => {
+    expect(placedOf({}, a, v)).toEqual({ life: a.life, rides: v.rides, things: v.things });
+  });
+  it('stands none in an interior: they are the battle outside, under whose ground it is (Endor_01’s bunker’s AT-AT and Ewoks)', () => {
+    expect(placedOf({ inside: true }, a, v)).toEqual({ life: [], rides: [], things: [] });
   });
 });

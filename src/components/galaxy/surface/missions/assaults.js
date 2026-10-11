@@ -16,6 +16,11 @@
 //   lines      what your crew say: start, won, lost (by ship's crew)
 //   barks      what the two sides shout, now and then: { attack, defend }
 //   ends       the card: won, lost, why: { posts, tickets }
+import { SITES as FOREST } from '../sites/forest';
+import { turnAt } from '../sites/turnSite';
+
+// (Kashyyyk's site is turned to the game's map, turnSite.js: its battle with it)
+const KASHYYYK = turnAt(FOREST.kashyyyk.turn);
 
 const EMPIRE = { id: 'empire', name: 'The Galactic Empire', short: 'Empire', colour: '#9fd0ff', kinds: [['snowtrooper', 1]] };
 const REBELS = { id: 'rebels', name: 'The Rebel Alliance', short: 'Rebellion', colour: '#ff8a5a', kinds: [['hothtrooper', 1]] };
@@ -291,8 +296,8 @@ export const ASSAULTS = {
     name: 'The Battle of Kashyyyk',
     line: 'The droid army is wading out of the lagoon. The clones and the Wookiees hold the beach at Kachirho, or the city falls.',
     ride: null,
-    start: [10, 0],
-    yaw: 3.0,
+    start: KASHYYYK([10, 0]),
+    yaw: 3.0 + FOREST.kashyyyk.turn.yaw,
     stars: [360, 540],
     achievement: 'galacticassault',
     sides: { attack: SEPARATISTS, defend: { ...REPUBLIC, name: 'The Republic and the Wookiees', short: 'Republic', kinds: [['clone', 2], ['wookiee', 1]] } },
@@ -303,7 +308,7 @@ export const ASSAULTS = {
       { id: 'gunline', name: 'The gun line', at: [40, 12], r: 20 },
       { id: 'command', name: 'The command post', at: [-60, 10], r: 16 },
       { id: 'lift', name: 'Kachirho’s lift', at: [-112, -14], r: 14, fixed: 'defend' },
-    ],
+    ].map((p) => ({ ...p, at: KASHYYYK(p.at) })),
     phases: [
       { name: 'The beach', posts: ['barricades'], tickets: 90 },
       { name: 'The gun line', posts: ['gunline'], tickets: 70 },

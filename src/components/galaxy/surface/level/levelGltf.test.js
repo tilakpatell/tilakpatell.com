@@ -1,7 +1,7 @@
 import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { asColour, bindSlot, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
+import { asColour, BARE, bareGlb, bindSlot, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
 
 // a GLB with one mesh of two primitives, their materials naming the game's
 // shaders in their extras as the export writes them
@@ -371,6 +371,43 @@ describe('every map at its smallest row first, promoted in place (lane N4)', () 
     const { loader, asked } = loaderWith({ tier: 'low' });
     await loader.texture('tex/t_a_n__normal.ktx2', undefined, { of: 'meshes/a.lod0.glb' });
     expect(asked[0][1]).toEqual({ glb: 'meshes/a.lod0.glb', promote: false });
+  });
+});
+
+describe('a material that names no colour map', () => {
+  const piece = (mat) => new THREE.Mesh(new THREE.BufferGeometry(), mat);
+  it('takes a two-sided card out of the scene and makes a solid piece grey, not white', () => {
+    const card = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide });
+    const plate = new THREE.MeshStandardMaterial();
+    const scene = new THREE.Group().add(piece(card), piece(plate));
+    expect(bareGlb(scene, (m) => [card, plate].indexOf(m), new Set())).toBe(1);
+    expect(scene.children.map((o) => o.material)).toEqual([plate]);
+    expect(plate.color.getHex()).toBe(BARE);
+  });
+
+  it('leaves a material that named one, got one, or is coloured by its vertices', () => {
+    const named = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide }); // (its map not in the bucket: lod upTo's)
+    const mapped = new THREE.MeshStandardMaterial({ map: new THREE.Texture() });
+    const painted = new THREE.MeshStandardMaterial({ vertexColors: true });
+    const scene = new THREE.Group().add(piece(named), piece(mapped), piece(painted));
+    expect(bareGlb(scene, (m) => [named, mapped, painted].indexOf(m), new Set([0]))).toBe(0);
+    expect(scene.children).toHaveLength(3);
+    expect([named, mapped, painted].map((m) => m.color.getHex())).toEqual([0xffffff, 0xffffff, 0xffffff]);
+  });
+
+  it('leaves a material that is not the GLB’s (a recipe’s game material)', () => {
+    const game = new THREE.MeshStandardMaterial();
+    const scene = new THREE.Group().add(piece(game));
+    expect(bareGlb(scene, () => undefined, new Set())).toBe(0);
+    expect(game.color.getHex()).toBe(0xffffff);
+  });
+
+  it('greys a GLB that loaded: its materials found through the parser, copies and all', async () => {
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => glbBytes(), sizes: {} });
+    const gltf = await loader.load('meshes/x.lod0.glb');
+    const colours = [];
+    gltf.scene.traverse((o) => o.isMesh && colours.push(o.material.color.getHex()));
+    expect(colours).toEqual([BARE, BARE]);
   });
 });
 

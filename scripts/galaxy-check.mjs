@@ -15,6 +15,8 @@
 //     result says the backend that drew it: webgl, nodes-webgl or webgpu)
 //   PHASE_WAIT=900000 … (ms for the world to come up: a level pack in software GL takes minutes)
 //   DIAG=1 … (each of the scene's top groups' share of the calls, hidden in turn)
+//   DISTRICT=<id> … surface: the world's district (?district=) instead of its main map
+//   SHOT_WAIT=600000 … (ms for the screenshot: a whole level's frame in software GL can take a minute)
 //   PROFILE=60 … (lane X2: the main thread's CPU profile over that many
 //     seconds of play, after the counts: the Battlefront's player deployed
 //     and walking, a surface's camera turning; <name>.cpuprofile for
@@ -65,7 +67,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { budget } from '../src/lib/budgets.js';
 import { summarise } from './cpu-profile.mjs';
-import { BUCKET_URL, MODEL_FILE, limitsFor, overBy } from './galaxy-budget.mjs';
+import { BUCKET_URL, MODEL_FILE, baselineOf, limitsFor, overBy } from './galaxy-budget.mjs';
 
 const [mode = 'space', list = 'tatooine'] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const bytesRun = process.argv.includes('--bytes');
@@ -210,8 +212,10 @@ for (const id of list.split(',')) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
   const bf = mode === 'battlefront';
-  // (`world@district`: a district of a world, its own pack, held to the row alone)
-  const [world, district] = id.split('@');
+  // (`world@district`: a district of a world, its own pack, held to the row
+  // alone; or DISTRICT=village for every world asked for)
+  const [world, atDistrict] = id.split('@');
+  const district = atDistrict ?? process.env.DISTRICT ?? null;
   const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
   await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
   const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
@@ -248,6 +252,34 @@ for (const id of list.split(',')) {
   // outlast the settle wait. Measured before, it drew nothing of itself, and
   // the gate fails it)
   await page.waitForFunction(() => !window.__RUNTIME__ || window.__RUNTIME__.status === 'on', null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the world never came up (runtime status not on)'));
+  // (and a game level's cells round you in: a district's pack, smaller than
+  // its world's, can be measured before its first cells land otherwise)
+  if (mode === 'surface') await page.waitForFunction(() => (window.__surfaceScene.level?.()?.progress ?? 1) >= 1, null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the level never came in round you'));
+  // (a district is measured from where you stand once down, not from the
+  // landing's watch: its ship held 320 m up by the held clock, the camera
+  // sees the sky. You set down 8 m off the ship's right, facing the
+  // district's landing heading, as the walk begins.)
+  if (mode === 'surface' && district) {
+    await page.evaluate(() => {
+      const s = window.__surfaceScene;
+      const yaw = s.landing?.yaw ?? 0;
+      s.put(s.land[0] + Math.cos(yaw) * 8, s.land[1] - Math.sin(yaw) * 8);
+      window.__RUNTIME__?.invalidate();
+    });
+    await page.waitForTimeout(Number(process.env.DOWN_WAIT ?? 8000));
+  }
+  // (and nothing held back: the frame guard leaves a draw out of the frame
+  // till its shader has linked, and in software GL a level's hundreds of
+  // materials take minutes, so measured sooner the frame drew the ground and
+  // none of its huts, and counted their calls as none; frames asked for till
+  // the guard holds nothing, window.__tpGuardPending, development's; where
+  // the guard can be told to hold nothing at all, window.__tpGuardOff, lane
+  // E4's, that is done before the count instead, and this waits on nothing)
+  {
+    const until = Date.now() + Number(process.env.GUARD_WAIT ?? 600000);
+    while ((await page.evaluate(() => (window.__tpGuardOff ? 0 : (window.__RUNTIME__?.invalidate(), window.__tpGuardPending?.() ?? 0)))) && Date.now() < until) await page.waitForTimeout(1000);
+    if (Date.now() >= until) errors.push('the frame guard still held draws back');
+  }
   // (in space, the ship put in one place, the same for every run: off the
   // planet on its sun side, facing it, stopped. The seeded randomness alone
   // can't hold it there: three.js draws on Math.random for every object's
@@ -368,6 +400,7 @@ for (const id of list.split(',')) {
     console.log(`${''.padEnd(10)} diag all ${parts.all.calls} calls: ${parts.out.map((o) => `${o.name} ${o.calls} (${Math.round(o.tris / 1000)}k)`).join(', ')}`);
   }
   const name = `${mode}-${id}-${quality}`;
+  // (SHOT_WAIT: a frame of a whole level in software GL can take a minute)
   await page.screenshot({ path: `${out}/${name}.png`, timeout: Number(process.env.SHOT_WAIT ?? 120000) });
   const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
   if (bytesRun && mode === 'surface') {
@@ -380,7 +413,7 @@ for (const id of list.split(',')) {
     console.log(`bytes  ${id.padEnd(10)} first frame ${r.firstFrameS} s  walkable ${boot?.s ?? '–'} s (on the line ${boot?.wireS ?? '–'} s, the level's own ${boot?.levelS ?? '–'} s)  boot ${boot?.levelMB ?? '–'}/${row.bootMB} MB  visit ${r.visitMB ?? '–'}/${row.visitMB} MB  wire ${r.wireMB} MB  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}`);
     if (over.length) process.exitCode = 1;
   }
-  results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), fromBucket, scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
+  results.push({ id, district, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), fromBucket, scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
   console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
   if (stats.level) {
     const l = stats.level;
@@ -410,7 +443,7 @@ if (process.env.BUDGET) {
   const k = Number(process.env.BUDGET_SCALE ?? 1);
   for (const r of results) {
     if (r.error) continue;
-    const l = limitsFor({ id: r.id, quality, row, base: base.find((x) => x.id === r.id) ?? null, scale: k, realGpu, bucket: r.fromBucket });
+    const l = limitsFor({ id: r.id, quality, row, base: baselineOf(base, r.id, r.district), scale: k, realGpu, bucket: r.fromBucket });
     const over = overBy(r, l);
     const say = (v) => (v === Infinity ? '–' : Math.round(v));
     console.log(`budget ${r.id.padEnd(10)} calls ${r.calls}/${say(l.calls)}  tris ${r.triangles}/${say(l.tris)}  models ${r.glbMB}/${l.mb} MB${l.bucket ? ' (from the bucket)' : ''}${quality === 'ultra' ? `  p95 ${r.p95}/${realGpu ? l.frame.toFixed(1) : 'reported'} ms` : ''}  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}${l.known ? `  (known over the row, held to its baseline: ${l.known})` : ''}`);

@@ -38,8 +38,14 @@
 //   variations: levelVariations.js's index (lane colour: the pack's
 //     variations.json): a varied mesh's recipes go through applyVariation
 //     first, its own maps (color, normal) found in the index's `maps`
+//
+// A material that names no colour map (lane E3: the game's leaf and branch
+// cards and some hull plates take theirs from the shader preset, which the
+// export never wrote, its `textures` empty in the GLB and in the material
+// dump alike) would draw white: a two-sided card is not drawn (a leaf card
+// without its alpha is a white slab), a solid piece is a dark moss grey (bareGlb).
 
-import { NoColorSpace, SRGBColorSpace } from 'three';
+import { DoubleSide, NoColorSpace, SRGBColorSpace } from 'three';
 import { BUDGETS } from '../../../../lib/device.js';
 import { COLOUR_MAP_KEYS } from '../../../../lib/three/surface/families.js';
 import { gltfLoader, ktx2Loader, textureFormats } from '../../../../lib/three/gltf.js';
@@ -217,6 +223,32 @@ export function isKtx2(bytes) {
 
 const rowOf = (file) => Number(String(file).match(/\.(\d+)(\.uastc)?\.ktx2$/)?.[1] ?? 0) || null;
 
+// (a solid piece with no colour map of its own: a dark moss grey, not white,
+// as a crown's branch cards and a hull plate both read under a canopy)
+export const BARE = 0x575b4f;
+
+// The GLB's own materials that named no colour map (`named`: the material
+// indices that did; `indexOf`: a scene material's GLB index, the loader's
+// copies included) and got none from a recipe: a two-sided card's meshes
+// taken out of the scene, a solid piece's material made grey. Returns how many
+// meshes were taken out.
+export function bareGlb(scene, indexOf, named) {
+  const out = [];
+  scene.traverse((o) => {
+    const m = o.material;
+    if (!o.isMesh || Array.isArray(m) || m.map || m.vertexColors) return;
+    const i = indexOf(m);
+    if (i == null || i < 0 || named.has(i)) return;
+    if (m.side === DoubleSide) out.push(o);
+    else m.color.setHex(BARE);
+  });
+  for (const o of out) {
+    o.parent.remove(o);
+    o.geometry.dispose();
+  }
+  return out.length;
+}
+
 export function createLevelLoader({
   world,
   tier,
@@ -353,6 +385,7 @@ export function createLevelLoader({
     const gltf = await gltfLoader().parseAsync(buffer, '');
     await bind(gltf, slots, glbPath);
     if (recipes && materialFor) await gameMaterials(gltf, glbPath);
+    bareGlb(gltf.scene, (m) => gltf.parser.associations.get(m)?.materials, new Set(slots.filter((x) => x.slot === 'map').map((x) => x.material)));
     return gltf;
   }
 
