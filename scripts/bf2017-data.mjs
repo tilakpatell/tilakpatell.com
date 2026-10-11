@@ -2,7 +2,7 @@
 // src/data/bf2017/ (spec section 8): the teams a level's era fields, their
 // classes, heroes, reinforcements and vehicles, every weapon, ability and
 // star card they carry, the AI's tuning, the level's map, lighting and
-// cameras, the HUD's widgets, and the strings all of them name. Every number
+// cameras, the HUD's widgets, the squads, and the strings all of them name. Every number
 // carries the record it came from (`<key>_source`); see scripts/lib/bf2017-*.
 //
 //   node scripts/bf2017-data.mjs all --root <dir> [--level hoth_01] [--era Orig] [--out src/data/bf2017] [--only <id,…>] [--dry]
@@ -29,6 +29,7 @@ import { abilityRow, cardRow, classRow, heroRow, indexOf, reinforcementRow, team
 import { aiRulebook } from './lib/bf2017-rulebook-ai.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
+import { squadsRow } from './lib/bf2017-rulebook-squads.mjs';
 import { LEVEL_WORLDS, modesRulebook } from './lib/bf2017-modes.mjs';
 import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
 
@@ -36,7 +37,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'build 489592';
 
 // In the order they are built: each reads what an earlier one found.
-export const RULEBOOKS = ['teams', 'map', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'lighting', 'cameras', 'ui', 'strings'];
+export const RULEBOOKS = ['teams', 'map', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'lighting', 'cameras', 'ui', 'squads', 'strings'];
 const NEEDS = {
   classes: ['teams'],
   heroes: ['teams'],
@@ -145,6 +146,7 @@ const BUILD = {
   abilities: (p, ctx) => rowsOf(ctx, uniq([...Object.values(ctx.classes), ...Object.values(ctx.heroes), ...Object.values(ctx.reinforcements)].flatMap((k) => (k.abilities ?? []).map((a) => a.asset))), (n) => abilityRow(p.root, n)),
   cards: (p, ctx) => rowsOf(ctx, uniq(Object.values(ctx.classes).flatMap((k) => k.cardAssets ?? [])), (n) => cardRow(p.root, n)),
   ai: (p) => aiRulebook(p.root),
+  squads: (p, ctx) => squadsRow(p.root, { strings: ctx.$strings }),
   lighting: (p) => lightingRow(p.root, p.level),
   cameras: (p, ctx) => camerasRow(p.root, { weapons: Object.values(ctx.weapons), vehicles: uniq(Object.values(ctx.vehicles).map((v) => v.blueprint)).filter((b) => indexOf(p.root).has(`${b}_Camera`)) }),
   ui: (p) =>

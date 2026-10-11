@@ -6,14 +6,21 @@
 // round when the check forces it. Lane 2's `mode`, `deploy` and `points`
 // replace those pieces; the page reads only `view()`.
 //
-//   createBattle({ rulebook, level, mode, heightAt, bots, seed, cell }) → battle
-//   addPlayer(battle, { team }) → id ; deploy(battle, id, { classId }) → { ok, why? }
-//   step(battle, inputs) → events ; view(battle) → the page's view
+//   createBattle({ rulebook, level, mode, heightAt, bots, seed, cell, mask }) → battle
+//   (mask: the pack's nav.bin, navMask.js's; one built for another grid is
+//   left out, with a warning, and the navgrid is the ground's alone)
+//   addPlayer(battle, { team }) → id ; deploy(battle, id, { classId, spawn: 'point' | 'squad', mate }) → { ok, why? }
+//   (the player keeps one soldier id, PLAYER_ID, life to life, in one squad from the start)
+//   step(battle, inputs) → events ; view(battle) → the page's view (each fallen
+//   entity's `fall`: { t, part, dir, at, weapon } from its kill, null on the
+//   living, and `hitDir`, the shot's way, for the death clip's side)
 //   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, vent })
 
-import { aiOf, classOf, mapOf, pointsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
+import { aiOf, classOf, mapOf, pointsOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
 import { buildNav } from '../../lib/battlefront/nav.js';
-import { STEP, addPlayer as addSoldier, createSim, removeEntity, step as stepSim, view as viewSim } from '../../lib/battlefront/sim.js';
+import { STEP, addPlayer as addSoldier, createSim, removeEntity, squadBlocks, squadSpot, step as stepSim, view as viewSim } from '../../lib/battlefront/sim.js';
+import { joinSquad, squadRows } from '../../lib/battlefront/ai/squad.js';
+import { earn } from '../../lib/battlefront/battlePoints.js';
 
 export { STEP };
 export const BOTS = 8; // bots a side on the page (the arena runs 20; the page draws each as a figure)
@@ -21,7 +28,13 @@ export const NAV_CELL = 2; // m: the design's navgrid (decision 7)
 export const BACK_TO_DEPLOY = 3; // s after the player goes down before the deploy screen comes back
 export const KILL_LOG = 6; // lines kept
 export const HIT_SHOWN = 1.2; // s a hit's arc is kept for the damage indicator
+// s a bolt the sim has let go of (a wall, a body, its range) stays in the
+// view, `ended` where it stopped, so the page draws it from the gun to there:
+// most stop in the step they're fired (700 m/s is 35 m a step). Hand: three
+// steps, past fx/bolts.js's CATCH_UP (src/data/bf2017/NOTES.md)
+export const SPENT = 0.15;
 const AIM_AHEAD = 100; // m ahead the player's aim point is put
+export const PLAYER_ID = 'p0'; // the player's soldier in the sim, every life (the sim numbers its own from 1)
 const SIDES = { 1: 'light', 2: 'dark' };
 
 // the stage's spawn polygon for a side, its middle; the map's spawn of that
@@ -56,11 +69,12 @@ export function worldMove([x, y], yaw) {
   return [y * s - x * c, y * c + x * s];
 }
 
-export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault', heightAt = () => 0, bots = { 1: BOTS, 2: BOTS }, seed = 1, cell = NAV_CELL, nav = null } = {}) {
+export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault', heightAt = () => 0, bots = { 1: BOTS, 2: BOTS }, seed = 1, cell = NAV_CELL, nav = null, mask = null } = {}) {
   const map = mapOf(rulebook, level);
   const ga = stagesOf(rulebook, level, mode);
   const stage = ga?.stages?.[0] ?? null;
-  const grid = nav ?? buildNav({ heightAt, bounds: { min: map.bounds.min, max: map.bounds.max }, cell, cover: aiOf(rulebook).cover.constants });
+  const grid = nav ?? buildNav({ heightAt, bounds: { min: map.bounds.min, max: map.bounds.max }, cell, cover: aiOf(rulebook).cover.constants, mask });
+  if (mask && !grid.mask) console.warn(`battlefront: the nav mask (${mask.cols} × ${mask.rows} of ${mask.cell} m) is not this map's grid; walking the ground alone`);
   const sim = createSim({ rulebook, level, nav: grid, seed, bots });
   let letter = 0;
   const objectives = (stage?.objectives ?? [])
@@ -84,6 +98,9 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
     result: null,
     killLog: [],
     names: new Map(),
+    spent: [], // { bolt, until }: the bolts the sim let go of lately, for the drawing (SPENT)
+    falls: new Map(), // the fallen's id → how it fell (the kill's part, the shot's way, where it struck, the weapon), for the figures' ragdolls
+    awards: new Map(), // Battle Points the bots earn here, until the page runs lane 2's mode (squad spawns on them)
     force(what, team) {
       if (what === 'win' || what === 'lose') this.result = { winner: what === 'win' ? team : 3 - team, why: 'forced' };
     },
@@ -92,21 +109,33 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
 }
 
 export function addPlayer(b, { team = 2 } = {}) {
-  b.player = { team, id: null, state: 'deploying', downAt: 0, earned: 0, hits: [] };
+  b.player = { team, id: PLAYER_ID, state: 'deploying', downAt: 0, earned: 0, hits: [] };
+  b.names.set(PLAYER_ID, 'You');
+  const { created } = joinSquad(b.sim.brains.squads, b.sim, PLAYER_ID, team);
+  if (created) b.sim.commanders?.[team]?.squads.push(created);
   return 'player';
 }
 
-export function deploy(b, _id, { classId } = {}) {
+export function deploy(b, _id, { classId, spawn = 'point', mate = null } = {}) {
   const p = b.player;
   if (!p || p.state !== 'deploying') return { ok: false, why: 'not deploying' };
   const side = b.sides[SIDES[p.team]];
   if (classId && !side.classes.includes(classId)) return { ok: false, why: 'not on offer here' };
   const cls = classId ?? side.classes[0];
-  const { at, yaw } = spawnFor(b.map, b.stage, p.team, b.ga?.attackers);
-  if (p.id) removeEntity(b.sim, p.id);
-  p.id = addSoldier(b.sim, { team: p.team, classId: cls, at, yaw });
+  let { at, yaw } = spawnFor(b.map, b.stage, p.team, b.ga?.attackers);
+  let on = null;
+  if (spawn === 'squad') {
+    const r = squadSpot(b.sim, p.id, p.team, mate);
+    if (r.why) return { ok: false, why: r.why };
+    ({ at, yaw } = r.spot);
+    on = r.spot.mate;
+  }
+  removeEntity(b.sim, p.id);
+  addSoldier(b.sim, { team: p.team, classId: cls, at, yaw, id: p.id });
   Object.assign(p, { state: 'alive', cls, earned: 0, hits: [] });
-  b.names.set(p.id, 'You');
+  // the mate spawned on earns for it: lane 2's points where the sim keeps them, else the page's tally
+  if (on && b.sim.bp) earn(b.sim.bp, on, 'squadSpawn');
+  else if (on) b.awards.set(on, (b.awards.get(on) ?? 0) + (b.points.earn?.squadSpawn ?? 0));
   return { ok: true };
 }
 
@@ -136,8 +165,12 @@ export function step(b, inputs = []) {
   }
   const events = stepSim(b.sim, mapped);
   const t = b.sim.time;
+  // (the bolts this step let go of, and the ones shown long enough forgotten)
+  b.spent = b.spent.filter((x) => x.until > t + 1e-9);
+  for (const bolt of b.sim.bolts.left ?? []) b.spent.push({ bolt, until: t + SPENT });
   for (const e of events) {
     if (e.type === 'kill') {
+      b.falls.set(e.target, { t, part: e.part ?? null, dir: e.dir ?? null, at: e.at ?? null, weapon: e.weapon ?? null });
       const killer = b.sim.entities.get(e.by);
       const victim = b.sim.entities.get(e.target);
       b.killLog.push({ id: `${t}:${e.target}`, killer: nameOf(b, e.by), killerTeam: killer?.team, victim: nameOf(b, e.target), victimTeam: victim?.team });
@@ -150,6 +183,8 @@ export function step(b, inputs = []) {
       p.hits.push({ id: `${t}:${e.by}`, angle: -angle, t });
     }
   }
+  // (a fall is forgotten once the sim has taken the body away, or it stands again)
+  for (const id of b.falls.keys()) if (!b.sim.entities.get(id) || b.sim.entities.get(id).alive) b.falls.delete(id);
   if (p) {
     p.hits = p.hits.filter((h) => t - h.t < HIT_SHOWN);
     if (p.state === 'alive' && me && !me.alive) {
@@ -172,13 +207,51 @@ function offers(b, team) {
   ];
 }
 
+// the deploy screen's squad strip: the side's HQ, then each squadmate and why it cannot be spawned on
+function spawns(b, p) {
+  const sq = squadsOf(b.rulebook);
+  const hq = { kind: 'hq', id: 'hq', name: stringOf(b.rulebook, sq.hq[SIDES[p.team]]) };
+  const mates = squadBlocks(b.sim, p.id, p.team).map(({ id, blocked }) => ({
+    kind: 'mate',
+    id,
+    name: nameOf(b, id),
+    cls: b.sim.entities.get(id)?.cls?.cls ?? null,
+    blocked,
+    reason: blocked ? stringOf(b.rulebook, sq.blocked[blocked] ?? sq.blocked.other) : null,
+  }));
+  return [hq, ...mates];
+}
+
 export function view(b) {
   const v = viewSim(b.sim);
   const t = b.sim.time;
   for (const e of v.entities) {
     const s = b.sim.entities.get(e.id);
     e.vel = [s?.vel?.[0] ?? 0, s?.vel?.[2] ?? 0];
+    e.weapon = s?.gun?.row?.id ?? null;
     e.t = t;
+    // (the view's entities are reused by place: a living one's fall is cleared)
+    e.fall = s && !s.alive ? (b.falls.get(e.id) ?? null) : null;
+    e.hitDir = e.fall?.dir ?? null;
+  }
+  // (each bolt's owner and start, for the drawing to leave from its gun:
+  // the sim's view lists them in the sim's order)
+  const list = b.sim.bolts.list;
+  for (let i = 0; i < v.bolts.length; i++) {
+    const o = v.bolts[i];
+    const sb = list[i];
+    o.id = sb?.id ?? null;
+    o.owner = sb?.owner ?? null;
+    o.from = sb?.from ?? o.at;
+    o.travelled = sb?.travelled ?? 0;
+    o.speed = sb?.speed ?? null;
+    o.ended = false;
+  }
+  // (then the ones the sim let go of lately, where they stopped: SPENT)
+  for (const { bolt, until } of b.spent) {
+    if (until <= t + 1e-9) continue;
+    const o = (v.bolts[v.bolts.length] ??= {});
+    Object.assign(o, { at: bolt.at, dir: bolt.dir, colour: bolt.colour, id: bolt.id, owner: bolt.owner, from: bolt.from, travelled: bolt.travelled, speed: bolt.speed, ended: true });
   }
   const p = b.player;
   const me = p?.id ? b.sim.entities.get(p.id) : null;
@@ -190,7 +263,8 @@ export function view(b) {
   out.bolts = v.bolts;
   out.teams = v.teams;
   out.points = 0;
-  out.deploy = { open: p?.state === 'deploying', offers: p ? offers(b, p.team) : [], team: p?.team ?? 2 };
+  out.deploy = { open: p?.state === 'deploying', offers: p ? offers(b, p.team) : [], team: p?.team ?? 2, spawns: p ? spawns(b, p) : [] };
+  out.squad = p ? squadRows(b.sim.brains.squads, b.sim, p.id, { names: squadsOf(b.rulebook).names.map((n) => stringOf(b.rulebook, n)), nameOf: (id) => nameOf(b, id) }) : null;
   out.player = p && {
     id: p.id ?? 'player',
     team: p.team,
@@ -212,7 +286,7 @@ export function view(b) {
   out.mode = b.stage ? { stage: 0, stageName: stringOf(b.rulebook, attacking ? b.stage.name : b.stage.nameDefend), objectives: b.objectives, tickets: b.stage.tickets ?? null, result: b.result } : null;
   out.killLog = b.killLog;
   out.scoreboard = Object.fromEntries(
-    [1, 2].map((team) => [team, { name: SIDES[team] === 'dark' ? 'EMPIRE' : 'REBELS', rows: [...b.sim.entities.values()].filter((s) => s.team === team).map((s) => ({ id: s.id, name: nameOf(b, s.id), kills: 0, deaths: s.alive ? 0 : 1, points: 0 })) }]),
+    [1, 2].map((team) => [team, { name: SIDES[team] === 'dark' ? 'EMPIRE' : 'REBELS', rows: [...b.sim.entities.values()].filter((s) => s.team === team).map((s) => ({ id: s.id, name: nameOf(b, s.id), kills: 0, deaths: s.alive ? 0 : 1, points: b.awards.get(s.id) ?? 0 })) }]),
   );
   return out;
 }

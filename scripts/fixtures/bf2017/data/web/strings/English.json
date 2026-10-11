@@ -1,7 +1,7 @@
 {
  "language": "English",
  "asset": "Localization/WSLocalization_English",
- "count": 16,
+ "count": 31,
  "id": "id = hash of the string key: h = 0xFFFFFFFF; for each character c: h = (c + 33*h) mod 2^32; written as 8 upper-case hex digits",
  "strings": {
   "B2823EBD": "TAKE OUT THE WALKERS",
@@ -19,6 +19,21 @@
   "579726DC": "A280",
   "6CFC2974": "ASSAULT",
   "B912C5CD": "Darth Vader",
-  "D35AB2F9": "Luke Skywalker"
+  "D35AB2F9": "Luke Skywalker",
+  "0B4473E0": "A",
+  "0B4473E1": "B",
+  "0B4473E2": "C",
+  "0B4473E3": "D",
+  "0B4473E4": "E",
+  "F4E74C62": "REBEL HQ",
+  "C2912E6B": "IMPERIAL HQ",
+  "38FD04AD": "IN COMBAT",
+  "F1DE1E97": "OUTSIDE MISSION AREA",
+  "F785EA37": "IN VEHICLE",
+  "89C3A30A": "NO PLAYER",
+  "F2538943": "UNAVAILABLE",
+  "34506AC6": "DEFEATED",
+  "3DDFEA68": "GROUP FULL\nDEPLOYING",
+  "4EB0FAFD": "You can spawn on squad mates unless they are in combat, out of bounds, in a vehicle, or an airborne unit."
  }
 }

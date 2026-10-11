@@ -34,7 +34,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { globMatch } from './lib/bf2017-paths.mjs';
 import { stringHash } from './lib/bf2017-ebx.mjs';
-import { SITE_FAMILIES, bitmapWanted, excludedFilms, filmRows, fontAllowed, fontLicence, iconFamily, iconName, isSequelUi, slugOf, spriteOf, stringTables, vttOf } from './lib/bf2017-ui.mjs';
+import { SITE_FAMILIES, bitmapWanted, excludedFilms, filmRows, fontLicence, iconFamily, iconName, isSequelUi, slugOf, spriteOf, stringTables, vttOf } from './lib/bf2017-ui.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const LAB = join(ROOT, 'lab', 'assets', 'bf2017');
@@ -198,17 +198,13 @@ const APACHE = () => {
 export function fonts({ dry = false, say = console.log } = {}) {
   const misc = readJsonl('misc.jsonl');
   const all = misc.filter((r) => r.cat === 'fonts');
-  const ok = all.filter((r) => fontAllowed(r.file));
-  say(`fonts: ${all.length} in the drop; ${ok.length} open-licence ship, ${all.length - ok.length} stay out (licence)`);
-  for (const r of all.filter((x) => !fontAllowed(x.file))) say(`  out: ${r.file.split('/').pop()}  (${r.copyright})`);
-  if (dry) return ok;
-  for (const r of ok) fetchRaw(r.file);
+  say(`fonts: ${all.length} in the drop, every one shipped (the owner holds the licence)`);
+  if (dry) return all;
+  for (const r of all) fetchRaw(r.file);
   const dir = join(PUBLIC, 'fonts', 'bf2017');
   mkdirSync(dir, { recursive: true });
-  // (nothing but the allowed faces and their licences is ever here)
-  for (const f of readdirSync(dir)) if (/\.(ttf|otf|woff2?)$/i.test(f) && !fontAllowed(f)) rmSync(join(dir, f));
   const ofl = [];
-  for (const r of ok) {
+  for (const r of all) {
     const file = r.file.split('/').pop();
     copyFileSync(onDisk(r.file), join(dir, file));
     if (fontLicence(file).licence === 'OFL-1.1' && !ofl.includes(r.copyright)) ofl.push(r.copyright);
@@ -219,21 +215,18 @@ export function fonts({ dry = false, say = console.log } = {}) {
     join(DATA, 'fonts.json'),
     json({
       _from: FROM,
-      rows: all.map((r) => {
-        const l = fontLicence(r.file);
-        return { file: r.file.split('/').pop(), face: `${r.nameFamily ?? r.family} ${r.nameStyle ?? ''}`.trim(), copyright: r.copyright, ships: Boolean(l), licence: l?.licence ?? null, ...(l ? { _source: r.name } : {}) };
-      }),
+      rows: all.map((r) => ({ file: r.file.split('/').pop(), face: `${r.nameFamily ?? r.family} ${r.nameStyle ?? ''}`.trim(), copyright: r.copyright, ships: true, licence: fontLicence(r.file).licence, _source: r.name })),
     }),
   );
-  const lines = ok.map((r) => {
+  const lines = all.map((r) => {
     const l = fontLicence(r.file);
-    return `| \`${r.file.split('/').pop()}\` | ${r.nameFamily ?? r.family} ${r.nameStyle ?? ''} | ${l.by} | ${l.licence} | \`${l.file}\` |`;
+    return `| \`${r.file.split('/').pop()}\` | ${r.nameFamily ?? r.family} ${r.nameStyle ?? ''} | ${r.copyright ?? ''} | ${l.licence === 'owner' ? 'the owner’s, with the game' : `${l.licence}, \`${l.file}\``} |`;
   });
   write(
     join(dir, 'README.md'),
-    `# The 2017 game’s open fonts\n\nThe faces of Star Wars Battlefront II (2017)’s drop that carry an open licence, as the drop has them (scripts/bf2017-ui.mjs fonts). Each file’s own name table states its licence; the licence’s text is beside it. \`src/lib/bf2017/fonts.css\` loads them.\n\n| file | face | by | licence | text |\n| --- | --- | --- | --- | --- |\n${lines.join('\n')}\n\nNot here, and never copied into \`public/\`: Linotype Univers (\`LinotypeUnivers-*\`, \`LT_UniversCond820\`, \`UniversLT-65Bold\`: Linotype and Monotype’s), DFPHSGothic (DynaComware’s), AR Yenti (Arphic’s), News Gothic (Bitstream’s), and RaxusPrimeNumericalMonospace and the game’s Aurebesh (no licence in either file; the Aurebesh is marked restricted, fsType 1). Those are licensed to EA, not to this site. The HUD draws in Cuprum and Roboto in their place, and the site’s own Aurebesh (\`public/fonts/aurebesh/\`, OFL) stands for the game’s.\n`,
+    `# The 2017 game’s fonts\n\nEvery face in Star Wars Battlefront II (2017)’s drop, as the drop has it (scripts/bf2017-ui.mjs fonts): every font shipped; the owner holds the licence (2026-10-10). The open-licence ones also carry their own licence, whose text is beside them. \`src/lib/bf2017/fonts.css\` loads them; the CJK and Arabic faces load only for a glyph in their ranges.\n\n| file | face | copyright | licence |\n| --- | --- | --- | --- |\n${lines.join('\n')}\n`,
   );
-  return ok;
+  return all;
 }
 
 // ---- strings ----

@@ -13,7 +13,7 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles, hoth, shadows, lightSun, clouds, filter, picture }
+//   materials, weather, decals, particles, upscale, hoth, shadows, lightSun, clouds, filter, picture }
 //
 // `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
 // 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
@@ -163,6 +163,7 @@ export default {
       made.push(g);
       return g;
     };
+    // (lane S's shadows fixture stands on a long strip, its figures, wall, posts and boards down it)
     const ground = new THREE.Mesh(geo(opts.shadows ? new THREE.PlaneGeometry(60, 400) : new THREE.PlaneGeometry(200, 200)), mat({ color: opts.hoth ? SNOW : 0x9aa0a8, roughness: opts.hoth ? 0.8 : 0.55, metalness: 0.05 }));
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
@@ -287,7 +288,8 @@ export default {
         return snow?.setTime(t) ?? null;
       },
       // (jitter: metres the camera is raised, for the grazing pair; lane S's
-      // `shadows` framings are in `views`, the camera moved and the light told)
+      // `shadows` framings are in `views`, the camera moved and the light
+      // told; lane Q1's `materials` framings in VIEWS; then Q4's)
       view(name, jitter = 0) {
         const v = views[name];
         if (v) {
@@ -295,6 +297,12 @@ export default {
           camera.lookAt(...v.at);
           camera.updateMatrixWorld();
           light?.update(0, camera);
+          return true;
+        }
+        const q1 = opts.materials ? VIEWS[name] : null;
+        if (q1) {
+          camera.position.set(...q1.from);
+          camera.lookAt(...q1.at);
           return true;
         }
         if (name === 'crate') camera.position.set(0.2, 2.1, 20), camera.lookAt(0.2, 0.7, 16);
@@ -322,14 +330,6 @@ export default {
     if (opts.materials) {
       for (const o of [...scene.children]) if (o !== ground) o.visible = false;
       row = recipeRow(scene, renderer, opts.materials, opts.tier, made);
-      // (Q1's views by name; any other is Q4's)
-      const theirs = probe.view;
-      probe.view = (name, ...rest) => {
-        const v = VIEWS[name];
-        if (!v) return theirs(name, ...rest);
-        camera.position.set(...v.from);
-        camera.lookAt(...v.at);
-      };
       probe.view('row');
       probe.recipes = () => row.then((r) => r.map((c) => ({ label: c.label, features: c.features })));
     }
@@ -341,7 +341,8 @@ export default {
       light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null });
       probe.light = { clustered: light.parts.placed?.clustered ?? null };
       probe.grade = light.parts.grade ?? null;
-      for (const f of figures) light.track(f);
+      // (lane S's shadow figures: the contact pass follows them)
+      for (const f of figures) light.track?.(f);
       if (!opts.sky) {
         const [{ PMREMGenerator }, { RoomEnvironment }] = await Promise.all([import('three/webgpu'), import('three/addons/environments/RoomEnvironment.js')]);
         const pmrem = new PMREMGenerator(renderer);
@@ -364,7 +365,9 @@ export default {
       light.update(0, camera);
       if (light.passes.length) {
         // (`only`: the passes kept, for finding which one breaks)
-        const passes = opts.only ? light.passes.filter((p) => opts.only.includes(p.kind)) : light.passes;
+        let passes = opts.only ? light.passes.filter((p) => opts.only.includes(p.kind)) : light.passes;
+        // (`upscale`, fidelity lane U: { kind, scale }, the picture drawn under the screen and brought up)
+        if (opts.upscale) passes = (await import('../../lib/three/light/post.js')).upscaled(passes, opts.upscale);
         post = rt.gfx.post(passes);
         probe.passes = passes.map((p) => p.kind);
         await post.ready;

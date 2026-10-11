@@ -176,3 +176,95 @@ describe('the ground in the game’s layers (lane Q2)', () => {
     }
   });
 });
+
+describe('the batched path (lane U)', () => {
+  // (the loader's materials are alike, as the pack's shared texture cache makes a mesh's LODs)
+  const celled = {
+    ...pack,
+    far: { draws: pack.far.draws.map((d, i) => ({ ...d, cells: { [i === 3 - 1 ? '2,0' : '0,0']: [0, d.count] } })) },
+    horizon: { draws: [{ mesh: 0, offset: 0, count: 1, mirrored: false }] },
+  };
+  const batchesIn = (scene) => {
+    const out = [];
+    scene.traverse((o) => o.isBatchedMesh && o.instanceCount && out.push(o));
+    return out;
+  };
+
+  it('draws the table as one BatchedMesh a material a band, no InstancedMesh, the same instances and triangles', async () => {
+    const scene = new THREE.Scene();
+    const level = createLevelScene({ scene, pack: celled, loadGltf, tier: 'high', batch: true });
+    level.setTable(table);
+    level.setHorizon(recs([[[20, 0, 0]]]));
+    level.update([0, 0]);
+    await settle();
+    await settle();
+    expect(drawn(scene)).toHaveLength(0);
+    expect(batchesIn(scene).map((m) => m.userData.band).sort()).toEqual(['arena', 'horizon']);
+    expect(level.stats()).toMatchObject({ tris: 10, calls: 2, instances: 5, batches: 2, bands: { arena: 1, horizon: 1 } });
+    // (walking: the LODs change, the batch's geometry is added to, not rebuilt)
+    const arena = batchesIn(scene).find((m) => m.userData.band === 'arena');
+    const before = arena._geometryInfo.length;
+    level.update([30, 0]);
+    await settle();
+    await settle();
+    expect(arena._geometryInfo.length).toBeGreaterThanOrEqual(before);
+    // (the crate, 27 m off at r 0.5, is past K radii now)
+    expect(level.stats()).toMatchObject({ calls: 2, instances: 4 });
+    level.dispose();
+    expect(batchesIn(scene)).toHaveLength(0);
+  });
+
+  it('puts the bundled bands in a render bundle, flagged again when the table moves', async () => {
+    class Bundle extends THREE.Group {
+      version = 0;
+      set needsUpdate(v) {
+        if (v) this.version++;
+      }
+    }
+    const scene = new THREE.Scene();
+    const level = createLevelScene({ scene, pack: celled, loadGltf, tier: 'high', batch: true, Bundle });
+    level.setTable(table);
+    level.setHorizon(recs([[[20, 0, 0]]]));
+    level.update([0, 0]);
+    await settle();
+    await settle();
+    const bundle = scene.getObjectByName('bundle:horizon');
+    expect(bundle).toBeInstanceOf(Bundle);
+    expect(bundle.children.map((m) => m.userData.band)).toEqual(['horizon']);
+    const v = bundle.version;
+    level.update([30, 0]);
+    await settle();
+    expect(bundle.version).toBeGreaterThan(v);
+    level.dispose();
+  });
+
+  it('hides the instances of a cell the walls cover, and shows them when it is seen', async () => {
+    const scene = new THREE.Scene();
+    const covered = new Set();
+    const renderer = { isOccluded: (m) => covered.has(m.name) };
+    const level = createLevelScene({ scene, pack: celled, loadGltf, tier: 'high', batch: true, occlude: renderer });
+    level.setTable(table);
+    level.update([0, 0]);
+    await settle();
+    await settle();
+    const proxies = scene.getObjectByName('occlusion').children;
+    expect(proxies.map((m) => m.name).sort()).toEqual(['occluder-proxy:0,0', 'occluder-proxy:1,0']);
+    const camera = new THREE.PerspectiveCamera();
+    const frame = () => {
+      for (const m of proxies) m.onBeforeRender(renderer);
+      level.afterRender(camera);
+    };
+    // the hangar piece's block (its cell 2,0, 100 m off) behind a wall for two frames
+    covered.add('occluder-proxy:1,0');
+    frame();
+    frame();
+    expect(level.stats()).toMatchObject({ blocks: 2, hidden: 1 });
+    const arena = batchesIn(scene)[0];
+    const visible = () => [...Array(arena.instanceCount).keys()].filter((i) => arena.getVisibleAt(i)).length;
+    expect(visible()).toBe(3);
+    covered.clear();
+    frame();
+    expect(visible()).toBe(4);
+    level.dispose();
+  });
+});

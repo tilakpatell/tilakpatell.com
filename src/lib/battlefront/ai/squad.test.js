@@ -3,9 +3,9 @@ import { loadRulebook } from '../rulebook.js';
 import { buildNav } from '../nav.js';
 import { field } from '../fixtures/field.js';
 import { addPlayer, createSim } from '../sim.js';
-import { SQUAD_SIZE, alert, createSquads, deliver, squadOf, update } from './squad.js';
+import { SQUAD_SIZE, alert, createSquads, deliver, joinSquad, squadOf, squadRows, update } from './squad.js';
 import { createBrain } from './soldierBrain.js';
-import { aiOf } from '../rulebook.js';
+import { aiOf, squadsOf } from '../rulebook.js';
 
 const rb = loadRulebook();
 
@@ -59,5 +59,70 @@ describe('squads', () => {
     expect(mate.brain.me.beliefs.enemy).toBeUndefined();
     expect(deliver(squads, sim, 5)).toHaveLength(1);
     expect(mate.brain.me.beliefs.enemy.at.z).toBe(40);
+  });
+
+  it('are as big as the game’s spawn manager says', () => {
+    expect(SQUAD_SIZE).toBe(squadsOf(rb).size);
+  });
+
+  it('take a player into the team’s first squad with room', () => {
+    const { sim, ids } = camp(6);
+    const squads = createSquads(sim);
+    const me = addPlayer(sim, { team: 1, classId: 'l-orig-heavy', at: [0, 0, -40] });
+    const r = joinSquad(squads, sim, me);
+    expect(r.created).toBe(null);
+    expect(r.squad.id).toBe('1.2');
+    expect(r.squad.members).toEqual([ids[4], ids[5], me]);
+    expect(squadOf(squads, me)).toBe(r.squad);
+    expect(joinSquad(squads, sim, me)).toEqual({ squad: r.squad, created: null });
+  });
+
+  it('when every squad is full, take a bot’s place in the first and send it to a new squad', () => {
+    const { sim, ids } = camp(8);
+    const squads = createSquads(sim);
+    const me = addPlayer(sim, { team: 1, classId: 'l-orig-heavy', at: [0, 0, -40] });
+    const r = joinSquad(squads, sim, me);
+    expect(r.squad.id).toBe('1.1');
+    expect(r.squad.members).toEqual([ids[0], ids[1], ids[2], me]);
+    expect(r.created.id).toBe('1.3');
+    expect(r.created.members).toEqual([ids[3]]);
+    expect(squadOf(squads, ids[3])).toBe(r.created);
+    expect(squads.list).toContain(r.created);
+  });
+
+  it('start the team’s first squad for a player on a team with none', () => {
+    const { sim } = camp(0);
+    const squads = createSquads(sim);
+    const me = addPlayer(sim, { team: 2, classId: 'd-orig-assault', at: [0, 0, 40] });
+    const r = joinSquad(squads, sim, me);
+    expect(r.squad).toMatchObject({ id: '2.1', team: 2, members: [me] });
+    expect(r.created).toBe(r.squad);
+  });
+
+  it('keep a bot as the leader with the player in front', () => {
+    const { sim, ids } = camp(2);
+    const squads = createSquads(sim);
+    const me = addPlayer(sim, { team: 1, classId: 'l-orig-heavy', at: [0, 0, -40] });
+    const sq = joinSquad(squads, sim, me).squad;
+    sq.members.unshift(sq.members.pop());
+    update(squads, sim);
+    expect(sq.members[0]).toBe(me);
+    expect(sq.leader).toBe(ids[0]);
+  });
+
+  it('list the player’s squad, the player first, with the squad’s letter and each one’s class, state and order', () => {
+    const { sim, ids } = camp(3);
+    const squads = createSquads(sim);
+    const me = addPlayer(sim, { team: 1, classId: 'l-orig-heavy', at: [0, 0, -40] });
+    joinSquad(squads, sim, me);
+    sim.entities.get(ids[1]).alive = false;
+    sim.entities.get(ids[2]).brain.task = { key: 'o1', at: [0, 0] };
+    const rows = squadRows(squads, sim, me, { names: ['A', 'B'], nameOf: (id) => (id === me ? 'You' : `Trooper ${id}`), letterOf: (t) => (t?.key === 'o1' ? 'B' : null) });
+    expect(rows.letter).toBe('A');
+    expect(rows.members.map((m) => m.id)).toEqual([me, ids[0], ids[1], ids[2]]);
+    expect(rows.members[0]).toMatchObject({ name: 'You', cls: 'heavy', alive: true, local: true, order: null });
+    expect(rows.members[2]).toMatchObject({ alive: false, local: false, cls: 'assault' });
+    expect(rows.members[3].order).toBe('B');
+    expect(squadRows(squads, sim, 'nobody', { names: [] })).toBe(null);
   });
 });
