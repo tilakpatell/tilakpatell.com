@@ -1,0 +1,44 @@
+{
+  "size": "960x540",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "motionBlur",
+        "tonemap",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "picture-post-ultra-webgl.png",
+      "meanLum": 0.4436,
+      "picture": {
+        "tonemap": "linear",
+        "lut": "Levels/Lighting/Hoth/Sunny_01/T_CC_Hoth_Sunny_01"
+      },
+      "horizon": {
+        "meet": 0.5715,
+        "painted": 0.6096
+      },
+      "envDiff": 27.55,
+      "programsBefore": 82,
+      "programsAfter": 82,
+      "frames": 5,
+      "mean": 2727.7,
+      "median": 2772,
+      "p95": 2787.1
+    }
+  ]
+}

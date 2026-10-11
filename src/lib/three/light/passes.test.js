@@ -3,6 +3,7 @@ import * as THREE from 'three/webgpu';
 import { ATTACHMENT_LIMIT, attachmentCost, buildChain } from './passes';
 import { createVolumetrics } from './volumetrics';
 import { passesFor, upscaled } from './post';
+import { gradeOf } from './grade';
 import hoth from './fixtures/hoth.ve.json';
 
 // Every kind builds into a node graph in Node (no GPU: the graph is made,
@@ -58,6 +59,24 @@ describe('buildChain', () => {
     const chain = await buildChain(renderer, passes);
     expect(chain.pipeline.outputNode).toBeTruthy();
     chain.dispose();
+  });
+  it('builds the record’s picture: the five Gaussians tinted, the HBAO numbers, the linear tone map before the LUT', async () => {
+    const grade = gradeOf(hoth.sunny.record);
+    for (const tier of ['ultra', 'high', 'mid', 'low']) {
+      const passes = passesFor(tier, hoth.sunny, 'webgpu', { scene, camera, light, lut, grade });
+      const chain = await buildChain(renderer, passes);
+      expect(chain.pipeline.outputNode).toBeTruthy();
+      // (the tone map is the chain's: the pipeline's own transform is off)
+      expect(chain.pipeline.outputColorTransform).toBe(false);
+      const bloom = chain.nodes.find((n) => n.bloomTintColors);
+      expect(bloom.strength.value).toBe(0.1);
+      expect(bloom.threshold.value).toBe(0);
+      expect(bloom.bloomTintColors[0].toArray()).toEqual([0, 0, 0]);
+      expect(bloom.bloomTintColors[4].z * 0.2 * 0.1).toBeCloseTo(0.8148467 * 0.5 * 0.1, 6);
+      const ao = chain.nodes.find((n) => n.distanceFallOff);
+      if (tier !== 'low') expect([ao.radius.value, ao.scale.value, ao.distanceFallOff.value]).toEqual([1.5, 2, 0.7]);
+      chain.dispose();
+    }
   });
   it('builds the upscale under the screen: TAAU on ultra, FSR1 after SMAA on high (lane U)', async () => {
     const refs = { scene, camera, light, lut };

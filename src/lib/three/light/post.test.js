@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom';
 import { COC, NODE_PASSES, ORDER, SSGI, arrange, dofParams, headroom, motionBlurOf, passesFor, raysLight, shed, upscaleKind, upscaled } from './post';
 import hoth from './fixtures/hoth.ve.json';
+import { gradeOf } from './grade';
 
 const kinds = (ps) => ps.map((p) => p.kind);
 const refs = { scene: {}, camera: {}, light: { isDirectionalLight: true }, lut: { isData3DTexture: true, image: { width: 32 } } };
@@ -140,6 +141,36 @@ describe('shed', () => {
     expect(kinds(shed(ultra, 4))).toEqual(['render', 'bloom', 'motionBlur', 'lut', 'traa', 'output']);
     // (high's denoise goes with its SSGI)
     expect(kinds(shed(passesFor('high', hoth.sunny, 'webgpu', refs), 1))).not.toContain('denoise');
+  });
+});
+
+describe('the record’s picture (lane Q6, refs.grade)', () => {
+  const grade = gradeOf(hoth.sunny.record);
+  it('the LUT after the tone map, the tone map after the bloom, in the game’s order, on every tier with a chain', () => {
+    const ultra = kinds(passesFor('ultra', hoth.sunny, 'webgpu', { ...refs, grade }));
+    expect(ultra).toEqual(['render', 'ssgi', 'ao', 'ssr', 'bloom', 'godrays', 'lensflare', 'motionBlur', 'tonemap', 'lut', 'traa', 'output']);
+    expect(ultra.indexOf('bloom')).toBeLessThan(ultra.indexOf('tonemap'));
+    expect(ultra.indexOf('tonemap')).toBeLessThan(ultra.indexOf('lut'));
+    // a chain given with the LUT first is put back in the game's order
+    expect(kinds(arrange([{ kind: 'render' }, { kind: 'lut', texture: {} }, { kind: 'tonemap', method: 'linear' }, { kind: 'bloom' }]))).toEqual(['render', 'bloom', 'tonemap', 'lut']);
+    expect(kinds(passesFor('high', hoth.sunny, 'nodes-webgl', { ...refs, grade }))).toEqual(['render', 'ssgi', 'denoise', 'ao', 'bloom', 'motionBlur', 'tonemap', 'lut', 'smaa', 'output']);
+    expect(kinds(passesFor('mid', hoth.sunny, 'webgpu', { ...refs, grade }))).toEqual(['render', 'ao', 'bloom', 'tonemap', 'smaa', 'output']);
+    expect(kinds(passesFor('low', hoth.sunny, 'webgpu', { ...refs, grade }))).toEqual(['render', 'bloom', 'tonemap', 'output']);
+    // the classic renderer keeps its own
+    expect(kinds(passesFor('ultra', hoth.sunny, 'webgl', { ...refs, grade }))).toEqual(['render', 'bloom', 'output']);
+    expect(passesFor('ultra', hoth.sunny, 'webgpu', { ...refs, grade }).find((p) => p.kind === 'tonemap').method).toBe('linear');
+  });
+  it('the bloom is the five Gaussians at the record’s scale and no threshold; the AO the HBAO numbers', () => {
+    const ps = passesFor('ultra', hoth.sunny, 'webgpu', { ...refs, grade });
+    const bloom = ps.find((p) => p.kind === 'bloom');
+    expect(bloom).toMatchObject({ gaussians: true, strength: 0.1, threshold: 0, radius: 0, levels: [1, 2, 3, 4, 5] });
+    expect(bloom.tints).toHaveLength(5);
+    expect(bloom.tints[0]).toEqual([0, 0, 0]);
+    expect(ps.find((p) => p.kind === 'ao')).toMatchObject({ radius: 1.5, scale: 2, falloff: 0.7, blur: 8 });
+  });
+  it('without refs.grade the chain is as it was', () => {
+    expect(passesFor('ultra', hoth.sunny, 'webgpu', refs)).toEqual(passesFor('ultra', hoth.sunny, 'webgpu', { ...refs, grade: null }));
+    expect(kinds(passesFor('ultra', hoth.sunny, 'webgpu', refs))).not.toContain('tonemap');
   });
 });
 
