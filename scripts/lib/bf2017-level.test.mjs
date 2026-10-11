@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
-import { NEVER, STILL_SKINNED, arenaOf, buildPack, neverOf, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
+import { NEVER, STILL_SKINNED, arenaOf, buildPack, neverOf, proxyKey, proxyMeshes, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
@@ -70,6 +70,22 @@ describe('arenaOf', () => {
     };
     expect(arenaOf(map)).toEqual([3, 4]);
     expect(neverOf(map)).toEqual([{ name: 'hothinterior_lightblocker_01', count: 3 }]);
+  });
+
+  it('knows a proxy by its shaders: shadow-only and virtual-texture-only meshes, never one that also draws', () => {
+    const line = (mesh, ...shaders) => JSON.stringify({ mesh, materials: shaders.map((shader) => ({ shader })) });
+    const m = proxyMeshes([
+      line('levels/mp/naboo_01/naboo_roof_shadow_mesh', 'Shaders/Presets/SS_Shadowmesh'),
+      line('objects/nature/takodana/base_shadow_mesh', 'Objects/Nature/Takodana/_TakodanaBase/_ShaderPresets/SS_TakodanaBase_ShadowMesh_01'),
+      line('levels/mp/naboo_01/plaza_vt_mesh', 'Shaders/Presets/Walrus/SS_VirtualTextureOnly'),
+      line('levels/mp/naboo_01/roof_mesh', 'Levels/Naboo/SS_Naboo_CopperRoof_01', 'Shaders/Presets/SS_Shadowmesh'),
+    ]);
+    expect([...m]).toEqual([
+      ['models/levels/mp/naboo_01/naboo_roof_shadow_mesh', 'shadow proxy'],
+      ['models/objects/nature/takodana/base_shadow_mesh', 'shadow proxy'],
+      ['models/levels/mp/naboo_01/plaza_vt_mesh', 'virtual texture only'],
+    ]);
+    expect(m.get(proxyKey('models/levels/mp/naboo_01/plaza_vt_mesh.glb'))).toBe('virtual texture only');
   });
 
   it('takes the subs it is given, by their last name, any case', () => {

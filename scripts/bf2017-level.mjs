@@ -56,7 +56,7 @@ import { parseArgs } from './lib/args.mjs';
 import { writeCredit } from './lib/catalog-write.mjs';
 import { isSequel } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs';
-import { buildPack, neverOf, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
+import { buildPack, neverOf, proxyKey, proxyMeshes, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
 import { LOD, TEX_MB, capIndex, fitMaps, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -359,6 +359,8 @@ async function main(args) {
   // the meshes: each one's LOD chain (the model manifest's, else counted
   // from its GLBs), its four cuts and their triangles
   const byFile = new Map();
+  // (the meshes that are a proxy by their shaders, shadow-only or virtual-texture-only, never drawn: materials.jsonl)
+  const proxies = proxyMeshes((await need(env, 'web/materials.jsonl', 'the material manifest')).toString('utf8').split('\n').filter(Boolean));
   for (const line of (await need(env, 'web/models.jsonl', 'the model manifest')).toString('utf8').split('\n')) {
     if (!line.trim()) continue;
     const e = JSON.parse(line);
@@ -378,6 +380,7 @@ async function main(args) {
   const meshes = await pool(map.meshes, 8, async (m) => {
     const base = { name: m.file, bounds: [...m.min, ...m.max], mats: 1 };
     if (isSequel(m.file)) return { ...base, ...NONE, missing: 'sequel' };
+    if (proxies.has(proxyKey(m.file))) return { ...base, ...NONE, missing: proxies.get(proxyKey(m.file)) };
     const entry = byFile.get(m.file);
     let chain = entry ? [...entry.lods].sort((x, y) => x.lod - y.lod).map((l) => ({ n: l.lod, file: l.file, tris: l.triangles })) : null;
     if (!chain) {
@@ -548,6 +551,7 @@ async function main(args) {
     '',
     `- ${pack.counts.arena} instances in the arena (±${arena} m), ${pack.counts.horizon} beyond it (the horizon), ${record ? `${pack.counts.buried} ${inside ? 'left out above the ground (the world outside: its own pack)' : 'left out under the ground (an interior: its own pack, `--inside`)'}` : 'no terrain: no ground layer, the instances alone'}, ${pack.counts.cells} cells of ${pack.json.cell} m`,
     ...(drop.length ? [`- left out: ${drop.join(', ')}`] : []),
+    `- proxies by their shaders, never drawn (materials.jsonl: SS_Shadowmesh casts shadows only, SS_VirtualTextureOnly paints the terrain's virtual texture only): ${meshes.filter((m) => /proxy|virtual texture/.test(m.missing ?? '')).map((m) => `${lastOf(m.name).replace(/_mesh\.glb$/, '')} (${m.missing})`).join(', ') || 'none'}`,
     `- never drawn as themselves (the NEVER rule: lighting proxies, light blockers, occluders, invisible collision, shadow-only meshes, destruction stages): ${neverOf(map, { subs }).map((n) => `${n.name} ×${n.count}`).join(', ') || 'none'}`,
     ...(Object.keys(share).length ? [`- fitted to a share of the tiers' rows: ${Object.entries(share).map(([t, k]) => `${t} ${k}`).join(', ')}`] : []),
     `- ${meshes.length} meshes (${absent.length} left out), ${glbs.length} LOD files, ${mb(glbBytes)}`,

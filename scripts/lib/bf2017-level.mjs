@@ -74,6 +74,27 @@ export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunn
 // and Hoth's hothinterior_lightblocker_01 drawn solid)
 export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|shadowmesh|invalidatelightplane|mistplane|lightcone|lightblocker|occluder|invisiblecollision/i;
 
+// The meshes whose every material is a proxy's shader, from the material
+// manifest (web/materials.jsonl): SS_Shadowmesh and its kin cast shadows
+// and never draw (lane E2: Naboo's 47), and SS_VirtualTextureOnly pieces
+// only paint the terrain's virtual texture, a decal the site's ground does
+// not have, so drawn they stand as solid slabs. Keyed by the mesh's file
+// as the maps name it, lower case, without .glb.
+//   PROXY_SHADER, proxyMeshes(lines) → Map(mesh → 'shadow proxy' | 'virtual texture only')
+export const PROXY_SHADER = /shadowmesh|virtualtextureonly/i;
+export function proxyMeshes(lines) {
+  const out = new Map();
+  for (const line of lines) {
+    if (!PROXY_SHADER.test(line)) continue;
+    const j = JSON.parse(line);
+    const shaders = (j.materials ?? []).map((m) => String(m.shader ?? ''));
+    if (!shaders.length || !shaders.every((x) => PROXY_SHADER.test(x))) continue;
+    out.set(`models/${j.mesh}`.toLowerCase(), shaders.some((x) => /virtualtextureonly/i.test(x)) ? 'virtual texture only' : 'shadow proxy');
+  }
+  return out;
+}
+export const proxyKey = (file) => String(file).toLowerCase().replace(/\.glb$/, '');
+
 // What NEVER keeps out of a map's arena, by mesh: [{ name, count }], the
 // most first (each pack's README lists them)
 export function neverOf(map, { subs = null } = {}) {
