@@ -12,7 +12,7 @@
 // - ssgi: colour × its AO (unless an `ao` pass follows) + diffuse × its GI;
 //   `denoise` after it filters the GI and composites again;
 // - ao: GTAO at half resolution, denoised unless TRAA follows, multiplied in;
-// - ssr: its reflection added (rgb already weighted; non-metals left out, SSRNode's default);
+// - ssr: its reflection added (rgb already weighted; non-metals left out, SSRNode's default; and, lane N3, anything at or over the row's roughnessCutoff, its metalness masked);
 // - volumes: the level's volumetric cones and glows (volumetrics.js), their
 //   quarter-resolution pass brought up over the depth and added;
 // - fog: the record's forward light scattering added, its participating
@@ -279,7 +279,10 @@ export async function buildChain(renderer, passes) {
       }
       case 'ssr': {
         // (SSRNode samples its colour as a texture; what comes before it is a composite)
-        const s = keep(mods.ssr.ssr(toTexture(node), g.depth, g.normal, { metalnessNode: g.metalRough.r, roughnessNode: g.metalRough.g, camera: p.camera ?? g.camera }));
+        // (the cut, lane N3: a pixel at or over roughnessCutoff reads as a
+        // non-metal, which SSRNode skips; its reflection stays the material's)
+        const metal = p.roughnessCutoff != null ? g.metalRough.r.mul(tsl.step(g.metalRough.g, tsl.float(p.roughnessCutoff - 1e-4))) : g.metalRough.r;
+        const s = keep(mods.ssr.ssr(toTexture(node), g.depth, g.normal, { metalnessNode: metal, roughnessNode: g.metalRough.g, camera: p.camera ?? g.camera }));
         s.resolutionScale = (p.resolutionScale ?? 0.5) * under;
         if (p.maxDistance != null) s.maxDistance.value = p.maxDistance;
         if (p.thickness != null) s.thickness.value = p.thickness;

@@ -58,6 +58,9 @@
 // to applyGameLight as `picture` (the urls from the dev server);
 // probe.view('horizon') looks along the ground to where the panorama meets
 // the scattering.
+// `baked`, `gridBudget`, `cadence` (GPU-first lane N3): the baked bounce, the
+// budgeted probe grid and the cached far cascades, set up by ./lightN3.js;
+// probe.n3 reads them.
 
 import * as THREE from 'three';
 import hothWeather from '../../lib/three/surface/fixtures/hoth.weather.json';
@@ -246,6 +249,7 @@ export default {
     let grid = null;
     let snow = null;
     let decals = null;
+    let n3 = null;
     // the ring as a level's lights.json, so the pools are filled the way a
     // level's are: the cells round the camera, the best by screen area
     const source = { cells: {} };
@@ -338,11 +342,15 @@ export default {
       await row;
       const { applyGameLight } = await import('../../lib/three/light/apply.js');
       // (Hoth's own LUT comes with `picture`: the cool test grade only without it)
-      light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null });
+      light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null, cadence: opts.cadence ? true : null });
       probe.light = { clustered: light.parts.placed?.clustered ?? null };
       probe.grade = light.parts.grade ?? null;
       // (lane S's shadow figures: the contact pass follows them)
       for (const f of figures) light.track?.(f);
+      if (opts.baked != null || opts.gridBudget || opts.cadence) {
+        n3 = await (await import('./lightN3.js')).setupN3({ scene, renderer, camera, light, ground, figures, entry, opts });
+        probe.n3 = n3.probe;
+      }
       if (!opts.sky) {
         const [{ PMREMGenerator }, { RoomEnvironment }] = await Promise.all([import('three/webgpu'), import('three/addons/environments/RoomEnvironment.js')]);
         const pmrem = new PMREMGenerator(renderer);
@@ -386,6 +394,7 @@ export default {
         cube.rotation.y += dt;
         if (camVel.x) camera.position.addScaledVector(camVel, dt);
         probe.particles?.step(dt);
+        n3?.step(dt);
         light?.update(dt, camera);
       },
       draw({ renderer: r }) {
@@ -396,6 +405,7 @@ export default {
       dispose() {
         post?.dispose();
         grid?.dispose();
+        n3?.dispose();
         light?.dispose();
         decals?.dispose();
         probe.particles?.dispose();
