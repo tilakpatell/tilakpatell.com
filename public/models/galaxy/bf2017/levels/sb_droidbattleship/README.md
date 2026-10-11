@@ -46,7 +46,7 @@ The game's shapes (`node scripts/bf2017-physics.mjs`).
 
 | meshes with shapes | hulls | mesh triangles | capsules | spheres | dropped | bytes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 134 | 2024 | 297607 | 0 | 3 | 0 | 6124992 |
+| 139 | 2029 | 297607 | 0 | 3 | 0 | 6128040 |
 
 | heaviest cells | colliders | trimesh triangles |
 | --- | --- | --- |
