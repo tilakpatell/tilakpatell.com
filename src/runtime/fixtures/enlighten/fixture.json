@@ -1,0 +1,60 @@
+{
+ "_source": "scripts/enlighten-fixture.mjs: a stand-in, not the game's bake. Hoth Sunny's probe radiances (src/data/bf2017/light/hoth.json weathers.sunny.probe) for the sky's shape and tint, its level the site's calibrated sky (skyLevel), and the record's sun (lux, az, el) gathered over the lit fixture's ground and ring (litWorld.js), the occluders' bounce at the stone's albedo and the record's SunScale; irradiance in the record's units (lux), sqrt(E / peak) in 8 bits",
+ "size": 256,
+ "span": 48,
+ "ground": 200,
+ "chart": [
+  4.166667,
+  4.166667,
+  -1.583333,
+  -1.583333
+ ],
+ "samples": 128,
+ "peak": 144181.219,
+ "encoding": "sqrt",
+ "openIrradiance": [
+  34155.226,
+  63426.281,
+  143426.306
+ ],
+ "skyLevel": {
+  "_source": "the probe's radiances × this, so the open snow's up irradiance × gameToSite is the hemisphere light's luminance (readEntry(hoth.ve.json sunny).ambient)",
+  "factor": 10.728,
+  "gameToSite": 0.000006154383971997172,
+  "hemisphereUp": [
+   0.333,
+   0.394,
+   0.485
+  ]
+ },
+ "sunScale": 0.5,
+ "stone": [
+  0.686,
+  0.644,
+  0.578
+ ],
+ "rows": [
+  {
+   "set": "fixture_hoth_sunny",
+   "variant": "Sunny",
+   "size": [
+    256,
+    256
+   ],
+   "irradiance": "irradiance.png",
+   "dirR": "dirR.png",
+   "dirG": "dirG.png",
+   "dirB": "dirB.png",
+   "skyVisibility": "sky.png",
+   "uvSet": 1,
+   "charts": {
+    "ground": [
+     4.166666666666667,
+     4.166666666666667,
+     -1.5833333333333335,
+     -1.5833333333333335
+    ]
+   }
+  }
+ ]
+}

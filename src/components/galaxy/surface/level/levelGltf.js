@@ -22,6 +22,13 @@
 //   variations: levelVariations.js's index (lane colour: the pack's
 //     variations.json): a varied mesh's recipes go through applyVariation
 //     first, its own maps (color, normal) found in the index's `maps`
+//   baked: the pack's Enlighten set (GPU-first lane N3, light/baked.js's
+//     createBaked over level.json's `enlighten`, bound once a pack): a game
+//     material whose meshes all carry TEXCOORD_1, in a GLB the set has a
+//     chart for, takes the atlas as its diffuse indirect light (withBaked);
+//     any other keeps the probe term. applyBaked(material, chart) overrides
+//     how (the tests'). loader.atlas(path) loads one of the set's maps as the
+//     pack has it (linear, no tier size), for createBaked's loadTexture.
 
 import { NoColorSpace, SRGBColorSpace } from 'three';
 import { COLOUR_MAP_KEYS } from '../../../../lib/three/surface/families.js';
@@ -29,6 +36,8 @@ import { gltfLoader, ktx2Loader } from '../../../../lib/three/gltf.js';
 import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
 import { packUrl, splitTextures, tierTexture } from './levelPack.js';
 import { applyVariation } from './levelVariations.js';
+import { hasUv1, withBaked } from '../../../../lib/three/light/baked.js';
+import { loadThree } from '../../../../lib/three/light/three.js';
 
 // '../tex/a.ktx2' named by meshes/x.glb → 'tex/a.ktx2' in the pack
 const inPack = (glbPath, uri) => {
@@ -156,7 +165,21 @@ export async function recipeMaps(recipe, { maps = {}, texture, keys = null }) {
   return out;
 }
 
-export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null }) {
+// The atlas on a GLB's game materials: each material all of whose meshes
+// carry a second uv set, where the set has the GLB's chart
+async function bakeMeshes(scene, glbPath, materials, baked, applyBaked) {
+  const chart = baked?.chartOf?.(glbPath) ?? null;
+  if (!chart) return;
+  const ok = new Map();
+  scene.traverse((o) => {
+    if (!o.isMesh || !materials.has(o.material)) return;
+    ok.set(o.material, (ok.get(o.material) ?? true) && hasUv1(o.geometry));
+  });
+  for (const [m, all] of ok) if (all && m.isNodeMaterial) await applyBaked(m, chart);
+}
+
+export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null, baked = null, applyBaked = null }) {
+  applyBaked ??= async (m, chart) => withBaked(m, baked, { chart, three: await loadThree() });
   // (mapKeys: the recipe maps the tier draws; null, all of them)
   if (recipes?.tex) sizes = { ...sizes, ...recipes.tex };
   if (variations?.tex) sizes = { ...sizes, ...variations.tex };
@@ -232,6 +255,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
       if (o.isMesh && swap.has(o.material)) o.material = swap.get(o.material);
     });
     for (const glb of swap.keys()) glb.dispose();
+    if (baked) await bakeMeshes(gltf.scene, glbPath, new Set(swap.values()), baked, applyBaked);
   }
 
   function load(glbPath) {
@@ -256,9 +280,30 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     return meshes.get(glbPath);
   }
 
+  // one of the pack's Enlighten maps, as written (enlighten/<set>.<map>.ktx2)
+  function atlas(path) {
+    if (gone) return Promise.resolve(null);
+    const key = `atlas:${path}`;
+    if (!textures.has(key)) {
+      textures.set(
+        key,
+        ktx2Loader({ renderer })
+          .then((k) => withFallback((u) => k.loadAsync(u))(packUrl(world, path)))
+          .then((t) => {
+            t.colorSpace = NoColorSpace;
+            t.needsUpdate = true;
+            return t;
+          })
+          .catch(() => null),
+      );
+    }
+    return textures.get(key);
+  }
+
   return {
     load,
     texture,
+    atlas,
     // (the remote name of a pack file, for the evidence)
     url: (path) => assetUrl(packUrl(world, path)),
     async dispose() {
