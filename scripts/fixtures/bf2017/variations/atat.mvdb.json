@@ -1,0 +1,578 @@
+{
+ "name": "levels/sp/a2/m3sul/ds02/a2_m3sul_ds02/MeshVariationDb_Win32",
+ "type": "MeshVariationDatabase",
+ "guid": "f1ae9639-3880-e666-c379-40feef16c838",
+ "root": 0,
+ "objects": [
+  {
+   "$type": "MeshVariationDatabase",
+   "$guid": "f1ae9639-3880-e666-c379-40feef16c838",
+   "Entries": [
+    {
+     "Mesh": {
+      "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+      "$assetType": "SkinnedMeshAsset",
+      "$class": "23c33bec-b31c-153f-0d49-70e80944ad3e"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "da8a21a7-ed7e-6535-626a-94de2524041e"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -4267396936739877939,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBodyDetail_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "a352c88a-2e06-4984-f48e-acf0a64da2b0"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBodyDetail_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "bbf7dd06-51c5-aec8-5853-1b9d4dafeffc"
+         },
+         "ParameterName": "Normal"
+        }
+       ],
+       "SurfaceShaderGuid": "81042c9c-cbd0-410d-ba77-d9c3ea2b56eb",
+       "SurfaceShaderId": 2240897728
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "d7645224-902b-4d96-94d7-c5e55e5a8f11"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -6163519079433938717,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBack_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "3b8431a1-10ff-b025-5d31-2aa4373ad5dd"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBack_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "e8e43eee-49a1-6e98-7e0d-64d7603b6902"
+         },
+         "ParameterName": "Normal"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        }
+       ],
+       "SurfaceShaderGuid": "81042c9c-cbd0-410d-ba77-d9c3ea2b56eb",
+       "SurfaceShaderId": 2240897728
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "59ab5838-0136-4a25-94a0-752bae92e7b3"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -353521964619599618,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATSeams_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "458dac35-00a1-939f-c019-d4671fc5e245"
+         },
+         "ParameterName": "Normal"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATSeams_01_C",
+          "$assetType": "TextureAsset",
+          "$class": "625f8323-13cf-450b-cde5-f189c926c140"
+         },
+         "ParameterName": "BaseColor"
+        }
+       ],
+       "SurfaceShaderGuid": "c9d8b487-0a91-4c91-b0cf-21e0b8ce1024",
+       "SurfaceShaderId": 1426016700
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "eaad0311-d782-4d78-b7eb-be2a4e783887"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 5764249919298310873,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATUpperLeg_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "1b1025b7-4f0e-ad98-0e61-1c5d90d96127"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATUpperLeg_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "85a31099-f84f-6fb6-6bb0-6fb64be7342e"
+         },
+         "ParameterName": "Normal"
+        }
+       ],
+       "SurfaceShaderGuid": "6d8d7921-a484-494a-8c29-60f53048a213",
+       "SurfaceShaderId": 2348723072
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "aca18d78-f6df-4280-81d7-8719da2f44d7"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -8903313056367295023,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATUnderbelly_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "581c8608-f483-b1d8-dda5-51b2998a595d"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATUnderbelly_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "dc65dbb4-3cc8-9dcb-7746-a6728544e729"
+         },
+         "ParameterName": "Normal"
+        }
+       ],
+       "SurfaceShaderGuid": "6d8d7921-a484-494a-8c29-60f53048a213",
+       "SurfaceShaderId": 2348723072
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "651323f3-c43e-4a47-9b85-d69b370d9e40"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -3834022882825399128,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATLOD_01_C",
+          "$assetType": "TextureAsset",
+          "$class": "67170028-d2d2-3ad3-a7ae-b79cc1542d24"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATLOD_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "f29caf97-897f-e336-ca69-cbdf06a34f70"
+         },
+         "ParameterName": "Normal"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        }
+       ],
+       "SurfaceShaderGuid": "6d8d7921-a484-494a-8c29-60f53048a213",
+       "SurfaceShaderId": 2348723072
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "a65b5053-403a-4779-aabc-881bd63d2d5f"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -841961800279624976,
+       "TextureParameters": [],
+       "SurfaceShaderGuid": "ed0743df-4022-42cf-a25e-3aa3785e668e",
+       "SurfaceShaderId": 3495350801
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "64b59920-9f71-40bb-8a69-c78715bb08de"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 5688789003526379106,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATHeadBlasters_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "a2f64a78-e895-5591-3dc9-224084837d2b"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATHeadBlasters_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "09fb4835-e871-7c84-c222-3abbd94131fd"
+         },
+         "ParameterName": "Normal"
+        }
+       ],
+       "SurfaceShaderGuid": "81042c9c-cbd0-410d-ba77-d9c3ea2b56eb",
+       "SurfaceShaderId": 2240897728
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "edd2e723-e1ab-40b1-893a-6497fb680ab4"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -5058195756044284992,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATScorchDetails_01_RGBM",
+          "$assetType": "TextureAsset",
+          "$class": "c84d28c7-7b42-1bcb-05c2-6852f7f51ef1"
+         },
+         "ParameterName": "BaseColor"
+        }
+       ],
+       "SurfaceShaderGuid": "9e7dbf1e-5d56-4e06-bbb1-806c98116ca7",
+       "SurfaceShaderId": 1196327905
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "d2fcfc78-4e42-4a00-9479-513676b192fb"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 9019611432945045077,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATServo_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "956cee8e-98fd-98ca-46bf-2da713ec0e38"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATServo_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "774dbeb6-e9e2-7b82-9fb2-90b78da31e07"
+         },
+         "ParameterName": "Normal"
+        }
+       ],
+       "SurfaceShaderGuid": "ec23e6b2-c175-40e4-bed8-8fdbf6b38fe6",
+       "SurfaceShaderId": 2285059331
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "e9725b93-1385-4169-9430-253bcb5e1ff8"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 4443222221728425766,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATChassi_01_RGBM",
+          "$assetType": "TextureAsset",
+          "$class": "0a69a024-4999-809e-1084-8940ed8b6961"
+         },
+         "ParameterName": "RM"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATChassi_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "0089fff8-135d-8e16-2fd7-99181a727d48"
+         },
+         "ParameterName": "CW"
+        }
+       ],
+       "SurfaceShaderGuid": "f0f74a51-3a1f-492e-a61e-7c49ce6a26e7",
+       "SurfaceShaderId": 768586141
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "e8c2b91d-9f41-4c9b-9901-7a4cc1ff9b95"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -3933214170405106251,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBottomDetail_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "27af6c69-1033-118d-ef93-47759ed28e4b"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBottomDetail_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "52f24631-fcb6-3918-95ea-dc86eedef0a1"
+         },
+         "ParameterName": "Normal"
+        }
+       ],
+       "SurfaceShaderGuid": "6d8d7921-a484-494a-8c29-60f53048a213",
+       "SurfaceShaderId": 2348723072
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "df4baa28-145d-44d7-a6c8-e6b8ad7a6350"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -8917306655883230989,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATFoot_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "ac9d3518-356e-8cde-ad29-96d5249a08bf"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATFoot_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "200ee8ac-a7ad-6d5f-456d-b31cb55ef12b"
+         },
+         "ParameterName": "Normal"
+        }
+       ],
+       "SurfaceShaderGuid": "81042c9c-cbd0-410d-ba77-d9c3ea2b56eb",
+       "SurfaceShaderId": 2240897728
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "9aaa1258-af5b-492d-a29e-bf0bffcb1863"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -3829579666265413334,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATNeck_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "6cfdc049-eb9d-5dfe-451f-64965b5efb66"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATNeck_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "6faa794a-2d4c-d0f8-cc69-cfdd098b5df2"
+         },
+         "ParameterName": "Normal"
+        }
+       ],
+       "SurfaceShaderGuid": "81042c9c-cbd0-410d-ba77-d9c3ea2b56eb",
+       "SurfaceShaderId": 2240897728
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "504959a7-321d-4c8b-8f52-88d4063975ff"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -4747366775271653073,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATLeg_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "32962fff-47b6-5ea1-2d27-945a961b528d"
+         },
+         "ParameterName": "Normal"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATLeg_01_MSR",
+          "$assetType": "TextureAsset",
+          "$class": "38d5860a-23c0-de5a-ba92-9a78f13b1297"
+         },
+         "ParameterName": "MSR"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATLeg_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "2f3b6b97-8e44-d68a-33d0-9ff6e3972871"
+         },
+         "ParameterName": "CW"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATDetail_01_NS",
+          "$assetType": "TextureAsset",
+          "$class": "34eb5720-37c9-9f61-94d4-39f13490e8bc"
+         },
+         "ParameterName": "DetailNS"
+        }
+       ],
+       "SurfaceShaderGuid": "aa3d28c4-abfc-41bc-ad75-1188ced2a1d4",
+       "SurfaceShaderId": 3988869944
+      },
+      {
+       "Material": {
+        "$asset": "gameplay/vehicles/ground/at-at/old/atat_mesh",
+        "$assetType": "SkinnedMeshAsset",
+        "$class": "6010c700-4543-4052-8eff-e867ae05445d"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 7409108739554809479,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBody_01_RGBM",
+          "$assetType": "TextureAsset",
+          "$class": "5c6ac137-4774-8c1c-7bc5-d7f7e15e3da6"
+         },
+         "ParameterName": "RM"
+        },
+        {
+         "Value": {
+          "$asset": "Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBody_01_CW",
+          "$assetType": "TextureAsset",
+          "$class": "d368f353-9657-d343-e334-ca076e5522d4"
+         },
+         "ParameterName": "CW"
+        }
+       ],
+       "SurfaceShaderGuid": "f0f74a51-3a1f-492e-a61e-7c49ce6a26e7",
+       "SurfaceShaderId": 768586141
+      }
+     ],
+     "VariationAssetNameHash": 0
+    }
+   ],
+   "RedirectEntries": [
+    {
+     "Mesh": {
+      "$asset": "fx/meshes/chunks/metal/meshp_chunk_metal_01_mesh",
+      "$assetType": "RigidMeshAsset",
+      "$class": "fcafcd28-ffae-b430-c4ed-451f11d1aed0"
+     },
+     "VariationAssetNameHash": 2878932828
+    },
+    {
+     "Mesh": {
+      "$asset": "objects/props/objectsets/_generic/canisterexploding_01/canisterexploding_01_cluster_mesh",
+      "$assetType": "CompositeMeshAsset",
+      "$class": "e22cedbc-9adf-7c27-6b40-fa4b6ff31f76"
+     },
+     "VariationAssetNameHash": 2878932828
+    }
+   ],
+   "Name": "levels/sp/a2/m3sul/ds02/a2_m3sul_ds02/MeshVariationDb_Win32"
+  }
+ ]
+}

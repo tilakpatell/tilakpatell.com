@@ -8,6 +8,8 @@
 
 **Spec:** `2026-10-10-bf2017-galaxy-on-the-game-design.md`, decision 5 and the mode catalogue; the game design's section 6 and 7.
 
+**Narrowed beside PR #877 (read the spec's "Beside the accuracy design" first):** #877's maps lane (`claude/bf2017-maps`) owns Extraction and Ewok Hunt (**skip them in Task 3**) and writes a `modes/supremacy.js` that is, by the records, **Co-op** (its layer is `Mode9`): Task 1 takes that module over, renames it `coop.js` keeping its tests, and adds the phases and policies; Task 2's Supremacy is the real one (`Mode1`, `PF_GameMode_Mode1`), ground phase and boarding. Start after the maps lane and G3 have merged.
+
 ## Global constraints
 
 - Start from `main` after G3 has merged. Own: `src/lib/battlefront/modes/{coop,supremacy,extraction,ewokHunt,jetpackCargo,arcade,explore}.js` and tests, `src/lib/battlefront/ai/policies.js` (new), `src/data/bf2017/maps/<key>.{coop,supremacy,extraction,ewokHunt,jetpackCargo}.json` (hand files), `src/components/battlefront/hud/{Posts,Phase,Cart,Night,Cargo,ArcadeSettings}.jsx` (new), `battle.js`'s switch (additive), `index.js`'s `BUILT`.

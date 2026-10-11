@@ -1,0 +1,480 @@
+{
+ "name": "levels/mp/hoth_01/hoth_01/MeshVariationDb_Win32",
+ "type": "MeshVariationDatabase",
+ "guid": "275d6997-9cbe-dbba-5fa9-a11d6a6ccc62",
+ "root": 0,
+ "objects": [
+  {
+   "$type": "MeshVariationDatabase",
+   "$guid": "275d6997-9cbe-dbba-5fa9-a11d6a6ccc62",
+   "Entries": [
+    {
+     "Mesh": {
+      "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+      "$assetType": "CompositeMeshAsset",
+      "$class": "4d888469-bc6f-434f-784f-3d7db3fb8202"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "309f7fd5-559d-805d-75c6-d8257e92bbc6"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -4660632450724550991,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/T_Box_M_01_A_CS",
+          "$assetType": "TextureAsset",
+          "$class": "6860ea8e-cb33-6b7f-5386-1d456034615a"
+         },
+         "ParameterName": "_CS"
+        },
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/T_Box_M_01_A_NAM",
+          "$assetType": "TextureAsset",
+          "$class": "f6f63969-c000-7c23-38fa-ed45f38221a9"
+         },
+         "ParameterName": "_NAM_texcoord0"
+        }
+       ],
+       "SurfaceShaderGuid": "943997d0-0838-48ac-acfe-09d7bf578581",
+       "SurfaceShaderId": 2612997987
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "4a70849e-cf4a-3b90-244c-dcd394398992"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 4807327068585634827,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_Glass_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "d3403a88-08ee-4b4e-d240-ad54edacf757"
+         },
+         "ParameterName": "CS"
+        }
+       ],
+       "SurfaceShaderGuid": "5e3bae45-4298-4e05-99ae-d2d0aeaa763a",
+       "SurfaceShaderId": 3200948114
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "f14b6fda-1cc3-4dcd-b3af-5c026ad4de7d"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 8122808864205787588,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_Glass_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "d3403a88-08ee-4b4e-d240-ad54edacf757"
+         },
+         "ParameterName": "CS"
+        },
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_GlassDamage_01_RGBM",
+          "$assetType": "TextureAsset",
+          "$class": "cbfd8922-6dbc-a920-40bc-77787cb1b89a"
+         },
+         "ParameterName": "DestructionRGBA"
+        }
+       ],
+       "SurfaceShaderGuid": "5e3bae45-4298-4e05-99ae-d2d0aeaa763a",
+       "SurfaceShaderId": 3200948114
+      }
+     ],
+     "VariationAssetNameHash": 0
+    },
+    {
+     "Mesh": {
+      "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+      "$assetType": "CompositeMeshAsset",
+      "$class": "4d888469-bc6f-434f-784f-3d7db3fb8202"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "309f7fd5-559d-805d-75c6-d8257e92bbc6"
+       },
+       "MaterialVariation": {
+        "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/Box_M_01_A_Snow",
+        "$assetType": "ObjectVariation",
+        "$class": "ec9f2c3f-cd2b-4fad-bbd9-0d74363eaadf"
+       },
+       "MaterialId": -8083628674015323391,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/T_Box_M_01_A_M",
+          "$assetType": "TextureAsset",
+          "$class": "f1715e02-7545-696c-2923-46962fe3c010"
+         },
+         "ParameterName": "_RGB"
+        },
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/T_Box_M_01_A_CS",
+          "$assetType": "TextureAsset",
+          "$class": "6860ea8e-cb33-6b7f-5386-1d456034615a"
+         },
+         "ParameterName": "_CS"
+        },
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/T_Box_M_01_A_NAM",
+          "$assetType": "TextureAsset",
+          "$class": "f6f63969-c000-7c23-38fa-ed45f38221a9"
+         },
+         "ParameterName": "_NAM_texcoord0"
+        }
+       ],
+       "SurfaceShaderGuid": "cbac717d-d196-4815-a0d1-0d7cfe0af426",
+       "SurfaceShaderId": 836688397
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "4a70849e-cf4a-3b90-244c-dcd394398992"
+       },
+       "MaterialVariation": {
+        "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/Box_M_01_A_Snow",
+        "$assetType": "ObjectVariation",
+        "$class": "35f22f6b-d40f-43d2-8b86-4901304c4e38"
+       },
+       "MaterialId": -4521659234626786715,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_Glass_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "d3403a88-08ee-4b4e-d240-ad54edacf757"
+         },
+         "ParameterName": "CS"
+        }
+       ],
+       "SurfaceShaderGuid": "5e3bae45-4298-4e05-99ae-d2d0aeaa763a",
+       "SurfaceShaderId": 3200948114
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh",
+        "$assetType": "CompositeMeshAsset",
+        "$class": "f14b6fda-1cc3-4dcd-b3af-5c026ad4de7d"
+       },
+       "MaterialVariation": {
+        "$asset": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/Box_M_01_A_Snow",
+        "$assetType": "ObjectVariation",
+        "$class": "470b9b0a-084b-470b-b60b-fc2471a66004"
+       },
+       "MaterialId": 2671471381983555167,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_Glass_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "d3403a88-08ee-4b4e-d240-ad54edacf757"
+         },
+         "ParameterName": "CS"
+        },
+        {
+         "Value": {
+          "$asset": "ToBeDeleted_TempInTransition/Objects/Props/_CommonTextures/T_GlassDamage_01_RGBM",
+          "$assetType": "TextureAsset",
+          "$class": "cbfd8922-6dbc-a920-40bc-77787cb1b89a"
+         },
+         "ParameterName": "DestructionRGBA"
+        }
+       ],
+       "SurfaceShaderGuid": "5e3bae45-4298-4e05-99ae-d2d0aeaa763a",
+       "SurfaceShaderId": 3200948114
+      }
+     ],
+     "VariationAssetNameHash": 2773463200
+    },
+    {
+     "Mesh": {
+      "$asset": "objects/nature/arctic/arcticice/arcticice_iceicles_01/arcticice_iceicles_04_mesh",
+      "$assetType": "RigidMeshAsset",
+      "$class": "dd9c1d92-0320-a9eb-4fc0-557086a1b70f"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "objects/nature/arctic/arcticice/arcticice_iceicles_01/arcticice_iceicles_04_mesh",
+        "$assetType": "RigidMeshAsset",
+        "$class": "7d22d9dc-2078-e605-d9ec-bd696b6c4df9"
+       },
+       "MaterialVariation": null,
+       "MaterialId": -8392904110664896081,
+       "TextureParameters": [],
+       "SurfaceShaderGuid": "d497b299-94dd-11e4-b59e-b54bcfa0869f",
+       "SurfaceShaderId": 3428356886
+      }
+     ],
+     "VariationAssetNameHash": 0
+    },
+    {
+     "Mesh": {
+      "$asset": "fx/meshes/footstep/meshp_soldierfootstepdecal_01_mesh",
+      "$assetType": "RigidMeshAsset",
+      "$class": "89be79cb-2180-726a-7aeb-c1794f596dc7"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "fx/meshes/footstep/meshp_soldierfootstepdecal_01_mesh",
+        "$assetType": "RigidMeshAsset",
+        "$class": "30a855d7-35bc-8f2a-d4cc-5c0bcbc97db4"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 4574302534410979213,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "FX/Textures/Footstep/T_FootstepSoldierSnow_01_H",
+          "$assetType": "TextureAsset",
+          "$class": "adef7056-f1e8-733f-37af-3866c8e5a4d4"
+         },
+         "ParameterName": "Heightmap"
+        },
+        {
+         "Value": {
+          "$asset": "FX/Textures/Footstep/T_FootstepSoldierSnow_01_N",
+          "$assetType": "TextureAsset",
+          "$class": "743fd33e-e4e5-060e-35ec-b87b27e240bc"
+         },
+         "ParameterName": "NormalMap"
+        }
+       ],
+       "SurfaceShaderGuid": "6fed590f-9cbf-4840-a51a-2dfbbd1318e2",
+       "SurfaceShaderId": 2325475996
+      }
+     ],
+     "VariationAssetNameHash": 0
+    },
+    {
+     "Mesh": {
+      "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+      "$assetType": "RigidMeshAsset",
+      "$class": "46aa4e89-6652-95ca-94e0-8dd3d8258c65"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+        "$assetType": "RigidMeshAsset",
+        "$class": "8c96d29e-b8a2-cbe1-904b-2feaa5339577"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 5793503613543841330,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/T_LightWall_S_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "6761ba32-576a-e489-f82b-b07d7070737a"
+         },
+         "ParameterName": "_CS"
+        },
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/T_LightWall_S_01_NAM",
+          "$assetType": "TextureAsset",
+          "$class": "33268cca-7f78-0dcf-9009-0406f95d1023"
+         },
+         "ParameterName": "_NAM_texcoord0"
+        }
+       ],
+       "SurfaceShaderGuid": "f8f1ed9b-4ceb-453e-bb4f-7110ef5ba8f3",
+       "SurfaceShaderId": 666991456
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+        "$assetType": "RigidMeshAsset",
+        "$class": "9aa8e398-30b2-1c7e-a906-fd7adcc46a83"
+       },
+       "MaterialVariation": null,
+       "MaterialId": 3185629309284924794,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightCeiling_M_01/T_LightCeiling_M_01_CA",
+          "$assetType": "TextureAsset",
+          "$class": "65b8c410-6d07-d126-8b90-2fa618c91faa"
+         },
+         "ParameterName": "_CA"
+        }
+       ],
+       "SurfaceShaderGuid": "064c3884-8f81-11e5-a0d9-90fa4e9c5457",
+       "SurfaceShaderId": 162853213
+      }
+     ],
+     "VariationAssetNameHash": 0
+    },
+    {
+     "Mesh": {
+      "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+      "$assetType": "RigidMeshAsset",
+      "$class": "46aa4e89-6652-95ca-94e0-8dd3d8258c65"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+        "$assetType": "RigidMeshAsset",
+        "$class": "8c96d29e-b8a2-cbe1-904b-2feaa5339577"
+       },
+       "MaterialVariation": {
+        "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/LightWall_S_01_Off",
+        "$assetType": "ObjectVariation",
+        "$class": "5ae3a6ce-b726-425b-82a7-83e78d539c4d"
+       },
+       "MaterialId": -147160486989043794,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/T_LightWall_S_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "6761ba32-576a-e489-f82b-b07d7070737a"
+         },
+         "ParameterName": "_CS"
+        },
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/T_LightWall_S_01_NAM",
+          "$assetType": "TextureAsset",
+          "$class": "33268cca-7f78-0dcf-9009-0406f95d1023"
+         },
+         "ParameterName": "_NAM_texcoord0"
+        }
+       ],
+       "SurfaceShaderGuid": "f8f1ed9b-4ceb-453e-bb4f-7110ef5ba8f3",
+       "SurfaceShaderId": 666991456
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+        "$assetType": "RigidMeshAsset",
+        "$class": "9aa8e398-30b2-1c7e-a906-fd7adcc46a83"
+       },
+       "MaterialVariation": {
+        "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/LightWall_S_01_Off",
+        "$assetType": "ObjectVariation",
+        "$class": "4ebaaf54-f79a-4a34-96e9-bf6f4cd38211"
+       },
+       "MaterialId": -8133610936072906149,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightCeiling_M_01/T_LightCeiling_M_01_CA",
+          "$assetType": "TextureAsset",
+          "$class": "65b8c410-6d07-d126-8b90-2fa618c91faa"
+         },
+         "ParameterName": "_CA"
+        }
+       ],
+       "SurfaceShaderGuid": "064c3884-8f81-11e5-a0d9-90fa4e9c5457",
+       "SurfaceShaderId": 162853213
+      }
+     ],
+     "VariationAssetNameHash": 71403881
+    },
+    {
+     "Mesh": {
+      "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+      "$assetType": "RigidMeshAsset",
+      "$class": "46aa4e89-6652-95ca-94e0-8dd3d8258c65"
+     },
+     "Materials": [
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+        "$assetType": "RigidMeshAsset",
+        "$class": "8c96d29e-b8a2-cbe1-904b-2feaa5339577"
+       },
+       "MaterialVariation": {
+        "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/LightWall_S_01_Red",
+        "$assetType": "ObjectVariation",
+        "$class": "dc1dc3dd-969d-419d-9b95-eff65667cc21"
+       },
+       "MaterialId": 468483024004551821,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/T_LightWall_S_01_CS",
+          "$assetType": "TextureAsset",
+          "$class": "6761ba32-576a-e489-f82b-b07d7070737a"
+         },
+         "ParameterName": "_CS"
+        },
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/T_LightWall_S_01_NAM",
+          "$assetType": "TextureAsset",
+          "$class": "33268cca-7f78-0dcf-9009-0406f95d1023"
+         },
+         "ParameterName": "_NAM_texcoord0"
+        }
+       ],
+       "SurfaceShaderGuid": "f8f1ed9b-4ceb-453e-bb4f-7110ef5ba8f3",
+       "SurfaceShaderId": 666991456
+      },
+      {
+       "Material": {
+        "$asset": "objects/props/objectsets/_rebelalliance/_lights/lightwall_s_01/lightwall_s_01_mesh",
+        "$assetType": "RigidMeshAsset",
+        "$class": "9aa8e398-30b2-1c7e-a906-fd7adcc46a83"
+       },
+       "MaterialVariation": {
+        "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightWall_S_01/LightWall_S_01_Red",
+        "$assetType": "ObjectVariation",
+        "$class": "8bdbf133-0fb8-4ee3-afde-15f3fa5963c4"
+       },
+       "MaterialId": -8966103105581009045,
+       "TextureParameters": [
+        {
+         "Value": {
+          "$asset": "Objects/Props/ObjectSets/_RebelAlliance/_Lights/LightCeiling_M_01/T_LightCeiling_M_01_CA",
+          "$assetType": "TextureAsset",
+          "$class": "65b8c410-6d07-d126-8b90-2fa618c91faa"
+         },
+         "ParameterName": "_CA"
+        }
+       ],
+       "SurfaceShaderGuid": "064c3884-8f81-11e5-a0d9-90fa4e9c5457",
+       "SurfaceShaderId": 162853213
+      }
+     ],
+     "VariationAssetNameHash": 71417493
+    }
+   ],
+   "RedirectEntries": [
+    {
+     "Mesh": {
+      "$asset": "fx/meshes/sparks/meshpva_sparkscone_100_01_mesh",
+      "$assetType": "RigidMeshAsset",
+      "$class": "c2b25abe-4d82-3c72-f728-3b444d571e95"
+     },
+     "VariationAssetNameHash": 2773463200
+    }
+   ],
+   "Name": "levels/mp/hoth_01/hoth_01/MeshVariationDb_Win32"
+  }
+ ]
+}
