@@ -67,14 +67,41 @@ export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunn
 // What the game places and never draws as itself: Enlighten's lighting
 // proxies, the fake light cones, destruction stages waiting their turn
 // (despawn and leftover pieces), the planes that fake shadow, mist and
-// light; and the skinned actors, which stand in
+// light, the shadow casters, occluders and blockers (levelPack.js's PROXY,
+// for the packs built before); and the skinned actors, which stand in
 // their bind pose (the site's own people do the living)
-export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|invalidatelightplane|mistplane|lightcone/i;
+export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|shadowmesh|_shadow_mesh|(?<!no)occluder|lightblocker|blockercsg|invalidatelightplane|mistplane|lightcone/i;
 
 // `drop`: meshes left out, each `<mesh name>` or `<sub>:<mesh name>` (its
 // file's last part without `_mesh.glb`, any case; `*` for any run of
 // letters): a space level's corvettes the battle draws itself, its end of
 // round's room
+// The thing a mesh is a part of, for the fit to drop whole: the game builds a
+// tree of a trunk (`_bottom`), a crown (`_top`, `_top_clear_01`) and addons, a
+// log of its addons; a burnt trunk has no crown and stands alone. null for a
+// mesh that is a thing by itself.
+export const groupOf = (file) => {
+  const name = last(String(file)).replace(/_mesh\.glb$/, '');
+  if (/_burnt$/.test(name) || !/_(top|bottom|addons)(_|$)/.test(name)) return null;
+  return name.replace(/_(top|bottom|addons)(_.*)?$/, '');
+};
+
+// A mesh's LOD chain as far as its maps go: the far LODs of the drop's
+// props often name LOD maps of their own (Endor_02's decks'
+// `t_ewokvillage_platform_01_lod_cs`) that the export never uploaded, and a
+// LOD drawn without its maps is white. The chain stops before the first such
+// LOD after the first, so the one before it is drawn farther. Pure.
+export function chainWithMaps(chain, hasMaps) {
+  const i = chain.findIndex((l, k) => k > 0 && !hasMaps(l));
+  return i < 0 ? chain : chain.slice(0, i);
+}
+
+// --keep's globs over a mesh's name (no folder, no _mesh.glb), as --drop's
+export const keepTest = (keep) => {
+  const res = keep.map((k) => new RegExp(`^${k.toLowerCase().replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`));
+  return (file) => res.some((re) => re.test(last(String(file)).toLowerCase().replace(/_mesh\.glb$/, '')));
+};
+
 const dropTest = (drop) => {
   const rules = drop.map((d) => {
     const [sub, mesh] = d.includes(':') ? d.split(':') : [null, d];
@@ -253,7 +280,7 @@ function farList(inst, meshOf, cell) {
   return { bin, draws };
 }
 
-export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false }) {
+export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], keep = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false }) {
   // (a mesh the bucket has not got, or sequel-era, draws nothing: its instances go)
   const idx = arenaOf(map, { subs, drop }).filter((i) => !meshes[map.meshOf[i]].missing);
   const all = rebase(subset(map.instances, idx), [spot[0], groundY, spot[1]], yaw);
@@ -298,7 +325,9 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
   const vol = (m) => weightOf({ indices: [0] }, meshes[m]);
   const weight = new Float64Array(meshes.length);
   for (let i = 0; i < arenaInst.count; i++) weight[arenaMesh[i]] += vol(arenaMesh[i]);
-  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing }));
+  // (--keep: the map's own buildings, which the fit drops only after every other mesh at its worst place)
+  const kept = keepTest(keep);
+  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing, keep: kept(m.name), group: groupOf(m.name) }));
   const flat = {
     x: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3]),
     z: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3 + 2]),

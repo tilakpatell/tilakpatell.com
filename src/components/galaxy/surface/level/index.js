@@ -34,7 +34,7 @@ import { withFallback } from '../../../../lib/assetBase.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
-import { packUrl, wanted } from './levelPack.js';
+import { packUrl, wanted, withoutProxies } from './levelPack.js';
 import { variationsIndex } from './levelVariations.js';
 import { createLevelScene } from './levelScene.js';
 import { createLevelStream } from './levelStream.js';
@@ -61,7 +61,8 @@ export const packOf = (world) => {
     packs.set(
       world,
       bytesOf(world)('level.json')
-        .then((b) => JSON.parse(new TextDecoder().decode(b)))
+        // (the render's helpers a pack still places, shadow casters and occluders, off: levelPack.js)
+        .then((b) => withoutProxies(JSON.parse(new TextDecoder().decode(b))))
         .catch((e) => {
           packs.delete(world);
           throw e;

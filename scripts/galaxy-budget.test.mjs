@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { budget } from '../src/lib/budgets.js';
-import { KNOWN_OVER, limitsFor, overBy } from './galaxy-budget.mjs';
+import { KNOWN_OVER, baselineOf, limitsFor, overBy } from './galaxy-budget.mjs';
 
 describe('what the galaxy check holds a world to', () => {
   it('holds a world to its baseline +10%, under its level’s row', () => {
@@ -48,5 +48,18 @@ describe('what the galaxy check holds a world to', () => {
     expect(l.calls).toBeCloseTo(55);
     expect(l.tris).toBeCloseTo(550000);
     expect(l.mb).toBe(30);
+  });
+});
+
+describe('baselineOf: what a run is held to beside its row', () => {
+  const list = [{ id: 'endor', calls: 234, triangles: 3345258 }];
+  it('is the world’s own baseline for its main map', () => {
+    expect(baselineOf(list, 'endor')).toEqual(list[0]);
+    expect(baselineOf(list, 'naboo')).toBe(null);
+  });
+  it('is none for a district: another map, which the world’s baseline never measured (the row alone, and no floor)', () => {
+    expect(baselineOf(list, 'endor', 'village')).toBe(null);
+    const l = limitsFor({ id: 'endor', quality: 'high', row: budget('high'), base: baselineOf(list, 'endor', 'village') });
+    expect(l).toMatchObject({ calls: 700, tris: 3e6, floor: 0 });
   });
 });

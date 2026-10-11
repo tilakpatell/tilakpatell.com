@@ -45,7 +45,7 @@
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { budget } from '../src/lib/budgets.js';
-import { limitsFor, overBy } from './galaxy-budget.mjs';
+import { baselineOf, limitsFor, overBy } from './galaxy-budget.mjs';
 
 const [mode = 'space', list = 'tatooine'] = process.argv.slice(2);
 const out = process.env.OUT ?? '.';
@@ -125,6 +125,19 @@ for (const id of list.split(',')) {
   // (and a game level's cells round you in: a district's pack, smaller than
   // its world's, can be measured before its first cells land otherwise)
   if (mode === 'surface') await page.waitForFunction(() => (window.__surfaceScene.level?.()?.progress ?? 1) >= 1, null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the level never came in round you'));
+  // (a district is measured from where you stand once down, not from the
+  // landing's watch: its ship held 320 m up by the held clock, the camera
+  // sees the sky. You set down 8 m off the ship's right, facing the
+  // district's landing heading, as the walk begins.)
+  if (mode === 'surface' && process.env.DISTRICT) {
+    await page.evaluate(() => {
+      const s = window.__surfaceScene;
+      const yaw = s.landing?.yaw ?? 0;
+      s.put(s.land[0] + Math.cos(yaw) * 8, s.land[1] - Math.sin(yaw) * 8);
+      window.__RUNTIME__?.invalidate();
+    });
+    await page.waitForTimeout(Number(process.env.DOWN_WAIT ?? 8000));
+  }
   // (in space, the ship put in one place, the same for every run: off the
   // planet on its sun side, facing it, stopped. The seeded randomness alone
   // can't hold it there: three.js draws on Math.random for every object's
@@ -250,7 +263,7 @@ if (process.env.BUDGET) {
   const k = Number(process.env.BUDGET_SCALE ?? 1);
   for (const r of results) {
     if (r.error) continue;
-    const l = limitsFor({ id: r.id, quality, row, base: base.find((x) => x.id === r.id) ?? null, scale: k, realGpu });
+    const l = limitsFor({ id: r.id, quality, row, base: baselineOf(base, r.id, process.env.DISTRICT), scale: k, realGpu });
     const over = overBy(r, l);
     const say = (v) => (v === Infinity ? '–' : Math.round(v));
     console.log(`budget ${r.id.padEnd(10)} calls ${r.calls}/${say(l.calls)}  tris ${r.triangles}/${say(l.tris)}  models ${r.glbMB}/${l.mb} MB${quality === 'ultra' ? `  p95 ${r.p95}/${realGpu ? l.frame.toFixed(1) : 'reported'} ms` : ''}  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}${l.known ? `  (known over the row, held to its baseline: ${l.known})` : ''}`);

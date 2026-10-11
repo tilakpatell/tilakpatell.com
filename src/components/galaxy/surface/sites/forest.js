@@ -53,12 +53,23 @@ const at = (o, [x, z]) => [o[0] + x, o[1] + z];
 const V = [-210, 150]; // the village
 
 // Endor's districts (lane E3): where the bunker's halls are walked, and the
-// village's fall. The bunker's control room floor is 61.7 m under the
-// landing's ground (its floor grills, Endor_01's controlroom_01 pieces), the
-// room itself at (263, −73): you land on its floor by the hangar's decals,
-// facing in. Under it, the halls' own ground, a hand's width lower.
-const BUNKER_LAND = { at: [245, -20], yaw: 2.81 };
-const BUNKER_FLOOR = -62;
+// village's fall. Under Endor_01's hill (the inside pack, read from its own
+// cells) are two places: the control room round (215, −40), its walls,
+// pillars, computers and floors 60 to 62 m under the landing's ground, and a
+// cave round (330, 210) of roots and cave rock down to 95 m under it. The
+// district's ground is a level 98 m down, under the cave, with a flat at the
+// control room's floor (its own floors stand on it); you land in the control
+// room, facing its consoles.
+const BUNKER_LAND = { at: [232, -45], yaw: -Math.PI / 2 };
+// (the halls' floor stone, not the forest's: a dark gravel, no grass)
+const BUNKER_GROUND = {
+  layers: [],
+  base: -98,
+  flats: [{ at: [222, -45], r: 66, edge: 22, h: -62.1 }],
+  pits: [],
+  detail: 'gravel',
+  palette: { low: '#3a3632', high: '#46413b', rock: '#2e2b28', accent: '#3a3632', deep: '#24211f', hLow: -98, hHigh: -60, rockAt: 0.5, accentCover: 0.2, grain: 0.6 },
+};
 const VILLAGE_FALL = -60;
 
 export const SITES = {
@@ -117,8 +128,21 @@ export const SITES = {
         door: { at: BUNKER_LAND.at.map((v, i) => v + [0, 4][i]), r: 2.4, prompt: 'Back out through the bunker’s door' },
         // (the same frame as the forest's, but none of it in here: its
         // trees, places and people are under the sky, and so is the Death Star)
-        ground: { layers: [], base: BUNKER_FLOOR, flats: [], pits: [] },
-        site: { ...ownMap('endor/bunker').site, skyships: [], flyovers: [], weather: [], fog: { color: '#2a3036', density: 0.012 } },
+        ground: BUNKER_GROUND,
+        // (and under the hill: the game's cave roof is its terrain, which the
+        // inside pack does not carry, so no day's sky either: a dark dome, the
+        // halls' lamps from above, their haze; the game's day light off)
+        site: {
+          ...ownMap('endor/bunker').site,
+          skyships: [],
+          flyovers: [],
+          weather: [],
+          gameLight: null,
+          grass: null,
+          sky: { zenith: '#0b0e10', horizon: '#1a2024', haze: 1, hazeColor: '#1a2024', suns: [{ az: 0.9, el: 1.35, color: '#ffe2b8', size: 0, glow: 0 }], clouds: null, bodies: [], stars: 0 },
+          light: { sun: 0.7, sky: '#56646c', ground: '#2a2622', ambient: 0.9 },
+          fog: { color: '#1a2024', density: 0.012 },
+        },
       },
     ],
     // (the way into the bunker's halls, at the game's bunker door)

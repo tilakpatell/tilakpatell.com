@@ -54,6 +54,23 @@ describe('fitCull', () => {
     expect(f.worst.tris).toBe(1000);
   });
 
+  it('a mesh the map keeps (its own buildings: `keep`) goes only after every other at the worst place', () => {
+    const inst = at([[1, 0, 10, 0], [1, 0, 1, 1], [1.2, 0, 1, 1], [1.4, 0, 1, 1]]);
+    const kept = [meshes[0], { ...meshes[1], keep: true }];
+    const f = fitCull(inst, kept, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 });
+    expect(f.dropped).toEqual([0]);
+    // (and when only kept ones are left, the lightest of them, as before)
+    const all = [{ ...meshes[0], keep: true }, { ...meshes[1], keep: true }];
+    expect(fitCull(inst, all, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 }).dropped).toEqual([1]);
+  });
+
+  it('the parts of one thing (a tree’s trunk and crown: one `group`) go together', () => {
+    const parts = [meshes[0], { ...meshes[1], group: 'tree' }, { ...meshes[1], weight: 5000, group: 'tree' }];
+    const inst = at([[1, 0, 10, 0], [1, 0, 1, 1], [1.2, 0, 1, 1], [1.4, 0, 1, 2]]);
+    const f = fitCull(inst, parts, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 });
+    expect(f.dropped.sort()).toEqual([1, 2]);
+  });
+
   it('ultra has no triangle ceiling: only the calls hold it', () => {
     const inst = at([[1, 0, 10, 0], [1, 0, 1, 1]]);
     expect(fitCull(inst, meshes, { tris: Infinity, calls: 1500 }, 'ultra', { positions: [[0, 0]], kMax: 1000 }).K).toBe(1000);
