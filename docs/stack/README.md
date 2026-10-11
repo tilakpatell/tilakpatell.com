@@ -10,18 +10,18 @@ WebAssembly is the browser’s own, not a package, and so has no row; its page i
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |
-| `three` | ^0.186.1 | [three.md](three.md) | 675 |
+| `three` | ^0.186.1 | [three.md](three.md) | 677 |
 | `react` | ^19.3.0 | [react.md](react.md) | 311 |
+| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 86 |
 | `react-router-dom` | ^7.18.4 | [react.md](react.md) | 84 |
-| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 84 |
-| `playwright-core` | ^1.56.0 | [testing.md](testing.md) | 78 |
+| `playwright-core` | ^1.56.0 | [testing.md](testing.md) | 80 |
 | `react-icons` | ^5.7.0 | [react.md](react.md) | 72 |
 | `@gltf-transform/core` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 65 |
 | `meshoptimizer` | ^1.3.0 | [assets-pipeline.md](assets-pipeline.md) | 62 |
 | `@gltf-transform/extensions` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 61 |
 | `@gltf-transform/functions` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 54 |
 | `react-dom` | ^19.3.0 | [react.md](react.md) | 26 |
-| `vite` | ^8.3.2 | [build.md](build.md) | 21 |
+| `vite` | ^8.3.2 | [build.md](build.md) | 23 |
 | `@fontsource/luckiest-guy` | ^5.3.0 | [fonts.md](fonts.md) | 6 |
 | `@fontsource/cinzel` | ^5.3.0 | [fonts.md](fonts.md) | 5 |
 | `@supabase/supabase-js` | ^2.117.3 | [supabase.md](supabase.md) | 5 |
