@@ -3,8 +3,7 @@
 // numbers on glass. A dev route: nothing links it, and it does nothing without
 // an id and the Supabase environment the build reads (VITE_SUPABASE_URL and
 // VITE_SUPABASE_ANON_KEY). Its client holds no session and is not the
-// durable world’s (src/lib/durable/supabase.js): the stream signals and
-// stores nothing. Decision: docs/decisions/2026-10-11-the-stream-from-the-desktop.md.
+// durable world’s: the stream signals and stores nothing. Decision: docs/decisions/2026-10-11-the-stream-from-the-desktop.md.
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';

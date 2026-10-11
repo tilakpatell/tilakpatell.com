@@ -30,7 +30,7 @@ Around them: `src/lib/durable/entityLoader.js` (a planet’s built things, cell 
 - **A `security definer` function for others’ writes.** Damage goes through `damage_entity`, clamped and rate-limited in the database.
 - **Realtime as the backstop.** `postgres_changes` on `world_entities` for one planet folds others’ builds in; a Nostr hint is the fast path.
 <!-- planet flight: end -->
-- **Realtime broadcast for a stream’s signalling** (lane R2’s spike, `docs/decisions/2026-10-11-the-stream-from-the-desktop.md`). One public channel a stream, `stream:<id>`, the id drawn by crypto; the WebRTC offer, answer and ICE candidates go as broadcast messages through `src/lib/stream/realtime.js` (which takes the client and imports no Supabase). No table, no policy, nothing stored. The clients are made in the stream’s own files, not `src/lib/durable/supabase.js`: the stream holds no session and must outlive the planet flight’s removal. A product mode would move to a private channel with an RLS policy on `realtime.messages` (the owner’s to create then).
+- **Realtime broadcast for a stream’s signalling** (lane R2’s spike, `docs/decisions/2026-10-11-the-stream-from-the-desktop.md`). One public channel a stream, `stream:<id>`, the id drawn by crypto; the WebRTC offer, answer and ICE candidates go as broadcast messages through `src/lib/stream/realtime.js` (which takes the client and imports no Supabase). No table, no policy, nothing stored. The clients are made in the stream’s own files, not the durable world’s: the stream holds no session and must outlive that world’s removal. A product mode would move to a private channel with an RLS policy on `realtime.messages` (the owner’s to create then).
 
 ## What the site does not use, and why
 
