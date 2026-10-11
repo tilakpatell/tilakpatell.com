@@ -24,11 +24,43 @@ export const bandOf = (w, key) => (w.near.includes(key) ? 'near' : w.mid.include
 
 // a map's file on a tier: its size from the pack's `tex` (sized by the
 // biggest thing that wears it; a pack without --ultra draws ultra as high)
-export function tierTexture(uri, tier, sizes = {}) {
+// (lane N4) and, for a data map on mid and up where the bucket has the
+// row (the tex row's `uastc` sizes, lane W's job) and the chip takes a
+// format UASTC transcodes to (BC7, ASTC 4×4 or ETC2: three's KTX2Loader's
+// own table), its UASTC row, `.<size>.uastc.ktx2`: ETC1S smears normals and
+// masks (the research note's image-quality section: UASTC 46.5 to 48.2 dB);
+// with none of the three, the ETC1S row
+//   tierTexture(uri, tier, sizes, { formats: { bc, astc, etc2 }, data })
+export function tierTexture(uri, tier, sizes = {}, { formats = null, data = false } = {}) {
   const slug = uri.split('/').pop().replace(/\.ktx2$/, '');
   const s = sizes[slug];
   const size = s?.[tier] ?? s?.high ?? TEX[tier] ?? TEX.high;
+  const uastc = data && tier !== 'low' && (formats?.bc || formats?.astc || formats?.etc2) && s?.uastc?.includes(size);
+  return uri.replace(/\.ktx2$/, `.${size}${uastc ? '.uastc' : ''}.ktx2`);
+}
+
+// (lane N4) a map's first file: its smallest row the pack lists (the
+// builder writes a 256 row or smaller for most: on Hoth 118 of 144, 65 at
+// 128, 53 at 256, 26 at 512), fetched before the tier's and promoted in place when that lands
+// (levelGltf.js). _source: the design's §4 N4, "every map at its .256 row"
+// (the research note's virtual-texturing section: per-tier rows fetched
+// lowest size first are its practical twin); a map the pack lists no
+// smaller row for is fetched at the smallest it has.
+export function firstTexture(uri, sizes = {}) {
+  const slug = uri.split('/').pop().replace(/\.ktx2$/, '');
+  const listed = Object.values(sizes[slug] ?? {}).filter((v) => typeof v === 'number');
+  const size = listed.length ? Math.min(...listed) : 256;
   return uri.replace(/\.ktx2$/, `.${size}.ktx2`);
+}
+
+// (lane N4) the maps that are data, not colour: what UASTC is for. By the
+// slot a GLB or a recipe binds it to, else by the game's word on it (the
+// tex row's `srgb`), else by the pipeline's suffixes
+const DATA_SLOTS = new Set(['normalMap', 'metalRough', 'aoMap', 'normal', 'detail', 'detailArray', 'mask', 'breakupNormal', 'aoSlice', 'height', 'wear', 'weathering', 'grunge']);
+export function isDataMap(slot, row = null, slug = '') {
+  if (slot) return DATA_SLOTS.has(slot);
+  if (typeof row?.srgb === 'boolean') return !row.srgb;
+  return /__(normal|orm)$|_(n|ns|nrm|orm|mask)$/.test(slug);
 }
 
 // The pack's meshes share their textures (one material a game material, one

@@ -275,6 +275,22 @@ describe('the loader’s asks through the stream (lane N4)', () => {
   });
 });
 
+describe('which meshes stand in a cell shown (lane N4)', () => {
+  it('says a GLB shows once a cell its mesh stands in is handed on, and not after the cell goes', async () => {
+    const f = fakeFetch();
+    const meshPack = { ...pack, meshes: [{ glb: ['meshes/a.lod0.glb'] }], far: { bin: 'far.bin', draws: [{ mesh: 0, offset: 0, count: 1, cells: { '0,0': [0, 1] } }] } };
+    const s = createLevelStream({ pack: meshPack, fetch: f.fetch, wanted, tier: 'high', onFar: () => {}, onCell: () => {}, onDrop: () => {} });
+    s.update([10, 10], 'high');
+    expect(s.shows('meshes/a.lod0.glb')).toBe(false);
+    await drain(f);
+    expect(s.shows('meshes/a.lod0.glb')).toBe(true);
+    expect(s.shows('meshes/other.glb')).toBe(false);
+    s.update([10 + 128 * 6, 10], 'high');
+    expect(s.shows('meshes/a.lod0.glb')).toBe(false);
+    s.dispose();
+  });
+});
+
 describe('the heading’s prefetch (lane N4)', () => {
   it('asks two cells ahead, and a flip abandons what waits but not what flies', async () => {
     const f = fakeFetch();

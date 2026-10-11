@@ -138,6 +138,21 @@ function probeRenderer() {
   return { isWebGPURenderer: false, extensions: { has: (name) => Boolean(get(name)), get } };
 }
 
+// (lane N4) The compressed formats a chip takes that UASTC transcodes to
+// (three's KTX2Loader: ASTC 4×4, BC7, ETC2-EAC), from the renderer the
+// way the loader reads it (its features on the node renderer, its
+// extensions on WebGL), so the level loader asks for a UASTC row only where
+// it will not be decoded to raw RGBA. No renderer, none known.
+//   textureFormats(renderer) → { bc, astc, etc2 }
+export function textureFormats(renderer = null) {
+  if (!renderer) return { bc: false, astc: false, etc2: false };
+  if (typeof renderer.hasFeature === 'function' && renderer.isWebGPURenderer) {
+    return { bc: renderer.hasFeature('texture-compression-bc'), astc: renderer.hasFeature('texture-compression-astc'), etc2: renderer.hasFeature('texture-compression-etc2') };
+  }
+  const has = (n) => Boolean(renderer.extensions?.has?.(n));
+  return { bc: has('EXT_texture_compression_bptc'), astc: has('WEBGL_compressed_texture_astc'), etc2: has('WEBGL_compressed_texture_etc') };
+}
+
 // The KTX2 loader, made and attached the first time it's needed; its
 // transcoder (three's basis_transcoder.js and .wasm, bundled by Vite from
 // three's own URL) only downloads on the first texture it decodes.
@@ -153,6 +168,8 @@ export function ktx2Loader({ renderer = null } = {}) {
         const k = new KTX2Loader();
         k.setWorkerLimit(Math.max(1, Math.min(2, (navigator?.hardwareConcurrency ?? 2) - 1)));
         k.detectSupport(renderer ?? probeRenderer());
+        // (what UASTC and ETC1S will be transcoded to on this chip, said once in development)
+        if (import.meta.env?.DEV) console.info('KTX2 targets', JSON.stringify(k.workerConfig));
         try {
           await basisUp(k);
         } catch (e) {

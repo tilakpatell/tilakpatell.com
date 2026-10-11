@@ -269,7 +269,9 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
   // draws from here (not dropped on the tier, and seen at the cell's
   // nearest point: lod.js's seenAt with the pack's K)
   function coarseUpdate([x, z]) {
-    if (!coarse || !pack0 || ticks++ % 15) return;
+    if (!pack0 || ticks++ % 15) return;
+    loader?.refresh();
+    if (!coarse) return;
     const cull = pack0.cull?.[tier] ?? pack0.cull?.high ?? { K: Infinity, dropped: [] };
     const dropped = new Set(cull.dropped ?? []);
     const size = pack0.coarse?.cell ?? 512;
@@ -314,7 +316,9 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
             if (!gone && gltf) level.setHorizon({ coarse: coarseArgs, key, gltf });
           }),
       });
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes: (path, hint) => stream.fetch(path, hint), sizes: pack.tex, recipes, materialFor, mapKeys, variations });
+      // (a map's finer row is bound once a GLB that wears it stands in a cell
+      // shown: one landing for a cell left behind waits, not uploaded)
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes: (path, hint) => stream.fetch(path, hint), sizes: pack.tex, recipes, materialFor, mapKeys, variations, wanted: (path, glbs) => !glbs.size || [...glbs].some((g) => stream.shows(g)) });
       level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       if (last) {
         stream.update(last, tier);

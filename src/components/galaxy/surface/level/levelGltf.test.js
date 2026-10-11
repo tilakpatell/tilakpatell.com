@@ -272,3 +272,81 @@ describe('a level pack’s textures bound to their materials', () => {
     expect(orm.colorSpace).toBe(THREE.NoColorSpace);
   });
 });
+
+describe('every map at its smallest row first, promoted in place (lane N4)', () => {
+  const sizes = { t_a_n__normal: { low: 128, mid: 512, high: 512, srgb: false, uastc: [512] } };
+  // a row's bytes say its size (the fake parse reads it back as the texture's width)
+  const sizeOf = (path) => Number(path.match(/\.(\d+)(\.uastc)?\.ktx2$/)[1]);
+  const parseKtx2 = async (bytes) => {
+    const n = bytes.byteLength;
+    return new THREE.CompressedTexture([{ data: new Uint8Array(4), width: n, height: n }], n, n);
+  };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  function loaderWith(opts = {}) {
+    const asked = [];
+    const fetchBytes = async (path, hint) => {
+      asked.push([path, hint ?? {}]);
+      if (opts.missing?.includes(path)) throw new Error('404');
+      return new ArrayBuffer(sizeOf(path));
+    };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes, parseKtx2, formats: { bc: true }, ...opts });
+    return { loader, asked };
+  }
+
+  it('fetches the first row and answers with it at once, then the tier’s row as detail, swapped into the same texture', async () => {
+    const { loader, asked } = loaderWith();
+    const tex = await loader.texture('tex/t_a_n__normal.ktx2');
+    expect(tex.image.width).toBe(128);
+    expect(asked[0][0]).toBe('tex/t_a_n__normal.128.ktx2');
+    let freed = 0;
+    tex.addEventListener('dispose', () => freed++);
+    await tick();
+    await tick();
+    expect(asked[1]).toEqual(['tex/t_a_n__normal.512.uastc.ktx2', { glb: null, promote: true }]);
+    expect(tex.image.width).toBe(512);
+    expect(tex.mipmaps[0].width).toBe(512);
+    expect(freed).toBe(1);
+    expect(tex.userData.row).toBe(512);
+  });
+
+  it('keeps a promotion that lands for a map no one shown wears, and binds it once one is', async () => {
+    let shown = false;
+    const { loader } = loaderWith({ wanted: () => shown });
+    const tex = await loader.texture('tex/t_a_n__normal.ktx2');
+    await tick();
+    await tick();
+    expect(tex.image.width).toBe(128);
+    shown = true;
+    loader.refresh();
+    expect(tex.image.width).toBe(512);
+  });
+
+  it('promotes nothing where the first row is the tier’s', async () => {
+    const { loader, asked } = loaderWith({ tier: 'low' });
+    const tex = await loader.texture('tex/t_a_n__normal.ktx2');
+    await tick();
+    expect(tex.image.width).toBe(128);
+    expect(asked).toHaveLength(1);
+  });
+
+  it('falls back to the tier’s row where the first cannot be had', async () => {
+    const { loader, asked } = loaderWith({ missing: ['tex/t_a_n__normal.128.ktx2'] });
+    const tex = await loader.texture('tex/t_a_n__normal.ktx2');
+    expect(tex.image.width).toBe(512);
+    expect(asked.map(([p]) => p)).toEqual(['tex/t_a_n__normal.128.ktx2', 'tex/t_a_n__normal.512.uastc.ktx2']);
+  });
+
+  it('takes the ETC1S row on a chip with no format UASTC reaches', async () => {
+    const { loader, asked } = loaderWith({ formats: { bc: false, astc: false, etc2: false } });
+    await loader.texture('tex/t_a_n__normal.ktx2');
+    await tick();
+    await tick();
+    expect(asked[1][0]).toBe('tex/t_a_n__normal.512.ktx2');
+  });
+
+  it('says which GLB asked for a map, so the stream ranks it with its mesh', async () => {
+    const { loader, asked } = loaderWith({ tier: 'low' });
+    await loader.texture('tex/t_a_n__normal.ktx2', undefined, { of: 'meshes/a.lod0.glb' });
+    expect(asked[0][1]).toEqual({ glb: 'meshes/a.lod0.glb', promote: false });
+  });
+});

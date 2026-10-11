@@ -27,7 +27,7 @@
 //
 //   createLevelStream({ pack, fetch, wanted, tier, onFar, onHorizon, onCell, onDrop, onCoarse, onHorizonCell,
 //     budgets, busy, signal, parallel, now })
-//     → { update(position, tier), fetch(path, { glb, promote }), ready(), progress(), status(), dispose() }
+//     → { update(position, tier), fetch(path, { glb, promote }), shows(glb), ready(), progress(), status(), dispose() }
 //   (fetch: the loader's way in, its GLBs and maps ranked by the mesh they
 //   are for; status() → { phase, bytes, bootDone, paused }; busy() → the
 //   loader's loads not yet bound, which the boot waits for; budgets(tier) →
@@ -294,6 +294,13 @@ export function createLevelStream({
         if (buf) check();
         return buf;
       });
+    },
+    // (a GLB's mesh stands in a cell shown: its maps' finer rows may be bound)
+    shows(glb) {
+      const mesh = meshOfGlb.get(glb);
+      if (mesh === undefined) return false;
+      for (const key of shown.keys()) if (meshesIn.get(key)?.has(mesh)) return true;
+      return false;
     },
     ready: () => bootDone,
     progress() {
