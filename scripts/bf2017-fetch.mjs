@@ -31,8 +31,10 @@
 //   pool         how many requests at once (6)
 //   list         the names under a glob, with their LOD triangles
 //   data         gameplay records (data/<Name>.json.gz) whose names match the
-//                globs (`*` within a folder, `**` across), and data.tsv, their
-//                index: the Battlefront extractor's --root (scripts/bf2017-data.mjs)
+//                globs (`*` within a folder, `**` across), or every record of a
+//                type (`type:ObjectVariation`, from data.tsv's type column), and
+//                data.tsv, their index: the Battlefront extractor's --root
+//                (scripts/bf2017-data.mjs)
 //   web          files of the web build (svg/**, fonts/…, maps/…, strings/…),
 //                and the listing of their folders in web/files.txt
 //   raw          one object by its path (maps/README.md, terrain.jsonl), not a model
@@ -60,7 +62,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { animEntry, animPath, globRe } from './lib/bf2017-anims.mjs';
 import { partsOf, readManifest } from './lib/bf2017-manifest.mjs';
-import { dataPath, globDir, globMatch, globRegExp, imageUris, inBucket, isCurrent, jobsFor, localPath, objectUrl, readIndex, summaryLine, textureSources, writeIndex } from './lib/bf2017-paths.mjs';
+import { dataPath, globDir, globMatch, globRegExp, imageUris, inBucket, isCurrent, jobsFor, localPath, namesOfType, objectUrl, readIndex, summaryLine, textureSources, writeIndex } from './lib/bf2017-paths.mjs';
 import { createPool } from './lib/pool.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -270,6 +272,13 @@ const getAll = (env, root, paths) =>
 export async function fetchData(env, root, globs) {
   const results = await getAll(env, root, ['data.tsv']);
   for (const glob of globs) {
+    // (`type:<Type>`: every record data.tsv says is of that type, by name)
+    if (glob.startsWith('type:')) {
+      const names = namesOfType(await readFile(join(root, 'data.tsv'), 'utf8'), glob.slice(5));
+      if (!names.length) console.log(`${glob}: nothing of that type in data.tsv`);
+      results.push(...(await getAll(env, root, names.map(dataPath))));
+      continue;
+    }
     const re = globRegExp(glob);
     const dir = globDir(glob);
     const names = (await listUnder(env, dir ? `data/${dir}` : 'data'))
