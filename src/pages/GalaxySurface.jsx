@@ -48,7 +48,7 @@ import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
 import { createCarry, createPayLedger } from '../components/universe/earnRules';
 import { wornFiles } from '../components/rickmorty/wardrobe/looks';
-import { pickLooks } from '../components/rickmorty/wardrobe/pickLooks';
+import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
 import { toggleGuide } from '../lib/palette';
 import { Menu, MenuItem, Prompt, Reticle, reticleState } from '../runtime/hud';
 import { wayOut } from '../components/worlds/worlds';
@@ -251,7 +251,7 @@ export default function GalaxySurface() {
       stopVoiced();
     };
   }, [talk]);
-  const [looks] = pickLooks(); // (how the cruiser's Rick and Morty come out, for the credits)
+  const [looks] = useLooks(); // (how the cruiser's Rick and Morty come out, for the credits)
   const talkCrew = useMemo(() => (crew && site ? surfaceCrew(galaxyCrew(crew), site) : null), [crew, site]);
 
   // Back up to the system. From the link as from E at the ship, the climb

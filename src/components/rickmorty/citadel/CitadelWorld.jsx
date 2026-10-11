@@ -24,7 +24,7 @@ import { EMOTES, createEmoteWheel, emotePacket, keepEmote, wheelAngle } from '..
 import '../../middleearth/shire/shire.css';
 import '../../middleearth/towns/bree/bree.css';
 import Wardrobe from '../wardrobe/Wardrobe';
-import { pickLooks } from '../wardrobe/pickLooks';
+import { useLooks } from '../wardrobe/useLooks';
 import './citadel.css';
 import GuideCue from '../../guide/GuideCue';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
@@ -154,7 +154,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
   const [wheel, setWheel] = useState({ open: false, hover: null });
   const wheelKey = useRef('');
   // the wardrobe: how Rick looks here (and Morty, wherever he turns up)
-  const [looks, setLook] = pickLooks();
+  const [looks, setLook] = useLooks();
   const looksRef = useRef(looks);
   looksRef.current = looks;
   const [wardrobe, setWardrobe] = useState(false);
