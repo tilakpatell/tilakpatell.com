@@ -12,11 +12,12 @@ describe('the game’s HUD widgets, for its world', () => {
     expect(widget('NoSuchWidget')).toBeNull();
   });
 
-  it('draws the game’s fonts on the open faces in their place', () => {
+  it('draws each widget in the game’s own face', () => {
     expect(fontFor('Univers620BoldCondensed30px')).toEqual({ family: 'var(--font-bf-hud)', size: 30, weight: 700 });
     expect(fontFor('Univers520MediumCondensed18px')).toMatchObject({ size: 18, weight: 500 });
-    expect(fontFor('RaxusPrimeNumericalMonospaceRegulart54')).toMatchObject({ size: 54, numeric: 'tabular-nums' });
-    expect(fontFor('Roboto18px')).toMatchObject({ family: 'var(--font-bf-text)', size: 18 });
+    expect(fontFor('Univers720HeavyCondensed48px')).toMatchObject({ size: 48, weight: 800 });
+    expect(fontFor('RaxusPrimeNumericalMonospaceRegulart54')).toEqual({ family: 'var(--font-bf-numerals)', size: 54, weight: 400, numeric: 'tabular-nums' });
+    expect(fontFor('Roboto18px')).toMatchObject({ family: "'Roboto BF', var(--font-bf-text)", size: 18 });
     expect(fontFor('Mystery')).toMatchObject({ family: 'var(--font-bf-hud)' });
   });
 

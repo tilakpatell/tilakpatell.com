@@ -588,3 +588,46 @@ export function shareBodies(rows) {
   }
   return rows;
 }
+
+// ── the death (the Battlefront world's ragdolls) ──
+
+// A weapon's hit impulse (N·s) is its projectile's ImpactImpulse: the
+// committed weapons.json names the projectile (damage.projectile) and
+// projectiles.json holds it; the page reads this small join, never the
+// whole projectiles book. A weapon with no projectile (the bowcaster's
+// second fire) is left out; the default rifle's bolt is the fallback.
+export const FALLBACK_PROJECTILE = 'Gameplay/Equipment/Rifles/_DefaultWeapon/BlasterProjectile_Default_Rifle';
+
+export function impulseRows(weapons, projectiles) {
+  const byName = new Map((projectiles?.rows ?? []).map((p) => [String(p.name).toLowerCase(), p]));
+  const rowOf = (name) => {
+    const p = name ? byName.get(String(name).toLowerCase()) : null;
+    if (!p || !isNum(p.impactImpulse)) return null;
+    const src = p.impactImpulse_source ?? '';
+    return { impulse: p.impactImpulse, impulse_source: src.startsWith('#') ? `${p.name}${src}` : src };
+  };
+  const rows = {};
+  const missing = [];
+  for (const [id, w] of Object.entries(weapons?.rows ?? {})) {
+    const row = rowOf(w?.damage?.projectile);
+    if (row) rows[id] = row;
+    else missing.push(id);
+  }
+  return { rows, fallback: rowOf(FALLBACK_PROJECTILE), missing };
+}
+
+// the blueprints whose death the world reads: the Hoth kits' player and bot
+// soldiers (each kit's Blueprint and AIBlueprint), the campaign AI and the hero
+export const DEATH_RECORDS = ['Gameplay/Characters/StormTrooperShared', 'Gameplay/Characters/StormTrooperAI_Skirmish', 'Gameplay/Characters/StormTrooperAI', 'Gameplay/Characters/Heroes/Hero_Lightsaber'];
+
+export function deathRow(asset) {
+  const health = (asset?.objects ?? []).find((o) => o?.$type === 'WSSoldierHealthComponentData');
+  if (!health) return null;
+  const src = (f) => `${asset.name}#WSSoldierHealthComponentData.${f}`;
+  const row = { id: shortId(asset.name), name: asset.name };
+  put(row, 'timeForCorpse', health.TimeForCorpse, src('TimeForCorpse'));
+  put(row, 'dyingMaxTimeInAir', health.DyingMaxTimeInAir, src('DyingMaxTimeInAir'));
+  if (typeof health.SkipDyingState === 'boolean') row.skipDyingState = health.SkipDyingState;
+  if (typeof health.RemainDyingInAir === 'boolean') row.remainDyingInAir = health.RemainDyingInAir;
+  return row;
+}

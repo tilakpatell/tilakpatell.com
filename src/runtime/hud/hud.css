@@ -186,3 +186,6 @@
 @media (prefers-reduced-motion: reduce) {
   :where(.hud-reticle i, .hud-reticle b):not(hud-none) { transition: none; }
 }
+/* the reticle in a game's own crosshair shape (Reticle's `shape`): centred, the ink's colour, the hit's */
+:where(.hud-reticle-shape svg):not(hud-none) { position: absolute; left: calc(-1 * var(--reticle-size, 28px) / 2); top: calc(-1 * var(--reticle-size, 28px) / 2); width: var(--reticle-size, 28px); height: var(--reticle-size, 28px); color: var(--hud-ink, #f6f3ea); filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6)); transform: scale(calc(1 - 0.25 * var(--tight, 0))); transition: transform var(--t-fast, 120ms) ease; }
+:where(.hud-reticle-shape[data-hit] svg):not(hud-none) { color: var(--hud-bad, #ff7a5a); }

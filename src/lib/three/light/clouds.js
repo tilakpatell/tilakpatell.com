@@ -18,8 +18,19 @@
 //
 // readClouds(entry, wind) → { on, layers: [{ size, coverage, exponent, speed: [x, z] }] }  (pure)
 // cloudDensity(noise01), cloudTerm(density, coverage, exponent), drift(layer, seconds)    (pure)
-// cloudShadowNode(entry, wind) → Promise<{ node, offsets, update(dt), dispose } | null>
+// cloudShadowNode(entry, wind, { texture }) → Promise<{ node, offsets, update(dt), dispose } | null>
+//
+// Where the record names a CloudShadowTexture (lane Q6: grade.js's
+// cloudShadowOf, Hoth's T_Arctic_01_CloudShadow_RGBM, its loaded texture as
+// `texture` with the record's `offset` (CloudXZTranslation) and `rgbm`),
+// the first layer is that texture in place of the noise: projected straight
+// down (CloudShadowIsTopDown), wrapped every CloudShadowSize metres
+// (TaWrap), its value the light let through (RGBM decoded, grade.js's
+// RGBM_RANGE, clamped to 1: the map is BC1 with no alpha, so lit wherever
+// it is over a sixth), so density = 1 − value; the second layer, which
+// names none, keeps the noise.
 
+import { RGBM_RANGE } from './grade.js';
 import { loadThree } from './three.js';
 
 // the noise's rise from clear sky to the thickest cloud: about a fifth of
@@ -57,11 +68,11 @@ export const cloudDensity = (n) => smooth(CLOUD_EDGE[0], CLOUD_EDGE[1], n);
 export const cloudTerm = (density, coverage, exponent) => 1 - coverage * density ** exponent;
 export const drift = (layer, seconds) => [layer.speed[0] * seconds, layer.speed[1] * seconds];
 
-export async function cloudShadowNode(entry, wind = null) {
+export async function cloudShadowNode(entry, wind = null, { texture: map = null, offset = [0, 0], rgbm = true } = {}) {
   const c = readClouds(entry, wind);
   if (!c.on) return null;
   const { THREE, tsl } = await loadThree();
-  const { float, positionWorld, mx_fractal_noise_float, renderGroup, smoothstep, uniform, vec3 } = tsl;
+  const { float, positionWorld, mx_fractal_noise_float, renderGroup, smoothstep, uniform, vec3, texture, clamp } = tsl;
   const layers = c.layers.filter((l) => l.coverage > 0);
   // (in the render's group: the shadow is built in the light's context, where
   // an object-group uniform is not refreshed per frame)
@@ -69,6 +80,12 @@ export async function cloudShadowNode(entry, wind = null) {
   let node = float(1);
   layers.forEach((l, i) => {
     const p = positionWorld.xz.sub(offsets[i]).div(l.size);
+    if (map && l === c.layers[0]) {
+      const t = texture(map, p.add(offset[0] / l.size, offset[1] / l.size));
+      const lit = rgbm ? clamp(t.rgb.mul(t.a).mul(RGBM_RANGE).r, 0, 1) : t.r;
+      node = node.mul(float(1).sub(lit.oneMinus().pow(l.exponent).mul(l.coverage)));
+      return;
+    }
     // (MaterialX's fractal noise keeps mostly within ±0.5 round 0: centred on ½)
     const n = mx_fractal_noise_float(vec3(p.x, p.y, i * 17.31), OCTAVES, 2, 0.5).add(0.5);
     const density = smoothstep(CLOUD_EDGE[0], CLOUD_EDGE[1], n);

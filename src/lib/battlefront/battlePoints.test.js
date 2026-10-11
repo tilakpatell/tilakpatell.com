@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadRulebook, teamsFor } from './rulebook.js';
-import { ASSIST_WINDOW, balance, buy, canBuy, createPoints, earn, hit, kill, offers } from './battlePoints.js';
+import { ASSIST_WINDOW, balance, buy, canBuy, createPoints, earn, hit, kill, offers, priceOf } from './battlePoints.js';
 
 const rb = loadRulebook();
 const t = teamsFor(rb, 'hoth');
@@ -53,10 +53,25 @@ describe('Battle Points', () => {
     expect(balance(bp, 'a')).toBe(5000);
   });
 
-  it('prices a reinforcement by its kind and refuses one it cannot afford', () => {
+  it('prices a reinforcement from the record and refuses one it cannot afford', () => {
     const bp = fresh();
     const o = offers(bp, 'a', 1).find((x) => x.id === 'WookieWarrior');
-    expect(o.cost).toBe(2000);
+    expect(o.cost).toBe(1500);
     expect(buy(bp, 'a', o)).toEqual({ ok: false, why: 'points' });
+  });
+
+  it('prices by the level’s own table, else the default list (Online/BattlepointCostData)', () => {
+    const hoth = fresh();
+    const price = (bp, id) => offers(bp, 'a', 1).concat(offers(bp, 'a', 2)).find((x) => x.id === id).cost;
+    // (Hoth's table: the A-wing 200, the Ewok 1,500; the default list: 400 and 2,000)
+    expect(price(hoth, 'Kit_Vehicle_Awing')).toBe(200);
+    expect(price(hoth, 'EwokRebel')).toBe(1500);
+    expect(price(hoth, 'Kit_Vehicle_ATST')).toBe(800);
+    const elsewhere = createPoints({ rulebook: rb, teams: { 1: t.light, 2: t.dark }, level: 'nowhere_01' });
+    expect(price(elsewhere, 'Kit_Vehicle_Awing')).toBe(400);
+    expect(price(elsewhere, 'EwokRebel')).toBe(2000);
+    expect(priceOf(rb, 'hero', 'darthvader')).toBe(4000);
+    // (the older readers' short name is the same level)
+    expect(priceOf(rb, 'vehicle', 'Kit_Vehicle_Awing', { level: 'hoth' })).toBe(200);
   });
 });

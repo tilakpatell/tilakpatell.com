@@ -19,7 +19,10 @@
 //   stateFor(entity) → { state, speed, dir8, side? }
 //   transition(from, to, names) → { clip | null, fade }
 //   deathFor(families, { yaw, hitDir }) → clipName
-//   packClip(state) → the humanoid pack's clip name (walrusClips.js's HUMANOID_SET)
+//   packClip(state, { stance }) → the humanoid pack's clip name (walrusClips.js's HUMANOID_SET),
+//     or with a held weapon's stance ('t', 'p', 'l') its pack's `stance.<key>.<name>`
+//     where the stance has one (walrusSets/stance.js's names)
+//   packFallback(name) → a stance clip's humanoid stand-in (the idle a held pose), else null
 
 export const CROSSFADE = 0.15; // s: the blend where the game has no transition clip
 export const WALK_MAX = 2.6; // m/s: under this a soldier walks (the soldier row's walk is 3.8 at full stick)
@@ -153,7 +156,25 @@ export function deathFor(families, { yaw = 0, hitDir = null } = {}) {
 // The humanoid pack's names (phase 1 and 2's clips-humanoid.glb, the game's
 // clips stored under the site's names): a strafe by its eighth
 const STRAFE = ['walk', 'walk', 'walk.right', 'walk.back', 'walk.back', 'walk.back', 'walk.left', 'walk'];
-export function packClip(s) {
+// the names a stance pack stands in for (walrusSets/stance.js's NAMES, the
+// ones a soldier here plays); a death, a hit or a roll is the humanoid's
+const STANCED = new Set(['idle', 'aim', 'walk', 'run', 'sprint', 'walk.back', 'walk.left', 'walk.right', 'crouch', 'crouch.run']);
+export function packClip(s, { stance = null } = {}) {
+  if (!stance) return humanoidClip(s);
+  const base = s.state === 'idle' ? 'idle' : s.state === 'aim' && !(s.speed > 0.2) ? 'aim' : humanoidClip(s);
+  return STANCED.has(base) ? `stance.${stance}.${base}` : base;
+}
+
+// (Luke's unarmed idle would hang the gun barrel-down: a held pose instead)
+export function packFallback(name) {
+  const m = /^stance\.([a-z])\.(.+)$/.exec(name);
+  if (!m) return null;
+  const [, key, base] = m;
+  if (base === 'idle' || base === 'aim') return key === 'p' ? 'aim.pistol' : 'aim.rifle';
+  return base;
+}
+
+function humanoidClip(s) {
   switch (s.state) {
     case 'death':
       return s.side === 'back' ? 'die.back' : 'die.fwd';

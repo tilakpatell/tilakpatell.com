@@ -83,7 +83,7 @@ export default function GalaxyMission() {
               {/* the game's Starfighter Assault over this world, from its space level (the landing's mode menu has the same card: surface/modes.js) */}
               {starfighterAt(sys.id) && (
                 <Link to={`/galaxy/${sys.id}?battle=starfighter`} className="btn btn-primary">
-                  Fly it now: Starfighter Assault <RiArrowRightLine className="h-4 w-4" aria-hidden="true" />
+                  Fly it now: {starfighterAt(sys.id).name} <RiArrowRightLine className="h-4 w-4" aria-hidden="true" />
                 </Link>
               )}
               {story && (

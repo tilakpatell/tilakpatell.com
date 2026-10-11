@@ -18,7 +18,17 @@
 //   findPath(nav, from, to, { blocked }) → [[x, z]] | null
 //   firstSolid(nav, a, b) → { t, at, solid } | null   lineClear(nav, a, b) → bool
 //   coverSlots(nav, near, r) → slots       nearestSlot(nav, at, threat) → slot | null
+//
+// A nav mask (navMask.js, the design's nav.bin: where the game's shapes
+// leave no room for a soldier's capsule, built offline by the physics
+// engine) is taken as it is when it fits the grid: its blocked cells are
+// solid, its fine grid makes `walkable` exact, its tops stop a line of sight
+// (`solid: -2`) and its edges give cover slots. A box solid blocks only
+// where its top is a step or more above the ground (the soldier's
+// `StepHeight`), so a box buried in the ground blocks nothing.
 // Pure: typed arrays, no three.js.
+
+import { fineBlocked, maskFits } from './navMask.js';
 
 export const MAX_EXPAND = 20000;
 // The slot buckets' size in metres: a coverSlots query looks at the few buckets its circle touches.
@@ -41,7 +51,10 @@ function toWorld(sol, lx, lz) {
   return [sol.at[0] + lx * sol.c + lz * sol.s, sol.at[2] - lx * sol.s + lz * sol.c];
 }
 
-export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0.9, cover = {}, radius = 0.3 }) {
+// m: the soldier's step (src/data/bf2017/physics/soldier.json, DefaultSoldierPhysics#CharacterPhysicsData.Poses[0].StepHeight)
+export const STEP_UP = 0.4;
+
+export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0.9, cover = {}, radius = 0.3, mask = null, step = STEP_UP }) {
   const origin = [bounds.min[0], bounds.min[1]];
   const cols = Math.ceil((bounds.max[0] - bounds.min[0]) / cell);
   const rows = Math.ceil((bounds.max[1] - bounds.min[1]) / cell);
@@ -65,7 +78,7 @@ export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0
         const i = r * cols + c;
         // the cell touches the footprint (a solid only blocks walking where it stands on the ground)
         if (Math.abs(lx) < b.half[0] + cell / 2 && Math.abs(lz) < b.half[2] + cell / 2) {
-          if (b.bottom <= height[i] + 0.5) solid[i] = 1;
+          if (b.bottom <= height[i] + 0.5 && b.top >= height[i] + step) solid[i] = 1;
           if (!near.has(i)) near.set(i, []);
           near.get(i).push(b);
         } else if (Math.abs(lx) < b.half[0] + cell * 1.5 && Math.abs(lz) < b.half[2] + cell * 1.5) {
@@ -74,6 +87,8 @@ export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0
         }
       }
   }
+  const fits = maskFits(mask, { cell, cols, rows, origin }) ? mask : null;
+  if (fits) for (let i = 0; i < n; i++) solid[i] |= fits.blocked[i];
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++) {
       const i = r * cols + c;
@@ -93,7 +108,7 @@ export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0
         }
       walk[i] = ok;
     }
-  const nav = { cell, cols, rows, origin, height, walk, solid, boxes, near, radius, slots: [], buckets: new Map(), scratch: null };
+  const nav = { cell, cols, rows, origin, height, walk, solid, boxes, near, radius, step, mask: fits, slots: [], buckets: new Map(), scratch: null };
   nav.slots = findSlots(nav, cover);
   for (const s of nav.slots) {
     const k = bucketKey(s.at[0], s.at[2]);
@@ -138,7 +153,7 @@ function inSolid(nav, x, z, i) {
   if (!list) return false;
   for (const b of list) {
     const [lx, lz] = local(b, x, z);
-    if (Math.abs(lx) < b.half[0] + nav.radius && Math.abs(lz) < b.half[2] + nav.radius && b.bottom <= nav.height[i] + 0.5) return true;
+    if (Math.abs(lx) < b.half[0] + nav.radius && Math.abs(lz) < b.half[2] + nav.radius && b.bottom <= nav.height[i] + 0.5 && b.top >= nav.height[i] + nav.step) return true;
   }
   return false;
 }
@@ -148,6 +163,8 @@ export function walkable(nav, x, z) {
   if (i < 0) return false;
   // the slope flag holds for the cell; a blocked cell may still be open beside its solid
   if (!nav.walk[i] && !nav.solid[i]) return false;
+  const m = nav.mask;
+  if (m && (m.fine ? fineBlocked(m, x, z) : m.blocked[i])) return false;
   return !inSolid(nav, x, z, i);
 }
 
@@ -401,7 +418,13 @@ function segBox(b, a, e) {
   return t0;
 }
 
-// the first solid (or the ground) segment a→b meets: its fraction and point
+// below a mask cell's top at the segment's fraction t
+function inMask(nav, a, b, t) {
+  const i = indexAt(nav, a[0] + (b[0] - a[0]) * t, a[2] + (b[2] - a[2]) * t);
+  return i >= 0 && nav.mask.top[i] > 0 && a[1] + (b[1] - a[1]) * t < nav.height[i] + nav.mask.top[i] / 10;
+}
+
+// the first solid (or the ground, or the mask) segment a→b meets: its fraction and point
 export function firstSolid(nav, a, b) {
   const d = Math.hypot(b[0] - a[0], b[2] - a[2]);
   const steps = Math.max(1, Math.ceil(d / (nav.cell / 2)));
@@ -422,6 +445,19 @@ export function firstSolid(nav, a, b) {
     }
     // a solid already met before the last sample: nothing nearer is left
     if (best && best.t <= (k - 1) / steps) break;
+    if (nav.mask && inMask(nav, a, b, t)) {
+      // (the entry, to an eighth of a cell: back from this sample towards the last)
+      let tt = t;
+      for (let q = 1; k > 0 && q <= 4; q++) {
+        const t2 = (k - 1 + q / 4) / steps;
+        if (inMask(nav, a, b, t2)) {
+          tt = t2;
+          break;
+        }
+      }
+      if (!best || tt < best.t) best = { t: tt, solid: -2 };
+      break;
+    }
     const y = a[1] + (b[1] - a[1]) * t;
     if (y < heightAt(nav, x, z) - 0.05) {
       if (!best || t < best.t) best = { t, solid: -1 };
@@ -467,7 +503,43 @@ function findSlots(nav, cover) {
       }
     }
   }
+  if (nav.mask) slots.push(...maskSlots(nav, { crouch, stand, off }));
   return slots;
+}
+
+// a slot on each open cell beside a mask-blocked one whose top makes cover,
+// the stand-off out from the face between them (the cell's pitch, not
+// SlotSpacing: the mask has no faces longer than a cell)
+function maskSlots(nav, { crouch, stand, off }) {
+  const { cols, rows, cell, height, mask } = nav;
+  const out = [];
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      if (!nav.walk[i] || nav.solid[i]) continue;
+      for (const [dc, dr] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
+        const cc = c + dc;
+        const rr = r + dr;
+        if (cc < 0 || rr < 0 || cc >= cols || rr >= rows) continue;
+        const j = rr * cols + cc;
+        if (!mask.top[j]) continue;
+        const [cx, cz] = centre(nav, i);
+        const x = cx + dc * (cell / 2 - off);
+        const z = cz + dr * (cell / 2 - off);
+        if (!walkable(nav, x, z)) continue;
+        const y = heightAt(nav, x, z);
+        const rise = height[j] + mask.top[j] / 10 - y;
+        if (rise < crouch) continue;
+        const normal = [-dc || 0, -dr || 0];
+        out.push({ at: [x, y, z], facing: Math.atan2(normal[0], normal[1]), normal, height: rise >= stand ? 'stand' : 'crouch', protectedWidth: cell, solid: -2 });
+      }
+    }
+  return out;
 }
 
 export function coverSlots(nav, near, r) {

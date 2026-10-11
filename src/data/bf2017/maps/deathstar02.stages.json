@@ -1,0 +1,39 @@
+{
+  "source": "hand",
+  "mode": "galacticAssault",
+  "level": "Levels/MP/DeathStar02_01/DeathStar02_01",
+  "attackers": "light",
+  "notes": "NOTES.md says how this was made: the stages in the order the level’s own stage strings number them, each team’s line; the attackers the side whose first line does not defend; the objectives are not yet chosen (empty), as no route plays this map’s Galactic Assault",
+  "stages": [
+    {
+      "id": "stage1",
+      "team1": "ID_FANTASYBATTLES_DEATH_STAR_II_STAGE1_TEAM1",
+      "team2": "ID_FANTASYBATTLES_DEATH_STAR_II_STAGE1_TEAM2",
+      "text": {
+        "team1": "SHUT DOWN THE TRACTOR BEAM CONTROLS",
+        "team2": "KEEP THE REBELS AWAY FROM THE TRACTOR BEAM CONTROLS"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage2",
+      "team1": "ID_FANTASYBATTLES_DEATH_STAR_II_STAGE2_TEAM1",
+      "team2": "ID_FANTASYBATTLES_DEATH_STAR_II_STAGE2_TEAM2",
+      "text": {
+        "team1": "DISABLE THE WEAPON SYSTEMS",
+        "team2": "STOP THE REBELS FROM TAKING THE WEAPONS OFFLINE"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage3",
+      "team1": "ID_FANTASYBATTLES_DEATH_STAR_II_STAGE3_TEAM1",
+      "team2": "ID_FANTASYBATTLES_DEATH_STAR_II_STAGE3_TEAM2",
+      "text": {
+        "team1": "BRING UP A SHUTTLE AND CLEAR ITS PATH",
+        "team2": "DON'T LET THE REBELS ESCAPE"
+      },
+      "objectives": []
+    }
+  ]
+}
