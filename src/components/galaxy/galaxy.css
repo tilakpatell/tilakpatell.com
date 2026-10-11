@@ -771,3 +771,19 @@
   outline: 2px solid var(--accent, #7fd4ff);
   outline-offset: 2px;
 }
+
+/* Starfighter Assault's objective panel (StarfighterHud.jsx): boxes from the game's widget tree, measured for the viewport */
+.galaxy-sfhud { position: absolute; inset: var(--sfhud-top, 4.2rem) 0 0 0; z-index: 3; pointer-events: none; color: #fff; }
+.galaxy-sfhud > * { position: absolute; margin: 0; }
+.galaxy-sfhud-words { display: flex; justify-content: center; text-align: center; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; text-shadow: 0 1px 3px rgb(0 0 0 / 0.8); transform: translateX(0); }
+.galaxy-sfhud-bar { overflow: hidden; background: rgb(255 255 255 / 0.16); }
+.galaxy-sfhud-fill { position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--k)); background: rgb(255 255 255 / 0.38); transition: transform 0.4s ease; }
+.galaxy-sfhud:not([data-attacking]) .galaxy-sfhud-fill { transform-origin: right; }
+.galaxy-sfhud-health { display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+.galaxy-sfhud-dots { display: flex; gap: 6px; align-items: center; }
+.galaxy-sfhud-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.galaxy-sfhud-dot[data-down] { background: transparent; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.6); }
+.galaxy-sfhud-abilities { right: var(--hud-pad, 1rem); bottom: 6.5rem; display: flex; gap: 0.5rem; }
+.galaxy-sfhud-abilities .game-icon { width: 2rem; height: 2rem; fill: currentColor; }
+.galaxy-sfhud-downed { right: var(--hud-pad, 1rem); top: 9rem; font-family: var(--font-bf-hud, inherit); font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-shadow: 0 1px 3px rgb(0 0 0 / 0.8); }
+.galaxy-warhud[data-sf] { top: calc(var(--sfhud-top, 4.2rem) + 12vh); }

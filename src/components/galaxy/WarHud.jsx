@@ -35,7 +35,7 @@ export default function WarHud({ sys, oath, front = null }) {
   const next = stage ? nextLine(info.next) : null;
   const bars = stage ? objectiveBars(info) : [];
   return (
-    <div className="galaxy-warhud" role="status" style={{ '--side': SIDES[oath?.side]?.colour ?? '#9fb0d0' }} data-ended={ended || undefined}>
+    <div className="galaxy-warhud" role="status" style={{ '--side': SIDES[oath?.side]?.colour ?? '#9fb0d0' }} data-ended={ended || undefined} data-sf={info?.laid?.kind === 'starfighter' || undefined}>
       <p className="galaxy-warhud-line">{line}</p>
       {stage && (
         <p className="galaxy-warhud-stage">

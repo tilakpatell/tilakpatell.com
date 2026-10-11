@@ -1,0 +1,26 @@
+hoth: Levels/MP/Hoth_01/Hoth_01_Terrain/Hoth_01_Terrain (the pack’s scatter.json (lane E0)); 0 types over 0 layers; 0 rules
+  layer 0: (unmatched)  (0.405)
+  layer 1: T_ArcticBase_SnowPacked_04 snow (1)
+  layer 2: T_ArcticBase_SnowChunkyWind_01 snow (1)
+  layer 3: T_ArcticBase_SnowRoughPacked_03 snow (1)
+  layer 4: T_ArcticBase_SnowTrampled_01 snow (1)
+  layer 5: T_ArcticBase_SnowRockyPacked_04 rock (1)
+  layer 6: T_ArcticBase_SnowRocky_02 rock (1)
+  layer 7: T_ArcticBase_SnowPackedSmoothness_01 snow (1)
+  layer 8: T_ArcticBase_SnowRough_03 snow (0.678)
+  nothing to place: the terrain scatters nothing
+endor: Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain (the pack’s scatter.json (lane E0)); 38 types over 10 layers; 7 rules
+  layer 0: T_ForestBase_Leaves_02 floor (1)
+  layer 1: T_ForestBase_River_02 river (0.837)
+  layer 2: T_ForestBase_Roots_02 roots (1)
+  layer 3: T_ForestBurnt_Mud_03 mud (1)
+  layer 4: T_ForestBase_Clover_02 cover (0.583)
+  layer 5: T_ForestBurnt_Soot burnt (1)
+  layer 6: (unmatched)  (0.275)
+  layer 7: T_ForestBase_Ferns_Distance_02 fern (1)
+  layer 8: (unmatched)  (0.495)
+  layer 9: T_ForestBase_River_02 river (0.653)
+  layer 10: (unmatched)  (0.13)
+  mask 1281×1281 at 2 m, 68.1 KB; shares {"0":0.005,"1":0.007,"2":0.0754,"4":0.0043,"6":0.008,"7":0.0367,"9":0.0099}; painted 16.1%, built 2.0%
+  16 meshes ({"waits":11,"colour":5}), 7 LOD files, 0 maps, 26.8 KB
+  maps not in the bucket yet (14): t_ms_forestbase_twigs_01_c.ktx2, t_ms_forestbase_twigs_01_n__normal.ktx2, t_ms_forestbase_log_01_c.ktx2, t_ms_forestbase_log_01_n__normal.ktx2, t_ms_forestbase_stone_01_c.ktx2, t_ms_forestbase_stone_01_n__normal.ktx2, t_ms_forestbase_fern_01_c.ktx2, t_ms_forestbase_fern_01_n__normal.ktx2, t_ms_forestbase_clover_01_c.ktx2, t_ms_forestbase_clover_01_n__normal.ktx2, t_ms_forestbase_roots_01_c.ktx2, t_ms_forestbase_roots_01_n__normal.ktx2, t_ms_forestbase_backdroptree_01_c.ktx2, t_ms_forestbase_backdroptree_01_n__normal.ktx2

@@ -1,0 +1,2283 @@
+{
+ "format": 1,
+ "world": "endor",
+ "terrain": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain",
+ "_source": "web/maps/terrain_scatter/<terrain>.json (scripts/bf2017-scatter.mjs); the mask derived by scripts/lib/bf2017-scatter.mjs",
+ "mask": "derived",
+ "masks": {
+  "png": "scatter/layers.png",
+  "w": 1281,
+  "h": 1281,
+  "minX": -1280,
+  "minZ": -1280,
+  "metresPerPixel": 2,
+  "share": {
+   "0": 0.005,
+   "1": 0.007,
+   "2": 0.0754,
+   "4": 0.0043,
+   "6": 0.008,
+   "7": 0.0367,
+   "9": 0.0099
+  },
+  "bytes": 69760
+ },
+ "rules": [
+  {
+   "layer": 9,
+   "kind": "river",
+   "height": [
+    null,
+    -4
+   ],
+   "slope": [
+    null,
+    20
+   ],
+   "play": [
+    null,
+    0.3
+   ]
+  },
+  {
+   "layer": 1,
+   "kind": "river",
+   "height": [
+    null,
+    -2
+   ],
+   "slope": [
+    null,
+    25
+   ],
+   "play": [
+    null,
+    0.3
+   ]
+  },
+  {
+   "layer": 2,
+   "kind": "roots",
+   "slope": [
+    30,
+    null
+   ]
+  },
+  {
+   "layer": 6,
+   "kind": null,
+   "canopy": [
+    0.5,
+    null
+   ],
+   "play": [
+    0.3,
+    null
+   ]
+  },
+  {
+   "layer": 0,
+   "kind": "floor",
+   "canopy": [
+    0.15,
+    0.5
+   ],
+   "play": [
+    0.3,
+    null
+   ]
+  },
+  {
+   "layer": 4,
+   "kind": "cover",
+   "play": [
+    0.3,
+    null
+   ]
+  },
+  {
+   "layer": 7,
+   "kind": "fern",
+   "play": [
+    null,
+    0.3
+   ]
+  }
+ ],
+ "rulesSource": "RULES.endor: derived (lane N). Layers by their surface textures (surfaceOf: 0 Leaves, 1 River, 2 Roots, 3 Mud, 4 Clover, 5 Burnt, 7 Ferns_Distance; 6 unmatched, named by what it grows: ferns and roots), placed by slope and height against the field (masks.js), the placed trees’ canopy and the play area; 3 (mud), 5 (burnt) and 8 left unplaced",
+ "layers": [
+  {
+   "index": 0,
+   "texture": "T_ForestBase_Leaves_02",
+   "kind": "floor",
+   "placed": true,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh.glb",
+     "id": 0,
+     "density": {
+      "low": 0.04,
+      "mid": 0.04,
+      "high": 0.04,
+      "ultra": 0.04
+     },
+     "scale": {
+      "min": [
+       3,
+       3
+      ],
+      "max": [
+       3,
+       3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.05,
+      "stiffness": 22.551,
+      "damping": 0.879,
+      "wiggle": 1,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 0 TerrainMeshScatteringType 0 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.797,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_b_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_b_mesh.glb",
+     "id": 1,
+     "density": {
+      "low": 0.3,
+      "mid": 0.3,
+      "high": 0.3,
+      "ultra": 0.3
+     },
+     "scale": {
+      "min": [
+       0.7,
+       1.5
+      ],
+      "max": [
+       0.7,
+       1.5
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.05,
+      "stiffness": 22.551,
+      "damping": 0.879,
+      "wiggle": 1,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 0 TerrainMeshScatteringType 1 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.426,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_c_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_c_mesh.glb",
+     "id": 2,
+     "density": {
+      "low": 0.1,
+      "mid": 0.1,
+      "high": 0.1,
+      "ultra": 0.1
+     },
+     "scale": {
+      "min": [
+       1.5,
+       2
+      ],
+      "max": [
+       1.5,
+       2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.05,
+      "stiffness": 22.551,
+      "damping": 0.879,
+      "wiggle": 1,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 0 TerrainMeshScatteringType 2 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.69,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_d_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_d_mesh.glb",
+     "id": 3,
+     "density": {
+      "low": 3,
+      "mid": 3,
+      "high": 3,
+      "ultra": 3
+     },
+     "scale": {
+      "min": [
+       0.7,
+       1.2
+      ],
+      "max": [
+       0.7,
+       1.3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.05,
+      "stiffness": 22.551,
+      "damping": 0.879,
+      "wiggle": 1,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 0 TerrainMeshScatteringType 3 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.465,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_a_mesh.glb",
+     "id": 4,
+     "density": {
+      "low": 0.05,
+      "mid": 0.05,
+      "high": 0.05,
+      "ultra": 0.05
+     },
+     "scale": {
+      "min": [
+       0.4,
+       0.4
+      ],
+      "max": [
+       1,
+       1
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 0 TerrainMeshScatteringType 4 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_a_mesh.lod0.glb",
+        "tris": 120
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_a_mesh.lod1.glb",
+        "tris": 34
+       }
+      ],
+      "radius": 2.574,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh.glb",
+     "id": 5,
+     "density": {
+      "low": 0.05,
+      "mid": 0.05,
+      "high": 0.05,
+      "ultra": 0.05
+     },
+     "scale": {
+      "min": [
+       0.5,
+       0.5
+      ],
+      "max": [
+       1,
+       1
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 0 TerrainMeshScatteringType 5 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod0.glb",
+        "tris": 90
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod1.glb",
+        "tris": 42
+       }
+      ],
+      "radius": 1.432,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 1,
+   "texture": "T_ForestBase_River_02",
+   "kind": "river",
+   "placed": true,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/ms_forestbase_stone_01_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/ms_forestbase_stone_01_mesh.glb",
+     "id": 6,
+     "density": {
+      "low": 1,
+      "mid": 1,
+      "high": 1,
+      "ultra": 1
+     },
+     "scale": {
+      "min": [
+       1,
+       1
+      ],
+      "max": [
+       3.5,
+       3.5
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 1 TerrainMeshScatteringType 6 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.2,
+       0.19,
+       0.17
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_stone_01_mesh.lod0.glb",
+        "tris": 48
+       }
+      ],
+      "radius": 0.059,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/t_ms_forestbase_stone_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/t_ms_forestbase_stone_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh.glb",
+     "id": 8,
+     "density": {
+      "low": 0.02,
+      "mid": 0.02,
+      "high": 0.02,
+      "ultra": 0.02
+     },
+     "scale": {
+      "min": [
+       0.7,
+       0.7
+      ],
+      "max": [
+       1.2,
+       1.2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 1 TerrainMeshScatteringType 8 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod0.glb",
+        "tris": 90
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod1.glb",
+        "tris": 42
+       }
+      ],
+      "radius": 1.432,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh.glb",
+     "id": 8,
+     "density": {
+      "low": 0.02,
+      "mid": 0.02,
+      "high": 0.02,
+      "ultra": 0.02
+     },
+     "scale": {
+      "min": [
+       0.7,
+       0.7
+      ],
+      "max": [
+       1.2,
+       1.2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 1 TerrainMeshScatteringType 8 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod0.glb",
+        "tris": 90
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod1.glb",
+        "tris": 42
+       }
+      ],
+      "radius": 1.432,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh.glb",
+     "id": 9,
+     "density": {
+      "low": 0.035,
+      "mid": 0.035,
+      "high": 0.035,
+      "ultra": 0.035
+     },
+     "scale": {
+      "min": [
+       4,
+       4
+      ],
+      "max": [
+       4,
+       4
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 22,
+      "damping": 0.8,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 1 TerrainMeshScatteringType 9 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.797,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 2,
+   "texture": "T_ForestBase_Roots_02",
+   "kind": "roots",
+   "placed": true,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh.glb",
+     "id": 10,
+     "density": {
+      "low": 0.04,
+      "mid": 0.04,
+      "high": 0.04,
+      "ultra": 0.04
+     },
+     "scale": {
+      "min": [
+       3,
+       3
+      ],
+      "max": [
+       3,
+       3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 2 TerrainMeshScatteringType 10 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.797,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_c_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_c_mesh.glb",
+     "id": 11,
+     "density": {
+      "low": 0.1,
+      "mid": 0.1,
+      "high": 0.1,
+      "ultra": 0.1
+     },
+     "scale": {
+      "min": [
+       1.5,
+       1.5
+      ],
+      "max": [
+       1.5,
+       1.5
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 2 TerrainMeshScatteringType 11 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.69,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_d_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_d_mesh.glb",
+     "id": 12,
+     "density": {
+      "low": 3,
+      "mid": 3,
+      "high": 3,
+      "ultra": 3
+     },
+     "scale": {
+      "min": [
+       0.7,
+       1
+      ],
+      "max": [
+       0.7,
+       1.2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.05,
+      "stiffness": 22.551,
+      "damping": 0.879,
+      "wiggle": 1,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 2 TerrainMeshScatteringType 12 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.465,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 3,
+   "texture": "T_ForestBurnt_Mud_03",
+   "kind": "mud",
+   "placed": false,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh.glb",
+     "id": 13,
+     "density": {
+      "low": 0.04,
+      "mid": 0.04,
+      "high": 0.04,
+      "ultra": 0.04
+     },
+     "scale": {
+      "min": [
+       3,
+       3
+      ],
+      "max": [
+       3,
+       3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.05,
+      "stiffness": 22.551,
+      "damping": 0.879,
+      "wiggle": 1,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 3 TerrainMeshScatteringType 13 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.797,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_c_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_c_mesh.glb",
+     "id": 14,
+     "density": {
+      "low": 0.1,
+      "mid": 0.1,
+      "high": 0.1,
+      "ultra": 0.1
+     },
+     "scale": {
+      "min": [
+       1.5,
+       2
+      ],
+      "max": [
+       1.5,
+       2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.05,
+      "stiffness": 22.551,
+      "damping": 0.879,
+      "wiggle": 1,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 3 TerrainMeshScatteringType 14 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.69,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_splinter_01/ms_forestbase_splinter_01_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_splinter_01/ms_forestbase_splinter_01_mesh.glb",
+     "id": 15,
+     "density": {
+      "low": 0.1,
+      "mid": 0.1,
+      "high": 0.1,
+      "ultra": 0.1
+     },
+     "scale": {
+      "min": [
+       1,
+       1
+      ],
+      "max": [
+       1.5,
+       2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 3 TerrainMeshScatteringType 15 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": null
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_a_mesh.glb",
+     "id": 16,
+     "density": {
+      "low": 0.5,
+      "mid": 0.5,
+      "high": 0.5,
+      "ultra": 0.5
+     },
+     "scale": {
+      "min": [
+       0.4,
+       0.4
+      ],
+      "max": [
+       1,
+       1
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0.2,
+      "lod1In": 0.2,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 3 TerrainMeshScatteringType 16 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_a_mesh.lod0.glb",
+        "tris": 120
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_a_mesh.lod1.glb",
+        "tris": 34
+       }
+      ],
+      "radius": 2.574,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh.glb",
+     "id": 17,
+     "density": {
+      "low": 0.02,
+      "mid": 0.02,
+      "high": 0.02,
+      "ultra": 0.02
+     },
+     "scale": {
+      "min": [
+       0.5,
+       0.5
+      ],
+      "max": [
+       1,
+       1
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0.2,
+      "lod1In": 0.2,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 3 TerrainMeshScatteringType 17 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod0.glb",
+        "tris": 90
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod1.glb",
+        "tris": 42
+       }
+      ],
+      "radius": 1.432,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_dirtpile_01/ms_forestbase_dirtpile_02_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_dirtpile_01/ms_forestbase_dirtpile_02_mesh.glb",
+     "id": 18,
+     "density": {
+      "low": 0.3,
+      "mid": 0.3,
+      "high": 0.3,
+      "ultra": 0.3
+     },
+     "scale": {
+      "min": [
+       1,
+       1
+      ],
+      "max": [
+       4,
+       4
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0.2,
+      "lod1In": 0.2,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 3 TerrainMeshScatteringType 18 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": null
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 4,
+   "texture": "T_ForestBase_Clover_02",
+   "kind": "cover",
+   "placed": true,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_a_mesh.glb",
+     "id": 19,
+     "density": {
+      "low": 0.25,
+      "mid": 0.25,
+      "high": 0.25,
+      "ultra": 0.25
+     },
+     "scale": {
+      "min": [
+       0.6,
+       0.6
+      ],
+      "max": [
+       1.3,
+       1.3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.2,
+      "stiffness": 8,
+      "damping": 0.7,
+      "wiggle": 0.3,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0.2,
+      "lod1In": 0.5,
+      "lod1Out": 0.2
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 4 TerrainMeshScatteringType 19 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 1.368,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_b_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_b_mesh.glb",
+     "id": 20,
+     "density": {
+      "low": 0.25,
+      "mid": 0.25,
+      "high": 0.25,
+      "ultra": 0.25
+     },
+     "scale": {
+      "min": [
+       0.6,
+       0.6
+      ],
+      "max": [
+       1.2,
+       1.2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.2,
+      "stiffness": 8,
+      "damping": 0.7,
+      "wiggle": 0.3,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0.2,
+      "lod1In": 0.5,
+      "lod1Out": 0.2
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 4 TerrainMeshScatteringType 20 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 1.203,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_c_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_c_mesh.glb",
+     "id": 21,
+     "density": {
+      "low": 0.2,
+      "mid": 0.2,
+      "high": 0.2,
+      "ultra": 0.2
+     },
+     "scale": {
+      "min": [
+       0.6,
+       0.6
+      ],
+      "max": [
+       1.4,
+       1.4
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.2,
+      "stiffness": 8,
+      "damping": 0.7,
+      "wiggle": 0.3,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0.2,
+      "lod1In": 0.5,
+      "lod1Out": 0.2
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 4 TerrainMeshScatteringType 21 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.807,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_clover_01/ms_forestbase_clover_02_c_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_clover_01/ms_forestbase_clover_02_c_mesh.glb",
+     "id": 22,
+     "density": {
+      "low": 2,
+      "mid": 2,
+      "high": 2,
+      "ultra": 2
+     },
+     "scale": {
+      "min": [
+       4,
+       4
+      ],
+      "max": [
+       6,
+       12
+      ]
+     },
+     "randomness": 0.5,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.2,
+      "stiffness": 9,
+      "damping": 0.3,
+      "wiggle": 0.5,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.1,
+      "lod0Out": 0.25,
+      "lod1In": 0.25,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 4 TerrainMeshScatteringType 22 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.148,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_clover_01/t_ms_forestbase_clover_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_clover_01/t_ms_forestbase_clover_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh.glb",
+     "id": 23,
+     "density": {
+      "low": 0.2,
+      "mid": 0.2,
+      "high": 0.2,
+      "ultra": 0.2
+     },
+     "scale": {
+      "min": [
+       3,
+       4
+      ],
+      "max": [
+       3,
+       4
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 4 TerrainMeshScatteringType 23 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.797,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_d_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_d_mesh.glb",
+     "id": 24,
+     "density": {
+      "low": 0.15,
+      "mid": 0.15,
+      "high": 0.15,
+      "ultra": 0.15
+     },
+     "scale": {
+      "min": [
+       1,
+       1
+      ],
+      "max": [
+       1.3,
+       1.3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.2,
+      "stiffness": 8,
+      "damping": 0.7,
+      "wiggle": 0.3,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 4 TerrainMeshScatteringType 24 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 1.367,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_a_mesh.glb",
+     "id": 25,
+     "density": {
+      "low": 0.02,
+      "mid": 0.02,
+      "high": 0.02,
+      "ultra": 0.02
+     },
+     "scale": {
+      "min": [
+       0.8,
+       0.8
+      ],
+      "max": [
+       1.1,
+       1.1
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 4 TerrainMeshScatteringType 25 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_a_mesh.lod0.glb",
+        "tris": 120
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_a_mesh.lod1.glb",
+        "tris": 34
+       }
+      ],
+      "radius": 2.574,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 5,
+   "texture": "T_ForestBurnt_Soot",
+   "kind": "burnt",
+   "placed": false,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh.glb",
+     "id": 26,
+     "density": {
+      "low": 0.01,
+      "mid": 0.01,
+      "high": 0.01,
+      "ultra": 0.01
+     },
+     "scale": {
+      "min": [
+       4,
+       4
+      ],
+      "max": [
+       4,
+       4
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 5 TerrainMeshScatteringType 26 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.797,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_c_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_c_mesh.glb",
+     "id": 27,
+     "density": {
+      "low": 0.1,
+      "mid": 0.1,
+      "high": 0.1,
+      "ultra": 0.1
+     },
+     "scale": {
+      "min": [
+       1.5,
+       2
+      ],
+      "max": [
+       1.5,
+       2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 5 TerrainMeshScatteringType 27 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.69,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_a_mesh.glb",
+     "id": 28,
+     "density": {
+      "low": 0.05,
+      "mid": 0.05,
+      "high": 0.05,
+      "ultra": 0.05
+     },
+     "scale": {
+      "min": [
+       0.4,
+       0.4
+      ],
+      "max": [
+       1.3,
+       1.3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 5 TerrainMeshScatteringType 28 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_a_mesh.lod0.glb",
+        "tris": 120
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_a_mesh.lod1.glb",
+        "tris": 34
+       }
+      ],
+      "radius": 2.574,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/ms_forestbase_log_01_b_mesh.glb",
+     "id": 29,
+     "density": {
+      "low": 0.05,
+      "mid": 0.05,
+      "high": 0.05,
+      "ultra": 0.05
+     },
+     "scale": {
+      "min": [
+       0.5,
+       0.5
+      ],
+      "max": [
+       1.3,
+       1.3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 5 TerrainMeshScatteringType 29 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod0.glb",
+        "tris": 90
+       },
+       {
+        "glb": "scatter/ms_forestbase_log_01_b_mesh.lod1.glb",
+        "tris": 42
+       }
+      ],
+      "radius": 1.432,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 6,
+   "texture": null,
+   "kind": null,
+   "placed": true,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_e_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_e_mesh.glb",
+     "id": 30,
+     "density": {
+      "low": 1.2,
+      "mid": 1.2,
+      "high": 1.2,
+      "ultra": 1.2
+     },
+     "scale": {
+      "min": [
+       1,
+       1
+      ],
+      "max": [
+       2,
+       2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.2,
+      "stiffness": 8,
+      "damping": 0.7,
+      "wiggle": 0.02,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0.2,
+      "lod1In": 0.5,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 6 TerrainMeshScatteringType 30 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 1.508,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_n__normal.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/ms_forestbase_roots_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/ms_forestbase_roots_01_a_mesh.glb",
+     "id": 31,
+     "density": {
+      "low": 0.25,
+      "mid": 0.25,
+      "high": 0.25,
+      "ultra": 0.25
+     },
+     "scale": {
+      "min": [
+       2,
+       2
+      ],
+      "max": [
+       2,
+       2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 6 TerrainMeshScatteringType 31 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_roots_01_a_mesh.lod0.glb",
+        "tris": 321
+       }
+      ],
+      "radius": 1.263,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/t_ms_forestbase_roots_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/t_ms_forestbase_roots_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/ms_forestbase_roots_01_b_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/ms_forestbase_roots_01_b_mesh.glb",
+     "id": 32,
+     "density": {
+      "low": 1,
+      "mid": 1,
+      "high": 1,
+      "ultra": 1
+     },
+     "scale": {
+      "min": [
+       2,
+       2
+      ],
+      "max": [
+       2,
+       2
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 6 TerrainMeshScatteringType 32 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.13,
+       0.085,
+       0.055
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_roots_01_b_mesh.lod0.glb",
+        "tris": 344
+       }
+      ],
+      "radius": 1.34,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/t_ms_forestbase_roots_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/t_ms_forestbase_roots_01_c.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 7,
+   "texture": "T_ForestBase_Ferns_Distance_02",
+   "kind": "fern",
+   "placed": true,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_backdroptree_01/ms_forestbase_backdroptree_01_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_backdroptree_01/ms_forestbase_backdroptree_01_mesh.glb",
+     "id": 33,
+     "density": {
+      "low": 0.001,
+      "mid": 0.001,
+      "high": 0.001,
+      "ultra": 0.001
+     },
+     "scale": {
+      "min": [
+       0.5,
+       0.5
+      ],
+      "max": [
+       0.7,
+       0.7
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.1,
+      "stiffness": 36.587,
+      "damping": 5.848,
+      "wiggle": 0.1,
+      "mass": 1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 7 TerrainMeshScatteringType 33 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 48.625,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_backdroptree_01/t_ms_forestbase_backdroptree_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_backdroptree_01/t_ms_forestbase_backdroptree_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_a_mesh.glb",
+     "id": 34,
+     "density": {
+      "low": 0.1,
+      "mid": 0.1,
+      "high": 0.1,
+      "ultra": 0.1
+     },
+     "scale": {
+      "min": [
+       0.6,
+       0.6
+      ],
+      "max": [
+       1.5,
+       1.5
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0.2,
+      "lod1In": 0.2,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 7 TerrainMeshScatteringType 34 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 1.368,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_n__normal.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 8,
+   "texture": null,
+   "kind": null,
+   "placed": false,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/ms_forestbase_twigs_01_a_mesh.glb",
+     "id": 35,
+     "density": {
+      "low": 0.035,
+      "mid": 0.035,
+      "high": 0.035,
+      "ultra": 0.035
+     },
+     "scale": {
+      "min": [
+       3,
+       3
+      ],
+      "max": [
+       3,
+       3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0.05,
+      "stiffness": 22.551,
+      "damping": 0.879,
+      "wiggle": 1,
+      "mass": 0.1
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 8 TerrainMeshScatteringType 35 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 0.797,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2"
+      }
+     }
+    },
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_d_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/ms_forestbase_fern_01_d_mesh.glb",
+     "id": 36,
+     "density": {
+      "low": 2,
+      "mid": 2,
+      "high": 2,
+      "ultra": 2
+     },
+     "scale": {
+      "min": [
+       0.7,
+       0.7
+      ],
+      "max": [
+       1.3,
+       1.3
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 8 TerrainMeshScatteringType 36 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "waits",
+      "why": "its colour map (a card’s alpha) is not in the bucket yet",
+      "lods": [],
+      "radius": 1.367,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_c.ktx2",
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_n__normal.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  },
+  {
+   "index": 9,
+   "texture": "T_ForestBase_River_02",
+   "kind": "river",
+   "placed": true,
+   "types": [
+    {
+     "mesh": "objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/ms_forestbase_stone_01_mesh",
+     "file": "models/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/ms_forestbase_stone_01_mesh.glb",
+     "id": 37,
+     "density": {
+      "low": 0.15,
+      "mid": 0.15,
+      "high": 0.15,
+      "ultra": 0.15
+     },
+     "scale": {
+      "min": [
+       7,
+       7
+      ],
+      "max": [
+       8,
+       8
+      ]
+     },
+     "randomness": 1,
+     "firstSpawnLevel": 0,
+     "wind": {
+      "scale": 0,
+      "stiffness": 8,
+      "damping": 1.6,
+      "wiggle": 1,
+      "mass": 4
+     },
+     "dissolve": {
+      "range": 0.4,
+      "lod0Out": 0,
+      "lod1In": 0,
+      "lod1Out": 0
+     },
+     "_source": "Levels/MP/Endor_01/Endor_01_Terrain/Endor_01_Terrain layer 9 TerrainMeshScatteringType 37 (Density.Low/Medium/High/Ultra, Min/MaxScale, ScaleRandomness, WindScale, Stiffness, Damping, WindWiggle, Mass, DissolveRangeRatio, Lod*Dissolve*)",
+     "glb": {
+      "look": "colour",
+      "rgb": [
+       0.2,
+       0.19,
+       0.17
+      ],
+      "lods": [
+       {
+        "glb": "scatter/ms_forestbase_stone_01_mesh.lod0.glb",
+        "tris": 48
+       }
+      ],
+      "radius": 0.059,
+      "maps": {
+       "color": null,
+       "normal": null
+      },
+      "wanted": {
+       "normal": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/t_ms_forestbase_stone_01_n__normal.ktx2",
+       "color": "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/t_ms_forestbase_stone_01_c.ktx2"
+      }
+     }
+    }
+   ],
+   "meshless": 0
+  }
+ ],
+ "tex": {},
+ "tableFrom": "the pack’s scatter.json (lane E0)",
+ "mapsMissing": [
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_c.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_twigs_01/t_ms_forestbase_twigs_01_n__normal.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_c.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_log_01/t_ms_forestbase_log_01_n__normal.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/t_ms_forestbase_stone_01_c.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_stone_01/t_ms_forestbase_stone_01_n__normal.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_c.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_fern_01/t_ms_forestbase_fern_01_n__normal.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_clover_01/t_ms_forestbase_clover_01_c.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_clover_01/t_ms_forestbase_clover_01_n__normal.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/t_ms_forestbase_roots_01_c.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_roots_01/t_ms_forestbase_roots_01_n__normal.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_backdroptree_01/t_ms_forestbase_backdroptree_01_c.ktx2",
+  "textures/objects/nature/forest/_forestbase/_meshscattering/ms_forestbase_backdroptree_01/t_ms_forestbase_backdroptree_01_n__normal.ktx2"
+ ]
+}
