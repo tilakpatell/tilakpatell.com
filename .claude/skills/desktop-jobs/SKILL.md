@@ -1,6 +1,6 @@
 ---
 name: desktop-jobs
-description: Use when a change needs a new 3D model (GLB), voice lines (recorded dialogue) or an animation clip from a text prompt that only the owner's GPU desktop can make, when asked to request, check on or retry a gen3d, voices or motion job, or when a gen3d/voices/motion issue, workflow run or self-hosted runner is queued, failed or stuck.
+description: Use when a change needs a new 3D model (GLB), voice lines (recorded dialogue) or an animation clip from a text prompt that only the owner's GPU desktop can make, when asked to request, check on or retry a gen3d, voices or motion job, when a bf2017 picture job (HDR panoramas, Enlighten atlases, not-uploaded textures, the UASTC ultra row, the depot probe, the ultra frame gate) is to be run, dry-run or checked, or when a gen3d/voices/motion/bf2017 issue, workflow run or self-hosted runner is queued, failed or stuck.
 ---
 
 # Desktop jobs: 3D models and voice lines
@@ -28,6 +28,18 @@ Add `--dry-run` first to see the issue. The same works as
 - The model lands as `public/models/gen3d/NAME{.hq,,.lo}.glb`. Wiring it into a scene is your own follow-up PR after theirs merges.
 - A clip lands as `public/games/meshy/ual-gen.NAME.glb` with a sheet beside a library clip; HY-Motion's licence excludes the EU, the UK and South Korea, so shipping one is the owner's call (`docs/research/2026-10-08-motion-spike.md`).
 - Voice lines for code not on main yet: list them as `who: text`. The id is `lineId(who, text)` (src/lib/voiced.js).
+
+## The bf2017 picture jobs (lane W)
+
+Six jobs the owner starts by hand, not issues: `bf2017-desktop.yml`
+(Actions → *bf2017 desktop* → *Run workflow*, or
+`gh workflow run bf2017-desktop.yml -f job=<panoramas|atlases|textures|uastc|depots|gate|all>`,
+`-f only=hoth -f limit=2` for a first run). Each opens its own pull request
+with its evidence under `docs/superpowers/evidence/bf2017-picture/`.
+From a cloud session, prove a job’s plan with
+`node scripts/desktop/bf2017-<job>.mjs --dry` (or `-f dry=true`, on
+GitHub’s runner); ask the owner to run the real one. What each makes and
+needs: `scripts/desktop/README.md`, “bf2017 picture jobs”.
 
 ## Follow
 

@@ -25,7 +25,7 @@ const END = '<!-- census:end -->';
 const group = (page, names) => Object.fromEntries(names.map((n) => [n, page]));
 export const PAGES = {
   ...group('three.md', ['three']),
-  ...group('physics-rapier.md', ['@dimforge/rapier3d-compat']),
+  ...group('physics-rapier.md', ['@dimforge/rapier3d-compat', '@dimforge/rapier3d-simd-compat']),
   ...group('react.md', ['react', 'react-dom', 'react-router-dom', 'react-icons', '@types/react', '@types/react-dom']),
   ...group('multiplayer-nostr.md', ['@noble/secp256k1']),
   ...group('fastnoise-lite.md', ['fastnoise-lite']), // planet flight (scripts/flight-island.mjs removes this row)

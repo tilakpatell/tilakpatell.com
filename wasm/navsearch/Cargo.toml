@@ -1,0 +1,23 @@
+[package]
+name = "navsearch"
+version = "0.1.0"
+edition = "2021"
+description = "The Battlefront navgrid's A*, lane X2's port of src/lib/battlefront/navSearch.js"
+license = "MIT"
+repository = "https://github.com/tilakpatell/tilakpatell.com"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "=0.2.100"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O3"]

@@ -16,7 +16,9 @@
 // and wait: figures/ragdolls.js).
 
 import * as THREE from 'three';
+import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
 import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf } from '../../lib/battlefront/rulebook.js';
+import { preloadDecoders } from '../../lib/three/gltf.js';
 import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
@@ -43,6 +45,12 @@ export default {
   async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault' } = {}) {
     const renderer = rt.gfx.renderer;
     const tier = rt.quality?.tier ?? 'high';
+    // (the meshopt decoder and the Basis transcoder up beside the level's
+    // first fetches, not behind its first model: lib/three/wasmDecoders.js)
+    preloadDecoders({ renderer, basis: true });
+    // (the bots' A* in WebAssembly where it comes up: the same paths, a third
+    // of the time; the JavaScript meanwhile and where it can't, navWasm.js)
+    loadNavSearch();
     const rb = loadRulebook();
     const cams = camerasOf(rb);
     const map = mapOf(rb, levelName);
