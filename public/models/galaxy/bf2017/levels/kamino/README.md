@@ -6,7 +6,7 @@ From `levels/mp/kamino_01` (Star Wars Battlefront II, 2017, EA DICE; used with p
 - fitted to low=0.5 of the tiers' triangles and calls (the site's own things spend the rest)
 - 1084 meshes (7 left out), 836 LOD files, 22.57 MB
 - the far list 0.34 MB; terrain none; the spot's ground 0.00 m in the game
-- textures missing from the bucket: 4
+- textures missing from the bucket: 3
 
 | | low | mid | high |
 |---|---|---|---|
