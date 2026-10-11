@@ -81,7 +81,8 @@ function leafGeometry(leaf) {
           pos.getElement(i, el);
           transform(m, el[0], el[1], el[2], out, i * 3);
         }
-        pts.push(...out);
+        // (a loop, not a spread: a big mesh has more points than a call takes arguments)
+        for (const v of out) pts.push(v);
         const ind = prim.getIndices();
         if (ind) for (const v of ind.getArray()) idx.push(base + v);
         else for (let i = 0; i < pos.getCount(); i++) idx.push(base + i);

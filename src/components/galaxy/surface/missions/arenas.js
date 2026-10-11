@@ -25,13 +25,16 @@
 //                                the enemies up) the respawn farthest from them
 
 import DATA from '../../../../data/bf2017/maps/arenas.json';
+import { SITES as FOREST } from '../sites/forest';
+import { turnAt } from '../sites/turnSite';
 
 export const ARENA_AT = {
   hoth: [320, 20], // (the plain east of the landing: 7.5 m of rise over 160 m)
   endor: [-40, 320], // (the forest floor north of the scouts' camp)
   tatooine: [220, 100], // (the flat sand between the sandcrawler and Ben's hut)
   geonosis: [110, -360], // (the dust plain west of the hangar)
-  kashyyyk: [60, -400], // (the dry ground south of the beach, past the pod)
+  // (the dry ground south of the beach, past the pod: the site's frame, turned to the game's map)
+  kashyyyk: turnAt(FOREST.kashyyyk.turn)([60, -400]),
 };
 export const GROUNDS = Object.keys(ARENA_AT);
 

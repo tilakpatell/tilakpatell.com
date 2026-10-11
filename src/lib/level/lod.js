@@ -45,16 +45,56 @@ export function lodAt(chain, d, r, tier) {
 export const seenAt = (d, r, K) => d <= K * Math.max(MIN_RADIUS, r);
 
 // A map is sized by the biggest thing that wears it, as its LODs are: on
-// high and mid 1024 for a thing 8 m from its middle to its edge or more, 512
-// from 2 m, 256 below; a normal or ORM map one step under its colour (the
+// high and mid 1024 for a thing 8 m from its middle to its edge or more,
+// 512 from 2 m, 256 below, a normal or ORM map a step under its colour (the
 // uploader's derived `__normal` and `__orm` maps: shading detail reads at
-// half the colour's size); low half all that (128 at least), ultra double
-// (2048 at most). Measured on Hoth against the GPU-memory contract (256 MB
-// desktop, 128 MB phone): most of a level's maps dress small things.
+// half the colour's size); low half of that (128 at least). Ultra a step
+// over high with its normal and ORM at the colour's size (2048, 2048,
+// 1024): lane D2's step up, given to ultra alone, since high's maps a step
+// up put main's Hoth at about 290 MB fetched against the 160 MB bucket row
+// (galaxy-budget.mjs's BUCKET_MB; the D2 evidence has the sums). A tier over
+// its row is cut by fitCull; the GPU-memory contract (256 MB desktop, 128 MB
+// phone) is fitTextures' at load.
 export function texSizeFor(r, tier, data = false) {
   const colour = r >= 8 ? 1024 : r >= 2 ? 512 : 256;
+  if (tier === 'ultra') return Math.min(2048, colour * 4);
   const high = data ? Math.max(128, colour / 2) : colour;
   if (tier === 'low') return Math.max(128, high / 2);
-  if (tier === 'ultra') return Math.min(2048, high * 2);
   return high;
+}
+
+// A tier's maps held to its bytes (lane D2): a pack's maps are bound after
+// the GLB is parsed, so fitTextures never sees them, and ultra's step up
+// took Endor's maps to 685 MB. TEX_MB is each tier's share of the GPU-memory
+// contract (null: unfitted, as main's sizes always held); over it, the
+// biggest map steps down a size, a normal or ORM map before a colour one
+// (shading detail reads at half the colour's size), never below `floor` (the
+// size high takes), until the tier fits.
+//   fitMaps(maps, budget) → { [slug]: size }
+//   maps: [{ slug, data, size, floor, bytes: { [size]: n } }]
+export const TEX_MB = Object.freeze({
+  low: null,
+  mid: null,
+  high: null,
+  ultra: 256,
+  _source: "the GPU-memory contract (256 MB desktop): lod.js's own note, measured on Hoth for lane L; ultra alone is fitted, the others keep main's sizes (Endor high 117 MB)",
+});
+
+export function fitMaps(maps, budget) {
+  const size = Object.fromEntries(maps.map((m) => [m.slug, m.size]));
+  if (!Number.isFinite(budget)) return size;
+  const bytesOf = (m) => m.bytes[size[m.slug]] ?? 0;
+  let total = maps.reduce((a, m) => a + bytesOf(m), 0);
+  while (total > budget) {
+    let pick = null;
+    for (const m of maps) {
+      if (size[m.slug] / 2 < m.floor || m.bytes[size[m.slug] / 2] == null) continue;
+      if (!pick || (m.data && !pick.data) || (m.data === pick.data && (bytesOf(m) > bytesOf(pick) || (bytesOf(m) === bytesOf(pick) && m.slug < pick.slug)))) pick = m;
+    }
+    if (!pick) break;
+    total -= bytesOf(pick);
+    size[pick.slug] /= 2;
+    total += bytesOf(pick);
+  }
+  return size;
 }

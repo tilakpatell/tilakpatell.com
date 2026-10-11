@@ -60,9 +60,11 @@
 //                  [{ id, name, level (a pack: '<world>/<district>'),
 //                  land: { at, yaw }, line, ground? (in place of the
 //                  site's: an interior's flat floor), door? { at, r,
-//                  prompt } (the way back to the main map), site? (any
-//                  of the site's own rows in place: an interior's fog, no
-//                  weather) }]; the route's
+//                  prompt, to? (a district's id: the way back is to it,
+//                  not the main map) } (the way back), zones? (its own
+//                  doors: `to: { district }`), site? (any of the site's own
+//                  rows in place: an interior's fog, no weather; another
+//                  map's own people and things) }]; the route's
 //                  ?district=<id>, a zone's door `to: { district }`, the
 //                  system panel's "Land at" rows. The default (none, or an
 //                  id the site lacks) is the site as written
@@ -82,6 +84,7 @@ import { SITE as bespin } from './bespin';
 import { SITES as edge } from './edge';
 import { SITES as outer } from './outer';
 import { EXTRA } from './quests';
+import { turnSite } from './turnSite';
 
 export const SITES = { ...desert, ...ice, ...forest, yavin, ...core, coruscant, ...edge, bespin, ...outer };
 
@@ -103,8 +106,12 @@ export function withDistrict(site, id) {
   const d = districtOf(site, id);
   if (d.id === 'main') return site;
   const layers = (site.ground?.layers ?? []).map((l) => (l.type === 'image' && l.pack === site.level ? { ...l, pack: d.level } : l));
-  // (the world's own zones are the main map's; a district's way back is its `door`)
-  const zones = d.door ? [{ id: `${d.id}-out`, name: site.place, door: d.door, to: { district: 'main' } }] : [];
+  // (the world's own zones are the main map's; a district's are its own
+  // `zones`, and its way back is its `door`: to the main map, or to the
+  // district its `to` names, as a cellar's goes back up to its house)
+  const back = d.door?.to ? site.districts.find((q) => q.id === d.door.to) : null;
+  const out = d.door ? [{ id: `${d.id}-out`, name: back?.name ?? site.place, door: d.door, to: { district: back?.id ?? 'main' } }] : [];
+  const zones = [...(d.zones ?? []), ...out];
   return { ...site, ...(d.site ?? {}), district: d.id, level: d.level, land: { ...site.land, ...d.land }, place: d.name ?? site.place, line: d.line ?? site.line, zones, ground: d.ground ? { ...site.ground, ...d.ground } : { ...site.ground, layers } };
 }
 
@@ -133,6 +140,8 @@ export function siteOf(id) {
 // book of sites outside the galaxy (the Rick and Morty planets) is made
 // whole by the same rules the scene was built for.
 export function siteFrom(raw, id, { name, accent } = {}) {
+  // (a site laid out another way than its game map turns to it: turnSite.js)
+  raw = turnSite(raw, raw.turn);
   const places = (raw.places ?? []).map((p) => ({
     ...p,
     things: (p.things ?? []).map((t) => ({ ...t, at: plus(p.at, turn(t.at, p.yaw)), yaw: (t.yaw ?? 0) + (p.yaw ?? 0), place: p.id })),

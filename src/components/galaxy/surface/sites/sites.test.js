@@ -271,6 +271,14 @@ describe('districts: more than one of the game’s maps on a world', () => {
     expect(withDistrict(site, 'nowhere')).toBe(site);
     expect(withDistrict(site, null)).toBe(site);
   });
+
+  it('gives a district its own doors, and a way back to another district than the main map', () => {
+    const below = { id: 'pit', name: 'The pit', level: 'tatooine/pit', land: { at: [5, 5] }, door: { at: [4, 4], r: 2, prompt: 'Back up', to: 'jabba' } };
+    const palace = { ...site.districts[0], door: { at: [1, 1], r: 2, prompt: 'Back to town' }, zones: [{ id: 'down', name: 'The pit', door: { at: [2, 2], r: 2, prompt: 'Down' }, to: { district: 'pit' } }] };
+    const two = { ...site, districts: [palace, below] };
+    expect(withDistrict(two, 'jabba').zones.map((z) => [z.id, z.to.district])).toEqual([['down', 'pit'], ['jabba-out', 'main']]);
+    expect(withDistrict(two, 'pit').zones).toEqual([{ id: 'pit-out', name: 'Jabba’s palace', door: below.door, to: { district: 'jabba' } }]);
+  });
 });
 
 describe('the worlds drawn from the game’s levels', () => {
@@ -281,6 +289,121 @@ describe('the worlds drawn from the game’s levels', () => {
     const bunker = endor.places.find((p) => p.id === 'bunker');
     expect(bunker.flat.game).toBe(true);
     expect(bunker.things.filter((t) => t.kind === 'bunker' || t.kind === 'bunkerbank').every((t) => t.game)).toBe(true);
+  });
+
+  // (lane E3: a district on another of the game's maps stands on its own pack
+  // alone: the main map's places, cast and scatter are in another frame)
+  const ownMap = (site, id) => {
+    const d = withDistrict(siteOf(site), id);
+    expect(d.ground.layers).toEqual([{ type: 'image', pack: d.level }]);
+    expect(d.ground.flats).toEqual([]);
+    for (const k of ['places', 'things_all', 'scatter', 'life', 'rides', 'quests']) expect(d[k], `${site}/${id}: ${k}`).toEqual([]);
+    expect(d.zones.map((z) => z.to)).toEqual([{ district: 'main' }]);
+    return d;
+  };
+
+  it('Kashyyyk stands on Kashyyyk_01, its beach over the game’s sea, Kashyyyk_02 a district (Review Focus 3)', () => {
+    const k = SITES.kashyyyk;
+    expect(k.level).toBe('kashyyyk');
+    expect(k.ground.layers).toEqual([{ type: 'image', pack: 'kashyyyk' }]);
+    expect(k.ground.base).toBeUndefined();
+    // (the landing on the sand, over the lagoon the pack's ground dips under)
+    expect(k.water.level).toBeLessThan(-0.2);
+    expect(k.districts.map((d) => [d.id, d.level])).toEqual([['second', 'kashyyyk/second']]);
+    ownMap('kashyyyk', 'second');
+  });
+
+  it('Geonosis stands on Geonosis_01, its places on the pack’s ground, Geonosis_02 a district (Review Focus 2)', () => {
+    const g = SITES.geonosis;
+    expect(g.level).toBe('geonosis');
+    expect(g.ground.layers).toEqual([{ type: 'image', pack: 'geonosis' }]);
+    // (the places keep their ids; their flats are the flight's, so the game's ground is the ground)
+    expect(g.places.map((p) => p.id)).toEqual(['arena', 'battle', 'command', 'foundry', 'hangar', 'hive', 'coreships']);
+    for (const p of g.places.filter((q) => q.flat)) expect(p.flat.game, p.id).toBe(true);
+    expect(g.districts.map((d) => [d.id, d.level])).toEqual([['second', 'geonosis/second']]);
+    ownMap('geonosis', 'second');
+  });
+
+  it('Endor has the village, the research station and the bunker’s inside as districts (Review Focus 1)', () => {
+    const e = SITES.endor;
+    expect(e.districts.map((d) => [d.id, d.level])).toEqual([
+      ['village', 'endor/village'],
+      ['station', 'endor/station'],
+      ['bunker', 'endor/bunker'],
+    ]);
+    // (the village's walkways are the pack's floors in the air: a fall off them puts you back)
+    const village = ownMap('endor', 'village');
+    expect(typeof village.fall).toBe('number');
+    ownMap('endor', 'station');
+    // (the bunker's inside is Endor_01's own halls, in the main map's frame, through the bunker's door)
+    expect(e.zones.find((z) => z.to?.district === 'bunker')).toBeTruthy();
+    const bunker = withDistrict(siteOf('endor'), 'bunker');
+    expect(bunker.level).toBe('endor/bunker');
+    expect(bunker.zones.map((z) => z.to)).toEqual([{ district: 'main' }]);
+  });
+
+  // (lane E2: the packs' level.json, in git though their bytes are published)
+  const pack = (level) => JSON.parse(readFileSync(new URL(`../../../../../public/models/galaxy/bf2017/levels/${level}/level.json`, import.meta.url), 'utf8'));
+
+  it('Naboo stands on Naboo_01, its water at the canals the game floats its lilies on (Review Focus 1)', () => {
+    const naboo = SITES.naboo;
+    expect(naboo.level).toBe('naboo');
+    expect(naboo.ground.layers).toEqual([{ type: 'image', pack: 'naboo' }]);
+    // (36 lilies on Theed's canals in Naboo_01's instances, all at 432.81 m;
+    // the pack's origin is the plaza's ground in the game)
+    const CANALS = 432.81;
+    expect(Math.abs(naboo.water.level - (CANALS - pack('naboo').origin[1]))).toBeLessThan(0.2);
+    // (the site's built palace is the flight's: the level draws the game's)
+    expect(naboo.places.find((p) => p.id === 'palace').things.every((t) => t.game)).toBe(true);
+  });
+
+  it('Kamino stands on Kamino_01 over its sea: off a platform is into the sea and back, onto nothing under it (Review Focus 2)', () => {
+    const kamino = SITES.kamino;
+    expect(kamino.level).toBe('kamino');
+    // (no ground in the map, so the site's y is the game's; the ocean is
+    // Shared_Art's WaterSurfaceEntityData, at -296.42 m)
+    expect(pack('kamino').origin[1]).toBe(0);
+    expect(kamino.water.level).toBeCloseTo(-296.42, 2);
+    // the line under which you are put back where you landed is over the sea,
+    // so no solid under the water is ever stood on, and 10 m under every deck
+    // the site stands its people on, so nobody on a deck is put back
+    expect(kamino.fall).toBeGreaterThan(kamino.water.level);
+    for (const f of kamino.floors) expect(kamino.fall, `${f.x}, ${f.z}`).toBeLessThan(f.y - 10);
+    for (const a of kamino.life.filter((q) => q.level != null)) expect(a.level, a.kind).toBeGreaterThan(kamino.fall);
+  });
+
+  it('every door into a district names one its world has, and every district has its door back (Review Focus 3)', () => {
+    for (const id of ['hoth', 'naboo', 'kamino']) {
+      const site = SITES[id];
+      const ids = new Set(site.districts.map((d) => d.id));
+      const doors = site.zones.filter((z) => z.to?.district);
+      expect(doors.length, id).toBeGreaterThan(0);
+      for (const z of doors) expect(ids.has(z.to.district), `${id}: ${z.id}`).toBe(true);
+      for (const d of site.districts) expect(withDistrict(site, d.id).zones.map((z) => z.to.district), `${id}/${d.id}`).toEqual(['main']);
+    }
+  });
+
+  it('Tatooine stands on Tatooine_01, Mos Eisley’s built town left to the level, its palace and pit districts in their own frame', () => {
+    const t = siteOf('tatooine');
+    expect(t.level).toBe('tatooine');
+    expect(t.ground.layers).toEqual([{ type: 'image', pack: 'tatooine' }]);
+    // (the flight keeps the desert it drew)
+    expect(t.ground.flight.map((l) => l.type)).toEqual(['swell', 'dunes', 'mesas', 'mountains']);
+    const mos = t.places.find((p) => p.id === 'moseisley');
+    expect(mos.flat.game).toBe(true);
+    expect(mos.things.every((x) => x.game)).toBe(true);
+    // (the stalls' people stand at the game's own stalls, none at a built one the level leaves out)
+    const built = t.things_all.filter((x) => x.kind === 'stall' && !x.game);
+    for (const w of t.wants.filter((q) => q.id.startsWith('stall'))) for (const at of w.spots) expect(built.every((x) => Math.hypot(at[0] - x.at[0], at[1] - x.at[1]) > 4), w.id).toBe(true);
+    // (the palace's road leads to the game's palace; its pit's way back is to the palace, not the town)
+    expect(t.zones.find((z) => z.id === 'jabbaroad').to).toEqual({ district: 'jabba' });
+    const palace = withDistrict(t, 'jabba');
+    expect(palace).toMatchObject({ level: 'tatooine/jabba', district: 'jabba', places: [], things_all: [] });
+    expect(palace.ground.layers).toEqual([{ type: 'image', pack: 'tatooine/jabba' }]);
+    expect(palace.zones.map((z) => z.to.district)).toEqual(['jabba-inside', 'main']);
+    const pit = withDistrict(t, 'jabba-inside');
+    expect(pit).toMatchObject({ level: 'tatooine/jabba-inside', weather: [], life: [] });
+    expect(pit.zones).toEqual([expect.objectContaining({ to: { district: 'jabba' } })]);
   });
 
   it('Bespin stands on CloudCity_01’s walkways, its fall above the city below, the campaign’s palace a district (Review Focus 3)', () => {

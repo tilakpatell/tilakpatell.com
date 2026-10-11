@@ -15,7 +15,7 @@
 // build.
 //
 // The output, per cell of the level pack's frame (lane L's 128 m):
-//   { format: 1, cell, count, kinds, skipped, textures: [name], files: { name: ktx2 },
+//   { format: 1, cell, count, kinds, normalOnly, skipped, textures: [name], files: { name: ktx2 },
 //     cells: { "cx,cz": [{ kind, position, quaternion, size, normal, texture,
 //       opacity, tile?, shader?, template? }] } }
 // `normal` is the axis the box projects along (AXIS) turned into the pack's
@@ -24,8 +24,13 @@
 // normal, not this.
 //
 // What the site draws is the decal's colour: a decal whose shader binds no
-// colour map (the normal-only volume decals bind T_DefaultBlack) is left
-// out and counted as `texture`.
+// colour map is left out and counted as `texture`, but for the normal-only
+// volume decals (SS_vDecal_NormalOnly_01: Endor_01's 11 bumped-metal
+// plates), which are decals still, a dent in what they lie on (lane D2):
+// kept with `texture: null` and `normalOnly: true`, counted in the json's
+// `normalOnly`. Their shader binds T_DefaultBlack alone; the template's own
+// normal map is not in the export, so nothing draws them until it is
+// (decalScene.js passes them over).
 //
 // readDecal(raw, extras) → decal | { skip } ; rebaseDecal(decal, origin, yaw) ;
 // colourOf(textureNames) → name | null ; decalsOf(extras, pack, { subworlds }) → json
@@ -65,6 +70,9 @@ function turn(v, [x, y, z, w]) {
 // a · b for quaternions [x, y, z, w]
 const qmul = ([ax, ay, az, aw], [bx, by, bz, bw]) => [aw * bx + ax * bw + ay * bz - az * by, aw * by - ax * bz + ay * bw + az * bx, aw * bz + ax * by - ay * bx + az * bw, aw * bw - ax * bx - ay * by - az * bz];
 
+// the volume decal shaders that bend the surface's normal and draw no colour
+export const NORMAL_ONLY = /NormalOnly/i;
+
 export function readDecal(raw, extras = {}) {
   if (!raw || raw.enabled === false) return { skip: 'off' };
   const quaternion = (raw.quaternion ?? [0, 0, 0, 1]).map(Number);
@@ -83,6 +91,7 @@ export function readDecal(raw, extras = {}) {
   if (raw.type === 'volume') {
     const shader = extras.decalTemplates?.[raw.template]?.Shader?.Shader;
     const texture = colourOf(extras.shaderTextures?.[shader]);
+    if (!texture && NORMAL_ONLY.test(shader ?? '')) return { ...base, texture: null, normalOnly: true, opacity: Number(raw.alpha ?? 1), template: raw.template };
     if (!texture) return { skip: 'texture' };
     return { ...base, texture, opacity: Number(raw.alpha ?? 1), template: raw.template, ...(raw.row || raw.column ? { cellRC: [raw.row ?? 0, raw.column ?? 0] } : {}) };
   }
@@ -102,7 +111,7 @@ export function rebaseDecal(decal, origin = [0, 0, 0], yaw = 0) {
 
 const tidy = (d) => {
   const out = { kind: d.kind, position: d.position.map(r2), quaternion: d.quaternion.map(r4), size: d.size.map(r2), normal: d.normal.map(r4), texture: d.texture, opacity: r2(d.opacity) };
-  for (const k of ['tile', 'cellRC', 'shader', 'template']) if (d[k] != null) out[k] = d[k];
+  for (const k of ['tile', 'cellRC', 'shader', 'template', 'normalOnly']) if (d[k] != null) out[k] = d[k];
   return out;
 };
 
@@ -116,6 +125,7 @@ export function decalsOf(extras, pack = {}, { subworlds = null } = {}) {
   const cells = {};
   const textures = new Set();
   let count = 0;
+  let normalOnly = 0;
   const skip = (why) => (skipped[why] = (skipped[why] ?? 0) + 1);
   for (const raw of extras?.decals ?? []) {
     if (subworlds && !keepSub(subworlds[raw.sub])) {
@@ -133,11 +143,12 @@ export function decalsOf(extras, pack = {}, { subworlds = null } = {}) {
       continue;
     }
     (cells[cellOf(at.position, cell)] ??= []).push(tidy(at));
-    textures.add(at.texture);
+    if (at.texture) textures.add(at.texture);
+    else normalOnly++;
     kinds[at.kind]++;
     count++;
   }
   const names = [...textures].sort();
   const files = Object.fromEntries(names.map((n) => [n, extras?.textureFiles?.[n] ?? null]));
-  return { format: 1, cell, count, kinds, skipped, textures: names, files, cells };
+  return { format: 1, cell, count, kinds, normalOnly, skipped, textures: names, files, cells };
 }
