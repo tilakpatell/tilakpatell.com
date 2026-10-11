@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, setSearchParams } from 'react-router-dom';
 import SurfaceView from '../../galaxy/surface/SurfaceView';
 import ChaseHud from '../../galaxy/surface/ChaseHud';
 import AssaultHud from '../../galaxy/surface/AssaultHud';
@@ -42,7 +42,7 @@ const CLIMB = 700; // ms after the cruiser's away before the page goes back to s
 // ranks. Saves are the planets' own (./saves.js).
 export default function RmSurface({ id, onLeave }) {
   const { pathname } = useLocation();
-  const [params] = useSearchParams();
+  const [params] = setSearchParams();
   const site = useMemo(() => planetSite(id), [id]);
   // a mission played here (?mission=<id>): the planet's, when it has one by that name
   const mission = useMemo(() => {

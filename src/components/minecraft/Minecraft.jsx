@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { setSearchParams } from 'react-router-dom';
 import '@fontsource/press-start-2p/400.css';
 import { useMediaQuery } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
@@ -133,7 +133,7 @@ export default function Minecraft({ mode = 'page', onExit = null }) {
   const [hud, setHud] = useState(null);
   const [seed, setSeed] = useState('');
   // the world is the address's (?world=<seed>) on the page; over the island, the one played last
-  const [params, setParams] = useSearchParams();
+  const [params, setParams] = setSearchParams();
   const want = mode === 'page' ? params.get('world') : null;
   const [props] = useState(() => (want ? { seed: want } : {}));
   const [say, setSay] = useState(null);

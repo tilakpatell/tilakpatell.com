@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams, setSearchParams } from 'react-router-dom';
 import { local, useDocumentTitle, useReducedMotion } from '../lib/hooks';
 import { CREWS, SHIP_KEY, crewById, parseShip } from '../components/universe/crews';
 import { CONTROLS_KEY, readControls } from '../components/universe/controls';
@@ -95,7 +95,7 @@ export default function GalaxySurface() {
   const site = useMemo(() => (id ? siteOf(id) : null), [id]);
   const sys = systemById(id);
   // a mission played down here (?mission=chase, or the mode it is: ?mode=galacticAssault, modes.js): you start in it
-  const [params] = useSearchParams();
+  const [params] = setSearchParams();
   const mission = useMemo(() => missionOf(id, params.get('mission') ?? missionForMode(id, params.get('mode'))), [id, params]);
   const missionKey = mission ? `${id}/${mission.id}` : null;
   // the scene's view of it, as the page needs it (how it stands, the count,
