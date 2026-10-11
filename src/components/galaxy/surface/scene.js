@@ -109,7 +109,6 @@ import { floorShadow } from '../../../lib/three/grounding';
 import { PROPS as GALAXY_PROPS, SCATTER as GALAXY_SCATTER } from './props';
 import { createPlacer } from './placer';
 import { createLevel, levelBusy, levelGround, levelPlaced } from './level';
-import { ownDressing } from './sites';
 import { anyFigure, createActors, modelFigure } from './actors';
 import { RIDES as GALAXY_RIDES } from './rides';
 import { SEATS, poseRider } from './riders';
@@ -363,8 +362,8 @@ export async function create(canvas, ctx) {
   // ground map is painted with the trees' crowns over it)
   const r = rng(site.ground.seed ?? 1);
   const avoid = [...site.places.map((p) => ({ at: p.at, r: p.flat?.r ?? p.r * 0.6 })), { at: site.land.at, r: 30 }];
-  // (on a world drawn from the game's level, only the game's: sites/index.js's ownDressing)
-  const scattered = site.scatter.filter((s) => ownDressing(site, s)).map((s) => {
+  // (on a world drawn from the game's level, what the game places itself is left to it)
+  const scattered = site.scatter.filter((s) => !(site.level && s.game)).map((s) => {
     const items = [];
     const [r0, r1] = s.within ?? [20, site.reach];
     let tries = 0;
@@ -454,7 +453,7 @@ export async function create(canvas, ctx) {
   // (things that float, a bongo on Lake Paonga, ride the waves: floats.js)
   const floaters = [];
   for (const t of [...site.things_all, ...placed.things]) {
-    if (!t.placed && !ownDressing(site, t)) continue;
+    if (site.level && t.game) continue;
     const put = placer.put(t);
     if (t.float && water?.height) put.then((o) => o && floaters.push({ o, x: o.position.x, z: o.position.z, yaw: t.yaw ?? 0, float: t.float }));
   }
@@ -462,7 +461,7 @@ export async function create(canvas, ctx) {
   // the grass round you (lib/three/grass, Bruno's: a triangle a blade, one
   // draw, the patch going with you), standing on the ground map and its
   // colour, where the site grows it
-  const grass = pieces.grass && ownDressing(site, site.grass)
+  const grass = pieces.grass
     ? createGrass({ ground: groundMap, wind, side: amounts.grass.side, size: amounts.grass.size, height: site.grass.h?.[1] ?? 0.5, width: site.grass.w ?? 0.05, root: 0.35 })
     : null;
   if (grass) scene.add(grass.mesh);

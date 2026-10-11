@@ -119,9 +119,7 @@ export const SITES = {
     // drifts between the fern beds, soft green over the dirt, not a lawn)
     grass: { h: [0.12, 0.36], w: 0.035, root: '#3a4a26', mid: '#52703a', tip: '#8fae62', dry: '#8c8050', cover: 0.62, scale: 45, above: 0, wind: 0.35 },
     weather: [{ kind: 'motes', count: 700 }],
-    // (where the game's first team spawns in Galactic Assault, FantasyBattle_Logic:5:
-    // game 564.8, 144.0, in the pack's frame; the owner's rule, lane E0)
-    land: { at: [353, -187], yaw: -0.96 },
+    land: { at: [0, 0], yaw: 0.6 },
     lines: {
       out: {
         xwing: [['luke', 'Endor. Quiet, Artoo. There could be scout troopers anywhere.'], ['r2', '(A very quiet beep.)']],

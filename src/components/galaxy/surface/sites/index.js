@@ -89,14 +89,6 @@ export const SITES = { ...desert, ...ice, ...forest, yavin, ...core, coruscant, 
 export const LANDABLE = SYSTEMS.filter((s) => SITES[s.id]).map((s) => s.id);
 export const canLand = (id) => Boolean(SITES[id]);
 
-// What of a site's own dressing a world draws (the owner's rule, lane E0):
-// on a world drawn from the game's level, only the game's (its map, its
-// placed actors and vehicles, its light); the site's invented scatter, flora,
-// grass and built props are the flight's planet's, and stand on the surface
-// only where a row says `keep: true` (a quest's prop that must be there).
-// A world without a level draws all of its own, as ever.
-export const ownDressing = (site, row) => !site?.level || row?.keep === true;
-
 // A site's district by id: one of its `districts`, else the site as it is
 // (`main`), so an unknown id lands where the world always did
 export function districtOf(site, id) {

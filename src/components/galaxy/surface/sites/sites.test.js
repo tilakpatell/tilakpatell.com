@@ -8,7 +8,7 @@ import { FIGURES } from '../figures';
 import { PROPS, SCATTER } from '../props';
 import { RIDES } from '../rides';
 import { LAYER_TYPES, REACH, heightGrid, makeHeight } from '../terrain';
-import { LANDABLE, SITES, districtOf, ownDressing, siteFrom, siteOf, withDistrict } from '.';
+import { LANDABLE, SITES, districtOf, siteFrom, siteOf, withDistrict } from '.';
 import { EXTRA } from './quests';
 import { CREW } from '../crew';
 import { talkTree } from '../talk';
@@ -257,17 +257,6 @@ describe('the worlds drawn from the game’s levels', () => {
     const bunker = endor.places.find((p) => p.id === 'bunker');
     expect(bunker.flat.game).toBe(true);
     expect(bunker.things.filter((t) => t.kind === 'bunker' || t.kind === 'bunkerbank').every((t) => t.game)).toBe(true);
-  });
-});
-
-describe('a world drawn from the game’s level draws the game’s, not its own dressing', () => {
-  it('leaves the site’s scatter, props and grass to the flight, but for a row that says keep', () => {
-    const site = { level: 'endor' };
-    expect(ownDressing(site, { kind: 'redwood' })).toBe(false);
-    expect(ownDressing(site, { kind: 'nettrap', keep: true })).toBe(true);
-    expect(ownDressing(site, undefined)).toBe(false);
-    // (a world with no level draws all of its own)
-    expect(ownDressing({}, { kind: 'redwood' })).toBe(true);
   });
 });
 
