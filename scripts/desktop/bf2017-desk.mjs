@@ -31,7 +31,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { REPO, deps, fresh, git, pullRequest, push, summary, workspace } from './lib.mjs';
+import { REPO, deps, fresh, git, keepAwake, pullRequest, push, summary, waitForGpu, workspace } from './lib.mjs';
 
 export const JOBS = ['panoramas', 'atlases', 'textures', 'uastc', 'depots', 'gate'];
 export const EVIDENCE = 'docs/superpowers/evidence/bf2017-picture';
@@ -138,7 +138,7 @@ export const writeJson = (file, data) => {
 export const today = (d = new Date()) => d.toISOString().slice(0, 10);
 
 // A job's command line. `spec` is the job:
-//   { job, title, needs(d) → [need], plan({ root, d, env }) → { items, notes? }, columns,
+//   { job, title, vram (MiB of the GPU it waits for; 0 for none), needs(d) → [need], plan({ root, d, env }) → { items, notes? }, columns,
 //     run(items, { root, d, env, log }) → { files: [repo paths changed], report: markdown, failed? } }
 // A dry run prints the plan and the checks and writes plan.json to --out.
 // A real run stops before anything when a need is missing, makes the items
@@ -166,6 +166,16 @@ export async function main(spec, argv = process.argv.slice(2), env = process.env
     summary(md);
     throw new Error(`missing on this machine: ${missing.map((c) => c.name).join(', ')} (node scripts/desktop/doctor.mjs says how to fix each)`);
   }
+  if (spec.vram && !(await waitForGpu(spec.vram, { minutes: Number(env.DESKTOP_GPU_WAIT_MINUTES ?? 45), log }))) throw new Error(`the GPU is busy (${spec.job} wants ${Math.round(spec.vram / 1024)} GB free): run it again when it is free`);
+  const awake = keepAwake();
+  try {
+    return await makeIn(spec, a, d, env, checks, log);
+  } finally {
+    awake.stop();
+  }
+}
+
+async function makeIn(spec, a, d, env, checks, log) {
   const branch = `desktop/bf2017-${spec.job}-${today()}`;
   const root = a.noPr ? REPO : workspace('bf2017');
   if (!a.noPr) {
