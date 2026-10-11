@@ -2,7 +2,7 @@
 
 Written by `node scripts/bf2017-map-audit.mjs --all` (the sixth design’s lane maps); do not edit by hand. An E lane runs `node scripts/bf2017-map-audit.mjs <level> --refresh` before its PR, and its row’s drawn columns fill from its pack’s README. `npm run maps:bf2017` checks it in CI.
 
-Of 44 usable maps: 44 have a rulebook, 3 a pack, 3 drawn columns; 27 carry a multiplayer mode in their records.
+Of 44 usable maps: 44 have a rulebook, 5 a pack, 5 drawn columns; 27 carry a multiplayer mode in their records.
 
 Columns: in the map / in the pack / drawn (instances: drawn at low·mid·high·ultra, from the pack’s cull row). A map with no pack has its map column and `none`. Modes: in the records · in modes.json · with a rulebook · with hand stages.
 
@@ -10,7 +10,9 @@ Columns: in the map / in the pack / drawn (instances: drawn at low·mid·high·u
 |---|---|---|--:|---|---|---|---|---|---|---|---|
 | hoth_01 | multiplayer | hoth | 24 / 24 | 24532 / 6051 / 5815·5815·5815·– | 1234 / 0 / 0 | 0 / 0 / 0 | 648 / 398 / 398 | 28 / 0 / 0 | 31 / 0 / 0 | galacticAssault, hvv, blast, showdown, coop, arcade · galacticAssault, hvv, blast, showdown, coop, arcade · galacticAssault, hvv, blast, showdown, coop, arcade · galacticAssault | – |
 | sb_endor_01 | space | sb_endor | 17 / 5 | 4602 / 2515 / 1193·1629·2158·– | 232 / 0 / 0 | 15 / 0 / 0 | 837 / 0 / 0 | 0 / 0 / 0 | 279 / 0 / 0 | starfighter, heroStarfighters, arcade · starfighter, heroStarfighters, arcade · heroStarfighters, arcade, starfighter · starfighter | – |
+| sb_fondor_01 | space | sb_fondor | 17 / 5 | 4528 / 2495 / 452·267·338·– | 995 / 0 / 0 | 132 / 0 / 0 | 622 / 0 / 0 | 0 / 0 / 0 | 349 / 0 / 0 | starfighter, heroStarfighters, arcade · starfighter, heroStarfighters, arcade · heroStarfighters, arcade, starfighter · starfighter | – |
 | sb_kamino_01 | space | sb_kamino | 17 / 5 | 25226 / 13843 / 3093·6764·6935·– | 602 / 0 / 0 | 50 / 0 / 0 | 1103 / 0 / 0 | 13 / 0 / 0 | 252 / 0 / 0 | starfighter, heroStarfighters, arcade · starfighter, heroStarfighters, arcade · heroStarfighters, arcade, starfighter · starfighter | – |
+| sb_droidbattleship_01 | space | sb_droidbattleship | 17 / 5 | 5786 / 1878 / 1731·1732·1732·– | 2542 / 0 / 0 | 80 / 0 / 0 | 1978 / 0 / 0 | 0 / 0 / 0 | 394 / 0 / 0 | starfighter, heroStarfighters, arcade · starfighter, heroStarfighters, arcade · heroStarfighters, arcade, starfighter · starfighter | – |
 | hoth_02 | multiplayer | – | 16 | 6868 / none | 54 | 0 | 262 | 0 | 20 | supremacy · supremacy · supremacy · – | no pack |
 | endor_01 | multiplayer | – | 26 | 18530 / none | 2335 | 23 | 1505 | 536 | 12 | galacticAssault, hvv, blast, showdown, coop, arcade · galacticAssault, hvv, blast, showdown, coop, arcade · galacticAssault, hvv, blast, showdown, coop, arcade · galacticAssault | no pack |
 | endor_02 | multiplayer | – | 10 | 9302 / none | 236 | 2 | 260 | 176 | 0 | blast, ewokHunt · blast, ewokHunt · blast, ewokHunt · – | no pack |
@@ -33,8 +35,6 @@ Columns: in the map / in the pack / drawn (instances: drawn at low·mid·high·u
 | deathstar02_01 | multiplayer | – | 22 | 21722 / none | 1992 | 119 | 640 | 20 | 5 | galacticAssault, hvv, blast, supremacy, showdown, coop, arcade · galacticAssault, hvv, blast, supremacy, showdown, coop, arcade · galacticAssault, hvv, blast, supremacy, showdown, coop, arcade · galacticAssault | no pack |
 | felucia_01 | multiplayer | – | 44 | 33133 / none | 724 | 507 | 1958 | 16 | 15 | hvv, supremacy, showdown, coop · hvv, supremacy, showdown, coop · hvv, supremacy, showdown, coop · – | no pack |
 | kessel_01 | multiplayer | – | 21 | 6872 / none | 660 | 0 | 424 | 0 | 1 | hvv, blast, extraction, showdown, coop · hvv, blast, extraction, showdown, coop · hvv, blast, extraction, showdown, coop · – | no pack |
-| sb_fondor_01 | space | – | 17 | 4528 / none | 995 | 132 | 622 | 0 | 349 | starfighter, heroStarfighters, arcade · starfighter, heroStarfighters, arcade · heroStarfighters, arcade, starfighter · – | no pack |
-| sb_droidbattleship_01 | space | – | 17 | 5786 / none | 2542 | 80 | 1978 | 0 | 394 | starfighter, heroStarfighters, arcade · starfighter, heroStarfighters, arcade · heroStarfighters, arcade, starfighter · – | no pack |
 | a1_m0lib_ds02 | campaign | – | 6 | 13788 / none | 2863 | 4287 | 726 | 19 | 29 | – · – · – · – | no pack |
 | a1_m1end_ds02 | campaign | – | 7 | 918 / none | 63 | 7 | 801 | 35 | 9 | – · – · – · – | no pack |
 | a1_m1end_ds04 | campaign | – | 11 | 4114 / none | 0 | 0 | 281 | 0 | 2 | – · – · – · – | no pack |

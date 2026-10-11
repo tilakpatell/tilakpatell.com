@@ -192,8 +192,10 @@ function wire(root, row, mode, byGuid, subName) {
     let value = null;
     if (c.Source?.$class) value = byGuid.get(c.Source.$class)?.at ?? null;
     else if (sub.objects[c.Source?.$ref]?.$type === 'InterfaceDescriptorData') value = fields.get(String(c.SourceField)) ?? null;
-    if (value == null) continue;
-    (target.prefab.inputs ??= {})[fieldName(c.TargetField)] = value;
+    // (only the fields whose names are known: an undecoded hash is read by nothing)
+    const field = fieldName(c.TargetField);
+    if (value == null || field.startsWith('0x')) continue;
+    (target.prefab.inputs ??= {})[field] = value;
     target.prefab.inputs_source = `${subName}#PropertyConnections`;
   }
 }

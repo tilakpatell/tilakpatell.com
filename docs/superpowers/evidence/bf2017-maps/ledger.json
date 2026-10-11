@@ -270,6 +270,127 @@
    }
   },
   {
+   "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
+   "key": "sb_fondor_01",
+   "kind": "space",
+   "world": "sb_fondor",
+   "pack": "sb_fondor",
+   "subLevels": {
+    "inMap": 17,
+    "inPack": 5
+   },
+   "instances": {
+    "inMap": 4528,
+    "inPack": 2495,
+    "drawn": {
+     "low": 452,
+     "mid": 267,
+     "high": 338,
+     "ultra": null
+    }
+   },
+   "lights": {
+    "inMap": 995,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "decals": {
+    "inMap": 132,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "effects": {
+    "inMap": 622,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "actors": {
+    "inMap": 0,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "vehicles": {
+    "inMap": 349,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [
+     "starfighter",
+     "heroStarfighters",
+     "arcade"
+    ],
+    "inModesJson": [
+     "starfighter",
+     "heroStarfighters",
+     "arcade"
+    ],
+    "withRulebook": [
+     "heroStarfighters",
+     "arcade",
+     "starfighter"
+    ],
+    "withStages": [
+     "starfighter"
+    ]
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "sb_fondor.json",
+    "unplaced": 9,
+    "stated": 9
+   },
+   "gaps": [],
+   "data": {
+    "index": {
+     "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
+     "kind": "space",
+     "instances": 4528,
+     "meshes": 346,
+     "spawns": 349,
+     "lights": 995,
+     "effects": 622,
+     "decals": 132,
+     "bytes": 1059745,
+     "terrain": []
+    },
+    "manifest": {
+     "subworlds": [
+      "SB_Fondor_01",
+      "VFX",
+      "Art",
+      "Lobby",
+      "SplitScreen",
+      "Cinematics",
+      "Fondor_01_IntroTeam2_NIS",
+      "Fondor_01_OutroTeam2_NIS",
+      "Fondor_01_IntroTeam1_NIS",
+      "Fondor_01_OutroTeam1_NIS",
+      "GameModes",
+      "SpaceBattle",
+      "EOR",
+      "Mode7",
+      "Mode7_Intro",
+      "SpaceArcadeTeamBattle",
+      "Level_Design"
+     ],
+     "groups": [
+      {
+       "kind": "actor",
+       "count": 0
+      }
+     ],
+     "vehicleSpawns": {
+      "length": 349
+     }
+    }
+   }
+  },
+  {
    "level": "Levels/Space/SB_Kamino_01/SB_Kamino_01",
    "key": "sb_kamino_01",
    "kind": "space",
@@ -386,6 +507,127 @@
      ],
      "vehicleSpawns": {
       "length": 252
+     }
+    }
+   }
+  },
+  {
+   "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
+   "key": "sb_droidbattleship_01",
+   "kind": "space",
+   "world": "sb_droidbattleship",
+   "pack": "sb_droidbattleship",
+   "subLevels": {
+    "inMap": 17,
+    "inPack": 5
+   },
+   "instances": {
+    "inMap": 5786,
+    "inPack": 1878,
+    "drawn": {
+     "low": 1731,
+     "mid": 1732,
+     "high": 1732,
+     "ultra": null
+    }
+   },
+   "lights": {
+    "inMap": 2542,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "decals": {
+    "inMap": 80,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "effects": {
+    "inMap": 1978,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "actors": {
+    "inMap": 0,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "vehicles": {
+    "inMap": 394,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [
+     "starfighter",
+     "heroStarfighters",
+     "arcade"
+    ],
+    "inModesJson": [
+     "starfighter",
+     "heroStarfighters",
+     "arcade"
+    ],
+    "withRulebook": [
+     "heroStarfighters",
+     "arcade",
+     "starfighter"
+    ],
+    "withStages": [
+     "starfighter"
+    ]
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "sb_droidbattleship.json",
+    "unplaced": 15,
+    "stated": 15
+   },
+   "gaps": [],
+   "data": {
+    "index": {
+     "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
+     "kind": "space",
+     "instances": 5786,
+     "meshes": 183,
+     "spawns": 394,
+     "lights": 2542,
+     "effects": 1978,
+     "decals": 80,
+     "bytes": 1994636,
+     "terrain": []
+    },
+    "manifest": {
+     "subworlds": [
+      "SB_DroidBattleShip_01",
+      "Lobby",
+      "SplitScreen",
+      "VFX",
+      "Level_Design",
+      "GameModes",
+      "Mode7",
+      "Mode7_Intro",
+      "SpaceBattle",
+      "SpaceArcadeTeamBattle",
+      "Art",
+      "Art_LargeGameMode",
+      "Cinematics",
+      "SB_DroidBattleShip_01_OutroTeam2_NIS",
+      "SB_DroidBattleShip_01_IntroTeam2_NIS",
+      "SB_DroidBattleShip_01_OutroTeam1_NIS",
+      "SB_DroidBattleShip_01_IntroTeam1_NIS"
+     ],
+     "groups": [
+      {
+       "kind": "actor",
+       "count": 0
+      }
+     ],
+     "vehicleSpawns": {
+      "length": 394
      }
     }
    }
@@ -3267,238 +3509,6 @@
      ],
      "vehicleSpawns": {
       "length": 1
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
-   "key": "sb_fondor_01",
-   "kind": "space",
-   "world": "fondor",
-   "pack": null,
-   "subLevels": {
-    "inMap": 17,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 4528,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 995,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 132,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 622,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 349,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
-    "inModesJson": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
-    "withRulebook": [
-     "heroStarfighters",
-     "arcade",
-     "starfighter"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "sb_fondor.json",
-    "unplaced": 9,
-    "stated": 9
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
-     "kind": "space",
-     "instances": 4528,
-     "meshes": 346,
-     "spawns": 349,
-     "lights": 995,
-     "effects": 622,
-     "decals": 132,
-     "bytes": 1059745,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "SB_Fondor_01",
-      "VFX",
-      "Art",
-      "Lobby",
-      "SplitScreen",
-      "Cinematics",
-      "Fondor_01_IntroTeam2_NIS",
-      "Fondor_01_OutroTeam2_NIS",
-      "Fondor_01_IntroTeam1_NIS",
-      "Fondor_01_OutroTeam1_NIS",
-      "GameModes",
-      "SpaceBattle",
-      "EOR",
-      "Mode7",
-      "Mode7_Intro",
-      "SpaceArcadeTeamBattle",
-      "Level_Design"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 349
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
-   "key": "sb_droidbattleship_01",
-   "kind": "space",
-   "world": "ryloth",
-   "pack": null,
-   "subLevels": {
-    "inMap": 17,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 5786,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 2542,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 80,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 1978,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 394,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
-    "inModesJson": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
-    "withRulebook": [
-     "heroStarfighters",
-     "arcade",
-     "starfighter"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "sb_droidbattleship.json",
-    "unplaced": 15,
-    "stated": 15
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
-     "kind": "space",
-     "instances": 5786,
-     "meshes": 183,
-     "spawns": 394,
-     "lights": 2542,
-     "effects": 1978,
-     "decals": 80,
-     "bytes": 1994636,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "SB_DroidBattleShip_01",
-      "Lobby",
-      "SplitScreen",
-      "VFX",
-      "Level_Design",
-      "GameModes",
-      "Mode7",
-      "Mode7_Intro",
-      "SpaceBattle",
-      "SpaceArcadeTeamBattle",
-      "Art",
-      "Art_LargeGameMode",
-      "Cinematics",
-      "SB_DroidBattleShip_01_OutroTeam2_NIS",
-      "SB_DroidBattleShip_01_IntroTeam2_NIS",
-      "SB_DroidBattleShip_01_OutroTeam1_NIS",
-      "SB_DroidBattleShip_01_IntroTeam1_NIS"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 394
      }
     }
    }
