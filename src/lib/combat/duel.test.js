@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DUEL, createDuellist, duelStep, guarding, onGuardBroken, onHit, onParried, onStagger, swung } from './duel';
+import { DUEL, createDuellist, duelStep, guarding, onGuardBroken, onHit, onStagger, swung } from './duel';
 
 // a roll that always comes up `v` (0 beats every rate, 0.99 none)
 const always = (v) => () => v;
@@ -87,7 +87,7 @@ describe('your stroke at it', () => {
   const swing = (t, contact = [0.4, 0.6]) => ({ contact, t });
 
   it('blocks when the roll beats its guard, held through your contact and let down after', () => {
-    const d = circling({ guard: 0.6, parry: 0 });
+    const d = circling({ guard: 0.6 });
     const a = duelStep(d, you(0, 10, swing(0)), DT, always(0.5));
     expect(a.state).toBe('block');
     expect(a.block).toBe(true);
@@ -99,55 +99,41 @@ describe('your stroke at it', () => {
   });
 
   it('lets it through when the roll doesn’t beat its guard', () => {
-    const d = circling({ guard: 0.6, parry: 1 });
+    const d = circling({ guard: 0.6 });
     const a = duelStep(d, you(0, 10, swing(0)), DT, always(0.7));
     expect(a.block).toBe(false);
     expect(guarding(d)).toBe(null);
   });
 
   it('never blocks a stroke from out of reach', () => {
-    const d = circling({ guard: 1, parry: 0 });
+    const d = circling({ guard: 1 });
     expect(duelStep(d, you(0, 20, swing(0)), DT, always(0)).block).toBe(false);
   });
 
-  it('parries: the block begun within the window before your contact, and only then', () => {
-    const d = circling({ guard: 1, parry: 1 });
-    // (your contact 0.4 s off: too soon to raise it for a parry; it waits)
-    const early = duelStep(d, you(0, 10, swing(0)), DT, always(0));
-    expect(early.block).toBe(false);
-    expect(early.state).not.toBe('parry');
-    // within the window: up, and a parry
-    const inside = duelStep(d, you(0, 10, swing(0.4 - DUEL.window + 0.05)), DT, always(0));
-    expect(inside.state).toBe('parry');
-    expect(inside.block).toBe(true);
-    expect(guarding(d)).toBe('parry');
+  it('holds its block for a strike whose query would reach it, and not for one that wouldn’t (the engine’s say)', () => {
+    const a = circling({ guard: 1 });
+    expect(duelStep(a, you(0, 10, { ...swing(0), reaches: true }), DT, always(0)).block).toBe(true);
+    const b = circling({ guard: 1 });
+    expect(duelStep(b, you(0, 10, { ...swing(0), reaches: false }), DT, always(0)).block).toBe(false);
   });
 
-  it('a parry roll that fails is a plain block, up at once', () => {
-    const d = circling({ guard: 1, parry: 0.5 });
-    const rolls = [0, 0.9];
-    const out = duelStep(d, you(0, 10, swing(0)), DT, () => rolls.shift() ?? 0.9);
-    expect(out.state).toBe('block');
-    expect(out.block).toBe(true);
+  it('can’t hold it with its stamina spent, and lets it down when it goes', () => {
+    const a = circling({ guard: 1 });
+    expect(duelStep(a, you(0, 10, swing(0), { tired: true }), DT, always(0)).block).toBe(false);
+    const b = circling({ guard: 1 });
+    expect(duelStep(b, you(0, 10, swing(0)), DT, always(0)).block).toBe(true);
+    expect(duelStep(b, you(0, 10, swing(0.2), { tired: true }), DT, always(0)).block).toBe(false);
   });
 
-  it('a stroke seen already past its contact is too late to parry', () => {
-    const d = circling({ guard: 1, parry: 1 });
-    const out = duelStep(d, you(0, 10, swing(0.55)), DT, always(0));
-    expect(out.state).not.toBe('parry');
-  });
-
-  it('ripostes after a parry: your contact passed, it attacks', () => {
-    const d = circling({ guard: 1, parry: 1 });
-    duelStep(d, you(0, 10, swing(0)), DT, always(0));
-    duelStep(d, you(0, 10, swing(0.3)), DT, always(0));
-    const out = duelStep(d, you(0, 10, swing(0.65)), DT, always(0));
+  it('comes at you at once when your stamina’s spent', () => {
+    const d = circling({ guard: 0 });
+    const out = duelStep(d, you(0, 10, null, { out: true }), DT, always(0.99));
     expect(out.state).toBe('attack');
     expect(out.begin).toBe(true);
   });
 
   it('doesn’t block mid-stroke: it’s committed', () => {
-    const d = createDuellist({ reach: 2.2, guard: 1, parry: 1 });
+    const d = createDuellist({ reach: 2.2, guard: 1 });
     d.at = [0, 8];
     run(d, you(0, 10), always(0.99), { until: (o) => o.begin });
     expect(duelStep(d, you(0, 10, swing(0)), DT, always(0)).state).toBe('attack');
@@ -162,22 +148,12 @@ describe('what you do to it', () => {
     return d;
   };
 
-  it('parried, it reels 0.6 s and then attacks', () => {
-    const d = attacking();
-    onParried(d);
-    const outs = run(d, you(0, 10), always(0.99), { n: Math.round(DUEL.stagger.parried / DT) + 2, walk: false });
-    expect(outs[0].state).toBe('stagger');
-    expect(outs[0].stroke).toBe(null);
-    expect(outs[Math.round(DUEL.stagger.parried / DT) - 2].state).toBe('stagger');
-    expect(outs.at(-1).state).toBe('attack');
-    expect(DUEL.stagger.parried).toBe(0.6);
-  });
-
-  it('its guard broken, it reels 2 s', () => {
+  it('its block broken at no stamina, it reels the rulebook’s time', () => {
     const d = attacking();
     onGuardBroken(d);
-    const outs = run(d, you(0, 10), always(0.99), { n: Math.round(2 / DT) + 2, walk: false });
-    expect(outs[Math.round(2 / DT) - 2].state).toBe('stagger');
+    const n = Math.round(DUEL.stagger.broken / DT);
+    const outs = run(d, you(0, 10), always(0.99), { n: n + 2, walk: false });
+    expect(outs[n - 2].state).toBe('stagger');
     expect(outs.at(-1).state).not.toBe('stagger');
   });
 

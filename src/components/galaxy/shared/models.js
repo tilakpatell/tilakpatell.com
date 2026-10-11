@@ -6,6 +6,8 @@
 // the catalogue: which kinds exist and where their files are, and its groups
 // (the game's own come last, so a kind they name wins over the same kind before)
 export { GROUPS, SURFACE_MODELS, lodUrlFor, modelUrlFor, wantsLod } from '../surface/catalog';
+// (the drop's object library: a thing whose model is `game:<name>`, its row in SURFACE_MODELS)
+export { isGame } from '../surface/catalog/bf2017-library';
 // the placer: putting a kind on the ground, singly or as a cluster
 export { createPlacer, loadModel, usesModel, clusterSpecs } from '../surface/placer';
 // the code-built props, for a check that a kind is drawable either way

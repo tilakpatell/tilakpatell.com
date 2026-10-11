@@ -177,7 +177,7 @@ describe('the modes, levels and planets', () => {
   });
 
   it("lists the modes in the game's order, Space Battles with its tile and Endor, the sequel's level refused", () => {
-    expect(info.order[0]).toBe('SpaceBattle');
+    expect(info.order.slice(0, 2)).toEqual(['PlanetaryBattles', 'SpaceBattle']);
     const sb = info.modes.SpaceBattle;
     expect(sb.levels).toContain('SB_Endor_01');
     expect(sb.levels).not.toContain('SB_Resurgent_01');

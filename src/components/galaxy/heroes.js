@@ -5,11 +5,11 @@
 // Node; DeployPanel.jsx offers it, pages/GalaxySurface.jsx reads it, and
 // surface/scene.js walks the hero in the lead of the party.
 //
-//   HEROES                   the roster, in order: { id, fallback (the site's committed figure of a 2017 hero, worn when the game's body can't be fetched: surface/standIn.js), name, tall, src, weapon ('saber' | a gun kind), bolt, saber?, abilities { power, second } (surface/abilityRules.js's kinds, on G and V), blurb, film, side ('galaxy' | 'elsewhere': the crews from other universes walk here too), lean ('light' | 'dark' | null: the side of the galaxy's wars they'd pick, allegiance.js), lines { ours, theirs } (said as a ground assault starts on their side, or against it) }
+//   HEROES                   the roster, in order: { id, soon? (why they can't be played yet: a saber hero not on the 2017 game's rig, which is the only one that fences), fallback (the site's committed figure of a 2017 hero, worn when the game's body can't be fetched: surface/standIn.js), name, tall, src, weapon ('saber' | a gun kind), bolt, saber?, abilities { power, second } (surface/abilityRules.js's kinds, on G and V), blurb, film, side ('galaxy' | 'elsewhere': the crews from other universes walk here too), lean ('light' | 'dark' | null: the side of the galaxy's wars they'd pick, allegiance.js), lines { ours, theirs } (said as a ground assault starts on their side, or against it) }
 //   SABER_COLORS, HILTS      what a saber can be: { id, name, hex } and { id, name, ... }
 //   SKINS, skinsOf(id)       a 2017 hero's outfits, the one they wear first and then the game's others: { id, name, kind (surface/crewList.js's CREW row) }
 //   HERO_KEY                 the localStorage key
-//   readHero(raw, ship)      the choice, made good: { id, skin, color, hilt, stance, gun, mods, perks, kind? (a trooper class's body: surface/troopers.js) } (skin null for a hero with no outfits) (the ship's own lead when nothing's kept or it's nonsense; the stance is combatRules.js's, the gun and mods weaponRules.js's)
+//   readHero(raw, ship)      the choice, made good: { id, skin, color, hilt, stance, gun, mods, perks, kind? (a trooper class's body: surface/troopers.js) } (skin null for a hero with no outfits) (the ship's own lead when nothing's kept, it's nonsense or the hero's `soon`; the stance is the hero's own, one blade or a staff, the gun and mods weaponRules.js's)
 //   heroSpec(hero, ship)     the party spec for them (universe/footScene.js's PARTY shape), the saber (with its stance) on it where they carry one, else the gun they picked with its mods
 //   partyFor(spec, crew)     the two who walk: the hero, and the ship's crewmate who isn't them (the crew as it is with no hero)
 //   loadoutLine(hero)        the choice in a line: a Jedi's blade, hilt and stance, or the gun and its mods; the perks counted
@@ -17,7 +17,7 @@
 //   defaultHeroId(ship)      who flies that ship
 //   leanText(lean)           a hero's lean, for their card (or null)
 
-import { STANCES } from './surface/combatRules';
+import { STANCE_IDS, STANCE_NAMES } from './surface/combatRules';
 import { MODS, MAX_MODS, PICKABLE, WEAPONS } from './surface/weaponRules';
 import { readPerks } from './perks';
 import { CREW, fileOf } from './surface/crewList';
@@ -75,7 +75,7 @@ export const HEROES = [
   { id: 'leia', fallback: crew('leia'), name: 'Leia Organa', tall: 1.5, src: { url: bf2017('leia') }, rig: 'walrus', weapon: 'blaster', bolt: '#ff3b30', abilities: { power: 'leiaDetonator', second: 'medpack' }, blurb: 'A princess, a senator, a general. Shoots better than the boys.', film: 'The Original Trilogy', side: 'galaxy' , lean: 'light', lines: { ours: 'Hold your positions. They’ve never beaten us when we stand together.', theirs: 'This isn’t my cause. I’ll fight it anyway, and remember who I am.' } },
   { id: 'han', fallback: crew('han'), name: 'Han Solo', tall: 1.85, src: { url: bf2017('han') }, rig: 'walrus', weapon: 'blaster', bolt: '#ff4a3d', abilities: { power: 'hanDetonator', second: 'hanSharpshooter' }, blurb: 'Captain of the Millennium Falcon. Shot first, with the DL-44.', film: 'The Original Trilogy', side: 'galaxy' , lean: 'light', lines: { ours: 'All right, let’s show these guys how it’s done.', theirs: 'I’m only here for the money. Remember that when it goes bad.' } },
   { id: 'chewie', name: 'Chewbacca', tall: 2.28, src: { url: bf2017('chewie') }, rig: 'walrus', weapon: 'bowcaster', bolt: '#ff4a3d', abilities: { power: 'chewieLeap', second: 'chewieBowcaster' }, blurb: 'Two hundred years old and still winning arguments.', film: 'The Original Trilogy', side: 'galaxy' , lean: 'light', lines: { ours: '[a battle roar, ready for anything]', theirs: '[an unhappy growl: he doesn’t like whose side this is]' } },
-  { id: 'ahsoka', name: 'Ahsoka Tano', tall: 1.85, src: { url: crew('ahsoka') }, weapon: 'saber', bolt: '#f4f8ff', saber: { color: 'white', hilt: 'ahsoka', stance: 'dual' }, abilities: { power: 'push', second: 'pull' }, blurb: 'No longer a Jedi. Still the best of them.', film: 'The Clone Wars, Ahsoka', side: 'galaxy' , lean: 'light', lines: { ours: 'Stay close and trust each other. That’s how we win.', theirs: 'I’ve fought for the wrong people before. Never again. Except today.' } },
+  { id: 'ahsoka', soon: 'On the game’s rig, when Battlefront Expanded’s Ahsoka is imported (lane D2)', name: 'Ahsoka Tano', tall: 1.85, src: { url: crew('ahsoka') }, weapon: 'saber', bolt: '#f4f8ff', saber: { color: 'white', hilt: 'ahsoka', stance: 'dual' }, abilities: { power: 'push', second: 'pull' }, blurb: 'No longer a Jedi. Still the best of them.', film: 'The Clone Wars, Ahsoka', side: 'galaxy' , lean: 'light', lines: { ours: 'Stay close and trust each other. That’s how we win.', theirs: 'I’ve fought for the wrong people before. Never again. Except today.' } },
   { id: 'bobafett', name: 'Boba Fett', tall: 1.83, src: { url: bf2017('bobafett') }, rig: 'walrus', weapon: 'ee3', bolt: '#ff6a3d', abilities: { power: 'jetpack', second: 'bobaRocket' }, blurb: 'The best bounty hunter in the galaxy, and he knows it. Flies.', film: 'The Original Trilogy, The Book of Boba Fett', side: 'galaxy' , lean: 'dark', lines: { ours: 'The contract’s good. Nobody gets through.', theirs: 'Different employer, same result. They’ll pay double.' } },
   // (the rest of the 2017 game's heroes on its skeleton, with its clips and its kits)
   { id: 'obiwan', name: 'Obi-Wan Kenobi', tall: 1.82, src: { url: bf2017('obiwan') }, rig: 'walrus', weapon: 'saber', bolt: '#4aa8ff', saber: { color: 'blue', hilt: 'temple', stance: 'single' }, abilities: { power: 'obiwanPush', second: 'obiwanRush' }, blurb: 'A Jedi Master of the old Order: patient, wry and very hard to get past.', film: 'The Prequels, The Original Trilogy', side: 'galaxy', lean: 'light', lines: { ours: 'Steady, all of you. We hold here, together.', theirs: 'I have a bad feeling about which side I’m on.' } },
@@ -137,10 +137,12 @@ export function readHero(raw, ship = 'xwing') {
       v = null;
     }
   }
-  const hero = BY_ID[v?.id] ?? BY_ID[defaultHeroId(ship)];
+  const kept = BY_ID[v?.id];
+  const hero = kept && !kept.soon ? kept : BY_ID[defaultHeroId(ship)];
   const color = SABER_COLORS.some((c) => c.id === v?.color) ? v.color : (hero.saber?.color ?? 'blue');
   const hilt = HILTS.some((h) => h.id === v?.hilt) ? v.hilt : (hero.saber?.hilt ?? 'skywalker');
-  const stance = STANCES[v?.stance] ? v.stance : (hero.saber?.stance ?? 'single');
+  // (the hero's own: the game's heroes hold one blade or a staff, and fence by their own strokes)
+  const stance = hero.saber?.stance ?? 'single';
   // (a gun hero carries their own, or one of the pickable ones; a Jedi's gun is their saber)
   const gun = hero.weapon !== 'saber' && (v?.gun === hero.weapon || PICKABLE.includes(v?.gun)) && WEAPONS[v.gun] ? v.gun : hero.weapon;
   const mods = Array.isArray(v?.mods) ? [...new Set(v.mods.filter((m) => MODS[m]))].slice(0, MAX_MODS) : [];
@@ -156,7 +158,7 @@ export const writeHero = (hero) => JSON.stringify({ id: hero.id, skin: hero.skin
 // own thing, surface/saber.js), the others their gun
 export function heroSpec(hero) {
   const h = BY_ID[hero.id] ?? BY_ID.luke;
-  const saber = h.weapon === 'saber' ? { color: SABER_COLORS.find((c) => c.id === hero.color)?.hex ?? '#4aa8ff', hilt: HILTS.find((x) => x.id === hero.hilt) ?? HILTS[0], stance: STANCES[hero.stance] ? hero.stance : (h.saber?.stance ?? 'single') } : null;
+  const saber = h.weapon === 'saber' ? { color: SABER_COLORS.find((c) => c.id === hero.color)?.hex ?? '#4aa8ff', hilt: HILTS.find((x) => x.id === hero.hilt) ?? HILTS[0], stance: STANCE_IDS.includes(h.saber?.stance) ? h.saber.stance : 'single' } : null;
   const gun = saber ? 'saber' : WEAPONS[hero.gun] && hero.gun !== 'saber' ? hero.gun : h.weapon;
   // (a gun from elsewhere fires yellow; the galaxy's keep the hero's own colour)
   const bolt = saber ? saber.color : WEAPONS[gun]?.side === 'elsewhere' ? '#ffd36b' : h.bolt;
@@ -187,7 +189,7 @@ export function loadoutLine(hero) {
   const h = BY_ID[hero.id] ?? BY_ID.luke;
   const parts =
     h.weapon === 'saber'
-      ? [`${SABER_COLORS.find((c) => c.id === hero.color)?.name ?? 'Blue'} blade`, `${HILTS.find((x) => x.id === hero.hilt)?.name ?? HILTS[0].name} hilt`, STANCES[hero.stance]?.name ?? STANCES.single.name]
+      ? [`${SABER_COLORS.find((c) => c.id === hero.color)?.name ?? 'Blue'} blade`, `${HILTS.find((x) => x.id === hero.hilt)?.name ?? HILTS[0].name} hilt`, STANCE_NAMES[h.saber?.stance] ?? STANCE_NAMES.single]
       : [[WEAPONS[hero.gun]?.name ?? WEAPONS[h.weapon]?.name, (hero.mods ?? []).filter((m) => MODS[m]).map((m) => MODS[m].name).join(', ')].filter(Boolean).join(' · ')];
   const n = (hero.perks ?? []).length;
   const look = skinsOf(h.id).find((l) => l.id === hero.skin && l.kind !== h.id);

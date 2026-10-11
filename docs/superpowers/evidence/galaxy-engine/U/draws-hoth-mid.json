@@ -1,0 +1,121 @@
+{
+  "world": "hoth",
+  "tier": "mid",
+  "materials": "shared maps",
+  "glbs": 189,
+  "textures": 144,
+  "rows": [
+    {
+      "path": "instanced",
+      "at": [
+        0,
+        0
+      ],
+      "tris": 1366531,
+      "calls": 168,
+      "instances": 4394
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        320
+      ],
+      "tris": 1419333,
+      "calls": 156,
+      "instances": 5265
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        448
+      ],
+      "tris": 1376962,
+      "calls": 155,
+      "instances": 4825
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        192
+      ],
+      "tris": 1436595,
+      "calls": 159,
+      "instances": 5257
+    },
+    {
+      "path": "batched",
+      "at": [
+        0,
+        0
+      ],
+      "tris": 1366531,
+      "calls": 68,
+      "instances": 4394,
+      "batches": 68,
+      "bands": {
+        "arena": 51,
+        "horizon": 17
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        320
+      ],
+      "tris": 1419333,
+      "calls": 71,
+      "instances": 5265,
+      "batches": 71,
+      "bands": {
+        "arena": 54,
+        "horizon": 17
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        448
+      ],
+      "tris": 1376962,
+      "calls": 69,
+      "instances": 4825,
+      "batches": 69,
+      "bands": {
+        "arena": 52,
+        "horizon": 17
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        192
+      ],
+      "tris": 1436595,
+      "calls": 75,
+      "instances": 5257,
+      "batches": 75,
+      "bands": {
+        "arena": 58,
+        "horizon": 17
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    }
+  ]
+}

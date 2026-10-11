@@ -3,6 +3,7 @@ import { MODELS as audit } from './audit';
 import { MODELS as battlefront } from './battlefront';
 import { MODELS as bf2017 } from './bf2017';
 import { MODELS as bf2017vehicles } from './bf2017-vehicles';
+import { MODELS as library2017 } from './bf2017-library';
 import { MODELS as common } from './common';
 import { MODELS as clonewars } from './clonewars';
 import { MODELS as core } from './core';
@@ -25,8 +26,9 @@ import { MODELS as three } from './three';
 // code, or goes without.
 // (battlefront near the end: a kind there takes over from the same kind's
 // Sketchfab model; bf2017 and lane V's bf2017vehicles last, so a 2017 kind
-// takes over from both)
-export const GROUPS = { common, desert, ice, forest, core, clonewars, edge, people, outer, rebels, three, quaternius, made, fill, library, audit, battlefront, bf2017, bf2017vehicles };
+// takes over from both; the drop's object library after them, its kinds
+// `game:<name>` and so never the same as another's: catalog/bf2017-library.js)
+export const GROUPS = { common, desert, ice, forest, core, clonewars, edge, people, outer, rebels, three, quaternius, made, fill, library, audit, battlefront, bf2017, bf2017vehicles, library2017 };
 export const SURFACE_MODELS = Object.fromEntries(Object.entries(GROUPS).flatMap(([group, models]) => Object.entries(models).map(([kind, m]) => [kind, { ...m, group }])));
 export const surfaceUrl = (kind) => `/models/galaxy/surface/${kind}.glb`;
 export const surfaceLodUrl = (kind) => `/models/galaxy/surface/${kind}.lod1.glb`;
@@ -40,11 +42,12 @@ export const surfaceFarUrl = (kind) => `/models/galaxy/surface/${kind}.far.glb`;
 // the Rick and Morty planets') loads that, and its ultra and light cuts only
 // where it names them (`ultraUrl`, `lodUrl`): no file is guessed at.
 // (a native kind, the game's own maps, has a plain cut of up to 16 MB: at
-// low and mid, the phone's levels, it draws its light cut alone)
+// low and mid, the phone's levels, it draws its light cut alone, the
+// library's `game:` rows by their own `lodUrl`)
 const PHONE = new Set(['low', 'mid']);
 export const modelUrlFor = (kind, level, models = SURFACE_MODELS) => {
   const m = models[kind];
-  if (m?.url) return (level === 'ultra' && m.ultraUrl) || m.url;
+  if (m?.url) return (m.native && m.lodUrl && PHONE.has(level) && m.lodUrl) || (level === 'ultra' && m.ultraUrl) || m.url;
   if (m?.native && m.lod && PHONE.has(level)) return surfaceLodUrl(kind);
   return level === 'ultra' && m?.ultra ? surfaceUltraUrl(kind) : surfaceUrl(kind);
 };

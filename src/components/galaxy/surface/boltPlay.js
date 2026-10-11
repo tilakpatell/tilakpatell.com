@@ -20,8 +20,11 @@
 //     side }; you: your walker state
 //   ctx: { you (your walker state, or null while nothing can hit you), mate
 //     (its, or null), allies (sides whose bolts pass you by), targets (the
-//     quests' or the battle's figures), guard (your raised blade: saber.js's
-//     guard()) }
+//     quests' or the battle's figures), guard (your block's shield, the game's
+//     deflect: saber.js's guard(), which tests a bolt by its own shape) }
+//   capsules(t) → where a target is hit, as the bolts see it: the game's
+//     capsules on a figure on the game's skeleton (with each's region and hit
+//     reaction), else its one capsule (saber.js lands a strike on them)
 //   on: { yours(e), hurt(damage, from), mate(damage, from), other(e),
 //     deflect(e), home(e) (a bolt your blade turned, into someone: e.damage
 //     is what it was fired with, so a trooper's own bolt fells him),
@@ -75,6 +78,10 @@ export function createBoltPlay({ blaster, ground = null, rng = Math.random, bone
   };
 
   return {
+    capsules(t) {
+      const out = [];
+      return gameBodies(t, out) ? out : [{ ...capsuleOf(t), region: 'chest' }];
+    },
     // their shot at you: none without a clear line; else scattered as a person shoots
     enemy(s, you, now = 0) {
       const to = s.to ? [s.to[0], you.y + CHEST, s.to[1]] : [you.x, you.y + CHEST, you.z];

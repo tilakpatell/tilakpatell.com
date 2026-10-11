@@ -17,9 +17,12 @@ const PUBLIC = new URL('../../../../../public', import.meta.url).pathname;
 const bytesOf = (url) => sizeOf(url, { publicDir: PUBLIC, manifest: PUBLISHED });
 const has = (url) => existsSync(`${PUBLIC}${url}`) || Boolean(PUBLISHED[url.slice(1)]);
 
+// (the drop's object library, `game:<name>`, by its own urls: bf2017-library.test.js)
+const SITE_OWN = Object.entries(SURFACE_MODELS).filter(([, m]) => m.group !== 'library2017');
+
 describe('the surface models', () => {
   it('names each kind once, across the groups (the two Battlefront groups aside: a kind there takes over)', () => {
-    const OVER = ['battlefront', 'bf2017', 'bf2017vehicles'];
+    const OVER = ['battlefront', 'bf2017', 'bf2017vehicles', 'library2017'];
     const all = Object.entries(GROUPS)
       .filter(([g]) => !OVER.includes(g))
       .flatMap(([, m]) => Object.keys(m));
@@ -32,12 +35,12 @@ describe('the surface models', () => {
     for (const kind of Object.keys(GROUPS.bf2017vehicles)) expect(SURFACE_MODELS[kind].group, kind).toBe('bf2017vehicles');
   });
 
-  it('puts the 2017 groups last, so their kinds win over every other', () => {
-    expect(Object.keys(GROUPS).slice(-2)).toEqual(['bf2017', 'bf2017vehicles']);
+  it('puts the 2017 groups last, so their kinds win over every other (the library’s `game:` kinds after them)', () => {
+    expect(Object.keys(GROUPS).slice(-3)).toEqual(['bf2017', 'bf2017vehicles', 'library2017']);
   });
 
   it('has each one brought in, small enough, with what the import needs', () => {
-    for (const [kind, m] of Object.entries(SURFACE_MODELS)) {
+    for (const [kind, m] of SITE_OWN) {
       if (m.cluster) continue;
       expect(m.as, kind).toBeTruthy();
       expect(m.metres, kind).toBeGreaterThan(0);
@@ -50,7 +53,7 @@ describe('the surface models', () => {
 
   it('credits each Sketchfab model, and lists each made one', () => {
     const made = madeKinds(README);
-    for (const [kind, m] of Object.entries(SURFACE_MODELS)) {
+    for (const [kind, m] of SITE_OWN) {
       if (m.cluster) continue;
       if (m.made === 'battlefront' || m.made === 'bf2017') {
         // (brought in by scripts/battlefront-import.mjs or bf2017-import.mjs: credited with its permission)
@@ -75,7 +78,7 @@ describe('the surface models', () => {
 
   it('has every clip a row names in its file (else the figure sways where it should walk)', () => {
     const glbJson = (buf) => JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8'));
-    for (const [kind, m] of Object.entries(SURFACE_MODELS)) {
+    for (const [kind, m] of SITE_OWN) {
       if (!m.anim || m.cluster) continue;
       const names = (glbJson(readFileSync(file(kind))).animations ?? []).map((a) => a.name);
       for (const [use, clip] of Object.entries(m.anim)) expect(names, `${kind}'s ${use}: ${clip}`).toContain(clip);
@@ -83,7 +86,7 @@ describe('the surface models', () => {
   });
 
   it('makes each cluster of models that are there', () => {
-    for (const [kind, m] of Object.entries(SURFACE_MODELS))
+    for (const [kind, m] of SITE_OWN)
       if (m.cluster) {
         expect(m.uid, kind).toBeUndefined();
         for (const [member] of m.cluster) expect(SURFACE_MODELS[member] && !SURFACE_MODELS[member].cluster, `${kind}: ${member}`).toBeTruthy();
@@ -100,7 +103,7 @@ describe('the surface models', () => {
   });
 
   it('has a light model beside each one marked lod, and only those (scripts/galaxy-surface-lod.mjs)', () => {
-    for (const [kind, m] of Object.entries(SURFACE_MODELS)) {
+    for (const [kind, m] of SITE_OWN) {
       if (m.cluster) continue;
       expect(has(surfaceLodUrl(kind)), `${kind}.lod1.glb`).toBe(Boolean(m.lod));
       if (m.lod) expect(bytesOf(surfaceLodUrl(kind)), `${kind}.lod1.glb`).toBeLessThan(0.7 * bytesOf(surfaceUrl(kind)));
@@ -110,7 +113,7 @@ describe('the surface models', () => {
   });
 
   it('has a far cut beside each one marked far, and only those, under a thousand-odd triangles’ bytes (lane V)', () => {
-    for (const [kind, m] of Object.entries(SURFACE_MODELS)) {
+    for (const [kind, m] of SITE_OWN) {
       if (m.cluster) continue;
       expect(has(surfaceFarUrl(kind)), `${kind}.far.glb`).toBe(Boolean(m.far));
       if (m.far) expect(bytesOf(surfaceFarUrl(kind)), `${kind}.far.glb`).toBeLessThan(0.5 * MB);
@@ -120,7 +123,7 @@ describe('the surface models', () => {
   });
 
   it('has an ultra cut beside each one whose entry says so, and only those, each within the ultra cut’s size', () => {
-    for (const [kind, m] of Object.entries(SURFACE_MODELS)) {
+    for (const [kind, m] of SITE_OWN) {
       if (m.cluster) continue;
       expect(has(surfaceUltraUrl(kind)), `${kind}.ultra.glb`).toBe(Boolean(m.ultra));
       if (!m.ultra) continue;

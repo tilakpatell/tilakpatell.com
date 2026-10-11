@@ -182,7 +182,8 @@ async function main() {
   pack.physics = sorted({ cells, materials, meshes, version: 1 });
   await mkdir(join(dir, 'physics'), { recursive: true });
   for (const { file, bin } of Object.values(bins)) await writeFile(join(dir, file), Buffer.from(bin));
-  await writeFile(join(dir, 'level.json'), JSON.stringify(sorted(pack), null, 1) + '\n');
+  // (compact, and the pack's own key order kept: only the physics section is sorted)
+  await writeFile(join(dir, 'level.json'), JSON.stringify(pack) + '\n');
   const readme = join(dir, 'README.md');
   const old = existsSync(readme) ? await readFile(readme, 'utf8') : '';
   const block = `<!-- physics -->\n## Physics\n\nThe game's shapes (\`node scripts/bf2017-physics.mjs\`).\n\n${report}\n<!-- /physics -->`;

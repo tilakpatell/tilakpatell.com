@@ -11,6 +11,7 @@ import Markers from './Markers.jsx';
 import ObjectiveBar from './ObjectiveBar.jsx';
 import Radar from './Radar.jsx';
 import Scoreboard from './Scoreboard.jsx';
+import SquadList from './SquadList.jsx';
 import './battlefront.css';
 
 // The game's HUD on the kit (the game design's decision 14): what the sim's
@@ -19,12 +20,12 @@ import './battlefront.css';
 // the end of round covers everything. One Menu, the kit's, is the way out.
 //
 //   <BattlefrontHud view={snapshot} mine={team} words={…} markers={[…]} scoreboard={bool}
-//     onDeploy={(offer) => …} readRadar={() => …} way={{ label, to }} touch={bool} />
+//     onDeploy={(offer) => …} onSpawn={(spawn) => …} readRadar={() => …} way={{ label, to }} touch={bool} />
 // The game's own screens (../screens/, lane screens) come in as parts:
 // `deployAs` (the spawn screen in place of DeployScreen, same props),
 // `roundAs` (null when the page draws the end of round itself), `reticle`
 // (the weapon's crosshair, one of the game's shapes, for the kit's Reticle).
-export default function BattlefrontHud({ view, mine = 2, words, markers = [], scoreboard = false, onDeploy, onPick, readRadar, way = null, toast = null, touch = false, deployAs: Deploy = DeployScreen, roundAs: Round = EndOfRound, reticle = null }) {
+export default function BattlefrontHud({ view, mine = 2, words, markers = [], scoreboard = false, onDeploy, onPick, onSpawn, readRadar, way = null, toast = null, touch = false, deployAs: Deploy = DeployScreen, roundAs: Round = EndOfRound, reticle = null }) {
   const p = view?.player ?? null;
   const deploying = Boolean(view?.deploy?.open);
   const mode = view?.mode ?? null;
@@ -40,6 +41,7 @@ export default function BattlefrontHud({ view, mine = 2, words, markers = [], sc
           <div className="bf-soldier">
             <Health hp={p.hp} hpMax={p.hpMax} />
             <Abilities slots={p.abilities ?? []} />
+            <SquadList squad={view?.squad ?? null} />
           </div>
           <DamageIndicator hits={p.hits ?? []} />
           {readRadar && <Radar read={readRadar} />}
@@ -47,7 +49,7 @@ export default function BattlefrontHud({ view, mine = 2, words, markers = [], sc
       )}
       <KillLog entries={view?.killLog ?? []} mine={mine} />
       {p && p.state !== 'alive' && !deploying && <DeathPoints earned={p.earned ?? 0} total={view?.points ?? 0} label={words.earned} totalLabel={words.total} />}
-      {deploying && <Deploy deploy={view.deploy} points={view.points ?? 0} name={words.offer} title={words.deploy} onDeploy={onDeploy} onPick={onPick} />}
+      {deploying && <Deploy deploy={view.deploy} points={view.points ?? 0} name={words.offer} title={words.deploy} onDeploy={onDeploy} onPick={onPick} onSpawn={onSpawn} />}
       {scoreboard && !mode?.result && <Scoreboard teams={view?.scoreboard ?? {}} />}
       {mode?.result && Round && <Round result={mode.result} mine={mine} words={words.outcome} teams={view?.scoreboard ?? {}} />}
     </Hud>

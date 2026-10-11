@@ -12,27 +12,28 @@
 // OOB_SECONDS. Pure: no three.js, no DOM.
 //
 //   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob }) → sim
-//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad' }) → { ok, why }
+//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate }) → { ok, why }
 //   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, vent, cool }]
-//   addPlayer(sim, { team, classId, at, yaw }) → id      removeEntity(sim, id)
-//   view(sim, { player }) → { time, teams, entities, bolts, mode, deploying, deploy }  (one object, refreshed in place)
+//   addPlayer(sim, { team, classId, at, yaw, id }) → id (in a squad)      removeEntity(sim, id)
+//   squadSpot(sim, id, team, mate?) → { spot } | { why }    squadBlocks(sim, id, team) → [{ id, blocked }]
+//   view(sim, { player }) → { time, teams, entities, bolts, mode, deploying, deploy, squad }  (one object, refreshed in place)
 //   drain(sim) → the event log so far, cleared
 
 import { seeded } from '../seeded.js';
-import { classOf, heroOf, mapOf, reinforcementOf, spawnsFor, teamsFor, weaponOf } from './rulebook.js';
+import { classOf, heroOf, mapOf, reinforcementOf, spawnsFor, squadsOf, stringOf, teamsFor, weaponOf } from './rulebook.js';
 import { press } from './abilities.js';
 import { createBolts, fire as fireBolt, step as stepBolts } from './bolts.js';
-import { heightAt, nearestMainland, nearestWalkable } from './nav.js';
+import { heightAt, nearestMainland, nearestWalkable, walkable } from './nav.js';
 import { STEP, clock, muzzleOf, profile, shoot } from './core.js';
 import { capsulesOf, chestOf, hurt, move, newSoldier, roll, tick as tickSoldier } from './soldier.js';
 import { coolPress, damageAt, vent } from './weapons.js';
 import { addBrain, createBrains, onEvents, stepBrains } from './ai/bots.js';
 import { assign, createCommander, spend, wave } from './ai/commander.js';
-import { squadOf } from './ai/squad.js';
+import { joinSquad, squadOf, squadRows } from './ai/squad.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
 import { AIM_SCALE, createAssault, onEvent as modeEvent, sideOf, spawnSets, tick as tickMode, view as modeView, walkersOf } from './modes/galacticAssault.js';
 import { insidePolygon } from './modes/objectives.js';
-import { isProtected, pickSpawn, protect, squadSpawn } from './spawn.js';
+import { blocked, isProtected, pickSpawn, protect, squadSpawn } from './spawn.js';
 
 export { STEP, THINK, SENSE, SQUAD, muzzleOf, shoot } from './core.js';
 
@@ -170,10 +171,35 @@ function addWalkers(sim) {
 
 const heightOf = (sim, at) => heightAt(sim.nav, at[0], at[2]);
 
-export function addPlayer(sim, { team, classId, at, yaw = 0 }) {
-  const s = addSoldier(sim, { team, classId, at, yaw, bot: false });
+export function addPlayer(sim, { team, classId, at, yaw = 0, id = null }) {
+  const s = addSoldier(sim, { team, classId, at, yaw, bot: false, id });
   sim.brains?.add?.(s);
+  // a player is in a squad: a squad made for one (a displaced bot's) the commander orders too
+  const { created } = sim.brains ? joinSquad(sim.brains.squads, sim, s.id) : {};
+  if (created) sim.commanders?.[team]?.squads.push(created);
   return s.id;
+}
+
+// where a squad spawn can stand: the navgrid's walkable cells, anywhere without one
+export const standable = (sim) => (x, z) => !sim.nav || walkable(sim.nav, x, z);
+
+// a squad spawn for one of a team: on the mate named (or why not), else on the first mate who can be
+export function squadSpot(sim, id, team, mate = null) {
+  const sq = sim.brains ? squadOf(sim.brains.squads, id) : null;
+  const enemies = enemiesOf(sim, team);
+  const one = mate != null ? sim.entities.get(mate) ?? null : null;
+  const why = mate != null && (!sq?.members.includes(mate) ? 'none' : blocked(one, { enemies, now: sim.time }));
+  if (why) return { why };
+  const squad = one ? [one] : (sq?.members ?? []).map((m) => sim.entities.get(m)).filter(Boolean);
+  const spot = squadSpawn({ squad, me: id, enemies, now: sim.time, walkable: standable(sim) });
+  return spot ? { spot } : { why: 'squad' };
+}
+
+// why each of a soldier's squadmates can or cannot be spawned on now
+export function squadBlocks(sim, id, team) {
+  const sq = sim.brains ? squadOf(sim.brains.squads, id) : null;
+  const enemies = enemiesOf(sim, team);
+  return (sq?.members ?? []).filter((m) => m !== id).map((m) => ({ id: m, blocked: blocked(sim.entities.get(m) ?? null, { enemies, now: sim.time }) }));
 }
 
 // what a team has out: heroes and reinforcements standing, with those chosen this wave
@@ -202,9 +228,9 @@ export function deploy(sim, id, choice) {
   const enemies = enemiesOf(sim, team);
   let spot = null;
   if (choice.spawn === 'squad') {
-    const sq = squadOf(sim.brains.squads, id);
-    spot = sq ? squadSpawn({ squad: sq.members.map((m) => sim.entities.get(m)).filter(Boolean), me: id, enemies }) : null;
-    if (!spot) return { ok: false, why: 'squad' };
+    const r = squadSpot(sim, id, team, choice.mate);
+    if (r.why) return { ok: false, why: r.why };
+    spot = r.spot;
   } else spot = pickSpawn({ map: mapOf(sim.rb, sim.level), ids: spawnSets(sim.ga)[sideOf(sim.ga, team)], team, enemies, rand: sim.rand });
   if (!spot) return { ok: false, why: 'nowhere' };
   buy(sim.bp, id, offer);
@@ -298,8 +324,10 @@ const chestAhead = (s) => {
   return [c[0] + Math.sin(s.yaw) * 100, c[1], c[2] + Math.cos(s.yaw) * 100];
 };
 
-// a soldier down: the score, the kill, the mode's ticket and the Battle Points
-function downed(sim, target, by, part, why = null) {
+// a soldier down: the score, the kill, the mode's ticket and the Battle Points;
+// a bolt's kill also says where the shot went (`dir`, unit), where it struck
+// (`at`) and the weapon's id, for the world's ragdolls
+function downed(sim, target, by, part, why = null, hit = null) {
   sim.score[target.team].deaths++;
   sim.stats.get(target.id).deaths++;
   const killer = by ? sim.entities.get(by) : null;
@@ -307,7 +335,7 @@ function downed(sim, target, by, part, why = null) {
     sim.score[killer.team].kills++;
     sim.stats.get(killer.id).kills++;
   }
-  emit(sim, { type: 'kill', by, target: target.id, part, ...(why ? { why } : {}) });
+  emit(sim, { type: 'kill', by, target: target.id, part, ...(why ? { why } : {}), ...(hit ? { dir: hit.dir.slice(), at: hit.at.slice(), weapon: hit.bolt.weapon?.id ?? null } : {}) });
   if (sim.ga) {
     target.respawn = modeEvent(sim.ga, { type: 'down', side: sideOf(sim.ga, target.team) }).respawn;
     if (killer && killer.team !== target.team) bpKill(sim.bp, { by, target: target.id, now: sim.time, hero: target.unit === 'hero' });
@@ -345,9 +373,13 @@ function resolveBolts(sim) {
       }
       const damage = damageAt(e.bolt.weapon, e.dist);
       const r = hurt(target, { damage, part: e.part, by: e.bolt.owner, now: sim.time });
-      emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: e.part, damage: Math.round(damage * 100) / 100 });
+      // (both in combat: no squad spawns on either for a while)
+      target.combatAt = sim.time;
+      const shooter = sim.entities.get(e.bolt.owner);
+      if (shooter) shooter.combatAt = sim.time;
+      emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: e.part, damage: Math.round(damage * 100) / 100, dir: e.dir.slice(), at: e.at.slice() });
       if (sim.bp) bpHit(sim.bp, target.id, e.bolt.owner, sim.time);
-      if (r === 'down') downed(sim, target, e.bolt.owner, e.part);
+      if (r === 'down') downed(sim, target, e.bolt.owner, e.part, null, e);
     }
   }
   return evs;
@@ -413,7 +445,7 @@ function stepMode(sim) {
         const choice = spend(c, entry.id, { squadClasses, out: outOf(sim, team, chosen) });
         const enemies = enemiesOf(sim, team);
         const mates = (sq?.members ?? []).map((m) => sim.entities.get(m)).filter(Boolean);
-        const spawn = squadSpawn({ squad: mates, me: entry.id, enemies }) ? 'squad' : 'point';
+        const spawn = squadSpawn({ squad: mates, me: entry.id, enemies, now: sim.time, walkable: standable(sim) }) ? 'squad' : 'point';
         let r = deploy(sim, entry.id, { ...choice, spawn });
         if (!r.ok) r = deploy(sim, entry.id, { kind: 'class', id: sim.teams[team].classes[0], spawn: 'point' });
         if (!r.ok) continue;
@@ -463,6 +495,12 @@ export function drain(sim) {
   return out;
 }
 
+// a bot's order as its objective's letter: the commander's task key names the objective by its place
+function letterOf(sim, task) {
+  const i = Number(/^o(\d+)/.exec(task?.key ?? '')?.[1] ?? NaN);
+  return Number.isInteger(i) && sim.ga?.objectives?.[i] ? String.fromCharCode(65 + i) : null;
+}
+
 export function view(sim, { player = null } = {}) {
   const v = (sim.view ??= { time: 0, teams: { 1: { alive: 0, dead: 0, kills: 0 }, 2: { alive: 0, dead: 0, kills: 0 } }, entities: [], bolts: [] });
   v.time = sim.time;
@@ -490,6 +528,7 @@ export function view(sim, { player = null } = {}) {
     e.heat = s.gun?.heat ?? 0;
     e.mode = s.brain?.intent?.mode ?? null;
     e.unit = s.unit ?? null;
+    e.cls = s.cls?.cls ?? null;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;
     e.oob = s.oobSince != null ? Math.max(0, OOB_SECONDS - (sim.time - s.oobSince)) : null;
   }
@@ -506,6 +545,7 @@ export function view(sim, { player = null } = {}) {
   v.deploying = sim.deploying ? [...sim.deploying.keys()] : [];
   // the player's deploy screen: open while they wait, with what their points buy
   const waiting = player && sim.deploying?.get(player);
+  v.squad = player && sim.brains ? squadRows(sim.brains.squads, sim, player, { names: squadsOf(sim.rb).names.map((n) => stringOf(sim.rb, n)), letterOf: (t) => letterOf(sim, t) }) : null;
   v.deploy = waiting ? { open: true, team: waiting.team, points: balance(sim.bp, player), offers: offers(sim.bp, player, waiting.team, { out: outOf(sim, waiting.team) }), timeLeft: 0 } : { open: false };
   return v;
 }
