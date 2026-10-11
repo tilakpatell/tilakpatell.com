@@ -9,3 +9,4 @@ ultra  calls 393  tris 2089253  models 323.5 MB   level calls 285  tris 455774  
 # Before the shares and the whole city in the arena (the level drawn, counted whole): low 410 calls, 1.78M triangles; high 778 calls, 3.98M.
 # On the node renderer (lane T's #887 on main; SwiftShader draws it as nodes-webgl, so the frame guard is not in the way and "prog" reads null), 2026-10-11, SCANS=game PHASE_WAIT=1500000:
 high   calls 436  tris 1611381  models 104.2 MB   level calls 278  tris 369603   row (700, 3M, 60 MB): models over (the crew, as before); baseline +10% (180, 1.05M): over; scans cc0 0, game 45
+# Findings for lane D2's task 7 (the gate that counts everything): over the 60 MB models row, as main's Hoth is at 111.7 MB from the bucket; over the pre-level baseline +10%, as every level world is. Calls, triangles and SCANS=game are inside the rows. Neither the row nor the baseline moves in lane E4.

@@ -8,3 +8,4 @@ high   calls 290  tris 1463160  models  68.1 MB   level calls 303  tris 764926  
 ultra  calls 329  tris 3619155  models 187.5 MB   level calls 318  tris 870227   row (1500, none, 240 MB): pass
 # On the node renderer (lane T's #887 on main; SwiftShader draws it as nodes-webgl, so the frame guard is not in the way and "prog" reads null), 2026-10-11, SCANS=game PHASE_WAIT=1500000:
 high   calls 365  tris 1463989  models  65.5 MB   level calls 303  tris 764926   row (700, 3M, 60 MB): models over (the crew, as before); baseline +10% (118): over; scans cc0 0, game 47
+# Findings for lane D2's task 7 (the gate that counts everything): over the 60 MB models row, as main's Hoth is at 111.7 MB from the bucket; over the pre-level baseline +10%, as every level world is. Calls, triangles and SCANS=game are inside the rows. Neither the row nor the baseline moves in lane E4.
