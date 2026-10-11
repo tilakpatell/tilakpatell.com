@@ -10,8 +10,37 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | --- | --- | --- | --- |
 | S1 | `claude/bf2017-s1-fleet` | | |
 | S2 | `claude/bf2017-s2-space-picture` | | |
-| S3 | `claude/bf2017-s3-map-hud` | | |
+| S3 | `claude/bf2017-s3-map-hud` | `session_011ndxL8L9shYuwhE5cmbo16` (spawned 2026-10-11 from `claude/bf2017-space-design`, `origin/main` merged) | PR_S3 (draft) |
 | E5 | `claude/bf2017-e5-new-systems` | `session_01QrcPrerTbhxxZoKTnYgFQA` (spawned 2026-10-11 16:36 UTC from `main`) | |
+
+### Lane S3: the map and the HUD on the game’s front end (`claude/bf2017-s3-map-hud`, PR_S3)
+
+The plan is `docs/superpowers/plans/2026-10-11-bf2017-space-laneS3-map-hud.md` (decision 6); the shots, `docs/superpowers/evidence/bf2017-space/s3/`.
+
+**Done.**
+
+- **A globe for every planet with a skin.** `bf2017-sky.mjs --globes` now renders a globe for every world in `src/data/planetSkins.json` with a colour map and no front-end picture (Bespin, Endor, Kamino, Naboo; E5’s the day their skins land there) from the site’s own mid cut of the skin (`scripts/lib/bf2017-sky.mjs`’s `renderGlobe`, tested: the map on a sphere seen head-on, lit from the upper left as the front end’s pictures are, the clouds over it as `bodySkin.js` cuts them, `smoothstep(cloudCut, 1, red)`, the air’s colour at the limb where the skin names one), at the front end’s 96 px (`GLOBE_PX`, lane K’s cut) beside the six pictures, WebP with alpha. `globes.json` says each row’s `kind` (`picture` or `skin`); the four were published by hash (`galaxyAssets.json`, 1.8 to 5.2 KB each; the six pictures came out byte for byte the same and were not sent again). `globes.js`’s `discOf(id)` gives `HoloMap.jsx` the dot’s props, so a procedural world keeps its dot.
+- **The war’s four sides wear the game’s icons.** `emblems.js`’s `emblemOf(side)` resolves the Republic, the Separatists, the Rebellion and the Empire to the game’s faction icons (`icon('side:republic' | 'side:separatists' | 'side:rebel' | 'side:empire')`, the factions sprite, white made currentColor so they take the side’s colour); `Emblem.jsx` draws a `<use>` of the sprite for those and the site’s crest for the rest, so the fleets, the strength strip, the key, the war card’s order and result all changed through it. `side:rebel` and `side:empire` joined `ICON_FOR` beside the battlefront world’s `side:light` and `side:dark`, which stay.
+- **The game’s sprites on the galaxy’s buttons where it has them.** Eight rows in `ICON_FOR` for the front end’s planet icons (`planet:hoth`, `endor`, `tatooine`, `yavin`, `kamino`, `kashyyyk`, `naboo`, `deathstar`; Kessel’s has no system here) lead a system’s name on the map’s side panel (`HoloSide.jsx`) and on its card (`GalaxyPanel.jsx`), in the name’s colour, and the Death Star’s is on the way to it; `hud:speed` (the starfighter HUD’s speed-bar icon) marks the flight cluster’s speed line. The sprites are sized by the text they sit with (`galaxy.css`, `flight.css`), so a touch target is what it was.
+- **The war HUD in the game’s widget layout.** `WarHud.jsx`’s stage row is laid out as the Starfighter Assault objective bar the screens lane recorded (`HUD_ObjectivesScreen_AttackBar_V03` and the objectives screen’s words, as `surface/missions/starfighterHud.js` reads them): the bar’s mark first (the game’s attack or defend shape by your side, `objective:attack` / `objective:defend`, and its lock, `objective:locked`, while the stage has not opened), the words in Univers 520 condensed at the game’s 18 px of a 1,080 screen (`clamp(0.7rem, 1.67vmin, 18px)`) in its palette’s 54 (rgb 252 252 255), each objective’s bar at the game’s 176 × 40 with the About To Lose track at alpha 0.25 and the fill at 0.85. The words are the site’s, as they were; `StarfighterHud.jsx` and its test are untouched.
+
+**Where the code and the plan differed.**
+
+- The plan’s `HoloMap.test.jsx` (the disc’s image for Naboo, the dot for Alderaan) is `globes.test.js`’s third test on `discOf`: `HoloMap` renders into a portal, which `renderToStaticMarkup` cannot, and the repository has no DOM test runner.
+- The plan named the sides `side:rebels` and `side:empire`; the site’s ids are `rebel` and `empire` (`sides.js`), so the rows are `side:rebel` and `side:empire`.
+- The globes are rendered from the site’s converted skins under `public/textures/galaxy/planets/` (the mid cut, 1,024 wide), not fetched from the drop again: the same maps, already in git, so a run needs the bucket only for the six pictures.
+- The objective bars keep their 176 : 40 proportion at the row’s height (0.5 rem, 2.2 rem wide) rather than the game’s 40 px of a 1,080 screen, which would be a third of the row’s own glass; the plan asked for the proportions.
+
+**Left.**
+
+- The sides the game has no icon for keep the site’s crests: the New Republic, the Imperial Remnant, the Hutts.
+- The buttons the game has no icon with the same meaning for keep their Remix glyphs, as the rule says: the map’s close, Layers (`RiStackLine`), the whole-galaxy zoom (`RiFullscreenExitLine`), the key (`RiInformationLine`); the side panel’s jump (`RiRocket2Fill`) and the way back to the universe (`RiArrowGoBackLine`); the keys card’s close; the briefing’s skip and close; the card’s land (`RiArrowDownLine`), plot a course (`RiCompass3Line`), play (`RiPlayFill`), the panel’s tuck (`RiSideBar*`), fly to (`RiRocket2Line`), and the war card’s join (`RiSwordFill`: the game’s `GameMode_Attack` is an objective’s mark, not a battle’s). The flight cluster’s deflectors keep the site’s shield (the game’s `Abilities_Countermeasures` is an ability). The keys card’s key caps stay the house `.kbd` (RULES.md: one key cap), not the game’s `PC_*` button art.
+- The worlds without a globe (a procedural look and no picture): Alderaan, Coruscant, Dagobah, Mustafar, Lothal, Mandalore, Nevarro, Sorgan and the rest of `systems.js` outside the ten in `globes.json`; Geonosis keeps its picture globe (its skin is rings only). The six E5 worlds get theirs by running `--globes` once their rows are in `planetSkins.json`.
+- The `Planets_Orig_KES` (Kessel) icon has no system to go on; the nine `Planets_*` icons are otherwise all placed.
+- On a phone the war’s line sits over the first flight’s tip toast (`hub-phone.webp`): the toast’s place is the kit’s and the line’s is as it was (`galaxy.css`’s phone row), so it is a finding for whoever owns the galaxy’s phone HUD, not this lane’s change.
+- The war HUD’s objective bars are one an objective as before; the game’s single bar with a dot an objective is the Starfighter HUD’s (`StarfighterHud.jsx`), which already draws it.
+
+**Checking it.** `npx vitest run scripts/lib/bf2017-sky.test.mjs src/components/galaxy/globes.test.js src/components/galaxy/emblems.test.js src/components/galaxy/Emblem.test.jsx src/components/galaxy/HoloSide.test.jsx src/components/galaxy/GalaxyPanel.test.jsx src/components/galaxy/FlightCluster.test.jsx src/components/galaxy/WarHud.test.jsx src/components/galaxy/StarfighterHud.test.jsx src/lib/bf2017/icons.test.js`; the globes: `NODE_USE_ENV_PROXY=1 node scripts/bf2017-sky.mjs --globes` (the keys in the environment for the six pictures), then `node scripts/assets-publish.mjs --only 'models/galaxy/space/globes/*'`; the shots: `docs/superpowers/evidence/bf2017-space/s3/README.md`. On the PR’s head: CHECKS_S3.
 
 ## The picture-everywhere design: every world on the node renderer, every layer on (2026-10-11, early)
 
