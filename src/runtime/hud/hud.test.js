@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMPASS, GUIDE_RESERVE, MINIMAP, STICK, far, layoutCompass, layoutRows, markerSize, minimapSize, objectiveText, othersText, padFor, promptText, stackUnder, stickRead, titleMode } from './hud';
+import { COMPASS, DETAIL_PAUSED, GUIDE_RESERVE, detailToast, MINIMAP, STICK, far, layoutCompass, layoutRows, markerSize, minimapSize, objectiveText, othersText, padFor, promptText, stackUnder, stickRead, titleMode } from './hud';
 
 const W = 420;
 // a mark at x px along the strip (bearing back from x)
@@ -164,5 +164,14 @@ describe('the minimap’s disc', () => {
     expect(minimapSize(1280, true)).toBe(160);
     expect(minimapSize(390)).toBe(160);
     expect(MINIMAP.hz).toBe(10);
+  });
+});
+
+describe('detailToast (lane N4)', () => {
+  it('says the detail paused once, as the pause begins, and nothing as it lifts', () => {
+    expect(detailToast(false, true)).toBe(DETAIL_PAUSED);
+    expect(detailToast(true, true)).toBeNull();
+    expect(detailToast(true, false)).toBeNull();
+    expect(DETAIL_PAUSED.text).toMatch(/^Detail paused by the data budget; a higher quality level raises it\.$/);
   });
 });

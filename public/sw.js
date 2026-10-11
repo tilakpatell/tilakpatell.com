@@ -15,12 +15,31 @@
 // content hash, so any cache holding it is current. The site's own path of
 // that file (the page asks it after the bucket failed once) is answered from
 // the same copy, under the pack's version like any other.
+//
+// The world being played (lane N4, the stream that feels like one): a
+// `tp-play` message names it (src/lib/sw.js's playing), and the bucket's
+// files of its level pack (`<hash>/models/galaxy/bf2017/levels/<world>/…`,
+// hashed, so never stale) are kept as they are fetched in a
+// tp-play-<world> cache and answered from it after. Worlds played before
+// stay, under 400 MB in all: past it the least recently played goes whole,
+// and the world being played keeps no more than the cap holds. The site's
+// own paths of those files are not hashed and are never kept. Phones evict
+// what a site keeps after a week unused, so the bucket's CDN is the real
+// cache; this one makes a second visit on the same machine quick.
 
 const PREFIX = 'tp-pack-';
 const INDEX_TTL = 5 * 60 * 1000;
 const POSSIBLE = /^\/(assets|models|textures|audio|hdri|hq|cc0|mc|n64|games|eagler|albuquerque|kit)\//;
 
 const BASE = (new URL(self.location.href).searchParams.get('base') || '').replace(/\/+$/, '');
+
+const PLAY = 'tp-play-';
+const PLAY_META = 'tp-play-meta';
+// _source: the GPU-first design's §4 N4, "a 400 MB cap with LRU"
+const CAP = 400e6;
+const LEVEL = /^\/[0-9a-f]{12}\/models\/galaxy\/bf2017\/levels\/([^/]+)\//;
+let playing = null; // the world being played (a district's world: its first part)
+let keeping = Promise.resolve(); // (one keep at a time: the sizes' ledger is read and written whole)
 
 let files = null; // pathname, or a bucket URL → { name: cache name, key: what it is cached under }
 let reading = null;
@@ -85,11 +104,69 @@ async function answer(request, path) {
   return hit ?? fetch(request);
 }
 
+// a bucket URL's level world, or null
+const levelOf = (url) => (BASE && url.startsWith(`${BASE}/`) ? (url.slice(BASE.length).match(LEVEL)?.[1] ?? null) : null);
+
+async function ledger() {
+  const hit = await (await caches.open(PLAY_META)).match('/ledger');
+  return hit ? hit.json() : {};
+}
+const saveLedger = async (m) => (await caches.open(PLAY_META)).put('/ledger', new Response(JSON.stringify(m)));
+
+// a fetched file of the world being played kept, and the cap held: the
+// least recently played other worlds go whole, oldest first; what the
+// world alone cannot fit is not kept
+async function keep(world, url, res) {
+  const size = Number(res.headers.get('content-length')) || (await res.clone().arrayBuffer()).byteLength;
+  const m = await ledger();
+  m[world] = { bytes: m[world]?.bytes ?? 0, at: m[world]?.at ?? Date.now() };
+  let total = Object.values(m).reduce((s, w) => s + w.bytes, 0) + size;
+  for (const w of Object.keys(m)
+    .filter((k) => k !== world)
+    .sort((a, b) => m[a].at - m[b].at)) {
+    if (total <= CAP) break;
+    await caches.delete(PLAY + w);
+    total -= m[w].bytes;
+    delete m[w];
+  }
+  if (total <= CAP) {
+    await (await caches.open(PLAY + world)).put(url, res);
+    m[world].bytes += size;
+  }
+  await saveLedger(m);
+}
+
+async function answerPlay(event, url, world) {
+  const hit = await (await caches.open(PLAY + world)).match(url);
+  if (hit) return hit;
+  const res = await fetch(event.request);
+  if (world === playing && res.ok && res.type !== 'opaque') {
+    const copy = res.clone();
+    keeping = keeping.then(() => keep(world, url, copy)).catch(() => {});
+    event.waitUntil?.(keeping);
+  }
+  return res;
+}
+
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
-// the installer says the caches changed
+// the installer says the caches changed; or the page says which world it plays
 self.addEventListener('message', (event) => {
+  if (event.data?.type === 'tp-play') {
+    playing = String(event.data.world || '').split('/')[0] || null;
+    if (!playing) return;
+    const world = playing;
+    keeping = keeping
+      .then(async () => {
+        const m = await ledger();
+        m[world] = { bytes: m[world]?.bytes ?? 0, at: Date.now() };
+        await saveLedger(m);
+      })
+      .catch(() => {});
+    event.waitUntil?.(keeping);
+    return;
+  }
   if (event.data?.type !== 'tp-packs') return;
   current = null;
   event.waitUntil?.(Promise.all([readCaches(), readIndex()]));
@@ -102,6 +179,9 @@ self.addEventListener('fetch', (event) => {
   if (url.search) return;
   const key = url.origin === self.location.origin ? (POSSIBLE.test(url.pathname) ? url.pathname : null) : BASE && req.url.startsWith(`${BASE}/`) ? req.url : null;
   if (!key) return;
+  // (a level file of the world being played: its own cache)
+  const world = levelOf(req.url);
+  if (world && world === playing) return event.respondWith(answerPlay(event, req.url, world));
   // once the caches are read, anything not in them is left alone
   if (files && !files.has(key)) return;
   event.respondWith(answer(req, key));

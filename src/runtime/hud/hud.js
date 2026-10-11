@@ -125,3 +125,9 @@ export function stickRead(x0, y0, x, y, { reach = STICK.throw, travel = STICK.tr
 // top row on the right, the guide's corner's opposite end of that column.
 export const MINIMAP = { size: 240, phone: 160, narrow: 640, hz: 10 };
 export const minimapSize = (width, touch = false) => (touch || width < MINIMAP.narrow ? MINIMAP.phone : MINIMAP.size);
+
+// A world's level paused by its data budget (lane N4: the stream stops asking
+// for finer rows and LODs past the quality level's `visitMB`): the toast's
+// one line when the pause begins, null otherwise (its end says nothing)
+export const DETAIL_PAUSED = Object.freeze({ title: 'Detail paused', text: 'Detail paused by the data budget; a higher quality level raises it.' });
+export const detailToast = (was, now) => (now && !was ? DETAIL_PAUSED : null);

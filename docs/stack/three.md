@@ -65,6 +65,8 @@ Last upgrade: not recorded; record the next one here, with what it broke.
 
 ## Gotchas
 
+- **KTX2Loader picks the transcode target itself** (r186’s `FORMAT_OPTIONS`, inside its worker): UASTC goes to ASTC 4×4, else BC7, else BC3, else ETC2-EAC, else raw RGBA; there is no BC5 or EAC RG11 option for a two-channel normal, short of patching the worker’s source. Lane N4 asks for a UASTC row only where the chip takes one of the compressed three (`src/lib/three/gltf.js`’s `textureFormats`), and the development build says the targets once (“KTX2 targets”).
+- **A finer row swapped into a bound texture** (lane N4’s promotion, `levelGltf.js`’s `swapInto`): `dispose()` it first, then give it the new `source` and `mipmaps`; three uploads a disposed texture again when next drawn, on WebGL and WebGPU alike, and a node that captured the texture draws the new one. Changing the source of a texture still holding its GPU copy reuses the old immutable storage at the old size.
 - **The drawing buffer has a side limit.** A canvas wider than the chip’s smallest texture, renderbuffer or viewport limit draws wrong; `fitRatio` keeps the ratio a hair under it (`renderer.js`, `maxSide`).
 - **A synchronous question waits on the chip.** Asking whether a shader has linked straight after compiling it makes the page wait for everything queued before it; ask after a fence (`gpuWork.js`’s header).
 - **Colour space is opt-in.** `sharpen(texture, { color })` sets sRGB for `true`, none for `false` and leaves the texture alone when `color` is not given, so a data map (normals, roughness) must say `false` or keep what its loader set (`textures.js`).

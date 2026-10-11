@@ -22,6 +22,7 @@ import surfaceModule from '../components/galaxy/surface/module';
 import galaxyModule from '../components/galaxy/module';
 import { FOUND_KEY, LAUNCH_KEY, QUESTS_KEY, readDone, readFound } from '../components/galaxy/travel';
 import { runtime } from '../runtime';
+import { detailToast } from '../runtime/hud/hud';
 import { thud } from '../lib/sfx';
 import { createImpacts } from '../lib/impact';
 import ChaseHud from '../components/galaxy/surface/ChaseHud';
@@ -349,6 +350,13 @@ export default function GalaxySurface() {
         // the ground war's news (ground/director.js): a raid, a post lost or held, a hunt, one line at a time
         setToast((t) => ({ title: SIDES[e.side]?.short ?? 'The ground war', text: e.text, n: (t?.n ?? 0) + 1 }));
         later('toast', 5000, () => setToast(null));
+      } else if (e.type === 'detail') {
+        // (lane N4) the level's finer rows held by the quality level's data budget: said once
+        const t = detailToast(false, e.paused);
+        if (t) {
+          setToast((p) => ({ ...t, n: (p?.n ?? 0) + 1 }));
+          later('toast', 6000, () => setToast(null));
+        }
       } else if (e.type === 'edge') {
         setToast((t) => ({ title: 'Nothing out there', text: site?.edge ?? 'Just more of the same, as far as you can see. Better turn back.', n: (t?.n ?? 0) + 1 }));
         later('toast', 4000, () => setToast(null));

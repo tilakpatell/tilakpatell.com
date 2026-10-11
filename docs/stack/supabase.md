@@ -59,6 +59,7 @@ The site calls `createClient`, `auth.getSession`, `auth.signInAnonymously`, `rpc
 
 ## Gotchas
 
+- **Egress is the bill a level world grows** (lane N4, `docs/superpowers/evidence/gpu-first/n4/README.md`). Pro includes 250 GB of cached egress a month, then $0.03 a GB (the research note’s streaming section). Every byte a visit pulls is held to its quality level’s `visitMB` (`src/lib/budgets.js`: 40, 120, 400, 1,200 MB), and its boot slice to `bootMB` (3, 6, 12, 12): at 400 MB a visit the included 250 GB is 625 high visits a month, at 1,200 MB about 210 ultra ones; the service worker keeps the world being played (`public/sw.js`, 400 MB), so a second visit on the same machine pulls little. The hedge if it climbs is Cloudflare R2 (no egress charge, $0.015 a GB-month stored) in front of the same hashed paths; the owner’s call (the GPU-first design’s §9, question 1). The paths stay public, unsigned and hashed: Smart CDN keys a signed URL apart, and a Range request into one GLB is never made (the loader parses whole files).
 - **Storage’s `cacheControl` is `max-age` only.** The bucket answers `max-age=31536000`; `immutable` cannot be set through the API, and needs not be: a path never changes its bytes.
 
 - **Anonymous sign-ins are off by default.** Enable them in the project’s Authentication settings, or every write is refused (`supabase/README.md`).

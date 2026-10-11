@@ -11,7 +11,7 @@
 //   levelPlaced(site) → Promise<{ life, rides, things }> (the map's actors and vehicles)
 //   levelBusy(site) → Promise<Set of cell keys the level fills>
 //   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics })
-//     → null | { update(position), ready(), progress(), stats(), physics(), dispose() }
+//     → null | { update(position), ready(), paused(), progress(), stats(), physics(), dispose() }
 //     (camera: the placed lights rank by it; light: the world's record, for their scale;
 //     onProbe: the reflection volume you stand in, for gameLit.js)
 //     (a pack with the game's shapes, off a phone and the low tier
@@ -34,6 +34,7 @@
 // scene's first directional light.
 
 import { withFallback } from '../../../../lib/assetBase.js';
+import { playWorld } from '../../../../lib/sw.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
@@ -288,6 +289,8 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
   packOf(world)
     .then(async (pack) => {
       pack0 = pack;
+      // (lane N4) the service worker keeps this world's hashed files as they come (public/sw.js)
+      playWorld(world).catch(() => {});
       // (the engine loads beside the materials; a failure leaves the walker as it was)
       startEngine(pack).catch((e) => {
         if (import.meta.env?.DEV) console.warn('level physics failed', world, e);
@@ -360,6 +363,8 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       probes?.update([position[0], camera?.position.y ?? 1.6, position[1]]);
     },
     ready: () => stream?.ready() ?? false,
+    // (lane N4: past the tier's visitMB the finer rows and LODs wait)
+    paused: () => stream?.status().paused ?? false,
     progress: () => stream?.progress() ?? 0,
     // (stream: lane N4's phase, bytes, boot and pause; coarse: the horizon grid's cells and cards)
     stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null, stream: stream?.status() ?? null, coarse: coarse?.stats() ?? null }),
