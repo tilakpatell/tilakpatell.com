@@ -36,7 +36,7 @@ The regression (Q1's fixture without `--variations`, `--size 1280x720`): the GLB
 
 ## The dictionary
 
-`node scripts/bf2017-shader-names.mjs` writes `src/data/bf2017/shaderParams.json`: 2,003 names (the material dump's keys, 2,801 object variations' parameter names, 139 shader presets'), each with its djb2-xor hash of the lower-cased name. The depot probe (`maps_work/shaderdepots.jsonl`) is not in the bucket, so the resolved share by count (the gate: ≥ 90 %) is the desktop's to measure: `--depots <file>`. The same hash names the variations: `VariationAssetNameHash` and an object variation's `NameHash` are `hashName` of its lower-cased path.
+`node scripts/bf2017-shader-names.mjs` writes `src/data/bf2017/shaderParams.json`: 2,003 names (the material dump's keys, 2,801 object variations' parameter names, 139 shader presets'), each with its djb2-xor hash of the lower-cased name. The depot probe (`maps_work/shaderdepots.jsonl`) is not in the bucket; the desktop ran it (2026-10-11): 173,321 of 2,339,665 entries resolve (7.4 %), and 44.3 % of the 391,192 material-specific entries once the nine per-block engine constants (216,497 entries each) are set apart. 2,273 hashes stay unresolved: graph-internal names no record spells out. The gate's ≥ 90 % was written against the wrong denominator. The same hash names the variations: `VariationAssetNameHash` and an object variation's `NameHash` are `hashName` of its lower-cased path.
 
 ## The vehicles
 
