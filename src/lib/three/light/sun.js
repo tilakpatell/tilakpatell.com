@@ -161,8 +161,22 @@ async function sunCSM() {
       }
     }
 
-    // over the last BLEND of the last cascade, into the distant shadow
+    // over the last BLEND of the last cascade, into the distant shadow.
+    // Built once and handed to every material the sun falls on: three's setup
+    // makes a new reference to the cascades' splits each time it is asked, a
+    // uniform block of its own name in every material's program, so no two
+    // materials shared a program (Tatooine's 379 materials, 369 programs, each
+    // a link of its own; the Fn's body is still built for each material)
     setup(builder) {
+      if (this.made) {
+        if (this.camera === null) this._init(builder);
+        return this.made;
+      }
+      this.made = this.cascadeShadow(builder);
+      return this.made;
+    }
+
+    cascadeShadow(builder) {
       const cascades = super.setup(builder);
       const far = uniform(this.maxFar).onRenderUpdate(() => Math.min(this.maxFar, this.camera.far));
       const t = positionView.z.negate().div(far);

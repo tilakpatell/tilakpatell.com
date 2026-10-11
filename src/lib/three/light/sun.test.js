@@ -140,6 +140,19 @@ describe('createSun', () => {
   });
 });
 
+describe('the cascades’ shadow node', () => {
+  it('is made once and handed to every material, so their programs can be shared (a new cascades buffer each time gave Tatooine 369 programs for 379 materials)', async () => {
+    const sun = await createSun(hoth.sunny, { tier: 'high' });
+    const csm = sun.light.shadow.shadowNode;
+    const camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 1000);
+    camera.updateMatrixWorld();
+    const first = csm.setup(fakeBuilder(camera));
+    const again = csm.setup(fakeBuilder(camera));
+    expect(first).toBeTruthy();
+    expect(again).toBe(first);
+  });
+});
+
 describe('castCascades', () => {
   it('the cascades on a light a world already has, its colour and strength its own', async () => {
     const light = new THREE.DirectionalLight(0xffeedd, 2.5);
