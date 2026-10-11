@@ -30,7 +30,9 @@
 //     <QUALITY>.json: draw calls and triangles no more than the baseline's
 //     +10% and never over the row's ceiling, its models (every .glb it
 //     fetched) no more than the row's megabytes; a line per world, and exit
-//     1 on a breach (BUDGET_SCALE=0.5 tightens it, to see it fail).
+//     1 on a breach (BUDGET_SCALE=0.5 tightens it, to see it fail; BUDGET_REPORT=1
+//     says each line and fails nothing: CI's software GL, where the node
+//     renderer's whole frame is not the laptop's).
 //     QUALITY=ultra has no triangle ceiling: its triangles are reported, and
 //     it is held to the draw calls and the megabytes, and, drawn on a real
 //     graphics chip (ANGLE=d3d11 or metal), to a frame p95 of 16.7 ms at
@@ -57,6 +59,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { budget } from '../src/lib/budgets.js';
 import { summarise } from './cpu-profile.mjs';
 import { limitsFor, overBy } from './galaxy-budget.mjs';
+import { noisy } from './lib/noise.mjs';
 
 const [mode = 'space', list = 'tatooine'] = process.argv.slice(2);
 const out = process.env.OUT ?? '.';
@@ -170,7 +173,8 @@ for (const id of list.split(',')) {
   });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  // (the console's errors, less what a sandbox or a software renderer always says: lib/noise.mjs)
+  page.on('console', (m) => m.type() === 'error' && !noisy(m.text()) && errors.push(m.text()));
   const t0 = Date.now();
   const bf = mode === 'battlefront';
   const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
@@ -300,7 +304,7 @@ if (process.env.BUDGET) {
     const over = overBy(r, l);
     const say = (v) => (v === Infinity ? '–' : Math.round(v));
     console.log(`budget ${r.id.padEnd(10)} calls ${r.calls}/${say(l.calls)}  tris ${r.triangles}/${say(l.tris)}  models ${r.glbMB}/${l.mb} MB${quality === 'ultra' ? `  p95 ${r.p95}/${realGpu ? l.frame.toFixed(1) : 'reported'} ms` : ''}  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}${l.known ? `  (known over the row, held to its baseline: ${l.known})` : ''}`);
-    if (over.length) process.exitCode = 1;
+    if (over.length && !process.env.BUDGET_REPORT) process.exitCode = 1;
   }
 }
 if (bad.length) process.exitCode = 1;

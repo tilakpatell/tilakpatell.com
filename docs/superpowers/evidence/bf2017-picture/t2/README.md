@@ -42,6 +42,10 @@ The chain built for Hoth at high over WebGL 2: render, SSGI, denoise, GTAO, volu
 - `hoth-high-nodes-webgl.webp`: as it stands (the house's exposure under the record's linear tone map, as lane Q6 drew Hoth).
 - `hoth-high-nodes-webgl-exposure1.webp`: before that, at the site's exposure alone, a stop and a half dark. (The first render, before the record's own rate was let stand, was white.)
 
+## CI
+
+`ci.yml`'s worlds job boots the seventeen worlds at high on the node renderer over a runner's software GL, in two shards. It fails when a world does not come up or says an error (less the noise `scripts/lib/noise.mjs` lists: a browser with no WebGPU says so, and the runtime draws on WebGL 2). Its rows (calls, triangles, models) are reported against the baseline, not held (`BUDGET_REPORT=1`): the baseline was made on the classic renderer, a frame through the node renderer's whole chain takes minutes in software, and the cascades' share of the frame cannot be counted there. The frame numbers are the laptop's run below, and a node-renderer baseline is made from it.
+
 ## Left for the owner's laptop
 
 - `BUDGET=1 QUALITY=high node scripts/galaxy-check.mjs surface tatooine,hoth,endor,yavin,bespin,dagobah,mustafar,coruscant,naboo,kashyyyk,kamino,geonosis,scarif,nevarro,mandalore,lothal,sorgan` with `ANGLE=d3d11` (or metal): every world's calls, triangles, MB, p50 and p95, beside `GPU=classic` for the classic numbers and shots. The baseline was made on the classic renderer; if the node renderer counts its passes differently, a node baseline is made from that run, with its reason in the commit.

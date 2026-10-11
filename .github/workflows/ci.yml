@@ -5,7 +5,8 @@ name: CI
 # red check stops any merge from deploying something broken (deploy.yml runs
 # the same steps again on main before it publishes). Beside it, the AI's
 # tests, the multiplayer's two-browser check (evidence, not a gate), and
-# the Star Wars worlds booted on the node renderer (reported).
+# the Star Wars worlds booted on the node renderer (a gate: every world up,
+# no error; the rows reported).
 on:
   pull_request:
     branches: [main]
@@ -56,15 +57,18 @@ jobs:
   # 'nodes-webgl'), held to its row of the budget table and its baseline
   # (scripts/galaxy-check.mjs BUDGET=1): no page error, no console error,
   # draw calls, triangles and models within the row. Two shards, as a
-  # world with a level pack takes minutes to come up in software. Reported,
-  # not a gate yet: a frame through the node renderer's whole chain takes
-  # minutes on a runner's software GL (Hoth at high, 2026-10-11), so the
-  # owner's laptop run is the measure until a GPU runner holds it.
+  # world with a level pack takes minutes to come up in software. The gate is
+  # that every world comes up and says no error (scripts/lib/noise.mjs's
+  # noise aside); the rows are reported, not held (BUDGET_REPORT=1): a frame
+  # through the node renderer's whole chain takes minutes on a runner's
+  # software GL and its cascades' frame cannot be counted there (Hoth at
+  # high, 2026-10-11), so the frame numbers are the owner's laptop run's
+  # (docs/superpowers/evidence/bf2017-picture/t2/README.md).
   worlds:
     name: Worlds on the node renderer (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 150
-    continue-on-error: true
+    continue-on-error: false
     strategy:
       fail-fast: false
       matrix:
@@ -99,7 +103,7 @@ jobs:
 
       - shell: bash
         run: |
-          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 QUALITY=high VIEW=640x360 SHOT_WAIT=900000 PHASE_WAIT=900000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.worlds }} 2>&1 | tee worlds-check.log
+          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 BUDGET_REPORT=1 QUALITY=high VIEW=640x360 SHOT_WAIT=900000 PHASE_WAIT=900000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.worlds }} 2>&1 | tee worlds-check.log
           exit ${PIPESTATUS[0]}
 
       - if: always()

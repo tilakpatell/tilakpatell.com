@@ -13,6 +13,8 @@ export const NOISE = [
   /THREE\.WebGLRenderer: Context Lost|KHR_parallel_shader_compile/i,
   /AudioContext was not allowed|The AudioContext was not allowed to start/i,
   /\[vite\]|preload|Preload/i,
+  // (a browser with no WebGPU says so, and the runtime draws on WebGL 2: src/runtime/backend.js)
+  /WebGPU is experimental on this platform|Failed to create WebGPU Context Provider|WebGPU is not available/i,
 ];
 
 export const noisy = (text) => NOISE.some((n) => n.test(text));
