@@ -1,0 +1,13 @@
+the level's battle in 25 s
+ok   the battle is the level's: stage 1 of 4, Attack the Venator’s bridges, 2 objectives, flying for team 1
+ok   its ships: venator, venator, corvette, corvette, corvette, providence, providence, providence
+ok   its own area at 114, 0, -280
+the pack's draws settled in 41 s (38 groups)
+ok   draw calls 141 (the high row: 700)
+ok   triangles 1.27M (the high row: 3.0M)
+frame times in software GL: 12733, 17, 733 ms
+ok   the MC80 projects into the frame at 640, 468
+ok   inside the area: its storm's fog on (density 0.0118859), the galaxy's sky and names shut out
+ok   the pack's flagship is drawn where the battle's is (its box changes without the pack)
+ok   no console errors
+exit 0

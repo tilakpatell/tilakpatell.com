@@ -23,8 +23,13 @@ Against the space lane’s table of 2026-10-10 (`../README.md`: Endor at high 57
 
 ## The Starfighter Assault
 
-`node scripts/starfighter-check.mjs endor high` and `kamino high`: the pack’s hull drawn once (the hidden-pack box test), the fallbacks on the game’s rows. S1SF
+`node scripts/starfighter-check.mjs endor high` and `kamino high` (`starfighter-<system>.txt`, the shots beside): the level’s battle laid, its ships the game’s rows, the pack’s flagship drawn where the battle’s is (the hidden-pack box test), the counts within the high row.
+
+| system | calls | triangles | the MC80 in frame | the pack’s flagship drawn once | console |
+| --- | --- | --- | --- | --- | --- |
+| Endor | 119 / 700 | 0.11M / 3M | yes (640, 467) | yes | the install’s `/packs/index.json` miss (above), nothing else; clean with the index served, `starfighter-endor-again.txt` |
+| Kamino | 141 / 700 | 1.27M / 3M | yes (640, 468); inside its area, the storm’s fog on | yes | none, exit 0 |
 
 ## The cockpit
 
-`SEAT=cockpit SHIP=xwing QUALITY=high node scripts/galaxy-check.mjs space tatooine` (`cockpit-xwing.webp`): the game’s X-wing cockpit from the pilot’s seat over Tatooine, the keys card over it as the check leaves it. S1CAB
+`SEAT=cockpit SHIP=xwing QUALITY=high node scripts/galaxy-check.mjs space tatooine` and `SHIP=falcon` (`cockpit-xwing.webp`, `cockpit-falcon.webp`): the game’s X-wing and Falcon cockpits from the pilot’s seat over Tatooine, the keys card over them as the check leaves it; the eye a share of each cockpit’s box (`cockpit/vehicles/game.js`’s `EYE_AT`), since the game’s cockpit meshes carry no camera node. Both runs exit 0 (the X-wing’s 84 calls, 139,378 triangles; the Falcon’s 82 and 146,275, within the high row).
