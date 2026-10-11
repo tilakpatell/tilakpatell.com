@@ -3,6 +3,8 @@
 // weather vane under it all. (sites/index.js has what a site is; edge.js
 // has Mustafar and Scarif.)
 
+import { ownMap } from './ownMap';
+
 export const SITE = {
   // lit as the game lights its level (src/data/bf2017/light/bespin.json, gameLit.js)
   gameLight: 'bespin',
@@ -177,6 +179,11 @@ export const SITE = {
       land: { at: [0, 0], yaw: 0 },
       line: 'The palace’s terraces, the Empire’s walkers on them, and the other mines floating off in the gold.',
       door: { at: [0, -8], r: 2.5, prompt: 'Take a cloud car back to the platforms' },
+      // (in its own map's frame: none of Cloud City's places, people or
+      // scatter on it; they stood on the palace's terraces, 420 draws of them)
+      ...ownMap('bespin/m2bes'),
+      site: { ...ownMap('bespin/m2bes').site, noGround: true, fall: -40 },
+      ground: { layers: [], flats: [], pits: [] },
     },
   ],
   // the places you go into: the dining room, the freezing chamber, the

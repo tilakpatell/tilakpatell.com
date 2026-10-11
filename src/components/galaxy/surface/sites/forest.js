@@ -3,6 +3,7 @@
 // (sites/index.js has what a site is.)
 
 import { grove } from './stand';
+import { DEATHSTAR, DEATHSTAR_ZONE } from './deathstar2';
 
 // Endor's sun, for its sky and the light slanting through its trees
 const ENDOR_SUN = { az: 0.9, el: 1.02 };
@@ -63,6 +64,10 @@ export const SITES = {
     // trenches, the AT-AT station and the forest round them stand as the game
     // placed them; the site's built bunker is the flight's (`game`))
     level: 'endor',
+    // (and overhead, the second Death Star's inside, the game's own: up by
+    // the shuttle on the shield generator's pad, deathstar2.js)
+    districts: [DEATHSTAR],
+    zones: [DEATHSTAR_ZONE],
     place: 'The forest moon',
     line: 'Redwoods older than the Empire, and something small watching you from the ferns.',
     sky: {
