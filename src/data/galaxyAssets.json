@@ -32520,7 +32520,7 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_backdrop_buildings_observatory_id.64.ktx2": {
-    "hash": "8e2395db74fa",
+    "hash": "68dcf3a1aa73",
     "bytes": 1429,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_backdrop_buildings_observatory_id.64.ktx2",
     "tier": "pack"
@@ -32718,55 +32718,55 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_flat_m.1024.ktx2": {
-    "hash": "30d91f1d8e0b",
+    "hash": "5af0b9f49682",
     "bytes": 368697,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_flat_m.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_flat_m.256.ktx2": {
-    "hash": "255ed234f42f",
+    "hash": "8907acd3895e",
     "bytes": 25422,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_flat_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_flat_m.512.ktx2": {
-    "hash": "2f3ac0c023c3",
+    "hash": "1f1f47002f26",
     "bytes": 94106,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_flat_m.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_id.1024.ktx2": {
-    "hash": "30e6bdf5f3b0",
+    "hash": "f094a525d2ac",
     "bytes": 9908,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_id.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_id.256.ktx2": {
-    "hash": "81022a97fc1c",
+    "hash": "d696d55260ae",
     "bytes": 4299,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_id.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_id.512.ktx2": {
-    "hash": "b46b98c47617",
+    "hash": "e7f10bf5d938",
     "bytes": 6736,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_id.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_m.1024.ktx2": {
-    "hash": "a4cd5b6a9f1b",
+    "hash": "3eb060361658",
     "bytes": 399486,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_m.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_m.256.ktx2": {
-    "hash": "e39edf1eaeb3",
+    "hash": "754c830777ca",
     "bytes": 28730,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_buildings_m.512.ktx2": {
-    "hash": "5296b1a36e34",
+    "hash": "8662127dffc7",
     "bytes": 103667,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_buildings_m.512.ktx2",
     "tier": "pack"
@@ -32820,25 +32820,25 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_id.128.ktx2": {
-    "hash": "e73440f67be7",
+    "hash": "8d92916e5014",
     "bytes": 561,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_id.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_m.1024.ktx2": {
-    "hash": "7ead13fd0578",
+    "hash": "e47121873d91",
     "bytes": 944915,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_m.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_m.256.ktx2": {
-    "hash": "df023fe9bdcf",
+    "hash": "3437b7b11535",
     "bytes": 60877,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_m.512.ktx2": {
-    "hash": "2e332d2e849a",
+    "hash": "04fd0ffcb6f2",
     "bytes": 235353,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_m.512.ktx2",
     "tier": "pack"
@@ -32856,31 +32856,31 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_id.256.ktx2": {
-    "hash": "c95dd6b35631",
+    "hash": "83b956f1d65f",
     "bytes": 668,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_id.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_id.512.ktx2": {
-    "hash": "1b115e5c47e8",
+    "hash": "e0245d97c256",
     "bytes": 661,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_id.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_m.1024.ktx2": {
-    "hash": "9319111eff10",
+    "hash": "a69a203a6fbf",
     "bytes": 66862,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_m.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_m.256.ktx2": {
-    "hash": "40cd40ba9138",
+    "hash": "a634cbcc547a",
     "bytes": 5633,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_m.512.ktx2": {
-    "hash": "d365ae4f1d51",
+    "hash": "1802174d0854",
     "bytes": 17352,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_rim_01_m.512.ktx2",
     "tier": "pack"
@@ -33078,25 +33078,25 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_defaultid_aluminium_rgba.16.ktx2": {
-    "hash": "ced5c499e4f5",
+    "hash": "1b561fb537eb",
     "bytes": 391,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_defaultid_aluminium_rgba.16.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_defaultid_aluminiumanodized_rgba.16.ktx2": {
-    "hash": "12048180e01e",
+    "hash": "4b6408b4a71e",
     "bytes": 409,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_defaultid_aluminiumanodized_rgba.16.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_defaultid_paint_01_rgba.16.ktx2": {
-    "hash": "ac5c2000d858",
+    "hash": "07b3cb218f5d",
     "bytes": 396,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_defaultid_paint_01_rgba.16.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_defaultid_plastic_rgba.16.ktx2": {
-    "hash": "4ca36141f734",
+    "hash": "c942a4dfa447",
     "bytes": 407,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_defaultid_plastic_rgba.16.ktx2",
     "tier": "pack"
@@ -33168,7 +33168,7 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_lightceilingsmall_01_id.256.ktx2": {
-    "hash": "404817793062",
+    "hash": "b75639b282ab",
     "bytes": 6486,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_lightceilingsmall_01_id.256.ktx2",
     "tier": "pack"
@@ -33180,7 +33180,7 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_lightdesksmall_01_id.128.ktx2": {
-    "hash": "bebf5b9a1800",
+    "hash": "cd7001068f11",
     "bytes": 539,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_lightdesksmall_01_id.128.ktx2",
     "tier": "pack"
@@ -33402,25 +33402,25 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_pedestrianplatform_id.256.ktx2": {
-    "hash": "2e387dfb1d87",
+    "hash": "e180a5530d89",
     "bytes": 7603,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_pedestrianplatform_id.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_pedestrianplatform_id.512.ktx2": {
-    "hash": "389382c747ec",
+    "hash": "a5ff16f1d28d",
     "bytes": 14003,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_pedestrianplatform_id.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_pedestrianplatform_m.256.ktx2": {
-    "hash": "7d0d5daa289a",
+    "hash": "1e54be6216cc",
     "bytes": 137114,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_pedestrianplatform_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_pedestrianplatform_m.512.ktx2": {
-    "hash": "b8544315932c",
+    "hash": "57a3d00107dc",
     "bytes": 481966,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_pedestrianplatform_m.512.ktx2",
     "tier": "pack"
@@ -33480,31 +33480,31 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_id.1024.ktx2": {
-    "hash": "41af6ebe81d5",
+    "hash": "309b48d1982b",
     "bytes": 10639,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_id.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_id.256.ktx2": {
-    "hash": "dc75b7460437",
+    "hash": "dbd24a35d0b0",
     "bytes": 4681,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_id.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_id.512.ktx2": {
-    "hash": "57ebce95cc83",
+    "hash": "376a7f9bc11c",
     "bytes": 6964,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_id.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_m.256.ktx2": {
-    "hash": "d49814f7f0a6",
+    "hash": "286a5663aded",
     "bytes": 37292,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_m.512.ktx2": {
-    "hash": "353f17643189",
+    "hash": "13a1f7d3cec5",
     "bytes": 125919,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_plaza_trim_01_m.512.ktx2",
     "tier": "pack"
@@ -33522,13 +33522,13 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_publicshelter_01_id.256.ktx2": {
-    "hash": "0add6eeadb43",
+    "hash": "4daaaee532e3",
     "bytes": 13812,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_publicshelter_01_id.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_publicshelter_01_id.512.ktx2": {
-    "hash": "65e94382240e",
+    "hash": "3a461b8efb2d",
     "bytes": 26598,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_publicshelter_01_id.512.ktx2",
     "tier": "pack"
@@ -33660,7 +33660,7 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_sculpturelarge_03_id.256.ktx2": {
-    "hash": "6eb6d786fcf0",
+    "hash": "c61eeb5f85e8",
     "bytes": 20851,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_sculpturelarge_03_id.256.ktx2",
     "tier": "pack"
@@ -33984,37 +33984,37 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_id.1024.ktx2": {
-    "hash": "6cb9da43fc0f",
+    "hash": "7fc750a6952b",
     "bytes": 28648,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_id.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_id.256.ktx2": {
-    "hash": "e45bb44842ee",
+    "hash": "49a28bdecd8c",
     "bytes": 9596,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_id.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_id.512.ktx2": {
-    "hash": "566f1fec46d4",
+    "hash": "8eb11d32c000",
     "bytes": 16748,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_id.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_m.1024.ktx2": {
-    "hash": "9371becbf3f0",
+    "hash": "7aea489e565b",
     "bytes": 104878,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_m.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_m.256.ktx2": {
-    "hash": "9d83e5c72567",
+    "hash": "89624a733dbe",
     "bytes": 8010,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_m.512.ktx2": {
-    "hash": "e4adbd5f8f80",
+    "hash": "62970e3f0c46",
     "bytes": 30464,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_ul_01_m.512.ktx2",
     "tier": "pack"
@@ -34176,13 +34176,13 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_wallmountedcomputer_01_a_cd.128.ktx2": {
-    "hash": "262dd18a250f",
+    "hash": "1e6a3f7ec478",
     "bytes": 41876,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_wallmountedcomputer_01_a_cd.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_wallmountedcomputer_01_a_cd.256.ktx2": {
-    "hash": "faaa15aa56e0",
+    "hash": "43e73cbcba8a",
     "bytes": 155659,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_wallmountedcomputer_01_a_cd.256.ktx2",
     "tier": "pack"
@@ -34200,13 +34200,13 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_wallpanels_01_m.256.ktx2": {
-    "hash": "63e14be02e00",
+    "hash": "dfa78f4d590d",
     "bytes": 131837,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_wallpanels_01_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_wallpanels_01_m.512.ktx2": {
-    "hash": "53e66c11dd3d",
+    "hash": "152a8a650597",
     "bytes": 447395,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_wallpanels_01_m.512.ktx2",
     "tier": "pack"
@@ -78870,13 +78870,13 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/outpost/tex/t_gozanticruiser_01_em.256.ktx2": {
-    "hash": "c9ef7b1d10ce",
+    "hash": "e13f569687f2",
     "bytes": 18963,
     "from": "models/galaxy/bf2017/levels/hoth/outpost/tex/t_gozanticruiser_01_em.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/outpost/tex/t_gozanticruiser_01_em.512.ktx2": {
-    "hash": "cf780ef31ae0",
+    "hash": "1d47a0f580ed",
     "bytes": 47791,
     "from": "models/galaxy/bf2017/levels/hoth/outpost/tex/t_gozanticruiser_01_em.512.ktx2",
     "tier": "pack"
@@ -79080,19 +79080,19 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/outpost/tex/t_rep_commandpost_01_m.1024.ktx2": {
-    "hash": "0524698c9012",
+    "hash": "17478200ba90",
     "bytes": 14332,
     "from": "models/galaxy/bf2017/levels/hoth/outpost/tex/t_rep_commandpost_01_m.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/outpost/tex/t_rep_commandpost_01_m.256.ktx2": {
-    "hash": "36faeba09291",
+    "hash": "b64a456ce547",
     "bytes": 3588,
     "from": "models/galaxy/bf2017/levels/hoth/outpost/tex/t_rep_commandpost_01_m.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/outpost/tex/t_rep_commandpost_01_m.512.ktx2": {
-    "hash": "ce24752c5d59",
+    "hash": "ff2aa7d5a11b",
     "bytes": 6749,
     "from": "models/galaxy/bf2017/levels/hoth/outpost/tex/t_rep_commandpost_01_m.512.ktx2",
     "tier": "pack"

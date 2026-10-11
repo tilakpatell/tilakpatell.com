@@ -151,7 +151,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const formats = args.formats ? gameWord(readFileSync(resolve(args.formats), 'utf8')) : loadGameWord(join(ROOT, 'lab', 'assets', 'bf2017'));
   if (formats) console.log(`the game's word: ${formats.size} maps (textures.jsonl)`);
   if (args.packs) {
-    for (const dir of readdirSync(join(ROOT, PACKS, 'levels'))) {
+    // (a world's packs and its districts' in their folders: levels/hoth/, levels/hoth/base/)
+    const levels = join(ROOT, PACKS, 'levels');
+    const packDirs = readdirSync(levels).flatMap((w) => [w, ...(statSync(join(levels, w)).isDirectory() ? readdirSync(join(levels, w)).filter((d) => existsSync(join(levels, w, d, 'level.json'))).map((d) => join(w, d)) : [])]);
+    for (const dir of packDirs) {
       for (const f of ['level.json', 'recipes.json']) {
         const file = join(ROOT, PACKS, 'levels', dir, f);
         if (!existsSync(file)) continue;
