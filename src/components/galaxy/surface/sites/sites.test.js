@@ -282,6 +282,52 @@ describe('the worlds drawn from the game’s levels', () => {
     expect(bunker.flat.game).toBe(true);
     expect(bunker.things.filter((t) => t.kind === 'bunker' || t.kind === 'bunkerbank').every((t) => t.game)).toBe(true);
   });
+
+  it('Bespin stands on CloudCity_01’s walkways, its fall above the city below, the campaign’s palace a district (Review Focus 3)', () => {
+    const bespin = SITES.bespin;
+    const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/bespin/level.json', import.meta.url), 'utf8'));
+    expect(bespin.level).toBe('bespin');
+    expect(bespin.noGround).toBe(true);
+    // (the walkways at the game's 199 m are the site's 0; the plazas the map draws below them, at -5 m, are
+    // the backdrop: one who falls off is counted fallen long before them, never caught on their floors)
+    expect(pack.origin[1]).toBe(199);
+    expect(bespin.fall).toBeLessThan(0);
+    expect(bespin.fall).toBeGreaterThan(-5 - pack.origin[1]);
+    // (the built deck, its towers and bridges the flight's: the level's walkways are what you stand on)
+    for (const t of bespin.things.filter((x) => ['bespindeck', 'bespinplatform', 'bespinbridge', 'cloudcity'].includes(x.kind))) expect(t.game, t.kind).toBe(true);
+    const palace = bespin.districts.find((d) => d.id === 'm2bes');
+    expect(palace.level).toBe('bespin/m2bes');
+    expect(bespin.zones.some((z) => z.to?.district === 'm2bes')).toBe(true);
+    // (the map has no carbon-freezing chamber: the site's stays, and its zone)
+    expect(bespin.places.find((p) => p.id === 'carbon').things.find((t) => t.kind === 'carbonchamber').game).toBeUndefined();
+  });
+
+  it('Hoth’s outpost is Hoth_02, a district reached on foot where the game put it on the same ice', () => {
+    const hoth = SITES.hoth;
+    const outpost = hoth.districts.find((d) => d.id === 'outpost');
+    expect(outpost.level).toBe('hoth/outpost');
+    const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/hoth/outpost/level.json', import.meta.url), 'utf8'));
+    const main = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/hoth/level.json', import.meta.url), 'utf8'));
+    // (Hoth_02 is drawn on Hoth_01's own terrain: its door on the main map is where its spot lies there)
+    const door = hoth.zones.find((z) => z.to?.district === 'outpost').door.at;
+    expect(door[0]).toBeCloseTo(pack.origin[0] - main.origin[0], 0);
+    expect(door[1]).toBeCloseTo(pack.origin[2] - main.origin[2], 0);
+    expect(withDistrict(hoth, 'outpost').ground.layers).toEqual([{ type: 'image', pack: 'hoth/outpost' }]);
+  });
+
+  it('Scarif stands on Scarif_02’s beach, its sea the game’s, its built base left to the level', () => {
+    const scarif = SITES.scarif;
+    const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/scarif/level.json', import.meta.url), 'utf8'));
+    expect(scarif.level).toBe('scarif');
+    expect(scarif.ground.layers).toEqual([{ type: 'image', pack: 'scarif' }]);
+    // (the game's sea, WaterSurfaceEntityData at 212.03 m, under the landing's 213.10: you come down on the shore)
+    expect(scarif.water.level).toBeCloseTo(212.03 - pack.origin[1], 1);
+    expect(scarif.water.level).toBeLessThan(0);
+    for (const t of scarif.things) if (['bunker', 'pad', 'lamp'].includes(t.kind)) expect(t.game, t.kind).toBe(true);
+    for (const s of scarif.scatter) expect(s.game, s.kind).toBe(true);
+    // (the vault's door needs its tower: the game's Citadel stands 3 km west, past the arena, on the horizon)
+    expect(scarif.places.find((p) => p.id === 'citadel').things.find((t) => t.kind === 'citadel').game).toBeUndefined();
+  });
 });
 
 // The seven worlds with no game map, dressed from the drop's library (the

@@ -11,11 +11,22 @@
 //     without: draws } (bin: the cell's 32-byte records; shapesByMesh:
 //     { <mesh>: shapes } already read)
 //   shapeReader(pack, loadBin) → (mesh) → Promise<shapes | null>, once a mesh
+//   deckFloor(box) → the floor at a broad box's top (4 m each way), or null
 
 import { readShapes, solidsOf } from '../physics/havok.js';
 import { instancesOf } from '../../components/galaxy/surface/level/levelPhysics.js';
 
 const FLOOR = { thick: 1, wide: 2 };
+// a hull this wide each way is a deck as well as a box: a landing platform,
+// a thick gangway. The walker climbs onto a box's top from beside it, but
+// it is set down (a landing, a teleport, a respawn) on floors alone, so a
+// platform with no floor at its top put you at the fall line under it
+const DECK = 4;
+
+// deckFloor(box) → a floor at its top, or null
+export function deckFloor(b) {
+  return Math.min(b.hw, b.hd) * 2 >= DECK ? { x: b.x, z: b.z, hw: b.hw, hd: b.hd, yaw: b.yaw, y: b.top } : null;
+}
 
 export function shapeSolids(draws, bin, shapesByMesh) {
   const floors = [];
@@ -32,7 +43,12 @@ export function shapeSolids(draws, bin, shapesByMesh) {
       for (const s of solidsOf(shapes, inst)) {
         if (s.type === 'circle') circles.push(s);
         else if (s.top - s.base <= FLOOR.thick && Math.min(s.hw, s.hd) * 2 >= FLOOR.wide) floors.push({ x: s.x, z: s.z, hw: s.hw, hd: s.hd, yaw: s.yaw, y: s.top });
-        else boxes.push({ x: s.x, z: s.z, hw: s.hw, hd: s.hd, yaw: s.yaw, top: s.top, base: s.base });
+        else {
+          const box = { x: s.x, z: s.z, hw: s.hw, hd: s.hd, yaw: s.yaw, top: s.top, base: s.base };
+          boxes.push(box);
+          const deck = deckFloor(box);
+          if (deck) floors.push(deck);
+        }
       }
   }
   return { floors, boxes, circles, without };
