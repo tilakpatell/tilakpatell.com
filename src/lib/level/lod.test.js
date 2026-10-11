@@ -41,14 +41,14 @@ describe('a level’s LOD by screen size', () => {
 });
 
 describe('a map’s size', () => {
-  // the whole table (lane D2: the caps a step up): [radius, tier, colour, normal or ORM]
+  // the whole table (lane D2: ultra a step up, its data maps at the colour's size): [radius, tier, colour, normal or ORM]
   const TABLE = [
     [20, 'ultra', 2048, 2048],
     [4, 'ultra', 2048, 2048],
     [0.3, 'ultra', 1024, 1024],
-    [20, 'high', 2048, 2048],
-    [4, 'high', 1024, 1024],
-    [0.3, 'high', 512, 512],
+    [20, 'high', 1024, 512],
+    [4, 'high', 512, 256],
+    [0.3, 'high', 256, 128],
     [20, 'mid', 1024, 512],
     [4, 'mid', 512, 256],
     [0.3, 'mid', 256, 128],
@@ -62,8 +62,8 @@ describe('a map’s size', () => {
   });
 
   it('steps at 8 m and 2 m from the middle to the edge', () => {
-    expect(texSizeFor(8, 'high')).toBe(2048);
-    expect(texSizeFor(7.9, 'high')).toBe(1024);
+    expect(texSizeFor(8, 'high')).toBe(1024);
+    expect(texSizeFor(7.9, 'high')).toBe(512);
     expect(texSizeFor(2, 'mid')).toBe(512);
     expect(texSizeFor(1.9, 'mid')).toBe(256);
   });
