@@ -19,13 +19,13 @@ import { createAudioBus } from './audio';
 import { createRuntime } from './runtime';
 import { createWorkerPool, poolSize } from './workers';
 import { readOverride } from './backend';
-import { device } from '../lib/device';
+import { device, quality } from '../lib/device';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
 import './runtime.css';
 
 // lib/video.js's values as this device may draw them (its detail the ceiling)
-const videoNow = () => resolveVideo(readVideo(), { ceiling: device().detail }).values;
+const videoNow = () => resolveVideo(readVideo(undefined, quality().level), { ceiling: device().detail }).values;
 
 export { usePrepareProgress, useWorld } from './useWorld';
 export { default as WorldHost } from './WorldHost';

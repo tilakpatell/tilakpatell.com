@@ -18,7 +18,10 @@
 //     default and named in `held`; `overridden` the overrides that stand,
 //     for a reader that overlays a row of its own (device.js's budget); no
 //     preset reads as high
-//   read(store) → { preset, overrides }; write(patch, store) → the same (a
+//   read(store, level?) → { preset, overrides }: the preset from 'tp-quality',
+//     or `level` where given (lib/device's quality().level: the address's
+//     ?quality= pin and Auto's pick count, which the store cannot know);
+//     write(patch, store) → the same (a
 //     `preset` in the patch sets 'tp-quality' and drops every override; a
 //     control written back to its preset's value drops its override);
 //     subscribe(fn) → stop; EVENT 'tp:video' on window with the resolved values
@@ -126,8 +129,8 @@ const json = (s) => {
   }
 };
 
-export function read(store = pageStore()) {
-  const q = get(store, 'tp-quality');
+export function read(store = pageStore(), level = null) {
+  const q = PRESETS.includes(level) ? level : get(store, 'tp-quality');
   const kept = json(get(store, KEY));
   const overrides = {};
   if (kept && kept.v === 1) {

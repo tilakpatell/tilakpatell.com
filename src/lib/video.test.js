@@ -66,9 +66,11 @@ describe('the store', () => {
     expect(read(fakeStore())).toEqual({ preset: null, overrides: {} });
   });
 
-  it('reads the preset from tp-quality and the overrides from tp-video', () => {
+  it('reads the preset from tp-quality and the overrides from tp-video; a level given (the address’s pin, Auto’s pick) is the preset instead', () => {
     const s = fakeStore({ 'tp-quality': 'high', 'tp-video': JSON.stringify({ v: 1, gi: 'low' }) });
     expect(read(s)).toEqual({ preset: 'high', overrides: { gi: 'low' } });
+    expect(read(s, 'mid').preset).toBe('mid');
+    expect(read(s, 'nonsense').preset).toBe('high');
   });
 
   it('a change of preset drops the overrides; a change of a control keeps the rest', () => {

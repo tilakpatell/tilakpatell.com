@@ -253,7 +253,7 @@ export const budget = (tier, video = videoValues()) => {
 // otherwise. Read once and again after a change ('tp:video') or a reset.
 let videoCache = null;
 export function videoValues() {
-  return (videoCache ??= resolveVideo(readVideo(), { ceiling: device().detail }).overridden);
+  return (videoCache ??= resolveVideo(readVideo(undefined, quality().level), { ceiling: device().detail }).overridden);
 }
 export function resetVideo() {
   videoCache = null;
