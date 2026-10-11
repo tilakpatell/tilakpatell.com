@@ -44,6 +44,22 @@ export function pickBackend({ gpu = false, shading = 'glsl', override = null, lo
 // What the settings panel says the world draws with, by kind.
 export const RENDERER_NAMES = { webgpu: 'WebGPU', 'nodes-webgl': 'WebGL 2, node renderer', webgl: 'classic' };
 
+// What a visitor is told of the picture they are seeing (the world's Menu,
+// the settings panel): the renderer's name, whether it is the best this
+// world draws, and what would give the best. A 'glsl' world has only the
+// classic renderer, so classic is its best; a 'nodes' world's best is
+// WebGPU, and anything else says why it is not and what to do.
+//   rendererReport({ backend, shading, gpu }) → { name, best, note } | null
+export function rendererReport({ backend = null, shading = 'nodes', gpu = false } = {}) {
+  const name = RENDERER_NAMES[backend];
+  if (!name) return null;
+  if (backend === 'webgpu') return { name, best: true, note: 'The best picture: every layer on.' };
+  if (shading !== 'nodes') return { name, best: true, note: 'This world draws on the classic renderer.' };
+  if (backend === 'nodes-webgl')
+    return { name, best: false, note: gpu ? 'WebGPU didn’t start here, so every layer is drawn more slowly over WebGL 2.' : 'This browser has no WebGPU, so every layer is drawn more slowly over WebGL 2. Chrome, Edge or Safari 26 draw it on WebGPU.' };
+  return { name, best: false, note: gpu ? 'The simpler picture: WebGPU didn’t start here, or ?gpu=classic asked for it (take it out of the address).' : 'The simpler picture: this browser has no WebGPU. Quality on High draws every layer over WebGL 2; Chrome, Edge or Safari 26 draw it on WebGPU.' };
+}
+
 // ?gpu= in the search, or after the ? in the hash (the site uses hash
 // routes), else what's stored.
 export function readOverride(search = '', hash = '', stored = null) {

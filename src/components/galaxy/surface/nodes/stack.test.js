@@ -28,6 +28,10 @@ describe('the surface’s entry', () => {
     const e = surfaceEntry(site, pic);
     expect(e.record).toBe(hoth.sunny.record);
     expect(e.picture).toBe(pic);
+    // (the record's own rate, never lane G's over it: the sky and the lamps at the game's brightness)
+    expect(e.gameToSite).toBeUndefined();
+    expect(readEntry(e).gameToSite).toBeLessThan(1e-4);
+    expect(readEntry(e).sky.luminance).toBeLessThan(5);
   });
 
   it('turns a direction into entry.js’s angles and back', () => {

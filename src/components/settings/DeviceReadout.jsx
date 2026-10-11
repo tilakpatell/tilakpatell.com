@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { device, storageFree } from '../../lib/device';
 import { gpu } from '../../lib/gpu';
 import { rendererLine } from './settings.js';
+import { rendererReport } from '../../runtime/backend.js';
 
 // What Auto sees here (the graphics chip and its grade, the tier, the
 // memory, whether hardware acceleration is on) and, while a world is up on
@@ -43,7 +44,8 @@ function useLive() {
       sum = 0;
       count = 0;
       const renderer = rt?.current ? rendererLine({ backend: rt.gfx?.backend, override: rt.override }) : null;
-      setLive(info ? { ms, calls: info.render.calls, triangles: info.render.triangles, renderer } : ms != null ? { ms } : null);
+      const report = rt?.current ? rendererReport({ backend: rt.gfx?.backend, shading: rt.current.module?.shading, gpu: Boolean(navigator.gpu) }) : null;
+      setLive(info ? { ms, calls: info.render.calls, triangles: info.render.triangles, renderer, report } : ms != null ? { ms } : null);
     }, 500);
     return () => {
       alive = false;
@@ -99,6 +101,7 @@ export default function DeviceReadout() {
       {live?.renderer && (
         <p className="settings-note">
           Drawn with <b>{live.renderer}</b>
+          {live.report?.best ? ': the best picture.' : live.report ? `. ${live.report.note}` : ''}
         </p>
       )}
       {live && live.calls == null && <p className="settings-note">Draw calls and triangles show while a 3D world is open behind this panel.</p>}

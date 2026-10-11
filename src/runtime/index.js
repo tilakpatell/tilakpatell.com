@@ -20,6 +20,7 @@ import { createRuntime } from './runtime';
 import { createWorkerPool, poolSize } from './workers';
 import { readOverride } from './backend';
 import { installer } from './install';
+import { setCurrentRuntime } from './current';
 import './runtime.css';
 
 export { usePrepareProgress, useWorld } from './useWorld';
@@ -78,6 +79,7 @@ export function runtime() {
   });
   // a world's install (install.js): the same one the gate and /worlds use
   instance.install = installer();
+  setCurrentRuntime(instance);
   if (win) {
     const wake = () => instance.invalidate();
     document.addEventListener('visibilitychange', wake);

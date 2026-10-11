@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KINDS, LEVELS, RENDERER_NAMES, pickBackend, readOverride } from './backend';
+import { KINDS, LEVELS, RENDERER_NAMES, pickBackend, readOverride, rendererReport } from './backend';
 
 describe('pickBackend', () => {
   it('a glsl module always gets the classic renderer', () => {
@@ -102,5 +102,20 @@ describe('?gpu=classic', () => {
       expect(pickBackend({ shading: 'nodes', tier, gpu: true, override: 'classic' })).toBe('webgpu');
     }
     expect(readOverride('?gpu=classic', '', null)).toBe('classic');
+  });
+});
+
+describe('rendererReport', () => {
+  it('WebGPU is the best; a classic-only world’s classic is its best', () => {
+    expect(rendererReport({ backend: 'webgpu' })).toMatchObject({ name: 'WebGPU', best: true });
+    expect(rendererReport({ backend: 'webgl', shading: 'glsl' })).toMatchObject({ name: 'classic', best: true });
+  });
+
+  it('anything less on a nodes world says why, and what would give the best', () => {
+    expect(rendererReport({ backend: 'nodes-webgl', gpu: false })).toMatchObject({ best: false, note: expect.stringContaining('no WebGPU') });
+    expect(rendererReport({ backend: 'nodes-webgl', gpu: true })).toMatchObject({ best: false, note: expect.stringContaining('didn’t start') });
+    expect(rendererReport({ backend: 'webgl', gpu: true })).toMatchObject({ best: false, note: expect.stringContaining('?gpu=classic') });
+    expect(rendererReport({ backend: 'webgl', gpu: false })).toMatchObject({ best: false, note: expect.stringContaining('High') });
+    expect(rendererReport({})).toBe(null);
   });
 });

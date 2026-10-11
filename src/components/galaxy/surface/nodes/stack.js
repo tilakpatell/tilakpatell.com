@@ -67,14 +67,18 @@ export function surfaceEntry(site, picture = null, { sunDir = null } = {}) {
     },
     light: { sun: light.sun, sky: hex(light.sky), ground: hex(light.ground), ambient: light.ambient },
     fog: { color: hex(fog.color), density: fog.density },
-    // (lane G's calibrated rate for the game's lumens and nits, its _source
-    // lib/three/gameLight.js: the volumes' glows, the placed lights)
-    gameToSite: GAME_TO_SITE,
   };
   if (picture?.record) {
+    // (the record's own rate, calibrate.js's from its tone map: Hoth's day
+    // 6.2e-6, the sun 0.79 as the site has it. A rate set here would win
+    // over it and light the painted sky and the lamps ten thousand times over)
     entry.record = picture.record;
     entry.name = picture.name ?? null;
     entry.picture = picture;
+  } else {
+    // (no record: lane G's calibrated rate for the game's lumens and nits,
+    // its _source lib/three/gameLight.js: the volumes' glows)
+    entry.gameToSite = GAME_TO_SITE;
   }
   return entry;
 }
@@ -95,6 +99,9 @@ export async function createSurfaceStack({ scene, renderer, camera, sun, site, t
   const toward = sun.position.clone().sub(sun.target.position).normalize();
   const entry = surfaceEntry(site, picture, { sunDir: [toward.x, toward.y, toward.z] });
   const pic = pictureOf(entry, entry.picture ?? null);
+  // (the rate from the game's lumens and nits to the site's: the volumes' glows, the lamps)
+  const { readEntry } = await import('../../../../lib/three/light/entry.js');
+  const rate = readEntry(entry).gameToSite;
   const owned = [];
 
   // the picture's textures: its LUT strip, its panorama, fog gradient and
@@ -135,8 +142,8 @@ export async function createSurfaceStack({ scene, renderer, camera, sun, site, t
   // the level's placed lights, clustered (the record's lumens at its rate)
   let placed = null;
   if (picture?.lights) {
-    const [{ createPlacedLights }, { readEntry }] = await Promise.all([import('../../../../lib/three/light/placed.js'), import('../../../../lib/three/light/entry.js')]);
-    placed = await createPlacedLights(scene, renderer, { source: picture.lights, scale: readEntry(entry).gameToSite }).catch(() => null);
+    const { createPlacedLights } = await import('../../../../lib/three/light/placed.js');
+    placed = await createPlacedLights(scene, renderer, { source: picture.lights, scale: rate }).catch(() => null);
   }
 
   // the sun's soft shadow by tier, through its cascades, under the clouds
@@ -161,7 +168,7 @@ export async function createSurfaceStack({ scene, renderer, camera, sun, site, t
   const contact = await createContactShadows(scene, renderer, { tier });
   // (the volumes: the pack's volumes.json, or a promise of it; none where it has none)
   const source = await Promise.resolve(volumes).catch(() => null);
-  const vols = source && CONES_LIT[tier] ? await createVolumetrics(scene, renderer, { tier, source, scale: entry.gameToSite }) : null;
+  const vols = source && CONES_LIT[tier] ? await createVolumetrics(scene, renderer, { tier, source, scale: rate }) : null;
   await post?.light?.({ entry, light: rays, lut, volumetrics: vols, grade: pic?.grade ?? null });
 
   const dir = new THREE.Vector3();
