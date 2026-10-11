@@ -4,6 +4,8 @@ One page per library, engine or framework the site is built on, and this index o
 
 `three/webgpu` and `three/tsl` ship inside `three` and so have no row; their page is [webgpu-tsl.md](webgpu-tsl.md).
 
+WebAssembly is the browser’s own, not a package, and so has no row; its page is [webassembly.md](webassembly.md) (Rapier’s two builds, the Basis transcoder, the meshopt decoder).
+
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |
