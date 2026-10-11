@@ -17,7 +17,7 @@
 //     Node ('/@fs/…', 'file://…', a bare absolute path, or '/node_modules/…'
 //     under root)
 
-export function pathOf(url, root = process.cwd()) {
+export function pathOf(url, root = globalThis.process?.cwd?.() ?? '') {
   let p = String(url).replace(/[?#].*$/, '');
   if (p.startsWith('file://')) return decodeURIComponent(new URL(p).pathname);
   if (p.startsWith('/@fs/')) return p.slice('/@fs'.length);
@@ -28,7 +28,7 @@ export function pathOf(url, root = process.cwd()) {
 export async function instantiate(
   url,
   imports = {},
-  { fetch = globalThis.fetch, WebAssembly: WA = globalThis.WebAssembly, node = typeof window === 'undefined' && typeof process !== 'undefined' } = {},
+  { fetch = globalThis.fetch, WebAssembly: WA = globalThis.WebAssembly, node = typeof window === 'undefined' && typeof globalThis.process !== 'undefined' } = {},
 ) {
   if (node) {
     const { readFile } = await import(/* @vite-ignore */ 'node:fs/promises');

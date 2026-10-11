@@ -1,6 +1,6 @@
 # Rapier
 
-**Version** `@dimforge/rapier3d-compat@0.21.0` and `@dimforge/rapier3d-simd-compat@0.21.0` (both pinned, no caret, always the same version) · **Page owner** `src/lib/physics/` · **Decision** none recorded; the reasons are in `docs/superpowers/specs/2026-10-08-natural-worlds-design.md` (“Rapier, not cannon-es”)
+**Version** `@dimforge/rapier3d@0.21.0` and `@dimforge/rapier3d-simd@0.21.0` (both pinned, no caret, always the same version; the bare builds since lane X3 of the Frostbite gaps design, the `-compat` ones before) · **Page owner** `src/lib/physics/` · **Decision** none recorded; the reasons are in `docs/superpowers/specs/2026-10-08-natural-worlds-design.md` (“Rapier, not cannon-es”)
 
 ## What it is, and why it is here
 
@@ -8,7 +8,7 @@ A rigid-body physics engine written in Rust and run as WebAssembly: bodies, coll
 
 ## Where it is used
 
-The census rows are in [README.md](README.md): Rapier is imported by one file, `src/lib/physics/engine.js`, and only dynamically, the first time `createPhysics` or `preload` (`src/lib/physics/world.js`) is called. Which build: the SIMD one where the browser validates a SIMD probe (`src/lib/wasm/features.js`), the plain one else, or when the SIMD one won’t come up; [webassembly.md](webassembly.md) has the why and the numbers.
+The census rows are in [README.md](README.md): Rapier is imported by `src/lib/physics/engine.js`, only dynamically, the first time `createPhysics` or `preload` (`src/lib/physics/world.js`) is called, and by the two shims under `src/lib/physics/raw/` (`scalar.js`, `simd.js`), which stand in for each package’s own `rapier_wasm3d.js`: `scripts/rapier-wasm.mjs` resolves the package’s import of that file to the shim, and the shim fetches the build’s binary as a hashed asset (`rapier_wasm3d_bg.wasm?url`), compiles it as it downloads through `src/lib/wasm/instantiate.js` (`instantiateStreaming`; the bytes where a server types it wrong; the file in Node) and hands the glue its exports. So a visitor downloads the glue (about 0.3 MB) and the binary (2.9 to 3.1 MB, about 1.1 MB gzipped) and nothing more; the `-compat` builds carried the binary as base64 inside a 4.1 to 4.4 MB module (1.58 MB gzipped) and compiled it from bytes after the whole download (the audit `docs/research/2026-10-11-frostbite-gap-audit.md`, §2.1). Which build: the SIMD one where the browser validates a SIMD probe (`src/lib/wasm/features.js`), the plain one else, or when the SIMD one won’t come up; [webassembly.md](webassembly.md) has the why and the numbers.
 
 The rest of the site reaches it through `src/lib/physics/`:
 
@@ -30,14 +30,15 @@ The rest of the site reaches it through `src/lib/physics/`:
 
 ## What the site does not use, and why
 
-- **The bundler-plugin build** (`@dimforge/rapier3d`): the `-compat` build inlines its wasm, so Vite needs no plugin and the engine loads in Node for the tests.
+- **The `-compat` builds** (`@dimforge/rapier3d-compat`, `-simd-compat`): they inline the wasm as base64 so that no bundler plugin is needed, at the cost above; the site’s own plugin (`scripts/rapier-wasm.mjs`, a dozen lines on a tested rule) gives the bare builds the same ease, in the build, the dev server and Vitest alike. No third-party wasm plugin: the two packages are left out of the dependency optimizer (`optimizeDeps.exclude`) and processed by Vite in SSR (`ssr.noExternal`) so the tests and `scripts/x2-profile.mjs` load the real engine the way a visitor does.
 - **Rapier’s debug renderer**: `src/lib/physics/` has no three.js and no DOM; a world draws its bodies from `position()` and `quaternion()`.
 - **A static import**: nothing imports Rapier at module scope, so no page but the one driving downloads it; and of the two builds, only the one chosen.
 - **The threaded builds**: they need a cross-origin-isolated page (COOP and COEP headers), which GitHub Pages can’t send ([webassembly.md](webassembly.md)).
 
 ## Rules
 
-- Import Rapier only in `src/lib/physics/engine.js`, dynamically (its header; nothing measures this, `node scripts/stack-census.mjs` shows the count).
+- Import Rapier only in `src/lib/physics/engine.js`, dynamically, and by its files (`@dimforge/rapier3d/rapier.js`: the packages carry only a `module` entry, which Node’s resolution does not read), plus the two shims under `src/lib/physics/raw/` (its header; nothing measures this, `node scripts/stack-census.mjs` shows the count).
+- The shim is the only `WebAssembly.instantiate` of Rapier; a world never instantiates it (`src/lib/wasm/instantiate.test.js`, `src/lib/physics/engine.test.js`).
 - The two builds move together: `src/lib/physics/engine.test.js` runs one scene through both and holds them to the same numbers.
 - `src/lib/physics/` stays pure: no three.js, no DOM, tested against the real engine in Node (`src/lib/physics/world.test.js` and the tests beside each file; `docs/health/RULES.md`, “Logic apart from drawing”).
 - A world that loads Rapier counts it in its download size (`WORLD_MB` in `src/components/worlds/worlds.js`, the autopilot’s standing rules).
@@ -49,13 +50,13 @@ The rest of the site reaches it through `src/lib/physics/`:
 The version is pinned without a caret, unlike the site’s other packages; the commit that added it gives no reason, so keep it exact until one is recorded.
 
 ```
-npm install @dimforge/rapier3d-compat@<version> @dimforge/rapier3d-simd-compat@<version> --save-exact
-npx vitest run src/lib/physics
-npm run build
+npm install @dimforge/rapier3d@<version> @dimforge/rapier3d-simd@<version> --save-exact
+npx vitest run src/lib/physics src/lib/wasm scripts/lib/rapier-wasm.test.mjs
+npm run build && node scripts/wasm-check.mjs dist
 node scripts/health.mjs --check --skip build
 ```
 
-Then land on a planet on the universe map and kick a barrel by hand: the tests hold the numbers to tolerances, not the feel. Last upgrade: not recorded; record the next one here, with what it broke. The SIMD build was added at 0.21.0 on 2026-10-11 (lane X2): `world.load.test.js` mocked the plain build alone and had to mock both.
+Then land on a planet on the universe map and kick a barrel by hand: the tests hold the numbers to tolerances, not the feel. Last upgrade: not recorded; record the next one here, with what it broke. The SIMD build was added at 0.21.0 on 2026-10-11 (lane X2): `world.load.test.js` mocked the plain build alone and had to mock both. The bare builds replaced the `-compat` ones at the same version on 2026-10-11 (lane X3): the shims re-export each package’s `rapier_wasm3d_bg.js` and call its `__wbg_set_wasm`, and `scripts/lib/rapier-wasm.mjs` matches the import `./rapier_wasm3d`; after an upgrade, check both names are still what the package’s `rapier_wasm3d.js` uses (`cat node_modules/@dimforge/rapier3d/rapier_wasm3d.js | head -5`), and that `scripts/wasm-check.mjs dist` still finds two hashed binaries.
 
 ## Gotchas
 
