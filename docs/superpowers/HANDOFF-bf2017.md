@@ -17,21 +17,8 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | M2 | per-instance variations from the bins (gate 95 %), weathering and terrain blend, the decal and glass families, level detail slices, translucency, head SSS | T2 | | `claude/bf2017-m2-material` | |
 | G | the gallery: every world at ultra on the laptop beside the game’s frame, with the numbers | T2, P, U2 | | `claude/bf2017-g-gallery` | |
 | W | the desktop as a workflow on the self-hosted runner: the HDR panoramas, the Enlighten atlases, the 4,149 textures, the UASTC row, the depot probe, the ultra frame gate; written in the cloud, run by the owner | nothing | `session_01FPogwWhFLVH94UY39gDNTh` (Opus 5.5) | `claude/bf2017-w-desktop` | PR #906 (draft): written and dry-run; the owner runs each job (below) |
-| R2 | the stream spike: the ultra picture rendered on the owner’s GPU and streamed over WebRTC (signalling on Supabase Realtime), the numbers, the decision | W to measure | | `claude/bf2017-r2-stream` | |
-
-**Lane W’s jobs, for the owner** (`.github/workflows/bf2017-desktop.yml` on the runner `[self-hosted, gpu]`; Actions → *bf2017 desktop* → *Run workflow*, pick the job; `limit` 2 for a first run; `dry` for the plan alone, on GitHub’s runner; the full guide is `scripts/desktop/README.md`, “bf2017 picture jobs”; what a dry run found is `docs/superpowers/evidence/bf2017-picture/w/DRY.md`). Each job opens its own PR.
-
-| job | what it does | before the first run |
-| --- | --- | --- |
-| `panoramas` | the 15 panoramas and 16 fog gradients the light records name, HDR (RGBA16F KTX2, 4,096 and 2,048 wide) from the exporter’s `.dds`, to the bucket and the site, each `<world>.picture.json` gaining `hdr` | export each sky’s BC6U as `.dds` under `<export>\raw\<its path>`; `winget install Microsoft.DirectXTex` |
-| `atlases` | the 868 Enlighten maps (176 sets) through `ktx2_encode.py` and `upload_supabase.py`; the irradiance HDR too where its `.dds` is there; the ledger again (`w/atlases/FORMAT.md` is Q3's note) | none beyond the export’s tools |
-| `textures` | the ledger’s 3,301 not-uploaded textures (the atlases aside) the same way; the ledger again | none |
-| `uastc` | Q5: the packs’ 220 colour maps as UASTC q4 at 2,048, PSNR against the BC7 master and the served ETC1S, kept at 3 dB or better as each pack’s `ultra` row | `winget install KhronosGroup.KTX-Software` |
-| `depots` | the probe through `bf2017-shader-names.mjs --depots`, the share of all and of the rest | the probe at `maps_work\shaderdepots.jsonl` |
-| `gate` | every world at ultra on the chip (ANGLE d3d11, then WebGPU), 16.7 ms p95, shots; the first run makes `lab/baseline/surface-ultra.json` | Chrome |
-| `stream` | lane R2’s sender (PR #908) with its README’s arguments: a world at ultra (`stream_world`) or the game’s own window (`stream_source: game`), for `stream_minutes`; the numbers as the run’s artifact; not in `all` | #908 merged (until then the job says so and stops); `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the runner’s `.env`; a phone |
-
-The keys are the runner’s `.env` (`~\actions-runner\.env`: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`), never the repository’s; `gh workflow run desktop-doctor.yml` shows each need under `bf2017`.
+| X2 | WebAssembly where it pays: Rapier, Basis and meshopt made robust; the CPU hot paths profiled and ported to Rust one at a time, kept by measurement | nothing | `session_01SDTWucfkJsK48o5ZrJJZs6` (spawned 2026-10-11 04:31 UTC, Opus 5.5) | `claude/bf2017-x2-wasm` | |
+| R2 | the stream spike (and the game itself from the owner’s desktop as a second source): the ultra picture rendered on the owner’s GPU and streamed over WebRTC (signalling on Supabase Realtime), the numbers, the decision | W to measure | `session_01Ssaa24nQsXQKzVD9zasd6d` (spawned 2026-10-11 04:29 UTC, Opus 5.5): sender `scripts/desktop/bf2017-stream.mjs`, receiver `#/stream`, `src/lib/stream/`; the cloud’s plumbing proven (360p30 input to picture p50 86 ms, p95 104 ms); the game’s window as a second source (`--source game`: `getDisplayMedia` of the window, SendInput through `scripts/desktop/inject.mjs`, PresentMon), rehearsed in the cloud on a stand-in; the decision a draft until the owner’s desktop run (`docs/superpowers/evidence/bf2017-picture/r2/README.md`; lane W adds `stream` to its job list); PR #908 (draft) | `claude/bf2017-r2-stream` | |
 
 ## The sixth design: accurate to the game (2026-10-10, late night)
 
