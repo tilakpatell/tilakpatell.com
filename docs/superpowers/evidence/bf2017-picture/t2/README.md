@@ -4,7 +4,7 @@ The design: `docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.
 
 ## What runs where
 
-WebGPU, the node renderer, is the default for everything where the browser has it (the owner's word, 2026-10-11); the classic renderer is the fallback for low and mid without it. Rapier (WebAssembly) is the physics on every tier and on a phone wherever a level pack has the game's shapes (`level/levelPhysics.js`'s `wantsEngine`; low at half mid's collider budget, a judgement until a phone is measured).
+WebGPU, the node renderer, is the default for everything where the browser has it (the owner's word, 2026-10-11); the classic renderer is the fallback for low and mid without it. Rapier (WebAssembly) is the physics on every Star Wars world, every tier and a phone: a world from the 2017 game (a level pack with its shapes: Hoth) stands on the game's own collision (`level/levelPhysics.js`, low at half mid's collider budget, a judgement until a phone is measured); every other world on a Rapier world of its drawn ground and the solids and floors it is walked on (`surface/sitePhysics.js`, 64 m cells in a ring round you). The 2017 soldier's body (`playerBody.js`) stands on either; if WebAssembly cannot start, the walker stays.
 
 | level | WebGPU | no WebGPU | `?gpu=webgl` | `?gpu=classic` |
 | --- | --- | --- | --- | --- |

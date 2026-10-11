@@ -140,6 +140,7 @@ import { gameSite } from '../../../lib/three/gameLight';
 import { gameLightOf } from '../../../data/bf2017/light/index';
 import { createGameLit } from './gameLit';
 import { createPlayerBody } from './playerBody';
+import { createSitePhysics } from './sitePhysics';
 import { segmentRay } from '../../../lib/physics/blast';
 import CAMERAS from '../../../data/bf2017/cameras.json';
 import { createSoldierMemo, soldierPose } from '../../../lib/three/camera/soldier';
@@ -925,8 +926,9 @@ export async function create(canvas, ctx, set) {
   let strode = 0;
   // ── The 2017 soldier's body (playerBody.js) ──
   // A level whose shapes are in a physics engine (lane P0's stream) hands it
-  // over through the handle's usePhysics; until then, and on a world with no
-  // level pack, a phone or a low tier, you walk on walker.js as ever.
+  // over through the handle's usePhysics; every other world makes its own
+  // from what it is walked on (sitePhysics.js, below). Until the engine is
+  // in, or for good if WebAssembly cannot start, you walk on walker.js.
   let body = null;
   let bodyPhysics = null;
   let bodyDrives = true;
@@ -958,6 +960,26 @@ export async function create(canvas, ctx, set) {
     attachPhysics(physics);
   };
   if (levelEngine) takeEngine(levelEngine);
+  // ── Rapier on every world (sitePhysics.js) ──
+  // A world without the game's own shapes (no level pack) gets a Rapier
+  // world of the ground as drawn and the solids and floors it is walked on,
+  // in a ring of cells round you, at the level's gravity (level/index.js's)
+  let sitePhys = null;
+  if (!site.level)
+    import('../../../lib/physics/world.js')
+      .then(async ({ createPhysics, preload }) => {
+        await preload();
+        return createPhysics({ gravity: -15.5 });
+      })
+      .then((physics) => {
+        if (disposed) return physics.dispose();
+        sitePhys = { physics, cells: createSitePhysics({ physics, world }) };
+        sitePhys.cells.update([landAt[0], landAt[1]]);
+        takeEngine(physics);
+      })
+      .catch((e) => {
+        if (import.meta.env.DEV) console.warn('surface physics failed: the walker stays', e);
+      });
   const bodyFor = (st) => {
     body?.dispose();
     return createPlayerBody({ physics: bodyPhysics, state: st, row: soldierBook.rows[soldierBook.default], world, drive: bodyDrives });
@@ -3216,6 +3238,7 @@ export async function create(canvas, ctx, set) {
     gameLit?.step(dt);
     stack?.update(dt, camera);
     gameLevel?.step(dt);
+    if (sitePhys) sitePhys.cells.update([me().st.x, me().st.z]);
     warmStreamed(dt);
     // the jump's clock: whether you stood (or your ride did) as this step began
     state.jumpPress.ground(state.phase === 'ride' ? Boolean(state.riding?.state.grounded) : state.phase === 'walk' && me().st.grounded, dt);
@@ -4067,6 +4090,10 @@ export async function create(canvas, ctx, set) {
       lit?.dispose();
       gameLit?.dispose();
       stack?.dispose();
+      // (the site's engine after the body that stood in it)
+      sitePhys?.cells.dispose();
+      sitePhys?.physics.dispose();
+      sitePhys = null;
       knocks?.dispose();
       knockHits.dispose();
       scene.remove(knockDust.mesh);
