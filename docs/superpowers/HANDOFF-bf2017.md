@@ -8,12 +8,12 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 
 | lane | branch | session | PR |
 | --- | --- | --- | --- |
-| S1 | `claude/bf2017-s1-fleet` | `session_01Lir8B5LnJzj9qRka8oq94o` (spawned 2026-10-11 16:50 UTC from `claude/bf2017-space-design`) | PR #S1PR (draft) |
+| S1 | `claude/bf2017-s1-fleet` | `session_01Lir8B5LnJzj9qRka8oq94o` (spawned 2026-10-11 16:50 UTC from `claude/bf2017-space-design`) | PR #936 (draft) |
 | S2 | `claude/bf2017-s2-space-picture` | | |
 | S3 | `claude/bf2017-s3-map-hud` | | |
 | E5 | `claude/bf2017-e5-new-systems` | `session_01QrcPrerTbhxxZoKTnYgFQA` (spawned 2026-10-11 16:36 UTC from `main`) | |
 
-### Lane S1: the fleet on the game’s hulls (`claude/bf2017-s1-fleet`, PR #S1PR)
+### Lane S1: the fleet on the game’s hulls (`claude/bf2017-s1-fleet`, PR #936)
 
 The numbers, the gate output and the shots: `docs/superpowers/evidence/bf2017-space/s1/README.md`; the sheet re-shot, `docs/superpowers/evidence/bf2017-space/fleet-2017.webp` (each kind the galaxy drew before beside the game’s, the same camera, `scripts/glb-shot.mjs`’s `three` view).
 
