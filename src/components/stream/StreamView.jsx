@@ -49,12 +49,19 @@ export default function StreamView() {
       if (e.repeat) return;
       send({ t: 'key', down, code: e.code, key: e.key });
     };
-    const pointer = (kind) => (e) => send({ t: 'pointer', kind, ...framePoint(v, e), button: e.button, buttons: e.buttons });
+    // a locked pointer (a click on the picture locks it; Esc frees it) sends
+    // its motion too, which the real game’s camera reads
+    const locked = () => document.pointerLockElement === v;
+    const pointer = (kind) => (e) => send({ t: 'pointer', kind, ...framePoint(v, e), button: e.button, buttons: e.buttons, ...(kind === 'move' && locked() ? { dx: e.movementX, dy: e.movementY } : {}) });
+    const lock = () => {
+      if (!locked() && !matchMedia('(pointer: coarse)').matches) v.requestPointerLock?.()?.catch?.(() => {});
+    };
     const wheel = (e) => send({ t: 'pointer', kind: 'wheel', ...framePoint(v, e), dy: e.deltaY });
     const listeners = [
       [window, 'keydown', onKey(true)],
       [window, 'keyup', onKey(false)],
       [v, 'pointerdown', pointer('down')],
+      [v, 'click', lock],
       [v, 'pointerup', pointer('up')],
       [v, 'pointermove', pointer('move')],
       [v, 'wheel', wheel],

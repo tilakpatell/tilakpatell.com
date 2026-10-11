@@ -25,9 +25,11 @@ The owner asked whether GeForce Now’s way of using a GPU could show the site�
 
 **What the cloud showed** (both ends on one 4-core machine, software GL, plumbing only; the evidence README has the table). Every piece joins: Realtime broadcast signals with no table or policy (offer to connected in 116 to 190 ms), the world’s canvas goes through the copy, the capture and WebRTC, a key held on the receiver is replayed on the sender as a real key, and the stamp reads back through AV1. At 640 × 360 and 30 frames, input to picture is p50 86 ms and p95 104 ms with no ping lost; at 720p60 the software encoder saturates and the times are seconds. None of it says what the desktop’s NVENC and a phone will do.
 
+**The game itself, a second source** (the owner’s added ask). No WebAssembly port of the real game exists to run (no Frostbite source; the binary is EA’s), so the one way Battlefront II (2017) reaches a browser is this stream: its own window on the desktop (the owner’s copy, Frosty’s mods) captured with `getDisplayMedia`, the receiver’s keys and locked pointer put into it through Windows’ `SendInput`, its own frame time read by PresentMon. The same lines decide it, plus that frame time with the mods on. Nothing of the game is copied, stored or served: only the owner’s live frame, to the owner’s own browser behind the stream id. The cloud rehearsed the capture on a stand-in window; the injection and the game are the desktop’s.
+
 ## Decision
 
-Draft: **the spike is built and its plumbing proven; nothing about a product is decided until the desktop’s numbers are in** (the owner’s run, the evidence README’s last section). If every line above holds on the desktop, a “watch at ultra, streamed from the desktop” mode is planned (not built) beside the quality switch; if the internet line fails but the LAN holds, it stays a tool for the owner’s own devices; if the LAN line fails, it is shelved.
+Draft: **the spike is built and its plumbing proven; nothing about a product is decided until the desktop’s numbers are in** (the owner’s run, the evidence README’s last section). If every line above holds on the desktop, a “watch at ultra, streamed from the desktop” mode is planned (not built) beside the quality switch; if the internet line fails but the LAN holds, it stays a tool for the owner’s own devices; if the LAN line fails, it is shelved. For the game’s window, a yes is a mode the owner starts from the desktop for the owner’s own devices, never a public route.
 
 ## Consequences
 

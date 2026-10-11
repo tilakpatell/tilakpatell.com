@@ -8,6 +8,15 @@ describe('the stream sender’s plumbing', () => {
     expect(() => parseArgs(['--quality', 'max'])).toThrow();
     expect(parseArgs(['--path', '/stream-plumbing']).path).toBe('/stream-plumbing');
     expect(() => parseArgs(['--path', 'javascript:x'])).toThrow();
+  });
+
+  it('takes the game’s window as a second source, headed on the desktop, rehearsed on a stand-in in the dry run', () => {
+    expect(parseArgs([]).source).toBe('site');
+    expect(parseArgs(['--source', 'game'])).toMatchObject({ source: 'game', headed: true, window: 'STAR WARS Battlefront II', process: 'starwarsbattlefrontii.exe', quality: 'ultra' });
+    expect(parseArgs(['--source', 'game', '--window', 'Battlefront II (modded)'])).toMatchObject({ window: 'Battlefront II (modded)' });
+    expect(parseArgs(['--source', 'game', '--dry'])).toMatchObject({ source: 'game', dry: true, headed: false });
+    expect(() => parseArgs(['--source', 'game', '--window', 'a"b'])).toThrow();
+    expect(() => parseArgs(['--source', 'console'])).toThrow();
     expect(() => parseArgs(['--size', 'big'])).toThrow();
     expect(() => parseArgs(['--world', '../etc'])).toThrow();
     expect(() => parseArgs(['--nope'])).toThrow();

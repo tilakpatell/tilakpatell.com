@@ -8,7 +8,13 @@
 // pointer moves (window.__streamInput, the script’s binding), or is
 // dispatched here when there is no script.
 //
-// startSender({ url, key, id, width, height, fps, maxMbps }) → Promise<window.__stream>
+// The second source (source: 'display'): a window on the desktop captured
+// with getDisplayMedia, the real game’s, picked by the script’s
+// --auto-select-desktop-capture-source; the same copy, stamp and offer, and
+// its input put into that window by the script (inject.mjs). Only the live
+// frame goes, to the stream id’s one receiver; nothing is kept.
+//
+// startSender({ url, key, id, width, height, fps, maxMbps, source }) → Promise<window.__stream>
 import { createClient } from '@supabase/supabase-js';
 import { ICE_SERVERS, THRESHOLDS, decodeInput, preferCodecs } from '../../lib/stream/protocol';
 import { cellSize, stampCells } from '../../lib/stream/stamp';
@@ -23,8 +29,20 @@ function worldCanvas() {
   return best;
 }
 
-export async function startSender({ url, key, id, width = THRESHOLDS.width, height = THRESHOLDS.height, fps = THRESHOLDS.fps, maxMbps = THRESHOLDS.maxMbps }) {
-  const state = { status: 'starting', stamp: 0, frames: [], encoder: null, codec: null, connection: 'new', log: [] };
+// a desktop window as a playing video element, to copy from like a canvas
+async function displaySource(fps) {
+  const media = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: fps }, audio: false, selfBrowserSurface: 'exclude' });
+  const video = document.createElement('video');
+  video.muted = true;
+  video.srcObject = media;
+  await video.play();
+  return video;
+}
+
+export async function startSender({ url, key, id, width = THRESHOLDS.width, height = THRESHOLDS.height, fps = THRESHOLDS.fps, maxMbps = THRESHOLDS.maxMbps, source = 'page' }) {
+  const state = { status: 'starting', source, stamp: 0, frames: [], encoder: null, codec: null, connection: 'new', log: [] };
+  const display = source === 'display' ? await displaySource(fps) : null;
+  const sourceOf = () => (display ? (display.videoWidth ? display : null) : worldCanvas());
   const log = (s) => state.log.push(`${Math.round(performance.now())} ${s}`);
 
   const comp = document.createElement('canvas');
@@ -41,8 +59,8 @@ export async function startSender({ url, key, id, width = THRESHOLDS.width, heig
     state.frames.push(now - last);
     if (state.frames.length > 600) state.frames.shift();
     last = now;
-    const src = worldCanvas();
-    if (src && src.width) g.drawImage(src, 0, 0, width, height);
+    const src = sourceOf();
+    if (src && (src.width || src.videoWidth)) g.drawImage(src, 0, 0, width, height);
     else {
       // no world on the page (the cloud’s plumbing check): moving bars, so
       // the encoder has motion to spend its bits on
@@ -119,6 +137,7 @@ export async function startSender({ url, key, id, width = THRESHOLDS.width, heig
     },
     stop() {
       running = false;
+      display?.srcObject?.getTracks().forEach((t) => t.stop());
       link.close();
       channel.close();
       pc.close();

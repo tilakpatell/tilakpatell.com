@@ -42,6 +42,11 @@ describe('the stream protocol', () => {
     expect(decodeInput(encodeInput(ping))).toEqual(ping);
   });
 
+  it('carries a locked pointer’s motion, clamped', () => {
+    expect(decodeInput(JSON.stringify({ t: 'pointer', kind: 'move', x: 0.5, y: 0.5, dx: 12.7, dy: -99999 }))).toMatchObject({ dx: 12, dy: -4000 });
+    expect(decodeInput(JSON.stringify({ t: 'pointer', kind: 'move', x: 0.5, y: 0.5 })).dx).toBeUndefined();
+  });
+
   it('clamps a pointer into the frame and drops what it cannot read', () => {
     expect(decodeInput(JSON.stringify({ t: 'pointer', kind: 'move', x: -2, y: 9 }))).toMatchObject({ x: 0, y: 1 });
     expect(decodeInput('not json')).toBeNull();

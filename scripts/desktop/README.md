@@ -150,7 +150,10 @@ With `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the environment:
 node scripts/desktop/bf2017-stream.mjs --world hoth --minutes 15 --name desktop-lan
 ```
 
-It prints the address the phone opens and writes the run’s numbers to
+`--source game` streams the real game’s window instead (the owner’s copy,
+running here), its input put in through Windows’ SendInput (`inject.mjs`)
+and its frame time read by PresentMon when `PRESENTMON` names it
+(`presentmon.mjs`). It prints the address the phone opens and writes the run’s numbers to
 `docs/superpowers/evidence/bf2017-picture/r2/`, whose README says what to
 run and what the numbers decide.
 
@@ -163,5 +166,6 @@ run and what the numbers decide.
 | `ask.mjs` / `status.mjs` / `doctor.mjs` | ask, follow, check the machine |
 | `setup-runner.ps1` | the runner and its watchdog, once |
 | `bf2017-stream.mjs` | the stream spike’s sender (above) |
+| `inject.mjs` / `presentmon.mjs` | the game source’s input into a window, and its frame times |
 | `../../.github/workflows/gen3d.yml`, `voices.yml`, `motion.yml` | the workflows |
 | `../../.github/ISSUE_TEMPLATE/gen3d.yml`, `voices.yml`, `motion.yml` | the issue forms |

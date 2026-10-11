@@ -97,6 +97,12 @@ export function decodeInput(text) {
     if (e.button != null) out.button = Math.trunc(Number(e.button) || 0);
     if (e.buttons != null) out.buttons = Math.trunc(Number(e.buttons) || 0);
     if (e.kind === 'wheel') out.dy = Math.max(-2000, Math.min(2000, Number(e.dy) || 0));
+    // a locked pointer’s motion, for a game’s camera (the real game reads
+    // relative moves, not a place on the screen)
+    if (e.kind === 'move' && (e.dx != null || e.dy != null)) {
+      out.dx = Math.max(-4000, Math.min(4000, Math.trunc(Number(e.dx) || 0)));
+      out.dy = Math.max(-4000, Math.min(4000, Math.trunc(Number(e.dy) || 0)));
+    }
     return out;
   }
   if (e.t === 'report') return report(e);
