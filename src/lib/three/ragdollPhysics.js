@@ -19,7 +19,8 @@
 //     side() → unit }]: the middle point m kept on the `side` of the line from a to b (a knee in
 //     front, an elbow behind); radii: a radius a point, else `radius`; settled: still for long
 //     enough to stop (step does nothing more)
-//   rigRagdoll(bones, { collide, push, speed, velocity, gravity, table }) → { step(dt), settled, point(name), body }
+//   rigRagdoll(bones, { collide, push, speed, velocity, gravity, table }) → { step(dt), settled, point(name), body,
+//     names (the bones that are points, in the body's order), indexOf(name) → i | -1 }
 //     bones: { name: Bone } on Meshy's skeleton, posed as the body is to fall from (its clip's pose);
 //     push: the way it was shot (unit-ish, in the world), speed: how hard (m/s at the chest);
 //     velocity: how the whole body was already moving (m/s, in the world);
@@ -319,6 +320,8 @@ export function rigRagdoll(bones, { collide = null, push = { x: 0, y: 0, z: 0 },
 
   const rag = {
     body,
+    names,
+    indexOf: (name) => index.get(name) ?? -1,
     get settled() {
       return body.settled;
     },

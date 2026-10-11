@@ -61,9 +61,9 @@ export function drawSpaceLevel(scene, { pack, origin, packOrigin, tier, renderer
       ? createLevelArea(scene, {
           at: laid.at,
           radius: area.radius / METRES,
-          sea: laid.frame([0, area.sea, 0])[1],
+          sea: area.sea === null ? null : laid.frame([0, area.sea, 0])[1],
           sky: area.sky,
-          fog: { ...area.fog, density: area.fog.density * METRES },
+          fog: area.fog ? { ...area.fog, density: area.fog.density * METRES } : null,
           light: area.light ? (LIGHTS[area.light] ?? null) : null,
           fill: area.fill ?? null,
           probe: area.probe ? (LIGHTS[area.probe] ?? null) : null,

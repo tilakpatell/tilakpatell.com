@@ -9,6 +9,32 @@ const fakeRenderer = () => ({ isWebGPURenderer: true, backend: { isWebGPUBackend
 const lights = { cells: { '0,0': [{ kind: 'point', pos: [2, 1, 2], color: [1, 0.8, 0.6], candela: 5000, range: 8 }, { kind: 'spot', pos: [4, 5, 4], dir: [0, -1, 0], cone: [0.4, 0.8], color: [1, 1, 1], candela: 9000, range: 12 }] } };
 
 describe('applyGameLight', () => {
+  it('takes the record’s picture only where asked (lane Q6): its tone map, five Gaussians and HBAO; a texture that fails to load is named', async () => {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+    const plain = await applyGameLight(scene, fakeRenderer(), hoth.sunny, { tier: 'ultra', camera });
+    expect(plain.parts.grade).toBeNull();
+    expect(plain.parts.picture).toBeNull();
+    expect(plain.passes.map((p) => p.kind)).not.toContain('tonemap');
+    plain.dispose();
+    const graded = await applyGameLight(scene, fakeRenderer(), hoth.sunny, { tier: 'ultra', camera, picture: true });
+    expect(graded.passes.map((p) => p.kind)).toEqual(['render', 'ssgi', 'ao', 'ssr', 'bloom', 'godrays', 'lensflare', 'motionBlur', 'tonemap', 'traa', 'output']);
+    // (the record's Gaussians keep their own threshold, none)
+    expect(graded.passes.find((p) => p.kind === 'bloom')).toMatchObject({ gaussians: true, threshold: 0, strength: 0.1 });
+    expect(graded.passes.find((p) => p.kind === 'ao')).toMatchObject({ radius: 1.5, scale: 2 });
+    expect(graded.parts.picture).toMatchObject({ lut: false, panorama: false, missing: [] });
+    graded.dispose();
+    // (no network here: each texture fails, is named, and the rest still lights)
+    const urls = { lut: { url: '/nope.lut.png', size: 17 }, panorama: { url: '/nope.ktx2', horizon: [0.7, 0.8, 0.9] } };
+    const missing = await applyGameLight(scene, fakeRenderer(), hoth.sunny, { tier: 'ultra', camera, picture: urls });
+    expect(missing.parts.picture.missing).toEqual(expect.arrayContaining(['/nope.lut.png', '/nope.ktx2']));
+    expect(missing.passes.map((p) => p.kind)).not.toContain('lut');
+    missing.dispose();
+    // the classic renderer takes none of it
+    const classic = await applyGameLight(scene, { isWebGLRenderer: true, shadowMap: { enabled: false } }, hoth.sunny, { tier: 'ultra', camera, picture: true, post: false });
+    expect(classic.parts.grade).toBeNull();
+    classic.dispose();
+  });
   it('wires the sun, the sky’s hemisphere, the placed lights, the sky, the fog and the chain, and takes them all away', async () => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);

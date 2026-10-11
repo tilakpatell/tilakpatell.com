@@ -1,0 +1,10 @@
+{
+ "_from": "scripts/bf2017-physics-rules.mjs death",
+ "default": "stormtroopershared",
+ "rows": {
+  "stormtroopershared": {"id":"stormtroopershared","name":"Gameplay/Characters/StormTrooperShared","timeForCorpse":10,"timeForCorpse_source":"Gameplay/Characters/StormTrooperShared#WSSoldierHealthComponentData.TimeForCorpse","dyingMaxTimeInAir":5,"dyingMaxTimeInAir_source":"Gameplay/Characters/StormTrooperShared#WSSoldierHealthComponentData.DyingMaxTimeInAir","skipDyingState":true,"remainDyingInAir":false},
+  "stormtrooperai_skirmish": {"id":"stormtrooperai_skirmish","name":"Gameplay/Characters/StormTrooperAI_Skirmish","timeForCorpse":10,"timeForCorpse_source":"Gameplay/Characters/StormTrooperAI_Skirmish#WSSoldierHealthComponentData.TimeForCorpse","dyingMaxTimeInAir":10,"dyingMaxTimeInAir_source":"Gameplay/Characters/StormTrooperAI_Skirmish#WSSoldierHealthComponentData.DyingMaxTimeInAir","skipDyingState":true,"remainDyingInAir":false},
+  "stormtrooperai": {"id":"stormtrooperai","name":"Gameplay/Characters/StormTrooperAI","timeForCorpse":120,"timeForCorpse_source":"Gameplay/Characters/StormTrooperAI#WSSoldierHealthComponentData.TimeForCorpse","dyingMaxTimeInAir":10,"dyingMaxTimeInAir_source":"Gameplay/Characters/StormTrooperAI#WSSoldierHealthComponentData.DyingMaxTimeInAir","skipDyingState":true,"remainDyingInAir":false},
+  "hero_lightsaber": {"id":"hero_lightsaber","name":"Gameplay/Characters/heroes/Hero_Lightsaber","timeForCorpse":4.5,"timeForCorpse_source":"Gameplay/Characters/heroes/Hero_Lightsaber#WSSoldierHealthComponentData.TimeForCorpse","dyingMaxTimeInAir":6,"dyingMaxTimeInAir_source":"Gameplay/Characters/heroes/Hero_Lightsaber#WSSoldierHealthComponentData.DyingMaxTimeInAir","skipDyingState":false,"remainDyingInAir":true}
+ }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global window */
+/* global window, document */
 // The lit fixture on both of the node renderer's kinds, headless: lane R's
 // proof (docs/superpowers/plans/2026-10-10-galaxy-engine-laneR-light.md).
 //
@@ -8,6 +8,8 @@
 //     [--volume [on|off]] [--weather interior|sunny|felucia] [--view wide|edge|sun] [--pan]
 //     [--weather] [--decals] [--seconds 0,12.5,30]   (lane Q4: the weathering and the placed decals, without --volume)
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
+//     [--picture [on|off]]   (lane Q6: Hoth's record's picture, or the same frame without it)
+//     [--upscale [fsr1|taau:]0.77]   (lane U: the picture drawn under the screen and upscaled)
 //   node scripts/light-fixture.mjs --materials [--legs webgl]
 //   node scripts/light-fixture.mjs --camera [--size 1600x900] [--legs webgpu,webgl]
 //
@@ -26,6 +28,21 @@
 // and without (-contact-off); --clouds adds the strip from 70 m up under
 // cloud shadows (the fixture's test layer: litWorld.js's CLOUD_TEST), and
 // again after 60 s of drift on Hoth's wind.
+//
+// --picture (lane Q6, docs/superpowers/plans/2026-10-10-bf2017-surfaces-laneQ6-picture.md):
+// --hoth under the record's picture (src/lib/three/light/grade.js): its
+// LUT after a linear tone map, its five Gaussians, its HBAO numbers, its
+// painted panorama, fog gradient and cloud texture, the urls from
+// src/data/bf2017/light/hoth.picture.json (scripts/bf2017-picture.mjs);
+// `--picture off` is the same --hoth frame without them, the before. Into
+// docs/superpowers/evidence/bf2017-surfaces/Q6/: the frame
+// (<label>-<leg>.png), the horizon where the panorama meets the scattering
+// (-horizon, and -horizon-nopost with the chain off) and the snow from
+// 90 m up under the cloud texture (-cloudtex); `horizon` in the JSON is
+// the sky's mean linear luminance in two bands over the horizon with the
+// chain off (`meet`: 1°–2°, inside the fade; `painted`: 3.5°–6°, the
+// panorama alone), which a --picture run sets beside the --picture off
+// run's: the ratio is Review Focus 2's (within 10 %).
 //
 // --camera (lane C): scripts/light-fixture/camera.html instead, a figure
 // with a wall behind it and a corner beside it through the soldier camera
@@ -75,6 +92,11 @@
 //   a shot during a 6 m/s pan (the streaks), the effects' stats, and the GPU
 //   twin's parity with the CPU step after 120 frames; into
 //   docs/superpowers/evidence/galaxy-engine/X/.
+// - with --upscale (fidelity lane U): the chain drawn at that internal
+//   resolution and brought up by FSR1 or TAAU (TAAU when the chain has
+//   TRAA, unless named), the same numbers into galaxy-engine/U/, with the
+//   canvas's CSS size and its drawing buffer beside them (the HUD is DOM:
+//   the CSS size must stay the screen's).
 // The numbers go to <label>.json beside the shots and to stdout as a table.
 //
 // On Linux without a display both legs draw on SwiftShader (CPU): the
@@ -95,8 +117,13 @@ const volumeAt = argv.indexOf('--volume');
 const volume = volumeAt < 0 ? null : argv[volumeAt + 1] !== 'off';
 const q4Flags = volume == null && (argv.includes('--weather') || argv.includes('--decals'));
 const particles = volume == null && !q4Flags && argv.includes('--particles');
+const pictureAt = argv.indexOf('--picture');
+const picture = volume == null && !q4Flags && pictureAt >= 0 ? argv[pictureAt + 1] !== 'off' : null;
 const laneS = volume == null && ['--hoth', '--shadows', '--clouds'].some((f) => argv.includes(f));
-const OUT = join(ROOT, q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : join('docs/superpowers/evidence/galaxy-engine', laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
+// --upscale [kind:]scale (lane U)
+const upscaleArg = argv.includes('--upscale') ? argv[argv.indexOf('--upscale') + 1] : null;
+const upscale = upscaleArg && !upscaleArg.startsWith('--') ? (([a, b]) => (b == null ? { scale: Number(a) } : { kind: a, scale: Number(b) }))(upscaleArg.split(':')) : null;
+const OUT = join(ROOT, q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
@@ -111,9 +138,11 @@ const baseLabel = arg(
       ? 'decals'
       : volume != null
         ? `${volume ? 'volume' : 'novolume'}-${tier}`
+        : picture != null
+          ? `${picture ? 'picture' : 'nopicture'}-${post ? `post-${tier}` : `lit-${tier}`}`
         : `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`,
 );
-const label = particles && arg('label', null) == null ? `particles-${baseLabel}` : baseLabel;
+const label = particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
@@ -127,7 +156,13 @@ const q4 = weather || decals;
 // metres the camera rises between the grazing pair's two frames
 const GRAZE_JITTER = 0.003;
 const shadows = volume == null && argv.includes('--shadows');
-const hoth = volume == null && (argv.includes('--hoth') || shadows);
+const hoth = volume == null && (argv.includes('--hoth') || shadows || picture != null);
+// (lane Q6) the record's picture's urls, from the dev server's root
+const pictureUrls = () => {
+  const w = JSON.parse(readFileSync(join(ROOT, 'src/data/bf2017/light/hoth.picture.json'), 'utf8')).weathers.sunny;
+  const at = (o) => o && { ...o, url: `/${o.url}` };
+  return { lut: at(w.lut), panorama: at(w.panorama), gradient: at(w.gradient), cloudShadow: at(w.cloudShadow) };
+};
 // the house tone mapper's exposure (src/lib/three/house.js LOOK.exposure): the classic stack's
 const HOUSE_EXPOSURE = 1.4;
 const fixture = {
@@ -144,6 +179,8 @@ const fixture = {
   ...(hoth ? { hoth: true, exposure: HOUSE_EXPOSURE } : {}),
   ...(shadows ? { shadows: true, lightSun: argv.includes('--light-sun'), clouds: argv.includes('--clouds') } : {}),
   ...(arg('filter', null) ? { filter: arg('filter', null) } : {}),
+  ...(picture ? { picture: pictureUrls() } : {}),
+  ...(upscale ? { upscale } : {}),
 };
 
 // The --decals pack: the decal fixtures' records (ten of Naboo_01's
@@ -266,6 +303,27 @@ const meanLum = async (png) => {
   for (let i = 0; i < data.length; i += info.channels) s += 0.2126 * LUT[data[i]] + 0.7152 * LUT[data[i + 1]] + 0.0722 * LUT[data[i + 2]];
   return s / (data.length / info.channels);
 };
+// (lane Q6) the sky's mean linear luminance in two bands over a level
+// view's horizon: the screen row of an elevation e is H/2 − tan(e)/tan(fov/2) · H/2
+const FIXTURE_FOV = 55; // litWorld.js's camera
+const horizonBands = async (png) => {
+  const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const LUT = Array.from({ length: 256 }, (_, i) => lin(i / 255));
+  const rowOf = (deg) => Math.round(info.height / 2 - (Math.tan((deg * Math.PI) / 180) / Math.tan((FIXTURE_FOV * Math.PI) / 360)) * (info.height / 2));
+  const band = (lo, hi) => {
+    let s = 0;
+    let n = 0;
+    for (let y = rowOf(hi); y <= rowOf(lo); y++) {
+      for (let x = 0; x < info.width; x++) {
+        const i = (y * info.width + x) * info.channels;
+        s += 0.2126 * LUT[data[i]] + 0.7152 * LUT[data[i + 1]] + 0.0722 * LUT[data[i + 2]];
+        n++;
+      }
+    }
+    return Number((s / n).toFixed(4));
+  };
+  return { meet: band(1, 2), painted: band(3.5, 6) };
+};
 const meanDiff = (a, b) => {
   let s = 0;
   for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
@@ -347,6 +405,11 @@ for (const leg of legs) {
       const png = await shot();
       writeFileSync(join(OUT, `${label}-${leg}.png`), png);
       row.shot = `${label}-${leg}.png`;
+      // (lane U: the canvas's CSS size stays the screen's; only its drawing is lowered)
+      row.canvas = await page.evaluate(() => {
+        const c = document.querySelector('canvas');
+        return { css: [c.clientWidth, c.clientHeight], buffer: [c.width, c.height] };
+      });
       if (particles) {
         row.parity = await page.evaluate(() => window.__lit.probe.particles.parity(120));
         row.simMode = await page.evaluate(() => window.__lit.probe.particles.mode);
@@ -356,6 +419,21 @@ for (const leg of legs) {
         row.stats = await page.evaluate(() => window.__lit.probe.particles.stats?.() ?? null);
       }
       row.meanLum = Number((await meanLum(png)).toFixed(4));
+      if (picture != null) {
+        row.picture = await page.evaluate(() => window.__lit.probe.grade && { tonemap: window.__lit.probe.grade.tonemap, lut: window.__lit.probe.grade.lut?.name ?? null });
+        const save = async (name) => {
+          const p = await shot();
+          writeFileSync(join(OUT, `${label}-${leg}-${name}.png`), p);
+          return p;
+        };
+        await page.evaluate(() => (window.__lit.probe.view('horizon'), window.__lit.draw(8)));
+        await save('horizon');
+        await page.evaluate(() => (window.__lit.probe.setPost(false), window.__lit.draw(4)));
+        row.horizon = await horizonBands(await save('horizon-nopost'));
+        await page.evaluate(() => (window.__lit.probe.setPost(true), window.__lit.probe.view('cloudTex'), window.__lit.draw(8)));
+        await save('cloudtex');
+        await page.evaluate(() => (window.__lit.probe.view('main'), window.__lit.draw(4)));
+      }
       if (shadows) {
         for (const v of ['seam', 'pen1', 'pen10', 'contact']) {
           await page.evaluate((name) => (window.__lit.probe.view(name), window.__lit.draw(8)), v);
@@ -426,6 +504,17 @@ await browser.close();
 await server.close();
 
 writeFileSync(join(OUT, `${label}.json`), `${JSON.stringify({ size: `${W}x${H}`, adapter: swift ? 'swiftshader' : 'system', rows }, null, 2)}\n`);
+if (picture) {
+  // Review Focus 2: the painted sky against the model's at the same bands, from the --picture off run
+  const before = join(OUT, `${label.replace(/^picture/, 'nopicture')}.json`);
+  if (existsSync(before)) {
+    const b = JSON.parse(readFileSync(before, 'utf8')).rows;
+    for (const r of rows) {
+      const o = b.find((x) => x.leg === r.leg);
+      if (r.horizon && o?.horizon) console.log(`${r.leg}: the horizon, painted over the model: ${(r.horizon.meet / o.horizon.meet).toFixed(3)} where they meet (1°–2°), ${(r.horizon.painted / o.horizon.painted).toFixed(3)} above (3.5°–6°); mean ms ${o.mean} → ${r.mean}`);
+    }
+  } else console.log(`(no ${before}: run with --picture off first for the comparison)`);
+}
 if (q4) {
   for (const r of rows) console.log(r.error ? `${r.leg}: failed: ${r.error}` : `${r.leg} (${r.backend}): ${r.shots.join(', ')}${r.amounts ? ` · accumulation ${JSON.stringify(r.amounts)} · programs ${r.programsBefore} → ${r.programsAfter}` : ''}${r.draws != null ? ` · decals ${r.count} in ${r.draws} draws (${r.textures} textures) · grazing: the scene moves ${r.grazingMove} between the pair, the decals add ${r.grazingFlicker}` : ''}`);
   for (const r of rows) if (r.errors) console.log(`  ${r.leg} errors: ${r.errors.join(' / ')}`);

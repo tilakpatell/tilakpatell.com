@@ -1085,8 +1085,9 @@
   height: 1.4em;
   margin: 0;
 }
-/* the ability buttons' words in the game's open HUD face (Cuprum, for the
-   game's Univers Condensed: src/lib/bf2017/fonts.css) */
+/* the ability buttons in the game's own HUD faces (src/lib/bf2017/fonts.css):
+   Univers Condensed for their words, RaxusPrime for the cooldown's seconds */
 .surface-power span { font-family: var(--font-bf-hud, inherit); letter-spacing: 0.08em; }
+.surface-power small { font-family: var(--font-bf-numerals, inherit); font-variant-numeric: tabular-nums; }
 /* the hero on the game's hero-select stage, in the Outfit tab (HeroStage.jsx) */
 .surface-hero-stage { display: block; width: 100%; aspect-ratio: 4 / 3; max-height: 42vh; margin: 0 0 0.6rem; border-radius: 8px; background: #05070c; touch-action: pan-y; cursor: grab; }

@@ -1,5 +1,5 @@
 {
- "_from": "web/maps/levels/mp/hoth_01/hoth_01.extras.json, environments; the fields readEntry reads, trimmed; the fog's ForwardLightScattering fields from src/data/bf2017/maps/hoth.lighting.json (lane V); the day's SunFlareComponentData (its elements, shaders left out) from the bucket's data/Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01; its MotionBlurComponentData's switches and scale; lane S's shadow, PCSS and cloud fields from src/data/bf2017/maps/hoth.lighting.json (rows.weathers.<w>.sun.raw, .shadows and .wind.raw)",
+ "_from": "web/maps/levels/mp/hoth_01/hoth_01.extras.json, environments; the fields readEntry reads, trimmed; the fog's ForwardLightScattering fields from src/data/bf2017/maps/hoth.lighting.json (lane V); the day's SunFlareComponentData (its elements, shaders left out) from the bucket's data/Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01; its MotionBlurComponentData's switches and scale; lane S's shadow, PCSS and cloud fields from src/data/bf2017/maps/hoth.lighting.json (rows.weathers.<w>.sun.raw, .shadows and .wind.raw); lane Q6's picture fields (TonemapComponentData's method and five Gaussians, ColorCorrectionComponentData's switches, DynamicAOComponentData's HBAO numbers, SkyComponentData's panorama and gradient, OutdoorLightComponentData's cloud-shadow texture) from the bucket's data/<name>.json.gz, assets by name",
  "sunny": {
   "name": "Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01",
   "record": {
@@ -42,7 +42,16 @@
      "SecondaryCloudShadowSpeed.x": 0,
      "SecondaryCloudShadowSpeed.y": 0,
      "ParticleSunShadowFactor": 1,
-     "ParticleSunShadowSmoothing": 0.5
+     "ParticleSunShadowSmoothing": 0.5,
+     "CloudShadowEnable": true,
+     "CloudShadowTexture": "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_Arctic_01_CloudShadow_RGBM",
+     "CloudShadowIsTopDown": true,
+     "CloudShadowAddressingMode": "TaWrap",
+     "CloudXZTranslation": [
+      0.0,
+      0.0
+     ],
+     "SecondaryCloudShadowTexture": null
     }
    ],
    "SkyComponentData": [
@@ -63,7 +72,17 @@
      "MieG": 0.785,
      "ScaleHeightMie": 1.2,
      "RayleighScatteringCoefficientScale": 1,
-     "ScaleHeightRayleigh": 8
+     "ScaleHeightRayleigh": 8,
+     "SkyType": "SkyType_Procedural",
+     "PanoramicTexture": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_C",
+     "SkyGradientTexture": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_Fog_C",
+     "PanoramicRotation": 0.963,
+     "PanoramicUVMinX": 0.0,
+     "PanoramicUVMaxX": 1.0,
+     "PanoramicUVMinY": 0.01,
+     "PanoramicUVMaxY": 1.0,
+     "PanoramicTileFactor": 1.0,
+     "SkyGradientFollowsPanoramicUVs": false
     }
    ],
    "FogComponentData": [
@@ -110,13 +129,50 @@
      "ExposureCompensation": 1.5,
      "MinEV": 11,
      "MaxEV": 15,
-     "AutomaticExposure": true
+     "AutomaticExposure": true,
+     "TonemapMethod": "TonemapMethod_Linear",
+     "BloomMethod": "BloomMethod_GaussianSimple",
+     "GaussianSharpness": 0.5,
+     "Gaussian1Weight": 0.0,
+     "Gaussian2Weight": 0.0,
+     "Gaussian3Weight": 0.2,
+     "Gaussian4Weight": 0.35,
+     "Gaussian5Weight": 0.5,
+     "Gaussian1Color": [
+      0.0619481429,
+      0.07671939,
+      0.09758735
+     ],
+     "Gaussian2Color": [
+      0.0619481429,
+      0.07671939,
+      0.09758735
+     ],
+     "Gaussian3Color": [
+      0.204426751,
+      0.239505738,
+      0.287440836
+     ],
+     "Gaussian4Color": [
+      0.168863758,
+      0.204489663,
+      0.2541521
+     ],
+     "Gaussian5Color": [
+      0.406536341,
+      0.568836153,
+      0.8148467
+     ],
+     "LensDirtTexture": null,
+     "FFTKernelTexture": null
     }
    ],
    "ColorCorrectionComponentData": [
     {
      "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunny_01/T_CC_Hoth_Sunny_01",
-     "ColorGradingMaxHdrValue": 1
+     "ColorGradingMaxHdrValue": 1,
+     "ColorGradingEnable": true,
+     "Enable": true
     }
    ],
    "SunFlareComponentData": [
@@ -341,6 +397,22 @@
      "WindDirection": 0,
      "WindStrength": 5
     }
+   ],
+   "DynamicAOComponentData": [
+    {
+     "Enable": true,
+     "DynamicAOFactor": 1.0,
+     "HbaoRadius": 1.5,
+     "HbaoAngleBias": 15.0,
+     "HbaoAttenuation": 0.7,
+     "HbaoContrast": 0.65,
+     "HbaoMaxFootprintRadius": 0.075,
+     "HbaoPowerExponent": 2.0,
+     "HbaoBlurRadius": 8.0,
+     "HbaoBlurSharpness": 4.0,
+     "AffectOutdoorLight": true,
+     "TemporalFilterEnable": true
+    }
    ]
   }
  },
@@ -386,7 +458,16 @@
      "SecondaryCloudShadowSpeed.x": 0,
      "SecondaryCloudShadowSpeed.y": 0,
      "ParticleSunShadowFactor": 1,
-     "ParticleSunShadowSmoothing": 0.5
+     "ParticleSunShadowSmoothing": 0.5,
+     "CloudShadowEnable": true,
+     "CloudShadowTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_01_Sunset_CloudShadow_C",
+     "CloudShadowIsTopDown": true,
+     "CloudShadowAddressingMode": "TaWrap",
+     "CloudXZTranslation": [
+      0.0,
+      0.0
+     ],
+     "SecondaryCloudShadowTexture": null
     }
    ],
    "SkyComponentData": [
@@ -407,7 +488,17 @@
      "MieG": 0.785,
      "ScaleHeightMie": 1.2,
      "RayleighScatteringCoefficientScale": 1,
-     "ScaleHeightRayleigh": 8
+     "ScaleHeightRayleigh": 8,
+     "SkyType": "SkyType_Procedural",
+     "PanoramicTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_Sunset_01_Panoramic_C",
+     "SkyGradientTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_Sunset_01_Fog_C",
+     "PanoramicRotation": 0.737,
+     "PanoramicUVMinX": 0.0,
+     "PanoramicUVMaxX": 1.0,
+     "PanoramicUVMinY": 0.0,
+     "PanoramicUVMaxY": 1.0,
+     "PanoramicTileFactor": 1.0,
+     "SkyGradientFollowsPanoramicUVs": false
     }
    ],
    "FogComponentData": [
@@ -454,13 +545,50 @@
      "ExposureCompensation": 1,
      "MinEV": 9.5,
      "MaxEV": 10.4,
-     "AutomaticExposure": true
+     "AutomaticExposure": true,
+     "TonemapMethod": "TonemapMethod_Linear",
+     "BloomMethod": "BloomMethod_GaussianSimple",
+     "GaussianSharpness": 0.5,
+     "Gaussian1Weight": 0.0,
+     "Gaussian2Weight": 0.0,
+     "Gaussian3Weight": 0.2,
+     "Gaussian4Weight": 0.35,
+     "Gaussian5Weight": 0.5,
+     "Gaussian1Color": [
+      0.0619481429,
+      0.07671939,
+      0.09758735
+     ],
+     "Gaussian2Color": [
+      0.0619481429,
+      0.07671939,
+      0.09758735
+     ],
+     "Gaussian3Color": [
+      0.204426751,
+      0.239505738,
+      0.287440836
+     ],
+     "Gaussian4Color": [
+      0.168863758,
+      0.204489663,
+      0.2541521
+     ],
+     "Gaussian5Color": [
+      0.406536341,
+      0.568836153,
+      0.8148467
+     ],
+     "LensDirtTexture": null,
+     "FFTKernelTexture": null
     }
    ],
    "ColorCorrectionComponentData": [
     {
      "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunset_01/T_CC_Hoth_Sunset_01",
-     "ColorGradingMaxHdrValue": 1
+     "ColorGradingMaxHdrValue": 1,
+     "ColorGradingEnable": true,
+     "Enable": true
     }
    ],
    "ShadowsComponentData": [
@@ -476,6 +604,22 @@
     {
      "WindDirection": 0,
      "WindStrength": 5
+    }
+   ],
+   "DynamicAOComponentData": [
+    {
+     "Enable": true,
+     "DynamicAOFactor": 1.0,
+     "HbaoRadius": 1.5,
+     "HbaoAngleBias": 15.0,
+     "HbaoAttenuation": 0.7,
+     "HbaoContrast": 0.65,
+     "HbaoMaxFootprintRadius": 0.075,
+     "HbaoPowerExponent": 2.0,
+     "HbaoBlurRadius": 8.0,
+     "HbaoBlurSharpness": 4.0,
+     "AffectOutdoorLight": true,
+     "TemporalFilterEnable": true
     }
    ]
   }
@@ -502,7 +646,16 @@
      ],
      "SunRotationX": 0,
      "SunRotationY": 60,
-     "SunIntensity": 1
+     "SunIntensity": 1,
+     "CloudShadowEnable": true,
+     "CloudShadowTexture": null,
+     "CloudShadowIsTopDown": false,
+     "CloudShadowAddressingMode": "TaWrap",
+     "CloudXZTranslation": [
+      0.0,
+      0.0
+     ],
+     "SecondaryCloudShadowTexture": null
     }
    ],
    "FogComponentData": [
@@ -549,13 +702,50 @@
      "ExposureCompensation": 1.5,
      "MinEV": 8.5,
      "MaxEV": 10.5,
-     "AutomaticExposure": true
+     "AutomaticExposure": true,
+     "TonemapMethod": "TonemapMethod_FilmicNeutral",
+     "BloomMethod": "BloomMethod_GaussianSimple",
+     "GaussianSharpness": 0.5,
+     "Gaussian1Weight": 1.0,
+     "Gaussian2Weight": 1.0,
+     "Gaussian3Weight": 1.0,
+     "Gaussian4Weight": 1.0,
+     "Gaussian5Weight": 1.0,
+     "Gaussian1Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "Gaussian2Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "Gaussian3Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "Gaussian4Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "Gaussian5Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "LensDirtTexture": null,
+     "FFTKernelTexture": null
     }
    ],
    "ColorCorrectionComponentData": [
     {
      "HdrColorGradingLut": "Levels/Lighting/Hoth/Interior_01/T_CC_Hoth_Interior_01",
-     "ColorGradingMaxHdrValue": 1
+     "ColorGradingMaxHdrValue": 1,
+     "ColorGradingEnable": true,
+     "Enable": true
     }
    ]
   }

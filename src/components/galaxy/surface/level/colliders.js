@@ -4,13 +4,14 @@
 // comes back (the walk world's shapes have no remove: `off` is how a gate
 // or a trapdoor goes, walker.js), so nothing is added twice.
 //
-// Where the pack has the game's shapes (level.json's `physics`, lane P0's
-// physics/<mesh>.bin; a prop with none, its web/collision/ mesh's hull,
-// lane E0) and a loader is given, a piece with shapes stands as its hulls
-// (src/lib/level/shapeSolids.js), and only the rest as their bounds: the
-// walker's solids on the tiers without the engine.
+// A pack with the game's shapes (its `physics` section, lane P0) and a
+// loadBin: the pieces that have shapes stop you at their hulls
+// (lib/level/shapeSolids.js: each hull's footprint a box, a thin wide one
+// a floor, a capsule a circle), read once a mesh; the rest by their bounds
+// as before. That cell's add is then a promise; a cell dropped while its
+// shapes are read comes in switched off.
 //
-//   createColliders({ solids, floors }, tier, { loadBin }) → { add(key, pack, bin) → Promise, drop(key), dispose() }
+//   createColliders({ solids, floors }, tier, { loadBin }) → { add(key, pack, bin) → undefined | Promise, drop(key), dispose() }
 // (a mesh the tier does not draw stops no one: no wall you cannot see)
 
 import { solidsOf } from '../../../../lib/level/collision.js';
@@ -18,40 +19,48 @@ import { shapeReader, shapeSolids } from '../../../../lib/level/shapeSolids.js';
 
 export function createColliders(walk, tier = 'high', { loadBin = null } = {}) {
   const byCell = new Map(); // key → the shapes it added
-  const dropped = new Set(); // (a cell gone before its shapes were read)
-  const readers = new WeakMap(); // pack → its shape reader
+  const dropped = new Set(); // cells gone (their shapes off)
+  let reader = null;
+  let readerOf = null;
   const set = (key, off) => {
     for (const s of byCell.get(key) ?? []) s.off = off;
   };
-  const put = (key, { floors, boxes, circles = [] }) => {
-    const added = [];
+  const put = (key, added, { floors = [], boxes = [], circles = [] }) => {
+    const tag = `level:${key}`;
     for (const f of floors) {
-      const floor = { ...f, tag: `level:${key}` };
+      const floor = { ...f, tag };
       walk.floors.push(floor);
       added.push(floor);
     }
-    for (const b of boxes) added.push(walk.solids.box(b.x, b.z, b.hw, b.hd, b.yaw, { top: b.top, base: b.base, tag: `level:${key}` }));
-    for (const c of circles) added.push(walk.solids.circle(c.x, c.z, c.r, { top: c.top, base: c.base, tag: `level:${key}` }));
-    byCell.set(key, added);
-    if (dropped.has(key)) set(key, true);
+    for (const b of boxes) added.push(walk.solids.box(b.x, b.z, b.hw, b.hd, b.yaw, { top: b.top, base: b.base, tag }));
+    for (const c of circles) added.push(walk.solids.circle(c.x, c.z, c.r, { top: c.top, base: c.base, tag }));
   };
   return {
-    async add(key, pack, bin) {
+    add(key, pack, bin) {
       dropped.delete(key);
       if (byCell.has(key)) return set(key, false);
       const c = pack.cells[key];
       if (!c) return;
-      byCell.set(key, []); // (claimed: a second add while the shapes are read adds nothing)
       const draws = c.draws.filter((d) => !pack.cull?.[tier]?.dropped?.includes(d.mesh));
-      const shaped = loadBin && Object.keys(pack.physics?.meshes ?? {}).length;
-      if (!shaped) return put(key, solidsOf(pack, draws, bin));
-      if (!readers.has(pack)) readers.set(pack, shapeReader(pack, loadBin));
-      const read = readers.get(pack);
+      const added = [];
+      byCell.set(key, added);
+      if (!loadBin || !Object.keys(pack.physics?.meshes ?? {}).length) {
+        put(key, added, solidsOf(pack, draws, bin));
+        return;
+      }
+      if (readerOf !== pack) {
+        reader = shapeReader(pack, loadBin);
+        readerOf = pack;
+      }
       const meshes = [...new Set(draws.map((d) => d.mesh))];
-      const shapes = Object.fromEntries(await Promise.all(meshes.map(async (m) => [m, await read(m)])));
-      const fromShapes = shapeSolids(draws, bin, shapes);
-      const rest = solidsOf(pack, fromShapes.without, bin);
-      put(key, { floors: [...fromShapes.floors, ...rest.floors], boxes: [...fromShapes.boxes, ...rest.boxes], circles: fromShapes.circles });
+      return Promise.all(meshes.map((m) => reader(m))).then((list) => {
+        const shapesByMesh = {};
+        meshes.forEach((m, i) => list[i] && (shapesByMesh[m] = list[i]));
+        const fromShapes = shapeSolids(draws, bin, shapesByMesh);
+        put(key, added, fromShapes);
+        put(key, added, solidsOf(pack, fromShapes.without, bin));
+        if (dropped.has(key)) set(key, true);
+      });
     },
     drop: (key) => {
       dropped.add(key);

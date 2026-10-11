@@ -27,15 +27,15 @@
 
 ### Task 1: `grade.js`
 
-- [ ] **Step 1: Failing tests**: `gradeOf(record) → { lut: { name, size }, bloom: { scale, weights[5], colors[5] }, ao: { radius, bias, attenuation, contrast, exponent, blur, sharpness }, tonemap: 'linear', _source }` on Hoth Sunny; `null` without the components.
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** → PASS.
+- [x] **Step 1: Failing tests**: `gradeOf(record) → { lut: { name, size }, bloom: { scale, weights[5], colors[5] }, ao: { radius, bias, attenuation, contrast, exponent, blur, sharpness }, tonemap: 'linear', _source }` on Hoth Sunny; `null` without the components.
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** → PASS.
 
 ### Task 2: In the chain
 
-- [ ] **Step 1**: `passesFor` takes `grade`: the bloom's five levels, the LUT through `gameLut.js`'s `loadLut` as a `Data3DTexture` into `Lut3DNode`, the AO numbers into `GTAONode` (radius, the exponent as `distanceExponent`, the blur as the denoise's radius), the tonemap `linear` where the record says so (the site's ACES elsewhere).
-- [ ] **Step 2**: the order test; `node scripts/light-fixture.mjs --hoth --picture` on WebGL 2: before and after; the frame cost (Review Focus 1).
+- [x] **Step 1**: `passesFor` takes `grade`: the bloom's five levels, the LUT through `gameLut.js`'s `loadLut` as a `Data3DTexture` into `Lut3DNode`, the AO numbers into `GTAONode` (radius, the exponent as `distanceExponent`, the blur as the denoise's radius), the tonemap `linear` where the record says so (the site's ACES elsewhere).
+- [x] **Step 2**: the order test; `node scripts/light-fixture.mjs --hoth --picture` on WebGL 2: before and after; the frame cost (Review Focus 1).
 
 ### Task 3: The sky's panorama and gradient, the cloud texture
 
-- [ ] **Step 1**: `sky.js`: `panorama` (the KTX2 HDR equirect through the stack's `loadCube`-like loader: `ktx2Loader`, `equirectUV` of the view direction) drawn behind the scattering with the record's `SkyBoxBlend`; the `SkyGradientTexture` as the fog's colour by view elevation (`fog.js` takes a `gradient` texture: additive); `clouds.js` takes `CloudShadowTexture` where the record names one (the RGBM decode: `rgb × a × 6`, a named constant from the suffix).
-- [ ] **Step 2**: the fixture's horizon shot (Review Focus 2); `galaxy-check surface hoth` per tier; the hand-off's row.
+- [x] **Step 1**: `sky.js`: `panorama` (the KTX2 HDR equirect through the stack's `loadCube`-like loader: `ktx2Loader`, `equirectUV` of the view direction) drawn behind the scattering with the record's `SkyBoxBlend`; the `SkyGradientTexture` as the fog's colour by view elevation (`fog.js` takes a `gradient` texture: additive); `clouds.js` takes `CloudShadowTexture` where the record names one (the RGBM decode: `rgb × a × 6`, a named constant from the suffix).
+- [x] **Step 2**: the fixture's horizon shot (Review Focus 2); `galaxy-check surface hoth` per tier; the hand-off's row.
