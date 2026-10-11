@@ -13,6 +13,7 @@ Branch `claude/gpu-n4-stream`, PR #918. The plan: `docs/superpowers/plans/2026-1
 | impostors | 2 meshes: the snow piles (542 at 391 triangles) and the straight trenches; 16 × 16 views | `impostorsOf` |
 | atlases | 3.58 MB at 2,048 (albedo and normal, both meshes), 1.71 at 1,024, 0.64 at 512 | the script’s log |
 | bake | 15 to 16 s a mesh in software GL at 2,048 | the script’s log |
+| cut again from lane D2’s pack (#926, merged before the PR; the far list 186,048 bytes) | 65 cells, 3.05 MB plain, 1.92 MB `.lo`, the same two impostors and atlases; the runs below were on the pack before it | the script’s log |
 | simplification | careful `simplify` with `LockBorder` left the base’s cell at 104,000 triangles; unlocked, then `simplifySloppy`, 12,662 | the script’s log |
 
 ## Hoth on high, main against the branch (no throttle, ten minutes settled)
