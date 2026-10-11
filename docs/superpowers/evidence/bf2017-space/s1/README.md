@@ -19,7 +19,7 @@ The plan is `docs/superpowers/plans/2026-10-11-bf2017-space-laneS1-fleet.md`; th
 
 Against the space lane’s table of 2026-10-10 (`../README.md`: Endor at high 57 calls and 199,337 triangles, at ultra 57 and 272,809), every tier draws the same or fewer calls and fewer triangles from the check’s pose: the kits at the fleet’s cut are lighter than the close-up Sketchfab hulls were. The megabytes at low and mid carry the Star Destroyer’s kit (2,049 KB with its 50 maps, the heaviest file an arrival loads) and at ultra its 21.6 MB ultra cut with the corvette’s 1.9 MB; all within the bucket rows.
 
-**Ultra’s exit 1 is not a breach.** Every row passes; the run exits 1 because Endor logged two page errors, both `SyntaxError: Unexpected token '<', "<!doctype "… is not valid JSON`. One source is the install’s fetch of `/packs/index.json` (`src/runtime/install.js`, since #d250562c), a file `scripts/packs.mjs` writes into `dist/` at build time, which the dev server has no copy of and answers with its page: with the index copied from `dist/` into `public/packs/` the Starfighter Assault checks run clean (below). Endor at ultra still logs the two errors with the index served (`gate-ultra-again` in the chain’s log), from no request the page’s own log shows (a request log of every fetch and every HTML answer, `lab/s1-tools/missing.mjs`, lists none: a worker’s fetch, which the page does not see). The same page on `origin/main` at `d78da3d2`, served from a worktree of its own on another port, logs the same two errors: the base’s, not this lane’s, and not the gate’s rows.
+**Ultra’s exit 1 was not a breach, and its cause is fixed.** Every row passed; the run exited 1 because Endor logged two page errors, both `SyntaxError: Unexpected token '<', "<!doctype "… is not valid JSON`. A request log of every answer in HTML (`lab/s1-tools/missing.mjs`) found the cause: the space level’s hulls and the 4,096 sky asked of the site, not the bucket, and the dev server answering its page for each. The asset base had marked the bucket down: its first answer was given 12 s for the whole download, and the first file asked at ultra was the Star Destroyer’s 21.6 MB ultra cut. And the page then broke because the site’s model loader parsed in a promise’s callback, out of its `try`, so the HTML threw as an unhandled rejection. `origin/main` logged the same two on the same page. Both are fixed (`assetBase.js`’s `waitFor`, `gltf.js`’s caught parse, each with a test that fails without it); the reruns are below. The install’s `/packs/index.json` miss on the dev server, suspected first, was never one: `install.js` catches it.
 
 ## The Starfighter Assault
 
@@ -27,8 +27,8 @@ Against the space lane’s table of 2026-10-10 (`../README.md`: Endor at high 57
 
 | system | calls | triangles | the MC80 in frame | the pack’s flagship drawn once | console |
 | --- | --- | --- | --- | --- | --- |
-| Endor | 119 / 700 (the pack’s draws unsettled after 600 s in software GL, 0 groups) | 0.11M / 3M | yes (640, 467) | yes | the install’s `/packs/index.json` miss (above), nothing else |
-| Endor, again with the index served (`starfighter-endor-again.txt`) | 193 / 700 (the pack settled in 32 s, 247 groups) | 0.74M / 3M | yes (645, 294) | yes | none, exit 0 |
+| Endor | 119 / 700 (the pack’s draws unsettled after 600 s in software GL, 0 groups: the bucket marked down, above) | 0.11M / 3M | yes (640, 467) | yes | the two page errors (above) |
+| Endor, again (`starfighter-endor-again.txt`) | 193 / 700 (the pack settled in 32 s, 247 groups) | 0.74M / 3M | yes (645, 294) | yes | none, exit 0 |
 | Kamino | 141 / 700 | 1.27M / 3M | yes (640, 468); inside its area, the storm’s fog on | yes | none, exit 0 |
 
 ## The cockpit

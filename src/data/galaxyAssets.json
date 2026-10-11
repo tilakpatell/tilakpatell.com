@@ -378323,6 +378323,12 @@
     "from": "the Imperial Star Destroyers (endor-isd: its kit as the space level places it)",
     "tier": "ultra"
   },
+  "models/galaxy/falcon.glb": {
+    "hash": "34bd3cf995e7",
+    "bytes": 2034276,
+    "from": "gameplay/vehicles/air/millenniumfalcon/landmark/millenniumfalcon_01_landmark_mesh",
+    "tier": "surface"
+  },
   "models/galaxy/hq/nebulon.glb": {
     "hash": "5d308368847d",
     "bytes": 476056,
@@ -378336,14 +378342,14 @@
     "tier": "surface"
   },
   "models/galaxy/moncal.glb": {
-    "hash": "82bf55c0e7cf",
-    "bytes": 691340,
+    "hash": "162924e97d22",
+    "bytes": 818252,
     "from": "the Mon Calamari cruisers (endor-mc80: its kit as the space level places it)",
     "tier": "surface"
   },
   "models/galaxy/moncal.ultra.glb": {
-    "hash": "34da164c7b99",
-    "bytes": 6733744,
+    "hash": "893a66b23936",
+    "bytes": 8106956,
     "from": "the Mon Calamari cruisers (endor-mc80: its kit as the space level places it)",
     "tier": "ultra"
   },
