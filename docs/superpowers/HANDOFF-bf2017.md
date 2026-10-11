@@ -4,7 +4,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 
 ## The picture-everywhere design: every world on the node renderer, every layer on (2026-10-11, early)
 
-`docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md`, with plans `docs/superpowers/plans/2026-10-11-bf2017-picture-lane{T2-flip,P-picture,D2-detail,U2-M2-G}.md` and the decision `docs/decisions/2026-10-11-the-node-renderer-above-low.md`. Written from four readings of `origin/main` at `00843045b` (#890) and the game’s own frames; the design is PR #905. The owner asked that every Star Wars world look like the 2017 game as Frostbite renders it, with every detail, on one renderer (the best-looking one, from above the medium setting, the setting checked), every layer on, every gate green.
+`docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md`, with plans `docs/superpowers/plans/2026-10-11-bf2017-picture-lane{T2-flip,P-picture,D2-detail,U2-M2-G}.md` and the decision `docs/decisions/2026-10-11-the-node-renderer-above-low.md`; §7 (added after the owner’s second ask: AAA, the compute, the desktop and the stream) weighs a WebGPU post-processing blueprint against the stack and adds lanes W and R2. Written from four readings of `origin/main` at `00843045b` (#890) and the game’s own frames; the design is PR #905. The owner asked that every Star Wars world look like the 2017 game as Frostbite renders it, with every detail, on one renderer (the best-looking one, from above the medium setting, the setting checked), every layer on, every gate green.
 
 **What the readings found.** The game-look stack is built and merged (`src/lib/three/light/`, `src/lib/three/surface/`: S, V, X, C, N, U, Q1, Q2, Q4, Q6, colour) and draws only on the `battlefront` world and the `litWorld` fixture: `galaxy-surface` is a `'glsl'` module, so the seventeen worlds run the classic renderer with one PCF sun that `groundWorld` usually turns off, three pooled lights, a gradient sky, exponential fog, Unreal bloom and a hand shoulder. No world passes `picture`; lane U’s options are all off; no pack has an ultra cut; pack maps stop at 1,024 with anisotropy 1; `decals.json` is empty; per-instance variations are unread (Hoth 93.1 % bound against 95 %); the `models MB` gate counts GLBs only.
 
@@ -16,7 +16,8 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | U2 | batch, bundles, occlusion and the upscaler on by tier; the bloom mismatch measured; the laptop workflow | T2 | | `claude/bf2017-u2-headroom` | |
 | M2 | per-instance variations from the bins (gate 95 %), weathering and terrain blend, the decal and glass families, level detail slices, translucency, head SSS | T2 | | `claude/bf2017-m2-material` | |
 | G | the gallery: every world at ultra on the laptop beside the game’s frame, with the numbers | T2, P, U2 | | `claude/bf2017-g-gallery` | |
-| desktop | the HDR panoramas re-encoded, the Enlighten atlases uploaded (Q3), the UASTC colour row (Q5), the 4,149 textures, the ANGLE frame gates | | the owner | | |
+| W | the desktop as a workflow on the self-hosted runner: the HDR panoramas, the Enlighten atlases, the 4,149 textures, the UASTC row, the depot probe, the ultra frame gate; written in the cloud, run by the owner | nothing | | `claude/bf2017-w-desktop` | |
+| R2 | the stream spike: the ultra picture rendered on the owner’s GPU and streamed over WebRTC (signalling on Supabase Realtime), the numbers, the decision | W to measure | | `claude/bf2017-r2-stream` | |
 
 ## The sixth design: accurate to the game (2026-10-10, late night)
 
