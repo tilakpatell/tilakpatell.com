@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three/webgpu';
 import { ATTACHMENT_LIMIT, attachmentCost, buildChain } from './passes';
 import { createVolumetrics } from './volumetrics';
-import { passesFor } from './post';
+import { passesFor, upscaled } from './post';
+import { gradeOf } from './grade';
 import hoth from './fixtures/hoth.ve.json';
 
 // Every kind builds into a node graph in Node (no GPU: the graph is made,
@@ -58,6 +59,46 @@ describe('buildChain', () => {
     const chain = await buildChain(renderer, passes);
     expect(chain.pipeline.outputNode).toBeTruthy();
     chain.dispose();
+  });
+  it('builds the record’s picture: the five Gaussians tinted, the HBAO numbers, the linear tone map before the LUT', async () => {
+    const grade = gradeOf(hoth.sunny.record);
+    for (const tier of ['ultra', 'high', 'mid', 'low']) {
+      const passes = passesFor(tier, hoth.sunny, 'webgpu', { scene, camera, light, lut, grade });
+      const chain = await buildChain(renderer, passes);
+      expect(chain.pipeline.outputNode).toBeTruthy();
+      // (the tone map is the chain's: the pipeline's own transform is off)
+      expect(chain.pipeline.outputColorTransform).toBe(false);
+      const bloom = chain.nodes.find((n) => n.bloomTintColors);
+      expect(bloom.strength.value).toBe(0.1);
+      expect(bloom.threshold.value).toBe(0);
+      expect(bloom.bloomTintColors[0].toArray()).toEqual([0, 0, 0]);
+      expect(bloom.bloomTintColors[4].z * 0.2 * 0.1).toBeCloseTo(0.8148467 * 0.5 * 0.1, 6);
+      const ao = chain.nodes.find((n) => n.distanceFallOff);
+      if (tier !== 'low') expect([ao.radius.value, ao.scale.value, ao.distanceFallOff.value]).toEqual([1.5, 2, 0.7]);
+      chain.dispose();
+    }
+  });
+  it('builds the upscale under the screen: TAAU on ultra, FSR1 after SMAA on high (lane U)', async () => {
+    const refs = { scene, camera, light, lut };
+    const sizes = (chain) => chain.nodes.map((n) => n.constructor.name);
+    const taau = await buildChain(renderer, upscaled(passesFor('ultra', hoth.sunny, 'webgpu', refs), { scale: 0.77 }));
+    expect(sizes(taau)).toContain('TAAUNode');
+    expect(sizes(taau)).not.toContain('TRAANode');
+    const scenePass = taau.nodes.find((n) => n.isPassNode);
+    expect(scenePass.getResolutionScale()).toBe(0.77);
+    // (TAAU reads the scene's velocity: the pass writes it)
+    expect(Object.keys(scenePass.getMRT().outputNodes)).toContain('velocity');
+    taau.dispose();
+    const fsr = await buildChain(renderer, passesFor('high', hoth.sunny, 'webgpu', { ...refs, upscale: { scale: 0.67 } }));
+    const names = sizes(fsr);
+    expect(names.indexOf('FSR1Node')).toBeGreaterThan(names.indexOf('SMAANode'));
+    // (SMAA sizes itself from the drawing buffer: held at the scale)
+    const smaa = fsr.nodes.find((n) => n.constructor.name === 'SMAANode');
+    smaa.setSize(1000, 500);
+    expect(smaa._renderTargetEdges.width).toBe(670);
+    expect(fsr.nodes.find((n) => n.constructor.name === 'GTAONode').resolutionScale).toBeCloseTo(0.335);
+    expect(fsr.pipeline.outputNode).toBe(fsr.nodes.find((n) => n.constructor.name === 'FSR1Node'));
+    fsr.dispose();
   });
   it('a shader pass still needs the webgl backend; an unknown kind is refused', async () => {
     await expect(buildChain(renderer, [{ kind: 'render', scene, camera }, { kind: 'shader' }])).rejects.toThrow('needs the webgl backend');

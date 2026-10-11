@@ -37,6 +37,16 @@ describe('createFog', () => {
     expect(f.uniforms.useCurve.value).toBe(0);
     expect(f.uniforms.useHeight.value).toBe(0);
   });
+  it('takes the record’s gradient as its colour (lane Q6); without one, FogColor as before', async () => {
+    const { Texture } = await import('three/webgpu');
+    const { uniform } = await import('three/tsl');
+    const plain = await createFog(hoth.sunny, { origin: [0, 300, 0] });
+    const painted = await createFog(hoth.sunny, { origin: [0, 300, 0], gradient: { texture: new Texture(), rotation: 0.963, gain: uniform(0.4) } });
+    expect(painted.node).toBeTruthy();
+    expect(painted.node).not.toBe(plain.node);
+    // the same uniforms either way: a weather crossfade moves both alike
+    expect(Object.keys(painted.uniforms)).toEqual(Object.keys(plain.uniforms));
+  });
 });
 
 describe('fogMedia', () => {

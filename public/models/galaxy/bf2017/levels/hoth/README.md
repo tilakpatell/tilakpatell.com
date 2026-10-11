@@ -39,18 +39,26 @@ The game's shapes (`node scripts/bf2017-physics.mjs`).
 
 | meshes with shapes | hulls | mesh triangles | capsules | spheres | dropped | bytes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 449 | 3556 | 236905 | 3 | 23 | 0 | 5253344 |
+| 432 | 3539 | 236905 | 3 | 23 | 0 | 5249252 |
 
 | heaviest cells | colliders | trimesh triangles |
 | --- | --- | --- |
 | -3,0 | 2019 | 51276 |
 | -1,2 | 1832 | 39165 |
-| -1,1 | 1830 | 40933 |
+| -1,1 | 1828 | 40933 |
 | -2,0 | 1777 | 47988 |
 | 0,1 | 1460 | 34112 |
-| -2,2 | 1457 | 36500 |
+| -2,2 | 1454 | 36500 |
 | 0,0 | 1453 | 35558 |
-| -1,0 | 1448 | 34187 |
 | -2,-1 | 1448 | 32368 |
+| -1,0 | 1447 | 34187 |
 | -2,3 | 1414 | 28516 |
 <!-- /physics -->
+
+## Variations
+
+Written by `node scripts/bf2017-variations.mjs hoth` from the level's 13 mesh variation databases (variations.json, 0.40 MB).
+
+| meshes | with variations | applied by instances | by the level rule | mixed (default drawn) | textures missing from the bucket | maps not in the pack |
+|---|---|---|---|---|---|---|
+| 601 | 55 | 20 | 0 | 24 | 105 | 0 |

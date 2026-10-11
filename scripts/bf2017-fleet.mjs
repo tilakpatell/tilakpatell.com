@@ -50,6 +50,12 @@ export const FLEET = [
   ['vulture', Math.PI, 'galaxy-vulture', { kind: 'vulture' }],
   ['trifighter', 0, 'galaxy-trifighter', { kind: 'trifighter' }],
   ['cloudcar', -Math.PI / 2, 'galaxy-cloudcar', { kind: 'cloudcar' }],
+  // (the sixth design's lane fighters: Starfighter Assault's Clone Wars kits
+  // over their Meshy stand-ins, and the T-65 the mode flies, `xwing65`, beside
+  // the galaxy's gen3d X-wing, which its hunters and wingmen keep)
+  ['vwing', Math.PI / 2, 'galaxy-vwing', { kind: 'vwing' }],
+  ['hyena', Math.PI / 2, 'galaxy-hyena', { kind: 'hyena' }],
+  ['xwing65', 0, 'galaxy-xwing65', { kind: 'xwing' }],
   ['nebulon', 0, 'galaxy-nebulon', { name: 'objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh', as: 'the Nebulon-B frigates', cut: 2 }],
   // (lane Q: a capital the space levels assemble from its kit, at the fleet's
   // cut: scripts/bf2017-space.mjs --fleet; `turn` brings the kit's nose, along

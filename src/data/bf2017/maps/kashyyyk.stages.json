@@ -1,0 +1,39 @@
+{
+  "source": "hand",
+  "mode": "galacticAssault",
+  "level": "Levels/MP/Kashyyyk_01/Kashyyyk_01",
+  "attackers": "dark",
+  "notes": "NOTES.md says how this was made: the stages in the order the level’s own stage strings number them, each team’s line; the attackers the side whose first line does not defend; the objectives are not yet chosen (empty), as no route plays this map’s Galactic Assault",
+  "stages": [
+    {
+      "id": "stage1",
+      "team1": "ID_FANTASYBATTLES_KASHYYYK_STAGE1_TEAM1",
+      "team2": "ID_FANTASYBATTLES_KASHYYYK_STAGE1_TEAM2",
+      "text": {
+        "team1": "TAKE OUT THE MTTS",
+        "team2": "ELIMINATE ANY THREATS TO THE MTTS"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage2",
+      "team1": "ID_FANTASYBATTLES_KASHYYYK_STAGE2_TEAM1",
+      "team2": "ID_FANTASYBATTLES_KASHYYYK_STAGE2_TEAM2",
+      "text": {
+        "team1": "KEEP THE JUGGERNAUTS SAFE",
+        "team2": "DESTROY THE TURBOTANKS TO ENABLE AERIAL BOMBARDMENT"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage3",
+      "team1": "ID_FANTASYBATTLES_KASHYYYK_STAGE3_TEAM1",
+      "team2": "ID_FANTASYBATTLES_KASHYYYK_STAGE3_TEAM2",
+      "text": {
+        "team1": "KEEP THE SEPARATISTS AWAY FROM THE FUEL SYSTEM",
+        "team2": "DEMOLISH FUEL SYSTEM TO ELIMINATE REPUBLIC STAR DESTROYER"
+      },
+      "objectives": []
+    }
+  ]
+}

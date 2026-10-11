@@ -22,6 +22,10 @@
 //   dim }, the storm's colour (the record's, `dim` times, where it has one)
 //   and how thick it is; `light`: the world's light record; `weather`: the
 //   url of its area.json; `frame`: the level's metres → the battle's units)
+//   A space level's area (Fondor's shipyard, the droid battleship over
+//   Ryloth: fought where no system of the galaxy's is) has no `sea` and no
+//   `fog` (null), and its `sky` is `full`: the level's star field round the
+//   whole dome, not horizon to zenith.
 
 import * as THREE from 'three';
 import { siteLightFrom, weatherEntry } from '../../lib/three/gameLight';
@@ -39,16 +43,16 @@ void main() {
 // at it, the storm's fog, so the sea runs into the sky with no seam)
 const DOME_FRAG = `
 uniform sampler2D uSky;
-uniform float uGain, uHas, uFlash;
+uniform float uGain, uHas, uFlash, uFull;
 uniform vec3 uFog;
 varying vec3 vDir;
 void main() {
   vec3 d = normalize(vDir);
   float el = asin(clamp(d.y, -1.0, 1.0));
   float u = atan(d.x, d.z) / 6.2831853 + 0.5;
-  float v = clamp(el / 1.5707963, 0.0, 1.0);
+  float v = uFull > 0.5 ? el / 3.1415927 + 0.5 : clamp(el / 1.5707963, 0.0, 1.0);
   vec3 sky = uHas > 0.5 ? texture2D(uSky, vec2(u, v)).rgb * uGain : uFog;
-  vec3 c = mix(uFog, sky, smoothstep(0.0, 0.22, v));
+  vec3 c = uFull > 0.5 ? sky : mix(uFog, sky, smoothstep(0.0, 0.22, v));
   // (lightning lights the clouds from inside)
   c *= 1.0 + uFlash * 2.5;
   gl_FragColor = vec4(c, 1.0);
@@ -117,17 +121,18 @@ export function lookOf(light, { fill = null, probe = null } = {}) {
   };
 }
 
-export function createLevelArea(scene, { at, radius, sea, sky = null, fog, light = null, fill = null, probe = null, weather = null, frame = null, metres = 1 }) {
+export function createLevelArea(scene, { at, radius, sea = null, sky = null, fog = null, light = null, fill = null, probe = null, weather = null, frame = null, metres = 1 }) {
   const group = new THREE.Group();
   group.name = 'level-area';
   group.position.set(...at);
   scene.add(group);
   const look = light ? lookOf(light, { fill, probe }) : null;
-  const fogColor = new THREE.Color(fog.color);
+  // (space: no fog, the dark of the star field under everything)
+  const fogColor = new THREE.Color(fog?.color ?? '#000000');
   // (the record's fog density, a metre's, in the battle's units, where it gives one)
-  if (look?.fogDensity) fog = { ...fog, density: look.fogDensity * metres };
+  if (fog && look?.fogDensity) fog = { ...fog, density: look.fogDensity * metres };
 
-  const domeUniforms = { uSky: { value: null }, uGain: { value: sky?.gain ?? 1 }, uHas: { value: 0 }, uFog: { value: fogColor }, uFlash: { value: 0 } };
+  const domeUniforms = { uSky: { value: null }, uGain: { value: sky?.gain ?? 1 }, uHas: { value: 0 }, uFog: { value: fogColor }, uFlash: { value: 0 }, uFull: { value: sky?.full ? 1 : 0 } };
   const dome = new THREE.Mesh(new THREE.SphereGeometry(radius, 48, 24), new THREE.ShaderMaterial({ vertexShader: DOME_VERT, fragmentShader: DOME_FRAG, uniforms: domeUniforms, side: THREE.DoubleSide, fog: false }));
   dome.name = 'level-area-sky';
   dome.frustumCulled = false;
@@ -142,17 +147,20 @@ export function createLevelArea(scene, { at, radius, sea, sky = null, fog, light
       domeUniforms.uHas.value = 1;
     });
 
-  const seaUniforms = { uFlash: { value: 0 }, uTime: { value: 0 }, uScale: { value: 0.9 }, uDensity: { value: fog.density }, uDeep: { value: new THREE.Color(fog.deep ?? '#16262e') }, uSea: { value: new THREE.Color(fog.sea ?? '#3e525c') }, uFog: { value: fogColor } };
-  const water = new THREE.Mesh(new THREE.CircleGeometry(radius * 0.995, 96).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({ vertexShader: SEA_VERT, fragmentShader: SEA_FRAG, uniforms: seaUniforms, fog: false }));
-  water.name = 'level-area-sea';
-  water.position.y = sea - at[1];
-  group.add(water);
+  const seaUniforms = { uFlash: { value: 0 }, uTime: { value: 0 }, uScale: { value: 0.9 }, uDensity: { value: fog?.density ?? 0 }, uDeep: { value: new THREE.Color(fog?.deep ?? '#16262e') }, uSea: { value: new THREE.Color(fog?.sea ?? '#3e525c') }, uFog: { value: fogColor } };
+  const water = sea === null ? null : new THREE.Mesh(new THREE.CircleGeometry(radius * 0.995, 96).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({ vertexShader: SEA_VERT, fragmentShader: SEA_FRAG, uniforms: seaUniforms, fog: false }));
+  if (water) {
+    water.name = 'level-area-sea';
+    water.position.y = sea - at[1];
+    group.add(water);
+  }
 
-  // the storm's fog over what's in it (the level's pack, the battle's ships), while you're inside
-  const storm = new THREE.FogExp2(fogColor, fog.density);
+  // the storm's fog over what's in it (the level's pack, the battle's ships), while you're inside (none in space)
+  const storm = fog ? new THREE.FogExp2(fogColor, fog.density) : null;
   let held = undefined; // (the scene's own fog, kept while ours is on)
   const inside = (p) => Boolean(p) && Math.hypot(p.x - at[0], p.y - at[1], p.z - at[2]) < radius * 0.98;
   const setFog = (on) => {
+    if (!storm) return;
     if (on && held === undefined) {
       held = scene.fog ?? null;
       scene.fog = storm;
@@ -170,7 +178,7 @@ export function createLevelArea(scene, { at, radius, sea, sky = null, fog, light
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data || gone) return;
-        rained = createAreaWeather(group, { data, frame, at, sea, wind: look?.wind });
+        rained = createAreaWeather(group, { data, frame, at, sea, wind: look?.wind, space: sea === null });
       })
       .catch(() => {});
 
@@ -198,8 +206,8 @@ export function createLevelArea(scene, { at, radius, sea, sky = null, fog, light
       scene.remove(group);
       dome.geometry.dispose();
       dome.material.dispose();
-      water.geometry.dispose();
-      water.material.dispose();
+      water?.geometry.dispose();
+      water?.material.dispose();
       texture?.dispose();
     },
   };

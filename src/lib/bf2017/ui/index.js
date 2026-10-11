@@ -12,11 +12,16 @@
 // colour(index) → 'rgb(…)' from the game's palette (linear, as the record
 //   keeps it, made sRGB), or null
 // fontFor(gameFont) → { family, size, weight }: the game's face and size by
-//   its name ('Univers620BoldCondensed30px'), on the open face in its place
-//   (Cuprum for Univers Condensed, Roboto for Roboto, a monospace figure
-//   face for RaxusPrime: the commercial faces never ship)
+//   its name ('Univers620BoldCondensed30px'), on the game's own file
+//   (src/lib/bf2017/fonts.css: Univers Condensed by its grade, RaxusPrime
+//   for the numerals, Roboto)
 // placeWidget(element, viewport) → { x, y, w, h }: an element's box on the
-//   game's 1920 × 1080 reference, scaled to the viewport's shorter side
+//   game's 1920 × 1080 reference, scaled to the viewport's shorter side;
+//   placeIn(element, parentBox, k) the same inside a parent's box
+// css([r, g, b]) → 'rgb(…)': a record's linear colour, made sRGB
+// (a screen's whole tree, the shapes, the modes' cards and the loading
+// screens are ./screens.js, ./shapes.js and ./info.js: the battlefront
+// world's, not every page's)
 // bitmap(name) → url | null; portrait(who) → url | null
 
 import UI from '../../../data/bf2017/ui.json';
@@ -27,29 +32,41 @@ const ROWS = UI.rows;
 export const WIDGETS = Object.keys(ROWS.widgets);
 
 const toSrgb = (c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
-export function colour(index, palette = ROWS.palette) {
-  const c = palette?.[index];
-  if (!c) return null;
+// a linear colour as the records keep it ([r, g, b], 0…1) → 'rgb(…)'
+export function css(c) {
+  if (!Array.isArray(c)) return null;
   const [r, g, b] = c.map((v) => Math.round(255 * Math.min(1, Math.max(0, toSrgb(v)))));
   return `rgb(${r} ${g} ${b})`;
 }
+export const colour = (index, palette = ROWS.palette) => css(palette?.[index]);
 
 export function fontFor(name) {
   const n = String(name ?? '');
   const size = Number(n.match(/(\d+)(?:px)?$/)?.[1] ?? 18);
-  if (/^RaxusPrime/.test(n)) return { family: 'var(--font-bf-hud)', size, weight: /Bold/.test(n) ? 700 : 400, numeric: 'tabular-nums' };
-  if (/^Roboto/.test(n)) return { family: 'var(--font-bf-text)', size, weight: 400 };
-  // (Univers' grades: 520 medium, 620 bold, 720 heavy)
+  if (/^RaxusPrime/.test(n)) return { family: 'var(--font-bf-numerals)', size, weight: /Bold/.test(n) ? 700 : /Light/.test(n) ? 300 : 400, numeric: 'tabular-nums' };
+  if (/^Roboto/.test(n)) return { family: "'Roboto BF', var(--font-bf-text)", size, weight: 400 };
+  // (Univers' grades, as fonts.css weighs them: 420 regular, 520 medium,
+  // 620 bold, 720 heavy, 820 black)
   const grade = Number(n.match(/^Univers(\d{3})/)?.[1] ?? 520);
-  return { family: 'var(--font-bf-hud)', size, weight: grade >= 620 ? 700 : 500 };
+  const weight = { 420: 400, 520: 500, 620: 700, 720: 800, 820: 900 }[grade] ?? 500;
+  return { family: 'var(--font-bf-hud)', size, weight };
 }
 
-export function placeWidget(el, { width, height }) {
-  const k = Math.min(width, height) / 1080;
-  const [ax, ay] = el.anchor ?? [0, 0];
+export const placeWidget = (el, { width, height }) => placeIn(el, { x: 0, y: 0, w: width, h: height }, Math.min(width, height) / 1080);
+
+// an element's box inside its parent's, at scale k (the viewport's shorter
+// side over the reference's 1080): anchored as the game anchors (the
+// element's own point at its anchor on the parent's), offset in the
+// reference's pixels; a PositionExpansion element from the parent's corner
+export function placeIn(el, parent, k) {
   const [w, h] = (el.size ?? [0, 0]).map((v) => v * k);
+  if (el.layout?.fill) {
+    const [px, py] = (el.layout.position ?? [0, 0]).map((v) => v * k);
+    return { x: parent.x + px, y: parent.y + py, w, h };
+  }
+  const [ax, ay] = el.anchor ?? [0, 0];
   const [ox, oy] = (el.offset ?? [0, 0]).map((v) => v * k);
-  return { x: ax * width - ax * w + ox, y: ay * height - ay * h + oy, w, h };
+  return { x: parent.x + ax * parent.w - ax * w + ox, y: parent.y + ay * parent.h - ay * h + oy, w, h };
 }
 
 const textsOf = (node, out = {}) => {

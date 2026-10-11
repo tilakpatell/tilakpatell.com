@@ -31,6 +31,10 @@ export const TICKETS_TOP_UP = 40;
 // go against how fast a point is taken. The balance's first lever
 // (docs/superpowers/evidence/battlefront-lane2/balance.md), by hand.
 export const AIM_SCALE = 3;
+// The walkers' gunners: the vehicle AI row each walker's gunner fires by
+// (ai.json's `vehicles`; lib/battlefront/ai/vehicleBrain.js). Hoth's AT-ATs
+// shoot at the uplinks' defenders.
+export const GUNNERS = { walker: 'ATAT_AI' };
 
 const SIDE_TEAM = { dark: 2, light: 1 };
 

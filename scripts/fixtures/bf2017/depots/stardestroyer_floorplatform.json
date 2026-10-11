@@ -1,0 +1,38 @@
+{
+  "_note": "hand-written in the sbdprobe row's shape as the accuracy design describes it (the desktop's maps_work/shaderdepots.jsonl is not in the bucket): three parameter blocks of one compiled material, names djb2-xor hashed lower-case, types raw-case",
+  "material": "objects/vehicles/stardestroyer/stardestroyer_floorplatform_mesh#0",
+  "blocks": [
+    {
+      "params": [
+        {
+          "hash": "f3d731d2",
+          "type": "0b87fa95",
+          "value": "0000c040000040400000000000000000"
+        },
+        {
+          "hash": "dd4eafac",
+          "type": "0b87fa95",
+          "value": "0000003f000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "params": [
+        {
+          "hash": "4667cc35",
+          "type": "0d1cfa1b",
+          "value": "01"
+        }
+      ]
+    },
+    {
+      "params": [
+        {
+          "hash": "fffadf65",
+          "type": "0b87fa95",
+          "value": "0000a0410000a0410000000000000000"
+        }
+      ]
+    }
+  ]
+}

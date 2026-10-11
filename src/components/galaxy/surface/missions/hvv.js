@@ -21,10 +21,13 @@
 // front. A bot's mark is the nearest enemy, the enemy's target weighed
 // RULES.pull metres nearer. Hit points are the game's (bf2017Abilities.json,
 // abilityRules.js's gameHealth), healing after the game's delay at its rate
-// (bf2017/heroes.json's regen).
+// (bf2017/heroes.json's regen). A difficulty (lib/battlefront/ai/difficulty.js's
+// row, `difficulty`) scales a blaster bot's chance to hit by its aim scale and
+// a bot's damage to you by its damage; the bots' decisions stay hand rules
+// (`source: "hand"`: no hero-bot record exists, their minds are logic graphs).
 //
 //   RULES, HVV_HEROES, GUNS
-//   newHvv(ground, { seed, n, stars })     → b, at the choose card (stars: the mission's, for a win's)
+//   newHvv(ground, { seed, n, stars, difficulty }) → b, at the choose card (stars: the mission's, for a win's)
 //   chooseSide(b, side, hero)              you on a side ('light' | 'dark') as `hero`
 //                                          (null: nobody plays, the bots fight it out)
 //   stepHvv(b, dt, you, env)               → events: { type: 'stroke' | 'shot' | 'hit' |
@@ -108,8 +111,8 @@ function fighter(b, hero, side, you = false) {
 }
 
 // A battle laid out at the choose card: the ground, nobody on it yet.
-export function newHvv(ground, { seed = 1, n = 4, stars = null } = {}) {
-  return { ground, seed, stars, r: rng(seed), n, t: 0, phase: 'choose', result: null, fighters: [], score: { light: 0, dark: 0 }, targets: { light: null, dark: null }, you: { side: null, id: null }, feed: [] };
+export function newHvv(ground, { seed = 1, n = 4, stars = null, difficulty = null } = {}) {
+  return { ground, seed, stars, difficulty, r: rng(seed), n, t: 0, phase: 'choose', result: null, fighters: [], score: { light: 0, dark: 0 }, targets: { light: null, dark: null }, you: { side: null, id: null }, feed: [] };
 }
 
 const feed = (b, kind, text) => {
@@ -296,7 +299,7 @@ function saberStep(b, f, m, h, env, out) {
     if (!t?.up) continue;
     if (e.type === 'blocked' || e.type === 'clash') out.push({ type: 'block', id: t.id, by: f.id, clash: e.type === 'clash' });
     else if (e.type === 'hit') {
-      if (t.you) out.push({ type: 'hit', id: f.id, you: true, melee: true, damage: e.damage, behind: e.behind, from: [f.x, f.z] });
+      if (t.you) out.push({ type: 'hit', id: f.id, you: true, melee: true, damage: toYou(b, e.damage), full: e.damage, behind: e.behind, from: [f.x, f.z] });
       else {
         const n = t.sim ? t.sim.taken(e.damage, b.t) : e.damage;
         out.push({ type: 'hit', id: f.id, target: t.id, melee: true, damage: n });
@@ -310,6 +313,9 @@ function saberStep(b, f, m, h, env, out) {
     move(b, f, f.x + o.move[0] * RULES.saber.pace * h, f.z + o.move[1] * RULES.saber.pace * h, env);
   }
 }
+
+// a bot's damage to you, by the difficulty's
+const toYou = (b, damage) => (b.difficulty ? Math.round(damage * (b.difficulty.damage ?? 1)) : damage);
 
 function blasterStep(b, f, m, h, env, out) {
   if (!m) return;
@@ -337,12 +343,12 @@ function blasterStep(b, f, m, h, env, out) {
     f.burstWait += 0.12;
     const damage = Math.round(damageAt(gun, d));
     if (m.you) {
-      out.push({ type: 'shot', id: f.id, from: [f.x, f.z], to: [m.x, m.z], atYou: true, damage });
+      out.push({ type: 'shot', id: f.id, from: [f.x, f.z], to: [m.x, m.z], atYou: true, damage: toYou(b, damage), full: damage });
       continue;
     }
     if (m.saber) m.firedAt = b.t;
     const [a0, a1] = R.accuracy;
-    let hit = b.r() < a0 + (a1 - a0) * Math.min(1, d / R.range);
+    let hit = b.r() < (a0 + (a1 - a0) * Math.min(1, d / R.range)) / (b.difficulty?.aim?.scale ?? 1);
     // (a saber hero's raised block turns what meets its shield from the front: its stamina pays)
     const turned = hit && Boolean(m.sim?.deflecting) && Boolean(shieldHit(m.sim.rules, m, [f.x, 1.3, f.z], [m.x, 1.3, m.z]));
     if (turned) {

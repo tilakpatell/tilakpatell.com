@@ -19,5 +19,7 @@ export { default as Film } from './Film';
 export { default as GameIcon } from './GameIcon';
 export { default as Reticle } from './Reticle.jsx'; // (named in full: ./reticle.js is beside it)
 export { reticleState, HIT_MS } from './reticle.js';
+export { default as Screen } from './Screen.jsx';
+export { screenKey } from './screenKey';
 export * from './hud';
 export { fitCanvas } from './canvas';

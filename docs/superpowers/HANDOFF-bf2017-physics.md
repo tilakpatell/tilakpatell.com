@@ -76,6 +76,7 @@ Each lane adds its Done and Left here when it merges: the pack’s physics bytes
 
 **Left.**
 
+- **Done by P1’s follow-up (the joins, 2026-10-10)**: steps 1 to 4 below and P2’s ask; see “P1: the joins” under P1’s section. Kept for the record:
 - **When both are on `main`** (lane L’s PR #831 and this; whoever merges second does it):
   1. Run `node scripts/bf2017-physics.mjs public/models/galaxy/bf2017/levels/hoth --from <web_opt>` (or with the keys) to fill `level.json`’s empty `physics` and write `physics/*.bin` (it reads `meshes[].name` and `cells[key].draws`); `bf2017-level.mjs` can call it after the meshes. Then `assets-upload.mjs` as lane L does.
   2. `level/index.js`: `createLevel({ …, physics })` takes the engine (`wantsEngine({ pack, small, tier }) ? await createPhysics({ gravity: -15.5 }) : null`, made in `scene.js` beside `createLevel`); once the pack is in, `const body = physics ? createLevelPhysics({ physics, pack, loadBin: fetchBytes, tier }) : null`; the stream’s `onCell: (key, bin) => { colliders?.add(key, pack, bin); body?.add(key, bin); }` and `onDrop: (key) => { colliders?.drop(key); body?.drop(key); }`; `update()` calls `body?.update(4)`; `dispose()` `body?.dispose()`; `stats()` gains `physics: body?.stats()`. `body.setTerrain((x, z) => LAYERS.image(x, z, layer))` with the layer `levelGround` decoded, so the floor is the ground drawn.
@@ -100,11 +101,26 @@ Each lane adds its Done and Left here when it merges: the pack’s physics bytes
 
 **Left.**
 
-- **The call site** (lane L’s seam, PR #831: `src/components/galaxy/surface/level/colliders.js`, wired from `level/index.js`; P0 builds `createLevelCollision` against it): once that gives an engine, `api.usePhysics(physics, { drive })`: `drive: true` (the default) lets the body step the world once a frame; pass `false` if the level steps it. Then `physics-check.mjs` waits for the body (`source: level`) and the course should become Hoth’s own spots (the hangar mouth, its ramp, a crate, a beam: add `--spot`), with P0’s `havok.test.js` fixture world for a test of the real shapes.
+- ~~The call site~~: made (see “P1: the joins” below).
 - **The figures on the body** (`bodyFor` for lane 1’s walrus figures and #812’s lane 5); the crewmate still walks on the walker and sinks into what only the engine knows (seen in the step shot).
 - **The crouch’s clip** (the legs read `state.pose`; nothing plays a crouch yet) and its HUD button (the kit’s `crouch` press is wired, no button drawn).
 - **The sprint ability** (abilityRules’ multiplier) is not applied on the body; the jump penalty (`JumpPenaltyTime` 0.1 × 0.2), the uphill/downhill speed modifiers and the slide state’s gravity scale are in the row and not yet used.
 - **The Windows-only test failures** seen on the desktop (`health.test`, `shadingClosure.test`, `bf2017-paths.test`: path separators; `supabase-seed.test`: CRLF; `supabase-check.test`: the desktop’s keys) are as on main; CI is the gate.
+
+### P1: the joins (lane L’s pack, P0’s stream, P1’s body, P2’s ray)
+
+**Done.**
+
+- **Hoth’s pack has its shapes**: `node scripts/bf2017-physics.mjs public/models/galaxy/bf2017/levels/hoth --from <web_opt>` filled `level.json`’s `physics` and wrote `physics/*.bin`: 432 meshes, 3,539 hulls, 236,905 trimesh triangles, 5.2 MB (P0’s numbers exactly), committed with the pack as lane L’s files are.
+- **`level/index.js`**: `createLevel({ …, small, heightAt, onPhysics })` makes its own Rapier world when `wantsEngine` says so (not a phone, not low, a pack with shapes; Rapier still a lazy import), streams `createLevelPhysics`’s cells beside lane L’s colliders (cells the stream brought before the engine was up are added once it is), sets the terrain from the scene’s `world.heightAt` (the ground drawn), `update(4)` each frame, `stats().physics`, `physics()` the engine, disposes both.
+- **`scene.js`**: `onPhysics` parks the engine until the body’s code has run (it can come during one of `create()`’s awaits), then puts the player on the soldier’s body (`attachPhysics`, the handle’s `usePhysics` the same function) and sets `world.physicsRay` to P2’s `segmentRay`, your own capsule left out; `__surfaceScene.physics()` (galaxy-check’s row) and `engine()` (the QA scripts’ rays) in dev.
+- **`blaster.js`** reads `world.physicsRay` at each shot, not at its making (the engine comes after the blaster).
+- **`colliders.js`** (the walker’s walls, on every device): with the pack’s shapes and a loader, a cell’s pieces stop you at their hulls (`shapeSolids`), lane L’s bounds only for the pieces without shapes; that add is a promise, and a cell dropped while it reads comes in off.
+- **`playerBody.js`**: a fall out of the engine’s world (past the streamed cells) is caught: falling faster than 10 m/s and 2 m under the walker’s ground, you’re set on it. A tunnel under a ridge, walked, never trips it.
+- **`vite.config.js`**: `optimizeDeps.entries: ['index.html']`. The dev server’s dependency scan read the tool pages under `scripts/` and `.claude/` (`scripts/twin-parity` imports an `@src` alias), failed, and left `react-dom` bundled twice: the page was blank in dev.
+- **Seen on Hoth’s own engine** (`node scripts/physics-check.mjs hoth`, `ANGLE=d3d11`, `source: level`): walking 12 m of snow the feet stay within 1 cm of the ground drawn; the nearest upright face rays find (a ridge’s rock) stops you 0.46 m short of it; 22 cells, 1,717 bodies, 10,853 colliders, 88 heightfields, the budget dropping Echo Base’s detail first. `docs/superpowers/evidence/bf2017-physics/p1/hoth-level.json` and two shots.
+
+**Left.** The hangar’s own spots in the check (its ramp, a crate, a beam by name; `--spot`); the crowds and the crewmate on the body (they walk on `walker.js`, now over the hulls’ boxes); `world.physicsRay` as P1’s budgeted `queries.ray`; the frame cost of the stream at every tier under `galaxy-check.mjs surface hoth` with `BUDGET=1`.
 
 ### Lane P2: bolts, blasts, hit zones, ragdolls (2026-10-10)
 
