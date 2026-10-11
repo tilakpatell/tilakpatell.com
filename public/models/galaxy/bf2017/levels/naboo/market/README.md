@@ -64,8 +64,8 @@ The game's shapes (`node scripts/bf2017-physics.mjs`).
 
 ## Variations
 
-Written by `node scripts/bf2017-variations.mjs naboo/market` from the level's 28 mesh variation databases (variations.json, 1.63 MB).
+Written by `node scripts/bf2017-variations.mjs naboo/market` from the level's 28 mesh variation databases (variations.json, 1.59 MB).
 
 | meshes | with variations | applied by instances | by the level rule | mixed (default drawn) | textures missing from the bucket | maps not in the pack |
 |---|---|---|---|---|---|---|
-| 1357 | 311 | 108 | 35 | 153 | 228 | 0 |
+| 1357 | 311 | 108 | 35 | 153 | 13 | 0 |
