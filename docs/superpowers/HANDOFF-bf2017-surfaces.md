@@ -40,7 +40,7 @@ One lane per session. Q1 owns `src/lib/three/surface/` and `levelGltf.js`'s opti
 | Q4 | `session_01UZN9iy457biyvcFRr7X39w` (the same) | `claude/surfaces-q4-weathering` | #852 (WebGL 2 leg shot; the WebGPU leg and the z-fighting proof on the owner's laptop) |
 | Q3 | | | after S |
 | Q5 | | | the desktop |
-| Q6 | `session_0176qPrnCnjzaZ9WkYe3RG5z` (Opus 5.5, env Website, started 2026-10-10 20:15 UTC) | `claude/surfaces-q6-picture` | #882 (WebGL 2 leg shot; the WebGPU leg on the owner's laptop) |
+| Q6 | `session_0176qPrnCnjzaZ9WkYe3RG5z` (Opus 5.5, env Website, started 2026-10-10 20:15 UTC) | `claude/surfaces-q6-picture` | #882 (both legs; the laptop's WebGPU run 5.5 ms) |
 
 **Q4 (weathering and decals), 2026-10-10:**
 
@@ -68,7 +68,7 @@ One lane per session. Q1 owns `src/lib/three/surface/` and `levelGltf.js`'s opti
 
 ### Q6 (the picture)
 
-**Done** (the WebGL 2 leg; the WebGPU leg and the real frame table wait for the owner's laptop: this machine has no GPU). Shots and numbers: `docs/superpowers/evidence/bf2017-surfaces/Q6/`.
+**Done**, both legs. On the owner's laptop (RTX 5090, ultra, 1600 × 900) the chain with the picture is 5.5 ms on WebGPU (6.0 without it) and 3.2 ms over WebGL 2, mean luminance 0.39 → 0.44 on both. Shots and numbers: `docs/superpowers/evidence/bf2017-surfaces/Q6/`.
 
 - **`src/lib/three/light/grade.js`** (pure): `gradeOf(record)` → `{ tonemap: 'linear', lut: { name, size: 33, maxHdr }, bloom: { scale, weights[5], colors[5], levels, lensDirt }, ao: { radius, bias, attenuation, contrast, exponent, blur, sharpness }, _source }` from `TonemapComponentData`, `ColorCorrectionComponentData`, `DynamicAOComponentData`; `panoramaOf`, `cloudShadowOf`, `panoramaUV`, `gradientUV`, `bloomTints`, `rgbmDecode`, `pictureOf(entry, picture)`.
 - **Behind a field, not the record alone.** The Battlefront world's entry already carries the Gaussians and HBAO (`weather.js`'s `entryFor`), so reading them from the record would have changed that world on merge. The picture applies only where asked: `applyGameLight(..., { picture })` or `entry.picture`; `true` for the record's numbers alone, or `src/data/bf2017/light/<world>.picture.json`'s weather (`{ lut, panorama, gradient, cloudShadow }`, urls without the base) for its textures too. Nothing on the classic renderer. **Lane picture**: hand the Battlefront world's entry `picture: { ...hoth.picture.json.weathers[weather] }` with the urls through `url()`; `look.js`'s exposure stays the renderer's, which the linear tone map uses.
@@ -76,7 +76,7 @@ One lane per session. Q1 owns `src/lib/three/surface/` and `levelGltf.js`'s opti
 - **The sky** (`sky.js` `panorama`, `fog.js` `gradient`, `clouds.js` `texture`): the bucket's panorama is the desktop's 2,048 × 512 UASTC, clamped to 0…1 (the BC6 HDR's range above 1 is gone); it is the upper hemisphere as an equirect at `u = fract(PanoramicRotation − azimuth)` (the record's sun's azimuth lands on the painted sun's), scaled to the model's horizon at 1.4° (`panoramaGain`, 0.509 on the day; 5.6 % off on the shot where they meet), the record's disc on top. The day's painted sun is near 16° against the record's 32.9°: both show. The fog's colour is FogColor × the gradient × the same gain. The cloud texture is BC1 (no alpha): `rgb × 6` clamped, on the first layer only.
 - **`scripts/bf2017-picture.mjs <world>`** fetches each weather's three textures (Hoth: sunny's and sunset's; the interior names the day's), serves them beside the LUTs (`public/textures/galaxy/bf2017/light/hoth/<weather>.{panorama,gradient,clouds}.ktx2`, 2.3 MB; the clouds at 1,024 px) and writes the manifest with the panorama's horizon row.
 - **The fixture**: lane X's merge had dropped lane S's `--hoth`, `--shadows` and `--clouds` from `litWorld.js`; restored beside X's particles. `node scripts/light-fixture.mjs --picture [off] --post on --tier ultra` (before 0.3951 mean luminance, after 0.4436; the frame's cost unchanged on SwiftShader).
-- **Left**: the laptop's legs; a weather crossfade eases the gain, not the textures, LUT or Gaussians (the chain is the first weather's, as V's fog and flares); `LensDirtTexture` is null on Hoth, so not drawn; no world passes `picture` yet.
+- **Left**: a weather crossfade eases the gain, not the textures, LUT or Gaussians (the chain is the first weather's, as V's fog and flares); `LensDirtTexture` is null on Hoth, so not drawn; no world passes `picture` yet.
 
 Findings for the next lane go here: families by count on Hoth and which fell to `glb`, the detail maps still missing at PR time, the ground's tile size as judged, what the Enlighten probe found, the PSNR table.
 
