@@ -8182,9 +8182,15 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tracks.json
 /public/models/galaxy/bf2017/levels/hoth/vehicles.json
+/public/models/galaxy/bf2017/levels/kashyyyk/game/kashyyyk_01/*
+!/public/models/galaxy/bf2017/levels/kashyyyk/game/kashyyyk_01/level.json
+!/public/models/galaxy/bf2017/levels/kashyyyk/game/kashyyyk_01/README.md
 /public/models/galaxy/bf2017/levels/tatooine/game/tatooine_01/*
 !/public/models/galaxy/bf2017/levels/tatooine/game/tatooine_01/level.json
 !/public/models/galaxy/bf2017/levels/tatooine/game/tatooine_01/README.md
+/public/models/galaxy/bf2017/levels/yavin/game/yavin_01/*
+!/public/models/galaxy/bf2017/levels/yavin/game/yavin_01/level.json
+!/public/models/galaxy/bf2017/levels/yavin/game/yavin_01/README.md
 /public/models/galaxy/bf2017/scenes/hoth-outro.glb
 /public/models/galaxy/bf2017/scenes/intro-anakin.glb
 /public/models/galaxy/bf2017/scenes/intro-bobafett.glb

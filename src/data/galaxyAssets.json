@@ -48671,6 +48671,18 @@
     "from": "models/galaxy/bf2017/levels/hoth/vehicles.json",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kashyyyk/game/kashyyyk_01/": {
+    "hash": "6830d37de1cd",
+    "bytes": 415636219,
+    "files": 3062,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/game/kashyyyk_01/",
+    "tier": "whole",
+    "check": {
+      "file": "level.json",
+      "bytes": 579236,
+      "hash": "d5210c2e70d0"
+    }
+  },
   "models/galaxy/bf2017/levels/tatooine/game/tatooine_01/": {
     "hash": "47158a0f119e",
     "bytes": 362229864,
@@ -48681,6 +48693,18 @@
       "file": "level.json",
       "bytes": 781947,
       "hash": "f10023f13424"
+    }
+  },
+  "models/galaxy/bf2017/levels/yavin/game/yavin_01/": {
+    "hash": "1e75ae3006fb",
+    "bytes": 586488782,
+    "files": 4580,
+    "from": "models/galaxy/bf2017/levels/yavin/game/yavin_01/",
+    "tier": "whole",
+    "check": {
+      "file": "level.json",
+      "bytes": 752167,
+      "hash": "58c264b3e82c"
     }
   },
   "models/galaxy/bf2017/scenes/hoth-outro.glb": {
