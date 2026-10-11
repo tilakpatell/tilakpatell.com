@@ -36,6 +36,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { candidatesOf, colourIndex, countFamilies, crewRecipes, mapsWanted, recipesOf } from './lib/bf2017-recipes.mjs';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
+import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = join(ROOT, 'lab/assets/bf2017');
@@ -83,10 +84,17 @@ async function bucketHas(env, listFolder) {
 
 // A KTX2 at each tier's size, its mips dropped (tex/<slug>.<size>.ktx2,
 // one file a distinct size) → { tier: size }
+let gameWordCache;
+const theGameWord = () => (gameWordCache === undefined ? (gameWordCache = loadGameWord(CACHE)) : gameWordCache);
+
 async function writeSizes(buf, kind, dir, slug) {
   const info = ktx2Info(buf);
   const sizes = TILING_KINDS.has(kind) ? TILING_SIZE : MASK_SIZE;
   const row = {};
+  // (the game's word on the map's colour space, else the suffix rule; the
+  // row carries it for the loader and the file is stamped the same)
+  const want = wantedTransfer(slug, { word: theGameWord() });
+  if (want) row.srgb = want === 'srgb';
   const written = new Set();
   await mkdir(dir, { recursive: true });
   for (const tier of TIERS) {
@@ -94,7 +102,7 @@ async function writeSizes(buf, kind, dir, slug) {
     row[tier] = size;
     if (written.has(size)) continue;
     written.add(size);
-    await writeFile(join(dir, `${slug}.${size}.ktx2`), dropMips(buf, Math.min(mipsToFit(info.width, size), info.levels - 1)));
+    await writeFile(join(dir, `${slug}.${size}.ktx2`), withTransfer(dropMips(buf, Math.min(mipsToFit(info.width, size), info.levels - 1)), want ?? 'linear'));
   }
   return row;
 }

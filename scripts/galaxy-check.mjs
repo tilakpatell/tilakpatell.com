@@ -146,7 +146,18 @@ for (const id of list.split(',')) {
   const page = await ctx.newPage();
   // what its models weigh: every .glb it fetched (a fresh context: nothing cached)
   let glbBytes = 0;
+  // (and whose scans it wears: the site's photo scans, or the game's roles.
+  // A Star Wars world is on the game's (sites/index.js's default), so a cc0
+  // fetch on a surface is a world that slipped back; SCANS=game fails it)
+  const scans = { cc0: 0, game: 0, cc0Paths: [] };
   page.on('requestfinished', async (req) => {
+    // (the maps themselves: the dev server also serves the set's index.json as a module)
+    if (/\/cc0\/galaxy\/.*\.(webp|ktx2|png|jpg|avif)(\?|$)/.test(req.url())) {
+      scans.cc0++;
+      // (which ones, so a world that slipped back says where)
+      if (scans.cc0Paths.length < 8) scans.cc0Paths.push(new URL(req.url()).pathname);
+    }
+    else if (/\/textures\/galaxy\/bf2017\/.*\.(webp|ktx2|png|jpg|avif|hdr)(\?|$)/.test(req.url())) scans.game++;
     if (!/\.glb(\?|$)/.test(req.url())) return;
     const sizes = await req.sizes().catch(() => null);
     glbBytes += sizes?.responseBodySize ?? 0;
@@ -299,11 +310,15 @@ for (const id of list.split(',')) {
   const name = `${mode}-${id}-${quality}`;
   await page.screenshot({ path: `${out}/${name}.png`, timeout: 120000 });
   const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
-  results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), ...(profile && { profile }), errors: errors.slice(0, 5) });
-  console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}`);
+  results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
+  console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
   if (stats.level) {
     const l = stats.level;
     console.log(`${''.padEnd(10)} level calls ${l.calls}  tris ${l.tris}  instances ${l.instances}  lights ${l.lights ?? 0}  probe ${l.probe ?? '–'}`);
+  }
+  if (mode === 'surface' && process.env.SCANS === 'game' && scans.cc0) {
+    console.log(`scans  ${id.padEnd(10)} FAIL: ${scans.cc0} of the site's own scans fetched; a Star Wars world wears the game's: ${scans.cc0Paths.join(' ')}`);
+    process.exitCode = 1;
   }
   if (stats.physics) {
     const p = stats.physics;
