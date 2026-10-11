@@ -216,7 +216,10 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, s
       loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations });
       // (the ground in the game's layers where the pack has them: the node renderer's, lane Q2)
       const layered = ground && renderer?.isWebGPURenderer ? { mesh: ground, renderer, fetchBytes, urlOf: (path) => assetUrl(packUrl(world, path)), entry: null } : null;
-      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier, ground: layered });
+      // (lane U's batches on the node renderer: a BatchedMesh culls each
+      // instance against each camera, the sun's cascades' too, where an
+      // InstancedMesh is drawn whole into every cascade it touches)
+      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier, ground: layered, batch: Boolean(renderer?.isWebGPURenderer) && tier !== 'low' });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when
       // a cell goes)
