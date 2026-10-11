@@ -61,6 +61,8 @@ export const LANES = [
   { lane: 'H', design: 839 },
   // the sixth design (#877): the colour chain
   { lane: 'colour', design: 877 },
+  // the picture-everywhere design (#905): the flip, the picture, every detail, headroom, the material, the gallery
+  ...['T2', 'P', 'D2', 'U2', 'M2', 'G'].map((lane) => ({ lane, design: 905 })),
 ];
 
 const BEASTS = ['dewback', 'bantha', 'eopie', 'ronto', 'jawa', 'aiwha'];
@@ -85,6 +87,13 @@ export const OWNERS = [
   // lanes consume is the first one's): Q1 the materials' manifest and the
   // shaders' presets, detail and weathering maps; Q3 the Enlighten proxies;
   // Q4 the decals and their sheets; Q6 the colour cubes and the painted skies
+  // #905's: the five textures lane W's dry run found no lane for (PR #906,
+  // w/DRY.md): the terrain's dynamic decal mask and its normal (D2, the
+  // packs' decals), the depth of field's bokeh shapes (T2, the node post
+  // chain's dof) and the space set's cloud normal (the space lane's skies)
+  { match: 'effects/terraindynamicdecals/', part: 'textures', lane: 'D2' },
+  { match: 'media/cameras/dof_textures/', part: 'textures', lane: 'T2' },
+  { match: 'media/levels/space_set/shaders/', part: 'textures', lane: 'space' },
   { match: 'materials.jsonl', part: 'index', lane: 'surfaces-Q1' },
   { match: /^(textures\/)?shaders\//, part: 'textures', lane: 'surfaces-Q1' },
   { match: /enlighten|staticirradiance/, lane: 'surfaces-Q3' },

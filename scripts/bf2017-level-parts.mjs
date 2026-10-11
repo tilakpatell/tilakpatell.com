@@ -10,7 +10,8 @@
 // scripts/lib/bf2017-level-*.mjs; this fetches, cuts and writes. Called by
 // scripts/bf2017-level.mjs after the meshes, or alone with --parts.
 //
-//   writeParts({ env, cache, mapName, base (the map's files' stem under web/), map, json, out, subs, mode, weather, dry, log })
+//   writeParts({ env, cache, mapName, base (the map's files' stem under web/), map, json, out, subs, mode, weather, ultra, dry, log })
+//     (ultra: each probe's 128² faces with the sun kept as well, `<faces>.ultra.<face>.hdr`)
 //     → { counts, lines (the README's section), shadowCache, parts (level.json's index) }
 
 import { existsSync } from 'node:fs';
@@ -33,6 +34,7 @@ import { MODELS as VEHICLES } from '../src/components/galaxy/surface/catalog/bf2
 const HAVE = new Set(['fetched', 'kept']);
 const FACES = ['px', 'nx', 'py', 'ny', 'pz', 'nz'];
 const PROBE_SIZE = 64;
+const ULTRA_PROBE_SIZE = 128;
 const lastOf = (p) => String(p).split('/').pop();
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 
@@ -41,7 +43,7 @@ async function bytes(env, cache, path) {
   return HAVE.has(r.state) ? readFile(r.file) : null;
 }
 
-export async function writeParts({ env, cache, mapName, base = `web/maps/${mapName}/${lastOf(mapName)}`, map, json, out, subs = null, mode = 'FantasyBattle', weather = 'sunny', dry = false, log = console.log }) {
+export async function writeParts({ env, cache, mapName, base = `web/maps/${mapName}/${lastOf(mapName)}`, map, json, out, subs = null, mode = 'FantasyBattle', weather = 'sunny', ultra = false, dry = false, log = console.log }) {
   const extrasBuf = await bytes(env, cache, `${base}.extras.json`);
   const extras = extrasBuf ? JSON.parse(extrasBuf.toString('utf8')) : {};
   if (!extrasBuf) log(`${mapName}: no extras in the bucket; the parts are empty`);
@@ -70,8 +72,22 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
   // until then the same shape, empty, and the README says so)
   const q4 = await import('./lib/bf2017-decals.mjs').catch(() => null);
   const decals = q4?.decalsOf ? q4.decalsOf(extras, json, { subworlds: map.subworlds }) : { format: 1, cell: json.cell ?? 128, count: 0, kinds: {}, skipped: {}, textures: [], files: {}, cells: {}, waiting: 'lane Q4 (scripts/lib/bf2017-decals.mjs)' };
+  // (each decal's colour map as the bucket's web build has it, into the
+  // pack's tex/decals/ and published with it: Q4's contract, E0's hand-off)
+  for (const [name, file] of Object.entries(decals.files ?? {})) {
+    if (!file || file.startsWith('tex/')) continue;
+    const buf = await bytes(env, cache, `web/${file}`);
+    if (!buf) {
+      decals.files[name] = null;
+      continue;
+    }
+    const at = `tex/decals/${lastOf(file)}`;
+    files.set(at, buf);
+    decals.files[name] = at;
+  }
   put('decals.json', decals);
   counts.decals = decals.count ?? 0;
+  counts.normalOnly = decals.normalOnly ?? 0;
 
   // the effect spawns, in fidelity X's effects.json (its reader, scripts/lib/bf2017-effects.mjs)
   const fxDir = join(import.meta.dirname, '..', 'src', 'data', 'bf2017', 'fx');
@@ -129,11 +145,16 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
     }
     if (Object.keys(faces).length < 6) continue;
     const s = probeStats(faces, size);
+    // (on ultra a second cut at 128² with the sun kept, lane D2: the
+    // node renderer's reflections take the game's whole range, the sun's
+    // glint on wet metal and ice included)
+    const big = ultra && size > PROBE_SIZE ? Math.min(ULTRA_PROBE_SIZE, size) : 0;
+    if (big) for (const f of FACES) files.set(`${p.faces}.ultra.${f}.hdr`, writeHdr({ w: big, h: big, px: shrinkFace(faces[f], size, big) }));
     // (held under twice its horizon, as lane G's probes are: no sun in a reflection)
     clipFaces(faces, 2 * (s.horizon[0] * 0.2126 + s.horizon[1] * 0.7152 + s.horizon[2] * 0.0722));
     for (const f of FACES) files.set(`${p.faces}.${f}.hdr`, writeHdr({ w: PROBE_SIZE, h: PROBE_SIZE, px: shrinkFace(faces[f], size, PROBE_SIZE) }));
     const r3 = (c) => c.map((v) => Math.round(v * 1000) / 1000);
-    kept.push({ id: p.id, variant: p.variant, centre: p.centre, axes: p.axes, faces: p.faces, zenith: r3(s.zenith), horizon: r3(s.horizon), ground: r3(s.ground), open: Math.round(s.open * 100) / 100 });
+    kept.push({ id: p.id, variant: p.variant, centre: p.centre, axes: p.axes, faces: p.faces, ...(big ? { ultra: `${p.faces}.ultra`, ultraSize: big } : {}), zenith: r3(s.zenith), horizon: r3(s.horizon), ground: r3(s.ground), open: Math.round(s.open * 100) / 100 });
   }
   put('probes.json', { probes: kept, skipped: probes.skipped });
   counts.probes = kept.length;
@@ -175,10 +196,10 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
     `| lights.json | ${counts.lights} | ${kb(size((p) => p === 'lights.json'))} | lane R's placed.js |`,
     `| actors.json | ${counts.actors} | ${kb(size((p) => p === 'actors.json'))} | the scene's life rows |`,
     `| vehicles.json | ${counts.vehicles} | ${kb(size((p) => p === 'vehicles.json'))} | the scene's rides and things |`,
-    `| decals.json | ${counts.decals}${q4?.decalsOf ? '' : ' (lane Q4 fills it)'} | ${kb(size((p) => p === 'decals.json'))} | lane Q4's src/lib/three/decals/ |`,
+    `| decals.json and tex/decals/ | ${counts.decals}${counts.normalOnly ? ` (${counts.normalOnly} normal-only: kept, not drawn until their normal maps are exported)` : ''}${q4?.decalsOf ? '' : ' (lane Q4 fills it)'} | ${kb(size((p) => p === 'decals.json' || p.startsWith('tex/decals/')))} | lane Q4's src/lib/three/decals/ |`,
     `| effects.json | ${counts.effects} | ${kb(size((p) => p === 'effects.json'))} | fidelity X's effects |`,
     `| tracks.json | ${counts.tracks} | ${kb(size((p) => p === 'tracks.json'))} | src/lib/three/animTracks.js |`,
-    `| probes.json and probes/ | ${counts.probes} | ${kb(size((p) => p === 'probes.json' || p.startsWith('probes/')))} | levelProbes.js, lane R's grid |`,
+    `| probes.json and probes/ | ${counts.probes}${kept.some((k) => k.ultra) ? ` (and ${kept.filter((k) => k.ultra).length} at ${ULTRA_PROBE_SIZE}² with the sun, for ultra)` : ''} | ${kb(size((p) => p === 'probes.json' || p.startsWith('probes/')))} | levelProbes.js, lane R's grid |`,
     `| shadow/far.png | ${counts.shadow} | ${kb(size((p) => p.startsWith('shadow/')))} | fidelity S (level.json's shadowCache) |`,
     `| scatter.json | ${counts.scatter} | ${kb(size((p) => p === 'scatter.json'))} | fidelity N |`,
     '',

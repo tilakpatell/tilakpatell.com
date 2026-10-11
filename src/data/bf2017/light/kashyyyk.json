@@ -54,7 +54,7 @@
    },
    "grading": {
     "lut": "textures/galaxy/bf2017/light/kashyyyk/overcast.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,
@@ -146,7 +146,7 @@
    },
    "grading": {
     "lut": "textures/galaxy/bf2017/light/kashyyyk/interior.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,
@@ -218,7 +218,7 @@
    },
    "grading": {
     "lut": "textures/galaxy/bf2017/light/kashyyyk/night.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,

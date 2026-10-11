@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { budget } from '../src/lib/budgets.js';
-import { KNOWN_OVER, limitsFor, overBy } from './galaxy-budget.mjs';
+import { BUCKET_MB, BUCKET_SOURCE, BUCKET_URL, KNOWN_OVER, MODEL_FILE, limitsFor, overBy } from './galaxy-budget.mjs';
 
 describe('what the galaxy check holds a world to', () => {
   it('holds a world to its baseline +10%, under its level’s row', () => {
@@ -48,5 +48,21 @@ describe('what the galaxy check holds a world to', () => {
     expect(l.calls).toBeCloseTo(55);
     expect(l.tris).toBeCloseTo(550000);
     expect(l.mb).toBe(30);
+  });
+
+  it('holds a world the bucket served to the bucket row, measured on main’s Hoth with +10%', () => {
+    for (const t of ['low', 'mid', 'high', 'ultra']) expect(BUCKET_MB[t]).toBeGreaterThanOrEqual(BUCKET_SOURCE.measured[t] * 1.1);
+    expect(BUCKET_SOURCE._source).toMatch(/hoth/);
+    const l = limitsFor({ id: 'hoth', quality: 'high', row: budget('high'), base: null, bucket: true });
+    expect(l).toMatchObject({ mb: 160, bucket: true });
+    // (a base-less server keeps the row's own)
+    expect(limitsFor({ id: 'hoth', quality: 'high', row: budget('high'), base: null }).mb).toBe(60);
+  });
+
+  it('counts a level pack’s maps and cells with its meshes, and knows the bucket by its path', () => {
+    for (const f of ['/a/b.glb', '/t/x.2048.ktx2', '/c/0_1.bin?v=1']) expect(MODEL_FILE.test(f)).toBe(true);
+    expect(MODEL_FILE.test('/a/level.json')).toBe(false);
+    expect(BUCKET_URL.test('https://x.supabase.co/storage/v1/object/public/site-assets/abc/models/a.glb')).toBe(true);
+    expect(BUCKET_URL.test('http://127.0.0.1:5188/models/a.glb')).toBe(false);
   });
 });
