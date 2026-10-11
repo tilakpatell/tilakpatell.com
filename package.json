@@ -21,6 +21,7 @@
     "photos": "node scripts/photos.mjs",
     "paint": "node scripts/paint.mjs",
     "globe": "node scripts/build-globe.mjs",
+    "manifest": "node scripts/build-manifest.mjs",
     "credits": "node scripts/credits.mjs",
     "mc:atlas": "node scripts/mc-atlas.mjs",
     "cc0": "node scripts/cc0.mjs",

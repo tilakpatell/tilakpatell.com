@@ -6,7 +6,7 @@
 // those two; .gitignore's block hides the rest). The work is in scripts/lib/bf2017-level.mjs (pure,
 // tested); this fetches, reads and writes.
 //
-//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share 1 | low=0.5,…] [--arena 1024] [--yaw 0] [--ultra] [--parts] [--dry]
+//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share 1 | low=0.5,…] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]
 //
 //   map     the map's folder under web/maps/ (levels/mp/hoth_01)
 //   world   the site's world (hoth): the pack's folder and its credit
@@ -30,6 +30,10 @@
 //           space level is drawn on the galaxy's flight page, beside the system
 //           and the battle, so it takes a share; or tier by tier (low=0.5),
 //           where a site's own things already spend the rest (Endor's)
+//   floor   a map with no terrain: the game's height of the deck the spot
+//           lands on (Cloud City's walkways, 199), which becomes the site's 0
+//   walk    the half-size of the square you can stand in (640): the fit
+//           holds each tier's row at every 64 m inside it, and no further
 //   arena   the pack's half-size in metres; instances beyond it are the horizon
 //   ultra   the LOD0 cut and 2048 textures as well
 //   dry     the table only: fetches the map, terrain and manifest, writes nothing
@@ -64,7 +68,7 @@ import { encodePng16 } from './lib/png16.mjs';
 import { writeParts } from './bf2017-level-parts.mjs';
 import { main as writePhysics } from './bf2017-physics.mjs';
 
-const USAGE = 'node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share low=0.5 | 0.5] [--arena 1024] [--yaw 0] [--ultra] [--parts] [--dry]';
+const USAGE = 'node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share low=0.5 | 0.5] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = join(ROOT, 'lab', 'assets', 'bf2017');
 const PERMISSION = 'From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.';
@@ -354,7 +358,9 @@ async function main(args) {
   if (!record) console.log('no terrain: the ground stays the site’s');
   const ground = record ? await heightsLayer(record, await need(env, inBucket(record.world.file), 'the world heightmap')) : null;
   const detail = record?.detail?.file ? await heightsLayer(record, await need(env, inBucket(record.detail.file), 'the detail heightmap'), 'detail') : null;
-  let groundY = detail && LAYERS.image(spot[0], spot[1], detail) ? LAYERS.image(spot[0], spot[1], detail) : ground ? LAYERS.image(spot[0], spot[1], ground) : 0;
+  // (no terrain: `--floor` names the game's height of the deck you land on, else 0)
+  let groundY = detail && LAYERS.image(spot[0], spot[1], detail) ? LAYERS.image(spot[0], spot[1], detail) : ground ? LAYERS.image(spot[0], spot[1], ground) : Number(args.floor ?? 0);
+  if (Number.isNaN(groundY)) throw new Error('--floor: the game\'s height of the landing deck, in metres');
 
   // the meshes: each one's LOD chain (the model manifest's, else counted
   // from its GLBs), its four cuts and their triangles
@@ -442,6 +448,11 @@ async function main(args) {
       missing: Boolean(missing),
     })),
     arena,
+    // (--walk: the square you can stand in, where the fit holds the row; a
+    // city in the clouds is seen from its walkways, not from its backdrop)
+    ...(args.walk ? { walk: Number(args.walk) } : {}),
+    // (--floor: a map stood on its deck, whose meshes are its only ground)
+    deck: !record && args.floor != null,
     rows: rowsOf(ultra ? BUDGET_ROWS : { low: BUDGET_ROWS.low, mid: BUDGET_ROWS.mid, high: BUDGET_ROWS.high }),
     subs,
     drop,
@@ -595,11 +606,12 @@ async function main(args) {
     license: 'permission',
     licenseUrl: GAME,
     source: GAME,
-    // (a space level's is drawn in the galaxy's flight, not on a surface)
-    where: record ? 'galaxy-surface' : 'galaxy',
+    // (a space level's, sb_<world>, is drawn in the galaxy's flight, not on
+    // a surface; a world with no terrain stood on its deck, Cloud City, is a surface's)
+    where: record || !world.startsWith('sb_') ? 'galaxy-surface' : 'galaxy',
     as: `${packId}: the game's level`,
     file: `/models/galaxy/bf2017/levels/${packId}/level.json`,
-    also: record ? ['galaxy'] : [],
+    also: record || !world.startsWith('sb_') ? ['galaxy'] : [],
     permission: PERMISSION,
   });
   await writePhysics([out]);

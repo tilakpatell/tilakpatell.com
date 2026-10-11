@@ -27,9 +27,8 @@ const YEAR = /max-age=31536000\b/;
 export function verdict(entry, got) {
   if (got.status === 'missing') return `not in the bucket (HTTP ${got.http})`;
   if (got.status !== 'fetched') return got.error ?? 'failed';
-  // (an empty file has no first byte to give: a pack's empty horizon.bin
-  // answers 416 with `bytes */0`, which is its whole size)
-  if (got.http === 416 && entry.bytes === 0) return /\/0$/.test(got.headers.get('content-range') ?? '') ? null : 'HTTP 416 without its size';
+  // (an empty file has no first byte to give: the range is refused, and the answer names its size, 0)
+  if (got.http === 416 && entry.bytes === 0 && got.headers.get('content-range') === 'bytes */0') return null;
   if (got.http !== 206 && got.http !== 200) return `HTTP ${got.http}`;
   const range = got.headers.get('content-range');
   const total = range ? Number(range.split('/')[1]) : Number(got.headers.get('content-length'));

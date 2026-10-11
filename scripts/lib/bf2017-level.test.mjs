@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
-import { NEVER, STILL_SKINNED, arenaOf, buildPack, neverOf, proxyKey, proxyMeshes, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
+import { NEVER, STILL_SKINNED, arenaOf, buildPack, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mainSubs, mergeHeights, meshCuts, neverOf, packCell, proxyKey, proxyMeshes, readMap, rebase, rewriteImageUris, seenWeight, standsOn, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
@@ -31,6 +31,34 @@ describe('readMap', () => {
 
   it('refuses a bin the wrong size for its count', () => {
     expect(() => readMap(json, bin.subarray(0, 100))).toThrow(/bytes/);
+  });
+});
+
+describe('seenWeight', () => {
+  it('weighs a floor or a wall as the solid it reads as, and clutter light (the fit drops the lightest first)', () => {
+    const floor = seenWeight({ bounds: [-1.92, -0.1, -1.92, 1.92, 0, 1.92] });
+    const wall = seenWeight({ bounds: [-1.92, 0, -0.1, 1.92, 3.84, 0.1] });
+    const vase = seenWeight({ bounds: [-0.2, 0, -0.2, 0.2, 0.6, 0.2] });
+    const crate = seenWeight({ bounds: [-0.6, 0, -0.6, 0.6, 1.2, 0.6] });
+    expect(floor).toBeCloseTo(wall, 6);
+    expect(floor).toBeGreaterThan(crate);
+    expect(crate).toBeGreaterThan(vase);
+    // (a decal with no thickness still weighs its face)
+    expect(seenWeight({ bounds: [0, 0, 0, 2, 0, 2] })).toBeGreaterThan(0);
+  });
+});
+
+describe('standsOn', () => {
+  it('is a floor, a catwalk plate, a gangway with its rails or a flight of stairs, and not a wall, a pillar, a crate or a rock', () => {
+    expect(standsOn({ bounds: [0, 0, 0, 3.84, 0.16, 3.84] })).toBe(true);
+    expect(standsOn({ bounds: [-5.12, -0.91, 0, 5.12, 1.41, 10.24] })).toBe(true);
+    expect(standsOn({ bounds: [0, 0, 0, 3.84, 2.72, 3.86] })).toBe(true);
+    expect(standsOn({ bounds: [0, 0, 0, 1.28, 5.12, 0.64] })).toBe(false);
+    expect(standsOn({ bounds: [-0.6, 0, -0.6, 0.6, 1.2, 0.6] })).toBe(false);
+    expect(standsOn({ bounds: [0, 0, 0, 1.28, 0.2, 1.28] })).toBe(true);
+    expect(standsOn({ bounds: [-1, 0, -1, 1, 1, 1] })).toBe(false);
+    // (a building is not a floor: the backdrop's towers may go before the walkway)
+    expect(standsOn({ bounds: [-20, 0, -20, 20, 10, 20] })).toBe(false);
   });
 });
 
@@ -211,6 +239,13 @@ describe('buildPack', () => {
     const tight = buildPack({ world: 'fixture', mapName: 'm', map: readMap(json, bin), spot: [100, 200], groundY: 0, meshes, arena: 256, rows: { ultra: { tris: 905, calls: 700 } } });
     expect(tight.table.ultra.K).toBeLessThan(1000);
     expect(tight.table.ultra.worst.tris).toBeLessThanOrEqual(905 * 0.9);
+  });
+
+  it('on a map stood on its deck (`deck`), keeps every broad piece whose top is at the deck: the meshes are the only ground', () => {
+    // (the deck at the fixture's 15 m: the hangar's top, 10 m over it (its 10 m at twice the size, from 5 m), is in the deck's band; the rock, 2 m wide, too small to stand on)
+    const decked = buildPack({ world: 'fixture', mapName: 'm', map: readMap(json, bin), spot: [100, 200], groundY: 15, meshes, arena: 256, deck: true, rows: { ultra: { tris: 905, calls: 700 } } });
+    expect(decked.table.ultra.dropped.map((d) => d.name)).not.toContain('hangar');
+    expect(decked.table.ultra.dropped.map((d) => d.name)).toContain('rock');
   });
 });
 

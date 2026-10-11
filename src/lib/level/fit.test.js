@@ -54,6 +54,14 @@ describe('fitCull', () => {
     expect(f.worst.tris).toBe(1000);
   });
 
+  it('never drops a mesh you stand on (`keep`): the next lightest goes, and the row is left over if nothing else can', () => {
+    const inst = at([[1, 0, 10, 0], [1, 0, 1, 1], [1.2, 0, 1, 1], [1.4, 0, 1, 1]]);
+    const kept = meshes.map((m, i) => (i === 1 ? { ...m, keep: true } : m));
+    const f = fitCull(inst, kept, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 });
+    expect(f.dropped).not.toContain(1);
+    expect(f.dropped).toEqual([0]);
+  });
+
   it('ultra has no triangle ceiling: only the calls hold it', () => {
     const inst = at([[1, 0, 10, 0], [1, 0, 1, 1]]);
     expect(fitCull(inst, meshes, { tris: Infinity, calls: 1500 }, 'ultra', { positions: [[0, 0]], kMax: 1000 }).K).toBe(1000);
