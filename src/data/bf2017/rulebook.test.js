@@ -39,7 +39,8 @@ describe('the Battlefront rulebooks', () => {
   it('stay small', () => {
     // (a space level's map is fetched only when its Starfighter Assault is flown: starfighterMaps.js; each map is held to its own)
     const bytes = FILES.filter((f) => !f.startsWith('maps/sb_')).reduce((n, f) => n + readFileSync(join(DIR, `${f}.json`)).length, 0);
-    expect(bytes).toBeLessThan(2 * 1024 * 1024);
+    // (4 MiB: the maps lane added a rulebook for every usable map and the bots lane the AI names, creatures and squadron tables; 2.1 MB after both)
+    expect(bytes).toBeLessThan(4 * 1024 * 1024);
     for (const f of FILES.filter((x) => x.startsWith('maps/') && !x.includes('.'))) expect(readFileSync(join(DIR, `${f}.json`)).length, f).toBeLessThan(600 * 1024);
   });
 
