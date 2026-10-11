@@ -142,7 +142,7 @@ export async function makePanoramaWebp(name, world, { root = join(ROOT, 'lab', '
 // the system each globe is the disc of (the giant Endor and Yavin 4 circle
 // is the system's parent, not its world: Yavin Prime's and the giant's
 // pictures stay lane K's)
-export const GLOBES = { geonosis: 'geonosis', hoth: 'hoth', kashyyyk: 'kashyyyk', scarif: 'scarif', tatooine: 'tatooine', yavin: 'yavin4' };
+export const GLOBES = { geonosis: 'geonosis', hoth: 'hoth', kashyyyk: 'kashyyyk', scarif: 'scarif', tatooine: 'tatooine', yavin: 'yavin4', felucia: 'felucia', kessel: 'kessel' };
 export const GLOBE_PX = 96;
 
 export async function makeGlobes({ root = join(ROOT, 'lab', 'assets', 'bf2017'), out = join(ROOT, 'public', 'models', 'galaxy', 'space', 'globes'), data = join(ROOT, 'src', 'data', 'galaxy', 'space', 'globes.json') } = {}) {

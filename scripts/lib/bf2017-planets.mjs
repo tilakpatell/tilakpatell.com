@@ -19,12 +19,16 @@
 // Yavin's are pictures of a lit disc, which no sphere can wear (PICTURES).
 //
 // SKINS: { [site look id]: { color?, normal?, clouds?, atmo?, rings?, tiles?,
-//   cloudTiles?, cloudCut?, seas?, greenDown?, atmoScale?, ringsAt? } }; each map
+//   cloudTiles?, cloudCut?, cloudsIn?, seas?, greenDown?, atmoScale?, ringsAt? } }; each map
 //   a glob over the lowercased game names, or a list of them, best first: the
 //   first that matches exactly one name wins, so one that matches two is
 //   reported, not guessed between. seas: the colour's alpha (smoothness) at
 //   which the ground is water; tiles, cloudTiles: times round the planet
-//   (the game's 1); cloudCut: the coverage under which there's no cloud
+//   (the game's 1); cloudCut: the coverage under which there's no cloud;
+//   cloudsIn: where a cloud map keeps its coverage, 'alpha' (the space
+//   levels', the default where the map has one) or 'rgb' (the campaign's
+//   objects/planets/<world>/T_Clouds*_CA: white cloud on black, its alpha
+//   255 all over)
 // sizesFor(kind, tier) → { w, format } | null
 // planFor(skin, available: Set<name>) → { fetch: [{ kind, name }], missing: [{ kind, why }] }
 // convertSkin({ id, skin, images: { kind: Buffer }, outDir, encodeKtx2 }) →
@@ -68,6 +72,35 @@ export const SKINS = {
     cloudCut: 0.45,
     seas: 0.38,
   },
+  // the fifth design's lane E5: the six worlds it made systems of. The
+  // campaign's planets (objects/planets/<world>) are whole-planet colour maps
+  // with a cloud map of their own (coverage in alpha); Fondor's is its space
+  // level's, with a relief map, as Naboo's
+  fondor: {
+    color: `${SB}/sb_fondor_01/planet/t_planet_fondor_03_cs`,
+    normal: `${SB}/sb_fondor_01/planet/t_planet_fondor_03_ni`,
+  },
+  pillio: {
+    // (Pillio_Alive: before Operation Cinder; Pillio_Dead is the burnt world
+    // after. Its _CA is the cloud map, white on black, the alpha solid)
+    color: 'objects/planets/pillio_alive/t_pillio_alive_01_c',
+    clouds: 'objects/planets/pillio_alive/t_pillio_alive_01_ca',
+    cloudsIn: 'rgb',
+    cloudCut: 0.3,
+  },
+  sullust: {
+    color: 'objects/planets/sullust/t_planetsullust_01_c',
+    clouds: 'objects/planets/sullust/t_cloudssullust_01_ca',
+    cloudsIn: 'rgb',
+    cloudCut: 0.3,
+  },
+  vardos: {
+    // (Vardos_Alive: before Operation Cinder, as the OT era has it)
+    color: 'objects/planets/vardos_alive/t_planetvardosalive_01_c',
+    clouds: 'objects/planets/vardos_alive/t_cloudsvardosalive_01_ca',
+    cloudsIn: 'rgb',
+    cloudCut: 0.3,
+  },
 };
 
 // The maps that are pictures of a planet, not a planet's maps: what the site
@@ -81,13 +114,18 @@ export const PICTURES = {
   tatooine: 's2/objects/planets/tatooine/t_planetfrontendtatooine_01_ca',
   yavin: 'levels/lighting/yavin/sunset_01/t_yavin_01_planet_c',
   yavin4: 's2/objects/planets/yavin4/t_planetfrontendyavin4_01_ca',
+  // (lane E5: Felucia and Kessel have only the front end's globes in the drop)
+  felucia: 's8/felucia/objects/planets/felucia/t_planetfrontendfelucia_01_ca',
+  kessel: 's3/objects/planets/kessel/t_planetfrontendkessel_01',
 };
 
 // The worlds the drop paints that no system on the site has a body for: left
 // out until a system draws them (a new look in bodies.js and a place in
-// systems.js are another lane's). Ryloth, Fondor, Athulla, Sullust, Pillio
-// and Vardos have maps like Endor's and Naboo's
-export const UNPLACED = ['naboo moon', 'sullust', 'kessel', 'felucia', 'death star II', 'ryloth and its moon', 'fondor and its moon', 'athulla', 'pillio', 'vardos'];
+// systems.js are another lane's). Ryloth and Athulla have maps like Endor's
+// and Naboo's; lane E5 placed Sullust, Kessel, Felucia, Fondor, Pillio and
+// Vardos (SKINS and PICTURES above). Athulla's map (A3 M3ATH) is 179
+// asteroids and no ground, so it is no system of its own
+export const UNPLACED = ['naboo moon', 'death star II', 'ryloth and its moon', 'fondor’s moon', 'athulla'];
 
 // The site's sizes, never larger than the game drew it. Low draws no skin (a
 // weak device keeps the procedural ground and its memory); the cloud map is
@@ -181,10 +219,11 @@ export async function meanColor(buffer) {
 }
 
 // a cloud map as coverage in one channel: its alpha where it has one, else
-// its brightness
-export async function coveragePng(buffer) {
+// its brightness; `from: 'rgb'` takes the brightness whatever the alpha (the
+// campaign's cloud maps, white on black with a solid alpha)
+export async function coveragePng(buffer, from = 'alpha') {
   const meta = await sharp(buffer).metadata();
-  const chan = meta.hasAlpha ? sharp(buffer).ensureAlpha().extractChannel(3) : sharp(buffer).greyscale();
+  const chan = meta.hasAlpha && from !== 'rgb' ? sharp(buffer).ensureAlpha().extractChannel(3) : sharp(buffer).removeAlpha().greyscale();
   return chan.png().toBuffer();
 }
 
@@ -210,7 +249,7 @@ export async function convertSkin({ id, skin = {}, images, outDir, encodeKtx2 })
     // (the colour's alpha is smoothness: kept only where it marks the seas)
     if (kind === 'color' && skin.seas === undefined) src = await sharp(src).removeAlpha().png().toBuffer();
     if (kind === 'normal') src = await normalPng(src);
-    if (kind === 'clouds') src = await coveragePng(src);
+    if (kind === 'clouds') src = await coveragePng(src, skin.cloudsIn);
     for (const tier of kind === 'rings' ? ['mid'] : TIERS) {
       const size = sizesFor(kind, tier);
       const w = Math.min(size.w, srcW);

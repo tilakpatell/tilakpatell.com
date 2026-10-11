@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { LOOKS } from '../../src/components/galaxy/bodies.js';
-import { PICTURES, SEQUEL_WORLDS, SKINS, convertSkin, meanColor, nameOf, planFor, planetNames, sequelWorld, sizesFor, skinsJson } from './bf2017-planets.mjs';
+import { PICTURES, SEQUEL_WORLDS, SKINS, UNPLACED, convertSkin, coveragePng, meanColor, nameOf, planFor, planetNames, sequelWorld, sizesFor, skinsJson } from './bf2017-planets.mjs';
 
 const sharp = createRequire(createRequire(import.meta.url).resolve('ndarray-pixels'))('sharp');
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'bf2017', 'web', 'textures', 'levels', 'space', 'sb_endor_01', 'planet');
@@ -56,6 +56,34 @@ describe('planFor', () => {
     const two = new Set(['a/x_cloud_01_c', 'a/x_cloud_02_c', 'b/y_c']);
     expect(planFor({ clouds: 'a/*cloud*' }, two).missing[0].why).toMatch(/^ambiguous: a\/\*cloud\*: 2 names/);
     expect(planFor({ clouds: ['a/*cloud*', '*/y_c'] }, two).fetch).toEqual([{ kind: 'clouds', name: 'b/y_c' }]);
+  });
+
+  // (lane E5: the six new systems' rows against the bucket's listing of 2026-10-11)
+  it('finds every map of the six new worlds, and leaves Felucia and Kessel to their globes', () => {
+    const dir = 'levels/space/sb_fondor_01/planet';
+    const have = new Set([
+      `${dir}/t_planet_fondor_03_cs`, `${dir}/t_planet_fondor_03_ni`, `${dir}/t_moon_fondor_01_c`, `${dir}/t_dock_cards_01_c`,
+      'objects/planets/pillio_alive/t_pillio_alive_01_c', 'objects/planets/pillio_alive/t_pillio_alive_01_ca', 'objects/planets/pillio_dead/t_planetpilliodead_01_c', 'objects/planets/pillio_dead/t_cloudspilliodead_01_ca',
+      'objects/planets/sullust/t_planetsullust_01_c', 'objects/planets/sullust/t_cloudssullust_01_ca',
+      'objects/planets/vardos_alive/t_planetvardosalive_01_c', 'objects/planets/vardos_alive/t_cloudsvardosalive_01_ca', 'objects/planets/vardos_dead/t_planetvardosdead_01_c', 'objects/planets/vardos_dead/t_cloudsvardosdead_01_ca',
+      's8/felucia/objects/planets/felucia/t_planetfrontendfelucia_01_ca', 's3/objects/planets/kessel/t_planetfrontendkessel_01',
+    ]);
+    expect(planFor(SKINS.fondor, have)).toEqual({ fetch: [{ kind: 'color', name: `${dir}/t_planet_fondor_03_cs` }, { kind: 'normal', name: `${dir}/t_planet_fondor_03_ni` }], missing: [] });
+    for (const id of ['pillio', 'sullust', 'vardos']) {
+      const { fetch, missing } = planFor(SKINS[id], have);
+      expect(fetch.map((f) => f.kind), id).toEqual(['color', 'clouds']);
+      // (the world before Operation Cinder, never the burnt one)
+      for (const f of fetch) expect(f.name, id).not.toMatch(/dead/);
+      expect(missing, id).toEqual([]);
+      expect(SKINS[id].cloudsIn, id).toBe('rgb');
+    }
+    for (const id of ['felucia', 'kessel']) {
+      expect(SKINS[id]).toBeUndefined();
+      expect(have.has(PICTURES[id]), id).toBe(true);
+    }
+    // (none of the six is left unplaced; Fondor’s moon still is)
+    for (const id of ['felucia', 'kessel', 'sullust', 'pillio', 'vardos', 'fondor']) expect(UNPLACED, id).not.toContain(id);
+    expect(UNPLACED).toContain('fondor’s moon');
   });
 
   it('never takes a sequel world’s map', () => {
@@ -119,6 +147,16 @@ describe('convertSkin', () => {
     } finally {
       await rm(out, { recursive: true, force: true });
     }
+  });
+
+  it('reads a cloud map’s coverage from its alpha, or from its brightness when told the alpha is solid', async () => {
+    // (a 2 × 1 map: left white with alpha 0, right black with alpha 255)
+    const buf = Buffer.from([255, 255, 255, 0, 0, 0, 0, 255]);
+    const png = await sharp(buf, { raw: { width: 2, height: 1, channels: 4 } }).png().toBuffer();
+    const alpha = await sharp(await coveragePng(png)).toColourspace('b-w').raw().toBuffer();
+    expect([...alpha]).toEqual([0, 255]);
+    const rgb = await sharp(await coveragePng(png, 'rgb')).toColourspace('b-w').raw().toBuffer();
+    expect([...rgb]).toEqual([255, 0]);
   });
 
   it('reads an atmosphere’s picture as its colour where it has air', async () => {

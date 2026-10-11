@@ -22,5 +22,13 @@
  "yavin": {
   "url": "/models/galaxy/space/globes/yavin.webp",
   "from": "s2/objects/planets/yavin4/t_planetfrontendyavin4_01_ca"
+ },
+ "felucia": {
+  "url": "/models/galaxy/space/globes/felucia.webp",
+  "from": "s8/felucia/objects/planets/felucia/t_planetfrontendfelucia_01_ca"
+ },
+ "kessel": {
+  "url": "/models/galaxy/space/globes/kessel.webp",
+  "from": "s3/objects/planets/kessel/t_planetfrontendkessel_01"
  }
 }
