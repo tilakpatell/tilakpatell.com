@@ -21,7 +21,8 @@
 // figure, an instanced row, an alpha-tested card, a panning banner) in
 // front of it; they move once probe.trailsGo(true) says, a step a frame,
 // and probe.trails({ width, height }) gives each one's box on the screen
-// and its travel a frame, for the trail check.
+// and its travel a frame, for the trail check; `temporal: 'none'` draws
+// it without a temporal pass (else TAAU at 0.77 where TRAA cannot draw).
 //
 // `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
 // 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
@@ -390,7 +391,12 @@ export default {
         // (`only`: the passes kept, for finding which one breaks)
         let passes = opts.only ? light.passes.filter((p) => opts.only.includes(p.kind)) : light.passes;
         // (`upscale`, fidelity lane U: { kind, scale }, the picture drawn under the screen and brought up)
-        if (opts.upscale) passes = (await import('../../lib/three/light/post.js')).upscaled(passes, opts.upscale);
+        const chain = await import('../../lib/three/light/post.js');
+        if (opts.upscale) passes = chain.upscaled(passes, opts.upscale);
+        // (lane N2's trails: under a temporal pass, TAAU at 0.77 where TRAA
+        // cannot draw (nodes-webgl); `temporal: 'none'` the picture without one)
+        if (opts.trails && opts.temporal === 'none') passes = chain.arrange(passes.filter((p) => p.kind !== 'traa' && !(p.kind === 'upscale' && p.upscaler === 'taau')));
+        else if (opts.trails && !chain.temporal(passes)) passes = chain.upscaled(passes, { kind: 'taau', scale: 0.77 });
         // (lane N2: `sharpen: false` is lane U's picture, for the before shot: no sharpen pass, no mip bias)
         if (opts.sharpen === false) passes = passes.filter((p) => p.kind !== 'sharpen');
         const bias = await import('../../lib/three/mipBias.js');

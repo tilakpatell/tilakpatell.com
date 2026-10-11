@@ -48,7 +48,7 @@
 // `internal` is the chain's scale. With no clock, or one that says it is
 // not available, it is the pace, silently (`source` reads 'cpu'). The
 // runtime sets it as it starts each world (`setSource(source, { gpuTime,
-// fps })`: 'gpu', 'cpu' for a node world on the pace, 'classic' for the
+// fps, tier })`: 'gpu', 'cpu' for a node world on the pace, 'classic' for the
 // classic renderer), and with each level the internal scale the mip bias
 // every game material samples at follows (lib/three/mipBias: log2(scale) −
 // 1 under the screen, −0.5 at native under TRAA, which webgpu.js reports
@@ -101,10 +101,13 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
   const onGpu = () => Boolean(dyn && clock?.available);
   const internal = () => (onGpu() ? dyn.scale : headroomAt(level).scale);
   const bias = () => setMipState({ scale: internal(), classic: picture === 'classic' });
-  const setSource = (want = 'cpu', { gpuTime: g = null, fps: f = null } = {}) => {
+  let seen = null; // the clock's last reading fed to the controller
+  const setSource = (want = 'cpu', { gpuTime: g = null, fps: f = null, tier: t = null } = {}) => {
     picture = want;
     clock = want === 'gpu' ? g : null;
-    dyn = clock?.available ? createDynres({ ...dynresFor({ tier, fps: f }), steps: RESOLUTION_STEPS }) : null;
+    seen = null;
+    // (`tier`: lane G1's renderer tier, T0…T2, when the runtime has one; else the device's)
+    dyn = clock?.available ? createDynres({ ...dynresFor({ tier: t ?? tier, fps: f }), steps: RESOLUTION_STEPS }) : null;
     bias();
   };
   const tell = (l) => {
@@ -159,7 +162,11 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
       }
       if (onGpu()) {
         clock.frame();
-        if (dyn.frame(clock.last) === null || dyn.level === level) return null;
+        // (G1's clock resolves one frame at a time and `last` stays until the
+        // next lands: a reading is fed once, or one late frame would panic it)
+        const ms = clock.last === seen ? null : clock.last;
+        seen = clock.last;
+        if (dyn.frame(ms) === null || dyn.level === level) return null;
         level = dyn.level;
         tell(level);
         return level;

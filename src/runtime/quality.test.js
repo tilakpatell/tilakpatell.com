@@ -233,8 +233,9 @@ describe('headroomAt (lane U)', () => {
 const fakeClock = (times, available = true) => {
   let i = 0;
   const clock = { available, last: null, median: null, p95: null };
+  // (each frame a new reading, as a fresh object would be: equal numbers are new readings here)
   clock.frame = vi.fn(() => {
-    clock.last = times[Math.min(i++, times.length - 1)];
+    clock.last = times[Math.min(i++, times.length - 1)] + i * 1e-9;
   });
   return clock;
 };
@@ -277,6 +278,28 @@ describe('the GPU clock as the source (lane N2)', () => {
     expect(q.internal).toBe(1);
     q.setSource('cpu');
     expect(q.source).toBe('cpu');
+  });
+
+  it('counts each reading of the clock once: `last` stays until the next resolve lands', () => {
+    // (lane G1's clock resolves one frame at a time: its `last` repeats on the frames between)
+    const clock = { available: true, last: null, frame: vi.fn() };
+    const q = createQuality({ tier: 'high', pace: fakePace([null]), source: 'gpu', gpuTime: clock });
+    clock.last = 30;
+    for (let t = 1; t <= 3; t++) q.frame(t * 16);
+    // (one reading over budget, seen three times: no panic)
+    expect(q.level).toBe(0);
+    clock.last = 31;
+    q.frame(64);
+    clock.last = 30;
+    q.frame(80);
+    expect(q.level).toBe(1);
+  });
+
+  it('takes lane G1’s renderer tier when the runtime has one: T0 budgets 33.3 ms', () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([null]) });
+    q.setSource('gpu', { gpuTime: fakeClock([25]), tier: 'T0' });
+    for (let t = 1; t <= 40; t++) q.frame(t * 33);
+    expect(q.level).toBe(0);
   });
 
   it('a hold lets the GPU’s frames go by too', () => {

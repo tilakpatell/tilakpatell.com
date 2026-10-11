@@ -307,8 +307,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     const nodes = module.shading === 'nodes' && gfx.backend !== 'webgl';
     const onGpu = nodes && gfx.backend === 'webgpu' && typeof gpuClock === 'function' && gfx.renderer;
     if (onGpu && !clocks.has(gfx.renderer)) clocks.set(gfx.renderer, gpuClock(gfx.renderer) ?? null);
-    quality.setSource?.(onGpu ? 'gpu' : nodes ? 'cpu' : 'classic', { gpuTime: onGpu ? clocks.get(gfx.renderer) : null, fps });
-    loop.setCadence?.(cadenceFor({ tier: quality.tier, fps }));
+    // (lane G1's renderer tier, T0…T2, where the runtime has one: rt.tier)
+    const tier = rt.tier ?? null;
+    quality.setSource?.(onGpu ? 'gpu' : nodes ? 'cpu' : 'classic', { gpuTime: onGpu ? clocks.get(gfx.renderer) : null, fps, tier });
+    loop.setCadence?.(cadenceFor({ tier: tier ?? quality.tier, fps }));
     quality.reset?.();
     quality.hold?.(WARM_UP);
     gfx.setRatio?.(ratioFor(module));
