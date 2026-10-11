@@ -589,8 +589,11 @@ export const SITES = {
     // flight's: the game's rock stands.
     level: 'geonosis',
     // (Geonosis_02, the Capital Supremacy map's ground, its dunes and the
-    // crash site: its first team-one spawn, from Mode1_Logic, as the
-    // rulebook reads no season map's records)
+    // crash site: /models/galaxy/bf2017/levels/geonosis/second/level.json,
+    // `node scripts/bf2017-level.mjs s6_2/geonosis_02/levels/geonosis_02
+    // --world geonosis --district second --spot 1838 -767 --subs
+    // geonosis_02,world_content,dunes,crashsite`, its first team-one spawn,
+    // from Mode1_Logic, as the rulebook reads no season map's records)
     districts: [
       {
         id: 'second',

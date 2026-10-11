@@ -113,7 +113,7 @@ export const SITE_GROUND = {
   sorgan: { detail: 'needles', detailLook: { color: 0.8, normal: 0.7 }, palette: { low: '#4f4c2e', high: '#5e6034', rock: '#5a5a50', accent: '#6a5e3a', deep: '#5a5a50', hLow: -4, hHigh: 14, rockAt: 0.4, accentCover: 0.25, ripple: { strength: 0.02, scale: 3, wind: 0.5 }, grain: 0.5, mark: '#3a3824' } },
 };
 export const SITE_WATER = {
-  kashyyyk: { kind: 'sea', level: 0 },
+  kashyyyk: { kind: 'sea', level: -0.27 },
   dagobah: { kind: 'swamp', level: 0 },
   yavin: { kind: 'swamp', level: -3 },
   naboo: { kind: 'sea', level: 0 },

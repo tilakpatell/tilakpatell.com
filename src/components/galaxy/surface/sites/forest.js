@@ -80,7 +80,8 @@ export const SITES = {
         id: 'village',
         name: 'Bright Tree Village',
         level: 'endor/village',
-        // (`node scripts/bf2017-level.mjs s2_1/levels/endor_02 --world endor
+        // (/models/galaxy/bf2017/levels/endor/village/level.json,
+        // `node scripts/bf2017-level.mjs s2_1/levels/endor_02 --world endor
         // --district village --spot -386 71 --subs endor_02,art,content`;
         // facing its huts and walkways, 120 m west and 126 m south)
         land: { at: [0, 0], yaw: -2.38 },
@@ -95,7 +96,8 @@ export const SITES = {
         id: 'station',
         name: 'The research station',
         level: 'endor/station',
-        // (`node scripts/bf2017-level.mjs s8_1/endor_04 --world endor
+        // (/models/galaxy/bf2017/levels/endor/station/level.json,
+        // `node scripts/bf2017-level.mjs s8_1/endor_04 --world endor
         // --district station --spot 446 299`; facing its decks, 183 m north)
         land: { at: [0, 0], yaw: 0.25 },
         line: 'An Imperial research station in the forest, long after the battle.',
@@ -106,7 +108,8 @@ export const SITES = {
         id: 'bunker',
         name: 'The bunker, inside',
         level: 'endor/bunker',
-        // (`node scripts/bf2017-level.mjs levels/mp/endor_01 --world endor
+        // (/models/galaxy/bf2017/levels/endor/bunker/level.json,
+        // `node scripts/bf2017-level.mjs levels/mp/endor_01 --world endor
         // --district bunker --inside --spot 211.8 331`: the 4,098 pieces
         // under the hill, in the main map's frame)
         land: BUNKER_LAND,
@@ -425,8 +428,11 @@ export const SITES = {
     // rows are the flight's (`game`): the game's stand.
     level: 'kashyyyk',
     turn: { yaw: -Math.PI / 2, by: [24, 0] },
-    // (Kashyyyk_02, the Capital Supremacy map's ground: its first team-one
-    // spawn, from Mode1_Logic, as the rulebook reads no season map's records)
+    // (Kashyyyk_02, the Capital Supremacy map's ground:
+    // /models/galaxy/bf2017/levels/kashyyyk/second/level.json, `node
+    // scripts/bf2017-level.mjs s7/levels/kashyyyk_02 --world kashyyyk
+    // --district second --spot 1166 -271`, its first team-one spawn, from
+    // Mode1_Logic, as the rulebook reads no season map's records)
     districts: [
       {
         id: 'second',
