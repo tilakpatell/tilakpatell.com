@@ -394,7 +394,8 @@ export const SITES = {
     ],
 
     // the game's own Jabba's palace (lane E1: the packs
-    // /models/galaxy/bf2017/levels/tatooine/jabba/ and jabba-inside/, `node
+    // /models/galaxy/bf2017/levels/tatooine/jabba/level.json and
+    // /models/galaxy/bf2017/levels/tatooine/jabba-inside/level.json, `node
     // scripts/bf2017-level.mjs s2_2/levels/jabbaspalace_01 --world tatooine
     // --district jabba --spot -22.9 20.8`, and the same `--district
     // jabba-inside --inside`: the palace on its rise, and the 473 pieces
