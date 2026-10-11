@@ -10,7 +10,7 @@
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
 //     [--picture [on|off]]   (lane Q6: Hoth's record's picture, or the same frame without it)
 //     [--upscale [fsr1|taau:]0.77]   (lane U: the picture drawn under the screen and upscaled)
-//   node scripts/light-fixture.mjs --materials [--legs webgl]
+//   node scripts/light-fixture.mjs --materials [--legs webgl] [--variations]
 //   node scripts/light-fixture.mjs --camera [--size 1600x900] [--legs webgpu,webgl]
 //
 // Lane S (docs/superpowers/plans/2026-10-10-bf-fidelity-laneS-shadows.md):
@@ -61,6 +61,12 @@
 // wall-<tier>-<leg>.png; the low tier against the GLB's (the design's
 // "low equals the GLB": mean and largest difference, 0…255) and each cube's
 // features into materials-<leg>.json.
+// --variations (lane colour, docs/superpowers/plans/2026-10-10-bf2017-accuracy-lane-colour.md):
+// instead of the seven, Hoth's crate (Box_M_01_A) twice, as the dump has it
+// and through Hoth's variations.json in its snow variation, at high and
+// ultra into docs/superpowers/evidence/bf2017-colour/crate-<tier>-<leg>.png,
+// and the report (each cube's features, the pack's variations counts) into
+// variations-<leg>.json.
 //
 // For each leg (?gpu=webgpu, and ?gpu=webgl: the node renderer on a WebGL 2
 // context) it opens scripts/light-fixture/index.html on a Vite dev server
@@ -532,6 +538,33 @@ process.exit(rows.some((r) => r.error && r.leg !== 'webgpu') ? 1 : 0);
 
 // ---- --materials (lane Q1)
 
+// Hoth's crate as the dump has it and in the variation the pack's
+// variations.json gives it (or Box_M_01_A_Snow, the mesh's one variation,
+// where the pack leaves the mesh mixed)
+async function variationList() {
+  const { readFileSync } = await import('node:fs');
+  const { spawnSync } = await import('node:child_process');
+  const { recipeOf } = await import('./lib/bf2017-recipes.mjs');
+  const { applyVariation, variationFor } = await import('../src/components/galaxy/surface/level/levelVariations.js');
+  const row = JSON.parse(readFileSync(join(ROOT, 'scripts/fixtures/bf2017/variations/crate.jsonl'), 'utf8').trim());
+  const json = JSON.parse(readFileSync(join(ROOT, 'public/models/galaxy/bf2017/levels/hoth/variations.json'), 'utf8'));
+  const glbFile = join(ROOT, 'lab/assets/bf2017/web/models', `${row.mesh}.glb`);
+  if (!existsSync(glbFile)) spawnSync(process.execPath, [join(ROOT, 'scripts/bf2017-fetch.mjs'), row.mesh, '--lod', '0'], { stdio: 'inherit', env: process.env });
+  const glb = existsSync(glbFile) ? `/lab/assets/bf2017/web/models/${row.mesh}.glb` : null;
+  const recipe = { ...recipeOf(row, 0), _source: undefined };
+  const mesh = json.meshes[row.mesh];
+  const v = variationFor(json, `models/${row.mesh}.glb`) ?? variationFor({ ...json, meshes: { [row.mesh]: { ...mesh, use: 'Box_M_01_A_Snow' } } }, `models/${row.mesh}.glb`);
+  const varied = applyVariation(recipe, v, 0);
+  const counts = json.counts;
+  return {
+    list: [
+      { label: 'crate', recipe, glb, maps: {} },
+      { label: `crate:${v?.name ?? 'none'}`, recipe: varied, glb, maps: {} },
+    ],
+    report: { mesh: row.mesh, by: mesh?.by ?? null, uses: mesh?.uses ?? null, drawn: v?.name ?? null, variations: { applied: counts.byInstances + counts.byRule, rule: counts.byRule, mixed: counts.mixed, missing: counts.missingTextures } },
+  };
+}
+
 async function materialList() {
   const { readFileSync } = await import('node:fs');
   const { spawnSync } = await import('node:child_process');
@@ -610,16 +643,22 @@ async function arraySlices(env, cache, name, getObject) {
 }
 
 async function materialsRun() {
-  const out = join(ROOT, 'docs/superpowers/evidence/bf2017-surfaces/Q1');
+  const variations = argv.includes('--variations') ? await variationList() : null;
+  const out = join(ROOT, variations ? 'docs/superpowers/evidence/bf2017-colour' : 'docs/superpowers/evidence/bf2017-surfaces/Q1');
   mkdirSync(out, { recursive: true });
-  const list = await materialList();
-  const configs = [
-    ['glb', 'low'],
-    ['game', 'low'],
-    ['game', 'mid'],
-    ['game', 'high'],
-    ['game', 'ultra'],
-  ];
+  const list = variations ? variations.list : await materialList();
+  const configs = variations
+    ? [
+        ['game', 'high'],
+        ['game', 'ultra'],
+      ]
+    : [
+        ['glb', 'low'],
+        ['game', 'low'],
+        ['game', 'mid'],
+        ['game', 'high'],
+        ['game', 'ultra'],
+      ];
   let failed = false;
   for (const leg of legs) {
     const result = { leg, adapter: swift ? 'swiftshader' : 'system', shots: {}, features: null, lowVsGlb: {}, errors: [] };
@@ -636,10 +675,10 @@ async function materialsRun() {
         const err = await page.evaluate(() => window.__lit.error);
         if (err) throw new Error(err);
         if (name === 'ultra') result.features = await page.evaluate(() => window.__lit.probe.recipes());
-        for (const view of ['row', 'wall']) {
+        for (const view of variations ? ['row'] : ['row', 'wall']) {
           await page.evaluate((v) => (window.__lit.probe.view(v), window.__lit.draw(60)), view);
           const png = await page.locator('canvas').screenshot();
-          const file = `${view === 'row' ? 'fixture' : 'wall'}-${name}-${leg}.png`;
+          const file = variations ? `crate-${name}-${leg}.png` : `${view === 'row' ? 'fixture' : 'wall'}-${name}-${leg}.png`;
           writeFileSync(join(out, file), png);
           result.shots[`${view}-${name}`] = file;
           raws[`${view}-${name}`] = await raw(png);
@@ -663,7 +702,8 @@ async function materialsRun() {
       }
       result.lowVsGlb[view] = { mean: Number(meanDiff(a, b).toFixed(3)), max, overOne: over };
     }
-    writeFileSync(join(out, `materials-${leg}.json`), `${JSON.stringify(result, null, 2)}\n`);
+    if (variations) Object.assign(result, variations.report);
+    writeFileSync(join(out, `${variations ? 'variations' : 'materials'}-${leg}.json`), `${JSON.stringify(result, null, 2)}\n`);
     console.log(`${leg}: low vs the GLB ${JSON.stringify(result.lowVsGlb)}; ${Object.keys(result.shots).length} shots${result.errors.length ? `; errors: ${[...new Set(result.errors)].slice(0, 4).join(' / ')}` : ''}`);
     for (const c of result.features ?? []) console.log(`  ${c.label.padEnd(11)} ${c.features.join(', ') || '(none)'}`);
   }

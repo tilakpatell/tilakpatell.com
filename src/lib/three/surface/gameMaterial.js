@@ -20,6 +20,12 @@
 //       { direction: [x, y, z] toward the sun, color: [r, g, b] } (else
 //       straight up and white); material.userData.game.sun holds it
 //     physical: a MeshPhysicalNodeMaterial whatever the features (a head's)
+//     recipe.variation (lane colour: the mesh's variation from the pack's
+//       variations.json, levelVariations.js): its vectors and conditionals
+//       read through the recipe's parameter names (variation.js), its own
+//       colour and normal maps (maps.color, maps.normal) in place of the
+//       GLB's, and a snow variation snowed from the start; a recipe without
+//       one draws as before
 //   loadGameMaterial() → Promise<(recipe, maps, opts) => material> with three loaded
 //
 // material.userData.game = { family, features: [...], parallaxSteps } says what
@@ -31,6 +37,8 @@
 import { loadThree } from '../light/three.js';
 import { composeOverlays, overlayName } from './compose.js';
 import { AOSLICE_LEVELS, EMISSIVE_EXPOSURE, EMISSIVE_MAX, METAL_CHANNEL, PAINT_CHANNEL, PARALLAX_STEPS } from './families.js';
+import { SNOW_FULL, variationParams } from './variation.js';
+import { snowOverlay } from './weather.js';
 
 // ---- the site's weights where the recipe has a switch and no number
 
@@ -60,10 +68,11 @@ export const TRANSLUCENCY_WEIGHT = 0.25;
 export const MAX_SLICES = 4;
 
 const ON_MID = new Set(['detail', 'detailArray', 'emissive']);
-// the recipe maps each tier draws, for the loader to fetch no more (low: none)
+// the recipe maps each tier draws, for the loader to fetch no more (low: none;
+// a variation's own colour and normal from mid up)
 export const TIER_MAPS = {
   low: [],
-  mid: ['detail', 'aoSlice', 'emissive'],
+  mid: ['detail', 'aoSlice', 'emissive', 'color', 'normal'],
   high: null,
   ultra: null,
 };
@@ -138,14 +147,27 @@ export function createSunUniforms(three, { direction = [0, 1, 0], color = [1, 1,
 
 export function createGameMaterial(recipe, maps = {}, { tier = 'high', overlays = [], three, sun = null, physical = false } = {}) {
   const { THREE, tsl } = three;
-  const p = recipe?.params ?? {};
-  const glb = maps.glb ?? null;
+  const variation = recipe?.variation ?? null;
+  const p = variationParams(recipe?.params ?? {}, variation);
+  // (a variation's own colour and normal maps over the GLB's, the GLB's
+  // material itself untouched)
+  let glb = maps.glb ?? null;
+  if (glb && (maps.color || maps.normal)) {
+    glb = Object.create(glb);
+    if (maps.color) glb.map = maps.color;
+    if (maps.normal) glb.normalMap = maps.normal;
+  }
   const features = [];
   const game = { family: recipe?.family ?? 'glb', features, parallaxSteps: 0, blink: null };
+  if (variation?.name) game.variation = variation.name;
   if (tier === 'low' || !recipe || recipe.family === 'glb') {
     const m = fromGlb(THREE, glb, false);
     m.userData.game = game;
     return m;
+  }
+  if (variation?.snow) {
+    overlays = [...overlays, Object.assign(snowOverlay(SNOW_FULL, three), { overlayName: 'snow' })];
+    game.snow = true;
   }
   const allow = (f) => tier !== 'mid' || ON_MID.has(f);
   const want = (f, ok) => ok && allow(f) && (features.push(f), true);

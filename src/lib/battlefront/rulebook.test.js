@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { abilityOf, aiOf, camerasOf, cardOf, classOf, heroOf, lightingOf, loadRulebook, mapOf, pointsOf, reinforcementOf, spawnsFor, squadsOf, stagesOf, stringOf, teamsFor, uiOf, vehicleOf, volumeOf, weaponOf } from './rulebook.js';
+import { abilityOf, aiOf, arcadeOf, camerasOf, cardOf, classOf, fileOfLevel, heroOf, hothModeFiles, kitsOf, levelKey, levelOf, levelsFor, lightingOf, loadLevel, loadRulebook, mapOf, modesOf, pointsOf, reinforcementOf, spawnsFor, squadsOf, stagesOf, stringOf, teamsFor, uiOf, vehicleOf, volumeOf, weaponOf } from './rulebook.js';
 
 describe('the rulebook', () => {
   const rb = loadRulebook();
@@ -51,6 +51,51 @@ describe('the rulebook', () => {
     expect(silo).toBeTruthy();
     expect(silo).not.toBe('ID_FANTASYBATTLES_HOTH_FUEL_SILO');
     expect(stringOf(rb, 'ID_NOT_THERE')).toBe('ID_NOT_THERE');
+  });
+
+  it('keys a level by the game’s level key, the older short names its aliases', () => {
+    expect(levelKey('hoth')).toBe('hoth_01');
+    expect(levelKey('Hoth_01')).toBe('hoth_01');
+    expect(levelKey('kashyyyk')).toBe('kashyyyk_01');
+    expect(levelOf(rb, 'hoth_01')).toBe(levelOf(rb, 'hoth'));
+    expect(mapOf(rb, 'hoth_01')).toBe(mapOf(rb, 'hoth'));
+    expect(stagesOf(rb, 'hoth_01', 'galacticAssault')).toBe(stagesOf(rb, 'hoth', 'galacticAssault'));
+    expect(teamsFor(rb, 'hoth_01').light.heroes).toContain('luke');
+  });
+
+  it('names each level’s files as the maps rulebooks are named (world, then .n past the first)', () => {
+    expect(fileOfLevel('hoth_01')).toBe('hoth');
+    expect(fileOfLevel('hoth_02')).toBe('hoth.2');
+    expect(fileOfLevel('deathstar02_01')).toBe('deathstar02');
+    expect(fileOfLevel('scarif_02')).toBe('scarif.2');
+  });
+
+  it('gives a system’s levels and a level’s modes', () => {
+    expect(levelsFor('hoth')).toEqual(['hoth_01', 'hoth_02']);
+    expect(levelsFor('alderaan')).toEqual([]);
+    expect(modesOf(rb, 'hoth')).toContain('galacticAssault');
+    expect(modesOf(rb, 'endor_02')).toContain('ewokHunt');
+  });
+
+  it('loads another level’s map when asked, and says so when it was not', async () => {
+    expect(() => mapOf(rb, 'endor_01')).toThrow(/loadLevel/);
+    const lv = await loadLevel('endor');
+    expect(lv.map.level).toMatch(/Endor_01/);
+    expect(mapOf(rb, 'endor_01')).toBe(lv.map);
+    expect(mapOf(rb, 'endor')).toBe(lv.map);
+    await expect(loadLevel('jakku_01')).rejects.toThrow(/jakku_01/);
+  });
+
+  it('finds a mode file of Hoth’s own beside the bundled stages', async () => {
+    const lv = await loadLevel('hoth');
+    expect(lv.stages.galacticAssault).toBe(stagesOf(rb, 'hoth', 'galacticAssault'));
+    expect(hothModeFiles()).toEqual(expect.any(Array));
+    expect(hothModeFiles().every((f) => /\/hoth\.[a-zA-Z]+\.json$/.test(f) && !/lighting|stages/.test(f))).toBe(true);
+  });
+
+  it('reads the kits and the Arcade', () => {
+    expect(kitsOf(rb).planetaryBattles.rows.length).toBeGreaterThan(50);
+    expect(arcadeOf(rb).params.Team1AISize.values).toContain(20);
   });
 
   it('reads the squads, and their words beside the strings', () => {

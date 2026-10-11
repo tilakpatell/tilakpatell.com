@@ -25,7 +25,9 @@
 // On the node renderer (WebGPU, or the node renderer on WebGL 2) a pack with
 // a recipes.json (scripts/bf2017-recipes.mjs, lane Q1) draws its game meshes
 // with the game's own surface shader (src/lib/three/surface/); the classic
-// renderer, or a pack without one, keeps the GLB's materials. Their sun (a
+// renderer, or a pack without one, keeps the GLB's materials. A pack with a
+// variations.json (lane colour) draws each varied mesh in the game's
+// variation for this level. Their sun (a
 // leaf's translucency, hair's lobes, a head's scattering) follows the
 // scene's first directional light.
 
@@ -34,6 +36,7 @@ import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
 import { packUrl, wanted } from './levelPack.js';
+import { variationsIndex } from './levelVariations.js';
 import { createLevelScene } from './levelScene.js';
 import { createLevelStream } from './levelStream.js';
 import { createColliders } from './colliders.js';
@@ -147,6 +150,13 @@ const recipesFor = (world, pack) =>
     .then((b) => recipesIndex(pack, JSON.parse(new TextDecoder().decode(b))))
     .catch(() => null);
 
+// The pack's variations for the loader (null without a variations.json:
+// scripts/bf2017-variations.mjs, lane colour)
+const variationsFor = (world, pack) =>
+  bytesOf(world)('variations.json')
+    .then((b) => variationsIndex(pack, JSON.parse(new TextDecoder().decode(b))))
+    .catch(() => null);
+
 // The scene's sun (its first directional light) as the game material takes
 // it: a direction toward the sun and its colour; null without one
 const _a = { x: 0, y: 0, z: 0 };
@@ -177,8 +187,9 @@ function findSun(scene) {
 async function gameMaterials(world, pack, renderer, tier, scene) {
   // (low draws the GLB as it is: nothing to swap or fetch)
   if (!renderer?.isWebGPURenderer || tier === 'low') return { recipes: null, materialFor: null };
-  const [recipes, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }] = await Promise.all([
+  const [recipes, variations, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }] = await Promise.all([
     recipesFor(world, pack),
+    variationsFor(world, pack),
     import('../../../../lib/three/surface/hair.js'),
     import('../../../../lib/three/surface/gameMaterial.js'),
     import('../../../../lib/three/light/three.js'),
@@ -186,7 +197,7 @@ async function gameMaterials(world, pack, renderer, tier, scene) {
   if (!recipes) return { recipes: null, materialFor: null };
   const [make, three] = await Promise.all([loadSurfaceMaterial(), loadThree()]);
   const sun = createSunUniforms(three, sunOf(scene) ?? {});
-  return { recipes, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
+  return { recipes, variations, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
 }
 
 export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null }) {
@@ -238,10 +249,10 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       startEngine(pack).catch((e) => {
         if (import.meta.env?.DEV) console.warn('level physics failed', world, e);
       });
-      const { recipes, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
+      const { recipes, variations = null, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
       sun = shared;
       if (gone) return;
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations });
       level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when

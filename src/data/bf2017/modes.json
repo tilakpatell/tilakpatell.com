@@ -21,6 +21,10 @@
     "id": "ID_RP_GAMEMODE_BLAST",
     "text": "Blast"
    },
+   "strike": {
+    "id": "#312DD139",
+    "text": "Strike"
+   },
    "supremacy": {
     "id": "ID_RP_GAMEMODE_MODE1",
     "text": "Supremacy"
@@ -293,6 +297,7 @@
     "galacticAssault",
     "hvv",
     "blast",
+    "strike",
     "supremacy"
    ]
   },
@@ -565,6 +570,7 @@
     "galacticAssault",
     "hvv",
     "blast",
+    "strike",
     "supremacy",
     "showdown",
     "coop"

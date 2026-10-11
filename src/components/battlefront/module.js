@@ -11,8 +11,9 @@
 // through world.do. `window.__battlefront` is the same door for
 // scripts/battlefront-check.mjs: { view(), do(action, arg) } with 'deploy'
 // { classId }, 'pick' id, 'spawn' a squadmate's id (null for the HQ),
-// 'advance' seconds, 'win', 'lose', 'weather' name, 'gpu', 'ragdolls' (how
-// many bodies fall, lie and wait: figures/ragdolls.js).
+// 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
+// screen), 'weather' name, 'gpu', 'ragdolls' (how many bodies fall, lie
+// and wait: figures/ragdolls.js).
 
 import * as THREE from 'three';
 import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf } from '../../lib/battlefront/rulebook.js';
@@ -229,6 +230,7 @@ export default {
           }
           case 'win':
           case 'lose':
+          case 'die':
             sim.force(action, PLAYER_TEAM);
             rt.events.emit('hud', snapshot());
             return { ok: true };
