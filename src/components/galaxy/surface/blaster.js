@@ -25,7 +25,7 @@
 import * as THREE from 'three';
 import { scatter } from '../../../lib/combat/accuracy';
 import { BOLT_SPEED, createBolts, segCapsule } from '../../../lib/combat/bolt';
-import { createBoltMeshes } from '../../../lib/three/combat/bolts';
+import { createBoltMeshes } from '../../../lib/three/combat/boltsNodes';
 import { boltSolids } from './solids';
 
 const RANGE = 90;

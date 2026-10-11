@@ -35,6 +35,8 @@ export const SITES = {
   tatooine: {
     // lit as the game lights its level (src/data/bf2017/light/tatooine.json, gameLit.js)
     gameLight: 'tatooine',
+    // the record's picture on the node renderer (src/data/bf2017/light/tatooine.picture.json, applyGameLight)
+    picture: 'tatooine.picture.json',
     place: 'The Jundland Wastes',
     line: 'Two suns, and sand to the edge of the world.',
     sky: {

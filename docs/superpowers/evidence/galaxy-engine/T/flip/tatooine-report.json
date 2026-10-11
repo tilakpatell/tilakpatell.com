@@ -1,0 +1,54 @@
+{
+ "route": "/galaxy/tatooine/surface",
+ "clock": "2026-10-08T12:00:00.000Z",
+ "quality": "high",
+ "adapterFlag": "swiftshader",
+ "before": {
+  "ref": "origin/main",
+  "sha": "9fc4fce9",
+  "extra": 0,
+  "backend": "webgl",
+  "onWebGPU": false,
+  "shading": "glsl",
+  "adapter": true,
+  "errors": [],
+  "views": [
+   "open"
+  ]
+ },
+ "webgl": {
+  "extra": 0,
+  "backend": "nodes-webgl",
+  "onWebGPU": false,
+  "shading": "nodes",
+  "adapter": true,
+  "errors": [],
+  "skipped": null
+ },
+ "webgpu": {
+  "failed": "webgpu: the world never came on"
+ },
+ "rows": [
+  {
+   "view": "open",
+   "leg": "webgl",
+   "backend": "nodes-webgl",
+   "mad": [
+    0.30216015625,
+    0.2995439453125,
+    0.2917998046875
+   ],
+   "off": 0.0000517578125,
+   "psnr": 50.71116185229215,
+   "pass": true,
+   "skipped": null,
+   "errors": 0
+  },
+  {
+   "view": "open",
+   "leg": "webgpu",
+   "backend": "?",
+   "note": "failed: webgpu: the world never came on"
+  }
+ ]
+}

@@ -2,9 +2,8 @@
 // edge, both faces of a card lit as one, and the wind in a crown, as node
 // hooks (./hookNodes.js) on node materials, with the same names, arguments
 // and uniforms (uniform nodes under the GLSL's names: userData.wind.uWindTime…).
-// spherifyNormals and liftNormals are foliage.js's, copied (they're geometry,
-// not shading): importing them would bring its GLSL into a 'nodes' world's
-// closure; foliage.js re-exports these once its last GLSL caller has moved.
+// spherifyNormals and liftNormals are geometry, not shading:
+// ./foliageNormals.js's, re-exported (as foliage.js does).
 //
 //   spherifyNormals(geometry, opts), liftNormals(geometry, opts)   (pure)
 //   wrapLighting(material, { wrap, backScatter })   → the node material
@@ -16,53 +15,9 @@
 // what's returned.
 
 import * as THREE from 'three';
+export { liftNormals, spherifyNormals } from './foliageNormals';
 import { BRDF_Lambert, attribute, clamp, diffuseColor, diffuseContribution, dot, mat3, modelWorldMatrix, normalView, normalViewGeometry, normalize, sin, transpose, vec2, vec3, vec4 } from 'three/tsl';
 import { asNode, follow, instanceMatrixOf, onDirect, onNormal, onPosition } from './hookNodes';
-
-const UP = new THREE.Vector3(0, 1, 0);
-
-export function spherifyNormals(geometry, { centre = null, radii = null, keep = 0.25 } = {}) {
-  const pos = geometry.attributes.position;
-  if (!geometry.attributes.normal) geometry.computeVertexNormals();
-  const nrm = geometry.attributes.normal;
-  let c = centre;
-  let r = radii;
-  if (!c || !r) {
-    geometry.computeBoundingBox();
-    const box = geometry.boundingBox;
-    c ??= box.getCenter(new THREE.Vector3());
-    r ??= box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
-  }
-  const inv = new THREE.Vector3(1 / Math.max(1e-6, r.x), 1 / Math.max(1e-6, r.y), 1 / Math.max(1e-6, r.z));
-  const v = new THREE.Vector3();
-  const n = new THREE.Vector3();
-  for (let i = 0; i < pos.count; i++) {
-    v.fromBufferAttribute(pos, i).sub(c).multiply(inv);
-    if (v.lengthSq() < 1e-12) v.copy(UP);
-    v.normalize();
-    n.fromBufferAttribute(nrm, i);
-    v.multiplyScalar(1 - keep).addScaledVector(n, keep);
-    if (v.lengthSq() < 1e-12) v.copy(UP);
-    v.normalize();
-    nrm.setXYZ(i, v.x, v.y, v.z);
-  }
-  nrm.needsUpdate = true;
-  return geometry;
-}
-
-export function liftNormals(geometry, { keep = 0.25 } = {}) {
-  if (!geometry.attributes.normal) geometry.computeVertexNormals();
-  const nrm = geometry.attributes.normal;
-  const n = new THREE.Vector3();
-  for (let i = 0; i < nrm.count; i++) {
-    n.fromBufferAttribute(nrm, i).multiplyScalar(keep).addScaledVector(UP, 1 - keep);
-    if (n.lengthSq() < 1e-12) n.copy(UP);
-    n.normalize();
-    nrm.setXYZ(i, n.x, n.y, n.z);
-  }
-  nrm.needsUpdate = true;
-  return geometry;
-}
 
 // ── light that wraps ──
 

@@ -1,0 +1,520 @@
+{
+ "view": {
+  "vw": 1280,
+  "vh": 800,
+  "vdpr": 1
+ },
+ "quality": "high",
+ "gpu": "default",
+ "report": {
+  "surface": {
+   "backend": "default",
+   "drawnOn": "webgl",
+   "rows": [
+    {
+     "phase": "load",
+     "secs": 19.9,
+     "frames": 1066,
+     "fps": 56.3,
+     "p50": 17.4,
+     "p95": 18.1,
+     "p99": 21.3,
+     "max": 235,
+     "over50": 3,
+     "over100": 2,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 0,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 235,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 219,
+         "fn": "http://127.0.0.1:5294/src/main.jsx",
+         "url": "src/main.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 169,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 165,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 735
+        }
+       ]
+      },
+      {
+       "ms": 53,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 43,
+         "fn": "http://127.0.0.1:5294/src/pages/GalaxySurface.jsx",
+         "url": "src/pages/GalaxySurface.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 47,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 38,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "settle",
+     "secs": 4,
+     "frames": 3254,
+     "fps": 813.5,
+     "p50": 0.6,
+     "p95": 4.2,
+     "p99": 8.4,
+     "max": 119,
+     "over50": 4,
+     "over100": 1,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 0,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 1,
+     "worst": [
+      {
+       "ms": 119,
+       "links": 0,
+       "tex": 9,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 3,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 34,
+         "fn": "http://127.0.0.1:5294/src/runtime/browser.js",
+         "url": "src/runtime/browser.js",
+         "at": 0
+        },
+        {
+         "ms": 83,
+         "fn": "import.then",
+         "url": "src/runtime/index.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 69,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 23,
+         "fn": "http://127.0.0.1:5294/src/pages/Galaxy.jsx",
+         "url": "src/pages/Galaxy.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 59,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 57,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 35,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 735
+        }
+       ]
+      },
+      {
+       "ms": 45,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "idle",
+     "secs": 6,
+     "frames": 1580,
+     "fps": 266.5,
+     "p50": 0.7,
+     "p95": 3.8,
+     "p99": 8.8,
+     "max": 2649,
+     "over50": 5,
+     "over100": 5,
+     "links": 5,
+     "mid": 0,
+     "texMB": 6.6,
+     "bufMB": 0.1,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 2649,
+       "links": 2,
+       "tex": 2,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 2640,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 661,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 114,
+         "fn": "Promise.resolve",
+         "url": "src/lib/three/gameLut.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 453,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 55,
+         "fn": "http://127.0.0.1:5294/src/components/galaxy/surface/scene.js",
+         "url": "src/components/galaxy/surface/scene.js",
+         "at": 0
+        },
+        {
+         "ms": 165,
+         "fn": "import.then",
+         "url": "src/components/galaxy/surface/module.js",
+         "at": -1
+        },
+        {
+         "ms": 441,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 229,
+       "links": 2,
+       "tex": 4,
+       "texMB": 6.6,
+       "bufMB": 0.1,
+       "glMs": 10,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 55,
+         "fn": "http://127.0.0.1:5294/src/components/galaxy/surface/scene.js",
+         "url": "src/components/galaxy/surface/scene.js",
+         "at": 0
+        },
+        {
+         "ms": 165,
+         "fn": "import.then",
+         "url": "src/components/galaxy/surface/module.js",
+         "at": -1
+        },
+        {
+         "ms": 441,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 154,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 21,
+         "fn": "ReadableStreamDefaultReader.read.then",
+         "url": "src/lib/net/assetFetch.js",
+         "at": -1
+        },
+        {
+         "ms": 9,
+         "fn": "ReadableStreamDefaultReader.read.then",
+         "url": "src/lib/net/assetFetch.js",
+         "at": -1
+        },
+        {
+         "ms": 11,
+         "fn": "ReadableStreamDefaultReader.read.then",
+         "url": "src/lib/net/assetFetch.js",
+         "at": -1
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "phase": "move",
+     "secs": 7.6,
+     "frames": 5023,
+     "fps": 663.6,
+     "p50": 0.7,
+     "p95": 3,
+     "p99": 13.1,
+     "max": 257,
+     "over50": 18,
+     "over100": 9,
+     "links": 63,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 0,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 257,
+       "links": 5,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 11,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        },
+        {
+         "ms": 38,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 146,
+       "links": 1,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 47,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        },
+        {
+         "ms": 23,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        },
+        {
+         "ms": 48,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 132,
+       "links": 8,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 14,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        },
+        {
+         "ms": 68,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 128,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 21,
+         "fn": "ReadableStreamDefaultReader.read.then",
+         "url": "src/lib/net/assetFetch.js",
+         "at": -1
+        },
+        {
+         "ms": 89,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 124,
+       "links": 3,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 70,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        },
+        {
+         "ms": 29,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.module-BbzU0yif.js",
+         "at": -1
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "errors": [],
+   "failed": null,
+   "secs": 38,
+   "readyS": 19.9,
+   "heapMB": 258,
+   "slips": {
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh": 1,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"PMREMGGXConvolution\" on Mesh": 1
+   }
+  }
+ }
+}

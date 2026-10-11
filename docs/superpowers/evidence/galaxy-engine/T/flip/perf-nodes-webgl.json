@@ -1,0 +1,561 @@
+{
+ "view": {
+  "vw": 1280,
+  "vh": 800,
+  "vdpr": 1
+ },
+ "quality": "high",
+ "gpu": "webgl",
+ "report": {
+  "surface": {
+   "backend": "webgl",
+   "drawnOn": "nodes-webgl",
+   "rows": [
+    {
+     "phase": "load",
+     "secs": 19,
+     "frames": 1024,
+     "fps": 56,
+     "p50": 17.4,
+     "p95": 18.3,
+     "p99": 21.5,
+     "max": 244,
+     "over50": 4,
+     "over100": 2,
+     "links": 0,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 0,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 244,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 228,
+         "fn": "http://127.0.0.1:5294/src/main.jsx",
+         "url": "src/main.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 178,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 174,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 703
+        }
+       ]
+      },
+      {
+       "ms": 71,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 59,
+         "fn": "http://127.0.0.1:5294/src/pages/GalaxySurface.jsx",
+         "url": "src/pages/GalaxySurface.jsx",
+         "at": 0
+        }
+       ]
+      },
+      {
+       "ms": 54,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 49,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 703
+        }
+       ]
+      },
+      {
+       "ms": 35,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "settle",
+     "secs": 4,
+     "frames": 941,
+     "fps": 334.9,
+     "p50": 0.8,
+     "p95": 5.5,
+     "p99": 15,
+     "max": 463,
+     "over50": 4,
+     "over100": 3,
+     "links": 3,
+     "mid": 0,
+     "texMB": 12.6,
+     "bufMB": 0.1,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 1,
+     "worst": [
+      {
+       "ms": 463,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 9,
+         "fn": "http://127.0.0.1:5294/src/components/galaxy/surface/scene.js",
+         "url": "src/components/galaxy/surface/scene.js",
+         "at": 0
+        },
+        {
+         "ms": 290,
+         "fn": "import.then",
+         "url": "src/components/galaxy/surface/module.js",
+         "at": -1
+        },
+        {
+         "ms": 456,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 415,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 1,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 11,
+         "fn": "http://127.0.0.1:5294/node_modules/.vite/deps/three_webgpu.js?v=01f69140",
+         "url": "node_modules/.vite/deps/three_webgpu.js",
+         "at": 0
+        },
+        {
+         "ms": 401,
+         "fn": "import.then",
+         "url": "src/runtime/webgpu.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 304,
+       "links": 3,
+       "tex": 5,
+       "texMB": 12.6,
+       "bufMB": 0.1,
+       "glMs": 30,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 9,
+         "fn": "http://127.0.0.1:5294/src/components/galaxy/surface/scene.js",
+         "url": "src/components/galaxy/surface/scene.js",
+         "at": 0
+        },
+        {
+         "ms": 290,
+         "fn": "import.then",
+         "url": "src/components/galaxy/surface/module.js",
+         "at": -1
+        },
+        {
+         "ms": 456,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 81,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 74,
+         "fn": "performWorkUntilDeadline",
+         "url": "node_modules/.vite/deps/react-dom_client.js",
+         "at": 703
+        }
+       ]
+      },
+      {
+       "ms": 43,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "idle",
+     "secs": 6,
+     "frames": 58,
+     "fps": 11.9,
+     "p50": 68.5,
+     "p95": 292.7,
+     "p99": 460.6,
+     "max": 461,
+     "over50": 31,
+     "over100": 23,
+     "links": 11,
+     "mid": 0,
+     "texMB": 344,
+     "bufMB": 10.8,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 461,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 125,
+         "fn": "Promise.resolve",
+         "url": "src/lib/three/gameLut.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 426,
+       "links": 1,
+       "tex": 6,
+       "texMB": 14,
+       "bufMB": 0.2,
+       "glMs": 382,
+       "drawMs": 0,
+       "slow": "getProgramParameter 377ms ",
+       "scripts": [
+        {
+         "ms": 13,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 384,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 293,
+       "links": 1,
+       "tex": 11,
+       "texMB": 42.8,
+       "bufMB": 0.6,
+       "glMs": 78,
+       "drawMs": 0,
+       "slow": "texSubImage2D 38ms getProgramParameter 28ms ",
+       "scripts": [
+        {
+         "ms": 13,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 278,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 290,
+       "links": 1,
+       "tex": 10,
+       "texMB": 130.5,
+       "bufMB": 0.6,
+       "glMs": 271,
+       "drawMs": 0,
+       "slow": "texSubImage2D 165ms getProgramParameter 21ms ",
+       "scripts": [
+        {
+         "ms": 288,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 180,
+       "links": 2,
+       "tex": 8,
+       "texMB": 21,
+       "bufMB": 6.9,
+       "glMs": 124,
+       "drawMs": 0,
+       "slow": "getProgramParameter 31ms texSubImage2D 27ms ",
+       "scripts": [
+        {
+         "ms": 33,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 16,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 9,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "phase": "move",
+     "secs": 12.8,
+     "frames": 65,
+     "fps": 7.2,
+     "p50": 105.4,
+     "p95": 130.9,
+     "p99": 2908.1,
+     "max": 2908,
+     "over50": 53,
+     "over100": 47,
+     "links": 82,
+     "mid": 0,
+     "texMB": 252.5,
+     "bufMB": 27.5,
+     "draws": 55,
+     "ktris": 228,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 2908,
+       "links": 1,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0.1,
+       "glMs": 1512,
+       "drawMs": 0,
+       "slow": "getProgramParameter 1512ms ",
+       "scripts": [
+        {
+         "ms": 10,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 2881,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 244,
+       "links": 6,
+       "tex": 2,
+       "texMB": 42.6,
+       "bufMB": 1.7,
+       "glMs": 72,
+       "drawMs": 0,
+       "slow": "getProgramParameter 33ms ",
+       "scripts": [
+        {
+         "ms": 45,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 52,
+         "fn": "Promise.resolve",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 14,
+         "fn": "go",
+         "url": "src/lib/three/gpuWork.js",
+         "at": 2447
+        }
+       ]
+      },
+      {
+       "ms": 185,
+       "links": 3,
+       "tex": 2,
+       "texMB": 2.3,
+       "bufMB": 0.2,
+       "glMs": 41,
+       "drawMs": 0,
+       "slow": "getProgramParameter 21ms ",
+       "scripts": [
+        {
+         "ms": 12,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 23,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 9,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 131,
+       "links": 1,
+       "tex": 6,
+       "texMB": 28,
+       "bufMB": 0.4,
+       "glMs": 91,
+       "drawMs": 0,
+       "slow": "getProgramParameter 82ms ",
+       "scripts": [
+        {
+         "ms": 16,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 9,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 93,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 131,
+       "links": 3,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0.4,
+       "glMs": 25,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 19,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 12,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        },
+        {
+         "ms": 38,
+         "fn": "Scheduler.yield.then",
+         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
+         "at": -1
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "errors": [],
+   "failed": null,
+   "secs": 42,
+   "readyS": 19,
+   "heapMB": 370,
+   "slips": {}
+  }
+ }
+}

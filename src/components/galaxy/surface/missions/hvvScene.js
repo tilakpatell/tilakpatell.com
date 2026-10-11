@@ -30,6 +30,7 @@ import { groundAt } from '../walker';
 import { SABER_COLORS, heroById } from '../../heroes';
 import { gameHealth } from '../abilityRules';
 import { groundFor } from './arenas';
+import { wallMaterial } from '../nodes/hvv';
 import { RULES, canDeploy, chooseSide as pick, deploy as deployAt, endHvv, hitFighter, hvvView, newHvv, stepHvv, youDown as putDown } from './hvv';
 
 const EYE = 1.45; // metres: where a bolt leaves from
@@ -64,18 +65,6 @@ export function wallGeometry(points, heightAt, high = WALL) {
   g.setIndex(index);
   return g;
 }
-const WALL_VERT = `
-attribute float v;
-varying float vV;
-void main() { vV = v; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const WALL_FRAG = `
-varying float vV;
-uniform vec3 uColor;
-uniform float uTime;
-void main() {
-  float a = (1.0 - vV) * (1.0 - vV) * (0.32 + 0.08 * sin(uTime * 1.6 + vV * 6.0));
-  gl_FragColor = vec4(uColor * 1.6, a);
-}`;
 
 // a side's chevron, or the target mark (a ring round a dot, the game's)
 function sprite(colour, kind) {
@@ -132,7 +121,7 @@ export function createHvvMission({ parent, world, blaster, mission, emit, say, s
   const yours = (n) => (n / (gameHealth(b?.fighters[b.you.id]?.hero ?? who()) ?? 700)) * 100;
 
   // ── the edge ──
-  const wall = new THREE.Mesh(wallGeometry(ground.points, (x, z) => groundAt(world, x, z)), new THREE.ShaderMaterial({ vertexShader: WALL_VERT, fragmentShader: WALL_FRAG, uniforms: { uColor: { value: new THREE.Color('#bcd8ff') }, uTime: { value: 0 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  const wall = new THREE.Mesh(wallGeometry(ground.points, (x, z) => groundAt(world, x, z)), wallMaterial());
   wall.renderOrder = 5;
   group.add(wall);
 

@@ -32,7 +32,7 @@
 // panoramaUV, mirrored in the shader. The model's disc stays on top (the
 // painted sun is clipped at 1).
 //
-// createSky(entry, { radius, panorama }) → Promise<{ mesh, uniforms, set(params), update(camera), envTexture(renderer), dispose }>
+// createSky(entry, { radius, panorama }) → Promise<{ mesh, uniforms, set(params), setHorizon(h), setPanorama({ texture, rotation, horizon }), update(camera), envTexture(renderer), dispose }>
 // skyUniforms(params) → the uniforms' plain values   (pure)
 // skyRadiance(dir, values, { disc }) → [r, g, b]   (pure: the shader's sky, for the gain and the tests)
 // panoramaGain(params, horizon) → the panorama's scale to the model's horizon   (pure)
@@ -142,6 +142,11 @@ export async function createSky(entry, { radius = 1000, panorama = null } = {}) 
     ground: uniform(new THREE.Color(...v.ground)),
     panoramaGain: uniform(panorama?.texture ? panoramaGain(p0, panorama.horizon) : 1),
   };
+  // (the panorama's horizon row the gain is measured against: a weather's
+  // crossfade eases it toward the next panorama's, setPanorama swaps both)
+  let horizon = panorama?.horizon ?? null;
+  let paintNode = null;
+  let paintRotation = null;
   // the optical air mass toward a direction's zenith cosine (Kasten–Young)
   const airMass = (c) => {
     const z = acos(clamp(c, 0, 1));
@@ -153,11 +158,15 @@ export async function createSky(entry, { radius = 1000, panorama = null } = {}) 
   if (panorama?.texture) {
     const [minX, minY, maxX, maxY] = panorama.uv ?? [0, 0, 1, 1];
     const rotation = uniform(panorama.rotation ?? 0);
+    paintRotation = rotation;
+    // (the base node, made now: each sample is a clone that reads its value,
+    // so setPanorama's texture reaches the shader however it was built)
+    paintNode = texture(panorama.texture);
     painted = (dir) => {
       const az = atan(dir.x, dir.z).div(Math.PI * 2);
       const up = asin(clamp(dir.y, 0, 1)).div(Math.PI / 2);
       const uv = vec2(fract(rotation.sub(az)).mul(maxX - minX).add(minX), up.oneMinus().mul(maxY - minY).add(minY));
-      return texture(panorama.texture, uv).level(0).rgb.mul(u.panoramaGain);
+      return paintNode.sample(uv).level(0).rgb.mul(u.panoramaGain);
     };
   }
   const skyColor = Fn(([dir]) => {
@@ -203,13 +212,27 @@ export async function createSky(entry, { radius = 1000, panorama = null } = {}) 
     for (const k of ['betaM', 'mieG', 'heightR', 'heightM', 'luminance', 'sunSize', 'sunScale', 'cover']) u[k].value = w[k];
     u.cloud.value.setRGB(...w.cloud);
     u.ground.value.setRGB(...w.ground);
-    if (panorama?.texture) u.panoramaGain.value = panoramaGain(p, panorama.horizon);
+    if (horizon) u.panoramaGain.value = panoramaGain(p, horizon);
   };
   return {
     mesh,
     material,
     uniforms: u,
     set,
+    // the horizon row the gain is measured against, for a crossfade to ease
+    // (takes hold at the next set)
+    setHorizon(h) {
+      if (paintNode && h) horizon = h;
+    },
+    // the next weather's painted sky in place of this one's, no new shader:
+    // false where the sky was built without a panorama (the branch is not in it)
+    setPanorama(next) {
+      if (!paintNode || !next?.texture) return false;
+      paintNode.value = next.texture;
+      if (next.rotation !== undefined) paintRotation.value = next.rotation;
+      if (next.horizon) horizon = next.horizon;
+      return true;
+    },
     // the sphere stays round the camera, inside its far plane
     update(camera) {
       if (!camera) return;

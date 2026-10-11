@@ -4,7 +4,7 @@
 // tops sheared off; and the glass the bombing left of the plains.
 
 import * as THREE from 'three';
-import { part, upright } from '../kit';
+import { part, upright } from '../kitCore';
 import { rng } from '../noise';
 
 const { PI } = Math;
