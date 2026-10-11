@@ -22,3 +22,12 @@ Dropped on mid: sb_dirtdecals_03 ×2, sb_dirtdecals_01 ×6, decalmesh_hitscorch_
 
 Dropped on high: sb_dirtdecals_03 ×2, sb_dirtdecals_01 ×6, decalmesh_hitscorch_01 ×19, sb_dirtdecals_02 ×7, sb_dirtdecals_05 ×13, sb_dirtdecals_06 ×10, sb_dirtdecals_04 ×21, deathstar_debris_m_03 ×8, turretturbolaser_01 ×23, stardestroyer_hangarprimary_door_01 ×1, stardestroyer_tractorbeam_01 ×2, stardestroyer_hangarprimaryentrance_01 ×1, stardestroyer_detailsside_01_right_d ×1, stardestroyer_detailsside_01_d ×1, mc80_largenodule_01 ×1, mc80_engine_module_03 ×2, mc80_mainturret ×1, debris_pipe_xl_01 ×12, stardestroyer_detailshulltop_02 ×1, stardestroyer_detailsfront_01 ×1, stardestroyer_hangarsecondary_01 ×1, stardestroyer_detailshulltop_04 ×1, stardestroyer_detailshulltop_01 ×1, debris_sdreactorpipe_s1024_a_01 ×37
 
+## Variations
+
+Written beside level.json by `node scripts/bf2017-variations.mjs` (the colour lane) from the level's mesh variation databases (`art`, `art_largegamemode`, `level_design`, `spacebattle`) and the object variations they name; the level loader applies them through the game material.
+
+| meshes | in a database | with variations | variations | rule-decided | missing textures |
+|---|---|---|---|---|---|
+| 93 | 93 | 6 | 6 | 6 | 12 |
+
+The level's own rule decided: `deathstar_debris_l_04_mesh` → `DeathStar_Debris_L_04_DarkVariation`, `deathstar_debris_l_04_mirrorx_mesh` → `DeathStar_Debris_L_04_MirrorX_DarkVariation`, `deathstar_debris_l_03_mesh` → `DeathStar_Debris_L_03_GreyVariation`, `debris_pipe_xl_03_mesh` → `Debris_Pipe_XL_03_Red_variation`, `deathstar_debris_l_02_mesh` → `DeathStar_Debris_L_02_DarkVariation`, `debris_pipe_xl_02_mesh` → `Debris_Pipe_XL_02_Red_variation`.

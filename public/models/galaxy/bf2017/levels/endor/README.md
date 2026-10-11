@@ -60,3 +60,13 @@ The game's shapes (`node scripts/bf2017-physics.mjs`).
 | 3,2 | 1805 | 114224 |
 | 2,-2 | 1698 | 91906 |
 <!-- /physics -->
+
+## Variations
+
+Written beside level.json by `node scripts/bf2017-variations.mjs` (the colour lane) from the level's mesh variation databases (`Endor_01`, `shared_art`, `sunny`) and the object variations they name; the level loader applies them through the game material.
+
+| meshes | in a database | with variations | variations | rule-decided | missing textures |
+|---|---|---|---|---|---|
+| 417 | 417 | 138 | 155 | 121 | 37 |
+
+The level's own rule decided (the first 12 of 121): `forestbase_treemedium_02_bottom_mesh` → `ForestBase_TreeMedium_02_Bottom_Rain`, `ms_forestbase_fern_01_b_mesh` → `MS_ForestBase_Fern_01_B_Rain`, `forestbase_treemedium_02_top_mesh` → `ForestBase_TreeMedium_02_Top_Rain`, `lightground_01_mesh` → `LightGround_01_Lit`, `forestbase_backdropcloud_01_a_mesh` → `ForestBase_BackdropCloud_01_A_Night`, `forestbase_rockwall_01_straight_cap_mesh` → `ForestBase_RockWall_01_Straight_Cap_Rain`, `cratelarge_2x2_03_mesh` → `CrateLarge_2x2_03_Rain`, `cargo_shuttle_container_02_mesh` → `Cargo_Shuttle_Container_02_Rain`, `bunkersystem_01_light_01_mesh` → `BunkerSystem_01_Light_01_Lit`, `forestbase_treelarge_01_top_clear_01_mesh` → `ForestBase_TreeLarge_01_Top_Clear_01_Rain`, `lightpole_xl_01_light_b_mesh` → `LightPole_XL_01_Light_B_Lit`, `forestswamp_treelarge_02_bottom_mesh` → `ForestSwamp_TreeLarge_02_Bottom_Rain`.

@@ -54,3 +54,13 @@ The game's shapes (`node scripts/bf2017-physics.mjs`).
 | -2,-1 | 1448 | 32368 |
 | -2,3 | 1414 | 28516 |
 <!-- /physics -->
+
+## Variations
+
+Written beside level.json by `node scripts/bf2017-variations.mjs` (the colour lane) from the level's mesh variation databases (`Hoth_01`, `content`) and the object variations they name; the level loader applies them through the game material.
+
+| meshes | in a database | with variations | variations | rule-decided | missing textures |
+|---|---|---|---|---|---|
+| 123 | 123 | 12 | 18 | 9 | 14 |
+
+The level's own rule decided: `box_m_01_a_mesh` → `Box_M_01_A_Snow`, `box_m_02_mesh` → `Box_M_02_Snow`, `floorboards_01_mesh` → `FloorBoards_01_Hoth`, `machinegenerator_01_mesh` → `MachineGenerator_01_Snow`, `transporterpersonel_01_mesh` → `TransporterPersonel_01_Lit`, `machinepump_02_mesh` → `MachinePump_02_Snow`, `atat_wreck_01_mesh` → `ATAT_Wreck_01_Snow`, `container_s_01_mesh` → `Container_S_01_Snow`, `gasflask_01_mesh` → `GasFlask_01_Snow`.
