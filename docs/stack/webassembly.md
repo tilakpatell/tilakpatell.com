@@ -1,0 +1,57 @@
+# WebAssembly
+
+**Version** the browser’s own; the ports are Rust (stable, edition 2021) built by `wasm-pack` 0.15 with `wasm-bindgen` · **Page owner** `src/lib/wasm/` (and `wasm/` for the Rust sources) · **Decision** none recorded; the reasons are the picture-everywhere design’s §7 (`docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md`) and lane X2’s plan
+
+## What it is, and why it is here
+
+Code compiled ahead to a compact bytecode the browser runs near native speed, with no garbage collector and SIMD where the browser has it. The site runs three modules made so by others, because there is no JavaScript that does their work as fast: Rapier (the physics), the Basis Universal transcoder (every KTX2 texture) and the meshopt decoder (every GLB). It is not a way to run the game’s engine: there is no Frostbite source to compile (the design’s §7). Lane X2 measured the engine’s own hot paths to see whether any more of them pay as WebAssembly; what it found is under **The ports** below.
+
+## Where it is used
+
+| module | what it does | build(s) | loaded by | when |
+| --- | --- | --- | --- | --- |
+| Rapier ([physics-rapier.md](physics-rapier.md)) | the physics | SIMD and plain, inlined in their `-compat` packages | `src/lib/physics/engine.js` | the first `createPhysics` or `preload` (a world that drives or has the engine) |
+| Basis transcoder (three’s `examples/jsm/libs/basis/`) | KTX2 → the GPU’s own compressed format | one (no SIMD build is published) | `src/lib/three/gltf.js`’s `ktx2Loader`, through `src/lib/three/wasmDecoders.js`’s `basisUp` | the first texture or model that carries KTX2, or a world’s `preloadDecoders({ basis: true })` |
+| meshopt decoder (three’s `examples/jsm/libs/meshopt_decoder.module.js`) | a GLB’s compressed buffers | SIMD and plain, inlined, picked by the module itself on the same probe | `src/lib/three/gltf.js`, through `meshoptUp` | the first GLB parsed, or `preloadDecoders()` |
+
+## How the site uses it
+
+- **Features asked once, by hand.** `src/lib/wasm/features.js`: three probes a few bytes long (wasm-feature-detect’s, MIT) handed to `WebAssembly.validate`, nothing compiled. `simd` picks Rapier’s build; meshopt asks the same probe itself. `threads` needs `SharedArrayBuffer` and a cross-origin-isolated page, which GitHub Pages can’t give (no COOP and COEP headers), so it is false on the live site and no module asks for it.
+- **Every module comes up through `load`** (`src/lib/wasm/load.js`): once, the same promise to every caller; a failure is a `WasmError` naming the module and the reason (`unsupported`, `load`, `timeout`), and isn’t kept, so the next ask tries again; a load that neither finishes nor fails within its time (20 s; meshopt 10 s) rejects rather than leaving a world on its loading screen. `status()` says each module’s state, its build and how long it took (`window.__wasm` in development).
+- **The fallbacks.** Rapier: the SIMD build where the probe passes, the plain one where it doesn’t or where the SIMD one won’t come up; neither, and the Battlefront goes on without its engine (the navgrid’s collision, `src/components/battlefront/module.js`). meshopt: its plain build where SIMD isn’t; no WebAssembly at all, and a model fails by name. Basis: the binary is compiled once on the main thread before any worker is handed it (a worker whose instantiation fails never answers, and the textures it holds would wait for good); one that can’t be had is a `WasmError`, and a level’s map that can’t be had is drawn without it (`levelGltf.js`’s catch).
+- **A failed world says why.** The runtime keeps `rt.failure` (`{ world, name, message, module }`), so a world that failed for a module says which (`src/runtime/runtime.js`).
+- **Preloaded with the world’s chunk.** A world that draws a level calls `preloadDecoders({ renderer, basis: true })` as its build starts (`src/components/battlefront/module.js`), so the decoders come up beside the level’s first fetches, not behind its first model; Rapier is preloaded and warmed where the world wants its engine (`preload()`).
+
+## The ports (lane X2)
+
+A Rust crate under `wasm/<name>/` stands behind the same interface as the JavaScript it would replace, the JavaScript kept as the fallback, the same tests run against both, and it is kept only when its own before-and-after says it pays. The profile, each candidate’s numbers and the verdicts are in `docs/superpowers/evidence/bf2017-picture/x2/README.md`; this page lists only what shipped.
+
+| port | replaces | kept? |
+| --- | --- | --- |
+| (filled in by the profile; see the evidence) | | |
+
+## What the site does not use, and why
+
+- **Threads** (shared memory, `wasm-bindgen-rayon`): they need a cross-origin-isolated page, and GitHub Pages sends no COOP or COEP header; a service-worker shim that adds them breaks the site’s cross-origin assets (the bucket, the fonts).
+- **`wasm-feature-detect`** (the package): three probes are a dozen lines; the bytes are its, credited in `features.js`.
+- **A port of a game engine**: there is no source to compile; the design’s §7 says why the records are read directly instead.
+- **A Vite plugin for WebAssembly**: Rapier’s and meshopt’s wasm is inlined in their JavaScript; the Basis binary is fetched as an asset by three’s own URL.
+
+## Rules
+
+- A module comes up through `src/lib/wasm/load.js`, never a bare `WebAssembly.instantiate` a world awaits (`src/lib/wasm/load.test.js`, `src/lib/physics/engine.test.js`, `src/lib/three/wasmDecoders.test.js`; nothing measures a new caller).
+- Every path is tested: the SIMD build, the plain one, a failure, a timeout (the same tests).
+- A port keeps its JavaScript as the fallback, behind the same interface, and is run by the same tests.
+- A port ships only with its own before-and-after in the evidence.
+
+## Upgrading
+
+Rapier: [physics-rapier.md](physics-rapier.md). The Basis transcoder and the meshopt decoder come with `three` ([three.md](three.md)); after a three upgrade run `npx vitest run src/lib/three/wasmDecoders.test.js`, which decodes a real GLB through both meshopt builds and compiles three’s transcoder.
+
+The Rust toolchain: `rustup target add wasm32-unknown-unknown`, `cargo install wasm-pack`, then `wasm-pack build --target web --release` in the crate’s folder. Last set up: 2026-10-11 (rustc 1.97.0, wasm-pack 0.15.0).
+
+## Gotchas
+
+- **A worker that fails to instantiate never answers.** three’s KTX2 loader hands each worker the transcoder’s binary; one that fails waits for good, and so does every texture it was given. Hence the main-thread compile (`wasmDecoders.js`’s header).
+- **Vitest keeps node_modules in Node’s own module cache**: `vi.resetModules` doesn’t make a new meshopt decoder; the test imports it by a URL with a query (`wasmDecoders.test.js`).
+- **The SIMD probe is a validate, not an instantiate**: a browser that validates SIMD but fails to instantiate the SIMD build (none known) falls to the plain one through `engine.js`’s catch.
