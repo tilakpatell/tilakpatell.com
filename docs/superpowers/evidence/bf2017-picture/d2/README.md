@@ -150,6 +150,10 @@ Ultra’s maps, held to 256 MB (`lod.js`’s `fitMaps`): Tatooine 407.7 MB as th
 
 `bf2017-colour-check.mjs --packs --fix` after the four runs: 4,728 files under the packs, 1,858 colour maps sRGB, 2,828 data maps linear, 42 unknown, 0 wrong; the four packs’ rows stamped by the game’s word (Tatooine 765 of 813, the palace 560 of 568, the pit 130 of 130, Yavin 638 of 643). It would also re-stamp ten rows in packs that are not this lane’s (`sb_fondor/level.json`: 4 rows gaining a word; `kamino/recipes.json`: 6, four of them flipping between sRGB and linear) because `textures.jsonl` now knows those maps. Those rows were put back: their published files are not in this checkout to take the same stamp, and a row that disagrees with its file is what `--published` is for. A finding for the colour lane or those packs’ next run.
 
+### The recipes
+
+Asked for by the orchestrating session on the way (lane T2 tests Tatooine’s level on the node renderer, where a mesh with no recipe keeps its raw GLB material and builds its own program): lane Q1’s `bf2017-recipes.mjs --level <pack> --fetch` over the cached `materials.jsonl`, for each of the four. Maps the recipes want, in the pack: Tatooine 13 of 13, the palace 22 of 22, the pit 12 of 12, Yavin 34 of 36 (two character detail arrays, `TA_CharacterDetail_01_NS` and `_07_NS`, the bucket lacks). The colour check stamped each `recipes.json`’s rows (4,897 files under the packs after the fetch, none wrong).
+
 ### Published
 
-`assets-publish.mjs --only 'models/galaxy/bf2017/levels/tatooine/**,models/galaxy/bf2017/levels/yavin/**'`: 4,575 files sent (3,375 new, 1,200 changed, 983.2 MB), none there already, none failed; the manifest and `.gitignore`’s block rewritten, so the packs’ binaries stay out of git (level.json, the parts’ JSON, the new `variations.json` and the READMEs are in).
+`assets-publish.mjs --only 'models/galaxy/bf2017/levels/tatooine/**,models/galaxy/bf2017/levels/yavin/**'`, twice: the packs, 4,575 files sent (3,375 new, 1,200 changed, 983.2 MB), none there already, none failed; then the recipes’ maps, 169 files (45.2 MB). The manifest and `.gitignore`’s block rewritten each time, so the packs’ binaries stay out of git (level.json, the parts’ JSON, the new `variations.json` and `recipes.json`, and the READMEs are in).
