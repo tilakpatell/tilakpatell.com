@@ -396,9 +396,9 @@ describe('the worlds drawn from the game’s levels', () => {
     const ds = withDistrict(endor, 'deathstar');
     expect(ds.level).toBe('endor/deathstar');
     const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/endor/deathstar/level.json', import.meta.url), 'utf8'));
-    // (landed on the spawn deck: the pack's origin, its floor at 0)
+    // (landed on the game's first team-one spawn point, on the spawn deck at the pack's 0)
     expect(pack.inside).toBe(true);
-    expect(ds.land.at).toEqual([0, 0]);
+    expect(ds.land.at).toEqual([2.1, 35.9]);
     expect([ds.noGround, ds.fall]).toEqual([true, -60]);
     expect([ds.places, ds.life, ds.quests, ds.scatter, ds.weather]).toEqual([[], [], [], [], []]);
     expect(ds.gameLight).toBeNull();

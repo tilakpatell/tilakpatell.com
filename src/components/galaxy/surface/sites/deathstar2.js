@@ -28,9 +28,11 @@ export const DEATHSTAR = {
   id: 'deathstar',
   name: 'The second Death Star',
   level: 'endor/deathstar',
-  land: { at: [0, 0], yaw: 0 },
+  // (on the game's first team-one spawn point, hvv's at (−856.1, 586.4,
+  // −240.6): the spawn area's middle, the pack's origin, is over a gap)
+  land: { at: [2.1, 35.9], yaw: 0 },
   line: 'Inside the half-built battle station over Endor: its corridors, hangars and gantries, the game’s own.',
-  door: { at: [0, 6], r: 2.4, prompt: 'Take the shuttle back down to Endor' },
+  door: { at: [2.1, 41.9], r: 2.4, prompt: 'Take the shuttle back down to Endor' },
   ground: { layers: [], flats: [], pits: [] },
   site: {
     ...ownMap('endor/deathstar').site,
@@ -45,7 +47,7 @@ export const DEATHSTAR = {
     picture: null,
     sky: { zenith: '#050608', horizon: '#0c0e12', haze: 1, hazeColor: '#0c0e12', suns: [{ az: 0.9, el: 1.35, color: '#e8eef8', size: 0, glow: 0 }], clouds: null, bodies: [], stars: 0 },
     // (lit from within: the station's lamps, no sun and none of its shadow)
-    light: { sun: 0.5, sky: '#5a6270', ground: '#1c1e22', ambient: 0.9, shadow: false },
+    light: { sun: 0.5, sky: '#7a8494', ground: '#2a2c32', ambient: 1.6, shadow: false },
     fog: { color: '#0c0e12', density: 0.006 },
   },
 };
