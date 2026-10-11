@@ -9,6 +9,10 @@
 // published to the bucket and credited by the import), and its index row
 // copied into src/data/bf2017/library-used.json, which this reads: a row
 // whose cuts are not published yet draws nothing (the placer says so once).
+// Whether a cut is published is asked of `virtual:bf2017-published`
+// (scripts/library-slice.mjs, lane D3): the paths of the used objects' cuts
+// that src/data/galaxyAssets.json lists, and nothing else of its 16 MB,
+// built from the two files when the module is loaded.
 //
 //   gameKind(name) → 'game:<name>'; isGame(model) → whether it names one
 //   slugOf(name) → the file's name: the last segment's letters and digits
@@ -23,7 +27,7 @@
 //     `game:` spec or row as, or null (not published yet, or rigged: a
 //     placer draws still things), said once a name
 
-import PUBLISHED from '../../../../data/galaxyAssets.json';
+import PUBLISHED from 'virtual:bf2017-published';
 import USED from '../../../../data/bf2017/library-used.json';
 import { gameKind, gameUrl, slugOf } from './bf2017-slug';
 

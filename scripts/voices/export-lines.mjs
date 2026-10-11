@@ -109,9 +109,12 @@ export function voicelineFiles(root, dir = 'src') {
 const here = dirname(fileURLToPath(import.meta.url));
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { runnerImport } = await import('vite');
+  const { default: librarySlice } = await import('../library-slice.mjs');
   const root = resolve(here, '../..');
-  // no config file: the site's plugins (prerender, the icons) have nothing to do here
-  const load = async (path) => (await runnerImport(join(root, path), { root, configFile: false, logLevel: 'error' })).module;
+  // no config file: the site's plugins (prerender, the icons) have nothing to do
+  // here, but the object library imports `virtual:bf2017-published`, which only
+  // librarySlice serves (lane D3), and the ground's sites reach the library
+  const load = async (path) => (await runnerImport(join(root, path), { root, configFile: false, logLevel: 'error', plugins: [librarySlice()] })).module;
   const voiced = await load('src/lib/voiced.js');
   // the site's own lists: the crews, the galaxy, the cockpit, the ground, the worlds' conversations and people
   const siteLines = async () => {
