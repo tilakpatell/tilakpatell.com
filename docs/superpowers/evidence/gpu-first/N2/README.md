@@ -8,17 +8,51 @@ The cloud has no GPU. The node renderer’s WebGL 2 leg runs on SwiftShader (the
 
 | file | what | `_source` |
 | --- | --- | --- |
-| `post-ultra-fsr1-0.77-webgl.png`, `.json` | the lit fixture at ultra, `--upscale 0.77`: over WebGL 2 the upscaler is FSR1 after SMAA (no TRAA there), which runs RCAS itself, so no sharpen pass | `node scripts/light-fixture.mjs --tier ultra --post on --upscale 0.77 --size 800x450 --legs webgl --evidence gpu-first/N2` |
+| `post-ultra-auto-0.77-webgl.png`, `.json` | the lit fixture at ultra, `--upscale 0.77`: over WebGL 2 the upscaler is FSR1 after SMAA (no TRAA there), which runs RCAS itself, so no sharpen pass | `node scripts/light-fixture.mjs --tier ultra --post on --upscale 0.77 --size 800x450 --legs webgl --evidence gpu-first/N2` |
 | `post-ultra-taau-0.77-webgl.png`, `.json` | the same with TAAU at 0.77: TAAU, then the sharpen | `… --upscale taau:0.77 …` |
 | `post-ultra-taau-0.77-nosharpen-webgl.png`, `.json` | the before: lane U’s picture, TAAU without the sharpen and with no mip bias | `… --upscale taau:0.77 --sharpen off …` |
 | `trails-webgl.png`, `trails.json` | the trail check under TAAU at 0.77 | `node scripts/light-fixture.mjs --trails --tier ultra --post on --size 800x450 --legs webgl` |
 | `trails-none-webgl.png`, `trails-none.json` | the same movers with no temporal pass: the control | `… --trails --temporal none …` |
+| `trails-checkbug-webgl.png`, `trails-checkbug.json`, `trails-none-checkbug*` | the check’s first runs, kept: they failed on the check’s own two faults (the skinned figure bound off its bone and drawn on the floor; the crate boxed from its centre plane, so its band clipped its own edge), the same with and without TAAU, and no trail in either shot | the same commands, before `src/runtime/fixtures/trails.js`’s fix |
 | `shadows-lit-ultra-reversed-off-webgl*.png`, `.json` | lane S’s shadow scene on the standard depth buffer | `node scripts/light-fixture.mjs --shadows --reversed off --tier ultra --size 800x450 --legs webgl --evidence gpu-first/N2` |
 | `shadows-lit-ultra-reversed-on-webgl*.png`, `.json` | the same on a reversed buffer, forced over WebGL 2 for the measurement (it is off there by default) | `… --reversed on …` |
 
 ## The numbers (the cloud, SwiftShader, WebGL 2 leg, 800 × 450)
 
-RESULTS
+Every run below: `exit 0`, no console error.
+
+**The chain** (ultra, 0.77):
+
+| run | passes after the LUT | mip bias | mean lum | programs before → after a light moves | mean ms (CPU) |
+| --- | --- | --- | --- | --- | --- |
+| FSR1 (`--upscale 0.77`) | smaa upscale output | −1.377 | 0.5271 | 83 → 83 | 2,606 |
+| TAAU + sharpen (`taau:0.77`) | upscale **sharpen** output | −1.377 | 0.5271 | 78 → 78 | 1,353 |
+| TAAU, the before (`taau:0.77 --sharpen off`) | upscale output | 0 | 0.5270 | 75 → 75 | 1,370 |
+
+The sharpen raises the frame’s edge contrast (the mean absolute Laplacian of the green channel) from 1.403 to 1.488, about 6 %. The frames differ by 0.06 of 255 on average, and the mean luminance does not move (the spec’s §5: under 3 %). The bias is log2(0.77) − 1 = −1.377. The game material reads it, and the fixture’s ring is plain three materials, so the bias shows in the material’s tests and on the laptop’s Battlefront, not in these shots.
+
+**The trails** (30 frames across the wall; the share of each mover’s band, past one frame’s travel, still in its colour; the gate is 2 %):
+
+| run | crate | skinned figure | instanced row | alpha-tested card | trail-free |
+| --- | --- | --- | --- | --- | --- |
+| TAAU 0.77 + sharpen | 0.00 % | 0.00 % | 0.00 % | 0.00 % | yes |
+| no temporal pass (the control) | 0.00 % | 0.00 % | 0.00 % | 0.00 % | yes |
+
+The plan expected the instanced row and the card to trail before the change. They do not: three r186 keeps last frame’s instance matrices and bones itself once velocity is in the MRT. The change that matters is the particles’ (`light/velocity.js`), and the fixture’s movers have none: the particle trail is the laptop’s `--particles` pan to read. The panning banner sits under the floor at this camera, so it is not in the shot. TRAA itself is the webgpu leg’s, on the laptop.
+
+**Reversed depth** (lane S’s shadow scene, the same frames on a standard and a reversed buffer; SwiftShader has `EXT_clip_control`, so the reversed buffer was made):
+
+| view | PSNR, standard against reversed | largest difference (of 255) |
+| --- | --- | --- |
+| near (`-webgl.png`) | identical | 0 |
+| contact on, contact off | identical | 0 |
+| the 10 m board (`-pen10`) | 108.5 dB | 1 |
+| the cascades’ seam (`-seam`) | 76.8 dB | 19 |
+| the 1 m board (`-pen1`) | 73.0 dB | 21 |
+
+Review Focus 5 asks for 40 dB. The mean luminance is 0.2907 both ways, and the programs stay 32 → 32. Over WebGL 2 the reversed buffer stays off by default: this is the measurement that says it could come on there, which is the laptop’s call with a real chip. The fixture now prints the depth buffer three made (`depth reversed | standard`), since three falls back without a word where the extension is missing.
+
+**The gates** on the merged branch: `npm run lint` (0), `npm test` (13,974 of 13,981 before the merge with main, the one failure `navSearch.test.js`’s timeout, which main’s #916 fixed; it passes after the merge), `npm run build` (0), `node scripts/health.mjs --check --skip build` (within budget), `npm run coverage:bf2017` (unowned 0), `npm run maps:bf2017` (44 rows, 0 errors).
 
 ## What the code found that the plan did not say
 
