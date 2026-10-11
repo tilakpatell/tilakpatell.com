@@ -24,18 +24,26 @@
 //   numbers, the painted sky): its passes come through applyGameLight's
 //   `passes` into rt.gfx.post (module.js) with nothing to add; the record's
 //   grade must stay one application (the stack's lut pass, not a second).
-// - N (the scatter): a levelScatter(level, tier) beside levelVolumes on the
-//   pack's scatter.json, its masks from Q2's ground (moved by packFrame.js).
-// - U (FSR1/TAAU, BatchedMesh, occlusion): the upscale as the pace's first
-//   step in rt.gfx; the statics as lane L's levelScene draws them.
+// - N (the scatter, merged): createWorldScatter below, the galaxy's
+//   levelScatter in the level's group (the pack's frame, which its mask is
+//   in), on the pack's ground; Hoth's terrain scatters nothing (its
+//   scatter.json says so), so on Hoth it is null.
+// - U (merged): the chain's start step (headroomAt at level 0: under a 4K
+//   screen on ultra and high) in module.js; the runtime's pace already
+//   lowers the ratio, so the chain is not rebuilt on each step. Batching,
+//   bundles and occlusion through map/level.js's `batch`, off unless asked
+//   (?batch=on), as U's rule keeps them until the laptop's table.
 //
 //   EFFECT_TIERS, VOLUME_TIERS
 //   createWorldEffects({ scene, renderer, tier, level, light, deps })
 //     → Promise<null | { update(dt, camera, wind), stats, dispose() }>
+//   createWorldScatter({ level, tier, renderer, small, deps }) → null | { update([x, y, z], dt), stats(), dispose() }
 //   levelVolumes(level, tier, backend = 'webgpu') → Promise<volumes.json in the map's frame | null>
 //   (backend: light/three.js's backendOf(renderer))
 //   (level: { pack, file(name) → Promise<json | null> }, map/level.js's)
 
+import * as laneL from '../galaxy/shared/level.js';
+import { toPack } from './map/level.js';
 import { rebaseCells } from './map/packFrame.js';
 
 export const EFFECT_TIERS = ['high', 'ultra'];
@@ -85,6 +93,17 @@ export async function createWorldEffects({ scene, renderer, tier, level, light =
       placed.dispose();
       effects.dispose();
     },
+  };
+}
+
+export function createWorldScatter({ level, tier, renderer = null, small = false, deps = {} }) {
+  const make = deps.createLevelScatter ?? laneL.createLevelScatter;
+  const inner = make({ scene: level.group, site: { level: level.world }, tier, renderer, groundAt: (x, z) => level.packHeightAt(x, z), wind: null, small });
+  if (!inner) return null;
+  return {
+    update: (at, dt) => inner.update(toPack(level.pack, at), dt),
+    stats: () => inner.stats(),
+    dispose: () => inner.dispose(),
   };
 }
 

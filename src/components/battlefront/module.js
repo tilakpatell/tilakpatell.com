@@ -17,6 +17,8 @@
 // one of the gallery's spots, spots.js).
 
 import * as THREE from 'three';
+import { headroom } from '../../lib/three/light/post.js';
+import { headroomAt } from '../../runtime/quality.js';
 import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf, stagesOf } from '../../lib/battlefront/rulebook.js';
 import { createLook } from '../../runtime/look.js';
 import { overviewPose } from './camera.js';
@@ -29,7 +31,7 @@ import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
 import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
-import { createWorldEffects, levelVolumes } from './passes.js';
+import { createWorldEffects, createWorldScatter, levelVolumes } from './passes.js';
 import { spotsOf } from './spots.js';
 import { entryFor, lightsJsonOf, windOf } from './weather.js';
 
@@ -59,7 +61,11 @@ export default {
     // brings them; the ground's layers take the weather's sun and sky: lane Q2)
     let collision = null;
     let physics = null;
-    const level = createLevel({ scene, tier, renderer, world: levelName, entry: entryFor(lighting, lighting.default), onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
+    // (?post=off: the scene drawn with no chain, for a check; ?batch=on: lane
+    // U's batching, bundles and occlusion, off until the laptop's table)
+    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search) : new URLSearchParams();
+    const batch = params.get('batch') === 'on' ? { Bundle: (await import('three/webgpu')).BundleGroup } : null;
+    const level = createLevel({ scene, tier, renderer, world: levelName, entry: entryFor(lighting, lighting.default), batch, onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     const figures = createFigures({ scene, ragdolls });
@@ -70,6 +76,8 @@ export default {
     // (the navgrid is built from the ground the world draws: the pack's
     // heightmaps first; lane 1's bots walk it, the player too)
     await level.ready;
+    // the terrain's scatter (lane N), in the level's group; null where none
+    const scatter = createWorldScatter({ level, tier, renderer, small: typeof window !== 'undefined' && Math.min(window.innerWidth, window.innerHeight) < 600 });
     const small = typeof window !== 'undefined' && Math.min(window.innerWidth, window.innerHeight) < 600;
     const engine = async () => {
       if (!level.pack || !wantsEngine({ pack: level.pack, tier, small })) return;
@@ -144,8 +152,11 @@ export default {
       .then((fx) => (effects = fx))
       .catch((e) => console.warn('battlefront: effects', e));
     // (?post=off in the address: the scene drawn with no chain, for a check)
-    const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
-    const post = light.passes.length && asked !== 'off' ? rt.gfx.post(light.passes) : null;
+    // (lane U's start step: under a 4K screen on ultra and high, upscaled
+    // back; the pace's later steps are the runtime's ratio, not the chain's)
+    const pixels = (rt.gfx.canvas?.width ?? 0) * (rt.gfx.canvas?.height ?? 0);
+    const chain = light.passes.length ? headroom(light.passes, headroomAt(0, { tier, pixels })) : [];
+    const post = chain.length && params.get('post') !== 'off' ? rt.gfx.post(chain) : null;
 
     const physicsStats = () => {
       const s = collision?.stats();
@@ -169,7 +180,7 @@ export default {
         markers,
         level: { loaded: level.loaded(), progress: level.progress(), ...level.stats(), physics: physicsStats() },
         // (the passes on, for the checks: lane 5's chain and what came after it)
-        passes: { post: post ? light.passes.map((p) => p.kind) : [], volumes: !!light.parts.volumetrics, clouds: !!light.parts.clouds, effects: effects ? { ...effects.stats } : null },
+        passes: { post: post ? chain.map((p) => p.kind) : [], batch: !!batch, scatter: scatter?.stats() ?? null, volumes: !!light.parts.volumetrics, clouds: !!light.parts.clouds, effects: effects ? { ...effects.stats } : null },
         backend: rt.gfx.backend,
         weather,
       };
@@ -225,6 +236,7 @@ export default {
         bolts.update(v.bolts, { muzzleOf: figures.muzzleOf, now: clock });
         light.update(dt, camera);
         effects?.update(dt, camera, wind);
+        if (pose) scatter?.update(pose.at, dt);
         sinceHud += dt;
         if (sinceHud >= 1 / HUD_HZ) {
           sinceHud = 0;
@@ -234,6 +246,7 @@ export default {
       draw({ renderer: r }) {
         if (post) post.render();
         else r.render(scene, camera);
+        level.afterRender(camera);
       },
       wants: () => true,
       do(action, arg) {
@@ -295,6 +308,7 @@ export default {
         bolts.dispose();
         figures.dispose();
         ragdolls.dispose();
+        scatter?.dispose();
         level.dispose();
         collision?.dispose();
         physics?.dispose();

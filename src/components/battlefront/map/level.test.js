@@ -180,5 +180,34 @@ describe('the whole map from lane L’s pack', () => {
     expect(g.masks).toMatchObject({ minX: -1075, minZ: -2820 });
     expect(seen.grounds[0].urlOf('tex/a.ktx2', 'high')).toMatch(/levels\/hoth\/tex\/a\.\d+\.ktx2$/);
   });
+
+  // fidelity lane U's paths, taken as its hand-off says: off unless asked
+  it('hands lane U’s batching, bundles and occlusion to the scene when asked, and reads the queries after each frame', async () => {
+    const { deps } = fakes();
+    let opts = null;
+    let read = null;
+    deps.createLevelScene = (o) => ((opts = o), { setTable() {}, setHorizon() {}, update() {}, stats: () => ({ tris: 0, calls: 0, instances: 0 }), afterRender: (c) => (read = c), dispose() {} });
+    const Bundle = class {};
+    const renderer = { isWebGPURenderer: true };
+    const level = createLevel({ scene: new THREE.Scene(), tier: 'high', renderer, deps, ground: false, batch: { Bundle } });
+    await level.ready;
+    expect(opts).toMatchObject({ batch: true, Bundle, occlude: renderer });
+    level.afterRender('cam');
+    expect(read).toBe('cam');
+    const plain = fakes();
+    let opts2 = null;
+    plain.deps.createLevelScene = (o) => ((opts2 = o), { setTable() {}, setHorizon() {}, update() {}, stats: () => ({ tris: 0, calls: 0, instances: 0 }), dispose() {} });
+    const off = createLevel({ scene: new THREE.Scene(), tier: 'high', renderer, deps: plain.deps, ground: false });
+    await off.ready;
+    expect(opts2.batch).toBeFalsy();
+    expect(() => off.afterRender('cam')).not.toThrow();
+  });
+
+  it('gives the ground’s height in the pack’s own frame, for what draws in its group', async () => {
+    const { deps } = fakes();
+    const level = createLevel({ scene: new THREE.Scene(), tier: 'high', deps, ground: false });
+    await level.ready;
+    expect(level.packHeightAt(0, 0)).toBeCloseTo(2, 5);
+  });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { EFFECT_TIERS, VOLUME_TIERS, createWorldEffects, levelVolumes } from './passes.js';
+import { EFFECT_TIERS, VOLUME_TIERS, createWorldEffects, createWorldScatter, levelVolumes } from './passes.js';
 
 const PACK = { origin: [205, 362.3, -1540], yaw: 0 };
 const EFFECTS = { format: 1, cell: 128, count: 2, cells: { '0,-1': [{ name: 'FX_Arctic_Ceiling_FallingSnow', pos: [4.09, 0.53, -37.99], quat: [0, 0, 0, 1] }], '1,0': [{ name: 'FX_Snow_FallingSnow_01_Hoth', pos: [130, 2, 10] }] } };
@@ -83,4 +83,18 @@ describe('the effects and the volumes on the game’s world', () => {
     expect(await levelVolumes(level, 'ultra', 'webgpu')).not.toBeNull();
     info.mockRestore();
   });
+
+  it('draws lane N’s scatter in the level’s group, on the pack’s own ground, updated in the pack’s frame', () => {
+    let opts = null;
+    const updates = [];
+    const make = (o) => ((opts = o), { update: (p, dt) => updates.push([p, dt]), stats: () => ({}), dispose() {} });
+    const level = { group: 'group', world: 'hoth', pack: PACK, packHeightAt: (x, z) => x + z };
+    const sc = createWorldScatter({ level, tier: 'high', renderer: 'r', small: false, deps: { createLevelScatter: make } });
+    expect(opts).toMatchObject({ scene: 'group', site: { level: 'hoth' }, tier: 'high', renderer: 'r', small: false });
+    expect(opts.groundAt(1, 2)).toBe(3);
+    sc.update([215, 380, -1530], 0.1);
+    expect(updates).toEqual([[[10, 10], 0.1]]);
+    expect(createWorldScatter({ level, tier: 'high', deps: { createLevelScatter: () => null } })).toBeNull();
+  });
 });
+

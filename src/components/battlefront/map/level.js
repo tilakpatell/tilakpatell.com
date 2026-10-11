@@ -19,12 +19,18 @@
 // into the map's frame, packFrame.js), and the placed decals from
 // decals.json cell by cell, cut from the cell's static instances (lane Q4;
 // mid and up). A file the pack lacks skips its pass with one log line.
+// Fidelity lane U's paths (`batch`: one BatchedMesh per material key, the
+// horizon in a bundle, occlusion by cell blocks) are handed to the scene
+// only when asked (`batch: { Bundle }`): U's own rule keeps a path off until
+// the laptop's table shows it lowers Hoth's frame, and the game materials
+// key a batch each until Q1's carry a batch key (U's hand-off).
 // Lane colour's variations ride Q1's recipes (a recipe gains `variation`
 // in levelGltf.js), so nothing here reads variations.json.
 //
-//   createLevel({ scene, tier, renderer, world = 'hoth', ground = true, entry, onCell, onDrop, deps })
+//   createLevel({ scene, tier, renderer, world = 'hoth', ground = true, entry, onCell, onDrop, batch, deps })
 //     → { ready: Promise, group, origin, pack, file(name), update([x, y, z]),
-//         heightAt(x, z), loadBin(path), navOf() → Promise<mask | null>,
+//         heightAt(x, z), packHeightAt(x, z), afterRender(camera), loadBin(path),
+//         navOf() → Promise<mask | null>,
 //         progress(), loaded(), stats(), dispose() }
 //   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
 //   and go, for the collision; navOf: the pack's nav.bin, navMask.js's;
@@ -117,7 +123,7 @@ const DEPS = {
   navOf: (world) => bytes(world)('nav.bin').then(inflateMask),
 };
 
-export function createLevel({ scene, tier = 'high', renderer = null, world = 'hoth', ground = true, entry = null, onCell: cellIn = () => {}, onDrop: cellOut = () => {}, deps = {} }) {
+export function createLevel({ scene, tier = 'high', renderer = null, world = 'hoth', ground = true, entry = null, onCell: cellIn = () => {}, onDrop: cellOut = () => {}, batch = null, deps = {} }) {
   const d = { ...DEPS, ...deps };
   const group = new THREE.Group();
   group.name = `level:${world}`;
@@ -187,7 +193,7 @@ export function createLevel({ scene, tier = 'high', renderer = null, world = 'ho
     loader = d.createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes: mats?.recipes ?? null, materialFor: mats?.materialFor ?? null, mapKeys: mats?.mapKeys ?? null });
     decals = await decalsOf().catch((e) => (console.warn('battlefront: decals', e), null));
     if (gone) return decals?.dispose();
-    level = d.createLevelScene({ scene: group, pack, loadGltf: loader.load, tier });
+    level = d.createLevelScene({ scene: group, pack, loadGltf: loader.load, tier, ...(batch ? { batch: true, Bundle: batch.Bundle, occlude: renderer } : {}) });
     stream = d.createLevelStream({ pack, fetch: (path) => fetchBytes(path), wanted: laneL.wanted, tier, onFar: level.setTable, onHorizon: level.setHorizon, onCell, onDrop });
     if (ground && layer) {
       groundMesh = buildGround(layer, pack.terrain);
@@ -260,6 +266,13 @@ export function createLevel({ scene, tier = 'high', renderer = null, world = 'ho
     update,
     // the ground's height at the export's (x, z): the pack's image layer in
     // its own frame, lifted back by the origin's height; 0 until it is in
+    // the same in the pack's own frame (the group's: what draws in it)
+    packHeightAt: (x, z) => (layer ? LAYERS.image(x, z, layer) : 0),
+    // (lane U's occlusion reads its queries after each frame)
+    afterRender: (camera) => level?.afterRender?.(camera),
+    get world() {
+      return world;
+    },
     heightAt(x, z) {
       if (!layer) return 0;
       const [px, pz] = toPack(pack, [x, 0, z]);
