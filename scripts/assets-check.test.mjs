@@ -14,6 +14,9 @@ describe('the bucket held to its manifest', () => {
     const empty = { hash: 'abcdef123456', bytes: 0 };
     expect(verdict(empty, got(416, { 'content-range': 'bytes */0', 'cache-control': 'max-age=31536000' }))).toBeNull();
     expect(verdict(e, got(416, { 'content-range': 'bytes */0' }))).toMatch(/HTTP 416/);
+    // (as the pool answers it: a 4xx is `failed` with its headers kept)
+    expect(verdict(empty, { status: 'failed', http: 416, headers: new Headers({ 'content-range': 'bytes */0' }), error: 'HTTP 416' })).toBeNull();
+    expect(verdict(empty, { status: 'failed', http: 416, error: 'HTTP 416' })).toBe('HTTP 416');
   });
 
   it('fails a file that is not there, the wrong size, or cached for less than a year', () => {

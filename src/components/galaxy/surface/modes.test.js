@@ -5,6 +5,7 @@ import { missionOf } from './missions';
 import BOOK from '../../../data/bf2017/modes.json';
 import { landLine } from './landLine';
 import { systemById } from '../systems';
+import { tilesFor } from '../../../lib/bf2017/films';
 
 const card = (system, id, ctx) => modesFor(system, ctx).find((c) => c.id === id);
 
@@ -25,7 +26,9 @@ describe('the modes on a world', () => {
     expect(MODES.find((m) => m.id === 'hvv').name).toBe('Heroes vs Villains');
   });
   it('Hoth: Galactic Assault, Heroes vs Villains, Blast and its story live (lane H’s rows); a mode the level has and no mission yet, coming', () => {
-    expect(card('hoth', 'galacticAssault')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=galacticAssault' });
+    // (Hoth's Galactic Assault is the Battlefront world, the game's own level, with the way back; the others stay the galaxy's: 2026-10-11's deploy-flow design)
+    expect(card('hoth', 'galacticAssault')).toMatchObject({ state: 'live', to: '/battlefront/hoth/galacticAssault?from=%2Fgalaxy%2Fhoth' });
+    expect(card('endor', 'galacticAssault')).toMatchObject({ state: 'live', to: '/galaxy/endor/surface?mode=galacticAssault', mission: 'assault' });
     expect(card('hoth', 'story')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mission=transport' });
     expect(card('hoth', 'hvv')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=hvv', mission: 'hvv' });
     expect(card('hoth', 'blast')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=blast', mission: 'blast' });
@@ -92,5 +95,18 @@ describe('the Land button’s line (lane 6)', () => {
   it('names a briefing’s Strike, Extraction, Ewok Hunt or Supremacy in the menu’s order', () => {
     const sys = { id: 'fixture', game: { status: 'soon', also: [{ to: '/galaxy/fixture/surface?mission=supremacy' }, { to: '/galaxy/fixture/surface?mission=strike' }] } };
     expect(landLine(sys)).toBe('Strike · Supremacy');
+  });
+});
+
+describe('the films on the cards (the menu’s tiles)', () => {
+  it('each mode carries the game’s menu film for it, or null where the game has none', () => {
+    const TILES = { galacticAssault: 'assault', hvv: 'heroes', blast: 'skirmish', supremacy: 'supremacy' };
+    for (const m of MODES) {
+      expect(m.film === null || (typeof m.film.url === 'string' && typeof m.film.poster === 'string'), m.id).toBe(true);
+      expect(m.film, m.id).toEqual(TILES[m.id] ? (tilesFor(TILES[m.id])[0] ?? null) : null);
+    }
+    // (and a world's cards bring theirs)
+    expect(card('hoth', 'galacticAssault').film).toEqual(MODES.find((m) => m.id === 'galacticAssault').film);
+    expect(card('hoth', 'free').film).toBe(null);
   });
 });

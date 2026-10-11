@@ -234,7 +234,7 @@ const AS_SET = [
       status: 'live',
       to: '/galaxy/hoth/surface?mission=transport',
       // (and the ground battle, on the same world: both from the briefing)
-      also: [{ id: 'assault', title: 'The Battle of Hoth', text: 'A galactic assault on the ice: the Empire comes in behind the walkers for the trench line, the ion cannon and Echo Base’s door, and the Rebellion holds each as long as it can. Fight for either side.', to: '/galaxy/hoth/surface?mission=assault', go: 'Fight it now' }],
+      also: [{ id: 'assault', title: 'The Battle of Hoth', text: 'Galactic Assault on the game’s own Outpost Delta: the Empire comes in behind the walkers for the uplinks, the hangars and the transports, and the Rebellion holds each as long as it can. Deploy as one of the four classes; a hero once your Battle Points afford one.', to: '/battlefront/hoth/galacticAssault?from=%2Fgalaxy%2Fhoth', go: 'Fight it now' }],
     },
   },
   {

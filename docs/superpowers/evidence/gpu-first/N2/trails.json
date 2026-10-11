@@ -1,0 +1,95 @@
+{
+  "size": "800x450",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": false,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "lut",
+        "upscale",
+        "sharpen",
+        "output"
+      ],
+      "bias": -0.5,
+      "shot": "trails-webgl.png",
+      "trails": [
+        {
+          "name": "crate",
+          "colour": [
+            225,
+            85,
+            96
+          ],
+          "band": {
+            "x": 180,
+            "y": 43,
+            "w": 57,
+            "h": 59
+          },
+          "share": 0,
+          "ok": true
+        },
+        {
+          "name": "figure",
+          "colour": [
+            82,
+            241,
+            115
+          ],
+          "band": {
+            "x": 180,
+            "y": 119,
+            "w": 57,
+            "h": 51
+          },
+          "share": 0,
+          "ok": true
+        },
+        {
+          "name": "row",
+          "colour": [
+            100,
+            143,
+            255
+          ],
+          "band": {
+            "x": 195,
+            "y": 196,
+            "w": 47,
+            "h": 44
+          },
+          "share": 0,
+          "ok": true
+        },
+        {
+          "name": "card",
+          "colour": [
+            229,
+            232,
+            106
+          ],
+          "band": {
+            "x": 201,
+            "y": 268,
+            "w": 44,
+            "h": 43
+          },
+          "share": 0,
+          "ok": true
+        }
+      ],
+      "trailsOk": true
+    }
+  ]
+}
