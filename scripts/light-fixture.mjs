@@ -12,6 +12,11 @@
 //     [--world <w>]          (lane P: with --picture, <w>'s own main weather and picture in Hoth's place)
 //     [--frame]              (the shots and the mean luminance alone: no environment pair, recompile count or timing)
 //     [--upscale [fsr1|taau:]0.77]   (lane U: the picture drawn under the screen and upscaled)
+//     [--sharpen off]   (GPU-first lane N2: lane U's picture, without the sharpen after TAAU and the mip bias)
+//     [--evidence gpu-first/N2]   (the shots and the JSON under docs/superpowers/evidence/<that> instead)
+//     [--trails] [--temporal taau|none]   (GPU-first lane N2: the trail check; below)
+//     [--reversed on|off]   (lane N2: the renderer's reversed depth buffer, on WebGPU's default)
+//     [--baked [on|off]] [--cadence]   (GPU-first lane N3: scripts/light-fixture/n3.mjs)
 //   node scripts/light-fixture.mjs --materials [--legs webgl] [--variations]
 //   node scripts/light-fixture.mjs --camera [--size 1600x900] [--legs webgpu,webgl]
 //
@@ -114,6 +119,15 @@
 //   TRAA, unless named), the same numbers into galaxy-engine/U/, with the
 //   canvas's CSS size and its drawing buffer beside them (the HUD is DOM:
 //   the CSS size must stay the screen's).
+// - with --trails (GPU-first lane N2): src/runtime/fixtures/trails.js's
+//   movers (a crate, a skinned figure, an instanced row, an alpha-tested
+//   card, a panning banner) cross a still wall for 30 frames under the
+//   tier's temporal pass (TRAA on webgpu; TAAU at 0.77 on the webgl leg,
+//   which cannot draw TRAA; --temporal none for the picture without one),
+//   then the last frame is read: behind each mover, past one frame's
+//   travel, the share of pixels still in its colour (sampled at its centre
+//   in the same frame) must be under 2 %, or the run fails. Into
+//   docs/superpowers/evidence/gpu-first/N2/ (trails-<leg>.png, trails.json).
 // The numbers go to <label>.json beside the shots and to stdout as a table.
 //
 // On Linux without a display both legs draw on SwiftShader (CPU): the
@@ -141,11 +155,16 @@ const debris = volume == null && !q4Flags && !particles && debrisAt >= 0 ? (argv
 const pictureAt = argv.indexOf('--picture');
 const picture = volume == null && !q4Flags && pictureAt >= 0 ? argv[pictureAt + 1] !== 'off' : null;
 const laneS = volume == null && ['--hoth', '--shadows', '--clouds'].some((f) => argv.includes(f));
+// (GPU-first lane N3: --baked, --cadence and the budgeted --grid)
+const { n3Flags, n3Fixture, inBand, gridSpread, cadenceRun, BAND } = await import('./light-fixture/n3.mjs');
+const n3 = n3Flags(argv);
+const laneN3 = volume == null && (n3.baked != null || n3.cadence);
 // --upscale [kind:]scale (lane U)
 const upscaleArg = argv.includes('--upscale') ? argv[argv.indexOf('--upscale') + 1] : null;
 const upscale = upscaleArg && !upscaleArg.startsWith('--') ? (([a, b]) => (b == null ? { scale: Number(a) } : { kind: a, scale: Number(b) }))(upscaleArg.split(':')) : null;
 const world = picture != null && argv.includes('--world') ? argv[argv.indexOf('--world') + 1] : null;
-const OUT = join(ROOT, debris ? 'docs/superpowers/evidence/gpu-first/N5' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : world ? 'docs/superpowers/evidence/bf2017-picture/p' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
+const evidenceAt = argv.indexOf('--evidence');
+const OUT = evidenceAt >= 0 ? join(ROOT, 'docs/superpowers/evidence', argv[evidenceAt + 1]) : argv.includes('--trails') ? join(ROOT, 'docs/superpowers/evidence/gpu-first/N2') : join(ROOT, laneN3 ? 'docs/superpowers/evidence/gpu-first/N3' : debris ? 'docs/superpowers/evidence/gpu-first/N5' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : world ? 'docs/superpowers/evidence/bf2017-picture/p' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
@@ -164,7 +183,13 @@ const baseLabel = arg(
           ? `${picture ? 'picture' : 'nopicture'}-${post ? `post-${tier}` : `lit-${tier}`}`
         : `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`,
 );
-const label = debris && arg('label', null) == null ? `${debris === 'off' ? 'nodebris' : 'debris'}-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : world && arg('label', null) == null ? `${world}-${baseLabel}` : baseLabel;
+const sharpenOff = arg('sharpen', 'on') === 'off';
+const trailsRun = argv.includes('--trails');
+const temporalArg = arg('temporal', null);
+const reversedArg = arg('reversed', null);
+const label0 = laneN3 && arg('label', null) == null ? `${n3.baked != null ? (n3.baked ? 'baked-' : 'nobaked-') : ''}${n3.cadence ? 'cadence-' : ''}${baseLabel}` : debris && arg('label', null) == null ? `${debris === 'off' ? 'nodebris' : 'debris'}-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : world && arg('label', null) == null ? `${world}-${baseLabel}` : baseLabel;
+const label1 = sharpenOff && arg('label', null) == null ? `${label0}-nosharpen` : label0;
+const label = arg('label', null) ?? (argv.includes('--trails') ? `trails${arg('temporal', null) === 'none' ? '-none' : ''}` : arg('reversed', null) ? `${label1}-reversed-${arg('reversed', null)}` : label1);
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
@@ -177,6 +202,8 @@ const seconds = arg('seconds', '0,12.5,30').split(',').map(Number);
 const q4 = weather || decals;
 // metres the camera rises between the grazing pair's two frames
 const GRAZE_JITTER = 0.003;
+// (lane N2) the frames the movers cross the wall for: trails.js's TRAIL.frames
+const TRAIL_FRAMES = 30;
 const shadows = volume == null && argv.includes('--shadows');
 const hoth = volume == null && (argv.includes('--hoth') || shadows || picture != null);
 // (lane Q6) the record's picture's urls, from the dev server's root
@@ -219,6 +246,10 @@ const fixture = {
   ...(picture ? { picture: pictureUrls() } : {}),
 
   ...(upscale ? { upscale } : {}),
+  ...(sharpenOff ? { sharpen: false } : {}),
+  ...(trailsRun ? { trails: true, temporal: temporalArg ?? 'auto' } : {}),
+  ...(reversedArg ? { reversed: reversedArg === 'on' } : {}),
+  ...n3Fixture(n3),
 };
 
 // The --decals pack: the decal fixtures' records (ten of Naboo_01's
@@ -394,9 +425,30 @@ for (const leg of legs) {
     await page.waitForFunction(() => window.__lit?.ready || window.__lit?.error, null, { timeout: 240000 });
     const err = await page.evaluate(() => window.__lit.error);
     if (err) throw new Error(err);
-    Object.assign(row, await page.evaluate(() => ({ backend: window.__lit.backend, clustered: window.__lit.probe.light?.clustered ?? null, passes: window.__lit.probe.passes })));
+    Object.assign(row, await page.evaluate(() => ({ backend: window.__lit.backend, clustered: window.__lit.probe.light?.clustered ?? null, passes: window.__lit.probe.passes, bias: window.__lit.probe.bias ?? null, reversed: window.__lit.reversed ?? null })));
     const shot = async () => page.locator('canvas').screenshot();
-    if (q4) {
+    if (trailsRun) {
+      // (still first: the history settles on the wall and the movers at rest)
+      await page.evaluate(() => window.__lit.draw(20));
+      await page.evaluate(() => window.__lit.probe.trailsGo(true));
+      await page.evaluate((n) => window.__lit.draw(n), TRAIL_FRAMES);
+      await page.evaluate(() => window.__lit.probe.trailsGo(false));
+      const png = await shot();
+      writeFileSync(join(OUT, `${label}-${leg}.png`), png);
+      row.shot = `${label}-${leg}.png`;
+      const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      const boxes = await page.evaluate((size) => window.__lit.probe.trails(size), { width: info.width, height: info.height });
+      const { trailBand, trailShare, TRAIL } = await import('../src/runtime/fixtures/trails.js');
+      row.trails = boxes.map((b) => {
+        const [cx, cy] = b.centre.map(Math.round);
+        const i = (cy * info.width + cx) * info.channels;
+        const rgb = [data[i], data[i + 1], data[i + 2]];
+        const band = trailBand(b.rect, b.step, info);
+        const share = trailShare({ data, info }, band, rgb);
+        return { name: b.name, colour: rgb, band, share: Number(share.toFixed(4)), ok: share < TRAIL.most };
+      });
+      row.trailsOk = row.trails.every((t) => t.ok);
+    } else if (q4) {
       row.shots = [];
       const save = async (name) => {
         const png = await shot();
@@ -479,6 +531,8 @@ for (const leg of legs) {
         await save('cloudtex');
         await page.evaluate(() => (window.__lit.probe.view('main'), window.__lit.draw(4)));
       }
+      if (n3.cadence) row.cadence = await cadenceRun({ page, sharp, OUT, label, leg, writeFileSync, join });
+      if (n3.baked != null) row.baked = await page.evaluate(() => window.__lit.probe.n3.baked());
       if (shadows) {
         for (const v of ['seam', 'pen1', 'pen10', 'contact']) {
           await page.evaluate((name) => (window.__lit.probe.view(name), window.__lit.draw(8)), v);
@@ -539,6 +593,11 @@ for (const leg of legs) {
         const after = await page.evaluate((t) => window.__lit.time(t), ms);
         row.gridMedian = Number(pct(after, 0.5)?.toFixed(1));
         row.gridMean = Number((after.reduce((a, b) => a + b, 0) / Math.max(1, after.length)).toFixed(1));
+        // (lane N3: the budgeted grid's pixel spread at a fixed camera, on a page of its own)
+        const n3Out = join(ROOT, 'docs/superpowers/evidence/gpu-first/N3');
+        mkdirSync(n3Out, { recursive: true });
+        row.budgetGrid = await gridSpread({ browser, base, fixture, leg, W, H, sharp, OUT: n3Out, label, writeFileSync, join });
+        writeFileSync(join(n3Out, `${label}-grid.json`), `${JSON.stringify(row.budgetGrid, null, 2)}\n`);
       }
     }
   } catch (e) {
@@ -563,6 +622,16 @@ if (picture) {
     }
   } else console.log(`(no ${before}: run with --picture off first for the comparison)`);
 }
+if (trailsRun) {
+  console.log('| leg | backend | passes | crate | figure | row | card | trail-free |');
+  console.log('|---|---|---|---|---|---|---|---|');
+  for (const r of rows) {
+    if (r.error) console.log(`| ${r.leg} | failed: ${r.error} |`);
+    else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ')} | ${r.trails.map((t) => `${(t.share * 100).toFixed(2)} %${t.ok ? '' : ' ✗'}`).join(' | ')} | ${r.trailsOk ? 'yes' : 'NO'} |`);
+    if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
+  }
+  process.exit(rows.some((r) => (r.error && r.leg !== 'webgpu') || (!r.error && !r.trailsOk)) ? 1 : 0);
+}
 if (q4) {
   for (const r of rows) console.log(r.error ? `${r.leg}: failed: ${r.error}` : `${r.leg} (${r.backend}): ${r.shots.join(', ')}${r.amounts ? ` · accumulation ${JSON.stringify(r.amounts)} · programs ${r.programsBefore} → ${r.programsAfter}` : ''}${r.draws != null ? ` · decals ${r.count} in ${r.draws} draws (${r.textures} textures) · grazing: the scene moves ${r.grazingMove} between the pair, the decals add ${r.grazingFlicker}` : ''}`);
   for (const r of rows) if (r.errors) console.log(`  ${r.leg} errors: ${r.errors.join(' / ')}`);
@@ -573,6 +642,12 @@ console.log(`|---|---|---|---|---|---|---|---|---|---|---|---|---|`);
 for (const r of rows) {
   if (r.error) console.log(`| ${r.leg} | failed: ${r.error} |`);
   else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ') || 'none'} | ${r.clustered} | ${r.meanLum} | ${r.envDiff} | ${r.programsBefore} → ${r.programsAfter} | ${r.mean} | ${r.median} | ${r.p95} | ${r.gridBakeMs ?? '–'} | ${r.gridMean ?? '–'} | ${r.volumesLit ?? '–'} |`);
+  if (r.reversed != null) console.log(`  ${r.leg}: depth ${r.reversed ? 'reversed' : 'standard'}`);
+  if (r.bias != null) console.log(`  ${r.leg}: bias ${Number(r.bias.toFixed(3))} (the mip bias every game material samples at: lane N2)`);
+  if (r.meanLum != null && laneN3) console.log(`  lane S's band: ${r.meanLum} against ${BAND.centre} (${((r.meanLum / BAND.centre - 1) * 100).toFixed(1)} %): ${inBand(r.meanLum) ? 'within' : 'outside'} ${BAND.within * 100} %`);
+  if (r.baked !== undefined) console.log(`  baked: ${JSON.stringify(r.baked)}`);
+  if (r.cadence) console.log(`  cadence: ${r.cadence.checked} figure-frames whose shadow the reference shows, ${r.cadence.missed} without it on the cadence; draws a cascade over ${r.cadence.frames} frames ${r.cadence.draws.join(', ')} (every frame: ${r.cadence.referenceDraws.join(', ')})${r.cadence.misses.length ? `; first misses ${JSON.stringify(r.cadence.misses)}` : ''}`);
+  if (r.budgetGrid) console.log(`  budgeted grid: spread ${r.budgetGrid.spread} (worst ${r.budgetGrid.worst}) over ${r.budgetGrid.frames} frames, ${r.budgetGrid.probesPerFrame} probes a frame, ${r.budgetGrid.ms} ms, ${r.budgetGrid.sweeps} sweeps${r.budgetGrid.error ? `; failed: ${r.budgetGrid.error}` : ''}`);
   if (r.debris) console.log(`  debris (${r.debris.mode}): ${r.debris.breaks} breaks in ${r.debris.seconds} s; the step p50 ${r.debris.stepMs.p50} ms, p95 ${r.debris.stepMs.p95} ms, worst ${r.debris.stepMs.max} ms; particles p95 ${r.debris.particlesMs.p95} ms; ${JSON.stringify(r.debris.debris)}`);
   if (r.parity) console.log(`  particles (${r.simMode}): parity ${JSON.stringify(r.parity)}${r.stats ? `; stats ${JSON.stringify(r.stats)}` : ''}`);
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);

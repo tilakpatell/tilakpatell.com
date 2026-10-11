@@ -1,0 +1,93 @@
+/* A galactic assault's deploy card as the game's spawn screen (AssaultSpawn.jsx),
+   beside the rest of the assault's HUD in surface.css (.assault-post, which it
+   reuses for the posts): the Battlefront world's (battlefront/screens/screens.css,
+   .bf-spawn-screen) copied, in the game's faces (src/lib/bf2017/fonts.css). A
+   column down the left on dark glass, a cell a row (its icon, its name in
+   capitals, its price on the right), the one highlighted by the game's 2 px edge
+   of ink, one out of reach in its muted ink; the posts beside it, the points and
+   the keys under. */
+.assault-spawn {
+  /* (the game's ink, its muted ink, its cell's glass and its lit cell, as the Battlefront
+     world draws them: battlefront/hud/battlefront.css, screens.css; 0.78 the HUD's least over the 3D) */
+  --spawn-ink: #f2f5f8;
+  --spawn-muted: #b9c2cc;
+  --spawn-glass: rgba(8, 12, 18, 0.78);
+  --spawn-lit: rgba(40, 52, 66, 0.86);
+  --hud-key-face: var(--font-bf-hud, inherit);
+  position: absolute;
+  z-index: 3;
+  left: max(16px, 5vw);
+  top: calc(var(--nav-h, 64px) + 128px); /* (under the phase's strip of posts: .assault-strip) */
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(40rem, calc(100vw - 32px));
+  overflow: auto;
+  color: var(--spawn-ink);
+  font-family: var(--font-bf-hud, inherit);
+  text-align: left;
+  pointer-events: auto;
+  animation: surface-found 0.5s var(--ease-smooth);
+}
+.assault-spawn-head, .assault-spawn-foot { padding: 0.65rem 1rem 0.75rem; background: var(--spawn-glass); }
+.assault-spawn-head { border-top: 3px solid var(--side); }
+.assault-spawn-kicker { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: var(--hud-min); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--side); }
+.assault-spawn-kicker img { width: 1.25rem; height: 1.25rem; }
+.assault-spawn-title { margin: 0.2rem 0 0; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.assault-spawn-text { margin: 0.3rem 0 0; font-family: var(--font-bf-text, inherit); font-size: 0.85rem; line-height: 1.4; color: var(--spawn-muted); }
+.assault-spawn-cols { display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); gap: 1rem; flex: 1 1 auto; min-height: 8rem; margin: 0.5rem 0; } /* (two rows at least, the panel scrolling past them on a short screen) */
+.assault-spawn-list { margin: 0; padding: 0; overflow: auto; list-style: none; }
+.assault-spawn-cell {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.4rem 1rem;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: var(--spawn-glass);
+  color: inherit;
+  font: inherit;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  text-align: left;
+  cursor: pointer;
+}
+li + li > .assault-spawn-cell { margin-top: 2px; }
+.assault-spawn-cell[aria-pressed='true'], .assault-spawn-cell:focus-visible { border-left-color: var(--spawn-ink); background: var(--spawn-lit); outline: none; }
+.assault-spawn-cell[aria-disabled] { color: var(--spawn-muted); cursor: default; }
+.assault-spawn-cell[aria-disabled] img { filter: brightness(0.7); }
+.assault-spawn-cell img, .assault-spawn-icon { width: 2.5rem; height: 2.5rem; }
+.assault-spawn-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
+.assault-spawn-cost { font-family: var(--font-bf-numerals, inherit); font-variant-numeric: tabular-nums; }
+/* (surface.css comes after this: its .assault-posts outranked by one more class) */
+.assault-spawn .assault-spawn-where { margin: 0; overflow: auto; align-content: start; }
+.assault-spawn .assault-post { background: var(--spawn-glass); font-family: var(--font-bf-text, inherit); }
+.assault-spawn .assault-post[aria-pressed='true'] { border-color: var(--spawn-ink); background: var(--spawn-lit); }
+.assault-spawn .assault-post:disabled { opacity: 1; color: var(--spawn-muted); }
+.assault-spawn .assault-post:disabled i { filter: grayscale(1); }
+.assault-spawn-points { margin: 0; font-size: 1.05rem; letter-spacing: 0.08em; }
+.assault-spawn-points b { margin-left: 0.35rem; font-family: var(--font-bf-numerals, inherit); font-weight: 400; font-variant-numeric: tabular-nums; }
+.assault-spawn-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.5rem; margin: 0.5rem 0 0; font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--spawn-muted); }
+.assault-spawn-hint { display: inline-flex; align-items: center; gap: 0.35rem; }
+.assault-spawn-go { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 36px; padding: 0 0.75rem; border: 1px solid color-mix(in srgb, var(--spawn-ink) 40%, transparent); background: transparent; color: var(--spawn-ink); font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.assault-spawn-go:hover:not(:disabled), .assault-spawn-go:focus-visible { border-color: var(--spawn-ink); background: var(--spawn-lit); }
+.assault-spawn-go:disabled { color: var(--spawn-muted); cursor: default; }
+.assault-spawn-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+@media (max-height: 760px) { .assault-spawn-cell { min-height: 3rem; } } /* (a laptop's screen: more of the list in sight, the cells still over 44 px) */
+@media (pointer: coarse) {
+  .assault-spawn-go, .assault-spawn-actions .btn { min-height: 44px; }
+  .assault-spawn-hint, .assault-spawn-go .hud-cap { display: none; }
+}
+@media (max-width: 640px) {
+  /* (full width under the strip, the posts under the column, the whole of it scrolling) */
+  .assault-spawn { left: 16px; width: calc(100vw - 32px); top: calc(var(--nav-h, 64px) + 120px); }
+  .assault-spawn-cols { grid-template-columns: 1fr; flex: none; }
+  .assault-spawn-list, .assault-spawn .assault-spawn-where { overflow: visible; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assault-spawn { animation: none; }
+}

@@ -255,3 +255,13 @@ describe('createGameMaterial', () => {
   });
 });
 
+
+describe('the picture’s two nodes in the game material (lane N2)', () => {
+  it('samples every map at the shared mip bias and widens the roughness by the shaded normal', () => {
+    const m = make(VEHICLE);
+    expect(m.userData.game.picture).toEqual({ mipBias: true, specularAA: true });
+    expect(m.roughnessNode.isNode).toBe(true);
+    // (the low tier and a bare GLB keep three's own roughness: no change there)
+    expect(createGameMaterial(VEHICLE, { glb: glb() }, { tier: 'low', three }).roughnessNode).toBeNull();
+  });
+});

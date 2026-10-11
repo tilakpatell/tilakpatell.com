@@ -217,7 +217,8 @@
 }
 .surface-help-btn:hover { border-color: var(--accent); color: var(--accent); }
 .surface-help-k { margin-right: 0.3em; color: rgba(242, 239, 232, 0.6); }
-/* the world's one Menu, its look prompt and its reticle (runtime/hud's), in the corner's own pills and glass */
+/* the world's one Menu, its look prompt and its reticle (runtime/hud's; the game's crosshair shape for a blaster, reticleFor.js, drawn at the game's size), in the corner's own pills and glass */
+.surface-reticle { --reticle-size: 34px; }
 .surface-menu, .surface-look, .surface-reticle {
   --hud-ink: #f2efe8;
   --hud-muted: rgba(242, 239, 232, 0.72);
@@ -624,6 +625,7 @@
 .assault-post i { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 6px; background: var(--side); color: #03040a; font-style: normal; font-weight: 700; }
 .assault-post b { font-weight: 600; }
 .assault-post span { font-size: 0.72rem; color: rgba(242, 239, 232, 0.65); }
+.assault-side-emblem { width: 2.5rem; height: 2.5rem; }
 .assault-strip {
   position: absolute;
   z-index: 2;
@@ -672,6 +674,7 @@
 .assault-tickets p[data-mine] span::after { content: ' · you'; color: var(--side); }
 .assault-score { margin-top: 0.2rem !important; padding-top: 0.35rem; border-top: 1px solid var(--line); }
 .assault-score b { color: var(--text) !important; }
+.assault-tickets .assault-points b { font-family: var(--font-bf-numerals, ui-monospace, monospace); font-weight: 400; color: var(--text); }
 .assault-ring {
   position: absolute;
   z-index: 2;
@@ -949,21 +952,10 @@
 .surface-power small { position: absolute; right: 4px; top: 2px; font-size: var(--hud-min); opacity: 0.8; }
 .surface-power.is-cooling { color: rgba(255, 255, 255, 0.55); }
 .surface-power.is-cooling::after { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); transform-origin: bottom; transform: scaleY(var(--k, 0)); transition: transform 0.1s linear; }
-.surface-hitmark {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  top: 50%;
-  width: 26px;
-  height: 26px;
-  margin: -13px 0 0 -13px;
-  pointer-events: none;
-  background:
-    linear-gradient(45deg, transparent 44%, #fff 44% 56%, transparent 56%),
-    linear-gradient(-45deg, transparent 44%, #fff 44% 56%, transparent 56%);
-  animation: surface-hitmark 0.26s ease-out forwards;
-}
-.surface-hitmark.is-kill { width: 36px; height: 36px; margin: -18px 0 0 -18px; filter: drop-shadow(0 0 6px #ff6a3d); }
+/* the hit marker: the game's own four ticks (HitMarker.jsx, lib/bf2017/ui/shapes.js), a flash that fades; a kill its longer bars in the warning colour */
+.surface-hitmark { position: absolute; z-index: 2; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; pointer-events: none; color: #fff; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6)); animation: surface-hitmark 0.26s ease-out forwards; }
+.surface-hitmark svg { display: block; width: 100%; height: 100%; }
+.surface-hitmark[data-kill] { width: 40px; height: 40px; margin: -20px 0 0 -20px; color: #ff6a5a; filter: drop-shadow(0 0 6px #ff6a3d); }
 @keyframes surface-hitmark { from { opacity: 1; transform: scale(1.3); } to { opacity: 0; transform: scale(0.8); } }
 .surface-parry {
   position: absolute;
