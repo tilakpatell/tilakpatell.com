@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
-import { arenaOf, buildPack, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
+import { STILL_SKINNED, arenaOf, buildPack, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
@@ -39,6 +39,21 @@ describe('arenaOf', () => {
     const map = readMap(json, bin);
     expect(mainSubs(map)).toEqual(['fixture_01', 'content', 'shared_art', 'sunny']);
     expect(arenaOf(map)).toEqual([0, 1, 2]);
+  });
+
+  it('keeps a still skinned actor (a wind-bent shrub, its bind pose) as scenery, and no other actor', () => {
+    const map = {
+      name: 'levels/mp/endor_01/endor_01',
+      subworlds: ['Levels/MP/Endor_01/Shared_Art'],
+      meshes: [{ file: 'objects/nature/forestbase/forestbase_shrublarge_01_skinned_mesh.glb' }, { file: 'characters/creatures/ewok/ewok_01_mesh.glb' }, { file: 'objects/props/crate_01_mesh.glb' }],
+      groups: [
+        { mesh: 0, sub: 0, kind: 'actor', first: 0, count: 2 },
+        { mesh: 1, sub: 0, kind: 'actor', first: 2, count: 1 },
+        { mesh: 2, sub: 0, kind: 'static', first: 3, count: 1 },
+      ],
+    };
+    expect(STILL_SKINNED.test(map.meshes[0].file)).toBe(true);
+    expect(arenaOf(map)).toEqual([0, 1, 3]);
   });
 
   it('takes the subs it is given, by their last name, any case', () => {

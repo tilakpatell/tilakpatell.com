@@ -67,8 +67,8 @@ export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunn
 // What the game places and never draws as itself: Enlighten's lighting
 // proxies, the fake light cones, destruction stages waiting their turn
 // (despawn and leftover pieces), the planes that fake shadow, mist and
-// light; and the skinned actors, which stand in
-// their bind pose (the site's own people do the living)
+// light; and the skinned actors but the still ones (STILL_SKINNED), whose
+// living the site's own people do
 export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|invalidatelightplane|mistplane|lightcone/i;
 
 // `drop`: meshes left out, each `<mesh name>` or `<sub>:<mesh name>` (its
@@ -86,6 +86,13 @@ const dropTest = (drop) => {
   };
 };
 
+// The skinned actors that are scenery, not figures: the wind-bent shrubs
+// (Endor_01's 425 forestbase_shrub*_skinned), skinned for the wind with no
+// clip of their own, so their bind pose is how they stand. They go in the
+// pack as rigid instances (lane D2); every other actor is the site's to
+// place (actorsJson).
+export const STILL_SKINNED = /objects\/nature\/.*_skinned/;
+
 export function arenaOf(map, { subs = null, drop = [] } = {}) {
   const want = new Set((subs ?? mainSubs(map)).map(last));
   const dropped = dropTest(drop);
@@ -93,7 +100,7 @@ export function arenaOf(map, { subs = null, drop = [] } = {}) {
   for (const g of map.groups) {
     const sub = last(map.subworlds[g.sub]);
     const file = map.meshes[g.mesh]?.file ?? '';
-    if (!want.has(sub) || g.kind === 'actor' || NEVER.test(file) || dropped(sub, file)) continue;
+    if (!want.has(sub) || (g.kind === 'actor' && !STILL_SKINNED.test(file)) || NEVER.test(file) || dropped(sub, file)) continue;
     for (let i = 0; i < g.count; i++) out.push(g.first + i);
   }
   return out.sort((a, b) => a - b);
