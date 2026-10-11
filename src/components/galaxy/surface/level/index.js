@@ -299,7 +299,9 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     },
     ready: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,
-    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null }),
+    // (maps: the pack's maps asked, loaded and failed, and why the first
+    // failed, levelGltf.js's counts: a level drawn white says why here)
+    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null, maps: loader?.counts() ?? { asked: 0, loaded: 0, failed: 0, why: null } }),
     // the level's engine, once it's up (null on a phone, the low tier, a pack without shapes)
     physics: () => engine,
     dispose() {

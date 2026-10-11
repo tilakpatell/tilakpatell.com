@@ -39,7 +39,7 @@ const killerOf = (snap) => {
   return line ? { name: line.killer, weapon: line.weapon ?? null } : null;
 };
 
-export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssault' }) {
+export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssault', back = null }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const navigate = useNavigate();
   const screens = useGameScreens();
@@ -51,7 +51,8 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   }, []);
   const world = useWorld(battlefrontModule, { props: { level, mode }, onEvent, rebuild: `${level}/${mode}` });
   const send = (action, arg) => world.world?.do?.(action, arg);
-  const way = wayOut('/battlefront');
+  // (the galaxy world that sent the player is the way out; else the view's)
+  const way = back ?? wayOut('/battlefront');
   const loading = !snap || !snap.level?.loaded;
   const alive = snap?.player?.state === 'alive';
   const result = snap?.mode?.result ?? null;
