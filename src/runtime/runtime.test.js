@@ -244,6 +244,27 @@ describe('createRuntime', () => {
     expect(makeBackend).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps why a world failed, a WebAssembly module by name, until one comes up', async () => {
+    const { rt, loop } = make();
+    const wasm = Object.assign(new Error('rapier: WebAssembly did not come up in time'), { name: 'WasmError', module: 'rapier' });
+    expect(await rt.mount({ id: 'bf', create: () => Promise.reject(wasm) }, {}, fakeHost())).toBe(false);
+    expect(rt.status).toBe('failed');
+    expect(rt.failure).toEqual({ world: 'bf', name: 'WasmError', message: wasm.message, module: 'rapier' });
+    expect(await rt.mount({ id: 'a', create: () => fakeWorld() }, {}, fakeHost())).toBe(true);
+    loop.tick(16);
+    expect(rt.status).toBe('on');
+    expect(rt.failure).toBe(null);
+  });
+
+  it('keeps why a frame failed', async () => {
+    const { rt, loop } = make();
+    const trap = Object.assign(new Error('unreachable'), { name: 'RuntimeError' });
+    expect(await rt.mount({ id: 'a', create: () => fakeWorld({ draw: () => { throw trap; } }) }, {}, fakeHost())).toBe(true);
+    loop.tick(16);
+    expect(rt.status).toBe('failed');
+    expect(rt.failure).toMatchObject({ world: 'a', name: 'RuntimeError', module: null });
+  });
+
   it("marks a fresh mount's box until its first frame (its canvas fades in), and a handover's never", async () => {
     const { rt, loop } = make();
     const host = { ...fakeHost(), dataset: {} };

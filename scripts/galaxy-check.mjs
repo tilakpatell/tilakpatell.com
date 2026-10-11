@@ -8,11 +8,21 @@
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs space endor,coruscant
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,hoth
 //   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, JSON=1 …
-//   GPU=classic … (?gpu=: the galaxy surface on the classic renderer at any level, for a parity shot)
 //   VIEW=640x360 … (the page's size), SHOT_WAIT=900000 … (ms the screenshot may wait for a frame)
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
+//   GPU=webgpu … (or webgl: the runtime's ?gpu= override, for a 'nodes' world; each
+//     result says the backend that drew it: webgl, nodes-webgl or webgpu; or
+//     classic: the galaxy surface on the classic renderer at any level, for a
+//     parity shot, the shot's name saying which)
 //   PHASE_WAIT=900000 … (ms for the world to come up: a level pack in software GL takes minutes)
+//   PROFILE=60 … (lane X2: the main thread's CPU profile over that many
+//     seconds of play, after the counts: the Battlefront's player deployed
+//     and walking, a surface's camera turning; <name>.cpuprofile for
+//     DevTools and <name>.profile.json, its time by module and function per
+//     frame, scripts/cpu-profile.mjs)
+//   …/galaxy-check.mjs battlefront hoth (the Battlefront world,
+//     /battlefront/<id>/galacticAssault, its player deployed as an assault)
 //   BUDGET=1 … (or BUDGET=path/to/baseline.json): each world held to its
 //     quality level's row of the budget table (src/lib/budgets.js, the
 //     quality modes design: docs/superpowers/specs/2026-10-07-quality-modes-
@@ -45,13 +55,12 @@
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { budget } from '../src/lib/budgets.js';
+import { summarise } from './cpu-profile.mjs';
 import { limitsFor, overBy } from './galaxy-budget.mjs';
 
 const [mode = 'space', list = 'tatooine'] = process.argv.slice(2);
 const out = process.env.OUT ?? '.';
 const quality = process.env.QUALITY ?? 'high';
-// (GPU=classic|webgl|webgpu: the renderer asked for, runtime/backend.js's ?gpu=; the shot's name says it)
-const gpuAsk = process.env.GPU ?? '';
 const ship = process.env.SHIP ?? 'xwing';
 const oath = process.env.OATH ?? null; // (allegiance.js's saved oath, as JSON: the side you land as)
 const base = process.env.BASE ?? 'http://127.0.0.1:5188';
@@ -67,7 +76,54 @@ const asked = /^(\d+)x(\d+)$/.exec(process.env.VIEW ?? '');
 const viewport = asked ? { width: +asked[1], height: +asked[2] } : quality === 'ultra' && realGpu ? { width: 2560, height: 1440 } : { width: 1280, height: 720 };
 mkdirSync(out, { recursive: true });
 
-const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', `--use-angle=${angle}`, '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const gpu = process.env.GPU ?? null; // (webgpu, webgl or classic: the runtime's override)
+const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', `--use-angle=${angle}`, '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', ...(gpu === 'webgpu' ? ['--enable-unsafe-webgpu'] : [])] });
+// The main thread's CPU profile over `seconds` of play (lane X2): sampled
+// every 0.5 ms through the DevTools protocol, the frames counted by the
+// page's own requestAnimationFrame, and summed by module and function
+// (cpu-profile.mjs). On the Battlefront the player walks forward and turns;
+// elsewhere the camera turns (the mouse dragged), so the LOD and the stream
+// have something to do.
+async function profileOf(page, seconds, file, bf) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Profiler.enable');
+  await cdp.send('Profiler.setSamplingInterval', { interval: 500 });
+  await page.evaluate(() => {
+    window.__frames = 0;
+    const tick = () => {
+      window.__frames++;
+      window.__RUNTIME__?.invalidate();
+      if (window.__frames >= 0) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await cdp.send('Profiler.start');
+  const t0 = Date.now();
+  const { width, height } = page.viewportSize();
+  await page.mouse.move(width / 2, height / 2);
+  if (bf) await page.keyboard.down('w');
+  else await page.mouse.down();
+  for (let k = 0; Date.now() - t0 < seconds * 1000; k++) {
+    await page.mouse.move(width / 2 + Math.sin(k / 6) * width * 0.3, height / 2, { steps: 4 });
+    if (bf && k % 20 === 10) await page.keyboard.press('Space');
+    await page.waitForTimeout(250);
+  }
+  if (bf) await page.keyboard.up('w');
+  else await page.mouse.up();
+  const { profile } = await cdp.send('Profiler.stop');
+  const frames = await page.evaluate(() => {
+    const n = window.__frames;
+    window.__frames = -Infinity;
+    return n;
+  });
+  writeFileSync(`${file}.cpuprofile`, JSON.stringify(profile));
+  const sum = { seconds, ...summarise(profile, { frames, top: 25 }) };
+  writeFileSync(`${file}.profile.json`, JSON.stringify(sum, null, 2));
+  console.log(`profile ${seconds} s, ${frames} frames, ${sum.ms} ms busy (${(sum.ms / Math.max(1, frames)).toFixed(1)} ms a frame); top modules:`);
+  for (const m of sum.modules.slice(0, 10)) console.log(`  ${m.module.padEnd(60)} ${String(m.selfMs).padStart(9)} ms  ${m.perFrame.toFixed(2)} ms/frame`);
+  return { frames, ms: sum.ms, file: `${file}.profile.json` };
+}
+
 const results = [];
 for (const id of list.split(',')) {
   const ctx = await browser.newContext({ viewport });
@@ -105,9 +161,10 @@ for (const id of list.split(',')) {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
-  const path = mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
-  await page.goto(`${base}/?quality=${quality}&calibrate=off${gpuAsk ? `&gpu=${gpuAsk}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
-  const ready = mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
+  const bf = mode === 'battlefront';
+  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
+  await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
+  const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
   try {
     await page.waitForFunction(ready, null, { timeout: Number(process.env.PHASE_WAIT ?? 180000) });
   } catch {
@@ -132,7 +189,8 @@ for (const id of list.split(',')) {
   // planet on its sun side, facing it, stopped. The seeded randomness alone
   // can't hold it there: three.js draws on Math.random for every object's
   // id, so a change that makes more objects moves the ship.)
-  if (mode !== 'surface' && !process.env.LIVE) {
+  if (bf) await page.evaluate(() => window.__battlefront.do('deploy', { classId: 'd-orig-assault' }));
+  if (mode === 'space' && !process.env.LIVE) {
     await page.waitForFunction(() => !window.__galaxy().jump, null, { timeout: 120000 }).catch(() => {});
     await page.evaluate(() => {
       const { state } = window.__galaxyDebug;
@@ -155,7 +213,7 @@ for (const id of list.split(',')) {
   const stats = await page.evaluate(
     (surface) =>
       new Promise((done) => {
-        const renderer = surface ? window.__surfaceScene.renderer : window.__galaxyDebug.renderer;
+        const renderer = surface === 'battlefront' ? window.__RUNTIME__.gfx.renderer : surface ? window.__surfaceScene.renderer : window.__galaxyDebug.renderer;
         const info = renderer.info;
         const wasAuto = info.autoReset;
         info.autoReset = false;
@@ -187,20 +245,22 @@ for (const id of list.split(',')) {
               p50: pick(0.5),
               p95: pick(0.95),
               ratio: renderer.getPixelRatio(),
+              backend: renderer.isWebGPURenderer ? (renderer.backend?.isWebGPUBackend ? 'webgpu' : 'nodes-webgl') : 'webgl',
               // (the ground war's update, smoothed: ground/groundScene.js's ms)
-              ground: surface && window.__surfaceScene.groundWar ? +window.__surfaceScene.groundWar.ms.toFixed(2) : null,
+              ground: surface && window.__surfaceScene?.groundWar ? +window.__surfaceScene.groundWar.ms.toFixed(2) : null,
               // (a level world's collision: surface/level/levelPhysics.js's stats, when it has an engine)
-              physics: surface && typeof window.__surfaceScene.physics === 'function' ? (({ dropped, ...rest }) => ({ ...rest, dropped: dropped?.length ?? 0 }))(window.__surfaceScene.physics() ?? {}) : null,
+              physics: surface && typeof window.__surfaceScene?.physics === 'function' ? (({ dropped, ...rest }) => ({ ...rest, dropped: dropped?.length ?? 0 }))(window.__surfaceScene.physics() ?? {}) : null,
             });
           }
         };
         requestAnimationFrame(tick);
       }),
-    mode === 'surface',
+    bf ? 'battlefront' : mode === 'surface',
   );
-  const name = `${mode}-${id}-${quality}${gpuAsk ? `-${gpuAsk}` : ''}`;
+  const name = `${mode}-${id}-${quality}${gpu ? `-${gpu}` : ''}`;
   await page.screenshot({ path: `${out}/${name}.png`, timeout: Number(process.env.SHOT_WAIT ?? 120000) });
-  results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), errors: errors.slice(0, 5) });
+  const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
+  results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), ...(profile && { profile }), errors: errors.slice(0, 5) });
   console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}`);
   if (stats.physics) {
     const p = stats.physics;
