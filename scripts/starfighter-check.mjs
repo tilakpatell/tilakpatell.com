@@ -119,7 +119,7 @@ const frame = () =>
           window.__RUNTIME__?.invalidate();
           times.push(now - t);
           t = now;
-          const f = { calls: i.render.calls, triangles: i.render.triangles };
+          const f = { calls: i.render.drawCalls ?? i.render.calls, triangles: i.render.triangles };
           i.reset();
           if (++n < 4) requestAnimationFrame(tick);
           else {
