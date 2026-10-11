@@ -20,12 +20,18 @@
 // material is disposed (its maps are the cache's and stay).
 //   recipes: { forGlb(glbPath) → recipe[] | null, maps: { name → 'tex/x.ktx2' | null }, tex: sizes }
 //   mapKeys: the recipe maps the tier draws (gameMaterial.js's TIER_MAPS), the rest never fetched
+//   variations: levelVariations.js's index (the colour lane): a mesh in the
+//     game's variation of it has its GLB maps swapped to the variation's
+//     (every renderer), and with `materialFor` each of its materials drawn
+//     with the variation's recipe, a pack without recipes.json too
+//   slotPath(glbPath, uri, material) → the pack path a GLB slot's map is read from
 
 import { NoColorSpace, SRGBColorSpace } from 'three';
 import { COLOUR_MAP_KEYS } from '../../../../lib/three/surface/families.js';
 import { gltfLoader, ktx2Loader } from '../../../../lib/three/gltf.js';
 import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
 import { packUrl, splitTextures, tierTexture } from './levelPack.js';
+import { applyVariation, swapped } from './levelVariations.js';
 
 // '../tex/a.ktx2' named by meshes/x.glb → 'tex/a.ktx2' in the pack
 const inPack = (glbPath, uri) => {
@@ -36,6 +42,9 @@ const inPack = (glbPath, uri) => {
   }
   return parts.join('/');
 };
+
+// a GLB slot's map in the pack, moved to the variation's where it swaps it
+export const slotPath = (glbPath, uri, material) => swapped(inPack(glbPath, uri), material);
 
 // GLB materials to recipes: each takes the first unused recipe of its shader
 // (the dump lists LOD variants the GLB lacks, so the orders differ); then a
@@ -151,12 +160,14 @@ export async function recipeMaps(recipe, { maps = {}, texture, keys = null }) {
   return out;
 }
 
-export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null }) {
+export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null }) {
   // (mapKeys: the recipe maps the tier draws; null, all of them)
   if (recipes?.tex) sizes = { ...sizes, ...recipes.tex };
+  if (variations?.tex) sizes = { ...sizes, ...variations.tex };
   const textures = new Map(); // pack path → Promise<Texture | null>
   const meshes = new Map(); // glb path → Promise<{ scene } | null>
   let gone = false;
+  let applied = 0; // materials drawn in their variation's recipe
 
   // (a part's own maps say their sizes beside them: `own`; after dispose
   // nothing new is fetched, so nothing is left undisposed)
@@ -176,9 +187,10 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
   }
 
   async function bind(gltf, slots, glbPath) {
+    const v = variations?.forGlb(glbPath) ?? null;
     await Promise.all(
       slots.map(async ({ material, slot, uri }) => {
-        const [mat, tex] = await Promise.all([gltf.parser.getDependency('material', material), texture(inPack(glbPath, uri))]);
+        const [mat, tex] = await Promise.all([gltf.parser.getDependency('material', material), texture(slotPath(glbPath, uri, v?.materials[material]))]);
         if (!tex || gone) return;
         bindSlot(mat, slot, tex);
       }),
@@ -186,29 +198,30 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
   }
 
   async function gameMaterials(gltf, glbPath) {
-    const list = recipes.forGlb(glbPath);
-    if (!list?.length) return;
+    const list = recipes?.forGlb(glbPath) ?? null;
+    // (the variation's material i is the GLB's material i: the export writes both in the mesh's order)
+    const v = variations?.forGlb(glbPath) ?? null;
+    if (!list?.length && !v?.materials.some((m) => m?.recipe)) return;
     const glbMats = await gltf.parser.getDependencies('material');
-    const chosen = matchRecipes(
-      glbMats.map((m) => m.userData?.shader ?? null),
-      list,
-    );
+    const chosen = (list?.length ? matchRecipes(glbMats.map((m) => m.userData?.shader ?? null), list) : glbMats.map(() => null)).map((r, i) => applyVariation(r, v?.materials[i], v?.name));
+    const mapsOf = (recipe, i) => (recipe?.variation ? { ...(recipes?.maps ?? {}), ...(v.materials[i].maps ?? {}) } : (recipes?.maps ?? {}));
     // (the scene's materials: the loader's own, or its copies of them, which
     // it makes for a mesh without normals; each said by its GLB index)
     const used = new Map();
     gltf.scene.traverse((o) => {
       if (!o.isMesh) return;
       const i = gltf.parser.associations.get(o.material)?.materials ?? glbMats.indexOf(o.material);
-      if (chosen[i] && chosen[i].family !== 'glb') used.set(o.material, chosen[i]);
+      if (chosen[i] && chosen[i].family !== 'glb') used.set(o.material, [chosen[i], i]);
     });
     const swap = new Map();
     await Promise.all(
-      [...used].map(async ([glb, recipe]) => {
-        const maps = { glb, ...(await recipeMaps(recipe, { maps: recipes.maps ?? {}, texture, keys: mapKeys })) };
+      [...used].map(async ([glb, [recipe, i]]) => {
+        const maps = { glb, ...(await recipeMaps(recipe, { maps: mapsOf(recipe, i), texture, keys: mapKeys })) };
         if (gone) return;
         // (a recipe the material cannot be made of keeps the GLB's material)
         try {
           swap.set(glb, materialFor(recipe, maps));
+          if (recipe.variation) applied++;
         } catch (e) {
           if (import.meta.env?.DEV) console.warn('game material failed', glbPath, recipe.shader, e);
         }
@@ -231,7 +244,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
             const { buffer, slots } = splitTextures(bytes);
             const gltf = await gltfLoader().parseAsync(buffer, '');
             await bind(gltf, slots, glbPath);
-            if (recipes && materialFor) await gameMaterials(gltf, glbPath);
+            if ((recipes || variations) && materialFor) await gameMaterials(gltf, glbPath);
             return gltf;
           })
           .catch((e) => {
@@ -246,6 +259,8 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
   return {
     load,
     texture,
+    // (how many materials draw in their variation, for the evidence)
+    applied: () => applied,
     // (the remote name of a pack file, for the evidence)
     url: (path) => assetUrl(packUrl(world, path)),
     async dispose() {

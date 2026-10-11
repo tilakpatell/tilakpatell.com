@@ -21,12 +21,15 @@
 // with the game's own surface shader (src/lib/three/surface/); the classic
 // renderer, or a pack without one, keeps the GLB's materials. Their sun (a
 // leaf's translucency, hair's lobes, a head's scattering) follows the
-// scene's first directional light.
+// scene's first directional light. A pack with a variations.json (the colour
+// lane, scripts/bf2017-variations.mjs) draws each mesh in the game's
+// variation of it: its maps on every renderer, its recipe on the node one.
 
 import { withFallback } from '../../../../lib/assetBase.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
+import { variationsIndex } from './levelVariations.js';
 import { packUrl, wanted } from './levelPack.js';
 import { createLevelScene } from './levelScene.js';
 import { createLevelStream } from './levelStream.js';
@@ -167,7 +170,7 @@ function findSun(scene) {
 
 // the game material for a tier, or null on the classic renderer; its sun one
 // set of uniforms the level moves with the scene's
-async function gameMaterials(world, pack, renderer, tier, scene) {
+async function gameMaterials(world, pack, renderer, tier, scene, variations) {
   // (low draws the GLB as it is: nothing to swap or fetch)
   if (!renderer?.isWebGPURenderer || tier === 'low') return { recipes: null, materialFor: null };
   const [recipes, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }] = await Promise.all([
@@ -176,7 +179,7 @@ async function gameMaterials(world, pack, renderer, tier, scene) {
     import('../../../../lib/three/surface/gameMaterial.js'),
     import('../../../../lib/three/light/three.js'),
   ]);
-  if (!recipes) return { recipes: null, materialFor: null };
+  if (!recipes && !variations?.chosen) return { recipes: null, materialFor: null };
   const [make, three] = await Promise.all([loadSurfaceMaterial(), loadThree()]);
   const sun = createSunUniforms(three, sunOf(scene) ?? {});
   return { recipes, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
@@ -198,10 +201,11 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
   const colliders = walk ? createColliders(walk, tier, { loadBin: fetchBytes }) : null;
   packOf(world)
     .then(async (pack) => {
-      const { recipes, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
+      const variations = variationsIndex(pack, await partOf(world, 'variations.json', null));
+      const { recipes, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene, variations).catch(() => ({ recipes: null, materialFor: null }));
       sun = shared;
       if (gone) return;
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations });
       level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when
@@ -246,7 +250,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     },
     ready: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,
-    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null }),
+    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, variations: loader?.applied() ?? 0 }),
     dispose() {
       gone = true;
       colliders?.dispose();

@@ -1,7 +1,7 @@
 import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { asColour, bindSlot, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex } from './levelGltf.js';
+import { asColour, bindSlot, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, slotPath } from './levelGltf.js';
 
 // a GLB with one mesh of two primitives, their materials naming the game's
 // shaders in their extras as the export writes them
@@ -175,6 +175,44 @@ describe('createLevelLoader', () => {
     expect('hairStrand' in maps && 'sss' in maps).toBe(true);
   });
 
+  // the colour lane's variations: material 0 (SS_A) in its variation, material 1 as it was
+  const variations = {
+    forGlb: (path) => (path.startsWith('meshes/v') ? { name: 'V', materials: [{ recipe: { shader: 'Shaders/SS_V', maps: { detail: 'T_V' }, params: {} }, maps: { T_V: null }, vectors: { PaintColour: [1, 0, 0, 1] }, bools: {} }, { recipe: null, maps: {} }] } : null),
+    chosen: 1,
+  };
+
+  it('with variations a material draws its variation’s recipe, its maps resolved from the variation’s', async () => {
+    const materialFor = vi.fn((recipe) => new THREE.MeshBasicMaterial({ name: `game:${recipe.shader}` }));
+    const recipes = { forGlb: () => [{ shader: 'Shaders/SS_A', maps: {} }, { shader: 'Shaders/SS_B', maps: {} }], maps: {}, tex: {} };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes, recipes, materialFor, variations });
+    const gltf = await loader.load('meshes/v.lod0.glb');
+    const mats = [];
+    gltf.scene.traverse((o) => o.isMesh && mats.push(o.material));
+    expect(mats.map((m) => m.name)).toEqual(['game:Shaders/SS_V', 'game:Shaders/SS_B']);
+    const [recipe, maps] = materialFor.mock.calls.find(([r]) => r.shader === 'Shaders/SS_V');
+    expect(recipe.variation).toEqual({ name: 'V', vectors: { PaintColour: [1, 0, 0, 1] }, bools: {} });
+    expect(maps.detail).toBeNull();
+    expect(loader.applied()).toBe(1);
+  });
+
+  it('with variations and no recipes the variation’s material still draws, the rest keep the GLB’s', async () => {
+    const materialFor = vi.fn((recipe) => new THREE.MeshBasicMaterial({ name: `game:${recipe.shader}` }));
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes, materialFor, variations });
+    const gltf = await loader.load('meshes/v2.lod0.glb');
+    const mats = [];
+    gltf.scene.traverse((o) => o.isMesh && mats.push(o.material));
+    expect(mats.map((m) => m.name)).toEqual(['game:Shaders/SS_V', 'Shaders/SS_B']);
+  });
+
+  it('without variations draws exactly as before', async () => {
+    const materialFor = vi.fn((recipe) => new THREE.MeshBasicMaterial({ name: `game:${recipe.shader}` }));
+    const recipes = { forGlb: () => [{ shader: 'Shaders/SS_A', maps: {} }, { shader: 'Shaders/SS_B', maps: {} }], maps: {}, tex: {} };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes, recipes, materialFor });
+    await loader.load('meshes/v3.lod0.glb');
+    expect(materialFor.mock.calls.map(([r]) => r)).toEqual(recipes.forGlb());
+    expect(loader.applied()).toBe(0);
+  });
+
   it('after dispose a load asks for nothing and gives null', async () => {
     const fetch = vi.fn(fetchBytes);
     const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: fetch, sizes });
@@ -217,5 +255,14 @@ describe('a level pack’s textures bound to their materials', () => {
     expect(mat.roughnessMap).toBe(orm);
     expect(mat.metalnessMap).toBe(orm);
     expect(orm.colorSpace).toBe(THREE.NoColorSpace);
+  });
+});
+
+describe('slotPath', () => {
+  it('reads a GLB’s map from the pack, moved to its variation’s where that swaps it', () => {
+    const vm = { swaps: { 'tex/t_a_cs.ktx2': 'tex/t_b_cs.ktx2' } };
+    expect(slotPath('meshes/x.lod0.glb', '../tex/t_a_cs.ktx2', vm)).toBe('tex/t_b_cs.ktx2');
+    expect(slotPath('meshes/x.lod0.glb', '../tex/t_a_nam__normal.ktx2', vm)).toBe('tex/t_a_nam__normal.ktx2');
+    expect(slotPath('meshes/x.lod0.glb', '../tex/t_a_cs.ktx2', null)).toBe('tex/t_a_cs.ktx2');
   });
 });
