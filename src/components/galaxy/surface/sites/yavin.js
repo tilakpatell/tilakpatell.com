@@ -35,7 +35,8 @@ export const SITE = {
   },
   fog: { color: '#b8c8b0', density: 0.0022 },
   light: { sun: 3.0, sky: '#c8daea', ground: '#4a4028', ambient: 0.8 },
-  water: { level: -3, color: '#5a7a5a', deep: '#22382a', kind: 'swamp', waves: 1.2 },
+  // (at the game's own water, its reservoir and river 15.3 m under the hangar's floor)
+  water: { level: -15.3, color: '#5a7a5a', deep: '#22382a', kind: 'swamp', waves: 1.2 },
   dust: '#8a8a60',
   edge: 'The jungle closes in. Somewhere out there are temples nobody has seen in four thousand years.',
   ground: { detail: 'leaves', detailLook: { color: 0.8, normal: 0.7 },
@@ -64,7 +65,7 @@ export const SITE = {
       rockAt: 0.5,
       accentCover: 0.3,
       grain: 0.85,
-      wet: { level: -3, band: 1.2, color: '#3a3a26' },
+      wet: { level: -15.3, band: 1.2, color: '#3a3a26' },
     },
   },
   weather: [{ kind: 'motes', count: 500, color: '#f0f8c0' }],
