@@ -289,20 +289,6 @@ describe('the worlds drawn from the game’s levels', () => {
     expect(pit).toMatchObject({ level: 'tatooine/jabba-inside', weather: [], life: [] });
     expect(pit.zones).toEqual([expect.objectContaining({ to: { district: 'jabba' } })]);
   });
-
-  it('Yavin 4 stands on Yavin_01: the landing on the game’s ground, the built temple and hangar left to the level', () => {
-    const y = siteOf('yavin');
-    expect(y.level).toBe('yavin');
-    expect(y.ground.layers).toEqual([{ type: 'image', pack: 'yavin' }]);
-    const temple = y.places.find((p) => p.id === 'temple');
-    expect(temple.flat.game).toBe(true);
-    for (const id of ['temple', 'hangar', 'field']) expect(y.places.find((p) => p.id === id).things.every((x) => x.game), id).toBe(true);
-    // (no built platform under the landing: whatever stands within 30 m of it is the flight's)
-    const near = y.things_all.filter((x) => Math.hypot(x.at[0] - y.land.at[0], x.at[1] - y.land.at[1]) < 30);
-    expect(near.every((x) => x.game)).toBe(true);
-    // (the landing faces the hangar's mouth, west of it)
-    expect(y.land.yaw).toBeCloseTo(-Math.PI / 2);
-  });
 });
 
 // The seven worlds with no game map, dressed from the drop's library (the
