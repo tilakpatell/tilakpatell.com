@@ -107,6 +107,9 @@ async function level(world, { fetch: doFetch }) {
   const all = [];
   let unknown = 0;
   pack.meshes.forEach((m, i) => {
+    // (a mesh the pack left out, its LOD files none, wants no maps: the
+    // sequel-era ones above all, which Scarif_02's mode layers place)
+    if (Array.isArray(m.glb) && !m.glb.some(Boolean)) return;
     const row = rows.get(meshOf(m.name));
     if (!row) return unknown++;
     meshes[i] = recipesOf(row);
