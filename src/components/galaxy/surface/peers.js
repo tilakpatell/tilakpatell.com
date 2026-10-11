@@ -14,7 +14,7 @@
 // 12 m of it: saberLight.js)
 
 import * as THREE from 'three';
-import { PARTY, loadPartyFigure } from '../../universe/footScene';
+import { PARTY, loadPartyFigure } from './nodes/figures';
 import { HEROES, heroSpec } from '../heroes';
 import { readLooks } from '../../rickmorty/wardrobe/looks';
 import { METRE } from '../../universe/foot';

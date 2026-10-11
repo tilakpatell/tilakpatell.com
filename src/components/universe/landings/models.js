@@ -20,14 +20,10 @@
 import * as THREE from 'three';
 import { loadGltf } from '../../../lib/three/gltf';
 import { bakeCanopy, canopy, canopyK, canopyLevel, canopyShader, crownMaterial, familyOf } from './canopy';
+import { sizeFor } from './sizing';
 
-// the scale that brings a model of `size` (a Vector3) to the spec's size
-export function sizeFor(size, { tall, long, wide } = {}) {
-  if (tall) return tall / (size.y || 1);
-  if (long) return long / (Math.max(size.x, size.z) || 1);
-  if (wide) return wide / (Math.max(size.x, size.z) || 1);
-  return 1;
-}
+// (the scale a spec asks for: ./sizing.js, pure, for a world that wants it alone)
+export { sizeFor };
 
 // One model of a kit, by its node's name: a copy of it (the kit's own
 // left as it is), where the kit puts it, in a group of its own; null if

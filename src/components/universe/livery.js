@@ -37,9 +37,13 @@
 // clone: copy each material before changing it (it's shared with others).
 // only: which materials are the hull's, by name (a model that brings its
 // cockpit, glass and lights as materials of their own keeps those as they are).
+//
+// (Its workings are ./liveryCore.js's, shared with liveryNodes.js, the same
+// on the node renderer; the GLSL below is this file's alone.)
 
-import * as THREE from 'three';
-import { SHIP_PROFILE } from '../../lib/three/gltf';
+import { createLiveryWith } from './liveryCore';
+
+export { complement } from './liveryCore';
 
 const DECLARE = `
 uniform vec3 paintHull;
@@ -86,8 +90,6 @@ void liveryDirectional( const in DirectionalLight dl, out IncidentLight il ) {
 }
 #define getDirectionalLightInfo( dl, il ) liveryDirectional( dl, il )`;
 
-const lit = (m) => Boolean(m && (m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial || m.isMeshToonMaterial));
-
 // A material taught the paint, on top of whatever it's already taught.
 function teach(m, uniforms) {
   const before = m.onBeforeCompile;
@@ -107,77 +109,7 @@ function teach(m, uniforms) {
   };
   m.needsUpdate = true;
   m.userData.painted = true;
+  return m;
 }
 
-const luminance = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-// The key's opposite hue at the key's own brightness: 1 − the key (taken at
-// its brightest channel, so a dim key isn't read as a dark one), scaled back
-// to the key's luminance. A white key has no opposite: a grey of its
-// luminance.
-export function complement(key) {
-  const top = Math.max(key[0], key[1], key[2]);
-  const l = luminance(key);
-  if (top <= 0) return [0, 0, 0];
-  const c = key.map((v) => 1 - v / top);
-  const lc = luminance(c);
-  if (lc < 1e-4) return [l, l, l];
-  return c.map((v) => (v * l) / lc);
-}
-
-export function createLivery() {
-  const shared = {
-    paintHull: { value: new THREE.Color() },
-    paintTrim: { value: new THREE.Color() },
-    paintOn: { value: 0 },
-    uRimColour: { value: new THREE.Color(0, 0, 0) },
-    uRimDir: { value: new THREE.Vector3(0, 1, 0) },
-    uRimStrength: { value: SHIP_PROFILE.light.rim },
-    uFillScale: { value: SHIP_PROFILE.light.fill / SHIP_PROFILE.light.key },
-  };
-  const copies = [];
-  return {
-    apply(root, fit, { clone = false, only = null } = {}) {
-      const uniforms = {
-        ...shared,
-        paintFit: { value: new THREE.Vector4(fit.mid, fit.marks[0], fit.marks[1], fit.keep) },
-        paintDark: { value: new THREE.Vector4(...(fit.dark ?? [0, 0.001, 0]), 0) },
-      };
-      const one = (m) => {
-        if (!lit(m) || m.userData.painted || (only && !only.test(m.name))) return m;
-        const p = clone ? m.clone() : m;
-        if (clone) copies.push(p);
-        teach(p, uniforms);
-        return p;
-      };
-      root.traverse((o) => {
-        if (!o.isMesh || o.userData.noPaint || o.userData.ink) return;
-        o.material = Array.isArray(o.material) ? o.material.map(one) : one(o.material);
-      });
-      return root;
-    },
-    // a paint from paint.js (the factory's has no hull: the texture as it is)
-    set(paint) {
-      shared.paintOn.value = paint?.hull ? 1 : 0;
-      if (!paint?.hull) return;
-      shared.paintHull.value.set(paint.hull);
-      shared.paintTrim.value.set(paint.trim);
-    },
-    // the light on its edges (lighting.js's fill), each frame
-    rim({ colour, dir, key }) {
-      if (Array.isArray(colour)) shared.uRimColour.value.setRGB(colour[0], colour[1], colour[2]);
-      else shared.uRimColour.value.copy(colour);
-      if (key) {
-        const c = complement(Array.isArray(key) ? key : [key.r, key.g, key.b]);
-        const r = shared.uRimColour.value;
-        r.setRGB((r.r + c[0]) / 2, (r.g + c[1]) / 2, (r.b + c[2]) / 2);
-      }
-      if (Array.isArray(dir)) shared.uRimDir.value.set(dir[0], dir[1], dir[2]);
-      else shared.uRimDir.value.copy(dir);
-    },
-    dispose() {
-      for (const m of copies) m.dispose();
-      copies.length = 0;
-    },
-  };
-}
+export const createLivery = () => createLiveryWith(teach);

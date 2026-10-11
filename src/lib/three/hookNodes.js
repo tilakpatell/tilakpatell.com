@@ -23,7 +23,8 @@
 //
 //   twinScene(root, twins) → every classic material under root swapped for its twin
 //   asNode(material) → the node material for a classic one (three's own
-//     NodeLibrary.fromMaterial: every property copied), or itself
+//     NodeLibrary.fromMaterial: every property copied; the same one every
+//     time it's asked), or itself
 //   follow(holder) → a uniform node that is `holder` ({ value } read every
 //     render) or the node itself, so a caller's shared { value } still drives it
 //   wrap(material, method, fn, tag, nodes) → material; keyed(material, tag, nodes) the key alone
@@ -64,14 +65,22 @@ const NODE_OF = {
 
 // (what three's renderer does to a classic material it meets, done early,
 // so a hook has a node material to wrap)
+// (one twin a classic material, ever: a hook put on a classic material
+// lands on its twin, and the swap that comes after, a house's adopt or
+// twinScene, puts that same twin on the object, so the hook is drawn)
+const TWINS = new WeakMap();
+
 export function asNode(material) {
   if (!material || material.isNodeMaterial) return material;
+  const known = TWINS.get(material);
+  if (known) return known;
   const Kind = NODE_OF[material.type];
   if (!Kind) return material;
   const out = new Kind();
   // (a GLSL hook's own program key is left behind: the node material keys
   // its program by its nodes; a GLSL patch copied over does nothing here)
   for (const key in material) if (key !== 'customProgramCacheKey') out[key] = material[key];
+  TWINS.set(material, out);
   return out;
 }
 

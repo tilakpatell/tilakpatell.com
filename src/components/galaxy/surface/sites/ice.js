@@ -50,6 +50,8 @@ export const SITES = {
     // lit as the game lights Hoth_01 (src/data/bf2017/light/hoth.json,
     // gameLit.js): its sun, sky, bounce, fog, probe and grade over these
     gameLight: 'hoth',
+    // the record's picture on the node renderer (src/data/bf2017/light/hoth.picture.json, applyGameLight)
+    picture: 'hoth.picture.json',
     sky: {
       zenith: '#6f98c8',
       horizon: '#e4ecf4',
@@ -133,12 +135,27 @@ export const SITES = {
         site: { weather: [], fog: { color: '#9fb4ca', density: 0.012 } },
         door: { at: [5, -28], r: 2.4, prompt: 'Back out onto the ice' },
       },
+      // the game's Hoth_02 (lane E4: /models/galaxy/bf2017/levels/hoth/outpost/level.json,
+      // `node scripts/bf2017-level.mjs s9_3/hoth_02 --world hoth --district
+      // outpost --spot 90 -1250 --subs Hoth_02,Content,Mode1`): the season's
+      // outpost on its floorboards, drawn on Hoth_01's own terrain, so it
+      // lies where the game put it, 290 m north of the landing
+      {
+        id: 'outpost',
+        name: 'The outpost',
+        level: 'hoth/outpost',
+        land: { at: [0, 0], yaw: 0 },
+        line: 'A forward post on the ice: floorboards, crates and gas flasks, wrecked DF.9 turrets, and the snow walls round it.',
+        door: { at: [0, -12], r: 3, prompt: 'Back out to the ice fields' },
+      },
     ],
     // inside Echo Base: in through the hangar's back-left door (the hangar
     // stands 30 m into the place, its back wall 59 m into the hangar)
     zones: [
       // (and beside it, the way down into the game's own halls: the base district)
       { id: 'echohalls', name: 'Echo Base, the halls', door: { at: [-12, -32], r: 2.4, prompt: 'Walk down into the halls' }, to: { district: 'base' } },
+      // (and out on the ice, the game's outpost: the outpost district, where Hoth_02 puts it)
+      { id: 'outposttrail', name: 'The outpost', door: { at: [-115, 290], r: 4, prompt: 'Walk on into the outpost' }, to: { district: 'outpost' } },
       {
         id: 'echo',
         name: 'Echo Base',

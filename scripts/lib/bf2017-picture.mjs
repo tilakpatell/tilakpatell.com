@@ -6,15 +6,57 @@ import { cloudShadowOf, panoramaOf } from '../../src/lib/three/light/grade.js';
 
 // the bucket's VE record ({ objects: [{ $type, … }] }) as entry.record takes
 // it: each component's first object in a one-element array; later records
-// (a weather's overrides) win field by field
+// (a weather's overrides) win field by field, and only on the fields their
+// PropertyOverrides name where they list them (the rest are the component's
+// defaults, as bf2017-light.mjs's readVE reads them: an interior that sets
+// nothing of the grade keeps the day's LUT)
 export function recordOf(...raws) {
   const out = {};
-  for (const raw of raws) {
+  raws.forEach((raw, i) => {
     for (const o of raw?.objects ?? []) {
       const t = o?.$type;
       if (!t || !t.endsWith('ComponentData')) continue;
-      out[t] = [{ ...(out[t]?.[0] ?? {}), ...o }];
+      const own = i > 0 && out[t] && Array.isArray(o.PropertyOverrides) ? new Set(o.PropertyOverrides) : null;
+      const over = own ? Object.fromEntries(Object.entries(o).filter(([k]) => own.has(k))) : o;
+      out[t] = [{ ...(out[t]?.[0] ?? {}), ...over }];
     }
+  });
+  return out;
+}
+
+// A weather's VE records as the light stack's entry (src/lib/three/light/
+// entry.js, as fixtures/hoth.ve.json has it): recordOf's components, each
+// vector ({ x, y, z[, w] }) an array and each asset reference its name, so a
+// world's own record can stand in the lit fixture where Hoth's does
+const plain = (v) => {
+  if (Array.isArray(v)) return v.map(plain);
+  if (!v || typeof v !== 'object') return v;
+  if (typeof v.$asset === 'string') return v.$asset;
+  const keys = Object.keys(v);
+  if (keys.length >= 3 && keys.length <= 4 && keys.every((k) => 'xyzw'.includes(k) && Number.isFinite(v[k]))) return ['x', 'y', 'z', 'w'].filter((k) => k in v).map((k) => v[k]);
+  return Object.fromEntries(keys.map((k) => [k, plain(v[k])]));
+};
+export function entryOf(name, ...raws) {
+  return { name, record: plain(recordOf(...raws)) };
+}
+
+// The record's picture fields by the game's names (vectors as arrays,
+// assets by name), for an entry built from a site's own tables, which keeps
+// the numbers but not the textures' names (grade.js's withPicture lays them
+// over it); a component the record lacks is left out
+export const PICTURE_FIELDS = {
+  TonemapComponentData: ['TonemapMethod'],
+  ColorCorrectionComponentData: ['HdrColorGradingLut', 'ColorGradingEnable', 'Enable', 'ColorGradingMaxHdrValue'],
+  SkyComponentData: ['PanoramicTexture', 'SkyGradientTexture', 'PanoramicRotation', 'PanoramicUVMinX', 'PanoramicUVMinY', 'PanoramicUVMaxX', 'PanoramicUVMaxY', 'PanoramicTileFactor'],
+  OutdoorLightComponentData: ['CloudShadowTexture', 'CloudShadowEnable', 'CloudShadowIsTopDown', 'CloudShadowAddressingMode', 'CloudXZTranslation'],
+};
+export function pictureFields(record) {
+  const out = {};
+  for (const [t, keys] of Object.entries(PICTURE_FIELDS)) {
+    const o = record?.[t]?.[0];
+    if (!o) continue;
+    const kept = Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, plain(o[k])]));
+    if (Object.keys(kept).length) out[t] = kept;
   }
   return out;
 }

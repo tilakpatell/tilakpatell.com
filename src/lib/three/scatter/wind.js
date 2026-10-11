@@ -45,6 +45,6 @@ export function swayOf(wind, height = 1) {
 // `time` a { value } the world's wind advances; `dir` a Vector2.
 export async function applySway(material, sway, { time, dir, nodes = false }) {
   if (!sway) return material;
-  const { wind } = nodes ? await import('../foliageNodes.js') : await import('../foliage.js');
+  const { wind } = nodes ? await import('../foliageNodes.js') : await import(/* classic */ '../foliage.js');
   return wind(material, { kind: 'shrub', time, dir, ...sway });
 }

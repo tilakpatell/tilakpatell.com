@@ -6,12 +6,12 @@
 // (catalog/forest.js) is drawn as the model; these are what's drawn without.
 
 import * as THREE from 'three';
-import { between, box, cyl, dome, part, ring, rockGeometry, rod, upright } from '../kit';
+import { between, box, cyl, dome, part, ring, rockGeometry, rod, upright } from '../kitCore';
 import { loft, trap8 } from '../../../universe/trafficKit';
 import { rng } from '../noise';
 import { insignia, scorch } from '../decals';
 import { buildGalaxyShip } from '../../fleet';
-import { liftNormals, spherifyNormals } from '../../../../lib/three/foliage';
+import { liftNormals, spherifyNormals } from '../../../../lib/three/foliageNormals';
 
 const { PI, cos, sin, max, min } = Math;
 const TAU = PI * 2;
@@ -652,35 +652,7 @@ const IMPERIAL = '#7a7d78';
 // light, slanting down through the canopy: soft columns along the sun's
 // rays, brightest low down, fading out far off and close up
 function shaftMaterial(k, color, strength) {
-  return k.own(
-    new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: new THREE.Color(color) }, uK: { value: strength } },
-      vertexShader: `
-varying vec3 vN; varying vec3 vW; varying float vY;
-void main() {
-  vec4 w = modelMatrix * vec4(position, 1.0);
-  vW = w.xyz;
-  vN = normalize(mat3(modelMatrix) * normal);
-  vY = uv.y;
-  gl_Position = projectionMatrix * viewMatrix * w;
-}`,
-      fragmentShader: `
-uniform vec3 uColor; uniform float uK;
-varying vec3 vN; varying vec3 vW; varying float vY;
-void main() {
-  vec3 v = normalize(cameraPosition - vW);
-  float d = length(cameraPosition - vW);
-  float edge = pow(abs(dot(normalize(vN), v)), 3.0);
-  float along = smoothstep(0.0, 0.1, vY) * (1.0 - smoothstep(0.45, 1.0, vY));
-  float fade = smoothstep(6.0, 30.0, d) * (1.0 - smoothstep(110.0, 260.0, d));
-  gl_FragColor = vec4(uColor * edge * along * fade * uK, 1.0);
-}`,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
-    }),
-  );
+  return k.own(k.looks.shaft(color, strength));
 }
 
 // a shaft geometry: cylinders from the ground up toward the sun

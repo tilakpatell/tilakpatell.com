@@ -11,7 +11,7 @@
 // rancor's den slams down, or goes back up).
 
 import * as THREE from 'three';
-import { box, cyl, dome, part, ring, rod } from '../kit';
+import { box, cyl, dome, part, ring, rod } from '../kitCore';
 
 const { PI, cos, sin } = Math;
 

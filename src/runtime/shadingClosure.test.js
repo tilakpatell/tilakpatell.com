@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { closure, glslSites, importsOf, resolveImport } from './shadingClosure';
+import { classicImportsOf, closure, glslSites, importsOf, resolveImport } from './shadingClosure';
 
 // an in-memory tree, as the file system is passed in
 const fsOf = (tree) => ({ read: (p) => tree[p], exists: (p) => p in tree });
@@ -60,5 +60,15 @@ describe('glslSites', () => {
   });
   it('keeps a URL in a string whole', () => {
     expect(glslSites("const u = 'https://x.org'; new ShaderMaterial()")).toEqual(['ShaderMaterial']);
+  });
+});
+
+describe('a classic branch', () => {
+  it('is left out of the node closure, and found by name', () => {
+    const src = "const s = await (k === 'webgl' ? import(/* classic */ './sceneClassic') : import('./sceneNodes'));\nimport(/* @vite-ignore */ './other');";
+    expect(importsOf(src)).toEqual(['./sceneNodes', './other']);
+    expect(classicImportsOf(src)).toEqual(['./sceneClassic']);
+    const tree = { 'm.js': src, 'sceneNodes.js': '', 'other.js': '', 'sceneClassic.js': "import { ShaderMaterial } from 'three';" };
+    expect([...closure('m.js', fsOf(tree))].sort()).toEqual(['m.js', 'other.js', 'sceneNodes.js']);
   });
 });
