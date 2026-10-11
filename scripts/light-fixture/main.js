@@ -12,7 +12,9 @@ import lit from '../../src/runtime/fixtures/litWorld.js';
 import volume from './volumeWorld.js';
 
 const q = new URLSearchParams(location.search);
-const fixture = JSON.parse(q.get('fixture') || '{}');
+// (a world's whole record is too long for a URL: light-fixture.mjs --world
+// hands it over before the page loads, as window.__fixtureEntry)
+const fixture = { ...JSON.parse(q.get('fixture') || '{}'), ...(window.__fixtureEntry ? { entry: window.__fixtureEntry } : {}) };
 const world = fixture.volume != null ? volume : lit; // (--volume: lane V's hangar)
 const canvas = document.querySelector('canvas');
 const state = { error: null, ready: false };
