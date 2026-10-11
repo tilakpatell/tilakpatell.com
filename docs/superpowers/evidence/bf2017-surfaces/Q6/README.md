@@ -30,7 +30,7 @@ Lane G's calibrated classic Hoth field measured 0.3531 (`docs/superpowers/eviden
 | WebGPU | 6.0 (5.7 / 7.1), 0.394 | 5.5 (5.5 / 6.7), 0.4419 (passes render ssgi ao ssr bloom godrays lensflare motionBlur tonemap lut traa output; 88 programs) |
 | WebGL 2 | 6.8 (5.4 / 14.8, noisy), 0.3949 | 3.2 (3.1 / 3.5), 0.4429 |
 
-The record's picture costs nothing measurable on the GPU (within noise of the frame without it) and lifts the mean luminance from 0.39 to 0.44 on both legs, as on SwiftShader. The WebGPU shots land in this folder in the design session's docs PR.
+The record's picture costs nothing measurable on the GPU (within noise of the frame without it) and lifts the mean luminance from 0.39 to 0.44 on both legs, as on SwiftShader. The WebGPU shots are beside this file (`picture-post-ultra-webgpu*.png`, `nopicture-post-ultra-webgpu*.png`: the painted sky with its clouds, the LUT and bloom, the cloud shadow's dither on the ground), and the two `.json` reports are the laptop's runs.
 
 ## Review focus
 
