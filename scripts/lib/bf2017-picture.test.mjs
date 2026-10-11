@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { picturedNames, recordOf, rowMean } from './bf2017-picture.mjs';
+import { entryOf, picturedNames, recordOf, rowMean } from './bf2017-picture.mjs';
+import { readEntry } from '../../src/lib/three/light/entry.js';
 import { halveLut, lutStrip } from './bf2017-light.mjs';
 import { cubeFromStrip } from '../../src/lib/three/gameLut.js';
 
@@ -45,6 +46,25 @@ describe('bf2017-picture', () => {
     expect(at(half, 17, [8, 8, 8])).toEqual([128, 128, 128]);
     // (the 17³ holds every other point: an odd one of the 33³ is between two of it)
     expect(at(half, 17, [0, 1, 1])).toEqual(at(full, 33, [0, 2, 2]));
+  });
+  it('makes a weather’s records the light stack’s entry, as the fixture’s Hoth has it', () => {
+    const day = {
+      objects: [
+        { $type: 'TonemapComponentData', BloomScale: { x: 0.1, y: 0.1, z: 0.1 } },
+        { $type: 'FogComponentData', Curve: { x: 2, y: -4, z: 3, w: -0.01 }, FogColor: { x: 0.5, y: 0.6, z: 0.7 } },
+        { $type: 'ColorCorrectionComponentData', HdrColorGradingLut: { $asset: 'Day/CC', $assetType: 'GradingLutAsset' } },
+      ],
+    };
+    const e = entryOf('VE_Day', day);
+    expect(e.name).toBe('VE_Day');
+    expect(e.record.TonemapComponentData[0].BloomScale).toEqual([0.1, 0.1, 0.1]);
+    expect(e.record.FogComponentData[0].Curve).toEqual([2, -4, 3, -0.01]);
+    expect(e.record.ColorCorrectionComponentData[0].HdrColorGradingLut).toBe('Day/CC');
+    const p = readEntry(e);
+    expect(p.fog.curve).toEqual([2, -4, 3, -0.01]);
+    // (the record's BloomScale as a ratio to Hoth's day, 0.1)
+    expect(p.bloom.scale).toBeCloseTo(1, 6);
+    expect(p.grade.lutName).toBe('Day/CC');
   });
   it('measures a row’s mean colour', () => {
     const rgba = new Uint8Array([255, 0, 0, 255, 0, 0, 255, 255, 51, 51, 51, 255, 51, 51, 51, 255]);
