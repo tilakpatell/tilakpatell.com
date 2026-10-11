@@ -51,3 +51,10 @@ describe('the stack', () => {
     expect(await createSurfaceStack({ backend: 'webgpu', tier: 'potato' })).toBe(null);
   });
 });
+
+describe('the chain’s exposure under the record', () => {
+  it('the house’s exposure under the record’s linear tone map, as lane Q6 drew Hoth', async () => {
+    const { LINEAR_EXPOSURE } = await import('./chain');
+    expect(LINEAR_EXPOSURE).toBe(1.4);
+  });
+});

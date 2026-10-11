@@ -30,8 +30,16 @@ import { LOOK } from '../../../universe/look';
 import { STEPS } from '../../../../lib/three/pace';
 import { headroom, passesFor } from '../../../../lib/three/light/post';
 import { headroomAt } from '../../../../runtime/quality';
+import { LOOK as HOUSE } from '../../../../lib/three/houseNodes';
 
 const SOFTEST = 0.6;
+// Under the record's linear tone map the picture is exposed as lane Q6 drew
+// Hoth's records (its fixture and the laptop's shots, docs/superpowers/
+// evidence/bf2017-surfaces/Q6): at the house's exposure, lib/three/house's
+// LOOK.exposure (1.4, what the house tone mapper's lift asks of a world),
+// times the site's own. At the site's alone the linear map draws a stop
+// and a half darker than the game's day.
+export const LINEAR_EXPOSURE = HOUSE.exposure;
 
 export const stepOf = (k) => {
   let best = 0;
@@ -63,6 +71,10 @@ export function createChainPost(renderer, scene, camera, { small = false, tier =
   let defocusWant = 0;
   let houseGrade = null;
   let frame = 0;
+  let exposureWant = 1;
+  const expose = () => {
+    u.uExposure.value = exposureWant * (u.uLinear.value > 0 ? LINEAR_EXPOSURE : 1);
+  };
   let resolveReady = null;
   const ready = new Promise((r) => (resolveReady = r));
   const bloomNow = { threshold: BLOOM.threshold, radius: BLOOM.radius };
@@ -135,6 +147,7 @@ export function createChainPost(renderer, scene, camera, { small = false, tier =
     light(next) {
       refs = { scene, camera, ...next, gaussians: Boolean(next?.grade?.bloom) };
       u.uLinear.value = next?.grade?.tonemap === 'linear' ? 1 : 0;
+      expose();
       // (the picture's LUT, read by FINAL, unless the world's light has handed one already)
       if (next?.lut?.isData3DTexture && !(u.uLutMix.value > 0)) this.grading({ lut: next.lut, size: next.lut.image.width });
       builtFor = '';
@@ -191,7 +204,8 @@ export function createChainPost(renderer, scene, camera, { small = false, tier =
       u.uAberration.value = level >= 3 ? 0 : k;
     },
     exposure(k) {
-      u.uExposure.value = k;
+      exposureWant = k;
+      expose();
     },
     // a game's grade (./post.js's): its LUT over the finished colour, the
     // house's contrast and saturation set aside while it is on
