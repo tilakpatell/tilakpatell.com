@@ -24,7 +24,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | T2 | the flip: `galaxy-surface` on `'nodes'` above low (mid on WebGPU, low classic), the node twins wired (sun, sky, fog, placed lights, probes, post chain, ground, decals, particles), the settings line, every world on nodes at high in software GL in CI | nothing | `session_0132eqJWiGAvWCdASsxt6vEb` (spawned 2026-10-11 04:25 UTC from `claude/bf2017-picture-everywhere`, Opus 5.5) | `claude/bf2017-t2-flip` | |
 | P | `<world>.picture.json` for every light record and weather, every site passing `picture`, the crossfade carrying the textures, the LUT at 33³ | nothing | `session_0159DutxhTdKUaYeTaoUgFFq` (spawned 2026-10-11 04:25 UTC, Opus 5.5) | `claude/bf2017-p-picture` | PR #909 (open) |
 | D2 | `--ultra` for every pack, the caps a step up, anisotropy 16, decals filled, the dropped meshes back at ultra, probes with the sun, the gate counting KTX2 and bins, the space packs out of git | E0 (#888) | `session_018HMjRBBkugTsV6uBdftCPV` (spawned 2026-10-11 04:25 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-d2-detail` (PR #926) | |
-| U-packs | E1’s packs on the ultra row: tatooine, tatooine/jabba, tatooine/jabba-inside and yavin re-run on D2’s factory with `--ultra` (each README’s own command; Yavin’s old `--drop` now the `NEVER` rule’s) and published by hash; the numbers in each README and in D2’s evidence (“E1’s packs”); the gates at high and ultra in software GL | D2 (#926) | `session_013s8SPvcpxqY9QA61zj8jAT` (spawned 2026-10-11 from `origin/main` at f6511872) | `claude/bf2017-upacks-e1` | (this PR) |
+| U-packs | E1’s packs on the ultra row: tatooine, tatooine/jabba, tatooine/jabba-inside and yavin re-run on D2’s factory with `--ultra` (each README’s own command; Yavin’s old `--drop` now the `NEVER` rule’s) and published by hash; the numbers in each README and in D2’s evidence (“E1’s packs”); the gates at high and ultra in software GL | D2 (#926) | `session_013s8SPvcpxqY9QA61zj8jAT` (spawned 2026-10-11 from `origin/main` at f6511872) | `claude/bf2017-upacks-e1` (PR #937) | |
 | U2 | batch, bundles, occlusion and the upscaler on by tier; the bloom mismatch measured; the laptop workflow | T2 | | `claude/bf2017-u2-headroom` | |
 | M2 | per-instance variations from the bins (gate 95 %), weathering and terrain blend, the decal and glass families, level detail slices, translucency, head SSS | T2 | | `claude/bf2017-m2-material` | |
 | G | the gallery: every world at ultra on the laptop beside the game’s frame, with the numbers | T2, P, U2 | | `claude/bf2017-g-gallery` | |
@@ -50,7 +50,7 @@ The numbers: `docs/superpowers/evidence/bf2017-picture/d2/README.md`.
 - **Left.** Ultra’s frame time, and mid and high counted whole on the node renderer, need a GPU: the laptop, G and the desktop’s `gate` job. In software GL they outlast 40 minutes. Ultra’s bucket run is about 470 MB on Hoth and Endor, over 285: the evidence has it. Endor’s normal-only decal maps and the 4,149 textures are the desktop’s.
 
 
-### Lane U-packs: E1’s packs on the ultra row (`claude/bf2017-upacks-e1`)
+### Lane U-packs: E1’s packs on the ultra row (`claude/bf2017-upacks-e1`, PR #937)
 
 The numbers: `docs/superpowers/evidence/bf2017-picture/d2/README.md`, “E1’s packs”. The four packs lane E1 built (tatooine, tatooine/jabba, tatooine/jabba-inside, yavin) re-run on D2’s factory with each README’s own command and `--ultra`, on `origin/main` at f6511872, and published by hash (4,575 files, 983.2 MB).
 
