@@ -9,6 +9,7 @@
 //     [--weather] [--decals] [--seconds 0,12.5,30]   (lane Q4: the weathering and the placed decals, without --volume)
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
 //   node scripts/light-fixture.mjs --materials [--legs webgl]
+//   node scripts/light-fixture.mjs --materials --variations [--legs webgl]
 //   node scripts/light-fixture.mjs --camera [--size 1600x900] [--legs webgpu,webgl]
 //
 // Lane S (docs/superpowers/plans/2026-10-10-bf-fidelity-laneS-shadows.md):
@@ -44,6 +45,11 @@
 // wall-<tier>-<leg>.png; the low tier against the GLB's (the design's
 // "low equals the GLB": mean and largest difference, 0…255) and each cube's
 // features into materials-<leg>.json.
+// --variations (the colour lane): Hoth's snow crate instead, its GLB under
+// its recipe from the pack's recipes.json (before) and under the same with
+// the pack's variations.json applied (after), both under Q4's snow at 25 s,
+// into docs/superpowers/evidence/bf2017-colour/crate-<before|after>-<leg>.webp
+// and variations-<leg>.json (each one's features, the pack's counts).
 //
 // For each leg (?gpu=webgpu, and ?gpu=webgl: the node renderer on a WebGL 2
 // context) it opens scripts/light-fixture/index.html on a Vite dev server
@@ -277,7 +283,7 @@ const pct = (xs, p) => {
 };
 
 if (argv.includes('--materials')) {
-  const code = await materialsRun();
+  const code = argv.includes('--variations') ? await variationsRun() : await materialsRun();
   await browser.close();
   await server.close();
   process.exit(code);
@@ -577,6 +583,72 @@ async function materialsRun() {
     writeFileSync(join(out, `materials-${leg}.json`), `${JSON.stringify(result, null, 2)}\n`);
     console.log(`${leg}: low vs the GLB ${JSON.stringify(result.lowVsGlb)}; ${Object.keys(result.shots).length} shots${result.errors.length ? `; errors: ${[...new Set(result.errors)].slice(0, 4).join(' / ')}` : ''}`);
     for (const c of result.features ?? []) console.log(`  ${c.label.padEnd(11)} ${c.features.join(', ') || '(none)'}`);
+  }
+  return failed ? 1 : 0;
+}
+
+// ---- --materials --variations (the colour lane)
+
+
+async function crateEntries() {
+  const CRATE = 'objects/props/objectsets/_rebelalliance/box_m_01/box_m_01_a_mesh';
+  const { readFileSync } = await import('node:fs');
+  const { spawnSync } = await import('node:child_process');
+  const { applyVariation, variationFor } = await import('../src/components/galaxy/surface/level/levelVariations.js');
+  const dir = join(ROOT, 'public/models/galaxy/bf2017/levels/hoth');
+  const pack = JSON.parse(readFileSync(join(dir, 'level.json'), 'utf8'));
+  const recipes = JSON.parse(readFileSync(join(dir, 'recipes.json'), 'utf8'));
+  const variations = JSON.parse(readFileSync(join(dir, 'variations.json'), 'utf8'));
+  const at = pack.meshes.findIndex((m) => m.name === `models/${CRATE}.glb`);
+  const glbFile = join(ROOT, 'lab/assets/bf2017/web/models', `${CRATE}.glb`);
+  if (!existsSync(glbFile)) spawnSync(process.execPath, [join(ROOT, 'scripts/bf2017-fetch.mjs'), CRATE, '--lod', '0'], { stdio: 'inherit', env: process.env });
+  const base = recipes.meshes[at][0];
+  const v = variationFor(variations, CRATE);
+  const after = applyVariation(base, v.materials[0], v.name);
+  const lean = (r) => ({ ...r, _source: undefined });
+  const glb = existsSync(glbFile) ? `/lab/assets/bf2017/web/models/${CRATE}.glb` : null;
+  return {
+    before: { label: 'crate', recipe: lean(base), glb, maps: {}, mesh: true },
+    // (the GLB's material is found by its own shader: the variation names another)
+    after: { label: 'crate-snow', recipe: lean(after), glb, maps: {}, mesh: true, glbShader: base.shader },
+    variation: v.name,
+    counts: variations.counts,
+  };
+}
+
+async function variationsRun() {
+  const out = join(ROOT, 'docs/superpowers/evidence/bf2017-colour');
+  mkdirSync(out, { recursive: true });
+  const crate = await crateEntries();
+  let failed = false;
+  for (const leg of legs) {
+    const result = { leg, adapter: swift ? 'swiftshader' : 'system', variation: crate.variation, counts: crate.counts, shader: { before: crate.before.recipe.shader, after: crate.after.recipe.shader }, weather: { before: crate.before.recipe.params.weather ?? null, after: crate.after.recipe.params.weather ?? null }, shots: {}, features: {}, errors: [] };
+    for (const name of ['before', 'after']) {
+      const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+      page.setDefaultTimeout(240000);
+      page.on('pageerror', (e) => result.errors.push(e.message.split('\n')[0]));
+      try {
+        const f = { tier: 'high', post: false, sky: true, env: true, materials: { mode: 'game', list: [crate[name]], weather: 25 } };
+        await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}&fixture=${encodeURIComponent(JSON.stringify(f))}`, { waitUntil: 'domcontentloaded', timeout: 240000 });
+        await page.waitForFunction(() => window.__lit?.ready || window.__lit?.error, null, { timeout: 300000 });
+        const err = await page.evaluate(() => window.__lit.error);
+        if (err) throw new Error(err);
+        result.features[name] = (await page.evaluate(() => window.__lit.probe.recipes()))[0]?.features ?? [];
+        await page.evaluate(() => (window.__lit.probe.view('close'), window.__lit.draw(60)));
+        // (the crate's middle of the frame, as a WebP: the evidence is committed)
+        const sharp = (await import('sharp')).default;
+        const png = await page.locator('canvas').screenshot();
+        const file = `crate-${name}-${leg}.webp`;
+        writeFileSync(join(out, file), await sharp(png).extract({ left: Math.round(W * 0.3), top: Math.round(H * 0.15), width: Math.round(W * 0.4), height: Math.round(H * 0.6) }).webp({ quality: 82 }).toBuffer());
+        result.shots[name] = file;
+      } catch (e) {
+        result.errors.push(`${name}: ${String(e.message ?? e).split('\n')[0]}`);
+        if (leg !== 'webgpu') failed = true;
+      }
+      await page.close();
+    }
+    writeFileSync(join(out, `variations-${leg}.json`), `${JSON.stringify(result, null, 2)}\n`);
+    console.log(`${leg}: ${crate.variation.split('/').pop()}; before ${result.features.before?.join(', ') || '–'}; after ${result.features.after?.join(', ') || '–'}${result.errors.length ? `; errors: ${[...new Set(result.errors)].slice(0, 4).join(' / ')}` : ''}`);
   }
   return failed ? 1 : 0;
 }

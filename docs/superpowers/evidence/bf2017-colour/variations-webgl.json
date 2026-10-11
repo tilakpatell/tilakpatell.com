@@ -1,0 +1,36 @@
+{
+  "leg": "webgl",
+  "adapter": "swiftshader",
+  "variation": "Objects/Props/ObjectSets/_RebelAlliance/Box_M_01/Box_M_01_A_Snow",
+  "counts": {
+    "meshes": 123,
+    "inMvdb": 123,
+    "withVariations": 12,
+    "variations": 18,
+    "ruled": 9,
+    "missing": 14
+  },
+  "shader": {
+    "before": "Shaders/Presets/SS_PropsMetallicPreset_2UV_TextureArray_01",
+    "after": "Shaders/Presets/SS_PropsMetallicPreset_2UV_TextureArray_SnowMask_01"
+  },
+  "weather": {
+    "before": null,
+    "after": {
+      "snow": true
+    }
+  },
+  "shots": {
+    "before": "crate-before-webgl.webp",
+    "after": "crate-after-webgl.webp"
+  },
+  "features": {
+    "before": [
+      "overlay:fn"
+    ],
+    "after": [
+      "overlay:fn"
+    ]
+  },
+  "errors": []
+}

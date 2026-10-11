@@ -20,6 +20,11 @@
 // the ring and its things set aside, a cube per recipe wearing the game
 // material over the GLB's own (mode 'glb': the GLB's material as it is) and
 // a wall under the first recipe, seen from probe.view('row' | 'wall').
+// An entry with `mesh: true` stands as its GLB's own mesh, its material of
+// the recipe's shader (or `glbShader`) in the game's; `weather` (seconds into Hoth's day)
+// hands every game material Q4's snow, which only a recipe whose
+// `params.weather` lets it on wears (the colour lane's crate, in its
+// variation: scripts/light-fixture.mjs --materials --variations).
 //
 // `particles` (fidelity lane X): the game's effects from their emitter
 // tables over the ring, and the GPU twin's parity (particleProbe.js), read
@@ -292,6 +297,8 @@ const VIEWS = {
   row: { from: [0, 1.9, -7], at: [0, 0.6, 0] },
   // the wall at 2 m, a little off square so the grain catches the sun
   wall: { from: [0.4, 1.3, 4], at: [0, 1.2, 6] },
+  // one mesh at 2 m, from above the sun's side (the colour lane's crate)
+  close: { from: [1.1, 2.1, -2.3], at: [0, 0.6, 0] },
 };
 // ENTRY's sun (az 210°, el 24°) as a direction toward it, for the
 // translucency and the hair's lobes
@@ -300,37 +307,50 @@ const CUBE = 1.1; // m
 const SPACING = 1.6; // m
 const WALL = [4, 2.5]; // m
 
-// the GLB's material whose shader the recipe names (the export's extras),
-// else its first
-function glbMaterial(gltf, recipe) {
+// the GLB's material whose shader the recipe names (the export's extras;
+// `shader` where a variation's recipe names another), else its first
+function glbMaterial(gltf, recipe, shader = recipe.shader) {
   let first = null;
   let match = null;
   gltf.scene.traverse((o) => {
     for (const m of o.isMesh ? [o.material].flat() : []) {
       first ??= m;
-      if (!match && recipe.shader && m.userData?.shader === recipe.shader) match = m;
+      if (!match && shader && m.userData?.shader === shader) match = m;
     }
   });
   return match ?? first ?? new THREE.MeshStandardMaterial({ color: 0x808080 });
 }
 
-async function recipeRow(scene, renderer, { mode = 'game', list = [] }, tier, made) {
+async function recipeRow(scene, renderer, { mode = 'game', list = [], weather = null }, tier, made) {
   const [{ gltfLoader, ktx2Loader }, { loadSurfaceMaterial }] = await Promise.all([import('../../lib/three/gltf.js'), import('../../lib/three/surface/hair.js')]);
   const ktx2 = await ktx2Loader({ renderer });
   const make = await loadSurfaceMaterial();
+  let overlays = [];
+  if (weather != null) {
+    const [{ loadThree }, { overlaysFor }] = await Promise.all([import('../../lib/three/light/three.js'), import('../../lib/three/surface/weather.js')]);
+    overlays = overlaysFor(hothWeather, 'snow', await loadThree());
+    for (const o of overlays) o.setTime(weather);
+  }
   const box = new THREE.BoxGeometry(CUBE, CUBE, CUBE);
   made.push(box);
   const out = [];
   const x0 = -((list.length - 1) * SPACING) / 2;
   for (const [i, entry] of list.entries()) {
     const gltf = entry.glb ? await gltfLoader().loadAsync(entry.glb) : null;
-    const glb = gltf ? glbMaterial(gltf, entry.recipe) : new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.6 });
+    const glb = gltf ? glbMaterial(gltf, entry.recipe, entry.glbShader) : new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.6 });
     const maps = { glb };
     for (const [k, url] of Object.entries(entry.maps ?? {})) maps[k] = Array.isArray(url) ? await Promise.all(url.map((u) => ktx2.loadAsync(u))) : url ? await ktx2.loadAsync(url) : null;
-    const material = mode === 'glb' ? glb : make(entry.recipe, maps, { tier, sun: SUN });
+    const material = mode === 'glb' ? glb : make(entry.recipe, maps, { tier, sun: SUN, overlays });
     made.push(material);
-    const cube = new THREE.Mesh(box, material);
-    cube.position.set(x0 + i * SPACING, CUBE / 2 + 0.05, 0);
+    const cube = entry.mesh && gltf ? gltf.scene : new THREE.Mesh(box, material);
+    if (cube !== gltf?.scene) cube.position.set(x0 + i * SPACING, CUBE / 2 + 0.05, 0);
+    else {
+      cube.traverse((o) => {
+        if (o.isMesh && o.material === glb) o.material = material;
+        if (o.isMesh) o.castShadow = o.receiveShadow = true;
+      });
+      cube.position.set(x0 + i * SPACING, 0.05, 0);
+    }
     cube.rotation.y = Math.PI / 6;
     cube.castShadow = cube.receiveShadow = true;
     scene.add(cube);
