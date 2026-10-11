@@ -72,29 +72,35 @@ async function loadBodies(physics, pack, loadBin) {
   return { bodies, refused };
 }
 
+// the ground's mask over a world already holding the shapes (`frame` turns
+// the export's (x, y, z) into the world's; the export's own frame when the
+// shapes were placed from the map itself)
+export function groundMask({ RAPIER, world, frame = (x, y, z) => ({ x, y, z }), heightAt, bounds, capsule, cell = 2, fine = 0.5 }) {
+  const length = capsule.height - capsule.step;
+  const shapes = new Map();
+  // a capsule of radius r from the step to the height; a cylinder once r is
+  // too wide for a capsule that short (the probe grown to a cell's corners)
+  const shapeOf = (r) => {
+    if (!shapes.has(r)) shapes.set(r, length > 2 * r ? new RAPIER.Capsule(length / 2 - r, r) : new RAPIER.Cylinder(length / 2, r));
+    return shapes.get(r);
+  };
+  const ROT = { x: 0, y: 0, z: 0, w: 1 };
+  const blockedAt = (x, g, z, r) => world.intersectionWithShape(frame(x, g + capsule.step + length / 2, z), ROT, shapeOf(r)) !== null;
+  const topAt = (x, z, g) => {
+    const p = frame(x, g + TOP_REACH, z);
+    const hit = world.castRay(new RAPIER.Ray(p, { x: 0, y: -1, z: 0 }), TOP_REACH, true);
+    // (no shape under the middle, though the capsule met one: its height)
+    return hit ? TOP_REACH - hit.timeOfImpact : capsule.height;
+  };
+  return buildMask({ bounds, cell, fine, heightAt, blockedAt, topAt, capsule: { step: capsule.step, height: capsule.height, radius: capsule.radius } });
+}
+
 export async function navMaskOf({ pack, loadBin, heightAt, bounds, capsule, cell = 2, fine = 0.5 }) {
   const physics = await createPhysics({ gravity: 0, onError: null });
   try {
     const { RAPIER, world } = physics;
     const stats = await loadBodies(physics, pack, loadBin);
-    const frame = packFrame(pack);
-    const length = capsule.height - capsule.step;
-    const shapes = new Map();
-    // a capsule of radius r from the step to the height; a cylinder once r is
-    // too wide for a capsule that short (the probe grown to a cell's corners)
-    const shapeOf = (r) => {
-      if (!shapes.has(r)) shapes.set(r, length > 2 * r ? new RAPIER.Capsule(length / 2 - r, r) : new RAPIER.Cylinder(length / 2, r));
-      return shapes.get(r);
-    };
-    const ROT = { x: 0, y: 0, z: 0, w: 1 };
-    const blockedAt = (x, g, z, r) => world.intersectionWithShape(frame(x, g + capsule.step + length / 2, z), ROT, shapeOf(r)) !== null;
-    const topAt = (x, z, g) => {
-      const p = frame(x, g + TOP_REACH, z);
-      const hit = world.castRay(new RAPIER.Ray(p, { x: 0, y: -1, z: 0 }), TOP_REACH, true);
-      // (no shape under the middle, though the capsule met one: its height)
-      return hit ? TOP_REACH - hit.timeOfImpact : capsule.height;
-    };
-    const mask = buildMask({ bounds, cell, fine, heightAt, blockedAt, topAt, capsule: { step: capsule.step, height: capsule.height, radius: capsule.radius } });
+    const mask = groundMask({ RAPIER, world, frame: packFrame(pack), heightAt, bounds, capsule, cell, fine });
     mask.stats = stats;
     return mask;
   } finally {

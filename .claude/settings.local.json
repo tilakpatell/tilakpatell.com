@@ -50,7 +50,20 @@
       "Bash(ffprobe -v error -show_entries format=duration,size -show_entries stream=width,height,codec_name,r_frame_rate -of default=noprint_wrappers=1 \"C:/Users/tilak/OneDrive/Desktop/new-portfolio-website/public/hyperspace.mp4\")",
       "Bash(node:*)",
       "Bash(cp \"c:\\\\Users\\\\tilak\\\\Downloads\\\\Imperial_Emblem-removebg-preview.png\" \"C:\\\\Users\\\\tilak\\\\OneDrive\\\\Desktop\\\\new-portfolio-website\\\\public\\\\imperial-emblem.png\")",
-      "Bash(cp \"c:\\\\Users\\\\tilak\\\\Downloads\\\\Pendar-Technologies-Positive-Color-CMYK-removebg-preview.png\" \"C:\\\\Users\\\\tilak\\\\OneDrive\\\\Desktop\\\\new-portfolio-website\\\\public\\\\Pendar-Technologies.png\")"
+      "Bash(cp \"c:\\\\Users\\\\tilak\\\\Downloads\\\\Pendar-Technologies-Positive-Color-CMYK-removebg-preview.png\" \"C:\\\\Users\\\\tilak\\\\OneDrive\\\\Desktop\\\\new-portfolio-website\\\\public\\\\Pendar-Technologies.png\")",
+      "Bash(cd /c/Users/tilak/source/repos/new-portfolio-website/.claude/worktrees/reference-audio-pipeline-4bc8a4/scripts/voices; ls -la refs/ 2>&1; ls cache/grab/raw | wc -l; ls cache/grab/vocals | wc -l; ls cache/grab/listen/*/ 2>/dev/null | head -20; du -sh cache/grab 2>/dev/null; ls ../../public/audio/voiced 2>&1 | head -3)",
+      "Bash(/c/Users/tilak/.venvs/voices/Scripts/python.exe -m unittest discover -s scripts/voices -p \"test_*.py\")",
+      "Bash(git log *)",
+      "Bash(git merge *)",
+      "Bash(npm ci *)",
+      "Bash(npm ls *)",
+      "PowerShell(git fetch origin main --quiet; git log --oneline -3 origin/main; git log --oneline -1 HEAD; git merge-base --is-ancestor HEAD origin/main; \"ancestor=$?\")",
+      "Bash(git fetch *)",
+      "PowerShell(npx vitest run src/components/galaxy/surface 2>&1 | Select-Object -Last 15; npx eslint src/components/galaxy/surface/scene.js; \"eslint exit: $LASTEXITCODE\")",
+      "Bash(git grep *)",
+      "Bash(node -e ' *)",
+      "mcp__claude-code-remote__send_message",
+      "Bash(cd /c/Users/tilak/Downloads/BF2_Extract/web/data && grep -l -m1 \"WSEACharacterPhysicsComponentData\" Gameplay/Characters/*.json Gameplay/Characters/*/*.json 2>/dev/null | head -5; echo ---; grep -rl -m1 \"RagdollComponentData\\\\|WSEACharacterPhysicsComponentData\" Gameplay/Characters --include=*.json 2>/dev/null | head -5; echo ---; grep -rl -m1 \"Ragdoll\" Gameplay/Characters --include=*.json 2>/dev/null | head -8)"
     ]
   }
 }
