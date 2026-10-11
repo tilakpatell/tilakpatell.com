@@ -3,7 +3,7 @@
 //
 // - `baked` (true | false, with `hoth`): the ground as a node material with
 //   a second uv set, and with `true` the fixture's Enlighten stand-in
-//   (./enlighten/, scripts/enlighten-fixture.mjs) as its diffuse indirect
+//   (./enlighten/, scripts/desktop/bf2017-lightmaps.mjs --dry --size 256) as its diffuse indirect
 //   light through light/baked.js, calibrated by lane S's calibrate.js; with
 //   `false` the same ground without it (the before).
 // - `gridBudget` (true): the budgeted probe grid (light/probes.js), two
@@ -75,9 +75,9 @@ export async function setupN3({ scene, renderer, camera, light, ground, figures,
     ground.material = m;
     let baked = null;
     if (opts.baked) {
-      const [{ createBaked, withBaked }, { calibrate }] = await Promise.all([import('../../lib/three/light/baked.js'), import('../../lib/three/light/calibrate.js')]);
+      const [{ chartOf, createBaked, withBaked }, { calibrate }] = await Promise.all([import('../../lib/three/light/baked.js'), import('../../lib/three/light/calibrate.js')]);
       baked = await createBaked(renderer, meta.rows, { loadTexture: (name, key) => loadMap(THREE, name, key), calibrate: calibrate(entry.record) });
-      if (baked) withBaked(m, baked, { chart: meta.rows[0].charts.ground, three });
+      if (baked) withBaked(m, baked, { chart: chartOf(meta.rows[0], 'ground'), three });
     }
     probe.baked = () => (baked ? { set: baked.set, scale: baked.scale, directional: baked.directional, peak: meta.peak } : null);
     made.push({ dispose: () => baked?.dispose() });

@@ -1,5 +1,5 @@
 {
- "_source": "scripts/enlighten-fixture.mjs: a stand-in, not the game's bake. Hoth Sunny's probe radiances (src/data/bf2017/light/hoth.json weathers.sunny.probe) for the sky's shape and tint, its level the site's calibrated sky (skyLevel), and the record's sun (lux, az, el) gathered over the lit fixture's ground and ring (litWorld.js), the occluders' bounce at the stone's albedo and the record's SunScale; irradiance in the record's units (lux), sqrt(E / peak) in 8 bits",
+ "_source": "scripts/desktop/bf2017-lightmaps.mjs --dry (lane W's lightmaps job, the site's own bake on the lit fixture): not the game's bake. Hoth Sunny's probe radiances (src/data/bf2017/light/hoth.json weathers.sunny.probe) for the sky's shape and tint, its level the site's calibrated sky (skyLevel), and the record's sun (lux, az, el) gathered over the lit fixture's ground and ring (litWorld.js), the occluders' bounce at the stone's albedo and the record's SunScale; irradiance in the record's units (lux), sqrt(E / peak) in 8 bits",
  "size": 256,
  "span": 48,
  "ground": 200,
@@ -47,12 +47,13 @@
    "dirB": "dirB.png",
    "skyVisibility": "sky.png",
    "uvSet": 1,
-   "charts": {
+   "charts": "site",
+   "rects": {
     "ground": [
-     4.166666666666667,
-     4.166666666666667,
      -1.5833333333333335,
-     -1.5833333333333335
+     -1.5833333333333335,
+     4.166666666666667,
+     4.166666666666667
     ]
    }
   }
