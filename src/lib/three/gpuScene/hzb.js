@@ -17,7 +17,8 @@
 //   reduceDepth(depth: Float32Array, w, h, { reversed }) → [{ width, height, data }]
 //   occludedAt(rect: { x0, y0, x1, y1 }, near, mips, { reversed }) → boolean
 // GPU: createHzb(renderer, { width, height, reversed, three }) → {
-//   levels (StorageTextures), sizes, valid, update(depthTexture), resize(w, h),
+//   levels (StorageTextures), sizes, valid, update(depthTexture), resize(w, h) (the cull's pass reads
+//   the levels through uniforms and texture nodes swapped in place, so it is never built again),
 //   occludedNode(rect: vec4, near: float) → bool (the test in TSL, for cull.js), dispose() }
 
 export const MAX_LEVELS = 12;
@@ -60,17 +61,20 @@ export function reduceDepth(depth, w, h, { reversed = false } = {}) {
 }
 
 // the level whose texels the rect spans two of at most, along each axis
+// the level whose texels the rect spans two of at most, along each axis;
+// −1 when none does (a screen past the levels the pyramid holds): no test
 export function levelFor(rect, count) {
   for (let L = 0; L < count; L++) {
     const s = 2 ** (L + 1);
     if (Math.floor(rect.x1 / s) - Math.floor(rect.x0 / s) <= 1 && Math.floor(rect.y1 / s) - Math.floor(rect.y0 / s) <= 1) return L;
   }
-  return count - 1;
+  return -1;
 }
 
 export function occludedAt(rect, near, mips, { reversed = false } = {}) {
   if (!mips?.length) return false;
   const L = levelFor(rect, mips.length);
+  if (L < 0) return false;
   const { width, height, data } = mips[L];
   const s = 2 ** (L + 1);
   const tx = (v) => Math.min(width - 1, Math.max(0, Math.floor(v / s)));
@@ -82,8 +86,12 @@ export function occludedAt(rect, near, mips, { reversed = false } = {}) {
 
 export function createHzb(renderer, { width, height, reversed = false, three }) {
   const { THREE, tsl } = three;
-  const { Fn, If, instanceIndex, ivec2, uint, int, float, vec4, min, max, textureLoad, textureStore, texture, floor, select, bool } = tsl;
+  const { Fn, If, instanceIndex, ivec2, uint, int, float, vec4, min, max, textureLoad, textureStore, texture, uniform, uniformArray, floor, select, bool } = tsl;
   const pick = reversed ? min : max;
+  // (a 1 × 1 stand-in for the levels a smaller screen does not use)
+  const blank = new THREE.StorageTexture(1, 1);
+  blank.type = THREE.FloatType;
+  blank.format = THREE.RedFormat;
   const hzb = {
     levels: [],
     sizes: [],
@@ -91,10 +99,15 @@ export function createHzb(renderer, { width, height, reversed = false, three }) 
     source: null,
     passes: [],
     reversed,
+    // the test's inputs, swapped in place on a resize so cull.js's pass is never built again
+    count: uniform(0, 'int'),
+    sizeOf: uniformArray(Array.from({ length: MAX_LEVELS }, () => new THREE.Vector4(1, 1, 0, 0)), 'vec4'),
+    textures: Array.from({ length: MAX_LEVELS }, () => texture(blank)),
   };
 
   function make(w, h) {
     for (const t of hzb.levels) t.dispose();
+    for (const p of hzb.passes) p.dispose?.();
     hzb.sizes = hzbSizes(w, h);
     hzb.levels = hzb.sizes.map(([lw, lh]) => {
       const t = new THREE.StorageTexture(lw, lh);
@@ -104,6 +117,11 @@ export function createHzb(renderer, { width, height, reversed = false, three }) 
       t.generateMipmaps = false;
       return t;
     });
+    hzb.textures.forEach((node, k) => {
+      node.value = hzb.levels[k] ?? blank;
+      hzb.sizeOf.array[k].set(...(hzb.sizes[k] ?? [1, 1]), 0, 0);
+    });
+    hzb.count.value = hzb.levels.length;
     hzb.width = w;
     hzb.height = h;
     hzb.passes = [];
@@ -144,32 +162,31 @@ export function createHzb(renderer, { width, height, reversed = false, three }) 
   };
   hzb.resize = (w, h) => make(w, h);
 
-  // The test in TSL, over the levels as they are now (cull.js builds its
-  // pass again after a resize): rect in the depth's pixels (x0, y0, x1, y1)
+  // The test in TSL: rect in the depth's pixels (x0, y0, x1, y1), as occludedAt
   hzb.occludedNode = (rect, nearDepth) => {
-    const n = hzb.levels.length;
-    const L = int(n - 1).toVar();
-    for (let k = n - 1; k >= 0; k--) {
+    const L = int(-1).toVar();
+    for (let k = MAX_LEVELS - 1; k >= 0; k--) {
       const s = float(2 ** (k + 1));
       const spans = floor(rect.z.div(s)).sub(floor(rect.x.div(s))).lessThanEqual(1).and(floor(rect.w.div(s)).sub(floor(rect.y.div(s))).lessThanEqual(1));
-      L.assign(select(spans, int(k), L));
+      L.assign(select(spans.and(int(k).lessThan(hzb.count)), int(k), L));
     }
     const far = float(reversed ? 1e30 : -1e30).toVar();
-    for (let k = 0; k < n; k++) {
+    for (let k = 0; k < MAX_LEVELS; k++) {
       If(L.equal(int(k)), () => {
         const s = float(2 ** (k + 1));
-        const [lw, lh] = hzb.sizes[k];
-        const tx = (v) => int(min(max(floor(v.div(s)), 0), lw - 1));
-        const ty = (v) => int(min(max(floor(v.div(s)), 0), lh - 1));
-        const tex = texture(hzb.levels[k]);
-        for (const y of [ty(rect.y), ty(rect.w)]) for (const x of [tx(rect.x), tx(rect.z)]) far.assign(pick(far, textureLoad(tex.value, ivec2(x, y)).x));
+        const size = hzb.sizeOf.element(k);
+        const tx = (v) => int(min(max(floor(v.div(s)), 0), size.x.sub(1)));
+        const ty = (v) => int(min(max(floor(v.div(s)), 0), size.y.sub(1)));
+        for (const y of [ty(rect.y), ty(rect.w)]) for (const x of [tx(rect.x), tx(rect.z)]) far.assign(pick(far, textureLoad(hzb.textures[k], ivec2(x, y)).x));
       });
     }
-    return reversed ? bool(nearDepth.lessThan(far)) : bool(nearDepth.greaterThan(far));
+    const hidden = reversed ? nearDepth.lessThan(far) : nearDepth.greaterThan(far);
+    return bool(L.greaterThanEqual(0).and(hidden));
   };
   hzb.dispose = () => {
     for (const t of hzb.levels) t.dispose();
     for (const p of hzb.passes) p.dispose?.();
+    blank.dispose();
   };
   return hzb;
 }

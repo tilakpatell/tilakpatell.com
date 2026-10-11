@@ -43,6 +43,8 @@ export const FADE = 0.3;
 // m: lane T2's SHADOW_REACH (levelScene.js on claude/bf2017-t2-flip): the
 // sun's farthest cascade (ULTRA_SHADOW_FAR, 140 m) plus its sunward margin (120 m)
 export const SHADOW_REACH = 260;
+// px: the margin round a sphere's screen rect (TRAA's jitter is under a pixel)
+export const JITTER = 1;
 // u32 a mesh in the GPU table: its LOD → file (MAX_LODS), then its keys (file × mirrored)
 export const MESH_U32 = MAX_LODS * 3;
 
@@ -96,7 +98,8 @@ export function sphereRect(centre, R, cam) {
   const zc = xform(cam.proj, [0, 0, v[2] + R]);
   const px = (n) => Math.min(cam.width - 1e-3, Math.max(0, (n * 0.5 + 0.5) * cam.width));
   const py = (n) => Math.min(cam.height - 1e-3, Math.max(0, (0.5 - n * 0.5) * cam.height));
-  return { rect: { x0: px(x0), x1: px(x1), y0: py(y1), y1: py(y0) }, near: zc[2] / zc[3] };
+  // (a pixel more each side: TRAA jitters the drawn frame by under a pixel, the prepass is not jittered)
+  return { rect: { x0: Math.max(0, px(x0) - JITTER), x1: Math.min(cam.width - 1e-3, px(x1) + JITTER), y0: Math.max(0, py(y1) - JITTER), y1: Math.min(cam.height - 1e-3, py(y0) + JITTER) }, near: zc[2] / zc[3] };
 }
 
 export function chooseFile(want, prev, loaded) {

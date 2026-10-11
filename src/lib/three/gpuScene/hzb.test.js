@@ -49,6 +49,13 @@ describe('the depth pyramid’s CPU twin', () => {
     expect(occludedAt({ x0: 0, y0: 0, x1: 1.9, y1: 3.9 }, 0.85, mips, { reversed: true })).toBe(false);
   });
 
+  it('a rect wider than the top level spans: no test, never a guess', () => {
+    const mips = reduceDepth(new Float32Array(64).fill(0.1), 8, 8);
+    // (8 pixels span four texels of level 0, the only level kept)
+    expect(occludedAt({ x0: 0, y0: 0, x1: 7.9, y1: 7.9 }, 0.5, mips.slice(0, 1))).toBe(false);
+    expect(occludedAt({ x0: 0, y0: 0, x1: 7.9, y1: 7.9 }, 0.5, mips)).toBe(true);
+  });
+
   it('no pyramid: nothing is occluded (the first frame)', () => {
     expect(occludedAt({ x0: 0, y0: 0, x1: 1, y1: 1 }, 0.9, null)).toBe(false);
   });

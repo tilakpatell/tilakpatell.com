@@ -13,11 +13,10 @@
 //   storageAttribute(node) → the node read per instance (node.toAttribute())
 //   setIndirect(geometry, attribute, offsets) → geometry (one drawIndexedIndirect an offset, in bytes)
 //   indirectOf(renderObject) → { attribute, offsets } | null (what the backend will draw from)
-//   hasIndirect(renderer) → boolean: the backend draws indirect (WebGPU; never the node renderer over WebGL 2)
+//   hasIndirect(renderer) → boolean: the backend draws indirect with firstInstance (WebGPU; never the node renderer over WebGL 2)
 //   upload(attribute, span, itemsPer) (one dirty span of a storage attribute sent, not the whole buffer)
 
-import { loadThree } from '../light/three.js';
-import { backendOf } from '../light/three.js';
+import { backendOf, loadThree } from '../light/three.js';
 
 export async function loadGpuThree() {
   const { THREE, tsl } = await loadThree();
@@ -46,8 +45,11 @@ export function indirectOf(renderObject) {
 }
 
 // (the WebGL 2 backend has no storage buffers and no indirect draws: the
-// node renderer there warns and draws nothing, so the path is never taken)
-export const hasIndirect = (renderer) => backendOf(renderer) === 'webgpu';
+// node renderer there warns and draws nothing, so the path is never taken;
+// and a sub-draw's base rides in firstInstance, which WebGPU honours only
+// with indirect-first-instance, an optional feature three asks for wherever
+// the adapter has it: 99.99 % of web3dsurvey's reports, the research note's §1)
+export const hasIndirect = (renderer) => backendOf(renderer) === 'webgpu' && renderer.backend?.hasFeature?.('indirect-first-instance') !== false;
 
 export function upload(attribute, span, itemsPer = 1) {
   if (!span) return;

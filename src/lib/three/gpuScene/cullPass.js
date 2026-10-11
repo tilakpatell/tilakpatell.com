@@ -25,7 +25,7 @@
 //   read() → Promise<every buffer as u32> (the parity check's),
 //   dispose() }
 
-import { FADE, MESH_U32, NONE, SHADOW_REACH } from './cull.js';
+import { FADE, JITTER, MESH_U32, NONE, SHADOW_REACH } from './cull.js';
 import { MIN_RADIUS } from '../../level/lod.js';
 import { MAX_LODS, lodIndexNode } from './lodRule.js';
 import { FLAG } from './pack.js';
@@ -163,7 +163,7 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
                 const zc = u.proj.mul(vec4(0, 0, v.z.add(R), 1));
                 const px = (x) => min(u.screen.x.sub(1e-3), max(0, x.mul(0.5).add(0.5).mul(u.screen.x)));
                 const py = (y) => min(u.screen.y.sub(1e-3), max(0, float(0.5).sub(y.mul(0.5)).mul(u.screen.y)));
-                const rect = vec4(px(lo.x), py(hi.y), px(hi.x), py(lo.y));
+                const rect = vec4(max(0, px(lo.x).sub(JITTER)), max(0, py(hi.y).sub(JITTER)), min(u.screen.x.sub(1e-3), px(hi.x).add(JITTER)), min(u.screen.y.sub(1e-3), py(lo.y).add(JITTER)));
                 If(hzb.occludedNode(rect, zc.z.div(zc.w)), () => {
                   done.assign(true);
                   stat(2);

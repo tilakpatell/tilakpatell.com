@@ -39,5 +39,7 @@ describe('gpuScene/three.js', () => {
     expect(hasIndirect({ isWebGPURenderer: true, backend: {} })).toBe(true);
     expect(hasIndirect({ isWebGPURenderer: true, backend: { isWebGLBackend: true } })).toBe(false);
     expect(hasIndirect({ isWebGLRenderer: true })).toBe(false);
+    expect(hasIndirect({ isWebGPURenderer: true, backend: { hasFeature: (f) => f !== 'indirect-first-instance' } })).toBe(false);
+    expect(hasIndirect({ isWebGPURenderer: true, backend: { hasFeature: () => true } })).toBe(true);
   });
 });
