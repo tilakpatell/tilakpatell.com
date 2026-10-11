@@ -53,7 +53,8 @@ function Ships({ ship, onShip }) {
 // the game's menu tile for a mode the galaxy has here: a galactic assault
 // plays as the 2017 game's own multiplayer tile does
 function ModeTile({ game }) {
-  const assault = [game, ...(game.also ?? [])].find((x) => x.to?.includes('mission=assault'));
+  // (the galaxy's own battle, or the game's level in the Battlefront world)
+  const assault = [game, ...(game.also ?? [])].find((x) => x.to?.includes('mission=assault') || /^\/battlefront\/[a-z0-9-]+\/galacticAssault/.test(x.to ?? ''));
   const tile = assault ? tilesFor('assault')[0] : null;
   if (!tile) return null;
   return (

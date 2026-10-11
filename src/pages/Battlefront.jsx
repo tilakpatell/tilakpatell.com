@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
-import { LEVEL_MODES, LEVELS, MODES, routeFor } from '../components/battlefront';
+import { LEVEL_MODES, LEVELS, MODES, routeFor, wayBack } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
 
 // The game's own front end (its Start, main menu and Play screens), loaded
@@ -18,8 +18,10 @@ const playable = (level, mode) => LEVELS.includes(level) && MODES.includes(mode)
 export default function Battlefront() {
   const { level, mode } = useParams();
   const navigate = useNavigate();
-  // (the address's knobs, ?gpu= and ?post=, go on with the player into the battle)
+  // (the address's knobs, ?gpu= and ?post=, go on with the player into the
+  // battle, and so does where they came from: a galaxy world's ?from=)
   const { search } = useLocation();
+  const back = wayBack(search);
   useDocumentTitle(level ? 'Battlefront · Hoth' : 'Battlefront');
   if (!level)
     return (
@@ -34,7 +36,7 @@ export default function Battlefront() {
   return (
     <main className="bf-page">
       <h1 className="sr-only">Battlefront: Galactic Assault on Hoth</h1>
-      <BattlefrontWorld level={level} mode={mode} />
+      <BattlefrontWorld level={level} mode={mode} back={back} />
     </main>
   );
 }

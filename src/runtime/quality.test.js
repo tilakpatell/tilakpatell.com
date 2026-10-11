@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { STEPS, createPace } from '../lib/three/pace';
-import { RESOLUTION_STEPS, UHD, createQuality, headroomAt } from './quality';
+import { mipBias, setMipBias, setMipState } from '../lib/three/mipBias';
+import { STEPS as DYNRES_STEPS } from './dynres';
+import { RESOLUTION_STEPS, UHD, createQuality, headroomAt, stepsAt } from './quality';
 
 // a stand-in pace: `levels` is what each frame() call returns, in turn
 const fakePace = (levels, last = STEPS.length - 1) => {
@@ -223,5 +225,138 @@ describe('headroomAt (lane U)', () => {
     expect(headroomAt(2, { tier: 'high', pixels: UHD })).toEqual({ scale: 0.5, shed: 1 });
     expect(headroomAt(0, { tier: 'ultra', pixels: 2560 * 1440 })).toEqual({ scale: 1, shed: 0 });
     expect(headroomAt(0, { tier: 'mid', pixels: UHD })).toEqual({ scale: 1, shed: 0 });
+  });
+});
+
+// a stand-in for lane G1's clock (lib/three/gpuTime's face): `times` is what
+// `last` reads after each frame(), in turn
+const fakeClock = (times, available = true) => {
+  let i = 0;
+  const clock = { available, last: null, median: null, p95: null };
+  // (each frame a new reading, as a fresh object would be: equal numbers are new readings here)
+  clock.frame = vi.fn(() => {
+    clock.last = times[Math.min(i++, times.length - 1)] + i * 1e-9;
+  });
+  return clock;
+};
+
+describe('the GPU clock as the source (lane N2)', () => {
+  it('falls back to the pace silently when there is no GPU time', () => {
+    const pace = fakePace([1]);
+    const q = createQuality({ tier: 'high', pace, source: 'gpu', gpuTime: { available: false } });
+    expect(q.source).toBe('cpu');
+    expect(q.frame(16)).toBe(1);
+    expect(createQuality({ tier: 'high', pace, source: 'gpu' }).source).toBe('cpu');
+  });
+
+  it('steps the level by the GPU time, never the pace, and keeps the canvas’s scale at 1', () => {
+    const pace = fakePace([3]);
+    const clock = fakeClock([30]);
+    const q = createQuality({ tier: 'high', pace, source: 'gpu', gpuTime: clock });
+    expect(q.source).toBe('gpu');
+    const seen = [];
+    q.on((l) => seen.push(l));
+    const got = [1, 2, 3].map((t) => q.frame(t * 16));
+    expect(got).toEqual([null, null, 1]);
+    expect(clock.frame).toHaveBeenCalledTimes(3);
+    expect(seen).toEqual([1]);
+    expect(q.level).toBe(1);
+    // (the output size never changes: only the chain's internal scale moves)
+    expect(q.scale).toBe(1);
+    expect(q.internal).toBe(0.77);
+  });
+
+  it('switches per world: the classic renderer keeps the pace, and a world’s start puts the controller back at 1', () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([null]) });
+    expect(q.source).toBe('cpu');
+    q.setSource('gpu', { gpuTime: fakeClock([30]) });
+    expect(q.source).toBe('gpu');
+    for (let t = 1; t <= 3; t++) q.frame(t * 16);
+    expect(q.level).toBe(1);
+    q.reset();
+    expect(q.level).toBe(0);
+    expect(q.internal).toBe(1);
+    q.setSource('cpu');
+    expect(q.source).toBe('cpu');
+  });
+
+  it('counts each reading of the clock once: `last` stays until the next resolve lands', () => {
+    // (lane G1's clock resolves one frame at a time: its `last` repeats on the frames between)
+    const clock = { available: true, last: null, frame: vi.fn() };
+    const q = createQuality({ tier: 'high', pace: fakePace([null]), source: 'gpu', gpuTime: clock });
+    clock.last = 30;
+    for (let t = 1; t <= 3; t++) q.frame(t * 16);
+    // (one reading over budget, seen three times: no panic)
+    expect(q.level).toBe(0);
+    clock.last = 31;
+    q.frame(64);
+    clock.last = 30;
+    q.frame(80);
+    expect(q.level).toBe(1);
+  });
+
+  it('takes lane G1’s renderer tier when the runtime has one: T0 budgets 33.3 ms', () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([null]) });
+    q.setSource('gpu', { gpuTime: fakeClock([25]), tier: 'T0' });
+    for (let t = 1; t <= 40; t++) q.frame(t * 33);
+    expect(q.level).toBe(0);
+  });
+
+  it('a hold lets the GPU’s frames go by too', () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([null]), source: 'gpu', gpuTime: fakeClock([30]) });
+    q.hold(100);
+    for (let t = 1; t <= 6; t++) expect(q.frame(t * 16)).toBe(null);
+    expect(q.level).toBe(0);
+  });
+
+  it('a calibrated step does not move the GPU’s controller (the clock measures the chip itself)', () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([null]), source: 'gpu', gpuTime: fakeClock([5]) });
+    q.setLevel(3);
+    expect(q.level).toBe(0);
+  });
+
+  it('a budget of 33.3 ms for a visitor who pins 30', () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([null]), source: 'gpu', gpuTime: fakeClock([25]), fps: 30 });
+    for (let t = 1; t <= 40; t++) q.frame(t * 33);
+    expect(q.level).toBe(0);
+  });
+
+  it('steps through the same list the world’s headroomAt reads at its drawing buffer: level 1 at 4K on ultra is 0.67 for both', () => {
+    expect(stepsAt({ tier: 'ultra', pixels: UHD })).toEqual([0.77, 0.67, 0.5]);
+    expect(stepsAt()).toEqual(RESOLUTION_STEPS);
+    const q = createQuality({ tier: 'high', detail: 'ultra', pace: fakePace([null]) });
+    q.setSource('gpu', { gpuTime: fakeClock([30]), pixels: UHD });
+    expect(q.internal).toBe(0.77);
+    for (let t = 1; t <= 3; t++) q.frame(t * 16);
+    expect(q.level).toBe(1);
+    expect(q.internal).toBe(headroomAt(1, { tier: 'ultra', pixels: UHD }).scale);
+    expect(q.internal).toBe(0.67);
+  });
+
+  it('uses the same steps headroomAt does', () => {
+    expect(DYNRES_STEPS).toEqual(RESOLUTION_STEPS);
+  });
+});
+
+describe('the mip bias following the scale (lane N2)', () => {
+  it('sets −0.5 at native under TRAA, log2(scale) − 1 as the controller steps down, 0 on the classic renderer', () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([null]) });
+    setMipState({ temporal: true }); // (webgpu.js, building a chain with TRAA)
+    q.setSource('gpu', { gpuTime: fakeClock([30]) });
+    expect(mipBias()).toBe(-0.5);
+    for (let t = 1; t <= 3; t++) q.frame(t * 16);
+    expect(mipBias()).toBeCloseTo(Math.log2(0.77) - 1, 6);
+    q.setSource('classic');
+    expect(mipBias()).toBe(0);
+  });
+
+  it('follows the pace’s level through headroomAt on a node world without the GPU clock', () => {
+    const q = createQuality({ tier: 'high', pace: fakePace([2]) });
+    setMipState({ temporal: false });
+    q.setSource('cpu');
+    expect(mipBias()).toBe(0);
+    q.frame(16);
+    expect(mipBias()).toBeCloseTo(Math.log2(0.67) - 1, 6);
+    setMipBias(0);
   });
 });

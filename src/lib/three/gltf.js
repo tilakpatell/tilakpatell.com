@@ -18,6 +18,8 @@
 //                              `fresh`, `scene` is a copy to move, wrap and
 //                              tune (geometry and textures shared)
 //   prepare(root, { renderer, shadows, receive, cullSkinned }) → root
+//   detectSupport(ktx2, renderer) → Promise<ktx2>: the chip's KTX2 formats
+//                              read, a node renderer waited for till it's up
 //   tune(material, rules) → material: generator defaults clamped
 //   tuneTree(root, rules) → root: `tune` over every material, each once
 //   SHIP_PROFILE: the rules the universe map's hero ships are tuned by
@@ -92,8 +94,17 @@ class SiteGLTFLoader extends GLTFLoader {
     // (the decoders up first, so one that can't come up fails the model
     // with its name, lib/three/wasmDecoders.js, rather than the parser's words)
     const decoders = !this.ktx2Loader && usesBasisu(data) ? Promise.all([meshopt(), ktx2Loader()]) : meshopt();
+    // (the parse runs in the promise's callback, out of load()'s try: a file
+    // that is not a model, a page answered in its place, would throw there
+    // and reach nothing but the page as an unhandled rejection, lane S1)
     decoders.then(
-      () => super.parse(data, path, done, onError),
+      () => {
+        try {
+          super.parse(data, path, done, onError);
+        } catch (e) {
+          onError?.(e);
+        }
+      },
       (e) => onError?.(e),
     );
   }
@@ -138,6 +149,31 @@ function probeRenderer() {
   return { isWebGPURenderer: false, extensions: { has: (name) => Boolean(get(name)), get } };
 }
 
+// The chip's formats read into the KTX2 loader. A node renderer answers
+// from its device, which three (r186) has only once init() has resolved,
+// and throws before; so one not yet up is waited for, within `timeoutMs`
+// (three's init() hands back the promise already running, so asking again
+// starts nothing, as its own detectSupportAsync did). A throw is a named
+// KTX2SupportError, never an unhandled one.
+//   detectSupport(ktx2, renderer, { timeoutMs }) → Promise<ktx2>
+export async function detectSupport(k, renderer, { timeoutMs = 10000 } = {}) {
+  let timer = null;
+  try {
+    if (typeof renderer?.hasInitialized === 'function' && renderer.hasInitialized() === false) {
+      const late = new Promise((_, no) => (timer = setTimeout(() => no(new Error(`the renderer did not come up in ${timeoutMs} ms`)), timeoutMs)));
+      await Promise.race([renderer.init(), late]);
+    }
+    k.detectSupport(renderer);
+    return k;
+  } catch (e) {
+    const named = new Error(`ktx2: the chip's texture formats could not be read (${e?.message ?? e})`, { cause: e });
+    named.name = 'KTX2SupportError';
+    throw named;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // The KTX2 loader, made and attached the first time it's needed; its
 // transcoder (three's basis_transcoder.js and .wasm, bundled by Vite from
 // three's own URL) only downloads on the first texture it decodes.
@@ -145,15 +181,17 @@ function probeRenderer() {
 // wasmDecoders.js's basisUp) before the loader is handed out, so a
 // transcoder that can't be had is a named WasmError here and not a texture
 // waiting for a worker that never answers; and a loader that failed so is
-// let go, the next ask making another.
+// let go, the next ask making another. The chip's formats are read the same
+// way (detectSupport above): a renderer not yet up is waited for, and one
+// that can't say is a named error and another try on the next ask.
 export function ktx2Loader({ renderer = null } = {}) {
   if (!ktx2Pending) {
     ktx2Pending = import('three/examples/jsm/loaders/KTX2Loader.js')
       .then(async ({ KTX2Loader }) => {
         const k = new KTX2Loader();
         k.setWorkerLimit(Math.max(1, Math.min(2, (navigator?.hardwareConcurrency ?? 2) - 1)));
-        k.detectSupport(renderer ?? probeRenderer());
         try {
+          await detectSupport(k, renderer ?? probeRenderer());
           await basisUp(k);
         } catch (e) {
           k.dispose();
@@ -169,9 +207,10 @@ export function ktx2Loader({ renderer = null } = {}) {
         throw e;
       });
   }
-  return ktx2Pending.then((k) => {
+  return ktx2Pending.then(async (k) => {
     if (renderer && detectedWith !== renderer) {
-      k.detectSupport(renderer);
+      // (one that can't say rejects this ask alone; the next asks again)
+      await detectSupport(k, renderer);
       detectedWith = renderer;
     }
     return k;

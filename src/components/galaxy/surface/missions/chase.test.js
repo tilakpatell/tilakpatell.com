@@ -258,7 +258,10 @@ describe('the chase: aiming and scoring', () => {
 });
 
 describe('the missions on the surface', () => {
-  it('gives every chase’s scouts a gap, a lane and a speed', async () => {
+  // (every chase laid out and its scouts placed: 5.0–6.1 s in a loaded cloud
+  // container, over vitest’s 5 s, so the allowance says so rather than the
+  // test being quieted)
+  it('gives every chase’s scouts a gap, a lane and a speed', { timeout: 30_000 }, async () => {
     const { MISSIONS } = await import('./index');
     for (const [system, list] of Object.entries(MISSIONS))
       for (const m of Object.values(list)) {
@@ -268,7 +271,9 @@ describe('the missions on the surface', () => {
         expect(m.waypoints.length).toBeGreaterThanOrEqual(2);
         expect(m.stars[0]).toBeLessThan(m.stars[1]);
       }
-  });
+    // (the first test here pays the missions index's import, 7.5 to 7.8 s in a
+    // cloud container, over vitest's 5 s: given 30 s as the flight island's test is)
+  }, 30000);
   it('only puts a mission on a world you can land on', async () => {
     const { MISSIONS } = await import('./index');
     const { siteOf } = await import('../sites');

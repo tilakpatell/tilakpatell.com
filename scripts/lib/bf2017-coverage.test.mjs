@@ -118,6 +118,13 @@ describe('classify', () => {
     expect(c('maps.lights:levels/mp/endor_01/endor_01').by).toBe('E');
     expect(c('maps.decals:levels/mp/endor_01/endor_01').by).toBe('surfaces-Q4');
   });
+  it('gives the Scimitar’s and the TIE striker’s folders to the space lane (lane S1: the galaxy’s fleet flies them), the other fighters to the game’s lane 4', () => {
+    // (a row the fixtures lack, in rowsOf's shape, held to the owners table alone)
+    const made = (part, name) => classify({ id: `${part}:${name}`, part, name, files: [], bytes: 0, keys: [normalise(name)] }, { consumers: consumersOf({}), owners: OWNERS });
+    expect(made('models', 'gameplay/vehicles/air/scimitar/vehicle_air_scimitar_cockpit_mesh')).toEqual({ state: 'owned', by: 'space', finding: true });
+    expect(made('textures', 'gameplay/vehicles/air/tiestriker/t_tiestriker_01_cs').by).toBe('space');
+    expect(made('models', 'gameplay/vehicles/air/xwing_t65/vehicle_air_xwing_t65_cockpit_mesh').by).toBe('4');
+  });
   it('leaves a row no table names unowned', () => {
     expect(classify(row('models:objects/nature/arctic/rock_01_mesh'), { ...ctx, owners: [] })).toEqual({ state: 'unowned', by: '' });
   });

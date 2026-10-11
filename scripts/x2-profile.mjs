@@ -20,6 +20,25 @@
 //   the heights: every heightAt the sim asks (the pack's image layer)
 //
 //   node scripts/x2-profile.mjs [--seconds 60] [--tier high] [--out dir] [--seed 1] [--search js|wasm]
+//     [--breaks 100 [--debris-world own|level]]
+//
+// --breaks n (GPU-first lane N5): n breaks a minute round the player (a
+// crate, a wall section, a speeder, a barrel in turn, 8 to 15 m off), each
+// split by src/lib/physics/breaks.js into Rapier hulls (debris.js, at most
+// 64 live) and a GPU burst (counted, never stepped here: on WebGPU it costs
+// the CPU its spawn call); and the engine stepped every frame, which the
+// Battlefront does not do without them (collision.js steps it only when a
+// cell comes), so the step timed (`physics` in the JSON: the step and the
+// hulls' sleep check a frame) holds the level's colliders and the hulls
+// both. The plan's gate: under 2 ms p95. --debris-world own (the default)
+// puts the hulls and their floor tiles in a small world of their own,
+// stepped every frame, and leaves the level's as the Battlefront has it:
+// Rapier 0.21 steps a fixed collider for about 0.3 µs whether anything
+// moves or not, so Hoth's near cells (3,873 colliders) cost 1.1 to 1.3 ms a
+// step with nothing in them (lane N5's evidence README); `level` steps the
+// level's world every frame with the hulls in it. `battle` is the run's fingerprint
+// (the searches it made and a hash of every entity's place at the end): the
+// same seed with and without breaks must give the same battle.
 //
 // --search wasm runs the navgrid's A* in its WebAssembly port (navWasm.js)
 // for the whole run; either way every search the minute made is recorded
@@ -49,6 +68,8 @@ const TIER = arg('tier', 'high');
 const OUT = resolve(ROOT, arg('out', 'docs/superpowers/evidence/bf2017-picture/x2'));
 const SEED = Number(arg('seed', 1));
 const SEARCH = arg('search', 'js');
+const BREAKS = Number(arg('breaks', 0)); // a minute
+const DEBRIS_WORLD = arg('debris-world', 'own');
 const FPS = 60;
 mkdirSync(OUT, { recursive: true });
 
@@ -128,6 +149,45 @@ const physics = await createPhysics();
 collision = createLevelCollision({ pack, loadBin: disk, physics, tier: TIER });
 const mask = await level.navOf();
 
+// (--breaks) the debris: hulls into the engine, bursts counted
+let debris = null;
+let debrisPhysics = null;
+const burst = {
+  spawned: 0,
+  particles: 0,
+  spawn(name, at, quat, scale, o) {
+    burst.spawned++;
+    burst.particles += o?.burst ?? 0;
+  },
+};
+const physicsMs = [];
+let breaks = 0;
+const KINDS = [1, 3, 4.5, 1.5]; // m: a crate, a wall section, a speeder, a barrel
+const [ox, oy, oz] = pack.origin ?? [0, 0, 0];
+const cy = Math.cos(pack.yaw ?? 0);
+const sy = Math.sin(pack.yaw ?? 0);
+if (BREAKS > 0) {
+  const { createDebris } = await load('/src/lib/three/particles/debris.js');
+  // (the ground under a break, in the pack's frame: Hoth's collision holds
+  // the cells' shapes and no terrain, so debris lays a tile there)
+  const groundAt = (px, pz) => level.heightAt(ox + px * cy - pz * sy, oz + px * sy + pz * cy) - oy;
+  debrisPhysics = DEBRIS_WORLD === 'level' ? physics : await createPhysics();
+  debris = createDebris(burst, debrisPhysics, { seed: SEED, groundAt });
+}
+function breakNear(at) {
+  const a = breaks * 2.39996; // (the golden angle: round the player)
+  const r = 8 + (breaks % 8);
+  const x = at[0] + Math.cos(a) * r;
+  const z = at[2] + Math.sin(a) * r;
+  const size = KINDS[breaks % KINDS.length];
+  const ground = level.heightAt(x, z);
+  // (into the pack's frame, where the collision is: map/level.js's toPack)
+  const px = (x - ox) * cy + (z - oz) * sy;
+  const pz = -(x - ox) * sy + (z - oz) * cy;
+  debris.break([px, (Number.isFinite(ground) ? ground : at[1]) - oy + size / 2 + 0.3, pz], size, [0, 1.5, 0]);
+  breaks++;
+}
+
 // every heightAt the sim asks, counted and timed apart (a call is too short
 // for the sampler to place alone)
 let heights = 0;
@@ -156,6 +216,13 @@ function frame(dt) {
   }
   collision.update(4);
   const p = sim.player?.id ? sim.sim.entities.get(sim.player.id) : null;
+  if (debris) {
+    if (p && t * (BREAKS / 60) >= breaks + 1) breakNear(p.at);
+    const a = performance.now();
+    debrisPhysics.step(dt);
+    debris.update(dt);
+    if (recording) physicsMs.push(performance.now() - a);
+  }
   if (p) level.update(p.at);
   else if (battle.view(sim).deploy?.open) battle.deploy(sim, me, { classId: 'd-orig-assault' });
 }
@@ -201,6 +268,18 @@ const replayed = { calls: calls.length, differ, jsMs: median(runs.js), wasmMs: m
 
 times.sort((a, b) => a - b);
 const pick = (q) => +times[Math.min(times.length - 1, Math.floor(q * times.length))].toFixed(3);
+const pickOf = (xs, q) => {
+  const v = [...xs].sort((a, b) => a - b);
+  return v.length ? +v[Math.min(v.length - 1, Math.floor(q * v.length))].toFixed(3) : null;
+};
+// the battle's fingerprint: every entity's place at the end, hashed (FNV-1a over the rounded numbers)
+function fingerprint() {
+  let h = 2166136261;
+  for (const [id, e] of [...sim.sim.entities].sort((a, b) => String(a[0]).localeCompare(String(b[0])))) {
+    for (const ch of `${id}:${(e.at ?? []).map((v) => v.toFixed(4)).join(',')};`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  }
+  return h.toString(16);
+}
 const sum = summarise(profile, { frames, top: 25 });
 const stats = level.stats();
 const out = {
@@ -212,21 +291,26 @@ const out = {
   search: SEARCH,
   searchMsPerFrame: +(searchMs / frames).toFixed(4),
   replay: replayed,
+  battle: { searches: calls.length, hash: fingerprint() },
+  ...(debris ? { breaks: { perMinute: BREAKS, world: DEBRIS_WORLD, made: breaks, ...debris.stats(), bursts: burst.spawned, particles: burst.particles }, physics: { p50: pickOf(physicsMs, 0.5), p95: pickOf(physicsMs, 0.95), max: pickOf(physicsMs, 1), mean: +(physicsMs.reduce((a, b) => a + b, 0) / Math.max(1, physicsMs.length)).toFixed(3) } } : {}),
   frame: { p50: pick(0.5), p95: pick(0.95), max: pick(1) },
   heightsPerFrame: +(heights / frames).toFixed(1),
   level: { instances: stats.instances, rebuilds: null },
   bots: sim.sim.entities.size,
   ...sum,
 };
-const name = `x2-cpu-${TIER}-${SEARCH}`;
+const name = `x2-cpu-${TIER}-${SEARCH}${BREAKS ? `-breaks${BREAKS}-${DEBRIS_WORLD}` : ''}`;
 writeFileSync(join(OUT, `${name}.cpuprofile`), JSON.stringify(profile));
 writeFileSync(join(OUT, `${name}.profile.json`), `${JSON.stringify(out, null, 2)}\n`);
 console.log(`${SECONDS} s at ${FPS} fps, ${TIER}, Rapier ${engineBuild()}: frame p50 ${out.frame.p50} ms, p95 ${out.frame.p95} ms; ${out.heightsPerFrame} heights a frame; ${out.bots} entities`);
+console.log(`the battle: ${out.battle.searches} searches, hash ${out.battle.hash}`);
+if (debris) console.log(`breaks (${DEBRIS_WORLD} world): ${breaks} made (${BREAKS} a minute), ${out.breaks.hulls} hulls live, ${out.breaks.statics} gone static, ${out.breaks.lost} lost, ${out.breaks.refused} refused by the cap, ${burst.particles} particles in ${burst.spawned} bursts; the physics step p50 ${out.physics.p50} ms, p95 ${out.physics.p95} ms, worst ${out.physics.max} ms`);
 console.log(`search (${SEARCH}): ${out.searchMsPerFrame} ms a frame; replayed ${replayed.calls} searches: JavaScript ${replayed.jsMs} ms, WebAssembly ${replayed.wasmMs} ms (${replayed.perCallJsUs} against ${replayed.perCallWasmUs} µs a search), ${differ} differ`);
 console.log('by module (self, ms a frame):');
 for (const m of sum.modules.slice(0, 15)) console.log(`  ${m.module.padEnd(64)} ${m.perFrame.toFixed(3)}  ${(m.share * 100).toFixed(1)}%`);
 console.log('by function (total, ms a frame):');
 for (const m of sum.total.slice(0, 25)) console.log(`  ${m.fn.padEnd(90)} ${m.perFrame.toFixed(3)}  ${(m.share * 100).toFixed(1)}%`);
 level.dispose?.();
+if (debrisPhysics && debrisPhysics !== physics) debrisPhysics.dispose();
 physics.dispose();
 await vite.close();

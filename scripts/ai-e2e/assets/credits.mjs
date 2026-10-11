@@ -41,7 +41,10 @@ export function credits(root) {
 // Whether a credit is for a file.
 export function covers(credit, file) {
   const f = original(file);
-  if (credit.file) return stem(credit.file) === stem(f);
+  // (a credit may name the copy in lod/ itself: a far copy whose original is
+  // credited under another name, the galaxy's lod/interceptor.glb made from
+  // surface/tieinterceptor.glb, lane S1)
+  if (credit.file) return stem(original(credit.file)) === stem(f);
   if (credit.dir) {
     if (!f.startsWith(credit.dir) || f.slice(credit.dir.length).includes('/')) return false;
     const base = stem(f).slice(credit.dir.length);

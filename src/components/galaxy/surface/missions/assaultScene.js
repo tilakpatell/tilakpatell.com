@@ -24,7 +24,7 @@
 // createAssaultMission({ parent, world, blaster, mission, emit, say, sounds,
 // kit, warm, tier, reduced, engine }) → { begin(), restart(), update(dt, you) →
 // { atYou: [{ from, spread, damage, color }] }, targets, hit(target, damage),
-// running(), started(), view(), target(x, z), chooseSide(side), deploy(id),
+// running(), started(), view(), target(x, z), chooseSide(side), deploy(id, offer?),
 // youDown(), force(how), dispose() }
 //
 // engine: the rules it runs, ASSAULT (./assault.js's) unless another mode
@@ -616,9 +616,9 @@ export function createAssaultMission({ parent, world, blaster, mission, emit, sa
       say(mission.lines?.start);
       tell({ type: 'start', side });
     },
-    deploy(id) {
+    deploy(id, offer = null) {
       if (!battle) return null;
-      const at = engine.deploy(battle, id);
+      const at = engine.deploy(battle, id, offer);
       if (at) tell({ type: 'deploy', id });
       return at;
     },

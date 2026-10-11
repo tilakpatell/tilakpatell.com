@@ -1,0 +1,11 @@
+the level's battle in 35 s
+ok   the battle is the level's: stage 1 of 5, Destroy the corvettes, 3 objectives, flying for team 1
+ok   its ships: moncal, corvette, corvette, corvette, destroyer
+the pack's draws settled in 601 s (0 groups)
+ok   draw calls 119 (the high row: 700)
+ok   triangles 0.11M (the high row: 3.0M)
+frame times in software GL: 1900, 2300, 2167 ms
+ok   the MC80 projects into the frame at 640, 467
+ok   the pack's flagship is drawn where the battle's is (its box changes without the pack)
+FAIL no console errors: SyntaxError: Unexpected token '<', "<!doctype "... is not valid JSON
+exit 1

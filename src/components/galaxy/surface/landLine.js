@@ -11,7 +11,8 @@ import { starfighterAt } from './missions/starfighterMaps';
 // (the names the mode menu's cards carry: the game's own, modes.json)
 const named = (id, own) => BOOK.names?.modes?.[id]?.text ?? own;
 
-const isAssault = (to) => /[?&]mission=assault\b/.test(to ?? '');
+// (the galaxy's own battle, or the game's level in the Battlefront world: Hoth's)
+const isAssault = (to) => /[?&]mission=assault\b/.test(to ?? '') || /^\/battlefront\/[a-z0-9-]+\/galacticAssault/.test(to ?? '');
 const assaulted = (g) => (g?.status === 'live' && isAssault(g.to)) || Boolean(g?.also?.some((a) => isAssault(a.to)));
 // (Heroes vs Villains and Blast: a line each on the briefing, missions/hvv.js and blast.js)
 const listed = (g, id) => Boolean(g?.also?.some((a) => new RegExp(`[?&]mission=${id}\\b`).test(a.to ?? '')));
