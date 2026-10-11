@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { JOBS, args, bf2017Checks, childEnv, desk, evidenceDir, keyState, pick, planMarkdown, preflight } from './bf2017-desk.mjs';
+import { JOBS, args, bf2017Checks, childEnv, desk, evidenceDir, keyState, main, pick, planMarkdown, preflight } from './bf2017-desk.mjs';
 
 const SECRET = 'sb_secret_do_not_print_0123456789';
 
@@ -64,5 +64,11 @@ describe("lane W's desktop jobs", () => {
     expect(md).toContain('- a note');
     expect(md).toContain('45 items.');
     expect(md).toContain('| … 5 more |');
+  });
+  it('stops a real run before anything is made when the machine lacks a need', async () => {
+    let made = false;
+    const spec = { job: 'x', title: 'x', needs: () => [{ name: 'the export', file: '/no/such/export', fix: 'set BF2_EXPORT' }], plan: async () => ({ items: [] }), run: async () => (made = true) };
+    await expect(main(spec, [], {})).rejects.toThrow(/missing on this machine: the export/);
+    expect(made).toBe(false);
   });
 });
