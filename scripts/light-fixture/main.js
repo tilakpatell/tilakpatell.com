@@ -7,6 +7,7 @@
 // volumeWorld.js instead).
 
 import { createWebGPU } from '../../src/runtime/webgpu.js';
+import { createGpuTime } from '../../src/lib/three/gpuTime.js';
 import lit from '../../src/runtime/fixtures/litWorld.js';
 import volume from './volumeWorld.js';
 
@@ -69,6 +70,28 @@ try {
       const cpu = await w.probe.bakeGrid();
       await sync();
       return { cpu, total: performance.now() - t };
+    },
+    // the GPU clock against the frame waited on (the GPU-first design's G1
+    // gate: within 10 % on the laptop), frames drawn back to back for ms:
+    // each one's GPU time from the timestamps (lib/three/gpuTime) and its
+    // time from the draw call to the queue done; the medians of both, or
+    // gpu null where the adapter has no timestamp-query
+    async gpuClock(ms) {
+      const clock = createGpuTime(gfx.renderer);
+      const cpu = [];
+      const gpu = [];
+      const end = performance.now() + ms;
+      while (performance.now() < end || cpu.length < 10) {
+        await tick();
+        const t = performance.now();
+        frame(1 / 60);
+        await sync();
+        cpu.push(performance.now() - t);
+        await clock.frame();
+        if (clock.last != null) gpu.push(clock.last);
+      }
+      const med = (a) => (a.length ? [...a].sort((x, y) => x - y)[a.length >> 1] : null);
+      return { available: clock.available, frames: cpu.length, cpuMedian: med(cpu), gpuMedian: med(gpu), gpuRing: clock.median };
     },
     // frames drawn back to back for ms (at least five), each waited on:
     // the time each took, CPU and GPU (a headless page's animation frames

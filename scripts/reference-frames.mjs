@@ -11,7 +11,7 @@
 //
 //   node scripts/reference-frames.mjs <world…> [--pose open|<view>] [--size 1600x900]
 //     [--jitter 8] [--gpu webgpu|webgl] [--quality ultra] [--adapter auto|swiftshader|system]
-//     [--out docs/superpowers/evidence/gpu-first/reference] [--label name] [--keep]
+//     [--out docs/superpowers/evidence/gpu-first/reference] [--label name] [--keep] [--plain]
 //
 // A world is `litWorld` (the lit fixture: scripts/light-fixture/index.html,
 // at the tier --quality names), `battlefront:<id>` (/battlefront/<id>/galacticAssault),
@@ -32,7 +32,10 @@
 // software-GL leg) and the same name .json: { _source, world, route, pose,
 // size, backend, three, jitter, quality, commit, date }. --keep writes each
 // shot beside it. --label replaces <world> in the names (a second run to
-// compare with the first: Review Focus 4 of the G1 plan).
+// compare with the first: Review Focus 4 of the G1 plan). --plain shoots
+// the candidate instead: the frame as a visitor sees it (the temporal pass
+// on, no jitter, one shot) into <name>.candidate.png, the baseline’s other
+// half for scripts/frame-score.mjs.
 // The canvas’s size never changes for a measurement: the viewport is
 // --size at a device scale of 1, so the reference is at the screen’s own
 // pixels (the design’s §5: the ratio capped at 2 is the world’s, not this
@@ -58,7 +61,9 @@ if (!worlds.length) {
   process.exit(2);
 }
 const [width, height] = String(args.size ?? '1600x900').split('x').map(Number);
-const jitter = Math.max(1, Number(args.jitter) || 8);
+const plain = Boolean(args.plain);
+const jitter = plain ? 1 : Math.max(1, Number(args.jitter) || 8);
+const temporal = plain ? '' : '&traa=off';
 const leg = args.gpu === 'webgl' ? 'webgl' : 'webgpu';
 const quality = ['low', 'mid', 'high', 'ultra'].includes(args.quality) ? args.quality : 'ultra';
 const pose = typeof args.pose === 'string' ? args.pose : 'open';
@@ -98,7 +103,7 @@ const raw = async (png) => {
 // the fixture: its own page, drawn in fixed steps
 async function shootFixture(page) {
   const fixture = { tier: quality };
-  await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}&traa=off&fixture=${encodeURIComponent(JSON.stringify(fixture))}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}${temporal}&fixture=${encodeURIComponent(JSON.stringify(fixture))}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   await page.waitForFunction(() => window.__lit?.ready || window.__lit?.error, null, { timeout: 240000 });
   const err = await page.evaluate(() => window.__lit.error);
   if (err) throw new Error(err);
@@ -112,7 +117,7 @@ async function shootFixture(page) {
   const shots = [];
   for (let i = 0; i < jitter; i++) {
     // (a step of 0: the cube’s turn and the weather’s clock stand still between shots)
-    await page.evaluate((k) => (window.__lit.jitter(k), window.__lit.draw(2, 0)), i);
+    await page.evaluate(([k, p]) => (p || window.__lit.jitter(k), window.__lit.draw(2, 0)), [i, plain]);
     shots.push(await page.locator('canvas').screenshot({ type: 'png' }));
   }
   await page.evaluate(() => window.__lit.jitter(null));
@@ -123,7 +128,7 @@ async function shootFixture(page) {
 async function shootRoute(page, route) {
   await page.clock.install({ time: CLOCK });
   await page.clock.pauseAt(new Date(CLOCK.getTime() + 1000));
-  await page.goto(`${base}/?quality=${quality}&calibrate=off&gpu=${leg}&traa=off#${route}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  await page.goto(`${base}/?quality=${quality}&calibrate=off&gpu=${leg}${temporal}#${route}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   const started = Date.now();
   for (;;) {
     const on = await page.evaluate(() => window.__RUNTIME__?.status === 'on' && Boolean(window.__RUNTIME__.current?.world));
@@ -147,16 +152,16 @@ async function shootRoute(page, route) {
     }
     return { backend: rt.gfx?.backend ?? null, jitters: typeof rt.gfx?.jitter === 'function', posed };
   }, pose);
-  if (!info.jitters) throw new Error(`the world is on ${info.backend}, which has no jitter hook (a 'nodes' world only: the classic renderer is not a reference)`);
+  if (!info.jitters && !plain) throw new Error(`the world is on ${info.backend}, which has no jitter hook (a 'nodes' world only: the classic renderer is not a reference)`);
   const shots = [];
   for (let i = 0; i < jitter; i++) {
-    await page.evaluate((k) => window.__RUNTIME__.gfx.jitter(k), i);
+    if (!plain) await page.evaluate((k) => window.__RUNTIME__.gfx.jitter(k), i);
     // (two frames: the jittered one drawn, then on screen at the compositor’s next)
     for (let n = 0; n < 2; n++) await page.clock.runFor(16);
     await page.waitForTimeout(300);
     shots.push(await page.screenshot({ type: 'png', animations: 'disabled', caret: 'hide', timeout: 120000 }));
   }
-  await page.evaluate(() => window.__RUNTIME__.gfx.jitter(null));
+  if (!plain) await page.evaluate(() => window.__RUNTIME__.gfx.jitter(null));
   return { ...info, shots };
 }
 
@@ -181,7 +186,7 @@ try {
     const started = Date.now();
     try {
       const got = route ? await shootRoute(page, route) : await shootFixture(page);
-      const name = `${typeof args.label === 'string' ? args.label : slug(world)}${got.backend === 'webgpu' ? '' : `.${got.backend}`}`;
+      const name = `${typeof args.label === 'string' ? args.label : slug(world)}${got.backend === 'webgpu' ? '' : `.${got.backend}`}${plain ? '.candidate' : ''}`;
       const images = await Promise.all(got.shots.map(raw));
       const avg = averageLinear(images);
       await sharp(Buffer.from(avg.data), { raw: { width: avg.width, height: avg.height, channels: 3 } }).png().toFile(join(OUT, `${name}.png`));
@@ -195,7 +200,8 @@ try {
         backend: got.backend,
         passes: got.passes,
         three,
-        jitter: { shots: jitter, sequence: 'Halton (2, 3) from its first point, centred on the pixel (src/lib/three/jitter.js)' },
+        kind: plain ? 'candidate (the temporal pass on, no jitter, one shot)' : 'reference',
+        jitter: plain ? null : { shots: jitter, sequence: 'Halton (2, 3) from its first point, centred on the pixel (src/lib/three/jitter.js)' },
         quality,
         commit,
         seconds: Math.round((Date.now() - started) / 1000),
