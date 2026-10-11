@@ -90,3 +90,13 @@ describe('pickBackend by the quality level (a nodes module with a classic path)'
     for (const k of KINDS) expect(RENDERER_NAMES[k]).toBeTruthy();
   });
 });
+
+describe('?gpu=classic', () => {
+  it('the classic renderer at any level for a module with a classic path, nothing for one without', () => {
+    for (const tier of LEVELS) {
+      expect(pickBackend({ shading: 'nodes', classic: true, tier, gpu: true, override: 'classic' })).toBe('webgl');
+      expect(pickBackend({ shading: 'nodes', tier, gpu: true, override: 'classic' })).toBe('webgpu');
+    }
+    expect(readOverride('?gpu=classic', '', null)).toBe('classic');
+  });
+});

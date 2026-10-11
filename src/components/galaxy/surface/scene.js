@@ -3180,6 +3180,31 @@ export async function create(canvas, ctx, set) {
     return shown && !disposed;
   }
 
+  // What the level streams in after the warm-up (its cells' meshes, as you
+  // walk) has its programs made before it is drawn, not in the frame that
+  // first draws it: on the node renderer over WebGL 2 lane T's walk linked
+  // 82 programs mid-move, the worst frame 1.5 s (evidence/galaxy-engine/T/
+  // flip). Looked at every WARM_EVERY s; a change in the level's draws
+  // sends its root through the warm-up (compileAsync; the node renderer's
+  // alone: the classic one's warm-up is as it was).
+  const WARM_EVERY = 1.5; // s
+  let warmClock = 0;
+  let warmedDraws = -1;
+  let warming = false;
+  function warmStreamed(dt) {
+    warmClock += dt;
+    if (L.name !== 'nodes' || warmClock < WARM_EVERY || warming || !gameLevel) return;
+    warmClock = 0;
+    const draws = gameLevel.stats().calls;
+    const root = draws !== warmedDraws ? scene.getObjectByName('level') : null;
+    if (!root) return;
+    warmedDraws = draws;
+    warming = true;
+    warm(root)
+      .catch(() => {})
+      .finally(() => (warming = false));
+  }
+
   // the world moving on by dt seconds
   function tick(dt) {
     // a hit holds the frame a moment: time runs slow through it
@@ -3191,6 +3216,7 @@ export async function create(canvas, ctx, set) {
     gameLit?.step(dt);
     stack?.update(dt, camera);
     gameLevel?.step(dt);
+    warmStreamed(dt);
     // the jump's clock: whether you stood (or your ride did) as this step began
     state.jumpPress.ground(state.phase === 'ride' ? Boolean(state.riding?.state.grounded) : state.phase === 'walk' && me().st.grounded, dt);
     const t = state.t;
@@ -3594,6 +3620,11 @@ export async function create(canvas, ctx, set) {
         get ground() {
           return lit;
         },
+        // (the node renderer's sun casts through its cascades: no floor to bake)
+        get cascaded() {
+          return Boolean(stack?.parts.cascades);
+        },
+        stack: () => stack,
       },
     };
 

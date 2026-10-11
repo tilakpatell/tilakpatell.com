@@ -10,7 +10,7 @@
 // never a loop), or ?gpu=webgl. So the override picks between the two
 // kinds a 'nodes' module can run on and does nothing for a 'glsl' one,
 // which used to be handed WebGPU it couldn't draw on. The visitor sets it
-// with ?gpu=webgl|webgpu in the address or localStorage 'tp-gpu'
+// with ?gpu=webgl|webgpu|classic in the address or localStorage 'tp-gpu'
 // (readOverride); 'nodes-webgl' is the runtime's own, never asked for.
 //
 // The quality level decides too, for a 'nodes' module that brings a classic
@@ -26,13 +26,15 @@
 
 export const KINDS = ['webgl', 'webgpu', 'nodes-webgl'];
 
-const ASKABLE = ['webgl', 'webgpu'];
+// (?gpu=classic: the classic renderer for a module with a classic path, at any
+// level: the parity shots, and the owner's check that the switch holds)
+const ASKABLE = ['webgl', 'webgpu', 'classic'];
 
 export const LEVELS = ['low', 'mid', 'high', 'ultra'];
 
 export function pickBackend({ gpu = false, shading = 'glsl', override = null, lost = false, tier = 'high', classic = false } = {}) {
   if (shading !== 'nodes') return 'webgl';
-  if (classic && tier === 'low') return 'webgl';
+  if (classic && (tier === 'low' || override === 'classic')) return 'webgl';
   const webgpu = gpu && !lost && override !== 'webgl';
   if (classic && tier === 'mid') return webgpu ? 'webgpu' : 'webgl';
   return webgpu ? 'webgpu' : 'nodes-webgl';

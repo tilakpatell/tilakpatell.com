@@ -8,6 +8,7 @@
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs space endor,coruscant
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,hoth
 //   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, JSON=1 …
+//   GPU=classic … (?gpu=: the galaxy surface on the classic renderer at any level, for a parity shot)
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
 //   PHASE_WAIT=900000 … (ms for the world to come up: a level pack in software GL takes minutes)
@@ -48,6 +49,8 @@ import { limitsFor, overBy } from './galaxy-budget.mjs';
 const [mode = 'space', list = 'tatooine'] = process.argv.slice(2);
 const out = process.env.OUT ?? '.';
 const quality = process.env.QUALITY ?? 'high';
+// (GPU=classic|webgl|webgpu: the renderer asked for, runtime/backend.js's ?gpu=; the shot's name says it)
+const gpuAsk = process.env.GPU ?? '';
 const ship = process.env.SHIP ?? 'xwing';
 const oath = process.env.OATH ?? null; // (allegiance.js's saved oath, as JSON: the side you land as)
 const base = process.env.BASE ?? 'http://127.0.0.1:5188';
@@ -98,7 +101,7 @@ for (const id of list.split(',')) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
   const path = mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
-  await page.goto(`${base}/?quality=${quality}&calibrate=off#${path}`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${base}/?quality=${quality}&calibrate=off${gpuAsk ? `&gpu=${gpuAsk}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
   const ready = mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
   try {
     await page.waitForFunction(ready, null, { timeout: Number(process.env.PHASE_WAIT ?? 180000) });
@@ -109,9 +112,10 @@ for (const id of list.split(',')) {
   }
   const loaded = (Date.now() - t0) / 1000;
   // (on the surface, the floor's light baked first: the bake's passes are a
-  // one-off, not a frame anyone plays. A world with no ground, cloud-borne,
+  // one-off, not a frame anyone plays; on the node renderer the sun casts
+  // through its cascades and there is no floor to bake. A world with no ground, cloud-borne,
   // has none to wait for: it runs out the clock)
-  if (mode === 'surface') await page.waitForFunction(() => Boolean(window.__surfaceScene.api?.ground?.stats?.baked), null, { timeout: Number(process.env.BAKE_WAIT ?? 150000), polling: 1000 }).catch(() => {});
+  if (mode === 'surface') await page.waitForFunction(() => Boolean(window.__surfaceScene.api?.ground?.stats?.baked || window.__surfaceScene.api?.cascaded), null, { timeout: Number(process.env.BAKE_WAIT ?? 150000), polling: 1000 }).catch(() => {});
   await page.waitForTimeout(settle);
   // (the world up before it's measured: a world is prepared out of sight,
   // every picture and shader sent a slice a frame behind its loading screen,
@@ -189,7 +193,7 @@ for (const id of list.split(',')) {
       }),
     mode === 'surface',
   );
-  const name = `${mode}-${id}-${quality}`;
+  const name = `${mode}-${id}-${quality}${gpuAsk ? `-${gpuAsk}` : ''}`;
   await page.screenshot({ path: `${out}/${name}.png`, timeout: 120000 });
   results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), errors: errors.slice(0, 5) });
   console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}`);
