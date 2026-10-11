@@ -17,14 +17,21 @@
 // null, never one in flight: that one lands and is kept, so a later ask for
 // it is the kept bytes, not another download.
 //
-//   createFetchQueue({ fetch, parallel, signal }) → { get(path, { cls, rank, tag }) → Promise<ArrayBuffer | null>,
+// An ask that has not answered in `timeout()` (the site's pool's: 20 s, a
+// second more a megabyte, lib/net/assetFetch.js) fails and frees its slot,
+// so one stalled request (the bucket's HTTP/2 resets, seen on Hoth) does
+// not hold the whole level back; its late answer is dropped.
+//
+//   createFetchQueue({ fetch, parallel, signal, timeout }) → { get(path, { cls, rank, tag }) → Promise<ArrayBuffer | null>,
 //     hold(classes), abandon(test) → n, pending(cls?), bytes(), dispose() }
 //   fetch(path, { signal }) → Promise<ArrayBuffer>
+
+import { TIMEOUT } from '../../../../lib/net/assetFetch.js';
 
 export const CLASSES = ['coarse', 'boot', 'cell', 'detail', 'prefetch'];
 const ORDER = Object.fromEntries(CLASSES.map((c, i) => [c, i]));
 
-export function createFetchQueue({ fetch, parallel = 4, signal = null }) {
+export function createFetchQueue({ fetch, parallel = 4, signal = null, timeout = TIMEOUT, setTimer = setTimeout, clearTimer = clearTimeout }) {
   const ctl = new AbortController();
   signal?.addEventListener('abort', () => dispose());
   const waiting = new Map(); // path → item
@@ -55,8 +62,17 @@ export function createFetchQueue({ fetch, parallel = 4, signal = null }) {
       if (!item) return;
       waiting.delete(item.path);
       flying.set(item.path, item);
+      let late = false;
+      const timer = setTimer(() => {
+        late = true;
+        flying.delete(item.path);
+        item.fail(new Error(`${item.path} did not answer`));
+        pump();
+      }, timeout(0));
       fetch(item.path, { signal: ctl.signal }).then(
         (buf) => {
+          clearTimer(timer);
+          if (late) return;
           flying.delete(item.path);
           if (gone) return item.done(null);
           total += buf?.byteLength ?? 0;
@@ -65,6 +81,8 @@ export function createFetchQueue({ fetch, parallel = 4, signal = null }) {
           pump();
         },
         (e) => {
+          clearTimer(timer);
+          if (late) return;
           flying.delete(item.path);
           if (gone) item.done(null);
           else item.fail(e);

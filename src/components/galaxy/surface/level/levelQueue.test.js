@@ -137,3 +137,25 @@ describe('createFetchQueue', () => {
     expect(f.asked).toEqual(['a']);
   });
 });
+
+describe('a fetch that never answers (lane N4)', () => {
+  it('fails after its timeout and frees its slot, and a late answer is dropped', async () => {
+    const f = fakeFetch();
+    let fire = null;
+    const timer = (fn) => {
+      fire = fn;
+      return 1;
+    };
+    const q = createFetchQueue({ fetch: f.fetch, parallel: 1, timeout: () => 1000, setTimer: timer, clearTimer: () => {} });
+    const stuck = q.get('stuck', { cls: 'coarse' });
+    q.get('next', { cls: 'boot' });
+    expect(f.asked).toEqual(['stuck']);
+    fire();
+    await expect(stuck).rejects.toThrow(/did not answer/);
+    await tick();
+    expect(f.asked).toEqual(['stuck', 'next']);
+    f.give('stuck');
+    await tick();
+    expect(q.bytes()).toBe(0);
+  });
+});
