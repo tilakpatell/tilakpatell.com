@@ -99,12 +99,33 @@ export function decodeInput(text) {
     if (e.kind === 'wheel') out.dy = Math.max(-2000, Math.min(2000, Number(e.dy) || 0));
     return out;
   }
+  if (e.t === 'report') return report(e);
   if (e.t === 'ping') {
     const n = Math.trunc(Number(e.n));
     if (!Number.isFinite(n) || n < 0) return null;
     return { t: 'ping', n, at: Number(e.at) || 0 };
   }
   return null;
+}
+
+// the receiver’s numbers, sent back every few seconds so the desktop script
+// writes the phone’s side of the run too: numbers kept, text cut short
+const num = (v) => (Number.isFinite(Number(v)) && v !== null ? Math.round(Number(v) * 100) / 100 : null);
+const text = (v, n) => (typeof v === 'string' ? v.slice(0, n) : null);
+function report(e) {
+  const l = e.latency ?? {};
+  return {
+    t: 'report',
+    where: e.where === 'internet' ? 'internet' : 'lan',
+    latency: { n: num(l.n), p50: num(l.p50), p95: num(l.p95), max: num(l.max), lost: num(l.lost) },
+    mbps: { mean: num(e.mbps?.mean), p95: num(e.mbps?.p95) },
+    fps: { mean: num(e.fps?.mean), min: num(e.fps?.min) },
+    rttMs: num(e.rttMs),
+    size: text(e.size, 16),
+    codec: text(e.codec, 32),
+    verdict: { latency: Boolean(e.verdict?.latency), bitrate: Boolean(e.verdict?.bitrate), size: Boolean(e.verdict?.size), ok: Boolean(e.verdict?.ok) },
+    ua: text(e.ua, 200),
+  };
 }
 
 export function preferCodecs(codecs) {

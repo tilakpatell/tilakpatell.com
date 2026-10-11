@@ -50,6 +50,13 @@ describe('the stream protocol', () => {
     expect(decodeInput(JSON.stringify({ t: 'shell', cmd: 'rm' }))).toBeNull();
   });
 
+  it('keeps a receiver’s report to numbers and short text', () => {
+    const r = decodeInput(JSON.stringify({ t: 'report', where: 'internet', latency: { n: 40, p50: 61.234, p95: 'x', max: 90, lost: 1 }, mbps: { mean: 18 }, fps: { mean: 59.5 }, size: '1920×1080', codec: 'video/H264', verdict: { ok: 1 }, ua: 'u'.repeat(500), evil: true }));
+    expect(r).toMatchObject({ t: 'report', where: 'internet', latency: { n: 40, p50: 61.23, p95: null, max: 90, lost: 1 }, mbps: { mean: 18, p95: null }, size: '1920×1080', verdict: { ok: true, latency: false } });
+    expect(r.ua).toHaveLength(200);
+    expect(r.evil).toBeUndefined();
+  });
+
   it('puts the preferred codecs first and keeps the rest', () => {
     const offered = [{ mimeType: 'video/VP8' }, { mimeType: 'video/H264' }, { mimeType: 'video/rtx' }, { mimeType: 'video/AV1' }];
     expect(preferCodecs(offered).map((c) => c.mimeType)).toEqual(['video/H264', 'video/AV1', 'video/VP8', 'video/rtx']);
