@@ -1,6 +1,6 @@
 # The Battlefront rulebooks: the hand values
 
-Everything under `src/data/bf2017/` is written by `node scripts/bf2017-data.mjs all --root <export> --level hoth_01 --era Orig` from the 2017 game’s data, each number with a `_source` naming its record, except the two files below, which carry `"source": "hand"`. One line per hand value: what it is, why it is by hand, and where to look to replace it.
+Everything under `src/data/bf2017/` is written by `node scripts/bf2017-data.mjs all --root <export> --level hoth_01 --era Orig` from the 2017 game’s data, each number with a `_source` naming its record, except the hand files and hand values below, which carry `"source": "hand"`. One line per hand value: what it is, why it is by hand, and where to look to replace it.
 
 ## `maps/hoth.stages.json`
 
@@ -15,15 +15,22 @@ The stage order and objectives of Hoth’s Galactic Assault are a logic graph in
 
 ## `points.json`
 
-Battle Points are a logic graph too (`Prefabs/GameplaySupply/PF_Gameplay_BattlePoints_Local`: an `IntEntityData` default 1000 and an `EventToInt` of 1 to 4). Until that graph is read:
+Written by `node scripts/bf2017-data.mjs points` from `Online/BattlepointCostData` (lane G3; it was lane 0's hand table). The record holds the prices, not the earnings:
 
-- `earn.kill` 100, `assist` 50, `vehicleKill` 150, `heroKill` 250: the game as played.
-- `earn.objectiveTick` 10 a second on an objective, `objectiveDamage` 1 a point of damage to one, `squadSpawn` 25: the game as played.
-- `cost.aerial` 1000, `enforcer` 2000, `infiltrator` 2000: the deploy screen as played (the three kinds are the data’s `Class_Special_*`).
-- `cost.vehicles.default` 500, the AT-ST (`Kit_Vehicle_ATST`) 1500, the AT-AT (`Vehicle_Ground_AT-AT_MP`, the map’s walker) 0 since the mode gives it: as played. Keys are `vehicles.json` row ids.
-- `cost.heroes.default` 4000: as played.
-- `limits.heroesPerTeam` 1, `reinforcementsPerTeam` 4: as played.
-- `bpRate` 1: the Instant Action option `InstantActionBPRate`’s default (“DEFAULT” of SLOW, DEFAULT, FAST; `ai.json`’s `instantAction`) as a multiplier.
+- **Read**: `cost.heroes` (`HeroCostConfig`, `EraCost`; every hero 4,000; `default` is the most common), `cost.units` (the default price list, `UnitCostConfig` with `PLANETARY_BATTLES` and an empty `Map`; keyed by the rulebooks' ids where they hold the unit), `cost.other` (OT and PT units the rulebooks do not hold yet, by the record's names), `cost.byMode.<mode>.<level key>` (each map's own table: Hoth's A-wing 200 and AT-ST 800, the Ewok 1,500 on every OT map; Kessel's and Jabba's Palace's Extraction tables), `settings.<mode>` (the names that are no unit of the default list: spawn times, round times, HvV's 35 tickets and `HvV_ENABLE_*`, Strike's bomb timers, the sabers' stamina costs under `global`). The sequel era's 25 names (heroes, units, maps) are refused.
+- **A reading**: the record's `ATAT` (400 on Hoth) is priced on `Kit_Vehicle_ATAT_Objective`, the team's AT-AT kit (the walker's guns a player takes); the escort walker (`Vehicle_Ground_AT-AT_MP`) is the mode's, not bought.
+- **By hand** (`source: "hand"`), the record holding none: `earn` (`kill` 100, `assist` 50, `vehicleKill` 150, `heroKill` 250, `objectiveTick` 10 a second, `objectiveDamage` 1, `squadSpawn` 25: the game as played; `Prefabs/GameplaySupply/PF_Gameplay_BattlePoints_Local` is the graph to read them from), `limits` (`heroesPerTeam` 1, `reinforcementsPerTeam` 4; `kits.json` holds the graph's own per-kit limits), `bpRate` (1: `InstantActionBPRate`'s default).
+
+## `kits.json`
+
+Written by `node scripts/bf2017-data.mjs kits` from `PF_KitLimitations_PlanetaryBattles`, `_HeroesVSVillains`, `_TrooperModes`, `_Skirmish`, `_Skirmish_Space` (lane G3). Each `KitLimitationEntityData` row's `KitId` is the `Identifier` of the kit's gameplay asset (`GP_*`: `GP_Hero_DarthVader` is 518018118), so a row is named by fetching every `*CustomizationGameplayAsset` record. Its `MaxCount`, `Price` and `EnabledAtStage` are field ids the prefab's `PropertyConnections` bind; each is read back up the graph (`bf2017-rulebook-costs.mjs` says how: interface defaults, `PF_HeroKitMaxCount` (a bool cast to 1), `PF_SpecialsKitMaxCount` (its `Int32 4` through an `IntHub`), the `MathEntityData` select, the record's prices). **Resolved**: Galactic Assault 59 of 60 limits and 60 of 60 prices (81 rows, 21 the sequel era's: the shared matcher misses the First Order's and the Resistance's kit names, so `SEQUEL_KITS` names them); all prefabs 103 limits and 115 prices of 168 rows (51 sequel rows left out).
+
+- A debug override (`DynamicDebugVariableEntityData`) is read as unset (true).
+- **By hand**, where the chain ends in a node not read (Skirmish's limits come from the Arcade's settings through a `MathEntityData` input; `SelectIntEntityData`): `{ source: "hand", value, hash }` with the game as played (a hero 1, a reinforcement 4) and `null` for a vehicle (no as-played number); the hash is the field to follow.
+
+## `arcade.json`
+
+Written by `node scripts/bf2017-data.mjs arcade` (lane G3, `bf2017-arcade.mjs`): the battle scenarios (`PF_Skirmish_BattleScenario_Teams_Scenario_*`, 18 of 24 kept: the six with a NewEra side are refused), each side's team record, faction, era, heroes and specials (team records' names: `teams.json` holds no Skirmish team); the 22 `SkirmishParam_*` (choices and the default; `DefaultIntValue` is read as an index, since `Team1ScoreLimit`'s 0 is none of its values); `SkirmishBaseParameters`' order; the bots' names (Empire, Republic, Separatists, and the Rebels' list, which the Resistance shares; the First Order's refused). Every scenario's planet list is empty in the data. Onslaught's and Duel's limits are not records: `PF_Skirmish_GameModeText_*` are the HUD's announcements (`LAST STAND`, `ONE KILL REMAINING`); the limits are the settings (`GameModePreset`, the score and time limits).
 
 ## Read, not by hand, but worth knowing
 
@@ -98,6 +105,28 @@ The game’s Team1 is the light side’s on Fondor and the droid battleship as w
 - **HvV, the game as played**: a target a side, drawn at the start and again when one falls; only a target's death scores; **10 points** win; 4 a side; 10 s to come back; 10 s out of the arena and you're down.
 - **HvV, the bots' tuning** (measured, not the game's): a saber stroke takes 150 of a hero's health, lands 0.35 s into it; a blaster bot fires a burst at its gun's rate but no more often than every 1.2 s (the guns' trigger rates are a player's: Lando's 400 a minute out-shot everyone), hits 75 % point blank to 30 % at 60 m, a saber hero turns 70 % of what it sees; one of yours takes 100; the enemy's target counts 40 m nearer when a bot picks its mark. The heroes' health, healing and guns are the rulebooks' (`bf2017Abilities.json`, `heroes.json`'s regen, `weapons.json`).
 - **Blast, the game as played**: **100 kills**, 10 a side (the tier's soldiers cap it). Tuning: a soldier's hit takes 14 more than the assault's (three hits down, not four), they roam within 0.3 of the ground's size round the point halfway between the two sides' spawns, and come back at the level's spawn nearest that point with no enemy within 30 m.
+
+## The other Galactic Assault maps’ stages (`maps/{endor,tatooine,geonosis,kashyyyk,yavin,kamino,deathstar02}.stages.json`)
+
+Each map’s stage order is a logic graph, as Hoth’s is. What these files take from the data: the stages’ count and order as the level’s own stage strings number them (`ID_FANTASYBATTLES_<LEVEL>_STAGE<n>_TEAM<k>`; Geonosis’s `ID_FANTASYBATTLE_GEONOSIS_{REP,CIS}_PHASE_<n>`), each team’s line in English. By hand:
+
+- **`attackers`**: the side whose first stage line does not defend (`DEFEND`, `STOP`, `HOLD`, `KEEP`, `FEND OFF`, `TAKE OUT THE` the escorted vehicles): Endor, Geonosis and the Death Star II the light side; Tatooine, Kashyyyk, Yavin and Kamino the dark. It agrees with the game.
+- **`objectives`: empty.** No route plays these maps’ Galactic Assault yet; the lane that does chooses each stage’s capture volumes, prefabs and spawns from the map rulebook as Hoth’s were chosen (its section above), not this lane.
+- Naboo_01 has no stage strings of its own (its Galactic Assault layer names only the planetary missions’), so it has no file.
+
+## Every map rulebook (`maps/<world>[.<n>].json`, the sixth design’s lane maps)
+
+`node scripts/bf2017-data.mjs map --root lab/assets/bf2017 --level <key>` for each of the 44 usable maps (`scripts/lib/bf2017-map-audit.mjs`’s `USABLE`): `hoth_02` → `maps/hoth.2.json`, a campaign map `a1_m0lib_ds02` → `maps/a1_m0lib_ds02.json`. The mode layers are the game’s own ids (`UI/Data/GameModes/<id>`’s `GameModeId` and Aurebesh name): `Domination` is Strike (its prefabs `PF_Strike_Bombs`, `PF_Strike_CTF`, `Pf_FlagDropOff`), `Mode1` Supremacy, `Mode3` Ewok Hunt, `Mode5` and the Strike/Extraction maps’ `Extraction` Extraction, `Mode6` Hero Showdown, `Mode9` the co-op missions, `ModeC` Jetpack Cargo, `Mode7` Hero Starfighters. Until this lane, the reader named `Mode9` Strike and `Mode6` Extraction; nothing read those rows. `unplaced` lists an objective prefab a mode’s layer names with no transform (a mode refuses that map until it is placed); the file’s `_from.unplaced` says how many, and the ledger’s check holds the two together. A campaign map’s rulebook is its mission’s `ObjectivesDefinition` tree (`objectives`), its manifest’s vehicle spawns and terrain; the front end’s two stages have none.
+
+## The other modes (`src/lib/battlefront/modes/strike.js`, `extraction.js`, `ewokHunt.js`, `supremacy.js`; lane 6)
+
+Each mode reads its map rulebook: the spawns of its layer by team, its prefabs, and the `inputs` its sub-world wires into them (the property connections across its layers; the field names are the logic graphs’ djb2-xor hashes, read where a name was found). From the records:
+
+- **Strike**: `DefendingTeam` (Naboo_01’s interface: Team1), `BombALocation` and `BombBLocation` (two of the layer’s locators); the carried objective’s return, 20 s (`PF_Strike_CTF`’s `FloatEntityData` 171 into the `StopWatch` the drop starts; `OnPickedUp` resets the delays); sixteen players (`UI/Data/GameModes/Domination`). By hand: the round’s 600 s, the setup and pause (Galactic Assault’s 12 s and 6 s), the drop-off’s 4 m (`DROP_RADIUS`), the light side defending where no team is wired, the match to the side with more rounds and at one each the faster attack.
+- **Extraction**: `CheckpointPosition1` to `3` and `CP1Overtime` to `CP3Overtime` (Jabba’s palace: 240, 270, 300 s), read as the time to reach each checkpoint; the cargo where the level places `PF_Mode5_Objective_*`; the light side carrying (`PF_GameMode_Mode5`’s own interface, `TeamId Team1`). By hand: Kessel’s checkpoint times (its level wires none and the prefab’s defaults are empty in the export: 300 s), the checkpoint’s 6 m, the dropped cargo lying until taken up again.
+- **Ewok Hunt**: the night’s 480 s (`PF_GameMode_Mode3`’s interface), the extraction opening with 121 s left (its `CompareFloatEntityData` 83), the extraction points (`PF_UI_ExtractionPoint_Marker_Mode3`, one by the seed), the stormtroopers’ 200 health (`Affector_Mode3Health`) and the Ewoks’ 80 (`Affector_Special_Health_Ewok`), twenty players (`UI/Data/GameModes/EwokHunt`). By hand: the troopers the dark side and the attackers, the extraction’s 8 m, the arena’s split of 15 troopers and 5 Ewoks.
+- **Supremacy’s ground half**: the five `PF_CapturePoint_Mode1` in `ObjectiveIndex` order with their `CaptureDuration` (20 s), each side’s `MaxReinforcements` (`PF_UI_Mode1`: 70), forty players (`UI/Data/GameModes/Mode1`). By hand: the bleed (one every 5 s from the side holding fewer posts), a post’s 10 m, the ground’s 1,200 s cap. The capital ships’ half (`PF_DestroyableObjective_Venator`, `MaxBoardingTickets`) is not played; the mode’s `gaps` says so.
+- **The arenas** (`src/lib/battlefront/fixtures/modeArena.js`): each map’s field is a plane through its mode’s spawns, crates round its objectives, walled on the edge of a 250 m margin; the sides are Hoth’s Original-era soldiers (`teams.json` holds Hoth’s alone). A bot fled to its flee query’s cover slot counts as in cover for the arena’s stuck rule.
 
 ## The Battlefront world's collision with buildings (`levels/hoth/nav.bin`, `lib/battlefront/navMask.js`, `battlefront/map/collision.js`)
 

@@ -1,0 +1,15 @@
+seed  winner  why  stage  minutes  kills1  kills2  heroes1  heroes2  ms
+1       Rebels  faster      1       7.1     37      40      0       0       18969 
+2       Empire  faster      1       5.5     22      33      0       0       16122 
+3       Empire  faster      1       4.7     15      17      0       0       14541 
+4       Rebels  faster      1       8.6     59      44      0       0       11337 
+5       Rebels  faster      1       4.1     21      28      0       0       7407  
+6       Rebels  faster      1       8       53      34      0       0       14612 
+7       Rebels  faster      1       4       20      23      0       0       5051  
+8       Rebels  faster      1       11.2    66      48      0       0       13244 
+9       Rebels  faster      1       9.1     47      47      0       0       11564 
+10      Rebels  faster      1       3.1     21      17      0       0       3322  
+11      Rebels  faster      1       12.1    59      70      0       0       7627  
+12      Rebels  faster      1       6.8     44      33      0       0       4445  
+
+12 rounds of strike (the Empire attack first): Rebels faster 10, Empire faster 2; no result in 25 min 0; median 6.95 min; kills 38.7 (Rebels) to 36.2 (Empire); stuck 0, off the navgrid 0; 10686.8 ms a round

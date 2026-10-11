@@ -6,7 +6,7 @@
 // round when the check forces it. Lane 2's `mode`, `deploy` and `points`
 // replace those pieces; the page reads only `view()`.
 //
-//   createBattle({ rulebook, level, mode, heightAt, bots, seed, cell, mask }) → battle
+//   createBattle({ rulebook, level, mode, heightAt, bots, seed, cell, nav, mask, teams }) → battle   (mode: any of modes/index.js's)
 //   (mask: the pack's nav.bin, navMask.js's; one built for another grid is
 //   left out, with a warning, and the navgrid is the ground's alone)
 //   addPlayer(battle, { team }) → id ; deploy(battle, id, { classId, spawn: 'point' | 'squad', mate }) → { ok, why? }
@@ -17,10 +17,13 @@
 //   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, vent })
 
 import { aiOf, classOf, mapOf, pointsOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
+import { priceOf } from '../../lib/battlefront/battlePoints.js';
 import { buildNav } from '../../lib/battlefront/nav.js';
 import { STEP, addPlayer as addSoldier, createSim, removeEntity, squadBlocks, squadSpot, step as stepSim, view as viewSim } from '../../lib/battlefront/sim.js';
 import { joinSquad, squadRows } from '../../lib/battlefront/ai/squad.js';
 import { earn } from '../../lib/battlefront/battlePoints.js';
+import { hurt } from '../../lib/battlefront/soldier.js';
+import { modeFor } from '../../lib/battlefront/modes/index.js';
 
 export { STEP };
 export const BOTS = 8; // bots a side on the page (the arena runs 20; the page draws each as a figure)
@@ -69,21 +72,26 @@ export function worldMove([x, y], yaw) {
   return [y * s - x * c, y * c + x * s];
 }
 
-export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault', heightAt = () => 0, bots = { 1: BOTS, 2: BOTS }, seed = 1, cell = NAV_CELL, nav = null, mask = null } = {}) {
+export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault', heightAt = () => 0, bots = { 1: BOTS, 2: BOTS }, seed = 1, cell = NAV_CELL, nav = null, mask = null, teams = null } = {}) {
   const map = mapOf(rulebook, level);
+  if (!modeFor(mode)) throw new Error(`mode ${mode}: not one the game world runs`);
   const ga = stagesOf(rulebook, level, mode);
   const stage = ga?.stages?.[0] ?? null;
   const grid = nav ?? buildNav({ heightAt, bounds: { min: map.bounds.min, max: map.bounds.max }, cell, cover: aiOf(rulebook).cover.constants, mask });
   if (mask && !grid.mask) console.warn(`battlefront: the nav mask (${mask.cols} × ${mask.rows} of ${mask.cell} m) is not this map's grid; walking the ground alone`);
-  const sim = createSim({ rulebook, level, nav: grid, seed, bots });
+  // (teams: { 1, 2 } where the level has no row of its own in teams.json, which holds Hoth's alone)
+  const sim = createSim({ rulebook, level, nav: grid, seed, bots, teams });
   let letter = 0;
+  // (the other modes, lane 6's: their objectives as the mode reads them from the map rulebook)
+  const other = mode === 'galacticAssault' ? [] : modeFor(mode).create({ rulebook, level }).objectives.map((o) => ({ id: o.name, type: o.type, name: String.fromCharCode(65 + letter++), meter: 0, at: [o.at[0], 0, o.at[1]] }));
   const objectives = (stage?.objectives ?? [])
     .filter((o) => o.volume)
     .map((o) => {
       const at = centreOf(map, o.volume);
       return at ? { id: o.volume, type: o.type, name: String.fromCharCode(65 + letter++), meter: 0, at } : null;
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .concat(other);
   return {
     rulebook,
     map,
@@ -92,7 +100,9 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
     sim,
     nav: grid,
     objectives,
-    sides: teamsFor(rulebook, level),
+    sides: teams ? { light: teams[1], dark: teams[2] } : teamsFor(rulebook, level),
+    level,
+    mode,
     points: pointsOf(rulebook),
     player: null, // { team, id, state: 'deploying' | 'alive' | 'down', downAt, earned, hits }
     result: null,
@@ -103,6 +113,9 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
     awards: new Map(), // Battle Points the bots earn here, until the page runs lane 2's mode (squad spawns on them)
     force(what, team) {
       if (what === 'win' || what === 'lose') this.result = { winner: what === 'win' ? team : 3 - team, why: 'forced' };
+      // (the player down, for the kill screen's check: the next step sees it)
+      const me = what === 'die' && this.player?.id ? this.sim.entities.get(this.player.id) : null;
+      if (me) hurt(me, { damage: me.hp + 1, now: this.sim.time });
     },
     out: null,
   };
@@ -199,12 +212,13 @@ export function step(b, inputs = []) {
 
 function offers(b, team) {
   const side = b.sides[SIDES[team]];
-  const cost = b.points.cost;
   const reinf = b.rulebook.reinforcements;
+  // (the record's prices: the level's table for the mode, else the default list)
+  const at = { level: b.level, mode: b.mode };
   return [
     ...side.classes.map((id) => ({ kind: 'class', id, cls: classOf(b.rulebook, id).cls, cost: 0 })),
-    ...(side.reinforcements ?? []).map((id) => ({ kind: 'reinforcement', id, reinforcementKind: reinf[id]?.kind, cost: cost[reinf[id]?.kind] ?? 0 })),
-    ...(side.heroes ?? []).map((id) => ({ kind: 'hero', id, cost: cost.heroes?.[id] ?? cost.heroes?.default ?? 0 })),
+    ...(side.reinforcements ?? []).map((id) => ({ kind: 'reinforcement', id, reinforcementKind: reinf[id]?.kind, cost: priceOf(b.rulebook, 'reinforcement', id, at) })),
+    ...(side.heroes ?? []).map((id) => ({ kind: 'hero', id, cost: priceOf(b.rulebook, 'hero', id, at) })),
   ];
 }
 

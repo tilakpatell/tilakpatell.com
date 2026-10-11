@@ -2,7 +2,7 @@ import { Document, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -251,5 +251,44 @@ describe('--textures: a map a shader graph binds', () => {
     // (the bucket's paths: lower case under web/textures, a normal map as the pipeline's derived __normal)
     expect(overridePath('Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_CW', 'color')).toBe('web/textures/gameplay/vehicles/ground/at-at/texture/t_atathead_01_cw.ktx2');
     expect(overridePath('Gameplay/Vehicles/Ground/AT-AT/texture/T_ATATHead_01_N', 'normal')).toBe('web/textures/gameplay/vehicles/ground/at-at/texture/t_atathead_01_n__normal.ktx2');
+  });
+});
+
+describe('--variations: the maps a mesh variation database binds', () => {
+  const record = JSON.parse(readFileSync(new URL('./fixtures/bf2017/variations/atat.mvdb.json', import.meta.url), 'utf8'));
+  const ATAT = 'gameplay/vehicles/ground/at-at/old/atat_mesh';
+
+  it("binds each material's colour and normal by its parameter name, by the material's index", async () => {
+    const { variationTextures } = await import('./bf2017-import.mjs');
+    const t = variationTextures([record], ATAT);
+    expect(t['#0']).toEqual([
+      { slot: 'color', name: 'Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBodyDetail_01_CW' },
+      { slot: 'normal', name: 'Gameplay/Vehicles/Ground/AT-AT/Old/textures/T_ATATBodyDetail_01_N' },
+    ]);
+    // (a detail normal and a packed map are not the GLB's colour or normal)
+    expect(t['#14'].map((b) => b.slot)).toEqual(['normal', 'color']);
+  });
+
+  it('names nothing for the head: its graph binds its maps, and the database lists none, so #866’s --textures stays', async () => {
+    const { variationTextures } = await import('./bf2017-import.mjs');
+    const t = variationTextures([record], ATAT);
+    expect(t['#6']).toBeUndefined();
+    expect(variationTextures([record], 'no/such_mesh')).toEqual({});
+  });
+});
+
+describe('--variations: index bindings reach only the model they were read for', () => {
+  it("binds by index only on the mesh's own files, and only when the GLB has the entry's material count", async () => {
+    const { variationTextures, indexBindings } = await import('./bf2017-import.mjs');
+    const record = JSON.parse(readFileSync(new URL('./fixtures/bf2017/variations/atat.mvdb.json', import.meta.url), 'utf8'));
+    const t = variationTextures([record], 'gameplay/vehicles/ground/at-at/old/atat_mesh');
+    expect(t['#count']).toBe(16);
+    const own = 'models/gameplay/vehicles/ground/at-at/old/atat_mesh.lod0.glb';
+    expect(indexBindings(t, own, 16)['#0']).toHaveLength(2);
+    // (a part's GLB: another mesh)
+    expect(indexBindings(t, 'models/gameplay/vehicles/ground/at-at/old/atat_cape_mesh.lod0.glb', 16)).toEqual({});
+    // (a GLB that dropped a material: the indices no longer line up)
+    expect(indexBindings(t, own, 15)).toEqual({});
+    expect(indexBindings(null, own, 16)).toEqual({});
   });
 });

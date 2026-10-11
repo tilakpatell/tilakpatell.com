@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { seeded } from '../../seeded.js';
 import { loadRulebook, teamsFor } from '../rulebook.js';
 import { createPoints, earn } from '../battlePoints.js';
-import { capture } from '../modes/objectives.js';
+import { capture, carry } from '../modes/objectives.js';
 import { buildNav, lineClear, shields } from '../nav.js';
 import { assign, createCommander, spend, wave } from './commander.js';
 import { createBrain, think } from './soldierBrain.js';
@@ -18,6 +18,14 @@ const sq = (id, centre, members = []) => ({ id, centre, members, leader: members
 const soldier = (id, team, at) => ({ id, team, kind: 'soldier', alive: true, at: [at[0], 0, at[1]] });
 
 describe('the commander', () => {
+  it('sends an attacker squad to a lying objective, and once it is carried to its drop-off', () => {
+    const o = carry.create({ at: [10, 0], to: [90, 0] });
+    const c = createCommander({ team: 2, side: 'attack', ga: ga([o]), squads: [sq('2.1', [0, -50])] });
+    expect(assign(c, { entities: [], now: 0 }).get('2.1')).toMatchObject({ objective: 0, role: 'take', task: { at: [10, 0], radius: 0 } });
+    o.carrier = 'b1';
+    expect(assign(c, { entities: [], now: 5 }).get('2.1').task.at).toEqual([90, 0]);
+  });
+
   it('sends two squads to two points, and the third to the one with fewer attackers', () => {
     const A = capture.create({ volume: box(0, 0) });
     const B = capture.create({ volume: box(100, 0) });
