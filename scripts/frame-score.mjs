@@ -28,7 +28,7 @@ import { psnr, ssim } from './lib/frame-metrics.mjs';
 
 export const PPD = 67; // _source: NVIDIA FLIP’s default pixels per degree (Andersson et al. 2020, §5: 0.7 m from a 0.7 m wide 3,840-pixel monitor)
 
-// FLIP’s command line prints its pooled values; the mean is the score
+// FLIP’s command line (flip-evaluator 1.7) prints its pooled values; the mean is the score
 export function parseFlip(stdout) {
   const m = /Mean:\s*([0-9]*\.?[0-9]+(?:e-?\d+)?)/i.exec(String(stdout ?? ''));
   return m ? Number(m[1]) : null;
@@ -59,7 +59,7 @@ export async function score(candidate, reference, { ppd = PPD, flip = findFlip()
   // (its error map goes to a scratch folder: only the number is wanted)
   const dir = mkdtempSync(join(tmpdir(), 'frame-score-'));
   try {
-    const stdout = run(flip, ['-r', resolve(reference), '-t', resolve(candidate), '-ppd', String(ppd), '-d', dir], { stdio: ['ignore', 'pipe', 'pipe'] }).toString();
+    const stdout = run(flip, ['-r', resolve(reference), '-t', resolve(candidate), '-ppd', String(ppd), '-nerm', '-d', dir], { stdio: ['ignore', 'pipe', 'pipe'] }).toString();
     out.flip = parseFlip(stdout);
     if (out.flip == null) out.flipWhy = 'flip ran but printed no mean';
   } catch (e) {
