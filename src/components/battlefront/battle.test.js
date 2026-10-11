@@ -82,7 +82,11 @@ describe('the battle on lane 1’s sim, with the deploy screen lane 2 will own',
     addPlayer(b, { team: 2 });
     const v = view(b);
     expect(v.squad.letter).toBe('A');
-    expect(v.squad.members.map((m) => m.name)).toEqual(['You', 'Trooper 1', 'Trooper 2', 'Trooper 3']);
+    // (a bot's name is its own from the game's lists, ai/names.js: never the placeholder)
+    const names = v.squad.members.map((m) => m.name);
+    expect(names[0]).toBe('You');
+    expect(names.slice(1)).toEqual(v.squad.members.slice(1).map((m) => b.sim.entities.get(m.id).name));
+    for (const n of names.slice(1)) expect(n).toMatch(/^TK-\d+$/);
     expect(v.squad.members[0].local).toBe(true);
     expect(v.squad.members[1]).toMatchObject({ alive: true, cls: 'assault' });
   });
@@ -95,7 +99,7 @@ describe('the battle on lane 1’s sim, with the deploy screen lane 2 will own',
     const spawns = view(b).deploy.spawns;
     expect(spawns[0]).toMatchObject({ kind: 'hq', name: 'IMPERIAL HQ' });
     expect(spawns.slice(1).map((s) => s.kind)).toEqual(['mate', 'mate', 'mate']);
-    expect(spawns[1]).toMatchObject({ id: hit.id, name: 'Trooper 1', cls: 'assault', blocked: 'combat', reason: 'IN COMBAT' });
+    expect(spawns[1]).toMatchObject({ id: hit.id, name: hit.name, cls: 'assault', blocked: 'combat', reason: 'IN COMBAT' });
     expect(spawns[2]).toMatchObject({ blocked: null, reason: null });
   });
 
