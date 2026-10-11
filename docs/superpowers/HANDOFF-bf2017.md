@@ -45,6 +45,7 @@ All nine sessions started 2026-10-10 20:15 UTC from `claude/bf2017-accuracy`; la
 ## The overhaul's sessions (2026-10-10, 23:45 UTC)
 
 Spawned by session_01282C5tuJnxtHN4SCrT1kct from `claude/bf2017-e0-factory-on-main` (E0 merged with `main`, PR #888) once its checks were green: E1 (`session_01NKhQZ93euwjJ5jaEre3jSY`), E2 (`session_01HrTPmQ9wFUvFYfdVLHxZ2q`), E3 (`session_0151EsRE5Sioz8bZWPSEzYeo`), E4 (`session_015ZTef1tZABeSq9E86wZKwv`), and the colour chain (`session_016MqzdEYrPgLbWg1mrpw1kG`, `claude/bf2017-colour-chain`, from `claude/bf2017-colours-everywhere` merged with E0), all Opus 5.5, each told to stop at once if the environment lacks `SUPABASE_URL` and `SUPA_KEY`. The bots lane landed on `main` as #885 from its own branch (`claude/bf2017-bots`) while this session was merging it; its merge branch (`claude/bf2017-bots-on-main`, PR #892) was closed as the same work. Not spawned yet, in this order when the above land: E5 (the six new systems), the screens, fighters, maps and picture lanes of the sixth design, Q6, N, U.
+
 ### Lane colour: what it found and left
 
 - **The numbers** (`docs/superpowers/evidence/bf2017-colour/README.md`): `node scripts/bf2017-material-audit.mjs hoth sb_endor sb_kamino` gives Hoth 804 of 864 drawn materials `bound` (93.1 %; 52 `default-only`, 7 `missing-texture`, 1 `no-entry`), Endor 358 of 387 (92.5 %), Kamino 672 of 693 (97.0 %). No E pack was on `main` at the run. **The 95 % gate on Hoth is missed** by the 24 meshes the level places both plain and varied (below).
@@ -99,7 +100,7 @@ SCANS=game QUALITY=high OUT=/tmp/shots node scripts/galaxy-check.mjs surface tat
 |---|---|---|---|---|---|
 | Z | the coverage ledger: `scripts/bf2017-coverage.mjs`, the owners table, `--check` in CI, the four counts in this table | nothing | `session_018HdseSL3U68899P3D9oWmP` | `claude/bf2017-z-ledger` | #853 |
 | E0 | the level factory: packs out of git, districts and interiors, every map part beside `level.json` (lights, decals, actors, vehicles, effects, tracks, probes, far shadow, scatter table, shapes, collision solids), the detail maps; Endor on Endor_01, Echo Base's inside | nothing | | `claude/bf2017-e0-factory` | |
-| E1 | Tatooine (Mos Eisley, the dunes, Jabba's palace and its inside), Yavin | E0 | `session_01NKhQZ93euwjJ5jaEre3jSY` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e1-tatooine-yavin` | |
+| E1 | Tatooine (Mos Eisley, the dunes, Jabba's palace and its inside), Yavin | E0 | `session_01NKhQZ93euwjJ5jaEre3jSY` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e1-tatooine-yavin` | (this PR) |
 | E2 | Naboo (Theed under its dusk and lanterns, the hangar, the plains, the palace), Kamino | E0 | `session_01HrTPmQ9wFUvFYfdVLHxZ2q` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e2-naboo-kamino` | |
 | E3 | Kashyyyk, Geonosis, Endor's village, research station and bunker | E0 | `session_0151EsRE5Sioz8bZWPSEzYeo` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e3-kashyyyk-geonosis-endor` | |
 | E4 | Scarif, Cloud City, Hoth's outpost, the Death Star inside on DeathStar02_01 | E0 | `session_015ZTef1tZABeSq9E86wZKwv` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e4-scarif-bespin-deathstar` | #911; the Death Star's pack built, not drawn (§ Lane E4) |
@@ -258,6 +259,34 @@ A campaign map with no mode layers has no spawn: pass `--spot`.
 - Endor's bunker halls are E3's interior pack (the line above).
 - The engine join for the shapes (P0's Left).
 - The base district shows the sky over the halls (the glacier is the main world's ground, not a pack mesh). A roof or an interior light record for districts is a later lane's.
+
+### Lane E1: Tatooine and Yavin (`claude/bf2017-e1-tatooine-yavin`)
+
+Session `session_01NKhQZ93euwjJ5jaEre3jSY`, from `claude/bf2017-e0-factory-on-main` (merged again at E0's 57d46c115, and `origin/main`, keeping both sides).
+
+**Tatooine stands on Tatooine_01.** `node scripts/bf2017-level.mjs levels/mp/tatooine_01 --world tatooine --spot -194.3 272.8 --subs tatooine_01,content,content_024`: 16,631 pieces, 151.4 MB published. Where the plan and the code differ:
+- `--spawn` lands on the town's north-west edge (−199.5, 186.2); the spot was chosen by hand, as Endor's was: the game's cantina (103, 52) on the site's Mos Eisley (300, −230), its east door in the alley where the site's cantina door now stands (`CANTINA_DOOR`, 315, −221.3).
+- `Content_024` is added to E0's default sub-levels: it holds Mos Eisley's outer skyline (2,275 pieces: towers, domes, 38 docking bays).
+- Mos Eisley's built town (its flat and 33 rows) is the flight's (`game: true`); the stalls' people stand at the game's own stalls, the stormtroopers patrol the street south of the cantina, the chickens and locals in the open (every spot checked against the game's footprints).
+- Beggar's Canyon moved 200 m north (its run went through the game's east houses; `missions/index.js`'s copy too), the escape pod 90 m west (the game's scrapyard), the landing turned to face the town.
+
+**Jabba's palace and its inside are districts in their own frame.** `s2_2/levels/jabbaspalace_01 --district jabba --spot -22.9 20.8` (11,197 pieces, 97.5 MB) and the same `--district jabba-inside --inside` (473 pieces: the rancor's pit, its cells and corridor, 23.1 MB). The map has no team-one spawn, so the spot puts the landing 40 m out on the road from the gate. Reached by a door beside the site's own palace gate ("Take the road round to the main gate"); the palace's door at its gate goes down to the pit (`zones` in a district), and the pit's way back is to the palace (`door.to`), both new in `withDistrict` (tested). The site's built palace, its zone and its quest stay as they are: the plan's "the Hutt's reach row moves into it" waits for someone to lay the audience out in the game's throne room.
+
+**Tatooine_02 is not "the dunes".** It is Mos Eisley again: 19,678 of its 19,715 pieces are Tatooine_01's, the rest Capital Supremacy's command posts and the outros' ships. No district was made of it.
+
+**Yavin is built and published, not wired.** `levels/mp/yavin_01 --world yavin --spot 160 661 --subs yavin_01,yavin_012,streamed_in_props,sunny --drop 'lightblocker,*occluder*,*invisiblecollision*'` (13,808 pieces, 160.9 MB; its level.json and parts are committed). Found on the way:
+- The game's helpers were drawn solid: a 336 m light blocker at the hangar's mouth, two occluders and 18 invisible collision shapes. Dropped here; **Hoth's pack draws one too** (`hothinterior_lightblocker_01`): E0's `NEVER` rule could take `lightblocker|occluder|invisiblecollision` for every pack.
+- The temple (eight 140 m pieces round game (−89.6, 661), its hangar running east to the doors at x 79) does not reach the screen in the browser gate: its instances are drawn every frame (`onBeforeRender`), red in a plain render pass with the scene's camera, through the composer's own `RenderPass` into a plain target too; yet the composed frame has nothing of the level (hiding the level root changes no pixel but the lighting). Ruled out: the probe, the placed lights, the water, the fog, back faces, the frustum, the level root's transform, shader errors, WebGL errors. Left: the composer's 4× MSAA half-float targets (reading them back fails, so not proven) and the temple's materials (`M_YavinTemple_MainTemple_Brick_01` has no colour map in the export). **The likely answer, found by lane E4 after this was written:** in software GL the frame guard readies about one shader a frame, so a level's hundreds of materials are still held back when a frame is shot, which is what a plain render pass (no guard) against the composed frame (guarded) shows. `holdNone()` (`window.__tpGuardOff`) now stops that. With it, and with lane T's node renderer on `main`, this sandbox could not shoot Yavin at all (the screenshot timed out at 2 and at 5 minutes), so the temple on screen is still to be seen, on a real GPU or a faster machine, before the wiring goes back in. Tatooine's and the palace's levels draw through the same pipeline. The site's built temple stays until this is found; `yavin.js` on `main` is unchanged. The layout for the wiring was worked out (the landing in the courtyard at site (−60, 0) facing west, the hangar's contents the game's own, the war room's doors in its mouth, the water at −15.3): it is in this branch's history (`git log -- src/components/galaxy/surface/sites/yavin.js`).
+- Yavin_01 buries only 8 pieces: no temple interior pack.
+
+**Gates** (`docs/superpowers/evidence/bf2017-levels/tatooine/`, `galaxy-check` now takes `world@district`): the palace and the pit pass every tier. Tatooine passes ultra; low and high are over the models row as `main` was before (33.0 and 76.8 MB against `main`'s 34.1 and 71.1: the cast, and 5.5 MB on high from the level's own E-Web and Mark II placements). Its calls (183) were held to a baseline from before it had a level (76); the baseline is refreshed in `lab/baseline/` (inside the rows: 500, 700).
+
+**Left.**
+- Yavin's temple on screen, then the wiring above.
+- Three of Tatooine_01's textures, two of the palace's and 15 of Yavin's are missing from the bucket.
+- Coverage: a fresh refresh reads 20,193 rows used (17,535 before), but three objects new in the bucket since lane Z's last walk are unowned (`Effects/TerrainDynamicDecals/DynamicMaskDecal_01`, `_N`, `textures_texgap.jsonl`), so the committed ledger stays as it was until the owners table names them.
+- `assets-check` fails on an empty `horizon.bin` (416 on a range of nothing): Hoth's base's and the pit's.
+- On `main`: `@dimforge/rapier3d-simd-compat` has no stack page (`stack.test.js`, health's `stack-pages`).
 
 ### Lane E4: Scarif, Cloud City, Hoth's outpost, the Death Star inside (`claude/bf2017-e4-scarif-bespin-deathstar`)
 

@@ -232,7 +232,7 @@ export const MISSIONS = {
 };
 
 // Beggar's Canyon's gates, the way the Tatooine site lays its pits (sites/desert.js's CANYON)
-const CANYON = [[470, 112], [488, 62], [482, 18], [500, -26], [492, -70], [472, -112], [482, -152], [462, -198]];
+const CANYON = [[470, 312], [488, 262], [482, 218], [500, 174], [492, 130], [472, 88], [482, 48], [462, 2]];
 const hostile = (range, every, damage, extra = {}) => ({ range, every, damage, spread: 0.06, ...extra });
 
 MISSIONS.tatooine = {
@@ -242,7 +242,7 @@ MISSIONS.tatooine = {
     kind: 'quest',
     name: 'The Canyon Run',
     ride: 'landspeeder',
-    start: [452, 158],
+    start: [452, 358],
     yaw: 2.77, // (toward the canyon's mouth)
     stars: [62, 84],
     achievement: 'canyonmission',
