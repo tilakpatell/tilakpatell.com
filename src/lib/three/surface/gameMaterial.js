@@ -28,14 +28,15 @@
 //       one draws as before
 //   loadGameMaterial() → Promise<(recipe, maps, opts) => material> with three loaded
 //
-// material.userData.game = { family, features: [...], parallaxSteps } says what
-// was wired, for the evidence and the tests. Tiers: ultra everything
+// material.userData.game = { family, features: [...], parallaxSteps, picture } says what
+// was wired, for the evidence and the tests (`picture`: the mip bias at every
+// sample and the specular anti-aliasing on the roughness, GPU-first lane N2). Tiers: ultra everything
 // (parallax 16 steps); high everything, parallax 8 steps (the detail a mip
 // under comes from the pack's sizes); mid the detail and the emissive; low
 // the GLB as it is.
 
 import { loadThree } from '../light/three.js';
-import { composeOverlays, overlayName } from './compose.js';
+import { biasedTexture, composeOverlays, overlayName, specularAA } from './compose.js';
 import { AOSLICE_LEVELS, EMISSIVE_EXPOSURE, EMISSIVE_MAX, METAL_CHANNEL, PAINT_CHANNEL, PARALLAX_STEPS } from './families.js';
 import { SNOW_FULL, variationParams } from './variation.js';
 import { snowOverlay } from './weather.js';
@@ -171,7 +172,10 @@ export function createGameMaterial(recipe, maps = {}, { tier = 'high', overlays 
   }
   const allow = (f) => tier !== 'mid' || ON_MID.has(f);
   const want = (f, ok) => ok && allow(f) && (features.push(f), true);
-  const { texture, uv, vec2, vec3, vec4, float, mix, max, dot, normalize, normalMap, normalWorld, positionWorld, positionViewDirection, saturate, step, fract, time, pow, Fn, Loop, If, parallaxDirection } = tsl;
+  const { uv, vec2, vec3, vec4, float, mix, max, dot, normalize, normalMap, normalWorld, positionWorld, positionViewDirection, saturate, step, fract, time, pow, Fn, Loop, If, parallaxDirection } = tsl;
+  // (every map sampled at the post chain's mip bias: GPU-first lane N2, compose.js)
+  const texture = biasedTexture(tsl);
+  game.picture = { mipBias: true, specularAA: true };
 
   // (a tiling map repeats: the pack's KTX2 loads clamped, and the detail
   // tiles 20 times over a vehicle's panel)
@@ -400,7 +404,8 @@ export function createGameMaterial(recipe, maps = {}, { tier = 'high', overlays 
     return m;
   }
   m.colorNode = vec4(color, alpha);
-  m.roughnessNode = roughness;
+  // (widened where the shaded normal varies within a pixel, so metal and wet snow stop sparkling: lane N2)
+  m.roughnessNode = specularAA(tsl, normal, roughness);
   m.metalnessNode = metalness;
   // (an untouched normal at the plain uv is the material's own normalMap)
   if (normal !== baseNormal || tangentDirty || game.parallaxSteps) m.normalNode = normal;

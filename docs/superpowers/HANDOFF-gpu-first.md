@@ -26,7 +26,7 @@ The owner’s word, fixed on 2026-10-11: no engine switch, no pixel streaming, e
 | --- | --- | --- | --- | --- | --- | --- |
 | G1 | `…-laneG1-reference.md` | the GPU clock (`timestamp-query`), the renderer tier from a probe, the reference frames and FLIP scores, the variance column | now | `session_01LAx1qXT387hkeFARZ34j6d` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-g1-reference` | #919 (draft) |
 | N1 | `…-laneN1-gpu-scene.md` | the GPU scene: instances in a storage buffer, compute culling with the LOD cut and a depth pyramid, indirect draws a material group, bundles | now | `session_01LJWah8w91QsWaqjvBuukhu` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n1-scene` | |
-| N2 | `…-laneN2-picture.md` | the dynamic-resolution controller on GPU time, sharpen after the upscaler, mip bias, velocity everywhere, reversed depth, specular anti-aliasing, the 30 fps cadence | now | `session_01C7wedSXsaKtR2ce8rN4e17` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n2-picture` | |
+| N2 | `…-laneN2-picture.md` | the dynamic-resolution controller on GPU time, sharpen after the upscaler, mip bias, velocity everywhere, reversed depth, specular anti-aliasing, the 30 fps cadence | now | `session_01C7wedSXsaKtR2ce8rN4e17` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n2-picture` | #917 (draft) |
 | N3 | `…-laneN3-light.md` | the Enlighten atlases as the baked bounce, the budgeted probe grid, SSR’s roughness cut, cached far cascades over the far shadow cache | now | `session_018TWXtVyrnGi8eHtVLYkiwK` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n3-light` | #921 (draft) |
 | N4 | `…-laneN4-stream.md` | the coarse horizon grid first, the boot slice, priority by size along the heading, low mip first, UASTC data rows, the cache, the byte budgets | now | `session_01M3zvYcbcXu7nBwoLQTvyZ3` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n4-stream` | |
 | N5 | `…-laneN5-sim.md` | Rapier in a worker behind the same face (off until measured), GPU debris on the depth buffer, particle lights in the clustered list | now | `session_012ehUtVgawMKAYhGQL7fUVS` (Opus 5.5, spawned 2026-10-11 07:10 UTC) | `claude/gpu-n5-sim` | #924 (draft) |
@@ -62,6 +62,28 @@ Each lane fills its row (session, PR) in its own PR and merges `origin/main` bef
 - The laptop’s table (README’s last section).
 
 **Checking it:** `npx vitest run src/lib/three/light scripts/lib/bf2017-level-light.test.mjs scripts/lib/enlighten-fixture.test.mjs src/components/galaxy/surface/level/levelGltf.test.js`; `node scripts/light-fixture.mjs --hoth --baked --legs webgl`, `--grid`, `--shadows --cadence --legs webgl`.
+
+## Lane N2: the stable picture (2026-10-11, `session_01C7wedSXsaKtR2ce8rN4e17`, #917)
+
+**Done.**
+- **The controller:** `src/runtime/dynres.js` carries Unreal’s constants, each with its `_source`. `quality.js` takes a source (`setSource('gpu' | 'cpu' | 'classic', { gpuTime, fps, tier, pixels })`), steps through `stepsAt`, the same list `headroomAt` reads, and feeds each of G1’s readings once. The runtime sets the source per world, never resizes the canvas from the GPU clock, and runs the 30 fps cadence (`cadence.js`, `loop.js`).
+- **The chain:** sharpen after TAAU (not FSR1, which runs RCAS itself), and no multisampling under TRAA or TAAU (per chain, through `PassNode`’s `samples`). The mip bias follows the scale at the game material’s samples (`mipBias.js`, `compose.js`’s `biasedTexture`).
+- **Reversed depth on a WebGPU device:** the screen-space passes get `1 − depth` in R32F, and TRAA and TAAU get the raw buffer.
+- **Velocity:** the particles write the still velocity (`light/velocity.js`); three r186 already covers matrices, instancing, batching and skinning. `--trails` is on the lit fixture.
+- **Specular anti-aliasing** on the shaded normal (`compose.js`’s `specularAA`).
+- **Evidence:** `docs/superpowers/evidence/gpu-first/N2/README.md`, with the plan’s corrections listed there.
+
+**Left.**
+1. When G1 merges: `gpuClock: (renderer) => createGpuTime(renderer)` in `src/runtime/index.js` (one line). The runtime already reads `rt.tier` for T0. G1’s `webgpu.js` also turns its `makeGfx` into `const gfx`, as N2’s does: keep both sides (G1’s `jitter`, N2’s `reversedDepth`).
+2. When T2 merges: its `surface/nodes/chain.js` calls `headroom()` and `lowerQuality(level)` as before. The sharpen and the samples rule come through `post.js`’s `arrange` and `passes.js` with no call of their own. Check that the chain reads `quality.internal` if it shows the scale.
+3. The laptop table in N2’s README (the fixture on both legs at both sizes, `battlefront-check` at ultra on WebGPU). Whether the GPU clock should lift the 4K start (0.77 on ultra) back to 1 is that table’s to say.
+4. The particles’ trail on a real chip (`--particles` with the pan, under TRAA).
+
+**Checking it.**
+- `npx vitest run src/runtime src/lib/three/light src/lib/three/surface src/lib/three/particles src/lib/three/loop.test.js src/lib/three/mipBias.test.js`
+- `node scripts/light-fixture.mjs --tier ultra --post on --upscale taau:0.77 --size 800x450 --legs webgl --evidence gpu-first/N2` (the pass list ends `upscale sharpen output`; bias −1.377)
+- `node scripts/light-fixture.mjs --trails --tier ultra --post on --size 800x450 --legs webgl` (trail-free: yes)
+- `--shadows --reversed off|on` (PSNR ≥ 40 dB on every view)
 
 ## What the other work must know
 

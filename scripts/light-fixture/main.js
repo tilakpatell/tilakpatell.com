@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', (e) => (state.error ??= String(e.r
 try {
   // (TRAA wants no multisampling, and the post chain draws into its own targets)
   // (?traa=off: the reference shots' chain, without its temporal pass; scripts/reference-frames.mjs)
-  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1, temporal: q.get('traa') !== 'off' });
+  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1, reversedDepth: fixture.reversed ?? null, temporal: q.get('traa') !== 'off' });
   gfx.setSize(innerWidth, innerHeight);
   gfx.setRatio(1);
   const w = world.create({ gfx, fixture });
@@ -52,6 +52,9 @@ try {
   Object.assign(state, {
     ready: true,
     backend: gfx.backend,
+    // (lane N2: the depth buffer drawn on, as three made it: it falls back
+    // silently to the standard one without EXT_clip_control over WebGL 2)
+    reversed: gfx.reversedDepth === true,
     probe: w.probe,
     // the camera moved by shot i's sub-pixel offset (lib/three/jitter), null to stop
     jitter: (i) => gfx.jitter(i),

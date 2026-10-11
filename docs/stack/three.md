@@ -61,6 +61,8 @@ node scripts/health.mjs --check --skip build
 
 On a new release, re-read the two files that reach inside the renderer: `src/lib/three/frameGuard.js` wraps the instance’s `renderBufferDirect`, and both it and `src/lib/three/gpuWork.js` read `renderer.properties`. Either breaks quietly if three renames what it holds there. The GPU clock (`src/lib/three/gpuTime.js`) and the tier probe lean on three r186’s timestamp names: `backend.trackTimestamp` (r186 reads it on the backend, set from the renderer’s parameters, not on the renderer), `renderer.resolveTimestampsAsync('render')` (`TimestampQuery.RENDER`) and `renderer.info.render.timestamp`; the reference shots’ jitter (`src/lib/three/jitter.js`) wraps the instance’s `render`, which three’s `PassNode` calls for a post chain’s scene. Check all four still mean the same. Then `node scripts/stack-census.mjs --write` for the version in the index.
 
+For the node renderer's picture (GPU-first lane N2), also re-check `SharpenNode`, `Renderer`'s `reversedDepthBuffer` (and `Camera.reversedDepth`, a getter it sets), whether `Texture` has gained a `mipmapBias` of its own (the site biases at the sample: `src/lib/three/mipBias.js`), and `getRoughness`'s floor of 0.0525 under `surface/compose.js`'s `specularAA` ([webgpu-tsl.md](webgpu-tsl.md), Gotchas).
+
 Last upgrade: not recorded; record the next one here, with what it broke.
 
 ## Gotchas
