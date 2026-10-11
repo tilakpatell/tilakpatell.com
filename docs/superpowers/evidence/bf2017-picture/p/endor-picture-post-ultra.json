@@ -17,6 +17,7 @@
         "bloom",
         "godrays",
         "lensflare",
+        "tonemap",
         "lut",
         "smaa",
         "output"
@@ -32,9 +33,9 @@
           540
         ]
       },
-      "meanLum": 0.5277,
+      "meanLum": 0.3665,
       "picture": {
-        "tonemap": null,
+        "tonemap": "neutral",
         "lut": "Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01"
       },
       "horizon": {

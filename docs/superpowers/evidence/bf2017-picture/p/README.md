@@ -13,17 +13,37 @@ node scripts/light-fixture.mjs --picture     --world <w> --post on --tier ultra 
 
 - `<w>-nopicture.webp`: the before, the chain as `main` builds it for a record (the house’s tone map, the site’s bloom and AO, the fixture’s cool test LUT over the encoded picture, the analytic sky).
 - `<w>-picture.webp`: the after, the record’s picture through `applyGameLight(..., { picture })` with `<w>.picture.json`’s main weather: its tone map, the 33³ LUT after it, the five Gaussians, the HBAO numbers, the painted panorama, the fog gradient and the cloud texture.
-- `<w>-nopicture-post-ultra.json`, `<w>-picture-post-ultra.json`: the runs’ numbers (`meanLum`, the frame’s mean linear luminance as lane G measures it; `horizon`, the sky’s in two bands over the horizon with the chain off; the passes).
+- `<w>-nopicture-post-ultra.json`, `<w>-picture-post-ultra.json`: the runs’ numbers (their `shot` names the canvas PNG the WebP was made from) (`meanLum`, the frame’s mean linear luminance as lane G measures it; `horizon`, the sky’s in two bands over the horizon with the chain off; the passes).
 
 The shots are the canvas shrunk to WebP; the horizon and cloud-texture views the fixture also takes are left out (lane Q6’s README has Hoth’s).
 
 ## The numbers
 
-TABLE
+| world | weathers | panorama (main) | LUT | cloud texture | picture KB (all weathers) | mean lum, no picture | mean lum, picture | change | in lane G’s band |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| bespin | dusk (main), interior | 2048 × 1024 | 33³ | yes | 1,597 | 0.6683 | 0.9668 | +44.7 % | **out** |
+| endor | sunny (main), night, foggy, interior | 2048 × 512 | 33³ | yes | 1,693 | 0.3283 | 0.3665 | +11.6 % | in |
+| geonosis | cloudy (main), interior | 2048 × 512 | 33³ | yes | 1,634 | 0.2995 | 0.3704 | +23.7 % | in |
+| hoth | sunny (main), sunset, interior | 2048 × 512 | 33³ | yes | 2,576 | 0.3638 | 0.3636 | -0.1 % | in |
+| kamino | stormy (main), interior | 2048 × 512 | 33³ | yes | 888 | 0.1828 | 0.7085 | +287.6 % | **out** |
+| kashyyyk | overcast (main), interior, night | 2048 × 512 | 33³ | yes | 1,397 | 0.4228 | 0.729 | +72.4 % | **out** |
+| naboo | dusk (main) | 2048 × 512 | 33³ | yes | 1,406 | 0.9101 | 0.8074 | -11.3 % | **out** |
+| scarif | sunset (main) | 2048 × 512 | 33³ | none named | 593 | 0.9166 | 0.9994 | +9.0 % | **out** |
+| tatooine | sunny (main), interior | 2048 × 512 | 33³ | none named | 718 | 0.6788 | 0.6481 | -4.5 % | **out** |
+| yavin | sunny (main), interior, sunset | 2048 × 512 | 33³ | yes | 1,872 | 0.3791 | 0.464 | +22.4 % | **out** |
 
-The band is lane G’s (`docs/superpowers/evidence/bf2017-light/`): the mean luminance its calibrated worlds put on screen under the game’s light, 0.1008 (Hoth’s speeder hangar) to 0.4167 (Scarif), Hoth’s field the anchor at 0.3531. No file names a narrower band; a world whose after leaves it is a finding below, not a constant.
+The panorama gain (`sky.js`’s `panoramaGain`: the painted sky’s foot scaled to the model’s sky where they meet) per world’s main weather, from the same entry: Hoth 0.38, Endor 0.46, Geonosis 0.63, Tatooine 0.70, Naboo 0.28, Yavin 1.50, Kashyyyk 1.98, Scarif 2.70, Bespin 5.66, Kamino 9.99.
 
-FINDINGS
+The band is lane G’s (`docs/superpowers/evidence/bf2017-light/`): the mean luminance its calibrated worlds put on screen under the game’s light, 0.1008 (Hoth’s speeder hangar) to 0.4167 (Scarif), Hoth’s field the anchor at 0.3531; no file names a narrower one. It measures the worlds’ own views, not this fixture: on Hoth’s snow at Hoth’s exposure, five worlds are over it before their picture is drawn at all (Bespin, Naboo, Scarif, Tatooine, Kashyyyk), so the column says where the after lands and the change column is the picture’s own effect. Each world outside is a finding below, not a constant.
+
+## Findings
+
+- **Hoth, Endor, Geonosis** are inside the band with their picture (Hoth unchanged, −0.1 %; Endor +11.6 %, Geonosis +23.7 %), the LUT after the tone map on each (`tonemap lut` in the chain).
+- **Kamino (+288 %), Bespin (+45 %, 0.97: near white), Kashyyyk (+72 %)**: dark-footed panoramas (a storm, a dusk over the cloud sea, an overcast) take large gains (10.0, 5.7, 2.0), because lane Q6’s rule matches the painted sky’s foot to the analytic sky, which a storm or a dusk painting does not resemble. Kamino’s storm draws as a bright cyan day. The cure is the record’s own scale, which the desktop’s HDR panoramas (lane W, `hdr` in a row) carry and the LDR copies lost; until `sky.js` reads them, these three are the picture’s known fault.
+- **Scarif (0.92 → 0.9994)** is white before and after: its record’s fog fills the fixture at Hoth’s exposure; the picture clamps what was left. Not the picture’s, but the fixture’s exposure against Scarif’s record.
+- **Naboo (0.91 → 0.81)**: the record’s fog colour reads as (1,298, 2,125, 3,072) through `entry.js` (a record in other units than the others’); its site passes no `picture` (lane G’s ruling stands), so nothing on the site changes.
+- **Tatooine (0.68 → 0.65)** and **Yavin (0.38 → 0.46)** move little; Yavin’s pillars go navy under its Takodana-named grade (below).
+- **The fixture’s ground and exposure are Hoth’s**: the comparison is of each record’s picture on one stage, not of each world as its surface will draw it; that is lane T2’s and the gallery’s (G).
 
 ## The records
 
