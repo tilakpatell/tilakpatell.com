@@ -35,6 +35,13 @@ WebGPU, the node renderer, is the default for everything where the browser has i
 
 The chain built for Hoth at high over WebGL 2: render, SSGI, denoise, GTAO, volumes, bloom, the surface's grade, SMAA, output (SSR and TRAA are what `nodes-webgl` cannot build: `lib/three/light/post.js`'s CANNOT). The stack: the cascades, PCSS, contact shadows, Hoth's 130 volumes; no console error on a clean run. A frame took over two minutes, so the whole-frame count with the cascades could not be taken here; the row (3M at high) is the laptop's to confirm.
 
+## Hoth in its picture, rendered here
+
+640 × 360, high, the node renderer over WebGL 2 (SwiftShader), the landing's view: every layer up (`entry, soft, clouds, cascades, contact, volumetrics, sky, fog, placed, picture`; the chain `render, ssgi, denoise, ao, volumes, bloom, motionBlur, grade, smaa, output`), no page error.
+
+- `hoth-high-nodes-webgl.webp`: as it stands (the house's exposure under the record's linear tone map, as lane Q6 drew Hoth).
+- `hoth-high-nodes-webgl-exposure1.webp`: before that, at the site's exposure alone, a stop and a half dark. (The first render, before the record's own rate was let stand, was white.)
+
 ## Left for the owner's laptop
 
 - `BUDGET=1 QUALITY=high node scripts/galaxy-check.mjs surface tatooine,hoth,endor,yavin,bespin,dagobah,mustafar,coruscant,naboo,kashyyyk,kamino,geonosis,scarif,nevarro,mandalore,lothal,sorgan` with `ANGLE=d3d11` (or metal): every world's calls, triangles, MB, p50 and p95, beside `GPU=classic` for the classic numbers and shots. The baseline was made on the classic renderer; if the node renderer counts its passes differently, a node baseline is made from that run, with its reason in the commit.
