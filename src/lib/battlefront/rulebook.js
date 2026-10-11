@@ -49,6 +49,21 @@ const FILES = import.meta.glob(['../../data/bf2017/maps/*.json', '!**/sb_*', '!*
 const fileAt = (name) => FILES[`../../data/bf2017/maps/${name}.json`] ?? null;
 const loaded = new Map();
 
+// `hoth.strike.json` → `strike` (a level's mode file; `stages` is Galactic Assault's)
+const modeFileOf = (name, path) => path.slice(path.lastIndexOf('/') + 1).match(new RegExp(`^${name.replace('.', '\\.')}\\.([a-zA-Z]+)\\.json$`))?.[1] ?? null;
+export const hothModeFiles = () => Object.keys(FILES).filter((path) => modeFileOf('hoth', path));
+
+async function modeFiles(name) {
+  const stages = {};
+  for (const [path, load] of Object.entries(FILES)) {
+    const mode = modeFileOf(name, path);
+    if (!mode || mode === 'lighting') continue;
+    const file = await load();
+    stages[file.mode ?? (mode === 'stages' ? 'galacticAssault' : mode)] = file;
+  }
+  return stages;
+}
+
 function freeze(v) {
   if (v && typeof v === 'object' && !Object.isFrozen(v)) {
     Object.freeze(v);
@@ -99,7 +114,7 @@ export const cardOf = (rb, id) => pick(rb.cards, id, 'star card');
 // A level's rulebooks ({ map, lighting, stages: { [mode]: file } }), bundled or loaded
 export function levelOf(rb, level) {
   const key = levelKey(level);
-  const lv = rb.maps[key] ?? loaded.get(key);
+  const lv = loaded.get(key) ?? rb.maps[key];
   if (lv) return lv;
   if (fileAt(fileOfLevel(key))) throw new Error(`level ${key}: not loaded yet (await loadLevel('${key}'))`);
   throw new Error(`level ${key}: not in the rulebook`);
@@ -108,20 +123,21 @@ export function levelOf(rb, level) {
 // Fetches a level's map, its lighting and its mode files once
 export async function loadLevel(level) {
   const key = levelKey(level);
-  if (key === 'hoth_01') return levelOf(loadRulebook(), key);
   if (loaded.has(key)) return loaded.get(key);
+  // (Hoth is bundled; a mode file of its own beside its stages is fetched)
+  if (key === 'hoth_01') {
+    const hothLv = levelOf(loadRulebook(), key);
+    const more = await modeFiles('hoth');
+    const lv = Object.keys(more).length ? freeze({ ...hothLv, stages: { ...more, ...hothLv.stages } }) : hothLv;
+    loaded.set(key, lv);
+    return lv;
+  }
   const name = fileOfLevel(key);
   const at = fileAt(name);
   if (!at) throw new Error(`level ${key}: not in the rulebook`);
   const map = (await at()).rows;
   const lighting = fileAt(`${name}.lighting`) ? (await fileAt(`${name}.lighting`)()).rows : null;
-  const stages = {};
-  for (const [path, load] of Object.entries(FILES)) {
-    const mode = path.slice(path.lastIndexOf('/') + 1).match(new RegExp(`^${name.replace('.', '\\.')}\\.([a-zA-Z]+)\\.json$`))?.[1];
-    if (!mode || mode === 'lighting') continue;
-    const file = await load();
-    stages[file.mode ?? (mode === 'stages' ? 'galacticAssault' : mode)] = file;
-  }
+  const stages = await modeFiles(name);
   const lv = freeze({ map, lighting, stages });
   loaded.set(key, lv);
   return lv;

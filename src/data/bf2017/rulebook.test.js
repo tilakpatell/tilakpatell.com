@@ -33,6 +33,8 @@ function checkSources(json) {
 // (copied from scripts/lib/bf2017-manifest.mjs's SEQUEL, with its matcher)
 const SEQUEL = ['kyloren', 'rey', 'finn', 'captainphasma', 'firstorder', 'starkiller', 'takodana', 'jakku', 'resurgent', 'xwing_t70', 'tiefighterfirstorder', 'tiefighterspecialforces', 'resistance', 'ep7', 'ep9', 'skytrooper', 'jump_cop', 'newera', 'kylo', 'phasma', 'bb8', 'bb9e', 'crait', 'spacebear'];
 const TESTS = SEQUEL.map((s) => (s.length < 5 ? new RegExp(`(^|[_\\-.\\d])${s}($|[_\\-.\\d])`) : new RegExp(s.replace(/[_-]/g, '[_-]'))));
+// (the First Order's and Resistance's kits the shared list spells otherwise: scripts/lib/bf2017-rulebook-costs.mjs's SEQUEL_KITS; held to the costs, the kits and the Arcade)
+const SEQUEL_KITS = /Flametrooper|Gunner|BermudaCop|JumpCop|AwingRZ3|Landspeeder_LIUV|NT_Skispeeder|FO_ATST|TieFighter_SpecialForces|T70|SmokeyBear/i;
 const isSequel = (name) => name.toLowerCase().split('/').some((seg) => TESTS.some((re) => re.test(seg)));
 
 describe('the Battlefront rulebooks', () => {
@@ -50,7 +52,8 @@ describe('the Battlefront rulebooks', () => {
 
   it('names most kit limits from the graph, and says by hand where it could not', () => {
     const rows = rb.kits.planetaryBattles.rows;
-    expect(rows.filter((r) => typeof r.maxCount === 'number').length).toBeGreaterThan(60);
+    expect(rows.filter((r) => typeof r.maxCount === 'number').length).toBeGreaterThan(50);
+    for (const f of ['points', 'kits', 'arcade']) expect(JSON.stringify(rb[f]).match(SEQUEL_KITS), f).toBeNull();
     for (const r of rows) if (typeof r.maxCount !== 'number') expect(r.maxCount.source, r.kit).toBe('hand');
     expect(Object.keys(rb.arcade.params)).toHaveLength(22);
   });

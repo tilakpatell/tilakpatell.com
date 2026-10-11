@@ -78,6 +78,13 @@ describe('the kit limits from the PF_KitLimitations_* prefabs', () => {
     expect(six[0].maxCount_source).toMatch(/InterfaceDescriptorData\.Fields\.\d+\.Value$/);
   });
 
+  it('refuses the sequel era’s kits the shared matcher misses (the Flametrooper, the special forces TIE)', () => {
+    const more = kitsRulebook(ROOT, { gameplay: ['Gameplay/Kits/Specials/Flametrooper/GP_Special_Flametrooper', 'Gameplay/Kits/Vehicle/TieFighter_SpecialForces/GP_Vehicle_TieFighter_SpecialForces'] });
+    const named = more.planetaryBattles.rows.map((r) => r.kit).filter(Boolean);
+    expect(named.filter((k) => /Flametrooper|SpecialForces/.test(k))).toEqual([]);
+    expect(more.counts.refused).toBeGreaterThanOrEqual(2);
+  });
+
   it('counts what resolved, and every number names its source', () => {
     expect(k.counts.rows).toBeGreaterThan(70);
     expect(k.counts.maxCount).toBeGreaterThan(60);

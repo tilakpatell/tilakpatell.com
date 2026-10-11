@@ -70,6 +70,9 @@ export const UNITS = {
 // only the sequel maps' tables list.
 const SEQUEL_UNITS = new Set(['RESISTENCE_JUMPTROOPER', 'FIRSTORDER_JUMPTROOPER', 'FLAMETROOPER', 'X_WING_T70', 'A_WING_RZ3', 'LANDSPEEDER_LIUV', 'LANSPEEDER_LIUV_RESISTENCE', 'NT_SKISPEEDER', 'TIE_FIGHTER_FIRSTORDER', 'TIE_FIGHTER_SPECIALFORCES', 'FO_ATST', 'GUNNER', 'RESISTANCESPY', 'BERMUDACOP', 'JUMPCOP', 'CAPTAIN_PHASMA']);
 const sequel = (name) => SEQUEL_UNITS.has(name) || isSequel(name.toLowerCase());
+// the same units' kits, by their gameplay assets' names
+const SEQUEL_KITS = /Flametrooper|Gunner|BermudaCop|JumpCop|AwingRZ3|Landspeeder_LIUV|NT_Skispeeder|FO_ATST|TieFighter_SpecialForces|T70|SmokeyBear/i;
+const sequelKit = (kit) => isSequel(kit) || SEQUEL_KITS.test(kit);
 
 // The record's game modes → the site's mode ids
 export const MODES = {
@@ -387,7 +390,7 @@ export function kitsRulebook(root, { books = {}, gameplay = [] } = {}) {
       (k.LimitationGroups ?? []).forEach((g, gi) =>
         (g.Limitations ?? []).forEach((l, li) => {
           const kit = gp.get(u32(l.KitId)) ?? null;
-          if (kit && isSequel(kit)) return void counts.refused++;
+          if (kit && sequelKit(kit)) return void counts.refused++;
           counts.rows++;
           if (kit) counts.named++;
           const row = { kit, kitId: u32(l.KitId), id: idOf(kit, books), kind: kindOf(kit), _source: `${name}#KitLimitationEntityData.LimitationGroups.${gi}.Limitations.${li}` };

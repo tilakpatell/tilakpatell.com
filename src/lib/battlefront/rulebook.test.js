@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { abilityOf, aiOf, arcadeOf, camerasOf, cardOf, classOf, fileOfLevel, heroOf, kitsOf, levelKey, levelOf, levelsFor, lightingOf, loadLevel, loadRulebook, mapOf, modesOf, pointsOf, reinforcementOf, spawnsFor, squadsOf, stagesOf, stringOf, teamsFor, uiOf, vehicleOf, volumeOf, weaponOf } from './rulebook.js';
+import { abilityOf, aiOf, arcadeOf, camerasOf, cardOf, classOf, fileOfLevel, heroOf, hothModeFiles, kitsOf, levelKey, levelOf, levelsFor, lightingOf, loadLevel, loadRulebook, mapOf, modesOf, pointsOf, reinforcementOf, spawnsFor, squadsOf, stagesOf, stringOf, teamsFor, uiOf, vehicleOf, volumeOf, weaponOf } from './rulebook.js';
 
 describe('the rulebook', () => {
   const rb = loadRulebook();
@@ -86,8 +86,15 @@ describe('the rulebook', () => {
     await expect(loadLevel('jakku_01')).rejects.toThrow(/jakku_01/);
   });
 
+  it('finds a mode file of Hoth’s own beside the bundled stages', async () => {
+    const lv = await loadLevel('hoth');
+    expect(lv.stages.galacticAssault).toBe(stagesOf(rb, 'hoth', 'galacticAssault'));
+    expect(hothModeFiles()).toEqual(expect.any(Array));
+    expect(hothModeFiles().every((f) => /\/hoth\.[a-zA-Z]+\.json$/.test(f) && !/lighting|stages/.test(f))).toBe(true);
+  });
+
   it('reads the kits and the Arcade', () => {
-    expect(kitsOf(rb).planetaryBattles.rows.length).toBeGreaterThan(60);
+    expect(kitsOf(rb).planetaryBattles.rows.length).toBeGreaterThan(50);
     expect(arcadeOf(rb).params.Team1AISize.values).toContain(20);
   });
 
