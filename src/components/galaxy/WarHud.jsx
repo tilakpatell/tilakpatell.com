@@ -52,7 +52,7 @@ export default function WarHud({ sys, oath, front = null }) {
       <p className="galaxy-warhud-line">{line}</p>
       {stage && (
         <p className="galaxy-warhud-stage">
-          {mark && <GameIcon name={mark} className="galaxy-warhud-mark" />}
+          {mark && <GameIcon name={mark} className={`galaxy-warhud-mark galaxy-warhud-mark-${mark.split(':')[1]}`} />}
           <span className="galaxy-warhud-text">
             {stage}
             {next && <span className="galaxy-warhud-next"> · {next}</span>}

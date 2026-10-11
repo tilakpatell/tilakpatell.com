@@ -460,10 +460,6 @@
   border-radius: 50%;
   background: radial-gradient(circle, var(--c) 0 3px, color-mix(in srgb, var(--c) 30%, transparent) 4px, transparent 7px);
 }
-/* a world the game's front end has a planet icon of (lib/bf2017/icons.js's `planet:*`): it leads the system's name in the side
-   panel and on its card, in the name's colour, the height of a capital */
-.holomap-sys-icon, .galaxy-title-icon { display: inline-block; width: 0.9em; height: 0.9em; margin-right: 0.28em; vertical-align: -0.08em; fill: currentColor; }
-.galaxy-btn-icon { fill: currentColor; }
 /* a world the game's front end drew a globe of, or one rendered from its skin (globes.js): that globe for its dot, ringed faintly in its colour */
 .holomap-dot[data-globe] { inset: -2px; background: var(--globe) center / contain no-repeat; box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
 /* a name sits in the place round its dot that HoloMap.jsx gave it, to the pixel (labelPlace.js's boxAt: right by default; a
@@ -691,20 +687,30 @@
    the stage's words are cut short instead */
 .galaxy-warhud { position: absolute; top: 4.6rem; left: calc((136px + 100% - var(--panel-w, 0px) - 24px) / 2); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; width: max-content; max-width: calc(100% - var(--panel-w, 0px) - 160px - 1rem); margin: 0; transform: translateX(-50%); color: #fff; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; pointer-events: none; }
 .galaxy-warhud p { max-width: 100%; margin: 0; white-space: nowrap; }
-.galaxy-warhud-line { overflow: hidden; padding: 0.26rem 0.8rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--side) 55%, transparent); background: rgb(2 6 16 / 0.72); text-overflow: ellipsis; }
+/* the line in the face of the objective bar's Timer Text (Univers620BoldCondensed22px, the same tree as the stage row below), at the
+   line's own size: the two rows must keep clear of the crew's line under them; glass at 0.78, RULES.md's floor for text over the 3D */
+.galaxy-warhud-line { overflow: hidden; padding: 0.26rem 0.8rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--side) 55%, transparent); background: rgb(2 6 16 / 0.78); font-family: var(--font-bf-hud, var(--font-mono)); font-weight: 700; text-overflow: ellipsis; }
 /* the stage row as the game's objective bar (WarHud.jsx; _source: the Starfighter Assault widgets, src/data/bf2017/ui.json's
    HUD_ObjectivesScreen_AttackBar_V03 and the objectives screen's GameModeTextWidget, as surface/missions/starfighterHud.js reads them):
    the words in Univers 520 condensed at the game's 18 px of a 1,080 screen (1.67 vmin, never under 0.7 rem) in its palette's 54
    (rgb 252 252 255); the mark the bar's 48 px shape, here the words' height; each objective's bar the game's 176 × 40 (4.4 : 1),
-   its track the About To Lose bar's white at alpha 0.25, its fill the Tickets Lost fill's at 0.85 */
-.galaxy-warhud-stage { display: flex; align-items: center; gap: 0.5rem; padding: 0.12rem 0.65rem; border-radius: 999px; background: rgb(2 6 16 / 0.62); color: rgb(252 252 255); font-family: var(--font-bf-hud, var(--font-mono)); font-weight: 500; font-size: clamp(0.7rem, 1.67vmin, 18px); letter-spacing: 0.05em; text-transform: uppercase; }
-.galaxy-warhud-mark { flex: none; width: 1.25em; height: 1.25em; fill: currentColor; }
+   its track the About To Lose bar's white at alpha 0.25, its fill the Tickets Lost fill's at 0.85. The words stop at 0.85 rem, the
+   line at 1.2 and the mark at the line's height: any taller and the row's foot runs into the crew's line (.galaxy-page
+   .universe-comms, nav-h + 56 px, sliding in from 6 px higher). Measured in Chromium (lab's shot script, the page's 76 px nav):
+   the foot at 125 px against the slide-in's 126 and the line's 132, at 1,600 × 900, 1,920 × 1,080 and 2,560 × 1,440 alike (the
+   words reach their stop above 850 px high). Glass at 0.78, RULES.md's floor */
+.galaxy-warhud-stage { display: flex; align-items: center; gap: 0.5rem; padding: 0.1rem 0.65rem; border-radius: 999px; background: rgb(2 6 16 / 0.78); color: rgb(252 252 255); font-family: var(--font-bf-hud, var(--font-mono)); font-weight: 500; font-size: clamp(0.7rem, 1.67vmin, 0.85rem); line-height: 1.2; letter-spacing: 0.05em; text-transform: uppercase; }
+.galaxy-warhud-mark { flex: none; width: 1.2em; height: 1.2em; fill: currentColor; }
+/* (the game's defend and lock shapes draw their ink 49 % and 42 % of their box high against the attack shape's 68 %, measured
+   rasterised: scaled up so each mark reads as large as the words, its box, and so the row, unchanged) */
+.galaxy-warhud-mark-defend, .galaxy-warhud-mark-locked { transform: scale(1.4); }
 .galaxy-warhud-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .galaxy-warhud-next { color: rgb(255 214 150 / 0.92); }
 .galaxy-warhud-bars { display: flex; flex: none; gap: 0.25rem; }
 .galaxy-warhud-bar { position: relative; width: 2.2rem; height: 0.5rem; overflow: hidden; background: rgb(255 255 255 / 0.25); }
 .galaxy-warhud-bar::after { content: ''; position: absolute; inset: 0; background: rgb(255 255 255 / 0.85); transform: scaleX(var(--k, 1)); transform-origin: left; }
-.galaxy-warhud-bar[data-down] { background: rgb(255 255 255 / 0.12); }
+/* (a downed objective's track: half the About To Lose bar's 0.25, so it reads as spent beside one still standing) */
+.galaxy-warhud-bar[data-down] { background: rgb(255 255 255 / 0.125); }
 @media (prefers-reduced-motion: no-preference) { .galaxy-warhud-bar::after { transition: transform 0.6s ease-out; } }
 /* (over a bright planet in a light page the glass needs more body to read) */
 @media (prefers-color-scheme: light) { .galaxy-warhud-line, .galaxy-warhud-stage { background: rgb(2 6 16 / 0.84); } }
@@ -713,7 +719,7 @@
    stage's words were cut to nothing: the HUD goes under the crew's line,
    the whole width, as the Citadel siege's does) */
 @media (max-width: 767px) {
-  .galaxy-warhud { top: calc(var(--nav-h, 68px) + 150px); left: 50%; max-width: calc(100% - 2rem); font-size: 0.68rem; }
+  .galaxy-warhud { top: calc(var(--nav-h, 68px) + 150px); left: 50%; max-width: calc(100% - 2rem); font-size: 0.7rem; }
   .galaxy-warhud-bar { width: 1.32rem; height: 0.3rem; }
 }
 

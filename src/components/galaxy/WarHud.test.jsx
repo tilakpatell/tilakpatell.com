@@ -67,9 +67,11 @@ describe('the war’s line over the galaxy', () => {
   it('marks the stage as the game’s objective bar does: attack or defend by your side, the lock while it has not opened, and the bars from the widgets', () => {
     const defending = hud(hoth(fighting), () => info());
     expect(defending).toContain('<use href="/ui/bf2017/ingame.svg#gamemode-gamemode-defend"');
-    expect(defending).toContain('galaxy-warhud-mark');
+    expect(defending).toContain('class="game-icon galaxy-warhud-mark galaxy-warhud-mark-defend"');
     expect(hud(hoth(fighting), () => info({ team: 1 }))).toContain('<use href="/ui/bf2017/ingame.svg#gamemode-gamemode-attack"');
-    expect(hud(hoth(fighting), () => info({ stage: { index: 1, count: 3, open: false, opensIn: 30, need: 1 } }))).toContain('<use href="/ui/bf2017/ingame.svg#gamemode-gamemode-lock"');
+    const locked = hud(hoth(fighting), () => info({ stage: { index: 1, count: 3, open: false, opensIn: 30, need: 1 } }));
+    expect(locked).toContain('<use href="/ui/bf2017/ingame.svg#gamemode-gamemode-lock"');
+    expect(locked).toContain('galaxy-warhud-mark-locked');
     // (nobody's side: no mark, the words alone)
     expect(hud(hoth(fighting), () => info({ team: null }))).not.toContain('<use href=');
     // (the bars keep their values; the line's words are as they were)

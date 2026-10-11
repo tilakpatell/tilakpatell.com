@@ -11,8 +11,8 @@
 // in itself. Tested: one for every side in sides.js, so a side keeps a mark
 // should its icon go.
 //
-// emblemOf(side) → { sprite, href } (the game's icon) | { shapes } (the
-//   site's crest) | null
+// emblemOf(side) → { sprite, href, box } (the game's icon, and the part of
+//   its 96 box its art fills) | { shapes } (the site's crest) | null
 
 import { icon } from '../../lib/bf2017/icons';
 
@@ -20,10 +20,17 @@ export const EMBLEM_BOX = '0 0 24 24';
 
 // the sides the game has, by the icon table's name for each
 export const GAME_SIDES = { republic: 'side:republic', separatists: 'side:separatists', rebel: 'side:rebel', empire: 'side:empire' };
+// The four faction icons draw their art between about 19 and 76 of their 96
+// box (measured, rasterised: the Rebellion 19.7–75.6, the Empire 19.7–75.6,
+// the Republic 20.9–74.6, the Separatists 19.0–76.3), a margin the crests
+// lack (they fill 75 to 92 % of EMBLEM_BOX); drawn whole they stood a third
+// smaller than the Hutts' gem beside them. This crop keeps a little margin
+// and brings the art to about 84 % of the emblem's box.
+export const GAME_BOX = '14 14 68 68';
 
 export function emblemOf(side) {
   const game = GAME_SIDES[side] ? icon(GAME_SIDES[side]) : null;
-  if (game) return { sprite: game.sprite, href: game.href };
+  if (game) return { sprite: game.sprite, href: game.href, box: GAME_BOX };
   return EMBLEMS[side] ? { shapes: EMBLEMS[side] } : null;
 }
 

@@ -6,7 +6,8 @@ describe('a side’s emblem', () => {
   it('draws the game’s faction icon from its sprite for a side the game has, in the colour it is given', () => {
     const html = renderToStaticMarkup(<Emblem side="empire" />);
     expect(html).toContain('class="holomap-emblem"');
-    expect(html).toContain('<use href="/ui/bf2017/factions.svg#factions-icon-galacticempire"');
+    expect(html).toContain('viewBox="14 14 68 68"');
+    expect(html).toContain('<use href="/ui/bf2017/factions.svg#factions-icon-galacticempire" width="96" height="96"');
     expect(html).toContain('aria-hidden="true"');
     expect(html).not.toContain('<path');
   });

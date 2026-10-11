@@ -9,9 +9,10 @@ export default function Emblem({ side, className = 'holomap-emblem' }) {
   const e = emblemOf(side);
   if (!e) return null;
   if (e.href) {
+    // (the symbol's 96 box laid 1:1 under a viewBox cropped to its art: emblems.js's GAME_BOX)
     return (
-      <svg className={className} aria-hidden="true" focusable="false">
-        <use href={e.href} />
+      <svg className={className} viewBox={e.box} aria-hidden="true" focusable="false">
+        <use href={e.href} width="96" height="96" />
       </svg>
     );
   }

@@ -12,14 +12,18 @@ const panel = (id, props = {}) =>
     </MemoryRouter>,
   );
 
+// (the drop's nine Planets_* drawings are all the Galactic Republic's crest, a placeholder: no title or button wears one)
 describe('the system’s card', () => {
-  it('titles a world with the game’s planet icon where the front end has one', () => {
-    expect(panel('kashyyyk')).toContain('<use href="/ui/bf2017/planets.svg#planets-planets-preq-kash"');
-    expect(panel('coruscant')).not.toContain('planets.svg');
+  it('titles a world by its name alone, with no placeholder planet sprite', () => {
+    for (const id of ['kashyyyk', 'hoth', 'coruscant']) {
+      const html = panel(id);
+      expect(html, id).toMatch(new RegExp(`<h2 class="universe-title galaxy-title">${systemById(id).name}</h2>`));
+      expect(html, id).not.toContain('planets.svg');
+    }
   });
-  it('puts the game’s Death Star icon on the way to the Death Star, with a crew aboard', () => {
+  it('keeps the way to the Death Star in words, with a crew aboard', () => {
     const html = panel('yavin', { ship: 'falcon', at: 'yavin' });
     expect(html).toContain('Fly to the Death Star');
-    expect(html).toContain('<use href="/ui/bf2017/planets.svg#planets-planets-orig-ds"');
+    expect(html).not.toContain('planets.svg');
   });
 });

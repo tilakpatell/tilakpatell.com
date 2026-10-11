@@ -4,7 +4,8 @@
 // world the game gave whole-planet maps (Bespin, Endor, Kamino, Naboo, and
 // E5's as they land), all cut to 96 pixels by scripts/bf2017-sky.mjs
 // --globes and published by hash; a world with neither (a procedural look:
-// Alderaan, Coruscant, Dagobah…) keeps its dot of light.
+// Coruscant, Dagobah…; or no planet at all: Alderaan's rubble) keeps its dot
+// of light.
 //
 // globeUrl(id) → the published picture's URL, or null
 // discOf(id) → the dot's props for HoloMap.jsx: `data-globe` and the picture

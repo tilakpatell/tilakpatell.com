@@ -19,19 +19,20 @@ const side = (pickedId, hereId = 'hoth') => {
   );
 };
 
+// (the drop's nine Planets_* drawings are all the Galactic Republic's crest, a placeholder: a world's name wears none of them,
+// lest Hoth or Endor carry the Republic's mark; lib/bf2017/icons.test.js holds the galaxy's rows to drawings of their own)
 describe('the galaxy map’s side panel', () => {
-  it('names a picked world with the game’s planet icon where the front end has one, and the jump keeps its own glyph', () => {
+  it('names a picked world in its own words, with the jump and its glyph, and no placeholder planet sprite', () => {
     const html = side('endor');
     expect(html).toContain('Course plotted');
-    expect(html).toContain('<use href="/ui/bf2017/planets.svg#planets-planets-orig-en"');
+    expect(html).toContain('Endor');
     expect(html).toContain('Jump to lightspeed');
-  });
-  it('names a world the game has no icon of without one', () => {
-    const html = side('alderaan');
-    expect(html).toContain('Alderaan');
     expect(html).not.toContain('planets.svg');
   });
   it('names where you are the same way when nothing is picked', () => {
-    expect(side(null, 'hoth')).toContain('<use href="/ui/bf2017/planets.svg#planets-planets-orig-ho"');
+    const html = side(null, 'hoth');
+    expect(html).toContain('You are here');
+    expect(html).toContain('Hoth');
+    expect(html).not.toContain('planets.svg');
   });
 });

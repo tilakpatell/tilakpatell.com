@@ -83,18 +83,12 @@ export const ICON_FOR = {
   'vehicle:landspeeder': 'Speeders/Icon_X-34_LandSpeeder',
   'vehicle:turret': 'StationaryWeapons/Icon_StationaryGroundTurret',
   'points': 'Shared/battle_points',
-  // the galaxy's own (lane S3): the planets the front end has an icon of, by
-  // the site's system (Kessel's has no system here); the Death Star's on the
-  // way to it; the starfighter HUD's speed bar on the flight cluster's speed
-  // line; the objective bar's attack, defend and lock marks on the war's HUD
-  'planet:hoth': 'Planets/Planets_Orig_HO',
-  'planet:endor': 'Planets/Planets_Orig_EN',
-  'planet:tatooine': 'Planets/Planets_Orig_MOS',
-  'planet:yavin': 'Planets/Planets_Orig_YA',
-  'planet:kamino': 'Planets/Planets_Preq_KAM',
-  'planet:kashyyyk': 'Planets/Planets_Preq_KASH',
-  'planet:naboo': 'Planets/Planets_Preq_THEE',
-  'planet:deathstar': 'Planets/Planets_Orig_DS',
+  // the galaxy's own (lane S3): the starfighter HUD's speed bar on the flight
+  // cluster's speed line; the objective bar's attack, defend and lock marks on
+  // the war's HUD. (No planet: the drop's nine Planets/Planets_* drawings are
+  // all one, the Galactic Republic's crest, byte for byte: a placeholder, so
+  // a world's name keeps no icon until the sprite is cut again; icons.test.js
+  // holds a galaxy row to a drawing of its own.)
   'hud:speed': 'SPaceBattles/Icon_HUD_SpeedBar',
   'objective:attack': 'GameMode/GameMode_Attack',
   'objective:defend': 'GameMode/GameMode_Defend',

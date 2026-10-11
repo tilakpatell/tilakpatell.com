@@ -30,8 +30,10 @@ export default function FlightCluster({ rootRef, ship, reduced, powersRef, onPow
             <span />
           </span>
           <div className="fc-line fc-sub">
-            <GameIcon name="hud:speed" className="fc-speed-icon" />
-            <b className="fc-speed-n">SPD 0</b>
+            <span className="fc-speed-lead">
+              <GameIcon name="hud:speed" className="fc-speed-icon" />
+              <b className="fc-speed-n">SPD 0</b>
+            </span>
             <span className="fc-label">
               Kills <b className="fc-kills-n">0</b>
             </span>
