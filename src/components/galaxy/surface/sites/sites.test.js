@@ -291,6 +291,57 @@ describe('the worlds drawn from the game’s levels', () => {
     expect(bunker.things.filter((t) => t.kind === 'bunker' || t.kind === 'bunkerbank').every((t) => t.game)).toBe(true);
   });
 
+  // (lane E3: a district on another of the game's maps stands on its own pack
+  // alone: the main map's places, cast and scatter are in another frame)
+  const ownMap = (site, id) => {
+    const d = withDistrict(siteOf(site), id);
+    expect(d.ground.layers).toEqual([{ type: 'image', pack: d.level }]);
+    expect(d.ground.flats).toEqual([]);
+    for (const k of ['places', 'things_all', 'scatter', 'life', 'rides', 'quests']) expect(d[k], `${site}/${id}: ${k}`).toEqual([]);
+    expect(d.zones.map((z) => z.to)).toEqual([{ district: 'main' }]);
+    return d;
+  };
+
+  it('Kashyyyk stands on Kashyyyk_01, its beach over the game’s sea, Kashyyyk_02 a district (Review Focus 3)', () => {
+    const k = SITES.kashyyyk;
+    expect(k.level).toBe('kashyyyk');
+    expect(k.ground.layers).toEqual([{ type: 'image', pack: 'kashyyyk' }]);
+    expect(k.ground.base).toBeUndefined();
+    // (the landing on the sand, over the lagoon the pack's ground dips under)
+    expect(k.water.level).toBeLessThan(-0.2);
+    expect(k.districts.map((d) => [d.id, d.level])).toEqual([['second', 'kashyyyk/second']]);
+    ownMap('kashyyyk', 'second');
+  });
+
+  it('Geonosis stands on Geonosis_01, its places on the pack’s ground, Geonosis_02 a district (Review Focus 2)', () => {
+    const g = SITES.geonosis;
+    expect(g.level).toBe('geonosis');
+    expect(g.ground.layers).toEqual([{ type: 'image', pack: 'geonosis' }]);
+    // (the places keep their ids; their flats are the flight's, so the game's ground is the ground)
+    expect(g.places.map((p) => p.id)).toEqual(['arena', 'battle', 'command', 'foundry', 'hangar', 'hive', 'coreships']);
+    for (const p of g.places.filter((q) => q.flat)) expect(p.flat.game, p.id).toBe(true);
+    expect(g.districts.map((d) => [d.id, d.level])).toEqual([['second', 'geonosis/second']]);
+    ownMap('geonosis', 'second');
+  });
+
+  it('Endor has the village, the research station and the bunker’s inside as districts (Review Focus 1)', () => {
+    const e = SITES.endor;
+    expect(e.districts.map((d) => [d.id, d.level])).toEqual([
+      ['village', 'endor/village'],
+      ['station', 'endor/station'],
+      ['bunker', 'endor/bunker'],
+    ]);
+    // (the village's walkways are the pack's floors in the air: a fall off them puts you back)
+    const village = ownMap('endor', 'village');
+    expect(typeof village.fall).toBe('number');
+    ownMap('endor', 'station');
+    // (the bunker's inside is Endor_01's own halls, in the main map's frame, through the bunker's door)
+    expect(e.zones.find((z) => z.to?.district === 'bunker')).toBeTruthy();
+    const bunker = withDistrict(siteOf('endor'), 'bunker');
+    expect(bunker.level).toBe('endor/bunker');
+    expect(bunker.zones.map((z) => z.to)).toEqual([{ district: 'main' }]);
+  });
+
   // (lane E2: the packs' level.json, in git though their bytes are published)
   const pack = (level) => JSON.parse(readFileSync(new URL(`../../../../../public/models/galaxy/bf2017/levels/${level}/level.json`, import.meta.url), 'utf8'));
 

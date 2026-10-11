@@ -19,8 +19,6 @@
 //     shapes streamed into it beside the walk world's boxes, the ground under
 //     them a heightfield from heightAt; onPhysics(engine) once it's up: the
 //     scene puts the player on the 2017 soldier's body, playerBody.js)
-//     (camera: the placed lights rank by it; light: the world's record, for
-//     their scale; onProbe: the reflection volume you stand in, for gameLit.js)
 //   packOf(world) → Promise<level.json> (fetched once)
 //     (walk: the walk world, { solids, floors }, the pack's collision goes into)
 //
@@ -37,7 +35,7 @@ import { withFallback } from '../../../../lib/assetBase.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
-import { packUrl, wanted } from './levelPack.js';
+import { packUrl, placedOf, wanted, withoutProxies } from './levelPack.js';
 import { variationsIndex } from './levelVariations.js';
 import { createLevelScene } from './levelScene.js';
 import { createLevelStream } from './levelStream.js';
@@ -64,7 +62,8 @@ export const packOf = (world) => {
     packs.set(
       world,
       bytesOf(world)('level.json')
-        .then((b) => JSON.parse(new TextDecoder().decode(b)))
+        // (the render's helpers a pack still places, shadow casters and occluders, off: levelPack.js)
+        .then((b) => withoutProxies(JSON.parse(new TextDecoder().decode(b))))
         .catch((e) => {
           packs.delete(world);
           throw e;
@@ -103,8 +102,8 @@ export function partOf(world, file, empty) {
 // Nothing for a site without a level.
 export async function levelPlaced(site) {
   if (!site?.level) return { life: [], rides: [], things: [] };
-  const [a, v] = await Promise.all([partOf(site.level, 'actors.json', { life: [] }), partOf(site.level, 'vehicles.json', { rides: [], things: [] })]);
-  return { life: a.life ?? [], rides: v.rides ?? [], things: v.things ?? [] };
+  const [pack, a, v] = await Promise.all([packOf(site.level).catch(() => null), partOf(site.level, 'actors.json', { life: [] }), partOf(site.level, 'vehicles.json', { rides: [], things: [] })]);
+  return placedOf(pack, a, v);
 }
 
 // The pack's cells the game's level fills (BUSY pieces or more in a 128 m
@@ -276,7 +275,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       if (onProbe)
         partOf(world, 'probes.json', { probes: [] }).then((j) => {
           if (gone || !j.probes?.length) return;
-          probes = createLevelProbes({ world, list: j.probes, onProbe });
+          probes = createLevelProbes({ world, list: j.probes, onProbe, tier });
         });
     })
     .catch((e) => {
