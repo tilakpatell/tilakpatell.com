@@ -5154,8 +5154,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/bunker/cells/-2_-3.bin": {
-    "hash": "a356385d1e1f",
-    "bytes": 288,
+    "hash": "84a89a207ec8",
+    "bytes": 32,
     "from": "models/galaxy/bf2017/levels/endor/bunker/cells/-2_-3.bin",
     "tier": "pack"
   },
@@ -5184,8 +5184,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/bunker/cells/1_-1.bin": {
-    "hash": "630709e182e6",
-    "bytes": 24448,
+    "hash": "f3d948922ebf",
+    "bytes": 24416,
     "from": "models/galaxy/bf2017/levels/endor/bunker/cells/1_-1.bin",
     "tier": "pack"
   },
@@ -5244,8 +5244,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/bunker/cells/2_1.bin": {
-    "hash": "34bb1bc140d9",
-    "bytes": 24992,
+    "hash": "6b28ae78a13a",
+    "bytes": 24928,
     "from": "models/galaxy/bf2017/levels/endor/bunker/cells/2_1.bin",
     "tier": "pack"
   },
@@ -5316,8 +5316,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/bunker/far.bin": {
-    "hash": "118ae957f1ce",
-    "bytes": 131136,
+    "hash": "4f57538491a6",
+    "bytes": 130784,
     "from": "models/galaxy/bf2017/levels/endor/bunker/far.bin",
     "tier": "pack"
   },
@@ -28752,8 +28752,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/cells/-1_0.bin": {
-    "hash": "f56cd4293265",
-    "bytes": 26304,
+    "hash": "f8dd67edf8d0",
+    "bytes": 26272,
     "from": "models/galaxy/bf2017/levels/endor/station/cells/-1_0.bin",
     "tier": "pack"
   },
@@ -28980,8 +28980,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/far.bin": {
-    "hash": "c3923ffa54bf",
-    "bytes": 265440,
+    "hash": "f446fbe6d38f",
+    "bytes": 265408,
     "from": "models/galaxy/bf2017/levels/endor/station/far.bin",
     "tier": "pack"
   },
@@ -31565,6 +31565,12 @@
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/detailhangarwall_06_b_mesh.lod3.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/meshes/dirtdecals_06_mesh.lod0.glb": {
+    "hash": "e8abddaf75ee",
+    "bytes": 2328,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/dirtdecals_06_mesh.lod0.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/meshes/dsi_hangarsystem_decalarray_corner_01_b_mesh.lod0.glb": {
     "hash": "868b7b6877fa",
     "bytes": 2328,
@@ -32051,10 +32057,118 @@
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_01_mesh.lod5.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod0.glb": {
+    "hash": "b08dbd3d6937",
+    "bytes": 104204,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod1.glb": {
+    "hash": "d97940debcc6",
+    "bytes": 60832,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod2.glb": {
+    "hash": "ea36bd78be94",
+    "bytes": 38564,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod3.glb": {
+    "hash": "49d6bd987b79",
+    "bytes": 26472,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod4.glb": {
+    "hash": "997b3aa1f28d",
+    "bytes": 13500,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod5.glb": {
+    "hash": "c7421040d771",
+    "bytes": 7412,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_02_mesh.lod5.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod0.glb": {
+    "hash": "9b7fe0ad0da2",
+    "bytes": 44332,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod1.glb": {
+    "hash": "fed78e277041",
+    "bytes": 26920,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod2.glb": {
+    "hash": "0a2867b9e4ef",
+    "bytes": 17060,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod3.glb": {
+    "hash": "661c80f0bebb",
+    "bytes": 10640,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod4.glb": {
+    "hash": "b44759935a08",
+    "bytes": 6060,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_03_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod0.glb": {
+    "hash": "f966b54ceadb",
+    "bytes": 49080,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod1.glb": {
+    "hash": "b5fd16b5a14a",
+    "bytes": 29372,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod2.glb": {
+    "hash": "4ed4bc1b3323",
+    "bytes": 17872,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod3.glb": {
+    "hash": "13677a0a3bc9",
+    "bytes": 11552,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod4.glb": {
+    "hash": "4c67c70f7de0",
+    "bytes": 6440,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokprops_04_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_01_leaves_01_mesh.lod0.glb": {
+    "hash": "65d0609d6e71",
+    "bytes": 2336,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_01_leaves_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_01_mesh.lod1.glb": {
     "hash": "946e6da312be",
     "bytes": 116004,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_02_leaves_01_mesh.lod0.glb": {
+    "hash": "017020a4be16",
+    "bytes": 2332,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_02_leaves_01_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_02_mesh.lod0.glb": {
@@ -32103,6 +32217,12 @@
     "hash": "a5fd59e784d0",
     "bytes": 7468,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_03_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_04_leaves_01_mesh.lod0.glb": {
+    "hash": "6780ebb902ac",
+    "bytes": 2344,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridge_04_leaves_01_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_bridgesupport_01_mesh.lod0.glb": {
@@ -32225,6 +32345,30 @@
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hut_02_mesh.lod5.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutdoor_02_mesh.lod0.glb": {
+    "hash": "d7f55ecb1994",
+    "bytes": 19532,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutdoor_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutdoor_02_mesh.lod1.glb": {
+    "hash": "aeb28d4891b6",
+    "bytes": 13440,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutdoor_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutdoor_02_mesh.lod2.glb": {
+    "hash": "1757e8189dbe",
+    "bytes": 11832,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutdoor_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutdoor_02_mesh.lod3.glb": {
+    "hash": "d403fe7703ee",
+    "bytes": 3524,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutdoor_02_mesh.lod3.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_hutopen_02_mesh.lod0.glb": {
     "hash": "c5b3520e132d",
     "bytes": 57008,
@@ -32309,6 +32453,18 @@
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_platform_04_mesh.lod1.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_smallplateau_01_mesh.lod0.glb": {
+    "hash": "c27d744cc46e",
+    "bytes": 40952,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_smallplateau_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_smallplateau_01_mesh.lod1.glb": {
+    "hash": "8be283907dda",
+    "bytes": 19100,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_smallplateau_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_smallplateau_02_mesh.lod0.glb": {
     "hash": "ac8c466f3ff3",
     "bytes": 40952,
@@ -32325,6 +32481,30 @@
     "hash": "77e1f9ae17f3",
     "bytes": 150968,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillage_spiralstairs_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_01_mesh.lod0.glb": {
+    "hash": "3a075a5e12d8",
+    "bytes": 5756,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_01_mesh.lod1.glb": {
+    "hash": "6ed22908723c",
+    "bytes": 4964,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_01_mesh.lod2.glb": {
+    "hash": "c96c1f877f84",
+    "bytes": 4328,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_01_mesh.lod3.glb": {
+    "hash": "fe2c9e108a1b",
+    "bytes": 3904,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_01_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/ewokvillagetorch_sleeve_01_mesh.lod0.glb": {
@@ -32777,6 +32957,12 @@
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_dirtwall_interiror_01_mesh.lod3.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_log_01_branch_b_mesh.lod0.glb": {
+    "hash": "8fc210abace7",
+    "bytes": 3240,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_log_01_branch_b_mesh.lod0.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_loglarge_01_a_addons_01_mesh.lod0.glb": {
     "hash": "4f9a46024f2d",
     "bytes": 79968,
@@ -33039,6 +33225,12 @@
     "hash": "e10e12e25dfb",
     "bytes": 5080,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_logsmall_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_mudfloor_01_mesh.lod0.glb": {
+    "hash": "00fec681011c",
+    "bytes": 2792,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_mudfloor_01_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_rocklarge_01_mesh.lod1.glb": {
@@ -33885,6 +34077,12 @@
     "hash": "be941bb76abd",
     "bytes": 6108,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_treestump_04_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_waterfall_foam_01_mesh.lod0.glb": {
+    "hash": "14a0577114eb",
+    "bytes": 2328,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_waterfall_foam_01_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/forestbase_waterfallmedium_01_mesh.lod0.glb": {
@@ -34985,6 +35183,24 @@
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/hangarsystem_decalarray_corner_01_mesh.lod0.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/meshes/hangarsystem_decalarray_line_01_mesh.lod0.glb": {
+    "hash": "fd2fb5c20749",
+    "bytes": 2348,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/hangarsystem_decalarray_line_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/hangarsystem_decalarray_line_02_mesh.lod0.glb": {
+    "hash": "4566304f9b60",
+    "bytes": 2352,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/hangarsystem_decalarray_line_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/hangarsystem_decalarray_line_03_mesh.lod0.glb": {
+    "hash": "686c9aa2a324",
+    "bytes": 2352,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/hangarsystem_decalarray_line_03_mesh.lod0.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/meshes/hangarsystem_decalarray_misc_01_mesh.lod0.glb": {
     "hash": "dfec008e7857",
     "bytes": 2356,
@@ -35975,6 +36191,18 @@
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_fern_01_b_mesh.lod3.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_log_01_a_mesh.lod0.glb": {
+    "hash": "c83b0cc6d25e",
+    "bytes": 3416,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_log_01_a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_log_01_a_mesh.lod1.glb": {
+    "hash": "42deb1481671",
+    "bytes": 2708,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_log_01_a_mesh.lod1.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_log_01_b_mesh.lod0.glb": {
     "hash": "9816b519735b",
     "bytes": 3236,
@@ -35985,6 +36213,12 @@
     "hash": "54139c4bfb5f",
     "bytes": 2860,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_log_01_b_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_roots_01_a_mesh.lod0.glb": {
+    "hash": "d16a82ed8e02",
+    "bytes": 5840,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_roots_01_a_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/ms_forestbase_roots_01_b_mesh.lod0.glb": {
@@ -36057,6 +36291,12 @@
     "hash": "370aa8b7c560",
     "bytes": 2332,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/o_nab_oilsplatter_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/o_nab_oilsplatter_03_mesh.lod0.glb": {
+    "hash": "c38379650713",
+    "bytes": 2320,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/o_nab_oilsplatter_03_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/o_nab_oilsplatter_04_mesh.lod0.glb": {
@@ -36207,6 +36447,42 @@
     "hash": "e496dd74e983",
     "bytes": 11408,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/silo_xl_01_endorvariation_mesh.lod5.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod0.glb": {
+    "hash": "55b84f60f677",
+    "bytes": 8080,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod1.glb": {
+    "hash": "20c19863e78f",
+    "bytes": 5896,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod2.glb": {
+    "hash": "cad61a701af5",
+    "bytes": 4656,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod3.glb": {
+    "hash": "a8356310bd9e",
+    "bytes": 4176,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod4.glb": {
+    "hash": "809fd5b4229b",
+    "bytes": 3924,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/skinanimal_01_b_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/square_shadow_01_mesh.lod0.glb": {
+    "hash": "c3c18650c8d1",
+    "bytes": 2224,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/square_shadow_01_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/storageunit_l_01_mesh.lod0.glb": {
@@ -36371,6 +36647,30 @@
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_campfire_01a_mesh.lod3.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01a_mesh.lod0.glb": {
+    "hash": "9c84c8012f9d",
+    "bytes": 11912,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01a_mesh.lod1.glb": {
+    "hash": "12bb95ce234c",
+    "bytes": 9708,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01a_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01a_mesh.lod2.glb": {
+    "hash": "006fffc3fc17",
+    "bytes": 6080,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01a_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01a_mesh.lod3.glb": {
+    "hash": "6e84f8b4b345",
+    "bytes": 4772,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01a_mesh.lod3.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01b_mesh.lod0.glb": {
     "hash": "4793fe399975",
     "bytes": 14064,
@@ -36393,6 +36693,72 @@
     "hash": "85c5c9e79292",
     "bytes": 5088,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropeangledbone_01b_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01a_mesh.lod0.glb": {
+    "hash": "830894287b4a",
+    "bytes": 8004,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01a_mesh.lod1.glb": {
+    "hash": "6fd9c2b35331",
+    "bytes": 6280,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01a_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01a_mesh.lod2.glb": {
+    "hash": "9da1cb2c810a",
+    "bytes": 6016,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01a_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01a_mesh.lod3.glb": {
+    "hash": "d277d7fc7149",
+    "bytes": 4936,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01a_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01b_mesh.lod0.glb": {
+    "hash": "1d975e3a4f00",
+    "bytes": 9832,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01b_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01b_mesh.lod1.glb": {
+    "hash": "14ef6dc20f01",
+    "bytes": 7496,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01b_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01b_mesh.lod2.glb": {
+    "hash": "09a89150ffe2",
+    "bytes": 6344,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01b_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01b_mesh.lod3.glb": {
+    "hash": "8c37335a9f53",
+    "bytes": 5124,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraight_01b_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraightbone_01a_mesh.lod0.glb": {
+    "hash": "740921defb89",
+    "bytes": 6788,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraightbone_01a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraightbone_01a_mesh.lod1.glb": {
+    "hash": "fa58d135bd8e",
+    "bytes": 5552,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraightbone_01a_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraightbone_01a_mesh.lod2.glb": {
+    "hash": "5e119f8d13e8",
+    "bytes": 4656,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropestraightbone_01a_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropetriangle_01a_mesh.lod0.glb": {
@@ -36429,6 +36795,30 @@
     "hash": "9a9fc5347a64",
     "bytes": 4880,
     "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_hangingropetriangle_01b_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_pole_01b_mesh.lod0.glb": {
+    "hash": "43ef17a4fd8d",
+    "bytes": 7036,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_pole_01b_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_pole_01b_mesh.lod1.glb": {
+    "hash": "dc96e54ef29b",
+    "bytes": 5160,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_pole_01b_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_pole_01b_mesh.lod2.glb": {
+    "hash": "68324f5675b3",
+    "bytes": 4528,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_pole_01b_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_pole_01b_mesh.lod3.glb": {
+    "hash": "1ef41218bbdf",
+    "bytes": 2420,
+    "from": "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_pole_01b_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/meshes/tuskencamp_skullbantha_01_mesh.lod0.glb": {
@@ -41411,6 +41801,30 @@
     "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_01_nw__orm_aa1eecfa.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_02_cs.128.ktx2": {
+    "hash": "f08a5d2eac20",
+    "bytes": 21854,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_02_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_02_cs.256.ktx2": {
+    "hash": "1f30bf11f90f",
+    "bytes": 83658,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_02_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_02_nw__normal.128.ktx2": {
+    "hash": "d0c6a79bd241",
+    "bytes": 12899,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_02_nw__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_02_nw__orm_6b00a1f7.128.ktx2": {
+    "hash": "574a70ccddc7",
+    "bytes": 17475,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagedrum_02_nw__orm_6b00a1f7.128.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagehorn_01_cs.128.ktx2": {
     "hash": "f985d45b8bc4",
     "bytes": 21619,
@@ -41619,6 +42033,30 @@
     "hash": "1dd258c0f631",
     "bytes": 466232,
     "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetiling_01_n__orm_a04a4a8b.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetorch_01_cs.128.ktx2": {
+    "hash": "51041fe23411",
+    "bytes": 44250,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetorch_01_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetorch_01_cs.256.ktx2": {
+    "hash": "ff379f1efe0b",
+    "bytes": 170610,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetorch_01_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetorch_01_nw__normal.128.ktx2": {
+    "hash": "d63897b485f9",
+    "bytes": 43323,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetorch_01_nw__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetorch_01_nw__orm_b54e5f46.128.ktx2": {
+    "hash": "a3d5d4427490",
+    "bytes": 35044,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagetorch_01_nw__orm_b54e5f46.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/tex/t_ewokvillagewall_01_cs.256.ktx2": {
@@ -43247,6 +43685,24 @@
     "from": "models/galaxy/bf2017/levels/endor/station/tex/t_imperialshuttle_01_wings_nam__orm_30a92e2c.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_junksorted_02_c.128.ktx2": {
+    "hash": "024e594daff9",
+    "bytes": 11434,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_junksorted_02_c.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_junksorted_02_c.256.ktx2": {
+    "hash": "945bfc09bd59",
+    "bytes": 43164,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_junksorted_02_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_junksorted_02_n__normal.128.ktx2": {
+    "hash": "c4d2c86ae288",
+    "bytes": 9668,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_junksorted_02_n__normal.128.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/tex/t_landinggear_engine_cs.1024.ktx2": {
     "hash": "2a0970a36a35",
     "bytes": 1122574,
@@ -43985,6 +44441,42 @@
     "from": "models/galaxy/bf2017/levels/endor/station/tex/t_skb_hangar_01_wall_768x3072_02_a_ca.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_cs.256.ktx2": {
+    "hash": "3170c78a3ac9",
+    "bytes": 23775,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_cs.512.ktx2": {
+    "hash": "655881143b9f",
+    "bytes": 77539,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_nw__normal.128.ktx2": {
+    "hash": "3a5efd01e3dd",
+    "bytes": 7772,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_nw__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_nw__normal.256.ktx2": {
+    "hash": "0e13770193ee",
+    "bytes": 22800,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_nw__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_nw__orm_18465db1.128.ktx2": {
+    "hash": "dfd80b571705",
+    "bytes": 6123,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_nw__orm_18465db1.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_nw__orm_18465db1.256.ktx2": {
+    "hash": "20f09ee9ee97",
+    "bytes": 18023,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_skinanimal_01_nw__orm_18465db1.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/station/tex/t_storageunit_l_01_cs.256.ktx2": {
     "hash": "f8525421d4bb",
     "bytes": 161942,
@@ -44205,6 +44697,42 @@
     "hash": "e9a052ba28eb",
     "bytes": 119755,
     "from": "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_hangingrope_01_na__orm_21d71083.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_cs.256.ktx2": {
+    "hash": "36d62aabc5f0",
+    "bytes": 45785,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_cs.512.ktx2": {
+    "hash": "c5d2d6da8b47",
+    "bytes": 60488,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_nw__normal.128.ktx2": {
+    "hash": "8a0d7b5fadc6",
+    "bytes": 4924,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_nw__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_nw__normal.256.ktx2": {
+    "hash": "5f97bee13e75",
+    "bytes": 17144,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_nw__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_nw__orm_357e0452.128.ktx2": {
+    "hash": "a0942453b070",
+    "bytes": 4344,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_nw__orm_357e0452.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_nw__orm_357e0452.256.ktx2": {
+    "hash": "ee503a5bff32",
+    "bytes": 14785,
+    "from": "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_leatherstrap_01_nw__orm_357e0452.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/station/tex/t_tuskencamp_rope_01_c.128.ktx2": {
@@ -50124,8 +50652,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/far.bin": {
-    "hash": "81fe4190818f",
-    "bytes": 233024,
+    "hash": "decc9372bcf4",
+    "bytes": 232992,
     "from": "models/galaxy/bf2017/levels/endor/village/far.bin",
     "tier": "pack"
   },
@@ -50259,6 +50787,48 @@
     "hash": "f8fe7d1869d7",
     "bytes": 26152,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_01_mesh.lod5.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_interior_01_mesh.lod2.glb": {
+    "hash": "9a556fb506d5",
+    "bytes": 87892,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_interior_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_interior_01_mesh.lod3.glb": {
+    "hash": "1986ba7098e8",
+    "bytes": 49580,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_interior_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_interior_01_mesh.lod4.glb": {
+    "hash": "8ea0fa1ef281",
+    "bytes": 28544,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_interior_01_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_part_02_mesh.lod0.glb": {
+    "hash": "16b754f92073",
+    "bytes": 19052,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_part_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_part_02_mesh.lod1.glb": {
+    "hash": "1bd5f5eca0eb",
+    "bytes": 14160,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_part_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_part_02_mesh.lod2.glb": {
+    "hash": "69f3f414ffa8",
+    "bytes": 6608,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_part_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_part_02_mesh.lod3.glb": {
+    "hash": "5309696020e1",
+    "bytes": 5476,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/atat_destroyed_part_02_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/box_m_02_mesh.lod0.glb": {
@@ -50633,10 +51203,250 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokprops_04_mesh.lod4.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod0.glb": {
+    "hash": "95e66acf0a42",
+    "bytes": 80664,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod1.glb": {
+    "hash": "2b9c875a4794",
+    "bytes": 51188,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod2.glb": {
+    "hash": "0cc30ee81bf5",
+    "bytes": 31216,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod3.glb": {
+    "hash": "e5ff06dfc71e",
+    "bytes": 11792,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod4.glb": {
+    "hash": "26b9dbee4f6b",
+    "bytes": 7208,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_01_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod0.glb": {
+    "hash": "ac6810f25733",
+    "bytes": 51844,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod1.glb": {
+    "hash": "8fe4baedcad3",
+    "bytes": 33812,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod2.glb": {
+    "hash": "c65eee9f40fd",
+    "bytes": 21172,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod3.glb": {
+    "hash": "ed1ef6040664",
+    "bytes": 14104,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod4.glb": {
+    "hash": "a47bb67fce01",
+    "bytes": 11300,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod5.glb": {
+    "hash": "e9f76b4fd5cd",
+    "bytes": 4960,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_02_mesh.lod5.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod0.glb": {
+    "hash": "ea3aed518063",
+    "bytes": 48876,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod1.glb": {
+    "hash": "44dc2347f993",
+    "bytes": 28824,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod2.glb": {
+    "hash": "747d006b1634",
+    "bytes": 15112,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod3.glb": {
+    "hash": "69b975ad7f25",
+    "bytes": 9460,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod4.glb": {
+    "hash": "1554410042b8",
+    "bytes": 4816,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokstack_03_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod0.glb": {
+    "hash": "31d3b39a54e4",
+    "bytes": 78140,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod1.glb": {
+    "hash": "ceb2be0c4af6",
+    "bytes": 54092,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod2.glb": {
+    "hash": "f2a4e17fcb24",
+    "bytes": 32816,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod3.glb": {
+    "hash": "b3bda1455b52",
+    "bytes": 21632,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod4.glb": {
+    "hash": "62ac4b1446df",
+    "bytes": 12464,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bbqmedium_01_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_01_mesh.lod1.glb": {
+    "hash": "946e6da312be",
+    "bytes": 116004,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_leaves_01_mesh.lod0.glb": {
+    "hash": "017020a4be16",
+    "bytes": 2332,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_leaves_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_mesh.lod0.glb": {
+    "hash": "0b6d81eb1fc5",
+    "bytes": 111008,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_mesh.lod1.glb": {
+    "hash": "6fadf010c81b",
+    "bytes": 70448,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_mesh.lod2.glb": {
+    "hash": "7c210dcf23ba",
+    "bytes": 23192,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_mesh.lod3.glb": {
+    "hash": "67e87713d0b0",
+    "bytes": 11600,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_02_mesh.lod3.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_leaves_01_mesh.lod0.glb": {
     "hash": "e2e24b7de3af",
     "bytes": 2340,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_leaves_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_mesh.lod0.glb": {
+    "hash": "4c19cb5b3187",
+    "bytes": 59008,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_mesh.lod1.glb": {
+    "hash": "382acda3ffcf",
+    "bytes": 40908,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_mesh.lod2.glb": {
+    "hash": "615a22666aa7",
+    "bytes": 13308,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_mesh.lod3.glb": {
+    "hash": "a5fd59e784d0",
+    "bytes": 7468,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_03_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_leaves_01_mesh.lod0.glb": {
+    "hash": "6780ebb902ac",
+    "bytes": 2344,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_leaves_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_mesh.lod0.glb": {
+    "hash": "65f23299359c",
+    "bytes": 33172,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_mesh.lod1.glb": {
+    "hash": "ee51f9d8732d",
+    "bytes": 21452,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_mesh.lod2.glb": {
+    "hash": "2f27fd56fee6",
+    "bytes": 10572,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_mesh.lod3.glb": {
+    "hash": "d296970b163a",
+    "bytes": 8196,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridge_04_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridgesupport_01_mesh.lod0.glb": {
+    "hash": "4b593ee271b0",
+    "bytes": 16468,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridgesupport_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridgesupport_01_mesh.lod1.glb": {
+    "hash": "2af10050627b",
+    "bytes": 12484,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridgesupport_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridgesupport_01_mesh.lod2.glb": {
+    "hash": "a1d0b29ddcf1",
+    "bytes": 9204,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridgesupport_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridgesupport_01_mesh.lod3.glb": {
+    "hash": "692fd28132cf",
+    "bytes": 4872,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_bridgesupport_01_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_drum_02_mesh.lod0.glb": {
@@ -50667,6 +51477,66 @@
     "hash": "5dcf23f02f5d",
     "bytes": 5096,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_drum_02_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_fencesmall_01_mesh.lod0.glb": {
+    "hash": "b61dabcb0353",
+    "bytes": 24004,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_fencesmall_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_fencesmall_01_mesh.lod1.glb": {
+    "hash": "b80ecd64671c",
+    "bytes": 15276,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_fencesmall_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_fencesmall_01_mesh.lod2.glb": {
+    "hash": "0e76049b10d8",
+    "bytes": 10936,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_fencesmall_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_fencesmall_01_mesh.lod3.glb": {
+    "hash": "d6af7ff9006f",
+    "bytes": 7564,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_fencesmall_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod0.glb": {
+    "hash": "7e1acbd8f8fa",
+    "bytes": 90776,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod1.glb": {
+    "hash": "cf9a7f0553bc",
+    "bytes": 66784,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod2.glb": {
+    "hash": "a176e258c35f",
+    "bytes": 60200,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod3.glb": {
+    "hash": "735a997f7ff0",
+    "bytes": 36408,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod4.glb": {
+    "hash": "16a02f13ce0c",
+    "bytes": 21308,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod5.glb": {
+    "hash": "24c7d1729754",
+    "bytes": 9644,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_01_mesh.lod5.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_02_mesh.lod0.glb": {
@@ -50705,6 +51575,66 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hut_02_mesh.lod5.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutdoor_02_mesh.lod0.glb": {
+    "hash": "d7f55ecb1994",
+    "bytes": 19532,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutdoor_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutdoor_02_mesh.lod1.glb": {
+    "hash": "aeb28d4891b6",
+    "bytes": 13440,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutdoor_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutdoor_02_mesh.lod2.glb": {
+    "hash": "1757e8189dbe",
+    "bytes": 11832,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutdoor_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutdoor_02_mesh.lod3.glb": {
+    "hash": "d403fe7703ee",
+    "bytes": 3524,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutdoor_02_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod0.glb": {
+    "hash": "185e20d08256",
+    "bytes": 72512,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod1.glb": {
+    "hash": "021c1b8f50af",
+    "bytes": 53024,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod2.glb": {
+    "hash": "e85d1797b59c",
+    "bytes": 26488,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod3.glb": {
+    "hash": "6a9e7011cb08",
+    "bytes": 19976,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod4.glb": {
+    "hash": "f9503da2bbff",
+    "bytes": 18128,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod5.glb": {
+    "hash": "067ad8d2e131",
+    "bytes": 8240,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_01_mesh.lod5.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_02_mesh.lod0.glb": {
     "hash": "c5b3520e132d",
     "bytes": 57008,
@@ -50741,6 +51671,24 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_hutopen_02_mesh.lod5.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_01_leaves_01_mesh.lod0.glb": {
+    "hash": "8eb9ff1a2bec",
+    "bytes": 2608,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_01_leaves_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_01_mesh.lod1.glb": {
+    "hash": "e5868fbf8972",
+    "bytes": 138828,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_02_leaves_01_mesh.lod0.glb": {
+    "hash": "a6e36984507f",
+    "bytes": 2620,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_02_leaves_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_02_mesh.lod1.glb": {
     "hash": "5022a90468cc",
     "bytes": 116160,
@@ -50753,6 +51701,42 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_03_forest06_01_mesh.lod1.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_03_leaves_01_mesh.lod0.glb": {
+    "hash": "35c766a84ff6",
+    "bytes": 2620,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_03_leaves_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_forest06_01_mesh.lod0.glb": {
+    "hash": "f2a28edc89aa",
+    "bytes": 155968,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_forest06_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_forest06_01_mesh.lod1.glb": {
+    "hash": "61b83e0c1bdd",
+    "bytes": 109728,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_forest06_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_forest06_02_mesh.lod0.glb": {
+    "hash": "d6c0af254dbd",
+    "bytes": 162852,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_forest06_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_forest06_02_mesh.lod1.glb": {
+    "hash": "7f2914eed9db",
+    "bytes": 115144,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_forest06_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_leaves_01_mesh.lod0.glb": {
+    "hash": "04082f3ee96c",
+    "bytes": 2576,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_leaves_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_mesh.lod0.glb": {
     "hash": "6c39d8f22cc2",
     "bytes": 173372,
@@ -50763,6 +51747,84 @@
     "hash": "eb055c588785",
     "bytes": 123556,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_platform_04_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_smallplateau_01_mesh.lod0.glb": {
+    "hash": "c27d744cc46e",
+    "bytes": 40952,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_smallplateau_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_smallplateau_01_mesh.lod1.glb": {
+    "hash": "8be283907dda",
+    "bytes": 19100,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_smallplateau_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_smallplateau_02_mesh.lod0.glb": {
+    "hash": "ac8c466f3ff3",
+    "bytes": 40952,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_smallplateau_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_smallplateau_02_mesh.lod1.glb": {
+    "hash": "597ffb925961",
+    "bytes": 19096,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_smallplateau_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_spiralstairs_01_mesh.lod1.glb": {
+    "hash": "77e1f9ae17f3",
+    "bytes": 150968,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_spiralstairs_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_01_mesh.lod0.glb": {
+    "hash": "1487cc6c1de2",
+    "bytes": 30724,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_01_mesh.lod1.glb": {
+    "hash": "ad70a6c79bb6",
+    "bytes": 17268,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_01_mesh.lod2.glb": {
+    "hash": "9f7434c55779",
+    "bytes": 8984,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_01_mesh.lod3.glb": {
+    "hash": "ae0edf1e226f",
+    "bytes": 4348,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_02_mesh.lod0.glb": {
+    "hash": "250a323029fa",
+    "bytes": 10612,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_02_mesh.lod1.glb": {
+    "hash": "b3c42ff515f9",
+    "bytes": 6804,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_02_mesh.lod2.glb": {
+    "hash": "1595309773ab",
+    "bytes": 4876,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_tarp_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_treeconnection_leaves_02_mesh.lod0.glb": {
+    "hash": "87c12853b2ca",
+    "bytes": 3512,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillage_treeconnection_leaves_02_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagedrum_01_mesh.lod0.glb": {
@@ -50831,6 +51893,30 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagehorn_01_mesh.lod5.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_01_mesh.lod0.glb": {
+    "hash": "3a075a5e12d8",
+    "bytes": 5756,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_01_mesh.lod1.glb": {
+    "hash": "6ed22908723c",
+    "bytes": 4964,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_01_mesh.lod2.glb": {
+    "hash": "c96c1f877f84",
+    "bytes": 4328,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_01_mesh.lod3.glb": {
+    "hash": "fe2c9e108a1b",
+    "bytes": 3904,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/ewokvillagetorch_sleeve_01_mesh.lod0.glb": {
     "hash": "b70076c22378",
     "bytes": 5276,
@@ -50889,6 +51975,54 @@
     "hash": "0a6b7faad014",
     "bytes": 8352,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forest06_backdrop_06_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forest06_rootscave_01_a_mesh.lod0.glb": {
+    "hash": "457b79b78356",
+    "bytes": 5796,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forest06_rootscave_01_a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_01_mesh.lod0.glb": {
+    "hash": "39c30a44696c",
+    "bytes": 8680,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_01_mesh.lod1.glb": {
+    "hash": "8fa8e11f79dd",
+    "bytes": 6296,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_01_mesh.lod2.glb": {
+    "hash": "29dcf0bd1e44",
+    "bytes": 5016,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_02_mesh.lod0.glb": {
+    "hash": "ec1e05bc36fa",
+    "bytes": 9292,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_02_mesh.lod1.glb": {
+    "hash": "da5dc9da4c63",
+    "bytes": 6404,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_02_mesh.lod2.glb": {
+    "hash": "945543cd5aec",
+    "bytes": 5776,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_02_mesh.lod3.glb": {
+    "hash": "9baa8df0d903",
+    "bytes": 4948,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_caverockmedium_02_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cavewallrocklarge_01a_mesh.lod0.glb": {
@@ -51047,6 +52181,18 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_mesh.lod4.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_01_mesh.lod0.glb": {
+    "hash": "dc135cdea42f",
+    "bytes": 65260,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_01_mesh.lod1.glb": {
+    "hash": "116678efb4f7",
+    "bytes": 2840,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_02_mesh.lod1.glb": {
     "hash": "88ed08e52071",
     "bytes": 2836,
@@ -51065,6 +52211,18 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_03_mesh.lod1.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_cap_01_mesh.lod0.glb": {
+    "hash": "294f3a7bdc2e",
+    "bytes": 65264,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_cap_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_cap_01_mesh.lod1.glb": {
+    "hash": "e8cfb9f14d6d",
+    "bytes": 2844,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_cap_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_cap_02_mesh.lod1.glb": {
     "hash": "dae1777b5483",
     "bytes": 2840,
@@ -51081,6 +52239,18 @@
     "hash": "890c922ad585",
     "bytes": 2828,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_moss_cap_03_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_waterstreams_01_forest_06_mesh.lod0.glb": {
+    "hash": "cc3258c52109",
+    "bytes": 8292,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_waterstreams_01_forest_06_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_waterstreams_01_mesh.lod0.glb": {
+    "hash": "235a6a5ac1b9",
+    "bytes": 8300,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_cliffhuge_01_waterstreams_01_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_dirtwall_01_mesh.lod0.glb": {
@@ -51107,6 +52277,114 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_dirtwall_01_mesh.lod3.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_addons_01_mesh.lod0.glb": {
+    "hash": "4f9a46024f2d",
+    "bytes": 79968,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_addons_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_addons_01_mesh.lod1.glb": {
+    "hash": "dd8b4f3fdcc8",
+    "bytes": 11500,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_addons_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_addons_02_mesh.lod0.glb": {
+    "hash": "66c52e844d29",
+    "bytes": 38096,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_addons_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_addons_02_mesh.lod1.glb": {
+    "hash": "c9e69e05395b",
+    "bytes": 8320,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_addons_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_mesh.lod0.glb": {
+    "hash": "8f6aa6d01f56",
+    "bytes": 57296,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_mesh.lod1.glb": {
+    "hash": "51ddbee21881",
+    "bytes": 40748,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_mesh.lod2.glb": {
+    "hash": "38c159ac7d2d",
+    "bytes": 28416,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_mesh.lod3.glb": {
+    "hash": "e61bfe25986d",
+    "bytes": 20420,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_a_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_addons_01_mesh.lod0.glb": {
+    "hash": "1770ebd17b58",
+    "bytes": 109780,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_addons_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_addons_01_mesh.lod1.glb": {
+    "hash": "05ebb71cb235",
+    "bytes": 13884,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_addons_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_addons_02_mesh.lod0.glb": {
+    "hash": "f45205f20e2e",
+    "bytes": 38196,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_addons_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_addons_02_mesh.lod1.glb": {
+    "hash": "315ebb34a920",
+    "bytes": 8436,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_addons_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_mesh.lod0.glb": {
+    "hash": "d4cff0799a0f",
+    "bytes": 58780,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_mesh.lod1.glb": {
+    "hash": "07d1b795010f",
+    "bytes": 45460,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_mesh.lod2.glb": {
+    "hash": "202cf9d2397b",
+    "bytes": 29628,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_mesh.lod3.glb": {
+    "hash": "84c1bc9f67f9",
+    "bytes": 22028,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_loglarge_01_b_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_addons_01_mesh.lod0.glb": {
+    "hash": "dc7aaa7a038b",
+    "bytes": 56508,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_addons_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_addons_01_mesh.lod1.glb": {
+    "hash": "166452aec7a1",
+    "bytes": 10444,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_addons_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_addons_a_mesh.lod0.glb": {
     "hash": "32b3905d3851",
     "bytes": 2504,
@@ -51117,6 +52395,84 @@
     "hash": "856b958ca8cc",
     "bytes": 2500,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_addons_d_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod0.glb": {
+    "hash": "4fde7ad7a0ec",
+    "bytes": 102156,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod1.glb": {
+    "hash": "4f71f9c1df39",
+    "bytes": 19148,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod2.glb": {
+    "hash": "55f2cdf33ec8",
+    "bytes": 12544,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod3.glb": {
+    "hash": "b9baadd7baf0",
+    "bytes": 8268,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod4.glb": {
+    "hash": "feedb0ef989e",
+    "bytes": 6216,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_01_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_a_mesh.lod0.glb": {
+    "hash": "f08698c9a918",
+    "bytes": 29464,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_a_mesh.lod1.glb": {
+    "hash": "b89899ecff77",
+    "bytes": 20576,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_a_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_a_mesh.lod2.glb": {
+    "hash": "76df1c8f3ba0",
+    "bytes": 13000,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_a_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_a_mesh.lod3.glb": {
+    "hash": "f0d9ade0cd68",
+    "bytes": 9580,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_a_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_b_mesh.lod0.glb": {
+    "hash": "a9917e4742d0",
+    "bytes": 27420,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_b_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_b_mesh.lod1.glb": {
+    "hash": "984ed054046d",
+    "bytes": 19928,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_b_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_b_mesh.lod2.glb": {
+    "hash": "c6910d2e0304",
+    "bytes": 14112,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_b_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_b_mesh.lod3.glb": {
+    "hash": "25d8f9636dad",
+    "bytes": 10012,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_logmedium_02_b_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_01_mesh.lod1.glb": {
@@ -51135,6 +52491,30 @@
     "hash": "f5bc867d1caf",
     "bytes": 5796,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_02_mesh.lod0.glb": {
+    "hash": "c9f0ac042cda",
+    "bytes": 180616,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_02_mesh.lod1.glb": {
+    "hash": "90ef447803a9",
+    "bytes": 9540,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_02_mesh.lod2.glb": {
+    "hash": "f00c894d10f3",
+    "bytes": 6696,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_02_mesh.lod3.glb": {
+    "hash": "9b2be4da3881",
+    "bytes": 5052,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_02_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_03_mesh.lod0.glb": {
@@ -51159,6 +52539,60 @@
     "hash": "9e48939ab68d",
     "bytes": 5468,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocklarge_03_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_01_mesh.lod0.glb": {
+    "hash": "69c4ade04c31",
+    "bytes": 6240,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_01_mesh.lod1.glb": {
+    "hash": "d2bea4f57c55",
+    "bytes": 4864,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_01_mesh.lod2.glb": {
+    "hash": "d9f47c84a638",
+    "bytes": 4132,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_02_mesh.lod0.glb": {
+    "hash": "2cf7274799c8",
+    "bytes": 5208,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_02_mesh.lod1.glb": {
+    "hash": "ecd89a473f62",
+    "bytes": 4524,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_02_mesh.lod2.glb": {
+    "hash": "5f38a1444f1a",
+    "bytes": 3860,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rockmedium_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocksmall_01_mesh.lod0.glb": {
+    "hash": "86dfaaf03d8a",
+    "bytes": 5088,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocksmall_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocksmall_01_mesh.lod1.glb": {
+    "hash": "fd3751d1fba9",
+    "bytes": 4296,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocksmall_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocksmall_01_mesh.lod2.glb": {
+    "hash": "a7e8e8312077",
+    "bytes": 3852,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocksmall_01_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_rocksmall_02_mesh.lod0.glb": {
@@ -51407,6 +52841,54 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treelarge_03_top_mesh.lod2.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_burnt_mesh.lod0.glb": {
+    "hash": "1e36b1a0df51",
+    "bytes": 9796,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_burnt_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_burnt_mesh.lod1.glb": {
+    "hash": "cfe3d727b35e",
+    "bytes": 7696,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_burnt_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_burnt_mesh.lod2.glb": {
+    "hash": "09c9857b80e4",
+    "bytes": 5240,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_burnt_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_burnt_mesh.lod3.glb": {
+    "hash": "3e5c5f2530a3",
+    "bytes": 4500,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_burnt_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_nosound_mesh.lod0.glb": {
+    "hash": "eeb958020fae",
+    "bytes": 9776,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_nosound_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_nosound_mesh.lod1.glb": {
+    "hash": "b63975cfed3c",
+    "bytes": 7676,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_nosound_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_nosound_mesh.lod2.glb": {
+    "hash": "22637cf3b324",
+    "bytes": 5220,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_nosound_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_nosound_mesh.lod3.glb": {
+    "hash": "e885a035113a",
+    "bytes": 4476,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_bottom_nosound_mesh.lod3.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_top_mesh.lod0.glb": {
     "hash": "013091d31499",
     "bytes": 108572,
@@ -51423,6 +52905,36 @@
     "hash": "12e6ff95b73b",
     "bytes": 6140,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_01_top_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_02_bottom_burnt_mesh.lod0.glb": {
+    "hash": "0f193e36140f",
+    "bytes": 11192,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_02_bottom_burnt_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_02_bottom_burnt_mesh.lod1.glb": {
+    "hash": "152d408af619",
+    "bytes": 8348,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_02_bottom_burnt_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_02_bottom_burnt_mesh.lod2.glb": {
+    "hash": "e37c22cb3f4c",
+    "bytes": 6384,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_02_bottom_burnt_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_02_bottom_burnt_mesh.lod3.glb": {
+    "hash": "6dba069e1178",
+    "bytes": 5184,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treemedium_02_bottom_burnt_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treeshadow_01_mesh.lod0.glb": {
+    "hash": "6047110bb55d",
+    "bytes": 2452,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treeshadow_01_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_01_destroyedstump_mesh.lod0.glb": {
@@ -51479,6 +52991,24 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_01_destructible_mesh.lod2.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_01_mesh.lod0.glb": {
+    "hash": "eea07439cdfe",
+    "bytes": 59488,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_01_mesh.lod1.glb": {
+    "hash": "94c020e17568",
+    "bytes": 24400,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_01_mesh.lod2.glb": {
+    "hash": "e444fa0e0a90",
+    "bytes": 5880,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_02_destroyedstump_mesh.lod0.glb": {
     "hash": "6370ef463ac7",
     "bytes": 8316,
@@ -51513,6 +53043,78 @@
     "hash": "0985c3d3868b",
     "bytes": 8040,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_treesmall_02_destructible_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallmediumrocks_01_mesh.lod0.glb": {
+    "hash": "f335d5c8f73e",
+    "bytes": 21540,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallmediumrocks_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallmediumrocks_01_mesh.lod1.glb": {
+    "hash": "7ad93bc19fd0",
+    "bytes": 16544,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallmediumrocks_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallmediumrocks_01_mesh.lod2.glb": {
+    "hash": "2e9ae3ef4fac",
+    "bytes": 12560,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallmediumrocks_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallmediumrocks_01_mesh.lod3.glb": {
+    "hash": "a39e6907b9ac",
+    "bytes": 8272,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallmediumrocks_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_01_mesh.lod0.glb": {
+    "hash": "a9300b88742c",
+    "bytes": 22524,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_01_mesh.lod1.glb": {
+    "hash": "52e679bfb9eb",
+    "bytes": 17640,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_01_mesh.lod2.glb": {
+    "hash": "5cf62b115037",
+    "bytes": 14800,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_01_mesh.lod3.glb": {
+    "hash": "95de2148a302",
+    "bytes": 11248,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_02_mesh.lod0.glb": {
+    "hash": "bb947a2551f0",
+    "bytes": 13160,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_02_mesh.lod1.glb": {
+    "hash": "2a6a7e9d291d",
+    "bytes": 10956,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_02_mesh.lod2.glb": {
+    "hash": "a6e1e75968ec",
+    "bytes": 8348,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_02_mesh.lod3.glb": {
+    "hash": "8570f8ff199b",
+    "bytes": 6548,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestbase_waterfallsmallrocks_02_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_logmedium_01_mesh.lod0.glb": {
@@ -51587,6 +53189,24 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_01_mesh.lod3.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_02_mesh.lod0.glb": {
+    "hash": "f04c175bb04c",
+    "bytes": 16064,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_02_mesh.lod1.glb": {
+    "hash": "61e7e61f182e",
+    "bytes": 11096,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_02_mesh.lod2.glb": {
+    "hash": "88cc30bf597a",
+    "bytes": 7468,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_b_destructible_01_mesh.lod0.glb": {
     "hash": "08c298636e9b",
     "bytes": 21332,
@@ -51603,6 +53223,24 @@
     "hash": "52cf5b5c174c",
     "bytes": 14804,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_b_destructible_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_b_destructible_fire_01_mesh.lod0.glb": {
+    "hash": "36f9f9ce81cf",
+    "bytes": 21344,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_b_destructible_fire_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_b_destructible_fire_01_mesh.lod1.glb": {
+    "hash": "4fc107160871",
+    "bytes": 18424,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_b_destructible_fire_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_b_destructible_fire_01_mesh.lod2.glb": {
+    "hash": "01b270b40204",
+    "bytes": 14812,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_b_destructible_fire_01_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_destructible_01_mesh.lod0.glb": {
@@ -51641,6 +53279,24 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_destructible_fire_01_mesh.lod2.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_mesh.lod0.glb": {
+    "hash": "2462380f495f",
+    "bytes": 19316,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_mesh.lod1.glb": {
+    "hash": "5f98b342490a",
+    "bytes": 14824,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_mesh.lod2.glb": {
+    "hash": "b4de7a781c96",
+    "bytes": 12276,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_03_mesh.lod2.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_04_mesh.lod0.glb": {
     "hash": "b1b526bbb5f1",
     "bytes": 11220,
@@ -51657,6 +53313,84 @@
     "hash": "5a93a30382fa",
     "bytes": 5952,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_04_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_06_mesh.lod0.glb": {
+    "hash": "33abb22bc8ad",
+    "bytes": 14868,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_06_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_06_mesh.lod1.glb": {
+    "hash": "fde9071e9830",
+    "bytes": 10792,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_06_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_06_mesh.lod2.glb": {
+    "hash": "8cce491f3790",
+    "bytes": 7996,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_06_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_01_mesh.lod0.glb": {
+    "hash": "8a3760d7b951",
+    "bytes": 40256,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_01_mesh.lod1.glb": {
+    "hash": "7d20285dcac9",
+    "bytes": 25800,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_01_mesh.lod2.glb": {
+    "hash": "a38443bfcb5d",
+    "bytes": 15688,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_01_mesh.lod3.glb": {
+    "hash": "241c5c31e5fd",
+    "bytes": 10840,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_02_mesh.lod0.glb": {
+    "hash": "87f226c8c86d",
+    "bytes": 16076,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_02_mesh.lod1.glb": {
+    "hash": "b0647b6b97df",
+    "bytes": 11108,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_02_mesh.lod2.glb": {
+    "hash": "395db630c4ea",
+    "bytes": 7480,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_02_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_04_mesh.lod0.glb": {
+    "hash": "c27d060353c3",
+    "bytes": 11228,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_04_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_04_mesh.lod1.glb": {
+    "hash": "5fdeffd3de77",
+    "bytes": 8352,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_04_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_04_mesh.lod2.glb": {
+    "hash": "8d6a0ac97fb4",
+    "bytes": 5964,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_04_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_05_mesh.lod0.glb": {
@@ -51677,6 +53411,24 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_05_mesh.lod2.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_06_mesh.lod0.glb": {
+    "hash": "427793bcd4c0",
+    "bytes": 14880,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_06_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_06_mesh.lod1.glb": {
+    "hash": "834c85525910",
+    "bytes": 10804,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_06_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_06_mesh.lod2.glb": {
+    "hash": "5e284ce36fef",
+    "bytes": 8008,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_treestump_fire_06_mesh.lod2.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_wooddebris_01_mesh.lod0.glb": {
     "hash": "ab10b2c6256c",
     "bytes": 16832,
@@ -51693,6 +53445,24 @@
     "hash": "3e4e8f1f13a0",
     "bytes": 10188,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_wooddebris_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_wooddebris_02_mesh.lod0.glb": {
+    "hash": "ea625fb3d599",
+    "bytes": 21172,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_wooddebris_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_wooddebris_02_mesh.lod1.glb": {
+    "hash": "7f3fdaa182c0",
+    "bytes": 15356,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_wooddebris_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_wooddebris_02_mesh.lod2.glb": {
+    "hash": "9b11fe550ef1",
+    "bytes": 13940,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestburnt_wooddebris_02_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_bottom_mesh.lod0.glb": {
@@ -51717,6 +53487,42 @@
     "hash": "18803c5a6c4e",
     "bytes": 7340,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_bottom_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_01_mesh.lod0.glb": {
+    "hash": "00fde67ff9b9",
+    "bytes": 131672,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_01_mesh.lod1.glb": {
+    "hash": "64b93a4f72ff",
+    "bytes": 2840,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_02_mesh.lod0.glb": {
+    "hash": "f32c26d8b72e",
+    "bytes": 172884,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_02_mesh.lod1.glb": {
+    "hash": "fee52e47b709",
+    "bytes": 2836,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_03_mesh.lod0.glb": {
+    "hash": "3d776bc7c058",
+    "bytes": 84028,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_03_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_03_mesh.lod1.glb": {
+    "hash": "48ca5c5a1582",
+    "bytes": 2828,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_moss_03_mesh.lod1.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_top_clear_01_mesh.lod0.glb": {
@@ -51773,10 +53579,40 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_treelarge_02_top_mesh.lod2.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_wateralgae_01_forest02cluster_01_mesh.lod0.glb": {
+    "hash": "a849887fae2c",
+    "bytes": 81436,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_wateralgae_01_forest02cluster_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_wateralgae_01_forest02cluster_01_mesh.lod1.glb": {
+    "hash": "39bca0d580ee",
+    "bytes": 2404,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_wateralgae_01_forest02cluster_01_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_waterpads_01_forest02cluster_06_mesh.lod0.glb": {
+    "hash": "a6147127f4a0",
+    "bytes": 57184,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_waterpads_01_forest02cluster_06_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_waterpads_01_forest02cluster_06_mesh.lod1.glb": {
+    "hash": "ee001f684ede",
+    "bytes": 2412,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_waterpads_01_forest02cluster_06_mesh.lod1.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_waterpads_01_mesh.lod0.glb": {
     "hash": "856cbda7fa42",
     "bytes": 3580,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/forestswamp_waterpads_01_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/imperial_stormtrooper_male_01_helmet_static_mesh.lod0.glb": {
+    "hash": "07e8b5a956a5",
+    "bytes": 62136,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/imperial_stormtrooper_male_01_helmet_static_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/machinegenerator_01_mesh.lod0.glb": {
@@ -51891,6 +53727,30 @@
     "hash": "7b6b8acd2398",
     "bytes": 6540,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/o_nab_rope_03_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/speederbike_01_mesh.lod2.glb": {
+    "hash": "04721e2df75d",
+    "bytes": 128520,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/speederbike_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/speederbike_01_mesh.lod3.glb": {
+    "hash": "7b3de5978a6f",
+    "bytes": 69084,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/speederbike_01_mesh.lod3.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/speederbike_01_mesh.lod4.glb": {
+    "hash": "caa713d1738d",
+    "bytes": 36100,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/speederbike_01_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/speederbike_01_mesh.lod5.glb": {
+    "hash": "49c5e7a7d244",
+    "bytes": 13260,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/speederbike_01_mesh.lod5.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/stormstrooperbodyarmor_breakable_01_mesh.lod0.glb": {
@@ -52031,6 +53891,24 @@
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_boneornament_01b_mesh.lod3.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_hangingropetriangle_01a_mesh.lod0.glb": {
+    "hash": "8f5487739ddd",
+    "bytes": 11264,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_hangingropetriangle_01a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_hangingropetriangle_01a_mesh.lod1.glb": {
+    "hash": "0f9f026106ac",
+    "bytes": 8052,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_hangingropetriangle_01a_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_hangingropetriangle_01a_mesh.lod2.glb": {
+    "hash": "4ffb04805179",
+    "bytes": 5824,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_hangingropetriangle_01a_mesh.lod2.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_skullbantha_01_mesh.lod0.glb": {
     "hash": "e0ac8a2d856f",
     "bytes": 20416,
@@ -52059,6 +53937,30 @@
     "hash": "c2c255d2a6fe",
     "bytes": 3464,
     "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_skullbantha_01_mesh.lod4.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnmedium_01a_mesh.lod0.glb": {
+    "hash": "4ada94cfc5e6",
+    "bytes": 14028,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnmedium_01a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnmedium_01a_mesh.lod1.glb": {
+    "hash": "379780da8820",
+    "bytes": 9540,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnmedium_01a_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnmedium_01a_mesh.lod2.glb": {
+    "hash": "6026fc6f056f",
+    "bytes": 6760,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnmedium_01a_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnmedium_01a_mesh.lod3.glb": {
+    "hash": "b151ad70e9cc",
+    "bytes": 3844,
+    "from": "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnmedium_01a_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/meshes/tuskencamp_urnsmall_01a_mesh.lod0.glb": {
@@ -53633,6 +55535,42 @@
     "from": "models/galaxy/bf2017/levels/endor/village/terrain/near.png",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatbody_01_cw.256.ktx2": {
+    "hash": "eb020b4aad3b",
+    "bytes": 78434,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatbody_01_cw.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatbody_01_cw.512.ktx2": {
+    "hash": "1a925d11dd08",
+    "bytes": 300471,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatbody_01_cw.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatbodydetail_01_cw.256.ktx2": {
+    "hash": "98ecfd9a9af6",
+    "bytes": 82845,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatbodydetail_01_cw.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatbodydetail_01_cw.512.ktx2": {
+    "hash": "12d094d21344",
+    "bytes": 318363,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatbodydetail_01_cw.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatbodydetail_01_n__normal.128.ktx2": {
+    "hash": "8a367f4d0814",
+    "bytes": 20234,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatbodydetail_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatbodydetail_01_n__normal.256.ktx2": {
+    "hash": "23d6780c3197",
+    "bytes": 71616,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatbodydetail_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_atatlod_01_n__normal.256.ktx2": {
     "hash": "ffd816ade9ca",
     "bytes": 60345,
@@ -53643,6 +55581,24 @@
     "hash": "1ae3ca121e5c",
     "bytes": 182910,
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatlod_01_n__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatseams_01_c.128.ktx2": {
+    "hash": "15b0c0a252ed",
+    "bytes": 16250,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatseams_01_c.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatseams_01_ns__normal.128.ktx2": {
+    "hash": "8a5cfff99eb1",
+    "bytes": 6744,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatseams_01_ns__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atatseams_01_ns__orm_d3910f54.128.ktx2": {
+    "hash": "bc6211aec74b",
+    "bytes": 2884,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atatseams_01_ns__orm_d3910f54.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/tex/t_atatwrecklod_01_c.512.ktx2": {
@@ -53681,6 +55637,12 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atst_01_rgbm__orm_790167b9.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atst_01_rgbm__orm_790167b9.256.ktx2": {
+    "hash": "173dfb98264e",
+    "bytes": 71666,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atst_01_rgbm__orm_790167b9.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_atstbody_01_cw.256.ktx2": {
     "hash": "85aa33b0a536",
     "bytes": 80973,
@@ -53703,6 +55665,12 @@
     "hash": "a8b5e5a0a8a2",
     "bytes": 82222,
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atsthead_01_cw.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_atsthead_01_cw.512.ktx2": {
+    "hash": "30d798f49931",
+    "bytes": 320627,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_atsthead_01_cw.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/tex/t_box_m_01_a_nam__normal.128.ktx2": {
@@ -53859,6 +55827,90 @@
     "hash": "f862313e6dea",
     "bytes": 17951,
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_d_officer_orig_ds_01_helmet_nm__orm_e10ba686.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_cs.256.ktx2": {
+    "hash": "b214dd8d5b12",
+    "bytes": 44270,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_cs.512.ktx2": {
+    "hash": "278b8c1722b6",
+    "bytes": 139303,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_na__normal.128.ktx2": {
+    "hash": "29055a005c1e",
+    "bytes": 16479,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_na__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_na__normal.256.ktx2": {
+    "hash": "1d2c6e8cdffc",
+    "bytes": 48906,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_na__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_na__orm_21a3aca8.128.ktx2": {
+    "hash": "63305e7f40aa",
+    "bytes": 13017,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_na__orm_21a3aca8.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_na__orm_21a3aca8.256.ktx2": {
+    "hash": "05a20e790262",
+    "bytes": 37824,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_02_lod_na__orm_21a3aca8.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_03_lod_cs.128.ktx2": {
+    "hash": "62d3272827cd",
+    "bytes": 12714,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_03_lod_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_03_lod_cs.256.ktx2": {
+    "hash": "ef6c26d60273",
+    "bytes": 37653,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_03_lod_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_03_lod_na__normal.128.ktx2": {
+    "hash": "48225158b1cc",
+    "bytes": 13985,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_03_lod_na__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_03_lod_na__orm_0d89049b.128.ktx2": {
+    "hash": "cdd63418aa42",
+    "bytes": 11064,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_03_lod_na__orm_0d89049b.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_04_lod_cs.128.ktx2": {
+    "hash": "c063bd2e613a",
+    "bytes": 13312,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_04_lod_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_04_lod_cs.256.ktx2": {
+    "hash": "8df084fab6a0",
+    "bytes": 40276,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_04_lod_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_04_lod_na__normal.128.ktx2": {
+    "hash": "b0a568be9a97",
+    "bytes": 14874,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_04_lod_na__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_04_lod_na__orm_d0f846da.128.ktx2": {
+    "hash": "23dee288f9e4",
+    "bytes": 11739,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagebridge_04_lod_na__orm_d0f846da.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagedrum_01_cs.128.ktx2": {
@@ -54119,6 +56171,30 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetiling_01_n__orm_a04a4a8b.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetorch_01_cs.128.ktx2": {
+    "hash": "51041fe23411",
+    "bytes": 44250,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetorch_01_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetorch_01_cs.256.ktx2": {
+    "hash": "ff379f1efe0b",
+    "bytes": 170610,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetorch_01_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetorch_01_nw__normal.128.ktx2": {
+    "hash": "d63897b485f9",
+    "bytes": 43323,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetorch_01_nw__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetorch_01_nw__orm_b54e5f46.128.ktx2": {
+    "hash": "a3d5d4427490",
+    "bytes": 35044,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagetorch_01_nw__orm_b54e5f46.128.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_ewokvillagewall_01_cs.256.ktx2": {
     "hash": "e518ae0bf64b",
     "bytes": 83625,
@@ -54177,6 +56253,48 @@
     "hash": "4701631e198d",
     "bytes": 9381,
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_floorboards_01_nam__orm_903a1524.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_01_c.256.ktx2": {
+    "hash": "bc8f7369dc53",
+    "bytes": 82948,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_01_c.512.ktx2": {
+    "hash": "4bbdfd14f58c",
+    "bytes": 316246,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_01_n__normal.128.ktx2": {
+    "hash": "96f18cc92a0c",
+    "bytes": 20680,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_01_n__normal.256.ktx2": {
+    "hash": "f93cd4ff3a0b",
+    "bytes": 76606,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_02_c.128.ktx2": {
+    "hash": "a2091150cad7",
+    "bytes": 10085,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_02_c.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_02_c.256.ktx2": {
+    "hash": "0b67021cf1ec",
+    "bytes": 35438,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_02_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_02_n__normal.128.ktx2": {
+    "hash": "dffe003ee70e",
+    "bytes": 9552,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_caverockmedium_02_n__normal.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_cavewallrocklarge_01_c.1024.ktx2": {
@@ -54299,6 +56417,90 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_dirtwall_01_n__normal.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_loglarge_01_c.1024.ktx2": {
+    "hash": "3e5ab381de30",
+    "bytes": 2453273,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_loglarge_01_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_loglarge_01_c.512.ktx2": {
+    "hash": "1105e33964bc",
+    "bytes": 623043,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_loglarge_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_loglarge_01_n__normal.256.ktx2": {
+    "hash": "1aa41c8457e3",
+    "bytes": 135284,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_loglarge_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_loglarge_01_n__normal.512.ktx2": {
+    "hash": "939d624a2f4c",
+    "bytes": 518863,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_loglarge_01_n__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_01_c.256.ktx2": {
+    "hash": "3bf310c65699",
+    "bytes": 161701,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_01_c.512.ktx2": {
+    "hash": "c15a49594238",
+    "bytes": 648493,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_01_n__normal.128.ktx2": {
+    "hash": "d54d6a519e67",
+    "bytes": 42267,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_01_n__normal.256.ktx2": {
+    "hash": "a5bcf2b2ec93",
+    "bytes": 164530,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_c.1024.ktx2": {
+    "hash": "93c5f75a9520",
+    "bytes": 1284079,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_c.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_c.256.ktx2": {
+    "hash": "483787673e6d",
+    "bytes": 83109,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_c.512.ktx2": {
+    "hash": "77048a3aa52f",
+    "bytes": 322506,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_n__normal.128.ktx2": {
+    "hash": "07de42407a41",
+    "bytes": 22071,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_n__normal.256.ktx2": {
+    "hash": "2cc62ab4d4e1",
+    "bytes": 86233,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_n__normal.512.ktx2": {
+    "hash": "7e758088210d",
+    "bytes": 340329,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_logmedium_02_n__normal.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_01_c.256.ktx2": {
     "hash": "7654e4352e83",
     "bytes": 78543,
@@ -54323,6 +56525,30 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_01_n__normal.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_02_c.256.ktx2": {
+    "hash": "43b4cf4fbfb5",
+    "bytes": 76424,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_02_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_02_c.512.ktx2": {
+    "hash": "dc05563cc560",
+    "bytes": 290826,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_02_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_02_n__normal.128.ktx2": {
+    "hash": "f8ecc8e7e88a",
+    "bytes": 20535,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_02_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_02_n__normal.256.ktx2": {
+    "hash": "ad820562eb5a",
+    "bytes": 77583,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_02_n__normal.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_03_c.256.ktx2": {
     "hash": "1f743328ad31",
     "bytes": 74474,
@@ -54345,6 +56571,66 @@
     "hash": "50c30e09737b",
     "bytes": 75847,
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocklarge_03_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_01_c.256.ktx2": {
+    "hash": "199e228d57cf",
+    "bytes": 79802,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_01_c.512.ktx2": {
+    "hash": "ed178e0a7e3d",
+    "bytes": 305750,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_01_n__normal.128.ktx2": {
+    "hash": "268f18f7b0cc",
+    "bytes": 21076,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_01_n__normal.256.ktx2": {
+    "hash": "e241bee22d3e",
+    "bytes": 80177,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_02_c.128.ktx2": {
+    "hash": "d84cdb3c2185",
+    "bytes": 21572,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_02_c.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_02_c.256.ktx2": {
+    "hash": "158411a62be5",
+    "bytes": 82531,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_02_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_02_n__normal.128.ktx2": {
+    "hash": "66d69c08661b",
+    "bytes": 21315,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rockmedium_02_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocksmall_01_c.128.ktx2": {
+    "hash": "e465b409b91d",
+    "bytes": 21827,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocksmall_01_c.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocksmall_01_c.256.ktx2": {
+    "hash": "dc742b4aa905",
+    "bytes": 83603,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocksmall_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocksmall_01_n__normal.128.ktx2": {
+    "hash": "55a799b65e0f",
+    "bytes": 21547,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocksmall_01_n__normal.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_rocksmall_02_c.128.ktx2": {
@@ -54509,6 +56795,78 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treelarge_tile_03_n__normal.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_burnt_c.256.ktx2": {
+    "hash": "61058ebfabee",
+    "bytes": 82199,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_burnt_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_burnt_c.512.ktx2": {
+    "hash": "3fba7cf39e0d",
+    "bytes": 315303,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_burnt_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_burnt_n__normal.128.ktx2": {
+    "hash": "ecb9198a632c",
+    "bytes": 21933,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_burnt_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_burnt_n__normal.256.ktx2": {
+    "hash": "1263be4da610",
+    "bytes": 85300,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_burnt_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_c.256.ktx2": {
+    "hash": "59535c12cad9",
+    "bytes": 83514,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_c.512.ktx2": {
+    "hash": "792896add13b",
+    "bytes": 321718,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_n__normal.128.ktx2": {
+    "hash": "2c77c735f1b4",
+    "bytes": 21937,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_n__normal.256.ktx2": {
+    "hash": "83e13f57f9c7",
+    "bytes": 85216,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_burnt_c.256.ktx2": {
+    "hash": "f9fa5011c878",
+    "bytes": 81075,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_burnt_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_burnt_c.512.ktx2": {
+    "hash": "a2e41419b672",
+    "bytes": 309847,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_burnt_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_burnt_n__normal.128.ktx2": {
+    "hash": "1c92a1e9df16",
+    "bytes": 21977,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_burnt_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_burnt_n__normal.256.ktx2": {
+    "hash": "48aab163961f",
+    "bytes": 85209,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_burnt_n__normal.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_forestbase_treemedium_02_c.256.ktx2": {
     "hash": "00f0df7f3a91",
     "bytes": 82297,
@@ -54611,6 +56969,30 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_01_n__normal.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_02_c.256.ktx2": {
+    "hash": "ed4d56e293d5",
+    "bytes": 32671,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_02_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_02_c.512.ktx2": {
+    "hash": "9d93f97e5b79",
+    "bytes": 113684,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_02_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_02_n__normal.128.ktx2": {
+    "hash": "bbd825657146",
+    "bytes": 9846,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_02_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_02_n__normal.256.ktx2": {
+    "hash": "c0a84764c3b6",
+    "bytes": 32816,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_02_n__normal.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_03_c.256.ktx2": {
     "hash": "de4af653436a",
     "bytes": 39012,
@@ -54683,6 +57065,30 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_05_n__normal.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_06_c.256.ktx2": {
+    "hash": "751067a1de77",
+    "bytes": 55419,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_06_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_06_c.512.ktx2": {
+    "hash": "55c9e1965f8e",
+    "bytes": 196786,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_06_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_06_n__normal.128.ktx2": {
+    "hash": "a4f14dee658a",
+    "bytes": 18048,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_06_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_06_n__normal.256.ktx2": {
+    "hash": "25a5377f5c3a",
+    "bytes": 61783,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_treestump_06_n__normal.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_01_c.256.ktx2": {
     "hash": "cfd4786bd96c",
     "bytes": 68934,
@@ -54705,6 +57111,30 @@
     "hash": "db55dca6ef32",
     "bytes": 75797,
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_02_c.256.ktx2": {
+    "hash": "e361b84f84a6",
+    "bytes": 71599,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_02_c.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_02_c.512.ktx2": {
+    "hash": "73f4cf0c369d",
+    "bytes": 261082,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_02_c.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_02_n__normal.128.ktx2": {
+    "hash": "0b4b62975402",
+    "bytes": 21676,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_02_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_02_n__normal.256.ktx2": {
+    "hash": "8b1666b0888c",
+    "bytes": 80127,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_forestburnt_wooddebris_02_n__normal.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/tex/t_forestswamp_treelarge_02_c.1024.ktx2": {
@@ -54797,6 +57227,12 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_junksorted_02_n__normal.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_junksorted_02_n__orm_eab976cd.128.ktx2": {
+    "hash": "420a727bdcea",
+    "bytes": 10402,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_junksorted_02_n__orm_eab976cd.128.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_machinegenerator_01_cs.128.ktx2": {
     "hash": "f912a6b2b346",
     "bytes": 21813,
@@ -54887,6 +57323,42 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_rope_01_n__orm_c77b7cb1.128.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_cw.256.ktx2": {
+    "hash": "9607abf18da9",
+    "bytes": 61711,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_cw.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_cw.512.ktx2": {
+    "hash": "24c0087d004f",
+    "bytes": 113638,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_cw.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_n__normal.128.ktx2": {
+    "hash": "62ac926fff96",
+    "bytes": 20592,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_n__normal.256.ktx2": {
+    "hash": "d3aea2d4145a",
+    "bytes": 74618,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_n__orm_5a439be9.128.ktx2": {
+    "hash": "07fbf6886348",
+    "bytes": 21087,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_n__orm_5a439be9.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_n__orm_5a439be9.256.ktx2": {
+    "hash": "ea51b88975a6",
+    "bytes": 78881,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_speederbike_01_n__orm_5a439be9.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_tiefighter_01_rgbm__normal.128.ktx2": {
     "hash": "b90095a5a948",
     "bytes": 20516,
@@ -54971,6 +57443,42 @@
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tiefighterwing_01_n__orm_be546191.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_cs.1024.ktx2": {
+    "hash": "4173222ddbba",
+    "bytes": 681802,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_cs.512.ktx2": {
+    "hash": "a5d7d55cad78",
+    "bytes": 184878,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_na__normal.256.ktx2": {
+    "hash": "1ace3a2fdb70",
+    "bytes": 42087,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_na__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_na__normal.512.ktx2": {
+    "hash": "b78a8d114649",
+    "bytes": 149952,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_na__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_na__orm_21d71083.256.ktx2": {
+    "hash": "2a98aa1c396c",
+    "bytes": 31992,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_na__orm_21d71083.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_na__orm_21d71083.512.ktx2": {
+    "hash": "e9a052ba28eb",
+    "bytes": 119755,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_hangingrope_01_na__orm_21d71083.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_rope_01_c.128.ktx2": {
     "hash": "cedb996b1bc1",
     "bytes": 5462,
@@ -54987,6 +57495,30 @@
     "hash": "d44c7312ae3d",
     "bytes": 4848,
     "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_rope_01_n__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_satchel_01a_cs.128.ktx2": {
+    "hash": "1c4e83afc889",
+    "bytes": 22346,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_satchel_01a_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_satchel_01a_cs.256.ktx2": {
+    "hash": "a02f98408e84",
+    "bytes": 85469,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_satchel_01a_cs.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_satchel_01a_nw__normal.128.ktx2": {
+    "hash": "c755dfdb5b06",
+    "bytes": 21306,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_satchel_01a_nw__normal.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_satchel_01a_nw__orm_da14a6ce.128.ktx2": {
+    "hash": "ca3743c473c8",
+    "bytes": 17898,
+    "from": "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_satchel_01a_nw__orm_da14a6ce.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_urnmedium_01a_cs.128.ktx2": {
@@ -131195,6 +133727,12 @@
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_hcvwa9_turbotank_01_cs_01.1024.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_hcvwa9_turbotank_01_cs_01.256.ktx2": {
+    "hash": "bf7993e676e2",
+    "bytes": 62930,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_hcvwa9_turbotank_01_cs_01.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_hcvwa9_turbotank_01_cs_01.512.ktx2": {
     "hash": "1779c317f9ca",
     "bytes": 140100,
@@ -131235,6 +133773,12 @@
     "hash": "1d9d38994a19",
     "bytes": 140438,
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_hcvwa9_turbotank_01_cs_04.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_hcvwa9_turbotank_01_nam_01__normal.128.ktx2": {
+    "hash": "6dd886ad89ed",
+    "bytes": 19809,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_hcvwa9_turbotank_01_nam_01__normal.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_hcvwa9_turbotank_01_nam_01__normal.256.ktx2": {
@@ -132179,10 +134723,22 @@
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformcommander_01_nam__orm_014f5a86.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_cs.256.ktx2": {
+    "hash": "58c1f22af259",
+    "bytes": 79767,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_cs.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_cs.512.ktx2": {
     "hash": "ffaea8ed04c8",
     "bytes": 297689,
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_nam__normal.128.ktx2": {
+    "hash": "dd9b817c90d6",
+    "bytes": 21768,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_nam__normal.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_nam__normal.256.ktx2": {
@@ -132195,6 +134751,12 @@
     "hash": "eb2e59213a80",
     "bytes": 326769,
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_nam__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_nam__orm_92c31048.128.ktx2": {
+    "hash": "57529a87ab1d",
+    "bytes": 18157,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_nam__orm_92c31048.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_kas_platformsplinterwood_01_a_nam__orm_92c31048.256.ktx2": {
@@ -132743,6 +135305,12 @@
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_metaldetail_02_ns__orm_808bbbc5.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01_nma__normal.128.ktx2": {
+    "hash": "02d914a833e1",
+    "bytes": 20012,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01_nma__normal.128.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01_nma__normal.256.ktx2": {
     "hash": "fac781211486",
     "bytes": 70557,
@@ -132753,6 +135321,12 @@
     "hash": "183441922914",
     "bytes": 239847,
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01_nma__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01_nma__orm_d6a8beaa.128.ktx2": {
+    "hash": "d7f18e3ee442",
+    "bytes": 21407,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01_nma__orm_d6a8beaa.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01_nma__orm_d6a8beaa.256.ktx2": {
@@ -132771,6 +135345,12 @@
     "hash": "03a3c2d3ca7a",
     "bytes": 445303,
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01b_cs.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01b_cs.256.ktx2": {
+    "hash": "0a1941843ab6",
+    "bytes": 67487,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01b_cs.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_mtt_01_exterior_01b_cs.512.ktx2": {
@@ -132911,10 +135491,28 @@
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_cs.1024.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_cs.128.ktx2": {
+    "hash": "fc1c1975f30b",
+    "bytes": 21343,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_cs.256.ktx2": {
+    "hash": "289be7855c12",
+    "bytes": 81385,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_cs.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_cs.512.ktx2": {
     "hash": "17382b06962b",
     "bytes": 315087,
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_nam__normal.128.ktx2": {
+    "hash": "dd144b72d321",
+    "bytes": 18473,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_nam__normal.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_nam__normal.256.ktx2": {
@@ -132927,6 +135525,12 @@
     "hash": "a510df0429dd",
     "bytes": 205877,
     "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_nam__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_nam__orm_9224b574.128.ktx2": {
+    "hash": "eeb59dbc7e36",
+    "bytes": 21432,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_nam__orm_9224b574.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/second/tex/t_o_kas_addontree_01_detail_nam__orm_9224b574.256.ktx2": {
@@ -133907,6 +136511,12 @@
     "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_hcvwa9_turbotank_01_cs_01.1024.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_hcvwa9_turbotank_01_cs_01.256.ktx2": {
+    "hash": "bf7993e676e2",
+    "bytes": 62930,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_hcvwa9_turbotank_01_cs_01.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/kashyyyk/tex/t_hcvwa9_turbotank_01_cs_01.512.ktx2": {
     "hash": "1779c317f9ca",
     "bytes": 140100,
@@ -133947,6 +136557,12 @@
     "hash": "1d9d38994a19",
     "bytes": 140438,
     "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_hcvwa9_turbotank_01_cs_04.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_hcvwa9_turbotank_01_nam_01__normal.128.ktx2": {
+    "hash": "6dd886ad89ed",
+    "bytes": 19809,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_hcvwa9_turbotank_01_nam_01__normal.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/tex/t_hcvwa9_turbotank_01_nam_01__normal.256.ktx2": {
@@ -134999,10 +137615,22 @@
     "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformcommander_01_nam__orm_014f5a86.256.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_cs.256.ktx2": {
+    "hash": "58c1f22af259",
+    "bytes": 79767,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_cs.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_cs.512.ktx2": {
     "hash": "ffaea8ed04c8",
     "bytes": 297689,
     "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_nam__normal.128.ktx2": {
+    "hash": "dd9b817c90d6",
+    "bytes": 21768,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_nam__normal.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_nam__normal.256.ktx2": {
@@ -135015,6 +137643,12 @@
     "hash": "eb2e59213a80",
     "bytes": 326769,
     "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_nam__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_nam__orm_92c31048.128.ktx2": {
+    "hash": "57529a87ab1d",
+    "bytes": 18157,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_nam__orm_92c31048.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/tex/t_kas_platformsplinterwood_01_a_nam__orm_92c31048.256.ktx2": {
@@ -135779,10 +138413,28 @@
     "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_cs.1024.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_cs.128.ktx2": {
+    "hash": "fc1c1975f30b",
+    "bytes": 21343,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_cs.128.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_cs.256.ktx2": {
+    "hash": "289be7855c12",
+    "bytes": 81385,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_cs.256.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_cs.512.ktx2": {
     "hash": "17382b06962b",
     "bytes": 315087,
     "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_cs.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_nam__normal.128.ktx2": {
+    "hash": "dd144b72d321",
+    "bytes": 18473,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_nam__normal.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_nam__normal.256.ktx2": {
@@ -135795,6 +138447,12 @@
     "hash": "a510df0429dd",
     "bytes": 205877,
     "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_nam__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_nam__orm_9224b574.128.ktx2": {
+    "hash": "eeb59dbc7e36",
+    "bytes": 21432,
+    "from": "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_nam__orm_9224b574.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/kashyyyk/tex/t_o_kas_addontree_01_detail_nam__orm_9224b574.256.ktx2": {

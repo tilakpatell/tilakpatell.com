@@ -2,16 +2,16 @@
 
 From `s7/levels/kashyyyk_02` (Star Wars Battlefront II, 2017, EA DICE; used with permission on this non-commercial fan project). Written by `node scripts/bf2017-level.mjs s7/levels/kashyyyk_02 --world kashyyyk --district second --spot 1166 -271`; do not edit by hand.
 
-- 8017 instances in the arena (±1024 m), 495 beyond it (the horizon), 108 left out under the ground (an interior: its own pack, `--inside`), 159 cells of 128 m
-- 836 meshes (13 left out), 738 LOD files, 20.64 MB
+- 8017 instances in the arena (±1024 m), 495 beyond it (the horizon), 92 left out under the ground (an interior: its own pack, `--inside`), 159 cells of 128 m
+- 836 meshes (13 left out), 708 LOD files, 20.20 MB
 - the far list 0.24 MB; terrain near 4.11 MB, far 3.61 MB; the spot's ground 173.13 m in the game
-- textures missing from the bucket: 42
+- textures missing from the bucket: 0
 
 | | low | mid | high |
 |---|---|---|---|
-| drawn out to (radii: a 1 m thing, a 20 m one) | 27 (27 m, 540 m) | 79 (79 m, 1580 m) | 1000 (1000 m, 20000 m) |
+| drawn out to (radii: a 1 m thing, a 20 m one) | 41 (41 m, 820 m) | 118 (118 m, 2360 m) | 1000 (1000 m, 20000 m) |
 | meshes dropped (instances) | 0 (0) | 0 (0) | 0 (0) |
-| worst place: triangles, calls | 710k, 279 | 1346k, 342 | 2248k, 427 |
+| worst place: triangles, calls | 719k, 244 | 1347k, 316 | 2036k, 384 |
 | texture bytes (every map the level has) | 15.47 MB | 49.45 MB | 49.45 MB |
 
 ## The map's other parts

@@ -2,19 +2,19 @@
 
 From `levels/mp/endor_01` (Star Wars Battlefront II, 2017, EA DICE; used with permission on this non-commercial fan project). Written by `node scripts/bf2017-level.mjs levels/mp/endor_01 --world endor --district bunker --inside --spot 211.8 331`; do not edit by hand.
 
-- 4098 instances in the arena (±1024 m), 0 beyond it (the horizon), 12962 left out above the ground (the world outside: its own pack), 25 cells of 128 m
-- 689 meshes (3 left out), 877 LOD files, 18.52 MB
-- the far list 0.13 MB; terrain near 0.90 MB, far 0.12 MB; the spot's ground 283.72 m in the game
-- textures missing from the bucket: 9
+- 4087 instances in the arena (±1024 m), 0 beyond it (the horizon), 12960 left out above the ground (the world outside: its own pack), 25 cells of 128 m
+- 689 meshes (3 left out), 859 LOD files, 18.39 MB
+- the far list 0.12 MB; terrain near 0.90 MB, far 0.12 MB; the spot's ground 283.72 m in the game
+- textures missing from the bucket: 0
 
 | | low | mid | high |
 |---|---|---|---|
-| drawn out to (radii: a 1 m thing, a 20 m one) | 20 (20 m, 400 m) | 86 (86 m, 1720 m) | 1000 (1000 m, 20000 m) |
-| meshes dropped (instances) | 9 (46) | 0 (0) | 0 (0) |
-| worst place: triangles, calls | 281k, 315 | 591k, 448 | 773k, 555 |
+| drawn out to (radii: a 1 m thing, a 20 m one) | 20 (20 m, 400 m) | 148 (148 m, 2960 m) | 1000 (1000 m, 20000 m) |
+| meshes dropped (instances) | 7 (35) | 0 (0) | 0 (0) |
+| worst place: triangles, calls | 280k, 315 | 634k, 450 | 772k, 529 |
 | texture bytes (every map the level has) | 13.59 MB | 41.51 MB | 41.51 MB |
 
-Dropped on low: o_nab_oilsplatter_04 ×1, o_nab_oilsplatter_01 ×3, hangarsystem_decalarray_line_02 ×1, hangarsystem_decalarray_misc_03 ×1, o_nab_oilsplatter_03 ×8, o_nab_oilsplatter_02 ×9, dsi_hangarsystem_decalarray_corner_01_b ×12, hangarsystem_decalarray_line_01 ×6, hangarcablefloor_s_128_end_02 ×5
+Dropped on low: o_nab_oilsplatter_04 ×1, o_nab_oilsplatter_01 ×3, hangarsystem_decalarray_line_02 ×1, hangarsystem_decalarray_misc_03 ×1, o_nab_oilsplatter_03 ×8, o_nab_oilsplatter_02 ×9, dsi_hangarsystem_decalarray_corner_01_b ×12
 
 ## The map's other parts
 

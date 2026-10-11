@@ -2,19 +2,17 @@
 
 From `levels/mp/kashyyyk_01` (Star Wars Battlefront II, 2017, EA DICE; used with permission on this non-commercial fan project). Written by `node scripts/bf2017-level.mjs levels/mp/kashyyyk_01 --world kashyyyk --spot 260 -211`; do not edit by hand.
 
-- 9679 instances in the arena (±1024 m), 1712 beyond it (the horizon), 100 left out under the ground (an interior: its own pack, `--inside`), 148 cells of 128 m
-- 393 meshes (7 left out), 912 LOD files, 27.23 MB
+- 9679 instances in the arena (±1024 m), 1712 beyond it (the horizon), 85 left out under the ground (an interior: its own pack, `--inside`), 148 cells of 128 m
+- 393 meshes (7 left out), 882 LOD files, 26.80 MB
 - the far list 0.30 MB; terrain near 2.93 MB, far 3.61 MB; the spot's ground 134.49 m in the game
-- textures missing from the bucket: 42
+- textures missing from the bucket: 0
 
 | | low | mid | high |
 |---|---|---|---|
-| drawn out to (radii: a 1 m thing, a 20 m one) | 20 (20 m, 400 m) | 39 (39 m, 780 m) | 303 (303 m, 6060 m) |
-| meshes dropped (instances) | 23 (759) | 0 (0) | 0 (0) |
-| worst place: triangles, calls | 719k, 307 | 1341k, 410 | 2698k, 522 |
+| drawn out to (radii: a 1 m thing, a 20 m one) | 24 (24 m, 480 m) | 50 (50 m, 1000 m) | 1000 (1000 m, 20000 m) |
+| meshes dropped (instances) | 0 (0) | 0 (0) | 0 (0) |
+| worst place: triangles, calls | 693k, 293 | 1332k, 376 | 2606k, 484 |
 | texture bytes (every map the level has) | 20.28 MB | 66.05 MB | 66.05 MB |
-
-Dropped on low: o_kashyyykbase_decal_foam_01 ×52, o_nab_sackflat_01 ×5, beachbase_groundscrub_05 ×3, o_kas_shieldtribal_01 ×31, kashyyykbase_decalplane_01 ×55, square_shadow_01 ×24, o_kas_antenna_01_b ×12, hcvwa9_turbotank_hatch_01 ×16, o_kas_antenna_01_d ×12, o_kas_objectplatform_03 ×43, o_kas_pipeplatform_01_detail ×24, wreckn99_part_02 ×39, crate_02_s_dark ×232, wreckn99_part_05 ×19, o_kas_platformcommander_01 ×7, o_kas_ramp_d_01 ×1, o_kas_siloaddontree_s_01_a ×62, bd_fogbillboard_01 ×2, kashyyykbase_wateralgae_01_cluster_04 ×5, venator_int_ramp_01 ×1, o_kas_antennaaddontree_l_01_a ×108, o_kas_platformaddontree_damaged_s_01 ×3, vehicle_ground_mtt_static_donotuse ×3
 
 ## The map's other parts
 
