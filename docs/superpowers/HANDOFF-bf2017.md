@@ -2,6 +2,17 @@
 
 The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-design.md` (the pipeline: fetch, import, the rig, the phases; PR #802) and `docs/superpowers/specs/2026-10-10-bf2017-levels-lighting-sabers-design.md` (the levels, the light, the planet skins, the sabers, and the review of the first design). The bucket’s numbers, `docs/superpowers/evidence/bf2017-assets/inventory.md`; the drop and its credit, `docs/assets/battlefront-2017.md`.
 
+## The galaxy in space on the game (2026-10-11, afternoon)
+
+`docs/superpowers/specs/2026-10-11-bf2017-galaxy-in-space-design.md`: everything the galaxy draws outside the surfaces (the hub and its map, the planets from orbit, space and travel, the fleet and the war, the starfighter mode, the HUD) on the game’s assets and in the game’s picture. Three lanes, one plan each: **S1** the fleet on the game’s hulls (`2026-10-11-bf2017-space-laneS1-fleet.md`, from `main`), **S2** space in the game’s picture (`…-laneS2-picture.md`, when lane T2’s #912 is on `main`), **S3** the map and the HUD (`…-laneS3-map-hud.md`, from `main`); lane E5 (the fifth design’s) places the six worlds the galaxy lacks. Each lane writes its section below and its row here when it opens its PR.
+
+| lane | branch | session | PR |
+| --- | --- | --- | --- |
+| S1 | `claude/bf2017-s1-fleet` | | |
+| S2 | `claude/bf2017-s2-space-picture` | | |
+| S3 | `claude/bf2017-s3-map-hud` | | |
+| E5 | `claude/bf2017-e5-new-systems` | `session_01QrcPrerTbhxxZoKTnYgFQA` (spawned 2026-10-11 16:36 UTC from `main`) | |
+
 ## The picture-everywhere design: every world on the node renderer, every layer on (2026-10-11, early)
 
 `docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md`, with plans `docs/superpowers/plans/2026-10-11-bf2017-picture-lane{T2-flip,P-picture,D2-detail,U2-M2-G}.md` and the decision `docs/decisions/2026-10-11-the-node-renderer-above-low.md`; §7 (added after the owner’s second ask: AAA, the compute, the desktop and the stream) weighs a WebGPU post-processing blueprint against the stack and adds lanes W and R2. Written from four readings of `origin/main` at `00843045b` (#890) and the game’s own frames; the design is PR #905. The owner asked that every Star Wars world look like the 2017 game as Frostbite renders it, with every detail, on one renderer (the best-looking one, from above the medium setting, the setting checked), every layer on, every gate green.
