@@ -47,6 +47,11 @@ describe('the Battlefront rulebooks', () => {
     expect(checkSources(rb[f])).toEqual([]);
   });
 
+  // (the bots' names, the creatures and the squadron trees, beside ai.json: read by the bots, the living world and the fighters alone)
+  it.each(['ai.names', 'ai.creatures', 'ai.squadron'])('%s names the source of every number', (f) => {
+    expect(checkSources(read(f))).toEqual([]);
+  });
+
   it('a hand file says so', () => {
     expect(rb.points.source).toBe('hand');
     expect(rb['maps/hoth.stages'].source).toBe('hand');

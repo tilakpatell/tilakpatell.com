@@ -5,7 +5,9 @@
 // s. A near miss fills the target's suppression by the shooter's
 // `SuppressionValue` and it fades over the target's `SuppressionTime`; a
 // hit or a near miss tells the target where the shot came from; a first
-// sight of an enemy is passed to the squad as an alert. Pure.
+// sight of an enemy is passed to the squad as an alert. Every bot has a name
+// from the game's lists (`names.js`, by its team's faction and the sim's
+// `namesMode`, Skirmish by default), kept by its id across redeploys. Pure.
 //
 //   createBrains(sim) → { brains: Map, squads, taken, add(s), remove(id) }
 //   addBrain(sim, s) (a bot deployed after the start)
@@ -18,14 +20,25 @@ import { lineClear, shields } from '../nav.js';
 import { chestOf, eyeOf } from '../soldier.js';
 import { act, createBrain, think } from './soldierBrain.js';
 import { alert, createSquads, deliver, squadOf, update } from './squad.js';
+import { factionOf, nameFor } from './names.js';
 
 // The suppression a player's shots give, with no tactics row of their own: the Rebel soldier's.
 const PLAYER_TACTICS = 'AIRebelSoldierTactics';
 
 const toV = (a) => ({ x: a[0], y: a[1], z: a[2] });
 
+// a bot's name, the same each time it deploys (its own seeded draw: the battle's `rand` is untouched)
+function nameOf(sim, s) {
+  sim.botNames ??= new Map();
+  sim.namesTaken ??= new Set();
+  if (!sim.botNames.has(s.id)) sim.botNames.set(s.id, nameFor(factionOf(sim.teams?.[s.team], sim.era), sim.namesMode ?? 'skirmish', sim.seed * 2 + s.team, sim.namesTaken));
+  return sim.botNames.get(s.id);
+}
+
 function brainFor(sim, ai, s) {
-  const brain = createBrain(s, { ai, rand: sim.rand, aimScale: sim.aimScale ?? 1 });
+  s.name = nameOf(sim, s);
+  const brain = createBrain(s, { ai, rand: sim.rand, aimScale: sim.aimScale ?? 1, difficulty: sim.difficulty ?? null, pve: !!sim.pve });
+  brain.name = s.name;
   brain.nextSense = sim.time + sim.rand() * SENSE;
   brain.nextThink = sim.time + sim.rand() * THINK;
   s.brain = brain;
@@ -82,6 +95,7 @@ function worldFor(sim, b, s) {
     taken: sim.brains.taken,
     muzzle: muzzleOf,
     shoot: (who, aim) => shoot(sim, who, aim),
+    who: (id) => sim.entities.get(id) ?? null,
   };
 }
 
