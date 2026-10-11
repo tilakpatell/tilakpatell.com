@@ -1,16 +1,22 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import * as THREE from 'three';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import PUBLISHED from '../../data/galaxyAssets.json';
 import { hitRadius } from '../universe/hunterRules';
 import { BY_SPAN, fitScale } from '../universe/shipFit';
 import { SHIP_MODELS } from '../universe/shipModels';
 import { BUILT_KINDS } from '../universe/trafficModels';
 import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { KINDS } from './hunted';
-import { ARRIVAL, HD_MAPS, HQ, HUNTER_GLB, LOD_FAR, LOD_NEAR, MODELS, STAND_IN, createModels, lodLevels, lodUrl, modelsAt, withHq } from './models';
+import { ARRIVAL, HD_MAPS, HQ, HULL, HUNTER_GLB, LIGHT_CUTS, LOD_FAR, LOD_NEAR, MADE, MODELS, STAND_IN, ULTRA, createModels, lodLevels, lodUrl, modelsAt, withHq } from './models';
 import { SYSTEMS, kindsIn } from './systems';
 
 const at = (path) => new URL(`../../../public${path}`, import.meta.url);
+// a file the site has: in public/, or published to the bucket (src/data/galaxyAssets.json: lane V's native cuts, the kits' ultra cuts)
+const onSite = (path) => existsSync(at(path)) || Boolean(PUBLISHED[path.replace(/^\//, '')]);
+const bytesOf = (path) => (existsSync(at(path)) ? statSync(at(path)).size : PUBLISHED[path.replace(/^\//, '')].bytes);
+// (a published file read here only when a checkout has it: the box tests skip it otherwise)
+const here = (path) => existsSync(at(path));
 
 // a GLB's JSON chunk
 const jsonOf = (url) => {
@@ -65,18 +71,66 @@ const canvases = () => {
 };
 
 describe('the galaxy’s models', () => {
-  it('are each in the site', () => {
-    for (const [kind, m] of Object.entries({ ...MODELS, ...HUNTER_GLB })) expect(existsSync(at(m.url)), `${kind}: ${m.url}`).toBe(true);
+  it('are each in the site, or published to the bucket', () => {
+    for (const [kind, m] of Object.entries({ ...MODELS, ...HUNTER_GLB })) expect(onSite(m.url), `${kind}: ${m.url}`).toBe(true);
+    for (const detail of ['low', 'mid', 'high', 'ultra']) for (const [kind, m] of Object.entries(modelsAt(detail))) expect(onSite(m.url), `${detail} ${kind}: ${m.url}`).toBe(true);
   });
 
-  it('has the ten ships brought in (from Sketchfab; the Munificent and the Invisible Hand since made again with Meshy), each turned to fly nose first, and the Razor Crest that walks the surfaces', () => {
+  // (lane S1, the galaxy-in-space design's decision 1: where the game has the
+  // hull, the galaxy draws it. MODELS is this device's table, a test's at
+  // ultra; the plain rows are a desktop's, modelsAt('high'))
+  describe('the game’s hulls', () => {
+    const HIGH = modelsAt('high');
+
+    it('draws the war’s capitals from the space levels’ kits at the fleet’s cut, bow to +z, and the Lucrehulk and the Arquitens as before', () => {
+      for (const kind of ['destroyer', 'moncal', 'venator', 'corvette', 'providence', 'lucrehulk']) expect(HIGH[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: 0 });
+      expect(HIGH.lightcruiser).toEqual({ url: '/models/galaxy/lightcruiser.glb', nose: -Math.PI / 2 });
+      // (the universe map keeps its own Star Destroyer and Venator: the galaxy's rows are the game's)
+      for (const detail of ['low', 'mid', 'high', 'ultra']) {
+        expect(modelsAt(detail).destroyer.url, detail).not.toBe('/models/universe/star-destroyer.glb');
+        expect(modelsAt(detail).venator.url, detail).not.toBe('/models/universe/venator.glb');
+      }
+    });
+
+    it('flies the X-wing, the TIE interceptor, the Falcon, Slave I, the Scimitar and the TIE striker as lane V imported them, native', () => {
+      const native = { xwing: 'xwing', interceptor: 'tieinterceptor', falcon: 'falcon', slave1: 'slave1', scimitar: 'scimitar', tiestriker: 'tiestriker' };
+      for (const [kind, file] of Object.entries(native)) {
+        expect(HIGH[kind], kind).toEqual({ url: `/models/galaxy/surface/${file}.glb`, nose: 0 });
+        expect(LIGHT_CUTS[kind], kind).toBe(`/models/galaxy/surface/${file}.lod1.glb`);
+        expect(onSite(LIGHT_CUTS[kind]), kind).toBe(true);
+        expect(bytesOf(LIGHT_CUTS[kind]), kind).toBeLessThan(bytesOf(HIGH[kind].url));
+      }
+      expect(MADE).toEqual({}); // (the gen3d X-wing retired from the galaxy)
+      expect(HUNTER_GLB.xwing).toEqual({ ...MODELS.xwing, built: true });
+      expect(HUNTER_GLB.redleader.url).toBe(MODELS.xwing.url);
+    });
+
+    it('draws a fighter’s light cut on a phone or a laptop, the plain one on a desktop, the same far copy either way', () => {
+      for (const detail of ['low', 'mid']) for (const kind of Object.keys(LIGHT_CUTS)) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...HIGH[kind], url: LIGHT_CUTS[kind] });
+      for (const detail of ['high', 'ultra']) for (const kind of Object.keys(LIGHT_CUTS)) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(HIGH[kind].url);
+      for (const detail of ['low', 'high']) expect(lodUrl('xwing', modelsAt(detail))).toBe('/models/galaxy/lod/xwing.glb');
+      // (a table laid over kinds the models have, and no other)
+      expect(withHq({ tie: { url: '/t.glb', nose: 0 } }, 'low')).toEqual({ tie: { url: '/t.glb', nose: 0 } });
+    });
+
+    it('draws the kits’ ultra cuts on the strongest graphics alone, the same far copies', () => {
+      for (const kind of ['destroyer', 'moncal', 'venator', 'corvette', 'providence']) {
+        expect(ULTRA[kind], kind).toBe(`/models/galaxy/${kind}.ultra.glb`);
+        expect(modelsAt('ultra')[kind], kind).toEqual({ ...HIGH[kind], url: ULTRA[kind] });
+        for (const detail of ['low', 'mid', 'high']) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(HIGH[kind].url);
+        expect(lodUrl(kind, modelsAt('ultra')), kind).toBe(`/models/galaxy/lod/${kind}.glb`);
+      }
+    });
+  });
+
+  it('has the ten ships brought in (from Sketchfab; the Munificent since made again with Meshy, the Providence the game’s), each turned to fly nose first, and the Razor Crest that walks the surfaces', () => {
     const noses = { tie: 0, tiebomber: 0, tieadvanced: 0, shuttle: 0, lightcruiser: -Math.PI / 2, gozanti: 0, munificent: 0, providence: 0, nubian: 0, ghost: 0 };
     for (const [kind, nose] of Object.entries(noses)) {
-      expect(MODELS[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose });
-      expect(existsSync(at(MODELS[kind].url)), kind).toBe(true);
+      expect(modelsAt('high')[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose }); // (a desktop's rows: the Providence's at ultra is its ultra cut)
+      expect(onSite(MODELS[kind].url), kind).toBe(true);
     }
     expect(MODELS.razorcrest).toEqual({ url: '/models/galaxy/surface/razorcrest.glb', nose: 0 });
-    expect(existsSync(at(MODELS.razorcrest.url))).toBe(true);
+    expect(onSite(MODELS.razorcrest.url)).toBe(true);
   });
 
   it('flies the Sketchfab TIEs as the hunters, each built until it is here', () => {
@@ -183,13 +237,13 @@ describe('the galaxy’s models', () => {
   });
 
   describe('the capitals’ close-up cut', () => {
-    const base = { destroyer: { url: '/models/universe/star-destroyer.glb', nose: Math.PI }, xwing: { url: '/x.glb', nose: 0 } };
+    const base = { nebulon: { url: '/models/galaxy/nebulon.glb', nose: 0 }, tie: { url: '/t.glb', nose: 0 } };
 
     it('is what a high or ultra device loads, in the capitals that have one', () => {
       for (const detail of ['high', 'ultra']) {
         const m = withHq(base, detail);
-        expect(m.destroyer).toEqual({ url: '/models/galaxy/hq/destroyer.glb', nose: HQ.destroyer.nose, hq: true });
-        expect(m.xwing).toBe(base.xwing);
+        expect(m.nebulon).toEqual({ url: '/models/galaxy/hq/nebulon.glb', nose: HQ.nebulon.nose, hq: true });
+        expect(m.tie).toBe(base.tie);
       }
     });
 
@@ -198,8 +252,8 @@ describe('the galaxy’s models', () => {
     });
 
     it('has a far-off copy of its own (the old one’s would sit wrong on the new hull)', () => {
-      expect(lodUrl('destroyer', withHq(base, 'high'))).toBe('/models/galaxy/lod/hq/destroyer.glb');
-      expect(lodUrl('destroyer', base)).toBe('/models/galaxy/lod/destroyer.glb');
+      expect(lodUrl('nebulon', withHq(base, 'high'))).toBe('/models/galaxy/lod/hq/nebulon.glb');
+      expect(lodUrl('nebulon', base)).toBe('/models/galaxy/lod/nebulon.glb');
     });
 
     it('is in the site, with its far-off copy, for each of them', () => {
@@ -212,55 +266,58 @@ describe('the galaxy’s models', () => {
     });
 
     it('is what modelsAt gives a desktop, and not a laptop', () => {
-      expect(modelsAt('high').destroyer.url).toBe(HQ.destroyer.url);
-      expect(modelsAt('mid').destroyer.url).not.toBe(HQ.destroyer.url);
+      expect(modelsAt('high').nebulon.url).toBe(HQ.nebulon.url);
+      expect(modelsAt('mid').nebulon.url).not.toBe(HQ.nebulon.url);
     });
   });
 
   describe('what every arrival loads', () => {
-    it('flies the galaxy’s own X-wings in the light cut and its Meshy interceptors, whatever the device (the player’s X-wing is a model of its own)', () => {
-      expect(MODELS.xwing.url).toMatch(/\/models\/gen3d\/x-wing\.lo\.glb$/);
-      expect(MODELS.interceptor.url).toBe('/models/galaxy/interceptor.glb');
-      for (const detail of ['low', 'mid', 'high', 'ultra']) for (const kind of ['xwing', 'interceptor']) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(MODELS[kind].url);
+    it('flies the game’s X-wings and TIE interceptors, the player’s X-wing the same file on a desktop (universe/shipModels.js)', () => {
+      expect(modelsAt('high').xwing.url).toBe('/models/galaxy/surface/xwing.glb');
+      expect(modelsAt('high').interceptor.url).toBe('/models/galaxy/surface/tieinterceptor.glb');
       expect(HUNTER_GLB.xwing.url).toBe(MODELS.xwing.url);
       expect(HUNTER_GLB.redleader.url).toBe(MODELS.xwing.url);
       expect(HUNTER_GLB.interceptor.url).toBe(MODELS.interceptor.url);
-      expect(SHIP_MODELS.xwing).toBe('/models/sketchfab/xwing-hd.glb');
+      expect(SHIP_MODELS.xwing).toBe(modelsAt('high').xwing.url);
     });
 
     // (the galaxy's models come to about 8 MB, specs/2026-10-06-galaxy-phases-design.md;
-    // these four were 7.7 MB of it on a desktop when the X-wing and the interceptor
-    // came in the 120k-triangle cut, and are 2.3 MB in the light one)
-    it('is the Star Destroyer, the corvette, the X-wing and the interceptor, with their far-off copies, under 3 MB on any device', () => {
+    // these four were 2.3 MB on any device as the gen3d X-wing's and the
+    // Meshy interceptor's light cuts over the universe map's 473 KB Star
+    // Destroyer. Lane S1 (the galaxy-in-space design, decision 1), measured
+    // 2026-10-11 (`_source`: the files and src/data/galaxyAssets.json): the
+    // Star Destroyer's kit at the fleet's cut is 2,049 KB (50 maps at 256),
+    // so a phone or a laptop with the game's light cuts comes to 3.76 MB,
+    // held under 4; a desktop takes the plain cuts (the X-wing's 3,147 KB,
+    // the interceptor's 2,164), 7.86 MB, held under 9, from the bucket's CDN
+    // with a year's cache; at ultra the Star Destroyer's 21.6 MB ultra cut
+    // and the corvette's 1.9 MB besides, 29.1 MB, held under 40)
+    it('is the Star Destroyer, the corvette, the X-wing and the interceptor, with their far-off copies, under 4 MB on a phone or a laptop, 9 on a desktop, 40 at ultra', () => {
       expect(ARRIVAL).toEqual(['destroyer', 'corvette', 'xwing', 'interceptor']);
-      for (const detail of ['low', 'mid', 'high', 'ultra']) {
+      for (const [detail, cap] of [['low', 4e6], ['mid', 4e6], ['high', 9e6], ['ultra', 40e6]]) {
         const models = modelsAt(detail);
-        const bytes = ARRIVAL.flatMap((k) => [models[k].url, lodUrl(k, models)]).reduce((n, url) => n + statSync(at(url)).size, 0);
-        expect(bytes, detail).toBeLessThan(3e6);
+        const bytes = ARRIVAL.flatMap((k) => [models[k].url, lodUrl(k, models)]).reduce((n, url) => n + bytesOf(url), 0);
+        expect(bytes, detail).toBeLessThan(cap);
       }
     });
   });
 
   // (scripts/meshy-galaxy-library.mjs: the galaxy's worst models made again,
-  // each over its old file or beside the universe map's, and each squeezed to
-  // its kind's budget: a fighter 450 KB, a capital 900 KB)
+  // each over its old file, and each squeezed to its kind's budget: a capital
+  // 900 KB. The corvette, the interceptor, the Providence, Slave I, the
+  // Scimitar and the TIE striker were Meshy's too, and are the game's since,
+  // lane S1: their Meshy credits retired with the files)
   describe('the worst ones made again with Meshy', () => {
-    // (`flown`: the hunters, wingmen and set pieces fly it too, galaxy/scene.js's fleet)
     const REMADE = {
       interdictor: { url: '/models/galaxy/interdictor.glb', kb: 900 },
-      corvette: { url: '/models/galaxy/corvette.glb', kb: 500, flown: true }, // (the galaxy's own: the universe map keeps cr90.glb)
-      interceptor: { url: '/models/galaxy/interceptor.glb', kb: 450, flown: true }, // (over the gen3d one made from the universe map's)
       munificent: { url: '/models/galaxy/munificent.glb', kb: 900 },
-      providence: { url: '/models/galaxy/providence.glb', kb: 900 },
-      slave1: { url: '/models/universe/slave1.glb', kb: 500 }, // (over the universe map's Meshy one, which the galaxy flies too)
     };
     const games = JSON.parse(readFileSync(at('/games/credits.json'), 'utf8'));
-    const sketchfab = JSON.parse(readFileSync(new URL('../../data/modelCredits.json', import.meta.url), 'utf8'));
+    const credits = JSON.parse(readFileSync(new URL('../../data/modelCredits.json', import.meta.url), 'utf8'));
 
     it('are what the galaxy loads for each kind, inside its budget', () => {
-      for (const [kind, { url, kb, flown }] of Object.entries(REMADE)) {
+      for (const [kind, { url, kb }] of Object.entries(REMADE)) {
         expect(MODELS[kind]?.url, kind).toBe(url);
-        if (flown) expect(HUNTER_GLB[kind], kind).toEqual({ ...MODELS[kind], built: true });
         expect(statSync(at(url)).size / 1024, kind).toBeLessThan(kb);
       }
     });
@@ -269,8 +326,20 @@ describe('the galaxy’s models', () => {
       for (const { url } of Object.values(REMADE)) {
         const name = url.split('/').pop().replace(/\.glb$/, '');
         expect(games[`meshy/${name}`]?.source, name).toBe('https://www.meshy.ai');
-        expect(Object.values(sketchfab).map((m) => m.file), name).not.toContain(url);
+        expect(Object.values(credits).map((m) => m.file), name).not.toContain(url);
       }
+    });
+
+    it('credit the game, not Meshy or Sketchfab, for what the game’s files replaced, and keep no file of theirs', () => {
+      for (const name of ['corvette', 'interceptor', 'providence', 'scimitar', 'tiestriker']) expect(games[`meshy/${name}`], name).toBeUndefined();
+      for (const file of ['/models/galaxy/interceptor.glb', '/models/galaxy/scimitar.glb', '/models/galaxy/tiestriker.glb', '/models/galaxy/hq/destroyer.glb']) expect(existsSync(at(file)), file).toBe(false);
+      for (const key of ['galaxy-destroyer', 'galaxy-moncal', 'galaxy-venator', 'galaxy-corvette', 'galaxy-providence', 'galaxy-nebulonhq', 'surface-xwing', 'surface-tieinterceptor', 'surface-falcon', 'surface-slave1', 'surface-scimitar', 'surface-tiestriker']) {
+        expect(credits[key]?.author, key).toBe('EA DICE');
+        expect(credits[key].also, key).toContain('galaxy'); // (the galaxy's panel shows it)
+      }
+      // (the universe map's own Star Destroyer is no longer drawn here; Daniel Andersson's MC80 and close-up ships are the game's rows since)
+      expect(credits['star-destroyer'].also ?? []).not.toContain('galaxy');
+      for (const key of ['galaxy-moncal', 'galaxy-nebulonhq']) expect(credits[key].author, key).not.toBe('Daniel');
     });
   });
 
@@ -311,6 +380,9 @@ describe('the galaxy’s models', () => {
         expect(statSync(file).size, kind).toBeLessThan(120 * 1024);
         expect(primitives(file), kind).toBe(1);
       }
+      // (the kits' plain and ultra cuts and the fighters' light and plain cuts
+      // share one far copy a kind: the same hull)
+      for (const kind of [...Object.keys(ULTRA), ...Object.keys(LIGHT_CUTS)]) for (const detail of ['low', 'high', 'ultra']) expect(lodUrl(kind, modelsAt(detail)), `${detail} ${kind}`).toBe(`/models/galaxy/lod/${kind}.glb`);
     });
 
     it('steps down at 45 and 900 times its size', () => {
@@ -377,6 +449,33 @@ describe('the galaxy’s models', () => {
     });
   });
 
+  describe('a bare hull', () => {
+    beforeEach(canvases);
+    afterEach(() => vi.unstubAllGlobals());
+
+    // (the MC80's main hull: its maps are bound in its shader graph, which the drop's GLB does not name)
+    it('is drawn the game’s hull grey, as the space levels draw theirs, where the export gave it no colour map', async () => {
+      const load = async () => {
+        const scene = new THREE.Group();
+        scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 4), new THREE.MeshStandardMaterial({ name: 'MC_80_Met', color: 0xffffff, metalness: 0, roughness: 1 })));
+        scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ name: 'M_MC80_Engine', color: 0xffffff, map: new THREE.Texture() })));
+        scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ name: 'tinted', color: 0xa62a1f })));
+        return { scene, animations: [] };
+      };
+      const models = createModels({ load });
+      const slot = models.slot('moncal', 1);
+      for (let i = 0; i < 5; i++) await settle();
+      const byName = {};
+      slot.inner.traverse((o) => o.isMesh && (byName[o.material.name] = o.material));
+      expect(byName.MC_80_Met.color.getHex()).toBe(HULL.getHex());
+      expect(byName.MC_80_Met.metalness).toBeGreaterThanOrEqual(0.45);
+      expect(byName.MC_80_Met.roughness).toBeLessThanOrEqual(0.6);
+      expect(byName.M_MC80_Engine.color.getHex()).toBe(0xffffff); // (a mapped one as it comes)
+      expect(byName.tinted.color.getHex()).toBe(0xa62a1f); // (a coloured one too)
+      models.dispose();
+    });
+  });
+
   describe('fitted by length', () => {
     beforeEach(canvases);
     afterEach(() => vi.unstubAllGlobals());
@@ -430,19 +529,22 @@ describe('the galaxy’s models', () => {
     });
 
     it('turns no ship it fits by length so that it is more than twice as wide or tall as it is long (as a nose turned the wrong way would be)', () => {
-      for (const models of [modelsAt('mid'), modelsAt('high'), HUNTER_GLB]) {
+      let read = 0;
+      for (const models of [modelsAt('mid'), modelsAt('high'), modelsAt('ultra'), HUNTER_GLB]) {
         for (const [kind, def] of Object.entries(models)) {
-          if (BY_SPAN.has(kind)) continue;
+          if (BY_SPAN.has(kind) || !here(def.url)) continue; // (a published file is measured where the checkout has it)
+          read++;
           const s = turnedBox(def);
           expect(Math.max(s.x, s.y, s.z) / s.z, `${kind}: ${def.url}`).toBeLessThanOrEqual(2);
         }
       }
+      expect(read).toBeGreaterThan(60); // (the committed fleet at least: the kits, the TIEs, the Sketchfab ships)
     });
 
     it('keeps every hunter’s hit radius round its widest side, loaded or built', () => {
       const built = new Set([...BUILT_KINDS, ...GALAXY_KINDS]);
       for (const [kind, type] of Object.entries(KINDS)) {
-        const boxes = HUNTER_GLB[kind] ? [turnedBox(HUNTER_GLB[kind])] : [];
+        const boxes = HUNTER_GLB[kind] && here(HUNTER_GLB[kind].url) ? [turnedBox(HUNTER_GLB[kind])] : [];
         if (built.has(kind)) {
           const m = buildGalaxyShip(kind);
           boxes.push(m.size.clone());

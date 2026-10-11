@@ -1,9 +1,12 @@
 // The galaxy's ships and stations as the set pieces place them: the models
-// that load (the Star Destroyer, the corvette, the X-wing, the interceptor,
-// Slave I, the Republic's Venator, the Millennium Falcon, the Death Star, and
-// the galaxy's own from Sketchfab: the Rebellion's cruisers and fighters, the
-// Executor, the Separatists' and the Republic's ships) and the ones built in
-// code (galaxy/fleet.js: everything else). Each kind is made once, its first
+// that load (Battlefront II (2017)'s where the game has the ship, lane S1 of
+// the galaxy-in-space design: the capitals from the space levels' kits
+// (scripts/bf2017-fleet.mjs), the fighters, the Falcon and Slave I as lane V
+// imported them (surface/), the Death Star, and the galaxy's own from
+// Sketchfab and Meshy for what the game has no model of: the Executor, the
+// Acclamator, the Gozanti, the Lambda shuttle, the Coreship, the B-wing, the
+// Ghost, the IG-2000, the Delta-7, the Nubian, the Munificent, the
+// Interdictor) and the ones built in code (galaxy/fleet.js: everything else). Each kind is made once, its first
 // copy kept as a template, and every ship of that kind after it is a copy
 // sharing its geometry and materials (so the four Star Destroyers over Hoth
 // cost one build). A kind that loads
@@ -32,10 +35,21 @@ import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 // which take over from the ones built in code
 export const MODELS = {
   ...Object.fromEntries(Object.entries(GLB).map(([k, d]) => [k, { url: d.url, nose: d.nose }])),
-  venator: { url: '/models/universe/venator.glb', nose: Math.PI / 2 },
-  falcon: { url: '/models/universe/falcon.glb', nose: -Math.PI / 2 },
-  deathstar: { url: '/models/universe/death-star.glb', nose: 0 },
+  // the war's capitals from the game's space levels, each its kit at the
+  // fleet's cut, written bow to +z (scripts/bf2017-fleet.mjs's `space` rows;
+  // the universe map keeps its own Star Destroyer and Venator)
+  destroyer: { url: '/models/galaxy/destroyer.glb', nose: 0 },
+  venator: { url: '/models/galaxy/venator.glb', nose: 0 },
   moncal: { url: '/models/galaxy/moncal.glb', nose: 0 },
+  // the game's fighters as lane V imported them, native (surface/: facing +z);
+  // Slave I stands as it lands, the way it flies here (shipFit.js's BY_SPAN)
+  xwing: { url: '/models/galaxy/surface/xwing.glb', nose: 0 },
+  interceptor: { url: '/models/galaxy/surface/tieinterceptor.glb', nose: 0 },
+  falcon: { url: '/models/galaxy/surface/falcon.glb', nose: 0 },
+  slave1: { url: '/models/galaxy/surface/slave1.glb', nose: 0 },
+  scimitar: { url: '/models/galaxy/surface/scimitar.glb', nose: 0 },
+  tiestriker: { url: '/models/galaxy/surface/tiestriker.glb', nose: 0 },
+  deathstar: { url: '/models/universe/death-star.glb', nose: 0 },
   nebulon: { url: '/models/galaxy/nebulon.glb', nose: 0 },
   awing: { url: '/models/galaxy/awing.glb', nose: 0 },
   ywing: { url: '/models/galaxy/ywing.glb', nose: 0 },
@@ -52,7 +66,6 @@ export const MODELS = {
   lucrehulk: { url: '/models/galaxy/lucrehulk.glb', nose: 0 },
   coreship: { url: '/models/galaxy/coreship.glb', nose: 0 },
   munificent: { url: '/models/galaxy/munificent.glb', nose: 0 },
-  providence: { url: '/models/galaxy/providence.glb', nose: 0 },
   vulture: { url: '/models/galaxy/vulture.glb', nose: Math.PI },
   trifighter: { url: '/models/galaxy/trifighter.glb', nose: 0 },
   acclamator: { url: '/models/galaxy/acclamator.glb', nose: 0 },
@@ -78,17 +91,16 @@ export const MODELS = {
   // and the ones made with Meshy from Wookieepedia's picture of each
   // (scripts/meshy-galaxy-library.mjs), every one come nose to -x: the
   // Hound's Tooth, the Punishing One, the Hammerhead and the Gauntlet,
-  // which were built in code; and the Twilight, the Scimitar, the TIE
-  // Defender, the TIE Striker, the V-wing, the Eta-2, the Hyena, the
-  // Sentinel, the Zeta, the Fang and the Naboo yacht, for the systems to fly
+  // which were built in code; and the Twilight, the TIE Defender, the
+  // Eta-2, the Sentinel, the Zeta, the Fang and the Naboo yacht, for the
+  // systems to fly (the Scimitar and the TIE striker above are the game's
+  // since, as the V-wing and the Hyena are: scripts/bf2017-fleet.mjs)
   houndstooth: { url: '/models/galaxy/houndstooth.glb', nose: Math.PI / 2 },
   punishingone: { url: '/models/galaxy/punishingone.glb', nose: Math.PI / 2 },
   hammerhead: { url: '/models/galaxy/hammerhead.glb', nose: Math.PI / 2 },
   gauntlet: { url: '/models/galaxy/gauntlet.glb', nose: Math.PI / 2 },
   twilight: { url: '/models/galaxy/twilight.glb', nose: Math.PI / 2 },
-  scimitar: { url: '/models/galaxy/scimitar.glb', nose: Math.PI / 2 },
   tiedefender: { url: '/models/galaxy/tiedefender.glb', nose: Math.PI / 2 },
-  tiestriker: { url: '/models/galaxy/tiestriker.glb', nose: Math.PI / 2 },
   vwing: { url: '/models/galaxy/vwing.glb', nose: Math.PI / 2 },
   eta2: { url: '/models/galaxy/eta2.glb', nose: Math.PI / 2 },
   hyena: { url: '/models/galaxy/hyena.glb', nose: Math.PI / 2 },
@@ -96,14 +108,12 @@ export const MODELS = {
   zeta: { url: '/models/galaxy/zeta.glb', nose: Math.PI / 2 },
   fang: { url: '/models/galaxy/fang.glb', nose: Math.PI / 2 },
   naboocruiser: { url: '/models/galaxy/naboocruiser.glb', nose: Math.PI / 2 },
-  // the universe map's corvette made again for the galaxy, where one flies
-  // close by in every Rebel line (its own file: the universe map keeps the
-  // lighter cr90.glb for its traffic), turned nose to +z in the making
+  // the galaxy's CR90 corvette and Providence, the game's (the space
+  // levels' corvettecr90_01 and providenceclassdreadnaught_01 at the fleet's
+  // cut, bow to +z: scripts/bf2017-fleet.mjs; the universe map keeps the
+  // lighter cr90.glb for its traffic)
   corvette: { url: '/models/galaxy/corvette.glb', nose: 0 },
-  // and its TIE interceptor, out of a picture of the real ship (the made one
-  // below, from the universe map's own model's render, came out lumpy and
-  // grey, and at 746 KB weighed more than this one does)
-  interceptor: { url: '/models/galaxy/interceptor.glb', nose: 0 },
+  providence: { url: '/models/galaxy/providence.glb', nose: 0 },
   // the universe map's wars' flagships (scripts/meshy-war.mjs: Rick and
   // Morty's from the show's own pictures, Breaking Bad's from words)
   councildread: { url: '/models/universe/war/councildread.glb', nose: Math.PI / 2 },
@@ -112,28 +122,55 @@ export const MODELS = {
   hacienda: { url: '/models/universe/war/hacienda.glb', nose: 0 }, // (its thrusters either side)
 };
 // the ones made again here (scripts/gen3d, remade from these models' own
-// renders): kind → the made model's name, loaded in the light cut (20k
-// triangles, 1024 maps) whatever the device. These are the galaxy's own
-// fighters, not yours (your X-wing is its own model, universe/shipModels.js),
-// and a fighter shows its whole model only inside LOD_NEAR times its size, a
-// dozen units or so; the desktop's 120k-triangle cut of the X-wing and the
-// interceptor came to 6.6 MB of every arrival, against 1.4 MB for these
-// (the interceptor's now the Meshy one above).
-export const MADE = { xwing: 'x-wing' };
+// renders): kind → the made model's name, loaded in the light cut whatever the
+// device. None now: the X-wing was the last, and it is the game's since (lane
+// S1; the Death Star's trench run keeps gen3d's). The table stays for the next.
+export const MADE = {};
 for (const [kind, name] of Object.entries(MADE)) if (MODELS[kind]) MODELS[kind] = { ...MODELS[kind], url: gen3dUrl(name, 'low') };
 
-// The capitals' close-up cut: Daniel Andersson's Imperial II and Nebulon-B
-// (scripts/sketchfab-galaxy.mjs, `hq`), about 100k triangles with
-// 2K maps, which hold up with a fighter flying along their hulls. Only a
-// desktop with a graphics card loads them (detail high or ultra); a laptop
-// or a phone keeps the lighter ones. Each has its own far-off copy, since
-// the old one's, fitted to the new hull's box, would sit wrong on it
-// (scripts/galaxy-lod.mjs hq/<kind>). The
-// battles' subsystems, batteries and hulls (universe/wars.js) are shares of
-// the ship's length, so they hold on either cut. nose: as each comes.
+// The game's fighters' light cuts (lane V's `.lod1`: the game's LOD under
+// 7,000 triangles, maps at 512 and 256), which a phone or a laptop (low and
+// mid) draws in place of the plain cut, as the surfaces do
+// (surface/catalog/index.js's modelUrlFor); the far copy is the same hull's.
+// `_source`: the plain cuts' bytes, src/data/galaxyAssets.json: the X-wing's
+// 3,147 KB against its light cut's 672, the interceptor's 2,164 against 638.
+export const LIGHT_CUTS = {
+  xwing: '/models/galaxy/surface/xwing.lod1.glb',
+  interceptor: '/models/galaxy/surface/tieinterceptor.lod1.glb',
+  falcon: '/models/galaxy/surface/falcon.lod1.glb',
+  slave1: '/models/galaxy/surface/slave1.lod1.glb',
+  scimitar: '/models/galaxy/surface/scimitar.lod1.glb',
+  tiestriker: '/models/galaxy/surface/tiestriker.lod1.glb',
+};
+const LIGHT_DETAILS = new Set(['low', 'mid']);
+
+// The Nebulon-B's close-up cut: the game's own frigate at its first LOD
+// (16,029 triangles, `_source`: lab/assets/bf2017/web/models.jsonl) with its
+// engine and its lights and 1,024 maps (scripts/bf2017-fleet.mjs's hq/nebulon
+// row, over Daniel Andersson's), which holds up with a fighter flying along
+// its hull. Only a desktop with a graphics card loads it (detail high or
+// ultra); a laptop or a phone keeps the lighter one. It has its own far-off
+// copy, since the plain one's, fitted to this hull's box, would sit wrong on
+// it (scripts/galaxy-lod.mjs hq/<kind>). The battles' subsystems, batteries
+// and hulls (universe/wars.js) are shares of the ship's length, so they hold
+// on either cut. nose: as each comes. (The Star Destroyer's close-up cut was
+// Daniel Andersson's too; it is the kit's ultra cut below since, lane S1.)
 export const HQ = {
-  destroyer: { url: '/models/galaxy/hq/destroyer.glb', nose: 0 },
   nebulon: { url: '/models/galaxy/hq/nebulon.glb', nose: 0 },
+};
+// The kits' ultra cuts (lane S1: scripts/bf2017-space.mjs --fleet --ultra,
+// bf2017-fleet.mjs's `ultra` rows): each capital at its own cap by its length
+// (the Star Destroyer's 1,600 m the whole 60,000 triangles, a corvette's no
+// less than 8,000; `_source`: bf2017-space.mjs's capOf) with every map at the
+// game's own 1,024, loaded only on the strongest graphics (ultra), in the
+// bucket (scripts/assets-publish.mjs). The same hulls as the fleet's cuts, so
+// each keeps its far-off copy.
+export const ULTRA = {
+  destroyer: '/models/galaxy/destroyer.ultra.glb',
+  moncal: '/models/galaxy/moncal.ultra.glb',
+  venator: '/models/galaxy/venator.ultra.glb',
+  corvette: '/models/galaxy/corvette.ultra.glb',
+  providence: '/models/galaxy/providence.ultra.glb',
 };
 // And the Death Stars' 4096-pixel maps (scripts/deathstar-hd.mjs), loaded
 // only on the strongest graphics (ultra), as the planets' biggest maps are:
@@ -145,14 +182,18 @@ export const HD_MAPS = {
   deathstar2: '/models/galaxy/deathstar2.hq.glb',
 };
 const HQ_DETAILS = new Set(['high', 'ultra']);
+// (a table of kind → url laid over the models that have the kind, the same nose)
+const over = (models, table) => Object.fromEntries(Object.entries(table).filter(([k]) => models[k]).map(([k, url]) => [k, { ...models[k], url }]));
 export const withHq = (models, detail) =>
   HQ_DETAILS.has(detail)
     ? {
         ...models,
         ...Object.fromEntries(Object.entries(HQ).filter(([k]) => models[k]).map(([k, d]) => [k, { url: d.url, nose: d.nose, hq: true }])),
-        ...(detail === 'ultra' ? Object.fromEntries(Object.entries(HD_MAPS).filter(([k]) => models[k]).map(([k, url]) => [k, { ...models[k], url }])) : {}),
+        ...(detail === 'ultra' ? { ...over(models, HD_MAPS), ...over(models, ULTRA) } : {}),
       }
-    : models;
+    : LIGHT_DETAILS.has(detail)
+      ? { ...models, ...over(models, LIGHT_CUTS) }
+      : models;
 // the models as a device of this detail loads them (MODELS is this device's)
 const LIGHT = { ...MODELS };
 export const modelsAt = (detail) => withHq(LIGHT, detail);
@@ -215,17 +256,17 @@ export const lodLevels = (size) => [
 ];
 
 // the models the hunters fly (universe/glbFleet.js flies them: the galaxy's
-// droids and Imperial TIEs, and its X-wings and interceptors in the cut the
-// battles load, each built until it's here). The Y-wing, the A-wing and the
+// droids and Imperial TIEs, and its X-wings and interceptors in the cut this
+// device loads, each built until it's here). The Y-wing, the A-wing and the
 // TIE bomber are the whole models, not GLB's far-off copies: those are for
 // the universe map, where a fighter is a few pixels long, and they have no
 // normals, so a wingman flying beside you came out in facets. The bounty
 // hunters' ships and the navy's gunboats are their models too, where they
 // were only ever the built ones. And the Star Destroyer and the corvette
 // that jump in on you (universe/setpieces.js) are the battles' ones, which
-// every arrival has loaded already: on a desktop the destroyer's is the
-// close-up cut, where the universe map's would have been another 470 KB of a
-// lesser ship, and the corvette is the galaxy's own.
+// every arrival has loaded already: the game's Star Destroyer, where the
+// universe map's would have been another 470 KB of a lesser ship, and the
+// corvette is the galaxy's own.
 export const HUNTER_GLB = {
   ...GLB,
   ...Object.fromEntries(['vulture', 'trifighter', 'tie', 'tieadvanced', 'xwing', 'interceptor', 'ywing', 'awing', 'tiebomber', 'gunboat', 'ig2000', 'houndstooth', 'punishingone', 'destroyer', 'corvette'].map((k) => [k, { ...MODELS[k], built: true }])),
@@ -235,12 +276,24 @@ export const HUNTER_GLB = {
   redleader: { ...MODELS.xwing, built: false },
 };
 
+// a mesh the game's export gives no colour map (a hull whose maps its shader
+// graph binds: the MC80's main hull, the Nebulon-B's), drawn the game's hull
+// grey and a little metal, not plain white, as the space levels draw theirs
+// (spaceLevel.js's HULL, `_source` there)
+export const HULL = new THREE.Color(0x6b6f76);
+const bare = (m) => !m.map && !m.emissiveMap && m.color?.getHex() === 0xffffff;
+
 // a model's materials tuned to the scene's light: engines and lights hot
-// enough to bloom, nothing mirror-shiny
+// enough to bloom, nothing mirror-shiny, a bare hull grey
 function tune(root) {
   root.traverse((o) => {
     if (!o.isMesh || !o.material) return;
     for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (bare(m)) {
+        m.color.copy(HULL);
+        if ('metalness' in m) m.metalness = Math.max(m.metalness, 0.45);
+        if ('roughness' in m) m.roughness = Math.min(m.roughness, 0.6);
+      }
       if ('roughness' in m) m.roughness = Math.min(Math.max(m.roughness ?? 1, 0.35), 0.75);
       if (/glow|light|engine/i.test(m.name) && m.emissive) {
         if (m.emissive.getHex() === 0) m.emissive.copy(m.color);

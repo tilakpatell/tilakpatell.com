@@ -18,9 +18,11 @@
 //     { system, map, title, centre, radius, models: { slug: { kind, as, size, url, far, from, tris } }, pieces }
 //   then: node scripts/galaxy-lod.mjs space/<slug>… for the capitals and docks
 //   --dry: the pieces and the cuts it would take, nothing fetched or written
-//   --fleet <slug> --out <file>: that model alone at the fleet's cut (FLEET_CUT:
-//   the war flies it at every quality level), to <file>, nothing else written
-//   (scripts/bf2017-fleet.mjs's `space` rows)
+//   --fleet <slug> --out <file> [--ultra]: that model alone at the fleet's cut
+//   (FLEET_CUT: the war flies it at every quality level), to <file>, nothing
+//   else written (scripts/bf2017-fleet.mjs's `space` rows); --ultra, the
+//   capital's own cap and the game's 1,024 maps instead (fleetUltra: the
+//   war's ultra cut, to the bucket)
 //
 // The map, its parts and their maps are fetched by scripts/bf2017-fetch.mjs
 // (the keys from the environment, never printed). The import goes through
@@ -66,6 +68,11 @@ export const CAPS = {
 
 // the war's capitals are loaded at every quality level: lighter
 export const FLEET_CUT = { tris: 24000, tex: 256, maps: 128, far: false };
+// and their ultra cut (lane S1): the capital's cap by its length, as the
+// space levels draw it, with every map at the game's own 1,024 (the capitals'
+// maps are 1,024 in the drop, `_source`: lab/assets/bf2017/web/textures.jsonl,
+// the venator's 31, the imperialcruiser's 25, the mc80's 17)
+export const fleetUltra = (model) => ({ ...capOf(model), tex: 1024, maps: 1024, far: false });
 
 // (a capital's cap by its length: the Star Destroyer's 1,600 m the whole
 // 60,000, a corvette's 130 m no less than 8,000)
@@ -156,13 +163,14 @@ export async function makeSpace(system, opts) {
   if (opts.fleet) {
     const model = models[opts.fleet];
     if (!model) throw new Error(`${opts.fleet}: no such model in ${system}'s level (${Object.keys(models).join(', ')})`);
-    const { lod } = lodFor(model.parts, entries, FLEET_CUT.tris);
+    const cap = opts.ultra ? fleetUltra(model) : FLEET_CUT;
+    const { lod } = lodFor(model.parts, entries, cap.tris);
     for (const file of new Set(model.parts.map((p) => p.file))) {
       const l = lodOf(entries.get(file), lod);
       if (l && !existsSync(localPath(opts.root, inBucket(l.file)))) fetch([nameOf(file), '--lod', String(l.lod)]);
     }
-    const made = await build(reader, { ...model, slug: opts.fleet }, entries, lod, FLEET_CUT, opts, resolve(opts.out));
-    console.log(`  ${opts.fleet} at the fleet's cut: ${(made.bytes / 1024).toFixed(0)} KB, ${made.tris} triangles → ${opts.out}`);
+    const made = await build(reader, { ...model, slug: opts.fleet }, entries, lod, cap, opts, resolve(opts.out));
+    console.log(`  ${opts.fleet} at the fleet's ${opts.ultra ? 'ultra' : ''} cut: ${(made.bytes / 1024).toFixed(0)} KB, ${made.tris} triangles, LOD${lod}, ${made.maps} maps → ${opts.out}`);
     return made;
   }
   const rows = {};
@@ -235,5 +243,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const only = args.only ? new Set(String(args.only).split(',')) : null;
   if (!args.dry && !args.fleet) await writeTracks(root);
   if (args.fleet && !args.out) throw new Error('--fleet <slug> --out <file>');
-  for (const system of which) await makeSpace(system, { root, manifest, dry: Boolean(args.dry), only, fleet: args.fleet ? String(args.fleet) : null, out: args.out ? String(args.out) : null });
+  for (const system of which) await makeSpace(system, { root, manifest, dry: Boolean(args.dry), only, fleet: args.fleet ? String(args.fleet) : null, out: args.out ? String(args.out) : null, ultra: Boolean(args.ultra) });
 }

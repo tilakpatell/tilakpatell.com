@@ -2194,19 +2194,6 @@
     "as": "the plane you fly (repainted in the site’s colours, without its airline’s livery)",
     "file": "/models/sketchfab/earth-plane.glb"
   },
-  "falcon-hd": {
-    "title": "Millennium Falcon",
-    "author": "fredbear1211",
-    "authorUrl": "https://sketchfab.com/fredbear1211",
-    "license": "CC-BY-4.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
-    "source": "https://sketchfab.com/3d-models/millennium-falcon-2c0783d083e44b959c691682b4cb1f16",
-    "where": "universe",
-    "as": "the Millennium Falcon you fly",
-    "also": [
-      "galaxy"
-    ]
-  },
   "galaxy-acclamator": {
     "title": "Acclamator-Class Assault Ship",
     "author": "Kuat-Entralla 3D Engineering",
@@ -2294,6 +2281,21 @@
       "galaxy"
     ]
   },
+  "galaxy-corvette": {
+    "title": "Star Wars Battlefront II (2017): the CR90 corvettes (corvettecr90-01: its kit as the space level places it)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy",
+    "as": "the CR90 corvettes",
+    "file": "/models/galaxy/corvette.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
   "galaxy-deathstar2": {
     "title": "Death Star II",
     "author": "N8",
@@ -2322,19 +2324,20 @@
       "galaxy"
     ]
   },
-  "galaxy-destroyerhq": {
-    "title": "Star Wars: Imperial II Star Destroyer",
-    "author": "Daniel",
-    "authorUrl": "https://sketchfab.com/DanielAndersson",
-    "license": "CC-BY-4.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
-    "source": "https://sketchfab.com/3d-models/star-wars-imperial-ii-star-destroyer-b8bd2d35f7604670ab85242c06c6d280",
+  "galaxy-destroyer": {
+    "title": "Star Wars Battlefront II (2017): the Imperial Star Destroyers (endor-isd: its kit as the space level places it)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
     "where": "galaxy",
-    "as": "the Star Destroyers, close up",
-    "file": "/models/galaxy/hq/destroyer.glb",
+    "as": "the Imperial Star Destroyers",
+    "file": "/models/galaxy/destroyer.glb",
     "also": [
       "galaxy"
-    ]
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
   "galaxy-executor": {
     "title": "Star Wars: Executor Class Star Destroyer",
@@ -2451,18 +2454,19 @@
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
   "galaxy-moncal": {
-    "title": "Star Wars: MC80 Home One Type Star Cruiser",
-    "author": "Daniel",
-    "authorUrl": "https://sketchfab.com/DanielAndersson",
-    "license": "CC-BY-4.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
-    "source": "https://sketchfab.com/3d-models/star-wars-mc80-home-one-type-star-cruiser-9b5e5e5192f64a7faad93a3bfd2efaf2",
+    "title": "Star Wars Battlefront II (2017): the Mon Calamari cruisers (endor-mc80: its kit as the space level places it)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
     "where": "galaxy",
     "as": "the Mon Calamari cruisers",
     "file": "/models/galaxy/moncal.glb",
     "also": [
       "galaxy"
-    ]
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
   "galaxy-n1": {
     "title": "Star Wars Battlefront II (2017): gameplay/vehicles/air/n1starfighter/vehicle_air_n1starfighter_static_donotuse_mesh",
@@ -2495,18 +2499,19 @@
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
   "galaxy-nebulonhq": {
-    "title": "Star Wars: Nebulon B Frigate",
-    "author": "Daniel",
-    "authorUrl": "https://sketchfab.com/DanielAndersson",
-    "license": "CC-BY-4.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
-    "source": "https://sketchfab.com/3d-models/star-wars-nebulon-b-frigate-19b1b0126f8248c28ce38863413c30b8",
+    "title": "Star Wars Battlefront II (2017): objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
     "where": "galaxy",
     "as": "the Nebulon-B frigates, close up",
     "file": "/models/galaxy/hq/nebulon.glb",
     "also": [
       "galaxy"
-    ]
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
   "galaxy-nubian": {
     "title": "Naboo Royal Starship (J-type 327 Nubian)",
@@ -3076,9 +3081,7 @@
     "where": "universe",
     "as": "the Star Destroyers",
     "file": "/models/universe/star-destroyer.glb",
-    "also": [
-      "galaxy"
-    ]
+    "also": []
   },
   "surface-a280": {
     "title": "Star Wars Battlefront II (2017): gameplay/equipment/rifles/a280/a280_mesh3p_mesh",
@@ -6214,19 +6217,6 @@
       "galaxy-surface"
     ]
   },
-  "xwing-hd": {
-    "title": "High Poly X-Wing Fighter",
-    "author": "charles.woods",
-    "authorUrl": "https://sketchfab.com/charles.woods",
-    "license": "CC-BY-4.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
-    "source": "https://sketchfab.com/3d-models/high-poly-x-wing-fighter-f2170d4a3ee04e8588c0ad29d4f91767",
-    "where": "universe",
-    "as": "the X-wing you fly",
-    "also": [
-      "galaxy"
-    ]
-  },
   "galaxy-hyena": {
     "title": "Star Wars Battlefront II (2017): gameplay/vehicles/air/hyenabomber/vehicle_air_hyenabomber_static_donotuse_mesh",
     "author": "EA DICE",
@@ -6237,6 +6227,36 @@
     "where": "galaxy",
     "as": "hyena",
     "file": "/models/galaxy/hyena.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "galaxy-providence": {
+    "title": "Star Wars Battlefront II (2017): the Providence-class dreadnoughts (providenceclassdreadnaught-01: its kit as the space level places it)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy",
+    "as": "the Providence-class dreadnoughts",
+    "file": "/models/galaxy/providence.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "galaxy-venator": {
+    "title": "Star Wars Battlefront II (2017): the Venator-class Star Destroyers (kamino-venator: its kit as the space level places it)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy",
+    "as": "the Venator-class Star Destroyers",
+    "file": "/models/galaxy/venator.glb",
     "also": [
       "galaxy"
     ],
@@ -6514,6 +6534,36 @@
     "where": "galaxy-surface",
     "as": "kashyyyk/second: the game's level",
     "file": "/models/galaxy/bf2017/levels/kashyyyk/second/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "surface-scimitar": {
+    "title": "Star Wars Battlefront II (2017): gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "Maul’s Scimitar",
+    "file": "/models/galaxy/surface/scimitar.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "surface-tiestriker": {
+    "title": "Star Wars Battlefront II (2017): gameplay/vehicles/air/tiestriker/tiestriker_01_static_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "the TIE strikers",
+    "file": "/models/galaxy/surface/tiestriker.glb",
     "also": [
       "galaxy"
     ],
