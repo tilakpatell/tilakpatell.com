@@ -251,7 +251,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
   let coarse = null;
   let coarseArgs = null;
   let coarseUp = null;
-  let ticks = 0;
+  let checkedAt = -Infinity;
   const impostorsMod = renderer?.isWebGPURenderer ? import('../../../../lib/three/impostor.js').catch(() => null) : Promise.resolve(null);
   async function startCoarse(index) {
     const mod = await impostorsMod;
@@ -270,7 +270,11 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
   // draws from here (not dropped on the tier, and seen at the cell's
   // nearest point: lod.js's seenAt with the pack's K)
   function coarseUpdate([x, z]) {
-    if (!pack0 || ticks++ % 15) return;
+    // (every half second of the clock, not every so many frames: a slow
+    // device's frame must not hold the swap back for minutes)
+    const t = performance.now();
+    if (!pack0 || t - checkedAt < 500) return;
+    checkedAt = t;
     loader?.refresh();
     if (!coarse) return;
     const cull = pack0.cull?.[tier] ?? pack0.cull?.high ?? { K: Infinity, dropped: [] };

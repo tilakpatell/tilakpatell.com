@@ -220,7 +220,12 @@ for (const id of list.split(',')) {
       .waitForFunction(() => window.__surfaceScene?.level?.()?.stream?.bootDone && window.__surfaceScene.level().stream, null, { timeout: Number(process.env.BOOT_WAIT ?? 600000), polling: 250 })
       .then((h) => h.jsonValue())
       .catch(() => null);
-    boot = got ? { s: +((Date.now() - t0) / 1000).toFixed(1), wireS: wireAt(got.bytes * 0.98), levelMB: +(got.bytes / 1e6).toFixed(2), wireMB: +(wire.bytes / 1e6).toFixed(2) } : { s: null, error: 'the boot slice never came in' };
+    // (levelS: from the first level file's arrival to the boot's last, the
+    // boot slice's own time on the line, apart from the page's code and the
+    // world's other assets, which a development server sends unbundled)
+    const firstLevel = wire.level.length ? Math.min(...wire.level.map((f) => f.t)) : null;
+    const wireS = wireAt(got?.bytes * 0.98);
+    boot = got ? { s: +((Date.now() - t0) / 1000).toFixed(1), wireS, levelS: wireS != null && firstLevel != null ? +(wireS - firstLevel).toFixed(1) : null, levelMB: +(got.bytes / 1e6).toFixed(2), wireMB: +(wire.bytes / 1e6).toFixed(2) } : { s: null, error: 'the boot slice never came in' };
   }
   // (on the surface, the floor's light baked first: the bake's passes are a
   // one-off, not a frame anyone plays. A world with no ground, cloud-borne,
@@ -343,7 +348,7 @@ for (const id of list.split(',')) {
     const over = [boot?.levelMB > row.bootMB && 'boot', r.visitMB > row.visitMB && 'visit', !boot?.s && 'never walkable'].filter(Boolean);
     r.pass = !over.length;
     byteRows.push(r);
-    console.log(`bytes  ${id.padEnd(10)} first frame ${r.firstFrameS} s  walkable ${boot?.s ?? '–'} s (on the line ${boot?.wireS ?? '–'} s)  boot ${boot?.levelMB ?? '–'}/${row.bootMB} MB  visit ${r.visitMB ?? '–'}/${row.visitMB} MB  wire ${r.wireMB} MB  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}`);
+    console.log(`bytes  ${id.padEnd(10)} first frame ${r.firstFrameS} s  walkable ${boot?.s ?? '–'} s (on the line ${boot?.wireS ?? '–'} s, the level's own ${boot?.levelS ?? '–'} s)  boot ${boot?.levelMB ?? '–'}/${row.bootMB} MB  visit ${r.visitMB ?? '–'}/${row.visitMB} MB  wire ${r.wireMB} MB  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}`);
     if (over.length) process.exitCode = 1;
   }
   results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
