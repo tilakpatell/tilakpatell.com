@@ -378611,6 +378611,18 @@
     "from": "models/galaxy/space/fondor-mc80.glb",
     "tier": "pack"
   },
+  "models/galaxy/space/globes/bespin.webp": {
+    "hash": "7b94be4181d2",
+    "bytes": 3368,
+    "from": "models/galaxy/space/globes/bespin.webp",
+    "tier": "pack"
+  },
+  "models/galaxy/space/globes/endor.webp": {
+    "hash": "7d7574579dd0",
+    "bytes": 5322,
+    "from": "models/galaxy/space/globes/endor.webp",
+    "tier": "pack"
+  },
   "models/galaxy/space/globes/geonosis.webp": {
     "hash": "e11403ae5b98",
     "bytes": 2950,
@@ -378623,10 +378635,22 @@
     "from": "models/galaxy/space/globes/hoth.webp",
     "tier": "pack"
   },
+  "models/galaxy/space/globes/kamino.webp": {
+    "hash": "c924ccc01cb3",
+    "bytes": 2448,
+    "from": "models/galaxy/space/globes/kamino.webp",
+    "tier": "pack"
+  },
   "models/galaxy/space/globes/kashyyyk.webp": {
     "hash": "9782bbc0ccbc",
     "bytes": 3172,
     "from": "models/galaxy/space/globes/kashyyyk.webp",
+    "tier": "pack"
+  },
+  "models/galaxy/space/globes/naboo.webp": {
+    "hash": "c1193895dfed",
+    "bytes": 4020,
+    "from": "models/galaxy/space/globes/naboo.webp",
     "tier": "pack"
   },
   "models/galaxy/space/globes/scarif.webp": {
