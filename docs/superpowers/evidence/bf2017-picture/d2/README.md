@@ -157,3 +157,5 @@ Asked for by the orchestrating session on the way (lane T2 tests Tatooine’s le
 ### Published
 
 `assets-publish.mjs --only 'models/galaxy/bf2017/levels/tatooine/**,models/galaxy/bf2017/levels/yavin/**'`, twice: the packs, 4,575 files sent (3,375 new, 1,200 changed, 983.2 MB), none there already, none failed; then the recipes’ maps, 169 files (45.2 MB). The manifest and `.gitignore`’s block rewritten each time, so the packs’ binaries stay out of git (level.json, the parts’ JSON, the new `variations.json` and `recipes.json`, and the READMEs are in).
+
+`assets-check` after the second publish: 52,035 of 52,035 right, 0 retried, 1,064 s. Three of them are the empty `horizon.bin` files of the interiors (Hoth’s base, Kamino’s Venator, the pit), which every earlier run reported as “HTTP 416”: the checker had the rule for an empty file’s 416 (`content-range: bytes */0`), but `scripts/lib/pool.mjs` called every 4xx `failed` before the verdict read it. The pool now keeps a failed answer’s headers and the verdict reads the empty file’s 416 first (`scripts/assets-check.test.mjs` covers both shapes).
