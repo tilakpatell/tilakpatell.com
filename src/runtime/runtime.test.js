@@ -956,3 +956,55 @@ describe('calibration switched off (the QA scripts: ?calibrate=off)', () => {
     expect(quality.setLevel).not.toHaveBeenCalled();
   });
 });
+
+describe('the picture’s source and cadence (lane N2)', () => {
+  const gpuMake = (overrides = {}) => {
+    const gfx = { ...fakeBackend(), backend: 'webgpu' };
+    const quality = { ...fakeQuality(), tier: 'ultra', setSource: vi.fn(), source: 'gpu', reset: vi.fn(), hold: vi.fn() };
+    const loop = fakeLoop();
+    loop.ctl.setCadence = vi.fn();
+    const rt = createRuntime({ makeBackend: vi.fn(() => gfx), loop: loop.create, input: fakeInput(), quality, audio: fakeAudio(), assets: fakeAssets(), gpu: true, ...overrides });
+    return { rt, gfx, quality, loop };
+  };
+
+  it('a node world on WebGPU takes the GPU clock, made once a renderer', async () => {
+    const clock = { available: true, frame: vi.fn(), last: null };
+    const gpuClock = vi.fn(() => clock);
+    const { rt, quality, gfx } = gpuMake({ gpuClock });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    await rt.mount({ id: 'm', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(gpuClock).toHaveBeenCalledTimes(1);
+    expect(gpuClock).toHaveBeenCalledWith(gfx.renderer);
+    expect(quality.setSource).toHaveBeenLastCalledWith('gpu', { gpuTime: clock, fps: null });
+  });
+
+  it('without a clock a node world keeps the pace, and the classic renderer says so', async () => {
+    const { rt, quality } = gpuMake();
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(quality.setSource).toHaveBeenLastCalledWith('cpu', { gpuTime: null, fps: null });
+    const q = { ...fakeQuality(), setSource: vi.fn() };
+    const classic = make({ quality: q });
+    await classic.rt.mount({ id: 'g', create: () => fakeWorld() }, {}, fakeHost());
+    expect(q.setSource).toHaveBeenLastCalledWith('classic', { gpuTime: null, fps: null });
+  });
+
+  it('a new level on the GPU clock never resizes the canvas', async () => {
+    const { rt, quality, gfx, loop } = gpuMake();
+    const world = fakeWorld({ lowerQuality: vi.fn() });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => world }, {}, fakeHost());
+    gfx.setRatio.mockClear();
+    quality.frame = vi.fn(() => 1);
+    loop.tick(100);
+    expect(world.lowerQuality).toHaveBeenCalledWith(1);
+    expect(gfx.setRatio).not.toHaveBeenCalled();
+  });
+
+  it('draws every second beat for a visitor who pins 30', async () => {
+    const { rt, loop } = gpuMake({ fps: 30 });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(loop.ctl.setCadence).toHaveBeenLastCalledWith(2);
+    const plain = gpuMake();
+    await plain.rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(plain.loop.ctl.setCadence).toHaveBeenLastCalledWith(1);
+  });
+});

@@ -8,7 +8,8 @@
 // passed in, so this runs in Node: index.js wires the real ones.
 //
 // createRuntime({ makeBackend, loop, input, quality, saves, assets, audio,
-//   workers, origin, events, now, gpu, override, visible, calibrate, debug }) → rt
+//   workers, origin, events, now, gpu, override, visible, calibrate, debug,
+//   gpuClock, fps }) → rt
 // rt: { gfx, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
 //   failure, current, loading, on(fn), invalidate(), resize(w, h), setVisible(on), lost(),
 //   mount(module, props, host) → shown, handover(module, props, host, { fade, held, after }) → shown,
@@ -30,8 +31,16 @@
 // panel under its module's id; the world let go closes it.
 // (`shown`: true once the module's world is the one drawing; false when it
 // failed, or something newer was asked for meanwhile)
+// The picture (GPU-first lane N2): a `'nodes'` world drawn on WebGPU takes
+// its internal resolution from the chip's own time (`gpuClock(renderer)`,
+// lane G1's createGpuTime, made once a renderer; none, or one without
+// `timestamp-query`, keeps the pace) through quality.setSource; a world on
+// the GPU clock never has its canvas resized by it (the output size
+// never changes: TAA's history). The loop's cadence is cadence.js's: every
+// second beat for a visitor who pins 30 (`fps`) or on lane N6's T0.
 
 import { createLoop } from '../lib/three/loop';
+import { cadenceFor } from './cadence';
 import { settle } from '../lib/settle';
 import { pickBackend } from './backend';
 import { createHandover } from './handover';
@@ -67,8 +76,9 @@ export function createEvents() {
   };
 }
 
-export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug() }) {
+export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null }) {
   let gfx = null;
+  const clocks = new WeakMap(); // a renderer's GPU clock, made once (it turns on its timestamps)
   let kind = null; // the backend asked for
   let coming = null; // { kind, promise }: a backend still being made, for every mount that asks meanwhile
   let lostWebGPU = false;
@@ -145,7 +155,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
         // (a module that draws through passes of its own sets its own
         // sharpness inside them, `sharpness: 'own'`: the canvas keeps its size,
         // whose every change waits on the graphics chip)
-        if (current.module.sharpness !== 'own') gfx.setRatio(ratioFor(current.module));
+        if (current.module.sharpness !== 'own' && quality.source !== 'gpu') gfx.setRatio(ratioFor(current.module));
         world.lowerQuality?.(level);
       }
       const at = world.anchor?.();
@@ -294,6 +304,11 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   // to its arrival's hitches for a moment, and before the ratio's set, so
   // that's the sharpest (not the last world's softened one)
   const start = (module) => {
+    const nodes = module.shading === 'nodes' && gfx.backend !== 'webgl';
+    const onGpu = nodes && gfx.backend === 'webgpu' && typeof gpuClock === 'function' && gfx.renderer;
+    if (onGpu && !clocks.has(gfx.renderer)) clocks.set(gfx.renderer, gpuClock(gfx.renderer) ?? null);
+    quality.setSource?.(onGpu ? 'gpu' : nodes ? 'cpu' : 'classic', { gpuTime: onGpu ? clocks.get(gfx.renderer) : null, fps });
+    loop.setCadence?.(cadenceFor({ tier: quality.tier, fps }));
     quality.reset?.();
     quality.hold?.(WARM_UP);
     gfx.setRatio?.(ratioFor(module));

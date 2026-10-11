@@ -39,9 +39,26 @@
 // resolution step each level sheds one more of post.js's SHED groups. On a
 // drawing buffer of 4K or more, ultra starts under the screen at 0.77 and
 // high at 0.67 (UHD_START: the fidelity design's "Lane U").
+//
+// The source (GPU-first lane N2): on a `'nodes'` world drawn on WebGPU
+// with lane G1's GPU clock (lib/three/gpuTime: `{ frame(), last, median,
+// p95, available }`), `source: 'gpu'` steps the level by the chip's own
+// time through dynres.js (Unreal's controller) instead of the pace's frame
+// times; the canvas's scale stays 1 (the output size never changes) and
+// `internal` is the chain's scale. With no clock, or one that says it is
+// not available, it is the pace, silently (`source` reads 'cpu'). The
+// runtime sets it as it starts each world (`setSource(source, { gpuTime,
+// fps })`: 'gpu', 'cpu' for a node world on the pace, 'classic' for the
+// classic renderer), and with each level the internal scale the mip bias
+// every game material samples at follows (lib/three/mipBias: log2(scale) −
+// 1 under the screen, −0.5 at native under TRAA, which webgpu.js reports
+// as it builds a chain; 0 on the classic renderer). `fps: 30` (a visitor
+// who pins 30) budgets the controller 33.3 ms.
 
 import { BUDGETS, device, sharpness } from '../lib/device';
+import { setMipState } from '../lib/three/mipBias';
 import { STEPS, createPace } from '../lib/three/pace';
+import { createDynres, dynresFor } from './dynres';
 
 // the internal resolutions the pace steps down through before shedding passes
 export const RESOLUTION_STEPS = [1, 0.77, 0.67, 0.5];
@@ -57,7 +74,7 @@ export function headroomAt(level = 0, { tier = null, pixels = 0 } = {}) {
   return { scale: steps.at(-1), shed: l - steps.length + 1 };
 }
 
-export function createQuality({ tier, detail, pace = createPace(), floorAfter = 2500, dpr = Infinity, minRatio = null, sharp = sharpness() } = {}) {
+export function createQuality({ tier, detail, pace = createPace(), floorAfter = 2500, dpr = Infinity, minRatio = null, sharp = sharpness(), source: asked = 'cpu', gpuTime = null, fps = null } = {}) {
   // (a tier given alone is its own level: the tests, a forced tier)
   detail ??= tier ?? device().detail;
   tier ??= device().tier;
@@ -77,9 +94,24 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
   let floored = false;
   let holdFor = 0; // ms of frames to let go by unjudged (hold)
   let heldTill = null; // till when: from the first frame after the hold was asked for
+  // the GPU clock's controller (lane N2), made for the world that asks for it
+  let clock = null;
+  let dyn = null;
+  let picture = 'cpu'; // 'gpu' | 'cpu' | 'classic', as asked
+  const onGpu = () => Boolean(dyn && clock?.available);
+  const internal = () => (onGpu() ? dyn.scale : headroomAt(level).scale);
+  const bias = () => setMipState({ scale: internal(), classic: picture === 'classic' });
+  const setSource = (want = 'cpu', { gpuTime: g = null, fps: f = null } = {}) => {
+    picture = want;
+    clock = want === 'gpu' ? g : null;
+    dyn = clock?.available ? createDynres({ ...dynresFor({ tier, fps: f }), steps: RESOLUTION_STEPS }) : null;
+    bias();
+  };
   const tell = (l) => {
     for (const fn of listeners) fn(l);
+    bias();
   };
+  setSource(asked, { gpuTime, fps });
   return {
     tier,
     get budget() {
@@ -94,6 +126,14 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     get ratio() {
       return sharpest() * scale;
     },
+    get source() {
+      return onGpu() ? 'gpu' : 'cpu';
+    },
+    // (the post chain's internal scale: the controller's on the GPU clock, else headroomAt's)
+    get internal() {
+      return internal();
+    },
+    setSource,
     // (`unscaled`: the level's ratio without the pace's scale, for a module
     // that softens through its own post chain and keeps its canvas as it is)
     ratioUnder(cap = Infinity, { unscaled = false } = {}) {
@@ -116,6 +156,13 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
         if (now < heldTill) return null;
         holdFor = 0;
         heldTill = null;
+      }
+      if (onGpu()) {
+        clock.frame();
+        if (dyn.frame(clock.last) === null || dyn.level === level) return null;
+        level = dyn.level;
+        tell(level);
+        return level;
       }
       const changed = pace.frame(now);
       if (changed !== null && !floored) {
@@ -143,6 +190,8 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
       return null;
     },
     setLevel(l) {
+      // (the GPU clock measures the chip itself: a calibrated step is the pace's)
+      if (onGpu()) return;
       pace.set?.(l);
       level = pace.level ?? l;
       scale = pace.scale ?? STEPS[level];
@@ -151,10 +200,12 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     },
     reset() {
       pace.reset();
+      dyn?.reset();
       level = 0;
       scale = 1;
       atLastSince = null;
       floored = false;
+      bias();
     },
     hold(ms) {
       holdFor = ms;
