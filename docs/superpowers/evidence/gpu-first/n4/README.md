@@ -45,6 +45,7 @@ What these say, and what they do not:
 
 - **The bytes hold.** Every tier’s boot ended under its `bootMB` (the stream ends it at 95 % so what is in flight lands under) and every visit stayed far under its `visitMB`; nothing paused.
 - **The times are the software renderer’s, not the line’s.** A frame of Hoth takes 14 to 38 s in SwiftShader, on main as on the branch. The page asks for the next files only as its frames let it (the far table is sorted, a mesh parsed, its maps asked), so even the line’s clock carries the renderer: mid’s boot slice crossed the line in 8.8 s from its first file, high’s took 137. The development server also sends its code unbundled (117 to 123 MB over the line by the boot). The design’s gate (walkable under 10 s on high at 20 Mbit/s) is the laptop’s, on a production build: 11.5 MB of boot at 20 Mbit/s is 4.6 s of line.
+- **At mid the branch draws what main draws, and the grid’s two cells still standing in.** Main: 187 calls, 1,990,383 triangles; the branch: 187 calls, 1,999,616 (the level the same, 162 calls and 1,357,108 triangles; the 9,233 more are the two coarse cells whose fine meshes were still coming, and their cards).
 - **The budget rows’ triangle ceiling fails on main too.** `lab/baseline/surface-high.json` holds Hoth at 1.51M triangles; main draws 4.28M today. The branch draws what main draws once the grid hides.
 
 ## The packs’ maps, as published (`ktx2-census.json`)
