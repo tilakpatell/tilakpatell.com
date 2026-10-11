@@ -4,7 +4,7 @@
 // Mos Eisley's docking bay).
 
 import * as THREE from 'three';
-import { box, cyl, dome, part, ring, rockGeometry, rod } from '../kit';
+import { box, cyl, dome, part, ring, rockGeometry, rod } from '../kitCore';
 import { loft, trap8 } from '../../../universe/trafficKit';
 
 const { PI, cos, sin } = Math;

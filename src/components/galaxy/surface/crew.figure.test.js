@@ -24,7 +24,7 @@ const fake = (how) => async () => {
   made.push(fig);
   return fig;
 };
-vi.mock('../../universe/footScene', () => ({ loadPartyFigure: fake('own'), loadSharedFigure: fake('shared') }));
+vi.mock('./nodes/figures', () => ({ loadPartyFigure: fake('own'), loadSharedFigure: fake('shared') }));
 // Jabba's file: a box
 vi.mock('./placer', () => ({
   loadGlb: async () => ({ scene: new THREE.Group() }),
