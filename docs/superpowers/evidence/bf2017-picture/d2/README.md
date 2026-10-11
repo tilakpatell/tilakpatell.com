@@ -165,3 +165,10 @@ Asked for by the orchestrating session on the way (lane T2 tests Tatooine’s le
 `BUDGET=1 BUDGET_REPORT=1 QUALITY=<tier> SCANS=game PHASE_WAIT=1500000 node scripts/galaxy-check.mjs surface tatooine,yavin` on this branch at 8c597ff9, through a dev server with `VITE_ASSET_BASE` at the public bucket (as the gate above), headless Chromium on SwiftShader, 2026-10-11. The surface draws on `nodes-webgl` (lane T’s flip; `galaxy-check` on this branch is `main`’s at f6511872, before #903’s `SHOT_WAIT`). Yavin’s pack is not wired into `yavin.js` (E1 left the temple to be seen on a real GPU first), so Yavin’s lines measure the site’s own Yavin without its level; Tatooine’s lines are the pack’s.
 
 The first pass ran both tiers side by side, 15:32 to 17:32 UTC. High: Yavin came up and was counted; Tatooine never did (“the world never came up”, the deploy dialog over a black world in its screenshot, an `ERR_HTTP2_PROTOCOL_ERROR` on one bucket fetch, and the second publish’s manifest hot-reloaded the surface pages at 15:42, ten minutes into its load). Ultra: Tatooine came up and the run was killed at the two-hour limit inside the frame count (`galaxy-check.mjs:246`), with no line written. Second pass, one world at a time, below.
+
+| world | tier | calls (row) | triangles (row) | models MB (bucket row) | frame p50, p95 (reported) | result |
+| --- | --- | --: | --: | --: | --: | --- |
+| yavin | high (first pass) | 281 (700; baseline 78 +10 % = 86) | 1,576,948 (1,900,234) | 76.7 (160) | 7,333, 7,443 ms | rows pass; over its baseline |
+| yavin | ultra | 323 (1,500) | 3,881,994 (none) | 200.5 (285) | 35,465, 39,749 ms | pass; one `ERR_HTTP2_PROTOCOL_ERROR` on a fetch (the proxy cut a transfer), so the check exits 1 on the page error |
+
+Yavin’s baseline (`lab/baseline/surface-high.json`, 78 calls, lane E1’s refresh on the classic renderer) is before lane T’s flip to the node renderer and before the game’s light: the world draws 281 calls now without its level, so the +10 % rule fails it while every row passes. That is the baseline wanting remaking with the node renderer and the levels in (D2’s task 7, left to the GPU), not a row to raise.
