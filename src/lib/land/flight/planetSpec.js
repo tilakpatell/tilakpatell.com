@@ -35,7 +35,8 @@ import { TYPE_BIOMES, TYPE_LOOK, WORLDS, expand } from './planetTables.js';
 // changes a planet's ground, so a turret stored on the old ground's height is
 // put back on the new one's. planetSpec.test.js hashes the ground and fails
 // when it moves without this.
-export const TERRAIN_VERSION = 1;
+// (2: Naboo's land drawn after the game's Theed, lane E2)
+export const TERRAIN_VERSION = 2;
 
 export { TYPE_BIOMES };
 

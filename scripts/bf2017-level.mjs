@@ -6,7 +6,7 @@
 // those two; .gitignore's block hides the rest). The work is in scripts/lib/bf2017-level.mjs (pure,
 // tested); this fetches, reads and writes.
 //
-//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share 1 | low=0.5,…] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]
+//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--keep m] [--share 1 | low=0.5,…] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]
 //
 //   map     the map's folder under web/maps/ (levels/mp/hoth_01)
 //   world   the site's world (hoth): the pack's folder and its credit
@@ -26,6 +26,9 @@
 //   drop    meshes left out, `<mesh>` or `<sub>:<mesh>` (`*` for any run): what the
 //           site draws itself (a space level's corvettes, the battle's), the end
 //           of round's room
+//   keep    meshes the fit drops only after every other at its worst place,
+//           `<mesh>` (`*` for any run): the map's own buildings, lighter by
+//           volume than the trees round them (Endor_02's ewokvillage_*)
 //   share   the part of each tier's budget row the pack is fitted to (1): a
 //           space level is drawn on the galaxy's flight page, beside the system
 //           and the battle, so it takes a share; or tier by tier (low=0.5),
@@ -45,8 +48,9 @@
 // never printed. A map the bucket has not got yet is said so and exits 3:
 // the uploader sends the maps in passes.
 
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BUDGET_ROWS } from '../src/lib/budgets.js';
@@ -59,15 +63,15 @@ import { parseArgs } from './lib/args.mjs';
 import { writeCredit } from './lib/catalog-write.mjs';
 import { isSequel } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs';
-import { buildPack, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
-import { LOD, capIndex, texSizeFor } from '../src/lib/level/lod.js';
+import { buildPack, mapsUpTo, neverOf, proxyKey, proxyMeshes, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
+import { LOD, TEX_MB, capIndex, fitMaps, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
 import { encodePng16 } from './lib/png16.mjs';
 import { writeParts } from './bf2017-level-parts.mjs';
 import { main as writePhysics } from './bf2017-physics.mjs';
 
-const USAGE = 'node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share low=0.5 | 0.5] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]';
+const USAGE = 'node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--keep m] [--share low=0.5 | 0.5] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = join(ROOT, 'lab', 'assets', 'bf2017');
 const PERMISSION = 'From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.';
@@ -219,8 +223,11 @@ async function writeTextures(env, uris, radiusOf, { out, tiers, dry }) {
     taken.add(slug);
     slugs.set(uri, slug);
   }
+  // (first each map's size per tier, and the bytes of every size it might
+  // take; then a fitted tier, ultra, held to its bytes, lod.js's fitMaps;
+  // then the files, each size once)
+  const found = new Map(); // uri → { file, width, levels, lengths: { size: bytes } }
   await pool(uris, 8, async (uri) => {
-    const slug = slugs.get(uri);
     const r = await getObject(env, CACHE, uri);
     if (!HAVE.has(r.state)) {
       missing.push(uri);
@@ -228,18 +235,42 @@ async function writeTextures(env, uris, radiusOf, { out, tiers, dry }) {
     }
     const buf = await readFile(r.file);
     const info = ktx2Info(buf);
+    const lengths = {};
+    for (let n = info.width; n >= 16 && Object.keys(lengths).length < info.levels; n /= 2) lengths[n] = dropMips(buf, Math.min(mipsToFit(info.width, n), info.levels - 1)).length;
+    found.set(uri, { file: r.file, width: info.width, levels: info.levels, lengths });
+    const slug = slugs.get(uri);
     sizes[slug] = {};
+    for (const tier of tiers) sizes[slug][tier] = Math.min(texSizeFor(radiusOf.get(uri) ?? 1, tier, /__(normal|orm)/.test(uri)), info.width);
+  });
+  const fitted = {};
+  for (const tier of tiers) {
+    if (!TEX_MB[tier]) continue;
+    const maps = [...found].map(([uri, f]) => {
+      const slug = slugs.get(uri);
+      return { slug, data: /__(normal|orm)/.test(uri), size: sizes[slug][tier], floor: Math.min(sizes[slug].high ?? 128, sizes[slug][tier]), bytes: f.lengths };
+    });
+    const before = maps.reduce((a, m) => a + (m.bytes[m.size] ?? 0), 0);
+    const fit = fitMaps(maps, TEX_MB[tier] * 1e6);
+    let stepped = 0;
+    for (const m of maps) {
+      if (fit[m.slug] !== m.size) stepped++;
+      sizes[m.slug][tier] = fit[m.slug];
+    }
+    fitted[tier] = { before, budget: TEX_MB[tier] * 1e6, stepped };
+  }
+  await pool([...found], 8, async ([uri, f]) => {
+    const slug = slugs.get(uri);
+    const buf = await readFile(f.file);
     const written = new Map();
+    // (and told what it is: the game's word, else a colour map sRGB and a
+    // data map linear by suffix, whatever the encode wrote; the row says
+    // it too, for the loader: ktx2-colour.mjs)
+    const want = wantedTransfer(uri, { word });
+    if (want) sizes[slug].srgb = want === 'srgb';
     for (const tier of tiers) {
-      const size = Math.min(texSizeFor(radiusOf.get(uri) ?? 1, tier, /__(normal|orm)/.test(uri)), info.width);
-      sizes[slug][tier] = size;
+      const size = sizes[slug][tier];
       if (!written.has(size)) {
-        // (and told what it is: the game's word, else a colour map sRGB and a
-        // data map linear by suffix, whatever the encode wrote; the row says
-        // it too, for the loader: ktx2-colour.mjs)
-        const want = wantedTransfer(uri, { word });
-        if (want) sizes[slug].srgb = want === 'srgb';
-        const k = withTransfer(dropMips(buf, Math.min(mipsToFit(info.width, size), info.levels - 1)), want ?? 'linear');
+        const k = withTransfer(dropMips(buf, Math.min(mipsToFit(f.width, size), f.levels - 1)), want ?? 'linear');
         written.set(size, k.length);
         if (!dry) {
           await mkdir(join(out, 'tex'), { recursive: true });
@@ -249,7 +280,7 @@ async function writeTextures(env, uris, radiusOf, { out, tiers, dry }) {
       bytes[tier] += written.get(size);
     }
   });
-  return { slugs, sizes, bytes, missing };
+  return { slugs, sizes, bytes, missing, fitted };
 }
 
 async function main(args) {
@@ -283,6 +314,7 @@ async function main(args) {
   const packId = district === 'main' ? world : `${world}/${district}`;
   const out = join(ROOT, 'public', 'models', 'galaxy', 'bf2017', 'levels', ...packId.split('/'));
   const drop = typeof args.drop === 'string' ? args.drop.split(',') : [];
+  const keep = typeof args.keep === 'string' ? args.keep.split(',') : [];
   // (each tier's row, its triangles and calls taken in its share: one share
   // for every tier, `--share 0.5`, or tier by tier, `--share low=0.5`)
   const shareOf = (t) => share[t] ?? share.all ?? 1;
@@ -312,7 +344,7 @@ async function main(args) {
   // (--parts: the map's other parts beside a pack already built, its frame from its level.json)
   if (args.parts) {
     const json = JSON.parse(await readFile(join(out, 'level.json'), 'utf8'));
-    const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny', dry });
+    const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny', ultra, dry });
     if (dry) return;
     json.shadowCache = parts.shadowCache;
     json.enlighten = parts.enlighten.length ? parts.enlighten : null;
@@ -338,6 +370,8 @@ async function main(args) {
   // the meshes: each one's LOD chain (the model manifest's, else counted
   // from its GLBs), its four cuts and their triangles
   const byFile = new Map();
+  // (the meshes that are a proxy by their shaders, shadow-only or virtual-texture-only, never drawn: materials.jsonl)
+  const proxies = proxyMeshes((await need(env, 'web/materials.jsonl', 'the material manifest')).toString('utf8').split('\n').filter(Boolean));
   for (const line of (await need(env, 'web/models.jsonl', 'the model manifest')).toString('utf8').split('\n')) {
     if (!line.trim()) continue;
     const e = JSON.parse(line);
@@ -352,11 +386,19 @@ async function main(args) {
     }
     return files.get(path);
   };
+  // (whether the bucket has a map, asked once a map: its bytes kept for the textures' pass)
+  const maps = new Map();
+  const mapThere = (uri) => {
+    if (!maps.has(uri)) maps.set(uri, getObject(env, CACHE, uri).then((r) => HAVE.has(r.state)));
+    return maps.get(uri);
+  };
+  const cutChains = [];
   const slugs = new Set();
   const NONE = { lods: [0], files: [] };
   const meshes = await pool(map.meshes, 8, async (m) => {
     const base = { name: m.file, bounds: [...m.min, ...m.max], mats: 1 };
     if (isSequel(m.file)) return { ...base, ...NONE, missing: 'sequel' };
+    if (proxies.has(proxyKey(m.file))) return { ...base, ...NONE, missing: proxies.get(proxyKey(m.file)) };
     const entry = byFile.get(m.file);
     let chain = entry ? [...entry.lods].sort((x, y) => x.lod - y.lod).map((l) => ({ n: l.lod, file: l.file, tris: l.triangles })) : null;
     if (!chain) {
@@ -372,11 +414,25 @@ async function main(args) {
       }
     }
     if (!chain.length) return { ...base, ...NONE, missing: 'not in the bucket' };
+    // (as far as the bucket has its maps: a far LOD whose own LOD maps were
+    // never uploaded would draw white; the mesh stops being drawn there)
+    let upTo = null;
+    if (!dry) {
+      const has = await Promise.all(chain.map(async (l) => {
+        const buf = await getGlb(l.file);
+        if (!buf) return false;
+        const there = await Promise.all(imageUris(buf, inBucket(l.file)).map(mapThere));
+        return there.every(Boolean);
+      }));
+      upTo = mapsUpTo(chain, (l) => has[chain.indexOf(l)]);
+      if (upTo !== null) cutChains.push(`${lastOf(m.file)} (LOD ${upTo} on)`);
+    }
     return {
       ...base,
       lods: chain.map((l) => l.tris),
       files: chain.map((l) => l.file),
       mats: entry?.sections ?? 1,
+      upTo,
     };
   });
   // (the LODs below the high tier's cap are drawn on ultra only: shipped with --ultra)
@@ -388,8 +444,11 @@ async function main(args) {
     if (slugs.has(slug)) slug = `${slug}_${slugs.size}`;
     slugs.add(slug);
     const from = ultra ? 0 : capIndex(m.lods, LOD.high.cap);
-    m.glb = m.lods.map((_, n) => (m.missing || n < from ? null : `meshes/${slug}.lod${n}.glb`));
+    // (and a mesh whose first LOD shipped already lacks its maps draws as it did: hidden whole would be worse)
+    if (m.upTo != null && m.upTo <= from) m.upTo = null;
+    m.glb = m.lods.map((_, n) => (m.missing || n < from || (m.upTo != null && n >= m.upTo) ? null : `meshes/${slug}.lod${n}.glb`));
   });
+  if (cutChains.length) console.log(`${cutChains.length} meshes drawn only as far as their LODs’ maps go (the bucket lacks the rest): ${cutChains.slice(0, 5).join(', ')}${cutChains.length > 5 ? ' …' : ''}`);
   const absent = meshes.filter((m) => m.missing);
   if (absent.length)
     console.log(
@@ -409,13 +468,14 @@ async function main(args) {
     map,
     spot,
     groundY,
-    meshes: meshes.map(({ name, glb, lods, bounds, mats, missing }) => ({
+    meshes: meshes.map(({ name, glb, lods, bounds, mats, missing, upTo }) => ({
       name,
       glb,
       lods,
       bounds,
       mats,
       missing: Boolean(missing),
+      ...(upTo != null ? { upTo } : {}),
     })),
     arena,
     // (--walk: the square you can stand in, where the fit holds the row; a
@@ -426,6 +486,7 @@ async function main(args) {
     rows: rowsOf(ultra ? BUDGET_ROWS : { low: BUDGET_ROWS.low, mid: BUDGET_ROWS.mid, high: BUDGET_ROWS.high }),
     subs,
     drop,
+    keep,
     terrain: terrain?.json ?? null,
     groundAt: terrain ? (x, z) => LAYERS.image(x, z, terrain.layer) : null,
     holeAt: terrain?.holeAt ?? null,
@@ -438,6 +499,7 @@ async function main(args) {
 
   // the GLBs: each LOD once, its images pointing at the pack's textures
   let glbBytes = 0;
+  const glbSize = new Map(); // pack path → bytes
   const uris = new Set();
   const texRadius = new Map(); // uri → the biggest radius among what wears it
   const glbs = [];
@@ -456,6 +518,17 @@ async function main(args) {
   }
   const tiers = ultra ? ['low', 'mid', 'high', 'ultra'] : ['low', 'mid', 'high'];
   const tex = dry ? { slugs: new Map(), sizes: {}, bytes: {}, missing: [] } : await writeTextures(env, [...uris], texRadius, { out, tiers, dry });
+  // (a size of one of this build's maps the last build wrote and this one
+  // does not is removed, so it is not published; a file git keeps, Hoth's
+  // ground layers, is another lane's and stays)
+  if (!dry) {
+    const kept = new Set(execFileSync('git', ['ls-files', relative(ROOT, join(out, 'tex'))], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean).map((f) => f.split('/').pop()));
+    const want = new Set(Object.entries(tex.sizes).flatMap(([slug, by]) => tiers.map((t) => `${slug}.${by[t]}.ktx2`)));
+    for (const f of existsSync(join(out, 'tex')) ? await readdir(join(out, 'tex')) : []) {
+      const slug = f.replace(/\.\d+\.ktx2$/, '');
+      if (slug !== f && tex.sizes[slug] && !want.has(f) && !kept.has(f)) await rm(join(out, 'tex', f));
+    }
+  }
   Object.assign(
     pack.json.tex,
     Object.fromEntries(
@@ -473,6 +546,7 @@ async function main(args) {
         return `../tex/${tex.slugs.get(abs) ?? lastOf(abs).replace(/\.ktx2$/, '')}.ktx2`;
       });
       glbBytes += fixed.length;
+      glbSize.set(g.path, fixed.length);
       await writeFile(join(out, g.path), fixed);
       glbJson(fixed); // (a GLB that does not parse back is a bug here, not a file to ship)
     }
@@ -496,6 +570,21 @@ async function main(args) {
       .map((t) => mb(tex.bytes[t] ?? 0))
       .join(' | ')} |`,
   );
+  // (the LOD files a tier can draw: from its cap's LOD down, of the meshes it keeps)
+  rows.push(
+    `| mesh bytes a tier can draw (its LODs, its meshes) | ${Object.keys(pack.table)
+      .map((t) => {
+        const gone = new Set(pack.json.cull[t]?.dropped ?? []);
+        let n = 0;
+        pack.json.meshes.forEach((m, i) => {
+          if (gone.has(i)) return;
+          const from = capIndex(m.lods, (LOD[t] ?? LOD.high).cap);
+          m.glb.forEach((path, k) => (n += path && k >= from ? (glbSize.get(path) ?? 0) : 0));
+        });
+        return mb(n);
+      })
+      .join(' | ')} |`,
+  );
   const farBytes = pack.files.get('far.bin').byteLength;
   const lines = [
     `# ${packId}: the game's level`,
@@ -504,10 +593,13 @@ async function main(args) {
     '',
     `- ${pack.counts.arena} instances in the arena (±${arena} m), ${pack.counts.horizon} beyond it (the horizon), ${record ? `${pack.counts.buried} ${inside ? 'left out above the ground (the world outside: its own pack)' : 'left out under the ground (an interior: its own pack, `--inside`)'}` : 'no terrain: no ground layer, the instances alone'}, ${pack.counts.cells} cells of ${pack.json.cell} m`,
     ...(drop.length ? [`- left out: ${drop.join(', ')}`] : []),
+    `- proxies by their shaders, never drawn (materials.jsonl: SS_Shadowmesh casts shadows only, SS_VirtualTextureOnly paints the terrain's virtual texture only): ${meshes.filter((m) => /proxy|virtual texture/.test(m.missing ?? '')).map((m) => `${lastOf(m.name).replace(/_mesh\.glb$/, '')} (${m.missing})`).join(', ') || 'none'}`,
+    `- never drawn as themselves (the NEVER rule: lighting proxies, light blockers, occluders, invisible collision, shadow-only meshes, destruction stages): ${neverOf(map, { subs }).map((n) => `${n.name} ×${n.count}`).join(', ') || 'none'}`,
     ...(Object.keys(share).length ? [`- fitted to a share of the tiers' rows: ${Object.entries(share).map(([t, k]) => `${t} ${k}`).join(', ')}`] : []),
     `- ${meshes.length} meshes (${absent.length} left out), ${glbs.length} LOD files, ${mb(glbBytes)}`,
     `- the far list ${mb(farBytes)}; terrain ${terrain ? `near ${mb(terrain.bytes.near)}, far ${mb(terrain.bytes.far)}` : 'none'}; the spot's ground ${groundY.toFixed(2)} m in the game`,
     `- textures missing from the bucket: ${tex.missing.length}`,
+    ...Object.entries(tex.fitted ?? {}).map(([t, f]) => `- ${t}'s maps held to ${mb(f.budget * 1.048576)} (lod.js's TEX_MB): ${mb(f.before * 1.048576)} as the table gives them, ${f.stepped} stepped down a size or more toward high's, normal and ORM first`),
     '',
     ...rows,
     '',
@@ -516,15 +608,29 @@ async function main(args) {
   console.log(lines.join('\n'));
   if (dry) return;
 
-  const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json: pack.json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny' });
+  const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json: pack.json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny', ultra });
   pack.json.shadowCache = parts.shadowCache;
   pack.json.enlighten = parts.enlighten.length ? parts.enlighten : null;
   pack.json.parts = parts.parts;
   lines.push(...parts.lines);
   await mkdir(join(out, 'cells'), { recursive: true });
   for (const [path, bin] of pack.files) await writeFile(join(out, path), Buffer.from(bin));
+  // (what other lanes wrote into the pack's level.json and this does not
+  // make, Hoth's `ground` from bf2017-ground.mjs, stays as they left it)
+  const before = existsSync(join(out, 'level.json')) ? JSON.parse(await readFile(join(out, 'level.json'), 'utf8')) : {};
+  for (const [k, v] of Object.entries(before)) if (!(k in pack.json)) pack.json[k] = v;
+  // (and the maps they named in its `tex`, Hoth's ground layers' sizes)
+  for (const [k, v] of Object.entries(before.tex ?? {})) pack.json.tex[k] ??= v;
   await writeFile(join(out, 'level.json'), `${JSON.stringify(pack.json)}\n`);
-  await writeFile(join(out, 'README.md'), `${lines.join('\n')}\n`);
+  // (and the README's sections other scripts wrote, Variations, kept after this one's)
+  const oldReadme = await readFile(join(out, 'README.md'), 'utf8').catch(() => '');
+  const ours = new Set(lines.filter((l) => l.startsWith('## ')));
+  // (the physics block is written again after, between its markers, by bf2017-physics.mjs)
+  const theirs = oldReadme
+    .replace(/<!-- physics -->[\s\S]*<!-- \/physics -->\n?/, '')
+    .split(/\n(?=## )/)
+    .filter((sec) => sec.startsWith('## ') && !ours.has(sec.split('\n')[0]));
+  await writeFile(join(out, 'README.md'), `${[lines.join('\n').replace(/\n*$/, ''), ...theirs.map((t) => t.replace(/\n*$/, ''))].join('\n\n')}\n`);
   await writeCredit(join(ROOT, 'src', 'data', 'modelCredits.json'), `level-${packId.replace('/', '-')}`, {
     title: `Star Wars Battlefront II (2017): ${mapName}${district === 'main' ? '' : ` (${district})`}`,
     author: 'EA DICE',

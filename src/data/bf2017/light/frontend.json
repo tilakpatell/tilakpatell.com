@@ -50,7 +50,7 @@
    "grading": {
     "contrast": 1,
     "lut": "textures/galaxy/bf2017/light/frontend/sunny.lut.png",
-    "lutSize": 17
+    "lutSize": 33
    },
    "wind": {
     "dir": 146.25,

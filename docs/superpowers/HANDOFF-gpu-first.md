@@ -25,15 +25,6 @@ The owner’s word, fixed on 2026-10-11: no engine switch, no pixel streaming, e
 
 Each lane fills its row (session, PR) in its own PR and merges `origin/main` before it, keeping both sides.
 
-## What the other work must know
-
-- **Lane T2** (`claude/bf2017-t2-flip`): every lane here builds on the lit fixture and the `battlefront` world until T2 lands, then wires into `surface/nodes/stack.js` by one call each (N2: `post.js` and `quality.js`; N3: `createBaked`, the grid’s budget, the sun’s cadence). Nothing here edits `stack.js` before T2 merges.
-- **Lane U2** (headroom on): N1 adds a third level path (`gpuScene: true`) beside lane U’s batched one and changes neither; N2 replaces the pace’s input, not `headroom()`’s face. Whichever merges second reconciles `map/level.js`’s call.
-- **Lane D2** (every detail): N4 adds `uastc`, `horizon` and (N3) `enlighten`, `farShadow` rows beside D2’s in `scripts/lib/bf2017-level.mjs`.
-- **Lane M2** (materials): N2 adds specular anti-aliasing and the mip-bias uniform as nodes in `compose.js`; N3 adds the baked term. M2’s branches untouched.
-- **Lane W** (the desktop): this design asks W for two more jobs: the impostor bake at full quality (N4) and the UASTC data rows (N4); N3 consumes the `atlases` job.
-- **Lane X2**: N5’s worker loads Rapier through `src/lib/wasm/load.js`.
-
 ## Lane N3 (2026-10-11): three distances of light
 
 **Done** (branch `claude/gpu-n3-light`, draft PR #921):
@@ -54,11 +45,14 @@ Each lane fills its row (session, PR) in its own PR and merges `origin/main` bef
 
 **Checking it:** `npx vitest run src/lib/three/light scripts/lib/bf2017-level-light.test.mjs scripts/lib/enlighten-fixture.test.mjs src/components/galaxy/surface/level/levelGltf.test.js`; `node scripts/light-fixture.mjs --hoth --baked --legs webgl`, `--grid`, `--shadows --cadence --legs webgl`.
 
-## The desktop asks for lane W (from N3)
+## What the other work must know
 
-- **`atlases`**: as written (`scripts/desktop/bf2017-atlases.mjs`), every set; the pack rows pick them up on the next `--parts` run. Of use only with charts (above).
-- **`lightmaps`**: the site’s own bake per level once the owner allows `three-gpu-pathtracer`: the level’s static instances under the record’s sun, sky and `EnlightenComponentData` bounce numbers, charts unwrapped per instance with `watlas`, written as RGBA16F KTX2 irradiance plus `dirR`, `dirG`, `dirB` and sky visibility, with `charts: 'site'` and `rects` in the rows.
-- **The far shadow caches** (`shadow/far.png`, E0’s `shadowCache`): published for every level that has one (Hoth’s is not in the mirror manifest today).
+- **Lane T2** (`claude/bf2017-t2-flip`): every lane here builds on the lit fixture and the `battlefront` world until T2 lands, then wires into `surface/nodes/stack.js` by one call each (N2: `post.js` and `quality.js`; N3: `createBaked`, the grid’s budget, the sun’s cadence). Nothing here edits `stack.js` before T2 merges.
+- **Lane U2** (headroom on): N1 adds a third level path (`gpuScene: true`) beside lane U’s batched one and changes neither; N2 replaces the pace’s input, not `headroom()`’s face. Whichever merges second reconciles `map/level.js`’s call.
+- **Lane D2** (every detail): N4 adds `uastc`, `horizon` and (N3) `enlighten`, `farShadow` rows beside D2’s in `scripts/lib/bf2017-level.mjs`.
+- **Lane M2** (materials): N2 adds specular anti-aliasing and the mip-bias uniform as nodes in `compose.js`; N3 adds the baked term. M2’s branches untouched.
+- **Lane W** (the desktop): this design asks W for two more jobs: the impostor bake at full quality (N4) and the UASTC data rows (N4); N3 consumes the `atlases` job.
+- **Lane X2**: N5’s worker loads Rapier through `src/lib/wasm/load.js`.
 
 ## Left, in order
 

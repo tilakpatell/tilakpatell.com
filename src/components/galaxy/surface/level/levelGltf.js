@@ -29,10 +29,18 @@
 //     any other keeps the probe term. applyBaked(material, chart) overrides
 //     how (the tests'). loader.atlas(path) loads one of the set's maps as the
 //     pack has it (linear, no tier size), for createBaked's loadTexture.
+//
+// A material that names no colour map (lane E3: the game's leaf and branch
+// cards and some hull plates take theirs from the shader preset, which the
+// export never wrote, its `textures` empty in the GLB and in the material
+// dump alike) would draw white: a two-sided card is not drawn (a leaf card
+// without its alpha is a white slab), a solid piece is a dark moss grey (bareGlb).
 
-import { NoColorSpace, SRGBColorSpace } from 'three';
+import { DoubleSide, NoColorSpace, SRGBColorSpace } from 'three';
+import { BUDGETS } from '../../../../lib/device.js';
 import { COLOUR_MAP_KEYS } from '../../../../lib/three/surface/families.js';
 import { gltfLoader, ktx2Loader } from '../../../../lib/three/gltf.js';
+import { anisotropyFor } from '../../../../lib/three/textures.js';
 import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
 import { packUrl, splitTextures, tierTexture } from './levelPack.js';
 import { applyVariation } from './levelVariations.js';
@@ -99,6 +107,24 @@ const MAP_KEYS = [
   ['sss', (m) => m.sss],
   ['aoSlice', (m) => m.aoSlice],
 ];
+
+// A pack map's anisotropy, the tier's (lib/device's BUDGETS: 16 on high and
+// ultra, 4 on mid, 1 on low), under what the chip has: a pack's floors and
+// walls are seen at a slant, and at 1 their maps smear a few metres out
+// (the surfaces design's Q5, lane D2). Set once, on load, so every slot that
+// shares the texture has it.
+//   sharpenPack(tex, tier, renderer) → tex
+export function sharpenPack(tex, tier, renderer = null) {
+  if (!tex?.isTexture) return tex;
+  const max = renderer?.capabilities?.getMaxAnisotropy?.() ?? renderer?.getMaxAnisotropy?.() ?? 16;
+  const want = (BUDGETS[tier] ?? BUDGETS.high).aniso;
+  const a = anisotropyFor(max, want);
+  if (tex.anisotropy !== a) {
+    tex.anisotropy = a;
+    tex.needsUpdate = true;
+  }
+  return tex;
+}
 
 // the slots whose texture is a colour, in sRGB (the rest are data: normals, roughness and metal)
 export const COLOUR_SLOTS = new Set(['map', 'emissiveMap']);
@@ -178,6 +204,32 @@ async function bakeMeshes(scene, glbPath, materials, baked, applyBaked) {
   for (const [m, all] of ok) if (all && m.isNodeMaterial) await applyBaked(m, chart);
 }
 
+// (a solid piece with no colour map of its own: a dark moss grey, not white,
+// as a crown's branch cards and a hull plate both read under a canopy)
+export const BARE = 0x575b4f;
+
+// The GLB's own materials that named no colour map (`named`: the material
+// indices that did; `indexOf`: a scene material's GLB index, the loader's
+// copies included) and got none from a recipe: a two-sided card's meshes
+// taken out of the scene, a solid piece's material made grey. Returns how many
+// meshes were taken out.
+export function bareGlb(scene, indexOf, named) {
+  const out = [];
+  scene.traverse((o) => {
+    const m = o.material;
+    if (!o.isMesh || Array.isArray(m) || m.map || m.vertexColors) return;
+    const i = indexOf(m);
+    if (i == null || i < 0 || named.has(i)) return;
+    if (m.side === DoubleSide) out.push(o);
+    else m.color.setHex(BARE);
+  });
+  for (const o of out) {
+    o.parent.remove(o);
+    o.geometry.dispose();
+  }
+  return out.length;
+}
+
 export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null, baked = null, applyBaked = null }) {
   applyBaked ??= async (m, chart) => withBaked(m, baked, { chart, three: await loadThree() });
   // (mapKeys: the recipe maps the tier draws; null, all of them)
@@ -199,6 +251,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
         ktx2Loader({ renderer })
           .then((k) => withFallback((u) => k.loadAsync(u))(local))
           .then((t) => gameWordOf(t, sizes, path))
+          .then((t) => sharpenPack(t, tier, renderer))
           .catch(() => null),
       );
     }
@@ -269,6 +322,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
             const gltf = await gltfLoader().parseAsync(buffer, '');
             await bind(gltf, slots, glbPath);
             if (recipes && materialFor) await gameMaterials(gltf, glbPath);
+            bareGlb(gltf.scene, (m) => gltf.parser.associations.get(m)?.materials, new Set(slots.filter((x) => x.slot === 'map').map((x) => x.material)));
             return gltf;
           })
           .catch((e) => {

@@ -1,0 +1,33 @@
+# BUDGET=1 QUALITY=<tier> PHASE_WAIT=900000 node scripts/galaxy-check.mjs surface naboo,kamino (lane E2, 2026-10-11, after origin/main merged; SwiftShader; the frame guard holds a level's new materials back, so 'level calls' is the level's own count, drawn or not)
+
+## low, with the level (this branch)
+kamino     calls   81  tris  351270  geo  283  tex 239  prog 145  frame p50 1066.5 p95 1642.9 ms  ground 0.02 ms  load 8.2 s
+           level calls 220  tris 537016  instances 797  lights 0  probe –
+budget kamino     calls 81/350  tris 351270/800000  models 13.6/20 MB  pass
+## low, before (the branch's site before this lane, no level)
+kamino     calls  114  tris  779467  geo  223  tex 252  prog  94  frame p50 6954.4 p95 7283.1 ms  ground 0.02 ms  load 7.7 s
+budget kamino     calls 114/350  tris 779467/800000  models 15.7/20 MB  pass
+
+## mid, with the level (this branch)
+kamino     calls   81  tris  351270  geo  151  tex 239  prog 147  frame p50 1266.7 p95 2899.9 ms  ground 0.03 ms  load 7.4 s
+           level calls 1  tris 4200  instances 2  lights 0  probe –
+budget kamino     calls 81/109  tris 351270/769432  models 16.7/40 MB  pass
+## mid, before (the branch's site before this lane, no level)
+kamino     calls  113  tris  777579  geo  223  tex 251  prog  96  frame p50 7577.2 p95 9016.3 ms  ground 0.02 ms  load 7.5 s
+budget kamino     calls 113/109  tris 777579/769432  models 16.3/40 MB  FAIL (calls 113 > 109, tris 777579 > 769432)
+
+## high, with the level (this branch)
+kamino     calls   77  tris  571957  geo  156  tex 247  prog 160  frame p50 372.6 p95 6616.4 ms  ground 0.03 ms  load 8.8 s
+           level calls 2  tris 10500  instances 5  lights 0  probe –
+budget kamino     calls 77/109  tris 571957/1192616  models 59.4/60 MB  pass
+## high, before (the branch's site before this lane, no level)
+kamino     calls  178  tris 1260461  geo  225  tex 258  prog 116  frame p50 1551.7 p95 15466 ms  ground 0.02 ms  load 7.4 s
+budget kamino     calls 178/109  tris 1260461/1192616  models 57/60 MB  FAIL (calls 178 > 109, tris 1260461 > 1192616)
+
+## ultra, with the level (this branch)
+kamino     calls   59  tris 1495521  geo  387  tex 229  prog 153  frame p50 5933.1 p95 8149.7 ms  ground 0.05 ms  load 9.7 s
+           level calls 715  tris 2121260  instances 2041  lights 0  probe –
+budget kamino     calls 59/1500  tris 1495521/–  models 131.2/240 MB  p95 8149.7/reported ms  pass
+## ultra, before (the branch's site before this lane, no level)
+kamino     calls   88  tris 7774566  geo  225  tex 239  prog 117  frame p50 9083.1 p95 48464.6 ms  ground 0.02 ms  load 9.3 s
+budget kamino     calls 88/1500  tris 7774566/–  models 136.2/240 MB  p95 48464.6/reported ms  pass

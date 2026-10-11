@@ -1,0 +1,54 @@
+tatooine   calls  184  tris  678394  geo  470  tex 397  prog 212  frame p50 4933.1 p95 7299.8 ms  ground 0.03 ms  load 13.6 s
+           level calls 115  tris 100848  instances 264  lights 0  probe –
+           physics cells undefined  bodies undefined  colliders undefined  shapes undefined  trimesh tris undefined  heightfields undefined  dropped 0  step 0.00 ms
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget tatooine   calls 184/350  tris 678394/800000  models 33/20 MB  FAIL (models 33 MB > 20)
+tatooine   calls  183  tris  649067  geo  481  tex 393  prog 217  frame p50 6099.8 p95 6466.4 ms  ground 0.04 ms  load 12.6 s
+           level calls 162  tris 192417  instances 591  lights 0  probe –
+           physics cells 17  bodies 1  colliders 98  shapes 98  trimesh tris 0  heightfields 68  dropped 1189  step 0.00 ms
+budget tatooine   calls 183/84  tris 649067/699643  models 36.5/40 MB  FAIL (calls 183 > 84)
+tatooine   calls  183  tris  835469  geo  506  tex 428  prog 241  frame p50 8399.6 p95 10049.7 ms  ground 0.03 ms  load 11.9 s
+           level calls 222  tris 347351  instances 1212  lights 0  probe –
+           physics cells 17  bodies 1  colliders 98  shapes 98  trimesh tris 0  heightfields 68  dropped 1232  step 0.00 ms
+budget tatooine   calls 183/84  tris 835469/901172  models 76.8/60 MB  FAIL (calls 183 > 84, models 76.8 MB > 60)
+tatooine   calls  172  tris 1747887  geo  517  tex 406  prog 227  frame p50 16132.7 p95 18515.9 ms  ground 0.05 ms  load 13.1 s
+           level calls 248  tris 429877  instances 1212  lights 0  probe –
+           physics cells 38  bodies 1  colliders 25  shapes 25  trimesh tris 0  heightfields 152  dropped 1948  step 0.00 ms
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget tatooine   calls 172/1500  tris 1747887/–  models 162.6/240 MB  p95 18515.9/reported ms  pass
+tatooine@jabba calls   39  tris  285018  geo  127  tex  75  prog  99  frame p50 1749.9 p95 2540.5 ms  ground 0.09 ms  load 10.6 s
+           level calls 120  tris 197825  instances 270  lights 0  probe 3b898361
+           physics cells undefined  bodies undefined  colliders undefined  shapes undefined  trimesh tris undefined  heightfields undefined  dropped 0  step 0.00 ms
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget tatooine@jabba calls 39/350  tris 285018/800000  models 10.8/20 MB  pass
+tatooine@jabba calls   39  tris  285018  geo  135  tex  71  prog  99  frame p50 2971.9 p95 3299.8 ms  ground 0.03 ms  load 11.8 s
+           level calls 246  tris 334787  instances 1374  lights 3  probe 3b898361
+           physics cells 8  bodies 14  colliders 15  shapes 5  trimesh tris 0  heightfields 32  dropped 645  step 0.00 ms
+budget tatooine@jabba calls 39/500  tris 285018/1500000  models 11.6/40 MB  pass
+tatooine@jabba calls   39  tris  461666  geo  130  tex  77  prog  99  frame p50 6499.8 p95 8416.2 ms  ground 0.03 ms  load 11.3 s
+           level calls 391  tris 1180006  instances 9803  lights 3  probe 3b898361
+           physics cells 8  bodies 1  colliders 23  shapes 23  trimesh tris 483  heightfields 32  dropped 535  step 0.00 ms
+budget tatooine@jabba calls 39/700  tris 461666/3000000  models 27.2/60 MB  pass
+tatooine@jabba calls   39  tris 1331106  geo   94  tex  77  prog 102  frame p50 15199.4 p95 34031.9 ms  ground 0.04 ms  load 15.2 s
+           level calls 1  tris 156  instances 78  lights 3  probe 3b898361
+           physics cells 0  bodies 0  colliders 0  shapes 0  trimesh tris 0  heightfields 0  dropped 0  step 0.00 ms
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget tatooine@jabba calls 39/1500  tris 1331106/–  models 60.6/240 MB  p95 34031.9/reported ms  pass
+tatooine@jabba-inside calls   42  tris  254677  geo  209  tex  81  prog  99  frame p50 1844.2 p95 3766.5 ms  ground 0.02 ms  load 10.5 s
+           level calls 122  tris 135520  instances 473  lights 0  probe ad230372
+           physics cells undefined  bodies undefined  colliders undefined  shapes undefined  trimesh tris undefined  heightfields undefined  dropped 0  step 0.00 ms
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget tatooine@jabba-inside calls 42/350  tris 254677/800000  models 9.6/20 MB  pass
+tatooine@jabba-inside calls   38  tris  254480  geo  216  tex  68  prog  96  frame p50 2349.9 p95 4016.6 ms  ground 0.02 ms  load 10.1 s
+           level calls 127  tris 149602  instances 473  lights 3  probe ad230372
+           physics cells 5  bodies 2  colliders 8  shapes 8  trimesh tris 0  heightfields 20  dropped 80  step 0.00 ms
+budget tatooine@jabba-inside calls 38/500  tris 254480/1500000  models 9.8/40 MB  pass
+tatooine@jabba-inside calls   41  tris  435150  geo  214  tex  82  prog  99  frame p50 4262.5 p95 10949.5 ms  ground 0.02 ms  load 10.9 s
+           level calls 128  tris 164916  instances 473  lights 3  probe ad230372
+           physics cells 5  bodies 39  colliders 206  shapes 87  trimesh tris 0  heightfields 20  dropped 58  step 0.00 ms
+budget tatooine@jabba-inside calls 41/700  tris 435150/3000000  models 24.1/60 MB  pass
+tatooine@jabba-inside calls   38  tris 1300568  geo   92  tex  74  prog  97  frame p50 1083.3 p95 38965.1 ms  ground 0.05 ms  load 12.5 s
+           level calls 0  tris 0  instances 0  lights 3  probe ad230372
+           physics cells 0  bodies 0  colliders 0  shapes 0  trimesh tris 0  heightfields 0  dropped 0  step 0.00 ms
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget tatooine@jabba-inside calls 38/1500  tris 1300568/–  models 57.4/240 MB  p95 38965.1/reported ms  pass

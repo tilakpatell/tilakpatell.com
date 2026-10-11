@@ -89,10 +89,15 @@ describe('rebaseDecal', () => {
 
 describe('volume decals (Endor)', () => {
   const json = decalsOf(endor, { origin: [400, 190, 700] });
-  it('the burnt one kept with its alpha and the template’s colour map; the normal-only one dropped', () => {
-    expect(json.kinds).toEqual({ projected: 0, volume: 1 });
-    expect(json.skipped.texture).toBe(1);
-    const [d] = all(json);
+  it('the burnt one kept with its alpha and the template’s colour map; the normal-only one kept with no colour', () => {
+    expect(json.kinds).toEqual({ projected: 0, volume: 2 });
+    expect(json.normalOnly).toBe(1);
+    expect(json.skipped.texture).toBeUndefined();
+    const [d] = all(json).filter((x) => x.texture);
+    const [n] = all(json).filter((x) => !x.texture);
+    expect(n).toMatchObject({ kind: 'volume', texture: null, normalOnly: true, template: 'FX/Decals/VolumeDecals/Templates/DV_BumpedMetal_01' });
+    // (no colour, so no texture to fetch for it)
+    expect(json.textures).toEqual(['FX/Decals/VolumeDecals/Textures/T_Burnt_01_RGB']);
     expect(d.kind).toBe('volume');
     expect(d.texture).toBe('FX/Decals/VolumeDecals/Textures/T_Burnt_01_RGB');
     expect(d.opacity).toBe(1);
