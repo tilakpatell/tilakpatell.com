@@ -21,6 +21,8 @@ const quality = process.env.QUALITY ?? 'high';
 const side = process.env.SIDE ?? 'defend';
 const base = process.env.BASE ?? 'http://127.0.0.1:5188';
 const chrome = process.env.CHROME ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+// (a screenshot's wait: a whole level's frame in software GL takes over a minute, as galaxy-check's SHOT_WAIT knows)
+const SHOT_WAIT = Number(process.env.SHOT_WAIT ?? 120000);
 const NOISE = [/WebSocket|wss:\/\/|relay|nostr/i, /net::ERR_|Failed to load resource/i, /SwiftShader|software WebGL|GPU stall|GL Driver Message|Automatic fallback|WebGL: too many errors/i, /AudioContext was not allowed/i, /\[vite\]|preload/i];
 mkdirSync(out, { recursive: true });
 
@@ -46,7 +48,7 @@ for (const id of list.split(',')) {
   const t0 = Date.now();
   await page.goto(`${base}/?quality=${quality}#/galaxy/${id}/surface?mission=assault`, { waitUntil: 'domcontentloaded' });
   const view = () => page.evaluate(() => window.__surface?.()?.mission ?? null);
-  const shot = (name) => page.screenshot({ path: `${out}/assault-${id}-${name}.png`, timeout: 120000 });
+  const shot = (name) => page.screenshot({ path: `${out}/assault-${id}-${name}.png`, timeout: SHOT_WAIT });
   try {
     await page.waitForFunction(() => window.__surface?.()?.mission?.phase === 'choose', null, { timeout: 240000 });
   } catch {
