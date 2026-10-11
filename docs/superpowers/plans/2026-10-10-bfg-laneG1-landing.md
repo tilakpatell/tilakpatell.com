@@ -8,6 +8,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-10-bf2017-galaxy-on-the-game-design.md`, decisions 1, 2, 3, 6, 11; the "mode catalogue" for ids.
 
+**Narrowed beside PR #877 (read the spec's "Beside the accuracy design" first):** #877's screens lane (`claude/bf2017-screens`, running since 20:15 UTC) writes `info.json` (the 61 mode, level and planet information assets with their names, descriptions and the mode list's order) and the game's screens, and names the galaxy's cards from it. So Task 1's `frontend.json` carries **only** each level's modes from the inclusion options and the `system → levels` join; names, abouts and order come from `info.json` when it lands and from `modes.json` until then. Both lanes touch `ModeMenu.jsx`, `landLine.js`, `BattlefrontWorld.jsx` and `App.jsx`: keep your edits additive and merge keeping both; the lobby state in `module.js` is yours, the `/battlefront`-with-no-level flow is theirs. When their `Play.jsx` lands, the landing may draw it over the lobby with the Free roam card added: a Departure, not a must.
+
 ## Global constraints
 
 - Start from `main`. Own: `src/pages/{Galaxy.jsx,GalaxySurface.jsx,GalaxyRoam.jsx,GalaxyMission.jsx}`, `src/App.jsx` (routes only), `src/components/galaxy/surface/{modes.js,modes.test.js,useModeMenu.js,ModeMenu.jsx,module.js}`, `src/components/galaxy/systems.js` (the `game.to` rows only), `src/components/battlefront/{index.js,module.js,BattlefrontWorld.jsx}` (module: props, the lobby state and `do`; lane 5's running session keeps `figures/`, `fx/`, `input.js`, `camera*.js`, `weather.js`, its HUD parts), `scripts/bf2017-data.mjs` (`frontend` only) and `scripts/lib/bf2017-frontend.mjs` (new), `src/data/bf2017/{frontend.json,modes.json}`, `scripts/landing-check.mjs`.

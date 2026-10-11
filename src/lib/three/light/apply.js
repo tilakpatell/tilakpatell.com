@@ -17,6 +17,13 @@
 //   arena, grid,                    { min, max } and true: the probe grid on ultra (off until measured, A3)
 //   sky = true, post = true, lut,   the sky and fog; the post chain; the grade as a Data3DTexture
 //   filter,                         'pcf' forces three's PCF on the sun (else shadows.js's by tier)
+//   picture,                        the record's picture (lane Q6, grade.js's pictureOf; else entry.picture):
+//                                   true for its tone map, five Gaussians and HBAO numbers alone, or
+//                                   { lut: { url, size }, panorama: { url, horizon }, gradient: { url }, cloudShadow: { url } }
+//                                   for its LUT, painted sky, fog gradient and cloud texture too (loaded
+//                                   here: the LUT strip through gameLut.js, the rest through the stack's
+//                                   KTX2 loader; one that fails to load is left out and named in
+//                                   parts.picture.missing). None: nothing here changes.
 // }) → Promise<{ update(dt, camera), setWeather(entry, seconds), track(object), untrack(object), shadowTerm, passes, params, parts, dispose }>
 //
 // sunShadowNode(lit) → the sun's shadow term as a node (the cascades × the
@@ -35,15 +42,50 @@ import { filterFor, pcssFilter, readPcss, vsmFallback } from './shadows.js';
 import { createSky } from './sky.js';
 import { createSun, readShadowRecord } from './sun.js';
 import { CONES_LIT, createVolumetrics } from './volumetrics.js';
+import { pictureOf } from './grade.js';
 import { backendOf, loadThree, registerLights } from './three.js';
 
 export const WEATHER_FADE = 20; // s: lane G's crossfade between two weathers
 const ENV_EVERY = 2; // s: the sky's environment re-baked this often while a weather fades
 
-export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null } = {}) {
+// The picture's textures, loaded; each that fails is named, not thrown
+async function loadPicture(pic, renderer, THREE) {
+  const out = { lut: null, panorama: null, gradient: null, cloudShadow: null, missing: [] };
+  if (!pic) return out;
+  let ktx2 = null;
+  const load = async (key, url) => {
+    try {
+      ktx2 ??= await (await import('../gltf.js')).ktx2Loader({ renderer });
+      const t = await ktx2.loadAsync(url);
+      t.colorSpace = THREE.NoColorSpace;
+      t.wrapS = THREE.RepeatWrapping;
+      t.wrapT = key === 'cloudShadow' ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+      t.needsUpdate = true;
+      out[key] = t;
+    } catch {
+      out.missing.push(url);
+    }
+  };
+  const jobs = [];
+  if (pic.lut)
+    jobs.push(
+      import('../gameLut.js')
+        .then(({ loadLut }) => loadLut(pic.lut.url, pic.lut.size))
+        .then((t) => (out.lut = t))
+        .catch(() => out.missing.push(pic.lut.url)),
+    );
+  for (const k of ['panorama', 'gradient', 'cloudShadow']) if (pic[k]) jobs.push(load(k, pic[k].url));
+  await Promise.all(jobs);
+  return out;
+}
+
+export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null } = {}) {
   const { THREE } = await loadThree();
   const backend = backendOf(renderer);
   await registerLights(renderer);
+  // (the record's picture, lane Q6: only where asked and only on the node renderer)
+  const pic = backend !== 'webgl' ? pictureOf(entry, picture) : null;
+  const tex = await loadPicture(pic, renderer, THREE);
   const was = { shadows: renderer.shadowMap?.enabled, shadowType: renderer.shadowMap?.type, environment: scene.environment, fogNode: scene.fogNode };
   if (renderer.shadowMap) renderer.shadowMap.enabled = tier !== 'low';
   let params = readEntry(entry, { origin });
@@ -52,7 +94,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   // the sun's soft shadow by tier (shadows.js): PCSS on ultra and high, PCF on mid
   const soft = forced === 'pcf' && tier !== 'low' ? { kind: 'pcf' } : filterFor(tier, readPcss(entry));
   const filter = soft.kind === 'pcss' ? await pcssFilter(soft) : null;
-  const clouds = tier !== 'low' ? await cloudShadowNode(entry) : null;
+  const clouds = tier !== 'low' ? await cloudShadowNode(entry, null, tex.cloudShadow ? { texture: tex.cloudShadow, offset: pic.cloudShadow.offset, rgbm: pic.cloudShadow.rgbm } : {}) : null;
   const sun = await createSun(entry, { tier, rays, filter, cloud: clouds?.node ?? null });
   // (before the first frame: the cascades clone the light's shadow then)
   if (soft.kind === 'vsm') vsmFallback(renderer, sun.light, soft.samples);
@@ -73,12 +115,13 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
 
   // (a renderer that cannot draw, a test's, gets no baked environment)
   const canDraw = typeof renderer.setRenderTarget === 'function';
-  const sky = withSky ? await createSky(entry) : null;
+  const sky = withSky ? await createSky(entry, { panorama: tex.panorama ? { ...pic.panorama, texture: tex.panorama } : null }) : null;
   if (sky) scene.add(sky.mesh);
   let env = sky && canDraw ? sky.envTexture(renderer) : null;
   const probes = volumes?.length && loadCube ? await createProbes(scene, volumes, loadCube, { fallback: env }) : null;
   if (!probes && env) scene.environment = env;
-  const fog = withSky ? await createFog(entry, { origin }) : null;
+  const gradient = tex.gradient ? { texture: tex.gradient, rotation: pic.gradient.rotation, gain: sky?.uniforms.panoramaGain ?? 1 } : null;
+  const fog = withSky ? await createFog(entry, { origin, gradient }) : null;
   if (fog) scene.fogNode = fog.node;
 
   let probeGrid = null;
@@ -90,9 +133,10 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
 
   // (the volumes draw only through the post chain)
   const vols = post && volumetrics && CONES_LIT[tier] && backend !== 'webgl' ? await createVolumetrics(scene, renderer, { tier, source: volumetrics, lights, scale: params.gameToSite }) : null;
-  const passes = post ? passesFor(tier, entry, backend, { scene, camera, light: raysLight(sun), lut, volumetrics: vols }) : [];
-  // (the bloom's threshold from the record's grade: calibrate.js)
-  for (const p of passes) if (p.kind === 'bloom') p.threshold = params.grade.bloomThreshold;
+  const passes = post ? passesFor(tier, entry, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, volumetrics: vols, grade: pic?.grade ?? null }) : [];
+  // (the bloom's threshold from the record's grade: calibrate.js; the
+  // record's own Gaussians have none)
+  for (const p of passes) if (p.kind === 'bloom' && !p.gaussians) p.threshold = params.grade.bloomThreshold;
 
   const show = (p) => {
     sun.set(p);
@@ -115,7 +159,22 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
     shadowTerm,
     track: (object) => contact.track(object),
     untrack: (object) => contact.untrack(object),
-    parts: { sun, soft, clouds, contact, hemi, placed, sky, fog, probes, grid: probeGrid, gridBake, volumetrics: vols },
+    parts: {
+      sun,
+      soft,
+      clouds,
+      contact,
+      hemi,
+      placed,
+      sky,
+      fog,
+      probes,
+      grid: probeGrid,
+      gridBake,
+      volumetrics: vols,
+      grade: pic?.grade ?? null,
+      picture: pic ? { lut: Boolean(tex.lut), panorama: Boolean(tex.panorama), gradient: Boolean(tex.gradient), cloudShadow: Boolean(tex.cloudShadow), gain: sky?.uniforms.panoramaGain?.value ?? null, missing: tex.missing } : null,
+    },
     update(dt, cam = camera) {
       if (fade) {
         fade.t = Math.min(1, fade.t + dt / fade.seconds);
@@ -167,6 +226,9 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       probes?.dispose();
       probeGrid?.dispose();
       sky?.dispose();
+      for (const k of ['panorama', 'gradient', 'cloudShadow']) tex[k]?.dispose();
+      // (a LUT handed in is the caller's; one loaded here is ours)
+      tex.lut?.dispose();
       scene.environment = was.environment;
       scene.fogNode = was.fogNode;
       if (renderer.shadowMap) Object.assign(renderer.shadowMap, { enabled: was.shadows, type: was.shadowType });

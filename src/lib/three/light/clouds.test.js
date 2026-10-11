@@ -57,4 +57,14 @@ describe('cloudShadowNode', () => {
     expect(c.offsets[0].value.y).toBeCloseTo(10);
     expect(await cloudShadowNode({ record: { OutdoorLightComponentData: [{ CloudShadowCoverage: 0, SecondaryCloudShadowCoverage: 0 }] } })).toBe(null);
   });
+  it('takes the record’s cloud texture for its first layer (lane Q6), the drift the same', async () => {
+    const { Texture } = await import('three/webgpu');
+    const plain = await cloudShadowNode(hoth.sunny);
+    const painted = await cloudShadowNode(hoth.sunny, null, { texture: new Texture(), offset: [0, 0], rgbm: true });
+    expect(painted.node).toBeTruthy();
+    expect(painted.node).not.toBe(plain.node);
+    expect(painted.layers).toHaveLength(2);
+    painted.update(2);
+    expect(painted.offsets[0].value.y).toBeCloseTo(10);
+  });
 });

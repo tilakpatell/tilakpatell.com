@@ -1,6 +1,6 @@
 # The Battlefront rulebooks: the hand values
 
-Everything under `src/data/bf2017/` is written by `node scripts/bf2017-data.mjs all --root <export> --level hoth_01 --era Orig` from the 2017 game’s data, each number with a `_source` naming its record, except the two files below, which carry `"source": "hand"`. One line per hand value: what it is, why it is by hand, and where to look to replace it.
+Everything under `src/data/bf2017/` is written by `node scripts/bf2017-data.mjs all --root <export> --level hoth_01 --era Orig` from the 2017 game’s data, each number with a `_source` naming its record, except the hand files and hand values below, which carry `"source": "hand"`. One line per hand value: what it is, why it is by hand, and where to look to replace it.
 
 ## `maps/hoth.stages.json`
 
@@ -15,15 +15,22 @@ The stage order and objectives of Hoth’s Galactic Assault are a logic graph in
 
 ## `points.json`
 
-Battle Points are a logic graph too (`Prefabs/GameplaySupply/PF_Gameplay_BattlePoints_Local`: an `IntEntityData` default 1000 and an `EventToInt` of 1 to 4). Until that graph is read:
+Written by `node scripts/bf2017-data.mjs points` from `Online/BattlepointCostData` (lane G3; it was lane 0's hand table). The record holds the prices, not the earnings:
 
-- `earn.kill` 100, `assist` 50, `vehicleKill` 150, `heroKill` 250: the game as played.
-- `earn.objectiveTick` 10 a second on an objective, `objectiveDamage` 1 a point of damage to one, `squadSpawn` 25: the game as played.
-- `cost.aerial` 1000, `enforcer` 2000, `infiltrator` 2000: the deploy screen as played (the three kinds are the data’s `Class_Special_*`).
-- `cost.vehicles.default` 500, the AT-ST (`Kit_Vehicle_ATST`) 1500, the AT-AT (`Vehicle_Ground_AT-AT_MP`, the map’s walker) 0 since the mode gives it: as played. Keys are `vehicles.json` row ids.
-- `cost.heroes.default` 4000: as played.
-- `limits.heroesPerTeam` 1, `reinforcementsPerTeam` 4: as played.
-- `bpRate` 1: the Instant Action option `InstantActionBPRate`’s default (“DEFAULT” of SLOW, DEFAULT, FAST; `ai.json`’s `instantAction`) as a multiplier.
+- **Read**: `cost.heroes` (`HeroCostConfig`, `EraCost`; every hero 4,000; `default` is the most common), `cost.units` (the default price list, `UnitCostConfig` with `PLANETARY_BATTLES` and an empty `Map`; keyed by the rulebooks' ids where they hold the unit), `cost.other` (OT and PT units the rulebooks do not hold yet, by the record's names), `cost.byMode.<mode>.<level key>` (each map's own table: Hoth's A-wing 200 and AT-ST 800, the Ewok 1,500 on every OT map; Kessel's and Jabba's Palace's Extraction tables), `settings.<mode>` (the names that are no unit of the default list: spawn times, round times, HvV's 35 tickets and `HvV_ENABLE_*`, Strike's bomb timers, the sabers' stamina costs under `global`). The sequel era's 25 names (heroes, units, maps) are refused.
+- **A reading**: the record's `ATAT` (400 on Hoth) is priced on `Kit_Vehicle_ATAT_Objective`, the team's AT-AT kit (the walker's guns a player takes); the escort walker (`Vehicle_Ground_AT-AT_MP`) is the mode's, not bought.
+- **By hand** (`source: "hand"`), the record holding none: `earn` (`kill` 100, `assist` 50, `vehicleKill` 150, `heroKill` 250, `objectiveTick` 10 a second, `objectiveDamage` 1, `squadSpawn` 25: the game as played; `Prefabs/GameplaySupply/PF_Gameplay_BattlePoints_Local` is the graph to read them from), `limits` (`heroesPerTeam` 1, `reinforcementsPerTeam` 4; `kits.json` holds the graph's own per-kit limits), `bpRate` (1: `InstantActionBPRate`'s default).
+
+## `kits.json`
+
+Written by `node scripts/bf2017-data.mjs kits` from `PF_KitLimitations_PlanetaryBattles`, `_HeroesVSVillains`, `_TrooperModes`, `_Skirmish`, `_Skirmish_Space` (lane G3). Each `KitLimitationEntityData` row's `KitId` is the `Identifier` of the kit's gameplay asset (`GP_*`: `GP_Hero_DarthVader` is 518018118), so a row is named by fetching every `*CustomizationGameplayAsset` record. Its `MaxCount`, `Price` and `EnabledAtStage` are field ids the prefab's `PropertyConnections` bind; each is read back up the graph (`bf2017-rulebook-costs.mjs` says how: interface defaults, `PF_HeroKitMaxCount` (a bool cast to 1), `PF_SpecialsKitMaxCount` (its `Int32 4` through an `IntHub`), the `MathEntityData` select, the record's prices). **Resolved**: Galactic Assault 59 of 60 limits and 60 of 60 prices (81 rows, 21 the sequel era's: the shared matcher misses the First Order's and the Resistance's kit names, so `SEQUEL_KITS` names them); all prefabs 103 limits and 115 prices of 168 rows (51 sequel rows left out).
+
+- A debug override (`DynamicDebugVariableEntityData`) is read as unset (true).
+- **By hand**, where the chain ends in a node not read (Skirmish's limits come from the Arcade's settings through a `MathEntityData` input; `SelectIntEntityData`): `{ source: "hand", value, hash }` with the game as played (a hero 1, a reinforcement 4) and `null` for a vehicle (no as-played number); the hash is the field to follow.
+
+## `arcade.json`
+
+Written by `node scripts/bf2017-data.mjs arcade` (lane G3, `bf2017-arcade.mjs`): the battle scenarios (`PF_Skirmish_BattleScenario_Teams_Scenario_*`, 18 of 24 kept: the six with a NewEra side are refused), each side's team record, faction, era, heroes and specials (team records' names: `teams.json` holds no Skirmish team); the 22 `SkirmishParam_*` (choices and the default; `DefaultIntValue` is read as an index, since `Team1ScoreLimit`'s 0 is none of its values); `SkirmishBaseParameters`' order; the bots' names (Empire, Republic, Separatists, and the Rebels' list, which the Resistance shares; the First Order's refused). Every scenario's planet list is empty in the data. Onslaught's and Duel's limits are not records: `PF_Skirmish_GameModeText_*` are the HUD's announcements (`LAST STAND`, `ONE KILL REMAINING`); the limits are the settings (`GameModePreset`, the score and time limits).
 
 ## Read, not by hand, but worth knowing
 
@@ -122,6 +129,20 @@ The game's navmesh (`PathfindingBlobAsset`) is opaque, so the navgrid's mask is 
 - The squad-spawn Battle Points stay `points.json`’s `earn.squadSpawn` 25: `UI/MetaData/ScoreUIMetaData` has the award “SQUAD SPAWN ON YOU” (identifier 2793359391) but `Persistence/Scoring/MPScoring` holds no score for it.
 - The palette picks’ roles (`hud.palette`): the picks are the records’, in order; which feeds the name and which the icon is read by hand from the cell’s hashed graph (`docs/superpowers/evidence/battlefront-lane5b/research-squad.md`).
 - An order’s letter is the objective’s place (A for the first), as the page names its objectives.
+
+## The bots' minds (the sixth design's bots lane)
+
+`ai.json`'s `system`, `coverQueries`, `coverScores`, `difficulties`, `skirmish` and `vehicles`, `ai.names.json` and `ai.creatures.json` are read from the records, every number with its `_source`. What the bots do with them is code (`src/lib/battlefront/ai/`), and where the game's own use of a number is compiled, the reading is by hand:
+
+- **Targeting** (`targeting.js`): the distance scales (`TargetVisibleDistScale`, `CurrentTargetDistScale`, `ElevationDistScaleY`, `CurrentHumanTargetLowHealthDistScale`) multiply the distance read through `TargetDistanceEvaluation`, and `HumanPreferenceScale` multiplies the score: the names say so, the order is ours. `SuppressionScore` (front 0.5, back 0.7) is read as a bonus on a target facing the bot or turned from it (`source: "hand"`: the game uses it for its suppression targets). `VisibleTargetLimit` is read as the share of a squad that may share one target under the coordinator (1 in multiplayer: all of it). `PreferredRange` (start 10, ideal 0.5, end 30) is kept in the rulebook and not used.
+- **Cover queries** (`coverQuery.js`): each score's x is read from its type's name (the angle at the slot between the solid's face and the target, the distance to the nearest enemy, the line of fire, …); a curve value of −1 or less rejects the slot, as the records' "[-] Reject" comments say; the cover-shape variants of `AngleToActor` (a `RuntimeFilter` with low bits) count by their best, since the navgrid's slots carry no shape; `CoverFilter`'s mask 3801088 ("Protected Covers") is read as a full-height slot. By hand: `MAX_SEARCH` 40 m (the farthest a query looks, under `Attack_PvE`'s 70), `STAND` 1.7 m (the game's `StandHeight`) and `SIDE` 1 m (the step round a tall solid for a line of fire). Path avoidance, nav probes and the follow and exposure scores are not read (`unreadScores`).
+- **Difficulty** (`difficulty.js`): a bot's first shot at a new target waits `FiringDelayAfterAquiringTarget` at its distance, its aim settles over `TimeUntilAccurateFromStartOfFirstDamage` (in place of the brain's hand `AIM_SETTLE` when a difficulty is set), its aim box widens by the `AccuracyPenaltySettings` multiplier when its target sprints, crouches or lies prone, and its bolts on a player are scaled by `BucketDamageAiVsHuman.DamageMultiplier`. By hand: the difficulty's one aim number (`aim.scale`, the mode's aim lever) is its sprint penalty over the Medium row's (rookie 1.5, normal 1, expert 0.7); the damage buckets' timings are not modelled; a sim with no difficulty plays as before (lanes 1 and 2's tables).
+- **The Skirmish bots** (`skirmish.js`): which AI logic prefab drives which class ability is read from their names (`ABILITY_LOGIC`: the four grenades → `Grenade`, Sentry, Combat Shield → `Shield`, Battle Command, Blaster Turret → `Turret`, Infiltration → `Infiltration02`, Scan Dart → `ScanPistol`; Vanguard and the Scout Binoculars have none); the logic's poll (its auto-starting 3–6 s delay), each prefab's gap between uses (a delay of 5 s or more), the shield's health threshold (0.5) and the sentry's range (50 m) are its data; `THROW` 25 m, the farthest a bot throws a grenade, is by hand.
+- **Heroes vs Villains** (`missions/hvv.js`): the bots' decisions stay hand rules (no hero-bot record exists: the heroes' minds are logic graphs); a difficulty row scales a blaster bot's chance to hit by its aim scale and a bot's damage to you by its damage.
+- **Names** (`names.js`): the game has no multiplayer list: a faction with no list for a mode takes its Skirmish list; a list that runs out numbers its names (`TK-772 2`); the Rebels' lists are the files named `Rebel_Resistance`.
+- **The squadron trees** (`squadron.js`): the fighters fly `PF_DogfightBehaviour` (the multiplayer dogfight tree) unless told another; `FIRE_CONE` 10°, the cone the cannon fires and the missile locks inside, is by hand (the rules hold the timings, not the cone).
+- **The creatures** (`creature.js`): `ExternalInfluence_Act` is read as a startle-run away from the player, out of the reaction's range, at the settings' medium speed; the wander's reach (`ROAM` 6 m) and pauses (`PAUSE` 2 to 6 s) are by hand; `FakeMass` is not used.
+- **The walkers' gunners** (`vehicleBrain.js`): `ATAT_AI` holds the class (the firing patterns) and the range, not the gun: the gun is the AT-AT's chin cannon from `vehicles.json`; the turret's place (`TURRET` 15 m up, 8 m ahead), its sight (`GUNNER_SIGHT` 250 m: the row's 1,500 m is the gun's reach) and its spread (`SPREAD` 0.02: the row has no aim box) are by hand.
 
 ## `saber.json`
 
