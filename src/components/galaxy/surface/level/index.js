@@ -11,7 +11,7 @@
 //     (ground: the surface's ground mesh, which a pack with a ground.json
 //     draws in the game's terrain layers on the node renderer, lane Q2)
 //   packJson(world, path) → Promise<object>: a JSON file beside the pack
-//     (a pack with the game's shapes, off a phone and the low tier
+//     (a pack with the game's shapes, on every tier and on a phone
 //     (levelPhysics.js's wantsEngine): a Rapier world of its own, the cells'
 //     shapes streamed into it beside the walk world's boxes, the ground under
 //     them a heightfield from heightAt; onPhysics(engine) once it's up: the
@@ -219,7 +219,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, s
       // (lane U's batches on the node renderer: a BatchedMesh culls each
       // instance against each camera, the sun's cascades' too, where an
       // InstancedMesh is drawn whole into every cascade it touches)
-      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier, ground: layered, batch: Boolean(renderer?.isWebGPURenderer) && tier !== 'low' });
+      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier, ground: layered, batch: Boolean(renderer?.isWebGPURenderer) });
       // the far list is the whole arena's table; the cells round you bring
       // its collision (the walk world's solids and floors, switched off when
       // a cell goes)

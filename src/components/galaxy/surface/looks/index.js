@@ -1,5 +1,5 @@
 // Which renderer's looks the surface draws with: ./nodes.js on the node
-// renderer, ./classic.js on the classic one (the low level's,
+// renderer, ./classic.js on the classic one (low and mid without WebGPU,
 // runtime/backend.js). The scene picks once, as it is made
 // (module.js hands it the set its backend can draw, and scene.js calls
 // pickLooks), and every part that makes a material asks looks() rather than

@@ -89,8 +89,9 @@ describe('createLevelPhysics', () => {
 
   it('wants the engine only off phones, above low, on a pack with shapes', () => {
     expect(wantsEngine({ pack, tier: 'high' })).toBe(true);
-    expect(wantsEngine({ pack, tier: 'high', small: true })).toBe(false);
-    expect(wantsEngine({ pack, tier: 'low' })).toBe(false);
+    // (Rapier by default: a phone and the low tier too)
+    expect(wantsEngine({ pack, tier: 'high', small: true })).toBe(true);
+    expect(wantsEngine({ pack, tier: 'low' })).toBe(true);
     expect(wantsEngine({ pack: { physics: {} }, tier: 'ultra' })).toBe(false);
   });
 

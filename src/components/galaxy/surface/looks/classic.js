@@ -1,7 +1,7 @@
-// The surface's looks on the classic renderer: the low level's, and mid's
-// without WebGPU (runtime/backend.js). What scene.js and its parts draw
+// The surface's looks on the classic renderer: low's and mid's where the
+// browser has no WebGPU, or ?gpu=classic (runtime/backend.js). What scene.js and its parts draw
 // with there, by the same names as ./nodes.js: the GLSL originals the node
-// twins were written beside, so the low level draws as the surface did
+// twins were written beside, so a device without WebGPU at low and mid draws as the surface did
 // before the flip. Reached only through module.js's classic branch
 // (import(/* classic */ …)), never by the node renderer.
 

@@ -14,15 +14,16 @@
 // (readOverride); 'nodes-webgl' is the runtime's own, never asked for.
 //
 // The quality level decides too, for a 'nodes' module that brings a classic
-// path of its own (`classic: true`, the galaxy surface's sceneClassic.js;
-// the picture-everywhere design, §3.1): it draws on the node renderer from
-// the mid level up and on the classic renderer at low. A 'nodes' module
-// without one (the Battlefront world, the fixtures) keeps the node renderer
-// at every level. At mid the node chain over WebGL 2 costs about twice the
-// classic frame (lane U's laptop tables), and a mid device without WebGPU
-// is a phone, so mid takes the node renderer only on WebGPU; high and ultra
-// take it always. A tier not given is high, as it was before the levels
-// counted.
+// path of its own (`classic: true`, the galaxy surface's looks/classic.js;
+// the picture-everywhere design, §3.1, and the owner's word since: WebGPU
+// is the renderer for everything by default). Where the browser has WebGPU
+// the node renderer draws on it at every level. Without it, high and ultra
+// take the node renderer over WebGL 2, and low and mid the classic renderer
+// (the node chain over WebGL 2 costs about twice the classic frame, lane
+// U's laptop tables, and a device without WebGPU at those levels is a phone
+// or a weak machine). A 'nodes' module without a classic path (the
+// Battlefront world, the fixtures) keeps the node renderer at every level.
+// A tier not given is high, as it was before the levels counted.
 
 export const KINDS = ['webgl', 'webgpu', 'nodes-webgl'];
 
@@ -34,10 +35,10 @@ export const LEVELS = ['low', 'mid', 'high', 'ultra'];
 
 export function pickBackend({ gpu = false, shading = 'glsl', override = null, lost = false, tier = 'high', classic = false } = {}) {
   if (shading !== 'nodes') return 'webgl';
-  if (classic && (tier === 'low' || override === 'classic')) return 'webgl';
+  if (classic && override === 'classic') return 'webgl';
   const webgpu = gpu && !lost && override !== 'webgl';
-  if (classic && tier === 'mid') return webgpu ? 'webgpu' : 'webgl';
-  return webgpu ? 'webgpu' : 'nodes-webgl';
+  if (webgpu) return 'webgpu';
+  return classic && (tier === 'low' || tier === 'mid') ? 'webgl' : 'nodes-webgl';
 }
 
 // What the settings panel says the world draws with, by kind.

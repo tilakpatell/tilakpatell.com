@@ -296,7 +296,7 @@ export async function create(canvas, ctx, set) {
     sun.shadow.normalBias = 0.05;
   }
   scene.add(sun, sun.target);
-  // the game's light under it on the node renderer, from mid up (nodes/stack.js:
+  // the game's light under it on the node renderer, at every level (nodes/stack.js:
   // the sun's cascades, contact shadows, the level's volumes, the chain's
   // record); none on the classic renderer. Awaited before the first draw.
   let stack = null;
@@ -3639,7 +3639,7 @@ export async function create(canvas, ctx, set) {
     // (the props' scanned surfaces on before their shaders are made, so
     // they're made once)
     await Promise.all([placer.ready.catch(() => {}), kit.ready.catch(() => {}), stacking]);
-    // (the floor's baked light is the classic renderer's, the low level's:
+    // (the floor's baked light where the sun has no cascades: the classic renderer's, and low's:
     // the node renderer's sun casts through its cascades, nodes/stack.js)
     if (!disposed && !site.noGround && !stack?.parts.cascades) {
       const R = 170;

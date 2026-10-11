@@ -32,11 +32,13 @@
 //     post, picture, volumes }) → Promise<null | { track(object),
 //     (volumes: the pack's volumes.json, or a promise of it)
 //     untrack(object), update(dt, camera), parts, dispose() }>
-//     (null on the classic renderer and at low)
+//     (null on the classic renderer)
 
 import { GAME_TO_SITE } from '../../../../lib/three/gameLight';
 
-export const STACK_TIERS = ['mid', 'high', 'ultra'];
+// (low on the node renderer: no cascades, contact shadows or volumes, the
+// floor's baked light instead, but its chain: the render, the bloom, the grade)
+export const STACK_TIERS = ['low', 'mid', 'high', 'ultra'];
 const RAYS_BOX = 80; // m: sun.js's, the god rays' shadow box round the camera
 const RAYS_FAR = 400; // m
 

@@ -37,8 +37,8 @@ describe('readOverride', () => {
 describe('pickBackend by the quality level (a nodes module with a classic path)', () => {
   // tier × gpu × override, every cell: [tier, gpu, override, lost, kind]
   const TABLE = [
-    ['low', true, null, false, 'webgl'],
-    ['low', true, 'webgpu', false, 'webgl'],
+    ['low', true, null, false, 'webgpu'],
+    ['low', true, 'webgpu', false, 'webgpu'],
     ['low', true, 'webgl', false, 'webgl'],
     ['low', false, null, false, 'webgl'],
     ['low', false, 'webgpu', false, 'webgl'],
@@ -80,6 +80,10 @@ describe('pickBackend by the quality level (a nodes module with a classic path)'
       expect(pickBackend({ shading: 'nodes', tier, gpu: true })).toBe('webgpu');
       expect(pickBackend({ shading: 'nodes', tier, gpu: false })).toBe('nodes-webgl');
     }
+  });
+
+  it('WebGPU, where the browser has it, at every level: the default for everything', () => {
+    for (const tier of LEVELS) expect(pickBackend({ shading: 'nodes', classic: true, tier, gpu: true })).toBe('webgpu');
   });
 
   it('a glsl module is classic at every level, whatever it says of a classic path', () => {

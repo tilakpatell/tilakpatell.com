@@ -17,8 +17,10 @@
 // removed from inside a step (a substep hook) is gone once the step is
 // done (world.js defers it); a cell arriving after dispose() adds nothing.
 //
-//   wantsEngine({ pack, small, tier }) → bool: not a phone, not low, a pack
-//     whose `physics` section has meshes (the one rule)
+//   wantsEngine({ pack, small, tier }) → bool: a pack whose `physics`
+//     section has meshes (the one rule): Rapier on every tier and on a phone
+//     (the owner's word: the engine by default), at low's smaller budget; a
+//     WebAssembly that cannot start leaves the walker as it was
 //   createLevelPhysics({ physics (createPhysics's), pack (level.json, with
 //     its `physics` section), loadBin(path) → Promise<ArrayBuffer>, tier =
 //     'high', budget = BUDGETS[tier], cellSize = pack.cell ?? 128,
@@ -47,12 +49,15 @@ import { budgetCell, cellBodies, collidersOf, readShapes } from '../../../../lib
 // hulls' volume, 1,000 keep 97% at 0.2 ms a step; docs/superpowers/
 // HANDOFF-bf2017-physics.md has the table)
 export const BUDGETS = {
+  // (low: half mid's, a judgement until a phone is measured on Echo Base)
+  low: { colliders: 200, triangles: 15000 },
   mid: { colliders: 400, triangles: 30000 },
   high: { colliders: 1000, triangles: 60000 },
   ultra: { colliders: 2000, triangles: 100000 },
 };
 
-export const wantsEngine = ({ pack, small = false, tier = 'high' }) => Boolean(!small && tier !== 'low' && Object.keys(pack?.physics?.meshes ?? {}).length);
+// (callers still pass small and tier: neither holds it back now)
+export const wantsEngine = ({ pack }) => Boolean(Object.keys(pack?.physics?.meshes ?? {}).length);
 
 const RECORD = 32;
 

@@ -1,5 +1,5 @@
 // The surface's looks on the node renderer (WebGPU, or WebGL 2 through the
-// node renderer): the mid level on WebGPU, high and ultra always
+// node renderer): every level on WebGPU, high and ultra without it
 // (runtime/backend.js). The twins lane T wrote beside each GLSL original,
 // by the same names as ./classic.js, so scene.js and its parts draw with
 // whichever set the renderer can; and the game's light under them (the

@@ -1,6 +1,6 @@
 // The surface's own shaders on the classic renderer, as they were before
 // the flip (main at #890: activity.js's beam, the assault's column and
-// meter, the heroes-versus-villains wall), for the low level. Their node
+// meter, the heroes-versus-villains wall), for the classic renderer. Their node
 // twins, line for line, are ../nodes/activity.js, ../nodes/missions.js and
 // ../nodes/hvv.js, with the same uniforms on `material.uniforms`.
 //

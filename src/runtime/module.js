@@ -3,8 +3,8 @@
 // → bool, ... }) into a world module without changing it.
 //
 // A world module: { id, shading: 'glsl' | 'nodes', classic?, mb, label?, ratio?, sharpness?, create(rt, props) }
-// (`classic`: a 'nodes' module that brings a classic path for the low level,
-// and mid without WebGPU: runtime/backend.js; its create reads rt.gfx.backend)
+// (`classic`: a 'nodes' module that brings a classic path, for low and mid
+// without WebGPU: runtime/backend.js; its create reads rt.gfx.backend)
 // (`label` says what the canvas shows, for a screen reader; `ratio` caps its
 // pixel ratio; `sharpness: 'own'`: when frames run late its world draws
 // softer through its own passes, told the level by lowerQuality, and the

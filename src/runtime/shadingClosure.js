@@ -14,8 +14,8 @@
 // glslSites(source) → string[]       the forbidden names it uses, comments stripped first
 //
 // A classic branch: a module with `classic: true` (runtime/backend.js) is
-// made on the classic renderer at the low level, so the scene it reaches
-// there is GLSL and is never drawn by the node renderer. It is a dynamic
+// made on the classic renderer at low and mid without WebGPU, so the scene
+// it reaches there is GLSL and is never drawn by the node renderer. It is a dynamic
 // import marked where it is written, by a comment saying `classic` between
 // its bracket and its path (the galaxy surface's module.js has one), taken
 // only when rt.gfx.backend is 'webgl' (or the renderer is not a node

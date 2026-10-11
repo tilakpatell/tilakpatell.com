@@ -4,9 +4,11 @@ The design: `docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.
 
 ## What runs where
 
+WebGPU, the node renderer, is the default for everything where the browser has it (the owner's word, 2026-10-11); the classic renderer is the fallback for low and mid without it. Rapier (WebAssembly) is the physics on every tier and on a phone wherever a level pack has the game's shapes (`level/levelPhysics.js`'s `wantsEngine`; low at half mid's collider budget, a judgement until a phone is measured).
+
 | level | WebGPU | no WebGPU | `?gpu=webgl` | `?gpu=classic` |
 | --- | --- | --- | --- | --- |
-| low | classic | classic | classic | classic |
+| low | WebGPU | classic | classic | classic |
 | mid | WebGPU | classic | classic | classic |
 | high | WebGPU | WebGL 2, node renderer | WebGL 2, node renderer | classic |
 | ultra | WebGPU | WebGL 2, node renderer | WebGL 2, node renderer | classic |
