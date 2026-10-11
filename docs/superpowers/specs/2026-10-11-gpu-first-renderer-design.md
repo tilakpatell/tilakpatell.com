@@ -202,3 +202,25 @@ Nanite’s inner loop, tried and kept only if it pays. `scripts/meshlets.mjs` cu
 ## 10. Gates, in one place
 
 Every lane: `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`, `npm run coverage:bf2017`, `npm run maps:bf2017`, the seventeen worlds at high on `nodes-webgl` in software GL (`BUDGET=1 QUALITY=high SCANS=game node scripts/galaxy-check.mjs surface <world>`), the parity check on the routes it touches, and on the owner’s laptop (RTX 5090, Edge, `ANGLE=d3d11`, 1,600 × 900 and 3,840 × 2,160, WebGPU and `nodes-webgl` legs): the lane’s own table above, every Star Wars world under 16.7 ms p95 at ultra (`scripts/galaxy-budget.mjs`), FLIP against G1’s reference no worse than before, and the evidence under `docs/superpowers/evidence/gpu-first/<lane>/` with a README saying what each file is and its `_source`. What the cloud cannot run is the desktop’s `gate` job (lane W), never a skipped row.
+
+## 11. Addendum (2026-10-11, later): a list of libraries weighed, and one correction
+
+The owner brought a list of repositories as candidates for the gaps above. Each against the repository as it stands:
+
+| candidate | what it is | verdict |
+| --- | --- | --- |
+| `0beqz/realism-effects` (SSGI, SSR, HBAO, TRAA, motion blur) | a post stack on `pmndrs/postprocessing`, the classic renderer’s | **no**: three r186 ships every one of these as TSL nodes and the light stack already runs them (`light/post.js`); a technique reference at most |
+| `gkjohnson/three-gpu-pathtracer` as an offline lightmap baker | a physically based path tracer on WebGL 2 | **yes, as N3’s second road** (below): the desktop bakes a level’s irradiance into the site’s own charts where the game’s cannot be read; never at run time |
+| `elad12390/three-virtual-geometry` (cluster LOD and GPU culling on three WebGPU) | a one-author library, r180+, numbers unverified | **measure, do not adopt**: N7 benchmarks it beside N1’s path and its own clusters on the three devices; a dependency enters only with its page and a number that beats what the site builds |
+| `Scthe/nanite-webgpu`, `apollo-2006/colossus` | references for compute meshlets and cluster streaming | already the research note’s sources; N7 reads them |
+| three r186’s `GaussianSplatMesh` (and `mkkellogg/GaussianSplats3D`, Spark) | photoreal splats, WebGPU-native | **later, as a spike for the horizon only**: a game vista is not a photo; a splat of Hoth’s mountains means rendering hundreds of views on the desktop and training for hours, for tens of MB a level, against the record’s own painted panorama and the horizon grid’s proxies. Worth one measured try on one level after N4 |
+| `N8python/n8ao` (and a WebGPU port) | screen-space AO with a denoiser | **no**: GTAO with the record’s HBAO numbers is the game’s AO (Q6); a second AO would un-match it |
+| `donmccurdy/glTF-Transform`, `meshoptimizer` | the glTF pipeline | **already in place**: every GLB in the bucket is gltfpack output (meshopt, KTX2), the scripts use `@gltf-transform/*` in 185 places, and the game ships its own LOD chains |
+| `gkjohnson/three-mesh-bvh` | a BVH for queries | **no**: queries are Rapier’s (`lib/physics/queries.js`) |
+
+**The correction, for N3.** The Enlighten atlases exist (200 of them) but the atlases are of no use without each instance’s chart: the exporter writes `TEXCOORD_1` only where a mesh has a second UV set, Hoth’s props have one set, and the charts and each instance’s atlas rectangle live in an Enlighten `DatabaseResource` the exporter never read (`2026-10-10-bf2017-surfaces-design.md`, Q3; `evidence/bf2017-picture/w/atlases/FORMAT.md`). So N3’s far field has two roads, and the lane builds the sampler to take either:
+
+1. **The game’s charts**, if Q3’s desktop spike (`tool/EnlightenResProbe.cs` on the `DatabaseResource`) finds per-instance rectangles and UVs: the pack gains a per-instance `uvRect` and a per-mesh chart UV, and `baked.js` samples the game’s own atlas at `uv1 × rect.zw + rect.xy`.
+2. **The site’s own bake**, where the charts cannot be read: a lane W job (`lightmaps`) on the owner’s GPU runs `three-gpu-pathtracer` over a level’s static instances (the game’s materials, sun and sky from the record, the bounce’s own numbers from `EnlightenComponentData`: `TerrainColor`, `SkyBoxSkyColor`, `SkyBoxGroundColor`, `BounceScale`, `SunScale`), into charts the site unwraps itself with `watlas` (already a devDependency) per instance, written as RGBA16F KTX2 atlases plus direction and sky-visibility maps in the same five-texture shape as Enlighten’s, so `baked.js` reads either road the same way. Numbers to hold: Flux’s `SystemLightmapSize 128`, `MaxLightmapSize 4096`; the mean luminance within lane S’s band against the record.
+
+`three-gpu-pathtracer` is a desktop-script dependency, never shipped to a visitor; it gets its stack page before `scripts/desktop/bf2017-lightmaps.mjs` imports it. N3’s plan carries the two roads from today.
