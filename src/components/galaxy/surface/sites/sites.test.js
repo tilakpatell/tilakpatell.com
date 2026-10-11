@@ -38,6 +38,10 @@ describe('the worlds you can land on', () => {
     describe(id, () => {
       const site = siteOf(id);
 
+      it('wears the game’s own maps for its props’ trims and its ground’s grain (the owner’s rule: every texture in a Star Wars world is the game’s)', () => {
+        expect(site.look?.scanned).toBe('bf2017');
+      });
+
       it('has its sky, its light, its land and where to come down', () => {
         expect(site.place, 'place').toBeTruthy();
         expect(site.line, 'line').toBeTruthy();
@@ -211,12 +215,13 @@ describe('siteFrom', () => {
 
   it('makes a raw site whole exactly as siteOf does', () => {
     expect(EXTRA.bespin).toBeUndefined();
-    expect(siteFrom(SITES.bespin, 'bespin', named('bespin'))).toEqual(siteOf('bespin'));
+    // (with the galaxy's own default, the game's maps, which siteOf gives every one of its sites)
+    expect(siteFrom({ ...SITES.bespin, look: { scanned: 'bf2017', ...SITES.bespin.look } }, 'bespin', named('bespin'))).toEqual(siteOf('bespin'));
   });
 
   it('gives siteOf’s result once the extra quests are folded in', () => {
     const more = EXTRA.endor;
-    const raw = { ...SITES.endor, life: [...(SITES.endor.life ?? []), ...more.life], quests: [...(SITES.endor.quests ?? []), ...more.quests] };
+    const raw = { ...SITES.endor, look: { scanned: 'bf2017' }, life: [...(SITES.endor.life ?? []), ...more.life], quests: [...(SITES.endor.quests ?? []), ...more.quests] };
     expect(siteFrom(raw, 'endor', named('endor'))).toEqual(siteOf('endor'));
   });
 

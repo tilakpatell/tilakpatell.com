@@ -10,7 +10,8 @@
 //   partOf(world, file, empty) → Promise<the part's JSON, or empty>
 //   levelPlaced(site) → Promise<{ life, rides, things }> (the map's actors and vehicles)
 //   levelBusy(site) → Promise<Set of cell keys the level fills>
-//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics }) → null | { update(position), ready(), stats(), physics(), dispose() }
+//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics })
+//     → null | { update(position), ready(), progress(), stats(), physics(), dispose() }
 //     (camera: the placed lights rank by it; light: the world's record, for their scale;
 //     onProbe: the reflection volume you stand in, for gameLit.js)
 //     (a pack with the game's shapes, off a phone and the low tier
@@ -18,6 +19,8 @@
 //     shapes streamed into it beside the walk world's boxes, the ground under
 //     them a heightfield from heightAt; onPhysics(engine) once it's up: the
 //     scene puts the player on the 2017 soldier's body, playerBody.js)
+//     (camera: the placed lights rank by it; light: the world's record, for
+//     their scale; onProbe: the reflection volume you stand in, for gameLit.js)
 //   packOf(world) → Promise<level.json> (fetched once)
 //     (walk: the walk world, { solids, floors }, the pack's collision goes into)
 //
@@ -291,9 +294,9 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       }
       stream?.update(position, tier);
       level?.update(position);
+      bodies?.update(4);
       if (camera) lights?.update(camera);
       probes?.update([position[0], camera?.position.y ?? 1.6, position[1]]);
-      bodies?.update(4);
     },
     ready: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,

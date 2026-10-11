@@ -132,6 +132,12 @@ const DRAWN_SLOTS = new Set(Object.values(MAPS).flat());
 
 // what each map is, for the fetch's order (the desktop encodes detail,
 // height, overlay, emissive, mask in that order)
+// the recipe maps that are colour, read as sRGB whatever their file says (the
+// game stores them as sRGB; some of the drop's KTX2 are tagged linear). The
+// overlays' colour (BreakUpColorRGBA) stays as the file says: its neutral
+// grey is 0.5 read linear (gameMaterial.js's BREAKUP_NEUTRAL).
+export const COLOUR_MAP_KEYS = new Set(['emissive']);
+
 export const MAP_KINDS = {
   detail: 'detail',
   detailArray: 'array',

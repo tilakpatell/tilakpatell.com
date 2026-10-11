@@ -11,7 +11,7 @@
 // scripts/bf2017-level.mjs after the meshes, or alone with --parts.
 //
 //   writeParts({ env, cache, mapName, base (the map's files' stem under web/), map, json, out, subs, mode, weather, dry, log })
-//     → { counts, lines (the README's section) }
+//     → { counts, lines (the README's section), shadowCache, parts (level.json's index) }
 
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
@@ -21,7 +21,7 @@ import { fetchData, fetchWeb, getObject } from './bf2017-fetch.mjs';
 import { inBucket } from './lib/bf2017-paths.mjs';
 import { mainSubs } from './lib/bf2017-level.mjs';
 import { actorsJson, vehiclesJson } from './lib/bf2017-level-actors.mjs';
-import { effectsJson } from './lib/bf2017-level-effects.mjs';
+import { effectsJson } from './lib/bf2017-effects.mjs';
 import { probesJson } from './lib/bf2017-level-probes.mjs';
 import { tracksJson } from './lib/bf2017-level-tracks.mjs';
 import { lightsJson } from './lib/bf2017-lights.mjs';
@@ -73,10 +73,12 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
   put('decals.json', decals);
   counts.decals = decals.count ?? 0;
 
-  // the effect spawns
-  const effects = effectsJson(extras, json, { subworlds: map.subworlds });
+  // the effect spawns, in fidelity X's effects.json (its reader, scripts/lib/bf2017-effects.mjs)
+  const fxDir = join(import.meta.dirname, '..', 'src', 'data', 'bf2017', 'fx');
+  const known = new Set(existsSync(fxDir) ? (await readdir(fxDir)).filter((f) => !f.startsWith('_') && f.endsWith('.json')).map((f) => f.slice(0, -5)) : []);
+  const effects = effectsJson(extras, json, { subworlds: map.subworlds, known });
   put('effects.json', effects);
-  counts.effects = effects.length;
+  counts.effects = effects.count ?? 0;
 
   // the curve tracks of what the pack places
   await fetchWeb(env, cache, ['animtracks/**/*.json']);
@@ -145,6 +147,10 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
   }
   counts.shadow = shadowCache ? 1 : 0;
 
+  // the colour lane's slot (#877): the variations' texture bindings and
+  // tints, empty until that lane writes it
+  put('variations.json', { format: 1, meshes: {}, instances: null });
+
   // the terrain's scatter table, as the bucket has it
   const scatterPath = map.terrain?.scatter;
   const scatter = scatterPath ? await bytes(env, cache, inBucket(scatterPath)) : null;
@@ -170,7 +176,7 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
     `| actors.json | ${counts.actors} | ${kb(size((p) => p === 'actors.json'))} | the scene's life rows |`,
     `| vehicles.json | ${counts.vehicles} | ${kb(size((p) => p === 'vehicles.json'))} | the scene's rides and things |`,
     `| decals.json | ${counts.decals}${q4?.decalsOf ? '' : ' (lane Q4 fills it)'} | ${kb(size((p) => p === 'decals.json'))} | lane Q4's src/lib/three/decals/ |`,
-    `| effects.json | ${counts.effects} | ${kb(size((p) => p === 'effects.json'))} | fidelity X (nothing until it merges) |`,
+    `| effects.json | ${counts.effects} | ${kb(size((p) => p === 'effects.json'))} | fidelity X's effects |`,
     `| tracks.json | ${counts.tracks} | ${kb(size((p) => p === 'tracks.json'))} | src/lib/three/animTracks.js |`,
     `| probes.json and probes/ | ${counts.probes} | ${kb(size((p) => p === 'probes.json' || p.startsWith('probes/')))} | levelProbes.js, lane R's grid |`,
     `| shadow/far.png | ${counts.shadow} | ${kb(size((p) => p.startsWith('shadow/')))} | fidelity S (level.json's shadowCache) |`,
@@ -180,5 +186,7 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
     '',
   ];
   for (const l of lines.slice(4, 15)) log(l);
-  return { counts, lines, shadowCache };
+  // (level.json's index of its parts, by name: each loader finds its own file)
+  const parts = Object.fromEntries([...files.keys()].filter((p) => p.endsWith('.json')).map((p) => [p.replace(/\.json$/, ''), p]));
+  return { counts, lines, shadowCache, parts };
 }
