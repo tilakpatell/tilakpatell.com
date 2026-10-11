@@ -277,7 +277,9 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     const dropped = new Set(cull.dropped ?? []);
     const size = pack0.coarse?.cell ?? 512;
     coarse.update({
-      loaded: (m) => (pack0.meshes[m]?.glb ?? []).some((g) => g && loader?.has(g)),
+      // (a mesh whose file could not be had counts as come: the fine path
+      // will not draw it either, and a cell must not wait on it for ever)
+      loaded: (m) => (pack0.meshes[m]?.glb ?? []).some((g) => g && loader?.settled(g)),
       drawn: (m, key) => {
         if (dropped.has(m)) return false;
         const [cx, cz] = key.split(',').map(Number);

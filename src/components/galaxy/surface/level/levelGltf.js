@@ -9,7 +9,7 @@
 //
 //   createLevelLoader({ world, tier, renderer, fetchBytes, sizes, recipes, materialFor }) → { load(glbPath) → Promise<{ scene } | null>,
 //     parse(bytes, glbPath) → Promise<{ scene } | null>, texture(packPath, sizes?) → Promise<Texture | null>,
-//     has(glbPath), busy(), dispose() }
+//     has(glbPath), settled(glbPath), busy(), dispose() }
 //   (sizes: level.json's `tex`, each map's size per tier; fetchBytes(path,
 //   { glb }) is told which GLB a file is for, so the stream can rank it
 //   (lane N4); parse: a file the stream fetched itself, a coarse cell; has:
@@ -323,6 +323,7 @@ export function createLevelLoader({
   }
 
   const loaded = new Set(); // glb paths whose scene is up
+  const settled = new Set(); // and those that could not be had too
   let pending = 0;
   function track(glbPath, p) {
     pending++;
@@ -335,7 +336,10 @@ export function createLevelLoader({
         if (import.meta.env?.DEV) console.warn('level mesh failed', glbPath, e);
         return null;
       })
-      .finally(() => pending--);
+      .finally(() => {
+        pending--;
+        settled.add(glbPath);
+      });
   }
 
   function load(glbPath) {
@@ -356,6 +360,8 @@ export function createLevelLoader({
     texture,
     refresh,
     has: (glbPath) => loaded.has(glbPath),
+    // (loaded or failed: nothing more will come of it)
+    settled: (glbPath) => settled.has(glbPath),
     busy: () => pending,
     // (the remote name of a pack file, for the evidence)
     url: (path) => assetUrl(packUrl(world, path)),

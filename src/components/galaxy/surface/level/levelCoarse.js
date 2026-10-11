@@ -8,7 +8,7 @@
 // (polygon offset), so while both stand at the swap the fine surface wins.
 //
 //   createCoarse({ parent, index, makeImpostors }) → { addCell(key, gltf), setAtlas(mesh, { albedo, normal }),
-//     update({ loaded(mesh), drawn(mesh, key) }), stats() → { cells, shown, cards }, dispose() }
+//     update({ loaded(mesh), drawn(mesh, key) }), stats() → { cells, shown, waiting, cards }, dispose() }
 //   (makeImpostors: impostor.js's createImpostors, null on the classic renderer)
 
 import { coarseHidden } from '../../../../lib/level/priority.js';
@@ -16,6 +16,7 @@ import { coarseHidden } from '../../../../lib/level/priority.js';
 export function createCoarse({ parent, index, makeImpostors = null }) {
   const cells = new Map(); // key → { group, meshes }
   const atlases = new Map(); // mesh → impostors
+  let waiting = 0; // (the meshes the shown cells wait on, at the last update: what holds a cell)
 
   const shownKeys = () => [...cells].filter(([, c]) => c.group.visible).map(([k]) => k);
   const recordsOf = (mesh, keys) => keys.flatMap((k) => index.cells?.[k]?.impostors?.[mesh] ?? []);
@@ -57,7 +58,9 @@ export function createCoarse({ parent, index, makeImpostors = null }) {
     },
     update({ loaded, drawn }) {
       let changed = false;
+      waiting = 0;
       for (const [key, c] of cells) {
+        waiting += c.meshes.filter((m) => drawn(m, key) && !loaded(m)).length;
         const show = !coarseHidden(c.meshes, { loaded, drawn: (m) => drawn(m, key) });
         if (c.group.visible !== show) {
           c.group.visible = show;
@@ -66,7 +69,7 @@ export function createCoarse({ parent, index, makeImpostors = null }) {
       }
       if (changed) refreshCards();
     },
-    stats: () => ({ cells: cells.size, shown: shownKeys().length, cards: [...atlases.values()].reduce((s, a) => s + a.count, 0) }),
+    stats: () => ({ cells: cells.size, shown: shownKeys().length, waiting, cards: [...atlases.values()].reduce((s, a) => s + a.count, 0) }),
     dispose() {
       for (const c of cells.values()) {
         parent.remove(c.group);

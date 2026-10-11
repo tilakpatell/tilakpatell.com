@@ -236,6 +236,16 @@ describe('the loader under the stream (lane N4)', () => {
     expect(loader.has('meshes/a.lod1.glb')).toBe(true);
   });
 
+  it('counts a GLB that could not be had as settled, not loaded', async () => {
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => Promise.reject(new Error('HTTP/2')), sizes: {} });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(await loader.load('meshes/gone.lod0.glb')).toBeNull();
+    warn.mockRestore();
+    expect(loader.has('meshes/gone.lod0.glb')).toBe(false);
+    expect(loader.settled('meshes/gone.lod0.glb')).toBe(true);
+    expect(loader.settled('meshes/never.lod0.glb')).toBe(false);
+  });
+
   it('parses a coarse cell’s bytes the stream fetched, as it would a mesh', async () => {
     const fetchBytes = vi.fn();
     const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes: {} });

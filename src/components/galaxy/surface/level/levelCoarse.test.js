@@ -51,9 +51,11 @@ describe('createCoarse', () => {
     const loaded = new Set([1, 2]);
     c.update({ loaded: (m) => loaded.has(m), drawn: () => true });
     expect(c.stats()).toMatchObject({ cells: 2, shown: 1 });
+    expect(c.stats().waiting).toBe(1);
     loaded.delete(2);
     c.update({ loaded: (m) => loaded.has(m), drawn: () => true });
     expect(c.stats().shown).toBe(2);
+    expect(c.stats().waiting).toBe(2);
   });
 
   it('draws one impostor mesh an atlas, its cards those of the cells shown', () => {
