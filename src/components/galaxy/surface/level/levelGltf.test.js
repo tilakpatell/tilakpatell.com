@@ -2,7 +2,7 @@ import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WasmError } from '../../../../lib/wasm/load.js';
-import { asColour, BARE, bareGlb, bindSlot, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
+import { asColour, BARE, bareGlb, bindSlot, colourByName, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
 
 // the KTX2 loader the pack's maps come through, as a test sets it (no
 // transcoder here: a test that names no map never asks)
@@ -106,7 +106,7 @@ describe('recipeMaps', () => {
 });
 
 describe('the pack’s word on a map', () => {
-  const sizes = { t_kam_wall_01_cs: { high: 1024, srgb: false }, t_crate_01_cs: { high: 512, srgb: true }, t_old_01_c: { high: 512 } };
+  const sizes = { t_kam_wall_01_cs: { high: 1024, srgb: false }, t_crate_01_cs: { high: 512, srgb: true }, t_old_01_c: { high: 512 }, t_lamp_01_m: { high: 256, srgb: false } };
 
   it('reads a map as the game reads it, sRGB or linear, and marks the texture so', () => {
     const wall = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
@@ -120,17 +120,35 @@ describe('the pack’s word on a map', () => {
     expect(gameWordOf(null, sizes, 'tex/t_old_01_c.ktx2')).toBeNull();
   });
 
-  it('is never overruled by the slot rule or a recipe’s colour key', () => {
-    const wall = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+  it('is overruled in a colour slot only for a map whose name says colour (the 2026-10-11 amendment)', () => {
+    // (Theed’s brick, t_naboo_bricks_05_cs, the game stores BC7_UNORM: read
+    // linear in the map slot it drew the palace near black, 30 32 31, and
+    // read sRGB its cream stone, 210 217 213)
+    const brick = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+    expect(brick.colorSpace).toBe(THREE.NoColorSpace);
     const mat = new THREE.MeshStandardMaterial();
-    bindSlot(mat, 'map', wall);
-    expect(mat.map).toBe(wall);
-    expect(wall.colorSpace).toBe(THREE.NoColorSpace);
-    expect(asColour(wall, true).colorSpace).toBe(THREE.NoColorSpace);
+    bindSlot(mat, 'map', brick);
+    expect(mat.map).toBe(brick);
+    expect(brick.colorSpace).toBe(THREE.SRGBColorSpace);
+    expect(asColour(gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2'), true).colorSpace).toBe(THREE.SRGBColorSpace);
+    // (in a data slot the word stands)
+    const data = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+    bindSlot(mat, 'normalMap', data);
+    expect(data.colorSpace).toBe(THREE.NoColorSpace);
+    expect(asColour(gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2'), false).colorSpace).toBe(THREE.NoColorSpace);
+    // (a map no colour suffix names keeps the word, in a colour slot too: a mask the emissive slot holds)
+    const mask = gameWordOf(new THREE.Texture(), sizes, 'tex/t_lamp_01_m.ktx2');
+    bindSlot(mat, 'emissiveMap', mask);
+    expect(mask.colorSpace).toBe(THREE.NoColorSpace);
     // (a map without the word still takes the slot rule)
     const old = gameWordOf(new THREE.Texture(), sizes, 'tex/t_old_01_c.ktx2');
     bindSlot(mat, 'emissiveMap', old);
     expect(old.colorSpace).toBe(THREE.SRGBColorSpace);
+  });
+
+  it('knows a colour map by DICE’s suffixes, a numbered one and a derived map apart', () => {
+    for (const slug of ['t_kam_wall_01_cs', 't_x_c', 't_x_ca', 't_x_cw', 't_nabboocopperroof_cs_01']) expect(colourByName(slug), slug).toBe(true);
+    for (const slug of ['t_x_cs__orm_04e5dd3e', 't_x_n__normal', 't_x_m', 't_x_nam', 't_concrete', 't_x_e']) expect(colourByName(slug), slug).toBe(false);
   });
 });
 
@@ -257,6 +275,42 @@ describe('createLevelLoader', () => {
     const maps = materialFor.mock.calls[0][1];
     expect('detail' in maps).toBe(true);
     expect('grunge' in maps).toBe(false);
+  });
+});
+
+describe('the baked bounce on the game materials (lane N3)', () => {
+  // two primitives: the first with a second uv set (TEXCOORD_1), the second without
+  async function glbUv1() {
+    const doc = new Document();
+    const buf = doc.createBuffer();
+    const pos = doc.createAccessor().setType('VEC3').setArray(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0])).setBuffer(buf);
+    const uv = doc.createAccessor().setType('VEC2').setArray(new Float32Array([0, 0, 1, 0, 0, 1])).setBuffer(buf);
+    const mesh = doc.createMesh();
+    for (const [shader, uv1] of [['Shaders/SS_A', true], ['Shaders/SS_B', false]]) {
+      const prim = doc.createPrimitive().setAttribute('POSITION', pos).setAttribute('TEXCOORD_0', uv).setMaterial(doc.createMaterial(shader).setExtras({ shader, textures: {} }));
+      if (uv1) prim.setAttribute('TEXCOORD_1', uv);
+      mesh.addPrimitive(prim);
+    }
+    doc.createScene().addChild(doc.createNode().setMesh(mesh));
+    return (await new NodeIO().writeBinary(doc)).buffer;
+  }
+  const recipes = { forGlb: () => [{ shader: 'Shaders/SS_A', maps: {} }, { shader: 'Shaders/SS_B', maps: {} }], maps: {}, tex: {} };
+  const materialFor = (recipe) => Object.assign(new THREE.MeshBasicMaterial({ name: recipe.shader }), { isNodeMaterial: true });
+
+  it('only a mesh with TEXCOORD_1 and a chart takes the atlas; the one without keeps the probe term', async () => {
+    const applied = [];
+    const baked = { chartOf: (glb) => (glb === 'meshes/x.lod0.glb' ? [1, 1, 0, 0] : null) };
+    const applyBaked = async (m, chart) => applied.push([m.name, chart]);
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked, applyBaked });
+    await loader.load('meshes/x.lod0.glb');
+    expect(applied).toEqual([['Shaders/SS_A', [1, 1, 0, 0]]]);
+  });
+  it('no chart for the mesh (lane Q3’s probe has not found them), or no atlas: nothing is applied', async () => {
+    const applied = [];
+    const applyBaked = async (m) => applied.push(m.name);
+    await createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked: { chartOf: () => null }, applyBaked }).load('meshes/x.lod0.glb');
+    await createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked: null, applyBaked }).load('meshes/y.lod0.glb');
+    expect(applied).toEqual([]);
   });
 });
 

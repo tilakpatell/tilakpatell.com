@@ -1,0 +1,27 @@
+{
+ "_source": "node scripts/reference-frames.mjs litWorld --size 800x450 --gpu webgl --plain (2026-10-11, linux, ANGLE swiftshader)",
+ "world": "litWorld",
+ "route": null,
+ "pose": "open",
+ "size": "800x450",
+ "backend": "nodes-webgl",
+ "passes": [
+  "render",
+  "ssgi",
+  "denoise",
+  "ao",
+  "bloom",
+  "godrays",
+  "lensflare",
+  "lut",
+  "smaa",
+  "output"
+ ],
+ "three": "0.186.1",
+ "kind": "candidate (the temporal pass on, no jitter, one shot)",
+ "jitter": null,
+ "quality": "ultra",
+ "commit": "f135c2613",
+ "seconds": 184,
+ "errors": []
+}

@@ -1,6 +1,6 @@
 {
   "date": "2026-10-11",
-  "sha": "53be744f",
+  "sha": "80557a7c8",
   "metrics": {
     "big-files": {
       "value": 30,
@@ -17,7 +17,7 @@
         },
         {
           "file": "src/components/galaxy/surface/scene.js",
-          "n": 4133
+          "n": 4131
         },
         {
           "file": "src/components/middleearth/towns/rivendell/props.js",

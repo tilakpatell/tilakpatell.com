@@ -5,6 +5,7 @@
 // the bones to follow its points.
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
+import { createHullCap } from '../physics/breaks.js';
 import { createBody, rigRagdoll } from './ragdollPhysics';
 
 const flatFloor = (y = 0) => (p, r) => {
@@ -180,6 +181,21 @@ describe('rigRagdoll', () => {
     expect(hips.distanceTo(new THREE.Vector3(p.x, p.y, p.z))).toBeLessThan(1e-4);
   });
 
+  it('counts its points against the live-hull cap while it falls, and gives them back once it rests (the GPU-first design’s N5)', () => {
+    const { bones } = figure();
+    const cap = createHullCap({ max: 64 });
+    const rag = rigRagdoll(bones, { collide: flatFloor(0), push: { x: 0, y: 0, z: -1 }, speed: 2.5, cap });
+    expect(cap.stats().held).toBe(rag.names.length);
+    expect(cap.room()).toBe(64 - rag.names.length);
+    for (let t = 0; t < 8 && !rag.settled; t += 1 / 60) rag.step(1 / 60);
+    expect(rag.settled).toBe(true);
+    expect(cap.stats().held).toBe(0);
+    // (one dropped before it rests gives them back too, once)
+    const early = rigRagdoll(figure().bones, { collide: flatFloor(0), cap });
+    early.release();
+    early.release();
+    expect(cap.room()).toBe(64);
+  });
   it('names its points: indexOf a bone, -1 for one it has not', () => {
     const { bones } = figure();
     const rag = rigRagdoll(bones, { collide: flatFloor(0), speed: 0 });
