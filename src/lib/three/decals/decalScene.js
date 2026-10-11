@@ -56,7 +56,8 @@ export function createDecals({ scene, pack, loader, tier = 'high', backend = 'we
   async function build(key, targets) {
     const t = await ready;
     const { THREE } = t;
-    const list = pack.cells[key] ?? [];
+    // (a normal-only decal has no colour to draw: kept in decals.json, passed over here)
+    const list = (pack.cells[key] ?? []).filter((d) => d.texture);
     const volumes = boxes && volumeOk(backend) ? list.filter((d) => d.kind === 'volume') : [];
     const flat = list.filter((d) => !volumes.includes(d));
     const maps = new Map(await Promise.all([...new Set(list.map((d) => d.texture))].map(async (n) => [n, await textureOf(n)])));

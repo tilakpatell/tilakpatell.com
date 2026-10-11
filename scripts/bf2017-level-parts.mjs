@@ -70,8 +70,22 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
   // until then the same shape, empty, and the README says so)
   const q4 = await import('./lib/bf2017-decals.mjs').catch(() => null);
   const decals = q4?.decalsOf ? q4.decalsOf(extras, json, { subworlds: map.subworlds }) : { format: 1, cell: json.cell ?? 128, count: 0, kinds: {}, skipped: {}, textures: [], files: {}, cells: {}, waiting: 'lane Q4 (scripts/lib/bf2017-decals.mjs)' };
+  // (each decal's colour map as the bucket's web build has it, into the
+  // pack's tex/decals/ and published with it: Q4's contract, E0's hand-off)
+  for (const [name, file] of Object.entries(decals.files ?? {})) {
+    if (!file || file.startsWith('tex/')) continue;
+    const buf = await bytes(env, cache, `web/${file}`);
+    if (!buf) {
+      decals.files[name] = null;
+      continue;
+    }
+    const at = `tex/decals/${lastOf(file)}`;
+    files.set(at, buf);
+    decals.files[name] = at;
+  }
   put('decals.json', decals);
   counts.decals = decals.count ?? 0;
+  counts.normalOnly = decals.normalOnly ?? 0;
 
   // the effect spawns
   const effects = effectsJson(extras, json, { subworlds: map.subworlds });
@@ -169,7 +183,7 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
     `| lights.json | ${counts.lights} | ${kb(size((p) => p === 'lights.json'))} | lane R's placed.js |`,
     `| actors.json | ${counts.actors} | ${kb(size((p) => p === 'actors.json'))} | the scene's life rows |`,
     `| vehicles.json | ${counts.vehicles} | ${kb(size((p) => p === 'vehicles.json'))} | the scene's rides and things |`,
-    `| decals.json | ${counts.decals}${q4?.decalsOf ? '' : ' (lane Q4 fills it)'} | ${kb(size((p) => p === 'decals.json'))} | lane Q4's src/lib/three/decals/ |`,
+    `| decals.json and tex/decals/ | ${counts.decals}${counts.normalOnly ? ` (${counts.normalOnly} normal-only: kept, not drawn until their normal maps are exported)` : ''}${q4?.decalsOf ? '' : ' (lane Q4 fills it)'} | ${kb(size((p) => p === 'decals.json' || p.startsWith('tex/decals/')))} | lane Q4's src/lib/three/decals/ |`,
     `| effects.json | ${counts.effects} | ${kb(size((p) => p === 'effects.json'))} | fidelity X (nothing until it merges) |`,
     `| tracks.json | ${counts.tracks} | ${kb(size((p) => p === 'tracks.json'))} | src/lib/three/animTracks.js |`,
     `| probes.json and probes/ | ${counts.probes} | ${kb(size((p) => p === 'probes.json' || p.startsWith('probes/')))} | levelProbes.js, lane R's grid |`,
