@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { abilityOf, aiOf, camerasOf, cardOf, classOf, heroOf, lightingOf, loadRulebook, mapOf, pointsOf, reinforcementOf, spawnsFor, stagesOf, stringOf, teamsFor, uiOf, vehicleOf, volumeOf, weaponOf } from './rulebook.js';
+import { abilityOf, aiOf, camerasOf, cardOf, classOf, heroOf, lightingOf, loadRulebook, mapOf, pointsOf, reinforcementOf, spawnsFor, squadsOf, stagesOf, stringOf, teamsFor, uiOf, vehicleOf, volumeOf, weaponOf } from './rulebook.js';
 
 describe('the rulebook', () => {
   const rb = loadRulebook();
@@ -51,5 +51,12 @@ describe('the rulebook', () => {
     expect(silo).toBeTruthy();
     expect(silo).not.toBe('ID_FANTASYBATTLES_HOTH_FUEL_SILO');
     expect(stringOf(rb, 'ID_NOT_THERE')).toBe('ID_NOT_THERE');
+  });
+
+  it('reads the squads, and their words beside the strings', () => {
+    expect(squadsOf(rb).size).toBe(4);
+    expect(squadsOf(rb).offsets[0]).toEqual([0, -3]);
+    expect(stringOf(rb, 'ID_SQUAD_SPAWN_BLOCK_REASON_IN_COMBAT')).toBe('IN COMBAT');
+    expect(stringOf(rb, 'ID_SPAWN_GROUP_NAME_A')).toBe('A');
   });
 });

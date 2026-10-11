@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const DIR = import.meta.dirname;
-const FILES = ['teams', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'abilities', 'cards', 'ai', 'cameras', 'ui', 'strings', 'points', 'maps/hoth', 'maps/hoth.lighting', 'maps/hoth.stages', 'maps/sb_endor', 'maps/sb_endor.stages', 'maps/sb_kamino', 'maps/sb_kamino.stages', 'maps/sb_fondor', 'maps/sb_droidbattleship'];
+const FILES = ['teams', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'held', 'abilities', 'cards', 'ai', 'cameras', 'ui', 'squads', 'strings', 'points', 'maps/hoth', 'maps/hoth.lighting', 'maps/hoth.stages', 'maps/sb_endor', 'maps/sb_endor.stages', 'maps/sb_kamino', 'maps/sb_kamino.stages', 'maps/sb_fondor', 'maps/sb_droidbattleship'];
 const read = (name) => JSON.parse(readFileSync(join(DIR, `${name}.json`), 'utf8'));
 const rb = Object.fromEntries(FILES.map((f) => [f, read(f)]));
 const rows = (f) => rb[f].rows ?? rb[f];

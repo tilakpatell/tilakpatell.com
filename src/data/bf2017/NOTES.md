@@ -31,6 +31,15 @@ Battle Points are a logic graph too (`Prefabs/GameplaySupply/PF_Gameplay_BattleP
 - Vader’s armour levels read 850, 875, 900, 950 (`Affector_Health_DarthVader_VaderArmor1..4`).
 - A mount’s own health is 1 (`WSMountHealthComponentData`): its rider takes the hits.
 
+## `held.json` (the weapons in hand: `node scripts/bf2017-held.mjs --root lab/assets/bf2017`)
+
+Every number is read; these are the hand parts around them.
+- **`stance`** is a hand label: the weapon’s `AnimBaseSet` to the stance pack the site packed for it (`wabsRif` → `t`, `wabsPstl` → `p`, `wabsLMG` → `l`: `lib/three/walrusSets/stance.js`’s keys). The game picks its anim set by that name too; the pairing is ours.
+- **The muzzle is the bone, the flash its effect’s offset.** The game spawns a bolt at the camera and draws it from `Wep_Muzzle` (the firing records’ `Shot.WeaponBone`, `SpawnVisualAtWeaponBone`), so the bolts start at `muzzle`. On the A280 (11 mm up, 8.5 mm out), DH-17 (26 mm down) and RK-3 (55 mm down) the flash sits off the bone; it is kept for the flash.
+- **The converge distance** a drawn bolt takes to slide from the gun onto the sim’s line (`battlefront/fx/bolts.js`’s `CONVERGE`, 15 m) and **the catch-up time** it takes to reach the sim’s bolt, which the sim has a step out when it is first seen (`CATCH_UP`, 0.1 s), are by hand: the game hides the gap behind its camera spawn and the bolt’s speed, and no record holds a number for either.
+- **How long a stopped bolt stays drawn** (`battlefront/battle.js`’s `SPENT`, 0.15 s, three of the sim’s steps): a bolt a wall, a body or its range stops is kept in the page’s view, `ended` where it stopped, so the drawing reaches it from the gun; most stop in the step they’re fired (a rifle’s 700 m/s is 35 m a step), and with the nav mask’s walls on Hoth more of them do. By hand, past `CATCH_UP`; a stopped bolt slides onto the sim’s line by where it stopped when that is nearer than `CONVERGE`.
+- **The figure’s turn** (`battlefront/figures/facing.js`): the packed clips face +X because the packer drops `AITrajectory`; the clips’ own constant on that node, −90° about y, is put back on each soldier’s body.
+
 ## `maps/sb_endor.stages.json`
 
 Endor’s space level (`Levels/Space/SB_Endor_01`) says its Starfighter Assault plainly: `SpaceBattle_Gameplay`’s `SpaceBattleObjectiveListEntityData` lists the phases in order (`Phase 1 - Corvettes`, `Phase 2 - Mines`, `Phase 3 - MC80`, then an empty `Intermission`), each with its objectives by name, the attacker (`Team2`, the Empire) and the defender (`Team1`, the Rebels), and its side objectives (the TIE bomber flights). The map row keeps it as `spaceBattle`. What the hand file adds:
@@ -69,6 +78,30 @@ Kamino’s space level (`Levels/Space/SB_Kamino_01`), read the same way: the Sep
 - **HvV, the game as played**: a target a side, drawn at the start and again when one falls; only a target's death scores; **10 points** win; 4 a side; 10 s to come back; 10 s out of the arena and you're down.
 - **HvV, the bots' tuning** (measured, not the game's): a saber stroke takes 150 of a hero's health, lands 0.35 s into it; a blaster bot fires a burst at its gun's rate but no more often than every 1.2 s (the guns' trigger rates are a player's: Lando's 400 a minute out-shot everyone), hits 75 % point blank to 30 % at 60 m, a saber hero turns 70 % of what it sees; one of yours takes 100; the enemy's target counts 40 m nearer when a bot picks its mark. The heroes' health, healing and guns are the rulebooks' (`bf2017Abilities.json`, `heroes.json`'s regen, `weapons.json`).
 - **Blast, the game as played**: **100 kills**, 10 a side (the tier's soldiers cap it). Tuning: a soldier's hit takes 14 more than the assault's (three hits down, not four), they roam within 0.3 of the ground's size round the point halfway between the two sides' spawns, and come back at the level's spawn nearest that point with no enemy within 30 m.
+
+## The Battlefront world's collision with buildings (`levels/hoth/nav.bin`, `lib/battlefront/navMask.js`, `battlefront/map/collision.js`)
+
+The game's navmesh (`PathfindingBlobAsset`) is opaque, so the navgrid's mask is built from the game's own Havok shapes (the pack's `physics/*.bin`) by `scripts/bf2017-nav.mjs`: a cell is blocked when the soldier's capsule meets a shape at its middle. The capsule is the records' (`DefaultSoldierPhysics#CharacterPhysicsData.PhysicalRadius` 0.3, from `Poses[0].StepHeight` 0.4 to `Poses[0].Height` 1.7, read from `physics/soldier.json` and written into the file's header with their sources); what is by hand:
+
+- **The fine grid's 0.5 m** (the walkable test's): four to a navgrid cell. The game's `CoverConstants.TerrainHeightSamplingStep` is 0.25; half as fine measured clean (22 of 22 paths a side) at an eighth of the bytes.
+- **Where the fine grid is sampled**: only in a cell whose middle a capsule grown to the cell's corners (2 m × √½ + 0.3) meets, so a wall thinner than a cell between two middles is still in the fine grid.
+- **A blocked cell's top** (for the line of sight and the cover slots) is a ray down from 25 m over the ground (`TOP_REACH`: a byte of decimetres); where the ray misses though the capsule met a shape, the capsule's height, 1.7 m.
+- **The mask's cover slots** come one to a navgrid cell along its edges (2 m apart, not `SlotSpacing`'s 2.2: the mask has no faces longer than a cell), set back `OcclusionCheckDist` 0.7 from the face, crouch or stand by `CrouchHeight` 0.94 and `StandHeight` 1.7 as the box slots are. The game's `CoverZones` are not exported.
+- **The camera's sweep radius** is `StormTrooperShared#SoldierCameraComponentData.CameraCullSphereRadius` 0.15, read as the ball swept along the arm; the records name no camera collision radius beyond `SoldierThirdPersonCameraData.CollisionWidthPadding` 0.17, which `camera.js` already takes off the hit. The ground march's 0.2 m step and 0.25 m clearance are the page's own, as before.
+- **A box solid blocks only above a step** (`nav.js`'s `STEP_UP`, the record's `StepHeight` 0.4): a box whose top is under the ground plus a step (13,000 of Hoth's 47,000 hull boxes are buried) blocks nothing.
+
+## Squads (`squads.json`, read by `lib/battlefront/ai/squad.js` and `spawn.js`)
+
+`squads.json` is read from the game (`scripts/lib/bf2017-rulebook-squads.mjs`); what the code around it adds by hand:
+
+- `IN_COMBAT` 5 s (`spawn.js`): how long a soldier hit, or hitting, cannot be spawned on. The game names what puts a soldier in combat (the killswitches `Online/Killswitches/SquadSpawn_InCombat_When*`, kept as `inCombat`) but keeps no time for it.
+- `SQUAD_SAFE` (`spawn.js`) is the record’s `safeEnemyDistance` 50 m (`SpawnLocationFinderEntityData.SpawnSafeEnemyDistance`); that an enemy that near makes a mate “in combat” (`ID_SQUAD_SPAWN_BLOCK_REASON_IN_COMBAT`) is by hand. `pickSpawn`’s `SAFE` 30 m for spawn points stays by hand, as before.
+- The block reasons by hand (`blocked`, `spawn.js`): a mate in the air (`'airborne'`) and a rolling mate show `ID_SQUAD_SPAWN_BLOCK_REASON_OTHER` (“UNAVAILABLE”), as the game has no airborne or rolling string.
+- The leader (`ai/squad.js`): the first bot alive, else the first alive, so the bots keep to the commander’s order and not the player’s. The game’s squad leading is native code.
+- `joinSquad` (`ai/squad.js`): a player takes the team’s first squad with room; with every squad full, the last bot of the first squad moves to a new one. The game’s parties and auto-partners (`AutoPartnerEntityData`, `TacticalGroupManagerEntityData`) are native code.
+- The squad-spawn Battle Points stay `points.json`’s `earn.squadSpawn` 25: `UI/MetaData/ScoreUIMetaData` has the award “SQUAD SPAWN ON YOU” (identifier 2793359391) but `Persistence/Scoring/MPScoring` holds no score for it.
+- The palette picks’ roles (`hud.palette`): the picks are the records’, in order; which feeds the name and which the icon is read by hand from the cell’s hashed graph (`docs/superpowers/evidence/battlefront-lane5b/research-squad.md`).
+- An order’s letter is the objective’s place (A for the first), as the page names its objectives.
 
 ## `saber.json`
 

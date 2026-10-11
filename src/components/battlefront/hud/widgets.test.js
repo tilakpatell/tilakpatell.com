@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { REF, heatColour, markerProjection, meterThirds, offerRows, placeWidget } from './widgets.js';
+import { REF, heatColour, markerProjection, meterThirds, offerRows, placeWidget, squadListRows } from './widgets.js';
 
 describe('the game’s widgets, placed and filled', () => {
   it('anchors a bottom-right widget to the viewport’s bottom right, scaled by the shorter side', () => {
@@ -56,5 +56,30 @@ describe('the game’s widgets, placed and filled', () => {
     // (looking down +Z, the camera's right is −X: a thing behind and to the right goes on the right edge)
     expect(markerProjection([-5, 0, -10], camera, { w: 1600, h: 900 }).x).toBeGreaterThan(800);
     expect(markerProjection([5, 0, -10], camera, { w: 1600, h: 900 }).x).toBeLessThan(800);
+  });
+
+  it('colours the squad list as the game’s cell does: grey when down, orange alive, the icon dark brown', () => {
+    const squad = {
+      letter: 'A',
+      members: [
+        { id: 'p0', name: 'You', cls: 'heavy', alive: true, local: true, order: null },
+        { id: 'b1', name: 'Trooper 1', cls: 'assault', alive: true, local: false, order: 'B' },
+        { id: 'b2', name: 'Trooper 2', cls: 'officer', alive: false, local: false, order: null },
+      ],
+    };
+    const rows = squadListRows(squad);
+    expect(rows.map((r) => r.id)).toEqual(['p0', 'b1', 'b2']);
+    expect(rows[0]).toMatchObject({ local: true, nameColour: 'rgb(242 174 10)', iconColour: 'rgb(94 65 1)', showName: true, turn: false });
+    expect(rows[0].icon).toMatch(/Class_Troopers_Heavy_01\.svg$/);
+    expect(rows[1]).toMatchObject({ nameColour: 'rgb(242 174 10)', iconColour: 'rgb(94 65 1)', letter: 'B', turn: true, dead: false });
+    expect(rows[2]).toMatchObject({ nameColour: 'rgb(120 130 135)', dead: true, letter: null });
+    expect(squadListRows(squad, { option: 'NoOutline' }).every((r) => !r.showName)).toBe(true);
+    expect(squadListRows(squad, { option: 'Off' })).toEqual([]);
+    expect(squadListRows(null)).toEqual([]);
+  });
+
+  it('keeps the squad list to the game’s four rows: the player and three', () => {
+    const members = Array.from({ length: 6 }, (_, i) => ({ id: `b${i}`, name: `T${i}`, cls: 'assault', alive: true, local: i === 0, order: null }));
+    expect(squadListRows({ letter: 'A', members })).toHaveLength(4);
   });
 });

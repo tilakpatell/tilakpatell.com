@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { bitmapWanted, excludedFilms, filmRows, fontAllowed, iconFamily, iconName, isSequelFilm, isSequelUi, spriteOf, stringTables, symbolOf, vttOf } from './bf2017-ui.mjs';
+import { bitmapWanted, excludedFilms, filmRows, fontLicence, OWNER_LICENCE, iconFamily, iconName, isSequelFilm, isSequelUi, spriteOf, stringTables, symbolOf, vttOf } from './bf2017-ui.mjs';
 
 const MISC = readFileSync(join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'web', 'misc.jsonl'), 'utf8')
   .split('\n')
@@ -43,14 +43,12 @@ describe('the 2017 front end’s cut', () => {
     expect(isSequelFilm('UI/Video/Loading/Planet_Endor_01')).toBe(false);
   });
 
-  it('ships the open fonts only', () => {
-    expect(fontAllowed('LinotypeUnivers-420Cn.ttf')).toBe(false);
-    expect(fontAllowed('UI/Resources/Fonts/LT_UniversCond820.ttf')).toBe(false);
-    expect(fontAllowed('RaxusPrimeNumericalMonospace_Bold.ttf')).toBe(false);
-    expect(fontAllowed('Aurebesh.ttf')).toBe(false);
-    expect(fontAllowed('Roboto-Regular.ttf')).toBe(true);
-    expect(fontAllowed('NotoSansCJKsc-Regular.ttf')).toBe(true);
-    expect(fontAllowed('Cuprum-Bold.ttf')).toBe(true);
+  it('ships every font, each under its own licence or the owner’s', () => {
+    expect(fontLicence('LinotypeUnivers-420Cn.ttf')).toEqual(OWNER_LICENCE);
+    expect(fontLicence('UI/Resources/Fonts/Aurebesh.ttf').licence).toBe('owner');
+    expect(fontLicence('Roboto-Regular.ttf').licence).toBe('Apache-2.0');
+    expect(fontLicence('NotoSansCJKsc-Regular.ttf').licence).toBe('OFL-1.1');
+    expect(fontLicence('Cuprum-Bold.ttf').file).toBe('OFL.txt');
   });
 
   it('names and files the icons as lane 0 does', () => {
