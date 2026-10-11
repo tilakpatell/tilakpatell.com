@@ -100,7 +100,8 @@ export const SITES = {
       pits: canyonPits(),
     },
     weather: [{ kind: 'sand', count: 1300 }],
-    land: { at: [0, 0], yaw: 0.9 },
+    // (facing Mos Eisley, its domes and towers 380 m south-east: the game's town)
+    land: { at: [0, 0], yaw: 2.22 },
     places: [
       {
         id: 'homestead',
