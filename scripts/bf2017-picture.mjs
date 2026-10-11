@@ -16,7 +16,17 @@
 // src/data/bf2017/light/<world>.picture.json: per weather { lut, panorama:
 // { url, name, horizon, size }, gradient: { url, name }, cloudShadow: { url, name } },
 // the shape applyGameLight's `picture` takes (urls without the base). A
-// texture the bucket lacks prints `missing:` and is left out.
+// texture the bucket lacks prints `missing:` and is left out; a weather whose
+// record names no panorama (an interior under a ceiling, a space level) says
+// so with `panorama: null`, and applyGameLight keeps the model's sky.
+//
+// The LUT is the game's whole 33³ (<weather>.lut33.png, a 1,089 × 33 strip:
+// bf2017-light.mjs keeps every other point, 17³, for the classic surface's
+// grade; the picture's LUT reads after a linear tonemap, where the upper
+// tones the game lifts sit between the 17³'s points).
+//
+// The textures are published by hash (scripts/assets-publish.mjs, the
+// manifest src/data/galaxyAssets.json), so git keeps none of them.
 //
 // The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment.
 
@@ -26,8 +36,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { bucketFile } from './lib/bf2017-bucket.mjs';
+import sharp from 'sharp';
 import { dropMips, ktx2Info, mipsToFit } from './lib/ktx2-mips.mjs';
+import { lutStrip } from './lib/bf2017-light.mjs';
 import { picturedNames, recordOf, rowMean } from './lib/bf2017-picture.mjs';
+import { gradeOf } from '../src/lib/three/light/grade.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CLOUD_SIZE = 1024; // px: a cloud map's served width
@@ -65,6 +78,29 @@ const decode = (buf) => {
   return r;
 };
 
+// The record's grading LUT, all 33 slices (textures.jsonl's volume), as
+// one strip beside the 17³; null where the bucket has no cube by that name
+async function fullLut(w, name) {
+  const t = manifest.get(name.toLowerCase());
+  if (t?.type !== 'volume' || t.width !== t.height || t.depth !== t.width) {
+    console.log(`  ${w}: the LUT ${name} is not a cube in the bucket`);
+    return null;
+  }
+  const n = t.width;
+  const slices = [];
+  for (const f of t.files) {
+    const { data } = await sharp(readFileSync(await bucketFile(CACHE, `web/${f}`)))
+      .raw({ depth: 'ushort' })
+      .toBuffer({ resolveWithObject: true });
+    slices.push(new Uint16Array(data.buffer, data.byteOffset, data.length / 2));
+  }
+  const fname = `${w}.lut${n}.png`;
+  await sharp(Buffer.from(lutStrip(slices, n)), { raw: { width: n * n, height: n, channels: 3 } })
+    .png({ compressionLevel: 9 })
+    .toFile(join(out, fname));
+  return { url: site(fname), size: n, name, _source: { size: `textures.jsonl: ${name} is a ${n}³ volume, kept whole` } };
+}
+
 const out = join(ROOT, 'public/textures/galaxy/bf2017/light', world);
 mkdirSync(out, { recursive: true });
 const site = (f) => `textures/galaxy/bf2017/light/${world}/${f}`;
@@ -79,8 +115,17 @@ for (const [w, e] of Object.entries(light.weathers ?? {})) {
       console.log(`  missing: data/${name}.json.gz`);
     }
   }
-  const names = picturedNames(recordOf(...raws));
-  const row = { ...(e.grading?.lut ? { lut: { url: e.grading.lut, size: e.grading.lutSize } } : {}) };
+  const record = recordOf(...raws);
+  const names = picturedNames(record);
+  const row = {};
+  const lutName = gradeOf(record)?.lut?.name ?? null;
+  const lut = lutName ? await fullLut(w, lutName) : null;
+  if (lut) row.lut = lut;
+  else if (e.grading?.lut) row.lut = { url: e.grading.lut, size: e.grading.lutSize, _source: { size: `${world}.json's 17³ (bf2017-light.mjs): the record's 33³ was not in the bucket` } };
+  if (!names.panorama) {
+    row.panorama = null;
+    row._panorama = 'the record names no PanoramicTexture: applyGameLight keeps the model’s sky';
+  }
   for (const [kind, name] of Object.entries(names)) {
     if (!name) continue;
     const t = manifest.get(name.toLowerCase());
@@ -106,7 +151,11 @@ for (const [w, e] of Object.entries(light.weathers ?? {})) {
     const entry = { url: site(fname), name };
     if (kind === 'panorama') {
       const img = decode(readFileSync(file));
-      Object.assign(entry, { horizon: rowMean(img.rgba, img.width, img.height - 1), size: [img.width, img.height] });
+      Object.assign(entry, {
+        horizon: rowMean(img.rgba, img.width, img.height - 1),
+        size: [img.width, img.height],
+        _source: { horizon: `measured: the mean of the decoded ${ktx}'s foot row, linear 0…1 (rowMean)`, size: `${ktx}'s own (the desktop's UASTC encode)` },
+      });
     }
     row[kind] = entry;
     console.log(`  ${w}: ${kind} ${name} → ${fname}${entry.horizon ? ` (horizon ${entry.horizon.join(', ')})` : ''}`);

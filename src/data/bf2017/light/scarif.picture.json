@@ -1,0 +1,37 @@
+{
+  "_from": "scripts/bf2017-picture.mjs scarif: the weathers' VE records (src/data/bf2017/light/scarif.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "scarif",
+  "weathers": {
+    "sunset": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/scarif/sunset.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_02",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_02 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/scarif/sunset.panorama.ktx2",
+        "name": "S9_3/Scarif/Levels/MP/Scarif_02/Lighting/Sky/T_Beach_Sky_Sunset_01_C",
+        "horizon": [
+          0.0701,
+          0.0926,
+          0.1194
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/s9_3/scarif/levels/mp/scarif_02/lighting/sky/t_beach_sky_sunset_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/s9_3/scarif/levels/mp/scarif_02/lighting/sky/t_beach_sky_sunset_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/scarif/sunset.gradient.ktx2",
+        "name": "S9_3/Scarif/Levels/MP/Scarif_02/Lighting/Sky/T_Beach_Sky_Sunset_01_Fog_C"
+      }
+    }
+  }
+}

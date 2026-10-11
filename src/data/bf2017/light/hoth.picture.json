@@ -4,8 +4,12 @@
   "weathers": {
     "sunny": {
       "lut": {
-        "url": "textures/galaxy/bf2017/light/hoth/sunny.lut.png",
-        "size": 17
+        "url": "textures/galaxy/bf2017/light/hoth/sunny.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Hoth/Sunny_01/T_CC_Hoth_Sunny_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Hoth/Sunny_01/T_CC_Hoth_Sunny_01 is a 33³ volume, kept whole"
+        }
       },
       "panorama": {
         "url": "textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2",
@@ -18,7 +22,11 @@
         "size": [
           2048,
           512
-        ]
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/hoth/sunny_01/t_hoth_sunny_02_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/hoth/sunny_01/t_hoth_sunny_02_c.ktx2's own (the desktop's UASTC encode)"
+        }
       },
       "gradient": {
         "url": "textures/galaxy/bf2017/light/hoth/sunny.gradient.ktx2",
@@ -31,8 +39,12 @@
     },
     "sunset": {
       "lut": {
-        "url": "textures/galaxy/bf2017/light/hoth/sunset.lut.png",
-        "size": 17
+        "url": "textures/galaxy/bf2017/light/hoth/sunset.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Hoth/Sunset_01/T_CC_Hoth_Sunset_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Hoth/Sunset_01/T_CC_Hoth_Sunset_01 is a 33³ volume, kept whole"
+        }
       },
       "panorama": {
         "url": "textures/galaxy/bf2017/light/hoth/sunset.panorama.ktx2",
@@ -45,7 +57,11 @@
         "size": [
           2048,
           512
-        ]
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/hoth/sunset_01/t_hoth_sunset_01_panoramic_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/hoth/sunset_01/t_hoth_sunset_01_panoramic_c.ktx2's own (the desktop's UASTC encode)"
+        }
       },
       "gradient": {
         "url": "textures/galaxy/bf2017/light/hoth/sunset.gradient.ktx2",
@@ -58,8 +74,12 @@
     },
     "interior": {
       "lut": {
-        "url": "textures/galaxy/bf2017/light/hoth/interior.lut.png",
-        "size": 17
+        "url": "textures/galaxy/bf2017/light/hoth/interior.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Hoth/Interior_01/T_CC_Hoth_Interior_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Hoth/Interior_01/T_CC_Hoth_Interior_01 is a 33³ volume, kept whole"
+        }
       },
       "panorama": {
         "url": "textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2",
@@ -72,11 +92,19 @@
         "size": [
           2048,
           512
-        ]
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/hoth/sunny_01/t_hoth_sunny_02_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/hoth/sunny_01/t_hoth_sunny_02_c.ktx2's own (the desktop's UASTC encode)"
+        }
       },
       "gradient": {
         "url": "textures/galaxy/bf2017/light/hoth/sunny.gradient.ktx2",
         "name": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunny.clouds.ktx2",
+        "name": "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_Arctic_01_CloudShadow_RGBM"
       }
     }
   }

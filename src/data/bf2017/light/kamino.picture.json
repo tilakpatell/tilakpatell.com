@@ -1,0 +1,76 @@
+{
+  "_from": "scripts/bf2017-picture.mjs kamino: the weathers' VE records (src/data/bf2017/light/kamino.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "kamino",
+  "weathers": {
+    "stormy": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/kamino/stormy.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Kamino/Stormy_01/T_CC_Kamino_Stormy_02_C",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Kamino/Stormy_01/T_CC_Kamino_Stormy_02_C is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/kamino/stormy.panorama.ktx2",
+        "name": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Panoramic_C",
+        "horizon": [
+          0.0076,
+          0.0255,
+          0.036
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/kamino/stormy_01/t_kamino_stormy_01_panoramic_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/kamino/stormy_01/t_kamino_stormy_01_panoramic_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/kamino/stormy.gradient.ktx2",
+        "name": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/kamino/stormy.clouds.ktx2",
+        "name": "Levels/Lighting/Kamino/Stormy_01/T_Cloudshadow_Kamino_01_M"
+      }
+    },
+    "interior": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/kamino/interior.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Kamino/Interior_01/T_CC_Kamino_Interior_01_C",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Kamino/Interior_01/T_CC_Kamino_Interior_01_C is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/kamino/stormy.panorama.ktx2",
+        "name": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Panoramic_C",
+        "horizon": [
+          0.0076,
+          0.0255,
+          0.036
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/kamino/stormy_01/t_kamino_stormy_01_panoramic_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/kamino/stormy_01/t_kamino_stormy_01_panoramic_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/kamino/stormy.gradient.ktx2",
+        "name": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/kamino/stormy.clouds.ktx2",
+        "name": "Levels/Lighting/Kamino/Stormy_01/T_Cloudshadow_Kamino_01_M"
+      }
+    }
+  }
+}

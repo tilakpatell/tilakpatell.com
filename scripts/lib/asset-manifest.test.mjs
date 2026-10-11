@@ -74,6 +74,11 @@ describe('the published assets’ manifest', () => {
     put(pub, 'models/galaxy/bf2017/clips/humanoid.glb', 'pack');
     put(pub, 'films/bf2017/planet-hoth-01.webm', 'film');
     put(pub, 'films/bf2017/planet-hoth-01.webp', 'poster');
+    put(pub, 'textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2', 'sky');
+    put(pub, 'textures/galaxy/bf2017/light/hoth/sunny.lut33.png', 'lut');
+    // (the classic surface's 17³ and probes stay committed)
+    put(pub, 'textures/galaxy/bf2017/light/hoth/sunny.lut.png', 'lut17');
+    put(pub, 'textures/galaxy/bf2017/light/hoth/sunny.px.hdr', 'probe');
     const credits = {
       'crew-luke': { title: 'Star Wars Battlefront II (2017): characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh', source: GAME, file: '/models/galaxy/crew/luke.glb' },
       'surface-hilt': { title: 'Star Wars Battlefront II (2017): gameplay/hilt_mesh', source: GAME, file: '/models/galaxy/surface/hilt.glb' },
@@ -89,6 +94,8 @@ describe('the published assets’ manifest', () => {
       ['models/galaxy/crew/luke.lod1.glb', 'crew', 'characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh'],
       ['models/galaxy/surface/hilt.glb', 'surface', 'gameplay/hilt_mesh'],
       ['models/galaxy/surface/hilt.ultra.glb', 'ultra', 'gameplay/hilt_mesh'],
+      ['textures/galaxy/bf2017/light/hoth/sunny.lut33.png', 'picture', 'textures/galaxy/bf2017/light/hoth/sunny.lut33.png'],
+      ['textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2', 'picture', 'textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2'],
     ]);
     expect(got.find((f) => f.path === 'models/galaxy/crew/luke.glb')).toMatchObject({ bytes: 4, hash: hashOf(Buffer.from('luke')) });
   });

@@ -1,0 +1,68 @@
+{
+  "_from": "scripts/bf2017-picture.mjs tatooine: the weathers' VE records (src/data/bf2017/light/tatooine.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "tatooine",
+  "weathers": {
+    "sunny": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/tatooine/sunny.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_05",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_05 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/tatooine/sunny.panorama.ktx2",
+        "name": "Levels/Lighting/Tatooine/Sunny/Textures/T_Tatooine_Sunny_06_C",
+        "horizon": [
+          0.6471,
+          0.6689,
+          0.7447
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/tatooine/sunny/textures/t_tatooine_sunny_06_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/tatooine/sunny/textures/t_tatooine_sunny_06_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/tatooine/sunny.gradient.ktx2",
+        "name": "Levels/Lighting/Tatooine/Sunny/Textures/T_Tatooine_Sunny_06_Fog_C"
+      }
+    },
+    "interior": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/tatooine/interior.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_05",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_05 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/tatooine/sunny.panorama.ktx2",
+        "name": "Levels/Lighting/Tatooine/Sunny/Textures/T_Tatooine_Sunny_06_C",
+        "horizon": [
+          0.6471,
+          0.6689,
+          0.7447
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/tatooine/sunny/textures/t_tatooine_sunny_06_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/tatooine/sunny/textures/t_tatooine_sunny_06_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/tatooine/sunny.gradient.ktx2",
+        "name": "Levels/Lighting/Tatooine/Sunny/Textures/T_Tatooine_Sunny_06_Fog_C"
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "_from": "scripts/bf2017-picture.mjs naboo: the weathers' VE records (src/data/bf2017/light/naboo.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "naboo",
+  "weathers": {
+    "dusk": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/naboo/dusk.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_02",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_02 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/naboo/dusk.panorama.ktx2",
+        "name": "Levels/Lighting/Naboo/Dusk/T_Naboo_01_Dusk_01_C",
+        "horizon": [
+          0.2716,
+          0.2353,
+          0.1997
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/naboo/dusk/t_naboo_01_dusk_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/naboo/dusk/t_naboo_01_dusk_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/naboo/dusk.gradient.ktx2",
+        "name": "Levels/Lighting/Naboo/Dusk/T_Naboo_01_Dusk_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/naboo/dusk.clouds.ktx2",
+        "name": "Levels/Lighting/Naboo/Cloudy/T_Naboo_Cloudy_Cloudshadow_01_C"
+      }
+    }
+  }
+}

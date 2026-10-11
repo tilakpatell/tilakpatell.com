@@ -1,0 +1,76 @@
+{
+  "_from": "scripts/bf2017-picture.mjs geonosis: the weathers' VE records (src/data/bf2017/light/geonosis.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "geonosis",
+  "weathers": {
+    "cloudy": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/geonosis/cloudy.lut33.png",
+        "size": 33,
+        "name": "S5_1/Levels/MP/Geonosis_01/Lighting/LUT/Geonosis_LUT_v04",
+        "_source": {
+          "size": "textures.jsonl: S5_1/Levels/MP/Geonosis_01/Lighting/LUT/Geonosis_LUT_v04 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/geonosis/cloudy.panorama.ktx2",
+        "name": "S5_1/Levels/MP/Geonosis_01/Lighting/Textures/T_GEonosis_Sky_01_F_Grade",
+        "horizon": [
+          0.7764,
+          0.5072,
+          0.1592
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/s5_1/levels/mp/geonosis_01/lighting/textures/t_geonosis_sky_01_f_grade.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/s5_1/levels/mp/geonosis_01/lighting/textures/t_geonosis_sky_01_f_grade.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/geonosis/cloudy.gradient.ktx2",
+        "name": "S5_1/Levels/MP/Geonosis_01/Lighting/Textures/T_GEonosis_Fog_01_D_Grade"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/geonosis/cloudy.clouds.ktx2",
+        "name": "S5_1/Levels/MP/Geonosis_01/Lighting/T_Sky_Geonosis_Shadows_01"
+      }
+    },
+    "interior": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/geonosis/interior.lut33.png",
+        "size": 33,
+        "name": "S5_1/Levels/MP/Geonosis_01/Lighting/LUT/Geonosis_LUT_v04",
+        "_source": {
+          "size": "textures.jsonl: S5_1/Levels/MP/Geonosis_01/Lighting/LUT/Geonosis_LUT_v04 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/geonosis/cloudy.panorama.ktx2",
+        "name": "S5_1/Levels/MP/Geonosis_01/Lighting/Textures/T_GEonosis_Sky_01_F_Grade",
+        "horizon": [
+          0.7764,
+          0.5072,
+          0.1592
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/s5_1/levels/mp/geonosis_01/lighting/textures/t_geonosis_sky_01_f_grade.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/s5_1/levels/mp/geonosis_01/lighting/textures/t_geonosis_sky_01_f_grade.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/geonosis/cloudy.gradient.ktx2",
+        "name": "S5_1/Levels/MP/Geonosis_01/Lighting/Textures/T_GEonosis_Fog_01_D_Grade"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/geonosis/cloudy.clouds.ktx2",
+        "name": "S5_1/Levels/MP/Geonosis_01/Lighting/T_Sky_Geonosis_Shadows_01"
+      }
+    }
+  }
+}

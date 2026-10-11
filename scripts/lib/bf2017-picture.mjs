@@ -6,16 +6,21 @@ import { cloudShadowOf, panoramaOf } from '../../src/lib/three/light/grade.js';
 
 // the bucket's VE record ({ objects: [{ $type, … }] }) as entry.record takes
 // it: each component's first object in a one-element array; later records
-// (a weather's overrides) win field by field
+// (a weather's overrides) win field by field, and only on the fields their
+// PropertyOverrides name where they list them (the rest are the component's
+// defaults, as bf2017-light.mjs's readVE reads them: an interior that sets
+// nothing of the grade keeps the day's LUT)
 export function recordOf(...raws) {
   const out = {};
-  for (const raw of raws) {
+  raws.forEach((raw, i) => {
     for (const o of raw?.objects ?? []) {
       const t = o?.$type;
       if (!t || !t.endsWith('ComponentData')) continue;
-      out[t] = [{ ...(out[t]?.[0] ?? {}), ...o }];
+      const own = i > 0 && out[t] && Array.isArray(o.PropertyOverrides) ? new Set(o.PropertyOverrides) : null;
+      const over = own ? Object.fromEntries(Object.entries(o).filter(([k]) => own.has(k))) : o;
+      out[t] = [{ ...(out[t]?.[0] ?? {}), ...over }];
     }
-  }
+  });
   return out;
 }
 

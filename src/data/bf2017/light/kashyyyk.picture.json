@@ -1,0 +1,111 @@
+{
+  "_from": "scripts/bf2017-picture.mjs kashyyyk: the weathers' VE records (src/data/bf2017/light/kashyyyk.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "kashyyyk",
+  "weathers": {
+    "overcast": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_CC_Kashyyyk_01_Overcast_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Kashyyyk/Overcast_01/T_CC_Kashyyyk_01_Overcast_01 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.panorama.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_Overcast_Panoramic_01_C",
+        "horizon": [
+          0.2352,
+          0.315,
+          0.3467
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/kashyyyk/overcast_01/t_kashyyyk_overcast_panoramic_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/kashyyyk/overcast_01/t_kashyyyk_overcast_panoramic_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.gradient.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_Overcast_Fog_01_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.clouds.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_CloudShadow_01_C"
+      }
+    },
+    "interior": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/interior.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_CC_Kashyyyk_01_Overcast_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Kashyyyk/Overcast_01/T_CC_Kashyyyk_01_Overcast_01 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.panorama.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_Overcast_Panoramic_01_C",
+        "horizon": [
+          0.2352,
+          0.315,
+          0.3467
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/kashyyyk/overcast_01/t_kashyyyk_overcast_panoramic_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/kashyyyk/overcast_01/t_kashyyyk_overcast_panoramic_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.gradient.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_Overcast_Fog_01_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.clouds.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_CloudShadow_01_C"
+      }
+    },
+    "night": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/night.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Global/T_Walrus_BaseGrade_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Global/T_Walrus_BaseGrade_01 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/night.panorama.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Night_01/T_Kashyyyk_Night_01_C",
+        "horizon": [
+          0.0164,
+          0.0272,
+          0.0488
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/kashyyyk/night_01/t_kashyyyk_night_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/kashyyyk/night_01/t_kashyyyk_night_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/night.gradient.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Night_01/T_Kashyyyk_Night_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.clouds.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_CloudShadow_01_C"
+      }
+    }
+  }
+}
