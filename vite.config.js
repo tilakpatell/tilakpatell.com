@@ -18,7 +18,13 @@ export default defineConfig({
   // scripts/bf2-dev.mjs; nothing when it is unset)
   plugins: [iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
   // (the icons' modules import react-icons' own GenIcon: bundled up front in dev)
-  optimizeDeps: { include: ['react-icons/lib'] },
+  // `entries`: the dependency scan starts from the site's own page only. Left
+  // to itself Vite crawls every *.html under the root, and scripts/twin-parity's
+  // page imports `@src/...` (an alias its own server provides): the scan fails
+  // on it, nothing is pre-bundled, and every dependency is then found as a
+  // browser asks for it, each find a re-bundle and a "504 (Outdated Optimize
+  // Dep)" reload (CI's Multiplayer check lost its page to those, 2026-10-10)
+  optimizeDeps: { include: ['react-icons/lib'], entries: ['index.html'] },
   base: '/',
   // the skills and the other branches' worktrees under .claude, and the
   // scratch checkouts under lab/, bring their own tests; the AI tiers are
