@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
-import { arenaOf, buildPack, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
+import { arenaOf, buildPack, keepRows, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
@@ -256,3 +256,26 @@ describe('the ground a map never painted', () => {
   });
 });
 
+
+describe('keepRows (lane N4)', () => {
+  const prev = { far: { bytes: 100 }, coarse: { index: 'horizon/index.json', cell: 512, far: 100 }, tex: { a_c: { high: 1024, srgb: true }, b_n__normal: { high: 512, uastc: [512, 1024] }, gone_n: { uastc: [256] } } };
+
+  it('keeps the coarse grid a rebuild was cut from, and lane W’s UASTC rows for the maps still there', () => {
+    const json = { far: { bytes: 100 }, tex: { a_c: { high: 2048, srgb: true }, b_n__normal: { high: 1024, srgb: false } } };
+    const out = keepRows(json, prev);
+    expect(out.coarse).toEqual(prev.coarse);
+    expect(out.tex.b_n__normal).toEqual({ high: 1024, srgb: false, uastc: [512, 1024] });
+    expect(out.tex.a_c).toEqual({ high: 2048, srgb: true });
+    expect(out.tex.gone_n).toBeUndefined();
+  });
+
+  it('drops a coarse grid cut from another far list (run bf2017-horizon.mjs again)', () => {
+    const out = keepRows({ far: { bytes: 101 }, tex: {} }, prev);
+    expect(out.coarse).toBeUndefined();
+  });
+
+  it('is the new pack as it is without a previous one', () => {
+    const json = { far: { bytes: 1 }, tex: {} };
+    expect(keepRows(json, null)).toBe(json);
+  });
+});

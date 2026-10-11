@@ -18,6 +18,10 @@
 //   meshCuts(entry, { ultra }) → { far, lod1, plain, ultra } LOD entries
 //   rewriteImageUris(glb, fn) → the GLB with its images' URIs mapped
 //   glbTriangles(glb), lodFile(file, n), mergeHeights(fine, coarse, hole, inside), fillHoles(data, w, h)
+//   keepRows(json, prev) → json with the rows other scripts wrote into the
+//     pack's level.json kept across a rebuild (lane N4: `coarse`, the horizon
+//     grid, while the far list it was cut from is the same; each map's
+//     `uastc`, lane W's UASTC data rows, while the map is still there)
 
 import { BUDGET_ROWS } from '../../src/lib/budgets.js';
 import { imageLayerFrom } from '../../src/lib/land/layers.js';
@@ -413,6 +417,16 @@ export function glbTriangles(glb) {
 }
 
 // A map mesh's LOD files: LOD 0 is its `file`, LOD n `<file>_lod<n>.glb`
+export function keepRows(json, prev) {
+  if (!prev) return json;
+  const out = { ...json };
+  if (prev.coarse && prev.coarse.far === json.far?.bytes) out.coarse = prev.coarse;
+  const tex = { ...(json.tex ?? {}) };
+  for (const [slug, row] of Object.entries(prev.tex ?? {})) if (row?.uastc && tex[slug]) tex[slug] = { ...tex[slug], uastc: row.uastc };
+  out.tex = tex;
+  return out;
+}
+
 export const lodFile = (file, n) => (n ? file.replace(/\.glb$/, `_lod${n}.glb`) : file);
 
 // Two heightmaps over the same square merged: the fine one where it has

@@ -55,7 +55,7 @@ import { parseArgs } from './lib/args.mjs';
 import { writeCredit } from './lib/catalog-write.mjs';
 import { isSequel } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs';
-import { buildPack, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
+import { buildPack, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, keepRows, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
 import { LOD, capIndex, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -510,7 +510,10 @@ async function main(args) {
   lines.push(...parts.lines);
   await mkdir(join(out, 'cells'), { recursive: true });
   for (const [path, bin] of pack.files) await writeFile(join(out, path), Buffer.from(bin));
-  await writeFile(join(out, 'level.json'), `${JSON.stringify(pack.json)}\n`);
+  // (the rows other scripts wrote beside the builder's: the horizon grid, lane W's UASTC rows)
+  const prev = existsSync(join(out, 'level.json')) ? JSON.parse(await readFile(join(out, 'level.json'), 'utf8')) : null;
+  const kept = keepRows(pack.json, prev);
+  await writeFile(join(out, 'level.json'), `${JSON.stringify(Object.fromEntries(Object.keys(kept).sort().map((k) => [k, kept[k]])))}\n`);
   await writeFile(join(out, 'README.md'), `${lines.join('\n')}\n`);
   await writeCredit(join(ROOT, 'src', 'data', 'modelCredits.json'), `level-${packId.replace('/', '-')}`, {
     title: `Star Wars Battlefront II (2017): ${mapName}${district === 'main' ? '' : ` (${district})`}`,
