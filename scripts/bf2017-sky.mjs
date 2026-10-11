@@ -23,6 +23,9 @@
 // galaxy it bakes: skyPanorama.js says which system has which).
 //
 //   node scripts/bf2017-sky.mjs --panorama t_space_endor01_c --as endor
+//   node scripts/bf2017-sky.mjs --panorama t_space_no_large_stars_01_c --webp sb_fondor
+//   (--webp <world>: the panorama as a level area's dome, galaxy/levelArea.js:
+//   2048 wide, WebP, public/models/galaxy/bf2017/levels/<world>/sky.webp)
 //   (t_space_01_c --as core; t_space_no_large_stars_01_c --as rim)
 //
 // And the front end's globes (lane K's PICTURES: a lit planet's picture,
@@ -123,6 +126,19 @@ export async function makePanorama(name, { as, root = join(ROOT, 'lab', 'assets'
   return written;
 }
 
+// a panorama as a level area's sky dome (galaxy/levelArea.js reads a picture, not a KTX2)
+export async function makePanoramaWebp(name, world, { root = join(ROOT, 'lab', 'assets', 'bf2017'), width = 2048 } = {}) {
+  if (!PANORAMAS[name]) throw new Error(`${name}: not a panorama (${Object.keys(PANORAMAS).join(', ')})`);
+  if (!/^[a-z0-9_]+$/.test(world ?? '')) throw new Error('--webp: the level pack, letters, digits and _ (sb_fondor)');
+  const sharp = createRequire(createRequire(import.meta.url).resolve('ndarray-pixels'))('sharp');
+  const png = await unpackKtx2(await bucketFile(root, PANORAMAS[name]), join(root, 'unpacked', dirname(PANORAMAS[name])));
+  const file = join(ROOT, 'public', 'models', 'galaxy', 'bf2017', 'levels', world, 'sky.webp');
+  await mkdir(dirname(file), { recursive: true });
+  await writeFile(file, await sharp(await readFile(png)).resize({ width, withoutEnlargement: true }).webp({ quality: 86 }).toBuffer());
+  console.log(`${relative(ROOT, file)} ← ${name}`);
+  return file;
+}
+
 // the system each globe is the disc of (the giant Endor and Yavin 4 circle
 // is the system's parent, not its world: Yavin Prime's and the giant's
 // pictures stay lane K's)
@@ -157,6 +173,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = parseArgs(process.argv.slice(2));
   if (args.globes) {
     await makeGlobes();
+    process.exit(0);
+  }
+  if (args.panorama && args.webp) {
+    await makePanoramaWebp(String(args.panorama), String(args.webp));
     process.exit(0);
   }
   if (args.panorama) {

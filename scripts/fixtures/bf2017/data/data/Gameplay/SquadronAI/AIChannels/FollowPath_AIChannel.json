@@ -1,0 +1,1 @@
+{"name":"Gameplay/SquadronAI/AIChannels/FollowPath_AIChannel","type":"AIChannelAsset","guid":"95f8dc44-dcd3-4340-8736-70b92dc0d367","root":0,"objects":[{"$type":"AIChannelAsset","$guid":"6baf1b7a-060a-4cf0-8d0c-9bb29712eb86","Events":[{"Realm":"Realm_Server"}],"Links":[],"Properties":[],"Name":"Gameplay/SquadronAI/AIChannels/FollowPath_AIChannel"}]}

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { writeInstances } from '../../../../lib/level/instances';
 import { createSolids, groundAt, walk, walker } from '../walker';
@@ -44,5 +45,30 @@ describe('the level’s colliders', () => {
     createColliders(walk, 'low').add('0,0', { ...pack, cull: { low: { K: 20, dropped: [1] } } }, bin);
     expect(walk.solids.all.length).toBe(0);
     expect(walk.floors.length).toBe(1);
+  });
+});
+
+describe('the level’s colliders from the game’s shapes', () => {
+  const PACK = new URL('../../../../../scripts/fixtures/bf2017/physics/pack/', import.meta.url);
+  const shaped = JSON.parse(readFileSync(new URL('level.json', PACK), 'utf8'));
+  const loadBin = async (file) => {
+    const b = readFileSync(new URL(file, PACK));
+    return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+  };
+
+  it('a cell’s hulls are its walls, and a cell dropped while they are read comes in off', async () => {
+    const bin = await loadBin('cells/0_0.bin');
+    const walk = { heightAt: () => 0, solids: createSolids(), floors: [] };
+    const c = createColliders(walk, 'high', { loadBin });
+    await c.add('0,0', shaped, bin);
+    expect(walk.solids.all).toHaveLength(3); // (the three piles’ hulls, not their bounds)
+    expect(walk.solids.all.every((s) => s.tag === 'level:0,0' && !s.off)).toBe(true);
+    const late = { heightAt: () => 0, solids: createSolids(), floors: [] };
+    const d = createColliders(late, 'high', { loadBin });
+    const pending = d.add('0,0', shaped, bin);
+    d.drop('0,0');
+    await pending;
+    expect(late.solids.all.length).toBeGreaterThan(0);
+    expect(late.solids.all.every((s) => s.off)).toBe(true);
   });
 });
