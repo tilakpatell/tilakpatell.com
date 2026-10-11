@@ -164,8 +164,10 @@ The detail maps are lane Q1's (`recipes.json`, `gameMaterial.js`). The design se
 **Sizes (published):** Hoth 64 MB (with physics and parts), Hoth's base 96 MB, Endor 191 MB.
 
 **Gates.** `BUDGET=1 galaxy-check surface`:
-- Hoth: low 166 calls, 703k triangles, 14.8 MB; mid 165, 703k, 15.2 MB; high 168, 880k, 15.7 MB; ultra 177, 1.76M, 16.2 MB. All pass.
-- Endor: ENDOR_GATES.
+- Hoth (on the merged branch): low 163 calls, 700k triangles, 16.2 MB; mid 160, 691k, 16.1 MB; high 161, 869k, 16.6 MB; ultra 168, 1.74M, 17.1 MB. All pass.
+- Endor: mid 167/262 calls, 925k triangles; high 191/257, 1.46M; ultra 222, 2.80M: pass. **Low fails on triangles: 918k against the row's 800k.** It is not the level's: from the landing the level draws about 20 calls (`DIAG=1` shows the level group absent from the frame's cost; the pack takes half the low row, `--share low=0.5`). The rest is the site's own free-roam dressing (its things, the Death Star in the sky, its scatter), which `main`'s Endor carried before this lane and which free roam keeps by the owner's rule. Endor's low row is lane O's or the next trim's, not the factory's.
+- Found and fixed on the way: the map's 34 placed Ewoks cost Endor's high 200 calls under its 700 m fog (now `PLACED_CUT`, 150 m); Endor's holes buried its bunker (filled at the rim's lowest); `window.__surface`'s fx hook replaced the page's debug read (main's fix kept); a district's site never reached the scene (fixed: `SurfaceView` takes it).
+- `anim-check` on Endor: every figure in view under 0.15 m/s, none at the bind pose.
 
 **For E1 to E5, one line a map** (build, check the README's table, then `node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/<world>/*'`). Try `--spawn` first; where the site's own places matter, put a landmark of the game's on the site's with `--spot`, as Endor did. Interiors use `--district <id> --inside` (with `--subs` where the interior is its own sub-level):
 - E1: `levels/mp/tatooine_01 --world tatooine --spawn`; `s9_3/tatooine_02 --world tatooine --district dunes --spawn`; `s2_2/levels/jabbaspalace_01 --world tatooine --district jabba --spawn`; `levels/mp/yavin_01 --world yavin --spawn`.
