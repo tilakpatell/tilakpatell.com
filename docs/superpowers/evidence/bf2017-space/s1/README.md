@@ -27,7 +27,8 @@ Against the space lane’s table of 2026-10-10 (`../README.md`: Endor at high 57
 
 | system | calls | triangles | the MC80 in frame | the pack’s flagship drawn once | console |
 | --- | --- | --- | --- | --- | --- |
-| Endor | 119 / 700 | 0.11M / 3M | yes (640, 467) | yes | the install’s `/packs/index.json` miss (above), nothing else; clean with the index served, `starfighter-endor-again.txt` |
+| Endor | 119 / 700 (the pack’s draws unsettled after 600 s in software GL, 0 groups) | 0.11M / 3M | yes (640, 467) | yes | the install’s `/packs/index.json` miss (above), nothing else |
+| Endor, again with the index served (`starfighter-endor-again.txt`) | 193 / 700 (the pack settled in 32 s, 247 groups) | 0.74M / 3M | yes (645, 294) | yes | none, exit 0 |
 | Kamino | 141 / 700 | 1.27M / 3M | yes (640, 468); inside its area, the storm’s fog on | yes | none, exit 0 |
 
 ## The cockpit
