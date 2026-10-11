@@ -1,0 +1,33 @@
+# BUDGET=1 QUALITY=<tier> PHASE_WAIT=900000 node scripts/galaxy-check.mjs surface naboo,kamino (lane E2, 2026-10-11, after origin/main merged; SwiftShader; the frame guard holds a level's new materials back, so 'level calls' is the level's own count, drawn or not)
+
+## low, with the level (this branch)
+naboo      calls  428  tris  891613  geo  421  tex 527  prog 194  frame p50 449.9 p95 6099.8 ms  ground 0.02 ms  load 29.3 s
+           level calls 10  tris 50880  instances 51  lights 0  probe –
+budget naboo      calls 428/350  tris 891613/800000  models 31.3/20 MB  FAIL (calls 428 > 350, tris 891613 > 800000, models 31.3 MB > 20)
+## low, before (the branch's site before this lane, no level)
+naboo      calls  539  tris 1123639  geo  437  tex 539  prog 124  frame p50 1800 p95 4716.5 ms  ground 0.02 ms  load 8.0 s
+budget naboo      calls 539/350  tris 1123639/800000  models 37.6/20 MB  FAIL (calls 539 > 350, tris 1123639 > 800000, models 37.6 MB > 20)
+
+## mid, with the level (this branch)
+naboo      calls  428  tris  883981  geo  417  tex 523  prog 208  frame p50 483.3 p95 5383 ms  ground 0.02 ms  load 10.0 s
+           level calls 9  tris 65441  instances 19  lights 3  probe –
+budget naboo      calls 428/500  tris 883981/1500000  models 35.4/40 MB  pass
+## mid, before (the branch's site before this lane, no level)
+naboo      calls  537  tris 1091951  geo  436  tex 539  prog 132  frame p50 1283.3 p95 2783.2 ms  ground 0.03 ms  load 10.2 s
+budget naboo      calls 537/500  tris 1091951/1500000  models 39.8/40 MB  FAIL (calls 537 > 500)
+
+## high, with the level (this branch)
+naboo      calls  426  tris 1500341  geo  424  tex 560  prog 231  frame p50 1149.9 p95 9716.3 ms  ground 0.03 ms  load 10.2 s
+           level calls 7  tris 119219  instances 19  lights 3  probe –
+budget naboo      calls 426/647  tris 1500341/2152962  models 105.5/60 MB  FAIL (models 105.5 MB > 60)
+## high, before (the branch's site before this lane, no level)
+naboo      calls  541  tris 1718144  geo  445  tex 585  prog 158  frame p50 861.7 p95 14999.4 ms  ground 0.03 ms  load 9.2 s
+budget naboo      calls 541/647  tris 1718144/2152962  models 104.2/60 MB  FAIL (models 104.2 MB > 60)
+
+## ultra, with the level (this branch)
+naboo      calls  376  tris 4419547  geo  661  tex 531  prog 211  frame p50 19032.6 p95 20165.9 ms  ground 0.04 ms  load 10.8 s
+           level calls 380  tris 1782021  instances 906  lights 3  probe –
+budget naboo      calls 376/1500  tris 4419547/–  models 278.7/240 MB  p95 20165.9/reported ms  FAIL (models 278.7 MB > 240)
+## ultra, before (the branch's site before this lane, no level)
+naboo      calls  497  tris 5727675  geo  431  tex 569  prog 152  frame p50 21382.4 p95 24932 ms  ground 0.04 ms  load 10.7 s
+budget naboo      calls 497/1500  tris 5727675/–  models 289.2/240 MB  p95 24932/reported ms  FAIL (models 289.2 MB > 240)

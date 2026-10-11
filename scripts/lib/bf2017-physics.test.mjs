@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Document, NodeIO } from '@gltf-transform/core';
 import { describe, expect, it } from 'vitest';
 import { cellIndex, packShapes, physicsKey, readPhysicsGlb, readShapes, reduceHull, summarise } from './bf2017-physics.mjs';
 
@@ -54,6 +55,21 @@ describe('readPhysicsGlb', () => {
     expect(Math.min(c.a[2], c.b[2])).toBeCloseTo(rec.min[2] + c.radius, 2);
     expect(Math.max(c.a[2], c.b[2])).toBeCloseTo(rec.max[2] - c.radius, 2);
     expect(c.a[0]).toBeCloseTo((rec.min[0] + rec.max[0]) / 2, 2);
+  });
+
+  // (Naboo_03's streets have a collision mesh of more points than a call may
+  // take as arguments: spread into push, it threw "Maximum call stack size exceeded")
+  it('reads a mesh leaf of 200,000 points', async () => {
+    const doc = new Document();
+    const n = 200000;
+    const pos = doc.createAccessor().setType('VEC3').setArray(new Float32Array(n * 3).map((_, i) => i % 7)).setBuffer(doc.createBuffer());
+    const prim = doc.createPrimitive().setAttribute('POSITION', pos);
+    const leaf = doc.createNode('big').setMesh(doc.createMesh().addPrimitive(prim)).setExtras({ kind: 'mesh' });
+    doc.createScene().addChild(doc.createNode('root').addChild(leaf));
+    const { shapes } = await readPhysicsGlb(await new NodeIO().writeBinary(doc));
+    expect(shapes).toHaveLength(1);
+    expect(shapes[0].points.length).toBe(n * 3);
+    expect(shapes[0].indices.length).toBe(n);
   });
 
   it('reads a hull and a capsule out of one compound', async () => {
