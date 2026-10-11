@@ -1,7 +1,7 @@
 import { FloatType } from 'three';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { describe, expect, it } from 'vitest';
-import { encodeRgbe, halve, luminance, normalise } from './bf2017-sky.mjs';
+import { encodeRgbe, halve, luminance, normalise, renderGlobe } from './bf2017-sky.mjs';
 
 const read = (buf) => {
   const l = new HDRLoader();
@@ -46,5 +46,39 @@ describe('a level’s probe, made the site’s', () => {
     expect(all.reduce((a, b) => a + b, 0) / all.length).toBeCloseTo(0.8, 5);
     // (the faces themselves untouched)
     expect(faces[1].data[0]).toBe(100);
+  });
+});
+
+describe('a globe from a planet’s skin (lane S3)', () => {
+  const flat = (rgb, w = 8, h = 4) => {
+    const data = new Uint8Array(w * h * 4);
+    for (let i = 0; i < w * h; i++) data.set([...rgb, 255], i * 4);
+    return { data, width: w, height: h };
+  };
+  it('lays the colour map on a lit disc, transparent outside it, darker on the side away from the sun', () => {
+    const g = renderGlobe({ colour: flat([40, 160, 60]), size: 24, over: 2 });
+    expect(g.width).toBe(48);
+    const at = (x, y) => Array.from(g.data.subarray((y * 48 + x) * 4, (y * 48 + x) * 4 + 4));
+    expect(at(0, 0)[3]).toBe(0); // (a corner: outside the globe, nothing)
+    const centre = at(24, 24);
+    expect(centre[3]).toBe(255);
+    expect(centre[1]).toBeGreaterThan(centre[0]); // (green, as the map)
+    expect(centre[1]).toBeGreaterThan(centre[2]);
+    const sunward = at(10, 10); // (up and to the left, where the sun is)
+    const shaded = at(38, 38);
+    expect(sunward[1]).toBeGreaterThan(shaded[1]);
+    expect(shaded[3]).toBe(255); // (the night side is still the planet, dim, not a hole)
+  });
+  it('lays the clouds over the ground where their coverage is above the cut, and the air’s colour at the limb', () => {
+    const clouds = flat([255, 255, 255], 8, 4);
+    for (let i = 0; i < 32; i++) clouds.data[i * 4] = i % 2 ? 255 : 0; // (coverage in red, as the site's cut keeps it: every other column covered)
+    const clear = renderGlobe({ colour: flat([40, 160, 60]), size: 24, over: 2 });
+    const cloudy = renderGlobe({ colour: flat([40, 160, 60]), clouds, cloudCut: 0.5, size: 24, over: 2 });
+    const sum = (g) => g.data.reduce((s, v, i) => (i % 4 === 0 ? s + v : s), 0);
+    expect(sum(cloudy)).toBeGreaterThan(sum(clear)); // (whiter where the clouds are)
+    const aired = renderGlobe({ colour: flat([40, 160, 60]), atmo: [124, 148, 178], size: 24, over: 2 });
+    const limb = (g, x, y) => g.data[(y * 48 + x) * 4 + 3];
+    expect(limb(aired, 0, 16)).toBeGreaterThan(0); // (just past the limb: r ≈ 1.03 radii)
+    expect(limb(clear, 0, 16)).toBe(0);
   });
 });

@@ -1,11 +1,38 @@
 // Each side's crest on the holotable (Emblem.jsx draws them): on its fleets,
-// in the war's strength strip and in the key. Simple geometric marks, one
-// shape apiece so they're told apart at a glance and small, drawn in the
-// side's colour (currentColor): stand-ins of our own, not the films'
-// insignia. A crest is SVG paths in EMBLEM_BOX, each filled, `evenodd` where
-// a path cuts a hole in itself. Tested: one for every side in sides.js.
+// in the war's strength strip and in the key. The four sides the 2017 game
+// has (the Republic, the Separatists, the Rebellion, the Empire) wear its
+// own faction icons (lib/bf2017/icons.js's `side:*`, the factions sprite,
+// white made currentColor so they take the side's colour); the New
+// Republic, the Remnant and the Hutts, which the game has no icon for, keep
+// the site's crests: simple geometric marks, one shape apiece so they're
+// told apart at a glance and small, drawn in the side's colour
+// (currentColor), stand-ins of our own, not the films' insignia. A crest is
+// SVG paths in EMBLEM_BOX, each filled, `evenodd` where a path cuts a hole
+// in itself. Tested: one for every side in sides.js, so a side keeps a mark
+// should its icon go.
+//
+// emblemOf(side) → { sprite, href, box } (the game's icon, and the part of
+//   its 96 box its art fills) | { shapes } (the site's crest) | null
+
+import { icon } from '../../lib/bf2017/icons';
 
 export const EMBLEM_BOX = '0 0 24 24';
+
+// the sides the game has, by the icon table's name for each
+export const GAME_SIDES = { republic: 'side:republic', separatists: 'side:separatists', rebel: 'side:rebel', empire: 'side:empire' };
+// The four faction icons draw their art between about 19 and 76 of their 96
+// box (measured, rasterised: the Rebellion 19.7–75.6, the Empire 19.7–75.6,
+// the Republic 20.9–74.6, the Separatists 19.0–76.3), a margin the crests
+// lack (they fill 75 to 92 % of EMBLEM_BOX); drawn whole they stood a third
+// smaller than the Hutts' gem beside them. This crop keeps a little margin
+// and brings the art to about 84 % of the emblem's box.
+export const GAME_BOX = '14 14 68 68';
+
+export function emblemOf(side) {
+  const game = GAME_SIDES[side] ? icon(GAME_SIDES[side]) : null;
+  if (game) return { sprite: game.sprite, href: game.href, box: GAME_BOX };
+  return EMBLEMS[side] ? { shapes: EMBLEMS[side] } : null;
+}
 
 export const EMBLEMS = {
   // the Republic: the Senate's column (a star in a ring, at first, looked like the map's + for a front)

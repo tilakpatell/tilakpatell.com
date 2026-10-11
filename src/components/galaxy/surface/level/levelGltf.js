@@ -114,6 +114,8 @@ const MAP_KEYS = [
   ['hairStrand', (m) => m.hairStrand],
   ['sss', (m) => m.sss],
   ['aoSlice', (m) => m.aoSlice],
+  ['nea', (m) => m.nea],
+  ['idMap', (m) => m.idMap],
 ];
 
 // A pack map's anisotropy, the tier's (lib/device's BUDGETS: 16 on high and
@@ -257,7 +259,8 @@ export function bareGlb(scene, indexOf, named) {
 // (a WasmError's), and its words (a fetch's status)
 const whyOf = (e) => (e instanceof Error ? `${e.name}${e.reason ? ` (${e.reason})` : ''}: ${e.message}` : String(e));
 
-export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null, baked = null, applyBaked = null }) {
+// (texTier: the video setting's texture quality, lib/video.js's textureTier, over the tier for the maps' sizes alone)
+export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null, baked = null, applyBaked = null, texTier = null }) {
   applyBaked ??= async (m, chart) => withBaked(m, baked, { chart, three: await loadThree() });
   // (mapKeys: the recipe maps the tier draws; null, all of them)
   if (recipes?.tex) sizes = { ...sizes, ...recipes.tex };
@@ -299,7 +302,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     if (gone) return Promise.resolve(null);
     if (!textures.has(path)) {
       asked.add(path);
-      const local = packUrl(world, tierTexture(path, tier, own));
+      const local = packUrl(world, tierTexture(path, texTier ?? tier, own));
       const got = ktx2Loader({ renderer }).then(
         (k) =>
           withFallback((u) => k.loadAsync(u))(local)

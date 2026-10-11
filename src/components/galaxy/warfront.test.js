@@ -866,6 +866,48 @@ describe('a space level’s Starfighter Assault in place of the war’s battle',
   });
 });
 
+// (lane S1 of the galaxy-in-space design: a hull the pack's tier leaves out
+// is drawn by the battle from galaxy/models.js's row, which is the game's
+// kit at the fleet's cut since, never a Meshy or Sketchfab stand-in)
+describe('the Starfighter Assault’s stand-ins on the game’s hulls', () => {
+  const GAME = ['destroyer', 'moncal', 'venator', 'corvette', 'providence', 'lucrehulk', 'lightcruiser'];
+
+  it('flies every ship a level names on the game’s file, bow to +z, credited to the game', async () => {
+    const { modelsAt } = await import('./models');
+    const MODELS = modelsAt('high'); // (a desktop's rows: at ultra the kits' are their ultra cuts)
+    const credits = (await import('../../data/modelCredits.json')).default;
+    for (const level of ['sb_endor', 'sb_kamino', 'sb_droidbattleship', 'sb_fondor']) {
+      const stages = (await import(`../../data/bf2017/maps/${level}.stages.json`)).default;
+      for (const s of stages.ships) {
+        expect(GAME, `${level}: ${s.id} (${s.kind})`).toContain(s.kind);
+        expect(MODELS[s.kind].url, `${level}: ${s.kind}`).toBe(`/models/galaxy/${s.kind}.glb`);
+        expect(credits[`galaxy-${s.kind}`]?.author, `${level}: ${s.kind}`).toBe('EA DICE');
+      }
+    }
+  });
+
+  it('draws Endor’s three corvettes itself at every tier (the pack has none) and the flagships the pack draws only where its tier leaves them out', async () => {
+    const { levelOf } = await import('./surface/missions/starfighter');
+    const map = (await import('../../data/bf2017/maps/sb_endor.json')).default;
+    const stages = (await import('../../data/bf2017/maps/sb_endor.stages.json')).default;
+    const k = kit('rebel');
+    k.drawn.setVisible = vi.fn();
+    let unhide = null;
+    k.front.enter(systemById('endor'), k.world);
+    k.front.starfighter({ level: levelOf(map, stages), draw: (laid, o) => ((unhide = o.unhide), { update: vi.fn(), dispose: vi.fn() }) });
+    const caps = k.front.battle.capitals;
+    const corvettes = caps.filter((c) => c.kind === 'corvette');
+    expect(corvettes).toHaveLength(3);
+    for (const c of corvettes) expect(k.drawn.setVisible).not.toHaveBeenCalledWith(c, false); // (the battle's to draw, on the game's corvette)
+    const isd = caps.find((c) => c.kind === 'destroyer');
+    const mc80 = caps.find((c) => c.kind === 'moncal');
+    for (const c of [isd, mc80]) expect(k.drawn.setVisible).toHaveBeenCalledWith(c, false); // (the pack's hulls, hidden)
+    unhide('isd'); // (a tier whose pack leaves the hull out: the battle draws the kit)
+    expect(k.drawn.setVisible).toHaveBeenLastCalledWith(isd, true);
+    k.front.enter(null);
+  });
+});
+
 describe('a space level fought in an area of its own (Kamino’s)', () => {
   it('is inside its area where the pack’s area says so, and not once it’s gone', async () => {
     const { levelOf } = await import('./surface/missions/starfighter');

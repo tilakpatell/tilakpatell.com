@@ -70,7 +70,8 @@ export function references(dir) {
 // The sandbox's repository with the voices fixture's src/ tree, the references beside it,
 // and every voices fake switched on. → { repo, refs, cache, env }
 export function voicesRepo(box) {
-  const repo = box.repo(['scripts/voices', 'scripts/desktop', 'scripts/ai-e2e/fakes', 'src/lib/voiced.js', 'src/lib/audio.js', 'src/lib/speech.js'], { 'src/worlds': join(FIXTURES, 'voices-src', 'src', 'worlds') });
+  // export-lines.mjs loads its modules with the library's manifest plugin (lane D3)
+  const repo = box.repo(['scripts/voices', 'scripts/library-slice.mjs', 'scripts/lib/library-slice.mjs', 'scripts/desktop', 'scripts/ai-e2e/fakes', 'src/lib/voiced.js', 'src/lib/audio.js', 'src/lib/speech.js'], { 'src/worlds': join(FIXTURES, 'voices-src', 'src', 'worlds') });
   const refs = references(join(box.dir, 'refs'));
   const cache = join(box.dir, 'voices-cache');
   Object.assign(box.env, {

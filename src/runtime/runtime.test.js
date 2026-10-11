@@ -919,6 +919,34 @@ describe('the quality level changed while a world is up', () => {
     expect(rt.requality('high')).toBe('reload');
   });
 
+  it('hands the video settings to a world’s onVideo, or its module’s; a world without one needs a reload; none up is idle (lane V1)', async () => {
+    const { rt } = make();
+    expect(rt.revideo({ gi: 'low' })).toBe('idle');
+    expect(rt.video).toEqual({ gi: 'low' });
+    const world = fakeWorld({ onVideo: vi.fn() });
+    await rt.mount({ id: 'a', create: () => world }, {}, fakeHost());
+    expect(rt.revideo({ aa: 'smaa' })).toBe('tuned');
+    expect(world.onVideo).toHaveBeenCalledWith({ aa: 'smaa' });
+    rt.unmount();
+    const mod = { id: 'b', create: () => fakeWorld(), onVideo: vi.fn() };
+    await rt.mount(mod, {}, fakeHost());
+    expect(rt.revideo({ aa: 'off' })).toBe('tuned');
+    expect(mod.onVideo).toHaveBeenCalledWith({ aa: 'off' }, rt.current.world, rt);
+    rt.unmount();
+    await rt.mount({ id: 'c', create: () => fakeWorld() }, {}, fakeHost());
+    expect(rt.revideo({ aa: 'off' })).toBe('reload');
+  });
+
+  it('asks the backend for HDR when the video settings say so (lane H1)', async () => {
+    const { rt, makeBackend } = make({ video: { hdr: 'on' } });
+    await rt.mount({ id: 'a', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend).toHaveBeenCalledWith('webgl', expect.objectContaining({ hdr: true }));
+    rt.unmount();
+    const { rt: rt2, makeBackend: mb2 } = make();
+    await rt2.mount({ id: 'b', create: () => fakeWorld() }, {}, fakeHost());
+    expect(mb2).toHaveBeenCalledWith('webgl', expect.objectContaining({ hdr: false }));
+  });
+
   it('sets the sharpness and draws again', async () => {
     const { rt, quality } = make();
     quality.setSharpness = vi.fn();

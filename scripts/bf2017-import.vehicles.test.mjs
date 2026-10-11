@@ -8,6 +8,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { NATIVE_VEHICLE, VEHICLE, farCut, vehicleCuts } from './bf2017-import.mjs';
+import { CAST, importArgs } from './bf2017-vehicles.mjs';
+import { MODELS as SURFACE } from '../src/components/galaxy/surface/catalog/bf2017-vehicles.js';
 
 // Lane V's flags on the 2017 import (docs/superpowers/plans/
 // 2026-10-10-bf2017-phaseV-vehicles.md): a walker's far cut, a rigid walker
@@ -90,6 +92,20 @@ async function scratch() {
 const run = (root, dir, name, kind, more) => execFileSync('node', ['scripts/bf2017-import.mjs', name, '--root', root, '--kind', kind, '--as', 'a test', '--out', dir, '--catalog', join(dir, 'cat.js'), '--credits', join(dir, 'credits.json'), ...more], { encoding: 'utf8' });
 
 describe('the 2017 import, for vehicles', () => {
+  // (lane S1: the galaxy's Scimitar and TIE striker, through lane V's path,
+  // the drop's model and its maps in three cuts, over their Meshy remakes)
+  it('lists the Scimitar and the TIE striker among the fighters, native with their three cuts, and the catalogue has their rows', () => {
+    const rows = Object.fromEntries(CAST.filter((r) => ['scimitar', 'tiestriker'].includes(r[0])).map((r) => [r[0], r]));
+    expect(rows.scimitar.slice(1, 3)).toEqual(['air', 'gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh']);
+    expect(rows.tiestriker.slice(1, 3)).toEqual(['air', 'gameplay/vehicles/air/tiestriker/tiestriker_01_static_mesh']);
+    for (const row of Object.values(rows)) {
+      const a = importArgs(row);
+      for (const flag of ['--vehicle', '--native', '--far', '--ultra']) expect(a, row[0]).toContain(flag);
+      expect(SURFACE[row[0]], row[0]).toMatchObject({ made: 'bf2017', native: true, far: true, lod: true, from: row[2] });
+      expect(SURFACE[row[0]].ultra?.tris, row[0]).toBeGreaterThanOrEqual(SURFACE[row[0]].tris); // (the striker's plain cut is its LOD0 already, 45,482 triangles)
+    }
+  });
+
   it('cuts far at the chain’s first LOD under 1,000 triangles, else its last', () => {
     const chain = (tris) => ({ lods: tris.map((t, lod) => ({ lod, triangles: t })) });
     expect(farCut(chain([108400, 50954, 25158, 12866, 6840, 870])).lod).toBe(5);

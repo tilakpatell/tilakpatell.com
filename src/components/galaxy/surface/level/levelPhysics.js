@@ -27,7 +27,7 @@
 //         32-byte records, read with pack.cells[key].draws; or
 //         [{ mesh, position, quaternion, scale }]),
 //       drop(key) / removeCell, setTerrain(heightAt | { near, far }), timed(stepMs),
-//         update(ms = 4)
+//         update(ms = 4, at = [x, z] (the nearest cell's first))
 //         → bodies added, stats() → { cells, bodies, colliders,
 //         uniqueShapes, triangles, heightfields, queued, dropped, stepMs },
 //       dispose() }
@@ -161,12 +161,22 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
     for (const b of [...cell.bodies, ...cell.heightfields]) physics.remove(b);
   }
 
-  // bodies into the world until `ms` has gone (at least one a call)
-  function update(ms = 4) {
+  // bodies into the world until `ms` has gone (at least one a call); `at`
+  // ([x, z], where you are): the nearest cell's first, so the deck under you
+  // is solid before the far side of the map
+  const nearFirst = (at) => {
+    if (!at) return [...cells.values()];
+    const d = (key) => {
+      const [cx, cz] = key.split(',').map(Number);
+      return Math.hypot((cx + 0.5) * cellSize - at[0], (cz + 0.5) * cellSize - at[1]);
+    };
+    return [...cells.keys()].sort((a, b) => d(a) - d(b)).map((k) => cells.get(k));
+  };
+  function update(ms = 4, at = null) {
     if (disposed) return 0;
     const start = now();
     let added = 0;
-    for (const cell of cells.values()) {
+    for (const cell of nearFirst(at)) {
       while (cell.queue.length) {
         const desc = cell.queue.shift();
         try {

@@ -13,7 +13,7 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles, debris, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry,
+//   materials, weather, decals, particles, debris, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry, gpuscene,
 //   trails, sharpen }
 //
 // `trails` (GPU-first lane N2, scripts/light-fixture.mjs --trails): the
@@ -66,6 +66,10 @@
 // secondary cloud layer for a test one (CLOUD_TEST: 80 m, coverage 1,
 // exponent 1; not Hoth's, whose sunny sky is nearly clear) so the drift
 // shows in a frame.
+// `gpuscene` (GPU-first lane N1): gpuSceneField.js's 3,000 pillars and
+// crates round the ring through the GPU scene (an InstancedMesh a part on
+// the node renderer over WebGL 2), culled before each frame;
+// probe.gpuScene() reads its stats, probe.view('field') looks over it.
 // `picture` (lane Q6, with `hoth`): the record's grade (src/lib/three/light/grade.js:
 // its LUT, its five Gaussians, its HBAO numbers, a linear tone map), its
 // painted panorama and fog gradient and its cloud-shadow texture, handed
@@ -299,6 +303,8 @@ export default {
     views.horizon = { pos: [0, 1.7, 30], at: [-30, 1.7, 60] };
     // (and from high over the ring: the record's cloud texture on the snow)
     views.cloudTex = { pos: [0, 90, 60], at: [0, 0, -40] };
+    // (lane N1) over the GPU scene's field, low enough that the near pillars hide the far ones
+    views.field = { pos: [0, 4, 60], at: [0, 2, 0] };
     const pillar = geo(new THREE.BoxGeometry(1, 5, 1));
     const ball = geo(new THREE.SphereGeometry(0.9, 32, 16));
     const stone = mat({ color: 0xd8d2c8, roughness: 0.7 });
@@ -324,6 +330,7 @@ export default {
     let grid = null;
     let snow = null;
     let decals = null;
+    let field = null;
     let n3 = null;
     // the ring as a level's lights.json, so the pools are filled the way a
     // level's are: the cells round the camera, the best by screen area
@@ -431,7 +438,7 @@ export default {
       await row;
       const { applyGameLight } = await import('../../lib/three/light/apply.js');
       // (Hoth's own LUT comes with `picture`: the cool test grade only without it)
-      light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null, cadence: opts.cadence ? true : null });
+      light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, video: rt?.video ?? null, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null, cadence: opts.cadence ? true : null });
       probe.light = { clustered: light.parts.placed?.clustered ?? null };
       probe.grade = light.parts.grade ?? null;
       // (lane S's shadow figures: the contact pass follows them)
@@ -448,6 +455,11 @@ export default {
       }
       if (opts.weather != null) snow = await weatherCrates(scene, made, opts.weather);
       if (opts.decals) decals = await decalWall(scene, made, renderer, ground, opts.decals, opts.tier);
+      if (opts.gpuscene) {
+        const { createGpuSceneField } = await import('./gpuSceneField.js');
+        field = await createGpuSceneField({ scene, renderer, tier: opts.tier });
+        probe.gpuScene = () => field.stats();
+      }
       if (opts.debris) {
         const { createDebrisProbe } = await import('./debrisProbe.js');
         probe.debris = await createDebrisProbe({ scene, renderer, camera, light, tier: opts.tier, breaks: opts.debris !== 'off' });
@@ -504,6 +516,7 @@ export default {
         light?.update(dt, camera);
       },
       draw({ renderer: r }) {
+        field?.beforeRender(camera);
         if (post && opts.post) post.render();
         else r.render(scene, camera);
         probe.debris?.draw(r);
@@ -515,6 +528,7 @@ export default {
         n3?.dispose();
         light?.dispose();
         decals?.dispose();
+        field?.dispose();
         probe.particles?.dispose();
         probe.debris?.dispose();
         if (!opts.sky) envTex?.dispose();

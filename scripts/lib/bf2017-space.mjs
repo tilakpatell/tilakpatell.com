@@ -53,6 +53,18 @@ export const KITS = [
   { kit: 'drydock', kind: 'dock', as: 'Fondor orbital dry dock', test: /capital\/fondor_drydock\//, anchor: null, minPart: 40 },
 ];
 
+// the maps a kit's shader graph binds that the drop's GLB never names, by
+// material (bf2017-import.mjs's --textures form, readLod's `textures`): the
+// MC80's main hull and its lit twin, `MC_80_Met` and `MC_80_light_Met`, bind
+// their panel colour inside the graph (the hull atlas,
+// t_mc80_hull_01_combine_rgba, is its shade, occlusion and masks, not a
+// colour), so the colour is the hull's own tiling panel map, the game's KTX2
+// as it is (lane S1: drawn white without it)
+const MC80_PANEL = [{ slot: 'color', name: 'gameplay/vehicles/capital/mc80/mc80_paneltile_breakup_02_rgba' }];
+export const GRAPH_MAPS = {
+  mc80: { MC_80_Met: MC80_PANEL, MC_80_Met_lods: MC80_PANEL, MC_80_light_Met: MC80_PANEL },
+};
+
 // what never draws as itself: the game's collision stand-ins, the shields'
 // and lights' effect shells, decals, the lobby's set, the pilots
 const NEVER = /collision|occluder|healthstate|vfx_shield|fx\/|_decals?\/|capital\/decals|frontend|pilots\/|enlighten|despawn|leftover|lightcone|shadowplane/i;

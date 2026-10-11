@@ -27,6 +27,25 @@ describe('the 2017 game’s icons', () => {
     }
   });
 
+  it('gives the galaxy’s rows a drawing of their own: none is another icon’s art, as the drop’s placeholders are', () => {
+    // (the drop reuses art: its nine Planets_* drawings are all the Republic's crest; a galaxy row on one of them would draw the wrong thing)
+    const sprites = {};
+    const drawing = (game) => {
+      const [family, id] = ICONS[game];
+      sprites[family] ??= readFileSync(join(PUBLIC, 'ui', 'bf2017', `${family}.svg`), 'utf8');
+      return sprites[family].match(new RegExp(`<symbol id="${id}"[^>]*>([\\s\\S]*?)</symbol>`))[1];
+    };
+    const galaxy = Object.keys(ICON_FOR).filter((k) => /^(side:(rebel|empire|republic|separatists)|planet:|hud:|objective:)/.test(k));
+    expect(galaxy.length).toBeGreaterThan(0);
+    for (const site of galaxy) {
+      const game = ICON_FOR[site];
+      const art = drawing(game);
+      const twins = Object.keys(ICONS).filter((other) => other !== game && drawing(other) === art);
+      expect(twins, `${site} → ${game}`).toEqual([]);
+    }
+    expect(Object.keys(ICON_FOR).filter((k) => k.startsWith('planet:'))).toEqual([]);
+  });
+
   it('holds none of the sequel era', () => {
     for (const name of Object.keys(ICONS)) expect(name).not.toMatch(/rey|finn|kylo|phasma|bb-?[89]|firstorder|resistance|blackone/i);
   });
