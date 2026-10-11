@@ -137,6 +137,21 @@ describe('createPlayerBody', () => {
     expect(body.ready).toBe(false);
   });
 
+  it('a fall out of the engine’s world is caught on the walker’s ground', async () => {
+    const p = await createPhysics({ gravity: -GRAVITY }); // (nothing in it: past the streamed cells)
+    const st = walker(0, 0, 0, 0);
+    const body = createPlayerBody({ physics: p, state: st, row, world: flat });
+    let lowest = 0;
+    for (let i = 0; i < 180; i++) {
+      body.step(still, STEP);
+      lowest = Math.min(lowest, st.y);
+    }
+    expect(lowest).toBeGreaterThan(-4); // (it trips at 10 m/s: about 3.2 m down)
+    expect(st.y).toBeGreaterThan(-4);
+    body.dispose();
+    p.dispose();
+  });
+
   it('a teleport puts the body there and clears the knock', async () => {
     const p = await level();
     const st = walker(-10, -10, 0, 0);
