@@ -115,6 +115,20 @@ export const summaryLine = ({ fetched, kept, missing, failed, bytes, seconds }) 
 // thousands below it).
 export const dataPath = (name) => `data/${name}.json.gz`;
 
+// The records of one type in data.tsv (name, type, path, bytes a line):
+// their names, for a fetch by type (`data type:ObjectVariation`), since a
+// record's name seldom says what it is (2,807 ObjectVariation records, 40
+// with "Variation" in the name).
+export function namesOfType(tsv, type) {
+  const want = String(type).toLowerCase();
+  const out = [];
+  for (const line of String(tsv).split('\n')) {
+    const [name, kind] = line.split('\t');
+    if (name && kind && kind.toLowerCase() === want) out.push(name);
+  }
+  return out;
+}
+
 export function globRegExp(glob) {
   const body = glob
     .split('**')

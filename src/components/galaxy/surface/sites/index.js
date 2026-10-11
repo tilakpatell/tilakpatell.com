@@ -88,7 +88,12 @@ export function siteOf(id) {
   if (!base) return null;
   // (with what quests.js adds: things to do where the world has none of its own)
   const more = EXTRA[id];
-  const raw = more ? { ...base, life: [...(base.life ?? []), ...more.life], quests: [...(base.quests ?? []), ...more.quests] } : base;
+  const added = more ? { ...base, life: [...(base.life ?? []), ...more.life], quests: [...(base.quests ?? []), ...more.quests] } : base;
+  // (every Star Wars world wears the game's own maps for its props' trims and
+  // its ground's grain, lib/three/scans.js's bf2017 set, the owner's rule
+  // that every texture here is the game's; a site says `scanned: 'cc0'` to
+  // keep the photo scans. The galaxy's sites only: siteFrom serves others.)
+  const raw = { ...added, look: { scanned: 'bf2017', ...(added.look ?? {}) } };
   const sys = SYSTEMS.find((s) => s.id === id);
   return siteFrom(raw, id, { name: sys?.name, accent: sys?.accent });
 }
