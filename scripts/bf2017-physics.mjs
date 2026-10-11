@@ -147,8 +147,9 @@ function table({ meshes, dropped, cells }) {
 const sorted = (v) =>
   Array.isArray(v) ? v.map(sorted) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sorted(v[k])])) : v;
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
+// (the level script calls it with the pack's folder: main([out]))
+export async function main(argv = process.argv.slice(2)) {
+  const args = parseArgs(argv);
   const from = typeof args.from === 'string' ? args.from : process.env.BF2017_EXPORT || null;
   const get = source(from);
   const recs = await records(get);

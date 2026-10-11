@@ -43,8 +43,9 @@
 // never printed. A map the bucket has not got yet is said so and exits 3:
 // the uploader sends the maps in passes.
 
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BUDGET_ROWS } from '../src/lib/budgets.js';
@@ -415,6 +416,7 @@ async function main(args) {
 
   // the GLBs: each LOD once, its images pointing at the pack's textures
   let glbBytes = 0;
+  const glbSize = new Map(); // pack path → bytes
   const uris = new Set();
   const texRadius = new Map(); // uri → the biggest radius among what wears it
   const glbs = [];
@@ -433,6 +435,17 @@ async function main(args) {
   }
   const tiers = ultra ? ['low', 'mid', 'high', 'ultra'] : ['low', 'mid', 'high'];
   const tex = dry ? { slugs: new Map(), sizes: {}, bytes: {}, missing: [] } : await writeTextures(env, [...uris], texRadius, { out, tiers, dry });
+  // (a size of one of this build's maps the last build wrote and this one
+  // does not is removed, so it is not published; a file git keeps, Hoth's
+  // ground layers, is another lane's and stays)
+  if (!dry) {
+    const kept = new Set(execFileSync('git', ['ls-files', relative(ROOT, join(out, 'tex'))], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean).map((f) => f.split('/').pop()));
+    const want = new Set(Object.entries(tex.sizes).flatMap(([slug, by]) => Object.values(by).map((n) => `${slug}.${n}.ktx2`)));
+    for (const f of existsSync(join(out, 'tex')) ? await readdir(join(out, 'tex')) : []) {
+      const slug = f.replace(/\.\d+\.ktx2$/, '');
+      if (slug !== f && tex.sizes[slug] && !want.has(f) && !kept.has(f)) await rm(join(out, 'tex', f));
+    }
+  }
   Object.assign(
     pack.json.tex,
     Object.fromEntries(
@@ -450,6 +463,7 @@ async function main(args) {
         return `../tex/${tex.slugs.get(abs) ?? lastOf(abs).replace(/\.ktx2$/, '')}.ktx2`;
       });
       glbBytes += fixed.length;
+      glbSize.set(g.path, fixed.length);
       await writeFile(join(out, g.path), fixed);
       glbJson(fixed); // (a GLB that does not parse back is a bug here, not a file to ship)
     }
@@ -471,6 +485,21 @@ async function main(args) {
   rows.push(
     `| texture bytes (every map the level has) | ${Object.keys(pack.table)
       .map((t) => mb(tex.bytes[t] ?? 0))
+      .join(' | ')} |`,
+  );
+  // (the LOD files a tier can draw: from its cap's LOD down, of the meshes it keeps)
+  rows.push(
+    `| mesh bytes a tier can draw (its LODs, its meshes) | ${Object.keys(pack.table)
+      .map((t) => {
+        const gone = new Set(pack.json.cull[t]?.dropped ?? []);
+        let n = 0;
+        pack.json.meshes.forEach((m, i) => {
+          if (gone.has(i)) return;
+          const from = capIndex(m.lods, (LOD[t] ?? LOD.high).cap);
+          m.glb.forEach((path, k) => (n += path && k >= from ? (glbSize.get(path) ?? 0) : 0));
+        });
+        return mb(n);
+      })
       .join(' | ')} |`,
   );
   const farBytes = pack.files.get('far.bin').byteLength;
@@ -498,8 +527,22 @@ async function main(args) {
   lines.push(...parts.lines);
   await mkdir(join(out, 'cells'), { recursive: true });
   for (const [path, bin] of pack.files) await writeFile(join(out, path), Buffer.from(bin));
+  // (what other lanes wrote into the pack's level.json and this does not
+  // make, Hoth's `ground` from bf2017-ground.mjs, stays as they left it)
+  const before = existsSync(join(out, 'level.json')) ? JSON.parse(await readFile(join(out, 'level.json'), 'utf8')) : {};
+  for (const [k, v] of Object.entries(before)) if (!(k in pack.json)) pack.json[k] = v;
+  // (and the maps they named in its `tex`, Hoth's ground layers' sizes)
+  for (const [k, v] of Object.entries(before.tex ?? {})) pack.json.tex[k] ??= v;
   await writeFile(join(out, 'level.json'), `${JSON.stringify(pack.json)}\n`);
-  await writeFile(join(out, 'README.md'), `${lines.join('\n')}\n`);
+  // (and the README's sections other scripts wrote, Variations, kept after this one's)
+  const oldReadme = await readFile(join(out, 'README.md'), 'utf8').catch(() => '');
+  const ours = new Set(lines.filter((l) => l.startsWith('## ')));
+  // (the physics block is written again after, between its markers, by bf2017-physics.mjs)
+  const theirs = oldReadme
+    .replace(/<!-- physics -->[\s\S]*<!-- \/physics -->\n?/, '')
+    .split(/\n(?=## )/)
+    .filter((sec) => sec.startsWith('## ') && !ours.has(sec.split('\n')[0]));
+  await writeFile(join(out, 'README.md'), `${[lines.join('\n').replace(/\n*$/, ''), ...theirs.map((t) => t.replace(/\n*$/, ''))].join('\n\n')}\n`);
   await writeCredit(join(ROOT, 'src', 'data', 'modelCredits.json'), `level-${packId.replace('/', '-')}`, {
     title: `Star Wars Battlefront II (2017): ${mapName}${district === 'main' ? '' : ` (${district})`}`,
     author: 'EA DICE',
