@@ -55,6 +55,8 @@ export const SITES = {
   endor: {
     // lit as the game lights its level (src/data/bf2017/light/endor.json, gameLit.js)
     gameLight: 'endor',
+    // the record's picture on the node renderer (src/data/bf2017/light/endor.picture.json, applyGameLight)
+    picture: 'endor.picture.json',
     // drawn from the game's level (lane E0: /models/galaxy/bf2017/levels/endor/level.json,
     // `node scripts/bf2017-level.mjs levels/mp/endor_01 --world endor --spot
     // 211.8 331`: the game's bunker door on this site's, so the bunker, its
@@ -355,6 +357,8 @@ export const SITES = {
   kashyyyk: {
     // lit as the game lights its level (src/data/bf2017/light/kashyyyk.json, gameLit.js)
     gameLight: 'kashyyyk',
+    // the record's picture on the node renderer (src/data/bf2017/light/kashyyyk.picture.json, applyGameLight)
+    picture: 'kashyyyk.picture.json',
     place: 'The shore at Kachirho',
     line: 'Wroshyr trees as tall as mountains, and a lagoon full of trouble.',
     sky: {

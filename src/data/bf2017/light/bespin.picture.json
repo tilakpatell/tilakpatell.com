@@ -1,0 +1,138 @@
+{
+  "_from": "scripts/bf2017-picture.mjs bespin: the weathers' VE records (src/data/bf2017/light/bespin.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "bespin",
+  "weathers": {
+    "dusk": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Global/T_Walrus_BaseGrade_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 3
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "S2/Levels/CloudCity_01/textures/T_Sky_Clouds_Dusk_01_01_C",
+          "SkyGradientTexture": "S2/Levels/CloudCity_01/textures/T_Clouds_Dusk_Fog_01_C",
+          "PanoramicRotation": 0.057,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": -0.858,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "S2/Levels/CloudCity_01/textures/T_Desert_01_CloudShadow_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirror",
+          "CloudXZTranslation": {
+            "x": 3200,
+            "y": -5500
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/bespin/dusk.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Global/T_Walrus_BaseGrade_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Global/T_Walrus_BaseGrade_01 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/bespin/dusk.panorama.ktx2",
+        "name": "S2/Levels/CloudCity_01/textures/T_Sky_Clouds_Dusk_01_01_C",
+        "horizon": [
+          0.0599,
+          0.0235,
+          0.0157
+        ],
+        "size": [
+          2048,
+          1024
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/s2/levels/cloudcity_01/textures/t_sky_clouds_dusk_01_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/s2/levels/cloudcity_01/textures/t_sky_clouds_dusk_01_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/bespin/dusk.gradient.ktx2",
+        "name": "S2/Levels/CloudCity_01/textures/T_Clouds_Dusk_Fog_01_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/bespin/dusk.clouds.ktx2",
+        "name": "S2/Levels/CloudCity_01/textures/T_Desert_01_CloudShadow_01_C"
+      }
+    },
+    "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Global/T_Walrus_BaseGrade_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 3
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "S2/Levels/CloudCity_01/textures/T_Sky_Clouds_Dusk_01_01_C",
+          "SkyGradientTexture": "S2/Levels/CloudCity_01/textures/T_Clouds_Dusk_Fog_01_C",
+          "PanoramicRotation": 0.057,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": -0.858,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "S2/Levels/CloudCity_01/textures/T_Desert_01_CloudShadow_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirror",
+          "CloudXZTranslation": {
+            "x": 3200,
+            "y": -5500
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/bespin/interior.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Global/T_Walrus_BaseGrade_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Global/T_Walrus_BaseGrade_01 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/bespin/dusk.panorama.ktx2",
+        "name": "S2/Levels/CloudCity_01/textures/T_Sky_Clouds_Dusk_01_01_C",
+        "horizon": [
+          0.0599,
+          0.0235,
+          0.0157
+        ],
+        "size": [
+          2048,
+          1024
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/s2/levels/cloudcity_01/textures/t_sky_clouds_dusk_01_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/s2/levels/cloudcity_01/textures/t_sky_clouds_dusk_01_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/bespin/dusk.gradient.ktx2",
+        "name": "S2/Levels/CloudCity_01/textures/T_Clouds_Dusk_Fog_01_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/bespin/dusk.clouds.ktx2",
+        "name": "S2/Levels/CloudCity_01/textures/T_Desert_01_CloudShadow_01_C"
+      }
+    }
+  }
+}

@@ -18,6 +18,7 @@ import { RECIPES, recipeNames } from '../gameFlora';
 import { isGame } from '../catalog/bf2017-library';
 import LIBRARY from '../../../../data/bf2017/library.json';
 import USED from '../../../../data/bf2017/library-used.json';
+import { LIGHTS, PICTURED, gamePictureOf } from '../../../../data/bf2017/light/index';
 
 const SHIPS = new Set([...GALAXY_KINDS, ...BUILT_KINDS]);
 const placeable = (kind) => Boolean(PROPS[kind] || SURFACE_MODELS[kind]);
@@ -53,6 +54,24 @@ describe('the worlds you can land on', () => {
         for (const k of ['low', 'high', 'rock']) expect(site.ground.palette[k], k).toBeTruthy();
         expect(Math.hypot(...site.land.at)).toBeLessThan(REACH - 40);
         for (const w of site.weather) expect(WEATHER, w.kind).toContain(w.kind);
+      });
+
+      it('passes its record’s picture where the game lights it, a row for every weather', async () => {
+        if (!site.gameLight) {
+          expect(site.picture, 'picture without a record').toBeUndefined();
+          return;
+        }
+        expect(PICTURED, 'a picture file for its record').toContain(site.gameLight);
+        expect(site.picture).toBe(`${site.gameLight}.picture.json`);
+        const pic = await gamePictureOf(site);
+        expect(pic.world).toBe(site.gameLight);
+        for (const w of Object.keys(LIGHTS[site.gameLight].weathers)) {
+          const row = pic.weathers[w];
+          expect(row, w).toBeTruthy();
+          // (the picture's LUT is the game's whole 33³, read after the linear tone map)
+          expect(row.lut?.size, `${w} lut`).toBe(33);
+          expect(row.panorama === null || row.panorama.url.endsWith('.ktx2'), `${w} panorama`).toBe(true);
+        }
       });
 
       it('has places to find, each one somewhere you can get to', () => {
@@ -252,6 +271,14 @@ describe('districts: more than one of the game’s maps on a world', () => {
     expect(withDistrict(site, 'nowhere')).toBe(site);
     expect(withDistrict(site, null)).toBe(site);
   });
+
+  it('gives a district its own doors, and a way back to another district than the main map', () => {
+    const below = { id: 'pit', name: 'The pit', level: 'tatooine/pit', land: { at: [5, 5] }, door: { at: [4, 4], r: 2, prompt: 'Back up', to: 'jabba' } };
+    const palace = { ...site.districts[0], door: { at: [1, 1], r: 2, prompt: 'Back to town' }, zones: [{ id: 'down', name: 'The pit', door: { at: [2, 2], r: 2, prompt: 'Down' }, to: { district: 'pit' } }] };
+    const two = { ...site, districts: [palace, below] };
+    expect(withDistrict(two, 'jabba').zones.map((z) => [z.id, z.to.district])).toEqual([['down', 'pit'], ['jabba-out', 'main']]);
+    expect(withDistrict(two, 'pit').zones).toEqual([{ id: 'pit-out', name: 'Jabba’s palace', door: below.door, to: { district: 'jabba' } }]);
+  });
 });
 
 describe('the worlds drawn from the game’s levels', () => {
@@ -262,6 +289,116 @@ describe('the worlds drawn from the game’s levels', () => {
     const bunker = endor.places.find((p) => p.id === 'bunker');
     expect(bunker.flat.game).toBe(true);
     expect(bunker.things.filter((t) => t.kind === 'bunker' || t.kind === 'bunkerbank').every((t) => t.game)).toBe(true);
+  });
+
+  // (lane E2: the packs' level.json, in git though their bytes are published)
+  const pack = (level) => JSON.parse(readFileSync(new URL(`../../../../../public/models/galaxy/bf2017/levels/${level}/level.json`, import.meta.url), 'utf8'));
+
+  it('Naboo stands on Naboo_01, its water at the canals the game floats its lilies on (Review Focus 1)', () => {
+    const naboo = SITES.naboo;
+    expect(naboo.level).toBe('naboo');
+    expect(naboo.ground.layers).toEqual([{ type: 'image', pack: 'naboo' }]);
+    // (36 lilies on Theed's canals in Naboo_01's instances, all at 432.81 m;
+    // the pack's origin is the plaza's ground in the game)
+    const CANALS = 432.81;
+    expect(Math.abs(naboo.water.level - (CANALS - pack('naboo').origin[1]))).toBeLessThan(0.2);
+    // (the site's built palace is the flight's: the level draws the game's)
+    expect(naboo.places.find((p) => p.id === 'palace').things.every((t) => t.game)).toBe(true);
+  });
+
+  it('Kamino stands on Kamino_01 over its sea: off a platform is into the sea and back, onto nothing under it (Review Focus 2)', () => {
+    const kamino = SITES.kamino;
+    expect(kamino.level).toBe('kamino');
+    // (no ground in the map, so the site's y is the game's; the ocean is
+    // Shared_Art's WaterSurfaceEntityData, at -296.42 m)
+    expect(pack('kamino').origin[1]).toBe(0);
+    expect(kamino.water.level).toBeCloseTo(-296.42, 2);
+    // the line under which you are put back where you landed is over the sea,
+    // so no solid under the water is ever stood on, and 10 m under every deck
+    // the site stands its people on, so nobody on a deck is put back
+    expect(kamino.fall).toBeGreaterThan(kamino.water.level);
+    for (const f of kamino.floors) expect(kamino.fall, `${f.x}, ${f.z}`).toBeLessThan(f.y - 10);
+    for (const a of kamino.life.filter((q) => q.level != null)) expect(a.level, a.kind).toBeGreaterThan(kamino.fall);
+  });
+
+  it('every door into a district names one its world has, and every district has its door back (Review Focus 3)', () => {
+    for (const id of ['hoth', 'naboo', 'kamino']) {
+      const site = SITES[id];
+      const ids = new Set(site.districts.map((d) => d.id));
+      const doors = site.zones.filter((z) => z.to?.district);
+      expect(doors.length, id).toBeGreaterThan(0);
+      for (const z of doors) expect(ids.has(z.to.district), `${id}: ${z.id}`).toBe(true);
+      for (const d of site.districts) expect(withDistrict(site, d.id).zones.map((z) => z.to.district), `${id}/${d.id}`).toEqual(['main']);
+    }
+  });
+
+  it('Tatooine stands on Tatooine_01, Mos Eisley’s built town left to the level, its palace and pit districts in their own frame', () => {
+    const t = siteOf('tatooine');
+    expect(t.level).toBe('tatooine');
+    expect(t.ground.layers).toEqual([{ type: 'image', pack: 'tatooine' }]);
+    // (the flight keeps the desert it drew)
+    expect(t.ground.flight.map((l) => l.type)).toEqual(['swell', 'dunes', 'mesas', 'mountains']);
+    const mos = t.places.find((p) => p.id === 'moseisley');
+    expect(mos.flat.game).toBe(true);
+    expect(mos.things.every((x) => x.game)).toBe(true);
+    // (the stalls' people stand at the game's own stalls, none at a built one the level leaves out)
+    const built = t.things_all.filter((x) => x.kind === 'stall' && !x.game);
+    for (const w of t.wants.filter((q) => q.id.startsWith('stall'))) for (const at of w.spots) expect(built.every((x) => Math.hypot(at[0] - x.at[0], at[1] - x.at[1]) > 4), w.id).toBe(true);
+    // (the palace's road leads to the game's palace; its pit's way back is to the palace, not the town)
+    expect(t.zones.find((z) => z.id === 'jabbaroad').to).toEqual({ district: 'jabba' });
+    const palace = withDistrict(t, 'jabba');
+    expect(palace).toMatchObject({ level: 'tatooine/jabba', district: 'jabba', places: [], things_all: [] });
+    expect(palace.ground.layers).toEqual([{ type: 'image', pack: 'tatooine/jabba' }]);
+    expect(palace.zones.map((z) => z.to.district)).toEqual(['jabba-inside', 'main']);
+    const pit = withDistrict(t, 'jabba-inside');
+    expect(pit).toMatchObject({ level: 'tatooine/jabba-inside', weather: [], life: [] });
+    expect(pit.zones).toEqual([expect.objectContaining({ to: { district: 'jabba' } })]);
+  });
+
+  it('Bespin stands on CloudCity_01’s walkways, its fall above the city below, the campaign’s palace a district (Review Focus 3)', () => {
+    const bespin = SITES.bespin;
+    const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/bespin/level.json', import.meta.url), 'utf8'));
+    expect(bespin.level).toBe('bespin');
+    expect(bespin.noGround).toBe(true);
+    // (the walkways at the game's 199 m are the site's 0; the plazas the map draws below them, at -5 m, are
+    // the backdrop: one who falls off is counted fallen long before them, never caught on their floors)
+    expect(pack.origin[1]).toBe(199);
+    expect(bespin.fall).toBeLessThan(0);
+    expect(bespin.fall).toBeGreaterThan(-5 - pack.origin[1]);
+    // (the built deck, its towers and bridges the flight's: the level's walkways are what you stand on)
+    for (const t of bespin.things.filter((x) => ['bespindeck', 'bespinplatform', 'bespinbridge', 'cloudcity'].includes(x.kind))) expect(t.game, t.kind).toBe(true);
+    const palace = bespin.districts.find((d) => d.id === 'm2bes');
+    expect(palace.level).toBe('bespin/m2bes');
+    expect(bespin.zones.some((z) => z.to?.district === 'm2bes')).toBe(true);
+    // (the map has no carbon-freezing chamber: the site's stays, and its zone)
+    expect(bespin.places.find((p) => p.id === 'carbon').things.find((t) => t.kind === 'carbonchamber').game).toBeUndefined();
+  });
+
+  it('Hoth’s outpost is Hoth_02, a district reached on foot where the game put it on the same ice', () => {
+    const hoth = SITES.hoth;
+    const outpost = hoth.districts.find((d) => d.id === 'outpost');
+    expect(outpost.level).toBe('hoth/outpost');
+    const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/hoth/outpost/level.json', import.meta.url), 'utf8'));
+    const main = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/hoth/level.json', import.meta.url), 'utf8'));
+    // (Hoth_02 is drawn on Hoth_01's own terrain: its door on the main map is where its spot lies there)
+    const door = hoth.zones.find((z) => z.to?.district === 'outpost').door.at;
+    expect(door[0]).toBeCloseTo(pack.origin[0] - main.origin[0], 0);
+    expect(door[1]).toBeCloseTo(pack.origin[2] - main.origin[2], 0);
+    expect(withDistrict(hoth, 'outpost').ground.layers).toEqual([{ type: 'image', pack: 'hoth/outpost' }]);
+  });
+
+  it('Scarif stands on Scarif_02’s beach, its sea the game’s, its built base left to the level', () => {
+    const scarif = SITES.scarif;
+    const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/scarif/level.json', import.meta.url), 'utf8'));
+    expect(scarif.level).toBe('scarif');
+    expect(scarif.ground.layers).toEqual([{ type: 'image', pack: 'scarif' }]);
+    // (the game's sea, WaterSurfaceEntityData at 212.03 m, under the landing's 213.10: you come down on the shore)
+    expect(scarif.water.level).toBeCloseTo(212.03 - pack.origin[1], 1);
+    expect(scarif.water.level).toBeLessThan(0);
+    for (const t of scarif.things) if (['bunker', 'pad', 'lamp'].includes(t.kind)) expect(t.game, t.kind).toBe(true);
+    for (const s of scarif.scatter) expect(s.game, s.kind).toBe(true);
+    // (the vault's door needs its tower: the game's Citadel stands 3 km west, past the arena, on the horizon)
+    expect(scarif.places.find((p) => p.id === 'citadel').things.find((t) => t.kind === 'citadel').game).toBeUndefined();
   });
 });
 

@@ -7,6 +7,7 @@
 // Chromium where Playwright keeps it:
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs space endor,coruscant
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,hoth
+//   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine@jabba (a district: ?district=jabba)
 //   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, JSON=1 …
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
@@ -167,7 +168,9 @@ for (const id of list.split(',')) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
   const bf = mode === 'battlefront';
-  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
+  // (`world@district`: a district of a world, its own pack, held to the row alone)
+  const [world, district] = id.split('@');
+  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
   await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
   const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
   try {
@@ -213,6 +216,24 @@ for (const id of list.split(',')) {
     });
     await page.waitForTimeout(2500);
   }
+  // (the whole world in the count: the frame guard, lib/three/frameGuard,
+  // readies about a shader a frame, and in software GL a frame takes seconds,
+  // so a level pack's hundreds of materials were still held back when the
+  // frame was counted and its draws left out. Held back no longer, and three
+  // frames drawn, compiling all of it, before the frames that are counted)
+  await page.evaluate(
+    () =>
+      new Promise((done) => {
+        window.__tpGuardOff?.();
+        let n = 0;
+        const tick = () => {
+          window.__RUNTIME__?.invalidate();
+          if (++n < 3) requestAnimationFrame(tick);
+          else done();
+        };
+        requestAnimationFrame(tick);
+      }),
+  );
   // one whole frame's counts (every pass), and the frame times over 4 s
   const stats = await page.evaluate(
     (surface) =>

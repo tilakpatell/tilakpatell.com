@@ -299,6 +299,15 @@ export const SITES = {
   scarif: {
     // lit as the game lights its level (src/data/bf2017/light/scarif.json, gameLit.js)
     gameLight: 'scarif',
+    // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/scarif/level.json,
+    // `node scripts/bf2017-level.mjs s9_3/scarif/levels/mp/scarif_02 --world
+    // scarif --spawn --subs Scarif_02,Phase_02,Phase_02_Unique --share low=0.6`: the ground
+    // fight's beach base, its palms, bunkers and stores; the site's built pads,
+    // bunkers, lamps and scatter are the flight's (`game`). The Citadel stays
+    // built: the game's stands 3 km west, past the arena, on the horizon)
+    level: 'scarif',
+    // the record's picture on the node renderer (src/data/bf2017/light/scarif.picture.json, applyGameLight)
+    picture: 'scarif.picture.json',
     place: 'The beaches of Scarif',
     line: 'White sand, palms and turquoise lagoons, under the shield, with the Citadel over all of it.',
     sky: {
@@ -315,9 +324,13 @@ export const SITES = {
     edge: 'Nothing out there but lagoon and sky, and the shield over all of it. Better turn back.',
     ground: { detail: 'beach', detailLook: { color: 0.7, normal: 0.7, metres: 6 },
       seed: 5,
-      base: -6,
       wind: 0.6,
-      layers: [
+      // (the game's own ground: Scarif_02's heightmap, 0 at the landing on
+      // the base's shore, the lagoon round it a hand's depth under the sea)
+      layers: [{ type: 'image', pack: 'scarif' }],
+      // (the flight's planet keeps the islands it had: the land the site
+      // drew before the level)
+      flight: [
         { type: 'island', at: [0, 0], r: 480, height: 9, core: 0.45, ragged: 0.35 },
         { type: 'island', at: [90, 460], r: 230, height: 9, core: 0.5, ragged: 0.25 },
         { type: 'island', at: [-420, 180], r: 190, height: 8, core: 0.4 },
@@ -339,11 +352,12 @@ export const SITES = {
         ripple: { strength: 0.05, scale: 2.6, wind: 0.6 },
         grain: 0.45,
         sparkle: 0.04,
-        wet: { level: 0, band: 1.3, color: '#b8a682' },
+        wet: { level: -1.07, band: 1.3, color: '#b8a682' },
         mark: '#c8b896',
       },
     },
-    water: { level: 0, color: '#38c6c8', deep: '#0a5a78', kind: 'sea', foam: 0.55 },
+    // (the game's sea: WaterSurfaceEntityData at 212.03 m, the landing's ground 213.10)
+    water: { level: -1.07, color: '#38c6c8', deep: '#0a5a78', kind: 'sea', foam: 0.55 },
     // (dune grass back from the beaches, sparse, in the sea wind)
     grass: { h: [0.35, 0.8], w: 0.05, root: '#5f7048', mid: '#6f9452', tip: '#adc47e', dry: '#c8c08a', cover: 0.7, scale: 70, above: 1.4, wind: 0.8 },
     weather: [{ kind: 'spray', count: 500 }],
@@ -516,32 +530,33 @@ export const SITES = {
       { kind: 'cratecube', at: [-20, 14], yaw: 2.2 },
       { kind: 'cooler', at: [-18, 16], yaw: 0.6 },
       { kind: 'barrel', at: [24, -14], yaw: 0.9 },
-      // pads, bunkers and lamps across the base
-      { kind: 'pad', at: [60, 60], opts: { r: 16, color: '#a6a49e', light: '#ffd27a', shape: 'square' } },
-      { kind: 'pad', at: [210, 40], opts: { r: 16, color: '#a6a49e', light: '#ffd27a', shape: 'square' } },
-      { kind: 'pad', at: [40, 210], opts: { r: 14, color: '#a6a49e', light: '#ffd27a', shape: 'square' } },
-      { kind: 'pad', at: [-60, -110], opts: { r: 16, color: '#a6a49e', light: '#ffd27a', shape: 'square' } },
-      { kind: 'pad', at: [120, -120], opts: { r: 14, color: '#a6a49e', light: '#ffd27a', shape: 'square' } },
-      { kind: 'bunker', at: [100, 100], yaw: 2.3 },
-      { kind: 'bunker', at: [-30, 150], yaw: 3.0, scale: 1.4, opts: { w: 18, d: 12 } },
-      { kind: 'bunker', at: [200, 120], yaw: 1.8 },
-      { kind: 'bunker', at: [-150, -40], yaw: -1.4 },
-      { kind: 'bunker', at: [40, -170], yaw: 0.2, scale: 1.6, opts: { w: 20, d: 12 } },
-      { kind: 'bunker', at: [150, 300], yaw: 3.4 },
-      { kind: 'lamp', at: [30, 24], opts: { h: 6, light: '#fff0c8', color: '#5a5c60' } },
-      { kind: 'lamp', at: [-24, 34], opts: { h: 6, light: '#fff0c8', color: '#5a5c60' } },
-      { kind: 'lamp', at: [80, 180], opts: { h: 6, light: '#fff0c8', color: '#5a5c60' } },
-      { kind: 'lamp', at: [170, 80], opts: { h: 6, light: '#fff0c8', color: '#5a5c60' } },
+      // pads, bunkers and lamps across the base (the flight's: the level's base stands for them)
+      { kind: 'pad', at: [60, 60], opts: { r: 16, color: '#a6a49e', light: '#ffd27a', shape: 'square' }, game: true },
+      { kind: 'pad', at: [210, 40], opts: { r: 16, color: '#a6a49e', light: '#ffd27a', shape: 'square' }, game: true },
+      { kind: 'pad', at: [40, 210], opts: { r: 14, color: '#a6a49e', light: '#ffd27a', shape: 'square' }, game: true },
+      { kind: 'pad', at: [-60, -110], opts: { r: 16, color: '#a6a49e', light: '#ffd27a', shape: 'square' }, game: true },
+      { kind: 'pad', at: [120, -120], opts: { r: 14, color: '#a6a49e', light: '#ffd27a', shape: 'square' }, game: true },
+      { kind: 'bunker', at: [100, 100], yaw: 2.3, game: true },
+      { kind: 'bunker', at: [-30, 150], yaw: 3.0, scale: 1.4, opts: { w: 18, d: 12 }, game: true },
+      { kind: 'bunker', at: [200, 120], yaw: 1.8, game: true },
+      { kind: 'bunker', at: [-150, -40], yaw: -1.4, game: true },
+      { kind: 'bunker', at: [40, -170], yaw: 0.2, scale: 1.6, opts: { w: 20, d: 12 }, game: true },
+      { kind: 'bunker', at: [150, 300], yaw: 3.4, game: true },
+      { kind: 'lamp', at: [30, 24], opts: { h: 6, light: '#fff0c8', color: '#5a5c60' }, game: true },
+      { kind: 'lamp', at: [-24, 34], opts: { h: 6, light: '#fff0c8', color: '#5a5c60' }, game: true },
+      { kind: 'lamp', at: [80, 180], opts: { h: 6, light: '#fff0c8', color: '#5a5c60' }, game: true },
+      { kind: 'lamp', at: [170, 80], opts: { h: 6, light: '#fff0c8', color: '#5a5c60' }, game: true },
     ],
+    // (the level places its own palms and scrub: these rows are the flight's)
     scatter: [
-      { kind: 'palm', n: 600, within: [34, 585], scale: [0.7, 1.3], above: 0.7, clear: 6 },
+      { kind: 'palm', n: 600, within: [34, 585], scale: [0.7, 1.3], above: 0.7, clear: 6, game: true },
       // (the scrub back from the beaches, low and round, under the palms; thicker in the islands' hearts)
-      { kind: 'bush', n: 700, within: [20, 570], scale: [0.7, 1.7], solid: false, above: 1.0, opts: { seed: 12, s: 2.2, color: '#4a5e3a' } },
-      { kind: 'bush', n: 260, within: [20, 300], scale: [0.5, 1.1], solid: false, above: 1.4, opts: { seed: 15, s: 1.6, color: '#587a3c' } },
-      { kind: 'rock', n: 70, within: [60, 560], scale: [0.6, 2.2], opts: { color: '#9a9484', sharp: 0.3 } },
-      { kind: 'stones', n: 220, within: [8, 500], scale: [0.2, 0.5], solid: false, opts: { color: '#b8b098' } },
+      { kind: 'bush', n: 700, within: [20, 570], scale: [0.7, 1.7], solid: false, above: 1.0, opts: { seed: 12, s: 2.2, color: '#4a5e3a' }, game: true },
+      { kind: 'bush', n: 260, within: [20, 300], scale: [0.5, 1.1], solid: false, above: 1.4, opts: { seed: 15, s: 1.6, color: '#587a3c' }, game: true },
+      { kind: 'rock', n: 70, within: [60, 560], scale: [0.6, 2.2], opts: { color: '#9a9484', sharp: 0.3 }, game: true },
+      { kind: 'stones', n: 220, within: [8, 500], scale: [0.2, 0.5], solid: false, opts: { color: '#b8b098' }, game: true },
       // the undergrowth under the palms, ferns and broad leaves
-      { kind: 'sorganfern', n: 340, within: [20, 560], scale: [1, 2.2], solid: false, above: 1.2 },
+      { kind: 'sorganfern', n: 340, within: [20, 560], scale: [1, 2.2], solid: false, above: 1.2, game: true },
     ],
     life: [
       // (the Empire's walkers on the beach: the rigged AT-AT model, walking its own walk; the film's cargo walkers are its taller cousins)
