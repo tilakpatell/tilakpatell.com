@@ -17,6 +17,8 @@
 //     surface's ground mesh, which a pack with a ground.json draws in the
 //     game's terrain layers on the node renderer, lane Q2)
 //   packJson(world, path) → Promise<object>: a JSON file beside the pack
+//   packBytes(response, url) → Promise<ArrayBuffer>: a pack file's bytes, a
+//     404 or a page in its place (a dev server's index.html) thrown
 //     (a pack with the game's shapes, on every tier and on a phone
 //     (levelPhysics.js's wantsEngine): a Rapier world of its own, the cells'
 //     shapes streamed into it beside the walk world's boxes, the ground under
@@ -53,13 +55,15 @@ import { createLevelPhysics, wantsEngine } from './levelPhysics.js';
 // (No abort signal on the request: assetBase reads any failure as the bucket
 // down for the visit, so a cancelled fetch is let finish and its answer
 // dropped by the stream; lane S's pool brings real aborts.)
-const bytesOf = (world) => (path) =>
-  withFallback((u) =>
-    fetch(u).then((r) => {
-      if (!r.ok) throw new Error(`${r.status} ${u}`);
-      return r.arrayBuffer();
-    }),
-  )(packUrl(world, path));
+// A page in a file's place is no file: a dev server (and a host's fallback
+// route) answers a path it lacks, a cell's bin left in the bucket, with its
+// index.html, which read as a cell's records lays boxes kilometres wide.
+export function packBytes(r, u) {
+  if (!r.ok) throw new Error(`${r.status} ${u}`);
+  if (/text\/html/i.test(r.headers?.get?.('content-type') ?? '')) throw new Error(`not a pack file (a page) ${u}`);
+  return r.arrayBuffer();
+}
+const bytesOf = (world) => (path) => withFallback((u) => fetch(u).then((r) => packBytes(r, u)))(packUrl(world, path));
 
 export const packJson = (world, path) => bytesOf(world)(path).then((b) => JSON.parse(new TextDecoder().decode(b)));
 

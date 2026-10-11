@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { createLevel, levelGround, levelPlaced, partOf, sunOf } from './index';
+import { createLevel, levelGround, levelPlaced, packBytes, partOf, sunOf } from './index';
 
 describe('the level’s entry', () => {
   it('leaves a ground without an image layer as it is (every world today)', async () => {
@@ -38,5 +38,16 @@ describe('sunOf', () => {
     const s = sunOf(scene);
     expect(s.direction.map((v) => Number(v.toFixed(4)))).toEqual([0, 0.7071, 0.7071]);
     expect(s.color.map((v) => Number(v.toFixed(3)))).toEqual([1, Number(new THREE.Color(0xff8000).g.toFixed(3)), 0]);
+  });
+});
+
+describe('packBytes', () => {
+  const answer = (status, type) => ({ ok: status < 400, status, headers: new Headers({ 'content-type': type }), arrayBuffer: async () => new ArrayBuffer(8) });
+  it('gives a file’s bytes', async () => {
+    expect((await packBytes(answer(200, 'application/octet-stream'), 'cells/0_0.bin')).byteLength).toBe(8);
+  });
+  it('throws a 404, and a page in a file’s place (a dev server’s index.html for a cell’s bin it lacks)', () => {
+    expect(() => packBytes(answer(404, 'text/plain'), 'cells/0_0.bin')).toThrow(/404/);
+    expect(() => packBytes(answer(200, 'text/html; charset=utf-8'), 'cells/0_0.bin')).toThrow(/page/);
   });
 });
