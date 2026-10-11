@@ -66,6 +66,10 @@
 - [ ] **Step 1: failing tests**: the first fetch is the 256 row; promotion swaps; a dropped cell’s promotion is cached, not bound (Review Focus 2); the UASTC pick table by slot, tier and format, including no compressed format (Review Focus 5).
 - [ ] **Step 2: run**: FAIL. **Step 3: implement.** **Step 4: run**: PASS. **Step 5: commit** `Every map at its smallest row first and promoted in place; UASTC on the data maps above low`.
 
+### Not this lane, noted for after it
+
+Gaussian-splat vistas (three r186’s `GaussianSplatMesh`) for one level’s horizon: a desktop capture of the game’s far terrain rendered from hundreds of views and trained, measured in bytes and FLIP against the painted panorama and this lane’s proxies (the spec’s §11). One spike after N4 lands, not part of it.
+
 ### Task 4: the cache, the budget, the gate
 
 **Files:**

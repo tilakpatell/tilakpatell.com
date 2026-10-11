@@ -49,6 +49,10 @@
 - [ ] **Step 1: failing tests**: the CPU twin of the LOD cut on a DAG (the right level by distance); the id saturates (Review Focus 3); skinned parts excluded from `groupsOf`’s cluster set (Review Focus 4); the barycentric reconstruction on a known triangle.
 - [ ] **Step 2: run**: FAIL. **Step 3: implement.** **Step 4: run**: PASS. **Step 5: commit** `Clusters culled on the GPU and drawn once into a visibility buffer, resolved a material group at a time`.
 
+### Task 2b: the library beside it
+
+- [ ] `elad12390/three-virtual-geometry` (cluster LOD and GPU culling for three WebGPU, r180+; its numbers unverified) is run on the same stress scene and Hoth as a third column, from a scratch checkout, not a dependency: GPU ms, main-thread ms, draws, FLIP. It enters `package.json` only if it beats both N1’s path and this lane’s clusters on the three devices, and then with its stack page first (`docs/health/RULES.md`: a dependency has a page; never a dependency to make a number move).
+
 ### Task 3: the compute rasteriser (T2), the three devices, the decision
 
 **Files:**

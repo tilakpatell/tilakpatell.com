@@ -16,6 +16,7 @@
 - The grid’s frame budget is `probes.js`’s `FRAME_BUDGET` (0.5 ms) read against G1’s GPU time: N probes a frame, N adapted so the budget holds; two cascades at 8 m and 32 m spacing round the player (`_source`: the research note’s DDGI section and Lumen’s radiance-cache spacing).
 - The cadence: the two far cascades every fourth frame or when a tracked caster crosses them; the two near every frame; `BLEND` (0.15) fades the last cascade into the far cache as it fades into the record’s distant shadow today.
 - SSR for roughness under 0.4 (Lumen’s cut); above it the probe or atlas.
+- **The two roads** (the spec’s §11): the game’s charts where Q3’s spike reads them, else the site’s own path-traced bake (a lane W desktop job); the sampler and the pack rows take either. `three-gpu-pathtracer` is a desktop-script dependency with its own stack page, never shipped to a visitor.
 - Until the atlases are in the bucket, the lane works on Hoth’s atlas from the desktop export (lane Q3’s probe of `EN_Hoth_01_Static_Sunset_*`) and the lit fixture; every other level lights up as lane W uploads: the loader treats a missing `enlighten` row as “none” and keeps today’s probes.
 - The rules and the gates of the spec’s §10.
 
@@ -29,7 +30,9 @@
 
 ---
 
-### Task 1: the baked bounce
+### Task 1: the baked bounce (two roads, one sampler)
+
+**The correction (the spec’s §11).** The game’s atlases are of no use without each instance’s chart, and the charts live in an Enlighten `DatabaseResource` the exporter never read; Hoth’s props carry one UV set. So the sampler takes either road: the game’s charts (if lane Q3’s desktop spike reads them: a per-instance `uvRect` and a per-mesh chart UV in the pack) or the site’s own bake (lane W’s `lightmaps` job: `three-gpu-pathtracer` on the owner’s GPU over a level’s static instances under the record’s sun, sky and `EnlightenComponentData` bounce numbers, into charts unwrapped per instance with `watlas`, written as RGBA16F KTX2 irradiance, three direction maps and a sky-visibility map, the same five-texture shape). This lane: `baked.js` reads `{ irradiance, dirX, dirY, dirZ, skyVisibility, charts: 'game' | 'site', rects }`; `scripts/desktop/bf2017-lightmaps.mjs` (the bake, run on the desktop; a `--dry` in the cloud on the fixture’s pillars at 64² proves the pipeline) and its stack page `docs/stack/pathtracer.md` written before the import; the fixture’s 256² cut is baked by the dry run, not cut from the game’s atlas. The row writer takes both shapes; a level with neither keeps today’s probes.
 
 **Files:**
 - Create: `src/lib/three/light/baked.js`, `baked.test.js`
