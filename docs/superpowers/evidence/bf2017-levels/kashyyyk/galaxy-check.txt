@@ -1,0 +1,27 @@
+# kashyyyk-high
+kashyyyk   calls  307  tris  885043  geo  406  tex 455  prog 129  frame p50 5766.3 p95 5966.5 ms  ground 0.03 ms  load 13.1 s
+           level calls 415  tris 2299920  instances 8850  lights 3  probe –
+budget kashyyyk   calls 307/155  tris 885043/1947625  models 74.3/60 MB  FAIL (calls 307 > 155, models 74.3 MB > 60)
+# kashyyyk-low
+kashyyyk   calls  338  tris  665750  geo  331  tex 415  prog 104  frame p50 2633.2 p95 2899.9 ms  ground 0.11 ms  load 14.0 s
+           level calls 211  tris 568070  instances 1647  lights 0  probe –
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget kashyyyk   calls 338/350  tris 665750/800000  models 19/20 MB  pass
+# kashyyyk-mid
+kashyyyk   calls  335  tris  621144  geo  364  tex 421  prog 105  frame p50 2716.7 p95 2733.1 ms  ground 0.03 ms  load 13.0 s
+           level calls 295  tris 1041009  instances 3382  lights 3  probe –
+budget kashyyyk   calls 335/155  tris 621144/1500000  models 22.3/40 MB  FAIL (calls 335 > 155)
+# kashyyyk-second-high
+kashyyyk   calls   38  tris  475480  geo  234  tex  77  prog 102  frame p50 2706.2 p95 4166.5 ms  ground 0.03 ms  load 12.9 s
+           level calls 315  tris 1670404  instances 8503  lights 3  probe e75ef2ce
+budget kashyyyk   calls 38/155  tris 475480/1947625  models 27.2/60 MB  pass
+# kashyyyk-second-low
+kashyyyk   calls   39  tris  267616  geo  205  tex  79  prog  99  frame p50 1833.3 p95 1849.9 ms  ground 0.11 ms  load 12.5 s
+           level calls 166  tris 497399  instances 2154  lights 0  probe e75ef2ce
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget kashyyyk   calls 39/350  tris 267616/800000  models 10.6/20 MB  pass
+# kashyyyk-ultra
+kashyyyk   calls  211  tris 1618972  geo  419  tex 431  prog 111  frame p50 16499.3 p95 16732.7 ms  ground 0.07 ms  load 13.8 s
+           level calls 451  tris 3170752  instances 8850  lights 3  probe –
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget kashyyyk   calls 211/1500  tris 1618972/–  models 176/240 MB  p95 16732.7/reported ms  pass

@@ -1,0 +1,43 @@
+http://127.0.0.1:5188/#/galaxy/kashyyyk/surface in chrome, in software
+  the world's up in 22 s, 33 figures drawn; settling 4 s
+note: only 17 frames in 66 s (asked for 20): the world drew slowly, or stopped drawing
+#/galaxy/kashyyyk/surface: 34 figures in 2 scenes, 0 in view; 17 frames, 66.4 s on the wall, 1.4 s in the world (by the wall clock)
+  drift m/s  left   right  view  playing         figure
+     0.000  0.000  0.000  out   idle 0.45       tach_01_mesh#0
+     0.000  0.000  0.000  out   idle 1.00       tach_01_mesh#1
+     0.000  0.000  0.000  out   idle 0.34       tach_01_mesh#2
+     0.000  0.000  0.000  out   idle 0.93       tach_01_mesh#3
+     0.000  0.000  0.000  out   Armature|Idle|  life#4
+     0.000  0.000  0.000  out   Armature|Idle|  life#5
+     0.000  0.000  0.000  out   Armature|Idle|  life#6
+     0.000  0.000  0.000  out   Armature|Idle|  life#7
+     0.000  0.000  0.000  out   Armature|Idle|  life#8
+     0.000  0.000  0.000  out   idle 0.23       wookiewarrior_01_mesh#9
+     0.000  0.000  0.000  out   idle 0.01       wookiewarrior_01_mesh#10
+     0.000  0.000  0.000  out   idle 0.93       wookiewarrior_01_mesh#11
+     0.000  0.000  0.000  out   idle 0.47       wookiewarrior_01_mesh#12
+     0.000  0.000  0.000  out   idle 0.24       wookiewarrior_01_mesh#13
+     0.000  0.000  0.000  out   idle 0.58       wookiewarrior_01_mesh#14
+     0.000  0.000  0.000  out   Armature|Idle|  life#15
+     0.000  0.000  0.000  out   Armature|Idle|  life#16
+     0.000  0.000  0.000  out   C_ATRT_Stand_I  atrt_mesh#17
+     0.000  0.000  0.000  out   C_ATRT_Stand_I  atrt_mesh#18
+     0.000  0.000  0.000  out   Armature|Idle|  life#19
+     0.000  0.000  0.000  out   Armature|Idle|  life#20
+     0.000  0.000  0.000  out   idle 0.24       wookiewarrior_01_mesh#21
+     0.000  0.000  0.000  out   idle 0.56       wookiewarrior_01_mesh#22
+     0.000  0.000  0.000  out   idle 0.72       wookiewarrior_01_mesh#23
+     0.000  0.000  0.000  out   idle 0.76       wookiewarrior_01_mesh#24
+     0.000  0.000  0.000  out   idle 0.82       wookiewarrior_01_mesh#25
+     0.000  0.000  0.000  out   idle 0.83       wookiewarrior_01_mesh#26
+     0.000  0.000  0.000  out   idle 0.99       wookiewarrior_01_mesh#27
+     0.000  0.000  0.000  out   idle 0.02       wookiewarrior_01_mesh#28
+     0.000  0.000  0.000  out   idle 0.31       wookiewarrior_01_mesh#29
+     0.000  0.000  0.000  out   idle 0.27       wookiewarrior_01_mesh#30
+     0.000  0.000  0.000  out   idle 0.44       l_assault_preq_01_mesh#31
+     0.000  0.000  0.000  out   idle 0.68       wookiewarrior_01_mesh#32
+         -      -      -  out   idle 0.92       luke_rotj_01_mesh#33
+bind pose: 0
+in step: 11 Armature|Idle|baselayer [life#4, life#6, life#8, life#15, life#19]; Armature|Idle|baselayer [life#5, life#7, life#16, life#20]; C_ATRT_Stand_Idle_01 [atrt_mesh#17, atrt_mesh#18]
+phase spread (1 in unison, 0 spread round): idle ×23 0.07, Armature|Idle|baselayer ×9 0.56, C_ATRT_Stand_Idle_01 ×2 1.00
+ok   every figure in view under 0.15 m/s

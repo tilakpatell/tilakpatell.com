@@ -1,0 +1,27 @@
+# geonosis-high
+geonosis   calls  163  tris  838228  geo  585  tex 531  prog 148  frame p50 6166.5 p95 6566.4 ms  ground 0.05 ms  load 13.9 s
+           level calls 399  tris 2621237  instances 7995  lights 3  probe 082f0619
+budget geonosis   calls 163/180  tris 838228/988595  models 122.3/60 MB  FAIL (models 122.3 MB > 60)
+# geonosis-low
+geonosis   calls  173  tris  580326  geo  337  tex 469  prog 110  frame p50 2499.9 p95 2566.6 ms  ground 0.04 ms  load 13.1 s
+           level calls 108  tris 701016  instances 1302  lights 0  probe 082f0619
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget geonosis   calls 173/350  tris 580326/800000  models 38/20 MB  FAIL (models 38 MB > 20)
+# geonosis-mid
+geonosis   calls  172  tris  580073  geo  460  tex 466  prog 124  frame p50 3049.8 p95 3433.3 ms  ground 0.02 ms  load 13.2 s
+           level calls 254  tris 1295839  instances 2743  lights 3  probe 082f0619
+budget geonosis   calls 172/180  tris 580073/723355  models 41.4/40 MB  FAIL (models 41.4 MB > 40)
+# geonosis-second-high
+geonosis   calls   36  tris  428440  geo  184  tex  76  prog  99  frame p50 2770.7 p95 4083.2 ms  ground 0.07 ms  load 13.4 s
+           level calls 347  tris 1825790  instances 6174  lights 0  probe a4c420a1
+budget geonosis   calls 36/180  tris 428440/988595  models 27.9/60 MB  FAIL (drew far less than its baseline (36 of 164 draw calls): held back while measured)
+# geonosis-second-low
+geonosis   calls   37  tris  251808  geo  169  tex  80  prog 100  frame p50 1649.9 p95 1800 ms  ground 0.02 ms  load 13.1 s
+           level calls 139  tris 452707  instances 873  lights 0  probe a4c420a1
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget geonosis   calls 37/350  tris 251808/800000  models 10.7/20 MB  pass
+# geonosis-ultra
+geonosis   calls  161  tris 1944230  geo  555  tex 433  prog 154  frame p50 17249.2 p95 17299.3 ms  ground 0.06 ms  load 15.1 s
+           level calls 406  tris 4056723  instances 7995  lights 3  probe 082f0619
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget geonosis   calls 161/1500  tris 1944230/–  models 322.2/240 MB  p95 17299.3/reported ms  FAIL (models 322.2 MB > 240)
