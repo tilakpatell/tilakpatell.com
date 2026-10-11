@@ -533,7 +533,7 @@ export async function create(canvas, ctx, set) {
     } else gadgetSound(how, ev);
   };
   // (a walker or droideka falling goes up in lane F's blast: gameFx, made just below, by then)
-  const activity = createActivity({ parent: scene, world, warm, kit, color: site.accent, onShow: showSound, blast: (at, cls) => gameFx.explode(at, cls) });
+  const activity = createActivity({ parent: scene, world, warm, kit, color: site.accent, onShow: showSound, blast: (at, cls) => gameFx.explode(at, cls), tier });
   // (a battle fills the air with bolts: room for them)
   const blaster = createBlaster({ parent: scene, world, pool: BATTLES.has(mission?.kind) ? 72 : undefined });
   // the ground war: who holds which turf, and its soldiers, made round you as you go (ground/)

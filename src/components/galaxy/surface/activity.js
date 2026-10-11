@@ -137,6 +137,7 @@ import { candidates } from '../../../lib/ai/spatial';
 import { looks } from './looks';
 import { createGadgetFx } from '../../../lib/three/gadgetFx';
 import { fallTurn } from '../../../lib/three/locomotion';
+import { RAGDOLLS, createRagdolls } from '../../../lib/three/ragdolls2017';
 import { preload } from '../../../lib/three/clipLibrary';
 import { createGunplay } from '../../universe/gunplay';
 import { SHOW_KILLS } from './weaponRules';
@@ -287,7 +288,12 @@ export function markMaterials() {
   };
 }
 
-export function createActivity({ parent, world, warm = (o) => Promise.resolve(o), color = '#ffd36a', kit = null, onShow = null, blast = null }) {
+export function createActivity({ parent, world, warm = (o) => Promise.resolve(o), color = '#ffd36a', kit = null, onShow = null, blast = null, tier = 'mid' }) {
+  // the fallen as the game's ragdoll (lib/three/ragdolls2017.js, the
+  // Battlefront world's: the death clip's first moments, then the game's
+  // fifteen bodies on ragdoll.json's row, the bolt's impulse at the bone it
+  // struck, on this world's ground), as many at once as the tier takes
+  const ragdolls = createRagdolls({ book: import('../../../data/bf2017/physics/ragdoll.json').then((m) => m.default ?? m), floorAt: (x, z) => groundAt(world, x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
   const group = new THREE.Group();
   group.name = 'activity';
   parent.add(group);
@@ -328,6 +334,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     searches.clear();
     tokens.clear();
     for (const t of targets) {
+      ragdolls.drop(t);
       t.show?.dispose();
       t.bar?.dispose();
       t.blade?.dispose();
@@ -575,8 +582,14 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
   // while, then into the ground and gone
   const STOOD = { speed: 0, side: 0, turn: 0 };
   const dying = (t, dt, time, eye) => {
-    const d = (t.death ??= { dir: fallOf({ from: lastYou, at: t.b, yaw: t.b.yaw }), force: 0.3, clip: null, started: false, y: null });
+    const d = (t.death ??= { dir: fallOf({ from: lastYou, at: t.b, yaw: t.b.yaw }), force: 0.3, clip: null, started: false, y: null, rag: false });
     const fig = t.fig;
+    // (a body the ragdoll has taken lies as the game's bodies fall: nothing more here)
+    if (d.rag && ragdolls.handed(t)) {
+      if (!fig?.model?.visible) t.holder.visible = false;
+      t.blade?.out(dt, time, { forward: _fwd.set(Math.sin(t.b.yaw), 0, Math.cos(t.b.yaw)), up: UP, eye });
+      return;
+    }
     const hover = fig?.hover ?? t.spec.y ?? 0;
     if (!d.started) {
       d.started = true;
@@ -594,6 +607,8 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
       const cls = blastClass(t.spec.kind);
       if (cls && blast) blast(new THREE.Vector3(t.b.x, groundAt(world, t.b.x, t.b.z, t.spec.level ?? Infinity) + (fig?.tall ?? 2) * 0.5, t.b.z), cls);
       d.y = groundAt(world, t.b.x, t.b.z, t.spec.level ?? Infinity) + hover;
+      // (a figure on the game's skeleton falls as its ragdoll after the clip's first moments)
+      if (fig?.model) d.rag = ragdolls.fall(t, { model: fig.model, mixer: fig.mixer ?? fig.anim?.mixer ?? null }, { fall: { dir: [d.dir.x, 0, d.dir.z], at: null, part: t.part ?? null, weapon: null }, vel: t.knock ? [t.knock.vx, t.knock.vz] : null, eye });
     }
     const k = t.knock;
     if (k) {
@@ -702,6 +717,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     // yours in it: lib/combat/saber2017.js); eye: the camera's position (their blades' light: saberLight.js)
     update(dt, you, time, { actors, door, swinging = null, mine = null, eye = null } = {}) {
       const events = [];
+      ragdolls.update(dt);
       const { quest, progress } = shown;
       const step = quest?.steps[progress?.step];
       // the beam, on where it wants you (or on the door in, for a step
@@ -974,6 +990,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     dispose() {
       dead = true;
       clearStep();
+      ragdolls.dispose();
       pfx.dispose();
       gfx.dispose();
       marks.dispose();

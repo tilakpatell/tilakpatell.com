@@ -48,6 +48,7 @@ import { loadScene, playScene } from '../../../../lib/three/scenePlayer';
 import { victoryFor } from '../../../../lib/three/walrusSets/emotes';
 import { OUTROS } from '../../../../lib/three/walrusSets/scenes';
 import { looks } from '../looks';
+import { RAGDOLLS, createRagdolls } from '../../../../lib/three/ragdolls2017';
 
 const EYE = 1.4; // metres: where a soldier's bolt leaves from
 const CHEST = 1.0; // metres: where one lands
@@ -184,6 +185,10 @@ function chevron(colour) {
 }
 
 export function createAssaultMission({ parent, world, blaster, mission, emit, say, sounds, kit = null, warm = (o) => Promise.resolve(o), tier = 'high', reduced = false, only = false, engine = ASSAULT }) {
+  // the fallen as the game's ragdoll (lib/three/ragdolls2017.js: the death
+  // clip's first moments, then the game's fifteen bodies), the tier's few at once
+  const ragdolls = createRagdolls({ book: import('../../../../data/bf2017/physics/ragdoll.json').then((m) => m.default ?? m), floorAt: (x, z) => groundAt(world, x, z), max: RAGDOLLS[tier === 'ultra' ? 'high' : tier] ?? RAGDOLLS.mid });
+  let eyeAt = null; // (where you are: a ragdoll falls only near)
   const group = new THREE.Group();
   group.name = mission.kind;
   parent.add(group);
@@ -327,6 +332,8 @@ export function createAssaultMission({ parent, world, blaster, mission, emit, sa
       b.aiming = false;
       const dir = from ? { x: x - from[0], z: z - from[1] } : null;
       b.clip = Boolean(b.fig.react?.('down', { dir, yaw: b.yaw, force: 0.5 }));
+      const l = dir ? Math.hypot(dir.x, dir.z) || 1 : 1;
+      if (b.fig.model) b.rag = ragdolls.fall(b, { model: b.fig.model, mixer: b.fig.mixer ?? b.fig.anim?.mixer ?? null }, { fall: { dir: dir ? [dir.x / l, 0, dir.z / l] : null }, eye: eyeAt });
     }
   };
   // hit and still up: a flinch
@@ -477,6 +484,11 @@ export function createAssaultMission({ parent, world, blaster, mission, emit, sa
     b.down += dt;
     const f = b.fall;
     if (!f) return;
+    // (taken by its ragdoll: it lies as the game's bodies fall, and goes when they say)
+    if (b.rag && ragdolls.handed(b)) {
+      if (!b.fig.model.visible) b.holder.visible = false;
+      return;
+    }
     const p = fallPose(b.down, { tall: tallOf(b), way: f.way, side: f.side });
     if (b.clip) {
       // (its own fall plays it down)
@@ -495,11 +507,14 @@ export function createAssaultMission({ parent, world, blaster, mission, emit, sa
     begin,
     restart() {
       seed += 1;
+      ragdolls.dispose(); // (the last battle's fallen let go: dispose only forgets them)
       begin();
     },
     // the battle moved on; what's fired at you is for the scene to shoot
     update(dt, you) {
       t += dt;
+      if (you) eyeAt = [you.x, groundAt(world, you.x, you.z) + 1.6, you.z];
+      ragdolls.update(dt);
       const atYou = [];
       if (!battle) return { atYou };
       const events = engine.stepBattle(battle, dt, you ? { x: you.x, z: you.z } : null, env);
@@ -636,6 +651,7 @@ export function createAssaultMission({ parent, world, blaster, mission, emit, sa
     },
     dispose() {
       dead = true;
+      ragdolls.dispose();
       for (const b of bodies) b.fig?.dispose?.();
       for (const m of Object.values(marks)) {
         m.map.dispose();
