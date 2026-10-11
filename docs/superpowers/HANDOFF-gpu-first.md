@@ -25,15 +25,6 @@ The owner’s word, fixed on 2026-10-11: no engine switch, no pixel streaming, e
 
 Each lane fills its row (session, PR) in its own PR and merges `origin/main` before it, keeping both sides.
 
-## What the other work must know
-
-- **Lane T2** (`claude/bf2017-t2-flip`): every lane here builds on the lit fixture and the `battlefront` world until T2 lands, then wires into `surface/nodes/stack.js` by one call each (N2: `post.js` and `quality.js`; N3: `createBaked`, the grid’s budget, the sun’s cadence). Nothing here edits `stack.js` before T2 merges.
-- **Lane U2** (headroom on): N1 adds a third level path (`gpuScene: true`) beside lane U’s batched one and changes neither; N2 replaces the pace’s input, not `headroom()`’s face. Whichever merges second reconciles `map/level.js`’s call.
-- **Lane D2** (every detail): N4 adds `uastc`, `horizon` and (N3) `enlighten`, `farShadow` rows beside D2’s in `scripts/lib/bf2017-level.mjs`.
-- **Lane M2** (materials): N2 adds specular anti-aliasing and the mip-bias uniform as nodes in `compose.js`; N3 adds the baked term. M2’s branches untouched.
-- **Lane W** (the desktop): this design asks W for two more jobs: the impostor bake at full quality (N4) and the UASTC data rows (N4); N3 consumes the `atlases` job. N4 found the second unneeded: every pack’s data maps are already UASTC in the bucket (1,756 of 1,756; N4’s evidence). The asks, as N4 leaves them, are under “Lane N4” below.
-- **Lane X2**: N5’s worker loads Rapier through `src/lib/wasm/load.js`.
-
 ## Lane N4: the stream that feels like one (`claude/gpu-n4-stream`, #918)
 
 **Done.** `scripts/bf2017-horizon.mjs` writes each pack’s coarse grid (`horizon/`: 512 m cells of merged last LODs, 12,000 triangles, 4,000 in the `.lo` cut low and mid take; octahedral impostor atlases, 16 × 16 views, baked by `scripts/impostors.mjs`), Hoth’s committed (65 cells, 3.06 MB; two impostors, 3.58 MB at 2,048) and named by `level.json`’s `coarse` row, which the pack builder keeps while the far list is the same (`keepRows`). One fetch queue a level (`levelQueue.js`: coarse, boot, cell, detail, prefetch; ranked by projected size × a heading weight, `src/lib/level/priority.js`; the site pool’s size and timeout). `levelStream.js` fetches the grid first, then the far list and the boot slice (`ready()` once it is in or `bootMB` is pulled), then the rest; two cells beyond the mid ring ahead prefetched, dropped at the queue on a turn. The loader fetches every map at its smallest row and swaps the tier’s into the same texture (`swapInto`), a promotion for a cell no longer shown kept and not uploaded; a `.uastc` row on mid and up where listed and the chip transcodes it. `levelCoarse.js` draws the grid (impostors on the node renderer only, `lib/three/impostor.js`, TSL) and hides a cell once the fine path has its meshes. `BUDGET_ROWS` gain `bootMB` (3, 6, 12, 12) and `visitMB` (40, 120, 400, 1,200); past `visitMB` the detail waits and the surface’s toast says so (`hud.js`’s `detailToast`). `public/sw.js` keeps the played world’s hashed files, 400 MB in all, least recently played going first. `galaxy-check --bytes`.
@@ -47,6 +38,15 @@ Each lane fills its row (session, PR) in its own PR and merges `origin/main` bef
 6. The owner’s egress question (the spec’s §9, 1): the budget rows hold a visit; R2 in front of the bucket is the hedge (`docs/stack/supabase.md`).
 
 **Checking it.** `npx vitest run src/components/galaxy/surface/level src/lib/level src/lib/sw.test.js src/lib/swWorker.test.js src/lib/budgets.test.js src/lib/three/impostor.test.js scripts/lib/bf2017-horizon.test.mjs scripts/lib/impostor-layout.test.mjs scripts/lib/horizon-merge.test.mjs`; the evidence README’s runs. In the cloud, serve the pack from disk (the bucket resets HTTP/2 streams from the container); a frame of Hoth in SwiftShader is 14 to 38 s, so pass `SHOT_WAIT=900000` and read the times as the renderer’s.
+
+## What the other work must know
+
+- **Lane T2** (`claude/bf2017-t2-flip`): every lane here builds on the lit fixture and the `battlefront` world until T2 lands, then wires into `surface/nodes/stack.js` by one call each (N2: `post.js` and `quality.js`; N3: `createBaked`, the grid’s budget, the sun’s cadence). Nothing here edits `stack.js` before T2 merges.
+- **Lane U2** (headroom on): N1 adds a third level path (`gpuScene: true`) beside lane U’s batched one and changes neither; N2 replaces the pace’s input, not `headroom()`’s face. Whichever merges second reconciles `map/level.js`’s call.
+- **Lane D2** (every detail): N4 adds `uastc`, `horizon` and (N3) `enlighten`, `farShadow` rows beside D2’s in `scripts/lib/bf2017-level.mjs`.
+- **Lane M2** (materials): N2 adds specular anti-aliasing and the mip-bias uniform as nodes in `compose.js`; N3 adds the baked term. M2’s branches untouched.
+- **Lane W** (the desktop): this design asks W for two more jobs: the impostor bake at full quality (N4) and the UASTC data rows (N4); N3 consumes the `atlases` job.
+- **Lane X2**: N5’s worker loads Rapier through `src/lib/wasm/load.js`.
 
 ## Left, in order
 
