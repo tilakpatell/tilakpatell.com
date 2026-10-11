@@ -152,6 +152,9 @@ async function shootRoute(page, route) {
     }
     return { backend: rt.gfx?.backend ?? null, jitters: typeof rt.gfx?.jitter === 'function', posed };
   }, pose);
+  // (the HTML over the world, its labels, panels and the site’s bar, hidden
+  // for the shots: an element’s screenshot is the page’s pixels where it is)
+  await page.addStyleTag({ content: 'body *:not(canvas.world-canvas) { visibility: hidden !important; } canvas.world-canvas { visibility: visible !important; }' });
   if (!info.jitters && !plain) throw new Error(`the world is on ${info.backend}, which has no jitter hook (a 'nodes' world only: the classic renderer is not a reference)`);
   const shots = [];
   for (let i = 0; i < jitter; i++) {
@@ -161,7 +164,7 @@ async function shootRoute(page, route) {
     // a pose that holds the world still is the clean reference)
     await page.clock.runFor(16);
     await page.waitForTimeout(300);
-    // (the world’s canvas alone: the site’s bar, the HUD and the help button are not the picture)
+    // (the world’s canvas alone, the HTML over it hidden above)
     shots.push(await page.locator('canvas.world-canvas').first().screenshot({ type: 'png', animations: 'disabled', caret: 'hide', timeout: 120000 }));
   }
   if (!plain) await page.evaluate(() => window.__RUNTIME__.gfx.jitter(null));
