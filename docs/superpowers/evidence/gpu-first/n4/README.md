@@ -39,7 +39,7 @@ Branch `claude/gpu-n4-stream`, PR #918. The plan: `docs/superpowers/plans/2026-1
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | mid | 5.76 of 6 MB | 40.8 of 120 MB | 42.6 s | 145.8 s | 41.0 s | 8.8 s | 2 of 20 (2 meshes still coming), 898 impostor cards |
 | high | 11.53 of 12 MB | 47.3 of 400 MB | 43.1 s | 174.0 s | 169.0 s | 137 s | 0 of 65 |
-| ultra | ULTRA_BOOT | ULTRA_VISIT | ULTRA_FIRST | ULTRA_WALL | ULTRA_LINE | ULTRA_LEVEL | ULTRA_COARSE |
+| ultra | 11.54 of 12 MB | 49.3 of 1,200 MB | 41.1 s | 165.8 s | 162.6 s | 131.2 s | 0 of 65 (the budget line: 196 of 1,500 calls, 18.9 of 240 MB of models, pass) |
 
 What these say, and what they do not:
 
