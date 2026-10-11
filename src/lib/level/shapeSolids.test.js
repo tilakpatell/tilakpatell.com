@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { createSolids, pushOut } from '../../components/galaxy/surface/walker';
-import { shapeReader, shapeSolids } from './shapeSolids';
+import { deckFloor, shapeReader, shapeSolids } from './shapeSolids';
 
 const PACK = new URL('../../../scripts/fixtures/bf2017/physics/pack/', import.meta.url);
 const pack = JSON.parse(readFileSync(new URL('level.json', PACK), 'utf8'));
@@ -44,5 +44,13 @@ describe('shapeSolids', () => {
     expect(floors.length).toBeGreaterThan(0);
     expect(floors[0].y).toBeCloseTo(0, 1);
     expect(shapeSolids(draws.slice(1), bin, await shapesFor(draws)).without).toEqual(draws.slice(1));
+  });
+
+  it('gives a broad thick hull a floor at its top as well as its box: a landing platform you are set down on', () => {
+    // (Cloud City's great platform: 61 m across, 3.4 m deep; the walker stands on floors when it is put somewhere)
+    expect(deckFloor({ x: 1, z: 2, hw: 30.7, hd: 30.7, yaw: 0.5, top: 0.17, base: -3.2 })).toEqual({ x: 1, z: 2, hw: 30.7, hd: 30.7, yaw: 0.5, y: 0.17 });
+    // (a crate, a pillar, a wall is no floor)
+    expect(deckFloor({ x: 0, z: 0, hw: 0.6, hd: 0.6, yaw: 0, top: 1.2, base: 0 })).toBeNull();
+    expect(deckFloor({ x: 0, z: 0, hw: 6, hd: 0.2, yaw: 0, top: 5, base: 0 })).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { guard, heldBack } from './frameGuard';
+import { guard, heldBack, holdNone } from './frameGuard';
 import { markLinked, warmDraw } from './gpuWork';
 import { fakeGl, fakeRenderer, now } from './gpuFake.fixture';
 import { wear } from './core';
@@ -28,6 +28,18 @@ const setup = (opts = {}) => {
 };
 
 describe('frameGuard', () => {
+  it('holdNone stops every guard holding anything back, so a measured frame is the whole world', async () => {
+    const { r, g, scene } = setup({ linkAfter: 50 });
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ color: 2 })));
+    await frames(r, scene);
+    expect(r.draws.length).toBe(0);
+    holdNone();
+    expect(g.enabled).toBe(false);
+    await frames(r, scene);
+    expect(r.draws.length).toBe(1);
+    g.dispose();
+  });
+
   it('heldBack counts what every guard is still readying, and forgets one disposed', async () => {
     const { r, g, scene } = setup({ linkAfter: 1 });
     const was = heldBack() - g.pending();
