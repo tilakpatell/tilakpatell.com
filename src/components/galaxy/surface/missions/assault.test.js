@@ -5,6 +5,7 @@ import { REACH } from '../terrain';
 import { siteOf } from '../sites';
 import { BATTLE_BODY, RULES, SOLDIERS, TACTICS, battleView, canDeploy, chooseSide, coverFrom, deploy, endBattle, forwardOf, hitSoldier, newBattle, objectiveFor, sideFor, soldierBody, stepBattle, warSideOf, youDown } from './assault';
 import { bodyFrom } from '../../../../lib/ai/body';
+import { EARN, offersFor } from './points';
 import { turnAt } from '../sites/turnSite';
 import { SITES as FOREST } from '../sites/forest';
 
@@ -524,6 +525,92 @@ describe('you', () => {
     run(b, 0.1, { x: 0, z: 30 });
     expect(battleView(b).you.in).toBe('a');
     expect(battleView(b).you.state).toBe('taking');
+  });
+});
+
+describe('your Battle Points', () => {
+  // (the spawn screen's offers on the test map, for so many points)
+  const offer = (b, id) => offersFor({ mission: MAP, side: b.you.side, points: b.you.points }).find((o) => o.id === id);
+
+  it('start at none in a new battle, and a kill of yours earns the game’s hundred', () => {
+    const b = newBattle(MAP, { n: 2, seed: 6 });
+    expect(b.you.points).toBe(0);
+    chooseSide(b, 'attack');
+    const d = up(b, 'defend')[0];
+    for (let i = 0; i < 3; i++) hitSoldier(b, d.id);
+    expect(b.you.kills).toBe(1);
+    expect(b.you.points).toBe(EARN.kill);
+    // (another's kill earns you nothing)
+    const a = up(b, 'attack')[0];
+    const d2 = up(b, 'defend')[0];
+    for (let i = 0; i < 5; i++) hitSoldier(b, d2.id, RULES.damage, a);
+    expect(b.you.points).toBe(EARN.kill);
+    expect(newBattle(MAP).you.points).toBe(0);
+  });
+
+  it('a post taken with you in it pays its capture, and every second you take it a tick', () => {
+    const b = empty('attack');
+    b.you.up = true;
+    const T = 1 / RULES.capture;
+    run(b, 2 * T + 1, { x: 0, z: 30 }); // inside post A, alone: draining it, then taking it
+    expect(post(b, 'a').owner).toBe('attack');
+    expect(b.you.captures).toBe(1);
+    // (2T seconds of ticks before it fell, give or take a step; none once it's quietly yours)
+    expect(b.you.points).toBeGreaterThan(EARN.capture + EARN.objectiveTick * (2 * T - 1));
+    expect(b.you.points).toBeLessThan(EARN.capture + EARN.objectiveTick * (2 * T + 0.5));
+    const was = b.you.points;
+    run(b, 3, { x: 0, z: 30 });
+    expect(b.you.points).toBe(was);
+    expect(battleView(b).you.points).toBe(Math.floor(was + 1e-6));
+  });
+
+  it('pays the tick while you hold a post of yours with the enemy inside, and nothing outside a post', () => {
+    const b = empty('defend');
+    b.you.up = true;
+    b.soldiers.push({ id: 99, side: 'attack', kind: 'snowtrooper', x: 0, z: 30, yaw: 0, hp: 100, up: true, down: 0, post: 'a', cool: 1, wait: 0, frozen: true, unarmed: true });
+    run(b, 2, { x: 0, z: 30 });
+    expect(b.you.points).toBeCloseTo(EARN.objectiveTick * 2, 5);
+    run(b, 2, { x: 60, z: 0 });
+    expect(b.you.points).toBeCloseTo(EARN.objectiveTick * 2, 5);
+  });
+
+  it('deploying as a class costs nothing; as a hero it spends their price, and you’re them until you go down', () => {
+    const b = empty('attack');
+    expect(deploy(b, 'line', offer(b, 'trooper-empire-heavy'))).toBeTruthy();
+    expect(b.you.as).toBe('trooper-empire-heavy');
+    expect(battleView(b).you.as).toBe('trooper-empire-heavy');
+    youDown(b);
+    expect(b.you.as).toBeNull();
+    b.you.points = 4100;
+    const vader = offer(b, 'vader');
+    expect(vader).toMatchObject({ kind: 'hero', cost: 4000, affordable: true });
+    expect(deploy(b, 'line', vader)).toBeTruthy();
+    expect(b.you.points).toBe(100);
+    expect(b.you.as).toBe('vader');
+    expect(b.tickets.attack).toBe(58);
+    youDown(b);
+    expect(b.you.as).toBeNull();
+    // (kept through the death)
+    expect(b.you.points).toBe(100);
+  });
+
+  it('can’t deploy as a hero you can’t afford: nothing spent, not even the ticket', () => {
+    const b = empty('attack');
+    b.you.points = 3999;
+    const vader = { ...offer(b, 'vader'), affordable: true }; // (whatever the screen thought)
+    expect(deploy(b, 'line', vader)).toBeNull();
+    expect(b.you.points).toBe(3999);
+    expect(b.tickets.attack).toBe(60);
+    expect(b.you.up).toBe(false);
+  });
+
+  it('are whole in the HUD’s view, and the key doesn’t change as they tick', () => {
+    const b = empty('attack');
+    b.you.points = 12.7;
+    const v = battleView(b);
+    expect(v.you.points).toBe(12);
+    b.you.points = 950.2;
+    expect(battleView(b).key).toBe(v.key);
   });
 });
 

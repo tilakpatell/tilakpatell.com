@@ -14,8 +14,10 @@
 //   sidesOf(era)             the two sides of an era's war: [{ id, name, short, stance, icon }]
 //   trooperKind(side, sys)   the crew list's kind a side's trooper is here
 //   trooperId(side, cls)     a class pick's hero id ('trooper-rebel-assault')
-//   TROOPERS                 every side's four, as heroes.js's roster rows: { id, name, tall, src, rig?, weapon, bolt, abilities, blurb, side: 'class', lean, trooper: { side, cls } }
+//   TROOPERS                 every side's four and its enforcer, as heroes.js's roster rows: { id, name, tall, src, rig?, weapon, bolt, abilities, blurb, side: 'class', lean, trooper: { side, cls, kind } }
 //   troopersFor(side, sys)   that side's four here (the world's own trooper)
+//   ENFORCERS                every side's enforcer, the same rows with `trooper.cls` 'enforcer' and a `health`
+//   enforcersFor(side)       that side's, in a list as troopersFor's (the same on any world)
 
 import { CREW } from './crewList';
 import { SIDES, WARS } from '../sides';
@@ -73,7 +75,47 @@ function row(side, cls, sys = null) {
   };
 }
 
+// The enforcers: the reinforcement a side buys with its Battle Points on a
+// galactic assault's spawn screen (the game's Enforcer class; its price is
+// missions/points.js's): a death trooper for the Empire and the Remnant, a
+// Wookiee warrior for the Rebellion, the New Republic and the Republic, a
+// super battle droid for the Separatists, each in the crew list's body with
+// a gun of weaponRules.js's. The health (300: twice a trooper's, and then
+// some), the abilities and the words are by hand.
+const ENFORCER = {
+  deathtrooper: { name: 'Death Trooper', gun: 'dlt19', abilities: { power: 'detonator', second: 'overcharge' }, about: 'Krennic’s guard, in black: a heavy repeater and a lot of armour.' },
+  wookiee: { name: 'Wookiee Warrior', gun: 'bowcaster', abilities: { power: 'roar', second: 'medpack' }, about: 'A bowcaster, a roar and arms that pull droids apart.' },
+  superdroid: { name: 'Super Battle Droid', gun: 'e5', abilities: { power: 'rocket', second: 'overcharge' }, about: 'Heavy plate and a wrist rocket: slow, and very hard to stop.' },
+};
+const ENFORCER_KIND = { empire: 'deathtrooper', remnant: 'deathtrooper', rebel: 'wookiee', newrepublic: 'wookiee', republic: 'wookiee', separatists: 'superdroid' };
+export const ENFORCER_HEALTH = 300;
+
+function enforcer(side) {
+  const kind = ENFORCER_KIND[side] ?? 'wookiee';
+  const e = ENFORCER[kind];
+  const body = CREW[kind];
+  const key = SIDES[side].stance === 'light' ? 'light' : 'dark';
+  return {
+    id: trooperId(side, 'enforcer'),
+    name: e.name,
+    tall: body.tall,
+    src: { url: body.url },
+    ...(body.rig === 'walrus' ? { rig: 'walrus', pack: null } : {}),
+    weapon: e.gun,
+    bolt: BOLT[side] ?? BOLT[key],
+    abilities: e.abilities,
+    blurb: e.about,
+    side: 'class',
+    lean: key,
+    health: ENFORCER_HEALTH,
+    trooper: { side, cls: 'enforcer', kind },
+  };
+}
+
 const ALL_SIDES = Object.keys(KINDS);
-// (every side's four, in their usual kit: what a kept pick is read back as)
-export const TROOPERS = ALL_SIDES.flatMap((side) => CLASSES.map((c) => row(side, c.cls)));
+export const ENFORCERS = ALL_SIDES.map(enforcer);
+// (every side's four, in their usual kit, and its enforcer: what a kept pick is read back as)
+export const TROOPERS = [...ALL_SIDES.flatMap((side) => CLASSES.map((c) => row(side, c.cls))), ...ENFORCERS];
 export const troopersFor = (side, sys = null) => CLASSES.map((c) => row(side, c.cls, sys));
+// (the same whatever the world: a death trooper wears no snow kit)
+export const enforcersFor = (side) => [enforcer(side)];
