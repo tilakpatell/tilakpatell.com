@@ -3,6 +3,7 @@ import SNOW from '../../../data/bf2017/fx/FX_Snow_FallingSnow_01_Hoth.json';
 import IMPACT from '../../../data/bf2017/fx/FX_Impact_Blaster_Snow.json';
 import EXHAUST from '../../../data/bf2017/fx/FX_EngineExhaust_TransportGR75_Prim.json';
 import CEILING from '../../../data/bf2017/fx/FX_Arctic_Ceiling_FallingSnow.json';
+import { DEBRIS_FX, debrisDefs } from './debris.js';
 import { chooseRunning, createEffects, cullFor, oneShotLength, poolSize, variantFor } from './effects.js';
 import { MAX_OWNERS } from './emitter.js';
 import { SET_CAP, setWeight, sheetFile, sizeFor } from './sheets.js';
@@ -115,6 +116,45 @@ describe('createEffects', () => {
     await fx.ready('FX_Nothing');
     expect(fx.stats.unknown).toBe(1);
     expect(() => h.start()).not.toThrow();
+  });
+  it('a break’s burst: one record, its burst times the instance’s, once', async () => {
+    const fx = createEffects(fakeScene(), null, { tier: 'high', defs: debrisDefs() });
+    fx.spawn(DEBRIS_FX, [0, 1, 0], [0, 0, 0, 1], 1, { burst: 700 });
+    fx.spawn(DEBRIS_FX, [4, 1, 0], [0, 0, 0, 1], 1, { burst: 200 });
+    await fx.ready(DEBRIS_FX);
+    fx.update(1 / 60, camera(0, 2, 8));
+    expect(fx.stats.spawned).toBe(900);
+    fx.update(1 / 60, camera(0, 2, 8));
+    expect(fx.stats.spawned).toBe(0);
+  });
+  it('setDepth hands last frame’s camera to the colliding emitters, and none is no collision', async () => {
+    const fx = createEffects(fakeScene(), null, { tier: 'high', defs: debrisDefs() });
+    const cam = { position: { x: 0, y: 2, z: 8 }, projectionMatrix: { elements: new Array(16).fill(0) }, projectionMatrixInverse: { elements: new Array(16).fill(0) }, matrixWorld: { elements: new Array(16).fill(0) }, matrixWorldInverse: { copy: () => ({ invert() {} }), elements: new Array(16).fill(0) }, updateMatrixWorld() {} };
+    fx.setDepth({ depthAt: () => 1, texel: [1 / 64, 1 / 64] });
+    fx.spawn(DEBRIS_FX, [0, 1, 0], [0, 0, 0, 1], 1, { burst: 300 });
+    await fx.ready(DEBRIS_FX);
+    expect(() => {
+      for (let i = 0; i < 5; i++) fx.update(1 / 60, cam);
+    }).not.toThrow();
+    fx.setDepth(null);
+    expect(() => fx.update(1 / 60, cam)).not.toThrow();
+  });
+  it('a lit instance’s light, oldest first, fading with a one-shot’s life (the GPU-first design’s N5)', async () => {
+    const fx = createEffects(fakeScene(), null, { tier: 'high', defs });
+    const flash = { color: [1, 0.6, 0.3], candela: 500, range: 6 };
+    fx.spawn(IMPACT.name, [0, 0, 0], undefined, 1, { light: flash });
+    fx.spawn(IMPACT.name, [9, 0, 0]);
+    fx.spawn(IMPACT.name, [3, 0, 0], undefined, 1, { light: { ...flash, candela: 100 } });
+    await fx.ready(IMPACT.name);
+    fx.update(1 / 60, camera(0, 2, 30));
+    const now = fx.lights();
+    expect(now.map((l) => l.pos[0])).toEqual([0, 3]);
+    expect(now[0]).toMatchObject({ kind: 'point', color: [1, 0.6, 0.3], range: 6 });
+    expect(now[0].candela).toBeGreaterThan(490);
+    for (let i = 0; i < 30; i++) fx.update(1 / 60, camera(0, 2, 30));
+    expect(fx.lights()[0].candela).toBeLessThan(now[0].candela);
+    for (let i = 0; i < 60 * Math.ceil(oneShotLength(IMPACT) + 1); i++) fx.update(1 / 60, camera(0, 2, 30));
+    expect(fx.lights()).toEqual([]);
   });
   it('places a level’s cells as effects.json gives them, autoStart as the export says', async () => {
     const fx = createEffects(fakeScene(), null, { defs });
