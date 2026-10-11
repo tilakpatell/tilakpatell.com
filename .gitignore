@@ -925,8 +925,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/fx/impact.256.ktx2
 /public/models/galaxy/bf2017/fx/impact.512.ktx2
 /public/models/galaxy/bf2017/fx/scorch.metal.512.ktx2
-/public/models/galaxy/bf2017/levels/endor/actors.json
-/public/models/galaxy/bf2017/levels/endor/bunker/actors.json
 /public/models/galaxy/bf2017/levels/endor/bunker/cells/-2_-3.bin
 /public/models/galaxy/bf2017/levels/endor/bunker/cells/0_0.bin
 /public/models/galaxy/bf2017/levels/endor/bunker/cells/0_1.bin
@@ -952,11 +950,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/bunker/cells/3_4.bin
 /public/models/galaxy/bf2017/levels/endor/bunker/cells/3_5.bin
 /public/models/galaxy/bf2017/levels/endor/bunker/cells/3_6.bin
-/public/models/galaxy/bf2017/levels/endor/bunker/decals.json
-/public/models/galaxy/bf2017/levels/endor/bunker/effects.json
 /public/models/galaxy/bf2017/levels/endor/bunker/far.bin
 /public/models/galaxy/bf2017/levels/endor/bunker/horizon.bin
-/public/models/galaxy/bf2017/levels/endor/bunker/lights.json
 /public/models/galaxy/bf2017/levels/endor/bunker/meshes/box_m_01_a_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/endor/bunker/meshes/box_m_01_a_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/endor/bunker/meshes/box_m_01_a_mesh.lod2.glb
@@ -2339,8 +2334,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/bunker/physics/wreckcontainerhuge_02.bin
 /public/models/galaxy/bf2017/levels/endor/bunker/physics/wreckgeneric_l_01_skiplods_01.bin
 /public/models/galaxy/bf2017/levels/endor/bunker/physics/wreckgeneric_l_02.bin
-/public/models/galaxy/bf2017/levels/endor/bunker/probes.json
-/public/models/galaxy/bf2017/levels/endor/bunker/scatter.json
 /public/models/galaxy/bf2017/levels/endor/bunker/shadow/far.png
 /public/models/galaxy/bf2017/levels/endor/bunker/tex/rsdfloor_01_c.128.ktx2
 /public/models/galaxy/bf2017/levels/endor/bunker/tex/rsdfloor_01_c.256.ktx2
@@ -2801,8 +2794,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/bunker/tex/t_wallmountedcomputer_01_b_cd.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/bunker/tex/t_wallmountedcomputer_01_b_n__normal.128.ktx2
 /public/models/galaxy/bf2017/levels/endor/bunker/tex/t_wallmountedcomputer_01_b_n__orm_90edddbd.128.ktx2
-/public/models/galaxy/bf2017/levels/endor/bunker/tracks.json
-/public/models/galaxy/bf2017/levels/endor/bunker/vehicles.json
 /public/models/galaxy/bf2017/levels/endor/cells/-1_5.bin
 /public/models/galaxy/bf2017/levels/endor/cells/-1_7.bin
 /public/models/galaxy/bf2017/levels/endor/cells/0_-1.bin
@@ -2842,11 +2833,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/cells/3_5.bin
 /public/models/galaxy/bf2017/levels/endor/cells/4_1.bin
 /public/models/galaxy/bf2017/levels/endor/cells/4_2.bin
-/public/models/galaxy/bf2017/levels/endor/decals.json
-/public/models/galaxy/bf2017/levels/endor/effects.json
 /public/models/galaxy/bf2017/levels/endor/far.bin
 /public/models/galaxy/bf2017/levels/endor/horizon.bin
-/public/models/galaxy/bf2017/levels/endor/lights.json
 /public/models/galaxy/bf2017/levels/endor/meshes/at_at_station_bunker_doorframe_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/endor/meshes/at_at_station_bunker_doorframe_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/endor/meshes/at_at_station_bunker_doorframe_01_mesh.lod2.glb
@@ -4846,8 +4834,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/physics/wreckcontainerhuge_02.bin
 /public/models/galaxy/bf2017/levels/endor/physics/wreckgeneric_l_01_skiplods_01.bin
 /public/models/galaxy/bf2017/levels/endor/physics/wreckgeneric_l_02.bin
-/public/models/galaxy/bf2017/levels/endor/probes.json
-/public/models/galaxy/bf2017/levels/endor/scatter.json
 /public/models/galaxy/bf2017/levels/endor/scatter/layers.png
 /public/models/galaxy/bf2017/levels/endor/scatter/ms_forestbase_log_01_a_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/endor/scatter/ms_forestbase_log_01_a_mesh.lod1.glb
@@ -4857,7 +4843,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/scatter/ms_forestbase_roots_01_b_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/endor/scatter/ms_forestbase_stone_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/endor/shadow/far.png
-/public/models/galaxy/bf2017/levels/endor/station/actors.json
 /public/models/galaxy/bf2017/levels/endor/station/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/endor/station/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/endor/station/cells/-1_0.bin
@@ -4896,11 +4881,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/station/cells/2_1.bin
 /public/models/galaxy/bf2017/levels/endor/station/cells/2_2.bin
 /public/models/galaxy/bf2017/levels/endor/station/cells/2_3.bin
-/public/models/galaxy/bf2017/levels/endor/station/decals.json
-/public/models/galaxy/bf2017/levels/endor/station/effects.json
 /public/models/galaxy/bf2017/levels/endor/station/far.bin
 /public/models/galaxy/bf2017/levels/endor/station/horizon.bin
-/public/models/galaxy/bf2017/levels/endor/station/lights.json
 /public/models/galaxy/bf2017/levels/endor/station/meshes/at_at_station_bunker_door_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/endor/station/meshes/at_at_station_bunker_door_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/endor/station/meshes/at_at_station_bunker_door_01_mesh.lod2.glb
@@ -6668,8 +6650,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/station/physics/watersplashsmall_01-collision.bin
 /public/models/galaxy/bf2017/levels/endor/station/physics/weaponcrate_01_bottom.bin
 /public/models/galaxy/bf2017/levels/endor/station/physics/weaponcrate_01_lid.bin
-/public/models/galaxy/bf2017/levels/endor/station/probes.json
-/public/models/galaxy/bf2017/levels/endor/station/scatter.json
 /public/models/galaxy/bf2017/levels/endor/station/terrain/far.png
 /public/models/galaxy/bf2017/levels/endor/station/terrain/near.png
 /public/models/galaxy/bf2017/levels/endor/station/tex/t_at_at_station_bunker_doorframe_01_cs.1024.ktx2
@@ -7555,8 +7535,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/station/tex/t_wings_nam__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/endor/station/tex/t_wings_nam__orm_c8effdfe.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/station/tex/t_wings_nam__orm_c8effdfe.512.ktx2
-/public/models/galaxy/bf2017/levels/endor/station/tracks.json
-/public/models/galaxy/bf2017/levels/endor/station/vehicles.json
 /public/models/galaxy/bf2017/levels/endor/terrain/far.png
 /public/models/galaxy/bf2017/levels/endor/terrain/near.png
 /public/models/galaxy/bf2017/levels/endor/tex/rsdceiling_01_c.256.ktx2
@@ -8467,9 +8445,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/tex/t_wings_nam__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_wings_nam__orm_c8effdfe.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_wings_nam__orm_c8effdfe.512.ktx2
-/public/models/galaxy/bf2017/levels/endor/tracks.json
-/public/models/galaxy/bf2017/levels/endor/vehicles.json
-/public/models/galaxy/bf2017/levels/endor/village/actors.json
 /public/models/galaxy/bf2017/levels/endor/village/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/endor/village/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/endor/village/cells/-1_-3.bin
@@ -8508,11 +8483,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/village/cells/2_-2.bin
 /public/models/galaxy/bf2017/levels/endor/village/cells/2_-3.bin
 /public/models/galaxy/bf2017/levels/endor/village/cells/6_1.bin
-/public/models/galaxy/bf2017/levels/endor/village/decals.json
-/public/models/galaxy/bf2017/levels/endor/village/effects.json
 /public/models/galaxy/bf2017/levels/endor/village/far.bin
 /public/models/galaxy/bf2017/levels/endor/village/horizon.bin
-/public/models/galaxy/bf2017/levels/endor/village/lights.json
 /public/models/galaxy/bf2017/levels/endor/village/meshes/at_st_01_wreckpart_body_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/endor/village/meshes/at_st_01_wreckpart_body_01_mesh.lod2.glb
 /public/models/galaxy/bf2017/levels/endor/village/meshes/at_st_01_wreckpart_body_01_mesh.lod3.glb
@@ -9278,7 +9250,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/village/physics/wreckdeflectordishimperial_01_e.bin
 /public/models/galaxy/bf2017/levels/endor/village/physics/xp0_tiewreckleftwing_01.bin
 /public/models/galaxy/bf2017/levels/endor/village/physics/xp0_tiewreckrightwing_01.bin
-/public/models/galaxy/bf2017/levels/endor/village/probes.json
 /public/models/galaxy/bf2017/levels/endor/village/probes/1a79ed93.nx.hdr
 /public/models/galaxy/bf2017/levels/endor/village/probes/1a79ed93.ny.hdr
 /public/models/galaxy/bf2017/levels/endor/village/probes/1a79ed93.nz.hdr
@@ -9321,7 +9292,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/village/probes/c332cf43.px.hdr
 /public/models/galaxy/bf2017/levels/endor/village/probes/c332cf43.py.hdr
 /public/models/galaxy/bf2017/levels/endor/village/probes/c332cf43.pz.hdr
-/public/models/galaxy/bf2017/levels/endor/village/scatter.json
 /public/models/galaxy/bf2017/levels/endor/village/terrain/far.png
 /public/models/galaxy/bf2017/levels/endor/village/terrain/near.png
 /public/models/galaxy/bf2017/levels/endor/village/tex/t_atatbody_01_cw.256.ktx2
@@ -9667,9 +9637,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_urnsmall_01b_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_urnsmall_01b_nw__normal.128.ktx2
 /public/models/galaxy/bf2017/levels/endor/village/tex/t_tuskencamp_urnsmall_01b_nw__orm_cbf06eb7.128.ktx2
-/public/models/galaxy/bf2017/levels/endor/village/tracks.json
-/public/models/galaxy/bf2017/levels/endor/village/vehicles.json
-/public/models/galaxy/bf2017/levels/geonosis/actors.json
 /public/models/galaxy/bf2017/levels/geonosis/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/geonosis/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/geonosis/cells/-1_-3.bin
@@ -9798,11 +9765,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/geonosis/cells/7_-3.bin
 /public/models/galaxy/bf2017/levels/geonosis/cells/7_5.bin
 /public/models/galaxy/bf2017/levels/geonosis/cells/7_7.bin
-/public/models/galaxy/bf2017/levels/geonosis/decals.json
-/public/models/galaxy/bf2017/levels/geonosis/effects.json
 /public/models/galaxy/bf2017/levels/geonosis/far.bin
 /public/models/galaxy/bf2017/levels/geonosis/horizon.bin
-/public/models/galaxy/bf2017/levels/geonosis/lights.json
 /public/models/galaxy/bf2017/levels/geonosis/meshes/at_te_backbroken_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/geonosis/meshes/at_te_backbroken_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/geonosis/meshes/at_te_backbroken_mesh.lod2.glb
@@ -10929,7 +10893,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/geonosis/physics/wreckeddebrisgeonosis_03.bin
 /public/models/galaxy/bf2017/levels/geonosis/physics/wreckeddebrisgeonosis_04.bin
 /public/models/galaxy/bf2017/levels/geonosis/physics/yavin_temple_watermesh_01-collision.bin
-/public/models/galaxy/bf2017/levels/geonosis/probes.json
 /public/models/galaxy/bf2017/levels/geonosis/probes/082f0619.nx.hdr
 /public/models/galaxy/bf2017/levels/geonosis/probes/082f0619.ny.hdr
 /public/models/galaxy/bf2017/levels/geonosis/probes/082f0619.nz.hdr
@@ -10960,8 +10923,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/geonosis/probes/bd343956.px.hdr
 /public/models/galaxy/bf2017/levels/geonosis/probes/bd343956.py.hdr
 /public/models/galaxy/bf2017/levels/geonosis/probes/bd343956.pz.hdr
-/public/models/galaxy/bf2017/levels/geonosis/scatter.json
-/public/models/galaxy/bf2017/levels/geonosis/second/actors.json
 /public/models/galaxy/bf2017/levels/geonosis/second/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/geonosis/second/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/geonosis/second/cells/-1_-3.bin
@@ -11091,11 +11052,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/geonosis/second/cells/7_4.bin
 /public/models/galaxy/bf2017/levels/geonosis/second/cells/7_5.bin
 /public/models/galaxy/bf2017/levels/geonosis/second/cells/7_6.bin
-/public/models/galaxy/bf2017/levels/geonosis/second/decals.json
-/public/models/galaxy/bf2017/levels/geonosis/second/effects.json
 /public/models/galaxy/bf2017/levels/geonosis/second/far.bin
 /public/models/galaxy/bf2017/levels/geonosis/second/horizon.bin
-/public/models/galaxy/bf2017/levels/geonosis/second/lights.json
 /public/models/galaxy/bf2017/levels/geonosis/second/meshes/at_te_backbroken_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/geonosis/second/meshes/at_te_backbroken_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/geonosis/second/meshes/at_te_backbroken_mesh.lod2.glb
@@ -12745,7 +12703,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/geonosis/second/physics/wreckeddebrisgeonosis_02.bin
 /public/models/galaxy/bf2017/levels/geonosis/second/physics/wreckeddebrisgeonosis_03.bin
 /public/models/galaxy/bf2017/levels/geonosis/second/physics/wreckeddebrisgeonosis_04.bin
-/public/models/galaxy/bf2017/levels/geonosis/second/probes.json
 /public/models/galaxy/bf2017/levels/geonosis/second/probes/02944b91.nx.hdr
 /public/models/galaxy/bf2017/levels/geonosis/second/probes/02944b91.ny.hdr
 /public/models/galaxy/bf2017/levels/geonosis/second/probes/02944b91.nz.hdr
@@ -13580,7 +13537,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/geonosis/second/probes/f87140f9.px.hdr
 /public/models/galaxy/bf2017/levels/geonosis/second/probes/f87140f9.py.hdr
 /public/models/galaxy/bf2017/levels/geonosis/second/probes/f87140f9.pz.hdr
-/public/models/galaxy/bf2017/levels/geonosis/second/scatter.json
 /public/models/galaxy/bf2017/levels/geonosis/second/shadow/far.png
 /public/models/galaxy/bf2017/levels/geonosis/second/terrain/far.png
 /public/models/galaxy/bf2017/levels/geonosis/second/terrain/near.png
@@ -14246,8 +14202,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/geonosis/second/tex/t_valleybase_rockwall_huge_03_ns__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/geonosis/second/tex/t_valleybase_rockwall_huge_03_ns__orm_bfff667b.256.ktx2
 /public/models/galaxy/bf2017/levels/geonosis/second/tex/t_valleybase_rockwall_huge_03_ns__orm_bfff667b.512.ktx2
-/public/models/galaxy/bf2017/levels/geonosis/second/tracks.json
-/public/models/galaxy/bf2017/levels/geonosis/second/vehicles.json
 /public/models/galaxy/bf2017/levels/geonosis/shadow/far.png
 /public/models/galaxy/bf2017/levels/geonosis/terrain/far.png
 /public/models/galaxy/bf2017/levels/geonosis/terrain/near.png
@@ -14883,10 +14837,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/geonosis/tex/t_valleybase_rockwall_huge_03_ns__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/geonosis/tex/t_valleybase_rockwall_huge_03_ns__orm_bfff667b.256.ktx2
 /public/models/galaxy/bf2017/levels/geonosis/tex/t_valleybase_rockwall_huge_03_ns__orm_bfff667b.512.ktx2
-/public/models/galaxy/bf2017/levels/geonosis/tracks.json
-/public/models/galaxy/bf2017/levels/geonosis/vehicles.json
-/public/models/galaxy/bf2017/levels/hoth/actors.json
-/public/models/galaxy/bf2017/levels/hoth/base/actors.json
 /public/models/galaxy/bf2017/levels/hoth/base/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/hoth/base/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/hoth/base/cells/-1_-3.bin
@@ -14924,11 +14874,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/cells/2_-5.bin
 /public/models/galaxy/bf2017/levels/hoth/base/cells/3_-5.bin
 /public/models/galaxy/bf2017/levels/hoth/base/cells/3_2.bin
-/public/models/galaxy/bf2017/levels/hoth/base/decals.json
-/public/models/galaxy/bf2017/levels/hoth/base/effects.json
 /public/models/galaxy/bf2017/levels/hoth/base/far.bin
 /public/models/galaxy/bf2017/levels/hoth/base/horizon.bin
-/public/models/galaxy/bf2017/levels/hoth/base/lights.json
 /public/models/galaxy/bf2017/levels/hoth/base/meshes/arctic_corridorsnowpile_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/hoth/base/meshes/arctic_corridorsnowpile_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/hoth/base/meshes/arctic_corridorsnowpile_01_mesh.lod2.glb
@@ -17146,7 +17093,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/physics/xwing_t65_landmark.bin
 /public/models/galaxy/bf2017/levels/hoth/base/physics/ywing_landmark.bin
 /public/models/galaxy/bf2017/levels/hoth/base/physics/ywing_tarp_01.bin
-/public/models/galaxy/bf2017/levels/hoth/base/probes.json
 /public/models/galaxy/bf2017/levels/hoth/base/probes/15c03c92.nx.hdr
 /public/models/galaxy/bf2017/levels/hoth/base/probes/15c03c92.ny.hdr
 /public/models/galaxy/bf2017/levels/hoth/base/probes/15c03c92.nz.hdr
@@ -17183,7 +17129,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/probes/bc0b0160.px.hdr
 /public/models/galaxy/bf2017/levels/hoth/base/probes/bc0b0160.py.hdr
 /public/models/galaxy/bf2017/levels/hoth/base/probes/bc0b0160.pz.hdr
-/public/models/galaxy/bf2017/levels/hoth/base/scatter.json
 /public/models/galaxy/bf2017/levels/hoth/base/shadow/far.png
 /public/models/galaxy/bf2017/levels/hoth/base/tex/icechunks01_n__normal.128.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/icechunks01_n__normal.256.ktx2
@@ -17750,8 +17695,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_ywing_wings_01_nma__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_ywing_wings_01_nma__orm_e824b34a.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_ywing_wings_01_nma__orm_e824b34a.512.ktx2
-/public/models/galaxy/bf2017/levels/hoth/base/tracks.json
-/public/models/galaxy/bf2017/levels/hoth/base/vehicles.json
 /public/models/galaxy/bf2017/levels/hoth/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/hoth/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/hoth/cells/-1_-3.bin
@@ -17907,12 +17850,9 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/cells/7_0.bin
 /public/models/galaxy/bf2017/levels/hoth/cells/7_1.bin
 /public/models/galaxy/bf2017/levels/hoth/cells/7_4.bin
-/public/models/galaxy/bf2017/levels/hoth/decals.json
-/public/models/galaxy/bf2017/levels/hoth/effects.json
 /public/models/galaxy/bf2017/levels/hoth/far.bin
 /public/models/galaxy/bf2017/levels/hoth/ground/masks.png
 /public/models/galaxy/bf2017/levels/hoth/horizon.bin
-/public/models/galaxy/bf2017/levels/hoth/lights.json
 /public/models/galaxy/bf2017/levels/hoth/meshes/arctic_entrance_small_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/hoth/meshes/arctic_entrance_small_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/hoth/meshes/arctic_entrance_small_01_mesh.lod2.glb
@@ -18839,7 +18779,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/physics/xwing_t65_landmark.bin
 /public/models/galaxy/bf2017/levels/hoth/physics/ywing_landmark.bin
 /public/models/galaxy/bf2017/levels/hoth/physics/ywing_tarp_01.bin
-/public/models/galaxy/bf2017/levels/hoth/probes.json
 /public/models/galaxy/bf2017/levels/hoth/probes/15c03c92.nx.hdr
 /public/models/galaxy/bf2017/levels/hoth/probes/15c03c92.ny.hdr
 /public/models/galaxy/bf2017/levels/hoth/probes/15c03c92.nz.hdr
@@ -18912,7 +18851,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/probes/d8829e68.px.hdr
 /public/models/galaxy/bf2017/levels/hoth/probes/d8829e68.py.hdr
 /public/models/galaxy/bf2017/levels/hoth/probes/d8829e68.pz.hdr
-/public/models/galaxy/bf2017/levels/hoth/scatter.json
 /public/models/galaxy/bf2017/levels/hoth/shadow/far.png
 /public/models/galaxy/bf2017/levels/hoth/terrain/far.png
 /public/models/galaxy/bf2017/levels/hoth/terrain/near.png
@@ -19219,9 +19157,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/tex/t_transporterpersonel_shell_01_nam__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.128.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.256.ktx2
-/public/models/galaxy/bf2017/levels/hoth/tracks.json
-/public/models/galaxy/bf2017/levels/hoth/vehicles.json
-/public/models/galaxy/bf2017/levels/kashyyyk/actors.json
 /public/models/galaxy/bf2017/levels/kashyyyk/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/cells/-1_-3.bin
@@ -19370,11 +19305,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kashyyyk/cells/7_5.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/cells/7_6.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/cells/7_7.bin
-/public/models/galaxy/bf2017/levels/kashyyyk/decals.json
-/public/models/galaxy/bf2017/levels/kashyyyk/effects.json
 /public/models/galaxy/bf2017/levels/kashyyyk/far.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/horizon.bin
-/public/models/galaxy/bf2017/levels/kashyyyk/lights.json
 /public/models/galaxy/bf2017/levels/kashyyyk/meshes/bd_fogbillboard_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/kashyyyk/meshes/beachbase_groundscrub_05_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/kashyyyk/meshes/beachbase_groundscrub_05_mesh.lod1.glb
@@ -20550,7 +20482,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kashyyyk/physics/wreckn99_part_03.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/physics/wreckn99_part_04.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/physics/wreckn99_part_05.bin
-/public/models/galaxy/bf2017/levels/kashyyyk/probes.json
 /public/models/galaxy/bf2017/levels/kashyyyk/probes/02356752.nx.hdr
 /public/models/galaxy/bf2017/levels/kashyyyk/probes/02356752.ny.hdr
 /public/models/galaxy/bf2017/levels/kashyyyk/probes/02356752.nz.hdr
@@ -20593,8 +20524,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kashyyyk/probes/c74b3408.px.hdr
 /public/models/galaxy/bf2017/levels/kashyyyk/probes/c74b3408.py.hdr
 /public/models/galaxy/bf2017/levels/kashyyyk/probes/c74b3408.pz.hdr
-/public/models/galaxy/bf2017/levels/kashyyyk/scatter.json
-/public/models/galaxy/bf2017/levels/kashyyyk/second/actors.json
 /public/models/galaxy/bf2017/levels/kashyyyk/second/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/second/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/second/cells/-1_0.bin
@@ -20754,11 +20683,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kashyyyk/second/cells/7_-1.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/second/cells/7_-8.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/second/cells/7_1.bin
-/public/models/galaxy/bf2017/levels/kashyyyk/second/decals.json
-/public/models/galaxy/bf2017/levels/kashyyyk/second/effects.json
 /public/models/galaxy/bf2017/levels/kashyyyk/second/far.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/second/horizon.bin
-/public/models/galaxy/bf2017/levels/kashyyyk/second/lights.json
 /public/models/galaxy/bf2017/levels/kashyyyk/second/meshes/bd_fogbillboard_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/kashyyyk/second/meshes/beachbase_groundscrub_05_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/kashyyyk/second/meshes/beachbase_groundscrub_05_mesh.lod1.glb
@@ -22189,7 +22115,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kashyyyk/second/physics/wreckn99_part_03.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/second/physics/wreckn99_part_04.bin
 /public/models/galaxy/bf2017/levels/kashyyyk/second/physics/wreckn99_part_05.bin
-/public/models/galaxy/bf2017/levels/kashyyyk/second/probes.json
 /public/models/galaxy/bf2017/levels/kashyyyk/second/probes/15da4cc5.nx.hdr
 /public/models/galaxy/bf2017/levels/kashyyyk/second/probes/15da4cc5.ny.hdr
 /public/models/galaxy/bf2017/levels/kashyyyk/second/probes/15da4cc5.nz.hdr
@@ -22262,7 +22187,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kashyyyk/second/probes/ebe0ba28.px.hdr
 /public/models/galaxy/bf2017/levels/kashyyyk/second/probes/ebe0ba28.py.hdr
 /public/models/galaxy/bf2017/levels/kashyyyk/second/probes/ebe0ba28.pz.hdr
-/public/models/galaxy/bf2017/levels/kashyyyk/second/scatter.json
 /public/models/galaxy/bf2017/levels/kashyyyk/second/shadow/far.png
 /public/models/galaxy/bf2017/levels/kashyyyk/second/terrain/far.png
 /public/models/galaxy/bf2017/levels/kashyyyk/second/terrain/near.png
@@ -22725,8 +22649,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kashyyyk/second/tex/t_trench_01_nam__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/kashyyyk/second/tex/t_trench_01_nam__orm_a3eeda12.128.ktx2
 /public/models/galaxy/bf2017/levels/kashyyyk/second/tex/t_trench_01_nam__orm_a3eeda12.256.ktx2
-/public/models/galaxy/bf2017/levels/kashyyyk/second/tracks.json
-/public/models/galaxy/bf2017/levels/kashyyyk/second/vehicles.json
 /public/models/galaxy/bf2017/levels/kashyyyk/shadow/far.png
 /public/models/galaxy/bf2017/levels/kashyyyk/terrain/far.png
 /public/models/galaxy/bf2017/levels/kashyyyk/terrain/near.png
@@ -23250,8 +23172,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/kashyyyk/tex/venatorstardestroyer_window_01_ns__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/kashyyyk/tex/venatorstardestroyer_window_01_ns__orm_934c7a36.256.ktx2
 /public/models/galaxy/bf2017/levels/kashyyyk/tex/venatorstardestroyer_window_01_ns__orm_934c7a36.512.ktx2
-/public/models/galaxy/bf2017/levels/kashyyyk/tracks.json
-/public/models/galaxy/bf2017/levels/kashyyyk/vehicles.json
 /public/models/galaxy/bf2017/levels/sb_droidbattleship/cells/-10_-1.bin
 /public/models/galaxy/bf2017/levels/sb_droidbattleship/cells/-10_-2.bin
 /public/models/galaxy/bf2017/levels/sb_droidbattleship/cells/-10_-3.bin
