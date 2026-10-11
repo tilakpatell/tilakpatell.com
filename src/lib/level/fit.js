@@ -16,7 +16,7 @@
 //
 // inst: { x, z, r, mesh, mirrored } typed arrays; meshes[m]: { lods (each
 // LOD's triangles), mats, weight, keep?, group? (the parts of one thing,
-// dropped together) }. A call is one mesh, LOD and side drawn
+// dropped together), upTo? (the first LOD not drawn: past it, nothing) }. A call is one mesh, LOD and side drawn
 // (the scene's InstancedMesh), times its materials.
 
 import { lodAt, seenAt } from './lod.js';
@@ -30,6 +30,8 @@ export function costAt(inst, meshes, [px, pz], tier, K, skip = null, who = null)
     const d = Math.hypot(inst.x[i] - px, inst.z[i] - pz);
     if (!seenAt(d, inst.r[i], K)) continue;
     const n = lodAt(meshes[m].lods, d, inst.r[i], tier);
+    // (a mesh drawn only up to a LOD, its far LODs' maps not in the bucket, is not drawn past it)
+    if (n >= (meshes[m].upTo ?? Infinity)) continue;
     tris += meshes[m].lods[n];
     calls.set(`${m}|${n}|${inst.mirrored[i]}`, meshes[m].mats ?? 1);
     who?.add(m);

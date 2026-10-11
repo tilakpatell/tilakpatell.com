@@ -60,7 +60,7 @@ import { parseArgs } from './lib/args.mjs';
 import { writeCredit } from './lib/catalog-write.mjs';
 import { isSequel } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs';
-import { buildPack, chainWithMaps, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
+import { buildPack, mapsUpTo, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
 import { LOD, capIndex, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { encodePng16 } from './lib/png16.mjs';
@@ -364,7 +364,8 @@ async function main(args) {
     }
     if (!chain.length) return { ...base, ...NONE, missing: 'not in the bucket' };
     // (as far as the bucket has its maps: a far LOD whose own LOD maps were
-    // never uploaded would draw white; the LOD before it is drawn farther)
+    // never uploaded would draw white; the mesh stops being drawn there)
+    let upTo = null;
     if (!dry) {
       const has = await Promise.all(chain.map(async (l) => {
         const buf = await getGlb(l.file);
@@ -372,15 +373,15 @@ async function main(args) {
         const there = await Promise.all(imageUris(buf, inBucket(l.file)).map(mapThere));
         return there.every(Boolean);
       }));
-      const whole = chainWithMaps(chain, (l) => has[chain.indexOf(l)]);
-      if (whole.length < chain.length) cutChains.push(`${lastOf(m.file)} (LOD ${whole.length} on)`);
-      chain = whole;
+      upTo = mapsUpTo(chain, (l) => has[chain.indexOf(l)]);
+      if (upTo !== null) cutChains.push(`${lastOf(m.file)} (LOD ${upTo} on)`);
     }
     return {
       ...base,
       lods: chain.map((l) => l.tris),
       files: chain.map((l) => l.file),
       mats: entry?.sections ?? 1,
+      upTo,
     };
   });
   // (the LODs below the high tier's cap are drawn on ultra only: shipped with --ultra)
@@ -392,9 +393,11 @@ async function main(args) {
     if (slugs.has(slug)) slug = `${slug}_${slugs.size}`;
     slugs.add(slug);
     const from = ultra ? 0 : capIndex(m.lods, LOD.high.cap);
-    m.glb = m.lods.map((_, n) => (m.missing || n < from ? null : `meshes/${slug}.lod${n}.glb`));
+    // (and a mesh whose first LOD shipped already lacks its maps draws as it did: hidden whole would be worse)
+    if (m.upTo != null && m.upTo <= from) m.upTo = null;
+    m.glb = m.lods.map((_, n) => (m.missing || n < from || (m.upTo != null && n >= m.upTo) ? null : `meshes/${slug}.lod${n}.glb`));
   });
-  if (cutChains.length) console.log(`${cutChains.length} meshes drawn without their far LODs, whose maps the bucket lacks: ${cutChains.slice(0, 5).join(', ')}${cutChains.length > 5 ? ' …' : ''}`);
+  if (cutChains.length) console.log(`${cutChains.length} meshes drawn only as far as their LODs’ maps go (the bucket lacks the rest): ${cutChains.slice(0, 5).join(', ')}${cutChains.length > 5 ? ' …' : ''}`);
   const absent = meshes.filter((m) => m.missing);
   if (absent.length)
     console.log(
@@ -414,13 +417,14 @@ async function main(args) {
     map,
     spot,
     groundY,
-    meshes: meshes.map(({ name, glb, lods, bounds, mats, missing }) => ({
+    meshes: meshes.map(({ name, glb, lods, bounds, mats, missing, upTo }) => ({
       name,
       glb,
       lods,
       bounds,
       mats,
       missing: Boolean(missing),
+      ...(upTo != null ? { upTo } : {}),
     })),
     arena,
     // (--share: the part of a tier's row the level may take, where the site's

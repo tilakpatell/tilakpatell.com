@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
-import { arenaOf, buildPack, chainWithMaps, groupOf, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, keepTest, lodFile, mainSubs, mergeHeights, meshCuts, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
+import { arenaOf, buildPack, groupOf, mapsUpTo, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, keepTest, lodFile, mainSubs, mergeHeights, meshCuts, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
@@ -278,12 +278,12 @@ describe('groupOf: the thing a mesh is part of, dropped whole', () => {
   });
 });
 
-describe('chainWithMaps: a mesh’s LODs as far as the bucket has their maps', () => {
-  it('stops before the first LOD past the first whose maps are not all there', () => {
+describe('mapsUpTo: how far a mesh’s LODs are drawn, as the bucket has their maps', () => {
+  it('is the first LOD past the first whose maps are not all there, or null', () => {
     const chain = [{ n: 0 }, { n: 1 }, { n: 2 }, { n: 3 }];
-    expect(chainWithMaps(chain, (l) => l.n < 2)).toEqual([{ n: 0 }, { n: 1 }]);
-    expect(chainWithMaps(chain, () => true)).toEqual(chain);
-    // (the first is kept whatever its maps: a mesh with none of its maps still stands, as before)
-    expect(chainWithMaps(chain, () => false)).toEqual([{ n: 0 }]);
+    expect(mapsUpTo(chain, (l) => l.n < 2)).toBe(2);
+    expect(mapsUpTo(chain, () => true)).toBe(null);
+    // (the first is drawn whatever its maps: a mesh with none of its maps still stands, as before)
+    expect(mapsUpTo(chain, () => false)).toBe(1);
   });
 });

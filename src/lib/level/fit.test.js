@@ -71,6 +71,13 @@ describe('fitCull', () => {
     expect(f.dropped.sort()).toEqual([1, 2]);
   });
 
+  it('a mesh drawn only up to a LOD (`upTo`: its far LODs’ maps missing) costs nothing past it', () => {
+    const inst = at([[40, 0, 10, 0]]);
+    // (at 40 m the hangar would draw its LOD2; drawn up to LOD 2, it is not drawn there at all)
+    expect(costAt(inst, [{ ...meshes[0], upTo: 2 }, meshes[1]], [0, 0], 'high', 60)).toEqual({ tris: 0, calls: 0 });
+    expect(costAt(inst, [{ ...meshes[0], upTo: 3 }, meshes[1]], [0, 0], 'high', 60)).toEqual({ tris: 100, calls: 1 });
+  });
+
   it('ultra has no triangle ceiling: only the calls hold it', () => {
     const inst = at([[1, 0, 10, 0], [1, 0, 1, 1]]);
     expect(fitCull(inst, meshes, { tris: Infinity, calls: 1500 }, 'ultra', { positions: [[0, 0]], kMax: 1000 }).K).toBe(1000);

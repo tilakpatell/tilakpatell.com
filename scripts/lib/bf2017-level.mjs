@@ -86,14 +86,16 @@ export const groupOf = (file) => {
   return name.replace(/_(top|bottom|addons)(_.*)?$/, '');
 };
 
-// A mesh's LOD chain as far as its maps go: the far LODs of the drop's
-// props often name LOD maps of their own (Endor_02's decks'
-// `t_ewokvillage_platform_01_lod_cs`) that the export never uploaded, and a
-// LOD drawn without its maps is white. The chain stops before the first such
-// LOD after the first, so the one before it is drawn farther. Pure.
-export function chainWithMaps(chain, hasMaps) {
+// How far a mesh's LOD chain is drawn: the far LODs of the drop's props often
+// name LOD maps of their own (Endor_02's decks' `t_ewokvillage_platform_01_lod_cs`,
+// Kashyyyk's tree-city addons') that the export never uploaded, and a LOD drawn
+// without its maps is white. The first such LOD past the first is where the
+// mesh stops being drawn (`upTo`: the scene finds no file from it on, and the
+// fit counts nothing there); null when every LOD has its maps. Drawing the LOD
+// before it farther instead costs the fit the city round it. Pure.
+export function mapsUpTo(chain, hasMaps) {
   const i = chain.findIndex((l, k) => k > 0 && !hasMaps(l));
-  return i < 0 ? chain : chain.slice(0, i);
+  return i < 0 ? null : i;
 }
 
 // --keep's globs over a mesh's name (no folder, no _mesh.glb), as --drop's
@@ -327,7 +329,7 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
   for (let i = 0; i < arenaInst.count; i++) weight[arenaMesh[i]] += vol(arenaMesh[i]);
   // (--keep: the map's own buildings, which the fit drops only after every other mesh at its worst place)
   const kept = keepTest(keep);
-  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing, keep: kept(m.name), group: groupOf(m.name) }));
+  const fitMeshes = meshes.map((m, i) => ({ lods: m.lods, mats: m.mats ?? 1, weight: weight[i], skip: m.missing, keep: kept(m.name), group: groupOf(m.name), upTo: m.upTo ?? undefined }));
   const flat = {
     x: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3]),
     z: Float32Array.from({ length: arenaInst.count }, (_, i) => arenaInst.position[i * 3 + 2]),
