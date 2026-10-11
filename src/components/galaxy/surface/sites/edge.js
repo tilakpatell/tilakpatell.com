@@ -352,12 +352,12 @@ export const SITES = {
         ripple: { strength: 0.05, scale: 2.6, wind: 0.6 },
         grain: 0.45,
         sparkle: 0.04,
-        wet: { level: -1.07, band: 1.3, color: '#b8a682' },
+        wet: { level: -0.92, band: 1.3, color: '#b8a682' },
         mark: '#c8b896',
       },
     },
-    // (the game's sea: WaterSurfaceEntityData at 212.03 m, the landing's ground 213.10)
-    water: { level: -1.07, color: '#38c6c8', deep: '#0a5a78', kind: 'sea', foam: 0.55 },
+    // (the game's sea: WaterSurfaceEntityData at 212.03 m, the landing's ground 212.95)
+    water: { level: -0.92, color: '#38c6c8', deep: '#0a5a78', kind: 'sea', foam: 0.55 },
     // (dune grass back from the beaches, sparse, in the sea wind)
     grass: { h: [0.35, 0.8], w: 0.05, root: '#5f7048', mid: '#6f9452', tip: '#adc47e', dry: '#c8c08a', cover: 0.7, scale: 70, above: 1.4, wind: 0.8 },
     weather: [{ kind: 'spray', count: 500 }],

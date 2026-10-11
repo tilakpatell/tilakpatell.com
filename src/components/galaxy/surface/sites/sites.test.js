@@ -411,7 +411,7 @@ describe('the worlds drawn from the game’s levels', () => {
     const pack = JSON.parse(readFileSync(new URL('../../../../../public/models/galaxy/bf2017/levels/scarif/level.json', import.meta.url), 'utf8'));
     expect(scarif.level).toBe('scarif');
     expect(scarif.ground.layers).toEqual([{ type: 'image', pack: 'scarif' }]);
-    // (the game's sea, WaterSurfaceEntityData at 212.03 m, under the landing's 213.10: you come down on the shore)
+    // (the game's sea, WaterSurfaceEntityData at 212.03 m, under the landing's 212.95: you come down on the shore)
     expect(scarif.water.level).toBeCloseTo(212.03 - pack.origin[1], 1);
     expect(scarif.water.level).toBeLessThan(0);
     for (const t of scarif.things) if (['bunker', 'pad', 'lamp'].includes(t.kind)) expect(t.game, t.kind).toBe(true);
