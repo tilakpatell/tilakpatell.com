@@ -21,7 +21,7 @@ window.addEventListener('unhandledrejection', (e) => (state.error ??= String(e.r
 
 try {
   // (TRAA wants no multisampling, and the post chain draws into its own targets)
-  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1 });
+  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1, reversedDepth: fixture.reversed ?? null });
   gfx.setSize(innerWidth, innerHeight);
   gfx.setRatio(1);
   const w = world.create({ gfx, fixture });

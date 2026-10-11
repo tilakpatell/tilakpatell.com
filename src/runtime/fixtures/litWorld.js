@@ -13,7 +13,15 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles, upscale, hoth, shadows, lightSun, clouds, filter, picture }
+//   materials, weather, decals, particles, upscale, hoth, shadows, lightSun, clouds, filter, picture,
+//   trails, sharpen }
+//
+// `trails` (GPU-first lane N2, scripts/light-fixture.mjs --trails): the
+// ring set aside, a grey wall, and trails.js's movers (a crate, a skinned
+// figure, an instanced row, an alpha-tested card, a panning banner) in
+// front of it; they move once probe.trailsGo(true) says, a step a frame,
+// and probe.trails({ width, height }) gives each one's box on the screen
+// and its travel a frame, for the trail check.
 //
 // `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
 // 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
@@ -62,6 +70,7 @@
 import * as THREE from 'three';
 import hothWeather from '../../lib/three/surface/fixtures/hoth.weather.json';
 import hothVe from '../../lib/three/light/fixtures/hoth.ve.json';
+import { createTrails } from './trails';
 
 // the snow's albedo under --hoth (fresh snow reflects 0.8 to 0.9; Hoth's
 // ice field, worn, a little under)
@@ -334,6 +343,20 @@ export default {
       probe.recipes = () => row.then((r) => r.map((c) => ({ label: c.label, features: c.features })));
     }
 
+    let trails = null;
+    let trailsOn = false;
+    if (opts.trails) {
+      for (const o of [...scene.children]) if (o !== ground) o.visible = false;
+      const wall = new THREE.Mesh(geo(new THREE.PlaneGeometry(14, 8)), mat({ color: 0x8a8f96, roughness: 0.7 }));
+      wall.position.set(0, 1.5, -1.2);
+      scene.add(wall);
+      trails = createTrails(scene, camera, THREE);
+      camera.position.set(0, 1.5, 6);
+      camera.lookAt(0, 1.5, 0);
+      probe.trails = (size) => trails.screen(size);
+      probe.trailsGo = (on) => (trailsOn = on);
+    }
+
     const ready = (async () => {
       await row;
       const { applyGameLight } = await import('../../lib/three/light/apply.js');
@@ -368,8 +391,14 @@ export default {
         let passes = opts.only ? light.passes.filter((p) => opts.only.includes(p.kind)) : light.passes;
         // (`upscale`, fidelity lane U: { kind, scale }, the picture drawn under the screen and brought up)
         if (opts.upscale) passes = (await import('../../lib/three/light/post.js')).upscaled(passes, opts.upscale);
+        // (lane N2: `sharpen: false` is lane U's picture, for the before shot: no sharpen pass, no mip bias)
+        if (opts.sharpen === false) passes = passes.filter((p) => p.kind !== 'sharpen');
+        const bias = await import('../../lib/three/mipBias.js');
+        bias.setMipState({ scale: opts.upscale?.scale ?? 1, classic: false });
         post = rt.gfx.post(passes);
+        if (opts.sharpen === false) bias.setMipBias(0);
         probe.passes = passes.map((p) => p.kind);
+        probe.bias = bias.mipBias();
         await post.ready;
       }
       await rt.gfx.compile(scene, camera);
@@ -383,6 +412,7 @@ export default {
         camera.updateProjectionMatrix();
       },
       step(dt) {
+        if (trailsOn) trails.step();
         cube.rotation.y += dt;
         if (camVel.x) camera.position.addScaledVector(camVel, dt);
         probe.particles?.step(dt);
