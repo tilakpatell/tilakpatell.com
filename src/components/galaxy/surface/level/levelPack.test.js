@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { writeInstances } from '../../../../lib/level/instances';
+import { assetUrl } from '../../../../lib/assetBase';
 import { bandOf, cutFor, packUrl, readInstances, splitTextures, tierTexture, wanted } from './levelPack';
 
 const S = Math.SQRT1_2;
@@ -77,5 +78,13 @@ describe('the pack, read', () => {
     expect(dv.getUint32(8, true)).toBe(out.length);
     expect(len % 4).toBe(0);
     expect(Array.from(out.subarray(out.length - 4))).toEqual([1, 2, 3, 4]);
+  });
+  it('finds a published pack file through the manifest, and the site’s path without a row', () => {
+    const manifest = { 'models/galaxy/bf2017/levels/hoth/cells/0_0.bin': { hash: 'abcdef123456', bytes: 1 } };
+    const base = 'https://x.supabase.co/storage/v1/object/public/site-assets';
+    expect(assetUrl(packUrl('hoth', 'cells/0_0.bin'), { base, manifest })).toBe(`${base}/abcdef123456/models/galaxy/bf2017/levels/hoth/cells/0_0.bin`);
+    expect(assetUrl(packUrl('hoth', 'cells/1_0.bin'), { base, manifest })).toBe('/models/galaxy/bf2017/levels/hoth/cells/1_0.bin');
+    // (a district's pack sits in its world's folder)
+    expect(packUrl('hoth/base', 'level.json')).toBe('/models/galaxy/bf2017/levels/hoth/base/level.json');
   });
 });

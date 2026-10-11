@@ -12,6 +12,8 @@
 //   ZONE=<id> …    (inside a zone: its id, the views then in the room's own
 //                  frame, through the dev hook __surfaceDo('zone', id))
 //   LOAD_WAIT=<ms> …  (how long a heavy world may take to load: 180000 by default)
+//   ROUTE_QUERY=<k=v&…> … (the route's own query, after the hash: district=base)
+//   LEVEL_WAIT=<ms> … (how long a game level may take to stream in round a view)
 //   QUERY=<k=v&…> …  (more of the page's query: gamelight=off, the site's
 //                  own light, for a before shot)
 //   WEATHER=<state> …  (clear, dusk, overcast, storm: the level's weather,
@@ -46,7 +48,7 @@ await ctx.addInitScript(() => {
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
-await page.goto(`${base}/?quality=${quality}${process.env.QUERY ? `&${process.env.QUERY}` : ''}#/galaxy/${world}/surface`);
+await page.goto(`${base}/?quality=${quality}${process.env.QUERY ? `&${process.env.QUERY}` : ''}#/galaxy/${world}/surface${process.env.ROUTE_QUERY ? `?${process.env.ROUTE_QUERY}` : ''}`);
 await page.waitForFunction(() => window.__surface?.()?.phase, null, { timeout: Number(process.env.PHASE_WAIT ?? process.env.LOAD_WAIT ?? 180000) });
 await page.waitForTimeout(4000);
 // (past the landing: out of the ship and walking)
@@ -82,6 +84,8 @@ for (const v of views) {
   const yaw = Math.atan2(x - sx, z - sz);
   await page.evaluate(([sx, sz, yaw]) => window.__surfaceDo('teleport', sx, sz, yaw), [sx, sz, yaw]);
   await page.waitForTimeout(7000);
+  // (on a game level: its cells round the new spot streamed in, LEVEL_WAIT ms at most)
+  await page.waitForFunction(() => window.__surfaceScene?.level?.()?.ready !== false, null, { timeout: Number(process.env.LEVEL_WAIT ?? 600000) }).catch(() => console.log('  (the level still streaming: shot as it stands)'));
   const file = `${out}/${world}-${zone ? `${zone}-` : ''}${label ?? `${x0}_${z0}_${deg}`}-${quality}.png`;
   await page.screenshot({ path: file, timeout: 180000 });
   console.log(file);
