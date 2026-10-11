@@ -15,7 +15,9 @@
 // decoded texture for sky.js's gain. The manifest goes to
 // src/data/bf2017/light/<world>.picture.json: per weather { lut, panorama:
 // { url, name, horizon, size }, gradient: { url, name }, cloudShadow: { url, name } },
-// the shape applyGameLight's `picture` takes (urls without the base). A
+// the shape applyGameLight's `picture` takes (urls without the base); a
+// panorama or gradient lane W's desktop job has made HDR (scripts/desktop/
+// bf2017-panoramas.mjs) gains `hdr: { url, widths, format }`. A
 // texture the bucket lacks prints `missing:` and is left out.
 //
 // The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment.
@@ -27,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { bucketFile } from './lib/bf2017-bucket.mjs';
 import { dropMips, ktx2Info, mipsToFit } from './lib/ktx2-mips.mjs';
-import { picturedNames, recordOf, rowMean } from './lib/bf2017-picture.mjs';
+import { hdrOf, picturedNames, recordOf, rowMean } from './lib/bf2017-picture.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CLOUD_SIZE = 1024; // px: a cloud map's served width
@@ -69,6 +71,14 @@ const out = join(ROOT, 'public/textures/galaxy/bf2017/light', world);
 mkdirSync(out, { recursive: true });
 const site = (f) => `textures/galaxy/bf2017/light/${world}/${f}`;
 const SUFFIX = { panorama: 'panorama', gradient: 'gradient', cloudShadow: 'clouds' };
+const published = (() => {
+  try {
+    return JSON.parse(readFileSync(join(ROOT, 'src/data/galaxyAssets.json'), 'utf8'));
+  } catch {
+    return {};
+  }
+})();
+const hasHdr = (path) => existsSync(join(ROOT, 'public', path)) || Boolean(published[path]);
 const weathers = {};
 for (const [w, e] of Object.entries(light.weathers ?? {})) {
   const raws = [];
@@ -108,6 +118,9 @@ for (const [w, e] of Object.entries(light.weathers ?? {})) {
       const img = decode(readFileSync(file));
       Object.assign(entry, { horizon: rowMean(img.rgba, img.width, img.height - 1), size: [img.width, img.height] });
     }
+    // (lane W's HDR copy, when the desktop has made it: the sky above white kept)
+    const hdr = kind === 'cloudShadow' ? null : hdrOf(name, hasHdr);
+    if (hdr) entry.hdr = hdr;
     row[kind] = entry;
     console.log(`  ${w}: ${kind} ${name} → ${fname}${entry.horizon ? ` (horizon ${entry.horizon.join(', ')})` : ''}`);
   }

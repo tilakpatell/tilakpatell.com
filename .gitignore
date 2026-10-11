@@ -13105,3 +13105,7 @@ scripts/twin-parity/out/
 /public/textures/galaxy/sky/space/rim.1024.ktx2
 /public/textures/galaxy/sky/space/rim.2048.ktx2
 # end galaxy assets
+
+# the Rust ports’ build folders (lane X2: scripts/wasm-build.mjs writes the .wasm into src/lib/wasm/<name>/)
+/wasm/*/target
+/tmp

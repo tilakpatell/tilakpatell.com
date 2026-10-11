@@ -26,7 +26,7 @@ One page per library, engine or framework the site is built on, and this index o
 | `@fontsource/courier-prime` | ^5.3.0 | [fonts.md](fonts.md) | 2 |
 | `@fontsource/orbitron` | ^5.3.0 | [fonts.md](fonts.md) | 2 |
 | `@noble/secp256k1` | ^3.2.0 | [multiplayer-nostr.md](multiplayer-nostr.md) | 2 |
-| `@supabase/supabase-js` | ^2.117.3 | [supabase.md](supabase.md) | 2 |
+| `@supabase/supabase-js` | ^2.117.3 | [supabase.md](supabase.md) | 5 |
 | `fflate` | ^0.8.3 | [assets-pipeline.md](assets-pipeline.md) | 2 |
 | `@dimforge/rapier3d-compat` | 0.21.0 | [physics-rapier.md](physics-rapier.md) | 1 |
 | `@fontsource-variable/archivo` | ^5.3.0 | [fonts.md](fonts.md) | 1 |
