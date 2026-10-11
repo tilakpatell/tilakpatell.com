@@ -10,7 +10,7 @@
 
 import * as THREE from 'three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { box, cyl, dome, mirror, part, place, ring, rod, rockGeometry } from '../kit';
+import { box, cyl, dome, mirror, part, place, ring, rod, rockGeometry } from '../kitCore';
 import { bake, canvasTexture, loft, plateXZ, trap8, upright } from '../../../universe/trafficKit';
 import { noise2 } from '../noise';
 import { PROPS as GENERIC } from './generic';

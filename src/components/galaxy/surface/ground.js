@@ -35,7 +35,7 @@
 import * as THREE from 'three';
 import { HALF } from './terrain';
 import { sharpen } from '../../../lib/three/textures';
-import { groundMaterial as shade } from '../../../lib/three/groundLook';
+import { groundMaterial as shade } from '../../../lib/three/groundLookNodes';
 
 export const groundMaterial = (site, opts = {}) => shade(site, { half: HALF, ...opts });
 

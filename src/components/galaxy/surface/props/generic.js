@@ -2,7 +2,7 @@
 // a campfire. (props/index.js has what a builder returns.)
 
 import * as THREE from 'three';
-import { box, cyl, part, rockGeometry, rod } from '../kit';
+import { box, cyl, part, rockGeometry, rod } from '../kitCore';
 import { loft, trap8 } from '../../../universe/trafficKit';
 
 const { PI, cos, sin } = Math;

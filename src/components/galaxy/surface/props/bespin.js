@@ -7,9 +7,8 @@
 // the platforms its tread plate (kit.js's roles).
 
 import * as THREE from 'three';
-import { box, cyl, dome, part, ring, rod } from '../kit';
+import { box, cyl, dome, part, ring, rod } from '../kitCore';
 import { upright } from '../../../universe/trafficKit';
-import { litWindows } from './windows';
 
 const { PI, cos, sin, abs } = Math;
 const hot = (c, k = 2) => new THREE.Color(c).multiplyScalar(k);
@@ -250,7 +249,7 @@ export const PROPS = {
     for (let i = 0; i < 4; i++) P.push(rod([0.9, 0.0, -r + 2 + i * 3], [0.9, 1.0, -r + 2 + i * 3], 0.04, 0.04, { color: '#7a7e88', to: 'metal' }));
     const object = k.build(P, { name: 'reactorshaft' });
     // the inner wall, its own mesh: dark, with the film's walls of tiny lights
-    const wallMat = litWindows(k.own(new THREE.MeshStandardMaterial({ color: '#121a26', roughness: 0.8, side: THREE.DoubleSide })), { seed: 19, density: 0.6, cell: [0.9, 1.2], warm: '#dbe8ff', cool: '#9ad4ff' });
+    const wallMat = k.looks.litWindows(k.own(new THREE.MeshStandardMaterial({ color: '#121a26', roughness: 0.8, side: THREE.DoubleSide })), { seed: 19, density: 0.6, cell: [0.9, 1.2], warm: '#dbe8ff', cool: '#9ad4ff' });
     const wall = new THREE.Mesh(k.own(new THREE.CylinderGeometry(r, r, 100, 40, 1, true, PI * 0.07 + PI, PI * 1.86)), wallMat);
     wall.position.y = -38;
     object.add(wall);

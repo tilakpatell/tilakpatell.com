@@ -23,7 +23,7 @@
 // shades blue, a sunset violet.
 
 import * as THREE from 'three';
-import { LOOK as HOUSE } from '../../../lib/three/house';
+import { LOOK as HOUSE } from '../../../lib/three/houseNodes';
 
 const SHADOW_MIX = 1 / 3;
 const SHADOW_DARK = 0.55;

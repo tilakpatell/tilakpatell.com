@@ -24,7 +24,7 @@
 //   all stand on); on Jabba they do nothing.
 
 import * as THREE from 'three';
-import { loadPartyFigure, loadSharedFigure } from '../../universe/footScene';
+import { loadPartyFigure, loadSharedFigure } from './nodes/figures';
 import { METRE } from '../../universe/foot';
 import { breathe } from '../../../lib/three/gait';
 import { NO_CALLS, seedOf } from '../../../lib/three/figureCalls';

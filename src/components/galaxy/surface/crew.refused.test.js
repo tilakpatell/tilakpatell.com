@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // the own-rig loader refusing a kind whose pack isn't built yet (Review Focus 5)
-vi.mock('../../universe/footScene', () => ({
+vi.mock('./nodes/figures', () => ({
   loadPartyFigure: async () => {
     throw new Error('/models/galaxy/bf2017/crew/sneep.lod1.glb: no clips for the rig sneep');
   },

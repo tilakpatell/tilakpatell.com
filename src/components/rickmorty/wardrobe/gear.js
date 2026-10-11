@@ -17,7 +17,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { toon } from '../portal/toon';
+import { toon } from '../portal/toonCore'; // (the paint without toon.js's ink pass, which is GLSL)
 import { BB_GEAR, GEAR, GEAR_SLOTS, gearById, gearWorn } from './looks';
 
 // geometries placed by [geometry, position, rotation, scale], merged into one

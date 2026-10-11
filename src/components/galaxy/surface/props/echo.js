@@ -7,7 +7,7 @@
 // Hoth as a zone (sites/index.js), lit by its own lamps.
 
 import * as THREE from 'three';
-import { box, cyl, dome, part, ring, rod } from '../kit';
+import { box, cyl, dome, part, ring, rod } from '../kitCore';
 import { insignia, scorch } from '../decals';
 import { ECHO_BASE, archesOf, floorsOf, wallsOf } from '../sites/echoLayout';
 import { iceMat, iceShade, meshOf, roughen } from './ice';
