@@ -21,7 +21,8 @@ window.addEventListener('unhandledrejection', (e) => (state.error ??= String(e.r
 
 try {
   // (TRAA wants no multisampling, and the post chain draws into its own targets)
-  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1 });
+  // (?traa=off: the reference shots' chain, without its temporal pass; scripts/reference-frames.mjs)
+  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1, temporal: q.get('traa') !== 'off' });
   gfx.setSize(innerWidth, innerHeight);
   gfx.setRatio(1);
   const w = world.create({ gfx, fixture });
@@ -49,6 +50,8 @@ try {
     ready: true,
     backend: gfx.backend,
     probe: w.probe,
+    // the camera moved by shot i's sub-pixel offset (lib/three/jitter), null to stop
+    jitter: (i) => gfx.jitter(i),
     // n frames of a fixed step, each on its own animation frame (a node
     // that updates once a frame, TRAA's history above all, resolves on the
     // next frame: drawn back to back in one task it never does, and the

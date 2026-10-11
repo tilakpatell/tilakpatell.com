@@ -11,7 +11,10 @@ export function makeBackend(kind, opts) {
   const canvas = document.createElement('canvas');
   canvas.className = 'world-canvas';
   // ('nodes-webgl' is the node renderer on WebGL 2: never the classic one)
-  return kind === 'webgl' ? createWebGL(canvas, opts) : createWebGPU(canvas, { ...opts, forceWebGL: kind === 'nodes-webgl' });
+  // (?traa=off, development's: the reference shots' chain without its
+  // temporal pass, scripts/reference-frames.mjs)
+  const temporal = !(import.meta.env?.DEV && /[?&]traa=off\b/.test(`${window.location.search}&${window.location.hash}`));
+  return kind === 'webgl' ? createWebGL(canvas, opts) : createWebGPU(canvas, { ...opts, forceWebGL: kind === 'nodes-webgl', temporal });
 }
 
 export const loaders = {
