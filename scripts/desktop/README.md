@@ -139,6 +139,24 @@ running on this machine at once. An issue still labelled `…:running` with
 no live runner behind it was cut off by sleep or a restart, and the next
 run takes it again.
 
+## The stream (lane R2’s spike)
+
+`bf2017-stream.mjs` draws a world at ultra in Chrome on this machine’s GPU
+and streams it over WebRTC to a phone at `#/stream?id=…`, the phone’s
+input coming back and replayed. It measures; nothing on the site links it.
+With `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the environment:
+
+```
+node scripts/desktop/bf2017-stream.mjs --world hoth --minutes 15 --name desktop-lan
+```
+
+`--source game` streams the real game’s window instead (the owner’s copy,
+running here), its input put in through Windows’ SendInput (`inject.mjs`)
+and its frame time read by PresentMon when `PRESENTMON` names it
+(`presentmon.mjs`). It prints the address the phone opens and writes the run’s numbers to
+`docs/superpowers/evidence/bf2017-picture/r2/`, whose README says what to
+run and what the numbers decide.
+
 ## The files
 
 | file | what |
@@ -147,5 +165,7 @@ run takes it again.
 | `jobs.mjs` | a job from issue to pull request; the runners' shared command line |
 | `ask.mjs` / `status.mjs` / `doctor.mjs` | ask, follow, check the machine |
 | `setup-runner.ps1` | the runner and its watchdog, once |
+| `bf2017-stream.mjs` | the stream spike’s sender (above) |
+| `inject.mjs` / `presentmon.mjs` | the game source’s input into a window, and its frame times |
 | `../../.github/workflows/gen3d.yml`, `voices.yml`, `motion.yml` | the workflows |
 | `../../.github/ISSUE_TEMPLATE/gen3d.yml`, `voices.yml`, `motion.yml` | the issue forms |
