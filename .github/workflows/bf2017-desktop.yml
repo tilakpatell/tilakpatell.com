@@ -75,7 +75,7 @@ jobs:
   make:
     if: ${{ !inputs.dry }}
     runs-on: [self-hosted, gpu]
-    timeout-minutes: 480
+    timeout-minutes: 360
     concurrency:
       group: bf2017-desktop
     steps:

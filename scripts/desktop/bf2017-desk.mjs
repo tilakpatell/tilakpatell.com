@@ -196,9 +196,11 @@ async function makeIn(spec, a, d, env, checks, log) {
     if (made.failed) process.exitCode = 1;
     return made;
   }
-  const files = [...new Set([...(made.files ?? []), evidenceDir(spec.job)])];
+  // (only what the job names: a path it didn't make is left out, and what
+  // else a script touched in the checkout stays out of the commit)
+  const files = [...new Set([...(made.files ?? []), evidenceDir(spec.job)])].filter((f) => existsSync(join(root, f)));
   git(root, 'add', '-A', '--', ...files);
-  if (!git(root, 'status', '--porcelain')) {
+  if (!git(root, 'diff', '--cached', '--name-only')) {
     log('nothing changed: no pull request');
     return made;
   }

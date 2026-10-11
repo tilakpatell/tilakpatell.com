@@ -114,8 +114,9 @@ both places, and the runner lives outside AppData.
 
 Security: the repository is public, so workflows from forks need the
 owner's approval (Settings → Actions → "Require approval for all external
-contributors"). The self-hosted runner only takes the two workflows' `make`
-jobs, and those run only for trusted issues.
+contributors"). The self-hosted runner only takes the pipelines' `make`
+jobs, which run only for trusted issues, the doctor, and the bf2017 desktop
+jobs, which only someone with write access can start (Run workflow).
 
 ## Running a job by hand
 
