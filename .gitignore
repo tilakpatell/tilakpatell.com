@@ -925,7 +925,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/fx/impact.256.ktx2
 /public/models/galaxy/bf2017/fx/impact.512.ktx2
 /public/models/galaxy/bf2017/fx/scorch.metal.512.ktx2
-/public/models/galaxy/bf2017/levels/bespin/actors.json
 /public/models/galaxy/bf2017/levels/bespin/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/bespin/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/bespin/cells/-1_-3.bin
@@ -1015,12 +1014,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/bespin/cells/4_5.bin
 /public/models/galaxy/bf2017/levels/bespin/cells/4_6.bin
 /public/models/galaxy/bf2017/levels/bespin/cells/5_7.bin
-/public/models/galaxy/bf2017/levels/bespin/decals.json
-/public/models/galaxy/bf2017/levels/bespin/effects.json
 /public/models/galaxy/bf2017/levels/bespin/far.bin
 /public/models/galaxy/bf2017/levels/bespin/horizon.bin
-/public/models/galaxy/bf2017/levels/bespin/lights.json
-/public/models/galaxy/bf2017/levels/bespin/m2bes/actors.json
 /public/models/galaxy/bf2017/levels/bespin/m2bes/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/bespin/m2bes/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/bespin/m2bes/cells/-1_-3.bin
@@ -1201,11 +1196,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/bespin/m2bes/cells/7_-7.bin
 /public/models/galaxy/bf2017/levels/bespin/m2bes/cells/7_-8.bin
 /public/models/galaxy/bf2017/levels/bespin/m2bes/cells/7_5.bin
-/public/models/galaxy/bf2017/levels/bespin/m2bes/decals.json
-/public/models/galaxy/bf2017/levels/bespin/m2bes/effects.json
 /public/models/galaxy/bf2017/levels/bespin/m2bes/far.bin
 /public/models/galaxy/bf2017/levels/bespin/m2bes/horizon.bin
-/public/models/galaxy/bf2017/levels/bespin/m2bes/lights.json
 /public/models/galaxy/bf2017/levels/bespin/m2bes/meshes/alarmwall_s_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/bespin/m2bes/meshes/alarmwall_s_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/bespin/m2bes/meshes/alarmwall_s_01_mesh.lod2.glb
@@ -3423,9 +3415,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/bespin/m2bes/physics/weaponcrate_01_lid.bin
 /public/models/galaxy/bf2017/levels/bespin/m2bes/physics/weaponrack_02.bin
 /public/models/galaxy/bf2017/levels/bespin/m2bes/physics/xp0_tiewreckleftwing_01.bin
-/public/models/galaxy/bf2017/levels/bespin/m2bes/probes.json
-/public/models/galaxy/bf2017/levels/bespin/m2bes/recipes.json
-/public/models/galaxy/bf2017/levels/bespin/m2bes/scatter.json
 /public/models/galaxy/bf2017/levels/bespin/m2bes/tex/gadget_detonitecharge_sp_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/bespin/m2bes/tex/gadget_detonitecharge_sp_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/bespin/m2bes/tex/gadget_detonitecharge_sp_cs__orm_404c1a58.128.ktx2
@@ -4234,8 +4223,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/bespin/m2bes/tex/t_weaponrack_02_nam__orm_3f0618e2.128.ktx2
 /public/models/galaxy/bf2017/levels/bespin/m2bes/tex/t_xwingcockpitwindowdirt_03_c.256.ktx2
 /public/models/galaxy/bf2017/levels/bespin/m2bes/tex/t_xwingcockpitwindowdirt_03_c.512.ktx2
-/public/models/galaxy/bf2017/levels/bespin/m2bes/tracks.json
-/public/models/galaxy/bf2017/levels/bespin/m2bes/vehicles.json
 /public/models/galaxy/bf2017/levels/bespin/meshes/backdrop_buildings_farbackdrop_cluster_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/bespin/meshes/backdrop_buildings_observatory_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/bespin/meshes/backdrop_buildings_observatory_01_mesh.lod1.glb
@@ -5248,7 +5235,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/bespin/physics/waterplane_01.bin
 /public/models/galaxy/bf2017/levels/bespin/physics/waterplane_03.bin
 /public/models/galaxy/bf2017/levels/bespin/physics/xwing_t65_landmark.bin
-/public/models/galaxy/bf2017/levels/bespin/probes.json
 /public/models/galaxy/bf2017/levels/bespin/probes/07e85542.nx.hdr
 /public/models/galaxy/bf2017/levels/bespin/probes/07e85542.ny.hdr
 /public/models/galaxy/bf2017/levels/bespin/probes/07e85542.nz.hdr
@@ -5501,8 +5487,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/bespin/probes/ff19f396.px.hdr
 /public/models/galaxy/bf2017/levels/bespin/probes/ff19f396.py.hdr
 /public/models/galaxy/bf2017/levels/bespin/probes/ff19f396.pz.hdr
-/public/models/galaxy/bf2017/levels/bespin/recipes.json
-/public/models/galaxy/bf2017/levels/bespin/scatter.json
 /public/models/galaxy/bf2017/levels/bespin/shadow/far.png
 /public/models/galaxy/bf2017/levels/bespin/tex/t_backdrop_buildings_observatory_id.64.ktx2
 /public/models/galaxy/bf2017/levels/bespin/tex/t_bespincontainer_01_a_cs.128.ktx2
@@ -5807,9 +5791,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/bespin/tex/t_xwing_wings_01_nma__orm_66d1afbc.512.ktx2
 /public/models/galaxy/bf2017/levels/bespin/tex/t_xwingcockpitwindowdirt_03_c.256.ktx2
 /public/models/galaxy/bf2017/levels/bespin/tex/t_xwingcockpitwindowdirt_03_c.512.ktx2
-/public/models/galaxy/bf2017/levels/bespin/tracks.json
-/public/models/galaxy/bf2017/levels/bespin/vehicles.json
-/public/models/galaxy/bf2017/levels/endor/actors.json
 /public/models/galaxy/bf2017/levels/endor/cells/-1_5.bin
 /public/models/galaxy/bf2017/levels/endor/cells/-1_7.bin
 /public/models/galaxy/bf2017/levels/endor/cells/0_-1.bin
@@ -5849,11 +5830,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/cells/3_5.bin
 /public/models/galaxy/bf2017/levels/endor/cells/4_1.bin
 /public/models/galaxy/bf2017/levels/endor/cells/4_2.bin
-/public/models/galaxy/bf2017/levels/endor/decals.json
-/public/models/galaxy/bf2017/levels/endor/effects.json
 /public/models/galaxy/bf2017/levels/endor/far.bin
 /public/models/galaxy/bf2017/levels/endor/horizon.bin
-/public/models/galaxy/bf2017/levels/endor/lights.json
 /public/models/galaxy/bf2017/levels/endor/meshes/at_at_station_bunker_doorframe_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/endor/meshes/at_at_station_bunker_doorframe_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/endor/meshes/at_at_station_bunker_doorframe_01_mesh.lod2.glb
@@ -7853,8 +7831,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/physics/wreckcontainerhuge_02.bin
 /public/models/galaxy/bf2017/levels/endor/physics/wreckgeneric_l_01_skiplods_01.bin
 /public/models/galaxy/bf2017/levels/endor/physics/wreckgeneric_l_02.bin
-/public/models/galaxy/bf2017/levels/endor/probes.json
-/public/models/galaxy/bf2017/levels/endor/scatter.json
 /public/models/galaxy/bf2017/levels/endor/scatter/layers.png
 /public/models/galaxy/bf2017/levels/endor/scatter/ms_forestbase_log_01_a_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/endor/scatter/ms_forestbase_log_01_a_mesh.lod1.glb
@@ -8774,10 +8750,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/endor/tex/t_wings_nam__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_wings_nam__orm_c8effdfe.256.ktx2
 /public/models/galaxy/bf2017/levels/endor/tex/t_wings_nam__orm_c8effdfe.512.ktx2
-/public/models/galaxy/bf2017/levels/endor/tracks.json
-/public/models/galaxy/bf2017/levels/endor/vehicles.json
-/public/models/galaxy/bf2017/levels/hoth/actors.json
-/public/models/galaxy/bf2017/levels/hoth/base/actors.json
 /public/models/galaxy/bf2017/levels/hoth/base/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/hoth/base/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/hoth/base/cells/-1_-3.bin
@@ -8815,11 +8787,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/cells/2_-5.bin
 /public/models/galaxy/bf2017/levels/hoth/base/cells/3_-5.bin
 /public/models/galaxy/bf2017/levels/hoth/base/cells/3_2.bin
-/public/models/galaxy/bf2017/levels/hoth/base/decals.json
-/public/models/galaxy/bf2017/levels/hoth/base/effects.json
 /public/models/galaxy/bf2017/levels/hoth/base/far.bin
 /public/models/galaxy/bf2017/levels/hoth/base/horizon.bin
-/public/models/galaxy/bf2017/levels/hoth/base/lights.json
 /public/models/galaxy/bf2017/levels/hoth/base/meshes/arctic_corridorsnowpile_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/hoth/base/meshes/arctic_corridorsnowpile_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/hoth/base/meshes/arctic_corridorsnowpile_01_mesh.lod2.glb
@@ -11037,7 +11006,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/physics/xwing_t65_landmark.bin
 /public/models/galaxy/bf2017/levels/hoth/base/physics/ywing_landmark.bin
 /public/models/galaxy/bf2017/levels/hoth/base/physics/ywing_tarp_01.bin
-/public/models/galaxy/bf2017/levels/hoth/base/probes.json
 /public/models/galaxy/bf2017/levels/hoth/base/probes/15c03c92.nx.hdr
 /public/models/galaxy/bf2017/levels/hoth/base/probes/15c03c92.ny.hdr
 /public/models/galaxy/bf2017/levels/hoth/base/probes/15c03c92.nz.hdr
@@ -11074,7 +11042,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/probes/bc0b0160.px.hdr
 /public/models/galaxy/bf2017/levels/hoth/base/probes/bc0b0160.py.hdr
 /public/models/galaxy/bf2017/levels/hoth/base/probes/bc0b0160.pz.hdr
-/public/models/galaxy/bf2017/levels/hoth/base/scatter.json
 /public/models/galaxy/bf2017/levels/hoth/base/shadow/far.png
 /public/models/galaxy/bf2017/levels/hoth/base/tex/icechunks01_n__normal.128.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/icechunks01_n__normal.256.ktx2
@@ -11641,8 +11608,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_ywing_wings_01_nma__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_ywing_wings_01_nma__orm_e824b34a.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/base/tex/t_ywing_wings_01_nma__orm_e824b34a.512.ktx2
-/public/models/galaxy/bf2017/levels/hoth/base/tracks.json
-/public/models/galaxy/bf2017/levels/hoth/base/vehicles.json
 /public/models/galaxy/bf2017/levels/hoth/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/hoth/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/hoth/cells/-1_-3.bin
@@ -11798,12 +11763,9 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/cells/7_0.bin
 /public/models/galaxy/bf2017/levels/hoth/cells/7_1.bin
 /public/models/galaxy/bf2017/levels/hoth/cells/7_4.bin
-/public/models/galaxy/bf2017/levels/hoth/decals.json
-/public/models/galaxy/bf2017/levels/hoth/effects.json
 /public/models/galaxy/bf2017/levels/hoth/far.bin
 /public/models/galaxy/bf2017/levels/hoth/ground/masks.png
 /public/models/galaxy/bf2017/levels/hoth/horizon.bin
-/public/models/galaxy/bf2017/levels/hoth/lights.json
 /public/models/galaxy/bf2017/levels/hoth/meshes/arctic_entrance_small_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/hoth/meshes/arctic_entrance_small_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/hoth/meshes/arctic_entrance_small_01_mesh.lod2.glb
@@ -12281,7 +12243,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/meshes/transporterpersonel_01_mesh.lod4.glb
 /public/models/galaxy/bf2017/levels/hoth/meshes/transporterpersonel_01_mesh.lod5.glb
 /public/models/galaxy/bf2017/levels/hoth/nav.bin
-/public/models/galaxy/bf2017/levels/hoth/outpost/actors.json
 /public/models/galaxy/bf2017/levels/hoth/outpost/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/hoth/outpost/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/hoth/outpost/cells/-1_-3.bin
@@ -12434,11 +12395,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/outpost/cells/7_2.bin
 /public/models/galaxy/bf2017/levels/hoth/outpost/cells/7_4.bin
 /public/models/galaxy/bf2017/levels/hoth/outpost/cells/7_5.bin
-/public/models/galaxy/bf2017/levels/hoth/outpost/decals.json
-/public/models/galaxy/bf2017/levels/hoth/outpost/effects.json
 /public/models/galaxy/bf2017/levels/hoth/outpost/far.bin
 /public/models/galaxy/bf2017/levels/hoth/outpost/horizon.bin
-/public/models/galaxy/bf2017/levels/hoth/outpost/lights.json
 /public/models/galaxy/bf2017/levels/hoth/outpost/meshes/arctic_entrance_small_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/hoth/outpost/meshes/arctic_entrance_small_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/hoth/outpost/meshes/arctic_entrance_small_01_mesh.lod2.glb
@@ -13041,9 +12999,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/outpost/physics/vehicle_air_tiefighter_static_donotuse.bin
 /public/models/galaxy/bf2017/levels/hoth/outpost/physics/vehicle_air_uwing_static_donotuse.bin
 /public/models/galaxy/bf2017/levels/hoth/outpost/physics/vehicle_markii_deployed.bin
-/public/models/galaxy/bf2017/levels/hoth/outpost/probes.json
-/public/models/galaxy/bf2017/levels/hoth/outpost/recipes.json
-/public/models/galaxy/bf2017/levels/hoth/outpost/scatter.json
 /public/models/galaxy/bf2017/levels/hoth/outpost/terrain/far.png
 /public/models/galaxy/bf2017/levels/hoth/outpost/terrain/near.png
 /public/models/galaxy/bf2017/levels/hoth/outpost/tex/t_arcticbase_rock_large_01_c.1024.ktx2
@@ -13355,8 +13310,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/outpost/tex/t_transporterpersonel_shell_01_nam__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/outpost/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.128.ktx2
 /public/models/galaxy/bf2017/levels/hoth/outpost/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.256.ktx2
-/public/models/galaxy/bf2017/levels/hoth/outpost/tracks.json
-/public/models/galaxy/bf2017/levels/hoth/outpost/vehicles.json
 /public/models/galaxy/bf2017/levels/hoth/physics/airspeeder_static_donotuse.bin
 /public/models/galaxy/bf2017/levels/hoth/physics/arctic_corridorsnowpile_01.bin
 /public/models/galaxy/bf2017/levels/hoth/physics/arctic_corridorsnowpile_02.bin
@@ -13806,7 +13759,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/physics/xwing_t65_landmark.bin
 /public/models/galaxy/bf2017/levels/hoth/physics/ywing_landmark.bin
 /public/models/galaxy/bf2017/levels/hoth/physics/ywing_tarp_01.bin
-/public/models/galaxy/bf2017/levels/hoth/probes.json
 /public/models/galaxy/bf2017/levels/hoth/probes/15c03c92.nx.hdr
 /public/models/galaxy/bf2017/levels/hoth/probes/15c03c92.ny.hdr
 /public/models/galaxy/bf2017/levels/hoth/probes/15c03c92.nz.hdr
@@ -13879,7 +13831,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/probes/d8829e68.px.hdr
 /public/models/galaxy/bf2017/levels/hoth/probes/d8829e68.py.hdr
 /public/models/galaxy/bf2017/levels/hoth/probes/d8829e68.pz.hdr
-/public/models/galaxy/bf2017/levels/hoth/scatter.json
 /public/models/galaxy/bf2017/levels/hoth/shadow/far.png
 /public/models/galaxy/bf2017/levels/hoth/terrain/far.png
 /public/models/galaxy/bf2017/levels/hoth/terrain/near.png
@@ -14186,8 +14137,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/tex/t_transporterpersonel_shell_01_nam__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.128.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.256.ktx2
-/public/models/galaxy/bf2017/levels/hoth/tracks.json
-/public/models/galaxy/bf2017/levels/hoth/vehicles.json
 /public/models/galaxy/bf2017/levels/sb_droidbattleship/cells/-10_-1.bin
 /public/models/galaxy/bf2017/levels/sb_droidbattleship/cells/-10_-2.bin
 /public/models/galaxy/bf2017/levels/sb_droidbattleship/cells/-10_-3.bin
@@ -18668,7 +18617,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/sb_kamino/tex/venatorstardestroyer_window_01_ns__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/sb_kamino/tex/venatorstardestroyer_window_01_ns__orm_934c7a36.256.ktx2
 /public/models/galaxy/bf2017/levels/sb_kamino/tex/venatorstardestroyer_window_01_ns__orm_934c7a36.512.ktx2
-/public/models/galaxy/bf2017/levels/scarif/actors.json
 /public/models/galaxy/bf2017/levels/scarif/cells/-1_-1.bin
 /public/models/galaxy/bf2017/levels/scarif/cells/-1_-2.bin
 /public/models/galaxy/bf2017/levels/scarif/cells/-1_-3.bin
@@ -18733,11 +18681,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/scarif/cells/5_3.bin
 /public/models/galaxy/bf2017/levels/scarif/cells/6_2.bin
 /public/models/galaxy/bf2017/levels/scarif/cells/6_3.bin
-/public/models/galaxy/bf2017/levels/scarif/decals.json
-/public/models/galaxy/bf2017/levels/scarif/effects.json
 /public/models/galaxy/bf2017/levels/scarif/far.bin
 /public/models/galaxy/bf2017/levels/scarif/horizon.bin
-/public/models/galaxy/bf2017/levels/scarif/lights.json
 /public/models/galaxy/bf2017/levels/scarif/meshes/atat_wreck_01_mesh.lod4.glb
 /public/models/galaxy/bf2017/levels/scarif/meshes/atat_wreck_01_mesh.lod5.glb
 /public/models/galaxy/bf2017/levels/scarif/meshes/barrack01_mainentrance01_scarif_02_mesh.lod0.glb
@@ -19928,9 +19873,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/scarif/physics/wreckgeneric_m_04.bin
 /public/models/galaxy/bf2017/levels/scarif/physics/xwingwreckpropbody_valley_01.bin
 /public/models/galaxy/bf2017/levels/scarif/physics/xwingwreckpropbody_valley_01_burning.bin
-/public/models/galaxy/bf2017/levels/scarif/probes.json
-/public/models/galaxy/bf2017/levels/scarif/recipes.json
-/public/models/galaxy/bf2017/levels/scarif/scatter.json
 /public/models/galaxy/bf2017/levels/scarif/shadow/far.png
 /public/models/galaxy/bf2017/levels/scarif/terrain/far.png
 /public/models/galaxy/bf2017/levels/scarif/terrain/near.png
@@ -20420,8 +20362,6 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/scarif/tex/t_xwing_01_rgbm__orm_9a306279.256.ktx2
 /public/models/galaxy/bf2017/levels/scarif/tex/t_xwing_01_rgbm__orm_c83d959d.128.ktx2
 /public/models/galaxy/bf2017/levels/scarif/tex/t_xwing_01_rgbm__orm_c83d959d.256.ktx2
-/public/models/galaxy/bf2017/levels/scarif/tracks.json
-/public/models/galaxy/bf2017/levels/scarif/vehicles.json
 /public/models/galaxy/bf2017/scenes/hoth-outro.glb
 /public/models/galaxy/bf2017/scenes/intro-anakin.glb
 /public/models/galaxy/bf2017/scenes/intro-bobafett.glb

@@ -5141,12 +5141,6 @@
     "from": "models/galaxy/bf2017/fx/scorch.metal.512.ktx2",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/actors.json": {
-    "hash": "7d1b05c1a3d0",
-    "bytes": 89,
-    "from": "models/galaxy/bf2017/levels/bespin/actors.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/cells/-1_-1.bin": {
     "hash": "1c165a7e8dd7",
     "bytes": 53984,
@@ -5681,18 +5675,6 @@
     "from": "models/galaxy/bf2017/levels/bespin/cells/5_7.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/decals.json": {
-    "hash": "addcc5627a4a",
-    "bytes": 118,
-    "from": "models/galaxy/bf2017/levels/bespin/decals.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/effects.json": {
-    "hash": "3976969df2da",
-    "bytes": 9524,
-    "from": "models/galaxy/bf2017/levels/bespin/effects.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/far.bin": {
     "hash": "3a3fa406dca5",
     "bytes": 164064,
@@ -5703,18 +5685,6 @@
     "hash": "4a3e48c8df7f",
     "bytes": 18944,
     "from": "models/galaxy/bf2017/levels/bespin/horizon.bin",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/lights.json": {
-    "hash": "f50290e6f7be",
-    "bytes": 36403,
-    "from": "models/galaxy/bf2017/levels/bespin/lights.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/m2bes/actors.json": {
-    "hash": "690983dcfbc5",
-    "bytes": 266,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/actors.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/m2bes/cells/-1_-1.bin": {
@@ -6797,18 +6767,6 @@
     "from": "models/galaxy/bf2017/levels/bespin/m2bes/cells/7_5.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/m2bes/decals.json": {
-    "hash": "071e5dcb77cf",
-    "bytes": 13395,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/decals.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/m2bes/effects.json": {
-    "hash": "456fe14481d6",
-    "bytes": 29266,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/effects.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/m2bes/far.bin": {
     "hash": "1999d194794b",
     "bytes": 296768,
@@ -6819,12 +6777,6 @@
     "hash": "8de33c5ca5db",
     "bytes": 103936,
     "from": "models/galaxy/bf2017/levels/bespin/m2bes/horizon.bin",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/m2bes/lights.json": {
-    "hash": "789585c32a7c",
-    "bytes": 175158,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/lights.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/m2bes/meshes/alarmwall_s_01_mesh.lod0.glb": {
@@ -20129,24 +20081,6 @@
     "from": "models/galaxy/bf2017/levels/bespin/m2bes/physics/xp0_tiewreckleftwing_01.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/m2bes/probes.json": {
-    "hash": "1b587cc777d3",
-    "bytes": 27,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/probes.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/m2bes/recipes.json": {
-    "hash": "b5b7574f06e2",
-    "bytes": 451617,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/recipes.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/m2bes/scatter.json": {
-    "hash": "ca3d163bab05",
-    "bytes": 3,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/scatter.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/m2bes/tex/gadget_detonitecharge_sp_cs.128.ktx2": {
     "hash": "e61138c9f0aa",
     "bytes": 21827,
@@ -24993,18 +24927,6 @@
     "hash": "5bbdac9ae3b7",
     "bytes": 278674,
     "from": "models/galaxy/bf2017/levels/bespin/m2bes/tex/t_xwingcockpitwindowdirt_03_c.512.ktx2",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/m2bes/tracks.json": {
-    "hash": "48bd6a0fbba2",
-    "bytes": 33512,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/tracks.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/m2bes/vehicles.json": {
-    "hash": "dcf6f2e8a2b8",
-    "bytes": 353,
-    "from": "models/galaxy/bf2017/levels/bespin/m2bes/vehicles.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/meshes/backdrop_buildings_farbackdrop_cluster_01_mesh.lod0.glb": {
@@ -31079,12 +31001,6 @@
     "from": "models/galaxy/bf2017/levels/bespin/physics/xwing_t65_landmark.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/probes.json": {
-    "hash": "693b683a49b4",
-    "bytes": 10871,
-    "from": "models/galaxy/bf2017/levels/bespin/probes.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/probes/07e85542.nx.hdr": {
     "hash": "beeec41de39d",
     "bytes": 16431,
@@ -32595,18 +32511,6 @@
     "hash": "558d1cfdebbe",
     "bytes": 16431,
     "from": "models/galaxy/bf2017/levels/bespin/probes/ff19f396.pz.hdr",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/recipes.json": {
-    "hash": "d66186cd533f",
-    "bytes": 207543,
-    "from": "models/galaxy/bf2017/levels/bespin/recipes.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/scatter.json": {
-    "hash": "ca3d163bab05",
-    "bytes": 3,
-    "from": "models/galaxy/bf2017/levels/bespin/scatter.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/shadow/far.png": {
@@ -34433,24 +34337,6 @@
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_xwingcockpitwindowdirt_03_c.512.ktx2",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/tracks.json": {
-    "hash": "f57bcb5180b7",
-    "bytes": 1191,
-    "from": "models/galaxy/bf2017/levels/bespin/tracks.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/vehicles.json": {
-    "hash": "831cb27f06d5",
-    "bytes": 39,
-    "from": "models/galaxy/bf2017/levels/bespin/vehicles.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/endor/actors.json": {
-    "hash": "41b92a64c5d5",
-    "bytes": 3445,
-    "from": "models/galaxy/bf2017/levels/endor/actors.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/endor/cells/-1_5.bin": {
     "hash": "e6cb2093f484",
     "bytes": 32,
@@ -34685,18 +34571,6 @@
     "from": "models/galaxy/bf2017/levels/endor/cells/4_2.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/endor/decals.json": {
-    "hash": "879c102ddc8d",
-    "bytes": 146,
-    "from": "models/galaxy/bf2017/levels/endor/decals.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/endor/effects.json": {
-    "hash": "ebc41b27caf9",
-    "bytes": 161405,
-    "from": "models/galaxy/bf2017/levels/endor/effects.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/endor/far.bin": {
     "hash": "52cc0e208908",
     "bytes": 414688,
@@ -34707,12 +34581,6 @@
     "hash": "79ed45441eec",
     "bytes": 96,
     "from": "models/galaxy/bf2017/levels/endor/horizon.bin",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/endor/lights.json": {
-    "hash": "c7ae8f9ff9b1",
-    "bytes": 192786,
-    "from": "models/galaxy/bf2017/levels/endor/lights.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/endor/meshes/at_at_station_bunker_doorframe_01_mesh.lod0.glb": {
@@ -46709,18 +46577,6 @@
     "from": "models/galaxy/bf2017/levels/endor/physics/wreckgeneric_l_02.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/endor/probes.json": {
-    "hash": "d9f013b9917b",
-    "bytes": 46,
-    "from": "models/galaxy/bf2017/levels/endor/probes.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/endor/scatter.json": {
-    "hash": "a0c87477e574",
-    "bytes": 255826,
-    "from": "models/galaxy/bf2017/levels/endor/scatter.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/endor/scatter/layers.png": {
     "hash": "30262d95dd3a",
     "bytes": 69760,
@@ -52235,30 +52091,6 @@
     "from": "models/galaxy/bf2017/levels/endor/tex/t_wings_nam__orm_c8effdfe.512.ktx2",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/endor/tracks.json": {
-    "hash": "f6b9acb06657",
-    "bytes": 7778,
-    "from": "models/galaxy/bf2017/levels/endor/tracks.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/endor/vehicles.json": {
-    "hash": "28cac4732211",
-    "bytes": 760,
-    "from": "models/galaxy/bf2017/levels/endor/vehicles.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/actors.json": {
-    "hash": "f56eb97d4dd4",
-    "bytes": 1044,
-    "from": "models/galaxy/bf2017/levels/hoth/actors.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/base/actors.json": {
-    "hash": "f56eb97d4dd4",
-    "bytes": 1044,
-    "from": "models/galaxy/bf2017/levels/hoth/base/actors.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/base/cells/-1_-1.bin": {
     "hash": "d345c8d0c93a",
     "bytes": 54048,
@@ -52481,18 +52313,6 @@
     "from": "models/galaxy/bf2017/levels/hoth/base/cells/3_2.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/hoth/base/decals.json": {
-    "hash": "879c102ddc8d",
-    "bytes": 146,
-    "from": "models/galaxy/bf2017/levels/hoth/base/decals.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/base/effects.json": {
-    "hash": "66b234dd3b41",
-    "bytes": 57299,
-    "from": "models/galaxy/bf2017/levels/hoth/base/effects.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/base/far.bin": {
     "hash": "16615c6808b0",
     "bytes": 464416,
@@ -52503,12 +52323,6 @@
     "hash": "e3b0c44298fc",
     "bytes": 0,
     "from": "models/galaxy/bf2017/levels/hoth/base/horizon.bin",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/base/lights.json": {
-    "hash": "4f92341d7349",
-    "bytes": 90903,
-    "from": "models/galaxy/bf2017/levels/hoth/base/lights.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/base/meshes/arctic_corridorsnowpile_01_mesh.lod0.glb": {
@@ -65813,12 +65627,6 @@
     "from": "models/galaxy/bf2017/levels/hoth/base/physics/ywing_tarp_01.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/hoth/base/probes.json": {
-    "hash": "2ba673e80ab2",
-    "bytes": 1568,
-    "from": "models/galaxy/bf2017/levels/hoth/base/probes.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/base/probes/15c03c92.nx.hdr": {
     "hash": "c9d530d4c8dc",
     "bytes": 16431,
@@ -66033,12 +65841,6 @@
     "hash": "0f06a77f4010",
     "bytes": 16431,
     "from": "models/galaxy/bf2017/levels/hoth/base/probes/bc0b0160.pz.hdr",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/base/scatter.json": {
-    "hash": "abf702fa28f8",
-    "bytes": 48945,
-    "from": "models/galaxy/bf2017/levels/hoth/base/scatter.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/base/shadow/far.png": {
@@ -69437,18 +69239,6 @@
     "from": "models/galaxy/bf2017/levels/hoth/base/tex/t_ywing_wings_01_nma__orm_e824b34a.512.ktx2",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/hoth/base/tracks.json": {
-    "hash": "f57bcb5180b7",
-    "bytes": 1191,
-    "from": "models/galaxy/bf2017/levels/hoth/base/tracks.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/base/vehicles.json": {
-    "hash": "9cc32dceabec",
-    "bytes": 1770,
-    "from": "models/galaxy/bf2017/levels/hoth/base/vehicles.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/cells/-1_-1.bin": {
     "hash": "b4f296f3a6a2",
     "bytes": 4576,
@@ -70379,18 +70169,6 @@
     "from": "models/galaxy/bf2017/levels/hoth/cells/7_4.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/hoth/decals.json": {
-    "hash": "879c102ddc8d",
-    "bytes": 146,
-    "from": "models/galaxy/bf2017/levels/hoth/decals.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/effects.json": {
-    "hash": "deb133b7cd78",
-    "bytes": 57626,
-    "from": "models/galaxy/bf2017/levels/hoth/effects.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/far.bin": {
     "hash": "952192f556e4",
     "bytes": 186080,
@@ -70407,12 +70185,6 @@
     "hash": "781a29233336",
     "bytes": 7552,
     "from": "models/galaxy/bf2017/levels/hoth/horizon.bin",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/lights.json": {
-    "hash": "4f92341d7349",
-    "bytes": 90903,
-    "from": "models/galaxy/bf2017/levels/hoth/lights.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/meshes/arctic_entrance_small_01_mesh.lod0.glb": {
@@ -73277,12 +73049,6 @@
     "from": "models/galaxy/bf2017/levels/hoth/nav.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/hoth/outpost/actors.json": {
-    "hash": "27454fc6e94c",
-    "bytes": 188,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/actors.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/outpost/cells/-1_-1.bin": {
     "hash": "2a51e3490882",
     "bytes": 11552,
@@ -74195,18 +73961,6 @@
     "from": "models/galaxy/bf2017/levels/hoth/outpost/cells/7_5.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/hoth/outpost/decals.json": {
-    "hash": "addcc5627a4a",
-    "bytes": 118,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/decals.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/outpost/effects.json": {
-    "hash": "e5a87b477cb5",
-    "bytes": 20591,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/effects.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/outpost/far.bin": {
     "hash": "bef682dabb26",
     "bytes": 186688,
@@ -74217,12 +73971,6 @@
     "hash": "89041eba529b",
     "bytes": 10848,
     "from": "models/galaxy/bf2017/levels/hoth/outpost/horizon.bin",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/outpost/lights.json": {
-    "hash": "abd2df1bbbec",
-    "bytes": 1255,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/lights.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/outpost/meshes/arctic_entrance_small_01_mesh.lod0.glb": {
@@ -77837,24 +77585,6 @@
     "from": "models/galaxy/bf2017/levels/hoth/outpost/physics/vehicle_markii_deployed.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/hoth/outpost/probes.json": {
-    "hash": "9feb18e302c8",
-    "bytes": 68,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/probes.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/outpost/recipes.json": {
-    "hash": "517e3d4544c6",
-    "bytes": 76049,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/recipes.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/outpost/scatter.json": {
-    "hash": "55e2ae6f560b",
-    "bytes": 53571,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/scatter.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/outpost/terrain/far.png": {
     "hash": "3a627ef836ce",
     "bytes": 2307053,
@@ -79719,18 +79449,6 @@
     "hash": "9120bbd9b15c",
     "bytes": 72443,
     "from": "models/galaxy/bf2017/levels/hoth/outpost/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.256.ktx2",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/outpost/tracks.json": {
-    "hash": "f57bcb5180b7",
-    "bytes": 1191,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/tracks.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/outpost/vehicles.json": {
-    "hash": "2c7aa7c7d230",
-    "bytes": 1327,
-    "from": "models/galaxy/bf2017/levels/hoth/outpost/vehicles.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/physics/airspeeder_static_donotuse.bin": {
@@ -82427,12 +82145,6 @@
     "from": "models/galaxy/bf2017/levels/hoth/physics/ywing_tarp_01.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/hoth/probes.json": {
-    "hash": "2ba673e80ab2",
-    "bytes": 1568,
-    "from": "models/galaxy/bf2017/levels/hoth/probes.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/hoth/probes/15c03c92.nx.hdr": {
     "hash": "c9d530d4c8dc",
     "bytes": 16431,
@@ -82863,12 +82575,6 @@
     "hash": "d804f017c137",
     "bytes": 16431,
     "from": "models/galaxy/bf2017/levels/hoth/probes/d8829e68.pz.hdr",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/scatter.json": {
-    "hash": "abf702fa28f8",
-    "bytes": 48945,
-    "from": "models/galaxy/bf2017/levels/hoth/scatter.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/shadow/far.png": {
@@ -84705,18 +84411,6 @@
     "hash": "9120bbd9b15c",
     "bytes": 72443,
     "from": "models/galaxy/bf2017/levels/hoth/tex/t_transporterpersonel_shell_01_nam__orm_fa6f4252.256.ktx2",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/tracks.json": {
-    "hash": "f57bcb5180b7",
-    "bytes": 1191,
-    "from": "models/galaxy/bf2017/levels/hoth/tracks.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/hoth/vehicles.json": {
-    "hash": "9cc32dceabec",
-    "bytes": 1770,
-    "from": "models/galaxy/bf2017/levels/hoth/vehicles.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/sb_droidbattleship/cells/-10_-1.bin": {
@@ -111599,12 +111293,6 @@
     "from": "models/galaxy/bf2017/levels/sb_kamino/tex/venatorstardestroyer_window_01_ns__orm_934c7a36.512.ktx2",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/scarif/actors.json": {
-    "hash": "6ed1582ffadf",
-    "bytes": 133,
-    "from": "models/galaxy/bf2017/levels/scarif/actors.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/scarif/cells/-1_-1.bin": {
     "hash": "f0e93d811c7d",
     "bytes": 34304,
@@ -111989,18 +111677,6 @@
     "from": "models/galaxy/bf2017/levels/scarif/cells/6_3.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/scarif/decals.json": {
-    "hash": "addcc5627a4a",
-    "bytes": 118,
-    "from": "models/galaxy/bf2017/levels/scarif/decals.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/scarif/effects.json": {
-    "hash": "b9614ac47b1d",
-    "bytes": 1836,
-    "from": "models/galaxy/bf2017/levels/scarif/effects.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/scarif/far.bin": {
     "hash": "96d3245d72d9",
     "bytes": 140160,
@@ -112011,12 +111687,6 @@
     "hash": "50414c067a49",
     "bytes": 3776,
     "from": "models/galaxy/bf2017/levels/scarif/horizon.bin",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/scarif/lights.json": {
-    "hash": "d3f2e01bbd48",
-    "bytes": 2494,
-    "from": "models/galaxy/bf2017/levels/scarif/lights.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/scarif/meshes/atat_wreck_01_mesh.lod4.glb": {
@@ -119159,24 +118829,6 @@
     "from": "models/galaxy/bf2017/levels/scarif/physics/xwingwreckpropbody_valley_01_burning.bin",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/scarif/probes.json": {
-    "hash": "4a038bafb586",
-    "bytes": 46,
-    "from": "models/galaxy/bf2017/levels/scarif/probes.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/scarif/recipes.json": {
-    "hash": "e755ff12936f",
-    "bytes": 172258,
-    "from": "models/galaxy/bf2017/levels/scarif/recipes.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/scarif/scatter.json": {
-    "hash": "ca3d163bab05",
-    "bytes": 3,
-    "from": "models/galaxy/bf2017/levels/scarif/scatter.json",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/scarif/shadow/far.png": {
     "hash": "505f50d59af3",
     "bytes": 856146,
@@ -122109,18 +121761,6 @@
     "hash": "f19eb8b646a1",
     "bytes": 76228,
     "from": "models/galaxy/bf2017/levels/scarif/tex/t_xwing_01_rgbm__orm_c83d959d.256.ktx2",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/scarif/tracks.json": {
-    "hash": "f57bcb5180b7",
-    "bytes": 1191,
-    "from": "models/galaxy/bf2017/levels/scarif/tracks.json",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/scarif/vehicles.json": {
-    "hash": "831cb27f06d5",
-    "bytes": 39,
-    "from": "models/galaxy/bf2017/levels/scarif/vehicles.json",
     "tier": "pack"
   },
   "models/galaxy/bf2017/scenes/hoth-outro.glb": {
