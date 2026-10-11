@@ -4,7 +4,9 @@
 // a centre, a confidence from what the squad believes it faces and so a
 // posture (press, hold, retreat); and alerts, which spread from the one who
 // saw to the squadmates at the template's `AlertPropagationSpeed`, a belief
-// planted when the wave reaches each. Pure.
+// planted when the wave reaches each; and the target coordinator
+// (`targeting.js`'s `coordinate`), which hands each member the target the
+// AI system's coordinator would. Pure.
 //
 //   createSquads(sim) → squads       update(squads, sim) (every SQUAD s)
 //   alert(squads, from, { id, at }, now)      deliver(squads, sim, now) → alerts that arrived
@@ -15,6 +17,7 @@
 
 import { confidence, posture } from '../../ai/squad.js';
 import SQUADS from '../../../data/bf2017/squads.json';
+import { coordinate, scoreTargets } from './targeting.js';
 
 // Soldiers a squad: the game's (squads.json: TacticalSpawnManagerEntityData.MaxPlayersPerSquad).
 export const SQUAD_SIZE = SQUADS.rows.size;
@@ -113,6 +116,7 @@ export function update(squads, sim) {
       continue;
     }
     sq.centre = [alive.reduce((n, m) => n + m.at[0], 0) / alive.length, alive.reduce((n, m) => n + m.at[2], 0) / alive.length];
+    assign(alive, sim);
     // the enemies any member believes in within the fight's reach, against every friend in that reach
     const reach = REACH;
     const near = (p) => Math.hypot(p[0] - sq.centre[0], p[1] - sq.centre[1]) <= reach;
@@ -133,6 +137,16 @@ export function update(squads, sim) {
     sq.level = c.level;
     sq.posture = posture(c.level);
   }
+}
+
+// each member's scored targets through the coordinator: brain.assigned
+function assign(alive, sim) {
+  const brains = alive.filter((m) => m.brain?.system);
+  if (!brains.length) return;
+  const who = (id) => sim.entities.get(id) ?? null;
+  const scores = new Map(brains.map((m) => [m.id, scoreTargets(m.brain, Object.values(m.brain.me.beliefs ?? {}).filter((b) => b.hostile), { system: m.brain.system, who, current: m.brain.target })]));
+  const picks = coordinate(scores, { system: brains[0].brain.system });
+  for (const m of brains) m.brain.assigned = picks.get(m.id) ?? null;
 }
 
 export function alert(squads, from, seen, now) {

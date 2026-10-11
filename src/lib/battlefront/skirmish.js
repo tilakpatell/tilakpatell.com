@@ -12,8 +12,8 @@ import { createSim, step } from './sim.js';
 // 20 s at the step: the arena's "no bot stands still" rule.
 export const STUCK_STEPS = 400;
 
-export function runSkirmish({ rulebook, nav, seed = 1, bots = 20, seconds = 180, onStep = null }) {
-  const sim = createSim({ rulebook, nav, seed, bots: { 1: bots, 2: bots } });
+export function runSkirmish({ rulebook, nav, seed = 1, bots = 20, seconds = 180, onStep = null, difficulty = null, pve = false }) {
+  const sim = createSim({ rulebook, nav, seed, bots: { 1: bots, 2: bots }, difficulty, pve });
   const still = new Map();
   const stuck = new Set();
   let offNav = 0;

@@ -29,6 +29,9 @@ describe('the data CLI', () => {
     expect(fileOf('lighting', 'hoth_01')).toBe('maps/hoth.lighting.json');
     expect(fileOf('lighting', 'hoth_02')).toBe('maps/hoth.2.lighting.json');
     expect(fileOf('weapons', 'hoth_01')).toBe('weapons.json');
+    expect(fileOf('aiNames', 'hoth_01')).toBe('ai.names.json');
+    expect(fileOf('aiCreatures', 'hoth_01')).toBe('ai.creatures.json');
+    expect(fileOf('aiSquadron', 'hoth_01')).toBe('ai.squadron.json');
   });
 
   it('a dry run writes nothing and still counts', () => {
