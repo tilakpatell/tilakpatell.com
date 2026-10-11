@@ -61,3 +61,11 @@ The game's shapes (`node scripts/bf2017-physics.mjs`).
 | -1,-5 | 929 | 94149 |
 | 1,-3 | 368 | 36226 |
 <!-- /physics -->
+
+## Variations
+
+Written by `node scripts/bf2017-variations.mjs kamino/venator` from the level's 25 mesh variation databases (variations.json, 1.20 MB).
+
+| meshes | with variations | applied by instances | by the level rule | mixed (default drawn) | textures missing from the bucket | maps not in the pack |
+|---|---|---|---|---|---|---|
+| 1357 | 175 | 90 | 1 | 65 | 138 | 0 |
