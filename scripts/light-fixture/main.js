@@ -7,6 +7,7 @@
 // volumeWorld.js instead).
 
 import { createWebGPU } from '../../src/runtime/webgpu.js';
+import { createGpuTime } from '../../src/lib/three/gpuTime.js';
 import lit from '../../src/runtime/fixtures/litWorld.js';
 import volume from './volumeWorld.js';
 
@@ -23,7 +24,8 @@ window.addEventListener('unhandledrejection', (e) => (state.error ??= String(e.r
 
 try {
   // (TRAA wants no multisampling, and the post chain draws into its own targets)
-  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1, reversedDepth: fixture.reversed ?? null });
+  // (?traa=off: the reference shots' chain, without its temporal pass; scripts/reference-frames.mjs)
+  const gfx = await createWebGPU(canvas, { forceWebGL: q.get('gpu') === 'webgl', budget: { antialias: !fixture.post }, alpha: false, exposure: fixture.exposure ?? 1, reversedDepth: fixture.reversed ?? null, temporal: q.get('traa') !== 'off' });
   gfx.setSize(innerWidth, innerHeight);
   gfx.setRatio(1);
   const w = world.create({ gfx, fixture });
@@ -54,6 +56,8 @@ try {
     // silently to the standard one without EXT_clip_control over WebGL 2)
     reversed: gfx.reversedDepth === true,
     probe: w.probe,
+    // the camera moved by shot i's sub-pixel offset (lib/three/jitter), null to stop
+    jitter: (i) => gfx.jitter(i),
     // n frames of a fixed step, each on its own animation frame (a node
     // that updates once a frame, TRAA's history above all, resolves on the
     // next frame: drawn back to back in one task it never does, and the
@@ -71,6 +75,28 @@ try {
       const cpu = await w.probe.bakeGrid();
       await sync();
       return { cpu, total: performance.now() - t };
+    },
+    // the GPU clock against the frame waited on (the GPU-first design's G1
+    // gate: within 10 % on the laptop), frames drawn back to back for ms:
+    // each one's GPU time from the timestamps (lib/three/gpuTime) and its
+    // time from the draw call to the queue done; the medians of both, or
+    // gpu null where the adapter has no timestamp-query
+    async gpuClock(ms) {
+      const clock = createGpuTime(gfx.renderer);
+      const cpu = [];
+      const gpu = [];
+      const end = performance.now() + ms;
+      while (performance.now() < end || cpu.length < 10) {
+        await tick();
+        const t = performance.now();
+        frame(1 / 60);
+        await sync();
+        cpu.push(performance.now() - t);
+        await clock.frame();
+        if (clock.last != null) gpu.push(clock.last);
+      }
+      const med = (a) => (a.length ? [...a].sort((x, y) => x - y)[a.length >> 1] : null);
+      return { available: clock.available, frames: cpu.length, cpuMedian: med(cpu), gpuMedian: med(gpu), gpuRing: clock.median };
     },
     // frames drawn back to back for ms (at least five), each waited on:
     // the time each took, CPU and GPU (a headless page's animation frames

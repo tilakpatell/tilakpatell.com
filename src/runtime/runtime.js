@@ -9,8 +9,8 @@
 //
 // createRuntime({ makeBackend, loop, input, quality, saves, assets, audio,
 //   workers, origin, events, now, gpu, override, visible, calibrate, debug,
-//   gpuClock, fps }) → rt
-// rt: { gfx, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
+//   gpuClock, fps, tier }) → rt
+// rt: { gfx, tier, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
 //   failure, current, loading, on(fn), invalidate(), resize(w, h), setVisible(on), lost(),
 //   mount(module, props, host) → shown, handover(module, props, host, { fade, held, after }) → shown,
 //   adopt(module, host), unmount(), dispose(), requality(level) → 'tuned' |
@@ -38,6 +38,11 @@
 // the GPU clock never has its canvas resized by it (the output size
 // never changes: TAA's history). The loop's cadence is cadence.js's: every
 // second beat for a visitor who pins 30 (`fps`) or on lane N6's T0.
+// `tier` (gfx) → Promise<'T0' | 'T1' | 'T2' | null>: the device's renderer
+// tier (lib/gpuProbe, the GPU-first design's G1), asked once a page, before
+// the first 'nodes' world is made, so its one-second probe runs under the
+// loading screen and never in a world's frames; `rt.tier` holds the answer
+// (null until then, or when it could not say). A classic world never asks.
 
 import { createLoop } from '../lib/three/loop';
 import { cadenceFor } from './cadence';
@@ -76,7 +81,7 @@ export function createEvents() {
   };
 }
 
-export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null }) {
+export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null }) {
   let gfx = null;
   const clocks = new WeakMap(); // a renderer's GPU clock, made once (it turns on its timestamps)
   let kind = null; // the backend asked for
@@ -102,6 +107,8 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   let holdSince = null;
   let fresh = null; // the box of a mount not yet drawn, marked data-fresh
   let resized = null; // { w, h }: the box's new size, for the next frame to take
+  let tier = null; // the renderer tier, once asked (decideTier)
+  let tiering = null; // its one asking, shared by every mount meanwhile
   const listeners = new Set();
   const dev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
 
@@ -328,6 +335,18 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   const build = async (module, props, host, token, { early }) => {
     const made = await backendFor(module);
     if (token !== seq || !made) return null;
+    if (module.shading === 'nodes' && decideTier) {
+      tiering ??= Promise.resolve()
+        .then(() => decideTier(made))
+        .then(
+          (t) => (tier = t ?? null),
+          (err) => {
+            if (dev) console.warn('the renderer tier could not be decided', err);
+          },
+        );
+      await tiering;
+      if (token !== seq) return null;
+    }
     if (early) start(module);
     rt.host = host;
     assets.owner?.(module.id);
@@ -462,6 +481,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     host: null,
     get status() {
       return status;
+    },
+    get tier() {
+      return tier;
     },
     get failure() {
       return failure;

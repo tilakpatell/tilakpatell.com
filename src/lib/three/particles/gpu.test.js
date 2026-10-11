@@ -1,6 +1,9 @@
+import * as THREE from 'three/webgpu';
 import { describe, expect, it } from 'vitest';
 import SNOW from '../../../data/bf2017/fx/FX_Snow_FallingSnow_01_Hoth.json';
 import { createPool, MAX_BATCHES, MAX_OWNERS, OWNER, stepPool } from './emitter.js';
+import { COLLIDE } from './collide.js';
+import { depthPlane } from './fixtures/depthPlane.js';
 import { createSim, modeFor } from './gpu.js';
 
 // The compute pass itself runs in a browser: scripts/light-fixture.mjs
@@ -54,5 +57,45 @@ describe('the GPU path', () => {
     stepPool(ref, 1 / 60, { batches: many, owners });
     stepPool(ref, 1 / 60, { batches: [{ owner: 1, count: 5 }], owners });
     expect([ref.head, ref.serial]).toEqual([sim.pool.head, sim.pool.serial]);
+  });
+});
+
+// Rubble that falls on a floor (the debris burst's shape): a box 1 m up,
+// straight down, under gravity, three seconds' life
+const RUBBLE = { spawn: { position: { box: { center: [0, 1, 0], size: [2, 0, 2] } }, direction: { dir: [0, -1, 0], spread: 0 }, speed: 3, size: 0.1 }, lifetime: 3, gravity: { g: 9.8 }, drag: 0 };
+
+describe('the depth collision', () => {
+  const run = async (collide) => {
+    const sim = await createSim(RUBBLE, 64, { seed: 2, mode: 'cpu', collide: true });
+    const view = collide ? depthPlane() : null;
+    sim.step(1 / 60, { batches: [{ owner: 0, count: 64 }], owners, collide: view });
+    for (let f = 0; f < 60; f++) sim.step(1 / 60, { owners, collide: view });
+    const { posAge } = await sim.read();
+    return Array.from({ length: 64 }, (_, i) => posAge[i * 4 + 1]);
+  };
+
+  it('on the CPU path, rubble lands on the plane and stays on it; without depth it falls through', async () => {
+    const landed = await run(true);
+    const fell = await run(false);
+    expect(Math.min(...landed)).toBeGreaterThan(-COLLIDE.thickness);
+    expect(Math.max(...landed)).toBeLessThan(0.5);
+    expect(Math.max(...fell)).toBeLessThan(-1);
+  });
+
+  it('the kernel’s term compiles to WGSL that reads last frame’s depth with textureLoad', async () => {
+    const calls = [];
+    const fake = { isWebGPURenderer: true, backend: {}, compute: (node) => calls.push(node) };
+    const sim = await createSim(RUBBLE, 16, { renderer: fake, collide: true });
+    sim.step(1 / 60, { owners, collide: null });
+    const canvas = { style: {}, addEventListener() {}, removeEventListener() {}, getContext: () => null, width: 1, height: 1 };
+    const r = new THREE.WebGPURenderer({ canvas });
+    // (no device in Node: the builder asks for features and the sample count, and is told none)
+    r.hasFeature = () => false;
+    r.backend.renderer = r;
+    const b = new THREE.WGSLNodeBuilder(null, r);
+    b.compute = calls[0];
+    b.build();
+    expect(b.computeShader).toMatch(/texture_depth_2d/);
+    expect(b.computeShader.match(/textureLoad\(/g).length).toBeGreaterThanOrEqual(5);
   });
 });
