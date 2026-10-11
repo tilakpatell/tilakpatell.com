@@ -11,7 +11,7 @@ const HOTH_SUNNY = {
   exposure: 0.000086317,
   probeScale: 0.003392122,
   bloom: 1,
-  grading: { brightness: 1, contrast: 1, saturation: 1, lut: 'textures/galaxy/bf2017/light/hoth/sunny.lut.png', lutSize: 17 },
+  grading: { brightness: 1, contrast: 1, saturation: 1, lut: 'textures/galaxy/bf2017/light/hoth/sunny.lut.png', lutSize: 33 },
   wind: { dir: 0, strength: 5 },
 };
 

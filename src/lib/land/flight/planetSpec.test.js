@@ -132,7 +132,7 @@ describe('planetSpecOf', () => {
 // TERRAIN_VERSION is bumped and the new hash written beside it, so a turret
 // built on the old ground is put back on the new (the shared world's
 // buildRules.js) rather than left floating. (GROUND gains a line a version.)
-const GROUND = { 1: '3ae3a7e7' };
+const GROUND = { 1: '3ae3a7e7', 2: 'af2cf901' };
 function groundHash() {
   let h = 0x811c9dc5;
   const text = JSON.stringify(PLANETS.map(({ id }) => planetSpecOf(id)).map(({ id, seed, type, climate, biomes, pois, pits, step, soft }) => ({ id, seed, type, climate, biomes, pois, pits, step, soft })));

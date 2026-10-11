@@ -17,7 +17,7 @@
 import { withFallback } from '../../../lib/assetBase.js';
 import { detailLevel } from '../../../lib/detail.js';
 import { ktx2Loader } from '../../../lib/three/gltf.js';
-import { recipeMaps } from './level/levelGltf.js';
+import { recipeMaps, sharpenPack } from './level/levelGltf.js';
 import { tierTexture } from './level/levelPack.js';
 import { gameWordOf } from './level/levelGltf.js';
 
@@ -34,12 +34,14 @@ const fetchJson = (url) => {
   return jsons.get(url);
 };
 const textures = new Map();
-const loadTextureFor = (renderer) => (url) => {
+// (each map at the tier's anisotropy, as a level pack's: levelGltf.js's sharpenPack)
+const loadTextureFor = (renderer, tier) => (url) => {
   if (!textures.has(url))
     textures.set(
       url,
       ktx2Loader({ renderer })
         .then((k) => withFallback((u) => k.loadAsync(u))(url))
+        .then((t) => sharpenPack(t, tier, renderer))
         .catch(() => null),
     );
   return textures.get(url);
@@ -51,7 +53,7 @@ const makeMaterial = async () => {
 };
 const shared = new Map(); // tier → WeakMap(GLB material → Promise<game material>)
 
-export async function dressCrew(model, kind, { renderer = null, tier, cache = null, fetchJson: getJson = fetchJson, loadTexture = loadTextureFor(renderer), make = null }) {
+export async function dressCrew(model, kind, { renderer = null, tier, cache = null, fetchJson: getJson = fetchJson, loadTexture = loadTextureFor(renderer, tier), make = null }) {
   if (tier === 'low') return 0;
   const json = await getJson(`${DIR}${kind}.recipes.json`);
   if (!json?.materials) return 0;

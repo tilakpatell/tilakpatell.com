@@ -1,0 +1,79 @@
+http://127.0.0.1:5188/#/galaxy/geonosis/surface in chrome, in software
+  the world's up in 24 s, 68 figures drawn; settling 4 s
+note: only 18 frames in 66 s (asked for 20): the world drew slowly, or stopped drawing
+#/galaxy/geonosis/surface: 76 figures in 2 scenes, 0 in view; 18 frames, 66.4 s on the wall, 1.4 s in the world (by the wall clock)
+  drift m/s  left   right  view  playing         figure
+     0.000  0.000  0.000  out   (no clip)       droideka_01_mesh#1
+     0.000  0.000  0.000  out   (no clip)       droideka_01_mesh#3
+     0.000  0.000  0.000  out   (no clip)       droideka_01_mesh#5
+     0.000  0.000  0.000  out   (no clip)       droideka_01_mesh#7
+     0.000  0.000  0.000  out   (no clip)       droideka_01_mesh#9
+     0.000  0.000  0.000  out   (no clip)       at_te_mesh#11 (by its feet)
+     0.000  0.000  0.000  out   (no clip)       at_te_mesh#13 (by its feet)
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#14 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#15 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#16 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#17 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#18 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#19 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#20 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#21 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#22 (by its feet) BIND
+     0.000  0.000  0.000  out   Armature|Idle|  life#23
+     0.000  0.000  0.000  out   Armature|Idle|  life#24
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#31 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#32 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#33 (by its feet) BIND
+     0.000  0.000  0.000  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#34 (by its feet) BIND
+     0.000  0.000  0.000  out   idle 0.57       c3p0_mesh#35
+     0.000  0.000  0.000  out   idle 0.08       l_assault_preq_01_mesh#36
+     0.000  0.000  0.000  out   idle 0.53       l_assault_preq_01_mesh#37
+     0.000  0.000  0.000  out   idle 0.61       l_assault_preq_01_mesh#38
+     0.000  0.000  0.000  out   idle 0.12       l_assault_preq_01_mesh#39
+     0.000  0.000  0.000  out   Armature|Idle|  life#40
+     0.000  0.000  0.000  out   Armature|Idle|  life#41
+     0.000  0.000  0.000  out   Armature|Idle|  life#42
+     0.000  0.000  0.000  out   Armature|Idle|  life#43
+     0.000  0.000  0.000  out   Armature|Idle|  life#44
+     0.000  0.000  0.000  out   Armature|Idle|  life#45
+     0.000  0.000  0.000  out   Armature|Idle|  life#46
+     0.000  0.000  0.000  out   Armature|Idle|  life#47
+     0.000  0.000  0.000  out   Armature|Idle|  life#48
+     0.000  0.000  0.000  out   Armature|Idle|  life#49
+     0.000  0.000  0.000  out   Armature|Idle|  life#50
+     0.000  0.000  0.000  out   Armature|Idle|  life#51
+     0.000  0.000  0.000  out   Armature|Idle|  life#52
+     0.000  0.000  0.000  out   Armature|Idle|  life#53
+     0.000  0.000  0.000  out   Armature|Idle|  life#54
+     0.000  0.000  0.000  out   Armature|Idle|  life#55
+     0.000  0.000  0.000  out   Armature|Idle|  life#56
+     0.000  0.000  0.000  out   Armature|Idle|  life#57
+     0.000  0.000  0.000  out   Armature|Idle|  life#58
+     0.000  0.000  0.000  out   Armature|Idle|  life#59
+     0.000  0.000  0.000  out   Armature|Idle|  life#60
+     0.000  0.000  0.000  out   Armature|Idle|  life#61
+     0.000  0.000  0.000  out   Armature|Idle|  life#62
+     0.000  0.000  0.000  out   Armature|Idle|  life#63
+     0.000  0.000  0.000  out   Armature|Idle|  life#64
+     0.000  0.000  0.000  out   Armature|Idle|  life#65
+     0.000  0.000  0.000  out   Armature|Idle|  life#66
+     0.000  0.000  0.000  out   idle 0.22       b2_01_mesh#67
+     0.000  0.000  0.000  out   idle 0.10       b2_01_mesh#68
+     0.000  0.000  0.000  out   idle 0.23       b2_01_mesh#69
+     0.000  0.000  0.000  out   idle 0.78       b2_01_mesh#70
+     0.000  0.000  0.000  out   C_ATTE_Stand_I  at_te_mesh#71 (by its feet)
+     0.000  0.000  0.000  out   C_ATTE_Stand_I  at_te_mesh#72 (by its feet)
+     0.000  0.000  0.000  out   idle 0.30       countdooku_01_mesh#73
+     0.000  0.000  0.000  out   (bind pose)     life#74 (by its feet) BIND
+         -      -      -  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#25 (by its feet) BIND
+         -      -      -  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#26 (by its feet) BIND
+         -      -      -  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#27 (by its feet) BIND
+         -      -      -  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#28 (by its feet) BIND
+         -      -      -  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#29 (by its feet) BIND
+         -      -      -  out   (bind pose)     Char_Geonosian_LOD0_Material_1_0#30 (by its feet) BIND
+         -      -      -  out   idle 0.92       luke_rotj_01_mesh#75
+  (7 more never shown)
+bind pose: 20 (Char_Geonosian_LOD0_Material_1_0#14, out of view; Char_Geonosian_LOD0_Material_1_0#15, out of view; Char_Geonosian_LOD0_Material_1_0#16, out of view; Char_Geonosian_LOD0_Material_1_0#17, out of view; Char_Geonosian_LOD0_Material_1_0#18, out of view; Char_Geonosian_LOD0_Material_1_0#19, out of view; Char_Geonosian_LOD0_Material_1_0#20, out of view; Char_Geonosian_LOD0_Material_1_0#21, out of view; Char_Geonosian_LOD0_Material_1_0#22, out of view; Char_Geonosian_LOD0_Material_1_0#25, out of view; Char_Geonosian_LOD0_Material_1_0#26, out of view; Char_Geonosian_LOD0_Material_1_0#27, out of view; Char_Geonosian_LOD0_Material_1_0#28, out of view; Char_Geonosian_LOD0_Material_1_0#29, out of view; Char_Geonosian_LOD0_Material_1_0#30, out of view; Char_Geonosian_LOD0_Material_1_0#31, out of view; Char_Geonosian_LOD0_Material_1_0#32, out of view; Char_Geonosian_LOD0_Material_1_0#33, out of view; Char_Geonosian_LOD0_Material_1_0#34, out of view; life#74, out of view)
+in step: 29 Armature|Idle|baselayer [life#40, life#44, life#54, life#57]; Armature|Idle|baselayer [life#53, life#66]; Armature|Idle|baselayer [life#48, life#61]; Armature|Idle|baselayer [life#49, life#62]; Armature|Idle|baselayer [life#43, life#47, life#60]; Armature|Idle|baselayer [life#42, life#46, life#56, life#59]; Armature|Idle|baselayer [life#41, life#45, life#55, life#58]; Armature|Idle|baselayer [life#51, life#64]; Armature|Idle|baselayer [life#50, life#63]; Armature|Idle|baselayer [life#52, life#65]; C_ATTE_Stand_Idle_01 [at_te_mesh#71, at_te_mesh#72]
+phase spread (1 in unison, 0 spread round): Armature|Idle|baselayer ×29 0.39, idle ×11 0.19, C_ATTE_Stand_Idle_01 ×2 1.00
+ok   every figure in view under 0.15 m/s
