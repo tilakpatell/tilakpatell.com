@@ -122,7 +122,7 @@ SCANS=game QUALITY=high OUT=/tmp/shots node scripts/galaxy-check.mjs surface tat
 | E2 | Naboo (Theed under its dusk and lanterns, the hangar, the plains, the palace), Kamino | E0 | `session_01HrTPmQ9wFUvFYfdVLHxZ2q` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e2-naboo-kamino` | (this PR; below) |
 | E3 | Kashyyyk, Geonosis, Endor's village, research station and bunker | E0 | `session_0151EsRE5Sioz8bZWPSEzYeo` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e3-kashyyyk-geonosis-endor` | draft PR #903 |
 | E4 | Scarif, Cloud City, Hoth's outpost, the Death Star inside on DeathStar02_01 | E0 | `session_015ZTef1tZABeSq9E86wZKwv` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e4-scarif-bespin-deathstar` | #911; the Death Star's pack built, not drawn (§ Lane E4) |
-| E5 | Felucia, Kessel, Sullust, Pillio, Vardos, Fondor as systems with skins and surfaces | E0 | | `claude/bf2017-e5-new-systems` | |
+| E5 | Felucia, Kessel, Sullust, Pillio, Vardos, Fondor as systems with skins and surfaces | E0 | `session_01QrcPrerTbhxxZoKTnYgFQA` (spawned 2026-10-11 from `main` at `dc0639b4`, #915) | `claude/bf2017-e5-new-systems` (the systems, the skins, Kessel; this PR), then one branch and PR a world off it: `claude/bf2017-e5-felucia`, `-sullust`, `-pillio`, `-vardos`, `-fondor` | (this PR); § Lane E5 |
 | O | the object library (every placeable set indexed), the seven mapless worlds dressed by biome, `GAME_FOR` props, the game's clouds, the living world | nothing | `session_01HvykTJCK7Bb4cFUjiKN1jW` | `claude/bf2017-o-library` | #876 |
 | Q (the space lane) | the space levels as set pieces, the capitals, the asteroids on their tracks, the sky panoramas, the map's globes | nothing (#793 read) | session_01CiUP7QfUtHM1EEqgBJpKew | `claude/bf2017-q-space` | (this PR) |
 | M | the films on the cards, veils and briefings; the tiles and tutorials for the game's world; the lava film; the open fonts, the icons, the strings, the UI widgets, the hero stage | nothing | `session_017cZLBzaqCrPFfg6zezARLt` | `claude/bf2017-m-frontend` | done, below |
@@ -460,6 +460,62 @@ session_015ZTef1tZABeSq9E86wZKwv, from `claude/bf2017-e0-factory-on-main` at `af
 - The site's own dune grass (`scarif.grass`) still grows over the game's ground, and stands taller than the game's scrub in places; a later pass may thin it where the level's cells are busy, as Endor's scatter keeps out of them.
 - The districts are not gated (`galaxy-check` lands on the main map); E0's base was not either.
 - Hoth's row breaches and the baselines (above).
+
+### Lane E5: Felucia, Kessel, Sullust, Pillio, Vardos and Fondor (`claude/bf2017-e5-new-systems` and five branches off it, session_01QrcPrerTbhxxZoKTnYgFQA)
+
+Plan: `docs/superpowers/plans/2026-10-10-bf2017-every-asset-laneE5-new-systems.md`. The six are systems on the galaxy map, each with its planet from orbit, a surface on its game map and a landing spot. One PR a world, stacked in the order below, each on `origin/main` merged first: the first carries the six systems, the skins and Kessel; the rest one site and its pack each.
+
+**Done.**
+- **The map** (`systems.js`): six rows in their canon regions (Felucia R-6, Kessel T-10, Fondor the Colonies, Sullust, Pillio and Vardos the Outer Rim with no atlas square: Sullust’s M-17 lies in the site’s Mid Rim under the regions’ southern bulge, so it stands south-east of Dagobah). The positions and lifts were searched (a small annealer over the tests’ own rules: no two stars within 2.3° in any sky, no name over a dot on a phone-sized map, Tatooine’s stickiness) since each move by hand fixed one overlap and made another; `labelPlace.test.js`’s phone widths gain the six names. Six looks in `bodies.js`, names and marks in `names.js`, a crawl each (the campaign’s open on Episode VI), a line from each crew. `WAR_SYSTEMS` is now the systems with a `war` row (the plan’s rule: a place to land, not a front), which also writes down why Alderaan and Dagobah were never fought over. Fondor’s Starfighter Assault moves from Coruscant’s key to its own.
+- **The skins** (`scripts/lib/bf2017-planets.mjs`): Fondor from its space level (colour, relief), Pillio, Sullust and Vardos from the campaign’s `Objects/Planets/<world>` (colour, clouds; the worlds before Operation Cinder); their cloud maps keep coverage in the RGB, so `cloudsIn: 'rgb'` and `coveragePng` reads the brightness. Felucia and Kessel have only the front end’s globes: procedural from orbit, their globes the galaxy map’s discs (`bf2017-sky.mjs --globes`, `globes.json`). Athulla’s map (A3 M3ATH) is 179 asteroids and no ground, so no seventh system; `UNPLACED` keeps it with Ryloth, Naboo’s moon, the Death Star II and Fondor’s moon. Shots and the table: `docs/superpowers/evidence/bf2017-planets/README.md`. The lava family’s shader had a local `skin` that shadowed the spliced `skin()` on a skinned world (Sullust never compiled): renamed `rafts`, the hash moved.
+- **The surfaces** (`sites/drop.js`): six sites, `life: []`, places at the maps’ own spots. The packs, each built with `--ultra`, then `bf2017-recipes.mjs --level <pack> --fetch`, `bf2017-variations.mjs <pack> --fetch`, `bf2017-colour-check.mjs <folder> --fix`, published by hash:
+
+| pack | command | pieces in the arena | meshes, LOD files | published |
+|---|---|---|---|---|
+| `kessel` | `s3/levels/kessel_01 --world kessel --spot 0 -53 --subs Kessel_01,Art --ultra` | 6,308 | 393, 995 (23.9 MB) | 2,860 files, 365 MB |
+| `felucia` | `s8/felucia/levels/mp/felucia_01 --world felucia --spot -5 270 --ultra` | 10,604 | 893, 1,097 (34.1 MB) | 3,111 files, 394 MB |
+| `sullust` | `levels/sp/a2/m3sul/ds02 --world sullust --spot -1575 430 --floor 260.5 --walk 320 --subs Art_Exterior,Art_Exterior_Beginning,Art_Exterior_Ending,Art_Interior_1,…,Art_Interior_5,A2_M3SUL_DS02_S0300_GP,A2_M3SUL_DS02_S0900_GP --ultra` | 14,044 | 498, 1,722 (49.7 MB) | 3,447 files, 392 MB |
+| `pillio` | `levels/sp/a1/m3pil/ds02 --world pillio --spot 7 74 --subs LevelArt,Lookdev,A1_M3PIL_DS02_S0300_GP,A1_M3PIL_DS02_S0500_GP --ultra` | 267 | 115, 119 (5.6 MB) | 393 files, 140 MB |
+| `vardos` | `levels/sp/a1/m4var/ds02 --world vardos --spot 120 -10 --floor 122.9 --walk 320 --subs A1_M4VAR_DS02_S0300_ART_BG,…_S0300_ART_MAIN,…_S0500_ART_BG,…_S0500_ART_MAIN,…_S0600_ART_BG,…_S0600_ART_MAIN,…_S0700_ART_BG,…_S0700_ART_MAIN,…_S0700_ART_SHARED --ultra` | 8,516 | 501, 1,135 (25.0 MB) | 2,337 files, 346 MB |
+| `fondor` | `levels/sp/a1/m2fon/ds02 --world fondor --inside --spot 437 75 --floor 5 --walk 160 --subs LD_StarDestroyerHangar_SubLevel,A1_M2FON_DS02_S0200_GP,A1_M2FON_DS02_S0110_NIS --ultra` | 778 | 558, 395 (9.8 MB) | 1,201 files, 211 MB |
+
+**Where the code and the plan differed.**
+- No map of the six has a team-one spawn in its gameplay records (`--spawn` fails on all, the season maps Felucia_01 and Kessel_01 included: Felucia’s Supremacy spawns and Kessel’s Blast spawns are there, but under `Mode9`/`TeamDeathmatch` layers `spotFrom`’s mode list does not reach as team one). Each spot is read by hand from the rulebook rows (`src/data/bf2017/maps/<map>.json`): Felucia the showdown’s spawn in the village (Mode6_Logic:2, game (−4.6, 288, 270.5)); Kessel Blast’s first spawn on the mine floor (TeamDeathmatch_Global:6, (1, 578, −53)); the campaign maps from their art sub-levels’ floors (`readMap` over each sub-level: Sullust’s landing platforms at the game’s 260.5 m, Vardos’s avenue gate at 122.9, the Star Destroyer’s hangar deck at 5).
+- The campaign maps keep their pieces in sub-levels the factory’s defaults never name (`Art_Exterior_*`, `A1_M4VAR_DS02_S0300_ART_MAIN`, `LD_StarDestroyerHangar_SubLevel`), so each has its `--subs`; without them a dry run finds 0 pieces in the arena.
+- Three of the six have no terrain (M3SUL, M4VAR, M2FON): their sites are `noGround` on a `--floor` deck with a flat `floors` row at the landing, as Cloud City is.
+- Fondor’s surface is the Star Destroyer’s hangar (`--inside`; the mission’s space is `LD_Space`, 2,206 pieces spread 25 km, left out: the shipyards are the space lane’s SB_Fondor over the system). The MC80’s interior (S0400/S0500, the mission’s second half, at the game’s 373 m) is not built: a district for a later pass.
+- Pillio’s M3PIL is small on the surface (267 pieces: the shore, cliffs and falls); its cave and vault (Cave_Cine, Vault_Cine, 1,083 pieces) are inside a cliff the map leaves unpainted (the heightmap’s floor, 0 m, under them), so `--inside` keeps nothing of them (“1,080 left out above the ground”): a district wants the factory to take `--floor` on a map with ground, or the cliff meshes as its ground. A3 M1PIL (14,776 pieces, no terrain, the Resurrection’s Pillio with Kylo-named waterfalls) and A3 M2PIL (4,098, the speeder run) were dry-run and not built: the plan’s districts for a later pass, and the first is sequel-era by its own names.
+- Vardos: A1 M4VAR is the main as the plan says; A3 M4VAR (16,657 pieces, with terrain, the same Kestro in the same frame) was dry-run and not built (a district for a later pass).
+- `--spawn` on Felucia/Kessel: the rulebook’s `levelName` does read the season folders now (E3’s Left); the miss is the mode list, above.
+- The skins went to git, not the bucket: the body loads a skin through `assets-manifest.json` and `public/`, which `assets-upload.mjs` (the owner’s key) mirrors from the files on disk, and `assets-publish.mjs --files` is refused for the site’s manifest. Lane K’s 25 files are in git the same way.
+- The light records (lane G’s reader) were not run: the campaign maps name interiors’ VE records (Sullust `sky: []`, Vardos a CCTV camera’s, Fondor the MC80 hangar’s), and a `gameLight` wants a `picture` too (lane P’s). Each site keeps its own sky, written from the map.
+- `bf2017-variations.mjs` found a campaign map’s file by its folder’s name (`ds02.json`); it reads `maps/index.json` now (`ds02_streamed.json`).
+- The flight (`src/lib/land/flight/planetTables.js`, the expanse) does not list the six: its `GALAXY` is a hand list its test holds to 17.
+
+**Gates** (`BUDGET=1 BUDGET_REPORT=1 QUALITY=<tier> PHASE_WAIT=1500000 node scripts/galaxy-check.mjs surface <world>`, the dev server with `VITE_ASSET_BASE` at the public bucket, software GL; `docs/superpowers/evidence/bf2017-levels/<world>/galaxy-check.txt` has every line):
+
+| world | tier | calls (the level’s own) | triangles | models MB | the row |
+|---|---|---|---|---|---|
+| Kessel | low | 420 (138) | 794k | 23.4 | calls over (350): the level takes 138 of them, the rest is the site’s own (the ground war’s soldiers, the ship, the crew), as E0 found on Endor; a finding, the row not moved |
+| Kessel | high | 432 (425) | 1.79M | 97.4 | pass (700, 3M, 160) |
+| Kessel | ultra | 488 (457) | 3.24M | 331 | models over (285, the bucket row): ultra’s maps, lane D2’s finding on Hoth and Endor (about 470 MB there); a finding, not held and not raised |
+
+The other five worlds’ gates follow in their own PRs, one a world. A gate run must not share the machine with a publish: `assets-publish.mjs` rewrites `galaxyAssets.json` and the dev server answers 500 on the half-written file, so the page sits on its landing cover and the check measures the cover (Kessel’s first high run: 416 calls, level 0). The `chase.test.js` import of the missions takes 6.7 s on this sandbox, on `main` too; it has `{ timeout: 30_000 }` with the reason, as #916’s did.
+
+**Left.**
+- Pillio’s cave and vault, the MC80’s interior, A3 M4VAR, A3 M2PIL as districts (above).
+- The six sites’ people, things and quests (lanes A and O): `life: []`.
+- The light records for the two multiplayer maps (Felucia_01, Kessel_01) and their pictures.
+- The flight’s planets for the six (the expanse’s hand list).
+
+**Checking it.**
+
+```
+npx vitest run src/components/galaxy src/components/galaxy/surface/sites scripts/lib/bf2017-planets.test.mjs
+node scripts/bf2017-planets.mjs --dry
+QUALITY=high OUT=/tmp/s node scripts/galaxy-check.mjs space felucia,kessel,sullust,pillio,vardos,fondor
+BUDGET=1 BUDGET_REPORT=1 QUALITY=high node scripts/galaxy-check.mjs surface kessel
+```
 
 ### The space lane (the fifth design's Q)
 

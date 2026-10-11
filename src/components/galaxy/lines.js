@@ -119,7 +119,7 @@ export const GALAXY_LINES = {
       ],
       vardos: [
         ['morty', 'Rick, this one’s all clean streets and big grey buildings.'],
-        ['rick', 'Vardos, Morty. The Empire’s show home. Ask what happened to it after the boss died and watch everybody change the subject.'],
+        ['rick', 'Vardos, Morty. The Empire’s show home. Ask what happened to it after the boss died and watch them change the subject.'],
       ],
       fondor: [
         ['morty', 'Rick, there’s like a ring of giant… scaffolding things around the planet!'],

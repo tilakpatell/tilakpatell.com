@@ -1,0 +1,17 @@
+# kessel-low
+kessel     calls  420  tris  794456  geo  130  tex 104  prog null  frame p50 4033.1 p95 7385.1 ms  ground 0 ms  load 17.6 s  scans cc0 0 game 38
+           level calls 138  tris 736271  instances 773  lights 0  probe –
+           physics cells undefined  bodies undefined  colliders undefined  shapes undefined  trimesh tris undefined  heightfields undefined  dropped 0  step 0.00 ms
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget kessel     calls 420/350  tris 794456/800000  models 23.4/45 MB (from the bucket)  FAIL (calls 420 > 350)
+# kessel-high
+kessel     calls  432  tris 1787052  geo  227  tex 226  prog null  frame p50 23032.5 p95 23412.8 ms  ground 0 ms  load 16.9 s  scans cc0 0 game 41
+           level calls 425  tris 2315217  instances 4442  lights 27  probe –
+           physics cells 15  bodies 50  colliders 310  shapes 261  trimesh tris 13682  heightfields 60  dropped 505  step 0.00 ms
+budget kessel     calls 432/700  tris 1787052/3000000  models 97.4/160 MB (from the bucket)  pass
+# kessel-ultra
+kessel     calls  488  tris 3236441  geo  246  tex 257  prog null  frame p50 42048.4 p95 42194.7 ms  ground 0 ms  load 11.4 s  scans cc0 0 game 47
+           level calls 457  tris 3291299  instances 6192  lights 27  probe –
+           physics cells 28  bodies 57  colliders 335  shapes 286  trimesh tris 16153  heightfields 112  dropped 501  step 0.00 ms
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget kessel     calls 488/1500  tris 3236441/–  models 331/285 MB (from the bucket)  p95 42194.7/reported ms  FAIL (models 331 MB > 285)

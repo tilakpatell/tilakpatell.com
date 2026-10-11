@@ -258,7 +258,9 @@ describe('the chase: aiming and scoring', () => {
 });
 
 describe('the missions on the surface', () => {
-  it('gives every chase’s scouts a gap, a lane and a speed', async () => {
+  // (the first import of ./index pulls the whole surface in: 6.7 s on a loaded
+  // sandbox, past the 5 s default, as #916 found for its own; the checks are the same)
+  it('gives every chase’s scouts a gap, a lane and a speed', { timeout: 30_000 }, async () => {
     const { MISSIONS } = await import('./index');
     for (const [system, list] of Object.entries(MISSIONS))
       for (const m of Object.values(list)) {
