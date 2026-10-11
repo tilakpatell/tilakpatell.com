@@ -16800,6 +16800,9 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_outsidevinebush_m_01_a_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_outsidevinebush_m_01_a_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_outsidevinebush_m_01_a_mesh.lod2.glb
+/public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod0.glb
+/public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod1.glb
+/public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod2.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_b_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_b_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_b_mesh.lod2.glb
@@ -17422,6 +17425,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01e_mesh.lod3.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01f_mesh.lod2.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01f_mesh.lod3.glb
+/public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01g_mesh.lod2.glb
+/public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01g_mesh.lod3.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01i_mesh.lod2.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01i_mesh.lod3.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintempledetail_01_mesh.lod0.glb
@@ -17462,6 +17467,9 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_64_01_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_64_01_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_64_01_mesh.lod2.glb
+/public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod0.glb
+/public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod1.glb
+/public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod2.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipecluster_briefingroom_01a_mesh.lod0.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipecluster_briefingroom_01a_mesh.lod1.glb
 /public/models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipecluster_briefingroom_01a_mesh.lod2.glb

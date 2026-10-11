@@ -97632,14 +97632,14 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/cells/-1_-1.bin": {
-    "hash": "4a3d7ac82ece",
-    "bytes": 27520,
+    "hash": "24fc899cd991",
+    "bytes": 27456,
     "from": "models/galaxy/bf2017/levels/yavin/cells/-1_-1.bin",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/cells/-1_-2.bin": {
-    "hash": "916928f3ce88",
-    "bytes": 1408,
+    "hash": "27990f8f0db0",
+    "bytes": 1344,
     "from": "models/galaxy/bf2017/levels/yavin/cells/-1_-2.bin",
     "tier": "pack"
   },
@@ -97656,14 +97656,14 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/cells/-1_0.bin": {
-    "hash": "720be66f2df1",
-    "bytes": 36128,
+    "hash": "e6b829cea9aa",
+    "bytes": 36064,
     "from": "models/galaxy/bf2017/levels/yavin/cells/-1_0.bin",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/cells/-1_1.bin": {
-    "hash": "462d7e951a00",
-    "bytes": 2400,
+    "hash": "b6d526cc849b",
+    "bytes": 2304,
     "from": "models/galaxy/bf2017/levels/yavin/cells/-1_1.bin",
     "tier": "pack"
   },
@@ -97836,14 +97836,14 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/cells/1_0.bin": {
-    "hash": "69a55a0b2032",
-    "bytes": 56128,
+    "hash": "ba317af26d20",
+    "bytes": 55904,
     "from": "models/galaxy/bf2017/levels/yavin/cells/1_0.bin",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/cells/1_1.bin": {
-    "hash": "bb31a9712c82",
-    "bytes": 3424,
+    "hash": "c3d4982c72f6",
+    "bytes": 3392,
     "from": "models/galaxy/bf2017/levels/yavin/cells/1_1.bin",
     "tier": "pack"
   },
@@ -97854,8 +97854,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/cells/2_-1.bin": {
-    "hash": "fa2e2f435f7d",
-    "bytes": 40544,
+    "hash": "10ed1ce07da9",
+    "bytes": 40448,
     "from": "models/galaxy/bf2017/levels/yavin/cells/2_-1.bin",
     "tier": "pack"
   },
@@ -97998,8 +97998,8 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/far.bin": {
-    "hash": "86363e6c70be",
-    "bytes": 442528,
+    "hash": "cad67145572c",
+    "bytes": 441856,
     "from": "models/galaxy/bf2017/levels/yavin/far.bin",
     "tier": "pack"
   },
@@ -100389,6 +100389,24 @@
     "hash": "92a6d0ddc368",
     "bytes": 5496,
     "from": "models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_outsidevinebush_m_01_a_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod0.glb": {
+    "hash": "8f78364cd6a6",
+    "bytes": 65568,
+    "from": "models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod1.glb": {
+    "hash": "a65a0c941f03",
+    "bytes": 20312,
+    "from": "models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod2.glb": {
+    "hash": "365e6009bbc9",
+    "bytes": 14952,
+    "from": "models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_a_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/meshes/o_yavintemple_vine_border_m_01_b_mesh.lod0.glb": {
@@ -104123,6 +104141,18 @@
     "from": "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01f_mesh.lod3.glb",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01g_mesh.lod2.glb": {
+    "hash": "57bee3bc2e66",
+    "bytes": 74072,
+    "from": "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01g_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01g_mesh.lod3.glb": {
+    "hash": "e0a1f91a51fe",
+    "bytes": 20112,
+    "from": "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01g_mesh.lod3.glb",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_maintemple_vines_01i_mesh.lod2.glb": {
     "hash": "188bea617085",
     "bytes": 84216,
@@ -104361,6 +104391,24 @@
     "hash": "88d7298aab63",
     "bytes": 3736,
     "from": "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_64_01_mesh.lod2.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod0.glb": {
+    "hash": "c95087368469",
+    "bytes": 4480,
+    "from": "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod0.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod1.glb": {
+    "hash": "fb0f6744f843",
+    "bytes": 4080,
+    "from": "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod1.glb",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod2.glb": {
+    "hash": "4eaf81254278",
+    "bytes": 3780,
+    "from": "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipe_s_fill_02_mesh.lod2.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/yavin/meshes/yavintemple_pipecluster_briefingroom_01a_mesh.lod0.glb": {
