@@ -73,4 +73,14 @@ describe('the effects and the volumes on the game’s world', () => {
     expect(await levelVolumes(level, 'mid')).toBeNull();
     expect(level.file).not.toHaveBeenCalled();
   });
+
+  it('keeps the volumes off the node renderer over WebGL 2, with one line (the whole level blackened the frame there)', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const level = levelOf({ 'volumes.json': VOLUMES });
+    expect(await levelVolumes(level, 'ultra', 'nodes-webgl')).toBeNull();
+    expect(level.file).not.toHaveBeenCalled();
+    expect(info).toHaveBeenCalledTimes(1);
+    expect(await levelVolumes(level, 'ultra', 'webgpu')).not.toBeNull();
+    info.mockRestore();
+  });
 });

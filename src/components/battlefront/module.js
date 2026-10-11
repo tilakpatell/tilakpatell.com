@@ -118,7 +118,7 @@ export default {
     // (the level's glows and light cones marched on high and ultra: lane V;
     // the sun's soft shadow, cloud shadows and flare come with the entry)
     const { applyGameLight } = await import('../../lib/three/light/apply.js');
-    const volumetrics = await levelVolumes(level, tier);
+    const volumetrics = await levelVolumes(level, tier, rt.gfx.backend);
     const light = await applyGameLight(scene, renderer, entryFor(lighting, weather), { tier, camera, lights: lightsJsonOf(lighting.lights), volumetrics });
     // the level's effects (lane X), lit by the stack, on high and ultra; not
     // awaited by the world's ready: a sheet still coming draws as its

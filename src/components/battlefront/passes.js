@@ -10,7 +10,11 @@
 //   blueprints' CullDistance, MaxActiveInstanceCount and nearby caps decide
 //   what runs (effects.js), so a far one costs a distance test a frame.
 // - the volumes (fidelity lane V): volumes.json's glows and light cones for
-//   applyGameLight's `volumetrics`, marched on high and ultra (CONES_LIT).
+//   applyGameLight's `volumetrics`, marched on high and ultra (CONES_LIT),
+//   on WebGPU only: on the node renderer over WebGL 2 (SwiftShader, 2026-10-11)
+//   Hoth's 130 volumes turned the whole frame black at high, sky and all,
+//   where V's six-cone fixture draws; the owner's laptop is to say whether a
+//   real driver's WebGL 2 draws them (VOLUME_BACKENDS).
 //
 // A pack without the file skips its pass with one log line.
 //
@@ -28,13 +32,15 @@
 //   EFFECT_TIERS, VOLUME_TIERS
 //   createWorldEffects({ scene, renderer, tier, level, light, deps })
 //     → Promise<null | { update(dt, camera, wind), stats, dispose() }>
-//   levelVolumes(level, tier) → Promise<volumes.json in the map's frame | null>
+//   levelVolumes(level, tier, backend = 'webgpu') → Promise<volumes.json in the map's frame | null>
+//   (backend: light/three.js's backendOf(renderer))
 //   (level: { pack, file(name) → Promise<json | null> }, map/level.js's)
 
 import { rebaseCells } from './map/packFrame.js';
 
 export const EFFECT_TIERS = ['high', 'ultra'];
 export const VOLUME_TIERS = ['high', 'ultra'];
+export const VOLUME_BACKENDS = ['webgpu'];
 
 const skipped = (file, pass) => console.info(`battlefront: the level has no ${file}; ${pass} skipped`);
 
@@ -82,8 +88,12 @@ export async function createWorldEffects({ scene, renderer, tier, level, light =
   };
 }
 
-export async function levelVolumes(level, tier) {
+export async function levelVolumes(level, tier, backend = 'webgpu') {
   if (!VOLUME_TIERS.includes(tier)) return null;
+  if (!VOLUME_BACKENDS.includes(backend)) {
+    console.info(`battlefront: the volumes are off on ${backend} (they blackened the frame there)`);
+    return null;
+  }
   const file = await level.file('volumes.json');
   if (!file?.cells) {
     skipped('volumes.json', 'the volumes');
