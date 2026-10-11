@@ -61,6 +61,7 @@
 // cloudShadowOf(record) → { name, rgbm, topDown, wrap, offset } | null
 // panoramaUV(dir, panorama) → [u, v];  gradientUV(dir, rotation) → [u, v]
 // rgbmDecode([r, g, b, a]) → [r, g, b] in 0…1
+// withPicture(entry, row) → { entry, picture }: a <world>.picture.json weather's row laid over an entry (below)
 // pictureOf(entry, picture) → { grade, lut, panorama, gradient, cloudShadow } | null
 //   (the caller's `picture`, or the entry's own `entry.picture`: true for the
 //   record's numbers alone, or { lut: { url, size }, panorama: { url, horizon },
@@ -204,6 +205,22 @@ export function gradientUV(dir, rotation = 0) {
 
 export function rgbmDecode([r, g, b, a = 1]) {
   return [r, g, b].map((c) => Math.min(1, c * a * RGBM_RANGE));
+}
+
+// withPicture(entry, row) → { entry, picture }: a weather's row of
+// <world>.picture.json (scripts/bf2017-picture.mjs) made ready for
+// applyGameLight. An entry built from a site's own tables (the galaxy's
+// light/<world>.json, the Battlefront rulebook) carries the record's numbers
+// but not the names of its textures; the row's `record` (the VE records'
+// picture fields, by the game's names) is laid over it, field by field, and
+// its urls are the site's paths. No row: the entry as it was, no picture.
+const PICTURE_FIELDS = ['TonemapComponentData', 'ColorCorrectionComponentData', 'SkyComponentData', 'OutdoorLightComponentData'];
+export function withPicture(entry, row) {
+  if (!row) return { entry, picture: null };
+  const record = { ...(entry?.record ?? {}) };
+  for (const t of PICTURE_FIELDS) if (row.record?.[t]) record[t] = [{ ...(first(record[t]) ?? {}), ...row.record[t] }];
+  const at = (o) => (o?.url ? { ...o, url: /^(\/|[a-z]+:)/i.test(o.url) ? o.url : `/${o.url}` } : null);
+  return { entry: { ...entry, record }, picture: { lut: at(row.lut), panorama: at(row.panorama), gradient: at(row.gradient), cloudShadow: at(row.cloudShadow) } };
 }
 
 export function pictureOf(entry, picture = null) {

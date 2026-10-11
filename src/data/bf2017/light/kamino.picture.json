@@ -3,6 +3,37 @@
   "world": "kamino",
   "weathers": {
     "stormy": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Kamino/Stormy_01/T_CC_Kamino_Stormy_02_C",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Panoramic_C",
+          "SkyGradientTexture": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Fog_C",
+          "PanoramicRotation": 0.422,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": -0.027,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Lighting/Kamino/Stormy_01/T_Cloudshadow_Kamino_01_M",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/kamino/stormy.lut33.png",
         "size": 33,
@@ -38,6 +69,37 @@
       }
     },
     "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Kamino/Interior_01/T_CC_Kamino_Interior_01_C",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Panoramic_C",
+          "SkyGradientTexture": "Levels/Lighting/Kamino/Stormy_01/T_Kamino_Stormy_01_Fog_C",
+          "PanoramicRotation": 0.422,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": -0.027,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Lighting/Kamino/Stormy_01/T_Cloudshadow_Kamino_01_M",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/kamino/interior.lut33.png",
         "size": 33,

@@ -3,6 +3,37 @@
   "world": "hoth",
   "weathers": {
     "sunny": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunny_01/T_CC_Hoth_Sunny_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_C",
+          "SkyGradientTexture": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_Fog_C",
+          "PanoramicRotation": 0.963,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0.01,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_Arctic_01_CloudShadow_RGBM",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/hoth/sunny.lut33.png",
         "size": 33,
@@ -38,6 +69,37 @@
       }
     },
     "sunset": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunset_01/T_CC_Hoth_Sunset_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_Sunset_01_Panoramic_C",
+          "SkyGradientTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_Sunset_01_Fog_C",
+          "PanoramicRotation": 0.737,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_01_Sunset_CloudShadow_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/hoth/sunset.lut33.png",
         "size": 33,
@@ -73,6 +135,37 @@
       }
     },
     "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Hoth/Interior_01/T_CC_Hoth_Interior_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_C",
+          "SkyGradientTexture": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_Fog_C",
+          "PanoramicRotation": 0.963,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0.01,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_Arctic_01_CloudShadow_RGBM",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/hoth/interior.lut33.png",
         "size": 33,

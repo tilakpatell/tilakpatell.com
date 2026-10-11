@@ -3,6 +3,37 @@
   "world": "bespin",
   "weathers": {
     "dusk": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Global/T_Walrus_BaseGrade_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 3
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "S2/Levels/CloudCity_01/textures/T_Sky_Clouds_Dusk_01_01_C",
+          "SkyGradientTexture": "S2/Levels/CloudCity_01/textures/T_Clouds_Dusk_Fog_01_C",
+          "PanoramicRotation": 0.057,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": -0.858,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "S2/Levels/CloudCity_01/textures/T_Desert_01_CloudShadow_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirror",
+          "CloudXZTranslation": {
+            "x": 3200,
+            "y": -5500
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/bespin/dusk.lut33.png",
         "size": 33,
@@ -38,6 +69,37 @@
       }
     },
     "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Global/T_Walrus_BaseGrade_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 3
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "S2/Levels/CloudCity_01/textures/T_Sky_Clouds_Dusk_01_01_C",
+          "SkyGradientTexture": "S2/Levels/CloudCity_01/textures/T_Clouds_Dusk_Fog_01_C",
+          "PanoramicRotation": 0.057,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": -0.858,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "S2/Levels/CloudCity_01/textures/T_Desert_01_CloudShadow_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirror",
+          "CloudXZTranslation": {
+            "x": 3200,
+            "y": -5500
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/bespin/interior.lut33.png",
         "size": 33,

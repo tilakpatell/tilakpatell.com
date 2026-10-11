@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import hoth from './fixtures/hoth.ve.json';
-import { BLOOM_FACTORS, GAUSSIAN_LEVELS, RGBM_RANGE, bloomTints, cloudShadowOf, gradeOf, gradientUV, panoramaOf, panoramaUV, pictureOf, rgbmDecode } from './grade.js';
+import { BLOOM_FACTORS, GAUSSIAN_LEVELS, RGBM_RANGE, bloomTints, cloudShadowOf, gradeOf, gradientUV, panoramaOf, panoramaUV, pictureOf, rgbmDecode, withPicture } from './grade.js';
 import { sunDir } from './entry.js';
 
 const sunny = hoth.sunny.record;
@@ -121,5 +121,42 @@ describe('pictureOf', () => {
     expect(bare.grade.bloom.weights[4]).toBe(0.5);
     expect(bare.lut).toBeNull();
     expect(bare.panorama).toBeNull();
+  });
+});
+
+describe('withPicture', () => {
+  // (a picture row as scripts/bf2017-picture.mjs writes it: the urls, and the record's picture fields)
+  const row = {
+    lut: { url: 'textures/x/sunny.lut33.png', size: 33 },
+    panorama: { url: 'textures/x/sunny.panorama.ktx2', horizon: [0.7, 0.8, 0.9] },
+    gradient: { url: 'textures/x/sunny.gradient.ktx2' },
+    cloudShadow: { url: 'textures/x/sunny.clouds.ktx2' },
+    record: {
+      TonemapComponentData: { TonemapMethod: 'TonemapMethod_Linear' },
+      ColorCorrectionComponentData: { HdrColorGradingLut: 'X/T_CC_Day', ColorGradingEnable: true, Enable: true },
+      SkyComponentData: { PanoramicTexture: 'X/T_Sky', SkyGradientTexture: 'X/T_Sky_Fog', PanoramicRotation: 0.25 },
+      OutdoorLightComponentData: { CloudShadowTexture: 'X/T_Clouds_RGBM' },
+    },
+  };
+  it('lays the record’s picture fields over an entry that lacks them, so pictureOf finds every texture', () => {
+    // (an entry as a site's rulebook makes it: the sky's numbers, no texture names)
+    const bare = { name: 'VE', record: { SkyComponentData: [{ PanoramicRotation: 0.25, LuminanceScale: 35000 }], TonemapComponentData: [{ BloomScale: [0.1, 0.1, 0.1] }], ColorCorrectionComponentData: [{ ColorGradingMaxHdrValue: 1 }] } };
+    expect(pictureOf(bare, row)?.panorama ?? null).toBeNull();
+    const { entry, picture } = withPicture(bare, row);
+    expect(entry.record.SkyComponentData[0]).toMatchObject({ LuminanceScale: 35000, PanoramicTexture: 'X/T_Sky' });
+    expect(entry.record.TonemapComponentData[0]).toMatchObject({ BloomScale: [0.1, 0.1, 0.1], TonemapMethod: 'TonemapMethod_Linear' });
+    const pic = pictureOf(entry, picture);
+    expect(pic.grade.tonemap).toBe('linear');
+    expect(pic.lut).toEqual({ url: '/textures/x/sunny.lut33.png', size: 33 });
+    expect(pic.panorama).toMatchObject({ name: 'X/T_Sky', url: '/textures/x/sunny.panorama.ktx2', horizon: [0.7, 0.8, 0.9], rotation: 0.25 });
+    expect(pic.gradient.url).toBe('/textures/x/sunny.gradient.ktx2');
+    expect(pic.cloudShadow).toMatchObject({ rgbm: true, url: '/textures/x/sunny.clouds.ktx2' });
+    // (the entry handed in is left as it was)
+    expect(bare.record.SkyComponentData[0].PanoramicTexture).toBeUndefined();
+  });
+  it('is nothing without a row; a row without a panorama keeps the model’s sky', () => {
+    expect(withPicture(hoth.sunny, null)).toEqual({ entry: hoth.sunny, picture: null });
+    const { picture } = withPicture(hoth.sunny, { ...row, panorama: null });
+    expect(picture.panorama).toBeNull();
   });
 });

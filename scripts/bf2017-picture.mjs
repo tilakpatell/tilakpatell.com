@@ -13,9 +13,11 @@
 // over the record's 8,192 m tile is 4 m a texel, and the shadow's blobs are
 // soft), and the panorama's horizon row (its foot, linear 0…1) measured off the
 // decoded texture for sky.js's gain. The manifest goes to
-// src/data/bf2017/light/<world>.picture.json: per weather { lut, panorama:
+// src/data/bf2017/light/<world>.picture.json: per weather { record, lut, panorama:
 // { url, name, horizon, size }, gradient: { url, name }, cloudShadow: { url, name } },
-// the shape applyGameLight's `picture` takes (urls without the base). A
+// the shape applyGameLight's `picture` takes (urls without the base) and the
+// record's picture fields by name (`record`: grade.js's withPicture lays them
+// over an entry that lacks them). A
 // texture the bucket lacks prints `missing:` and is left out; a weather whose
 // record names no panorama (an interior under a ceiling, a space level) says
 // so with `panorama: null`, and applyGameLight keeps the model's sky.
@@ -39,7 +41,7 @@ import { bucketFile } from './lib/bf2017-bucket.mjs';
 import sharp from 'sharp';
 import { dropMips, ktx2Info, mipsToFit } from './lib/ktx2-mips.mjs';
 import { lutStrip } from './lib/bf2017-light.mjs';
-import { picturedNames, recordOf, rowMean } from './lib/bf2017-picture.mjs';
+import { pictureFields, picturedNames, recordOf, rowMean } from './lib/bf2017-picture.mjs';
 import { gradeOf } from '../src/lib/three/light/grade.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -117,7 +119,8 @@ for (const [w, e] of Object.entries(light.weathers ?? {})) {
   }
   const record = recordOf(...raws);
   const names = picturedNames(record);
-  const row = {};
+  // (the record's picture fields, for a site whose entry has the numbers but not the names)
+  const row = { record: pictureFields(record) };
   const lutName = gradeOf(record)?.lut?.name ?? null;
   const lut = lutName ? await fullLut(w, lutName) : null;
   if (lut) row.lut = lut;

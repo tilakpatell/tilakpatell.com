@@ -3,6 +3,37 @@
   "world": "kashyyyk",
   "weathers": {
     "overcast": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Kashyyyk/Overcast_01/T_CC_Kashyyyk_01_Overcast_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_Overcast_Panoramic_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_Overcast_Fog_01_C",
+          "PanoramicRotation": 0.252,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_CloudShadow_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaClamp",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/kashyyyk/overcast.lut33.png",
         "size": 33,
@@ -38,6 +69,37 @@
       }
     },
     "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Kashyyyk/Overcast_01/T_CC_Kashyyyk_01_Overcast_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_Overcast_Panoramic_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_Overcast_Fog_01_C",
+          "PanoramicRotation": 0.252,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_CloudShadow_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaClamp",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/kashyyyk/interior.lut33.png",
         "size": 33,
@@ -73,6 +135,37 @@
       }
     },
     "night": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Global/T_Walrus_BaseGrade_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Kashyyyk/Night_01/T_Kashyyyk_Night_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Kashyyyk/Night_01/T_Kashyyyk_Night_01_Fog_C",
+          "PanoramicRotation": 0.577,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Lighting/Kashyyyk/Overcast_01/T_Kashyyyk_CloudShadow_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/kashyyyk/night.lut33.png",
         "size": 33,

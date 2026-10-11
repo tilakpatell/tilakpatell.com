@@ -3,6 +3,37 @@
   "world": "naboo",
   "weathers": {
     "dusk": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Naboo/Dusk/T_Naboo_01_Dusk_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Naboo/Dusk/T_Naboo_01_Dusk_01_Fog_C",
+          "PanoramicRotation": 0.662,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Lighting/Naboo/Cloudy/T_Naboo_Cloudy_Cloudshadow_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/naboo/dusk.lut33.png",
         "size": 33,

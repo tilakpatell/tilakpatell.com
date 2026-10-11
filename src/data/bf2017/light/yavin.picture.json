@@ -3,6 +3,37 @@
   "world": "yavin",
   "weathers": {
     "sunny": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_Fog_C",
+          "PanoramicRotation": 0.821,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirror",
+          "CloudXZTranslation": {
+            "x": -290,
+            "y": -695
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/yavin/sunny.lut33.png",
         "size": 33,
@@ -38,6 +69,37 @@
       }
     },
     "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_Fog_C",
+          "PanoramicRotation": 0.821,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirror",
+          "CloudXZTranslation": {
+            "x": -290,
+            "y": -695
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/yavin/interior.lut33.png",
         "size": 33,
@@ -73,6 +135,37 @@
       }
     },
     "sunset": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Yavin/Sunset_01/T_CC_Yavin_Sunset_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Yavin/Sunset_01/T_Yavin_Sunset_02_Panoramic_C",
+          "SkyGradientTexture": "Levels/Lighting/Yavin/Sunset_01/T_Yavin_Sunset_01_Fog_C",
+          "PanoramicRotation": 0.781,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": -0.039,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaClamp",
+          "CloudXZTranslation": {
+            "x": -290,
+            "y": -695
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/yavin/sunset.lut33.png",
         "size": 33,

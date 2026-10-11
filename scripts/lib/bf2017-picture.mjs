@@ -40,6 +40,27 @@ export function entryOf(name, ...raws) {
   return { name, record: plain(recordOf(...raws)) };
 }
 
+// The record's picture fields by the game's names (vectors as arrays,
+// assets by name), for an entry built from a site's own tables, which keeps
+// the numbers but not the textures' names (grade.js's withPicture lays them
+// over it); a component the record lacks is left out
+export const PICTURE_FIELDS = {
+  TonemapComponentData: ['TonemapMethod'],
+  ColorCorrectionComponentData: ['HdrColorGradingLut', 'ColorGradingEnable', 'Enable', 'ColorGradingMaxHdrValue'],
+  SkyComponentData: ['PanoramicTexture', 'SkyGradientTexture', 'PanoramicRotation', 'PanoramicUVMinX', 'PanoramicUVMinY', 'PanoramicUVMaxX', 'PanoramicUVMaxY', 'PanoramicTileFactor'],
+  OutdoorLightComponentData: ['CloudShadowTexture', 'CloudShadowEnable', 'CloudShadowIsTopDown', 'CloudShadowAddressingMode', 'CloudXZTranslation'],
+};
+export function pictureFields(record) {
+  const out = {};
+  for (const [t, keys] of Object.entries(PICTURE_FIELDS)) {
+    const o = record?.[t]?.[0];
+    if (!o) continue;
+    const kept = Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, plain(o[k])]));
+    if (Object.keys(kept).length) out[t] = kept;
+  }
+  return out;
+}
+
 // the textures the record's picture names: { panorama, gradient, cloudShadow } → name | null
 export function picturedNames(record) {
   const p = panoramaOf(record);

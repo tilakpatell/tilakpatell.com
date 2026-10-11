@@ -3,6 +3,37 @@
   "world": "geonosis",
   "weathers": {
     "cloudy": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "S5_1/Levels/MP/Geonosis_01/Lighting/LUT/Geonosis_LUT_v04",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "S5_1/Levels/MP/Geonosis_01/Lighting/Textures/T_GEonosis_Sky_01_F_Grade",
+          "SkyGradientTexture": "S5_1/Levels/MP/Geonosis_01/Lighting/Textures/T_GEonosis_Fog_01_D_Grade",
+          "PanoramicRotation": 0.669,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0.058,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 0.96,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "S5_1/Levels/MP/Geonosis_01/Lighting/T_Sky_Geonosis_Shadows_01",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaBorder",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/geonosis/cloudy.lut33.png",
         "size": 33,
@@ -38,6 +69,37 @@
       }
     },
     "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "S5_1/Levels/MP/Geonosis_01/Lighting/LUT/Geonosis_LUT_v04",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "S5_1/Levels/MP/Geonosis_01/Lighting/Textures/T_GEonosis_Sky_01_F_Grade",
+          "SkyGradientTexture": "S5_1/Levels/MP/Geonosis_01/Lighting/Textures/T_GEonosis_Fog_01_D_Grade",
+          "PanoramicRotation": 0.669,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0.058,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 0.96,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "S5_1/Levels/MP/Geonosis_01/Lighting/T_Sky_Geonosis_Shadows_01",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": true,
+          "CloudShadowAddressingMode": "TaBorder",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/geonosis/interior.lut33.png",
         "size": 33,

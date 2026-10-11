@@ -3,6 +3,37 @@
   "world": "tatooine",
   "weathers": {
     "sunny": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_05",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Tatooine/Sunny/Textures/T_Tatooine_Sunny_06_C",
+          "SkyGradientTexture": "Levels/Lighting/Tatooine/Sunny/Textures/T_Tatooine_Sunny_06_Fog_C",
+          "PanoramicRotation": 0.52,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": null,
+          "CloudShadowEnable": false,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/tatooine/sunny.lut33.png",
         "size": 33,
@@ -34,6 +65,37 @@
       }
     },
     "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_Linear"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_05",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Tatooine/Sunny/Textures/T_Tatooine_Sunny_06_C",
+          "SkyGradientTexture": "Levels/Lighting/Tatooine/Sunny/Textures/T_Tatooine_Sunny_06_Fog_C",
+          "PanoramicRotation": 0.52,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": null,
+          "CloudShadowEnable": false,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/tatooine/interior.lut33.png",
         "size": 33,

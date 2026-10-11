@@ -3,6 +3,37 @@
   "world": "scarif",
   "weathers": {
     "sunset": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_LinearApproxGamma"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Naboo/Cloudy/T_CC_Naboo_01_Cloudy_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 3
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "S9_3/Scarif/Levels/MP/Scarif_02/Lighting/Sky/T_Beach_Sky_Sunset_01_C",
+          "SkyGradientTexture": "S9_3/Scarif/Levels/MP/Scarif_02/Lighting/Sky/T_Beach_Sky_Sunset_01_Fog_C",
+          "PanoramicRotation": 0.325,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": null,
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": 1300,
+            "y": 1100
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/scarif/sunset.lut33.png",
         "size": 33,

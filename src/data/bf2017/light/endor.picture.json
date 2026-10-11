@@ -3,6 +3,37 @@
   "world": "endor",
   "weathers": {
     "sunny": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/SP/A1/M1END/DS02/Lighting/T_A1_M1END_Sky_Sunny_01_C",
+          "SkyGradientTexture": "Levels/Forest/Lighting/Textures/T_Sky_Forest_02_Fog_Sunny_C",
+          "PanoramicRotation": 0.327,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirrorOnce",
+          "CloudXZTranslation": {
+            "x": -230,
+            "y": -375
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/endor/sunny.lut33.png",
         "size": 33,
@@ -38,6 +69,37 @@
       }
     },
     "night": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Kashyyyk/Night_01/T_Kashyyyk_Night_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Endor/night_01/T_Endor_Night_01_Fog_D",
+          "PanoramicRotation": 0.298,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirrorOnce",
+          "CloudXZTranslation": {
+            "x": -230,
+            "y": -375
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/endor/night.lut33.png",
         "size": 33,
@@ -73,6 +135,37 @@
       }
     },
     "foggy": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_LinearApproxGamma"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "TestRanges/TestRange_Lighting/Textures/T_Walrus_HDR_Grade_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Endor/Foggy_01/T_Endor_Foggy_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Endor/Foggy_01/T_Endor_Foggy_01_Fog_C",
+          "PanoramicRotation": 0.364,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Forest/Intro_01/Lighting/T_CloudShadows_Intro_02_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": -1300,
+            "y": -900
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/endor/foggy.lut33.png",
         "size": 33,
@@ -108,6 +201,37 @@
       }
     },
     "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/SP/A1/M1END/DS02/Lighting/T_A1_M1END_Sky_Sunny_01_C",
+          "SkyGradientTexture": "Levels/Forest/Lighting/Textures/T_Sky_Forest_02_Fog_Sunny_C",
+          "PanoramicRotation": 0.327,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirrorOnce",
+          "CloudXZTranslation": {
+            "x": -230,
+            "y": -375
+          }
+        }
+      },
       "lut": {
         "url": "textures/galaxy/bf2017/light/endor/interior.lut33.png",
         "size": 33,

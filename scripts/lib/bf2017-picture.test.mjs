@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { entryOf, picturedNames, recordOf, rowMean } from './bf2017-picture.mjs';
+import { entryOf, pictureFields, picturedNames, recordOf, rowMean } from './bf2017-picture.mjs';
+import { pictureOf, withPicture } from '../../src/lib/three/light/grade.js';
 import { readEntry } from '../../src/lib/three/light/entry.js';
 import { halveLut, lutStrip } from './bf2017-light.mjs';
 import { cubeFromStrip } from '../../src/lib/three/gameLut.js';
@@ -65,6 +66,26 @@ describe('bf2017-picture', () => {
     // (the record's BloomScale as a ratio to Hoth's day, 0.1)
     expect(p.bloom.scale).toBeCloseTo(1, 6);
     expect(p.grade.lutName).toBe('Day/CC');
+  });
+  it('keeps the record’s picture fields, by name, for an entry that lacks them', () => {
+    const day = {
+      objects: [
+        { $type: 'TonemapComponentData', TonemapMethod: 'TonemapMethod_Linear', BloomScale: { x: 0.1, y: 0.1, z: 0.1 } },
+        { $type: 'SkyComponentData', PanoramicTexture: { $asset: 'Sky/Day' }, SkyGradientTexture: { $asset: 'Sky/Day_Fog' }, PanoramicRotation: 0.5, LuminanceScale: 35000 },
+        { $type: 'OutdoorLightComponentData', CloudShadowTexture: { $asset: 'Clouds/C_RGBM' }, CloudXZTranslation: { x: 10, y: 20 }, SunRotationX: 30 },
+      ],
+    };
+    const f = pictureFields(recordOf(day));
+    expect(f).toEqual({
+      TonemapComponentData: { TonemapMethod: 'TonemapMethod_Linear' },
+      SkyComponentData: { PanoramicTexture: 'Sky/Day', SkyGradientTexture: 'Sky/Day_Fog', PanoramicRotation: 0.5 },
+      OutdoorLightComponentData: { CloudShadowTexture: 'Clouds/C_RGBM', CloudXZTranslation: { x: 10, y: 20 } },
+    });
+    // (over an entry with none of them, the panorama and the clouds are found)
+    const { entry, picture } = withPicture({ name: 'VE', record: {} }, { panorama: { url: 'p.ktx2', horizon: [0.5, 0.5, 0.5] }, cloudShadow: { url: 'c.ktx2' }, record: f });
+    const pic = pictureOf(entry, picture);
+    expect(pic.panorama).toMatchObject({ name: 'Sky/Day', rotation: 0.5 });
+    expect(pic.cloudShadow).toMatchObject({ name: 'Clouds/C_RGBM', offset: [10, 20] });
   });
   it('measures a row’s mean colour', () => {
     const rgba = new Uint8Array([255, 0, 0, 255, 0, 0, 255, 255, 51, 51, 51, 255, 51, 51, 51, 255]);
