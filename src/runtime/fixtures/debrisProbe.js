@@ -11,7 +11,8 @@
 // hundred breaks a minute) and, apart, the particles' CPU work.
 // scripts/light-fixture.mjs --debris reads `probe.debris`.
 //
-// createDebrisProbe({ scene, renderer, camera, light, tier }) → Promise<{
+// createDebrisProbe({ scene, renderer, camera, light, tier, breaks = true }) → Promise<{
+//   (breaks false: the same scene, nothing broken: the frame's before)
 //   mode, step(dt), run(seconds) → the table's row, stats(), draw(r) (the depth pass), dispose() }>
 
 import { createPhysics } from '../../lib/physics/world.js';
@@ -53,7 +54,7 @@ const pct = (xs, p) => {
   return s.length ? +s[Math.min(s.length - 1, Math.floor(p * s.length))].toFixed(3) : null;
 };
 
-export async function createDebrisProbe({ scene, renderer, camera, light, tier = 'ultra' }) {
+export async function createDebrisProbe({ scene, renderer, camera, light, tier = 'ultra', breaks = true }) {
   const THREE = await import('three/webgpu');
   const physics = await createPhysics();
   physics.add({ type: 'fixed', position: [0, -0.5, 0], group: 'floor', colliders: [{ shape: 'cuboid', args: [100, 0.5, 100] }] });
@@ -77,7 +78,7 @@ export async function createDebrisProbe({ scene, renderer, camera, light, tier =
   const now = () => performance.now();
   function step(dt) {
     clock += dt;
-    while (clock >= next) {
+    while (breaks && clock >= next) {
       const k = KINDS[n % KINDS.length];
       const a = (n * 2.39996) % (Math.PI * 2); // (the golden angle: breaks spread round the ring)
       const r = 3 + (n % 5);

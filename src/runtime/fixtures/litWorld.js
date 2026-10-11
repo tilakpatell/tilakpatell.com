@@ -27,7 +27,8 @@
 //
 // `debris` (GPU-first lane N5): a hundred breaks a minute round the ring,
 // Rapier hulls and GPU bursts on the depth buffer (debrisProbe.js), read by
-// scripts/light-fixture.mjs --debris as `probe.debris`.
+// scripts/light-fixture.mjs --debris as `probe.debris`; 'off', the same
+// scene and camera with nothing broken (the frame's before).
 //
 // `weather` (lane Q4, seconds into Hoth's day): three crates at the front
 // under the snow contributor of src/lib/three/surface/weather.js, composed
@@ -362,7 +363,7 @@ export default {
       if (opts.decals) decals = await decalWall(scene, made, renderer, ground, opts.decals, opts.tier);
       if (opts.debris) {
         const { createDebrisProbe } = await import('./debrisProbe.js');
-        probe.debris = await createDebrisProbe({ scene, renderer, camera, light, tier: opts.tier });
+        probe.debris = await createDebrisProbe({ scene, renderer, camera, light, tier: opts.tier, breaks: opts.debris !== 'off' });
       }
       if (opts.particles) {
         const { createParticleProbe } = await import('./particleProbe.js');

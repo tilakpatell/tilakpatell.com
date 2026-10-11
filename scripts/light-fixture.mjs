@@ -4,7 +4,7 @@
 // proof (docs/superpowers/plans/2026-10-10-galaxy-engine-laneR-light.md).
 //
 //   node scripts/light-fixture.mjs [--tier ultra] [--post on|off] [--sky on|off]
-//     [--grid] [--particles] [--debris] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
+//     [--grid] [--particles] [--debris [off]] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
 //     [--volume [on|off]] [--weather interior|sunny|felucia] [--view wide|edge|sun] [--pan]
 //     [--weather] [--decals] [--seconds 0,12.5,30]   (lane Q4: the weathering and the placed decals, without --volume)
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
@@ -123,8 +123,10 @@ const volumeAt = argv.indexOf('--volume');
 const volume = volumeAt < 0 ? null : argv[volumeAt + 1] !== 'off';
 const q4Flags = volume == null && (argv.includes('--weather') || argv.includes('--decals'));
 const particles = volume == null && !q4Flags && argv.includes('--particles');
-// (GPU-first lane N5: a hundred breaks a minute, the CPU step timed)
-const debris = volume == null && !q4Flags && !particles && argv.includes('--debris');
+// (GPU-first lane N5: a hundred breaks a minute, the CPU step timed; `--debris off`
+// the same scene and camera without them, the frame's before)
+const debrisAt = argv.indexOf('--debris');
+const debris = volume == null && !q4Flags && !particles && debrisAt >= 0 ? (argv[debrisAt + 1] === 'off' ? 'off' : true) : null;
 const pictureAt = argv.indexOf('--picture');
 const picture = volume == null && !q4Flags && pictureAt >= 0 ? argv[pictureAt + 1] !== 'off' : null;
 const laneS = volume == null && ['--hoth', '--shadows', '--clouds'].some((f) => argv.includes(f));
@@ -150,7 +152,7 @@ const baseLabel = arg(
           ? `${picture ? 'picture' : 'nopicture'}-${post ? `post-${tier}` : `lit-${tier}`}`
         : `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`,
 );
-const label = debris && arg('label', null) == null ? `debris-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
+const label = debris && arg('label', null) == null ? `${debris === 'off' ? 'nodebris' : 'debris'}-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');

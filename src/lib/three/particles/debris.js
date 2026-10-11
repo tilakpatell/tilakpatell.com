@@ -6,7 +6,8 @@
 // decides which is which and holds the live cap (64 hulls, a ragdoll's
 // bodies counted too); a hull asleep 2 s leaves the engine and becomes a
 // static instance (onStatic: the world's, or createDebrisMeshes' below),
-// and its slot is free for the next break.
+// and its slot is free for the next break (or one still under 0.1 m/s for
+// as long: Rapier keeps a hull rocking on an edge awake).
 //
 // The burst is one effect record, DEBRIS_FX (debrisDefs()), made from the
 // game's own falling plaster on Hoth (FX_Arctic_Ceiling_FallingSnow's
@@ -15,16 +16,25 @@
 // (effects.js's `burst`), thrown out of a sphere the break's size, under
 // gravity, three seconds at most, colliding.
 //
+// A world whose ground isn't in the engine (the Battlefront: its soldiers
+// walk the navgrid, and Rapier holds only the cells' shapes) passes
+// `groundAt(x, z)`: each break lays a fixed floor tile under itself there,
+// three times its size, gone with its last hull. And a hull that falls LOST
+// metres below its break is lost: taken out, its slot freed, counted, so a
+// world with no ground can never hold the cap with pieces falling for ever
+// (lane N5's first Hoth profile: 64 hulls at y −470 after ten seconds, the
+// step 2.7 ms a frame).
+//
 // A seed gives the same pieces in the same places (curves.js's rnd over a
 // break's serial): Rapier steps them the same, so a seeded battle stays the
 // same battle.
 //
 //   createDebris(effects, physics, { cap, seed = 1, sleepToStatic = 2,
-//     onStatic(pose), density = 300, piecesPerMetre = 6 }) → {
+//     onStatic(pose), density = 300, piecesPerMetre = 6, groundAt(x, z) → y }) → {
 //     break(at, size, velocity = [0, 0, 0], material = null, { pieces, mass, light }),
 //       (light: the burst's glow while it runs, effects.js's `light`: an explosion's flash)
 //     update(dt), hulls() → [{ body, size, points, material }], cap,
-//     stats() → { breaks, hulls, statics, refused, bursts, particles }, dispose() }
+//     stats() → { breaks, hulls, statics, lost, floors, refused, bursts, particles, cap }, dispose() }
 //     pose: { position, quaternion, size, points, material }
 //   createDebrisMeshes(scene, debris, { max = 512 }) → Promise<{ update(), statics(pose), dispose() }>
 //     (the live hulls and the static ones as two InstancedMeshes, for a world
@@ -40,6 +50,11 @@ export const DEBRIS_FX = 'FX_Break_Debris';
 const DENSITY = 300; // kg/m³ over a break's bounding cube: a crate, hollow (this lane's)
 const PIECES_PER_METRE = 6; // pieces a break makes a metre of its size, at most 24 (this lane's)
 const SCATTER = 1.5; // m/s a hull is thrown out of the break, at most (this lane's)
+const LOST = 30; // m below its break: a hull fallen this far has nothing under it (this lane's)
+const FLOOR = 0.25; // m: half a floor tile's thickness
+// m/s: a hull moving slower than this counts as resting, asleep or not (Rapier
+// keeps a hull rocking on an edge awake for good: one in six in debris.test.js)
+const STILL = 0.1;
 const BURST_LIFE = [1.8, 3]; // s: a burst's particles (the plan's: the lifetime bounds them)
 
 const plaster = CEILING.emitters.find((e) => e.name.endsWith('em_arctic_ceiling_debris'));
@@ -109,9 +124,17 @@ function turn(seed, serial, k) {
 
 const ok3 = (a) => Array.isArray(a) && a.length >= 3 && a.every(Number.isFinite);
 
-export function createDebris(effects, physics, { cap = createHullCap(), seed = 1, sleepToStatic = BREAK.sleepToStatic, onStatic = null, density = DENSITY, piecesPerMetre = PIECES_PER_METRE } = {}) {
+export function createDebris(effects, physics, { cap = createHullCap(), seed = 1, sleepToStatic = BREAK.sleepToStatic, onStatic = null, density = DENSITY, piecesPerMetre = PIECES_PER_METRE, groundAt = null } = {}) {
   const live = [];
-  const stats = { breaks: 0, hulls: 0, statics: 0, refused: 0, bursts: 0, particles: 0 };
+  const stats = { breaks: 0, hulls: 0, statics: 0, lost: 0, floors: 0, refused: 0, bursts: 0, particles: 0 };
+  // a hull gone: its floor tile goes with the last of its break's
+  const leave = (h) => {
+    cap.give(1);
+    if (h.floor && --h.floor.n === 0) {
+      physics.remove(h.floor.body);
+      stats.floors--;
+    }
+  };
   let serial = 0;
 
   function piecesOf(size) {
@@ -126,6 +149,17 @@ export function createDebris(effects, physics, { cap = createHullCap(), seed = 1
     const granted = cap.take(split.hulls);
     stats.breaks++;
     stats.refused += split.wanted - granted;
+    // (the ground under it, where the engine has none)
+    let floor = null;
+    const g = granted > 0 && groundAt ? groundAt(at[0], at[2]) : NaN;
+    if (Number.isFinite(g)) {
+      try {
+        floor = { n: 0, body: physics.add({ type: 'fixed', position: [at[0], g - FLOOR, at[2]], group: 'floor', colliders: [{ shape: 'cuboid', args: [size * 1.5, FLOOR, size * 1.5] }] }) };
+        stats.floors++;
+      } catch {
+        floor = null;
+      }
+    }
     for (let i = 0; i < granted; i++) {
       const k = i * 64;
       const sz = split.sizes[i];
@@ -151,7 +185,12 @@ export function createDebris(effects, physics, { cap = createHullCap(), seed = 1
       const kick = SCATTER * rnd(seed, s, k + 60);
       const m = split.masses[i];
       body.push([(v[0] + (off[0] / len) * kick) * m, (v[1] + (off[1] / len) * kick + kick * 0.5) * m, (v[2] + (off[2] / len) * kick) * m]);
-      live.push({ body, size: sz, points, material, asleep: 0 });
+      live.push({ body, size: sz, points, material, asleep: 0, from: at[1], floor, last: [NaN, NaN, NaN] });
+      if (floor) floor.n++;
+    }
+    if (floor && floor.n === 0) {
+      physics.remove(floor.body);
+      stats.floors--;
     }
     stats.hulls = live.length;
     if (split.burst > 0) {
@@ -161,6 +200,7 @@ export function createDebris(effects, physics, { cap = createHullCap(), seed = 1
     }
   }
 
+  const at3 = [0, 0, 0];
   const pose = (h) => ({ position: h.body.position(), quaternion: h.body.quaternion(), size: h.size, points: h.points, material: h.material });
 
   return {
@@ -174,14 +214,25 @@ export function createDebris(effects, physics, { cap = createHullCap(), seed = 1
       for (let i = 0; i < live.length; i++) {
         const h = live[i];
         if (h.body.removed) {
-          cap.give(1);
+          leave(h);
           continue;
         }
-        h.asleep = h.body.sleeping ? h.asleep + dt : 0;
+        const p3 = h.body.position(at3);
+        if (p3[1] < h.from - LOST) {
+          physics.remove(h.body);
+          leave(h);
+          stats.lost++;
+          continue;
+        }
+        const moved = Math.hypot(p3[0] - h.last[0], p3[1] - h.last[1], p3[2] - h.last[2]);
+        h.last[0] = p3[0];
+        h.last[1] = p3[1];
+        h.last[2] = p3[2];
+        h.asleep = h.body.sleeping || moved < STILL * dt ? h.asleep + dt : 0;
         if (h.asleep >= sleepToStatic) {
           const p = pose(h);
           physics.remove(h.body);
-          cap.give(1);
+          leave(h);
           stats.statics++;
           try {
             onStatic?.(p);
@@ -199,7 +250,7 @@ export function createDebris(effects, physics, { cap = createHullCap(), seed = 1
     dispose() {
       for (const h of live) {
         physics.remove(h.body);
-        cap.give(1);
+        leave(h);
       }
       live.length = 0;
       stats.hulls = 0;

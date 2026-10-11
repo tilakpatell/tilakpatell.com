@@ -58,6 +58,32 @@ describe('createDebris', () => {
     physics.dispose();
   });
 
+  it('where the world has no ground in the engine, groundAt lays a floor under the break, gone with its last hull', async () => {
+    const physics = await createPhysics();
+    const debris = createDebris(fakeEffects(), physics, { groundAt: () => 2 });
+    debris.break([0, 3, 0], 1, [0, 0, 0]);
+    expect(debris.stats().floors).toBe(1);
+    for (let f = 0; f < 60 * 8 && debris.stats().hulls; f++) {
+      physics.step(1 / 60);
+      debris.update(1 / 60);
+    }
+    expect(debris.stats()).toMatchObject({ hulls: 0, statics: 6, floors: 0, lost: 0 });
+    physics.dispose();
+  });
+
+  it('a hull fallen 30 m below its break is lost and frees its slot, so a world without ground never holds the cap', async () => {
+    const physics = await createPhysics();
+    const debris = createDebris(fakeEffects(), physics);
+    debris.break([0, 1, 0], 1, [0, 0, 0]);
+    for (let f = 0; f < 60 * 4; f++) {
+      physics.step(1 / 60);
+      debris.update(1 / 60);
+    }
+    expect(debris.stats()).toMatchObject({ hulls: 0, lost: 6 });
+    expect(debris.cap.room()).toBe(BREAK.live);
+    physics.dispose();
+  });
+
   it('the live cap counts a ragdoll’s bodies too (Review Focus 4)', async () => {
     const physics = await createPhysics();
     const cap = createHullCap();
