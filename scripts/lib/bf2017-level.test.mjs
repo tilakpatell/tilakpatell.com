@@ -193,6 +193,13 @@ describe('buildPack', () => {
     expect(tight.table.ultra.K).toBeLessThan(1000);
     expect(tight.table.ultra.worst.tris).toBeLessThanOrEqual(905 * 0.9);
   });
+
+  it('on a map stood on its deck (`deck`), keeps every broad piece whose top is at the deck: the meshes are the only ground', () => {
+    // (the deck at the fixture's 15 m: the hangar's top, 10 m over it (its 10 m at twice the size, from 5 m), is in the deck's band; the rock, 2 m wide, too small to stand on)
+    const decked = buildPack({ world: 'fixture', mapName: 'm', map: readMap(json, bin), spot: [100, 200], groundY: 15, meshes, arena: 256, deck: true, rows: { ultra: { tris: 905, calls: 700 } } });
+    expect(decked.table.ultra.dropped.map((d) => d.name)).not.toContain('hangar');
+    expect(decked.table.ultra.dropped.map((d) => d.name)).toContain('rock');
+  });
 });
 
 describe('under the ground', () => {

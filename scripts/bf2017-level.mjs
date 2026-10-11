@@ -407,6 +407,8 @@ async function main(args) {
     // (--walk: the square you can stand in, where the fit holds the row; a
     // city in the clouds is seen from its walkways, not from its backdrop)
     ...(args.walk ? { walk: Number(args.walk) } : {}),
+    // (--floor: a map stood on its deck, whose meshes are its only ground)
+    deck: !record && args.floor != null,
     // (--share: the part of a tier's row the level may take, where the site's
     // own things already spend the rest: Endor's low=0.5)
     rows: Object.fromEntries(Object.entries(ultra ? BUDGET_ROWS : { low: BUDGET_ROWS.low, mid: BUDGET_ROWS.mid, high: BUDGET_ROWS.high }).map(([t, r]) => [t, share[t] ? { ...r, tris: r.tris * share[t], calls: Math.round(r.calls * share[t]) } : r])),
