@@ -6,7 +6,7 @@
 // The movers, one a lane across the screen, each its own flat colour (unlit,
 // so the colour behind it is unmistakable), moving right at SPEED a frame:
 // - crate: a plain mesh, moved by its matrix;
-// - figure: a skinned mesh, moved by its bone (the mesh stays: three's
+// - figure: a skinned mesh, moved by its bone (bound at the origin) (the mesh stays: three's
 //   skinning velocity);
 // - row: an InstancedMesh of three, moved by their instance matrices;
 // - card: an alpha-tested plane (a foliage card's cut-out), moved by its matrix;
@@ -89,7 +89,7 @@ export function createTrails(scene, camera, THREE) {
 
   const crate = new THREE.Mesh(box(), flat(THREE, lane('crate').color));
   crate.position.set(START, lane('crate').y, 0);
-  add('crate', crate, () => crate.position.clone(), [SIZE, SIZE], () => (crate.position.x += SPEED));
+  add('crate', crate, () => crate.position.clone(), [SIZE, SIZE, SIZE], () => (crate.position.x += SPEED));
 
   const geo = box();
   const count = geo.attributes.position.count;
@@ -97,11 +97,13 @@ export function createTrails(scene, camera, THREE) {
   geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(new Float32Array(count * 4).map((_, i) => (i % 4 === 0 ? 1 : 0)), 4));
   const figure = new THREE.SkinnedMesh(geo, flat(THREE, lane('figure').color));
   const bone = new THREE.Bone();
-  bone.position.set(START, lane('figure').y, 0);
   figure.add(bone);
+  // (bound with the bone at the mesh's origin, then moved: bound where it
+  // starts, the box would be drawn offset by the bone's whole travel)
   figure.bind(new THREE.Skeleton([bone]));
+  bone.position.set(START, lane('figure').y, 0);
   figure.frustumCulled = false;
-  add('figure', figure, () => bone.getWorldPosition(new THREE.Vector3()), [SIZE, SIZE], () => (bone.position.x += SPEED));
+  add('figure', figure, () => bone.getWorldPosition(new THREE.Vector3()), [SIZE, SIZE, SIZE], () => (bone.position.x += SPEED));
 
   const row = new THREE.InstancedMesh(new THREE.BoxGeometry(SIZE / 3, SIZE, SIZE / 3), flat(THREE, lane('row').color), 3);
   row.frustumCulled = false;
@@ -112,11 +114,11 @@ export function createTrails(scene, camera, THREE) {
     row.instanceMatrix.needsUpdate = true;
   };
   placeRow();
-  add('row', row, () => new THREE.Vector3(rowX, lane('row').y, 0), [SIZE, SIZE], () => ((rowX += SPEED), placeRow()));
+  add('row', row, () => new THREE.Vector3(rowX, lane('row').y, 0), [SIZE, SIZE, SIZE / 3], () => ((rowX += SPEED), placeRow()));
 
   const card = new THREE.Mesh(new THREE.PlaneGeometry(SIZE, SIZE), flat(THREE, lane('card').color, { map: pattern(THREE, { alpha: true }), alphaTest: 0.5, side: THREE.DoubleSide }));
   card.position.set(START, lane('card').y, 0);
-  add('card', card, () => card.position.clone(), [SIZE, SIZE], () => (card.position.x += SPEED));
+  add('card', card, () => card.position.clone(), [SIZE, SIZE, 0], () => (card.position.x += SPEED));
 
   const banner = new THREE.Mesh(new THREE.PlaneGeometry(SIZE * 4, SIZE), flat(THREE, lane('banner').color, { map: pattern(THREE) }));
   banner.position.set(0, lane('banner').y, 0);
@@ -136,8 +138,19 @@ export function createTrails(scene, camera, THREE) {
         .filter((m) => m.size)
         .map((m) => {
           const c = m.centre();
-          const [x0, y0] = project(c.clone().add(new THREE.Vector3(-m.size[0] / 2, m.size[1] / 2, 0)), size);
-          const [x1, y1] = project(c.clone().add(new THREE.Vector3(m.size[0] / 2, -m.size[1] / 2, 0)), size);
+          // (all eight corners: a box's nearer face is the larger on the screen)
+          const xs = [];
+          const ys = [];
+          for (const sx of [-1, 1]) {
+            for (const sy of [-1, 1]) {
+              for (const sz of [-1, 1]) {
+                const [x, y] = project(c.clone().add(new THREE.Vector3((sx * m.size[0]) / 2, (sy * m.size[1]) / 2, (sz * m.size[2]) / 2)), size);
+                xs.push(x);
+                ys.push(y);
+              }
+            }
+          }
+          const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
           const [nx] = project(c.clone().add(new THREE.Vector3(SPEED, 0, 0)), size);
           const [cx] = project(c, size);
           return { name: m.name, rect: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, step: { dx: nx - cx, dy: 0 }, centre: project(c, size) };

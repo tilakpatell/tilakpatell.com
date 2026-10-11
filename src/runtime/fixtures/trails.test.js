@@ -72,6 +72,12 @@ describe('createTrails', () => {
     camera.updateMatrixWorld();
     const boxes = t.screen({ width: 1600, height: 900 });
     expect(boxes.map((b) => b.name)).toEqual(['crate', 'figure', 'row', 'card']);
+    // (the figure's box is drawn where its bone is: bound at the origin)
+    figure.updateMatrixWorld(true);
+    figure.skeleton.update();
+    const v = new THREE.Vector3().fromBufferAttribute(figure.geometry.attributes.position, 0);
+    figure.applyBoneTransform(0, v);
+    expect(v.x).toBeCloseTo(figure.skeleton.bones[0].position.x + figure.geometry.attributes.position.getX(0), 6);
     for (const b of boxes) {
       expect(b.rect.w).toBeGreaterThan(4);
       expect(b.step.dx).toBeGreaterThan(0);
