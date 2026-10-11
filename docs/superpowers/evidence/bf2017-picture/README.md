@@ -12,6 +12,7 @@ The design: `docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.
 | `w/textures/made.json` | the not-uploaded textures sent, those that failed, those with no file | the `textures` job |
 | `w/uastc/psnr.json` | each colour map’s PSNR as UASTC and as the served ETC1S against the BC7 master, and whether it was kept | the `uastc` job |
 | `w/depots/share.json` | the depots’ resolved share, of all and of the entries left when the per-block constants are set apart | the `depots` job |
+| `p/README.md`, `p/<w>-[no]picture.webp`, `p/<w>-*.json` | each lit world’s fixture frame without and with its record’s picture, the mean luminance and the table | lane P, `scripts/light-fixture.mjs --picture [off] --world <w> --frame` |
 | `gate/<date>.json`, `gate/shots/` | every world at ultra on the desktop’s chip, both legs: p50, p95, calls, triangles, MB, the backend, a shot a world | the `gate` job |
 
 Every JSON here carries its own `_source`.

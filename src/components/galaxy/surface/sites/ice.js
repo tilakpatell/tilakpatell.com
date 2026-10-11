@@ -50,6 +50,8 @@ export const SITES = {
     // lit as the game lights Hoth_01 (src/data/bf2017/light/hoth.json,
     // gameLit.js): its sun, sky, bounce, fog, probe and grade over these
     gameLight: 'hoth',
+    // the record's picture on the node renderer (src/data/bf2017/light/hoth.picture.json, applyGameLight)
+    picture: 'hoth.picture.json',
     sky: {
       zenith: '#6f98c8',
       horizon: '#e4ecf4',

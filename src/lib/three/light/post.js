@@ -38,9 +38,9 @@
 // - The record's picture (lane Q6, refs.grade: grade.js's gradeOf): the
 //   bloom is its five Gaussians (BloomNode's five mips tinted by the
 //   record's weights and colours, its BloomScale the strength, no
-//   threshold); the AO its HBAO numbers; and where its tone map is
-//   TonemapMethod_Linear a `tonemap` pass takes the picture to 0…1 by a
-//   linear tone map before the LUT, on every tier that has a node chain
+//   threshold); the AO its HBAO numbers; and where its tone map is one
+//   grade.js reads (TONEMAPS: Linear, LinearApproxGamma, FilmicNeutral) a
+//   `tonemap` pass takes the picture to 0…1 before the LUT, on every tier that has a node chain
 //   (the game's order: the LUT reads the tone-mapped picture). Without
 //   refs.grade nothing here changes.
 // - `volumes` needs a level's volumetrics (createVolumetrics); none, none.

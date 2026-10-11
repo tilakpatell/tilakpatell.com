@@ -303,8 +303,10 @@ export async function create(canvas, ctx, set) {
   // record); none on the classic renderer. Awaited before the first draw.
   let stack = null;
   // (the world's picture: a page's, the site's, or the game's own where the
-  // world is under its light and the site has its records, nodes/picture.js)
-  const picture = ctx.picture ?? site.picture ?? (gameLight && L.name === 'nodes' ? pictureFor(own.gameLight) : null);
+  // world is under its light and the site has its records, nodes/picture.js;
+  // a site's `picture` that only names its file, lane P's, is read there)
+  const sitePicture = site.picture && typeof site.picture === 'object' ? site.picture : null;
+  const picture = ctx.picture ?? sitePicture ?? (gameLight && L.name === 'nodes' ? pictureFor(own.gameLight) : null);
   const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, backend: rt.gfx.backend, post, picture, volumes: site.level ? L.levelJson(site.level, 'volumes.json') : null, dome: sky.mesh, skyFog })
     .then((made) => {
       if (disposed) return made?.dispose();

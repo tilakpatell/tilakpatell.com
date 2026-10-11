@@ -356,6 +356,8 @@ export const SITES = {
   kamino: {
     // lit as the game lights its level (src/data/bf2017/light/kamino.json, gameLit.js)
     gameLight: 'kamino',
+    // the record's picture on the node renderer (src/data/bf2017/light/kamino.picture.json, applyGameLight)
+    picture: 'kamino.picture.json',
     place: 'Tipoca City',
     line: 'Rain, and the sea, and white domes on stilts in the storm.',
     sky: {
@@ -576,6 +578,8 @@ export const SITES = {
   geonosis: {
     // lit as the game lights its level (src/data/bf2017/light/geonosis.json, gameLit.js)
     gameLight: 'geonosis',
+    // the record's picture on the node renderer (src/data/bf2017/light/geonosis.picture.json, applyGameLight)
+    picture: 'geonosis.picture.json',
     place: 'The Plains of Geonosis',
     line: 'Red rock, hive spires and a ringed, rust-coloured sky.',
     sky: {

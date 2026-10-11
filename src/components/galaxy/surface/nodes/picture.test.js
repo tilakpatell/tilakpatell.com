@@ -9,7 +9,7 @@ describe('a world’s picture', () => {
     expect(pic.record.TonemapComponentData).toHaveLength(1);
     expect(pic.record.OutdoorLightComponentData[0]).toBeTruthy();
     expect(pic.panorama.url).toBe('/textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2');
-    expect(pic.lut).toEqual({ url: '/textures/galaxy/bf2017/light/hoth/sunny.lut.png', size: 17 });
+    expect(pic.lut).toMatchObject({ url: '/textures/galaxy/bf2017/light/hoth/sunny.lut33.png', size: 33 });
     expect(Object.keys(pic.lights.cells).length).toBeGreaterThan(0);
     // what grade.js makes of it: the record's tone map and the textures
     const p = pictureOf({ record: pic.record, name: pic.name }, pic);
