@@ -8,7 +8,7 @@ The WebAssembly modules (Rapier, the Basis transcoder, meshopt) and lane X2’s 
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |
-| `three` | ^0.186.1 | [three.md](three.md) | 678 |
+| `three` | ^0.186.1 | [three.md](three.md) | 679 |
 | `react` | ^19.3.0 | [react.md](react.md) | 311 |
 | `react-router-dom` | ^7.18.4 | [react.md](react.md) | 84 |
 | `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 82 |

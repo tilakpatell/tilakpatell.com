@@ -25,8 +25,9 @@
 //   over the surface's dome (`dome`, hidden while it shows), its fog
 //   (light/fog.js, the gradient's colour) as the scene's fog node over the
 //   surface's (`skyFog`'s mix to the dome set to 0), and the level's placed
-//   lights clustered (light/placed.js). None: the surface's own sky, fog
-//   and grade.
+//   lights clustered (light/placed.js) where the site has no pack (a pack's
+//   lights.json is placed by level/index.js). None: the surface's own sky,
+//   fog and grade.
 //
 //   surfaceEntry(site, picture, { sunDir }) → the entry lib/three/light reads
 //     (pure): lane G's derived shape from the site, its sun where the scene's
@@ -139,9 +140,10 @@ export async function createSurfaceStack({ scene, renderer, camera, sun, site, t
     scene.fogNode = recordFog.node;
     if (skyFog?.uniforms?.uSfMix) skyFog.uniforms.uSfMix.value = 0;
   }
-  // the level's placed lights, clustered (the record's lumens at its rate)
+  // the level's placed lights, clustered (the record's lumens at its rate);
+  // a world with a pack has them from its lights.json already (level/index.js)
   let placed = null;
-  if (picture?.lights) {
+  if (picture?.lights && !site?.level) {
     const { createPlacedLights } = await import('../../../../lib/three/light/placed.js');
     placed = await createPlacedLights(scene, renderer, { source: picture.lights, scale: rate }).catch(() => null);
   }
