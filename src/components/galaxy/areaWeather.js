@@ -126,7 +126,8 @@ function boltOf(top, bottom, rand) {
   return new Float32Array(out);
 }
 
-export function createAreaWeather(group, { data, frame, at, sea, wind = null, rand = Math.random }) {
+// (`space`: a space level's area, its lamps and beacons only: no rain, no sea for lightning)
+export function createAreaWeather(group, { data, frame, at, sea, wind = null, rand = Math.random, space = false }) {
   const parts = [];
   const glows = data.glows?.length ? points(group, data.glows, { frame, at, gain: 2.4, rand }) : null;
   const beacons = data.blinkers?.length ? points(group, data.blinkers, { frame, at, color: [1, 0.08, 0.04], size: 30, gain: 4, blink: true, rand }) : null;
@@ -153,13 +154,14 @@ export function createAreaWeather(group, { data, frame, at, sea, wind = null, ra
   const rainU = { uCam: { value: new THREE.Vector3() }, uFall: { value: fall }, uTime: { value: 0 }, uBox: { value: BOX }, uColor: { value: new THREE.Color(0.55, 0.62, 0.7) }, uFlash: { value: 0 } };
   const rain = new THREE.LineSegments(rainGeo, new THREE.ShaderMaterial({ vertexShader: RAIN_VERT, fragmentShader: RAIN_FRAG, uniforms: rainU, transparent: true, depthWrite: false, fog: false }));
   rain.frustumCulled = false;
+  rain.visible = !space;
   parts.push(rain);
   // (the rain's in world space round the camera, not the group's frame)
   group.parent?.add(rain);
 
   // lightning: a strike every few seconds at one of the level's places
   const strikes = (data.strikes ?? []).map((p) => local(frame, at, p));
-  const seaY = sea - at[1];
+  const seaY = (sea ?? at[1]) - at[1];
   const boltU = { uOn: { value: 0 } };
   const bolt = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.ShaderMaterial({ vertexShader: BOLT_VERT, fragmentShader: BOLT_FRAG, uniforms: boltU, fog: false }));
   bolt.frustumCulled = false;
