@@ -87,7 +87,7 @@ The earlier counts left part of each level out: in software GL `lib/three/frameG
 
 Either way it changes what low looks like, so the decision is the owner's. No row was raised.
 
-Mid and high, counted whole, cannot be run here in time. Since lane T's #887 the surface draws mid and up on the node renderer, and `?gpu=webgl` now picks `nodes-webgl`, still the node renderer. In software GL the high run outlasts a 40-minute limit with two worlds. [HIGH] The earlier high runs, which held back some materials as described above, put Hoth at 146.1 MB and Endor at 157.7 MB of models, within the 160 MB bucket row. Downloads do not depend on the frame guard, so those megabyte figures stand.
+Mid and high, counted whole, cannot be run here in time. Since lane T's #887 the surface draws mid and up on the node renderer, and `?gpu=webgl` now picks `nodes-webgl`, still the node renderer. In software GL the high run outlasts a 40-minute limit with two worlds, and Hoth alone outlasts 100 minutes: that measure is the GPU’s (the laptop, lane G, the desktop’s `gate` job). The earlier high runs, which held back some materials as described above, put Hoth at 146.1 MB and Endor at 157.7 MB of models, within the 160 MB bucket row. Downloads do not depend on the frame guard, so those megabyte figures stand.
 
 ## Decals
 
