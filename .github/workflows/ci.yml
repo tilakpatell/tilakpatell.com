@@ -89,11 +89,13 @@ jobs:
       - run: npx playwright-core install --with-deps chromium
 
       # the dev server with the public bucket (a variable, not a secret) as
-      # the asset base, as the deploy builds it, and a wait till it answers
+      # the asset base, as the deploy builds it, and a wait till it answers.
+      # (bound to 127.0.0.1, where galaxy-check asks: on the runner
+      # `localhost` answers on ::1 alone, and the check found nothing there)
       - run: |
-          npx vite --port 5188 > vite.log 2>&1 &
+          npx vite --host 127.0.0.1 --port 5188 > vite.log 2>&1 &
           for i in $(seq 1 60); do
-            if curl -sf http://localhost:5188/ > /dev/null; then exit 0; fi
+            if curl -sf http://127.0.0.1:5188/ > /dev/null; then exit 0; fi
             sleep 2
           done
           cat vite.log
