@@ -103,6 +103,8 @@ The numbers (each pack's README has the rest):
 
 <!-- G2 table -->
 
+**In the browser:** Hoth_01's whole pack in the game world, headless WebGL at low on SwiftShader (`docs/superpowers/evidence/bfg-levels/hoth_01/`: deploy, field and end shots, `check.json`). No console errors; the level loaded whole, with 2.23 million triangles, 540 calls, 10,617 instances and 14 placed vehicles drawn round the first spawn. The deploy screen, the stage line, the objective markers and the battle run on the pack's `nav.bin`. A frame takes about 2 s on the CPU, so it is no measure.
+
 **Checking it:**
 - `npx vitest run scripts/lib/bf2017-level.test.mjs scripts/lib/bf2017-nav.test.mjs scripts/bf2017-level-nav.test.mjs scripts/lib/asset-manifest.test.mjs scripts/assets-check.test.mjs src/lib/battlefront/nav.test.js src/components/battlefront/map`
 - in the browser, Hoth: `node scripts/battlefront-check.mjs --gpu webgl --quality low --out docs/superpowers/evidence/bfg-levels/hoth_01`
