@@ -24491,58 +24491,16 @@
     "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_buildings_spire_01_mesh.lod3.glb",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_01_mesh.lod0.glb": {
-    "hash": "d6c8e4babb01",
-    "bytes": 401976,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_01_mesh.lod0.glb",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_03_mesh.lod0.glb": {
     "hash": "8e684d9efbbb",
     "bytes": 1223092,
     "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_03_mesh.lod0.glb",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_04_mesh.lod0.glb": {
-    "hash": "cc8f57d87944",
-    "bytes": 1268108,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_04_mesh.lod0.glb",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_05_mesh.lod0.glb": {
     "hash": "5fb72bd0ecee",
     "bytes": 1089152,
     "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_05_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_06_mesh.lod0.glb": {
-    "hash": "66a114b4a9fc",
-    "bytes": 1280672,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_06_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_07_mesh.lod1.glb": {
-    "hash": "cf7d6ea15a53",
-    "bytes": 148164,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_07_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_07_mesh.lod2.glb": {
-    "hash": "cb4b3747b8e4",
-    "bytes": 89488,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_07_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_07_mesh.lod3.glb": {
-    "hash": "f2cbd92535b9",
-    "bytes": 39672,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_07_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_07_mesh.lod4.glb": {
-    "hash": "ea8c25f2c8be",
-    "bytes": 5376,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/backdrop_tile_01_cluster_07_mesh.lod4.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/meshes/box_m_03_mesh.lod0.glb": {
@@ -24737,24 +24695,6 @@
     "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingaddonhuge02_mesh.lod3.glb",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/meshes/buildingentrancedoorconnector01_mesh.lod0.glb": {
-    "hash": "4e1fc34403f4",
-    "bytes": 8724,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingentrancedoorconnector01_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/buildingentrancedoorconnector01_mesh.lod1.glb": {
-    "hash": "a360140ccf58",
-    "bytes": 6760,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingentrancedoorconnector01_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/buildingentrancedoorconnector01_mesh.lod2.glb": {
-    "hash": "5410eb6e37b0",
-    "bytes": 4760,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingentrancedoorconnector01_mesh.lod2.glb",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/meshes/buildingentranceopenhuge01_mesh.lod0.glb": {
     "hash": "5d5c872bc0e6",
     "bytes": 10120,
@@ -24765,36 +24705,6 @@
     "hash": "4391b38f54a6",
     "bytes": 6516,
     "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingentranceopenhuge01_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod1.glb": {
-    "hash": "d281fb508558",
-    "bytes": 109552,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod2.glb": {
-    "hash": "c917a7958120",
-    "bytes": 54380,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod3.glb": {
-    "hash": "170adfac1c0b",
-    "bytes": 32952,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod4.glb": {
-    "hash": "a569895f740e",
-    "bytes": 21996,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod4.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod5.glb": {
-    "hash": "d468b3c1a0e7",
-    "bytes": 6104,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/buildingharbourhuge01_mesh.lod5.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/meshes/buildings_occluders_02_mesh.lod0.glb": {
@@ -24855,30 +24765,6 @@
     "hash": "8ed0d824c4b0",
     "bytes": 2632,
     "from": "models/galaxy/bf2017/levels/bespin/meshes/ceilingglass_01_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/chairwaitinghall_01_mesh.lod0.glb": {
-    "hash": "67f61227aaae",
-    "bytes": 28028,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/chairwaitinghall_01_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/chairwaitinghall_01_mesh.lod1.glb": {
-    "hash": "0aacea4a8aac",
-    "bytes": 17352,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/chairwaitinghall_01_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/chairwaitinghall_01_mesh.lod2.glb": {
-    "hash": "a147adc2d2e7",
-    "bytes": 12068,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/chairwaitinghall_01_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/chairwaitinghall_01_mesh.lod3.glb": {
-    "hash": "b7a708ee5726",
-    "bytes": 9176,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/chairwaitinghall_01_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/meshes/citydisk_clouds_huge_01_mesh.lod0.glb": {
@@ -25071,66 +24957,6 @@
     "hash": "58c90671bcfb",
     "bytes": 10472,
     "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_01_platform_01_railing_04_mesh.lod4.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_01_mesh.lod0.glb": {
-    "hash": "ab508de4d53f",
-    "bytes": 38152,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_01_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_01_mesh.lod1.glb": {
-    "hash": "fe6ef5497bae",
-    "bytes": 23460,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_01_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_01_mesh.lod2.glb": {
-    "hash": "5785fadc629e",
-    "bytes": 14440,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_01_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_01_mesh.lod3.glb": {
-    "hash": "654a90490eb0",
-    "bytes": 5428,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_01_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_mesh.lod0.glb": {
-    "hash": "f269c062cf3e",
-    "bytes": 28280,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_mesh.lod1.glb": {
-    "hash": "c10633dc2d65",
-    "bytes": 18892,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_mesh.lod2.glb": {
-    "hash": "495db7a85c3f",
-    "bytes": 12992,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_mesh.lod3.glb": {
-    "hash": "983a30eca284",
-    "bytes": 6212,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_bottom_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_mesh.lod0.glb": {
-    "hash": "e24e79d2587f",
-    "bytes": 13212,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_mesh.lod1.glb": {
-    "hash": "cbb07b926dcf",
-    "bytes": 10356,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_building_02_mesh.lod1.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/meshes/clouds_02_groundcloud_01_mesh.lod0.glb": {
@@ -26501,24 +26327,6 @@
     "from": "models/galaxy/bf2017/levels/bespin/meshes/plantfoundation_02_water_mesh.lod1.glb",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/meshes/plantfoundation_05_mesh.lod0.glb": {
-    "hash": "6100f0710f75",
-    "bytes": 7148,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/plantfoundation_05_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/plantfoundation_05_mesh.lod1.glb": {
-    "hash": "1b8230a8c344",
-    "bytes": 5084,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/plantfoundation_05_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/plantfoundation_05_mesh.lod2.glb": {
-    "hash": "04f06c1f0288",
-    "bytes": 3764,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/plantfoundation_05_mesh.lod2.glb",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/meshes/plantfoundation_06_mesh.lod0.glb": {
     "hash": "cf21a9208aec",
     "bytes": 7972,
@@ -26601,12 +26409,6 @@
     "hash": "4f2f1f3b68f9",
     "bytes": 3632,
     "from": "models/galaxy/bf2017/levels/bespin/meshes/plaza_building_huge_trim_07_b_s3072_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/plaza_building_huge_trim_07_d_mesh.lod0.glb": {
-    "hash": "0559fd50fc6e",
-    "bytes": 12480,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/plaza_building_huge_trim_07_d_mesh.lod0.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/meshes/plaza_building_huge_trim_07_e_end_mesh.lod0.glb": {
@@ -26939,36 +26741,6 @@
     "from": "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_01_mesh.lod4.glb",
     "tier": "pack"
   },
-  "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod0.glb": {
-    "hash": "07224cee33ba",
-    "bytes": 23108,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod1.glb": {
-    "hash": "947234f7eee4",
-    "bytes": 14564,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod2.glb": {
-    "hash": "3b6f09cad7d9",
-    "bytes": 9540,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod3.glb": {
-    "hash": "e47fd43fba89",
-    "bytes": 6876,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod4.glb": {
-    "hash": "751a8f7f3724",
-    "bytes": 5432,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/sculpturelarge_04_mesh.lod4.glb",
-    "tier": "pack"
-  },
   "models/galaxy/bf2017/levels/bespin/meshes/sculpturemedium_01_mesh.lod0.glb": {
     "hash": "518c03dcb4da",
     "bytes": 44868,
@@ -27261,180 +27033,6 @@
     "hash": "433e810c85d3",
     "bytes": 4900,
     "from": "models/galaxy/bf2017/levels/bespin/meshes/toolboxsmall_01_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod0.glb": {
-    "hash": "ddc72160c962",
-    "bytes": 52716,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod1.glb": {
-    "hash": "c5a61ef27f3c",
-    "bytes": 32728,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod2.glb": {
-    "hash": "940ca6c6c3f4",
-    "bytes": 16844,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod3.glb": {
-    "hash": "faaaeaaa2bb0",
-    "bytes": 10084,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod4.glb": {
-    "hash": "1961b8c6d3ef",
-    "bytes": 6720,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection01_mesh.lod4.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod0.glb": {
-    "hash": "f0d9935e93e4",
-    "bytes": 85000,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod1.glb": {
-    "hash": "6efa86282101",
-    "bytes": 55372,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod2.glb": {
-    "hash": "40b82dfd2927",
-    "bytes": 35000,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod3.glb": {
-    "hash": "85740543b1e8",
-    "bytes": 18724,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod4.glb": {
-    "hash": "3ad561c49406",
-    "bytes": 11616,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection02_mesh.lod4.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod0.glb": {
-    "hash": "d436df63597d",
-    "bytes": 71800,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod1.glb": {
-    "hash": "beaa0f56c212",
-    "bytes": 46848,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod2.glb": {
-    "hash": "da42033d5f63",
-    "bytes": 24064,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod3.glb": {
-    "hash": "21f36be48141",
-    "bytes": 15896,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod4.glb": {
-    "hash": "849deef48dbb",
-    "bytes": 9780,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection03_mesh.lod4.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod0.glb": {
-    "hash": "4923b0870288",
-    "bytes": 74844,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod1.glb": {
-    "hash": "d954c372f104",
-    "bytes": 48008,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod2.glb": {
-    "hash": "cffcae132964",
-    "bytes": 34780,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod3.glb": {
-    "hash": "3f0eff18a598",
-    "bytes": 24052,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod4.glb": {
-    "hash": "ca5b34e5eaeb",
-    "bytes": 11548,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection11_mesh.lod4.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod0.glb": {
-    "hash": "641c304f55f4",
-    "bytes": 92008,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod1.glb": {
-    "hash": "ceebde8b885c",
-    "bytes": 56696,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod2.glb": {
-    "hash": "e23581128c57",
-    "bytes": 34256,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod3.glb": {
-    "hash": "c3e79021337e",
-    "bytes": 20856,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod3.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod4.glb": {
-    "hash": "040bc496777c",
-    "bytes": 6316,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection14_mesh.lod4.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection17_clouds02_mesh.lod0.glb": {
-    "hash": "9f39ce5fd0cb",
-    "bytes": 49992,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection17_clouds02_mesh.lod0.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection17_clouds02_mesh.lod1.glb": {
-    "hash": "4d28df4323ef",
-    "bytes": 34496,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection17_clouds02_mesh.lod1.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection17_clouds02_mesh.lod2.glb": {
-    "hash": "3f0a36d50bed",
-    "bytes": 20680,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection17_clouds02_mesh.lod2.glb",
-    "tier": "pack"
-  },
-  "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection17_clouds02_mesh.lod3.glb": {
-    "hash": "8c51dbcad1af",
-    "bytes": 7448,
-    "from": "models/galaxy/bf2017/levels/bespin/meshes/towerhugesection17_clouds02_mesh.lod3.glb",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/meshes/ul_ceiling_01_384_mesh.lod0.glb": {
@@ -31751,6 +31349,12 @@
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_citydisk_clouds_huge_01_n__normal.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_n__normal.128.ktx2": {
+    "hash": "82334f3c67d4",
+    "bytes": 18531,
+    "from": "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_n__normal.128.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_n__normal.256.ktx2": {
     "hash": "55ed5cdbdee2",
     "bytes": 64708,
@@ -31761,6 +31365,12 @@
     "hash": "fe8db2f43704",
     "bytes": 225584,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_n__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_n__orm_451515a9.128.ktx2": {
+    "hash": "c6127b98ffc7",
+    "bytes": 18486,
+    "from": "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_n__orm_451515a9.128.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_n__orm_451515a9.256.ktx2": {
@@ -31779,6 +31389,12 @@
     "hash": "37e7a88bbf71",
     "bytes": 198378,
     "from": "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_rebel_cw.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_rebel_cw.256.ktx2": {
+    "hash": "305d8e5af2d8",
+    "bytes": 46670,
+    "from": "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_rebel_cw.256.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/bespin/tex/t_cloudcar_rebel_cw.512.ktx2": {

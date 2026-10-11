@@ -9,7 +9,7 @@ export const SITE = {
   // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/bespin/level.json,
   // `node scripts/bf2017-level.mjs s2/levels/cloudcity_01 --world bespin
   // --spot 20 0 --floor 199 --walk 192 --arena 1024 --share
-  // low=0.5,mid=0.6,high=0.7 --subs CloudCity_01,StreamedLevel`): CloudCity_01's walkways, platforms and
+  // low=0.35,mid=0.6,high=0.4 --subs CloudCity_01,StreamedLevel`): CloudCity_01's walkways, platforms and
   // halls at the game's 199 m, the city's plazas 204 m below as its
   // backdrop. Each place stands on the game's own: Platform 327 on the great
   // landing platform, the chamber by the Tibanna generators and the
