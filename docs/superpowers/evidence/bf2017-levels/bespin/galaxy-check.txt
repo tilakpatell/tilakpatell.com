@@ -1,0 +1,12 @@
+# BUDGET=1 PHASE_WAIT=900000 QUALITY=<tier> node scripts/galaxy-check.mjs surface bespin
+# 2026-10-11, the whole world counted (lib/three/frameGuard's holdNone), on main with E0's latest.
+# Measured with the dev server on the public bucket (VITE_ASSET_BASE), as main's own Hoth reads 111.7 MB of models there (E0's e0-on-main README): the models row was written for a base-less server.
+# The pack: --spot 20 0 --floor 199 --walk 192 --arena 1024 --share low=0.35,mid=0.6,high=0.4, the deck rule.
+low    calls 211  tris  629121  models  26.3 MB   level calls 216  tris 227637   row (350, 0.8M, 20 MB): models over (the crew packs; the level 0.8 MB)
+mid    calls 214  tris  646537  models  29.1 MB   level calls 254  tris 308229   row (500, 1.5M, 40 MB): pass; baseline +10% (112, 0.60M): over
+high   calls 395  tris 1636181  models 110.4 MB   level calls 278  tris 369603   row (700, 3M, 60 MB): models over; baseline +10% (180, 1.05M): over
+ultra  calls 393  tris 2089253  models 323.5 MB   level calls 285  tris 455774   row (1500, none, 240 MB): models over
+# Before the shares and the whole city in the arena (the level drawn, counted whole): low 410 calls, 1.78M triangles; high 778 calls, 3.98M.
+# On the node renderer (lane T's #887 on main; SwiftShader draws it as nodes-webgl, so the frame guard is not in the way and "prog" reads null), 2026-10-11, SCANS=game PHASE_WAIT=1500000:
+high   calls 436  tris 1611381  models 104.2 MB   level calls 278  tris 369603   row (700, 3M, 60 MB): models over (the crew, as before); baseline +10% (180, 1.05M): over; scans cc0 0, game 45
+# Findings for lane D2's task 7 (the gate that counts everything): over the 60 MB models row, as main's Hoth is at 111.7 MB from the bucket; over the pre-level baseline +10%, as every level world is. Calls, triangles and SCANS=game are inside the rows. Neither the row nor the baseline moves in lane E4.

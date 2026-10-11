@@ -469,7 +469,9 @@ export async function create(canvas, ctx) {
     renderer,
     walk: world,
     small: device().phone,
-    heightAt: (x, z) => world.heightAt(x, z),
+    // (a world with no ground under its floors, Cloud City, gives the engine
+    // no heightfield: its heightAt is the fall line, a floor of air at -40)
+    heightAt: site.noGround ? null : (x, z) => world.heightAt(x, z),
     // (kept till the body below exists: the engine can come during an await before it)
     onPhysics: (physics) => {
       levelEngine = physics;

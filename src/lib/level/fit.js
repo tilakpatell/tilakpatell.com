@@ -5,18 +5,20 @@
 // and the sky have the rest). A reach is in radii, so the small things
 // (snow debris, cables, clutter) go first and the hangar and the ridges
 // last. Where even the nearest reach is over, the lightest meshes (instances
-// × bounding volume over the whole arena) go entirely, one at a time; a mesh
-// marked `keep` (the map's own buildings, the level script's --keep: an Ewok
-// village's decks and huts, lighter than the trees they hang in) only once
-// no other is left at the worst place. The parts of one thing (`group`: a
-// tree's trunk, crown and addons) go together.
+// × bounding volume over the whole arena) go entirely, one at a time; never
+// one marked `keep` (a floor you stand on: a mesh not drawn has no collision,
+// so dropping it drops you through it), even if the row is left over; one
+// marked `last` (the map's own buildings, the level script's --keep: an Ewok
+// village's decks and huts, lighter than the trees they hang in) only once no
+// other is left at the worst place. The parts of one thing (`group`: a tree's
+// trunk, crown and addons) go together.
 //
 //   costAt(inst, meshes, [x, z], tier, K, skip) → { tris, calls }
 //   fitCull(inst, meshes, row, tier, { positions, share = 0.9, kMin = 4, kMax = 1000 }) → { K, dropped, worst }
 //
 // inst: { x, z, r, mesh, mirrored } typed arrays; meshes[m]: { lods (each
-// LOD's triangles), mats, weight, keep?, group? (the parts of one thing,
-// dropped together), upTo? (the first LOD not drawn: past it, nothing) }. A call is one mesh, LOD and side drawn
+// LOD's triangles), mats, weight, keep?, last?, group? (the parts of one
+// thing, dropped together), upTo? (the first LOD not drawn: past it, nothing) }. A call is one mesh, LOD and side drawn
 // (the scene's InstancedMesh), times its materials.
 
 import { lodAt, seenAt } from './lod.js';
@@ -70,14 +72,14 @@ export function fitCull(inst, meshes, row, tier, { positions, share = 0.9, kMin 
     for (let w = worstAt(K); !fits(w); w = worstAt(K)) {
       const who = new Set();
       costAt(inst, meshes, w.at, tier, K, skip, who);
-      // (a mesh the map keeps, its own buildings, after every other: then the lightest of those)
+      // (never a floor kept; a mesh the map keeps last, its own buildings, after every other: then the lightest of those)
       const lighter = (m, p) => meshes[m].weight < meshes[p].weight || (meshes[m].weight === meshes[p].weight && m < p);
       let pick = -1;
-      for (const m of who) if (pick < 0 || (!meshes[m].keep && meshes[pick].keep) || (Boolean(meshes[m].keep) === Boolean(meshes[pick].keep) && lighter(m, pick))) pick = m;
+      for (const m of who) if (!meshes[m].keep && (pick < 0 || (!meshes[m].last && meshes[pick].last) || (Boolean(meshes[m].last) === Boolean(meshes[pick].last) && lighter(m, pick)))) pick = m;
       if (pick < 0) break;
       skip.add(pick);
       // (and the rest of its thing: a tree's crown goes with its trunk)
-      if (meshes[pick].group != null) for (let m = 0; m < meshes.length; m++) if (meshes[m].group === meshes[pick].group) skip.add(m);
+      if (meshes[pick].group != null) for (let m = 0; m < meshes.length; m++) if (meshes[m].group === meshes[pick].group && !meshes[m].keep) skip.add(m);
     }
   }
   const w = worstAt(K);

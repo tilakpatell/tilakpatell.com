@@ -54,13 +54,21 @@ describe('fitCull', () => {
     expect(f.worst.tris).toBe(1000);
   });
 
-  it('a mesh the map keeps (its own buildings: `keep`) goes only after every other at the worst place', () => {
+  it('never drops a mesh you stand on (`keep`): the next lightest goes, and the row is left over if nothing else can', () => {
     const inst = at([[1, 0, 10, 0], [1, 0, 1, 1], [1.2, 0, 1, 1], [1.4, 0, 1, 1]]);
-    const kept = [meshes[0], { ...meshes[1], keep: true }];
+    const kept = meshes.map((m, i) => (i === 1 ? { ...m, keep: true } : m));
+    const f = fitCull(inst, kept, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 });
+    expect(f.dropped).not.toContain(1);
+    expect(f.dropped).toEqual([0]);
+  });
+
+  it('a mesh the map keeps last (its own buildings: `last`) goes only after every other at the worst place', () => {
+    const inst = at([[1, 0, 10, 0], [1, 0, 1, 1], [1.2, 0, 1, 1], [1.4, 0, 1, 1]]);
+    const kept = [meshes[0], { ...meshes[1], last: true }];
     const f = fitCull(inst, kept, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 });
     expect(f.dropped).toEqual([0]);
     // (and when only kept ones are left, the lightest of them, as before)
-    const all = [{ ...meshes[0], keep: true }, { ...meshes[1], keep: true }];
+    const all = [{ ...meshes[0], last: true }, { ...meshes[1], last: true }];
     expect(fitCull(inst, all, { tris: 1150, calls: 100 }, 'high', { positions: [[0, 0]], kMin: 4, kMax: 1000 }).dropped).toEqual([1]);
   });
 
