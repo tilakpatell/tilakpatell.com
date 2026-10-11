@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom';
-import { COC, NODE_PASSES, ORDER, SSGI, arrange, dofParams, headroom, motionBlurOf, passesFor, raysLight, shed, upscaleKind, upscaled } from './post';
+import { COC, NODE_PASSES, ORDER, SSGI, SSR_ROUGHNESS, arrange, dofParams, headroom, motionBlurOf, passesFor, raysLight, shed, upscaleKind, upscaled } from './post';
 import hoth from './fixtures/hoth.ve.json';
 import { gradeOf } from './grade';
 
@@ -233,5 +233,13 @@ describe('a world’s own grade', () => {
     expect(arrange([{ kind: 'render' }, { kind: 'grade' }, { kind: 'output' }]).map((p) => p.kind)).toEqual(['render', 'output']);
     expect(NODE_PASSES.has('grade')).toBe(true);
     expect(ORDER.indexOf('grade')).toBe(ORDER.indexOf('motionBlur') + 1);
+  });
+});
+
+describe('SSR’s roughness cut (lane N3)', () => {
+  it('the ssr row reflects only under Lumen’s 0.4; rougher is the material’s environment', () => {
+    expect(SSR_ROUGHNESS).toBe(0.4);
+    const ssr = passesFor('ultra', hoth.sunny, 'webgpu', refs).find((p) => p.kind === 'ssr');
+    expect(ssr.roughnessCutoff).toBe(0.4);
   });
 });

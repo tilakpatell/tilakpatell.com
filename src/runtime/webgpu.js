@@ -11,13 +11,17 @@
 // the house’s numbers (lib/three/bloom) unless a world says otherwise, as
 // the WebGL backend is.
 //
-// createWebGPU(canvas, { budget, onLost, alpha, toneMapping, exposure, forceWebGL }) → Promise<gfx>
+// createWebGPU(canvas, { budget, onLost, alpha, toneMapping, exposure, forceWebGL, temporal }) → Promise<gfx>
+// (`temporal: false`, development's ?traa=off for the reference shots: a
+// chain's TRAA pass left out, and gfx.jitter(i) moves the camera by shot
+// i's sub-pixel offset, lib/three/jitter; gfx.jitter(null) stops)
 
 import * as THREE from 'three';
 import { settle } from '../lib/settle';
 import { BLOOM } from '../lib/three/bloom';
 import { NODE_PASSES } from '../lib/three/light/post';
 import { makeGfx } from './gfx';
+import { createJitter } from '../lib/three/jitter';
 
 export const hasWebGPU = () => typeof navigator !== 'undefined' && Boolean(navigator.gpu);
 
@@ -107,7 +111,7 @@ export async function adapterLimits(gpu = typeof navigator !== 'undefined' ? nav
   }
 }
 
-export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false } = {}) {
+export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false, temporal = true } = {}) {
   const { WebGPURenderer } = await import('three/webgpu');
   // A device is made with its adapter's own limits where the defaults are
   // tighter than the chip: a post chain's five colour targets cost more a
@@ -139,7 +143,8 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   };
   if (onWebGL) canvas.addEventListener('webglcontextlost', onContextLost);
   else renderer.backend?.device?.lost?.then(gone);
-  return makeGfx({
+  let jitter = null; // (made on the first gfx.jitter: until then render is three's own)
+  const gfx = makeGfx({
     backend: onWebGL ? 'nodes-webgl' : 'webgpu',
     renderer,
     canvas,
@@ -158,11 +163,14 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
           }
         }
       }),
-    post: (passes) => buildPostProcessing(renderer, passes),
+    post: (passes) => buildPostProcessing(renderer, temporal ? passes : passes.filter((p) => p.kind !== 'traa')),
     isLost: () => lost,
     release: () => {
       released = true;
+      jitter?.dispose();
       if (onWebGL) canvas.removeEventListener('webglcontextlost', onContextLost);
     },
   });
+  gfx.jitter = (i) => (jitter ??= createJitter(renderer)).set(i);
+  return gfx;
 }

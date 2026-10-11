@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three/webgpu';
-import { BLEND, REF_TEXEL, ULTRA_SHADOW_FAR, biasFor, cascadesFor, castCascades, createSun, readShadowRecord, splitsFor } from './sun';
+import { BLEND, CADENCE, REF_TEXEL, ULTRA_SHADOW_FAR, biasFor, cadenceFor, cascadeDue, cascadesFor, castCascades, createSun, inCascade, readShadowRecord, splitsFor } from './sun';
 import { sunDir } from './entry';
 import { raysLight } from './post';
 import hoth from './fixtures/hoth.ve.json';
@@ -179,5 +179,50 @@ describe('castCascades', () => {
     light.position.set(1, 0, 0);
     c.follow();
     expect(c.shadowDir.x).toBeCloseTo(1);
+  });
+});
+
+describe('the cascades’ cadence (lane N3)', () => {
+  const cadence = { near: 1, far: 4, split: 2 };
+  it('cascadeDue: the near two every frame; each far one every fourth (staggered); a caster in, at once', () => {
+    const table = [];
+    for (let f = 0; f < 8; f++) table.push([0, 1, 2, 3].map((i) => (cascadeDue(i, f, cadence, false) ? 1 : 0)).join(''));
+    expect(table).toEqual(['1100', '1101', '1110', '1100', '1100', '1101', '1110', '1100']);
+    expect(cascadeDue(2, 1, cadence, true)).toBe(true);
+    expect(cascadeDue(3, 0, cadence, true)).toBe(true);
+    // (no cadence: every cascade every frame, as before)
+    expect([0, 1, 2, 3].every((i) => cascadeDue(i, 5, null, false))).toBe(true);
+  });
+  it('cadenceFor: the near half of the cascades every frame, the rest every fourth (two on mid: one each)', () => {
+    expect(cadenceFor(4)).toEqual({ near: 1, far: 4, split: 2 });
+    expect(cadenceFor(2)).toEqual({ near: 1, far: 4, split: 1 });
+    expect(cadenceFor(0)).toBe(null);
+    expect(CADENCE).toEqual({ near: 1, far: 4 });
+  });
+  it('inCascade: a body’s bounds against a cascade’s box (its centre, axes, half side, depth range), with its radius', () => {
+    const axes = { right: [1, 0, 0], up: [0, 0, -1], forward: [0, -1, 0] };
+    const box = { half: 10, near: 0, far: 100 };
+    expect(inCascade([0, -50, 0], 1, [0, 0, 0], axes, box)).toBe(true);
+    expect(inCascade([10.5, -50, 0], 1, [0, 0, 0], axes, box)).toBe(true);
+    expect(inCascade([12, -50, 0], 1, [0, 0, 0], axes, box)).toBe(false);
+    expect(inCascade([0, 5, 0], 1, [0, 0, 0], axes, box)).toBe(false);
+    expect(inCascade([0, -50, 30], 1, [0, 0, 20], axes, box)).toBe(true);
+  });
+  it('a sun on a cadence can track a body and says each cascade’s draws', async () => {
+    const sun = await createSun(hoth.sunny, { tier: 'ultra', cadence: true });
+    expect(sun.cadence).toEqual({ near: 1, far: 4, split: 2 });
+    const figure = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshBasicMaterial());
+    sun.track(figure);
+    expect(sun.csm.tracked.has(figure)).toBe(true);
+    sun.untrack(figure);
+    expect(sun.csm.tracked.has(figure)).toBe(false);
+    // (nothing drawn before the first frame)
+    expect(sun.csm.draws).toEqual([]);
+    sun.dispose();
+    // (no cadence asked: none, every cascade every frame)
+    const plain = await createSun(hoth.sunny, { tier: 'ultra' });
+    expect(plain.cadence).toBe(null);
+    plain.track(figure);
+    plain.dispose();
   });
 });

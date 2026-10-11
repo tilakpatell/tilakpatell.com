@@ -8,8 +8,8 @@
 // passed in, so this runs in Node: index.js wires the real ones.
 //
 // createRuntime({ makeBackend, loop, input, quality, saves, assets, audio,
-//   workers, origin, events, now, gpu, override, visible, calibrate, debug }) → rt
-// rt: { gfx, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
+//   workers, origin, events, now, gpu, override, visible, calibrate, debug, tier }) → rt
+// rt: { gfx, tier, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
 //   failure, current, loading, on(fn), invalidate(), resize(w, h), setVisible(on), lost(),
 //   mount(module, props, host) → shown, handover(module, props, host, { fade, held, after }) → shown,
 //   adopt(module, host), unmount(), dispose(), requality(level) → 'tuned' |
@@ -30,6 +30,11 @@
 // panel under its module's id; the world let go closes it.
 // (`shown`: true once the module's world is the one drawing; false when it
 // failed, or something newer was asked for meanwhile)
+// `tier` (gfx) → Promise<'T0' | 'T1' | 'T2' | null>: the device's renderer
+// tier (lib/gpuProbe, the GPU-first design's G1), asked once a page, before
+// the first 'nodes' world is made, so its one-second probe runs under the
+// loading screen and never in a world's frames; `rt.tier` holds the answer
+// (null until then, or when it could not say). A classic world never asks.
 
 import { createLoop } from '../lib/three/loop';
 import { settle } from '../lib/settle';
@@ -67,7 +72,7 @@ export function createEvents() {
   };
 }
 
-export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug() }) {
+export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), tier: decideTier = null }) {
   let gfx = null;
   let kind = null; // the backend asked for
   let coming = null; // { kind, promise }: a backend still being made, for every mount that asks meanwhile
@@ -92,6 +97,8 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   let holdSince = null;
   let fresh = null; // the box of a mount not yet drawn, marked data-fresh
   let resized = null; // { w, h }: the box's new size, for the next frame to take
+  let tier = null; // the renderer tier, once asked (decideTier)
+  let tiering = null; // its one asking, shared by every mount meanwhile
   const listeners = new Set();
   const dev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
 
@@ -319,6 +326,18 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   const build = async (module, props, host, token, { early }) => {
     const made = await backendFor(module);
     if (token !== seq || !made) return null;
+    if (module.shading === 'nodes' && decideTier) {
+      tiering ??= Promise.resolve()
+        .then(() => decideTier(made))
+        .then(
+          (t) => (tier = t ?? null),
+          (err) => {
+            if (dev) console.warn('the renderer tier could not be decided', err);
+          },
+        );
+      await tiering;
+      if (token !== seq) return null;
+    }
     if (early) start(module);
     rt.host = host;
     assets.owner?.(module.id);
@@ -455,6 +474,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     host: null,
     get status() {
       return status;
+    },
+    get tier() {
+      return tier;
     },
     get failure() {
       return failure;

@@ -12,7 +12,12 @@
 //
 //   writeParts({ env, cache, mapName, base (the map's files' stem under web/), map, json, out, subs, mode, weather, ultra, dry, log })
 //     (ultra: each probe's 128² faces with the sun kept as well, `<faces>.ultra.<face>.hdr`)
-//     → { counts, lines (the README's section), shadowCache, parts (level.json's index) }
+//     → { counts, lines (the README's section), shadowCache, enlighten, parts (level.json's index) }
+//
+// The Enlighten sets (GPU-first lane N3, level.json's `enlighten`): each
+// set's five maps copied into enlighten/ from the first bucket path that has
+// it (the HDR irradiance, else the clamped one); a set whose irradiance the
+// bucket has not got is left out, so the loader keeps the level's probes.
 
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
@@ -24,6 +29,7 @@ import { mainSubs } from './lib/bf2017-level.mjs';
 import { actorsJson, vehiclesJson } from './lib/bf2017-level-actors.mjs';
 import { effectsJson } from './lib/bf2017-effects.mjs';
 import { probesJson } from './lib/bf2017-level-probes.mjs';
+import { enlightenRows } from './lib/bf2017-level.mjs';
 import { tracksJson } from './lib/bf2017-level-tracks.mjs';
 import { lightsJson } from './lib/bf2017-lights.mjs';
 import { clipFaces, probeStats, readHdr, shrinkFace, writeHdr } from './lib/bf2017-light.mjs';
@@ -168,6 +174,23 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
   }
   counts.shadow = shadowCache ? 1 : 0;
 
+  // the baked light (lane N3): every set the bucket has the irradiance of
+  const enlighten = [];
+  for (const row of enlightenRows([...manifest.values()])) {
+    const keep = { ...row };
+    for (const [key, paths] of Object.entries(row.from)) {
+      let found = null;
+      for (const p of paths) if (!found) found = (await bytes(env, cache, `web/${p}`)) ? p : null;
+      if (found) {
+        files.set(row[key], await bytes(env, cache, `web/${found}`));
+        if (key === 'irradiance') keep.hdr = found === paths[0];
+      } else delete keep[key];
+    }
+    delete keep.from;
+    if (keep.irradiance) enlighten.push(keep);
+  }
+  counts.enlighten = enlighten.length;
+
   // the colour lane's slot (#877): the variations' texture bindings and
   // tints, empty until that lane writes it (and never over what it wrote)
   if (!existsSync(join(out, 'variations.json'))) put('variations.json', { format: 1, meshes: {}, instances: null });
@@ -201,13 +224,14 @@ export async function writeParts({ env, cache, mapName, base = `web/maps/${mapNa
     `| tracks.json | ${counts.tracks} | ${kb(size((p) => p === 'tracks.json'))} | src/lib/three/animTracks.js |`,
     `| probes.json and probes/ | ${counts.probes}${kept.some((k) => k.ultra) ? ` (and ${kept.filter((k) => k.ultra).length} at ${ULTRA_PROBE_SIZE}² with the sun, for ultra)` : ''} | ${kb(size((p) => p === 'probes.json' || p.startsWith('probes/')))} | levelProbes.js, lane R's grid |`,
     `| shadow/far.png | ${counts.shadow} | ${kb(size((p) => p.startsWith('shadow/')))} | fidelity S (level.json's shadowCache) |`,
+    `| enlighten/ | ${counts.enlighten} | ${kb(size((p) => p.startsWith('enlighten/')))} | lane N3's light/baked.js (level.json's enlighten) |`,
     `| scatter.json | ${counts.scatter} | ${kb(size((p) => p === 'scatter.json'))} | fidelity N |`,
     '',
     `Not placed (no kind on the site yet, or scenery): ${unplaced.map((u) => `${u.blueprint} ×${u.count}`).join(', ') || 'none'}. Decals skipped: ${Object.entries(decals.skipped ?? {}).map(([k, v]) => `${k} ${v}`).join(', ') || 'none'}. Tracks of owners the pack lacks: ${tracks.unplaced.length}.`,
     '',
   ];
-  for (const l of lines.slice(4, 15)) log(l);
+  for (const l of lines.slice(4, 16)) log(l);
   // (level.json's index of its parts, by name: each loader finds its own file)
   const parts = Object.fromEntries([...files.keys()].filter((p) => p.endsWith('.json')).map((p) => [p.replace(/\.json$/, ''), p]));
-  return { counts, lines, shadowCache, parts };
+  return { counts, lines, shadowCache, enlighten, parts };
 }

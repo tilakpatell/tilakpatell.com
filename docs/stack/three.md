@@ -59,7 +59,7 @@ node scripts/autopilot-check.mjs --only smoke
 node scripts/health.mjs --check --skip build
 ```
 
-On a new release, re-read the two files that reach inside the renderer: `src/lib/three/frameGuard.js` wraps the instance’s `renderBufferDirect`, and both it and `src/lib/three/gpuWork.js` read `renderer.properties`. Either breaks quietly if three renames what it holds there. Then `node scripts/stack-census.mjs --write` for the version in the index.
+On a new release, re-read the two files that reach inside the renderer: `src/lib/three/frameGuard.js` wraps the instance’s `renderBufferDirect`, and both it and `src/lib/three/gpuWork.js` read `renderer.properties`. Either breaks quietly if three renames what it holds there. The GPU clock (`src/lib/three/gpuTime.js`) and the tier probe lean on three r186’s timestamp names: `backend.trackTimestamp` (r186 reads it on the backend, set from the renderer’s parameters, not on the renderer), `renderer.resolveTimestampsAsync('render')` (`TimestampQuery.RENDER`) and `renderer.info.render.timestamp`; the reference shots’ jitter (`src/lib/three/jitter.js`) wraps the instance’s `render`, which three’s `PassNode` calls for a post chain’s scene. Check all four still mean the same. Then `node scripts/stack-census.mjs --write` for the version in the index.
 
 Last upgrade: not recorded; record the next one here, with what it broke.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHANNELS, composeOverlays, overlayName } from './compose.js';
+import { CHANNELS, composeOverlays, indirectDiffuse, overlayName } from './compose.js';
 
 describe('composeOverlays', () => {
   const base = { color: 'c0', roughness: 'r0', metalness: 'm0', normal: 'n0', emissive: 'e0' };
@@ -33,5 +33,16 @@ describe('composeOverlays', () => {
     expect(overlayName(snowOverlay)).toBe('snowOverlay');
     expect(overlayName(named)).toBe('terrainBlend');
     expect(overlayName(() => ({}))).toBe('overlay');
+  });
+});
+
+describe('indirectDiffuse (lane N3: the baked term)', () => {
+  const baked = { node: (uv1, chart) => `atlas(${uv1},${chart.join(' ')})` };
+  it('the atlas where there is one, a uv1 and a chart; else the probe term', () => {
+    expect(indirectDiffuse({ baked, uv1: 'uv1', chart: [1, 1, 0, 0], probe: 'probe' })).toBe('atlas(uv1,1 1 0 0)');
+    expect(indirectDiffuse({ baked: null, uv1: 'uv1', chart: [1, 1, 0, 0], probe: 'probe' })).toBe('probe');
+    expect(indirectDiffuse({ baked, uv1: null, chart: [1, 1, 0, 0], probe: 'probe' })).toBe('probe');
+    expect(indirectDiffuse({ baked, uv1: 'uv1', chart: null, probe: 'probe' })).toBe('probe');
+    expect(indirectDiffuse({ baked, uv1: 'uv1', chart: null })).toBe(null);
   });
 });

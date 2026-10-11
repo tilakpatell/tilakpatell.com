@@ -31,13 +31,27 @@
 // DirectionalLight that casts and adds no light, following the camera,
 // whose one shadow map the rays read (assumption B2 is lane V's).
 //
+// - The cadence (GPU-first lane N3, Virtual Shadow Maps' caching on
+//   cascades): with `cadence`, the near half of the cascades is drawn every
+//   frame and each far one every fourth (staggered, so two far ones never
+//   fall on one frame), unless a tracked body (track(object): the figures,
+//   the vehicles) is in that cascade's fit now but outside what its cached
+//   map covers, or the view has moved past the map's slack (CSMShadowNode's
+//   own fade margin: the map is that much wider than the cascade needs), or
+//   the shadow sun turned: then at once. A cascade not drawn keeps its map
+//   and its matrix together (three moves a cascade's shadow matrix only when
+//   it draws), so a cached map is read where it was drawn. csm.draws counts
+//   each cascade's draws, for the evidence.
+//
 // readShadowRecord(entry) → { viewDistance: { low, mid, high, ultra }, shadowSun: [x, y] | null }   (pure)
 // cascadesFor(tier, viewDistance) → { n, far, map }   (pure)
 // splitsFor(near, far, n, lambda = 0.5) → n + 1 distances  (pure)
 // biasFor(texel, { bias, normalBias }) → { bias, normalBias }   (pure)
-// createSun(entry, { tier, rays, filter, farShadow, cloud }) → Promise<{ light, rays, csm, shadowDir, set(params), setShadowSun([x, y] | null), update(camera), dispose }>
-// castCascades(light, entry, { tier, filter, farShadow, cloud }) → Promise<null | { csm, shadowDir, setShadowSun, follow(), update(camera), dispose }>
+// cadenceFor(n) → { near, far, split } | null; cascadeDue(i, frame, cadence, entered) → boolean   (pure)
+// inCascade(p, r, centre, { right, up, forward }, { half, near, far }) → boolean   (pure)
+// castCascades(light, entry, { tier, filter, farShadow, cloud, cadence }) → Promise<null | { csm, shadowDir, setShadowSun, follow(), track(object), untrack(object), update(camera), dispose }>
 //   (the same cascades on a light a world already has: the galaxy surface's)
+// createSun(entry, { tier, rays, filter, farShadow, cloud, cadence }) → Promise<{ light, rays, csm, shadowDir, cadence, set(params), setShadowSun([x, y] | null), track(object), untrack(object), update(camera), dispose }>
 
 import { readEntry, sunDir } from './entry.js';
 import { loadCSM, loadThree } from './three.js';
@@ -56,6 +70,8 @@ const RAYS_FAR = 400; // m
 const VIEW_DISTANCE = { low: 30, mid: 30, high: 30, ultra: 70 };
 const TIERS = { ultra: { n: 4, map: 2048 }, high: { n: 4, map: 2048 }, mid: { n: 2, map: 1024 }, low: { n: 0, map: 0 } };
 const RECORD_TIER = { low: 'Low', mid: 'Medium', high: 'High', ultra: 'Ultra' };
+// frames between draws: the near cascades every frame, the far every fourth (lane N3; the design's §4 "Shadows cached")
+export const CADENCE = { near: 1, far: 4 };
 
 const num = (v) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? undefined : Number(v));
 const field = (o, name, sub) => num(o?.[`${name}.${sub}`] ?? o?.[name]?.[sub]);
@@ -103,13 +119,32 @@ export function biasFor(texel, base) {
   return { bias: base.bias * k, normalBias: base.normalBias * k };
 }
 
+export function cadenceFor(n) {
+  if (!(n > 0)) return null;
+  return { ...CADENCE, split: Math.ceil(n / 2) };
+}
+
+export function cascadeDue(i, frame, cadence, entered) {
+  if (!cadence || entered) return true;
+  const every = i < cadence.split ? cadence.near : cadence.far;
+  return every <= 1 || (frame + i) % every === 0;
+}
+
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+export function inCascade(p, r, centre, axes, { half, near, far }) {
+  const v = [p[0] - centre[0], p[1] - centre[1], p[2] - centre[2]];
+  const z = dot3(v, axes.forward);
+  return Math.abs(dot3(v, axes.right)) <= half + r && Math.abs(dot3(v, axes.up)) <= half + r && z >= near - r && z <= far + r;
+}
+
 let SunCSM = null;
 async function sunCSM() {
   if (SunCSM) return SunCSM;
   const [CSMShadowNode, { tsl }] = await Promise.all([loadCSM(), loadThree()]);
   const { float, mix, positionView, smoothstep, uniform, vec4 } = tsl;
   SunCSM = class extends CSMShadowNode {
-    constructor(light, data, { shadowDir, filter, farShadow, cloud, base }) {
+    constructor(light, data, { shadowDir, filter, farShadow, cloud, base, cadence = null }) {
       super(light, data);
       // (three's CSMShadowNode carries no flag; post.js's raysLight reads this
       // one to keep god rays off the cascades, which have no single map)
@@ -119,6 +154,11 @@ async function sunCSM() {
       this.filter = filter;
       this.farShadow = farShadow;
       this.base = base;
+      this.cadence = cadence;
+      this.tracked = new Set();
+      this.draws = [];
+      this._frame = 0;
+      this._drawn = []; // each cascade's shadow sun at its last draw
     }
 
     _init(builder) {
@@ -159,6 +199,53 @@ async function sunCSM() {
       } finally {
         light.position.copy(was);
       }
+      this.schedule();
+    }
+
+    // Which cascades draw this frame (the cadence): a cascade not due has
+    // its shadow's autoUpdate and needsUpdate off, so ShadowNode skips it
+    schedule() {
+      const f = this._frame++;
+      for (let i = 0; i < this.lights.length; i++) {
+        const shadow = this.lights[i].shadow;
+        const due = !this.cadence || !this._drawn[i] || !this._drawn[i].equals(this.shadowDir) || cascadeDue(i, f, this.cadence, this.entered(i));
+        shadow.autoUpdate = due;
+        shadow.needsUpdate = due;
+        if (due) {
+          this.draws[i] = (this.draws[i] ?? 0) + 1;
+          (this._drawn[i] ??= this.shadowDir.clone()).copy(this.shadowDir);
+        }
+      }
+    }
+
+    // A cached cascade must draw now: a tracked body in its fit but outside
+    // its cached map, or the view moved past the map's slack
+    entered(i) {
+      const lw = this.lights[i];
+      const cam = lw.shadow.camera;
+      const e = cam.matrixWorld.elements;
+      const axes = { right: [e[0], e[1], e[2]], up: [e[4], e[5], e[6]], forward: [-e[8], -e[9], -e[10]] };
+      const cached = [e[12], e[13], e[14]];
+      const now = [lw.position.x, lw.position.y, lw.position.z];
+      const box = { half: cam.right, near: cam.near, far: cam.far };
+      // (CSMShadowNode widened each cascade by its fade margin, 0.25 × its
+      // far edge's depth² × the range: half of that each side is slack)
+      const f = this.frustums[i];
+      const range = Math.max(this.camera.far, this.maxFar) - this.camera.near;
+      const depth = f ? f.vertices.far[0].z / range : 1;
+      const slack = (0.25 * depth * depth * range) / 2;
+      const d = [now[0] - cached[0], now[1] - cached[1], now[2] - cached[2]];
+      if (Math.abs(dot3(d, axes.right)) > slack || Math.abs(dot3(d, axes.up)) > slack) return true;
+      for (const o of this.tracked) {
+        const g = o.geometry;
+        if (!g) continue;
+        if (!g.boundingSphere) g.computeBoundingSphere();
+        const c = g.boundingSphere.center.clone().applyMatrix4(o.matrixWorld);
+        const r = g.boundingSphere.radius * o.matrixWorld.getMaxScaleOnAxis();
+        const p = [c.x, c.y, c.z];
+        if (inCascade(p, r, now, axes, box) && !inCascade(p, r, cached, axes, box)) return true;
+      }
+      return false;
     }
 
     // over the last BLEND of the last cascade, into the distant shadow.
@@ -192,9 +279,9 @@ async function sunCSM() {
 
 // The cascades on a DirectionalLight a world already has (the galaxy
 // surface's sun, which its weather, rooms and day move): the same cascades,
-// filter, clouds and shadow sun as createSun's, its colour, strength and
-// direction left to the world. No cascades on low (null).
-export async function castCascades(light, entry, { tier = 'high', filter = null, farShadow = null, cloud = null } = {}) {
+// filter, clouds, cadence and shadow sun as createSun's, its colour, strength
+// and direction left to the world. No cascades on low (null).
+export async function castCascades(light, entry, { tier = 'high', filter = null, farShadow = null, cloud = null, cadence = null } = {}) {
   const { THREE } = await loadThree();
   const record = readShadowRecord(entry);
   const { n, far, map } = cascadesFor(tier, record.viewDistance);
@@ -216,7 +303,8 @@ export async function castCascades(light, entry, { tier = 'high', filter = null,
   light.shadow.normalBias = params.shadow.normalBias;
   Object.assign(light.shadow.camera, { near: 0.5, far: LIGHT_MARGIN * 2 + far * 2 });
   const Csm = await sunCSM();
-  const csm = new Csm(light, { cascades: n, maxFar: Math.min(far, params.shadow.far ?? far), mode: 'practical', lightMargin: LIGHT_MARGIN }, { shadowDir, filter, farShadow, cloud, base: { bias: params.shadow.bias, normalBias: params.shadow.normalBias } });
+  const pace = cadence === true ? cadenceFor(n) : cadence ? { ...cadenceFor(n), ...cadence } : null;
+  const csm = new Csm(light, { cascades: n, maxFar: Math.min(far, params.shadow.far ?? far), mode: 'practical', lightMargin: LIGHT_MARGIN }, { shadowDir, filter, farShadow, cloud, base: { bias: params.shadow.bias, normalBias: params.shadow.normalBias }, cadence: pace });
   csm.fade = true;
   light.shadow.shadowNode = csm;
   let projection = '';
@@ -231,6 +319,9 @@ export async function castCascades(light, entry, { tier = 'high', filter = null,
     follow() {
       if (!lockShadow) shadowDir.copy(light.position).sub(light.target.position).normalize();
     },
+    // a body whose entering a cached cascade redraws it at once (the cadence)
+    track: (object) => csm.tracked.add(object),
+    untrack: (object) => csm.tracked.delete(object),
     // (the cascades follow the view's pose each frame by themselves; a new
     // projection, a resize or a zoom, refits their splits and sizes)
     update(camera) {
@@ -247,15 +338,36 @@ export async function castCascades(light, entry, { tier = 'high', filter = null,
   };
 }
 
-export async function createSun(entry, { tier = 'high', rays = false, filter = null, farShadow = null, cloud = null } = {}) {
+export async function createSun(entry, { tier = 'high', rays = false, filter = null, farShadow = null, cloud = null, cadence = null } = {}) {
   const { THREE } = await loadThree();
+  const record = readShadowRecord(entry);
+  const { n, far, map } = cascadesFor(tier, record.viewDistance);
   const params = readEntry(entry);
   const light = new THREE.DirectionalLight(new THREE.Color(...params.sun.color), params.sun.intensity);
   light.name = 'sun';
-  light.castShadow = false;
-  const cascades = await castCascades(light, entry, { tier, filter, farShadow, cloud });
-  const csm = cascades?.csm ?? null;
-  const shadowDir = cascades?.shadowDir ?? new THREE.Vector3();
+  light.castShadow = n > 0;
+  const shadowDir = new THREE.Vector3();
+  let lockShadow = false;
+  // the record's shadow sun, or (null) cast along the light
+  const setShadowSun = (rot) => {
+    lockShadow = Boolean(rot);
+    if (lockShadow) shadowDir.set(...sunDir(rot[0], rot[1])).normalize();
+    else shadowDir.copy(light.position).sub(light.target.position).normalize();
+  };
+  setShadowSun(record.shadowSun);
+  let csm = null;
+  if (light.castShadow) {
+    const size = Math.min(map, params.shadow.mapSize);
+    light.shadow.mapSize.set(size, size);
+    light.shadow.bias = params.shadow.bias;
+    light.shadow.normalBias = params.shadow.normalBias;
+    Object.assign(light.shadow.camera, { near: 0.5, far: LIGHT_MARGIN * 2 + far * 2 });
+    const Csm = await sunCSM();
+    const pace = cadence === true ? cadenceFor(n) : cadence ? { ...cadenceFor(n), ...cadence } : null;
+    csm = new Csm(light, { cascades: n, maxFar: Math.min(far, params.shadow.far ?? far), mode: 'practical', lightMargin: LIGHT_MARGIN }, { shadowDir, filter, farShadow, cloud, base: { bias: params.shadow.bias, normalBias: params.shadow.normalBias }, cadence: pace });
+    csm.fade = true;
+    light.shadow.shadowNode = csm;
+  }
   let raysLight = null;
   if (rays && light.castShadow) {
     raysLight = new THREE.DirectionalLight(0xffffff, 0);
@@ -268,22 +380,33 @@ export async function createSun(entry, { tier = 'high', rays = false, filter = n
   const dir = new THREE.Vector3();
   const set = (p) => {
     dir.set(...p.sun.dir).normalize();
-    if (cascades && !cascades.locked) shadowDir.copy(dir);
+    if (!lockShadow) shadowDir.copy(dir);
     light.position.copy(light.target.position).addScaledVector(dir, SUN_DISTANCE);
     light.color.setRGB(...p.sun.color);
     light.intensity = p.sun.intensity;
     light.updateMatrixWorld();
   };
   set(params);
+  let projection = '';
   return {
     light,
     rays: raysLight,
     csm,
     shadowDir,
+    cadence: csm?.cadence ?? null,
     set,
-    setShadowSun: (rot) => cascades?.setShadowSun(rot),
+    setShadowSun,
+    // a body whose entering a cached cascade redraws it at once (the cadence)
+    track: (object) => csm?.tracked.add(object),
+    untrack: (object) => csm?.tracked.delete(object),
+    // (the cascades follow the view's pose each frame by themselves; a new
+    // projection, a resize or a zoom, refits their splits and sizes)
     update(camera) {
-      cascades?.update(camera);
+      if (csm?.camera && camera?.isCamera) {
+        const key = `${camera.fov},${camera.aspect},${camera.near},${camera.far},${camera.zoom}`;
+        if (projection && key !== projection) csm.updateFrustums();
+        projection = key;
+      }
       if (!raysLight || !camera) return;
       raysLight.target.position.copy(camera.position);
       raysLight.position.copy(camera.position).addScaledVector(dir, RAYS_FAR / 2);
@@ -291,7 +414,7 @@ export async function createSun(entry, { tier = 'high', rays = false, filter = n
       raysLight.updateMatrixWorld();
     },
     dispose() {
-      cascades?.dispose();
+      csm?.dispose();
       light.removeFromParent();
       light.target.removeFromParent();
       light.dispose();
