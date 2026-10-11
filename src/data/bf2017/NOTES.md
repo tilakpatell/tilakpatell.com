@@ -65,7 +65,27 @@ Kamino’s space level (`Levels/Space/SB_Kamino_01`), read the same way: the Sep
 - **area**: the level is fought low over Tipoca City in the storm, not in orbit, so it has an area of its own (`galaxy/levelArea.js`): a dome 9 km across round the battle, well off the planet on its night side, with the level’s own storm panorama for its sky (`T_Kamino_Stormy_01_Panoramic_C`; `Stormy_02`’s export is clipped to white), a sea under the city, and the storm’s fog. The export has no water: the city’s “endless” pillars run from −1,090 m down past −2,400 m, so the sea’s −1,400 m is hand, as are the fog’s thickness (about 8 km to see) and how much its colour, the light record’s horizon, is dimmed for the storm (`dim`). The area is lit by the space level's own records (`light/sb_kamino.json`, `light`; its sun, fog distance and no grade), its fill the outdoor light's stored sky and ground colours (`fill`), its shine multiplayer Kamino's probe (`probe`: the space level's own sees a black sky).
 - The game’s Team1 is the light side’s in every level read so far (Hoth, Endor, Kamino), as the battle’s team 0 is.
 
-`maps/sb_fondor.json` and `maps/sb_droidbattleship.json` are the rulebooks alone (their systems are not in the galaxy yet): Fondor’s phases are Cruisers, Shields, Clamps and Reactor; the droid battleship’s Tractor Beams, Generators, Towers and Reactor.
+## `maps/sb_fondor.stages.json`
+
+Fondor’s space level (`Levels/Space/SB_Fondor_01`, the sixth design’s lane fighters): the Rebels (`Team1`, the objective list’s `attacker` 1) attack, the Empire defends a Star Destroyer in the shipyard’s dry dock; the phases are `Phase 1 - Cruisers`, `Phase 2 - Shields`, `Phase 3 - Clamps & Reactor` and an empty `Intermission`. The level’s strings name its parts: the cruisers are Gladiators (`…_GLADIATORS_ATTACK`, `…_NAME_IMPERIAL_CRUISER`), the shields projectors, the clamps couplings.
+
+- **ships**: the mode’s sub-level places the Star Destroyer (`stardestroyer_hull_01`), two Gladiator cruisers (`imperialcruiser_hull_01`, 348 m: drawn as the galaxy’s light cruiser at their own length), the MC80 (`mc80_mainhull_01`) and four CR90s (`corvettecr90_01`). The pack leaves the cruisers and the corvettes to the battle, which sinks them.
+- **cruisers**: `Cruiser A` and `B` the two cruisers in the sub-level’s order; each sinks its ship.
+- **shields**: `Shield A` to `D` the four `drydock_shield_generator_01` in the sub-level’s order (a guess which is which).
+- **clamps, reactor**: the last phase is two stages, as Kamino’s is: `Clamp A` to `D` the four `o_drydock_clamps_lower_01_static`, then the `Reactor`, the Star Destroyer’s `stardestroyer_solarionizationreactor_01`; it breaks the Star Destroyer up.
+- **gates and hp**, **bombers** (two Y-wing flights: the level places thirteen Y-wing spawners), **camera**: hand, as Endor’s.
+- **area**: Fondor is no system of the galaxy’s yet (E5 adds it), so its battle is fought in an area of its own, entered from Coruscant (`starfighterMaps.js`): the dome 12 km across round the battle, its sky the level’s own star field all the way round (`t_space_no_large_stars_01_c`, the extras’ `PanoramicTexture`, `bf2017-sky.mjs --webp`, its `gain` by eye), no sea, no fog. No light record is read: inside it the galaxy’s own keys light it.
+
+## `maps/sb_droidbattleship.stages.json`
+
+The droid battleship’s level (`Levels/Space/SB_DroidBattleShip_01`, over Ryloth): the Republic (`Team1`) attacks the Separatists’ Lucrehulk; the phases are `Phase 1 - Tractor Beams`, `Phase 2 - Generators`, `Phase 3 - Towers & Reactor` and an empty `Intermission`, the last two stages by its strings (`…_PHASE_3` the towers, `…_PHASE_3A` the core).
+
+- **ships**: of the Venators the sub-level places, the two within 8 km (`venatorstardestroyer_hull_01#1` the flagship, `#0`); of the dreadnoughts, `#3` and `#2`; two of the three Republic cruisers (`jedicruiser_hull_01#0`, `#2`): the third, `#1`, is held by the tractor beams inside the Lucrehulk’s ring, where the battle’s hull spheres round the ring would hold it. The Lucrehulk is the ring’s centre sphere (`…_centersphere_exterior_01`), 3,170 m.
+- **tractors**: `TractorBeam A` and `B` the two `…_tractor_01_base` in order; **generators** `PowerGenerator A` to `D` the four `…_transmissiontowerpowergenerator_01`; **towers** the two control bridge towers by side; **core** the `Reactor`, `…_thecore_conceptobjective_01`, which breaks the battleship up.
+- **gates and hp**, **bombers** (two BTL Y-wing flights: the level places thirty-one), **camera**: hand.
+- **area**: fought in an area of its own entered from Naboo, where the space lane set this level’s blockade (Ryloth is no system of the galaxy’s): a dome 20 km across, the level’s star field round it, no sea, no fog.
+
+The game’s Team1 is the light side’s on Fondor and the droid battleship as well; there the light side attacks.
 
 ## Heroes vs Villains and Blast (`maps/arenas.json`, `surface/missions/hvv.js`, `blast.js`)
 

@@ -1,0 +1,97 @@
+{
+  "source": "hand",
+  "mode": "starfighter",
+  "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
+  "attackers": "light",
+  "notes": "NOTES.md says how each id was chosen. The phases are the level's own (SpaceBattle_Gameplay's objective list: Cruisers, Shields, Clamps & Reactor); the Rebels (Team1) attack the Star Destroyer in Fondor's dry dock. Hand: which cruiser is A and B, which projector is A to D, which clamp is A to D, the gates, the hp and the Y-wing flights' times.",
+  "origin": [246, 306, -130],
+  "sides": { "1": "rebel", "2": "empire" },
+  "hides": [],
+  "area": {
+    "source": "hand",
+    "why": "Fondor is no system of the galaxy's yet (the E5 lane adds it): the shipyard is fought in an area of its own, its sky the level's own star field (SkyComponentData's PanoramicTexture, t_space_no_large_stars_01_c), no sea, no fog (space)",
+    "radius": 6000,
+    "sea": null,
+    "sky": { "url": "/models/galaxy/bf2017/levels/sb_fondor/sky.webp", "gain": 2.5, "full": true },
+    "fog": null
+  },
+  "ships": [
+    { "id": "mc80", "team": 1, "kind": "moncal", "role": "flagship", "name": "MC80 star cruiser", "placed": "mc80_mainhull_01" },
+    { "id": "cr90-a", "team": 1, "kind": "corvette", "role": "escort", "name": "CR90 corvette", "placed": "corvettecr90_01#0" },
+    { "id": "cr90-b", "team": 1, "kind": "corvette", "role": "escort", "name": "CR90 corvette", "placed": "corvettecr90_01#1" },
+    { "id": "cr90-c", "team": 1, "kind": "corvette", "role": "escort", "name": "CR90 corvette", "placed": "corvettecr90_01#2" },
+    { "id": "cr90-d", "team": 1, "kind": "corvette", "role": "escort", "name": "CR90 corvette", "placed": "corvettecr90_01#3" },
+    { "id": "isd", "team": 2, "kind": "destroyer", "role": "flagship", "name": "Imperial Star Destroyer", "placed": "stardestroyer_hull_01" },
+    { "id": "cruiser-a", "team": 2, "kind": "lightcruiser", "role": "escort", "name": "Gladiator-class star destroyer", "placed": "imperialcruiser_hull_01#0", "length": 348 },
+    { "id": "cruiser-b", "team": 2, "kind": "lightcruiser", "role": "escort", "name": "Gladiator-class star destroyer", "placed": "imperialcruiser_hull_01#1", "length": 348 }
+  ],
+  "fighters": {
+    "1": [{ "kind": "xwing", "role": "fighter", "weight": 3 }, { "kind": "awing", "role": "interceptor", "weight": 2 }, { "kind": "ywing", "role": "bomber", "weight": 1.5 }],
+    "2": [{ "kind": "tie", "role": "fighter", "weight": 3 }, { "kind": "interceptor", "role": "interceptor", "weight": 2 }, { "kind": "tiebomber", "role": "bomber", "weight": 1.5 }]
+  },
+  "stages": [
+    {
+      "id": "cruisers",
+      "phase": "Phase 1 - Cruisers",
+      "name": "ID_SPACEBATTLES_OBJ_GLADIATORS_ATTACK",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_GLADIATORS_DEFEND",
+      "title": "Destroy the Gladiator cruisers",
+      "titleDefend": "Protect the Gladiator cruisers",
+      "opensAt": 0,
+      "hp": 240,
+      "objectives": [
+        { "id": "Cruiser A", "kind": "corvette", "name": "Gladiator-class star destroyer", "sid": "ID_SPACEBATTLES_OBJ_NAME_IMPERIAL_CRUISER", "ship": "cruiser-a", "sinks": true },
+        { "id": "Cruiser B", "kind": "corvette", "name": "Gladiator-class star destroyer", "sid": "ID_SPACEBATTLES_OBJ_NAME_IMPERIAL_CRUISER", "ship": "cruiser-b", "sinks": true }
+      ]
+    },
+    {
+      "id": "shields",
+      "phase": "Phase 2 - Shields",
+      "name": "ID_SPACEBATTLES_OBJ_SHIELDS_ATTACK",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_SHIELDS_DEFEND",
+      "title": "Destroy the dry dock’s shield projectors",
+      "titleDefend": "Protect the dry dock’s shield projectors",
+      "opensAt": 150,
+      "hp": 240,
+      "objectives": [
+        { "id": "Shield A", "kind": "nodule", "name": "Shield projector", "sid": "ID_SPACEBATTLES_OBJ_NAME_PROJECTORS", "placed": "drydock_shield_generator_01#0" },
+        { "id": "Shield B", "kind": "nodule", "name": "Shield projector", "sid": "ID_SPACEBATTLES_OBJ_NAME_PROJECTORS", "placed": "drydock_shield_generator_01#1" },
+        { "id": "Shield C", "kind": "nodule", "name": "Shield projector", "sid": "ID_SPACEBATTLES_OBJ_NAME_PROJECTORS", "placed": "drydock_shield_generator_01#2" },
+        { "id": "Shield D", "kind": "nodule", "name": "Shield projector", "sid": "ID_SPACEBATTLES_OBJ_NAME_PROJECTORS", "placed": "drydock_shield_generator_01#3" }
+      ]
+    },
+    {
+      "id": "clamps",
+      "phase": "Phase 3 - Clamps & Reactor",
+      "name": "ID_SPACEBATTLES_OBJ_CLAMPS_ATTACK",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_CLAMPS_DEFEND",
+      "title": "Destroy the dock’s couplings",
+      "titleDefend": "Protect the dock’s couplings",
+      "opensAt": 300,
+      "hp": 240,
+      "objectives": [
+        { "id": "Clamp A", "kind": "nodule", "name": "Dock coupling", "sid": "ID_SPACEBATTLES_OBJ_NAME_COUPLINGS", "placed": "o_drydock_clamps_lower_01_static#0" },
+        { "id": "Clamp B", "kind": "nodule", "name": "Dock coupling", "sid": "ID_SPACEBATTLES_OBJ_NAME_COUPLINGS", "placed": "o_drydock_clamps_lower_01_static#1" },
+        { "id": "Clamp C", "kind": "nodule", "name": "Dock coupling", "sid": "ID_SPACEBATTLES_OBJ_NAME_COUPLINGS", "placed": "o_drydock_clamps_lower_01_static#2" },
+        { "id": "Clamp D", "kind": "nodule", "name": "Dock coupling", "sid": "ID_SPACEBATTLES_OBJ_NAME_COUPLINGS", "placed": "o_drydock_clamps_lower_01_static#3" }
+      ]
+    },
+    {
+      "id": "reactor",
+      "phase": "Phase 3 - Clamps & Reactor",
+      "name": "ID_SPACEBATTLES_OBJ_REACTOR_ATTACK",
+      "nameDefend": "ID_SPACEBATTLES_OBJ_REACTOR_DEFEND",
+      "title": "Destroy the Star Destroyer’s reactor",
+      "titleDefend": "Protect the Star Destroyer’s reactor",
+      "opensAt": 420,
+      "hp": 220,
+      "breaks": true,
+      "objectives": [{ "id": "Reactor", "kind": "engines", "name": "Solar ionization reactor", "sid": "ID_SPACEBATTLES_OBJ_NAME_REACTOR", "placed": "stardestroyer_solarionizationreactor_01" }]
+    }
+  ],
+  "bombers": [
+    { "id": "Y-wing flight A", "at": 120, "n": 3 },
+    { "id": "Y-wing flight B", "at": 330, "n": 3 }
+  ],
+  "camera": { "source": "hand", "why": "the level's intro and outro cameras are Cinematics tracks (Fondor_01_IntroTeam1_NIS and the rest), not CameraEntityData", "at": [3200, 600, 1400], "look": [543, 89, -535] }
+}
