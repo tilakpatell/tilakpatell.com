@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { candidatesOf, colourIndex, countFamilies, crewRecipes, mapsWanted, recipeOf, recipesOf } from './bf2017-recipes.mjs';
+import { candidatesOf, colourIndex, countFamilies, crewRecipes, mapsWanted, recipeOf, recipesOf, shaderMapIndex, shaderMapsOf } from './bf2017-recipes.mjs';
 
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '../fixtures/bf2017/materials');
 const row = (name) => JSON.parse(readFileSync(join(DIR, `${name}.jsonl`), 'utf8').trim());
@@ -223,5 +223,68 @@ describe('crew recipes', () => {
     const index = colourIndex([row('props')]);
     const g = { materials: [{ name: 'M', pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }], textures: [{ source: 0 }], images: [{ name: 'ktx2:web/textures/objects/props/objectsets/_generic/catwalksystem_01/t_catwalksystem_imperial_04_cs.ktx2' }] };
     expect(crewRecipes(g, index).M.family).toBe('propsNonMetallic');
+  });
+});
+
+// The surface shaders' own maps (lane E2's finding 8): the game binds no
+// texture on a material whose shader holds its maps, and the export dumped
+// no shaders, so the maps are found by the shader's name among the world's
+describe('shader maps', () => {
+  const NAMES = [
+    'Objects/Architecture/Naboo/BuildingsUnique/Textures/T_NabooCopperRoofTiles_01',
+    'Objects/Architecture/Naboo/BuildingsUnique/Textures/T_NabooCopperRoof_NAM_01',
+    'Objects/Architecture/Naboo/BuildingsUnique/Textures/T_NabooCopperRoof_CS_01',
+    'Objects/Architecture/Naboo/Backdrop/T_BackdropCanalBoardWalk_01_CS',
+    'Objects/Architecture/Naboo/Backdrop/T_BackdropHouseWindows_01_CS',
+    'Objects/Architecture/Naboo/Backdrop/T_BackdropHouseWindows_01_N',
+    'Objects/Architecture/Naboo/Backdrop/T_NabooBackdropCanal_04_C',
+    'Objects/Architecture/Naboo/Backdrop/T_NAB_BackdropBuildings_01_CA',
+    'Objects/Architecture/Naboo/Backdrop/T_NAB_BackdropBuildings_01_N',
+    'Objects/Architecture/Bespin/Backdrop/T_Backdrop_Buildings_FarBackdrop_Cluster_C',
+    'Objects/Architecture/Bespin/Backdrop/T_Backdrop_Buildings_FarBackdrop_Cluster_N',
+    'Levels/MP/Naboo_01/Objects/Textures/T_Naboo_StoneHangar_01_M',
+  ];
+  const index = shaderMapIndex(NAMES);
+  const bare = (shader) => ({ mesh: 'levels/mp/naboo_01/objects/x_mesh', materials: [{ name: 'MeshMaterial', shader, textures: {}, bools: {}, vectors: {}, conditionals: {} }] });
+
+  it('SS_Naboo_CopperRoof_01 wears the copper roof’s colour and normal, from the game’s names', () => {
+    const maps = shaderMapsOf('Levels/MP/Naboo_01/Objects/Shaders/SS_Naboo_CopperRoof_01', index, 'naboo');
+    expect(maps).toEqual({
+      color: 'Objects/Architecture/Naboo/BuildingsUnique/Textures/T_NabooCopperRoof_CS_01',
+      normal: 'Objects/Architecture/Naboo/BuildingsUnique/Textures/T_NabooCopperRoof_NAM_01',
+    });
+    const r = bare('Levels/MP/Naboo_01/Objects/Shaders/SS_Naboo_CopperRoof_01');
+    const x = recipeOf(r, 0, { shaderMaps: index, world: 'naboo' });
+    expect(x.family).toBe('instance');
+    expect(x.maps.color).toBe(maps.color);
+    expect(x._source['maps.color']).toBe('textures.jsonl:shader SS_Naboo_CopperRoof_01');
+    // (the fetch step takes them as it takes the recipe's other maps)
+    expect(mapsWanted([x]).map((m) => m.kind)).toEqual(['color', 'normal']);
+  });
+
+  it('SS_BackdropBuildings_01 keeps to Naboo’s own maps, never Bespin’s backdrop', () => {
+    // (Bespin’s T_Backdrop_Buildings_… is a bare stem’s match too)
+    expect(shaderMapsOf('Objects/Architecture/Naboo/Backdrop/SS_BackdropBuildings_01', index, 'naboo')).toEqual({
+      color: 'Objects/Architecture/Naboo/Backdrop/T_NAB_BackdropBuildings_01_CA',
+      normal: 'Objects/Architecture/Naboo/Backdrop/T_NAB_BackdropBuildings_01_N',
+    });
+    // (on another world, Naboo’s and Bespin’s are both out of reach)
+    expect(shaderMapsOf('Objects/Architecture/Naboo/Backdrop/SS_BackdropBuildings_01', index, 'kamino')).toBeNull();
+    // (and a boardwalk’s shader finds the boardwalk in the same folder)
+    expect(shaderMapsOf('Objects/Architecture/Naboo/Backdrop/SS_BackdropCanalBoardwalk_01', index, 'naboo').color).toBe('Objects/Architecture/Naboo/Backdrop/T_BackdropCanalBoardWalk_01_CS');
+  });
+
+  it('a shader with no colour map of its own name or folder keeps the GLB', () => {
+    expect(shaderMapsOf('Levels/MP/Naboo_01/Objects/Shaders/SS_Naboo_StoneHangar_01', index, 'naboo')).toBeNull();
+    expect(recipeOf(bare('Levels/MP/Naboo_01/Objects/Shaders/SS_Naboo_StoneHangar_01'), 0, { shaderMaps: index, world: 'naboo' }).family).toBe('glb');
+  });
+
+  it('shadow meshes, virtual-texture terrain, decals, emissive-only and glass are left to the NEVER rule and the terrain', () => {
+    for (const sh of ['Shaders/Presets/SS_Shadowmesh', 'Shaders/Presets/Walrus/SS_VirtualTextureOnly', 'Objects/Architecture/Naboo/_Decals/SS_DecalsNaboo_01', 'Shaders/presets/SS_PropsGenericPreset_EmissiveOnly', 'Shaders/Presets/Walrus/SS_GlassPreset', 'Shaders/SS_Invisible', 'Objects/Nature/Naboo/_NabooBase/_ShaderPresets/SS_NabooBase_Vegetation_Shadow_01'])
+      expect(shaderMapsOf(sh, index, 'naboo'), sh).toBeNull();
+  });
+
+  it('without the index a texture-less material keeps the GLB, as before', () => {
+    expect(recipeOf(bare('Levels/MP/Naboo_01/Objects/Shaders/SS_Naboo_CopperRoof_01'), 0).family).toBe('glb');
   });
 });
