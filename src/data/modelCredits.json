@@ -2685,6 +2685,81 @@
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
+  "level-endor-bunker": {
+    "title": "Star Wars Battlefront II (2017): levels/mp/endor_01 (bunker)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "endor/bunker: the game's level",
+    "file": "/models/galaxy/bf2017/levels/endor/bunker/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "level-endor-station": {
+    "title": "Star Wars Battlefront II (2017): s8_1/endor_04 (station)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "endor/station: the game's level",
+    "file": "/models/galaxy/bf2017/levels/endor/station/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "level-endor-village": {
+    "title": "Star Wars Battlefront II (2017): s2_1/levels/endor_02 (village)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "endor/village: the game's level",
+    "file": "/models/galaxy/bf2017/levels/endor/village/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "level-geonosis": {
+    "title": "Star Wars Battlefront II (2017): s5_1/levels/mp/geonosis_01",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "geonosis: the game's level",
+    "file": "/models/galaxy/bf2017/levels/geonosis/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "level-geonosis-second": {
+    "title": "Star Wars Battlefront II (2017): s6_2/geonosis_02/levels/geonosis_02 (second)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "geonosis/second: the game's level",
+    "file": "/models/galaxy/bf2017/levels/geonosis/second/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
   "level-hoth": {
     "title": "Star Wars Battlefront II (2017): levels/mp/hoth_01",
     "author": "EA DICE",
@@ -2712,6 +2787,36 @@
     "where": "galaxy-surface",
     "as": "hoth/base: the game's level",
     "file": "/models/galaxy/bf2017/levels/hoth/base/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "level-kashyyyk": {
+    "title": "Star Wars Battlefront II (2017): levels/mp/kashyyyk_01",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "kashyyyk: the game's level",
+    "file": "/models/galaxy/bf2017/levels/kashyyyk/level.json",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "level-kashyyyk-second": {
+    "title": "Star Wars Battlefront II (2017): s7/levels/kashyyyk_02 (second)",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "kashyyyk/second: the game's level",
+    "file": "/models/galaxy/bf2017/levels/kashyyyk/second/level.json",
     "also": [
       "galaxy"
     ],
