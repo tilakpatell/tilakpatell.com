@@ -78,7 +78,7 @@ describe('buildChain', () => {
       chain.dispose();
     }
   });
-  it('builds the upscale under the screen: TAAU on ultra, FSR1 after SMAA on high (lane U)', async () => {
+  it('builds the upscale under the screen: TAAU on ultra, FSR1 after SMAA on mid (lane U; high took TRAA in lane V1, so its upscale is TAAU too)', async () => {
     const refs = { scene, camera, light, lut };
     const sizes = (chain) => chain.nodes.map((n) => n.constructor.name);
     const taau = await buildChain(renderer, upscaled(passesFor('ultra', hoth.sunny, 'webgpu', refs), { scale: 0.77 }));
@@ -89,7 +89,7 @@ describe('buildChain', () => {
     // (TAAU reads the scene's velocity: the pass writes it)
     expect(Object.keys(scenePass.getMRT().outputNodes)).toContain('velocity');
     taau.dispose();
-    const fsr = await buildChain(renderer, passesFor('high', hoth.sunny, 'webgpu', { ...refs, upscale: { scale: 0.67 } }));
+    const fsr = await buildChain(renderer, passesFor('mid', hoth.sunny, 'webgpu', { ...refs, upscale: { scale: 0.67 } }));
     const names = sizes(fsr);
     expect(names.indexOf('FSR1Node')).toBeGreaterThan(names.indexOf('SMAANode'));
     // (SMAA sizes itself from the drawing buffer: held at the scale)
@@ -119,7 +119,9 @@ describe('buildChain', () => {
     };
     expect(await samples(passesFor('ultra', hoth.sunny, 'webgpu', { scene, camera, light, lut }))).toBe(0);
     expect(await samples(upscaled(passesFor('ultra', hoth.sunny, 'webgpu', { scene, camera, light, lut }), { scale: 0.77 }))).toBe(0);
-    expect(await samples(passesFor('high', hoth.sunny, 'webgpu', { scene, camera, light, lut }))).toBe(undefined);
+    // (high ends in TRAA since lane V1; mid, on SMAA, keeps the renderer's own)
+    expect(await samples(passesFor('high', hoth.sunny, 'webgpu', { scene, camera, light, lut }))).toBe(0);
+    expect(await samples(passesFor('mid', hoth.sunny, 'webgpu', { scene, camera, light, lut }))).toBe(undefined);
   });
   it('under a reversed depth buffer, gives the screen-space passes the standard depth and TRAA the buffer as it is (lane N2)', async () => {
     const reversed = { isWebGPURenderer: true, reversedDepthBuffer: true };

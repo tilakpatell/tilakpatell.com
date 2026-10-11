@@ -44,7 +44,7 @@
 //   each cascade's draws, for the evidence.
 //
 // readShadowRecord(entry) → { viewDistance: { low, mid, high, ultra }, shadowSun: [x, y] | null }   (pure)
-// cascadesFor(tier, viewDistance) → { n, far, map }   (pure)
+// cascadesFor(tier, viewDistance, video?) → { n, far, map }   (pure; video: lib/video.js's `shadows` and `shadowDistance` over the tier's)
 // splitsFor(near, far, n, lambda = 0.5) → n + 1 distances  (pure)
 // biasFor(texel, { bias, normalBias }) → { bias, normalBias }   (pure)
 // cadenceFor(n) → { near, far, split } | null; cascadeDue(i, frame, cadence, entered) → boolean   (pure)
@@ -67,6 +67,8 @@ const RAYS_FAR = 400; // m
 // Hoth's record where an entry has none
 const VIEW_DISTANCE = { low: 30, mid: 30, high: 30, ultra: 70 };
 const TIERS = { ultra: { n: 4, map: 2048 }, high: { n: 4, map: 2048 }, mid: { n: 2, map: 1024 }, low: { n: 0, map: 0 } };
+// the video setting's shadow quality (lib/video.js `shadows`), over the tier's
+export const SHADOWS = { off: { n: 0, map: 0 }, low: { n: 2, map: 1024 }, medium: { n: 4, map: 2048 }, high: { n: 4, map: 2048 }, ultra: { n: 4, map: 4096 } };
 const RECORD_TIER = { low: 'Low', mid: 'Medium', high: 'High', ultra: 'Ultra' };
 // frames between draws: the near cascades every frame, the far every fourth (lane N3; the design's §4 "Shadows cached")
 export const CADENCE = { near: 1, far: 4 };
@@ -88,11 +90,13 @@ export function readShadowRecord(entry) {
   return { viewDistance, shadowSun: x !== undefined && y !== undefined ? [x, y] : null };
 }
 
-export function cascadesFor(tier, viewDistance = VIEW_DISTANCE) {
-  const t = TIERS[tier] ?? TIERS.high;
+export function cascadesFor(tier, viewDistance = VIEW_DISTANCE, video = null) {
+  const t = (video?.shadows && SHADOWS[video.shadows]) || TIERS[tier] || TIERS.high;
   if (!t.n) return { n: 0, far: 0, map: 0 };
   const key = TIERS[tier] ? tier : 'high';
-  return { n: t.n, far: key === 'ultra' ? ULTRA_SHADOW_FAR : (viewDistance[key] ?? VIEW_DISTANCE[key]), map: t.map };
+  const asked = Number(video?.shadowDistance);
+  const far = Number.isFinite(asked) && asked > 0 ? asked : key === 'ultra' ? ULTRA_SHADOW_FAR : (viewDistance[key] ?? VIEW_DISTANCE[key]);
+  return { n: t.n, far, map: t.map };
 }
 
 // The practical split: each inner edge the average, weighted by lambda, of
@@ -261,10 +265,10 @@ async function sunCSM() {
   return SunCSM;
 }
 
-export async function createSun(entry, { tier = 'high', rays = false, filter = null, farShadow = null, cloud = null, cadence = null } = {}) {
+export async function createSun(entry, { tier = 'high', rays = false, filter = null, farShadow = null, cloud = null, cadence = null, video = null } = {}) {
   const { THREE } = await loadThree();
   const record = readShadowRecord(entry);
-  const { n, far, map } = cascadesFor(tier, record.viewDistance);
+  const { n, far, map } = cascadesFor(tier, record.viewDistance, video);
   const params = readEntry(entry);
   const light = new THREE.DirectionalLight(new THREE.Color(...params.sun.color), params.sun.intensity);
   light.name = 'sun';
