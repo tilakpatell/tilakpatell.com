@@ -17,19 +17,23 @@
 // - The post: ./chain.js handed the record, the rays light, the volumes and
 //   the picture's grade and LUT; it builds lib/three/light/post.js's chain
 //   for the level.
-// - The record's picture (lane Q6, lane P passes it): `picture` is one
-//   weather's { record, lut, panorama, gradient, cloudShadow } (the shape
-//   applyGameLight's `picture` takes, the VE record beside it). Its LUT and
-//   Gaussians go to the chain, its cloud texture to the shadow; its painted
-//   sky and fog gradient are lane P's to lay over the surface's dome. None:
-//   the surface's own sky, fog and grade.
+// - The record's picture (lane Q6; ./picture.js, or lane P's): `picture` is
+//   one weather's { record, lut, panorama, gradient, cloudShadow, lights }
+//   (the shape applyGameLight's `picture` takes, the VE record beside it),
+//   or a promise of it. Its tone map, LUT and Gaussians go to the chain, its
+//   cloud texture to the sun's shadow, its painted panorama (light/sky.js)
+//   over the surface's dome (`dome`, hidden while it shows), its fog
+//   (light/fog.js, the gradient's colour) as the scene's fog node over the
+//   surface's (`skyFog`'s mix to the dome set to 0), and the level's placed
+//   lights clustered (light/placed.js). None: the surface's own sky, fog
+//   and grade.
 //
 //   surfaceEntry(site, picture, { sunDir }) → the entry lib/three/light reads
 //     (pure): lane G's derived shape from the site, its sun where the scene's
 //     shines from (the site's suns are the dome's, in its own angles), the
 //     picture's VE record beside it
 //   createSurfaceStack({ scene, renderer, camera, sun, site, tier, backend,
-//     post, picture, volumes }) → Promise<null | { track(object),
+//     post, picture, volumes, dome, skyFog }) → Promise<null | { track(object),
 //     (volumes: the pack's volumes.json, or a promise of it)
 //     untrack(object), update(dt, camera), parts, dispose() }>
 //     (null on the classic renderer)
@@ -75,8 +79,9 @@ export function surfaceEntry(site, picture = null, { sunDir = null } = {}) {
   return entry;
 }
 
-export async function createSurfaceStack({ scene, renderer, camera, sun, site, tier = 'high', backend = 'webgpu', post = null, picture = null, volumes = null }) {
+export async function createSurfaceStack({ scene, renderer, camera, sun, site, tier = 'high', backend = 'webgpu', post = null, picture: asked = null, volumes = null, dome = null, skyFog = null }) {
   if (backend === 'webgl' || !STACK_TIERS.includes(tier)) return null;
+  const picture = await Promise.resolve(asked).catch(() => null);
   const [{ loadThree }, { castCascades }, { filterFor, pcssFilter, readPcss, vsmFallback }, { cloudShadowNode }, { createContactShadows }, { CONES_LIT, createVolumetrics }, { pictureOf }] = await Promise.all([
     import('../../../../lib/three/light/three.js'),
     import('../../../../lib/three/light/sun.js'),
@@ -92,21 +97,47 @@ export async function createSurfaceStack({ scene, renderer, camera, sun, site, t
   const pic = pictureOf(entry, entry.picture ?? null);
   const owned = [];
 
-  // the picture's textures: its LUT strip and its cloud texture (a failure leaves it out)
+  // the picture's textures: its LUT strip, its panorama, fog gradient and
+  // cloud texture (a failure leaves that one out)
   let lut = null;
-  let cloudTex = null;
   if (pic?.lut) lut = await import('../../../../lib/three/gameLut.js').then(({ loadLut }) => loadLut(pic.lut.url, pic.lut.size)).catch(() => null);
-  if (pic?.cloudShadow)
-    cloudTex = await import('../../../../lib/three/gltf.js')
-      .then(({ ktx2Loader }) => ktx2Loader({ renderer }))
-      .then((k) => k.loadAsync(pic.cloudShadow.url))
-      .then((t) => {
-        t.colorSpace = THREE.NoColorSpace;
-        t.wrapS = t.wrapT = THREE.RepeatWrapping;
-        return t;
-      })
-      .catch(() => null);
-  owned.push(lut, cloudTex);
+  const ktx2 = pic?.panorama || pic?.gradient || pic?.cloudShadow ? await import('../../../../lib/three/gltf.js').then(({ ktx2Loader }) => ktx2Loader({ renderer })).catch(() => null) : null;
+  const loadTex = (part, tiled) =>
+    part && ktx2
+      ? ktx2
+          .loadAsync(part.url)
+          .then((t) => {
+            t.colorSpace = THREE.NoColorSpace;
+            t.wrapS = THREE.RepeatWrapping;
+            t.wrapT = tiled ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+            t.needsUpdate = true;
+            return t;
+          })
+          .catch(() => null)
+      : Promise.resolve(null);
+  const [panoTex, gradTex, cloudTex] = await Promise.all([loadTex(pic?.panorama, false), loadTex(pic?.gradient, false), loadTex(pic?.cloudShadow, true)]);
+  owned.push(lut, panoTex, gradTex, cloudTex);
+
+  // the record's own sky and fog over the surface's, where it has a picture
+  let painted = null;
+  let recordFog = null;
+  const was = { fogNode: scene.fogNode ?? null, dome: dome?.visible ?? null, mix: skyFog?.uniforms?.uSfMix?.value ?? null };
+  if (pic && entry.record) {
+    const [{ createSky }, { createFog }] = await Promise.all([import('../../../../lib/three/light/sky.js'), import('../../../../lib/three/light/fog.js')]);
+    painted = await createSky(entry, { panorama: panoTex ? { ...pic.panorama, texture: panoTex } : null });
+    scene.add(painted.mesh);
+    if (dome) dome.visible = false;
+    const gradient = gradTex ? { texture: gradTex, rotation: pic.gradient.rotation, gain: painted.uniforms.panoramaGain ?? 1 } : null;
+    recordFog = await createFog(entry, { origin: [0, 0, 0], gradient });
+    scene.fogNode = recordFog.node;
+    if (skyFog?.uniforms?.uSfMix) skyFog.uniforms.uSfMix.value = 0;
+  }
+  // the level's placed lights, clustered (the record's lumens at its rate)
+  let placed = null;
+  if (picture?.lights) {
+    const [{ createPlacedLights }, { readEntry }] = await Promise.all([import('../../../../lib/three/light/placed.js'), import('../../../../lib/three/light/entry.js')]);
+    placed = await createPlacedLights(scene, renderer, { source: picture.lights, scale: readEntry(entry).gameToSite }).catch(() => null);
+  }
 
   // the sun's soft shadow by tier, through its cascades, under the clouds
   const soft = filterFor(tier, readPcss(entry));
@@ -135,7 +166,7 @@ export async function createSurfaceStack({ scene, renderer, camera, sun, site, t
 
   const dir = new THREE.Vector3();
   return {
-    parts: { entry, soft, clouds, cascades, rays, contact, volumetrics: vols, picture: pic ? { grade: Boolean(pic.grade), lut: Boolean(lut), cloudShadow: Boolean(cloudTex) } : null },
+    parts: { entry, soft, clouds, cascades, rays, contact, volumetrics: vols, sky: painted, fog: recordFog, placed, picture: pic ? { grade: Boolean(pic.grade), lut: Boolean(lut), panorama: Boolean(panoTex), gradient: Boolean(gradTex), cloudShadow: Boolean(cloudTex), lights: Boolean(placed) } : null },
     track: (object) => contact.track(object),
     untrack: (object) => contact.untrack(object),
     update(dt, view = camera) {
@@ -145,6 +176,8 @@ export async function createSurfaceStack({ scene, renderer, camera, sun, site, t
       cascades?.update(view);
       contact.update(view);
       vols?.update(view);
+      painted?.update(view);
+      placed?.update(view);
       if (rays) {
         dir.copy(sun.position).sub(sun.target.position).normalize();
         rays.target.position.copy(view.position);
@@ -156,6 +189,11 @@ export async function createSurfaceStack({ scene, renderer, camera, sun, site, t
     dispose() {
       contact.dispose();
       clouds?.dispose();
+      placed?.dispose();
+      painted?.dispose();
+      if (recordFog) scene.fogNode = was.fogNode;
+      if (dome && was.dome != null) dome.visible = was.dome;
+      if (skyFog?.uniforms?.uSfMix && was.mix != null) skyFog.uniforms.uSfMix.value = was.mix;
       cascades?.dispose();
       vols?.dispose();
       rays?.removeFromParent();

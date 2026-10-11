@@ -141,6 +141,7 @@ import { gameLightOf } from '../../../data/bf2017/light/index';
 import { createGameLit } from './gameLit';
 import { createPlayerBody } from './playerBody';
 import { createSitePhysics } from './sitePhysics';
+import { pictureFor } from './nodes/picture';
 import { segmentRay } from '../../../lib/physics/blast';
 import CAMERAS from '../../../data/bf2017/cameras.json';
 import { createSoldierMemo, soldierPose } from '../../../lib/three/camera/soldier';
@@ -301,7 +302,10 @@ export async function create(canvas, ctx, set) {
   // the sun's cascades, contact shadows, the level's volumes, the chain's
   // record); none on the classic renderer. Awaited before the first draw.
   let stack = null;
-  const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, backend: rt.gfx.backend, post, picture: ctx.picture ?? site.picture ?? null, volumes: site.level ? L.levelJson(site.level, 'volumes.json') : null })
+  // (the world's picture: a page's, the site's, or the game's own where the
+  // world is under its light and the site has its records, nodes/picture.js)
+  const picture = ctx.picture ?? site.picture ?? (gameLight && L.name === 'nodes' ? pictureFor(own.gameLight) : null);
+  const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, backend: rt.gfx.backend, post, picture, volumes: site.level ? L.levelJson(site.level, 'volumes.json') : null, dome: sky.mesh, skyFog })
     .then((made) => {
       if (disposed) return made?.dispose();
       stack = made;

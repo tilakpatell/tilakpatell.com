@@ -135,6 +135,8 @@ export function createChainPost(renderer, scene, camera, { small = false, tier =
     light(next) {
       refs = { scene, camera, ...next, gaussians: Boolean(next?.grade?.bloom) };
       u.uLinear.value = next?.grade?.tonemap === 'linear' ? 1 : 0;
+      // (the picture's LUT, read by FINAL, unless the world's light has handed one already)
+      if (next?.lut?.isData3DTexture && !(u.uLutMix.value > 0)) this.grading({ lut: next.lut, size: next.lut.image.width });
       builtFor = '';
       return build();
     },
