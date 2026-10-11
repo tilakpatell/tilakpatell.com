@@ -40,7 +40,7 @@ export const SITES = {
     places: [
       { id: 'mine', name: 'The mine', at: [0, 0], r: 50, about: 'The corridors where the spice comes out, and where the Empire’s guard stands over every door.' },
       // (the extraction’s payload, V_KesselPayload, 157 m north of the landing)
-      { id: 'payload', name: 'The payload’s run', at: [-31, 157], r: 40, about: 'The track the spice payload is pushed along to the ship, and the corridors that overlook it.' },
+      { id: 'payload', name: 'The payload’s run', at: [-31, 157], r: 40, about: 'The track the stolen coaxium is pushed along to the Millennium Falcon, and the corridors that overlook it.' },
       // (Heroes vs Villains’ first spawn, HeroesVsVillains_Logic:10, by the quarry pools)
       { id: 'quarry', name: 'The quarry pools', at: [-47, -75], r: 40, about: 'Pools of still water in the salt where the quarry was dug out, and the heroes’ ground in the game.' },
     ],

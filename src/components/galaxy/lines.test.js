@@ -133,6 +133,8 @@ describe('the crawls', () => {
       const film = FILMS[s.game.film];
       // (a show's: its title and the chapter)
       if (film.show) expect(c.episode, s.id).toMatch(new RegExp(`^${film.title}, (Chapter|Part) [A-Z0-9]`));
+      // (the 2017 game's campaign, lane E5's worlds: its own title)
+      else if (film.game) expect(c.episode, s.id).toBe(film.title);
       else expect(c.episode, s.id).toBe(film.episode ? `Episode ${film.episode}` : 'A Star Wars Story');
       expect(c.title, s.id).toBe(s.game.title);
       expect(c.paragraphs, s.id).toHaveLength(3);

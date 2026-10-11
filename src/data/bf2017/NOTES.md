@@ -81,7 +81,7 @@ Fondor’s space level (`Levels/Space/SB_Fondor_01`, the sixth design’s lane f
 - **shields**: `Shield A` to `D` the four `drydock_shield_generator_01` in the sub-level’s order (a guess which is which).
 - **clamps, reactor**: the last phase is two stages, as Kamino’s is: `Clamp A` to `D` the four `o_drydock_clamps_lower_01_static`, then the `Reactor`, the Star Destroyer’s `stardestroyer_solarionizationreactor_01`; it breaks the Star Destroyer up.
 - **gates and hp**, **bombers** (two Y-wing flights: the level places thirteen Y-wing spawners), **camera**: hand, as Endor’s.
-- **area**: Fondor is no system of the galaxy’s yet (E5 adds it), so its battle is fought in an area of its own, entered from Coruscant (`starfighterMaps.js`): the dome 12 km across round the battle, its sky the level’s own star field all the way round (`t_space_no_large_stars_01_c`, the extras’ `PanoramicTexture`, `bf2017-sky.mjs --webp`, its `gain` by eye), no sea, no fog. No light record is read: inside it the galaxy’s own keys light it.
+- **area**: its battle is fought in an area of its own, entered from Fondor’s own system (lane E5 added it; until then from Coruscant; `starfighterMaps.js`): the dome 12 km across round the battle, its sky the level’s own star field all the way round (`t_space_no_large_stars_01_c`, the extras’ `PanoramicTexture`, `bf2017-sky.mjs --webp`, its `gain` by eye), no sea, no fog. No light record is read: inside it the galaxy’s own keys light it.
 
 ## `maps/sb_droidbattleship.stages.json`
 

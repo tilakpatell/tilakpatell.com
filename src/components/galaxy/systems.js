@@ -20,14 +20,18 @@
 // `traffic` what flies by on its own business.
 //
 // Each system is from one or more of the films (`films`, FILMS' ids: the
-// films, and the two shows of the years after the Empire's fall, The
-// Mandalorian and Ahsoka); its era is the era of the moment it's shown at.
+// films, the two shows of the years after the Empire's fall, The
+// Mandalorian and Ahsoka, and the 2017 game for the worlds only it visits);
+// its era is the era of the moment it's shown at.
 // `game` is the mission you can fly there: most are briefings for games
 // still to be built (status 'soon'), a couple go straight to one that's here
 // already (`to`).
 
 // ── The films (and the shows), in the galaxy's own order of events ──
-// (a show has no episode: `show`, and `short`, its name on a small button)
+// (a show has no episode: `show`, and `short`, its name on a small button;
+// the 2017 game is here for the worlds only its campaign visits, `game`:
+// Fondor, Pillio and Vardos, and its lines on Sullust. Its campaign begins
+// at Endor, so it stands beside Return of the Jedi)
 
 import { fitSystem } from './fit.js'; // (with its extension: the prerender reads this file in Node)
 
@@ -39,6 +43,7 @@ export const FILMS = {
   anh: { title: 'A New Hope', episode: 'IV', year: 0, era: 'empire' },
   esb: { title: 'The Empire Strikes Back', episode: 'V', year: 3, era: 'empire' },
   rotj: { title: 'Return of the Jedi', episode: 'VI', year: 4, era: 'empire' },
+  bf2017: { title: 'Star Wars Battlefront II', episode: null, game: true, short: 'BF II', year: 4, era: 'empire' },
   mando: { title: 'The Mandalorian', episode: null, show: true, short: 'Mando', year: 9, era: 'newrepublic' },
   ahsoka: { title: 'Ahsoka', episode: null, show: true, short: 'Ahsoka', year: 11, era: 'newrepublic' },
 };
@@ -974,7 +979,13 @@ const AS_SET = [
   // ── The 2017 game's own worlds (lane E5, the fifth design): six systems the
   // films only name or never visit, each on its game map from the ground, its
   // planet wearing the game's skin from orbit. A place to land, not a front:
-  // no war row, no battle of its own ──
+  // no war row, no battle of its own. Their missions, objectives and quotes
+  // are the game's own: its strings (Localization/WSLocalization_English:
+  // the campaign's ID_SPMH_<mission>_NAME and _DESCRIPTION and its ID_OBJ_
+  // objectives; the modes' ID_PLAY_SCR_MODE<n>_DESC and objectives) and the
+  // campaign films' captions (public/films/bf2017/<mission>-*.vtt). Felucia's
+  // and Kessel's missions are the game's modes, set in their films' years;
+  // the campaign's four are after Endor, the game's own (bf2017) ──
   {
     id: 'felucia',
     name: 'Felucia',
@@ -1001,12 +1012,13 @@ const AS_SET = [
     traffic: ['freighter'],
     game: {
       id: 'felucia',
-      objectives: ['Take the village and the crashed Venator', 'Hold the Separatist dreadnought’s cooling rooms', 'Push the line back through the fungus forest'],
+      // (Supremacy, ID_RP_GAMEMODE_MODE1, at Tagata; its posts ID_MODE1_OBJECTIVE_FELUCIA_A to _E; the map's capital ships its Venator and Separatist dreadnought sub-levels)
+      objectives: ['Take the posts at the Village, the Swamp and the Caves', 'Push on to the Sarlacc and the Farm', 'Board the enemy’s capital ship and bring it down'],
       title: 'Supremacy on Felucia',
       film: 'rots',
-      role: 'A clone of the 327th, or a B1 in the jungle',
-      pitch: 'Capital Supremacy in the fungus forest: the clones and the droids fight over the village and the wrecks, then board each other’s capital ships. Fight for either side.',
-      how: 'Take the posts to fill your side’s ship; when it is full, board theirs and bring its systems down. The forest is thick: use it.',
+      role: 'A clone trooper of the Republic, or a battle droid of the Separatists',
+      pitch: 'Supremacy at Tagata on Felucia: the Republic and the Separatists fight for five posts in the fungus forest, from the Village to the Sarlacc; hold the most and your side boards the other’s capital ship, a Venator or a dreadnought. Fight for either side.',
+      how: 'Take the posts and hold them to push the line; when your side breaks through, board their ship and bring its systems down. The forest is thick: use it.',
       status: 'soon',
     },
   },
@@ -1036,12 +1048,13 @@ const AS_SET = [
     traffic: ['freighter', 'shuttle'],
     game: {
       id: 'kessel',
-      objectives: ['Get the spice out of the mine', 'Hold the corridor against the Empire’s guard', 'Run the payload to the ship'],
+      // (Extraction, ID_RP_GAMEMODE_MODE5: ID_MODE5_OBJ_ATCK Steal the shipment, ID_MODE5_OBJ_DFND Intercept the shipment, and ID_PLAY_SCR_MODE5_DESC)
+      objectives: ['Steal the coaxium shipment from deep in the mines', 'Get it through the corridors past the Imperial guard', 'Reach the Millennium Falcon, your ride home'],
       title: 'Extraction on Kessel',
       film: 'anh',
-      role: 'A smuggler’s crew, or the Imperial guard on the mines',
-      pitch: 'Extraction in the spice mines: one side pushes a payload of spice out through the corridors to its ship, the other holds every door. Fight for either side.',
-      how: 'Stand by the payload to move it; the guard stops it by standing nearer. Every corridor is a choke point, and the salt flats outside are open ground.',
+      role: 'The Rebellion’s infiltration squad, or the Imperial forces alerted to it',
+      pitch: 'Extraction in the mines of Kessel: a Rebel infiltration squad steals a shipment of coaxium and fights it out through the corridors to the Millennium Falcon, while the Empire’s garrison tries to intercept it. Fight for either side.',
+      how: 'Stand by the shipment to move it on; the garrison stops it by standing nearer. Every corridor is a choke point, and the checkpoints are where it turns.',
       status: 'soon',
     },
   },
@@ -1054,7 +1067,7 @@ const AS_SET = [
     // lies in the site's Mid Rim, and the south is crowded: it stands south-east of Dagobah instead)
     grid: null,
     pos: [15.5, 19.6],
-    films: ['rotj'],
+    films: ['rotj', 'bf2017'],
     moment: { film: 'rotj', title: 'The fleet gathers', text: 'The Rebel fleet masses off Sullust before the jump to Endor; on the surface, the Empire’s factories keep smoking.' },
     about: 'A volcanic world of black rock and sulphur, its cities and factories cut into the lava tubes, where the Sullustans build ships and the Rebel fleet gathered before Endor.',
     facts: [
@@ -1063,7 +1076,8 @@ const AS_SET = [
       ['Industry', 'SoroSuub’s shipyards'],
       ['Fleet', 'The Alliance massed here, 4 ABY'],
     ],
-    quote: { text: 'Many Bothans died to bring us this information.', by: 'Mon Mothma', film: 'rotj' },
+    // (a2-m3sul-ds01-s0100-fmv.vtt)
+    quote: { text: 'Relax, it’s one strike team. We’ll be fine.', by: 'Lando Calrissian', film: 'bf2017' },
     accent: '#f0a060',
     body: { look: 'sullust', r: 28 },
     moons: [{ look: 'moon-grey', r: 2.2, orbit: 84, speed: 0.011, tilt: 0.1, phase: 0.8 }],
@@ -1073,12 +1087,13 @@ const AS_SET = [
     traffic: ['freighter', 'transport'],
     game: {
       id: 'sullust',
-      objectives: ['Land at the Imperial facility', 'Fight through the halls to the launch bay', 'Get the Corvus off the ground'],
-      title: 'Inferno on Sullust',
-      film: 'rotj',
-      role: 'Inferno Squad, in the Empire’s own factory',
-      pitch: 'The campaign on Sullust: Inferno Squad goes into an Imperial facility cut into the lava, through its halls and out the far side to the Corvus.',
-      how: 'Keep to the platforms; the lava below is not for walking. The halls are narrow, so take them one door at a time.',
+      // (ID_SPMH_A2_M3SUL_NAME; its objectives ID_OBJ_A2_M3SUL_TOPOBJ_A, _B and _D)
+      objectives: ['Find the weapons cache', 'Shut down the factory', 'Get off Sullust'],
+      title: 'Cache Grab',
+      film: 'bf2017',
+      role: 'Lando Calrissian and Shriv Suurgav, for the Rebellion',
+      pitch: 'The campaign on Sullust: Iden Versio has the intel, and Lando and Shriv go into an abandoned Imperial weapons depot to steal its cache from under Admiral Versio’s nose before his strike team can recover it.',
+      how: 'Keep to the platforms; the lava below is not for walking. The factory’s halls are narrow, so take them a door at a time, and when the plan changes, change with it.',
       status: 'soon',
     },
   },
@@ -1089,8 +1104,8 @@ const AS_SET = [
     sector: 'Jinata sector',
     grid: null,
     pos: [17.2, 18.1],
-    films: ['rotj'],
-    moment: { film: 'rotj', title: 'The Emperor’s observatory', text: 'Luke Skywalker lands on a world of cliffs and sea, and finds Del Meeko of Inferno Squad at the door of a vault the Emperor left.' },
+    films: ['bf2017'],
+    moment: { film: 'bf2017', title: 'A call from the Force', text: 'Luke Skywalker follows a call in the Force to a world of cliffs and sea, and finds Del Meeko of Inferno Squad trapped in a cave below the Emperor’s observatory.' },
     about: 'An ocean world of cliffs, coral and sea spray, far out in the Jinata sector, where the Emperor hid an observatory full of his treasures and Luke Skywalker came looking for it after Endor.',
     facts: [
       ['Terrain', 'Cliffs, coves, coral'],
@@ -1098,7 +1113,8 @@ const AS_SET = [
       ['Met here', 'Luke Skywalker and Del Meeko'],
       ['Life', 'Pillio shrimp, sea birds'],
     ],
-    quote: { text: 'The Force brought me here. It brought you too, whether you know it or not.', by: 'Luke Skywalker', film: 'rotj' },
+    // (a1-m3pil-ds01-s0100-fmv.vtt)
+    quote: { text: 'There must be something special about this place.', by: 'Luke Skywalker', film: 'bf2017' },
     accent: '#7fd0e8',
     body: { look: 'pillio', r: 30 },
     moons: [],
@@ -1108,12 +1124,13 @@ const AS_SET = [
     traffic: [],
     game: {
       id: 'pillio',
-      objectives: ['Find the way into the cave', 'Cut through the vault doors', 'Decide what to do with the Emperor’s treasure'],
+      // (ID_SPMH_A1_M3PIL_NAME; the objectives under ID_OBJ_A1M3_TOPLEVEL_0, A Call from the Force)
+      objectives: ['Explore Pillio and search the cave', 'Use the Force to free Del from the amber, and defend him', 'Reach the Observatory'],
       title: 'The Observatory',
-      film: 'rotj',
-      role: 'Luke Skywalker, alone on the cliffs',
-      pitch: 'The campaign on Pillio: Luke follows the Force down from the cliffs into a cave, and through the vault doors to what the Emperor kept there.',
-      how: 'The cave is dark and the shrimp bite; keep your blade lit. The doors take a saber, not a blaster.',
+      film: 'bf2017',
+      role: 'Luke Skywalker, then Del Meeko of Inferno Squad',
+      pitch: 'The campaign on Pillio: Del Meeko is ordered to destroy one of the Emperor’s observatories before the Rebels can find the dangerous artifacts inside, and Luke Skywalker, following the Force to the same place, finds him in trouble.',
+      how: 'The cave is dark and the shrimp bite; keep your blade lit. The Imperial troops on the shore are no friends of yours, and Del is no enemy.',
       status: 'soon',
     },
   },
@@ -1124,8 +1141,8 @@ const AS_SET = [
     sector: 'Jinata sector',
     grid: null,
     pos: [17.4, 19.4],
-    films: ['rotj'],
-    moment: { film: 'rotj', title: 'Operation Cinder', text: 'The satellites rise over Kestro and the storms come down; Iden Versio chooses the people of her own world over the Emperor’s last order.' },
+    films: ['bf2017'],
+    moment: { film: 'bf2017', title: 'Operation Cinder', text: 'The satellites rise over Kestro and the storms come down; Iden Versio chooses the people of her own world over the Emperor’s last order.' },
     about: 'The Empire’s model world: a grey-green planet of terraced cities and clean streets, where Iden Versio grew up, and the first the Emperor’s Operation Cinder burned.',
     facts: [
       ['Terrain', 'Terraced cities, coast'],
@@ -1133,7 +1150,8 @@ const AS_SET = [
       ['Raised here', 'Iden Versio'],
       ['Fate', 'Operation Cinder, 4 ABY'],
     ],
-    quote: { text: 'This is my home.', by: 'Iden Versio', film: 'rotj' },
+    // (a1-m4var-ds01-s0100-fmv.vtt)
+    quote: { text: 'I don’t take orders from dead men.', by: 'Iden Versio', film: 'bf2017' },
     accent: '#a8c8e0',
     body: { look: 'vardos', r: 30 },
     moons: [{ look: 'moon-grey', r: 2.4, orbit: 92, speed: 0.008, tilt: 0.2, phase: 3 }],
@@ -1143,12 +1161,13 @@ const AS_SET = [
     traffic: ['shuttle', 'tie'],
     game: {
       id: 'vardos',
-      objectives: ['Reach Kestro’s plaza under the storm', 'Get the civilians to the Corvus', 'Hold the landing pad until it lifts off'],
-      title: 'Operation Cinder',
-      film: 'rotj',
+      // (ID_SPMH_A1_M4VAR_NAME; its objectives ID_OBJ_A1M4_A, _B and _C)
+      objectives: ['Recover Protectorate Gleb', 'Destroy the anti-air weapons', 'Escape Vardos'],
+      title: 'The Storm',
+      film: 'bf2017',
       role: 'Iden Versio, turning on her own Empire',
-      pitch: 'The campaign on Vardos: the Emperor’s last order burns Kestro, and Iden Versio and Del Meeko get who they can to the Corvus through the streets she grew up in.',
-      how: 'The storms strike where the satellites point; keep under cover between the plazas. The stormtroopers on the pads are hers no longer.',
+      pitch: 'The campaign on Vardos: Inferno Squad is sent to extract Protectorate Gleb as Operation Cinder’s satellites rise over Kestro, and Iden Versio and Del Meeko choose the people of her home world over the Emperor’s last order.',
+      how: 'The storms strike where the satellites point; keep under cover between the plazas. Take an AT-AT to the anti-air guns, and get to the Corvus while there is still a sky to fly in.',
       status: 'soon',
     },
   },
@@ -1159,16 +1178,17 @@ const AS_SET = [
     sector: 'Tapani sector',
     grid: null,
     pos: [14.4, 11],
-    films: ['rotj'],
-    moment: { film: 'rotj', title: 'The shipyards', text: 'Over the dry docks, Inferno Squad’s TIEs clear the way for the Star Destroyers; below, the yards keep building.' },
+    films: ['bf2017'],
+    moment: { film: 'bf2017', title: 'The Dauntless', text: 'Rebel ships jump into Fondor space while Inferno Squad collects the satellites for Operation Cinder, and Iden Versio has to free the Star Destroyer Dauntless from its dock.' },
     about: 'A Colonies world of factories and orbital shipyards, where the Empire’s Star Destroyers are laid down in dry docks that ring the planet, and Inferno Squad fought over them after Endor.',
     facts: [
       ['Terrain', 'Cities, factories, smog'],
       ['Orbit', 'Dry docks, a Star Destroyer in each'],
       ['Built here', 'Imperial Star Destroyers'],
-      ['Battle', 'Starfighter Assault, 4 ABY'],
+      ['Battle', 'The Dauntless freed, 4 ABY'],
     ],
-    quote: { text: 'Every ship in the yards is one more the Rebellion has to face.', by: 'Admiral Versio', film: 'rotj' },
+    // (a1-m2fon-ds02-s0680-fmv.vtt)
+    quote: { text: 'Exactly as planned.', by: 'Iden Versio', film: 'bf2017' },
     accent: '#c8c0b0',
     body: { look: 'fondor', r: 32 },
     moons: [{ look: 'moon-grey', r: 3, orbit: 100, speed: 0.007, tilt: 0.1, phase: 1.2 }],
@@ -1178,15 +1198,16 @@ const AS_SET = [
     traffic: ['shuttle', 'tie', 'freighter'],
     game: {
       id: 'fondor',
-      objectives: ['Clear the Rebel fighters off the dry dock', 'Bring down the shield and the cruiser’s guns', 'Get the Star Destroyer out of the yard'],
-      title: 'Starfighter Assault: Fondor',
-      film: 'rotj',
-      role: 'A TIE pilot of Inferno Squad, or a Rebel raiding the yards',
-      pitch: 'Starfighter Assault over the Fondor shipyards: the Rebels come for the Star Destroyer in its dry dock, and the Empire’s fighters hold the yard. Fly for either side.',
-      how: 'Pick a fighter and a side. The dock’s guns and the cruiser’s shield go down in stages; keep your wingmates close in the scaffolding.',
-      status: 'live',
-      to: '/galaxy/fondor?battle=starfighter',
-      go: 'Fly it now',
+      // (ID_SPMH_A1_M2FON_NAME; its objectives ID_OBJ_A1_M2FON_TOPLEVEL_0 to _2. The
+      // shipyard's Starfighter Assault is live already: starfighterMaps.js's row,
+      // its own button on the briefing and its own card in the modes)
+      objectives: ['Defend the Dauntless', 'Destroy the ion cannons', 'Free the Dauntless'],
+      title: 'The Dauntless',
+      film: 'bf2017',
+      role: 'Iden Versio of Inferno Squad, on foot and in her TIE',
+      pitch: 'The campaign at Fondor: Iden works security aboard the Star Destroyer Dauntless as it takes on the satellites for Operation Cinder, and when the Rebels strike the shipyards she has to fight them off, take out their ion cannons and free the ship from its dock.',
+      how: 'Keep Agent Hask alive and the Dauntless in one piece; the ion cannons are aboard the Rebel cruiser, and the dock’s clamps go last.',
+      status: 'soon',
     },
   },
 ];

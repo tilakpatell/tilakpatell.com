@@ -6,7 +6,7 @@
 
 export const ABOUT = {
   '/universe': 'The whole site as places in space: the stations round the sun are its pages, the planets in deep space its worlds. Fly a ship to any of them, or pick one.',
-  '/galaxy': 'Eighteen star systems from the films and shows: fly between them, land on their planets, and pick a side in the wars.',
+  '/galaxy': 'Twenty-four star systems from the films, shows and games: fly between them, land on their planets, and pick a side.',
   '/galaxy/surface': 'A world from the films, on foot: its places to find, its people to talk to, things to ride.',
   '/deathstar': 'That’s no moon. Open any part of the station on the technical readout, fire the superlaser, or fly the trench run.',
   '/fly': 'A ship low over a planet that never ends: Hoth’s snowfields and ridges, Echo Base flat among them, and forty-nine more worlds.', // planet flight (scripts/flight-island.mjs removes this row)

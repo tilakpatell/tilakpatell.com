@@ -513,7 +513,7 @@ export default function Terminal() {
       worlds: () => [
         BLANK,
         L('  WORLDS', 'head'),
-        L(`  ${pad('galaxy', 13)}Star Wars: a galaxy far, far away, eighteen systems to fly and jump between (try galaxy hoth)`),
+        L(`  ${pad('galaxy', 13)}Star Wars: a galaxy far, far away, twenty-four systems to fly and jump between (try galaxy hoth)`),
         L(`  ${pad('deathstar', 13)}Star Wars: the superlaser, the readout, the trench run`),
         L(`  ${pad('aboard', 13)}Star Wars: inside both Death Stars, room by room, either side, story or free roam`),
         L(`  ${pad('moria', 13)}The Lord of the Rings: the Doors of Durin, the road, the Bridge, Mordor, the Ring`),
