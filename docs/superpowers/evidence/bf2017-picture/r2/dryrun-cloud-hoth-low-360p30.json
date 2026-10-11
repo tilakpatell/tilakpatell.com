@@ -1,0 +1,1110 @@
+{
+  "when": "2026-10-11T05:13:02.735Z",
+  "kind": "cloud dry run: plumbing only",
+  "world": "hoth",
+  "path": null,
+  "ready": true,
+  "loadS": 23.5,
+  "backend": null,
+  "angle": "swiftshader",
+  "quality": "low",
+  "asked": {
+    "width": 640,
+    "height": 360,
+    "fps": 30,
+    "maxMbps": 25
+  },
+  "sender": {
+    "connection": "connected",
+    "encoder": null,
+    "powerEfficient": null,
+    "codec": "video/AV1",
+    "size": "640×360",
+    "framesEncoded": 62,
+    "encodeMs": 7.5,
+    "limitedBy": "none",
+    "frameMs": {
+      "p50": 816.6999999999971,
+      "p95": 1283.2999999999993
+    }
+  },
+  "replayed": {
+    "key": 2,
+    "pointer": 0,
+    "ping": 250
+  },
+  "replayHopMs": {
+    "n": 252,
+    "p50": 2.7,
+    "p95": 59
+  },
+  "receiver": {
+    "latency": {
+      "n": 58,
+      "p50": 2643.1999999997206,
+      "p95": 3292.400000000096,
+      "max": 4591.9999999997235,
+      "lost": 6
+    },
+    "mbps": {
+      "mean": 0.03,
+      "p95": 0.07
+    },
+    "fps": {
+      "mean": 1.02,
+      "min": 0
+    },
+    "size": "640×360",
+    "codec": "video/AV1",
+    "last": {
+      "mbps": 0.04,
+      "fps": 1,
+      "decodeMs": 3,
+      "jitterMs": 0.2,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 3
+    },
+    "connection": "connected"
+  },
+  "reports": [
+    {
+      "at": "2026-10-11T05:12:05.034Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 2,
+        "p50": 2160.4,
+        "p95": 2210.4,
+        "max": 2210.4,
+        "lost": 0
+      },
+      "mbps": {
+        "mean": 0.01,
+        "p95": 0.01
+      },
+      "fps": {
+        "mean": 0.5,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:10.034Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 7,
+        "p50": 1843.7,
+        "p95": 2726.8,
+        "max": 2726.8,
+        "lost": 0
+      },
+      "mbps": {
+        "mean": 0.01,
+        "p95": 0.02
+      },
+      "fps": {
+        "mean": 0.86,
+        "min": 0
+      },
+      "rttMs": 0,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:15.061Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 12,
+        "p50": 2210.4,
+        "p95": 2726.8,
+        "max": 2726.8,
+        "lost": 0
+      },
+      "mbps": {
+        "mean": 0.01,
+        "p95": 0.04
+      },
+      "fps": {
+        "mean": 1,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:20.037Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 19,
+        "p50": 2476.5,
+        "p95": 2726.8,
+        "max": 2726.8,
+        "lost": 0
+      },
+      "mbps": {
+        "mean": 0.02,
+        "p95": 0.05
+      },
+      "fps": {
+        "mean": 1.06,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:25.031Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 25,
+        "p50": 2443.4,
+        "p95": 2676.6,
+        "max": 2726.8,
+        "lost": 0
+      },
+      "mbps": {
+        "mean": 0.02,
+        "p95": 0.05
+      },
+      "fps": {
+        "mean": 1.14,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:30.034Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 31,
+        "p50": 2476.5,
+        "p95": 2676.6,
+        "max": 2726.8,
+        "lost": 0
+      },
+      "mbps": {
+        "mean": 0.02,
+        "p95": 0.05
+      },
+      "fps": {
+        "mean": 1.15,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:35.036Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 37,
+        "p50": 2526.1,
+        "p95": 2809.3,
+        "max": 2875.9,
+        "lost": 0
+      },
+      "mbps": {
+        "mean": 0.03,
+        "p95": 0.05
+      },
+      "fps": {
+        "mean": 1.16,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:41.544Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 41,
+        "p50": 2543.3,
+        "p95": 3159,
+        "max": 3292.4,
+        "lost": 0
+      },
+      "mbps": {
+        "mean": 0.03,
+        "p95": 0.05
+      },
+      "fps": {
+        "mean": 1.14,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:45.033Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 44,
+        "p50": 2576,
+        "p95": 3159.2,
+        "max": 4475.5,
+        "lost": 5
+      },
+      "mbps": {
+        "mean": 0.03,
+        "p95": 0.05
+      },
+      "fps": {
+        "mean": 1.07,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:52.538Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 48,
+        "p50": 2576.7,
+        "p95": 3292.4,
+        "max": 4592,
+        "lost": 5
+      },
+      "mbps": {
+        "mean": 0.03,
+        "p95": 0.05
+      },
+      "fps": {
+        "mean": 1.04,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:12:55.033Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 51,
+        "p50": 2609.4,
+        "p95": 3292.4,
+        "max": 4592,
+        "lost": 6
+      },
+      "mbps": {
+        "mean": 0.03,
+        "p95": 0.07
+      },
+      "fps": {
+        "mean": 1.02,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    },
+    {
+      "at": "2026-10-11T05:13:00.032Z",
+      "t": "report",
+      "where": "lan",
+      "latency": {
+        "n": 56,
+        "p50": 2626.6,
+        "p95": 3292.4,
+        "max": 4592,
+        "lost": 6
+      },
+      "mbps": {
+        "mean": 0.03,
+        "p95": 0.07
+      },
+      "fps": {
+        "mean": 1,
+        "min": 0
+      },
+      "rttMs": 1,
+      "size": "640×360",
+      "codec": "video/AV1",
+      "verdict": {
+        "latency": false,
+        "bitrate": true,
+        "size": false,
+        "ok": false
+      },
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36"
+    }
+  ],
+  "latencies": [
+    2210.4000000000933,
+    2160.3999999997204,
+    2726.7999999999065,
+    1843.6999999997206,
+    1443.5999999997202,
+    1643.4999999997199,
+    1676.799999999721,
+    2410.0000000000928,
+    2443.3999999997213,
+    2426.7000000000935,
+    2493.3999999997213,
+    2543.300000000094,
+    2543.299999999719,
+    2576.6999999997206,
+    2626.599999999722,
+    2643.1999999997206,
+    2676.599999999722,
+    2476.49999999972,
+    2476.49999999972,
+    2426.3999999997213,
+    2426.300000000094,
+    2392.99999999972,
+    2392.9000000000924,
+    2509.599999999722,
+    2609.599999999722,
+    2676.1999999997206,
+    2676.1999999997206,
+    2459.49999999972,
+    2526.099999999722,
+    2576.099999999722,
+    2609.3999999997213,
+    2709.3999999997213,
+    2576.0000000000946,
+    2725.9999999997235,
+    2809.299999999719,
+    2709,
+    2875.8999999997177,
+    3292.400000000096,
+    3159.1999999997206,
+    3009.0000000000946,
+    3158.9999999997235,
+    2992.299999999719,
+    4475.500000000095,
+    3092.099999999722,
+    2942.0000000000946,
+    2942.099999999722,
+    2675.3999999997177,
+    4591.9999999997235,
+    2791.8999999997177,
+    2908.4999999997235,
+    2241.7000000000917,
+    2924.9999999997235,
+    2841.600000000093,
+    2958.299999999719,
+    2791.4000000000015,
+    2974.799999999719,
+    2891.4999999997235,
+    3058.099999999722
+  ],
+  "samples": [
+    {
+      "mbps": 0.01,
+      "fps": 1,
+      "decodeMs": 0.9,
+      "jitterMs": 6.3,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.01,
+      "fps": 1,
+      "decodeMs": 1.1,
+      "jitterMs": 4.8,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.01,
+      "fps": 1,
+      "decodeMs": 1.2,
+      "jitterMs": 0,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.02,
+      "fps": 2,
+      "decodeMs": 1,
+      "jitterMs": 0,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 0
+    },
+    {
+      "mbps": 0.01,
+      "fps": 1,
+      "decodeMs": 1.1,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 0
+    },
+    {
+      "mbps": 0.02,
+      "fps": 2,
+      "decodeMs": 1.1,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 0
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.01,
+      "fps": 1,
+      "decodeMs": 4.5,
+      "jitterMs": 25.7,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.04,
+      "fps": 2,
+      "decodeMs": 1.2,
+      "jitterMs": 17.4,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.02,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.02,
+      "fps": 1,
+      "decodeMs": 1.2,
+      "jitterMs": 0.2,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.02,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.05,
+      "fps": 2,
+      "decodeMs": 1.3,
+      "jitterMs": 42.5,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.6,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.05,
+      "fps": 2,
+      "decodeMs": 1.6,
+      "jitterMs": 31.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 35.9,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": null
+    },
+    {
+      "mbps": 0.02,
+      "fps": 1,
+      "decodeMs": 1.5,
+      "jitterMs": 38,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 3
+    },
+    {
+      "mbps": 0.05,
+      "fps": 2,
+      "decodeMs": 1.3,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 3
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.1,
+      "jitterMs": 0.2,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.2,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.7,
+      "jitterMs": 0.4,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.05,
+      "fps": 2,
+      "decodeMs": 1.4,
+      "jitterMs": 2.3,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.02,
+      "fps": 1,
+      "decodeMs": 1.2,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 2.1,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 3.9,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.2,
+      "jitterMs": 2.7,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.05,
+      "fps": 2,
+      "decodeMs": 1.3,
+      "jitterMs": 0.2,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.02,
+      "fps": 1,
+      "decodeMs": 1.1,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 0.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 0,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.2,
+      "jitterMs": 265.4,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.02,
+      "fps": 1,
+      "decodeMs": 1.2,
+      "jitterMs": 244.3,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 222.5,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 176.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.09,
+      "fps": 2,
+      "decodeMs": 1.8,
+      "jitterMs": 202.5,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 182.9,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.4,
+      "jitterMs": 164.7,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 145.9,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.06,
+      "fps": 2,
+      "decodeMs": 1.8,
+      "jitterMs": 130.5,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.07,
+      "fps": 1,
+      "decodeMs": 1.2,
+      "jitterMs": 118.3,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 1,
+      "decodeMs": 1.4,
+      "jitterMs": 118.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.12,
+      "fps": 2,
+      "decodeMs": 1.4,
+      "jitterMs": 101.3,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.04,
+      "fps": 1,
+      "decodeMs": 1.4,
+      "jitterMs": 90.2,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0,
+      "fps": 0,
+      "decodeMs": null,
+      "jitterMs": null,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 76.3,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.04,
+      "fps": 1,
+      "decodeMs": 1.3,
+      "jitterMs": 75.6,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.07,
+      "fps": 1,
+      "decodeMs": 1.9,
+      "jitterMs": 47.1,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.03,
+      "fps": 2,
+      "decodeMs": 1.4,
+      "jitterMs": 16,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 1
+    },
+    {
+      "mbps": 0.05,
+      "fps": 1,
+      "decodeMs": 1.7,
+      "jitterMs": 10,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 3
+    },
+    {
+      "mbps": 0.04,
+      "fps": 1,
+      "decodeMs": 3,
+      "jitterMs": 0.2,
+      "width": 640,
+      "height": 360,
+      "codec": "video/AV1",
+      "rttMs": 3
+    }
+  ],
+  "senderLog": [
+    "27473 realtime SUBSCRIBED",
+    "29844 offering",
+    "29907 connection connecting",
+    "29952 answered",
+    "29960 connection connected"
+  ],
+  "errors": [],
+  "_source": {
+    "sender": "send.js stats(): the outbound video’s RTCStats (encoderImplementation, totalEncodeTime ÷ framesEncoded) and requestAnimationFrame intervals on the sending page",
+    "receiver": "receive.js numbers(): inbound video RTCStats deltas each second (stats.js rates) and the frame stamp’s input-to-picture times (stamp.js), p50 and p95 by nearest rank",
+    "replayHopMs": "performance.now() from the binding call to the replayed call resolving, in this script",
+    "replayed": "the inputs that reached this script over the data channel and were replayed with Playwright (keys, pointer moves, pings)",
+    "loadS": "from page.goto to window.__surfaceScene.renderer"
+  }
+}

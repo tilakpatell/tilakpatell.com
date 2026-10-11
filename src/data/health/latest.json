@@ -1,6 +1,6 @@
 {
   "date": "2026-10-11",
-  "sha": "3324a7d7f",
+  "sha": "2dbc064ba",
   "metrics": {
     "big-files": {
       "value": 30,
@@ -17,7 +17,7 @@
         },
         {
           "file": "src/components/galaxy/surface/scene.js",
-          "n": 4111
+          "n": 4096
         },
         {
           "file": "src/components/universe/footScene.js",

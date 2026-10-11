@@ -41,6 +41,8 @@ describe('the 2017 drop’s paths', () => {
   it('reads the manifest’s paths as bucket paths', () => {
     expect(inBucket('models/a/b.glb')).toBe('web/models/a/b.glb');
     expect(inBucket('web/models/a/b.glb')).toBe('web/models/a/b.glb');
+    // (the records' folder is at the bucket's root: `--folder data/Levels/…` lists it)
+    expect(inBucket('data/Levels/MP/Hoth_01.json.gz')).toBe('data/Levels/MP/Hoth_01.json.gz');
     expect(mapPath('Gameplay/Heroes/X/T_X_3p_NAM')).toBe('web/textures/gameplay/heroes/x/t_x_3p_nam.png');
   });
 

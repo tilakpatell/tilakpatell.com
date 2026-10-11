@@ -50,6 +50,10 @@ jobs:
           # live (scripts/assets-upload.mjs, scripts/assets-publish.mjs).
           # Unset, every file comes from the site as before
           VITE_ASSET_BASE: ${{ vars.ASSET_BASE }}
+      # every WebAssembly binary the build publishes valid, and every one a
+      # chunk asks for there (scripts/wasm-check.mjs; Pages serves .wasm as
+      # application/wasm, docs/stack/webassembly.md)
+      - run: node scripts/wasm-check.mjs dist
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

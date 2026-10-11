@@ -34,7 +34,9 @@ const TITLE = 'Star Wars Battlefront II (2017): ';
 // the clip packs and anything else the pipeline makes outside a kind's file
 // (and the space levels' models, scripts/bf2017-space.mjs, and the game's
 // star fields, scripts/bf2017-sky.mjs --panorama)
-const PACKS = ['models/galaxy/bf2017', 'models/galaxy/space', 'textures/galaxy/sky/space'];
+// (textures/galaxy/bf2017/hdr: lane W's HDR skies, made on the desktop,
+// scripts/desktop/bf2017-panoramas.mjs; tens of MB each, never in git)
+const PACKS = ['models/galaxy/bf2017', 'models/galaxy/space', 'textures/galaxy/sky/space', 'textures/galaxy/bf2017/hdr'];
 // the game's films (scripts/bf2017-ui.mjs): the WebM only, its poster and
 // captions beside it stay committed
 const FILMS = 'films/bf2017';

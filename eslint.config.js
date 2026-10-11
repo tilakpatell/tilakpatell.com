@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist', 'scripts/.cache', 'scripts/health/fixtures', 'scripts/fixtures', '.claude', '.agents', 'lab'] },
+  { ignores: ['dist', 'scripts/.cache', 'scripts/health/fixtures', 'scripts/fixtures', '.claude', '.agents', 'lab', 'wasm/*/target', 'src/lib/wasm/*/*.js'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {

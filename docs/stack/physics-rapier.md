@@ -1,6 +1,6 @@
 # Rapier
 
-**Version** `@dimforge/rapier3d-compat@0.21.0` (pinned, no caret) · **Page owner** `src/lib/physics/` · **Decision** none recorded; the reasons are in `docs/superpowers/specs/2026-10-08-natural-worlds-design.md` (“Rapier, not cannon-es”)
+**Version** `@dimforge/rapier3d-compat@0.21.0` and `@dimforge/rapier3d-simd-compat@0.21.0` (both pinned, no caret, always the same version) · **Page owner** `src/lib/physics/` · **Decision** none recorded; the reasons are in `docs/superpowers/specs/2026-10-08-natural-worlds-design.md` (“Rapier, not cannon-es”)
 
 ## What it is, and why it is here
 
@@ -8,7 +8,7 @@ A rigid-body physics engine written in Rust and run as WebAssembly: bodies, coll
 
 ## Where it is used
 
-The census row is in [README.md](README.md): Rapier is imported by one file, `src/lib/physics/world.js`, and only dynamically, the first time `createPhysics` or `preload` is called.
+The census rows are in [README.md](README.md): Rapier is imported by one file, `src/lib/physics/engine.js`, and only dynamically, the first time `createPhysics` or `preload` (`src/lib/physics/world.js`) is called. Which build: the SIMD one where the browser validates a SIMD probe (`src/lib/wasm/features.js`), the plain one else, or when the SIMD one won’t come up; [webassembly.md](webassembly.md) has the why and the numbers.
 
 The rest of the site reaches it through `src/lib/physics/`:
 
@@ -26,17 +26,19 @@ The rest of the site reaches it through `src/lib/physics/`:
 - **The eyes are queries** (`src/lib/physics/queries.js`): `ray`, `sweep`, `overlap`, `floorAt`, `project`, as plain numbers, against the world after its last step, on a per-frame budget (`budget.js`): a refused call answers `undefined`, so a caller keeps its last answer and never sees through a wall. Groups are `groups.js`’s: the three of his, and `character`, `hurtbox`, `zone`, with two query-only groups (`projectile`, `sight`); `filterOf(...names)` builds a query’s filter.
 - **Sensors and tags** (`world.js`): a collider desc gains `sensor` and `tag`, a body desc `onEnter` and `onLeave` (collision events), a `Body` gains `attach(desc)` and `detach(collider)`, and `src/lib/physics/zones.js` is a sensor volume over them; `tagOf(collider)` names what a query hit. (`hurtbox.js`, sensor capsules by region on a figure, is lane P2’s of the Battlefront physics design and comes with it.)
 - **Colliders from names.** A model made with its physics (nodes named `physical`, their children `cuboid`, `ball`, `cylinder`, `capsule`, `hull` or `trimesh`, sized by their scale) gives its bodies through `src/lib/three/colliders.js`’s `collidersOf(model)`, its rules pure in `src/lib/physics/fromModel.js`; `scripts/gen3d/web.mjs` keeps the nodes through the web cut, the planet landings read them before a hand-written body, and `docs/assets/colliders.md` is the page a modeller reads.
-- **It never throws at a world**: bad numbers put a body back where it began, a throwing `onHit` goes to `onError`, a failed load (offline) is not cached so the next call tries again.
+- **It never throws at a world**: bad numbers put a body back where it began, a throwing `onHit` goes to `onError`, a failed load (offline) is not cached so the next call tries again, and a load that fails or never comes is a named `WasmError` within 20 s (`src/lib/wasm/load.js`), which the Battlefront catches and goes on without the engine.
 
 ## What the site does not use, and why
 
 - **The bundler-plugin build** (`@dimforge/rapier3d`): the `-compat` build inlines its wasm, so Vite needs no plugin and the engine loads in Node for the tests.
 - **Rapier’s debug renderer**: `src/lib/physics/` has no three.js and no DOM; a world draws its bodies from `position()` and `quaternion()`.
-- **A static import**: nothing imports Rapier at module scope, so no page but the one driving downloads it.
+- **A static import**: nothing imports Rapier at module scope, so no page but the one driving downloads it; and of the two builds, only the one chosen.
+- **The threaded builds**: they need a cross-origin-isolated page (COOP and COEP headers), which GitHub Pages can’t send ([webassembly.md](webassembly.md)).
 
 ## Rules
 
-- Import Rapier only in `src/lib/physics/world.js`, dynamically (its header; nothing measures this, `node scripts/stack-census.mjs` shows the count).
+- Import Rapier only in `src/lib/physics/engine.js`, dynamically (its header; nothing measures this, `node scripts/stack-census.mjs` shows the count).
+- The two builds move together: `src/lib/physics/engine.test.js` runs one scene through both and holds them to the same numbers.
 - `src/lib/physics/` stays pure: no three.js, no DOM, tested against the real engine in Node (`src/lib/physics/world.test.js` and the tests beside each file; `docs/health/RULES.md`, “Logic apart from drawing”).
 - A world that loads Rapier counts it in its download size (`WORLD_MB` in `src/components/worlds/worlds.js`, the autopilot’s standing rules).
 - A character moves only in `onSubstep` (its `move`); nothing writes a figure’s pose between substeps. A brain outputs an intent, never a transform.
@@ -47,13 +49,13 @@ The rest of the site reaches it through `src/lib/physics/`:
 The version is pinned without a caret, unlike the site’s other packages; the commit that added it gives no reason, so keep it exact until one is recorded.
 
 ```
-npm install @dimforge/rapier3d-compat@<version> --save-exact
+npm install @dimforge/rapier3d-compat@<version> @dimforge/rapier3d-simd-compat@<version> --save-exact
 npx vitest run src/lib/physics
 npm run build
 node scripts/health.mjs --check --skip build
 ```
 
-Then land on a planet on the universe map and kick a barrel by hand: the tests hold the numbers to tolerances, not the feel. Last upgrade: not recorded; record the next one here, with what it broke.
+Then land on a planet on the universe map and kick a barrel by hand: the tests hold the numbers to tolerances, not the feel. Last upgrade: not recorded; record the next one here, with what it broke. The SIMD build was added at 0.21.0 on 2026-10-11 (lane X2): `world.load.test.js` mocked the plain build alone and had to mock both.
 
 ## Gotchas
 
