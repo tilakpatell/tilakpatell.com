@@ -50,6 +50,9 @@ try {
   Object.assign(state, {
     ready: true,
     backend: gfx.backend,
+    // (lane N2: the depth buffer drawn on, as three made it: it falls back
+    // silently to the standard one without EXT_clip_control over WebGL 2)
+    reversed: gfx.reversedDepth === true,
     probe: w.probe,
     // n frames of a fixed step, each on its own animation frame (a node
     // that updates once a frame, TRAA's history above all, resolves on the

@@ -414,7 +414,7 @@ for (const leg of legs) {
     await page.waitForFunction(() => window.__lit?.ready || window.__lit?.error, null, { timeout: 240000 });
     const err = await page.evaluate(() => window.__lit.error);
     if (err) throw new Error(err);
-    Object.assign(row, await page.evaluate(() => ({ backend: window.__lit.backend, clustered: window.__lit.probe.light?.clustered ?? null, passes: window.__lit.probe.passes, bias: window.__lit.probe.bias ?? null })));
+    Object.assign(row, await page.evaluate(() => ({ backend: window.__lit.backend, clustered: window.__lit.probe.light?.clustered ?? null, passes: window.__lit.probe.passes, bias: window.__lit.probe.bias ?? null, reversed: window.__lit.reversed ?? null })));
     const shot = async () => page.locator('canvas').screenshot();
     if (trailsRun) {
       // (still first: the history settles on the wall and the movers at rest)
@@ -618,6 +618,7 @@ console.log(`|---|---|---|---|---|---|---|---|---|---|---|---|---|`);
 for (const r of rows) {
   if (r.error) console.log(`| ${r.leg} | failed: ${r.error} |`);
   else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ') || 'none'} | ${r.clustered} | ${r.meanLum} | ${r.envDiff} | ${r.programsBefore} → ${r.programsAfter} | ${r.mean} | ${r.median} | ${r.p95} | ${r.gridBakeMs ?? '–'} | ${r.gridMean ?? '–'} | ${r.volumesLit ?? '–'} |`);
+  if (r.reversed != null) console.log(`  ${r.leg}: depth ${r.reversed ? 'reversed' : 'standard'}`);
   if (r.bias != null) console.log(`  ${r.leg}: bias ${Number(r.bias.toFixed(3))} (the mip bias every game material samples at: lane N2)`);
   if (r.parity) console.log(`  particles (${r.simMode}): parity ${JSON.stringify(r.parity)}${r.stats ? `; stats ${JSON.stringify(r.stats)}` : ''}`);
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
