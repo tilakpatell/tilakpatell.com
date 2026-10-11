@@ -31,6 +31,7 @@
 //
 //   node scripts/bf2017-clips.mjs <pack> [--fps 24] [--only <site name>,…]
 //   node scripts/bf2017-clips.mjs --scene <id> [--cast <role>=<game clip>,…]   (scenes/<id>.glb)
+//   node scripts/bf2017-clips.mjs --graph graph-t   (the animation graph's packs: graph, graph-t, -p, -l, graph-add)
 //   node scripts/bf2017-clips.mjs --census   (docs/superpowers/evidence/bf2017-coverage/clips.md)
 //     [--out public/models/galaxy/bf2017] [--root lab/assets/bf2017] [--skeleton public/models/galaxy/bf2017/walrus.glb]
 //
@@ -336,6 +337,16 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       PACK_OPTS[`scene-${args.scene}`] = { scene: args.scene };
     }
     args._[0] = `scene-${args.scene}`;
+  }
+  // --graph: the animation graph's packs (src/data/bf2017/animgraph.json's
+  // `packs`: graph, graph-t, graph-p, graph-l, graph-add), the clips its
+  // states play that no other pack carries (scripts/bf2017-animgraph.mjs)
+  if (args.graph) {
+    const graph = JSON.parse(await readFile(join(ROOT, 'src', 'data', 'bf2017', 'animgraph.json'), 'utf8'));
+    for (const [name, set] of Object.entries(graph.packs ?? {})) {
+      PACKS[name] = set;
+      PACK_OPTS[name] = name === 'graph-add' ? { additive: true } : {};
+    }
   }
   if (!args._[0]) {
     console.error(`usage: node scripts/bf2017-clips.mjs <pack> [--fps 24] [--only a,b] (packs: ${Object.keys(PACKS).join(', ')})`);

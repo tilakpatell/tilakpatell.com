@@ -1,0 +1,3623 @@
+{
+ "_from": "web/anims.jsonl (10141 clips) by name, each locomotion clip's travel from its own AITrajectory and each jump's take-off and landing from its own Hips; the numbers from physics/soldier.json, weapons.json and abilities.json; 2026-10-11",
+ "_note": "The game's animation graphs (its ANT trees) are not in the export: the states, their blending and their triggers are authored here from the clips' names (src/data/bf2017/NOTES.md, 'The animation graph').",
+ "numbers": {
+  "walk": 3.8,
+  "walk_source": "Gameplay/Characters/DefaultSoldierPhysics#OnGroundStateData.PoseInfo[Stand].Velocity",
+  "sprint": 1.57,
+  "sprint_source": "Gameplay/Characters/DefaultSoldierPhysics#OnGroundStateData.PoseInfo[Stand].SprintMultiplier",
+  "crouch": 2.5,
+  "crouch_source": "Gameplay/Characters/DefaultSoldierPhysics#OnGroundStateData.PoseInfo[Crouch].Velocity",
+  "back": 0.8,
+  "back_source": "Gameplay/Characters/DefaultSoldierPhysics#OnGroundStateData.PoseInfo[Stand].VelocityBackward",
+  "side": 0.9,
+  "side_source": "Gameplay/Characters/DefaultSoldierPhysics#OnGroundStateData.PoseInfo[Stand].VelocityLeft",
+  "jumpHeight": 1.1,
+  "jumpHeight_source": "Gameplay/Characters/DefaultSoldierPhysics#JumpStateData.JumpHeight",
+  "radius": 0.3,
+  "radius_source": "Gameplay/Characters/DefaultSoldierPhysics#CharacterPhysicsData.PhysicalRadius",
+  "height": 1.7,
+  "height_source": "Gameplay/Characters/DefaultSoldierPhysics#CharacterPoseData[Stand].Height",
+  "crouchHeight": 1.15,
+  "crouchHeight_source": "Gameplay/Characters/DefaultSoldierPhysics#CharacterPoseData[Crouch].Height",
+  "step": 0.4,
+  "step_source": "Gameplay/Characters/DefaultSoldierPhysics#CharacterPoseData[Stand].StepHeight",
+  "toCrouch": 0.2,
+  "toCrouch_source": "Gameplay/Characters/DefaultSoldierPhysics#CharacterPoseData[Stand].PoseTransitionTimes[Crouch]",
+  "toStand": 0.2,
+  "toStand_source": "Gameplay/Characters/DefaultSoldierPhysics#CharacterPoseData[Crouch].PoseTransitionTimes[Stand]",
+  "gravity": 9.81,
+  "gravity_source": "hand",
+  "ragdollLead": 0.2,
+  "ragdollLead_source": "hand"
+ },
+ "fade": {
+  "loco": 0.25,
+  "state": 0.15,
+  "onceIn": 0.1,
+  "onceOut": 0.2,
+  "upperIn": 0.12,
+  "upperOut": 0.2,
+  "crouch": 0.2,
+  "stand": 0.2,
+  "land": 0.15,
+  "death": 0.08,
+  "_source": "hand, but crouch and stand: the pose transition times"
+ },
+ "skeletons": {
+  "humanoid": {
+   "skeletons": "\\/(Walrus_HumanMale|Walrus_NIS_S0800_Skeleton)$",
+   "prefix": "HM",
+   "stances": {
+    "t": {
+     "family": "Rifle",
+     "aim": "",
+     "states": {
+      "stand.idle": {
+       "game": "L_HM_Stand_Combat_IdleLoop",
+       "play": [
+        "stance.t.idle",
+        "g.L_HM_Stand_Combat_IdleLoop"
+       ],
+       "duration": 11.333,
+       "kind": "loop"
+      },
+      "stand.idle.add": {
+       "game": "Add_HM_Rifle_StandIdleLoop_01",
+       "play": [
+        "add.g.Add_HM_Rifle_StandIdleLoop_01"
+       ],
+       "duration": 15.9,
+       "kind": "addLoop"
+      },
+      "stand.walk.fwd": {
+       "game": "C_HM_Rifle_Walk_Fwd_01",
+       "play": [
+        "walk",
+        "stance.t.walk",
+        "g.C_HM_Rifle_Walk_Fwd_01"
+       ],
+       "duration": 1.933,
+       "kind": "cycle",
+       "speed": 1.914,
+       "heading": 0
+      },
+      "stand.walk.back": {
+       "game": "C_HM_Rifle_Walk_Bwd_01",
+       "play": [
+        "walk.back",
+        "stance.t.walk.back",
+        "g.C_HM_Rifle_Walk_Bwd_01"
+       ],
+       "duration": 1.133,
+       "kind": "cycle",
+       "speed": 1.62,
+       "heading": 3.142
+      },
+      "stand.walk.left": {
+       "game": "C_HM_Rifle_Walk_Left1_01",
+       "play": [
+        "walk.left",
+        "stance.t.walk.left",
+        "g.C_HM_Rifle_Walk_Left1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 2.009,
+       "heading": 1.571
+      },
+      "stand.walk.right": {
+       "game": "C_HM_Rifle_Walk_Right1_01",
+       "play": [
+        "walk.right",
+        "stance.t.walk.right",
+        "g.C_HM_Rifle_Walk_Right1_01"
+       ],
+       "duration": 1.733,
+       "kind": "cycle",
+       "speed": 1.906,
+       "heading": -1.571
+      },
+      "stand.run.fwd": {
+       "game": "C_HM_Rifle_Run_Fwd_01",
+       "play": [
+        "run",
+        "stance.t.run",
+        "g.C_HM_Rifle_Run_Fwd_01"
+       ],
+       "duration": 2.867,
+       "kind": "cycle",
+       "speed": 3.941,
+       "heading": 0
+      },
+      "stand.run.back": {
+       "game": "C_HM_Rifle_Run_Bwd_01",
+       "play": [
+        "stance.t.run.back",
+        "g.C_HM_Rifle_Run_Bwd_01"
+       ],
+       "duration": 1.267,
+       "kind": "cycle",
+       "speed": 3.18,
+       "heading": 3.142
+      },
+      "stand.run.left": {
+       "game": "C_HM_Rifle_Run_Left1_01",
+       "play": [
+        "stance.t.run.left",
+        "g.C_HM_Rifle_Run_Left1_01"
+       ],
+       "duration": 2,
+       "kind": "cycle",
+       "speed": 3.707,
+       "heading": 1.571
+      },
+      "stand.run.right": {
+       "game": "C_HM_Rifle_Run_Right1_01",
+       "play": [
+        "stance.t.run.right",
+        "g.C_HM_Rifle_Run_Right1_01"
+       ],
+       "duration": 2,
+       "kind": "cycle",
+       "speed": 3.712,
+       "heading": -1.571
+      },
+      "stand.sprint.fwd": {
+       "game": "C_HM_Rifle_Sprint_Fwd_01",
+       "play": [
+        "sprint",
+        "stance.t.sprint",
+        "g.C_HM_Rifle_Sprint_Fwd_01"
+       ],
+       "duration": 2.333,
+       "kind": "cycle",
+       "speed": 5.902,
+       "heading": 0
+      },
+      "stand.turn.left": {
+       "game": "L_HM_Rifle_Stand_TurnLeftSlow90_01",
+       "play": [
+        "stance.t.turn.left",
+        "g.L_HM_Rifle_Stand_TurnLeftSlow90_01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.turn.right": {
+       "game": "L_HM_Rifle_Stand_TurnRightSlow90_01",
+       "play": [
+        "stance.t.turn.right",
+        "g.L_HM_Rifle_Stand_TurnRightSlow90_01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.stop": {
+       "game": "T_HM_Rifle_RunToStand_Fwd_01",
+       "play": [
+        "g.T_HM_Rifle_RunToStand_Fwd_01"
+       ],
+       "duration": 1.033,
+       "kind": "once"
+      },
+      "crouch.idle": {
+       "game": "C_HM_Rifle_Crouch_ZeroSpeed_01",
+       "play": [
+        "g.C_HM_Rifle_Crouch_ZeroSpeed_01"
+       ],
+       "duration": 1.4,
+       "kind": "loop"
+      },
+      "crouch.idle.add": {
+       "game": "Add_HM_Rifle_CrouchIdleLoop_01",
+       "play": [
+        "add.g.Add_HM_Rifle_CrouchIdleLoop_01"
+       ],
+       "duration": 5.6,
+       "kind": "addLoop"
+      },
+      "crouch.run.fwd": {
+       "game": "C_HM_Rifle_Crouch_Run_Fwd_01",
+       "play": [
+        "crouch.run",
+        "stance.t.crouch.run",
+        "g.C_HM_Rifle_Crouch_Run_Fwd_01"
+       ],
+       "duration": 0.867,
+       "kind": "cycle",
+       "speed": 2.544,
+       "heading": 0
+      },
+      "crouch.run.back": {
+       "game": "C_HM_Rifle_Crouch_Run_Bwd_01",
+       "play": [
+        "g.C_HM_Rifle_Crouch_Run_Bwd_01"
+       ],
+       "duration": 0.667,
+       "kind": "cycle",
+       "speed": 2.231,
+       "heading": 3.142
+      },
+      "crouch.run.left": {
+       "game": "C_HM_Rifle_Crouch_Run_Left1_01",
+       "play": [
+        "g.C_HM_Rifle_Crouch_Run_Left1_01"
+       ],
+       "duration": 0.733,
+       "kind": "cycle",
+       "speed": 2.527,
+       "heading": 1.571
+      },
+      "crouch.run.right": {
+       "game": "C_HM_Rifle_Crouch_Run_Right1_01",
+       "play": [
+        "g.C_HM_Rifle_Crouch_Run_Right1_01"
+       ],
+       "duration": 0.733,
+       "kind": "cycle",
+       "speed": 2.371,
+       "heading": -1.571
+      },
+      "crouch.stop": {
+       "game": "A_HM_Rifle_CrouchRun_to_CrouchIdle",
+       "play": [
+        "g.A_HM_Rifle_CrouchRun_to_CrouchIdle"
+       ],
+       "duration": 1.267,
+       "kind": "once"
+      },
+      "air.jump": {
+       "game": "A_HM_Rifle_Jump_Stand_01",
+       "play": [
+        "g.A_HM_Rifle_Jump_Stand_01"
+       ],
+       "duration": 1.8,
+       "kind": "once",
+       "markers": {
+        "land": 0.633,
+        "absorb": 0.833,
+        "settle": 1.133
+       }
+      },
+      "air.jump.run": {
+       "game": "A_HM_Rifle_Jump_Fwd_Run_LeftFoot_01",
+       "play": [
+        "g.A_HM_Rifle_Jump_Fwd_Run_LeftFoot_01"
+       ],
+       "duration": 1.367,
+       "kind": "once",
+       "markers": {
+        "land": 0.733,
+        "absorb": 0.967,
+        "settle": 1.067
+       }
+      },
+      "air.jump.sprint": {
+       "game": "A_HM_Rifle_Jump_Fwd_Sprint_LeftFoot_01",
+       "play": [
+        "g.A_HM_Rifle_Jump_Fwd_Sprint_LeftFoot_01"
+       ],
+       "duration": 1.367,
+       "kind": "once",
+       "markers": {
+        "land": 0.667,
+        "absorb": 0.9,
+        "settle": 1
+       }
+      },
+      "air.fall": {
+       "game": "L_HM_Rifle_Falling_01",
+       "play": [
+        "g.L_HM_Rifle_Falling_01"
+       ],
+       "duration": 2.933,
+       "kind": "loop"
+      },
+      "air.land.hard": {
+       "game": "Rifle_DropFromHeightLand",
+       "play": [
+        "spawn.drop",
+        "ai.rifle.land",
+        "g.Rifle_DropFromHeightLand"
+       ],
+       "duration": 1.333,
+       "kind": "once"
+      },
+      "air.land.light": {
+       "game": "Add_HM_Rifle_JumpLand_Stand_Light_01",
+       "play": [
+        "add.g.Add_HM_Rifle_JumpLand_Stand_Light_01"
+       ],
+       "duration": 0.8,
+       "kind": "add"
+      },
+      "air.land.heavy": {
+       "game": "Add_HM_Rifle_JumpLand_Stand_Heavy_01",
+       "play": [
+        "add.g.Add_HM_Rifle_JumpLand_Stand_Heavy_01"
+       ],
+       "duration": 0.933,
+       "kind": "add"
+      },
+      "air.land.run": {
+       "game": "JumpLandFwd",
+       "play": [
+        "add.g.JumpLandFwd"
+       ],
+       "duration": 0.667,
+       "kind": "add"
+      },
+      "upper.fire": {
+       "game": "Add_HM_Rifle_StandFire",
+       "play": [
+        "add.g.Add_HM_Rifle_StandFire"
+       ],
+       "duration": 0.8,
+       "kind": "add"
+      },
+      "upper.fire.crouch": {
+       "game": "Add_HM_Rifle_CrouchFire",
+       "play": [
+        "add.g.Add_HM_Rifle_CrouchFire"
+       ],
+       "duration": 0.8,
+       "kind": "add"
+      },
+      "upper.overheat.enter": {
+       "game": "A_HM_Rifle_Overheat_Enter",
+       "play": [
+        "g.A_HM_Rifle_Overheat_Enter"
+       ],
+       "duration": 1.333,
+       "kind": "once"
+      },
+      "upper.overheat.loop": {
+       "game": "A_HM_Rifle_Overheat_Loop",
+       "play": [
+        "g.A_HM_Rifle_Overheat_Loop"
+       ],
+       "duration": 3.1,
+       "kind": "loop"
+      },
+      "upper.overheat.exit": {
+       "game": "A_HM_Rifle_Overheat_Exit",
+       "play": [
+        "g.A_HM_Rifle_Overheat_Exit"
+       ],
+       "duration": 1.3,
+       "kind": "once"
+      },
+      "upper.cool.fail": {
+       "game": "A_HM_Rifle_Overheat_AC_Fail",
+       "play": [
+        "g.A_HM_Rifle_Overheat_AC_Fail"
+       ],
+       "duration": 2.567,
+       "kind": "once"
+      },
+      "upper.venting": {
+       "game": "A_HM_Rifle_Stand_Venting",
+       "play": [
+        "add.g.A_HM_Rifle_Stand_Venting"
+       ],
+       "duration": 3.5,
+       "kind": "add"
+      },
+      "upper.raise": {
+       "game": "A_HM_Rifle_Stand_Deploy_01",
+       "play": [
+        "g.A_HM_Rifle_Stand_Deploy_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "once.spawn": {
+       "game": "A_HM_Rifle_Stand_SpawnIn_01",
+       "play": [
+        "g.A_HM_Rifle_Stand_SpawnIn_01"
+       ],
+       "duration": 2.2,
+       "kind": "once"
+      },
+      "once.melee.a": {
+       "game": "A_HM_Rifle_Melee_FirstStrike_01",
+       "play": [
+        "melee.rifle",
+        "g.A_HM_Rifle_Melee_FirstStrike_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.melee.b": {
+       "game": "A_HM_Rifle_Melee_SecondStrike_01",
+       "play": [
+        "g.A_HM_Rifle_Melee_SecondStrike_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.grenade": {
+       "game": "A_HM_Rifle_QuickThrow_Stand_HG",
+       "play": [
+        "g.A_HM_Rifle_QuickThrow_Stand_HG"
+       ],
+       "duration": 1.467,
+       "kind": "once"
+      },
+      "once.grenade.crouch": {
+       "game": "A_HM_Rifle_QuickThrow_Crouch_HG",
+       "play": [
+        "g.A_HM_Rifle_QuickThrow_Crouch_HG"
+       ],
+       "duration": 1.467,
+       "kind": "once"
+      },
+      "once.shield": {
+       "game": "A_HM_LMG_Stand_Shield_Deploy",
+       "play": [
+        "g.A_HM_LMG_Stand_Shield_Deploy"
+       ],
+       "duration": 1.133,
+       "kind": "once"
+      },
+      "once.dodge.front": {
+       "game": "A_HM_Rifle_Dodge_Front_01",
+       "play": [
+        "dodge.front",
+        "g.A_HM_Rifle_Dodge_Front_01"
+       ],
+       "duration": 1.933,
+       "kind": "once"
+      },
+      "once.dodge.back": {
+       "game": "A_HM_Rifle_Dodge_Back_01",
+       "play": [
+        "dodge.back",
+        "g.A_HM_Rifle_Dodge_Back_01"
+       ],
+       "duration": 2.467,
+       "kind": "once"
+      },
+      "once.dodge.left": {
+       "game": "A_HM_Rifle_Dodge_Left_01",
+       "play": [
+        "dodge.left",
+        "g.A_HM_Rifle_Dodge_Left_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "once.dodge.right": {
+       "game": "A_HM_Rifle_Dodge_Right_01",
+       "play": [
+        "dodge.right",
+        "g.A_HM_Rifle_Dodge_Right_01"
+       ],
+       "duration": 3.233,
+       "kind": "once"
+      },
+      "once.stagger.front": {
+       "game": "A_HM_Rifle_Stagger_Bwd_01",
+       "play": [
+        "stagger",
+        "g.A_HM_Rifle_Stagger_Bwd_01"
+       ],
+       "duration": 1.767,
+       "kind": "once"
+      },
+      "once.stagger.back": {
+       "game": "A_HM_Rifle_Stagger_Fwd_01",
+       "play": [
+        "g.A_HM_Rifle_Stagger_Fwd_01"
+       ],
+       "duration": 1.867,
+       "kind": "once"
+      },
+      "once.sprintHit.back": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Back_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Back_01"
+       ],
+       "duration": 1.233,
+       "kind": "once"
+      },
+      "once.sprintHit.front": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Front_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Front_01"
+       ],
+       "duration": 1.367,
+       "kind": "once"
+      },
+      "once.sprintHit.left": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Left_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Left_01"
+       ],
+       "duration": 1.333,
+       "kind": "once"
+      },
+      "once.sprintHit.right": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Right_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Right_01"
+       ],
+       "duration": 1.5,
+       "kind": "once"
+      },
+      "add.hit.front": {
+       "game": "Rifle_Stand_HitReact_Front1",
+       "play": [
+        "add.hit.front",
+        "add.g.Rifle_Stand_HitReact_Front1"
+       ],
+       "duration": 1.467,
+       "kind": "add"
+      },
+      "add.hit.back": {
+       "game": "Rifle_Stand_HitReact_Back1",
+       "play": [
+        "add.hit.back",
+        "add.g.Rifle_Stand_HitReact_Back1"
+       ],
+       "duration": 1.2,
+       "kind": "add"
+      },
+      "add.hit.left": {
+       "game": "Rifle_Stand_HitReact_Left1",
+       "play": [
+        "add.hit.left",
+        "add.g.Rifle_Stand_HitReact_Left1"
+       ],
+       "duration": 1.367,
+       "kind": "add"
+      },
+      "add.hit.right": {
+       "game": "Rifle_Stand_HitReact_Right1",
+       "play": [
+        "add.hit.right",
+        "add.g.Rifle_Stand_HitReact_Right1"
+       ],
+       "duration": 1.4,
+       "kind": "add"
+      },
+      "add.hit.crouch": {
+       "game": "Rifle_CrouchHitReactionFront2",
+       "play": [
+        "add.hit.crouch",
+        "add.g.Rifle_CrouchHitReactionFront2"
+       ],
+       "duration": 1.167,
+       "kind": "add"
+      },
+      "death.front": {
+       "game": "A_HM_Death_Stand_Front_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Front_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "death.back": {
+       "game": "A_HM_Death_Stand_Back_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Back_Upperbody_BlasterFire_01"
+       ],
+       "duration": 2.367,
+       "kind": "once"
+      },
+      "death.left": {
+       "game": "A_HM_Death_Stand_Left_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Left_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "death.right": {
+       "game": "A_HM_Death_Stand_Right_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Right_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "death.run.fwd": {
+       "game": "A_HM_Death_Stand_Run_Fwd_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Fwd_01"
+       ],
+       "duration": 1.3,
+       "kind": "once"
+      },
+      "death.run.left": {
+       "game": "A_HM_Death_Stand_Run_Left_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Left_01"
+       ],
+       "duration": 1.3,
+       "kind": "once"
+      },
+      "death.run.right": {
+       "game": "A_HM_Death_Stand_Run_Right_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Right_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "death.blast.front": {
+       "game": "A_HM_Death_Stand_Front_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Front_Explosion_01"
+       ],
+       "duration": 1.067,
+       "kind": "once"
+      },
+      "death.blast.back": {
+       "game": "A_HM_Death_Stand_Back_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Back_Explosion_01"
+       ],
+       "duration": 1.233,
+       "kind": "once"
+      },
+      "death.blast.left": {
+       "game": "A_HM_Death_Stand_Left_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Left_Explosion_01"
+       ],
+       "duration": 1.133,
+       "kind": "once"
+      },
+      "death.blast.right": {
+       "game": "A_HM_Death_Stand_Right_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Right_Explosion_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      }
+     }
+    },
+    "p": {
+     "family": "Pistol",
+     "aim": "p.",
+     "states": {
+      "stand.idle": {
+       "game": "L_HM_Pistol_DeployScreen_Idle_01",
+       "play": [
+        "stance.p.idle",
+        "g.L_HM_Pistol_DeployScreen_Idle_01"
+       ],
+       "duration": 7.233,
+       "kind": "loop"
+      },
+      "stand.idle.add": {
+       "game": "ADD_HM_Pistol_StandIdleLoop_01",
+       "play": [
+        "add.g.ADD_HM_Pistol_StandIdleLoop_01"
+       ],
+       "duration": 7.233,
+       "kind": "addLoop"
+      },
+      "stand.walk.fwd": {
+       "game": "C_HM_Pistol_Walk_Fwd",
+       "play": [
+        "stance.p.walk",
+        "g.C_HM_Pistol_Walk_Fwd"
+       ],
+       "duration": 1.733,
+       "kind": "cycle",
+       "speed": 2.468,
+       "heading": 0
+      },
+      "stand.walk.back": {
+       "game": "C_HM_Pistol_Walk_Bwd",
+       "play": [
+        "stance.p.walk.back",
+        "g.C_HM_Pistol_Walk_Bwd"
+       ],
+       "duration": 1.133,
+       "kind": "cycle",
+       "speed": 1.618,
+       "heading": 3.142
+      },
+      "stand.walk.left": {
+       "game": "C_HM_Pistol_Walk_Left1",
+       "play": [
+        "stance.p.walk.left",
+        "g.C_HM_Pistol_Walk_Left1"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 2.009,
+       "heading": 1.571
+      },
+      "stand.walk.right": {
+       "game": "C_HM_Pistol_Walk_Right1",
+       "play": [
+        "stance.p.walk.right",
+        "g.C_HM_Pistol_Walk_Right1"
+       ],
+       "duration": 1.733,
+       "kind": "cycle",
+       "speed": 1.906,
+       "heading": -1.571
+      },
+      "stand.run.fwd": {
+       "game": "C_HM_Pistol_Run_Fwd",
+       "play": [
+        "stance.p.run",
+        "g.C_HM_Pistol_Run_Fwd"
+       ],
+       "duration": 2.867,
+       "kind": "cycle",
+       "speed": 3.845,
+       "heading": 0
+      },
+      "stand.run.back": {
+       "game": "C_HM_Pistol_Run_Bwd",
+       "play": [
+        "stance.p.run.back",
+        "g.C_HM_Pistol_Run_Bwd"
+       ],
+       "duration": 1.267,
+       "kind": "cycle",
+       "speed": 3.205,
+       "heading": 3.142
+      },
+      "stand.run.left": {
+       "game": "C_HM_Pistol_Run_Left1",
+       "play": [
+        "stance.p.run.left",
+        "g.C_HM_Pistol_Run_Left1"
+       ],
+       "duration": 2.1,
+       "kind": "cycle",
+       "speed": 3.479,
+       "heading": 1.571
+      },
+      "stand.run.right": {
+       "game": "C_HM_Pistol_Run_Right1",
+       "play": [
+        "stance.p.run.right",
+        "g.C_HM_Pistol_Run_Right1"
+       ],
+       "duration": 2.1,
+       "kind": "cycle",
+       "speed": 3.669,
+       "heading": -1.571
+      },
+      "stand.sprint.fwd": {
+       "game": "C_HM_Pistol_Sprint_Fwd",
+       "play": [
+        "stance.p.sprint",
+        "g.C_HM_Pistol_Sprint_Fwd"
+       ],
+       "duration": 2.333,
+       "kind": "cycle",
+       "speed": 6.557,
+       "heading": 0
+      },
+      "stand.turn.left": {
+       "game": "L_HM_Pistol_Stand_TurnLeftSlow90_01",
+       "play": [
+        "turn.left",
+        "stance.p.turn.left",
+        "g.L_HM_Pistol_Stand_TurnLeftSlow90_01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.turn.right": {
+       "game": "L_HM_Pistol_Stand_TurnRightSlow90_01",
+       "play": [
+        "turn.right",
+        "stance.p.turn.right",
+        "g.L_HM_Pistol_Stand_TurnRightSlow90_01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.stop": {
+       "game": "T_HM_Pistol_RunToStand_Fwd_01",
+       "play": [
+        "g.T_HM_Pistol_RunToStand_Fwd_01"
+       ],
+       "duration": 1.2,
+       "kind": "once"
+      },
+      "crouch.idle": {
+       "game": "C_HM_Pistol_Crouch_ZeroSpeed_01",
+       "play": [
+        "g.C_HM_Pistol_Crouch_ZeroSpeed_01"
+       ],
+       "duration": 1.4,
+       "kind": "loop"
+      },
+      "crouch.idle.add": {
+       "game": "Add_HM_Pistol_CrouchIdle_01",
+       "play": [
+        "add.g.Add_HM_Pistol_CrouchIdle_01"
+       ],
+       "duration": 8,
+       "kind": "addLoop"
+      },
+      "crouch.run.fwd": {
+       "game": "C_HM_Pistol_Crouch_Run_Fwd_01",
+       "play": [
+        "stance.p.crouch.run",
+        "g.C_HM_Pistol_Crouch_Run_Fwd_01"
+       ],
+       "duration": 0.667,
+       "kind": "cycle",
+       "speed": 2.656,
+       "heading": 0
+      },
+      "crouch.run.back": {
+       "game": "C_HM_Pistol_Crouch_Run_Bwd_01",
+       "play": [
+        "g.C_HM_Pistol_Crouch_Run_Bwd_01"
+       ],
+       "duration": 0.633,
+       "kind": "cycle",
+       "speed": 2.115,
+       "heading": 3.142
+      },
+      "crouch.run.left": {
+       "game": "C_HM_Pistol_Crouch_Run_Left1_01",
+       "play": [
+        "g.C_HM_Pistol_Crouch_Run_Left1_01"
+       ],
+       "duration": 0.667,
+       "kind": "cycle",
+       "speed": 2.51,
+       "heading": 1.571
+      },
+      "crouch.run.right": {
+       "game": "C_HM_Pistol_Crouch_Run_Right1_01",
+       "play": [
+        "g.C_HM_Pistol_Crouch_Run_Right1_01"
+       ],
+       "duration": 0.6,
+       "kind": "cycle",
+       "speed": 2.532,
+       "heading": -1.571
+      },
+      "crouch.stop": {
+       "game": "A_HM_Pistol_CrouchRun_to_CrouchIdle_01",
+       "play": [
+        "g.A_HM_Pistol_CrouchRun_to_CrouchIdle_01"
+       ],
+       "duration": 1.267,
+       "kind": "once"
+      },
+      "air.jump": {
+       "game": "A_HM_Pistol_Stand_Jump",
+       "play": [
+        "jump",
+        "g.A_HM_Pistol_Stand_Jump"
+       ],
+       "duration": 1.8,
+       "kind": "once",
+       "markers": {
+        "land": 0.6,
+        "absorb": 0.833,
+        "settle": 0.967
+       }
+      },
+      "air.jump.run": {
+       "game": "A_HM_Rifle_Jump_Fwd_Run_LeftFoot_01",
+       "play": [
+        "g.A_HM_Rifle_Jump_Fwd_Run_LeftFoot_01"
+       ],
+       "duration": 1.367,
+       "kind": "once",
+       "markers": {
+        "land": 0.733,
+        "absorb": 0.967,
+        "settle": 1.067
+       }
+      },
+      "air.jump.sprint": {
+       "game": "A_HM_Pistol_Jump_Fwd_Sprint_LeftFoot_01",
+       "play": [
+        "g.A_HM_Pistol_Jump_Fwd_Sprint_LeftFoot_01"
+       ],
+       "duration": 1.367,
+       "kind": "once",
+       "markers": {
+        "land": 0.667,
+        "absorb": 0.9,
+        "settle": 1
+       }
+      },
+      "air.fall": {
+       "game": "L_HM_Pistol_Falling_01",
+       "play": [
+        "g.L_HM_Pistol_Falling_01"
+       ],
+       "duration": 2.933,
+       "kind": "loop"
+      },
+      "air.land.hard": {
+       "game": "A_HM_Pistol_DropFromHeightLand_01",
+       "play": [
+        "g.A_HM_Pistol_DropFromHeightLand_01"
+       ],
+       "duration": 2.1,
+       "kind": "once"
+      },
+      "air.land.light": {
+       "game": "Add_HM_Pistol_JumpLand_Stand_Light_01",
+       "play": [
+        "add.g.Add_HM_Pistol_JumpLand_Stand_Light_01"
+       ],
+       "duration": 0.8,
+       "kind": "add"
+      },
+      "air.land.heavy": {
+       "game": "Add_HM_Pistol_JumpLand_Stand_Heavy_01",
+       "play": [
+        "add.g.Add_HM_Pistol_JumpLand_Stand_Heavy_01"
+       ],
+       "duration": 0.933,
+       "kind": "add"
+      },
+      "air.land.run": {
+       "game": "ADD_HM_Pistol_Land_Run_Fwd",
+       "play": [
+        "add.g.ADD_HM_Pistol_Land_Run_Fwd"
+       ],
+       "duration": 1,
+       "kind": "add"
+      },
+      "upper.fire": {
+       "game": "A_HM_Pistol_Stand_Fire",
+       "play": [
+        "add.fire.p",
+        "add.g.A_HM_Pistol_Stand_Fire"
+       ],
+       "duration": 0.6,
+       "kind": "add"
+      },
+      "upper.fire.crouch": {
+       "game": "A_HM_Pistol_Stand_Fire",
+       "play": [
+        "add.fire.p",
+        "add.g.A_HM_Pistol_Stand_Fire"
+       ],
+       "duration": 0.6,
+       "kind": "add"
+      },
+      "upper.overheat.enter": {
+       "game": "A_HM_Pistol_Overheat_Enter",
+       "play": [
+        "g.A_HM_Pistol_Overheat_Enter"
+       ],
+       "duration": 1.033,
+       "kind": "once"
+      },
+      "upper.overheat.loop": {
+       "game": "A_HM_Pistol_Overheat_Loop",
+       "play": [
+        "g.A_HM_Pistol_Overheat_Loop"
+       ],
+       "duration": 3.367,
+       "kind": "loop"
+      },
+      "upper.overheat.exit": {
+       "game": "A_HM_Pistol_Overheat_Exit",
+       "play": [
+        "g.A_HM_Pistol_Overheat_Exit"
+       ],
+       "duration": 1.1,
+       "kind": "once"
+      },
+      "upper.cool.fail": {
+       "game": "A_HM_Pistol_Overheat_AC_Fail",
+       "play": [
+        "g.A_HM_Pistol_Overheat_AC_Fail"
+       ],
+       "duration": 2.4,
+       "kind": "once"
+      },
+      "upper.venting": {
+       "game": "A_HM_Pistol_Stand_Venting",
+       "play": [
+        "add.g.A_HM_Pistol_Stand_Venting"
+       ],
+       "duration": 3.5,
+       "kind": "add"
+      },
+      "upper.raise": {
+       "game": "A_HM_Pistol_Stand_Deploy_01",
+       "play": [
+        "g.A_HM_Pistol_Stand_Deploy_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "once.spawn": {
+       "game": "A_HM_Pistol_Stand_SpawnIn_01",
+       "play": [
+        "g.A_HM_Pistol_Stand_SpawnIn_01"
+       ],
+       "duration": 2.2,
+       "kind": "once"
+      },
+      "once.melee.a": {
+       "game": "A_HM_Pistol_Melee_FirstStrike_01",
+       "play": [
+        "g.A_HM_Pistol_Melee_FirstStrike_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.melee.b": {
+       "game": "A_HM_Pistol_Melee_SecondStrike_01",
+       "play": [
+        "g.A_HM_Pistol_Melee_SecondStrike_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.grenade": {
+       "game": "A_HM_Pistol_QuickThrow_Stand_HG",
+       "play": [
+        "g.A_HM_Pistol_QuickThrow_Stand_HG"
+       ],
+       "duration": 1.333,
+       "kind": "once"
+      },
+      "once.grenade.crouch": {
+       "game": "A_HM_Pistol_QuickThrow_Crouch_HG",
+       "play": [
+        "g.A_HM_Pistol_QuickThrow_Crouch_HG"
+       ],
+       "duration": 1.5,
+       "kind": "once"
+      },
+      "once.shield": {
+       "game": "A_HM_LMG_Stand_Shield_Deploy",
+       "play": [
+        "g.A_HM_LMG_Stand_Shield_Deploy"
+       ],
+       "duration": 1.133,
+       "kind": "once"
+      },
+      "once.dodge.front": {
+       "game": "A_HM_Pistol_Dodge_Front_01",
+       "play": [
+        "g.A_HM_Pistol_Dodge_Front_01"
+       ],
+       "duration": 3.467,
+       "kind": "once"
+      },
+      "once.dodge.back": {
+       "game": "A_HM_Pistol_Dodge_Back_01",
+       "play": [
+        "g.A_HM_Pistol_Dodge_Back_01"
+       ],
+       "duration": 1.7,
+       "kind": "once"
+      },
+      "once.dodge.left": {
+       "game": "A_HM_Pistol_Dodge_Left_01",
+       "play": [
+        "g.A_HM_Pistol_Dodge_Left_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.dodge.right": {
+       "game": "A_HM_Pistol_Dodge_Right_01",
+       "play": [
+        "g.A_HM_Pistol_Dodge_Right_01"
+       ],
+       "duration": 1.967,
+       "kind": "once"
+      },
+      "once.stagger.front": {
+       "game": "A_HM_Pistol_Stagger_Bwd_01",
+       "play": [
+        "g.A_HM_Pistol_Stagger_Bwd_01"
+       ],
+       "duration": 1.767,
+       "kind": "once"
+      },
+      "once.stagger.back": {
+       "game": "A_HM_Pistol_Stagger_Fwd_02",
+       "play": [
+        "g.A_HM_Pistol_Stagger_Fwd_02"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.sprintHit.back": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Back_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Back_01"
+       ],
+       "duration": 1.233,
+       "kind": "once"
+      },
+      "once.sprintHit.front": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Front_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Front_01"
+       ],
+       "duration": 1.367,
+       "kind": "once"
+      },
+      "once.sprintHit.left": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Left_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Left_01"
+       ],
+       "duration": 1.333,
+       "kind": "once"
+      },
+      "once.sprintHit.right": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Right_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Right_01"
+       ],
+       "duration": 1.5,
+       "kind": "once"
+      },
+      "add.hit.front": {
+       "game": "Add_HM_Pistol_Stand_HitReact_Fwd_01",
+       "play": [
+        "add.hit.p.front",
+        "add.g.Add_HM_Pistol_Stand_HitReact_Fwd_01"
+       ],
+       "duration": 1,
+       "kind": "add"
+      },
+      "add.hit.back": {
+       "game": "Add_HM_Pistol_Stand_HitReact_Bwd_01",
+       "play": [
+        "add.hit.p.back",
+        "add.g.Add_HM_Pistol_Stand_HitReact_Bwd_01"
+       ],
+       "duration": 1.133,
+       "kind": "add"
+      },
+      "add.hit.left": {
+       "game": "Add_HM_Pistol_Stand_HitReact_Left_01",
+       "play": [
+        "add.hit.p.left",
+        "add.g.Add_HM_Pistol_Stand_HitReact_Left_01"
+       ],
+       "duration": 0.967,
+       "kind": "add"
+      },
+      "add.hit.right": {
+       "game": "Add_HM_Pistol_Stand_HitReact_Right_01",
+       "play": [
+        "add.hit.p.right",
+        "add.g.Add_HM_Pistol_Stand_HitReact_Right_01"
+       ],
+       "duration": 1,
+       "kind": "add"
+      },
+      "add.hit.crouch": {
+       "game": "Rifle_CrouchHitReactionFront2",
+       "play": [
+        "add.hit.crouch",
+        "add.g.Rifle_CrouchHitReactionFront2"
+       ],
+       "duration": 1.167,
+       "kind": "add"
+      },
+      "death.front": {
+       "game": "A_HM_Death_Stand_Front_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Front_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "death.back": {
+       "game": "A_HM_Death_Stand_Back_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Back_Upperbody_BlasterFire_01"
+       ],
+       "duration": 2.367,
+       "kind": "once"
+      },
+      "death.left": {
+       "game": "A_HM_Death_Stand_Left_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Left_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "death.right": {
+       "game": "A_HM_Death_Stand_Right_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Right_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "death.run.fwd": {
+       "game": "A_HM_Death_Stand_Run_Fwd_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Fwd_01"
+       ],
+       "duration": 1.3,
+       "kind": "once"
+      },
+      "death.run.left": {
+       "game": "A_HM_Death_Stand_Run_Left_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Left_01"
+       ],
+       "duration": 1.3,
+       "kind": "once"
+      },
+      "death.run.right": {
+       "game": "A_HM_Death_Stand_Run_Right_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Right_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "death.blast.front": {
+       "game": "A_HM_Death_Stand_Front_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Front_Explosion_01"
+       ],
+       "duration": 1.067,
+       "kind": "once"
+      },
+      "death.blast.back": {
+       "game": "A_HM_Death_Stand_Back_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Back_Explosion_01"
+       ],
+       "duration": 1.233,
+       "kind": "once"
+      },
+      "death.blast.left": {
+       "game": "A_HM_Death_Stand_Left_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Left_Explosion_01"
+       ],
+       "duration": 1.133,
+       "kind": "once"
+      },
+      "death.blast.right": {
+       "game": "A_HM_Death_Stand_Right_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Right_Explosion_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      }
+     }
+    },
+    "l": {
+     "family": "Lmg",
+     "aim": "l.",
+     "states": {
+      "stand.idle": {
+       "game": "P_HM_Lmg_StandIdle_01",
+       "play": [
+        "stance.l.idle",
+        "stance.l.aim",
+        "g.P_HM_Lmg_StandIdle_01"
+       ],
+       "duration": 0.033,
+       "kind": "loop"
+      },
+      "stand.idle.add": {
+       "game": "Add_HM_Rifle_StandIdleLoop_01",
+       "play": [
+        "add.g.Add_HM_Rifle_StandIdleLoop_01"
+       ],
+       "duration": 15.9,
+       "kind": "addLoop"
+      },
+      "stand.walk.fwd": {
+       "game": "C_HM_Lmg_Walk_Fwd_01",
+       "play": [
+        "stance.l.walk",
+        "g.C_HM_Lmg_Walk_Fwd_01"
+       ],
+       "duration": 2.133,
+       "kind": "cycle",
+       "speed": 2.005,
+       "heading": 0
+      },
+      "stand.walk.back": {
+       "game": "C_HM_Lmg_Walk_Bwd_01",
+       "play": [
+        "stance.l.walk.back",
+        "g.C_HM_Lmg_Walk_Bwd_01"
+       ],
+       "duration": 0.933,
+       "kind": "cycle",
+       "speed": 1.589,
+       "heading": 3.142
+      },
+      "stand.walk.left": {
+       "game": "C_HM_Lmg_Walk_Left1_01",
+       "play": [
+        "stance.l.walk.left",
+        "g.C_HM_Lmg_Walk_Left1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 1.834,
+       "heading": 1.571
+      },
+      "stand.walk.right": {
+       "game": "C_HM_Lmg_Walk_Right1_01",
+       "play": [
+        "stance.l.walk.right",
+        "g.C_HM_Lmg_Walk_Right1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 1.82,
+       "heading": -1.571
+      },
+      "stand.run.fwd": {
+       "game": "C_HM_Lmg_Run_Fwd_01",
+       "play": [
+        "stance.l.run",
+        "g.C_HM_Lmg_Run_Fwd_01"
+       ],
+       "duration": 2.667,
+       "kind": "cycle",
+       "speed": 4.001,
+       "heading": 0
+      },
+      "stand.run.back": {
+       "game": "C_HM_Lmg_Run_Bwd_01",
+       "play": [
+        "stance.l.run.back",
+        "g.C_HM_Lmg_Run_Bwd_01"
+       ],
+       "duration": 1.267,
+       "kind": "cycle",
+       "speed": 3.226,
+       "heading": 3.142
+      },
+      "stand.run.left": {
+       "game": "C_HM_Lmg_Run_Left1_01",
+       "play": [
+        "stance.l.run.left",
+        "g.C_HM_Lmg_Run_Left1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 3.679,
+       "heading": 1.571
+      },
+      "stand.run.right": {
+       "game": "C_HM_Lmg_Run_Right1_01",
+       "play": [
+        "stance.l.run.right",
+        "g.C_HM_Lmg_Run_Right1_01"
+       ],
+       "duration": 1.933,
+       "kind": "cycle",
+       "speed": 3.658,
+       "heading": -1.571
+      },
+      "stand.sprint.fwd": {
+       "game": "C_HM_Rifle_Sprint_Fwd_01",
+       "play": [
+        "sprint",
+        "stance.t.sprint",
+        "g.C_HM_Rifle_Sprint_Fwd_01"
+       ],
+       "duration": 2.333,
+       "kind": "cycle",
+       "speed": 5.902,
+       "heading": 0
+      },
+      "stand.turn.left": {
+       "game": "L_HM_Lmg_Stand_TurnLeftSlow90_01",
+       "play": [
+        "stance.l.turn.left",
+        "g.L_HM_Lmg_Stand_TurnLeftSlow90_01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.turn.right": {
+       "game": "L_HM_Lmg_Stand_TurnRightSlow90_01",
+       "play": [
+        "stance.l.turn.right",
+        "g.L_HM_Lmg_Stand_TurnRightSlow90_01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.stop": {
+       "game": "T_HM_LMG_RunToStand_Fwd_01",
+       "play": [
+        "g.T_HM_LMG_RunToStand_Fwd_01"
+       ],
+       "duration": 1.033,
+       "kind": "once"
+      },
+      "crouch.idle": {
+       "game": "C_HM_Rifle_Crouch_ZeroSpeed_01",
+       "play": [
+        "g.C_HM_Rifle_Crouch_ZeroSpeed_01"
+       ],
+       "duration": 1.4,
+       "kind": "loop"
+      },
+      "crouch.idle.add": {
+       "game": "Add_HM_Rifle_CrouchIdleLoop_01",
+       "play": [
+        "add.g.Add_HM_Rifle_CrouchIdleLoop_01"
+       ],
+       "duration": 5.6,
+       "kind": "addLoop"
+      },
+      "crouch.run.fwd": {
+       "game": "C_HM_Rifle_Crouch_Run_Fwd_01",
+       "play": [
+        "crouch.run",
+        "stance.t.crouch.run",
+        "g.C_HM_Rifle_Crouch_Run_Fwd_01"
+       ],
+       "duration": 0.867,
+       "kind": "cycle",
+       "speed": 2.544,
+       "heading": 0
+      },
+      "crouch.run.back": {
+       "game": "C_HM_Rifle_Crouch_Run_Bwd_01",
+       "play": [
+        "g.C_HM_Rifle_Crouch_Run_Bwd_01"
+       ],
+       "duration": 0.667,
+       "kind": "cycle",
+       "speed": 2.231,
+       "heading": 3.142
+      },
+      "crouch.run.left": {
+       "game": "C_HM_Rifle_Crouch_Run_Left1_01",
+       "play": [
+        "g.C_HM_Rifle_Crouch_Run_Left1_01"
+       ],
+       "duration": 0.733,
+       "kind": "cycle",
+       "speed": 2.527,
+       "heading": 1.571
+      },
+      "crouch.run.right": {
+       "game": "C_HM_Rifle_Crouch_Run_Right1_01",
+       "play": [
+        "g.C_HM_Rifle_Crouch_Run_Right1_01"
+       ],
+       "duration": 0.733,
+       "kind": "cycle",
+       "speed": 2.371,
+       "heading": -1.571
+      },
+      "crouch.stop": {
+       "game": "A_HM_Rifle_CrouchRun_to_CrouchIdle",
+       "play": [
+        "g.A_HM_Rifle_CrouchRun_to_CrouchIdle"
+       ],
+       "duration": 1.267,
+       "kind": "once"
+      },
+      "air.jump": {
+       "game": "A_HM_Lmg_Jump_Stand_01",
+       "play": [
+        "g.A_HM_Lmg_Jump_Stand_01"
+       ],
+       "duration": 1.8,
+       "kind": "once",
+       "markers": {
+        "land": 0.633,
+        "absorb": 0.833,
+        "settle": 1.167
+       }
+      },
+      "air.jump.run": {
+       "game": "A_HM_Lmg_Jump_Fwd_Run_LeftFoot_01",
+       "play": [
+        "g.A_HM_Lmg_Jump_Fwd_Run_LeftFoot_01"
+       ],
+       "duration": 1.367,
+       "kind": "once",
+       "markers": {
+        "land": 0.733,
+        "absorb": 0.967,
+        "settle": 1.033
+       }
+      },
+      "air.jump.sprint": {
+       "game": "A_HM_Lmg_Jump_Fwd_Sprint_LeftFoot_01",
+       "play": [
+        "g.A_HM_Lmg_Jump_Fwd_Sprint_LeftFoot_01"
+       ],
+       "duration": 1.367,
+       "kind": "once",
+       "markers": {
+        "land": 0.633,
+        "absorb": 0.9,
+        "settle": 1
+       }
+      },
+      "air.fall": {
+       "game": "L_HM_Lmg_Falling_01",
+       "play": [
+        "g.L_HM_Lmg_Falling_01"
+       ],
+       "duration": 2.933,
+       "kind": "loop"
+      },
+      "air.land.hard": {
+       "game": "Rifle_DropFromHeightLand",
+       "play": [
+        "spawn.drop",
+        "ai.rifle.land",
+        "g.Rifle_DropFromHeightLand"
+       ],
+       "duration": 1.333,
+       "kind": "once"
+      },
+      "air.land.light": {
+       "game": "Add_HM_Rifle_JumpLand_Stand_Light_01",
+       "play": [
+        "add.g.Add_HM_Rifle_JumpLand_Stand_Light_01"
+       ],
+       "duration": 0.8,
+       "kind": "add"
+      },
+      "air.land.heavy": {
+       "game": "Add_HM_Rifle_JumpLand_Stand_Heavy_01",
+       "play": [
+        "add.g.Add_HM_Rifle_JumpLand_Stand_Heavy_01"
+       ],
+       "duration": 0.933,
+       "kind": "add"
+      },
+      "air.land.run": {
+       "game": "ADD_HM_Lmg_Land_Run_Fwd",
+       "play": [
+        "add.g.ADD_HM_Lmg_Land_Run_Fwd"
+       ],
+       "duration": 0.667,
+       "kind": "add"
+      },
+      "upper.fire": {
+       "game": "Add_HM_Rifle_Stand_HeavyFire01",
+       "play": [
+        "add.g.Add_HM_Rifle_Stand_HeavyFire01"
+       ],
+       "duration": 1.267,
+       "kind": "add"
+      },
+      "upper.fire.crouch": {
+       "game": "Add_HM_Rifle_Crouch_HeavyFire01",
+       "play": [
+        "add.g.Add_HM_Rifle_Crouch_HeavyFire01"
+       ],
+       "duration": 1.267,
+       "kind": "add"
+      },
+      "upper.overheat.enter": {
+       "game": "A_HM_Lmg_Overheat_Enter",
+       "play": [
+        "g.A_HM_Lmg_Overheat_Enter"
+       ],
+       "duration": 1.367,
+       "kind": "once"
+      },
+      "upper.overheat.loop": {
+       "game": "A_HM_Lmg_Overheat_Loop",
+       "play": [
+        "g.A_HM_Lmg_Overheat_Loop"
+       ],
+       "duration": 3.133,
+       "kind": "loop"
+      },
+      "upper.overheat.exit": {
+       "game": "A_HM_Lmg_Overheat_Exit",
+       "play": [
+        "g.A_HM_Lmg_Overheat_Exit"
+       ],
+       "duration": 1.267,
+       "kind": "once"
+      },
+      "upper.cool.fail": {
+       "game": "A_HM_Lmg_Overheat_AC_Fail",
+       "play": [
+        "g.A_HM_Lmg_Overheat_AC_Fail"
+       ],
+       "duration": 2.233,
+       "kind": "once"
+      },
+      "upper.venting": {
+       "game": "A_HM_Lmg_Stand_Venting",
+       "play": [
+        "add.g.A_HM_Lmg_Stand_Venting"
+       ],
+       "duration": 3.5,
+       "kind": "add"
+      },
+      "upper.raise": {
+       "game": "A_HM_Lmg_Stand_Deploy_01",
+       "play": [
+        "g.A_HM_Lmg_Stand_Deploy_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "once.spawn": {
+       "game": "A_HM_Lmg_Stand_SpawnIn_01",
+       "play": [
+        "g.A_HM_Lmg_Stand_SpawnIn_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "once.melee.a": {
+       "game": "A_HM_LMG_Melee_FirstStrike_01",
+       "play": [
+        "g.A_HM_LMG_Melee_FirstStrike_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.melee.b": {
+       "game": "A_HM_LMG_Melee_SecondStrike_01",
+       "play": [
+        "g.A_HM_LMG_Melee_SecondStrike_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.grenade": {
+       "game": "A_HM_Lmg_QuickThrow_Stand_HG",
+       "play": [
+        "g.A_HM_Lmg_QuickThrow_Stand_HG"
+       ],
+       "duration": 1.467,
+       "kind": "once"
+      },
+      "once.grenade.crouch": {
+       "game": "A_HM_Rifle_QuickThrow_Crouch_HG",
+       "play": [
+        "g.A_HM_Rifle_QuickThrow_Crouch_HG"
+       ],
+       "duration": 1.467,
+       "kind": "once"
+      },
+      "once.shield": {
+       "game": "A_HM_LMG_Stand_Shield_Deploy",
+       "play": [
+        "g.A_HM_LMG_Stand_Shield_Deploy"
+       ],
+       "duration": 1.133,
+       "kind": "once"
+      },
+      "once.dodge.front": {
+       "game": "A_HM_Rifle_Dodge_Front_01",
+       "play": [
+        "dodge.front",
+        "g.A_HM_Rifle_Dodge_Front_01"
+       ],
+       "duration": 1.933,
+       "kind": "once"
+      },
+      "once.dodge.back": {
+       "game": "A_HM_Rifle_Dodge_Back_01",
+       "play": [
+        "dodge.back",
+        "g.A_HM_Rifle_Dodge_Back_01"
+       ],
+       "duration": 2.467,
+       "kind": "once"
+      },
+      "once.dodge.left": {
+       "game": "A_HM_Rifle_Dodge_Left_01",
+       "play": [
+        "dodge.left",
+        "g.A_HM_Rifle_Dodge_Left_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "once.dodge.right": {
+       "game": "A_HM_Rifle_Dodge_Right_01",
+       "play": [
+        "dodge.right",
+        "g.A_HM_Rifle_Dodge_Right_01"
+       ],
+       "duration": 3.233,
+       "kind": "once"
+      },
+      "once.stagger.front": {
+       "game": "A_HM_LMG_Stagger_Bwd_01",
+       "play": [
+        "g.A_HM_LMG_Stagger_Bwd_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "once.stagger.back": {
+       "game": "A_HM_LMG_Stagger_Fwd_01",
+       "play": [
+        "g.A_HM_LMG_Stagger_Fwd_01"
+       ],
+       "duration": 1.967,
+       "kind": "once"
+      },
+      "once.sprintHit.back": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Back_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Back_01"
+       ],
+       "duration": 1.233,
+       "kind": "once"
+      },
+      "once.sprintHit.front": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Front_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Front_01"
+       ],
+       "duration": 1.367,
+       "kind": "once"
+      },
+      "once.sprintHit.left": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Left_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Left_01"
+       ],
+       "duration": 1.333,
+       "kind": "once"
+      },
+      "once.sprintHit.right": {
+       "game": "A_HM_Pistol_Sprint_HitReact_Right_01",
+       "play": [
+        "g.A_HM_Pistol_Sprint_HitReact_Right_01"
+       ],
+       "duration": 1.5,
+       "kind": "once"
+      },
+      "add.hit.front": {
+       "game": "Rifle_Stand_HitReact_Front1",
+       "play": [
+        "add.hit.front",
+        "add.g.Rifle_Stand_HitReact_Front1"
+       ],
+       "duration": 1.467,
+       "kind": "add"
+      },
+      "add.hit.back": {
+       "game": "Rifle_Stand_HitReact_Back1",
+       "play": [
+        "add.hit.back",
+        "add.g.Rifle_Stand_HitReact_Back1"
+       ],
+       "duration": 1.2,
+       "kind": "add"
+      },
+      "add.hit.left": {
+       "game": "Rifle_Stand_HitReact_Left1",
+       "play": [
+        "add.hit.left",
+        "add.g.Rifle_Stand_HitReact_Left1"
+       ],
+       "duration": 1.367,
+       "kind": "add"
+      },
+      "add.hit.right": {
+       "game": "Rifle_Stand_HitReact_Right1",
+       "play": [
+        "add.hit.right",
+        "add.g.Rifle_Stand_HitReact_Right1"
+       ],
+       "duration": 1.4,
+       "kind": "add"
+      },
+      "add.hit.crouch": {
+       "game": "Rifle_CrouchHitReactionFront2",
+       "play": [
+        "add.hit.crouch",
+        "add.g.Rifle_CrouchHitReactionFront2"
+       ],
+       "duration": 1.167,
+       "kind": "add"
+      },
+      "death.front": {
+       "game": "A_HM_Death_Stand_Front_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Front_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "death.back": {
+       "game": "A_HM_Death_Stand_Back_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Back_Upperbody_BlasterFire_01"
+       ],
+       "duration": 2.367,
+       "kind": "once"
+      },
+      "death.left": {
+       "game": "A_HM_Death_Stand_Left_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Left_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "death.right": {
+       "game": "A_HM_Death_Stand_Right_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_HM_Death_Stand_Right_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "death.run.fwd": {
+       "game": "A_HM_Death_Stand_Run_Fwd_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Fwd_01"
+       ],
+       "duration": 1.3,
+       "kind": "once"
+      },
+      "death.run.left": {
+       "game": "A_HM_Death_Stand_Run_Left_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Left_01"
+       ],
+       "duration": 1.3,
+       "kind": "once"
+      },
+      "death.run.right": {
+       "game": "A_HM_Death_Stand_Run_Right_01",
+       "play": [
+        "g.A_HM_Death_Stand_Run_Right_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "death.blast.front": {
+       "game": "A_HM_Death_Stand_Front_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Front_Explosion_01"
+       ],
+       "duration": 1.067,
+       "kind": "once"
+      },
+      "death.blast.back": {
+       "game": "A_HM_Death_Stand_Back_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Back_Explosion_01"
+       ],
+       "duration": 1.233,
+       "kind": "once"
+      },
+      "death.blast.left": {
+       "game": "A_HM_Death_Stand_Left_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Left_Explosion_01"
+       ],
+       "duration": 1.133,
+       "kind": "once"
+      },
+      "death.blast.right": {
+       "game": "A_HM_Death_Stand_Right_Explosion_01",
+       "play": [
+        "g.A_HM_Death_Stand_Right_Explosion_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      }
+     }
+    }
+   }
+  },
+  "b1": {
+   "skeletons": "\\/D_Assault_Preq_01_Ske$",
+   "prefix": "B1",
+   "stances": {
+    "t": {
+     "family": "Rifle",
+     "aim": "",
+     "states": {
+      "stand.idle": {
+       "game": "L_B1_3p1pLoco_StandIdleLoop_01",
+       "play": [
+        "idle",
+        "g.L_B1_3p1pLoco_StandIdleLoop_01"
+       ],
+       "duration": 6.133,
+       "kind": "loop"
+      },
+      "stand.walk.fwd": {
+       "game": "C_B1_Rifle_Walk_Fwd_01",
+       "play": [
+        "walk",
+        "g.C_B1_Rifle_Walk_Fwd_01"
+       ],
+       "duration": 2.133,
+       "kind": "cycle",
+       "speed": 1.988,
+       "heading": 0
+      },
+      "stand.walk.back": {
+       "game": "C_B1_Rifle_Walk_Bwd_01",
+       "play": [
+        "walk.back",
+        "g.C_B1_Rifle_Walk_Bwd_01"
+       ],
+       "duration": 0.933,
+       "kind": "cycle",
+       "speed": 1.589,
+       "heading": 3.142
+      },
+      "stand.walk.left": {
+       "game": "C_B1_Rifle_Walk_Left1_01",
+       "play": [
+        "walk.left",
+        "g.C_B1_Rifle_Walk_Left1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 1.834,
+       "heading": 1.571
+      },
+      "stand.walk.right": {
+       "game": "C_B1_Rifle_Walk_Right1_01",
+       "play": [
+        "walk.right",
+        "g.C_B1_Rifle_Walk_Right1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 1.82,
+       "heading": -1.571
+      },
+      "stand.run.fwd": {
+       "game": "C_B1_Rifle_Run_Fwd_01",
+       "play": [
+        "run",
+        "g.C_B1_Rifle_Run_Fwd_01"
+       ],
+       "duration": 2.667,
+       "kind": "cycle",
+       "speed": 3.95,
+       "heading": 0
+      },
+      "stand.run.back": {
+       "game": "C_B1_Rifle_Run_Bwd_01",
+       "play": [
+        "g.C_B1_Rifle_Run_Bwd_01"
+       ],
+       "duration": 1.267,
+       "kind": "cycle",
+       "speed": 3.221,
+       "heading": 3.142
+      },
+      "stand.run.left": {
+       "game": "C_B1_Rifle_Run_Left1_01",
+       "play": [
+        "g.C_B1_Rifle_Run_Left1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 3.555,
+       "heading": 1.571
+      },
+      "stand.run.right": {
+       "game": "C_B1_Rifle_Run_Right1_01",
+       "play": [
+        "g.C_B1_Rifle_Run_Right1_01"
+       ],
+       "duration": 1.933,
+       "kind": "cycle",
+       "speed": 3.592,
+       "heading": -1.571
+      },
+      "stand.sprint.fwd": {
+       "game": "C_B1_Rifle_Sprint_Fwd_01",
+       "play": [
+        "sprint",
+        "g.C_B1_Rifle_Sprint_Fwd_01"
+       ],
+       "duration": 2,
+       "kind": "cycle",
+       "speed": 7.607,
+       "heading": 0
+      },
+      "stand.turn.left": {
+       "game": "L_B1_Rifle_Stand_TurnLeftSlow90_01",
+       "play": [
+        "turn.left",
+        "g.L_B1_Rifle_Stand_TurnLeftSlow90_01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.turn.right": {
+       "game": "L_B1_Rifle_Stand_TurnRightSlow90_01",
+       "play": [
+        "turn.right",
+        "g.L_B1_Rifle_Stand_TurnRightSlow90_01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.stop": {
+       "game": "A_B1_Rifle_Run_FwdToStand_01",
+       "play": [
+        "g.A_B1_Rifle_Run_FwdToStand_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "crouch.idle": {
+       "game": "P_B1_Rifle_CrouchIdle_01",
+       "play": [
+        "g.P_B1_Rifle_CrouchIdle_01"
+       ],
+       "duration": 0,
+       "kind": "loop"
+      },
+      "crouch.run.fwd": {
+       "game": "C_B1_Rifle_Crouch_Run_Fwd_01",
+       "play": [
+        "crouch.run",
+        "g.C_B1_Rifle_Crouch_Run_Fwd_01"
+       ],
+       "duration": 0.867,
+       "kind": "cycle",
+       "speed": 2.544,
+       "heading": 0
+      },
+      "crouch.run.back": {
+       "game": "C_B1_Rifle_Crouch_Run_Bwd_01",
+       "play": [
+        "g.C_B1_Rifle_Crouch_Run_Bwd_01"
+       ],
+       "duration": 0.667,
+       "kind": "cycle",
+       "speed": 2.232,
+       "heading": 3.142
+      },
+      "crouch.run.left": {
+       "game": "C_B1_Rifle_Crouch_Run_Left1_01",
+       "play": [
+        "g.C_B1_Rifle_Crouch_Run_Left1_01"
+       ],
+       "duration": 0.733,
+       "kind": "cycle",
+       "speed": 2.528,
+       "heading": 1.571
+      },
+      "crouch.run.right": {
+       "game": "C_B1_Rifle_Crouch_Run_Right1_01",
+       "play": [
+        "g.C_B1_Rifle_Crouch_Run_Right1_01"
+       ],
+       "duration": 0.733,
+       "kind": "cycle",
+       "speed": 2.371,
+       "heading": -1.571
+      },
+      "air.jump": {
+       "game": "A_B1_Rifle_Jump_Stand_01",
+       "play": [
+        "g.A_B1_Rifle_Jump_Stand_01"
+       ],
+       "duration": 1.833,
+       "kind": "once",
+       "markers": {
+        "land": 0.6,
+        "absorb": 0.833,
+        "settle": 1.233
+       }
+      },
+      "air.jump.run": {
+       "game": "A_B1_Rifle_Jump_Fwd_Run_LeftFoot_01",
+       "play": [
+        "g.A_B1_Rifle_Jump_Fwd_Run_LeftFoot_01"
+       ],
+       "duration": 1.667,
+       "kind": "once",
+       "markers": {
+        "land": 0.5,
+        "absorb": 0.867,
+        "settle": 0.933
+       }
+      },
+      "air.jump.sprint": {
+       "game": "A_B1_Rifle_Jump_Fwd_Sprint_LeftFoot_01",
+       "play": [
+        "g.A_B1_Rifle_Jump_Fwd_Sprint_LeftFoot_01"
+       ],
+       "duration": 1.367,
+       "kind": "once",
+       "markers": {
+        "land": 0.667,
+        "absorb": 0.933,
+        "settle": 1.067
+       }
+      },
+      "air.fall": {
+       "game": "L_B1_Rifle_Falling_01",
+       "play": [
+        "g.L_B1_Rifle_Falling_01"
+       ],
+       "duration": 2.933,
+       "kind": "loop"
+      },
+      "upper.overheat.enter": {
+       "game": "A_B1_Rifle_Overheat_Enter",
+       "play": [
+        "g.A_B1_Rifle_Overheat_Enter"
+       ],
+       "duration": 1.367,
+       "kind": "once"
+      },
+      "upper.overheat.loop": {
+       "game": "A_B1_Rifle_Overheat_Loop",
+       "play": [
+        "g.A_B1_Rifle_Overheat_Loop"
+       ],
+       "duration": 3.1,
+       "kind": "loop"
+      },
+      "upper.overheat.exit": {
+       "game": "A_B1_Rifle_Overheat_Exit",
+       "play": [
+        "g.A_B1_Rifle_Overheat_Exit"
+       ],
+       "duration": 1.333,
+       "kind": "once"
+      },
+      "upper.cool.fail": {
+       "game": "A_B1_Rifle_Overheat_AC_Fail",
+       "play": [
+        "g.A_B1_Rifle_Overheat_AC_Fail"
+       ],
+       "duration": 2.4,
+       "kind": "once"
+      },
+      "upper.raise": {
+       "game": "A_B1_Rifle_Stand_Deploy_01",
+       "play": [
+        "g.A_B1_Rifle_Stand_Deploy_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "once.melee.a": {
+       "game": "A_B1_Rifle_Melee_FirstStrike_01",
+       "play": [
+        "g.A_B1_Rifle_Melee_FirstStrike_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.melee.b": {
+       "game": "A_B1_Rifle_Melee_SecondStrike_01",
+       "play": [
+        "g.A_B1_Rifle_Melee_SecondStrike_01"
+       ],
+       "duration": 2,
+       "kind": "once"
+      },
+      "once.grenade": {
+       "game": "A_B1_Rifle_QuickThrow_Stand_HG",
+       "play": [
+        "g.A_B1_Rifle_QuickThrow_Stand_HG"
+       ],
+       "duration": 1.467,
+       "kind": "once"
+      },
+      "once.grenade.crouch": {
+       "game": "A_B1_Rifle_QuickThrow_Crouch_HG",
+       "play": [
+        "g.A_B1_Rifle_QuickThrow_Crouch_HG"
+       ],
+       "duration": 1.467,
+       "kind": "once"
+      },
+      "once.dodge.front": {
+       "game": "A_B1_Rifle_Dodge_Front_01",
+       "play": [
+        "g.A_B1_Rifle_Dodge_Front_01"
+       ],
+       "duration": 1.933,
+       "kind": "once"
+      },
+      "once.dodge.back": {
+       "game": "A_B1_Rifle_Dodge_Back_01",
+       "play": [
+        "g.A_B1_Rifle_Dodge_Back_01"
+       ],
+       "duration": 2.5,
+       "kind": "once"
+      },
+      "once.dodge.left": {
+       "game": "A_B1_Rifle_Dodge_Left_01",
+       "play": [
+        "g.A_B1_Rifle_Dodge_Left_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "once.dodge.right": {
+       "game": "A_B1_Rifle_Dodge_Right_01",
+       "play": [
+        "g.A_B1_Rifle_Dodge_Right_01"
+       ],
+       "duration": 3.233,
+       "kind": "once"
+      },
+      "death.front": {
+       "game": "A_B1_Death_Stand_Front_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_B1_Death_Stand_Front_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "death.back": {
+       "game": "A_B1_Death_Stand_Back_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_B1_Death_Stand_Back_Upperbody_BlasterFire_01"
+       ],
+       "duration": 2.367,
+       "kind": "once"
+      },
+      "death.left": {
+       "game": "A_B1_Death_Stand_Left_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_B1_Death_Stand_Left_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "death.right": {
+       "game": "A_B1_Death_Stand_Right_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_B1_Death_Stand_Right_Upperbody_BlasterFire_01"
+       ],
+       "duration": 1.567,
+       "kind": "once"
+      },
+      "death.run.fwd": {
+       "game": "A_B1_Death_Stand_Run_Fwd_01",
+       "play": [
+        "g.A_B1_Death_Stand_Run_Fwd_01"
+       ],
+       "duration": 2.5,
+       "kind": "once"
+      },
+      "death.run.left": {
+       "game": "A_B1_Death_Stand_Run_Left_01",
+       "play": [
+        "g.A_B1_Death_Stand_Run_Left_01"
+       ],
+       "duration": 1.3,
+       "kind": "once"
+      },
+      "death.run.right": {
+       "game": "A_B1_Death_Stand_Run_Right_01",
+       "play": [
+        "g.A_B1_Death_Stand_Run_Right_01"
+       ],
+       "duration": 1.833,
+       "kind": "once"
+      },
+      "death.blast.front": {
+       "game": "A_B1_Death_Stand_Front_Explosion_01",
+       "play": [
+        "g.A_B1_Death_Stand_Front_Explosion_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "death.blast.back": {
+       "game": "A_B1_Death_Stand_Back_Explosion_01",
+       "play": [
+        "die.blown",
+        "g.A_B1_Death_Stand_Back_Explosion_01"
+       ],
+       "duration": 1.233,
+       "kind": "once"
+      },
+      "death.blast.left": {
+       "game": "A_B1_Death_Stand_Left_Explosion_01",
+       "play": [
+        "g.A_B1_Death_Stand_Left_Explosion_01"
+       ],
+       "duration": 1.133,
+       "kind": "once"
+      },
+      "death.blast.right": {
+       "game": "A_B1_Death_Stand_Right_Explosion_01",
+       "play": [
+        "g.A_B1_Death_Stand_Right_Explosion_01"
+       ],
+       "duration": 0.867,
+       "kind": "once"
+      }
+     }
+    }
+   }
+  },
+  "b2": {
+   "skeletons": "\\/B2_01_Ske$",
+   "prefix": "B2",
+   "stances": {
+    "t": {
+     "family": "Rifle",
+     "aim": "",
+     "states": {
+      "stand.idle": {
+       "game": "P_B2_Rifle_StandIdle_01",
+       "play": [
+        "g.P_B2_Rifle_StandIdle_01"
+       ],
+       "duration": 0,
+       "kind": "loop"
+      },
+      "stand.walk.fwd": {
+       "game": "C_B2_Rifle_Walk_Fwd_01",
+       "play": [
+        "walk",
+        "g.C_B2_Rifle_Walk_Fwd_01"
+       ],
+       "duration": 2.133,
+       "kind": "cycle",
+       "speed": 1.875,
+       "heading": 0
+      },
+      "stand.walk.back": {
+       "game": "C_B2_Rifle_Walk_Bwd_01",
+       "play": [
+        "walk.back",
+        "g.C_B2_Rifle_Walk_Bwd_01"
+       ],
+       "duration": 0.933,
+       "kind": "cycle",
+       "speed": 1.589,
+       "heading": 3.142
+      },
+      "stand.walk.left": {
+       "game": "C_B2_Rifle_Walk_Left1_01",
+       "play": [
+        "walk.left",
+        "g.C_B2_Rifle_Walk_Left1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle"
+      },
+      "stand.walk.right": {
+       "game": "C_B2_Rifle_Walk_Right1_01",
+       "play": [
+        "walk.right",
+        "g.C_B2_Rifle_Walk_Right1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle"
+      },
+      "stand.run.fwd": {
+       "game": "C_B2_Rifle_Run_Fwd_01",
+       "play": [
+        "run",
+        "g.C_B2_Rifle_Run_Fwd_01"
+       ],
+       "duration": 2.667,
+       "kind": "cycle",
+       "speed": 3.799,
+       "heading": 0
+      },
+      "stand.run.back": {
+       "game": "C_B2_Rifle_Run_Bwd_01",
+       "play": [
+        "g.C_B2_Rifle_Run_Bwd_01"
+       ],
+       "duration": 1.267,
+       "kind": "cycle",
+       "speed": 3.264,
+       "heading": 3.142
+      },
+      "stand.run.left": {
+       "game": "C_B2_Rifle_Run_Left1_01",
+       "play": [
+        "g.C_B2_Rifle_Run_Left1_01"
+       ],
+       "duration": 1.8,
+       "kind": "cycle",
+       "speed": 3.612,
+       "heading": 1.571
+      },
+      "stand.run.right": {
+       "game": "C_B2_Rifle_Run_Right1_01",
+       "play": [
+        "g.C_B2_Rifle_Run_Right1_01"
+       ],
+       "duration": 1.933,
+       "kind": "cycle",
+       "speed": 3.611,
+       "heading": -1.571
+      },
+      "stand.sprint.fwd": {
+       "game": "C_B2_Rifle_Sprint_Fwd_01",
+       "play": [
+        "sprint",
+        "g.C_B2_Rifle_Sprint_Fwd_01"
+       ],
+       "duration": 2.467,
+       "kind": "cycle",
+       "speed": 5.999,
+       "heading": 0
+      },
+      "stand.turn.left": {
+       "game": "L_B2_Rifle_Stand_TurnLeftSlow90_01_v01",
+       "play": [
+        "turn.left",
+        "g.L_B2_Rifle_Stand_TurnLeftSlow90_01_v01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.turn.right": {
+       "game": "L_B2_Rifle_Stand_TurnRightSlow90_01_v01",
+       "play": [
+        "turn.right",
+        "g.L_B2_Rifle_Stand_TurnRightSlow90_01_v01"
+       ],
+       "duration": 1.867,
+       "kind": "loop"
+      },
+      "stand.stop": {
+       "game": "A_B2_Rifle_Run_FwdToStand_01",
+       "play": [
+        "g.A_B2_Rifle_Run_FwdToStand_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "crouch.idle": {
+       "game": "P_B2_Rifle_CrouchIdle_01",
+       "play": [
+        "g.P_B2_Rifle_CrouchIdle_01"
+       ],
+       "duration": 0,
+       "kind": "loop"
+      },
+      "crouch.run.fwd": {
+       "game": "C_B2_Rifle_Crouch_Run_Fwd_01",
+       "play": [
+        "crouch.run",
+        "g.C_B2_Rifle_Crouch_Run_Fwd_01"
+       ],
+       "duration": 0.867,
+       "kind": "cycle",
+       "speed": 2.544,
+       "heading": 0
+      },
+      "crouch.run.back": {
+       "game": "C_B2_Rifle_Crouch_Run_Bwd_01",
+       "play": [
+        "g.C_B2_Rifle_Crouch_Run_Bwd_01"
+       ],
+       "duration": 0.667,
+       "kind": "cycle",
+       "speed": 2.231,
+       "heading": 3.142
+      },
+      "crouch.run.left": {
+       "game": "C_B2_Rifle_Crouch_Run_Left1_01",
+       "play": [
+        "g.C_B2_Rifle_Crouch_Run_Left1_01"
+       ],
+       "duration": 0.733,
+       "kind": "cycle"
+      },
+      "crouch.run.right": {
+       "game": "C_B2_Rifle_Crouch_Run_Right1_01",
+       "play": [
+        "g.C_B2_Rifle_Crouch_Run_Right1_01"
+       ],
+       "duration": 0.733,
+       "kind": "cycle"
+      },
+      "crouch.stop": {
+       "game": "A_B2_Rifle_CrouchRun_to_CrouchIdle",
+       "play": [
+        "g.A_B2_Rifle_CrouchRun_to_CrouchIdle"
+       ],
+       "duration": 1.267,
+       "kind": "once"
+      },
+      "air.jump.run": {
+       "game": "A_B2_Rifle_Jump_Fwd_Run_LeftFoot_01",
+       "play": [
+        "g.A_B2_Rifle_Jump_Fwd_Run_LeftFoot_01"
+       ],
+       "duration": 1.367,
+       "kind": "once",
+       "markers": {
+        "land": 1.1,
+        "absorb": 1.3,
+        "settle": 1.333
+       }
+      },
+      "air.jump.sprint": {
+       "game": "A_B2_Rifle_Jump_Fwd_Sprint_LeftFoot_01",
+       "play": [
+        "g.A_B2_Rifle_Jump_Fwd_Sprint_LeftFoot_01"
+       ],
+       "duration": 1.5,
+       "kind": "once",
+       "markers": {
+        "land": 0.633,
+        "absorb": 1.033,
+        "settle": 1.167
+       }
+      },
+      "upper.raise": {
+       "game": "A_B2_Rifle_Stand_Deploy_01",
+       "play": [
+        "deploy",
+        "g.A_B2_Rifle_Stand_Deploy_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "once.grenade": {
+       "game": "A_B2_Rifle_QuickThrow_Stand_HG",
+       "play": [
+        "g.A_B2_Rifle_QuickThrow_Stand_HG"
+       ],
+       "duration": 1.467,
+       "kind": "once"
+      },
+      "once.grenade.crouch": {
+       "game": "A_B2_Rifle_QuickThrow_Crouch_HG",
+       "play": [
+        "g.A_B2_Rifle_QuickThrow_Crouch_HG"
+       ],
+       "duration": 1.467,
+       "kind": "once"
+      },
+      "once.stagger.front": {
+       "game": "A_B2_Stagger_Front_01",
+       "play": [
+        "hit.chest",
+        "stagger",
+        "g.A_B2_Stagger_Front_01"
+       ],
+       "duration": 2.067,
+       "kind": "once"
+      },
+      "once.stagger.back": {
+       "game": "A_B2_Stagger_Back_01",
+       "play": [
+        "hit.back",
+        "g.A_B2_Stagger_Back_01"
+       ],
+       "duration": 2.6,
+       "kind": "once"
+      },
+      "death.front": {
+       "game": "A_B2_Death_Stand_Front_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_B2_Death_Stand_Front_Upperbody_BlasterFire_01"
+       ],
+       "duration": 2.767,
+       "kind": "once"
+      },
+      "death.back": {
+       "game": "A_B2_Death_Stand_Back_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_B2_Death_Stand_Back_Upperbody_BlasterFire_01"
+       ],
+       "duration": 2.5,
+       "kind": "once"
+      },
+      "death.left": {
+       "game": "A_B2_Death_Stand_Left_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_B2_Death_Stand_Left_Upperbody_BlasterFire_01"
+       ],
+       "duration": 3.1,
+       "kind": "once"
+      },
+      "death.right": {
+       "game": "A_B2_Death_Stand_Right_Upperbody_BlasterFire_01",
+       "play": [
+        "g.A_B2_Death_Stand_Right_Upperbody_BlasterFire_01"
+       ],
+       "duration": 2.833,
+       "kind": "once"
+      },
+      "death.run.fwd": {
+       "game": "A_B2_Death_Stand_Run_Fwd_01",
+       "play": [
+        "g.A_B2_Death_Stand_Run_Fwd_01"
+       ],
+       "duration": 2.5,
+       "kind": "once"
+      },
+      "death.run.left": {
+       "game": "A_B2_Death_Stand_Run_Left_01",
+       "play": [
+        "g.A_B2_Death_Stand_Run_Left_01"
+       ],
+       "duration": 2.167,
+       "kind": "once"
+      },
+      "death.run.right": {
+       "game": "A_B2_Death_Stand_Run_Right_01",
+       "play": [
+        "g.A_B2_Death_Stand_Run_Right_01"
+       ],
+       "duration": 2.4,
+       "kind": "once"
+      },
+      "death.blast.front": {
+       "game": "A_B2_Death_Stand_Front_Explosion_01",
+       "play": [
+        "g.A_B2_Death_Stand_Front_Explosion_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "death.blast.back": {
+       "game": "A_B2_Death_Stand_Back_Explosion_01",
+       "play": [
+        "die.blown",
+        "g.A_B2_Death_Stand_Back_Explosion_01"
+       ],
+       "duration": 1.233,
+       "kind": "once"
+      },
+      "death.blast.left": {
+       "game": "A_B2_Death_Stand_Left_Explosion_01",
+       "play": [
+        "g.A_B2_Death_Stand_Left_Explosion_01"
+       ],
+       "duration": 1,
+       "kind": "once"
+      },
+      "death.blast.right": {
+       "game": "A_B2_Death_Stand_Right_Explosion_01",
+       "play": [
+        "g.A_B2_Death_Stand_Right_Explosion_01"
+       ],
+       "duration": 1.133,
+       "kind": "once"
+      }
+     }
+    }
+   }
+  }
+ },
+ "weapons": {
+  "a280c": {
+   "stance": "t",
+   "interval": 0.1,
+   "burst": 3,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Rifles/A280C/W_BlasterRifle_A280C: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "cr2": {
+   "stance": "t",
+   "interval": 0.0667,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Rifles/CR2/W_BlasterRifle_CR2: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "el16hfe": {
+   "stance": "t",
+   "interval": 0.3,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Rifles/EL16HFE/W_BlasterRifle_EL16HFE: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "e11dmod": {
+   "stance": "t",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Rifles/E11DMod/W_BlasterRifle_E11DMod: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "a280": {
+   "stance": "t",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Rifles/A280/W_BlasterRifle_A280: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "e11": {
+   "stance": "t",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Rifles/E11/W_BlasterRifle_E11: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "dc15": {
+   "stance": "t",
+   "interval": 0.1,
+   "burst": null,
+   "overheat": 3,
+   "vent": 2.5,
+   "raise": 0.9,
+   "_source": "Gameplay/Equipment/Heavy/DC15/W_HeavyBlaster_DC15: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "fwmb10": {
+   "stance": "t",
+   "interval": 0.1,
+   "burst": null,
+   "overheat": 3,
+   "vent": 2.5,
+   "raise": 0.9,
+   "_source": "Gameplay/Equipment/Heavy/FWMB10/W_HeavyBlaster_FWMB10: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "tl50": {
+   "stance": "t",
+   "interval": 0.0857,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.5,
+   "_source": "Gameplay/Equipment/Heavy/TL50/W_HeavyBlaster_TL50: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "rt97c": {
+   "stance": "l",
+   "interval": 0.1,
+   "burst": null,
+   "overheat": 3,
+   "vent": 2.5,
+   "raise": 0.9,
+   "_source": "Gameplay/Equipment/Heavy/RT97C/W_HeavyBlaster_RT97C: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "dlt19": {
+   "stance": "l",
+   "interval": 0.1,
+   "burst": null,
+   "overheat": 3,
+   "vent": 2.5,
+   "raise": 0.9,
+   "_source": "Gameplay/Equipment/Heavy/DLT19/W_HeavyBlaster_DLT19: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "s5": {
+   "stance": "t",
+   "interval": 0.4286,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.6,
+   "_source": "Gameplay/Equipment/Pistols/S5/W_Pistol_S5: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "blurrg1120": {
+   "stance": "t",
+   "interval": 0.15,
+   "burst": 2,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.6,
+   "_source": "Gameplay/Equipment/Pistols/Blurrg1120/W_Pistol_Blurrg1120: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "se44c": {
+   "stance": "t",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.6,
+   "_source": "Gameplay/Equipment/Pistols/SE44C/W_Pistol_SE44C: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "dl18mod": {
+   "stance": "t",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.6,
+   "_source": "Gameplay/Equipment/Pistols/DL18Mod/W_Pistol_DL18Mod: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "dh17": {
+   "stance": "p",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.6,
+   "_source": "Gameplay/Equipment/Pistols/DH17/W_Pistol_DH17: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "rk3": {
+   "stance": "p",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.6,
+   "_source": "Gameplay/Equipment/Pistols/RK3/W_Pistol_RK3: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "iqa11": {
+   "stance": "t",
+   "interval": 0.4615,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/LongRange/IQA11/W_LongRange_IQA11: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "a280cfe": {
+   "stance": "t",
+   "interval": 0.1875,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/LongRange/A280CFE/W_LongRange_A280CFE: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "nt242": {
+   "stance": "t",
+   "interval": 0.75,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/LongRange/NT242/W_LongRange_NT242: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "cyclerriflemod": {
+   "stance": "t",
+   "interval": 0.3333,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/LongRange/CyclerRifleMod/W_LongRange_CyclerRifleMod: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "dlt20a": {
+   "stance": "t",
+   "interval": 0.3333,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/LongRange/DLT20A/W_LongRange_DLT20A: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "dlt19x": {
+   "stance": "t",
+   "interval": 0.3333,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/LongRange/DLT19X/W_LongRange_DLT19X: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "leia": {
+   "stance": "t",
+   "interval": 0.0857,
+   "burst": 2,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.75,
+   "_source": "Gameplay/Equipment/Heroes/DefenderLeia/W_Pistol_Defender_Leia: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "hansolo": {
+   "stance": "t",
+   "interval": 0.3429,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.2,
+   "_source": "Gameplay/Equipment/Heroes/DL44/W_Pistol_DL44_HanSolo: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "chewbacca": {
+   "stance": "t",
+   "interval": 1,
+   "burst": null,
+   "overheat": 2,
+   "vent": null,
+   "raise": 1,
+   "_source": "Gameplay/Equipment/Heroes/Bowcaster/W_BlasterRifle_Bowcaster_Chewbacca: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "x8nightsniper": {
+   "stance": "t",
+   "interval": 0.15,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.6,
+   "_source": "Gameplay/Equipment/Heroes/X8NightSniper/W_Lando_X8NightSniper: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "boba": {
+   "stance": "t",
+   "interval": 0.075,
+   "burst": 3,
+   "overheat": null,
+   "vent": null,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Heroes/EE3/W_BlasterRifle_EE3_Boba: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "v10": {
+   "stance": "t",
+   "interval": 0.6,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Heroes/RelbyV10/W_Bossk_Relby_V10: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "iden": {
+   "stance": "t",
+   "interval": 0.0857,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.9,
+   "_source": "Gameplay/Equipment/Heroes/TL50_Iden/W_HeavyBlaster_TL50_Iden: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "wookiewarrior": {
+   "stance": "t",
+   "interval": 0.75,
+   "burst": null,
+   "overheat": 2,
+   "vent": 1,
+   "raise": 1,
+   "_source": "Gameplay/Equipment/Specials/Bowcaster/W_BlasterRifle_Bowcaster_WookieWarrior: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "bowv2": {
+   "stance": "t",
+   "interval": null,
+   "burst": null,
+   "overheat": null,
+   "vent": null,
+   "raise": null,
+   "_source": "Gameplay/Kits/Specials/EwokRebel/W_BowV2: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "e11d": {
+   "stance": "t",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Specials/Deathtrooper_E11D/W_DeathTrooper_E11D: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  },
+  "dualrk3": {
+   "stance": "t",
+   "interval": 0.2,
+   "burst": null,
+   "overheat": 3,
+   "vent": 1,
+   "raise": 0.8,
+   "_source": "Gameplay/Equipment/Specials/ISBAgent_DualRK3/W_ISBAgent_DualRK3: WeaponFiringData.RateOfFire, OverheatConfig.OverHeatPenaltyTime, the active cooling's vent, WeaponFiringData.DeployTime"
+  }
+ },
+ "abilities": {
+  "DefaultAbility_Assault_ThermalDetonator": {
+   "id": "DefaultAbility_Assault_ThermalDetonator",
+   "activation": 0.32,
+   "active": 0.7,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "DefaultAbility_Assault_Vanguard": {
+   "id": "DefaultAbility_Assault_Vanguard",
+   "activation": 0,
+   "active": null,
+   "slot": "middle",
+   "kind": "fire"
+  },
+  "DefaultAbility_Assault_ScanDart": {
+   "id": "DefaultAbility_Assault_ScanDart",
+   "activation": 0,
+   "active": null,
+   "slot": "right",
+   "kind": "fire"
+  },
+  "DefaultAbility_Heavy_ImpactGrenade": {
+   "id": "DefaultAbility_Heavy_ImpactGrenade",
+   "activation": 0.32,
+   "active": 0.7,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "DefaultAbility_Heavy_Sentry": {
+   "id": "DefaultAbility_Heavy_Sentry",
+   "activation": 0,
+   "active": null,
+   "slot": "middle",
+   "kind": "raise"
+  },
+  "DefaultAbility_Heavy_CombatShield": {
+   "id": "DefaultAbility_Heavy_CombatShield",
+   "activation": 0,
+   "active": null,
+   "slot": "right",
+   "kind": "shield"
+  },
+  "DefaultAbility_Officer_SplitterGrenade": {
+   "id": "DefaultAbility_Officer_SplitterGrenade",
+   "activation": 0.32,
+   "active": null,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "DefaultAbility_Officer_BlasterTurret": {
+   "id": "DefaultAbility_Officer_BlasterTurret",
+   "activation": 0.4,
+   "active": null,
+   "slot": "right",
+   "kind": "raise"
+  },
+  "DefaultAbility_Specialist_ShockGrenade": {
+   "id": "DefaultAbility_Specialist_ShockGrenade",
+   "activation": 0.32,
+   "active": 0.7,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "Ability_Luke_ForcePush": {
+   "id": "Ability_Luke_ForcePush",
+   "activation": 0.5,
+   "active": 0,
+   "slot": "left",
+   "kind": "hero",
+   "hero": "luke",
+   "play": [
+    "force.push"
+   ]
+  },
+  "Ability_Luke_ForceRepulse": {
+   "id": "Ability_Luke_ForceRepulse",
+   "activation": 0.5,
+   "active": 0,
+   "slot": "middle",
+   "kind": "hero",
+   "hero": "luke",
+   "play": [
+    "force.slam",
+    "sword.pound"
+   ]
+  },
+  "Ability_Luke_Dash": {
+   "id": "Ability_Luke_Dash",
+   "activation": 0.8,
+   "active": 1,
+   "slot": "right",
+   "kind": "hero",
+   "hero": "luke",
+   "play": [
+    "force.rush",
+    "sword.dash"
+   ]
+  },
+  "Ability_Leia_ThermalDetonator_Fake": {
+   "id": "Ability_Leia_ThermalDetonator_Fake",
+   "activation": 0,
+   "active": 10000,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "Ability_Leia_BubbleShield": {
+   "id": "Ability_Leia_BubbleShield",
+   "activation": 0.5,
+   "active": 0.3,
+   "slot": "right",
+   "kind": "shield"
+  },
+  "Ability_HanSolo_DemolitionGrenade": {
+   "id": "Ability_HanSolo_DemolitionGrenade",
+   "activation": 0.4,
+   "active": null,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "Ability_HanSolo_Sharpshooterz": {
+   "id": "Ability_HanSolo_Sharpshooterz",
+   "activation": 0,
+   "active": null,
+   "slot": "middle",
+   "kind": "fire"
+  },
+  "Ability_Chewbacca_GrenadeStun": {
+   "id": "Ability_Chewbacca_GrenadeStun",
+   "activation": 0.4,
+   "active": 1,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "Ability_Weapon_FuriousBowcaster": {
+   "id": "Ability_Weapon_FuriousBowcaster",
+   "activation": 0,
+   "active": null,
+   "slot": "middle",
+   "kind": "fire"
+  },
+  "Ability_GrenadeSmoke_Lando": {
+   "id": "Ability_GrenadeSmoke_Lando",
+   "activation": 0.4,
+   "active": 0,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "Ability_Lando_SharpShot": {
+   "id": "Ability_Lando_SharpShot",
+   "activation": 0,
+   "active": 7,
+   "slot": "middle",
+   "kind": "fire"
+  },
+  "Ability_Lando_Disruptor": {
+   "id": "Ability_Lando_Disruptor",
+   "activation": 0.4,
+   "active": 25,
+   "slot": "right",
+   "kind": "raise"
+  },
+  "DefaultAbility_ObiWan_AllOutPush": {
+   "id": "DefaultAbility_ObiWan_AllOutPush",
+   "activation": 1.5,
+   "active": 1.2,
+   "slot": "left",
+   "kind": "hero",
+   "hero": "obiwan",
+   "play": [
+    "force.push"
+   ]
+  },
+  "DefaultAbility_ObiWan_DefensiveRush": {
+   "id": "DefaultAbility_ObiWan_DefensiveRush",
+   "activation": 0.5,
+   "active": 0,
+   "slot": "right",
+   "kind": "hero",
+   "hero": "obiwan",
+   "play": [
+    "force.rush",
+    "sword.dash"
+   ]
+  },
+  "DefaultAbility_Anakin_PullDominance": {
+   "id": "DefaultAbility_Anakin_PullDominance",
+   "activation": 2,
+   "active": 0,
+   "slot": "left",
+   "kind": "hero",
+   "hero": "anakin",
+   "play": [
+    "force.pull",
+    "force.push"
+   ]
+  },
+  "DefaultAbility_Anakin_HeroicImpact": {
+   "id": "DefaultAbility_Anakin_HeroicImpact",
+   "activation": 2,
+   "active": 3.5,
+   "slot": "middle",
+   "kind": "hero",
+   "hero": "anakin",
+   "play": [
+    "force.slam",
+    "sword.pound"
+   ]
+  },
+  "DefaultAbility_Anakin_ImpassionateStrike": {
+   "id": "DefaultAbility_Anakin_ImpassionateStrike",
+   "activation": 2,
+   "active": 1,
+   "slot": "right",
+   "kind": "hero",
+   "hero": "anakin",
+   "play": [
+    "force.rush",
+    "sword.dash"
+   ]
+  },
+  "Ability_BobaFett_Concussion_Rocket": {
+   "id": "Ability_BobaFett_Concussion_Rocket",
+   "activation": 0.7,
+   "active": 0,
+   "slot": "left",
+   "kind": "fire"
+  },
+  "Ability_BobaFett_Ping": {
+   "id": "Ability_BobaFett_Ping",
+   "activation": 0.5,
+   "active": 8,
+   "slot": "middle",
+   "kind": "fire"
+  },
+  "Ability_BobaFett_RocketBarrage": {
+   "id": "Ability_BobaFett_RocketBarrage",
+   "activation": 0.5,
+   "active": 1.3,
+   "slot": "right",
+   "kind": "fire"
+  },
+  "Ability_Bossk_GrenadeDioxis": {
+   "id": "Ability_Bossk_GrenadeDioxis",
+   "activation": 0.4,
+   "active": 0,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "Ability_Bossk_ExplosiveTraps_New": {
+   "id": "Ability_Bossk_ExplosiveTraps_New",
+   "activation": 0.6,
+   "active": 0.1,
+   "slot": "right",
+   "kind": "raise"
+  },
+  "Ability_DarthVader_SaberThrowCharacterState": {
+   "id": "Ability_DarthVader_SaberThrowCharacterState",
+   "activation": 0.7,
+   "active": 2,
+   "slot": "left",
+   "kind": "hero",
+   "hero": "vader",
+   "play": [
+    "saber.throw"
+   ]
+  },
+  "Ability_Vader_FocusRage": {
+   "id": "Ability_Vader_FocusRage",
+   "activation": 0,
+   "active": 10,
+   "slot": "middle",
+   "kind": "hero",
+   "hero": "vader",
+   "play": [
+    "force.rage"
+   ]
+  },
+  "Ability_DarthVader_ForceChoke_02": {
+   "id": "Ability_DarthVader_ForceChoke_02",
+   "activation": 0.1,
+   "active": 1.5,
+   "slot": "right",
+   "kind": "hero",
+   "hero": "vader",
+   "play": [
+    "force.choke"
+   ]
+  },
+  "Ability_Emperor_ChainLightningCS": {
+   "id": "Ability_Emperor_ChainLightningCS",
+   "activation": 0.5,
+   "active": 2,
+   "slot": "left",
+   "kind": "hero",
+   "hero": "palpatine",
+   "play": [
+    "force.chain",
+    "force.electrocute"
+   ]
+  },
+  "Ability_Emperor_ElectrocuteCS": {
+   "id": "Ability_Emperor_ElectrocuteCS",
+   "activation": 2,
+   "active": 0,
+   "slot": "right",
+   "kind": "hero",
+   "hero": "palpatine",
+   "play": [
+    "force.electrocute",
+    "force.lightning"
+   ]
+  },
+  "Ability_DarthMaul_SaberThrowCharacterState": {
+   "id": "Ability_DarthMaul_SaberThrowCharacterState",
+   "activation": 2,
+   "active": 2,
+   "slot": "left",
+   "kind": "hero",
+   "hero": "maul",
+   "play": [
+    "saber.throw"
+   ]
+  },
+  "Ability_Maul_ForceChoke": {
+   "id": "Ability_Maul_ForceChoke",
+   "activation": 1,
+   "active": 0.1,
+   "slot": "middle",
+   "kind": "hero",
+   "hero": "maul",
+   "play": [
+    "force.choke"
+   ]
+  },
+  "Ability_DarthMaul_SpinAttackCharacterState": {
+   "id": "Ability_DarthMaul_SpinAttackCharacterState",
+   "activation": 0.8,
+   "active": 1,
+   "slot": "right",
+   "kind": "hero",
+   "hero": "maul",
+   "play": [
+    "force.rush",
+    "sword.dash"
+   ]
+  },
+  "Ability_Iden_Pulse_Cannon": {
+   "id": "Ability_Iden_Pulse_Cannon",
+   "activation": 0,
+   "active": null,
+   "slot": "middle",
+   "kind": "fire"
+  },
+  "Ability_Iden_Droid_Shield": {
+   "id": "Ability_Iden_Droid_Shield",
+   "activation": 0,
+   "active": 12,
+   "slot": "right",
+   "kind": "shield"
+  },
+  "DefaultAbility_Dooku_LightningStun": {
+   "id": "DefaultAbility_Dooku_LightningStun",
+   "activation": 2,
+   "active": 1,
+   "slot": "left",
+   "kind": "hero",
+   "hero": "dooku",
+   "play": [
+    "force.lightning",
+    "force.electrocute"
+   ]
+  },
+  "DefaultAbility_Dooku_ExposeWeakness": {
+   "id": "DefaultAbility_Dooku_ExposeWeakness",
+   "activation": 2,
+   "active": 5.5,
+   "slot": "right",
+   "kind": "hero",
+   "hero": "dooku",
+   "play": [
+    "force.weaken"
+   ]
+  },
+  "Ability_Special_WookieWarrior_ThermalImploder": {
+   "id": "Ability_Special_WookieWarrior_ThermalImploder",
+   "activation": 0.32,
+   "active": 0.5,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "Ability_Special_Weapon_WookieWarrior_BowcasterFrenzy": {
+   "id": "Ability_Special_Weapon_WookieWarrior_BowcasterFrenzy",
+   "activation": 0,
+   "active": 9,
+   "slot": "middle",
+   "kind": "fire"
+  },
+  "Ability_Special_RebelJumpTrooper_RocketLauncher": {
+   "id": "Ability_Special_RebelJumpTrooper_RocketLauncher",
+   "activation": 0,
+   "active": null,
+   "slot": "middle",
+   "kind": "fire"
+  },
+  "Ability_Special_SonicImploder": {
+   "id": "Ability_Special_SonicImploder",
+   "activation": 0.4,
+   "active": 0.5,
+   "slot": "left",
+   "kind": "grenade"
+  },
+  "Ability_Shared_Fortify": {
+   "id": "Ability_Shared_Fortify",
+   "activation": 0,
+   "active": 15,
+   "slot": "right",
+   "kind": "shield"
+  },
+  "Ability_Special_JumpTrooper_RocketLauncher": {
+   "id": "Ability_Special_JumpTrooper_RocketLauncher",
+   "activation": 0,
+   "active": null,
+   "slot": "middle",
+   "kind": "fire"
+  }
+ },
+ "packs": {
+  "graph": {
+   "g.A_HM_LMG_Stand_Shield_Deploy": "A_HM_LMG_Stand_Shield_Deploy",
+   "g.A_HM_Pistol_Sprint_HitReact_Back_01": "A_HM_Pistol_Sprint_HitReact_Back_01",
+   "g.A_HM_Pistol_Sprint_HitReact_Front_01": "A_HM_Pistol_Sprint_HitReact_Front_01",
+   "g.A_HM_Pistol_Sprint_HitReact_Left_01": "A_HM_Pistol_Sprint_HitReact_Left_01",
+   "g.A_HM_Pistol_Sprint_HitReact_Right_01": "A_HM_Pistol_Sprint_HitReact_Right_01",
+   "g.A_HM_Death_Stand_Front_Upperbody_BlasterFire_01": "A_HM_Death_Stand_Front_Upperbody_BlasterFire_01",
+   "g.A_HM_Death_Stand_Back_Upperbody_BlasterFire_01": "A_HM_Death_Stand_Back_Upperbody_BlasterFire_01",
+   "g.A_HM_Death_Stand_Left_Upperbody_BlasterFire_01": "A_HM_Death_Stand_Left_Upperbody_BlasterFire_01",
+   "g.A_HM_Death_Stand_Right_Upperbody_BlasterFire_01": "A_HM_Death_Stand_Right_Upperbody_BlasterFire_01",
+   "g.A_HM_Death_Stand_Run_Fwd_01": "A_HM_Death_Stand_Run_Fwd_01",
+   "g.A_HM_Death_Stand_Run_Left_01": "A_HM_Death_Stand_Run_Left_01",
+   "g.A_HM_Death_Stand_Run_Right_01": "A_HM_Death_Stand_Run_Right_01",
+   "g.A_HM_Death_Stand_Front_Explosion_01": "A_HM_Death_Stand_Front_Explosion_01",
+   "g.A_HM_Death_Stand_Back_Explosion_01": "A_HM_Death_Stand_Back_Explosion_01",
+   "g.A_HM_Death_Stand_Left_Explosion_01": "A_HM_Death_Stand_Left_Explosion_01",
+   "g.A_HM_Death_Stand_Right_Explosion_01": "A_HM_Death_Stand_Right_Explosion_01"
+  },
+  "graph-t": {
+   "g.T_HM_Rifle_RunToStand_Fwd_01": "T_HM_Rifle_RunToStand_Fwd_01",
+   "g.C_HM_Rifle_Crouch_ZeroSpeed_01": "C_HM_Rifle_Crouch_ZeroSpeed_01",
+   "g.C_HM_Rifle_Crouch_Run_Bwd_01": "C_HM_Rifle_Crouch_Run_Bwd_01",
+   "g.C_HM_Rifle_Crouch_Run_Left1_01": "C_HM_Rifle_Crouch_Run_Left1_01",
+   "g.C_HM_Rifle_Crouch_Run_Right1_01": "C_HM_Rifle_Crouch_Run_Right1_01",
+   "g.A_HM_Rifle_CrouchRun_to_CrouchIdle": "A_HM_Rifle_CrouchRun_to_CrouchIdle",
+   "g.A_HM_Rifle_Jump_Stand_01": "A_HM_Rifle_Jump_Stand_01",
+   "g.A_HM_Rifle_Jump_Fwd_Run_LeftFoot_01": "A_HM_Rifle_Jump_Fwd_Run_LeftFoot_01",
+   "g.A_HM_Rifle_Jump_Fwd_Sprint_LeftFoot_01": "A_HM_Rifle_Jump_Fwd_Sprint_LeftFoot_01",
+   "g.L_HM_Rifle_Falling_01": "L_HM_Rifle_Falling_01",
+   "g.A_HM_Rifle_Overheat_Enter": "A_HM_Rifle_Overheat_Enter",
+   "g.A_HM_Rifle_Overheat_Loop": "A_HM_Rifle_Overheat_Loop",
+   "g.A_HM_Rifle_Overheat_Exit": "A_HM_Rifle_Overheat_Exit",
+   "g.A_HM_Rifle_Overheat_AC_Fail": "A_HM_Rifle_Overheat_AC_Fail",
+   "g.A_HM_Rifle_Stand_Deploy_01": "A_HM_Rifle_Stand_Deploy_01",
+   "g.A_HM_Rifle_Stand_SpawnIn_01": "A_HM_Rifle_Stand_SpawnIn_01",
+   "g.A_HM_Rifle_Melee_SecondStrike_01": "A_HM_Rifle_Melee_SecondStrike_01",
+   "g.A_HM_Rifle_QuickThrow_Stand_HG": "A_HM_Rifle_QuickThrow_Stand_HG",
+   "g.A_HM_Rifle_QuickThrow_Crouch_HG": "A_HM_Rifle_QuickThrow_Crouch_HG",
+   "g.A_HM_Rifle_Stagger_Fwd_01": "A_HM_Rifle_Stagger_Fwd_01"
+  },
+  "graph-p": {
+   "g.T_HM_Pistol_RunToStand_Fwd_01": "T_HM_Pistol_RunToStand_Fwd_01",
+   "g.C_HM_Pistol_Crouch_ZeroSpeed_01": "C_HM_Pistol_Crouch_ZeroSpeed_01",
+   "g.C_HM_Pistol_Crouch_Run_Bwd_01": "C_HM_Pistol_Crouch_Run_Bwd_01",
+   "g.C_HM_Pistol_Crouch_Run_Left1_01": "C_HM_Pistol_Crouch_Run_Left1_01",
+   "g.C_HM_Pistol_Crouch_Run_Right1_01": "C_HM_Pistol_Crouch_Run_Right1_01",
+   "g.A_HM_Pistol_CrouchRun_to_CrouchIdle_01": "A_HM_Pistol_CrouchRun_to_CrouchIdle_01",
+   "g.A_HM_Rifle_Jump_Fwd_Run_LeftFoot_01": "A_HM_Rifle_Jump_Fwd_Run_LeftFoot_01",
+   "g.A_HM_Pistol_Jump_Fwd_Sprint_LeftFoot_01": "A_HM_Pistol_Jump_Fwd_Sprint_LeftFoot_01",
+   "g.L_HM_Pistol_Falling_01": "L_HM_Pistol_Falling_01",
+   "g.A_HM_Pistol_DropFromHeightLand_01": "A_HM_Pistol_DropFromHeightLand_01",
+   "g.A_HM_Pistol_Overheat_Enter": "A_HM_Pistol_Overheat_Enter",
+   "g.A_HM_Pistol_Overheat_Loop": "A_HM_Pistol_Overheat_Loop",
+   "g.A_HM_Pistol_Overheat_Exit": "A_HM_Pistol_Overheat_Exit",
+   "g.A_HM_Pistol_Overheat_AC_Fail": "A_HM_Pistol_Overheat_AC_Fail",
+   "g.A_HM_Pistol_Stand_Deploy_01": "A_HM_Pistol_Stand_Deploy_01",
+   "g.A_HM_Pistol_Stand_SpawnIn_01": "A_HM_Pistol_Stand_SpawnIn_01",
+   "g.A_HM_Pistol_Melee_FirstStrike_01": "A_HM_Pistol_Melee_FirstStrike_01",
+   "g.A_HM_Pistol_Melee_SecondStrike_01": "A_HM_Pistol_Melee_SecondStrike_01",
+   "g.A_HM_Pistol_QuickThrow_Stand_HG": "A_HM_Pistol_QuickThrow_Stand_HG",
+   "g.A_HM_Pistol_QuickThrow_Crouch_HG": "A_HM_Pistol_QuickThrow_Crouch_HG",
+   "g.A_HM_Pistol_Dodge_Front_01": "A_HM_Pistol_Dodge_Front_01",
+   "g.A_HM_Pistol_Dodge_Back_01": "A_HM_Pistol_Dodge_Back_01",
+   "g.A_HM_Pistol_Dodge_Left_01": "A_HM_Pistol_Dodge_Left_01",
+   "g.A_HM_Pistol_Dodge_Right_01": "A_HM_Pistol_Dodge_Right_01",
+   "g.A_HM_Pistol_Stagger_Bwd_01": "A_HM_Pistol_Stagger_Bwd_01",
+   "g.A_HM_Pistol_Stagger_Fwd_02": "A_HM_Pistol_Stagger_Fwd_02"
+  },
+  "graph-l": {
+   "g.T_HM_LMG_RunToStand_Fwd_01": "T_HM_LMG_RunToStand_Fwd_01",
+   "g.C_HM_Rifle_Crouch_ZeroSpeed_01": "C_HM_Rifle_Crouch_ZeroSpeed_01",
+   "g.C_HM_Rifle_Crouch_Run_Bwd_01": "C_HM_Rifle_Crouch_Run_Bwd_01",
+   "g.C_HM_Rifle_Crouch_Run_Left1_01": "C_HM_Rifle_Crouch_Run_Left1_01",
+   "g.C_HM_Rifle_Crouch_Run_Right1_01": "C_HM_Rifle_Crouch_Run_Right1_01",
+   "g.A_HM_Rifle_CrouchRun_to_CrouchIdle": "A_HM_Rifle_CrouchRun_to_CrouchIdle",
+   "g.A_HM_Lmg_Jump_Stand_01": "A_HM_Lmg_Jump_Stand_01",
+   "g.A_HM_Lmg_Jump_Fwd_Run_LeftFoot_01": "A_HM_Lmg_Jump_Fwd_Run_LeftFoot_01",
+   "g.A_HM_Lmg_Jump_Fwd_Sprint_LeftFoot_01": "A_HM_Lmg_Jump_Fwd_Sprint_LeftFoot_01",
+   "g.L_HM_Lmg_Falling_01": "L_HM_Lmg_Falling_01",
+   "g.A_HM_Lmg_Overheat_Enter": "A_HM_Lmg_Overheat_Enter",
+   "g.A_HM_Lmg_Overheat_Loop": "A_HM_Lmg_Overheat_Loop",
+   "g.A_HM_Lmg_Overheat_Exit": "A_HM_Lmg_Overheat_Exit",
+   "g.A_HM_Lmg_Overheat_AC_Fail": "A_HM_Lmg_Overheat_AC_Fail",
+   "g.A_HM_Lmg_Stand_Deploy_01": "A_HM_Lmg_Stand_Deploy_01",
+   "g.A_HM_Lmg_Stand_SpawnIn_01": "A_HM_Lmg_Stand_SpawnIn_01",
+   "g.A_HM_LMG_Melee_FirstStrike_01": "A_HM_LMG_Melee_FirstStrike_01",
+   "g.A_HM_LMG_Melee_SecondStrike_01": "A_HM_LMG_Melee_SecondStrike_01",
+   "g.A_HM_Lmg_QuickThrow_Stand_HG": "A_HM_Lmg_QuickThrow_Stand_HG",
+   "g.A_HM_Rifle_QuickThrow_Crouch_HG": "A_HM_Rifle_QuickThrow_Crouch_HG",
+   "g.A_HM_LMG_Stagger_Bwd_01": "A_HM_LMG_Stagger_Bwd_01",
+   "g.A_HM_LMG_Stagger_Fwd_01": "A_HM_LMG_Stagger_Fwd_01"
+  },
+  "graph-add": {
+   "add.g.Add_HM_Rifle_StandIdleLoop_01": "Add_HM_Rifle_StandIdleLoop_01",
+   "add.g.Add_HM_Rifle_CrouchIdleLoop_01": "Add_HM_Rifle_CrouchIdleLoop_01",
+   "add.g.Add_HM_Rifle_JumpLand_Stand_Light_01": "Add_HM_Rifle_JumpLand_Stand_Light_01",
+   "add.g.Add_HM_Rifle_JumpLand_Stand_Heavy_01": "Add_HM_Rifle_JumpLand_Stand_Heavy_01",
+   "add.g.JumpLandFwd": "JumpLandFwd",
+   "add.g.Add_HM_Rifle_StandFire": "Add_HM_Rifle_StandFire",
+   "add.g.Add_HM_Rifle_CrouchFire": "Add_HM_Rifle_CrouchFire",
+   "add.g.A_HM_Rifle_Stand_Venting": "A_HM_Rifle_Stand_Venting",
+   "add.g.ADD_HM_Pistol_StandIdleLoop_01": "ADD_HM_Pistol_StandIdleLoop_01",
+   "add.g.Add_HM_Pistol_CrouchIdle_01": "Add_HM_Pistol_CrouchIdle_01",
+   "add.g.Add_HM_Pistol_JumpLand_Stand_Light_01": "Add_HM_Pistol_JumpLand_Stand_Light_01",
+   "add.g.Add_HM_Pistol_JumpLand_Stand_Heavy_01": "Add_HM_Pistol_JumpLand_Stand_Heavy_01",
+   "add.g.ADD_HM_Pistol_Land_Run_Fwd": "ADD_HM_Pistol_Land_Run_Fwd",
+   "add.g.A_HM_Pistol_Stand_Venting": "A_HM_Pistol_Stand_Venting",
+   "add.g.ADD_HM_Lmg_Land_Run_Fwd": "ADD_HM_Lmg_Land_Run_Fwd",
+   "add.g.Add_HM_Rifle_Stand_HeavyFire01": "Add_HM_Rifle_Stand_HeavyFire01",
+   "add.g.Add_HM_Rifle_Crouch_HeavyFire01": "Add_HM_Rifle_Crouch_HeavyFire01",
+   "add.g.A_HM_Lmg_Stand_Venting": "A_HM_Lmg_Stand_Venting"
+  }
+ },
+ "missing": [
+  "b1.t.stand.idle.add",
+  "b1.t.crouch.idle.add",
+  "b1.t.crouch.stop",
+  "b1.t.air.land.hard",
+  "b1.t.air.land.light",
+  "b1.t.air.land.heavy",
+  "b1.t.air.land.run",
+  "b1.t.upper.fire",
+  "b1.t.upper.fire.crouch",
+  "b1.t.upper.venting",
+  "b1.t.once.spawn",
+  "b1.t.once.shield",
+  "b1.t.once.stagger.front",
+  "b1.t.once.stagger.back",
+  "b1.t.once.sprintHit.back",
+  "b1.t.once.sprintHit.front",
+  "b1.t.once.sprintHit.left",
+  "b1.t.once.sprintHit.right",
+  "b1.t.add.hit.front",
+  "b1.t.add.hit.back",
+  "b1.t.add.hit.left",
+  "b1.t.add.hit.right",
+  "b1.t.add.hit.crouch",
+  "b2.t.stand.idle.add",
+  "b2.t.crouch.idle.add",
+  "b2.t.air.jump",
+  "b2.t.air.fall",
+  "b2.t.air.land.hard",
+  "b2.t.air.land.light",
+  "b2.t.air.land.heavy",
+  "b2.t.air.land.run",
+  "b2.t.upper.fire",
+  "b2.t.upper.fire.crouch",
+  "b2.t.upper.overheat.enter",
+  "b2.t.upper.overheat.loop",
+  "b2.t.upper.overheat.exit",
+  "b2.t.upper.cool.fail",
+  "b2.t.upper.venting",
+  "b2.t.once.spawn",
+  "b2.t.once.melee.a",
+  "b2.t.once.melee.b",
+  "b2.t.once.shield",
+  "b2.t.once.dodge.front",
+  "b2.t.once.dodge.back",
+  "b2.t.once.dodge.left",
+  "b2.t.once.dodge.right",
+  "b2.t.once.sprintHit.back",
+  "b2.t.once.sprintHit.front",
+  "b2.t.once.sprintHit.left",
+  "b2.t.once.sprintHit.right",
+  "b2.t.add.hit.front",
+  "b2.t.add.hit.back",
+  "b2.t.add.hit.left",
+  "b2.t.add.hit.right",
+  "b2.t.add.hit.crouch"
+ ]
+}
