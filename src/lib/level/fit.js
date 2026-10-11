@@ -5,13 +5,15 @@
 // and the sky have the rest). A reach is in radii, so the small things
 // (snow debris, cables, clutter) go first and the hangar and the ridges
 // last. Where even the nearest reach is over, the lightest meshes (instances
-// × bounding volume over the whole arena) go entirely, one at a time.
+// × bounding volume over the whole arena) go entirely, one at a time; never
+// one marked `keep` (a floor you stand on: a mesh not drawn has no collision,
+// so dropping it drops you through it), even if the row is left over.
 //
 //   costAt(inst, meshes, [x, z], tier, K, skip) → { tris, calls }
 //   fitCull(inst, meshes, row, tier, { positions, share = 0.9, kMin = 4, kMax = 1000 }) → { K, dropped, worst }
 //
 // inst: { x, z, r, mesh, mirrored } typed arrays; meshes[m]: { lods (each
-// LOD's triangles), mats, weight }. A call is one mesh, LOD and side drawn
+// LOD's triangles), mats, weight, keep? }. A call is one mesh, LOD and side drawn
 // (the scene's InstancedMesh), times its materials.
 
 import { lodAt, seenAt } from './lod.js';
@@ -64,7 +66,7 @@ export function fitCull(inst, meshes, row, tier, { positions, share = 0.9, kMin 
       const who = new Set();
       costAt(inst, meshes, w.at, tier, K, skip, who);
       let pick = -1;
-      for (const m of who) if (pick < 0 || meshes[m].weight < meshes[pick].weight || (meshes[m].weight === meshes[pick].weight && m < pick)) pick = m;
+      for (const m of who) if (!meshes[m].keep && (pick < 0 || meshes[m].weight < meshes[pick].weight || (meshes[m].weight === meshes[pick].weight && m < pick))) pick = m;
       if (pick < 0) break;
       skip.add(pick);
     }
