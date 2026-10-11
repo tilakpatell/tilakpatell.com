@@ -1,18 +1,22 @@
 # tatooine/jabba-inside: the game's level
 
-From `s2_2/levels/jabbaspalace_01` (Star Wars Battlefront II, 2017, EA DICE; used with permission on this non-commercial fan project). Written by `node scripts/bf2017-level.mjs s2_2/levels/jabbaspalace_01 --world tatooine --district jabba-inside --inside --spot -22.9 20.8`; do not edit by hand.
+From `s2_2/levels/jabbaspalace_01` (Star Wars Battlefront II, 2017, EA DICE; used with permission on this non-commercial fan project). Written by `node scripts/bf2017-level.mjs s2_2/levels/jabbaspalace_01 --world tatooine --district jabba-inside --inside --spot -22.9 20.8 --ultra`; do not edit by hand.
 
-- 473 instances in the arena (±1024 m), 0 beyond it (the horizon), 11206 left out above the ground (the world outside: its own pack), 5 cells of 128 m
-- 429 meshes (0 left out), 291 LOD files, 3.65 MB
+- 473 instances in the arena (±1024 m), 0 beyond it (the horizon), 11205 left out above the ground (the world outside: its own pack), 5 cells of 128 m
+- proxies by their shaders, never drawn (materials.jsonl: SS_Shadowmesh casts shadows only, SS_VirtualTextureOnly paints the terrain's virtual texture only): palace_01_shadowmesh (shadow proxy)
+- never drawn as themselves (the NEVER rule: lighting proxies, light blockers, occluders, invisible collision, shadow-only meshes, destruction stages): mesh_light_cone_00 ×20, mesh_enlightenproxy_02 ×7, palace_01_shadowmesh ×1
+- 429 meshes (1 left out), 296 LOD files, 4.44 MB
 - the far list 0.01 MB; terrain near 1.10 MB, far 0.09 MB; the spot's ground 524.97 m in the game
 - textures missing from the bucket: 0
+- ultra's maps held to 256.00 MB (lod.js's TEX_MB): 51.69 MB as the table gives them, 0 stepped down a size or more toward high's, normal and ORM first
 
-| | low | mid | high |
-|---|---|---|---|
-| drawn out to (radii: a 1 m thing, a 20 m one) | 1000 (1000 m, 20000 m) | 1000 (1000 m, 20000 m) | 1000 (1000 m, 20000 m) |
-| meshes dropped (instances) | 0 (0) | 0 (0) | 0 (0) |
-| worst place: triangles, calls | 130k, 116 | 143k, 117 | 170k, 117 |
-| texture bytes (every map the level has) | 3.32 MB | 8.63 MB | 8.63 MB |
+| | low | mid | high | ultra |
+|---|---|---|---|---|
+| drawn out to (radii: a 1 m thing, a 20 m one) | 1000 (1000 m, 20000 m) | 1000 (1000 m, 20000 m) | 1000 (1000 m, 20000 m) | 1000 (1000 m, 20000 m) |
+| meshes dropped (instances) | 0 (0) | 0 (0) | 0 (0) | 0 (0) |
+| worst place: triangles, calls | 130k, 116 | 143k, 117 | 170k, 117 | 264k, 120 |
+| texture bytes (every map the level has) | 3.32 MB | 8.63 MB | 8.63 MB | 49.30 MB |
+| mesh bytes a tier can draw (its LODs, its meshes) | 2.49 MB | 3.14 MB | 3.65 MB | 4.44 MB |
 
 ## The map's other parts
 
@@ -23,10 +27,10 @@ Written beside level.json by `scripts/bf2017-level-parts.mjs` (lane E0); a part 
 | lights.json | 648 | 76.3 KB | lane R's placed.js |
 | actors.json | 0 | 0.2 KB | the scene's life rows |
 | vehicles.json | 0 | 0.0 KB | the scene's rides and things |
-| decals.json | 0 | 0.1 KB | lane Q4's src/lib/three/decals/ |
-| effects.json | 411 | 60.1 KB | fidelity X (nothing until it merges) |
+| decals.json and tex/decals/ | 0 | 0.1 KB | lane Q4's src/lib/three/decals/ |
+| effects.json | 411 | 47.2 KB | fidelity X's effects |
 | tracks.json | 0 | 1.2 KB | src/lib/three/animTracks.js |
-| probes.json and probes/ | 65 | 6274.0 KB | levelProbes.js, lane R's grid |
+| probes.json and probes/ | 65 (and 65 at 128² with the sun, for ultra) | 31255.7 KB | levelProbes.js, lane R's grid |
 | shadow/far.png | 1 | 339.5 KB | fidelity S (level.json's shadowCache) |
 | scatter.json | 1 | 33.7 KB | fidelity N |
 

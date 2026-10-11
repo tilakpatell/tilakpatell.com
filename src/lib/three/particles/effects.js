@@ -3,7 +3,12 @@
 // of a kind however many instances run (fidelity lane X).
 //
 // createEffects(scene, renderer, { tier, defs, load, sheets, light, shadow }) → {
-//   spawn(name, at, quat, scale, { autoStart, parent }) → handle,
+//   spawn(name, at, quat, scale, { autoStart, parent, burst, light }) → handle,
+//   lights() → [{ kind: 'point', pos, color, candela, range }] (the running
+//     lit instances', oldest first: placed.js's update(camera, extra)),
+//   setDepth({ depth, depthAt, texel } | null) (last frame's depth, for the
+//     emitters that collide: collide.js; `depth` a DepthTexture on WebGPU,
+//     `depthAt(u, v)` on the CPU path; none, no collision),
 //   place(json) → { enter(cellKey), leave(cellKey), dispose }   (a level's effects.json)
 //   update(dt, camera, wind), stats, ready(name) → Promise, dispose }
 //
@@ -29,6 +34,15 @@
 // - `autoStart: false` waits for `handle.start()` (lane 5's events); an
 //   explicit spawn starts at once. A one-shot (no looping emitter) ends by
 //   itself once its last particle could have died.
+// - `light`: { color, candela, range }: the instance glows while it runs
+//   (a spark's, an explosion's), a one-shot's fading over its life; lights()
+//   hands them to placed.js, which puts them after the level's own lamps in
+//   ClusteredLighting's list and drops the newest past its cap (the GPU-first
+//   design's N5).
+// - `burst`: the instance's bursts times this (a break's 200 to 2,000
+//   particles from one debris record: debris.js).
+// - An emitter with `collide: true` lands on last frame's depth (collide.js)
+//   where setDepth gave one, with the camera that drew it.
 // - `parent`: the instance rides an Object3D (`at`, `quat` in its frame):
 //   exhaust and contrails on a ship; the emitters' FollowSpawnSource and
 //   FollowSpawnSourceVelocity say whether the particles go with it.
@@ -82,6 +96,13 @@ export function chooseRunning(list, count, { cull = Infinity, maxActive = Infini
   return m;
 }
 
+// a × b, column-major 4×4 (three's `elements`), into out
+function mul4(a, b, out) {
+  for (let c = 0; c < 4; c++)
+    for (let r = 0; r < 4; r++) out[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+  return out;
+}
+
 export function variantFor(def, tier = 'high') {
   return def.variants?.[TIER_KEY[tier] ?? 'high'] ?? { emitters: def.emitters.map((_, i) => i), scale: 1 };
 }
@@ -100,7 +121,7 @@ export function oneShotLength(def) {
 
 export function createEffects(scene, renderer, { tier = 'high', defs = {}, load = null, sheets = null, light = null, shadow = null, loadTexture = null } = {}) {
   const kinds = new Map();
-  const stats = { kinds: 0, instances: 0, running: 0, beyond: 0, culled: 0, drawn: 0, dispatches: 0, declined: 0, unknown: 0 };
+  const stats = { kinds: 0, instances: 0, running: 0, beyond: 0, culled: 0, drawn: 0, dispatches: 0, spawned: 0, declined: 0, unknown: 0 };
   let shared = null;
   const sharedReady = createShared().then((s) => {
     shared = s;
@@ -108,8 +129,14 @@ export function createEffects(scene, renderer, { tier = 'high', defs = {}, load 
     return s;
   });
   const camPrev = { x: 0, y: 0, z: 0, set: false };
+  // last frame's depth (setDepth) and the camera that drew it, kept a frame
+  // (the depth the colliding emitters read is the frame before this one's)
+  let depthSrc = null;
+  const drew = { viewProj: new Array(16).fill(0), invViewProj: new Array(16).fill(0), camera: [0, 0, 0], set: false };
+  let view = null;
   let disposed = false;
   let serial = 0;
+  let born = 0; // (spawn order, for the lights' oldest first)
 
   async function sheetFor(em) {
     if (!em.texture) return null;
@@ -157,7 +184,7 @@ export function createEffects(scene, renderer, { tier = 'high', defs = {}, load 
         continue;
       }
       const n = poolSize(em, def, variant);
-      const sim = await createSim(em, n, { renderer, seed: (serial++ * 2654435761) >>> 0 });
+      const sim = await createSim(em, n, { renderer, seed: (serial++ * 2654435761) >>> 0, collide: !!em.collide });
       const mesh = await createSpriteMesh(em, sim, { shared, map: await sheetFor(em) });
       mesh.visible = false;
       scene.add(mesh);
@@ -208,13 +235,16 @@ export function createEffects(scene, renderer, { tier = 'high', defs = {}, load 
     return k;
   }
 
-  function spawn(name, at = [0, 0, 0], quat = [0, 0, 0, 1], scale = 1, { autoStart = true, parent = null } = {}) {
+  function spawn(name, at = [0, 0, 0], quat = [0, 0, 0, 1], scale = 1, { autoStart = true, parent = null, burst = 1, light = null } = {}) {
     const k = kindOf(name);
     const prob = k.kind?.def.probability ?? defs[name]?.probability ?? 1;
     const inst = {
       at: [...at],
       quat: [...quat],
       scale,
+      burst: Number.isFinite(burst) && burst >= 0 ? burst : 1,
+      light: light && light.candela > 0 ? light : null,
+      born: born++,
       parent,
       running: autoStart,
       dead: false,
@@ -417,9 +447,9 @@ export function createEffects(scene, renderer, { tier = 'high', defs = {}, load 
         else if (st.t < 0) {
           st.t += dt;
           kind.batches[c].count = 0;
-        } else kind.batches[c].count = spawnCount(st, em, dt, { scale: kind.variant.scale ?? 1, factor: spawnFactor(inst.d, em) });
+        } else kind.batches[c].count = spawnCount(st, em, dt, { scale: (kind.variant.scale ?? 1) * inst.burst, factor: spawnFactor(inst.d, em) });
       }
-      sim.step(dt, { batches: kind.batches, batchCount: nb, owners: kind.owners, wind });
+      stats.spawned += sim.step(dt, { batches: kind.batches, batchCount: nb, owners: kind.owners, wind, collide: em.collide ? view : null });
       stats.dispatches += sim.mode === 'gpu' ? 1 : 0;
       mesh.visible = true;
       stats.drawn++;
@@ -468,6 +498,7 @@ export function createEffects(scene, renderer, { tier = 'high', defs = {}, load 
       stats.culled = 0;
       stats.drawn = 0;
       stats.dispatches = 0;
+      stats.spawned = 0;
       const cp = camera.position;
       if (shared) {
         if (camPrev.set && dt > 0) shared.camVel.value.set((cp.x - camPrev.x) / dt, (cp.y - camPrev.y) / dt, (cp.z - camPrev.z) / dt);
@@ -477,11 +508,42 @@ export function createEffects(scene, renderer, { tier = 'high', defs = {}, load 
       camPrev.y = cp.y;
       camPrev.z = cp.z;
       camPrev.set = true;
+      view = depthSrc && drew.set ? { ...depthSrc, viewProj: drew.viewProj, invViewProj: drew.invViewProj, camera: drew.camera } : null;
       for (const k of kinds.values()) {
         if (!k.kind) continue;
         updateKind(k.kind, dt, camera, wind);
         stats.instances += k.kind.instances.length;
       }
+      // this frame's camera, for next frame's read of the depth it draws now
+      if (depthSrc && camera.projectionMatrix && camera.updateMatrixWorld) {
+        camera.updateMatrixWorld();
+        camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+        mul4(camera.projectionMatrix.elements, camera.matrixWorldInverse.elements, drew.viewProj);
+        mul4(camera.matrixWorld.elements, camera.projectionMatrixInverse.elements, drew.invViewProj);
+        drew.camera[0] = cp.x;
+        drew.camera[1] = cp.y;
+        drew.camera[2] = cp.z;
+        drew.set = true;
+      }
+    },
+    lights() {
+      const out = [];
+      for (const k of kinds.values()) {
+        const kind = k.kind;
+        if (!kind) continue;
+        for (const inst of kind.chosen) {
+          if (!inst.light || inst.dead) continue;
+          const fade = Number.isFinite(kind.life) ? Math.max(0, 1 - inst.t / kind.life) : 1;
+          if (fade <= 0) continue;
+          const l = inst.light;
+          out.push({ kind: 'point', pos: [inst.x, inst.y, inst.z], color: l.color ?? [1, 1, 1], candela: l.candela * fade, range: l.range ?? 5, born: inst.born });
+        }
+      }
+      return out.sort((a, b) => a.born - b.born);
+    },
+    setDepth(src) {
+      depthSrc = src?.depth || src?.depthAt ? { depth: src.depth ?? null, depthAt: src.depthAt ?? null, texel: src.texel ?? [1 / (src.depth?.image?.width || 1), 1 / (src.depth?.image?.height || 1)] } : null;
+      if (!depthSrc) drew.set = false;
     },
     dispose() {
       disposed = true;

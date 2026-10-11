@@ -30,6 +30,11 @@ export default defineConfig({
   // from under it, 2026-10-10)
   optimizeDeps: { entries: ['index.html'], include: ['react-icons/lib'] },
   base: '/',
+  // workers as ES modules, so one that loads a module dynamically shares its
+  // chunk with the page (the physics worker's Rapier: as an iife, both
+  // builds were inlined into one 9 MB worker); every worker is made with
+  // { type: 'module' }
+  worker: { format: 'es' },
   // the skills and the other branches' worktrees under .claude, and the
   // scratch checkouts under lab/, bring their own tests; the AI tiers are
   // `npm run test:ai` (vitest.ai.config.js), slower than this run promises

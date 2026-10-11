@@ -9,8 +9,8 @@
 //   shape is a stroke
 // shapeSvg(shape, { colour, size }) → the SVG as a string, in the game's
 //   colours unless `colour` is given
-// composeShapes(parts, viewBox), blasterCrosshair(): shapes put together
-//   (a path's `transform` places it)
+// composeShapes(parts, viewBox), blasterCrosshair(), hitMarker(), killMarker():
+//   shapes put together (a path's `transform` places it)
 // SHAPES: the names there are
 
 import BOOK from '../../../data/bf2017/shapes.json';
@@ -80,5 +80,39 @@ export const blasterCrosshair = () =>
       { name: 'Crosshairs_Notch', at: [-13, -6], turn: -90 },
       { name: 'Crosshairs_Notch', at: [10, -6], turn: 90 },
     ],
+    '-20 -20 40 40',
+  );
+
+// The hit marker as the HUD's crosshair widget draws it from the game's
+// parts: four tapered ticks (Crosshairs_MarkerHit_Horizontal, its point at
+// +x) on the diagonals round the middle, each pointing out; and the kill
+// marker, four longer bars (Crosshairs_MarkerKill, its point at +y) the
+// same way. Each part is placed by its middle, 9 and 10 units out (the
+// widget's own distances are set at run time: source hand). The shapes'
+// white is the ink the caller gives them (runtime/hud's Reticle maps it to
+// currentColor); the game's HUD draws a hit white and a kill in its warning
+// colour.
+const BAR = { w: 10, h: 3 }; // Crosshairs_MarkerHit_Horizontal's rect
+const KILL = { w: 4, h: 12 }; // Crosshairs_MarkerKill's rect
+const diagonal = (name, size, r, turns) =>
+  turns.map(([sx, sy, turn]) => ({ name, at: [sx * r - size.w / 2, sy * r - size.h / 2], turn }));
+export const hitMarker = () =>
+  composeShapes(
+    diagonal('Crosshairs_MarkerHit_Horizontal', BAR, 9 * Math.SQRT1_2, [
+      [1, -1, -45],
+      [-1, -1, -135],
+      [1, 1, 45],
+      [-1, 1, 135],
+    ]),
+    '-20 -20 40 40',
+  );
+export const killMarker = () =>
+  composeShapes(
+    diagonal('Crosshairs_MarkerKill', KILL, 10 * Math.SQRT1_2, [
+      [1, 1, -45],
+      [-1, 1, 45],
+      [1, -1, -135],
+      [-1, -1, 135],
+    ]),
     '-20 -20 40 40',
   );

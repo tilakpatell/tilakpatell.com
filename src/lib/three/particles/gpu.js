@@ -12,22 +12,32 @@
 // same integers curves.js hashes (PCG in u32), so a seeded spawn lands the
 // same on both. gpu.test.js steps both 120 frames and reads the buffers back.
 //
-// createSim(em, n, { renderer, seed, mode }) → Promise<{
+// Depth collision (collide.js, the GPU-first design's N5): a sim made with
+// `collide: true` has the term in its update kernel (collideNode below,
+// collide.js's collideParticle line for line), on while a step is given
+// `collide` (last frame's depth and the camera that drew it) and off when
+// not; on the CPU path the step hands the same options to emitter.js's.
+//
+// createSim(em, n, { renderer, seed, mode, collide }) → Promise<{
 //   mode: 'gpu' | 'cpu', n, pool (the CPU twin's counters; its buffers on 'cpu'),
 //   nodes: { posAge, velLife, extra } (per-instance vec4 nodes for sprites.js),
-//   step(dt, { batches, batchCount, owners, wind }) → spawned,
+//   step(dt, { batches, batchCount, owners, wind, collide }) → spawned,
+//     (collide: { viewProj, invViewProj, camera, texel, thickness, bounce,
+//     friction } and, on 'gpu', `depth` (a DepthTexture, last frame's), on
+//     'cpu', `depthAt(u, v)`; null: no collision this step)
 //   read() → Promise<{ posAge, velLife, extra }> (Float32Arrays: the GPU's read back),
 //   clear() (every slot dead),
 //   dispose() }>
 // mode: 'gpu' where the renderer is WebGPU, else 'cpu'; forced for the tests
 
+import { COLLIDE, NOTHING } from './collide.js';
 import { evalCurve } from './curves.js';
 import { createPool, MAX_BATCHES, MAX_OWNERS, OWNER, stepPool } from './emitter.js';
 import { loadThree } from '../light/three.js';
 
 export const modeFor = (renderer) => (renderer?.backend?.isWebGLBackend || !renderer?.isWebGPURenderer ? 'cpu' : 'gpu');
 
-export async function createSim(em, n, { renderer = null, seed = 1, mode = modeFor(renderer) } = {}) {
+export async function createSim(em, n, { renderer = null, seed = 1, mode = modeFor(renderer), collide = false } = {}) {
   const { THREE, tsl } = await loadThree();
   const pool = createPool(em, n, { seed });
   if (mode === 'cpu') {
@@ -55,10 +65,10 @@ export async function createSim(em, n, { renderer = null, seed = 1, mode = modeF
       dispose() {},
     };
   }
-  return gpuSim(THREE, tsl, pool, renderer);
+  return gpuSim(THREE, tsl, pool, renderer, collide);
 }
 
-function gpuSim(THREE, tsl, pool, renderer) {
+function gpuSim(THREE, tsl, pool, renderer, collide) {
   const { Fn, If, Loop, instancedArray, instanceIndex, uniform, uniformArray, uint, float, vec3, vec4, sin, cos, sqrt, max, pow, PI } = tsl;
   const { em, n } = pool;
   const posAge = instancedArray(n, 'vec4');
@@ -160,6 +170,8 @@ function gpuSim(THREE, tsl, pool, renderer) {
     extra.element(i).assign(vec4(size.mul(op.w), g, r(9), float(o)));
   };
 
+  const hit = collide ? collideNode(THREE, tsl) : null;
+
   const update = Fn(() => {
     const i = instanceIndex;
     const j = i.add(uint(n)).sub(u.head).mod(uint(n));
@@ -184,6 +196,7 @@ function gpuSim(THREE, tsl, pool, renderer) {
       if (em.follow?.source) move = move.add(u.owners.element(uint(ex.w).mul(OWNER / 4).add(3)).xyz);
       vl.assign(vec4(v, vl.w));
       pa.assign(vec4(pa.xyz.add(move), pa.w.add(u.dt)));
+      if (hit) hit.node(pa, vl, u.dt);
     });
   })().compute(n);
 
@@ -192,7 +205,8 @@ function gpuSim(THREE, tsl, pool, renderer) {
     n,
     pool,
     nodes: { posAge: posAge.toAttribute(), velLife: velLife.toAttribute(), extra: extra.toAttribute() },
-    step(dt, { batches = [], batchCount = batches.length, owners, wind = null } = {}) {
+    step(dt, { batches = [], batchCount = batches.length, owners, wind = null, collide: view = null } = {}) {
+      if (hit) hit.set(view);
       // the window: the batches' counts laid end to end from the head, as stepPool lays them
       let total = 0;
       const nb = Math.min(batchCount, MAX_BATCHES);
@@ -230,6 +244,112 @@ function gpuSim(THREE, tsl, pool, renderer) {
     dispose() {
       update.dispose?.();
       for (const s of [posAge, velLife, extra]) s.value?.dispose?.();
+    },
+  };
+}
+
+// collide.js's collideParticle as a TSL term of the update kernel, line for
+// line: the particle into last frame's depth, the surface's point and its
+// normal from two neighbouring texels (the other side where one is
+// nothing), a particle within the thickness behind it (plus its move this
+// step) put back on it and its speed into it turned and damped. Depth 1 (nothing drawn) and off the
+// screen are no collision. The depth is read with textureLoad (a compute
+// pass has no derivatives to sample with).
+function collideNode(THREE, tsl) {
+  const { If, float, vec2, vec3, vec4, ivec2, floor, clamp, textureLoad, texture, uniform, cross, dot, normalize, length } = tsl;
+  const blank = new THREE.DepthTexture(1, 1);
+  const depth = texture(blank);
+  const u = {
+    on: uniform(0),
+    vp: uniform(new THREE.Matrix4()),
+    inv: uniform(new THREE.Matrix4()),
+    cam: uniform(new THREE.Vector3()),
+    texel: uniform(new THREE.Vector2(1, 1)),
+    size: uniform(new THREE.Vector2(1, 1)),
+    thickness: uniform(COLLIDE.thickness),
+    bounce: uniform(COLLIDE.bounce),
+    friction: uniform(COLLIDE.friction),
+  };
+  const inside = (q) => q.x.greaterThanEqual(0).and(q.x.lessThan(1)).and(q.y.greaterThanEqual(0)).and(q.y.lessThan(1));
+  // depthSampler: the nearest texel, NOTHING off the buffer
+  const load = (q) => {
+    const z = float(NOTHING).toVar();
+    If(inside(q), () => {
+      z.assign(textureLoad(depth, ivec2(clamp(floor(q.mul(u.size)), vec2(0), u.size.sub(1)))));
+    });
+    return z;
+  };
+  const unproject = (q, z) => {
+    const c = u.inv.mul(vec4(q.x.mul(2).sub(1), float(0.5).sub(q.y).mul(2), z, 1));
+    return c.xyz.div(c.w);
+  };
+  // a neighbour one texel along `d`, or the other side's; its sign, 0 for neither
+  const neighbour = (q, d) => {
+    const side = float(0).toVar();
+    const at = vec3(0).toVar();
+    const za = load(q.add(d));
+    If(za.lessThan(NOTHING), () => {
+      side.assign(1);
+      at.assign(unproject(q.add(d), za));
+    }).Else(() => {
+      const zb = load(q.sub(d));
+      If(zb.lessThan(NOTHING), () => {
+        side.assign(-1);
+        at.assign(unproject(q.sub(d), zb));
+      });
+    });
+    return { side, at };
+  };
+  return {
+    set(view) {
+      if (!view || !view.depth) {
+        u.on.value = 0;
+        return;
+      }
+      u.on.value = 1;
+      depth.value = view.depth;
+      u.vp.value.fromArray(view.viewProj);
+      u.inv.value.fromArray(view.invViewProj);
+      u.cam.value.fromArray(view.camera);
+      u.size.value.set(view.depth.image?.width ?? 1, view.depth.image?.height ?? 1);
+      u.texel.value.set(1 / u.size.value.x, 1 / u.size.value.y);
+      u.thickness.value = view.thickness ?? COLLIDE.thickness;
+      u.bounce.value = view.bounce ?? COLLIDE.bounce;
+      u.friction.value = view.friction ?? COLLIDE.friction;
+    },
+    node(pa, vl, dt) {
+      If(u.on.greaterThan(0.5), () => {
+        const clip = u.vp.mul(vec4(pa.xyz, 1));
+        If(clip.w.greaterThan(0), () => {
+          const q = vec2(clip.x.div(clip.w).mul(0.5).add(0.5), float(0.5).sub(clip.y.div(clip.w).mul(0.5))).toVar();
+          const z = load(q);
+          If(z.lessThan(NOTHING), () => {
+            const s = unproject(q, z).toVar();
+            const a = neighbour(q, vec2(u.texel.x, 0));
+            const b = neighbour(q, vec2(0, u.texel.y));
+            If(a.side.notEqual(0).and(b.side.notEqual(0)), () => {
+              const n = cross(a.at.sub(s).mul(a.side), b.at.sub(s).mul(b.side)).toVar();
+              If(length(n).greaterThan(1e-12), () => {
+                n.assign(normalize(n));
+                If(dot(u.cam.sub(s), n).lessThan(0), () => {
+                  n.assign(n.negate());
+                });
+                const d = dot(pa.xyz.sub(s), n).toVar();
+                const deep = u.thickness.add(length(vl.xyz).mul(dt));
+                If(d.lessThan(0).and(d.greaterThan(deep.negate())), () => {
+                  pa.assign(vec4(pa.xyz.sub(n.mul(d)), pa.w));
+                  const v = vl.xyz.toVar();
+                  const vn = dot(v, n).toVar();
+                  If(vn.lessThan(0), () => {
+                    const along = v.sub(n.mul(vn)).mul(u.friction.oneMinus());
+                    vl.assign(vec4(along.add(n.mul(vn.negate().mul(u.bounce))), vl.w));
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
     },
   };
 }

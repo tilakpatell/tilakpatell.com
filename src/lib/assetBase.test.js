@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { assetUrl, forgetDown, isDown, markDown, withFallback } from './assetBase';
+import { SLOW_RATE, WAIT_MS, assetUrl, forgetDown, isDown, markDown, waitFor, withFallback } from './assetBase';
 
 const BASE = 'https://x.supabase.co/storage/v1/object/public/assets';
 const manifest = { 'kit/crate.glb': { hash: 'aaaaaaaaaaaa', bytes: 70000 }, 'hq/tex/rock.jpg': { hash: 'bbbbbbbbbbbb', bytes: 90000 } };
@@ -101,3 +101,15 @@ describe('the asset base', () => {
     expect(isDown()).toBe(false);
   });
 });
+
+// (lane S1: the Star Destroyer's 21.6 MB ultra cut asked first took longer
+// than 12 s in a cloud container, and a healthy bucket was marked down)
+describe('the wait for the bucket’s first answer', () => {
+  it('is 12 s for a small file, and a slow link’s time for a big one', () => {
+    expect(waitFor(null)).toBe(WAIT_MS);
+    expect(waitFor(1e6)).toBe(WAIT_MS);
+    expect(SLOW_RATE).toBe(0.5e6);
+    expect(waitFor(21.6e6)).toBeCloseTo(43200, 0);
+  });
+});
+

@@ -19,7 +19,7 @@
 // assetPool() → the pool (its progress() for a check); useAssetPool(p) for a test
 
 import MANIFEST from '../data/assets-manifest.json';
-import { withFallback } from './assetBase';
+import { waitFor, withFallback } from './assetBase';
 import { device } from './device';
 import { createAssetFetch, poolSize } from './net/assetFetch';
 
@@ -78,7 +78,8 @@ export function loadBytes(path, { priority = priorityNow, signal = current?.sign
   const scope = current;
   const bytes = typeof path === 'string' ? (MANIFEST[path.replace(/^\/+/, '')]?.bytes ?? null) : null;
   if (scope && bytes) scope.total += bytes;
-  return withFallback((u) => assetPool().fetch(u, { priority, signal, bytes }))(path).then((buf) => {
+  // (the bucket given as long as the file's size asks before it counts as down: assetBase's waitFor)
+  return withFallback((u) => assetPool().fetch(u, { priority, signal, bytes }), { wait: waitFor(bytes) })(path).then((buf) => {
     if (scope) {
       scope.bytes += buf.byteLength;
       scope.files++;
