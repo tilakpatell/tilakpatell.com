@@ -174,3 +174,25 @@ describe('a model a world parses itself', () => {
     }
   });
 });
+
+// (lane S1: a page answered in a model's place, the dev server's for a file a
+// checkout lacks, threw inside the parse's promise callback, out of reach of
+// load()'s try, and reached the page as an unhandled rejection)
+describe('a file that is not a model', () => {
+  it('fails the load through its error path, not as an unhandled rejection', async () => {
+    const { gltfLoader } = await import('./gltf');
+    const page = new TextEncoder().encode('<!doctype html><html></html>').buffer;
+    const unhandled = vi.fn();
+    globalThis.process.on('unhandledRejection', unhandled);
+    try {
+      const err = await new Promise((resolve) => gltfLoader().parse(page, '', () => resolve(null), resolve));
+      expect(err).toBeInstanceOf(Error);
+      expect(String(err)).toMatch(/JSON|Unexpected/);
+      await new Promise((r) => setTimeout(r, 10));
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      globalThis.process.off('unhandledRejection', unhandled);
+    }
+  });
+});
+
