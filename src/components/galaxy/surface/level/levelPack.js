@@ -40,6 +40,13 @@ export function withoutProxies(pack) {
   return { ...pack, cull };
 }
 
+// What a pack stands of the map's creatures and vehicles (actors.json,
+// vehicles.json): all of them on a world's own map; none in an interior
+// (`inside`: its parts are the whole map's, the battle out under the sky,
+// and carry no height to tell the halls' own from it: Endor_01's bunker
+// would have stood the AT-AT station's walker and its Ewoks in its halls)
+export const placedOf = (pack, a, v) => (pack?.inside ? { life: [], rides: [], things: [] } : { life: a.life ?? [], rides: v.rides ?? [], things: v.things ?? [] });
+
 // A key's band in a `wanted` answer: 'near', 'mid', or null (not wanted)
 export const bandOf = (w, key) => (w.near.includes(key) ? 'near' : w.mid.includes(key) ? 'mid' : null);
 

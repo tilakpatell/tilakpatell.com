@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { writeInstances } from '../../../../lib/level/instances';
 import { assetUrl } from '../../../../lib/assetBase';
-import { bandOf, cutFor, packUrl, readInstances, splitTextures, tierTexture, wanted, withoutProxies } from './levelPack';
+import { bandOf, cutFor, packUrl, readInstances, splitTextures, tierTexture, placedOf, wanted, withoutProxies } from './levelPack';
 
 const S = Math.SQRT1_2;
 
@@ -112,5 +112,16 @@ describe('withoutProxies: what the game places and never draws as itself', () =>
   it('leaves a pack with none as it is', () => {
     const plain = { meshes: [{ name: 'a_mesh.glb' }], cull: { high: { K: 40, dropped: [] } } };
     expect(withoutProxies(plain)).toBe(plain);
+  });
+});
+
+describe('placedOf: the map’s creatures and vehicles a pack stands', () => {
+  const a = { life: [{ kind: 'ewok', at: [331, -198] }] };
+  const v = { rides: [{ kind: 'speederbike', at: [0, 0] }], things: [{ kind: 'atat', at: [231, 0] }] };
+  it('stands them on a world’s own map', () => {
+    expect(placedOf({}, a, v)).toEqual({ life: a.life, rides: v.rides, things: v.things });
+  });
+  it('stands none in an interior: they are the battle outside, under whose ground it is (Endor_01’s bunker’s AT-AT and Ewoks)', () => {
+    expect(placedOf({ inside: true }, a, v)).toEqual({ life: [], rides: [], things: [] });
   });
 });

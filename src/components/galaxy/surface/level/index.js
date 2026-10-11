@@ -35,7 +35,7 @@ import { withFallback } from '../../../../lib/assetBase.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
-import { packUrl, wanted, withoutProxies } from './levelPack.js';
+import { packUrl, placedOf, wanted, withoutProxies } from './levelPack.js';
 import { variationsIndex } from './levelVariations.js';
 import { createLevelScene } from './levelScene.js';
 import { createLevelStream } from './levelStream.js';
@@ -102,8 +102,8 @@ export function partOf(world, file, empty) {
 // Nothing for a site without a level.
 export async function levelPlaced(site) {
   if (!site?.level) return { life: [], rides: [], things: [] };
-  const [a, v] = await Promise.all([partOf(site.level, 'actors.json', { life: [] }), partOf(site.level, 'vehicles.json', { rides: [], things: [] })]);
-  return { life: a.life ?? [], rides: v.rides ?? [], things: v.things ?? [] };
+  const [pack, a, v] = await Promise.all([packOf(site.level).catch(() => null), partOf(site.level, 'actors.json', { life: [] }), partOf(site.level, 'vehicles.json', { rides: [], things: [] })]);
+  return placedOf(pack, a, v);
 }
 
 // The pack's cells the game's level fills (BUSY pieces or more in a 128 m
