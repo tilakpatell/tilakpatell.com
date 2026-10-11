@@ -56,7 +56,7 @@ import { parseArgs } from './lib/args.mjs';
 import { writeCredit } from './lib/catalog-write.mjs';
 import { isSequel } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs';
-import { buildPack, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
+import { buildPack, neverOf, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
 import { LOD, TEX_MB, capIndex, fitMaps, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { encodePng16 } from './lib/png16.mjs';
@@ -538,6 +538,7 @@ async function main(args) {
     '',
     `- ${pack.counts.arena} instances in the arena (±${arena} m), ${pack.counts.horizon} beyond it (the horizon), ${record ? `${pack.counts.buried} ${inside ? 'left out above the ground (the world outside: its own pack)' : 'left out under the ground (an interior: its own pack, `--inside`)'}` : 'no terrain: no ground layer, the instances alone'}, ${pack.counts.cells} cells of ${pack.json.cell} m`,
     ...(drop.length ? [`- left out: ${drop.join(', ')}`] : []),
+    `- never drawn as themselves (the NEVER rule: lighting proxies, light blockers, occluders, invisible collision, shadow-only meshes, destruction stages): ${neverOf(map, { subs }).map((n) => `${n.name} ×${n.count}`).join(', ') || 'none'}`,
     ...(Object.keys(share).length ? [`- fitted to a share of the tiers' rows: ${Object.entries(share).map(([t, k]) => `${t} ${k}`).join(', ')}`] : []),
     `- ${meshes.length} meshes (${absent.length} left out), ${glbs.length} LOD files, ${mb(glbBytes)}`,
     `- the far list ${mb(farBytes)}; terrain ${terrain ? `near ${mb(terrain.bytes.near)}, far ${mb(terrain.bytes.far)}` : 'none'}; the spot's ground ${groundY.toFixed(2)} m in the game`,

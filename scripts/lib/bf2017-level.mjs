@@ -69,7 +69,24 @@ export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunn
 // (despawn and leftover pieces), the planes that fake shadow, mist and
 // light; and the skinned actors but the still ones (STILL_SKINNED), whose
 // living the site's own people do
-export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|invalidatelightplane|mistplane|lightcone/i;
+// light, the light blockers and occluders that only stop light or sight,
+// and the invisible collision and shadow-only meshes (lane E1 found Yavin's
+// and Hoth's hothinterior_lightblocker_01 drawn solid)
+export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destruction_|shadowplane|shadowmesh|invalidatelightplane|mistplane|lightcone|lightblocker|occluder|invisiblecollision/i;
+
+// What NEVER keeps out of a map's arena, by mesh: [{ name, count }], the
+// most first (each pack's README lists them)
+export function neverOf(map, { subs = null } = {}) {
+  const want = new Set((subs ?? mainSubs(map)).map(last));
+  const out = new Map();
+  for (const g of map.groups) {
+    const file = map.meshes[g.mesh]?.file ?? '';
+    if (!want.has(last(map.subworlds[g.sub])) || !NEVER.test(file)) continue;
+    const name = last(file).replace(/_mesh\.glb$/, '');
+    out.set(name, (out.get(name) ?? 0) + g.count);
+  }
+  return [...out].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || (a.name < b.name ? -1 : 1));
+}
 
 // `drop`: meshes left out, each `<mesh name>` or `<sub>:<mesh name>` (its
 // file's last part without `_mesh.glb`, any case; `*` for any run of

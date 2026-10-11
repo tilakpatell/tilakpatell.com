@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
-import { STILL_SKINNED, arenaOf, buildPack, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
+import { NEVER, STILL_SKINNED, arenaOf, buildPack, neverOf, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
@@ -54,6 +54,22 @@ describe('arenaOf', () => {
     };
     expect(STILL_SKINNED.test(map.meshes[0].file)).toBe(true);
     expect(arenaOf(map)).toEqual([0, 1, 3]);
+  });
+
+  it('never draws the light blockers, occluders, invisible collision and shadow meshes, and lists them', () => {
+    for (const f of ['levels/mp/hoth_01/hothinterior_lightblocker_01_mesh.glb', 'levels/space/sb_kamino_01/o_sb_kam_dome_l_occludermesh_01_mesh.glb', 'objects/x/invisiblecollision_wall_01_mesh.glb', 'levels/mp/endor_01/endor_01_section04_bunker_shadowmesh_01_mesh.glb']) expect(NEVER.test(f)).toBe(true);
+    expect(NEVER.test('objects/props/crate_01_mesh.glb')).toBe(false);
+    const map = {
+      name: 'levels/mp/hoth_01/hoth_01',
+      subworlds: ['Levels/MP/Hoth_01/Hoth_01'],
+      meshes: [{ file: 'levels/mp/hoth_01/hothinterior_lightblocker_01_mesh.glb' }, { file: 'objects/props/crate_01_mesh.glb' }],
+      groups: [
+        { mesh: 0, sub: 0, kind: 'static', first: 0, count: 3 },
+        { mesh: 1, sub: 0, kind: 'static', first: 3, count: 2 },
+      ],
+    };
+    expect(arenaOf(map)).toEqual([3, 4]);
+    expect(neverOf(map)).toEqual([{ name: 'hothinterior_lightblocker_01', count: 3 }]);
   });
 
   it('takes the subs it is given, by their last name, any case', () => {
