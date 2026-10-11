@@ -462,9 +462,6 @@ export async function create(canvas, ctx) {
     tier: level,
     renderer,
     walk: world,
-    camera,
-    light: gameLight,
-    onProbe: gameLit ? (p) => gameLit.outdoorProbe(p) : null,
     small: device().phone,
     heightAt: (x, z) => world.heightAt(x, z),
     // (kept till the body below exists: the engine can come during an await before it)
@@ -472,6 +469,10 @@ export async function create(canvas, ctx) {
       levelEngine = physics;
       takeEngine?.(physics);
     },
+    // (the map's placed lights rank by the camera; its probes go to the game light)
+    camera,
+    light: gameLight,
+    onProbe: gameLit ? (p) => gameLit.outdoorProbe(p) : null,
   });
   // its terrain's scatter, from the game's tables, in the world's wind (fidelity lane N; null without one)
   const gameScatter = createLevelScatter({ scene, site, tier: level, renderer, groundAt: (x, z) => groundAt(world, x, z), wind, small });

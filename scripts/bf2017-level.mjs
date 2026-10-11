@@ -6,7 +6,7 @@
 // those two; .gitignore's block hides the rest). The work is in scripts/lib/bf2017-level.mjs (pure,
 // tested); this fetches, reads and writes.
 //
-//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share low=0.5 | 0.5] [--arena 1024] [--yaw 0] [--ultra] [--parts] [--dry]
+//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--share 1 | low=0.5,…] [--arena 1024] [--yaw 0] [--ultra] [--parts] [--dry]
 //
 //   map     the map's folder under web/maps/ (levels/mp/hoth_01)
 //   world   the site's world (hoth): the pack's folder and its credit
@@ -15,9 +15,6 @@
 //           records (fetched from data/), scripts/lib/bf2017-level-spots.mjs
 //   district  the pack is levels/<world>/<district>/ (a second map of one
 //           world, or an interior); the default `main` is levels/<world>/
-//   share   a tier's part of its row the level is fitted to, triangles and
-//           calls (low=0.5,mid=0.8; default all of it), where the site's own
-//           things already spend the rest
 //   parts   only the map's other parts beside a pack already built (lights,
 //           actors, vehicles, decals, effects, tracks, probes, the far shadow,
 //           the scatter table: scripts/bf2017-level-parts.mjs)
@@ -31,7 +28,8 @@
 //           of round's room
 //   share   the part of each tier's budget row the pack is fitted to (1): a
 //           space level is drawn on the galaxy's flight page, beside the system
-//           and the battle, so it takes a share
+//           and the battle, so it takes a share; or tier by tier (low=0.5),
+//           where a site's own things already spend the rest (Endor's)
 //   arena   the pack's half-size in metres; instances beyond it are the horizon
 //   ultra   the LOD0 cut and 2048 textures as well
 //   dry     the table only: fetches the map, terrain and manifest, writes nothing
@@ -263,7 +261,7 @@ async function main(args) {
     String(args.share ?? '')
       .split(',')
       .filter(Boolean)
-      .map((kv) => kv.split('='))
+      .map((kv) => (kv.includes('=') ? kv.split('=') : ['all', kv]))
       .map(([t, k]) => [t, Number(k)]),
   );
   for (const [t, k] of Object.entries(share)) if (!(k > 0 && k <= 1)) throw new Error(`--share: ${t}'s part of the row must be over 0 and up to 1`);
@@ -273,6 +271,11 @@ async function main(args) {
   const packId = district === 'main' ? world : `${world}/${district}`;
   const out = join(ROOT, 'public', 'models', 'galaxy', 'bf2017', 'levels', ...packId.split('/'));
   const drop = typeof args.drop === 'string' ? args.drop.split(',') : [];
+  // (each tier's row, its triangles and calls taken in its share: one share
+  // for every tier, `--share 0.5`, or tier by tier, `--share low=0.5`)
+  const shareOf = (t) => share[t] ?? share.all ?? 1;
+  if (Object.values(share).some((k) => !(k > 0 && k <= 1))) throw new Error('--share: a part of the row, over 0 and up to 1');
+  const rowsOf = (rows) => Object.fromEntries(Object.entries(rows).map(([t, r]) => [t, shareOf(t) === 1 ? r : { ...r, tris: r.tris * shareOf(t), calls: Math.floor(r.calls * shareOf(t)) }]));
   if (yaw) throw new Error('--yaw: the heightmaps are not turned yet; keep the level square to the site');
 
   // (the map's file by the bucket's index: a campaign map's is ds02_streamed, not its folder's name)
@@ -300,6 +303,7 @@ async function main(args) {
     const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny', ultra, dry });
     if (dry) return;
     json.shadowCache = parts.shadowCache;
+    json.parts = parts.parts;
     await writeFile(join(out, 'level.json'), `${JSON.stringify(json)}\n`);
     const readme = await readFile(join(out, 'README.md'), 'utf8').catch(() => '');
     const head = readme.split("## The map's other parts")[0].replace(/\n*$/, '\n\n');
@@ -399,9 +403,7 @@ async function main(args) {
       missing: Boolean(missing),
     })),
     arena,
-    // (--share: the part of a tier's row the level may take, where the site's
-    // own things already spend the rest: Endor's low=0.5)
-    rows: Object.fromEntries(Object.entries(ultra ? BUDGET_ROWS : { low: BUDGET_ROWS.low, mid: BUDGET_ROWS.mid, high: BUDGET_ROWS.high }).map(([t, r]) => [t, share[t] ? { ...r, tris: r.tris * share[t], calls: Math.round(r.calls * share[t]) } : r])),
+    rows: rowsOf(ultra ? BUDGET_ROWS : { low: BUDGET_ROWS.low, mid: BUDGET_ROWS.mid, high: BUDGET_ROWS.high }),
     subs,
     drop,
     terrain: terrain?.json ?? null,
@@ -510,7 +512,7 @@ async function main(args) {
     '',
     `- ${pack.counts.arena} instances in the arena (±${arena} m), ${pack.counts.horizon} beyond it (the horizon), ${record ? `${pack.counts.buried} ${inside ? 'left out above the ground (the world outside: its own pack)' : 'left out under the ground (an interior: its own pack, `--inside`)'}` : 'no terrain: no ground layer, the instances alone'}, ${pack.counts.cells} cells of ${pack.json.cell} m`,
     ...(drop.length ? [`- left out: ${drop.join(', ')}`] : []),
-    ...(Object.keys(share).length ? [`- fitted to ${Object.entries(share).map(([t, k]) => `${t}=${k}`).join(', ')} of the tiers' triangles and calls (the site's own things spend the rest)`] : []),
+    ...(Object.keys(share).length ? [`- fitted to a share of the tiers' rows: ${Object.entries(share).map(([t, k]) => `${t} ${k}`).join(', ')}`] : []),
     `- ${meshes.length} meshes (${absent.length} left out), ${glbs.length} LOD files, ${mb(glbBytes)}`,
     `- the far list ${mb(farBytes)}; terrain ${terrain ? `near ${mb(terrain.bytes.near)}, far ${mb(terrain.bytes.far)}` : 'none'}; the spot's ground ${groundY.toFixed(2)} m in the game`,
     `- textures missing from the bucket: ${tex.missing.length}`,
@@ -524,6 +526,7 @@ async function main(args) {
 
   const parts = await writeParts({ env, cache: CACHE, mapName, base, map, json: pack.json, out, subs, mode: args.mode ?? 'FantasyBattle', weather: args.weather ?? 'sunny', ultra });
   pack.json.shadowCache = parts.shadowCache;
+  pack.json.parts = parts.parts;
   lines.push(...parts.lines);
   await mkdir(join(out, 'cells'), { recursive: true });
   for (const [path, bin] of pack.files) await writeFile(join(out, path), Buffer.from(bin));

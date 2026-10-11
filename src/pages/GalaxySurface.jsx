@@ -92,9 +92,8 @@ export default function GalaxySurface() {
   // (the way back up: the galaxy page's code comes ahead, so the route changes under the glare at once)
   useEffect(() => void import('./Galaxy').catch(() => {}), []);
   const id = parseSystem(useParams().system);
-  // a mission played down here (?mission=chase, or the mode it is:
-  // ?mode=galacticAssault, modes.js): you start in it; another of the game's
-  // maps on this world (?district=jabba: sites/index.js's districts)
+  // a mission played down here (?mission=chase, or the mode it is: ?mode=galacticAssault, modes.js): you start in it;
+  // another of the game's maps on this world (?district=jabba: sites/index.js's districts)
   const [params] = useSearchParams();
   const district = params.get('district');
   const site = useMemo(() => (id ? withDistrict(siteOf(id), district) : null), [id, district]);
