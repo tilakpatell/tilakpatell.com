@@ -7,6 +7,7 @@
 import { fromScene } from '../../../runtime/module';
 
 export default fromScene('galaxy-surface', (canvas, ctx) => import('./scene').then((m) => m.create(canvas, ctx)), {
+  shading: 'nodes', // (everything it reaches is TSL: the twins, nodes/; the node renderer, on WebGPU or WebGL 2)
   mb: 19, // (WORLD_MB['/galaxy'], which counts its worlds' surfaces)
   ratio: 1.5,
   sharpness: 'own', // (the pace's steps are the post's: lowerQuality)

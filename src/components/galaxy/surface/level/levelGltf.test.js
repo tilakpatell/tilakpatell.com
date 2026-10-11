@@ -1,7 +1,7 @@
 import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { bindSlot, createLevelLoader, matchRecipes, recipeMaps, recipesIndex } from './levelGltf.js';
+import { asColour, bindSlot, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex } from './levelGltf.js';
 
 // a GLB with one mesh of two primitives, their materials naming the game's
 // shaders in their extras as the export writes them
@@ -50,6 +50,55 @@ describe('recipeMaps', () => {
     expect(got.aoSlice.path).toBe('tex/t_aosl.ktx2');
     expect(got.weathering).toBeNull();
     expect('grunge' in got).toBe(false);
+  });
+
+  it('reads a recipe’s emissive map as sRGB whatever its file said, and leaves a data map as it came', async () => {
+    const texture = vi.fn(async (path) => Object.assign(new THREE.Texture(), { path }));
+    const recipe = { maps: { emissive: 'T_E', detail: 'T_D' } };
+    const maps = { T_E: 'tex/t_x_e.ktx2', T_D: 'tex/t_x_ns.ktx2' };
+    const got = await recipeMaps(recipe, { maps, texture });
+    expect(got.emissive.colorSpace).toBe(THREE.SRGBColorSpace);
+    expect(got.detail.colorSpace).toBe(THREE.NoColorSpace);
+  });
+});
+
+describe('the pack’s word on a map', () => {
+  const sizes = { t_kam_wall_01_cs: { high: 1024, srgb: false }, t_crate_01_cs: { high: 512, srgb: true }, t_old_01_c: { high: 512 } };
+
+  it('reads a map as the game reads it, sRGB or linear, and marks the texture so', () => {
+    const wall = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+    expect(wall.colorSpace).toBe(THREE.NoColorSpace);
+    expect(wall.userData.gameSrgb).toBe(false);
+    const crate = gameWordOf(new THREE.Texture(), sizes, '../tex/t_crate_01_cs.ktx2');
+    expect(crate.colorSpace).toBe(THREE.SRGBColorSpace);
+    expect(crate.userData.gameSrgb).toBe(true);
+    const old = gameWordOf(new THREE.Texture(), sizes, 'tex/t_old_01_c.ktx2');
+    expect(old.userData.gameSrgb).toBeUndefined();
+    expect(gameWordOf(null, sizes, 'tex/t_old_01_c.ktx2')).toBeNull();
+  });
+
+  it('is never overruled by the slot rule or a recipe’s colour key', () => {
+    const wall = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+    const mat = new THREE.MeshStandardMaterial();
+    bindSlot(mat, 'map', wall);
+    expect(mat.map).toBe(wall);
+    expect(wall.colorSpace).toBe(THREE.NoColorSpace);
+    expect(asColour(wall, true).colorSpace).toBe(THREE.NoColorSpace);
+    // (a map without the word still takes the slot rule)
+    const old = gameWordOf(new THREE.Texture(), sizes, 'tex/t_old_01_c.ktx2');
+    bindSlot(mat, 'emissiveMap', old);
+    expect(old.colorSpace).toBe(THREE.SRGBColorSpace);
+  });
+});
+
+describe('asColour', () => {
+  it('turns a colour map to sRGB once, and passes a data map, a null or a non-texture through', () => {
+    const t = new THREE.Texture();
+    expect(asColour(t, true)).toBe(t);
+    expect(t.colorSpace).toBe(THREE.SRGBColorSpace);
+    expect(asColour(new THREE.Texture(), false).colorSpace).toBe(THREE.NoColorSpace);
+    expect(asColour(null, true)).toBeNull();
+    expect(asColour({ path: 'x' }, true)).toEqual({ path: 'x' });
   });
 });
 

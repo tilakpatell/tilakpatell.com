@@ -9,10 +9,12 @@
 //   planeMaterial(values, { fine }) → { material, uniforms }   (values with uFlow: the lava film over it, VIDEO's)
 //   seaMaterial(values, waves, { fine }) → { material, uniforms }   (waves: ocean.js's wavesFor)
 //   gerstner(p, dist, amp, uTime, waves) → { d, n, pinch }   (WAVES_GLSL's)
+//   createWater(site, sunDir, sunColor, opts) → water.js's, on these materials
 
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { Fn, If, abs, fract, cameraPosition, clamp, cos, dot, exp, float, length, max, mix, modelWorldMatrix, normalize, positionGeometry, pow, reflect, select, sin, smoothstep, step, texture, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
 import { rev } from './common';
+import { createWater as createWith } from '../waterCore';
 
 export function waterNodes(values) {
   const out = {};
@@ -231,3 +233,12 @@ export function seaMaterial(values, waves, { fine = false } = {}) {
   material.colorNode = colour();
   return { material, uniforms: u };
 }
+
+// water.js's createWater on the node renderer: the same workings
+// (../waterCore.js), these two materials for its looks
+const LOOKS = {
+  plane: (values, late, { fine }) => planeMaterial({ ...values, ...late }, { fine }),
+  sea: (values, late, waves, { fine }) => seaMaterial({ ...values, ...late }, waves, { fine }),
+};
+
+export const createWater = (site, sunDir, sunColor, opts = {}) => createWith(site, sunDir, sunColor, opts, LOOKS);

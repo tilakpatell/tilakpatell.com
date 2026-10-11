@@ -47,6 +47,8 @@ export const SITES = {
     // skyline stand as the game placed them; the site's built town is the
     // flight's (`game`))
     level: 'tatooine',
+    // the record's picture on the node renderer (src/data/bf2017/light/tatooine.picture.json, applyGameLight)
+    picture: 'tatooine.picture.json',
     place: 'The Jundland Wastes',
     line: 'Two suns, and sand to the edge of the world.',
     sky: {
