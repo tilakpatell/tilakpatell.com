@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { STEPS, createPace } from '../lib/three/pace';
-import { createQuality } from './quality';
+import { RESOLUTION_STEPS, UHD, createQuality, headroomAt } from './quality';
 
 // a stand-in pace: `levels` is what each frame() call returns, in turn
 const fakePace = (levels, last = STEPS.length - 1) => {
@@ -206,5 +206,22 @@ describe('the renderer row a quality level starts from', () => {
   it('keeps high on high’s row', () => {
     const q = createQuality({ tier: 'high', detail: 'high', pace: fakePace([null]) });
     expect(q.budget.samples).toBe(4);
+  });
+});
+
+describe('headroomAt (lane U)', () => {
+  it('steps the internal resolution down before shedding a pass', () => {
+    expect(RESOLUTION_STEPS).toEqual([1, 0.77, 0.67, 0.5]);
+    expect([0, 1, 2, 3].map((l) => headroomAt(l))).toEqual([1, 0.77, 0.67, 0.5].map((scale) => ({ scale, shed: 0 })));
+    expect(headroomAt(4)).toEqual({ scale: 0.5, shed: 1 });
+    expect(headroomAt(7)).toEqual({ scale: 0.5, shed: 4 });
+  });
+  it('starts ultra at 0.77 and high at 0.67 on a 4K buffer, nothing else', () => {
+    expect(headroomAt(0, { tier: 'ultra', pixels: UHD })).toEqual({ scale: 0.77, shed: 0 });
+    expect(headroomAt(1, { tier: 'ultra', pixels: UHD })).toEqual({ scale: 0.67, shed: 0 });
+    expect(headroomAt(0, { tier: 'high', pixels: UHD })).toEqual({ scale: 0.67, shed: 0 });
+    expect(headroomAt(2, { tier: 'high', pixels: UHD })).toEqual({ scale: 0.5, shed: 1 });
+    expect(headroomAt(0, { tier: 'ultra', pixels: 2560 * 1440 })).toEqual({ scale: 1, shed: 0 });
+    expect(headroomAt(0, { tier: 'mid', pixels: UHD })).toEqual({ scale: 1, shed: 0 });
   });
 });

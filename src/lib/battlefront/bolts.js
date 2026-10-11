@@ -10,6 +10,8 @@
 //   step(bolts, dt, { bodies: [{ id, team, alive, safe, at, capsules }], nav, now }) → events   (a `safe` body is passed through)
 //     { type: 'hit', bolt, target, part, at, dir, dist } | { type: 'wall', bolt, at } |
 //     { type: 'near', bolt, target, dist } | { type: 'gone', bolt }
+//   (a bolt a wall or a body stops is left `ended`, its `at` and `travelled`
+//   where it stopped; `bolts.left` is the step's let go of, fired in it or before)
 
 import { segCapsule } from '../combat/bolt.js';
 import { firstSolid } from './nav.js';
@@ -21,7 +23,7 @@ export const NEAR = 2;
 // Bodies further than this from a bolt's segment are not looked at closely.
 const BROAD = 3;
 
-export const createBolts = () => ({ list: [], next: 1 });
+export const createBolts = () => ({ list: [], next: 1, left: [] });
 
 export function fire(bolts, { from, dir, speed, range = 200, ttl = 3, team, owner, weapon = null, colour = null, now = 0 }) {
   const bolt = { id: bolts.next++, at: [...from], from: [...from], dir: [...dir], speed, range, ttl, team, owner, weapon, colour, born: now, travelled: 0, near: null };
@@ -37,9 +39,18 @@ function pointSeg(p, a, b) {
   return Math.hypot(a[0] + d[0] * t - p[0], a[1] + d[1] * t - p[1], a[2] + d[2] * t - p[2]);
 }
 
+// a bolt stopped this step keeps where (and how far on) it stopped: the page
+// draws it there though the sim has let it go
+function end(bolt, at, len) {
+  bolt.at = at.slice();
+  bolt.travelled += len;
+  bolt.ended = true;
+}
+
 export function step(bolts, dt, { bodies, nav, now = 0 }) {
   const events = [];
   const keep = [];
+  const left = [];
   for (const bolt of bolts.list) {
     const len = Math.min(bolt.speed * dt, bolt.range - bolt.travelled);
     const a = bolt.at;
@@ -58,10 +69,14 @@ export function step(bolts, dt, { bodies, nav, now = 0 }) {
     }
     if (hit && (!wall || hit.t <= wall.t)) {
       events.push({ type: 'hit', bolt, target: hit.target, part: hit.part, at: hit.at, dir: bolt.dir, dist: bolt.travelled + hit.t * len });
+      end(bolt, hit.at, hit.t * len);
+      left.push(bolt);
       continue;
     }
     if (wall) {
       events.push({ type: 'wall', bolt, at: wall.at });
+      end(bolt, wall.at, wall.t * len);
+      left.push(bolt);
       continue;
     }
     for (const body of bodies) {
@@ -75,10 +90,12 @@ export function step(bolts, dt, { bodies, nav, now = 0 }) {
     bolt.travelled += len;
     if (bolt.travelled >= bolt.range - 1e-9 || now - bolt.born >= bolt.ttl) {
       events.push({ type: 'gone', bolt });
+      left.push(bolt);
       continue;
     }
     keep.push(bolt);
   }
   bolts.list = keep;
+  bolts.left = left;
   return events;
 }

@@ -30,9 +30,32 @@
 //   setSharpness(k), setLevel(step) }
 // (`setLevel`: a calibrated step of the pace, held as its ceiling:
 // lib/three/calibrate)
+//
+// headroomAt(level, { tier, pixels }) → { scale, shed } (fidelity lane U):
+// what a lit post chain (lib/three/light/post.js's `headroom`) draws at a
+// pace level, for a module that softens through its own chain. The first
+// steps lower the internal resolution (RESOLUTION_STEPS, upscaled back to
+// the screen by FSR1 or TAAU) before any pass is shed; past the last
+// resolution step each level sheds one more of post.js's SHED groups. On a
+// drawing buffer of 4K or more, ultra starts under the screen at 0.77 and
+// high at 0.67 (UHD_START: the fidelity design's "Lane U").
 
 import { BUDGETS, device, sharpness } from '../lib/device';
 import { STEPS, createPace } from '../lib/three/pace';
+
+// the internal resolutions the pace steps down through before shedding passes
+export const RESOLUTION_STEPS = [1, 0.77, 0.67, 0.5];
+// a 4K drawing buffer's pixels, and where ultra and high start on one
+export const UHD = 3840 * 2160;
+export const UHD_START = { ultra: 0.77, high: 0.67 };
+
+export function headroomAt(level = 0, { tier = null, pixels = 0 } = {}) {
+  const start = pixels >= UHD ? (UHD_START[tier] ?? 1) : 1;
+  const steps = [start, ...RESOLUTION_STEPS.filter((s) => s < start)];
+  const l = Math.max(0, Math.floor(level));
+  if (l < steps.length) return { scale: steps[l], shed: 0 };
+  return { scale: steps.at(-1), shed: l - steps.length + 1 };
+}
 
 export function createQuality({ tier, detail, pace = createPace(), floorAfter = 2500, dpr = Infinity, minRatio = null, sharp = sharpness() } = {}) {
   // (a tier given alone is its own level: the tests, a forced tier)

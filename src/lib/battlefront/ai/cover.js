@@ -20,6 +20,12 @@
 //   scoreSlots(slots, { me, threat, enemies, objective, query, range, taken, who, nav }) → [{ slot, score }] (best first)
 //   pickCover(nav, ctx) → slot | null       queryFor(ai, branch) → the query row a branch uses
 //   unknownTerms: Set of term names met and skipped
+//   covered(ctx, slot) → the slot's solid stands between it and ctx.threat (given ctx.nav)
+//   lineOfFire(nav, slot, threat, threatY) → a bot at the slot has a line to the threat, standing
+//     over the solid or stepping SIDE round it (what `coverQuery.js`'s LineOfFire reads)
+//
+// This scorer is the brain's fallback now: `coverQuery.js` runs the game's
+// selection-form queries first, and this one only when they offer nothing.
 
 import { coverSlots, lineClear, shields } from '../nav.js';
 
@@ -34,6 +40,10 @@ export const OBJECTIVE_WEIGHT = 1;
 export const PEEK = 0.8;
 // How far round the actor pickCover looks when a query has no radius filter.
 export const SEARCH = 30;
+// The height a bot fires from standing (the game's `StandHeight`), and how
+// far it steps round the side of a solid too tall to fire over. By hand.
+export const STAND = 1.7;
+export const SIDE = 1;
 
 // The queries the brain's branches use: the ones written in the game's query
 // styles. The Empire's own (`Attack_Empire_Stormtrooper`, `Hide_Empire_…`)
@@ -120,7 +130,16 @@ function termScore(term, ctx, slot) {
 }
 
 // with a navgrid, the solid must truly stand between the slot and the threat
-const covered = (ctx, slot) => !ctx.nav || !lineClear(ctx.nav, [slot.at[0], slot.at[1] + PEEK, slot.at[2]], [ctx.threat[0], slot.at[1] + 1.2, ctx.threat[1]]);
+export const covered = (ctx, slot) => !ctx.nav || !lineClear(ctx.nav, [slot.at[0], slot.at[1] + PEEK, slot.at[2]], [ctx.threat[0], slot.at[1] + 1.2, ctx.threat[1]]);
+
+export function lineOfFire(nav, slot, threat, threatY = slot.at[1] + 1.2) {
+  const t = [threat[0], threatY, threat[1]];
+  if (lineClear(nav, [slot.at[0], slot.at[1] + STAND, slot.at[2]], t)) return true;
+  const tx = -slot.normal[1];
+  const tz = slot.normal[0];
+  for (const k of [-1, 1]) if (lineClear(nav, [slot.at[0] + tx * k * SIDE, slot.at[1] + 1.2, slot.at[2] + tz * k * SIDE], t)) return true;
+  return false;
+}
 
 export function scoreSlots(slots, ctx) {
   const out = [];

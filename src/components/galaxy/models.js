@@ -57,6 +57,7 @@ export const MODELS = {
   trifighter: { url: '/models/galaxy/trifighter.glb', nose: 0 },
   acclamator: { url: '/models/galaxy/acclamator.glb', nose: 0 },
   delta7: { url: '/models/galaxy/delta7.glb', nose: 0 },
+  xwing65: { url: '/models/galaxy/xwing65.glb', nose: 0 }, // (the game's T-65, Starfighter Assault's: scripts/bf2017-fleet.mjs)
   arc170: { url: '/models/galaxy/arc170.glb', nose: Math.PI },
   n1: { url: '/models/galaxy/n1.glb', nose: 0 },
   nubian: { url: '/models/galaxy/nubian.glb', nose: 0 },
@@ -191,6 +192,7 @@ export const STAND_IN = {
   tiedefender: 'tie',
   tiestriker: 'tie',
   vwing: 'delta7',
+  xwing65: 'xwing',
   eta2: 'delta7',
   hyena: 'vulture',
   sentinel: 'shuttle',

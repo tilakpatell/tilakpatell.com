@@ -263,6 +263,13 @@ export const FIGHTERS = {
   trifighter: F({ size: 0.32, speed: 25, turn: 2.9, hp: 5, burst: [0.1, 0.55] }),
   arc170: F({ size: 0.46, speed: 18, turn: 2.1, hp: 8, reload: 1.3 }),
   delta7: F({ size: 0.3, speed: 25, turn: 3, hp: 5, burst: [0.1, 0.55] }),
+  // (Starfighter Assault's kits the rows above lack, galaxy/surface/missions/
+  // starfighterKits.js: each as the row whose game handling it shares,
+  // src/data/bf2017/air.json: the V-wing the A-wing's, 115 m/s and its turn
+  // rates; the Hyena the Y-wing's, 90 m/s; the T-65 the X-wing's own)
+  xwing65: F({ size: 0.36, speed: 20, turn: 2.3, hp: 5 }),
+  vwing: F({ size: 0.3, speed: 25, turn: 2.9, hp: 4, burst: [0.1, 0.6] }),
+  hyena: F({ size: 0.4, speed: 15, turn: 1.7, hp: 7, reload: 1.2 }),
   skiff: F({ size: 0.4, speed: 18, turn: 2.2, hp: 5, reload: 1.5 }),
   ghost: F({ size: 0.8, speed: 17, turn: 1.8, hp: 14, burst: [0.1, 0.5] }),
   // Rick and Morty
@@ -297,6 +304,9 @@ export const NAMES = {
   trifighter: 'Droid tri-fighter',
   arc170: 'ARC-170',
   delta7: 'Jedi starfighter',
+  xwing65: 'X-wing',
+  vwing: 'V-wing',
+  hyena: 'Hyena bomber',
   skiff: 'Weequay skiff',
   ghost: 'The Ghost',
   councilship: 'Council cruiser',

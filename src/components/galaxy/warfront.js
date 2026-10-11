@@ -86,6 +86,7 @@ import { teamFor } from './allegiance';
 import { DEFAULT_WAR, WARS, otherSide, warOfSide } from './sides';
 import { layBattle, layStarfighter } from './battles';
 import { sideShips, starfighterPlan } from './surface/missions/starfighter';
+import { createRoster } from './surface/missions/starfighterPilots';
 import { planOf } from './battlePlans';
 import { piecesFor } from './warpieces';
 import { addPoints, addWin, receiveWar, warMessage, warTally, warVersion } from './warState';
@@ -136,6 +137,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
   let pieces = []; // the set pieces of the battle on
   let forced = false; // (a dev hook's battle, or a Starfighter Assault, kept till the system's left)
   let level = null; // (a Starfighter Assault's pack, drawn while it's on)
+  let roster = null;
   const last = { t: 0, camera: null }; // (the last frame's, for the dev hook that runs it on)
   const said = new Map(); // a set piece's line, by id: when it was last said (seconds on the battle's clock)
   const held = new Map(); // a world solid let go of (a run's way in): its r and reach
@@ -305,7 +307,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
   // the shared state's stage, its objectives and what's next, for the HUD (warText.js says them)
   const stageOf = (st) => {
     const s = director.plan.stages[st.stage];
-    return { index: st.stage, count: director.plan.stages.length, open: st.open, opensIn: +st.opensIn.toFixed(1), need: s ? (s.need ?? s.objectives.length) : 0, id: s?.id ?? null, type: s?.type ?? null, ...(s?.name ? { title: attacking() ? s.name : s.nameDefend } : {}) };
+    return { index: st.stage, count: director.plan.stages.length, open: st.open, opensIn: +st.opensIn.toFixed(1), need: s ? (s.need ?? s.objectives.length) : 0, id: s?.id ?? null, type: s?.type ?? null, ...(s?.name ? { title: attacking() ? s.name : s.nameDefend } : {}), ...(s?.sid ? { sid: attacking() ? s.sid : s.sidDefend } : {}) };
   };
   const objectivesOf = (st) => {
     const s = director.plan.stages[st.stage];
@@ -374,6 +376,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
     version += 1;
     on = b;
     director = createDirector({ plan: sf ? starfighterPlan(sf.level, laid.frame, { id: b.id }) : planOf(sys, b, laid), seed: b.id });
+    roster = sf ? createRoster(sf.level.pilots) : null; // (a Starfighter Assault's bots by name: missions/starfighterPilots.js)
     planned = new Set(director.keys());
     const aces = director.plan.side.filter((o) => o.type === 'ace');
     battle = createBattle({
@@ -494,6 +497,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
         if (cap?.alive && cap.dying <= 0 && !battle.over) battle.wreck(cap.id);
       }
       const events = stepBattle(battle, dt, live ? { x: live.x, y: live.y, z: live.z, alive: true } : null, you ?? {});
+      roster?.name(battle.fighters);
       if (live) {
         const d = Math.hypot(live.x - laid.at[0], live.y - laid.at[1], live.z - laid.at[2]);
         if (d < laid.radius * FRONT.near) {
@@ -632,7 +636,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
         const h = p.hit(from, to, damage);
         if (h) return h;
       }
-      return battle.hit(from, to, damage);
+      return roster ? roster.downed(battle.hit(from, to, damage), battle.fighters) : battle.hit(from, to, damage);
     },
     // Walt's magnet: the other side's fighters within `r` of `at` held for
     // `secs` with their guns quiet, `daze` more (battlePowers.js); how many
@@ -708,6 +712,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
         mine,
         // (how hard the fight round you is: yours alone)
         difficulty: battle?.difficulty ?? null,
+        downed: roster?.last ?? null, // (a Starfighter Assault's: the last bot you shot down, by name)
         // the stage it's at, that stage's objectives (their hp the director's,
         // every pilot's), what's next on its clock, and how it ended
         stage: st ? stageOf(st) : null,

@@ -1,0 +1,121 @@
+{
+  "world": "hoth",
+  "tier": "high",
+  "materials": "own",
+  "glbs": 195,
+  "textures": 148,
+  "rows": [
+    {
+      "path": "instanced",
+      "at": [
+        0,
+        0
+      ],
+      "tris": 1651470,
+      "calls": 183,
+      "instances": 6037
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        320
+      ],
+      "tris": 1570632,
+      "calls": 172,
+      "instances": 6051
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        448
+      ],
+      "tris": 1513706,
+      "calls": 172,
+      "instances": 6047
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        192
+      ],
+      "tris": 1586415,
+      "calls": 172,
+      "instances": 6051
+    },
+    {
+      "path": "batched",
+      "at": [
+        0,
+        0
+      ],
+      "tris": 1651470,
+      "calls": 200,
+      "instances": 6037,
+      "batches": 200,
+      "bands": {
+        "arena": 165,
+        "horizon": 35
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        320
+      ],
+      "tris": 1570632,
+      "calls": 189,
+      "instances": 6051,
+      "batches": 189,
+      "bands": {
+        "arena": 154,
+        "horizon": 35
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        448
+      ],
+      "tris": 1513706,
+      "calls": 189,
+      "instances": 6047,
+      "batches": 189,
+      "bands": {
+        "arena": 154,
+        "horizon": 35
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        192
+      ],
+      "tris": 1586415,
+      "calls": 189,
+      "instances": 6051,
+      "batches": 189,
+      "bands": {
+        "arena": 154,
+        "horizon": 35
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    }
+  ]
+}
