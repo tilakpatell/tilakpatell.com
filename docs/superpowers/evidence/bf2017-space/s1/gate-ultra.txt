@@ -1,0 +1,18 @@
+endor      calls   50  tris  173548  geo  104  tex 104  prog  80  frame p50 2816.6 p95 2987.3 ms  load 9.6 s  errors 2
+kamino     calls   42  tris  153754  geo   98  tex  68  prog  73  frame p50 2233.3 p95 2416.3 ms  load 8.3 s
+naboo      calls   54  tris  221497  geo  108  tex 131  prog  75  frame p50 2778 p95 2933.2 ms  load 8.4 s
+hoth       calls   49  tris  252550  geo  208  tex 147  prog  73  frame p50 2399.9 p95 3099.9 ms  load 8.2 s
+tatooine   calls   80  tris  199910  geo  115  tex 106  prog  67  frame p50 2366.6 p95 2599.8 ms  load 8.2 s
+yavin      calls   44  tris  297780  geo   80  tex  59  prog  70  frame p50 2549.8 p95 2719.7 ms  load 9.0 s
+problem endor  [
+  `SyntaxError: Unexpected token '<', "<!doctype "... is not valid JSON`,
+  `SyntaxError: Unexpected token '<', "<!doctype "... is not valid JSON`
+]
+budget: no baseline at lab/baseline/space-ultra.json; holding to the ultra row alone
+budget endor      calls 50/1500  tris 173548/–  models 112.1/285 MB (from the bucket)  p95 2987.3/reported ms  pass
+budget kamino     calls 42/1500  tris 153754/–  models 92.1/285 MB (from the bucket)  p95 2416.3/reported ms  pass
+budget naboo      calls 54/1500  tris 221497/–  models 92/285 MB (from the bucket)  p95 2933.2/reported ms  pass
+budget hoth       calls 49/1500  tris 252550/–  models 69.7/285 MB (from the bucket)  p95 3099.9/reported ms  pass
+budget tatooine   calls 80/1500  tris 199910/–  models 58.9/285 MB (from the bucket)  p95 2599.8/reported ms  pass
+budget yavin      calls 44/1500  tris 297780/–  models 67.2/285 MB (from the bucket)  p95 2719.7/reported ms  pass
+exit 1

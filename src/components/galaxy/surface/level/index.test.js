@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
-import { createLevel, levelGround, levelPlaced, partOf, sunOf } from './index';
+import { describe, expect, it, vi } from 'vitest';
+import { createLevel, levelGround, levelPlaced, packOf, partOf, sunOf } from './index';
 
 describe('the level’s entry', () => {
   it('leaves a ground without an image layer as it is (every world today)', async () => {
@@ -18,6 +18,20 @@ describe('the level’s entry', () => {
 
   it('is nothing for a site with no level', () => {
     expect(createLevel({ scene: null, site: { id: 'tatooine' }, tier: 'high' })).toBe(null);
+  });
+
+  it('says the pack’s maps in its stats beside the rest, none before its loader is up', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const level = createLevel({ scene: new THREE.Scene(), site: { id: 'x', level: 'nowhere' }, tier: 'high' });
+      expect(level.stats()).toMatchObject({ tris: 0, calls: 0, instances: 0, lights: 0, probe: null, physics: null, maps: { asked: 0, loaded: 0, failed: 0, why: null } });
+      // (the pack that cannot be had said, in development, before the spy goes)
+      await packOf('nowhere').catch(() => {});
+      await new Promise((r) => setTimeout(r, 0));
+      level.dispose();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('places nothing of a map for a site with no level, and a pack without the part gives the empty one', async () => {

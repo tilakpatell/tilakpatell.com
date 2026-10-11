@@ -11,20 +11,35 @@
 // the house’s numbers (lib/three/bloom) unless a world says otherwise, as
 // the WebGL backend is.
 //
-// createWebGPU(canvas, { budget, onLost, alpha, toneMapping, exposure, forceWebGL }) → Promise<gfx>
+// On a WebGPU device the depth buffer is reversed (GPU-first lane N2:
+// three's reversedDepthBuffer, a 32-bit float depth with the far plane at
+// 0), so a 2 km map has no z-fighting at its far end; over WebGL 2 it
+// stays standard until measured there. `reversedDepth` forces either way
+// (true over WebGL 2 is the lit fixture's measurement, not a default);
+// gfx.reversedDepth says which it is.
+//
+// createWebGPU(canvas, { budget, onLost, alpha, toneMapping, exposure, forceWebGL, reversedDepth, temporal }) → Promise<gfx>
+// (`temporal: false`, development's ?traa=off for the reference shots: a
+// chain's TRAA pass left out, and gfx.jitter(i) moves the camera by shot
+// i's sub-pixel offset, lib/three/jitter; gfx.jitter(null) stops)
 
 import * as THREE from 'three';
 import { settle } from '../lib/settle';
 import { BLOOM } from '../lib/three/bloom';
-import { NODE_PASSES } from '../lib/three/light/post';
+import { NODE_PASSES, temporal } from '../lib/three/light/post';
+import { setMipState } from '../lib/three/mipBias';
 import { makeGfx } from './gfx';
+import { createJitter } from '../lib/three/jitter';
 
 export const hasWebGPU = () => typeof navigator !== 'undefined' && Boolean(navigator.gpu);
 
 // the chain as data → a PostProcessing graph; `ready` resolves once the
 // nodes are loaded, and render() draws nothing until then. A chain with any
 // of the game light's passes goes to buildLitPost.
+// The chain built says whether the picture is temporal, for the mip bias
+// (lib/three/mipBias: −0.5 at native under TRAA, lane N2).
 export function buildPostProcessing(renderer, passes) {
+  setMipState({ temporal: temporal(passes) });
   if (passes.some((p) => NODE_PASSES.has(p.kind))) return buildLitPost(renderer, passes);
   let post = null;
   let scenePass = null;
@@ -107,14 +122,17 @@ export async function adapterLimits(gpu = typeof navigator !== 'undefined' ? nav
   }
 }
 
-export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false } = {}) {
+export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false, reversedDepth = null, temporal = true } = {}) {
   const { WebGPURenderer } = await import('three/webgpu');
   // A device is made with its adapter's own limits where the defaults are
   // tighter than the chip: a post chain's five colour targets cost more a
   // sample than the default 32 bytes on some chains, and a chip that can
   // take 128 should (the laptop's did not, and drew black, until asked).
   const requiredLimits = forceWebGL ? undefined : await adapterLimits();
-  const renderer = new WebGPURenderer({ canvas, alpha, antialias: budget?.antialias ?? true, powerPreference: 'high-performance', forceWebGL, requiredLimits });
+  // (no adapter, no limits: three would fall back to WebGL 2 by itself, so the standard buffer there)
+  // (asked for outright, it is honoured over WebGL 2 too: the fixture's measurement there)
+  const asked = Boolean(reversedDepth ?? (!forceWebGL && requiredLimits !== undefined));
+  const renderer = new WebGPURenderer({ canvas, alpha, antialias: budget?.antialias ?? true, powerPreference: 'high-performance', forceWebGL, requiredLimits, reversedDepthBuffer: asked });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = toneMapping;
   renderer.toneMappingExposure = exposure;
@@ -139,7 +157,8 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   };
   if (onWebGL) canvas.addEventListener('webglcontextlost', onContextLost);
   else renderer.backend?.device?.lost?.then(gone);
-  return makeGfx({
+  let jitter = null; // (made on the first gfx.jitter: until then render is three's own)
+  const gfx = makeGfx({
     backend: onWebGL ? 'nodes-webgl' : 'webgpu',
     renderer,
     canvas,
@@ -158,11 +177,15 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
           }
         }
       }),
-    post: (passes) => buildPostProcessing(renderer, passes),
+    post: (passes) => buildPostProcessing(renderer, temporal ? passes : passes.filter((p) => p.kind !== 'traa')),
     isLost: () => lost,
     release: () => {
       released = true;
+      jitter?.dispose();
       if (onWebGL) canvas.removeEventListener('webglcontextlost', onContextLost);
     },
   });
+  gfx.reversedDepth = (renderer.reversedDepthBuffer ?? asked) === true;
+  gfx.jitter = (i) => (jitter ??= createJitter(renderer)).set(i);
+  return gfx;
 }

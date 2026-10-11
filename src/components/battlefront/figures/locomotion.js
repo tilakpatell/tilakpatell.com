@@ -23,8 +23,17 @@
 //     or with a held weapon's stance ('t', 'p', 'l') its pack's `stance.<key>.<name>`
 //     where the stance has one (walrusSets/stance.js's names)
 //   packFallback(name) → a stance clip's humanoid stand-in (the idle a held pose), else null
+//   LOCO_STATES, RATE_MIN, RATE_MAX
+//   clipSpeed(clip) → m/s the clip's root travels (its `root`), or null
+//   rateFor(state, speed, pace) → the timeScale that puts a walking clip's feet on the ground
 
 export const CROSSFADE = 0.15; // s: the blend where the game has no transition clip
+// (the humanoid pack's own paces, its clips' root travel over their length,
+// read from clips-humanoid.glb 2026-10-11: walk 1.91 m/s, run 3.94, sprint
+// 5.90, crouch.run 2.54, the strafes 1.6 to 2.0; so the sim's 3.8 plays the
+// run near its pace, 5.97 the sprint and the crouch's 2.5 its run, and these
+// two fall near the paces' midpoints, where neither clip is pushed out of
+// rateFor's band)
 export const WALK_MAX = 2.6; // m/s: under this a soldier walks (the soldier row's walk is 3.8 at full stick)
 export const RUN_MAX = 4.6; // m/s: over this they sprint (the row's sprint is 5.97)
 
@@ -197,4 +206,37 @@ function humanoidClip(s) {
     default:
       return STRAFE[s.dir8] ?? 'walk';
   }
+}
+
+// The states whose clips walk. The pack's clips play in place (the sim moves
+// the body), so one played at its own pace over a body moved at another
+// slides its feet: these play at the body's speed over the clip's. The rest
+// (the idle, the aim standing, a death, a hit, the roll, the crouch) are not
+// steps over the ground and keep their own.
+export const LOCO_STATES = new Set(['walk', 'run', 'sprint', 'crouchWalk', 'aim']);
+// By hand: past half or 1.8 times its pace a stride reads as slow motion or
+// a scurry whatever the feet do, so a speed out there slides a little instead
+// (a strafe at the full 3.8 asks 1.9 of walk.left, 2.35 of walk.back)
+export const RATE_MIN = 0.5;
+export const RATE_MAX = 1.8;
+
+// metres a second the clip's root goes: its last row's distance from the
+// start over that row's time (the clip's length where the row has none); null
+// for a clip with no root, or one that ends where it began (the pack keeps a
+// root only past a centimetre: scripts/bf2017-clips.mjs)
+export function clipSpeed(clip) {
+  const root = clip?.userData?.root;
+  if (!root?.length) return null;
+  const [t, dx, dz] = root[root.length - 1];
+  const time = t > 0 ? t : clip.duration;
+  const dist = Math.hypot(dx, dz);
+  if (!(time > 0) || !(dist > 0.01)) return null;
+  return dist / time;
+}
+
+// (the aim walks only on the move, as packClip strafes it; a body the view
+// gives no speed, or a clip with no pace of its own, plays as it was made)
+export function rateFor(state, speed, pace) {
+  if (!LOCO_STATES.has(state) || !(speed > 0.2) || !(pace > 0)) return 1;
+  return Math.min(RATE_MAX, Math.max(RATE_MIN, speed / pace));
 }

@@ -20,6 +20,7 @@
 //     them a heightfield from heightAt; onPhysics(engine) once it's up: the
 //     scene puts the player on the 2017 soldier's body, playerBody.js)
 //   packOf(world) → Promise<level.json> (fetched once)
+//   bytesOf(world)(path) → Promise<ArrayBuffer>: a pack file through the asset base, the site's copy when the bucket fails
 //     (walk: the walk world, { solids, floors }, the pack's collision goes into)
 //
 // On the node renderer (WebGPU, or the node renderer on WebGL 2) a pack with
@@ -48,7 +49,10 @@ import { createLevelPhysics, wantsEngine } from './levelPhysics.js';
 // (No abort signal on the request: assetBase reads any failure as the bucket
 // down for the visit, so a cancelled fetch is let finish and its answer
 // dropped by the stream; lane S's pool brings real aborts.)
-const bytesOf = (world) => (path) =>
+// (packBytes: the Battlefront world's level takes the same fetcher through
+// the galaxy's face, galaxy/shared/level.js, so its meshes and cells come
+// from the bucket as the galaxy's do, the site's copy when it cannot)
+export const bytesOf = (world) => (path) =>
   withFallback((u) =>
     fetch(u).then((r) => {
       if (!r.ok) throw new Error(`${r.status} ${u}`);
@@ -293,13 +297,15 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       }
       stream?.update(position, tier);
       level?.update(position);
-      bodies?.update(4);
+      bodies?.update(4, position);
       if (camera) lights?.update(camera);
       probes?.update([position[0], camera?.position.y ?? 1.6, position[1]]);
     },
     ready: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,
-    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null }),
+    // (maps: the pack's maps asked, loaded and failed, and why the first
+    // failed, levelGltf.js's counts: a level drawn white says why here)
+    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null, maps: loader?.counts() ?? { asked: 0, loaded: 0, failed: 0, why: null } }),
     // the level's engine, once it's up (null on a phone, the low tier, a pack without shapes)
     physics: () => engine,
     dispose() {

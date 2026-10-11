@@ -126,18 +126,25 @@ async function leg(kind) {
     const v = window.__battlefront.view();
     return { player: v.player, stage: v.mode?.stageName, level: v.level, weather: v.weather };
   });
+  // (GPU-first lane N2: the frame times' spread, and the dynamic-resolution
+  // controller's source and the internal scales it reached, quality.js)
   out.frame = await page.evaluate((ms) => new Promise((done) => {
     const dts = [];
+    const q = window.__RUNTIME__?.quality;
+    const scales = [];
     let last = performance.now();
     const end = last + ms;
     const tick = (t) => {
       dts.push(t - last);
       last = t;
+      if (q?.internal != null) scales.push(q.internal);
       if (t < end) requestAnimationFrame(tick);
       else {
-        dts.sort((a, b) => a - b);
         const mean = dts.reduce((a, b) => a + b, 0) / dts.length;
-        done({ frames: dts.length, mean: +mean.toFixed(1), median: +dts[dts.length >> 1].toFixed(1), p95: +dts[Math.floor(dts.length * 0.95)].toFixed(1) });
+        const stdev = Math.sqrt(dts.reduce((a, b) => a + (b - mean) ** 2, 0) / dts.length);
+        dts.sort((a, b) => a - b);
+        const controller = q ? { source: q.source ?? null, scale: scales.length ? [Math.min(...scales), Math.max(...scales)] : null } : null;
+        done({ frames: dts.length, mean: +mean.toFixed(1), median: +dts[dts.length >> 1].toFixed(1), p95: +dts[Math.floor(dts.length * 0.95)].toFixed(1), stdev: +stdev.toFixed(2), controller });
       }
     };
     requestAnimationFrame(tick);

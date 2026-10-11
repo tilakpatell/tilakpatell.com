@@ -1,0 +1,34 @@
+{
+  "size": "800x450",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": false,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [],
+      "bias": null,
+      "shot": "shadows-lit-ultra-reversed-on-webgl.png",
+      "canvas": {
+        "css": [
+          800,
+          450
+        ],
+        "buffer": [
+          800,
+          450
+        ]
+      },
+      "meanLum": 0.2907,
+      "envDiff": 16.02,
+      "programsBefore": 32,
+      "programsAfter": 32,
+      "frames": 5,
+      "mean": 491.9,
+      "median": 484.2,
+      "p95": 536.4
+    }
+  ]
+}

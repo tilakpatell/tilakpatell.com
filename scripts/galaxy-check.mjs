@@ -8,7 +8,8 @@
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs space endor,coruscant
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,hoth
 //   OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine@jabba (a district: ?district=jabba)
-//   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, JSON=1 …
+//   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, SEAT=cockpit … (the
+//     cockpit view, the game's cockpit for the X-wing and the Falcon: galaxy/cabs.js), JSON=1 …
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
 //   GPU=webgpu … (or webgl: the runtime's ?gpu= override, for a 'nodes' world; each
@@ -65,6 +66,7 @@ const [mode = 'space', list = 'tatooine'] = process.argv.slice(2);
 const out = process.env.OUT ?? '.';
 const quality = process.env.QUALITY ?? 'high';
 const ship = process.env.SHIP ?? 'xwing';
+const seat = process.env.SEAT ?? null; // ('cockpit': the view from the pilot's seat, scene.js's SEAT_KEY)
 const oath = process.env.OATH ?? null; // (allegiance.js's saved oath, as JSON: the side you land as)
 const base = process.env.BASE ?? 'http://127.0.0.1:5188';
 const settle = Number(process.env.WAIT ?? 9000);
@@ -126,15 +128,16 @@ async function profileOf(page, seconds, file, bf) {
 const results = [];
 for (const id of list.split(',')) {
   const ctx = await browser.newContext({ viewport });
-  await ctx.addInitScript(({ ship: s, oath }) => {
+  await ctx.addInitScript(({ ship: s, oath, seat: st }) => {
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-start', '"universe"');
     window.localStorage.setItem('tp-universe-ship', JSON.stringify(s));
+    if (st) window.localStorage.setItem('tp:universe-seat', JSON.stringify(st));
     window.localStorage.setItem('tp-galaxy-panel', JSON.stringify('tucked'));
     window.sessionStorage.setItem('tp-galaxy-intro', '1');
     window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking: a software GL is slow, and that's the point)
     if (oath) window.localStorage.setItem('tp-gcw-side', oath);
-  }, { ship, oath });
+  }, { ship, oath, seat });
   if (!process.env.LIVE) {
     await ctx.addInitScript(() => {
       let a = 0x2f6b9c1d;
@@ -294,7 +297,10 @@ for (const id of list.split(',')) {
           window.__RUNTIME__?.invalidate();
           times.push(now - last);
           last = now;
-          frame = { calls: info.render.calls, triangles: info.render.triangles, points: info.render.points, lines: info.render.lines };
+          // (the frame's draws: the node renderer's info.render.calls is its
+          // render passes since the page began, never reset, and its draws
+          // are drawCalls; the classic renderer's calls are its draws)
+          frame = { calls: info.render.drawCalls ?? info.render.calls, triangles: info.render.triangles, points: info.render.points, lines: info.render.lines };
           info.reset();
           if (now - t0 < 4000 || times.length < 3) requestAnimationFrame(tick);
           else {
@@ -334,7 +340,7 @@ for (const id of list.split(',')) {
           window.__RUNTIME__?.invalidate();
           info.autoReset = false;
           info.reset();
-          requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.calls, tris: info.render.triangles })));
+          requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.drawCalls ?? info.render.calls, tris: info.render.triangles })));
         });
       const all = await frame();
       const out = [];
@@ -358,7 +364,11 @@ for (const id of list.split(',')) {
   console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
   if (stats.level) {
     const l = stats.level;
-    console.log(`${''.padEnd(10)} level calls ${l.calls}  tris ${l.tris}  instances ${l.instances}  lights ${l.lights ?? 0}  probe ${l.probe ?? '–'}`);
+    // (its maps: loaded of asked, and the ones not had with why the first
+    // failed, levelGltf.js's counts: a level drawn white or grey says why here)
+    const m = l.maps;
+    const maps = m ? `  maps ${m.loaded}/${m.asked}${m.failed ? `  failed ${m.failed} (${m.why ?? '?'})` : ''}` : '';
+    console.log(`${''.padEnd(10)} level calls ${l.calls}  tris ${l.tris}  instances ${l.instances}  lights ${l.lights ?? 0}  probe ${l.probe ?? '–'}${maps}`);
   }
   if (mode === 'surface' && process.env.SCANS === 'game' && scans.cc0) {
     console.log(`scans  ${id.padEnd(10)} FAIL: ${scans.cc0} of the site's own scans fetched; a Star Wars world wears the game's: ${scans.cc0Paths.join(' ')}`);

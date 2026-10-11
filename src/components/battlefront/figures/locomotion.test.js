@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CROSSFADE, deathFor, packClip, packFallback, resolveFamilies, stateFor, transition } from './locomotion.js';
+import { CROSSFADE, RATE_MAX, RATE_MIN, clipSpeed, deathFor, packClip, packFallback, rateFor, resolveFamilies, stateFor, transition } from './locomotion.js';
 
 // a cut of anims.jsonl's names, as the export spells them
 const NAMES = ['P_HM_Rifle_StandIdle_01', 'C_HM_Rifle_Walk_Fwd_01', 'C_HM_Rifle_Run_Fwd_01', 'C_HM_Rifle_Walk_Left1_01', 'A_HM_Death_Stand_Front_Upperbody_BlasterFire_01', 'A_HM_Death_Stand_Back_Upperbody_BlasterFire_01', 'A_HM_Death_Stand_Left_Upperbody_BlasterFire_01', 'T_HM_Rifle_RunToStand_Fwd_01', 'Stand_Combat_Flinch01'];
@@ -69,6 +69,49 @@ describe('the game’s clips, by family', () => {
     expect(packFallback('stance.l.crouch')).toBe('crouch');
     expect(packFallback('stance.t.walk.left')).toBe('walk.left');
     expect(packFallback('walk')).toBe(null);
+  });
+});
+
+// a clip as the pack writes it: its root's travel in its extras (clip.userData)
+const rooted = (root, duration = 1) => ({ duration, userData: root ? { root, loop: false } : {} });
+// the humanoid pack's paces, read from clips-humanoid.glb (locomotion.js's note)
+const PACE = { walk: 1.91, run: 3.94, sprint: 5.9, 'crouch.run': 2.54 };
+
+describe('a clip’s pace against the ground', () => {
+  it('reads a clip’s own speed from its root travel: none with no root, or one that goes nowhere', () => {
+    expect(clipSpeed(rooted([[0, 0, 0], [1, 0, 2]]))).toBeCloseTo(2, 9);
+    // (sideways and back count as far as ahead; a row with no time takes the clip's length)
+    expect(clipSpeed(rooted([[0, 0, 0], [1.8, 3.6, 0]], 1.8))).toBeCloseTo(2, 9);
+    expect(clipSpeed(rooted([[0, 0, 0], [0, 0, -3]], 2))).toBeCloseTo(1.5, 9);
+    expect(clipSpeed(rooted(null))).toBe(null);
+    expect(clipSpeed(rooted([[0, 0, 0], [5.3, 0, 0]], 5.3))).toBe(null);
+    expect(clipSpeed(null)).toBe(null);
+  });
+
+  it('plays a walking clip at the body’s speed over its own, inside the band, and the rest as made', () => {
+    expect(rateFor('run', 3.8, 3)).toBeCloseTo(1.2667, 4);
+    expect(rateFor('aim', 2.4, 2)).toBeCloseTo(1.2, 9);
+    expect(rateFor('crouchWalk', 2.5, 2.5)).toBeCloseTo(1, 9);
+    expect(rateFor('walk', 9, 1.9)).toBe(RATE_MAX);
+    expect(rateFor('walk', 0.3, 1.9)).toBe(RATE_MIN);
+    // (no pace of its own, no speed to match, or not a step over the ground)
+    expect(rateFor('run', 3.8, null)).toBe(1);
+    expect(rateFor('run', 0, 3)).toBe(1);
+    for (const state of ['idle', 'aim', 'death', 'hit', 'roll', 'crouchIdle']) expect(rateFor(state, state === 'aim' ? 0 : 3.8, 3), state).toBe(1);
+  });
+
+  it('plays the sim’s speeds on the clips paced nearest them: 3.8 the run, 5.97 the sprint, the crouch’s 2.5 its run', () => {
+    const at = (speed, stance = 'stand') => {
+      const s = stateFor({ state: 'alive', stance, yaw: 0, vel: [0, speed] });
+      const clip = packClip(s);
+      return { clip, rate: rateFor(s.state, s.speed, PACE[clip]) };
+    };
+    expect(at(3.8).clip).toBe('run');
+    expect(at(5.97).clip).toBe('sprint');
+    expect(at(2.5, 'crouch').clip).toBe('crouch.run');
+    // (a soldier slowed under the walk's line walks)
+    expect(at(1.5).clip).toBe('walk');
+    for (const [speed, stance] of [[3.8], [5.97], [2.5, 'crouch']]) expect(Math.abs(at(speed, stance).rate - 1), `${speed}`).toBeLessThan(0.1);
   });
 });
 

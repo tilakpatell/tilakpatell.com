@@ -41,6 +41,7 @@
 // address pins one for that visit, over what is kept.
 
 import { gpuGrade } from './gpuGrade';
+import { readTier, TIER_KEY } from './gpuProbe';
 import { anisotropyOf, read as readVideo, resolve as resolveVideo, samplesFor } from './video.js';
 
 const KEY = 'tp-quality';
@@ -214,6 +215,18 @@ export function setQuality(mode) {
 export function sharpness() {
   const k = Number.parseFloat(readKey('tp-sharpness'));
   return Number.isFinite(k) ? Math.min(2, Math.max(0.5, k)) : 1;
+}
+
+// The renderer tier this device was given (lib/gpuProbe: 'T0', 'T1' or
+// 'T2', decided by the runtime's probe on a 'nodes' world's first mount and
+// kept as 'tp-tier'), or ?tier= pinned for the visit; null before the probe
+// has run. Nothing else here reads it: the quality level stays the visitor's.
+export function rendererTier() {
+  try {
+    return readTier(window.location.search, window.location.hash, readKey(TIER_KEY), null).tier;
+  } catch {
+    return null;
+  }
 }
 
 // Hold this chip at `level` from now on (lib/detail calls it when frames

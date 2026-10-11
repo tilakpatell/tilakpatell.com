@@ -32,12 +32,11 @@ export function toPack(pack, [x, , z]) {
   return [dx * c + dz * s, -dx * s + dz * c];
 }
 
-// the pack's level.json and its bytes, from the asset host where it has them
-const bytes = (world) => (path) =>
-  fetch(laneL.packUrl(world, path)).then((r) => {
-    if (!r.ok) throw new Error(`${r.status} ${path}`);
-    return r.arrayBuffer();
-  });
+// the pack's level.json and its bytes, through the asset base as the
+// galaxy's level fetches them (lane L's packBytes: the bucket by hash where
+// the manifest names the file, the site's copy when the bucket fails; a plain
+// fetch of the site path here drew nothing once the packs left git)
+const bytes = (world) => laneL.packBytes(world);
 const DEPS = {
   packOf: (world) =>
     bytes(world)("level.json").then((b) =>

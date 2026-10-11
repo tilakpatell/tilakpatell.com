@@ -1,0 +1,185 @@
+{
+  "world": "hoth",
+  "tier": "ultra",
+  "materials": "own",
+  "glbs": 231,
+  "textures": 148,
+  "rows": [
+    {
+      "path": "instanced",
+      "at": [
+        0,
+        0
+      ],
+      "tris": 2309478,
+      "calls": 209,
+      "instances": 6037
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        320
+      ],
+      "tris": 2121071,
+      "calls": 192,
+      "instances": 6051
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        448
+      ],
+      "tris": 2080818,
+      "calls": 190,
+      "instances": 6047
+    },
+    {
+      "path": "instanced",
+      "at": [
+        -64,
+        192
+      ],
+      "tris": 2164093,
+      "calls": 189,
+      "instances": 6051
+    },
+    {
+      "path": "batched",
+      "at": [
+        0,
+        0
+      ],
+      "tris": 2309478,
+      "calls": 230,
+      "instances": 6037,
+      "batches": 230,
+      "bands": {
+        "arena": 191,
+        "horizon": 39
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        320
+      ],
+      "tris": 2121071,
+      "calls": 212,
+      "instances": 6051,
+      "batches": 212,
+      "bands": {
+        "arena": 174,
+        "horizon": 38
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        448
+      ],
+      "tris": 2080818,
+      "calls": 210,
+      "instances": 6047,
+      "batches": 210,
+      "bands": {
+        "arena": 172,
+        "horizon": 38
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "batched",
+      "at": [
+        -64,
+        192
+      ],
+      "tris": 2164093,
+      "calls": 209,
+      "instances": 6051,
+      "batches": 209,
+      "bands": {
+        "arena": 171,
+        "horizon": 38
+      },
+      "instanced": 0,
+      "blocks": 55,
+      "hidden": 0
+    },
+    {
+      "path": "gpu scene",
+      "at": [
+        0,
+        0
+      ],
+      "instances": 6037,
+      "dead": 0,
+      "tris": 2309478,
+      "calls": 209,
+      "indirect": 209,
+      "groups": 209,
+      "culled": 14,
+      "occluded": 0,
+      "drawn": 6037
+    },
+    {
+      "path": "gpu scene",
+      "at": [
+        -64,
+        320
+      ],
+      "instances": 6051,
+      "dead": 0,
+      "tris": 2121071,
+      "calls": 192,
+      "indirect": 192,
+      "groups": 192,
+      "culled": 0,
+      "occluded": 0,
+      "drawn": 6051
+    },
+    {
+      "path": "gpu scene",
+      "at": [
+        -64,
+        448
+      ],
+      "instances": 6047,
+      "dead": 0,
+      "tris": 2080818,
+      "calls": 190,
+      "indirect": 190,
+      "groups": 190,
+      "culled": 4,
+      "occluded": 0,
+      "drawn": 6047
+    },
+    {
+      "path": "gpu scene",
+      "at": [
+        -64,
+        192
+      ],
+      "instances": 6051,
+      "dead": 0,
+      "tris": 2164093,
+      "calls": 189,
+      "indirect": 189,
+      "groups": 189,
+      "culled": 0,
+      "occluded": 0,
+      "drawn": 6051
+    }
+  ]
+}

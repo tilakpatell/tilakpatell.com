@@ -13,7 +13,16 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry }
+//   materials, weather, decals, particles, debris, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry, gpuscene,
+//   trails, sharpen }
+//
+// `trails` (GPU-first lane N2, scripts/light-fixture.mjs --trails): the
+// ring set aside, a grey wall, and trails.js's movers (a crate, a skinned
+// figure, an instanced row, an alpha-tested card, a panning banner) in
+// front of it; they move once probe.trailsGo(true) says, a step a frame,
+// and probe.trails({ width, height }) gives each one's box on the screen
+// and its travel a frame, for the trail check; `temporal: 'none'` draws
+// it without a temporal pass (else TAAU at 0.77 where TRAA cannot draw).
 //
 // `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
 // 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
@@ -24,6 +33,11 @@
 // `particles` (fidelity lane X): the game's effects from their emitter
 // tables over the ring, and the GPU twin's parity (particleProbe.js), read
 // by scripts/light-fixture.mjs --particles as `probe.particles`.
+//
+// `debris` (GPU-first lane N5): a hundred breaks a minute round the ring,
+// Rapier hulls and GPU bursts on the depth buffer (debrisProbe.js), read by
+// scripts/light-fixture.mjs --debris as `probe.debris`; 'off', the same
+// scene and camera with nothing broken (the frame's before).
 //
 // `weather` (lane Q4, seconds into Hoth's day): three crates at the front
 // under the snow contributor of src/lib/three/surface/weather.js, composed
@@ -52,16 +66,24 @@
 // secondary cloud layer for a test one (CLOUD_TEST: 80 m, coverage 1,
 // exponent 1; not Hoth's, whose sunny sky is nearly clear) so the drift
 // shows in a frame.
+// `gpuscene` (GPU-first lane N1): gpuSceneField.js's 3,000 pillars and
+// crates round the ring through the GPU scene (an InstancedMesh a part on
+// the node renderer over WebGL 2), culled before each frame;
+// probe.gpuScene() reads its stats, probe.view('field') looks over it.
 // `picture` (lane Q6, with `hoth`): the record's grade (src/lib/three/light/grade.js:
 // its LUT, its five Gaussians, its HBAO numbers, a linear tone map), its
 // painted panorama and fog gradient and its cloud-shadow texture, handed
 // to applyGameLight as `picture` (the urls from the dev server);
 // probe.view('horizon') looks along the ground to where the panorama meets
 // the scattering.
+// `baked`, `gridBudget`, `cadence` (GPU-first lane N3): the baked bounce, the
+// budgeted probe grid and the cached far cascades, set up by ./lightN3.js;
+// probe.n3 reads them.
 
 import * as THREE from 'three';
 import hothWeather from '../../lib/three/surface/fixtures/hoth.weather.json';
 import hothVe from '../../lib/three/light/fixtures/hoth.ve.json';
+import { createTrails } from './trails';
 
 // the snow's albedo under --hoth (fresh snow reflects 0.8 to 0.9; Hoth's
 // ice field, worn, a little under)
@@ -121,6 +143,60 @@ export const ENTRY = {
   },
 };
 
+// The tier probe's scene (lib/gpuProbe, the GPU-first design's G1): the
+// ring of pillars and spheres at high, the cube in the middle, on the
+// ground, under a sun with a 2,048 shadow map and a sky light, from the
+// fixture's own camera. Plain lit materials and no post chain, so it is
+// made at once and costs the same on every page: what it measures is the
+// chip, not a world.
+// probeScene() → { scene, camera, dispose() }
+export function probeScene() {
+  const made = [];
+  const keep = (x) => (made.push(x), x);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b0d12);
+  const camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 800);
+  camera.position.set(0, 7, 24);
+  camera.lookAt(0, 1, 0);
+  const ground = new THREE.Mesh(keep(new THREE.PlaneGeometry(200, 200)), keep(new THREE.MeshStandardMaterial({ color: 0x9aa0a8, roughness: 0.55, metalness: 0.05 })));
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  const pillar = keep(new THREE.BoxGeometry(1, 5, 1));
+  const ball = keep(new THREE.SphereGeometry(0.9, 32, 16));
+  const stone = keep(new THREE.MeshStandardMaterial({ color: 0xd8d2c8, roughness: 0.7 }));
+  const chrome = keep(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.08, metalness: 1 }));
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const p = new THREE.Mesh(pillar, stone);
+    p.position.set(Math.cos(a) * 10, 2.5, Math.sin(a) * 10);
+    const b = new THREE.Mesh(ball, i % 2 ? chrome : stone);
+    b.position.set(Math.cos(a + 0.26) * 5, 0.9, Math.sin(a + 0.26) * 5);
+    p.castShadow = p.receiveShadow = b.castShadow = b.receiveShadow = true;
+    scene.add(p, b);
+  }
+  const cube = new THREE.Mesh(keep(new THREE.BoxGeometry(2, 2, 2)), keep(new THREE.MeshStandardMaterial({ color: 0x4488ff, roughness: 0.3 })));
+  cube.position.y = 1.6;
+  cube.castShadow = cube.receiveShadow = true;
+  scene.add(cube);
+  // (ENTRY's sun: az 210°, el 24°)
+  const [az, el] = [(210 * Math.PI) / 180, (24 * Math.PI) / 180];
+  const sun = new THREE.DirectionalLight(0xffeedd, 3);
+  sun.position.set(Math.sin(az) * Math.cos(el) * 40, Math.sin(el) * 40, Math.cos(az) * Math.cos(el) * 40);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, near: 1, far: 100 });
+  scene.add(sun, new THREE.HemisphereLight(0x8099bf, 0x59544f, 0.6));
+  return {
+    scene,
+    camera,
+    dispose() {
+      sun.shadow.map?.dispose();
+      for (const m of made) m.dispose();
+    },
+  };
+}
+
 export default {
   id: 'fixture-lit',
   shading: 'nodes',
@@ -151,6 +227,11 @@ export default {
     if (opts.particles) {
       camera.position.set(0, 2.2, 7);
       camera.lookAt(0, 2.4, 0);
+    }
+    // (over the breaks, which land 3 to 7 m round a point 2 m behind the centre)
+    if (opts.debris) {
+      camera.position.set(0, 9, 14);
+      camera.lookAt(0, 0, -2);
     }
     const camVel = new THREE.Vector3();
 
@@ -222,6 +303,8 @@ export default {
     views.horizon = { pos: [0, 1.7, 30], at: [-30, 1.7, 60] };
     // (and from high over the ring: the record's cloud texture on the snow)
     views.cloudTex = { pos: [0, 90, 60], at: [0, 0, -40] };
+    // (lane N1) over the GPU scene's field, low enough that the near pillars hide the far ones
+    views.field = { pos: [0, 4, 60], at: [0, 2, 0] };
     const pillar = geo(new THREE.BoxGeometry(1, 5, 1));
     const ball = geo(new THREE.SphereGeometry(0.9, 32, 16));
     const stone = mat({ color: 0xd8d2c8, roughness: 0.7 });
@@ -247,6 +330,8 @@ export default {
     let grid = null;
     let snow = null;
     let decals = null;
+    let field = null;
+    let n3 = null;
     // the ring as a level's lights.json, so the pools are filled the way a
     // level's are: the cells round the camera, the best by screen area
     const source = { cells: {} };
@@ -335,15 +420,33 @@ export default {
       probe.recipes = () => row.then((r) => r.map((c) => ({ label: c.label, features: c.features })));
     }
 
+    let trails = null;
+    let trailsOn = false;
+    if (opts.trails) {
+      for (const o of [...scene.children]) if (o !== ground) o.visible = false;
+      const wall = new THREE.Mesh(geo(new THREE.PlaneGeometry(14, 8)), mat({ color: 0x8a8f96, roughness: 0.7 }));
+      wall.position.set(0, 1.5, -1.2);
+      scene.add(wall);
+      trails = createTrails(scene, camera, THREE);
+      camera.position.set(0, 1.5, 6);
+      camera.lookAt(0, 1.5, 0);
+      probe.trails = (size) => trails.screen(size);
+      probe.trailsGo = (on) => (trailsOn = on);
+    }
+
     const ready = (async () => {
       await row;
       const { applyGameLight } = await import('../../lib/three/light/apply.js');
       // (Hoth's own LUT comes with `picture`: the cool test grade only without it)
-      light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, video: rt?.video ?? null, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null });
+      light = await applyGameLight(scene, renderer, entry, { tier: opts.tier, video: rt?.video ?? null, camera, lights: opts.placed ? source : null, clustered: opts.clustered, sky: opts.sky, post: opts.post, lut: opts.picture ? null : gradeLut(), filter: opts.filter, picture: opts.picture ?? null, cadence: opts.cadence ? true : null });
       probe.light = { clustered: light.parts.placed?.clustered ?? null };
       probe.grade = light.parts.grade ?? null;
       // (lane S's shadow figures: the contact pass follows them)
       for (const f of figures) light.track?.(f);
+      if (opts.baked != null || opts.gridBudget || opts.cadence) {
+        n3 = await (await import('./lightN3.js')).setupN3({ scene, renderer, camera, light, ground, figures, entry, opts });
+        probe.n3 = n3.probe;
+      }
       if (!opts.sky) {
         const [{ PMREMGenerator }, { RoomEnvironment }] = await Promise.all([import('three/webgpu'), import('three/addons/environments/RoomEnvironment.js')]);
         const pmrem = new PMREMGenerator(renderer);
@@ -352,6 +455,15 @@ export default {
       }
       if (opts.weather != null) snow = await weatherCrates(scene, made, opts.weather);
       if (opts.decals) decals = await decalWall(scene, made, renderer, ground, opts.decals, opts.tier);
+      if (opts.gpuscene) {
+        const { createGpuSceneField } = await import('./gpuSceneField.js');
+        field = await createGpuSceneField({ scene, renderer, tier: opts.tier });
+        probe.gpuScene = () => field.stats();
+      }
+      if (opts.debris) {
+        const { createDebrisProbe } = await import('./debrisProbe.js');
+        probe.debris = await createDebrisProbe({ scene, renderer, camera, light, tier: opts.tier, breaks: opts.debris !== 'off' });
+      }
       if (opts.particles) {
         const { createParticleProbe } = await import('./particleProbe.js');
         probe.particles = await createParticleProbe({ scene, renderer, camera, light, tier: opts.tier });
@@ -368,9 +480,20 @@ export default {
         // (`only`: the passes kept, for finding which one breaks)
         let passes = opts.only ? light.passes.filter((p) => opts.only.includes(p.kind)) : light.passes;
         // (`upscale`, fidelity lane U: { kind, scale }, the picture drawn under the screen and brought up)
-        if (opts.upscale) passes = (await import('../../lib/three/light/post.js')).upscaled(passes, opts.upscale);
+        const chain = await import('../../lib/three/light/post.js');
+        if (opts.upscale) passes = chain.upscaled(passes, opts.upscale);
+        // (lane N2's trails: under a temporal pass, TAAU at 0.77 where TRAA
+        // cannot draw (nodes-webgl); `temporal: 'none'` the picture without one)
+        if (opts.trails && opts.temporal === 'none') passes = chain.arrange(passes.filter((p) => p.kind !== 'traa' && !(p.kind === 'upscale' && p.upscaler === 'taau')));
+        else if (opts.trails && !chain.temporal(passes)) passes = chain.upscaled(passes, { kind: 'taau', scale: 0.77 });
+        // (lane N2: `sharpen: false` is lane U's picture, for the before shot: no sharpen pass, no mip bias)
+        if (opts.sharpen === false) passes = passes.filter((p) => p.kind !== 'sharpen');
+        const bias = await import('../../lib/three/mipBias.js');
+        bias.setMipState({ scale: opts.upscale?.scale ?? 1, classic: false });
         post = rt.gfx.post(passes);
+        if (opts.sharpen === false) bias.setMipBias(0);
         probe.passes = passes.map((p) => p.kind);
+        probe.bias = bias.mipBias();
         await post.ready;
       }
       await rt.gfx.compile(scene, camera);
@@ -384,22 +507,30 @@ export default {
         camera.updateProjectionMatrix();
       },
       step(dt) {
+        if (trailsOn) trails.step();
         cube.rotation.y += dt;
         if (camVel.x) camera.position.addScaledVector(camVel, dt);
         probe.particles?.step(dt);
+        n3?.step(dt);
+        probe.debris?.step(dt);
         light?.update(dt, camera);
       },
       draw({ renderer: r }) {
+        field?.beforeRender(camera);
         if (post && opts.post) post.render();
         else r.render(scene, camera);
+        probe.debris?.draw(r);
       },
       wants: () => true,
       dispose() {
         post?.dispose();
         grid?.dispose();
+        n3?.dispose();
         light?.dispose();
         decals?.dispose();
+        field?.dispose();
         probe.particles?.dispose();
+        probe.debris?.dispose();
         if (!opts.sky) envTex?.dispose();
         for (const m of made) m.dispose();
       },

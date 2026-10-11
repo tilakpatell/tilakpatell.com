@@ -100,6 +100,46 @@ describe('buildChain', () => {
     expect(fsr.pipeline.outputNode).toBe(fsr.nodes.find((n) => n.constructor.name === 'FSR1Node'));
     fsr.dispose();
   });
+  it('sharpens after TAAU with RCAS at the pass’s sharpness, the last node of the chain (lane N2)', async () => {
+    const passes = upscaled(passesFor('ultra', hoth.sunny, 'webgpu', { scene, camera, light, lut }), { scale: 0.67 });
+    const chain = await buildChain(renderer, passes);
+    const names = chain.nodes.map((n) => n.constructor.name);
+    expect(names.indexOf('SharpenNode')).toBeGreaterThan(names.indexOf('TAAUNode'));
+    const sharpen = chain.nodes.find((n) => n.constructor.name === 'SharpenNode');
+    expect(chain.pipeline.outputNode).toBe(sharpen);
+    expect(sharpen.sharpness.value).toBeCloseTo(-Math.log2(0.332), 6);
+    chain.dispose();
+  });
+  it('draws the scene with no multisampling under TRAA or TAAU, and at the renderer’s own otherwise (lane N2)', async () => {
+    const samples = async (passes) => {
+      const chain = await buildChain(renderer, passes);
+      const n = chain.nodes.find((x) => x.isPassNode).options.samples;
+      chain.dispose();
+      return n;
+    };
+    expect(await samples(passesFor('ultra', hoth.sunny, 'webgpu', { scene, camera, light, lut }))).toBe(0);
+    expect(await samples(upscaled(passesFor('ultra', hoth.sunny, 'webgpu', { scene, camera, light, lut }), { scale: 0.77 }))).toBe(0);
+    // (high ends in TRAA since lane V1; mid, on SMAA, keeps the renderer's own)
+    expect(await samples(passesFor('high', hoth.sunny, 'webgpu', { scene, camera, light, lut }))).toBe(0);
+    expect(await samples(passesFor('mid', hoth.sunny, 'webgpu', { scene, camera, light, lut }))).toBe(undefined);
+  });
+  it('under a reversed depth buffer, gives the screen-space passes the standard depth and TRAA the buffer as it is (lane N2)', async () => {
+    const reversed = { isWebGPURenderer: true, reversedDepthBuffer: true };
+    const chain = await buildChain(reversed, passesFor('ultra', hoth.sunny, 'webgpu', { scene, camera, light, lut }));
+    const std = chain.nodes.find((n) => n.isStandardDepth);
+    expect(std).toBeTruthy();
+    expect(std.renderTarget.texture.type).toBe(THREE.FloatType);
+    const scenePass = chain.nodes.find((n) => n.isPassNode);
+    const traa = chain.nodes.find((n) => n.constructor.name === 'TRAANode');
+    expect(traa.depthTextureNode ?? traa.depthNode).toBe(scenePass.getTextureNode('depth'));
+    const gtao = chain.nodes.find((n) => n.constructor.name === 'GTAONode');
+    expect(gtao.depthNode).toBe(std);
+    chain.dispose();
+    // (and none on a standard buffer)
+    const plain = await buildChain(renderer, passesFor('ultra', hoth.sunny, 'webgpu', { scene, camera, light, lut }));
+    expect(plain.nodes.some((n) => n.isStandardDepth)).toBe(false);
+    plain.dispose();
+  });
   it('a shader pass still needs the webgl backend; an unknown kind is refused', async () => {
     await expect(buildChain(renderer, [{ kind: 'render', scene, camera }, { kind: 'shader' }])).rejects.toThrow('needs the webgl backend');
     await expect(buildChain(renderer, [{ kind: 'render', scene, camera }, { kind: 'vignette' }])).rejects.toThrow('unknown pass vignette');

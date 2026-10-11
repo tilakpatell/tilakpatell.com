@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { anisotropyFor, fitSize, fitTexture, imageBitmapOk, loadTexture, mipsOver, variant } from './textures';
+import { anisotropyFor, fitSize, fitTexture, imageBitmapOk, loadTexture, mipsOver, setMipBias, sharpen, variant } from './textures';
+import { mipBias } from './mipBias';
 
 // (one file the bucket holds, for the asset base's case)
 vi.mock('../../data/assets-manifest.json', () => ({ default: { 'hq/tex/rock.jpg': { hash: 'bbbbbbbbbbbb', bytes: 90000 } } }));
@@ -113,5 +114,18 @@ describe('a texture the bucket holds', () => {
       useAssetPool(null);
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe('the mip bias (lane N2)', () => {
+  it('sharpen keeps a texture’s own bias for the material’s samples, and leaves one not given alone', () => {
+    const t = sharpen(new THREE.Texture(), { bias: -0.25 });
+    expect(t.userData.mipBias).toBe(-0.25);
+    expect(sharpen(new THREE.Texture()).userData.mipBias).toBeUndefined();
+  });
+  it('setMipBias reaches every game material through lib/three/mipBias', () => {
+    setMipBias(-1.38);
+    expect(mipBias()).toBe(-1.38);
+    setMipBias(0);
   });
 });
