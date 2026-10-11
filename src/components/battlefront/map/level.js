@@ -10,7 +10,7 @@
 // (ground.js) since the pack carries no ground mesh: the galaxy draws its
 // own over it.
 //
-//   createLevel({ scene, tier, renderer, world = 'hoth', ground = true, onCell, onDrop, deps })
+//   createLevel({ scene, tier, texTier, renderer, world = 'hoth', ground = true, onCell, onDrop, deps })
 //     → { ready: Promise, group, origin, pack, update([x, y, z]), heightAt(x, z),
 //         loadBin(path), navOf() → Promise<mask | null>, progress(), loaded(), stats(), dispose() }
 //   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
@@ -53,6 +53,7 @@ const DEPS = {
 export function createLevel({
   scene,
   tier = "high",
+  texTier = null,
   renderer = null,
   world = "hoth",
   ground = true,
@@ -85,6 +86,7 @@ export function createLevel({
     group.position.fromArray(pack.origin ?? [0, 0, 0]);
     group.rotation.y = -(pack.yaw ?? 0);
     loader = d.createLevelLoader({
+      texTier,
       world,
       tier,
       renderer,

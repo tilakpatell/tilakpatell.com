@@ -16,6 +16,7 @@
 // and wait: figures/ragdolls.js).
 
 import * as THREE from 'three';
+import { textureTier } from '../../lib/video.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
 import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf } from '../../lib/battlefront/rulebook.js';
 import { preloadDecoders } from '../../lib/three/gltf.js';
@@ -65,7 +66,7 @@ export default {
     // brings them)
     let collision = null;
     let physics = null;
-    const level = createLevel({ scene, tier, renderer, world: levelName, onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
+    const level = createLevel({ scene, tier, texTier: textureTier(tier, rt.video), renderer, world: levelName, onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     const figures = createFigures({ scene, ragdolls });
@@ -140,7 +141,7 @@ export default {
     const pictures = await picturesOf(levelName);
     const lit = (w) => litWith(pictures, entryFor(lighting, w), w);
     const first = lit(weather);
-    const light = await applyGameLight(scene, renderer, first.entry, { tier, camera, lights: lightsJsonOf(lighting.lights), picture: first.picture, onChain: (passes) => swapPost(passes) });
+    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, lights: lightsJsonOf(lighting.lights), picture: first.picture, onChain: (passes) => swapPost(passes) });
     // (?post=off in the address: the scene drawn with no chain, for a check)
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
     let post = light.passes.length && asked !== 'off' ? rt.gfx.post(light.passes) : null;
@@ -277,6 +278,12 @@ export default {
         }
       },
       view: snapshot,
+      // a video control turned in the settings (lane V1): the chain built again
+      // for the live fields (the shadows, the lights' pool and the maps take a
+      // reload, which the panel offers)
+      onVideo(values) {
+        light.setVideo(values);
+      },
       dispose() {
         look.detach();
         input.detach();
