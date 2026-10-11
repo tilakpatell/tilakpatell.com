@@ -72,6 +72,11 @@ export const CAST = [
   ['trifighter', 'air', `${V}/air/droidtrifighter/vehicle_air_droidtrifighter_static_donotuse_mesh`, 'the droid tri-fighters'],
   ['hyena', 'air', `${V}/air/hyenabomber/vehicle_air_hyenabomber_static_donotuse_mesh`, 'the Hyena bombers'],
   ['cloudcar', 'air', `${V}/air/cloudcar/vehicle_air_cloudcar_static_donotuse_mesh`, 'Bespin’s cloud cars', ['--hull-frame']],
+  // (lane S1, the galaxy's fleet: Maul's Scimitar and the TIE striker, which
+  // the space layer flew as Meshy remakes; drawn by galaxy/models.js's rows,
+  // not placed on a surface)
+  ['scimitar', 'air', `${V}/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh`, 'Maul’s Scimitar', ['--hull-frame']],
+  ['tiestriker', 'air', `${V}/air/tiestriker/tiestriker_01_static_mesh`, 'the TIE strikers'],
 
   // the cockpits: the game's own interiors, each in its hull's frame, loaded
   // only when someone boards (the rides, the space layer's cockpit view)
