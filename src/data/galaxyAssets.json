@@ -5399,6 +5399,18 @@
     "from": "models/galaxy/bf2017/levels/endor/far.bin",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/endor/game/endor_01/": {
+    "hash": "6643b8508d68",
+    "bytes": 616654385,
+    "files": 4582,
+    "from": "models/galaxy/bf2017/levels/endor/game/endor_01/",
+    "tier": "whole",
+    "check": {
+      "file": "level.json",
+      "bytes": 734254,
+      "hash": "a61b31b7fd0b"
+    }
+  },
   "models/galaxy/bf2017/levels/endor/horizon.bin": {
     "hash": "79ed45441eec",
     "bytes": 96,
@@ -48658,6 +48670,18 @@
     "bytes": 1770,
     "from": "models/galaxy/bf2017/levels/hoth/vehicles.json",
     "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/tatooine/game/tatooine_01/": {
+    "hash": "47158a0f119e",
+    "bytes": 362229864,
+    "files": 4689,
+    "from": "models/galaxy/bf2017/levels/tatooine/game/tatooine_01/",
+    "tier": "whole",
+    "check": {
+      "file": "level.json",
+      "bytes": 781947,
+      "hash": "f10023f13424"
+    }
   },
   "models/galaxy/bf2017/scenes/hoth-outro.glb": {
     "hash": "201417ead22b",
