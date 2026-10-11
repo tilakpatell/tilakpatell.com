@@ -301,7 +301,7 @@ export const SITES = {
     gameLight: 'scarif',
     // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/scarif/level.json,
     // `node scripts/bf2017-level.mjs s9_3/scarif/levels/mp/scarif_02 --world
-    // scarif --spawn --subs Scarif_02,Phase_02,Phase_02_Unique`: the ground
+    // scarif --spawn --subs Scarif_02,Phase_02,Phase_02_Unique --share low=0.6`: the ground
     // fight's beach base, its palms, bunkers and stores; the site's built pads,
     // bunkers, lamps and scatter are the flight's (`game`). The Citadel stays
     // built: the game's stands 3 km west, past the arena, on the horizon)

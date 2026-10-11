@@ -8,8 +8,8 @@ export const SITE = {
   gameLight: 'bespin',
   // drawn from the game's level (lane E4: /models/galaxy/bf2017/levels/bespin/level.json,
   // `node scripts/bf2017-level.mjs s2/levels/cloudcity_01 --world bespin
-  // --spot 20 0 --floor 199 --walk 192 --arena 256 --subs
-  // CloudCity_01,StreamedLevel`): CloudCity_01's walkways, platforms and
+  // --spot 20 0 --floor 199 --walk 192 --arena 1024 --share
+  // low=0.5,mid=0.6,high=0.7 --subs CloudCity_01,StreamedLevel`): CloudCity_01's walkways, platforms and
   // halls at the game's 199 m, the city's plazas 204 m below as its
   // backdrop. Each place stands on the game's own: Platform 327 on the great
   // landing platform, the chamber by the Tibanna generators and the
@@ -162,8 +162,9 @@ export const SITE = {
   ],
   // the campaign's Bespin (lane E4: /models/galaxy/bf2017/levels/bespin/m2bes/level.json,
   // `node scripts/bf2017-level.mjs levels/sp/a2/m2bes/ds02 --world bespin
-  // --district m2bes --spot -2531 2912 --floor 2366.25 --walk 256 --arena 384
-  // --subs AdministratorsPalace,A2_M2BES_DS02_S0600_GP,A2_M2BES_DS02_S0700_GP,BespinAtmosphere`):
+  // --district m2bes --spot -2531 2912 --floor 2366.25 --walk 256 --arena 1024
+  // --share low=0.5,mid=0.6,high=0.7 --subs AdministratorsPalace,
+  // A2_M2BES_DS02_S0600_GP,A2_M2BES_DS02_S0700_GP,BespinAtmosphere`):
   // the Administrator's palace, where the campaign's AT-STs and E-Web
   // stand, the other floating cities round it on the horizon
   districts: [
