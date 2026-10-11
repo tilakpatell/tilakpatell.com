@@ -31,7 +31,17 @@ The first run, at the real 8 × 3 × 8 grid, held one probe a frame (5.7 ms a pr
 
 ## The cadence (`--shadows --cadence`)
 
-CADENCE_PLACEHOLDER
+Lane S’s shadow strip under Hoth’s record, cast along the light (`lightSun`: a 2.8 m shadow off a 1.8 m figure, where the record’s 82° shadow sun hides it under the capsule), the figures running from 2, 20 and 60 m away at 30 m/s for 90 frames (`lightN3.js`’s `WALK`, the stress case), watched from low beside them. The walk runs twice from the same start: every cascade drawn every frame (the reference), then on the cadence. A miss is a figure-frame where the reference shows the figure’s shadow (its pixel under 0.9 of the open snow 2.5 m beside it) and the cached run does not.
+
+| | value | `_source` |
+| --- | --- | --- |
+| figure-frames whose shadow the reference shows | 18 | `cadence-shadows-lit-ultra.json` |
+| of those, without it on the cadence | **0** (Review Focus 4) | the same |
+| draws a cascade over 90 frames, cached | 90, 90, 23, 22 | the same |
+| draws a cascade over 90 frames, every frame | 90, 90, 90, 90 | the same |
+| the run’s first and last frames | `cadence-shadows-lit-ultra-webgl-run0.png`, `-run89.png` | |
+
+The two far cascades drew 45 times in place of 180 (−75 %), the one redraw beyond every fourth frame being the view’s first frame. Only 18 figure-frames qualify because SwiftShader shows a cast shadow in the nearest cascades alone (lane S’s shots on `main` show the same: no shadow off the 20 m figure or the posts past it), so the far cascades’ shadows are judged on the laptop. The other shots (`-seam`, `-pen1`, `-pen10`, `-contact`, `-contact-off`) are lane S’s views on this branch; the frame’s 0.2859 is the strip’s, not the calibration view’s.
 
 ## The laptop’s table (the owner runs these)
 
