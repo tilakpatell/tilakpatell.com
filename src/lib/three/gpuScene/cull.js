@@ -199,7 +199,8 @@ const MIN = MIN_RADIUS;
 export function cullCpu({ scene, table, camera, tier, hzb = null, K = table.K, state = null, now = 0, fade = FADE, shadowReach = SHADOW_REACH }) {
   const count = scene.count;
   const L0 = (LOD[tier] ?? LOD.high).L0;
-  const planes = planesOf(camera.viewProj);
+  // (a camera without matrices, the counting script's: no frustum, no pyramid)
+  const planes = camera.viewProj ? planesOf(camera.viewProj) : null;
   const lods = new Uint8Array(count).fill(NONE);
   const prev = new Uint8Array(count).fill(NONE);
   const changed = new Float32Array(count).fill(-Infinity);
@@ -241,11 +242,11 @@ export function cullCpu({ scene, table, camera, tier, hzb = null, K = table.K, s
       changed[i] = now;
     }
     if (d - R <= shadowReach && !(row.flags & FLAG.horizon)) push(shadow, table.keyOf(m, k, mir), i);
-    if (!planes.every((p) => p[0] * c[0] + p[1] * c[1] + p[2] * c[2] + p[3] >= -R)) {
+    if (planes && !planes.every((p) => p[0] * c[0] + p[1] * c[1] + p[2] * c[2] + p[3] >= -R)) {
       stats.culled++;
       continue;
     }
-    if (hzb) {
+    if (hzb && camera.view) {
       const s = sphereRect(c, R, camera);
       if (s && occludedAt(s.rect, s.near, hzb, { reversed: camera.reversed })) {
         stats.occluded++;
