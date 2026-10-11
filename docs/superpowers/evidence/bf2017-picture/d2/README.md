@@ -60,7 +60,16 @@ The room under the row is about 47 MB of pack maps. So high and mid keep main’
 | high | 140 (274) | 908,609 (1,664,163) | 142.4 | 60 | 160 |
 | ultra | 120 (1,500) | 1,728,667 (none) | 258.6 | 240 | 285 |
 
-D2’s branch, measured the same way, is in the PR’s body: [GATE] below is filled in once the packs are published.
+D2’s branch at 7535bb89 and its packs as published, measured the same way: `BUDGET=1 QUALITY=<tier> galaxy-check surface hoth,endor` on 2026-10-11, 06:20 to 06:50 UTC.
+
+| world | tier | calls (row) | triangles (row) | level calls, instances | models MB (bucket row) | result |
+| --- | --- | --: | --: | --: | --: | --- |
+| hoth | high | 158 (274) | 982,095 (1,664,163) | 181, 6,037 | 146.1 (160) | pass |
+| endor | high | 164 (257) | 1,403,163 (3,679,784) | 237, 2,121 | 157.7 (160) | pass (Endor is held to its own baseline: `KNOWN_OVER`) |
+| hoth | ultra | 185 (1,500) | 1,890,727 (none) | 0 when measured, 206 and 6,037 at 160 s | 472.6 (285) | over: recorded, not held |
+| endor | ultra | 90 (1,500) | 2,583,301 (none) | 865, 12,940 | 475.7 (285) | over: recorded, not held |
+
+High holds on both, Endor with 2.3 MB to spare. Ultra fetches about 470 MB, against 258.6 MB on main: ultra’s pack maps (up to 256 MB a pack, against main’s high sizes) and the LOD0 meshes come on top of what main fetches. The plan holds ultra to its numbers being recorded; the frame time and memory at ultra are the laptop’s gate (lane G, the desktop’s `gate` job, PR #906). In software GL, Hoth’s level at ultra comes up about 150 s in, after the check’s settle, so its counts there are the world without the level (a probe of the page polled every 20 s: 0 calls to 120 s, 57 at 140 s, 206 at 160 s). The ultra rows therefore want a longer settle, or the desktop’s GPU, before they can be held.
 
 ## Decals
 
