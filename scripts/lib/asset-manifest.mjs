@@ -41,9 +41,10 @@ const PACKS = ['models/galaxy/bf2017', 'models/galaxy/space', 'textures/galaxy/s
 // captions beside it stay committed
 const FILMS = 'films/bf2017';
 const CUTS = ['lod1', 'far', 'ultra'];
-// A level pack's own text stays in git (the tests and the sites read it, and
-// it is small); every other file of the pack is published (lane E0)
-export const PACK_KEPT = /^models\/galaxy\/bf2017\/levels\/.+\/(level\.json|README\.md)$/;
+// A level pack's text stays in git (level.json, its parts' JSON, the README:
+// the tests, the sites and the other lanes read them, and they are small);
+// its binaries (cells, meshes, textures, maps, shapes) are published (lane E0)
+export const PACK_KEPT = /^models\/galaxy\/bf2017\/levels\/.+\.(json|md)$/;
 
 const bare = (path) => path.replace(/^\/+/, '');
 export const publishedPath = (path, hash) => keyOf({ hash, path: bare(path) });
@@ -82,10 +83,10 @@ const measure = (publicDir, path) => {
 // What the pipeline made from the game and is here to publish: every file a
 // credit from the game names (crew or surface), each of its cuts beside it
 // (.lod1, .far, .ultra), and everything under models/galaxy/bf2017 (the clip
-// packs, and the level packs but their level.json and README) and
-// models/galaxy/space (the space levels), and the game's films under
-// films/bf2017. Meshy's, Sketchfab's and Quaternius's stay committed: their
-// credits name another source. Sorted by path.
+// packs) and models/galaxy/space (the space levels), the level packs but their
+// level.json and README, and the game's films under films/bf2017. Meshy's,
+// Sketchfab's and Quaternius's stay committed: their credits name another
+// source. Sorted by path.
 export function gameFiles(credits, publicDir) {
   const out = new Map();
   for (const c of Object.values(credits)) {

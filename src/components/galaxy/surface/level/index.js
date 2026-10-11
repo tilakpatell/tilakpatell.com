@@ -19,6 +19,8 @@
 //     shapes streamed into it beside the walk world's boxes, the ground under
 //     them a heightfield from heightAt; onPhysics(engine) once it's up: the
 //     scene puts the player on the 2017 soldier's body, playerBody.js)
+//     (camera: the placed lights rank by it; light: the world's record, for
+//     their scale; onProbe: the reflection volume you stand in, for gameLit.js)
 //   packOf(world) → Promise<level.json> (fetched once)
 //     (walk: the walk world, { solids, floors }, the pack's collision goes into)
 //
