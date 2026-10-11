@@ -20,7 +20,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | X2 | WebAssembly where it pays: Rapier, Basis and meshopt made robust; the CPU hot paths profiled and ported to Rust one at a time, kept by measurement | nothing | `session_01SDTWucfkJsK48o5ZrJJZs6` (spawned 2026-10-11 04:31 UTC, Opus 5.5) | `claude/bf2017-x2-wasm` | |
 | R2 | the stream spike (and the game itself from the owner’s desktop as a second source): the ultra picture rendered on the owner’s GPU and streamed over WebRTC (signalling on Supabase Realtime), the numbers, the decision | W to measure | `session_01Ssaa24nQsXQKzVD9zasd6d` (spawned 2026-10-11 04:29 UTC, Opus 5.5): sender `scripts/desktop/bf2017-stream.mjs`, receiver `#/stream`, `src/lib/stream/`; the cloud’s plumbing proven (360p30 input to picture p50 86 ms, p95 104 ms); the game’s window as a second source (`--source game`: `getDisplayMedia` of the window, SendInput through `scripts/desktop/inject.mjs`, PresentMon), rehearsed in the cloud on a stand-in; the decision a draft until the owner’s desktop run (`docs/superpowers/evidence/bf2017-picture/r2/README.md`; lane W adds `stream` to its job list); PR #908 (draft) | `claude/bf2017-r2-stream` | |
 
-### Lane D2: every detail (`claude/bf2017-d2-detail`, PR #PRNUM)
+### Lane D2: every detail (`claude/bf2017-d2-detail`, PR #926)
 
 The numbers: `docs/superpowers/evidence/bf2017-picture/d2/README.md`.
 
