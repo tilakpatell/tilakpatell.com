@@ -45,6 +45,16 @@ describe('Starfighter Assault over Endor, from the game’s level', () => {
     expect(level.spawns[1].length).toBeGreaterThan(0);
   });
 
+  it('names each side’s pilots from the game’s space-battle lists, by the battle’s seed', () => {
+    const { plan } = lay(3);
+    expect(plan.pilots[1]).toHaveLength(20);
+    expect(new Set(plan.pilots[1]).size).toBe(20);
+    expect(plan.pilots[1].every((n) => /^TK-\d+$/.test(n))).toBe(true);
+    expect(plan.pilots[0]).toContain('Reeech');
+    expect(lay(3).plan.pilots).toEqual(plan.pilots);
+    expect(lay(4).plan.pilots[1]).not.toEqual(plan.pilots[1]);
+  });
+
   it('follows the level’s phases, stage by stage, its objectives where the level puts them', () => {
     const { laid, plan } = lay(1);
     expect(plan.stages.map((s) => s.id)).toEqual(['corvettes', 'mines', 'top', 'beneath', 'engines']);

@@ -1,0 +1,83 @@
+{
+  "_from": "scripts/bf2017-picture.mjs hoth: the weathers' VE records (src/data/bf2017/light/hoth.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "hoth",
+  "weathers": {
+    "sunny": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunny.lut.png",
+        "size": 17
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2",
+        "name": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_C",
+        "horizon": [
+          0.7335,
+          0.8368,
+          0.962
+        ],
+        "size": [
+          2048,
+          512
+        ]
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunny.gradient.ktx2",
+        "name": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunny.clouds.ktx2",
+        "name": "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_Arctic_01_CloudShadow_RGBM"
+      }
+    },
+    "sunset": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunset.lut.png",
+        "size": 17
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunset.panorama.ktx2",
+        "name": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_Sunset_01_Panoramic_C",
+        "horizon": [
+          0.157,
+          0.0909,
+          0.0708
+        ],
+        "size": [
+          2048,
+          512
+        ]
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunset.gradient.ktx2",
+        "name": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_Sunset_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunset.clouds.ktx2",
+        "name": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_01_Sunset_CloudShadow_C"
+      }
+    },
+    "interior": {
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/hoth/interior.lut.png",
+        "size": 17
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2",
+        "name": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_C",
+        "horizon": [
+          0.7335,
+          0.8368,
+          0.962
+        ],
+        "size": [
+          2048,
+          512
+        ]
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/hoth/sunny.gradient.ktx2",
+        "name": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_Fog_C"
+      }
+    }
+  }
+}

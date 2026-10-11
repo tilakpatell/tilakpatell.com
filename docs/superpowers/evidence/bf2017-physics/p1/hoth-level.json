@@ -1,0 +1,1191 @@
+{
+  "world": "hoth",
+  "source": "level",
+  "angle": "d3d11",
+  "checks": [
+    {
+      "name": "walking the snow, the feet stay on the ground drawn (within 0.5 m)",
+      "ok": true,
+      "seen": {
+        "off": [
+          0.002,
+          0.009,
+          0.005,
+          0.001,
+          0.006,
+          0.004,
+          0.007,
+          0.005,
+          0.003,
+          0.009,
+          0.004,
+          0
+        ],
+        "moved": 11.59
+      }
+    },
+    {
+      "name": "a wall of the game’s stops you short of its face",
+      "ok": true,
+      "seen": {
+        "along": 3.37,
+        "wallAt": 4,
+        "y": 0.28
+      }
+    }
+  ],
+  "stats": {
+    "cells": 22,
+    "bodies": 1717,
+    "colliders": 10853,
+    "uniqueShapes": 5088,
+    "triangles": 95137,
+    "heightfields": 88,
+    "queued": 0,
+    "dropped": [
+      {
+        "cell": "0,0",
+        "mesh": 17,
+        "hulls": 29,
+        "triangles": 1434
+      },
+      {
+        "cell": "0,0",
+        "mesh": 275,
+        "hulls": 0,
+        "triangles": 660
+      },
+      {
+        "cell": "0,0",
+        "mesh": 276,
+        "hulls": 0,
+        "triangles": 1152
+      },
+      {
+        "cell": "0,0",
+        "mesh": 277,
+        "hulls": 0,
+        "triangles": 1848
+      },
+      {
+        "cell": "0,0",
+        "mesh": 279,
+        "hulls": 8,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 280,
+        "hulls": 4,
+        "triangles": 182
+      },
+      {
+        "cell": "0,0",
+        "mesh": 282,
+        "hulls": 7,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 283,
+        "hulls": 15,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 289,
+        "hulls": 26,
+        "triangles": 11284
+      },
+      {
+        "cell": "0,0",
+        "mesh": 291,
+        "hulls": 8,
+        "triangles": 2430
+      },
+      {
+        "cell": "0,0",
+        "mesh": 292,
+        "hulls": 0,
+        "triangles": 5292
+      },
+      {
+        "cell": "0,0",
+        "mesh": 294,
+        "hulls": 0,
+        "triangles": 1845
+      },
+      {
+        "cell": "0,0",
+        "mesh": 295,
+        "hulls": 0,
+        "triangles": 4384
+      },
+      {
+        "cell": "0,0",
+        "mesh": 296,
+        "hulls": 0,
+        "triangles": 955
+      },
+      {
+        "cell": "0,0",
+        "mesh": 306,
+        "hulls": 114,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 316,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 319,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 320,
+        "hulls": 0,
+        "triangles": 999
+      },
+      {
+        "cell": "0,0",
+        "mesh": 323,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 327,
+        "hulls": 8,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 406,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 448,
+        "hulls": 3,
+        "triangles": 132
+      },
+      {
+        "cell": "0,0",
+        "mesh": 450,
+        "hulls": 2,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 451,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "0,0",
+        "mesh": 457,
+        "hulls": 0,
+        "triangles": 196
+      },
+      {
+        "cell": "0,0",
+        "mesh": 461,
+        "hulls": 52,
+        "triangles": 624
+      },
+      {
+        "cell": "0,0",
+        "mesh": 468,
+        "hulls": 5,
+        "triangles": 358
+      },
+      {
+        "cell": "0,0",
+        "mesh": 469,
+        "hulls": 6,
+        "triangles": 202
+      },
+      {
+        "cell": "0,0",
+        "mesh": 473,
+        "hulls": 28,
+        "triangles": 1581
+      },
+      {
+        "cell": "0,-1",
+        "mesh": 276,
+        "hulls": 0,
+        "triangles": 144
+      },
+      {
+        "cell": "0,-1",
+        "mesh": 461,
+        "hulls": 0,
+        "triangles": 240
+      },
+      {
+        "cell": "0,-1",
+        "mesh": 473,
+        "hulls": 0,
+        "triangles": 1581
+      },
+      {
+        "cell": "0,-1",
+        "mesh": 509,
+        "hulls": 0,
+        "triangles": 714
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 17,
+        "hulls": 29,
+        "triangles": 1434
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 275,
+        "hulls": 0,
+        "triangles": 528
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 276,
+        "hulls": 0,
+        "triangles": 432
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 277,
+        "hulls": 0,
+        "triangles": 1232
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 278,
+        "hulls": 5,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 279,
+        "hulls": 8,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 280,
+        "hulls": 6,
+        "triangles": 273
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 282,
+        "hulls": 21,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 283,
+        "hulls": 35,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 284,
+        "hulls": 22,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 285,
+        "hulls": 0,
+        "triangles": 1566
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 286,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 287,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 288,
+        "hulls": 18,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 289,
+        "hulls": 36,
+        "triangles": 15624
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 291,
+        "hulls": 3,
+        "triangles": 1215
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 292,
+        "hulls": 0,
+        "triangles": 2646
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 295,
+        "hulls": 0,
+        "triangles": 5480
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 296,
+        "hulls": 0,
+        "triangles": 955
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 319,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 320,
+        "hulls": 0,
+        "triangles": 333
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 323,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 324,
+        "hulls": 27,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 327,
+        "hulls": 24,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 457,
+        "hulls": 0,
+        "triangles": 252
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 461,
+        "hulls": 53,
+        "triangles": 636
+      },
+      {
+        "cell": "-1,0",
+        "mesh": 473,
+        "hulls": 28,
+        "triangles": 1581
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 88,
+        "hulls": 14,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 262,
+        "hulls": 1,
+        "triangles": 3134
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 279,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 280,
+        "hulls": 10,
+        "triangles": 455
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 282,
+        "hulls": 36,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 283,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 284,
+        "hulls": 28,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 286,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 287,
+        "hulls": 7,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 288,
+        "hulls": 14,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 289,
+        "hulls": 34,
+        "triangles": 15624
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 291,
+        "hulls": 1,
+        "triangles": 405
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 292,
+        "hulls": 0,
+        "triangles": 6615
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 293,
+        "hulls": 0,
+        "triangles": 1178
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 294,
+        "hulls": 0,
+        "triangles": 2460
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 295,
+        "hulls": 0,
+        "triangles": 4384
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 301,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 316,
+        "hulls": 2,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 320,
+        "hulls": 0,
+        "triangles": 1332
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 321,
+        "hulls": 0,
+        "triangles": 274
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 323,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 327,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 461,
+        "hulls": 19,
+        "triangles": 228
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 473,
+        "hulls": 28,
+        "triangles": 1581
+      },
+      {
+        "cell": "-1,-1",
+        "mesh": 516,
+        "hulls": 2,
+        "triangles": 1142
+      },
+      {
+        "cell": "0,1",
+        "mesh": 17,
+        "hulls": 29,
+        "triangles": 1434
+      },
+      {
+        "cell": "0,1",
+        "mesh": 275,
+        "hulls": 0,
+        "triangles": 2112
+      },
+      {
+        "cell": "0,1",
+        "mesh": 276,
+        "hulls": 0,
+        "triangles": 1872
+      },
+      {
+        "cell": "0,1",
+        "mesh": 277,
+        "hulls": 0,
+        "triangles": 3080
+      },
+      {
+        "cell": "0,1",
+        "mesh": 279,
+        "hulls": 8,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 280,
+        "hulls": 6,
+        "triangles": 273
+      },
+      {
+        "cell": "0,1",
+        "mesh": 283,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 284,
+        "hulls": 8,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 286,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 288,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 289,
+        "hulls": 18,
+        "triangles": 7812
+      },
+      {
+        "cell": "0,1",
+        "mesh": 291,
+        "hulls": 4,
+        "triangles": 1620
+      },
+      {
+        "cell": "0,1",
+        "mesh": 292,
+        "hulls": 0,
+        "triangles": 2646
+      },
+      {
+        "cell": "0,1",
+        "mesh": 294,
+        "hulls": 0,
+        "triangles": 1230
+      },
+      {
+        "cell": "0,1",
+        "mesh": 295,
+        "hulls": 0,
+        "triangles": 5480
+      },
+      {
+        "cell": "0,1",
+        "mesh": 306,
+        "hulls": 32,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 320,
+        "hulls": 0,
+        "triangles": 1332
+      },
+      {
+        "cell": "0,1",
+        "mesh": 321,
+        "hulls": 0,
+        "triangles": 137
+      },
+      {
+        "cell": "0,1",
+        "mesh": 406,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 448,
+        "hulls": 9,
+        "triangles": 396
+      },
+      {
+        "cell": "0,1",
+        "mesh": 450,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 451,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "0,1",
+        "mesh": 457,
+        "hulls": 0,
+        "triangles": 252
+      },
+      {
+        "cell": "0,1",
+        "mesh": 461,
+        "hulls": 80,
+        "triangles": 960
+      },
+      {
+        "cell": "0,1",
+        "mesh": 462,
+        "hulls": 19,
+        "triangles": 2356
+      },
+      {
+        "cell": "0,1",
+        "mesh": 468,
+        "hulls": 10,
+        "triangles": 716
+      },
+      {
+        "cell": "0,1",
+        "mesh": 469,
+        "hulls": 12,
+        "triangles": 404
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 17,
+        "hulls": 117,
+        "triangles": 4302
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 275,
+        "hulls": 0,
+        "triangles": 1188
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 276,
+        "hulls": 0,
+        "triangles": 1152
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 277,
+        "hulls": 0,
+        "triangles": 3080
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 278,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 279,
+        "hulls": 16,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 280,
+        "hulls": 8,
+        "triangles": 364
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 281,
+        "hulls": 17,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 283,
+        "hulls": 42,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 286,
+        "hulls": 9,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 288,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 289,
+        "hulls": 44,
+        "triangles": 9548
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 291,
+        "hulls": 15,
+        "triangles": 1215
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 292,
+        "hulls": 4,
+        "triangles": 5292
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 294,
+        "hulls": 0,
+        "triangles": 615
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 295,
+        "hulls": 0,
+        "triangles": 5480
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 296,
+        "hulls": 0,
+        "triangles": 2865
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 303,
+        "hulls": 2,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 306,
+        "hulls": 112,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 311,
+        "hulls": 11,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 312,
+        "hulls": 26,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 319,
+        "hulls": 2,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 320,
+        "hulls": 8,
+        "triangles": 2664
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 327,
+        "hulls": 60,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 406,
+        "hulls": 4,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 448,
+        "hulls": 9,
+        "triangles": 396
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 450,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 451,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 457,
+        "hulls": 15,
+        "triangles": 140
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 461,
+        "hulls": 90,
+        "triangles": 1080
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 462,
+        "hulls": 8,
+        "triangles": 992
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 468,
+        "hulls": 5,
+        "triangles": 358
+      },
+      {
+        "cell": "-1,1",
+        "mesh": 469,
+        "hulls": 6,
+        "triangles": 202
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 278,
+        "hulls": 16,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 279,
+        "hulls": 11,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 280,
+        "hulls": 4,
+        "triangles": 182
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 281,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 282,
+        "hulls": 28,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 283,
+        "hulls": 12,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 284,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 285,
+        "hulls": 0,
+        "triangles": 522
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 286,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 287,
+        "hulls": 5,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 288,
+        "hulls": 22,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 289,
+        "hulls": 216,
+        "triangles": 32984
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 291,
+        "hulls": 5,
+        "triangles": 405
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 292,
+        "hulls": 3,
+        "triangles": 3969
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 294,
+        "hulls": 0,
+        "triangles": 1845
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 295,
+        "hulls": 0,
+        "triangles": 4384
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 296,
+        "hulls": 0,
+        "triangles": 955
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 301,
+        "hulls": 1,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 306,
+        "hulls": 2,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 318,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 320,
+        "hulls": 7,
+        "triangles": 2331
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 321,
+        "hulls": 0,
+        "triangles": 411
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 323,
+        "hulls": 9,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 324,
+        "hulls": 9,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 327,
+        "hulls": 338,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,0",
+        "mesh": 328,
+        "hulls": 8,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 278,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 279,
+        "hulls": 26,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 280,
+        "hulls": 4,
+        "triangles": 182
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 282,
+        "hulls": 7,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 283,
+        "hulls": 15,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 284,
+        "hulls": 72,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 285,
+        "hulls": 0,
+        "triangles": 261
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 286,
+        "hulls": 6,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 288,
+        "hulls": 10,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 289,
+        "hulls": 56,
+        "triangles": 24304
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 291,
+        "hulls": 3,
+        "triangles": 405
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 292,
+        "hulls": 0,
+        "triangles": 3969
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 294,
+        "hulls": 0,
+        "triangles": 1230
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 301,
+        "hulls": 3,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 320,
+        "hulls": 0,
+        "triangles": 1332
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 321,
+        "hulls": 0,
+        "triangles": 685
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 323,
+        "hulls": 24,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 327,
+        "hulls": 169,
+        "triangles": 0
+      },
+      {
+        "cell": "-2,-1",
+        "mesh": 328,
+        "hulls": 4,
+        "triangles": 0
+      }
+    ],
+    "stepMs": 0
+  },
+  "errors": [],
+  "note": "the level’s own engine: Hoth’s game shapes streamed by cell (levelPhysics.js), the player on the soldier’s body"
+}

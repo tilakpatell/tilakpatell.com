@@ -18,7 +18,9 @@
 // - fog: the record's forward light scattering added, its participating
 //   media (when on) marched at FOG_SCALE and brought up over the depth
 //   (fog.js's fogVolume);
-// - bloom: added, the house's numbers unless the pass says;
+// - bloom: added, the house's numbers unless the pass says; the record's
+//   five Gaussians (grade.js) as BloomNode's five mips, each tinted by the
+//   pass's `tints` (the record's weight × colour over the node's own factor);
 // - godrays: the lit haze added faintly in the sun's colour;
 // - lensflare: the bloom's ghosts, blurred, added; with the record's sun
 //   flare, scaled by its alpha curves at the sun's disc (flare.js);
@@ -26,8 +28,15 @@
 // - motionBlur: MotionBlur over the camera's own motion (the depth
 //   reprojected through last frame's view and projection), times the
 //   record's MotionBlurScale;
+// - tonemap (the record's, lane Q6): the picture tone-mapped by the pass's
+//   method ('linear': the renderer's exposure, then a clamp to 0…1), still
+//   linear; what follows is then encoded only (no second tone map), the
+//   pipeline's own transform off;
 // - lut: the grading LUT (a Data3DTexture) applied to the tone-mapped,
-//   encoded picture;
+//   encoded picture; after a `tonemap` pass, to its linear 0…1 picture (the
+//   game's HDR LUT reads 0…ColorGradingMaxHdrValue, 1 on Hoth: read over
+//   the encoded picture, Hoth's curve sends all above 0.875 to white, the
+//   painted sky with it), encoded after;
 // - traa or smaa: the anti-aliasing; SMAA on the picture as shown, TRAA
 //   before the output transform unless a LUT came first.
 // - upscale (fidelity lane U): with one in the chain, the scene pass and
@@ -164,12 +173,14 @@ export async function buildChain(renderer, passes) {
   // (renderOutput) and the pipeline's own transform is switched off, as
   // three's LUT and SMAA examples do. A LUT on linear HDR clamps every
   // bright pixel to its last cell.
+  // (after a `tonemap` pass the picture is tone-mapped already: the encoding only)
   let shown = false;
+  let toned = false;
   const display = (n) => {
     if (shown) return n;
     shown = true;
     pipeline.outputColorTransform = false;
-    return tsl.renderOutput(n);
+    return toned ? tsl.renderOutput(n, THREE.NoToneMapping, renderer.outputColorSpace ?? THREE.SRGBColorSpace) : tsl.renderOutput(n);
   };
   // SSGINode draws two attachments: its occlusion (getAONode) and its
   // bounce (getGINode). Composited as three's example does: the colour
@@ -254,7 +265,15 @@ export async function buildChain(renderer, passes) {
         ao.resolutionScale = (p.resolutionScale ?? 0.5) * under;
         if (p.radius != null) ao.radius.value = p.radius;
         if (p.power != null) ao.distanceExponent.value = p.power;
-        const occlusion = kinds.has('traa') ? ao.getTextureNode() : keep(mods.denoise.denoise(ao.getTextureNode(), g.depth, g.normal, p.camera ?? g.camera));
+        // (the record's HBAO: its power exponent is GTAO's pow(ao, scale), its attenuation the fall-off)
+        if (p.scale != null) ao.scale.value = p.scale;
+        if (p.falloff != null) ao.distanceFallOff.value = p.falloff;
+        let occlusion = ao.getTextureNode();
+        if (!kinds.has('traa')) {
+          const dn = keep(mods.denoise.denoise(occlusion, g.depth, g.normal, p.camera ?? g.camera));
+          if (p.blur != null) dn.radius.value = p.blur;
+          occlusion = dn;
+        }
         node = vec4(node.rgb.mul(occlusion.r), node.a);
         break;
       }
@@ -281,6 +300,8 @@ export async function buildChain(renderer, passes) {
       }
       case 'bloom': {
         const b = keep(mods.bloom.bloom(node, p.strength ?? BLOOM.strength, p.radius ?? BLOOM.radius, p.threshold ?? BLOOM.threshold));
+        // (set before the node is first drawn: its composite reads them then)
+        if (p.tints) p.tints.forEach((t, i) => b.bloomTintColors[i]?.set(...t));
         if (under < 1) b.setResolutionScale(b.getResolutionScale() * under);
         g.bloom = b;
         node = node.add(b);
@@ -315,9 +336,16 @@ export async function buildChain(renderer, passes) {
         node = mods.motionBlur.motionBlur(toTexture(node), vel, tsl.int(p.samples ?? 16));
         break;
       }
+      case 'tonemap':
+        // (linear: three's LinearToneMapping, kept linear; only 'linear' is read from the records)
+        if (shown || p.method !== 'linear') break;
+        node = vec4(tsl.clamp(node.rgb.mul(tsl.toneMappingExposure), 0, 1), node.a);
+        toned = true;
+        pipeline.outputColorTransform = false;
+        break;
       case 'lut': {
         if (!p.texture) break;
-        node = keep(mods.lut.lut3D(display(node), texture3D(p.texture), p.texture.image.width, tsl.float(p.intensity ?? 1)));
+        node = keep(mods.lut.lut3D(toned ? node : display(node), texture3D(p.texture), p.texture.image.width, tsl.float(p.intensity ?? 1)));
         break;
       }
       case 'traa':
@@ -345,6 +373,8 @@ export async function buildChain(renderer, passes) {
         throw new Error(`unknown pass ${p.kind}`);
     }
   }
+  // (tone-mapped in the chain and not yet shown: the encoding is the chain's last step)
+  if (toned) node = display(node);
   pipeline.outputNode = node;
   return {
     pipeline,

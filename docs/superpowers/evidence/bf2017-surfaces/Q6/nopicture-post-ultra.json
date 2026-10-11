@@ -1,0 +1,40 @@
+{
+  "size": "960x540",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "motionBlur",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "nopicture-post-ultra-webgl.png",
+      "meanLum": 0.3951,
+      "picture": null,
+      "horizon": {
+        "meet": 0.5413,
+        "painted": 0.4685
+      },
+      "envDiff": 15.44,
+      "programsBefore": 82,
+      "programsAfter": 82,
+      "frames": 5,
+      "mean": 2733.6,
+      "median": 2728.3,
+      "p95": 2821.2
+    }
+  ]
+}

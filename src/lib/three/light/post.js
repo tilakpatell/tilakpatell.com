@@ -4,7 +4,7 @@
 //
 // The order (the design, "The light", post.js): render → ssgi (and its
 // denoise) → ao → ssr → volumes → fog → bloom → godrays → lensflare →
-// dof → motionBlur → lut → traa | smaa → upscale → output. A chain given out of order is put in it. The
+// dof → motionBlur → tonemap → lut → traa | smaa → upscale → output. A chain given out of order is put in it. The
 // volumes (volumetrics.js) come before the bloom so they are tone-mapped
 // and bloomed with the scene (the fidelity design, lane V).
 //
@@ -35,6 +35,14 @@
 //   its ghosts from the record's elements and is scaled by the record's
 //   occluder and screen-position curves at the sun's screen disc.
 // - `lut` needs the record's grading LUT as a Data3DTexture; none, none.
+// - The record's picture (lane Q6, refs.grade: grade.js's gradeOf): the
+//   bloom is its five Gaussians (BloomNode's five mips tinted by the
+//   record's weights and colours, its BloomScale the strength, no
+//   threshold); the AO its HBAO numbers; and where its tone map is
+//   TonemapMethod_Linear a `tonemap` pass takes the picture to 0…1 by a
+//   linear tone map before the LUT, on every tier that has a node chain
+//   (the game's order: the LUT reads the tone-mapped picture). Without
+//   refs.grade nothing here changes.
 // - `volumes` needs a level's volumetrics (createVolumetrics); none, none.
 // - `fog` (mode 'volume': fog.js's fogVolume) draws the record's forward
 //   light scattering and its participating media; a record with neither
@@ -57,7 +65,7 @@
 // render, bloom, output as today.
 //
 // ORDER, NODE_PASSES, CANNOT, SSGI
-// passesFor(tier, entry, backend = 'webgpu', refs = { scene, camera, light, lut, volumetrics, dof, upscale }) → passes
+// passesFor(tier, entry, backend = 'webgpu', refs = { scene, camera, light, lut, volumetrics, dof, upscale, grade }) → passes
 // motionBlurOf(entry) → { enabled, scale }   (pure: the record's, off without one)
 // dofParams({ focus, aperture, focalLength, maxblur }) → { focusDistance, range, bokehScale }   (pure)
 // raysLight(sun) → the light GodraysNode can march, or null
@@ -72,10 +80,11 @@ import { BLOOM } from '../bloom.js';
 import { readEntry } from './entry.js';
 import { flareElements, lensflareParams } from './flare.js';
 import { FOG_STEPS, fogMedia } from './fog.js';
+import { bloomTints } from './grade.js';
 
-export const ORDER = ['render', 'ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'godrays', 'lensflare', 'dof', 'motionBlur', 'lut', 'traa', 'smaa', 'upscale', 'output'];
+export const ORDER = ['render', 'ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'godrays', 'lensflare', 'dof', 'motionBlur', 'tonemap', 'lut', 'traa', 'smaa', 'upscale', 'output'];
 // the kinds only the node renderer builds
-export const NODE_PASSES = new Set(['ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'godrays', 'lensflare', 'dof', 'motionBlur', 'lut', 'traa', 'smaa', 'upscale']);
+export const NODE_PASSES = new Set(['ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'godrays', 'lensflare', 'dof', 'motionBlur', 'tonemap', 'lut', 'traa', 'smaa', 'upscale']);
 // What each backend cannot build. On 'nodes-webgl' the lit fixture
 // (scripts/light-fixture.mjs, pass by pass) drew SSR as white smears below
 // every pillar and TRAA as a flat grey frame, so both are left out there
@@ -163,14 +172,16 @@ export function arrange(passes) {
 export function passesFor(tier, entry, backend = 'webgpu', refs = {}) {
   const p = readEntry(entry);
   const cannot = CANNOT[backend] ?? CANNOT.webgl;
+  const grade = refs.grade ?? null;
+  const hbao = grade?.ao ?? null;
   const make = {
     render: () => ({ kind: 'render', scene: refs.scene, camera: refs.camera }),
     ssgi: (preset) => ({ kind: 'ssgi', preset, temporal: tier === 'ultra', ...SSGI[tier === 'ultra' ? 'temporal' : 'plain'][preset], radius: SSGI_RADIUS, gi: GI, camera: refs.camera }),
-    ao: () => ({ kind: 'ao', radius: p.ao.radius, bias: p.ao.bias, power: p.ao.power, camera: refs.camera }),
+    ao: () => ({ kind: 'ao', radius: p.ao.radius, bias: p.ao.bias, power: p.ao.power, ...(hbao ? { radius: hbao.radius, scale: hbao.exponent, falloff: hbao.attenuation, blur: hbao.blur, hbao } : {}), camera: refs.camera }),
     ssr: () => ({ kind: 'ssr', maxDistance: 40, thickness: 0.1, camera: refs.camera }),
     volumes: () => ({ kind: 'volumes', volumetrics: refs.volumetrics ?? null, camera: refs.camera }),
     fog: () => ({ kind: 'fog', mode: 'volume', media: fogMedia(entry?.record), fog: p.fog, sun: { dir: p.sun.dir.slice(), color: p.sun.color.slice(), intensity: p.sun.intensity }, steps: FOG_STEPS[tier] ?? FOG_STEPS.high, camera: refs.camera }),
-    bloom: () => ({ kind: 'bloom', strength: BLOOM.strength * p.bloom.scale, radius: BLOOM.radius, threshold: BLOOM.threshold }),
+    bloom: () => (grade?.bloom ? { kind: 'bloom', ...bloomTints(grade.bloom), radius: 0, gaussians: true } : { kind: 'bloom', strength: BLOOM.strength * p.bloom.scale, radius: BLOOM.radius, threshold: BLOOM.threshold }),
     godrays: () => ({ kind: 'godrays', light: refs.light ?? null, color: p.sun.color.slice(), density: 0.7, maxDensity: 0.5, camera: refs.camera }),
     motionBlur: () => {
       const mb = motionBlurOf(entry);
@@ -189,6 +200,7 @@ export function passesFor(tier, entry, backend = 'webgpu', refs = {}) {
   };
   const chain = (TIERS[tier] ?? TIERS.high).map((k) => (Array.isArray(k) ? make[k[0]](k[1]) : make[k]()));
   if (refs.dof && chain.length > 1) chain.push(make.dof());
+  if (grade?.tonemap) chain.push({ kind: 'tonemap', method: grade.tonemap });
   // (no TRAA on this backend: SMAA is the anti-aliasing instead)
   if (cannot.has('traa') && !cannot.has('smaa') && chain.some((x) => x.kind === 'traa')) chain.push(make.smaa());
   const out = arrange(chain.filter((x) => !cannot.has(x.kind)));
