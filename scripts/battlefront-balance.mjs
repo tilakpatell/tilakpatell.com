@@ -1,13 +1,15 @@
 // The Battlefront balance runner (spec section 9): the sim headless in Node,
 // N times, a line a run and a summary, for the PR body and the hand-off.
 //
-//   node scripts/battlefront-balance.mjs --skirmish [--runs 10] [--bots 20] [--seconds 180] [--seed 1] [--profile]
+//   node scripts/battlefront-balance.mjs --skirmish [--runs 10] [--bots 20] [--seconds 180] [--seed 1] [--profile] [--difficulty <name>] [--pve]
 //   node scripts/battlefront-balance.mjs --assault [--runs 20] [--bots 20] [--minutes 25] [--seed 1] [--jobs 4]
 //
 // --skirmish   two teams of bots on Hoth's arena navgrid (fixtures/hothFlat.js), no mode
 // --assault    Hoth's Galactic Assault on the same navgrid, bots only, to a result or the minutes;
 //              --jobs runs the seeds in that many processes
 // --profile    the share of the run spent thinking, stepping bolts and finding paths
+// --difficulty the game's difficulty the bots fight at (rookie, normal, medium, expert, default; lib/battlefront/ai/difficulty.js)
+// --pve        the Skirmish (Instant Action) bots: their PvE templates, tactics and abilities
 // A bot is "stuck" when alive, not in cover or hiding, and standing on one
 // spot for 400 steps (20 s): the arena test's rule.
 
@@ -21,6 +23,10 @@ const opt = (name, def) => {
   return i < 0 ? def : Number(args[i + 1]);
 };
 const flag = (name) => args.includes(`--${name}`);
+const word = (name) => {
+  const i = args.indexOf(`--${name}`);
+  return i < 0 ? null : args[i + 1];
+};
 const COLUMNS = ['seed', 'winner', 'why', 'stage', 'minutes', 'kills1', 'kills2', 'heroes1', 'heroes2', 'ms'];
 const SIDE = { 1: 'Rebels', 2: 'Empire' };
 
@@ -39,6 +45,8 @@ const runs = opt('runs', 10);
 const bots = opt('bots', 20);
 const seconds = opt('seconds', 180);
 const first = opt('seed', 1);
+const difficulty = word('difficulty');
+const pve = flag('pve');
 
 // src modules use Vite's extensionless imports and JSON: loaded through Vite
 const { createServer } = await import('vite');
@@ -56,7 +64,7 @@ try {
   for (let r = 0; r < runs; r++) {
     const seed = first + r;
     const t = performance.now();
-    const out = runSkirmish({ rulebook: rb, nav, seed, bots, seconds });
+    const out = runSkirmish({ rulebook: rb, nav, seed, bots, seconds, difficulty, pve });
     const ms = Math.round(performance.now() - t);
     rows.push({ seed, ...out, ms });
     console.log([seed, out.kills[1], out.kills[2], out.alive[1], out.alive[2], out.stuck, out.offNav, ms].map((v) => String(v).padEnd(6)).join('  '));
@@ -65,7 +73,7 @@ try {
   const mean = (f) => (sum(f) / rows.length).toFixed(1);
   const wins1 = rows.filter((r) => r.alive[1] > r.alive[2]).length;
   const wins2 = rows.filter((r) => r.alive[2] > r.alive[1]).length;
-  console.log(`\n${runs} runs, ${bots} a side, ${seconds} s: kills ${mean((r) => r.kills[1])} (Rebels) to ${mean((r) => r.kills[2])} (Empire); more alive at the end: Rebels ${wins1}, Empire ${wins2}, even ${runs - wins1 - wins2}; stuck ${sum((r) => r.stuck)}, off the navgrid ${sum((r) => r.offNav)}; ${mean((r) => r.ms)} ms a run`);
+  console.log(`\n${runs} runs, ${bots} a side, ${seconds} s${difficulty ? `, ${difficulty}` : ''}${pve ? ', the Skirmish bots' : ''}: kills ${mean((r) => r.kills[1])} (Rebels) to ${mean((r) => r.kills[2])} (Empire); more alive at the end: Rebels ${wins1}, Empire ${wins2}, even ${runs - wins1 - wins2}; stuck ${sum((r) => r.stuck)}, off the navgrid ${sum((r) => r.offNav)}; ${mean((r) => r.ms)} ms a run`);
   if (profile.on) {
     const total = sum((r) => r.ms);
     const pct = (v) => `${((100 * v) / total).toFixed(1)} %`;

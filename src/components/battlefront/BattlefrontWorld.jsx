@@ -52,6 +52,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
           scoreboard={snap.showScoreboard}
           onDeploy={(o) => send('deploy', o.kind === 'class' ? { classId: o.id } : {})}
           onPick={(o) => send('pick', o.kind === 'class' ? o.id : null)}
+          onSpawn={(c) => send('spawn', c.kind === 'mate' ? c.id : null)}
           readRadar={() => ({ me: snap.player, entities: [], objectives: (snap.mode?.objectives ?? []).map((o) => ({ ...o, label: o.name })) })}
           way={wayOut('/battlefront')}
           touch={touch}

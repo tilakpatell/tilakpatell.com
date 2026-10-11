@@ -12,6 +12,7 @@ import GuideCue from '../guide/GuideCue';
 import { letHandedGo } from '../hyperspace3d/timeline';
 import { letsJumpGo } from './jumpIn';
 import WarHud from './WarHud';
+import StarfighterHud from './StarfighterHud';
 import LoadingVeil from '../worlds/LoadingVeil';
 import BattleEnd from './BattleEnd';
 import FlightCluster from './FlightCluster';
@@ -197,6 +198,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
         <>
           <LoadingVeil className="universe-loading" shown={!on} progress={progress.value} step={progress.step} title="Plotting a course to a galaxy far, far away" />
           {on && oath && <WarHud sys={here} oath={oath} front={warInfo} />}
+          {on && <StarfighterHud front={warInfo} />}
           {on && oath && <BattleEnd front={warInfo} />}
           <ul className="universe-labels galaxy-labels" aria-label="In this system">
             {goals.map((g) => (
