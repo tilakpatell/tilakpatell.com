@@ -63,3 +63,37 @@ The owner attached a Supabase connector; the storage host itself stays refused b
 So the format decides and the suffix rule is the fallback. Over the three packs with the game's word: 307 colour maps sRGB, 593 data maps linear, 7 unknown (swatches, not in the game's list); 21 maps the rule had called colour are linear in the game (`t_kam_cargometal_01_light_cs`, `t_kam_corridorlarge_wall2_01_cs` and `_e`, `t_kam_corridorlargerims_01_cs` and `_e`, among them) and are now stamped linear with the word in their pack rows. Every pack's `tex` row carries `srgb`: Hoth 51 sRGB and 98 linear, Hoth's recipes 4 and 6, Endor 37 and 77, Kamino 65 and 128 (2 unknown).
 
 **Every published file answers** (`node scripts/assets-check.mjs`, 23:00 UTC): 1,246 of 1,246 right, 21.5 s. **Every published KTX2 says what it is** (`--published`): 492 files, 460 data maps linear, 32 unknown (the `_wm` weathering masks, the site's own fx sheets and sky maps), 0 wrong, 0 unreachable; the crew's published maps are all data (their colour maps are inside their GLBs).
+
+## The variation chain (the colour lane, 2026-10-11)
+
+`node scripts/bf2017-variations.mjs hoth sb_endor sb_kamino endor` read each pack’s mesh variation databases (the level’s own and the sub-levels its builder took: Hoth 2, the space packs 4 each, Endor 3; fetched by folder, as the bucket keys them with their case) and the 2,801 object variations, and wrote `variations.json` beside each `level.json`:
+
+| world | drawn meshes | with variations | variations | chosen by the level’s rule | maps missing |
+| --- | --: | --: | --: | --: | --: |
+| hoth | 123 | 12 | 18 | 9 | 14 |
+| sb_endor | 93 | 6 | 6 | 6 | 12 |
+| sb_kamino | 125 | 6 | 7 | 5 | 0 |
+| endor | 417 | 138 | 155 | 121 | 37 |
+
+What a variation changes, measured: almost never the maps. Across the four packs 2 of 497 variation materials swap a map the GLB draws to one the pack has (and a handful more want the six unencoded maps below); the rest change the shader preset (Hoth’s nine `_Snow` variations take `…_TextureArray_SnowMask_01`), the vectors (`PaintColour`, `EmissiveIntensity`, `Detail_Tiling` among the ones the recipe reads; `ColorVariation`, `Color`, `Reflectance` among the ones it does not yet name, so they ride in the file unread) and the switches. The writer folds each into a lane Q1 recipe with `recipeOf` (the same reader the packs’ `recipes.json` came from), so the game material reads a variation’s tints where it reads every recipe’s and `gameMaterial.js` did not change.
+
+**The crate.** `node scripts/light-fixture.mjs --materials --variations --legs webgl` (SwiftShader; the WebGPU leg is the owner’s laptop): Hoth’s `box_m_01_a_mesh` under its recipe from `recipes.json` (before) and with `variations.json` applied (after, `Box_M_01_A_Snow`: the `SnowMask` preset, its snow let on), both under Q4’s snow at 25 s into Hoth’s day. The snow lies on the after crate’s top alone; the before crate’s recipe lets no weather on.
+
+| before | after |
+| --- | --- |
+| ![](crate-before-webgl.webp) | ![](crate-after-webgl.webp) |
+
+The side face differs too, and that is lane Q1’s, not this lane’s: once an overlay touches the normal, `gameMaterial.js` samples the GLB’s normal map at the colour map’s UV set (the crate’s colour is on UV1, its normal on UV0). Q4’s weather is not yet composed into the level loader’s materials, so in the worlds the variation draws its shader and parameters and the snow waits on Q4’s wiring.
+
+**The maps missing.** Of the swaps the chosen variations make, six maps are in the bucket only as the export’s PNGs, never encoded to KTX2 (`t_floorboards_01_hoth_cs`, `_nam`; `t_forestbase_treesmall_01_burnt_c`, `_n`; `t_metalbaredetail_01_ns`; `t_container_xl_rebel_01_cs`): they are the desktop’s to encode (lane D’s list), and `--fetch` adds them to the packs once they are there. The rest are masks the site reads nowhere yet (the snow variations’ `_RGB`, the glass’s `DestructionRGBA`, the `_MSW` and `_AO` sheets): the audit counts them, and no bytes were spent on them.
+
+## The material audit
+
+Written by `node scripts/bf2017-material-audit.mjs hoth sb_endor sb_kamino endor`; each world's rows in `<world>.md`.
+
+| world | drawn materials | bound | default-only | missing-texture | unbound | no-entry | bound |
+|---|---|---|---|---|---|---|---|
+| hoth | 148 | 133 | 3 | 12 | 0 | 0 | 89.9 % |
+| sb_endor | 207 | 189 | 0 | 18 | 0 | 0 | 91.3 % |
+| sb_kamino | 267 | 265 | 2 | 0 | 0 | 0 | 99.3 % |
+| endor | 778 | 708 | 23 | 47 | 0 | 0 | 91.0 % |
