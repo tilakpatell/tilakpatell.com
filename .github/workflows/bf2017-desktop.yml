@@ -1,0 +1,117 @@
+name: bf2017 desktop
+
+# Lane W of the picture-everywhere design (docs/superpowers/specs/2026-10-11-
+# bf2017-picture-everywhere-design.md, §7): what only the owner's desktop can
+# make for the Star Wars worlds' picture, as jobs on its self-hosted runner.
+# Run it from the Actions tab (bf2017 desktop → Run workflow) or
+# `gh workflow run bf2017-desktop.yml -f job=panoramas`. Each job is
+# scripts/desktop/bf2017-<job>.mjs; a real run makes its job in its own
+# checkout beside the repository, writes its evidence under
+# docs/superpowers/evidence/bf2017-picture/ and opens a pull request, as the
+# gen3d jobs do (scripts/desktop/README.md, "bf2017 picture jobs").
+#
+# Tick "dry" to see the plan without the desktop: it runs on GitHub's own
+# runner, makes nothing and says what the job would make and what it needs.
+
+run-name: >-
+  ${{ format('bf2017 desktop: {0}{1}{2}', inputs.job, inputs.dry && ' (dry)' || '', inputs.name && format(' · {0}', inputs.name) || '') }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job (all runs the six in turn)'
+        required: true
+        type: choice
+        options: [panoramas, atlases, textures, uastc, depots, gate, all]
+      name:
+        description: 'A name for this run, shown in the list (optional)'
+        required: false
+        type: string
+      only:
+        description: 'Only the items whose name has one of these words, comma-separated (a world, a texture, a pack)'
+        required: false
+        type: string
+      limit:
+        description: 'Only the first N items (a first run)'
+        required: false
+        type: string
+      dry:
+        description: 'Dry run: the plan only, on GitHub''s runner, nothing made'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  # the plan, without the desktop (GitHub's own runner, always up)
+  plan:
+    if: inputs.dry
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: The plan
+        run: |
+          set -e
+          for j in $( [ "$JOB" = all ] && echo panoramas atlases textures uastc depots gate || echo "$JOB" ); do
+            node "scripts/desktop/bf2017-$j.mjs" --dry ${ONLY:+--only "$ONLY"} ${LIMIT:+--limit "$LIMIT"}
+          done
+        env:
+          JOB: ${{ inputs.job }}
+          ONLY: ${{ inputs.only }}
+          LIMIT: ${{ inputs.limit }}
+
+  # the job, on the desktop (one at a time: the runner takes one job)
+  make:
+    if: ${{ !inputs.dry }}
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 360
+    concurrency:
+      group: bf2017-desktop
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts
+            src/data/bf2017
+            src/lib
+            lab/baseline
+            docs/superpowers/evidence/bf2017-coverage
+          persist-credentials: false
+      - name: Make it
+        shell: powershell
+        run: |
+          $jobs = if ($env:JOB -eq 'all') { @('panoramas', 'atlases', 'textures', 'uastc', 'depots', 'gate') } else { @($env:JOB) }
+          $flags = @()
+          if ($env:ONLY) { $flags += @('--only', $env:ONLY) }
+          if ($env:LIMIT) { $flags += @('--limit', $env:LIMIT) }
+          $code = 0
+          foreach ($j in $jobs) {
+            node "scripts/desktop/bf2017-$j.mjs" @flags
+            if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE; "- **$j failed** (exit $LASTEXITCODE): see the log" | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY }
+          }
+          exit $code
+        env:
+          JOB: ${{ inputs.job }}
+          ONLY: ${{ inputs.only }}
+          LIMIT: ${{ inputs.limit }}
+          GCM_INTERACTIVE: never
+          GIT_TERMINAL_PROMPT: '0'
+      - name: The gate's shots
+        if: always() && (inputs.job == 'gate' || inputs.job == 'all')
+        uses: actions/upload-artifact@v7
+        with:
+          name: bf2017-gate-${{ github.run_id }}
+          path: ${{ runner.temp }}/bf2017-gate
+          if-no-files-found: ignore
+          retention-days: 14

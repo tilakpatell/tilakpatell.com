@@ -171,7 +171,7 @@ const hit = (row, test) => test(lower(row.name)) || row.files.some((f) => test(l
 const FOLDER = /^(models|collision|textures|physics|terrain|maps|anims|anims_additive|animtracks|movies|fonts|svg|strings)\//;
 const ownerHit = (row, test) => hit(row, test) || test(lower(row.name).replace(FOLDER, ''));
 
-function ownerOf(row, owners) {
+export function ownerOf(row, owners) {
   for (const o of owners) {
     if (!o.match && !o.part) continue;
     if (o.part && row.part !== o.part) continue;

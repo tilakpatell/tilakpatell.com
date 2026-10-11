@@ -75,3 +75,32 @@ T2 first; P and D2 beside it (data and pipeline, no seam with T2 beyond `scene.j
 - Memory on the ultra packs at 2,048 maps: the rows and `fitTextures` cap the device; D2 records the numbers.
 - The TSL bloom’s third: settled by measurement in U2, not by a constant.
 - What the desktop owes (HDR panoramas, Enlighten) is the difference between “the record’s sky with its sun” and ours; the lanes draw the LDR copies and say so in the gallery.
+
+## 7. AAA, the compute, the desktop and the stream (added 2026-10-11, after the owner’s second ask)
+
+The owner asked for AAA quality, “depending on compute”, with Supabase to accelerate it, GeForce Now’s way of using a GPU and streaming considered for the local desktop, Frosty and the desktop connected where needed, and a blueprint (WebGPU, AgX or ACES tone mapping, SSAO, bloom, SSR or probe GI, HDR IBL, 2,048 to 4,096 PCF shadow maps) weighed, with a note on WebAssembly ports of engines. Point by point against this repository:
+
+| the blueprint says | what is true here |
+| --- | --- |
+| use `WebGPURenderer`, the node pipeline | it is the engine (three r186, `src/runtime/webgpu.js`); the Star Wars worlds do not ask for it: lane T2 |
+| ACES or AgX tone mapping, linear working space | the working space is linear already; **the game’s tone map is not ACES**: the VE record says `TonemapMethod_Linear` followed by its own 33³ LUT, and lane Q6 built that order. ACES or AgX would un-match the game. AgX is the site’s fallback only where a world has no record |
+| SSAO | GTAO with the record’s HBAO numbers, built (`light/passes.js`); on when T2 lands |
+| cinematic bloom | the record’s five-Gaussian bloom, built (Q6); the TSL-against-Unreal ratio is U2’s measurement |
+| SSR or probe GI | SSR, SSGI, crossfading probes and the ultra probe grid, built; the game’s baked Enlighten bounce is the desktop’s (the 200 atlases, §4) |
+| HDR environment maps | the game’s own probes, 64² with the sun clipped (D2 restores 128² with the sun); the HDR sky panoramas are the desktop’s re-encode |
+| 2,048 to 4,096 PCF shadows | four PCSS cascades with cloud and contact shadows (lane S), 4,096 on ultra; on when T2 lands |
+
+So the blueprint’s passes exist; the design’s lanes are what switch them on and feed them the record’s numbers. What the blueprint does not cover, and the owner’s ask adds:
+
+**Compute, and what Supabase is for.** Supabase holds no GPU. It accelerates the picture in two ways: as the CDN for everything precomputed (the packs, the ultra cuts, the probes, the atlases, the panoramas, the hashed and immutable `site-assets`), and as the signalling store for a stream (below). The heavy work happens once, on the owner’s desktop, and ships as data. **Lane W** (the desktop) makes that a workflow on the self-hosted runner `[self-hosted, gpu]` (as `desktop-doctor.yml` and `gen3d.yml` run), dispatched from the Actions tab, with a job per ask: the HDR panoramas (BC6 → RGBA16F KTX2 through the exporter’s `ktx2_encode.py`), the 200 Enlighten atlases and the 4,149 textures uploaded, the UASTC colour row (Q5), the depot probe, the variation hashes already in the bins, and the frame-time gate at ultra under ANGLE d3d11 (U2’s 16.7 ms p95 for every world, the laptop tables’ way), each writing its evidence and opening a PR as the gen3d jobs do.
+
+**GeForce Now’s way: the stream.** A cloud game streams a frame rendered on a server GPU as video over WebRTC, and sends the input back. The same works from the owner’s desktop: a headless Chromium with WebGPU draws the site’s own ultra picture (every layer on, the HDR panoramas and the atlases the desktop has, no budget rows), the frame is captured and encoded (NVENC through Chromium’s `getDisplayMedia` and `RTCPeerConnection`, or OBS’s WebRTC output), and the visitor’s page shows the video with the input sent back on a data channel. It is the one route to the game’s full frame on a phone. Its limits are the desktop’s (one stream per encoder session, the desktop awake, the owner’s upload), so it is a mode (“watch at ultra, streamed from the desktop”) beside the local renderer, never the site. **Lane R2** is its spike: signalling through Supabase Realtime (the stack page `docs/stack/supabase.md`; the multiplayer stays on Nostr, `docs/stack/multiplayer-nostr.md`), a desktop sender script, a page receiver, the input channel, and the numbers that decide it (end-to-end latency, bitrate, the frame on the desktop, the owner’s upload), measured on the owner’s desktop through lane W’s workflow; a product decision follows the numbers, not before.
+
+**WebAssembly.** WebAssembly is already where it pays here: Rapier (the physics), the Basis transcoder (every KTX2), the meshopt decoder (every GLB). It does not give a Frostbite: there is no Frostbite source to compile, and a Unity or Unreal port would be a different engine with its own pipeline, not these assets rendered as DICE renders them. The claims about AI-decompiled engine ports are not a path this design takes; the game’s records, maps and materials are read directly instead, which is the accuracy design’s whole method.
+
+**Frosty and the desktop.** The exporter (`tool/bf2export.csproj`, on Frosty’s SDK) runs on the desktop and already wrote the drop; lane W gives it a workflow, so an ask from the cloud (a texture, a record type, a bake) is a dispatch, not a message. The owner connects the desktop by waking the runner (`scripts/desktop/setup-runner.ps1`, `desktop-doctor.yml`).
+
+| lane | what | needs first | gate |
+| --- | --- | --- | --- |
+| **W the desktop** | `.github/workflows/bf2017-desktop.yml` on `[self-hosted, gpu]` with a job per ask (panoramas HDR, atlases, textures, UASTC row, depot probe, the ultra frame gate), `scripts/desktop/bf2017-*.mjs` beside the gen3d jobs, each job’s evidence and PR | nothing to write it; the owner to run it | `desktop-doctor.yml` green with the new checks; one job run end to end by the owner |
+| **R2 the stream** | the spike: sender, receiver, signalling on Supabase Realtime, the input channel, the numbers; a “watch at ultra” mode only if the numbers say so | W (for the measurement) | latency and bitrate measured on the desktop; the decision written |

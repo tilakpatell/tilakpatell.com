@@ -4,19 +4,33 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 
 ## The picture-everywhere design: every world on the node renderer, every layer on (2026-10-11, early)
 
-`docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md`, with plans `docs/superpowers/plans/2026-10-11-bf2017-picture-lane{T2-flip,P-picture,D2-detail,U2-M2-G}.md` and the decision `docs/decisions/2026-10-11-the-node-renderer-above-low.md`. Written from four readings of `origin/main` at `00843045b` (#890) and the game’s own frames. The owner asked that every Star Wars world look like the 2017 game as Frostbite renders it, with every detail, on one renderer (the best-looking one, from above the medium setting, the setting checked), every layer on, every gate green.
+`docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md`, with plans `docs/superpowers/plans/2026-10-11-bf2017-picture-lane{T2-flip,P-picture,D2-detail,U2-M2-G}.md` and the decision `docs/decisions/2026-10-11-the-node-renderer-above-low.md`; §7 (added after the owner’s second ask: AAA, the compute, the desktop and the stream) weighs a WebGPU post-processing blueprint against the stack and adds lanes W and R2. Written from four readings of `origin/main` at `00843045b` (#890) and the game’s own frames; the design is PR #905. The owner asked that every Star Wars world look like the 2017 game as Frostbite renders it, with every detail, on one renderer (the best-looking one, from above the medium setting, the setting checked), every layer on, every gate green.
 
 **What the readings found.** The game-look stack is built and merged (`src/lib/three/light/`, `src/lib/three/surface/`: S, V, X, C, N, U, Q1, Q2, Q4, Q6, colour) and draws only on the `battlefront` world and the `litWorld` fixture: `galaxy-surface` is a `'glsl'` module, so the seventeen worlds run the classic renderer with one PCF sun that `groundWorld` usually turns off, three pooled lights, a gradient sky, exponential fog, Unreal bloom and a hand shoulder. No world passes `picture`; lane U’s options are all off; no pack has an ultra cut; pack maps stop at 1,024 with anisotropy 1; `decals.json` is empty; per-instance variations are unread (Hoth 93.1 % bound against 95 %); the `models MB` gate counts GLBs only.
 
 | Lane | What | Needs first | Session | Branch | Merged |
 |---|---|---|---|---|---|
-| T2 | the flip: `galaxy-surface` on `'nodes'` above low (mid on WebGPU, low classic), the node twins wired (sun, sky, fog, placed lights, probes, post chain, ground, decals, particles), the settings line, every world on nodes at high in software GL in CI | nothing | | `claude/bf2017-t2-flip` | |
-| P | `<world>.picture.json` for every light record and weather, every site passing `picture`, the crossfade carrying the textures, the LUT at 33³ | nothing | | `claude/bf2017-p-picture` | |
-| D2 | `--ultra` for every pack, the caps a step up, anisotropy 16, decals filled, the dropped meshes back at ultra, probes with the sun, the gate counting KTX2 and bins, the space packs out of git | E0 (#888) | | `claude/bf2017-d2-detail` | |
+| T2 | the flip: `galaxy-surface` on `'nodes'` above low (mid on WebGPU, low classic), the node twins wired (sun, sky, fog, placed lights, probes, post chain, ground, decals, particles), the settings line, every world on nodes at high in software GL in CI | nothing | `session_0132eqJWiGAvWCdASsxt6vEb` (spawned 2026-10-11 04:25 UTC from `claude/bf2017-picture-everywhere`, Opus 5.5) | `claude/bf2017-t2-flip` | |
+| P | `<world>.picture.json` for every light record and weather, every site passing `picture`, the crossfade carrying the textures, the LUT at 33³ | nothing | `session_0159DutxhTdKUaYeTaoUgFFq` (spawned 2026-10-11 04:25 UTC, Opus 5.5) | `claude/bf2017-p-picture` | |
+| D2 | `--ultra` for every pack, the caps a step up, anisotropy 16, decals filled, the dropped meshes back at ultra, probes with the sun, the gate counting KTX2 and bins, the space packs out of git | E0 (#888) | `session_018HMjRBBkugTsV6uBdftCPV` (spawned 2026-10-11 04:25 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-d2-detail` | |
 | U2 | batch, bundles, occlusion and the upscaler on by tier; the bloom mismatch measured; the laptop workflow | T2 | | `claude/bf2017-u2-headroom` | |
 | M2 | per-instance variations from the bins (gate 95 %), weathering and terrain blend, the decal and glass families, level detail slices, translucency, head SSS | T2 | | `claude/bf2017-m2-material` | |
 | G | the gallery: every world at ultra on the laptop beside the game’s frame, with the numbers | T2, P, U2 | | `claude/bf2017-g-gallery` | |
-| desktop | the HDR panoramas re-encoded, the Enlighten atlases uploaded (Q3), the UASTC colour row (Q5), the 4,149 textures, the ANGLE frame gates | | the owner | | |
+| W | the desktop as a workflow on the self-hosted runner: the HDR panoramas, the Enlighten atlases, the 4,149 textures, the UASTC row, the depot probe, the ultra frame gate; written in the cloud, run by the owner | nothing | `session_01FPogwWhFLVH94UY39gDNTh` (Opus 5.5) | `claude/bf2017-w-desktop` | PR #906 (draft): written and dry-run; the owner runs each job (below) |
+| R2 | the stream spike: the ultra picture rendered on the owner’s GPU and streamed over WebRTC (signalling on Supabase Realtime), the numbers, the decision | W to measure | | `claude/bf2017-r2-stream` | |
+
+**Lane W’s jobs, for the owner** (`.github/workflows/bf2017-desktop.yml` on the runner `[self-hosted, gpu]`; Actions → *bf2017 desktop* → *Run workflow*, pick the job; `limit` 2 for a first run; `dry` for the plan alone, on GitHub’s runner; the full guide is `scripts/desktop/README.md`, “bf2017 picture jobs”; what a dry run found is `docs/superpowers/evidence/bf2017-picture/w/DRY.md`). Each job opens its own PR.
+
+| job | what it does | before the first run |
+| --- | --- | --- |
+| `panoramas` | the 15 panoramas and 16 fog gradients the light records name, HDR (RGBA16F KTX2, 4,096 and 2,048 wide) from the exporter’s `.dds`, to the bucket and the site, each `<world>.picture.json` gaining `hdr` | export each sky’s BC6U as `.dds` under `<export>\raw\<its path>`; `winget install Microsoft.DirectXTex` |
+| `atlases` | the 868 Enlighten maps (176 sets) through `ktx2_encode.py` and `upload_supabase.py`; the irradiance HDR too where its `.dds` is there; the ledger again (`w/atlases/FORMAT.md` is Q3's note) | none beyond the export’s tools |
+| `textures` | the ledger’s 3,301 not-uploaded textures (the atlases aside) the same way; the ledger again | none |
+| `uastc` | Q5: the packs’ 220 colour maps as UASTC q4 at 2,048, PSNR against the BC7 master and the served ETC1S, kept at 3 dB or better as each pack’s `ultra` row | `winget install KhronosGroup.KTX-Software` |
+| `depots` | the probe through `bf2017-shader-names.mjs --depots`, the share of all and of the rest | the probe at `maps_work\shaderdepots.jsonl` |
+| `gate` | every world at ultra on the chip (ANGLE d3d11, then WebGPU), 16.7 ms p95, shots; the first run makes `lab/baseline/surface-ultra.json` | Chrome |
+
+The keys are the runner’s `.env` (`~\actions-runner\.env`: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`), never the repository’s; `gh workflow run desktop-doctor.yml` shows each need under `bf2017`.
 
 ## The sixth design: accurate to the game (2026-10-10, late night)
 

@@ -10,6 +10,8 @@
 //   QUALITY=mid … (the device tier: ?quality=), SHIP=falcon …, JSON=1 …
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
+//   GPU=webgpu … (or webgl: the runtime's ?gpu= override, for a 'nodes' world; each
+//     result says the backend that drew it: webgl, nodes-webgl or webgpu)
 //   PHASE_WAIT=900000 … (ms for the world to come up: a level pack in software GL takes minutes)
 //   BUDGET=1 … (or BUDGET=path/to/baseline.json): each world held to its
 //     quality level's row of the budget table (src/lib/budgets.js, the
@@ -59,7 +61,8 @@ const realGpu = angle !== 'swiftshader';
 const viewport = quality === 'ultra' && realGpu ? { width: 2560, height: 1440 } : { width: 1280, height: 720 };
 mkdirSync(out, { recursive: true });
 
-const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', `--use-angle=${angle}`, '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const gpu = process.env.GPU ?? null; // (webgpu or webgl: the runtime's override)
+const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', `--use-angle=${angle}`, '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', ...(gpu === 'webgpu' ? ['--enable-unsafe-webgpu'] : [])] });
 const results = [];
 for (const id of list.split(',')) {
   const ctx = await browser.newContext({ viewport });
@@ -98,7 +101,7 @@ for (const id of list.split(',')) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   const t0 = Date.now();
   const path = mode === 'surface' ? `/galaxy/${id}/surface` : `/galaxy/${id}`;
-  await page.goto(`${base}/?quality=${quality}&calibrate=off#${path}`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
   const ready = mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
   try {
     await page.waitForFunction(ready, null, { timeout: Number(process.env.PHASE_WAIT ?? 180000) });
@@ -178,6 +181,7 @@ for (const id of list.split(',')) {
               p50: pick(0.5),
               p95: pick(0.95),
               ratio: renderer.getPixelRatio(),
+              backend: renderer.isWebGPURenderer ? (renderer.backend?.isWebGPUBackend ? 'webgpu' : 'nodes-webgl') : 'webgl',
               // (the ground war's update, smoothed: ground/groundScene.js's ms)
               ground: surface && window.__surfaceScene.groundWar ? +window.__surfaceScene.groundWar.ms.toFixed(2) : null,
               // (a level world's collision: surface/level/levelPhysics.js's stats, when it has an engine)

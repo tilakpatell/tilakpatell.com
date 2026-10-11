@@ -73,3 +73,14 @@ export function rowMean(rgba, w, y) {
   for (let x = 0; x < w; x++) for (let c = 0; c < 3; c++) s[c] += rgba[(y * w + x) * 4 + c];
   return s.map((v) => Number((v / w / 255).toFixed(4)));
 }
+
+// Lane W's HDR copy of a sky (scripts/desktop/bf2017-panoramas.mjs: RGBA16F
+// KTX2, nothing clamped), when the desktop has made it: `has(sitePath)` says
+// whether public/<path> is there or published. → { url (the stem: add
+// `.<width>.ktx2`), widths, format } | null
+export const HDR_DIR = 'textures/galaxy/bf2017/hdr';
+export function hdrOf(name, has) {
+  const slug = name.split('/').pop().toLowerCase();
+  const widths = [4096, 2048, 1024, 512, 256].filter((w) => has(`${HDR_DIR}/${slug}.${w}.ktx2`));
+  return widths.length ? { url: `${HDR_DIR}/${slug}`, widths, format: 'rgba16f' } : null;
+}

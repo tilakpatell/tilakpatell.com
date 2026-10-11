@@ -17,7 +17,9 @@
 // { url, name, horizon, size }, gradient: { url, name }, cloudShadow: { url, name } },
 // the shape applyGameLight's `picture` takes (urls without the base) and the
 // record's picture fields by name (`record`: grade.js's withPicture lays them
-// over an entry that lacks them). A
+// over an entry that lacks them); a panorama or gradient lane W's desktop
+// job has made HDR (scripts/desktop/bf2017-panoramas.mjs) gains `hdr: { url,
+// widths, format }`. A
 // texture the bucket lacks prints `missing:` and is left out; a weather whose
 // record names no panorama (an interior under a ceiling, a space level) says
 // so with `panorama: null`, and applyGameLight keeps the model's sky.
@@ -41,7 +43,7 @@ import { bucketFile } from './lib/bf2017-bucket.mjs';
 import sharp from 'sharp';
 import { dropMips, ktx2Info, mipsToFit } from './lib/ktx2-mips.mjs';
 import { lutStrip } from './lib/bf2017-light.mjs';
-import { pictureFields, picturedNames, recordOf, rowMean } from './lib/bf2017-picture.mjs';
+import { hdrOf, pictureFields, picturedNames, recordOf, rowMean } from './lib/bf2017-picture.mjs';
 import { gradeOf } from '../src/lib/three/light/grade.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -107,6 +109,14 @@ const out = join(ROOT, 'public/textures/galaxy/bf2017/light', world);
 mkdirSync(out, { recursive: true });
 const site = (f) => `textures/galaxy/bf2017/light/${world}/${f}`;
 const SUFFIX = { panorama: 'panorama', gradient: 'gradient', cloudShadow: 'clouds' };
+const published = (() => {
+  try {
+    return JSON.parse(readFileSync(join(ROOT, 'src/data/galaxyAssets.json'), 'utf8'));
+  } catch {
+    return {};
+  }
+})();
+const hasHdr = (path) => existsSync(join(ROOT, 'public', path)) || Boolean(published[path]);
 const weathers = {};
 for (const [w, e] of Object.entries(light.weathers ?? {})) {
   const raws = [];
@@ -160,6 +170,9 @@ for (const [w, e] of Object.entries(light.weathers ?? {})) {
         _source: { horizon: `measured: the mean of the decoded ${ktx}'s foot row, linear 0…1 (rowMean)`, size: `${ktx}'s own (the desktop's UASTC encode)` },
       });
     }
+    // (lane W's HDR copy, when the desktop has made it: the sky above white kept)
+    const hdr = kind === 'cloudShadow' ? null : hdrOf(name, hasHdr);
+    if (hdr) entry.hdr = hdr;
     row[kind] = entry;
     console.log(`  ${w}: ${kind} ${name} → ${fname}${entry.horizon ? ` (horizon ${entry.horizon.join(', ')})` : ''}`);
   }
