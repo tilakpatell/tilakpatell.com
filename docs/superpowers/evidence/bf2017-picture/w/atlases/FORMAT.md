@@ -14,7 +14,7 @@ Every lit level has one set per lighting setup (`StaticEnlightenData`), five tex
 
 - `_source`: the index rows whose names end in those suffixes; the era rule is `scripts/lib/bf2017-manifest.mjs`’s `isSequel` (24 sets are the sequel era’s and are never sent).
 - Sizes run from 4 × 4 (a spawn room’s split-screen set) to 5,564 × 6,144 (the Death Star’s); 119 sets are 1,024 or more on a side; Hoth_01’s two outdoor sets (`EN_Hoth_01_Static_Sunset`, `FL_Hoth_Cloudy_01_Static`) are 3,128 × 3,680. The 30 maps over 4,096 are cut to fit 4,096 on their longer side (`fitSize`, `--max 4096`).
-- The PNGs the export wrote are 8-bit: 5.9 GB for the 988 rows (the index’s `bytes`). An irradiance PNG is therefore clamped to 1, which is why the job makes the irradiance HDR from the exporter’s `.dds` when there is one.
+- The PNGs the export wrote are 8-bit: 5.9 GB for the 988 rows, 4.8 GB for the 868 the era rule keeps (the index’s `bytes`). An irradiance PNG is therefore clamped to 1, which is why the job makes the irradiance HDR from the exporter’s `.dds` when there is one.
 
 ## What the bucket gets
 
