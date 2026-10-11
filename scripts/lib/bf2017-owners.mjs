@@ -59,11 +59,17 @@ export const LANES = [
   { lane: '0', design: 812, merged: 824 },
   { lane: 'X-sabers', design: 810, merged: 816 },
   { lane: 'H', design: 839 },
+  // the sixth design (#877): the colour chain
+  { lane: 'colour', design: 877 },
 ];
 
 const BEASTS = ['dewback', 'bantha', 'eopie', 'ronto', 'jawa', 'aiwha'];
 
 export const OWNERS = [
+  // the sixth design's lane colour: the mesh variation databases and the
+  // object variations (a level pack's variations.json consumes those its
+  // level names; the rest are the lane's until every pack has one)
+  { match: /\/(meshvariationdatabase|objectvariation)$/, part: 'data', lane: 'colour' },
   // #839's cast left: the six beasts (and their clips), Yoda and Grievous, the walkers' wrecks
   { match: new RegExp(`^characters/npc/creatures/(${BEASTS.join('|')})`), lane: 'B' },
   { match: new RegExp(`^anims(_additive)?/(${BEASTS.join('|')})[^/]*/`), lane: 'B' },

@@ -105,6 +105,7 @@ import { parseArgs } from './lib/args.mjs';
 import { isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-paths.mjs';
 import { resolveImage } from './lib/bf2017-textures.mjs';
+import { meshBindings } from './lib/bf2017-variations.mjs';
 import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { writeCatalogueLine, writeCredit } from './lib/catalog-write.mjs';
 import { joinSkinned, shareSkins } from './lib/rig-parts.mjs';
@@ -164,6 +165,52 @@ export function parseTextures(text) {
   return out;
 }
 
+// --variations <MVDB record>: the maps the game's mesh variation database
+// binds for the mesh (its default entry), by the shader's parameter names
+// (bf2017-textures.mjs's slotOfParameter), each material by its index in the
+// GLB as '#<i>'; only the colour, normal and emissive the GLB lacks are
+// bound (readLod). A graph that binds its maps inside itself (the AT-AT's
+// SS_ATAT_Head, the Falcon's details and legs) has an empty entry there too,
+// so --textures stays for those (lane colour, task 6).
+// variationTextures(records, mesh) → { '#<i>': [{ slot, name }] }
+export function variationTextures(records, mesh) {
+  const out = {};
+  const bound = meshBindings(records, mesh);
+  if (!bound) return out;
+  // (the mesh and its material count, so a part's GLB or one that dropped a
+  // material takes none of them: indexBindings)
+  out['#mesh'] = String(mesh).toLowerCase();
+  out['#count'] = bound.length;
+  bound.forEach((list, i) => {
+    const keep = list.filter((b) => ['color', 'normal', 'emissive'].includes(b.slot)).map(({ slot, name }) => ({ slot, name }));
+    if (keep.length) out[`#${i}`] = keep;
+  });
+  return out;
+}
+
+// the index bindings a GLB file takes: only the database's own mesh's files,
+// and only when the GLB has as many materials as the entry (else the
+// indices may not line up)
+export function indexBindings(textures, file, count) {
+  if (!textures?.['#mesh'] || textures['#count'] !== count) return {};
+  if (!String(file).toLowerCase().includes(`${textures['#mesh']}.`)) return {};
+  return Object.fromEntries(Object.entries(textures).filter(([k]) => /^#\d+$/.test(k)));
+}
+
+// --textures and --variations together: the hand table by material name,
+// the database's by index (the record under lab/assets/bf2017/data/, fetched
+// with bf2017-fetch.mjs data '<record>')
+async function texturesOpt(opts, mesh) {
+  const hand = typeof opts.textures === 'string' ? parseTextures(opts.textures) : {};
+  if (typeof opts.variations === 'string') {
+    const { records } = await import('./bf2017-shader-names.mjs');
+    const got = await records([opts.variations.replace(/\.json(\.gz)?$/, '')]);
+    if (!got.size) throw new Error(`--variations: no record ${opts.variations}`);
+    Object.assign(hand, variationTextures([...got.values()], mesh));
+  }
+  return Object.keys(hand).length ? hand : null;
+}
+
 // the bucket path of a named map in the slot's form: a normal map as the
 // pipeline's derived `__normal` (its z rebuilt; the KTX2 under that name)
 export const overridePath = (name, slot) => (slot === 'normal' ? mapPath(name).replace(/\.png$/, '__normal.ktx2') : mapPath(name).replace(/\.png$/, '.ktx2'));
@@ -202,7 +249,8 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
   for (const key of ['extensionsUsed', 'extensionsRequired']) if (json[key]) json[key] = json[key].filter((e) => e !== 'KHR_texture_basisu');
   const doc = await io.readJSON({ json, resources });
   // a map not there yet: the material goes without it rather than wear grey
-  for (const m of doc.getRoot().listMaterials()) {
+  const byIndexOf = indexBindings(textures, file, doc.getRoot().listMaterials().length);
+  for (const [index, m] of doc.getRoot().listMaterials().entries()) {
     for (const slot of SLOTS) if (m[`get${slot}Texture`]()?.getName() === MISSING) m[`set${slot}Texture`](null);
     const shader = String(m.getExtras()?.shader ?? '');
     // a hair preset's colour map carries its strands' cut-out in alpha
@@ -227,7 +275,10 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
     m.setExtras(decalOf(shader) ? { decal: decalOf(shader) } : {});
     // a map the material's shader graph binds, given by --textures: found as
     // any other (the PNG, else unpacked), named for the native pass
-    for (const { slot, name } of textures?.[m.getName()] ?? []) {
+    // (and --variations' by the material's index, where the GLB has none in that slot)
+    const lacks = { color: !m.getBaseColorTexture(), normal: !m.getNormalTexture(), emissive: !m.getEmissiveTexture() };
+    const byIndex = (byIndexOf[`#${index}`] ?? []).filter((b) => lacks[b.slot]);
+    for (const { slot, name } of [...(textures?.[m.getName()] ?? []), ...byIndex]) {
       const at = overridePath(name, slot);
       const found = await resolveImage(at, { root, derived, unpackDir });
       if (!found) {
@@ -536,7 +587,8 @@ export async function importModel(name, opts) {
     // (a hero's own eye map, under web/textures/, for the eye shader's material)
     eyes: typeof opts.eyes === 'string' ? `web/textures/${opts.eyes.replace(/^web\/textures\//, '')}` : null,
     // (maps a shader graph binds, by material name: --textures)
-    textures: typeof opts.textures === 'string' ? parseTextures(opts.textures) : null,
+    // (and those the game's mesh variation database binds: --variations <record>)
+    textures: await texturesOpt(opts, name),
     // (WebP quality: colour, then the rest; a hero at the game's full maps takes more)
     quality: Number(opts.quality ?? 82),
     mapsQuality: Number(opts.mapsQuality ?? opts.quality ?? 80),
