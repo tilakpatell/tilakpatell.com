@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LAYERS } from '../../src/lib/land/layers.js';
 import { readInstances } from '../../src/lib/level/instances.js';
-import { arenaOf, buildPack, cropHeights, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
+import { arenaOf, buildPack, cropHeights, emptyValue, fillEmpty, heightsLayer, mainSubs, fillHoles, glbTriangles, lodFile, meshCuts, mergeHeights, packCell, readMap, rebase, rewriteImageUris, subset, terrainFrame } from './bf2017-level.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
@@ -37,7 +37,7 @@ describe('readMap', () => {
 describe('arenaOf', () => {
   it('takes the level’s own sub and Content by default, and leaves the lobby, the actors and the lighting proxies out', () => {
     const map = readMap(json, bin);
-    expect(mainSubs(map)).toEqual(['fixture_01', 'content']);
+    expect(mainSubs(map)).toEqual(['fixture_01', 'content', 'shared_art', 'sunny']);
     expect(arenaOf(map)).toEqual([0, 1, 2]);
   });
 
@@ -127,6 +127,9 @@ describe('cropHeights', () => {
     expect(edge.data[4]).toBe(0);
     expect(edge.data[8]).toBe(0);
     expect(edge.data[0]).toBeGreaterThan(0);
+    // (clamped, off the map is its edge's height)
+    const off = cropHeights(src, f, { minX: 600, minZ: 0, size: 64, metresPerPixel: 32, clamp: true });
+    expect(off.data[0]).toBe(src[1 * 9 + 8]);
   });
 });
 
@@ -223,4 +226,33 @@ describe('the files', () => {
     const data = Uint16Array.from([90, 90, 90, 90, 90, 0, 0, 50, 90, 90, 90, 90]);
     expect(Array.from(fillHoles(data, 4, 3))).toEqual([90, 90, 90, 90, 90, 50, 50, 50, 90, 90, 90, 90]);
   });
+  it('writes an interior: no terrain, its bounds the extent, and only what is under the ground when it is buried', () => {
+    const meshes = [0, 1, 2, 3, 4].map((i) => ({ name: `m${i}`, lods: [8, 4], bounds: [-1, 0, -1, 1, 1, 1], mats: 1 }));
+    const inside = buildPack({ world: 'fixture/base', mapName: 'm', map: readMap(json, bin), spot: [100, 200], groundY: 0, meshes, arena: 256, inside: true, terrain: { near: {} } });
+    expect(inside.json.inside).toBe(true);
+    expect(inside.json.terrain).toBe(null);
+    expect(inside.json.bounds.min[0]).toBeLessThanOrEqual(10);
+    expect(inside.json.bounds.max[0]).toBeGreaterThanOrEqual(200);
+    // (a ground 50 m up buries the arena: an interior keeps what a world leaves out)
+    const buried = buildPack({ world: 'fixture/base', mapName: 'm', map: readMap(json, bin), spot: [100, 200], groundY: 0, meshes, arena: 256, inside: true, groundAt: () => 50 });
+    expect(buried.counts.arena).toBe(2);
+    const world = buildPack({ world: 'fixture', mapName: 'm', map: readMap(json, bin), spot: [100, 200], groundY: 0, meshes, arena: 256, groundAt: () => 50 });
+    expect(world.counts.arena).toBe(0);
+    expect(world.json.inside).toBe(false);
+  });
 });
+
+describe('the ground a map never painted', () => {
+  it('finds the empty value only where much of the map is it, and fills it from the painted edge', () => {
+    // 5 × 1: painted 300 and 500 at the left, empty (100) the rest
+    const row = Uint16Array.from([300, 500, 100, 100, 100]);
+    expect(emptyValue(row, 0.25)).toBe(100);
+    expect(emptyValue(Uint16Array.from([300, 500, 100, 400]), 0.5)).toBe(null);
+    expect(Array.from(fillEmpty(row, 5, 1, 100))).toEqual([300, 500, 500, 500, 500]);
+    // (a hole, 0, stays a hole)
+    expect(Array.from(fillEmpty(Uint16Array.from([0, 300, 100]), 3, 1, 100))).toEqual([0, 300, 300]);
+    // (the painted rim blended toward the floor, 200, is taken as empty with a margin)
+    expect(Array.from(fillEmpty(Uint16Array.from([500, 500, 200, 100, 100]), 5, 1, 100, { margin: 1 }))).toEqual([500, 500, 500, 500, 500]);
+  });
+});
+

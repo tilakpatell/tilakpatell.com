@@ -46,6 +46,10 @@ const FILMS = 'films/bf2017';
 const PICTURE = 'textures/galaxy/bf2017/light';
 const PICTURED = /\.(panorama|gradient|clouds)\.ktx2$|\.lut33\.png$/;
 const CUTS = ['lod1', 'far', 'ultra'];
+// A level pack's text stays in git (level.json, its parts' JSON, the README:
+// the tests, the sites and the other lanes read them, and they are small);
+// its binaries (cells, meshes, textures, maps, shapes) are published (lane E0)
+export const PACK_KEPT = /^models\/galaxy\/bf2017\/levels\/.+\.(json|md)$/;
 
 const bare = (path) => path.replace(/^\/+/, '');
 export const publishedPath = (path, hash) => keyOf({ hash, path: bare(path) });
@@ -84,10 +88,11 @@ const measure = (publicDir, path) => {
 // What the pipeline made from the game and is here to publish: every file a
 // credit from the game names (crew or surface), each of its cuts beside it
 // (.lod1, .far, .ultra), and everything under models/galaxy/bf2017 (the clip
-// packs) and models/galaxy/space (the space levels), and the game's films
-// under films/bf2017, and the records' pictures under
-// textures/galaxy/bf2017/light (PICTURED). Meshy's, Sketchfab's and Quaternius's stay committed:
-// their credits name another source. Sorted by path.
+// packs) and models/galaxy/space (the space levels), the level packs but their
+// level.json and README, the game's films under films/bf2017, and the
+// records' pictures under textures/galaxy/bf2017/light (PICTURED). Meshy's,
+// Sketchfab's and Quaternius's stay committed: their credits name another
+// source. Sorted by path.
 export function gameFiles(credits, publicDir) {
   const out = new Map();
   for (const c of Object.values(credits)) {
@@ -97,11 +102,13 @@ export function gameFiles(credits, publicDir) {
     const tier = plain.includes('/crew/') ? 'crew' : 'surface';
     const stem = plain.replace(/\.glb$/, '');
     for (const [path, t] of [[plain, tier], ...CUTS.map((cut) => [`${stem}.${cut}.glb`, cut === 'ultra' ? 'ultra' : tier])]) {
+      if (PACK_KEPT.test(path)) continue; // (a level pack's credit names its level.json: git keeps it)
       if (existsSync(join(publicDir, path))) out.set(path, { path, ...measure(publicDir, path), from, tier: t });
     }
   }
   for (const abs of PACKS.flatMap((dir) => walk(join(publicDir, dir)))) {
     const path = abs.slice(publicDir.length + 1).split('\\').join('/');
+    if (PACK_KEPT.test(path)) continue;
     if (!out.has(path)) out.set(path, { path, ...measure(publicDir, path), from: path, tier: 'pack' });
   }
   for (const abs of walk(join(publicDir, FILMS)).filter((f) => f.endsWith('.webm'))) {

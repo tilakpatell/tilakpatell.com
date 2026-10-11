@@ -12,6 +12,12 @@ name: bf2017 desktop
 #
 # Tick "dry" to see the plan without the desktop: it runs on GitHub's own
 # runner, makes nothing and says what the job would make and what it needs.
+#
+# `stream` is lane R2's sender (scripts/desktop/bf2017-stream.mjs, PR #908):
+# a world drawn here at ultra, or the game's own window, streamed to a phone
+# over WebRTC for the numbers that decide the stream. It needs a phone on
+# the other end, so `all` leaves it out; until #908 is on main the job says
+# so and stops.
 
 run-name: >-
   ${{ format('bf2017 desktop: {0}{1}{2}', inputs.job, inputs.dry && ' (dry)' || '', inputs.name && format(' · {0}', inputs.name) || '') }}
@@ -20,10 +26,10 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: 'Which job (all runs the six in turn)'
+        description: 'Which job (all runs the first six in turn; stream needs a phone, so never in all)'
         required: true
         type: choice
-        options: [panoramas, atlases, textures, uastc, depots, gate, all]
+        options: [panoramas, atlases, textures, uastc, depots, gate, all, stream]
       name:
         description: 'A name for this run, shown in the list (optional)'
         required: false
@@ -36,6 +42,22 @@ on:
         description: 'Only the first N items (a first run)'
         required: false
         type: string
+      stream_source:
+        description: 'stream: what it sends (site: a world of the site''s at ultra; game: the game''s own window, running on the desktop)'
+        required: false
+        type: choice
+        options: [site, game]
+        default: site
+      stream_world:
+        description: 'stream: the world (site only)'
+        required: false
+        type: string
+        default: hoth
+      stream_minutes:
+        description: 'stream: how long it runs, in minutes'
+        required: false
+        type: string
+        default: '15'
       dry:
         description: 'Dry run: the plan only, on GitHub''s runner, nothing made'
         required: false
@@ -63,6 +85,10 @@ jobs:
       - name: The plan
         run: |
           set -e
+          if [ "$JOB" = stream ]; then
+            node scripts/desktop/bf2017-stream-plan.mjs
+            exit 0
+          fi
           for j in $( [ "$JOB" = all ] && echo panoramas atlases textures uastc depots gate || echo "$JOB" ); do
             node "scripts/desktop/bf2017-$j.mjs" --dry ${ONLY:+--only "$ONLY"} ${LIMIT:+--limit "$LIMIT"}
           done
@@ -70,10 +96,14 @@ jobs:
           JOB: ${{ inputs.job }}
           ONLY: ${{ inputs.only }}
           LIMIT: ${{ inputs.limit }}
+          STREAM_SOURCE: ${{ inputs.stream_source }}
+          STREAM_WORLD: ${{ inputs.stream_world }}
+          STREAM_MINUTES: ${{ inputs.stream_minutes }}
+          STREAM_NAME: ${{ inputs.name }}
 
   # the job, on the desktop (one at a time: the runner takes one job)
   make:
-    if: ${{ !inputs.dry }}
+    if: ${{ !inputs.dry && inputs.job != 'stream' }}
     runs-on: [self-hosted, gpu]
     timeout-minutes: 360
     concurrency:
@@ -115,3 +145,39 @@ jobs:
           path: ${{ runner.temp }}/bf2017-gate
           if-no-files-found: ignore
           retention-days: 14
+
+  # lane R2's stream, on the desktop: the whole repository (the dev server
+  # serves the world), its numbers kept as the run's artifact
+  stream:
+    if: ${{ !inputs.dry && inputs.job == 'stream' }}
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 120
+    concurrency:
+      group: bf2017-desktop
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Stream it
+        shell: powershell
+        run: |
+          $plan = node scripts/desktop/bf2017-stream-plan.mjs --args
+          if ($LASTEXITCODE -ne 0) { $plan | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY; Write-Host $plan; exit 1 }
+          npm ci --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $a = $plan -split "`n" | Where-Object { $_ -ne '' }
+          node scripts/desktop/bf2017-stream.mjs @a
+          exit $LASTEXITCODE
+        env:
+          STREAM_SOURCE: ${{ inputs.stream_source }}
+          STREAM_WORLD: ${{ inputs.stream_world }}
+          STREAM_MINUTES: ${{ inputs.stream_minutes }}
+          STREAM_NAME: ${{ inputs.name }}
+      - name: The stream's numbers
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bf2017-stream-${{ github.run_id }}
+          path: docs/superpowers/evidence/bf2017-picture/r2
+          if-no-files-found: ignore
+          retention-days: 30

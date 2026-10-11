@@ -57,10 +57,12 @@ export function readMap(json, bin) {
   return { name: json.level, instances: { count, position, quaternion, scale }, meshOf, groups, meshes: json.meshes, subworlds: json.subworlds.map((x) => x.name ?? x), terrain: json.terrain?.[0] ?? null, sky: json.sky ?? [], vehicleSpawns: json.vehicleSpawns ?? [] };
 }
 
-// The playable map: the level's own sub-level (its name's last part) and
-// `Content`. Lobby, EOR, Cinematics, Outro_*, HeroArena and the rest are
+// The playable map: the level's own sub-level (its name's last part),
+// `Content`, and where a map keeps its scenery apart, `Shared_Art` and the
+// day's `Sunny` (Endor_01: 16,341 of its 18,530 pieces). Lobby, EOR,
+// Cinematics, Outro_*, HeroArena, the modes and the other times of day are
 // other sets in the same file, drawn somewhere else in the game.
-export const mainSubs = (map) => [last(map.name), 'content'];
+export const mainSubs = (map) => [last(map.name), 'content', 'shared_art', 'sunny'];
 
 // What the game places and never draws as itself: Enlighten's lighting
 // proxies, the fake light cones, destruction stages waiting their turn
@@ -183,15 +185,21 @@ export async function heightsLayer(record, png, which = 'world') {
 // A square of a heightmap, resampled bilinearly to its own step, in the
 // source's 16-bit units; a hole stays a hole (any hole under a sample makes
 // the sample one), and so does anywhere outside the source
-export function cropHeights(src, frame, { minX, minZ, size, metresPerPixel }) {
+// (`clamp`: off the map, its nearest edge, for a level whose map is smaller
+// than its world, Endor's 2 km of 8: the forest floor runs on level)
+export function cropHeights(src, frame, { minX, minZ, size, metresPerPixel, clamp = false }) {
   const n = Math.round(size / metresPerPixel) + 1;
   const out = new Uint16Array(n * n);
   const hole = frame.hole ?? 0;
   const at = (i, j) => src[j * frame.w + i];
   for (let j = 0; j < n; j++) {
     for (let i = 0; i < n; i++) {
-      const gx = (minX + i * metresPerPixel - frame.minX) / frame.metresPerPixel;
-      const gz = (minZ + j * metresPerPixel - frame.minZ) / frame.metresPerPixel;
+      let gx = (minX + i * metresPerPixel - frame.minX) / frame.metresPerPixel;
+      let gz = (minZ + j * metresPerPixel - frame.minZ) / frame.metresPerPixel;
+      if (clamp) {
+        gx = Math.min(Math.max(gx, 0), frame.w - 1);
+        gz = Math.min(Math.max(gz, 0), frame.h - 1);
+      }
       if (gx < 0 || gz < 0 || gx > frame.w - 1 || gz > frame.h - 1) {
         out[j * n + i] = hole;
         continue;
@@ -245,7 +253,7 @@ function farList(inst, meshOf, cell) {
   return { bin, draws };
 }
 
-export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null }) {
+export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes, arena = 1024, cell = CELL, rows = BUDGET_ROWS, subs = null, drop = [], terrain = null, physics = {}, walk = 640, tex = {}, groundAt = null, holeAt = null, inside = false }) {
   // (a mesh the bucket has not got, or sequel-era, draws nothing: its instances go)
   const idx = arenaOf(map, { subs, drop }).filter((i) => !meshes[map.meshOf[i]].missing);
   const all = rebase(subset(map.instances, idx), [spot[0], groundY, spot[1]], yaw);
@@ -262,18 +270,22 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
     if (holeAt?.(x, z)) return false;
     return top < groundAt(x, z) - 0.5;
   };
-  const inside = [];
+  const inArena = [];
   const outside = [];
   let buried = 0;
+  // (an interior keeps what a world leaves out: the base inside the glacier,
+  // or, with no ground given, everything its sub-levels hold)
   for (let i = 0; i < all.count; i++) {
-    if (under(i)) {
+    if (under(i) !== Boolean(inside && groundAt)) {
       buried++;
       continue;
     }
-    (Math.abs(all.position[i * 3]) < arena && Math.abs(all.position[i * 3 + 2]) < arena ? inside : outside).push(i);
+    // (an interior has no horizon: what is beyond its arena is not seen from it)
+    if (Math.abs(all.position[i * 3]) < arena && Math.abs(all.position[i * 3 + 2]) < arena) inArena.push(i);
+    else if (!inside) outside.push(i);
   }
-  const arenaInst = subset(all, inside);
-  const arenaMesh = Int32Array.from(inside.map((i) => meshOfAll[i]));
+  const arenaInst = subset(all, inArena);
+  const arenaMesh = Int32Array.from(inArena.map((i) => meshOfAll[i]));
   const horizonInst = subset(all, outside);
   const horizonMesh = Int32Array.from(outside.map((i) => meshOfAll[i]));
   const cells = cellsOf(arenaInst, arenaMesh, { cell, reach: (m, i) => radius(meshes[m]) * Math.max(...arenaInst.scale.subarray(i * 3, i * 3 + 3).map(Math.abs)) });
@@ -330,11 +342,28 @@ export function buildPack({ world, mapName, map, spot, groundY, yaw = 0, meshes,
     meshes: meshes.map((m) => ({ name: m.name, radius: Math.round(radius(m) * 100) / 100, glb: m.glb ?? m.lods.map((_, n) => `meshes/${slug(m.name)}.lod${n}.glb`), lods: m.lods, bounds: m.bounds, mats: m.mats ?? 1 })),
     cull,
     tex,
-    terrain,
+    terrain: inside ? null : terrain,
+    inside: Boolean(inside),
+    bounds: inside ? extentOf(arenaInst, arenaMesh, meshes) : null,
     shadowCache: null,
     physics,
   });
   return { json, files, table, counts: { arena: arenaInst.count, horizon: horizonInst.count, buried, cells: cells.size } };
+}
+
+// An interior's box in the pack's frame: every piece's bounds, scaled
+function extentOf(inst, meshOf, meshes) {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < inst.count; i++) {
+    const r = radius(meshes[meshOf[i]]) * Math.max(...inst.scale.subarray(i * 3, i * 3 + 3).map(Math.abs));
+    for (let k = 0; k < 3; k++) {
+      min[k] = Math.min(min[k], inst.position[i * 3 + k] - r);
+      max[k] = Math.max(max[k], inst.position[i * 3 + k] + r);
+    }
+  }
+  const round = (v) => Math.round(v * 10) / 10;
+  return inst.count ? { min: min.map(round), max: max.map(round) } : { min: [0, 0, 0], max: [0, 0, 0] };
 }
 
 // ── The meshes ──
@@ -426,3 +455,80 @@ export function fillHoles(data, w, h, hole = 0) {
   }
   return out;
 }
+
+// The value a map uses for ground it never painted (Endor_01's: 58% of its
+// pixels, the tiles outside the play area left at its floor): the map's
+// lowest non-zero value when that much of it is that value, else null.
+export function emptyValue(data, share = 0.25) {
+  let min = Infinity;
+  for (const v of data) if (v && v < min) min = v;
+  let n = 0;
+  for (const v of data) if (v === min) n++;
+  return n / data.length >= share ? min : null;
+}
+
+// Each empty pixel the mean of its nearest painted neighbours, spreading out
+// from the painted ground ring by ring: the floor runs on from the play
+// area's edge instead of dropping to the map's floor. Holes (0) stay.
+// (`margin`: pixels within that many of an empty one are empty too: the
+// painted ground's rim is blended down toward the floor value)
+export function fillEmpty(data, w, h, empty, { margin = 0 } = {}) {
+  const out = Uint16Array.from(data);
+  const done = new Uint8Array(data.length);
+  let ring = [];
+  for (let i = 0; i < data.length; i++) if (data[i] !== empty) done[i] = 1;
+  for (let step = 0; step < margin; step++) {
+    const grow = [];
+    for (let i = 0; i < data.length; i++) {
+      if (!done[i] || !out[i]) continue;
+      const x = i % w;
+      const y = (i - x) / w;
+      if ((x > 0 && !done[i - 1]) || (x < w - 1 && !done[i + 1]) || (y > 0 && !done[i - w]) || (y < h - 1 && !done[i + w])) grow.push(i);
+    }
+    for (const i of grow) done[i] = 0;
+  }
+  for (let i = 0; i < data.length; i++) {
+    if (done[i]) continue;
+    const x = i % w;
+    const y = (i - x) / w;
+    if ((x > 0 && done[i - 1]) || (x < w - 1 && done[i + 1]) || (y > 0 && done[i - w]) || (y < h - 1 && done[i + w])) ring.push(i);
+  }
+  while (ring.length) {
+    const vals = ring.map((i) => {
+      const x = i % w;
+      const y = (i - x) / w;
+      let sum = 0;
+      let n = 0;
+      for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const j = ny * w + nx;
+        if (done[j] && out[j]) {
+          sum += out[j];
+          n++;
+        }
+      }
+      return n ? Math.round(sum / n) : empty;
+    });
+    const next = [];
+    ring.forEach((i, k) => {
+      out[i] = vals[k];
+      done[i] = 1;
+    });
+    for (const i of ring) {
+      const x = i % w;
+      const y = (i - x) / w;
+      for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const j = ny * w + nx;
+        if (!done[j]) {
+          done[j] = 2;
+          next.push(j);
+        }
+      }
+    }
+    for (const j of next) done[j] = 0;
+    ring = next;
+  }
+  return out;
+}
+

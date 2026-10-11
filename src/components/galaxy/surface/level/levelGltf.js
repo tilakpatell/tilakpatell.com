@@ -7,7 +7,8 @@
 // textures.jsonl's `format`), but many of the pack's KTX2s are labelled
 // linear, and read as linear they came out washed pale (bindSlot).
 //
-//   createLevelLoader({ world, tier, renderer, fetchBytes, sizes, recipes, materialFor }) → { load(glbPath) → Promise<{ scene } | null>, dispose() }
+//   createLevelLoader({ world, tier, renderer, fetchBytes, sizes, recipes, materialFor }) → { load(glbPath) → Promise<{ scene } | null>,
+//     texture(packPath, sizes?) → Promise<Texture | null>, dispose() }
 //   (sizes: level.json's `tex`, each map's size per tier)
 //
 // With `recipes` and `materialFor` (lane Q1: a node world draws the game's
@@ -22,7 +23,8 @@
 //     variations.json): a varied mesh's recipes go through applyVariation
 //     first, its own maps (color, normal) found in the index's `maps`
 
-import { SRGBColorSpace } from 'three';
+import { NoColorSpace, SRGBColorSpace } from 'three';
+import { COLOUR_MAP_KEYS } from '../../../../lib/three/surface/families.js';
 import { gltfLoader, ktx2Loader } from '../../../../lib/three/gltf.js';
 import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
 import { packUrl, splitTextures, tierTexture } from './levelPack.js';
@@ -92,9 +94,39 @@ const MAP_KEYS = [
 // the slots whose texture is a colour, in sRGB (the rest are data: normals, roughness and metal)
 export const COLOUR_SLOTS = new Set(['map', 'emissiveMap']);
 
+// The game's own word on a map, carried in the pack's `tex` row (`srgb`:
+// true or false, from textures.jsonl, written by the pipeline): a texture
+// so marked is read as the game reads it, and nothing below overrules it. A
+// row without the word leaves the slot rules to decide (a colour slot sRGB
+// whatever the file says, since many of the drop's files were tagged wrong).
+export function gameWordOf(tex, sizes, path) {
+  const slug = String(path).split('/').pop().replace(/\.ktx2$/, '');
+  const said = sizes?.[slug]?.srgb;
+  if (typeof said !== 'boolean' || !tex?.isTexture) return tex;
+  tex.userData.gameSrgb = said;
+  const want = said ? SRGBColorSpace : NoColorSpace;
+  if (tex.colorSpace !== want) {
+    tex.colorSpace = want;
+    tex.needsUpdate = true;
+  }
+  return tex;
+}
+
+// a colour map read as sRGB whatever its file says (bindSlot's rule, for a
+// recipe's maps too: the crew's and a pack's emissive maps come this way),
+// unless the pack carries the game's word on it
+export function asColour(tex, colour) {
+  if (colour && tex?.isTexture && typeof tex.userData?.gameSrgb !== 'boolean' && tex.colorSpace !== SRGBColorSpace) {
+    tex.colorSpace = SRGBColorSpace;
+    tex.needsUpdate = true;
+  }
+  return tex;
+}
+
 // a pack texture bound to a material's slot, the colour ones read as sRGB
+// unless the pack's word says the game reads that map linear
 export function bindSlot(mat, slot, tex) {
-  if (COLOUR_SLOTS.has(slot) && tex.colorSpace !== SRGBColorSpace) {
+  if (COLOUR_SLOTS.has(slot) && typeof tex.userData?.gameSrgb !== 'boolean' && tex.colorSpace !== SRGBColorSpace) {
     tex.colorSpace = SRGBColorSpace;
     tex.needsUpdate = true;
   }
@@ -118,7 +150,7 @@ export async function recipeMaps(recipe, { maps = {}, texture, keys = null }) {
       if (typeof name !== 'string') return;
       const path = maps[name];
       if (Array.isArray(path)) out.detailSlices = await Promise.all(path.map((p) => texture(p)));
-      else out[key] = path ? await texture(path) : null;
+      else out[key] = path ? asColour(await texture(path), COLOUR_MAP_KEYS.has(key)) : null;
     }),
   );
   return out;
@@ -133,15 +165,17 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
   const meshes = new Map(); // glb path → Promise<{ scene } | null>
   let gone = false;
 
-  function texture(path) {
+  // (a part's own maps say their sizes beside them: `own`)
+  function texture(path, own = sizes) {
     // (after dispose nothing new is fetched, so nothing is left undisposed)
     if (gone) return Promise.resolve(null);
     if (!textures.has(path)) {
-      const local = packUrl(world, tierTexture(path, tier, sizes));
+      const local = packUrl(world, tierTexture(path, tier, own));
       textures.set(
         path,
         ktx2Loader({ renderer })
           .then((k) => withFallback((u) => k.loadAsync(u))(local))
+          .then((t) => gameWordOf(t, sizes, path))
           .catch(() => null),
       );
     }
@@ -224,6 +258,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
 
   return {
     load,
+    texture,
     // (the remote name of a pack file, for the evidence)
     url: (path) => assetUrl(packUrl(world, path)),
     async dispose() {

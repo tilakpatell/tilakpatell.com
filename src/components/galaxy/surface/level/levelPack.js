@@ -12,6 +12,11 @@ export { bandsFor, cutFor, readInstances, wanted };
 // a map's size on a tier when the pack does not say (the design's)
 export const TEX = { low: 512, mid: 1024, high: 1024, ultra: 2048 };
 
+// A pack file's site path. The pack's bytes are published to site-assets,
+// not committed (lane E0; level.json and README.md stay in git): the build
+// merges src/data/galaxyAssets.json into the asset manifest, so assetUrl and
+// withFallback (src/lib/assetBase.js) turn this path into the published URL,
+// as they do a model's. A district's pack is `<world>/<district>`.
 export const packUrl = (world, path) => `/models/galaxy/bf2017/levels/${world}/${path}`;
 
 // A key's band in a `wanted` answer: 'near', 'mid', or null (not wanted)
