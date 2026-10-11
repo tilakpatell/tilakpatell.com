@@ -94,7 +94,7 @@ jobs:
 
       - shell: bash
         run: |
-          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 QUALITY=high PHASE_WAIT=900000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.worlds }} 2>&1 | tee worlds-check.log
+          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 QUALITY=high VIEW=640x360 SHOT_WAIT=900000 PHASE_WAIT=900000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.worlds }} 2>&1 | tee worlds-check.log
           exit ${PIPESTATUS[0]}
 
       - if: always()
