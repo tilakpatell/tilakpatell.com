@@ -42,12 +42,39 @@ Branch `claude/gpu-n4-stream`, PR #918. The plan: `docs/superpowers/plans/2026-1
 | high | 11.53 of 12 MB | 47.3 of 400 MB | 43.1 s | 174.0 s | 169.0 s | 137 s | 0 of 65 |
 | ultra | 11.54 of 12 MB | 49.3 of 1,200 MB | 41.1 s | 165.8 s | 162.6 s | 131.2 s | 0 of 65 (the budget line: 196 of 1,500 calls, 18.9 of 240 MB of models, pass) |
 
+On a bundled build (`NODE_ENV=development vite build --mode development`, served by `vite preview`, as `scripts/stream-check.mjs` does, so the page’s hook is there and its code comes bundled; lane D2’s pack, the grid cut again; `bytes-high-bundle.json`):
+
+| tier | boot (of bootMB) | visit (of visitMB) | first frame | walkable, wall | walkable, line | the level’s own span | over the wire by the boot | coarse cells shown |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| high | 11.64 of 12 MB | 47.3 of 400 MB | 10.0 s | 123.1 s | 120.3 s | 116.7 s | 43.4 MB (123 on the dev server) | 0 of 65 |
+
+The bundle takes the first frame from 43 s to 10 s and the page’s own bytes from 123 MB to 43 by the boot; the level’s span stays about two minutes, its requests paced by SwiftShader’s 13 s frames. Its level draws 180 calls, 1,628,371 triangles and 6,036 instances (D2’s pack). The budget line reads `models 60.9/60 MB`: served from disk, the run is held to the row written for a dev server that never fetches a published pack; served by the bucket as a visitor gets it, Hoth on high is held to 160 MB (`galaxy-budget.mjs`’s `BUCKET_MB`, main measured at 142.4 MB), and the grid’s cells are 3.05 MB of it.
+
 What these say, and what they do not:
 
 - **The bytes hold.** Every tier’s boot ended under its `bootMB` (the stream ends it at 95 % so what is in flight lands under) and every visit stayed far under its `visitMB`; nothing paused.
 - **The times are the software renderer’s, not the line’s.** A frame of Hoth takes 14 to 38 s in SwiftShader, on main as on the branch. The page asks for the next files only as its frames let it (the far table is sorted, a mesh parsed, its maps asked), so even the line’s clock carries the renderer: mid’s boot slice crossed the line in 8.8 s from its first file, high’s took 137. The development server also sends its code unbundled (117 to 123 MB over the line by the boot). The design’s gate (walkable under 10 s on high at 20 Mbit/s) is the laptop’s, on a production build: 11.5 MB of boot at 20 Mbit/s is 4.6 s of line.
 - **At mid the branch draws what main draws, and the grid’s two cells still standing in.** Main: 187 calls, 1,990,383 triangles; the branch: 187 calls, 1,999,616 (the level the same, 162 calls and 1,357,108 triangles; the 9,233 more are the two coarse cells whose fine meshes were still coming, and their cards).
 - **The budget rows’ triangle ceiling fails on main too.** `lab/baseline/surface-high.json` holds Hoth at 1.51M triangles; main draws 4.28M today. The branch draws what main draws once the grid hides.
+
+## The grid planned for every surface pack (`node scripts/bf2017-horizon.mjs <pack> --dry --no-impostors`)
+
+Nothing written; the impostor meshes merged with the rest, so the proxies are an upper bound. Every pack’s grid is between 0.95 and 3.10 MB, every cell under the cap.
+
+| pack | cells | proxies MB | `.lo` MB |
+| --- | --: | --: | --: |
+| endor | 7 | 1.24 | 1.09 |
+| hoth | 65 | 3.10 | 1.92 |
+| hoth/outpost | 67 | 3.09 | 1.98 |
+| naboo | 47 | 2.50 | 1.88 |
+| naboo/hangar | 6 | 0.99 | 0.73 |
+| naboo/market | 21 | 1.48 | 1.06 |
+| scarif | 61 | 1.31 | 1.07 |
+| tatooine | 9 | 1.33 | 0.90 |
+| tatooine/jabba | 14 | 0.95 | 0.73 |
+| yavin | 15 | 1.81 | 1.37 |
+
+The interiors (hoth/base, kamino/venator, tatooine/jabba-inside, bespin/m2bes) see no horizon and the space packs have no ground: they keep the far list. Lane W’s `horizon` job (`scripts/desktop/bf2017-horizon.mjs`, `gh workflow run bf2017-desktop.yml -f job=horizon`) bakes these ten with their impostors on the chip and publishes them; its dry run plans the same ten, 106 arena cells and 31 impostor meshes.
 
 ## The packs’ maps, as published (`ktx2-census.json`)
 

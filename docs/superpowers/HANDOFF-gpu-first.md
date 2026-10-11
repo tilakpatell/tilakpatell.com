@@ -40,7 +40,7 @@ Each lane fills its row (session, PR) in its own PR and merges `origin/main` bef
 
 **Left.**
 1. The laptop’s gate: `BUDGET=1 QUALITY=high ANGLE=d3d11 node scripts/galaxy-check.mjs surface hoth --bytes` on a production build (walkable under 10 s at 20 Mbit/s; the cloud’s times are SwiftShader’s), and the parity shots at the coarse-to-fine swap; the impostors’ blend judged on a real chip.
-2. Lane W, the impostor bake at full quality: `ANGLE=d3d11 node scripts/bf2017-horizon.mjs <world>` for every pack (hoth, endor and its districts, sb_*), then `node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/*/horizon/*'` with the owner’s key, so the grid leaves git and comes from the bucket; commit each `level.json`’s `coarse` row and `horizon/index.json`.
+2. Lane W, the impostor bake at full quality: one dispatch once #918 is on main, `gh workflow run bf2017-desktop.yml -f job=horizon` (`scripts/desktop/bf2017-horizon.mjs`): the ten surface packs baked with ANGLE d3d11 and their `horizon/` published by hash with the runner’s key, `level.json`’s `coarse` row and `horizon/index.json` committed in its pull request. `-f dry=true` shows the plan on GitHub’s runner (ten packs, 106 arena cells, 31 impostor meshes).
 3. Lane W, the UASTC data rows: not needed (every data map is UASTC already). What is left of it is lane W’s existing `uastc` job for the ETC1S colour maps (335 of 1,074).
 4. BC5 or EAC RG11 for two-channel normals: three r186’s KTX2Loader has no such target; a patched transcoder worker, if FLIP on the laptop says the BC7 path loses.
 5. The splat vistas (the plan’s addendum): one spike after N4 lands.
