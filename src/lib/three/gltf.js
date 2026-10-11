@@ -29,7 +29,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { fitTextures, sharpenTree } from './textures';
+import { basisUp, meshoptUp } from './wasmDecoders.js';
 import { loadBytes } from '../assetLoad';
+import { features } from '../wasm/features.js';
 
 let loader = null;
 let ktx2 = null; // the KTX2Loader, once something has needed it
@@ -87,14 +89,13 @@ class SiteGLTFLoader extends GLTFLoader {
       }
       onLoad(gltf);
     };
-    if (!this.ktx2Loader && usesBasisu(data)) {
-      ktx2Loader().then(
-        () => super.parse(data, path, done, onError),
-        (e) => onError?.(e),
-      );
-      return;
-    }
-    super.parse(data, path, done, onError);
+    // (the decoders up first, so one that can't come up fails the model
+    // with its name, lib/three/wasmDecoders.js, rather than the parser's words)
+    const decoders = !this.ktx2Loader && usesBasisu(data) ? Promise.all([meshopt(), ktx2Loader()]) : meshopt();
+    decoders.then(
+      () => super.parse(data, path, done, onError),
+      (e) => onError?.(e),
+    );
   }
 }
 
@@ -104,6 +105,18 @@ export function gltfLoader() {
     loader.setMeshoptDecoder(MeshoptDecoder);
   }
   return loader;
+}
+
+// the meshopt decoder up (its SIMD build where the browser has it), once
+const meshopt = () => meshoptUp(MeshoptDecoder, { simd: features().simd });
+
+// The decoders a world's models and textures need, brought up while its
+// chunk loads (a world's module calls this beside its own imports): the
+// meshopt decoder always, the Basis transcoder where the world draws KTX2.
+// Settles either way; what failed is in lib/wasm/load's status() and fails
+// again, by name, where it's used.
+export function preloadDecoders({ renderer = null, basis = false } = {}) {
+  return Promise.allSettled([meshopt(), basis ? ktx2Loader({ renderer }) : null]);
 }
 
 // What the graphics chip can take GPU-compressed textures as, read the way
@@ -128,16 +141,33 @@ function probeRenderer() {
 // The KTX2 loader, made and attached the first time it's needed; its
 // transcoder (three's basis_transcoder.js and .wasm, bundled by Vite from
 // three's own URL) only downloads on the first texture it decodes.
+// The transcoder is brought up (fetched and compiled on the main thread,
+// wasmDecoders.js's basisUp) before the loader is handed out, so a
+// transcoder that can't be had is a named WasmError here and not a texture
+// waiting for a worker that never answers; and a loader that failed so is
+// let go, the next ask making another.
 export function ktx2Loader({ renderer = null } = {}) {
   if (!ktx2Pending) {
-    ktx2Pending = import('three/examples/jsm/loaders/KTX2Loader.js').then(({ KTX2Loader }) => {
-      ktx2 = new KTX2Loader();
-      ktx2.setWorkerLimit(Math.max(1, Math.min(2, (navigator?.hardwareConcurrency ?? 2) - 1)));
-      ktx2.detectSupport(renderer ?? probeRenderer());
-      detectedWith = renderer;
-      gltfLoader().setKTX2Loader(ktx2);
-      return ktx2;
-    });
+    ktx2Pending = import('three/examples/jsm/loaders/KTX2Loader.js')
+      .then(async ({ KTX2Loader }) => {
+        const k = new KTX2Loader();
+        k.setWorkerLimit(Math.max(1, Math.min(2, (navigator?.hardwareConcurrency ?? 2) - 1)));
+        k.detectSupport(renderer ?? probeRenderer());
+        try {
+          await basisUp(k);
+        } catch (e) {
+          k.dispose();
+          throw e;
+        }
+        ktx2 = k;
+        detectedWith = renderer;
+        gltfLoader().setKTX2Loader(ktx2);
+        return ktx2;
+      })
+      .catch((e) => {
+        ktx2Pending = null;
+        throw e;
+      });
   }
   return ktx2Pending.then((k) => {
     if (renderer && detectedWith !== renderer) {
