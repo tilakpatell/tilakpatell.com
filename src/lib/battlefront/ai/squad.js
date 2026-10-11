@@ -13,6 +13,7 @@
 //   squadOf(squads, id) → squad | null
 //   joinSquad(squads, sim, id, team?) → { squad, created: squad | null }
 //   squadRows(squads, sim, id, { names, nameOf, letterOf }) → { id, letter, members: [{ id, name, cls, alive, local, order }] } | null
+//   changeSides(squads, id, team) → the squad a side-changer joins (Ewok Hunt)
 
 import { confidence, posture } from '../../ai/squad.js';
 import SQUADS from '../../../data/bf2017/squads.json';
@@ -90,6 +91,18 @@ export function squadRows(squads, sim, id, { names = [], nameOf = (m) => m, lett
     return { id: m, name: nameOf(m), cls: e?.cls?.cls ?? null, alive: Boolean(e?.alive), local: m === id, order: e?.alive ? letterOf(e.brain?.task ?? null) : null };
   };
   return { id: sq.id, letter: names[index] ?? null, members: [id, ...sq.members.filter((m) => m !== id)].map(row) };
+}
+
+// a bot that changes sides (Ewok Hunt's trooper risen an Ewok) leaves its squad for the new team's smallest
+export function changeSides(squads, id, team) {
+  const was = squads.by.get(id);
+  if (was?.team === team) return was;
+  if (was) was.members = was.members.filter((m) => m !== id);
+  const to = squads.list.filter((q) => q.team === team).sort((a, b) => a.members.length - b.members.length)[0] ?? null;
+  if (to) to.members.push(id);
+  if (to) squads.by.set(id, to);
+  else squads.by.delete(id);
+  return to;
 }
 
 export function update(squads, sim) {

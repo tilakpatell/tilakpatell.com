@@ -3,7 +3,7 @@ import { loadRulebook } from '../rulebook.js';
 import { buildNav } from '../nav.js';
 import { field } from '../fixtures/field.js';
 import { addPlayer, createSim } from '../sim.js';
-import { SQUAD_SIZE, alert, createSquads, deliver, joinSquad, squadOf, squadRows, update } from './squad.js';
+import { SQUAD_SIZE, alert, createSquads, changeSides, deliver, joinSquad, squadOf, squadRows, update } from './squad.js';
 import { createBrain } from './soldierBrain.js';
 import { aiOf, squadsOf } from '../rulebook.js';
 
@@ -124,5 +124,16 @@ describe('squads', () => {
     expect(rows.members[2]).toMatchObject({ alive: false, local: false, cls: 'assault' });
     expect(rows.members[3].order).toBe('B');
     expect(squadRows(squads, sim, 'nobody', { names: [] })).toBe(null);
+  });
+});
+
+describe('a bot that changes sides', () => {
+  it('leaves its squad for the new team’s smallest', () => {
+    const squads = { list: [{ id: '1.1', team: 1, members: ['a', 'b'] }, { id: '2.1', team: 2, members: ['c', 'd', 'e'] }, { id: '2.2', team: 2, members: ['f'] }], by: new Map() };
+    for (const q of squads.list) for (const m of q.members) squads.by.set(m, q);
+    expect(changeSides(squads, 'a', 2).id).toBe('2.2');
+    expect(squads.list[0].members).toEqual(['b']);
+    expect(squads.list[2].members).toEqual(['f', 'a']);
+    expect(changeSides(squads, 'a', 2).id).toBe('2.2');
   });
 });

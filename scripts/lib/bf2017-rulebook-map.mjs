@@ -30,18 +30,27 @@ import { readFileSync } from 'node:fs';
 import { follow, isSequel, pointsOf, readWebJson, shortName, transformOf, webFile } from './bf2017-ebx.mjs';
 import { indexOf } from './bf2017-rulebook.mjs';
 
-export const MODE_LAYERS = { galacticAssault: 'FantasyBattle', hvv: 'HeroArena', blast: 'TeamDeathmatch', strike: 'Mode9', supremacy: 'Mode1', extraction: 'Mode6', ewokHunt: 'Mode8', arcade: 'PlanetaryMissions', starfighter: 'SpaceBattle' };
-// (a level that names a mode's layer another way: Geonosis_01's hero arena)
-const ALT_LAYERS = { HeroArena: ['HeroesVsVillains'] };
+// The mode layers by the game's own mode ids (UI/Data/GameModes/<id>'s
+// GameModeId and AurebeshGameModeName: Domination "STRIKE", Mode1
+// "SUPREMACY", Mode3 "EWOK HUNT", Mode5 and the Strike/Extraction maps'
+// Extraction "EXTRACTION", Mode6 "HERO SHOWDOWN", Mode9 the co-op missions,
+// ModeC "JETPACK CARGO", Mode7 "HERO STARFIGHTERS"; lane F's modes.json names them the same).
+// Mode8 ("INSTANT ACTION") has no sub-level of its own: its Mode8_Shapes ride in Supremacy's maps.
+export const MODE_LAYERS = { galacticAssault: 'FantasyBattle', hvv: 'HeroArena', blast: 'TeamDeathmatch', strike: 'Domination', supremacy: 'Mode1', extraction: 'Mode5', ewokHunt: 'Mode3', showdown: 'Mode6', coop: 'Mode9', jetpackCargo: 'ModeC', heroStarfighters: 'Mode7', arcade: 'PlanetaryMissions', starfighter: 'SpaceBattle' };
+// (a level that names a mode's layer another way: Geonosis_01's hero arena, Naboo_02's Blast, Cloud City's Extraction, a space level's arcade)
+const ALT_LAYERS = { HeroArena: ['HeroesVsVillains'], TeamDeathmatch: ['Blast'], Mode5: ['Extraction'], PlanetaryMissions: ['SpaceArcadeTeamBattle'] };
+// A mode's objective prefabs: what a rule needs placed (a bomb, the carried
+// objective and its drop-off, a capture point, the payload, an uplink)
+const OBJECTIVE = /objective|bomb|ctf|flag|dropoff|capture|payload|extraction|commandpost|uplink|cargo|escort/i;
 
 // The layers a mode's rules read, by suffix (art, automation, sound, the
 // living world's ambient paths and the cinematics are not rules).
-const RULE_LAYER = /_(Logic|Spawns|Spawns_Team\d|Shapes|Inf_Shapes_\w+|OOBTeam\d|Gameplay|Global|DefendAreas|CaptureAreas|Skirmish_DefendAreas|Phase\d|Phase\d_(Empire|Rebel)Spawns)$/;
+const RULE_LAYER = /_(Logic|Spawns|Spawns_Team\d|Shapes|Shapes_\w+|Inf_Shapes_\w+|OOBTeam\d|Gameplay|Global|DefendAreas|CaptureAreas|Skirmish_DefendAreas|Phase\d|Phase\d_(Empire|Rebel)Spawns|SpawnZones|Defend_Logic|Defend_Shapes|CombatAreas|FriendZones|Traps|Pickups|Teleport|Volumes)$/i;
 // (a space level's launch points are its phases' own: SpaceBattle_Phase1, SpaceBattle_Phase2_EmpireSpawns…)
 const phaseOf = (layer) => Number(layer.match(/_Phase(\d)/i)?.[1] ?? 0) || null;
 const EXTRA_LAYERS = { Mode9: ['ModeDefend_Spawns_Team1', 'ModeDefend_Spawns_Team2'], SpaceBattle: ['SpaceBattle_ScriptedEvents', 'SpaceBattle_SecondaryObjective_Cruisers'] };
 // the layers whose prefabs are the mode's (a space level's objectives sit in its scripted events and side objectives)
-const PREFAB_LAYER = /_(Logic|Gameplay|ScriptedEvents|SecondaryObjective_\w+)$/;
+const PREFAB_LAYER = /_(Logic|Gameplay|ScriptedEvents|SecondaryObjective_\w+|Traps|Pickups|Teleport)$/i;
 // what a space level's mode sub-level places that is not the battle: the end
 // of round's star cards and its room, and the dressing no rule reads (decals,
 // greebles, a hangar's boxes, crates and containers)
@@ -58,6 +67,7 @@ function kindOf(layer) {
   if (/OOB/.test(layer)) return 'oob';
   if (/Capture/.test(layer)) return 'capture';
   if (/Defend/.test(layer)) return 'defend';
+  if (/CombatArea/i.test(layer)) return 'combat';
   return 'shape';
 }
 
@@ -65,6 +75,11 @@ function kindOf(layer) {
 const yawOfQuat = ([x, y, z, w]) => Math.atan2(2 * (x * z + w * y), 1 - 2 * (x * x + y * y));
 
 export function levelName(root, level) {
+  // (a whole path: S9_3/Hoth_02/Hoth_02, Levels/SP/A1/M0LIB/DS02)
+  if (level.includes('/')) {
+    const keys = [...indexOf(root).keys()];
+    return keys.find((n) => n.toLowerCase() === level.toLowerCase()) ?? level;
+  }
   const want = [`levels/mp/${level}/${level}`.toLowerCase(), `levels/space/${level}/${level}`.toLowerCase()];
   // (or under a season's folder: S5_1/Levels/MP/Geonosis_01/Geonosis_01)
   const keys = [...indexOf(root).keys()];
@@ -131,18 +146,93 @@ function placedIn(root, manifest, rel, sub) {
   return out;
 }
 
+// The names of the mode prefabs' input fields (djb2-xor, as the graphs hash
+// them: scripts/lib/bf2017-rulebook-map.mjs's djb): those the modes read
+const INPUT_NAMES = ['DefendingTeam', 'AttackingTeam', 'BombALocation', 'BombBLocation', 'BombAName', 'BombBName', 'CheckpointPosition1', 'CheckpointPosition2', 'CheckpointPosition3', 'CP1Overtime', 'CP2Overtime', 'CP3Overtime', 'NumberCheckPoints', 'ObjectiveIndex', 'CaptureDuration', 'MaxReinforcements', 'MaxBoardingTickets', 'Team', 'Owner', 'VisibleMaxDistance'];
+export const djb = (name) => {
+  let h = 5381;
+  for (const c of Buffer.from(name)) h = ((h * 33) ^ c) >>> 0;
+  return h;
+};
+const INPUT_BY_HASH = new Map(INPUT_NAMES.map((n) => [djb(n), n]));
+const fieldName = (f) => {
+  const h = Number.parseInt(String(f ?? '').replace(/^0x/, ''), 16);
+  return INPUT_BY_HASH.get(h >>> 0) ?? String(f);
+};
+
+// An interface field's value as the export prints it: a team, a number, a transform's position
+function valueOf(v) {
+  const s = String(v ?? '');
+  let m = s.match(/^TeamId Team(\d)/);
+  if (m) return Number(m[1]);
+  m = s.match(/^(?:Int32|Float32|UInt32) (-?[\d.e+-]+)/);
+  if (m) return Number(m[1]);
+  m = s.match(/^LinearTransform \(.*\(([-\d.e]+),([-\d.e]+),([-\d.e]+)\)\)$/);
+  if (m) return [r3(+m[1]), r3(+m[2]), r3(+m[3])];
+  m = s.match(/^Boolean (True|False)/);
+  if (m) return m[1] === 'True';
+  return null;
+}
+
+const modeLayerOf = (modes, mode, names, dir) => [modes[mode], ...(ALT_LAYERS[modes[mode]] ?? [])].map((l) => l.toLowerCase()).find((l) => names.some((n) => n.slice(dir.length).toLowerCase() === l));
+
+// A mode's sub-world wires the level's settings into its prefabs (property
+// connections across its layers): a locator's position into a site field
+// (Strike's BombALocation), the sub-world's interface values (Strike's
+// DefendingTeam). Each prefab gains `inputs`: field → a value or a position.
+function wire(root, row, mode, byGuid, subName) {
+  const sub = subName ? follow(root, subName) : null;
+  const top = sub?.objects?.[0];
+  if (!top) return;
+  const fields = new Map();
+  for (const o of sub.objects) if (o?.$type === 'InterfaceDescriptorData') for (const f of o.Fields ?? []) fields.set(String(f.Name), valueOf(f.Value));
+  for (const c of top.PropertyConnections ?? []) {
+    const target = byGuid.get(c.Target?.$class);
+    if (!target?.prefab || target.prefab.mode !== mode) continue;
+    let value = null;
+    if (c.Source?.$class) value = byGuid.get(c.Source.$class)?.at ?? null;
+    else if (sub.objects[c.Source?.$ref]?.$type === 'InterfaceDescriptorData') value = fields.get(String(c.SourceField)) ?? null;
+    if (value == null) continue;
+    (target.prefab.inputs ??= {})[fieldName(c.TargetField)] = value;
+    target.prefab.inputs_source = `${subName}#PropertyConnections`;
+  }
+}
+
+// A campaign map's objectives (its mission's ObjectivesDefinition records: the
+// tree of top-level and sub-level objectives, their strings and timings)
+function campaignObjectives(root, all, name) {
+  const mission = name.slice(0, name.lastIndexOf('/') + 1).toLowerCase();
+  const defs = all.filter((n) => indexOf(root).get(n)?.type === 'ObjectivesDefinition' && n.toLowerCase().startsWith(mission) && n.slice(mission.length).split('/').length <= 2);
+  return defs.flatMap((d) => {
+    const asset = follow(root, d);
+    if (!asset) return [];
+    return asset.objects.flatMap((o, i) =>
+      o?.$type === 'Objective'
+        ? [{ id: o.ObjectiveId, name: o.ObjectiveName, level: o.ObjectiveLevel, parent: o.ParentId || null, index: o.Index, visibleTime: o.VisibleTime, completedTime: o.CompletedTime, dependsOn: (o.DependsOnObjectives ?? []).map((r) => asset.objects[r?.$ref]?.ObjectiveId).filter((x) => x != null), _source: `${d}#Objective.${i}` }]
+        : [],
+    );
+  });
+}
+
 export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
   // (the sequel era's levels are refused: SB_Resurgent_01, SB_SpaceBear_01, Jakku, Takodana…)
   if (isSequel(level)) throw new Error(`${level}: a sequel-era level, refused`);
   const name = levelName(root, level);
-  const dir = name ? name.slice(0, name.lastIndexOf('/') + 1) : `Levels/MP/${level}/`;
+  // (a campaign map is a folder of detached sub-worlds: Levels/SP/A1/M0LIB/DS02/)
+  const campaign = /(^|\/)SP\//i.test(name ?? level) && !indexOf(root).has(name);
+  const dir = campaign ? `${name}/` : name ? name.slice(0, name.lastIndexOf('/') + 1) : `Levels/MP/${level}/`;
   const space = /^Levels\/Space\//i.test(dir);
-  const names = [...indexOf(root).keys()].filter((n) => n.startsWith(dir) && !n.slice(dir.length).includes('/'));
-  const row = { level: name, modes: [], spawns: [], polygons: [], volumes: [], spheres: [], boxes: [], waypoints: [], oob: { team1: [], team2: [] }, locators: [], cameras: [], prefabs: [], strings: [], _missing: [] };
+  const all = [...indexOf(root).keys()];
+  const names = all.filter((n) => n.toLowerCase().startsWith(dir.toLowerCase()) && !n.slice(dir.length).includes('/'));
+  const row = { level: name, modes: [], spawns: [], polygons: [], volumes: [], spheres: [], boxes: [], waypoints: [], oob: { team1: [], team2: [] }, locators: [], cameras: [], prefabs: [], strings: [], unplaced: [], _missing: [] };
   const seen = new Set();
+  // (each mode's objects by guid, for its sub-world's wiring: guid → a prefab row, or a locator's position)
+  const byGuid = new Map();
   for (const [mode, named] of Object.entries(modes)) {
-    const layer = [named, ...(ALT_LAYERS[named] ?? [])].find((l) => names.includes(`${dir}${l}`));
-    if (!layer) continue;
+    // (any case: Kamino_01's hero showdown is `mode6`)
+    const found = [named, ...(ALT_LAYERS[named] ?? [])].map((l) => names.find((n) => n.slice(dir.length).toLowerCase() === l.toLowerCase())).find(Boolean);
+    if (!found) continue;
+    const layer = found.slice(dir.length);
     row.modes.push(mode);
     // (any case: the droid battleship's are `Spacebattle_Phase1`)
     const layers = names.filter((n) => shortName(n).toLowerCase().startsWith(`${layer}_`.toLowerCase()) && RULE_LAYER.test(shortName(n))).concat((EXTRA_LAYERS[layer] ?? []).map((l) => `${dir}${l}`).filter((n) => names.includes(n)));
@@ -200,6 +290,7 @@ export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
           case 'LocatorEntityData':
           case 'LocalLocatorEntityData': {
             const t = transformOf(o);
+            if (t && o.$guid) byGuid.set(o.$guid, { at: t.at.map(r3), id });
             if (t) row.locators.push({ ...base, at: t.at.map(r3), yaw: r3(t.yaw) });
             return;
           }
@@ -218,7 +309,11 @@ export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
           case 'LogicPrefabReferenceObjectData': {
             const t = transformOf(o);
             const bp = o.Blueprint?.$asset;
-            if (bp && PREFAB_LAYER.test(lay)) row.prefabs.push({ ...base, name: shortName(bp), blueprint: bp, ...(t && /Spatial/.test(o.$type) ? { at: t.at.map(r3), yaw: r3(t.yaw) } : {}) });
+            if (!bp || !PREFAB_LAYER.test(lay) || isSequel(bp)) return;
+            const at = t && /Spatial/.test(o.$type) ? { at: t.at.map(r3), yaw: r3(t.yaw) } : null;
+            const prefab = { ...base, name: shortName(bp), blueprint: bp, ...(at ?? {}) };
+            row.prefabs.push(prefab);
+            if (o.$guid) byGuid.set(o.$guid, { prefab });
             return;
           }
           default:
@@ -227,17 +322,24 @@ export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
     }
   }
 
-  const manifest = readWebJson(root, `maps/${(name ?? '').toLowerCase()}.json`);
+  for (const mode of row.modes) wire(root, row, mode, byGuid, names.find((n) => n.slice(dir.length).toLowerCase() === modeLayerOf(modes, mode, names, dir)));
+  // (an objective the extractor cannot place: no transform of its own and no site wired in; a mode on this map refuses to start until it is)
+  for (const p of row.prefabs) if (!p.at && OBJECTIVE.test(p.name) && !Object.keys(p.inputs ?? {}).some((k) => /location|transform/i.test(k))) row.unplaced.push({ id: p.id, mode: p.mode, layer: p.layer, name: p.name, why: 'an objective prefab with no transform and no site wired to it', _source: p._source });
+  if (campaign) row.objectives = campaignObjectives(root, all, name);
+  // (the map's manifest where the bucket's index files it, else by its name)
+  const filed = (readWebJson(root, 'maps/index.json') ?? []).find((r) => r.level.toLowerCase() === String(name).toLowerCase())?.file;
+  const manifestFile = filed ?? `maps/${(name ?? '').toLowerCase()}.json`;
+  const manifest = readWebJson(root, manifestFile);
   if (manifest) {
-    const rel = `web/maps/${name.toLowerCase()}.json`;
+    const rel = `web/${manifestFile}`;
     const t = manifest.terrain?.[0];
     if (t) row.terrain = { ...t, _source: `${rel}#terrain.0` };
     // (a space level's: those of the level itself and of its modes' sub-levels, not the arcade's or the lobby's)
-    const subs = !space ? null : new Set((manifest.subworlds ?? []).map((n, i) => [shortName(n.name ?? n), i]).filter(([n]) => !space || n === shortName(name) || Object.values(modes).includes(n)).map(([, i]) => i));
-    row.vehicleSpawns = (manifest.vehicleSpawns ?? []).flatMap((v, i) => (!subs || ((v.sub == null || subs.has(v.sub)) && !isSequel(v.blueprint ?? '')) ? [{ blueprint: v.blueprint, at: v.position.map(r3), yaw: r3(yawOfQuat(v.quaternion)), sub: v.sub ?? null, _source: `${rel}#vehicleSpawns.${i}` }] : []));
+    const subs = !space ? null : new Set((manifest.subworlds ?? []).map((n, i) => [shortName(n.name ?? n), i]).filter(([n]) => n === shortName(name) || n === modes.starfighter).map(([, i]) => i));
+    row.vehicleSpawns = (manifest.vehicleSpawns ?? []).flatMap((v, i) => (!isSequel(v.blueprint ?? '') && (!subs || v.sub == null || subs.has(v.sub)) ? [{ blueprint: v.blueprint, at: v.position.map(r3), yaw: r3(yawOfQuat(v.quaternion)), sub: v.sub ?? null, _source: `${rel}#vehicleSpawns.${i}` }] : []));
     // (a space level's battle stands in its mode's own sub-level)
-    if (space) row.placed = Object.fromEntries(row.modes.map((mode) => [mode, placedIn(root, manifest, rel.replace(/^web\//, ''), modes[mode])]));
-  } else row._missing.push(`map manifest: maps/${(name ?? level).toLowerCase()}.json`);
+    if (space) row.placed = Object.fromEntries(row.modes.filter((mode) => mode === 'starfighter').map((mode) => [mode, placedIn(root, manifest, rel.replace(/^web\//, ''), modes[mode])]));
+  } else row._missing.push(`map manifest: ${manifestFile}`);
 
   const xs = [...row.spawns.map((s) => [s.at[0], s.at[2]]), ...row.volumes.flatMap((v) => v.points)];
   if (xs.length) {

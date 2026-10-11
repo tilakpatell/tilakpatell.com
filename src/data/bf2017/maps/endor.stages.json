@@ -1,0 +1,39 @@
+{
+  "source": "hand",
+  "mode": "galacticAssault",
+  "level": "Levels/MP/Endor_01/Endor_01",
+  "attackers": "light",
+  "notes": "NOTES.md says how this was made: the stages in the order the level’s own stage strings number them, each team’s line; the attackers the side whose first line does not defend; the objectives are not yet chosen (empty), as no route plays this map’s Galactic Assault",
+  "stages": [
+    {
+      "id": "stage1",
+      "team1": "ID_FANTASYBATTLES_ENDOR_STAGE1_TEAM1",
+      "team2": "ID_FANTASYBATTLES_ENDOR_STAGE1_TEAM2",
+      "text": {
+        "team1": "STEAL THE WALKER",
+        "team2": "FEND OFF THE REBEL ATTACK"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage2",
+      "team1": "ID_FANTASYBATTLES_ENDOR_STAGE2_TEAM1",
+      "team2": "ID_FANTASYBATTLES_ENDOR_STAGE2_TEAM2",
+      "text": {
+        "team1": "KEEP THE WALKER ALIVE",
+        "team2": "TAKE OUT THE STOLEN AT-AT"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage3",
+      "team1": "ID_FANTASYBATTLES_ENDOR_STAGE3_TEAM1",
+      "team2": "ID_FANTASYBATTLES_ENDOR_STAGE3_TEAM2",
+      "text": {
+        "team1": "TAKE CONTROL OF THE BASE",
+        "team2": "PUSH THE ATTACKING REBELS BACK"
+      },
+      "objectives": []
+    }
+  ]
+}
