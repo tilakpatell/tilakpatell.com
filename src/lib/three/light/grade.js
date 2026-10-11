@@ -74,6 +74,13 @@ export const GAUSSIAN_LEVELS = [1, 2, 3, 4, 5];
 export const BLOOM_FACTORS = [1, 0.8, 0.6, 0.4, 0.2];
 // the export's GradingLutAssets are all 33³ (textures.jsonl, 63 of them)
 export const GAME_LUT_SIZE = 33;
+// The records' tone maps as the chain's: Linear clamps the exposed scene to
+// 0…1; FilmicNeutral (Endor, Geonosis, Naboo, Yavin) is Frostbite's neutral
+// filmic curve, whose shape is not in the export: three's Neutral (Khronos
+// PBR Neutral) is the nearest, a neutral shoulder that keeps hue;
+// LinearApproxGamma (Scarif) is the linear map whose encode approximates the
+// gamma, where the site's output encodes exactly. Any other: none.
+export const TONEMAPS = { TonemapMethod_Linear: 'linear', TonemapMethod_LinearApproxGamma: 'linear', TonemapMethod_FilmicNeutral: 'neutral' };
 // an _RGBM map's multiplier range: rgb × a × 6 (the suffix's encoding)
 export const RGBM_RANGE = 6;
 
@@ -102,11 +109,8 @@ export function gradeOf(record, { name = null } = {}) {
   if (!tone && !cc && !dao) return null;
   const _source = { record: name };
 
-  let tonemap = null;
-  if (tone?.TonemapMethod === 'TonemapMethod_Linear') {
-    tonemap = 'linear';
-    _source.tonemap = 'TonemapComponentData.TonemapMethod';
-  }
+  const tonemap = TONEMAPS[tone?.TonemapMethod] ?? null;
+  if (tonemap) _source.tonemap = `TonemapComponentData.TonemapMethod (${tone.TonemapMethod}: TONEMAPS)`;
 
   let lut = null;
   const lutName = asset(cc?.HdrColorGradingLut);

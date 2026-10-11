@@ -23,6 +23,18 @@ describe('gradeOf', () => {
     for (const k of ['tonemap', 'lut.name', 'lut.size', 'bloom.scale', 'bloom.weights', 'bloom.colors', 'bloom.levels', 'ao.radius', 'ao.exponent', 'ao.blur']) expect(g._source[k]).toBeTruthy();
   });
 
+  it('reads every tone map the lit worlds name, so each LUT reads a tone-mapped picture', () => {
+    const method = (m) => gradeOf({ TonemapComponentData: [{ TonemapMethod: m }] })?.tonemap ?? null;
+    // (Hoth, Bespin, Kamino, Kashyyyk, Tatooine)
+    expect(method('TonemapMethod_Linear')).toBe('linear');
+    // (Endor, Geonosis, Naboo, Yavin: Frostbite's neutral filmic curve, three's Neutral its nearest)
+    expect(method('TonemapMethod_FilmicNeutral')).toBe('neutral');
+    // (Scarif: the linear tone map, its gamma approximated where the site encodes exactly)
+    expect(method('TonemapMethod_LinearApproxGamma')).toBe('linear');
+    expect(method('TonemapMethod_Unknown')).toBeNull();
+    expect(gradeOf({ TonemapComponentData: [{ TonemapMethod: 'TonemapMethod_FilmicNeutral' }] })._source.tonemap).toMatch(/TonemapMethod/);
+  });
+
   it('is null without the components, and each part null without its own', () => {
     expect(gradeOf(null)).toBeNull();
     expect(gradeOf({})).toBeNull();
@@ -31,9 +43,9 @@ describe('gradeOf', () => {
     const inside = gradeOf(hoth.interior.record);
     expect(inside.ao).toBeNull();
     expect(inside.lut.name).toMatch(/T_CC_Hoth_Interior_01/);
-    // a LUT switched off, an AO disabled, a tone map not linear
+    // a LUT switched off, an AO disabled, a tone map the stack does not know
     // (all four off: no grade at all, the site's own picture)
-    const off = { ColorCorrectionComponentData: [{ HdrColorGradingLut: 'x', ColorGradingEnable: false }], DynamicAOComponentData: [{ Enable: false, HbaoRadius: 2 }], TonemapComponentData: [{ TonemapMethod: 'TonemapMethod_FilmicNeutral', BloomScale: [0.1, 0.1, 0.1] }] };
+    const off = { ColorCorrectionComponentData: [{ HdrColorGradingLut: 'x', ColorGradingEnable: false }], DynamicAOComponentData: [{ Enable: false, HbaoRadius: 2 }], TonemapComponentData: [{ TonemapMethod: 'TonemapMethod_Unknown', BloomScale: [0.1, 0.1, 0.1] }] };
     expect(gradeOf(off)).toBeNull();
     const some = gradeOf({ ...off, DynamicAOComponentData: [{ HbaoRadius: 2 }] });
     expect([some.lut, some.tonemap, some.bloom]).toEqual([null, null, null]);
