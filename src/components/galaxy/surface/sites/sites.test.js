@@ -258,6 +258,47 @@ describe('the worlds drawn from the game’s levels', () => {
     expect(bunker.flat.game).toBe(true);
     expect(bunker.things.filter((t) => t.kind === 'bunker' || t.kind === 'bunkerbank').every((t) => t.game)).toBe(true);
   });
+
+  // (lane E2: the packs' level.json, in git though their bytes are published)
+  const pack = (level) => JSON.parse(readFileSync(new URL(`../../../../../public/models/galaxy/bf2017/levels/${level}/level.json`, import.meta.url), 'utf8'));
+
+  it('Naboo stands on Naboo_01, its water at the canals the game floats its lilies on (Review Focus 1)', () => {
+    const naboo = SITES.naboo;
+    expect(naboo.level).toBe('naboo');
+    expect(naboo.ground.layers).toEqual([{ type: 'image', pack: 'naboo' }]);
+    // (36 lilies on Theed's canals in Naboo_01's instances, all at 432.81 m;
+    // the pack's origin is the plaza's ground in the game)
+    const CANALS = 432.81;
+    expect(Math.abs(naboo.water.level - (CANALS - pack('naboo').origin[1]))).toBeLessThan(0.2);
+    // (the site's built palace is the flight's: the level draws the game's)
+    expect(naboo.places.find((p) => p.id === 'palace').things.every((t) => t.game)).toBe(true);
+  });
+
+  it('Kamino stands on Kamino_01 over its sea: off a platform is into the sea and back, onto nothing under it (Review Focus 2)', () => {
+    const kamino = SITES.kamino;
+    expect(kamino.level).toBe('kamino');
+    // (no ground in the map, so the site's y is the game's; the ocean is
+    // Shared_Art's WaterSurfaceEntityData, at -296.42 m)
+    expect(pack('kamino').origin[1]).toBe(0);
+    expect(kamino.water.level).toBeCloseTo(-296.42, 2);
+    // the line under which you are put back where you landed is over the sea,
+    // so no solid under the water is ever stood on, and 10 m under every deck
+    // the site stands its people on, so nobody on a deck is put back
+    expect(kamino.fall).toBeGreaterThan(kamino.water.level);
+    for (const f of kamino.floors) expect(kamino.fall, `${f.x}, ${f.z}`).toBeLessThan(f.y - 10);
+    for (const a of kamino.life.filter((q) => q.level != null)) expect(a.level, a.kind).toBeGreaterThan(kamino.fall);
+  });
+
+  it('every door into a district names one its world has, and every district has its door back (Review Focus 3)', () => {
+    for (const id of ['hoth', 'naboo', 'kamino']) {
+      const site = SITES[id];
+      const ids = new Set(site.districts.map((d) => d.id));
+      const doors = site.zones.filter((z) => z.to?.district);
+      expect(doors.length, id).toBeGreaterThan(0);
+      for (const z of doors) expect(ids.has(z.to.district), `${id}: ${z.id}`).toBe(true);
+      for (const d of site.districts) expect(withDistrict(site, d.id).zones.map((z) => z.to.district), `${id}/${d.id}`).toEqual(['main']);
+    }
+  });
 });
 
 // The seven worlds with no game map, dressed from the drop's library (the
