@@ -156,10 +156,13 @@ async function shootRoute(page, route) {
   const shots = [];
   for (let i = 0; i < jitter; i++) {
     if (!plain) await page.evaluate((k) => window.__RUNTIME__.gfx.jitter(k), i);
-    // (two frames: the jittered one drawn, then on screen at the compositor’s next)
-    for (let n = 0; n < 2; n++) await page.clock.runFor(16);
+    // (one 16 ms frame a shot, so eight shots span 128 ms of the world’s
+    // time: what moves on its own, snow and sparks, smears across them;
+    // a pose that holds the world still is the clean reference)
+    await page.clock.runFor(16);
     await page.waitForTimeout(300);
-    shots.push(await page.screenshot({ type: 'png', animations: 'disabled', caret: 'hide', timeout: 120000 }));
+    // (the world’s canvas alone: the site’s bar, the HUD and the help button are not the picture)
+    shots.push(await page.locator('canvas.world-canvas').first().screenshot({ type: 'png', animations: 'disabled', caret: 'hide', timeout: 120000 }));
   }
   if (!plain) await page.evaluate(() => window.__RUNTIME__.gfx.jitter(null));
   return { ...info, shots };
