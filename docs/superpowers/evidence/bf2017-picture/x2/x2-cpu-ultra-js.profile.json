@@ -1,0 +1,487 @@
+{
+  "_source": "scripts/x2-profile.mjs on this machine (Node, the lane X2 container): the Battlefront world’s step on Hoth’s pack, the draw left out",
+  "seconds": 60,
+  "tier": "ultra",
+  "seed": 1,
+  "rapier": "simd",
+  "search": "js",
+  "searchMsPerFrame": 0.1607,
+  "replay": {
+    "calls": 2946,
+    "differ": 0,
+    "jsMs": 463.49,
+    "wasmMs": 153.15,
+    "perCallJsUs": 157.3,
+    "perCallWasmUs": 52
+  },
+  "frame": {
+    "p50": 0.169,
+    "p95": 2.166,
+    "max": 20.789
+  },
+  "heightsPerFrame": 0,
+  "level": {
+    "instances": 6025,
+    "rebuilds": null
+  },
+  "bots": 17,
+  "ms": 2265.7,
+  "idleMs": 70.4,
+  "frames": 3600,
+  "modules": [
+    {
+      "module": "src/lib/battlefront/navSearch.js",
+      "selfMs": 453.4,
+      "perFrame": 0.126,
+      "share": 0.2001
+    },
+    {
+      "module": "(native)",
+      "selfMs": 298.5,
+      "perFrame": 0.083,
+      "share": 0.1317
+    },
+    {
+      "module": "src/lib/battlefront/nav.js",
+      "selfMs": 241.3,
+      "perFrame": 0.067,
+      "share": 0.1065
+    },
+    {
+      "module": "src/lib/level/bands.js",
+      "selfMs": 143.4,
+      "perFrame": 0.04,
+      "share": 0.0633
+    },
+    {
+      "module": "(garbage collector)",
+      "selfMs": 141.7,
+      "perFrame": 0.039,
+      "share": 0.0626
+    },
+    {
+      "module": "src/lib/battlefront/ai/soldierBrain.js",
+      "selfMs": 121.4,
+      "perFrame": 0.034,
+      "share": 0.0536
+    },
+    {
+      "module": "src/components/battlefront/battle.js",
+      "selfMs": 106.2,
+      "perFrame": 0.03,
+      "share": 0.0469
+    },
+    {
+      "module": "src/lib/battlefront/ai/bots.js",
+      "selfMs": 103.8,
+      "perFrame": 0.029,
+      "share": 0.0458
+    },
+    {
+      "module": "file:///home/user/tilakpatell.com/scripts/x2-profile.mjs",
+      "selfMs": 100.9,
+      "perFrame": 0.028,
+      "share": 0.0445
+    },
+    {
+      "module": "src/lib/battlefront/sim.js",
+      "selfMs": 82,
+      "perFrame": 0.023,
+      "share": 0.0362
+    },
+    {
+      "module": "src/components/galaxy/surface/level/levelScene.js",
+      "selfMs": 79.9,
+      "perFrame": 0.022,
+      "share": 0.0353
+    },
+    {
+      "module": "src/components/galaxy/surface/level/levelStream.js",
+      "selfMs": 60.2,
+      "perFrame": 0.017,
+      "share": 0.0266
+    },
+    {
+      "module": "three",
+      "selfMs": 53.4,
+      "perFrame": 0.015,
+      "share": 0.0236
+    },
+    {
+      "module": "src/lib/battlefront/soldier.js",
+      "selfMs": 52.5,
+      "perFrame": 0.015,
+      "share": 0.0232
+    },
+    {
+      "module": "src/lib/battlefront/ai/coverQuery.js",
+      "selfMs": 36.7,
+      "perFrame": 0.01,
+      "share": 0.0162
+    },
+    {
+      "module": "src/lib/battlefront/ai/squad.js",
+      "selfMs": 30.9,
+      "perFrame": 0.009,
+      "share": 0.0137
+    },
+    {
+      "module": "src/lib/ai/perception.js",
+      "selfMs": 24.6,
+      "perFrame": 0.007,
+      "share": 0.0109
+    },
+    {
+      "module": "src/lib/battlefront/ai/targeting.js",
+      "selfMs": 17.2,
+      "perFrame": 0.005,
+      "share": 0.0076
+    },
+    {
+      "module": "src/lib/ai/utility.js",
+      "selfMs": 13.9,
+      "perFrame": 0.004,
+      "share": 0.0061
+    },
+    {
+      "module": "src/lib/battlefront/weapons.js",
+      "selfMs": 13.4,
+      "perFrame": 0.004,
+      "share": 0.0059
+    },
+    {
+      "module": "src/lib/battlefront/bolts.js",
+      "selfMs": 8.5,
+      "perFrame": 0.002,
+      "share": 0.0037
+    },
+    {
+      "module": "src/lib/battlefront/ai/cover.js",
+      "selfMs": 8,
+      "perFrame": 0.002,
+      "share": 0.0035
+    },
+    {
+      "module": "src/lib/battlefront/core.js",
+      "selfMs": 6.8,
+      "perFrame": 0.002,
+      "share": 0.003
+    },
+    {
+      "module": "src/lib/battlefront/ai/curve.js",
+      "selfMs": 6.2,
+      "perFrame": 0.002,
+      "share": 0.0027
+    },
+    {
+      "module": "(program)",
+      "selfMs": 5,
+      "perFrame": 0.001,
+      "share": 0.0022
+    }
+  ],
+  "self": [
+    {
+      "fn": "searchJs src/lib/battlefront/navSearch.js:76",
+      "selfMs": 304.3,
+      "perFrame": 0.085,
+      "share": 0.1343
+    },
+    {
+      "fn": "bandOf (native):32",
+      "selfMs": 146.1,
+      "perFrame": 0.041,
+      "share": 0.0645
+    },
+    {
+      "fn": "(garbage collector)",
+      "selfMs": 141.7,
+      "perFrame": 0.039,
+      "share": 0.0626
+    },
+    {
+      "fn": "pop src/lib/battlefront/navSearch.js:42",
+      "selfMs": 133,
+      "perFrame": 0.037,
+      "share": 0.0587
+    },
+    {
+      "fn": "findPath src/lib/battlefront/nav.js:313",
+      "selfMs": 123.3,
+      "perFrame": 0.034,
+      "share": 0.0544
+    },
+    {
+      "fn": "wanted src/lib/level/bands.js:37",
+      "selfMs": 100.1,
+      "perFrame": 0.028,
+      "share": 0.0442
+    },
+    {
+      "fn": "(anonymous) file:///home/user/tilakpatell.com/scripts/x2-profile.mjs:87",
+      "selfMs": 65.9,
+      "perFrame": 0.018,
+      "share": 0.0291
+    },
+    {
+      "fn": "view src/components/battlefront/battle.js:398",
+      "selfMs": 58.9,
+      "perFrame": 0.016,
+      "share": 0.026
+    },
+    {
+      "fn": "stepBrains src/lib/battlefront/ai/bots.js:185",
+      "selfMs": 52.8,
+      "perFrame": 0.015,
+      "share": 0.0233
+    },
+    {
+      "fn": "sort (native):255",
+      "selfMs": 48.7,
+      "perFrame": 0.014,
+      "share": 0.0215
+    },
+    {
+      "fn": "firstSolid src/lib/battlefront/nav.js:370",
+      "selfMs": 47.7,
+      "perFrame": 0.013,
+      "share": 0.021
+    },
+    {
+      "fn": "poolFor (native):167",
+      "selfMs": 44.2,
+      "perFrame": 0.012,
+      "share": 0.0195
+    },
+    {
+      "fn": "byDist src/lib/level/bands.js:52",
+      "selfMs": 43.3,
+      "perFrame": 0.012,
+      "share": 0.0191
+    },
+    {
+      "fn": "plan src/lib/battlefront/ai/soldierBrain.js:545",
+      "selfMs": 32.2,
+      "perFrame": 0.009,
+      "share": 0.0142
+    },
+    {
+      "fn": "heightAt src/lib/battlefront/nav.js:171",
+      "selfMs": 31.1,
+      "perFrame": 0.009,
+      "share": 0.0137
+    },
+    {
+      "fn": "step src/lib/battlefront/sim.js:715",
+      "selfMs": 31,
+      "perFrame": 0.009,
+      "share": 0.0137
+    },
+    {
+      "fn": "frame file:///home/user/tilakpatell.com/scripts/x2-profile.mjs:148",
+      "selfMs": 30.8,
+      "perFrame": 0.009,
+      "share": 0.0136
+    },
+    {
+      "fn": "perceive src/lib/battlefront/ai/bots.js:118",
+      "selfMs": 28.4,
+      "perFrame": 0.008,
+      "share": 0.0125
+    },
+    {
+      "fn": "show src/components/galaxy/surface/level/levelStream.js:41",
+      "selfMs": 25.9,
+      "perFrame": 0.007,
+      "share": 0.0114
+    },
+    {
+      "fn": "think src/lib/battlefront/ai/soldierBrain.js:355",
+      "selfMs": 23.7,
+      "perFrame": 0.007,
+      "share": 0.0105
+    },
+    {
+      "fn": "sense src/lib/ai/perception.js:64",
+      "selfMs": 23.4,
+      "perFrame": 0.007,
+      "share": 0.0103
+    },
+    {
+      "fn": "poolFor src/components/galaxy/surface/level/levelScene.js:167",
+      "selfMs": 22,
+      "perFrame": 0.006,
+      "share": 0.0097
+    },
+    {
+      "fn": "stepsOf (native):50",
+      "selfMs": 21.9,
+      "perFrame": 0.006,
+      "share": 0.0096
+    },
+    {
+      "fn": "gridClear src/lib/battlefront/nav.js:303",
+      "selfMs": 21.4,
+      "perFrame": 0.006,
+      "share": 0.0094
+    },
+    {
+      "fn": "sort src/components/galaxy/surface/level/levelScene.js:255",
+      "selfMs": 21,
+      "perFrame": 0.006,
+      "share": 0.0093
+    }
+  ],
+  "total": [
+    {
+      "fn": "(anonymous) file:///home/user/tilakpatell.com/scripts/x2-profile.mjs:0",
+      "totalMs": 2036,
+      "perFrame": 0.566,
+      "share": 0.8986
+    },
+    {
+      "fn": "frame file:///home/user/tilakpatell.com/scripts/x2-profile.mjs:148",
+      "totalMs": 2022.3,
+      "perFrame": 0.562,
+      "share": 0.8925
+    },
+    {
+      "fn": "step src/components/battlefront/battle.js:271",
+      "totalMs": 1299.5,
+      "perFrame": 0.361,
+      "share": 0.5735
+    },
+    {
+      "fn": "step src/lib/battlefront/sim.js:715",
+      "totalMs": 1289.3,
+      "perFrame": 0.358,
+      "share": 0.5691
+    },
+    {
+      "fn": "stepBrains src/lib/battlefront/ai/bots.js:185",
+      "totalMs": 1168.8,
+      "perFrame": 0.325,
+      "share": 0.5159
+    },
+    {
+      "fn": "act src/lib/battlefront/ai/soldierBrain.js:598",
+      "totalMs": 793,
+      "perFrame": 0.22,
+      "share": 0.35
+    },
+    {
+      "fn": "navigate src/lib/battlefront/ai/soldierBrain.js:569",
+      "totalMs": 766.6,
+      "perFrame": 0.213,
+      "share": 0.3383
+    },
+    {
+      "fn": "plan src/lib/battlefront/ai/soldierBrain.js:545",
+      "totalMs": 703.5,
+      "perFrame": 0.195,
+      "share": 0.3105
+    },
+    {
+      "fn": "findPath src/lib/battlefront/nav.js:313",
+      "totalMs": 674.7,
+      "perFrame": 0.187,
+      "share": 0.2978
+    },
+    {
+      "fn": "update src/components/battlefront/map/level.js:116",
+      "totalMs": 536.2,
+      "perFrame": 0.149,
+      "share": 0.2366
+    },
+    {
+      "fn": "(anonymous) file:///home/user/tilakpatell.com/scripts/x2-profile.mjs:87",
+      "totalMs": 524.8,
+      "perFrame": 0.146,
+      "share": 0.2316
+    },
+    {
+      "fn": "search src/lib/battlefront/navSearch.js:130",
+      "totalMs": 510.9,
+      "perFrame": 0.142,
+      "share": 0.2255
+    },
+    {
+      "fn": "searchJs src/lib/battlefront/navSearch.js:76",
+      "totalMs": 447.4,
+      "perFrame": 0.124,
+      "share": 0.1975
+    },
+    {
+      "fn": "update src/components/galaxy/surface/level/levelStream.js:86",
+      "totalMs": 355.7,
+      "perFrame": 0.099,
+      "share": 0.157
+    },
+    {
+      "fn": "show src/components/galaxy/surface/level/levelStream.js:41",
+      "totalMs": 176.7,
+      "perFrame": 0.049,
+      "share": 0.078
+    },
+    {
+      "fn": "update src/components/galaxy/surface/level/levelScene.js:299",
+      "totalMs": 176.1,
+      "perFrame": 0.049,
+      "share": 0.0777
+    },
+    {
+      "fn": "sort (native):255",
+      "totalMs": 165.4,
+      "perFrame": 0.046,
+      "share": 0.073
+    },
+    {
+      "fn": "view src/components/battlefront/battle.js:398",
+      "totalMs": 147.5,
+      "perFrame": 0.041,
+      "share": 0.0651
+    },
+    {
+      "fn": "wanted src/lib/level/bands.js:37",
+      "totalMs": 146.2,
+      "perFrame": 0.041,
+      "share": 0.0645
+    },
+    {
+      "fn": "bandOf (native):32",
+      "totalMs": 146.1,
+      "perFrame": 0.041,
+      "share": 0.0645
+    },
+    {
+      "fn": "(garbage collector)",
+      "totalMs": 141.7,
+      "perFrame": 0.039,
+      "share": 0.0626
+    },
+    {
+      "fn": "think src/lib/battlefront/ai/soldierBrain.js:355",
+      "totalMs": 135.6,
+      "perFrame": 0.038,
+      "share": 0.0599
+    },
+    {
+      "fn": "perceive src/lib/battlefront/ai/bots.js:118",
+      "totalMs": 134.8,
+      "perFrame": 0.037,
+      "share": 0.0595
+    },
+    {
+      "fn": "pop src/lib/battlefront/navSearch.js:42",
+      "totalMs": 133,
+      "perFrame": 0.037,
+      "share": 0.0587
+    },
+    {
+      "fn": "sense src/lib/ai/perception.js:64",
+      "totalMs": 105.1,
+      "perFrame": 0.029,
+      "share": 0.0464
+    }
+  ]
+}
