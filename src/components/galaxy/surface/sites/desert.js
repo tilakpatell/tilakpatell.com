@@ -12,13 +12,18 @@ const r1 = (v) => Math.round(v * 10) / 10;
 // the world's
 const from = ({ at, yaw }, [x, z]) => [r1(at[0] + x * cos(yaw) + z * sin(yaw)), r1(at[1] - x * sin(yaw) + z * cos(yaw))];
 
-const CANTINA = { at: [300, -230], yaw: 0.3 }; // (at the middle of Mos Eisley)
+// the cantina's door, at the middle of Mos Eisley: the game's cantina's
+// east door, in the alley outside its wall (lane E1: the level's spot puts
+// the game's cantina where the site's stood, at 300, −230)
+const CANTINA_DOOR = [315, -221.3];
 const BAY = { at: [266, -208], yaw: 2.2 }; // Docking Bay 94
 const PALACE = { at: [-430, -40], yaw: PI / 2 };
 const TOSCHE = [-20, 330];
 // Beggar's Canyon: down from the north through the eastern mesa, a run of
 // pits each down to the canyon's floor
-const CANYON = [[470, 112], [488, 62], [482, 18], [500, -26], [492, -70], [472, -112], [482, -152], [462, -198]];
+// (200 m north of where the site first drew it: on the game's level, Mos
+// Eisley's east houses stand where its southern half ran)
+const CANYON = [[470, 312], [488, 262], [482, 218], [500, 174], [492, 130], [472, 88], [482, 48], [462, 2]];
 const canyonPits = () => {
   const pits = [];
   for (let i = 0; i < CANYON.length - 1; i++) {
@@ -35,6 +40,13 @@ export const SITES = {
   tatooine: {
     // lit as the game lights its level (src/data/bf2017/light/tatooine.json, gameLit.js)
     gameLight: 'tatooine',
+    // drawn from the game's level (lane E1: /models/galaxy/bf2017/levels/tatooine/level.json,
+    // `node scripts/bf2017-level.mjs levels/mp/tatooine_01 --world tatooine
+    // --spot -194.3 272.8 --subs tatooine_01,content,content_024`: the game's
+    // cantina on this site's, so Mos Eisley's streets, docking bays and
+    // skyline stand as the game placed them; the site's built town is the
+    // flight's (`game`))
+    level: 'tatooine',
     // the record's picture on the node renderer (src/data/bf2017/light/tatooine.picture.json, applyGameLight)
     picture: 'tatooine.picture.json',
     place: 'The Jundland Wastes',
@@ -63,7 +75,11 @@ export const SITES = {
     ground: { detail: 'sand', detailLook: { color: 0.7, normal: 0.8, metres: 6 },
       seed: 3,
       wind: 0.5,
-      layers: [
+      // (the game's own ground: Tatooine_01's heightmap, 0 at the landing)
+      layers: [{ type: 'image', pack: 'tatooine' }],
+      // (the flight's planet keeps the desert it had: the dunes, mesas and
+      // mountains the site drew before the level)
+      flight: [
         { type: 'swell', scale: 420, height: 8 },
         { type: 'dunes', scale: 64, height: 9, wind: 0.5 },
         { type: 'mesas', scale: 560, height: 46, cover: 0.32, cliff: 0.045 },
@@ -86,7 +102,8 @@ export const SITES = {
       pits: canyonPits(),
     },
     weather: [{ kind: 'sand', count: 1300 }],
-    land: { at: [0, 0], yaw: 0.9 },
+    // (facing Mos Eisley, its domes and towers 380 m south-east: the game's town)
+    land: { at: [0, 0], yaw: 2.22 },
     places: [
       {
         id: 'homestead',
@@ -118,46 +135,47 @@ export const SITES = {
         name: 'Mos Eisley',
         at: [300, -230],
         r: 70,
-        flat: { r: 64 },
+        flat: { r: 64, game: true },
         about: 'A wretched hive of scum and villainy: domes, docking bays, a cantina and a garrison of stormtroopers looking for two droids.',
         lines: {
           xwing: [['luke', 'Mos Eisley. Ben said we’d never find a more wretched hive of scum and villainy.']],
           falcon: [['han', 'Home sweet home. Keep your head down, Chewie: Jabba’s got people everywhere.'], ['chewie', '(A wary rumble.)']],
           rv: [['walt', 'A cantina full of smugglers and bounty hunters.'], ['jesse', 'So… basically Albuquerque.']],
         },
+        // (the game's town stands here: the site's built one is the flight's)
         things: [
-          { kind: 'moscantina', at: [0, 0], yaw: 0.3 },
-          { kind: 'dockingbay', at: [-34, 22], yaw: 2.2, model: false },
-          { kind: 'adobe', at: [26, 16], opts: { r: 4.5 } },
-          { kind: 'adobe', at: [34, -10], opts: { r: 3.6 } },
-          { kind: 'adobe', at: [18, -28], opts: { r: 5 } },
-          { kind: 'adobe', at: [-12, -30], opts: { r: 4 } },
-          { kind: 'adobe', at: [-36, -14], opts: { r: 3.5 } },
-          { kind: 'adobe', at: [-24, 48], opts: { r: 4.2 } },
-          { kind: 'adobe', at: [8, 44], opts: { r: 3.8 } },
-          { kind: 'adobe', at: [44, 34], opts: { r: 4.6 } },
-          { kind: 'adobe', at: [52, -30], opts: { r: 3.4 } },
-          { kind: 'stall', at: [12, 20], yaw: 2.6 },
-          { kind: 'stall', at: [-6, 24], yaw: 3.4 },
-          { kind: 'stall', at: [22, -6], yaw: 1.4 },
-          { kind: 'crates', at: [-20, 8] },
-          { kind: 'crates', at: [30, 2] },
+          { kind: 'moscantina', at: [0, 0], yaw: 0.3, game: true },
+          { kind: 'dockingbay', at: [-34, 22], yaw: 2.2, model: false, game: true },
+          { kind: 'adobe', at: [26, 16], opts: { r: 4.5 }, game: true },
+          { kind: 'adobe', at: [34, -10], opts: { r: 3.6 }, game: true },
+          { kind: 'adobe', at: [18, -28], opts: { r: 5 }, game: true },
+          { kind: 'adobe', at: [-12, -30], opts: { r: 4 }, game: true },
+          { kind: 'adobe', at: [-36, -14], opts: { r: 3.5 }, game: true },
+          { kind: 'adobe', at: [-24, 48], opts: { r: 4.2 }, game: true },
+          { kind: 'adobe', at: [8, 44], opts: { r: 3.8 }, game: true },
+          { kind: 'adobe', at: [44, 34], opts: { r: 4.6 }, game: true },
+          { kind: 'adobe', at: [52, -30], opts: { r: 3.4 }, game: true },
+          { kind: 'stall', at: [12, 20], yaw: 2.6, game: true },
+          { kind: 'stall', at: [-6, 24], yaw: 3.4, game: true },
+          { kind: 'stall', at: [22, -6], yaw: 1.4, game: true },
+          { kind: 'crates', at: [-20, 8], game: true },
+          { kind: 'crates', at: [30, 2], game: true },
           // (the town round about: towers, spires, arches over the lanes,
           // houses and huts)
-          { kind: 'mostower', at: [-48, -32], yaw: 0.5 },
-          { kind: 'mostower', at: [58, 8], yaw: -0.9 },
-          { kind: 'mosspire', at: [34, -46], yaw: 0.3 },
-          { kind: 'mosspire', at: [-46, 38], yaw: 2.1 },
-          { kind: 'mosarch', at: [2, -46], yaw: 0.1 },
-          { kind: 'mosarch', at: [26, 52], yaw: 0.45 },
-          { kind: 'moshouse', at: [-52, -2], yaw: 1.4 },
-          { kind: 'moshouse', at: [46, -40], yaw: -0.5 },
-          { kind: 'moshut', at: [-28, -50], yaw: 0.8 },
-          { kind: 'moshut', at: [56, 26], yaw: -1.9 },
-          { kind: 'mosblock', at: [-6, 58], yaw: 3.0 },
-          { kind: 'vaporator', at: [-46, 4] },
-          { kind: 'vaporator', at: [40, -46] },
-          { kind: 'landspeeder', at: [6, 12], yaw: 1.9, y: 0.7, solid: { r: 1.4 } },
+          { kind: 'mostower', at: [-48, -32], yaw: 0.5, game: true },
+          { kind: 'mostower', at: [58, 8], yaw: -0.9, game: true },
+          { kind: 'mosspire', at: [34, -46], yaw: 0.3, game: true },
+          { kind: 'mosspire', at: [-46, 38], yaw: 2.1, game: true },
+          { kind: 'mosarch', at: [2, -46], yaw: 0.1, game: true },
+          { kind: 'mosarch', at: [26, 52], yaw: 0.45, game: true },
+          { kind: 'moshouse', at: [-52, -2], yaw: 1.4, game: true },
+          { kind: 'moshouse', at: [46, -40], yaw: -0.5, game: true },
+          { kind: 'moshut', at: [-28, -50], yaw: 0.8, game: true },
+          { kind: 'moshut', at: [56, 26], yaw: -1.9, game: true },
+          { kind: 'mosblock', at: [-6, 58], yaw: 3.0, game: true },
+          { kind: 'vaporator', at: [-46, 4], game: true },
+          { kind: 'vaporator', at: [40, -46], game: true },
+          { kind: 'landspeeder', at: [6, 12], yaw: 1.9, y: 0.7, solid: { r: 1.4 }, game: true },
         ],
       },
       {
@@ -188,7 +206,9 @@ export const SITES = {
       {
         id: 'escapepod',
         name: 'The escape pod',
-        at: [-70, -330],
+        // (90 m west of where the site first drew it: on the game's level,
+        // Mos Eisley's scrapyard is there)
+        at: [-160, -330],
         r: 22,
         about: 'Where Artoo and Threepio came down, with the Death Star plans. No life forms aboard, said the Star Destroyer’s gunner, so he held his fire.',
         lines: {
@@ -286,7 +306,7 @@ export const SITES = {
       {
         id: 'canyon',
         name: 'Beggar’s Canyon',
-        at: [486, -40],
+        at: [486, 160],
         r: 60,
         about: 'A winding gorge through the mesas east of Anchorhead. Farm kids race their skyhoppers through it, round the Stone Needle, and bullseye the womp rats on the way.',
         lines: {
@@ -332,10 +352,11 @@ export const SITES = {
       { id: 'vaporator3', kind: 'work', at: [-148, 162], spots: [[-149.4, 161.2]], clip: 'kneel.fix', pause: 8 },
       { id: 'vaporator4', kind: 'work', at: [-190, 164], spots: [[-188.7, 163.1]], clip: 'kneel.fix', pause: 8 },
       { id: 'vaporator5', kind: 'work', at: [-166, 172], spots: [[-166.3, 170.4]], clip: 'kneel.fix', pause: 8 },
-      // (a stall's counter, two at a time in front of it)
-      { id: 'stall1', kind: 'food', at: [312, -210], slots: 2, spots: [[312.5, -212.5], [313.9, -211.7]], clip: 'interact', pause: 7 },
-      { id: 'stall2', kind: 'food', at: [294, -206], slots: 2, spots: [[292.6, -208.1], [294.2, -208.5]], clip: 'interact', pause: 7 },
-      { id: 'stall3', kind: 'food', at: [322, -236], slots: 2, spots: [[324.5, -236.4], [324.3, -234.8]], clip: 'interact', pause: 7 },
+      // (a stall's counter, two at a time in front of it: the game's own
+      // stalls, in the street north of the cantina and east of it)
+      { id: 'stall1', kind: 'food', at: [284.6, -198.8], slots: 2, spots: [[286.3, -197.7], [285.8, -196.3]], clip: 'interact', pause: 7 },
+      { id: 'stall2', kind: 'food', at: [272.2, -184.9], slots: 2, spots: [[274.2, -184.9], [274.5, -183.6]], clip: 'interact', pause: 7 },
+      { id: 'stall3', kind: 'food', at: [371.1, -229.9], slots: 2, spots: [[370, -231.6], [372.7, -227.9]], clip: 'interact', pause: 7 },
       { id: 'tuskenfire', kind: 'rest', at: [-419, 247], slots: 3, spots: [[-417.5, 247], [-420.5, 247], [-419, 245.5]], base: 'crouch', pause: 14 },
     ],
     life: [
@@ -347,15 +368,15 @@ export const SITES = {
       { kind: 'jawa', n: 7, at: [140, 268], spread: 14, roam: 16, speed: 0.9, name: 'Jawa', says: ['Utinni!', 'Utinni! (It holds up a power converter, and names a price you don’t understand.)', 'M’um m’aloo!', '(It counts your credits, then counts them again.)'] },
       { kind: 'bantha', n: 4, at: [-400, 230], spread: 20, roam: 20, speed: 0.8, r: 1.5 },
       { kind: 'tusken', id: 'tuskencamp', n: 3, at: [-420, 250], spread: 10, roam: 10, speed: 1.0, needs: ['rest'], name: 'Tusken Raider', says: ['(A long, rising howl, and the gaffi stick held high.)', '(It stares. It doesn’t move. You get the message.)'] },
-      { kind: 'stormtrooper', n: 4, path: [[290, -200], [330, -230], [300, -270], [262, -236]], speed: 1.4, name: 'Stormtrooper', says: ['Move along.', 'Let me see your identification.', 'How long have you had these droids?', 'These aren’t the droids we’re looking for.'] },
-      { kind: 'sandtrooper', n: 2, at: [-60, -320], spread: 8, roam: 12, speed: 1.1, name: 'Sandtrooper', says: ['Look, sir: droids. Someone was in the pod.', 'The tracks go off in this direction.'] },
-      { kind: 'dewback', n: 2, at: [-80, -300], spread: 10, roam: 14, speed: 0.7, r: 1.2 },
+      { kind: 'stormtrooper', n: 4, path: [[236, -257], [279, -256], [364, -257], [279, -255.5]], speed: 1.4, name: 'Stormtrooper', says: ['Move along.', 'Let me see your identification.', 'How long have you had these droids?', 'These aren’t the droids we’re looking for.'] },
+      { kind: 'sandtrooper', n: 2, at: [-150, -320], spread: 8, roam: 12, speed: 1.1, name: 'Sandtrooper', says: ['Look, sir: droids. Someone was in the pod.', 'The tracks go off in this direction.'] },
+      { kind: 'dewback', n: 2, at: [-170, -300], spread: 10, roam: 14, speed: 0.7, r: 1.2 },
       { kind: 'sullustan', n: 1, at: [284, -244], roam: 8, speed: 1.0, name: 'A Sullustan pilot', says: ['(A string of chattering Sullustese, and a grin.)', 'Freighter’s in Bay 86. Cargo? Don’t ask.'] },
-      { kind: 'ronto', n: 1, at: [330, -250], roam: 10, speed: 0.4, r: 1.3 },
+      { kind: 'ronto', n: 1, at: [328, -249.6], roam: 10, speed: 0.4, r: 1.3 },
       // (the game's own: Mos Eisley's chickens and scurriers under the stalls)
-      { kind: 'chicken', n: 5, at: [298, -224], spread: 12, roam: 8, speed: 0.5, r: 0.2, solid: false },
+      { kind: 'chicken', n: 5, at: [296, -196], spread: 12, roam: 8, speed: 0.5, r: 0.2, solid: false },
       { kind: 'scurrier', n: 4, at: [278, -252], spread: 18, roam: 12, speed: 0.9, r: 0.2, solid: false },
-      { kind: 'villager', n: 5, at: [300, -230], spread: 40, roam: 25, speed: 1.1, needs: ['food'], name: 'Mos Eisley local', says: ['Watch yourself. This place can be a little rough.', 'Chalmun’s got a band in tonight. No droids, though.', 'If you’re looking for a pilot, try the cantina.', 'Hutt business. Don’t ask.'] },
+      { kind: 'villager', n: 5, at: [300, -258], spread: 40, roam: 25, speed: 1.1, needs: ['food'], name: 'Mos Eisley local', says: ['Watch yourself. This place can be a little rough.', 'Chalmun’s got a band in tonight. No droids, though.', 'If you’re looking for a pilot, try the cantina.', 'Hutt business. Don’t ask.'] },
       { kind: 'droid', n: 1, at: [-160, 140], roam: 10, speed: 0.6, name: 'An R5 unit', says: ['(A cheerful whistle. Its motivator sounds fine… for now.)'] },
       // who has something for you to do
       { kind: 'farmer', id: 'owen', at: [-158, 160], roam: 6, speed: 0.7, needs: ['work'], name: 'Owen Lars', named: true, quest: 'converters', says: ['Those vaporators won’t fix themselves.', 'You can waste time with your friends when your chores are done.'] },
@@ -370,18 +391,70 @@ export const SITES = {
     rides: [
       { kind: 'landspeeder', at: [14, -10], yaw: 2.4 },
       { kind: 'landspeeder', at: [-4, 314], yaw: 1.2 },
-      { kind: 'landspeeder', at: [452, 132], yaw: 2.8 },
+      { kind: 'landspeeder', at: [452, 332], yaw: 2.8 },
       { kind: 'bantha', at: [-390, 270], yaw: 0.4 },
+    ],
+
+    // the game's own Jabba's palace (lane E1: the packs
+    // /models/galaxy/bf2017/levels/tatooine/jabba/level.json and
+    // /models/galaxy/bf2017/levels/tatooine/jabba-inside/level.json, `node
+    // scripts/bf2017-level.mjs s2_2/levels/jabbaspalace_01 --world tatooine
+    // --district jabba --spot -22.9 20.8`, and the same `--district
+    // jabba-inside --inside`: the palace on its rise, and the 473 pieces
+    // under its sand, the rancor's pit and the cells beside it), another
+    // map in its own frame, so its people are its own. (The game's
+    // Tatooine_02 is Mos Eisley again, 19,678 of its 19,715 pieces the
+    // same as Tatooine_01's: no district of its own.)
+    districts: [
+      {
+        id: 'jabba',
+        name: 'Jabba’s palace',
+        level: 'tatooine/jabba',
+        // (on the road, 40 m out from the gate, facing it)
+        land: { at: [0, 0], yaw: 0.26 },
+        line: 'The B’omarr monastery on its rise, and the Hutt’s court inside it.',
+        ground: { layers: [{ type: 'image', pack: 'tatooine/jabba' }], flats: [], pits: [] },
+        site: {
+          places: [],
+          things: [],
+          things_all: [],
+          scatter: [],
+          rides: [],
+          wants: [],
+          quests: [],
+          // (the gate's guards, either side of it, facing the road)
+          life: [
+            { kind: 'gamorrean', at: [6.7, 35.1], still: true, face: -2.88, name: 'Gamorrean guard', says: ['(It grunts. It points at the gate. It grunts again.)'] },
+            { kind: 'gamorrean', at: [12.5, 36.7], still: true, face: -2.88, name: 'Gamorrean guard', says: ['(Snort.)'] },
+          ],
+        },
+        door: { at: [-3, -5], r: 2.6, prompt: 'Back to the ship, and Mos Eisley' },
+        zones: [{ id: 'jabbapit', name: 'The rancor’s pit', door: { at: [11.2, 41.7], r: 2.4, prompt: 'Down to the pit and the cells' }, to: { district: 'jabba-inside' } }],
+      },
+      {
+        id: 'jabba-inside',
+        name: 'Under the palace',
+        level: 'tatooine/jabba-inside',
+        // (in the cell block's corridor, facing the pit's doorway)
+        land: { at: [42.5, 104.4], yaw: -2.73 },
+        line: 'The cells, and the rancor’s pit, under the Hutt’s floor.',
+        // (a flat floor just under the corridor's, the game's floors over it; no weather in here)
+        ground: { layers: [], base: -10.45, flats: [], pits: [] },
+        site: { places: [], things: [], things_all: [], scatter: [], rides: [], wants: [], quests: [], life: [], weather: [], fog: { color: '#2a1e14', density: 0.02 } },
+        door: { at: [45.7, 101.2], r: 2.4, prompt: 'Back up into the palace', to: 'jabba' },
+      },
     ],
 
     // ── Places you go into ──
     zones: [
+      // (and beside the palace's own gate, the road round to the game's)
+      { id: 'jabbaroad', name: 'Jabba’s palace, the road round', door: { at: from(PALACE, [7, 30]), r: 2.4, prompt: 'Take the road round to the main gate' }, to: { district: 'jabba' } },
       {
         id: 'cantina',
         name: 'the cantina',
         music: 'cantina',
-        door: { at: from(CANTINA, [2.5, 9.9]), r: 2.6, prompt: 'Go into the cantina' },
-        back: from(CANTINA, [2.5, 12.5]),
+        door: { at: CANTINA_DOOR, r: 2.6, prompt: 'Go into the cantina' },
+        back: [CANTINA_DOOR[0] + 1.5, CANTINA_DOOR[1] + 0.9],
         inside: {
           build: 'cantinainside',
           spawn: [0, 14.6],
@@ -595,7 +668,7 @@ export const SITES = {
         intro: [['Camie', 'Biggs ran the canyon in under thirty seconds. In a landspeeder. Bet you can’t.']],
         steps: [
           { type: 'ride', kind: 'landspeeder', text: 'Get in a landspeeder' },
-          { type: 'reach', at: [470, 128], r: 16, text: 'Ride to the mouth of Beggar’s Canyon' },
+          { type: 'reach', at: [470, 328], r: 16, text: 'Ride to the mouth of Beggar’s Canyon' },
           { type: 'race', ride: 'landspeeder', gates: CANYON, r: 11, time: 32, text: 'Run Beggar’s Canyon', lines: [[null, 'Through every gate, round the Stone Needle, out the far end. Go!']] },
         ],
         done: [['Camie', '(over the comlink) You did WHAT? In under thirty? …Biggs is going to hate this.']],

@@ -65,7 +65,7 @@ for (const name of list.split(',')) {
     await page.waitForFunction(([from, n]) => window.__surfaceScene.renderer.info.render.frame >= from + n, [f0, frames], { timeout: 120000, polling: 50 });
     const file = join(out, `${world}-${name}-${look}.jpg`);
     await page.screenshot({ path: file, type: 'jpeg', quality: 82, timeout: 180000 });
-    const calls = await page.evaluate(() => window.__surfaceScene.renderer.info.render.calls);
+    const calls = await page.evaluate(() => window.__surfaceScene.renderer.info.render.drawCalls ?? window.__surfaceScene.renderer.info.render.calls);
     rows.push({ world, name, look, calls, file });
     console.log(world, name, look, 'calls', calls);
   }

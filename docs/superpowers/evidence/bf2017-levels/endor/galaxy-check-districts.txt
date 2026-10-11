@@ -1,0 +1,31 @@
+# endor-bunker-high
+endor      calls   55  tris  572296  geo  299  tex 240  prog 136  frame p50 4699.8 p95 5016.5 ms  ground 0.02 ms  load 12.1 s
+           level calls 412  tris 630036  instances 4092  lights 3  probe –
+budget endor      calls 55/257  tris 572296/3679784  models 57.3/60 MB  FAIL (drew far less than its baseline (55 of 234 draw calls): held back while measured)  (known over the row, held to its baseline: TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over the 3M row; the far redwoods are 0.1M of it: the near full redwoods (1.1M with their shadow pass), the crew figures (0.73M), the ground (0.58M) and the built ferns (0.52M) are where it goes (docs/superpowers/HANDOFF-galaxy-asset-upgrade.md, Phase 4); trim those and take it off this list)
+# endor-bunker-low
+endor      calls   61  tris  344824  geo  149  tex 201  prog 116  frame p50 1600 p95 1766.6 ms  ground 0.02 ms  load 11.3 s
+           level calls 202  tris 186653  instances 660  lights 0  probe –
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget endor      calls 61/350  tris 344824/800000  models 14/20 MB  pass
+# endor-high
+endor      calls  158  tris 1399725  geo  291  tex 553  prog 192  frame p50 11916.2 p95 12916.1 ms  ground 0.04 ms  load 14.1 s
+           level calls 243  tris 655212  instances 2042  lights 3  probe –
+budget endor      calls 158/257  tris 1399725/3679784  models 94.4/60 MB  FAIL (models 94.4 MB > 60)  (known over the row, held to its baseline: TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over the 3M row; the far redwoods are 0.1M of it: the near full redwoods (1.1M with their shadow pass), the crew figures (0.73M), the ground (0.58M) and the built ferns (0.52M) are where it goes (docs/superpowers/HANDOFF-galaxy-asset-upgrade.md, Phase 4); trim those and take it off this list)
+# endor-station-high
+endor      calls   40  tris  517568  geo  315  tex  74  prog  97  frame p50 3153.8 p95 4116.5 ms  ground 0.06 ms  load 12.8 s
+           level calls 495  tris 1777111  instances 3460  lights 1  probe –
+budget endor      calls 40/257  tris 517568/3679784  models 27.7/60 MB  FAIL (drew far less than its baseline (40 of 234 draw calls): held back while measured)  (known over the row, held to its baseline: TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over the 3M row; the far redwoods are 0.1M of it: the near full redwoods (1.1M with their shadow pass), the crew figures (0.73M), the ground (0.58M) and the built ferns (0.52M) are where it goes (docs/superpowers/HANDOFF-galaxy-asset-upgrade.md, Phase 4); trim those and take it off this list)
+# endor-station-low
+endor      calls   42  tris  284743  geo  197  tex  80  prog 101  frame p50 1566.6 p95 3149.9 ms  ground 0.03 ms  load 11.4 s
+           level calls 193  tris 598938  instances 1657  lights 0  probe –
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget endor      calls 42/350  tris 284743/800000  models 10.1/20 MB  pass
+# endor-village-high
+endor      calls   37  tris  506840  geo  218  tex  76  prog 100  frame p50 3298.5 p95 3833.2 ms  ground 0.02 ms  load 12.1 s
+           level calls 174  tris 1975221  instances 3009  lights 3  probe 1a79ed93
+budget endor      calls 37/257  tris 506840/3679784  models 25.3/60 MB  FAIL (drew far less than its baseline (37 of 234 draw calls): held back while measured)  (known over the row, held to its baseline: TODO: 4.32M triangles at high on 2026-10-08 (3.35M when first listed), over the 3M row; the far redwoods are 0.1M of it: the near full redwoods (1.1M with their shadow pass), the crew figures (0.73M), the ground (0.58M) and the built ferns (0.52M) are where it goes (docs/superpowers/HANDOFF-galaxy-asset-upgrade.md, Phase 4); trim those and take it off this list)
+# endor-village-low
+endor      calls   37  tris  266192  geo  154  tex  72  prog  99  frame p50 1649.9 p95 1783.2 ms  ground 0.02 ms  load 12.2 s
+           level calls 86  tris 545934  instances 1628  lights 0  probe 1a79ed93
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget endor      calls 37/350  tris 266192/800000  models 9.4/20 MB  pass

@@ -25,17 +25,6 @@ The owner’s word, fixed on 2026-10-11: no engine switch, no pixel streaming, e
 
 Each lane fills its row (session, PR) in its own PR and merges `origin/main` before it, keeping both sides.
 
-## N1: the GPU scene (2026-10-11, `session_01LJWah8w91QsWaqjvBuukhu`)
-
-**Done.** `src/lib/three/gpuScene/` (the 32-byte rows in one storage buffer appended and freed by cell; the TSL cull with the frustum, `lodAt`'s cut, equal to it on 10,000 random instances, and a depth pyramid, compacted by `atomicAdd` into one `IndirectStorageBufferAttribute`; one indirect draw a material group pulling its rows, a sub-draw a part, mirrored parts wound back as a second sub-draw; a `BundleGroup`; the dithered LOD crossfade; the shadow pass drawn from its own list within 260 m); `createLevelScene({ gpuScene: true, renderer })` → `surface/level/levelGpu.js`, lanes L's and U's paths untouched; `light-fixture.mjs --gpuscene`; `level-draws.mjs`'s third column; `scripts/gpu-scene-parity.mjs`. Proved in the cloud on SwiftShader's WebGPU device, offscreen: the compute pass equals its CPU twin over four frames of 3,000 rows (0 lists, files or arguments differ; 1,140 occluded on both), and the draws equal lane L's InstancedMesh (mean 0.01 of 255). Hoth through the scene's code: ultra 209 instanced / 80 batched / **69** GPU scene, high 183 / 78 / 67, the same triangles on every path. The fallback: the node renderer over WebGL 2 never takes the path. Evidence: `docs/superpowers/evidence/gpu-first/N1/README.md`, with where the code differs from the plan and why (three scales a row, one indirect buffer, the mirrored copy instead of `DoubleSide`, the occluders' depth drawn with this frame's camera, the shadow list).
-
-**Left.**
-1. The laptop's table (the README's commands): the fixture's frame on webgpu at 1,600 × 900 and 4K, `gpu-scene-parity.mjs` on the laptop's chip.
-2. Under 40 draws on Hoth: keys alone give 69. Hoth's 70 material keys are 11 material shapes; texture arrays by size with a per-part material row would draw about 11. And the node game materials carry no `userData.batchKey`: keyed each by itself the GPU scene draws 209, as lane L (lane U found the same). Both are the materials' (M2, Q1's `createGameMaterial`, `levelGltf.js`'s swap).
-3. The world's call: once T2 lands, `surface/level/index.js`'s and (lane U2's) `battlefront/map/level.js`'s `createLevelScene` pass `gpuScene: true, renderer` and call `level.beforeRender?.(camera)` before each frame's draw; then the Hoth rows (`perf-probe.mjs`, `gpu-parity.mjs` on three poses). N6's `tiers.js` takes the choice over from `canDrawGpuScene`.
-
-**Checking it.** `npx vitest run src/lib/three/gpuScene src/components/galaxy/surface/level`; `node scripts/gpu-scene-parity.mjs` (any WebGPU device, SwiftShader's included); `node scripts/level-draws.mjs hoth --tier ultra [--own]` (the pack fetched by hash into `public/`); `node scripts/light-fixture.mjs --gpuscene --legs webgl`.
-
 ## What the other work must know
 
 - **Lane T2** (`claude/bf2017-t2-flip`): every lane here builds on the lit fixture and the `battlefront` world until T2 lands, then wires into `surface/nodes/stack.js` by one call each (N2: `post.js` and `quality.js`; N3: `createBaked`, the grid’s budget, the sun’s cadence). Nothing here edits `stack.js` before T2 merges.

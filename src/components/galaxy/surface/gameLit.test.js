@@ -50,7 +50,7 @@ describe('a world under the game’s light, running', () => {
     expect(r.loaded[0]).toEqual(['px', 'nx', 'py', 'ny', 'pz', 'nz'].map((f) => `/textures/galaxy/bf2017/light/hoth/sunny.${f}.hdr`));
     expect(r.scene.environment).toBe(r.envs[0]);
     expect(r.scene.environmentIntensity).toBeCloseTo(0.4 * siteLightFrom(hoth.weathers.sunny).probeScale, 6);
-    expect(r.post.grading).toHaveBeenLastCalledWith({ lut: expect.objectContaining({ u: '/textures/galaxy/bf2017/light/hoth/sunny.lut.png', n: 17 }), size: 17 });
+    expect(r.post.grading).toHaveBeenLastCalledWith({ lut: expect.objectContaining({ u: '/textures/galaxy/bf2017/light/hoth/sunny.lut.png', n: 33 }), size: 33 });
   });
 
   it('takes the room’s probe and the interior’s grade indoors, and the outdoor ones back', async () => {

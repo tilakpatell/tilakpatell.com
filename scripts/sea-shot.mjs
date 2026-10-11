@@ -60,7 +60,7 @@ for (const id of worlds) {
   await page.waitForTimeout(Number(process.env.SETTLE ?? 6000));
   const file = `${OUT}/${id}-${TAG}.png`;
   await page.screenshot({ path: file, timeout: 300000 });
-  const info = await page.evaluate(() => new Promise((r) => { const info = window.__surfaceScene.renderer.info; info.autoReset = false; let n = 0; const times = []; let last = performance.now(); let f = null; const tick = (now) => { times.push(now - last); last = now; f = { calls: info.render.calls, tris: info.render.triangles }; info.reset(); if (++n < 90) requestAnimationFrame(tick); else { info.autoReset = true; times.sort((a, b) => a - b); r({ ...f, p50: +times[45].toFixed(1) }); } }; requestAnimationFrame(tick); }));
+  const info = await page.evaluate(() => new Promise((r) => { const info = window.__surfaceScene.renderer.info; info.autoReset = false; let n = 0; const times = []; let last = performance.now(); let f = null; const tick = (now) => { times.push(now - last); last = now; f = { calls: info.render.drawCalls ?? info.render.calls, tris: info.render.triangles }; info.reset(); if (++n < 90) requestAnimationFrame(tick); else { info.autoReset = true; times.sort((a, b) => a - b); r({ ...f, p50: +times[45].toFixed(1) }); } }; requestAnimationFrame(tick); }));
   console.log(id, TAG, spot ? `shore r=${spot.r}` : 'no shore', JSON.stringify(info), errors.length ? 'ERR ' + errors.slice(0, 2).join(' | ') : 'ok');
   await ctx.close();
 }

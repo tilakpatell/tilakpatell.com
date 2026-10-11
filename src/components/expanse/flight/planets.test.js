@@ -75,6 +75,8 @@ describe('the flight’s planets, composed', () => {
     for (const k of ['layers', 'flight', 'flats', 'pits', 'seed', 'base']) delete look[k];
     expect(SITE_GROUND[id]).toEqual(look);
     if (id !== 'coruscant') expect(planetSpecOf(id).ground).toEqual(look);
-    if (SITES[id].water && id !== 'bespin') expect(planetSpecOf(id).water).toEqual({ kind: SITES[id].water.kind, level: SITES[id].water.level });
+    // (Bespin's is clouds; Kamino's is the game's ocean, 296 m under the city
+    // it walks, and the flight keeps its own sea at 0 under its own land, ground.flight)
+    if (SITES[id].water && id !== 'bespin' && id !== 'kamino') expect(planetSpecOf(id).water).toEqual({ kind: SITES[id].water.kind, level: SITES[id].water.level });
   });
 });

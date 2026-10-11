@@ -1,19 +1,19 @@
 [
   {
     "id": "tatooine",
-    "loaded": 4.5,
-    "calls": 76,
-    "triangles": 636039,
+    "loaded": 15.7,
+    "calls": 183,
+    "triangles": 649067,
     "points": 745,
     "lines": 96,
-    "geometries": 137,
-    "textures": 98,
-    "programs": 175,
+    "geometries": 481,
+    "textures": 392,
+    "programs": 214,
     "frames": 3,
-    "p50": 1916.5,
-    "p95": 1983.3,
+    "p50": 7799.7,
+    "p95": 8066.3,
     "ratio": 1,
-    "glbMB": 18.6
+    "glbMB": 36.5
   },
   {
     "id": "hoth",
