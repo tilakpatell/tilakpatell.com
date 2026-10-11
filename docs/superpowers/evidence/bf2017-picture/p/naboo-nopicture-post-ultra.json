@@ -1,0 +1,42 @@
+{
+  "size": "960x540",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "naboo-nopicture-post-ultra-webgl.png",
+      "canvas": {
+        "css": [
+          960,
+          540
+        ],
+        "buffer": [
+          960,
+          540
+        ]
+      },
+      "meanLum": 0.9101,
+      "picture": null,
+      "horizon": {
+        "meet": 0.0383,
+        "painted": 0.0321
+      }
+    }
+  ]
+}

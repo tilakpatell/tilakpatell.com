@@ -78173,6 +78173,384 @@
     "from": "gameplay/vehicles/air/ywing/vehicle_air_ywing_static_donotuse_mesh",
     "tier": "surface"
   },
+  "textures/galaxy/bf2017/light/bespin/dusk.clouds.ktx2": {
+    "hash": "2ce80128dd43",
+    "bytes": 541417,
+    "from": "textures/galaxy/bf2017/light/bespin/dusk.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/bespin/dusk.gradient.ktx2": {
+    "hash": "c9ee3970a5be",
+    "bytes": 48753,
+    "from": "textures/galaxy/bf2017/light/bespin/dusk.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/bespin/dusk.lut33.png": {
+    "hash": "e3dd03fea237",
+    "bytes": 88319,
+    "from": "textures/galaxy/bf2017/light/bespin/dusk.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/bespin/dusk.panorama.ktx2": {
+    "hash": "09384ce4fca2",
+    "bytes": 868174,
+    "from": "textures/galaxy/bf2017/light/bespin/dusk.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/bespin/interior.lut33.png": {
+    "hash": "e3dd03fea237",
+    "bytes": 88319,
+    "from": "textures/galaxy/bf2017/light/bespin/interior.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/foggy.clouds.ktx2": {
+    "hash": "226b3929bea1",
+    "bytes": 31421,
+    "from": "textures/galaxy/bf2017/light/endor/foggy.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/foggy.gradient.ktx2": {
+    "hash": "0a763b90a3a3",
+    "bytes": 59152,
+    "from": "textures/galaxy/bf2017/light/endor/foggy.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/foggy.lut33.png": {
+    "hash": "8e373f5b06ac",
+    "bytes": 96413,
+    "from": "textures/galaxy/bf2017/light/endor/foggy.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/foggy.panorama.ktx2": {
+    "hash": "49c66257f663",
+    "bytes": 479273,
+    "from": "textures/galaxy/bf2017/light/endor/foggy.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/interior.lut33.png": {
+    "hash": "cec8bab63691",
+    "bytes": 68800,
+    "from": "textures/galaxy/bf2017/light/endor/interior.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/night.gradient.ktx2": {
+    "hash": "f35029a31a72",
+    "bytes": 4315,
+    "from": "textures/galaxy/bf2017/light/endor/night.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/night.lut33.png": {
+    "hash": "61d3a3b19878",
+    "bytes": 84371,
+    "from": "textures/galaxy/bf2017/light/endor/night.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/night.panorama.ktx2": {
+    "hash": "af5f807fbee2",
+    "bytes": 72740,
+    "from": "textures/galaxy/bf2017/light/endor/night.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/sunny.clouds.ktx2": {
+    "hash": "36b704fc634f",
+    "bytes": 95120,
+    "from": "textures/galaxy/bf2017/light/endor/sunny.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/sunny.gradient.ktx2": {
+    "hash": "7d08e1111fd4",
+    "bytes": 30770,
+    "from": "textures/galaxy/bf2017/light/endor/sunny.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/sunny.lut33.png": {
+    "hash": "cec8bab63691",
+    "bytes": 68800,
+    "from": "textures/galaxy/bf2017/light/endor/sunny.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/endor/sunny.panorama.ktx2": {
+    "hash": "29b6000f45f7",
+    "bytes": 642592,
+    "from": "textures/galaxy/bf2017/light/endor/sunny.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/geonosis/cloudy.clouds.ktx2": {
+    "hash": "e7c44fb0d687",
+    "bytes": 957836,
+    "from": "textures/galaxy/bf2017/light/geonosis/cloudy.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/geonosis/cloudy.gradient.ktx2": {
+    "hash": "e687a4ce4567",
+    "bytes": 44476,
+    "from": "textures/galaxy/bf2017/light/geonosis/cloudy.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/geonosis/cloudy.lut33.png": {
+    "hash": "bca8560ad0d0",
+    "bytes": 87109,
+    "from": "textures/galaxy/bf2017/light/geonosis/cloudy.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/geonosis/cloudy.panorama.ktx2": {
+    "hash": "060e9f1d99ab",
+    "bytes": 496281,
+    "from": "textures/galaxy/bf2017/light/geonosis/cloudy.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/geonosis/interior.lut33.png": {
+    "hash": "bca8560ad0d0",
+    "bytes": 87109,
+    "from": "textures/galaxy/bf2017/light/geonosis/interior.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/interior.lut33.png": {
+    "hash": "db791b2c31fb",
+    "bytes": 97678,
+    "from": "textures/galaxy/bf2017/light/hoth/interior.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/sunny.clouds.ktx2": {
+    "hash": "5e4d023ae483",
+    "bytes": 409018,
+    "from": "textures/galaxy/bf2017/light/hoth/sunny.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/sunny.gradient.ktx2": {
+    "hash": "e0f7d0f7ac0a",
+    "bytes": 53150,
+    "from": "textures/galaxy/bf2017/light/hoth/sunny.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/sunny.lut33.png": {
+    "hash": "3fed36c5a0b4",
+    "bytes": 92668,
+    "from": "textures/galaxy/bf2017/light/hoth/sunny.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2": {
+    "hash": "0dcfb7c9a268",
+    "bytes": 752237,
+    "from": "textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/sunset.clouds.ktx2": {
+    "hash": "a8f5a0022e7e",
+    "bytes": 773664,
+    "from": "textures/galaxy/bf2017/light/hoth/sunset.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/sunset.gradient.ktx2": {
+    "hash": "7ea71cbb4b3d",
+    "bytes": 28524,
+    "from": "textures/galaxy/bf2017/light/hoth/sunset.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/sunset.lut33.png": {
+    "hash": "bee258489a94",
+    "bytes": 95075,
+    "from": "textures/galaxy/bf2017/light/hoth/sunset.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/hoth/sunset.panorama.ktx2": {
+    "hash": "73d1ce9104d7",
+    "bytes": 335347,
+    "from": "textures/galaxy/bf2017/light/hoth/sunset.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kamino/interior.lut33.png": {
+    "hash": "0f65e2536cf7",
+    "bytes": 88062,
+    "from": "textures/galaxy/bf2017/light/kamino/interior.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kamino/stormy.clouds.ktx2": {
+    "hash": "bcd61fb1cd99",
+    "bytes": 196074,
+    "from": "textures/galaxy/bf2017/light/kamino/stormy.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kamino/stormy.gradient.ktx2": {
+    "hash": "d61a3ef0c94e",
+    "bytes": 41147,
+    "from": "textures/galaxy/bf2017/light/kamino/stormy.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kamino/stormy.lut33.png": {
+    "hash": "7c71ed1613b6",
+    "bytes": 81557,
+    "from": "textures/galaxy/bf2017/light/kamino/stormy.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kamino/stormy.panorama.ktx2": {
+    "hash": "fb8197fb49c8",
+    "bytes": 502384,
+    "from": "textures/galaxy/bf2017/light/kamino/stormy.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kashyyyk/interior.lut33.png": {
+    "hash": "36f3a00a8da2",
+    "bytes": 66536,
+    "from": "textures/galaxy/bf2017/light/kashyyyk/interior.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kashyyyk/night.gradient.ktx2": {
+    "hash": "e717b90f7032",
+    "bytes": 11818,
+    "from": "textures/galaxy/bf2017/light/kashyyyk/night.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kashyyyk/night.lut33.png": {
+    "hash": "e3dd03fea237",
+    "bytes": 88319,
+    "from": "textures/galaxy/bf2017/light/kashyyyk/night.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kashyyyk/night.panorama.ktx2": {
+    "hash": "af5f807fbee2",
+    "bytes": 72740,
+    "from": "textures/galaxy/bf2017/light/kashyyyk/night.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kashyyyk/overcast.clouds.ktx2": {
+    "hash": "6e4f7a76f1a3",
+    "bytes": 497284,
+    "from": "textures/galaxy/bf2017/light/kashyyyk/overcast.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kashyyyk/overcast.gradient.ktx2": {
+    "hash": "40dfd0d23679",
+    "bytes": 34307,
+    "from": "textures/galaxy/bf2017/light/kashyyyk/overcast.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kashyyyk/overcast.lut33.png": {
+    "hash": "36f3a00a8da2",
+    "bytes": 66536,
+    "from": "textures/galaxy/bf2017/light/kashyyyk/overcast.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/kashyyyk/overcast.panorama.ktx2": {
+    "hash": "f8b0bc712368",
+    "bytes": 592480,
+    "from": "textures/galaxy/bf2017/light/kashyyyk/overcast.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/naboo/dusk.clouds.ktx2": {
+    "hash": "24c4029325af",
+    "bytes": 824544,
+    "from": "textures/galaxy/bf2017/light/naboo/dusk.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/naboo/dusk.gradient.ktx2": {
+    "hash": "f2a86f11260f",
+    "bytes": 56935,
+    "from": "textures/galaxy/bf2017/light/naboo/dusk.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/naboo/dusk.lut33.png": {
+    "hash": "174d5f027879",
+    "bytes": 86795,
+    "from": "textures/galaxy/bf2017/light/naboo/dusk.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/naboo/dusk.panorama.ktx2": {
+    "hash": "4bd6083a4504",
+    "bytes": 471689,
+    "from": "textures/galaxy/bf2017/light/naboo/dusk.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/scarif/sunset.gradient.ktx2": {
+    "hash": "b7a4aef86ab3",
+    "bytes": 49423,
+    "from": "textures/galaxy/bf2017/light/scarif/sunset.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/scarif/sunset.lut33.png": {
+    "hash": "174d5f027879",
+    "bytes": 86795,
+    "from": "textures/galaxy/bf2017/light/scarif/sunset.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/scarif/sunset.panorama.ktx2": {
+    "hash": "25cd2dd4c98a",
+    "bytes": 470771,
+    "from": "textures/galaxy/bf2017/light/scarif/sunset.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/tatooine/interior.lut33.png": {
+    "hash": "99534a07cc2f",
+    "bytes": 85799,
+    "from": "textures/galaxy/bf2017/light/tatooine/interior.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/tatooine/sunny.gradient.ktx2": {
+    "hash": "01e7fafa6bb0",
+    "bytes": 45206,
+    "from": "textures/galaxy/bf2017/light/tatooine/sunny.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/tatooine/sunny.lut33.png": {
+    "hash": "99534a07cc2f",
+    "bytes": 85799,
+    "from": "textures/galaxy/bf2017/light/tatooine/sunny.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/tatooine/sunny.panorama.ktx2": {
+    "hash": "7fda5f85a20d",
+    "bytes": 518017,
+    "from": "textures/galaxy/bf2017/light/tatooine/sunny.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/yavin/interior.lut33.png": {
+    "hash": "61d3a3b19878",
+    "bytes": 84371,
+    "from": "textures/galaxy/bf2017/light/yavin/interior.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/yavin/sunny.clouds.ktx2": {
+    "hash": "ffbb5814761c",
+    "bytes": 447410,
+    "from": "textures/galaxy/bf2017/light/yavin/sunny.clouds.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/yavin/sunny.gradient.ktx2": {
+    "hash": "8a403e76827b",
+    "bytes": 80673,
+    "from": "textures/galaxy/bf2017/light/yavin/sunny.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/yavin/sunny.lut33.png": {
+    "hash": "61d3a3b19878",
+    "bytes": 84371,
+    "from": "textures/galaxy/bf2017/light/yavin/sunny.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/yavin/sunny.panorama.ktx2": {
+    "hash": "671797f6ea9b",
+    "bytes": 765920,
+    "from": "textures/galaxy/bf2017/light/yavin/sunny.panorama.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/yavin/sunset.gradient.ktx2": {
+    "hash": "6bc48d1b4f7c",
+    "bytes": 26833,
+    "from": "textures/galaxy/bf2017/light/yavin/sunset.gradient.ktx2",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/yavin/sunset.lut33.png": {
+    "hash": "ffcdaaa12991",
+    "bytes": 90407,
+    "from": "textures/galaxy/bf2017/light/yavin/sunset.lut33.png",
+    "tier": "picture"
+  },
+  "textures/galaxy/bf2017/light/yavin/sunset.panorama.ktx2": {
+    "hash": "7796088006dd",
+    "bytes": 336768,
+    "from": "textures/galaxy/bf2017/light/yavin/sunset.panorama.ktx2",
+    "tier": "picture"
+  },
   "textures/galaxy/sky/space/core.1024.ktx2": {
     "hash": "b1bcca5de83b",
     "bytes": 369983,

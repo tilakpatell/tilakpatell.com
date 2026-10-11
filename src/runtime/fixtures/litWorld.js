@@ -13,7 +13,7 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles, upscale, hoth, shadows, lightSun, clouds, filter, picture,
+//   materials, weather, decals, particles, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry,
 //   trails, sharpen }
 //
 // `trails` (GPU-first lane N2, scripts/light-fixture.mjs --trails): the
@@ -137,9 +137,10 @@ export default {
   mb: 0,
   create(rt) {
     const opts = { tier: 'ultra', env: true, post: true, sky: true, placed: true, ...(rt.fixture ?? {}) };
-    if (opts.shadows || opts.clouds || opts.lightSun || opts.picture) opts.hoth = true;
+    if (opts.shadows || opts.clouds || opts.lightSun || opts.picture || opts.entry) opts.hoth = true;
     if (opts.hoth) opts.placed = false;
-    let entry = opts.hoth ? hothVe.sunny : ENTRY;
+    // (lane P: another world's record on Hoth's snow, light-fixture.mjs --world)
+    let entry = opts.entry ?? (opts.hoth ? hothVe.sunny : ENTRY);
     if (opts.clouds) {
       const outdoor = { ...entry.record.OutdoorLightComponentData[0], ...CLOUD_TEST };
       entry = { ...entry, record: { ...entry.record, OutdoorLightComponentData: [outdoor] } };
