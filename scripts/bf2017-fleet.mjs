@@ -64,7 +64,7 @@ export const FLEET = [
   // 16,029 triangles with its engine and its lights, over Daniel Andersson's;
   // `_source`: lab/assets/bf2017/web/models.jsonl)
   // (lane S1: the Falcon in flight, gear up: the landmark Falcon at the plain
-  // cut lane V took (its LOD2, 48,567 triangles; LOD1 is 101,207), its details' maps bound as
+  // cut lane V took (its LOD2, 48,567 triangles, 38,633 without the legs; LOD1 is 101,207), its details' maps bound as
   // lane V's row binds them, and its landing legs, a material of their own in
   // the drop (`Legs_Shader`), left out; the surfaces keep lane V's, gear down)
   ['falcon', 0, 'galaxy-falcon', { name: 'gameplay/vehicles/air/millenniumfalcon/landmark/millenniumfalcon_01_landmark_mesh', as: 'the Millennium Falcon in flight', cut: 2, drop: /^Legs_Shader/, textures: 'Details_Shader1=color:Gameplay/Vehicles/Air/MillenniumFalcon/T_MillenniumFalconDetails_01_CS,normal:Gameplay/Vehicles/Air/MillenniumFalcon/T_MillenniumFalcon_01_N' }],
