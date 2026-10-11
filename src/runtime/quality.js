@@ -48,7 +48,7 @@
 // `internal` is the chain's scale. With no clock, or one that says it is
 // not available, it is the pace, silently (`source` reads 'cpu'). The
 // runtime sets it as it starts each world (`setSource(source, { gpuTime,
-// fps, tier })`: 'gpu', 'cpu' for a node world on the pace, 'classic' for the
+// fps, tier, pixels })`: 'gpu', 'cpu' for a node world on the pace, 'classic' for the
 // classic renderer), and with each level the internal scale the mip bias
 // every game material samples at follows (lib/three/mipBias: log2(scale) −
 // 1 under the screen, −0.5 at native under TRAA, which webgpu.js reports
@@ -66,9 +66,15 @@ export const RESOLUTION_STEPS = [1, 0.77, 0.67, 0.5];
 export const UHD = 3840 * 2160;
 export const UHD_START = { ultra: 0.77, high: 0.67 };
 
-export function headroomAt(level = 0, { tier = null, pixels = 0 } = {}) {
+// (the steps at a drawing buffer, sharpest first: what headroomAt's levels
+// index, and the GPU clock's controller with them, so a level is one scale)
+export function stepsAt({ tier = null, pixels = 0 } = {}) {
   const start = pixels >= UHD ? (UHD_START[tier] ?? 1) : 1;
-  const steps = [start, ...RESOLUTION_STEPS.filter((s) => s < start)];
+  return [start, ...RESOLUTION_STEPS.filter((s) => s < start)];
+}
+
+export function headroomAt(level = 0, { tier = null, pixels = 0 } = {}) {
+  const steps = stepsAt({ tier, pixels });
   const l = Math.max(0, Math.floor(level));
   if (l < steps.length) return { scale: steps[l], shed: 0 };
   return { scale: steps.at(-1), shed: l - steps.length + 1 };
@@ -99,15 +105,20 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
   let dyn = null;
   let picture = 'cpu'; // 'gpu' | 'cpu' | 'classic', as asked
   const onGpu = () => Boolean(dyn && clock?.available);
-  const internal = () => (onGpu() ? dyn.scale : headroomAt(level).scale);
+  let px = 0; // the drawing buffer's pixels, for the 4K start (headroomAt)
+  const internal = () => (onGpu() ? dyn.scale : headroomAt(level, { tier: detail, pixels: px }).scale);
   const bias = () => setMipState({ scale: internal(), classic: picture === 'classic' });
   let seen = null; // the clock's last reading fed to the controller
-  const setSource = (want = 'cpu', { gpuTime: g = null, fps: f = null, tier: t = null } = {}) => {
+  const setSource = (want = 'cpu', { gpuTime: g = null, fps: f = null, tier: t = null, pixels = 0 } = {}) => {
     picture = want;
     clock = want === 'gpu' ? g : null;
     seen = null;
-    // (`tier`: lane G1's renderer tier, T0…T2, when the runtime has one; else the device's)
-    dyn = clock?.available ? createDynres({ ...dynresFor({ tier: t ?? tier, fps: f }), steps: RESOLUTION_STEPS }) : null;
+    px = pixels;
+    // (`tier`: lane G1's renderer tier, T0…T2, when the runtime has one; else
+    // the device's. The steps are headroomAt's at this drawing buffer: at 4K
+    // ultra starts at 0.77, lane U's measured start, so a level is the same
+    // scale to the controller and to the world's chain)
+    dyn = clock?.available ? createDynres({ ...dynresFor({ tier: t ?? tier, fps: f }), steps: stepsAt({ tier: detail, pixels }) }) : null;
     bias();
   };
   const tell = (l) => {
@@ -144,6 +155,8 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     },
     retune(level) {
       budget = BUDGETS[level] ?? BUDGETS.high;
+      // (the level the 4K start reads: stepsAt)
+      detail = level;
     },
     setSharpness(next) {
       k = Number.isFinite(next) ? Math.min(2, Math.max(0.5, next)) : 1;

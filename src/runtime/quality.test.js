@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { STEPS, createPace } from '../lib/three/pace';
 import { mipBias, setMipBias, setMipState } from '../lib/three/mipBias';
 import { STEPS as DYNRES_STEPS } from './dynres';
-import { RESOLUTION_STEPS, UHD, createQuality, headroomAt } from './quality';
+import { RESOLUTION_STEPS, UHD, createQuality, headroomAt, stepsAt } from './quality';
 
 // a stand-in pace: `levels` is what each frame() call returns, in turn
 const fakePace = (levels, last = STEPS.length - 1) => {
@@ -319,6 +319,18 @@ describe('the GPU clock as the source (lane N2)', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null]), source: 'gpu', gpuTime: fakeClock([25]), fps: 30 });
     for (let t = 1; t <= 40; t++) q.frame(t * 33);
     expect(q.level).toBe(0);
+  });
+
+  it('steps through the same list the world’s headroomAt reads at its drawing buffer: level 1 at 4K on ultra is 0.67 for both', () => {
+    expect(stepsAt({ tier: 'ultra', pixels: UHD })).toEqual([0.77, 0.67, 0.5]);
+    expect(stepsAt()).toEqual(RESOLUTION_STEPS);
+    const q = createQuality({ tier: 'high', detail: 'ultra', pace: fakePace([null]) });
+    q.setSource('gpu', { gpuTime: fakeClock([30]), pixels: UHD });
+    expect(q.internal).toBe(0.77);
+    for (let t = 1; t <= 3; t++) q.frame(t * 16);
+    expect(q.level).toBe(1);
+    expect(q.internal).toBe(headroomAt(1, { tier: 'ultra', pixels: UHD }).scale);
+    expect(q.internal).toBe(0.67);
   });
 
   it('uses the same steps headroomAt does', () => {

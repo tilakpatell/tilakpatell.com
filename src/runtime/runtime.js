@@ -309,7 +309,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     if (onGpu && !clocks.has(gfx.renderer)) clocks.set(gfx.renderer, gpuClock(gfx.renderer) ?? null);
     // (lane G1's renderer tier, T0…T2, where the runtime has one: rt.tier)
     const tier = rt.tier ?? null;
-    quality.setSource?.(onGpu ? 'gpu' : nodes ? 'cpu' : 'classic', { gpuTime: onGpu ? clocks.get(gfx.renderer) : null, fps, tier });
+    // (the drawing buffer's pixels: the 4K start the world's headroomAt takes)
+    const pixels = Math.round((gfx.size?.w ?? 0) * (gfx.size?.h ?? 0) * ratioFor(module) ** 2);
+    quality.setSource?.(onGpu ? 'gpu' : nodes ? 'cpu' : 'classic', { gpuTime: onGpu ? clocks.get(gfx.renderer) : null, fps, tier, pixels });
     loop.setCadence?.(cadenceFor({ tier: tier ?? quality.tier, fps }));
     quality.reset?.();
     quality.hold?.(WARM_UP);

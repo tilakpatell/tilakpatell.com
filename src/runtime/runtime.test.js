@@ -975,17 +975,17 @@ describe('the picture’s source and cadence (lane N2)', () => {
     await rt.mount({ id: 'm', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
     expect(gpuClock).toHaveBeenCalledTimes(1);
     expect(gpuClock).toHaveBeenCalledWith(gfx.renderer);
-    expect(quality.setSource).toHaveBeenLastCalledWith('gpu', { gpuTime: clock, fps: null, tier: null });
+    expect(quality.setSource).toHaveBeenLastCalledWith('gpu', expect.objectContaining({ gpuTime: clock, fps: null, tier: null }));
   });
 
   it('without a clock a node world keeps the pace, and the classic renderer says so', async () => {
     const { rt, quality } = gpuMake();
     await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
-    expect(quality.setSource).toHaveBeenLastCalledWith('cpu', { gpuTime: null, fps: null, tier: null });
+    expect(quality.setSource).toHaveBeenLastCalledWith('cpu', expect.objectContaining({ gpuTime: null, fps: null, tier: null }));
     const q = { ...fakeQuality(), setSource: vi.fn() };
     const classic = make({ quality: q });
     await classic.rt.mount({ id: 'g', create: () => fakeWorld() }, {}, fakeHost());
-    expect(q.setSource).toHaveBeenLastCalledWith('classic', { gpuTime: null, fps: null, tier: null });
+    expect(q.setSource).toHaveBeenLastCalledWith('classic', expect.objectContaining({ gpuTime: null, fps: null, tier: null }));
   });
 
   it('a new level on the GPU clock never resizes the canvas', async () => {
