@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const DIR = import.meta.dirname;
-const FILES = ['teams', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'held', 'abilities', 'cards', 'ai', 'cameras', 'ui', 'squads', 'strings', 'points', 'maps/hoth', 'maps/hoth.lighting', 'maps/hoth.stages', 'maps/sb_endor', 'maps/sb_endor.stages', 'maps/sb_kamino', 'maps/sb_kamino.stages', 'maps/sb_fondor', 'maps/sb_droidbattleship'];
+const FILES = ['teams', 'classes', 'heroes', 'reinforcements', 'vehicles', 'weapons', 'held', 'abilities', 'cards', 'ai', 'cameras', 'ui', 'squads', 'strings', 'points', 'kits', 'arcade', 'maps/hoth', 'maps/hoth.lighting', 'maps/hoth.stages', 'maps/sb_endor', 'maps/sb_endor.stages', 'maps/sb_kamino', 'maps/sb_kamino.stages', 'maps/sb_fondor', 'maps/sb_droidbattleship'];
 const read = (name) => JSON.parse(readFileSync(join(DIR, `${name}.json`), 'utf8'));
 const rb = Object.fromEntries(FILES.map((f) => [f, read(f)]));
 const rows = (f) => rb[f].rows ?? rb[f];
@@ -33,14 +33,29 @@ function checkSources(json) {
 // (copied from scripts/lib/bf2017-manifest.mjs's SEQUEL, with its matcher)
 const SEQUEL = ['kyloren', 'rey', 'finn', 'captainphasma', 'firstorder', 'starkiller', 'takodana', 'jakku', 'resurgent', 'xwing_t70', 'tiefighterfirstorder', 'tiefighterspecialforces', 'resistance', 'ep7', 'ep9', 'skytrooper', 'jump_cop', 'newera', 'kylo', 'phasma', 'bb8', 'bb9e', 'crait', 'spacebear'];
 const TESTS = SEQUEL.map((s) => (s.length < 5 ? new RegExp(`(^|[_\\-.\\d])${s}($|[_\\-.\\d])`) : new RegExp(s.replace(/[_-]/g, '[_-]'))));
+// (the First Order's and Resistance's kits the shared list spells otherwise: scripts/lib/bf2017-rulebook-costs.mjs's SEQUEL_KITS; held to the costs, the kits and the Arcade)
+const SEQUEL_KITS = /Flametrooper|Gunner|BermudaCop|JumpCop|AwingRZ3|Landspeeder_LIUV|NT_Skispeeder|FO_ATST|TieFighter_SpecialForces|T70|SmokeyBear/i;
 const isSequel = (name) => name.toLowerCase().split('/').some((seg) => TESTS.some((re) => re.test(seg)));
 
 describe('the Battlefront rulebooks', () => {
   it('stay small', () => {
     // (a space level's map is fetched only when its Starfighter Assault is flown: starfighterMaps.js; each map is held to its own)
-    const bytes = FILES.filter((f) => !f.startsWith('maps/sb_')).reduce((n, f) => n + readFileSync(join(DIR, `${f}.json`)).length, 0);
+    // (the costs, the kits and the Arcade have their own budget, below)
+    const bytes = FILES.filter((f) => !f.startsWith('maps/sb_') && !['points', 'kits', 'arcade'].includes(f)).reduce((n, f) => n + readFileSync(join(DIR, `${f}.json`)).length, 0);
     expect(bytes).toBeLessThan(2 * 1024 * 1024);
     for (const f of FILES.filter((x) => x.startsWith('maps/') && !x.includes('.'))) expect(readFileSync(join(DIR, `${f}.json`)).length, f).toBeLessThan(600 * 1024);
+  });
+
+  it('keeps the costs, the kits and the Arcade under 200 KB together', () => {
+    expect(['points', 'kits', 'arcade'].reduce((n, f) => n + readFileSync(join(DIR, `${f}.json`)).length, 0)).toBeLessThan(200 * 1024);
+  });
+
+  it('names most kit limits from the graph, and says by hand where it could not', () => {
+    const rows = rb.kits.planetaryBattles.rows;
+    expect(rows.filter((r) => typeof r.maxCount === 'number').length).toBeGreaterThan(50);
+    for (const f of ['points', 'kits', 'arcade']) expect(JSON.stringify(rb[f]).match(SEQUEL_KITS), f).toBeNull();
+    for (const r of rows) if (typeof r.maxCount !== 'number') expect(r.maxCount.source, r.kit).toBe('hand');
+    expect(Object.keys(rb.arcade.params)).toHaveLength(22);
   });
 
   it.each(FILES)('%s names the source of every number', (f) => {
@@ -53,7 +68,9 @@ describe('the Battlefront rulebooks', () => {
   });
 
   it('a hand file says so', () => {
-    expect(rb.points.source).toBe('hand');
+    // (points.json is the record's now: only what it lacks is by hand)
+    expect(rb.points.source).toBeUndefined();
+    for (const k of ['earn', 'limits', 'bpRate']) expect(rb.points[k].source, k).toBe('hand');
     expect(rb['maps/hoth.stages'].source).toBe('hand');
     expect(rb['maps/sb_endor.stages'].source).toBe('hand');
     expect(rb['maps/sb_kamino.stages'].source).toBe('hand');
@@ -117,8 +134,11 @@ describe('the Battlefront rulebooks', () => {
     expect(bad).toEqual([]);
   });
 
-  it('every Battle Point cost names a vehicle the rulebook holds', () => {
-    const bad = Object.keys(rb.points.cost.vehicles).filter((id) => id !== 'default' && !rows('vehicles')[id]);
+  it('every Battle Point price names a hero, reinforcement or vehicle the rulebooks hold', () => {
+    const ids = (o) => Object.keys(o ?? {}).filter((k) => !k.endsWith('_source'));
+    const bad = ids(rb.points.cost.heroes).filter((id) => id !== 'default' && !rows('heroes')[id]);
+    const units = [rb.points.cost.units, ...Object.values(rb.points.cost.byMode).flatMap((m) => Object.values(m).map((t) => t.units))];
+    for (const u of units) for (const id of ids(u)) if (!rows('vehicles')[id] && !rows('reinforcements')[id]) bad.push(`unit ${id}`);
     for (const stage of rb['maps/hoth.stages'].stages) for (const id of [...stage.vehicles, ...stage.objectives.map((o) => o.vehicle).filter(Boolean)]) if (!rows('vehicles')[id]) bad.push(`${stage.id}: ${id}`);
     expect(bad).toEqual([]);
   });
@@ -135,7 +155,8 @@ describe('the Battlefront rulebooks', () => {
     const bad = [];
     const walk = (v, path) => {
       if (typeof v === 'string') return isSequel(v) && bad.push(`${path}: ${v}`);
-      if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'refused') walk(x, `${path}.${k}`);
+      // (a source names the record a value came from: the Rebels' bot names sit in the list the Resistance shares)
+      if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'refused' && !k.endsWith('_source')) walk(x, `${path}.${k}`);
     };
     for (const f of FILES) if (!['ui', 'ai', 'strings', 'maps/hoth.lighting'].includes(f)) walk(rows(f), f);
     walk(Object.keys(rows('ui').icons), 'ui.icons');
