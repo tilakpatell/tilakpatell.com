@@ -19,6 +19,7 @@ import { detailLevel } from '../../../lib/detail.js';
 import { ktx2Loader } from '../../../lib/three/gltf.js';
 import { recipeMaps } from './level/levelGltf.js';
 import { tierTexture } from './level/levelPack.js';
+import { gameWordOf } from './level/levelGltf.js';
 
 const DIR = '/models/galaxy/bf2017/crew/';
 
@@ -64,7 +65,8 @@ export async function dressCrew(model, kind, { renderer = null, tier, cache = nu
     // (a mesh already in its game material is left: it keeps the GLB's name)
     if (o.isMesh && !Array.isArray(o.material) && !o.material?.userData?.game && json.materials[o.material?.name]?.family && json.materials[o.material.name].family !== 'glb') meshes.push(o);
   });
-  const texture = (p) => loadTexture(tierTexture(`${DIR}${p}`, tier, json.tex));
+  // (each map read as the game reads it where the recipes' tex row says: levelGltf.js's gameWordOf)
+  const texture = (p) => loadTexture(tierTexture(`${DIR}${p}`, tier, json.tex)).then((t) => gameWordOf(t, json.tex, p));
   let swapped = 0;
   await Promise.all(
     meshes.map(async (mesh) => {

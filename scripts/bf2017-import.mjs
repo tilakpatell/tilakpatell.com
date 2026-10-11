@@ -107,6 +107,7 @@ import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-p
 import { resolveImage } from './lib/bf2017-textures.mjs';
 import { meshBindings } from './lib/bf2017-variations.mjs';
 import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
+import { loadGameWord, slotTransfer, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
 import { writeCatalogueLine, writeCredit } from './lib/catalog-write.mjs';
 import { joinSkinned, shareSkins } from './lib/rig-parts.mjs';
 import { glbTextures } from '../src/lib/glbTextures.js';
@@ -414,6 +415,7 @@ const opaqueColour = () => async (doc) => {
 // mip levels. Returns how many it took.
 export async function nativeMaps(doc, spec) {
   let n = 0;
+  const word = loadGameWord(spec.root);
   for (const t of doc.getRoot().listTextures()) {
     const name = t.getName();
     if (!name.startsWith(NATIVE)) continue;
@@ -421,13 +423,22 @@ export async function nativeMaps(doc, spec) {
     if (!file.endsWith('.ktx2') || !existsSync(file)) continue;
     const bytes = new Uint8Array(await readFile(file));
     const { width, scheme } = ktx2Info(bytes);
-    const want = listTextureSlots(t).some((s) => /baseColor|emissive/.test(s)) ? spec.tex : spec.maps;
+    const slots = listTextureSlots(t);
+    const bySlot = slots.some((s) => slotTransfer(s) === 'srgb');
+    // (the game's own word on the map when textures.jsonl is fetched, else the slot's)
+    const said = word ? wantedTransfer(file, { word }) : null;
+    const colour = said ? said === 'srgb' : bySlot;
+    const want = bySlot ? spec.tex : spec.maps;
     const drop = Math.max(0, Math.round(Math.log2(width / want)));
     // (an ETC1S map, BasisLZ, keeps codebooks across its levels, so its top
     // can't be taken off: whole where it fits, else the decoded image goes
     // through textureCompress like any other)
     if (scheme === BASIS_LZ && drop) continue;
-    t.setImage(dropLevels(bytes, drop)).setMimeType('image/ktx2').setName(name.slice(NATIVE.length).split('/').pop());
+    // (and told its colour space by the slot it fills, whatever the encode
+    // wrote: a base colour or emissive map sRGB, the rest linear, so a loader
+    // that trusts the file reads it right; ktx2-colour.mjs)
+    const stamped = withTransfer(Buffer.from(dropLevels(bytes, drop)), colour ? 'srgb' : 'linear');
+    t.setImage(new Uint8Array(stamped.buffer, stamped.byteOffset, stamped.length)).setMimeType('image/ktx2').setName(name.slice(NATIVE.length).split('/').pop());
     n++;
   }
   if (n) doc.createExtension(KHRTextureBasisu).setRequired(true);
