@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOD, capIndex, lodAt, seenAt, stepsOf, texSizeFor } from './lod';
+import { LOD, TEX_MB, capIndex, fitMaps, lodAt, seenAt, stepsOf, texSizeFor } from './lod';
 
 const chain = [12000, 6000, 3000, 1500, 700];
 
@@ -66,5 +66,35 @@ describe('a map’s size', () => {
     expect(texSizeFor(7.9, 'high')).toBe(512);
     expect(texSizeFor(2, 'mid')).toBe(512);
     expect(texSizeFor(1.9, 'mid')).toBe(256);
+  });
+});
+
+describe('fitMaps (lane D2: ultra held to its bytes)', () => {
+  const map = (slug, data, size, floor, mb) => ({ slug, data, size, floor, bytes: Object.fromEntries(Object.entries(mb).map(([k, v]) => [k, v * 1e6])) });
+  const maps = [
+    map('rock_c', false, 2048, 1024, { 2048: 5, 1024: 1.3, 512: 0.35 }),
+    map('rock_n__normal', true, 2048, 512, { 2048: 5, 1024: 1.3, 512: 0.35 }),
+    map('crate_c', false, 1024, 512, { 1024: 1.3, 512: 0.35 }),
+  ];
+
+  it('leaves a tier under its bytes, or with none, as it is', () => {
+    expect(fitMaps(maps, Infinity)).toEqual({ rock_c: 2048, rock_n__normal: 2048, crate_c: 1024 });
+    expect(fitMaps(maps, 20e6)).toEqual({ rock_c: 2048, rock_n__normal: 2048, crate_c: 1024 });
+  });
+
+  it('steps the normal or ORM map down before the colour, the biggest first', () => {
+    expect(fitMaps(maps, 10e6)).toEqual({ rock_c: 2048, rock_n__normal: 1024, crate_c: 1024 });
+    expect(fitMaps(maps, 7e6)).toEqual({ rock_c: 2048, rock_n__normal: 512, crate_c: 1024 });
+    // (the normal at its floor: the colour next)
+    expect(fitMaps(maps, 6e6)).toEqual({ rock_c: 1024, rock_n__normal: 512, crate_c: 1024 });
+  });
+
+  it('never below the floor (high’s size), even when it cannot fit', () => {
+    expect(fitMaps(maps, 1)).toEqual({ rock_c: 1024, rock_n__normal: 512, crate_c: 512 });
+  });
+
+  it('says where its bytes come from', () => {
+    expect(TEX_MB.ultra).toBe(256);
+    expect(TEX_MB._source).toMatch(/GPU-memory contract/);
   });
 });

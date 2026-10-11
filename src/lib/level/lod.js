@@ -62,3 +62,39 @@ export function texSizeFor(r, tier, data = false) {
   if (tier === 'low') return Math.max(128, high / 2);
   return high;
 }
+
+// A tier's maps held to its bytes (lane D2): a pack's maps are bound after
+// the GLB is parsed, so fitTextures never sees them, and ultra's step up
+// took Endor's maps to 685 MB. TEX_MB is each tier's share of the GPU-memory
+// contract (null: unfitted, as main's sizes always held); over it, the
+// biggest map steps down a size, a normal or ORM map before a colour one
+// (shading detail reads at half the colour's size), never below `floor` (the
+// size high takes), until the tier fits.
+//   fitMaps(maps, budget) → { [slug]: size }
+//   maps: [{ slug, data, size, floor, bytes: { [size]: n } }]
+export const TEX_MB = Object.freeze({
+  low: null,
+  mid: null,
+  high: null,
+  ultra: 256,
+  _source: "the GPU-memory contract (256 MB desktop): lod.js's own note, measured on Hoth for lane L; ultra alone is fitted, the others keep main's sizes (Endor high 117 MB)",
+});
+
+export function fitMaps(maps, budget) {
+  const size = Object.fromEntries(maps.map((m) => [m.slug, m.size]));
+  if (!Number.isFinite(budget)) return size;
+  const bytesOf = (m) => m.bytes[size[m.slug]] ?? 0;
+  let total = maps.reduce((a, m) => a + bytesOf(m), 0);
+  while (total > budget) {
+    let pick = null;
+    for (const m of maps) {
+      if (size[m.slug] / 2 < m.floor || m.bytes[size[m.slug] / 2] == null) continue;
+      if (!pick || (m.data && !pick.data) || (m.data === pick.data && (bytesOf(m) > bytesOf(pick) || (bytesOf(m) === bytesOf(pick) && m.slug < pick.slug)))) pick = m;
+    }
+    if (!pick) break;
+    total -= bytesOf(pick);
+    size[pick.slug] /= 2;
+    total += bytesOf(pick);
+  }
+  return size;
+}

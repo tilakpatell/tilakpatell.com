@@ -57,7 +57,7 @@ import { writeCredit } from './lib/catalog-write.mjs';
 import { isSequel } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs';
 import { buildPack, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
-import { LOD, capIndex, texSizeFor } from '../src/lib/level/lod.js';
+import { LOD, TEX_MB, capIndex, fitMaps, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { encodePng16 } from './lib/png16.mjs';
 import { writeParts } from './bf2017-level-parts.mjs';
@@ -212,8 +212,11 @@ async function writeTextures(env, uris, radiusOf, { out, tiers, dry }) {
     taken.add(slug);
     slugs.set(uri, slug);
   }
+  // (first each map's size per tier, and the bytes of every size it might
+  // take; then a fitted tier, ultra, held to its bytes, lod.js's fitMaps;
+  // then the files, each size once)
+  const found = new Map(); // uri → { file, width, levels, lengths: { size: bytes } }
   await pool(uris, 8, async (uri) => {
-    const slug = slugs.get(uri);
     const r = await getObject(env, CACHE, uri);
     if (!HAVE.has(r.state)) {
       missing.push(uri);
@@ -221,23 +224,46 @@ async function writeTextures(env, uris, radiusOf, { out, tiers, dry }) {
     }
     const buf = await readFile(r.file);
     const info = ktx2Info(buf);
+    const lengths = {};
+    for (let n = info.width; n >= 16 && Object.keys(lengths).length < info.levels; n /= 2) lengths[n] = dropMips(buf, Math.min(mipsToFit(info.width, n), info.levels - 1)).length;
+    found.set(uri, { file: r.file, width: info.width, levels: info.levels, lengths });
+    const slug = slugs.get(uri);
     sizes[slug] = {};
-    const written = new Map();
+    for (const tier of tiers) sizes[slug][tier] = Math.min(texSizeFor(radiusOf.get(uri) ?? 1, tier, /__(normal|orm)/.test(uri)), info.width);
+  });
+  const fitted = {};
+  for (const tier of tiers) {
+    if (!TEX_MB[tier]) continue;
+    const maps = [...found].map(([uri, f]) => {
+      const slug = slugs.get(uri);
+      return { slug, data: /__(normal|orm)/.test(uri), size: sizes[slug][tier], floor: Math.min(sizes[slug].high ?? 128, sizes[slug][tier]), bytes: f.lengths };
+    });
+    const before = maps.reduce((a, m) => a + (m.bytes[m.size] ?? 0), 0);
+    const fit = fitMaps(maps, TEX_MB[tier] * 1e6);
+    let stepped = 0;
+    for (const m of maps) {
+      if (fit[m.slug] !== m.size) stepped++;
+      sizes[m.slug][tier] = fit[m.slug];
+    }
+    fitted[tier] = { before, budget: TEX_MB[tier] * 1e6, stepped };
+  }
+  await pool([...found], 8, async ([uri, f]) => {
+    const slug = slugs.get(uri);
+    const buf = await readFile(f.file);
+    const written = new Set();
     for (const tier of tiers) {
-      const size = Math.min(texSizeFor(radiusOf.get(uri) ?? 1, tier, /__(normal|orm)/.test(uri)), info.width);
-      sizes[slug][tier] = size;
+      const size = sizes[slug][tier];
       if (!written.has(size)) {
-        const k = dropMips(buf, Math.min(mipsToFit(info.width, size), info.levels - 1));
-        written.set(size, k.length);
+        written.add(size);
         if (!dry) {
           await mkdir(join(out, 'tex'), { recursive: true });
-          await writeFile(join(out, 'tex', `${slug}.${size}.ktx2`), k);
+          await writeFile(join(out, 'tex', `${slug}.${size}.ktx2`), dropMips(buf, Math.min(mipsToFit(f.width, size), f.levels - 1)));
         }
       }
-      bytes[tier] += written.get(size);
+      bytes[tier] += f.lengths[size] ?? 0;
     }
   });
-  return { slugs, sizes, bytes, missing };
+  return { slugs, sizes, bytes, missing, fitted };
 }
 
 async function main(args) {
@@ -516,6 +542,7 @@ async function main(args) {
     `- ${meshes.length} meshes (${absent.length} left out), ${glbs.length} LOD files, ${mb(glbBytes)}`,
     `- the far list ${mb(farBytes)}; terrain ${terrain ? `near ${mb(terrain.bytes.near)}, far ${mb(terrain.bytes.far)}` : 'none'}; the spot's ground ${groundY.toFixed(2)} m in the game`,
     `- textures missing from the bucket: ${tex.missing.length}`,
+    ...Object.entries(tex.fitted ?? {}).map(([t, f]) => `- ${t}'s maps held to ${mb(f.budget * 1.048576)} (lod.js's TEX_MB): ${mb(f.before * 1.048576)} as the table gives them, ${f.stepped} stepped down a size or more toward high's, normal and ORM first`),
     '',
     ...rows,
     '',
