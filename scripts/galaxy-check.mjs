@@ -132,215 +132,227 @@ async function profileOf(page, seconds, file, bf) {
 const results = [];
 for (const id of list.split(',')) {
   const ctx = await browser.newContext({ viewport });
-  await ctx.addInitScript(({ ship: s, oath }) => {
-    window.localStorage.setItem('tp-intro', '1');
-    window.localStorage.setItem('tp-start', '"universe"');
-    window.localStorage.setItem('tp-universe-ship', JSON.stringify(s));
-    window.localStorage.setItem('tp-galaxy-panel', JSON.stringify('tucked'));
-    window.sessionStorage.setItem('tp-galaxy-intro', '1');
-    window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking: a software GL is slow, and that's the point)
-    if (oath) window.localStorage.setItem('tp-gcw-side', oath);
-  }, { ship, oath });
-  if (!process.env.LIVE) {
-    await ctx.addInitScript(() => {
-      let a = 0x2f6b9c1d;
-      Math.random = () => {
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-      const held = Date.UTC(2026, 9, 5, 12);
-      Date.now = () => held;
-    });
-  }
-  const page = await ctx.newPage();
-  // what its models weigh: every .glb it fetched (a fresh context: nothing cached)
-  let glbBytes = 0;
-  // (and whose scans it wears: the site's photo scans, or the game's roles.
-  // A Star Wars world is on the game's (sites/index.js's default), so a cc0
-  // fetch on a surface is a world that slipped back; SCANS=game fails it)
-  const scans = { cc0: 0, game: 0, cc0Paths: [] };
-  page.on('requestfinished', async (req) => {
-    // (the maps themselves: the dev server also serves the set's index.json as a module)
-    if (/\/cc0\/galaxy\/.*\.(webp|ktx2|png|jpg|avif)(\?|$)/.test(req.url())) {
-      scans.cc0++;
-      // (which ones, so a world that slipped back says where)
-      if (scans.cc0Paths.length < 8) scans.cc0Paths.push(new URL(req.url()).pathname);
-    }
-    else if (/\/textures\/galaxy\/bf2017\/.*\.(webp|ktx2|png|jpg|avif|hdr)(\?|$)/.test(req.url())) scans.game++;
-    if (!/\.glb(\?|$)/.test(req.url())) return;
-    const sizes = await req.sizes().catch(() => null);
-    glbBytes += sizes?.responseBodySize ?? 0;
-  });
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
-  // (the console's errors, less what a sandbox or a software renderer always says: lib/noise.mjs)
-  page.on('console', (m) => m.type() === 'error' && !noisy(m.text()) && errors.push(m.text()));
-  const t0 = Date.now();
-  const bf = mode === 'battlefront';
-  // (`world@district`: a district of a world, its own pack, held to the row alone)
-  const [world, district] = id.split('@');
-  const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
-  await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
-  const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
+  // (anything else a world throws is its failure alone, too)
   try {
-    await page.waitForFunction(ready, null, { timeout: Number(process.env.PHASE_WAIT ?? 180000) });
-  } catch {
-    results.push({ id, error: 'timed out waiting for the scene', errors });
-    await ctx.close();
-    continue;
-  }
-  const loaded = (Date.now() - t0) / 1000;
-  // (on the surface, the floor's light baked first: the bake's passes are a
-  // one-off, not a frame anyone plays; on the node renderer the sun casts
-  // through its cascades and there is no floor to bake. A world with no ground, cloud-borne,
-  // has none to wait for: it runs out the clock)
-  if (mode === 'surface') await page.waitForFunction(() => Boolean(window.__surfaceScene.api?.ground?.stats?.baked || window.__surfaceScene.api?.cascaded), null, { timeout: Number(process.env.BAKE_WAIT ?? 150000), polling: 1000 }).catch(() => {});
-  await page.waitForTimeout(settle);
-  // (the world up before it's measured: a world is prepared out of sight,
-  // every picture and shader sent a slice a frame behind its loading screen,
-  // and only then shown, the runtime's status 'on'; in software GL that can
-  // outlast the settle wait. Measured before, it drew nothing of itself, and
-  // the gate fails it)
-  await page.waitForFunction(() => !window.__RUNTIME__ || window.__RUNTIME__.status === 'on', null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the world never came up (runtime status not on)'));
-  // (in space, the ship put in one place, the same for every run: off the
-  // planet on its sun side, facing it, stopped. The seeded randomness alone
-  // can't hold it there: three.js draws on Math.random for every object's
-  // id, so a change that makes more objects moves the ship.)
-  if (bf) await page.evaluate(() => window.__battlefront.do('deploy', { classId: 'd-orig-assault' }));
-  if (mode === 'space' && !process.env.LIVE) {
-    await page.waitForFunction(() => !window.__galaxy().jump, null, { timeout: 120000 }).catch(() => {});
-    await page.evaluate(() => {
-      const { state } = window.__galaxyDebug;
-      const r = state.world?.body?.radius ?? 30;
-      const sun = state.sys.suns[0].dir;
-      const l = Math.hypot(sun[0], sun[2]) || 1;
-      const [sx, sz] = [sun[0] / l, sun[2] / l];
-      const d = r * 3.2 + 26;
-      const pose = { x: sx * d, y: d * 0.12, z: sz * d, heading: Math.atan2(sx, sz), pitch: -Math.atan(0.12), bank: 0 };
-      // (pin puts the camera straight behind it too: put there by hand, the camera would still be easing round to it, to a different view for every frame the software GL happened to draw)
-      if (window.__galaxyDebug.pin) window.__galaxyDebug.pin(pose);
-      else {
-        state.auto = null;
-        state.ship = { ...state.ship, ...pose, speed: 0, rate: 0, tipRate: 0, rollRate: 0 };
+    await ctx.addInitScript(({ ship: s, oath }) => {
+      window.localStorage.setItem('tp-intro', '1');
+      window.localStorage.setItem('tp-start', '"universe"');
+      window.localStorage.setItem('tp-universe-ship', JSON.stringify(s));
+      window.localStorage.setItem('tp-galaxy-panel', JSON.stringify('tucked'));
+      window.sessionStorage.setItem('tp-galaxy-intro', '1');
+      window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking: a software GL is slow, and that's the point)
+      if (oath) window.localStorage.setItem('tp-gcw-side', oath);
+    }, { ship, oath });
+    if (!process.env.LIVE) {
+      await ctx.addInitScript(() => {
+        let a = 0x2f6b9c1d;
+        Math.random = () => {
+          a = (a + 0x6d2b79f5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const held = Date.UTC(2026, 9, 5, 12);
+        Date.now = () => held;
+      });
+    }
+    const page = await ctx.newPage();
+    // what its models weigh: every .glb it fetched (a fresh context: nothing cached)
+    let glbBytes = 0;
+    // (and whose scans it wears: the site's photo scans, or the game's roles.
+    // A Star Wars world is on the game's (sites/index.js's default), so a cc0
+    // fetch on a surface is a world that slipped back; SCANS=game fails it)
+    const scans = { cc0: 0, game: 0, cc0Paths: [] };
+    page.on('requestfinished', async (req) => {
+      // (the maps themselves: the dev server also serves the set's index.json as a module)
+      if (/\/cc0\/galaxy\/.*\.(webp|ktx2|png|jpg|avif)(\?|$)/.test(req.url())) {
+        scans.cc0++;
+        // (which ones, so a world that slipped back says where)
+        if (scans.cc0Paths.length < 8) scans.cc0Paths.push(new URL(req.url()).pathname);
       }
+      else if (/\/textures\/galaxy\/bf2017\/.*\.(webp|ktx2|png|jpg|avif|hdr)(\?|$)/.test(req.url())) scans.game++;
+      if (!/\.glb(\?|$)/.test(req.url())) return;
+      const sizes = await req.sizes().catch(() => null);
+      glbBytes += sizes?.responseBodySize ?? 0;
     });
-    await page.waitForTimeout(2500);
-  }
-  // (the whole world in the count: the frame guard, lib/three/frameGuard,
-  // readies about a shader a frame, and in software GL a frame takes seconds,
-  // so a level pack's hundreds of materials were still held back when the
-  // frame was counted and its draws left out. Held back no longer, and three
-  // frames drawn, compiling all of it, before the frames that are counted)
-  await page.evaluate(
-    () =>
-      new Promise((done) => {
-        window.__tpGuardOff?.();
-        let n = 0;
-        const tick = () => {
-          window.__RUNTIME__?.invalidate();
-          if (++n < 3) requestAnimationFrame(tick);
-          else done();
-        };
-        requestAnimationFrame(tick);
-      }),
-  );
-  // one whole frame's counts (every pass), and the frame times over 4 s
-  const stats = await page.evaluate(
-    (surface) =>
-      new Promise((done) => {
-        const renderer = surface === 'battlefront' ? window.__RUNTIME__.gfx.renderer : surface ? window.__surfaceScene.renderer : window.__galaxyDebug.renderer;
-        const info = renderer.info;
-        const wasAuto = info.autoReset;
-        info.autoReset = false;
-        const times = [];
-        let frame = null;
-        let last = performance.now();
-        const t0 = last;
-        window.__RUNTIME__?.invalidate();
-        // (a frame asked for every tick, and three ticks at least, whatever a
-        // software GL's frame takes: the runtime draws only when something
-        // changes, and with the clock held a still world isn't drawn again)
-        const tick = (now) => {
-          window.__RUNTIME__?.invalidate();
-          times.push(now - last);
-          last = now;
-          frame = { calls: info.render.calls, triangles: info.render.triangles, points: info.render.points, lines: info.render.lines };
-          info.reset();
-          if (now - t0 < 4000 || times.length < 3) requestAnimationFrame(tick);
-          else {
-            info.autoReset = wasAuto;
-            times.sort((a, b) => a - b);
-            const pick = (q) => +times[Math.min(times.length - 1, Math.floor(q * times.length))].toFixed(1);
-            done({
-              ...frame,
-              geometries: info.memory.geometries,
-              textures: info.memory.textures,
-              programs: info.programs?.length ?? null,
-              frames: times.length,
-              p50: pick(0.5),
-              p95: pick(0.95),
-              ratio: renderer.getPixelRatio(),
-              backend: renderer.isWebGPURenderer ? (renderer.backend?.isWebGPUBackend ? 'webgpu' : 'nodes-webgl') : 'webgl',
-              // (the ground war's update, smoothed: ground/groundScene.js's ms)
-              ground: surface && window.__surfaceScene?.groundWar ? +window.__surfaceScene.groundWar.ms.toFixed(2) : null,
-              // (a level world's collision: surface/level/levelPhysics.js's stats, when it has an engine)
-              level: surface && typeof window.__surfaceScene?.level === 'function' ? window.__surfaceScene.level() : null,
-              physics: surface && typeof window.__surfaceScene?.physics === 'function' ? ((p) => (p ? { ...p, dropped: p.dropped?.length ?? 0 } : null))(window.__surfaceScene.physics()) : null,
-            });
-          }
-        };
-        requestAnimationFrame(tick);
-      }),
-    bf ? 'battlefront' : mode === 'surface',
-  );
-  // (DIAG=1: what each of the scene's top groups costs, by drawing a frame
-  // with it hidden: the calls and triangles it takes, largest first)
-  if (process.env.DIAG && mode === 'surface') {
-    const parts = await page.evaluate(async () => {
-      const { scene, renderer } = window.__surfaceScene;
-      const info = renderer.info;
-      const frame = () =>
-        new Promise((r) => {
-          window.__RUNTIME__?.invalidate();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    // (the console's errors, less what a sandbox or a software renderer always says: lib/noise.mjs)
+    page.on('console', (m) => m.type() === 'error' && !noisy(m.text()) && errors.push(m.text()));
+    const t0 = Date.now();
+    const bf = mode === 'battlefront';
+    // (`world@district`: a district of a world, its own pack, held to the row alone)
+    const [world, district] = id.split('@');
+    const path = bf ? `/battlefront/${id}/galacticAssault` : mode === 'surface' ? `/galaxy/${world}/surface${district ? `?district=${district}` : ''}` : `/galaxy/${world}`;
+    await page.goto(`${base}/?quality=${quality}&calibrate=off${gpu ? `&gpu=${gpu}` : ''}#${path}`, { waitUntil: 'domcontentloaded' });
+    const ready = bf ? () => Boolean(window.__battlefront?.view?.()?.level?.loaded) : mode === 'surface' ? () => Boolean(window.__surfaceScene?.renderer) : () => typeof window.__galaxy === 'function' && Boolean(window.__galaxy().system);
+    try {
+      await page.waitForFunction(ready, null, { timeout: Number(process.env.PHASE_WAIT ?? 180000) });
+    } catch {
+      results.push({ id, error: 'timed out waiting for the scene', errors });
+      await ctx.close();
+      continue;
+    }
+    const loaded = (Date.now() - t0) / 1000;
+    // (on the surface, the floor's light baked first: the bake's passes are a
+    // one-off, not a frame anyone plays; on the node renderer the sun casts
+    // through its cascades and there is no floor to bake. A world with no ground, cloud-borne,
+    // has none to wait for: it runs out the clock)
+    if (mode === 'surface') await page.waitForFunction(() => Boolean(window.__surfaceScene.api?.ground?.stats?.baked || window.__surfaceScene.api?.cascaded), null, { timeout: Number(process.env.BAKE_WAIT ?? 150000), polling: 1000 }).catch(() => {});
+    await page.waitForTimeout(settle);
+    // (the world up before it's measured: a world is prepared out of sight,
+    // every picture and shader sent a slice a frame behind its loading screen,
+    // and only then shown, the runtime's status 'on'; in software GL that can
+    // outlast the settle wait. Measured before, it drew nothing of itself, and
+    // the gate fails it)
+    await page.waitForFunction(() => !window.__RUNTIME__ || window.__RUNTIME__.status === 'on', null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the world never came up (runtime status not on)'));
+    // (in space, the ship put in one place, the same for every run: off the
+    // planet on its sun side, facing it, stopped. The seeded randomness alone
+    // can't hold it there: three.js draws on Math.random for every object's
+    // id, so a change that makes more objects moves the ship.)
+    if (bf) await page.evaluate(() => window.__battlefront.do('deploy', { classId: 'd-orig-assault' }));
+    if (mode === 'space' && !process.env.LIVE) {
+      await page.waitForFunction(() => !window.__galaxy().jump, null, { timeout: 120000 }).catch(() => {});
+      await page.evaluate(() => {
+        const { state } = window.__galaxyDebug;
+        const r = state.world?.body?.radius ?? 30;
+        const sun = state.sys.suns[0].dir;
+        const l = Math.hypot(sun[0], sun[2]) || 1;
+        const [sx, sz] = [sun[0] / l, sun[2] / l];
+        const d = r * 3.2 + 26;
+        const pose = { x: sx * d, y: d * 0.12, z: sz * d, heading: Math.atan2(sx, sz), pitch: -Math.atan(0.12), bank: 0 };
+        // (pin puts the camera straight behind it too: put there by hand, the camera would still be easing round to it, to a different view for every frame the software GL happened to draw)
+        if (window.__galaxyDebug.pin) window.__galaxyDebug.pin(pose);
+        else {
+          state.auto = null;
+          state.ship = { ...state.ship, ...pose, speed: 0, rate: 0, tipRate: 0, rollRate: 0 };
+        }
+      });
+      await page.waitForTimeout(2500);
+    }
+    // (the whole world in the count: the frame guard, lib/three/frameGuard,
+    // readies about a shader a frame, and in software GL a frame takes seconds,
+    // so a level pack's hundreds of materials were still held back when the
+    // frame was counted and its draws left out. Held back no longer, and three
+    // frames drawn, compiling all of it, before the frames that are counted)
+    await page.evaluate(
+      () =>
+        new Promise((done) => {
+          window.__tpGuardOff?.();
+          let n = 0;
+          const tick = () => {
+            window.__RUNTIME__?.invalidate();
+            if (++n < 3) requestAnimationFrame(tick);
+            else done();
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
+    // one whole frame's counts (every pass), and the frame times over 4 s
+    const stats = await page.evaluate(
+      (surface) =>
+        new Promise((done) => {
+          const renderer = surface === 'battlefront' ? window.__RUNTIME__.gfx.renderer : surface ? window.__surfaceScene.renderer : window.__galaxyDebug.renderer;
+          const info = renderer.info;
+          const wasAuto = info.autoReset;
           info.autoReset = false;
-          info.reset();
-          requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.calls, tris: info.render.triangles })));
-        });
-      const all = await frame();
-      const out = [];
-      for (const [i, c] of scene.children.entries()) {
-        if (!c.visible) continue;
-        c.visible = false;
-        const f = await frame();
-        c.visible = true;
-        out.push({ name: `${c.name || c.type}#${i}`, calls: all.calls - f.calls, tris: all.tris - f.tris });
-      }
-      info.autoReset = true;
-      return { all, out: out.filter((o) => o.calls > 0).sort((a, b) => b.calls - a.calls) };
-    });
-    console.log(`${''.padEnd(10)} diag all ${parts.all.calls} calls: ${parts.out.map((o) => `${o.name} ${o.calls} (${Math.round(o.tris / 1000)}k)`).join(', ')}`);
+          const times = [];
+          let frame = null;
+          let last = performance.now();
+          const t0 = last;
+          window.__RUNTIME__?.invalidate();
+          // (a frame asked for every tick, and three ticks at least, whatever a
+          // software GL's frame takes: the runtime draws only when something
+          // changes, and with the clock held a still world isn't drawn again)
+          const tick = (now) => {
+            window.__RUNTIME__?.invalidate();
+            times.push(now - last);
+            last = now;
+            frame = { calls: info.render.calls, triangles: info.render.triangles, points: info.render.points, lines: info.render.lines };
+            info.reset();
+            if (now - t0 < 4000 || times.length < 3) requestAnimationFrame(tick);
+            else {
+              info.autoReset = wasAuto;
+              times.sort((a, b) => a - b);
+              const pick = (q) => +times[Math.min(times.length - 1, Math.floor(q * times.length))].toFixed(1);
+              done({
+                ...frame,
+                geometries: info.memory.geometries,
+                textures: info.memory.textures,
+                programs: info.programs?.length ?? null,
+                frames: times.length,
+                p50: pick(0.5),
+                p95: pick(0.95),
+                ratio: renderer.getPixelRatio(),
+                backend: renderer.isWebGPURenderer ? (renderer.backend?.isWebGPUBackend ? 'webgpu' : 'nodes-webgl') : 'webgl',
+                // (the ground war's update, smoothed: ground/groundScene.js's ms)
+                ground: surface && window.__surfaceScene?.groundWar ? +window.__surfaceScene.groundWar.ms.toFixed(2) : null,
+                // (a level world's collision: surface/level/levelPhysics.js's stats, when it has an engine)
+                level: surface && typeof window.__surfaceScene?.level === 'function' ? window.__surfaceScene.level() : null,
+                physics: surface && typeof window.__surfaceScene?.physics === 'function' ? ((p) => (p ? { ...p, dropped: p.dropped?.length ?? 0 } : null))(window.__surfaceScene.physics()) : null,
+              });
+            }
+          };
+          requestAnimationFrame(tick);
+        }),
+      bf ? 'battlefront' : mode === 'surface',
+    );
+    // (DIAG=1: what each of the scene's top groups costs, by drawing a frame
+    // with it hidden: the calls and triangles it takes, largest first)
+    if (process.env.DIAG && mode === 'surface') {
+      const parts = await page.evaluate(async () => {
+        const { scene, renderer } = window.__surfaceScene;
+        const info = renderer.info;
+        const frame = () =>
+          new Promise((r) => {
+            window.__RUNTIME__?.invalidate();
+            info.autoReset = false;
+            info.reset();
+            requestAnimationFrame(() => requestAnimationFrame(() => r({ calls: info.render.calls, tris: info.render.triangles })));
+          });
+        const all = await frame();
+        const out = [];
+        for (const [i, c] of scene.children.entries()) {
+          if (!c.visible) continue;
+          c.visible = false;
+          const f = await frame();
+          c.visible = true;
+          out.push({ name: `${c.name || c.type}#${i}`, calls: all.calls - f.calls, tris: all.tris - f.tris });
+        }
+        info.autoReset = true;
+        return { all, out: out.filter((o) => o.calls > 0).sort((a, b) => b.calls - a.calls) };
+      });
+      console.log(`${''.padEnd(10)} diag all ${parts.all.calls} calls: ${parts.out.map((o) => `${o.name} ${o.calls} (${Math.round(o.tris / 1000)}k)`).join(', ')}`);
+    }
+    const name = `${mode}-${id}-${quality}${gpu ? `-${gpu}` : ''}`;
+    // (a shot that never comes, a frame that never finishes, is this world's
+    // failure on its own line, not the end of the run: the other worlds go on)
+    const shotAt = Date.now();
+    await page.screenshot({ path: `${out}/${name}.png`, timeout: Number(process.env.SHOT_WAIT ?? 120000) }).then(
+      () => console.log(`${id.padEnd(10)} shot in ${((Date.now() - shotAt) / 1000).toFixed(1)} s`),
+      (e) => errors.push(`the screenshot did not come in ${((Date.now() - shotAt) / 1000).toFixed(0)} s: ${String(e?.message ?? e).split('\n')[0]}`),
+    );
+    const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
+    results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
+    console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
+    if (stats.level) {
+      const l = stats.level;
+      console.log(`${''.padEnd(10)} level calls ${l.calls}  tris ${l.tris}  instances ${l.instances}  lights ${l.lights ?? 0}  probe ${l.probe ?? '–'}${l.skipped ? `  skipped ${l.skipped} files` : ''}`);
+    }
+    if (mode === 'surface' && process.env.SCANS === 'game' && scans.cc0) {
+      console.log(`scans  ${id.padEnd(10)} FAIL: ${scans.cc0} of the site's own scans fetched; a Star Wars world wears the game's: ${scans.cc0Paths.join(' ')}`);
+      process.exitCode = 1;
+    }
+    if (stats.physics) {
+      const p = stats.physics;
+      if (p.site) console.log(`${''.padEnd(10)} physics (the site's, sitePhysics.js) cells ${p.cells}  heightfields ${p.heightfields}  solids ${p.solids}  floors ${p.floors}`);
+      else console.log(`${''.padEnd(10)} physics cells ${p.cells}  bodies ${p.bodies}  colliders ${p.colliders}  shapes ${p.uniqueShapes}  trimesh tris ${p.triangles}  heightfields ${p.heightfields}  dropped ${p.dropped}  step ${(+p.stepMs || 0).toFixed(2)} ms`);
+    }
+  } catch (e) {
+    console.log(`${id.padEnd(10)} FAIL: ${String(e?.message ?? e).split('\n')[0]}`);
+    results.push({ id, error: String(e?.message ?? e).split('\n')[0], errors: [] });
   }
-  const name = `${mode}-${id}-${quality}${gpu ? `-${gpu}` : ''}`;
-  await page.screenshot({ path: `${out}/${name}.png`, timeout: Number(process.env.SHOT_WAIT ?? 120000) });
-  const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
-  results.push({ id, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
-  console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
-  if (stats.level) {
-    const l = stats.level;
-    console.log(`${''.padEnd(10)} level calls ${l.calls}  tris ${l.tris}  instances ${l.instances}  lights ${l.lights ?? 0}  probe ${l.probe ?? '–'}${l.skipped ? `  skipped ${l.skipped} files` : ''}`);
-  }
-  if (mode === 'surface' && process.env.SCANS === 'game' && scans.cc0) {
-    console.log(`scans  ${id.padEnd(10)} FAIL: ${scans.cc0} of the site's own scans fetched; a Star Wars world wears the game's: ${scans.cc0Paths.join(' ')}`);
-    process.exitCode = 1;
-  }
-  if (stats.physics) {
-    const p = stats.physics;
-    if (p.site) console.log(`${''.padEnd(10)} physics (the site's, sitePhysics.js) cells ${p.cells}  heightfields ${p.heightfields}  solids ${p.solids}  floors ${p.floors}`);
-    else console.log(`${''.padEnd(10)} physics cells ${p.cells}  bodies ${p.bodies}  colliders ${p.colliders}  shapes ${p.uniqueShapes}  trimesh tris ${p.triangles}  heightfields ${p.heightfields}  dropped ${p.dropped}  step ${(+p.stepMs || 0).toFixed(2)} ms`);
-  }
-  await ctx.close();
+  await ctx.close().catch(() => {});
 }
 await browser.close();
 if (process.env.JSON) writeFileSync(`${out}/${mode}-${quality}.json`, JSON.stringify(results, null, 2));
