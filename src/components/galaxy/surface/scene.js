@@ -53,44 +53,30 @@ import { PLACES } from '../battleLines';
 import { systemById } from '../systems';
 import { readBuildWire, writeBuild } from '../../universe/shipyard/build';
 import * as THREE from 'three';
-import { PMREMGenerator } from 'three/webgpu';
-import { disposeTree, singlePass } from '../../../lib/three/renderer';
+import { disposeTree } from '../../../lib/three/renderer';
+import { pickLooks } from './looks';
 import { nextFrame as breathe } from '../../../lib/three/gpuWork';
-import { twinScene } from '../../../lib/three/hookNodes';
 import { STEPS } from '../../../lib/three/pace';
 import { settle as settleWithin } from '../../../lib/settle';
 import { dropTransmission } from '../../../lib/three/glass';
 import { device } from '../../../lib/device';
 import { detailLevel } from '../../../lib/detail';
-import { createPost } from './nodes/post';
-import { SHIP_MODELS, buildShip, LENGTH } from '../../universe/shipModelsNodes';
 import { cloneScene, loadGLTF } from '../../../lib/three/gltfCache';
 import { paintById } from '../../universe/paint';
 import { readLoadout, STOCK_LOADOUT } from '../../universe/outfit';
 import { flybySound, gadgetSound, gunSound, impactSound, popSound, portalSound, shipEngine } from '../../universe/sounds';
-import { PARTY, loadPartyFigure } from './nodes/figures';
 import { bodiesFor, firstBody } from './standIn';
 import { GUNS, createGunplay } from '../../universe/gunplay';
-import { createGameFx } from '../../../lib/three/fx/gameFxNodes';
 import { createGunFx } from '../../universe/gunfx';
 import { spring } from '../../../lib/three/ik';
 import { METRE } from '../../universe/foot';
-import { createMeshyCast } from '../../rickmorty/portal/meshyCastNodes';
-import { withWardrobe } from '../../rickmorty/wardrobe/wearNodes';
 import { buildGalaxyShip } from '../fleet';
 import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
 import { heightGrid, makeHeight } from './terrain';
 import { createMarks, groundMaterial, groundMesh } from './ground';
-import { createSky } from './nodes/sky';
-import { wearScanSet } from '../../../lib/three/scansNodes';
-import { createSkyFog } from './nodes/skyfog';
-import { createWater } from './nodes/water';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
-import { createWeather } from './nodes/weather';
-import { createKit } from './nodes/kit';
-import { createHouse } from '../../../lib/three/houseNodes';
 import { adoptLater, exposureOf, groundPieces, lookOf } from './look';
 import { surfaceTuning, siteCode } from './tune';
 import { debugOn, debugPanel } from '../../../lib/debugPanel';
@@ -101,13 +87,8 @@ import { downAt } from './respawn';
 import { createSquash } from './squash';
 import { createKnocks, loosePlaces } from './knocks';
 import { wireImpacts } from '../../../lib/three/impacts';
-import { createDust } from '../../../lib/three/dustNodes';
-import { createGrass } from '../../../lib/three/grassNodes';
 import { amountsFor } from './amounts';
-import { createWind } from '../../../lib/three/windNodes';
-import { createGroundMap } from '../../../lib/three/groundmapNodes';
 import { groundPainter, mapAreaOf } from './groundPaint';
-import { floorShadow } from '../../../lib/three/groundingNodes';
 import { PROPS as GALAXY_PROPS, SCATTER as GALAXY_SCATTER } from './props';
 import { createPlacer } from './placer';
 import { createLevel, levelGround } from './level';
@@ -149,7 +130,6 @@ import { createAssaultMission } from './missions/assaultScene';
 import { createHvvMission } from './missions/hvvScene';
 import { createBlastMission } from './missions/blastScene';
 import { RULES as ASSAULT } from './missions/assault';
-import { groundWorld } from '../../../lib/three/groundworkNodes';
 import { garrisonLife, garrisonProbe } from './garrison';
 import { createGround, landingFor } from './ground/index';
 import { standable } from './sites/validity';
@@ -219,8 +199,12 @@ const BACK = new THREE.Vector3(0, 0, -1); // (a figure's own back, falling over 
 const AHEAD = new THREE.Vector3(0, 0, 1);
 const WHEEL_PX = 90; // the pointer this far from where it was when the wheel opened is all the way out
 
-export async function create(canvas, ctx) {
+// (`set`: the renderer's looks, ./looks/nodes.js or ./looks/classic.js,
+// which module.js picks by the backend; the node set when none is given)
+export async function create(canvas, ctx, set) {
   const { reduced, rt } = ctx;
+  const L = pickLooks(set);
+  const { createPost, SHIP_MODELS, buildShip, LENGTH, PARTY, loadPartyFigure, createGameFx, createMeshyCast, withWardrobe, createSky, wearScanSet, createSkyFog, createWater, createWeather, createKit, createHouse, createDust, createGrass, createWind, createGroundMap, floorShadow, groundWorld, PMREMGenerator } = L;
   let props = ctx;
   let disposed = false;
   // every file this world asks for belongs to it (lib/assetLoad): leaving
@@ -282,14 +266,11 @@ export async function create(canvas, ctx) {
   post.exposure(exposureOf(site));
   // (fogged in the sky's colour and in the look before its shaders are
   // made, so they're made once)
-  // (on the node renderer: a classic material with a hook on it swapped for
-  // the twin that holds the hook, lib/three/hookNodes, then the programs
-  // made through the runtime's compileAsync)
+  // (the programs made the renderer's way: the looks' compile)
   const warm = (root) => {
     skyFog.scene(root);
     adoptLater(house, root);
-    twinScene(root);
-    return rt.gfx.compile ? Promise.resolve(rt.gfx.compile(singlePass(root), camera, scene)).catch(() => {}) : Promise.resolve();
+    return L.compile(root, { renderer, rt, camera, scene, post });
   };
 
   const sky = createSky(site, { clouds: amounts.clouds });
@@ -727,7 +708,7 @@ export async function create(canvas, ctx) {
       })
       .catch(() => {});
   } else if (shipKind === 'cruiser') {
-    import('../../rickmorty/cruiser3dNodes')
+    L.loadCruiser()
       .then((mod) => mod.buildCruiser({ ink: 0.36 / 2.7 }))
       .then((c) => {
         if (!c) return;
@@ -3687,15 +3668,9 @@ export async function create(canvas, ctx) {
         await within(lit.bake(), 20000);
         if (!on()) return;
       }
-      // (the node renderer's: every program made, compileAsync, then one
-      // small draw through the post, so its passes are made too)
-      twinScene(scene);
-      onProgress?.(0.35, 'shaders');
-      if (rt.gfx.compile) await within(rt.gfx.compile(scene, camera, scene), 600000);
-      if (!on()) return;
-      onProgress?.(0.8, 'first draw');
-      post.render(64, 64);
-      onProgress?.(1, 'first draw');
+      // (every program made and one draw through the post, the renderer's
+      // way: the looks' prepareGpu)
+      await L.prepareGpu({ renderer, rt, scene, camera, post, within, on, onProgress });
     } finally {
       clearInterval(telling);
       offSkip?.();

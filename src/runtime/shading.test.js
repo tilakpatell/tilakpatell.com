@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { closure, glslSites } from './shadingClosure';
+import { classicImportsOf, closure, glslSites } from './shadingClosure';
 
 // A module that promises 'nodes' (so it gets the node renderer, on WebGPU
 // or on WebGL 2) must keep it over everything it reaches, not its folder
@@ -70,4 +70,30 @@ describe('a nodes module keeps its promise', () => {
       expect(sitesIn(file, ROOT)).toEqual([]);
     });
   }
+});
+
+// Every classic branch a node closure leaves out (shadingClosure.js), by
+// file and path, each with why it is safe: taken only on the classic
+// renderer. A new one changes this list, so it is never added unseen.
+const CLASSIC = {
+  'components/galaxy/surface/module.js': ['./looks/classic'], // the low level's surface (runtime/backend.js: `classic: true`), on rt.gfx.backend 'webgl'
+  'lib/three/scatter/wind.js': ['../foliage.js'], // the GLSL sway, when the renderer is not a node one (`nodes` false)
+};
+
+describe('a classic branch is named', () => {
+  it('every one in src is on the list, and every one on the list is there', () => {
+    const found = {};
+    for (const p of walk(ROOT)) {
+      const specs = classicImportsOf(readFileSync(p, 'utf8'));
+      if (specs.length) found[relative(ROOT, p).split(sep).join('/')] = specs;
+    }
+    expect(found).toEqual(CLASSIC);
+  });
+
+  it('only a module that says it has a classic path takes one at its root', () => {
+    for (const file of modules()) {
+      if (!classicImportsOf(readFileSync(file, 'utf8')).length) continue;
+      expect(readFileSync(file, 'utf8')).toMatch(/classic:\s*true/);
+    }
+  });
 });

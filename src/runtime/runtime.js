@@ -247,7 +247,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   const ratioFor = (mod) => (quality.ratioUnder ? quality.ratioUnder(mod?.ratio, { unscaled: mod?.sharpness === 'own' }) : quality.ratio);
 
   const backendFor = async (module) => {
-    const want = pickBackend({ gpu, shading: module.shading, override, lost: lostWebGPU });
+    const want = pickBackend({ gpu, shading: module.shading, classic: Boolean(module.classic), tier: quality.detail, override, lost: lostWebGPU });
     if (gfx && kind === want && !gfx.lost) return gfx;
     // one of this kind on its way already: a mount meanwhile waits for that
     // one (React's second run of an effect mounts again at once, and a second
@@ -605,6 +605,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       // (the budget first: a world mounted next is built at the new level)
       quality.retune?.(level);
       if (!current || rt.loading) return 'idle';
+      // (a level that wants the other renderer, runtime/backend.js: the world
+      // is made again, on it)
+      const { module: mod } = current;
+      if (pickBackend({ gpu, shading: mod.shading, classic: Boolean(mod.classic), tier: quality.detail, override, lost: lostWebGPU }) !== kind) return 'reload';
       if (gfx) gfx.setRatio?.(ratioFor(current.module));
       const { world, module } = current;
       const tune = world.onQuality ? () => world.onQuality(level) : module.onQuality ? () => module.onQuality(level, world, rt) : null;

@@ -68,7 +68,7 @@ import { speak, stopSpeaking } from './shipVoice';
 import { ROOMS_SAY, SAY } from './say';
 import { lineSaid } from './voicelines';
 import { preloadVoiced, sayVoiced, stopVoiced } from '../../../lib/voiced';
-import { useLooks } from '../wardrobe/useLooks';
+import { pickLooks } from '../wardrobe/pickLooks';
 import './world.css';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
 import { createEmoteWheel, emotePacket, keepEmote, readEmote } from '../../../lib/emote';
@@ -455,7 +455,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const listRef = useRef(list);
   listRef.current = list;
   // the wardrobe: how Morty looks here (and Rick, wherever he turns up)
-  const [looks, setLook] = useLooks();
+  const [looks, setLook] = pickLooks();
   const looksRef = useRef(looks);
   looksRef.current = looks;
   const [wardrobe, setWardrobe] = useState(false);

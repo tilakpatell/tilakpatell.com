@@ -24,7 +24,7 @@ import Rain from '../components/universe/Rain';
 import Online from '../components/universe/online/Online';
 import Wardrobe from '../components/rickmorty/wardrobe/Wardrobe';
 const Shipyard = lazy(() => import('../components/universe/shipyard/Shipyard'));
-import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
+import { pickLooks } from '../components/rickmorty/wardrobe/pickLooks';
 import { CASTS, castOfCrew } from '../components/rickmorty/wardrobe/looks';
 import { useOnline } from '../components/universe/online/useOnline';
 import EarnNote from '../components/universe/EarnNote';
@@ -112,7 +112,7 @@ export default function Universe({ ask = false }) {
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
   // the wardrobe, from the shipyard: how the cruiser’s Rick and Morty look,
   // or the RV’s Walt and Jesse (whichever crew’s flying)
-  const [looks, setLook] = useLooks();
+  const [looks, setLook] = pickLooks();
   const dressing = castOfCrew(ship) ?? 'rickmorty';
   const [wardrobe, setWardrobe] = useState(false);
   const closeWardrobe = useCallback(() => setWardrobe(false), []);

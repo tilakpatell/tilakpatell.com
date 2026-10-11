@@ -47,7 +47,7 @@ import { sharpen } from '../../../../lib/three/textures';
 import { loadScene, playScene } from '../../../../lib/three/scenePlayer';
 import { victoryFor } from '../../../../lib/three/walrusSets/emotes';
 import { OUTROS } from '../../../../lib/three/walrusSets/scenes';
-import { columnMaterial, meterMaterial } from '../nodes/missions';
+import { looks } from '../looks';
 
 const EYE = 1.4; // metres: where a soldier's bolt leaves from
 const CHEST = 1.0; // metres: where one lands
@@ -253,12 +253,12 @@ export function createAssaultMission({ parent, world, blaster, mission, emit, sa
       const y = groundAt(world, p.at[0], p.at[1]);
       g.position.set(p.at[0], y + 0.05, p.at[1]);
       group.add(g);
-      const column = new THREE.Mesh(columnGeo, columnMaterial(colourOf(p.owner), p.fixed ? 0.45 : 0.8));
+      const column = new THREE.Mesh(columnGeo, looks().columnMaterial(colourOf(p.owner), p.fixed ? 0.45 : 0.8));
       column.renderOrder = 6;
       g.add(column);
       const ring = new THREE.Mesh(new THREE.RingGeometry(p.r - 0.5, p.r, 64).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(colourOf(p.owner)).multiplyScalar(2), toneMapped: false, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
       g.add(ring);
-      const meter = new THREE.Mesh(new THREE.RingGeometry(p.r - 1.6, p.r - 0.7, 64).rotateX(-Math.PI / 2), meterMaterial(colourOf(p.owner)));
+      const meter = new THREE.Mesh(new THREE.RingGeometry(p.r - 1.6, p.r - 0.7, 64).rotateX(-Math.PI / 2), looks().meterMaterial(colourOf(p.owner)));
       meter.visible = !p.fixed;
       g.add(meter);
       posts.push({ id: p.id, g, column, ring, meter, colour: new THREE.Color(colourOf(p.owner)) });

@@ -134,8 +134,7 @@ import { lineClear } from './walker';
 import { createTokens } from '../../../lib/ai/squad';
 import { createSearch } from '../../../lib/ai/search';
 import { candidates } from '../../../lib/ai/spatial';
-import { createPortalFx, meshyJoints } from '../../../lib/three/portalFxNodes';
-import { beamMaterial } from './nodes/activity';
+import { looks } from './looks';
 import { createGadgetFx } from '../../../lib/three/gadgetFx';
 import { fallTurn } from '../../../lib/three/locomotion';
 import { preload } from '../../../lib/three/clipLibrary';
@@ -166,7 +165,7 @@ const _yq = new THREE.Quaternion();
 // a beam of light standing on a spot, and a ring round it on the ground
 function beam(color) {
   const g = new THREE.Group();
-  const mat = beamMaterial(color);
+  const mat = looks().beamMaterial(color);
   const geo = new THREE.CylinderGeometry(1.1, 1.1, 60, 20, 1, true).translate(0, 30, 0);
   const m = new THREE.Mesh(geo, mat);
   m.renderOrder = 6;
@@ -294,7 +293,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
   parent.add(group);
   // Rick's guns' kills: through a portal, frozen and shattered, shrunk and
   // popped (onShow(how, event) for the sounds of them)
-  const pfx = createPortalFx({ parent: group });
+  const pfx = looks().createPortalFx({ parent: group });
   const gfx = createGadgetFx({ parent: group });
   const marker = beam(color);
   marker.visible = false;
@@ -755,7 +754,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
             if (t.mark) t.mark.visible = false;
             if (t.how === 'freeze') t.show = gfx.freeze({ root: t.holder, tall, up, push, on });
             else if (t.how === 'shrink') t.show = gfx.shrink({ root: t.holder, tall, up, on });
-            else t.show = pfx.swallow({ root: t.holder, tall, up, push, joints: meshyJoints(t.holder, 1, tall), on });
+            else t.show = pfx.swallow({ root: t.holder, tall, up, push, joints: looks().meshyJoints(t.holder, 1, tall), on });
             t.holder.userData.show = t.show; // (for the QA scripts: the show's handle)
             onShow?.(t.how, 'hit');
           }

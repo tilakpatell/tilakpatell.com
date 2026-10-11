@@ -79,8 +79,9 @@ export function createGameLit({
   url = assetUrl,
 } = {}) {
   if (!light?.weathers) return null;
-  // (prefiltered by the node renderer's PMREM: the classic one's passes are GLSL)
-  const holder = probes ?? createProbeEnv({ renderer, pmrem: renderer ? new PMREMGenerator(renderer) : undefined });
+  // (prefiltered by the node renderer's PMREM on the node renderer: the
+  // classic one's passes are GLSL; the classic renderer keeps its own)
+  const holder = probes ?? createProbeEnv({ renderer, pmrem: renderer?.isWebGPURenderer ? new PMREMGenerator(renderer) : undefined });
   const luts = new Map();
   let disposed = false;
   let inZone = false;

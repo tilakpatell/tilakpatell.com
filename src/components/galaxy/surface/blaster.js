@@ -25,7 +25,7 @@
 import * as THREE from 'three';
 import { scatter } from '../../../lib/combat/accuracy';
 import { BOLT_SPEED, createBolts, segCapsule } from '../../../lib/combat/bolt';
-import { createBoltMeshes } from '../../../lib/three/combat/boltsNodes';
+import { looks } from './looks';
 import { boltSolids } from './solids';
 
 const RANGE = 90;
@@ -43,7 +43,7 @@ export function capsuleOf(t) {
 
 export function createBlaster({ parent, world, pool = POOL, ballistic = null }) {
   const bolts = createBolts({ pool });
-  const draw = createBoltMeshes(parent, { pool });
+  const draw = looks().createBoltMeshes(parent, { pool });
   // (read each time: a level's engine comes after the blaster is made)
   const walkerSolids = boltSolids(world);
   const solids = (a, b, exclude) => (world.physicsRay ?? walkerSolids)(a, b, exclude);

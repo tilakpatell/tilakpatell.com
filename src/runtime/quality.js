@@ -82,6 +82,11 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
   };
   return {
     tier,
+    // the level picked (low, mid, high, ultra): the budget row's name, which
+    // runtime/backend.js reads to pick the renderer
+    get detail() {
+      return detail;
+    },
     get budget() {
       return budget;
     },
@@ -101,6 +106,7 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     },
     retune(level) {
       budget = BUDGETS[level] ?? BUDGETS.high;
+      detail = BUDGETS[level] ? level : 'high';
     },
     setSharpness(next) {
       k = Number.isFinite(next) ? Math.min(2, Math.max(0.5, next)) : 1;

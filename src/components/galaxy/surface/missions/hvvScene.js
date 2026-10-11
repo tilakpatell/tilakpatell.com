@@ -30,7 +30,7 @@ import { groundAt } from '../walker';
 import { SABER_COLORS, heroById } from '../../heroes';
 import { gameHealth } from '../abilityRules';
 import { groundFor } from './arenas';
-import { wallMaterial } from '../nodes/hvv';
+import { looks } from '../looks';
 import { RULES, canDeploy, chooseSide as pick, deploy as deployAt, endHvv, hitFighter, hvvView, newHvv, stepHvv, youDown as putDown } from './hvv';
 
 const EYE = 1.45; // metres: where a bolt leaves from
@@ -121,7 +121,7 @@ export function createHvvMission({ parent, world, blaster, mission, emit, say, s
   const yours = (n) => (n / (gameHealth(b?.fighters[b.you.id]?.hero ?? who()) ?? 700)) * 100;
 
   // ── the edge ──
-  const wall = new THREE.Mesh(wallGeometry(ground.points, (x, z) => groundAt(world, x, z)), wallMaterial());
+  const wall = new THREE.Mesh(wallGeometry(ground.points, (x, z) => groundAt(world, x, z)), looks().wallMaterial());
   wall.renderOrder = 5;
   group.add(wall);
 

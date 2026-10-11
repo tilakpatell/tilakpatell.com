@@ -14,7 +14,7 @@ import './wardrobe.css';
 // (the show’s, a Citadel Rick, Evil or Cop Morty; Mr. White or Heisenberg,
 // Jesse in the lab’s suit), a colour for each part of it that takes one,
 // from his own show’s, and gear for his head, his face and his hand. Every
-// change is kept at once (useLooks), and Reset puts him back as the show has
+// change is kept at once (pickLooks), and Reset puts him back as the show has
 // him. Modal: Escape, the close button or the backdrop puts it away; Tab
 // stays inside while it’s open, and focus goes back after (to `returnTo`, a
 // selector, when what opened it has gone).

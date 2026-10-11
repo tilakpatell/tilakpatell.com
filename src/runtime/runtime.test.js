@@ -535,6 +535,35 @@ describe('createRuntime', () => {
     expect(makeBackend.mock.calls[3][0]).toBe('webgl');
   });
 
+  it('a nodes module with a classic path is made on the renderer its quality level says, and again when the level changes it', async () => {
+    const quality = { ...fakeQuality(), detail: 'high', retune: vi.fn((l) => (quality.detail = l)) };
+    const { rt, makeBackend } = make({ gpu: false, quality });
+    const surface = { id: 's', shading: 'nodes', classic: true, create: () => fakeWorld({ onQuality: vi.fn() }) }; // (a world that retunes in place: only a change of renderer reloads)
+    await rt.mount(surface, {}, fakeHost());
+    expect(makeBackend.mock.calls.at(-1)[0]).toBe('nodes-webgl');
+    // the same renderer: nothing to make again
+    expect(rt.requality('ultra')).not.toBe('reload');
+    // low wants the classic renderer: the world is made again, on it
+    expect(rt.requality('low')).toBe('reload');
+    await rt.reload();
+    expect(makeBackend.mock.calls.at(-1)[0]).toBe('webgl');
+    // mid without WebGPU stays classic; high goes back to the node renderer
+    expect(rt.requality('mid')).not.toBe('reload');
+    expect(rt.requality('high')).toBe('reload');
+    await rt.reload();
+    expect(makeBackend.mock.calls.at(-1)[0]).toBe('nodes-webgl');
+  });
+
+  it('mid with WebGPU takes the node renderer; a nodes module without a classic path keeps it at low', async () => {
+    const quality = { ...fakeQuality(), detail: 'mid' };
+    const { rt, makeBackend } = make({ gpu: true, quality });
+    await rt.mount({ id: 's', shading: 'nodes', classic: true, create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls.at(-1)[0]).toBe('webgpu');
+    quality.detail = 'low';
+    await rt.mount({ id: 'b', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls.at(-1)[0]).toBe('webgpu');
+  });
+
   it('a create that throws fails the mount', async () => {
     const { rt } = make();
     await rt.mount({ id: 'a', create: () => { throw new Error('nope'); } }, {}, fakeHost());

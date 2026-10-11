@@ -10,7 +10,7 @@ const EVENT = 'tp:looks';
 // Rick and Morty (and the RV’s seats, the crews on foot and Albuquerque
 // their Walt and Jesse) the moment the wardrobe does.
 // → [looks ({ rick, morty, walt, jesse }), setLook(who, look)]
-export function useLooks() {
+export function pickLooks() {
   const [looks, setLooks] = useState(() => readLooks(local.get(LOOK_KEY)));
   const now = useRef(looks);
   now.current = looks;
