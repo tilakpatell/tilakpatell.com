@@ -20,9 +20,10 @@
 //
 // The picture lanes not yet on main when this was written (2026-10-10), and
 // where each lands here (the sixth design's picture lane, task 4):
-// - Q6 (the LUT after a linear tonemap, the five-Gaussian bloom, the HBAO
-//   numbers, the painted sky): its passes come through applyGameLight's
-//   `passes` into rt.gfx.post (module.js) with nothing to add; the record's
+// - Q6 (merged; the LUT after a linear tonemap, the five-Gaussian bloom, the
+//   painted sky, the cloud-shadow texture): applyGameLight draws them when
+//   module.js passes `picture: { lut, panorama, gradient, cloudShadow }`
+//   with their URLs (grade.js's pictureOf), not yet done; the record's
 //   grade must stay one application (the stack's lut pass, not a second).
 // - N (the scatter, merged): createWorldScatter below, the galaxy's
 //   levelScatter in the level's group (the pack's frame, which its mask is
