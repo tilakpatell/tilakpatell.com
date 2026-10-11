@@ -1,0 +1,270 @@
+{
+  "_from": "scripts/bf2017-picture.mjs endor: the weathers' VE records (src/data/bf2017/light/endor.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "endor",
+  "weathers": {
+    "sunny": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/SP/A1/M1END/DS02/Lighting/T_A1_M1END_Sky_Sunny_01_C",
+          "SkyGradientTexture": "Levels/Forest/Lighting/Textures/T_Sky_Forest_02_Fog_Sunny_C",
+          "PanoramicRotation": 0.327,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirrorOnce",
+          "CloudXZTranslation": {
+            "x": -230,
+            "y": -375
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/endor/sunny.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/endor/sunny.panorama.ktx2",
+        "name": "Levels/SP/A1/M1END/DS02/Lighting/T_A1_M1END_Sky_Sunny_01_C",
+        "horizon": [
+          0.545,
+          0.605,
+          0.6393
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/sp/a1/m1end/ds02/lighting/t_a1_m1end_sky_sunny_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/sp/a1/m1end/ds02/lighting/t_a1_m1end_sky_sunny_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/endor/sunny.gradient.ktx2",
+        "name": "Levels/Forest/Lighting/Textures/T_Sky_Forest_02_Fog_Sunny_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/endor/sunny.clouds.ktx2",
+        "name": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C"
+      }
+    },
+    "night": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Kashyyyk/Night_01/T_Kashyyyk_Night_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Endor/night_01/T_Endor_Night_01_Fog_D",
+          "PanoramicRotation": 0.298,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirrorOnce",
+          "CloudXZTranslation": {
+            "x": -230,
+            "y": -375
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/endor/night.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/endor/night.panorama.ktx2",
+        "name": "Levels/Lighting/Kashyyyk/Night_01/T_Kashyyyk_Night_01_C",
+        "horizon": [
+          0.0164,
+          0.0272,
+          0.0488
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/kashyyyk/night_01/t_kashyyyk_night_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/kashyyyk/night_01/t_kashyyyk_night_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/endor/night.gradient.ktx2",
+        "name": "Levels/Lighting/Endor/night_01/T_Endor_Night_01_Fog_D"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/endor/sunny.clouds.ktx2",
+        "name": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C"
+      }
+    },
+    "foggy": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_LinearApproxGamma"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "TestRanges/TestRange_Lighting/Textures/T_Walrus_HDR_Grade_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Endor/Foggy_01/T_Endor_Foggy_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Endor/Foggy_01/T_Endor_Foggy_01_Fog_C",
+          "PanoramicRotation": 0.364,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/Forest/Intro_01/Lighting/T_CloudShadows_Intro_02_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaWrap",
+          "CloudXZTranslation": {
+            "x": -1300,
+            "y": -900
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/endor/foggy.lut33.png",
+        "size": 33,
+        "name": "TestRanges/TestRange_Lighting/Textures/T_Walrus_HDR_Grade_02",
+        "_source": {
+          "size": "textures.jsonl: TestRanges/TestRange_Lighting/Textures/T_Walrus_HDR_Grade_02 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/endor/foggy.panorama.ktx2",
+        "name": "Levels/Lighting/Endor/Foggy_01/T_Endor_Foggy_01_C",
+        "horizon": [
+          0.0546,
+          0.0916,
+          0.1333
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/endor/foggy_01/t_endor_foggy_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/endor/foggy_01/t_endor_foggy_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/endor/foggy.gradient.ktx2",
+        "name": "Levels/Lighting/Endor/Foggy_01/T_Endor_Foggy_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/endor/foggy.clouds.ktx2",
+        "name": "Levels/Forest/Intro_01/Lighting/T_CloudShadows_Intro_02_C"
+      }
+    },
+    "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/SP/A1/M1END/DS02/Lighting/T_A1_M1END_Sky_Sunny_01_C",
+          "SkyGradientTexture": "Levels/Forest/Lighting/Textures/T_Sky_Forest_02_Fog_Sunny_C",
+          "PanoramicRotation": 0.327,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirrorOnce",
+          "CloudXZTranslation": {
+            "x": -230,
+            "y": -375
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/endor/interior.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Endor/Sunny_01/T_CC_Endor_Sunny_01 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/endor/sunny.panorama.ktx2",
+        "name": "Levels/SP/A1/M1END/DS02/Lighting/T_A1_M1END_Sky_Sunny_01_C",
+        "horizon": [
+          0.545,
+          0.605,
+          0.6393
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/sp/a1/m1end/ds02/lighting/t_a1_m1end_sky_sunny_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/sp/a1/m1end/ds02/lighting/t_a1_m1end_sky_sunny_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/endor/sunny.gradient.ktx2",
+        "name": "Levels/Forest/Lighting/Textures/T_Sky_Forest_02_Fog_Sunny_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/endor/sunny.clouds.ktx2",
+        "name": "Levels/MP/Endor_01/Lighting/T_Endor_CloudShadows_01_C"
+      }
+    }
+  }
+}

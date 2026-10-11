@@ -13,7 +13,7 @@
 //
 // fogAt(fog, d, y) → 0…1    (pure: the same sum, for the tests and a CPU
 //   reading such as a HUD's visibility)
-// createFog(entry, { origin, gradient }) → Promise<{ node, uniforms, set(params) }>
+// createFog(entry, { origin, gradient }) → Promise<{ node, uniforms, set(params), setGradient({ texture, rotation }) }>
 //   gradient (lane Q6): the record's SkyGradientTexture { texture, rotation,
 //   gain }, the fog's colour by the view's direction (grade.js's gradientUV,
 //   mirrored here: the whole sphere as an equirect) times FogColor and the panorama's gain (sky.js's
@@ -121,12 +121,16 @@ export async function createFog(entry, { origin, gradient = null } = {}) {
   const h = clamp(u.altitude.add(u.depth).sub(positionWorld.y).div(u.depth), 0, 1);
   const height = h.mul(float(1).sub(exp(d.mul(-3).div(u.visibility)))).mul(u.useHeight);
   let color = u.color;
+  let gradientNode = null;
+  let rotation = null;
   if (gradient?.texture) {
     const dir = normalize(positionWorld.sub(cameraPosition));
     const up = asin(clamp(dir.y, -1, 1)).div(Math.PI / 2);
-    const uv = vec2(fract(float(gradient.rotation ?? 0).sub(atan(dir.x, dir.z).div(Math.PI * 2))), up.mul(-0.5).add(0.5));
+    rotation = uniform(gradient.rotation ?? 0);
+    const uv = vec2(fract(rotation.sub(atan(dir.x, dir.z).div(Math.PI * 2))), up.mul(-0.5).add(0.5));
     const gain = gradient.gain?.isNode ? gradient.gain : float(gradient.gain ?? 1);
-    color = u.color.mul(texture(gradient.texture, uv).level(0).rgb).mul(gain);
+    gradientNode = texture(gradient.texture, uv).level(0);
+    color = u.color.mul(gradientNode.rgb).mul(gain);
   }
   const node = fog(color, max(distance, height));
   return {
@@ -137,6 +141,14 @@ export async function createFog(entry, { origin, gradient = null } = {}) {
       u.color.value.setRGB(...w.color);
       u.curve.value.set(...w.curve);
       for (const k of ['useCurve', 'start', 'end', 'density', 'useHeight', 'altitude', 'depth', 'visibility']) u[k].value = w[k];
+    },
+    // the next weather's gradient in place of this one's (a weather's
+    // crossfade, at its end); false where the fog was built without one
+    setGradient(next) {
+      if (!gradientNode || !next?.texture) return false;
+      gradientNode.value = next.texture;
+      if (next.rotation !== undefined) rotation.value = next.rotation;
+      return true;
     },
   };
 }

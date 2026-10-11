@@ -1,0 +1,204 @@
+{
+  "_from": "scripts/bf2017-picture.mjs yavin: the weathers' VE records (src/data/bf2017/light/yavin.json's sources) in the bf2017-assets bucket, their textures' KTX2 (web/<file>.ktx2) as the desktop encoded them",
+  "world": "yavin",
+  "weathers": {
+    "sunny": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_Fog_C",
+          "PanoramicRotation": 0.821,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirror",
+          "CloudXZTranslation": {
+            "x": -290,
+            "y": -695
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunny.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunny.panorama.ktx2",
+        "name": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_C",
+        "horizon": [
+          0.2691,
+          0.2981,
+          0.3074
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/yavin/sunny_01/t_yavin_sunny_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/yavin/sunny_01/t_yavin_sunny_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunny.gradient.ktx2",
+        "name": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunny.clouds.ktx2",
+        "name": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C"
+      }
+    },
+    "interior": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_C",
+          "SkyGradientTexture": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_Fog_C",
+          "PanoramicRotation": 0.821,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": 0,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaMirror",
+          "CloudXZTranslation": {
+            "x": -290,
+            "y": -695
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/yavin/interior.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Takodana/Sunny/T_CC_Takodana_Sunny_02 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunny.panorama.ktx2",
+        "name": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_C",
+        "horizon": [
+          0.2691,
+          0.2981,
+          0.3074
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/yavin/sunny_01/t_yavin_sunny_01_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/yavin/sunny_01/t_yavin_sunny_01_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunny.gradient.ktx2",
+        "name": "Levels/Lighting/Yavin/Sunny_01/T_Yavin_Sunny_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunny.clouds.ktx2",
+        "name": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C"
+      }
+    },
+    "sunset": {
+      "record": {
+        "TonemapComponentData": {
+          "TonemapMethod": "TonemapMethod_FilmicNeutral"
+        },
+        "ColorCorrectionComponentData": {
+          "HdrColorGradingLut": "Levels/Lighting/Yavin/Sunset_01/T_CC_Yavin_Sunset_01",
+          "ColorGradingEnable": true,
+          "Enable": true,
+          "ColorGradingMaxHdrValue": 1
+        },
+        "SkyComponentData": {
+          "PanoramicTexture": "Levels/Lighting/Yavin/Sunset_01/T_Yavin_Sunset_02_Panoramic_C",
+          "SkyGradientTexture": "Levels/Lighting/Yavin/Sunset_01/T_Yavin_Sunset_01_Fog_C",
+          "PanoramicRotation": 0.781,
+          "PanoramicUVMinX": 0,
+          "PanoramicUVMinY": -0.039,
+          "PanoramicUVMaxX": 1,
+          "PanoramicUVMaxY": 1,
+          "PanoramicTileFactor": 1
+        },
+        "OutdoorLightComponentData": {
+          "CloudShadowTexture": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C",
+          "CloudShadowEnable": true,
+          "CloudShadowIsTopDown": false,
+          "CloudShadowAddressingMode": "TaClamp",
+          "CloudXZTranslation": {
+            "x": -290,
+            "y": -695
+          }
+        }
+      },
+      "lut": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunset.lut33.png",
+        "size": 33,
+        "name": "Levels/Lighting/Yavin/Sunset_01/T_CC_Yavin_Sunset_01",
+        "_source": {
+          "size": "textures.jsonl: Levels/Lighting/Yavin/Sunset_01/T_CC_Yavin_Sunset_01 is a 33³ volume, kept whole"
+        }
+      },
+      "panorama": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunset.panorama.ktx2",
+        "name": "Levels/Lighting/Yavin/Sunset_01/T_Yavin_Sunset_02_Panoramic_C",
+        "horizon": [
+          0.1384,
+          0.0822,
+          0.065
+        ],
+        "size": [
+          2048,
+          512
+        ],
+        "_source": {
+          "horizon": "measured: the mean of the decoded web/textures/levels/lighting/yavin/sunset_01/t_yavin_sunset_02_panoramic_c.ktx2's foot row, linear 0…1 (rowMean)",
+          "size": "web/textures/levels/lighting/yavin/sunset_01/t_yavin_sunset_02_panoramic_c.ktx2's own (the desktop's UASTC encode)"
+        }
+      },
+      "gradient": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunset.gradient.ktx2",
+        "name": "Levels/Lighting/Yavin/Sunset_01/T_Yavin_Sunset_01_Fog_C"
+      },
+      "cloudShadow": {
+        "url": "textures/galaxy/bf2017/light/yavin/sunny.clouds.ktx2",
+        "name": "Objects/Nature/Yavin/_YavinBase/_CommonTextures/T_YavinBase_CloudShadows_01_C"
+      }
+    }
+  }
+}

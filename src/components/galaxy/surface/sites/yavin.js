@@ -6,6 +6,8 @@
 export const SITE = {
   // lit as the game lights its level (src/data/bf2017/light/yavin.json, gameLit.js)
   gameLight: 'yavin',
+  // the record's picture on the node renderer (src/data/bf2017/light/yavin.picture.json, applyGameLight)
+  picture: 'yavin.picture.json',
   // the look (look.js): green-grey shade under the canopy, a warm halo
   // through it; the grass on the ground map (groundPaint.js), thin under
   // the trees' crowns and thick in the clearings

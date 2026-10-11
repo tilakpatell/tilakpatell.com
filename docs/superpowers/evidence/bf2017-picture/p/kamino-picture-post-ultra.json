@@ -1,0 +1,46 @@
+{
+  "size": "960x540",
+  "adapter": "swiftshader",
+  "rows": [
+    {
+      "leg": "webgl",
+      "tier": "ultra",
+      "post": true,
+      "backend": "nodes-webgl",
+      "clustered": null,
+      "passes": [
+        "render",
+        "ssgi",
+        "denoise",
+        "ao",
+        "bloom",
+        "godrays",
+        "lensflare",
+        "tonemap",
+        "lut",
+        "smaa",
+        "output"
+      ],
+      "shot": "kamino-picture-post-ultra-webgl.png",
+      "canvas": {
+        "css": [
+          960,
+          540
+        ],
+        "buffer": [
+          960,
+          540
+        ]
+      },
+      "meanLum": 0.7085,
+      "picture": {
+        "tonemap": "linear",
+        "lut": "Levels/Lighting/Kamino/Stormy_01/T_CC_Kamino_Stormy_02_C"
+      },
+      "horizon": {
+        "meet": 0.3885,
+        "painted": 0.53
+      }
+    }
+  ]
+}
