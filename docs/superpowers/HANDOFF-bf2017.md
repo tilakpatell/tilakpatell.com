@@ -116,7 +116,7 @@ The humanoid pack is unchanged (1.0 MB). Past the figure's own, the soldiers', a
 
 ### Lane E0: the level factory (`claude/bf2017-e0-factory`)
 
-**Hosting.** A pack's bytes are published to `site-assets` by `node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/<world>/*'`, never committed. `gameFiles` walks the packs, but each pack's `level.json` and `README.md` stay in git (`PACK_KEPT`), so the tests and the sites read them with no bytes on disk. `assets-upload.mjs` no longer mirrors `models/galaxy/bf2017`. `packUrl` stays the site path, and `withFallback` and `assetUrl` turn it into the published URL through `galaxyAssets.json`, as they do for a model. One loader rule, so no second lookup was added. A single manifest is fine at this size (A1 holds): Hoth, Endor and Hoth's base together are 7,200 rows.
+**Hosting.** A pack's binaries (cells, meshes, textures, terrain and shadow PNGs, probes, physics bins) are published to `site-assets` by `node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/<world>/*'`, never committed. Its text (`level.json`, every part's JSON, `README.md`) stays in git (`PACK_KEPT` in `scripts/lib/asset-manifest.mjs`): it is small, and the tests, the sites and the other lanes read it. `assets-upload.mjs` no longer mirrors `models/galaxy/bf2017`. The merge with `main` published the binaries other lanes had committed under `levels/` (Q's space packs, Q2's ground masks: 2,721 files) and untracked them. `packUrl` stays the site path; `withFallback` and `assetUrl` turn it into the published URL through `galaxyAssets.json`, as they do for a model.
 
 **The command.** `node scripts/bf2017-level.mjs <map> --world <id> (--spot x z | --spawn) [--district <id>] [--inside] [--subs a,b] [--arena m] [--mode FantasyBattle] [--weather sunny] [--parts] [--dry]`.
 - `--spawn`: the landing is the first team's first spawn area of the first mode the map has (Galactic Assault first), from its gameplay records in `data/`. The records are fetched and read by `bf2017-rulebook-map.mjs`'s `mapRow`, then by `bf2017-level-spots.mjs`.
@@ -126,7 +126,9 @@ The humanoid pack is unchanged (1.0 MB). Past the figure's own, the soldiers', a
 - Ground the game never painted (Endor's: 58% of its pixels at the floor value) takes its nearest painted ground (`emptyValue`, `fillEmpty`, with a margin past the blended rim).
 - `--district base` writes `levels/<world>/base/`.
 - `--inside` writes no terrain, sets `inside: true` and gives `bounds` (the pieces' extent). Where the map has ground, it keeps only what lies under it (Hoth's base, the 14,513 pieces lane L's world leaves under the ice). It has no horizon.
-- `--parts` writes only the parts below beside a pack already built.
+- `--parts` writes only the parts below beside a pack already built, and `level.json`'s `parts` indexes them by name.
+- `--share` is either one share of every tier's row (`--share 0.5`, the space lane's) or tier by tier (`--share low=0.5`, Endor's); `--drop` is the space lane's.
+- A world map's own holes (Endor's bunker in its hill) are filled at their rim's lowest, as Hoth's mouths are.
 
 **What a pack carries beside `level.json`** (`scripts/bf2017-level-parts.mjs`; a part the map lacks is an empty file):
 
@@ -136,7 +138,8 @@ The humanoid pack is unchanged (1.0 MB). Past the figure's own, the soldiers', a
 | `actors.json` | the map's `actor` groups in the arena's subs and the mode's layer, by `crewList.js` kind; `unplaced` lists what the site lacks (the gonk droid, the kullbee) and the wind-bent skinned shrubs; `unresolved` lists the extras' runtime-dressed actors | `scene.js` (`levelPlaced`): still figures where the game stood them |
 | `vehicles.json` | `vehicleSpawns[]`: a mount is a `rides` row; a walker or gun is a `things` row of the catalogue's kinds | `scene.js` |
 | `decals.json` | lane Q4's shape, by its `decalsOf` once `scripts/lib/bf2017-decals.mjs` is on `main`; until then empty, with `waiting: 'lane Q4'` | Q4's `src/lib/three/decals/` (whichever of Q4 and E0 merges second adds the `cell`/`drop` call to `level/index.js`'s `onCell`/`onDrop`) |
-| `effects.json` | the extras' `effects[]`, the playable subs only | fidelity X (nothing draws it until X merges) |
+| `effects.json` | fidelity X's own writer, `scripts/lib/bf2017-effects.mjs`'s `effectsJson` (format 1, by cell; Hoth's is byte for byte X's) | fidelity X's effects |
+| `variations.json` | an empty format-1 slot (`{ format: 1, meshes: {}, instances: null }`) for the colour lane (#877) | the colour lane |
 | `tracks.json` | `web/animtracks/` whose owner the pack places | `src/lib/three/animTracks.js` (`evalTrack` Hermite, `createTracks`); shared with lane Q. `src/lib/three/tracks.js` was already the wheels' tracks, hence the name |
 | `probes.json`, `probes/<id>.<face>.hdr` | the level's `PbrBoxReflectionVolumeEntityData` in any of `data/Levels/MP/<Map>/*`'s layers (Hoth's are in `Cloudy_VFX`), in the light record's own variant where lane G named one, at 64², clipped as lane G's are | `level/levelProbes.js`: the box you stand in goes to `gameLit.js`'s `outdoorProbe` (the weather's calibration is kept) |
 | `shadow/far.png`, `level.json`'s `shadowCache` | the `DistantShadowCacheVolumeEntityData` and its 16-bit depth PNG, with its frame | fidelity S |
@@ -153,6 +156,8 @@ The detail maps are lane Q1's (`recipes.json`, `gameMaterial.js`). The design se
 - `validity.test.js` holds every district to a committed `level.json`.
 
 **Endor** stands on Endor_01, built with `--spot 211.8 331`. The spot was chosen by hand: it puts the game's bunker door (game 461.8, 285) on the site's (250, −46), so the site's places and quests keep their meaning. The landing is on the painted ridge west of the battle, 63 m over the bunker. The site's built bunker, its bank and its two redwoods, and three of its scatter rows (spruce, a redwood row, logs), are `game: true`, so the flight still draws them. The site's other scatter keeps out of the 128 m cells the level fills (`levelBusy`: 40 pieces or more). 4,056 of the map's pieces are buried (the bunker's halls under the hill) and wait for E3's interior. Endor_01 bakes no reflection volume for its sunny layer (only 20 foggy and 20 night ones), so `probes.json` is empty for the day.
+
+**Free roam keeps its own.** The owner's rule (2026-10-11): you land into a choice of what to do, the Battlefront game world (G1, G2) or free roam, and can switch between them; the game world looks as close to the original as it can, and only free roam has the site's creative freedom. This surface is free roam-to-be (`/galaxy/:system/roam` after G1), so it draws the site's own dressing over the game's level; the map's placed figures stand out to 150 m only (`actors.js`'s `PLACED_CUT`), so a battle's worth far off costs nothing.
 
 **Hoth** keeps lane L's meshes; its parts were written with `--parts`. **Hoth's base** is the district `base`: `levels/hoth/base/`, 14,513 pieces, 96 MB. It lands on the hangar's floorboards (−3 m) and is reached by a second door at the mouth ("Walk down into the halls"). The site's built Echo Base zone, with its cast, stays beside it until a later lane decides.
 
