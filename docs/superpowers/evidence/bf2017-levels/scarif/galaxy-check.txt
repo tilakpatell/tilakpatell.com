@@ -6,3 +6,5 @@ low    calls 207  tris  445654  models  17.9 MB   level calls  76  tris  96133  
 mid    calls 283  tris 1023569  models  21.0 MB   level calls 300  tris 739527   row (500, 1.5M, 40 MB): pass; baseline +10% (118, 0.94M): over
 high   calls 290  tris 1463160  models  68.1 MB   level calls 303  tris 764926   row (700, 3M, 60 MB): models over (the crew: luke 13.2, shoretrooper 12.9, atat 12.3; the level 2.6); baseline +10% (118): over
 ultra  calls 329  tris 3619155  models 187.5 MB   level calls 318  tris 870227   row (1500, none, 240 MB): pass
+# On the node renderer (lane T's #887 on main; SwiftShader draws it as nodes-webgl, so the frame guard is not in the way and "prog" reads null), 2026-10-11, SCANS=game PHASE_WAIT=1500000:
+high   calls 365  tris 1463989  models  65.5 MB   level calls 303  tris 764926   row (700, 3M, 60 MB): models over (the crew, as before); baseline +10% (118): over; scans cc0 0, game 47
