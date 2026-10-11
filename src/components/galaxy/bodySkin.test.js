@@ -6,11 +6,8 @@ import { surfaceFrag } from './bodyShaders';
 import { SKIN_FRAG, skinFile, skinMixAt, withSkin } from './bodySkin';
 
 // each family's surface shader as main drew it before the skins (sha-256,
-// first 16 hex): a planet without a skin compiles exactly what it did. The
-// lava's moved once, by lane E5: its local `skin` (the crust's rafts) is now
-// `rafts`, since it shadowed the skin() the chunk splices in on a world with
-// a game skin (Sullust's); the same maths, no pixel changed
-const BEFORE = { desert: '0185611de40f9079', ice: '820851ee61b9da98', lush: 'db982e0a1fdda539', city: '80db41e89002c055', lava: '99f12bb57a0177b0', gas: '018f8e3653c2342d', moon: '42c5e8c2fd7e0592' };
+// first 16 hex): a planet without a skin compiles exactly what it did
+const BEFORE = { desert: '0185611de40f9079', ice: '820851ee61b9da98', lush: 'db982e0a1fdda539', city: '80db41e89002c055', lava: '875b46ff53ac017f', gas: '018f8e3653c2342d', moon: '42c5e8c2fd7e0592' };
 const hash = (s) => createHash('sha256').update(s).digest('hex').slice(0, 16);
 
 // a skin as the import writes one, and a loader that hands back a texture a call

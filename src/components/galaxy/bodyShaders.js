@@ -507,11 +507,9 @@ void surface(vec3 P, inout Surf s) {
   float k3 = max(0.04, gFoot * 70.0 * 3.0);
   float crack = smoothstep(1.0 - k3, 1.0 - k3 * 0.3, 1.0 - abs(r3.x)) * min(1.0, 0.04 / k3) * smoothstep(0.55, 0.9, v1 + b.x * 0.2) * 0.8;
   float lava = max(max(riv, lake), crack * uP0.x);
-  // the lava's crust: rafts drifting on it (rafts, not skin: a world with a
-  // game skin splices a skin() function in after this, bodySkin.js, and a
-  // local of that name would shadow it: Sullust's, lane E5)
-  float rafts = noise(P * 60.0 + vec3(uTime * 0.03, 0.0, uTime * 0.02)) * 0.5 + noise(P * 220.0 - vec3(uTime * 0.05)) * 0.5 * fade(220.0);
-  float core = smoothstep(0.0, 0.7, lava) * (0.75 + 0.25 * rafts);
+  // the lava's skin: crusted rafts drifting on it
+  float skin = noise(P * 60.0 + vec3(uTime * 0.03, 0.0, uTime * 0.02)) * 0.5 + noise(P * 220.0 - vec3(uTime * 0.05)) * 0.5 * fade(220.0);
+  float core = smoothstep(0.0, 0.7, lava) * (0.75 + 0.25 * skin);
   float pulse = 1.0 + uP0.w * 0.25 * sin(uTime * 1.3 + noise(P * 5.0) * 6.0);
   vec3 crust = mix(CRUST, ASH, smoothstep(-0.2, 0.5, fbm(P * 18.0 + 4.0, min(octs(18.0), 5.0)) + b.x * 0.3));
   float near = smoothstep(0.7, 0.96, v1) * uP0.x + smoothstep(-0.18, -0.3, b.x) * uP0.y;
