@@ -380082,26 +380082,26 @@
     "tier": "surface"
   },
   "models/galaxy/surface/scimitar.far.glb": {
-    "hash": "043ef5f315de",
-    "bytes": 67580,
+    "hash": "29f79d88cda7",
+    "bytes": 77468,
     "from": "gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
     "tier": "surface"
   },
   "models/galaxy/surface/scimitar.glb": {
-    "hash": "76d0f8489baf",
-    "bytes": 686440,
+    "hash": "94ccd4391945",
+    "bytes": 732240,
     "from": "gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
     "tier": "surface"
   },
   "models/galaxy/surface/scimitar.lod1.glb": {
-    "hash": "ca08a02f23d4",
-    "bytes": 167392,
+    "hash": "938afc6cb51e",
+    "bytes": 178200,
     "from": "gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
     "tier": "surface"
   },
   "models/galaxy/surface/scimitar.ultra.glb": {
-    "hash": "5d587e515380",
-    "bytes": 5165076,
+    "hash": "e05943ce706d",
+    "bytes": 5201336,
     "from": "gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
     "tier": "ultra"
   },
