@@ -283,3 +283,12 @@ describe('an Apple silicon Mac (not a GeForce, but a strong chip)', () => {
     expect(classifyDevice({ ua: MAC_CHROME, screen: 1512, renderer: 'Apple M1, or similar' })).toMatchObject({ tier: 'high', grade: null, detail: 'ultra' });
   });
 });
+
+describe('budget with the video settings (lane V1)', () => {
+  it('multisampling and anisotropy under the row’s own, never over it', () => {
+    expect(budget('high', { msaa: 2, anisotropy: 4 })).toMatchObject({ samples: 2, aniso: 4 });
+    expect(budget('mid', { msaa: 8, anisotropy: 16 })).toMatchObject({ samples: 2, aniso: 4 });
+    expect(budget('high', {})).toBe(BUDGETS.high);
+    expect(budget('high', null)).toBe(BUDGETS.high);
+  });
+});

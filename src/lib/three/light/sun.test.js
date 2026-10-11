@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three/webgpu';
-import { BLEND, CADENCE, REF_TEXEL, ULTRA_SHADOW_FAR, biasFor, cadenceFor, cascadeDue, cascadesFor, castCascades, createSun, inCascade, readShadowRecord, splitsFor } from './sun';
+import { BLEND, CADENCE, REF_TEXEL, SHADOWS, ULTRA_SHADOW_FAR, biasFor, cadenceFor, cascadeDue, cascadesFor, castCascades, createSun, inCascade, readShadowRecord, splitsFor } from './sun';
 import { sunDir } from './entry';
 import { raysLight } from './post';
 import hoth from './fixtures/hoth.ve.json';
@@ -179,6 +179,17 @@ describe('castCascades', () => {
     light.position.set(1, 0, 0);
     c.follow();
     expect(c.shadowDir.x).toBeCloseTo(1);
+  });
+});
+
+describe('cascadesFor with the video settings (lane V1)', () => {
+  it('the shadow quality sets the cascades and the map; the distance the far', () => {
+    expect(cascadesFor('high', undefined, { shadows: 'low' })).toMatchObject({ n: 2, map: 1024 });
+    expect(cascadesFor('mid', undefined, { shadows: 'ultra' })).toMatchObject({ n: 4, map: 4096 });
+    expect(cascadesFor('ultra', undefined, { shadows: 'off' })).toEqual({ n: 0, far: 0, map: 0 });
+    expect(cascadesFor('high', undefined, { shadowDistance: 100 }).far).toBe(100);
+    expect(cascadesFor('high', undefined, { shadows: 'nonsense', shadowDistance: -3 })).toEqual(cascadesFor('high'));
+    expect(Object.keys(SHADOWS)).toEqual(['off', 'low', 'medium', 'high', 'ultra']);
   });
 });
 

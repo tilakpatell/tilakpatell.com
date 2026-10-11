@@ -141,12 +141,58 @@ export const SHARPEN = { base: 0.2, slope: 0.4, max: 0.4, _source: 'the GPU-firs
 export const sharpenFor = (scale = 1) => Math.min(SHARPEN.max, SHARPEN.base + SHARPEN.slope * (1 - Math.max(0, Math.min(1, scale))));
 const SHED = [['ssgi', 'denoise'], ['ssr'], ['godrays', 'lensflare'], ['ao']];
 
+// (high ends in TRAA since lane V1: PCSS, the fog march and the volumes
+// dither with a static per-pixel noise that only a temporal pass integrates;
+// SMAA left high grainy. On a backend without TRAA, CANNOT still swaps SMAA
+// in, as before.)
 const TIERS = {
   ultra: ['render', ['ssgi', 'high'], 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'godrays', 'lensflare', 'motionBlur', 'lut', 'traa', 'output'],
-  high: ['render', ['ssgi', 'medium'], 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'motionBlur', 'lut', 'smaa', 'output'],
+  high: ['render', ['ssgi', 'medium'], 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'motionBlur', 'lut', 'traa', 'output'],
   mid: ['render', 'ao', 'bloom', 'smaa', 'output'],
   low: ['render', 'bloom', 'output'],
 };
+// every pass with the record's numbers: the chain a video setting starts from
+// (applyVideo drops and tunes; arrange() drops what has no input)
+const FULL = ['render', ['ssgi', 'high'], 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'godrays', 'lensflare', 'motionBlur', 'lut', 'traa', 'output'];
+
+// The video settings over a chain (lib/video.js's resolved values, every
+// field optional: one missing changes nothing). Pure; arrange() runs last,
+// so SSGI follows TRAA's presence (temporal or denoised) and a pass with no
+// input goes.
+export function applyVideo(passes, video = {}) {
+  if (!video) return arrange(passes);
+  let out = passes.map((p) => ({ ...p }));
+  const drop = (...kinds) => (out = out.filter((p) => !kinds.includes(p.kind)));
+  const find = (kind) => out.find((p) => p.kind === kind);
+  const camera = find('render')?.camera;
+  if (video.aa === 'off') drop('traa', 'smaa');
+  else if (video.aa === 'smaa') {
+    drop('traa');
+    if (!find('smaa')) out.push({ kind: 'smaa' });
+  } else if (video.aa === 'traa' && !find('traa')) out.push({ kind: 'traa', camera });
+  if (video.gi === 'off') drop('ssgi', 'denoise', 'ao');
+  else if (video.gi === 'ssao') drop('ssgi', 'denoise');
+  else if (['low', 'medium', 'high'].includes(video.gi)) {
+    const g = find('ssgi');
+    if (g) Object.assign(g, { preset: video.gi, ...SSGI[g.temporal ? 'temporal' : 'plain'][video.gi] });
+  }
+  if (video.reflections === 'probes') drop('ssr');
+  else if (video.reflections === 'half' || video.reflections === 'full') {
+    const r = find('ssr');
+    if (r) r.resolutionScale = video.reflections === 'half' ? 0.5 : 1;
+  }
+  if (video.volumetric === 'off') drop('volumes');
+  if (video.fogQuality) {
+    const f = find('fog');
+    if (f) f.steps = FOG_STEPS[video.fogQuality === 'high' ? 'ultra' : 'high'] ?? f.steps;
+  }
+  for (const [field, kind] of [['bloom', 'bloom'], ['lensFlare', 'lensflare'], ['godRays', 'godrays'], ['depthOfField', 'dof']]) if (video[field] === 'off') drop(kind);
+  if (video.motionBlur === 'off') {
+    const m = find('motionBlur');
+    if (m) m.scale = 0;
+  }
+  return arrange(out);
+}
 
 const rank = (k) => {
   const i = ORDER.indexOf(k);
@@ -228,9 +274,12 @@ export function passesFor(tier, entry, backend = 'webgpu', refs = {}) {
     smaa: () => ({ kind: 'smaa' }),
     output: () => ({ kind: 'output' }),
   };
-  const chain = (TIERS[tier] ?? TIERS.high).map((k) => (Array.isArray(k) ? make[k[0]](k[1]) : make[k]()));
+  // (a video setting given: every pass with the record's numbers, then the
+  // setting says which stay; else the tier's own chain)
+  let chain = (refs.video ? FULL : TIERS[tier] ?? TIERS.high).map((k) => (Array.isArray(k) ? make[k[0]](k[1]) : make[k]()));
   if (refs.dof && chain.length > 1) chain.push(make.dof());
   if (grade?.tonemap) chain.push({ kind: 'tonemap', method: grade.tonemap });
+  if (refs.video) chain = applyVideo(chain, refs.video);
   // (no TRAA on this backend: SMAA is the anti-aliasing instead)
   if (cannot.has('traa') && !cannot.has('smaa') && chain.some((x) => x.kind === 'traa')) chain.push(make.smaa());
   const out = arrange(chain.filter((x) => !cannot.has(x.kind)));

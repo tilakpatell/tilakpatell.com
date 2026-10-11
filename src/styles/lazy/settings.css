@@ -39,6 +39,7 @@
 
 .settings-row { padding: 6px 0 10px; }
 .settings-row-title { font-size: 0.9rem; font-weight: 600; }
+.settings-badge { margin-left: 8px; vertical-align: middle; font-size: 0.7rem; }
 .settings-row-hint, .settings-note { margin-top: 2px; font-size: 0.78rem; line-height: 1.45; color: var(--muted); }
 .settings-row-head { margin-bottom: 8px; }
 

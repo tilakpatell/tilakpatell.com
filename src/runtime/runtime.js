@@ -14,7 +14,7 @@
 //   failure, current, loading, on(fn), invalidate(), resize(w, h), setVisible(on), lost(),
 //   mount(module, props, host) → shown, handover(module, props, host, { fade, held, after }) → shown,
 //   adopt(module, host), unmount(), dispose(), requality(level) → 'tuned' |
-//   'reload' | 'idle', reload() → shown, sharpen(k) }
+//   'reload' | 'idle', revideo(values) → the same, reload() → shown, sharpen(k) }
 // (`failure`: why the last world failed, { world, name, message, module }:
 // a WebAssembly module that couldn't come up is a WasmError naming it,
 // lib/wasm/load.js, so a failed world says which; null once one comes up)
@@ -81,7 +81,7 @@ export function createEvents() {
   };
 }
 
-export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null }) {
+export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, video = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null }) {
   let gfx = null;
   const clocks = new WeakMap(); // a renderer's GPU clock, made once (it turns on its timestamps)
   let kind = null; // the backend asked for
@@ -288,7 +288,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     kind = want;
     const asked = { kind: want, promise: null };
     coming = asked;
-    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: () => rt.lost() }))).then(
+    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: () => rt.lost(), hdr: rt.video?.hdr === 'on' }))).then(
       (made) => {
         // another kind asked for since (or the runtime let go): this one goes too
         if (coming !== asked) {
@@ -475,6 +475,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   };
 
   const rt = {
+    // the visitor's video settings as resolved for this device (lib/video.js;
+    // lane V1): a module reads them at mount; revideo() replaces them
+    video,
     get gfx() {
       return gfx;
     },
@@ -684,6 +687,25 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
         tune();
       } catch (err) {
         if (dev) console.warn(`[${module.id}] onQuality failed`, err);
+        return 'reload';
+      }
+      loop.kick();
+      return 'tuned';
+    },
+    // (the video settings changed while a world is up, lane V1: the shape of
+    // requality; the world's `onVideo(values)`, or its module's
+    // `onVideo(values, world, rt)`, for one that can turn its live controls
+    // without being built again; 'reload' says it can't)
+    revideo(values) {
+      rt.video = values ?? null;
+      if (!current || rt.loading) return 'idle';
+      const { world, module } = current;
+      const tune = world.onVideo ? () => world.onVideo(rt.video) : module.onVideo ? () => module.onVideo(rt.video, world, rt) : null;
+      if (!tune) return 'reload';
+      try {
+        tune();
+      } catch (err) {
+        if (dev) console.warn(`[${module.id}] onVideo failed`, err);
         return 'reload';
       }
       loop.kick();

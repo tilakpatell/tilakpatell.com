@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom';
-import { antialias, arrange, COC, dofParams, headroom, motionBlurOf, NODE_PASSES, ORDER, passesFor, raysLight, SHARPEN, sharpenFor, shed, SSGI, SSR_ROUGHNESS, temporal, upscaled, upscaleKind } from './post';
+import { antialias, applyVideo, arrange, COC, dofParams, headroom, motionBlurOf, NODE_PASSES, ORDER, passesFor, raysLight, SHARPEN, sharpenFor, shed, SSGI, SSR_ROUGHNESS, temporal, upscaled, upscaleKind } from './post';
 import hoth from './fixtures/hoth.ve.json';
 import { gradeOf } from './grade';
 
@@ -36,7 +36,7 @@ describe('the order', () => {
 describe('passesFor', () => {
   it('the tiers’ chains, as the design gives them', () => {
     expect(kinds(passesFor('ultra', hoth.sunny, 'webgpu', refs))).toEqual(['render', 'ssgi', 'ao', 'ssr', 'bloom', 'godrays', 'lensflare', 'motionBlur', 'lut', 'traa', 'output']);
-    expect(kinds(passesFor('high', hoth.sunny, 'webgpu', refs))).toEqual(['render', 'ssgi', 'denoise', 'ao', 'ssr', 'bloom', 'motionBlur', 'lut', 'smaa', 'output']);
+    expect(kinds(passesFor('high', hoth.sunny, 'webgpu', refs))).toEqual(['render', 'ssgi', 'ao', 'ssr', 'bloom', 'motionBlur', 'lut', 'traa', 'output']);
     expect(kinds(passesFor('mid', hoth.sunny, 'webgpu', refs))).toEqual(['render', 'ao', 'bloom', 'smaa', 'output']);
     expect(kinds(passesFor('low', hoth.sunny, 'webgpu', refs))).toEqual(['render', 'bloom', 'output']);
   });
@@ -249,7 +249,9 @@ describe('sharpen after TAAU, and the samples rule (lane N2)', () => {
     expect(antialias(ultra())).toBe(false);
     expect(antialias(upscaled(ultra(), { scale: 0.77 }))).toBe(false);
     expect(antialias(upscaled(ultra(), { kind: 'fsr1', scale: 0.77 }))).toBe(true);
-    expect(antialias(passesFor('high', hoth.sunny, 'webgpu', refs))).toBe(true);
+    // (high ends in TRAA since lane V1, so it is temporal too; mid is the SMAA tier)
+    expect(antialias(passesFor('high', hoth.sunny, 'webgpu', refs))).toBe(false);
+    expect(antialias(passesFor('mid', hoth.sunny, 'webgpu', refs))).toBe(true);
     expect(antialias(passesFor('ultra', hoth.sunny, 'nodes-webgl', refs))).toBe(true);
   });
 });
@@ -273,5 +275,49 @@ describe('SSR’s roughness cut (lane N3)', () => {
     expect(SSR_ROUGHNESS).toBe(0.4);
     const ssr = passesFor('ultra', hoth.sunny, 'webgpu', refs).find((p) => p.kind === 'ssr');
     expect(ssr.roughnessCutoff).toBe(0.4);
+  });
+});
+
+describe('the video settings (lane V1)', () => {
+  const high = () => passesFor('high', hoth.sunny, 'webgpu', refs);
+  it('high ends in TRAA on WebGPU and in SMAA on nodes-webgl, where TRAA cannot be built', () => {
+    expect(kinds(high()).at(-2)).toBe('traa');
+    expect(kinds(passesFor('high', hoth.sunny, 'nodes-webgl', refs)).at(-2)).toBe('smaa');
+  });
+  it('aa off drops both; smaa swaps TRAA out and SSGI falls to its plain preset with a denoiser', () => {
+    const off = applyVideo(high(), { aa: 'off' });
+    expect(kinds(off)).not.toContain('traa');
+    expect(kinds(off)).not.toContain('smaa');
+    const smaa = applyVideo(high(), { aa: 'smaa' });
+    expect(kinds(smaa)).toContain('smaa');
+    expect(kinds(smaa)).toContain('denoise');
+    expect(smaa.find((p) => p.kind === 'ssgi')).toMatchObject({ temporal: false, slices: 3, steps: 8 });
+  });
+  it('gi: ssao keeps ao and drops ssgi; off drops both; a preset sets the SSGI preset', () => {
+    expect(kinds(applyVideo(high(), { gi: 'ssao' }))).toEqual(expect.arrayContaining(['ao']));
+    expect(kinds(applyVideo(high(), { gi: 'ssao' }))).not.toContain('ssgi');
+    const none = kinds(applyVideo(high(), { gi: 'off' }));
+    expect(none).not.toContain('ssgi');
+    expect(none).not.toContain('ao');
+    expect(applyVideo(high(), { gi: 'high' }).find((p) => p.kind === 'ssgi')).toMatchObject({ preset: 'high', temporal: true, slices: 3, steps: 16 });
+  });
+  it('reflections: probes drops ssr; half and full set its scale', () => {
+    expect(kinds(applyVideo(high(), { reflections: 'probes' }))).not.toContain('ssr');
+    expect(applyVideo(high(), { reflections: 'half' }).find((p) => p.kind === 'ssr').resolutionScale).toBe(0.5);
+    expect(applyVideo(high(), { reflections: 'full' }).find((p) => p.kind === 'ssr').resolutionScale).toBe(1);
+  });
+  it('the post switches drop their pass; motion blur off is a scale of 0 and goes', () => {
+    const k = kinds(applyVideo(high(), { bloom: 'off', lensFlare: 'off', godRays: 'off', motionBlur: 'off' }));
+    for (const x of ['bloom', 'lensflare', 'godrays', 'motionBlur']) expect(k).not.toContain(x);
+  });
+  it('every field missing changes nothing', () => {
+    expect(applyVideo(high(), {})).toEqual(high());
+    expect(applyVideo(high(), null)).toEqual(high());
+  });
+  it('through passesFor, a video setting starts from every pass: mid with gi high gains SSGI, and CANNOT still wins over aa traa on nodes-webgl', () => {
+    expect(kinds(passesFor('mid', hoth.sunny, 'webgpu', { ...refs, video: { gi: 'high', aa: 'traa' } }))).toEqual(expect.arrayContaining(['ssgi', 'traa']));
+    const k = kinds(passesFor('high', hoth.sunny, 'nodes-webgl', { ...refs, video: { aa: 'traa' } }));
+    expect(k).not.toContain('traa');
+    expect(k).toContain('smaa');
   });
 });

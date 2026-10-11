@@ -84,6 +84,17 @@ describe('vsmFallback', () => {
   });
 });
 
+describe('filterFor with the video settings (lane V1)', () => {
+  it('the shadow quality picks the filter and its samples, under the record’s maximum', () => {
+    expect(filterFor('high', undefined, { video: { shadows: 'ultra' } })).toMatchObject({ kind: 'pcss', max: 256 });
+    expect(filterFor('ultra', undefined, { video: { shadows: 'high' } })).toMatchObject({ kind: 'pcss', max: 128 });
+    expect(filterFor('ultra', undefined, { video: { shadows: 'medium' } })).toMatchObject({ kind: 'pcss', max: 32 });
+    expect(filterFor('ultra', undefined, { video: { shadows: 'low' } })).toEqual({ kind: 'pcf' });
+    expect(filterFor('ultra', undefined, { video: { shadows: 'off' } })).toEqual({ kind: 'none' });
+    expect(filterFor('high', undefined, { video: {} })).toEqual(filterFor('high'));
+  });
+});
+
 describe('the far shadow cache (lane N3)', () => {
   // Hoth's level.json shadowCache (lane E0): the box's axes each its full size
   const hoth = { centre: [-20.36, 22.72, 197.52], forward: [0, 0, 1111.48], png: 'shadow/far.png', resolution: 4096, right: [650.64, 0, 0], size: [2048, 2048], tiles: 8, up: [0, 202.43, 0], variant: 'Cloudy_VFX' };

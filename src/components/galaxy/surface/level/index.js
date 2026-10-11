@@ -10,7 +10,7 @@
 //   partOf(world, file, empty) → Promise<the part's JSON, or empty>
 //   levelPlaced(site) → Promise<{ life, rides, things }> (the map's actors and vehicles)
 //   levelBusy(site) → Promise<Set of cell keys the level fills>
-//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics, ground })
+//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics, ground, texTier })
 //     → null | { update(position), step(dt), ready(), progress(), stats(), physics(), dispose() }
 //     (stats().skipped: the pack files that failed to load, the first said as an error)
 //     (camera: the placed lights rank by it; light: the world's record, for their scale;
@@ -236,7 +236,7 @@ async function gameMaterials(world, pack, renderer, tier, scene) {
   return { recipes, variations, sun, clock, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun, overlays }), mapKeys: TIER_MAPS[tier] ?? null };
 }
 
-export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null, ground = null }) {
+export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null, ground = null, texTier = null }) {
   if (!site?.level) return null;
   const world = site.level;
   // (a pack file that fails, the bucket slow or a page in its place, leaves
@@ -296,7 +296,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       sun = shared;
       clock = weathering;
       if (gone) return;
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes, sizes: pack.tex, recipes, materialFor, mapKeys, variations, texTier });
       // (the ground in the game's layers where the pack has them: the node renderer's, lane Q2)
       const layered = ground && renderer?.isWebGPURenderer ? { mesh: ground, renderer, fetchBytes, urlOf: (path) => assetUrl(packUrl(world, path)), entry: null } : null;
       // (lane U's batches on the node renderer: a BatchedMesh culls each
