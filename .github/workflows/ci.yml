@@ -84,6 +84,11 @@ jobs:
           # being measured. docs/superpowers/evidence/bf2017-picture/t2/README.md)
           - shard: 3
             worlds: tatooine
+          # (DRAW_WAIT, 50 minutes: a world is prepared out of sight before it
+          # shows, a slice of its pictures and shaders a frame, and a frame of
+          # Tatooine's whole level takes 15 to 20 s here; its warm-up took most
+          # of a 54-minute run on 2026-10-11 against the 10-minute default.
+          # A ceiling, not a wait: a world that comes up sooner goes on)
     steps:
       - uses: actions/checkout@v7
 
@@ -112,7 +117,7 @@ jobs:
 
       - shell: bash
         run: |
-          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 BUDGET_REPORT=1 QUALITY=high VIEW=640x360 SHOT_WAIT=900000 PHASE_WAIT=900000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.worlds }} 2>&1 | tee worlds-check.log
+          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 BUDGET_REPORT=1 QUALITY=high VIEW=640x360 SHOT_WAIT=900000 PHASE_WAIT=900000 DRAW_WAIT=3000000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.worlds }} 2>&1 | tee worlds-check.log
           exit ${PIPESTATUS[0]}
 
       - if: always()

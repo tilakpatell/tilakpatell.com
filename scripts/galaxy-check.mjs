@@ -216,7 +216,13 @@ for (const id of list.split(',')) {
     // and only then shown, the runtime's status 'on'; in software GL that can
     // outlast the settle wait. Measured before, it drew nothing of itself, and
     // the gate fails it)
-    await page.waitForFunction(() => !window.__RUNTIME__ || window.__RUNTIME__.status === 'on', null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the world never came up (runtime status not on)'));
+    const upAt = Date.now();
+    await page
+      .waitForFunction(() => !window.__RUNTIME__ || window.__RUNTIME__.status === 'on', null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 })
+      .then(
+        () => console.log(`${id.padEnd(10)} up in ${((Date.now() - upAt) / 1000).toFixed(0)} s after the settle`),
+        () => errors.push(`the world never came up (runtime status not on) in ${((Date.now() - upAt) / 1000).toFixed(0)} s`),
+      );
     // (and a game level's cells round you in: a district's pack, smaller than
     // its world's, can be measured before its first cells land otherwise)
     if (mode === 'surface') await page.waitForFunction(() => (window.__surfaceScene.level?.()?.progress ?? 1) >= 1, null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the level never came in round you'));
