@@ -11,7 +11,7 @@
 //   textures no browser decodes that nothing here asks for
 // isSequelFilm(name), isSequelUi(name)
 // iconName(file), iconFamily(file), symbolOf(name, text), spriteOf(icons)
-// fontAllowed(file), FONT_LICENCES
+// fontLicence(file), FONT_LICENCES, OWNER_LICENCE
 // stringFamily(key), stringTables(english, keys) → { named, families }
 // vttOf(ssa, say) → WebVTT text of a SubStation Alpha script's dialogue
 //   (the game's scripts name a string key a line, which `say` resolves)
@@ -210,15 +210,18 @@ export function spriteOf(icons) {
 
 // ---- fonts ----
 
-// The open-licence faces, with the licence each file's name table states.
+// Every face in the drop ships: the owner holds the licence for all of it,
+// the fonts included (the owner, 2026-10-10). The open-licence ones keep
+// the licence their own name table states, with its text beside them; the
+// rest are the owner's (the game's licence).
 export const FONT_LICENCES = [
   { match: /^Roboto-/, licence: 'Apache-2.0', file: 'LICENSE-Apache-2.0.txt', by: 'Google (Christian Robertson)' },
   { match: /^NotoSansCJK/, licence: 'OFL-1.1', file: 'OFL.txt', by: 'Adobe Systems Incorporated, for Google’s Noto' },
   { match: /^NotoKufiArabic/, licence: 'OFL-1.1', file: 'OFL.txt', by: 'Google (Monotype Design Team)' },
   { match: /^Cuprum-/, licence: 'OFL-1.1', file: 'OFL.txt', by: 'Jovanny Lemonad, with Reserved Font Name “Cuprum”' },
 ];
-export const fontAllowed = (file) => FONT_LICENCES.some((l) => l.match.test(base(file)));
-export const fontLicence = (file) => FONT_LICENCES.find((l) => l.match.test(base(file))) ?? null;
+export const OWNER_LICENCE = { licence: 'owner', file: null, by: 'licensed to the owner with the game (2026-10-10)' };
+export const fontLicence = (file) => FONT_LICENCES.find((l) => l.match.test(base(file))) ?? OWNER_LICENCE;
 
 // ---- strings ----
 

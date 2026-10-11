@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global window */
+/* global window, document */
 // The lit fixture on both of the node renderer's kinds, headless: lane R's
 // proof (docs/superpowers/plans/2026-10-10-galaxy-engine-laneR-light.md).
 //
@@ -8,6 +8,7 @@
 //     [--volume [on|off]] [--weather interior|sunny|felucia] [--view wide|edge|sun] [--pan]
 //     [--weather] [--decals] [--seconds 0,12.5,30]   (lane Q4: the weathering and the placed decals, without --volume)
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
+//     [--upscale [fsr1|taau:]0.77]   (lane U: the picture drawn under the screen and upscaled)
 //   node scripts/light-fixture.mjs --materials [--legs webgl]
 //   node scripts/light-fixture.mjs --camera [--size 1600x900] [--legs webgpu,webgl]
 //
@@ -75,6 +76,11 @@
 //   a shot during a 6 m/s pan (the streaks), the effects' stats, and the GPU
 //   twin's parity with the CPU step after 120 frames; into
 //   docs/superpowers/evidence/galaxy-engine/X/.
+// - with --upscale (fidelity lane U): the chain drawn at that internal
+//   resolution and brought up by FSR1 or TAAU (TAAU when the chain has
+//   TRAA, unless named), the same numbers into galaxy-engine/U/, with the
+//   canvas's CSS size and its drawing buffer beside them (the HUD is DOM:
+//   the CSS size must stay the screen's).
 // The numbers go to <label>.json beside the shots and to stdout as a table.
 //
 // On Linux without a display both legs draw on SwiftShader (CPU): the
@@ -96,7 +102,10 @@ const volume = volumeAt < 0 ? null : argv[volumeAt + 1] !== 'off';
 const q4Flags = volume == null && (argv.includes('--weather') || argv.includes('--decals'));
 const particles = volume == null && !q4Flags && argv.includes('--particles');
 const laneS = volume == null && ['--hoth', '--shadows', '--clouds'].some((f) => argv.includes(f));
-const OUT = join(ROOT, q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : join('docs/superpowers/evidence/galaxy-engine', laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
+// --upscale [kind:]scale (lane U)
+const upscaleArg = argv.includes('--upscale') ? argv[argv.indexOf('--upscale') + 1] : null;
+const upscale = upscaleArg && !upscaleArg.startsWith('--') ? (([a, b]) => (b == null ? { scale: Number(a) } : { kind: a, scale: Number(b) }))(upscaleArg.split(':')) : null;
+const OUT = join(ROOT, q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
@@ -113,7 +122,7 @@ const baseLabel = arg(
         ? `${volume ? 'volume' : 'novolume'}-${tier}`
         : `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`,
 );
-const label = particles && arg('label', null) == null ? `particles-${baseLabel}` : baseLabel;
+const label = particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
@@ -144,6 +153,7 @@ const fixture = {
   ...(hoth ? { hoth: true, exposure: HOUSE_EXPOSURE } : {}),
   ...(shadows ? { shadows: true, lightSun: argv.includes('--light-sun'), clouds: argv.includes('--clouds') } : {}),
   ...(arg('filter', null) ? { filter: arg('filter', null) } : {}),
+  ...(upscale ? { upscale } : {}),
 };
 
 // The --decals pack: the decal fixtures' records (ten of Naboo_01's
@@ -347,6 +357,11 @@ for (const leg of legs) {
       const png = await shot();
       writeFileSync(join(OUT, `${label}-${leg}.png`), png);
       row.shot = `${label}-${leg}.png`;
+      // (lane U: the canvas's CSS size stays the screen's; only its drawing is lowered)
+      row.canvas = await page.evaluate(() => {
+        const c = document.querySelector('canvas');
+        return { css: [c.clientWidth, c.clientHeight], buffer: [c.width, c.height] };
+      });
       if (particles) {
         row.parity = await page.evaluate(() => window.__lit.probe.particles.parity(120));
         row.simMode = await page.evaluate(() => window.__lit.probe.particles.mode);
