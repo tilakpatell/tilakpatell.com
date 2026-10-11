@@ -63,4 +63,37 @@ describe('the sim', () => {
     expect(b.teams[1].alive).toBe(2);
     expect(b.time).toBeCloseTo(STEP, 9);
   });
+
+  it('tells a bolt’s kill where the shot went, where it struck and with what; an out-of-bounds kill has none', () => {
+    const sim = createSim({ rulebook: rb, nav: buildNav(field()), seed: 1 });
+    const me = addPlayer(sim, { team: 1, classId: 'l-orig-assault', at: [0, 0, -40], yaw: 0 });
+    const them = addPlayer(sim, { team: 2, classId: 'd-orig-assault', at: [0, 0, -20], yaw: Math.PI });
+    const target = sim.entities.get(them);
+    let kill = null;
+    let hit = null;
+    for (let i = 0; i < 400 && !kill; i++) {
+      // (the gun cools between bursts: a press every other step)
+      const ev = step(sim, [{ id: me, fire: i % 2 === 0, aim: [target.at[0], target.at[1] + 1.2, target.at[2]] }]);
+      hit ??= ev.find((e) => e.type === 'hit');
+      kill = ev.find((e) => e.type === 'kill');
+    }
+    expect(kill).toBeTruthy();
+    expect(kill).toMatchObject({ by: me, target: them, weapon: sim.entities.get(me).gun.row.id });
+    expect(Math.hypot(...kill.dir)).toBeCloseTo(1, 6);
+    expect(kill.dir[2]).toBeGreaterThan(0.9);
+    expect(kill.at).toHaveLength(3);
+    expect(kill.at[2]).toBeCloseTo(-20, 0);
+    expect(hit.dir).toHaveLength(3);
+    expect(hit.at).toHaveLength(3);
+
+    const zone = { points: [[-10, -10], [10, -10], [10, 10], [-10, 10]] };
+    const away = createSim({ rulebook: rb, nav: buildNav(field()), seed: 1, oob: { 1: [zone], 2: [zone] } });
+    const lost = addPlayer(away, { team: 1, classId: 'l-orig-assault', at: [40, 0, -40] });
+    let ev = [];
+    for (let i = 0; i < 300; i++) ev = ev.concat(step(away));
+    const oob = ev.find((e) => e.type === 'kill' && e.target === lost);
+    expect(oob.why).toBe('oob');
+    expect(oob.dir).toBeUndefined();
+    expect(oob.at).toBeUndefined();
+  });
 });

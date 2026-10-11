@@ -1,0 +1,39 @@
+{
+  "source": "hand",
+  "mode": "galacticAssault",
+  "level": "S5_1/Levels/MP/Geonosis_01/Geonosis_01",
+  "attackers": "light",
+  "notes": "NOTES.md says how this was made: the stages in the order the level’s own stage strings number them, each team’s line; the attackers the side whose first line does not defend; the objectives are not yet chosen (empty), as no route plays this map’s Galactic Assault",
+  "stages": [
+    {
+      "id": "stage1",
+      "team1": "ID_FANTASYBATTLE_GEONOSIS_REP_PHASE_1",
+      "team2": "ID_FANTASYBATTLE_GEONOSIS_CIS_PHASE_1",
+      "text": {
+        "team1": "REACH COMMAND CENTERS",
+        "team2": "DEFEND COMMAND CENTERS"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage2",
+      "team1": "ID_FANTASYBATTLE_GEONOSIS_REP_PHASE_2",
+      "team2": "ID_FANTASYBATTLE_GEONOSIS_CIS_PHASE_2",
+      "text": {
+        "team1": "DESTROY HARDCELL TRANSPORTS",
+        "team2": "PROTECT HARDCELL TRANSPORTS FROM AT-TEs"
+      },
+      "objectives": []
+    },
+    {
+      "id": "stage3",
+      "team1": "ID_FANTASYBATTLE_GEONOSIS_REP_PHASE_3",
+      "team2": "ID_FANTASYBATTLE_GEONOSIS_CIS_PHASE_3",
+      "text": {
+        "team1": "SECURE TURBOLASERS",
+        "team2": "DEFEND CORE SHIP FROM AT-TEs"
+      },
+      "objectives": []
+    }
+  ]
+}

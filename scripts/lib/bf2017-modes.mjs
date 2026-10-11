@@ -26,6 +26,7 @@ export const LAYER_MODES = [
   [/^SpaceBattle$/i, 'starfighter'],
   [/^(HeroArena|HeroesVsVillains)$/i, 'hvv'],
   [/^(TeamDeathmatch|TeamDeathmatch_Sk\w*|Blast)$/i, 'blast'],
+  [/^Domination$/i, 'strike'],
   [/^Mode1$/i, 'supremacy'],
   [/^(Mode5|Extraction)$/i, 'extraction'],
   [/^Mode6$/i, 'showdown'],
@@ -42,6 +43,8 @@ export const MODE_STRINGS = {
   starfighter: 'ID_RP_GAMEMODE_SPACEBATTLES',
   hvv: 'ID_RP_GAMEMODE_HEROESVSVILLAINS',
   blast: 'ID_RP_GAMEMODE_BLAST',
+  // (Strike has no rich-presence string: UI/Data/GameModes/Domination's GameModeName, by its hash)
+  strike: '#312DD139',
   supremacy: 'ID_RP_GAMEMODE_MODE1',
   ewokHunt: 'ID_RP_GAMEMODE_MODE3',
   extraction: 'ID_RP_GAMEMODE_MODE5',
@@ -98,17 +101,17 @@ export function modesOf(subworlds = []) {
 
 // (an upper-case string, ARCADE, as the menu's other names are cased)
 const cased = (t) => (t && t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t);
-const nameOf = (key, strings) => (strings && key ? (cased(resolveStrings([key], strings)[key]) ?? null) : null);
+const nameOf = (key, strings) => (strings && key ? (cased(key.startsWith('#') ? (strings.strings ?? strings)[key.slice(1)] : resolveStrings([key], strings)[key]) ?? null) : null);
 
-// levels: [{ level: 'Levels/MP/Hoth_01/Hoth_01', subworlds: [...] }]
+// levels: [{ level: 'Levels/MP/Hoth_01/Hoth_01', subworlds: [...], modes? }] (modes: the level's rulebook's, when it has one)
 export function modesRulebook(levels, strings = null) {
   const out = { names: { modes: {}, worlds: {} }, levels: {}, worlds: {} };
   for (const mode of MODE_ORDER) out.names.modes[mode] = { id: MODE_STRINGS[mode], text: nameOf(MODE_STRINGS[mode], strings) };
-  for (const { level, subworlds } of levels) {
+  for (const { level, subworlds, modes: given } of levels) {
     const file = fileOf(level);
     const at = LEVEL_WORLDS[file];
     if (!at || isSequel(level)) continue;
-    const modes = modesOf(subworlds);
+    const modes = given ? MODE_ORDER.filter((m) => given.includes(m)) : modesOf(subworlds);
     if (!modes.length) continue;
     out.levels[file] = { level, world: at.world, ...(at.space ? { space: true } : {}), modes, ...(LEVEL_STRINGS[file] ? { name: { id: LEVEL_STRINGS[file], text: nameOf(LEVEL_STRINGS[file], strings) } } : {}) };
     const w = (out.worlds[at.world] ??= { ground: [], space: [], modes: [] });

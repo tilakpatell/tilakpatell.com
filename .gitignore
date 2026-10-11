@@ -15673,6 +15673,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/space/silo-xl-01.glb
 /public/models/galaxy/space/stardestroyerdestructionback-01-endor.glb
 /public/models/galaxy/space/stardestroyerdestructionfront-01-endor.glb
+/public/models/galaxy/surface/a280.glb
 /public/models/galaxy/surface/aat.far.glb
 /public/models/galaxy/surface/aat.glb
 /public/models/galaxy/surface/aat.lod1.glb
@@ -15724,7 +15725,11 @@ scripts/twin-parity/out/
 /public/models/galaxy/surface/cloudcar.ultra.glb
 /public/models/galaxy/surface/cloudcarcockpit.glb
 /public/models/galaxy/surface/cloudcarcockpit.lod1.glb
+/public/models/galaxy/surface/dh17.glb
 /public/models/galaxy/surface/dl44.glb
+/public/models/galaxy/surface/dlt19.glb
+/public/models/galaxy/surface/dlt19x.glb
+/public/models/galaxy/surface/dlt20a.glb
 /public/models/galaxy/surface/droideka.far.glb
 /public/models/galaxy/surface/droideka.glb
 /public/models/galaxy/surface/droideka.lod1.glb
@@ -15733,6 +15738,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/surface/dwarfspider.glb
 /public/models/galaxy/surface/dwarfspider.lod1.glb
 /public/models/galaxy/surface/dwarfspider.ultra.glb
+/public/models/galaxy/surface/e11.glb
 /public/models/galaxy/surface/ee3.glb
 /public/models/galaxy/surface/ee3.lod1.glb
 /public/models/galaxy/surface/eweb.far.glb
@@ -15875,6 +15881,8 @@ scripts/twin-parity/out/
 /public/models/galaxy/surface/parkedxwing.glb
 /public/models/galaxy/surface/parkedxwing.lod1.glb
 /public/models/galaxy/surface/parkedxwing.ultra.glb
+/public/models/galaxy/surface/rk3.glb
+/public/models/galaxy/surface/rt97c.glb
 /public/models/galaxy/surface/slave1.far.glb
 /public/models/galaxy/surface/slave1.glb
 /public/models/galaxy/surface/slave1.lod1.glb

@@ -3,36 +3,48 @@
 // later lanes), their guns' bolts, hits, deaths, events. Inputs go in as
 // plain objects a step, events come out; every random draw is the sim's own
 // `rand`, so one seed gives one battle. The bots' brains (ai/) are stepped
-// here on a stagger. With a mode (`'galacticAssault'`) the battle also
-// runs the stage file (`modes/galacticAssault.js`): the fallen are removed
+// here on a stagger. With a mode (`'galacticAssault'`, or any of
+// modes/index.js's: Strike, Extraction, Ewok Hunt, Supremacy's ground) the
+// battle also runs it (`modes/galacticAssault.js`'s shape): the fallen are removed
 // after `TimeForCorpse` and wait to deploy, bots on their team's wave as
 // their commander (`ai/commander.js`) spends their Battle Points, a player
 // by `deploy`; the walkers are bodies the bolts hit, open to damage while a
-// bombing run lasts. Out of bounds, where a team has bounds, kills in
-// OOB_SECONDS. Pure: no three.js, no DOM.
+// bombing run lasts, and their gunners fire on the defenders (the mode's
+// `GUNNERS`, ai/vehicleBrain.js). Out of bounds, where a team has bounds, kills in
+// OOB_SECONDS. A difficulty (`ai/difficulty.js`: 'rookie', 'normal', 'expert'…)
+// sets the bots' reaction, aim and their damage to a player, and the
+// player's health; `pve` makes the bots the Skirmish (Instant Action) bots,
+// with their PvE templates and their abilities (`ai/skirmish.js`). Pure: no
+// three.js, no DOM.
 //
-//   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob }) → sim
-//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad' }) → { ok, why }
+//   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve }) → sim
+//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate }) → { ok, why }
 //   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, vent, cool }]
-//   addPlayer(sim, { team, classId, at, yaw }) → id      removeEntity(sim, id)
-//   view(sim, { player }) → { time, teams, entities, bolts, mode, deploying, deploy }  (one object, refreshed in place)
+//   addPlayer(sim, { team, classId, at, yaw, id }) → id (in a squad)      removeEntity(sim, id)
+//   squadSpot(sim, id, team, mate?) → { spot } | { why }    squadBlocks(sim, id, team) → [{ id, blocked }]
+//   view(sim, { player }) → { time, teams, entities, bolts, mode, deploying, deploy, squad }  (one object, refreshed in place;
+//     an entity row carries a bot's `name`, ai/names.js)
 //   drain(sim) → the event log so far, cleared
 
 import { seeded } from '../seeded.js';
-import { classOf, heroOf, mapOf, reinforcementOf, spawnsFor, teamsFor, weaponOf } from './rulebook.js';
+import { aiOf, classOf, heroOf, mapOf, reinforcementOf, spawnsFor, squadsOf, stringOf, teamsFor, weaponOf } from './rulebook.js';
 import { press } from './abilities.js';
 import { createBolts, fire as fireBolt, step as stepBolts } from './bolts.js';
-import { heightAt, nearestMainland, nearestWalkable } from './nav.js';
+import { heightAt, lineClear, nearestMainland, nearestWalkable, walkable } from './nav.js';
 import { STEP, clock, muzzleOf, profile, shoot } from './core.js';
 import { capsulesOf, chestOf, hurt, move, newSoldier, roll, tick as tickSoldier } from './soldier.js';
 import { coolPress, damageAt, vent } from './weapons.js';
 import { addBrain, createBrains, onEvents, stepBrains } from './ai/bots.js';
 import { assign, createCommander, spend, wave } from './ai/commander.js';
-import { squadOf } from './ai/squad.js';
+import { changeSides, joinSquad, squadOf, squadRows } from './ai/squad.js';
+import { difficultyFor } from './ai/difficulty.js';
+import { abilitiesFor } from './ai/skirmish.js';
+import { createGunner } from './ai/vehicleBrain.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
-import { AIM_SCALE, createAssault, onEvent as modeEvent, sideOf, spawnSets, tick as tickMode, view as modeView, walkersOf } from './modes/galacticAssault.js';
+import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
+import { modeFor } from './modes/index.js';
 import { insidePolygon } from './modes/objectives.js';
-import { isProtected, pickSpawn, protect, squadSpawn } from './spawn.js';
+import { blocked, isProtected, pickSpawn, protect, squadSpawn } from './spawn.js';
 
 export { STEP, THINK, SENSE, SQUAD, muzzleOf, shoot } from './core.js';
 
@@ -74,7 +86,7 @@ function openingSpawns(map) {
   return out;
 }
 
-export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 1, teams = null, bots = { 1: 0, 2: 0 }, mode = null, spawns = null, oob = null }) {
+export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 1, teams = null, bots = { 1: 0, 2: 0 }, mode = null, spawns = null, oob = null, difficulty = null, pve = false }) {
   const rb = rulebook;
   const sides = teams ?? (() => {
     const t = teamsFor(rb, level, era);
@@ -101,13 +113,18 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     brains: null,
     oob,
     stats: new Map(),
+    difficulty: difficulty ? difficultyFor(difficulty, aiOf(rb)) : null,
+    pve: !!pve,
   };
-  if (mode === 'galacticAssault') {
-    sim.ga = createAssault({ rulebook: rb, level });
-    sim.bp = createPoints({ rulebook: rb, teams: sides });
+  if (mode) {
+    sim.M = modeFor(mode);
+    if (!sim.M) throw new Error(`mode ${mode}: not built`);
+    sim.ga = sim.M.create({ rulebook: rb, level, seed });
+    sim.bp = createPoints({ rulebook: rb, teams: sides, level, mode });
     sim.deploying = new Map();
     sim.aimScale = AIM_SCALE;
-  } else if (mode) throw new Error(`mode ${mode}: not built`);
+  }
+  if (sim.difficulty) sim.aimScale = (sim.aimScale ?? 1) * sim.difficulty.aim.scale;
   const opening = spawns ?? (sim.ga ? {} : bots[1] || bots[2] ? openingSpawns(mapOf(rb, level)) : {});
   for (const team of [1, 2]) {
     const n = bots[team] ?? 0;
@@ -115,7 +132,7 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     const list = opening[team] ?? [];
     const classes = sides[team].classes;
     for (let k = 0; k < n; k++) {
-      const sp = sim.ga ? pickSpawn({ map: mapOf(rb, level), ids: spawnSets(sim.ga)[sideOf(sim.ga, team)], team, rand: sim.rand }) : list[k % list.length];
+      const sp = sim.ga ? pickSpawn({ map: mapOf(rb, level), ids: sim.M.spawnSets(sim.ga)[sim.M.sideOf(sim.ga, team)], team, rand: sim.rand, mode }) : list[k % list.length];
       const at = sp ? [...sp.at] : [0, 0, 0];
       // a second lap of the spawns stands a metre or two off the first
       if (sim.ga || k >= list.length) {
@@ -130,7 +147,7 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     sim.commanders = {};
     for (const team of [1, 2]) {
       const squads = sim.brains.squads.list.filter((q) => q.team === team);
-      sim.commanders[team] = createCommander({ team, side: sideOf(sim.ga, team), ga: sim.ga, squads, bp: sim.bp, rand: sim.rand, nav, rulebook: rb });
+      sim.commanders[team] = createCommander({ team, side: sim.M.sideOf(sim.ga, team), ga: sim.ga, squads, bp: sim.bp, rand: sim.rand, nav, rulebook: rb });
     }
     addWalkers(sim);
   }
@@ -138,17 +155,24 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
 }
 
 function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id: given = null }) {
-  const cls = row ?? classOf(sim.rb, classId);
+  const base = row ?? classOf(sim.rb, classId);
+  // (a mode that sets each side's health: Ewok Hunt's troopers and Ewoks)
+  const cls = sim.ga?.health?.[team] ? { ...base, health: sim.ga.health[team] } : base;
   const id = given ?? `${bot ? 'b' : 'p'}${sim.nextId++}`;
   // a deploy in a mode lands on the map's main walkable region, never in a pocket the made-up cover walls off
   const spot = sim.nav ? (sim.ga ? nearestMainland(sim.nav, at[0], at[2], 12) : nearestWalkable(sim.nav, at[0], at[2], 12)) : null;
   const where = spot ? [spot[0], 0, spot[1]] : [...at];
   if (sim.nav) where[1] = heightOf(sim, where);
-  const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: weaponOf(sim.rb, cls.weapon) });
+  // (a Skirmish bot carries its class's abilities, which its brain uses)
+  const abilities = sim.pve && bot && cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
+  const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: weaponOf(sim.rb, cls.weapon), ...abilities });
+  // (the difficulty's health for a player)
+  if (!bot && sim.difficulty && sim.difficulty.health !== 1) s.hp = s.hpMax = s.hpMax * sim.difficulty.health;
   s.capsules = capsulesOf(s);
   sim.entities.set(id, s);
   if (!sim.stats.has(id)) sim.stats.set(id, { id, team, bot, kills: 0, deaths: 0, captures: 0, arms: 0, cls: cls.id });
   sim.stats.get(id).cls = cls.unitId ?? cls.id;
+  sim.stats.get(id).team = team;
   return s;
 }
 
@@ -160,20 +184,47 @@ function walkerCapsules(w) {
 
 function addWalkers(sim) {
   for (const [id, e] of sim.entities) if (e.kind === 'walker') sim.entities.delete(id);
-  walkersOf(sim.ga).forEach((w, i) => {
+  sim.M.walkersOf(sim.ga).forEach((w, i) => {
     Object.assign(w, { id: `w${sim.ga.stage + 1}.${i + 1}`, team: sim.ga.attack, state: 'walk', stance: 'stand', vel: [0, 0, 0] });
     if (sim.nav) w.at[1] = heightOf(sim, w.at);
     walkerCapsules(w);
+    const row = GUNNERS[w.kind] && aiOf(sim.rb).vehicles?.[GUNNERS[w.kind]];
+    if (row) w.gunner = createGunner(row, w, { ai: aiOf(sim.rb), rb: sim.rb, rand: sim.rand });
     sim.entities.set(w.id, w);
   });
 }
 
 const heightOf = (sim, at) => heightAt(sim.nav, at[0], at[2]);
 
-export function addPlayer(sim, { team, classId, at, yaw = 0 }) {
-  const s = addSoldier(sim, { team, classId, at, yaw, bot: false });
+export function addPlayer(sim, { team, classId, at, yaw = 0, id = null }) {
+  const s = addSoldier(sim, { team, classId, at, yaw, bot: false, id });
   sim.brains?.add?.(s);
+  // a player is in a squad: a squad made for one (a displaced bot's) the commander orders too
+  const { created } = sim.brains ? joinSquad(sim.brains.squads, sim, s.id) : {};
+  if (created) sim.commanders?.[team]?.squads.push(created);
   return s.id;
+}
+
+// where a squad spawn can stand: the navgrid's walkable cells, anywhere without one
+export const standable = (sim) => (x, z) => !sim.nav || walkable(sim.nav, x, z);
+
+// a squad spawn for one of a team: on the mate named (or why not), else on the first mate who can be
+export function squadSpot(sim, id, team, mate = null) {
+  const sq = sim.brains ? squadOf(sim.brains.squads, id) : null;
+  const enemies = enemiesOf(sim, team);
+  const one = mate != null ? sim.entities.get(mate) ?? null : null;
+  const why = mate != null && (!sq?.members.includes(mate) ? 'none' : blocked(one, { enemies, now: sim.time }));
+  if (why) return { why };
+  const squad = one ? [one] : (sq?.members ?? []).map((m) => sim.entities.get(m)).filter(Boolean);
+  const spot = squadSpawn({ squad, me: id, enemies, now: sim.time, walkable: standable(sim) });
+  return spot ? { spot } : { why: 'squad' };
+}
+
+// why each of a soldier's squadmates can or cannot be spawned on now
+export function squadBlocks(sim, id, team) {
+  const sq = sim.brains ? squadOf(sim.brains.squads, id) : null;
+  const enemies = enemiesOf(sim, team);
+  return (sq?.members ?? []).filter((m) => m !== id).map((m) => ({ id: m, blocked: blocked(sim.entities.get(m) ?? null, { enemies, now: sim.time }) }));
 }
 
 // what a team has out: heroes and reinforcements standing, with those chosen this wave
@@ -197,15 +248,17 @@ export function deploy(sim, id, choice) {
   const list = offers(sim.bp, id, team, { out: outOf(sim, team) });
   const offer = list.find((o) => o.kind === (choice.kind ?? 'class') && o.id === choice.id);
   if (!offer) return { ok: false, why: 'none' };
+  // (a mode without heroes or reinforcements deploys its classes only: Strike, Extraction, Ewok Hunt)
+  if (sim.ga.heroes === false && offer.kind !== 'class') return { ok: false, why: 'mode' };
   if (offer.available === false) return { ok: false, why: offer.why };
   if (balance(sim.bp, id) < offer.cost) return { ok: false, why: 'points' };
   const enemies = enemiesOf(sim, team);
   let spot = null;
   if (choice.spawn === 'squad') {
-    const sq = squadOf(sim.brains.squads, id);
-    spot = sq ? squadSpawn({ squad: sq.members.map((m) => sim.entities.get(m)).filter(Boolean), me: id, enemies }) : null;
-    if (!spot) return { ok: false, why: 'squad' };
-  } else spot = pickSpawn({ map: mapOf(sim.rb, sim.level), ids: spawnSets(sim.ga)[sideOf(sim.ga, team)], team, enemies, rand: sim.rand });
+    const r = squadSpot(sim, id, team, choice.mate);
+    if (r.why) return { ok: false, why: r.why };
+    spot = r.spot;
+  } else spot = pickSpawn({ map: mapOf(sim.rb, sim.level), ids: sim.M.spawnSets(sim.ga)[sim.M.sideOf(sim.ga, team)], team, enemies, rand: sim.rand, mode: sim.mode });
   if (!spot) return { ok: false, why: 'nowhere' };
   buy(sim.bp, id, offer);
   const base = classOf(sim.rb, sim.teams[team].classes[0]);
@@ -298,18 +351,25 @@ const chestAhead = (s) => {
   return [c[0] + Math.sin(s.yaw) * 100, c[1], c[2] + Math.cos(s.yaw) * 100];
 };
 
-// a soldier down: the score, the kill, the mode's ticket and the Battle Points
-function downed(sim, target, by, part, why = null) {
+// a soldier down: the score, the kill, the mode's ticket and the Battle Points;
+// a bolt's kill also says where the shot went (`dir`, unit), where it struck
+// (`at`) and the weapon's id, for the world's ragdolls
+function downed(sim, target, by, part, why = null, hit = null) {
   sim.score[target.team].deaths++;
   sim.stats.get(target.id).deaths++;
   const killer = by ? sim.entities.get(by) : null;
   if (killer && killer.team !== target.team) {
     sim.score[killer.team].kills++;
-    sim.stats.get(killer.id).kills++;
+    // (a walker's gunner keeps no row of its own)
+    const row = sim.stats.get(killer.id);
+    if (row) row.kills++;
   }
-  emit(sim, { type: 'kill', by, target: target.id, part, ...(why ? { why } : {}) });
+  emit(sim, { type: 'kill', by, target: target.id, part, ...(why ? { why } : {}), ...(hit ? { dir: hit.dir.slice(), at: hit.at.slice(), weapon: hit.bolt.weapon?.id ?? null } : {}) });
   if (sim.ga) {
-    target.respawn = modeEvent(sim.ga, { type: 'down', side: sideOf(sim.ga, target.team) }).respawn;
+    const r = sim.M.onEvent(sim.ga, { type: 'down', side: sim.M.sideOf(sim.ga, target.team) });
+    target.respawn = r.respawn;
+    // (Ewok Hunt: a trooper killed comes back on the Ewoks' side)
+    target.joins = r.joins ?? null;
     if (killer && killer.team !== target.team) bpKill(sim.bp, { by, target: target.id, now: sim.time, hero: target.unit === 'hero' });
   }
 }
@@ -343,11 +403,17 @@ function resolveBolts(sim) {
         hitWalker(sim, target, e);
         continue;
       }
-      const damage = damageAt(e.bolt.weapon, e.dist);
+      // (a bot's bolt on a player: the difficulty's damage)
+      const scale = sim.difficulty && target.bot === false && sim.entities.get(e.bolt.owner)?.bot ? sim.difficulty.damage : 1;
+      const damage = damageAt(e.bolt.weapon, e.dist) * scale;
       const r = hurt(target, { damage, part: e.part, by: e.bolt.owner, now: sim.time });
-      emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: e.part, damage: Math.round(damage * 100) / 100 });
+      // (both in combat: no squad spawns on either for a while)
+      target.combatAt = sim.time;
+      const shooter = sim.entities.get(e.bolt.owner);
+      if (shooter) shooter.combatAt = sim.time;
+      emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: e.part, damage: Math.round(damage * 100) / 100, dir: e.dir.slice(), at: e.at.slice() });
       if (sim.bp) bpHit(sim.bp, target.id, e.bolt.owner, sim.time);
-      if (r === 'down') downed(sim, target, e.bolt.owner, e.part);
+      if (r === 'down') downed(sim, target, e.bolt.owner, e.part, null, e);
     }
   }
   return evs;
@@ -359,6 +425,7 @@ export function step(sim, inputs = []) {
   sim.steps++;
   for (const inp of inputs) applyInput(sim, inp);
   stepBrains(sim);
+  stepGunners(sim);
   for (const s of sim.entities.values()) {
     if (s.kind !== 'soldier') continue;
     if (s.state === 'roll' && s.alive) move(s, s.rollDir, STEP, sim.nav);
@@ -370,6 +437,21 @@ export function step(sim, inputs = []) {
   if (sim.oob) outOfBounds(sim);
   if (sim.ga) stepMode(sim);
   return sim.out;
+}
+
+// the walkers' gunners: a bolt from the turret when the pattern and the cannon's rate allow
+function stepGunners(sim) {
+  for (const w of sim.entities.values()) {
+    if (!w.gunner || !w.alive) continue;
+    const enemies = sim.cache?.all?.filter((e) => e.team !== w.team && e.kind === 'soldier') ?? [];
+    const shot = w.gunner.tick(sim.time, { enemies, lineClear: (a, b) => lineClear(sim.nav, a, b) });
+    if (!shot) continue;
+    const d = [shot.aim[0] - shot.from[0], shot.aim[1] - shot.from[1], shot.aim[2] - shot.from[2]];
+    const L = Math.hypot(...d) || 1;
+    const row = shot.weapon;
+    fireBolt(sim.bolts, { from: shot.from, dir: d.map((v) => v / L), speed: row.firing.speed, range: row.range, ttl: row.damage.timeToLive, team: w.team, owner: w.id, weapon: row, colour: row.colour, now: sim.time });
+    emit(sim, { type: 'shot', by: w.id });
+  }
 }
 
 function outOfBounds(sim) {
@@ -397,7 +479,8 @@ function stepMode(sim) {
   for (const [id, s] of sim.entities) {
     if (s.kind !== 'soldier' || s.alive || s.state !== 'down') continue;
     removeEntity(sim, id);
-    if (s.respawn) sim.deploying.set(id, { id, team: s.team, bot: s.bot, since: sim.time });
+    if (s.respawn) sim.deploying.set(id, { id, team: s.joins ?? s.team, bot: s.bot, since: sim.time });
+    if (s.respawn && s.joins && s.joins !== s.team && s.bot) changeSides(sim.brains.squads, id, s.joins);
   }
   if (ga.phase !== 'over')
     for (const team of [1, 2]) {
@@ -413,7 +496,7 @@ function stepMode(sim) {
         const choice = spend(c, entry.id, { squadClasses, out: outOf(sim, team, chosen) });
         const enemies = enemiesOf(sim, team);
         const mates = (sq?.members ?? []).map((m) => sim.entities.get(m)).filter(Boolean);
-        const spawn = squadSpawn({ squad: mates, me: entry.id, enemies }) ? 'squad' : 'point';
+        const spawn = squadSpawn({ squad: mates, me: entry.id, enemies, now: sim.time, walkable: standable(sim) }) ? 'squad' : 'point';
         let r = deploy(sim, entry.id, { ...choice, spawn });
         if (!r.ok) r = deploy(sim, entry.id, { kind: 'class', id: sim.teams[team].classes[0], spawn: 'point' });
         if (!r.ok) continue;
@@ -427,12 +510,12 @@ function stepMode(sim) {
   const alive = { attack: 0, defend: 0 };
   for (const s of sim.entities.values()) {
     if (s.kind !== 'soldier' || !s.alive) continue;
-    const side = sideOf(ga, s.team);
+    const side = sim.M.sideOf(ga, s.team);
     alive[side]++;
     soldiers.push({ id: s.id, side, at: s.at, alive: true, interact: !!s.interact });
   }
   const stage = ga.stage;
-  for (const e of tickMode(ga, STEP, { soldiers, alive })) {
+  for (const e of sim.M.tick(ga, STEP, { soldiers, alive })) {
     emit(sim, e);
     if (e.type === 'objective' && e.kind === 'capture') for (const o of ga.objectives) if (o.name === e.name) for (const id of o.inside.attack) sim.stats.get(id).captures++;
     if (e.type === 'armed') for (const o of ga.objectives) if (o.name === e.name) for (const i of o.interactions) sim.stats.get(i.id).arms++;
@@ -441,7 +524,7 @@ function stepMode(sim) {
     addWalkers(sim);
     for (const c of Object.values(sim.commanders)) c.nextAssign = 0;
   }
-  for (const w of walkersOf(ga)) {
+  for (const w of sim.M.walkersOf(ga)) {
     if (sim.nav) w.at[1] = heightOf(sim, w.at);
     walkerCapsules(w);
   }
@@ -453,6 +536,9 @@ function stepMode(sim) {
     }
   for (const team of [1, 2]) {
     const c = sim.commanders[team];
+    // (Strike's second round swaps the sides)
+    const side = sim.M.sideOf(ga, team);
+    if (c.side !== side) [c.side, c.nextAssign] = [side, 0];
     if (sim.time + 1e-9 >= c.nextAssign) assign(c, { entities: [...sim.entities.values()], now: sim.time });
   }
 }
@@ -461,6 +547,12 @@ export function drain(sim) {
   const out = sim.events;
   sim.events = [];
   return out;
+}
+
+// a bot's order as its objective's letter: the commander's task key names the objective by its place
+function letterOf(sim, task) {
+  const i = Number(/^o(\d+)/.exec(task?.key ?? '')?.[1] ?? NaN);
+  return Number.isInteger(i) && sim.ga?.objectives?.[i] ? String.fromCharCode(65 + i) : null;
 }
 
 export function view(sim, { player = null } = {}) {
@@ -490,6 +582,8 @@ export function view(sim, { player = null } = {}) {
     e.heat = s.gun?.heat ?? 0;
     e.mode = s.brain?.intent?.mode ?? null;
     e.unit = s.unit ?? null;
+    e.name = s.name ?? null;
+    e.cls = s.cls?.cls ?? null;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;
     e.oob = s.oobSince != null ? Math.max(0, OOB_SECONDS - (sim.time - s.oobSince)) : null;
   }
@@ -502,10 +596,11 @@ export function view(sim, { player = null } = {}) {
     o.colour = b.colour;
   }
   v.bolts.length = k;
-  v.mode = sim.ga ? modeView(sim.ga) : null;
+  v.mode = sim.ga ? sim.M.view(sim.ga) : null;
   v.deploying = sim.deploying ? [...sim.deploying.keys()] : [];
   // the player's deploy screen: open while they wait, with what their points buy
   const waiting = player && sim.deploying?.get(player);
+  v.squad = player && sim.brains ? squadRows(sim.brains.squads, sim, player, { names: squadsOf(sim.rb).names.map((n) => stringOf(sim.rb, n)), letterOf: (t) => letterOf(sim, t) }) : null;
   v.deploy = waiting ? { open: true, team: waiting.team, points: balance(sim.bp, player), offers: offers(sim.bp, player, waiting.team, { out: outOf(sim, waiting.team) }), timeLeft: 0 } : { open: false };
   return v;
 }

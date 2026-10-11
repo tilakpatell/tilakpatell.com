@@ -62,3 +62,17 @@ describe('the 2017 drop’s textures', () => {
   );
 });
 
+
+describe('slotOfParameter: a variation database binding’s glTF slot', () => {
+  it('reads the colour, normal, packed and emissive slots by the parameter’s name', async () => {
+    const { slotOfParameter } = await import('./bf2017-textures.mjs');
+    for (const n of ['Color', '_CS', 'CS', 'BaseColor', '_BaseColor', 'CW', '_CA']) expect(slotOfParameter(n), n).toBe('color');
+    for (const n of ['NS', '_NAM_texcoord0', '_NAM', 'Normal', '_Normal', 'N', 'NA', '_NA_texcoord0']) expect(slotOfParameter(n), n).toBe('normal');
+    for (const n of ['_RGB', 'Mask', 'RSSSAO', 'MSR', 'RM']) expect(slotOfParameter(n), n).toBe('packed');
+    for (const n of ['Emissive', '_EM', '_Emissive']) expect(slotOfParameter(n), n).toBe('emissive');
+    // (noted, not bound: the Fresnel colour; and anything the table does not know)
+    expect(slotOfParameter('F90ColorTexture')).toBe(null);
+    expect(slotOfParameter('DetailNS')).toBe(null);
+    expect(slotOfParameter('WeatheringMask')).toBe(null);
+  });
+});
