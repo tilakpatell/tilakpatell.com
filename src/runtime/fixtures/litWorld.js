@@ -13,7 +13,7 @@
 // light moves (no recompile), the frame time.
 //
 // rt.fixture: { tier = 'ultra', env = true, post = true, sky = true, placed = true, clustered, only,
-//   materials, weather, decals, particles, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry }
+//   materials, weather, decals, particles, debris, upscale, hoth, shadows, lightSun, clouds, filter, picture, entry }
 //
 // `materials` (lane Q1, scripts/light-fixture.mjs --materials): { mode:
 // 'game' | 'glb', list: [{ label, recipe, glb, maps: { detail: url, … } }] }:
@@ -24,6 +24,11 @@
 // `particles` (fidelity lane X): the game's effects from their emitter
 // tables over the ring, and the GPU twin's parity (particleProbe.js), read
 // by scripts/light-fixture.mjs --particles as `probe.particles`.
+//
+// `debris` (GPU-first lane N5): a hundred breaks a minute round the ring,
+// Rapier hulls and GPU bursts on the depth buffer (debrisProbe.js), read by
+// scripts/light-fixture.mjs --debris as `probe.debris`; 'off', the same
+// scene and camera with nothing broken (the frame's before).
 //
 // `weather` (lane Q4, seconds into Hoth's day): three crates at the front
 // under the snow contributor of src/lib/three/surface/weather.js, composed
@@ -121,6 +126,60 @@ export const ENTRY = {
   },
 };
 
+// The tier probe's scene (lib/gpuProbe, the GPU-first design's G1): the
+// ring of pillars and spheres at high, the cube in the middle, on the
+// ground, under a sun with a 2,048 shadow map and a sky light, from the
+// fixture's own camera. Plain lit materials and no post chain, so it is
+// made at once and costs the same on every page: what it measures is the
+// chip, not a world.
+// probeScene() → { scene, camera, dispose() }
+export function probeScene() {
+  const made = [];
+  const keep = (x) => (made.push(x), x);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b0d12);
+  const camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 800);
+  camera.position.set(0, 7, 24);
+  camera.lookAt(0, 1, 0);
+  const ground = new THREE.Mesh(keep(new THREE.PlaneGeometry(200, 200)), keep(new THREE.MeshStandardMaterial({ color: 0x9aa0a8, roughness: 0.55, metalness: 0.05 })));
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  const pillar = keep(new THREE.BoxGeometry(1, 5, 1));
+  const ball = keep(new THREE.SphereGeometry(0.9, 32, 16));
+  const stone = keep(new THREE.MeshStandardMaterial({ color: 0xd8d2c8, roughness: 0.7 }));
+  const chrome = keep(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.08, metalness: 1 }));
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const p = new THREE.Mesh(pillar, stone);
+    p.position.set(Math.cos(a) * 10, 2.5, Math.sin(a) * 10);
+    const b = new THREE.Mesh(ball, i % 2 ? chrome : stone);
+    b.position.set(Math.cos(a + 0.26) * 5, 0.9, Math.sin(a + 0.26) * 5);
+    p.castShadow = p.receiveShadow = b.castShadow = b.receiveShadow = true;
+    scene.add(p, b);
+  }
+  const cube = new THREE.Mesh(keep(new THREE.BoxGeometry(2, 2, 2)), keep(new THREE.MeshStandardMaterial({ color: 0x4488ff, roughness: 0.3 })));
+  cube.position.y = 1.6;
+  cube.castShadow = cube.receiveShadow = true;
+  scene.add(cube);
+  // (ENTRY's sun: az 210°, el 24°)
+  const [az, el] = [(210 * Math.PI) / 180, (24 * Math.PI) / 180];
+  const sun = new THREE.DirectionalLight(0xffeedd, 3);
+  sun.position.set(Math.sin(az) * Math.cos(el) * 40, Math.sin(el) * 40, Math.cos(az) * Math.cos(el) * 40);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, near: 1, far: 100 });
+  scene.add(sun, new THREE.HemisphereLight(0x8099bf, 0x59544f, 0.6));
+  return {
+    scene,
+    camera,
+    dispose() {
+      sun.shadow.map?.dispose();
+      for (const m of made) m.dispose();
+    },
+  };
+}
+
 export default {
   id: 'fixture-lit',
   shading: 'nodes',
@@ -151,6 +210,11 @@ export default {
     if (opts.particles) {
       camera.position.set(0, 2.2, 7);
       camera.lookAt(0, 2.4, 0);
+    }
+    // (over the breaks, which land 3 to 7 m round a point 2 m behind the centre)
+    if (opts.debris) {
+      camera.position.set(0, 9, 14);
+      camera.lookAt(0, 0, -2);
     }
     const camVel = new THREE.Vector3();
 
@@ -352,6 +416,10 @@ export default {
       }
       if (opts.weather != null) snow = await weatherCrates(scene, made, opts.weather);
       if (opts.decals) decals = await decalWall(scene, made, renderer, ground, opts.decals, opts.tier);
+      if (opts.debris) {
+        const { createDebrisProbe } = await import('./debrisProbe.js');
+        probe.debris = await createDebrisProbe({ scene, renderer, camera, light, tier: opts.tier, breaks: opts.debris !== 'off' });
+      }
       if (opts.particles) {
         const { createParticleProbe } = await import('./particleProbe.js');
         probe.particles = await createParticleProbe({ scene, renderer, camera, light, tier: opts.tier });
@@ -387,11 +455,13 @@ export default {
         cube.rotation.y += dt;
         if (camVel.x) camera.position.addScaledVector(camVel, dt);
         probe.particles?.step(dt);
+        probe.debris?.step(dt);
         light?.update(dt, camera);
       },
       draw({ renderer: r }) {
         if (post && opts.post) post.render();
         else r.render(scene, camera);
+        probe.debris?.draw(r);
       },
       wants: () => true,
       dispose() {
@@ -400,6 +470,7 @@ export default {
         light?.dispose();
         decals?.dispose();
         probe.particles?.dispose();
+        probe.debris?.dispose();
         if (!opts.sky) envTex?.dispose();
         for (const m of made) m.dispose();
       },

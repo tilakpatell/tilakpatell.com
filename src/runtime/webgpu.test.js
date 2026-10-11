@@ -119,6 +119,31 @@ describe('buildPostProcessing', () => {
   });
 });
 
+describe('the reference shots’ hooks', () => {
+  it('leaves a chain’s TRAA out with temporal off, and keeps it by default', async () => {
+    const passes = [{ kind: 'render' }, { kind: 'ao' }, { kind: 'traa' }, { kind: 'output' }];
+    built.length = 0;
+    const on = await createWebGPU(fakeCanvas());
+    await on.post(passes).ready;
+    expect(built.at(-1).passes.map((p) => p.kind)).toEqual(['render', 'ao', 'traa', 'output']);
+    const off = await createWebGPU(fakeCanvas(), { temporal: false });
+    await off.post(passes).ready;
+    expect(built.at(-1).passes.map((p) => p.kind)).toEqual(['render', 'ao', 'output']);
+  });
+
+  it('jitters through the renderer’s render only once asked', async () => {
+    const gfx = await createWebGPU(fakeCanvas());
+    const own = vi.fn();
+    const renderer = made.at(-1);
+    renderer.render = own;
+    expect(typeof gfx.jitter).toBe('function');
+    expect(renderer.render).toBe(own);
+    gfx.jitter(0);
+    expect(renderer.render).not.toBe(own);
+    gfx.jitter(null);
+  });
+});
+
 describe('adapterLimits', () => {
   it('asks for the adapter’s own values of the limits a chain can exceed', async () => {
     const gpu = { requestAdapter: async () => ({ limits: { maxColorAttachmentBytesPerSample: 128, maxColorAttachments: 8, maxStorageBuffersPerShaderStage: 10, maxBindGroups: 4 } }) };

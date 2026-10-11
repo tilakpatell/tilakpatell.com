@@ -21,11 +21,13 @@
 // FLY picks the /fly journey's planet (default Hoth).
 // planet flight: end
 // Each journey prints a table: a row per phase (load, idle, move...), with the frame
-// times' spread, the hitches (frames over 50 and 100 ms), what the worst
+// times' spread (p50 to max, and `stdev`, the frame-to-frame deltas'
+// standard deviation, pauses over 250 ms dropped: how even the pace was), the hitches (frames over 50 and 100 ms), what the worst
 // frames were spent on, and `sizes`, the 3D canvases resized (each one
 // waits on the graphics chip: a stall with no GL call named in it).
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { frameStdev } from './lib/perf-stats.mjs';
 
 const argv = process.argv.slice(2);
 const profile = Boolean(process.env.PROFILE);
@@ -276,6 +278,8 @@ function phases({ frames, marks, loaf }) {
       fps: r1(gaps.length / Math.max(0.001, gaps.reduce((s, g) => s + g.ms, 0) / 1000)),
       p50: r1(pct(ms, 0.5)),
       p95: r1(pct(ms, 0.95)),
+      // (the frame-to-frame spread, pauses over 250 ms dropped: lib/perf-stats)
+      stdev: r1(frameStdev(gaps.map((g) => g.ms)) ?? 0),
       p99: r1(pct(ms, 0.99)),
       max: Math.round(ms[ms.length - 1] ?? 0),
       over50: ms.filter((m) => m > 50).length,
@@ -625,10 +629,10 @@ try {
     report[name] = { backend: gpu ?? 'default', drawnOn, rows, errors, failed, secs: Math.round((Date.now() - t0) / 1000), readyS: ready ? r1((ready[1] - data.origin) / 1000) : null, heapMB: data?.heap ? Math.round(data.heap / 1048576) : null };
     console.log(`\n== ${name}${failed ? `  (stopped: ${failed})` : ''}  on ${drawnOn ?? '?'}  ready ${report[name].readyS}s  total ${report[name].secs}s  heap ${report[name].heapMB} MB${errors.length ? `  errors ${errors.length}` : ''}`);
     const pw = Math.max(9, ...rows.map((r) => r.phase.length));
-    console.log(`${'phase'.padEnd(pw)}  secs  fps    p50   p95   p99   max  >50 >100 links   mid texMB bufMB draws ktris sizes`);
+    console.log(`${'phase'.padEnd(pw)}  secs  fps    p50   p95 stdev   p99   max  >50 >100 links   mid texMB bufMB draws ktris sizes`);
     for (const r of rows) {
       console.log(
-        [r.phase.padEnd(pw), String(r.secs).padStart(5), String(r.fps).padStart(5), String(r.p50).padStart(6), String(r.p95).padStart(5), String(r.p99).padStart(5), String(r.max).padStart(5), String(r.over50).padStart(4), String(r.over100).padStart(4), String(r.links).padStart(5), String(r.mid).padStart(5), String(r.texMB).padStart(5), String(r.bufMB).padStart(5), String(r.draws).padStart(5), String(r.ktris).padStart(5), String(r.sizes).padStart(5)].join(' '),
+        [r.phase.padEnd(pw), String(r.secs).padStart(5), String(r.fps).padStart(5), String(r.p50).padStart(6), String(r.p95).padStart(5), String(r.stdev).padStart(5), String(r.p99).padStart(5), String(r.max).padStart(5), String(r.over50).padStart(4), String(r.over100).padStart(4), String(r.links).padStart(5), String(r.mid).padStart(5), String(r.texMB).padStart(5), String(r.bufMB).padStart(5), String(r.draws).padStart(5), String(r.ktris).padStart(5), String(r.sizes).padStart(5)].join(' '),
       );
     }
     for (const r of rows) {

@@ -6,6 +6,12 @@ import { SIGHT } from '../ground/landing';
 import { LANDABLE } from '.';
 import { districtProblems, heightFor, namedTwice, spawnProblems, standable } from './validity';
 import { existsSync } from 'node:fs';
+import { turnAt } from './turnSite';
+import { SITES as FOREST } from './forest';
+
+const TURN = FOREST.kashyyyk.turn;
+const K = turnAt(TURN);
+const U = ([x, z]) => turnAt({ yaw: -TURN.yaw })([x - TURN.by[0], z - TURN.by[1]]);
 
 describe('every world can be played as written', () => {
   for (const id of Object.keys(SITES)) {
@@ -28,43 +34,47 @@ describe('every world can be played as written', () => {
   }
   it('knows the lagoon from the beach (Kashyyyk)', () => {
     const site = siteOf('kashyyyk');
-    expect(heightFor(site)(40, 40)).toBeGreaterThan(0.2);
-    expect(standable(site, [150, 120])).toBe(false);
+    expect(heightFor(site)(...K([40, 40]))).toBeGreaterThan(0.2);
+    expect(standable(site, K([60, 96]))).toBe(false);
   });
 });
 
+// (Kashyyyk's site is turned to the game's map, turnSite.js: these read it in
+// its own frame, the lagoon at +z, K into the turned site and U back out)
 describe('Kashyyyk, as Revenge of the Sith has it', () => {
   const site = siteOf('kashyyyk');
   const h = heightFor(site);
+  const sea = site.water.level;
   it('has a beach in front of the landing, and shallows in front of the beach', () => {
-    for (const x of [0, 40, 80, 110]) expect(h(x, 40), `beach ${x}`).toBeGreaterThan(0.4);
+    for (const x of [0, 40, 80, 110]) expect(h(...K([x, 40])) - sea, `beach ${x}`).toBeGreaterThan(0.4);
     for (const x of [20, 60, 100]) {
-      expect(h(x, 90), `shallows ${x}`).toBeLessThan(0);
-      expect(h(x, 90), `shallows ${x}`).toBeGreaterThan(-0.8);
+      expect(h(...K([x, 90])) - sea, `shallows ${x}`).toBeLessThan(0);
+      expect(h(...K([x, 90])) - sea, `shallows ${x}`).toBeGreaterThan(-0.8);
     }
   });
   const bar = site.things_all.filter((t) => t.kind === 'barricade');
-  const line = Math.max(...bar.map((b) => b.at[1]));
+  const line = Math.max(...bar.map((b) => U(b.at)[1]));
   it('faces its barricades to the water, in front of the cover', () => {
     expect(bar.length).toBeGreaterThanOrEqual(4);
-    for (const b of bar) expect(b.at[1]).toBeGreaterThan(50);
+    for (const b of bar) expect(U(b.at)[1]).toBeGreaterThan(50);
     // the cover on the sand lies between the barricades and the water (the
     // stores, crates too, stay back behind the line)
-    const cover = site.things_all.filter((t) => t.place === 'beach' && (['karst', 'log'].includes(t.kind) || (t.kind === 'crates' && t.at[1] > 60)));
+    const cover = site.things_all.filter((t) => t.place === 'beach' && (['karst', 'log'].includes(t.kind) || (t.kind === 'crates' && U(t.at)[1] > 60)));
     expect(cover.length).toBeGreaterThanOrEqual(5);
-    for (const c of cover) expect(c.at[1], `${c.kind} at ${c.at}`).toBeGreaterThan(line);
+    for (const c of cover) expect(U(c.at)[1], `${c.kind} at ${c.at}`).toBeGreaterThan(line);
   });
   it('puts the spider-droid wreck on the sand, between the water and the barricades', () => {
     const w = site.things_all.find((t) => t.kind === 'homingspider');
     expect(standable(site, w.at)).toBe(true);
-    expect(w.at[1]).toBeGreaterThan(line);
+    expect(U(w.at)[1]).toBeGreaterThan(line);
   });
   it('has one Gree and one Tarfful, both where you can talk to them', () => {
     const named = site.life.filter((a) => /Gree|Tarfful/.test(a.name ?? ''));
     expect(named.map((a) => a.name).sort()).toEqual(['Commander Gree', 'Tarfful']);
     const tarfful = named.find((a) => a.name === 'Tarfful');
     // (outside Kachirho's trunk: 18 m round its middle)
-    expect(Math.hypot(tarfful.at[0] + 140, tarfful.at[1] + 30)).toBeGreaterThan(22);
+    const [tx, tz] = U(tarfful.at);
+    expect(Math.hypot(tx + 140, tz + 30)).toBeGreaterThan(22);
   });
   it('stands everyone on Kashyyyk somewhere they can stand', () => {
     for (const a of site.life) {
@@ -82,11 +92,12 @@ describe('Kashyyyk, as Revenge of the Sith has it', () => {
       for (const sp of spawns.filter((x) => x.side === 'yours')) {
         expect(sp.tag).not.toBe(s.tag);
         // (the whole disc of them is on dry ground: z at its near and far edges)
-        for (const dz of [-(sp.spread ?? 0), 0, sp.spread ?? 0]) expect(standable(site, [sp.at[0], sp.at[1] + dz]), `${sp.kind} at ${sp.at} ${dz}`).toBe(true);
+        const [x, z] = U(sp.at);
+        for (const dz of [-(sp.spread ?? 0), 0, sp.spread ?? 0]) expect(standable(site, K([x, z + dz])), `${sp.kind} at ${sp.at} ${dz}`).toBe(true);
       }
       for (const sp of spawns.filter((x) => x.hostile && x.side !== 'yours')) {
-        expect(sp.at[1]).toBeGreaterThan(75); // in the shallows
-        expect(sp.at[1] - (sp.spread ?? 0)).toBeGreaterThanOrEqual(84); // none of its spread on the sand
+        expect(U(sp.at)[1]).toBeGreaterThan(75); // in the shallows
+        expect(U(sp.at)[1] - (sp.spread ?? 0)).toBeGreaterThanOrEqual(84); // none of its spread on the sand
         expect(sp.wade).toBe(true);
       }
       expect(s.at).toBeTruthy();

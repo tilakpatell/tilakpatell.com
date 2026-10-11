@@ -1,0 +1,516 @@
+{
+  "_source": "scripts/x2-profile.mjs on this machine (Node, the lane X2 container): the Battlefront world’s step on Hoth’s pack, the draw left out",
+  "seconds": 60,
+  "tier": "ultra",
+  "seed": 1,
+  "rapier": "simd",
+  "search": "js",
+  "searchMsPerFrame": 0.2439,
+  "replay": {
+    "calls": 2946,
+    "differ": 0,
+    "jsMs": 688.73,
+    "wasmMs": 231.58,
+    "perCallJsUs": 233.8,
+    "perCallWasmUs": 78.6
+  },
+  "battle": {
+    "searches": 2946,
+    "hash": "8b0ff052"
+  },
+  "breaks": {
+    "perMinute": 100,
+    "world": "level",
+    "made": 104,
+    "breaks": 104,
+    "hulls": 42,
+    "statics": 727,
+    "lost": 10,
+    "floors": 7,
+    "refused": 1,
+    "bursts": 104,
+    "particles": 121550,
+    "cap": {
+      "live": 42,
+      "held": 0,
+      "max": 64,
+      "refused": 0
+    }
+  },
+  "physics": {
+    "p50": 2.918,
+    "p95": 5.717,
+    "max": 31.395,
+    "mean": 3.284
+  },
+  "frame": {
+    "p50": 3.987,
+    "p95": 8.664,
+    "max": 32.095
+  },
+  "heightsPerFrame": 0,
+  "level": {
+    "instances": 6025,
+    "rebuilds": null
+  },
+  "bots": 17,
+  "ms": 16702.5,
+  "idleMs": 65.8,
+  "frames": 3600,
+  "modules": [
+    {
+      "module": "00c8f112",
+      "selfMs": 6019.7,
+      "perFrame": 1.672,
+      "share": 0.3604
+    },
+    {
+      "module": "rapier",
+      "selfMs": 4518.8,
+      "perFrame": 1.255,
+      "share": 0.2705
+    },
+    {
+      "module": "(garbage collector)",
+      "selfMs": 822.6,
+      "perFrame": 0.229,
+      "share": 0.0493
+    },
+    {
+      "module": "src/lib/battlefront/navSearch.js",
+      "selfMs": 755.1,
+      "perFrame": 0.21,
+      "share": 0.0452
+    },
+    {
+      "module": "(native)",
+      "selfMs": 498.6,
+      "perFrame": 0.138,
+      "share": 0.0298
+    },
+    {
+      "module": "src/lib/level/bands.js",
+      "selfMs": 466.7,
+      "perFrame": 0.13,
+      "share": 0.0279
+    },
+    {
+      "module": "src/components/battlefront/battle.js",
+      "selfMs": 438.5,
+      "perFrame": 0.122,
+      "share": 0.0263
+    },
+    {
+      "module": "file:///home/user/tilakpatell.com/scripts/x2-profile.mjs",
+      "selfMs": 344.5,
+      "perFrame": 0.096,
+      "share": 0.0206
+    },
+    {
+      "module": "src/lib/battlefront/nav.js",
+      "selfMs": 328.3,
+      "perFrame": 0.091,
+      "share": 0.0197
+    },
+    {
+      "module": "src/lib/three/particles/debris.js",
+      "selfMs": 327.9,
+      "perFrame": 0.091,
+      "share": 0.0196
+    },
+    {
+      "module": "src/lib/battlefront/sim.js",
+      "selfMs": 292.2,
+      "perFrame": 0.081,
+      "share": 0.0175
+    },
+    {
+      "module": "src/lib/physics/world.js",
+      "selfMs": 290.4,
+      "perFrame": 0.081,
+      "share": 0.0174
+    },
+    {
+      "module": "src/lib/battlefront/ai/bots.js",
+      "selfMs": 283.1,
+      "perFrame": 0.079,
+      "share": 0.0169
+    },
+    {
+      "module": "src/lib/battlefront/ai/soldierBrain.js",
+      "selfMs": 244,
+      "perFrame": 0.068,
+      "share": 0.0146
+    },
+    {
+      "module": "src/components/galaxy/surface/level/levelScene.js",
+      "selfMs": 151.2,
+      "perFrame": 0.042,
+      "share": 0.0091
+    },
+    {
+      "module": "src/components/galaxy/surface/level/levelStream.js",
+      "selfMs": 136.9,
+      "perFrame": 0.038,
+      "share": 0.0082
+    },
+    {
+      "module": "src/lib/battlefront/soldier.js",
+      "selfMs": 121.5,
+      "perFrame": 0.034,
+      "share": 0.0073
+    },
+    {
+      "module": "three",
+      "selfMs": 114.7,
+      "perFrame": 0.032,
+      "share": 0.0069
+    },
+    {
+      "module": "src/lib/battlefront/ai/squad.js",
+      "selfMs": 85.1,
+      "perFrame": 0.024,
+      "share": 0.0051
+    },
+    {
+      "module": "src/lib/ai/perception.js",
+      "selfMs": 56.1,
+      "perFrame": 0.016,
+      "share": 0.0034
+    },
+    {
+      "module": "src/lib/battlefront/ai/coverQuery.js",
+      "selfMs": 45.7,
+      "perFrame": 0.013,
+      "share": 0.0027
+    },
+    {
+      "module": "src/lib/battlefront/ai/targeting.js",
+      "selfMs": 40.1,
+      "perFrame": 0.011,
+      "share": 0.0024
+    },
+    {
+      "module": "src/lib/ai/utility.js",
+      "selfMs": 39.9,
+      "perFrame": 0.011,
+      "share": 0.0024
+    },
+    {
+      "module": "src/lib/battlefront/weapons.js",
+      "selfMs": 21.2,
+      "perFrame": 0.006,
+      "share": 0.0013
+    },
+    {
+      "module": "src/lib/battlefront/battlePoints.js",
+      "selfMs": 20.4,
+      "perFrame": 0.006,
+      "share": 0.0012
+    }
+  ],
+  "self": [
+    {
+      "fn": "(anonymous) rapier:1",
+      "selfMs": 1781.5,
+      "perFrame": 0.495,
+      "share": 0.1067
+    },
+    {
+      "fn": "wasm-function[1140] 00c8f112:1",
+      "selfMs": 1190.4,
+      "perFrame": 0.331,
+      "share": 0.0713
+    },
+    {
+      "fn": "wasm-to-js 00c8f112:1",
+      "selfMs": 1176.1,
+      "perFrame": 0.327,
+      "share": 0.0704
+    },
+    {
+      "fn": "unmapRemovedColliders rapier:1",
+      "selfMs": 843.3,
+      "perFrame": 0.234,
+      "share": 0.0505
+    },
+    {
+      "fn": "(garbage collector)",
+      "selfMs": 822.6,
+      "perFrame": 0.229,
+      "share": 0.0493
+    },
+    {
+      "fn": "__wbindgen_object_drop_ref rapier:1",
+      "selfMs": 535.1,
+      "perFrame": 0.149,
+      "share": 0.032
+    },
+    {
+      "fn": "searchJs src/lib/battlefront/navSearch.js:76",
+      "selfMs": 533,
+      "perFrame": 0.148,
+      "share": 0.0319
+    },
+    {
+      "fn": "wasm-function[2643] 00c8f112:1",
+      "selfMs": 482.8,
+      "perFrame": 0.134,
+      "share": 0.0289
+    },
+    {
+      "fn": "wasm-function[2453] 00c8f112:1",
+      "selfMs": 447.9,
+      "perFrame": 0.124,
+      "share": 0.0268
+    },
+    {
+      "fn": "wanted src/lib/level/bands.js:37",
+      "selfMs": 395.3,
+      "perFrame": 0.11,
+      "share": 0.0237
+    },
+    {
+      "fn": "wasm-function[1166] 00c8f112:1",
+      "selfMs": 365.7,
+      "perFrame": 0.102,
+      "share": 0.0219
+    },
+    {
+      "fn": "update src/lib/three/particles/debris.js:339",
+      "selfMs": 303,
+      "perFrame": 0.084,
+      "share": 0.0181
+    },
+    {
+      "fn": "__wbg_call_187d372bd5fdd4aa rapier:1",
+      "selfMs": 286.7,
+      "perFrame": 0.08,
+      "share": 0.0172
+    },
+    {
+      "fn": "wasm-function[359] 00c8f112:1",
+      "selfMs": 286,
+      "perFrame": 0.079,
+      "share": 0.0171
+    },
+    {
+      "fn": "view src/components/battlefront/battle.js:398",
+      "selfMs": 259.4,
+      "perFrame": 0.072,
+      "share": 0.0155
+    },
+    {
+      "fn": "unmapRemovedBodies rapier:1",
+      "selfMs": 257.1,
+      "perFrame": 0.071,
+      "share": 0.0154
+    },
+    {
+      "fn": "__wbindgen_generic_0000000000000001 rapier:1",
+      "selfMs": 227.4,
+      "perFrame": 0.063,
+      "share": 0.0136
+    },
+    {
+      "fn": "bandOf (native):37",
+      "selfMs": 215.3,
+      "perFrame": 0.06,
+      "share": 0.0129
+    },
+    {
+      "fn": "frame file:///home/user/tilakpatell.com/scripts/x2-profile.mjs:208",
+      "selfMs": 196,
+      "perFrame": 0.054,
+      "share": 0.0117
+    },
+    {
+      "fn": "wasm-function[447] 00c8f112:1",
+      "selfMs": 195.9,
+      "perFrame": 0.054,
+      "share": 0.0117
+    },
+    {
+      "fn": "pop src/lib/battlefront/navSearch.js:42",
+      "selfMs": 184.9,
+      "perFrame": 0.051,
+      "share": 0.0111
+    },
+    {
+      "fn": "stepBrains src/lib/battlefront/ai/bots.js:185",
+      "selfMs": 161.2,
+      "perFrame": 0.045,
+      "share": 0.0097
+    },
+    {
+      "fn": "wasm-function[813] 00c8f112:1",
+      "selfMs": 159.3,
+      "perFrame": 0.044,
+      "share": 0.0095
+    },
+    {
+      "fn": "findPath src/lib/battlefront/nav.js:313",
+      "selfMs": 154.3,
+      "perFrame": 0.043,
+      "share": 0.0092
+    },
+    {
+      "fn": "wasm-function[55] 00c8f112:1",
+      "selfMs": 153.3,
+      "perFrame": 0.043,
+      "share": 0.0092
+    }
+  ],
+  "total": [
+    {
+      "fn": "(anonymous) file:///home/user/tilakpatell.com/scripts/x2-profile.mjs:0",
+      "totalMs": 15685.6,
+      "perFrame": 4.357,
+      "share": 0.9391
+    },
+    {
+      "fn": "frame file:///home/user/tilakpatell.com/scripts/x2-profile.mjs:208",
+      "totalMs": 15622.1,
+      "perFrame": 4.339,
+      "share": 0.9353
+    },
+    {
+      "fn": "step src/lib/physics/world.js:592",
+      "totalMs": 10424.5,
+      "perFrame": 2.896,
+      "share": 0.6241
+    },
+    {
+      "fn": "step rapier:1",
+      "totalMs": 9923.4,
+      "perFrame": 2.756,
+      "share": 0.5941
+    },
+    {
+      "fn": "mapNewSoftBodies rapier:1",
+      "totalMs": 7385.3,
+      "perFrame": 2.051,
+      "share": 0.4422
+    },
+    {
+      "fn": "js-to-wasm:ii: 00c8f112:1",
+      "totalMs": 4541.1,
+      "perFrame": 1.261,
+      "share": 0.2719
+    },
+    {
+      "fn": "wasm-to-js 00c8f112:1",
+      "totalMs": 4255.3,
+      "perFrame": 1.182,
+      "share": 0.2548
+    },
+    {
+      "fn": "mapNewColliders rapier:1",
+      "totalMs": 4231.1,
+      "perFrame": 1.175,
+      "share": 0.2533
+    },
+    {
+      "fn": "forEachColliderHandle rapier:1",
+      "totalMs": 4222.8,
+      "perFrame": 1.173,
+      "share": 0.2528
+    },
+    {
+      "fn": "wasm-function[1140] 00c8f112:1",
+      "totalMs": 4186.9,
+      "perFrame": 1.163,
+      "share": 0.2507
+    },
+    {
+      "fn": "stepWithEvents rapier:1",
+      "totalMs": 2467.6,
+      "perFrame": 0.685,
+      "share": 0.1477
+    },
+    {
+      "fn": "step src/components/battlefront/battle.js:271",
+      "totalMs": 2429.7,
+      "perFrame": 0.675,
+      "share": 0.1455
+    },
+    {
+      "fn": "wasm-function[245] 00c8f112:1",
+      "totalMs": 2423.3,
+      "perFrame": 0.673,
+      "share": 0.1451
+    },
+    {
+      "fn": "wasm-function[2643] 00c8f112:1",
+      "totalMs": 2392.6,
+      "perFrame": 0.665,
+      "share": 0.1432
+    },
+    {
+      "fn": "step src/lib/battlefront/sim.js:715",
+      "totalMs": 2388.8,
+      "perFrame": 0.664,
+      "share": 0.143
+    },
+    {
+      "fn": "__wbg_call_187d372bd5fdd4aa rapier:1",
+      "totalMs": 2312.6,
+      "perFrame": 0.642,
+      "share": 0.1385
+    },
+    {
+      "fn": "stepBrains src/lib/battlefront/ai/bots.js:185",
+      "totalMs": 2089.8,
+      "perFrame": 0.581,
+      "share": 0.1251
+    },
+    {
+      "fn": "jA rapier:1",
+      "totalMs": 2025.9,
+      "perFrame": 0.563,
+      "share": 0.1213
+    },
+    {
+      "fn": "(anonymous) rapier:1",
+      "totalMs": 2021.7,
+      "perFrame": 0.562,
+      "share": 0.121
+    },
+    {
+      "fn": "mapNewBodies rapier:1",
+      "totalMs": 1413.3,
+      "perFrame": 0.393,
+      "share": 0.0846
+    },
+    {
+      "fn": "forEachRigidBodyHandle rapier:1",
+      "totalMs": 1409.7,
+      "perFrame": 0.392,
+      "share": 0.0844
+    },
+    {
+      "fn": "unmapRemovedColliders rapier:1",
+      "totalMs": 1400.4,
+      "perFrame": 0.389,
+      "share": 0.0838
+    },
+    {
+      "fn": "wasm-function[1166] 00c8f112:1",
+      "totalMs": 1398.3,
+      "perFrame": 0.388,
+      "share": 0.0837
+    },
+    {
+      "fn": "js-to-wasm:iiiiiiiiiiiiiiii: (native):0",
+      "totalMs": 1390.8,
+      "perFrame": 0.386,
+      "share": 0.0833
+    },
+    {
+      "fn": "act src/lib/battlefront/ai/soldierBrain.js:598",
+      "totalMs": 1274.9,
+      "perFrame": 0.354,
+      "share": 0.0763
+    }
+  ]
+}
