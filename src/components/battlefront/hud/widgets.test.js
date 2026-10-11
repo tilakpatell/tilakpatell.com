@@ -83,3 +83,18 @@ describe('the game’s widgets, placed and filled', () => {
     expect(squadListRows({ letter: 'A', members })).toHaveLength(4);
   });
 });
+
+describe('the spawn screen’s names', () => {
+  it('writes each offer as the game’s screen does, in capitals, from its strings or by hand', async () => {
+    const { offerNameOf } = await import('./widgets.js');
+    const { loadRulebook } = await import('../../../lib/battlefront/rulebook.js');
+    const rb = loadRulebook();
+    expect(offerNameOf(rb, { kind: 'class', id: 'd-orig-assault', cls: 'assault' })).toBe('ASSAULT');
+    expect(offerNameOf(rb, { kind: 'hero', id: 'darthvader' })).toBe('DARTH VADER');
+    expect(offerNameOf(rb, { kind: 'hero', id: 'bobafett' })).toBe('BOBA FETT');
+    expect(offerNameOf(rb, { kind: 'hero', id: 'bossk' })).toBe('BOSSK');
+    expect(offerNameOf(rb, { kind: 'reinforcement', id: 'ISBAgent' })).toBe('ISB AGENT');
+    expect(offerNameOf(rb, { kind: 'reinforcement', id: 'DeathTrooper' })).toBe('DEATH TROOPER');
+    expect(offerNameOf(rb, { kind: 'reinforcement', id: 'SomethingNew' })).toBe('SOMETHING NEW');
+  });
+});

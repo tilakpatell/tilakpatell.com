@@ -1,0 +1,14 @@
+# Evidence: the Galactic Assault rework (2026-10-11)
+
+The design: `../../specs/2026-10-11-galactic-assault-bf2017-flow-design.md`. Shot in the cloud container’s headless Chromium on SwiftShader (software GL), the dev server with the bucket base, `/battlefront/hoth/galacticAssault?gpu=webgl&post=off` at the low tier (the node chain loses SwiftShader’s device with the post on; the owner’s desktop runs the chain), 1280 × 720.
+
+| file | what |
+| --- | --- |
+| `battlefront-hoth-spawn-low.png` | the game’s spawn screen over the level: the four classes at no cost, the Empire’s reinforcements (Death Trooper 1,500, Jump Trooper 1,000, ISB Agent 1,500) and heroes (4,000) at the record’s prices, named as the game’s screen writes them (`hud/widgets.js`’s `offerNameOf`), the squad strip (Imperial HQ, the squadmates), Battle Points 0, the keys |
+| `battlefront-hoth-field-low.png` | the field after a deploy and 20 s advanced: the stage line, the objective bar A to F, the markers with their distances, the game’s crosshair, the squad list, the abilities, the radar; the level’s meshes drawn (718,417 triangles, 145 calls, 1,918 instances at the spawn view; 447,447, 93, 1,132 on the field; the nav mask on) once `map/level.js` fetched the pack through the asset base (0 triangles before) |
+| `mode-menu-dagobah-desktop.png`, `-phone.png` | the landing’s mode menu as the game’s multiplayer screen (`ModeMenu.jsx`): Galactic Assault the large tile with the game’s AT-AT film, the grid beside it in the game’s faces, Story’s missions as chips, Free roam, the keys at the foot; Dagobah, where no battle is, so every card says why (a static render of the component at 1280 × 720 and 390 × 844) |
+| `galaxy-geonosis-spawn-low.png` | the galaxy’s engine on Geonosis (`scripts/assault-check.mjs geonosis`, low, `SHOT_WAIT=900000`): the game’s spawn screen (`AssaultSpawn.jsx`): the Separatists’ four classes free, the super battle droid at 1,500, the posts with their letters and state, Battle Points, the keys; the world’s own talk line draws over it (pre-existing: the party’s chatter, `surface-talk`) |
+| `galaxy-geonosis-field-low.png` | the same battle a minute on: the game’s crosshair (the dot and notches) in place of the kit’s ticks, the phase and posts, the tickets with Battle Points under the kills, the post’s meter. The check’s “met in a minute” gate said no post moved and nobody fell in that minute at the low tier in software GL; the pure rules at six a side meet in it (118 shots, 23 hits, 4 down, the ridge contested), so the gate’s miss is the browser run’s pace, not the rules’ |
+| `battlefront-hoth-figure-low.png` | the player’s snowtrooper from the game’s third-person camera, its maps bound (the body’s KTX2 through the bucket), before the pack fetch fix (the level behind it the ground alone) |
+
+No console error in any run (`lab/`-style script, `OUT=… QUALITY=low node lab/bfshot/shoot.mjs`; the script is not committed).

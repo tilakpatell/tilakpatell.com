@@ -1869,8 +1869,8 @@ export async function create(canvas, ctx, set) {
     assault?.chooseSide(id);
     ctx.invalidate();
   }
-  function deployAt(id) {
-    const at = assault?.deploy(id);
+  function deployAt(id, offer = null) {
+    const at = assault?.deploy(id, offer);
     if (!at) return;
     leaveZone();
     putAt(me().st, at.x, at.z, at.yaw);
@@ -2092,8 +2092,8 @@ export async function create(canvas, ctx, set) {
     d.roll = Math.PI * 2 * k * (d.dx * Math.sin(p.yaw) + d.dz * Math.cos(p.yaw) >= 0 ? 1 : -1);
     return false;
   }
-  // the ring over the one you're squared up to: a thin additive ring at
-  // their chest, facing you, breathing; in your blade's (or bolt's) colour
+  // the ring over the one you're squared up to, with a blade in hand: a thin
+  // additive ring at their chest, facing you, breathing; in your blade's colour
   const lockRing = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.5, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, side: THREE.DoubleSide, toneMapped: false }));
   lockRing.visible = false;
   lockRing.renderOrder = 6;
@@ -2102,7 +2102,9 @@ export async function create(canvas, ctx, set) {
   lockRing.add(lockTicks);
   function stepLockRing(dt) {
     const t = state.lock;
-    if (!t || t.down || state.phase !== 'walk') {
+    // (a blade's ring alone: a blaster fight has the game's crosshair and its
+    // hit markers on the HUD, never a circle on the target: reticleFor.js)
+    if (!t || t.down || state.phase !== 'walk' || !me().saber) {
       lockRing.visible = false;
       return;
     }
