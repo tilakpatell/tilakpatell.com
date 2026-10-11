@@ -31,6 +31,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { REPO, deps, fresh, git, keepAwake, pullRequest, push, summary, waitForGpu, workspace } from './lib.mjs';
 
 export const JOBS = ['panoramas', 'atlases', 'textures', 'uastc', 'depots', 'gate'];
@@ -291,5 +292,59 @@ export function ledgerAgain(root, d, { env, log }) {
     return 'The coverage check passes on the new ledger.';
   } catch {
     return '**The coverage check fails on the new ledger**: rows that moved need an owner in `scripts/lib/bf2017-owners.mjs` (the log lists the first twenty).';
+  }
+}
+
+// What the doctor checks for these jobs (scripts/desktop/doctor.mjs, group
+// bf2017): none is needed by gen3d, voices or motion, so a missing one is a
+// "no" with its fix, never a red doctor. → [{ name, ok, detail, fix }]
+export function bf2017Checks(env = process.env, io = {}) {
+  const d = desk(env);
+  return preflight(
+    [
+      { name: 'the export (BF2_EXPORT)', file: d.root, fix: 'set BF2_EXPORT in the runner\'s .env to the export folder (default ~\\Downloads\\BF2_Extract)' },
+      { name: "the export's texture index", file: join(d.web, 'textures.jsonl'), fix: 'the export writes web/textures.jsonl' },
+      { name: "the export's encoder (tool/ktx2_encode.py)", file: join(d.tool, 'ktx2_encode.py'), fix: 'the export keeps its tools in tool/' },
+      { name: "the export's uploader (tool/upload_supabase.py)", file: join(d.tool, 'upload_supabase.py'), fix: 'the export keeps its tools in tool/' },
+      { name: 'the exporter (tool/bf2export.csproj)', file: join(d.tool, 'bf2export.csproj'), fix: 'the exporter, on Frosty\'s SDK, in the export\'s tool/' },
+      { name: "the uploader's record (web_opt/upload_state.tsv)", file: join(d.webOpt, 'upload_state.tsv'), fix: 'written by the uploader\'s first run' },
+      { name: 'the depot probe (maps_work/shaderdepots.jsonl)', file: join(d.mapsWork, 'shaderdepots.jsonl'), fix: "the exporter's depot probe writes it" },
+      { name: 'python', cmd: d.python, fix: 'Python 3 on PATH (or set PYTHON)' },
+      { name: 'texconv (BC6H to half floats)', cmd: d.texconv, fix: 'winget install Microsoft.DirectXTex, or set TEXCONV' },
+      { name: 'toktx (UASTC)', cmd: env.TOKTX ?? 'toktx', fix: 'winget install KhronosGroup.KTX-Software, or set TOKTX' },
+      { name: 'ffmpeg', cmd: 'ffmpeg', fix: 'winget install Gyan.FFmpeg' },
+      { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
+      { name: 'Chrome (the gate)', file: d.chrome, fix: 'install Google Chrome, or set CHROME' },
+    ],
+    env,
+    io,
+  );
+}
+
+// Does that Chrome give WebGPU an adapter on this machine's chip? (the
+// gate's webgpu leg). Uses the repository's own Playwright when it's
+// installed; → { ok, detail }
+export async function webgpuCheck(chrome, root = REPO) {
+  let chromium;
+  try {
+    ({ chromium } = await import(pathToFileURL(join(root, 'node_modules/playwright-core/index.mjs')).href));
+  } catch {
+    return { ok: false, detail: 'not checked: no playwright-core in this checkout (the gate checks it when it runs)' };
+  }
+  let browser;
+  try {
+    browser = await chromium.launch({ executablePath: chrome, args: ['--enable-unsafe-webgpu', '--use-angle=d3d11', '--ignore-gpu-blocklist'], timeout: 30000 });
+    const page = await browser.newPage();
+    const info = await page.evaluate(async () => {
+      const a = await navigator.gpu?.requestAdapter();
+      if (!a) return null;
+      const i = a.info ?? (await a.requestAdapterInfo?.());
+      return [i?.vendor, i?.architecture, i?.description].filter(Boolean).join(' ') || 'an adapter';
+    });
+    return info ? { ok: true, detail: `WebGPU: ${info}` } : { ok: false, detail: 'no WebGPU adapter in headless Chrome' };
+  } catch (e) {
+    return { ok: false, detail: `Chrome would not start: ${String(e.message).split('\n')[0]}` };
+  } finally {
+    await browser?.close();
   }
 }
