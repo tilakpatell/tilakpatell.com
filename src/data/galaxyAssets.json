@@ -399557,11 +399557,59 @@
     "from": "gameplay/vehicles/air/cloudcar/vehicle_air_cloudcar_static_donotuse_mesh",
     "tier": "surface"
   },
+  "models/galaxy/corvette.glb": {
+    "hash": "0086fc1e5ed4",
+    "bytes": 287776,
+    "from": "the CR90 corvettes (corvettecr90-01: its kit as the space level places it)",
+    "tier": "surface"
+  },
+  "models/galaxy/corvette.ultra.glb": {
+    "hash": "92c2c54f0ae4",
+    "bytes": 1921512,
+    "from": "the CR90 corvettes (corvettecr90-01: its kit as the space level places it)",
+    "tier": "ultra"
+  },
+  "models/galaxy/destroyer.glb": {
+    "hash": "57b7c9eb4998",
+    "bytes": 2048576,
+    "from": "the Imperial Star Destroyers (endor-isd: its kit as the space level places it)",
+    "tier": "surface"
+  },
+  "models/galaxy/destroyer.ultra.glb": {
+    "hash": "e404a15be43a",
+    "bytes": 21616520,
+    "from": "the Imperial Star Destroyers (endor-isd: its kit as the space level places it)",
+    "tier": "ultra"
+  },
+  "models/galaxy/falcon.glb": {
+    "hash": "34bd3cf995e7",
+    "bytes": 2034276,
+    "from": "gameplay/vehicles/air/millenniumfalcon/landmark/millenniumfalcon_01_landmark_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/hq/nebulon.glb": {
+    "hash": "5d308368847d",
+    "bytes": 476056,
+    "from": "objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh",
+    "tier": "surface"
+  },
   "models/galaxy/kits/frontendstage.glb": {
     "hash": "41ddc7ffbc14",
     "bytes": 344216,
     "from": "levels/frontend/objects",
     "tier": "surface"
+  },
+  "models/galaxy/moncal.glb": {
+    "hash": "162924e97d22",
+    "bytes": 818252,
+    "from": "the Mon Calamari cruisers (endor-mc80: its kit as the space level places it)",
+    "tier": "surface"
+  },
+  "models/galaxy/moncal.ultra.glb": {
+    "hash": "893a66b23936",
+    "bytes": 8106956,
+    "from": "the Mon Calamari cruisers (endor-mc80: its kit as the space level places it)",
+    "tier": "ultra"
   },
   "models/galaxy/n1.glb": {
     "hash": "2f8b687e9d57",
@@ -399574,6 +399622,18 @@
     "bytes": 2568712,
     "from": "objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh",
     "tier": "surface"
+  },
+  "models/galaxy/providence.glb": {
+    "hash": "0897869920b2",
+    "bytes": 315448,
+    "from": "the Providence-class dreadnoughts (providenceclassdreadnaught-01: its kit as the space level places it)",
+    "tier": "surface"
+  },
+  "models/galaxy/providence.ultra.glb": {
+    "hash": "59cd11bd7c54",
+    "bytes": 1025136,
+    "from": "the Providence-class dreadnoughts (providenceclassdreadnaught-01: its kit as the space level places it)",
+    "tier": "ultra"
   },
   "models/galaxy/space/bd-tradefederationlandingship-01.far.glb": {
     "hash": "7068854ba2d7",
@@ -401285,6 +401345,30 @@
     "from": "gameplay/equipment/heavy/rt97c/rt97c_mesh3p_mesh",
     "tier": "surface"
   },
+  "models/galaxy/surface/scimitar.far.glb": {
+    "hash": "29f79d88cda7",
+    "bytes": 77468,
+    "from": "gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/scimitar.glb": {
+    "hash": "94ccd4391945",
+    "bytes": 732240,
+    "from": "gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/scimitar.lod1.glb": {
+    "hash": "938afc6cb51e",
+    "bytes": 178200,
+    "from": "gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/scimitar.ultra.glb": {
+    "hash": "e05943ce706d",
+    "bytes": 5201336,
+    "from": "gameplay/vehicles/air/scimitar/vehicle_air_scimitar_static_donotuse_mesh",
+    "tier": "ultra"
+  },
   "models/galaxy/surface/slave1.far.glb": {
     "hash": "a3ea856e07ce",
     "bytes": 45032,
@@ -401529,6 +401613,30 @@
     "hash": "f56a2bb5224e",
     "bytes": 18395992,
     "from": "gameplay/vehicles/air/tieinterceptor/vehicle_air_tieinterceptor_static_donotuse_mesh",
+    "tier": "ultra"
+  },
+  "models/galaxy/surface/tiestriker.far.glb": {
+    "hash": "d65cf2822f78",
+    "bytes": 38936,
+    "from": "gameplay/vehicles/air/tiestriker/tiestriker_01_static_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/tiestriker.glb": {
+    "hash": "30ae705c82da",
+    "bytes": 949396,
+    "from": "gameplay/vehicles/air/tiestriker/tiestriker_01_static_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/tiestriker.lod1.glb": {
+    "hash": "929986993161",
+    "bytes": 181332,
+    "from": "gameplay/vehicles/air/tiestriker/tiestriker_01_static_mesh",
+    "tier": "surface"
+  },
+  "models/galaxy/surface/tiestriker.ultra.glb": {
+    "hash": "760dcd6160f7",
+    "bytes": 3123376,
+    "from": "gameplay/vehicles/air/tiestriker/tiestriker_01_static_mesh",
     "tier": "ultra"
   },
   "models/galaxy/surface/trifighter.far.glb": {
@@ -401782,6 +401890,18 @@
     "bytes": 447032,
     "from": "gameplay/vehicles/air/uwing/vehicle_air_uwing_static_donotuse_mesh",
     "tier": "surface"
+  },
+  "models/galaxy/venator.glb": {
+    "hash": "db94f7d10359",
+    "bytes": 1054480,
+    "from": "the Venator-class Star Destroyers (kamino-venator: its kit as the space level places it)",
+    "tier": "surface"
+  },
+  "models/galaxy/venator.ultra.glb": {
+    "hash": "dd8ab3cf225c",
+    "bytes": 8207540,
+    "from": "the Venator-class Star Destroyers (kamino-venator: its kit as the space level places it)",
+    "tier": "ultra"
   },
   "models/galaxy/vulture.glb": {
     "hash": "f7c91fefcd7a",

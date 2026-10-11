@@ -3554,15 +3554,6 @@
     ],
     "license": "Meshy paid-plan output, owned by the site owner"
   },
-  "meshy/scimitar": {
-    "source": "https://www.meshy.ai",
-    "id": "01a114e3-d986-73c2-8f2c-24d0c754d27e",
-    "name": "the Scimitar, generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s picture of it)",
-    "authors": [
-      "Tilak Patel, with Meshy AI"
-    ],
-    "license": "Meshy paid-plan output, owned by the site owner"
-  },
   "meshy/sentinel": {
     "source": "https://www.meshy.ai",
     "id": "01a114e3-e901-7645-a702-921784ea3d48",
@@ -3608,37 +3599,10 @@
     ],
     "license": "Meshy paid-plan output, owned by the site owner"
   },
-  "meshy/corvette": {
-    "source": "https://www.meshy.ai",
-    "id": "01a11b86-9697-75f7-9012-e308f6ed4607",
-    "name": "the CR90 corvette the galaxy flies (the universe map keeps cr90.glb, credited apart), generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s pictures of it)",
-    "authors": [
-      "Tilak Patel, with Meshy AI"
-    ],
-    "license": "Meshy paid-plan output, owned by the site owner"
-  },
-  "meshy/interceptor": {
-    "source": "https://www.meshy.ai",
-    "id": "01a11b86-9c13-775c-a2c4-dc7364838732",
-    "name": "the TIE interceptor the galaxy flies (the universe map keeps its own), generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s picture of it)",
-    "authors": [
-      "Tilak Patel, with Meshy AI"
-    ],
-    "license": "Meshy paid-plan output, owned by the site owner"
-  },
   "meshy/munificent": {
     "source": "https://www.meshy.ai",
     "id": "01a11b86-a10e-76f5-a1fc-0efbd38cd7eb",
     "name": "the Munificent frigate, generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s pictures of it)",
-    "authors": [
-      "Tilak Patel, with Meshy AI"
-    ],
-    "license": "Meshy paid-plan output, owned by the site owner"
-  },
-  "meshy/providence": {
-    "source": "https://www.meshy.ai",
-    "id": "01a11b86-a7ce-72c7-9567-3e3fc5de8aad",
-    "name": "the Providence dreadnought (the Invisible Hand), generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s pictures of it)",
     "authors": [
       "Tilak Patel, with Meshy AI"
     ],
@@ -3963,15 +3927,6 @@
     "source": "https://www.meshy.ai",
     "id": "01a116cd-57ef-7515-9ca6-c1cac31fe20b",
     "name": "the third Jedi, generated for this site with Meshy AI (scripts/meshy-galaxy.mjs, described by look, rigged by Meshy)",
-    "authors": [
-      "Tilak Patel, with Meshy AI"
-    ],
-    "license": "Meshy paid-plan output, owned by the site owner"
-  },
-  "meshy/tiestriker": {
-    "source": "https://www.meshy.ai",
-    "id": "01a116d3-18e1-704c-af5c-58f1425187ca",
-    "name": "the TIE Striker, generated for this site with Meshy AI (scripts/meshy-galaxy-library.mjs, from Wookieepedia’s picture of it)",
     "authors": [
       "Tilak Patel, with Meshy AI"
     ],

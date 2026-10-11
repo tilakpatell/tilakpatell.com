@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { readMap } from './bf2017-level.mjs';
-import { SUBS, UNIT, clusters, kindOf, piecesOf, rotate, trackOf } from './bf2017-space.mjs';
+import { GRAPH_MAPS, KITS, SUBS, UNIT, clusters, kindOf, piecesOf, rotate, trackOf } from './bf2017-space.mjs';
 
 // SB_Endor_01 trimmed to 28 instances (a Star Destroyer and six of its parts
 // in SpaceBattle, the hull and the same parts again in Mode7, the MC80's hull
@@ -84,5 +84,16 @@ describe('the space levels as set pieces', () => {
     expect(lots.map((l) => l.length)).toEqual([3, 2]);
     const q = [0, Math.SQRT1_2, 0, Math.SQRT1_2]; // (a quarter turn about y)
     rotate(q, [1, 0, 0]).forEach((v, k) => expect(v).toBeCloseTo([0, 0, -1][k], 6));
+  });
+});
+
+// (lane S1: the MC80's hull binds its colour inside its shader graph, which
+// the drop's GLB does not name; drawn white without the hand binding)
+describe('the maps a kit’s shader graph binds', () => {
+  it('gives the MC80’s bare hull materials its own tiling panel map as their colour, for a kit that exists', () => {
+    expect(Object.keys(GRAPH_MAPS).every((k) => KITS.some((kit) => kit.kit === k))).toBe(true);
+    for (const material of ['MC_80_Met', 'MC_80_Met_lods', 'MC_80_light_Met']) {
+      expect(GRAPH_MAPS.mc80[material], material).toEqual([{ slot: 'color', name: 'gameplay/vehicles/capital/mc80/mc80_paneltile_breakup_02_rgba' }]);
+    }
   });
 });
