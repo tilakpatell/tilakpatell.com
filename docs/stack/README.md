@@ -11,7 +11,7 @@ The WebAssembly modules (Rapier, the Basis transcoder, meshopt) and lane X2’s 
 | `three` | ^0.186.1 | [three.md](three.md) | 679 |
 | `react` | ^19.3.0 | [react.md](react.md) | 311 |
 | `react-router-dom` | ^7.18.4 | [react.md](react.md) | 84 |
-| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 83 |
+| `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 84 |
 | `playwright-core` | ^1.56.0 | [testing.md](testing.md) | 77 |
 | `react-icons` | ^5.7.0 | [react.md](react.md) | 72 |
 | `@gltf-transform/core` | ^4.5.1 | [assets-pipeline.md](assets-pipeline.md) | 65 |

@@ -1,6 +1,6 @@
 {
   "date": "2026-10-11",
-  "sha": "762662b63",
+  "sha": "0b198643",
   "metrics": {
     "big-files": {
       "value": 30,
@@ -17,7 +17,7 @@
         },
         {
           "file": "src/components/galaxy/surface/scene.js",
-          "n": 4131
+          "n": 4197
         },
         {
           "file": "src/components/middleearth/towns/rivendell/props.js",
@@ -110,7 +110,7 @@
       ]
     },
     "boundary-breaks": {
-      "value": 475,
+      "value": 482,
       "unit": "imports",
       "label": "imports across a line docs/health/RULES.md draws",
       "detail": [
@@ -506,7 +506,7 @@
       "detail": []
     },
     "glsl-sites": {
-      "value": 617,
+      "value": 621,
       "unit": "sites",
       "label": "GLSL sites a WebGPU port removes",
       "detail": [
@@ -639,7 +639,7 @@
           "file": "src/components/galaxy/surface",
           "n": 1,
           "scan": "src/components/galaxy/surface/detail.js",
-          "ramp": "src/components/rickmorty/portal/meshyCastNodes.js"
+          "ramp": "src/components/rickmorty/portal/meshyCast.js"
         },
         {
           "file": "src/components/albuquerque/world",
