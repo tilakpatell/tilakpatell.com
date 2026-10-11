@@ -104,7 +104,7 @@ SCANS=game QUALITY=high OUT=/tmp/shots node scripts/galaxy-check.mjs surface tat
 | E1 | Tatooine (Mos Eisley, the dunes, Jabba's palace and its inside), Yavin | E0 | `session_01NKhQZ93euwjJ5jaEre3jSY` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e1-tatooine-yavin` | |
 | E2 | Naboo (Theed under its dusk and lanterns, the hangar, the plains, the palace), Kamino | E0 | `session_01HrTPmQ9wFUvFYfdVLHxZ2q` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e2-naboo-kamino` | |
 | E3 | Kashyyyk, Geonosis, Endor's village, research station and bunker | E0 | `session_0151EsRE5Sioz8bZWPSEzYeo` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e3-kashyyyk-geonosis-endor` | |
-| E4 | Scarif, Cloud City, Hoth's outpost, the Death Star inside on DeathStar02_01 | E0 | `session_015ZTef1tZABeSq9E86wZKwv` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e4-scarif-bespin-deathstar` | |
+| E4 | Scarif, Cloud City, Hoth's outpost, the Death Star inside on DeathStar02_01 | E0 | `session_015ZTef1tZABeSq9E86wZKwv` (spawned 2026-10-10 23:45 UTC from `claude/bf2017-e0-factory-on-main`, Opus 5.5) | `claude/bf2017-e4-scarif-bespin-deathstar` | #911; the Death Star's pack built, not drawn (§ Lane E4) |
 | E5 | Felucia, Kessel, Sullust, Pillio, Vardos, Fondor as systems with skins and surfaces | E0 | | `claude/bf2017-e5-new-systems` | |
 | O | the object library (every placeable set indexed), the seven mapless worlds dressed by biome, `GAME_FOR` props, the game's clouds, the living world | nothing | `session_01HvykTJCK7Bb4cFUjiKN1jW` | `claude/bf2017-o-library` | #876 |
 | Q (the space lane) | the space levels as set pieces, the capitals, the asteroids on their tracks, the sky panoramas, the map's globes | nothing (#793 read) | session_01CiUP7QfUtHM1EEqgBJpKew | `claude/bf2017-q-space` | (this PR) |
@@ -120,6 +120,7 @@ Coverage (from lane Z's ledger, `docs/superpowers/evidence/bf2017-coverage/`, re
 | 2026-10-10, lane M's fonts (all 23 used, the owner holding the licence) | 80,837 | 4,667 | 57,498 | 14,044 | 4,628 | 0 |
 | 2026-10-10, the space lane (on main after lane M; the space lane's own owned rows: 894 models and 564 maps before, 450 and 157 now) | 80,837 | 4,651 | 57,498 | 14,060 | 4,628 | 0 |
 | 2026-10-10, lane O (the index’s 8,503 objects consumed by `src/data/bf2017/library.json`; lane O owns 970 rows still: the levels’ own meshes and the nature sets’ textures no model of the index names) | 80,837 | 17,485 | 45,207 | 13,925 | 4,220 | 0 |
+| 2026-10-11, lane E4 (on main with E0's latest: Scarif_02, CloudCity_01, M2BES and Hoth_02 packed and drawn; DeathStar02_01 packed, not yet drawn). Measured, not committed: a refresh an hour later found the bucket at 80,838 rows with 6 new objects no lane owns (two terrain dynamic decals, two camera DOF maps, the space set's cloud normal map, `textures_texgap.jsonl`), for lane Z; the committed ledger stays `main`'s | 80,837 | 20,404 | 43,015 | 13,290 | 4,128 | 0 |
 
 **The first finding: what no lane named.** When the ledger was first written, 18,377 of its rows were `unowned`: no plan of this design or the running ones named them, and none of the merged lanes (K, L, G, V, F, P0, P1, P2, P4, R, 0, the sabers' X, the game's 1 and 2) had consumed them. None is hidden: each is given in `scripts/lib/bf2017-owners.mjs` to the lane that takes it, marked `finding: true`, and counted apart in `ledger.md`. By lane and part:
 
@@ -259,6 +260,64 @@ A campaign map with no mode layers has no spawn: pass `--spot`.
 - Endor's bunker halls are E3's interior pack (the line above).
 - The engine join for the shapes (P0's Left).
 - The base district shows the sky over the halls (the glacier is the main world's ground, not a pack mesh). A roof or an interior light record for districts is a later lane's.
+
+### Lane E4: Scarif, Cloud City, Hoth's outpost, the Death Star inside (`claude/bf2017-e4-scarif-bespin-deathstar`)
+
+session_015ZTef1tZABeSq9E86wZKwv, from `claude/bf2017-e0-factory-on-main` at `af29dcfd`. Plan: `docs/superpowers/plans/2026-10-10-bf2017-every-asset-laneE4-scarif-bespin-deathstar.md`.
+
+**The packs** (each built, its maps stamped with the colour space the game gives them by the colours lane's `bf2017-colour-check.mjs <pack> --fix`, run from that branch's worktree since it is not on `main`; published; only `level.json` and `README.md` in git):
+
+| world | command | pieces | published |
+|---|---|---|---|
+| Scarif | `s9_3/scarif/levels/mp/scarif_02 --world scarif --spawn --subs Scarif_02,Phase_02,Phase_02_Unique --share low=0.6` | 4,380 | 80 MB |
+| Cloud City | `s2/levels/cloudcity_01 --world bespin --spot 20 0 --floor 199 --walk 192 --arena 1024 --share low=0.35,mid=0.6,high=0.4 --subs CloudCity_01,StreamedLevel` | 5,127 | with the palace, 225 MB |
+| the palace (M2BES) | `levels/sp/a2/m2bes/ds02 --world bespin --district m2bes --spot -2531 2912 --floor 2366.25 --walk 256 --arena 1024 --share low=0.5,mid=0.6,high=0.7 --subs AdministratorsPalace,A2_M2BES_DS02_S0600_GP,A2_M2BES_DS02_S0700_GP,BespinAtmosphere` | 9,274 | |
+| Hoth's outpost | `s9_3/hoth_02 --world hoth --district outpost --spot 90 -1250 --subs Hoth_02,Content,Mode1` | 5,834 | 59 MB |
+| the Death Star inside | `levels/mp/deathstar02_01 --world deathstar --district inside --inside --spawn` | 19,728 | 119 MB, not in git (below) |
+
+**Where the hand-off's lines and the maps disagreed (the maps won).**
+- Scarif_02's ground fight is in `Phase_02` and `Phase_02_Unique`, none of the default sub-levels (`--spawn` alone found 0 pieces). `--spawn` takes `Mode9`'s team-two spawn on the base's shore; `Mode9`'s own dressing is Takodana's and Jakku's (sequel-era, all 139 left out by `isSequel`) and is not in the pack.
+- CloudCity_01 and M2BES have no spawn records (`--spot`). CloudCity_01's playable deck is at the game's 199 m (corridors, Leia's chamber, the landing platforms, Slave I's and the X-wing's pads); the plazas at −5 m are the backdrop city. A map with no terrain landed at the game's 0, so the factory gained `--floor <y>` (the deck's height becomes the site's 0) and `--walk <m>` (the square the fit holds the row over). Hoth_02 has no spawn records either (`--spot` on the outpost's floorboards); it is drawn on Hoth_01's own terrain.
+- The Death Star: the plan has the inside world load the pack in place of `kit.js`'s rooms, re-measuring `layout`; the task kept the room layout and asked for the kit to wear the game's pieces. The pieces cannot be worn yet: every `dsi_*` wall, floor and ceiling has no colour map, the game shades them with its DSI shader from a trim sheet (Imperial markings on a 512 × 1024 strip) and an id map, so they would read worse than the painted plating. The pack is built and published, but no page draws it, so its `level.json`, credit and 2,918 manifest rows are out of this PR (`modelCredits.test.js` holds every credit to a page that uses it); republishing finds every file already there. What it waits for is in `HANDOFF-deathstar-inside.md`.
+
+**The sites.**
+- Scarif (`sites/edge.js`): `level`, the image ground, the game's sea (`WaterSurfaceEntityData` at 212.03 m against the landing's 213.10: −1.07), the built pads, bunkers, lamps and every scatter row `game: true`; the Citadel stays built (the vault's door needs it; the game's stands 3 km west, on the horizon); the flight's planet keeps the islands (`ground.flight`).
+- Cloud City (`sites/bespin.js`): the places, zones, posts and cast moved onto the game's deck (Platform 327 on the great landing platform, the chamber by the Tibanna generators and the Tydirium's pad, the reactor's door in Leia's tower, the east platform where Slave I is parked, the vane off the X-wing's pad), each point checked against a raster of the deck's floors; the built deck, towers, bridges and lamps `game: true`; the carbon-freezing chamber stays built (the map has none). `fall` is −40: the backdrop's floors are 204 m down. The palace is the district `m2bes`, a cloud car from the landing platform's far edge.
+- Hoth (`sites/ice.js`): the district `outpost`, its door on the main map at (−115, 290), where the game puts it.
+
+**The game's materials.** Lane Q1's recipes (`node scripts/bf2017-recipes.mjs --level <pack> --fetch`, after `node scripts/bf2017-fetch.mjs --raw materials.jsonl`) for all four packs, published with them: Scarif 8 maps, Cloud City 34, the palace 43 (1 missing from the bucket), the outpost 6 (1 missing). The recipes now leave out the meshes a pack leaves out (`m.glb` all null): 26 of Scarif's first 39 maps were the sequel-era pieces' (Maz's castle, the Resurgent class's panels). Each pack's `tex/` holds only the maps its `level.json` and `recipes.json` name.
+
+**What the merge with `main` repaired.** E0's latest (`bb91df0a`, main merged into it) was merged here, which brings this branch up to `main`. E0's merge had taken `main`'s `scripts/bf2017-physics.mjs` whole: the level script's `import { main }` failed and a prop with no Havok shape lost its collision hull. Both sides are kept now. `main`'s level physics laid its heightfield from `heightAt`, which on a world with no ground is the fall line: Cloud City had a floor of air at −40 (`scene.js` passes no `heightAt` for `noGround`). A broad hull (4 m each way) is a deck as well as a box (`shapeSolids.js`'s `deckFloor`), since a landing, a teleport and a respawn set you down on floors alone.
+
+**What the fit changed** (`scripts/lib/bf2017-level.mjs`, `src/lib/level/fit.js`): a mesh's weight is its largest face times its largest extent (`seenWeight`), and a mesh you stand on (`standsOn`: a plate, or 3 m wide each way and a storey tall at most) is never dropped, since one not drawn has no collision. On a map stood on its deck (`--floor`, no terrain), every broad piece (2.5 m each way, no taller than it is wide) with an instance's top between −1.5 and 12 m is kept too: Cloud City's platforms, gangways and stair blocks. The fit does not see the horizon list or the shadow pass, so a world whose backdrop is heavy (Cloud City's plazas) wants its whole city in the arena (`--arena 1024`) and a share of each row left over (`--share`).
+
+**The gate counted nothing of the level (all level worlds, E0's too).** In software GL the frame guard (`lib/three/frameGuard.js`) readies about one shader a frame, at 3 to 7 s a frame, so a level's 300 to 400 materials were still held back when `galaxy-check` counted the frame: Scarif's 303 level calls, Hoth's 181, were not in its 95 and 165. `holdNone()` (`window.__tpGuardOff` in development) now stops the guard holding anything back; `galaxy-check` calls it and draws three frames before counting, `surface-shot` before shooting. Counted whole, the baseline +10% check cannot hold a world that gains a level (Scarif high: 290 calls against 118), so the rows are the gate below; the baselines in `lab/baseline/` want remaking with the levels in, which is lane D2's task 7. Hoth, counted whole (its level is E0's; this lane added a door): low 269 calls, 1.39M triangles, 30.7 MB (over the 0.8M and 20 MB row); mid 281, 2.01M, 32.8 MB; high 301, 2.66M, 115.5 MB (over 60); ultra drew nothing in the measured frames at 246 MB.
+
+**Gates** (`BUDGET=1 PHASE_WAIT=900000 node scripts/galaxy-check.mjs surface <world>`, the whole world counted; the row is `src/lib/budgets.js`'s: low 350 calls, 0.8M triangles, 20 MB; mid 500, 1.5M, 40; high 700, 3M, 60; ultra 1,500, none, 240):
+
+| world | tier | calls (level's own) | triangles | models MB | the row | the baseline +10% |
+|---|---|---|---|---|---|---|
+| Scarif | low | 207 (76) | 446k | 17.9 | pass | no baseline |
+| Scarif | mid | 283 (300) | 1.02M | 21.0 | pass | over (118 calls, 0.94M) |
+| Scarif | high | 290 (303) | 1.46M | 68.1 | models over (the crew: Luke 13.2, the shoretrooper 12.9, the AT-AT 12.3 MB; the level 2.6) | over (118 calls) |
+| Scarif | ultra | 329 (318) | 3.62M | 187.5 | pass | no baseline |
+| Cloud City | low | 211 (216) | 629k | 26.3 | models over (the crew packs; the level 0.8 MB) | no baseline |
+| Cloud City | mid | 214 (254) | 647k | 29.1 | pass | over (112 calls, 0.60M) |
+| Cloud City | high | 395 (278) | 1.64M | 110.4 | models over | over (180 calls, 1.05M) |
+| Cloud City | ultra | 393 (285) | 2.09M | 323.5 | models over | no baseline |
+
+(The level's own calls are its own count of its draws, without its shadow pass; the frame's are what three drew, so on a frame where the camera sees less of it they can be the smaller.) Before the shares, counted whole, Cloud City drew 410 calls and 1.78M triangles on low and 778 calls and 3.98M triangles on high. The models breaches are the crew packs already on `main` (`models/galaxy/bf2017/crew/`), not the levels. Shots: `docs/superpowers/evidence/bf2017-levels/{scarif,bespin,hoth}/`.
+
+**On the node renderer** (lane T’s #887 on `main`; SwiftShader draws it as `nodes-webgl`, where no frame guard holds anything back), `BUDGET=1 QUALITY=high SCANS=game PHASE_WAIT=1500000`: Scarif 365 calls, 1.46M triangles, 65.5 MB; Cloud City 436 calls, 1.61M triangles, 104.2 MB. Calls, triangles and `SCANS=game` (no photo scans fetched; 47 and 45 of the game’s maps) are inside the rows. Two findings for lane D2’s task 7, the gate that counts everything: both are over the 60 MB models row, as `main`’s Hoth is at 111.7 MB from the bucket, and both are over the pre-level baseline +10% (118 and 180 calls), as every level world is. Neither row nor baseline moves in this lane: a row moves only with its reason measured, which is that task’s work.
+
+**Left.**
+- The Death Star inside (above).
+- Walking Cloud City wants a pass on a real GPU. In software GL the level's engine adds a few bodies a frame at seconds a frame (1,200 were queued at the landing), so on high you fall before Platform 327's shapes arrive; on low a teleport settles on the decks (0.7 to 0.9 m) but drifts 10 to 100 m in the seconds after, and the plaza's point (0, −10) still fell. Cloud City's surfaces read pale: its plazas are cream and the haze is Bespin's own pink.
+- Lane D2: the models row and the pre-level baselines, re-measured with the levels in (above).
+- `textures missing from the bucket`: Scarif 8, Cloud City 3, the palace 9, the outpost 4 (the packs' READMEs).
+- The site's own dune grass (`scarif.grass`) still grows over the game's ground, and stands taller than the game's scrub in places; a later pass may thin it where the level's cells are busy, as Endor's scatter keeps out of them.
+- The districts are not gated (`galaxy-check` lands on the main map); E0's base was not either.
+- Hoth's row breaches and the baselines (above).
 
 ### The space lane (the fifth design's Q)
 

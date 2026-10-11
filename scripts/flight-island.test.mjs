@@ -30,7 +30,9 @@ describe('the flight’s island on this tree', () => {
     for (const { lines } of plan.dropLines) for (const l of lines) expect(l.text).toBeDefined();
   });
 
-  it('says ok from the command line', () => {
+  // (the script reads every file on the island: 7.5 to 7.8 s in a cloud
+  // container, over vitest's 5 s; the time is the read's, not a hang)
+  it('says ok from the command line', { timeout: 30_000 }, () => {
     expect(execFileSync('node', ['scripts/flight-island.mjs', '--check'], { cwd: ROOT, encoding: 'utf8' })).toMatch(/^ok /);
   });
 });

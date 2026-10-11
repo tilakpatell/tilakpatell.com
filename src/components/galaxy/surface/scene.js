@@ -306,8 +306,11 @@ export async function create(canvas, ctx, set) {
   // world is under its light and the site has its records, nodes/picture.js;
   // a site's `picture` that only names its file, lane P's, is read there)
   const sitePicture = site.picture && typeof site.picture === 'object' ? site.picture : null;
-  const picture = ctx.picture ?? sitePicture ?? (gameLight && L.name === 'nodes' ? pictureFor(own.gameLight) : null);
-  const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, backend: rt.gfx.backend, post, picture, volumes: site.level ? L.levelJson(site.level, 'volumes.json') : null, dome: sky.mesh, skyFog })
+  const picture = ctx.picture ?? sitePicture ?? (gameLight && L.name === 'nodes' ? pictureFor(own.gameLight).catch(() => null) : null);
+  // (the pack's volumes.json where it has one: Endor's has none, and a fetch
+  // the stack awaits only later must not reject unheard meanwhile)
+  const volumes = site.level ? Promise.resolve(L.levelJson(site.level, 'volumes.json')).catch(() => null) : null;
+  const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, backend: rt.gfx.backend, post, picture, volumes, dome: sky.mesh, skyFog })
     .then((made) => {
       if (disposed) return made?.dispose();
       stack = made;
@@ -473,7 +476,9 @@ export async function create(canvas, ctx, set) {
     renderer,
     walk: world,
     small: device().phone,
-    heightAt: (x, z) => world.heightAt(x, z),
+    // (a world with no ground under its floors, Cloud City, gives the engine
+    // no heightfield: its heightAt is the fall line, a floor of air at -40)
+    heightAt: site.noGround ? null : (x, z) => world.heightAt(x, z),
     // (kept till the body below exists: the engine can come during an await before it)
     onPhysics: (physics) => {
       levelEngine = physics;
@@ -3634,7 +3639,7 @@ export async function create(canvas, ctx, set) {
     });
   if (import.meta.env.DEV)
     window.__surfaceScene = {
-      physics: () => gameLevel?.stats().physics ?? null,
+      physics: () => gameLevel?.stats().physics ?? (sitePhys ? { site: true, ...sitePhys.cells.stats() } : null),
       engine: () => gameLevel?.physics() ?? null, // (the level's Rapier world: the QA scripts' rays)
       scene,
       post,

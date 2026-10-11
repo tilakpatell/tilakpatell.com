@@ -225,6 +225,24 @@ for (const id of list.split(',')) {
     });
     await page.waitForTimeout(2500);
   }
+  // (the whole world in the count: the frame guard, lib/three/frameGuard,
+  // readies about a shader a frame, and in software GL a frame takes seconds,
+  // so a level pack's hundreds of materials were still held back when the
+  // frame was counted and its draws left out. Held back no longer, and three
+  // frames drawn, compiling all of it, before the frames that are counted)
+  await page.evaluate(
+    () =>
+      new Promise((done) => {
+        window.__tpGuardOff?.();
+        let n = 0;
+        const tick = () => {
+          window.__RUNTIME__?.invalidate();
+          if (++n < 3) requestAnimationFrame(tick);
+          else done();
+        };
+        requestAnimationFrame(tick);
+      }),
+  );
   // one whole frame's counts (every pass), and the frame times over 4 s
   const stats = await page.evaluate(
     (surface) =>
@@ -266,7 +284,7 @@ for (const id of list.split(',')) {
               ground: surface && window.__surfaceScene?.groundWar ? +window.__surfaceScene.groundWar.ms.toFixed(2) : null,
               // (a level world's collision: surface/level/levelPhysics.js's stats, when it has an engine)
               level: surface && typeof window.__surfaceScene?.level === 'function' ? window.__surfaceScene.level() : null,
-              physics: surface && typeof window.__surfaceScene?.physics === 'function' ? (({ dropped, ...rest }) => ({ ...rest, dropped: dropped?.length ?? 0 }))(window.__surfaceScene.physics() ?? {}) : null,
+              physics: surface && typeof window.__surfaceScene?.physics === 'function' ? ((p) => (p ? { ...p, dropped: p.dropped?.length ?? 0 } : null))(window.__surfaceScene.physics()) : null,
             });
           }
         };
@@ -316,7 +334,8 @@ for (const id of list.split(',')) {
   }
   if (stats.physics) {
     const p = stats.physics;
-    console.log(`${''.padEnd(10)} physics cells ${p.cells}  bodies ${p.bodies}  colliders ${p.colliders}  shapes ${p.uniqueShapes}  trimesh tris ${p.triangles}  heightfields ${p.heightfields}  dropped ${p.dropped}  step ${(+p.stepMs || 0).toFixed(2)} ms`);
+    if (p.site) console.log(`${''.padEnd(10)} physics (the site's, sitePhysics.js) cells ${p.cells}  heightfields ${p.heightfields}  solids ${p.solids}  floors ${p.floors}`);
+    else console.log(`${''.padEnd(10)} physics cells ${p.cells}  bodies ${p.bodies}  colliders ${p.colliders}  shapes ${p.uniqueShapes}  trimesh tris ${p.triangles}  heightfields ${p.heightfields}  dropped ${p.dropped}  step ${(+p.stepMs || 0).toFixed(2)} ms`);
   }
   await ctx.close();
 }
