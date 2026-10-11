@@ -29,6 +29,9 @@ import { cutsFor } from './bf2017-manifest.mjs';
 import { glbJson } from './bf2017-paths.mjs';
 import { cellsOf } from './level-cells.mjs';
 
+// (GPU-first lane N3's rows, beside the rows above: the baked light and the far shadow)
+export { enlightenRows, farShadowRow } from './bf2017-level-light.mjs';
+
 export const TIERS = ['low', 'mid', 'high', 'ultra'];
 export const KMIN = { low: 20, mid: 30, high: 40, ultra: 60 };
 const Q = 32767;
