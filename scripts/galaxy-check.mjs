@@ -211,10 +211,12 @@ for (const id of list.split(',')) {
   // till its shader has linked, and in software GL a level's hundreds of
   // materials take minutes, so measured sooner the frame drew the ground and
   // none of its huts, and counted their calls as none; frames asked for till
-  // the guard holds nothing, window.__tpGuardPending, development's)
+  // the guard holds nothing, window.__tpGuardPending, development's; where
+  // the guard can be told to hold nothing at all, window.__tpGuardOff, lane
+  // E4's, that is done before the count instead, and this waits on nothing)
   {
     const until = Date.now() + Number(process.env.GUARD_WAIT ?? 600000);
-    while ((await page.evaluate(() => (window.__RUNTIME__?.invalidate(), window.__tpGuardPending?.() ?? 0))) && Date.now() < until) await page.waitForTimeout(1000);
+    while ((await page.evaluate(() => (window.__tpGuardOff ? 0 : (window.__RUNTIME__?.invalidate(), window.__tpGuardPending?.() ?? 0)))) && Date.now() < until) await page.waitForTimeout(1000);
     if (Date.now() >= until) errors.push('the frame guard still held draws back');
   }
   // (in space, the ship put in one place, the same for every run: off the
