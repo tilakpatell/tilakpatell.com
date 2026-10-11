@@ -217,6 +217,17 @@ describe('the coarse grid first (lane N4)', () => {
     s.dispose();
   });
 
+  it('ends its phase when the cells have landed, not when the scene has drawn them', async () => {
+    const f = coarseFetch();
+    // (a cell the scene never finishes with: its maps that will not come)
+    const { s } = coarseStream(f, { onHorizonCell: () => new Promise(() => {}) });
+    s.update([10, 10], 'high');
+    await drain(f, () => f.asked.includes('far.bin'));
+    await tick();
+    expect(s.status().phase).not.toBe('horizon');
+    s.dispose();
+  });
+
   it('takes the light cut and a ring of the grid on low', async () => {
     const f = coarseFetch();
     const { s, got } = coarseStream(f, { tier: 'low' });

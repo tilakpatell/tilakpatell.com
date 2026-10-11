@@ -186,6 +186,15 @@ export function swapInto(tex, next, row = null) {
   return tex;
 }
 
+// a KTX2's twelve-byte identifier (the Khronos container's), so bytes that
+// are something else (a site answering a missing file with its page) fail
+// here and are never handed to the transcoder, whose worker may not answer
+const KTX2_ID = [0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a];
+export function isKtx2(bytes) {
+  const b = bytes instanceof ArrayBuffer ? new Uint8Array(bytes, 0, Math.min(12, bytes.byteLength)) : new Uint8Array(bytes?.buffer ?? new ArrayBuffer(0), bytes?.byteOffset ?? 0, Math.min(12, bytes?.byteLength ?? 0));
+  return b.length === 12 && KTX2_ID.every((v, i) => b[i] === v);
+}
+
 const rowOf = (file) => Number(String(file).match(/\.(\d+)(\.uastc)?\.ktx2$/)?.[1] ?? 0) || null;
 
 export function createLevelLoader({
@@ -223,7 +232,11 @@ export function createLevelLoader({
       const data = isDataMap(null, own?.[slug] ?? sizes?.[slug], slug);
       const first = firstTexture(path, own);
       const target = tierTexture(path, tier, own, { formats, data });
-      const get = (file, promote) => Promise.resolve(fetchBytes(file, { glb: of, promote, ...(coarse ? { coarse } : {}) })).then((bytes) => parseKtx2(bytes));
+      const get = (file, promote) =>
+        Promise.resolve(fetchBytes(file, { glb: of, promote, ...(coarse ? { coarse } : {}) })).then((bytes) => {
+          if (!isKtx2(bytes)) throw new Error(`${file} is not a KTX2`);
+          return parseKtx2(bytes);
+        });
       let held = first;
       const p = get(first, false)
         .catch(() => {

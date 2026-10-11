@@ -225,7 +225,11 @@ export function createLevelStream({
           cells.map(({ key, entry }, i) =>
             queue
               .get(entry.glb, { cls: 'coarse', rank: () => -i })
-              .then((bin) => bin && alive() && onHorizonCell(key, bin, entry))
+              // (handed on, not waited for: the phase is the fetches', and a
+              // cell the scene cannot finish must not hold the boot)
+              .then((bin) => {
+                if (bin && alive()) onHorizonCell(key, bin, entry);
+              })
               .catch(() => {}),
           ),
         );

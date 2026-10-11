@@ -283,6 +283,8 @@ describe('a level pack’s textures bound to their materials', () => {
   });
 });
 
+const KTX2_ID = [0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a];
+
 describe('every map at its smallest row first, promoted in place (lane N4)', () => {
   const sizes = { t_a_n__normal: { low: 128, mid: 512, high: 512, srgb: false, uastc: [512] } };
   // a row's bytes say its size (the fake parse reads it back as the texture's width)
@@ -297,7 +299,10 @@ describe('every map at its smallest row first, promoted in place (lane N4)', () 
     const fetchBytes = async (path, hint) => {
       asked.push([path, hint ?? {}]);
       if (opts.missing?.includes(path)) throw new Error('404');
-      return new ArrayBuffer(sizeOf(path));
+      // (a KTX2's identifier first, then as many bytes as the row says)
+      const b = new Uint8Array(sizeOf(path));
+      b.set(KTX2_ID);
+      return b.buffer;
     };
     const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes, parseKtx2, formats: { bc: true }, ...opts });
     return { loader, asked };
@@ -344,6 +349,14 @@ describe('every map at its smallest row first, promoted in place (lane N4)', () 
     const tex = await loader.texture('tex/t_a_n__normal.ktx2');
     expect(tex.image.width).toBe(512);
     expect(asked.map(([p]) => p)).toEqual(['tex/t_a_n__normal.128.ktx2', 'tex/t_a_n__normal.512.uastc.ktx2']);
+  });
+
+  it('fails at once on bytes that are no KTX2 (a site answering a missing file with its page), never handing them to the transcoder', async () => {
+    const parsed = vi.fn(parseKtx2);
+    const html = new TextEncoder().encode('<!doctype html><html lang="en">').buffer;
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => html, sizes, parseKtx2: parsed, formats: { bc: true } });
+    expect(await loader.texture('tex/t_a_n__normal.ktx2')).toBeNull();
+    expect(parsed).not.toHaveBeenCalled();
   });
 
   it('takes the ETC1S row on a chip with no format UASTC reaches', async () => {
