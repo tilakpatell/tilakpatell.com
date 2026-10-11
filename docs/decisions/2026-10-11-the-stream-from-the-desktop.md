@@ -1,6 +1,6 @@
 # The ultra picture streamed from the owner’s desktop: a spike, decided by its numbers
 
-Date: 2026-10-11. **Status: draft**, written before the numbers (lane R2’s task 1); finished from them in task 7. The long version: `docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md` §7; the plan: `docs/superpowers/plans/2026-10-11-bf2017-picture-laneR2-stream.md`; the numbers: `docs/superpowers/evidence/bf2017-picture/r2/README.md`.
+Date: 2026-10-11. **Status: draft**, written before the numbers (lane R2’s task 1), with the cloud’s plumbing numbers added the same day; finished from the desktop’s numbers when the owner has run it. The long version: `docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md` §7; the plan: `docs/superpowers/plans/2026-10-11-bf2017-picture-laneR2-stream.md`; the numbers: `docs/superpowers/evidence/bf2017-picture/r2/README.md`.
 
 ## Context
 
@@ -23,9 +23,11 @@ The owner asked whether GeForce Now’s way of using a GPU could show the site�
 
 “Input to picture” is measured, not estimated: the receiver sends a numbered ping on the data channel, the sender replays it through the same path as a key, the number is painted into the frame’s corner as blocks, and the receiver reads it back from the decoded video (`src/lib/stream/stamp.js`). No clock has to agree between the two machines.
 
+**What the cloud showed** (both ends on one 4-core machine, software GL, plumbing only; the evidence README has the table). Every piece joins: Realtime broadcast signals with no table or policy (offer to connected in 116 to 190 ms), the world’s canvas goes through the copy, the capture and WebRTC, a key held on the receiver is replayed on the sender as a real key, and the stamp reads back through AV1. At 640 × 360 and 30 frames, input to picture is p50 86 ms and p95 104 ms with no ping lost; at 720p60 the software encoder saturates and the times are seconds. None of it says what the desktop’s NVENC and a phone will do.
+
 ## Decision
 
-Draft: **build the smallest sender, receiver and signalling that measure it, and decide nothing about a product until the desktop’s numbers are in.** If every line above holds on the desktop, a “watch at ultra, streamed from the desktop” mode is planned (not built) beside the quality switch; if the internet line fails but the LAN holds, it stays a tool for the owner’s own devices; if the LAN line fails, it is shelved.
+Draft: **the spike is built and its plumbing proven; nothing about a product is decided until the desktop’s numbers are in** (the owner’s run, the evidence README’s last section). If every line above holds on the desktop, a “watch at ultra, streamed from the desktop” mode is planned (not built) beside the quality switch; if the internet line fails but the LAN holds, it stays a tool for the owner’s own devices; if the LAN line fails, it is shelved.
 
 ## Consequences
 
