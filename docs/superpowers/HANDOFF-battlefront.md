@@ -73,7 +73,7 @@ What the survey found that earlier designs had not: the game's front end is data
 | lane | what | branch | plan | needs | state |
 | --- | --- | --- | --- | --- | --- |
 | G1 | landing is the game, free roam its own area; the lobby and the menu over the level; `frontend.json` and `modes.js` on it with the level picker; Explore; take-off | `claude/bfg-g1-landing` | `plans/2026-10-10-bfg-laneG1-landing.md` | nothing | |
-| G2 | every level whole in the map's frame (`--whole` on E0's builder, `nav.bin`), the nine Galactic Assault levels then the rest, the parts drawn in the game world | `claude/bfg-g2-levels-whole` | `-laneG2-levels-whole.md` | E0 on main (or its branch merged in) | |
+| G2 | every level whole in the map's frame (`--whole` on E0's builder, `nav.bin`), the nine Galactic Assault levels then the rest, the parts drawn in the game world | `claude/bfg-g2-levels-whole` | `-laneG2-levels-whole.md` | E0 on main (or its branch merged in) || **done** (the PR carries E0's branch): see "Lane G2" below |
 | G3 | `points.json` from `Online/BattlepointCostData`; `kits.json`; `arcade.json`; `rulebook.js` by level key with aliases (the map rulebooks and stage files are #877's maps lane's) | `claude/bfg-g3-rulebooks` | `-laneG3-rulebooks.md` | nothing | |
 | G4a | Blast, Heroes vs Villains, Hero Showdown on the sim with their HUD widgets and arena tests, Hoth first (Strike is #877's maps lane's) | `claude/bfg-g4a-small-modes` | `-laneG4a-small-modes.md` | Hoth's rows (now); the maps lane for the rest | |
 | G4b | Co-op (over the maps lane's `Mode9` module), Supremacy's boarding phase, Jetpack Cargo, Arcade, Explore on the sim; the Co-op bot logic graphs as commander policies (Extraction and Ewok Hunt are the maps lane's) | `claude/bfg-g4b-big-modes` | `-laneG4b-big-modes.md` | G3 and the maps lane merged | |
@@ -81,6 +81,37 @@ What the survey found that earlier designs had not: the game's front end is data
 | G6 | the mode columns on the maps lane's per-map ledger and its CI check, the compare page against the owner's game screenshots, the gizmo overlay | `claude/bfg-g6-parity` | `-laneG6-parity.md` | nothing (the maps lane's ledger when it lands) | |
 
 G1, G3, G4a and G6 start at once; G2 when E0 is on main; G4b after G3; G5 after #875. File ownership is in the spec's "Lanes" section; lane 5's running session keeps `figures/`, `fx/`, `input.js`, `camera*.js`, `weather.js` and its HUD parts. Each lane adds its row's numbers here when it merges and a line to the spec's "Departures". The parity ledger (`docs/superpowers/evidence/bf2017-parity/ledger.md`, lane G6) becomes this page's status table once it exists.
+
+### Lane G2: every level, whole, in the map's frame
+
+- **`node scripts/bf2017-level.mjs <map> --world <w> --whole`** writes `public/models/galaxy/bf2017/levels/<w>/game/<key>/` (the key is the map's own name, `hoth_01`). It has no spot; the origin is 0 and the yaw 0, so the rulebooks' coordinates are the pack's.
+  - **Kept:** every sub-level except the lobby's, the end of round's, the cinematics, the intros and outros, the `*_Automation` layers and the other times of day (`scripts/lib/bf2017-level-whole.mjs`'s `wholeSubs`; a level with no layer of the asked weather keeps its first, so Hoth draws `Cloudy` and Naboo `Cloudy`). The mode layers stay for their art. The meshes only a mode layer places are listed in `level.json`'s `modeOnly`, and `map/levels.js`'s `hiddenFor(pack, mode)` hides the other modes' own props.
+  - **Not trimmed:** nothing buried is left out (Echo Base's halls are in), there is no horizon and no budget fit. Every tier draws a 1 m thing out to 1,000 m, except low at 400 m. Every cut ships, LOD0 and the 2048 maps included.
+  - **Parts:** E0's parts and P0's physics run with it.
+- **`nav.bin`** is built at pack time (`scripts/bf2017-level-nav.mjs`, over `scripts/lib/bf2017-nav.mjs`). It is lane 1's `buildNav` at 2 m, over the gameplay records' bounds, on the pack's heightmaps (or, with no terrain, the highest floor over a cell). The solids are the placed pieces' standing hulls (P0's shapes, else their bounds), leaving out a box over 30 m half-size (a building's shell taken whole) and one wholly under the ground. `nav.js` gains `toBin` and `fromBin`; `module.js` hands the pack's grid to `createBattle`.
+- **The frame check:** each rulebook spawn (the map's gameplay records, `mapRow`) is held to the nearest surface the pack has under it: the ground, a floor, or a piece's top. Each pack's README has the counts, and `docs/superpowers/evidence/bfg-levels/<key>/nav.png` draws the grid from above with the spawns on it (green on a surface, magenta off it).
+- **Published as one folder:** `node scripts/assets-publish.mjs --whole <w>/game/<key>` sends every file under one hash and writes one manifest row for the folder (`scripts/lib/asset-manifest.mjs`'s `wholeFolder`). `src/lib/assetPath.js` finds a file's folder row, `assets-check` holds the row by its `level.json`, and `.gitignore` hides the folder except `level.json` and the README. Per-file rows for the 23 levels would have put about 80,000 entries in every visitor's bundle.
+- **The game world** (`map/level.js`) loads by level key (`map/levels.js`: the 23 keys and their worlds) and brings the parts:
+  - the pack's `lights.json` in place of the rulebook's lights;
+  - its probes as the light stack's reflection volumes;
+  - its actors and vehicles, stood where the game put them by the galaxy's models (`map/placed.js`), filtered to the mode's layers;
+  - its `nav.bin`.
+
+  Where a whole pack is not published, it falls back to the roam pack and says so on the loading line.
+
+The numbers (each pack's README has the rest):
+
+<!-- G2 table -->
+
+**Checking it:**
+- `npx vitest run scripts/lib/bf2017-level.test.mjs scripts/lib/bf2017-nav.test.mjs scripts/bf2017-level-nav.test.mjs scripts/lib/asset-manifest.test.mjs scripts/assets-check.test.mjs src/lib/battlefront/nav.test.js src/components/battlefront/map`
+- in the browser, Hoth: `node scripts/battlefront-check.mjs --gpu webgl --quality low --out docs/superpowers/evidence/bfg-levels/hoth_01`
+
+**Left:**
+- Browser shots of the other 22 levels: the game world runs only a level with a rulebook map, and Hoth is the only one wired in. They wait for the maps lane's rulebooks or G1's lobby.
+- Frame times at high on the owner's laptop. The worst place on Hoth_01 is 3.3 million triangles and 905 calls on low, 5.3 million on ultra (its README's table); spec assumption 2's texture caps and headroom rules apply if a level does not hold 60 fps.
+- The decals wait on Q4, as E0's do.
+- Portals and coarse regions are not built at pack time: `nav.js` labels its regions on first use, as before.
 
 ## Beside the asset lanes (PR #802 and PR #810)
 

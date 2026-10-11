@@ -213,3 +213,9 @@ G1, G3, G4a and G6 start at once; G2 when E0 is on main (or from E0's branch, me
 ## Departures
 
 Where a lane goes another way than this page, one line each, added by the lane when it merges.
+
+- G2: a whole pack is published as one folder (`assets-publish.mjs --whole`, one manifest row, `assetPath.js` finds a file's folder) rather than with `--only`, which would have put about 80,000 rows in every visitor's bundle.
+- G2: low's "far-cut horizon beyond 400 m" is a reach of 400 radii (lod.js already draws far cuts at that distance); no tier drops a mesh.
+- G2: the navgrid's solids leave out boxes over 30 m half-size and boxes wholly under the ground (Echo Base's hangar shell and halls walled in the spawns); portals and coarse regions are not built at pack time (`nav.js` labels regions on first use).
+- G2: Hoth has no `Sunny` layer and Naboo_01 none either, so a whole pack keeps the first weather layer the map has (`Cloudy`); the intros (`Mode6_Intro`, `HvsVIntro`) are left out with the cinematics.
+- G2: the browser check covers Hoth only; the game world runs a level only with a rulebook map, so the other levels have the frame check and a picture of their navgrid (`evidence/bfg-levels/<key>/nav.png`) until the maps lane's rulebooks or G1's lobby land.

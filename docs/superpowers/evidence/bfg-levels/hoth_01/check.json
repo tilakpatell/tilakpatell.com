@@ -1,0 +1,15 @@
+{
+  "route": "/battlefront/hoth/galacticAssault",
+  "size": [
+    960,
+    540
+  ],
+  "swiftshader": true,
+  "results": [
+    {
+      "leg": "webgl",
+      "failed": "Error: [battlefront] 3D failed TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:42511/node_modules/.vite/deps/three_tsl.js?v=23180bc9",
+      "gates": true
+    }
+  ]
+}
