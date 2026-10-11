@@ -7,7 +7,8 @@
 //   light through light/baked.js, calibrated by lane S's calibrate.js; with
 //   `false` the same ground without it (the before).
 // - `gridBudget` (true): the budgeted probe grid (light/probes.js), two
-//   cascades round the camera, a few probes a frame; probe.n3.grid() its stats.
+//   cascades round the camera, a few probes a frame ('stress': lightN3.js's
+//   STRESS); probe.n3.grid() its stats.
 // - `cadence` (true, with `shadows`): the sun's far cascades on their cadence
 //   (light/sun.js), the figures tracked and walked away from the camera;
 //   probe.n3.feet() each figure's shadow and an open patch beside it, in
@@ -27,6 +28,14 @@ const URLS = {
   'dirB.png': new URL('./enlighten/dirB.png', import.meta.url).href,
   'sky.png': new URL('./enlighten/sky.png', import.meta.url).href,
 };
+// the budgeted grid's stress setting for the fixture: few probes and a wide
+// budget, so sweeps finish and the pairs swap inside the script's 60 frames on
+// SwiftShader (about 6 ms of CPU a probe there); the laptop runs the real budget
+const STRESS = { res: [4, 2, 4], ms: 1000 };
+// where the run is watched from: low over the strip beside the figures (the
+// fixture's high `seam` view shows no cast shadows on SwiftShader, lane S's
+// seam shots on main included)
+const RUN_VIEW = { pos: [6, 4, 6], at: [0.6, 0, -25] };
 const WALK = 30; // m/s: the figures' run out of the near cascades (the stress case: a speeder's pace, so 90 frames cross a cascade's edge)
 
 // A PNG's 8-bit pixels, as the file has them (no premultiplying, no colour conversion)
@@ -85,7 +94,8 @@ export async function setupN3({ scene, renderer, camera, light, ground, figures,
 
   if (opts.gridBudget) {
     const { createProbeGrid, PROBE_GRID } = await import('../../lib/three/light/probes.js');
-    const grid = await createProbeGrid(scene, renderer, null, PROBE_GRID, { budget: {}, far: 200 });
+    const stress = opts.gridBudget === 'stress';
+    const grid = await createProbeGrid(scene, renderer, null, stress ? STRESS.res : PROBE_GRID, { budget: stress ? { ms: STRESS.ms } : {}, far: 200 });
     steps.push((dt) => grid.update(camera, dt));
     probe.grid = () => grid.stats();
     made.push(grid);
@@ -96,6 +106,12 @@ export async function setupN3({ scene, renderer, camera, light, ground, figures,
     for (const f of figures) light.track(f);
     let walking = false;
     probe.walk = (on) => (walking = on);
+    probe.look = () => {
+      camera.position.set(...RUN_VIEW.pos);
+      camera.lookAt(...RUN_VIEW.at);
+      camera.updateMatrixWorld();
+      light.update(0, camera);
+    };
     probe.draws = () => sun.csm?.draws.slice() ?? null;
     steps.push((dt) => {
       if (walking) for (const f of figures) f.position.z -= WALK * dt;

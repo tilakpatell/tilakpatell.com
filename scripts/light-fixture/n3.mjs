@@ -7,7 +7,8 @@
 //                      node ground without it (the before); the frame's mean
 //                      luminance against lane S's band (BAND)
 //   --grid             after lane R's A3 numbers: the budgeted grid (two
-//                      cascades round the camera) on a page of its own, 60
+//                      cascades round the camera, at lightN3.js's stress
+//                      setting so its pairs swap in the run) on a page of its own, 60
 //                      frames at a fixed camera, the pixel spread after frame 20
 //                      (Review Focus 3: under 1/255), its probes a frame
 //   --cadence          with --shadows: the far cascades on their cadence, the
@@ -47,7 +48,7 @@ export async function gridSpread({ browser, base, fixture, leg, W, H, sharp, OUT
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   const out = { leg };
   try {
-    await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}&fixture=${encodeURIComponent(JSON.stringify({ ...fixture, gridBudget: true }))}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+    await page.goto(`${base}/scripts/light-fixture/index.html?gpu=${leg}&fixture=${encodeURIComponent(JSON.stringify({ ...fixture, gridBudget: 'stress' }))}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
     await page.waitForFunction(() => window.__lit?.ready || window.__lit?.error, null, { timeout: 240000 });
     const err = await page.evaluate(() => window.__lit.error);
     if (err) throw new Error(err);
@@ -108,7 +109,7 @@ export async function cadenceRun({ page, sharp, OUT, label, leg, writeFileSync, 
     }
     return n ? s / n : null;
   };
-  await page.evaluate(() => (window.__lit.probe.view('seam'), window.__lit.draw(4)));
+  await page.evaluate(() => (window.__lit.probe.n3.look(), window.__lit.draw(4)));
   const before = await page.evaluate(() => window.__lit.probe.n3.draws());
   await page.evaluate(() => window.__lit.probe.n3.walk(true));
   let missed = 0;
