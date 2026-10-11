@@ -224,3 +224,19 @@ export const jsonLines = (file) =>
     .split('\n')
     .filter((l) => l.trim())
     .map((l) => JSON.parse(l));
+
+// A job script's entry: main(), a failure said in a line (and in the run's
+// summary) with exit 1 rather than a stack.
+export function runCli(spec) {
+  return main(spec).catch((e) => {
+    console.error(`bf2017 ${spec.job}: ${e.message}`);
+    summary(`- **bf2017 ${spec.job} failed**: ${e.message}`);
+    process.exitCode = 1;
+  });
+}
+
+// A child run with its output shown live; throws with the command's name on a non-zero exit.
+export function step(cmd, argv, { cwd, env, log = console.log } = {}) {
+  log(`$ ${[cmd, ...argv].map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ')}`);
+  execFileSync(cmd, argv, { cwd, env, stdio: ['ignore', 'inherit', 'inherit'], windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
+}
