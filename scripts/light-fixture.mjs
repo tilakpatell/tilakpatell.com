@@ -4,7 +4,7 @@
 // proof (docs/superpowers/plans/2026-10-10-galaxy-engine-laneR-light.md).
 //
 //   node scripts/light-fixture.mjs [--tier ultra] [--post on|off] [--sky on|off]
-//     [--grid] [--particles] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
+//     [--grid] [--particles] [--debris] [--only render,ao,…] [--label name] [--size 1600x900] [--ms 5000] [--legs webgpu,webgl]
 //     [--volume [on|off]] [--weather interior|sunny|felucia] [--view wide|edge|sun] [--pan]
 //     [--weather] [--decals] [--seconds 0,12.5,30]   (lane Q4: the weathering and the placed decals, without --volume)
 //     [--hoth] [--shadows [--light-sun] [--clouds]] [--filter pcss|pcf]
@@ -123,13 +123,15 @@ const volumeAt = argv.indexOf('--volume');
 const volume = volumeAt < 0 ? null : argv[volumeAt + 1] !== 'off';
 const q4Flags = volume == null && (argv.includes('--weather') || argv.includes('--decals'));
 const particles = volume == null && !q4Flags && argv.includes('--particles');
+// (GPU-first lane N5: a hundred breaks a minute, the CPU step timed)
+const debris = volume == null && !q4Flags && !particles && argv.includes('--debris');
 const pictureAt = argv.indexOf('--picture');
 const picture = volume == null && !q4Flags && pictureAt >= 0 ? argv[pictureAt + 1] !== 'off' : null;
 const laneS = volume == null && ['--hoth', '--shadows', '--clouds'].some((f) => argv.includes(f));
 // --upscale [kind:]scale (lane U)
 const upscaleArg = argv.includes('--upscale') ? argv[argv.indexOf('--upscale') + 1] : null;
 const upscale = upscaleArg && !upscaleArg.startsWith('--') ? (([a, b]) => (b == null ? { scale: Number(a) } : { kind: a, scale: Number(b) }))(upscaleArg.split(':')) : null;
-const OUT = join(ROOT, q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
+const OUT = join(ROOT, debris ? 'docs/superpowers/evidence/gpu-first/N5' : q4Flags ? 'docs/superpowers/evidence/bf2017-surfaces/Q4' : picture != null ? 'docs/superpowers/evidence/bf2017-surfaces/Q6' : join('docs/superpowers/evidence/galaxy-engine', upscale ? 'U' : laneS ? 'S' : particles ? 'X' : volume == null ? 'R' : 'V'));
 const arg = (k, d) => {
   const i = argv.indexOf(`--${k}`);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
@@ -148,7 +150,7 @@ const baseLabel = arg(
           ? `${picture ? 'picture' : 'nopicture'}-${post ? `post-${tier}` : `lit-${tier}`}`
         : `${arg('filter', null) ? `${arg('filter', null)}-` : ''}${argv.includes('--shadows') ? `shadows${argv.includes('--light-sun') ? '-lightsun' : ''}${argv.includes('--clouds') ? '-clouds' : ''}-` : argv.includes('--hoth') ? 'hoth-' : ''}${post ? `post-${tier}` : `lit-${tier}`}`,
 );
-const label = particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
+const label = debris && arg('label', null) == null ? `debris-${baseLabel}` : particles && arg('label', null) == null ? `particles-${baseLabel}` : upscale && arg('label', null) == null ? `${baseLabel}-${upscale.kind ?? 'auto'}-${upscale.scale}` : baseLabel;
 const [W, H] = arg('size', '1600x900').split('x').map(Number);
 const ms = Number(arg('ms', 5000));
 const legs = arg('legs', 'webgpu,webgl').split(',');
@@ -178,6 +180,7 @@ const fixture = {
   env: true,
   only,
   ...(particles ? { particles } : {}),
+  ...(debris ? { debris } : {}),
   ...(volume != null ? { volume, weather: arg('weather', 'interior'), view: arg('view', 'wide') } : {}),
   ...(q4 ? { placed: false } : {}),
   ...(weather ? { weather: seconds[0] } : {}),
@@ -424,6 +427,12 @@ for (const leg of legs) {
         await page.evaluate(() => (window.__lit.probe.pan(0), window.__lit.draw(1)));
         row.stats = await page.evaluate(() => window.__lit.probe.particles.stats?.() ?? null);
       }
+      if (debris) {
+        // a minute of breaks undrawn (the CPU step's row), then drawn, mid-break
+        row.debris = await page.evaluate(() => ({ mode: window.__lit.probe.debris.mode, ...window.__lit.probe.debris.run(60) }));
+        await page.evaluate(() => window.__lit.draw(45));
+        writeFileSync(join(OUT, `${label}-${leg}-breaks.png`), await shot());
+      }
       row.meanLum = Number((await meanLum(png)).toFixed(4));
       if (picture != null) {
         row.picture = await page.evaluate(() => window.__lit.probe.grade && { tonemap: window.__lit.probe.grade.tonemap, lut: window.__lit.probe.grade.lut?.name ?? null });
@@ -531,6 +540,7 @@ console.log(`|---|---|---|---|---|---|---|---|---|---|---|---|---|`);
 for (const r of rows) {
   if (r.error) console.log(`| ${r.leg} | failed: ${r.error} |`);
   else console.log(`| ${r.leg} | ${r.backend} | ${(r.passes ?? []).join(' ') || 'none'} | ${r.clustered} | ${r.meanLum} | ${r.envDiff} | ${r.programsBefore} → ${r.programsAfter} | ${r.mean} | ${r.median} | ${r.p95} | ${r.gridBakeMs ?? '–'} | ${r.gridMean ?? '–'} | ${r.volumesLit ?? '–'} |`);
+  if (r.debris) console.log(`  debris (${r.debris.mode}): ${r.debris.breaks} breaks in ${r.debris.seconds} s; the step p50 ${r.debris.stepMs.p50} ms, p95 ${r.debris.stepMs.p95} ms, worst ${r.debris.stepMs.max} ms; particles p95 ${r.debris.particlesMs.p95} ms; ${JSON.stringify(r.debris.debris)}`);
   if (r.parity) console.log(`  particles (${r.simMode}): parity ${JSON.stringify(r.parity)}${r.stats ? `; stats ${JSON.stringify(r.stats)}` : ''}`);
   if (r.errors) console.log(`  errors: ${r.errors.join(' / ')}`);
 }
