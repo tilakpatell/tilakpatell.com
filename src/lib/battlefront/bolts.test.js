@@ -52,4 +52,23 @@ describe('bolts', () => {
     for (let i = 0; i < 3; i++) ev.push(...step(bolts, 0.05, { bodies: [], nav: null }));
     expect(ev.map((e) => e.type)).toEqual(['gone']);
   });
+
+  it('keep where they ended, a wall or a body, and how far they went', () => {
+    const bolts = createBolts();
+    const a = shot(bolts, [0, 1, 0], [0, 0, 1]);
+    for (let i = 0; i < 3; i++) step(bolts, 0.05, { bodies: [], nav });
+    expect(a.ended).toBe(true);
+    expect(a.at[2]).toBeCloseTo(19.5, 5);
+    expect(a.travelled).toBeCloseTo(19.5, 5);
+    const b = shot(bolts, [0, 1.2, 0], [0, 0, 1]);
+    const hit = step(bolts, 0.05, { bodies: [body([0, 0, 15])], nav: null }).find((e) => e.type === 'hit');
+    expect(b.ended).toBe(true);
+    expect(b.at).toEqual(hit.at);
+    expect(b.travelled).toBeCloseTo(hit.dist, 9);
+    // (the step's let go of, fired in it or before)
+    expect(bolts.left).toEqual([b]);
+    step(bolts, 0.05, { bodies: [], nav: null });
+    expect(bolts.left).toEqual([]);
+  });
 });
+

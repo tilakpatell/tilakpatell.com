@@ -4,7 +4,7 @@
 //
 // The order (the design, "The light", post.js): render → ssgi (and its
 // denoise) → ao → ssr → volumes → fog → bloom → godrays → lensflare →
-// dof → motionBlur → lut → traa | smaa → output. A chain given out of order is put in it. The
+// dof → motionBlur → lut → traa | smaa → upscale → output. A chain given out of order is put in it. The
 // volumes (volumetrics.js) come before the bloom so they are tone-mapped
 // and bloomed with the scene (the fidelity design, lane V).
 //
@@ -39,6 +39,15 @@
 // - `fog` (mode 'volume': fog.js's fogVolume) draws the record's forward
 //   light scattering and its participating media; a record with neither
 //   (Hoth's day: Presence 0) has none.
+// - `upscale` (fidelity lane U): the picture drawn under the screen's size
+//   (`scale`, the internal resolution: 0.77, 0.67, 0.5) and brought up to it
+//   as the last pass before the output, by FSR1Node or TAAUNode (`kind`).
+//   TAAU is temporal and anti-aliases as it upscales: with it, no `traa`
+//   and no `smaa`. FSR1 wants an anti-aliased source and pairs with SMAA:
+//   a chain with `traa` and `fsr1` takes `smaa` in TRAA's place (TRAA's
+//   history is the screen's size, so it cannot sit under the upscale). A
+//   scale of 1 or more is no upscale. Only the canvas's drawing is
+//   lowered: its CSS size, and the DOM HUD over it, stay the screen's.
 // - SSGI already darkens its creases; with `ao` beside it, its own AO is
 //   left out of the composite (passes.js) so the two do not double.
 //
@@ -48,21 +57,25 @@
 // render, bloom, output as today.
 //
 // ORDER, NODE_PASSES, CANNOT, SSGI
-// passesFor(tier, entry, backend = 'webgpu', refs = { scene, camera, light, lut, volumetrics, dof }) → passes
+// passesFor(tier, entry, backend = 'webgpu', refs = { scene, camera, light, lut, volumetrics, dof, upscale }) → passes
 // motionBlurOf(entry) → { enabled, scale }   (pure: the record's, off without one)
 // dofParams({ focus, aperture, focalLength, maxblur }) → { focusDistance, range, bokehScale }   (pure)
 // raysLight(sun) → the light GodraysNode can march, or null
 // shed(passes, level) → passes   (level 1 drops ssgi, 2 ssr, 3 god rays and flare, 4 ao)
 // arrange(passes) → passes       (the order and the rules above)
+// upscaleKind(passes) → 'taau' with TRAA in the chain, else 'fsr1'
+// upscaled(passes, { kind, scale, sharpness }) → passes   (the upscale pass added, or taken out at scale 1)
+// headroom(passes, { scale, shed }, kind) → passes   (the pace's step: under the screen first, then shed;
+//   src/runtime/quality.js's headroomAt(level) says which)
 
 import { BLOOM } from '../bloom.js';
 import { readEntry } from './entry.js';
 import { flareElements, lensflareParams } from './flare.js';
 import { FOG_STEPS, fogMedia } from './fog.js';
 
-export const ORDER = ['render', 'ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'godrays', 'lensflare', 'dof', 'motionBlur', 'lut', 'traa', 'smaa', 'output'];
+export const ORDER = ['render', 'ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'godrays', 'lensflare', 'dof', 'motionBlur', 'lut', 'traa', 'smaa', 'upscale', 'output'];
 // the kinds only the node renderer builds
-export const NODE_PASSES = new Set(['ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'godrays', 'lensflare', 'dof', 'motionBlur', 'lut', 'traa', 'smaa']);
+export const NODE_PASSES = new Set(['ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'godrays', 'lensflare', 'dof', 'motionBlur', 'lut', 'traa', 'smaa', 'upscale']);
 // What each backend cannot build. On 'nodes-webgl' the lit fixture
 // (scripts/light-fixture.mjs, pass by pass) drew SSR as white smears below
 // every pillar and TRAA as a flat grey frame, so both are left out there
@@ -93,6 +106,9 @@ export const MOTION_SAMPLES = 16; // MotionBlur's default
 // m: how far SSGI gathers (SSGINode's 12 suits a hall; on open ground it
 // reaches the sky's pixels above every surface that faces up)
 export const SSGI_RADIUS = 4;
+// FSR1Node's RCAS strength (0 the most, 2 none): its own default
+export const FSR_SHARPNESS = 0.2;
+export const UPSCALERS = ['fsr1', 'taau'];
 const SHED = [['ssgi', 'denoise'], ['ssr'], ['godrays', 'lensflare'], ['ao']];
 
 const TIERS = {
@@ -113,6 +129,16 @@ export function arrange(passes) {
     .map((p, i) => [{ ...p }, i])
     .sort((a, b) => rank(a[0].kind) - rank(b[0].kind) || a[1] - b[1])
     .map(([p]) => p);
+  out = out.filter((p) => p.kind !== 'upscale' || (p.scale > 0 && p.scale < 1 && UPSCALERS.includes(p.upscaler)));
+  const up = out.find((p) => p.kind === 'upscale');
+  if (up && out.filter((p) => p.kind === 'upscale').length > 1) out = out.filter((p) => p.kind !== 'upscale' || p === up);
+  // (TAAU is the anti-aliasing; FSR1 takes SMAA under it, never TRAA)
+  if (up?.upscaler === 'taau') out = out.filter((p) => p.kind !== 'traa' && p.kind !== 'smaa');
+  if (up?.upscaler === 'fsr1' && has(out, 'traa')) {
+    const at = out.findIndex((p) => p.kind === 'traa');
+    out = out.filter((p) => p.kind !== 'smaa');
+    out.splice(at, 1, { kind: 'smaa' });
+  }
   if (has(out, 'traa')) out = out.filter((p) => p.kind !== 'smaa');
   if (!has(out, 'bloom')) out = out.filter((p) => p.kind !== 'lensflare');
   if (!has(out, 'ssgi')) out = out.filter((p) => p.kind !== 'denoise');
@@ -165,7 +191,25 @@ export function passesFor(tier, entry, backend = 'webgpu', refs = {}) {
   if (refs.dof && chain.length > 1) chain.push(make.dof());
   // (no TRAA on this backend: SMAA is the anti-aliasing instead)
   if (cannot.has('traa') && !cannot.has('smaa') && chain.some((x) => x.kind === 'traa')) chain.push(make.smaa());
-  return arrange(chain.filter((x) => !cannot.has(x.kind)));
+  const out = arrange(chain.filter((x) => !cannot.has(x.kind)));
+  // (refs.upscale: { kind, scale }, the pace's step or the 4K start; none on the classic backend)
+  return refs.upscale && !cannot.has('upscale') ? upscaled(out, refs.upscale) : out;
+}
+
+export function upscaleKind(passes) {
+  return has(passes, 'traa') ? 'taau' : 'fsr1';
+}
+
+export function upscaled(passes, { kind, scale = 1, sharpness = FSR_SHARPNESS } = {}) {
+  const rest = passes.filter((p) => p.kind !== 'upscale');
+  if (!(scale > 0 && scale < 1)) return arrange(rest);
+  const upscaler = kind ?? upscaleKind(rest);
+  const camera = rest.find((p) => p.kind === 'render')?.camera;
+  return arrange([...rest, { kind: 'upscale', upscaler, scale, ...(upscaler === 'fsr1' ? { sharpness } : { camera }) }]);
+}
+
+export function headroom(passes, { scale = 1, shed: level = 0 } = {}, kind) {
+  return upscaled(shed(passes, level), { kind, scale });
 }
 
 export function shed(passes, level = 0) {

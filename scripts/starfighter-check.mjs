@@ -163,7 +163,9 @@ const differ = Buffer.compare(withPack, without) !== 0;
 if (area) {
   const fog = await page.evaluate(() => (window.__galaxyDebug.scene.fog?.isFogExp2 ? window.__galaxyDebug.scene.fog.density : null));
   const sky = await page.evaluate(() => window.__galaxyDebug.state.enclosed);
-  ok(fog !== null && sky, `inside the area: its storm's fog on (density ${fog}), the galaxy's sky and names shut out`);
+  // (a space level's area, Fondor's or the droid battleship's, has no fog: its star field alone)
+  const space = await page.evaluate(() => !window.__galaxyDebug.scene.getObjectByName('level-area-sea'));
+  ok((space || fog !== null) && sky, space ? `inside the area: the level's star field round it, the galaxy's sky and names shut out` : `inside the area: its storm's fog on (density ${fog}), the galaxy's sky and names shut out`);
 }
 ok(differ, `the pack's flagship is drawn where the battle's is (its box ${differ ? 'changes' : 'is the same'} without the pack)`);
 writeFileSync(`${out}/starfighter-${system}-${quality}-mc80.png`, withPack);
