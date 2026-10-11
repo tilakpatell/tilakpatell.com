@@ -16,8 +16,8 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | U2 | batch, bundles, occlusion and the upscaler on by tier; the bloom mismatch measured; the laptop workflow | T2 | | `claude/bf2017-u2-headroom` | |
 | M2 | per-instance variations from the bins (gate 95 %), weathering and terrain blend, the decal and glass families, level detail slices, translucency, head SSS | T2 | | `claude/bf2017-m2-material` | |
 | G | the gallery: every world at ultra on the laptop beside the game’s frame, with the numbers | T2, P, U2 | | `claude/bf2017-g-gallery` | |
-| W | the desktop as a workflow on the self-hosted runner: the HDR panoramas, the Enlighten atlases, the 4,149 textures, the UASTC row, the depot probe, the ultra frame gate; written in the cloud, run by the owner | nothing | | `claude/bf2017-w-desktop` | |
-| R2 | the stream spike: the ultra picture rendered on the owner’s GPU and streamed over WebRTC (signalling on Supabase Realtime), the numbers, the decision | W to measure | | `claude/bf2017-r2-stream` | |
+| W | the desktop as a workflow on the self-hosted runner: the HDR panoramas, the Enlighten atlases, the 4,149 textures, the UASTC row, the depot probe, the ultra frame gate; written in the cloud, run by the owner | nothing | `session_01FPogwWhFLVH94UY39gDNTh` (spawned 2026-10-11 04:29 UTC, Opus 5.5) | `claude/bf2017-w-desktop` | |
+| R2 | the stream spike: the ultra picture rendered on the owner’s GPU and streamed over WebRTC (signalling on Supabase Realtime), the numbers, the decision | W to measure | `session_01Ssaa24nQsXQKzVD9zasd6d` (spawned 2026-10-11 04:29 UTC, Opus 5.5) | `claude/bf2017-r2-stream` | |
 
 ## The sixth design: accurate to the game (2026-10-10, late night)
 
