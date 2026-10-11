@@ -17,9 +17,10 @@
 // its probe's sky colours) and, under public/textures/galaxy/bf2017/light/
 // <world>/, each weather's outdoor probe and the world's one indoor probe
 // (when named: lit by its own lamps, it is the same in every weather) as
-// six 64² HDR faces, and each weather's LUT as a 17² × 17 strip (every other
-// slice, row and column of the game's 33³: a grade is smooth, and the pack
-// stays under 400 KB). Downloads are kept under
+// six 64² HDR faces, and each weather's LUT as a 33² × 33 strip, the game's
+// whole cube (lane D2: the 17³ every-other cut bent the grade's dark end,
+// where a slice is 8 of 255; `--half` keeps the old cut). scripts/
+// bf2017-lut.mjs re-cuts a record's LUTs alone. Downloads are kept under
 // lab/assets/bf2017/ (git-ignored).
 //
 // The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment,
@@ -140,7 +141,7 @@ for (const [w, e] of Object.entries(weathers)) {
     slices.push(new Uint16Array(data.buffer, data.byteOffset, data.length / 2));
   }
   const half = (n + 1) / 2;
-  const small = Number.isInteger(half) ? halveLut(slices, n) : null;
+  const small = args.includes('--half') && Number.isInteger(half) ? halveLut(slices, n) : null;
   const [lut, size] = small ? [small, half] : [lutStrip(slices, n), n];
   await sharp(Buffer.from(lut), { raw: { width: size * size, height: size, channels: 3 } })
     .png({ compressionLevel: 9 })

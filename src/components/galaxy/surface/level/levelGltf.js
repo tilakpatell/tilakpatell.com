@@ -24,8 +24,10 @@
 //     first, its own maps (color, normal) found in the index's `maps`
 
 import { NoColorSpace, SRGBColorSpace } from 'three';
+import { BUDGETS } from '../../../../lib/device.js';
 import { COLOUR_MAP_KEYS } from '../../../../lib/three/surface/families.js';
 import { gltfLoader, ktx2Loader } from '../../../../lib/three/gltf.js';
+import { anisotropyFor } from '../../../../lib/three/textures.js';
 import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
 import { packUrl, splitTextures, tierTexture } from './levelPack.js';
 import { applyVariation } from './levelVariations.js';
@@ -92,6 +94,24 @@ const MAP_KEYS = [
   ['nea', (m) => m.nea],
   ['idMap', (m) => m.idMap],
 ];
+
+// A pack map's anisotropy, the tier's (lib/device's BUDGETS: 16 on high and
+// ultra, 4 on mid, 1 on low), under what the chip has: a pack's floors and
+// walls are seen at a slant, and at 1 their maps smear a few metres out
+// (the surfaces design's Q5, lane D2). Set once, on load, so every slot that
+// shares the texture has it.
+//   sharpenPack(tex, tier, renderer) → tex
+export function sharpenPack(tex, tier, renderer = null) {
+  if (!tex?.isTexture) return tex;
+  const max = renderer?.capabilities?.getMaxAnisotropy?.() ?? renderer?.getMaxAnisotropy?.() ?? 16;
+  const want = (BUDGETS[tier] ?? BUDGETS.high).aniso;
+  const a = anisotropyFor(max, want);
+  if (tex.anisotropy !== a) {
+    tex.anisotropy = a;
+    tex.needsUpdate = true;
+  }
+  return tex;
+}
 
 // the slots whose texture is a colour, in sRGB (the rest are data: normals, roughness and metal)
 export const COLOUR_SLOTS = new Set(['map', 'emissiveMap']);
@@ -178,6 +198,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
         ktx2Loader({ renderer })
           .then((k) => withFallback((u) => k.loadAsync(u))(local))
           .then((t) => gameWordOf(t, sizes, path))
+          .then((t) => sharpenPack(t, tier, renderer))
           .catch(() => null),
       );
     }
