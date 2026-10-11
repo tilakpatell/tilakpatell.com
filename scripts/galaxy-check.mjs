@@ -138,6 +138,16 @@ for (const id of list.split(',')) {
     });
     await page.waitForTimeout(Number(process.env.DOWN_WAIT ?? 8000));
   }
+  // (and nothing held back: the frame guard leaves a draw out of the frame
+  // till its shader has linked, and in software GL a level's hundreds of
+  // materials take minutes, so measured sooner the frame drew the ground and
+  // none of its huts, and counted their calls as none; frames asked for till
+  // the guard holds nothing, window.__tpGuardPending, development's)
+  {
+    const until = Date.now() + Number(process.env.GUARD_WAIT ?? 600000);
+    while ((await page.evaluate(() => (window.__RUNTIME__?.invalidate(), window.__tpGuardPending?.() ?? 0))) && Date.now() < until) await page.waitForTimeout(1000);
+    if (Date.now() >= until) errors.push('the frame guard still held draws back');
+  }
   // (in space, the ship put in one place, the same for every run: off the
   // planet on its sun side, facing it, stopped. The seeded randomness alone
   // can't hold it there: three.js draws on Math.random for every object's
