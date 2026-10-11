@@ -10,7 +10,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 
 | Lane | What | Needs first | Session | Branch | Merged |
 |---|---|---|---|---|---|
-| colour | `variations.json` per pack from the MVDBs and object variations; the level loader applies tints and texture overrides through Q1's game material; the djb2-xor dictionary (`shaderParams.json`); the material audit per world; the vehicles' hand table retired | nothing (E0's slot: `level.json.parts.variations`) | `session_01U5D9w4boHLP4YqctWhTfdF` | `claude/bf2017-colour` (no branch on `origin` by 22:00 UTC; task 1, the dictionary, landed with the colours PR below) | |
+| colour | `variations.json` per pack from the MVDBs and object variations; the level loader applies tints and texture overrides through Q1's game material; the djb2-xor dictionary (`shaderParams.json`); the material audit per world; the vehicles' hand table retired | nothing (E0's slot: `level.json.parts.variations`) | `session_016MqzdEYrPgLbWg1mrpw1kG` (task 1: `session_01282C5tuJnxtHN4SCrT1kct`) | `claude/bf2017-colour-chain` | tasks 1 to 5 and 7 done ("The variation chain" below): bound hoth 89.9 %, sb_endor 91.3 %, sb_kamino 99.3 %, endor 91.0 %; task 6 not done (the AT-AT's MVDBs bind another mesh) |
 | bots | the AI system's targeting and squad engagement, the cover queries and scores, the difficulties, the Skirmish bots with abilities, the names, the squadron behaviour trees, the creatures' minds, the walkers' gunners | nothing | `session_01CKvDqG9j2gHKnYVKvnDkUP` | `claude/bf2017-bots` | |
 | screens | the front-end, loading, spawn, in-game menu, end-of-round, kill screen and scoreboard from the widget trees; the vector shapes; `Screen.jsx`; the route through them; the galaxy's cards named as the game's | nothing (lane 5 and M live: merge main first) | `session_01NH9xQCGQhfdoG41VpCneb7` | `claude/bf2017-screens` | |
 | fighters | `air.json`; the game's flight model; the game's fighters imported; the mission on the rulebook and the squadron minds; Fondor and the droid battleship as areas; the mode's HUD | nothing (bots' `squadron.js` and the screens' `Screen.jsx` taken when present) | `session_01JqYzKMGHdHxUJHnuF1M3p9` | `claude/bf2017-fighters` | |
@@ -51,6 +51,29 @@ node scripts/bf2017-colour-check.mjs --check                 # every pack's map 
 npx vitest run scripts/lib/ktx2-colour.test.mjs scripts/lib/bf2017-shader-names.test.mjs src/components/galaxy/surface/level/levelGltf.test.js src/components/galaxy/surface/sites/sites.test.js
 SCANS=game QUALITY=high OUT=/tmp/shots node scripts/galaxy-check.mjs surface tatooine,endor,naboo   # no cc0 fetch on a Star Wars world
 ```
+
+## The variation chain (2026-10-11; `claude/bf2017-colour-chain`, session_016MqzdEYrPgLbWg1mrpw1kG)
+
+The colour lane's plan (`plans/2026-10-10-bf2017-accuracy-lane-colour.md`), tasks 2 to 5 and 7, on the four packs on `main` and E0's (hoth, sb_endor, sb_kamino, endor). Evidence: `evidence/bf2017-colour/README.md` ("The variation chain", "The material audit") and `<world>.md`.
+
+**Done.**
+- `scripts/lib/bf2017-variations.mjs` (pure: the MVDBs' entries, the object variations by their material variations' guids, the swaps, the level's own rule, each variation material folded into a Q1 recipe by `recipeOf`) and `scripts/bf2017-variations.mjs <world>… [--fetch]` (the pack's databases as its builder chose them, `mainSubs` or the README's `--subs`; writes `variations.json` and a "Variations" table in the pack's README). A variation whose shader is a `_SnowMask_` preset lets Q4's snow on (`SNOW_MASK_RE`; the mask's channel is not in the records, so the whole face).
+- `src/components/galaxy/surface/level/levelVariations.js` and the loader: the swaps on every renderer (`slotPath` in `bind`), the variation's recipe on the node one, a pack without `recipes.json` too; `index.js` reads `variations.json` through `partOf`; `stats().variations` counts the materials drawn so. A pack without the file draws as before (the loader's test pins it). `gameMaterial.js` did not change: the vectors are in the recipe's params.
+- `scripts/lib/bf2017-material-audit.mjs` and `scripts/bf2017-material-audit.mjs`: per drawn material bound, default-only, missing-texture, unbound or no-entry.
+- `scripts/light-fixture.mjs --materials --variations`: Hoth's crate before and after (`crate-*-webgl.webp`).
+- The fetch: `--folder 'data/…'` keeps the bucket's own path (`inBucket`), so the MVDBs come by folder as this page asked. The ledger: a data group is also keyed by its records' whole paths (`data:<path>`: every MVDB is `MeshVariationDb_Win32`), `variations.json` uses the databases and variations it reads, and the rest of the MVDB and ObjectVariation groups (the characters' aside, lane T's) are the colour lane's in `bf2017-owners.mjs`.
+
+**The numbers.** Variations per pack (drawn meshes with one; chosen by the rule): hoth 12 (9), sb_endor 6 (6), sb_kamino 6 (5), endor 138 (121). Bound as the game binds it: **hoth 89.9 %** (133 of 148), **sb_endor 91.3 %** (189 of 207), **sb_kamino 99.3 %** (265 of 267), **endor 91.0 %** (708 of 778); nothing unbound, nothing outside a database. Hoth is under the plan's 95 % gate: 12 of its 15 short rows are maps the packs lack, 3 are meshes with a variation the rule could not choose. `shaderParams.json`: 4,943 names; the depots' resolved share still waits on the desktop's `maps_work/shaderdepots.jsonl`.
+
+**Left.**
+- Six swapped-to maps are in the bucket only as PNGs, never encoded (Hoth's floorboards `_cs` and `_nam`, Endor's burnt small tree `_c` and `_n`, `t_metalbaredetail_01_ns`, `t_container_xl_rebel_01_cs`): the desktop's encode (lane D), then `node scripts/bf2017-variations.mjs <world> --fetch`.
+- The masks the variations bind that the site reads nowhere (`_RGB` snow masks, `_MSW`, `_AO`, `DestructionRGBA`): counted, not fetched; the snow mask's channel is the shader graph's (the depots).
+- Q4's weather is not composed into the level's game materials yet, so in the worlds the snow variations draw their preset and parameters without the snow; the fixture shows it composed.
+- The per-instance variation hashes (the desktop's §4: the maps' `.bin` `variation` column); until then `instances` is null and the rule decides.
+- Vectors the recipe does not name yet ride unread in the file (`ColorVariation`, `Color`, `Reflectance`, `CenterColor`, `Markings_*`); `families.js`'s `PARAMS` is where a meaning goes once the depots say it.
+- **Task 6, not done, and why.** The AT-AT's two MVDBs (`Gameplay/Vehicles/Ground/AT-AT/AT-AT/vur_ground_at-at_bpb`, `Gameplay/Bundles/SP/Vehicle/SP_Kit_Vehicle_ATAT/…`) bind `at-at_static_donotuse_mesh` and `vehicle_ground_at-at_sp_mesh` with `T_AT-AT_Head_01_CS` and its set; the hand table (#866) binds `T_ATATHead_01_CW` inside `SS_ATAT_Head`'s graph, which no MVDB names. A binder from these would bind nothing the table does, so the table stays until the depots name the graph's maps.
+- The characters' variations (656 `Characters/ObjectVariation` records) are lane T's.
+- Q1's: with an overlay on the normal, the base normal is sampled at the colour map's UV set (the crate's side face in the shots).
 
 ## The overhaul's sessions (2026-10-10, 23:45 UTC)
 

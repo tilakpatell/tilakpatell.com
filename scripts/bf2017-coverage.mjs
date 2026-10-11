@@ -127,6 +127,19 @@ export async function readConsumers(root, { fetchPack = null } = {}) {
     add(file, names);
   }
 
+  // the packs' variations (scripts/bf2017-variations.mjs): the mesh
+  // variation databases by their whole path, the object variations they name
+  for (const file of filesUnder(at('public/models/galaxy/bf2017/levels'), (f) => f.endsWith('variations.json'))) {
+    const names = [];
+    for (const m of Object.values(readJson(file).meshes ?? {})) {
+      for (const [name, v] of Object.entries(m.variations ?? {})) {
+        names.push(name);
+        if (v._source?.mvdb) names.push(`data:${v._source.mvdb.replace(/^data\//, '').replace(/\.json$/, '')}`);
+      }
+    }
+    add(file, names);
+  }
+
   // the space levels' set pieces (scripts/bf2017-space.mjs): the map, each
   // model's parts, the asteroid tracks the rocks turn on, the map's globes
   for (const file of filesUnder(at('src/data/galaxy/space'), (f) => f.endsWith('.json'))) {

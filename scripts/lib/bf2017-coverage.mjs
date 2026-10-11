@@ -132,7 +132,9 @@ export function rowsOf({ models = [], anims = [], textures = [], physics = [], t
     const g = groups.get(id) ?? { id: `data:${id}`, part: 'data', name: id, files: [], bytes: 0, keys: [], count: 0 };
     g.bytes += Number(bytes) || 0;
     g.count++;
-    g.keys.push(normalise(name));
+    // (and by its whole path: records share a file name, every mesh
+    // variation database is MeshVariationDb_Win32)
+    g.keys.push(normalise(name), normalise(`data:${name}`));
     groups.set(id, g);
   }
   rows.push(...groups.values());

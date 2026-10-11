@@ -63,6 +63,18 @@ describe('rowsOf', () => {
   });
 });
 
+describe('a record named by its whole path', () => {
+  // every mesh variation database is called MeshVariationDb_Win32: a consumer
+  // naming one by `data:<path>` uses its own group, not every group of the type
+  const data = ['levels/mp/hoth_01/hoth_01/MeshVariationDb_Win32\tMeshVariationDatabase\tdata/levels/mp/hoth_01/hoth_01/MeshVariationDb_Win32.json\t10', 'gameplay/vehicles/x/MeshVariationDb_Win32\tMeshVariationDatabase\tdata/gameplay/vehicles/x/MeshVariationDb_Win32.json\t5'].join('\n');
+  it('uses that record’s group alone', () => {
+    const consumers = consumersOf({ 'public/models/galaxy/bf2017/levels/hoth/variations.json': ['data:Levels/MP/Hoth_01/Hoth_01/MeshVariationDb_Win32'] });
+    const [levels, gameplay] = rowsOf({ data }).filter((r) => r.part === 'data');
+    expect(classify(levels, { consumers }).state).toBe('used');
+    expect(classify(gameplay, { consumers }).state).toBe('unowned');
+  });
+});
+
 describe('classify', () => {
   const c = (id) => classify(row(id), ctx);
   it('marks what a consumer names used, by that consumer', () => {

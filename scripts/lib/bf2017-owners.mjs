@@ -40,6 +40,8 @@ export const LANES = [
   { lane: 'S', design: 836 },
   { lane: 'C', design: 836 },
   { lane: 'V', design: 836 },
+  // the sixth design (#877): the colour lane, the variation chain
+  { lane: 'colour', design: 877 },
   // the game design (#812): modes, bots, HUD and world
   ...['1', '2', '3', '4', '5', '6', '7'].map((lane) => ({ lane, design: 812, ...(lane === '1' ? { merged: 815 } : lane === '2' ? { merged: 832 } : {}) })),
   // the physics design (#817) and the engine decision (#819)
@@ -70,6 +72,10 @@ export const OWNERS = [
   { match: /^characters\/hero\/(yoda|generalgrievous)\//, lane: 'Y' },
   { match: /^anims(_additive)?\/(yoda_01_ske|generalgrievous_01_ske)\//, lane: 'Y' },
   { match: /^anims(_additive)?\/atat_destruction_/, lane: 'W' },
+  // the colour lane (#877): the mesh variation databases and the object
+  // variations, every level's and every set's; a pack's variations.json
+  // uses the ones it reads (the characters' outfit variations stay lane T's)
+  { match: /^(?!characters\/).*\/(meshvariationdatabase|objectvariation)$/, part: 'data', lane: 'colour' },
   // #839's lane D: the sound
   { match: 'sound/', part: 'data', lane: 'D' },
   // #836: the effect spawns (lane X) and the terrain scatter (lane N)
