@@ -2,21 +2,33 @@
 // table in `points.json` (a kill, an assist to whoever hurt the target
 // lately, a second on a moving objective, damage to the escort, a squad
 // spawn on you) and spent at the deploy screen on a reinforcement, a hero
-// or a vehicle, within the team's limits. Pure.
+// or a vehicle, within the team's limits. The prices are the game's record
+// (Online/BattlepointCostData: the level's own table for its mode, else the
+// default list); what a deed earns and the limits are by hand. Pure.
 //
-//   createPoints({ rulebook, teams: { 1: side, 2: side }, bpRate }) → bp
+//   createPoints({ rulebook, teams: { 1: side, 2: side }, bpRate, level = 'hoth_01', mode = 'galacticAssault' }) → bp
+//   priceOf(rulebook, kind, id, { level, mode }) → Battle Points
 //   earn(bp, id, kind, amount = 1)    hit(bp, target, by, now)    kill(bp, { by, target, now }) → [{ id, kind }]
 //   balance(bp, id)    offers(bp, id, team, { out: { heroes, reinforcements } }) → [{ kind, id, cost, affordable, available, why }]
 //   canBuy(bp, id, offer)    buy(bp, id, offer) → { ok, why }
 
-import { heroOf, pointsOf, reinforcementOf } from './rulebook.js';
+import { heroOf, levelKey, pointsOf, reinforcementOf } from './rulebook.js';
 
 // The window inside which a hit counts toward an assist, by hand (the game as played).
 export const ASSIST_WINDOW = 8;
 
-export function createPoints({ rulebook, teams, bpRate = null }) {
+export function createPoints({ rulebook, teams, bpRate = null, level = 'hoth_01', mode = 'galacticAssault' }) {
   const p = pointsOf(rulebook);
-  return { rb: rulebook, table: p, teams, rate: bpRate ?? p.bpRate ?? 1, balances: new Map(), hits: new Map(), earned: new Map() };
+  return { rb: rulebook, table: p, teams, level, mode, rate: bpRate ?? p.bpRate?.value ?? 1, balances: new Map(), hits: new Map(), earned: new Map() };
+}
+
+// A hero's, reinforcement's or vehicle's price: the level's table for the
+// mode, else the default list; a class is free
+export function priceOf(rulebook, kind, id, { level = 'hoth_01', mode = 'galacticAssault' } = {}) {
+  if (kind === 'class') return 0;
+  const c = pointsOf(rulebook).cost;
+  if (kind === 'hero') return c.heroes[id] ?? c.heroes.default ?? 0;
+  return c.byMode?.[mode]?.[levelKey(level)]?.units?.[id] ?? c.units[id] ?? 0;
 }
 
 export const balance = (bp, id) => bp.balances.get(id) ?? 0;
@@ -55,11 +67,8 @@ export function kill(bp, { by, target, now, hero = false }) {
 }
 
 function costOf(bp, kind, id) {
-  const c = bp.table.cost;
-  if (kind === 'class') return 0;
-  if (kind === 'reinforcement') return c[reinforcementOf(bp.rb, id).kind] ?? 0;
-  if (kind === 'hero') return c.heroes[id] ?? c.heroes.default;
-  return c.vehicles[id] ?? c.vehicles.default;
+  if (kind === 'reinforcement') reinforcementOf(bp.rb, id);
+  return priceOf(bp.rb, kind, id, bp);
 }
 
 export function offers(bp, id, team, { out = { heroes: 0, reinforcements: 0 } } = {}) {

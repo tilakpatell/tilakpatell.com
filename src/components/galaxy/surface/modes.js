@@ -16,23 +16,28 @@
 //   MODE_ASK_KEY, readAsk(raw)   whether the menu asks on landing ('ask' | 'never')
 
 import BOOK from '../../../data/bf2017/modes.json';
+import { info } from '../../../lib/bf2017/ui/info';
 import { MISSIONS } from './missions';
 import { systemById } from '../systems';
 import { STARFIGHTER as FLOWN } from './missions/starfighterMaps';
 
 const ICONS = '/battlefront/icons/UI/SVG';
 const name = (id, own) => BOOK.names?.modes?.[id]?.text ?? own;
+// the game's own description of a mode (src/data/bf2017/info.json, its
+// GameModeInformationAsset), so the cards say what the game's do
+const GAME_MODE = { galacticAssault: 'PlanetaryBattles', starfighter: 'SpaceBattle', hvv: 'HeroesVersusVillains', blast: 'Blast' };
+const about = (id, own) => info('mode', GAME_MODE[id])?.blurb ?? own;
 
 export const MODES = [
-  { id: 'galacticAssault', name: name('galacticAssault', 'Galactic Assault'), about: 'The big battle: attackers push objective by objective, defenders hold each as long as they can.', icon: `${ICONS}/InGame/GameMode/GameMode_Attack_AT-TE.svg` },
-  { id: 'starfighter', name: name('starfighter', 'Starfighter Assault'), about: 'Up in the fighters over the world, for the capital ships and what they guard.', icon: `${ICONS}/Classes/Class_Vehicle_Interceptor.svg` },
-  { id: 'hvv', name: name('hvv', 'Heroes vs Villains'), about: 'Four heroes against four villains, each side guarding its target.', icon: `${ICONS}/Classes/Hero_Icon_01.svg` },
-  { id: 'blast', name: name('blast', 'Blast'), about: 'Ten troopers a side, no objectives: first to a hundred eliminations.', icon: `${ICONS}/Classes/Class_Troopers_Assault_01.svg` },
+  { id: 'galacticAssault', name: name('galacticAssault', 'Galactic Assault'), about: about('galacticAssault', 'The big battle: attackers push objective by objective, defenders hold each as long as they can.'), icon: `${ICONS}/InGame/GameMode/GameMode_Attack_AT-TE.svg` },
+  { id: 'starfighter', name: name('starfighter', 'Starfighter Assault'), about: about('starfighter', 'Up in the fighters over the world, for the capital ships and what they guard.'), icon: `${ICONS}/Classes/Class_Vehicle_Interceptor.svg` },
+  { id: 'hvv', name: name('hvv', 'Heroes vs Villains'), about: about('hvv', 'Four heroes against four villains, each side guarding its target.'), icon: `${ICONS}/Classes/Hero_Icon_01.svg` },
+  { id: 'blast', name: name('blast', 'Blast'), about: about('blast', 'Ten troopers a side, no objectives: first to a hundred eliminations.'), icon: `${ICONS}/Classes/Class_Troopers_Assault_01.svg` },
   // (the other modes, lane 6's: a card only where the game fights them, `where`)
-  { id: 'strike', name: name('strike', 'Strike'), about: 'Eight a side, one objective: the attackers blow it or carry it out, then the sides swap.', icon: `${ICONS}/InGame/GameMode/GameMode_Attack.svg`, where: true },
-  { id: 'extraction', name: name('extraction', 'Extraction'), about: 'Carry the cargo through the checkpoints before the clock runs out; the other side stops you.', icon: `${ICONS}/InGame/GameMode/GameMode_Vehicle.svg`, where: true },
-  { id: 'ewokHunt', name: name('ewokHunt', 'Ewok Hunt'), about: 'Survive a night on Endor: stormtroopers against the Ewoks, every trooper lost one more Ewok.', icon: `${ICONS}/InGame/GameMode/GameMode_Defend.svg`, where: true },
-  { id: 'supremacy', name: name('supremacy', 'Supremacy'), about: 'Twenty a side for five command posts: the side holding fewer bleeds its reinforcements.', icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg`, where: true },
+  { id: 'strike', name: name('strike', 'Strike'), about: about('strike', 'Eight a side, one objective: the attackers blow it or carry it out, then the sides swap.'), icon: `${ICONS}/InGame/GameMode/GameMode_Attack.svg`, where: true },
+  { id: 'extraction', name: name('extraction', 'Extraction'), about: about('extraction', 'Carry the cargo through the checkpoints before the clock runs out; the other side stops you.'), icon: `${ICONS}/InGame/GameMode/GameMode_Vehicle.svg`, where: true },
+  { id: 'ewokHunt', name: name('ewokHunt', 'Ewok Hunt'), about: about('ewokHunt', 'Survive a night on Endor: stormtroopers against the Ewoks, every trooper lost one more Ewok.'), icon: `${ICONS}/InGame/GameMode/GameMode_Defend.svg`, where: true },
+  { id: 'supremacy', name: name('supremacy', 'Supremacy'), about: about('supremacy', 'Twenty a side for five command posts: the side holding fewer bleeds its reinforcements.'), icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg`, where: true },
   { id: 'story', name: 'Story', about: 'This world’s own missions, from the films.', icon: `${ICONS}/InGame/GameMode/GameMode_Soldier.svg` },
   { id: 'free', name: 'Free roam', about: 'The world as it is: walk, ride, talk and find things.', icon: `${ICONS}/Classes/Class_Vehicle_Speeder.svg` },
 ];

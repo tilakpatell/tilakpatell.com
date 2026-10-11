@@ -5,7 +5,11 @@
 //
 // landLine(sys) → 'Galactic Assault · Story' | ''
 
+import BOOK from '../../../data/bf2017/modes.json';
 import { starfighterAt } from './missions/starfighterMaps';
+
+// (the names the mode menu's cards carry: the game's own, modes.json)
+const named = (id, own) => BOOK.names?.modes?.[id]?.text ?? own;
 
 const isAssault = (to) => /[?&]mission=assault\b/.test(to ?? '');
 const assaulted = (g) => (g?.status === 'live' && isAssault(g.to)) || Boolean(g?.also?.some((a) => isAssault(a.to)));
@@ -20,4 +24,5 @@ const OTHER = [
 ];
 const storied = (g) => g?.status === 'live' && Boolean(g.to) && !isAssault(g.to);
 
-export const landLine = (sys) => [assaulted(sys?.game) ? 'Galactic Assault' : null, sys && starfighterAt(sys.id) ? 'Starfighter Assault' : null, listed(sys?.game, 'hvv') ? 'Heroes vs Villains' : null, listed(sys?.game, 'blast') ? 'Blast' : null, ...OTHER.map(([id, name]) => (listed(sys?.game, id) ? name : null)), storied(sys?.game) ? 'Story' : null].filter(Boolean).join(' · ');
+export const landLine = (sys) =>
+  [assaulted(sys?.game) ? named('galacticAssault', 'Galactic Assault') : null, sys && starfighterAt(sys.id) ? named('starfighter', 'Starfighter Assault') : null, listed(sys?.game, 'hvv') ? named('hvv', 'Heroes vs Villains') : null, listed(sys?.game, 'blast') ? named('blast', 'Blast') : null, ...OTHER.map(([id, name]) => (listed(sys?.game, id) ? named(id, name) : null)), storied(sys?.game) ? 'Story' : null].filter(Boolean).join(' · ');

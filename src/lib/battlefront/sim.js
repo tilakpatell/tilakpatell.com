@@ -120,7 +120,7 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     sim.M = modeFor(mode);
     if (!sim.M) throw new Error(`mode ${mode}: not built`);
     sim.ga = sim.M.create({ rulebook: rb, level, seed });
-    sim.bp = createPoints({ rulebook: rb, teams: sides });
+    sim.bp = createPoints({ rulebook: rb, teams: sides, level, mode });
     sim.deploying = new Map();
     sim.aimScale = AIM_SCALE;
   }

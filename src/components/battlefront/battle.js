@@ -17,10 +17,12 @@
 //   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, vent })
 
 import { aiOf, classOf, mapOf, pointsOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
+import { priceOf } from '../../lib/battlefront/battlePoints.js';
 import { buildNav } from '../../lib/battlefront/nav.js';
 import { STEP, addPlayer as addSoldier, createSim, removeEntity, squadBlocks, squadSpot, step as stepSim, view as viewSim } from '../../lib/battlefront/sim.js';
 import { joinSquad, squadRows } from '../../lib/battlefront/ai/squad.js';
 import { earn } from '../../lib/battlefront/battlePoints.js';
+import { hurt } from '../../lib/battlefront/soldier.js';
 import { modeFor } from '../../lib/battlefront/modes/index.js';
 
 export { STEP };
@@ -99,6 +101,8 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
     nav: grid,
     objectives,
     sides: teams ? { light: teams[1], dark: teams[2] } : teamsFor(rulebook, level),
+    level,
+    mode,
     points: pointsOf(rulebook),
     player: null, // { team, id, state: 'deploying' | 'alive' | 'down', downAt, earned, hits }
     result: null,
@@ -109,6 +113,9 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
     awards: new Map(), // Battle Points the bots earn here, until the page runs lane 2's mode (squad spawns on them)
     force(what, team) {
       if (what === 'win' || what === 'lose') this.result = { winner: what === 'win' ? team : 3 - team, why: 'forced' };
+      // (the player down, for the kill screen's check: the next step sees it)
+      const me = what === 'die' && this.player?.id ? this.sim.entities.get(this.player.id) : null;
+      if (me) hurt(me, { damage: me.hp + 1, now: this.sim.time });
     },
     out: null,
   };
@@ -205,12 +212,13 @@ export function step(b, inputs = []) {
 
 function offers(b, team) {
   const side = b.sides[SIDES[team]];
-  const cost = b.points.cost;
   const reinf = b.rulebook.reinforcements;
+  // (the record's prices: the level's table for the mode, else the default list)
+  const at = { level: b.level, mode: b.mode };
   return [
     ...side.classes.map((id) => ({ kind: 'class', id, cls: classOf(b.rulebook, id).cls, cost: 0 })),
-    ...(side.reinforcements ?? []).map((id) => ({ kind: 'reinforcement', id, reinforcementKind: reinf[id]?.kind, cost: cost[reinf[id]?.kind] ?? 0 })),
-    ...(side.heroes ?? []).map((id) => ({ kind: 'hero', id, cost: cost.heroes?.[id] ?? cost.heroes?.default ?? 0 })),
+    ...(side.reinforcements ?? []).map((id) => ({ kind: 'reinforcement', id, reinforcementKind: reinf[id]?.kind, cost: priceOf(b.rulebook, 'reinforcement', id, at) })),
+    ...(side.heroes ?? []).map((id) => ({ kind: 'hero', id, cost: priceOf(b.rulebook, 'hero', id, at) })),
   ];
 }
 

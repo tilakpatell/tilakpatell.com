@@ -8,6 +8,8 @@
 
 **Spec:** `2026-10-10-bf2017-galaxy-on-the-game-design.md`, decision 5 and "the mode catalogue"; the game design's section 8 (rulebook formats).
 
+**Narrowed beside PR #877 (read the spec's "Beside the accuracy design" first):** #877's maps lane (`claude/bf2017-maps`, running since 20:15 UTC) owns Task 1 (every map's rulebook and the mode layers) and Task 4 (the Galactic Assault stage files). **Do not do Tasks 1 and 4.** Do Tasks 2, 3, 5 and 6; in Task 5 key `rulebook.js` by the game's level key and add aliases for whatever file names the maps lane chooses (merge its branch or PR first if it has landed; read its hand-off row). Send the maps lane nothing yourself: the architect has told it the two layer corrections.
+
 ## Global constraints
 
 - Start from `main`. Own: `scripts/bf2017-data.mjs` (`map`, `points`, `kits`, `arcade`; not `frontend`, which is G1's), `scripts/lib/bf2017-rulebook-map.mjs`, `scripts/lib/bf2017-rulebook.mjs` (points, kits), `scripts/lib/bf2017-arcade.mjs` (new), `scripts/fixtures/bf2017/data/**` (additive), `src/data/bf2017/maps/*.json`, `src/data/bf2017/maps/*.stages.json`, `points.json`, `kits.json`, `arcade.json`, `NOTES.md`, `src/lib/battlefront/rulebook.js`, `rulebook.test.js`.
