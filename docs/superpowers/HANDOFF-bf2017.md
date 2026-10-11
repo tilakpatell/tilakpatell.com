@@ -10,7 +10,7 @@ The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-
 | --- | --- | --- | --- |
 | S1 | `claude/bf2017-s1-fleet` | `session_01Lir8B5LnJzj9qRka8oq94o` (spawned 2026-10-11 16:50 UTC from `claude/bf2017-space-design`) | PR #936 (draft) |
 | S2 | `claude/bf2017-s2-space-picture` | | |
-| S3 | `claude/bf2017-s3-map-hud` | `session_011ndxL8L9shYuwhE5cmbo16` (spawned 2026-10-11 from `claude/bf2017-space-design`, `origin/main` merged) | PR_S3 (draft) |
+| S3 | `claude/bf2017-s3-map-hud` | `session_011ndxL8L9shYuwhE5cmbo16` (spawned 2026-10-11 from `claude/bf2017-space-design`, `origin/main` merged) | PR #941 (draft) |
 | E5 | `claude/bf2017-e5-new-systems` | `session_01QrcPrerTbhxxZoKTnYgFQA` (spawned 2026-10-11 16:36 UTC from `main`) | |
 
 ### Lane S1: the fleet on the game’s hulls (`claude/bf2017-s1-fleet`, PR #936)
@@ -70,7 +70,7 @@ SEAT=cockpit SHIP=xwing QUALITY=high node scripts/galaxy-check.mjs space tatooin
 
 The tests need no keys: `npx vitest run scripts/bf2017-fleet.test.mjs scripts/bf2017-import.vehicles.test.mjs scripts/lib/bf2017-coverage.test.mjs src/components/galaxy/models.test.js src/components/galaxy/warfront.test.js src/components/galaxy/cabs.test.js src/components/cockpit/vehicles/game.test.js src/components/universe/shipModels.test.js src/data/modelCredits.test.js`.
 
-### Lane S3: the map and the HUD on the game’s front end (`claude/bf2017-s3-map-hud`, PR_S3)
+### Lane S3: the map and the HUD on the game’s front end (`claude/bf2017-s3-map-hud`, PR #941)
 
 The plan is `docs/superpowers/plans/2026-10-11-bf2017-space-laneS3-map-hud.md` (decision 6); the shots, `docs/superpowers/evidence/bf2017-space/s3/`.
 
@@ -97,7 +97,7 @@ The plan is `docs/superpowers/plans/2026-10-11-bf2017-space-laneS3-map-hud.md` (
 - On a phone the war’s line sits over the first flight’s tip toast (`hub-phone.webp`): the toast’s place is the kit’s and the war HUD’s phone row is as it was (`galaxy.css`), so it is a finding for whoever owns the galaxy’s phone HUD, not this lane’s change.
 - The war HUD’s objective bars are one an objective as before; the game’s single bar with a dot an objective is the Starfighter HUD’s (`StarfighterHud.jsx`), which already draws it.
 
-**Checking it.** `npx vitest run scripts/lib/bf2017-sky.test.mjs src/components/galaxy/globes.test.js src/components/galaxy/emblems.test.js src/components/galaxy/Emblem.test.jsx src/components/galaxy/HoloSide.test.jsx src/components/galaxy/GalaxyPanel.test.jsx src/components/galaxy/FlightCluster.test.jsx src/components/galaxy/WarHud.test.jsx src/components/galaxy/StarfighterHud.test.jsx src/lib/bf2017/icons.test.js`; the globes: `NODE_USE_ENV_PROXY=1 node scripts/bf2017-sky.mjs --globes` (the keys in the environment for the six pictures), then `node scripts/assets-publish.mjs --only 'models/galaxy/space/globes/*'`; the shots: `docs/superpowers/evidence/bf2017-space/s3/README.md`. A review pass (four reviewers over the diff, each finding put to a skeptic) found the planet placeholder, the emblems’ size, the stage row against the crew’s line, the speed line’s spacing, the marks’ sizes and the evidence’s captions; all are fixed above. On the PR’s head: CHECKS_S3.
+**Checking it.** `npx vitest run scripts/lib/bf2017-sky.test.mjs src/components/galaxy/globes.test.js src/components/galaxy/emblems.test.js src/components/galaxy/Emblem.test.jsx src/components/galaxy/HoloSide.test.jsx src/components/galaxy/GalaxyPanel.test.jsx src/components/galaxy/FlightCluster.test.jsx src/components/galaxy/WarHud.test.jsx src/components/galaxy/StarfighterHud.test.jsx src/lib/bf2017/icons.test.js`; the globes: `NODE_USE_ENV_PROXY=1 node scripts/bf2017-sky.mjs --globes` (the keys in the environment for the six pictures), then `node scripts/assets-publish.mjs --only 'models/galaxy/space/globes/*'`; the shots: `docs/superpowers/evidence/bf2017-space/s3/README.md`. A review pass (four reviewers over the diff, each finding put to a skeptic) found the planet placeholder, the emblems’ size, the stage row against the crew’s line, the speed line’s spacing, the marks’ sizes and the evidence’s captions; all are fixed above. On 34c5f640, with `origin/main` at 803bfc86 merged in: `npm run lint` passes, `npm test` passes (1,350 files, 1 skipped), `npm run build` passes, `node scripts/health.mjs --check --skip build` is within budget, `npm run coverage:bf2017` has 0 unowned rows, and `node scripts/autopilot-check.mjs --routes /galaxy --only smoke` is everything green.
 
 ## The picture-everywhere design: every world on the node renderer, every layer on (2026-10-11, early)
 
