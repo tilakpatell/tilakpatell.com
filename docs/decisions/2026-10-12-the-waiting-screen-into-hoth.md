@@ -14,7 +14,7 @@ The Battlefront world takes the game's sequence. Until the first deploy the came
 
 - On the owner's desk (an RTX 5090, 5,120 × 1,440 at ultra): Deploy to the first drawn field frame 430 ms, the worst frame of the next 3 s 54 ms (one over 50; the rest the world's steady 27 ms frame on that buffer), no shader built after the swap. The evidence: `docs/superpowers/evidence/bf2017-waiting-screen-2026-10-12.md`.
 - The wait is the load's whole length (41 s there, the level's stream most of it), shown honestly; the player chooses while it runs.
-- The page's `send` reached the world for the first time (`useWorld`'s `world` is a ref; the page read it as the world), so the screen's picks and the game's spawn screen's now act.
+- The screen's picks and Deploy go through `send.js`'s `sendTo` (the 2026-10-12 page-turn decision), as the game's spawn screen's do.
 - Two counts are new on public faces: `guardOf(renderer)` on the guard, `rt.gpuClock` on the runtime.
 
 ## Revisit when
