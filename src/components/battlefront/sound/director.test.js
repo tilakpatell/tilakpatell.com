@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_SHOTS, VO_GAP, createDirector } from './director.js';
+import { KILL_PITCH, MAX_SHOTS, VO_GAP, createDirector } from './director.js';
 import { LAND_DROP, STRIDE } from './mix.js';
 import { loadRulebook } from '../../../lib/battlefront/rulebook.js';
 import { hothFlatNav } from '../../../lib/battlefront/fixtures/hothFlat.js';
@@ -151,22 +151,27 @@ describe('the feet', () => {
 });
 
 describe('the cues', () => {
-  it('a landed hit is the FirstHit cue once a life, then the hit; a kill the confirmation', () => {
+  it('a landed hit is the FirstHit cue once a life, then the hit; a kill the confirmation over the Killed cue', () => {
     const { player, d } = make();
     d.update(view(), [{ type: 'hit', by: 'me', target: 'b' }]);
     d.update(view(), [{ type: 'hit', by: 'me', target: 'b' }]);
     d.update(view(), [{ type: 'kill', by: 'me', target: 'b' }]);
-    expect(names(player).filter((n) => n.startsWith('hit.'))).toEqual(['hit.first', 'hit.hit', 'hit.kill']);
+    expect(names(player).filter((n) => n.startsWith('hit.'))).toEqual(['hit.first', 'hit.hit', 'hit.killed', 'hit.kill']);
+    expect(player.calls.find((c) => c.name === 'hit.kill').pitch).toBe(KILL_PITCH);
+    // (a bot's kill of a bot is neither)
+    d.update(view(), [{ type: 'kill', by: 'b', target: 'c' }]);
+    expect(names(player).filter((n) => n.startsWith('hit.'))).toHaveLength(4);
     for (const c of player.calls.filter((n) => n.name?.startsWith('hit.'))) expect(c.ux).toBe(true);
   });
 
-  it('the player’s death: the scream, the fall, the killed cue, the world ducked', () => {
+  it('the player’s death: the scream, the body’s fall, the landing, the world ducked', () => {
     const { player, d } = make();
     d.update(view(), [{ type: 'kill', by: 'b', target: 'me' }]);
     const n = names(player);
     expect(n).toContain('death.scream');
     expect(n).toContain('death.fall');
-    expect(n).toContain('hit.killed');
+    expect(n).toContain('step.land');
+    expect(n).not.toContain('hit.killed');
     d.update(view({ player: { ...view().player, state: 'down' } }), []);
     expect(player.duckKind).toBe('death');
     expect(n.filter((x) => x === 'death.scream')).toHaveLength(1);

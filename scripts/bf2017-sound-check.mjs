@@ -5,9 +5,10 @@
 // opens Hoth's Galactic Assault on the waiting screen (the loading cue
 // plays, the world behind it unheard), presses the screen's Deploy once it
 // is ready, then jogs (W), sprints (Shift), crouch-walks (C), fires until
-// the rifle overheats and it clears, hunts the nearest enemy for the hit
-// and kill cues, stands in the battle for the bed and the far fire, dies
-// and wins; and the script counts what played: the player's own counter by
+// the rifle overheats and it clears, dies (the death's cues and duck),
+// deploys on a squadmate at the line and hunts the nearest enemy for the hit
+// and kill cues, stands in the battle for the bed and the far fire, and
+// wins; and the script counts what played: the player's own counter by
 // name and by kind (`sounds()`), and, apart from it, every
 // AudioBufferSourceNode started and every <audio> element played, hooked
 // before the page's scripts run. It adds up the bytes of every file asked
@@ -46,7 +47,7 @@ const MODE = argv.includes('--gone') ? 'gone' : argv.includes('--lost') ? 'lost'
 const ROUTE = '/battlefront/hoth/galacticAssault?gpu=webgpu';
 const CLASS = 'd-orig-assault';
 const HUNT = Number(arg('hunt', 150000)); // ms the hunt may take
-const RANGE = 35; // m: the hunt fires inside this
+const RANGE = 45; // m: the hunt fires inside this
 mkdirSync(OUT, { recursive: true });
 if (!existsSync(exe)) {
   console.error(`no browser at ${exe} (--browser names one)`);
@@ -120,23 +121,37 @@ const me = () => page.evaluate(() => {
 });
 const phase = async (more = {}) => ({ sounds: await sounds(), hook: await hook(), ...more });
 const moved = (a, b) => (a && b ? Math.round(Math.hypot(b[0] - a[0], b[2] - a[2]) * 100) / 100 : null);
-// the nearest living enemy soldier: where, how far, and the look that faces its chest
-const target = () => page.evaluate(() => {
-  const v = window.__battlefront.view();
-  const p = v.player;
-  if (!p || p.state !== 'alive') return null;
-  let best = null;
-  for (const e of v.entities) {
-    if (e.kind !== 'soldier' || !e.alive || e.team === p.team) continue;
-    const d = Math.hypot(e.at[0] - p.at[0], e.at[2] - p.at[2]);
-    if (!best || d < best.dist) best = { id: e.id, dist: d, at: e.at };
-  }
-  if (!best) return null;
-  const dx = best.at[0] - p.at[0];
-  const dz = best.at[2] - p.at[2];
-  // (yaw 0 faces +Z, the aim is (sin yaw, cos yaw); the chest to the chest)
-  return { ...best, yaw: Math.atan2(dx, dz), pitch: Math.atan2(best.at[1] - p.at[1] - 0.2, Math.max(1, best.dist)) };
-});
+// the aim, kept in the page every frame (a look sent from here would lag a running
+// target by metres): the nearest living enemy soldier, the player's view turned to
+// its chest; `window.__aim` says who and how far, null with nobody to face
+const aiming = (on) => page.evaluate((go) => {
+  window.__aimOn = go;
+  if (!go || window.__aimLoop) return;
+  window.__aimLoop = true;
+  const tick = () => {
+    if (!window.__aimOn || !window.__battlefront) {
+      window.__aimLoop = false;
+      window.__aim = null;
+      return;
+    }
+    const v = window.__battlefront.view();
+    const p = v.player;
+    let best = null;
+    if (p?.state === 'alive') {
+      for (const e of v.entities) {
+        if (e.kind !== 'soldier' || !e.alive || e.team === p.team) continue;
+        const d = Math.hypot(e.at[0] - p.at[0], e.at[2] - p.at[2]);
+        if (!best || d < best.dist) best = { id: e.id, dist: d, at: e.at };
+      }
+    }
+    // (yaw 0 faces +Z, the aim is (sin yaw, cos yaw); the chest to just under the chest)
+    if (best) window.__battlefront.do('look', { yaw: Math.atan2(best.at[0] - p.at[0], best.at[2] - p.at[2]), pitch: Math.atan2(best.at[1] - p.at[1] - 0.2, Math.max(1, best.dist)) });
+    window.__aim = best && { id: best.id, dist: best.dist };
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}, on);
+const target = () => page.evaluate(() => window.__aim ?? null);
 const hold = async (keys, ms) => {
   for (const k of keys) await page.keyboard.down(k);
   await page.waitForTimeout(ms);
@@ -233,9 +248,36 @@ try {
     await page.waitForTimeout(500);
     out.phases.fired = await phase({ overheated, cleared });
 
-    // the hunt: face the nearest enemy, sprint to within range (the keys held, the look
-    // turned as it moves), fire in bursts, until a hit and a kill have been heard
-    const hunt = { looks: 0, first: null, nearest: null, bursts: 0, deaths: 0 };
+    // the hunt, for the hit and kill cues. The spawn is hundreds of metres from the
+    // line, so the next life is the game's squad spawn: down (the death's cues and
+    // duck), then deployed on the squadmate nearest an enemy. From there: face the
+    // nearest enemy, sprint to within range (the keys held, the look turned as it
+    // moves), fire in bursts, until a hit and a kill have been heard.
+    await alive();
+    await door('die');
+    await page.waitForTimeout(2500);
+    out.phases.died = await phase({ state: (await me())?.state });
+    await page.waitForFunction(() => window.__battlefront.view().deploy.open, null, { timeout: 30000, polling: 250 });
+    const mate = await page.evaluate(() => {
+      const v = window.__battlefront.view();
+      const mine = v.deploy.team;
+      const foes = v.entities.filter((e) => e.kind === 'soldier' && e.alive && e.team !== mine);
+      let best = null;
+      for (const s of v.deploy.spawns) {
+        if (s.kind !== 'mate' || s.blocked) continue;
+        const m = v.entities.find((e) => e.id === s.id);
+        if (!m) continue;
+        const d = Math.min(Infinity, ...foes.map((f) => Math.hypot(f.at[0] - m.at[0], f.at[2] - m.at[2])));
+        if (!best || d < best.foe) best = { id: s.id, foe: Math.round(d) };
+      }
+      return best;
+    });
+    if (mate) await door('spawn', mate.id);
+    const again = await door('deploy', { classId: CLASS });
+    await page.waitForTimeout(500);
+    const hunt = { mate, deploy: again, looks: 0, first: null, nearest: null, bursts: 0, deaths: 0, moved: 0 };
+    let last = (await me())?.at ?? null;
+    await aiming(true);
     let running = false;
     const run = async (on) => {
       if (on === running) return;
@@ -254,7 +296,9 @@ try {
       }
       hunt.first ??= Math.round(t.dist);
       hunt.nearest = Math.min(hunt.nearest ?? Infinity, Math.round(t.dist));
-      await door('look', { yaw: t.yaw, pitch: t.pitch });
+      const here = (await me())?.at ?? null;
+      hunt.moved += moved(last, here) ?? 0;
+      last = here;
       hunt.looks += 1;
       if (t.dist > RANGE) {
         await run(true);
@@ -262,29 +306,27 @@ try {
       } else {
         await run(false);
         await page.mouse.down();
-        await page.waitForTimeout(450);
+        await page.waitForTimeout(600);
         await page.mouse.up();
-        await page.waitForTimeout(150);
+        await page.waitForTimeout(250);
         hunt.bursts += 1;
       }
       const s = await sounds();
       if ((s.played['hit.kill'] ?? 0) >= 1 && (s.played['hit.hit'] ?? 0) >= 1) break;
     }
     await run(false);
+    await aiming(false);
+    hunt.moved = Math.round(hunt.moved);
     out.phases.hunted = await phase({ hunt });
 
     // the battle round the player: the bed's one-shots, the far fire
     await alive();
     await page.waitForTimeout(8000);
     out.phases.battle = await phase();
-    await alive();
-    await door('die');
-    await page.waitForTimeout(2500);
-    out.phases.died = await phase({ state: (await me())?.state });
     await door('win');
     await page.waitForTimeout(3000);
     out.phases.won = await phase();
-    await page.screenshot({ path: join(OUT, 'field.png') });
+    await page.screenshot({ path: join(OUT, 'end-of-round.png') });
     out.view = await page.evaluate(() => {
       const v = window.__battlefront.view();
       return { player: v.player && { state: v.player.state, heat: v.player.heat, overheated: v.player.overheated, weapon: v.player.weapon }, stage: v.mode?.stageName, result: v.mode?.result, entities: v.entities?.length, weather: v.weather, waiting: Boolean(document.querySelector('.bf-waiting')) };

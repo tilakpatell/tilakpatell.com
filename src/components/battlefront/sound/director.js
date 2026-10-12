@@ -3,8 +3,10 @@
 // numbers. A shot by anyone plays the blaster's layers by its distance from
 // the listener (the player's body) and its side; the player's own feet
 // plant by the body's speed, suppressed under fire by the HDR window; the
-// hit, kill and death cues, the overheat set and the abilities from the
-// events; the bed loops with its one-shots on their timers; the music by
+// hit cue for a shot the player lands (the first of a life its own), the
+// kill's confirmation over the Killed cue, the player's own death (the
+// scream, the body's fall, the landing), the overheat set and the abilities
+// from the events; the bed loops with its one-shots on their timers; the music by
 // the mode's state, with the tension's duck, the spawn screen's and the
 // death's; a commander line on an objective event. Behind the waiting
 // screen (`waiting`: the darkroom before the first deploy, where the page
@@ -24,6 +26,7 @@ export const MAX_SHOTS = 6; // shot sounds a step at most, the nearest first (fo
 export const VO_GAP = 6; // s between commander lines
 export const WALKER_VO_GAP = 45; // s between the walker-damaged lines
 export const ABILITY_EARSHOT = 40; // m: another soldier's ability is heard this near
+export const KILL_PITCH = 1.1; // the kill confirmation's (Kill_Confirmation_UI_Add_Short, finding 36 §5)
 export const PRELOAD = ['blaster.hifi', 'blaster.noise.close', 'blaster.noise.distant', 'blaster.reflection', 'blaster.passby', 'step.walk', 'step.jog', 'step.sprint', 'step.jump', 'step.land', 'cloth.crouchDown', 'cloth.crouchUp', 'cloth.jump', 'cloth.land', 'death.scream', 'death.fall', 'hit.hit', 'hit.first', 'hit.killed', 'hit.kill', 'overheat.warning', 'overheat.overheated', 'overheat.reset', 'overheat.manual', 'ambience.bed'];
 
 const SIDE = { 1: 'rebellion', 2: 'imperial' };
@@ -75,7 +78,6 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
     player.play('death.scream', { gain: 1, pitch });
     player.play('death.fall', { gain: 1, pitch });
     player.play('step.land', { gain: 0.8, pitch });
-    player.play('hit.killed', { ux: true });
     hear(state.window, LOUDNESS.death, state.now, 1.5);
   };
 
@@ -83,7 +85,7 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
   // and Land, the armour's cloth over each), a landing by how far it fell
   const jump = () => {
     player.play('step.jump', { gain: 1 });
-    player.play('cloth.jump', { gain: 0.5 }); // (the Stormtrooper configuration's Jump at 0.5)
+    player.play('cloth.jump', { gain: 1 }); // (the Stormtrooper configuration's Jump at 0.5 is the row's own gain)
   };
   const land = (gain = 1) => {
     player.play('step.land', { gain });
@@ -114,7 +116,11 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
           }
           break;
         case 'kill':
-          if (e.by === me && e.target !== me) player.play('hit.kill', { ux: true });
+          // (the kill's confirmation over the Killed cue, a tenth up: 36 §5)
+          if (e.by === me && e.target !== me) {
+            player.play('hit.killed', { ux: true });
+            player.play('hit.kill', { ux: true, pitch: KILL_PITCH });
+          }
           if (e.target === me) death();
           else if (at(e) && byId.get(e.target)?.kind === 'soldier') {
             const d = Math.hypot(e.at[0] - state.listener.at[0], e.at[2] - state.listener.at[2]);
