@@ -21,7 +21,7 @@
 //                                   shadows.js's createFarCache as the last cascade's distant term (none: a lit 1)
 //   picture,                        the record's picture (lane Q6, grade.js's pictureOf; else entry.picture):
 //                                   true for its tone map, five Gaussians and HBAO numbers alone, or
-//                                   { lut: { url, size }, panorama: { url, horizon }, gradient: { url }, cloudShadow: { url } }
+//                                   { lut: { url, size }, panorama: { url, horizon, hdr }, gradient: { url }, cloudShadow: { url } }
 //                                   for its LUT, painted sky, fog gradient and cloud texture too (loaded
 //                                   here: the LUT strip through gameLut.js, the rest through the stack's
 //                                   KTX2 loader; one that fails to load is left out and named in
@@ -51,7 +51,7 @@ import { filterFor, pcssFilter, readPcss, vsmFallback } from './shadows.js';
 import { createSky } from './sky.js';
 import { createSun, readShadowRecord } from './sun.js';
 import { CONES_LIT, createVolumetrics } from './volumetrics.js';
-import { pictureOf } from './grade.js';
+import { panoramaSource, pictureOf } from './grade.js';
 import { backendOf, loadThree, registerLights } from './three.js';
 
 export const WEATHER_FADE = 20; // s: lane G's crossfade between two weathers
@@ -67,14 +67,19 @@ const gltf = () => (gltfModule ??= import('../gltf.js'));
 // url already in `have` (the weather before's, a texture two weathers share)
 // is that texture again, not a second load. Each goes through the asset base
 // (published by hash: src/data/galaxyAssets.json), the site's copy its fallback.
-async function loadPicture(pic, renderer, THREE, have = null) {
+// The painted sky is the tier's copy (grade.js's panoramaSource): lane W's
+// HDR KTX2 (RGBA16F, nothing clamped) on high and ultra, which three's
+// KTX2Loader reads as a half-float DataTexture with its own mips (set to
+// filter linearly: the loader leaves a raw texture at nearest); one that
+// fails to load is named and the UASTC copy loaded in its place.
+async function loadPicture(pic, renderer, THREE, have = null, tier = 'high') {
   const out = { lut: null, panorama: null, gradient: null, cloudShadow: null, missing: [], urls: {} };
   if (!pic) return out;
   // (one loader for the three textures, asked for once)
   let ktx2 = null;
   const loader = () => (ktx2 ??= gltf().then((m) => m.ktx2Loader({ renderer })));
   const { withFallback } = await import('../../assetBase.js');
-  const load = async (key, url) => {
+  const load = async (key, url, { hdr = false, fallback = null } = {}) => {
     out.urls[key] = url;
     if (have?.urls?.[key] === url && have[key]) {
       out[key] = have[key];
@@ -86,10 +91,15 @@ async function loadPicture(pic, renderer, THREE, have = null) {
       t.colorSpace = THREE.NoColorSpace;
       t.wrapS = THREE.RepeatWrapping;
       t.wrapT = key === 'cloudShadow' ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+      if (hdr) {
+        t.magFilter = THREE.LinearFilter;
+        t.minFilter = t.mipmaps?.length > 1 ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+      }
       t.needsUpdate = true;
       out[key] = t;
     } catch {
       out.missing.push(url);
+      if (fallback) await load(key, fallback);
     }
   };
   const jobs = [];
@@ -105,10 +115,17 @@ async function loadPicture(pic, renderer, THREE, have = null) {
         .catch(() => out.missing.push(pic.lut.url)),
     );
   }
-  for (const k of ['panorama', 'gradient', 'cloudShadow']) if (pic[k]) jobs.push(load(k, pic[k].url));
+  if (pic.panorama) {
+    const src = panoramaSource(pic.panorama, tier);
+    jobs.push(load('panorama', src.url, { hdr: src.hdr, fallback: src.hdr ? pic.panorama.url : null }));
+  }
+  for (const k of ['gradient', 'cloudShadow']) if (pic[k]) jobs.push(load(k, pic[k].url));
   await Promise.all(jobs);
   return out;
 }
+
+// (what the painted sky was loaded as: the evidence reads it off the dev door)
+const formatOf = (t, THREE) => (t ? (t.type === THREE.HalfFloatType ? 'rgba16f' : t.type === THREE.FloatType ? 'rgba32f' : 'uastc') : null);
 
 // (the picture files' urls are the site's paths without the leading slash)
 const site = (url) => (/^(\/|[a-z]+:)/i.test(url) ? url : `/${url}`);
@@ -120,7 +137,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   await registerLights(renderer);
   // (the record's picture, lane Q6: only where asked and only on the node renderer)
   let pic = backend !== 'webgl' ? pictureOf(entry, picture) : null;
-  let tex = await loadPicture(pic, renderer, THREE);
+  let tex = await loadPicture(pic, renderer, THREE, null, tier);
   const was = { shadows: renderer.shadowMap?.enabled, shadowType: renderer.shadowMap?.type, environment: scene.environment, fogNode: scene.fogNode };
   // (the video settings, lib/video.js: each reader takes its field over the tier's)
   let vid = video;
@@ -272,7 +289,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
         return pic?.grade ?? null;
       },
       get picture() {
-        return pic ? { lut: Boolean(tex.lut), panorama: Boolean(tex.panorama), gradient: Boolean(tex.gradient), cloudShadow: Boolean(tex.cloudShadow), gain: sky?.uniforms.panoramaGain?.value ?? null, missing: tex.missing, urls: { ...tex.urls } } : null;
+        return pic ? { lut: Boolean(tex.lut), panorama: Boolean(tex.panorama), gradient: Boolean(tex.gradient), cloudShadow: Boolean(tex.cloudShadow), gain: sky?.uniforms.panoramaGain?.value ?? null, format: formatOf(tex.panorama, THREE), missing: tex.missing, urls: { ...tex.urls } } : null;
       },
     },
     update(dt, cam = camera) {
@@ -316,7 +333,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       sun.setShadowSun(readShadowRecord(next).shadowSun);
       const nextPic = pic && backend !== 'webgl' ? pictureOf(next, nextAsk) : null;
       const ask = ++turned;
-      const picture = nextPic ? { pic: nextPic, entry: next, ask, ahead: loadPicture(nextPic, renderer, THREE, tex) } : null;
+      const picture = nextPic ? { pic: nextPic, entry: next, ask, ahead: loadPicture(nextPic, renderer, THREE, tex, tier) } : null;
       const from = pic?.panorama?.horizon ?? null;
       const horizon = from && nextPic?.panorama?.horizon ? [from, nextPic.panorama.horizon] : null;
       if (!(seconds > 0)) {

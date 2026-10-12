@@ -12,7 +12,8 @@
 // scripts/battlefront-check.mjs: { view(), do(action, arg) } with 'deploy'
 // { classId }, 'pick' id, 'spawn' a squadmate's id (null for the HQ),
 // 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
-// screen), 'weather' name, 'gpu', 'ragdolls' (how many bodies fall, lie
+// screen), 'weather' name, 'look' { yaw, pitch } (the player's view, for
+// a shot toward the sun), 'gpu', 'ragdolls' (how many bodies fall, lie
 // and wait: figures/ragdolls.js).
 
 import * as THREE from 'three';
@@ -305,6 +306,12 @@ export default {
             const next = lit(arg);
             light.setWeather(next.entry, 0, { picture: next.picture });
             return { ok: true };
+          }
+          case 'look': {
+            // (a check turns the player's view: radians, yaw 0 down +Z, pitch up positive)
+            const l = input.look();
+            input.setLook(arg?.yaw ?? l.yaw, arg?.pitch ?? l.pitch);
+            return { ok: true, ...input.look() };
           }
           case 'gpu':
             return rt.gfx.backend;

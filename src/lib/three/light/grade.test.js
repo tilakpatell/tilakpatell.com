@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import hoth from './fixtures/hoth.ve.json';
-import { BLOOM_FACTORS, GAUSSIAN_LEVELS, RGBM_RANGE, bloomTints, cloudShadowOf, gradeOf, gradientUV, panoramaOf, panoramaUV, pictureOf, rgbmDecode, withPicture } from './grade.js';
+import { BLOOM_FACTORS, GAUSSIAN_LEVELS, HDR_WIDTH, RGBM_RANGE, bloomTints, cloudShadowOf, gradeOf, gradientUV, panoramaOf, panoramaSource, panoramaUV, pictureOf, rgbmDecode, withPicture } from './grade.js';
 import { sunDir } from './entry.js';
 
 const sunny = hoth.sunny.record;
@@ -133,6 +133,29 @@ describe('pictureOf', () => {
     expect(bare.grade.bloom.weights[4]).toBe(0.5);
     expect(bare.lut).toBeNull();
     expect(bare.panorama).toBeNull();
+    // (lane W's HDR copy rides on the panorama's row; none, null)
+    expect(p.panorama.hdr).toBeNull();
+    const hdr = { url: 'textures/galaxy/bf2017/hdr/t_sky', widths: [2048], format: 'rgba16f' };
+    expect(pictureOf({ record: sunny }, { ...urls, panorama: { ...urls.panorama, hdr } }).panorama.hdr).toEqual(hdr);
+  });
+});
+
+describe('panoramaSource', () => {
+  const hdr = { url: 'textures/galaxy/bf2017/hdr/t_sky', widths: [2048], format: 'rgba16f' };
+  const pan = { url: 'textures/galaxy/bf2017/light/x/sunny.panorama.ktx2', hdr };
+  it('loads the HDR copy on high and ultra, the widest under the tier’s cap; the UASTC on the rest and where there is none', () => {
+    expect(HDR_WIDTH).toEqual({ ultra: 4096, high: 2048 });
+    expect(panoramaSource(pan, 'ultra')).toEqual({ url: 'textures/galaxy/bf2017/hdr/t_sky.2048.ktx2', hdr: true });
+    expect(panoramaSource(pan, 'high')).toEqual({ url: 'textures/galaxy/bf2017/hdr/t_sky.2048.ktx2', hdr: true });
+    expect(panoramaSource({ ...pan, hdr: { ...hdr, widths: [4096, 2048] } }, 'ultra').url).toBe('textures/galaxy/bf2017/hdr/t_sky.4096.ktx2');
+    expect(panoramaSource({ ...pan, hdr: { ...hdr, widths: [4096, 2048] } }, 'high').url).toBe('textures/galaxy/bf2017/hdr/t_sky.2048.ktx2');
+    // (a copy wider than the cap alone: the UASTC)
+    expect(panoramaSource({ ...pan, hdr: { ...hdr, widths: [4096] } }, 'high')).toEqual({ url: pan.url, hdr: false });
+    expect(panoramaSource(pan, 'mid')).toEqual({ url: pan.url, hdr: false });
+    expect(panoramaSource(pan, 'low')).toEqual({ url: pan.url, hdr: false });
+    expect(panoramaSource({ url: pan.url, hdr: null }, 'ultra')).toEqual({ url: pan.url, hdr: false });
+    expect(panoramaSource({ url: pan.url }, 'ultra')).toEqual({ url: pan.url, hdr: false });
+    expect(panoramaSource(null, 'ultra')).toBeNull();
   });
 });
 
