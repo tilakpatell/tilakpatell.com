@@ -33,6 +33,8 @@ import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js
 import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { litWith, picturesOf } from './picture.js';
+import { headroom, upscaleKind } from '../../lib/three/light/post.js';
+import { headroomAt } from '../../runtime/quality.js';
 
 export const HUD_HZ = 8; // snapshots a second to the page
 export const PLAYER_TEAM = 2; // the attackers on Hoth, the Empire (maps/hoth.stages.json)
@@ -43,6 +45,18 @@ export default {
   id: 'battlefront',
   shading: 'nodes',
   mb: 0,
+  // The pace's steps are the chain's (lowerQuality): the canvas keeps its
+  // size and the chain draws under it, upscaled back (lane U's headroom),
+  // then sheds passes. Drawn at the screen's own pixels and no sharper:
+  // ultra's budget asks for twice a plain monitor's (device.js's ratio 2),
+  // which on a 5,120 × 1,440 desk is 29 million pixels a frame through a
+  // chain of thirty passes; TRAA already smooths the edges that extra
+  // ratio was for.
+  sharpness: 'own',
+  // (read as the world starts: the screen the window is on then)
+  get ratio() {
+    return typeof window !== 'undefined' ? Math.max(1, Math.min(2, window.devicePixelRatio || 1)) : 1;
+  },
   label: 'Hoth from Star Wars Battlefront II (2017), drawn from the game’s own level, light and figures. W A S D to move, the mouse to look and fire, Enter to deploy.',
   async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault' } = {}) {
     const renderer = rt.gfx.renderer;
@@ -141,14 +155,27 @@ export default {
     const pictures = await picturesOf(levelName);
     const lit = (w) => litWith(pictures, entryFor(lighting, w), w);
     const first = lit(weather);
-    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, lights: lightsJsonOf(lighting.lights), picture: first.picture, onChain: (passes) => swapPost(passes) });
+    // (cadence: lane N3's far cascades drawn every fourth frame, the near
+    // ones every frame; the whole level was drawn into all four each frame)
+    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, lights: lightsJsonOf(lighting.lights), picture: first.picture, cadence: true, onChain: (passes) => swapPost(passes) });
     // (?post=off in the address: the scene drawn with no chain, for a check)
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
-    let post = light.passes.length && asked !== 'off' ? rt.gfx.post(light.passes) : null;
+    // The pace's level on the chain (runtime/quality's headroomAt): first
+    // the internal resolution, 0.77, 0.67, 0.5 of the screen brought back
+    // up by TAAU, then the passes shed from the top (post.js's SHED). On
+    // the GPU clock the controller's own scale is the internal one.
+    let paceLevel = rt.quality?.level ?? 0; // (the pace's step; `level` is the pack, `step` the sim's)
+    const pixels = () => Math.round((rt.gfx.size?.w ?? 1) * (rt.gfx.size?.h ?? 1) * (rt.gfx.ratio ?? 1) ** 2);
+    const chainFor = (passes) => {
+      const h = headroomAt(paceLevel, { tier, pixels: pixels() });
+      const scale = rt.quality?.source === 'gpu' ? (rt.quality.internal ?? h.scale) : h.scale;
+      return headroom(passes, { scale, shed: h.shed }, upscaleKind(passes));
+    };
+    let post = light.passes.length && asked !== 'off' ? rt.gfx.post(chainFor(light.passes)) : null;
     // (the old chain draws until the new one is built, then is let go)
     function swapPost(passes) {
       if (!post) return;
-      const next = rt.gfx.post(passes);
+      const next = rt.gfx.post(chainFor(passes));
       Promise.resolve(next.ready).then(() => {
         // (the world left while it was built)
         if (!post) return next.dispose?.();
@@ -284,6 +311,14 @@ export default {
       onVideo(values) {
         light.setVideo(values);
       },
+      // the pace's step (the runtime, through quality.js): the chain built
+      // again under it; the same level again changes nothing
+      lowerQuality(next = 0) {
+        const l = Math.max(0, Math.floor(next));
+        if (l === paceLevel) return;
+        paceLevel = l;
+        swapPost(light.passes);
+      },
       dispose() {
         look.detach();
         input.detach();
@@ -299,7 +334,8 @@ export default {
         if (typeof window !== 'undefined' && window.__battlefront?.world === world) delete window.__battlefront;
       },
     };
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x) };
+    // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     return world;
   },
 };

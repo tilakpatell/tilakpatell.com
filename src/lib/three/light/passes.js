@@ -200,6 +200,7 @@ export async function buildChain(renderer, passes) {
   // (after a `tonemap` pass the picture is tone-mapped already: the encoding only)
   let shown = false;
   let toned = false;
+  let graded = false; // (the LUT read the gamma-encoded picture: its output is the display value)
   const display = (n) => {
     if (shown) return n;
     shown = true;
@@ -375,7 +376,18 @@ export async function buildChain(renderer, passes) {
         break;
       case 'lut': {
         if (!p.texture) break;
-        node = keep(mods.lut.lut3D(toned ? node : display(node), texture3D(p.texture), p.texture.image.width, tsl.float(p.intensity ?? 1)));
+        // After the record's tone map, the game's own order (read from its
+        // tonemap composite shader, the owner's bf2-re study, findings 02):
+        // the clamped picture is gamma-2.2 encoded, the grading LUT is read
+        // with that encoded value, and what the LUT gives is the display
+        // value itself, encoded no further. Read with the linear value and
+        // encoded after, as before, Hoth's LUT (black below 0.13, white from
+        // 0.875) crushed every shadow and mid-tone to black: the navy field.
+        if (toned) {
+          const encoded = vec4(tsl.pow(tsl.max(node.rgb, 0), 1 / 2.2), node.a);
+          node = keep(mods.lut.lut3D(encoded, texture3D(p.texture), p.texture.image.width, tsl.float(p.intensity ?? 1)));
+          graded = true;
+        } else node = keep(mods.lut.lut3D(display(node), texture3D(p.texture), p.texture.image.width, tsl.float(p.intensity ?? 1)));
         break;
       }
       case 'traa':
@@ -406,8 +418,10 @@ export async function buildChain(renderer, passes) {
         throw new Error(`unknown pass ${p.kind}`);
     }
   }
-  // (tone-mapped in the chain and not yet shown: the encoding is the chain's last step)
-  if (toned) node = display(node);
+  // (tone-mapped in the chain and not yet shown: the encoding is the chain's
+  // last step; graded through the LUT, the picture is the display's already)
+  if (toned && !graded) node = display(node);
+  else if (graded) shown = true;
   pipeline.outputNode = node;
   return {
     pipeline,

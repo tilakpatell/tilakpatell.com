@@ -90,7 +90,21 @@ export function skyRadiance(dir, v, { disc: withDisc = true } = {}) {
   return clouds.map((x, i) => x + (v.ground[i] * v.luminance * ZENITH_SHARE * 0.25 - x) * below);
 }
 
+// The game's sky shader (the owner's bf2-re study, findings 02: the
+// panoramic sky program) draws the painting as the sky and multiplies it by
+// one number, the record's LuminanceScale, pre-exposed like every light; it
+// fits nothing to an analytic model. So the gain is the calibrated luminance
+// (readEntry's `sky.luminance`, LuminanceScale at the site's exposure). The
+// painting's horizon row is still taken (`horizon`: a sky with none has no
+// painting, gain 1); `meetGain` keeps the old fit, the panorama's foot scaled
+// to the model's sky where they meet, for the worlds whose LDR copies lost
+// their level and need a fit until lane W's HDR skies are read.
 export function panoramaGain(p, horizon) {
+  if (!horizon) return 1;
+  return p.sky.luminance;
+}
+
+export function meetGain(p, horizon) {
   if (!horizon) return 1;
   const v = skyUniforms(p);
   const y = PANORAMA_MEET;
