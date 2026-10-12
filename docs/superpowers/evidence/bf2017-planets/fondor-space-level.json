@@ -1,0 +1,41 @@
+{
+ "wasDown": true,
+ "downAtEnd": false,
+ "jumpAtShot": null,
+ "world": "fondor",
+ "quality": "high",
+ "group": {
+  "children": 66,
+  "meshes": 193
+ },
+ "shown": {
+  "calls": 52,
+  "triangles": 166928
+ },
+ "hidden": {
+  "calls": 31,
+  "triangles": 40374
+ },
+ "glbs": 23,
+ "glbNames": [
+  "fondor-drydock.far.glb",
+  "fondor-drydock.glb",
+  "fondor-drydock-2.far.glb",
+  "fondor-arquitens.far.glb",
+  "fondor-arquitens.glb",
+  "fondor-isd.far.glb",
+  "fondor-drydock-2.glb",
+  "fondor-mc80.glb",
+  "fondor-mc80.far.glb",
+  "silo-xl-01.glb",
+  "fondor-isd.glb",
+  "debrisfield-02.glb",
+  "corvettecr90-01.glb",
+  "corvettecr90-01.far.glb",
+  "cinder-satellite-large-03.glb",
+  "cinder-satellite-large-01.glb",
+  "cinder-satellite-small-02.glb",
+  "cinder-satellite-01.glb"
+ ],
+ "errors": []
+}
