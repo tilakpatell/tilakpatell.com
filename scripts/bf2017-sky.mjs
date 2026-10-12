@@ -147,7 +147,7 @@ export async function makePanoramaWebp(name, world, { root = join(ROOT, 'lab', '
 // the system each globe is the disc of (the giant Endor and Yavin 4 circle
 // is the system's parent, not its world: Yavin Prime's and the giant's
 // pictures stay lane K's)
-export const GLOBES = { geonosis: 'geonosis', hoth: 'hoth', kashyyyk: 'kashyyyk', scarif: 'scarif', tatooine: 'tatooine', yavin: 'yavin4' };
+export const GLOBES = { geonosis: 'geonosis', hoth: 'hoth', kashyyyk: 'kashyyyk', scarif: 'scarif', tatooine: 'tatooine', yavin: 'yavin4', felucia: 'felucia', kessel: 'kessel' };
 export const GLOBE_PX = 96; // (_source: the front end's globe pictures as lane K cut them, 96 px on the map's disc)
 const GLOBE_OVER = 4; // (rendered at four times the size and brought down, so the limb is smooth)
 

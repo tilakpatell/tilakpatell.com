@@ -9,7 +9,7 @@
   "hides": [],
   "area": {
     "source": "hand",
-    "why": "Fondor is no system of the galaxy's yet (the E5 lane adds it): the shipyard is fought in an area of its own, its sky the level's own star field (SkyComponentData's PanoramicTexture, t_space_no_large_stars_01_c), no sea, no fog (space)",
+    "why": "Fondor is a system of the galaxy's own (lane E5), the battle entered from it; the shipyard is fought in an area of its own, its sky the level's own star field (SkyComponentData's PanoramicTexture, t_space_no_large_stars_01_c), no sea, no fog (space)",
     "radius": 6000,
     "sea": null,
     "sky": { "url": "/models/galaxy/bf2017/levels/sb_fondor/sky.webp", "gain": 2.5, "full": true },

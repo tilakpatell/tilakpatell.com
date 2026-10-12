@@ -9,6 +9,16 @@
   "from": "textures/galaxy/planets/endor/color",
   "kind": "skin"
  },
+ "felucia": {
+  "url": "/models/galaxy/space/globes/felucia.webp",
+  "from": "s8/felucia/objects/planets/felucia/t_planetfrontendfelucia_01_ca",
+  "kind": "picture"
+ },
+ "fondor": {
+  "url": "/models/galaxy/space/globes/fondor.webp",
+  "from": "textures/galaxy/planets/fondor/color",
+  "kind": "skin"
+ },
  "geonosis": {
   "url": "/models/galaxy/space/globes/geonosis.webp",
   "from": "s5_1/objects/planets/geonosis/t_planetfrontendgeonosis_01_ca",
@@ -29,9 +39,19 @@
   "from": "s2/objects/planets/kashyyyk/t_planetfrontendkashyyyk_01_ca",
   "kind": "picture"
  },
+ "kessel": {
+  "url": "/models/galaxy/space/globes/kessel.webp",
+  "from": "s3/objects/planets/kessel/t_planetfrontendkessel_01",
+  "kind": "picture"
+ },
  "naboo": {
   "url": "/models/galaxy/space/globes/naboo.webp",
   "from": "textures/galaxy/planets/naboo/color",
+  "kind": "skin"
+ },
+ "pillio": {
+  "url": "/models/galaxy/space/globes/pillio.webp",
+  "from": "textures/galaxy/planets/pillio/color",
   "kind": "skin"
  },
  "scarif": {
@@ -39,10 +59,20 @@
   "from": "s9_3/scarif/objects/planets/scarif/t_planetfrontendscarif_01_ca",
   "kind": "picture"
  },
+ "sullust": {
+  "url": "/models/galaxy/space/globes/sullust.webp",
+  "from": "textures/galaxy/planets/sullust/color",
+  "kind": "skin"
+ },
  "tatooine": {
   "url": "/models/galaxy/space/globes/tatooine.webp",
   "from": "s2/objects/planets/tatooine/t_planetfrontendtatooine_01_ca",
   "kind": "picture"
+ },
+ "vardos": {
+  "url": "/models/galaxy/space/globes/vardos.webp",
+  "from": "textures/galaxy/planets/vardos/color",
+  "kind": "skin"
  },
  "yavin": {
   "url": "/models/galaxy/space/globes/yavin.webp",

@@ -49,7 +49,7 @@ export const WALKED = [
   walk('galaxy', '/galaxy/hoth', 'A galaxy far, far away', {
     at: 'galaxy-panel',
     wait: true, // (the world's own panel or HUD mounts after the page)
-    title: 'Eighteen systems, three wars',
+    title: 'Twenty-four systems, three wars',
     text: 'Jump from Tatooine to Hoth to Endor (J jumps, M is the holotable). Swear to a side and your battles count for it. Each system has a briefing; land and walk it as Luke, Leia, Han or Boba.',
   }),
   walk('avengers', '/avengers', 'Avengers HQ', {

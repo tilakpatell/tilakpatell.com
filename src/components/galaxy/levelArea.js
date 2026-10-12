@@ -22,8 +22,8 @@
 //   dim }, the storm's colour (the record's, `dim` times, where it has one)
 //   and how thick it is; `light`: the world's light record; `weather`: the
 //   url of its area.json; `frame`: the level's metres → the battle's units)
-//   A space level's area (Fondor's shipyard, the droid battleship over
-//   Ryloth: fought where no system of the galaxy's is) has no `sea` and no
+//   A space level's area (Fondor's shipyard, entered from Fondor's own
+//   system; the droid battleship over Ryloth, from Naboo's) has no `sea` and no
 //   `fog` (null), and its `sky` is `full`: the level's star field round the
 //   whole dome, not horizon to zenith.
 

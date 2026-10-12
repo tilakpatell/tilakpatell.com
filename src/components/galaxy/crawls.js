@@ -159,6 +159,67 @@ export const CRAWLS = {
       'Now Sabine must race her speeder across the plains to her home in the old tower, unlock the map that points the way to Ezra, and keep it out of the hands of the dark Jedi Shin Hati, who is already on her way…',
     ],
   },
+  // (lane E5: the 2017 game's own worlds; their missions are the game's campaign and modes, so the crawl opens on the film the campaign is set after)
+  felucia: {
+    episode: 'Episode III',
+    title: 'Supremacy on Felucia',
+    paragraphs: [
+      'The Clone Wars rage across the Outer Rim. On Felucia, a jungle world of giant fungi in the Thanium sector, the Separatist Alliance has dug in among the villages of the Tagata region, and the Republic has come to drive it out.',
+      'Both sides have brought their capital ships into the fight. A Republic Venator and a Separatist dreadnought hang over the forest, and whichever army holds the ground below will open the way to board the other.',
+      'Now the clones and the droids fight for the posts between the mushrooms, from the Village and the Swamp to the Caves, the Sarlacc and the Farm, and the side that breaks through will strike at the heart of the enemy ship…',
+    ],
+  },
+
+  kessel: {
+    episode: 'Episode IV',
+    title: 'Extraction on Kessel',
+    paragraphs: [
+      'The Empire works the mines of Kessel with prisoners, droids and Wookiees in chains, and guards what they dig with a garrison that answers to no one. Deep in the mines lies a shipment of coaxium the Rebellion cannot do without.',
+      'A Rebel infiltration squad has gone in to take it. But the Imperial forces have been alerted, and every corridor between the coaxium and the squad’s ride home, the Millennium Falcon, is about to be held against them.',
+      'Now the Rebels must steal the shipment and fight it out through the mines checkpoint by checkpoint, while the Empire throws everything it has at intercepting them before the Falcon can lift them clear of Kessel…',
+    ],
+  },
+
+  sullust: {
+    episode: 'Star Wars Battlefront II',
+    title: 'Cache Grab',
+    paragraphs: [
+      'The Emperor is dead, and his last order has burned worlds. Iden Versio and Del Meeko of Inferno Squad turned on Operation Cinder, and now they fly for the Rebellion against the father who gave the order.',
+      'Their intel points to an abandoned Imperial factory on Sullust, a volcanic world of black rock and sulphur. Admiral Versio means to recover a weapons cache from inside it, and the Rebellion means to take it first.',
+      'Now General Lando Calrissian and the Sullustan scout Shriv Suurgav must find the cache, shut the factory down around them, and steal a way off Sullust before the Admiral’s strike team can close the trap…',
+    ],
+  },
+
+  pillio: {
+    episode: 'Star Wars Battlefront II',
+    title: 'The Observatory',
+    paragraphs: [
+      'The second Death Star is destroyed, and the Emperor with it. But his secrets remain, hidden across the galaxy in observatories that only the most trusted of his servants were ever allowed to see.',
+      'Inferno Squad has been ordered to Pillio, an uncolonised world of cliffs and coral far out in the Jinata sector, to destroy one of them before the Rebels can find the dangerous artifacts it holds.',
+      'Agent Del Meeko has gone in alone. But Luke Skywalker has followed a call in the Force to the same shore, and the cave beneath the cliffs holds more than either of them came looking for…',
+    ],
+  },
+
+  vardos: {
+    episode: 'Star Wars Battlefront II',
+    title: 'The Storm',
+    paragraphs: [
+      'The Emperor is dead, and his last order has reached his fleet. Operation Cinder will strike the worlds he chose, loyal or not, and the satellites Inferno Squad guarded at Fondor are already in orbit.',
+      'Commander Iden Versio has been sent home to Vardos, a model Imperial world, to extract Protectorate Gleb from its capital. Only when the satellites rise over Kestro does she learn that Vardos is a target.',
+      'Now Iden and Del Meeko must decide whether to follow orders or the people of Kestro, fight through the storm to the anti-air guns, and escape Vardos with everyone the Corvus can carry…',
+    ],
+  },
+
+  fondor: {
+    episode: 'Star Wars Battlefront II',
+    title: 'The Dauntless',
+    paragraphs: [
+      'The Battle of Endor is lost and the Emperor is dead, but his plans live on. In preparation for Operation Cinder, Inferno Squad has been ordered to the Fondor shipyards, where the Empire builds its Star Destroyers.',
+      'Commander Iden Versio and Agent Hask are aboard the Star Destroyer Dauntless to take on a cargo of experimental satellites and see to the security of Moff Raythe. Then Rebel ships drop out of hyperspace into Fondor space.',
+      'Now Iden must defend the Dauntless from the Rebels’ boarding parties, destroy the ion cannons aboard their cruiser, and free the Star Destroyer from the clamps of its dock before the shipyard becomes its grave…',
+    ],
+  },
+
   sorgan: {
     episode: 'The Mandalorian, Chapter 4',
     title: 'Sanctuary',

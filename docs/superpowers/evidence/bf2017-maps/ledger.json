@@ -8,17 +8,17 @@
    "world": "hoth",
    "pack": "hoth",
    "subLevels": {
-    "inMap": 24,
-    "inPack": 24
+    "inMap": null,
+    "inPack": 0
    },
    "instances": {
     "inMap": 24532,
-    "inPack": 6051,
+    "inPack": 6050,
     "drawn": {
-     "low": 5815,
-     "mid": 5815,
-     "high": 5815,
-     "ultra": null,
+     "low": 5814,
+     "mid": 5814,
+     "high": 5814,
+     "ultra": 5814,
      "lowFrame": {
       "calls": 120,
       "triangles": 596126
@@ -31,8 +31,8 @@
    },
    "lights": {
     "inMap": 1234,
-    "inPack": 0,
-    "drawn": 0
+    "inPack": 691,
+    "drawn": 691
    },
    "decals": {
     "inMap": 0,
@@ -45,25 +45,18 @@
     "drawn": 398
    },
    "actors": {
-    "inMap": 28,
-    "inPack": 0,
-    "drawn": 0
+    "inMap": null,
+    "inPack": 10,
+    "drawn": 10
    },
    "vehicles": {
-    "inMap": 31,
-    "inPack": 0,
-    "drawn": 0
+    "inMap": null,
+    "inPack": 27,
+    "drawn": 27
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "showdown",
-     "coop",
-     "arcade"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "galacticAssault",
      "hvv",
@@ -104,401 +97,12 @@
      "lights": 1234,
      "effects": 648,
      "decals": 0,
-     "bytes": 1667722,
+     "bytes": 1771021,
      "terrain": [
       {}
      ]
     },
-    "manifest": {
-     "subworlds": [
-      "Hoth_01",
-      "Hoth_012",
-      "Cloudy",
-      "Sunset",
-      "HighEnd",
-      "Content",
-      "GameModes",
-      "PlanetaryMissions",
-      "Mode6",
-      "Mode6_Intro",
-      "Mode9",
-      "FantasyBattle",
-      "HeroArena",
-      "HvsVIntro",
-      "GameModes_Automation",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Skirmish",
-      "TeamDeathmatch_Online",
-      "Lobby",
-      "LobbySplitScreen",
-      "EOR",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 28
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 31
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/Space/SB_Endor_01/SB_Endor_01",
-   "key": "sb_endor_01",
-   "kind": "space",
-   "world": "sb_endor",
-   "pack": "sb_endor",
-   "subLevels": {
-    "inMap": 17,
-    "inPack": 5
-   },
-   "instances": {
-    "inMap": 4602,
-    "inPack": 2515,
-    "drawn": {
-     "low": 1193,
-     "mid": 1629,
-     "high": 2158,
-     "ultra": null
-    }
-   },
-   "lights": {
-    "inMap": 232,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "decals": {
-    "inMap": 15,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "effects": {
-    "inMap": 837,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "actors": {
-    "inMap": 0,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "vehicles": {
-    "inMap": 279,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
-    "inModesJson": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
-    "withRulebook": [
-     "heroStarfighters",
-     "arcade",
-     "starfighter"
-    ],
-    "withStages": [
-     "starfighter"
-    ]
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "sb_endor.json",
-    "unplaced": 21,
-    "stated": 21
-   },
-   "gaps": [],
-   "data": {
-    "index": {
-     "level": "Levels/Space/SB_Endor_01/SB_Endor_01",
-     "kind": "space",
-     "instances": 4602,
-     "meshes": 210,
-     "spawns": 279,
-     "lights": 232,
-     "effects": 837,
-     "decals": 15,
-     "bytes": 658021,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "SB_Endor_01",
-      "Level_Design",
-      "Cinematics",
-      "OutroTeam2_NIS",
-      "IntroTeam1_NIS",
-      "OutroTeam1_NIS",
-      "IntroTeam2_NIS",
-      "VFX",
-      "GameModes",
-      "Mode7",
-      "Mode7_Intro",
-      "SpaceArcadeTeamBattle",
-      "SpaceBattle",
-      "Art",
-      "Art_LargeGameMode",
-      "Lobby",
-      "Splitscreen"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 279
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/Space/SB_Kamino_01/SB_Kamino_01",
-   "key": "sb_kamino_01",
-   "kind": "space",
-   "world": "sb_kamino",
-   "pack": "sb_kamino",
-   "subLevels": {
-    "inMap": 17,
-    "inPack": 5
-   },
-   "instances": {
-    "inMap": 25226,
-    "inPack": 13843,
-    "drawn": {
-     "low": 3093,
-     "mid": 6764,
-     "high": 6935,
-     "ultra": null
-    }
-   },
-   "lights": {
-    "inMap": 602,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "decals": {
-    "inMap": 50,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "effects": {
-    "inMap": 1103,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "actors": {
-    "inMap": 13,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "vehicles": {
-    "inMap": 252,
-    "inPack": 0,
-    "drawn": 0
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
-    "inModesJson": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
-    "withRulebook": [
-     "heroStarfighters",
-     "arcade",
-     "starfighter"
-    ],
-    "withStages": [
-     "starfighter"
-    ]
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "sb_kamino.json",
-    "unplaced": 13,
-    "stated": 13
-   },
-   "gaps": [],
-   "data": {
-    "index": {
-     "level": "Levels/Space/SB_Kamino_01/SB_Kamino_01",
-     "kind": "space",
-     "instances": 25226,
-     "meshes": 344,
-     "spawns": 252,
-     "lights": 602,
-     "effects": 1103,
-     "decals": 50,
-     "bytes": 1572350,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "SB_Kamino_01",
-      "Cinematics",
-      "IntroTeam1_NIS",
-      "OutroTeam2_NIS",
-      "OutroTeam1_NIS",
-      "IntroTeam2_NIS",
-      "Art",
-      "Art_LargeGameMode",
-      "GameModes",
-      "SpaceBattle",
-      "Mode7",
-      "Mode7_Intro",
-      "SpaceArcadeTeamBattle",
-      "Lobby",
-      "SplitScreen",
-      "Level_Design",
-      "VFX"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 13
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 252
-     }
-    }
-   }
-  },
-  {
-   "level": "S9_3/Hoth_02/Hoth_02",
-   "key": "hoth_02",
-   "kind": "multiplayer",
-   "world": "hoth",
-   "pack": null,
-   "subLevels": {
-    "inMap": 16,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 6868,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 54,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 262,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 20,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "supremacy"
-    ],
-    "inModesJson": [
-     "supremacy"
-    ],
-    "withRulebook": [
-     "supremacy"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "hoth.2.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S9_3/Hoth_02/Hoth_02",
-     "kind": "multiplayer",
-     "instances": 6868,
-     "meshes": 163,
-     "spawns": 20,
-     "lights": 54,
-     "effects": 262,
-     "decals": 0,
-     "bytes": 402642,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "Hoth_02",
-      "Content",
-      "Lobby",
-      "LobbySplitScreen",
-      "EOR",
-      "GameModes",
-      "Mode1",
-      "GameModes_Automation",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "Hoth_012",
-      "Cloudy",
-      "Sunset",
-      "HighEnd",
-      "Media"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 20
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -506,51 +110,57 @@
    "key": "endor_01",
    "kind": "multiplayer",
    "world": "endor",
-   "pack": null,
+   "pack": "endor",
    "subLevels": {
-    "inMap": 26,
-    "inPack": null
+    "inMap": null,
+    "inPack": 0
    },
    "instances": {
     "inMap": 18530,
-    "inPack": null,
-    "drawn": null
+    "inPack": 13385,
+    "drawn": {
+     "low": 3995,
+     "mid": 7313,
+     "high": 9266,
+     "ultra": 13382,
+     "lowFrame": {
+      "calls": 167,
+      "triangles": 1362301
+     },
+     "highFrame": {
+      "calls": 167,
+      "triangles": 2046229
+     }
+    }
    },
    "lights": {
     "inMap": 2335,
-    "inPack": null,
-    "drawn": null
+    "inPack": 1319,
+    "drawn": 1319
    },
    "decals": {
     "inMap": 23,
-    "inPack": null,
-    "drawn": null
+    "inPack": 11,
+    "drawn": 11
    },
    "effects": {
     "inMap": 1505,
-    "inPack": null,
-    "drawn": null
+    "inPack": 1130,
+    "drawn": 1130
    },
    "actors": {
-    "inMap": 536,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 34,
+    "drawn": 34
    },
    "vehicles": {
-    "inMap": 12,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 11,
+    "drawn": 11
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "showdown",
-     "coop",
-     "arcade"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "galacticAssault",
      "hvv",
@@ -573,16 +183,14 @@
    },
    "terrain": {
     "layers": 1,
-    "scatter": false
+    "scatter": true
    },
    "rulebook": {
     "file": "endor.json",
     "unplaced": 4,
     "stated": 4
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/MP/Endor_01/Endor_01",
@@ -593,268 +201,12 @@
      "lights": 2335,
      "effects": 1505,
      "decals": 23,
-     "bytes": 2223025,
+     "bytes": 2317606,
      "terrain": [
       {}
      ]
     },
-    "manifest": {
-     "subworlds": [
-      "Endor_01",
-      "Lobby",
-      "LobbySplitScreen",
-      "EOR",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "Media",
-      "Shared_Art",
-      "Endor_012",
-      "Sunny",
-      "Night",
-      "Foggy",
-      "HighEnd",
-      "GameModes",
-      "Mode6",
-      "Mode6_Intro",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "TeamDeathmatch_Skirmish",
-      "Mode9",
-      "GameMode_Automation",
-      "FantasyBattle",
-      "PlanetaryMissions",
-      "HeroArena",
-      "HvsVIntro"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 536
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 12
-     }
-    }
-   }
-  },
-  {
-   "level": "S2_1/Levels/Endor_02/Endor_02",
-   "key": "endor_02",
-   "kind": "multiplayer",
-   "world": "endor",
-   "pack": null,
-   "subLevels": {
-    "inMap": 10,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 9302,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 236,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 2,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 260,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 176,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "blast",
-     "ewokHunt"
-    ],
-    "inModesJson": [
-     "blast",
-     "ewokHunt"
-    ],
-    "withRulebook": [
-     "blast",
-     "ewokHunt"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "endor.2.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S2_1/Levels/Endor_02/Endor_02",
-     "kind": "multiplayer",
-     "instances": 9302,
-     "meshes": 250,
-     "spawns": 0,
-     "lights": 236,
-     "effects": 260,
-     "decals": 2,
-     "bytes": 530370,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "Endor_02",
-      "Art",
-      "GameModes",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "Mode3",
-      "Lighting",
-      "HighEnd",
-      "Lobby",
-      "EOR"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 176
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 0
-     }
-    }
-   }
-  },
-  {
-   "level": "S8_1/Endor_04/Endor_04",
-   "key": "endor_04",
-   "kind": "multiplayer",
-   "world": "endor",
-   "pack": null,
-   "subLevels": {
-    "inMap": 12,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 13424,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 281,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 13,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 851,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 464,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "blast",
-     "ewokHunt"
-    ],
-    "inModesJson": [
-     "blast",
-     "ewokHunt"
-    ],
-    "withRulebook": [
-     "blast",
-     "ewokHunt"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "endor.4.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S8_1/Endor_04/Endor_04",
-     "kind": "multiplayer",
-     "instances": 13424,
-     "meshes": 580,
-     "spawns": 0,
-     "lights": 281,
-     "effects": 851,
-     "decals": 13,
-     "bytes": 893351,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "Endor_04",
-      "GameModes",
-      "Mode3",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "Cinematics",
-      "Lobby",
-      "EOR",
-      "Shared_Art",
-      "Endor_04_Lighting",
-      "Night",
-      "HighEnd"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 464
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 0
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -862,53 +214,57 @@
    "key": "tatooine_01",
    "kind": "multiplayer",
    "world": "tatooine",
-   "pack": null,
+   "pack": "tatooine",
    "subLevels": {
-    "inMap": 28,
-    "inPack": null
+    "inMap": null,
+    "inPack": 3
    },
    "instances": {
     "inMap": 20321,
-    "inPack": null,
-    "drawn": null
+    "inPack": 16632,
+    "drawn": {
+     "low": 13250,
+     "mid": 15227,
+     "high": 16631,
+     "ultra": null,
+     "lowFrame": {
+      "calls": 84,
+      "triangles": 515545
+     },
+     "highFrame": {
+      "calls": 84,
+      "triangles": 722385
+     }
+    }
    },
    "lights": {
     "inMap": 1238,
-    "inPack": null,
-    "drawn": null
+    "inPack": 170,
+    "drawn": 170
    },
    "decals": {
     "inMap": 1,
-    "inPack": null,
-    "drawn": null
+    "inPack": 1,
+    "drawn": 1
    },
    "effects": {
     "inMap": 1293,
-    "inPack": null,
-    "drawn": null
+    "inPack": 383,
+    "drawn": 0
    },
    "actors": {
-    "inMap": 134,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 27,
+    "drawn": 27
    },
    "vehicles": {
-    "inMap": 9,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 5,
+    "drawn": 5
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "supremacy",
-     "showdown",
-     "jetpackCargo",
-     "coop",
-     "arcade"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "galacticAssault",
      "hvv",
@@ -942,9 +298,7 @@
     "unplaced": 6,
     "stated": 6
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/MP/Tatooine_01/Tatooine_01",
@@ -955,290 +309,12 @@
      "lights": 1238,
      "effects": 1293,
      "decals": 1,
-     "bytes": 1697075,
+     "bytes": 1782192,
      "terrain": [
       {}
      ]
     },
-    "manifest": {
-     "subworlds": [
-      "Tatooine_01",
-      "Content_024",
-      "Content",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "Tatooine_012",
-      "Lighting_Night",
-      "Lighting_Sunny",
-      "Lighting_Sunset",
-      "HighEnd",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "GameModes",
-      "Mode9",
-      "HeroArena",
-      "HvsVIntro",
-      "GameModes_Automation",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "TeamDeathmatch_Skirmish",
-      "FantasyBattle",
-      "Mode6",
-      "Mode6_Intro",
-      "ModeC",
-      "Mode1",
-      "PlanetaryMissions"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 134
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 9
-     }
-    }
-   }
-  },
-  {
-   "level": "S9_3/Tatooine_02/Tatooine_02",
-   "key": "tatooine_02",
-   "kind": "multiplayer",
-   "world": "tatooine",
-   "pack": null,
-   "subLevels": {
-    "inMap": 18,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 19715,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 895,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 1,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 1197,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 28,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 4,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "supremacy"
-    ],
-    "inModesJson": [
-     "supremacy"
-    ],
-    "withRulebook": [
-     "supremacy"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "tatooine.2.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S9_3/Tatooine_02/Tatooine_02",
-     "kind": "multiplayer",
-     "instances": 19715,
-     "meshes": 623,
-     "spawns": 4,
-     "lights": 895,
-     "effects": 1197,
-     "decals": 1,
-     "bytes": 1492231,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "Tatooine_02",
-      "GameModes",
-      "Mode1",
-      "GameMode_Automation",
-      "Content",
-      "Lobby",
-      "LobbySplitScreen",
-      "EOR",
-      "Media",
-      "Cinematics",
-      "Outro_Team2",
-      "Outro_Team1",
-      "Tatooine_012",
-      "Lighting_Sunset",
-      "Lighting_Sunny",
-      "Lighting_Night",
-      "HighEnd",
-      "Content_024"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 28
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 4
-     }
-    }
-   }
-  },
-  {
-   "level": "S2_2/Levels/JabbasPalace_01/JabbasPalace_01",
-   "key": "jabbaspalace_01",
-   "kind": "multiplayer",
-   "world": "tatooine",
-   "pack": null,
-   "subLevels": {
-    "inMap": 18,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 11983,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 967,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 487,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 1,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "hvv",
-     "blast",
-     "extraction",
-     "showdown",
-     "coop"
-    ],
-    "inModesJson": [
-     "hvv",
-     "blast",
-     "extraction",
-     "showdown",
-     "coop"
-    ],
-    "withRulebook": [
-     "hvv",
-     "blast",
-     "extraction",
-     "showdown",
-     "coop"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "jabbaspalace.json",
-    "unplaced": 1,
-    "stated": 1
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S2_2/Levels/JabbasPalace_01/JabbasPalace_01",
-     "kind": "multiplayer",
-     "instances": 11983,
-     "meshes": 429,
-     "spawns": 1,
-     "lights": 967,
-     "effects": 487,
-     "decals": 0,
-     "bytes": 1058475,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "JabbasPalace_01",
-      "Content",
-      "GameModes",
-      "Extraction",
-      "Extraction_Outro_Team1",
-      "Extraction_Outro_Team2",
-      "GameModes_Automation",
-      "Mode6",
-      "Mode6_Intro",
-      "Mode9",
-      "HeroArena",
-      "HvsVIntro",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "TeamDeathmatch_Skirmish",
-      "Lobby",
-      "LobbySplitScreen",
-      "EOR"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 1
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -1246,53 +322,49 @@
    "key": "yavin_01",
    "kind": "multiplayer",
    "world": "yavin",
-   "pack": null,
+   "pack": "yavin",
    "subLevels": {
-    "inMap": 28,
-    "inPack": null
+    "inMap": null,
+    "inPack": 4
    },
    "instances": {
     "inMap": 15428,
-    "inPack": null,
-    "drawn": null
+    "inPack": 13810,
+    "drawn": {
+     "low": 3523,
+     "mid": 4294,
+     "high": 7680,
+     "ultra": null
+    }
    },
    "lights": {
     "inMap": 733,
-    "inPack": null,
-    "drawn": null
+    "inPack": 328,
+    "drawn": 328
    },
    "decals": {
     "inMap": 7,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "effects": {
     "inMap": 799,
-    "inPack": null,
-    "drawn": null
+    "inPack": 280,
+    "drawn": 0
    },
    "actors": {
-    "inMap": 508,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 15,
+    "drawn": 15
    },
    "vehicles": {
-    "inMap": 16,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 7,
+    "drawn": 7
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "supremacy",
-     "showdown",
-     "jetpackCargo",
-     "coop",
-     "arcade"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "galacticAssault",
      "hvv",
@@ -1319,16 +391,14 @@
    },
    "terrain": {
     "layers": 1,
-    "scatter": false
+    "scatter": true
    },
    "rulebook": {
     "file": "yavin.json",
     "unplaced": 6,
     "stated": 6
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/MP/Yavin_01/Yavin_01",
@@ -1339,52 +409,12 @@
      "lights": 733,
      "effects": 799,
      "decals": 7,
-     "bytes": 1244809,
+     "bytes": 1321572,
      "terrain": [
       {}
      ]
     },
-    "manifest": {
-     "subworlds": [
-      "Yavin_01",
-      "Yavin_012",
-      "Streamed_in_Props",
-      "Media",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "GameModes",
-      "ModeC",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "TeamDeathmatch_Skirmish",
-      "Mode9",
-      "GameMode_Automation",
-      "HeroArena",
-      "HvsVIntro",
-      "FantasyBattle",
-      "PlanetaryMissions",
-      "Mode6",
-      "Mode6_Intro",
-      "Mode1",
-      "Lighting3",
-      "Sunny",
-      "Sunset",
-      "HighEnd",
-      "Cinematics",
-      "OutroTeam1",
-      "OutroTeam2"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 508
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 16
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -1392,50 +422,57 @@
    "key": "kashyyyk_01",
    "kind": "multiplayer",
    "world": "kashyyyk",
-   "pack": null,
+   "pack": "kashyyyk",
    "subLevels": {
-    "inMap": 28,
-    "inPack": null
+    "inMap": null,
+    "inPack": 0
    },
    "instances": {
     "inMap": 15827,
-    "inPack": null,
-    "drawn": null
+    "inPack": 11391,
+    "drawn": {
+     "low": 9679,
+     "mid": 9679,
+     "high": 9679,
+     "ultra": null,
+     "lowFrame": {
+      "calls": 90,
+      "triangles": 902126
+     },
+     "highFrame": {
+      "calls": 90,
+      "triangles": 1320590
+     }
+    }
    },
    "lights": {
     "inMap": 647,
-    "inPack": null,
-    "drawn": null
+    "inPack": 237,
+    "drawn": 237
    },
    "decals": {
     "inMap": 1,
-    "inPack": null,
-    "drawn": null
+    "inPack": 1,
+    "drawn": 1
    },
    "effects": {
     "inMap": 365,
-    "inPack": null,
-    "drawn": null
+    "inPack": 189,
+    "drawn": 0
    },
    "actors": {
-    "inMap": 67,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
-    "inMap": 36,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 2,
+    "drawn": 2
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "showdown",
-     "arcade"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "galacticAssault",
      "hvv",
@@ -1456,16 +493,14 @@
    },
    "terrain": {
     "layers": 1,
-    "scatter": false
+    "scatter": true
    },
    "rulebook": {
     "file": "kashyyyk.json",
     "unplaced": 5,
     "stated": 5
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/MP/Kashyyyk_01/Kashyyyk_01",
@@ -1476,189 +511,12 @@
      "lights": 647,
      "effects": 365,
      "decals": 1,
-     "bytes": 1037369,
+     "bytes": 1103371,
      "terrain": [
       {}
      ]
     },
-    "manifest": {
-     "subworlds": [
-      "Kashyyyk_01",
-      "GameModes",
-      "GameMode_Automation",
-      "FantasyBattlesProps",
-      "HeroArena",
-      "HvsVIntro",
-      "PlanetaryMissions",
-      "FantasyBattle",
-      "SmallModesReflections_Day",
-      "Mode6",
-      "Mode6_Intro",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "TeamDeathmatch_Skrimish",
-      "SmallModesProps",
-      "Content",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "Lighting",
-      "Overcast",
-      "Overcast2",
-      "Interior",
-      "Night",
-      "HighEnd"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 67
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 36
-     }
-    }
-   }
-  },
-  {
-   "level": "S7/Levels/Kashyyyk_02/Kashyyyk_02",
-   "key": "kashyyyk_02",
-   "kind": "multiplayer",
-   "world": "kashyyyk",
-   "pack": null,
-   "subLevels": {
-    "inMap": 39,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 34010,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 718,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 512,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 1855,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 5,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 29,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "supremacy",
-     "coop"
-    ],
-    "inModesJson": [
-     "supremacy",
-     "coop"
-    ],
-    "withRulebook": [
-     "supremacy",
-     "coop"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "kashyyyk.2.json",
-    "unplaced": 1,
-    "stated": 1
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S7/Levels/Kashyyyk_02/Kashyyyk_02",
-     "kind": "multiplayer",
-     "instances": 34010,
-     "meshes": 836,
-     "spawns": 29,
-     "lights": 718,
-     "effects": 1855,
-     "decals": 512,
-     "bytes": 2338381,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "Kashyyyk_02",
-      "Lobby",
-      "EOR",
-      "Content",
-      "Lighting",
-      "Overcast",
-      "HighEnd",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "GameModes",
-      "Mode1",
-      "Dreadnaught",
-      "Dreadnaught_Occluders",
-      "Dreadnought_DroidDeploymentBay",
-      "Dreadnought_Light",
-      "Dreadnought_CoolingVentRoom",
-      "Dreadnought_SpawnPoint",
-      "Dreadnought_Logic",
-      "Dreadnought_Damage_Phase_01",
-      "Dreadnought_Hangar",
-      "Dreadnought_Enlighten",
-      "Dreadnought_Damage_Phase_02",
-      "Dreadnought_Damage_Phase_03",
-      "Dreadnought_FX",
-      "Venator",
-      "Venator_Enlighten",
-      "Venator_ReactorCore",
-      "Venator_Lighting",
-      "Venator_Occluders",
-      "Venator_ControlRoom",
-      "Venator_Hangar",
-      "Venator_Damage_Phase_01",
-      "Venator_CargoBay",
-      "Venator_Damage_Phase_02",
-      "Venator_Logic",
-      "Venator_Damage_Phase_03",
-      "GameMode_Automation",
-      "Mode9"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 5
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 29
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -1666,51 +524,49 @@
    "key": "kamino_01",
    "kind": "multiplayer",
    "world": "kamino",
-   "pack": null,
+   "pack": "kamino",
    "subLevels": {
-    "inMap": 24,
-    "inPack": null
+    "inMap": null,
+    "inPack": 0
    },
    "instances": {
     "inMap": 14330,
-    "inPack": null,
-    "drawn": null
+    "inPack": 13412,
+    "drawn": {
+     "low": 1267,
+     "mid": 1533,
+     "high": 1834,
+     "ultra": null
+    }
    },
    "lights": {
     "inMap": 866,
-    "inPack": null,
-    "drawn": null
+    "inPack": 236,
+    "drawn": 236
    },
    "decals": {
     "inMap": 51,
-    "inPack": null,
-    "drawn": null
+    "inPack": 51,
+    "drawn": 51
    },
    "effects": {
     "inMap": 532,
-    "inPack": null,
-    "drawn": null
+    "inPack": 259,
+    "drawn": 0
    },
    "actors": {
-    "inMap": 14,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
-    "inMap": 8,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "showdown",
-     "coop",
-     "arcade"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "galacticAssault",
      "hvv",
@@ -1740,9 +596,7 @@
     "unplaced": 5,
     "stated": 5
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/MP/Kamino_01/Kamino_01",
@@ -1753,182 +607,10 @@
      "lights": 866,
      "effects": 532,
      "decals": 51,
-     "bytes": 1275765,
+     "bytes": 1337818,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "Kamino_01",
-      "Content",
-      "Kamino_012",
-      "Stormy",
-      "Cloudy",
-      "HighEnd",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "GameModes",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Skirmish",
-      "TeamDeathmatch_Online",
-      "HeroArena",
-      "HvsVIntro",
-      "Mode9",
-      "mode6",
-      "Mode6_Intro",
-      "FantasyBattle",
-      "PlanetaryMissions",
-      "GameMode_Automation",
-      "Lobby",
-      "LobbySplitScreen",
-      "EOR"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 14
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 8
-     }
-    }
-   }
-  },
-  {
-   "level": "S7_1/Levels/Kamino_03/Kamino_03",
-   "key": "kamino_03",
-   "kind": "multiplayer",
-   "world": "kamino",
-   "pack": null,
-   "subLevels": {
-    "inMap": 40,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 32337,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 976,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 536,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 2044,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 12,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 15,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "supremacy",
-     "coop"
-    ],
-    "inModesJson": [
-     "supremacy",
-     "coop"
-    ],
-    "withRulebook": [
-     "supremacy",
-     "coop"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "kamino.3.json",
-    "unplaced": 1,
-    "stated": 1
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S7_1/Levels/Kamino_03/Kamino_03",
-     "kind": "multiplayer",
-     "instances": 32337,
-     "meshes": 1357,
-     "spawns": 15,
-     "lights": 976,
-     "effects": 2044,
-     "decals": 536,
-     "bytes": 2565212,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "Kamino_03",
-      "Content",
-      "Cinematics",
-      "Outro_Team2",
-      "Outro_Team1",
-      "Lobby",
-      "LobbySplitScreen",
-      "EOR",
-      "GameModes",
-      "GameMode_Automation",
-      "Dreadnaught",
-      "Dreadnought_Damage_Phase_01",
-      "Dreadnought_Damage_Phase_02",
-      "Dreadnought_SpawnPoint",
-      "Dreadnought_Logic",
-      "Dreadnought_DroidDeploymentBay",
-      "Dreadnought_CoolingVentRoom",
-      "Dreadnought_Damage_Phase_03",
-      "Dreadnaught_Occluders",
-      "Dreadnought_Light",
-      "Dreadnought_Enlighten",
-      "Dreadnought_Hangar",
-      "Dreadnought_FX",
-      "Venator",
-      "Venator_Hangar",
-      "Venator_Damage_Phase_03",
-      "Venator_Damage_Phase_01",
-      "Venator_Enlighten",
-      "Venator_Damage_Phase_02",
-      "Venator_ReactorCore",
-      "Venator_CargoBay",
-      "Venator_Logic",
-      "Venator_ControlRoom",
-      "Venator_Occluders",
-      "Venator_Lighting",
-      "Mode1",
-      "Mode9",
-      "Kamino_Lighting",
-      "Stormy",
-      "HighEnd"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 12
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 15
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -1936,50 +618,57 @@
    "key": "naboo_01",
    "kind": "multiplayer",
    "world": "naboo",
-   "pack": null,
+   "pack": "naboo",
    "subLevels": {
-    "inMap": 24,
-    "inPack": null
+    "inMap": null,
+    "inPack": 3
    },
    "instances": {
     "inMap": 18720,
-    "inPack": null,
-    "drawn": null
+    "inPack": 17325,
+    "drawn": {
+     "low": 2137,
+     "mid": 3177,
+     "high": 2631,
+     "ultra": null,
+     "lowFrame": {
+      "calls": 586,
+      "triangles": 1326951
+     },
+     "highFrame": {
+      "calls": 588,
+      "triangles": 1899004
+     }
+    }
    },
    "lights": {
     "inMap": 936,
-    "inPack": null,
-    "drawn": null
+    "inPack": 189,
+    "drawn": 189
    },
    "decals": {
     "inMap": 48,
-    "inPack": null,
-    "drawn": null
+    "inPack": 48,
+    "drawn": 48
    },
    "effects": {
     "inMap": 365,
-    "inPack": null,
-    "drawn": null
+    "inPack": 197,
+    "drawn": 0
    },
    "actors": {
-    "inMap": 38,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
-    "inMap": 2,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "strike",
-     "supremacy"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "galacticAssault",
      "hvv",
@@ -1998,16 +687,14 @@
    },
    "terrain": {
     "layers": 1,
-    "scatter": false
+    "scatter": true
    },
    "rulebook": {
     "file": "naboo.json",
     "unplaced": 3,
     "stated": 3
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/MP/Naboo_01/Naboo_01",
@@ -2018,317 +705,12 @@
      "lights": 936,
      "effects": 365,
      "decals": 48,
-     "bytes": 1381713,
+     "bytes": 1462245,
      "terrain": [
       {}
      ]
     },
-    "manifest": {
-     "subworlds": [
-      "Naboo_01",
-      "Media",
-      "GameModes",
-      "Mode1",
-      "HeroArena",
-      "Domination",
-      "GameMode_Automation",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Skirmish",
-      "TeamDeathmatch_Online",
-      "FantasyBattle",
-      "FB_PalaceDestruction",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "Art_Exterior",
-      "Naboo_012",
-      "Cloudy",
-      "Sunset",
-      "Dusk",
-      "HighEnd",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 38
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 2
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/MP/Naboo_02/Naboo_02",
-   "key": "naboo_02",
-   "kind": "multiplayer",
-   "world": "naboo",
-   "pack": null,
-   "subLevels": {
-    "inMap": 19,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 3150,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 395,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 128,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "hvv",
-     "blast",
-     "showdown"
-    ],
-    "inModesJson": [
-     "hvv",
-     "blast",
-     "showdown"
-    ],
-    "withRulebook": [
-     "hvv",
-     "blast",
-     "showdown"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "naboo.2.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "Levels/MP/Naboo_02/Naboo_02",
-     "kind": "multiplayer",
-     "instances": 3150,
-     "meshes": 206,
-     "spawns": 0,
-     "lights": 395,
-     "effects": 128,
-     "decals": 0,
-     "bytes": 402518,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "Naboo_02",
-      "GameModes",
-      "Mode6",
-      "Mode6_Intro",
-      "Blast",
-      "TeamDeathmatch_Skirmish",
-      "TeamDeathmatch_Online",
-      "HeroArena",
-      "HvsVIntro",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "LightSettings",
-      "Sunset",
-      "HighEnd",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "Media"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 0
-     }
-    }
-   }
-  },
-  {
-   "level": "S7_2/Levels/Naboo_03/Naboo_03",
-   "key": "naboo_03",
-   "kind": "multiplayer",
-   "world": "naboo",
-   "pack": null,
-   "subLevels": {
-    "inMap": 45,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 36507,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 1094,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 563,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 1914,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 2,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 20,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "hvv",
-     "supremacy",
-     "showdown",
-     "coop"
-    ],
-    "inModesJson": [
-     "hvv",
-     "supremacy",
-     "showdown",
-     "coop"
-    ],
-    "withRulebook": [
-     "hvv",
-     "supremacy",
-     "showdown",
-     "coop"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "naboo.3.json",
-    "unplaced": 1,
-    "stated": 1
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S7_2/Levels/Naboo_03/Naboo_03",
-     "kind": "multiplayer",
-     "instances": 36507,
-     "meshes": 1357,
-     "spawns": 20,
-     "lights": 1094,
-     "effects": 1914,
-     "decals": 563,
-     "bytes": 2849246,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "Naboo_03",
-      "GameModes",
-      "Mode9",
-      "HeroesVsVillains",
-      "HvsV_Intro",
-      "GameMode_Automation",
-      "Dreadnaught",
-      "Dreadnought_Light",
-      "Dreadnought_Damage_Phase_01",
-      "Dreadnought_FX",
-      "Dreadnought_Logic",
-      "Dreadnought_Damage_Phase_02",
-      "Dreadnought_Damage_Phase_03",
-      "Dreadnought_CoolingVentRoom",
-      "Dreadnaught_Occluders",
-      "Dreadnought_DroidDeploymentBay",
-      "Dreadnought_SpawnPoint",
-      "Dreadnought_Enlighten",
-      "Dreadnought_Hangar",
-      "Venator",
-      "Venator_ControlRoom",
-      "Venator_Damage_Phase_03",
-      "Venator_CargoBay",
-      "Venator_Lighting",
-      "Venator_Occluders",
-      "Venator_Damage_Phase_01",
-      "Venator_ReactorCore",
-      "Venator_Hangar",
-      "Venator_Enlighten",
-      "Venator_Logic",
-      "Venator_Damage_Phase_02",
-      "Mode6",
-      "Mode6_Intro",
-      "Mode1",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "FB_Art_MainStreet_StreamOut",
-      "Naboo_03_Lighting",
-      "Dusk",
-      "HighEnd",
-      "Art_Exterior"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 2
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 20
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -2336,51 +718,57 @@
    "key": "geonosis_01",
    "kind": "multiplayer",
    "world": "geonosis",
-   "pack": null,
+   "pack": "geonosis",
    "subLevels": {
-    "inMap": 21,
-    "inPack": null
+    "inMap": null,
+    "inPack": 4
    },
    "instances": {
     "inMap": 9580,
-    "inPack": null,
-    "drawn": null
+    "inPack": 8112,
+    "drawn": {
+     "low": 5828,
+     "mid": 7672,
+     "high": 7672,
+     "ultra": null,
+     "lowFrame": {
+      "calls": 172,
+      "triangles": 743867
+     },
+     "highFrame": {
+      "calls": 172,
+      "triangles": 1016357
+     }
+    }
    },
    "lights": {
     "inMap": 315,
-    "inPack": null,
-    "drawn": null
+    "inPack": 25,
+    "drawn": 25
    },
    "decals": {
     "inMap": 181,
-    "inPack": null,
-    "drawn": null
+    "inPack": 121,
+    "drawn": 121
    },
    "effects": {
     "inMap": 642,
-    "inPack": null,
-    "drawn": null
+    "inPack": 196,
+    "drawn": 0
    },
    "actors": {
-    "inMap": 83,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
-    "inMap": 46,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "supremacy",
-     "showdown",
-     "coop"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "galacticAssault",
      "hvv",
@@ -2403,16 +791,14 @@
    },
    "terrain": {
     "layers": 1,
-    "scatter": false
+    "scatter": true
    },
    "rulebook": {
     "file": "geonosis.json",
     "unplaced": 4,
     "stated": 4
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "S5_1/Levels/MP/Geonosis_01/Geonosis_01",
@@ -2423,192 +809,12 @@
      "lights": 315,
      "effects": 642,
      "decals": 181,
-     "bytes": 769392,
+     "bytes": 812768,
      "terrain": [
       {}
      ]
     },
-    "manifest": {
-     "subworlds": [
-      "Geonosis_01",
-      "World_Factory",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "World_Content",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "GameModes",
-      "FantasyBattle",
-      "GameModes_Automation",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Skirmish",
-      "TeamDeathmatch_Online",
-      "Mode1",
-      "HeroesVsVillains",
-      "HvsV_Intro",
-      "Mode6",
-      "Mode6_Intro",
-      "Mode9"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 83
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 46
-     }
-    }
-   }
-  },
-  {
-   "level": "S6_2/Geonosis_02/Levels/Geonosis_02/Geonosis_02",
-   "key": "geonosis_02",
-   "kind": "multiplayer",
-   "world": "geonosis",
-   "pack": null,
-   "subLevels": {
-    "inMap": 43,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 28859,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 587,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 582,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 1939,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 18,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 23,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "hvv",
-     "supremacy",
-     "showdown",
-     "coop"
-    ],
-    "inModesJson": [
-     "hvv",
-     "supremacy",
-     "showdown",
-     "coop"
-    ],
-    "withRulebook": [
-     "hvv",
-     "supremacy",
-     "showdown",
-     "coop"
-    ],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 1,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "geonosis.2.json",
-    "unplaced": 1,
-    "stated": 1
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "S6_2/Geonosis_02/Levels/Geonosis_02/Geonosis_02",
-     "kind": "multiplayer",
-     "instances": 28859,
-     "meshes": 837,
-     "spawns": 23,
-     "lights": 587,
-     "effects": 1939,
-     "decals": 582,
-     "bytes": 2258721,
-     "terrain": [
-      {}
-     ]
-    },
-    "manifest": {
-     "subworlds": [
-      "Geonosis_02",
-      "GameModes",
-      "Mode6",
-      "Mode6_Intro",
-      "Mode9",
-      "Mode1",
-      "GameModes_Automation",
-      "Venator",
-      "Venator_Damage_Phase_02",
-      "Venator_Lighting",
-      "Venator_Logic",
-      "Venator_ControlRoom",
-      "Venator_Damage_Phase_03",
-      "Venator_Occluders",
-      "Venator_Hangar",
-      "Venator_Damage_Phase_01",
-      "Venator_ReactorCore",
-      "Venator_CargoBay",
-      "Venator_Enlighten",
-      "HeroesVsVillains",
-      "HvsV_Intro",
-      "Dreadnaught",
-      "Dreadnought_Enlighten",
-      "Dreadnought_Logic",
-      "Dreadnought_Hangar",
-      "Dreadnought_Damage_Phase_02",
-      "Dreadnought_Light",
-      "Dreadnought_DroidDeploymentBay",
-      "Dreadnaught_Occluders",
-      "Dreadnought_Damage_Phase_01",
-      "Dreadnought_Damage_Phase_03",
-      "Dreadnought_CoolingVentRoom",
-      "Dreadnought_FX",
-      "Dreadnought_SpawnPoint",
-      "Dunes",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "World_Content",
-      "Lobby",
-      "EOR",
-      "Crashsite",
-      "Media"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 18
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 23
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -2616,49 +822,57 @@
    "key": "scarif_02",
    "kind": "multiplayer",
    "world": "scarif",
-   "pack": null,
+   "pack": "scarif",
    "subLevels": {
-    "inMap": 24,
-    "inPack": null
+    "inMap": null,
+    "inPack": 3
    },
    "instances": {
     "inMap": 8723,
-    "inPack": null,
-    "drawn": null
+    "inPack": 4498,
+    "drawn": {
+     "low": 4345,
+     "mid": 4380,
+     "high": 4380,
+     "ultra": null,
+     "lowFrame": {
+      "calls": 132,
+      "triangles": 1133700
+     },
+     "highFrame": {
+      "calls": 140,
+      "triangles": 1783241
+     }
+    }
    },
    "lights": {
     "inMap": 174,
-    "inPack": null,
-    "drawn": null
+    "inPack": 16,
+    "drawn": 16
    },
    "decals": {
     "inMap": 0,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "effects": {
     "inMap": 523,
-    "inPack": null,
-    "drawn": null
+    "inPack": 12,
+    "drawn": 0
    },
    "actors": {
-    "inMap": 2,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
-    "inMap": 3,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "hvv",
-     "supremacy",
-     "showdown",
-     "coop"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "hvv",
      "supremacy",
@@ -2682,9 +896,7 @@
     "unplaced": 1,
     "stated": 1
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "S9_3/Scarif/Levels/MP/Scarif_02/Scarif_02",
@@ -2695,48 +907,12 @@
      "lights": 174,
      "effects": 523,
      "decals": 0,
-     "bytes": 643889,
+     "bytes": 685871,
      "terrain": [
       {}
      ]
     },
-    "manifest": {
-     "subworlds": [
-      "Scarif_02",
-      "Phase_01",
-      "LightingConditions",
-      "Sunny",
-      "Sunset",
-      "Highend",
-      "Phase_02",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "Phase_03",
-      "GameModes",
-      "Mode6",
-      "Mode6_Intro",
-      "Mode1",
-      "GameMode_Automation",
-      "HeroesVsVillains",
-      "HvsV_Intro",
-      "Mode9",
-      "Media",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "Phase_02_Unique"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 2
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 3
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -2744,50 +920,49 @@
    "key": "cloudcity_01",
    "kind": "multiplayer",
    "world": "bespin",
-   "pack": null,
+   "pack": "bespin",
    "subLevels": {
-    "inMap": 16,
-    "inPack": null
+    "inMap": null,
+    "inPack": 2
    },
    "instances": {
     "inMap": 5982,
-    "inPack": null,
-    "drawn": null
+    "inPack": 5719,
+    "drawn": {
+     "low": 2797,
+     "mid": 2558,
+     "high": 2268,
+     "ultra": null
+    }
    },
    "lights": {
     "inMap": 555,
-    "inPack": null,
-    "drawn": null
+    "inPack": 293,
+    "drawn": 293
    },
    "decals": {
     "inMap": 0,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "effects": {
     "inMap": 328,
-    "inPack": null,
-    "drawn": null
+    "inPack": 62,
+    "drawn": 0
    },
    "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
-    "inMap": 1,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "hvv",
-     "blast",
-     "extraction",
-     "showdown",
-     "jetpackCargo"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "hvv",
      "blast",
@@ -2813,9 +988,7 @@
     "unplaced": 0,
     "stated": 0
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "S2/Levels/CloudCity_01/CloudCity_01",
@@ -2826,173 +999,10 @@
      "lights": 555,
      "effects": 328,
      "decals": 0,
-     "bytes": 628006,
+     "bytes": 652795,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "CloudCity_01",
-      "GameModes",
-      "Extraction",
-      "HeroArena",
-      "HvsVIntro",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "TeamDeathmatch_Skirmish",
-      "ModeC",
-      "Mode6",
-      "Mode6_Intro",
-      "Lobby",
-      "LobbySplitScreen",
-      "EOR",
-      "StreamedLevel",
-      "LightingLogic"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 1
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/MP/DeathStar02_01/DeathStar02_01",
-   "key": "deathstar02_01",
-   "kind": "multiplayer",
-   "world": "deathstar",
-   "pack": null,
-   "subLevels": {
-    "inMap": 22,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 21722,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 1992,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 119,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 640,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 20,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 5,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "supremacy",
-     "showdown",
-     "coop",
-     "arcade"
-    ],
-    "inModesJson": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "supremacy",
-     "showdown",
-     "coop",
-     "arcade"
-    ],
-    "withRulebook": [
-     "galacticAssault",
-     "hvv",
-     "blast",
-     "supremacy",
-     "showdown",
-     "coop",
-     "arcade"
-    ],
-    "withStages": [
-     "galacticAssault"
-    ]
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "deathstar02.json",
-    "unplaced": 1,
-    "stated": 1
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "Levels/MP/DeathStar02_01/DeathStar02_01",
-     "kind": "multiplayer",
-     "instances": 21722,
-     "meshes": 613,
-     "spawns": 5,
-     "lights": 1992,
-     "effects": 640,
-     "decals": 119,
-     "bytes": 1903333,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "DeathStar02_01",
-      "Lobby",
-      "EOR",
-      "LobbySplitScreen",
-      "Media",
-      "Cinematics",
-      "Outro_Team1",
-      "Outro_Team2",
-      "GameModes",
-      "FantasyBattle",
-      "Mode1",
-      "GameMode_Automation",
-      "HeroArena",
-      "HvsVIntro",
-      "Mode9",
-      "Mode6",
-      "Mode6_Intro",
-      "PlanetaryMissions",
-      "TeamDeathmatch",
-      "TeamDeathmatch_Online",
-      "TeamDeathmatch_Skirmish",
-      "HighEnd"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 20
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 5
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -3000,40 +1010,45 @@
    "key": "felucia_01",
    "kind": "multiplayer",
    "world": "felucia",
-   "pack": null,
+   "pack": "felucia",
    "subLevels": {
     "inMap": 44,
-    "inPack": null
+    "inPack": 44
    },
    "instances": {
     "inMap": 33133,
-    "inPack": null,
-    "drawn": null
+    "inPack": 10647,
+    "drawn": {
+     "low": 6989,
+     "mid": 8001,
+     "high": 10604,
+     "ultra": 10604
+    }
    },
    "lights": {
     "inMap": 724,
-    "inPack": null,
-    "drawn": null
+    "inPack": 508,
+    "drawn": 508
    },
    "decals": {
     "inMap": 507,
-    "inPack": null,
-    "drawn": null
+    "inPack": 342,
+    "drawn": 342
    },
    "effects": {
     "inMap": 1958,
-    "inPack": null,
-    "drawn": null
+    "inPack": 1390,
+    "drawn": 1390
    },
    "actors": {
     "inMap": 16,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
     "inMap": 15,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
@@ -3059,16 +1074,14 @@
    },
    "terrain": {
     "layers": 1,
-    "scatter": false
+    "scatter": true
    },
    "rulebook": {
     "file": "felucia.json",
     "unplaced": 1,
     "stated": 1
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "S8/Felucia/Levels/MP/Felucia_01/Felucia_01",
@@ -3079,7 +1092,7 @@
      "lights": 724,
      "effects": 1958,
      "decals": 507,
-     "bytes": 2413712,
+     "bytes": 2557877,
      "terrain": [
       {}
      ]
@@ -3148,40 +1161,45 @@
    "key": "kessel_01",
    "kind": "multiplayer",
    "world": "kessel",
-   "pack": null,
+   "pack": "kessel",
    "subLevels": {
     "inMap": 21,
-    "inPack": null
+    "inPack": 2
    },
    "instances": {
     "inMap": 6872,
-    "inPack": null,
-    "drawn": null
+    "inPack": 6361,
+    "drawn": {
+     "low": 2309,
+     "mid": 3300,
+     "high": 6308,
+     "ultra": 6308
+    }
    },
    "lights": {
     "inMap": 660,
-    "inPack": null,
-    "drawn": null
+    "inPack": 374,
+    "drawn": 374
    },
    "decals": {
     "inMap": 0,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "effects": {
     "inMap": 424,
-    "inPack": null,
-    "drawn": null
+    "inPack": 338,
+    "drawn": 338
    },
    "actors": {
     "inMap": 0,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
     "inMap": 1,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
@@ -3210,16 +1228,14 @@
    },
    "terrain": {
     "layers": 1,
-    "scatter": false
+    "scatter": true
    },
    "rulebook": {
     "file": "kessel.json",
     "unplaced": 1,
     "stated": 1
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "S3/Levels/Kessel_01/Kessel_01",
@@ -3230,7 +1246,7 @@
      "lights": 660,
      "effects": 424,
      "decals": 0,
-     "bytes": 736473,
+     "bytes": 768697,
      "terrain": [
       {}
      ]
@@ -3272,52 +1288,53 @@
    }
   },
   {
-   "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
-   "key": "sb_fondor_01",
+   "level": "Levels/Space/SB_Endor_01/SB_Endor_01",
+   "key": "sb_endor_01",
    "kind": "space",
-   "world": "fondor",
-   "pack": null,
+   "world": "sb_endor",
+   "pack": "sb_endor",
    "subLevels": {
-    "inMap": 17,
-    "inPack": null
+    "inMap": null,
+    "inPack": 5
    },
    "instances": {
-    "inMap": 4528,
-    "inPack": null,
-    "drawn": null
+    "inMap": 4602,
+    "inPack": 2515,
+    "drawn": {
+     "low": 1346,
+     "mid": 1556,
+     "high": 2238,
+     "ultra": 2331
+    }
    },
    "lights": {
-    "inMap": 995,
-    "inPack": null,
-    "drawn": null
+    "inMap": 232,
+    "inPack": 102,
+    "drawn": 102
    },
    "decals": {
-    "inMap": 132,
-    "inPack": null,
-    "drawn": null
+    "inMap": 15,
+    "inPack": 0,
+    "drawn": 0
    },
    "effects": {
-    "inMap": 622,
-    "inPack": null,
-    "drawn": null
+    "inMap": 837,
+    "inPack": 296,
+    "drawn": 296
    },
    "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
-    "inMap": 349,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 23,
+    "drawn": 23
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "starfighter",
      "heroStarfighters",
@@ -3328,7 +1345,97 @@
      "arcade",
      "starfighter"
     ],
-    "withStages": []
+    "withStages": [
+     "starfighter"
+    ]
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "sb_endor.json",
+    "unplaced": 21,
+    "stated": 21
+   },
+   "gaps": [],
+   "data": {
+    "index": {
+     "level": "Levels/Space/SB_Endor_01/SB_Endor_01",
+     "kind": "space",
+     "instances": 4602,
+     "meshes": 210,
+     "spawns": 279,
+     "lights": 232,
+     "effects": 837,
+     "decals": 15,
+     "bytes": 677731,
+     "terrain": []
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
+   "key": "sb_fondor_01",
+   "kind": "space",
+   "world": "sb_fondor",
+   "pack": "sb_fondor",
+   "subLevels": {
+    "inMap": null,
+    "inPack": 5
+   },
+   "instances": {
+    "inMap": 4528,
+    "inPack": 2495,
+    "drawn": {
+     "low": 916,
+     "mid": 704,
+     "high": 1026,
+     "ultra": 2081
+    }
+   },
+   "lights": {
+    "inMap": 995,
+    "inPack": 758,
+    "drawn": 758
+   },
+   "decals": {
+    "inMap": 132,
+    "inPack": 98,
+    "drawn": 98
+   },
+   "effects": {
+    "inMap": 622,
+    "inPack": 386,
+    "drawn": 386
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": 31,
+    "drawn": 31
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "starfighter",
+     "heroStarfighters",
+     "arcade"
+    ],
+    "withRulebook": [
+     "heroStarfighters",
+     "arcade",
+     "starfighter"
+    ],
+    "withStages": [
+     "starfighter"
+    ]
    },
    "terrain": {
     "layers": 0,
@@ -3339,9 +1446,7 @@
     "unplaced": 9,
     "stated": 9
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/Space/SB_Fondor_01/SB_Fondor_01",
@@ -3352,88 +1457,60 @@
      "lights": 995,
      "effects": 622,
      "decals": 132,
-     "bytes": 1059745,
+     "bytes": 1079867,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "SB_Fondor_01",
-      "VFX",
-      "Art",
-      "Lobby",
-      "SplitScreen",
-      "Cinematics",
-      "Fondor_01_IntroTeam2_NIS",
-      "Fondor_01_OutroTeam2_NIS",
-      "Fondor_01_IntroTeam1_NIS",
-      "Fondor_01_OutroTeam1_NIS",
-      "GameModes",
-      "SpaceBattle",
-      "EOR",
-      "Mode7",
-      "Mode7_Intro",
-      "SpaceArcadeTeamBattle",
-      "Level_Design"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 349
-     }
-    }
+    "manifest": null
    }
   },
   {
-   "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
-   "key": "sb_droidbattleship_01",
+   "level": "Levels/Space/SB_Kamino_01/SB_Kamino_01",
+   "key": "sb_kamino_01",
    "kind": "space",
-   "world": "ryloth",
-   "pack": null,
+   "world": "sb_kamino",
+   "pack": "sb_kamino",
    "subLevels": {
-    "inMap": 17,
-    "inPack": null
+    "inMap": null,
+    "inPack": 5
    },
    "instances": {
-    "inMap": 5786,
-    "inPack": null,
-    "drawn": null
+    "inMap": 25226,
+    "inPack": 13812,
+    "drawn": {
+     "low": 9746,
+     "mid": 9181,
+     "high": 9169,
+     "ultra": 13807
+    }
    },
    "lights": {
-    "inMap": 2542,
-    "inPack": null,
-    "drawn": null
+    "inMap": 602,
+    "inPack": 267,
+    "drawn": 267
    },
    "decals": {
-    "inMap": 80,
-    "inPack": null,
-    "drawn": null
+    "inMap": 50,
+    "inPack": 24,
+    "drawn": 24
    },
    "effects": {
-    "inMap": 1978,
-    "inPack": null,
-    "drawn": null
+    "inMap": 1103,
+    "inPack": 523,
+    "drawn": 523
    },
    "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
-    "inMap": 394,
-    "inPack": null,
-    "drawn": null
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
-    "inRecords": [
-     "starfighter",
-     "heroStarfighters",
-     "arcade"
-    ],
+    "inRecords": [],
     "inModesJson": [
      "starfighter",
      "heroStarfighters",
@@ -3444,7 +1521,97 @@
      "arcade",
      "starfighter"
     ],
-    "withStages": []
+    "withStages": [
+     "starfighter"
+    ]
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "sb_kamino.json",
+    "unplaced": 13,
+    "stated": 13
+   },
+   "gaps": [],
+   "data": {
+    "index": {
+     "level": "Levels/Space/SB_Kamino_01/SB_Kamino_01",
+     "kind": "space",
+     "instances": 25226,
+     "meshes": 344,
+     "spawns": 252,
+     "lights": 602,
+     "effects": 1103,
+     "decals": 50,
+     "bytes": 1674506,
+     "terrain": []
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
+   "key": "sb_droidbattleship_01",
+   "kind": "space",
+   "world": "sb_droidbattleship",
+   "pack": "sb_droidbattleship",
+   "subLevels": {
+    "inMap": null,
+    "inPack": 5
+   },
+   "instances": {
+    "inMap": 5786,
+    "inPack": 1878,
+    "drawn": {
+     "low": 1731,
+     "mid": 1732,
+     "high": 1732,
+     "ultra": 1732
+    }
+   },
+   "lights": {
+    "inMap": 2542,
+    "inPack": 1558,
+    "drawn": 1558
+   },
+   "decals": {
+    "inMap": 80,
+    "inPack": 16,
+    "drawn": 16
+   },
+   "effects": {
+    "inMap": 1978,
+    "inPack": 702,
+    "drawn": 702
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "starfighter",
+     "heroStarfighters",
+     "arcade"
+    ],
+    "withRulebook": [
+     "heroStarfighters",
+     "arcade",
+     "starfighter"
+    ],
+    "withStages": [
+     "starfighter"
+    ]
    },
    "terrain": {
     "layers": 0,
@@ -3455,9 +1622,7 @@
     "unplaced": 15,
     "stated": 15
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/Space/SB_DroidBattleShip_01/SB_DroidBattleShip_01",
@@ -3468,365 +1633,56 @@
      "lights": 2542,
      "effects": 1978,
      "decals": 80,
-     "bytes": 1994636,
+     "bytes": 2018163,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "SB_DroidBattleShip_01",
-      "Lobby",
-      "SplitScreen",
-      "VFX",
-      "Level_Design",
-      "GameModes",
-      "Mode7",
-      "Mode7_Intro",
-      "SpaceBattle",
-      "SpaceArcadeTeamBattle",
-      "Art",
-      "Art_LargeGameMode",
-      "Cinematics",
-      "SB_DroidBattleShip_01_OutroTeam2_NIS",
-      "SB_DroidBattleShip_01_IntroTeam2_NIS",
-      "SB_DroidBattleShip_01_OutroTeam1_NIS",
-      "SB_DroidBattleShip_01_IntroTeam1_NIS"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 394
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/SP/A1/M0LIB/DS02",
-   "key": "a1_m0lib_ds02",
-   "kind": "campaign",
-   "world": null,
-   "pack": null,
-   "subLevels": {
-    "inMap": 6,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 13788,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 2863,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 4287,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 726,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 19,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 29,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [],
-    "inModesJson": [],
-    "withRulebook": [],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "a1_m0lib_ds02.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "Levels/SP/A1/M0LIB/DS02",
-     "kind": "campaign",
-     "instances": 13788,
-     "meshes": 464,
-     "spawns": 29,
-     "lights": 2863,
-     "effects": 726,
-     "decals": 4287,
-     "bytes": 3050956,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "A1_M0LIB_DS02_Interior_LA",
-      "A1_M0LIB_DS02_S0200_GP",
-      "A1_M0LIB_DS02_S0205_GP",
-      "A1_M0LIB_DS02_S0207_GP",
-      "A1_M0LIB_DS02_S0300_GP",
-      "A1_M0LIB_DS02_S0350_GP"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 19
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 29
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/SP/A1/M1END/DS02",
-   "key": "a1_m1end_ds02",
-   "kind": "campaign",
-   "world": null,
-   "pack": null,
-   "subLevels": {
-    "inMap": 7,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 918,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 63,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 7,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 801,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 35,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 9,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [],
-    "inModesJson": [],
-    "withRulebook": [],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "a1_m1end_ds02.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "Levels/SP/A1/M1END/DS02",
-     "kind": "campaign",
-     "instances": 918,
-     "meshes": 93,
-     "spawns": 9,
-     "lights": 63,
-     "effects": 801,
-     "decals": 7,
-     "bytes": 245267,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "A1_M1END_DS02_DISH_ZONE",
-      "A1_M1END_DS02_S0200_GP",
-      "A1_M1END_DS02_S0500_GP",
-      "A1_M1END_DS02_S0600_GP",
-      "A1_M1END_DS02_S0700_GP",
-      "A1_M1END_DS02_S0750_NIS",
-      "LGT_Streaming_Lightmaps_Forest01"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 35
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 9
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/SP/A1/M1END/DS04",
-   "key": "a1_m1end_ds04",
-   "kind": "campaign",
-   "world": null,
-   "pack": null,
-   "subLevels": {
-    "inMap": 11,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 4114,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 281,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 0,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 2,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [],
-    "inModesJson": [],
-    "withRulebook": [],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "a1_m1end_ds04.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "Levels/SP/A1/M1END/DS04",
-     "kind": "campaign",
-     "instances": 4114,
-     "meshes": 60,
-     "spawns": 2,
-     "lights": 0,
-     "effects": 281,
-     "decals": 0,
-     "bytes": 206192,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "A1_M1END_DS04_S1000_GP",
-      "LD_S1000_Debris_MainRoute_Streaming03",
-      "LD_S1000_Debris_MainRoute_Streaming01",
-      "LD_S1000_Debris_MainRoute_Streaming02",
-      "BackgroundDressing_Streaming01",
-      "BackgroundDressing_Streaming02",
-      "BackgroundDressing_Streaming03",
-      "BackgroundDressing_Streaming04",
-      "BackgroundDressing_Streaming05",
-      "BackgroundDressing_Streaming06",
-      "BackgroundDressing_Streaming07"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 2
-     }
-    }
+    "manifest": null
    }
   },
   {
    "level": "Levels/SP/A1/M2FON/DS02",
    "key": "a1_m2fon_ds02",
    "kind": "campaign",
-   "world": null,
-   "pack": null,
+   "world": "fondor",
+   "pack": "fondor",
    "subLevels": {
     "inMap": 8,
-    "inPack": null
+    "inPack": 3
    },
    "instances": {
     "inMap": 8496,
-    "inPack": null,
-    "drawn": null
+    "inPack": 778,
+    "drawn": {
+     "low": 778,
+     "mid": 778,
+     "high": 778,
+     "ultra": 778
+    }
    },
    "lights": {
     "inMap": 882,
-    "inPack": null,
-    "drawn": null
+    "inPack": 68,
+    "drawn": 68
    },
    "decals": {
     "inMap": 1494,
-    "inPack": null,
-    "drawn": null
+    "inPack": 10,
+    "drawn": 10
    },
    "effects": {
     "inMap": 643,
-    "inPack": null,
-    "drawn": null
+    "inPack": 172,
+    "drawn": 172
    },
    "actors": {
     "inMap": 8,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
     "inMap": 161,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
@@ -3844,9 +1700,7 @@
     "unplaced": 0,
     "stated": 0
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/SP/A1/M2FON/DS02",
@@ -3857,7 +1711,7 @@
      "lights": 882,
      "effects": 643,
      "decals": 1494,
-     "bytes": 1380167,
+     "bytes": 1420354,
      "terrain": []
     },
     "manifest": {
@@ -3887,41 +1741,46 @@
    "level": "Levels/SP/A1/M3PIL/DS02",
    "key": "a1_m3pil_ds02",
    "kind": "campaign",
-   "world": null,
-   "pack": null,
+   "world": "pillio",
+   "pack": "pillio",
    "subLevels": {
     "inMap": 8,
-    "inPack": null
+    "inPack": 4
    },
    "instances": {
     "inMap": 1537,
-    "inPack": null,
-    "drawn": null
+    "inPack": 282,
+    "drawn": {
+     "low": 267,
+     "mid": 267,
+     "high": 267,
+     "ultra": 267
+    }
    },
    "lights": {
     "inMap": 136,
-    "inPack": null,
-    "drawn": null
+    "inPack": 58,
+    "drawn": 58
    },
    "decals": {
     "inMap": 10,
-    "inPack": null,
-    "drawn": null
+    "inPack": 1,
+    "drawn": 1
    },
    "effects": {
     "inMap": 526,
-    "inPack": null,
-    "drawn": null
+    "inPack": 487,
+    "drawn": 487
    },
    "actors": {
     "inMap": 1,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
     "inMap": 0,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
@@ -3939,9 +1798,7 @@
     "unplaced": 0,
     "stated": 0
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/SP/A1/M3PIL/DS02",
@@ -3952,7 +1809,7 @@
      "lights": 136,
      "effects": 526,
      "decals": 10,
-     "bytes": 254596,
+     "bytes": 263176,
      "terrain": [
       {}
      ]
@@ -3984,41 +1841,46 @@
    "level": "Levels/SP/A1/M4VAR/DS02",
    "key": "a1_m4var_ds02",
    "kind": "campaign",
-   "world": null,
-   "pack": null,
+   "world": "vardos",
+   "pack": "vardos",
    "subLevels": {
     "inMap": 16,
-    "inPack": null
+    "inPack": 9
    },
    "instances": {
     "inMap": 10122,
-    "inPack": null,
-    "drawn": null
+    "inPack": 8518,
+    "drawn": {
+     "low": 3421,
+     "mid": 4810,
+     "high": 6523,
+     "ultra": 8516
+    }
    },
    "lights": {
     "inMap": 809,
-    "inPack": null,
-    "drawn": null
+    "inPack": 785,
+    "drawn": 785
    },
    "decals": {
     "inMap": 438,
-    "inPack": null,
-    "drawn": null
+    "inPack": 124,
+    "drawn": 124
    },
    "effects": {
     "inMap": 574,
-    "inPack": null,
-    "drawn": null
+    "inPack": 574,
+    "drawn": 574
    },
    "actors": {
     "inMap": 526,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "vehicles": {
     "inMap": 57,
-    "inPack": null,
-    "drawn": null
+    "inPack": 0,
+    "drawn": 0
    },
    "variations": null,
    "modes": {
@@ -4036,9 +1898,7 @@
     "unplaced": 0,
     "stated": 0
    },
-   "gaps": [
-    "no pack"
-   ],
+   "gaps": [],
    "data": {
     "index": {
      "level": "Levels/SP/A1/M4VAR/DS02",
@@ -4049,7 +1909,7 @@
      "lights": 809,
      "effects": 574,
      "decals": 438,
-     "bytes": 1069353,
+     "bytes": 1116507,
      "terrain": []
     },
     "manifest": {
@@ -4084,13 +1944,1271 @@
    }
   },
   {
+   "level": "Levels/SP/A2/M3SUL/DS02",
+   "key": "a2_m3sul_ds02",
+   "kind": "campaign",
+   "world": "sullust",
+   "pack": "sullust",
+   "subLevels": {
+    "inMap": 10,
+    "inPack": 10
+   },
+   "instances": {
+    "inMap": 14075,
+    "inPack": 14047,
+    "drawn": {
+     "low": 8161,
+     "mid": 9473,
+     "high": 13563,
+     "ultra": 14044
+    }
+   },
+   "lights": {
+    "inMap": 506,
+    "inPack": 468,
+    "drawn": 468
+   },
+   "decals": {
+    "inMap": 160,
+    "inPack": 130,
+    "drawn": 130
+   },
+   "effects": {
+    "inMap": 4819,
+    "inPack": 4819,
+    "drawn": 4819
+   },
+   "actors": {
+    "inMap": 12,
+    "inPack": 0,
+    "drawn": 0
+   },
+   "vehicles": {
+    "inMap": 4,
+    "inPack": 4,
+    "drawn": 4
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [],
+    "withRulebook": [],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "a2_m3sul_ds02.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [],
+   "data": {
+    "index": {
+     "level": "Levels/SP/A2/M3SUL/DS02",
+     "kind": "campaign",
+     "instances": 14075,
+     "meshes": 498,
+     "spawns": 4,
+     "lights": 506,
+     "effects": 4819,
+     "decals": 160,
+     "bytes": 1853730,
+     "terrain": []
+    },
+    "manifest": {
+     "subworlds": [
+      "A2_M3SUL_DS02_S0300_GP",
+      "A2_M3SUL_DS02_S0900_GP",
+      "Art_Exterior",
+      "Art_Exterior_Beginning",
+      "Art_Exterior_Ending",
+      "Art_Interior_1",
+      "Art_Interior_2",
+      "Art_Interior_3",
+      "Art_Interior_4",
+      "Art_Interior_5"
+     ],
+     "groups": [
+      {
+       "kind": "actor",
+       "count": 12
+      }
+     ],
+     "vehicleSpawns": {
+      "length": 4
+     }
+    }
+   }
+  },
+  {
+   "level": "S9_3/Hoth_02/Hoth_02",
+   "key": "hoth_02",
+   "kind": "multiplayer",
+   "world": "hoth",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 6868,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 54,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 0,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 262,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "supremacy"
+    ],
+    "withRulebook": [
+     "supremacy"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "hoth.2.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S9_3/Hoth_02/Hoth_02",
+     "kind": "multiplayer",
+     "instances": 6868,
+     "meshes": 163,
+     "spawns": 20,
+     "lights": 54,
+     "effects": 262,
+     "decals": 0,
+     "bytes": 431818,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "S2_1/Levels/Endor_02/Endor_02",
+   "key": "endor_02",
+   "kind": "multiplayer",
+   "world": "endor",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 9302,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 236,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 2,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 260,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "blast",
+     "ewokHunt"
+    ],
+    "withRulebook": [
+     "blast",
+     "ewokHunt"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "endor.2.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S2_1/Levels/Endor_02/Endor_02",
+     "kind": "multiplayer",
+     "instances": 9302,
+     "meshes": 250,
+     "spawns": 0,
+     "lights": 236,
+     "effects": 260,
+     "decals": 2,
+     "bytes": 570793,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "S8_1/Endor_04/Endor_04",
+   "key": "endor_04",
+   "kind": "multiplayer",
+   "world": "endor",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 13424,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 281,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 13,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 851,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "blast",
+     "ewokHunt"
+    ],
+    "withRulebook": [
+     "blast",
+     "ewokHunt"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "endor.4.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S8_1/Endor_04/Endor_04",
+     "kind": "multiplayer",
+     "instances": 13424,
+     "meshes": 580,
+     "spawns": 0,
+     "lights": 281,
+     "effects": 851,
+     "decals": 13,
+     "bytes": 965205,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "S9_3/Tatooine_02/Tatooine_02",
+   "key": "tatooine_02",
+   "kind": "multiplayer",
+   "world": "tatooine",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 19715,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 895,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 1,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 1197,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "supremacy"
+    ],
+    "withRulebook": [
+     "supremacy"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "tatooine.2.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S9_3/Tatooine_02/Tatooine_02",
+     "kind": "multiplayer",
+     "instances": 19715,
+     "meshes": 623,
+     "spawns": 4,
+     "lights": 895,
+     "effects": 1197,
+     "decals": 1,
+     "bytes": 1574924,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "S2_2/Levels/JabbasPalace_01/JabbasPalace_01",
+   "key": "jabbaspalace_01",
+   "kind": "multiplayer",
+   "world": "tatooine",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 11983,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 967,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 0,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 487,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "hvv",
+     "blast",
+     "extraction",
+     "showdown",
+     "coop"
+    ],
+    "withRulebook": [
+     "hvv",
+     "blast",
+     "extraction",
+     "showdown",
+     "coop"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "jabbaspalace.json",
+    "unplaced": 1,
+    "stated": 1
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S2_2/Levels/JabbasPalace_01/JabbasPalace_01",
+     "kind": "multiplayer",
+     "instances": 11983,
+     "meshes": 429,
+     "spawns": 1,
+     "lights": 967,
+     "effects": 487,
+     "decals": 0,
+     "bytes": 1109755,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "S7/Levels/Kashyyyk_02/Kashyyyk_02",
+   "key": "kashyyyk_02",
+   "kind": "multiplayer",
+   "world": "kashyyyk",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 34010,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 718,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 512,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 1855,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "supremacy",
+     "coop"
+    ],
+    "withRulebook": [
+     "supremacy",
+     "coop"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "kashyyyk.2.json",
+    "unplaced": 1,
+    "stated": 1
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S7/Levels/Kashyyyk_02/Kashyyyk_02",
+     "kind": "multiplayer",
+     "instances": 34010,
+     "meshes": 836,
+     "spawns": 29,
+     "lights": 718,
+     "effects": 1855,
+     "decals": 512,
+     "bytes": 2483257,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "S7_1/Levels/Kamino_03/Kamino_03",
+   "key": "kamino_03",
+   "kind": "multiplayer",
+   "world": "kamino",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 32337,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 976,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 536,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 2044,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "supremacy",
+     "coop"
+    ],
+    "withRulebook": [
+     "supremacy",
+     "coop"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "kamino.3.json",
+    "unplaced": 1,
+    "stated": 1
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S7_1/Levels/Kamino_03/Kamino_03",
+     "kind": "multiplayer",
+     "instances": 32337,
+     "meshes": 1357,
+     "spawns": 15,
+     "lights": 976,
+     "effects": 2044,
+     "decals": 536,
+     "bytes": 2705876,
+     "terrain": []
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "Levels/MP/Naboo_02/Naboo_02",
+   "key": "naboo_02",
+   "kind": "multiplayer",
+   "world": "naboo",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 3150,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 395,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 0,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 128,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "hvv",
+     "blast",
+     "showdown"
+    ],
+    "withRulebook": [
+     "hvv",
+     "blast",
+     "showdown"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "naboo.2.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "Levels/MP/Naboo_02/Naboo_02",
+     "kind": "multiplayer",
+     "instances": 3150,
+     "meshes": 206,
+     "spawns": 0,
+     "lights": 395,
+     "effects": 128,
+     "decals": 0,
+     "bytes": 417735,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "S7_2/Levels/Naboo_03/Naboo_03",
+   "key": "naboo_03",
+   "kind": "multiplayer",
+   "world": "naboo",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 36507,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 1094,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 563,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 1914,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "hvv",
+     "supremacy",
+     "showdown",
+     "coop"
+    ],
+    "withRulebook": [
+     "hvv",
+     "supremacy",
+     "showdown",
+     "coop"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "naboo.3.json",
+    "unplaced": 1,
+    "stated": 1
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S7_2/Levels/Naboo_03/Naboo_03",
+     "kind": "multiplayer",
+     "instances": 36507,
+     "meshes": 1357,
+     "spawns": 20,
+     "lights": 1094,
+     "effects": 1914,
+     "decals": 563,
+     "bytes": 3008936,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "S6_2/Geonosis_02/Levels/Geonosis_02/Geonosis_02",
+   "key": "geonosis_02",
+   "kind": "multiplayer",
+   "world": "geonosis",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 28859,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 587,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 582,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 1939,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "hvv",
+     "supremacy",
+     "showdown",
+     "coop"
+    ],
+    "withRulebook": [
+     "hvv",
+     "supremacy",
+     "showdown",
+     "coop"
+    ],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 1,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "geonosis.2.json",
+    "unplaced": 1,
+    "stated": 1
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "S6_2/Geonosis_02/Levels/Geonosis_02/Geonosis_02",
+     "kind": "multiplayer",
+     "instances": 28859,
+     "meshes": 837,
+     "spawns": 23,
+     "lights": 587,
+     "effects": 1939,
+     "decals": 582,
+     "bytes": 2386310,
+     "terrain": [
+      {}
+     ]
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "Levels/MP/DeathStar02_01/DeathStar02_01",
+   "key": "deathstar02_01",
+   "kind": "multiplayer",
+   "world": "deathstar",
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 21722,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 1992,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 119,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 640,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [
+     "galacticAssault",
+     "hvv",
+     "blast",
+     "supremacy",
+     "showdown",
+     "coop",
+     "arcade"
+    ],
+    "withRulebook": [
+     "galacticAssault",
+     "hvv",
+     "blast",
+     "supremacy",
+     "showdown",
+     "coop",
+     "arcade"
+    ],
+    "withStages": [
+     "galacticAssault"
+    ]
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "deathstar02.json",
+    "unplaced": 1,
+    "stated": 1
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "Levels/MP/DeathStar02_01/DeathStar02_01",
+     "kind": "multiplayer",
+     "instances": 21722,
+     "meshes": 613,
+     "spawns": 5,
+     "lights": 1992,
+     "effects": 640,
+     "decals": 119,
+     "bytes": 1995967,
+     "terrain": []
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "Levels/SP/A1/M0LIB/DS02",
+   "key": "a1_m0lib_ds02",
+   "kind": "campaign",
+   "world": null,
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 13788,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 2863,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 4287,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 726,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [],
+    "withRulebook": [],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "a1_m0lib_ds02.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "Levels/SP/A1/M0LIB/DS02",
+     "kind": "campaign",
+     "instances": 13788,
+     "meshes": 464,
+     "spawns": 29,
+     "lights": 2863,
+     "effects": 726,
+     "decals": 4287,
+     "bytes": 3111627,
+     "terrain": []
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "Levels/SP/A1/M1END/DS02",
+   "key": "a1_m1end_ds02",
+   "kind": "campaign",
+   "world": null,
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 918,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 63,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 7,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 801,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [],
+    "withRulebook": [],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "a1_m1end_ds02.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "Levels/SP/A1/M1END/DS02",
+     "kind": "campaign",
+     "instances": 918,
+     "meshes": 93,
+     "spawns": 9,
+     "lights": 63,
+     "effects": 801,
+     "decals": 7,
+     "bytes": 250148,
+     "terrain": []
+    },
+    "manifest": null
+   }
+  },
+  {
+   "level": "Levels/SP/A1/M1END/DS04",
+   "key": "a1_m1end_ds04",
+   "kind": "campaign",
+   "world": null,
+   "pack": null,
+   "subLevels": {
+    "inMap": null,
+    "inPack": null
+   },
+   "instances": {
+    "inMap": 4114,
+    "inPack": null,
+    "drawn": null
+   },
+   "lights": {
+    "inMap": 0,
+    "inPack": null,
+    "drawn": null
+   },
+   "decals": {
+    "inMap": 0,
+    "inPack": null,
+    "drawn": null
+   },
+   "effects": {
+    "inMap": 281,
+    "inPack": null,
+    "drawn": null
+   },
+   "actors": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "vehicles": {
+    "inMap": null,
+    "inPack": null,
+    "drawn": null
+   },
+   "variations": null,
+   "modes": {
+    "inRecords": [],
+    "inModesJson": [],
+    "withRulebook": [],
+    "withStages": []
+   },
+   "terrain": {
+    "layers": 0,
+    "scatter": false
+   },
+   "rulebook": {
+    "file": "a1_m1end_ds04.json",
+    "unplaced": 0,
+    "stated": 0
+   },
+   "gaps": [
+    "no pack"
+   ],
+   "data": {
+    "index": {
+     "level": "Levels/SP/A1/M1END/DS04",
+     "kind": "campaign",
+     "instances": 4114,
+     "meshes": 60,
+     "spawns": 2,
+     "lights": 0,
+     "effects": 281,
+     "decals": 0,
+     "bytes": 223694,
+     "terrain": []
+    },
+    "manifest": null
+   }
+  },
+  {
    "level": "Levels/SP/A1/M5NAB/DS02",
    "key": "a1_m5nab_ds02",
    "kind": "campaign",
    "world": null,
    "pack": null,
    "subLevels": {
-    "inMap": 5,
+    "inMap": null,
     "inPack": null
    },
    "instances": {
@@ -4114,12 +3232,12 @@
     "drawn": null
    },
    "actors": {
-    "inMap": 1,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
    "vehicles": {
-    "inMap": 115,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
@@ -4152,27 +3270,10 @@
      "lights": 524,
      "effects": 832,
      "decals": 716,
-     "bytes": 818188,
+     "bytes": 833485,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "A1_M5NAB_DS02_S0200_GP",
-      "A1_M5NAB_DS02_S0200_NIS",
-      "A1_M5NAB_DS02_S0400_GP",
-      "A1_M5NAB_DS02_S0410_NIS",
-      "LGT_A1_M5NAB_DS02"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 1
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 115
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -4182,7 +3283,7 @@
    "world": null,
    "pack": null,
    "subLevels": {
-    "inMap": 3,
+    "inMap": null,
     "inPack": null
    },
    "instances": {
@@ -4206,12 +3307,12 @@
     "drawn": null
    },
    "actors": {
-    "inMap": 4,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
    "vehicles": {
-    "inMap": 12,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
@@ -4244,25 +3345,10 @@
      "lights": 63,
      "effects": 128,
      "decals": 56,
-     "bytes": 531882,
+     "bytes": 573750,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "A1_M5NAB_DS05_S1020_GP",
-      "A1_M5NAB_DS05_S1050_GP",
-      "A1_M5NAB_MP_Imports_August8th"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 4
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 12
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -4272,7 +3358,7 @@
    "world": null,
    "pack": null,
    "subLevels": {
-    "inMap": 10,
+    "inMap": null,
     "inPack": null
    },
    "instances": {
@@ -4296,12 +3382,12 @@
     "drawn": null
    },
    "actors": {
-    "inMap": 31,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
    "vehicles": {
-    "inMap": 119,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
@@ -4334,129 +3420,10 @@
      "lights": 1604,
      "effects": 591,
      "decals": 60,
-     "bytes": 1541143,
+     "bytes": 1610154,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "A2_M2BES_DS02_S0200_GP",
-      "A2_M2BES_DS02_S0300_GP",
-      "A2_M2BES_DS02_S0600_GP",
-      "A2_M2BES_DS02_S0600_NIS",
-      "A2_M2BES_DS02_S0650_NIS",
-      "A2_M2BES_DS02_S0660_GP",
-      "A2_M2BES_DS02_S0700_GP",
-      "A2_M2BES_DS02_S0900_GP",
-      "AdministratorsPalace",
-      "BespinAtmosphere"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 31
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 119
-     }
-    }
-   }
-  },
-  {
-   "level": "Levels/SP/A2/M3SUL/DS02",
-   "key": "a2_m3sul_ds02",
-   "kind": "campaign",
-   "world": null,
-   "pack": null,
-   "subLevels": {
-    "inMap": 10,
-    "inPack": null
-   },
-   "instances": {
-    "inMap": 14075,
-    "inPack": null,
-    "drawn": null
-   },
-   "lights": {
-    "inMap": 506,
-    "inPack": null,
-    "drawn": null
-   },
-   "decals": {
-    "inMap": 160,
-    "inPack": null,
-    "drawn": null
-   },
-   "effects": {
-    "inMap": 4819,
-    "inPack": null,
-    "drawn": null
-   },
-   "actors": {
-    "inMap": 12,
-    "inPack": null,
-    "drawn": null
-   },
-   "vehicles": {
-    "inMap": 4,
-    "inPack": null,
-    "drawn": null
-   },
-   "variations": null,
-   "modes": {
-    "inRecords": [],
-    "inModesJson": [],
-    "withRulebook": [],
-    "withStages": []
-   },
-   "terrain": {
-    "layers": 0,
-    "scatter": false
-   },
-   "rulebook": {
-    "file": "a2_m3sul_ds02.json",
-    "unplaced": 0,
-    "stated": 0
-   },
-   "gaps": [
-    "no pack"
-   ],
-   "data": {
-    "index": {
-     "level": "Levels/SP/A2/M3SUL/DS02",
-     "kind": "campaign",
-     "instances": 14075,
-     "meshes": 498,
-     "spawns": 4,
-     "lights": 506,
-     "effects": 4819,
-     "decals": 160,
-     "bytes": 1790631,
-     "terrain": []
-    },
-    "manifest": {
-     "subworlds": [
-      "A2_M3SUL_DS02_S0300_GP",
-      "A2_M3SUL_DS02_S0900_GP",
-      "Art_Exterior",
-      "Art_Exterior_Beginning",
-      "Art_Exterior_Ending",
-      "Art_Interior_1",
-      "Art_Interior_2",
-      "Art_Interior_3",
-      "Art_Interior_4",
-      "Art_Interior_5"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 12
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 4
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -4466,7 +3433,7 @@
    "world": null,
    "pack": null,
    "subLevels": {
-    "inMap": 1,
+    "inMap": null,
     "inPack": null
    },
    "instances": {
@@ -4490,12 +3457,12 @@
     "drawn": null
    },
    "actors": {
-    "inMap": 0,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
    "vehicles": {
-    "inMap": 0,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
@@ -4528,23 +3495,10 @@
      "lights": 0,
      "effects": 0,
      "decals": 0,
-     "bytes": 7133,
+     "bytes": 8951,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "A3_M1PIL_DS02_S0200_GP"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 0
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -4616,7 +3570,7 @@
      "lights": 982,
      "effects": 736,
      "decals": 673,
-     "bytes": 1435402,
+     "bytes": 1510622,
      "terrain": []
     },
     "manifest": {
@@ -4717,7 +3671,7 @@
      "lights": 115,
      "effects": 587,
      "decals": 2,
-     "bytes": 360769,
+     "bytes": 381427,
      "terrain": []
     },
     "manifest": {
@@ -4817,7 +3771,7 @@
      "lights": 0,
      "effects": 2,
      "decals": 0,
-     "bytes": 7984,
+     "bytes": 8885,
      "terrain": []
     },
     "manifest": {
@@ -4905,7 +3859,7 @@
      "lights": 731,
      "effects": 433,
      "decals": 715,
-     "bytes": 1389609,
+     "bytes": 1467055,
      "terrain": [
       {}
      ]
@@ -4958,7 +3912,7 @@
    "world": null,
    "pack": null,
    "subLevels": {
-    "inMap": 7,
+    "inMap": null,
     "inPack": null
    },
    "instances": {
@@ -4982,12 +3936,12 @@
     "drawn": null
    },
    "actors": {
-    "inMap": 1,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
    "vehicles": {
-    "inMap": 0,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
@@ -5020,29 +3974,10 @@
      "lights": 91,
      "effects": 43,
      "decals": 0,
-     "bytes": 128565,
+     "bytes": 136803,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "Frontend",
-      "Trader",
-      "LootBoxes",
-      "Backdrops",
-      "Backdrop_01",
-      "Collection",
-      "Holograms"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 1
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 0
-     }
-    }
+    "manifest": null
    }
   },
   {
@@ -5052,7 +3987,7 @@
    "world": null,
    "pack": null,
    "subLevels": {
-    "inMap": 5,
+    "inMap": null,
     "inPack": null
    },
    "instances": {
@@ -5076,12 +4011,12 @@
     "drawn": null
    },
    "actors": {
-    "inMap": 0,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
    "vehicles": {
-    "inMap": 0,
+    "inMap": null,
     "inPack": null,
     "drawn": null
    },
@@ -5114,27 +4049,10 @@
      "lights": 708,
      "effects": 377,
      "decals": 0,
-     "bytes": 711423,
+     "bytes": 745708,
      "terrain": []
     },
-    "manifest": {
-     "subworlds": [
-      "InitialExperience_01",
-      "Lobby",
-      "EOR",
-      "GameModes",
-      "Skirmish"
-     ],
-     "groups": [
-      {
-       "kind": "actor",
-       "count": 0
-      }
-     ],
-     "vehicleSpawns": {
-      "length": 0
-     }
-    }
+    "manifest": null
    }
   }
  ]
