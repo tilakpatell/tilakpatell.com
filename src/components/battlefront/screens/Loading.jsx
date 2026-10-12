@@ -8,7 +8,9 @@ import GameScreen from './GameScreen.jsx';
 // the mode in the tree's hint box (LoadingScreenWrapperWidget), the level's
 // name, and the bar the game draws for it carrying the level's real progress
 // (the world's own count; `waiting` is the veil's line when it waits on
-// something, as lane F's rule has it).
+// something, as lane F's rule has it). (The loading cue plays under the
+// waiting screen, WaitingScreen.jsx, which is the way in now; this veil
+// comes up over a battle already heard.)
 export default function Loading({ mode = 'galacticAssault', level = 'hoth', progress = 0, waiting = null }) {
   const [seed] = useState(() => Math.floor(Math.random() * 1e6));
   const l = loading(mode, level, { seed });

@@ -6,6 +6,7 @@ import { loading } from '../../lib/bf2017/ui/screens';
 import { Film } from '../../runtime/hud';
 import { offerIcon } from './hud/icons.js';
 import { offerRows } from './hud/widgets.js';
+import { startLoadingMusic } from './sound/loading.js';
 import { COIN, VARIANTS } from './waiting.js';
 import './waiting.css';
 
@@ -20,6 +21,9 @@ import './waiting.css';
 // the runtime's pace computes and a button to apply it, and Deploy, which
 // takes only once the field is ready. A modal dialog over the whole view
 // (the game's screens cover the site's bar too), put at the body's end.
+// Under it the level's loading cue (the game's intro and loop, sound/
+// loading.js) until the screen goes at the wipe's swap; the world behind
+// it is unheard until then (sound/director.js).
 //
 // <WaitingScreen level mode progress={{ value, ready, line }} offers points name={(o) => text}
 //   variant onVariant rolled machine recommendation canApply onApply applied onDeploy back />
@@ -60,6 +64,7 @@ export default function WaitingScreen({
   useEffect(() => {
     ref.current?.querySelector('button:not([aria-disabled="true"])')?.focus({ preventScroll: true });
   }, []);
+  useEffect(() => startLoadingMusic(level), [level]);
   const pick = (o) => {
     if (!o.affordable) return;
     setPicked(o.id);

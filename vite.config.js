@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { configDefaults } from 'vitest/config'
@@ -8,6 +9,14 @@ import assetManifest from './scripts/assets-manifest.mjs'
 import bf2Dev from './scripts/bf2-dev.mjs'
 import librarySlice from './scripts/library-slice.mjs'
 import rapierWasm from './scripts/rapier-wasm.mjs'
+
+// Whether this checkout has the game's sounds on disk (the Hoth set under
+// public/audio/galaxy/bf2017, src/data/bf2017/sounds.json): 'gone' once
+// they are published and have left git, and then the Battlefront world asks
+// only the bucket for them, or for none where there is no bucket, so a
+// missing sound is never a request that fails (sound/sounds.js's HERE).
+// Read by Vite as any VITE_ variable of the shell's; one set there wins.
+process.env.VITE_BF2017_SOUNDS ??= existsSync(new URL('./public/audio/galaxy/bf2017/ambience-bed-01.mp3', import.meta.url)) ? 'here' : 'gone'
 
 export default defineConfig({
   // each react-icons icon a module of its own, so the entry chunk carries
