@@ -36,11 +36,25 @@ export const turnToward = (from, to, max) => from + clamp(wrapAngle(to - from), 
 // how high it stands (you can jump onto something low; null for as high as
 // you like); `base`: where it starts (something over your head, on the
 // floor above: a throne over a rancor's pit).
+// (a solid wider than this is a bad one, not a big one: a level piece whose
+// extent came through as NaN, Infinity or kilometres took the cell grid to
+// an "Invalid array length" on Hoth at ultra, 2026-10-11; it is left out,
+// said once, and the walker keeps going)
+export const SOLID_MAX = 4096; // m
+const SPANS = (minX, minZ, maxX, maxZ) => Number.isFinite(minX) && Number.isFinite(minZ) && Number.isFinite(maxX) && Number.isFinite(maxZ) && maxX - minX <= SOLID_MAX && maxZ - minZ <= SOLID_MAX;
+let saidBad = false;
 export function createSolids(cell = 16) {
   const cells = new Map();
   const all = [];
   const key = (i, j) => i * 73856093 + j * 19349663;
   const put = (s, minX, minZ, maxX, maxZ) => {
+    if (!SPANS(minX, minZ, maxX, maxZ)) {
+      if (!saidBad) {
+        saidBad = true;
+        console.warn(`[solids] a ${s.type} with a bad extent left out${s.tag ? ` (${s.tag})` : ''}: x ${minX}…${maxX}, z ${minZ}…${maxZ}`);
+      }
+      return null;
+    }
     all.push(s);
     for (let i = Math.floor(minX / cell); i <= Math.floor(maxX / cell); i++)
       for (let j = Math.floor(minZ / cell); j <= Math.floor(maxZ / cell); j++) {

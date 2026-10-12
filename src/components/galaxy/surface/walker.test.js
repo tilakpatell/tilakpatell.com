@@ -153,6 +153,27 @@ describe('on foot', () => {
     expect(b.z).toBeLessThanOrEqual(4.5 - WALK.radius + 1e-6);
   });
 
+  it('leaves out a solid with a bad extent, and keeps the good ones', () => {
+    const solids = createSolids();
+    const warn = console.warn;
+    console.warn = () => {};
+    try {
+      // (a level piece whose extent came through as NaN, Infinity or kilometres
+      // took the cell grid to an "Invalid array length": null, not a throw)
+      expect(solids.box(0, 0, Infinity, 1)).toBeNull();
+      expect(solids.box(NaN, 0, 1, 1)).toBeNull();
+      expect(solids.circle(0, 0, 1e7)).toBeNull();
+      expect(solids.box(0, 0, 3000, 3000)).toBeNull();
+    } finally {
+      console.warn = warn;
+    }
+    expect(solids.all).toHaveLength(0);
+    expect(solids.near(0, 0, 10)).toHaveLength(0);
+    const ok = solids.box(0, 0, 2, 1);
+    expect(ok).not.toBeNull();
+    expect(solids.near(0, 0, 1)).toContain(ok);
+  });
+
   it('pushes out of a box turned any way, through its nearest side', () => {
     const solids = createSolids();
     const box = solids.box(0, 0, 2, 1, Math.PI / 4);

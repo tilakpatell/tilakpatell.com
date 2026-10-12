@@ -33,8 +33,15 @@ export function createColliders(walk, tier = 'high', { loadBin = null } = {}) {
       walk.floors.push(floor);
       added.push(floor);
     }
-    for (const b of boxes) added.push(walk.solids.box(b.x, b.z, b.hw, b.hd, b.yaw, { top: b.top, base: b.base, tag }));
-    for (const c of circles) added.push(walk.solids.circle(c.x, c.z, c.r, { top: c.top, base: c.base, tag }));
+    // (a solid the walker refused, a bad extent, is null: nothing to switch off later)
+    for (const b of boxes) {
+      const s = walk.solids.box(b.x, b.z, b.hw, b.hd, b.yaw, { top: b.top, base: b.base, tag });
+      if (s) added.push(s);
+    }
+    for (const c of circles) {
+      const s = walk.solids.circle(c.x, c.z, c.r, { top: c.top, base: c.base, tag });
+      if (s) added.push(s);
+    }
   };
   return {
     add(key, pack, bin) {
