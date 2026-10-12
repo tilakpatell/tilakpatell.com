@@ -6,7 +6,7 @@ import { statSync } from 'node:fs';
 import * as THREE from 'three';
 import { beforeAll, describe, expect, it } from 'vitest';
 import HELD from '../../../data/bf2017/held.json';
-import { parseGlb } from './fixtures/glb.js';
+import { glbJson, parseGlb } from './fixtures/glb.js';
 import { weaponUrl } from './held.js';
 
 const IDS = Object.keys(HELD.rows);
@@ -27,6 +27,29 @@ describe('the class weapons’ light cuts', () => {
     const grip = got[id].scene.getObjectByName('grip');
     expect(grip).toBeTruthy();
     expect(grip.position.length()).toBeLessThan(1e-6);
+  });
+  // (the game's Walrus weapon preset: metal from the NAM's blue and
+  // smoothness from the colour's alpha on one ORM, no occlusion, and a
+  // reflectance of 0.5, which is F0 0.04: glTF's own dielectric, so three
+  // lights it as a MeshStandardMaterial would, whatever the loader makes)
+  it.each(IDS)('%s carries the game’s channels: an ORM, no occlusion, F0 0.04', (id) => {
+    const json = glbJson(file(id));
+    for (const m of json.materials) {
+      // (a scope's glass carries no maps at all)
+      if (m.pbrMetallicRoughness?.baseColorTexture) {
+        expect(m.pbrMetallicRoughness.metallicRoughnessTexture, m.name).toBeTruthy();
+        expect(m.pbrMetallicRoughness.metallicFactor ?? 1, m.name).toBe(1); // × the map
+      }
+      expect(m.occlusionTexture, m.name).toBeUndefined();
+      expect(m.extensions?.KHR_materials_specular, m.name).toBeUndefined();
+    }
+    got[id].scene.traverse((o) => {
+      if (!o.isMesh) return;
+      const mat = o.material;
+      const ior = mat.ior ?? 1.5;
+      const f0 = ((ior - 1) / (ior + 1)) ** 2 * (mat.specularIntensity ?? 1);
+      expect(f0, mat.name).toBeCloseTo(0.04, 3);
+    });
   });
   it.each(IDS)('%s has its muzzle just inside the barrel’s end, along +z', (id) => {
     const box = new THREE.Box3().setFromObject(got[id].scene);

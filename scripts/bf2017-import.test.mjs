@@ -45,6 +45,10 @@ describe('the 2017 import', () => {
     expect(mat.getBaseColorTexture().getSize()).toEqual([64, 64]);
     expect(mat.getNormalTexture()).toBeTruthy();
     expect(mat.getMetallicRoughnessTexture()).toBeTruthy();
+    // (a Walrus weapon: the game's preset has no occlusion, and its
+    // reflectance 0.5 is glTF's own dielectric F0, so no specular extension)
+    expect(mat.getOcclusionTexture()).toBe(null);
+    expect(used).not.toContain('KHR_materials_specular');
     expect(mat.getExtras()).toEqual({});
     expect(triangles(doc)).toBe(920);
     const manifest = JSON.parse((await readFile(join(FIXTURE, 'web', 'models.jsonl'), 'utf8')).trim());
