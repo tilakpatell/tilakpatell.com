@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { groupsOf, mergeParts, texturesOf } from './draws.js';
+import { groupsOf, mergeParts, texturesOf, watchTextures } from './draws.js';
 
 const tex = (name) => Object.assign(new THREE.Texture(), { name });
 const box = () => new THREE.BoxGeometry(1, 1, 1);
@@ -77,5 +77,21 @@ describe('mergeParts', () => {
     expect(geometry.attributes.position.array).toBeInstanceOf(Float32Array);
     expect(geometry.attributes.position.getX(0)).toBeCloseTo(1);
     expect(geometry.index.count).toBe(3);
+  });
+});
+
+describe('watchTextures', () => {
+  it('hears each map’s dispose once, so a promotion under a bundle records it again', () => {
+    const a = tex('a');
+    const b = tex('b');
+    const gone = [];
+    const unwatch = watchTextures(new Set([a, b, null, { notATexture: true }]), (t) => gone.push(t.name));
+    a.dispose();
+    a.dispose();
+    expect(gone).toEqual(['a', 'a']);
+    unwatch();
+    b.dispose();
+    a.dispose();
+    expect(gone).toEqual(['a', 'a']);
   });
 });

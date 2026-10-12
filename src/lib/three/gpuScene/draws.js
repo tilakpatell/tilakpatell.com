@@ -28,7 +28,18 @@
 // frame's camera, the occluders for the pyramid: last frame's visible rows,
 // where they are now, so nothing visible is hidden by a stale depth.
 //
+// A map a group samples may be let go under it: the level loader promotes a
+// map from its first row to the tier's by disposing the texture and
+// swapping its source (levelGltf.js's swapInto), and three uploads it again
+// on its next draw. A bundle, though, recorded its bind groups when it was
+// made, and a bind group names the GPU texture that was destroyed, so the
+// next submit failed on it ("Destroyed texture used in a submit": the
+// decision of 2026-10-12, the GPU scene's texture lifetime). watchTextures
+// hears each map's dispose and asks the bundle to record itself again, which
+// the next frame does with the map uploaded anew.
+//
 //   texturesOf(material) → Set (the maps it samples, by its own fields)
+//   watchTextures(textures, onGone) → unwatch (each texture's 'dispose' heard once)
 //   groupsOf(parts, { keyOf, maxTextures = 16 }) → { groups: [{ key, parts, material, textures }], refused: parts }
 //   mergeParts(THREE, [{ geometry, local, file, mirrored }]) → { geometry, ranges: [{ baseVertex, firstIndex, indexCount, mirrored? }] }
 //   createDraws(renderer, { cull, three, parent, keyOf, bundle = true }) → {
@@ -45,6 +56,20 @@ export function texturesOf(material) {
   const out = new Set();
   for (const v of Object.values(material)) if (v?.isTexture) out.add(v);
   return out;
+}
+
+export function watchTextures(textures, onGone) {
+  const offs = [];
+  for (const t of textures) {
+    if (typeof t?.addEventListener !== 'function') continue;
+    const on = () => onGone(t);
+    t.addEventListener('dispose', on);
+    offs.push(() => t.removeEventListener('dispose', on));
+  }
+  return () => {
+    for (const off of offs) off();
+    offs.length = 0;
+  };
 }
 
 const attributeKey = (g) => `${Object.keys(g.attributes).sort().join(',')}`;
@@ -196,6 +221,9 @@ export function createDraws(renderer, { cull, three, parent, keyOf, bundle: useB
   let target = null;
 
   const fadeKeep = pull.keep();
+  const rerecord = () => {
+    if (bundle) bundle.needsUpdate = true;
+  };
 
   function materialFor(base) {
     const m = base.isNodeMaterial ? base.clone() : renderer.library.fromMaterial(base);
@@ -272,7 +300,8 @@ export function createDraws(renderer, { cull, three, parent, keyOf, bundle: useB
       refused.push(...no);
       let added = 0;
       for (const f of found) {
-        if (!groups.has(f.key)) groups.set(f.key, { key: f.key, material: f.material, parts: [], mesh: null, depth: null, static: true });
+        // (a map promoted under the group: the bundle recorded again, see watchTextures)
+        if (!groups.has(f.key)) groups.set(f.key, { key: f.key, material: f.material, parts: [], mesh: null, depth: null, static: true, unwatch: watchTextures(f.textures, () => rerecord()) });
         const group = groups.get(f.key);
         for (const p of f.parts) {
           const entry = { geometry: p.geometry, local: p.local, file, mirrored: mir.length > 0, slots: [], keys: [], slotRanges: [] };
@@ -292,9 +321,7 @@ export function createDraws(renderer, { cull, three, parent, keyOf, bundle: useB
       if (g.mesh) (on && bundle ? bundle : root).add(g.mesh);
       if (bundle) bundle.needsUpdate = true;
     },
-    rerecord() {
-      if (bundle) bundle.needsUpdate = true;
-    },
+    rerecord,
     // the occluders' depth with this frame's camera, for hzb.update
     prepass(camera, width, height) {
       if (!prepassScene.children.length) return null;
@@ -311,6 +338,7 @@ export function createDraws(renderer, { cull, three, parent, keyOf, bundle: useB
     stats: () => ({ groups: groups.size, slots, refused: refused.length }),
     dispose() {
       for (const g of groups.values()) {
+        g.unwatch?.();
         g.mesh?.geometry.dispose();
         g.mesh?.material.dispose();
         g.depth?.material.dispose();
