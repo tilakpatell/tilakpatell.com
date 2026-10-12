@@ -1,0 +1,1300 @@
+{
+  "route": "/battlefront/hoth/galacticAssault?gpu=webgpu",
+  "mode": "lost",
+  "quality": "ultra",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "errors": [],
+  "missing": [],
+  "phases": {
+    "short": {
+      "sounds": {
+        "played": {},
+        "kinds": {},
+        "starts": 0,
+        "late": 0,
+        "lateNames": {},
+        "failed": 241,
+        "missing": 241,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 0,
+        "live": 0,
+        "duck": "none",
+        "music": "music.medium",
+        "window": {
+          "top": 20,
+          "until": 0
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            -30.08931194315144,
+            313.34556278152155,
+            -962.0069797196096
+          ],
+          "yaw": 2.7471
+        }
+      },
+      "hook": {
+        "buffers": 0,
+        "elements": 3,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ]
+      },
+      "moved": 5.32
+    }
+  },
+  "backend": "webgpu",
+  "upMs": 44775,
+  "deploy": {
+    "ok": true
+  },
+  "seconds": 59,
+  "audioRequests": {
+    "/audio/galaxy/bf2017-lost/ambience-alien-beluga-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-beluga-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-rayboo-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-rayboo-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-skuaCalls-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-skuaCalls-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-skuaRoar-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-skuaRoar-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-wampa-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-alien-wampa-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-bed-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-cave-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-ice-cracks-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-ice-cracks-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-ice-pings-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-ice-pings-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-ice-pings-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-flutters-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-flutters-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-gusts-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-gusts-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-gusts-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-moleWind-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-moleWind-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-moleWind-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-wisps-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/ambience-wind-wisps-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-close-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-close-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-distant-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-a280-distant-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-close-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-close-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-distant-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dh17-distant-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-close-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-close-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-distant-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19-distant-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19x-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19x-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19x-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19x-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19x-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19x-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19x-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt19x-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-close-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-close-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-distant-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-dlt20a-distant-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-close-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-close-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-distant-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-e11-distant-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-hifi-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-hifi-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-hifi-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-hifi-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-hifi-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-hifi-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-hifi-07.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-hifi-08.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-close-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-close-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-distant-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-noise-distant-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-passby-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-passby-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-passby-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-passby-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-passby-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-passby-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-passby-07.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-passby-08.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-reflection-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-reflection-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-reflection-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-reflection-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-close-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-close-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-distant-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rk3-distant-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-close-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-close-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-close-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-close-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-close-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-close-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-distant-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-distant-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-distant-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-distant-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-distant-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/blaster-rt97c-distant-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-crouchDown-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-crouchDown-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-crouchDown-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-crouchDown-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-crouchUp-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-crouchUp-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-crouchUp-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-crouchUp-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-jump-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-jump-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-jump-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-jump-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-land-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-land-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-land-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/cloth-land-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-fall-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-fall-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-fall-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-fall-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-scream-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-scream-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-scream-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-scream-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-scream-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-scream-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-scream-07.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/death-scream-08.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-first-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-first-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-hit-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-hit-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-hit-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-hit-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-hit-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-hit-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-kill-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-killed-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-killed-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-killed-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/hit-killed-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/music-loading-intro-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/music-medium-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-manual-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-manual-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-manual-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-manual-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-overheated-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-overheated-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-overheated-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-overheated-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-reset-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-reset-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-reset-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-reset-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-warning-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-warning-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-warning-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-warning-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/overheat-warning-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jog-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jog-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jog-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jog-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jog-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jog-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jog-07.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jog-08.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jump-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jump-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jump-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-jump-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-land-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-land-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-land-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-land-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-sprint-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-sprint-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-sprint-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-sprint-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-sprint-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-sprint-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-sprint-07.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-sprint-08.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-walk-01.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-walk-02.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-walk-03.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-walk-04.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-walk-05.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-walk-06.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-walk-07.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    },
+    "/audio/galaxy/bf2017-lost/step-walk-08.mp3": {
+      "bytes": 4627,
+      "status": 200,
+      "type": "text/html"
+    }
+  },
+  "summary": {
+    "kinds": {},
+    "starts": 0,
+    "names": 0,
+    "late": 0,
+    "failed": 241,
+    "missing": 241,
+    "absent": 0,
+    "asleep": 0,
+    "suppressed": 0,
+    "buffers": 0,
+    "hookBuffers": 0,
+    "hookElements": 3,
+    "files": 243,
+    "bytes": 1124361,
+    "stemFiles": 2,
+    "stemBytes": 9254,
+    "statuses": {
+      "200": 243
+    },
+    "notFound": 0,
+    "errors": 0
+  }
+}

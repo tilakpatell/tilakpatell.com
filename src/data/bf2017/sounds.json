@@ -1,0 +1,1482 @@
+{
+  "_from": {
+    "export": "web/sounds (bf2-re/findings/36-sound-export.md)",
+    "date": "2026-10-12",
+    "script": "scripts/bf2017-sounds.mjs"
+  },
+  "dir": "audio/galaxy/bf2017",
+  "rows": {
+    "ability.command.start": {
+      "files": [
+        "ability-command-start-01.mp3"
+      ],
+      "bytes": 51308,
+      "seconds": 4.21,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/BattleCommand/SW02_Gadgets_BattleCommand_VAR_08"
+    },
+    "ability.error": {
+      "files": [
+        "ability-error-01.mp3"
+      ],
+      "bytes": 5516,
+      "seconds": 0.38,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.6,
+      "asset": "Sound/UX/Abilities/SW02_UX_Abilities_Error_07"
+    },
+    "ability.explosion.close": {
+      "files": [
+        "ability-explosion-close-01.mp3",
+        "ability-explosion-close-02.mp3",
+        "ability-explosion-close-03.mp3",
+        "ability-explosion-close-04.mp3"
+      ],
+      "bytes": 34160,
+      "seconds": 2.58,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Destruction/Explosions/Modular/Small/Ambience/SW02_Destruction_Explosions_Modular_Small_Ambience_Close_VAR_01"
+    },
+    "ability.explosion.reflection": {
+      "files": [
+        "ability-explosion-reflection-01.mp3",
+        "ability-explosion-reflection-02.mp3"
+      ],
+      "bytes": 80728,
+      "seconds": 6.59,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.6,
+      "asset": "Sound/Destruction/Explosions/Modular/Small/Reflection/SW02_Destruction_Explosions_Modular_Small_Reflection_Field_VAR_01"
+    },
+    "ability.grenade.bounce": {
+      "files": [
+        "ability-grenade-bounce-01.mp3",
+        "ability-grenade-bounce-02.mp3",
+        "ability-grenade-bounce-03.mp3",
+        "ability-grenade-bounce-04.mp3"
+      ],
+      "bytes": 61232,
+      "seconds": 4.85,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Weapons/Grenades/Bounce/SW01_Weapons_Grenades_Bounce_Dirt_VAR_03"
+    },
+    "ability.impact.beep": {
+      "files": [
+        "ability-impact-beep-01.mp3"
+      ],
+      "bytes": 2348,
+      "seconds": 0.13,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Weapons/Grenades/ImpactGrenade/SW01_Weapons_Grenades_ImpactGrenade_Beep_01"
+    },
+    "ability.infiltration.start": {
+      "files": [
+        "ability-infiltration-start-01.mp3",
+        "ability-infiltration-start-02.mp3"
+      ],
+      "bytes": 137752,
+      "seconds": 11.35,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/Infiltration/SW02_Gadgets_Infiltration_Start_VAR_02"
+    },
+    "ability.infiltration.stop": {
+      "files": [
+        "ability-infiltration-stop-01.mp3",
+        "ability-infiltration-stop-02.mp3"
+      ],
+      "bytes": 27736,
+      "seconds": 2.18,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/Infiltration/SW02_Gadgets_Infiltration_Stop_VAR_01"
+    },
+    "ability.scanDart.ping": {
+      "files": [
+        "ability-scanDart-ping-01.mp3",
+        "ability-scanDart-ping-02.mp3",
+        "ability-scanDart-ping-03.mp3"
+      ],
+      "bytes": 93156,
+      "seconds": 7.59,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Gadgets/ScanPing/SW02_Gadgets_ScanDartPing_VAR_01"
+    },
+    "ability.scanDart.shot": {
+      "files": [
+        "ability-scanDart-shot-01.mp3",
+        "ability-scanDart-shot-02.mp3",
+        "ability-scanDart-shot-03.mp3"
+      ],
+      "bytes": 31236,
+      "seconds": 2.41,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Weapons/Blasters/ScanDart/SW02_Weapons_Blasters_ScanDart_Laser_Close_VAR_04"
+    },
+    "ability.sentry.shot": {
+      "files": [
+        "ability-sentry-shot-01.mp3",
+        "ability-sentry-shot-02.mp3",
+        "ability-sentry-shot-03.mp3",
+        "ability-sentry-shot-04.mp3"
+      ],
+      "bytes": 38768,
+      "seconds": 2.98,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Blasters/Z6RotaryBlaster/SW02_Blasters_Z6RotaryBlaster_Laser_Close_VAR_01"
+    },
+    "ability.sentry.start": {
+      "files": [
+        "ability-sentry-start-01.mp3",
+        "ability-sentry-start-02.mp3"
+      ],
+      "bytes": 49624,
+      "seconds": 4.01,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Weapons/Blasters/Z6RotaryBlaster/SW02_Blasters_Z6RotaryBlaster_Start_Short_VAR_01"
+    },
+    "ability.sentry.stop": {
+      "files": [
+        "ability-sentry-stop-01.mp3"
+      ],
+      "bytes": 35468,
+      "seconds": 2.9,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Weapons/Blasters/Z6RotaryBlaster/SW02_Blasters_Z6RotaryBlaster_Stop_03"
+    },
+    "ability.shield.hit": {
+      "files": [
+        "ability-shield-hit-01.mp3",
+        "ability-shield-hit-02.mp3",
+        "ability-shield-hit-03.mp3",
+        "ability-shield-hit-04.mp3"
+      ],
+      "bytes": 47984,
+      "seconds": 3.72,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Gadgets/BurstShield/Impacts/SW01_Gadgets_BurstShield_Impacts_Hit_VAR_01"
+    },
+    "ability.shield.loop": {
+      "files": [
+        "ability-shield-loop-01.mp3"
+      ],
+      "bytes": 44972,
+      "seconds": 3.68,
+      "stereo": false,
+      "loop": true,
+      "gain": 0.5,
+      "asset": "Sound/Gadgets/BurstShield/SW02_Gadgets_BurstShield_Loop_01"
+    },
+    "ability.shield.start": {
+      "files": [
+        "ability-shield-start-01.mp3",
+        "ability-shield-start-02.mp3"
+      ],
+      "bytes": 43288,
+      "seconds": 3.47,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/BurstShield/SW02_Gadgets_BurstShield_Start_VAR_01"
+    },
+    "ability.shield.stop": {
+      "files": [
+        "ability-shield-stop-01.mp3",
+        "ability-shield-stop-02.mp3"
+      ],
+      "bytes": 25432,
+      "seconds": 2,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/BurstShield/SW01_Gadgets_BurstShield_Stop_VAR_02"
+    },
+    "ability.shock.beep": {
+      "files": [
+        "ability-shock-beep-01.mp3"
+      ],
+      "bytes": 4652,
+      "seconds": 0.32,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Weapons/Grenades/Shock/SW02_Weapons_Grenades_Shock_Beep_01"
+    },
+    "ability.shock.charge": {
+      "files": [
+        "ability-shock-charge-01.mp3"
+      ],
+      "bytes": 15020,
+      "seconds": 1.2,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Weapons/Grenades/Shock/SW02_Weapons_Grenades_Shock_Charge_01"
+    },
+    "ability.shock.loop": {
+      "files": [
+        "ability-shock-loop-01.mp3"
+      ],
+      "bytes": 15020,
+      "seconds": 1.2,
+      "stereo": false,
+      "loop": true,
+      "gain": 0.6,
+      "asset": "Sound/Gadgets/ShockGrenade/SW02_Gadgets_ShockGrenade_Groundeffect_Loop_01"
+    },
+    "ability.splitter.split": {
+      "files": [
+        "ability-splitter-split-01.mp3",
+        "ability-splitter-split-02.mp3"
+      ],
+      "bytes": 78280,
+      "seconds": 6.35,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/GrenadeSplitter/SW02_Gadgets_GrenadeSplitter_Split_VAR_02"
+    },
+    "ability.thermal.beeps": {
+      "files": [
+        "ability-thermal-beeps-01.mp3"
+      ],
+      "bytes": 26828,
+      "seconds": 2.18,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Weapons/Grenades/ThermalDetonator/SW01_Weapons_Grenades_ThermalDetonator_Beeps_01"
+    },
+    "ability.thermal.click": {
+      "files": [
+        "ability-thermal-click-01.mp3"
+      ],
+      "bytes": 1772,
+      "seconds": 0.08,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Weapons/Grenades/ThermalDetonator/SW01_Weapons_Grenades_ThermalDetonator_Click_01"
+    },
+    "ability.turret.beep": {
+      "files": [
+        "ability-turret-beep-01.mp3"
+      ],
+      "bytes": 3788,
+      "seconds": 0.24,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/AutoTurretAntiInfantry/SW01_Gadgets_AutoTurretAntiInfantry_InfantryBeep_01"
+    },
+    "ability.turret.chargeUp": {
+      "files": [
+        "ability-turret-chargeUp-01.mp3",
+        "ability-turret-chargeUp-02.mp3"
+      ],
+      "bytes": 32056,
+      "seconds": 2.53,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/Sentry/SW02_Gadgets_Sentry_Deploy_ChargeUp_VAR_07"
+    },
+    "ability.turret.detonation": {
+      "files": [
+        "ability-turret-detonation-01.mp3"
+      ],
+      "bytes": 16748,
+      "seconds": 1.33,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/UX/Abilities/SW02_UX_Abilities_TurretDetonation_01"
+    },
+    "ability.turret.stop": {
+      "files": [
+        "ability-turret-stop-01.mp3",
+        "ability-turret-stop-02.mp3"
+      ],
+      "bytes": 17944,
+      "seconds": 1.37,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/Sentry/SW02_Gadgets_Sentry_Deploy_DeActivate_VAR_01"
+    },
+    "ability.vanguard.pump": {
+      "files": [
+        "ability-vanguard-pump-01.mp3",
+        "ability-vanguard-pump-02.mp3",
+        "ability-vanguard-pump-03.mp3"
+      ],
+      "bytes": 24324,
+      "seconds": 1.83,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/HunterMode/SW02_Gadgets_HunterMode_ScatterGun_PumpAction_VAR_01"
+    },
+    "ability.vanguard.shot": {
+      "files": [
+        "ability-vanguard-shot-01.mp3",
+        "ability-vanguard-shot-02.mp3",
+        "ability-vanguard-shot-03.mp3"
+      ],
+      "bytes": 28932,
+      "seconds": 2.2,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Weapons/Blasters/ScatterGun/SW02_Weapons_Blaster_ScatterGun_Laser_Close_VAR_01"
+    },
+    "ability.vanguard.start": {
+      "files": [
+        "ability-vanguard-start-01.mp3",
+        "ability-vanguard-start-02.mp3",
+        "ability-vanguard-start-03.mp3"
+      ],
+      "bytes": 39588,
+      "seconds": 3.1,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/HunterMode/SW02_Gadgets_HunterMode_Start_VAR_02"
+    },
+    "ability.vanguard.stop": {
+      "files": [
+        "ability-vanguard-stop-01.mp3",
+        "ability-vanguard-stop-02.mp3",
+        "ability-vanguard-stop-03.mp3"
+      ],
+      "bytes": 25476,
+      "seconds": 1.94,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Gadgets/HunterMode/SW02_Gadgets_HunterMode_Stop_VAR_02"
+    },
+    "ambience.alien.beluga": {
+      "files": [
+        "ambience-alien-beluga-01.mp3",
+        "ambience-alien-beluga-02.mp3"
+      ],
+      "bytes": 72088,
+      "seconds": 5.89,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW02_Planets_Hoth_Shared_Ambience_BigWorld_Alien_BelugaRoar_VAR_01"
+    },
+    "ambience.alien.rayboo": {
+      "files": [
+        "ambience-alien-rayboo-01.mp3",
+        "ambience-alien-rayboo-02.mp3"
+      ],
+      "bytes": 95704,
+      "seconds": 7.86,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_BigWorld_Alien_Rayboo_VAR_02"
+    },
+    "ambience.alien.skuaCalls": {
+      "files": [
+        "ambience-alien-skuaCalls-01.mp3",
+        "ambience-alien-skuaCalls-02.mp3"
+      ],
+      "bytes": 81880,
+      "seconds": 6.67,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW02_Planets_Hoth_Shared_Ambience_BigWorld_Alien_SkuaCalls_VAR_01"
+    },
+    "ambience.alien.skuaRoar": {
+      "files": [
+        "ambience-alien-skuaRoar-01.mp3",
+        "ambience-alien-skuaRoar-02.mp3"
+      ],
+      "bytes": 99448,
+      "seconds": 8.14,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW02_Planets_Hoth_Shared_Ambience_BigWorld_Alien_SkuaRoar_VAR_01"
+    },
+    "ambience.alien.wampa": {
+      "files": [
+        "ambience-alien-wampa-01.mp3",
+        "ambience-alien-wampa-02.mp3"
+      ],
+      "bytes": 106648,
+      "seconds": 8.75,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_BigWorld_Alien_Wampa_VAR_01"
+    },
+    "ambience.bed": {
+      "files": [
+        "ambience-bed-01.mp3"
+      ],
+      "bytes": 336716,
+      "seconds": 24,
+      "stereo": true,
+      "loop": true,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW02_Planets_Hoth_Shared_Ambience_SoundArea_HothSnow_302_309_319_321_02"
+    },
+    "ambience.cave": {
+      "files": [
+        "ambience-cave-01.mp3"
+      ],
+      "bytes": 168716,
+      "seconds": 12,
+      "stereo": true,
+      "loop": true,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_SoundArea_Cave_Snow_01"
+    },
+    "ambience.ice.cracks": {
+      "files": [
+        "ambience-ice-cracks-01.mp3",
+        "ambience-ice-cracks-02.mp3"
+      ],
+      "bytes": 89656,
+      "seconds": 7.34,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_BigWorld_Ice_Cracks_VAR_01"
+    },
+    "ambience.ice.pings": {
+      "files": [
+        "ambience-ice-pings-01.mp3",
+        "ambience-ice-pings-02.mp3",
+        "ambience-ice-pings-03.mp3"
+      ],
+      "bytes": 16836,
+      "seconds": 1.21,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.4,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_BigWorld_Ice_Pings_VAR_01"
+    },
+    "ambience.wind.flutters": {
+      "files": [
+        "ambience-wind-flutters-01.mp3",
+        "ambience-wind-flutters-02.mp3"
+      ],
+      "bytes": 138328,
+      "seconds": 11.39,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_BigWorld_Wind_SnowFlutters_VAR_01"
+    },
+    "ambience.wind.gusts": {
+      "files": [
+        "ambience-wind-gusts-01.mp3",
+        "ambience-wind-gusts-02.mp3",
+        "ambience-wind-gusts-03.mp3"
+      ],
+      "bytes": 191076,
+      "seconds": 15.73,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.6,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_BigWorld_Wind_SnowGusts_VAR_01"
+    },
+    "ambience.wind.moleWind": {
+      "files": [
+        "ambience-wind-moleWind-01.mp3",
+        "ambience-wind-moleWind-02.mp3",
+        "ambience-wind-moleWind-03.mp3"
+      ],
+      "bytes": 74436,
+      "seconds": 6.04,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.6,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_BigWorld_Wind_SnowMoleWind_VAR_02"
+    },
+    "ambience.wind.wisps": {
+      "files": [
+        "ambience-wind-wisps-01.mp3",
+        "ambience-wind-wisps-02.mp3"
+      ],
+      "bytes": 117592,
+      "seconds": 9.67,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Planets/Hoth/Shared/Ambience/SW01_Planets_Hoth_Shared_Ambience_BigWorld_Wind_SnowWisps_VAR_01"
+    },
+    "blaster.a280.close": {
+      "files": [
+        "blaster-a280-close-01.mp3",
+        "blaster-a280-close-02.mp3",
+        "blaster-a280-close-03.mp3",
+        "blaster-a280-close-04.mp3",
+        "blaster-a280-close-05.mp3",
+        "blaster-a280-close-06.mp3"
+      ],
+      "bytes": 50376,
+      "seconds": 3.82,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Weapons/Blasters/A280/SW02_Weapons_Blasters_A280_Laser_Close_VAR_01"
+    },
+    "blaster.a280.distant": {
+      "files": [
+        "blaster-a280-distant-01.mp3",
+        "blaster-a280-distant-02.mp3",
+        "blaster-a280-distant-03.mp3",
+        "blaster-a280-distant-04.mp3",
+        "blaster-a280-distant-05.mp3",
+        "blaster-a280-distant-06.mp3"
+      ],
+      "bytes": 93000,
+      "seconds": 7.35,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.85,
+      "asset": "Sound/Weapons/Blasters/A280/SW02_Weapons_Blasters_A280_Laser_Distant_VAR_01"
+    },
+    "blaster.dh17.close": {
+      "files": [
+        "blaster-dh17-close-01.mp3",
+        "blaster-dh17-close-02.mp3",
+        "blaster-dh17-close-03.mp3",
+        "blaster-dh17-close-04.mp3",
+        "blaster-dh17-close-05.mp3",
+        "blaster-dh17-close-06.mp3"
+      ],
+      "bytes": 55560,
+      "seconds": 4.26,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Weapons/Blasters/DH17/SW02_Weapons_Blasters_DH17_Laser_Close_VAR_03"
+    },
+    "blaster.dh17.distant": {
+      "files": [
+        "blaster-dh17-distant-01.mp3",
+        "blaster-dh17-distant-02.mp3",
+        "blaster-dh17-distant-03.mp3",
+        "blaster-dh17-distant-04.mp3",
+        "blaster-dh17-distant-05.mp3",
+        "blaster-dh17-distant-06.mp3"
+      ],
+      "bytes": 117480,
+      "seconds": 9.4,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Blasters/DH17/SW02_Weapons_Blasters_DH17_Laser_Distant_VAR_01"
+    },
+    "blaster.dlt19.close": {
+      "files": [
+        "blaster-dlt19-close-01.mp3",
+        "blaster-dlt19-close-02.mp3",
+        "blaster-dlt19-close-03.mp3",
+        "blaster-dlt19-close-04.mp3",
+        "blaster-dlt19-close-05.mp3",
+        "blaster-dlt19-close-06.mp3"
+      ],
+      "bytes": 56712,
+      "seconds": 4.33,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.6,
+      "asset": "Sound/Weapons/Blasters/DLT19/SW02_Weapons_Blasters_DLT19_Laser_Close_VAR_02"
+    },
+    "blaster.dlt19.distant": {
+      "files": [
+        "blaster-dlt19-distant-01.mp3",
+        "blaster-dlt19-distant-02.mp3",
+        "blaster-dlt19-distant-03.mp3",
+        "blaster-dlt19-distant-04.mp3",
+        "blaster-dlt19-distant-05.mp3",
+        "blaster-dlt19-distant-06.mp3"
+      ],
+      "bytes": 53544,
+      "seconds": 4.08,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Weapons/Blasters/DLT19/SW02_Weapons_Blasters_DLT19_Laser_Distant_VAR_04"
+    },
+    "blaster.dlt19x.close": {
+      "files": [
+        "blaster-dlt19x-close-01.mp3",
+        "blaster-dlt19x-close-02.mp3",
+        "blaster-dlt19x-close-03.mp3",
+        "blaster-dlt19x-close-04.mp3"
+      ],
+      "bytes": 90320,
+      "seconds": 7.27,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Weapons/Blasters/DLT19X/SW02_Weapons_Blaster_DLT19X_Laser_Close_VAR_01"
+    },
+    "blaster.dlt19x.distant": {
+      "files": [
+        "blaster-dlt19x-distant-01.mp3",
+        "blaster-dlt19x-distant-02.mp3",
+        "blaster-dlt19x-distant-03.mp3",
+        "blaster-dlt19x-distant-04.mp3"
+      ],
+      "bytes": 98096,
+      "seconds": 7.94,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Blasters/DLT19X/SW02_Weapons_Blaster_DLT19X_Laser_Distant_VAR_01"
+    },
+    "blaster.dlt20a.close": {
+      "files": [
+        "blaster-dlt20a-close-01.mp3",
+        "blaster-dlt20a-close-02.mp3",
+        "blaster-dlt20a-close-03.mp3",
+        "blaster-dlt20a-close-04.mp3",
+        "blaster-dlt20a-close-05.mp3",
+        "blaster-dlt20a-close-06.mp3"
+      ],
+      "bytes": 65640,
+      "seconds": 5.09,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Weapons/Blasters/DLT20A/SW02_Weapons_Blasters_DLT20A_Laser_Close_VAR_03"
+    },
+    "blaster.dlt20a.distant": {
+      "files": [
+        "blaster-dlt20a-distant-01.mp3",
+        "blaster-dlt20a-distant-02.mp3",
+        "blaster-dlt20a-distant-03.mp3",
+        "blaster-dlt20a-distant-04.mp3",
+        "blaster-dlt20a-distant-05.mp3",
+        "blaster-dlt20a-distant-06.mp3"
+      ],
+      "bytes": 114024,
+      "seconds": 9.14,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Blasters/DLT20A/SW02_Weapons_Blasters_DLT20A_Laser_Distant_VAR_04"
+    },
+    "blaster.e11.close": {
+      "files": [
+        "blaster-e11-close-01.mp3",
+        "blaster-e11-close-02.mp3",
+        "blaster-e11-close-03.mp3",
+        "blaster-e11-close-04.mp3",
+        "blaster-e11-close-05.mp3",
+        "blaster-e11-close-06.mp3"
+      ],
+      "bytes": 50664,
+      "seconds": 3.85,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Weapons/Blasters/E11/SW02_Weapons_Blasters_E11_Laser_Close_VAR_08"
+    },
+    "blaster.e11.distant": {
+      "files": [
+        "blaster-e11-distant-01.mp3",
+        "blaster-e11-distant-02.mp3",
+        "blaster-e11-distant-03.mp3",
+        "blaster-e11-distant-04.mp3",
+        "blaster-e11-distant-05.mp3",
+        "blaster-e11-distant-06.mp3"
+      ],
+      "bytes": 52392,
+      "seconds": 3.97,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Blasters/E11/SW02_Weapons_Blasters_E11_Laser_Distant_VAR_06"
+    },
+    "blaster.hifi": {
+      "files": [
+        "blaster-hifi-01.mp3",
+        "blaster-hifi-02.mp3",
+        "blaster-hifi-03.mp3",
+        "blaster-hifi-04.mp3",
+        "blaster-hifi-05.mp3",
+        "blaster-hifi-06.mp3",
+        "blaster-hifi-07.mp3",
+        "blaster-hifi-08.mp3"
+      ],
+      "bytes": 23104,
+      "seconds": 1.44,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.2,
+      "asset": "Sound/Weapons/Blasters/Shared/HiFi/SW01_Weapons_Blasters_Shared_HiFi_VAR_02"
+    },
+    "blaster.noise.close": {
+      "files": [
+        "blaster-noise-close-01.mp3",
+        "blaster-noise-close-02.mp3",
+        "blaster-noise-close-03.mp3",
+        "blaster-noise-close-04.mp3",
+        "blaster-noise-close-05.mp3",
+        "blaster-noise-close-06.mp3"
+      ],
+      "bytes": 54984,
+      "seconds": 4.2,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Weapons/Blasters/Shared/Noise/Field/SW02_Weapons_Blasters_Shared_Noise_Field_Close_VAR_08"
+    },
+    "blaster.noise.distant": {
+      "files": [
+        "blaster-noise-distant-01.mp3",
+        "blaster-noise-distant-02.mp3",
+        "blaster-noise-distant-03.mp3",
+        "blaster-noise-distant-04.mp3",
+        "blaster-noise-distant-05.mp3",
+        "blaster-noise-distant-06.mp3"
+      ],
+      "bytes": 213384,
+      "seconds": 17.37,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.6,
+      "asset": "Sound/Weapons/Blasters/Shared/Noise/Field/SW02_Weapons_Blasters_Shared_Noise_Field_Distant_VAR_04"
+    },
+    "blaster.passby": {
+      "files": [
+        "blaster-passby-01.mp3",
+        "blaster-passby-02.mp3",
+        "blaster-passby-03.mp3",
+        "blaster-passby-04.mp3",
+        "blaster-passby-05.mp3",
+        "blaster-passby-06.mp3",
+        "blaster-passby-07.mp3",
+        "blaster-passby-08.mp3"
+      ],
+      "bytes": 26272,
+      "seconds": 1.68,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Weapons/Projectiles/BlasterRifles/SW01_Weapons_Projectiles_BlasterRifles_PassBy_Close_VAR_02"
+    },
+    "blaster.reflection": {
+      "files": [
+        "blaster-reflection-01.mp3",
+        "blaster-reflection-02.mp3",
+        "blaster-reflection-03.mp3",
+        "blaster-reflection-04.mp3"
+      ],
+      "bytes": 160304,
+      "seconds": 13.1,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.35,
+      "asset": "Sound/Weapons/Blasters/Shared/Reflection/Field/SW02_Weapons_Blasters_Shared_Reflection_Field_VAR_03"
+    },
+    "blaster.rk3.close": {
+      "files": [
+        "blaster-rk3-close-01.mp3",
+        "blaster-rk3-close-02.mp3",
+        "blaster-rk3-close-03.mp3",
+        "blaster-rk3-close-04.mp3",
+        "blaster-rk3-close-05.mp3",
+        "blaster-rk3-close-06.mp3"
+      ],
+      "bytes": 87816,
+      "seconds": 6.93,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Weapons/Blasters/RK3/SW02_Weapons_Blasters_RK3_Laser_Close_VAR_02"
+    },
+    "blaster.rk3.distant": {
+      "files": [
+        "blaster-rk3-distant-01.mp3",
+        "blaster-rk3-distant-02.mp3",
+        "blaster-rk3-distant-03.mp3",
+        "blaster-rk3-distant-04.mp3",
+        "blaster-rk3-distant-05.mp3",
+        "blaster-rk3-distant-06.mp3"
+      ],
+      "bytes": 105672,
+      "seconds": 8.42,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Blasters/RK3/SW02_Weapons_Blasters_RK3_Laser_Distant_VAR_02"
+    },
+    "blaster.rt97c.close": {
+      "files": [
+        "blaster-rt97c-close-01.mp3",
+        "blaster-rt97c-close-02.mp3",
+        "blaster-rt97c-close-03.mp3",
+        "blaster-rt97c-close-04.mp3",
+        "blaster-rt97c-close-05.mp3",
+        "blaster-rt97c-close-06.mp3"
+      ],
+      "bytes": 85512,
+      "seconds": 6.77,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.6,
+      "asset": "Sound/Weapons/Blasters/RT97C/SW02_Weapons_Blasters_RT96C_Laser_Close_VAR_06"
+    },
+    "blaster.rt97c.distant": {
+      "files": [
+        "blaster-rt97c-distant-01.mp3",
+        "blaster-rt97c-distant-02.mp3",
+        "blaster-rt97c-distant-03.mp3",
+        "blaster-rt97c-distant-04.mp3",
+        "blaster-rt97c-distant-05.mp3",
+        "blaster-rt97c-distant-06.mp3"
+      ],
+      "bytes": 97320,
+      "seconds": 7.77,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Weapons/Blasters/RT97C/SW02_Weapons_Blasters_RT96C_Laser_Distant_VAR_03"
+    },
+    "cloth.crouchDown": {
+      "files": [
+        "cloth-crouchDown-01.mp3",
+        "cloth-crouchDown-02.mp3",
+        "cloth-crouchDown-03.mp3",
+        "cloth-crouchDown-04.mp3"
+      ],
+      "bytes": 53168,
+      "seconds": 4.16,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Characters/Stormtrooper/Foley/1P/SW01_Characters_Stormtrooper_Foley_Clothes_1P_CrouchDown_VAR_02"
+    },
+    "cloth.crouchUp": {
+      "files": [
+        "cloth-crouchUp-01.mp3",
+        "cloth-crouchUp-02.mp3",
+        "cloth-crouchUp-03.mp3",
+        "cloth-crouchUp-04.mp3"
+      ],
+      "bytes": 46832,
+      "seconds": 3.66,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Characters/Stormtrooper/Foley/1P/SW01_Characters_Stormtrooper_Foley_Clothes_1P_CrouchUp_VAR_02"
+    },
+    "cloth.jump": {
+      "files": [
+        "cloth-jump-01.mp3",
+        "cloth-jump-02.mp3",
+        "cloth-jump-03.mp3",
+        "cloth-jump-04.mp3"
+      ],
+      "bytes": 47696,
+      "seconds": 3.74,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/Characters/Stormtrooper/Foley/1P/SW01_Characters_Stormtrooper_Foley_Clothes_1P_Jump_VAR_03"
+    },
+    "cloth.land": {
+      "files": [
+        "cloth-land-01.mp3",
+        "cloth-land-02.mp3",
+        "cloth-land-03.mp3",
+        "cloth-land-04.mp3"
+      ],
+      "bytes": 55760,
+      "seconds": 4.39,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Characters/Stormtrooper/Foley/1P/SW01_Characters_Stormtrooper_Foley_Clothes_1P_Land_VAR_02"
+    },
+    "death.fall": {
+      "files": [
+        "death-fall-01.mp3",
+        "death-fall-02.mp3",
+        "death-fall-03.mp3",
+        "death-fall-04.mp3"
+      ],
+      "bytes": 74480,
+      "seconds": 5.94,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Characters/Stormtrooper/Foley/SW02_Characters_Stormtrooper_Foley_BodyFall_VAR_01"
+    },
+    "death.scream": {
+      "files": [
+        "death-scream-01.mp3",
+        "death-scream-02.mp3",
+        "death-scream-03.mp3",
+        "death-scream-04.mp3",
+        "death-scream-05.mp3",
+        "death-scream-06.mp3",
+        "death-scream-07.mp3",
+        "death-scream-08.mp3"
+      ],
+      "bytes": 161344,
+      "seconds": 12.93,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.9,
+      "asset": "Sound/Characters/Shared/Emotes/Male/DeathScreams/SW01_Characters_Shared_Emotes_Male_DeathScreams_001"
+    },
+    "hit.first": {
+      "files": [
+        "hit-first-01.mp3",
+        "hit-first-02.mp3"
+      ],
+      "bytes": 43720,
+      "seconds": 3.44,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.5,
+      "asset": "Sound/UX/Damage/Received/Bullet/SW02_UX_Damage_Received_Bullet_FirstHit_VAR_02"
+    },
+    "hit.hit": {
+      "files": [
+        "hit-hit-01.mp3",
+        "hit-hit-02.mp3",
+        "hit-hit-03.mp3",
+        "hit-hit-04.mp3",
+        "hit-hit-05.mp3",
+        "hit-hit-06.mp3"
+      ],
+      "bytes": 15240,
+      "seconds": 0.91,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.6,
+      "asset": "Sound/UX/Damage/Received/Bullet/SW02_UX_Damage_Received_Bullet_Hit_VAR_03"
+    },
+    "hit.kill": {
+      "files": [
+        "hit-kill-01.mp3"
+      ],
+      "bytes": 13580,
+      "seconds": 1.07,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/UX/Shared/Kill/SW02_UX_Shared_Kill_Confirmation_UI_Add_Short_VAR_02"
+    },
+    "hit.killed": {
+      "files": [
+        "hit-killed-01.mp3",
+        "hit-killed-02.mp3",
+        "hit-killed-03.mp3",
+        "hit-killed-04.mp3"
+      ],
+      "bytes": 37040,
+      "seconds": 2.83,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/UX/Damage/Received/Bullet/SW02_UX_Damage_Recieved_Bullet_Killed_VAR_05"
+    },
+    "music.eor.draw": {
+      "files": [
+        "music-eor-draw-01.mp3"
+      ],
+      "bytes": 226844,
+      "seconds": 16.15,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Music/MP/EOR/SW02_Music_MP_EOR_Draw_01"
+    },
+    "music.eor.lose": {
+      "files": [
+        "music-eor-lose-01.mp3"
+      ],
+      "bytes": 224492,
+      "seconds": 15.98,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Music/MP/EOR/SW02_Music_MP_EOR_Lose_01"
+    },
+    "music.eor.win": {
+      "files": [
+        "music-eor-win-01.mp3"
+      ],
+      "bytes": 226172,
+      "seconds": 16.1,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Music/MP/EOR/SW02_Music_MP_EOR_Win_01"
+    },
+    "music.high": {
+      "files": [
+        "music-high-01.mp3",
+        "music-high-02.mp3"
+      ],
+      "bytes": 1297720,
+      "seconds": 92.57,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Music/MP/Continuous/HighIntensity/SW02_Music_MP_Continuous_HighIntensity_07"
+    },
+    "music.loading.intro": {
+      "files": [
+        "music-loading-intro-01.mp3"
+      ],
+      "bytes": 58508,
+      "seconds": 4.12,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Music/Loading/Hoth/SW02_Music_Loading_Hoth_Loop_01_VAR"
+    },
+    "music.loading.loop": {
+      "files": [
+        "music-loading-loop-01.mp3"
+      ],
+      "bytes": 1780172,
+      "seconds": 127.09,
+      "stereo": true,
+      "loop": true,
+      "gain": 1,
+      "asset": "Sound/Music/Loading/Hoth/SW02_Music_Loading_Hoth_Loop_01_VAR"
+    },
+    "music.medium": {
+      "files": [
+        "music-medium-01.mp3",
+        "music-medium-02.mp3"
+      ],
+      "bytes": 1190848,
+      "seconds": 84.92,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Music/MP/Continuous/MediumIntensity/SW02_Music_MP_Continuous_MediumIntensity_23"
+    },
+    "music.sting.defeat": {
+      "files": [
+        "music-sting-defeat-01.mp3"
+      ],
+      "bytes": 46748,
+      "seconds": 3.28,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/UX/EOR/SW02_UX_EOR_Defeat_02"
+    },
+    "music.sting.victory": {
+      "files": [
+        "music-sting-victory-01.mp3"
+      ],
+      "bytes": 46748,
+      "seconds": 3.28,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/UX/EOR/SW02_UX_EOR_Victory_02"
+    },
+    "music.tension.intro": {
+      "files": [
+        "music-tension-intro-01.mp3"
+      ],
+      "bytes": 169388,
+      "seconds": 12.04,
+      "stereo": true,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Music/MP/Tension/SW02_Music_MP_Tension_Intro_01"
+    },
+    "music.tension.loop": {
+      "files": [
+        "music-tension-loop-01.mp3"
+      ],
+      "bytes": 831980,
+      "seconds": 59.36,
+      "stereo": true,
+      "loop": true,
+      "gain": 1,
+      "asset": "Sound/Music/MP/Tension/SW02_Music_MP_Tension_6chLoop_02"
+    },
+    "overheat.coolFail": {
+      "files": [
+        "overheat-coolFail-01.mp3",
+        "overheat-coolFail-02.mp3",
+        "overheat-coolFail-03.mp3",
+        "overheat-coolFail-04.mp3"
+      ],
+      "bytes": 111632,
+      "seconds": 9.07,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Overheat/SW01_Weapons_OverheatActiveCoolingFail_VAR_06"
+    },
+    "overheat.coolSuccess": {
+      "files": [
+        "overheat-coolSuccess-01.mp3",
+        "overheat-coolSuccess-02.mp3",
+        "overheat-coolSuccess-03.mp3",
+        "overheat-coolSuccess-04.mp3"
+      ],
+      "bytes": 46256,
+      "seconds": 3.59,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Overheat/SW02_Weapons_OverheatActiveCoolingSuccess_VAR_01"
+    },
+    "overheat.manual": {
+      "files": [
+        "overheat-manual-01.mp3",
+        "overheat-manual-02.mp3",
+        "overheat-manual-03.mp3",
+        "overheat-manual-04.mp3"
+      ],
+      "bytes": 70736,
+      "seconds": 5.63,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Weapons/Overheat/SW02_Weapons_Overheat_ManualCooling_VAR_04"
+    },
+    "overheat.overheated": {
+      "files": [
+        "overheat-overheated-01.mp3",
+        "overheat-overheated-02.mp3",
+        "overheat-overheated-03.mp3",
+        "overheat-overheated-04.mp3"
+      ],
+      "bytes": 98096,
+      "seconds": 7.92,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.8,
+      "asset": "Sound/Weapons/Overheat/SW02_Weapons_Overheat_Overheated_VAR_03"
+    },
+    "overheat.reset": {
+      "files": [
+        "overheat-reset-01.mp3",
+        "overheat-reset-02.mp3",
+        "overheat-reset-03.mp3",
+        "overheat-reset-04.mp3"
+      ],
+      "bytes": 49424,
+      "seconds": 3.88,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Weapons/Overheat/SW02_Weapons_Overheat_Reset_VAR_08"
+    },
+    "overheat.warning": {
+      "files": [
+        "overheat-warning-01.mp3",
+        "overheat-warning-02.mp3",
+        "overheat-warning-03.mp3",
+        "overheat-warning-04.mp3",
+        "overheat-warning-05.mp3"
+      ],
+      "bytes": 25564,
+      "seconds": 1.8,
+      "stereo": false,
+      "loop": false,
+      "gain": 0.7,
+      "asset": "Sound/Weapons/Overheat/SW02_Weapons_Overheat_Warning_VAR_05"
+    },
+    "step.jog": {
+      "files": [
+        "step-jog-01.mp3",
+        "step-jog-02.mp3",
+        "step-jog-03.mp3",
+        "step-jog-04.mp3",
+        "step-jog-05.mp3",
+        "step-jog-06.mp3",
+        "step-jog-07.mp3",
+        "step-jog-08.mp3"
+      ],
+      "bytes": 68032,
+      "seconds": 5.17,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Characters/Shared/Footsteps/Snow/1P/SW01_Characters_Shared_Footsteps_Snow_1P_Jog_VAR_02"
+    },
+    "step.jump": {
+      "files": [
+        "step-jump-01.mp3",
+        "step-jump-02.mp3",
+        "step-jump-03.mp3",
+        "step-jump-04.mp3"
+      ],
+      "bytes": 48848,
+      "seconds": 3.81,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Characters/Shared/Footsteps/Snow/1P/SW01_Characters_Shared_Footsteps_Snow_1P_Jump_VAR_01"
+    },
+    "step.land": {
+      "files": [
+        "step-land-01.mp3",
+        "step-land-02.mp3",
+        "step-land-03.mp3",
+        "step-land-04.mp3"
+      ],
+      "bytes": 39344,
+      "seconds": 3.01,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Characters/Shared/Footsteps/Snow/1P/SW01_Characters_Shared_Footsteps_Snow_1P_Land_VAR_01"
+    },
+    "step.scuff": {
+      "files": [
+        "step-scuff-01.mp3",
+        "step-scuff-02.mp3",
+        "step-scuff-03.mp3",
+        "step-scuff-04.mp3"
+      ],
+      "bytes": 39056,
+      "seconds": 3.01,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Characters/Shared/Footsteps/Snow/1P/SW01_Characters_Shared_Footsteps_Snow_1P_Scuff_VAR_02"
+    },
+    "step.sprint": {
+      "files": [
+        "step-sprint-01.mp3",
+        "step-sprint-02.mp3",
+        "step-sprint-03.mp3",
+        "step-sprint-04.mp3",
+        "step-sprint-05.mp3",
+        "step-sprint-06.mp3",
+        "step-sprint-07.mp3",
+        "step-sprint-08.mp3"
+      ],
+      "bytes": 38080,
+      "seconds": 2.67,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Characters/Shared/Footsteps/Snow/1P/SW01_Characters_Shared_Footsteps_Snow_1P_Sprint_VAR_02"
+    },
+    "step.walk": {
+      "files": [
+        "step-walk-01.mp3",
+        "step-walk-02.mp3",
+        "step-walk-03.mp3",
+        "step-walk-04.mp3",
+        "step-walk-05.mp3",
+        "step-walk-06.mp3",
+        "step-walk-07.mp3",
+        "step-walk-08.mp3"
+      ],
+      "bytes": 90496,
+      "seconds": 7.02,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/Characters/Shared/Footsteps/Snow/1P/SW01_Characters_Shared_Footsteps_Snow_1P_Walk_VAR_02"
+    },
+    "vo.imperial.capping": {
+      "files": [
+        "vo-imperial-capping-01.mp3",
+        "vo-imperial-capping-02.mp3"
+      ],
+      "bytes": 33208,
+      "seconds": 2.66,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Imperial/CPSeq1/CP1/SW02_VO_MP_Battles_Hoth_Imperial_CPSeq1_CP1_Capping"
+    },
+    "vo.imperial.captured": {
+      "files": [
+        "vo-imperial-captured-01.mp3"
+      ],
+      "bytes": 42668,
+      "seconds": 3.5,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Imperial/CPSeq1/CP1/SW02_VO_MP_Battles_Hoth_Imperial_CPSeq1_CP1_Captured1Left"
+    },
+    "vo.imperial.timeLow": {
+      "files": [
+        "vo-imperial-timeLow-01.mp3"
+      ],
+      "bytes": 42380,
+      "seconds": 3.48,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Imperial/IntSeq1/IntA/SW02_VO_MP_Battles_Hoth_Imperial_IntSeq1_IntA_TimeLow"
+    },
+    "vo.imperial.uplinkActivate": {
+      "files": [
+        "vo-imperial-uplinkActivate-01.mp3",
+        "vo-imperial-uplinkActivate-02.mp3"
+      ],
+      "bytes": 46744,
+      "seconds": 3.79,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Imperial/IntSeq1/IntA/SW02_VO_MP_Battles_Hoth_Imperial_IntSeq1_IntA_Activate"
+    },
+    "vo.imperial.uplinkDeactivate": {
+      "files": [
+        "vo-imperial-uplinkDeactivate-01.mp3",
+        "vo-imperial-uplinkDeactivate-02.mp3"
+      ],
+      "bytes": 45592,
+      "seconds": 3.7,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Imperial/IntSeq1/IntA/SW02_VO_MP_Battles_Hoth_Imperial_IntSeq1_IntA_DeActivate"
+    },
+    "vo.imperial.walkerDamaged": {
+      "files": [
+        "vo-imperial-walkerDamaged-01.mp3",
+        "vo-imperial-walkerDamaged-02.mp3"
+      ],
+      "bytes": 23704,
+      "seconds": 1.87,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Imperial/WlkSeq1/SW02_VO_MP_Battles_Hoth_Imperial_WlkSeq1_WlkDmg1Left"
+    },
+    "vo.imperial.walkerDown": {
+      "files": [
+        "vo-imperial-walkerDown-01.mp3"
+      ],
+      "bytes": 22508,
+      "seconds": 1.82,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Imperial/WlkSeq1/SW02_VO_MP_Battles_Hoth_Imperial_WlkSeq1_WlkDestroy1Left"
+    },
+    "vo.rebellion.capping": {
+      "files": [
+        "vo-rebellion-capping-01.mp3",
+        "vo-rebellion-capping-02.mp3"
+      ],
+      "bytes": 37240,
+      "seconds": 3,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Rebellion/CPSeq1/CP1/SW02_VO_MP_Battles_Hoth_Rebellion_CPSeq1_CP1_Capping"
+    },
+    "vo.rebellion.captured": {
+      "files": [
+        "vo-rebellion-captured-01.mp3"
+      ],
+      "bytes": 49004,
+      "seconds": 4.03,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Rebellion/CPSeq1/CP1/SW02_VO_MP_Battles_Hoth_Rebellion_CPSeq1_CP1_Captured1Left"
+    },
+    "vo.rebellion.timeLow": {
+      "files": [
+        "vo-rebellion-timeLow-01.mp3"
+      ],
+      "bytes": 34892,
+      "seconds": 2.86,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Rebellion/IntSeq1/IntA/SW02_VO_MP_Battles_Hoth_Rebellion_IntSeq1_IntA_TimeLow"
+    },
+    "vo.rebellion.uplinkActivate": {
+      "files": [
+        "vo-rebellion-uplinkActivate-01.mp3",
+        "vo-rebellion-uplinkActivate-02.mp3"
+      ],
+      "bytes": 49048,
+      "seconds": 3.98,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Rebellion/IntSeq1/IntA/SW02_VO_MP_Battles_Hoth_Rebellion_IntSeq1_IntA_Activate"
+    },
+    "vo.rebellion.uplinkDeactivate": {
+      "files": [
+        "vo-rebellion-uplinkDeactivate-01.mp3",
+        "vo-rebellion-uplinkDeactivate-02.mp3"
+      ],
+      "bytes": 51640,
+      "seconds": 4.2,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Rebellion/IntSeq1/IntA/SW02_VO_MP_Battles_Hoth_Rebellion_IntSeq1_IntA_DeActivate"
+    },
+    "vo.rebellion.walkerDamaged": {
+      "files": [
+        "vo-rebellion-walkerDamaged-01.mp3",
+        "vo-rebellion-walkerDamaged-02.mp3"
+      ],
+      "bytes": 34072,
+      "seconds": 2.74,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Rebellion/WlkSeq1/SW02_VO_MP_Battles_Hoth_Rebellion_WlkSeq1_WlkDmg1Left"
+    },
+    "vo.rebellion.walkerDown": {
+      "files": [
+        "vo-rebellion-walkerDown-01.mp3"
+      ],
+      "bytes": 21644,
+      "seconds": 1.75,
+      "stereo": false,
+      "loop": false,
+      "gain": 1,
+      "asset": "Sound/VO/MP/Battles/Hoth/Rebellion/WlkSeq1/SW02_VO_MP_Battles_Hoth_Rebellion_WlkSeq1_WlkDestroy1Left"
+    }
+  }
+}

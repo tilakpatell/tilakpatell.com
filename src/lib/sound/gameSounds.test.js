@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { GAME_SOUNDS, SITUATIONS, lineFor, soundFor } from './gameSounds';
+import PUBLISHED from '../../data/galaxyAssets.json';
+import { onSite } from '../../../scripts/lib/asset-manifest.mjs';
 
 // the modules whose names the map uses, read as text (a test may read what
 // a module in lib may not import)
@@ -56,13 +59,23 @@ describe('the game’s sounds, by the site’s names', () => {
     for (const n of ['surface.saber:ignite', 'surface.saber:clash', 'surface.combat:force', 'universe.gunSound:blaster', 'universe.impactSound', 'surface.step:snow', 'universe.shipEngine:xwing', 'line.luke', 'line.stormtrooper']) expect(GAME_SOUNDS, n).toHaveProperty([n]);
   });
 
-  it('every game file is null until the audio is in the bucket', () => {
+  // (a game file named here is one the Hoth set made: public/audio/galaxy/bf2017/, or published from it)
+  const PUBLIC = { publicDir: fileURLToPath(new URL('../../../public', import.meta.url)), manifest: PUBLISHED };
+  const onDisk = (f) => onSite(`audio/galaxy/bf2017/${f}`, PUBLIC);
+
+  it('every game file is null until its audio is here, and names a file of the site’s when it is', () => {
+    let named = 0;
     for (const [name, v] of Object.entries(GAME_SOUNDS)) {
       if (name.startsWith('line.')) {
         expect(Object.keys(v)).toEqual(SITUATIONS);
         for (const f of Object.values(v)) expect(f, name).toBeNull();
-      } else expect(v, name).toBeNull();
+      } else if (v !== null) {
+        expect(onDisk(v), `${name}: ${v}`).toBe(true);
+        named += 1;
+      }
     }
+    expect(named).toBeGreaterThanOrEqual(4);
+    expect(soundFor('universe.gunSound:blaster', onDisk)).toBe('/audio/galaxy/bf2017/blaster-e11-close-01.mp3');
   });
 });
 
@@ -81,7 +94,8 @@ describe('soundFor', () => {
     expect(soundFor('surface.nothing', has, table)).toBeNull();
     expect(lineFor('luke', 'kill', has, table)).toBeNull();
     expect(lineFor('vader', 'taunt', has, table)).toBeNull();
-    // and with the real table, today, nothing at all
-    for (const name of Object.keys(GAME_SOUNDS)) expect(soundFor(name, () => true)).toBeNull();
+    // and with the real table, only the names the Hoth set gave a file
+    for (const name of Object.keys(GAME_SOUNDS)) if (GAME_SOUNDS[name] === null) expect(soundFor(name, () => true), name).toBeNull();
+    expect(soundFor('surface.combat:hit', () => true)).toBe('/audio/galaxy/bf2017/hit-hit-01.mp3');
   });
 });
