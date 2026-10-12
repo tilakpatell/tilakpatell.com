@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { writeInstances } from '../../../../lib/level/instances.js';
 import { lodAt } from '../../../../lib/level/lod.js';
-import { createLevelGpu } from './levelGpu.js';
+import { createLevelGpu, localCameraOf } from './levelGpu.js';
 import { createLevelScene } from './levelScene.js';
 
 // a pack of three meshes over two cells: a crate (two LOD files), a hut, and a
@@ -130,5 +130,34 @@ describe('levelScene.js’s third path', () => {
       expect(level.root.name).toBe('level');
       level.dispose();
     }
+  });
+});
+
+describe('localCameraOf', () => {
+  it('moves the camera into the frame of a level group placed at a pack origin and turned by its yaw', () => {
+    const root = new THREE.Group();
+    root.position.set(100, 5, -40);
+    root.rotation.y = -0.7;
+    const camera = new THREE.PerspectiveCamera(70, 2, 0.1, 500);
+    camera.position.set(130, 7, -60);
+    camera.rotation.y = 0.3;
+    camera.updateMatrixWorld();
+    camera.updateProjectionMatrix();
+    const local = localCameraOf(root, camera);
+    // (a point the world camera sees at a place, the local camera sees at the same place in the group's frame)
+    const world = new THREE.Vector3(120, 6, -55);
+    const seenByWorld = world.clone().applyMatrix4(camera.matrixWorldInverse);
+    const inRoot = root.worldToLocal(world.clone());
+    const seenByLocal = inRoot.applyMatrix4(local.matrixWorldInverse);
+    expect(seenByLocal.toArray().map((v) => +v.toFixed(6))).toEqual(seenByWorld.toArray().map((v) => +v.toFixed(6)));
+    expect(local.projectionMatrix.equals(camera.projectionMatrix)).toBe(true);
+    expect(local.near).toBe(0.1);
+    expect(local.far).toBe(500);
+    // (a group at the origin: the camera as it is)
+    const same = localCameraOf(new THREE.Group(), camera);
+    expect(same.matrixWorld.equals(camera.matrixWorld)).toBe(true);
+    // (three may not recompute it from a parent it has none of)
+    same.updateMatrixWorld();
+    expect(same.matrixWorld.equals(camera.matrixWorld)).toBe(true);
   });
 });

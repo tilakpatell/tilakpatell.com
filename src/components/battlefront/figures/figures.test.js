@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
 import { AITRAJECTORY_TURN } from './facing.js';
-import { createFigures } from './figures.js';
+import { BODY_MIDDLE, BODY_REACH, createFigures, cullBy } from './figures.js';
 import { createHeld, weaponUrl } from './held.js';
 
 const settle = async () => {
@@ -274,5 +274,48 @@ describe('a soldier’s stride against the ground', () => {
     expect(f.clip).toBe('run');
     expect(f.speeds.get('run')).toBe(null);
     expect(f.actions.get('run').timeScale).toBe(1);
+  });
+});
+
+describe('cullBy', () => {
+  const part = (size, y) => {
+    const g = new THREE.BoxGeometry(size, size, size);
+    g.translate(0, y, 0);
+    const m = new THREE.SkinnedMesh(g, new THREE.MeshStandardMaterial());
+    m.frustumCulled = false;
+    return m;
+  };
+  it('culls every part of a body by one sphere round the body, carried into each part’s own frame', () => {
+    const model = new THREE.Group();
+    const glove = part(0.2, 1.2);
+    const torso = part(0.8, 1);
+    // (a part on a node in centimetres, off to one side)
+    const holder = new THREE.Group();
+    holder.scale.setScalar(0.01);
+    holder.position.set(0.5, 0, 0);
+    const cape = part(80, 100);
+    holder.add(cape);
+    model.add(glove, torso, holder);
+    const whole = cullBy(model);
+    expect(whole.radius).toBe(BODY_REACH);
+    expect(whole.center.toArray()).toEqual(BODY_MIDDLE);
+    for (const o of [glove, torso, cape]) expect(o.frustumCulled).toBe(true);
+    expect(glove.boundingSphere.radius).toBe(BODY_REACH);
+    expect(glove.boundingSphere.center.toArray()).toEqual(BODY_MIDDLE);
+    expect(cape.boundingSphere.radius).toBeCloseTo(BODY_REACH * 100, 6);
+    expect(cape.boundingSphere.center.toArray().map((v) => Math.round(v))).toEqual([-50, 100, 0]);
+    // (the same sphere in the world, whichever part asks)
+    const s = cape.boundingSphere.clone().applyMatrix4(cape.matrixWorld);
+    expect(s.center.toArray().map((v) => +v.toFixed(6))).toEqual(BODY_MIDDLE);
+    expect(s.radius).toBeCloseTo(BODY_REACH, 6);
+  });
+  it('scales with a body drawn larger, and leaves a body with no skinned part alone', () => {
+    const model = new THREE.Group();
+    model.scale.setScalar(2);
+    model.add(part(1, 1));
+    expect(cullBy(model).radius).toBeCloseTo(BODY_REACH * 2, 6);
+    const bare = new THREE.Group();
+    bare.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    expect(cullBy(bare)).toBeNull();
   });
 });

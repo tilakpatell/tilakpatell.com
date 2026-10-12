@@ -54,6 +54,23 @@ export function cloneScene(gltf) {
   let skinned = false;
   gltf.scene.traverse((o) => o.isSkinnedMesh && (skinned = true));
   const copy = skinned ? cloneSkinned(gltf.scene) : gltf.scene.clone(true);
+  // (SkeletonUtils gives every skinned mesh of the copy a Skeleton of its
+  // own, so a body of six parts on one skin had six: six bone-matrix
+  // updates and six bone textures a frame for one pose. The parts that
+  // shared a skeleton in the original share one in the copy: the copy's
+  // tree is the original's in the same order, so the pairs walk together)
+  if (skinned) {
+    const shared = new Map(); // the original's skeleton → this copy's
+    const walk = (a, b) => {
+      if (b.isSkinnedMesh && a.skeleton) {
+        const s = shared.get(a.skeleton);
+        if (s) b.bind(s, b.bindMatrix);
+        else shared.set(a.skeleton, b.skeleton);
+      }
+      for (let i = 0; i < a.children.length && i < b.children.length; i++) walk(a.children[i], b.children[i]);
+    };
+    walk(gltf.scene, copy);
+  }
   // (clone shares materials with the original; each copy gets its own, one for
   // each the original has, so meshes that shared a material still do: GLTFLoader
   // gives every primitive of a glTF material the one Material, and a ship of 30

@@ -44,6 +44,38 @@ export const KINDS = { dark: 'snowtrooper', light: 'hothtrooper' };
 export const bodyUrl = (kind) => `${PACK_DIR}/crew/${kind}.lod1.glb`;
 const ONCE = new Set(['die.fwd', 'die.back', 'die', 'dodge.front', 'hit.chest', 'crouch']);
 
+// A figure's parts are culled by one sphere round the whole body, as the
+// game culls a soldier by its bounds. three's own bound of a skinned part
+// is its bind pose (a glove's, which the arm swings out of), so the parts
+// were drawn unculled: every figure into every pass, on screen or not (17
+// soldiers were 126 draws in each cascade and the view, more than the
+// level). The clips play in place while the sim moves the body, so a
+// sphere of the whole body's bind pose, half as big again and never under
+// BODY_REACH, holds every pose, a fallen one too.
+export const BODY_REACH = 2.5;
+export const BODY_MIDDLE = [0, 1, 0]; // m above the body's feet, in the body's own frame
+const _at = new THREE.Vector3();
+const _scale = new THREE.Vector3();
+const _inv = new THREE.Matrix4();
+export function cullBy(model) {
+  const parts = [];
+  model.traverse((o) => o.isSkinnedMesh && parts.push(o));
+  if (!parts.length) return null;
+  // (the one sphere, the body's middle at BODY_REACH, carried into each
+  // part's own frame: a part's node may sit off the body's root, or in
+  // centimetres, and three tests a part's sphere through that node)
+  model.updateMatrixWorld(true);
+  const middle = _at.fromArray(BODY_MIDDLE).applyMatrix4(model.matrixWorld);
+  const whole = new THREE.Sphere(middle.clone(), BODY_REACH * (model.getWorldScale(_scale).x || 1));
+  for (const o of parts) {
+    _inv.copy(o.matrixWorld).invert();
+    const k = o.getWorldScale(_scale).x || 1;
+    o.boundingSphere = new THREE.Sphere(whole.center.clone().applyMatrix4(_inv), whole.radius / k);
+    o.frustumCulled = true;
+  }
+  return whole;
+}
+
 const lerp = (a, b, t) => a + (b - a) * t;
 const lerpAngle = (a, b, t) => {
   let d = b - a;
@@ -74,9 +106,9 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
           if (o.isMesh) {
             o.castShadow = true;
             o.receiveShadow = true;
-            o.frustumCulled = false;
           }
         });
+        cullBy(model);
         f.model = model;
         f.clips = clips;
         f.sockets = sockets ?? null;

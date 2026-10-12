@@ -28,6 +28,7 @@ import { settle } from '../lib/settle';
 import { BLOOM } from '../lib/three/bloom';
 import { NODE_PASSES, temporal } from '../lib/three/light/post';
 import { setMipState } from '../lib/three/mipBias';
+import { guardPipelines } from '../lib/three/pipelineGuard';
 import { makeGfx } from './gfx';
 import { createJitter } from '../lib/three/jitter';
 
@@ -124,7 +125,7 @@ export async function adapterLimits(gpu = typeof navigator !== 'undefined' ? nav
 
 // (hdr, lane H1: a half-float canvas, which three configures with the
 // 'extended' tone-mapping mode, so an HDR display shows the chain's range)
-export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false, reversedDepth = null, temporal = true, hdr = false } = {}) {
+export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false, reversedDepth = null, temporal = true, hdr = false, invalidate = null } = {}) {
   const { WebGPURenderer } = await import('three/webgpu');
   // A device is made with its adapter's own limits where the defaults are
   // tighter than the chip: a post chain's five colour targets cost more a
@@ -140,6 +141,9 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   renderer.toneMappingExposure = exposure;
   if (alpha) renderer.setClearColor(0x000000, 0);
   await renderer.init();
+  // (no frame waits for a pipeline: lib/three/pipelineGuard, the node
+  // renderer's frame guard; a WebGL 2 backend is left alone by it)
+  const guard = guardPipelines(renderer, { invalidate });
   // (three's renderer, asked for WebGPU and finding no adapter, quietly
   // draws on its WebGL 2 backend: that's the nodes-webgl kind, whatever
   // was asked, and the canvas is what says it's lost)
@@ -183,6 +187,7 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
     isLost: () => lost,
     release: () => {
       released = true;
+      guard?.dispose();
       jitter?.dispose();
       if (onWebGL) canvas.removeEventListener('webglcontextlost', onContextLost);
     },

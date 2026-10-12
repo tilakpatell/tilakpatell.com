@@ -56,6 +56,7 @@ export function createLevel({
   renderer = null,
   world = "hoth",
   ground = true,
+  gpuScene = false,
   onCell = () => {},
   onDrop = () => {},
   deps = {},
@@ -92,11 +93,17 @@ export function createLevel({
       fetchBytes,
       sizes: pack.tex,
     });
+    // (GPU-first lane N1's scene where asked and the renderer draws
+    // indirect: the rows culled by compute, one indirect draw a material
+    // group, the static groups in a render bundle; elsewhere lane L's
+    // instanced path, as before)
     level = d.createLevelScene({
       scene: group,
       pack,
       loadGltf: loader.load,
       tier,
+      gpuScene,
+      renderer: gpuScene ? renderer : null,
     });
     stream = d.createLevelStream({
       pack,
@@ -148,6 +155,10 @@ export function createLevel({
     loaded: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,
     stats: () => level?.stats() ?? { tris: 0, calls: 0, instances: 0 },
+    // (the GPU scene's frame: the occluders' depth, the pyramid and the cull
+    // before the scene is drawn, the queries read after; nothing on the other paths)
+    beforeRender: (camera) => level?.beforeRender?.(camera),
+    afterRender: () => level?.afterRender?.(),
     dispose() {
       gone = true;
       stream?.dispose();

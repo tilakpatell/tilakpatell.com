@@ -34,6 +34,31 @@ const STEP = 8;
 
 export const canDrawGpuScene = (renderer) => Boolean(renderer) && hasIndirect(renderer);
 
+// The camera in the level's own frame. The rows are in the pack's frame,
+// and the Battlefront map puts the level group at the pack's origin, turned
+// by its yaw (map/level.js), while the cull and the occluders' prepass read
+// a camera in the frame of the rows: given the world's camera they culled
+// everything (Hoth: 5,813 of 6,050 rows, nothing drawn). The scene's own
+// draws sit under the group and three places them; only the cull's camera
+// moves. (the galaxy's level is at the origin: the two are the same there)
+const _rootInv = new THREE.Matrix4();
+export function localCameraOf(root, camera, local = new THREE.PerspectiveCamera()) {
+  local.matrixAutoUpdate = false;
+  local.matrixWorldAutoUpdate = false;
+  root.updateWorldMatrix(true, false);
+  _rootInv.copy(root.matrixWorld).invert();
+  local.matrixWorld.multiplyMatrices(_rootInv, camera.matrixWorld);
+  local.matrix.copy(local.matrixWorld);
+  local.matrixWorldInverse.copy(local.matrixWorld).invert();
+  local.projectionMatrix.copy(camera.projectionMatrix);
+  local.projectionMatrixInverse.copy(camera.projectionMatrixInverse);
+  local.near = camera.near;
+  local.far = camera.far;
+  local.coordinateSystem = camera.coordinateSystem;
+  local._reversedDepth = camera.reversedDepth; // (the renderer's own field under the getter)
+  return local;
+}
+
 export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, keyOf = materialKey, occlude = true }) {
   const root = new THREE.Group();
   root.name = 'level:gpuScene';
