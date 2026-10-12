@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { writeInstances } from '../../../../lib/level/instances';
 import { assetUrl } from '../../../../lib/assetBase';
-import { bandOf, cutFor, packUrl, readInstances, splitTextures, tierTexture, placedOf, wanted, withoutProxies } from './levelPack';
+import { firstTexture, isDataMap, bandOf, cutFor, packUrl, readInstances, splitTextures, tierTexture, placedOf, wanted, withoutProxies } from './levelPack';
 
 const S = Math.SQRT1_2;
 
@@ -86,6 +86,46 @@ describe('the pack, read', () => {
     expect(assetUrl(packUrl('hoth', 'cells/1_0.bin'), { base, manifest })).toBe('/models/galaxy/bf2017/levels/hoth/cells/1_0.bin');
     // (a district's pack sits in its world's folder)
     expect(packUrl('hoth/base', 'level.json')).toBe('/models/galaxy/bf2017/levels/hoth/base/level.json');
+  });
+});
+
+describe('low mip first and the UASTC rows (lane N4)', () => {
+  const sizes = {
+    t_rock_c: { low: 512, mid: 1024, high: 1024, ultra: 2048, srgb: true },
+    t_rock_n__normal: { low: 256, mid: 512, high: 512, ultra: 1024, srgb: false, uastc: [512, 1024] },
+    t_big_c: { low: 512, mid: 512, high: 512, srgb: true },
+  };
+  const bc = { bc: true, astc: false, etc2: false };
+
+  it('fetches a map first at its smallest row, 256 at most', () => {
+    expect(firstTexture('tex/t_rock_n__normal.ktx2', sizes)).toBe('tex/t_rock_n__normal.256.ktx2');
+    // (a map whose smallest row the pack lists is 512: that row)
+    expect(firstTexture('tex/t_big_c.ktx2', sizes)).toBe('tex/t_big_c.512.ktx2');
+    expect(firstTexture('tex/unknown.ktx2', {})).toBe('tex/unknown.256.ktx2');
+  });
+
+  it('picks the UASTC row for a data map on mid and up, where the chip takes BC, ASTC or ETC2', () => {
+    const n = 'tex/t_rock_n__normal.ktx2';
+    expect(tierTexture(n, 'low', sizes, { formats: bc, data: true })).toBe('tex/t_rock_n__normal.256.ktx2');
+    expect(tierTexture(n, 'mid', sizes, { formats: bc, data: true })).toBe('tex/t_rock_n__normal.512.uastc.ktx2');
+    expect(tierTexture(n, 'high', sizes, { formats: { astc: true }, data: true })).toBe('tex/t_rock_n__normal.512.uastc.ktx2');
+    expect(tierTexture(n, 'ultra', sizes, { formats: { etc2: true }, data: true })).toBe('tex/t_rock_n__normal.1024.uastc.ktx2');
+  });
+
+  it('keeps the ETC1S row with no compressed format the transcoder can reach, for a colour map, and where the bucket has no UASTC', () => {
+    const n = 'tex/t_rock_n__normal.ktx2';
+    expect(tierTexture(n, 'high', sizes, { formats: { bc: false, astc: false, etc2: false }, data: true })).toBe('tex/t_rock_n__normal.512.ktx2');
+    expect(tierTexture(n, 'high', sizes, { formats: null, data: true })).toBe('tex/t_rock_n__normal.512.ktx2');
+    expect(tierTexture('tex/t_rock_c.ktx2', 'high', sizes, { formats: bc, data: false })).toBe('tex/t_rock_c.1024.ktx2');
+    expect(tierTexture('tex/t_big_c.ktx2', 'high', sizes, { formats: bc, data: true })).toBe('tex/t_big_c.512.ktx2');
+  });
+
+  it('knows a data map by its slot, or by the game’s word on it', () => {
+    for (const slot of ['normalMap', 'metalRough', 'aoMap', 'normal', 'detail', 'mask', 'breakupNormal']) expect(isDataMap(slot)).toBe(true);
+    for (const slot of ['map', 'emissiveMap', 'color', 'emissive']) expect(isDataMap(slot)).toBe(false);
+    expect(isDataMap(null, { srgb: false })).toBe(true);
+    expect(isDataMap(null, { srgb: true })).toBe(false);
+    expect(isDataMap(null, null, 't_x_n__normal')).toBe(true);
   });
 });
 

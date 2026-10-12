@@ -484,6 +484,7 @@ export async function create(canvas, ctx) {
     light: gameLight,
     onProbe: gameLit ? (p) => gameLit.outdoorProbe(p) : null,
   });
+  let detailPaused = false;
   // its terrain's scatter, from the game's tables, in the world's wind (fidelity lane N; null without one)
   const gameScatter = createLevelScatter({ scene, site, tier: level, renderer, groundAt: (x, z) => groundAt(world, x, z), wind, small });
   // (things that float, a bongo on Lake Paonga, ride the waves: floats.js)
@@ -3437,6 +3438,8 @@ export async function create(canvas, ctx) {
     life.update(dt, state.phase === 'walk' ? me().st : null, state.phase === 'walk' || state.phase === 'ride' ? me().st : camera.position);
     placer.update(t, dt, me().st);
     gameLevel?.update([me().st.x, me().st.z]);
+    // (lane N4: the level's stream paused by its data budget, told the HUD as it begins and ends)
+    if ((gameLevel?.paused?.() ?? false) !== detailPaused) emit({ type: 'detail', paused: (detailPaused = !detailPaused) });
     gameScatter?.update([me().st.x, me().st.z], dt);
     if (!reduced) kit.tick(dt);
     grass?.update(me().st);

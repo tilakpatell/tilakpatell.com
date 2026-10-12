@@ -18,6 +18,11 @@ name: bf2017 desktop
 # over WebRTC for the numbers that decide the stream. It needs a phone on
 # the other end, so `all` leaves it out; until #908 is on main the job says
 # so and stops.
+#
+# `horizon` is the GPU-first design's lane N4 asking: every surface pack's
+# coarse horizon grid baked on the chip (its impostors' views in d3d11, not
+# SwiftShader) and published (scripts/desktop/bf2017-horizon.mjs). A bake is
+# long, so `all` leaves it out too.
 
 run-name: >-
   ${{ format('bf2017 desktop: {0}{1}{2}', inputs.job, inputs.dry && ' (dry)' || '', inputs.name && format(' · {0}', inputs.name) || '') }}
@@ -29,7 +34,7 @@ on:
         description: 'Which job (all runs the first six in turn; stream needs a phone, so never in all)'
         required: true
         type: choice
-        options: [panoramas, atlases, textures, uastc, depots, gate, all, stream]
+        options: [panoramas, atlases, textures, uastc, depots, gate, all, stream, horizon]
       name:
         description: 'A name for this run, shown in the list (optional)'
         required: false

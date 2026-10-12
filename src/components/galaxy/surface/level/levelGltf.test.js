@@ -53,13 +53,27 @@ async function glbNaming(maps, twoSided = []) {
   return out.buffer;
 }
 
-// a KTX2 loader whose maps load, but for those named `bad` (a 404)
+// a KTX2 loader whose maps load, but for those named `bad` (a 404); since
+// lane N4 the level's maps come as bytes through the stream (fetchBytes) and
+// are parsed, so `parse` is the face the loader uses
 const some = async () => ({
   loadAsync: async (url) => {
     if (url.includes('bad')) throw new Error(`404 ${url}`);
     return new THREE.Texture();
   },
+  parse: (bytes, ok) => ok(new THREE.Texture()),
 });
+
+// the stream's fetch for a test: a map (any .ktx2) comes as a KTX2's bytes,
+// but for those named `bad` (a 404, as the bucket answers one); anything else
+// is the GLB `glbOf(path)` gives. `log` keeps each path asked.
+const KTX2_BYTES = new Uint8Array([0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]).buffer;
+const withMaps = (glbOf, log = []) => async (path) => {
+  log.push(path);
+  if (!path.endsWith('.ktx2')) return glbOf(path);
+  if (path.includes('bad')) throw new Error(`404 /models/galaxy/bf2017/levels/hoth/${path}`);
+  return KTX2_BYTES;
+};
 
 describe('matchRecipes', () => {
   it('matches a GLB material to the first unused recipe of its shader', () => {
@@ -278,6 +292,46 @@ describe('createLevelLoader', () => {
   });
 });
 
+describe('the loader under the stream (lane N4)', () => {
+  it('tells the stream which mesh a GLB is for, and how many loads are not yet bound', async () => {
+    const hints = [];
+    let give = null;
+    const fetchBytes = (path, hint) => {
+      hints.push([path, hint]);
+      return new Promise((r) => (give = r));
+    };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes: {} });
+    const p = loader.load('meshes/a.lod1.glb');
+    expect(hints[0]).toEqual(['meshes/a.lod1.glb', { glb: 'meshes/a.lod1.glb' }]);
+    expect(loader.busy()).toBe(1);
+    expect(loader.has('meshes/a.lod1.glb')).toBe(false);
+    give(await glbBytes());
+    await p;
+    expect(loader.busy()).toBe(0);
+    expect(loader.has('meshes/a.lod1.glb')).toBe(true);
+  });
+
+  it('counts a GLB that could not be had as settled, not loaded', async () => {
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => Promise.reject(new Error('HTTP/2')), sizes: {} });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(await loader.load('meshes/gone.lod0.glb')).toBeNull();
+    warn.mockRestore();
+    expect(loader.has('meshes/gone.lod0.glb')).toBe(false);
+    expect(loader.settled('meshes/gone.lod0.glb')).toBe(true);
+    expect(loader.settled('meshes/never.lod0.glb')).toBe(false);
+  });
+
+  it('parses a coarse cell’s bytes the stream fetched, as it would a mesh', async () => {
+    const fetchBytes = vi.fn();
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes: {} });
+    const gltf = await loader.parse(await glbBytes(), 'horizon/0_0.glb');
+    let n = 0;
+    gltf.scene.traverse((o) => o.isMesh && n++);
+    expect(n).toBe(2);
+    expect(fetchBytes).not.toHaveBeenCalled();
+  });
+});
+
 describe('the baked bounce on the game materials (lane N3)', () => {
   // two primitives: the first with a second uv set (TEXCOORD_1), the second without
   async function glbUv1() {
@@ -340,6 +394,97 @@ describe('a level pack’s textures bound to their materials', () => {
   });
 });
 
+const KTX2_ID = [0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a];
+
+describe('every map at its smallest row first, promoted in place (lane N4)', () => {
+  const sizes = { t_a_n__normal: { low: 128, mid: 512, high: 512, srgb: false, uastc: [512] } };
+  // a row's bytes say its size (the fake parse reads it back as the texture's width)
+  const sizeOf = (path) => Number(path.match(/\.(\d+)(\.uastc)?\.ktx2$/)[1]);
+  const parseKtx2 = async (bytes) => {
+    const n = bytes.byteLength;
+    return new THREE.CompressedTexture([{ data: new Uint8Array(4), width: n, height: n }], n, n);
+  };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  function loaderWith(opts = {}) {
+    const asked = [];
+    const fetchBytes = async (path, hint) => {
+      asked.push([path, hint ?? {}]);
+      if (opts.missing?.includes(path)) throw new Error('404');
+      // (a KTX2's identifier first, then as many bytes as the row says)
+      const b = new Uint8Array(sizeOf(path));
+      b.set(KTX2_ID);
+      return b.buffer;
+    };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes, sizes, parseKtx2, formats: { bc: true }, ...opts });
+    return { loader, asked };
+  }
+
+  it('fetches the first row and answers with it at once, then the tier’s row as detail, swapped into the same texture', async () => {
+    const { loader, asked } = loaderWith();
+    const tex = await loader.texture('tex/t_a_n__normal.ktx2');
+    expect(tex.image.width).toBe(128);
+    expect(asked[0][0]).toBe('tex/t_a_n__normal.128.ktx2');
+    let freed = 0;
+    tex.addEventListener('dispose', () => freed++);
+    await tick();
+    await tick();
+    expect(asked[1]).toEqual(['tex/t_a_n__normal.512.uastc.ktx2', { glb: null, promote: true }]);
+    expect(tex.image.width).toBe(512);
+    expect(tex.mipmaps[0].width).toBe(512);
+    expect(freed).toBe(1);
+    expect(tex.userData.row).toBe(512);
+  });
+
+  it('keeps a promotion that lands for a map no one shown wears, and binds it once one is', async () => {
+    let shown = false;
+    const { loader } = loaderWith({ wanted: () => shown });
+    const tex = await loader.texture('tex/t_a_n__normal.ktx2');
+    await tick();
+    await tick();
+    expect(tex.image.width).toBe(128);
+    shown = true;
+    loader.refresh();
+    expect(tex.image.width).toBe(512);
+  });
+
+  it('promotes nothing where the first row is the tier’s', async () => {
+    const { loader, asked } = loaderWith({ tier: 'low' });
+    const tex = await loader.texture('tex/t_a_n__normal.ktx2');
+    await tick();
+    expect(tex.image.width).toBe(128);
+    expect(asked).toHaveLength(1);
+  });
+
+  it('falls back to the tier’s row where the first cannot be had', async () => {
+    const { loader, asked } = loaderWith({ missing: ['tex/t_a_n__normal.128.ktx2'] });
+    const tex = await loader.texture('tex/t_a_n__normal.ktx2');
+    expect(tex.image.width).toBe(512);
+    expect(asked.map(([p]) => p)).toEqual(['tex/t_a_n__normal.128.ktx2', 'tex/t_a_n__normal.512.uastc.ktx2']);
+  });
+
+  it('fails at once on bytes that are no KTX2 (a site answering a missing file with its page), never handing them to the transcoder', async () => {
+    const parsed = vi.fn(parseKtx2);
+    const html = new TextEncoder().encode('<!doctype html><html lang="en">').buffer;
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => html, sizes, parseKtx2: parsed, formats: { bc: true } });
+    expect(await loader.texture('tex/t_a_n__normal.ktx2')).toBeNull();
+    expect(parsed).not.toHaveBeenCalled();
+  });
+
+  it('takes the ETC1S row on a chip with no format UASTC reaches', async () => {
+    const { loader, asked } = loaderWith({ formats: { bc: false, astc: false, etc2: false } });
+    await loader.texture('tex/t_a_n__normal.ktx2');
+    await tick();
+    await tick();
+    expect(asked[1][0]).toBe('tex/t_a_n__normal.512.ktx2');
+  });
+
+  it('says which GLB asked for a map, so the stream ranks it with its mesh', async () => {
+    const { loader, asked } = loaderWith({ tier: 'low' });
+    await loader.texture('tex/t_a_n__normal.ktx2', undefined, { of: 'meshes/a.lod0.glb' });
+    expect(asked[0][1]).toEqual({ glb: 'meshes/a.lod0.glb', promote: false });
+  });
+});
+
 describe('a material that names no colour map', () => {
   const piece = (mat) => new THREE.Mesh(new THREE.BufferGeometry(), mat);
   it('takes a two-sided card out of the scene and makes a solid piece grey, not white', () => {
@@ -394,7 +539,7 @@ describe('a colour map named and lost', () => {
     quiet();
     ktx2.up = some;
     const glbs = { 'meshes/solid.lod0.glb': () => glbNaming({ 0: '../tex/good.ktx2', 1: '../tex/bad.ktx2' }), 'meshes/card.lod0.glb': () => glbNaming({ 0: '../tex/bad_card.ktx2', 1: '../tex/good.ktx2' }, [0]) };
-    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async (path) => glbs[path](), sizes: {} });
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps((path) => glbs[path]()), sizes: {} });
     const [kept, lost] = meshesOf(await loader.load('meshes/solid.lod0.glb')).map((o) => o.material);
     expect(kept.map?.isTexture).toBe(true);
     expect(kept.color.getHex()).toBe(0xffffff);
@@ -406,7 +551,7 @@ describe('a colour map named and lost', () => {
 
   it('binds a map to the loader’s copy of its material too, the one drawn (a mesh without normals or tangents)', async () => {
     ktx2.up = some;
-    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => glbNaming({ 0: '../tex/good.ktx2', 1: '../tex/good.ktx2' }), sizes: {} });
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/good.ktx2', 1: '../tex/good.ktx2' })), sizes: {} });
     const gltf = await loader.load('meshes/x.lod0.glb');
     const drawn = meshesOf(gltf).map((o) => o.material);
     const parsed = await gltf.parser.getDependencies('material');
@@ -417,24 +562,27 @@ describe('a colour map named and lost', () => {
 
   it('counts the maps asked, loaded and failed, and why the first failed', async () => {
     quiet();
-    ktx2.up = vi.fn(some);
-    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => glbNaming({ 0: '../tex/good.ktx2', 1: '../tex/bad.ktx2' }), sizes: {} });
+    ktx2.up = some;
+    const asked = [];
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/good.ktx2', 1: '../tex/bad.ktx2' }), asked), sizes: {} });
+    const badAsked = () => asked.filter((p) => p.includes('bad')).length;
     expect(loader.counts()).toEqual({ asked: 0, loaded: 0, failed: 0, why: null });
     await loader.load('meshes/a.lod0.glb');
     // (a map is asked once, whatever names it)
     await loader.load('meshes/b.lod0.glb');
     expect(loader.counts()).toEqual({ asked: 2, loaded: 1, failed: 1, why: 'Error: 404 /models/galaxy/bf2017/levels/hoth/tex/bad.1024.ktx2' });
     // (a map that failed on its own, a 404, is not asked again)
-    expect(ktx2.up).toHaveBeenCalledTimes(2);
+    const once = badAsked();
+    expect(once).toBeGreaterThan(0);
     expect(await loader.texture('tex/bad.ktx2')).toBeNull();
-    expect(ktx2.up).toHaveBeenCalledTimes(2);
+    expect(badAsked()).toBe(once);
   });
 
   it('asks again for a map the KTX2 loader failed once that loader comes up, and counts it loaded', async () => {
     quiet();
     let up = false;
     ktx2.up = () => (up ? some() : Promise.reject(new WasmError('basis', 'load')));
-    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => glbNaming({ 0: '../tex/a.ktx2', 1: '../tex/b.ktx2' }), sizes: {} });
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/a.ktx2', 1: '../tex/b.ktx2' })), sizes: {} });
     await loader.load('meshes/x.lod0.glb');
     expect(loader.counts()).toEqual({ asked: 2, loaded: 0, failed: 2, why: 'WasmError (load): basis: WebAssembly failed to load' });
     up = true;
@@ -451,7 +599,7 @@ describe('a colour map named and lost', () => {
   it('says the first lost map of a world once, a warning in production too, and the rest not', async () => {
     quiet();
     ktx2.up = some;
-    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async (path) => glbNaming({ 0: `../tex/bad_${path.split('/')[1]}.ktx2`, 1: '../tex/bad.ktx2' }), sizes: {} });
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps((path) => glbNaming({ 0: `../tex/bad_${path.split('/')[1]}.ktx2`, 1: '../tex/bad.ktx2' })), sizes: {} });
     await loader.load('meshes/a.lod0.glb');
     await loader.load('meshes/b.lod0.glb');
     expect(loader.counts().failed).toBe(3);
@@ -462,7 +610,7 @@ describe('a colour map named and lost', () => {
   it('says a transcoder that would not come up once, by its WasmError’s name, and draws the level bare', async () => {
     quiet();
     ktx2.up = () => Promise.reject(new WasmError('basis', 'timeout'));
-    const loader = createLevelLoader({ world: 'endor', tier: 'high', renderer: null, fetchBytes: async () => glbNaming({ 0: '../tex/a.ktx2', 1: '../tex/b.ktx2' }), sizes: {} });
+    const loader = createLevelLoader({ world: 'endor', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/a.ktx2', 1: '../tex/b.ktx2' })), sizes: {} });
     const gltf = await loader.load('meshes/x.lod0.glb');
     expect(meshesOf(gltf).map((o) => o.material.color.getHex())).toEqual([BARE, BARE]);
     expect(warn).toHaveBeenCalledTimes(1);
@@ -490,7 +638,7 @@ describe('a colour map named and lost', () => {
       maps: { T_C: 'tex/good_own.ktx2' },
       tex: {},
     };
-    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => glbNaming({ 0: '../tex/bad.ktx2', 1: '../tex/good.ktx2' }), sizes: {}, recipes, materialFor });
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/bad.ktx2', 1: '../tex/good.ktx2' })), sizes: {}, recipes, materialFor });
     const drawn = meshesOf(await loader.load('meshes/x.lod0.glb')).map((o) => o.material.name);
     expect(drawn).toEqual(['game:Shaders/SS_A', 'game:Shaders/SS_B']);
     expect(base).toEqual({ 'Shaders/SS_A': BARE, 'Shaders/SS_B': 0xffffff });
@@ -501,7 +649,7 @@ describe('a colour map named and lost', () => {
   it('a recipe’s material whose GLB named no colour map and whose recipe brings none: a solid piece grey, a two-sided card not drawn', async () => {
     const { base, materialFor } = game();
     const recipes = { forGlb: () => [{ shader: 'Shaders/SS_A', maps: {} }, { shader: 'Shaders/SS_B', maps: {} }], maps: {}, tex: {} };
-    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: async () => glbNaming({}, [0]), sizes: {}, recipes, materialFor });
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({}, [0])), sizes: {}, recipes, materialFor });
     const drawn = meshesOf(await loader.load('meshes/x.lod0.glb')).map((o) => o.material.name);
     expect(drawn).toEqual(['game:Shaders/SS_B']);
     expect(materialFor).toHaveBeenCalledTimes(1);

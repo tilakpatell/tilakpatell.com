@@ -48,6 +48,14 @@
 //       cp /tmp/b/surface-high.json lab/baseline/surface-high.json
 //     (TODO, the owner's desktop: lab/baseline/surface-ultra.json, made with
 //     ANGLE=d3d11 QUALITY=ultra, so the ultra run has calls to compare.)
+//   --bytes (lane N4, a surface with a level pack): the line held to 20 Mbit/s
+//     down, 20 ms (CDP Network.emulateNetworkConditions), and for each world:
+//     the time to its first frame and to its level's boot slice (`walkable`:
+//     the stream's bootDone; and on the line's own clock, when its bytes were
+//     in, which a software GL's slow frames do not hold back), the level's bytes then and after the settle
+//     (the stream's own count) and the page's bytes over the wire, held to
+//     the quality level's bootMB and visitMB (src/lib/budgets.js); a line a
+//     world, <out>/bytes-<quality>.json, and exit 1 past either.
 // Headless Chromium draws in software (SwiftShader), slowly: the frame times
 // only mean something compared with another run on the same machine, the
 // counts mean the same anywhere. So that two runs see the same thing, the
@@ -62,7 +70,11 @@ import { budget } from '../src/lib/budgets.js';
 import { summarise } from './cpu-profile.mjs';
 import { BUCKET_URL, MODEL_FILE, baselineOf, limitsFor, overBy } from './galaxy-budget.mjs';
 
-const [mode = 'space', list = 'tatooine'] = process.argv.slice(2);
+const [mode = 'space', list = 'tatooine'] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const bytesRun = process.argv.includes('--bytes');
+// _source: the GPU-first design's §4 N4 gate, "a throttled 20 Mbit/s line"
+const LINE = { offline: false, latency: 20, downloadThroughput: (20e6 / 8) | 0, uploadThroughput: (5e6 / 8) | 0 };
+const byteRows = [];
 const out = process.env.OUT ?? '.';
 const quality = process.env.QUALITY ?? 'high';
 const ship = process.env.SHIP ?? 'xwing';
@@ -175,6 +187,29 @@ for (const id of list.split(',')) {
     const sizes = await req.sizes().catch(() => null);
     glbBytes += sizes?.responseBodySize ?? 0;
   });
+  // (--bytes: the line throttled, and every byte over the wire counted)
+  // (and each level-pack file's arrival on the line's own clock, so the time
+  // its boot bytes were in is read apart from a software GL's slow frames)
+  const wire = { bytes: 0, t0: null, urls: new Map(), level: [] };
+  if (bytesRun) {
+    const cdp = await ctx.newCDPSession(page);
+    await cdp.send('Network.enable');
+    await cdp.send('Network.emulateNetworkConditions', LINE);
+    cdp.on('Network.requestWillBeSent', (e) => {
+      wire.t0 ??= e.timestamp;
+      wire.urls.set(e.requestId, e.request.url);
+    });
+    cdp.on('Network.loadingFinished', (e) => {
+      wire.bytes += e.encodedDataLength ?? 0;
+      if (/\/levels\//.test(wire.urls.get(e.requestId) ?? '')) wire.level.push({ t: e.timestamp - (wire.t0 ?? e.timestamp), bytes: e.encodedDataLength ?? 0 });
+    });
+  }
+  // the line's time at which this many level bytes had arrived
+  const wireAt = (bytes) => {
+    let sum = 0;
+    for (const f of [...wire.level].sort((a, b) => a.t - b.t)) if ((sum += f.bytes) >= bytes) return +f.t.toFixed(1);
+    return null;
+  };
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -195,6 +230,20 @@ for (const id of list.split(',')) {
     continue;
   }
   const loaded = (Date.now() - t0) / 1000;
+  // (--bytes: the time to the level's boot slice, and the bytes then)
+  let boot = null;
+  if (bytesRun && mode === 'surface') {
+    const got = await page
+      .waitForFunction(() => window.__surfaceScene?.level?.()?.stream?.bootDone && window.__surfaceScene.level().stream, null, { timeout: Number(process.env.BOOT_WAIT ?? 600000), polling: 250 })
+      .then((h) => h.jsonValue())
+      .catch(() => null);
+    // (levelS: from the first level file's arrival to the boot's last, the
+    // boot slice's own time on the line, apart from the page's code and the
+    // world's other assets, which a development server sends unbundled)
+    const firstLevel = wire.level.length ? Math.min(...wire.level.map((f) => f.t)) : null;
+    const wireS = wireAt(got?.bytes * 0.98);
+    boot = got ? { s: +((Date.now() - t0) / 1000).toFixed(1), wireS, levelS: wireS != null && firstLevel != null ? +(wireS - firstLevel).toFixed(1) : null, levelMB: +(got.bytes / 1e6).toFixed(2), wireMB: +(wire.bytes / 1e6).toFixed(2) } : { s: null, error: 'the boot slice never came in' };
+  }
   // (on the surface, the floor's light baked first: the bake's passes are a
   // one-off, not a frame anyone plays. A world with no ground, cloud-borne,
   // has none to wait for: it runs out the clock)
@@ -360,6 +409,16 @@ for (const id of list.split(',')) {
   // (SHOT_WAIT: a frame of a whole level in software GL can take a minute)
   await page.screenshot({ path: `${out}/${name}.png`, timeout: Number(process.env.SHOT_WAIT ?? 120000) });
   const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
+  if (bytesRun && mode === 'surface') {
+    const after = stats.level?.stream ?? null;
+    const row = budget(quality);
+    const r = { id, quality, firstFrameS: +loaded.toFixed(1), boot, visitMB: after ? +(after.bytes / 1e6).toFixed(2) : null, paused: after?.paused ?? null, phase: after?.phase ?? null, coarse: stats.level?.coarse ?? null, wireMB: +(wire.bytes / 1e6).toFixed(2), bootMB: row.bootMB, visitCapMB: row.visitMB, _source: `scripts/galaxy-check.mjs --bytes: ${quality}, a ${LINE.downloadThroughput * 8e-6} Mbit/s line at ${LINE.latency} ms (CDP), ${angle}, the clock held; level bytes are the stream's own count (levelStream.js status())` };
+    const over = [boot?.levelMB > row.bootMB && 'boot', r.visitMB > row.visitMB && 'visit', !boot?.s && 'never walkable'].filter(Boolean);
+    r.pass = !over.length;
+    byteRows.push(r);
+    console.log(`bytes  ${id.padEnd(10)} first frame ${r.firstFrameS} s  walkable ${boot?.s ?? '–'} s (on the line ${boot?.wireS ?? '–'} s, the level's own ${boot?.levelS ?? '–'} s)  boot ${boot?.levelMB ?? '–'}/${row.bootMB} MB  visit ${r.visitMB ?? '–'}/${row.visitMB} MB  wire ${r.wireMB} MB  ${over.length ? `FAIL (${over.join(', ')})` : 'pass'}`);
+    if (over.length) process.exitCode = 1;
+  }
   results.push({ id, district, loaded: +loaded.toFixed(1), ...stats, glbMB: +(glbBytes / 1e6).toFixed(1), fromBucket, scans, ...(profile && { profile }), errors: errors.slice(0, 5) });
   console.log(`${id.padEnd(10)} calls ${String(stats.calls).padStart(4)}  tris ${String(stats.triangles).padStart(7)}  geo ${String(stats.geometries).padStart(4)}  tex ${String(stats.textures).padStart(3)}  prog ${String(stats.programs).padStart(3)}  frame p50 ${stats.p50} p95 ${stats.p95} ms${stats.ground != null ? `  ground ${stats.ground} ms` : ''}  load ${loaded.toFixed(1)} s${errors.length ? `  errors ${errors.length}` : ''}${mode === 'surface' ? `  scans cc0 ${scans.cc0} game ${scans.game}` : ''}`);
   if (stats.level) {
@@ -382,6 +441,7 @@ for (const id of list.split(',')) {
 }
 await browser.close();
 if (process.env.JSON) writeFileSync(`${out}/${mode}-${quality}.json`, JSON.stringify(results, null, 2));
+if (bytesRun) writeFileSync(`${out}/bytes-${quality}.json`, `${JSON.stringify(byteRows, null, 2)}\n`);
 const bad = results.filter((r) => r.error || r.errors?.length);
 for (const r of bad) console.log('problem', r.id, r.error ?? '', r.errors);
 if (process.env.BUDGET) {

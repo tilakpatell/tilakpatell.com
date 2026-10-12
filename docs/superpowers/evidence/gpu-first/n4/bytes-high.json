@@ -1,0 +1,28 @@
+[
+  {
+    "id": "hoth",
+    "quality": "high",
+    "firstFrameS": 43.1,
+    "boot": {
+      "s": 174,
+      "wireS": 169,
+      "levelS": 137,
+      "levelMB": 11.53,
+      "wireMB": 123.01
+    },
+    "visitMB": 47.26,
+    "paused": false,
+    "phase": "detail",
+    "coarse": {
+      "cells": 65,
+      "shown": 0,
+      "waiting": 0,
+      "cards": 0
+    },
+    "wireMB": 158.75,
+    "bootMB": 12,
+    "visitCapMB": 400,
+    "_source": "scripts/galaxy-check.mjs --bytes: high, a 20 Mbit/s line at 20 ms (CDP), swiftshader, the clock held; level bytes are the stream's own count (levelStream.js status())",
+    "pass": true
+  }
+]

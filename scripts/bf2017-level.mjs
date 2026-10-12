@@ -63,7 +63,7 @@ import { parseArgs } from './lib/args.mjs';
 import { writeCredit } from './lib/catalog-write.mjs';
 import { isSequel } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, imageUris, inBucket } from './lib/bf2017-paths.mjs';
-import { buildPack, mapsUpTo, neverOf, proxyKey, proxyMeshes, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
+import { keepRows, buildPack, mapsUpTo, neverOf, proxyKey, proxyMeshes, cropHeights, emptyValue, fillEmpty, fillHoles, glbTriangles, heightsLayer, lodFile, mergeHeights, readMap, rewriteImageUris, terrainFrame } from './lib/bf2017-level.mjs';
 import { LOD, TEX_MB, capIndex, fitMaps, texSizeFor } from '../src/lib/level/lod.js';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -621,6 +621,10 @@ async function main(args) {
   for (const [k, v] of Object.entries(before)) if (!(k in pack.json)) pack.json[k] = v;
   // (and the maps they named in its `tex`, Hoth's ground layers' sizes)
   for (const [k, v] of Object.entries(before.tex ?? {})) pack.json.tex[k] ??= v;
+  // (lane N4: but a horizon grid cut from another far list goes, run
+  // bf2017-horizon.mjs again; and lane W's UASTC rows stay on their maps)
+  if (pack.json.coarse && pack.json.coarse.far !== pack.json.far?.bytes) delete pack.json.coarse;
+  pack.json.tex = keepRows(pack.json, before).tex;
   await writeFile(join(out, 'level.json'), `${JSON.stringify(pack.json)}\n`);
   // (and the README's sections other scripts wrote, Variations, kept after this one's)
   const oldReadme = await readFile(join(out, 'README.md'), 'utf8').catch(() => '');
