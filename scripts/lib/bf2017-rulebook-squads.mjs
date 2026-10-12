@@ -84,6 +84,33 @@ function spawning(root) {
     checkRadius_source: at('SpawnLocationFinderEntityData', 'SpawnPointCheckRadius'),
     safeEnemyDistance: f.SpawnSafeEnemyDistance,
     safeEnemyDistance_source: at('SpawnLocationFinderEntityData', 'SpawnSafeEnemyDistance'),
+    // the finder's scoring of a candidate spot (finding 27 §4b): a weight per
+    // friendly, enemy, recent death and recent spawn near it, how long those are
+    // remembered, and the preference for a spot facing the front
+    finder: {
+      friendlyWeight: f.FriendlyWeight,
+      friendlyWeight_source: at('SpawnLocationFinderEntityData', 'FriendlyWeight'),
+      enemyWeight: f.EnemyWeight,
+      enemyWeight_source: at('SpawnLocationFinderEntityData', 'EnemyWeight'),
+      deathWeight: f.DeathWeight,
+      deathWeight_source: at('SpawnLocationFinderEntityData', 'DeathWeight'),
+      deathRemember: f.DeathRememberDuration,
+      deathRemember_source: at('SpawnLocationFinderEntityData', 'DeathRememberDuration'),
+      deathTimeout: f.DeathWeightTimeout,
+      deathTimeout_source: at('SpawnLocationFinderEntityData', 'DeathWeightTimeout'),
+      spawnWeight: f.SpawnWeight,
+      spawnWeight_source: at('SpawnLocationFinderEntityData', 'SpawnWeight'),
+      spawnRemember: f.SpawnRememberDuration,
+      spawnRemember_source: at('SpawnLocationFinderEntityData', 'SpawnRememberDuration'),
+      spawnsRemembered: f.PreviousSpawnsRemembered,
+      spawnsRemembered_source: at('SpawnLocationFinderEntityData', 'PreviousSpawnsRemembered'),
+      directionThreshold: f.DirectionAngleThreshold,
+      directionThreshold_source: at('SpawnLocationFinderEntityData', 'DirectionAngleThreshold'),
+      directionRange: f.DirectionCheckMaxRange,
+      directionRange_source: at('SpawnLocationFinderEntityData', 'DirectionCheckMaxRange'),
+      heightOffset: f.SpawnerHeightOffset,
+      heightOffset_source: at('SpawnLocationFinderEntityData', 'SpawnerHeightOffset'),
+    },
   };
 }
 

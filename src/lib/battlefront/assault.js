@@ -4,8 +4,8 @@
 // skirmish does: bots stuck (alive, not in cover, hiding or at a prop, on
 // one spot for STUCK_STEPS) and bots off the navgrid. Pure.
 //
-//   runAssault({ rulebook, nav, seed, bots, minutes, onStep, mode, level, teams }) → { result, stage, minutes, kills, heroes, stuck, offNav, events, sim }
-//   (mode: any of modes/index.js's, on its level; bots: a number a side, or { 1: n, 2: n })
+//   runAssault({ rulebook, nav, seed, bots, minutes, onStep, mode, level, teams, botModel }) → { result, stage, minutes, kills, heroes, stuck, offNav, events, sim }
+//   (mode: any of modes/index.js's, on its level; bots: a number a side, or { 1: n, 2: n }; botModel: the sim's, 'autoPlayer' | 'battleAI')
 
 import { STEP } from './core.js';
 import { walkable } from './nav.js';
@@ -16,8 +16,8 @@ const STILL_OK = new Set(['cover', 'hide', 'interact']);
 // (a bot fled to its flee query's cover slot is in cover there: the retreat's own spot)
 const atFleeCover = (e) => e.brain?.intent?.mode === 'flee' && e.brain.intent.goal && Math.hypot(e.brain.intent.goal[0] - e.at[0], e.brain.intent.goal[1] - e.at[2]) <= 1.5;
 
-export function runAssault({ rulebook, nav, seed = 1, bots = 20, minutes = 25, onStep = null, mode = 'galacticAssault', level = 'hoth', teams = null }) {
-  const sim = createSim({ rulebook, nav, seed, bots: typeof bots === 'number' ? { 1: bots, 2: bots } : bots, mode, level, teams });
+export function runAssault({ rulebook, nav, seed = 1, bots = 20, minutes = 25, onStep = null, mode = 'galacticAssault', level = 'hoth', teams = null, botModel = null }) {
+  const sim = createSim({ rulebook, nav, seed, bots: typeof bots === 'number' ? { 1: bots, 2: bots } : bots, mode, level, teams, botModel });
   const steps = Math.round((minutes * 60) / STEP);
   const heroes = { 1: 0, 2: 0 };
   const still = new Map();

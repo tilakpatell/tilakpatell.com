@@ -9,13 +9,16 @@
 //   createCommander({ team, side, ga, squads, bp, rand, nav, rulebook }) → c
 //   assign(c, world) → Map<squadId, { objective, role, task }>     world: { entities: [...], now }
 //   spend(c, id, { squadClasses, out: { heroes, reinforcements } }) → { kind, id }
-//   wave(c, now) → true when the team's wave is due (and the next one set)
+//   wave(c, now, { phase, held }) → true when the team's wave is due (and the next one set):
+//     the server's wave table (ai/waves.js) when the commander was given `waves`, else every WAVE s
+//   forcedBack(c, since, now, { phase }) → a bot dead since `since` must come back now, outside the wave
 
 import { aiOf, pointsOf } from '../rulebook.js';
 import { nearestWalkable } from '../nav.js';
 import { balance, offers } from '../battlePoints.js';
 import { INTERACT_REACH, UPLINK_RANGE, insidePolygon } from '../modes/objectives.js';
 import { WAVE } from '../spawn.js';
+import { due, forced } from './waves.js';
 
 // Seconds between the commander's orders, by hand.
 export const ASSIGN = 5;
@@ -38,7 +41,7 @@ const ONE_A_SQUAD = new Set(['officer', 'specialist']);
 const d2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const xz = (e) => [e.at[0], e.at[2]];
 
-export function createCommander({ team, side, ga, squads, bp, rand = Math.random, nav = null, rulebook = null }) {
+export function createCommander({ team, side, ga, squads, bp, rand = Math.random, nav = null, rulebook = null, waves = null }) {
   const ia = rulebook ? aiOf(rulebook).instantAction : null;
   const cap = (key, limit) => {
     const v = ia?.[key]?.default ?? -1;
@@ -53,6 +56,7 @@ export function createCommander({ team, side, ga, squads, bp, rand = Math.random
     bp,
     rand,
     nav,
+    waves,
     caps: { heroes: cap('InstantActionEnemyHeroCount', limits.heroesPerTeam), reinforcements: cap('InstantActionEnemyReinforcementCount', limits.reinforcementsPerTeam) },
     next: 0,
     nextWave: 0,
@@ -233,8 +237,11 @@ export function spend(c, id, { squadClasses = [], out = { heroes: 0, reinforceme
   return { kind: 'class', id: classes[0] };
 }
 
-export function wave(c, now) {
+export function wave(c, now, { phase = 1, held = 0 } = {}) {
+  if (c.waves) return due(c.waves, now, { phase, held });
   if (now + 1e-9 < c.nextWave) return false;
   c.nextWave = Math.floor(now / WAVE + 1e-9) * WAVE + WAVE;
   return true;
 }
+
+export const forcedBack = (c, since, now, { phase = 1 } = {}) => !!c.waves && forced(c.waves, since, now, { phase });

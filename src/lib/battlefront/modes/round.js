@@ -15,6 +15,11 @@ export function refuseUnplaced(map, kind, label) {
   if (missing.length) throw new Error(`${label} can’t start on ${map.level}: ${[...new Set(missing.map((u) => u.name))].join(', ')} is not placed (the map rulebook lists it under unplaced)`);
 }
 
+// The smaller modes' holds, by hand (their own prefabs' delay chains are not
+// read): 12 s before the first round, 6 s between rounds.
+export const SETUP = 12;
+export const PAUSE = 6;
+
 const idsOf = (map, kind, team) => [...map.spawns, ...map.polygons].filter((s) => s.mode === kind && s.team === team).map((s) => s.id);
 
 export function baseMode({ kind, label, map, level = null, attack = 2, objectives = [], setup = 12 }) {

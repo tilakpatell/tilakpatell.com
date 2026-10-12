@@ -1,0 +1,336 @@
+{
+ "_from": {
+  "export": "Online/GameSettingsContainer",
+  "date": "2026-10-12",
+  "script": "scripts/bf2017-autoplayer.mjs"
+ },
+ "rows": {
+  "aim": {
+   "noise": {
+    "blaster": {
+     "instantAction": 1.5,
+     "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_BlasterAimNoise_Mode8].DefaultValue",
+     "coop": 2.5,
+     "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_BlasterAimNoise_Mode9].DefaultValue",
+     "supremacy": 2.5,
+     "supremacy_source": "Online/GameSettingsContainer#GameSettingNode[AP_BlasterAimNoise_Mode1].DefaultValue"
+    },
+    "lmg": {
+     "instantAction": 1.5,
+     "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_LmgAimNoise_Mode8].DefaultValue",
+     "coop": 3,
+     "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_LmgAimNoise_Mode9].DefaultValue"
+    },
+    "shotgun": {
+     "instantAction": 3,
+     "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_ShotgunAimNoise_Mode8].DefaultValue",
+     "coop": 3,
+     "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_ShotgunAimNoise_Mode9].DefaultValue"
+    },
+    "sniperRifle": {
+     "instantAction": 1,
+     "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_SniperRifleAimNoise_Mode8].DefaultValue",
+     "coop": 1,
+     "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_SniperRifleAimNoise_Mode9].DefaultValue"
+    },
+    "launcher": {
+     "instantAction": 0,
+     "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_LauncherAimNoise_Mode8].DefaultValue",
+     "coop": 0,
+     "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_LauncherAimNoise_Mode9].DefaultValue"
+    }
+   },
+   "scale": {
+    "instantAction": 2,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Mode8].DefaultValue",
+    "rookie": 7,
+    "rookie_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Rookie_Mode8].DefaultValue",
+    "normal": 3,
+    "normal_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Normal_Mode8].DefaultValue",
+    "expert": 2,
+    "expert_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Expert_Mode8].DefaultValue",
+    "coop": 2.3,
+    "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Mode9].DefaultValue",
+    "supremacy": 2,
+    "supremacy_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Mode1].DefaultValue"
+   },
+   "enemies": {
+    "rookie": 1.2,
+    "rookie_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Enemies_Rookie_Mode8].DefaultValue",
+    "normal": 1,
+    "normal_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Enemies_Normal_Mode8].DefaultValue",
+    "expert": 0.9,
+    "expert_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Enemies_Expert_Mode8].DefaultValue",
+    "coop": 1,
+    "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Enemies_Mode9].DefaultValue"
+   },
+   "friendlies": {
+    "rookie": 1,
+    "rookie_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Friendlies_Rookie_Mode8].DefaultValue",
+    "normal": 1,
+    "normal_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Friendlies_Normal_Mode8].DefaultValue",
+    "expert": 1,
+    "expert_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Friendlies_Expert_Mode8].DefaultValue",
+    "coop": 1,
+    "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimNoiseScale_Friendlies_Mode9].DefaultValue"
+   },
+   "vehicle": {
+    "rookie": 4,
+    "rookie_source": "Online/GameSettingsContainer#GameSettingNode[AP_VehicleAimNoiseScale_Rookie_Mode8].DefaultValue",
+    "normal": 2,
+    "normal_source": "Online/GameSettingsContainer#GameSettingNode[AP_VehicleAimNoiseScale_Normal_Mode8].DefaultValue",
+    "expert": 1,
+    "expert_source": "Online/GameSettingsContainer#GameSettingNode[AP_VehicleAimNoiseScale_Expert_Mode8].DefaultValue",
+    "coop": 2,
+    "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_VehicleAimNoiseScale_Coop].DefaultValue"
+   },
+   "lap": 0.25,
+   "lap_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimLapTime_Mode8].DefaultValue",
+   "acceleration": 0.25,
+   "acceleration_source": "Online/GameSettingsContainer#GameSettingNode[AP_AimAcceleration_Mode8].DefaultValue",
+   "inputScale": {
+    "yaw": 1,
+    "yaw_source": "Online/GameSettingsContainer#GameSettingNode[AP_InputScaleYaw].DefaultValue",
+    "pitch": 1,
+    "pitch_source": "Online/GameSettingsContainer#GameSettingNode[AP_InputScalePitch].DefaultValue"
+   }
+  },
+  "lof": {
+   "reaction": {
+    "default": 0.05,
+    "default_source": "Online/GameSettingsContainer#GameSettingNode[AP_LofReactionTimeS].DefaultValue",
+    "rookie": 0.1,
+    "rookie_source": "Online/GameSettingsContainer#GameSettingNode[AP_LofReactionTimeS_Rookie_Mode8].DefaultValue",
+    "normal": 0.05,
+    "normal_source": "Online/GameSettingsContainer#GameSettingNode[AP_LofReactionTimeS_Normal_Mode8].DefaultValue",
+    "expert": 0.025,
+    "expert_source": "Online/GameSettingsContainer#GameSettingNode[AP_LofReactionTimeS_Expert_Mode8].DefaultValue"
+   },
+   "timeout": 1.5,
+   "timeout_source": "Online/GameSettingsContainer#GameSettingNode[AP_LofTimeoutS].DefaultValue",
+   "prediction": 0.15,
+   "prediction_source": "Online/GameSettingsContainer#GameSettingNode[AP_LofPredictionTime].DefaultValue"
+  },
+  "tracker": {
+   "fov": 140,
+   "fov_source": "Online/GameSettingsContainer#GameSettingNode[AP_TargetTrackerFieldOfViewDegrees].DefaultValue"
+  },
+  "engage": {
+   "distanceScale": {
+    "instantAction": 2.5,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_MaxTargetEngagingDistanceScale_Mode8].DefaultValue",
+    "coop": 2.5,
+    "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_MaxTargetEngagingDistanceScale_Mode9].DefaultValue",
+    "supremacy": 1.5,
+    "supremacy_source": "Online/GameSettingsContainer#GameSettingNode[AP_MaxTargetEngagingDistanceScale_Mode1].DefaultValue"
+   }
+  },
+  "evasive": {
+   "dodgeRoll": {
+    "instantAction": 0.2,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversDodgeRollProbability_Mode8].DefaultValue",
+    "rookie": 0.2,
+    "rookie_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversDodgeRollProbability_Rookie_Mode8].DefaultValue",
+    "normal": 0.2,
+    "normal_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversDodgeRollProbability_Normal_Mode8].DefaultValue",
+    "expert": 0.2,
+    "expert_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversDodgeRollProbability_Expert_Mode8].DefaultValue",
+    "coop": 0.2,
+    "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversDodgeRollProbability_Mode9].DefaultValue",
+    "supremacy": 0.3,
+    "supremacy_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversDodgeRollProbability_Mode1].DefaultValue"
+   },
+   "jump": {
+    "instantAction": 0,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversJumpProbability_Mode8].DefaultValue"
+   },
+   "invertStrafeMin": {
+    "instantAction": 1.5,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversInvertStrafeDurationMin_Mode8].DefaultValue",
+    "supremacy": 0.5,
+    "supremacy_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversInvertStrafeDurationMin_Mode1].DefaultValue"
+   },
+   "invertStrafeMax": {
+    "instantAction": 3.5,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversInvertStrafeDurationMax_Mode8].DefaultValue",
+    "supremacy": 2.5,
+    "supremacy_source": "Online/GameSettingsContainer#GameSettingNode[AP_EvasiveManeuversInvertStrafeDurationMax_Mode1].DefaultValue"
+   }
+  },
+  "melee": {
+   "distance": 1.5,
+   "distance_source": "Online/GameSettingsContainer#GameSettingNode[AP_MeleeDistanceM].DefaultValue",
+   "interval": 0.5,
+   "interval_source": "Online/GameSettingsContainer#GameSettingNode[AP_MeleeIntervalS].DefaultValue",
+   "on": false,
+   "on_source": "Online/GameSettingsContainer#GameSettingNode[AP_CombatUseMelee].DefaultValue"
+  },
+  "waves": {
+   "spawnTime": {
+    "attack": 5,
+    "attack_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_SpawnTime_Attack].DefaultValue",
+    "defend": 5,
+    "defend_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_SpawnTime_Defend].DefaultValue",
+    "instantAction": 15,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_SpawnTime_Mode8].DefaultValue",
+    "intermission": 35,
+    "intermission_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_SpawnTime_Intermission_Attack].DefaultValue"
+   },
+   "pause": {
+    "attack": 30,
+    "attack_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Attack].DefaultValue",
+    "attackShort": 20,
+    "attackShort_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Short_Attack].DefaultValue",
+    "attackMedium": 30,
+    "attackMedium_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Medium_Attack].DefaultValue",
+    "attackLong": 40,
+    "attackLong_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Long_Attack].DefaultValue",
+    "defend": 15,
+    "defend_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Defend].DefaultValue",
+    "defendByPhase": [
+     12,
+     6,
+     3,
+     0
+    ],
+    "defendByPhase_source": [
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Defend_Phase1].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Defend_Phase2].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Defend_Phase3].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Defend_Phase4].DefaultValue"
+    ],
+    "instantAction": 30,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_PauseTime_Mode8].DefaultValue"
+   },
+   "force": {
+    "default": 60,
+    "default_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime].DefaultValue",
+    "attackByPhase": [
+     55,
+     50,
+     45,
+     40,
+     40
+    ],
+    "attackByPhase_source": [
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Attack_Phase1].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Attack_Phase2].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Attack_Phase3].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Attack_Phase4].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Attack_Phase5].DefaultValue"
+    ],
+    "defend": 45,
+    "defend_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Defend].DefaultValue",
+    "defendByPhase": [
+     40,
+     45,
+     50,
+     55,
+     55
+    ],
+    "defendByPhase_source": [
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Defend_Phase1].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Defend_Phase2].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Defend_Phase3].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Defend_Phase4].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_ForceSpawnTime_Defend_Phase5].DefaultValue"
+    ]
+   },
+   "killRatio": {
+    "attack": [
+     1.1,
+     1.2,
+     1.3
+    ],
+    "attack_source": [
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_KillRatio_1CP_Attack].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_KillRatio_2CP_Attack].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_KillRatio_3CP_Attack].DefaultValue"
+    ],
+    "defend": [
+     1.1,
+     1.2,
+     1.3
+    ],
+    "defend_source": [
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_KillRatio_1CP_Defend].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_KillRatio_2CP_Defend].DefaultValue",
+     "Online/GameSettingsContainer#GameSettingNode[AP_Waves_KillRatio_3CP_Defend].DefaultValue"
+    ],
+    "delay": 3,
+    "delay_source": "Online/GameSettingsContainer#GameSettingNode[AP_Waves_KillRatioDelay_Attack].DefaultValue"
+   },
+   "heroes": {
+    "attack": 180,
+    "attack_source": "Online/GameSettingsContainer#GameSettingNode[AP_WavesHeroes_PauseTime_Attack].DefaultValue"
+   }
+  },
+  "respawn": {
+   "delay": 0,
+   "delay_source": "Online/GameSettingsContainer#GameSettingNode[AP_RespawnDelay_Mode8].DefaultValue",
+   "initial": 0,
+   "initial_source": "Online/GameSettingsContainer#GameSettingNode[AP_InitialRespawnDelay_Mode8].DefaultValue",
+   "spawnDelay": {
+    "instantAction": 4,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_Spawn_Delay_Mode8].DefaultValue",
+    "coop": 1,
+    "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_Spawn_Delay_Mode9].DefaultValue"
+   },
+   "rate": 4,
+   "rate_source": "Online/GameSettingsContainer#GameSettingNode[AP_SpawnRate].DefaultValue",
+   "maxPerUpdate": 1,
+   "maxPerUpdate_source": "Online/GameSettingsContainer#GameSettingNode[AP_MaxSpawnsPerUpdate].DefaultValue",
+   "squadSpawn": {
+    "instantAction": 0.5,
+    "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[AP_SquadSpawnProbability_Mode8].DefaultValue",
+    "coop": 0,
+    "coop_source": "Online/GameSettingsContainer#GameSettingNode[AP_SquadSpawnProbability_Mode9].DefaultValue"
+   }
+  },
+  "teams": {
+   "instantAction": {
+    "bots": 16,
+    "bots_source": "Online/GameSettingsContainer#GameSettingNode[TeamSize_AutoPlayers_Mode8].DefaultValue",
+    "botsNormal": 13,
+    "botsNormal_source": "Online/GameSettingsContainer#GameSettingNode[TeamSize_AutoPlayers_Normal_Mode8].DefaultValue",
+    "players": 9,
+    "players_source": "Online/GameSettingsContainer#GameSettingNode[TeamSize_RealPlayer_Mode8].DefaultValue",
+    "playersNormal": 12,
+    "playersNormal_source": "Online/GameSettingsContainer#GameSettingNode[TeamSize_RealPlayer_Normal_Mode8].DefaultValue",
+    "team1": 12,
+    "team1_source": "Online/GameSettingsContainer#GameSettingNode[TeamSize1_AP_Mode8].DefaultValue",
+    "team2": 12,
+    "team2_source": "Online/GameSettingsContainer#GameSettingNode[TeamSize2_AP_Mode8].DefaultValue"
+   },
+   "coop": {
+    "small": 16,
+    "small_source": "Online/GameSettingsContainer#GameSettingNode[TeamSizeAP_BotTeam_Small_Mode9].DefaultValue",
+    "medium": 20,
+    "medium_source": "Online/GameSettingsContainer#GameSettingNode[TeamSizeAP_BotTeam_Medium_Mode9].DefaultValue",
+    "large": 24,
+    "large_source": "Online/GameSettingsContainer#GameSettingNode[TeamSizeAP_BotTeam_Large_Mode9].DefaultValue",
+    "human": 8,
+    "human_source": "Online/GameSettingsContainer#GameSettingNode[TeamSizeAP_HumanTeam_Mode9].DefaultValue"
+   },
+   "supremacy": {
+    "team1": 12,
+    "team1_source": "Online/GameSettingsContainer#GameSettingNode[AP_Number_of_Bots_Team1_Mode1].DefaultValue",
+    "team2": 12,
+    "team2_source": "Online/GameSettingsContainer#GameSettingNode[AP_Number_of_Bots_Team2_Mode1].DefaultValue"
+   }
+  },
+  "orphans": {
+   "instantAction": 45,
+   "instantAction_source": "Online/GameSettingsContainer#GameSettingNode[OrphanTimeSeconds_Mode8].DefaultValue",
+   "trigger": 60,
+   "trigger_source": "Online/GameSettingsContainer#GameSettingNode[TriggerOrphansTimer_Mode8].DefaultValue",
+   "attack": 20,
+   "attack_source": "Online/GameSettingsContainer#GameSettingNode[OrphanTime_Attack_ModeD].DefaultValue",
+   "defend": 20,
+   "defend_source": "Online/GameSettingsContainer#GameSettingNode[OrphanTime_Defend_Mode9].DefaultValue",
+   "retreat": 0,
+   "retreat_source": "Online/GameSettingsContainer#GameSettingNode[OrphanTime_Retreat_Mode9].DefaultValue"
+  },
+  "_missing": []
+ }
+}

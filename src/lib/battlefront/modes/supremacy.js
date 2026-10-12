@@ -11,13 +11,14 @@
 //   tick(m, dt, world)   onEvent(m, e)   view(m)   force(m)   and round.js's sideOf, teamOf, spawnSets, walkersOf, canRespawn
 
 import { mapOf } from '../rulebook.js';
-import { ADVANTAGE_MAX } from './objectives.js';
-import { STAGE_SETUP } from './galacticAssault.js';
 import { baseMode, finish, refuseUnplaced, sense, viewOf } from './round.js';
 
 export { sideOf, spawnSets, teamOf, walkersOf } from './round.js';
 
-export const SETUP_SECONDS = STAGE_SETUP;
+// Supremacy's own prefab (`PF_GameMode_Mode1`) is not read: 12 s before the
+// first phase and a post's crowd counting up to six, by hand.
+export const SETUP_SECONDS = 12;
+export const ADVANTAGE_MAX = 6;
 // Where the level wires none: PF_CapturePoint_Mode1's CaptureDuration and PF_UI_Mode1's MaxReinforcements as Hoth_02 sets them
 export const CAPTURE_DURATION = 20;
 export const REINFORCEMENTS = 70;

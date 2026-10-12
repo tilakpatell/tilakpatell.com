@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { classOf, loadRulebook, weaponOf } from './rulebook.js';
 import { field } from './fixtures/field.js';
 import { buildNav } from './nav.js';
-import { HEAD_MULTIPLIER, TIME_FOR_CORPSE, capsulesOf, hurt, move, newSoldier, speedOf, tick } from './soldier.js';
+import { HEAD_MULTIPLIER, TIME_FOR_CORPSE, boltOf, capsulesOf, hurt, move, multiplierFor, newSoldier, speedOf, tick } from './soldier.js';
 
 const rb = loadRulebook();
 const ASSAULT = classOf(rb, 'l-orig-assault');
@@ -23,6 +23,19 @@ describe('soldiers', () => {
     const t = make();
     hurt(t, { damage: 35, part: 'head', now: 0 });
     expect(t.hp).toBeCloseTo(150 - 35 * HEAD_MULTIPLIER, 9);
+    // the material pair: the blaster bolt (6) on the head capsule (9) is 1.9×, on every other part 1.0×
+    expect(HEAD_MULTIPLIER).toBe(1.9);
+    expect(multiplierFor('blaster', 'head')).toEqual({ multiplier: 1.9, threshold: 0 });
+    for (const part of ['chest', 'hips', 'armL', 'armR', 'legL', 'legR']) expect(multiplierFor('blaster', part).multiplier).toBe(1);
+    // the heavy bolt (7): 1.0× everywhere, nothing under its 2-damage floor
+    expect(multiplierFor('heavy', 'head')).toEqual({ multiplier: 1, threshold: 2 });
+    expect(boltOf({ family: 'heavy' })).toBe('heavy');
+    expect(boltOf({ family: 'rifle' })).toBe('blaster');
+    const u = make({ id: 'u' });
+    hurt(u, { damage: 2, part: 'head', bolt: 'heavy', now: 0 });
+    expect(u.hp).toBe(150);
+    hurt(u, { damage: 30, part: 'head', bolt: 'heavy', now: 0 });
+    expect(u.hp).toBe(120);
   });
 
   it('regenerate after the class’s delay at its rate', () => {

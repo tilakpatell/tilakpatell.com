@@ -35,7 +35,9 @@ describe('guns', () => {
     expect(fire(g, 0.2)).toHaveLength(1);
   });
 
-  it('overheats at exactly the threshold after 24 bolts', () => {
+  it('overheats at the full bar after 30 bolts: the config’s override, not the legacy 0.8 and 3 s', () => {
+    expect(A280C.heat).toMatchObject({ threshold: 1, penalty: 1, exitDelay: 0.2, dropDelay: 5, legacy: { threshold: 0.8, penalty: 3 } });
+    expect(weaponOf(rb, 'e11').heat).toMatchObject({ perBullet: 0.04, threshold: 1, penalty: 1, exitDelay: 0.3, dropDelay: 5 });
     const g = gun();
     let n = 0;
     let now = 0;
@@ -43,10 +45,22 @@ describe('guns', () => {
       n += fire(g, now)?.length ?? 0;
       now += 1;
     }
-    expect(n).toBe(24);
+    expect(n).toBe(30);
     expect(g.heat).toBeGreaterThanOrEqual(A280C.heat.threshold);
     expect(g.state).toBe('overheated');
     expect(fire(g, now)).toBeNull();
+  });
+
+  it('holds its heat the drop delay after the last shot, then cools', () => {
+    const g = gun();
+    fire(g, 0);
+    const heat = g.heat;
+    // (the burst's last bolt is the last shot)
+    const t0 = g.lastShot;
+    tick(g, A280C.heat.dropDelay - 0.1, t0 + A280C.heat.dropDelay - 0.1);
+    expect(g.heat).toBe(heat);
+    tick(g, 0.1, t0 + A280C.heat.dropDelay + 0.1);
+    expect(g.heat).toBeCloseTo(heat - A280C.heat.dropPerSecond * 0.1, 9);
   });
 
   it('times active cooling on the bar: the window, its inclusive edge, the super window and a miss', () => {
@@ -85,23 +99,23 @@ describe('guns', () => {
     expect(g.cooling.window[1]).toBeCloseTo(A280C.heat.cooling.window[1] + WINDOW_STEP, 9);
   });
 
-  it('serves the penalty and the vent when nobody presses', () => {
+  it('serves the penalty and the exit delay when nobody presses', () => {
     const { g } = overheated(1);
     const t0 = g.cooling.at;
     tick(g, A280C.heat.penalty, t0 + A280C.heat.penalty);
     expect(g.state).toBe('venting');
-    tick(g, A280C.heat.cooling.vent, t0 + A280C.heat.penalty + A280C.heat.cooling.vent);
+    tick(g, A280C.heat.exitDelay, t0 + A280C.heat.penalty + A280C.heat.exitDelay);
     expect(g.state).toBe('ready');
     expect(g.heat).toBe(0);
   });
 
-  it('cools between bursts and vents by hand above the minimum heat', () => {
+  it('cools between bursts after the drop delay and vents by hand above the minimum heat', () => {
     const g = gun();
     fire(g, 0);
     const h = g.heat;
     tick(g, 0.2, 0.2);
     expect(g.heat).toBe(h);
-    tick(g, 0.2, 1);
+    tick(g, 0.2, A280C.heat.dropDelay + 0.2);
     expect(g.heat).toBeCloseTo(h - A280C.heat.dropPerSecond * 0.2, 9);
     expect(vent(g, 1)).toBe(false);
     fire(g, 2);

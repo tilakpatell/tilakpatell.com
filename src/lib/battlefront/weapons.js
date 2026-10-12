@@ -15,9 +15,10 @@ const DEG = Math.PI / 180;
 // A row with no bolt damage (lane 0 found it on every gun but the bowcaster,
 // whose bolt is a ProjectileBlueprint): the family's damage, the game's by observation.
 export const HAND_DAMAGE = { rifle: 35, heavy: 30, pistol: 40, sniper: 55, longRange: 55, shortRange: 25, special: 30, hero: 40 };
-// How long after the last shot the heat starts to fall when not overheated:
-// the data's `OverheatDropDelay` (5 s on the A280C) holds a full bar after an
-// overheat, and the ordinary drop's delay is not in the record. The game's by observation.
+// How long after the last shot the heat starts to fall: the row's
+// `OverheatDropDelay` (5 s on every blaster, bf2-re finding 20: after it,
+// heat falls at `HeatDropPerSecond`, ×1.5 while overheated); this is the
+// fallback for a row without one, by hand.
 export const COOL_DELAY = 0.3;
 // How far a success narrows the cooling window's low edge (`OnSuccess` counts
 // steps; the step's size is not in the record): the game's by observation.
@@ -108,8 +109,9 @@ export function tick(gun, dt, now) {
   if (gun.state === 'overheated') {
     if (now - gun.cooling?.at >= h.dropDelay || !gun.cooling) gun.heat = Math.max(0, gun.heat - h.dropPerSecond * h.overheatedDrop * dt);
     if (now >= gun.until - EDGE) {
+      // (the penalty served: the config's exit delay, then ready; a row without one vents instead)
       gun.state = 'venting';
-      gun.until = now + (h.cooling?.vent ?? 0);
+      gun.until = now + (h.exitDelay ?? h.cooling?.vent ?? 0);
       gun.cooling = null;
     }
   } else if (gun.state === 'venting') {
@@ -122,7 +124,7 @@ export function tick(gun, dt, now) {
       gun.state = 'ready';
       gun.mag = gun.row.ammo.magazine;
     }
-  } else if (h && now - gun.lastShot >= COOL_DELAY) {
+  } else if (h && now - gun.lastShot >= (h.dropDelay ?? COOL_DELAY)) {
     gun.heat = Math.max(0, gun.heat - h.dropPerSecond * dt);
   }
 }

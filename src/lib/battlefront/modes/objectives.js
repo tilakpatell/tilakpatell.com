@@ -12,12 +12,21 @@
 //   each kind's view(o) → the HUD's row
 //   insidePolygon(points, x, z)    centroid(points)
 
-// `PF_CapturePoint`'s cast: 60 s for one attacker alone to take a point from neutral to held.
+// The capture point's record (`CapturePoint_Shared#WSCapturePointEntityData`,
+// bf2-re findings 19 and 27 §5): `CaptureDuration 5` s is the base one
+// attacker needs, which the mode's tunable `GLOBAL_CAPTURE_POINT_TIME 60`
+// (`Online/BattlepointCostData`, points.json) scales it to in Galactic
+// Assault; `PlayerScale 1` and `MaxMultiplier 1`: more attackers take it no
+// faster; `MaxDecayMultiplier 10`: the defenders drain it up to ten soldiers'
+// worth; `PassiveDecay 0`: an empty point holds; `OnePlayerCanBlock false`.
+export const CAPTURE = { base: 5, playerScale: 1, maxMultiplier: 1, maxDecayMultiplier: 10, passiveDecay: 0, onePlayerCanBlock: false, _source: 'Gameplay/GameModes/Shared/CapturePoints/CapturePoint_Shared#WSCapturePointEntityData' };
+export const CAPTURE_BASE = CAPTURE.base;
 export const CAPTURE_SECONDS = 60;
-// The most a crowd counts for on a point, by hand (the game's meter speeds up to four soldiers' worth).
-export const ADVANTAGE_MAX = 6;
-// The HUD's thirds of the meter (`PF_CapturePoint`'s 0.33 and 0.66).
-export const THIRDS = [0.33, 0.66];
+// The most a crowd counts for on a point: the record's MaxMultiplier (taking) and MaxDecayMultiplier (draining).
+export const ADVANTAGE_MAX = CAPTURE.maxMultiplier;
+export const DECAY_MAX = CAPTURE.maxDecayMultiplier;
+// The meter's thirds (the shared graph's `CompareFloat 0.33 / 0.67`; the HUD's own are 0.33 / 0.66), the voice-over's cues.
+export const THIRDS = [0.33, 0.67];
 // `SW02_VO_BombInteract`'s shape, by hand: hold 6 s to arm, 30 s of fuse, 6 s to defuse.
 export const ARM_SECONDS = 6;
 export const FUSE_SECONDS = 30;
@@ -52,28 +61,34 @@ export const centroid = (points) => [points.reduce((n, p) => n + p[0], 0) / poin
 
 const clamp = (v) => Math.max(-1, Math.min(1, v));
 
-// -- capture: −1 the defenders' to +1 the attackers'; the side with more inside moves it --
-// A point opens at 0, the defenders' (`PF_CapturePoint`'s 0 to 1 is the
-// attackers' take); the defenders can push it on to −1, a margin to win back.
+// -- capture: 0 the defenders' (neutral, the record's InitialOwner) to 1 the attackers' --
+// Attackers alone inside take it at `min(MaxMultiplier, n × PlayerScale)` of
+// the base rate; both inside, it is contested and holds; defenders alone
+// drain it back at up to `MaxDecayMultiplier` soldiers' worth; empty, it
+// holds (`PassiveDecay 0`). `seconds` is the time one attacker needs (the
+// mode's tunable, 60 s in Galactic Assault; the record's base is 5 s).
 
 export const capture = {
-  create({ volume, name = null, meter = 0 }) {
-    return { type: 'capture', name, volume, at: centroid(volume.points), meter, owner: meter >= 1 ? 'attack' : 'defend', contested: false, overtime: false, moving: null, done: meter >= 1 };
+  create({ volume, name = null, meter = 0, seconds = CAPTURE_SECONDS }) {
+    return { type: 'capture', name, volume, at: centroid(volume.points), meter, seconds, owner: meter >= 1 ? 'attack' : 'defend', contested: false, overtime: false, moving: null, done: meter >= 1 };
   },
   tick(o, dt, { inside }) {
     const a = inside.attack ?? 0;
     const d = inside.defend ?? 0;
     o.contested = a > 0 && d > 0;
     o.overtime = o.contested;
-    const net = a - d;
-    const sign = Math.sign(net);
     o.moving = null;
-    if (sign && !(sign > 0 && o.meter >= 1) && !(sign < 0 && o.meter <= -1)) {
-      o.meter = clamp(o.meter + (sign * Math.min(ADVANTAGE_MAX, Math.abs(net)) * dt) / CAPTURE_SECONDS);
-      o.moving = sign > 0 ? 'attack' : 'defend';
+    if (o.contested) return;
+    const rate = a > 0 ? Math.min(ADVANTAGE_MAX, a * CAPTURE.playerScale) : d > 0 ? -Math.min(DECAY_MAX, d) : -CAPTURE.passiveDecay;
+    if (rate > 0 && o.meter < 1) {
+      o.meter = clamp(o.meter + (rate * dt) / o.seconds);
+      o.moving = 'attack';
+    } else if (rate < 0 && o.meter > 0) {
+      o.meter = Math.max(0, o.meter + (rate * dt) / o.seconds);
+      o.moving = 'defend';
     }
     if (o.meter >= 1) o.owner = 'attack';
-    if (o.meter <= -1) o.owner = 'defend';
+    if (o.meter <= 0) o.owner = 'defend';
     o.done = o.meter >= 1;
   },
   view: (o) => ({ type: o.type, name: o.name, meter: o.meter, owner: o.owner, contested: o.contested, armed: false, fuse: 0, progress: Math.abs(o.meter) }),

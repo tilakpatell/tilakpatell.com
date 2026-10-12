@@ -227,6 +227,16 @@ function heatOf(root, blueprint, firing, fn, missing) {
   or('threshold', { asset: firing, obj: fn }, 'OverHeat.OverHeatThreshold', conf?.asset, cfg, 'OverHeatThreshold');
   or('penalty', { asset: firing, obj: fn }, 'OverHeat.OverHeatPenaltyTime', conf?.asset, cfg, 'OverHeatPenaltyTime');
   if (!cfg) return heat;
+  // the config's `OverrideSettings` (bf2-re finding 20): its own penalty and
+  // exit delay win over the firing data's legacy block, and the gun overheats
+  // at the full bar (heat is 0…1; the config's `OverHeatThreshold 0.001` is
+  // its epsilon over 1), the legacy numbers kept beside
+  if (cfg.OverrideSettings) {
+    heat.legacy = { threshold: heat.threshold, threshold_source: heat.threshold_source, penalty: heat.penalty, penalty_source: heat.penalty_source };
+    withSources(Object.assign(heat, { threshold: 1 }), { threshold: `${conf.asset.name}#OverheatConfig.OverrideSettings (the full bar; OverHeatThreshold ${cfg.OverHeatThreshold} is the epsilon over it)` });
+    take(heat, 'penalty', conf.asset, cfg, 'OverHeatPenaltyTime');
+    take(heat, 'exitDelay', conf.asset, cfg, 'ExitOverheatDelay');
+  }
   take(heat, 'overheatedDrop', conf.asset, cfg, 'OverheatedDropMultiplier');
   take(heat, 'warning', conf.asset, cfg, 'HeatWarningThreshold');
   const ac = cfg.ActiveCooldownSettings;

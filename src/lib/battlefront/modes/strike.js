@@ -15,8 +15,7 @@
 
 import { mapOf } from '../rulebook.js';
 import { KINDS } from './objectives.js';
-import { STAGE_PAUSE, STAGE_SETUP } from './galacticAssault.js';
-import { baseMode, finish, refuseUnplaced, sense, viewOf } from './round.js';
+import { PAUSE as STAGE_PAUSE, SETUP as STAGE_SETUP, baseMode, finish, refuseUnplaced, sense, viewOf } from './round.js';
 
 export { canRespawn, sideOf, spawnSets, teamOf, walkersOf } from './round.js';
 

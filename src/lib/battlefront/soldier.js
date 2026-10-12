@@ -7,10 +7,12 @@
 // skeleton by stance since the sim poses no bones. Pure.
 //
 //   newSoldier(classRow, { id, team, at, yaw, rand, bot, weapon, abilities }) → s
-//   capsulesOf(s) → [{ part, a, b, r }]    hurt(s, { damage, part, from, by, now }) → 'hurt' | 'down' | null
+//   capsulesOf(s) → [{ part, a, b, r }]    hurt(s, { damage, part, bolt, from, by, now }) → 'hurt' | 'down' | null
+//   multiplierFor(bolt, part) → { multiplier, threshold }    boltOf(weaponRow) → 'blaster' | 'heavy'
 //   tick(s, dt, now)    speedOf(s) → m/s    move(s, dir, dt, nav) → metres moved    stanceOf(s)
 
 import bones from '../../data/bf2017/physics/bones.json';
+import hurtbox from '../../data/bf2017/physics/hurtbox.json';
 import physics from '../../data/bf2017/physics/soldier.json';
 import { ROLL, createAbilities, tick as tickAbilities } from './abilities.js';
 import { createStack, resolve, tick as tickStack } from './affectors.js';
@@ -24,9 +26,23 @@ const SET = bones.sets.find((s) => s.id === 'defaultsoldierbonecollision');
 const radiusOf = (bone, k = 0) => SET.bones.filter((b) => b.bone === bone)[k].radius;
 const lengthOf = (bone) => SET.bones.find((b) => b.bone === bone).length;
 
-// No damage multiplier by bone is in the bone collision data (lane 0 and P2
-// read it whole): the head's, the game's headshot rule by observation.
-export const HEAD_MULTIPLIER = 1.5;
+// The damage multiplier by part is a material pair of the level's grid
+// (bf2-re finding 20; physics/hurtbox.json, scripts/bf2017-hurtbox.mjs): the
+// bolt's material (the blaster's 6, the heavy's 7) against the bone capsule's
+// (`MaterialPair.Packed >> 22`: the head 9, the body and arms 8, the forearms
+// 70, the lower legs 69). The blaster: head 1.9×, every other part 1.0×, no
+// limb reduction; the heavy bolt 1.0× everywhere with a 2-damage floor.
+const HURTBOX = hurtbox.rows;
+// the sim's parts → the bone whose capsule (and material) they take
+const PART_BONE = { head: 'Head', chest: 'Spine', hips: 'Spine', armL: 'LeftArm', armR: 'RightArm', legL: 'LeftUpLeg', legR: 'RightUpLeg', body: 'Spine' };
+export function multiplierFor(bolt = 'blaster', part = 'chest') {
+  const material = HURTBOX.parts[PART_BONE[part] ?? 'Spine']?.material ?? HURTBOX.parts.Spine.material;
+  const pair = HURTBOX.pairs[bolt]?.[material] ?? HURTBOX.pairs.blaster[material];
+  return { multiplier: pair?.multiplier ?? 1, threshold: pair?.threshold ?? 0 };
+}
+// the material row a weapon's bolt strikes with: the heavy family's bolt is 7, every other blaster's 6
+export const boltOf = (row) => (row?.family === 'heavy' ? 'heavy' : 'blaster');
+export const HEAD_MULTIPLIER = multiplierFor('blaster', 'head').multiplier;
 // `SoldierEntityData.TimeForCorpse` (4.5 s on the soldier blueprints the
 // design's survey read; no rulebook carries it yet): dying to gone.
 export const TIME_FOR_CORPSE = 4.5;
@@ -102,10 +118,11 @@ export function capsulesOf(s, out = []) {
 export const chestOf = (s) => [s.at[0], s.at[1] + (s.stance === 'crouch' ? POSES.crouch.height : POSES.stand.height) * 0.7, s.at[2]];
 export const eyeOf = (s) => [s.at[0], s.at[1] + (s.stance === 'crouch' ? POSES.crouch.eye[1] : POSES.stand.eye[1]), s.at[2]];
 
-export function hurt(s, { damage, part = 'chest', by = null, now = 0 }) {
+export function hurt(s, { damage, part = 'chest', bolt = 'blaster', by = null, now = 0 }) {
   if (!s.alive) return null;
-  const head = part === 'head' ? HEAD_MULTIPLIER : 1;
-  const dealt = damage * head * resolve(s.stack, 'ArmorMultiplier', 1);
+  const pair = multiplierFor(bolt, part);
+  // (the pair's floor: a hit under its threshold does nothing)
+  const dealt = damage > pair.threshold ? damage * pair.multiplier * resolve(s.stack, 'ArmorMultiplier', 1) : 0;
   s.hp = Math.max(0, s.hp - dealt);
   s.lastHurt = now;
   s.lastBy = by;

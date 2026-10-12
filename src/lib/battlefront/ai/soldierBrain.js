@@ -403,7 +403,8 @@ function plan(brain, world, s, goal, now) {
   if (profile.on) profile.path += clock() - t0;
 }
 
-function navigate(brain, world, s, goal, dt, now) {
+// (shared with the AutoPlayer model, ai/autoPlayer.js: the site's A* and its path-following)
+export function navigate(brain, world, s, goal, dt, now) {
   if (!goal) return move(s, [0, 0], dt, world.nav);
   if (d2(flat(s.at), goal) < NEAR_GOAL) {
     brain.stuck = 0;

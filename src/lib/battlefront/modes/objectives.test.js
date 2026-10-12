@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ARM_SECONDS, CAPTURE_SECONDS, DEFUSE_SECONDS, FUSE_SECONDS, WALKER_SPEED, arm, capture, escort, hold, insidePolygon, uplink } from './objectives.js';
+import { ARM_SECONDS, CAPTURE, CAPTURE_BASE, CAPTURE_SECONDS, DEFUSE_SECONDS, FUSE_SECONDS, THIRDS, WALKER_SPEED, arm, capture, escort, hold, insidePolygon, uplink } from './objectives.js';
 
 const square = { points: [[0, 0], [10, 0], [10, 10], [0, 10]] };
 const run = (kind, o, seconds, ctx, dt = 0.05) => {
@@ -12,9 +12,19 @@ describe('the objectives', () => {
     expect(insidePolygon(square.points, 11, 5)).toBe(false);
   });
 
-  it('takes a point from neutral in 60 s over the advantage', () => {
+  it('carries the capture point’s record: a 5 s base the mode scales to 60, one soldier’s worth at most, thirds at 0.33 and 0.67', () => {
+    expect(CAPTURE).toMatchObject({ base: 5, playerScale: 1, maxMultiplier: 1, maxDecayMultiplier: 10, passiveDecay: 0 });
+    expect(CAPTURE_BASE).toBe(5);
+    expect(CAPTURE_SECONDS).toBe(60);
+    expect(THIRDS).toEqual([0.33, 0.67]);
+    const o = capture.create({ volume: square, seconds: CAPTURE_BASE });
+    run(capture, o, CAPTURE_BASE, { inside: { attack: 1, defend: 0 } });
+    expect(o.done).toBe(true);
+  });
+
+  it('takes a point from neutral in 60 s, two attackers no faster than one', () => {
     const o = capture.create({ volume: square, meter: 0 });
-    run(capture, o, CAPTURE_SECONDS / 2 - 0.5, { inside: { attack: 2, defend: 0 } });
+    run(capture, o, CAPTURE_SECONDS - 0.5, { inside: { attack: 2, defend: 0 } });
     expect(o.done).toBe(false);
     run(capture, o, 0.5, { inside: { attack: 2, defend: 0 } });
     expect(o.meter).toBeCloseTo(1, 6);
@@ -22,10 +32,19 @@ describe('the objectives', () => {
     expect(o.owner).toBe('attack');
   });
 
-  it('caps the crowd at four', () => {
+  it('caps the crowd at the record’s MaxMultiplier: nine attackers take a quarter in a quarter of the time', () => {
     const o = capture.create({ volume: square, meter: 0 });
     run(capture, o, CAPTURE_SECONDS / 4, { inside: { attack: 9, defend: 0 } });
-    expect(o.meter).toBeCloseTo(1, 6);
+    expect(o.meter).toBeCloseTo(0.25, 6);
+  });
+
+  it('lets defenders drain it up to ten soldiers’ worth, never below neutral', () => {
+    const o = capture.create({ volume: square, meter: 1 });
+    run(capture, o, CAPTURE_SECONDS / 20, { inside: { attack: 0, defend: 12 } });
+    expect(o.meter).toBeCloseTo(0.5, 6);
+    run(capture, o, CAPTURE_SECONDS, { inside: { attack: 0, defend: 12 } });
+    expect(o.meter).toBe(0);
+    expect(o.owner).toBe('defend');
   });
 
   it('contested holds', () => {

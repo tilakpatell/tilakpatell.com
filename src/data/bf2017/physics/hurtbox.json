@@ -1,0 +1,119 @@
+{
+ "_from": {
+  "export": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32",
+  "date": "2026-10-12",
+  "script": "scripts/bf2017-hurtbox.mjs"
+ },
+ "rows": {
+  "bolts": {
+   "blaster": 6,
+   "blaster_source": "derived: bf2-re finding 20 (the material grid row the blaster bolt and the heavy bolt strike with, from the bolts’ impact rows)",
+   "heavy": 7,
+   "heavy_source": "derived: bf2-re finding 20 (the material grid row the blaster bolt and the heavy bolt strike with, from the bolts’ impact rows)"
+  },
+  "parts": {
+   "Head": {
+    "material": 9,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[0].MaterialPair.Packed >> 22"
+   },
+   "RightArm": {
+    "material": 8,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[2].MaterialPair.Packed >> 22"
+   },
+   "LeftArm": {
+    "material": 8,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[3].MaterialPair.Packed >> 22"
+   },
+   "RightForeArm": {
+    "material": 70,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[4].MaterialPair.Packed >> 22"
+   },
+   "LeftForeArm": {
+    "material": 70,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[5].MaterialPair.Packed >> 22"
+   },
+   "Spine": {
+    "material": 8,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[6].MaterialPair.Packed >> 22"
+   },
+   "RightUpLeg": {
+    "material": 8,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[8].MaterialPair.Packed >> 22"
+   },
+   "LeftUpLeg": {
+    "material": 8,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[9].MaterialPair.Packed >> 22"
+   },
+   "RightLeg": {
+    "material": 69,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[10].MaterialPair.Packed >> 22"
+   },
+   "LeftLeg": {
+    "material": 69,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[11].MaterialPair.Packed >> 22"
+   },
+   "AITrajectory": {
+    "material": 8,
+    "material_source": "Gameplay/Characters/DefaultSoldierBoneCollision#SkeletonCollisionData.BoneCollisionData[12].MaterialPair.Packed >> 22"
+   }
+  },
+  "pairs": {
+   "blaster": {
+    "8": {
+     "multiplier": 1,
+     "multiplier_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[5].Items[7].MaterialRelationDamageData.DamageProtectionMultiplier",
+     "threshold": 0,
+     "threshold_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[5].Items[7].MaterialRelationDamageData.DamageProtectionThreshold"
+    },
+    "9": {
+     "multiplier": 1.9,
+     "multiplier_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[5].Items[8].MaterialRelationDamageData.DamageProtectionMultiplier",
+     "threshold": 0,
+     "threshold_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[5].Items[8].MaterialRelationDamageData.DamageProtectionThreshold"
+    },
+    "69": {
+     "multiplier": 1,
+     "multiplier_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[5].Items[51].MaterialRelationDamageData.DamageProtectionMultiplier",
+     "threshold": 0,
+     "threshold_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[5].Items[51].MaterialRelationDamageData.DamageProtectionThreshold"
+    },
+    "70": {
+     "multiplier": 1,
+     "multiplier_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[5].Items[52].MaterialRelationDamageData.DamageProtectionMultiplier",
+     "threshold": 0,
+     "threshold_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[5].Items[52].MaterialRelationDamageData.DamageProtectionThreshold"
+    },
+    "material": 6,
+    "material_source": "derived: bf2-re finding 20 (the material grid row the blaster bolt and the heavy bolt strike with, from the bolts’ impact rows)"
+   },
+   "heavy": {
+    "8": {
+     "multiplier": 1,
+     "multiplier_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[6].Items[7].MaterialRelationDamageData.DamageProtectionMultiplier",
+     "threshold": 2,
+     "threshold_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[6].Items[7].MaterialRelationDamageData.DamageProtectionThreshold"
+    },
+    "9": {
+     "multiplier": 1,
+     "multiplier_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[6].Items[8].MaterialRelationDamageData.DamageProtectionMultiplier",
+     "threshold": 2,
+     "threshold_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[6].Items[8].MaterialRelationDamageData.DamageProtectionThreshold"
+    },
+    "69": {
+     "multiplier": 1,
+     "multiplier_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[6].Items[51].MaterialRelationDamageData.DamageProtectionMultiplier",
+     "threshold": 2,
+     "threshold_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[6].Items[51].MaterialRelationDamageData.DamageProtectionThreshold"
+    },
+    "70": {
+     "multiplier": 1,
+     "multiplier_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[6].Items[52].MaterialRelationDamageData.DamageProtectionMultiplier",
+     "threshold": 2,
+     "threshold_source": "Levels/MP/Hoth_01/Hoth_01/materialgrid_win32#MaterialGridData.InteractionGrid[6].Items[52].MaterialRelationDamageData.DamageProtectionThreshold"
+    },
+    "material": 7,
+    "material_source": "derived: bf2-re finding 20 (the material grid row the blaster bolt and the heavy bolt strike with, from the bolts’ impact rows)"
+   }
+  }
+ }
+}

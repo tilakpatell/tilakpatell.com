@@ -2,7 +2,7 @@
 // N times, a line a run and a summary, for the PR body and the hand-off.
 //
 //   node scripts/battlefront-balance.mjs --skirmish [--runs 10] [--bots 20] [--seconds 180] [--seed 1] [--profile] [--difficulty <name>] [--pve]
-//   node scripts/battlefront-balance.mjs --assault [--runs 20] [--bots 20] [--minutes 25] [--seed 1] [--jobs 4]
+//   node scripts/battlefront-balance.mjs --assault [--runs 20] [--bots 20] [--minutes 25] [--seed 1] [--jobs 4] [--model autoPlayer|battleAI]
 //   node scripts/battlefront-balance.mjs --mode strike|extraction|ewokhunt|supremacy [--runs 12] [--minutes 25] [--seed 1] [--jobs 4]
 //
 // --skirmish   two teams of bots on Hoth's arena navgrid (fixtures/hothFlat.js), no mode
@@ -109,7 +109,7 @@ async function assaultRuns(seeds, bots, minutes) {
     const rows = [];
     for (const seed of seeds) {
       const t = performance.now();
-      const r = runAssault({ ...arena, seed, minutes, mode: MODE ?? 'galacticAssault' });
+      const r = runAssault({ ...arena, seed, minutes, mode: MODE ?? 'galacticAssault', botModel: word('model') });
       const row = { seed, winner: r.result ? (r.result.winner ? SIDE[r.result.winner] : 'draw') : 'none', why: r.result?.why ?? '-', stage: r.stage, minutes: Math.round(r.minutes * 10) / 10, kills1: r.kills[1], kills2: r.kills[2], heroes1: r.heroes[1], heroes2: r.heroes[2], ms: Math.round(performance.now() - t), stuck: r.stuck, offNav: r.offNav, attack: SIDE[r.sim.ga.rounds?.[0]?.attack ?? r.sim.ga.attack] };
       rows.push(row);
       if (flag('json')) console.log(JSON.stringify(row));
@@ -141,7 +141,7 @@ async function assault() {
       lanes.map(
         (lane) =>
           new Promise((done, fail) => {
-            const child = spawn(process.execPath, [self, ...(MODE ? ['--mode', MODE] : ['--assault']), '--json', '--seeds', lane.join(','), '--bots', String(bots), '--minutes', String(minutes)], { stdio: ['ignore', 'pipe', 'inherit'] });
+            const child = spawn(process.execPath, [self, ...(MODE ? ['--mode', MODE] : ['--assault']), '--json', '--seeds', lane.join(','), '--bots', String(bots), '--minutes', String(minutes), ...(word('model') ? ['--model', word('model')] : [])], { stdio: ['ignore', 'pipe', 'inherit'] });
             let text = '';
             child.stdout.on('data', (d) => (text += d));
             child.on('exit', (code) => (code ? fail(new Error(`a job failed (${code})`)) : done(text)));

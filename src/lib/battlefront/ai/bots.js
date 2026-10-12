@@ -7,7 +7,11 @@
 // hit or a near miss tells the target where the shot came from; a first
 // sight of an enemy is passed to the squad as an alert. Every bot has a name
 // from the game's lists (`names.js`, by its team's faction and the sim's
-// `namesMode`, Skirmish by default), kept by its id across redeploys. Pure.
+// `namesMode`, Skirmish by default), kept by its id across redeploys. The
+// mind is the sim's `botModel`: 'autoPlayer' (ai/autoPlayer.js, the game's
+// bot on a Galactic Assault map: objectives, a tracker and noise) or
+// 'battleAI' (ai/soldierBrain.js, the Arcade soldier: tactics, cover, the
+// firing patterns), each on the same senses, squads and paths. Pure.
 //
 //   createBrains(sim) → { brains: Map, squads, taken, add(s), remove(id) }
 //   addBrain(sim, s) (a bot deployed after the start)
@@ -15,10 +19,11 @@
 
 import { sense } from '../../ai/perception.js';
 import { SENSE, SQUAD, STEP, THINK, clock, muzzleOf, profile, shoot } from '../core.js';
-import { aiOf } from '../rulebook.js';
+import { aiOf, autoPlayerOf } from '../rulebook.js';
 import { lineClear, shields } from '../nav.js';
 import { chestOf, eyeOf } from '../soldier.js';
 import { act, createBrain, think } from './soldierBrain.js';
+import { act as actAuto, createAutoBrain, think as thinkAuto } from './autoPlayer.js';
 import { alert, createSquads, deliver, squadOf, update } from './squad.js';
 import { factionOf, nameFor } from './names.js';
 
@@ -37,7 +42,10 @@ function nameOf(sim, s) {
 
 function brainFor(sim, ai, s) {
   s.name = nameOf(sim, s);
-  const brain = createBrain(s, { ai, rand: sim.rand, aimScale: sim.aimScale ?? 1, difficulty: sim.difficulty ?? null, pve: !!sim.pve });
+  const brain =
+    sim.botModel === 'autoPlayer'
+      ? createAutoBrain(s, { ap: autoPlayerOf(sim.rb), rand: sim.rand, difficulty: sim.difficulty ?? null, side: sim.playerTeam != null && s.team === sim.playerTeam ? 'friendlies' : 'enemies', mode: sim.apMode ?? 'instantAction' })
+      : createBrain(s, { ai, rand: sim.rand, aimScale: sim.aimScale ?? 1, difficulty: sim.difficulty ?? null, pve: !!sim.pve });
   brain.name = s.name;
   brain.nextSense = sim.time + sim.rand() * SENSE;
   brain.nextThink = sim.time + sim.rand() * THINK;
@@ -152,17 +160,18 @@ export function stepBrains(sim) {
       b.nextSense += SENSE;
     }
     const world = worldFor(sim, b, s);
+    const auto = b.model === 'autoPlayer';
     if (sim.time >= b.nextThink) {
       const was = b.cover;
       const t0 = clock();
-      think(b, world, sim.time);
+      (auto ? thinkAuto : think)(b, world, sim.time);
       if (profile.on) profile.think += clock() - t0;
       if (was && was !== b.cover && B.taken.get(was) === id) B.taken.delete(was);
       if (b.cover) B.taken.set(b.cover, id);
       b.nextThink += THINK;
       sim.thinks = (sim.thinks ?? 0) + 1;
     }
-    act(b, b.intent, s, STEP, world, sim.time);
+    (auto ? actAuto : act)(b, b.intent, s, STEP, world, sim.time);
   }
 }
 

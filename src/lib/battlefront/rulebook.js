@@ -12,7 +12,9 @@
 
 import abilities from '../../data/bf2017/abilities.json';
 import ai from '../../data/bf2017/ai.json';
+import autoplayer from '../../data/bf2017/ai.autoplayer.json';
 import arcade from '../../data/bf2017/arcade.json';
+import hurtbox from '../../data/bf2017/physics/hurtbox.json';
 import cameras from '../../data/bf2017/cameras.json';
 import cards from '../../data/bf2017/cards.json';
 import classes from '../../data/bf2017/classes.json';
@@ -78,6 +80,8 @@ export function loadRulebook() {
   cached ??= freeze({
     abilities: abilities.rows,
     ai: ai.rows,
+    autoPlayer: autoplayer.rows,
+    hurtbox: hurtbox.rows,
     cameras: cameras.rows,
     cards: cards.rows,
     classes: classes.rows,
@@ -161,6 +165,8 @@ export const arcadeOf = (rb) => rb.arcade;
 export const camerasOf = (rb) => rb.cameras;
 export const uiOf = (rb) => rb.ui;
 export const aiOf = (rb) => rb.ai;
+export const autoPlayerOf = (rb) => rb.autoPlayer;
+export const hurtboxOf = (rb) => rb.hurtbox;
 export const pointsOf = (rb) => rb.points;
 export const squadsOf = (rb) => rb.squads;
 // (the squad strip's words travel with squads.json, beside the strings rulebook)

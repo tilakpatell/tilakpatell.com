@@ -11,8 +11,11 @@ import { balance, earn } from './battlePoints.js';
 import { squadOf } from './ai/squad.js';
 import { TIME_FOR_CORPSE } from './soldier.js';
 import { WAVE, isProtected } from './spawn.js';
+import { forceOf } from './ai/waves.js';
+import { autoPlayerOf } from './rulebook.js';
 
 const rb = loadRulebook();
+const ap = autoPlayerOf(rb);
 const hoth = hothFlatNav(rb);
 const until = (sim, test, seconds) => {
   for (let i = 0; i < seconds / 0.05 && !test(); i++) step(sim);
@@ -28,7 +31,8 @@ const kill = (sim, s) => {
 };
 
 describe('the sim in Galactic Assault', () => {
-  const sim = createSim({ rulebook: rb, nav: hoth, seed: 3, bots: { 1: 8, 2: 8 }, mode: 'galacticAssault' });
+  // (the BattleAI model, back on the hand wave; the AutoPlayer model's waves are below)
+  const sim = createSim({ rulebook: rb, nav: hoth, seed: 3, bots: { 1: 8, 2: 8 }, mode: 'galacticAssault', botModel: 'battleAI' });
 
   it('deploys both teams in their first stage’s areas, with the walkers', () => {
     const v = view(sim);
@@ -62,6 +66,30 @@ describe('the sim in Galactic Assault', () => {
     earn(sim.bp, me, 'kill', 40);
     expect(deploy(sim, me, { kind: 'hero', id: 'luke' })).toEqual({ ok: true });
     expect(sim.entities.get(me)).toMatchObject({ unit: 'hero', hp: 750 });
+  });
+});
+
+describe('the AutoPlayer model in Galactic Assault', () => {
+  const sim = createSim({ rulebook: rb, nav: hoth, seed: 5, bots: { 1: 6, 2: 6 }, mode: 'galacticAssault' });
+
+  it('is the default: every bot an AutoPlayer on the server’s waves, the spawn memory kept', () => {
+    expect(sim.botModel).toBe('autoPlayer');
+    for (const b of sim.brains.brains.values()) expect(b.model).toBe('autoPlayer');
+    expect(sim.commanders[2].waves.side).toBe('attack');
+    expect(sim.commanders[1].waves.side).toBe('defend');
+    expect(sim.spawnMemory.spawns).toHaveLength(12);
+    expect(createSim({ rulebook: rb, nav: hoth, seed: 5, bots: { 1: 1, 2: 1 }, mode: 'galacticAssault', pve: true }).botModel).toBe('battleAI');
+  });
+
+  it('brings a fallen attacker back on its side’s wave, or the force time at the latest', () => {
+    const s = [...sim.entities.values()].find((e) => e.team === 2 && e.kind === 'soldier');
+    kill(sim, s);
+    expect(until(sim, () => !s.alive, 1)).toBe(true);
+    expect(until(sim, () => sim.deploying.has(s.id), TIME_FOR_CORPSE + 0.2)).toBe(true);
+    const since = sim.time;
+    expect(until(sim, () => sim.entities.get(s.id)?.alive, forceOf(ap, 'attack', { phase: 1 }) + 1)).toBe(true);
+    expect(sim.time - since).toBeLessThanOrEqual(forceOf(ap, 'attack', { phase: 1 }) + 0.1);
+    expect(sim.spawnMemory.deaths.length + sim.spawnMemory.spawns.length).toBeGreaterThan(0);
   });
 });
 

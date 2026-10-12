@@ -30,7 +30,9 @@ describe('the weapon row', () => {
   });
 
   it('reads the heat and the active cooling', () => {
-    expect(w.heat).toMatchObject({ perBullet: 0.03334, dropPerSecond: 0.3, dropDelay: 5, threshold: 0.8, penalty: 3, overheatedDrop: 1.5, warning: 0.7 });
+    // (the config's OverrideSettings: the full bar and its own penalty and exit delay win over the firing data's legacy block)
+    expect(w.heat).toMatchObject({ perBullet: 0.03334, dropPerSecond: 0.3, dropDelay: 5, threshold: 1, penalty: 1, exitDelay: 0.2, overheatedDrop: 1.5, warning: 0.7, legacy: { threshold: 0.8, penalty: 3 } });
+    expect(w.heat.threshold_source).toMatch(/OverheatConfig_Rifle_A280C#OverheatConfig\.OverrideSettings/);
     expect(w.heat.perBullet_source).toMatch(/W_BlasterRifle_A280C#WeaponOverheatModifier\.HeatPerBullet$/);
     expect(w.heat.cooling).toMatchObject({ window: [0.8, 0.65], shrink: 1, reset: -100, successPenalty: 0.2, failurePenalty: 0.3, minHeat: 0.1, vent: 1, super: [0.4, 0.3] });
   });

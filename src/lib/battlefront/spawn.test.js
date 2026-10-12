@@ -1,27 +1,64 @@
 import { describe, expect, it } from 'vitest';
-import { IN_COMBAT, OFFSETS, SPAWN_PROTECTION, SQUAD_SAFE, WAVE, blocked, isProtected, pickSpawn, protect, squadSpawn, waves } from './spawn.js';
+import { ATTEMPT_OFFSET, FINDER, IN_COMBAT, NEAR_RADIUS, OFFSETS, SAFE, SPAWN_PROTECTION, SQUAD_SAFE, WAVE, blocked, createMemory, isProtected, pickSpawn, protect, remember, scoreSpot, squadSpawn, waves } from './spawn.js';
 import { loadRulebook, squadsOf } from './rulebook.js';
 
 const area = (id, x0, z0, x1, z1) => ({ id, mode: 'galacticAssault', team: 1, points: [[x0, z0], [x1, z0], [x1, z1], [x0, z1]], y: 0 });
-const point = (id, x, z, priority) => ({ id, mode: 'galacticAssault', team: 1, priority, enabled: false, at: [x, 0, z], yaw: 0.5 });
+const point = (id, x, z, priority, yaw = 0.5) => ({ id, mode: 'galacticAssault', team: 1, priority, enabled: false, at: [x, 0, z], yaw });
 const map = () => ({
-  polygons: [area('A', 0, 0, 100, 100)],
-  spawns: [point('hi', 10, 10, 2), point('lo', 80, 80, 1), point('out', 200, 200, 3), { ...point('them', 50, 50, 5), team: 2 }],
+  polygons: [area('A', 0, 0, 200, 200)],
+  spawns: [point('hi', 10, 10, 2), point('lo', 150, 150, 1), point('out', 300, 300, 3), { ...point('them', 100, 100, 5), team: 2 }],
 });
 
 describe('spawning', () => {
+  it('reads the finder’s weights from the record', () => {
+    expect(FINDER).toBe(squadsOf(loadRulebook()).finder);
+    expect(FINDER).toMatchObject({ friendlyWeight: -1, enemyWeight: -2, deathWeight: -50, spawnWeight: -100, deathRemember: 10, spawnRemember: 10, directionThreshold: 0.5, directionRange: 200 });
+    expect(SAFE).toBe(50);
+  });
+
   it('takes the highest priority point inside the set', () => {
     expect(pickSpawn({ map: map(), ids: ['A'], team: 1, rand: () => 0 }).at).toEqual([10, 0, 10]);
   });
 
-  it('picks a lower-priority safe point over a high one with an enemy 10 m off', () => {
-    const s = pickSpawn({ map: map(), ids: ['A'], team: 1, enemies: [[10, 20]], rand: () => 0 });
-    expect(s.at).toEqual([80, 0, 80]);
+  it('rejects a point with an enemy inside the safe distance, taking a lower priority one', () => {
+    const s = pickSpawn({ map: map(), ids: ['A'], team: 1, enemies: [[10, 10 + SAFE - 1]], rand: () => 0 });
+    expect(s.at).toEqual([150, 0, 150]);
     expect(s.yaw).toBe(0.5);
+    expect(scoreSpot([10, 10], { enemies: [[10, 10 + SAFE - 1]] })).toBe(-Infinity);
+    expect(scoreSpot([10, 10], { enemies: [[10, 10 + SAFE]] })).toBe(0);
+  });
+
+  it('weighs what is near a spot: a death −50, a spawn −100, a friendly −1, an enemy −2', () => {
+    const memory = createMemory();
+    remember(memory, 'death', [12, 12], 5);
+    remember(memory, 'spawn', [12, 12], 5);
+    expect(scoreSpot([10, 10], { memory, now: 6, friendlies: [[10, 15], [10, 10 + NEAR_RADIUS + 1]], enemies: [[10, 10 + SAFE + 1]] })).toBe(-151);
+    expect(scoreSpot([10, 10], { memory, now: 6, enemies: [[10, 10 + NEAR_RADIUS - 1]] })).toBe(-Infinity);
+    // forgotten after their durations
+    expect(scoreSpot([10, 10], { memory, now: 5 + FINDER.deathRemember + 0.1 })).toBe(0);
+  });
+
+  it('spawns away from a recent death with the same priority on offer', () => {
+    const m = map();
+    m.spawns.push(point('hi2', 60, 60, 2));
+    const memory = createMemory();
+    remember(memory, 'death', [10, 12], 0);
+    expect(pickSpawn({ map: m, ids: ['A'], team: 1, memory, now: 1, rand: () => 0 }).at).toEqual([60, 0, 60]);
+  });
+
+  it('prefers a spot facing the front among equals', () => {
+    const m = { polygons: [area('A', 0, 0, 200, 200)], spawns: [point('back', 10, 10, 1, Math.PI), point('front', 20, 10, 1, 0)] };
+    expect(pickSpawn({ map: m, ids: ['A'], team: 1, front: [15, 150], rand: () => 0 }).at).toEqual([20, 0, 10]);
+    expect(pickSpawn({ map: m, ids: ['A'], team: 1, front: [15, -150], rand: () => 0 }).at).toEqual([10, 0, 10]);
+  });
+
+  it('takes the stage’s own points when it names them', () => {
+    const s = pickSpawn({ map: map(), ids: ['A'], points: ['out'], team: 1, rand: () => 0 });
+    expect(s.at).toEqual([300, 0, 300]);
   });
 
   it('no safe point still spawns', () => {
-    const enemies = [[10, 10], [80, 80]];
+    const enemies = [[10, 10], [150, 150]];
     const s = pickSpawn({ map: map(), ids: ['A'], team: 1, enemies });
     expect(s).not.toBe(null);
     const d = Math.min(...enemies.map((e) => Math.hypot(e[0] - s.at[0], e[1] - s.at[2])));
@@ -53,13 +90,17 @@ describe('spawning', () => {
     expect(s.yaw).toBe(Math.PI / 2);
   });
 
-  it('skips an offset that is not walkable for the next', () => {
+  it('skips an offset that is not walkable for the next, and moves the table back for a second attempt', () => {
     const mate = { id: 'm', kind: 'soldier', alive: true, at: [0, 0, 0], yaw: 0, suppressed: 0 };
     const s = squadSpawn({ squad: [mate], me: 'me', walkable: (x, z) => z > -2.5 || x > 0 });
     // (the table's second, (−1.6, −2.25), is 1.6 m to the mate's left: +X at yaw 0, the right being −X)
     expect(s.at[0]).toBeCloseTo(1.6, 6);
     expect(s.at[2]).toBeCloseTo(-2.25, 6);
     expect(squadSpawn({ squad: [mate], me: 'me', walkable: () => false })).toBe(null);
+    // nothing in the first table fits: the second attempt's table, 6 m further behind
+    expect(ATTEMPT_OFFSET).toEqual([0, -6]);
+    const far = squadSpawn({ squad: [mate], me: 'me', walkable: (x, z) => z < -7.5 });
+    expect(far.at[2]).toBeCloseTo(-9, 6);
   });
 
   it('blocks a mate in combat, out of bounds, down or in the air, and spawns on none then', () => {
@@ -76,20 +117,21 @@ describe('spawning', () => {
     expect(squadSpawn({ squad, me: 'me', now: 10 })).toBe(null);
   });
 
-  it('keeps a squad spawn the record’s safe enemy distance from every enemy, not the points’ hand 30 m', () => {
+  it('keeps a squad spawn the record’s safe enemy distance from every enemy', () => {
     expect(SQUAD_SAFE).toBe(squadsOf(loadRulebook()).safeEnemyDistance);
     const mate = { id: 'm', kind: 'soldier', alive: true, at: [0, 0, 0], yaw: 0, suppressed: 0, cls: { cls: 'assault' } };
-    // (an enemy 40 m off: clear of the hand 30, inside the record's 50)
     expect(blocked(mate, { enemies: [[0, 40]], now: 10 })).toBe('combat');
     expect(squadSpawn({ squad: [mate], me: 'me', enemies: [[0, 40]], now: 10 })).toBe(null);
     expect(blocked(mate, { enemies: [[0, SQUAD_SAFE]], now: 10 })).toBe(null);
   });
 
-  it('protects a fresh soldier for a while', () => {
+  it('protects a fresh soldier for a while, or for the window asked', () => {
     const e = {};
     protect(e, 10);
     expect(isProtected(e, 10 + SPAWN_PROTECTION - 0.1)).toBe(true);
     expect(isProtected(e, 10 + SPAWN_PROTECTION)).toBe(false);
+    protect(e, 10, 6);
+    expect(isProtected(e, 15.9)).toBe(true);
   });
 
   it('brings bots back on the wave', () => {
