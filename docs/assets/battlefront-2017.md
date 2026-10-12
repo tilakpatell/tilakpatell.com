@@ -19,6 +19,8 @@ node --env-file=.env.local scripts/bf2017-fetch.mjs <name> [--lod all|0,2] [--pa
 
 A texture the bucket has not got yet prints `missing`: the upload is still running.
 
+**The dev server and the packs.** A level pack's binaries live in the public bucket, not in git ([the decision](../decisions/2026-10-10-battlefront-2017-assets.md)), and the site asks for them at `VITE_ASSET_BASE` (the deploy takes it from the repository variable `ASSET_BASE`). A dev server without that line in `.env.local` answers every pack binary with the site's index page: `SyntaxError: Unexpected token 'm', "ml lang="e"…` in the console, no level drawn, and a frame measured without it. Put `VITE_ASSET_BASE=` (the value `gh variable get ASSET_BASE` prints) in `.env.local` before measuring a Star Wars world; `node scripts/desktop/doctor.mjs` says whether it is there.
+
 ## Importing
 
 ```

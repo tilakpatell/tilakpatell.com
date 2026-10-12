@@ -32,6 +32,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { findChromium } from '../lib/chromium.mjs';
 import { REPO, deps, fresh, git, keepAwake, pullRequest, push, summary, waitForGpu, workspace } from './lib.mjs';
 
 export const JOBS = ['panoramas', 'atlases', 'textures', 'uastc', 'depots', 'gate'];
@@ -50,8 +51,23 @@ export function desk(env = process.env) {
     logs: join(root, 'logs'),
     python: env.PYTHON ?? (process.platform === 'win32' ? 'python' : 'python3'),
     texconv: env.TEXCONV ?? 'texconv',
-    chrome: env.CHROME ?? (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'),
+    // (Chrome or Edge, as the shot scripts find them: the owner's desktop has Edge alone)
+    chrome: env.CHROME ?? findChromium({ env }) ?? (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'),
   };
+}
+
+// The public bucket the site serves its packs from (the repository variable
+// ASSET_BASE, which the deploy hands the build as VITE_ASSET_BASE): from the
+// environment, else the checkout's .env.local. Without it a dev server
+// answers every pack binary with index.html, and the gate measures a world
+// whose level never loaded (the owner's desktop, 2026-10-11).
+export function assetBase(env = process.env, { root = REPO, exists = existsSync, read = (f) => readFileSync(f, 'utf8') } = {}) {
+  const fromEnv = env.VITE_ASSET_BASE || env.ASSET_BASE;
+  if (fromEnv) return fromEnv;
+  const file = join(root, '.env.local');
+  if (!exists(file)) return null;
+  const m = read(file).match(/^\s*VITE_ASSET_BASE\s*=\s*(\S+)/m);
+  return m ? m[1] : null;
 }
 
 // The bucket's keys, as present or not: the values never leave this function
@@ -64,9 +80,12 @@ export function keyState(env = process.env) {
 
 // The environment a child gets: the site's scripts read SUPA_KEY and the
 // desktop's uploader SUPABASE_SERVICE_KEY; the runner's .env may set either.
-export function childEnv(env = process.env) {
+export function childEnv(env = process.env, { base = assetBase(env) } = {}) {
   const key = env.SUPABASE_SERVICE_KEY || env.SUPA_KEY || env.BF2017_KEY;
-  return key ? { ...env, SUPA_KEY: env.SUPA_KEY || key, SUPABASE_SERVICE_KEY: env.SUPABASE_SERVICE_KEY || key } : { ...env };
+  const out = key ? { ...env, SUPA_KEY: env.SUPA_KEY || key, SUPABASE_SERVICE_KEY: env.SUPABASE_SERVICE_KEY || key } : { ...env };
+  // (the dev server a job starts reads VITE_ASSET_BASE from its environment)
+  if (base && !out.VITE_ASSET_BASE) out.VITE_ASSET_BASE = base;
+  return out;
 }
 
 export function args(argv = process.argv.slice(2)) {
@@ -100,13 +119,18 @@ export function onPath(cmd) {
 
 // What a job needs of this machine, checked: [{ name, ok, detail, fix }].
 // A need is { name, file } (a path that must exist), { name, cmd } (on
-// PATH), or { name, keys: true } (the bucket's keys in the environment).
-export function preflight(needs, env = process.env, { exists = existsSync, which = onPath } = {}) {
+// PATH), { name, keys: true } (the bucket's keys in the environment), or
+// { name, assetBase: true } (the public bucket's base, assetBase()).
+export function preflight(needs, env = process.env, { exists = existsSync, which = onPath, base = () => assetBase(env, { exists }) } = {}) {
   return needs.map((n) => {
     if (n.keys) {
       const k = keyState(env);
       const ok = k.url && k.key;
       return { name: n.name, ok, detail: `SUPABASE_URL ${k.url ? 'set' : 'missing'}, key ${k.key ? 'set' : 'missing'}`, fix: ok ? undefined : n.fix };
+    }
+    if (n.assetBase) {
+      const b = base();
+      return { name: n.name, ok: Boolean(b), detail: b ?? 'VITE_ASSET_BASE missing (the environment and .env.local)', fix: b ? undefined : n.fix };
     }
     const ok = n.file ? exists(n.file) : which(n.cmd);
     return { name: n.name, ok, detail: n.file ?? n.cmd, fix: ok ? undefined : n.fix };
@@ -312,11 +336,14 @@ export function bf2017Checks(env = process.env, io = {}) {
       { name: "the uploader's record (web_opt/upload_state.tsv)", file: join(d.webOpt, 'upload_state.tsv'), fix: 'written by the uploader\'s first run' },
       { name: 'the depot probe (maps_work/shaderdepots.jsonl)', file: join(d.mapsWork, 'shaderdepots.jsonl'), fix: "the exporter's depot probe writes it" },
       { name: 'python', cmd: d.python, fix: 'Python 3 on PATH (or set PYTHON)' },
-      { name: 'texconv (BC6H to half floats)', cmd: d.texconv, fix: 'winget install Microsoft.DirectXTex, or set TEXCONV' },
-      { name: 'toktx (UASTC)', cmd: env.TOKTX ?? 'toktx', fix: 'winget install KhronosGroup.KTX-Software, or set TOKTX' },
+      // (neither encoder is on winget, 2026-10-11: texconv.exe is a file of
+      // the DirectXTex release on GitHub, toktx an installer of KTX-Software's)
+      { name: 'texconv (BC6H to half floats)', cmd: d.texconv, fix: 'texconv.exe from github.com/microsoft/DirectXTex/releases (gh release download -R microsoft/DirectXTex -p texconv.exe), then set TEXCONV to it' },
+      { name: 'toktx (UASTC)', cmd: env.TOKTX ?? 'toktx', fix: 'the Windows installer at github.com/KhronosGroup/KTX-Software/releases, then set TOKTX to its bin\\toktx.exe' },
       { name: 'ffmpeg', cmd: 'ffmpeg', fix: 'winget install Gyan.FFmpeg' },
       { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
-      { name: 'Chrome (the gate)', file: d.chrome, fix: 'install Google Chrome, or set CHROME' },
+      { name: 'the asset base (the packs from the bucket)', assetBase: true, fix: 'VITE_ASSET_BASE=<the repository variable ASSET_BASE: gh variable get ASSET_BASE> in .env.local or the runner\'s .env' },
+      { name: 'Chrome or Edge (the gate)', file: d.chrome, fix: 'install Google Chrome or Microsoft Edge, or set CHROME' },
     ],
     env,
     io,

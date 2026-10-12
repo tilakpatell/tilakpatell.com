@@ -69,9 +69,11 @@ export function gateMarkdown(legs) {
 
 const legsOf = (env) => (env.GATE_LEGS ?? 'd3d11,webgpu').split(',').filter((l) => LEGS[l]);
 
-// The dev server, up until stopped. → { stop }
-async function devServer(root, log) {
-  const p = spawn(process.execPath, [join(root, 'node_modules/vite/bin/vite.js'), '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], { cwd: root, stdio: 'ignore', windowsHide: true });
+// The dev server, up until stopped, with the asset base in its environment
+// (childEnv: without VITE_ASSET_BASE it answers every pack binary with
+// index.html and no level loads). → { stop }
+async function devServer(root, log, env = process.env) {
+  const p = spawn(process.execPath, [join(root, 'node_modules/vite/bin/vite.js'), '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], { cwd: root, env, stdio: 'ignore', windowsHide: true });
   for (let i = 0; i < 120; i++) {
     try {
       if ((await fetch(`http://127.0.0.1:${PORT}/`)).ok) {
@@ -92,7 +94,10 @@ export const spec = {
   title: 'The ultra frame gate on the desktop',
   vram: 12 * 1024,
   columns: ['name', 'legs'],
-  needs: (d) => [{ name: 'Chrome (the real GPU, WebGPU)', file: d.chrome, fix: 'install Google Chrome, or set CHROME to a Chromium with WebGPU' }],
+  needs: (d) => [
+    { name: 'Chrome or Edge (the real GPU, WebGPU)', file: d.chrome, fix: 'install Google Chrome or Microsoft Edge, or set CHROME to a Chromium with WebGPU' },
+    { name: 'the asset base (the packs from the bucket)', assetBase: true, fix: 'VITE_ASSET_BASE in .env.local or the environment (gh variable get ASSET_BASE)' },
+  ],
   async plan({ root, env }) {
     const legs = legsOf(env);
     return {
@@ -105,7 +110,7 @@ export const spec = {
     const temp = join(env.RUNNER_TEMP ?? join(root, 'lab'), 'bf2017-gate');
     const baseFile = join(root, 'lab/baseline/surface-ultra.json');
     const base = existsSync(baseFile) ? JSON.parse(readFileSync(baseFile, 'utf8')) : [];
-    const server = await devServer(root, log);
+    const server = await devServer(root, log, env);
     const legs = {};
     const raw = {};
     try {

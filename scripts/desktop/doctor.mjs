@@ -95,9 +95,10 @@ export async function checks() {
   // the bf2017 picture jobs (bf2017-desktop.yml, lane W): none needed by the jobs above
   const { bf2017Checks, desk, webgpuCheck } = await import('./bf2017-desk.mjs');
   for (const c of bf2017Checks()) add('bf2017', c.name, c.ok, c.detail, c.fix, false);
+  // (desk() finds Chrome or Edge, as the shot scripts do: scripts/lib/chromium.mjs)
   if (existsSync(desk().chrome)) {
     const w = await webgpuCheck(desk().chrome, root ?? undefined);
-    add('bf2017', 'WebGPU in that Chrome', w.ok, w.detail, 'a driver with WebGPU (Chrome 113+ on D3D12); chrome://gpu says why not', false);
+    add('bf2017', 'WebGPU in that browser', w.ok, w.detail, 'a driver with WebGPU (Chrome or Edge 113+ on D3D12); chrome://gpu or edge://gpu says why not', false);
   }
 
   return list;

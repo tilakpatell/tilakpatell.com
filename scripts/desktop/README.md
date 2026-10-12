@@ -175,7 +175,13 @@ What they need on the desktop, all checked by the doctor’s `bf2017` group
 - the bucket’s keys in the runner’s `.env` (`~\actions-runner\.env`:
   `SUPABASE_URL=…` and `SUPABASE_SERVICE_KEY=…`, then restart the runner),
   never in the repository; the jobs pass them on to the scripts as
-  `SUPA_KEY` too and never print them.
+  `SUPA_KEY` too and never print them;
+- the public bucket’s base (`VITE_ASSET_BASE=…`, the repository variable
+  `ASSET_BASE`: `gh variable get ASSET_BASE`) in the runner’s `.env` or the
+  checkout’s `.env.local`: the `gate` starts a dev server, and without it
+  that server answers every pack binary with the site’s index page, so no
+  level loads and the gate measures a world without its level (the owner’s
+  desktop, 2026-10-11). The doctor’s `bf2017` group checks it.
 
 By hand on the desktop: `node scripts\desktop\bf2017-<job>.mjs --dry` for
 the plan, `--only hoth --limit 2 --no-pr` to make a little in this checkout

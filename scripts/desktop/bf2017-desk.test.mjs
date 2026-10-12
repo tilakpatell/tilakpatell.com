@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { JOBS, args, bf2017Checks, childEnv, desk, evidenceDir, keyState, main, pick, planMarkdown, preflight } from './bf2017-desk.mjs';
+import { JOBS, args, assetBase, bf2017Checks, childEnv, desk, evidenceDir, keyState, main, pick, planMarkdown, preflight } from './bf2017-desk.mjs';
 
 const SECRET = 'sb_' + 'secret_do_not_print_0123456789'; // (in halves: the guard in assets-upload.test.mjs greps for the whole)
 
@@ -54,7 +54,25 @@ describe("lane W's desktop jobs", () => {
 
   it("gives the doctor every tool and file the jobs need", () => {
     const names = bf2017Checks({ BF2_EXPORT: '/none' }, { exists: () => false, which: () => false }).map((c) => c.name);
-    for (const want of ['ktx2_encode', 'upload_supabase', 'bf2export', 'texconv', 'toktx', 'ffmpeg', "bucket's keys", 'Chrome', 'shaderdepots']) expect(names.join(' | ')).toContain(want);
+    for (const want of ['ktx2_encode', 'upload_supabase', 'bf2export', 'texconv', 'toktx', 'ffmpeg', "bucket's keys", 'asset base', 'Chrome', 'shaderdepots']) expect(names.join(' | ')).toContain(want);
+  });
+
+  it('finds the asset base in the environment or .env.local, and hands it to every child', () => {
+    const base = 'https://abcdefgh.supabase.co/storage/v1/object/public/site-assets';
+    expect(assetBase({ VITE_ASSET_BASE: base })).toBe(base);
+    expect(assetBase({ ASSET_BASE: base })).toBe(base);
+    const io = { root: '/repo', exists: (f) => /\.env\.local$/.test(f), read: () => `SUPABASE_URL=x\n# a note\nVITE_ASSET_BASE=${base}\n` };
+    expect(assetBase({}, io)).toBe(base);
+    expect(assetBase({}, { ...io, read: () => 'SUPABASE_URL=x\nVITE_ASSET_BASE=\n' })).toBeNull();
+    expect(assetBase({}, { ...io, exists: () => false })).toBeNull();
+    // (a child's dev server reads VITE_ASSET_BASE; one already set stands)
+    expect(childEnv({ SUPA_KEY: 'k' }, { base }).VITE_ASSET_BASE).toBe(base);
+    expect(childEnv({ VITE_ASSET_BASE: 'mine' }, { base }).VITE_ASSET_BASE).toBe('mine');
+    expect(childEnv({}, { base: null }).VITE_ASSET_BASE).toBeUndefined();
+    // (the gate and the doctor check it as a need)
+    const checks = preflight([{ name: 'the asset base', assetBase: true, fix: 'set it' }], {}, { base: () => null });
+    expect(checks[0]).toMatchObject({ ok: false, fix: 'set it' });
+    expect(preflight([{ name: 'the asset base', assetBase: true }], {}, { base: () => base })[0]).toMatchObject({ ok: true, detail: base });
   });
 
   it('writes the plan as a table, cut at forty rows', () => {
