@@ -22,7 +22,7 @@
 //   scoreSpot(at, { enemies, friendlies, memory, now }) → number | -Infinity (rejected)
 //   squadSpawn({ squad: [mates], me, enemies, now, offsets, walkable }) → { at, yaw, mate } | null
 //   blocked(mate, { enemies, now }) → null | 'none' | 'dead' | 'oob' | 'vehicle' | 'airborne' | 'combat' | 'other'
-//   protect(entity, now, seconds)    waves(now) → the next wave's time
+//   protect(entity, now)    waves(now) → the next wave's time
 
 import SQUADS from '../../data/bf2017/squads.json';
 import { spawnsFor } from './rulebook.js';
@@ -173,8 +173,8 @@ export function squadSpawn({ squad, me = null, enemies = [], now = 0, offsets = 
   return null;
 }
 
-export function protect(entity, now, seconds = SPAWN_PROTECTION) {
-  entity.safeUntil = now + seconds;
+export function protect(entity, now) {
+  entity.safeUntil = now + SPAWN_PROTECTION;
 }
 
 export const isProtected = (entity, now) => (entity.safeUntil ?? -Infinity) > now;

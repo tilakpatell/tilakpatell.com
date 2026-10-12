@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadRulebook, mapOf, stagesOf, volumeOf } from '../rulebook.js';
-import { COUNTER, HOLDS, LOW, STAGE_PAUSE, STAGE_SETUP, TICKETS_START, TICKETS_TOP_UP, canRespawn, createAssault, force, onEvent, protectFor, spawnPoints, spawnSets, tick, view } from './galacticAssault.js';
+import { COUNTER, HOLDS, PROGRESS_MAX, RATING, STAGE_PAUSE, STAGE_SETUP, TICKETS_START, TICKETS_TOP_UP, WAYPOINT_REACH, canRespawn, createAssault, force, onEvent, progressOf, ratingFor, spawnPoints, spawnSets, spawnStep, tick, view } from './galacticAssault.js';
 import { BOMBING_RUN, UPLINK_RANGE, centroid } from './objectives.js';
 
 const rb = loadRulebook();
@@ -23,6 +23,7 @@ describe('Galactic Assault', () => {
     const v = view(ga);
     expect(v.stage).toMatchObject({ id: 'walkers', index: 0, count: 3 });
     expect(v.objectives.filter((o) => o.type === 'escort')).toHaveLength(2);
+    // (the opening room, open as the stage starts)
     expect(spawnSets(ga).attack).toContain('FantasyBattle_Shapes:9');
   });
 
@@ -42,62 +43,144 @@ describe('Galactic Assault', () => {
     expect(B.done).toBe(true);
     expect(ga.stage).toBe(0);
     expect(ga.phase).toBe('live');
-    // both held at once: the stage-won hold, then the next stage with its spawn-protection window
-    run(ga, 60.05, { soldiers: [...squad('attack', A, 4, 'a'), ...squad('attack', B, 4, 'b')], alive: { attack: 8, defend: 2 } });
+    // both held at once: the stage-won hold, then the next stage
+    const out = [];
+    for (let t = 0; t < 60.05; t += 0.05) out.push(...tick(ga, 0.05, { soldiers: [...squad('attack', A, 4, 'a'), ...squad('attack', B, 4, 'b')], alive: { attack: 8, defend: 2 } }));
     expect(ga.phase).toBe('pause');
-    expect(ga.timer).toBeGreaterThan(HOLDS.won - 0.1);
+    expect(ga.timer).toBeGreaterThan(HOLDS.won - 0.2);
+    // (nobody fell in the stage: 30 or fewer spent is the attackers' "GREAT ATTACK")
+    expect(out.find((e) => e.type === 'stageDone')).toMatchObject({ index: 0, spent: 0, rating: 'attack', string: 'ID_FANTASYBATTLES_OBJECTIVE_GREAT_ATTACK' });
     run(ga, STAGE_PAUSE + 0.05);
     expect(ga.stage).toBe(1);
     expect(view(ga).stage.id).toBe('escape');
-    expect(protectFor(ga)).toBeCloseTo(HOLDS.window, 0);
-    run(ga, HOLDS.window);
-    expect(protectFor(ga)).toBe(0);
   });
 
-  it('holds as the prefab’s delay chain: 120 s opening, 9 s won, 6 s window, 7.2 s banner, 5.8 s head', () => {
-    expect(HOLDS).toEqual({ opening: 120, won: 9, window: 6, banner: 7.2, head: 5.8, respawnFlip: 12, respawnNormal: 2 });
-    expect(STAGE_SETUP).toBe(120);
-    expect(STAGE_PAUSE).toBe(9);
+  it('keeps the prefab’s delays by what each does: 6 s a stage won, 9 s to the pickups, 120 s to the progress step, the client’s 7.2 and 5.8', () => {
+    expect(HOLDS).toEqual({ won: 6, pickups: 9, progress: 120, banner: 7.2, head: 5.8, state: [12, 2] });
+    expect(STAGE_PAUSE).toBe(6);
     expect(view(createAssault({ rulebook: rb })).holds).toBe(HOLDS);
-    // (a shorter opening when asked: the page's checks)
     const ga = createAssault({ rulebook: rb, setup: 1 });
     run(ga, 1.05);
     expect(ga.phase).toBe('live');
   });
 
-  it('counts the attackers’ deaths against the quota and crosses the 50 and 30 lines once', () => {
-    expect(LOW).toEqual([50, 30]);
-    expect(COUNTER).toMatchObject({ maxKills: 65000, enemyWeight: 1, suicideWeight: 1, ignoreAI: true });
+  it('steps the game progress once 120 s into the round and as each stage is done: 1, 2, 3, 4, and 5 at the end', () => {
     const ga = createAssault({ rulebook: rb });
     live(ga);
-    const lows = [];
-    for (let i = 0; i < 45; i++) {
-      ga.out = [];
-      onEvent(ga, { type: 'down', side: 'attack' });
-      lows.push(...ga.out.filter((e) => e.type === 'low').map((e) => e.tickets));
-    }
+    expect(progressOf(ga)).toBe(1);
+    run(ga, HOLDS.progress - 1);
+    expect(progressOf(ga)).toBe(1);
+    run(ga, 1.1);
+    expect(progressOf(ga)).toBe(2);
+    force(ga);
+    run(ga, 0.05);
+    expect(progressOf(ga)).toBe(3);
+    expect(view(ga).progress).toBe(3);
+    // the timed step runs once a round: 120 s into the second stage changes nothing
+    run(ga, STAGE_PAUSE + 0.05);
+    expect(ga.stage).toBe(1);
+    run(ga, HOLDS.progress + 1);
+    expect(progressOf(ga)).toBe(3);
+    force(ga);
+    run(ga, 0.05);
+    expect(progressOf(ga)).toBe(4);
+    run(ga, STAGE_PAUSE + 0.05);
+    force(ga);
+    run(ga, 0.05);
+    expect(ga.result).toMatchObject({ winner: 2, why: 'objectives' });
+    expect(progressOf(ga)).toBe(PROGRESS_MAX);
+    ga.progress = 9;
+    expect(progressOf(ga)).toBe(PROGRESS_MAX);
+  });
+
+  it('runs the timed step with the first stage’s done when the stage falls inside its 120 s', () => {
+    const ga = createAssault({ rulebook: rb });
+    live(ga);
+    run(ga, 10);
+    force(ga);
+    run(ga, 0.05);
+    expect(progressOf(ga)).toBe(3);
+    // (and not again when the 120 s pass)
+    run(ga, HOLDS.progress);
+    expect(progressOf(ga)).toBe(3);
+  });
+
+  it('counts both sides’ deaths, and rates a stage by what the attackers spent in it: 50 or more a great defence, 30 or fewer a great attack', () => {
+    expect(COUNTER).toMatchObject({ maxKills: 65000, enemyWeight: 1, suicideWeight: 1, countSuicide: true, ignoreAI: true, ignoreAIVictims: true });
+    expect(RATING).toMatchObject({ defense: { atLeast: 50 }, attack: { atMost: 30 } });
+    expect([0, 30, 31, 49, 50, 80].map(ratingFor)).toEqual(['attack', 'attack', null, null, 'defense', 'defense']);
+    const ga = createAssault({ rulebook: rb });
+    live(ga);
+    for (let i = 0; i < 55; i++) onEvent(ga, { type: 'down', side: 'attack' });
     onEvent(ga, { type: 'down', side: 'defend' });
-    expect(ga.deaths).toEqual({ attack: 45, defend: 1 });
-    expect(ga.tickets).toBe(TICKETS_START - 45);
-    expect(lows).toEqual([50]);
-    expect(view(ga).low).toBe(50);
-    for (let i = 0; i < 15; i++) onEvent(ga, { type: 'down', side: 'attack' });
-    expect(ga.low).toEqual([50, 30]);
+    expect(ga.deaths).toEqual({ attack: 55, defend: 1 });
+    expect(ga.tickets).toBe(TICKETS_START - 55);
+    force(ga);
+    const done = tick(ga, 0.05, nobody).find((e) => e.type === 'stageDone');
+    expect(done).toMatchObject({ id: 'walkers', spent: 55, rating: 'defense', string: 'ID_FANTASYBATTLES_OBJECTIVE_GREAT_DEFENSE' });
+    // the next stage counts from its own start
+    run(ga, STAGE_PAUSE + 0.05);
+    for (let i = 0; i < 40; i++) onEvent(ga, { type: 'down', side: 'attack' });
+    force(ga);
+    expect(tick(ga, 0.05, nobody).find((e) => e.type === 'stageDone')).toMatchObject({ id: 'hangars', spent: 40, rating: null });
   });
 
   it('names each stage’s areas and points from the wiring: the attackers’ 26, 4 and 3, the defenders’ last stand the neutral three', () => {
     const ids = (list) => list.map((id) => Number(id.split(':')[1]));
-    const ga = createAssault({ rulebook: rb });
-    expect(ids(spawnSets(ga).attack)).toEqual([1, 2, 5, 9, 16, 18, 19, 22, 31, 32, 34, 36, 38, 40, 42, 47, 48, 49, 52, 55, 59, 60, 65, 66, 69, 70]);
-    expect(ids(spawnSets(ga).defend)).toEqual([4, 11, 14, 15, 27, 37, 43, 56, 57, 58, 63, 64, 72]);
+    expect(ids(file.stages[0].spawns.attack)).toEqual([1, 2, 5, 9, 16, 18, 19, 22, 31, 32, 34, 36, 38, 40, 42, 47, 48, 49, 52, 55, 59, 60, 65, 66, 69, 70]);
+    expect(ids(file.stages[0].spawns.defend)).toEqual([4, 11, 14, 15, 27, 37, 43, 56, 57, 58, 63, 64, 72]);
     expect(ids(file.stages[1].spawns.attack)).toEqual([20, 21, 44, 71]);
     expect(ids(file.stages[1].spawns.defend)).toEqual([30, 46, 53, 61, 74]);
     expect(ids(file.stages[2].spawns.attack)).toEqual([10, 24, 28]);
     expect(ids(file.stages[2].spawns.defend)).toEqual([3, 45, 54]);
     expect(map.polygons.filter((p) => file.stages[2].spawns.defend.includes(p.id)).every((p) => p.team === 0)).toBe(true);
-    expect(spawnPoints(ga).attack.length).toBeGreaterThan(50);
-    expect(file.stages.map((s) => s.points.defend.length)).toEqual([66, 18, 13]);
+    expect(file.stages.map((s) => s.points.attack.length)).toEqual([97, 19, 10]);
+    expect(file.stages.map((s) => s.points.defend.length)).toEqual([66, 17, 12]);
     expect(file.spawnsSource).toBe('wired');
+    // every id the file names is in the map
+    const known = new Set([...map.polygons, ...map.spawns].map((x) => x.id));
+    for (const st of file.stages) for (const id of [...st.spawns.attack, ...st.spawns.defend, ...st.points.attack, ...st.points.defend]) expect(known.has(id)).toBe(true);
+  });
+
+  it('walks the walkers’ stage’s spawn areas forward a step a waypoint trigger, the opening rooms shut after 25 s', () => {
+    const ids = (list) => list.map((id) => Number(id.split(':')[1]));
+    const steps = file.stages[0].steps;
+    expect(steps.areas.attack).toHaveLength(8);
+    expect(steps.at).toEqual({ 'FantasyBattle_Logic:303': [1, 4, 5, 6, 7, 8, 10], 'FantasyBattle_Logic:123': [1, 3, 4, 5, 6, 8, 11] });
+    expect(file.stages[0].opening).toMatchObject({ seconds: 25, areas: { attack: [9], defend: [11] } });
+    const ga = createAssault({ rulebook: rb });
+    // as the round opens: the first step's three areas and the opening room
+    expect(spawnStep(ga)).toBe(0);
+    expect(ids(spawnSets(ga).attack)).toEqual([40, 49, 70, 9]);
+    expect(ids(spawnSets(ga).defend)).toEqual([27, 37, 64, 11]);
+    expect(spawnPoints(ga).attack).toHaveLength(12 + 25);
+    live(ga);
+    run(ga, 25.05);
+    expect(ids(spawnSets(ga).attack)).toEqual([40, 49, 70]);
+    expect(spawnPoints(ga).defend).toHaveLength(14);
+    // a walker inside the reach of its first trigger's waypoint: the next three areas
+    const walker = ga.objectives.find((o) => o.id === 'FantasyBattle_Logic:123');
+    walker.walker.dist = walker.marks[1] - WAYPOINT_REACH - 1;
+    expect(spawnStep(ga)).toBe(0);
+    walker.walker.dist = walker.marks[1] - WAYPOINT_REACH;
+    expect(spawnStep(ga)).toBe(1);
+    expect(ids(spawnSets(ga).attack)).toEqual([22, 48, 55]);
+    expect(ids(spawnSets(ga).defend)).toEqual([27, 37, 64]);
+    // the further walker leads; at the path's end, the last step
+    walker.walker.dist = walker.marks[4];
+    expect(spawnStep(ga)).toBe(3);
+    expect(ids(spawnSets(ga).defend)).toEqual([4, 56, 63]);
+    walker.walker.dist = walker.walker.length;
+    expect(spawnStep(ga)).toBe(7);
+    expect(ids(spawnSets(ga).attack)).toEqual([52, 60, 66]);
+    expect(view(ga).step).toBe(7);
+    // a stage without steps gives its whole set
+    force(ga);
+    run(ga, 0.05);
+    run(ga, STAGE_PAUSE + 0.05);
+    expect(spawnStep(ga)).toBe(null);
+    expect(ids(spawnSets(ga).attack)).toEqual([20, 21, 44, 71]);
+    expect(spawnPoints(ga).attack).toHaveLength(19);
   });
 
   it('last life', () => {

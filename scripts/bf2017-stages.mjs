@@ -42,15 +42,29 @@ const book = JSON.parse(readFileSync(file, 'utf8'));
 const teams = book.attackers === 'light' ? { attack: 1, defend: 2 } : { attack: 2, defend: 1 };
 const sets = stageSets(graph, { prefab: prefab.guid, ports: GA_PORTS, stages: book.stages.length, teams });
 const source = `Levels/MP/${level}/${mode}#PropertyConnections from ${prefab.id} (${Object.values(GA_PORTS).flat().join(', ')}) through ${mode}_Spawns into Enabled (2662400)`;
+const layerOf = (ids, what) => {
+  const names = [...new Set(ids.map((id) => id.slice(0, id.lastIndexOf(':'))))];
+  if (names.length > 1) throw new Error(`${level}: the ${what} sit in more than one layer (${names.join(', ')})`);
+  return names[0] ?? null;
+};
+// number arrays on one line (the steps' lists)
+const stringify = (v) => JSON.stringify(v, null, 2).replace(/\[\s+(-?\d[\d\s,-]*?)\s+\]/g, (m, body) => `[${body.replace(/\s+/g, ' ')}]`);
 book.stages.forEach((st, k) => {
   const s = sets[k];
   st.spawns = { attack: s.areas.attack, defend: s.areas.defend, gated: s.areas.gated, _source: source };
   st.points = { attack: s.points.attack, defend: s.points.defend, gated: s.points.gated, _source: source };
+  const layers = { areas: layerOf([...s.areas.attack, ...s.areas.defend], 'spawn areas'), points: layerOf([...s.points.attack, ...s.points.defend], 'spawn points') };
+  delete st.steps;
+  delete st.opening;
+  // the sets a walker's progress switches inside the stage: the escort tracker's int through the selector's events
+  if (s.steps) st.steps = { ...s.steps, layers, _source: `Levels/MP/${level}/${mode}#EventConnections from ${s.steps.selector} (SelectEventEntityData on ${s.steps.tracker}'s int) into ${mode}_Spawns' Bools; the waypoint triggers' LinkConnections into the paths` };
+  // the rooms open only as the round starts: the prefab's start event through the layer's Delay
+  if (s.opening) st.opening = { ...s.opening, layers, _source: `Levels/MP/${level}/${mode}#EventConnections from ${prefab.id} (-474851384) through ${mode}_Spawns#DelayEntityData.Delay into its Bools' SetFalse` };
 });
 book.spawnsSource = 'wired';
-book.notes = 'NOTES.md says how each objective id was chosen; three stages, as the stage strings name them. The spawn sets are the wiring’s (scripts/bf2017-stages.mjs): `gated` lists the ones a run-time trigger or event-set Bool also holds.';
+book.notes = 'NOTES.md says how each objective id was chosen; three stages, as the stage strings name them. The spawn sets are the wiring’s (scripts/bf2017-stages.mjs): `steps` the sets a walker’s progress switches inside a stage, `opening` the rooms open only as it starts, `gated` the ones another event-set Bool also holds.';
 
-for (const [k, st] of book.stages.entries()) console.log(`stage ${k + 1} ${st.id}: areas attack ${st.spawns.attack.length} defend ${st.spawns.defend.length} (gated ${st.spawns.gated.length}); points attack ${st.points.attack.length} defend ${st.points.defend.length}`);
+for (const [k, st] of book.stages.entries()) console.log(`stage ${k + 1} ${st.id}: areas attack ${st.spawns.attack.length} defend ${st.spawns.defend.length} (gated ${st.spawns.gated.length}); points attack ${st.points.attack.length} defend ${st.points.defend.length}${st.steps ? `; ${st.steps.areas.attack.length} steps` : ''}${st.opening ? `; opening ${st.opening.seconds} s` : ''}`);
 if (opt.dry) process.exit(0);
-writeFileSync(file, `${JSON.stringify(book, null, 2)}\n`);
+writeFileSync(file, `${stringify(book)}\n`);
 console.log(`wrote ${file}`);

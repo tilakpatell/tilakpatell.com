@@ -1,47 +1,73 @@
 // Galactic Assault (spec catalogue 6): a state machine over the level's
 // stage file. A stage lists its objectives (escorts, uplinks, captures,
 // arms, holds) and each side's spawn sets (the areas and points the mode
-// prefab's stage ports enable, bf2-re finding 27 §4c); the attackers'
-// reinforcements are a kill counter against a quota, topped up at each new
-// stage; a stage is won when its objectives are all done at once (an escort
-// when any one walker arrives), the round when the last stage is. The
-// defenders win when the attackers' quota is spent and their last soldier is
-// down, when every walker is destroyed, or when a stage's timer runs out
-// uncontested. Pure: the sim hands it who stands where a step and the deaths
-// as they happen.
+// prefab's stage ports enable, bf2-re finding 27 §4c; inside the walkers'
+// stage the sets walk forward with them, a step a waypoint trigger); the
+// attackers' reinforcements are a kill counter against a quota, topped up
+// at each new stage; a stage is won when its objectives are all done at
+// once (an escort when any one walker arrives), the round when the last
+// stage is. The defenders win when the attackers' quota is spent and their
+// last soldier is down, when every walker is destroyed, or when a stage's
+// timer runs out uncontested. Pure: the sim hands it who stands where a
+// step and the deaths as they happen.
 //
 //   createAssault({ rulebook, level, stages, map, attackers, teams, setup }) → ga
 //   tick(ga, dt, world)    world: { soldiers: [{ id, side, at, alive, interact }], alive: { attack, defend } }
 //   onEvent(ga, { type: 'down', side }) → { respawn }      canRespawn(ga, side)
 //   spawnSets(ga) → { attack: ids, defend: ids }    spawnPoints(ga) → { attack: ids, defend: ids } | null
-//   sideOf(ga, team)    teamOf(ga, side)    protectFor(ga) → seconds of the new stage's spawn-protection window left
-//   view(ga) → the HUD's objective bar        force(ga) (tests: every live objective done, the setup over)
+//   spawnStep(ga) → the stage's spawn step (null: the stage has none)    progressOf(ga) → the game progress, 1…5
+//   sideOf(ga, team)    teamOf(ga, side)
+//   view(ga) → the HUD's objective bar        force(ga) (tests: every live objective done)
 
 import { mapOf, stagesOf, vehicleOf, volumeOf } from '../rulebook.js';
 import { BOMBING_RUN, ESCORT_REACH, UPLINK_RANGE, INTERACT_REACH, KINDS, VULNERABLE_SECONDS, insidePolygon } from './objectives.js';
 
-// The staged conquest's clock (`PF_GameMode_Conquest_Staged`'s DelayEntityData
-// chain on the world clock, bf2-re finding 19): the round's opening hold, the
-// stage-won hold, the next stage's spawn-protection window, and the client's
-// stage banner and talking head; `ConditionalFloat 12 / 2`, the respawn hold
-// when a stage flips against the ordinary one.
-export const HOLDS = { opening: 120, won: 9, window: 6, banner: 7.2, head: 5.8, respawnFlip: 12, respawnNormal: 2 };
-export const HOLDS_SOURCE = 'Gameplay/GameModes/FantasyBattles/PF_GameMode_Conquest_Staged#DelayEntityData 120, 9, 6, 7.2, 5.8; ConditionalFloat 12 / 2';
-export const STAGE_SETUP = HOLDS.opening;
+// The staged conquest's clock: `PF_GameMode_Conquest_Staged`'s DelayEntityData
+// on the world clock, each by what the prefab's connections make it do (the
+// numbers are bf2-re findings 19 and 27's; the roles are the wiring's):
+//   won 6         a stage's "done" input → 6 s → the state manager's next stage: the stage-won hold
+//   pickups 9     the round's start (the controller hub's event) → 9 s → the level's first pickups on (Hoth: three ion disruptors)
+//   progress 120  the round's start → 120 s → the game progress steps up, once a round (below)
+//   banner 7.2, head 5.8   the client's stage banner and talking head
+//   state 12 / 2  `ConditionalFloat`: the state manager's follow-on delay, 12 s under the level's flag, else 2
+export const HOLDS = { won: 6, pickups: 9, progress: 120, banner: 7.2, head: 5.8, state: [12, 2] };
+export const HOLDS_SOURCE = 'Gameplay/GameModes/FantasyBattles/PF_GameMode_Conquest_Staged#DelayEntityData 6, 9, 120, 7.2, 5.8; ConditionalFloatEntityData 12 / 2';
 export const STAGE_PAUSE = HOLDS.won;
+// Before the first stage: the pre-round is the round controller's
+// (`PF_GameMode_Controller`, not read), 12 s by hand.
+export const STAGE_SETUP = 12;
+// The game progress (`GameProgressEntityData`, an int the prefab keeps
+// inside 1…5): the "phase" the server's wave tables are written by
+// (`AP_Waves_*_Phase1..5`). It starts at 1 and steps up through four
+// run-once splitters: 120 s into the round (or as the first stage is done,
+// when that comes sooner), and as each stage is done. So the walkers' stage
+// plays at 1 then 2, the second stage at 3, the third at 4, the round's end
+// is 5. (Its Math's function, hash 1543335391 over the int, 1 and 5, is read
+// as a clamp, by hand.)
+export const PROGRESS_MAX = 5;
+// The walker reaches a waypoint inside this: `SimpleDriverComponentData.ReachWaypointRadius` (finding 27 §5).
+export const WAYPOINT_REACH = 15;
 // The attackers' reinforcements: a `KillCounterEntityData` a team in
 // `PlanetaryBattleStateManager` (`MaxKillCount 65000`, `EnemyWeight 1`,
-// `SuicideWeight 1`, `IgnoreAI true`: the game counts players only; here the
-// bots stand in for them and count, by hand) against the stage's quota, wired
-// in from the level; the graph's `CompareInt 50` and `30` are the
-// "reinforcements low" lines the HUD and the commander voice react to. The
-// quota and the top-up are not read from the level's graph: by hand, as the
-// game plays them.
-export const COUNTER = { maxKills: 65000, enemyWeight: 1, suicideWeight: 1, ignoreAI: true, _source: 'Gameplay/GameModes/FantasyBattles/PlanetaryBattleStateManager#KillCounterEntityData' };
-export const LOW = [50, 30];
-export const LOW_SOURCE = 'Gameplay/GameModes/FantasyBattles/PlanetaryBattleStateManager#CompareIntEntityData.B (50, 30)';
+// `SuicideWeight 1`, `CountSuicide`, `IgnoreAI` and `IgnoreAIVictims` true:
+// the game counts players only; here the bots stand in for them and count,
+// by hand) against the stage's quota. The quota and the top-up are wired in
+// from the level through maths not read: by hand, as the game plays them.
+export const COUNTER = { maxKills: 65000, enemyWeight: 1, suicideWeight: 1, countSuicide: true, ignoreAI: true, ignoreAIVictims: true, _source: 'Gameplay/GameModes/FantasyBattles/PlanetaryBattleStateManager#KillCounterEntityData' };
 export const TICKETS_START = 90;
 export const TICKETS_TOP_UP = 40;
+// A stage's rating: a second after a stage is done the state manager compares
+// what its counter moved since the stage's start (`MathIntOp` Subtract of the
+// count against its cache): 50 or more shows the defenders "GREAT DEFENSE",
+// 30 or fewer shows the attackers "GREAT ATTACK". (Findings 19 and 27 read
+// the two compares as warning lines; the wiring fires them at a stage's end.)
+// The count is read as the attackers' deaths in the stage, by hand.
+export const RATING = {
+  defense: { atLeast: 50, string: 'ID_FANTASYBATTLES_OBJECTIVE_GREAT_DEFENSE' },
+  attack: { atMost: 30, string: 'ID_FANTASYBATTLES_OBJECTIVE_GREAT_ATTACK' },
+  _source: 'Gameplay/GameModes/FantasyBattles/PlanetaryBattleStateManager#CompareIntEntityData.B (A>=B 50, A<=B 30), fired by the stage-done input',
+};
+export const ratingFor = (spent) => (spent >= RATING.defense.atLeast ? 'defense' : spent <= RATING.attack.atMost ? 'attack' : null);
 
 // The BattleAI model's lethality lever in Galactic Assault, by hand (the
 // balance's first lever, docs/superpowers/evidence/battlefront-lane2/balance.md):
@@ -61,7 +87,12 @@ function build(rb, map, stage) {
     const name = def.name ?? null;
     if (def.type === 'escort') {
       const path = map.waypoints.find((w) => w.id === def.waypoints).points;
-      return KINDS.escort.create({ path, health: vehicleOf(rb, def.vehicle).health, name });
+      const o = KINDS.escort.create({ path, health: vehicleOf(rb, def.vehicle).health, name });
+      // (the path's id and how far along it each waypoint lies: the spawn steps' marks)
+      o.id = def.waypoints;
+      o.marks = [0];
+      for (let i = 1; i < path.length; i++) o.marks.push(o.marks[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][2] - path[i - 1][2]));
+      return o;
     }
     if (def.type === 'capture') return KINDS.capture.create({ volume: volumeOf(map, def.volume), name });
     if (def.type === 'hold') return KINDS.hold.create({ volume: volumeOf(map, def.volume), seconds: def.seconds, name });
@@ -94,8 +125,11 @@ export function createAssault({ rulebook, level = 'hoth', stages = null, map = n
     stageTimer: 0,
     tickets: file.ticketsStart ?? TICKETS_START,
     deaths: { attack: 0, defend: 0 },
-    low: [],
-    protectUntil: -Infinity,
+    spentAt: 0,
+    progress: 1,
+    progressAt: null,
+    stageStart: 0,
+    sets: new Map(),
     objectives: [],
     vulnerableUntil: -Infinity,
     time: 0,
@@ -108,12 +142,39 @@ export function createAssault({ rulebook, level = 'hoth', stages = null, map = n
 
 export const sideOf = (ga, team) => (team === ga.attack ? 'attack' : 'defend');
 export const teamOf = (ga, side) => (side === 'attack' ? ga.attack : ga.defend);
-export const spawnSets = (ga) => ga.stages[ga.stage].spawns;
-export const spawnPoints = (ga) => ga.stages[ga.stage].points ?? null;
-// seconds left of the new stage's spawn-protection window (`HOLDS.window` after a stage opens)
-export const protectFor = (ga) => Math.max(0, ga.protectUntil - ga.time);
 export const canRespawn = (ga, side) => !ga.result && (side === 'defend' || ga.tickets > 0);
 export const walkersOf = (ga) => ga.objectives.filter((o) => o.type === 'escort').map((o) => o.walker);
+export const progressOf = (ga) => Math.max(1, Math.min(PROGRESS_MAX, ga.progress));
+
+// The stage's spawn step: the escort tracker's int, the waypoint triggers the
+// leading walker has reached (the tracker keeps a count a walker; which of the
+// two it puts out is a select not read: the further one, by hand).
+export function spawnStep(ga) {
+  const steps = ga.stages[ga.stage].steps;
+  if (!steps) return null;
+  let k = 0;
+  for (const o of ga.objectives) {
+    const at = o.type === 'escort' ? steps.at[o.id] : null;
+    if (at) k = Math.max(k, at.filter((i) => o.walker.dist >= o.marks[i] - WAYPOINT_REACH).length);
+  }
+  return Math.min(k, steps.areas.attack.length - 1);
+}
+
+// the stage's areas and points now: the step's, with the opening rooms while they are open
+function setsNow(ga) {
+  const st = ga.stages[ga.stage];
+  const k = spawnStep(ga);
+  if (k === null) return { areas: st.spawns, points: st.points ?? null };
+  const open = !!st.opening && (ga.phase === 'setup' || ga.time - ga.stageStart < st.opening.seconds);
+  const key = `${ga.stage}|${k}|${open}`;
+  if (!ga.sets.has(key)) {
+    const ids = (kind, side) => [...st.steps[kind][side][k].map((n) => `${st.steps.layers[kind]}:${n}`), ...(open ? st.opening[kind][side].map((n) => `${st.opening.layers[kind]}:${n}`) : [])];
+    ga.sets.set(key, { areas: { attack: ids('areas', 'attack'), defend: ids('areas', 'defend') }, points: { attack: ids('points', 'attack'), defend: ids('points', 'defend') } });
+  }
+  return ga.sets.get(key);
+}
+export const spawnSets = (ga) => setsNow(ga).areas;
+export const spawnPoints = (ga) => setsNow(ga).points;
 
 // a death: an attacker's costs a ticket, and only a paid-for death respawns
 export function onEvent(ga, e) {
@@ -122,13 +183,32 @@ export function onEvent(ga, e) {
   if (e.side === 'defend') return { respawn: !ga.result };
   if (ga.result || ga.tickets <= 0) return { respawn: false };
   ga.tickets--;
-  // the counter crossing a "reinforcements low" line
-  for (const line of LOW)
-    if (ga.tickets === line && !ga.low.includes(line)) {
-      ga.low.push(line);
-      ga.out.push({ type: 'low', tickets: line });
-    }
   return { respawn: true };
+}
+
+// the game progress's timed step: once a round
+function stepProgress(ga) {
+  ga.progressAt = null;
+  ga.progress++;
+}
+
+// a stage goes live: its clock starts (the rating's count; as the round starts, the opening rooms and the progress's 120 s step)
+function startStage(ga) {
+  ga.phase = 'live';
+  ga.stageTimer = ga.stages[ga.stage].timer ?? 0;
+  ga.stageStart = ga.time;
+  if (ga.stage === 0) ga.progressAt = ga.time + HOLDS.progress;
+  ga.spentAt = ga.deaths.attack;
+  ga.out.push({ type: 'stage', index: ga.stage, id: ga.stages[ga.stage].id });
+}
+
+// a stage done: the progress steps up (the first stage's done also runs the timed step, when its 120 s have not passed) and the stage is rated
+function stageDone(ga) {
+  const spent = ga.deaths.attack - ga.spentAt;
+  const rating = ratingFor(spent);
+  if (ga.progressAt !== null) stepProgress(ga);
+  ga.progress++;
+  ga.out.push({ type: 'stageDone', index: ga.stage, id: ga.stages[ga.stage].id, spent, rating, string: rating ? RATING[rating].string : null });
 }
 
 const near = (a, b, r) => Math.hypot(a[0] - b[0], a[1] - b[1]) <= r;
@@ -175,27 +255,21 @@ function advance(ga) {
   ga.stage++;
   ga.objectives = build(ga.rb, ga.map, ga.stages[ga.stage]);
   ga.tickets += ga.stages[ga.stage].ticketsTopUp ?? TICKETS_TOP_UP;
-  ga.phase = 'live';
-  ga.stageTimer = ga.stages[ga.stage].timer ?? 0;
   ga.vulnerableUntil = -Infinity;
-  ga.protectUntil = ga.time + HOLDS.window;
-  ga.low = ga.low.filter((line) => ga.tickets < line);
-  ga.out.push({ type: 'stage', index: ga.stage, id: ga.stages[ga.stage].id });
+  startStage(ga);
 }
 
 export function tick(ga, dt, world = { soldiers: [], alive: { attack: 0, defend: 0 } }) {
   ga.out = [];
   ga.time += dt;
   if (ga.phase === 'over') return ga.out;
+  // the game progress's timed step, 120 s after the round's start
+  if (ga.progressAt !== null && ga.time >= ga.progressAt - 1e-9) stepProgress(ga);
   if (ga.phase === 'setup' || ga.phase === 'pause') {
     ga.timer -= dt;
     if (ga.timer > 1e-9) return ga.out;
     if (ga.phase === 'pause') advance(ga);
-    else {
-      ga.phase = 'live';
-      ga.stageTimer = ga.stages[0].timer ?? 0;
-      ga.out.push({ type: 'stage', index: 0, id: ga.stages[0].id });
-    }
+    else startStage(ga);
     return ga.out;
   }
   senseObjectives(ga, world.soldiers);
@@ -220,6 +294,7 @@ export function tick(ga, dt, world = { soldiers: [], alive: { attack: 0, defend:
     return ga.out;
   }
   if (state.done) {
+    stageDone(ga);
     if (ga.stage === ga.stages.length - 1) finish(ga, ga.attack, 'objectives');
     else {
       ga.phase = 'pause';
@@ -240,9 +315,8 @@ export function tick(ga, dt, world = { soldiers: [], alive: { attack: 0, defend:
   return ga.out;
 }
 
-// a test's shortcut: the opening hold over, every live objective of the stage done
+// a test's shortcut: every live objective of the stage done
 export function force(ga) {
-  if (ga.phase === 'setup') ga.timer = 0;
   for (const o of ga.objectives) {
     if (o.type === 'capture') o.meter = 1;
     if (o.type === 'escort') o.walker.dist = o.walker.length;
@@ -261,7 +335,8 @@ export function view(ga) {
     objectives: ga.objectives.map((o) => KINDS[o.type].view(o)),
     tickets: ga.tickets,
     deaths: ga.deaths,
-    low: ga.low.length ? ga.low[ga.low.length - 1] : null,
+    progress: progressOf(ga),
+    step: spawnStep(ga),
     phase: ga.phase,
     timer: ga.phase === 'live' ? ga.stageTimer : Math.max(0, ga.timer),
     holds: HOLDS,

@@ -50,7 +50,7 @@ import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers 
 import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
 import { modeFor } from './modes/index.js';
 import { insidePolygon } from './modes/objectives.js';
-import { SPAWN_PROTECTION, blocked, createMemory, isProtected, pickSpawn, protect, remember, squadSpawn } from './spawn.js';
+import { blocked, createMemory, isProtected, pickSpawn, protect, remember, squadSpawn } from './spawn.js';
 
 export { STEP, THINK, SENSE, SQUAD, muzzleOf, shoot } from './core.js';
 
@@ -302,8 +302,7 @@ export function deploy(sim, id, choice) {
     s.unit = cls.unit;
     s.unitId = cls.unitId;
   }
-  // (a deploy inside a new stage's window keeps the window's protection, else the moment's)
-  protect(s, sim.time, Math.max(SPAWN_PROTECTION, sim.M.protectFor?.(sim.ga) ?? 0));
+  protect(s, sim.time);
   remember(sim.spawnMemory, 'spawn', [s.at[0], s.at[2]], sim.time);
   if (entry.bot) {
     // a fresh bot takes its squad's orders at once
@@ -511,8 +510,8 @@ function stepMode(sim) {
   if (ga.phase !== 'over')
     for (const team of [1, 2]) {
       const c = sim.commanders[team];
-      // (the wave table's phase is the stage, the points held the side's capture points)
-      const phase = ga.stage + 1;
+      // (the wave table's phase is the mode's game progress, the points held the side's capture points)
+      const phase = sim.M.progressOf?.(ga) ?? ga.stage + 1;
       const held = ga.objectives.filter((o) => o.type === 'capture' && (c.side === 'attack' ? o.done : !o.done)).length;
       const open = wave(c, sim.time, { phase, held });
       const chosen = { heroes: 0, reinforcements: 0 };

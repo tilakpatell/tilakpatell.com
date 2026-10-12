@@ -125,13 +125,11 @@ describe('spawning', () => {
     expect(blocked(mate, { enemies: [[0, SQUAD_SAFE]], now: 10 })).toBe(null);
   });
 
-  it('protects a fresh soldier for a while, or for the window asked', () => {
+  it('protects a fresh soldier for a while', () => {
     const e = {};
     protect(e, 10);
     expect(isProtected(e, 10 + SPAWN_PROTECTION - 0.1)).toBe(true);
     expect(isProtected(e, 10 + SPAWN_PROTECTION)).toBe(false);
-    protect(e, 10, 6);
-    expect(isProtected(e, 15.9)).toBe(true);
   });
 
   it('brings bots back on the wave', () => {
