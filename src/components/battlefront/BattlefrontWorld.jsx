@@ -8,6 +8,8 @@ import BattlefrontHud from './hud/BattlefrontHud.jsx';
 import battlefrontModule from './module.js';
 import { useGameScreens, wantsMenu } from './useGameScreens.js';
 import { offerNameOf } from './hud/widgets.js';
+import { sendTo } from './send.js';
+import '../../lib/bf2017/fonts.css';
 import './hud/battlefront.css';
 
 // The Battlefront world's page body: the module on the runtime, the game's
@@ -48,7 +50,8 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
     if (e.type === 'hud') setSnap(e);
   }, []);
   const world = useWorld(battlefrontModule, { props: { level, mode }, onEvent, rebuild: `${level}/${mode}` });
-  const send = (action, arg) => world.world?.do?.(action, arg);
+  // (the handle's `world` is a ref to the mounted world; send.js)
+  const send = (action, arg) => sendTo(world, action, arg);
   // (the galaxy world that sent the player is the way out; else the view's)
   const way = back ?? wayOut('/battlefront');
   const loading = !snap || !snap.level?.loaded;
