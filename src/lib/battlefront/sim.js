@@ -19,10 +19,12 @@
 //
 //   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve }) → sim
 //   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate }) → { ok, why }
-//   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, vent, cool }]
+//   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, abilityHeld, vent, cool }]
+//     (the class abilities, kit.js: 'ability' { id, slot, phase, why }, 'throw', 'explosion', 'split', 'turret', 'turretDown',
+//     'turretGone'; a blast's hit has part 'blast'; a bot's bolt on a human waits its bucket, ai/buckets.js)
 //   addPlayer(sim, { team, classId, at, yaw, id }) → id (in a squad)      removeEntity(sim, id)
 //   squadSpot(sim, id, team, mate?) → { spot } | { why }    squadBlocks(sim, id, team) → [{ id, blocked }]
-//   view(sim, { player }) → { time, teams, entities, bolts, mode, deploying, deploy, squad }  (one object, refreshed in place;
+//   view(sim, { player }) → { time, teams, entities, bolts, grenades, mode, deploying, deploy, squad }  (one object, refreshed in place;
 //     an entity row carries a bot's `name`, ai/names.js)
 //   drain(sim) → the event log so far, cleared
 
@@ -39,6 +41,8 @@ import { assign, createCommander, spend, wave } from './ai/commander.js';
 import { changeSides, joinSquad, squadOf, squadRows } from './ai/squad.js';
 import { difficultyFor } from './ai/difficulty.js';
 import { abilitiesFor } from './ai/skirmish.js';
+import { createBuckets, mayHurt } from './ai/buckets.js';
+import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
 import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
@@ -115,6 +119,9 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     stats: new Map(),
     difficulty: difficulty ? difficultyFor(difficulty, aiOf(rb)) : null,
     pve: !!pve,
+    // (the kit: the class abilities' effects, the grenades in the air; the bots' damage buckets)
+    kit: createKit(),
+    buckets: createBuckets(),
   };
   if (mode) {
     sim.M = modeFor(mode);
@@ -163,9 +170,10 @@ function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id:
   const spot = sim.nav ? (sim.ga ? nearestMainland(sim.nav, at[0], at[2], 12) : nearestWalkable(sim.nav, at[0], at[2], 12)) : null;
   const where = spot ? [spot[0], 0, spot[1]] : [...at];
   if (sim.nav) where[1] = heightOf(sim, where);
-  // (a Skirmish bot carries its class's abilities, which its brain uses)
-  const abilities = sim.pve && bot && cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
+  // (every soldier carries its class's abilities: a player presses them, a Skirmish bot's brain does, an AutoPlayer's the turret alone)
+  const abilities = cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
   const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: weaponOf(sim.rb, cls.weapon), ...abilities });
+  s.kit = sim.kit;
   // (the difficulty's health for a player)
   if (!bot && sim.difficulty && sim.difficulty.health !== 1) s.hp = s.hpMax = s.hpMax * sim.difficulty.health;
   s.capsules = capsulesOf(s);
@@ -320,7 +328,8 @@ function release(sim) {
     }
     const s = sim.entities.get(p.owner);
     if (!s?.alive) continue;
-    const from = muzzleOf(s);
+    // (a turret's bolt leaves its own gun)
+    const from = p.from ?? muzzleOf(s);
     const d = [p.aim[0] - from[0], p.aim[1] - from[1], p.aim[2] - from[2]];
     const L = Math.hypot(d[0], d[1], d[2]) || 1;
     const dir = jitter([d[0] / L, d[1] / L, d[2] / L], p.dir);
@@ -337,7 +346,12 @@ function applyInput(sim, inp) {
   if (inp.look != null) s.yaw = inp.look;
   if (inp.crouch != null) s.stance = inp.crouch ? 'crouch' : 'stand';
   s.sprint = !!inp.sprint;
-  if (inp.roll && press(s.abilities, 0, sim.time).fired) roll(s, inp.move ?? [Math.sin(s.yaw), Math.cos(s.yaw)], sim.time);
+  if (inp.roll && press(s.abilities, 0, sim.time).fired) {
+    roll(s, inp.move ?? [Math.sin(s.yaw), Math.cos(s.yaw)], sim.time);
+    onRoll(s, sim.time);
+  }
+  if (inp.aim) s.aim = inp.aim;
+  s.abilityHeld = inp.abilityHeld ?? 0;
   if (inp.ability) press(s.abilities, inp.ability, sim.time);
   if (inp.vent) vent(s.gun, sim.time);
   if (inp.cool) coolPress(s.gun, sim.time);
@@ -399,17 +413,27 @@ function resolveBolts(sim) {
   for (const e of evs) {
     if (e.type === 'hit') {
       const target = sim.entities.get(e.target);
+      // (a turret an earlier bolt of this step shot down)
+      if (!target) continue;
       if (target.kind === 'walker') {
         hitWalker(sim, target, e);
         continue;
       }
-      // (a bot's bolt on a player: the difficulty's damage)
-      const scale = sim.difficulty && target.bot === false && sim.entities.get(e.bolt.owner)?.bot ? sim.difficulty.damage : 1;
-      const damage = damageAt(e.bolt.weapon, e.dist) * scale;
+      const shooter = sim.entities.get(e.bolt.owner);
+      // (a bot's bolt on a player: the difficulty's damage; the AI's half-damage bolt; the buckets' grace)
+      const scale = sim.difficulty && target.bot === false && shooter?.bot ? sim.difficulty.damage : 1;
+      const grace = mayHurt(sim.buckets, { shooter, target, shotAt: e.bolt.born, now: sim.time });
+      let damage = grace ? damageAt(e.bolt.weapon, e.dist, { bot: !!shooter?.bot }) * scale : 0;
+      if (target.kind === 'turret') {
+        const r = hurtTurret(sim, target, damage);
+        emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: 'body', damage: Math.round(damage * 100) / 100 });
+        if (r === 'down') emit(sim, { type: 'turretDown', by: e.bolt.owner, target: e.target });
+        continue;
+      }
+      damage = absorb(target, damage, { dir: e.dir, now: sim.time });
       const r = hurt(target, { damage, part: e.part, by: e.bolt.owner, now: sim.time });
       // (both in combat: no squad spawns on either for a while)
       target.combatAt = sim.time;
-      const shooter = sim.entities.get(e.bolt.owner);
       if (shooter) shooter.combatAt = sim.time;
       emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: e.part, damage: Math.round(damage * 100) / 100, dir: e.dir.slice(), at: e.at.slice() });
       if (sim.bp) bpHit(sim.bp, target.id, e.bolt.owner, sim.time);
@@ -429,14 +453,39 @@ export function step(sim, inputs = []) {
   for (const s of sim.entities.values()) {
     if (s.kind !== 'soldier') continue;
     if (s.state === 'roll' && s.alive) move(s, s.rollDir, STEP, sim.nav);
-    for (const e of tickSoldier(s, STEP, sim.time)) emit(sim, { ...e, by: s.id });
+    for (const e of tickSoldier(s, STEP, sim.time)) {
+      emit(sim, { ...e, by: s.id });
+      if (e.type === 'ability') onAbility(sim, s, e);
+    }
   }
+  // (the kit: the grenades fly, the turrets fire, the fields burn; its damage applied here)
+  for (const r of stepKit(sim)) applyKit(sim, r);
   release(sim);
   const raw = resolveBolts(sim);
   onEvents(sim, raw);
   if (sim.oob) outOfBounds(sim);
   if (sim.ga) stepMode(sim);
   return sim.out;
+}
+
+// a blast's or a field's damage on each body it reached: the shield and the overhealth first, then the soldier
+function applyKit(sim, r) {
+  const hits = r.type === 'blast' ? r.hits : [{ id: r.id, damage: r.damage, dir: null }];
+  for (const h of hits) {
+    const target = sim.entities.get(h.id);
+    if (!target?.alive) continue;
+    if (target.kind === 'turret') {
+      if (hurtTurret(sim, target, h.damage) === 'down') emit(sim, { type: 'turretDown', by: r.by, target: h.id });
+      continue;
+    }
+    if (target.kind !== 'soldier') continue;
+    const damage = absorb(target, h.damage, { dir: h.dir, now: sim.time });
+    const was = hurt(target, { damage, part: 'chest', by: r.by, now: sim.time });
+    target.combatAt = sim.time;
+    if (r.type === 'blast') emit(sim, { type: 'hit', by: r.by, target: h.id, part: 'blast', damage: Math.round(damage * 100) / 100, dir: h.dir, at: [...r.at] });
+    if (sim.bp && r.by !== h.id) bpHit(sim.bp, target.id, r.by, sim.time);
+    if (was === 'down') downed(sim, target, r.by, 'blast', null, null);
+  }
 }
 
 // the walkers' gunners: a bolt from the turret when the pattern and the cannon's rate allow
@@ -566,7 +615,7 @@ export function view(sim, { player = null } = {}) {
   let i = 0;
   for (const s of sim.entities.values()) {
     const e = (v.entities[i++] ??= {});
-    v.teams[s.team][s.alive ? 'alive' : 'dead']++;
+    if (s.kind !== 'turret') v.teams[s.team][s.alive ? 'alive' : 'dead']++;
     e.id = s.id;
     e.team = s.team;
     e.kind = s.kind;
@@ -585,6 +634,15 @@ export function view(sim, { player = null } = {}) {
     e.name = s.name ?? null;
     e.cls = s.cls?.cls ?? null;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;
+    // (the kit's marks on a body: the shield up, flashed, stunned, marked, hidden, an ability's weapon in hand)
+    e.shield = s.shield ? s.shield.hp / s.shield.max : null;
+    e.over = s.over?.hp ?? 0;
+    e.flashed = (s.flashedUntil ?? -Infinity) > sim.time;
+    e.stunned = (s.stunnedUntil ?? -Infinity) > sim.time;
+    e.marked = (s.markedUntil ?? -Infinity) > sim.time;
+    e.hidden = !!s.hidden;
+    e.ability = s.kitActive?.id ?? null;
+    e.weapon = s.gun?.row?.id ?? null;
     e.oob = s.oobSince != null ? Math.max(0, OOB_SECONDS - (sim.time - s.oobSince)) : null;
   }
   v.entities.length = i;
@@ -596,6 +654,7 @@ export function view(sim, { player = null } = {}) {
     o.colour = b.colour;
   }
   v.bolts.length = k;
+  v.grenades = grenadesOf(sim.kit);
   v.mode = sim.ga ? sim.M.view(sim.ga) : null;
   v.deploying = sim.deploying ? [...sim.deploying.keys()] : [];
   // the player's deploy screen: open while they wait, with what their points buy

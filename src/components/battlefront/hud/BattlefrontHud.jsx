@@ -54,12 +54,13 @@ export default function BattlefrontHud({ view, mine = 2, words, markers = [], sc
           {reticle && <Reticle state={{ shown: true, hit: marker ? 0 : null }} shape={reticle} />}
           {marker && <Reticle state={{ shown: true }} shape={marker} className="bf-hitmarker" />}
           <Heat heat={p.heat ?? 0} warning={p.warning ?? 0.75} overheated={Boolean(p.overheated)} window={p.coolWindow ?? null} />
-          <Health hp={p.hp} hpMax={p.hpMax} evade={p.evade ?? null} />
+          <Health hp={p.hp} hpMax={p.hpMax} evade={p.evade ?? null} over={p.over ?? 0} />
           <Abilities slots={p.abilities ?? []} cls={p.cls ?? null} />
           <div className="bf-soldier">
             <SquadList squad={view?.squad ?? null} />
           </div>
           <DamageIndicator hits={p.hits ?? []} />
+          {p.flash > 0 && <div className="bf-flashed" style={{ opacity: Math.min(1, p.flash / 2.5) }} aria-hidden="true" />}
           {readRadar && <Radar read={readRadar} />}
         </>
       )}

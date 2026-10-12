@@ -120,7 +120,8 @@ export function hurt(s, { damage, part = 'chest', by = null, now = 0 }) {
 export function speedOf(s) {
   if (s.state === 'roll') return ROLL_SPEED;
   const pose = s.stance === 'crouch' ? GROUND.crouch : GROUND.stand;
-  const sprint = s.sprint && pose.sprintMultiplier > 0 ? pose.sprintMultiplier : 1;
+  // (an ability's AbilitySprintSpeedMultiplier, the vanguard's and infiltration's 1.3, on the sprint alone)
+  const sprint = s.sprint && pose.sprintMultiplier > 0 ? pose.sprintMultiplier * resolve(s.stack, 'sprint', 1) : 1;
   return resolve(s.stack, 'speed', pose.velocity * sprint);
 }
 

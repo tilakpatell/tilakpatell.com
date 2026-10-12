@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { abilityOf, loadRulebook } from './rulebook.js';
-import { QUEUE, ROLL, blocked, charges, createAbilities, press, tick } from './abilities.js';
+import { QUEUE, ROLL, STATES, blocked, charges, createAbilities, end, hold, press, recharge, state, tick } from './abilities.js';
 
 describe('abilities', () => {
   it('gives the roll two charges a bar and refills them over the recharge', () => {
@@ -48,5 +48,69 @@ describe('abilities', () => {
     press(abs, 1, 0);
     const ev = tick(abs, 1, 1);
     expect(ev.some((e) => e.id === ROLL.id)).toBe(false);
+  });
+
+  // finding 33: PlayerAbilityState Disabled/Recharge/Blocked/Ready/Activating/Active, BlockedPlayerAbilityIds
+  it('names the game’s six states, and a grenade in the hand blocks the slots it names through its pull', () => {
+    expect(STATES).toEqual(['disabled', 'recharge', 'blocked', 'ready', 'activating', 'active']);
+    const grenade = { id: 'nade', activation: 0.32, active: 0.7, recharge: 35, channels: [], blocks: ['mid'] };
+    const mid = { id: 'mid', activation: 0, active: Infinity, recharge: 25, channels: [] };
+    const abs = createAbilities([grenade, mid]);
+    expect(state(abs, 0)).toBe('ready');
+    expect(press(abs, 0, 0).fired).toBe(true);
+    expect(state(abs, 0)).toBe('activating');
+    expect(state(abs, 1)).toBe('blocked');
+    tick(abs, 0.32, 0.32);
+    expect(state(abs, 0)).toBe('active');
+    expect(press(abs, 1, 0.4)).toEqual({ fired: false, why: 'blocked' });
+    tick(abs, 0.7, 1.02);
+    expect(state(abs, 0)).toBe('recharge');
+    expect(state(abs, 1)).toBe('ready');
+    expect(state(abs, 9)).toBe('disabled');
+  });
+
+  it('holds an infinite ability active until its own event ends it, and only then recharges', () => {
+    const sentry = { id: 'sentry', activation: 0.9, active: Infinity, recharge: 30, channels: [] };
+    const abs = createAbilities([sentry]);
+    press(abs, 0, 0);
+    tick(abs, 0.9, 0.9);
+    expect(state(abs, 0)).toBe('active');
+    tick(abs, 19, 19.9);
+    expect(state(abs, 0)).toBe('active');
+    expect(charges(abs, 0)).toBe(0);
+    expect(end(abs, 0, 19.9, 'heat')).toBe(true);
+    expect(end(abs, 0, 19.9, 'heat')).toBe(false);
+    const ev = tick(abs, 0.05, 19.95);
+    expect(ev).toEqual([{ type: 'ability', id: 'sentry', slot: 0, phase: 'end', why: 'heat' }]);
+    expect(state(abs, 0)).toBe('recharge');
+    expect(recharge(abs, 0)).toBeCloseTo(0.05 / 30, 9);
+    tick(abs, 30, 49.95);
+    expect(state(abs, 0)).toBe('ready');
+    expect(recharge(abs, 0)).toBe(1);
+  });
+
+  it('lowers a toggle on its second press once the retrigger cooldown has passed', () => {
+    const shield = { id: 'shield', activation: 0, active: Infinity, recharge: 30, channels: [], retrigger: { cooldown: 2 } };
+    const abs = createAbilities([shield]);
+    expect(press(abs, 0, 0).fired).toBe(true);
+    expect(tick(abs, 0.05, 0.05).map((e) => e.phase)).toEqual(['start', 'active']);
+    expect(press(abs, 0, 1)).toEqual({ fired: false, why: 'blocked' });
+    expect(state(abs, 0)).toBe('active');
+    expect(press(abs, 0, 2)).toEqual({ fired: false, why: 'retriggered' });
+    expect(tick(abs, 0.05, 2.05).map((e) => e.phase)).toEqual(['end']);
+    expect(state(abs, 0)).toBe('recharge');
+  });
+
+  it('keeps a held ability active past its active time until it is let go', () => {
+    const grenade = { id: 'nade', activation: 0.32, active: 0.7, recharge: 35, channels: [] };
+    const abs = createAbilities([grenade]);
+    press(abs, 0, 0);
+    tick(abs, 0.32, 0.32);
+    hold(abs, 0, true);
+    tick(abs, 2, 2.32);
+    expect(state(abs, 0)).toBe('active');
+    hold(abs, 0, false);
+    expect(tick(abs, 0.05, 2.37).map((e) => e.phase)).toEqual(['end']);
+    expect(state(abs, 0)).toBe('recharge');
   });
 });

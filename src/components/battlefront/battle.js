@@ -14,7 +14,7 @@
 //   step(battle, inputs) → events ; view(battle) → the page's view (each fallen
 //   entity's `fall`: { t, part, dir, at, weapon } from its kill, null on the
 //   living, and `hitDir`, the shot's way, for the death clip's side)
-//   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, vent })
+//   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, abilityHeld, vent })
 
 import { aiOf, classOf, mapOf, pointsOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
 import { priceOf } from '../../lib/battlefront/battlePoints.js';
@@ -23,6 +23,8 @@ import { STEP, addPlayer as addSoldier, createSim, removeEntity, squadBlocks, sq
 import { joinSquad, squadRows } from '../../lib/battlefront/ai/squad.js';
 import { earn } from '../../lib/battlefront/battlePoints.js';
 import { hurt } from '../../lib/battlefront/soldier.js';
+import { slotsOf } from '../../lib/battlefront/kit.js';
+import { charges } from '../../lib/battlefront/abilities.js';
 import { modeFor } from '../../lib/battlefront/modes/index.js';
 
 export { STEP };
@@ -174,6 +176,7 @@ export function step(b, inputs = []) {
       sprint: Boolean(inp.sprint),
       roll: Boolean(inp.roll),
       ability: inp.ability || 0,
+      abilityHeld: inp.abilityHeld || 0,
       vent: Boolean(inp.vent),
     });
   }
@@ -249,7 +252,8 @@ export function view(b) {
     const s = b.sim.entities.get(e.id);
     e.alive = Boolean(s?.alive);
     e.vel = [s?.vel?.[0] ?? 0, s?.vel?.[2] ?? 0];
-    e.weapon = s?.gun?.row?.id ?? null;
+    // (an ability's weapon has no mesh of its own yet: the figure keeps its rifle in hand)
+    e.weapon = (s?.gunBase ?? s?.gun)?.row?.id ?? null;
     e.t = t;
     // (the view's entities are reused by place: a living one's fall is cleared)
     e.fall = s && !s.alive ? (b.falls.get(e.id) ?? null) : null;
@@ -282,6 +286,7 @@ export function view(b) {
   out.time = t;
   out.entities = v.entities;
   out.bolts = v.bolts;
+  out.grenades = v.grenades ?? [];
   out.teams = v.teams;
   out.points = 0;
   out.deploy = { open: p?.state === 'deploying', offers: p ? offers(b, p.team) : [], team: p?.team ?? 2, spawns: p ? spawns(b, p) : [] };
@@ -304,12 +309,22 @@ export function view(b) {
     hits: p.hits.map((h) => ({ id: h.id, angle: h.angle, age: t - h.t })),
     hitAt: p.hitAt ?? null,
     killAt: p.killAt ?? null,
+    // (the three class abilities: the game's state each, the recharge sweep, the charges; kit.js)
+    abilities: me ? slotsOf(me) : [],
+    shield: me?.shield ? me.shield.hp / me.shield.max : null,
+    over: me?.over?.hp ?? 0,
+    flashed: me ? (me.flashedUntil ?? -Infinity) > t : false,
+    // (seconds of the flash left, for the HUD's white)
+    flash: me ? Math.max(0, (me.flashedUntil ?? 0) - t) : 0,
+    // (the roll's charges: two a bar, one back every 2 s)
+    evade: me ? charges(me.abilities, 0) : 0,
+    ability: me?.kitActive?.id ?? null,
   };
   const attacking = p ? SIDES[p.team] === b.ga?.attackers : true;
   out.mode = b.stage ? { stage: 0, stageName: stringOf(b.rulebook, attacking ? b.stage.name : b.stage.nameDefend), objectives: b.objectives, tickets: b.stage.tickets ?? null, result: b.result } : null;
   out.killLog = b.killLog;
   out.scoreboard = Object.fromEntries(
-    [1, 2].map((team) => [team, { name: SIDES[team] === 'dark' ? 'EMPIRE' : 'REBELS', rows: [...b.sim.entities.values()].filter((s) => s.team === team).map((s) => ({ id: s.id, name: nameOf(b, s.id), kills: 0, deaths: s.alive ? 0 : 1, points: b.awards.get(s.id) ?? 0 })) }]),
+    [1, 2].map((team) => [team, { name: SIDES[team] === 'dark' ? 'EMPIRE' : 'REBELS', rows: [...b.sim.entities.values()].filter((s) => s.team === team && s.kind === 'soldier').map((s) => ({ id: s.id, name: nameOf(b, s.id), kills: 0, deaths: s.alive ? 0 : 1, points: b.awards.get(s.id) ?? 0 })) }]),
   );
   return out;
 }
