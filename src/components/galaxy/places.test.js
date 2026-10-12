@@ -80,7 +80,7 @@ describe('the game’s space levels', () => {
   it('sets each level clear of the system’s places, its moment and its planet', () => {
     for (const [id, level] of Object.entries(SPACE_LEVELS)) {
       const sys = systemById(id);
-      if (!sys) continue; // (Fondor: a system lane E5 adds)
+      expect(sys, id).toBeTruthy();
       for (const x of placesOf(sys)) expect(dist(x.at, level.at), `${id} ${x.id}`).toBeGreaterThan(level.r + x.reach + PLACES.clear);
       for (const p of sys.pieces ?? []) if (p.at) expect(dist(p.at, level.at), `${id} ${p.type}`).toBeGreaterThan(level.r + 300);
       expect(Math.hypot(...level.at)).toBeGreaterThan(PLACES.inner);

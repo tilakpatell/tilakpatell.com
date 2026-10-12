@@ -407,7 +407,7 @@ export const THINGS_TO_DO = [
     audience: 'both',
     seconds: 120,
     phone: true,
-    blurb: 'Eighteen star systems from the films and the shows, each a moment playing out round you, on one clock for everyone.',
+    blurb: 'Twenty-four star systems from the films, the shows and Battlefront II, each a moment playing out round you, on one clock for everyone.',
     done: { visited: '/galaxy' },
   },
   {
@@ -431,7 +431,7 @@ export const THINGS_TO_DO = [
     audience: 'both',
     seconds: 180,
     phone: true,
-    blurb: 'Seventeen worlds to stand on, with seas, weather and baked light. Your ship comes down and you climb out.',
+    blurb: 'Eighteen worlds to stand on, with seas, weather and baked light. Your ship comes down and you climb out.',
     done: { achievement: 'groundside' },
   },
   {

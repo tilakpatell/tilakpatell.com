@@ -97,7 +97,12 @@ async function main() {
   const own = lastOf(level).toLowerCase();
   const { fetchData, getObject, keys, listFolder } = await import('./bf2017-fetch.mjs');
   const env = keys();
-  const mapBase = `web/maps/${level}/${lastOf(level)}.json`;
+  // (the map's file as maps/index.json names it: a campaign map's is
+  // `ds02_streamed.json`, not its folder's name; lane E5)
+  const indexFile = 'web/maps/index.json';
+  if (!existsSync(join(CACHE, indexFile))) await getObject(env, CACHE, indexFile);
+  const entry = JSON.parse(await readFile(join(CACHE, indexFile), 'utf8')).find((m) => String(m.file ?? '').toLowerCase().startsWith(`maps/${level.toLowerCase()}/`));
+  const mapBase = entry ? `web/${entry.file}` : `web/maps/${level}/${lastOf(level)}.json`;
   if (!existsSync(join(CACHE, mapBase))) await getObject(env, CACHE, mapBase);
   const map = JSON.parse(await readFile(join(CACHE, mapBase), 'utf8'));
   // (data.tsv lower-cases a level's record names; the bucket keeps their

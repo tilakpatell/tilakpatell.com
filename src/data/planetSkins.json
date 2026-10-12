@@ -19,6 +19,14 @@
     "normal": "textures/galaxy/planets/endor/normal",
     "seas": 0.38
   },
+  "fondor": {
+    "color": "textures/galaxy/planets/fondor/color",
+    "from": {
+      "color": "levels/space/sb_fondor_01/planet/t_planet_fondor_03_cs",
+      "normal": "levels/space/sb_fondor_01/planet/t_planet_fondor_03_ni"
+    },
+    "normal": "textures/galaxy/planets/fondor/normal"
+  },
   "geonosis": {
     "from": {
       "rings": "s5_1/objects/planets/geonosis/t_planetfrontendgeonosisrings_01_ca"
@@ -47,5 +55,32 @@
     },
     "normal": "textures/galaxy/planets/naboo/normal",
     "seas": 0.38
+  },
+  "pillio": {
+    "cloudCut": 0.3,
+    "clouds": "textures/galaxy/planets/pillio/clouds",
+    "color": "textures/galaxy/planets/pillio/color",
+    "from": {
+      "color": "objects/planets/pillio_alive/t_pillio_alive_01_c",
+      "clouds": "objects/planets/pillio_alive/t_pillio_alive_01_ca"
+    }
+  },
+  "sullust": {
+    "cloudCut": 0.3,
+    "clouds": "textures/galaxy/planets/sullust/clouds",
+    "color": "textures/galaxy/planets/sullust/color",
+    "from": {
+      "color": "objects/planets/sullust/t_planetsullust_01_c",
+      "clouds": "objects/planets/sullust/t_cloudssullust_01_ca"
+    }
+  },
+  "vardos": {
+    "cloudCut": 0.3,
+    "clouds": "textures/galaxy/planets/vardos/clouds",
+    "color": "textures/galaxy/planets/vardos/color",
+    "from": {
+      "color": "objects/planets/vardos_alive/t_planetvardosalive_01_c",
+      "clouds": "objects/planets/vardos_alive/t_cloudsvardosalive_01_ca"
+    }
   }
 }

@@ -75,7 +75,11 @@ export const GCW = {
 };
 export const HOURS_PER_STEP = GCW.step / 3600e3;
 
-export const WAR_SYSTEMS = SYSTEMS.filter((s) => s.body && s.id !== 'dagobah').map((s) => s.id);
+// (the systems the war is fought over: those with a `war` row. Alderaan is
+// rubble, Dagobah is left to its swamp, and the 2017 game's six (lane E5:
+// Felucia, Kessel, Sullust, Pillio, Vardos, Fondor) are places to land on
+// the game's own maps, not fronts)
+export const WAR_SYSTEMS = SYSTEMS.filter((s) => s.body && s.war).map((s) => s.id);
 const BY_ID = Object.fromEntries(SYSTEMS.map((s) => [s.id, s]));
 
 // what a system is to the war (systems.js's `war`, or what any is without one)

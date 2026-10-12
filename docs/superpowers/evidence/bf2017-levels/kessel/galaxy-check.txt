@@ -1,0 +1,22 @@
+# kessel-low
+kessel     calls  114  tris  794456  geo  130  tex 107  prog null  frame p50 6433 p95 6549.7 ms  ground 0 ms  load 31.7 s  scans cc0 0 game 38
+           level calls 138  tris 736271  instances 773  lights 0  probe –  maps 91/91
+           physics cells undefined  bodies undefined  colliders undefined  shapes undefined  trimesh tris undefined  heightfields undefined  dropped 0  step 0.00 ms
+budget: no baseline at lab/baseline/surface-low.json; holding to the low row alone
+budget kessel     calls 114/350  tris 794456/800000  models 23.6/45 MB (from the bucket)  pass
+# kessel-mid
+kessel     calls  151  tris 1192773  geo  166  tex 141  prog null  frame p50 43498.3 p95 46414.8 ms  ground 0 ms  load 34.5 s  scans cc0 0 game 38
+           level calls 223  tris 1192976  instances 1211  lights 27  probe –  maps 170/170
+           physics cells 15  bodies 100  colliders 280  shapes 251  trimesh tris 0  heightfields 60  dropped 303  step 0.00 ms
+budget kessel     calls 151/500  tris 1192773/1500000  models 58.5/70 MB (from the bucket)  pass
+# kessel-high
+kessel     calls  211  tris 1787052  geo  227  tex 230  prog null  frame p50 43931.6 p95 44546.5 ms  ground 0 ms  load 42.9 s  scans cc0 0 game 41
+           level calls 425  tris 2315217  instances 4442  lights 27  probe –  maps 440/440
+           physics cells 15  bodies 84  colliders 153  shapes 94  trimesh tris 0  heightfields 60  dropped 505  step 0.00 ms
+budget kessel     calls 211/700  tris 1787052/3000000  models 97.9/160 MB (from the bucket)  pass
+# kessel-ultra
+kessel     calls  230  tris 3236441  geo  246  tex 263  prog null  frame p50 51014.6 p95 53281.2 ms  ground 0 ms  load 18.2 s  scans cc0 0 game 47
+           level calls 457  tris 3291299  instances 6192  lights 27  probe –  maps 479/479
+           physics cells 28  bodies 231  colliders 450  shapes 190  trimesh tris 0  heightfields 112  dropped 501  step 0.00 ms
+budget: no baseline at lab/baseline/surface-ultra.json; holding to the ultra row alone
+budget kessel     calls 230/1500  tris 3236441/–  models 330.8/285 MB (from the bucket)  p95 53281.2/reported ms  FAIL (models 330.8 MB > 285)
