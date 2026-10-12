@@ -73,14 +73,16 @@ export function footstep(speed, { crouch = false } = {}) {
 }
 
 // The HDR window: 25 dB under the loudest playing sound; its top rises at
-// once (attack 25 ms), holds while that sound plays, and falls back over a
-// second or two after (release 0.5–2 s by the curve; 17 dB/s here), never
-// under 20 dB (WindowMinBottom). A sound at or under the bottom is
-// suspended: footsteps vanish under fire, by design, and come back once
-// the window has fallen.
+// once (attack 25 ms), holds while that sound plays and for the top's
+// release after it (0.5–2 s by the curve: its start here), then falls at
+// 17 dB/s, never under 20 dB (WindowMinBottom). A voice's loudness is its
+// patch's less the distance (loudnessOf); one at or under the bottom is
+// suspended: the feet (75) vanish under a blaster at the ear (100), by
+// design, and come back once the window has fallen.
 export const WINDOW = 25;
 export const WINDOW_FLOOR = 20;
 export const RELEASE_DB_PER_S = 17;
+export const TOP_RELEASE = 0.5;
 export const createWindow = () => ({ top: WINDOW_FLOOR, until: 0 });
 export const topOf = (w, now) => Math.max(WINDOW_FLOOR, w.top - Math.max(0, now - w.until) * RELEASE_DB_PER_S);
 // `hold`: how long the sound plays (its take's length)
@@ -88,7 +90,7 @@ export function hear(w, loudness, now, hold = 0.5) {
   const top = topOf(w, now);
   if (loudness >= top) {
     w.top = loudness;
-    w.until = now + hold;
+    w.until = now + hold + TOP_RELEASE;
   } else {
     w.top = top;
     w.until = Math.max(w.until, now);

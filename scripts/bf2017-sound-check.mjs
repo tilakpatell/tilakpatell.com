@@ -109,10 +109,13 @@ try {
   await page.mouse.click(640, 360);
   await frames(10);
   // walk: W held, the footsteps come
+  const at = () => page.evaluate(() => window.__battlefront.view().player?.at ?? null);
+  const from = await at();
   await page.keyboard.down('KeyW');
   await page.waitForTimeout((SECONDS * 1000) / 4);
   await page.keyboard.up('KeyW');
-  out.phases.walked = { sounds: await sounds(), hook: await hook() };
+  const to = await at();
+  out.phases.walked = { sounds: await sounds(), hook: await hook(), moved: from && to ? Math.hypot(to[0] - from[0], to[2] - from[2]) : null };
   // fire: the mouse held, the blaster's layers, the overheat
   await page.mouse.move(640, 360);
   await page.mouse.down();

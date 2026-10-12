@@ -30,7 +30,7 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
+import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { createSoundPlayer } from './sound/player.js';
 import { PRELOAD, createDirector } from './sound/director.js';
@@ -119,8 +119,9 @@ export default {
     // director on the sim's events; the one-shots the first minute needs
     // fetched now, the stems streamed as they play
     const sound = createSoundPlayer({ context: rt.audio.context, output: () => rt.audio.bus(), load: (url) => rt.assets.audio(url) });
-    const director = createDirector({ player: sound, me, team: PLAYER_TEAM });
-    sound.preload([...PRELOAD, ...NAMES.filter((n) => n.startsWith('blaster.') && !PRELOAD.includes(n))]).catch(() => {});
+    // (`me` to the sim is the input's 'player'; the soldier the events name is PLAYER_ID)
+    const director = createDirector({ player: sound, me: PLAYER_ID, team: PLAYER_TEAM });
+    sound.preload([...PRELOAD, ...NAMES.filter((n) => (n.startsWith('blaster.') || n.startsWith('ambience.')) && !PRELOAD.includes(n))]).catch(() => {});
     // the player's soldier in lane 1's sim, once deployed
     const body = () => (sim.player?.id ? sim.sim.entities.get(sim.player.id) : null);
     let picked = null;
@@ -364,7 +365,7 @@ export default {
     };
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
     // (`sounds`: the player's counter by name, for scripts/bf2017-sound-check.mjs)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => sound.stats(), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     return world;
   },
 };

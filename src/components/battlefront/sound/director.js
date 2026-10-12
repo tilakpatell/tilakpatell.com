@@ -29,6 +29,7 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
     now: 0,
     window: createWindow(),
     sinceStep: 0,
+    suppressed: 0, // the plants the window dropped
     crouch: false,
     gun: null,
     life: null,
@@ -154,7 +155,11 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
     state.sinceStep += dt;
     if (state.sinceStep < f.interval) return;
     state.sinceStep = 0;
-    if (!admits(state.window, loudnessOf(LOUDNESS.step, f.gain), state.now)) return;
+    // (the patch's loudness, at the ear: the speed's gain is inside the patch)
+    if (!admits(state.window, LOUDNESS.step, state.now)) {
+      state.suppressed += 1;
+      return;
+    }
     player.play(`step.${f.set}`, { gain: f.gain, pitch: f.pitch });
   };
 

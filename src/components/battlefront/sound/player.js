@@ -78,6 +78,7 @@ export function createSoundPlayer({ context = audioContext, output = masterOut, 
   const history = new Map(); // name → the last takes played
   const buffers = new Map(); // url → AudioBuffer | null (loading)
   let late = 0;
+  const lateNames = {};
   let failed = 0;
   let world = null; // the in-world sounds' gain, into the low-pass
   let lpf = null;
@@ -136,6 +137,7 @@ export function createSoundPlayer({ context = audioContext, output = masterOut, 
     if (!buf) {
       // (not here yet: fetched for the next time, this one goes unheard)
       late += 1;
+      lateNames[name] = (lateNames[name] ?? 0) + 1;
       fetchBuffer(url);
       return null;
     }
@@ -225,7 +227,7 @@ export function createSoundPlayer({ context = audioContext, output = masterOut, 
     get musicName() {
       return stemName;
     },
-    stats: () => ({ played: { ...played }, starts: Object.values(played).reduce((s, n) => s + n, 0), late, failed, buffers: [...buffers.values()].filter(Boolean).length, live: live.size }),
+    stats: () => ({ played: { ...played }, starts: Object.values(played).reduce((s, n) => s + n, 0), late, lateNames: { ...lateNames }, failed, buffers: [...buffers.values()].filter(Boolean).length, live: live.size }),
     dispose() {
       for (const h of [...live]) h.stop(100);
       stopMusic(300);

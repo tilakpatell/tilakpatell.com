@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_SHOTS, VO_GAP, createDirector } from './director.js';
 import { STRIDE } from './mix.js';
+import { loadRulebook } from '../../../lib/battlefront/rulebook.js';
+import { hothFlatNav } from '../../../lib/battlefront/fixtures/hothFlat.js';
+import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, step, view as battleView } from '../battle.js';
 
 // a player that remembers every call
 function fakePlayer() {
@@ -202,5 +205,59 @@ describe('the commanders', () => {
     d.update(view({ time: 11 }), [{ type: 'uplink', name: 'B' }]);
     d.update(view({ time: 11 + VO_GAP }), [{ type: 'walkerDown' }]);
     expect(names(player).filter((n) => n.startsWith('vo.'))).toEqual(['vo.imperial.uplinkActivate', 'vo.imperial.walkerDown']);
+  });
+});
+
+// (the wiring module.js makes: the sim names the player's soldier PLAYER_ID
+// in its entities and its events, never the input's 'player' that addPlayer
+// hands back; a director given the latter finds no body and plants no foot)
+describe('on the battle’s own view', () => {
+  const rb = loadRulebook();
+  const battle = () => {
+    const b = createBattle({ rulebook: rb, level: 'hoth', mode: 'galacticAssault', nav: hothFlatNav(rb), bots: { 1: 0, 2: 0 } });
+    const input = addPlayer(b, { team: 2 });
+    deploy(b, input, { classId: 'd-orig-assault' });
+    return { b, input };
+  };
+  const walk = (b, input, d, over = {}, steps = 60) => {
+    for (let i = 0; i < steps; i++) d.update(battleView(b), step(b, [{ id: input, move: [0, 1], yaw: 0, ...over }]), STEP);
+  };
+
+  it('the feet plant as the player’s soldier walks, a stride apart, and faster on the sprint', () => {
+    const { b, input } = battle();
+    const player = fakePlayer();
+    const d = createDirector({ player, me: PLAYER_ID, team: 2, rng: () => 0.5 });
+    const from = battleView(b).player.at.slice();
+    walk(b, input, d);
+    const to = battleView(b).player.at;
+    const moved = Math.hypot(to[0] - from[0], to[2] - from[2]);
+    const jog = names(player).filter((n) => n.startsWith('step.'));
+    expect(moved).toBeGreaterThan(5);
+    expect(new Set(jog)).toEqual(new Set(['step.jog']));
+    expect(jog.length).toBeGreaterThanOrEqual(Math.floor(moved / STRIDE.jog) - 1);
+    expect(jog.length).toBeLessThanOrEqual(Math.ceil(moved / STRIDE.jog) + 1);
+    walk(b, input, d, { sprint: true });
+    expect(names(player)).toContain('step.sprint');
+    expect(d.state.suppressed).toBe(0);
+  });
+
+  it('and none for a director told the input’s name', () => {
+    const { b, input } = battle();
+    const player = fakePlayer();
+    const d = createDirector({ player, me: input, team: 2, rng: () => 0.5 });
+    walk(b, input, d);
+    expect(input).not.toBe(PLAYER_ID);
+    expect(names(player).filter((n) => n.startsWith('step.'))).toEqual([]);
+  });
+
+  it('the player’s own shot is the close layer at the ear, and the feet wait for the window', () => {
+    const { b, input } = battle();
+    const player = fakePlayer();
+    const d = createDirector({ player, me: PLAYER_ID, team: 2, rng: () => 0.5 });
+    walk(b, input, d, { fire: true }, 20);
+    const n = names(player);
+    expect(n).toContain('blaster.e11.close');
+    expect(n.filter((x) => x.startsWith('step.'))).toEqual([]);
+    expect(d.state.suppressed).toBeGreaterThan(0);
   });
 });
