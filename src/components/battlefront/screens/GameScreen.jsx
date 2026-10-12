@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Film, Screen } from '../../../runtime/hud';
+import '../../../lib/bf2017/fonts.css';
 import './screens.css';
 
 // The frame every one of the game's screens here sits in: the whole view,

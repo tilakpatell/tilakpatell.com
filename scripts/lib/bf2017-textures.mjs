@@ -49,8 +49,9 @@ export async function unpackKtx2(file, outDir, { basisu = basisuPath() } = {}) {
 }
 
 // `normal:<map>` and `orm:<map>:ao=<map>|<ch>;rough=<map>|<ch>;metal=<map>|<ch>[;rebuild]`
-// (`rebuild`: a recipe the site mended, weaponRecipes; the map is built from
-// it even where the uploader's own PNG of the derived map is on disk)
+// (`rebuild`: a recipe of the site's own, not the uploader's; the map is
+// built from it even where the uploader's own PNG of the derived map is on
+// disk. No recipe carries it today: the uploader's are the game's.)
 export function parseDerived(derived = []) {
   const out = { normal: [], orm: [] };
   for (const d of derived ?? []) {
@@ -74,43 +75,32 @@ export function parseDerived(derived = []) {
   return out;
 }
 
-// The Walrus weapon presets (SS_WeaponsPreset, _Alpha, _TransparentDepth)
-// bind three maps: _BaseColor (`_CS`: colour, smoothness in alpha), _Normal
-// (`_NAM`: x and y, a wear mask in blue, 255 in alpha) and _Mask (`_RGB`:
-// the metal mask in green, red and blue empty). The uploader's ORM recipe
-// reads a weapon's metal from the NAM's blue, which is the wear mask (near
-// black on all eight class weapons: docs/superpowers/evidence/
-// bf2017-guns-2026-10-12.md), so every blaster came in as dark plastic.
-// This adds a mended recipe after the uploader's, from the GLB's own
-// materials (the export writes the shader and its bound maps in each
-// material's extras): the metal from the _Mask's green, marked `rebuild` so
-// it is built rather than read from the uploader's PNG; resolveImage takes
-// it when its maps are on disk and falls back to the uploader's when the
-// mask is not (a fixture, a half-fetched folder). A model on another shader
-// is left as it is.
-//   weaponRecipes(derived, materials) → derived, a mended ORM line after each weapon's
+// The Walrus weapon presets (SS_WeaponsPreset, _Alpha, _Transparancy,
+// _TransparentDepth: every blaster and hilt) bind three maps, and the
+// game's compiled preset shader (bf2-re `findings/18-textures.md`, the
+// GBuffer compile `weapons-gbuf-31465021.asm`) says what each is:
+// _BaseColor (`_CS`) is the albedo with smoothness in alpha; _Normal
+// (`_NAM`) is x and y with the METAL in blue (`metal = NAM.b × (1 − wear)`:
+// a Walrus weapon is a painted dielectric whose metal is its worn-through
+// edges, so the channel is near black and bright only on them) and 255 in
+// alpha; _Mask (`_RGB`) is the weathering's gates (R tints it, G scales its
+// amount, B shuts it) and never reaches the metal or the smoothness. The
+// reflectance is a constant 0.5 (Frostbite's F0 = 0.16 × 0.5² = 0.04) and
+// there is no occlusion: so the uploader's recipe (`metal = NAM|b`,
+// `rough = 255 − CS|a`) is the game's, and the GLB keeps the ORM's blue as
+// its metal, drops the occlusion slot and holds the glTF dielectric F0.
+// (PR #946 read the metal from the _Mask's green for a day: the evidence
+// is docs/superpowers/evidence/bf2017-guns-2026-10-12.md.)
+//   weaponMaterial(shader) → { reflectance: 0.5, occlusion: false } on a Walrus weapon preset, else null
+//   specularFactorOf(reflectance) → glTF's KHR_materials_specular factor for Frostbite's reflectance
 const WEAPON_PRESET = /SS_Weapons?Preset/i;
-const frostbiteName = (file) =>
-  String(file)
-    .replace(/^(web\/)?textures\//, '')
-    .replace(/\.(png|ktx2)$/, '');
-export function weaponRecipes(derived = [], materials = []) {
-  const masks = new Map(); // the normal map's name (lower case) → its mask's
-  for (const m of materials) {
-    const x = m?.extras ?? {};
-    if (!WEAPON_PRESET.test(String(x.shader ?? '')) || !x.textures?._Mask || !x.textures?._Normal) continue;
-    masks.set(frostbiteName(x.textures._Normal).toLowerCase(), frostbiteName(x.textures._Mask));
-  }
-  if (!masks.size) return derived;
-  const mended = derived.filter((d) => /;rebuild$/.test(d)).map((d) => d.split(':')[1].toLowerCase());
-  return derived.flatMap((d) => {
-    const [kind, from, recipe = ''] = d.split(':');
-    const mask = kind === 'orm' && !mended.includes(String(from).toLowerCase()) ? masks.get(String(from).toLowerCase()) : null;
-    if (!mask || /;rebuild$/.test(d)) return [d];
-    const kept = recipe.split(';').filter((p) => p && !/^metal=/.test(p));
-    return [d, `orm:${from}:${[...kept, `metal=${mask}|g`, 'rebuild'].join(';')}`];
-  });
-}
+export const weaponMaterial = (shader) => (WEAPON_PRESET.test(String(shader ?? '')) ? { reflectance: 0.5, occlusion: false } : null);
+// Frostbite's F0 is 0.16·r²; glTF's dielectric F0 at the default IOR 1.5
+// is 0.04, which KHR_materials_specular's factor scales: f = 0.16·r² / 0.04
+// = 4·r², clamped to the extension's 1 (a reflectance above 0.5 would need
+// an IOR instead). So a weapon's 0.5 is exactly glTF's default, and the
+// import writes the extension only where the factor is below 1.
+export const specularFactorOf = (reflectance) => Math.min(1, 4 * reflectance * reflectance);
 
 const CH = { r: 0, g: 1, b: 2, a: 3 };
 
@@ -158,8 +148,8 @@ export async function normalPng(buffer) {
 }
 
 // One image a GLB names (a bucket path to a KTX2), as a PNG from what is on
-// disk under `root`, best first: an ORM a mended recipe says to rebuild
-// (weaponRecipes), from its source PNGs; a PNG of the map itself; for a
+// disk under `root`, best first: an ORM a recipe marked `rebuild` names,
+// from its source PNGs; a PNG of the map itself; for a
 // derived map (`__normal`, `__orm_<hash>`), its source PNG split by the
 // recipe; the KTX2 unpacked into `unpackDir`. Null when none is there (the
 // upload is still running): the material then goes without that map.
@@ -172,8 +162,8 @@ export async function resolveImage(bucketPath, { root, derived, unpackDir }) {
   const stem = bucketPath.replace(/\.(ktx2|png)$/, '');
   const kind = /__normal$/.test(stem) ? 'normal' : /__orm_[0-9a-f]+$/.test(stem) ? 'orm' : null;
   const source = kind ? `${stem.replace(/__(normal|orm_[0-9a-f]+)$/, '')}.png` : own;
-  // (the map's recipes: a mended one first where its maps are on disk, else
-  // one whose maps are, else the first, for the message)
+  // (the map's recipes: one marked rebuild first where its maps are on disk,
+  // else one whose maps are, else the first, for the message)
   const mapsOf = (r) => [r.ao, r.rough, r.metal].filter(Boolean).map((c) => mapPath(c.map));
   const recipes = kind === 'orm' ? parseDerived(derived).orm.filter((r) => mapPath(r.from) === source) : [];
   const recipe = recipes.find((r) => r.rebuild && mapsOf(r).every(onDisk)) ?? recipes.find((r) => mapsOf(r).every(onDisk)) ?? recipes[0] ?? null;
