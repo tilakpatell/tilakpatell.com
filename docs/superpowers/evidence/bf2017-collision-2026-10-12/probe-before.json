@@ -1,0 +1,752 @@
+{
+ "base": "http://127.0.0.1:5622",
+ "gpu": "webgpu",
+ "quality": "ultra",
+ "spawn": [
+  -32.134,
+  313.5422697867767,
+  -957.0956
+ ],
+ "physics": {
+  "cells": 1,
+  "bodies": 0,
+  "colliders": 0,
+  "queued": 0,
+  "mask": true
+ },
+ "scene": {
+  "found": true,
+  "kinds": {
+   "InstancedMesh": 96,
+   "Mesh": 2
+  },
+  "names": [
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:",
+   "InstancedMesh:"
+  ]
+ },
+ "piles": [
+  {
+   "name": "snowdebris_06",
+   "at": [
+    8.2,
+    310.4,
+    -939
+   ],
+   "size": [
+    2.9,
+    0.4,
+    2.9
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    5.7,
+    310.6,
+    -942.4
+   ]
+  },
+  {
+   "name": "snowdebris_06",
+   "at": [
+    11.2,
+    310.8,
+    -945.9
+   ],
+   "size": [
+    3.3,
+    0.5,
+    3.3
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": false,
+   "endIn": true,
+   "sinkBelowTop": null,
+   "end": [
+    10.2,
+    310.7,
+    -945.4
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_04",
+   "at": [
+    9.8,
+    310.7,
+    -939.4
+   ],
+   "size": [
+    2.4,
+    2.5,
+    2.2
+   ],
+   "verdict": "stuck inside",
+   "why": "stalled",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 1.42,
+   "end": [
+    9.4,
+    310.5,
+    -939.9
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -68.9,
+    315.3,
+    -983.8
+   ],
+   "size": [
+    6.9,
+    2,
+    5.8
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 1.15,
+   "end": [
+    -72.3,
+    316.2,
+    -986
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_04",
+   "at": [
+    11.3,
+    310.8,
+    -941.1
+   ],
+   "size": [
+    2.3,
+    2.3,
+    2.2
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 1.44,
+   "end": [
+    10.4,
+    310.6,
+    -940.9
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    10.7,
+    310.4,
+    -939.5
+   ],
+   "size": [
+    5.6,
+    1.5,
+    6.8
+   ],
+   "verdict": "stuck inside",
+   "why": "stalled",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 0.89,
+   "end": [
+    9.3,
+    310.5,
+    -939.9
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    11.4,
+    310.4,
+    -940.8
+   ],
+   "size": [
+    6.4,
+    1.6,
+    4.6
+   ],
+   "verdict": "stuck inside",
+   "why": "stalled",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 0.88,
+   "end": [
+    10.3,
+    310.5,
+    -940.9
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -69.1,
+    315.5,
+    -985.4
+   ],
+   "size": [
+    6.1,
+    1.7,
+    6.9
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": true,
+   "endIn": false,
+   "sinkBelowTop": 1.24,
+   "end": [
+    -71,
+    316,
+    -988.8
+   ]
+  },
+  {
+   "name": "snowdebris_06",
+   "at": [
+    8.2,
+    310.3,
+    -933.5
+   ],
+   "size": [
+    3.3,
+    0.5,
+    3.3
+   ],
+   "verdict": "through",
+   "why": "arrived",
+   "wentIn": true,
+   "endIn": false,
+   "sinkBelowTop": 0.3,
+   "end": [
+    12.6,
+    310.3,
+    -930.6
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    11.9,
+    310.5,
+    -941.6
+   ],
+   "size": [
+    6.6,
+    1.3,
+    5.1
+   ],
+   "verdict": "stuck inside",
+   "why": "stalled",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 0.8,
+   "end": [
+    11.3,
+    310.6,
+    -941.9
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    11.1,
+    310.4,
+    -938.6
+   ],
+   "size": [
+    5.2,
+    1.7,
+    6.6
+   ],
+   "verdict": "stuck inside",
+   "why": "stalled",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 0.89,
+   "end": [
+    10.9,
+    310.5,
+    -937.9
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    13.8,
+    310.9,
+    -946.7
+   ],
+   "size": [
+    4.5,
+    2.3,
+    6.4
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 1.38,
+   "end": [
+    13.3,
+    310.9,
+    -945.5
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_04",
+   "at": [
+    14.4,
+    311.2,
+    -947.7
+   ],
+   "size": [
+    3,
+    2.8,
+    2.3
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    12.8,
+    311,
+    -947
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_04",
+   "at": [
+    14.3,
+    311.2,
+    -946.4
+   ],
+   "size": [
+    1.7,
+    2.3,
+    2.4
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    13.3,
+    310.9,
+    -945.5
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    14.6,
+    310.7,
+    -946.1
+   ],
+   "size": [
+    5.1,
+    2.3,
+    6.6
+   ],
+   "verdict": "time",
+   "why": "time",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 1.34,
+   "end": [
+    17.1,
+    310.5,
+    -944.7
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    10.1,
+    310.2,
+    -934.2
+   ],
+   "size": [
+    5.6,
+    1.5,
+    6.8
+   ],
+   "verdict": "through",
+   "why": "arrived",
+   "wentIn": true,
+   "endIn": false,
+   "sinkBelowTop": 0.94,
+   "end": [
+    16.1,
+    310.5,
+    -930.8
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_04",
+   "at": [
+    -72.1,
+    315.9,
+    -984.6
+   ],
+   "size": [
+    1.7,
+    1.9,
+    2.2
+   ],
+   "verdict": "through",
+   "why": "arrived",
+   "wentIn": true,
+   "endIn": false,
+   "sinkBelowTop": 0.85,
+   "end": [
+    -75.4,
+    316.3,
+    -986.9
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -71.9,
+    316.1,
+    -988
+   ],
+   "size": [
+    6.5,
+    2.2,
+    4.8
+   ],
+   "verdict": "blocked at the edge",
+   "why": "stalled",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    -68.5,
+    315.7,
+    -984.8
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -71.4,
+    316.1,
+    -988.9
+   ],
+   "size": [
+    6.7,
+    1.5,
+    5.3
+   ],
+   "verdict": "stuck inside",
+   "why": "stalled",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 1.29,
+   "end": [
+    -71,
+    316,
+    -988.7
+   ]
+  },
+  {
+   "name": "snowdebris_06",
+   "at": [
+    -73.3,
+    316.4,
+    -986.5
+   ],
+   "size": [
+    3.4,
+    0.7,
+    3.4
+   ],
+   "verdict": "through",
+   "why": "arrived",
+   "wentIn": true,
+   "endIn": false,
+   "sinkBelowTop": 0.56,
+   "end": [
+    -77.7,
+    316.3,
+    -989.2
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_04",
+   "at": [
+    -72.3,
+    316.7,
+    -988.6
+   ],
+   "size": [
+    3.1,
+    2.6,
+    3
+   ],
+   "verdict": "blocked at the edge",
+   "why": "stalled",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    -70.9,
+    316,
+    -988.8
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_04",
+   "at": [
+    -65.7,
+    315.6,
+    -996
+   ],
+   "size": [
+    2.2,
+    2.1,
+    2.4
+   ],
+   "verdict": "through",
+   "why": "arrived",
+   "wentIn": true,
+   "endIn": false,
+   "sinkBelowTop": 1.44,
+   "end": [
+    -68.4,
+    315.4,
+    -999.2
+   ]
+  },
+  {
+   "name": "snowdebris_02",
+   "at": [
+    -73.4,
+    316.7,
+    -988.5
+   ],
+   "size": [
+    1.3,
+    0.8,
+    1.1
+   ],
+   "verdict": "blocked at the edge",
+   "why": "stalled",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    -74.1,
+    316.3,
+    -987.8
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_04",
+   "at": [
+    -72.9,
+    316.5,
+    -989.4
+   ],
+   "size": [
+    2.7,
+    2.3,
+    2
+   ],
+   "verdict": "blocked at the edge",
+   "why": "stalled",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    -71,
+    316,
+    -988.8
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -66,
+    315.3,
+    -996.7
+   ],
+   "size": [
+    4.3,
+    1.7,
+    6.3
+   ],
+   "verdict": "through",
+   "why": "arrived",
+   "wentIn": true,
+   "endIn": false,
+   "sinkBelowTop": 1.15,
+   "end": [
+    -70.4,
+    315.6,
+    -1001.8
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -72.3,
+    315.9,
+    -990.8
+   ],
+   "size": [
+    5.1,
+    1.7,
+    6.6
+   ],
+   "verdict": "stuck inside",
+   "why": "stalled",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 1.18,
+   "end": [
+    -71,
+    316,
+    -988.8
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -74.4,
+    316.3,
+    -988.8
+   ],
+   "size": [
+    4.8,
+    2.1,
+    6.4
+   ],
+   "verdict": "blocked at the edge",
+   "why": "stalled",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    -68.6,
+    316.3,
+    -984.5
+   ]
+  },
+  {
+   "name": "snowdebris_03",
+   "at": [
+    -74.8,
+    316.6,
+    -988.7
+   ],
+   "size": [
+    1.1,
+    0.7,
+    1.3
+   ],
+   "verdict": "blocked at the edge",
+   "why": "stalled",
+   "wentIn": false,
+   "endIn": false,
+   "sinkBelowTop": null,
+   "end": [
+    -74,
+    316.3,
+    -987.8
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -73.1,
+    315.9,
+    -991.3
+   ],
+   "size": [
+    5.7,
+    1.7,
+    6.8
+   ],
+   "verdict": "stuck inside",
+   "why": "stalled",
+   "wentIn": true,
+   "endIn": true,
+   "sinkBelowTop": 0.84,
+   "end": [
+    -71,
+    316,
+    -988.7
+   ]
+  },
+  {
+   "name": "arcticbase_snowpile_medium_08",
+   "at": [
+    -77.4,
+    316.3,
+    -986.5
+   ],
+   "size": [
+    6.8,
+    1.6,
+    5.3
+   ],
+   "verdict": "through",
+   "why": "arrived",
+   "wentIn": true,
+   "endIn": false,
+   "sinkBelowTop": 1.03,
+   "end": [
+    -83.4,
+    316.7,
+    -990.1
+   ]
+  }
+ ],
+ "tally": {
+  "time": 9,
+  "stuck inside": 8,
+  "through": 7,
+  "blocked at the edge": 6
+ },
+ "grid": {
+  "step": 0.5,
+  "half": 100,
+  "points": 160801,
+  "blocked": 3357,
+  "bare": 0,
+  "clusters": []
+ },
+ "walls": [],
+ "wallTally": {},
+ "combatArea": {
+  "id": "FantasyBattle_Shapes:12",
+  "bareIn": 0,
+  "bareOut": 0
+ },
+ "errors": []
+}

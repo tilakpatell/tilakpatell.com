@@ -14,7 +14,7 @@ import bones from '../../data/bf2017/physics/bones.json';
 import physics from '../../data/bf2017/physics/soldier.json';
 import { ROLL, createAbilities, tick as tickAbilities } from './abilities.js';
 import { createStack, resolve, tick as tickStack } from './affectors.js';
-import { heightAt, walkable } from './nav.js';
+import { canStep, heightAt } from './nav.js';
 import { createGun, tick as tickGun } from './weapons.js';
 
 const BODY = physics.rows[physics.default];
@@ -143,7 +143,8 @@ export function roll(s, dir, now) {
   s.rollDir = [...dir];
 }
 
-// a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it
+// a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it; the
+// height is the navgrid's (the ground, and what the mask stands on: a pile's top, a trench's floor)
 export function move(s, dir, dt, nav) {
   const step = speedOf(s) * dt;
   const len = Math.hypot(dir[0], dir[1]);
@@ -163,7 +164,7 @@ export function move(s, dir, dt, nav) {
     if (Math.abs(mx) + Math.abs(mz) < 1e-9) continue;
     const x = s.at[0] + mx;
     const z = s.at[2] + mz;
-    if (!walkable(nav, x, z)) continue;
+    if (!canStep(nav, s.at[0], s.at[2], x, z)) continue;
     s.at[0] = x;
     s.at[2] = z;
     s.at[1] = heightAt(nav, x, z);

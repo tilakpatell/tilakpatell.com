@@ -13,22 +13,26 @@
 // at the nearest open cell and walks the last metre straight.
 //
 //   buildNav({ heightAt, bounds, cell, solids, maxSlope, cover, radius }) → nav
-//   cellAt(nav, x, z) → [c, r] | null      heightAt(nav, x, z) → y (bilinear)
+//   cellAt(nav, x, z) → [c, r] | null      heightAt(nav, x, z) → y (bilinear, plus what the mask stands on)
 //   walkable(nav, x, z) → bool             nearestWalkable(nav, x, z) → [x, z] | null
+//   standAt(nav, x, z) → m over the ground the mask stands at (a pile, a trench floor)
+//   canStep(nav, fromX, fromZ, toX, toZ) → bool: walkable, and no rise past the mask's climb
 //   findPath(nav, from, to, { blocked }) → [[x, z]] | null
 //   firstSolid(nav, a, b) → { t, at, solid } | null   lineClear(nav, a, b) → bool
 //   coverSlots(nav, near, r) → slots       nearestSlot(nav, at, threat) → slot | null
 //
-// A nav mask (navMask.js, the design's nav.bin: where the game's shapes
-// leave no room for a soldier's capsule, built offline by the physics
-// engine) is taken as it is when it fits the grid: its blocked cells are
-// solid, its fine grid makes `walkable` exact, its tops stop a line of sight
-// (`solid: -2`) and its edges give cover slots. A box solid blocks only
+// A nav mask (navMask.js, the design's nav.bin: the game's shapes walked
+// offline by the physics engine as its capsule controller walks them) is
+// taken as it is when it fits the grid: its blocked cells are solid, its
+// fine grid makes `walkable` exact, its tops stop a line of sight
+// (`solid: -2`), its edges give cover slots, and its stands lift a soldier
+// onto a pile or down into a trench (`heightAt`), a rise past its climb
+// being a wall (`canStep`). A box solid blocks only
 // where its top is a step or more above the ground (the soldier's
 // `StepHeight`), so a box buried in the ground blocks nothing.
 // Pure: typed arrays, no three.js.
 
-import { fineBlocked, maskFits } from './navMask.js';
+import { fineBlocked, fineStand, maskFits } from './navMask.js';
 import { search } from './navSearch.js';
 
 export const MAX_EXPAND = 20000;
@@ -133,7 +137,34 @@ const indexAt = (nav, x, z) => {
   return cr ? cr[1] * nav.cols + cr[0] : -1;
 };
 
+// the mask's stand at (x, z), bilinear over the four fine cells round it; a
+// neighbour a climb or more away (a wall's top, a trench's rim) counts as
+// the cell's own, so a soldier is never lifted up a face it cannot step
+export function standAt(nav, x, z) {
+  const m = nav.mask;
+  if (!m?.stand) return 0;
+  const f = m.fine.cell;
+  const fx = (x - m.origin[0]) / f - 0.5;
+  const fz = (z - m.origin[1]) / f - 0.5;
+  const c0 = Math.floor(fx);
+  const r0 = Math.floor(fz);
+  const tx = fx - c0;
+  const tz = fz - r0;
+  const own = fineStand(m, x, z);
+  const at = (c, r) => {
+    const s = fineStand(m, m.origin[0] + (c + 0.5) * f, m.origin[1] + (r + 0.5) * f);
+    return Math.abs(s - own) > m.climb ? own : s;
+  };
+  const a = at(c0, r0) * (1 - tx) + at(c0 + 1, r0) * tx;
+  const b = at(c0, r0 + 1) * (1 - tx) + at(c0 + 1, r0 + 1) * tx;
+  return a * (1 - tz) + b * tz;
+}
+
 export function heightAt(nav, x, z) {
+  return groundAt(nav, x, z) + standAt(nav, x, z);
+}
+
+function groundAt(nav, x, z) {
   const fx = Math.min(nav.cols - 1, Math.max(0, (x - nav.origin[0]) / nav.cell - 0.5));
   const fz = Math.min(nav.rows - 1, Math.max(0, (z - nav.origin[1]) / nav.cell - 0.5));
   const c0 = Math.floor(fx);
@@ -167,6 +198,15 @@ export function walkable(nav, x, z) {
   const m = nav.mask;
   if (m && (m.fine ? fineBlocked(m, x, z) : m.blocked[i])) return false;
   return !inSolid(nav, x, z, i);
+}
+
+// a step from one spot to the next: open there, and no rise past the climb
+// (a drop is any depth: the game's soldier falls off anything)
+export function canStep(nav, fromX, fromZ, toX, toZ) {
+  if (!walkable(nav, toX, toZ)) return false;
+  const m = nav.mask;
+  if (!m?.stand) return true;
+  return fineStand(m, toX, toZ) - fineStand(m, fromX, fromZ) <= m.climb + 1e-6;
 }
 
 const open = (nav, i, blocked) => nav.walk[i] === 1 && !nav.solid[i] && !(blocked && blocked.has(i));

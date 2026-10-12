@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { aiOf, loadRulebook } from './rulebook.js';
 import { field } from './fixtures/field.js';
-import { buildNav, cellAt, coverSlots, findPath, firstSolid, lineClear, walkable } from './nav.js';
-import { buildMask } from './navMask.js';
+import { buildNav, canStep, cellAt, coverSlots, findPath, firstSolid, heightAt, lineClear, standAt, walkable } from './nav.js';
+import { CLIMB, buildMask, buildWalkMask } from './navMask.js';
 
 const cover = aiOf(loadRulebook()).cover.constants;
 
@@ -72,5 +72,49 @@ describe('the navgrid over the nav mask', () => {
     const [c, r] = cellAt(n, 40, -20);
     expect(n.solid[r * n.cols + c]).toBe(0);
     expect(coverSlots(n, [40, -20], 6).filter((s) => s.solid === 2)).toEqual([]);
+  });
+});
+
+// The walk mask on the field: a snow pile (a cone 1.2 m tall, 3 m round, at
+// [40, 40]) and a wall 2 m tall (x 60…61, z −10…10), walked from the field's south-west
+const pile = (x, z) => Math.max(0, 1.2 * (1 - Math.hypot(x - 40, z - 40) / 3));
+const inWall = (x, z, r = 0) => x >= 60 - r && x < 61 + r && Math.abs(z) < 10 + r;
+const walk = buildWalkMask({
+  bounds: field().bounds,
+  cell: 2,
+  fine: 0.5,
+  heightAt: () => 0,
+  surfacesAt: (x, z, top, bottom) => [inWall(x, z) ? 2 : pile(x, z) || null].filter((h) => h !== null && h <= top && h >= bottom),
+  freeAt: (x, y, z) => !(inWall(x, z, 0.3) && y < 1.95) && !(pile(x, z) > 0 && y < pile(x, z) - 0.05),
+  topAt: (x, z) => (inWall(x, z) ? 2 : 0),
+  seeds: [[-99, 0, -99]],
+  capsule: { step: 0.4, height: 1.7, radius: 0.3 },
+  rays: { start: 1.2, end: -4 },
+});
+const walked = buildNav({ ...field(), heightAt: () => 0, solids: [], cover, mask: walk });
+
+describe('the navgrid over the walk mask', () => {
+  it('stands a soldier on the pile, the height rising with it', () => {
+    expect(standAt(walked, 40, 40)).toBeCloseTo(1.1, 0);
+    expect(heightAt(walked, 40, 40)).toBeCloseTo(standAt(walked, 40, 40), 5);
+    expect(standAt(walked, 40, 42.5)).toBeLessThan(standAt(walked, 40, 41));
+    expect(standAt(walked, 40, 50)).toBe(0);
+    expect(heightAt(walked, 0, 0)).toBe(0);
+  });
+
+  it('steps onto the pile and off it, never up the wall', () => {
+    expect(canStep(walked, 40, 44, 40, 43.5)).toBe(true);
+    expect(canStep(walked, 40, 40.5, 40, 40)).toBe(true);
+    expect(canStep(walked, 59.5, 0, 60.2, 0)).toBe(false);
+    expect(walkable(walked, 60.5, 0)).toBe(false);
+    expect(walkable(walked, 62, 0)).toBe(true);
+  });
+
+  it('never lifts a soldier beside a face it cannot step, and keeps the climb', () => {
+    expect(standAt(walked, 59.6, 0)).toBe(0);
+    expect(walk.climb).toBe(CLIMB);
+    // (a mask with no stands: the ground alone, every step a walk)
+    expect(standAt(nav, 0, 0)).toBe(0);
+    expect(canStep(nav, 0, 17, 0, 17.5)).toBe(true);
   });
 });

@@ -13,11 +13,13 @@
 // { classId }, 'pick' id, 'spawn' a squadmate's id (null for the HQ),
 // 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
 // screen), 'weather' name, 'look' { yaw, pitch } (the player's view, for
-// a shot toward the sun), 'gpu', 'ragdolls' (how many bodies fall, lie
+// a shot toward the sun), 'teleport' [x, y, z] and 'walkable' [x, z] (a
+// collision probe's), 'gpu', 'ragdolls' (how many bodies fall, lie
 // and wait: figures/ragdolls.js).
 
 import * as THREE from 'three';
 import { textureTier } from '../../lib/video.js';
+import { walkable } from '../../lib/battlefront/nav.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
 import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf } from '../../lib/battlefront/rulebook.js';
 import { preloadDecoders } from '../../lib/three/gltf.js';
@@ -316,6 +318,18 @@ export default {
             input.setLook(arg?.yaw ?? l.yaw, arg?.pitch ?? l.pitch);
             return { ok: true, ...input.look() };
           }
+          // (a check's probe: the player's soldier put at a spot, and whether the sim lets a soldier stand at one)
+          case 'teleport': {
+            const p = body();
+            if (!p || !Array.isArray(arg) || arg.length < 3) return { ok: false, why: 'no body or no [x, y, z]' };
+            p.at[0] = arg[0];
+            p.at[1] = arg[1];
+            p.at[2] = arg[2];
+            lastAt = null;
+            return { ok: true, at: p.at.slice() };
+          }
+          case 'walkable':
+            return Array.isArray(arg) && arg.length >= 2 ? walkable(sim.nav, arg[0], arg[1]) : null;
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':

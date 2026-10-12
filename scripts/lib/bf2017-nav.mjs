@@ -1,20 +1,25 @@
-// The navgrid's mask from a level pack's shapes (the design's nav.bin,
+// The navgrid's walk mask from a level pack's shapes (the design's nav.bin,
 // decision 15; the research: docs/superpowers/evidence/battlefront-lane5b/
 // research-collision.md §3–4). Every placed mesh with shapes goes into the
 // physics engine as lane P0's bodies (the pack's cell bins, its
 // physics/<mesh>.bin), in the pack's frame; each question is turned into
-// that frame (the pack's origin and yaw) and asked of the engine: does the
-// soldier's capsule, from a step above the ground to its height, meet a
-// shape at this spot? (src/lib/battlefront/navMask.js keeps the answers.)
-// A blocked cell's top is a ray down from TOP_REACH over the ground.
+// that frame (the pack's origin and yaw) and asked of the engine as the
+// game's capsule controller asks it: from where a soldier stands, which
+// surfaces (the shapes' tops, the ground) do the ground rays find at the
+// next spot, and is the capsule free standing on one? navMask.js's
+// buildWalkMask floods the map from its spawns on those answers, so a snow
+// pile is walked up and over, a trench dropped into, and a wall is where the
+// rise is past the climb. A blocked cell's top is a ray down from TOP_REACH
+// over the ground.
 //
 //   capsuleOf(soldierJson) → { radius, step, height, sources }
-//   navMaskOf({ pack, loadBin, heightAt (export frame), bounds, capsule, cell, fine }) → mask
+//   raysOf(soldierJson) → { start, end, sources } (the ground probe's reach, the in-air end for the drops)
+//   navMaskOf({ pack, loadBin, heightAt (export frame), holeAt, bounds, seeds, capsule, rays, climb, cell, fine }) → mask
 //   pathTable({ map, heightAt, mask, cell, cover }) → rows of the measured paths
 //
 // Only the shapes: the ground's own slope is the navgrid's test.
 
-import { buildMask } from '../../src/lib/battlefront/navMask.js';
+import { CLIMB, buildWalkMask } from '../../src/lib/battlefront/navMask.js';
 import { MAX_EXPAND, buildNav, findPath, walkable } from '../../src/lib/battlefront/nav.js';
 import { cellBodies, collidersOf, readShapes } from '../../src/lib/physics/havok.js';
 import { createPhysics } from '../../src/lib/physics/world.js';
@@ -23,6 +28,11 @@ import { instancesOf } from '../../src/components/galaxy/surface/level/levelPhys
 // m over the ground a blocked cell's top is looked for from (hand: a byte of
 // decimetres, navMask.js's TOP_MAX, is 25.5 m)
 export const TOP_REACH = 25;
+
+export function raysOf(soldier) {
+  const r = soldier.rows[soldier.default].rays;
+  return { start: r.groundStart, end: Math.min(r.groundEnd, r.airEnd), sources: { start: r.groundStart_source, end: r.airEnd_source } };
+}
 
 export function capsuleOf(soldier) {
   const row = soldier.rows[soldier.default];
@@ -72,29 +82,38 @@ async function loadBodies(physics, pack, loadBin) {
   return { bodies, refused };
 }
 
-export async function navMaskOf({ pack, loadBin, heightAt, bounds, capsule, cell = 2, fine = 0.5 }) {
+export async function navMaskOf({ pack, loadBin, heightAt, holeAt = () => false, bounds, seeds = null, capsule, rays = { start: 1.2, end: -4 }, climb = CLIMB, cell = 2, fine = 0.5 }) {
   const physics = await createPhysics({ gravity: 0, onError: null });
   try {
     const { RAPIER, world } = physics;
     const stats = await loadBodies(physics, pack, loadBin);
     const frame = packFrame(pack);
     const length = capsule.height - capsule.step;
-    const shapes = new Map();
-    // a capsule of radius r from the step to the height; a cylinder once r is
-    // too wide for a capsule that short (the probe grown to a cell's corners)
-    const shapeOf = (r) => {
-      if (!shapes.has(r)) shapes.set(r, length > 2 * r ? new RAPIER.Capsule(length / 2 - r, r) : new RAPIER.Cylinder(length / 2, r));
-      return shapes.get(r);
-    };
+    const shape = length > 2 * capsule.radius ? new RAPIER.Capsule(length / 2 - capsule.radius, capsule.radius) : new RAPIER.Cylinder(length / 2, capsule.radius);
     const ROT = { x: 0, y: 0, z: 0, w: 1 };
-    const blockedAt = (x, g, z, r) => world.intersectionWithShape(frame(x, g + capsule.step + length / 2, z), ROT, shapeOf(r)) !== null;
+    const DOWN = { x: 0, y: -1, z: 0 };
+    // the shapes' surfaces under (x, z) between two heights, highest first:
+    // every crossing of a ray down through them (a hull's top and its
+    // underside both: the underside is never free for the capsule)
+    const surfacesAt = (x, z, top, bottom) => {
+      const out = [];
+      const ray = new RAPIER.Ray(frame(x, top, z), DOWN);
+      world.intersectionsWithRay(ray, top - bottom, false, (hit) => {
+        out.push(top - hit.timeOfImpact);
+        return true;
+      });
+      return out.sort((a, b) => b - a);
+    };
+    // the capsule, its foot at y, from the step to the height: free of every shape
+    const freeAt = (x, y, z) => world.intersectionWithShape(frame(x, y + capsule.step + length / 2, z), ROT, shape) === null;
     const topAt = (x, z, g) => {
       const p = frame(x, g + TOP_REACH, z);
-      const hit = world.castRay(new RAPIER.Ray(p, { x: 0, y: -1, z: 0 }), TOP_REACH, true);
-      // (no shape under the middle, though the capsule met one: its height)
+      const hit = world.castRay(new RAPIER.Ray(p, DOWN), TOP_REACH, true);
+      // (no shape under the middle, though the walk never came: its height)
       return hit ? TOP_REACH - hit.timeOfImpact : capsule.height;
     };
-    const mask = buildMask({ bounds, cell, fine, heightAt, blockedAt, topAt, capsule: { step: capsule.step, height: capsule.height, radius: capsule.radius } });
+    const from = seeds ?? [[(bounds.min[0] + bounds.max[0]) / 2, 0, (bounds.min[1] + bounds.max[1]) / 2]];
+    const mask = buildWalkMask({ bounds, cell, fine, heightAt, holeAt, surfacesAt, freeAt, topAt, seeds: from.map(([x, y, z]) => [x, y ?? heightAt(x, z), z]), capsule: { step: capsule.step, height: capsule.height, radius: capsule.radius }, rays, climb });
     mask.stats = stats;
     return mask;
   } finally {
