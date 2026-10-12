@@ -279,8 +279,8 @@ describe('a soldier’s stride against the ground', () => {
     expect(w('walk')).toBeCloseTo(1, 9);
     for (const n of f.loco) expect(f.actions.get(n).timeScale, n).toBeCloseTo(1, 9);
     expect(f.phase).toBeCloseTo(0.1, 9);
-    // a step to the right-ahead at 2 m/s: half the walk, half the right strafe, eased over CROSSFADE, the sum one
-    const diag = [-Math.SQRT2, Math.SQRT2];
+    // a step to the right-ahead at the walk's diagonal pace: half the walk, half the right strafe, eased over CROSSFADE, the sum one
+    const diag = [-1, 1];
     figs.update([runner({ vel: diag, t: 1 })], 0.05);
     expect(w('walk')).toBeCloseTo(1 - 0.05 / 0.15, 6);
     expect(w('walk.right')).toBeCloseTo(0.05 / 0.15, 6);

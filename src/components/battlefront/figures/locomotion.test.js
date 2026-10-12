@@ -162,9 +162,12 @@ describe('the walk as a blend', () => {
 
   it('weights the two nearest directions by the angle, the weights summing to one', () => {
     const rings = locoClips('stand', { has: (n) => HUMANOID.includes(n) });
-    const at = (angle, speed = 1.9) => locoBlend({ state: 'walk', speed, angle }, rings, info);
+    // (at a walk: under the walk ring's pace, which across the diagonal is
+    // the two clips' travel as vectors, 0.71 of either's)
+    const at = (angle, speed = 1.3) => locoBlend({ state: 'walk', speed, angle }, rings, info);
     expect(at(0).weights).toEqual({ walk: 1 });
     const half = at(Math.PI / 4).weights;
+    expect(at(Math.PI / 4).pace).toBeCloseTo(1.91 * Math.SQRT1_2, 6);
     expect(half.walk).toBeCloseTo(0.5, 9);
     expect(half['walk.right']).toBeCloseTo(0.5, 9);
     expect(sum(half)).toBeCloseTo(1, 9);

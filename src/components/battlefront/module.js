@@ -242,6 +242,12 @@ export default {
           step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]);
         }
         collision?.update(4);
+        // (the view again, after the steps: its entities' `at` are the sim's
+        // own arrays, live, while their step time `t` and the rest are read
+        // when it is taken; the figures pair a step's place with its time to
+        // glide between two steps, and read before the steps the pair was
+        // one step out, the body drawn a step forward then a step back)
+        const drawn = view(sim);
         const p = body();
         if (sim.player.state === 'alive' && p) {
           const look = input.look();
@@ -259,11 +265,11 @@ export default {
         }
         if (pose) rig.set(pose);
         rig.update(dt);
-        figures.update(v.entities, dt, Math.min(1, acc / STEP), camera.position);
+        figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position);
         ragdolls.update(dt);
         clock += dt;
         // (each bolt leaves its owner's gun: fx/bolts.js)
-        bolts.update(v.bolts, { muzzleOf: figures.muzzleOf, now: clock });
+        bolts.update(drawn.bolts, { muzzleOf: figures.muzzleOf, now: clock });
         light.update(dt, camera);
         sinceHud += dt;
         if (sinceHud >= 1 / HUD_HZ) {

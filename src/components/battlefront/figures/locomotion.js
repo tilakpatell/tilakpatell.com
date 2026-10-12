@@ -311,7 +311,7 @@ export function locoClips(stance, { key = null, has }) {
 
 // the two nearest of a ring by angle, weighted by where between them
 function dirWeights(angle, ring) {
-  if (ring.length === 1) return [{ name: ring[0].name, w: 1 }];
+  if (ring.length === 1) return [{ name: ring[0].name, angle: ring[0].angle, w: 1 }];
   const n = ring.length;
   for (let i = 0; i < n; i++) {
     const a = ring[i];
@@ -320,15 +320,15 @@ function dirWeights(angle, ring) {
     const off = (angle - a.angle + TAU) % TAU;
     if (off <= span + 1e-9) {
       const t = Math.min(1, off / span);
-      if (t < 1e-6) return [{ name: a.name, w: 1 }];
-      if (t > 1 - 1e-6) return [{ name: b.name, w: 1 }];
+      if (t < 1e-6) return [{ name: a.name, angle: a.angle, w: 1 }];
+      if (t > 1 - 1e-6) return [{ name: b.name, angle: b.angle, w: 1 }];
       return [
-        { name: a.name, w: 1 - t },
-        { name: b.name, w: t },
+        { name: a.name, angle: a.angle, w: 1 - t },
+        { name: b.name, angle: b.angle, w: t },
       ];
     }
   }
-  return [{ name: ring[0].name, w: 1 }];
+  return [{ name: ring[0].name, angle: ring[0].angle, w: 1 }];
 }
 
 export function locoBlend({ state = 'walk', speed = 0, angle = 0 }, rings, infoOf) {
@@ -336,7 +336,16 @@ export function locoBlend({ state = 'walk', speed = 0, angle = 0 }, rings, infoO
   const gaits = rings.map((ring) => {
     const parts = dirWeights(angle, ring);
     const paces = parts.map((p) => info(p.name).pace);
-    const pace = paces.every((p) => p > 0) ? parts.reduce((s, p, i) => s + p.w * paces[i], 0) : null;
+    // (a direction blend's pace is the sum of its clips' travel as vectors:
+    // half a walk ahead and half a strafe carry the feet along the diagonal
+    // at 0.71 of either, so the phase runs that much faster to keep up)
+    let px = 0;
+    let pz = 0;
+    for (let i = 0; i < parts.length; i++) {
+      px += parts[i].w * paces[i] * Math.sin(parts[i].angle);
+      pz += parts[i].w * paces[i] * Math.cos(parts[i].angle);
+    }
+    const pace = paces.every((p) => p > 0) ? Math.hypot(px, pz) : null;
     return { parts, pace };
   });
   // the gaits by speed: between the two whose paces bracket it, the slowest
