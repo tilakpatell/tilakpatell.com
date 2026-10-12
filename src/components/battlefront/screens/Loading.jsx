@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { info, levelFor } from '../../../lib/bf2017/ui/info';
 import { loading, word } from '../../../lib/bf2017/ui/screens';
+import { startLoadingMusic } from '../sound/loading.js';
 import { useTree } from './useTree';
 import GameScreen from './GameScreen.jsx';
 
@@ -8,9 +9,11 @@ import GameScreen from './GameScreen.jsx';
 // the mode in the tree's hint box (LoadingScreenWrapperWidget), the level's
 // name, and the bar the game draws for it carrying the level's real progress
 // (the world's own count; `waiting` is the veil's line when it waits on
-// something, as lane F's rule has it).
+// something, as lane F's rule has it), under the level's loading cue (the
+// game's intro and loop, sound/loading.js) until the screen goes.
 export default function Loading({ mode = 'galacticAssault', level = 'hoth', progress = 0, waiting = null }) {
   const [seed] = useState(() => Math.floor(Math.random() * 1e6));
+  useEffect(() => startLoadingMusic(level), [level]);
   const l = loading(mode, level, { seed });
   const tree = useTree('LoadingScreenWrapperWidget', { hintbody: l.hint ?? '' });
   const lv = levelFor(level) ?? info('level', level);

@@ -8,6 +8,7 @@
 //   pickTake(row, history, rng) → a take's index, never one of the last three played
 //     (the game's VariationHistoryCount 3; `history` is the name's last picks, newest last)
 //   gunOf(weaponId, team) → the blaster set's key ('e11' …), the side's rifle when the weapon has none
+//   gunGains(gun) → [close, distant, HiFi] amplitudes, the master patch's (the index's rows carry them)
 //   abilityCues(id, phase) → the names an ability's phase plays
 //   totalBytes(index) → the set's bytes; NAMES: every name
 
@@ -34,6 +35,8 @@ export function pickTake(row, history = [], rng = Math.random) {
 // weapon takes its side's rifle (the Empire's E-11, the Rebellion's A280)
 const GUNS = new Set(['e11', 'dlt19', 'rk3', 'dlt19x', 'a280', 'rt97c', 'dh17', 'dlt20a']);
 export const gunOf = (weaponId, team = 2) => (weaponId && GUNS.has(weaponId) ? weaponId : team === 2 ? 'e11' : 'a280');
+// the master patch's per-shot amplitudes for a gun, as the index carries them: [close, distant, HiFi]
+export const gunGains = (gun) => [rowOf(`blaster.${gun}.close`)?.gain ?? 0.9, rowOf(`blaster.${gun}.distant`)?.gain ?? 0.8, rowOf('blaster.hifi')?.gain ?? 0.2];
 
 // the four kits' abilities (abilities.json ids) → the cues by phase
 const ABILITIES = {

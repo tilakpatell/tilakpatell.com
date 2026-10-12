@@ -13,7 +13,7 @@
 // { classId }, 'pick' id, 'spawn' a squadmate's id (null for the HQ),
 // 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
 // screen), 'weather' name, 'gpu', 'ragdolls' (how many bodies fall, lie
-// and wait: figures/ragdolls.js).
+// and wait: figures/ragdolls.js); `sounds()` the sound player's counter.
 
 import * as THREE from 'three';
 import { textureTier } from '../../lib/video.js';
@@ -32,6 +32,9 @@ import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
 import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
+import { createSoundPlayer } from './sound/player.js';
+import { PRELOAD, createDirector } from './sound/director.js';
+import { NAMES } from './sound/sounds.js';
 import { litWith, picturesOf } from './picture.js';
 import { headroom, upscaleKind } from '../../lib/three/light/post.js';
 import { headroomAt } from '../../runtime/quality.js';
@@ -112,6 +115,12 @@ export default {
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
     const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask });
     const me = addPlayer(sim, { team: PLAYER_TEAM });
+    // the game's sounds (sound/): the player on the runtime's bus, the
+    // director on the sim's events; the one-shots the first minute needs
+    // fetched now, the stems streamed as they play
+    const sound = createSoundPlayer({ context: rt.audio.context, output: () => rt.audio.bus(), load: (url) => rt.assets.audio(url) });
+    const director = createDirector({ player: sound, me, team: PLAYER_TEAM });
+    sound.preload([...PRELOAD, ...NAMES.filter((n) => n.startsWith('blaster.') && !PRELOAD.includes(n))]).catch(() => {});
     // the player's soldier in lane 1's sim, once deployed
     const body = () => (sim.player?.id ? sim.sim.entities.get(sim.player.id) : null);
     let picked = null;
@@ -237,13 +246,17 @@ export default {
         if (v.deploy.open && read.deploy) doDeploy();
         acc = Math.min(acc + dt, STEP * MAX_STEPS);
         let first = true;
+        let stepped = 0;
+        const heard = [];
         while (acc >= STEP) {
           acc -= STEP;
+          stepped += STEP;
           lastAt = body()?.at.slice() ?? null;
           const once = first ? read : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
           first = false;
-          step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]);
+          heard.push(...step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]));
         }
+        if (stepped > 0) director.update(view(sim), heard, stepped);
         collision?.update(4);
         const p = body();
         if (sim.player.state === 'alive' && p) {
@@ -335,6 +348,8 @@ export default {
       dispose() {
         look.detach();
         input.detach();
+        director.dispose();
+        sound.dispose();
         post?.dispose?.();
         post = null;
         light.dispose();
@@ -348,7 +363,8 @@ export default {
       },
     };
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    // (`sounds`: the player's counter by name, for scripts/bf2017-sound-check.mjs)
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => sound.stats(), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     return world;
   },
 };
