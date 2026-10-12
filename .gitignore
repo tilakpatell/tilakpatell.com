@@ -33504,12 +33504,19 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwallmossy_medium_02_n__normal.2048.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwallmossy_medium_02_n__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwallmossy_medium_02_n__normal.512.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.1024.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.2048.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowchunkywind_01_n.1024.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowchunkywind_01_n.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowchunkywind_01_n.512.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowdetail_01_n.256.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowdetail_01_n.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpacked_04_n.1024.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpacked_04_n.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpacked_04_n.512.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpackedsmoothness_01_rgbm.1024.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpackedsmoothness_01_rgbm.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowrockypacked_04_n.1024.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowrockypacked_04_n.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowrockypacked_04_n.512.ktx2
@@ -33589,6 +33596,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/tex/t_at-at_leg_01_nam__orm_c54b5fb5.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_atatdetail_01_ns.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_atatdetail_01_ns.512.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_blowingsnowflowmap_01_c.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_box_m_01_a_cs.128.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_box_m_01_a_cs.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_box_m_01_a_cs.512.ktx2
