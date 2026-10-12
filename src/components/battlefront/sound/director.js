@@ -6,21 +6,25 @@
 // hit, kill and death cues, the overheat set and the abilities from the
 // events; the bed loops with its one-shots on their timers; the music by
 // the mode's state, with the tension's duck, the spawn screen's and the
-// death's; a commander line on an objective event. Pure but for the player
-// it is given, so director.test.js runs it on a fake.
+// death's; a commander line on an objective event. Behind the waiting
+// screen (`waiting`: the darkroom before the first deploy, where the page
+// plays the loading cue) the world is silent: no bed, no stem, no shot.
+// Pure but for the player it is given, so director.test.js runs it on a
+// fake.
 //
-//   createDirector({ player, me, team, rng, maxShots }) → { update(view, events, dt), dispose(), state }
-//   (me: the player's soldier id; team: their team; the view is battle.js's,
-//   the events the step's; dt in seconds)
+//   createDirector({ player, me, team, rng, maxShots }) → { update(view, events, dt, { waiting }), dispose(), state }
+//   (me: the player's soldier id in the sim, battle.js's PLAYER_ID, not the
+//   input's name; team: their team; the view is battle.js's, the events the
+//   step's; dt in seconds)
 
-import { LOUDNESS, admits, blasterLayers, createWindow, dueOneShots, footstep, hear, lifeCues, loudnessOf, musicFor, oneShots, overheatCues, panOf, rolloff } from './mix.js';
+import { LOUDNESS, admits, blasterLayers, createWindow, dueOneShots, footstep, hear, landing, lifeCues, loudnessOf, musicFor, oneShots, overheatCues, panOf, rolloff } from './mix.js';
 import { abilityCues, gunGains, gunOf } from './sounds.js';
 
 export const MAX_SHOTS = 6; // shot sounds a step at most, the nearest first (forty bots fire at 300 rpm)
 export const VO_GAP = 6; // s between commander lines
 export const WALKER_VO_GAP = 45; // s between the walker-damaged lines
 export const ABILITY_EARSHOT = 40; // m: another soldier's ability is heard this near
-export const PRELOAD = ['blaster.hifi', 'blaster.noise.close', 'blaster.noise.distant', 'blaster.reflection', 'blaster.passby', 'step.walk', 'step.jog', 'step.sprint', 'step.land', 'cloth.crouchDown', 'cloth.crouchUp', 'cloth.land', 'death.scream', 'death.fall', 'hit.hit', 'hit.first', 'hit.killed', 'hit.kill', 'overheat.warning', 'overheat.overheated', 'overheat.reset', 'overheat.manual', 'ambience.bed'];
+export const PRELOAD = ['blaster.hifi', 'blaster.noise.close', 'blaster.noise.distant', 'blaster.reflection', 'blaster.passby', 'step.walk', 'step.jog', 'step.sprint', 'step.jump', 'step.land', 'cloth.crouchDown', 'cloth.crouchUp', 'cloth.jump', 'cloth.land', 'death.scream', 'death.fall', 'hit.hit', 'hit.first', 'hit.killed', 'hit.kill', 'overheat.warning', 'overheat.overheated', 'overheat.reset', 'overheat.manual', 'ambience.bed'];
 
 const SIDE = { 1: 'rebellion', 2: 'imperial' };
 
@@ -30,6 +34,8 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
     window: createWindow(),
     sinceStep: 0,
     suppressed: 0, // the plants the window dropped
+    height: null, // the body's height a step ago, for a landing
+    waited: false, // the last step was behind the waiting screen
     crouch: false,
     gun: null,
     life: null,
@@ -73,6 +79,18 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
     hear(state.window, LOUDNESS.death, state.now, 1.5);
   };
 
+  // the feet leaving the ground and meeting it again (the snow set's Jump
+  // and Land, the armour's cloth over each), a landing by how far it fell
+  const jump = () => {
+    player.play('step.jump', { gain: 1 });
+    player.play('cloth.jump', { gain: 0.5 }); // (the Stormtrooper configuration's Jump at 0.5)
+  };
+  const land = (gain = 1) => {
+    player.play('step.land', { gain });
+    player.play('cloth.land', { gain });
+    state.sinceStep = 0;
+  };
+
   const say = (name) => {
     if (state.now - state.vo < VO_GAP) return;
     if (player.play(name, { ux: true })) state.vo = state.now;
@@ -114,6 +132,13 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
           }
           break;
         }
+        // (the sim's soldiers do not jump yet: the cues wait on its events)
+        case 'jump':
+          if (e.by === me) jump();
+          break;
+        case 'land':
+          if (e.by === me) land();
+          break;
         case 'uplink':
           say(`vo.${SIDE[team]}.uplinkActivate`);
           break;
@@ -139,8 +164,13 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
   const feet = (p, body, dt) => {
     if (!p || p.state !== 'alive' || !body) {
       state.sinceStep = 0;
+      state.height = null;
       return;
     }
+    // (a drop off a ledge: the body's height fell a landing's worth in a step)
+    const fell = landing(state.height == null ? 0 : state.height - body.at[1]);
+    state.height = body.at[1];
+    if (fell && admits(state.window, LOUDNESS.step, state.now)) land(fell.gain);
     const crouch = body.stance === 'crouch';
     if (crouch !== state.crouch) {
       state.crouch = crouch;
@@ -188,9 +218,20 @@ export function createDirector({ player, me, team = 2, rng = Math.random, maxSho
 
   return {
     state,
-    update(view, events = [], dt = 0.05) {
+    update(view, events = [], dt = 0.05, { waiting = false } = {}) {
       state.now = view.time ?? state.now + dt;
       const p = view.player;
+      if (waiting) {
+        // (the darkroom: the battle runs unheard, the loading cue is the page's)
+        state.life = null;
+        state.gun = null;
+        state.height = null;
+        state.waited = true;
+        return;
+      }
+      // (out of the darkroom: the bed's one-shots count from here, not all at once)
+      if (state.waited) state.shots = oneShots(rng, state.now);
+      state.waited = false;
       const byId = new Map();
       let body = null;
       for (const e of view.entities ?? []) {

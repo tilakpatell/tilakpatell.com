@@ -9,6 +9,7 @@
 //   blasterLayers(dist, gains) → { close, distant, hifi, far } amplitudes
 //   panOf(from, at, yaw) → -1..1 (the sound's side of the listener)
 //   footstep(speed, { crouch }) → { set, gain, pitch, interval } | null
+//   landing(drop) → { gain } | null (the body's height fell a landing's worth in a step)
 //   createWindow() / hear(w, loudness, now) / admits(w, loudness, now)
 //   loudnessOf(base, gain) → the patch's Loudness less the attenuation
 //   DUCKS: the mixers' gains and low-pass by name
@@ -71,6 +72,14 @@ export function footstep(speed, { crouch = false } = {}) {
     interval: STRIDE[set] / speed,
   };
 }
+
+// A landing: the sim keeps a soldier on the ground it walks (no jump yet),
+// so the Land set plays when the body's height falls LAND_DROP or more in
+// one step, a ledge walked off; a slope run down at the sprint falls half
+// that. Louder the further it fell, whole at LAND_FULL.
+export const LAND_DROP = 0.6; // m in a step
+export const LAND_FULL = 2.5; // m
+export const landing = (drop) => (drop >= LAND_DROP ? { gain: lerp(drop, [LAND_DROP, LAND_FULL], [0.5, 1]) } : null);
 
 // The HDR window: 25 dB under the loudest playing sound; its top rises at
 // once (attack 25 ms), holds while that sound plays and for the top's

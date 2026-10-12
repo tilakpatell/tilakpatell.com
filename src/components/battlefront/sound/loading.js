@@ -1,8 +1,9 @@
-// The loading screen's music: the game's Hoth loading cue under the planet
+// The waiting screen's music: the game's Hoth loading cue under the planet
 // film (bf2-re/findings/26-audio.md: `SW02_Music_Loading_Hoth_Loop_01_VAR`,
 // a 4 s intro then a 127 s loop), streamed through the site's music volume
-// (player.js's playStem). Returns the stop; a level with no cue in the
-// index plays nothing.
+// (player.js's playStem) from the screen's mount to the wipe's swap
+// (WaitingScreen.jsx). Returns the stop; a level with no cue in the index,
+// or a site without the file, plays nothing.
 //
 //   startLoadingMusic(level, { rows, play }) → stop()
 

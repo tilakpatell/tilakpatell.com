@@ -74,6 +74,10 @@ describe('the published assets’ manifest', () => {
     put(pub, 'models/galaxy/bf2017/clips/humanoid.glb', 'pack');
     put(pub, 'films/bf2017/planet-hoth-01.webm', 'film');
     put(pub, 'films/bf2017/planet-hoth-01.webp', 'poster');
+    // (the game's sounds: the MP3s; the index beside them is src/data's)
+    put(pub, 'audio/galaxy/bf2017/step-jog-01.mp3', 'step');
+    put(pub, 'audio/galaxy/bf2017/notes.txt', 'not a sound');
+    put(pub, 'audio/clips/other.mp3', 'the site’s own');
     put(pub, 'textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2', 'sky');
     put(pub, 'textures/galaxy/bf2017/light/hoth/sunny.lut33.png', 'lut');
     // (the classic surface's 17³ and probes stay committed)
@@ -87,6 +91,7 @@ describe('the published assets’ manifest', () => {
     };
     const got = gameFiles(credits, pub);
     expect(got.map((f) => [f.path, f.tier, f.from])).toEqual([
+      ['audio/galaxy/bf2017/step-jog-01.mp3', 'sound', 'audio/galaxy/bf2017/step-jog-01.mp3'],
       ['films/bf2017/planet-hoth-01.webm', 'film', 'films/bf2017/planet-hoth-01.webm'],
       ['models/galaxy/bf2017/clips/humanoid.glb', 'pack', 'models/galaxy/bf2017/clips/humanoid.glb'],
       ['models/galaxy/crew/luke.far.glb', 'crew', 'characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh'],

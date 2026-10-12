@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 function page() {
@@ -39,6 +40,58 @@ describe('the voices switch', () => {
     stop();
     setVoicesOn(true);
     expect(heard).toEqual([false]);
+  });
+});
+
+describe('loading a sound', () => {
+  // a context whose decoder answers as a browser's does: the callbacks and a promise
+  const withDecoder = (decode) => {
+    const node = () => ({ connect: (to) => to, gain: { value: 1 }, threshold: {}, knee: {}, ratio: {}, attack: {}, release: {} });
+    class AudioContext {
+      state = 'running';
+      destination = {};
+      createGain = node;
+      createDynamicsCompressor = node;
+      decodeAudioData = decode;
+    }
+    const kept = new Map();
+    vi.stubGlobal('window', { localStorage: { getItem: (k) => kept.get(k) ?? null, setItem: (k, v) => kept.set(k, v), removeItem: (k) => kept.delete(k) }, addEventListener() {}, AudioContext });
+    vi.stubGlobal('fetch', () => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) }));
+  };
+
+  it('gives the decoded buffer once a URL', async () => {
+    let calls = 0;
+    withDecoder((data, ok) => {
+      calls += 1;
+      const buf = { bytes: data.byteLength };
+      ok(buf);
+      return Promise.resolve(buf);
+    });
+    const { loadBuffer } = await import('./audio');
+    await expect(loadBuffer('/audio/a.mp3')).resolves.toEqual({ bytes: 8 });
+    await loadBuffer('/audio/a.mp3');
+    expect(calls).toBe(1);
+  });
+
+  it('fails for bytes that are not audio, with no rejection left unheard, and may be asked again', async () => {
+    const unheard = [];
+    const on = (e) => unheard.push(e);
+    process.on('unhandledRejection', on);
+    let calls = 0;
+    withDecoder((data, ok, no) => {
+      calls += 1;
+      const e = Object.assign(new Error('Unable to decode audio data'), { name: 'EncodingError' });
+      no(e);
+      return Promise.reject(e);
+    });
+    const { loadBuffer } = await import('./audio');
+    await expect(loadBuffer('/audio/page.mp3')).rejects.toMatchObject({ name: 'EncodingError' });
+    await new Promise((r) => setTimeout(r, 0));
+    await expect(loadBuffer('/audio/page.mp3')).rejects.toMatchObject({ name: 'EncodingError' });
+    await new Promise((r) => setTimeout(r, 0));
+    process.off('unhandledRejection', on);
+    expect(calls).toBe(2);
+    expect(unheard).toEqual([]);
   });
 });
 

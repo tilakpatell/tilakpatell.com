@@ -11,9 +11,14 @@
 //   gunGains(gun) → [close, distant, HiFi] amplitudes, the master patch's (the index's rows carry them)
 //   abilityCues(id, phase) → the names an ability's phase plays
 //   totalBytes(index) → the set's bytes; NAMES: every name
+//   HERE: whether the site itself has the set's files (public/), by the
+//     build's word (vite.config.js: VITE_BF2017_SOUNDS, 'gone' once the
+//     published files have left the checkout); then only the bucket can
+//     give them, and with no bucket nothing is asked for (player.js)
 
 import INDEX from '../../../data/bf2017/sounds.json';
 
+export const HERE = import.meta.env?.VITE_BF2017_SOUNDS !== 'gone';
 export const DIR = `/${INDEX.dir ?? 'audio/galaxy/bf2017'}`;
 export const ROWS = INDEX.rows ?? {};
 export const NAMES = Object.keys(ROWS);

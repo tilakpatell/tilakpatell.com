@@ -1,6 +1,9 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { GAME_SOUNDS, SITUATIONS, lineFor, soundFor } from './gameSounds';
+import PUBLISHED from '../../data/galaxyAssets.json';
+import { onSite } from '../../../scripts/lib/asset-manifest.mjs';
 
 // the modules whose names the map uses, read as text (a test may read what
 // a module in lib may not import)
@@ -56,10 +59,11 @@ describe('the game’s sounds, by the site’s names', () => {
     for (const n of ['surface.saber:ignite', 'surface.saber:clash', 'surface.combat:force', 'universe.gunSound:blaster', 'universe.impactSound', 'surface.step:snow', 'universe.shipEngine:xwing', 'line.luke', 'line.stormtrooper']) expect(GAME_SOUNDS, n).toHaveProperty([n]);
   });
 
-  // (a game file named here is one the Hoth set made: public/audio/galaxy/bf2017/)
-  const onDisk = (f) => existsSync(new URL(`../../../public/audio/galaxy/bf2017/${f}`, import.meta.url));
+  // (a game file named here is one the Hoth set made: public/audio/galaxy/bf2017/, or published from it)
+  const PUBLIC = { publicDir: fileURLToPath(new URL('../../../public', import.meta.url)), manifest: PUBLISHED };
+  const onDisk = (f) => onSite(`audio/galaxy/bf2017/${f}`, PUBLIC);
 
-  it('every game file is null until its audio is here, and names a file in public/ when it is', () => {
+  it('every game file is null until its audio is here, and names a file of the site’s when it is', () => {
     let named = 0;
     for (const [name, v] of Object.entries(GAME_SOUNDS)) {
       if (name.startsWith('line.')) {

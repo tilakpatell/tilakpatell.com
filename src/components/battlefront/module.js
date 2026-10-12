@@ -129,7 +129,8 @@ export default {
     const me = addPlayer(sim, { team: PLAYER_TEAM });
     // the game's sounds (sound/): the player on the runtime's bus, the
     // director on the sim's events; the one-shots the first minute needs
-    // fetched now, the stems streamed as they play
+    // fetched now, the stems streamed as they play; nothing heard behind
+    // the waiting screen, where the page plays the loading cue
     const sound = createSoundPlayer({ context: rt.audio.context, output: () => rt.audio.bus(), load: (url) => rt.assets.audio(url) });
     // (`me` to the sim is the input's 'player'; the soldier the events name is PLAYER_ID)
     const director = createDirector({ player: sound, me: PLAYER_ID, team: PLAYER_TEAM });
@@ -313,7 +314,7 @@ export default {
           first = false;
           heard.push(...step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]));
         }
-        if (stepped > 0) director.update(view(sim), heard, stepped);
+        if (stepped > 0) director.update(view(sim), heard, stepped, { waiting: parked });
         collision?.update(4);
         // (the view again, after the steps: its entities' `at` are the sim's
         // own arrays, live, while their step time `t` and the rest are read
@@ -443,8 +444,8 @@ export default {
       },
     };
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
-    // (`sounds`: the player's counter by name, for scripts/bf2017-sound-check.mjs)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    // (`sounds`: the player's counter by name and kind, the duck and the stem in force, the HDR window, for scripts/bf2017-sound-check.mjs)
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     return world;
   },
 };

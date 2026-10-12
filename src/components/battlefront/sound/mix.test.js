@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RUN_MAX, WALK_MAX } from '../figures/locomotion.js';
-import { DUCKS, LOUDNESS, ONE_SHOTS, admits, blasterLayers, createWindow, dueOneShots, footstep, hear, lifeCues, loudnessOf, musicFor, oneShots, overheatCues, panOf, topOf } from './mix.js';
+import { DUCKS, LAND_DROP, LAND_FULL, LOUDNESS, ONE_SHOTS, admits, blasterLayers, createWindow, dueOneShots, footstep, hear, landing, lifeCues, loudnessOf, musicFor, oneShots, overheatCues, panOf, topOf } from './mix.js';
 
 describe('the blaster’s layers by distance', () => {
   it('is the close take and the HiFi transient at the muzzle, at the patch’s gains', () => {
@@ -66,6 +66,19 @@ describe('the footsteps by speed', () => {
     expect(sprint.pitch).toBe(1);
     expect(footstep(0.5).pitch).toBeCloseTo(0.85);
     expect(footstep(3, { crouch: true }).gain).toBeLessThan(footstep(3).gain);
+  });
+});
+
+describe('a landing', () => {
+  it('is a drop of a ledge’s worth in one step, half gain at the least and whole from a long fall', () => {
+    // (the sprint down a 45° slope falls 0.3 m a step: no landing)
+    expect(landing(5.97 * 0.05)).toBeNull();
+    expect(landing(0)).toBeNull();
+    expect(landing(-3)).toBeNull();
+    expect(landing(LAND_DROP).gain).toBeCloseTo(0.5);
+    expect(landing(LAND_FULL).gain).toBe(1);
+    expect(landing(40).gain).toBe(1);
+    expect(landing(1.5).gain).toBeGreaterThan(landing(0.8).gain);
   });
 });
 

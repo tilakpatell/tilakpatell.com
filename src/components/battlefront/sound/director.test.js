@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_SHOTS, VO_GAP, createDirector } from './director.js';
-import { STRIDE } from './mix.js';
+import { LAND_DROP, STRIDE } from './mix.js';
 import { loadRulebook } from '../../../lib/battlefront/rulebook.js';
 import { hothFlatNav } from '../../../lib/battlefront/fixtures/hothFlat.js';
 import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, step, view as battleView } from '../battle.js';
@@ -114,6 +114,34 @@ describe('the feet', () => {
     expect(names(player).filter((n) => n.startsWith('step.'))).toContain('step.sprint');
   });
 
+  it('land when the body drops off a ledge, louder the further, and not on a slope run down', () => {
+    const { player, d } = make();
+    const at = (y, t) => view({ time: t, entities: [soldier('me', [0, y, 0], { team: 2 })] });
+    d.update(at(10, 10), [], 0.05);
+    d.update(at(10 - LAND_DROP / 2, 10.05), [], 0.05);
+    expect(names(player).filter((n) => n === 'step.land')).toEqual([]);
+    d.update(at(8, 10.1), [], 0.05);
+    expect(names(player).filter((n) => n === 'step.land' || n === 'cloth.land')).toEqual(['step.land', 'cloth.land']);
+    const soft = player.calls.find((c) => c.name === 'step.land').gain;
+    d.update(at(2, 10.15), [], 0.05);
+    const hard = player.calls.filter((c) => c.name === 'step.land')[1].gain;
+    expect(soft).toBeGreaterThanOrEqual(0.5);
+    expect(hard).toBe(1);
+    // (a new life starts where it is put: no landing for the spawn's height)
+    d.update(view({ time: 11, player: { ...view().player, state: 'deploying' }, entities: [] }), [], 0.05);
+    d.update(at(300, 12), [], 0.05);
+    d.update(at(300, 12.05), [], 0.05);
+    expect(names(player).filter((n) => n === 'step.land')).toHaveLength(2);
+  });
+
+  it('the jump’s and the landing’s sets on the sim’s events for the player, once it has them', () => {
+    const { player, d } = make();
+    d.update(view(), [{ type: 'jump', by: 'me' }, { type: 'jump', by: 'b' }]);
+    expect(names(player).filter((n) => /jump|land/.test(n))).toEqual(['step.jump', 'cloth.jump']);
+    d.update(view(), [{ type: 'land', by: 'me' }]);
+    expect(names(player).filter((n) => /land/.test(n))).toEqual(['step.land', 'cloth.land']);
+  });
+
   it('the armour’s cloth on a crouch and on standing again', () => {
     const { player, d } = make();
     d.update(view({ entities: [soldier('me', [0, 0, 0], { team: 2, stance: 'crouch' })] }), []);
@@ -195,6 +223,30 @@ describe('the bed and the music', () => {
     const winds = player.calls.filter((c) => c.name?.startsWith('ambience.wind.'));
     expect(winds.length).toBeGreaterThan(5);
     expect(winds[0].gain).toBeGreaterThan(0);
+  });
+});
+
+describe('behind the waiting screen', () => {
+  it('plays nothing: no bed, no stem, no shot, no step; then the battle from the first step out of it', () => {
+    const { player, d } = make();
+    const running = (t) => view({ time: t, entities: [soldier('me', [0, 0, 0], { team: 2, vel: [5.9, 0] }), soldier('b', [10, 0, 0])] });
+    for (let i = 0; i < 40; i++) d.update(running(i * 0.05), [{ type: 'shot', by: 'b' }], 0.05, { waiting: true });
+    expect(player.calls).toEqual([]);
+    expect(player.musicName).toBeNull();
+    d.update(running(2), [{ type: 'shot', by: 'b' }], 0.05);
+    const n = names(player);
+    expect(n).toContain('ambience.bed');
+    expect(n).toContain('blaster.a280.close');
+    expect(player.musicName).toBe('music.medium');
+  });
+
+  it('the bed’s one-shots count from the way out, not all at once after a long wait', () => {
+    const { player, d } = make();
+    for (let t = 0; t < 300; t += 1) d.update(view({ time: t }), [], 1, { waiting: true });
+    d.update(view({ time: 300 }), [], 0.05);
+    expect(player.calls.filter((c) => c.name?.startsWith('ambience.') && c.name !== 'ambience.bed')).toEqual([]);
+    for (let t = 301; t < 420; t += 1) d.update(view({ time: t }), [], 1);
+    expect(player.calls.filter((c) => c.name?.startsWith('ambience.wind.')).length).toBeGreaterThan(3);
   });
 });
 

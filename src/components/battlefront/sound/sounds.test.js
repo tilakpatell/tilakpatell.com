@@ -1,10 +1,13 @@
-import { existsSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { ABILITY_IDS, DIR, NAMES, ROWS, abilityCues, gunOf, pickTake, rowOf, totalBytes, urlOf } from './sounds.js';
+import { ABILITY_IDS, DIR, HERE, NAMES, ROWS, abilityCues, gunOf, pickTake, rowOf, totalBytes, urlOf } from './sounds.js';
+import PUBLISHED from '../../../data/galaxyAssets.json';
+import { bytesOf, onSite } from '../../../../scripts/lib/asset-manifest.mjs';
 import CLASSES from '../../../data/bf2017/classes.json';
 import { WORLD_MB } from '../../worlds/worlds.js';
 
-const PUBLIC = new URL('../../../../public', import.meta.url);
+// (on disk, or published to the bucket and out of git: src/data/galaxyAssets.json)
+const PUBLIC = { publicDir: fileURLToPath(new URL('../../../../public', import.meta.url)), manifest: PUBLISHED };
 
 describe('the Battlefront world’s sounds', () => {
   it('holds the trooper blasters, the snow steps, the overheat set, the bed, the stems and the loading loop', () => {
@@ -15,16 +18,20 @@ describe('the Battlefront world’s sounds', () => {
     expect(rowOf('nothing')).toBeNull();
   });
 
-  it('every file the index names is in public/, the size the index says', () => {
+  it('every file the index names is the site’s (in public/, or published), the size the index says', () => {
     let bytes = 0;
     for (const [name, row] of Object.entries(ROWS)) {
       for (const f of row.files) {
-        const abs = new URL(`${PUBLIC.href}${urlOf(f)}`);
-        expect(existsSync(abs), `${name}: ${f}`).toBe(true);
-        bytes += statSync(abs).size;
+        expect(onSite(urlOf(f), PUBLIC), `${name}: ${f}`).toBe(true);
+        bytes += bytesOf(urlOf(f), PUBLIC);
       }
     }
     expect(bytes).toBe(totalBytes());
+  });
+
+  it('says the set is here while the checkout has it (vite.config.js’s word)', () => {
+    expect(HERE).toBe(import.meta.env.VITE_BF2017_SOUNDS !== 'gone');
+    expect(['here', 'gone']).toContain(import.meta.env.VITE_BF2017_SOUNDS);
   });
 
   it('stays under the world’s download budget (WORLD_MB, src/components/worlds/worlds.js)', () => {
