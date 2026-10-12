@@ -13,7 +13,7 @@ import { createRequire } from 'node:module';
 import { basename, dirname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { basisuPath } from '../ktx2.mjs';
-import { localPath, mapPath, textureSources } from './bf2017-paths.mjs';
+import { localPath, mapPath } from './bf2017-paths.mjs';
 
 // (the sharp glTF-Transform's ndarray-pixels loads: see battlefront-import.mjs)
 const sharp = createRequire(createRequire(import.meta.url).resolve('ndarray-pixels'))('sharp');
@@ -48,7 +48,9 @@ export async function unpackKtx2(file, outDir, { basisu = basisuPath() } = {}) {
   }
 }
 
-// `normal:<map>` and `orm:<map>:ao=<map>|<ch>;rough=<map>|<ch>;metal=<map>|<ch>`
+// `normal:<map>` and `orm:<map>:ao=<map>|<ch>;rough=<map>|<ch>;metal=<map>|<ch>[;rebuild]`
+// (`rebuild`: a recipe the site mended, weaponRecipes; the map is built from
+// it even where the uploader's own PNG of the derived map is on disk)
 export function parseDerived(derived = []) {
   const out = { normal: [], orm: [] };
   for (const d of derived ?? []) {
@@ -66,10 +68,48 @@ export function parseDerived(derived = []) {
             return [key, map ? { map, ch } : null];
           }),
       );
-      out.orm.push({ from, ao: parts.ao ?? null, rough: parts.rough ?? null, metal: parts.metal ?? null });
+      out.orm.push({ from, ao: parts.ao ?? null, rough: parts.rough ?? null, metal: parts.metal ?? null, rebuild: 'rebuild' in parts });
     }
   }
   return out;
+}
+
+// The Walrus weapon presets (SS_WeaponsPreset, _Alpha, _TransparentDepth)
+// bind three maps: _BaseColor (`_CS`: colour, smoothness in alpha), _Normal
+// (`_NAM`: x and y, a wear mask in blue, 255 in alpha) and _Mask (`_RGB`:
+// the metal mask in green, red and blue empty). The uploader's ORM recipe
+// reads a weapon's metal from the NAM's blue, which is the wear mask (near
+// black on all eight class weapons: docs/superpowers/evidence/
+// bf2017-guns-2026-10-12.md), so every blaster came in as dark plastic.
+// This adds a mended recipe after the uploader's, from the GLB's own
+// materials (the export writes the shader and its bound maps in each
+// material's extras): the metal from the _Mask's green, marked `rebuild` so
+// it is built rather than read from the uploader's PNG; resolveImage takes
+// it when its maps are on disk and falls back to the uploader's when the
+// mask is not (a fixture, a half-fetched folder). A model on another shader
+// is left as it is.
+//   weaponRecipes(derived, materials) → derived, a mended ORM line after each weapon's
+const WEAPON_PRESET = /SS_Weapons?Preset/i;
+const frostbiteName = (file) =>
+  String(file)
+    .replace(/^(web\/)?textures\//, '')
+    .replace(/\.(png|ktx2)$/, '');
+export function weaponRecipes(derived = [], materials = []) {
+  const masks = new Map(); // the normal map's name (lower case) → its mask's
+  for (const m of materials) {
+    const x = m?.extras ?? {};
+    if (!WEAPON_PRESET.test(String(x.shader ?? '')) || !x.textures?._Mask || !x.textures?._Normal) continue;
+    masks.set(frostbiteName(x.textures._Normal).toLowerCase(), frostbiteName(x.textures._Mask));
+  }
+  if (!masks.size) return derived;
+  const mended = derived.filter((d) => /;rebuild$/.test(d)).map((d) => d.split(':')[1].toLowerCase());
+  return derived.flatMap((d) => {
+    const [kind, from, recipe = ''] = d.split(':');
+    const mask = kind === 'orm' && !mended.includes(String(from).toLowerCase()) ? masks.get(String(from).toLowerCase()) : null;
+    if (!mask || /;rebuild$/.test(d)) return [d];
+    const kept = recipe.split(';').filter((p) => p && !/^metal=/.test(p));
+    return [d, `orm:${from}:${[...kept, `metal=${mask}|g`, 'rebuild'].join(';')}`];
+  });
 }
 
 const CH = { r: 0, g: 1, b: 2, a: 3 };
@@ -118,23 +158,32 @@ export async function normalPng(buffer) {
 }
 
 // One image a GLB names (a bucket path to a KTX2), as a PNG from what is on
-// disk under `root`, best first: a PNG of the map itself; for a derived map
-// (`__normal`, `__orm_<hash>`), its source PNG split by the recipe; the KTX2
-// unpacked into `unpackDir`. Null when none is there (the upload is still
-// running): the material then goes without that map.
+// disk under `root`, best first: an ORM a mended recipe says to rebuild
+// (weaponRecipes), from its source PNGs; a PNG of the map itself; for a
+// derived map (`__normal`, `__orm_<hash>`), its source PNG split by the
+// recipe; the KTX2 unpacked into `unpackDir`. Null when none is there (the
+// upload is still running): the material then goes without that map.
 export async function resolveImage(bucketPath, { root, derived, unpackDir }) {
   const own = bucketPath.replace(/\.ktx2$/, '.png');
   const onDisk = (p) => existsSync(localPath(root, p));
   const read = (p) => readFile(localPath(root, p));
+  // (a derived map by its stem: the bucket's GLBs name it as KTX2, the
+  // export's on disk as the uploader's PNG; its source is the map's own PNG)
+  const stem = bucketPath.replace(/\.(ktx2|png)$/, '');
+  const kind = /__normal$/.test(stem) ? 'normal' : /__orm_[0-9a-f]+$/.test(stem) ? 'orm' : null;
+  const source = kind ? `${stem.replace(/__(normal|orm_[0-9a-f]+)$/, '')}.png` : own;
+  // (the map's recipes: a mended one first where its maps are on disk, else
+  // one whose maps are, else the first, for the message)
+  const mapsOf = (r) => [r.ao, r.rough, r.metal].filter(Boolean).map((c) => mapPath(c.map));
+  const recipes = kind === 'orm' ? parseDerived(derived).orm.filter((r) => mapPath(r.from) === source) : [];
+  const recipe = recipes.find((r) => r.rebuild && mapsOf(r).every(onDisk)) ?? recipes.find((r) => mapsOf(r).every(onDisk)) ?? recipes[0] ?? null;
+  const maps = recipe ? mapsOf(recipe) : [];
+  const orm = async () => ({ png: await ormPng(recipe, (map) => read(mapPath(map))), from: `${[...new Set(maps)].map((m) => basename(m)).join(' + ')} (orm${recipe.rebuild ? ', rebuilt' : ''})` });
+  if (recipe?.rebuild && maps.every(onDisk)) return orm();
   if (onDisk(own)) return { png: await read(own), from: basename(own) };
-  const [source] = textureSources(bucketPath);
-  const kind = /__normal\.ktx2$/.test(bucketPath) ? 'normal' : /__orm_[0-9a-f]+\.ktx2$/.test(bucketPath) ? 'orm' : null;
   if (kind && source !== own && onDisk(source)) {
-    const recipes = parseDerived(derived);
     if (kind === 'normal') return { png: await normalPng(await read(source)), from: `${basename(source)} (normal)` };
-    const recipe = recipes.orm.find((r) => mapPath(r.from) === source);
-    const maps = recipe ? [recipe.ao, recipe.rough, recipe.metal].filter(Boolean).map((c) => mapPath(c.map)) : [];
-    if (recipe && maps.every(onDisk)) return { png: await ormPng(recipe, (map) => read(mapPath(map))), from: `${[...new Set(maps)].map((m) => basename(m)).join(' + ')} (orm)` };
+    if (recipe && maps.every(onDisk)) return orm();
   }
   if (bucketPath.endsWith('.ktx2') && onDisk(bucketPath)) {
     // (unpacked once: each cut of a model, and every model sharing a map, reads the same PNG)

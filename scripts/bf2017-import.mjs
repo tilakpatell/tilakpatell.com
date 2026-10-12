@@ -104,7 +104,7 @@ import { overCaps } from './lib/bf2017-caps.mjs';
 import { parseArgs } from './lib/args.mjs';
 import { isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-paths.mjs';
-import { resolveImage } from './lib/bf2017-textures.mjs';
+import { resolveImage, weaponRecipes } from './lib/bf2017-textures.mjs';
 import { meshBindings } from './lib/bf2017-variations.mjs';
 import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { loadGameWord, slotTransfer, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -223,10 +223,12 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
   const json = glbJson(glb);
   const at0 = 20 + glb.readUInt32LE(12);
   const resources = { '@glb.bin': new Uint8Array(glb.buffer, glb.byteOffset + at0 + 8, glb.readUInt32LE(at0)) };
+  // (a weapon's ORM recipe mended from its materials: the metal is in the _Mask, not the NAM)
+  const recipes = weaponRecipes(derived, json.materials);
   for (const [i, img] of (json.images ?? []).entries()) {
     const at = imagePath(img.uri, inBucket(file));
     if (!at) continue;
-    const found = await resolveImage(at, { root, derived, unpackDir });
+    const found = await resolveImage(at, { root, derived: recipes, unpackDir });
     const uri = `image${i}.png`;
     if (found) {
       resources[uri] = new Uint8Array(found.png);
@@ -281,7 +283,7 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
     const byIndex = (byIndexOf[`#${index}`] ?? []).filter((b) => lacks[b.slot]);
     for (const { slot, name } of [...(textures?.[m.getName()] ?? []), ...byIndex]) {
       const at = overridePath(name, slot);
-      const found = await resolveImage(at, { root, derived, unpackDir });
+      const found = await resolveImage(at, { root, derived: recipes, unpackDir });
       if (!found) {
         said.missing.add(at);
         continue;
