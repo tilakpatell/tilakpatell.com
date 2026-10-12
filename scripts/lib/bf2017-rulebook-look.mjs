@@ -47,7 +47,7 @@ function weatherOf(asset) {
   if (sky) w.sky = { rayleigh: v3(sky.RayleighScatteringCoefficient), cloudColours: [v3(sky.CloudLayer1Color), v3(sky.CloudLayer2Color)], light1: v3(sky.Light1Color), light2: v3(sky.Light2Color), _source: where(asset, sky), raw: group(sky) };
   if (fog) w.fog = { curve: [fog.Curve.x, fog.Curve.y, fog.Curve.z, fog.Curve.w], colour: v3(fog.FogColor), _source: where(asset, fog), raw: group(fog) };
   if (tone) {
-    w.exposure = { ev: tone.EV, compensation: tone.ExposureCompensation, minEv: tone.MinEV, maxEv: tone.MaxEV, _source: where(asset, tone) };
+    w.exposure = { ev: tone.EV, compensation: tone.ExposureCompensation, clampEv: tone.ClampEV, minEv: tone.MinEV, maxEv: tone.MaxEV, _source: where(asset, tone) };
     w.bloom = { scale: tone.BloomScale?.x, gaussians: [1, 2, 3, 4, 5].map((i) => v3(tone[`Gaussian${i}Color`])).filter(Boolean), _source: where(asset, tone), raw: group(tone) };
   }
   if (cc) w.grading = { brightness: v3(cc.Brightness), contrast: v3(cc.Contrast), saturation: v3(cc.Saturation), hue: cc.Hue ?? null, maxHdr: cc.ColorGradingMaxHdrValue, lut: cc.HdrColorGradingLut?.$asset ? shortName(cc.HdrColorGradingLut.$asset) : null, _source: where(asset, cc) };

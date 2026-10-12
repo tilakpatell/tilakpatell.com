@@ -42,7 +42,7 @@ export function entryFor(lighting, name) {
       // (Enable and HeightFogEnable are in the record's field flags, not its
       // fields: Hoth's three weathers have both on, as the extras say)
       FogComponentData: [{ ...unflatten(w.fog?.raw), Enable: true, HeightFogEnable: true }],
-      TonemapComponentData: [{ ...tone, EV: w.exposure?.ev ?? tone.EV, ExposureCompensation: w.exposure?.compensation ?? tone.ExposureCompensation, MinEV: w.exposure?.minEv ?? tone.MinEV, MaxEV: w.exposure?.maxEv ?? tone.MaxEV, AutomaticExposure: true }],
+      TonemapComponentData: [{ ...tone, EV: w.exposure?.ev ?? tone.EV, ExposureCompensation: w.exposure?.compensation ?? tone.ExposureCompensation, ClampEV: w.exposure?.clampEv ?? tone.ClampEV, MinEV: w.exposure?.minEv ?? tone.MinEV, MaxEV: w.exposure?.maxEv ?? tone.MaxEV, AutomaticExposure: true }],
       ColorCorrectionComponentData: [{ ColorGradingMaxHdrValue: w.grading?.maxHdr ?? 1 }],
       ...(w.ao?.raw ? { DynamicAOComponentData: [unflatten(w.ao.raw)] } : {}),
     },

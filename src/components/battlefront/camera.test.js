@@ -46,12 +46,15 @@ describe('the soldier’s camera, from the trooper’s records', () => {
     expect(back.arm - held.arm).toBeCloseTo((free.arm - target) * cam.soldier.collision.blendOut * 0.1, 3);
   });
 
-  it('eases the field of view to the weapon’s sights while aiming, and back', () => {
+  it('eases the field of view to the weapon’s sights while aiming, and back (a blaster’s sights are the hip’s 55: no change)', () => {
     expect(settle({ yaw: 0, pitch: 0 }).fov).toBeCloseTo(FOV_DEFAULT, 3);
     expect(settle({ yaw: 0, pitch: 0, aiming: true, weaponId: 'a280c' }).fov).toBeCloseTo(cam.aim.a280c[0].fov, 3);
-    const half = soldierPose(body, cam, { yaw: 0, pitch: 0, aiming: true, weaponId: 'a280c', dt: 0.05, prev: settle({ yaw: 0, pitch: 0 }) });
+    expect(cam.aim.a280c[0].fov).toBe(FOV_DEFAULT);
+    // (a scope narrower than the hip eases down over its seconds, never a jump)
+    const scoped = { ...cam, aim: { ...cam.aim, a280c: [{ ...cam.aim.a280c[0], fov: 30 }] } };
+    const half = soldierPose(body, scoped, { yaw: 0, pitch: 0, aiming: true, weaponId: 'a280c', dt: 0.05, prev: settle({ yaw: 0, pitch: 0 }) });
     expect(half.fov).toBeLessThan(FOV_DEFAULT);
-    expect(half.fov).toBeGreaterThan(cam.aim.a280c[0].fov);
+    expect(half.fov).toBeGreaterThan(30);
   });
 });
 

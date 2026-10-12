@@ -16,7 +16,7 @@
 const RAD = Math.PI / 180;
 
 // What the records do not hold, by hand:
-export const FOV_DEFAULT = 70; // degrees: the game's base field-of-view option's default
+export const FOV_DEFAULT = 55; // degrees, vertical: the game's hip field of view (ZoomLevel_0_Default.FieldOfView 55, the video option's default; bf2-re findings 12)
 export const SHOULDER = 0.45; // m: the camera's offset to the shoulder side (the record holds the side, not the offset)
 export const PIVOT = { stand: 1.55, crouch: 1.05, prone: 0.35, dead: 0.2 }; // m above the feet the arm turns about (a trooper's shoulder line)
 export const AIM_AHEAD = 30; // m ahead the camera looks at
