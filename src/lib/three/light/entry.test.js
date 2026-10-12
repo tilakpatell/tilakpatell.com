@@ -31,17 +31,17 @@ describe('readEntry', () => {
   });
   it('reads Hoth’s records as the bucket has them: the sun, the sky, the fog, the exposure', () => {
     const p = readEntry({ ...hoth.sunny, light: { sun: 5 } });
-    // 128,000 lux metered to EV 15, opened 1.5 stops, at lane G's GAME_TO_SITE
-    // (calibrate.js): the classic stack's 0.79
-    expect(p.gameToSite).toBeCloseTo(0.0713 * 2 ** (1.5 - 15), 12);
-    expect(p.sun.intensity).toBeCloseTo(0.79, 2);
+    // 128,000 lux metered to EV 16.33 (unclamped: no ClampEV in the record), opened 1.5 stops,
+    // at one physical exposure (calibrate.js): 3.67 (the classic stack's 0.79 was lane G's fit)
+    expect(p.gameToSite).toBeCloseTo(2 ** 1.5 / (1.2 * 2 ** 16.3287), 9);
+    expect(p.sun.intensity).toBeCloseTo(3.666, 2);
     expect(p.sun.color[2]).toBeCloseTo(0.91762);
     expect(p.sun.dir[1]).toBeCloseTo(Math.sin((32.943 * Math.PI) / 180), 4);
     expect(p.sky.rayleigh).toEqual([0.00001, 0.00001, 0.00003]);
     expect(p.sky.mie).toBe(0);
     expect(p.sky.mieG).toBe(0.785);
     expect(p.sky.heightR).toBe(8000);
-    expect(p.sky.luminance).toBeCloseTo(35000 * 0.2006 * 2 ** (1.5 - 15), 6);
+    expect(p.sky.luminance).toBeCloseTo(35000 * p.gameToSite, 6);
     expect(p.fog.curve).toEqual([2.23109, -4.56547, 2.92437, -0.00879]);
     expect([p.fog.start, p.fog.end]).toEqual([50, 10000]);
     expect(p.fog.height).toEqual({ altitude: 320, depth: 50, visibility: 3000 });
@@ -51,8 +51,9 @@ describe('readEntry', () => {
     expect(p.ambient.sky).toEqual(readEntry({}).ambient.sky);
   });
   it('the sunset opens up, the interior has its own ambient; the height fog in the pack’s frame', () => {
-    // (the meter clamps the dusk at MaxEV 10.4: lane G's 2.37 on the classic stack)
-    expect(readEntry(hoth.sunset).sun.intensity).toBeCloseTo(2.37, 2);
+    // (the dusk’s 22,500 lux at its own metered EV, no ClampEV; lane G’s clamped 2.37 was the classic stack’s)
+    expect(readEntry(hoth.sunset).sun.intensity).toBeCloseTo(22500 * readEntry(hoth.sunset).gameToSite, 6);
+    expect(readEntry(hoth.sunset).sun.intensity).toBeGreaterThan(readEntry(hoth.sunny).sun.intensity);
     expect(readEntry(hoth.sunset).sun.color[1]).toBeCloseTo(0.28355);
     const inside = readEntry(hoth.interior);
     expect(inside.ambient.sky).toEqual([0.318, 0.341, 0.4]);
