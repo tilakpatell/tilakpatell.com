@@ -2,6 +2,22 @@
 
 The designs: `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-design.md` (the pipeline: fetch, import, the rig, the phases; PR #802) and `docs/superpowers/specs/2026-10-10-bf2017-levels-lighting-sabers-design.md` (the levels, the light, the planet skins, the sabers, and the review of the first design). The bucket’s numbers, `docs/superpowers/evidence/bf2017-assets/inventory.md`; the drop and its credit, `docs/assets/battlefront-2017.md`.
 
+## The picture on the owner's desktop (2026-10-11, night)
+
+`docs/superpowers/specs/2026-10-11-desktop-picture-design.md`: the owner asked why the site on the RTX 5090 does not render like an installed AAA game. Measured on the desktop itself (Edge, WebGPU, tier T1, grade ultra): the chip and the renderer are right; what the surfaces draw is not. The game-light stack reaches them only through PR #912 (lane T2, conflicting with `main`); the GPU clock is never handed to the runtime, so the CPU pace governs, floors during the level's 228 s arrival and `strained()` caps the chip at high; ultra draws the canvas at 1.5× and then halves the chain inside it; the desktop's data (HDR skies, Enlighten atlases, the UASTC row, 3,301 textures) was never made and seven packs have no ultra row; and the desktop could not measure (a Windows path bug in the dev server, no asset base in `.env.local`, the deploy cancelling itself). The numbers: the design's §1.
+
+| Lane | What | Needs first | Session | Branch | PR |
+|---|---|---|---|---|---|
+| L0 | the desktop measures: the Windows path fixes, `VITE_ASSET_BASE` for the dev server and the jobs (`assetBase`, the doctor's row), Edge for the gate, the deploy not cancelling itself, the walker refusing a bad extent | nothing | this session (Fable 5.1, the design) | `claude/fidelity-5090` | (this PR) |
+| L1 | the governor on the chip's own time: `gpuClock` wired, held until the level is ready, `strained()` from the GPU clock only, the cap's age and "Try ultra again", the readout's source and scale | L0 | Opus 5.5, spawned 2026-10-11 | `claude/fidelity-l1-governor` | |
+| L2 | native pixels on a temporal node chain; super-resolution steps above 1 under the controller | L1 | the same session | `claude/fidelity-l2-native-pixels` | |
+| L3 | #912 brought up to `main`, both sides kept, every gate green, the shots on the chip | nothing | Opus 5.5, spawned 2026-10-11 | `claude/bf2017-t2-flip` | #912 |
+| L4 | the desktop's data: uastc, panoramas, depots, atlases, textures, gate, run by hand on the desktop | texconv (`C:\Users\tilak\tools\texconv\texconv.exe`), toktx (the KTX-Software installer, not yet run: its elevation prompt was declined) | this desktop | each job's branch | each job's PR |
+| L5 | `--ultra` for geonosis, kamino, kashyyyk, naboo and their districts, published by hash | L4's keys | | `claude/fidelity-l5-ultra-packs` | |
+| L6 | the recipes bind from the depots' resolved parameters first (`maps_work/shaderdepots.jsonl`: 287,596 of 287,612 blocks) | nothing | Opus 5.5, spawned 2026-10-11 | `claude/fidelity-l6-depots` | |
+
+Found on the way, for their owners: four of Hoth's 148 pack maps are not KTX2 files (`tex/t_arcticbase_rockwall_large_lod_01_n__normal.ktx2`: "Missing KTX 2.0 identifier"; lane D2's publish); Hoth's physics drops four meshes of cell −3,0 with no hulls; the level's 4,412 queued physics shapes are built on the main thread while the world is already playable (p95 161 ms, max 2.3 s walking: lane N5's worker is the place); Hoth at ultra takes 228 s to come up from the bucket on this desktop (lane N4's stream).
+
 ## The galaxy in space on the game (2026-10-11, afternoon)
 
 `docs/superpowers/specs/2026-10-11-bf2017-galaxy-in-space-design.md`: everything the galaxy draws outside the surfaces (the hub and its map, the planets from orbit, space and travel, the fleet and the war, the starfighter mode, the HUD) on the game’s assets and in the game’s picture. Three lanes, one plan each: **S1** the fleet on the game’s hulls (`2026-10-11-bf2017-space-laneS1-fleet.md`, from `main`), **S2** space in the game’s picture (`…-laneS2-picture.md`, when lane T2’s #912 is on `main`), **S3** the map and the HUD (`…-laneS3-map-hud.md`, from `main`); lane E5 (the fifth design’s) places the six worlds the galaxy lacks. Each lane writes its section below and its row here when it opens its PR.
