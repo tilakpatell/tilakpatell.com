@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom.js';
-import { GAME_TO_SITE, SKY_TO_SITE, siteLightFrom, weatherEntry } from '../gameLight.js';
+import { siteLightFrom, weatherEntry } from '../gameLight.js';
 import hothLight from '../../../data/bf2017/light/hoth.json';
 import { bloomThreshold, calibrate, gameToSite, luminanceScale, meteredEV, skyScale, sunIntensity } from './calibrate';
 import { readEntry } from './entry';
@@ -10,11 +10,11 @@ const comp = (e, name) => e.record[`${name}ComponentData`][0];
 const classic = siteLightFrom(weatherEntry(hothLight, 'clear'));
 
 describe('luminanceScale', () => {
-  it('meters Hoth Sunny as lane G does: the EV clamps at MaxEV 15, opened 1.5 stops', () => {
+  it('meters Hoth Sunny unclamped (no ClampEV in the record): EV 16.33, opened 1.5 stops', () => {
     const tone = comp(hoth.sunny, 'Tonemap');
     const scene = { lux: 128000, el: 32.943, sky: 35000 };
-    expect(meteredEV(tone, scene)).toBe(15);
-    expect(luminanceScale(tone, scene)).toBeCloseTo((2 ** 15 * 1.2) / 2 ** 1.5, 6);
+    expect(meteredEV(tone, scene)).toBeCloseTo(16.3287, 3);
+    expect(luminanceScale(tone, scene)).toBeCloseTo((2 ** meteredEV(tone, scene) * 1.2) / 2 ** 1.5, 3);
   });
   it('a record that exposes by hand keeps its EV; none gives null', () => {
     expect(meteredEV({ EV: 12, ExposureCompensation: 0, AutomaticExposure: false }, {})).toBe(12);
@@ -24,23 +24,29 @@ describe('luminanceScale', () => {
   });
 });
 
-describe('Hoth Sunny on the node stack and the classic one', () => {
+describe('Hoth Sunny at one physical exposure (the owner’s bf2-re study, findings 02)', () => {
   const k = luminanceScale(comp(hoth.sunny, 'Tonemap'), { lux: 128000, el: 32.943, sky: 35000 });
-  it('the same sun as gameLight.js gives the classic stack', () => {
-    expect(sunIntensity(comp(hoth.sunny, 'OutdoorLight'), k)).toBeCloseTo(classic.light.sun, 2);
-    expect(readEntry(hoth.sunny).sun.intensity).toBeCloseTo(classic.light.sun, 2);
+  it('the meter runs unclamped where the record sets no ClampEV: Hoth’s day at EV 16.33, not MaxEV 15', () => {
+    expect(meteredEV(comp(hoth.sunny, 'Tonemap'), { lux: 128000, el: 32.943, sky: 35000 })).toBeCloseTo(16.3287, 3);
+    expect(meteredEV({ ...comp(hoth.sunny, 'Tonemap'), ClampEV: true }, { lux: 128000, el: 32.943, sky: 35000 })).toBe(15);
+  });
+  it('the sun is its lux over k, no fitted constant: 3.67 on Hoth’s day (the classic stack’s 0.79 was lane G’s fit)', () => {
+    expect(sunIntensity(comp(hoth.sunny, 'OutdoorLight'), k)).toBeCloseTo(128000 / k, 6);
+    expect(readEntry(hoth.sunny).sun.intensity).toBeCloseTo(3.666, 2);
     expect(classic.light.sun).toBe(0.79);
   });
-  it('the sky at lane G’s level: the dome’s horizon and the fill', () => {
-    expect(skyScale(comp(hoth.sunny, 'Sky'), k)).toBeCloseTo(classic.light.ambient, 2);
+  it('the sky is its nits over the same k: 1.00, the dome’s level and the fill', () => {
+    expect(skyScale(comp(hoth.sunny, 'Sky'), k)).toBeCloseTo(35000 / k, 6);
     const p = readEntry(hoth.sunny);
-    expect(p.sky.luminance).toBeCloseTo(0.61, 2);
-    expect(p.ambient.intensity).toBeCloseTo(0.61, 2);
+    expect(p.sky.luminance).toBeCloseTo(1.002, 2);
+    expect(p.ambient.intensity).toBeCloseTo(1.002, 2);
+    // the game’s ratio: 128,000 lux to 35,000 nits
+    expect(p.sun.intensity / p.sky.luminance).toBeCloseTo(128000 / 35000, 6);
   });
-  it('one factor for the lamps: lux to the site’s at the sun’s rate, from GAME_TO_SITE', () => {
-    expect(gameToSite(k)).toBeCloseTo(GAME_TO_SITE * 2 ** (1.5 - 15), 12);
+  it('one factor for the lamps: 1 / k, the sun’s rate', () => {
+    expect(gameToSite(k)).toBeCloseTo(1 / k, 12);
     expect(readEntry(hoth.sunny).gameToSite).toBeCloseTo(gameToSite(k), 12);
-    expect(skyScale({ LuminanceScale: 1 }, k)).toBeCloseTo(SKY_TO_SITE * 2 ** (1.5 - 15), 12);
+    expect(skyScale({ LuminanceScale: 1 }, k)).toBeCloseTo(1 / k, 12);
   });
   it('bloom from ColorGradingMaxHdrValue: Hoth’s 1 is the house’s threshold', () => {
     expect(bloomThreshold(comp(hoth.sunny, 'ColorCorrection'))).toBe(BLOOM.threshold);
@@ -52,8 +58,8 @@ describe('Hoth Sunny on the node stack and the classic one', () => {
 describe('calibrate', () => {
   it('a record in, the four numbers out; no tone map, null', () => {
     const c = calibrate(hoth.sunny.record);
-    expect(c.sun).toBeCloseTo(0.79, 2);
-    expect(c.sky).toBeCloseTo(0.61, 2);
+    expect(c.sun).toBeCloseTo(3.666, 2);
+    expect(c.sky).toBeCloseTo(1.002, 2);
     expect(c.bloomThreshold).toBe(1);
     expect(calibrate({})).toBe(null);
     // a sun with no tone map is still taken to the site's units

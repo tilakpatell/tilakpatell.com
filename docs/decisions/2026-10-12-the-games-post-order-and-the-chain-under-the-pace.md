@@ -14,14 +14,15 @@ Hoth at ultra on the owner's desktop (RTX 5090, a 5,120 × 1,440 screen at 200 %
 - The painting's gain is the record's luminance (`sky.js`'s `panoramaGain`); the old fit is kept as `meetGain` for a world whose LDR copy lost its level.
 - The Battlefront module declares `sharpness: 'own'` and a ratio cap at the screen's own pixels (never over 2), rebuilds its chain under the pace (`lowerQuality` → `headroom`: the internal resolution first, then the shed passes), asks the sun for lane N3's cascade cadence, and the runtime hands every node world the GPU clock (`createGpuTime`), so the controller steps on the chip's time.
 - Contact-shadow passes hide every top-level branch of the scene that holds no tracked figure while they draw.
+- One physical exposure for the sun, the sky and the lamps (`calibrate.js`): the record's lux, nits and candela over k = 1.2 · 2^(EV − compensation), the EV metered as the game meters it and clamped to MinEV…MaxEV only where the record sets `ClampEV` (Hoth's day meters 16.33; clamped to 15 it blew the snow and the sky to white). Lane G's GAME_TO_SITE (0.0713) and SKY_TO_SITE (0.2006) go: they dimmed the sun 11.7× and the sky 4.2× to hide the LUT read with linear values.
 
 ## Consequences
 
 - Hoth's field reads as a day: snow and sky at the grade's levels, not navy.
 - Ultra on a 4K-class screen starts at 0.77 of the screen and steps down before shedding; no supersampling on the Battlefront world.
-- The sun/sky ratio and the absolute exposure are still lane G's calibration; the game's are physical (sun 128,000 lux against sky 35,000 nits with one exposure). Open, to be set against a capture of the game's own Hoth.
+- Hoth's day: sun 3.67, sky 1.00 (the game's 3.66 : 1), snow white with its detail, the sky deep blue; the mean of the headless field shot 0.56/0.65/0.77 (was 0.33/0.43/0.55 navy, 0.05/0.11/0.22 before the LUT fix).
 
 ## Revisit when
 
-- The game's C++ side of the exposure (the histogram meter, `MinEV`/`MaxEV`, the compensation) is read from the live image and the capture is in hand: then the sun, the sky and the lamps take one factor.
+- A capture of the game's own sunny Hoth (a Galactic Assault match; Arcade's Outpost Delta is the blizzard) puts a number on the snow and the sky to check the 3.67/1.00 against.
 - Lane W's HDR panoramas are read by `sky.js`: `meetGain` can go.

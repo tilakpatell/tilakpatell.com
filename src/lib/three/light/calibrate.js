@@ -24,7 +24,7 @@
 // calibrate(record) → { k, ev, sun, sky, gameToSite, bloomThreshold } | null   (a VE record's components)
 
 import { BLOOM } from '../bloom.js';
-import { GAME_TO_SITE, SKY_TO_SITE, exposureOf } from '../gameLight.js';
+import { exposureOf } from '../gameLight.js';
 
 const ISO_K = 1.2;
 const n = (v) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? undefined : Number(v));
@@ -37,10 +37,15 @@ export function meteredEV(tone, { lux, el, sky } = {}) {
   if (!tone) return null;
   const ev = n(tone.EV) ?? 12;
   const comp = n(tone.ExposureCompensation) ?? 0;
+  // (a scene with no light to meter keeps the record’s EV, as before)
+  const lit = (n(lux) ?? 0) > 0 || (n(sky) ?? 0) > 0;
   const m = exposureOf({
     sun: { lux: n(lux) ?? 0, el: n(el) ?? 45 },
     sky: { luminance: n(sky) ?? 0 },
-    tonemap: { ev, compensation: comp, minEV: n(tone.MinEV), maxEV: n(tone.MaxEV), auto: tone.AutomaticExposure !== false },
+    // (the record's MinEV/MaxEV clamp the metered EV only where ClampEV is
+    // set: Hoth's day meters 16.3 under its 128,000 lux and 35,000 nits, and
+    // clamping it to MaxEV 15 blew the snow and the sky to white)
+    tonemap: { ev, compensation: comp, minEV: tone.ClampEV === true ? n(tone.MinEV) : lit ? -Infinity : undefined, maxEV: tone.ClampEV === true ? n(tone.MaxEV) : lit ? Infinity : undefined, auto: tone.AutomaticExposure !== false },
   });
   return comp - Math.log2(m);
 }
@@ -51,9 +56,16 @@ export function luminanceScale(tone, scene = {}) {
   return (2 ** ev * ISO_K) / 2 ** (n(tone.ExposureCompensation) ?? 0);
 }
 
-export const gameToSite = (k) => (ISO_K / k) * GAME_TO_SITE;
+// One exposure for everything, as the game applies it (the owner's bf2-re
+// study, findings 02: the lighting passes multiply by g_exposureMultipliers,
+// the sky dome by its LuminanceScale at the same exposure): the record's
+// lux, nits and candela over k, no fitted constant. Lane G's GAME_TO_SITE
+// (0.0713) and SKY_TO_SITE (0.2006) dimmed the sun 11.7× and the sky 4.2×
+// to hide the LUT read with linear values (passes.js, fixed); with that
+// fixed the physical factor is the picture.
+export const gameToSite = (k) => 1 / k;
 export const sunIntensity = (outdoor, k) => (n(outdoor?.SunIntensity) ?? 0) * gameToSite(k);
-export const skyScale = (sky, k) => (n(sky?.LuminanceScale) ?? 0) * (ISO_K / k) * SKY_TO_SITE;
+export const skyScale = (sky, k) => (n(sky?.LuminanceScale) ?? 0) / k;
 export const bloomThreshold = (grading) => (n(grading?.ColorGradingMaxHdrValue) ?? 1) * BLOOM.threshold;
 
 export function calibrate(record) {
