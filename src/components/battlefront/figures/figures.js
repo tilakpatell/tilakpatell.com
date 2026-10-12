@@ -20,8 +20,16 @@
 //
 // Bodies: Hoth's Galactic Assault puts the Empire (team 2, the attackers:
 // maps/hoth.stages.json) in snowtroopers and the Rebels (team 1) in Hoth
-// troopers, phase 2's light cuts (public/models/galaxy/bf2017/crew/), every
-// class alike until the class kits' own bodies are imported.
+// troopers, every class alike until the class kits' own bodies are imported.
+// A body comes up on its light cut (public/models/galaxy/bf2017/crew/, the
+// game's LOD4: 1,500 triangles, its cloth and coat skinned whole to the leg
+// bones) and, with `cuts`, takes the cut its distance from the eye wants
+// (lib/three/walrusCuts.js, as the galaxy's crowds do: the game's LOD0 near,
+// within the quality level's share of the GPU and the download, the far cut
+// past the level's `mid`), swapped onto the same bones (walrus.js's
+// swapBody) so the mixer and the gun go on as they were. The player is the
+// nearest body there is, so on a level that upgrades it is drawn as the
+// game draws it, not as its distant LOD.
 //
 // Each holds its class weapon (held.js: the game's mesh at Wep_Root, the
 // view's `weapon` id) and stands in that weapon's stance (the stance pack
@@ -37,11 +45,17 @@
 // hand once they have the body (no figure to hold it, no muzzle to fire
 // from), and comes back with the view's `weapon` if it stands again.
 //
-//   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls }) →
+//   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls, cuts }) →
 //     { update(entities, dt, alpha, eye), figure(id), muzzleOf(id, out), count(), dispose() }
+//   cuts: { of(kind) → its cut row | null, level, lowData, load(url) → glTF } or
+//     null (every body on its light cut); figureCuts({ level, lowData }) the page's
+//   BODIES: a kind's plain file and cut row (crewList.js's rows for the same files)
 
 import * as THREE from 'three';
-import { clipsFor, loadWalrusBody, loadWalrusPacks, packUrls, PACK_DIR } from '../../../lib/three/walrus.js';
+import { cloneScene, loadGLTF } from '../../../lib/three/gltfCache.js';
+import { clipsFor, loadWalrusBody, loadWalrusPacks, packUrls, PACK_DIR, swapBody } from '../../../lib/three/walrus.js';
+import { createCutter } from '../../../lib/three/walrusCuts.js';
+import { CLOTH_PART, reskinCloth } from '../../../lib/three/clothFallback.js';
 import { resolveClip } from '../../../lib/three/walrusRig.js';
 import { stancePackUrl } from '../../../lib/three/walrusStance.js';
 import { stanceClips } from '../../../lib/three/walrusSets/stance.js';
@@ -53,6 +67,12 @@ import { strideOf } from './stride.js';
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
 export const KINDS = { dark: 'snowtrooper', light: 'hothtrooper' };
 export const bodyUrl = (kind) => `${PACK_DIR}/crew/${kind}.lod1.glb`;
+// (fullMB: the LOD0's GPU textures, fullDL its download, both MB: the ledger's share)
+export const BODIES = {
+  snowtrooper: { url: `${PACK_DIR}/crew/snowtrooper.glb`, cuts: { lod: true, far: true, full: true, fullMB: 26, fullDL: 18 } },
+  hothtrooper: { url: `${PACK_DIR}/crew/hothtrooper.glb`, cuts: { lod: true, far: true, full: true, fullMB: 50, fullDL: 27 } },
+};
+export const figureCuts = ({ level, lowData = false }) => ({ of: (kind) => BODIES[kind]?.cuts ?? null, level, lowData, load: (url) => loadGLTF(url) });
 const ONCE = new Set(['die.fwd', 'die.back', 'die', 'dodge.front', 'hit.chest', 'crouch']);
 
 // A figure's parts are culled by one sphere round the whole body, as the
@@ -98,7 +118,22 @@ const lerpAngle = (a, b, t) => {
 const loadStancePack = (key) => loadWalrusPacks([stancePackUrl(key)]);
 const DEAD = new Set(['dying', 'down']);
 
-export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, { packs: packUrls() }), kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null } = {}) {
+// a body's meshes as the figures draw them: each casts and takes shadows,
+// its cloth on lib/three/clothFallback's skin (the game simulates it; drawn
+// on the file's fallback skin it webs between the legs), the whole culled by
+// one sphere
+function dress(model) {
+  model.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+    if (o.isSkinnedMesh && [].concat(o.material).some((m) => CLOTH_PART.test(m?.name ?? ''))) reskinCloth(o);
+  });
+  cullBy(model);
+}
+
+export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, { packs: packUrls() }), kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null } = {}) {
   const root = new THREE.Group();
   root.name = 'figures';
   scene.add(root);
@@ -109,30 +144,40 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
     // (actions: every clip played so far; weights: each one's, eased;
     // loco: the names on the stride phase; phase in strides; walking: on
     // the move last frame, so a start seats every loco action at the phase)
-    const f = { model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null };
+    const f = { model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null };
     figs.set(e.id, f);
     const kind = kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
     loadBody(bodyUrl(kind))
       .then(({ model, clips, sockets }) => {
         if (gone || !figs.has(e.id)) return;
         faceAlongZ(model);
-        model.traverse((o) => {
-          if (o.isMesh) {
-            o.castShadow = true;
-            o.receiveShadow = true;
-          }
-        });
-        cullBy(model);
+        dress(model);
         f.model = model;
         f.clips = clips;
         f.sockets = sockets ?? null;
         f.mixer = new THREE.AnimationMixer(model);
         root.add(model);
+        const row = cuts?.of(kind);
+        if (row && BODIES[kind]) f.cutter = createCutter({ url: BODIES[kind].url, cuts: row, level: cuts.level, lowData: cuts.lowData, load: cuts.load, start: 'lod1', swap: (gltf) => swapCut(f, gltf) });
       })
       .catch((err) => {
         if (import.meta.env?.DEV) console.warn('figure failed', kind, err);
       });
     return f;
+  }
+
+  // a cut onto a body that is still here: its meshes on the body's own bones,
+  // the old cut's materials freed (each body's are its own: cloneScene)
+  function swapCut(f, gltf) {
+    if (gone || !f.model || !gltf) return;
+    const next = cloneScene(gltf);
+    const old = swapBody(f.model, next);
+    if (!old.length) {
+      next.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => m.dispose()));
+      return;
+    }
+    for (const o of old) for (const m of [].concat(o.material)) m.dispose();
+    dress(f.model);
   }
 
   // the weapon the view says it holds, and that weapon's stance
@@ -289,6 +334,11 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
             arm(f, null);
             continue;
           }
+        }
+        // (the cut its distance wants, asked once a step: the cutter holds a band's edge and loads one at a time)
+        if (f.cutter && eye && f.cutAsked !== e.t) {
+          f.cutAsked = e.t;
+          f.cutter.at(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z));
         }
         f.model.position.set(lerp(f.last.at[0], f.cur.at[0], alpha), lerp(f.last.at[1], f.cur.at[1], alpha), lerp(f.last.at[2], f.cur.at[2], alpha));
         f.model.rotation.y = lerpAngle(f.last.yaw, f.cur.yaw, alpha);
