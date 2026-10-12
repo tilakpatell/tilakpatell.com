@@ -94,9 +94,8 @@ async function main() {
   const out = deflateSync(Buffer.from(encodeMask(mask)), { level: 9 });
   const plain = pathTable({ map: { ...map, bounds }, heightAt, cell });
   const masked = pathTable({ map: { ...map, bounds }, heightAt, cell, mask });
-  let stood = 0;
-  for (const b of mask.stand?.bytes ?? []) if (b) stood++;
-  console.log(`mask: ${mask.cols} × ${mask.rows} cells of ${cell} m, fine ${fine} m, capsule r ${capsule.radius} from ${capsule.step} to ${capsule.height} m, rays ${rays.start} to ${rays.end} m, climb ${climb} m, ${seeds.length} seeds; ${mask.stats.bodies} bodies (${mask.stats.refused} refused); ${stood} fine cells stand off the ground in ${(mask.stand?.bytes.length ?? 0) / 16} blocks; ${ms} ms; ${out.length} bytes deflated`);
+  const w = mask.walk ?? { open: 0, stood: 0, layered: 0 };
+  console.log(`mask: ${mask.cols} × ${mask.rows} cells of ${cell} m, fine ${fine} m, capsule r ${capsule.radius} from ${capsule.step} to ${capsule.height} m, rays ${rays.start} to ${rays.end} m, climb ${climb} m, ${seeds.length} seeds; ${mask.stats.bodies} bodies (${mask.stats.refused} refused), ${mask.stats.near} of ${mask.stats.columns} columns near a shape; ${w.open} fine cells walked, ${w.stood} of them standing off the ground (${w.layered} raised a body's height or more over a lower way); ${ms} ms; ${out.length} bytes deflated`);
   console.log('');
   console.log('| nav source | solid cells | spawns not walkable | paths found, team 2 / team 1 | within the bots’ 20,000 cells | metres walked, team 2 / team 1 | nav build |');
   console.log('| --- | --- | --- | --- | --- | --- | --- |');

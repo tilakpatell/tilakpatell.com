@@ -122,7 +122,9 @@ describe('the walk mask', () => {
   it('walks up a pile and stands on it, the height kept over the ground', () => {
     expect(fineBlocked(mask, 0, 0)).toBe(false);
     expect(fineStand(mask, 0.1, 0.1)).toBeCloseTo(pile(0.25, 0.25), 1);
-    expect(fineStand(mask, 2.6, 0)).toBeCloseTo(pile(2.75, 0.25), 1);
+    expect(fineStand(mask, 2.1, 0)).toBeCloseTo(pile(2.25, 0.25), 1);
+    // (its skirt, under 0.15 m, is the ground)
+    expect(fineStand(mask, 2.6, 0)).toBe(0);
     expect(fineStand(mask, -3, 8)).toBe(0);
   });
 
@@ -147,11 +149,106 @@ describe('the walk mask', () => {
     expect(back.climb).toBe(CLIMB);
     expect(back.stand.k).toBe(4);
     expect([...back.stand.offsets]).toEqual([...mask.stand.offsets]);
-    expect([...back.stand.bytes]).toEqual([...mask.stand.bytes]);
+    expect([...back.stand.dm]).toEqual([...mask.stand.dm]);
     expect(fineStand(back, 0.1, 0.1)).toBe(fineStand(mask, 0.1, 0.1));
     expect(fineStand(back, -7, 0)).toBe(fineStand(mask, -7, 0));
     // (a block only where something stands off the ground)
     expect(mask.stand.offsets[0]).toBe(-1);
     expect(mask.stand.offsets[4 * 10 + 4]).toBeGreaterThanOrEqual(0);
+  });
+
+  it('keeps a stand a byte of decimetres could not: a floor 30 m under the ground', () => {
+    const deep = buildWalkMask(WALK);
+    deep.stand.dm[deep.stand.offsets[4 * 10 + 4]] = -300;
+    const back = decodeMask(encodeMask(deep));
+    expect(back.stand.dm[back.stand.offsets[4 * 10 + 4]]).toBe(-300);
+    expect(fineStand(back, -1.9, -1.9)).toBe(-30);
+  });
+
+  it('counts what it walked', () => {
+    expect(mask.walk.open).toBeGreaterThan(1400);
+    expect(mask.walk.stood).toBeGreaterThan(80);
+    expect(mask.walk.layered).toBe(0);
+  });
+});
+
+describe('the walk mask’s rules', () => {
+  const flat = { ...WALK, holeAt: () => false, surfacesAt: () => [], freeAt: () => true, topAt: () => 0 };
+
+  it('says it was walked though every stand is flush with the ground', () => {
+    const mask = buildWalkMask(flat);
+    expect(mask.stand.dm.length).toBe(0);
+    const back = decodeMask(encodeMask(mask));
+    expect(back.stand).not.toBeNull();
+    expect(back.stand.dm.length).toBe(0);
+    expect(fineStand(back, 0, 0)).toBe(0);
+    // (the plain mask has none)
+    expect(decodeMask(encodeMask(buildMask(opts))).stand).toBeNull();
+  });
+
+  it('asks the engine nothing where no shape is near', () => {
+    const never = () => {
+      throw new Error('asked');
+    };
+    const mask = buildWalkMask({ ...flat, surfacesAt: never, freeAt: never, bareAt: () => true });
+    expect(mask.walk.open).toBe(40 * 40);
+    // (and only round the pile when the pile alone is near)
+    let asked = 0;
+    const some = buildWalkMask({
+      ...WALK,
+      bareAt: (x, z) => Math.hypot(x, z) > 4,
+      surfacesAt: (x, z, top, bottom) => {
+        asked++;
+        return [pile(x, z) || null].filter((h) => h !== null && h <= top && h >= bottom);
+      },
+      freeAt: (x, y, z) => !(pile(x, z) > 0 && y < pile(x, z) - 0.05),
+      holeAt: () => false,
+    });
+    expect(asked).toBeGreaterThan(0);
+    expect(asked).toBeLessThan(8 * 16 * 16 + 1);
+    expect(fineStand(some, 0.1, 0.1)).toBeCloseTo(pile(0.25, 0.25), 1);
+  });
+
+  it('walks the ground’s own slope by the climb: up a bank it can step, never up a cliff, down either', () => {
+    // a ramp a sixth of a metre a metre east of x 2, and a 3 m cliff north of z 4
+    const ground = (x, z) => (z >= 4 ? 3 : x > 2 ? (x - 2) / 6 : 0);
+    const mask = buildWalkMask({ ...flat, heightAt: ground, seeds: [[-9.5, 0, -9.5]] });
+    expect(fineBlocked(mask, 8, 0)).toBe(false);
+    expect(fineBlocked(mask, 0, 8)).toBe(true);
+    // (walked from the top too, the cliff's foot is still open: the drop is any depth)
+    const both = buildWalkMask({ ...flat, heightAt: ground, seeds: [[-9.5, 3, 9.5]] });
+    expect(fineBlocked(both, 0, 8)).toBe(false);
+    expect(fineBlocked(both, 0, 0)).toBe(false);
+  });
+
+  it('keeps the way under a ledge a body or more above it, and counts the cells that had both', () => {
+    // a slab 0.2 m thick, its top 3 m up, over x 2…6; a ramp down from it to the ground at x 12
+    const inSlab = (x, z) => x >= 2 && x < 6 && Math.abs(z) < 3;
+    const ramp = (x, z) => (x >= 6 && x < 12 && Math.abs(z) < 3 ? (3 * (12 - x)) / 6 : 0);
+    const mask = buildWalkMask({
+      ...flat,
+      bounds: { min: [-10, -10], max: [14, 10] },
+      surfacesAt: (x, z, top, bottom) => [inSlab(x, z) ? 3 : ramp(x, z) || null].filter((h) => h !== null && h <= top && h >= bottom),
+      freeAt: (x, y, z) => !(inSlab(x, z) && y + CAPSULE.height > 2.8 && y + CAPSULE.step < 3) && !(ramp(x, z) > 0 && y < ramp(x, z) - 0.05),
+    });
+    expect(fineBlocked(mask, 4, 0)).toBe(false);
+    expect(fineStand(mask, 4, 0)).toBe(0);
+    expect(mask.walk.layered).toBeGreaterThan(0);
+    // (the ramp itself is walked: nothing lies under it)
+    expect(fineStand(mask, 8.2, 0)).toBeCloseTo(ramp(8.25, 0.25), 1);
+  });
+
+  it('never walks a surface under whole ground: a hull’s buried half is in the earth', () => {
+    // (the trench's floor, 2 m down, with no hole cut over it)
+    const mask = buildWalkMask({ ...flat, surfacesAt: (x, z, top, bottom) => (inTrench(x, z) ? [-2] : []).filter((h) => h <= top && h >= bottom) });
+    expect(fineBlocked(mask, -7, 0)).toBe(false);
+    expect(fineStand(mask, -7, 0)).toBe(0);
+    expect(mask.walk.layered).toBe(0);
+  });
+
+  it('takes a surface a hand’s breadth off the ground for the ground', () => {
+    const mask = buildWalkMask({ ...flat, surfacesAt: (x, z, top, bottom) => (Math.abs(x) < 3 && Math.abs(z) < 3 ? [0.1] : []).filter((h) => h <= top && h >= bottom) });
+    expect(fineStand(mask, 0, 0)).toBe(0);
+    expect(mask.walk.stood).toBe(0);
   });
 });

@@ -10,7 +10,10 @@
 // buildWalkMask floods the map from its spawns on those answers, so a snow
 // pile is walked up and over, a trench dropped into, and a wall is where the
 // rise is past the climb. A blocked cell's top is a ray down from TOP_REACH
-// over the ground.
+// over the ground. Most of a map's columns have no shape near them: each
+// body's box is marked on the fine grid as it goes in (`near`), and the walk
+// asks the engine nothing where none is (Hoth: 15.3 million columns, a
+// twentieth of them near a shape).
 //
 //   capsuleOf(soldierJson) → { radius, step, height, sources }
 //   raysOf(soldierJson) → { start, end, sources } (the ground probe's reach, the in-air end for the drops)
@@ -56,7 +59,44 @@ function packFrame(pack) {
   };
 }
 
-async function loadBodies(physics, pack, loadBin) {
+// a point of a body's collider in the pack's frame: turned by the body's rotation, put at its place
+function turned([qx, qy, qz, qw], x, y, z) {
+  const tx = 2 * (qy * z - qz * y);
+  const ty = 2 * (qz * x - qx * z);
+  const tz = 2 * (qx * y - qy * x);
+  return [x + qw * tx + (qy * tz - qz * ty), y + qw * ty + (qz * tx - qx * tz), z + qw * tz + (qx * ty - qy * tx)];
+}
+
+// a body's box on the ground (the pack's frame): [minX, minZ, maxX, maxZ] over its colliders
+export function bodyBox(desc) {
+  const box = [Infinity, Infinity, -Infinity, -Infinity];
+  const grow = (x, z, r = 0) => {
+    if (x - r < box[0]) box[0] = x - r;
+    if (z - r < box[1]) box[1] = z - r;
+    if (x + r > box[2]) box[2] = x + r;
+    if (z + r > box[3]) box[3] = z + r;
+  };
+  const q = desc.rotation ?? [0, 0, 0, 1];
+  const [px, , pz] = desc.position ?? [0, 0, 0];
+  for (const c of desc.colliders ?? []) {
+    if (c.shape === 'hull' || c.shape === 'trimesh') {
+      const p = c.args[0];
+      for (let i = 0; i < p.length; i += 3) {
+        const [x, , z] = turned(q, p[i], p[i + 1], p[i + 2]);
+        grow(px + x, pz + z);
+      }
+      continue;
+    }
+    // (a ball, a capsule or a box: a sphere round its middle holds it)
+    const at = c.position ?? [0, 0, 0];
+    const [x, , z] = turned(q, at[0], at[1], at[2]);
+    const r = c.shape === 'ball' ? c.args[0] : c.shape === 'capsule' || c.shape === 'cylinder' ? c.args[0] + c.args[1] : Math.hypot(...(c.args ?? [0]));
+    grow(px + x, pz + z, r);
+  }
+  return box;
+}
+
+async function loadBodies(physics, pack, loadBin, onBody = () => {}) {
   const section = pack.physics ?? { meshes: {}, materials: {} };
   const byMesh = {};
   for (const [mesh, rec] of Object.entries(section.meshes ?? {})) {
@@ -73,6 +113,7 @@ async function loadBodies(physics, pack, loadBin) {
       try {
         physics.add(desc);
         bodies++;
+        onBody(desc);
       } catch {
         refused++;
       }
@@ -82,11 +123,55 @@ async function loadBodies(physics, pack, loadBin) {
   return { bodies, refused };
 }
 
+// The fine grid's columns a shape is near: each body's box (the pack's
+// frame, put into the export's) grown by the capsule's reach, marked.
+function nearGrid({ bounds, cell, fine, pack, reach }) {
+  const k = Math.round(cell / fine);
+  const f = cell / k;
+  const cols = Math.ceil((bounds.max[0] - bounds.min[0]) / cell) * k;
+  const rows = Math.ceil((bounds.max[1] - bounds.min[1]) / cell) * k;
+  const marks = new Uint8Array(cols * rows);
+  const [ox, , oz] = pack.origin ?? [0, 0, 0];
+  const c = Math.cos(pack.yaw ?? 0);
+  const s = Math.sin(pack.yaw ?? 0);
+  const out = (x, z) => [ox + x * c - z * s, oz + x * s + z * c];
+  let marked = 0;
+  return {
+    mark(desc) {
+      const b = bodyBox(desc);
+      if (!Number.isFinite(b[0])) return;
+      const corners = [out(b[0], b[1]), out(b[2], b[1]), out(b[0], b[3]), out(b[2], b[3])];
+      const x0 = Math.min(...corners.map((p) => p[0])) - reach;
+      const x1 = Math.max(...corners.map((p) => p[0])) + reach;
+      const z0 = Math.min(...corners.map((p) => p[1])) - reach;
+      const z1 = Math.max(...corners.map((p) => p[1])) + reach;
+      const c0 = Math.max(0, Math.floor((x0 - bounds.min[0]) / f));
+      const c1 = Math.min(cols - 1, Math.floor((x1 - bounds.min[0]) / f));
+      const r0 = Math.max(0, Math.floor((z0 - bounds.min[1]) / f));
+      const r1 = Math.min(rows - 1, Math.floor((z1 - bounds.min[1]) / f));
+      for (let r = r0; r <= r1; r++)
+        for (let q = c0; q <= c1; q++)
+          if (!marks[r * cols + q]) {
+            marks[r * cols + q] = 1;
+            marked++;
+          }
+    },
+    bareAt(x, z) {
+      const q = Math.floor((x - bounds.min[0]) / f);
+      const r = Math.floor((z - bounds.min[1]) / f);
+      return q < 0 || r < 0 || q >= cols || r >= rows || !marks[r * cols + q];
+    },
+    stats: () => ({ columns: cols * rows, near: marked }),
+  };
+}
+
 export async function navMaskOf({ pack, loadBin, heightAt, holeAt = () => false, bounds, seeds = null, capsule, rays = { start: 1.2, end: -4 }, climb = CLIMB, cell = 2, fine = 0.5 }) {
   const physics = await createPhysics({ gravity: 0, onError: null });
   try {
     const { RAPIER, world } = physics;
-    const stats = await loadBodies(physics, pack, loadBin);
+    // (a column is near a shape when its middle is within the capsule's radius, and a little, of the shape's box)
+    const near = nearGrid({ bounds, cell, fine, pack, reach: capsule.radius + 0.1 });
+    const stats = await loadBodies(physics, pack, loadBin, near.mark);
     const frame = packFrame(pack);
     const length = capsule.height - capsule.step;
     const shape = length > 2 * capsule.radius ? new RAPIER.Capsule(length / 2 - capsule.radius, capsule.radius) : new RAPIER.Cylinder(length / 2, capsule.radius);
@@ -109,12 +194,14 @@ export async function navMaskOf({ pack, loadBin, heightAt, holeAt = () => false,
     const topAt = (x, z, g) => {
       const p = frame(x, g + TOP_REACH, z);
       const hit = world.castRay(new RAPIER.Ray(p, DOWN), TOP_REACH, true);
-      // (no shape under the middle, though the walk never came: its height)
-      return hit ? TOP_REACH - hit.timeOfImpact : capsule.height;
+      if (hit) return TOP_REACH - hit.timeOfImpact;
+      // (no shape under the middle: one beside it the capsule meets, its height; else ground the walk
+      // never reached, too steep or cut off, which stops no line and makes no cover)
+      return freeAt(x, g, z) ? 0.1 : capsule.height;
     };
     const from = seeds ?? [[(bounds.min[0] + bounds.max[0]) / 2, 0, (bounds.min[1] + bounds.max[1]) / 2]];
-    const mask = buildWalkMask({ bounds, cell, fine, heightAt, holeAt, surfacesAt, freeAt, topAt, seeds: from.map(([x, y, z]) => [x, y ?? heightAt(x, z), z]), capsule: { step: capsule.step, height: capsule.height, radius: capsule.radius }, rays, climb });
-    mask.stats = stats;
+    const mask = buildWalkMask({ bounds, cell, fine, heightAt, holeAt, surfacesAt, freeAt, topAt, bareAt: near.bareAt, seeds: from.map(([x, y, z]) => [x, y ?? heightAt(x, z), z]), capsule: { step: capsule.step, height: capsule.height, radius: capsule.radius }, rays, climb });
+    mask.stats = { ...stats, ...near.stats() };
     return mask;
   } finally {
     physics.dispose();

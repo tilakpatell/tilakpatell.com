@@ -13,7 +13,7 @@
 // { classId }, 'pick' id, 'spawn' a squadmate's id (null for the HQ),
 // 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
 // screen), 'weather' name, 'look' { yaw, pitch } (the player's view, for
-// a shot toward the sun), 'teleport' [x, y, z] and 'walkable' [x, z] (a
+// a shot toward the sun), 'teleport' [x, y, z], 'walkable' [x, z] and 'ground' [x, z] (a
 // collision probe's), 'gpu', 'ragdolls' (how many bodies fall, lie
 // and wait: figures/ragdolls.js).
 //
@@ -28,7 +28,7 @@
 
 import * as THREE from 'three';
 import { textureTier } from '../../lib/video.js';
-import { walkable } from '../../lib/battlefront/nav.js';
+import { heightAt, walkable } from '../../lib/battlefront/nav.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
 import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf } from '../../lib/battlefront/rulebook.js';
 import { preloadDecoders } from '../../lib/three/gltf.js';
@@ -401,6 +401,8 @@ export default {
           }
           case 'walkable':
             return Array.isArray(arg) && arg.length >= 2 ? walkable(sim.nav, arg[0], arg[1]) : null;
+          case 'ground':
+            return Array.isArray(arg) && arg.length >= 2 ? heightAt(sim.nav, arg[0], arg[1]) : null;
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':

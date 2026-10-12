@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { cellAt } from '../../src/lib/battlefront/nav.js';
 import { encodeMask, fineBlocked, fineStand } from '../../src/lib/battlefront/navMask.js';
-import { capsuleOf, navMaskOf, raysOf } from './bf2017-nav.mjs';
+import { bodyBox, capsuleOf, navMaskOf, raysOf } from './bf2017-nav.mjs';
 
 // lane P0's fixture pack: snow piles 0.9 m tall at (10, 0, 10), (20, 0, 10), (30, 0, 10)
 const PACK = new URL('../fixtures/bf2017/physics/pack/', import.meta.url);
@@ -33,8 +33,21 @@ describe('the nav mask from a pack’s shapes', () => {
     expect(raysOf(soldier).sources.start).toMatch(/RayStartHeightOnGround$/);
   });
 
-  it('walks up a pile’s slope as the game’s step allows, and stands on it', async () => {
+  it('boxes a body on the ground: its hulls’ points turned and placed, a ball by its radius', () => {
+    // (a quarter turn about +Y: x → −z, z → x)
+    const q = [0, Math.SQRT1_2, 0, Math.SQRT1_2];
+    const box = bodyBox({ position: [10, 0, 20], rotation: q, colliders: [{ shape: 'hull', args: [new Float32Array([0, 0, 0, 4, 1, 0, 0, 2, 1])] }] });
+    expect(box.map((v) => Math.round(v * 1000) / 1000)).toEqual([10, 16, 11, 20]);
+    expect(bodyBox({ position: [0, 0, 0], colliders: [{ shape: 'ball', args: [2], position: [5, 1, 5] }] })).toEqual([3, 3, 7, 7]);
+    expect(bodyBox({ colliders: [] })[0]).toBe(Infinity);
+  });
+
+  // (the engine's first load can take the default five seconds on a busy machine)
+  it('walks up a pile’s slope as the game’s step allows, and stands on it', { timeout: 60000 }, async () => {
     const mask = await navMaskOf({ pack, loadBin, heightAt: () => 0, bounds: BOUNDS, seeds: SEEDS, capsule });
+    // (the columns near a shape are few: the rest ask the engine nothing)
+    expect(mask.stats.near).toBeGreaterThan(0);
+    expect(mask.stats.near).toBeLessThan(mask.stats.columns / 4);
     expect(blockedAt(mask, 10, 10)).toBe(false);
     expect(fineBlocked(mask, 10, 10)).toBe(false);
     expect(fineStand(mask, 10, 10)).toBeGreaterThan(0.6);

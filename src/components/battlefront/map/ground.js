@@ -1,6 +1,10 @@
 // Hoth's ground from the pack's heightmaps (the `image` layer, in the pack's
-// frame): a fine grid over the near map and a coarse one under the whole
-// world map, a little lower so the two never fight where they overlap.
+// frame): a fine grid over the near map and a coarse one round it over the
+// rest of the world map, a little lower so the two never fight where they
+// meet. The coarse one is cut away under the near map (`cutUnder`): a vertex
+// every 32 m spans a hollow or a trench line, and its sheet stood over the
+// near ground there, up to 20 m on Hoth and over a fifth of the base: snow a
+// soldier walked through.
 // Snow is the game's terrain colour (the lighting record's Enlighten
 // `TerrainColor`, 0.55 / 0.59 / 0.64 on Hoth's day) brightened toward
 // white by the albedo of packed snow.
@@ -24,6 +28,27 @@ function grid(layer, min, size, step, drop) {
   return g;
 }
 
+// A grid's quads that lie wholly inside [min, max] on XZ, left out of its
+// index (a quad the rectangle's edge crosses stays, so the two grids still
+// overlap by a quad at the seam). → how many quads went
+export function cutUnder(g, min, max) {
+  const p = g.attributes.position;
+  const inside = (i) => p.getX(i) >= min[0] && p.getX(i) <= max[0] && p.getZ(i) >= min[1] && p.getZ(i) <= max[1];
+  const index = g.index.array;
+  const kept = [];
+  let cut = 0;
+  // (PlaneGeometry: six indices a quad, a b d then b c d)
+  for (let q = 0; q < index.length; q += 6) {
+    if (inside(index[q]) && inside(index[q + 1]) && inside(index[q + 2]) && inside(index[q + 4])) {
+      cut++;
+      continue;
+    }
+    for (let k = 0; k < 6; k++) kept.push(index[q + k]);
+  }
+  g.setIndex(kept);
+  return cut;
+}
+
 export function buildGround(layer, terrain = {}) {
   const mat = new THREE.MeshStandardMaterial({ color: SNOW, roughness: 0.82, metalness: 0 });
   const out = new THREE.Group();
@@ -38,7 +63,12 @@ export function buildGround(layer, terrain = {}) {
   const far = terrain.far;
   if (far?.min && far?.size) {
     const size = (far.size[0] - 1) * far.metresPerPixel;
-    const m = new THREE.Mesh(grid(layer, far.min, size, FAR_STEP, FAR_DROP), mat.clone());
+    const g = grid(layer, far.min, size, FAR_STEP, FAR_DROP);
+    if (near?.min && near?.size) {
+      const side = (near.size[0] - 1) * near.metresPerPixel;
+      cutUnder(g, near.min, [near.min[0] + side, near.min[1] + side]);
+    }
+    const m = new THREE.Mesh(g, mat.clone());
     m.receiveShadow = true;
     out.add(m);
   }

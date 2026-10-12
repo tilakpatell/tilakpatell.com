@@ -13,10 +13,10 @@
 // at the nearest open cell and walks the last metre straight.
 //
 //   buildNav({ heightAt, bounds, cell, solids, maxSlope, cover, radius }) → nav
-//   cellAt(nav, x, z) → [c, r] | null      heightAt(nav, x, z) → y (bilinear, plus what the mask stands on)
+//   cellAt(nav, x, z) → [c, r] | null      heightAt(nav, x, z) → y (the ground's own height, plus what the mask stands on)
 //   walkable(nav, x, z) → bool             nearestWalkable(nav, x, z) → [x, z] | null
 //   standAt(nav, x, z) → m over the ground the mask stands at (a pile, a trench floor)
-//   canStep(nav, fromX, fromZ, toX, toZ) → bool: walkable, and no rise past the mask's climb
+//   canStep(nav, fromX, fromZ, toX, toZ) → bool: walkable, and no rise past the mask's climb from one fine cell to the next
 //   findPath(nav, from, to, { blocked }) → [[x, z]] | null
 //   firstSolid(nav, a, b) → { t, at, solid } | null   lineClear(nav, a, b) → bool
 //   coverSlots(nav, near, r) → slots       nearestSlot(nav, at, threat) → slot | null
@@ -27,7 +27,11 @@
 // fine grid makes `walkable` exact, its tops stop a line of sight
 // (`solid: -2`), its edges give cover slots, and its stands lift a soldier
 // onto a pile or down into a trench (`heightAt`), a rise past its climb
-// being a wall (`canStep`). A box solid blocks only
+// being a wall (`canStep`). A mask with stands was walked over the ground
+// itself, so it is the whole answer to `walkable`: the grid's slope flag,
+// which shuts both the 2 m cells a steep bank lies between, is the paths'
+// alone then (the bots keep off the banks; a soldier walks to their foot and
+// drops off their top). A box solid blocks only
 // where its top is a step or more above the ground (the soldier's
 // `StepHeight`), so a box buried in the ground blocks nothing.
 // Pure: typed arrays, no three.js.
@@ -113,7 +117,8 @@ export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0
         }
       walk[i] = ok;
     }
-  const nav = { cell, cols, rows, origin, height, walk, solid, boxes, near, radius, step, mask: fits, slots: [], buckets: new Map(), scratch: null };
+  // (ground: the height function itself, for where a soldier stands; the grid's `height` is its middles, for the paths and the lines)
+  const nav = { cell, cols, rows, origin, height, ground: heightAt, walk, solid, boxes, near, radius, step, mask: fits, slots: [], buckets: new Map(), scratch: null };
   nav.slots = findSlots(nav, cover);
   for (const s of nav.slots) {
     const k = bucketKey(s.at[0], s.at[2]);
@@ -160,11 +165,17 @@ export function standAt(nav, x, z) {
   return a * (1 - tz) + b * tz;
 }
 
+// where a soldier's feet are: the ground's own height there (the grid's
+// middles, 2 m apart, smooth a bank's foot and a hollow away: the body sank
+// into the one and floated over the other), and what the mask stands on
 export function heightAt(nav, x, z) {
   return groundAt(nav, x, z) + standAt(nav, x, z);
 }
 
-function groundAt(nav, x, z) {
+const groundAt = (nav, x, z) => (nav.ground ? nav.ground(x, z) : gridHeight(nav, x, z));
+
+// (a grid with no height function, one made by hand: bilinear over its middles)
+function gridHeight(nav, x, z) {
   const fx = Math.min(nav.cols - 1, Math.max(0, (x - nav.origin[0]) / nav.cell - 0.5));
   const fz = Math.min(nav.rows - 1, Math.max(0, (z - nav.origin[1]) / nav.cell - 0.5));
   const c0 = Math.floor(fx);
@@ -193,20 +204,42 @@ function inSolid(nav, x, z, i) {
 export function walkable(nav, x, z) {
   const i = indexAt(nav, x, z);
   if (i < 0) return false;
-  // the slope flag holds for the cell; a blocked cell may still be open beside its solid
-  if (!nav.walk[i] && !nav.solid[i]) return false;
   const m = nav.mask;
+  // the slope flag holds for the cell (a blocked cell may still be open
+  // beside its solid), unless the mask walked the ground itself
+  if (!m?.stand && !nav.walk[i] && !nav.solid[i]) return false;
   if (m && (m.fine ? fineBlocked(m, x, z) : m.blocked[i])) return false;
   return !inSolid(nav, x, z, i);
 }
 
-// a step from one spot to the next: open there, and no rise past the climb
-// (a drop is any depth: the game's soldier falls off anything)
+// m: a stand is kept in decimetres, so a rise read back from one is this far out
+const STAND_SLACK = 0.051;
+
+// a step from one spot to the next: open there, and from one fine cell to
+// another no rise past the climb, measured as the walk measured it, between
+// the cells' middles, the ground and what stands on it together (so a bank
+// too steep to walk is a wall from below, and from above a drop of any
+// depth: the game's soldier falls off anything). A soldier standing where
+// the mask has no room (put there by a spawn) may always step out.
 export function canStep(nav, fromX, fromZ, toX, toZ) {
   if (!walkable(nav, toX, toZ)) return false;
   const m = nav.mask;
   if (!m?.stand) return true;
-  return fineStand(m, toX, toZ) - fineStand(m, fromX, fromZ) <= m.climb + 1e-6;
+  const f = m.fine.cell;
+  const c0 = Math.floor((fromX - m.origin[0]) / f);
+  const r0 = Math.floor((fromZ - m.origin[1]) / f);
+  const c1 = Math.floor((toX - m.origin[0]) / f);
+  const r1 = Math.floor((toZ - m.origin[1]) / f);
+  if (c0 === c1 && r0 === r1) return true;
+  const ax = m.origin[0] + (c0 + 0.5) * f;
+  const az = m.origin[1] + (r0 + 0.5) * f;
+  if (fineBlocked(m, ax, az)) return true;
+  const bx = m.origin[0] + (c1 + 0.5) * f;
+  const bz = m.origin[1] + (r1 + 0.5) * f;
+  const sa = fineStand(m, ax, az);
+  const sb = fineStand(m, bx, bz);
+  const slack = (sa ? STAND_SLACK : 0) + (sb ? STAND_SLACK : 0) + 1e-6;
+  return groundAt(nav, bx, bz) + sb - (groundAt(nav, ax, az) + sa) <= m.climb + slack;
 }
 
 const open = (nav, i, blocked) => nav.walk[i] === 1 && !nav.solid[i] && !(blocked && blocked.has(i));

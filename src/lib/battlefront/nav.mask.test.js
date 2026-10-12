@@ -117,4 +117,60 @@ describe('the navgrid over the walk mask', () => {
     expect(standAt(nav, 0, 0)).toBe(0);
     expect(canStep(nav, 0, 17, 0, 17.5)).toBe(true);
   });
+
+  it('lets a soldier put where the mask has no room step out of it', () => {
+    expect(walkable(walked, 60.5, 0)).toBe(false);
+    expect(canStep(walked, 60.2, 0, 59.2, 0)).toBe(true);
+  });
+});
+
+// A bank in the ground itself: 3 m up north of z 0, walked from both sides.
+const bank = (x, z) => (z >= 0 ? 3 : 0);
+const banked = buildWalkMask({
+  bounds: field().bounds,
+  cell: 2,
+  fine: 0.5,
+  heightAt: bank,
+  surfacesAt: () => [],
+  freeAt: () => true,
+  bareAt: () => true,
+  seeds: [
+    [0, 0, -50],
+    [0, 3, 50],
+  ],
+  capsule: { step: 0.4, height: 1.7, radius: 0.3 },
+  rays: { start: 1.2, end: -4 },
+});
+const onBank = buildNav({ ...field(), heightAt: bank, solids: [], cover, mask: banked });
+const plainBank = buildNav({ ...field(), heightAt: bank, solids: [], cover });
+
+describe('the navgrid over a walk mask on steep ground', () => {
+  it('stands a soldier at the ground’s own height, not the grid’s middles’', () => {
+    expect(heightAt(onBank, 10.3, -0.2)).toBe(0);
+    expect(heightAt(onBank, 10.3, 0.2)).toBe(3);
+    expect(heightAt(plainBank, 10.3, -0.2)).toBe(0);
+    // (a grid made by hand, with no height function: bilinear over its middles, as before)
+    expect(heightAt({ ...plainBank, ground: null }, 10.3, 0)).toBeCloseTo(1.5, 5);
+  });
+
+  it('is walkable to the bank’s foot and its brink, where the grid’s slope flag shut both cells', () => {
+    const [c, r] = cellAt(onBank, 10, -0.5);
+    expect(onBank.walk[r * onBank.cols + c]).toBe(0);
+    expect(walkable(plainBank, 10, -0.5)).toBe(false);
+    expect(walkable(plainBank, 10, 0.5)).toBe(false);
+    expect(walkable(onBank, 10, -0.5)).toBe(true);
+    expect(walkable(onBank, 10, 0.5)).toBe(true);
+  });
+
+  it('never steps up the bank, and drops off it', () => {
+    expect(canStep(onBank, 10, -0.2, 10, 0.2)).toBe(false);
+    expect(canStep(onBank, 10, 0.2, 10, -0.2)).toBe(true);
+    // (along its foot and along its brink: no rise)
+    expect(canStep(onBank, 10.2, -0.2, 10.7, -0.2)).toBe(true);
+    expect(canStep(onBank, 10.2, 0.2, 10.7, 0.2)).toBe(true);
+  });
+
+  it('keeps the paths off the bank: the slope flag is still theirs', () => {
+    expect(findPath(onBank, [0, -20], [0, 20])).toBeNull();
+  });
 });
