@@ -11,7 +11,7 @@ import { LAYERS } from '../../../lib/land/layers.js';
 export const NEAR_STEP = 4; // m between the near grid's vertices (the map is 1 m a pixel)
 export const FAR_STEP = 32; // m: the world map's grid (4 m a pixel)
 export const FAR_DROP = 1.5; // m the far grid sits under the near one
-const SNOW = new THREE.Color(0.86, 0.9, 0.95);
+const SNOW = new THREE.Color(0.546830952, 0.594003737, 0.644479752);
 
 function grid(layer, min, size, step, drop) {
   const n = Math.max(2, Math.round(size / step) + 1);

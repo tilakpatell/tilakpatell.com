@@ -345,7 +345,7 @@ export default {
       },
     };
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     return world;
   },
 };

@@ -31,10 +31,10 @@ describe('readEntry', () => {
   });
   it('reads Hoth’s records as the bucket has them: the sun, the sky, the fog, the exposure', () => {
     const p = readEntry({ ...hoth.sunny, light: { sun: 5 } });
-    // 128,000 lux metered to EV 16.33 (unclamped: no ClampEV in the record), opened 1.5 stops,
-    // at one physical exposure (calibrate.js): 3.67 (the classic stack's 0.79 was lane G's fit)
-    expect(p.gameToSite).toBeCloseTo(2 ** 1.5 / (1.2 * 2 ** 16.3287), 9);
-    expect(p.sun.intensity).toBeCloseTo(3.666, 2);
+    // 128,000 lux meters to EV 16.33, and the record clamps it (ClampEV, MaxEV 15), opened 1.5 stops,
+    // at one physical exposure (calibrate.js): 9.21 (the classic stack's 0.79 was lane G's fit)
+    expect(p.gameToSite).toBeCloseTo(2 ** 1.5 / (1.2 * 2 ** 15), 9);
+    expect(p.sun.intensity).toBeCloseTo(9.207, 2);
     expect(p.sun.color[2]).toBeCloseTo(0.91762);
     expect(p.sun.dir[1]).toBeCloseTo(Math.sin((32.943 * Math.PI) / 180), 4);
     expect(p.sky.rayleigh).toEqual([0.00001, 0.00001, 0.00003]);

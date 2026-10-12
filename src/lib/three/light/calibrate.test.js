@@ -10,10 +10,11 @@ const comp = (e, name) => e.record[`${name}ComponentData`][0];
 const classic = siteLightFrom(weatherEntry(hothLight, 'clear'));
 
 describe('luminanceScale', () => {
-  it('meters Hoth Sunny unclamped (no ClampEV in the record): EV 16.33, opened 1.5 stops', () => {
+  it('meters Hoth Sunny at its clamp (ClampEV, MaxEV 15 in the record): the meter says 16.33, the record 15, opened 1.5 stops', () => {
     const tone = comp(hoth.sunny, 'Tonemap');
     const scene = { lux: 128000, el: 32.943, sky: 35000 };
-    expect(meteredEV(tone, scene)).toBeCloseTo(16.3287, 3);
+    expect(meteredEV(tone, scene)).toBe(15);
+    expect(meteredEV({ ...tone, ClampEV: undefined }, scene)).toBeCloseTo(16.3287, 3);
     expect(luminanceScale(tone, scene)).toBeCloseTo((2 ** meteredEV(tone, scene) * 1.2) / 2 ** 1.5, 3);
   });
   it('a record that exposes by hand keeps its EV; none gives null', () => {
@@ -26,20 +27,20 @@ describe('luminanceScale', () => {
 
 describe('Hoth Sunny at one physical exposure (the owner’s bf2-re study, findings 02)', () => {
   const k = luminanceScale(comp(hoth.sunny, 'Tonemap'), { lux: 128000, el: 32.943, sky: 35000 });
-  it('the meter runs unclamped where the record sets no ClampEV: Hoth’s day at EV 16.33, not MaxEV 15', () => {
-    expect(meteredEV(comp(hoth.sunny, 'Tonemap'), { lux: 128000, el: 32.943, sky: 35000 })).toBeCloseTo(16.3287, 3);
-    expect(meteredEV({ ...comp(hoth.sunny, 'Tonemap'), ClampEV: true }, { lux: 128000, el: 32.943, sky: 35000 })).toBe(15);
+  it('the meter is clamped only where the record sets ClampEV: Hoth’s day at MaxEV 15, the meter’s own 16.33 without it', () => {
+    expect(meteredEV(comp(hoth.sunny, 'Tonemap'), { lux: 128000, el: 32.943, sky: 35000 })).toBe(15);
+    expect(meteredEV({ ...comp(hoth.sunny, 'Tonemap'), ClampEV: undefined }, { lux: 128000, el: 32.943, sky: 35000 })).toBeCloseTo(16.3287, 3);
   });
-  it('the sun is its lux over k, no fitted constant: 3.67 on Hoth’s day (the classic stack’s 0.79 was lane G’s fit)', () => {
+  it('the sun is its lux over k, no fitted constant: 9.21 on Hoth’s day at the clamp (the classic stack’s 0.79 was lane G’s fit)', () => {
     expect(sunIntensity(comp(hoth.sunny, 'OutdoorLight'), k)).toBeCloseTo(128000 / k, 6);
-    expect(readEntry(hoth.sunny).sun.intensity).toBeCloseTo(3.666, 2);
+    expect(readEntry(hoth.sunny).sun.intensity).toBeCloseTo(9.207, 2);
     expect(classic.light.sun).toBe(0.79);
   });
-  it('the sky is its nits over the same k: 1.00, the dome’s level and the fill', () => {
+  it('the sky is its nits over the same k: 2.52, the dome’s level and the fill', () => {
     expect(skyScale(comp(hoth.sunny, 'Sky'), k)).toBeCloseTo(35000 / k, 6);
     const p = readEntry(hoth.sunny);
-    expect(p.sky.luminance).toBeCloseTo(1.002, 2);
-    expect(p.ambient.intensity).toBeCloseTo(1.002, 2);
+    expect(p.sky.luminance).toBeCloseTo(2.5176, 3);
+    expect(p.ambient.intensity).toBeCloseTo(2.5176, 3);
     // the game’s ratio: 128,000 lux to 35,000 nits
     expect(p.sun.intensity / p.sky.luminance).toBeCloseTo(128000 / 35000, 6);
   });
@@ -58,8 +59,8 @@ describe('Hoth Sunny at one physical exposure (the owner’s bf2-re study, findi
 describe('calibrate', () => {
   it('a record in, the four numbers out; no tone map, null', () => {
     const c = calibrate(hoth.sunny.record);
-    expect(c.sun).toBeCloseTo(3.666, 2);
-    expect(c.sky).toBeCloseTo(1.002, 2);
+    expect(c.sun).toBeCloseTo(9.207, 2);
+    expect(c.sky).toBeCloseTo(2.5176, 3);
     expect(c.bloomThreshold).toBe(1);
     expect(calibrate({})).toBe(null);
     // a sun with no tone map is still taken to the site's units
