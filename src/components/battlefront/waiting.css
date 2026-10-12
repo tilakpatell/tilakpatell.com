@@ -1,0 +1,55 @@
+/* The waiting screen (WaitingScreen.jsx): the darkroom the player waits
+   in before the field, over the whole view at the dialog's depth, in the
+   game's faces and the world's ink (hud/battlefront.css); and the wipe,
+   black over everything at the top depth for the game's 0.75 s. Glass at
+   0.78 or more over the 3D, nothing read under 0.7 rem (docs/health/RULES.md). */
+.bf-waiting { position: fixed; inset: 0; z-index: var(--z-dialog); /* over the world's canvas and HUD */ display: grid; grid-template-columns: minmax(18rem, 30rem) minmax(16rem, 26rem); justify-content: space-between; align-content: start; gap: 2rem; padding: clamp(1rem, 5vh, 4rem) 5%; overflow: auto; color: var(--bf-ink, #f2f5f8); font-family: var(--font-bf-hud, var(--bf-font-label, sans-serif)); background: #06090d; }
+.bf-waiting-backdrop { position: absolute; inset: 0; z-index: 0; }
+.bf-waiting-film { position: absolute; inset: 0; opacity: 0.45; }
+.bf-waiting-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4, 7, 10, 0.92) 0%, rgba(4, 7, 10, 0.55) 50%, rgba(4, 7, 10, 0.86) 100%); }
+.bf-waiting-choice, .bf-waiting-card { position: relative; z-index: 1; }
+.bf-waiting-kicker { margin: 0; font-size: 0.95rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
+.bf-waiting-level { margin: 0.2rem 0 0; font-size: clamp(2rem, 4.5vw, 4rem); font-weight: 800; letter-spacing: 0.06em; line-height: 1; }
+.bf-waiting-change { margin: 0.5rem 0 1.25rem; font-size: 0.85rem; }
+.bf-waiting-head { margin: 1rem 0 0.4rem; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
+.bf-waiting-days, .bf-waiting-list { margin: 0; padding: 0; list-style: none; }
+.bf-waiting-days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.bf-waiting-day, .bf-waiting-cell { width: 100%; min-height: 3.5rem; padding: 0.4rem 0.8rem; border: 0; border-left: 2px solid transparent; background: rgba(8, 12, 18, 0.82); color: inherit; font: inherit; letter-spacing: 0.05em; text-align: left; cursor: pointer; }
+.bf-waiting-day { display: grid; gap: 0.2rem; font-size: 0.95rem; }
+.bf-waiting-day-odds { font-size: 0.75rem; color: var(--bf-muted, #b9c2cc); }
+.bf-waiting-cell { display: grid; grid-template-columns: 2.5rem 1fr auto; align-items: center; gap: 0.75rem; font-size: 1.1rem; }
+.bf-waiting-list li + li .bf-waiting-cell { margin-top: 2px; }
+.bf-waiting-day[aria-checked='true'], .bf-waiting-cell[aria-pressed='true'], .bf-waiting-day:focus-visible, .bf-waiting-cell:focus-visible { border-left-color: var(--bf-ink, #f2f5f8); background: rgba(40, 52, 66, 0.9); outline: none; }
+.bf-waiting-cell[aria-disabled] { color: var(--bf-muted, #b9c2cc); cursor: default; }
+.bf-waiting-cell img { filter: invert(1); }
+.bf-waiting-points { margin: 0.75rem 0 0; letter-spacing: 0.08em; }
+.bf-waiting-card { display: grid; align-content: start; gap: 0.75rem; padding: 1.25rem; background: rgba(8, 12, 18, 0.86); border: 1px solid rgba(242, 245, 248, 0.18); }
+.bf-waiting-hint { margin: 0; min-height: 2.6em; font-family: var(--font-bf-text, var(--bf-font-label, sans-serif)); font-size: 0.95rem; line-height: 1.35; color: var(--bf-muted, #b9c2cc); }
+.bf-waiting-bar { height: 4px; background: rgba(242, 245, 248, 0.18); }
+.bf-waiting-bar i { display: block; height: 100%; background: var(--bf-ink, #f2f5f8); transition: width 400ms linear; }
+.bf-waiting-line { margin: 0; font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
+.bf-waiting[data-ready] .bf-waiting-line { color: var(--bf-ink, #f2f5f8); }
+.bf-waiting-machine, .bf-waiting-recommend { margin: 0; font-size: 0.85rem; line-height: 1.4; }
+.bf-waiting-recommend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.bf-waiting-apply { --hud-ink: var(--bf-ink, #f2f5f8); --hud-face: inherit; min-height: 2.25rem; }
+.bf-waiting-apply:disabled { color: var(--bf-muted, #b9c2cc); cursor: default; }
+.bf-waiting-deploy { min-height: 3.25rem; margin-top: 0.5rem; padding: 0.6rem 1.5rem; border: 1px solid var(--bf-ink, #f2f5f8); background: var(--bf-ink, #f2f5f8); color: #06090d; font: inherit; font-size: 1.15rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; }
+.bf-waiting-deploy:disabled { border-color: rgba(242, 245, 248, 0.3); background: transparent; color: var(--bf-muted, #b9c2cc); cursor: progress; }
+.bf-waiting-deploy:focus-visible { outline: 2px solid var(--bf-ink, #f2f5f8); outline-offset: 3px; }
+.bf-waiting-back { font-size: 0.85rem; justify-self: start; }
+.bf-waiting-keys { position: fixed; left: 5%; bottom: 3%; z-index: 1; display: flex; gap: 1.5rem; margin: 0; font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
+@media (max-width: 52rem) {
+  .bf-waiting { grid-template-columns: 1fr; }
+  .bf-waiting-keys { display: none; }
+}
+
+/* the wipe */
+.bf-wipe { position: fixed; inset: 0; z-index: var(--z-top); /* over every screen and the HUD: the game's black between the darkroom and the field */ background: #000; opacity: 0; pointer-events: none; }
+.bf-wipe[data-wipe='down'] { opacity: 1; transition: opacity 300ms ease-in 50ms; }
+.bf-wipe[data-wipe='up'] { opacity: 0; transition: opacity 400ms ease-out; }
+@starting-style {
+  .bf-wipe[data-wipe='up'] { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bf-waiting-bar i, .bf-wipe[data-wipe] { transition: none; }
+}

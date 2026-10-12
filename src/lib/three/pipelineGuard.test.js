@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { guardPipelines, rendererAs } from './pipelineGuard';
+import { guardOf, guardPipelines, rendererAs } from './pipelineGuard';
 
 // three's renderer, as far as the guard sees it: Pipelines asked with no
 // promise list makes the pipeline in the frame and given one pushes a
@@ -190,6 +190,9 @@ describe('guardPipelines', () => {
     expect(list).toHaveLength(1);
     expect(guard.pending()).toBe(0);
     expect(guardPipelines(r)).toBe(guard);
+    expect(guardOf(r)).toBe(guard);
+    expect(guardOf(null)).toBe(null);
+    expect(guardOf({})).toBe(null);
   });
 
   it('leaves an object out of the frame while its shader builds off it, and draws it once built', async () => {
