@@ -10,9 +10,12 @@ permissions:
   pages: write
   id-token: write
 
+# (one deploy at a time, each merge's in turn: with the deploy in progress
+# cancelled on every push, an evening of nine merges left the site at the
+# first one's build for hours, 2026-10-11)
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
