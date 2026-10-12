@@ -207,7 +207,9 @@ export function tick(gun, dt, now) {
   const sway = swayOf(gun.row, 'stand', false);
   // (a negative decay is the sentry's: the cone opens again when the trigger drops)
   if (now - gun.lastShot >= sway.noFireDelay) gun.spread = sway.decay >= 0 ? Math.max(0, gun.spread - sway.decay * dt) : Math.min(0, gun.spread - sway.decay * dt);
-  const fall = (gun.rr ?? recoilRow(gun.row, 'stand', false)).decay * dt;
+  // (the kick falls from its shot's own time: one fired this step has not begun to, so the
+  // view sees the whole 0.7° before it goes, whatever the step)
+  const fall = (gun.rr ?? recoilRow(gun.row, 'stand', false)).decay * Math.max(0, Math.min(dt, now - gun.lastShot));
   gun.recoil[0] = Math.abs(gun.recoil[0]) <= fall ? 0 : gun.recoil[0] - Math.sign(gun.recoil[0]) * fall;
   gun.recoil[1] = Math.max(0, gun.recoil[1] - fall);
   if (gun.state === 'overheated') {

@@ -27,7 +27,7 @@
 //   absorb(s, damage, { dir, now }) → the damage left after the shield and the overhealth
 //   hurtTurret(sim, turret, damage) → 'hurt' | 'down'
 //   slotsOf(s) → [{ slot, id, state, recharge, charges, ready, active }]   (the HUD's three)
-//   grenadesOf(kit) → [{ at, kind, owner, team, spin, resting }]   (the grenades in the air, for the view)
+//   grenadesOf(kit) → [{ id, at, kind, owner, team, spin, resting }]   (the grenades in the air, for the view)
 
 import kit from '../../data/bf2017/trooperKit.json';
 import { charges, end, hold, recharge, state } from './abilities.js';
@@ -67,6 +67,8 @@ export const kitWeapon = (id) => kit.weapons[id] ?? null;
 
 export const createKit = () => ({ grenades: [], fields: [], spots: [], blasts: [], armed: new Map(), tokens: createTokens(), next: 1 });
 
+// a grenade numbered as it leaves, for the view
+const born = (K, g) => Object.assign(g, { id: K.next++ });
 const slotOf = (s, id) => s.abilities.list.find((a) => a.row.id === id) ?? null;
 const dist3 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
@@ -104,7 +106,7 @@ function throwNow(sim, s, entry, now, power = THROW.power) {
     ({ at, vel } = throwFrom(eye, yaw, pitch, { power }));
   }
   s.throwPlan = null;
-  const g = createGrenade(row, { at, vel, owner: s.id, team: s.team, now, bot: s.bot });
+  const g = born(K, createGrenade(row, { at, vel, owner: s.id, team: s.team, now, bot: s.bot }));
   // (a bot's grenade holds its team's token while it is out)
   if (s.bot) {
     g.token = true;
@@ -208,7 +210,7 @@ function fireDart(sim, s, a, now) {
   const row = GRENADES.dart;
   const { eye, yaw, pitch } = aimAngles(s);
   const dir = [Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)];
-  sim.kit.grenades.push(createGrenade(row, { at: [...eye], vel: dir.map((v) => v * row.speed), owner: s.id, team: s.team, now, bot: s.bot }));
+  sim.kit.grenades.push(born(sim.kit, createGrenade(row, { at: [...eye], vel: dir.map((v) => v * row.speed), owner: s.id, team: s.team, now, bot: s.bot })));
   sim.out.push({ t: now, type: 'throw', by: s.id, kind: row.id, at: [...eye] });
   // (one round, SwitchToPrimaryWhenOutOfAmmo: the ability is spent on the shot)
   end(s.abilities, a.slot, now, 'fired');
@@ -309,7 +311,7 @@ function stepGrenades(sim, K, now, requests) {
       if (ev.type === 'split') {
         for (let i = 0; i < ev.count; i++) {
           const a = (i / ev.count) * Math.PI * 2;
-          keep.push(createGrenade(GRENADES.flashSub, { at: [ev.at[0], ev.at[1] + 0.3, ev.at[2]], vel: [Math.cos(a) * SPLIT.speed * 0.5, SPLIT.speed, Math.sin(a) * SPLIT.speed * 0.5], owner: g.owner, team: g.team, now, bot: g.bot }));
+          keep.push(born(K, createGrenade(GRENADES.flashSub, { at: [ev.at[0], ev.at[1] + 0.3, ev.at[2]], vel: [Math.cos(a) * SPLIT.speed * 0.5, SPLIT.speed, Math.sin(a) * SPLIT.speed * 0.5], owner: g.owner, team: g.team, now, bot: g.bot })));
         }
         sim.out.push({ t: now, type: 'split', by: g.owner, at: ev.at });
       } else if (ev.type === 'explode') {
@@ -449,4 +451,4 @@ export function stepKit(sim) {
   return requests;
 }
 
-export const grenadesOf = (K) => (K ? K.grenades.map((g) => ({ at: g.at, kind: g.row.id, owner: g.owner, team: g.team, spin: g.spin, resting: g.resting })) : []);
+export const grenadesOf = (K) => (K ? K.grenades.map((g) => ({ id: g.id, at: g.at, kind: g.row.id, owner: g.owner, team: g.team, spin: g.spin, resting: g.resting })) : []);

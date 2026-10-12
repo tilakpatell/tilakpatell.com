@@ -29,6 +29,20 @@ describe('recoil (finding 34: GunSwayRecoilData, CameraRecoilData)', () => {
     expect(recoilOf(g)).toEqual([0, 0]);
   });
 
+  it('leaves a shot’s whole kick standing at the end of the step it was fired in, as the sim orders a step', () => {
+    const g = createGun(weaponOf(rb, 'e11'), { rand: seeded(5) });
+    // (the sim's step: the trigger, then the soldier's tick, at one time)
+    const seen = [];
+    for (let i = 0; i < 8; i++) {
+      const now = i * 0.05;
+      fire(g, now);
+      tick(g, 0.05, now);
+      seen.push(Math.round(g.recoil[1] * 1000) / 1000);
+    }
+    // (300 rpm: a bolt every fourth step)
+    expect(seen).toEqual([0.7, 0.2, 0, 0, 0.7, 0.2, 0, 0]);
+  });
+
   it('kicks less crouched and zoomed, more prone, and follows the dispersion sample’s side', () => {
     const row = weaponOf(rb, 'e11');
     const crouched = createGun(row, { rand: seeded(1) });

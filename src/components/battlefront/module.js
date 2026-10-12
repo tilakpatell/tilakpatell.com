@@ -13,8 +13,10 @@
 // { classId }, 'pick' id, 'spawn' a squadmate's id (null for the HQ),
 // 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
 // screen), 'weather' name, 'look' { yaw, pitch } (the player's view, for
-// a shot toward the sun), 'gpu', 'ragdolls' (how many bodies fall, lie
-// and wait: figures/ragdolls.js).
+// a shot toward the sun; it answers with the recoil), 'fire' { on } (the
+// trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
+// fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
+// 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js).
 //
 // Until the first deploy the camera is parked in the soldier's own pose at
 // the side's spawn (the game's darkroom: the waiting screen covers it),
@@ -37,6 +39,7 @@ import { recoilOf } from '../../lib/battlefront/weapons.js';
 import { createFigures } from './figures/figures.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
+import { createKitFx } from './fx/kit.js';
 import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
@@ -106,6 +109,11 @@ export default {
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     const figures = createFigures({ scene, ragdolls });
     const bolts = createBolts(scene);
+    // (the grenades, their blasts, the turrets and the shields: fx/kit.js)
+    const kitFx = createKitFx(scene);
+    const booms = []; // the steps' explosions since the last frame drawn
+    // (a press read on a frame with no step of the sim's, two frames in three at 60 Hz, waits for the next that has one)
+    const pressed = { ability: 0, roll: false, vent: false };
     const rig = createCameraRig(camera);
     const input = createInput({ maxPitch: (cams.soldier.maxPitch * Math.PI) / 180 });
     input.attach();
@@ -260,7 +268,7 @@ export default {
         squad: v.squad,
         points: v.points,
         // (evade: the game's two rolls, HealthEvade's charges; the sim's rolls are not counted, so the two stand)
-        player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, hitAt: p.hitAt, killAt: p.killAt, evade: 2, abilities: p.abilities?.length ? p.abilities : [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })), shield: p.shield, over: p.over, flashed: p.flashed, ability: p.ability },
+        player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, hitAt: p.hitAt, killAt: p.killAt, evade: p.evade, abilities: p.abilities?.length ? p.abilities : [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })), shield: p.shield, over: p.over, flashed: p.flashed, flash: p.flash, ability: p.ability },
         mode: v.mode && { stageName: v.mode.stageName, objectives: v.mode.objectives.map((o) => ({ id: o.id, name: o.name, meter: o.meter, at: o.at })), tickets: v.mode.tickets, result: v.mode.result },
         // (the radar's soldiers: who, where, which side, up or down, firing)
         entities: v.entities.map((e) => ({ id: e.id, team: e.team, kind: e.kind, at: e.at, alive: e.alive, firing: e.firing })),
@@ -297,13 +305,17 @@ export default {
         // (the first deploy is the waiting screen's, through the wipe: the input's Enter waits for it)
         if (v.deploy.open && read.deploy && !parked) doDeploy();
         acc = Math.min(acc + dt, STEP * MAX_STEPS);
+        pressed.ability = v.deploy.open ? 0 : read.ability || pressed.ability;
+        pressed.roll = !v.deploy.open && (read.roll || pressed.roll);
+        pressed.vent = !v.deploy.open && (read.vent || pressed.vent);
         let first = true;
         while (acc >= STEP) {
           acc -= STEP;
           lastAt = body()?.at.slice() ?? null;
-          const once = first ? read : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
+          const once = first ? { ...read, ...pressed } : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
+          if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false });
           first = false;
-          step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }]);
+          for (const e of step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }])) if (e.type === 'explosion') booms.push(e);
         }
         collision?.update(4);
         // (the view again, after the steps: its entities' `at` are the sim's
@@ -341,6 +353,8 @@ export default {
         clock += dt;
         // (each bolt leaves its owner's gun: fx/bolts.js)
         bolts.update(drawn.bolts, { muzzleOf: figures.muzzleOf, now: clock });
+        kitFx.update(drawn, { now: clock, alpha: Math.min(1, acc / STEP), events: booms });
+        booms.length = 0;
         light.update(dt, camera);
         if (arrival) {
           arrival.t += dt;
@@ -399,6 +413,17 @@ export default {
             // (a check's trigger: held down until told to let go)
             input.button('left', Boolean(arg?.on ?? true));
             return { ok: true, on: Boolean(arg?.on ?? true) };
+          case 'ability':
+            // (a check's finger on an ability key: { slot } pressed, held until { slot: 0 }; { tap: slot } pressed and let go)
+            if (arg?.tap) input.press('ability', arg.tap);
+            else input.holdAbility(arg?.slot ?? 0);
+            return { ok: true };
+          case 'roll':
+            input.press('roll');
+            return { ok: true };
+          case 'kit':
+            // (what the kit draws, and the player's soldier as the sim has it: for a check)
+            return { drawn: kitFx.counts(), grenades: view(sim).grenades.map((g) => ({ id: g.id, kind: g.kind, at: g.at.slice(), resting: g.resting })), state: body()?.state ?? null, gun: body()?.gun?.row?.id ?? null, heat: body()?.gun?.heat ?? null, spin: body()?.gun?.spin ?? null, hp: body()?.hp ?? null, shield: body()?.shield?.hp ?? null, over: body()?.over?.hp ?? 0 };
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':
@@ -430,6 +455,7 @@ export default {
         post = null;
         light.dispose();
         bolts.dispose();
+        kitFx.dispose();
         figures.dispose();
         ragdolls.dispose();
         level.dispose();

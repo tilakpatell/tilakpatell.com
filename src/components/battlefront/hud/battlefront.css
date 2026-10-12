@@ -339,6 +339,34 @@
   top: 100%;
   transform: translate(0, -2px);
 }
+/* an ability in use: its edge lit whole; one another blocks: dimmed */
+.bf-ability[data-state='active'],
+.bf-ability[data-state='activating'] {
+  color: var(--bf-white);
+}
+.bf-ability[data-state='blocked'] .bf-ability-icon {
+  opacity: 0.25;
+}
+/* the officer's flash on the one it blinds: white, thinning as its 5 s run out */
+.bf-flashed {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+  transition: opacity 0.2s linear;
+}
+/* the presence's overhealth, over the health bar's own */
+.bf-health-bar {
+  position: relative;
+}
+.bf-health-bar > .bf-health-over {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--bf-white);
+  opacity: 0.55;
+}
 .bf-ability-charges {
   position: absolute;
   right: calc(6 * var(--bf-u));

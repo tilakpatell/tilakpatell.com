@@ -10,9 +10,11 @@ import { classKind } from './widgets.js';
 // (the trooper ability icons, UI/SVG/…/TrooperAbilityIcons) and its key
 // beside it, the recharge sweeping the hexagon's edge (AbilityStateTemplate's
 // ProgressRadial from the top) and the charges in the corner (AbilityRecharge's
-// ChargesCounterText, Univers 620 Bold 18 px).
+// ChargesCounterText, Univers 620 Bold 18 px). A slot's `state` is the
+// game's (abilities.js: recharge, blocked, ready, activating, active): an
+// active one's edge is lit whole, a blocked one's icon dimmed.
 //
-//   <Abilities slots={[{ slot: 1 | 2 | 3, recharge: 0…1, charges, ready }]} cls="assault" keys={['Q', 'E', 'F']} />
+//   <Abilities slots={[{ slot: 1 | 2 | 3, recharge: 0…1, charges, ready, state }]} cls="assault" keys={['Q', 'E', 'F']} />
 const BG = shape('Hexagon_HUD_bg');
 const OUTLINE = shape('Hexagon_HUD_outline');
 // the classes' three default abilities' icons, left, middle, right
@@ -34,7 +36,7 @@ export default function Abilities({ slots = [], cls = null, keys = ['Q', 'E', 'F
         const href = icons ? icon(icons[i])?.href : null;
         const share = s.ready ? 1 : Math.max(0, Math.min(1, s.recharge ?? 0));
         return (
-          <div key={s.slot} className="bf-ability" data-at={PLACE[i]} data-ready={s.ready ? '' : undefined}>
+          <div key={s.slot} className="bf-ability" data-at={PLACE[i]} data-ready={s.ready ? '' : undefined} data-state={s.state ?? undefined}>
             <svg viewBox={BG.viewBox} aria-hidden="true">
               <path d={BG.paths[0].d} className="bf-ability-glass" />
               <path d={OUTLINE.paths[0].d} fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.6" />
