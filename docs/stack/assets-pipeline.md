@@ -22,6 +22,8 @@ The census rows are in [README.md](README.md); every file that imports these is 
 - **Every GLB is meshopt-compressed**, and the browser decodes it with three’s own decoder (`src/lib/three/gltf.js` imports `MeshoptDecoder` from `three/examples/jsm/`), so the `meshoptimizer` package itself never ships.
 - **A model comes in cuts**: `.hq.glb`, plain and `.lo.glb` for the quality levels, and `.ultra.glb` for a strong card, each held to its triangle budget (`scripts/gen3d/budget.mjs`; `src/lib/budgets.js` says which cut a level draws).
 - **Textures are WebP by default; KTX2 where it pays**: normal maps and large maps seen close (`scripts/ktx2.mjs`’s header, after `docs/research/2026-10-05-textures-and-asset-quality.md`).
+- **A level pack has a coarse horizon grid** (lane N4, `scripts/bf2017-horizon.mjs` over `scripts/lib/bf2017-horizon.mjs`): beside its pack, `horizon/` holds a 512 m cell’s things merged at their last LODs (`@gltf-transform/*` to write, `meshoptimizer`’s simplifier to 12,000 triangles, 4,000 in the `.lo` cut low and mid take, meshopt-compressed) and the kit’s repeated props as octahedral impostor atlases (16 × 16 views at 2,048, UASTC, the 1,024 and 512 rows the same file with its top mips dropped by `scripts/lib/ktx2-levels.mjs`), baked by `scripts/impostors.mjs` in headless Chromium; `level.json` names it (`coarse`). The stream fetches it first (`levelStream.js`).
+- **A pack map comes in rows**, `tex/<slug>.<size>.ktx2`, its tex row saying each tier’s size: the loader fetches the smallest first and promotes it to the tier’s in place (`levelGltf.js`). A data map’s row may list `uastc` sizes, `tex/<slug>.<size>.uastc.ktx2`, taken on mid and up where the chip transcodes UASTC to BC7, ASTC 4×4 or ETC2 (`levelPack.js`’s `tierTexture`); in October 2026 the packs’ data maps are already UASTC in their plain rows (the evidence README).
 - **Every asset is credited.** A model from elsewhere goes into `public/games/credits.json`, which `scripts/credits.mjs` turns into CREDITS.md; a photo’s credit is in `src/data/photos.js`.
 - **No map library ships.** The globe’s points are tested against country outlines at build time, and the browser rebuilds the lattice from its size alone (`scripts/build-globe.mjs`’s header).
 
@@ -50,6 +52,7 @@ Keep the three `@gltf-transform` packages on one version. `npm run test:ai` runs
 
 ## Gotchas
 
+- **meshopt’s careful simplifier stops at borders** (lane N4’s coarse cells): a cell merged from hundreds of separate meshes is nearly all border, so `simplify` with `LockBorder` left Hoth’s busiest cell at 104,000 triangles against 12,000; `scripts/bf2017-horizon.mjs` runs it unlocked and finishes with `simplifySloppy` where it still falls short.
 - **`basisu` is a binary.** The package ships a build per platform, and `scripts/ktx2.mjs` finds the one for this machine (`basisuPath`).
 - **Generated models need the desktop.** The gen3d pipeline runs on the owner’s GPU machine; the desktop-jobs skill (`.claude/skills/desktop-jobs/`) says how to request one.
 - **`sharp` is native too.** It brings its own libvips build per platform; an `npm ci` on a new platform fetches it.

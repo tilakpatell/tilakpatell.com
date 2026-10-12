@@ -7,7 +7,7 @@
 // wanted, so the detail comes in round you as you go.
 //
 //   createLevelScene({ scene, pack, loadGltf, tier, ground?, batch?, Bundle?, bundled?, occlude?, gpuScene?, renderer? }) → {
-//     setTable(bin), setHorizon(bin), update([x, z]), stats() → { tris, calls, instances },
+//     setTable(bin), setHorizon(bin | coarse cell), update([x, z]), stats() → { tris, calls, instances },
 //     afterRender(camera), rebuilds(), dispose() }
 //
 // A mirrored instance (an odd number of negative scales) turns its triangles
@@ -52,6 +52,7 @@ import { attachLayeredGround } from '../../../../lib/three/ground/layeredGround.
 import { backendOf } from '../../../../lib/three/light/three.js';
 import { batchable, createBatches } from './levelBatch.js';
 import { blockOf, boundsOf, createOcclusion } from './occlusion.js';
+import { createCoarse } from './levelCoarse.js';
 import { canDrawGpuScene, createLevelGpu } from './levelGpu.js';
 
 const _m = new THREE.Matrix4();
@@ -143,6 +144,7 @@ export function createLevelScene({ scene, pack, loadGltf, tier, ground = null, b
   let last = null;
   let sorts = 0;
   let disposed = false;
+  let coarse = null; // (lane N4) the horizon grid's layer, made by its first cell
   const layered = ground?.mesh && pack.ground && backendOf(ground.renderer) !== 'webgl' ? attachLayeredGround({ ...ground, pack, tier }) : null;
 
   // the first shipped LOD at or past n (a pack built without --ultra holds
@@ -263,7 +265,15 @@ export function createLevelScene({ scene, pack, loadGltf, tier, ground = null, b
       proxies();
       if (last) sort(last);
     },
+    // (lane N4) or a coarse cell of the horizon grid, { coarse: { index,
+    // makeImpostors }, key, gltf }: drawn by levelCoarse.js under the root,
+    // and that layer handed back (the caller hides, feeds and frees it)
     setHorizon(bin) {
+      if (bin?.coarse) {
+        coarse ??= createCoarse({ parent: root, ...bin.coarse });
+        if (bin.key) coarse.addCell(bin.key, bin.gltf);
+        return coarse;
+      }
       if (!pack.horizon?.draws?.length) return;
       rows = [...rows.filter((r) => !r.horizon), ...rowsOf(pack, pack.horizon.draws, bin).map((r) => ({ ...r, horizon: true }))];
       if (last) sort(last);

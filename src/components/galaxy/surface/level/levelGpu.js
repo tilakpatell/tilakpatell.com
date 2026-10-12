@@ -153,6 +153,8 @@ export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, k
       if (last) want(last);
     },
     setHorizon(bin) {
+      // (lane N4's coarse horizon cells are the CPU scene's, levelScene.js: not drawn here yet)
+      if (bin?.coarse) return null;
       if (!pack.horizon?.draws?.length) return;
       append('horizon', rowsOfBin(pack.horizon.draws, bin), true);
       if (last) want(last);

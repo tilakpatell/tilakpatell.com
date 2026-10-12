@@ -73,3 +73,100 @@ describe('the service worker and the asset bucket', () => {
     expect(await ask('https://site.test/kit/house.glb')).toBe('house from the pack');
   });
 });
+
+// (lane N4) the played world's files, kept as fetched under a cap
+describe('the service worker and the world being played', () => {
+  const hothFile = (n) => `${BASE}/${String(n).padStart(12, 'a')}/models/galaxy/bf2017/levels/hoth/meshes/m${n}.glb`;
+  const endorFile = `${BASE}/bbbbbbbbbbbb/models/galaxy/bf2017/levels/endor/meshes/tree.glb`;
+  function playCaches() {
+    const all = {};
+    return {
+      all,
+      keys: async () => Object.keys(all),
+      delete: async (name) => delete all[name],
+      open: async (name) => {
+        all[name] ??= {};
+        return {
+          keys: async () => Object.keys(all[name]).map((url) => ({ url })),
+          match: async (req) => {
+            const got = all[name]?.[typeof req === 'string' ? req : req.url];
+            return got ? new Response(got.body, { headers: got.headers }) : undefined;
+          },
+          put: async (req, res) => {
+            all[name][typeof req === 'string' ? req : req.url] = { body: await res.text(), headers: Object.fromEntries(res.headers) };
+          },
+        };
+      },
+    };
+  }
+  async function player({ sizes = {} } = {}) {
+    const on = {};
+    const self = { location: new URL(`https://site.test/sw.js?base=${encodeURIComponent(BASE)}`), addEventListener: (type, fn) => (on[type] = fn), skipWaiting() {}, clients: { claim() {} } };
+    const caches = playCaches();
+    const fetch = vi.fn(async (req) => {
+      if (req === '/packs/index.json') return Response.json({});
+      const url = typeof req === 'string' ? req : req.url;
+      return new Response(`bytes of ${url.split('/').pop()}`, { headers: sizes[url] ? { 'content-length': String(sizes[url]) } : {} });
+    });
+    vm.runInNewContext(CODE, { self, caches, fetch, URL, Response, Map, Date, Promise, Object, JSON, Number, console });
+    const settle = async (event) => {
+      const waits = [];
+      on.message({ ...event, waitUntil: (p) => waits.push(p) });
+      await Promise.all(waits);
+    };
+    const ask = async (url) => {
+      let answer = null;
+      const waits = [];
+      on.fetch({ request: new Request(url), respondWith: (p) => (answer = p), waitUntil: (p) => waits.push(p) });
+      const text = answer ? await (await answer).text() : 'left alone';
+      await Promise.all(waits);
+      return text;
+    };
+    const asked = (url) => fetch.mock.calls.filter(([r]) => (typeof r === 'string' ? r : r.url) === url).length;
+    return { ask, asked, caches, play: (world) => settle({ data: { type: 'tp-play', world } }) };
+  }
+
+  it('keeps the played world’s hashed files as they are fetched, and answers them from the cache after', async () => {
+    const p = await player();
+    await p.play('hoth');
+    expect(await p.ask(hothFile(1))).toBe('bytes of m1.glb');
+    expect(await p.ask(hothFile(1))).toBe('bytes of m1.glb');
+    expect(p.asked(hothFile(1))).toBe(1);
+    expect(Object.keys(p.caches.all)).toContain('tp-play-hoth');
+  });
+
+  it('keeps nothing of a world not being played, nor the site’s own (unhashed) paths', async () => {
+    const p = await player();
+    await p.play('hoth');
+    await p.ask(endorFile);
+    await p.ask('https://site.test/models/galaxy/bf2017/levels/hoth/far.bin');
+    expect(p.caches.all['tp-play-endor']).toBeUndefined();
+    expect(Object.keys(p.caches.all['tp-play-hoth'] ?? {})).toEqual([]);
+  });
+
+  it('takes a district’s world as its world', async () => {
+    const p = await player();
+    await p.play('endor/bunker');
+    expect(await p.ask(endorFile)).toBe('bytes of tree.glb');
+    expect(Object.keys(p.caches.all['tp-play-endor'])).toEqual([endorFile]);
+  });
+
+  it('lets the least recently played world go, whole, past 400 MB', async () => {
+    const big = { [hothFile(1)]: 300e6, [endorFile]: 200e6 };
+    const p = await player({ sizes: big });
+    await p.play('hoth');
+    await p.ask(hothFile(1));
+    await p.play('endor');
+    await p.ask(endorFile);
+    expect(p.caches.all['tp-play-hoth']).toBeUndefined();
+    expect(Object.keys(p.caches.all['tp-play-endor'])).toEqual([endorFile]);
+  });
+
+  it('keeps no more of one world than the cap holds', async () => {
+    const p = await player({ sizes: { [hothFile(1)]: 350e6, [hothFile(2)]: 100e6 } });
+    await p.play('hoth');
+    await p.ask(hothFile(1));
+    await p.ask(hothFile(2));
+    expect(Object.keys(p.caches.all['tp-play-hoth'])).toEqual([hothFile(1)]);
+  });
+});
