@@ -33447,6 +33447,9 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_c.1024.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_c.2048.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_c.512.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.1024.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.256.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_05_n__normal.2048.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_05_n__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_05_n__normal.512.ktx2
@@ -33462,6 +33465,15 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_07_n__normal.2048.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_07_n__normal.256.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_07_n__normal.512.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.1024.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.256.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.512.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.1024.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.256.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.512.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.2048.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.256.ktx2
+/public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.512.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwallmossy_large_01_c.1024.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwallmossy_large_01_c.2048.ktx2
 /public/models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwallmossy_large_01_c.512.ktx2
