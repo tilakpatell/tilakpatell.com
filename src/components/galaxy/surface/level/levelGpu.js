@@ -75,6 +75,7 @@ export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, k
   let sorts = 0;
   let disposed = false;
   let frames = 0;
+  const local = new THREE.PerspectiveCamera(); // (the camera in the rows' frame: localCameraOf)
   const clock = typeof performance !== 'undefined' ? () => performance.now() / 1000 : () => Date.now() / 1000;
   const t0 = clock();
 
@@ -83,7 +84,8 @@ export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, k
       const three = await t.loadGpuThree();
       if (disposed) return;
       const size = renderer.getDrawingBufferSize(new three.THREE.Vector2());
-      const hzb = occlude ? h.createHzb(renderer, { width: size.x, height: size.y, three }) : null;
+      // (the pyramid on the device's own depth: reversed on WebGPU, where near is 1; built standard it hid every row)
+      const hzb = occlude ? h.createHzb(renderer, { width: size.x, height: size.y, three, reversed: renderer.reversedDepthBuffer === true }) : null;
       // (a slot a part and key: the pack's mesh materials over its files, both sides)
       const slots = Math.max(64, table.keys.reduce((n, k) => n + (pack.meshes[k.mesh].mats ?? 2), 0) * 2);
       const cull = c.createCull(renderer, { scene: rows, table, hzb, three, slots });
@@ -196,11 +198,14 @@ export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, k
     beforeRender(camera) {
       if (!gpu || disposed) return;
       renderer.getDrawingBufferSize(gpu.size);
-      if (gpu.hzb && frames > 0) gpu.hzb.update(gpu.draws.prepass(camera, gpu.size.x, gpu.size.y));
-      gpu.cull.run(camera, { now: clock() - t0, width: gpu.size.x, height: gpu.size.y, occlude: Boolean(gpu.hzb) });
+      const cam = localCameraOf(root, camera, local);
+      if (gpu.hzb && frames > 0) gpu.hzb.update(gpu.draws.prepass(cam, gpu.size.x, gpu.size.y));
+      gpu.cull.run(cam, { now: clock() - t0, width: gpu.size.x, height: gpu.size.y, occlude: Boolean(gpu.hzb) });
       frames++;
     },
     afterRender() {},
+    // (development: the scene's own state for a check in the browser)
+    debug: () => ({ table, rows, files, ranges, last, gpu, local, dropped, root, tier }),
     rebuilds: () => sorts,
     cells: () => [...ranges.keys()],
     stats() {

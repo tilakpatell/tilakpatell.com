@@ -159,6 +159,7 @@ export function createLevel({
     // before the scene is drawn, the queries read after; nothing on the other paths)
     beforeRender: (camera) => level?.beforeRender?.(camera),
     afterRender: () => level?.afterRender?.(),
+    debug: () => level?.debug?.() ?? null,
     dispose() {
       gone = true;
       stream?.dispose();
