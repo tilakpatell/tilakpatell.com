@@ -14,7 +14,7 @@
 //   step(battle, inputs) → events ; view(battle) → the page's view (each fallen
 //   entity's `fall`: { t, part, dir, at, weapon } from its kill, null on the
 //   living, and `hitDir`, the shot's way, for the death clip's side)
-//   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, vent })
+//   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, abilityHeld, vent })
 
 import { aiOf, classOf, mapOf, pointsOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
 import { priceOf } from '../../lib/battlefront/battlePoints.js';
@@ -174,6 +174,7 @@ export function step(b, inputs = []) {
       sprint: Boolean(inp.sprint),
       roll: Boolean(inp.roll),
       ability: inp.ability || 0,
+      abilityHeld: inp.abilityHeld || 0,
       vent: Boolean(inp.vent),
     });
   }

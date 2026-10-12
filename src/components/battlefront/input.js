@@ -7,6 +7,8 @@
 //
 //   createInput({ win, now }) → { attach(), detach(), read(), swallow(on),
 //     turn(dx, dy), button(which, down), touchMove([x, z]), press(name) }
+//   (an ability key is read once as `ability` and, while it stays down, as
+//   `abilityHeld`: a grenade leaves on its release, weapons.js's hold rule)
 //
 // While the deploy screen is up, `swallow(true)`: nothing reaches the sim
 // but the deploy itself (Enter). Esc is the browser's: it releases the
@@ -19,6 +21,7 @@ export const MAX_PITCH = (70 * Math.PI) / 180; // the camera clamps to the recor
 const MOVE = { KeyW: [0, 1], KeyS: [0, -1], KeyA: [-1, 0], KeyD: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 const HELD = { ShiftLeft: 'sprint', ShiftRight: 'sprint', ControlLeft: 'crouch', KeyZ: 'crouch', KeyC: 'crouch', Tab: 'scoreboard' };
 const PRESS = { Digit1: ['ability', 1], Digit2: ['ability', 2], Digit3: ['ability', 3], KeyR: ['vent', true], KeyE: ['interact', true], Enter: ['deploy', true], NumpadEnter: ['deploy', true] };
+const ABILITY_KEYS = ['Digit1', 'Digit2', 'Digit3'];
 // (keys the page must not act on while the world has them: Tab moves
 // focus, Space scrolls; on a button of the HUD, or while the deploy screen
 // is up, they are the page's, so the Menu and the offers are reachable)
@@ -131,6 +134,7 @@ export function createInput({ win = typeof window !== 'undefined' ? window : nul
         jump: !swallowed && Boolean(once.jump),
         roll: !swallowed && Boolean(once.roll),
         ability: swallowed ? 0 : (once.ability ?? 0),
+        abilityHeld: swallowed ? 0 : ABILITY_KEYS.findIndex((k) => down.has(k)) + 1,
         vent: !swallowed && Boolean(once.vent),
         interact: !swallowed && Boolean(once.interact),
         deploy: Boolean(once.deploy),

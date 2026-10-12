@@ -24,6 +24,7 @@ import { preloadDecoders } from '../../lib/three/gltf.js';
 import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
+import { recoilOf } from '../../lib/battlefront/weapons.js';
 import { createFigures } from './figures/figures.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
@@ -233,6 +234,10 @@ export default {
       step(dt) {
         const read = input.read();
         scoreboard = read.scoreboard;
+        // (the recoil's kick is part of the view: the shot goes where the kicked camera looks)
+        const kicked = rig.offset();
+        read.yaw += kicked.yaw;
+        read.pitch += kicked.pitch;
         const v = view(sim);
         input.swallow(v.deploy.open);
         if (v.deploy.open && read.deploy) doDeploy();
@@ -243,7 +248,7 @@ export default {
           lastAt = body()?.at.slice() ?? null;
           const once = first ? read : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
           first = false;
-          step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]);
+          step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }]);
         }
         collision?.update(4);
         const p = body();
@@ -255,11 +260,14 @@ export default {
           const from = lastAt ?? p.at;
           const drawn = { ...p, at: p.at.map((v, i) => from[i] + (v - from[i]) * k) };
           pose = soldierPose(drawn, cams, { yaw: look.yaw, pitch: look.pitch, aiming: read.aim, weaponId: p.weapon, dt, prev: pose, castArm });
+          // (the gun's recoil amplitude is the camera spring's target: the climb and the recovery)
+          rig.aim(recoilOf(p.gun));
           level.update(p.at);
         } else {
           const towards = sim.objectives[0]?.at ?? [0, 0, 0];
           pose = overviewPose(map, towards) ?? pose;
           if (pose) level.update(pose.at);
+          rig.aim([0, 0]);
         }
         if (pose) rig.set(pose);
         rig.update(dt);
@@ -314,8 +322,12 @@ export default {
             // (a check turns the player's view: radians, yaw 0 down +Z, pitch up positive)
             const l = input.look();
             input.setLook(arg?.yaw ?? l.yaw, arg?.pitch ?? l.pitch);
-            return { ok: true, ...input.look() };
+            return { ok: true, ...input.look(), recoil: rig.offset(), amplitude: recoilOf(body()?.gun) };
           }
+          case 'fire':
+            // (a check's trigger: held down until told to let go)
+            input.button('left', Boolean(arg?.on ?? true));
+            return { ok: true, on: Boolean(arg?.on ?? true) };
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':
