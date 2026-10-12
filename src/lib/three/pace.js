@@ -34,8 +34,14 @@
 // and waits for the graphics chip (most of a second when it's busy), so a
 // see-saw costs far more than it saves (the world runtime's).
 //
+// `hold(true)` lets frames go by unjudged until `hold(false)`: no step, no
+// count at its softest, nothing told to `onFloor`; the first frame after
+// starts a run afresh. The runtime's governor holds it while a world
+// arrives (runtime/quality.js: its first seconds, a game level still
+// coming), since a loading hitch is not a weak chip (lane L1).
+//
 // createPace({ steps, window, missed, settle, wait, longest, floorRuns, onFloor, climb }) →
-//   { frame(now) → the new scale when it changes, else null, scale, level, stuck, reset(), set(level) }
+//   { frame(now) → the new scale when it changes, else null, scale, level, stuck, reset(), set(level), hold(on) }
 // `set(level)` puts it at a step and holds it there as its ceiling (lib/three/
 // calibrate's answer): it steps down from there if it must, never up past it.
 // `now` is the frame's timestamp (ms); the scale is one of `steps`, sharpest first.
@@ -59,6 +65,7 @@ export function createPace({ steps = STEPS, window = 20, missed: tooMany = 0.25,
   let changedAt = -Infinity;
   let upAt = -Infinity;
   let hold = wait; // ms of clean running before going back up a step
+  let held = false; // hold(): frames let go by unjudged
 
   // (it used to keep the level and the waits, so a scene after a struggling
   // one went straight to wherever that one had got to, the next step past it)
@@ -74,6 +81,7 @@ export function createPace({ steps = STEPS, window = 20, missed: tooMany = 0.25,
     changedAt = -Infinity;
     upAt = -Infinity;
     hold = wait;
+    held = false;
   };
 
   return {
@@ -94,7 +102,15 @@ export function createPace({ steps = STEPS, window = 20, missed: tooMany = 0.25,
       n = 0;
       late = 0;
     },
+    hold(on) {
+      held = Boolean(on);
+      // (the next frame starts a run, as after a pause)
+      last = 0;
+      n = 0;
+      late = 0;
+    },
     frame(now) {
+      if (held) return null;
       const dt = now - last;
       const first = !last;
       last = now;

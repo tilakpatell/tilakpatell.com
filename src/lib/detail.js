@@ -24,8 +24,9 @@
 //   modelTexCap(level) → the largest map a loaded model keeps (bigger ones
 //       are halved until they fit: lib/three/gltf's `prepare`)
 //   lodScale(level) → how much further detail holds before stepping down
-//   strained() → the frames stayed late with nothing left to soften: hold a
-//       strong card at high from now on (lib/device's `capDetail`)
+//   strained({ by }) → the frames stayed late with nothing left to soften:
+//       hold a strong card at high for a day (lib/device's `capDetail`);
+//       the frame gaps alone ('pace') never hold a chip graded ultra
 //
 // The level is read once the graphics chip has been looked at (lib/gpu), so
 // a scene that asks before anything else has still gets the chip's grade.
@@ -78,7 +79,17 @@ export const modelTexCap = (level) => detail(level).modelTex;
 export const lodScale = (level) => detail(level).lod;
 
 // Called when a scene's frames stayed late at ultra with its pixel ratio
-// already as soft as it goes: this chip is held at high from now on.
-export function strained() {
-  if (device().detail === 'ultra') capDetail('high');
+// already as soft as it goes: this chip is held at high (for a day:
+// lib/device's capDetail). `by`: who says so, 'pace' (lib/three/pace, the
+// gaps between frames, the default) or 'gpu' (the runtime's governor on the
+// chip's own clock, runtime/quality.js). The gaps alone never hold a chip
+// graded ultra (lib/gpuGrade): a level arriving on the main thread makes
+// them as long as a weak chip would (lane L1; on the owner's RTX 5090 they
+// held it at high within twenty seconds of landing on Hoth). True when held.
+export function strained({ by = 'pace' } = {}) {
+  const d = device();
+  if (d.detail !== 'ultra') return false;
+  if (by !== 'gpu' && d.grade === 'ultra') return false;
+  capDetail('high');
+  return true;
 }

@@ -9,7 +9,7 @@
 //
 // createRuntime({ makeBackend, loop, input, quality, saves, assets, audio,
 //   workers, origin, events, now, gpu, override, visible, calibrate, debug,
-//   gpuClock, fps, tier }) → rt
+//   gpuClock, fps, tier, arriving }) → rt
 // rt: { gfx, tier, input, quality, saves, assets, audio, workers, origin, events, debug, host, status,
 //   failure, current, loading, on(fn), invalidate(), resize(w, h), setVisible(on), lost(),
 //   mount(module, props, host) → shown, handover(module, props, host, { fade, held, after }) → shown,
@@ -43,6 +43,10 @@
 // the first 'nodes' world is made, so its one-second probe runs under the
 // loading screen and never in a world's frames; `rt.tier` holds the answer
 // (null until then, or when it could not say). A classic world never asks.
+// `arriving()` → boolean (lane L1, ./arriving.js): something of the world
+// that's up still on its way after it is shown (a game level's far list),
+// asked each frame and handed to quality.frame as `loading`, which holds
+// the governor while it is and three seconds after.
 
 import { createLoop } from '../lib/three/loop';
 import { cadenceFor } from './cadence';
@@ -81,7 +85,7 @@ export function createEvents() {
   };
 }
 
-export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, video = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null }) {
+export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, video = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null, arriving = null }) {
   let gfx = null;
   const clocks = new WeakMap(); // a renderer's GPU clock, made once (it turns on its timestamps)
   let kind = null; // the backend asked for
@@ -157,7 +161,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       // cleared buffer for a frame: the picture blinked out). Not while the
       // next world is made behind this one: these frames carry its making,
       // and its warm-up starts at its own first frame.
-      const level = rt.loading ? null : quality.frame(t);
+      const level = rt.loading ? null : arriving?.() ? quality.frame(t, { loading: true }) : quality.frame(t);
       if (level !== null) {
         // (a module that draws through passes of its own sets its own
         // sharpness inside them, `sharpness: 'own'`: the canvas keeps its size,

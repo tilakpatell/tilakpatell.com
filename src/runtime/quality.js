@@ -24,9 +24,9 @@
 // starts on the ultra row, more samples and a bigger shadow map), the tier
 // still the tier.
 //
-// createQuality({ tier, detail, pace, floorAfter, dpr, minRatio, sharp }) → { tier,
+// createQuality({ tier, detail, pace, floorAfter, dpr, minRatio, sharp, onStrained }) → { tier,
 //   budget, level, scale, ratio, ratioUnder(cap, { unscaled }), on(fn) → undo,
-//   frame(now) → the new level or null, reset(), hold(ms), retune(level),
+//   frame(now, { loading }) → the new level or null, reset(), hold(ms), retune(level),
 //   setSharpness(k), setLevel(step) }
 // (`setLevel`: a calibrated step of the pace, held as its ceiling:
 // lib/three/calibrate)
@@ -54,11 +54,29 @@
 // 1 under the screen, −0.5 at native under TRAA, which webgpu.js reports
 // as it builds a chain; 0 on the classic renderer). `fps: 30` (a visitor
 // who pins 30) budgets the controller 33.3 ms.
+//
+// A world still arriving (lane L1): `frame(now, { loading: true })` holds
+// the governor as `hold` does, the pace told (`pace.hold`) and the GPU's
+// controller fed nothing, until ARRIVAL_SETTLE ms after the last frame that
+// said so (the runtime asks runtime/arriving.js each frame: a game level's
+// far list). The GPU clock is still read while held. On the GPU clock, a
+// median over the controller's budget for STRAIN_MS with the controller at
+// its floor, outside any hold, tells `onStrained` once (lib/detail's
+// `strained({ by: 'gpu' })`: the chip held at high for a day); the pace's
+// own floor tells lib/detail through the pace, by 'pace'.
 
 import { BUDGETS, device, sharpness } from '../lib/device';
+import { strained } from '../lib/detail';
 import { setMipState } from '../lib/three/mipBias';
 import { STEPS, createPace } from '../lib/three/pace';
 import { createDynres, dynresFor } from './dynres';
+
+// A world still arriving (lane L1, the desktop-picture design §2.2): held
+// while it says so and this long after, as a new world's warm-up is
+export const ARRIVAL_SETTLE = 3000;
+// The chip's own median over its budget this long, with the controller at
+// its floor, before it is held at high (lib/detail's strained, by 'gpu')
+export const STRAIN_MS = 10000;
 
 // the internal resolutions the pace steps down through before shedding passes
 export const RESOLUTION_STEPS = [1, 0.77, 0.67, 0.5];
@@ -80,7 +98,7 @@ export function headroomAt(level = 0, { tier = null, pixels = 0 } = {}) {
   return { scale: steps.at(-1), shed: l - steps.length + 1 };
 }
 
-export function createQuality({ tier, detail, pace = createPace(), floorAfter = 2500, dpr = Infinity, minRatio = null, sharp = sharpness(), source: asked = 'cpu', gpuTime = null, fps = null } = {}) {
+export function createQuality({ tier, detail, pace = createPace(), floorAfter = 2500, dpr = Infinity, minRatio = null, sharp = sharpness(), source: asked = 'cpu', gpuTime = null, fps = null, onStrained = () => strained({ by: 'gpu' }) } = {}) {
   // (a tier given alone is its own level: the tests, a forced tier)
   detail ??= tier ?? device().detail;
   tier ??= device().tier;
@@ -100,9 +118,14 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
   let floored = false;
   let holdFor = 0; // ms of frames to let go by unjudged (hold)
   let heldTill = null; // till when: from the first frame after the hold was asked for
+  let settleTill = null; // a world still arriving: held till this (frame's `loading`)
+  let paceHeld = false; // the pace told it is held (pace.hold)
+  let overSince = null; // the GPU's median over budget at the floor since (strain)
+  let told = false; // onStrained called (once a page: the cap is the machine's)
   // the GPU clock's controller (lane N2), made for the world that asks for it
   let clock = null;
   let dyn = null;
+  let dynBudget = null; // its budget, ms (the strain's line)
   let picture = 'cpu'; // 'gpu' | 'cpu' | 'classic', as asked
   const onGpu = () => Boolean(dyn && clock?.available);
   let px = 0; // the drawing buffer's pixels, for the 4K start (headroomAt)
@@ -118,8 +141,24 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     // the device's. The steps are headroomAt's at this drawing buffer: at 4K
     // ultra starts at 0.77, lane U's measured start, so a level is the same
     // scale to the controller and to the world's chain)
-    dyn = clock?.available ? createDynres({ ...dynresFor({ tier: t ?? tier, fps: f }), steps: stepsAt({ tier: detail, pixels }) }) : null;
+    const opts = dynresFor({ tier: t ?? tier, fps: f });
+    dyn = clock?.available ? createDynres({ ...opts, steps: stepsAt({ tier: detail, pixels }) }) : null;
+    dynBudget = opts.budgetMs;
+    overSince = null;
     bias();
+  };
+  // the chip's own median over budget STRAIN_MS at the controller's floor: told once
+  const strain = (now) => {
+    const m = clock.median;
+    if (!(dyn.floored && Number.isFinite(m) && m > dynBudget)) {
+      overSince = null;
+      return;
+    }
+    overSince ??= now;
+    if (!told && now - overSince >= STRAIN_MS) {
+      told = true;
+      onStrained?.();
+    }
   };
   const tell = (l) => {
     for (const fn of listeners) fn(l);
@@ -165,13 +204,33 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
       listeners.add(fn);
       return () => listeners.delete(fn);
     },
-    frame(now) {
+    frame(now, { loading = false } = {}) {
+      // (a world still arriving: held while it says so, and ARRIVAL_SETTLE after)
+      if (loading) settleTill = now + ARRIVAL_SETTLE;
+      else if (settleTill !== null && now >= settleTill) settleTill = null;
+      let held = settleTill !== null;
       if (holdFor) {
         heldTill ??= now + holdFor;
         // (none of it goes to the pace: its first frame after this starts its count)
-        if (now < heldTill) return null;
-        holdFor = 0;
-        heldTill = null;
+        if (now < heldTill) held = true;
+        else {
+          holdFor = 0;
+          heldTill = null;
+        }
+      }
+      if (held !== paceHeld) {
+        paceHeld = held;
+        pace.hold?.(held);
+      }
+      if (held) {
+        // (the chip's clock still read, so its median stays the chip's own
+        // and the first reading after the hold is a new one)
+        if (onGpu()) {
+          clock.frame();
+          seen = clock.last;
+        }
+        overSince = null;
+        return null;
       }
       if (onGpu()) {
         clock.frame();
@@ -179,7 +238,9 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
         // next lands: a reading is fed once, or one late frame would panic it)
         const ms = clock.last === seen ? null : clock.last;
         seen = clock.last;
-        if (dyn.frame(ms) === null || dyn.level === level) return null;
+        const changed = dyn.frame(ms);
+        strain(now);
+        if (changed === null || dyn.level === level) return null;
         level = dyn.level;
         tell(level);
         return level;
@@ -225,6 +286,9 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
       scale = 1;
       atLastSince = null;
       floored = false;
+      settleTill = null;
+      paceHeld = false; // (the pace's reset lets go of its hold)
+      overSince = null;
       bias();
     },
     hold(ms) {

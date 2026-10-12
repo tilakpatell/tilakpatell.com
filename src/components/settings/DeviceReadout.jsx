@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { device, storageFree } from '../../lib/device';
 import { gpu } from '../../lib/gpu';
+import { pictureLine } from './settings.js';
 
 // What Auto sees here (the graphics chip and its grade, the tier, the
 // memory, whether hardware acceleration is on) and, while a world is up on
 // the runtime, what it costs: the frame time, the draw calls and the
-// triangles of the last frame (its renderer's info), read twice a second.
+// triangles of the last frame (its renderer's info), read twice a second,
+// and how its picture is governed: the clock (the chip's own or the frame
+// gaps), the chain's internal scale and the drawing buffer.
 
 const GRADE = { ultra: 'Strong', high: 'Good', mid: 'Modest' };
 const TIER = { high: 'Laptop or desktop', mid: 'Phone, tablet or small computer', low: 'Weak device' };
@@ -39,7 +42,9 @@ function useLive() {
       const ms = count ? sum / count : null;
       sum = 0;
       count = 0;
-      setLive(info ? { ms, calls: info.render.calls, triangles: info.render.triangles } : ms != null ? { ms } : null);
+      // (which clock times the world's picture, how far inside its buffer it draws, and the buffer: lane L1)
+      const picture = info ? pictureLine({ source: rt.quality?.source, internal: rt.quality?.internal, w: rt.gfx?.canvas?.width, h: rt.gfx?.canvas?.height }) : null;
+      setLive(info ? { ms, calls: info.render.calls, triangles: info.render.triangles, picture } : ms != null ? { ms } : null);
     }, 500);
     return () => {
       alive = false;
@@ -92,6 +97,7 @@ export default function DeviceReadout() {
           <b>{live?.triangles != null ? millions(live.triangles) : '–'}</b> triangles
         </span>
       </div>
+      {live?.picture && <p className="settings-note">{live.picture}</p>}
       {live && live.calls == null && <p className="settings-note">Draw calls and triangles show while a 3D world is open behind this panel.</p>}
     </div>
   );

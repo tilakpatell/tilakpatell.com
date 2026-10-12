@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createRuntime } from './runtime';
+import { createQuality } from './quality';
+import { createPace } from '../lib/three/pace';
 
 // stand-ins: a backend, a loop the test ticks, a host box, and a world
 const fakeBackend = () => ({
@@ -1025,6 +1027,31 @@ describe('the picture’s source and cadence (lane N2)', () => {
     loop.tick(100);
     expect(world.lowerQuality).toHaveBeenCalledWith(1);
     expect(gfx.setRatio).not.toHaveBeenCalled();
+  });
+
+  // (lane L1: index.js never handed the runtime its clock, and on the owner's
+  // RTX 5090 the frame gaps governed the picture: `source` read 'cpu')
+  it('with the clock given, a node world on WebGPU reads its source as the GPU’s, through the real governor', async () => {
+    const clock = { available: true, frame: vi.fn(), last: null, median: null };
+    const quality = createQuality({ tier: 'high', detail: 'ultra', pace: createPace({ onFloor: () => {} }) });
+    const gfx = { ...fakeBackend(), backend: 'webgpu' };
+    const rt = createRuntime({ makeBackend: vi.fn(() => gfx), loop: fakeLoop().create, input: fakeInput(), quality, audio: fakeAudio(), assets: fakeAssets(), gpu: true, gpuClock: () => clock, calibrate: false });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(rt.quality.source).toBe('gpu');
+    const without = createRuntime({ makeBackend: vi.fn(() => ({ ...fakeBackend(), backend: 'webgpu' })), loop: fakeLoop().create, input: fakeInput(), quality: createQuality({ tier: 'high', detail: 'ultra', pace: createPace({ onFloor: () => {} }) }), audio: fakeAudio(), assets: fakeAssets(), gpu: true, calibrate: false });
+    await without.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(without.quality.source).toBe('cpu');
+  });
+
+  it('tells the governor each frame whether something is still arriving (a level’s far list: arriving.js)', async () => {
+    let busy = true;
+    const { rt, loop, quality } = make({ arriving: () => busy });
+    await rt.mount({ id: 'a', create: () => fakeWorld({ wants: () => true }) }, {}, fakeHost());
+    loop.tick(16);
+    expect(quality.frame).toHaveBeenLastCalledWith(16, { loading: true });
+    busy = false;
+    loop.tick(32);
+    expect(quality.frame).toHaveBeenLastCalledWith(32);
   });
 
   it('draws every second beat for a visitor who pins 30', async () => {

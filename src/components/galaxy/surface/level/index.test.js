@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { createLevel, levelGround, levelPlaced, packOf, partOf, sunOf } from './index';
+import { arrivals } from '../../../../runtime/arriving.js';
 
 describe('the level’s entry', () => {
   it('leaves a ground without an image layer as it is (every world today)', async () => {
@@ -29,6 +30,25 @@ describe('the level’s entry', () => {
       await packOf('nowhere').catch(() => {});
       await new Promise((r) => setTimeout(r, 0));
       level.dispose();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  // (lane L1: the runtime's governor holds while a level is on its way)
+  it('says it is arriving until it is ready, and not once its pack cannot be had or it is let go', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const level = createLevel({ scene: new THREE.Scene(), site: { id: 'x', level: 'nowhere' }, tier: 'high' });
+      expect(arrivals.any()).toBe(true);
+      await packOf('nowhere').catch(() => {});
+      await new Promise((r) => setTimeout(r, 0));
+      expect(arrivals.any()).toBe(false);
+      level.dispose();
+      const next = createLevel({ scene: new THREE.Scene(), site: { id: 'x', level: 'nowhere' }, tier: 'high' });
+      expect(arrivals.any()).toBe(true);
+      next.dispose();
+      expect(arrivals.any()).toBe(false);
     } finally {
       warn.mockRestore();
     }

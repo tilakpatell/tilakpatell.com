@@ -23,6 +23,8 @@ import { readOverride } from './backend';
 import { device, quality } from '../lib/device';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
+import { arrivals } from './arriving';
+import { lazyBrowser } from './lazyBrowser';
 import './runtime.css';
 
 // lib/video.js's values as this device may draw them (its detail the ceiling)
@@ -37,7 +39,8 @@ export { createLook, defaultMode, senseLook, SPIKE, RELOCK, TP_LOOK, PROMPT as L
 export { createDebug } from './debug';
 
 const GPU_KEY = 'tp-gpu';
-const browser = () => import('./browser');
+const parts = lazyBrowser(() => import('./browser'));
+const browser = parts.load;
 const covered = () => typeof document !== 'undefined' && 'covered' in document.documentElement.dataset;
 
 let instance = null;
@@ -87,6 +90,13 @@ export function runtime() {
     calibrate: !/[?&]calibrate=off\b/.test(`${win?.location.search ?? ''}&${win?.location.hash ?? ''}`),
     // (the renderer tier, lib/gpuProbe: probed once on the first 'nodes' world)
     tier: (gfx) => browser().then((m) => m.rendererTier(gfx)),
+    // (lane G1's GPU clock, for N2's controller on a 'nodes' world on WebGPU:
+    // lazyBrowser.js; lane L1: without it the frame gaps governed the
+    // picture and a level's arrival held an RTX 5090 at high)
+    gpuClock: parts.gpuClock,
+    // (what is still on its way into the world that's up: a game level's
+    // far list; the governor holds while anything is, lane L1)
+    arriving: () => arrivals.any(),
   });
   // a world's install (install.js): the same one the gate and /worlds use
   instance.install = installer();

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULTS, KEY, read, subscribe, write } from './settings.js';
+import { DEFAULTS, KEY, heldLine, pictureLine, read, subscribe, write } from './settings.js';
 
 const memory = (init = {}) => {
   const m = new Map(Object.entries(init));
@@ -115,5 +115,20 @@ describe('the motion setting on the page', () => {
     expect(doc.documentElement.dataset.motion).toBe('reduced');
     applyMotion('auto', doc);
     expect(doc.documentElement.dataset.motion).toBeUndefined();
+  });
+});
+
+describe('what the panel says of the picture (lane L1)', () => {
+  it('says since when a chip has been held, in the visitor’s own time', () => {
+    const since = Date.UTC(2026, 9, 11, 20, 4);
+    expect(heldLine({ level: 'high', since }, { timeZone: 'UTC' })).toBe('Held at High since 11 Oct, 20:04, after it struggled at Ultra.');
+    expect(heldLine(null)).toBe(null);
+    expect(heldLine({ level: 'high' })).toBe(null);
+  });
+
+  it('says which clock times the picture, how far inside its buffer it draws, and the buffer', () => {
+    expect(pictureLine({ source: 'gpu', internal: 0.77, w: 3840, h: 2160 })).toBe('Timed by the graphics chip’s own clock (gpu) · drawn at 77% inside a 3,840 × 2,160 buffer');
+    expect(pictureLine({ source: 'cpu', internal: 1, w: 2560, h: 1440 })).toBe('Timed by the gaps between frames (cpu) · drawn at 100% inside a 2,560 × 1,440 buffer');
+    expect(pictureLine({ source: null, internal: null, w: 0, h: 0 })).toBe(null);
   });
 });

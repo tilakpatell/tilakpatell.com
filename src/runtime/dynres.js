@@ -23,7 +23,7 @@
 //
 // createDynres({ budgetMs, headroom, threshold, minPeriod, history, panic,
 //   floor, ceiling, steps }) → { frame(gpuMs) → the new scale | null, scale,
-//   level, frames, set(level), reset() }
+//   level, frames, floored, set(level), reset() }
 // dynresFor({ tier, fps }) → the options for a tier and a pinned rate
 // `level` is the index into `steps` (RESOLUTION_STEPS: 1, .77, .67, .5), the
 // level headroomAt takes; steps outside floor…ceiling are never used.
@@ -111,6 +111,10 @@ export function createDynres({ budgetMs = DYNRES.budgetMs, headroom = DYNRES.hea
     },
     get frames() {
       return costs.length;
+    },
+    // (at its softest usable step: nothing left to lower, quality.js's strain)
+    get floored() {
+      return at === usable.length - 1;
     },
     set(level) {
       const i = usable.findIndex(([, l]) => l >= level);

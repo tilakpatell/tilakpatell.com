@@ -16,6 +16,10 @@
 //   capped         read only: the level this chip was held at after it struggled ('tp-detail-cap')
 //
 // read(store?) → settings; write(patch, store?) → settings; subscribe(fn) → stop.
+// heldLine(capped, { timeZone }) → "Held at High since 11 Oct, 20:04, …" for
+//   lib/device's quality().capped, or null (lane L1)
+// pictureLine({ source, internal, w, h }) → which clock times the world
+//   that's up, its chain's internal scale and its drawing buffer, or null
 // Pure but for the storage it's handed (the page's localStorage by default).
 
 export const KEY = 'tp-settings';
@@ -135,4 +139,24 @@ export function applyMotion(motion, doc = typeof document !== 'undefined' ? docu
   if (!doc) return;
   if (motion === 'reduced') doc.documentElement.dataset.motion = 'reduced';
   else delete doc.documentElement.dataset.motion;
+}
+
+// A chip held at a level by lib/device's cap, and since when, in the
+// visitor's own time (lane L1: the cap lets go after a day)
+const LABEL = { low: 'Low', mid: 'Medium', high: 'High', ultra: 'Ultra' };
+export function heldLine(capped, { timeZone } = {}) {
+  if (!capped || !LEVELS.includes(capped.level) || !Number.isFinite(capped.since)) return null;
+  const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', ...(timeZone ? { timeZone } : {}) }).format(capped.since);
+  return `Held at ${LABEL[capped.level]} since ${when}, after it struggled at Ultra.`;
+}
+
+// The world that's up: which clock its governor reads (runtime/quality.js's
+// `source`: the chip's own timestamps, or the gaps between frames), the
+// share of its drawing buffer its post chain draws at (`internal`) and the
+// buffer itself
+const CLOCK = { gpu: 'the graphics chip’s own clock', cpu: 'the gaps between frames' };
+export function pictureLine({ source, internal, w, h } = {}) {
+  if (!CLOCK[source] || !(w > 0) || !(h > 0)) return null;
+  const share = Number.isFinite(internal) ? ` · drawn at ${Math.round(internal * 100)}% inside` : ' · drawn in';
+  return `Timed by ${CLOCK[source]} (${source})${share} a ${w.toLocaleString('en-GB')} × ${h.toLocaleString('en-GB')} buffer`;
 }

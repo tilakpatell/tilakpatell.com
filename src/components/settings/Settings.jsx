@@ -1,10 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { RiCloseLine } from 'react-icons/ri';
-import { BUDGETS, LEVELS, quality, setQuality } from '../../lib/device';
+import { BUDGETS, LEVELS, clearCap, quality, setQuality } from '../../lib/device';
 import { setMode3D } from '../../lib/gpu';
 import { setSound, setVoicesOn, setVolumes } from '../../lib/audio';
-import { applyMotion, read, write } from './settings.js';
+import { applyMotion, heldLine, read, write } from './settings.js';
 import DeviceReadout from './DeviceReadout';
 import Video from './Video.jsx';
 import { useVideo } from './useVideo.js';
@@ -124,11 +124,22 @@ export default function Settings({ onClose }) {
                 q.pinned
                   ? `The address (?quality=${q.level}) pins ${LABEL[q.level]} for this visit; take it out of the address to choose here.`
                   : q.mode === 'auto'
-                  ? `Auto picks ${LABEL[q.auto]} on this machine${s.capped ? `, held at ${LABEL[s.capped]} after it struggled. A level you pick yourself is never held down.` : '.'}`
+                  ? `Auto picks ${LABEL[q.auto]} on this machine${q.capped ? '. A level you pick yourself is never held down.' : '.'}`
                   : `${LABEL[q.level]}, picked by you: never lowered on its own. Auto would pick ${LABEL[q.auto]}.`
               }
             >
               <Segmented label="Quality" value={q.mode} options={qualityOptions} onChange={(v) => change({ quality: v })} describedBy={qualityHint} disabled={q.pinned} />
+              {q.capped && heldLine(q.capped) && (
+                <p className="settings-reload" role="status">
+                  {heldLine(q.capped)}{' '}
+                  <button type="button" className="settings-link" onClick={() => {
+                      clearCap();
+                      setQ(quality());
+                    }}>
+                    Try ultra again
+                  </button>
+                </p>
+              )}
               {reload && (
                 <p className="settings-reload" role="status">
                   This world builds its detail once.{' '}

@@ -4,6 +4,7 @@
 import { loadTexture, forgetTexture } from '../lib/three/textures';
 import { hdrWanted } from '../lib/video.js';
 import { loadGltf, forgetGltf } from '../lib/three/gltf';
+import { createGpuTime } from '../lib/three/gpuTime';
 import { loadBuffer } from '../lib/audio';
 import { createWebGL } from './webgl';
 import { createWebGPU } from './webgpu';
@@ -30,6 +31,11 @@ export const forget = {
   gltf: (url) => forgetGltf(url),
 };
 
+// The frame's GPU time from the renderer's own timestamps (lane G1's
+// lib/three/gpuTime), for the runtime's governor (GPU-first lane N2;
+// handed over by index.js, lane L1): the runtime makes one a renderer.
+export const gpuClock = (renderer) => createGpuTime(renderer);
+
 // The renderer tier (lib/gpuProbe), asked once a page by the runtime before
 // the first 'nodes' world: the address's ?tier=, else the one kept for this
 // chip, else the probe scene (the lit fixture's ring) drawn for a second
@@ -39,7 +45,7 @@ export const forget = {
 // The timestamps are let go after the probe (N2's controller turns them on
 // again for its own reading), so a page pays for them for that second only.
 export async function rendererTier(gfx) {
-  const [{ adapterFacts, decideTier, probeTier, readTier, PROBE, TIER_KEY }, { createGpuTime }, { device }] = await Promise.all([import('../lib/gpuProbe'), import('../lib/three/gpuTime'), import('../lib/device')]);
+  const [{ adapterFacts, decideTier, probeTier, readTier, PROBE, TIER_KEY }, { device }] = await Promise.all([import('../lib/gpuProbe'), import('../lib/device')]);
   const { search, hash } = window.location;
   let stored = null;
   try {

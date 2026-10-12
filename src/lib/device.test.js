@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BUDGETS, budget, classifyDevice, pixelRatio, quality, rendererTier, resetDevice, setQuality, sharpness, worldCheck } from './device';
+import { BUDGETS, CAP_MS, budget, capDetail, classifyDevice, clearCap, noteGpu, pixelRatio, quality, rendererTier, resetDevice, setQuality, sharpness, worldCheck } from './device';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const PIXEL = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36';
@@ -276,5 +276,79 @@ describe('budget with the video settings (lane V1)', () => {
     expect(budget('mid', { msaa: 8, anisotropy: 16 })).toMatchObject({ samples: 2, aniso: 4 });
     expect(budget('high', {})).toBe(BUDGETS.high);
     expect(budget('high', null)).toBe(BUDGETS.high);
+  });
+});
+
+describe('the cap a chip earned, kept a day (lane L1)', () => {
+  const RTX = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)';
+  const NOW = Date.UTC(2026, 9, 11, 20, 4);
+  const store = new Map();
+  const events = [];
+  beforeEach(() => {
+    store.clear();
+    events.length = 0;
+    vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
+    vi.stubGlobal('window', {
+      location: { search: '', hash: '' },
+      localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
+      navigator: { userAgent: WINDOWS, deviceMemory: 16, hardwareConcurrency: 8 },
+      screen: { width: 2560, height: 1440 },
+      innerWidth: 2560,
+      dispatchEvent: (e) => events.push(e),
+    });
+    noteGpu({ renderer: RTX });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    noteGpu(null);
+  });
+
+  it('keeps when it was earned, and says so in quality()', () => {
+    capDetail('high');
+    expect(JSON.parse(store.get('tp-detail-cap'))).toEqual({ renderer: RTX, level: 'high', since: NOW });
+    expect(quality()).toMatchObject({ mode: 'auto', level: 'high', auto: 'high', capped: { level: 'high', since: NOW } });
+  });
+
+  it('lets go after a day, and Auto is back at ultra', () => {
+    capDetail('high');
+    vi.setSystemTime(NOW + CAP_MS - 1000);
+    resetDevice();
+    expect(quality().level).toBe('high');
+    vi.setSystemTime(NOW + CAP_MS + 1000);
+    resetDevice();
+    expect(quality()).toMatchObject({ level: 'ultra', auto: 'ultra' });
+    expect(quality().capped).toBeUndefined();
+    expect(store.has('tp-detail-cap')).toBe(false);
+  });
+
+  it('lets go of a cap kept before caps had an age (earned, on the owner’s desktop, by a level arriving)', () => {
+    store.set('tp-detail-cap', JSON.stringify({ renderer: RTX, level: 'high' }));
+    resetDevice();
+    expect(quality()).toMatchObject({ level: 'ultra' });
+    expect(quality().capped).toBeUndefined();
+  });
+
+  it('is forgotten by “Try ultra again”, and the page told', () => {
+    capDetail('high');
+    clearCap();
+    expect(store.has('tp-detail-cap')).toBe(false);
+    expect(quality()).toMatchObject({ level: 'ultra' });
+    expect(events.at(-1).type).toBe('tp:quality');
+    expect(events.at(-1).detail).toBe('ultra');
+  });
+
+  it('holds no level picked by hand, and says nothing of a cap there', () => {
+    capDetail('high');
+    store.set('tp-quality', 'ultra');
+    resetDevice();
+    expect(quality()).toMatchObject({ mode: 'ultra', level: 'ultra' });
+    expect(quality().capped).toBeUndefined();
+  });
+
+  it('holds a cap to its age in the pure classifier too', () => {
+    const cap = { renderer: RTX, level: 'high', since: NOW };
+    expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: RTX, cap, now: NOW + 1000 })).toMatchObject({ detail: 'high', capped: { level: 'high', since: NOW } });
+    expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: RTX, cap, now: NOW + CAP_MS + 1 })).toMatchObject({ detail: 'ultra', capped: null });
   });
 });

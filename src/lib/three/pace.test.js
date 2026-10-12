@@ -160,4 +160,21 @@ describe('pace', () => {
     run(pace, 1000, 3000, 16.7);
     expect(pace.level).toBe(2);
   });
+
+  // (lane L1: a level's cells, maps and shapes arriving on the main thread
+  // for a minute read as late frames; on the owner's RTX 5090 the pace
+  // reached its softest and told onFloor within twenty seconds)
+  it('under a hold says nothing and moves nothing, and judges again from the first frame after', () => {
+    let told = 0;
+    const pace = createPace({ onFloor: () => (told += 1) });
+    const { t } = run(pace, 1000, 120, 16.7);
+    pace.hold(true);
+    const held = run(pace, t, 1200, 50); // a minute of late frames
+    expect(held.changes).toEqual([]);
+    expect(pace.level).toBe(0);
+    expect(pace.stuck).toBe(0);
+    expect(told).toBe(0);
+    pace.hold(false);
+    expect(run(pace, held.t, 45, 33.4).changes).toEqual([STEPS[1], STEPS[2]]);
+  });
 });

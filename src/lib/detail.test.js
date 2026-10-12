@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { DETAIL, detail, lodScale, modelTexCap, seg, texScale } from './detail';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DETAIL, detail, lodScale, modelTexCap, seg, strained, texScale } from './detail';
+import { noteGpu } from './device';
 
 describe('how finely to paint a texture at each level', () => {
   it('paints at the design size on a desktop and a phone, half on a weak device, twice at ultra', () => {
@@ -73,5 +74,44 @@ describe('the rest of each level', () => {
   it('keeps clearcoat on the hulls for ultra alone', () => {
     expect(DETAIL.ultra.clearcoat).toBeGreaterThan(0);
     for (const level of ['low', 'mid', 'high']) expect(DETAIL[level].clearcoat).toBe(0);
+  });
+});
+
+describe('a strong card held at high (lane L1)', () => {
+  const RTX5090 = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)';
+  const GTX1060 = 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 6GB Direct3D11 vs_5_0 ps_5_0, D3D11)';
+  const store = new Map();
+  beforeEach(() => {
+    store.clear();
+    vi.stubGlobal('window', {
+      location: { search: '', hash: '' },
+      localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
+      navigator: { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0', deviceMemory: 16, hardwareConcurrency: 8 },
+      screen: { width: 2560, height: 1440 },
+      innerWidth: 2560,
+      dispatchEvent: () => {},
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    noteGpu(null);
+  });
+
+  // (on the owner's RTX 5090 a level arriving for a minute read as late
+  // frames, the pace floored and this held the chip at high for good)
+  it('never from the frame times alone on a chip graded ultra: a loading hitch is not a weak chip', () => {
+    noteGpu({ renderer: RTX5090 });
+    expect(strained()).toBe(false);
+    expect(store.has('tp-detail-cap')).toBe(false);
+    expect(strained({ by: 'gpu' })).toBe(true);
+    expect(JSON.parse(store.get('tp-detail-cap'))).toMatchObject({ renderer: RTX5090, level: 'high' });
+  });
+
+  it('from the frame times on a card graded below ultra, and never below ultra', () => {
+    noteGpu({ renderer: GTX1060 });
+    expect(strained()).toBe(true);
+    expect(JSON.parse(store.get('tp-detail-cap')).level).toBe('high');
+    store.clear();
+    expect(strained()).toBe(false); // (held at high already: nothing more to hold)
   });
 });

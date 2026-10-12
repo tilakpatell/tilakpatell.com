@@ -33,6 +33,7 @@
 // scene's first directional light.
 
 import { withFallback } from '../../../../lib/assetBase.js';
+import { arriving } from '../../../../runtime/arriving.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16 } from '../../../../lib/level/png16.js';
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
@@ -218,6 +219,9 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
   let probes = null;
   let sun = null; // the game materials' shared sun, when they draw
   let sunLight = null;
+  // (the runtime's governor holds while the level is not ready, its far list
+  // still coming, and three seconds after: runtime/arriving.js, lane L1)
+  const arrived = arriving(() => !stream?.ready());
   const colliders = walk ? createColliders(walk, tier, { loadBin: fetchBytes }) : null;
   // the engine's side: its world, the cells' bodies, and the cells the
   // stream brought before the engine was up (added once it is)
@@ -283,6 +287,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
         });
     })
     .catch((e) => {
+      arrived(); // (nothing more is coming)
       if (import.meta.env?.DEV) console.warn('level pack failed', world, e);
     });
   return {
@@ -310,6 +315,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     physics: () => engine,
     dispose() {
       gone = true;
+      arrived();
       colliders?.dispose();
       lights?.dispose();
       bodies?.dispose();

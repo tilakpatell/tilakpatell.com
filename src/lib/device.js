@@ -31,8 +31,8 @@
 // detail level, a row with more of each (and drawing sharper than a plain
 // monitor's pixels, so edges and fine texture come out clean). The
 // renderers' own watchdogs still step down from there when frames run long,
-// and a strong card that struggles anyway is held at high from then on
-// (`capDetail`, kept for that chip only).
+// and a strong card that struggles anyway is held at high for a day
+// (`capDetail`, kept for that chip only; `clearCap` lets it go sooner).
 //
 // The visitor picks a mode in the settings panel (components/settings): Auto,
 // or a level, kept as localStorage 'tp-quality' (`setQuality`, which tells
@@ -67,19 +67,26 @@ export const BUDGETS = {
   low: { tier: 'low', ratio: 1, antialias: false, samples: 0, shadows: false, shadowMap: 512, bloom: 0, aniso: 1, stars: 0.35 },
 };
 
+// How long a cap holds a chip down: a day, so the next visit's world tries
+// ultra again (lane L1: a cap earned by a level arriving held an RTX 5090
+// at high for good)
+export const CAP_MS = 24 * 60 * 60 * 1000;
+
 // What Auto picks from the tier and the chip's grade: a laptop or desktop
 // with a graphics chip ultra, unless its chip grades 'mid' (high); anything
-// else its tier. A cap (`{ renderer, level }`, kept when this chip struggled
-// at ultra) holds it down for that chip only.
-function detailOf(tier, grade, renderer, cap) {
+// else its tier. A cap (`{ renderer, level, since }`, kept when this chip
+// struggled at ultra) holds it down for that chip only, for CAP_MS from
+// `since`; `capped` is the cap when it held Auto down, else null.
+function detailOf(tier, grade, renderer, cap, now) {
   let detail = tier;
   if (tier === 'high') detail = grade === 'mid' ? 'high' : 'ultra';
-  if (cap && cap.renderer === renderer && LEVELS.includes(cap.level) && LEVELS.indexOf(detail) > LEVELS.indexOf(cap.level)) detail = cap.level;
-  return detail;
+  const young = !Number.isFinite(cap?.since) || now - cap.since < CAP_MS;
+  if (cap && young && cap.renderer === renderer && LEVELS.includes(cap.level) && LEVELS.indexOf(detail) > LEVELS.indexOf(cap.level)) return { detail: cap.level, capped: { level: cap.level, since: cap.since ?? null } };
+  return { detail, capped: null };
 }
 
 // The tier from what the browser tells us. Pure, so it can be tested.
-export function classifyDevice({ ua = '', touchPoints = 0, coarse = false, screen = 1920, memory = null, cores = null, saveData = false, net = '', renderer = '', software = false, override = null, cap = null } = {}) {
+export function classifyDevice({ ua = '', touchPoints = 0, coarse = false, screen = 1920, memory = null, cores = null, saveData = false, net = '', renderer = '', software = false, override = null, cap = null, now = Date.now() } = {}) {
   const phone = MOBILE_UA.test(ua) || (/Macintosh/.test(ua) && touchPoints > 1) || (coarse && screen < 900);
   const lowData = Boolean(saveData) || /(^|-)2g$/.test(net);
   const why = [];
@@ -95,14 +102,14 @@ export function classifyDevice({ ua = '', touchPoints = 0, coarse = false, scree
     if (why.length) tier = 'mid';
   }
   const grade = phone ? null : gpuGrade(renderer);
-  const auto = detailOf(tier, grade, renderer, cap);
+  const { detail: auto, capped } = detailOf(tier, grade, renderer, cap, now);
   let detail = auto;
   // (a level picked by hand: never capped)
   if (LEVELS.includes(override)) {
     tier = override === 'ultra' ? 'high' : override;
     detail = override;
   }
-  return { tier, phone, saveData: lowData, memory: memory ?? null, why, grade, detail, auto };
+  return { tier, phone, saveData: lowData, memory: memory ?? null, why, grade, detail, auto, capped };
 }
 
 function readUrlLevel() {
@@ -133,11 +140,18 @@ const readKey = (key) => {
   }
 };
 
-// The cap a chip earned by struggling at ultra (see `capDetail`).
-function readCap() {
+// The cap a chip earned by struggling at ultra (see `capDetail`), while it
+// holds: one a day old, or kept with no time (before caps aged, when a
+// level arriving could earn one), is let go and forgotten.
+function readCap(now = Date.now()) {
   try {
     const kept = JSON.parse(window.localStorage.getItem(CAP_KEY) ?? 'null');
-    return kept && typeof kept.renderer === 'string' && LEVELS.includes(kept.level) ? kept : null;
+    if (!kept || typeof kept.renderer !== 'string' || !LEVELS.includes(kept.level)) return null;
+    if (!Number.isFinite(kept.since) || now - kept.since >= CAP_MS) {
+      window.localStorage.removeItem(CAP_KEY);
+      return null;
+    }
+    return kept;
   } catch {
     return null;
   }
@@ -188,10 +202,13 @@ export function resetDevice() {
 
 // The mode the visitor chose ('auto' or a level; the address's ?quality=
 // counts as chosen, and `pinned` says it's the address's, which a pick in
-// the panel can't override), the level in force, and what Auto would pick.
+// the panel can't override), the level in force, and what Auto would pick;
+// `capped` ({ level, since }) only while a cap holds Auto, and Auto is the
+// mode (the settings panel's "Held at High since …").
 export function quality() {
   const d = device();
-  return { mode: readOverride() ?? 'auto', level: d.detail, auto: d.auto, pinned: readUrlLevel() != null };
+  const mode = readOverride() ?? 'auto';
+  return { mode, level: d.detail, auto: d.auto, pinned: readUrlLevel() != null, ...(d.capped && mode === 'auto' ? { capped: d.capped } : {}) };
 }
 
 // Keep a mode ('auto' forgets the pick) and tell the page: a 'tp:quality'
@@ -229,19 +246,34 @@ export function rendererTier() {
   }
 }
 
-// Hold this chip at `level` from now on (lib/detail calls it when frames
+// Hold this chip at `level` for a day (lib/detail calls it when frames
 // stayed late at ultra with every softening already used up). Kept with the
-// chip's name, so a new graphics card starts fresh; ?quality=ultra tries it
-// again. Scenes already built keep what they have; the next one is built to
-// the new level.
+// chip's name, so a new graphics card starts fresh, and the time, so it
+// lets go after CAP_MS; ?quality=ultra pins ultra for a visit, and the
+// settings panel's "Try ultra again" forgets it (clearCap). Scenes already
+// built keep what they have; the next one is built to the new level.
 export function capDetail(level = 'high') {
   if (!LEVELS.includes(level)) return;
+  const cap = { renderer: gpuLook?.renderer ?? '', level, since: Date.now() };
   try {
-    window.localStorage.setItem(CAP_KEY, JSON.stringify({ renderer: gpuLook?.renderer ?? '', level }));
+    window.localStorage.setItem(CAP_KEY, JSON.stringify(cap));
   } catch {
     /* storage unavailable: it lasts for this page */
   }
-  cached = classifyDevice({ ...signals(gpuLook ?? {}), cap: { renderer: gpuLook?.renderer ?? '', level } });
+  cached = classifyDevice({ ...signals(gpuLook ?? {}), cap });
+}
+
+// Forget the cap and tell the page (a 'tp:quality' event with the level now
+// in force, as setQuality does): the world that's up retunes or is offered
+// a reload at it.
+export function clearCap() {
+  try {
+    window.localStorage.removeItem(CAP_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+  cached = null;
+  window.dispatchEvent(new CustomEvent('tp:quality', { detail: device().detail }));
 }
 
 // The renderer's numbers. With no tier given, this device's: the ultra row

@@ -338,6 +338,90 @@ describe('the GPU clock as the source (lane N2)', () => {
   });
 });
 
+describe('a world still arriving (lane L1)', () => {
+  it('holds the pace while the world says it is loading, and lets go three seconds after it stops', () => {
+    const pace = fakePace([1]);
+    pace.frame = vi.fn(pace.frame);
+    pace.hold = vi.fn();
+    const q = createQuality({ tier: 'high', pace });
+    let t = 1000;
+    for (; t < 61000; t += 16) expect(q.frame(t, { loading: true })).toBe(null); // a minute of a level arriving
+    expect(pace.frame).not.toHaveBeenCalled();
+    expect(pace.hold).toHaveBeenCalledWith(true);
+    expect(q.frame(t)).toBe(null); // (ready: and three seconds more)
+    expect(q.frame(t + 2900)).toBe(null);
+    expect(pace.frame).not.toHaveBeenCalled();
+    expect(q.frame(t + 3100)).toBe(1);
+    expect(pace.hold).toHaveBeenLastCalledWith(false);
+  });
+
+  it('holds the GPU clock’s controller too, the clock still read, and judges its frames after', () => {
+    const clock = fakeClock([30]);
+    const q = createQuality({ tier: 'high', pace: fakePace([null]), source: 'gpu', gpuTime: clock });
+    for (let i = 1; i <= 200; i++) expect(q.frame(i * 16, { loading: true })).toBe(null);
+    expect(q.level).toBe(0);
+    // (the readings keep coming while it waits: the strain's median, the settings' readout)
+    expect(clock.frame).toHaveBeenCalledTimes(200);
+    const t = 200 * 16 + 3100;
+    expect([0, 1, 2].map((i) => q.frame(t + i * 16))).toEqual([null, null, 1]);
+  });
+
+  it('keeps the warm-up for a world with nothing arriving', () => {
+    const pace = fakePace([1]);
+    const q = createQuality({ tier: 'high', pace });
+    q.hold(3000);
+    expect(q.frame(1000, { loading: false })).toBe(null);
+    expect(q.frame(4010, { loading: false })).toBe(1);
+  });
+});
+
+describe('a chip held at high by its own clock (lane L1)', () => {
+  // 40 ms a frame on the GPU's clock whatever the scale: the controller
+  // panics down to its floor (0.67) in six frames, and stays over budget there
+  const strainedRun = ({ median = 40, loading = 0 } = {}) => {
+    const clock = fakeClock([40]);
+    clock.median = median;
+    const onStrained = vi.fn();
+    const q = createQuality({ tier: 'high', pace: fakePace([null]), source: 'gpu', gpuTime: clock, onStrained });
+    let t = 1000;
+    const until = (end, opts) => {
+      for (; t < end; t += 16) q.frame(t, opts);
+    };
+    until(1000 + loading, { loading: true });
+    return { q, clock, onStrained, until, now: () => t };
+  };
+
+  it('tells it once, when the chip’s median has stayed over its budget ten seconds at the controller’s floor', () => {
+    const { q, onStrained, until, now } = strainedRun();
+    until(now() + 9000);
+    expect(q.internal).toBe(0.67);
+    expect(onStrained).not.toHaveBeenCalled();
+    until(now() + 1500);
+    expect(onStrained).toHaveBeenCalledTimes(1);
+    until(now() + 20000);
+    expect(onStrained).toHaveBeenCalledTimes(1);
+  });
+
+  it('never while a level arrives, and counts the ten seconds from its settle', () => {
+    const { onStrained, until, now } = strainedRun({ loading: 60000 });
+    expect(onStrained).not.toHaveBeenCalled();
+    until(now() + 3000 + 9000); // (the settle, then nine seconds)
+    expect(onStrained).not.toHaveBeenCalled();
+    until(now() + 1500);
+    expect(onStrained).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts the count again when the median comes back under budget', () => {
+    const { clock, onStrained, until, now } = strainedRun();
+    until(now() + 8000);
+    clock.median = 12;
+    until(now() + 500);
+    clock.median = 40;
+    until(now() + 8000);
+    expect(onStrained).not.toHaveBeenCalled();
+  });
+});
+
 describe('the mip bias following the scale (lane N2)', () => {
   it('sets −0.5 at native under TRAA, log2(scale) − 1 as the controller steps down, 0 on the classic renderer', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null]) });
