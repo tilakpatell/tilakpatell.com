@@ -10,6 +10,13 @@
 //
 //   node scripts/level-draws.mjs [world=hoth] [--tier high] [--json out.json]
 //
+// GPU-first lane N1 adds the third path, the GPU scene (levelGpu.js), counted
+// through the cull's CPU twin round each spot: one draw a material group
+// (`draw calls`), whatever its LODs, files and mirrored copies, which ride as
+// sub-draws of the group's one indirect draw (`indirect`); no frustum and no
+// pyramid here, so its counts are the arena's whole at the spot, as the other
+// two paths' are.
+//
 // The node renderer's game materials (lane Q1) are made one per GLB
 // material and key a batch by themselves (levelBatch.js): this counts the
 // classic material path, the batches' best case; `--own` keys every
@@ -22,6 +29,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { createLevelScene } from "../src/components/galaxy/surface/level/levelScene.js";
+import { createLevelGpu } from "../src/components/galaxy/surface/level/levelGpu.js";
 import { splitTextures } from "../src/components/galaxy/surface/level/levelPack.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -100,7 +108,22 @@ const fullest = Object.entries(
 const spots = [[0, 0], ...fullest];
 
 const rows = [];
-for (const batch of [false, true]) {
+for (const batch of [false, true, "gpu"]) {
+  if (batch === "gpu") {
+    const level = createLevelGpu({ scene: new THREE.Scene(), pack, loadGltf, tier });
+    level.setTable(bytes(pack.far.bin));
+    if (pack.horizon?.bin) level.setHorizon(bytes(pack.horizon.bin));
+    for (const at of spots) {
+      level.update([at[0] + 1000, at[1]]);
+      level.update(at);
+      await settle();
+      const s = level.stats();
+      // (the rows drawn round the spot, as the other paths count theirs)
+      rows.push({ path: "gpu scene", at: at.map((v) => Math.round(v)), ...s, instances: s.drawn });
+    }
+    level.dispose();
+    continue;
+  }
   const scene = new THREE.Scene();
   const level = createLevelScene({
     scene,
@@ -142,10 +165,10 @@ console.log(
   `${world}, ${tier}, ${out.glbs} GLBs, ${out.textures} maps (${out.materials})`,
 );
 console.log(
-  "| path | at | instances | triangles | draw calls | batches (arena / horizon) | still instanced | occlusion blocks |",
+  "| path | at | instances | triangles | draw calls | batches (arena / horizon) | still instanced | occlusion blocks | indirect sub-draws |",
 );
-console.log("|---|---|---|---|---|---|---|---|");
+console.log("|---|---|---|---|---|---|---|---|---|");
 for (const r of rows)
   console.log(
-    `| ${r.path} | ${r.at.join(", ")} | ${r.instances} | ${Math.round(r.tris)} | ${r.calls} | ${r.batches == null ? "–" : `${r.bands.arena ?? 0} / ${r.bands.horizon ?? 0}`} | ${r.instanced ?? r.calls} | ${r.blocks ?? "–"} |`,
+    `| ${r.path} | ${r.at.join(", ")} | ${r.instances} | ${Math.round(r.tris)} | ${r.calls} | ${r.batches == null ? "–" : `${r.bands.arena ?? 0} / ${r.bands.horizon ?? 0}`} | ${r.path === "gpu scene" ? 0 : (r.instanced ?? r.calls)} | ${r.blocks ?? "–"} | ${r.indirect ?? "–"} |`,
   );

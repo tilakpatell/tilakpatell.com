@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { SHIP_PROFILE, loadGltf, loadGltfFile, tune, tuneTree, usesBasisu } from './gltf';
+import { SHIP_PROFILE, detectSupport, ktx2Loader, loadGltf, loadGltfFile, tune, tuneTree, usesBasisu } from './gltf';
+
+// (the Basis transcoder taken as up: the KTX2 loader's tests ask nothing of it)
+vi.mock('./wasmDecoders.js', async (importOriginal) => ({ ...(await importOriginal()), basisUp: async (k) => k }));
 
 // (one file the bucket holds, for the asset base's case)
 vi.mock('../../data/assets-manifest.json', () => ({ default: { 'kit/crate.glb': { hash: 'aaaaaaaaaaaa', bytes: 70000 }, 'hq/models/lamp.glb': { hash: 'cccccccccccc', bytes: 70000 } } }));
@@ -172,5 +175,73 @@ describe('a model a world parses itself', () => {
       parse.mockRestore();
       useAssetPool(null);
     }
+  });
+});
+
+// (lane S1: a page answered in a model's place, the dev server's for a file a
+// checkout lacks, threw inside the parse's promise callback, out of reach of
+// load()'s try, and reached the page as an unhandled rejection)
+describe('a file that is not a model', () => {
+  it('fails the load through its error path, not as an unhandled rejection', async () => {
+    const { gltfLoader } = await import('./gltf');
+    const page = new TextEncoder().encode('<!doctype html><html></html>').buffer;
+    const unhandled = vi.fn();
+    globalThis.process.on('unhandledRejection', unhandled);
+    try {
+      const err = await new Promise((resolve) => gltfLoader().parse(page, '', () => resolve(null), resolve));
+      expect(err).toBeInstanceOf(Error);
+      expect(String(err)).toMatch(/JSON|Unexpected/);
+      await new Promise((r) => setTimeout(r, 10));
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      globalThis.process.off('unhandledRejection', unhandled);
+    }
+  });
+});
+
+describe('the chip’s KTX2 formats', () => {
+  // a node renderer as three r186 has it: hasFeature throws till init() has resolved
+  const nodeRenderer = ({ fails = false } = {}) => {
+    let up = false;
+    return {
+      isWebGPURenderer: true,
+      hasInitialized: () => up,
+      init: vi.fn(async () => {
+        if (fails) throw new Error('no adapter');
+        up = true;
+      }),
+      hasFeature: (name) => {
+        if (!up) throw new Error('THREE.Renderer: .hasFeature() called before the backend is initialized');
+        return name === 'texture-compression-bc';
+      },
+    };
+  };
+  // (a KTX2 loader's reading, as three's: a node renderer's features, else its extensions)
+  const reader = () => ({ detectSupport: vi.fn((r) => (r.isWebGPURenderer ? r.hasFeature('texture-compression-bc') : r.extensions.has('EXT_texture_compression_bptc'))) });
+
+  it('waits for a node renderer not yet up, then reads its formats; one already up is not asked again', async () => {
+    const r = nodeRenderer();
+    const k = reader();
+    expect(await detectSupport(k, r)).toBe(k);
+    expect(r.init).toHaveBeenCalledTimes(1);
+    expect(k.detectSupport).toHaveBeenCalledWith(r);
+    await detectSupport(k, r);
+    expect(r.init).toHaveBeenCalledTimes(1);
+    // (the classic renderer has no init to wait for)
+    const classic = { extensions: { has: () => false } };
+    expect(await detectSupport(k, classic)).toBe(k);
+  });
+
+  it('names a renderer that cannot say, or never comes up, rather than throwing unhandled', async () => {
+    await expect(detectSupport(reader(), nodeRenderer({ fails: true }))).rejects.toMatchObject({ name: 'KTX2SupportError', message: expect.stringContaining('no adapter') });
+    const never = { ...nodeRenderer(), init: () => new Promise(() => {}) };
+    await expect(detectSupport(reader(), never, { timeoutMs: 5 })).rejects.toMatchObject({ name: 'KTX2SupportError', message: expect.stringContaining('did not come up') });
+  });
+
+  // (the first ask of the KTX2 loader in this file: nothing before it needs one)
+  it('lets a loader that could not read the chip go, and the next ask makes another', async () => {
+    await expect(ktx2Loader({ renderer: nodeRenderer({ fails: true }) })).rejects.toMatchObject({ name: 'KTX2SupportError' });
+    const k = await ktx2Loader({ renderer: nodeRenderer() });
+    expect(k.workerConfig).toMatchObject({ bptcSupported: true, astcSupported: false });
   });
 });

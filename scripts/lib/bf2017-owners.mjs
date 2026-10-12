@@ -138,6 +138,11 @@ export const OWNERS = [
   // the capital ships are the space lane's; the other vehicles the game's lane 4
   { match: /^gameplay\/vehicles\/.*(capital|cruiser|venator|mc80|cr90|lucrehulk|providence|stardestroyer|dreadnought|frigate|corvette)/, lane: 'space', finding: true },
   { match: /(^|\/)gameplay\/ntcapitalships\//, lane: 'space', finding: true },
+  // the Scimitar and the TIE striker are the space lane's too (lane S1 of the
+  // galaxy-in-space design): drawn by the galaxy's fleet (galaxy/models.js),
+  // imported through lane V's path (scripts/bf2017-vehicles.mjs), not placed
+  // on a surface, so not the game's lane 4's
+  { match: /(^|\/)gameplay\/vehicles\/air\/(scimitar|tiestriker)\//, lane: 'space', finding: true },
   { match: /(^|\/)gameplay\/vehicles\//, lane: '4', finding: true },
   // the prefabs (pickups, spawners, vehicle pads) are placed by the levels (lane E)
   { match: /(^|\/)gameplay\/prefabs\//, lane: 'E', finding: true },

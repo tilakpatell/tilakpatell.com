@@ -919,6 +919,34 @@ describe('the quality level changed while a world is up', () => {
     expect(rt.requality('high')).toBe('reload');
   });
 
+  it('hands the video settings to a world’s onVideo, or its module’s; a world without one needs a reload; none up is idle (lane V1)', async () => {
+    const { rt } = make();
+    expect(rt.revideo({ gi: 'low' })).toBe('idle');
+    expect(rt.video).toEqual({ gi: 'low' });
+    const world = fakeWorld({ onVideo: vi.fn() });
+    await rt.mount({ id: 'a', create: () => world }, {}, fakeHost());
+    expect(rt.revideo({ aa: 'smaa' })).toBe('tuned');
+    expect(world.onVideo).toHaveBeenCalledWith({ aa: 'smaa' });
+    rt.unmount();
+    const mod = { id: 'b', create: () => fakeWorld(), onVideo: vi.fn() };
+    await rt.mount(mod, {}, fakeHost());
+    expect(rt.revideo({ aa: 'off' })).toBe('tuned');
+    expect(mod.onVideo).toHaveBeenCalledWith({ aa: 'off' }, rt.current.world, rt);
+    rt.unmount();
+    await rt.mount({ id: 'c', create: () => fakeWorld() }, {}, fakeHost());
+    expect(rt.revideo({ aa: 'off' })).toBe('reload');
+  });
+
+  it('asks the backend for HDR when the video settings say so (lane H1)', async () => {
+    const { rt, makeBackend } = make({ video: { hdr: 'on' } });
+    await rt.mount({ id: 'a', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend).toHaveBeenCalledWith('webgl', expect.objectContaining({ hdr: true }));
+    rt.unmount();
+    const { rt: rt2, makeBackend: mb2 } = make();
+    await rt2.mount({ id: 'b', create: () => fakeWorld() }, {}, fakeHost());
+    expect(mb2).toHaveBeenCalledWith('webgl', expect.objectContaining({ hdr: false }));
+  });
+
   it('sets the sharpness and draws again', async () => {
     const { rt, quality } = make();
     quality.setSharpness = vi.fn();
@@ -954,5 +982,57 @@ describe('calibration switched off (the QA scripts: ?calibrate=off)', () => {
     await settled();
     expect(steps).toHaveLength(0);
     expect(quality.setLevel).not.toHaveBeenCalled();
+  });
+});
+
+describe('the picture’s source and cadence (lane N2)', () => {
+  const gpuMake = (overrides = {}) => {
+    const gfx = { ...fakeBackend(), backend: 'webgpu' };
+    const quality = { ...fakeQuality(), tier: 'ultra', setSource: vi.fn(), source: 'gpu', reset: vi.fn(), hold: vi.fn() };
+    const loop = fakeLoop();
+    loop.ctl.setCadence = vi.fn();
+    const rt = createRuntime({ makeBackend: vi.fn(() => gfx), loop: loop.create, input: fakeInput(), quality, audio: fakeAudio(), assets: fakeAssets(), gpu: true, ...overrides });
+    return { rt, gfx, quality, loop };
+  };
+
+  it('a node world on WebGPU takes the GPU clock, made once a renderer', async () => {
+    const clock = { available: true, frame: vi.fn(), last: null };
+    const gpuClock = vi.fn(() => clock);
+    const { rt, quality, gfx } = gpuMake({ gpuClock });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    await rt.mount({ id: 'm', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(gpuClock).toHaveBeenCalledTimes(1);
+    expect(gpuClock).toHaveBeenCalledWith(gfx.renderer);
+    expect(quality.setSource).toHaveBeenLastCalledWith('gpu', expect.objectContaining({ gpuTime: clock, fps: null, tier: null }));
+  });
+
+  it('without a clock a node world keeps the pace, and the classic renderer says so', async () => {
+    const { rt, quality } = gpuMake();
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(quality.setSource).toHaveBeenLastCalledWith('cpu', expect.objectContaining({ gpuTime: null, fps: null, tier: null }));
+    const q = { ...fakeQuality(), setSource: vi.fn() };
+    const classic = make({ quality: q });
+    await classic.rt.mount({ id: 'g', create: () => fakeWorld() }, {}, fakeHost());
+    expect(q.setSource).toHaveBeenLastCalledWith('classic', expect.objectContaining({ gpuTime: null, fps: null, tier: null }));
+  });
+
+  it('a new level on the GPU clock never resizes the canvas', async () => {
+    const { rt, quality, gfx, loop } = gpuMake();
+    const world = fakeWorld({ lowerQuality: vi.fn() });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => world }, {}, fakeHost());
+    gfx.setRatio.mockClear();
+    quality.frame = vi.fn(() => 1);
+    loop.tick(100);
+    expect(world.lowerQuality).toHaveBeenCalledWith(1);
+    expect(gfx.setRatio).not.toHaveBeenCalled();
+  });
+
+  it('draws every second beat for a visitor who pins 30', async () => {
+    const { rt, loop } = gpuMake({ fps: 30 });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(loop.ctl.setCadence).toHaveBeenLastCalledWith(2);
+    const plain = gpuMake();
+    await plain.rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(plain.loop.ctl.setCadence).toHaveBeenLastCalledWith(1);
   });
 });

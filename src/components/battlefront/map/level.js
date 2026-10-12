@@ -10,7 +10,7 @@
 // (ground.js) since the pack carries no ground mesh: the galaxy draws its
 // own over it.
 //
-//   createLevel({ scene, tier, renderer, world = 'hoth', ground = true, onCell, onDrop, deps })
+//   createLevel({ scene, tier, texTier, renderer, world = 'hoth', ground = true, onCell, onDrop, deps })
 //     → { ready: Promise, group, origin, pack, update([x, y, z]), heightAt(x, z),
 //         loadBin(path), navOf() → Promise<mask | null>, progress(), loaded(), stats(), dispose() }
 //   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
@@ -32,12 +32,11 @@ export function toPack(pack, [x, , z]) {
   return [dx * c + dz * s, -dx * s + dz * c];
 }
 
-// the pack's level.json and its bytes, from the asset host where it has them
-const bytes = (world) => (path) =>
-  fetch(laneL.packUrl(world, path)).then((r) => {
-    if (!r.ok) throw new Error(`${r.status} ${path}`);
-    return r.arrayBuffer();
-  });
+// the pack's level.json and its bytes, through the asset base as the
+// galaxy's level fetches them (lane L's packBytes: the bucket by hash where
+// the manifest names the file, the site's copy when the bucket fails; a plain
+// fetch of the site path here drew nothing once the packs left git)
+const bytes = (world) => laneL.packBytes(world);
 const DEPS = {
   packOf: (world) =>
     bytes(world)("level.json").then((b) =>
@@ -53,6 +52,7 @@ const DEPS = {
 export function createLevel({
   scene,
   tier = "high",
+  texTier = null,
   renderer = null,
   world = "hoth",
   ground = true,
@@ -85,6 +85,7 @@ export function createLevel({
     group.position.fromArray(pack.origin ?? [0, 0, 0]);
     group.rotation.y = -(pack.yaw ?? 0);
     loader = d.createLevelLoader({
+      texTier,
       world,
       tier,
       renderer,

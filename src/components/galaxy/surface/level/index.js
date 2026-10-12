@@ -10,7 +10,7 @@
 //   partOf(world, file, empty) → Promise<the part's JSON, or empty>
 //   levelPlaced(site) → Promise<{ life, rides, things }> (the map's actors and vehicles)
 //   levelBusy(site) → Promise<Set of cell keys the level fills>
-//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics })
+//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics, texTier })
 //     → null | { update(position), ready(), paused(), progress(), stats(), physics(), dispose() }
 //     (camera: the placed lights rank by it; light: the world's record, for their scale;
 //     onProbe: the reflection volume you stand in, for gameLit.js)
@@ -20,6 +20,7 @@
 //     them a heightfield from heightAt; onPhysics(engine) once it's up: the
 //     scene puts the player on the 2017 soldier's body, playerBody.js)
 //   packOf(world) → Promise<level.json> (fetched once)
+//   bytesOf(world)(path) → Promise<ArrayBuffer>: a pack file through the asset base, the site's copy when the bucket fails
 //     (walk: the walk world, { solids, floors }, the pack's collision goes into)
 //
 // On the node renderer (WebGPU, or the node renderer on WebGL 2) a pack with
@@ -50,7 +51,10 @@ import { seenAt } from '../../../../lib/level/lod.js';
 // (No abort signal on the request: assetBase reads any failure as the bucket
 // down for the visit, so a cancelled fetch is let finish and its answer
 // dropped by the stream; lane S's pool brings real aborts.)
-const bytesOf = (world) => (path) =>
+// (packBytes: the Battlefront world's level takes the same fetcher through
+// the galaxy's face, galaxy/shared/level.js, so its meshes and cells come
+// from the bucket as the galaxy's do, the site's copy when it cannot)
+export const bytesOf = (world) => (path) =>
   withFallback((u) =>
     fetch(u).then((r) => {
       if (!r.ok) throw new Error(`${r.status} ${u}`);
@@ -203,7 +207,7 @@ async function gameMaterials(world, pack, renderer, tier, scene) {
   return { recipes, variations, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
 }
 
-export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null }) {
+export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null, texTier = null }) {
   if (!site?.level) return null;
   const world = site.level;
   const fetchBytes = bytesOf(world);
@@ -326,7 +330,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       });
       // (a map's finer row is bound once a GLB that wears it stands in a cell
       // shown: one landing for a cell left behind waits, not uploaded)
-      loader = createLevelLoader({ world, tier, renderer, fetchBytes: (path, hint) => stream.fetch(path, hint), sizes: pack.tex, recipes, materialFor, mapKeys, variations, wanted: (path, glbs) => !glbs.size || [...glbs].some((g) => stream.shows(g)) });
+      loader = createLevelLoader({ world, tier, renderer, fetchBytes: (path, hint) => stream.fetch(path, hint), sizes: pack.tex, recipes, materialFor, mapKeys, variations, texTier, wanted: (path, glbs) => !glbs.size || [...glbs].some((g) => stream.shows(g)) });
       level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
       if (last) {
         stream.update(last, tier);
@@ -363,7 +367,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       stream?.update(position, tier);
       level?.update(position);
       coarseUpdate(position);
-      bodies?.update(4);
+      bodies?.update(4, position);
       if (camera) lights?.update(camera);
       probes?.update([position[0], camera?.position.y ?? 1.6, position[1]]);
     },
@@ -371,8 +375,10 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     // (lane N4: past the tier's visitMB the finer rows and LODs wait)
     paused: () => stream?.status().paused ?? false,
     progress: () => stream?.progress() ?? 0,
-    // (stream: lane N4's phase, bytes, boot and pause; coarse: the horizon grid's cells and cards)
-    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null, stream: stream?.status() ?? null, coarse: coarse?.stats() ?? null }),
+    // (stream: lane N4's phase, bytes, boot and pause; coarse: the horizon grid's cells and cards;
+    // maps: the pack's maps asked, loaded and failed, and why the first
+    // failed, levelGltf.js's counts: a level drawn white says why here)
+    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null, stream: stream?.status() ?? null, coarse: coarse?.stats() ?? null, maps: loader?.counts() ?? { asked: 0, loaded: 0, failed: 0, why: null } }),
     // the level's engine, once it's up (null on a phone, the low tier, a pack without shapes)
     physics: () => engine,
     dispose() {

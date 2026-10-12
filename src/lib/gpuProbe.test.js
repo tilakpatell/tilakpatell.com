@@ -1,0 +1,160 @@
+import { describe, expect, it, vi } from 'vitest';
+import { adapterFacts, classifyTier, decideTier, keepTier, PROBE, probeTier, readTier, TIER_KEY } from './gpuProbe';
+
+const TS = 'timestamp-query';
+const set = (...f) => new Set(f);
+const NVIDIA = { vendor: 'nvidia', architecture: 'blackwell' };
+const INTEL = { vendor: 'intel', architecture: 'xe-lpg' };
+const kept = (tier, info = NVIDIA) => JSON.stringify({ tier, info });
+
+describe('the renderer tier from the adapter and the probe', () => {
+  it('is T0 on a phone, whatever the chip says', () => {
+    expect(classifyTier({ features: set(TS, 'subgroups', 'atomic-vec2u-min-max'), limits: { maxStorageBuffersPerShaderStage: 16 }, medianMs: 1, phone: true })).toBe('T0');
+  });
+
+  it('is T0 without timestamp-query (nothing to measure the frame by)', () => {
+    expect(classifyTier({ features: set('subgroups'), medianMs: 1 })).toBe('T0');
+  });
+
+  it('is T0 when the probe scene took over 8 ms of the chip, and T1 at 8 ms or under', () => {
+    expect(classifyTier({ features: set(TS), medianMs: 8.1 })).toBe('T0');
+    expect(classifyTier({ features: set(TS), medianMs: 8 })).toBe('T1');
+    expect(classifyTier({ features: set(TS), medianMs: 2.4 })).toBe('T1');
+  });
+
+  it('is T0 when the probe measured nothing, or the adapter is the software fallback', () => {
+    expect(classifyTier({ features: set(TS), medianMs: null })).toBe('T0');
+    expect(classifyTier({ features: set(TS), medianMs: 1, info: { fallback: true } })).toBe('T0');
+  });
+
+  it('is T2 with 64-bit min-max atomics, subgroups and 16 storage buffers a stage', () => {
+    const features = set(TS, 'subgroups', 'atomic-vec2u-min-max');
+    expect(classifyTier({ features, limits: { maxStorageBuffersPerShaderStage: 16 }, medianMs: 1 })).toBe('T2');
+    // (one short of any of the three: T1)
+    expect(classifyTier({ features, limits: { maxStorageBuffersPerShaderStage: 8 }, medianMs: 1 })).toBe('T1');
+    expect(classifyTier({ features: set(TS, 'subgroups'), limits: { maxStorageBuffersPerShaderStage: 16 }, medianMs: 1 })).toBe('T1');
+    expect(classifyTier({ features: set(TS, 'atomic-vec2u-min-max'), limits: { maxStorageBuffersPerShaderStage: 16 }, medianMs: 1 })).toBe('T1');
+    // (and a slow chip with them all is still T0: the probe decides first)
+    expect(classifyTier({ features, limits: { maxStorageBuffersPerShaderStage: 16 }, medianMs: 12 })).toBe('T0');
+  });
+
+  it('defaults to T0 when told nothing', () => {
+    expect(classifyTier()).toBe('T0');
+  });
+});
+
+describe('the tier kept, and the one the address pins', () => {
+  it('pins ?tier= for the visit over the kept one, in the search or the hash', () => {
+    expect(readTier('?tier=T2', '', kept('T0'), NVIDIA)).toEqual({ tier: 'T2', fresh: false, pinned: true });
+    expect(readTier('', '#/universe?tier=T1', kept('T2'), NVIDIA)).toEqual({ tier: 'T1', fresh: false, pinned: true });
+  });
+
+  it('pins nothing for an unknown value: the kept tier stands', () => {
+    expect(readTier('?tier=T9', '', kept('T1'), NVIDIA)).toEqual({ tier: 'T1', fresh: false, pinned: false });
+    expect(readTier('?tier=t1', '', null, NVIDIA)).toEqual({ tier: null, fresh: true, pinned: false });
+  });
+
+  it('keeps a stored tier from the same chip', () => {
+    expect(readTier('', '', kept('T1'), { ...NVIDIA, description: 'whatever' })).toEqual({ tier: 'T1', fresh: false, pinned: false });
+  });
+
+  it('probes again when the kept tier came from another chip (a laptop docked to a different GPU)', () => {
+    expect(readTier('', '', kept('T2', NVIDIA), INTEL)).toEqual({ tier: null, fresh: true, pinned: false });
+    expect(readTier('', '', kept('T2', NVIDIA), { vendor: 'nvidia', architecture: 'ada' })).toEqual({ tier: null, fresh: true, pinned: false });
+  });
+
+  it('trusts the kept tier when the chip is not known yet (a read before the adapter answers)', () => {
+    expect(readTier('', '', kept('T2'), null)).toEqual({ tier: 'T2', fresh: false, pinned: false });
+  });
+
+  it('probes when nothing usable is kept', () => {
+    for (const s of [null, '', 'not json', JSON.stringify({ tier: 'T7', info: NVIDIA }), JSON.stringify('T1')]) expect(readTier('', '', s, NVIDIA).fresh).toBe(true);
+  });
+
+  it('keeps a tier with its chip under tp-tier, and keeps nothing it does not know', () => {
+    const store = new Map();
+    const storage = { setItem: (k, v) => store.set(k, v) };
+    expect(TIER_KEY).toBe('tp-tier');
+    keepTier('T1', { ...NVIDIA, description: 'RTX 5090' }, storage);
+    expect(JSON.parse(store.get('tp-tier'))).toEqual({ tier: 'T1', info: NVIDIA });
+    keepTier('T5', NVIDIA, storage);
+    expect(JSON.parse(store.get('tp-tier')).tier).toBe('T1');
+    // (storage that throws: a private window)
+    expect(() => keepTier('T0', NVIDIA, { setItem: () => { throw new Error('quota'); } })).not.toThrow();
+  });
+});
+
+describe('the adapter read into facts', () => {
+  it('takes the features, the two limits and the chip’s vendor and architecture', () => {
+    const adapter = { features: set(TS, 'subgroups'), limits: { maxStorageBuffersPerShaderStage: 10, maxColorAttachmentBytesPerSample: 64, maxTextureDimension2D: 8192 }, info: { vendor: 'apple', architecture: 'metal-3', isFallbackAdapter: false } };
+    expect(adapterFacts(adapter)).toEqual({ features: set(TS, 'subgroups'), limits: { maxStorageBuffersPerShaderStage: 10, maxColorAttachmentBytesPerSample: 64 }, info: { vendor: 'apple', architecture: 'metal-3', fallback: false } });
+  });
+
+  it('is empty without an adapter', () => {
+    expect(adapterFacts(null)).toEqual({ features: new Set(), limits: {}, info: { vendor: '', architecture: '', fallback: false } });
+  });
+});
+
+describe('the probe and the decision', () => {
+  it('draws the probe scene for a second into a fixed-size target and answers the GPU median', async () => {
+    let t = 0;
+    const renderer = { render: vi.fn(), setRenderTarget: vi.fn(), getRenderTarget: () => 'screen' };
+    const gpuTime = { available: true, median: 3.2, frame: vi.fn(async () => { t += 100; }), reset: vi.fn() };
+    const ms = await probeTier({ renderer, scene: 'scene', camera: 'camera', target: 'target', gpuTime, now: () => t });
+    expect(ms).toBe(3.2);
+    expect(renderer.render).toHaveBeenCalledWith('scene', 'camera');
+    expect(renderer.render.mock.calls.length).toBe(PROBE.ms / 100);
+    expect(renderer.setRenderTarget.mock.calls.map((c) => c[0])).toEqual(['target', 'screen']);
+    expect(gpuTime.reset).toHaveBeenCalled();
+  });
+
+  it('draws at least the fewest frames however slow the clock, and answers null without the clock', async () => {
+    const renderer = { render: vi.fn() };
+    let t = 0;
+    const gpuTime = { available: true, median: 9, frame: async () => { t += 5000; }, reset() {} };
+    await probeTier({ renderer, scene: 1, camera: 2, gpuTime, now: () => t });
+    expect(renderer.render.mock.calls.length).toBe(PROBE.frames);
+    expect(await probeTier({ renderer, scene: 1, camera: 2, gpuTime: { available: false } })).toBeNull();
+  });
+
+  it('a kept tier skips the probe', async () => {
+    const probe = vi.fn();
+    const keep = vi.fn();
+    const got = await decideTier({ stored: kept('T1'), facts: { features: set(TS), limits: {}, info: NVIDIA }, probe, keep });
+    expect(got).toEqual({ tier: 'T1', probed: false, pinned: false });
+    expect(probe).not.toHaveBeenCalled();
+    expect(keep).not.toHaveBeenCalled();
+  });
+
+  it('a pinned tier skips the probe and keeps nothing', async () => {
+    const probe = vi.fn();
+    const keep = vi.fn();
+    expect(await decideTier({ search: '?tier=T0', facts: { features: set(TS), info: NVIDIA }, probe, keep })).toEqual({ tier: 'T0', probed: false, pinned: true });
+    expect(probe).not.toHaveBeenCalled();
+    expect(keep).not.toHaveBeenCalled();
+  });
+
+  it('with nothing kept, probes, classifies and keeps the answer with its chip', async () => {
+    const probe = vi.fn(async () => 2);
+    const keep = vi.fn();
+    const facts = { features: set(TS), limits: {}, info: NVIDIA };
+    expect(await decideTier({ facts, probe, keep })).toEqual({ tier: 'T1', probed: true, pinned: false });
+    expect(keep).toHaveBeenCalledWith('T1', NVIDIA);
+  });
+
+  it('without timestamp-query (or on a phone) needs no probe to say T0', async () => {
+    const probe = vi.fn();
+    const keep = vi.fn();
+    expect(await decideTier({ facts: { features: set(), info: INTEL }, probe, keep })).toEqual({ tier: 'T0', probed: false, pinned: false });
+    expect(await decideTier({ facts: { features: set(TS), info: INTEL }, phone: true, probe, keep })).toEqual({ tier: 'T0', probed: false, pinned: false });
+    expect(probe).not.toHaveBeenCalled();
+    expect(keep).toHaveBeenCalledWith('T0', INTEL);
+  });
+
+  it('a probe that throws answers T0 and keeps nothing (it is asked again next visit)', async () => {
+    const keep = vi.fn();
+    const got = await decideTier({ facts: { features: set(TS), info: NVIDIA }, probe: async () => { throw new Error('lost'); }, keep });
+    expect(got).toEqual({ tier: 'T0', probed: false, pinned: false });
+    expect(keep).not.toHaveBeenCalled();
+  });
+});

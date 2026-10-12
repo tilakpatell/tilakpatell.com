@@ -76,3 +76,12 @@ describe('createContactShadows', () => {
     expect(contact.planes).toHaveLength(0);
   });
 });
+
+describe('contactFor with the video settings (lane V1)', () => {
+  it('off turns them off on any tier; on gives a tier without them high’s set', () => {
+    expect(contactFor('ultra', { contactShadows: 'off' }).on).toBe(false);
+    expect(contactFor('mid', { contactShadows: 'on' })).toEqual(contactFor('high'));
+    expect(contactFor('ultra', { contactShadows: 'on' })).toEqual(contactFor('ultra'));
+    expect(contactFor('ultra', {})).toEqual(contactFor('ultra'));
+  });
+});

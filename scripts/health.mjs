@@ -3,7 +3,7 @@
 // Design: docs/superpowers/specs/2026-10-06-codebase-health-design.md.
 //
 //   node scripts/health.mjs                 # measure, print the table, write src/data/health/latest.json
-//   node scripts/health.mjs --check         # exit 1 when a metric is over its budget (CI runs this)
+//   node scripts/health.mjs --check         # exit 1 when a metric is over its budget (CI runs this); leaves latest.json
 //   node scripts/health.mjs --ratchet       # lower the budgets to today's numbers, append to history.jsonl
 //   node scripts/health.mjs --only big-files,todo-notes --json
 //
@@ -73,7 +73,10 @@ async function main() {
   else console.log(table(metrics, budgets));
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, markdown(metrics, budgets));
 
-  if (!only.length) {
+  // the snapshot is the measuring run's: a `--check` (CI's, and every lane's
+  // before its PR) leaves it, so two branches that both checked never meet
+  // in a merge conflict over the one generated file
+  if (!only.length && !args.has('--check')) {
     await mkdir(join(ROOT, 'src/data/health'), { recursive: true });
     const latest = { date, sha, metrics: Object.fromEntries(metrics.map((m) => [m.id, { value: m.value, unit: m.unit, label: m.label, detail: m.detail }])) };
     await writeFile(LATEST, `${JSON.stringify(latest, null, 2)}\n`);

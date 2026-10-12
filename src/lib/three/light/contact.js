@@ -27,10 +27,16 @@ const TIERS = {
   high: { on: true, target: 128, count: 8, range: 20 },
 };
 
-export const contactFor = (tier) => TIERS[tier] ?? { on: false, target: 0, count: 0, range: 0 };
+// (video: lib/video.js's `contactShadows` over the tier's: on takes high's set where the tier has none)
+export const contactFor = (tier, video = null) => {
+  const own = TIERS[tier] ?? { on: false, target: 0, count: 0, range: 0 };
+  if (video?.contactShadows === 'off') return { on: false, target: 0, count: 0, range: 0 };
+  if (video?.contactShadows === 'on') return own.on ? own : TIERS.high;
+  return own;
+};
 
-export async function createContactShadows(scene, renderer, { tier = 'high', size = CONTACT_SIZE, blur = BLUR } = {}) {
-  const set = contactFor(tier);
+export async function createContactShadows(scene, renderer, { tier = 'high', size = CONTACT_SIZE, blur = BLUR, video = null } = {}) {
+  const set = contactFor(tier, video);
   const tracked = new Map(); // object → { plane, target }
   const planes = [];
   const off = { planes, track() {}, untrack() {}, update() {}, dispose() {} };

@@ -123,6 +123,7 @@ import { createRadar } from './radar';
 import { drawRadar } from './radarDraw';
 import { chargeFor } from '../universe/shipPowers';
 import { effectsFor } from './warEffects';
+import { CABS } from './cabs';
 import { warNow } from './warState';
 import { createWingmen } from '../universe/wingmen';
 import { createBolts, createFlashes } from './fx';
@@ -154,12 +155,6 @@ const PLUME = {
   falcon: { color: '#5cbcff', core: '#eef8ff', width: 0.034, life: 0.45, length: 0.36, wobble: 0 },
   xwing: { color: '#ff6a36', core: '#fff0dc', width: 0.017, life: 0.38, length: 0.3, wobble: 0 },
   rv: { color: '#ff9a3c', core: '#fff0d8', width: 0.02, life: 0.4, length: 0.3, wobble: 0 },
-};
-const CABS = {
-  falcon: () => import('../cockpit/vehicles/falcon'),
-  xwing: () => import('../cockpit/vehicles/xwing'),
-  cruiser: () => import('../cockpit/vehicles/cruiser'),
-  rv: () => import('../cockpit/vehicles/rv'),
 };
 const SEAT_KEY = 'tp:universe-seat'; // (the universe map's: one seat, wherever you fly)
 const JUMPS_KEY = 'tp:galaxy-jumps'; // (session) the Empire's count of your jumps

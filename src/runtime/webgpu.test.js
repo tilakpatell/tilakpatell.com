@@ -35,6 +35,7 @@ vi.mock('../lib/three/light/passes.js', () => ({
 }));
 
 const { adapterLimits, buildPostProcessing, createWebGPU, RAISED_LIMITS } = await import('./webgpu');
+const { mipBias, setMipState } = await import('../lib/three/mipBias');
 
 const fakeCanvas = () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() });
 
@@ -42,6 +43,15 @@ describe('createWebGPU', () => {
   beforeEach(() => {
     made.length = 0;
     fallBack = false;
+  });
+
+  it('hdr asks for a half-float canvas, and nothing else does (lane H1)', async () => {
+    const plain = await createWebGPU(fakeCanvas(), { forceWebGL: true });
+    expect(plain.renderer.options.outputType).toBeUndefined();
+    plain.dispose();
+    const hdr = await createWebGPU(fakeCanvas(), { forceWebGL: true, hdr: true });
+    expect(hdr.renderer.options.outputType).toBe(THREE.HalfFloatType);
+    hdr.dispose();
   });
 
   it('forceWebGL makes the nodes-webgl kind on a WebGL 2 context', async () => {
@@ -55,6 +65,27 @@ describe('createWebGPU', () => {
     expect(made[0].toneMapping).toBe(THREE.NeutralToneMapping);
     await createWebGPU(fakeCanvas(), { toneMapping: THREE.NoToneMapping });
     expect(made[1].toneMapping).toBe(THREE.NoToneMapping);
+  });
+
+  it('draws on a reversed depth buffer on a WebGPU device, and on the standard one over WebGL 2 or when asked (lane N2)', async () => {
+    const was = globalThis.navigator;
+    Object.defineProperty(globalThis, 'navigator', { value: { gpu: { requestAdapter: async () => ({ limits: { maxColorAttachments: 8 } }) } }, configurable: true });
+    try {
+      const gfx = await createWebGPU(fakeCanvas());
+      expect(made.at(-1).options.reversedDepthBuffer).toBe(true);
+      expect(gfx.reversedDepth).toBe(true);
+      await createWebGPU(fakeCanvas(), { reversedDepth: false });
+      expect(made.at(-1).options.reversedDepthBuffer).toBe(false);
+      expect((await createWebGPU(fakeCanvas(), { forceWebGL: true })).reversedDepth).toBe(false);
+      expect(made.at(-1).options.reversedDepthBuffer).toBe(false);
+      // (asked outright over WebGL 2: the fixture's measurement)
+      expect((await createWebGPU(fakeCanvas(), { forceWebGL: true, reversedDepth: true })).reversedDepth).toBe(true);
+    } finally {
+      Object.defineProperty(globalThis, 'navigator', { value: was, configurable: true });
+    }
+    // (no adapter: three falls back to WebGL 2 by itself, so the standard buffer, until measured there)
+    await createWebGPU(fakeCanvas());
+    expect(made.at(-1).options.reversedDepthBuffer).toBe(false);
   });
 
   it('without it the kind is webgpu', async () => {
@@ -116,6 +147,44 @@ describe('buildPostProcessing', () => {
     expect(chain.pipeline.render).toHaveBeenCalledTimes(1);
     post.dispose();
     expect(chain.dispose).toHaveBeenCalled();
+  });
+  it('says whether the chain is temporal, for the mip bias at native (lane N2)', async () => {
+    setMipState({ scale: 1, classic: false });
+    // (each built before it is let go: a chain's import left resolving past
+    // the file's end reached the real passes.js, its mock gone)
+    const traa = buildPostProcessing({}, [{ kind: 'render' }, { kind: 'traa' }, { kind: 'output' }]);
+    expect(mipBias()).toBe(-0.5);
+    await traa.ready;
+    traa.dispose();
+    const smaa = buildPostProcessing({}, [{ kind: 'render' }, { kind: 'smaa' }, { kind: 'output' }]);
+    expect(mipBias()).toBe(0);
+    await smaa.ready;
+    smaa.dispose();
+  });
+});
+
+describe('the reference shots’ hooks', () => {
+  it('leaves a chain’s TRAA out with temporal off, and keeps it by default', async () => {
+    const passes = [{ kind: 'render' }, { kind: 'ao' }, { kind: 'traa' }, { kind: 'output' }];
+    built.length = 0;
+    const on = await createWebGPU(fakeCanvas());
+    await on.post(passes).ready;
+    expect(built.at(-1).passes.map((p) => p.kind)).toEqual(['render', 'ao', 'traa', 'output']);
+    const off = await createWebGPU(fakeCanvas(), { temporal: false });
+    await off.post(passes).ready;
+    expect(built.at(-1).passes.map((p) => p.kind)).toEqual(['render', 'ao', 'output']);
+  });
+
+  it('jitters through the renderer’s render only once asked', async () => {
+    const gfx = await createWebGPU(fakeCanvas());
+    const own = vi.fn();
+    const renderer = made.at(-1);
+    renderer.render = own;
+    expect(typeof gfx.jitter).toBe('function');
+    expect(renderer.render).toBe(own);
+    gfx.jitter(0);
+    expect(renderer.render).not.toBe(own);
+    gfx.jitter(null);
   });
 });
 

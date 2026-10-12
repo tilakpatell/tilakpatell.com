@@ -42,6 +42,15 @@ const EMISSIVE = {
   params: { emissive: { intensity: 333209.96875, color: [0.38, 0.75, 1], mode: 'baseColor' }, alphaTest: true, alphaCutoff: 0.5, doubleSided: false },
 };
 const GLB = { family: 'glb', maps: {}, params: {} };
+// the Death Star interior's master (bf2017-recipes.test.mjs's emissive wall)
+const DSI = {
+  family: 'dsi',
+  maps: { nea: 'T_DSI_01_RGBA', wear: 'T_DSI_01_M' },
+  params: {
+    dsi: { metal: 'layers', color: [0.117, 0.117, 0.117], aluminium: [0.147, 0.147, 0.147], plastic: [0.178, 0.178, 0.178], dirt: [0.184, 0.165, 0.144], soot: [0.058, 0.058, 0.058], smoothness: 1, aluminiumSmoothness: 1, plasticSmoothness: 2.5, scratch: 2 },
+    emissive: { mode: 'nea', intensity: 3000, color: [1, 1, 1] },
+  },
+};
 
 let three;
 let tex;
@@ -91,6 +100,24 @@ describe('createGameMaterial', () => {
     expect(features(make(VEHICLE, {}, { tier: 'mid' }))).toEqual(['detail']);
     expect(features(make(EMISSIVE, {}, { tier: 'mid' }))).toEqual(['emissive']);
     expect(features(make(VEGETATION, {}, { tier: 'mid' }))).toEqual([]);
+  });
+
+  it('the DSI master: its paint flat on low, its masks by tier', () => {
+    const low = createGameMaterial(DSI, { glb: glb() }, { tier: 'low', three });
+    expect(low.map).toBeNull();
+    expect(low.color.toArray().map((c) => +c.toFixed(3))).toEqual([0.117, 0.117, 0.117]);
+    expect(low.metalness).toBe(0);
+    expect(low.colorNode).toBeNull();
+    expect(features(make(DSI, {}, { tier: 'mid' }))).toEqual(['dsiNormal', 'emissive']);
+    const ultra = make(DSI);
+    expect(features(ultra)).toEqual(['dsiNormal', 'dsiWear', 'emissive']);
+    expect(ultra.colorNode).not.toBeNull();
+    expect(ultra.normalNode).not.toBeNull();
+    expect(ultra.aoNode).not.toBeNull();
+    // (an id map: the two-UV kind's layers)
+    expect(features(make({ ...DSI, maps: { ...DSI.maps, idMap: 'T_DSI_RGBA_ID' } }))).toEqual(['dsiLayers', 'dsiNormal', 'dsiWear', 'emissive']);
+    // (no packed map: the paint and the wear alone, no normal)
+    expect(make({ ...DSI, maps: { wear: 'T_DSI_01_M' } }).normalNode).toBeNull();
   });
 
   it('keeps a blended GLB material blended: depth, blending and offsets, at every tier', () => {
@@ -255,3 +282,13 @@ describe('createGameMaterial', () => {
   });
 });
 
+
+describe('the picture’s two nodes in the game material (lane N2)', () => {
+  it('samples every map at the shared mip bias and widens the roughness by the shaded normal', () => {
+    const m = make(VEHICLE);
+    expect(m.userData.game.picture).toEqual({ mipBias: true, specularAA: true });
+    expect(m.roughnessNode.isNode).toBe(true);
+    // (the low tier and a bare GLB keep three's own roughness: no change there)
+    expect(createGameMaterial(VEHICLE, { glb: glb() }, { tier: 'low', three }).roughnessNode).toBeNull();
+  });
+});

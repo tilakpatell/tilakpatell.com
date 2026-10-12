@@ -6,6 +6,10 @@ import { setMode3D } from '../../lib/gpu';
 import { setSound, setVoicesOn, setVolumes } from '../../lib/audio';
 import { applyMotion, read, write } from './settings.js';
 import DeviceReadout from './DeviceReadout';
+import Video from './Video.jsx';
+import { useVideo } from './useVideo.js';
+import { Row, Segmented, Slider } from './parts.jsx';
+import { write as writeVideo } from '../../lib/video.js';
 import '../../styles/lazy/settings.css';
 
 // The settings panel: one for the whole site (in the spirit of Bruno
@@ -18,45 +22,6 @@ import '../../styles/lazy/settings.css';
 // be reloaded), the sound by lib/audio, 3D by lib/gpu.
 
 const LABEL = { auto: 'Auto', low: 'Low', mid: 'Medium', high: 'High', ultra: 'Ultra' };
-
-function Segmented({ label, value, options, onChange, describedBy, disabled = false }) {
-  return (
-    <div className="settings-seg" role="radiogroup" aria-label={label} aria-describedby={describedBy} aria-disabled={disabled || undefined}>
-      {options.map(([v, text]) => (
-        <button key={v} type="button" role="radio" aria-checked={value === v} className="settings-seg-btn" disabled={disabled} onClick={() => onChange(v)}>
-          {text}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Slider({ label, value, min = 0, max = 1, step = 0.05, onChange, show = (v) => `${Math.round(v * 100)}%`, disabled }) {
-  const id = useId();
-  return (
-    <div className="settings-slider">
-      <label htmlFor={id}>{label}</label>
-      <input id={id} type="range" min={min} max={max} step={step} value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} />
-      <output htmlFor={id}>{show(value)}</output>
-    </div>
-  );
-}
-
-function Row({ title, hint, children, id }) {
-  return (
-    <div className="settings-row">
-      <div className="settings-row-head">
-        <p className="settings-row-title">{title}</p>
-        {hint && (
-          <p className="settings-row-hint" id={id}>
-            {hint}
-          </p>
-        )}
-      </div>
-      {children}
-    </div>
-  );
-}
 
 // the focusable things in the sheet, for keeping Tab inside it
 const focusables = (el) => [...el.querySelectorAll('button, a[href], input, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled && x.offsetParent !== null);
@@ -112,6 +77,10 @@ export default function Settings({ onClose }) {
     return () => window.removeEventListener('tp:quality-reload', onReload);
   }, []);
 
+  // (a video control that is not live: the world is built once, as a quality
+  // change on a world that cannot retune; the same reload offer)
+  const needsReload = () => setReload({ level: q.level, world: null, video: true });
+
   const change = (patch) => {
     const next = write(patch);
     setS(next);
@@ -119,6 +88,8 @@ export default function Settings({ onClose }) {
       setReload(null);
       setQuality(next.quality);
       setQ(quality());
+      // (a preset is a whole row of the picture's controls: the overrides go, lane V1)
+      writeVideo({ preset: next.quality === 'auto' ? null : next.quality });
     }
     if ('three' in patch) setMode3D(next.three);
     if ('sound' in patch) setSound(next.sound);
@@ -128,6 +99,7 @@ export default function Settings({ onClose }) {
     if ('motion' in patch) applyMotion(next.motion);
   };
 
+  const video = useVideo();
   const ceiling = BUDGETS[q.level]?.ratio ?? 2;
   const qualityOptions = [['auto', `Auto · ${LABEL[q.auto]}`], ...LEVELS.map((l) => [l, LABEL[l]])];
 
@@ -146,6 +118,7 @@ export default function Settings({ onClose }) {
             <h3 id="settings-graphics">Graphics</h3>
             <Row
               title="Quality"
+              badge={video.custom ? 'Custom' : null}
               id={qualityHint}
               hint={
                 q.pinned
@@ -163,7 +136,7 @@ export default function Settings({ onClose }) {
                       setReload(null);
                       window.dispatchEvent(new Event('tp:world-reload'));
                     }}>
-                    Reload it at {LABEL[reload.level]}
+                    {reload.video ? 'Reload it with these settings' : `Reload it at ${LABEL[reload.level]}`}
                   </button>
                 </p>
               )}
@@ -171,13 +144,15 @@ export default function Settings({ onClose }) {
             <Row title="3D" hint="Auto draws in 3D wherever the browser can. Off keeps every page flat.">
               <Segmented label="3D" value={s.three} options={[['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]} onChange={(v) => change({ three: v })} />
             </Row>
-            <Row title="Sharpness" hint={`Pixels drawn for each on the screen, up to ${LABEL[q.level]}’s ${ceiling}×.`}>
-              <Slider label="Sharpness" value={s.sharpness} min={0.5} max={2} step={0.25} onChange={(v) => change({ sharpness: v })} show={(v) => `${v}×`} />
+            <Row title="Render resolution" hint={`The picture drawn at this share of the screen’s pixels, up to ${LABEL[q.level]}’s ${ceiling}×.`}>
+              <Slider label="Render resolution" value={s.sharpness} min={0.5} max={2} step={0.25} onChange={(v) => change({ sharpness: v })} show={(v) => `${Math.round(v * 100)}%`} />
             </Row>
             <Row title="Motion" hint="Auto follows your system’s setting. Reduced calms the page’s animations.">
               <Segmented label="Motion" value={s.motion === 'reduced' ? 'reduced' : 'auto'} options={[['auto', 'Auto'], ['reduced', 'Reduced']]} onChange={(v) => change({ motion: v })} />
             </Row>
           </section>
+
+          <Video onNeedsReload={needsReload} />
 
           <section aria-labelledby="settings-sound">
             <h3 id="settings-sound">Sound</h3>

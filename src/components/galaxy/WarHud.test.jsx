@@ -64,6 +64,20 @@ describe('the war’s line over the galaxy', () => {
     const late = { ...fighting, fightEnd: NOW - 5e3, fighting: true };
     expect(hud(hoth(late), () => info({ on: { ...late, attackerTeam: 1 } }))).toContain('Evacuation: regrouping, the next in 4:05');
   });
+  it('marks the stage as the game’s objective bar does: attack or defend by your side, the lock while it has not opened, and the bars from the widgets', () => {
+    const defending = hud(hoth(fighting), () => info());
+    expect(defending).toContain('<use href="/ui/bf2017/ingame.svg#gamemode-gamemode-defend"');
+    expect(defending).toContain('class="game-icon galaxy-warhud-mark galaxy-warhud-mark-defend"');
+    expect(hud(hoth(fighting), () => info({ team: 1 }))).toContain('<use href="/ui/bf2017/ingame.svg#gamemode-gamemode-attack"');
+    const locked = hud(hoth(fighting), () => info({ stage: { index: 1, count: 3, open: false, opensIn: 30, need: 1 } }));
+    expect(locked).toContain('<use href="/ui/bf2017/ingame.svg#gamemode-gamemode-lock"');
+    expect(locked).toContain('galaxy-warhud-mark-locked');
+    // (nobody's side: no mark, the words alone)
+    expect(hud(hoth(fighting), () => info({ team: null }))).not.toContain('<use href=');
+    // (the bars keep their values; the line's words are as they were)
+    expect(defending).toMatch(/--k:\s*0\.25/);
+    expect(defending).toContain('Stage 1 of 3 · Defend: Echo Base’s ion cannon');
+  });
   it('is nothing where there’s no battle', () => {
     expect(hud(hoth(null))).toBe('');
     expect(hud(null)).toBe('');

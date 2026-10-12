@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BUDGETS, budget, classifyDevice, pixelRatio, quality, resetDevice, setQuality, sharpness, worldCheck } from './device';
+import { BUDGETS, budget, classifyDevice, pixelRatio, quality, rendererTier, resetDevice, setQuality, sharpness, worldCheck } from './device';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const PIXEL = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36';
@@ -171,6 +171,31 @@ describe('whether a world asks before it loads', () => {
   });
 });
 
+describe('the renderer tier kept beside the quality level', () => {
+  const store = new Map();
+  const at = (search = '', hash = '') => vi.stubGlobal('window', { location: { search, hash }, localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null) } });
+  beforeEach(() => store.clear());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('is null until the probe has kept one, then the kept one', () => {
+    at();
+    expect(rendererTier()).toBeNull();
+    store.set('tp-tier', JSON.stringify({ tier: 'T1', info: { vendor: 'nvidia', architecture: 'blackwell' } }));
+    expect(rendererTier()).toBe('T1');
+  });
+
+  it('is the address’s ?tier= over the kept one', () => {
+    store.set('tp-tier', JSON.stringify({ tier: 'T1', info: {} }));
+    at('', '#/universe?tier=T2');
+    expect(rendererTier()).toBe('T2');
+  });
+
+  it('is null where there is no window (Node, a worker)', () => {
+    vi.stubGlobal('window', undefined);
+    expect(rendererTier()).toBeNull();
+  });
+});
+
 describe('the quality mode the visitor chose', () => {
   const store = new Map();
   const events = [];
@@ -242,5 +267,14 @@ describe('the quality mode the visitor chose', () => {
     expect(worldCheck(10, phone).ask).toBe(false);
     // (too little room still asks: the download wouldn't fit)
     expect(worldCheck(10, phone, 5).ask).toBe(true);
+  });
+});
+
+describe('budget with the video settings (lane V1)', () => {
+  it('multisampling and anisotropy under the row’s own, never over it', () => {
+    expect(budget('high', { msaa: 2, anisotropy: 4 })).toMatchObject({ samples: 2, aniso: 4 });
+    expect(budget('mid', { msaa: 8, anisotropy: 16 })).toMatchObject({ samples: 2, aniso: 4 });
+    expect(budget('high', {})).toBe(BUDGETS.high);
+    expect(budget('high', null)).toBe(BUDGETS.high);
   });
 });

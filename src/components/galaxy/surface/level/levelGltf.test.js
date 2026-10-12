@@ -1,7 +1,13 @@
 import { Document, NodeIO } from '@gltf-transform/core';
 import * as THREE from 'three';
-import { describe, expect, it, vi } from 'vitest';
-import { asColour, BARE, bareGlb, bindSlot, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { WasmError } from '../../../../lib/wasm/load.js';
+import { asColour, BARE, bareGlb, bindSlot, colourByName, createLevelLoader, gameWordOf, matchRecipes, recipeMaps, recipesIndex, sharpenPack } from './levelGltf.js';
+
+// the KTX2 loader the pack's maps come through, as a test sets it (no
+// transcoder here: a test that names no map never asks)
+const ktx2 = vi.hoisted(() => ({ up: () => Promise.reject(new Error('no KTX2 loader in this test')) }));
+vi.mock('../../../../lib/three/gltf.js', async (importOriginal) => ({ ...(await importOriginal()), ktx2Loader: () => ktx2.up() }));
 
 // a GLB with one mesh of two primitives, their materials naming the game's
 // shaders in their extras as the export writes them
@@ -17,6 +23,57 @@ async function glbBytes() {
   doc.createScene().addChild(doc.createNode().setMesh(mesh));
   return (await new NodeIO().writeBinary(doc)).buffer;
 }
+
+// that GLB with its materials naming colour maps as the export writes them,
+// beside the meshes (`maps`: a material's index → its KTX2), and the
+// materials `twoSided` two-sided
+async function glbNaming(maps, twoSided = []) {
+  const bytes = new Uint8Array(await glbBytes());
+  const len = new DataView(bytes.buffer).getUint32(12, true);
+  const json = JSON.parse(new TextDecoder().decode(bytes.subarray(20, 20 + len)));
+  json.images = [];
+  json.textures = [];
+  for (const [i, uri] of Object.entries(maps)) {
+    json.images.push({ uri, mimeType: 'image/ktx2' });
+    json.textures.push({ source: json.images.length - 1 });
+    json.materials[i].pbrMetallicRoughness = { ...json.materials[i].pbrMetallicRoughness, baseColorTexture: { index: json.textures.length - 1 } };
+  }
+  for (const i of twoSided) json.materials[i].doubleSided = true;
+  const raw = new TextEncoder().encode(JSON.stringify(json));
+  const text = new Uint8Array(Math.ceil(raw.length / 4) * 4).fill(0x20);
+  text.set(raw);
+  const rest = bytes.subarray(20 + len);
+  const out = new Uint8Array(20 + text.length + rest.length);
+  out.set(bytes.subarray(0, 20));
+  const o = new DataView(out.buffer);
+  o.setUint32(8, out.length, true);
+  o.setUint32(12, text.length, true);
+  out.set(text, 20);
+  out.set(rest, 20 + text.length);
+  return out.buffer;
+}
+
+// a KTX2 loader whose maps load, but for those named `bad` (a 404); since
+// lane N4 the level's maps come as bytes through the stream (fetchBytes) and
+// are parsed, so `parse` is the face the loader uses
+const some = async () => ({
+  loadAsync: async (url) => {
+    if (url.includes('bad')) throw new Error(`404 ${url}`);
+    return new THREE.Texture();
+  },
+  parse: (bytes, ok) => ok(new THREE.Texture()),
+});
+
+// the stream's fetch for a test: a map (any .ktx2) comes as a KTX2's bytes,
+// but for those named `bad` (a 404, as the bucket answers one); anything else
+// is the GLB `glbOf(path)` gives. `log` keeps each path asked.
+const KTX2_BYTES = new Uint8Array([0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]).buffer;
+const withMaps = (glbOf, log = []) => async (path) => {
+  log.push(path);
+  if (!path.endsWith('.ktx2')) return glbOf(path);
+  if (path.includes('bad')) throw new Error(`404 /models/galaxy/bf2017/levels/hoth/${path}`);
+  return KTX2_BYTES;
+};
 
 describe('matchRecipes', () => {
   it('matches a GLB material to the first unused recipe of its shader', () => {
@@ -63,7 +120,7 @@ describe('recipeMaps', () => {
 });
 
 describe('the pack’s word on a map', () => {
-  const sizes = { t_kam_wall_01_cs: { high: 1024, srgb: false }, t_crate_01_cs: { high: 512, srgb: true }, t_old_01_c: { high: 512 } };
+  const sizes = { t_kam_wall_01_cs: { high: 1024, srgb: false }, t_crate_01_cs: { high: 512, srgb: true }, t_old_01_c: { high: 512 }, t_lamp_01_m: { high: 256, srgb: false } };
 
   it('reads a map as the game reads it, sRGB or linear, and marks the texture so', () => {
     const wall = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
@@ -77,17 +134,35 @@ describe('the pack’s word on a map', () => {
     expect(gameWordOf(null, sizes, 'tex/t_old_01_c.ktx2')).toBeNull();
   });
 
-  it('is never overruled by the slot rule or a recipe’s colour key', () => {
-    const wall = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+  it('is overruled in a colour slot only for a map whose name says colour (the 2026-10-11 amendment)', () => {
+    // (Theed’s brick, t_naboo_bricks_05_cs, the game stores BC7_UNORM: read
+    // linear in the map slot it drew the palace near black, 30 32 31, and
+    // read sRGB its cream stone, 210 217 213)
+    const brick = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+    expect(brick.colorSpace).toBe(THREE.NoColorSpace);
     const mat = new THREE.MeshStandardMaterial();
-    bindSlot(mat, 'map', wall);
-    expect(mat.map).toBe(wall);
-    expect(wall.colorSpace).toBe(THREE.NoColorSpace);
-    expect(asColour(wall, true).colorSpace).toBe(THREE.NoColorSpace);
+    bindSlot(mat, 'map', brick);
+    expect(mat.map).toBe(brick);
+    expect(brick.colorSpace).toBe(THREE.SRGBColorSpace);
+    expect(asColour(gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2'), true).colorSpace).toBe(THREE.SRGBColorSpace);
+    // (in a data slot the word stands)
+    const data = gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2');
+    bindSlot(mat, 'normalMap', data);
+    expect(data.colorSpace).toBe(THREE.NoColorSpace);
+    expect(asColour(gameWordOf(new THREE.Texture(), sizes, 'tex/t_kam_wall_01_cs.ktx2'), false).colorSpace).toBe(THREE.NoColorSpace);
+    // (a map no colour suffix names keeps the word, in a colour slot too: a mask the emissive slot holds)
+    const mask = gameWordOf(new THREE.Texture(), sizes, 'tex/t_lamp_01_m.ktx2');
+    bindSlot(mat, 'emissiveMap', mask);
+    expect(mask.colorSpace).toBe(THREE.NoColorSpace);
     // (a map without the word still takes the slot rule)
     const old = gameWordOf(new THREE.Texture(), sizes, 'tex/t_old_01_c.ktx2');
     bindSlot(mat, 'emissiveMap', old);
     expect(old.colorSpace).toBe(THREE.SRGBColorSpace);
+  });
+
+  it('knows a colour map by DICE’s suffixes, a numbered one and a derived map apart', () => {
+    for (const slug of ['t_kam_wall_01_cs', 't_x_c', 't_x_ca', 't_x_cw', 't_nabboocopperroof_cs_01']) expect(colourByName(slug), slug).toBe(true);
+    for (const slug of ['t_x_cs__orm_04e5dd3e', 't_x_n__normal', 't_x_m', 't_x_nam', 't_concrete', 't_x_e']) expect(colourByName(slug), slug).toBe(false);
   });
 });
 
@@ -257,6 +332,42 @@ describe('the loader under the stream (lane N4)', () => {
   });
 });
 
+describe('the baked bounce on the game materials (lane N3)', () => {
+  // two primitives: the first with a second uv set (TEXCOORD_1), the second without
+  async function glbUv1() {
+    const doc = new Document();
+    const buf = doc.createBuffer();
+    const pos = doc.createAccessor().setType('VEC3').setArray(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0])).setBuffer(buf);
+    const uv = doc.createAccessor().setType('VEC2').setArray(new Float32Array([0, 0, 1, 0, 0, 1])).setBuffer(buf);
+    const mesh = doc.createMesh();
+    for (const [shader, uv1] of [['Shaders/SS_A', true], ['Shaders/SS_B', false]]) {
+      const prim = doc.createPrimitive().setAttribute('POSITION', pos).setAttribute('TEXCOORD_0', uv).setMaterial(doc.createMaterial(shader).setExtras({ shader, textures: {} }));
+      if (uv1) prim.setAttribute('TEXCOORD_1', uv);
+      mesh.addPrimitive(prim);
+    }
+    doc.createScene().addChild(doc.createNode().setMesh(mesh));
+    return (await new NodeIO().writeBinary(doc)).buffer;
+  }
+  const recipes = { forGlb: () => [{ shader: 'Shaders/SS_A', maps: {} }, { shader: 'Shaders/SS_B', maps: {} }], maps: {}, tex: {} };
+  const materialFor = (recipe) => Object.assign(new THREE.MeshBasicMaterial({ name: recipe.shader }), { isNodeMaterial: true });
+
+  it('only a mesh with TEXCOORD_1 and a chart takes the atlas; the one without keeps the probe term', async () => {
+    const applied = [];
+    const baked = { chartOf: (glb) => (glb === 'meshes/x.lod0.glb' ? [1, 1, 0, 0] : null) };
+    const applyBaked = async (m, chart) => applied.push([m.name, chart]);
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked, applyBaked });
+    await loader.load('meshes/x.lod0.glb');
+    expect(applied).toEqual([['Shaders/SS_A', [1, 1, 0, 0]]]);
+  });
+  it('no chart for the mesh (lane Q3’s probe has not found them), or no atlas: nothing is applied', async () => {
+    const applied = [];
+    const applyBaked = async (m) => applied.push(m.name);
+    await createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked: { chartOf: () => null }, applyBaked }).load('meshes/x.lod0.glb');
+    await createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: glbUv1, sizes: {}, recipes, materialFor, baked: null, applyBaked }).load('meshes/y.lod0.glb');
+    expect(applied).toEqual([]);
+  });
+});
+
 describe('a level pack’s textures bound to their materials', () => {
   it('reads a colour or emissive map as sRGB, whatever its file says (the game’s colour maps are BC7_SRGB)', () => {
     const mat = new THREE.MeshStandardMaterial();
@@ -408,6 +519,141 @@ describe('a material that names no colour map', () => {
     const colours = [];
     gltf.scene.traverse((o) => o.isMesh && colours.push(o.material.color.getHex()));
     expect(colours).toEqual([BARE, BARE]);
+  });
+});
+
+describe('a colour map named and lost', () => {
+  const meshesOf = (gltf) => {
+    const out = [];
+    gltf.scene.traverse((o) => o.isMesh && out.push(o));
+    return out;
+  };
+  let warn = null;
+  const quiet = () => (warn = vi.spyOn(console, 'warn').mockImplementation(() => {}));
+  afterEach(() => {
+    warn?.mockRestore();
+    ktx2.up = () => Promise.reject(new Error('no KTX2 loader in this test'));
+  });
+
+  it('is bare, as one that named none: a solid piece grey and a two-sided card not drawn', async () => {
+    quiet();
+    ktx2.up = some;
+    const glbs = { 'meshes/solid.lod0.glb': () => glbNaming({ 0: '../tex/good.ktx2', 1: '../tex/bad.ktx2' }), 'meshes/card.lod0.glb': () => glbNaming({ 0: '../tex/bad_card.ktx2', 1: '../tex/good.ktx2' }, [0]) };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps((path) => glbs[path]()), sizes: {} });
+    const [kept, lost] = meshesOf(await loader.load('meshes/solid.lod0.glb')).map((o) => o.material);
+    expect(kept.map?.isTexture).toBe(true);
+    expect(kept.color.getHex()).toBe(0xffffff);
+    expect(lost.map).toBeNull();
+    expect(lost.color.getHex()).toBe(BARE);
+    const card = meshesOf(await loader.load('meshes/card.lod0.glb'));
+    expect(card.map((o) => o.material.name)).toEqual(['Shaders/SS_B']);
+  });
+
+  it('binds a map to the loader’s copy of its material too, the one drawn (a mesh without normals or tangents)', async () => {
+    ktx2.up = some;
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/good.ktx2', 1: '../tex/good.ktx2' })), sizes: {} });
+    const gltf = await loader.load('meshes/x.lod0.glb');
+    const drawn = meshesOf(gltf).map((o) => o.material);
+    const parsed = await gltf.parser.getDependencies('material');
+    expect(drawn[0]).not.toBe(parsed[0]);
+    expect(drawn.map((m) => m.map?.isTexture)).toEqual([true, true]);
+    expect(parsed.map((m) => m.map?.isTexture)).toEqual([true, true]);
+  });
+
+  it('counts the maps asked, loaded and failed, and why the first failed', async () => {
+    quiet();
+    ktx2.up = some;
+    const asked = [];
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/good.ktx2', 1: '../tex/bad.ktx2' }), asked), sizes: {} });
+    const badAsked = () => asked.filter((p) => p.includes('bad')).length;
+    expect(loader.counts()).toEqual({ asked: 0, loaded: 0, failed: 0, why: null });
+    await loader.load('meshes/a.lod0.glb');
+    // (a map is asked once, whatever names it)
+    await loader.load('meshes/b.lod0.glb');
+    expect(loader.counts()).toEqual({ asked: 2, loaded: 1, failed: 1, why: 'Error: 404 /models/galaxy/bf2017/levels/hoth/tex/bad.1024.ktx2' });
+    // (a map that failed on its own, a 404, is not asked again)
+    const once = badAsked();
+    expect(once).toBeGreaterThan(0);
+    expect(await loader.texture('tex/bad.ktx2')).toBeNull();
+    expect(badAsked()).toBe(once);
+  });
+
+  it('asks again for a map the KTX2 loader failed once that loader comes up, and counts it loaded', async () => {
+    quiet();
+    let up = false;
+    ktx2.up = () => (up ? some() : Promise.reject(new WasmError('basis', 'load')));
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/a.ktx2', 1: '../tex/b.ktx2' })), sizes: {} });
+    await loader.load('meshes/x.lod0.glb');
+    expect(loader.counts()).toEqual({ asked: 2, loaded: 0, failed: 2, why: 'WasmError (load): basis: WebAssembly failed to load' });
+    up = true;
+    expect((await loader.texture('tex/a.ktx2'))?.isTexture).toBe(true);
+    expect(loader.counts()).toEqual({ asked: 2, loaded: 1, failed: 1, why: 'WasmError (load): basis: WebAssembly failed to load' });
+    const gltf = await loader.load('meshes/y.lod0.glb');
+    expect(meshesOf(gltf).map((o) => [o.material.map?.isTexture, o.material.color.getHex()])).toEqual([
+      [true, 0xffffff],
+      [true, 0xffffff],
+    ]);
+    expect(loader.counts()).toEqual({ asked: 2, loaded: 2, failed: 0, why: null });
+  });
+
+  it('says the first lost map of a world once, a warning in production too, and the rest not', async () => {
+    quiet();
+    ktx2.up = some;
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps((path) => glbNaming({ 0: `../tex/bad_${path.split('/')[1]}.ktx2`, 1: '../tex/bad.ktx2' })), sizes: {} });
+    await loader.load('meshes/a.lod0.glb');
+    await loader.load('meshes/b.lod0.glb');
+    expect(loader.counts().failed).toBe(3);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/^level hoth: a map did not load, tex\/bad\S*\.ktx2: Error: 404 /);
+  });
+
+  it('says a transcoder that would not come up once, by its WasmError’s name, and draws the level bare', async () => {
+    quiet();
+    ktx2.up = () => Promise.reject(new WasmError('basis', 'timeout'));
+    const loader = createLevelLoader({ world: 'endor', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/a.ktx2', 1: '../tex/b.ktx2' })), sizes: {} });
+    const gltf = await loader.load('meshes/x.lod0.glb');
+    expect(meshesOf(gltf).map((o) => o.material.color.getHex())).toEqual([BARE, BARE]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/^level endor: the KTX2 loader did not come up.*WasmError \(timeout\)/);
+    expect(loader.counts()).toEqual({ asked: 2, loaded: 0, failed: 2, why: 'WasmError (timeout): basis: WebAssembly did not come up in time' });
+  });
+
+  // (the game material's base is the GLB's colour under no map: what each
+  // was handed, by shader)
+  const game = () => {
+    const base = {};
+    const materialFor = vi.fn((recipe, maps) => {
+      base[recipe.shader] = maps.glb.color.getHex();
+      return new THREE.MeshBasicMaterial({ name: `game:${recipe.shader}` });
+    });
+    return { base, materialFor };
+  };
+
+  it('makes a recipe’s base grey where the GLB’s colour map was lost and the recipe brings none; one with a colour of its own draws it', async () => {
+    quiet();
+    ktx2.up = some;
+    const { base, materialFor } = game();
+    const recipes = {
+      forGlb: (path) => [{ shader: 'Shaders/SS_A', maps: path.includes('own') ? { color: 'T_C' } : {} }, { shader: 'Shaders/SS_B', maps: {} }],
+      maps: { T_C: 'tex/good_own.ktx2' },
+      tex: {},
+    };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({ 0: '../tex/bad.ktx2', 1: '../tex/good.ktx2' })), sizes: {}, recipes, materialFor });
+    const drawn = meshesOf(await loader.load('meshes/x.lod0.glb')).map((o) => o.material.name);
+    expect(drawn).toEqual(['game:Shaders/SS_A', 'game:Shaders/SS_B']);
+    expect(base).toEqual({ 'Shaders/SS_A': BARE, 'Shaders/SS_B': 0xffffff });
+    await loader.load('meshes/own.lod0.glb');
+    expect(base['Shaders/SS_A']).toBe(0xffffff);
+  });
+
+  it('a recipe’s material whose GLB named no colour map and whose recipe brings none: a solid piece grey, a two-sided card not drawn', async () => {
+    const { base, materialFor } = game();
+    const recipes = { forGlb: () => [{ shader: 'Shaders/SS_A', maps: {} }, { shader: 'Shaders/SS_B', maps: {} }], maps: {}, tex: {} };
+    const loader = createLevelLoader({ world: 'hoth', tier: 'high', renderer: null, fetchBytes: withMaps(() => glbNaming({}, [0])), sizes: {}, recipes, materialFor });
+    const drawn = meshesOf(await loader.load('meshes/x.lod0.glb')).map((o) => o.material.name);
+    expect(drawn).toEqual(['game:Shaders/SS_B']);
+    expect(materialFor).toHaveBeenCalledTimes(1);
+    expect(base).toEqual({ 'Shaders/SS_B': BARE });
   });
 });
 

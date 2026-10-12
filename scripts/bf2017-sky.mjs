@@ -28,11 +28,16 @@
 //   2048 wide, WebP, public/models/galaxy/bf2017/levels/<world>/sky.webp)
 //   (t_space_01_c --as core; t_space_no_large_stars_01_c --as rim)
 //
-// And the front end's globes (lane K's PICTURES: a lit planet's picture,
-// which no sphere can wear) as the galaxy map's system discs: each cut to
-// 96 pixels square (WebP, its alpha kept), as public/models/galaxy/space/
-// globes/<system>.webp, and src/data/galaxy/space/globes.json, which
-// HoloMap.jsx reads.
+// And the galaxy map's system discs (globes.js, HoloMap.jsx): the front
+// end's globes (lane K's PICTURES: a lit planet's picture, which no sphere
+// can wear) each cut to 96 pixels square, and, for every world with a skin
+// and no picture (lane S3: bespin, endor, kamino, naboo; E5's as their skins
+// land in src/data/planetSkins.json), a globe rendered from the skin's
+// colour map and clouds (scripts/lib/bf2017-sky.mjs's renderGlobe) at the
+// same 96 (WebP, alpha kept), as public/models/galaxy/space/globes/
+// <system>.webp, and src/data/galaxy/space/globes.json (`kind`: picture or
+// skin). Then publish them by hash:
+//   node scripts/assets-publish.mjs --only 'models/galaxy/space/globes/*'
 //
 //   node scripts/bf2017-sky.mjs --globes
 //
@@ -46,7 +51,7 @@ import { FloatType } from 'three';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { parseArgs } from './lib/args.mjs';
 import { bucketFile } from './lib/bf2017-bucket.mjs';
-import { encodeRgbe, halve, normalise } from './lib/bf2017-sky.mjs';
+import { encodeRgbe, halve, normalise, renderGlobe } from './lib/bf2017-sky.mjs';
 import { dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { PICTURES } from './lib/bf2017-planets.mjs';
 import { unpackKtx2 } from './lib/bf2017-textures.mjs';
@@ -143,12 +148,42 @@ export async function makePanoramaWebp(name, world, { root = join(ROOT, 'lab', '
 // is the system's parent, not its world: Yavin Prime's and the giant's
 // pictures stay lane K's)
 export const GLOBES = { geonosis: 'geonosis', hoth: 'hoth', kashyyyk: 'kashyyyk', scarif: 'scarif', tatooine: 'tatooine', yavin: 'yavin4' };
-export const GLOBE_PX = 96;
+export const GLOBE_PX = 96; // (_source: the front end's globe pictures as lane K cut them, 96 px on the map's disc)
+const GLOBE_OVER = 4; // (rendered at four times the size and brought down, so the limb is smooth)
 
-export async function makeGlobes({ root = join(ROOT, 'lab', 'assets', 'bf2017'), out = join(ROOT, 'public', 'models', 'galaxy', 'space', 'globes'), data = join(ROOT, 'src', 'data', 'galaxy', 'space', 'globes.json') } = {}) {
+// the worlds with a skin (src/data/planetSkins.json: a colour map on disk, the
+// site's mid cut) and no picture: their globes are rendered from the skin
+export async function skinnedGlobes({ skins, pictures = GLOBES, publicDir = join(ROOT, 'public') }) {
+  const out = [];
+  for (const [system, skin] of Object.entries(skins)) {
+    if (!skin.color || pictures[system]) continue;
+    out.push({ system, colour: join(publicDir, `${skin.color}-mid.webp`), clouds: skin.clouds ? join(publicDir, `${skin.clouds}-mid.webp`) : null, cloudCut: skin.cloudCut ?? 0.5, atmo: skin.atmo ?? null, from: skin.color });
+  }
+  return out;
+}
+
+const hexRgb = (hex) => (typeof hex === 'string' && /^#[0-9a-f]{6}$/i.test(hex) ? [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) : null);
+
+export async function makeGlobes({ root = join(ROOT, 'lab', 'assets', 'bf2017'), out = join(ROOT, 'public', 'models', 'galaxy', 'space', 'globes'), data = join(ROOT, 'src', 'data', 'galaxy', 'space', 'globes.json'), skins = join(ROOT, 'src', 'data', 'planetSkins.json') } = {}) {
   const sharp = createRequire(createRequire(import.meta.url).resolve('ndarray-pixels'))('sharp');
   await mkdir(out, { recursive: true });
   const index = {};
+  // the skinned worlds first (no bucket needed: the skins are the site's own files)
+  const raw = async (file) => {
+    const { data: px, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    return { data: new Uint8Array(px.buffer, px.byteOffset, px.length), width: info.width, height: info.height };
+  };
+  for (const g of await skinnedGlobes({ skins: JSON.parse(await readFile(skins, 'utf8')) })) {
+    const globe = renderGlobe({ colour: await raw(g.colour), clouds: g.clouds ? await raw(g.clouds) : null, cloudCut: g.cloudCut, atmo: hexRgb(g.atmo), size: GLOBE_PX, over: GLOBE_OVER });
+    const webp = await sharp(Buffer.from(globe.data.buffer), { raw: { width: globe.width, height: globe.height, channels: 4 } })
+      .resize(GLOBE_PX, GLOBE_PX, { kernel: 'lanczos3' })
+      .webp({ quality: 88, alphaQuality: 90 })
+      .toBuffer();
+    const file = join(out, `${g.system}.webp`);
+    await writeFile(file, webp);
+    index[g.system] = { url: `/models/galaxy/space/globes/${g.system}.webp`, from: g.from, kind: 'skin' };
+    console.log(`${relative(ROOT, file)} ${(webp.length / 1024).toFixed(1)} KB ← ${g.from} (rendered)`);
+  }
   for (const [system, picture] of Object.entries(GLOBES)) {
     const name = PICTURES[picture];
     let png = null;
@@ -162,11 +197,12 @@ export async function makeGlobes({ root = join(ROOT, 'lab', 'assets', 'bf2017'),
     const webp = await img.resize(GLOBE_PX, GLOBE_PX, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).webp({ quality: 88, alphaQuality: 90 }).toBuffer();
     const file = join(out, `${system}.webp`);
     await writeFile(file, webp);
-    index[system] = { url: `/models/galaxy/space/globes/${system}.webp`, from: name };
+    index[system] = { url: `/models/galaxy/space/globes/${system}.webp`, from: name, kind: 'picture' };
     console.log(`${relative(ROOT, file)} ${(webp.length / 1024).toFixed(1)} KB ← ${name}`);
   }
   await mkdir(dirname(data), { recursive: true });
-  await writeFile(data, `${JSON.stringify(index, null, 1)}\n`);
+  const sorted = Object.fromEntries(Object.keys(index).sort().map((k) => [k, index[k]]));
+  await writeFile(data, `${JSON.stringify(sorted, null, 1)}\n`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
