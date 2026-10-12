@@ -36,6 +36,7 @@ export const WORLD_MB = {
   '/dot-matrix/64': 7, // the castle's and Bob-omb Ridge's texture sets at phone size, two skies, and Mario, the cast and the props (fan-made Sketchfab models, 2 MB)
   '/earth': 2, // NASA's globe at phone size, the stars and the plane
   '/dot-matrix/minecraft': 2, // drawn in code from the pack's tiles: the block strip, the skins and the sky's and HUD's sprites (under a tenth of an MB today)
+  '/battlefront': 13, // the game's sounds for Hoth (src/data/bf2017/sounds.json: 112 names, 352 takes, 12.4 MB as encoded 2026-10-12; the stems stream as they play, the one-shots load as the world starts); the level pack streams by cell from the bucket and is the galaxy's packBytes, not counted here
 };
 
 // The world a path is in: '/middle-earth/moria' is Middle-earth. Some

@@ -44,7 +44,7 @@ const MAX_STEPS = 10; // the sim's steps at most a frame (a tab back from the ba
 export default {
   id: 'battlefront',
   shading: 'nodes',
-  mb: 0,
+  mb: 13, // (WORLD_MB['/battlefront']: the game's sounds; the level pack streams by cell)
   // The pace's steps are the chain's (lowerQuality): the canvas keeps its
   // size and the chain draws under it, upscaled back (lane U's headroom),
   // then sheds passes. Drawn at the screen's own pixels and no sharper:
