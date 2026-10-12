@@ -235,13 +235,15 @@ export function squadBlocks(sim, id, team) {
   return (sq?.members ?? []).filter((m) => m !== id).map((m) => ({ id: m, blocked: blocked(sim.entities.get(m) ?? null, { enemies, now: sim.time }) }));
 }
 
-// what a team has out: heroes and reinforcements standing, with those chosen this wave
-function outOf(sim, team, extra = { heroes: 0, reinforcements: 0 }) {
-  const out = { ...extra };
+// what a team has out: heroes and reinforcements standing, with those chosen
+// this wave, and which ones (a hero is one of a kind: kits.json's MaxCount 1)
+export function outOf(sim, team, extra = { heroes: 0, reinforcements: 0 }) {
+  const out = { heroes: extra.heroes ?? 0, reinforcements: extra.reinforcements ?? 0, units: new Set(extra.units ?? []) };
   for (const e of sim.entities.values()) {
     if (e.team !== team || !e.alive) continue;
     if (e.unit === 'hero') out.heroes++;
     if (e.unit === 'reinforcement') out.reinforcements++;
+    if (e.unit) out.units.add(e.unitId);
   }
   return out;
 }
@@ -308,7 +310,8 @@ export function removeEntity(sim, id) {
 function emit(sim, e) {
   const ev = { t: Math.round(sim.time * 1000) / 1000, ...e };
   sim.events.push(ev);
-  sim.out.push(ev);
+  // (a deploy before the first step: the page's first, from the waiting screen)
+  (sim.out ??= []).push(ev);
 }
 
 // a direction turned by small yaw and pitch offsets (radians)
@@ -353,8 +356,8 @@ function applyInput(sim, inp) {
   if (inp.aim) s.aim = inp.aim;
   s.abilityHeld = inp.abilityHeld ?? 0;
   if (inp.ability) press(s.abilities, inp.ability, sim.time);
-  if (inp.vent) vent(s.gun, sim.time);
-  if (inp.cool) coolPress(s.gun, sim.time);
+  if (inp.vent && s.gun) vent(s.gun, sim.time);
+  if (inp.cool && s.gun) coolPress(s.gun, sim.time);
   if (s.state !== 'roll') move(s, inp.move ?? [0, 0], STEP, sim.nav);
   if (inp.fire) shoot(sim, s, inp.aim ?? chestAhead(s));
   s.interact = !!inp.interact;
@@ -535,7 +538,7 @@ function stepMode(sim) {
     for (const team of [1, 2]) {
       const c = sim.commanders[team];
       if (!wave(c, sim.time)) continue;
-      const chosen = { heroes: 0, reinforcements: 0 };
+      const chosen = { heroes: 0, reinforcements: 0, units: [] };
       const squadPicks = new Map();
       for (const entry of [...sim.deploying.values()]) {
         if (entry.team !== team || !entry.bot) continue;
@@ -551,6 +554,7 @@ function stepMode(sim) {
         if (!r.ok) continue;
         if (choice.kind === 'hero') chosen.heroes++;
         if (choice.kind === 'reinforcement') chosen.reinforcements++;
+        if (choice.kind !== 'class') chosen.units.push(choice.id);
         picks.push(sim.entities.get(entry.id).cls.cls);
         squadPicks.set(sq, picks);
       }

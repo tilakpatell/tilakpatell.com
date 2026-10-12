@@ -87,9 +87,10 @@ export function offers(bp, id, team, { out = { heroes: 0, reinforcements: 0 } } 
   };
   for (const c of side.classes) add('class', c, false);
   for (const r of side.reinforcements) add('reinforcement', r, out.reinforcements >= lim.reinforcementsPerTeam);
+  // (a hero is one of a kind on its team: the kit limitation's MaxCount 1, kits.json)
   for (const h of side.heroes) {
     heroOf(bp.rb, h);
-    add('hero', h, out.heroes >= lim.heroesPerTeam);
+    add('hero', h, out.heroes >= lim.heroesPerTeam || Boolean(out.units?.has(h)));
   }
   // vehicles wait for lane 4: offered at their price, not yet deployable
   for (const v of side.vehicles ?? []) {

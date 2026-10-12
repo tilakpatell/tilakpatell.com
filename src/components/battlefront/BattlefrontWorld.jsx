@@ -113,8 +113,8 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   // Deploy on the waiting screen: the game's wipe, the world's deploy at its swap
   const deployThrough = (o) => {
     if (phase !== 'waiting' || !progress.ready) return;
-    picked.current = o.kind === 'class' ? { classId: o.id } : {};
-    send('pick', o.kind === 'class' ? o.id : null);
+    picked.current = { kind: o.kind, id: o.id };
+    send('pick', { kind: o.kind, id: o.id });
     setPhase('down');
     setTimeout(() => {
       send('deploy', picked.current);
@@ -156,7 +156,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
           canApply={canApply}
           applied={applied}
           onApply={onApply}
-          onPick={(o) => send('pick', o.kind === 'class' ? o.id : null)}
+          onPick={(o) => send('pick', { kind: o.kind, id: o.id })}
           onDeploy={deployThrough}
           back={way}
         />
@@ -178,8 +178,8 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
           words={WORDS}
           markers={snap.markers ?? []}
           scoreboard={screens ? false : snap.showScoreboard}
-          onDeploy={(o) => send('deploy', o.kind === 'class' ? { classId: o.id } : {})}
-          onPick={(o) => send('pick', o.kind === 'class' ? o.id : null)}
+          onDeploy={(o) => send('deploy', { kind: o.kind, id: o.id })}
+          onPick={(o) => send('pick', { kind: o.kind, id: o.id })}
           onSpawn={(c) => send('spawn', c.kind === 'mate' ? c.id : null)}
           readRadar={() => ({ me: snap.player, entities: snap.entities ?? [], objectives: (snap.mode?.objectives ?? []).map((o) => ({ ...o, label: o.name })) })}
           way={way}
