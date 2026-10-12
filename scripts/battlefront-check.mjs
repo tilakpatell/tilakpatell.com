@@ -260,7 +260,7 @@ async function walkScreens(kind) {
 // the battle's screens: the HUD's crosshair, the pause menu, the kill
 // screen, the end of round
 async function screensInWorld(page, at, wait) {
-  await at('hud', '.bf-hud .hud-reticle-shape', wait);
+  await at('hud', '.bf-hud .hud-reticle-shape', wait, 'attached');
   await page.keyboard.press('Escape');
   await at('ingame-menu', '[data-screen$="/IngameMenuMPScreen"]', wait);
   await page.click('[data-item="RESUME"]');

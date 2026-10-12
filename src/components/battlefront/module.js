@@ -15,6 +15,15 @@
 // screen), 'weather' name, 'look' { yaw, pitch } (the player's view, for
 // a shot toward the sun), 'gpu', 'ragdolls' (how many bodies fall, lie
 // and wait: figures/ragdolls.js).
+//
+// Until the first deploy the camera is parked in the soldier's own pose at
+// the side's spawn (the game's darkroom: the waiting screen covers it),
+// so the level streams round where the player will land and the shaders
+// of what they will see build behind the screen (waiting.js has the
+// rules; the snapshot's `shaders` carries lib/three/pipelineGuard's
+// counts, `machine` the chip's numbers for the recommendation). The
+// deploy is the game's wipe's swap: the exposure then adapts from the
+// darkroom's stops to the day's over a quarter second.
 
 import * as THREE from 'three';
 import { device } from '../../lib/device.js';
@@ -32,8 +41,10 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { STEP, addPlayer, createBattle, deploy, step, view } from './battle.js';
+import { STEP, addPlayer, createBattle, deploy, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
+import { guardOf } from '../../lib/three/pipelineGuard.js';
+import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
 import { litWith, picturesOf } from './picture.js';
 import { headroom, upscaleKind } from '../../lib/three/light/post.js';
 import { headroomAt } from '../../runtime/quality.js';
@@ -60,7 +71,7 @@ export default {
     return typeof window !== 'undefined' ? Math.max(1, Math.min(2, window.devicePixelRatio || 1)) : 1;
   },
   label: 'Hoth from Star Wars Battlefront II (2017), drawn from the game’s own level, light and figures. W A S D to move, the mouse to look and fire, Enter to deploy.',
-  async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault' } = {}) {
+  async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault', weather: askedWeather = null } = {}) {
     const renderer = rt.gfx.renderer;
     const tier = rt.quality?.tier ?? 'high';
     // (the meshopt decoder and the Basis transcoder up beside the level's
@@ -128,8 +139,15 @@ export default {
     let size = { w: 1, h: 1 };
     let sinceHud = Infinity;
     let scoreboard = false;
-    let weather = lighting.default;
+    // (the day asked for at mount, the waiting screen's coin or pick, so the chain is built once for it)
+    let weather = askedWeather && lighting.weathers[askedWeather] ? askedWeather : lighting.default;
     let clock = 0; // s the world has drawn: a drawn bolt's age
+    let parked = true; // the camera at the spawn until the first deploy (the darkroom)
+    let arrival = null; // { t, stops }: the exposure adapting after the wipe's swap
+    let arrivedAt = null; // ms (performance.now) of the first deploy, and of the first frame drawn after it
+    let firstFieldAt = null;
+    let building = 0; // post chains being built (a weather's, the pace's)
+    const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
     const look = createLook({
       host: rt.gfx.canvas,
@@ -149,6 +167,13 @@ export default {
       // (a mate who cannot be spawned on by now: the HQ, as the game falls back, SpawnOnSpawnEntityIfSpawnOnPlayerFails)
       if (!r.ok && mate && squadsOf(rb).fallbackToPoint) r = deploy(sim, me, base);
       if (r.ok) {
+        if (parked) {
+          // (the wipe's swap: the darkroom's EV 8 to the day's clamp, settling over ADAPT_S)
+          parked = false;
+          arrival = { t: 0, stops: stopsFrom(lighting.weathers[weather]?.exposure?.minEv) };
+          arrivedAt = now();
+          firstFieldAt = null;
+        }
         input.setLook(body().yaw, 0);
         // (the next life's deploy screen starts from its own highlight)
         picked = null;
@@ -186,18 +211,43 @@ export default {
       return headroom(passes, { scale, shed: h.shed }, upscaleKind(passes));
     };
     let post = light.passes.length && asked !== 'off' ? rt.gfx.post(chainFor(light.passes)) : null;
+    // (the chain's tonemap pass reads the renderer's exposure: the arrival scales it from here)
+    const baseExposure = renderer.toneMappingExposure ?? 1;
     // (the old chain draws until the new one is built, then is let go)
     function swapPost(passes) {
       if (!post) return;
       const next = rt.gfx.post(chainFor(passes));
-      Promise.resolve(next.ready).then(() => {
-        // (the world left while it was built)
-        if (!post) return next.dispose?.();
-        const was = post;
-        post = next;
-        was.dispose?.();
-      });
+      building++;
+      Promise.resolve(next.ready)
+        .catch(() => null)
+        .then(() => {
+          building--;
+          // (the world left while it was built)
+          if (!post) return next.dispose?.();
+          const was = post;
+          post = next;
+          was.dispose?.();
+        });
     }
+    // where the side deploys: the camera's park until the first deploy
+    const park = (() => {
+      const s = spawnFor(sim.map, sim.stage, PLAYER_TEAM, sim.ga?.attackers);
+      return { at: [s.at[0], level.heightAt(s.at[0], s.at[2]), s.at[2]], yaw: s.yaw };
+    })();
+    const guard = guardOf(renderer);
+    const machine = () => {
+      const gpuClock = rt.gpuClock ?? null;
+      return {
+        backend: rt.gfx.backend,
+        tier: rt.tier ?? null,
+        level: paceLevel,
+        internal: rt.quality?.internal ?? 1,
+        source: rt.quality?.source ?? 'cpu',
+        gpuMs: gpuClock?.available ? (gpuClock.median ?? null) : null,
+        pixels: pixels(),
+        adapter: renderer.backend?.adapter?.info?.description || renderer.backend?.adapter?.info?.device || null,
+      };
+    };
 
     const physicsStats = () => {
       const s = collision?.stats();
@@ -223,8 +273,12 @@ export default {
         showScoreboard: scoreboard,
         markers,
         level: { loaded: level.loaded(), progress: level.progress(), ...level.stats(), physics: physicsStats() },
+        shaders: { pending: guard?.pending() ?? 0, held: guard?.held() ?? 0, building },
+        machine: machine(),
+        marks: { arrivedAt, firstFieldAt },
         backend: rt.gfx.backend,
         weather,
+        parked,
       };
     };
 
@@ -240,7 +294,8 @@ export default {
         scoreboard = read.scoreboard;
         const v = view(sim);
         input.swallow(v.deploy.open);
-        if (v.deploy.open && read.deploy) doDeploy();
+        // (the first deploy is the waiting screen's, through the wipe: the input's Enter waits for it)
+        if (v.deploy.open && read.deploy && !parked) doDeploy();
         acc = Math.min(acc + dt, STEP * MAX_STEPS);
         let first = true;
         while (acc >= STEP) {
@@ -251,6 +306,12 @@ export default {
           step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]);
         }
         collision?.update(4);
+        // (the view again, after the steps: its entities' `at` are the sim's
+        // own arrays, live, while their step time `t` and the rest are read
+        // when it is taken; the figures pair a step's place with its time to
+        // glide between two steps, and read before the steps the pair was
+        // one step out, the body drawn a step forward then a step back)
+        const drawn = view(sim);
         const p = body();
         if (sim.player.state === 'alive' && p) {
           const look = input.look();
@@ -261,6 +322,10 @@ export default {
           const drawn = { ...p, at: p.at.map((v, i) => from[i] + (v - from[i]) * k) };
           pose = soldierPose(drawn, cams, { yaw: look.yaw, pitch: look.pitch, aiming: read.aim, weaponId: p.weapon, dt, prev: pose, castArm });
           level.update(p.at);
+        } else if (parked) {
+          // (the darkroom: the soldier's own camera at the spawn, the level streaming round it)
+          pose = soldierPose({ at: park.at, stance: 'stand' }, cams, { yaw: park.yaw, pitch: 0, dt, prev: pose, castArm });
+          level.update(park.at);
         } else {
           const towards = sim.objectives[0]?.at ?? [0, 0, 0];
           pose = overviewPose(map, towards) ?? pose;
@@ -268,12 +333,17 @@ export default {
         }
         if (pose) rig.set(pose);
         rig.update(dt);
-        figures.update(v.entities, dt, Math.min(1, acc / STEP), camera.position);
+        figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position);
         ragdolls.update(dt);
         clock += dt;
         // (each bolt leaves its owner's gun: fx/bolts.js)
-        bolts.update(v.bolts, { muzzleOf: figures.muzzleOf, now: clock });
+        bolts.update(drawn.bolts, { muzzleOf: figures.muzzleOf, now: clock });
         light.update(dt, camera);
+        if (arrival) {
+          arrival.t += dt;
+          renderer.toneMappingExposure = baseExposure * arrivalExposure(arrival.t, { stops: arrival.stops, seconds: ADAPT_S });
+          if (arrival.t >= ADAPT_S) arrival = null;
+        }
         sinceHud += dt;
         if (sinceHud >= 1 / HUD_HZ) {
           sinceHud = 0;
@@ -285,6 +355,7 @@ export default {
         if (post) post.render();
         else r.render(scene, camera);
         level.afterRender();
+        if (arrivedAt !== null && firstFieldAt === null) firstFieldAt = now();
       },
       wants: () => true,
       do(action, arg) {
@@ -347,6 +418,7 @@ export default {
       dispose() {
         look.detach();
         input.detach();
+        renderer.toneMappingExposure = baseExposure;
         post?.dispose?.();
         post = null;
         light.dispose();
