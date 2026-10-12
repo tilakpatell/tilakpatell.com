@@ -13,7 +13,10 @@
 import { fileURLToPath } from 'node:url';
 import { shimFor } from './lib/rapier-wasm.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/\/+$/, '');
+// (forward slashes whatever the platform: a resolved id is a Vite id, and on
+// Windows fileURLToPath gives backslashes, which left the shim's id half of
+// each kind on the owner's desktop)
+const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/\\/g, '/').replace(/\/+$/, '');
 
 export default function rapierWasm() {
   return {
