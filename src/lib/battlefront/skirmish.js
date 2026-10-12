@@ -21,7 +21,7 @@ export function runSkirmish({ rulebook, nav, seed = 1, bots = 20, seconds = 180,
   for (let i = 1; i <= steps; i++) {
     step(sim);
     for (const e of sim.entities.values()) {
-      if (!e.alive) continue;
+      if (!e.alive || e.kind !== 'soldier') continue; // (soldiers only: an officer's turret stands where it was put)
       const mode = e.brain?.intent?.mode;
       const was = still.get(e.id);
       if (was && was.x === e.at[0] && was.z === e.at[2]) {
@@ -33,6 +33,6 @@ export function runSkirmish({ rulebook, nav, seed = 1, bots = 20, seconds = 180,
     onStep?.(sim, i);
   }
   const alive = { 1: 0, 2: 0 };
-  for (const e of sim.entities.values()) if (e.alive) alive[e.team]++;
+  for (const e of sim.entities.values()) if (e.alive && e.kind === 'soldier') alive[e.team]++;
   return { kills: { 1: sim.score[1].kills, 2: sim.score[2].kills }, alive, stuck: stuck.size, offNav, events: sim.events, sim };
 }
