@@ -341,7 +341,7 @@ describe('the GPU clock as the source (lane N2)', () => {
 describe('the mip bias following the scale (lane N2)', () => {
   it('sets −0.5 at native under TRAA, log2(scale) − 1 as the controller steps down, 0 on the classic renderer', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null]) });
-    setMipState({ temporal: true }); // (webgpu.js, building a chain with TRAA)
+    setMipState({ temporal: true, upscaled: true }); // (webgpu.js, building a chain with TRAA and an upscale pass)
     q.setSource('gpu', { gpuTime: fakeClock([30]) });
     expect(mipBias()).toBe(-0.5);
     for (let t = 1; t <= 3; t++) q.frame(t * 16);
@@ -352,11 +352,23 @@ describe('the mip bias following the scale (lane N2)', () => {
 
   it('follows the pace’s level through headroomAt on a node world without the GPU clock', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([2]) });
-    setMipState({ temporal: false });
+    setMipState({ temporal: false, upscaled: true });
     q.setSource('cpu');
     expect(mipBias()).toBe(0);
     q.frame(16);
     expect(mipBias()).toBeCloseTo(Math.log2(0.67) - 1, 6);
+    setMipBias(0);
+  });
+
+  it('stays native where no chain upscales: a 4K drawing buffer’s 0.77 start, or a pace step, with no upscale pass built', () => {
+    setMipState({ temporal: true, upscaled: false });
+    const q = createQuality({ tier: 'high', detail: 'ultra', pace: fakePace([2]) });
+    q.setSource('cpu', { pixels: UHD });
+    expect(q.internal).toBe(0.77);
+    expect(mipBias()).toBe(-0.5);
+    q.frame(16);
+    expect(mipBias()).toBe(-0.5);
+    setMipState({ scale: 1, temporal: false, upscaled: false });
     setMipBias(0);
   });
 });

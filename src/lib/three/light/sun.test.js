@@ -149,6 +149,15 @@ describe('cascadesFor with the video settings (lane V1)', () => {
     expect(cascadesFor('high', undefined, { shadows: 'nonsense', shadowDistance: -3 })).toEqual(cascadesFor('high'));
     expect(Object.keys(SHADOWS)).toEqual(['off', 'low', 'medium', 'high', 'ultra']);
   });
+  it('a size the setting names is drawn whole: the ultra setting’s 4,096 maps, past the entry’s 2,048 cap, which holds the tier’s own', async () => {
+    const asked = await createSun(hoth.sunny, { tier: 'high', video: { shadows: 'ultra' } });
+    expect(asked.light.shadow.mapSize.x).toBe(4096);
+    expect(asked.light.shadow.shadowNode.cascades).toBe(4);
+    const own = await createSun(hoth.sunny, { tier: 'ultra' });
+    expect(own.light.shadow.mapSize.x).toBe(2048);
+    const low = await createSun(hoth.sunny, { tier: 'ultra', video: { shadows: 'low' } });
+    expect(low.light.shadow.mapSize.x).toBe(1024);
+  });
 });
 
 describe('the cascades’ cadence (lane N3)', () => {

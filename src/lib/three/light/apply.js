@@ -126,7 +126,11 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   let vid = video;
   if (renderer.shadowMap) renderer.shadowMap.enabled = vid?.shadows ? vid.shadows !== 'off' : tier !== 'low';
   let params = readEntry(entry, { origin });
-  const rays = post && tier === 'ultra';
+  // (the god rays' light: the video setting's word where there is one, as
+  // the other readers take theirs. `tier` here is the device's, which is
+  // never 'ultra' (lib/device), so on the tier alone the ultra preset's rays
+  // never came: found on the desktop, 2026-10-11)
+  const rays = post && (vid?.godRays ? vid.godRays === 'on' : tier === 'ultra');
 
   // the sun's soft shadow by tier (shadows.js): PCSS on ultra and high, PCF on mid
   const soft = forced === 'pcf' && tier !== 'low' ? { kind: 'pcf' } : filterFor(tier, readPcss(entry), { video: vid });

@@ -14,6 +14,7 @@ import { createInput } from './input';
 import { createQuality } from './quality';
 import { readFps } from './cadence';
 import { createPace } from '../lib/three/pace';
+import { createGpuTime } from '../lib/three/gpuTime';
 import { localSaves, worldStore, winOf } from './local';
 import { createAssets } from './assets';
 import { createAudioBus } from './audio';
@@ -78,6 +79,11 @@ export function runtime() {
     workers: createWorkerPool({ size: poolSize(win?.navigator?.hardwareConcurrency) }),
     // the visitor's video settings, resolved under this device's ceiling (lane V1)
     video: videoNow(),
+    // lane G1's GPU clock (lib/three/gpuTime: the chip's own frame time from
+    // its timestamps, where the adapter has `timestamp-query`): the quality's
+    // source on a 'nodes' world drawn on WebGPU, so the dynamic resolution
+    // follows what the chip took, not when the page asked (lane N2's one line)
+    gpuClock: (renderer) => createGpuTime(renderer),
     gpu: Boolean(win?.navigator?.gpu),
     override: readOverride(win?.location.search ?? '', win?.location.hash ?? '', stored),
     visible: () => !(typeof document !== 'undefined' && document.hidden) && !covered(),

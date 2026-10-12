@@ -60,7 +60,7 @@ import { twinScene } from '../../../lib/three/hookNodes';
 import { STEPS } from '../../../lib/three/pace';
 import { settle as settleWithin } from '../../../lib/settle';
 import { dropTransmission } from '../../../lib/three/glass';
-import { device } from '../../../lib/device';
+import { BUDGETS, device } from '../../../lib/device';
 import { detailLevel } from '../../../lib/detail';
 import { createPost } from './nodes/post';
 import { SHIP_MODELS, buildShip, LENGTH } from '../../universe/shipModelsNodes';
@@ -304,8 +304,13 @@ export async function create(canvas, ctx) {
   // (a site lit from within, `light.shadow: false`: no sun to cast one, and
   // no shadow pass over a whole interior level, the Death Star's)
   sun.castShadow = !small && site.light?.shadow !== false;
+  // (the one map's size: the ultra row's 4,096 (lib/device's BUDGETS, read
+  // here for the first time) at ultra, 2,048 below it as always, so the
+  // texel over the 84 m box halves where the chip has the room; measured on
+  // the desktop's RTX 5090, 2026-10-11, docs/superpowers/evidence/gpu-first/desktop/)
+  const shadowMap = device().detail === 'ultra' ? BUDGETS.ultra.shadowMap : 2048;
   if (sun.castShadow) {
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(shadowMap, shadowMap);
     const sc = sun.shadow.camera;
     sc.left = sc.bottom = -42;
     sc.right = sc.top = 42;
@@ -318,7 +323,7 @@ export async function create(canvas, ctx) {
   scene.add(sun, sun.target);
   // the shadow camera's right and up (it looks down the sun's way, up as three
   // turns it), for its focus to be snapped to whole texels along them (shadow.js)
-  const SHADOW = { extent: 42, map: 2048 };
+  const SHADOW = { extent: 42, map: shadowMap };
   const shadowFrame = new THREE.Matrix4().lookAt(sunDir, new V(), new V(0, 1, 0));
   const shadowRight = new V().setFromMatrixColumn(shadowFrame, 0);
   const shadowUp = new V().setFromMatrixColumn(shadowFrame, 1);

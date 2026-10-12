@@ -161,6 +161,18 @@ describe('buildPostProcessing', () => {
     await smaa.ready;
     smaa.dispose();
   });
+  it('says whether the chain has an upscale pass: only then does a scale under 1 bias the maps', async () => {
+    setMipState({ scale: 0.77, classic: false });
+    const plain = buildPostProcessing({}, [{ kind: 'render' }, { kind: 'traa' }, { kind: 'output' }]);
+    expect(mipBias()).toBe(-0.5);
+    await plain.ready;
+    plain.dispose();
+    const up = buildPostProcessing({}, [{ kind: 'render' }, { kind: 'upscale', upscaler: 'taau', scale: 0.77 }, { kind: 'output' }]);
+    expect(mipBias()).toBeCloseTo(Math.log2(0.77) - 1, 6);
+    await up.ready;
+    up.dispose();
+    setMipState({ scale: 1, temporal: false, upscaled: false });
+  });
 });
 
 describe('the reference shots’ hooks', () => {

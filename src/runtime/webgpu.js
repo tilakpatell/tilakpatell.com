@@ -36,10 +36,11 @@ export const hasWebGPU = () => typeof navigator !== 'undefined' && Boolean(navig
 // the chain as data → a PostProcessing graph; `ready` resolves once the
 // nodes are loaded, and render() draws nothing until then. A chain with any
 // of the game light's passes goes to buildLitPost.
-// The chain built says whether the picture is temporal, for the mip bias
-// (lib/three/mipBias: −0.5 at native under TRAA, lane N2).
+// The chain built says whether the picture is temporal, and whether it has
+// an upscale pass, for the mip bias (lib/three/mipBias: −0.5 at native under
+// TRAA, log2(scale) − 1 only under an upscaler, lane N2).
 export function buildPostProcessing(renderer, passes) {
-  setMipState({ temporal: temporal(passes) });
+  setMipState({ temporal: temporal(passes), upscaled: passes.some((p) => p.kind === 'upscale') });
   if (passes.some((p) => NODE_PASSES.has(p.kind))) return buildLitPost(renderer, passes);
   let post = null;
   let scenePass = null;

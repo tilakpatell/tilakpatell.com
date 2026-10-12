@@ -109,6 +109,17 @@ describe('applyGameLight', () => {
     const mid = await applyGameLight(new THREE.Scene(), fakeRenderer(), hoth.sunny, { tier: 'mid', camera, volumetrics });
     expect(mid.parts.volumetrics).toBe(null);
   });
+  it('the god rays follow the video setting where there is one, whatever the tier says (the device’s tier is never ultra)', async () => {
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+    const on = await applyGameLight(new THREE.Scene(), fakeRenderer(), hoth.sunny, { tier: 'high', camera, video: { godRays: 'on' } });
+    expect(on.parts.sun.rays?.isDirectionalLight).toBe(true);
+    expect(on.passes.map((p) => p.kind)).toContain('godrays');
+    on.dispose();
+    const off = await applyGameLight(new THREE.Scene(), fakeRenderer(), hoth.sunny, { tier: 'ultra', camera, video: { godRays: 'off' } });
+    expect(off.parts.sun.rays).toBe(null);
+    expect(off.passes.map((p) => p.kind)).not.toContain('godrays');
+    off.dispose();
+  });
   it('on low: no shadow, render and bloom only', async () => {
     const renderer = fakeRenderer();
     const light = await applyGameLight(new THREE.Scene(), renderer, {}, { tier: 'low', camera: new THREE.PerspectiveCamera() });

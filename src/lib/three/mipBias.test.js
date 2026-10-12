@@ -13,6 +13,11 @@ describe('biasFor', () => {
     expect(biasFor(0.5, { classic: true })).toBe(0);
     expect(MIP_BIAS._source).toMatch(/FSR2/);
   });
+  it('stays native under a scale that nothing upscales: the pace’s own step, or the 4K start with no upscale pass', () => {
+    expect(biasFor(0.77, { upscaled: false })).toBe(0);
+    expect(biasFor(0.77, { upscaled: false, temporal: true })).toBe(-0.5);
+    expect(biasFor(0.77, { upscaled: true })).toBeCloseTo(Math.log2(0.77) - 1, 6);
+  });
 });
 
 describe('setMipBias', () => {
@@ -36,13 +41,21 @@ describe('setMipBias', () => {
 
 describe('setMipState', () => {
   it('keeps each part from where it was last given', () => {
-    setMipState({ scale: 1, temporal: true, classic: false });
+    setMipState({ scale: 1, temporal: true, classic: false, upscaled: true });
     expect(mipBias()).toBe(-0.5);
     setMipState({ scale: 0.5 });
     expect(mipBias()).toBeCloseTo(-2, 6);
     setMipState({ classic: true });
     expect(mipBias()).toBe(0);
-    setMipState({ scale: 1, temporal: false, classic: false });
+    setMipState({ scale: 1, temporal: false, classic: false, upscaled: false });
+    expect(mipBias()).toBe(0);
+  });
+  it('starts with no upscaler: a scale under 1 biases nothing until a chain with an upscale pass says so', () => {
+    setMipState({ scale: 0.77, temporal: true, classic: false, upscaled: false });
+    expect(mipBias()).toBe(-0.5);
+    setMipState({ upscaled: true });
+    expect(mipBias()).toBeCloseTo(Math.log2(0.77) - 1, 6);
+    setMipState({ scale: 1, temporal: false, upscaled: false });
     expect(mipBias()).toBe(0);
   });
 });

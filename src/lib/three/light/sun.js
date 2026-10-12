@@ -284,7 +284,11 @@ export async function createSun(entry, { tier = 'high', rays = false, filter = n
   setShadowSun(record.shadowSun);
   let csm = null;
   if (light.castShadow) {
-    const size = Math.min(map, params.shadow.mapSize);
+    // (the entry's map size caps the tier's own; a video setting that names
+    // a size is the visitor's word and takes it whole: the ultra setting's
+    // 4,096 was capped to the entry's default 2,048 until the desktop's run
+    // of 2026-10-11, so Ultra and High drew the same maps)
+    const size = video?.shadows && SHADOWS[video.shadows] ? map : Math.min(map, params.shadow.mapSize);
     light.shadow.mapSize.set(size, size);
     light.shadow.bias = params.shadow.bias;
     light.shadow.normalBias = params.shadow.normalBias;
