@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readEntry } from './entry';
 import * as THREE from 'three/webgpu';
-import { PANORAMA_MEET, ZENITH_SHARE, createSky, meetGain, panoramaGain, skyRadiance, skyUniforms } from './sky';
+import { PANORAMA_MEET, ZENITH_SHARE, createSky, meetGain, panoramaGain, skyRadiance, skyUniforms, sunLobe } from './sky';
 import { panoramaOf } from './grade';
 import hoth from './fixtures/hoth.ve.json';
 
@@ -58,6 +58,24 @@ describe('the painted panorama (lane Q6)', () => {
     expect(skyRadiance([0, -1, 0], v)[1]).toBeCloseTo(v.ground[1] * v.luminance * ZENITH_SHARE * 0.25);
     // the disc only toward the sun
     expect(lum(skyRadiance(v.sunDir, v))).toBeGreaterThan(lum(skyRadiance(v.sunDir, v, { disc: false })) * 2);
+  });
+  it('the sun is the game’s HG lobe: flat at SunColor × SunScale (the record’s 120,000 nits at the site’s exposure) to about 1°, a halo past it, nothing by 10°', () => {
+    const p = readEntry(hoth.sunny);
+    const v = skyUniforms(p);
+    const deg = (d) => Math.cos((d * Math.PI) / 180);
+    // (g = 1 − SunSize: the lobe over 1 at the centre, clamped)
+    expect(sunLobe(1, 0.004)).toBe(1);
+    expect(sunLobe(deg(0.9), 0.004)).toBe(1);
+    expect(sunLobe(deg(2), 0.004)).toBeGreaterThan(0.08);
+    expect(sunLobe(deg(2), 0.004)).toBeLessThan(0.16);
+    expect(sunLobe(deg(5), 0.004)).toBeLessThan(0.01);
+    expect(sunLobe(deg(10), 0.004)).toBeLessThan(1e-3);
+    expect(sunLobe(-1, 0.004)).toBeLessThan(1e-5);
+    // the peak: SunScale over k (the record names none, so SUN_TO_SKY × LuminanceScale: 120,000 / k), in SunColor, no air between
+    const peak = skyRadiance(v.sunDir, v);
+    const beside = skyRadiance(v.sunDir, v, { disc: false });
+    for (let i = 0; i < 3; i++) expect(peak[i] - beside[i]).toBeCloseTo(v.sunColor[i] * v.sunScale, 6);
+    expect(v.sunScale).toBeCloseTo(120000 * p.gameToSite, 6);
   });
   it('the gain is the record’s luminance scale, as the game’s sky shader multiplies its painting; meetGain keeps the old fit', () => {
     const p = readEntry(hoth.sunny);

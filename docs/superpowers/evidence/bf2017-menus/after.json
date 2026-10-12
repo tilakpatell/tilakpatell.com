@@ -1,0 +1,3794 @@
+{
+ "label": "after",
+ "base": "http://127.0.0.1:5533",
+ "gpu": "webgpu",
+ "failed": null,
+ "totalMs": 68601,
+ "viewport": "2560x720@2",
+ "quality": "ultra",
+ "steps": [
+  {
+   "name": "start",
+   "toPaint": 1127,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 65,
+    "mean": 17.5,
+    "median": 13.6,
+    "p95": 13.7,
+    "max": 271.1
+   },
+   "inputs": [],
+   "rest": {
+    "frames": {
+     "n": 149,
+     "mean": 13.6,
+     "median": 13.6,
+     "p95": 13.7,
+     "max": 13.8
+    },
+    "longTaskMs": 0,
+    "longTasks": 0
+   },
+   "profile": {
+    "total": 1127.4,
+    "functions": [
+     {
+      "name": "(idle) :0",
+      "ms": 658.6
+     },
+     {
+      "name": "(program) :0",
+      "ms": 381.3
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 12.4
+     },
+     {
+      "name": "exports.createElement /node_modules/.vite/deps/react.js:624",
+      "ms": 7.7
+     },
+     {
+      "name": "focus :0",
+      "ms": 5.6
+     },
+     {
+      "name": "(anonymous) /src/components/projects/PeriodicStack.jsx:55",
+      "ms": 4.4
+     },
+     {
+      "name": "freeze /src/lib/battlefront/rulebook.js:73",
+      "ms": 3.8
+     },
+     {
+      "name": "(anonymous) /src/components/travel/PlacesExplorer.jsx:1",
+      "ms": 2.7
+     },
+     {
+      "name": "(garbage collector) :0",
+      "ms": 2.7
+     },
+     {
+      "name": "(anonymous) /src/data/bf2017/screens.json:1",
+      "ms": 2.2
+     },
+     {
+      "name": "appendChild :0",
+      "ms": 1.7
+     },
+     {
+      "name": "updateStyle /@vite/client:1280",
+      "ms": 1.6
+     },
+     {
+      "name": "insertAdjacentElement :0",
+      "ms": 1.1
+     },
+     {
+      "name": "ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:105",
+      "ms": 1.1
+     },
+     {
+      "name": "NavLinkWithRef /node_modules/.vite/deps/react-router-dom.js:7399",
+      "ms": 1.1
+     },
+     {
+      "name": "measure :0",
+      "ms": 1.1
+     },
+     {
+      "name": "query :5119",
+      "ms": 1.1
+     },
+     {
+      "name": "(anonymous) /src/data/bf2017/ai.json:1",
+      "ms": 1.1
+     },
+     {
+      "name": "run :0",
+      "ms": 1.1
+     },
+     {
+      "name": "(anonymous) /src/data/bf2017/ui.json:1",
+      "ms": 1.1
+     },
+     {
+      "name": "pushProvider /node_modules/.vite/deps/react-dom_client.js:3248",
+      "ms": 0.9
+     },
+     {
+      "name": "unpack /node_modules/.vite/deps/three_examples_jsm_libs_meshopt___decoder__module__js.js:127",
+      "ms": 0.7
+     },
+     {
+      "name": "startProfilerTimer /node_modules/.vite/deps/react-dom_client.js:3489",
+      "ms": 0.6
+     },
+     {
+      "name": "(anonymous) /src/data/bf2017/abilities.json:1",
+      "ms": 0.6
+     },
+     {
+      "name": "updateProperties /node_modules/.vite/deps/react-dom_client.js:10695",
+      "ms": 0.6
+     },
+     {
+      "name": "get scrollWidth :0",
+      "ms": 0.6
+     },
+     {
+      "name": "createBrowserURLImpl /node_modules/.vite/deps/react-router-dom.js:323",
+      "ms": 0.6
+     },
+     {
+      "name": "logComponentRender /node_modules/.vite/deps/react-dom_client.js:2633",
+      "ms": 0.6
+     },
+     {
+      "name": "requestAnimationFrame :0",
+      "ms": 0.6
+     },
+     {
+      "name": "boxOf /src/lib/bf2017/ui/screens.js:59",
+      "ms": 0.6
+     },
+     {
+      "name": "validateProperty /node_modules/.vite/deps/react-dom_client.js:1974",
+      "ms": 0.6
+     },
+     {
+      "name": "expand /src/lib/bf2017/ui/screens.js:103",
+      "ms": 0.6
+     },
+     {
+      "name": "computeBox :2616",
+      "ms": 0.6
+     },
+     {
+      "name": "setInitialProperties /node_modules/.vite/deps/react-dom_client.js:10529",
+      "ms": 0.6
+     },
+     {
+      "name": "queryAll :6684",
+      "ms": 0.6
+     },
+     {
+      "name": "isAttributeNameSafe /node_modules/.vite/deps/react-dom_client.js:1296",
+      "ms": 0.6
+     },
+     {
+      "name": "reconcileChildFibersImpl /node_modules/.vite/deps/react-dom_client.js:3956",
+      "ms": 0.6
+     },
+     {
+      "name": "(anonymous) /src/pages/Travel.jsx:28",
+      "ms": 0.6
+     },
+     {
+      "name": "(anonymous) :0",
+      "ms": 0.6
+     },
+     {
+      "name": "updateSlot /node_modules/.vite/deps/react-dom_client.js:3828",
+      "ms": 0.6
+     }
+    ],
+    "files": [
+     {
+      "name": "((idle))",
+      "ms": 658.6
+     },
+     {
+      "name": "((program))",
+      "ms": 381.3
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 13.8
+     },
+     {
+      "name": "/node_modules/.vite/deps/react.js",
+      "ms": 8.7
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 7.7
+     },
+     {
+      "name": "(focus)",
+      "ms": 5.6
+     },
+     {
+      "name": "/src/components/projects/PeriodicStack.jsx",
+      "ms": 4.9
+     },
+     {
+      "name": "/src/lib/battlefront/rulebook.js",
+      "ms": 3.8
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-router-dom.js",
+      "ms": 2.8
+     },
+     {
+      "name": "/node_modules/.vite/deps/three.core-D5jE5TYE.js",
+      "ms": 2.7
+     },
+     {
+      "name": "/src/components/travel/PlacesExplorer.jsx",
+      "ms": 2.7
+     },
+     {
+      "name": "((garbage collector))",
+      "ms": 2.7
+     },
+     {
+      "name": "/src/data/bf2017/screens.json",
+      "ms": 2.2
+     },
+     {
+      "name": "(appendChild)",
+      "ms": 1.7
+     },
+     {
+      "name": "/src/lib/bf2017/ui/screens.js",
+      "ms": 1.7
+     },
+     {
+      "name": "/@vite/client",
+      "ms": 1.6
+     },
+     {
+      "name": "(insertAdjacentElement)",
+      "ms": 1.1
+     },
+     {
+      "name": "(measure)",
+      "ms": 1.1
+     },
+     {
+      "name": "()",
+      "ms": 1.1
+     },
+     {
+      "name": "(query)",
+      "ms": 1.1
+     },
+     {
+      "name": "/src/components/Nav.jsx",
+      "ms": 1.1
+     },
+     {
+      "name": "/src/data/bf2017/ai.json",
+      "ms": 1.1
+     },
+     {
+      "name": "(run)",
+      "ms": 1.1
+     },
+     {
+      "name": "/src/data/bf2017/ui.json",
+      "ms": 1.1
+     },
+     {
+      "name": "/src/lib/hooks.js",
+      "ms": 0.7
+     }
+    ]
+   }
+  },
+  {
+   "name": "main-menu",
+   "toPaint": 85,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 7,
+    "mean": 13.5,
+    "median": 13.5,
+    "p95": 13.6,
+    "max": 13.6
+   },
+   "inputs": [],
+   "rest": {
+    "frames": {
+     "n": 149,
+     "mean": 13.6,
+     "median": 13.6,
+     "p95": 13.7,
+     "max": 13.8
+    },
+    "longTaskMs": 0,
+    "longTasks": 0
+   },
+   "profile": {
+    "total": 86,
+    "functions": [
+     {
+      "name": "(program) :0",
+      "ms": 48.2
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 14
+     },
+     {
+      "name": "exports.createElement /node_modules/.vite/deps/react.js:624",
+      "ms": 3.9
+     },
+     {
+      "name": "focus :0",
+      "ms": 3.5
+     },
+     {
+      "name": "(idle) :0",
+      "ms": 3.4
+     },
+     {
+      "name": "run :0",
+      "ms": 1.1
+     },
+     {
+      "name": "(garbage collector) :0",
+      "ms": 1.1
+     },
+     {
+      "name": "createBrowserURLImpl /node_modules/.vite/deps/react-router-dom.js:323",
+      "ms": 0.6
+     },
+     {
+      "name": "get scrollWidth :0",
+      "ms": 0.6
+     },
+     {
+      "name": "boxOf /src/lib/bf2017/ui/screens.js:59",
+      "ms": 0.6
+     },
+     {
+      "name": "setValueForStyle /node_modules/.vite/deps/react-dom_client.js:1903",
+      "ms": 0.6
+     },
+     {
+      "name": "_defineProperty /node_modules/.vite/deps/react-icons_lib.js:289",
+      "ms": 0.6
+     },
+     {
+      "name": "runWithFiberInDEV /node_modules/.vite/deps/react-dom_client.js:940",
+      "ms": 0.6
+     },
+     {
+      "name": "warnForMissingKey /node_modules/.vite/deps/react-dom_client.js:14196",
+      "ms": 0.6
+     },
+     {
+      "name": "setValueForStyles /node_modules/.vite/deps/react-dom_client.js:1908",
+      "ms": 0.5
+     },
+     {
+      "name": "(anonymous) /node_modules/.vite/deps/react-icons_lib.js:336",
+      "ms": 0.5
+     },
+     {
+      "name": "URL :0",
+      "ms": 0.5
+     },
+     {
+      "name": "getComponentNameFromType /node_modules/.vite/deps/react_jsx-dev-runtime.js:15",
+      "ms": 0.5
+     },
+     {
+      "name": "removeChild :0",
+      "ms": 0.5
+     },
+     {
+      "name": "(anonymous) /src/lib/bf2017/ui/shapes.js:27",
+      "ms": 0.5
+     },
+     {
+      "name": "push /node_modules/.vite/deps/react-dom_client.js:606",
+      "ms": 0.5
+     },
+     {
+      "name": "Box /src/runtime/hud/Screen.jsx:69",
+      "ms": 0.5
+     },
+     {
+      "name": "defineKeyPropWarningGetter /node_modules/.vite/deps/react_jsx-dev-runtime.js:89",
+      "ms": 0.5
+     },
+     {
+      "name": "getNextLanes /node_modules/.vite/deps/react-dom_client.js:1039",
+      "ms": 0.5
+     },
+     {
+      "name": "appendChild :0",
+      "ms": 0.5
+     },
+     {
+      "name": "warnOnInvalidKey /node_modules/.vite/deps/react-dom_client.js:3874",
+      "ms": 0.5
+     },
+     {
+      "name": "commitPassiveMountOnFiber /node_modules/.vite/deps/react-dom_client.js:8303",
+      "ms": 0.3
+     },
+     {
+      "name": "reappearLayoutEffects /node_modules/.vite/deps/react-dom_client.js:8200",
+      "ms": 0.2
+     }
+    ],
+    "files": [
+     {
+      "name": "((program))",
+      "ms": 48.2
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 15
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 4.4
+     },
+     {
+      "name": "/node_modules/.vite/deps/react.js",
+      "ms": 3.9
+     },
+     {
+      "name": "(focus)",
+      "ms": 3.5
+     },
+     {
+      "name": "((idle))",
+      "ms": 3.4
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-icons_lib.js",
+      "ms": 1.1
+     },
+     {
+      "name": "(run)",
+      "ms": 1.1
+     },
+     {
+      "name": "((garbage collector))",
+      "ms": 1.1
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-router-dom.js",
+      "ms": 0.6
+     },
+     {
+      "name": "(get scrollWidth)",
+      "ms": 0.6
+     },
+     {
+      "name": "/src/lib/bf2017/ui/screens.js",
+      "ms": 0.6
+     },
+     {
+      "name": "(URL)",
+      "ms": 0.5
+     },
+     {
+      "name": "(removeChild)",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/lib/bf2017/ui/shapes.js",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/runtime/hud/Screen.jsx",
+      "ms": 0.5
+     },
+     {
+      "name": "(appendChild)",
+      "ms": 0.5
+     }
+    ]
+   }
+  },
+  {
+   "name": "play",
+   "toPaint": 117,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 8,
+    "mean": 16.9,
+    "median": 13.6,
+    "p95": 40.6,
+    "max": 40.6
+   },
+   "inputs": [],
+   "rest": {
+    "frames": {
+     "n": 75,
+     "mean": 26.7,
+     "median": 27.1,
+     "p95": 27.2,
+     "max": 162.6
+    },
+    "longTaskMs": 0,
+    "longTasks": 0
+   },
+   "profile": {
+    "total": 117.1,
+    "functions": [
+     {
+      "name": "(program) :0",
+      "ms": 53.9
+     },
+     {
+      "name": "(idle) :0",
+      "ms": 30.1
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 7.9
+     },
+     {
+      "name": "focus :0",
+      "ms": 5.1
+     },
+     {
+      "name": "exports.createElement /node_modules/.vite/deps/react.js:624",
+      "ms": 4.9
+     },
+     {
+      "name": "get scrollWidth :0",
+      "ms": 1.7
+     },
+     {
+      "name": "warnUnknownProperties /node_modules/.vite/deps/react-dom_client.js:2094",
+      "ms": 1.7
+     },
+     {
+      "name": "boxOf /src/lib/bf2017/ui/screens.js:59",
+      "ms": 1.2
+     },
+     {
+      "name": "IntersectionObserver :0",
+      "ms": 0.7
+     },
+     {
+      "name": "querySelectorAll :0",
+      "ms": 0.6
+     },
+     {
+      "name": "oneLine :7767",
+      "ms": 0.6
+     },
+     {
+      "name": "pc /src/runtime/hud/Screen.jsx:21",
+      "ms": 0.6
+     },
+     {
+      "name": "useResolvedPath /node_modules/.vite/deps/react-router-dom.js:4050",
+      "ms": 0.6
+     },
+     {
+      "name": "getEventTarget /node_modules/.vite/deps/react-dom_client.js:2106",
+      "ms": 0.6
+     },
+     {
+      "name": "now :0",
+      "ms": 0.6
+     },
+     {
+      "name": "react_stack_bottom_frame /node_modules/.vite/deps/react-dom_client.js:14138",
+      "ms": 0.6
+     },
+     {
+      "name": "OFFLINE /src/components/battlefront/screens/tree.js:48",
+      "ms": 0.6
+     },
+     {
+      "name": "exports.useContext /node_modules/.vite/deps/react.js:724",
+      "ms": 0.6
+     },
+     {
+      "name": "removeChild :0",
+      "ms": 0.6
+     },
+     {
+      "name": "updateSlot /node_modules/.vite/deps/react-dom_client.js:3828",
+      "ms": 0.6
+     },
+     {
+      "name": "querySelector :0",
+      "ms": 0.5
+     },
+     {
+      "name": "setInitialProperties /node_modules/.vite/deps/react-dom_client.js:10529",
+      "ms": 0.5
+     },
+     {
+      "name": "(anonymous) :1",
+      "ms": 0.5
+     },
+     {
+      "name": "gpuScore /src/lib/gpuGrade.js:345",
+      "ms": 0.5
+     },
+     {
+      "name": "parseEvaluationResultValue :96",
+      "ms": 0.5
+     },
+     {
+      "name": "updatedAncestorInfoDev /node_modules/.vite/deps/react-dom_client.js:1744",
+      "ms": 0.5
+     },
+     {
+      "name": "getListener /node_modules/.vite/deps/react-dom_client.js:2152",
+      "ms": 0.4
+     }
+    ],
+    "files": [
+     {
+      "name": "((program))",
+      "ms": 53.9
+     },
+     {
+      "name": "((idle))",
+      "ms": 30.1
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 7.9
+     },
+     {
+      "name": "/node_modules/.vite/deps/react.js",
+      "ms": 5.5
+     },
+     {
+      "name": "(focus)",
+      "ms": 5.1
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 4.9
+     },
+     {
+      "name": "(get scrollWidth)",
+      "ms": 1.7
+     },
+     {
+      "name": "/src/lib/bf2017/ui/screens.js",
+      "ms": 1.2
+     },
+     {
+      "name": "(IntersectionObserver)",
+      "ms": 0.7
+     },
+     {
+      "name": "(querySelectorAll)",
+      "ms": 0.6
+     },
+     {
+      "name": "(oneLine)",
+      "ms": 0.6
+     },
+     {
+      "name": "/src/runtime/hud/Screen.jsx",
+      "ms": 0.6
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-router-dom.js",
+      "ms": 0.6
+     },
+     {
+      "name": "(now)",
+      "ms": 0.6
+     },
+     {
+      "name": "/src/components/battlefront/screens/tree.js",
+      "ms": 0.6
+     },
+     {
+      "name": "(removeChild)",
+      "ms": 0.6
+     },
+     {
+      "name": "(querySelector)",
+      "ms": 0.5
+     },
+     {
+      "name": "()",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/lib/gpuGrade.js",
+      "ms": 0.5
+     },
+     {
+      "name": "(parseEvaluationResultValue)",
+      "ms": 0.5
+     }
+    ]
+   }
+  },
+  {
+   "name": "multiplayer-category",
+   "toPaint": 147,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 6,
+    "mean": 24.8,
+    "median": 27.1,
+    "p95": 27.2,
+    "max": 27.2
+   },
+   "inputs": [],
+   "rest": {
+    "frames": {
+     "n": 86,
+     "mean": 23.2,
+     "median": 27.1,
+     "p95": 27.2,
+     "max": 27.2
+    },
+    "longTaskMs": 0,
+    "longTasks": 0
+   },
+   "profile": {
+    "total": 147,
+    "functions": [
+     {
+      "name": "(idle) :0",
+      "ms": 72.9
+     },
+     {
+      "name": "(program) :0",
+      "ms": 67
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 1.4
+     },
+     {
+      "name": "placeIn /src/lib/bf2017/ui/index.js:79",
+      "ms": 0.6
+     },
+     {
+      "name": "(garbage collector) :0",
+      "ms": 0.6
+     },
+     {
+      "name": "appendChild :0",
+      "ms": 0.6
+     },
+     {
+      "name": "focus :0",
+      "ms": 0.6
+     },
+     {
+      "name": "updatedAncestorInfoDev /node_modules/.vite/deps/react-dom_client.js:1744",
+      "ms": 0.5
+     },
+     {
+      "name": "(anonymous) :0",
+      "ms": 0.5
+     },
+     {
+      "name": "commitUpdate /node_modules/.vite/deps/react-dom_client.js:11377",
+      "ms": 0.5
+     },
+     {
+      "name": "elementsFromPoint :0",
+      "ms": 0.5
+     },
+     {
+      "name": "reconcileChildFibersImpl /node_modules/.vite/deps/react-dom_client.js:3956",
+      "ms": 0.4
+     },
+     {
+      "name": "expand /src/lib/bf2017/ui/screens.js:103",
+      "ms": 0.3
+     },
+     {
+      "name": "addObjectDiffToProperties /node_modules/.vite/deps/react-dom_client.js:2561",
+      "ms": 0.2
+     },
+     {
+      "name": "ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:105",
+      "ms": 0.2
+     },
+     {
+      "name": "querySelector :0",
+      "ms": 0.2
+     },
+     {
+      "name": "commitMount /node_modules/.vite/deps/react-dom_client.js:11365",
+      "ms": 0.1
+     },
+     {
+      "name": "(anonymous) /node_modules/.vite/deps/react-dom_client.js:10005",
+      "ms": 0.1
+     },
+     {
+      "name": "beginWork /node_modules/.vite/deps/react-dom_client.js:6328",
+      "ms": 0
+     }
+    ],
+    "files": [
+     {
+      "name": "((idle))",
+      "ms": 72.9
+     },
+     {
+      "name": "((program))",
+      "ms": 67
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 1.7
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 1.6
+     },
+     {
+      "name": "/src/lib/bf2017/ui/index.js",
+      "ms": 0.6
+     },
+     {
+      "name": "((garbage collector))",
+      "ms": 0.6
+     },
+     {
+      "name": "(appendChild)",
+      "ms": 0.6
+     },
+     {
+      "name": "(focus)",
+      "ms": 0.6
+     },
+     {
+      "name": "()",
+      "ms": 0.5
+     },
+     {
+      "name": "(elementsFromPoint)",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/lib/bf2017/ui/screens.js",
+      "ms": 0.3
+     },
+     {
+      "name": "(querySelector)",
+      "ms": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "name": "multiplayer",
+   "toPaint": 144,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 6,
+    "mean": 24.8,
+    "median": 27.1,
+    "p95": 27.2,
+    "max": 27.2
+   },
+   "inputs": [],
+   "rest": {
+    "frames": {
+     "n": 148,
+     "mean": 13.6,
+     "median": 13.6,
+     "p95": 13.6,
+     "max": 13.7
+    },
+    "longTaskMs": 0,
+    "longTasks": 0
+   },
+   "profile": {
+    "total": 146.1,
+    "functions": [
+     {
+      "name": "(program) :0",
+      "ms": 65.6
+     },
+     {
+      "name": "(idle) :0",
+      "ms": 56.7
+     },
+     {
+      "name": "(garbage collector) :0",
+      "ms": 11.3
+     },
+     {
+      "name": "focus :0",
+      "ms": 3.5
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 1.2
+     },
+     {
+      "name": "unique /src/lib/bf2017/ui/screens.js:98",
+      "ms": 0.9
+     },
+     {
+      "name": "getEventTarget /node_modules/.vite/deps/react-dom_client.js:2106",
+      "ms": 0.7
+     },
+     {
+      "name": "runWithFiberInDEV /node_modules/.vite/deps/react-dom_client.js:940",
+      "ms": 0.6
+     },
+     {
+      "name": "isAttributeNameSafe /node_modules/.vite/deps/react-dom_client.js:1296",
+      "ms": 0.6
+     },
+     {
+      "name": "push /node_modules/.vite/deps/react-dom_client.js:606",
+      "ms": 0.6
+     },
+     {
+      "name": "(anonymous) /src/lib/bf2017/ui/screens.js:184",
+      "ms": 0.5
+     },
+     {
+      "name": "levelCards /src/components/battlefront/screens/cards.js:28",
+      "ms": 0.5
+     },
+     {
+      "name": "matchMedia :0",
+      "ms": 0.5
+     },
+     {
+      "name": "expectHitTarget :7169",
+      "ms": 0.5
+     },
+     {
+      "name": "appendChild :0",
+      "ms": 0.5
+     },
+     {
+      "name": "getLowestCommonAncestor /node_modules/.vite/deps/react-dom_client.js:504",
+      "ms": 0.5
+     },
+     {
+      "name": "(anonymous) :0",
+      "ms": 0.5
+     },
+     {
+      "name": "validateChildKeys /node_modules/.vite/deps/react_jsx-dev-runtime.js:174",
+      "ms": 0.4
+     },
+     {
+      "name": "boxOf /src/lib/bf2017/ui/screens.js:59",
+      "ms": 0.3
+     },
+     {
+      "name": "isValidElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:177",
+      "ms": 0
+     }
+    ],
+    "files": [
+     {
+      "name": "((program))",
+      "ms": 65.6
+     },
+     {
+      "name": "((idle))",
+      "ms": 56.7
+     },
+     {
+      "name": "((garbage collector))",
+      "ms": 11.3
+     },
+     {
+      "name": "(focus)",
+      "ms": 3.5
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 2.9
+     },
+     {
+      "name": "/src/lib/bf2017/ui/screens.js",
+      "ms": 1.7
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 1.6
+     },
+     {
+      "name": "/src/components/battlefront/screens/cards.js",
+      "ms": 0.5
+     },
+     {
+      "name": "(matchMedia)",
+      "ms": 0.5
+     },
+     {
+      "name": "(expectHitTarget)",
+      "ms": 0.5
+     },
+     {
+      "name": "(appendChild)",
+      "ms": 0.5
+     },
+     {
+      "name": "()",
+      "ms": 0.5
+     }
+    ]
+   }
+  },
+  {
+   "name": "levels",
+   "toPaint": 97,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 6,
+    "mean": 18.1,
+    "median": 13.6,
+    "p95": 40.6,
+    "max": 40.6
+   },
+   "inputs": [],
+   "rest": {
+    "frames": {
+     "n": 149,
+     "mean": 13.6,
+     "median": 13.6,
+     "p95": 13.6,
+     "max": 13.7
+    },
+    "longTaskMs": 0,
+    "longTasks": 0
+   },
+   "profile": {
+    "total": 97.4,
+    "functions": [
+     {
+      "name": "(program) :0",
+      "ms": 48.4
+     },
+     {
+      "name": "(idle) :0",
+      "ms": 42.9
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 0.8
+     },
+     {
+      "name": "run :0",
+      "ms": 0.7
+     },
+     {
+      "name": "areHookInputsEqual /node_modules/.vite/deps/react-dom_client.js:4381",
+      "ms": 0.6
+     },
+     {
+      "name": "(anonymous) :0",
+      "ms": 0.6
+     },
+     {
+      "name": "getOwnerDocumentFromRootContainer /node_modules/.vite/deps/react-dom_client.js:11288",
+      "ms": 0.6
+     },
+     {
+      "name": "ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:105",
+      "ms": 0.6
+     },
+     {
+      "name": "completeWork /node_modules/.vite/deps/react-dom_client.js:6534",
+      "ms": 0.5
+     },
+     {
+      "name": "removeChild :0",
+      "ms": 0.5
+     },
+     {
+      "name": "previewNode :7383",
+      "ms": 0.5
+     },
+     {
+      "name": "elementsFromPoint :0",
+      "ms": 0.5
+     },
+     {
+      "name": "OFFLINE /src/components/battlefront/screens/tree.js:48",
+      "ms": 0.3
+     }
+    ],
+    "files": [
+     {
+      "name": "((program))",
+      "ms": 48.4
+     },
+     {
+      "name": "((idle))",
+      "ms": 42.9
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 1.7
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 1.3
+     },
+     {
+      "name": "(run)",
+      "ms": 0.7
+     },
+     {
+      "name": "()",
+      "ms": 0.6
+     },
+     {
+      "name": "(removeChild)",
+      "ms": 0.5
+     },
+     {
+      "name": "(previewNode)",
+      "ms": 0.5
+     },
+     {
+      "name": "(elementsFromPoint)",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/components/battlefront/screens/tree.js",
+      "ms": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "name": "loading",
+   "toPaint": 186,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 12,
+    "mean": 15.8,
+    "median": 13.6,
+    "p95": 40.7,
+    "max": 40.7
+   },
+   "inputs": [
+    {
+     "name": "pointerout",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "pointerover",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "pointerenter",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "pointerenter",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "pointerenter",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "pointerenter",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "mouseout",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "mouseover",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "pointerdown",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "mousedown",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "pointerup",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "mouseup",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "click",
+     "start": 15837,
+     "wait": 1,
+     "dur": 24
+    },
+    {
+     "name": "pointerout",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "pointerleave",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "pointerleave",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "pointerleave",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "pointerleave",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "pointerleave",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "pointerover",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "pointerenter",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "pointerenter",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "mouseout",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    },
+    {
+     "name": "mouseover",
+     "start": 15889,
+     "wait": 0,
+     "dur": 16
+    }
+   ],
+   "rest": {
+    "frames": {
+     "n": 133,
+     "mean": 15.1,
+     "median": 13.6,
+     "p95": 13.7,
+     "max": 162.7
+    },
+    "longTaskMs": 225,
+    "longTasks": 2
+   },
+   "profile": {
+    "total": 188.8,
+    "functions": [
+     {
+      "name": "(idle) :0",
+      "ms": 98.6
+     },
+     {
+      "name": "(program) :0",
+      "ms": 68.8
+     },
+     {
+      "name": "ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:105",
+      "ms": 1.1
+     },
+     {
+      "name": "setAttribute :0",
+      "ms": 1.1
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 1.1
+     },
+     {
+      "name": "compilePath /node_modules/.vite/deps/react-router-dom.js:615",
+      "ms": 0.9
+     },
+     {
+      "name": "react_stack_bottom_frame /node_modules/.vite/deps/react-dom_client.js:14138",
+      "ms": 0.8
+     },
+     {
+      "name": "react_stack_bottom_frame /node_modules/.vite/deps/react-dom_client.js:14175",
+      "ms": 0.6
+     },
+     {
+      "name": "createWebGPU /src/runtime/webgpu.js:126",
+      "ms": 0.6
+     },
+     {
+      "name": "commitPassiveMountOnFiber /node_modules/.vite/deps/react-dom_client.js:8303",
+      "ms": 0.6
+     },
+     {
+      "name": "browser /src/runtime/index.js:37",
+      "ms": 0.6
+     },
+     {
+      "name": "areHookInputsEqual /node_modules/.vite/deps/react-dom_client.js:4381",
+      "ms": 0.6
+     },
+     {
+      "name": "createFiberFromPortal /node_modules/.vite/deps/react-dom_client.js:3004",
+      "ms": 0.6
+     },
+     {
+      "name": "validateHashLocation /node_modules/.vite/deps/react-router-dom.js:160",
+      "ms": 0.6
+     },
+     {
+      "name": "(anonymous) /src/runtime/useWorld.js:60",
+      "ms": 0.6
+     },
+     {
+      "name": "runtime /src/runtime/index.js:43",
+      "ms": 0.6
+     },
+     {
+      "name": "appendChild :0",
+      "ms": 0.6
+     },
+     {
+      "name": "_callQuery :5108",
+      "ms": 0.5
+     },
+     {
+      "name": "presetValues /src/lib/video.js:152",
+      "ms": 0.5
+     },
+     {
+      "name": "createRuntime /src/runtime/runtime.js:80",
+      "ms": 0.5
+     },
+     {
+      "name": "recursivelyTraverseDeletionEffects /node_modules/.vite/deps/react-dom_client.js:7667",
+      "ms": 0.5
+     },
+     {
+      "name": "parseEvaluationResultValue :96",
+      "ms": 0.5
+     },
+     {
+      "name": "jsxDEVImpl /node_modules/.vite/deps/react_jsx-dev-runtime.js:149",
+      "ms": 0.5
+     },
+     {
+      "name": "scheduleTaskForRootDuringMicrotask /node_modules/.vite/deps/react-dom_client.js:9783",
+      "ms": 0.5
+     },
+     {
+      "name": "query :5119",
+      "ms": 0.5
+     },
+     {
+      "name": "useState /node_modules/.vite/deps/react-dom_client.js:14570",
+      "ms": 0.5
+     },
+     {
+      "name": "previewNode :7383",
+      "ms": 0.5
+     },
+     {
+      "name": "run :0",
+      "ms": 0.5
+     },
+     {
+      "name": "text /src/lib/bf2017/strings.js:47",
+      "ms": 0.5
+     },
+     {
+      "name": "css /src/lib/bf2017/ui/index.js:33",
+      "ms": 0.5
+     },
+     {
+      "name": "commitLayoutEffectOnFiber /node_modules/.vite/deps/react-dom_client.js:7486",
+      "ms": 0.4
+     },
+     {
+      "name": "elementsFromPoint :0",
+      "ms": 0.4
+     },
+     {
+      "name": "logComponentRender /node_modules/.vite/deps/react-dom_client.js:2633",
+      "ms": 0.4
+     },
+     {
+      "name": "updateFunctionComponent /node_modules/.vite/deps/react-dom_client.js:5767",
+      "ms": 0.4
+     },
+     {
+      "name": "commitDeletionEffectsOnFiber /node_modules/.vite/deps/react-dom_client.js:7670",
+      "ms": 0.3
+     },
+     {
+      "name": "propagateParentContextChanges /node_modules/.vite/deps/react-dom_client.js:3318",
+      "ms": 0.3
+     },
+     {
+      "name": "reconcileChildFibersImpl /node_modules/.vite/deps/react-dom_client.js:3956",
+      "ms": 0.3
+     },
+     {
+      "name": "exports.createElement /node_modules/.vite/deps/react.js:624",
+      "ms": 0.2
+     },
+     {
+      "name": "commitPassiveUnmountEffectsInsideOfDeletedTree_begin /node_modules/.vite/deps/react-dom_client.js:8567",
+      "ms": 0.2
+     },
+     {
+      "name": "updateCallback /node_modules/.vite/deps/react-dom_client.js:5112",
+      "ms": 0.2
+     }
+    ],
+    "files": [
+     {
+      "name": "((idle))",
+      "ms": 98.6
+     },
+     {
+      "name": "((program))",
+      "ms": 68.8
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 7.9
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 2.8
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-router-dom.js",
+      "ms": 1.5
+     },
+     {
+      "name": "/src/runtime/index.js",
+      "ms": 1.1
+     },
+     {
+      "name": "(setAttribute)",
+      "ms": 1.1
+     },
+     {
+      "name": "/src/runtime/webgpu.js",
+      "ms": 0.6
+     },
+     {
+      "name": "/src/runtime/useWorld.js",
+      "ms": 0.6
+     },
+     {
+      "name": "(appendChild)",
+      "ms": 0.6
+     },
+     {
+      "name": "(_callQuery)",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/lib/video.js",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/runtime/runtime.js",
+      "ms": 0.5
+     },
+     {
+      "name": "(parseEvaluationResultValue)",
+      "ms": 0.5
+     },
+     {
+      "name": "(query)",
+      "ms": 0.5
+     },
+     {
+      "name": "(previewNode)",
+      "ms": 0.5
+     },
+     {
+      "name": "(run)",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/lib/bf2017/strings.js",
+      "ms": 0.5
+     },
+     {
+      "name": "/src/lib/bf2017/ui/index.js",
+      "ms": 0.5
+     },
+     {
+      "name": "(elementsFromPoint)",
+      "ms": 0.4
+     },
+     {
+      "name": "/node_modules/.vite/deps/react.js",
+      "ms": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "name": "spawn",
+   "toPaint": 963,
+   "longTasks": [
+    {
+     "start": 30682,
+     "dur": 74
+    },
+    {
+     "start": 30805,
+     "dur": 55
+    }
+   ],
+   "longTaskMs": 129,
+   "frames": {
+    "n": 10,
+    "mean": 108.4,
+    "median": 54.3,
+    "p95": 515,
+    "max": 515
+   },
+   "inputs": [],
+   "rest": {
+    "frames": {
+     "n": 27,
+     "mean": 131,
+     "median": 135.5,
+     "p95": 176.2,
+     "max": 189.7
+    },
+    "longTaskMs": 1839,
+    "longTasks": 24
+   },
+   "profile": {
+    "total": 1076.8,
+    "functions": [
+     {
+      "name": "(program) :0",
+      "ms": 503.3
+     },
+     {
+      "name": "getUniforms /node_modules/.vite/deps/three_webgpu.js:56710",
+      "ms": 119
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:1584",
+      "ms": 35.4
+     },
+     {
+      "name": "writeBuffer :0",
+      "ms": 21.6
+     },
+     {
+      "name": "(garbage collector) :0",
+      "ms": 19.9
+     },
+     {
+      "name": "getDataFromNode /node_modules/.vite/deps/three_webgpu.js:38022",
+      "ms": 19.3
+     },
+     {
+      "name": "updateMatrixWorld /node_modules/.vite/deps/three.core-D5jE5TYE.js:10058",
+      "ms": 18.3
+     },
+     {
+      "name": "_getChildren /node_modules/.vite/deps/three_webgpu.js:1291",
+      "ms": 17.4
+     },
+     {
+      "name": "sort /src/components/galaxy/surface/level/levelScene.js:263",
+      "ms": 14.4
+     },
+     {
+      "name": "_projectObject /node_modules/.vite/deps/three_webgpu.js:44638",
+      "ms": 13.2
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:45457",
+      "ms": 10.4
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:1911",
+      "ms": 9.9
+     },
+     {
+      "name": "getChildren /node_modules/.vite/deps/three_webgpu.js:1259",
+      "ms": 8.9
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 8.7
+     },
+     {
+      "name": "setup /node_modules/.vite/deps/three_webgpu.js:1498",
+      "ms": 7.8
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:10823",
+      "ms": 7.7
+     },
+     {
+      "name": "updateForRender /node_modules/.vite/deps/three_webgpu.js:40371",
+      "ms": 7.1
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:5932",
+      "ms": 7
+     },
+     {
+      "name": "fn /node_modules/.vite/deps/three_webgpu.js:2601",
+      "ms": 6.6
+     },
+     {
+      "name": "multiplyMatrices /node_modules/.vite/deps/three.core-D5jE5TYE.js:8264",
+      "ms": 6.5
+     },
+     {
+      "name": "_renderObjectDirect /node_modules/.vite/deps/three_webgpu.js:44928",
+      "ms": 6
+     },
+     {
+      "name": "fn /node_modules/.vite/deps/three_webgpu.js:2593",
+      "ms": 5.7
+     },
+     {
+      "name": "getShared /node_modules/.vite/deps/three_webgpu.js:1463",
+      "ms": 5.6
+     },
+     {
+      "name": "getNodeFromHash /node_modules/.vite/deps/three_webgpu.js:37404",
+      "ms": 5.6
+     },
+     {
+      "name": "analyze /node_modules/.vite/deps/three_webgpu.js:1511",
+      "ms": 5.5
+     },
+     {
+      "name": "getInputType /node_modules/.vite/deps/three_webgpu.js:4558",
+      "ms": 4.9
+     },
+     {
+      "name": "fetch :0",
+      "ms": 4.5
+     },
+     {
+      "name": "setData /node_modules/.vite/deps/three_webgpu.js:36091",
+      "ms": 4.5
+     },
+     {
+      "name": "(idle) :0",
+      "ms": 3.8
+     },
+     {
+      "name": "(anonymous) /src/components/galaxy/surface/level/levelScene.js:197",
+      "ms": 3.7
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:2697",
+      "ms": 3.4
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:24291",
+      "ms": 3.3
+     },
+     {
+      "name": "_update /node_modules/.vite/deps/three_webgpu.js:22753",
+      "ms": 3.3
+     },
+     {
+      "name": "getHash /node_modules/.vite/deps/three_webgpu.js:1363",
+      "ms": 3.3
+     },
+     {
+      "name": "computeBoundingSphere /node_modules/.vite/deps/three.core-D5jE5TYE.js:18552",
+      "ms": 3.1
+     },
+     {
+      "name": "getNodeType /node_modules/.vite/deps/three_webgpu.js:1422",
+      "ms": 2.9
+     },
+     {
+      "name": "getNodeProperties /node_modules/.vite/deps/three_webgpu.js:38053",
+      "ms": 2.8
+     },
+     {
+      "name": "union /node_modules/.vite/deps/three.core-D5jE5TYE.js:13711",
+      "ms": 2.7
+     },
+     {
+      "name": "updateMatrix3 /node_modules/.vite/deps/three_webgpu.js:45599",
+      "ms": 2.2
+     },
+     {
+      "name": "setBindGroup :0",
+      "ms": 2.2
+     }
+    ],
+    "files": [
+     {
+      "name": "((program))",
+      "ms": 503.3
+     },
+     {
+      "name": "/node_modules/.vite/deps/three_webgpu.js",
+      "ms": 419.4
+     },
+     {
+      "name": "/node_modules/.vite/deps/three.core-D5jE5TYE.js",
+      "ms": 41.4
+     },
+     {
+      "name": "(writeBuffer)",
+      "ms": 21.6
+     },
+     {
+      "name": "((garbage collector))",
+      "ms": 19.9
+     },
+     {
+      "name": "/src/components/galaxy/surface/level/levelScene.js",
+      "ms": 18.1
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 10.3
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 5.4
+     },
+     {
+      "name": "(fetch)",
+      "ms": 4.5
+     },
+     {
+      "name": "((idle))",
+      "ms": 3.8
+     },
+     {
+      "name": "(setBindGroup)",
+      "ms": 2.2
+     },
+     {
+      "name": "/src/lib/three/pipelineGuard.js",
+      "ms": 2.2
+     },
+     {
+      "name": "(finish)",
+      "ms": 2.2
+     },
+     {
+      "name": "/@vite/client",
+      "ms": 1.8
+     },
+     {
+      "name": "(submit)",
+      "ms": 1.7
+     },
+     {
+      "name": "(beginRenderPass)",
+      "ms": 1.7
+     },
+     {
+      "name": "/src/components/battlefront/screens/Spawn.jsx",
+      "ms": 1.7
+     },
+     {
+      "name": "/src/components/battlefront/figures/figures.js",
+      "ms": 1.6
+     },
+     {
+      "name": "/src/lib/battlefront/ai/soldierBrain.js",
+      "ms": 1.3
+     },
+     {
+      "name": "/src/lib/battlefront/ai/bots.js",
+      "ms": 1.3
+     },
+     {
+      "name": "(arrayBuffer)",
+      "ms": 1.2
+     },
+     {
+      "name": "(setPipeline)",
+      "ms": 1.1
+     },
+     {
+      "name": "/src/components/battlefront/figures/locomotion.js",
+      "ms": 1.1
+     },
+     {
+      "name": "(evaluate)",
+      "ms": 0.6
+     },
+     {
+      "name": "(send)",
+      "ms": 0.6
+     }
+    ]
+   }
+  },
+  {
+   "name": "deploy",
+   "toPaint": 8734,
+   "longTasks": [
+    {
+     "start": 47683,
+     "dur": 224
+    },
+    {
+     "start": 47968,
+     "dur": 83
+    },
+    {
+     "start": 48117,
+     "dur": 70
+    },
+    {
+     "start": 48235,
+     "dur": 63
+    },
+    {
+     "start": 48354,
+     "dur": 70
+    },
+    {
+     "start": 48517,
+     "dur": 75
+    },
+    {
+     "start": 48643,
+     "dur": 74
+    },
+    {
+     "start": 48764,
+     "dur": 74
+    },
+    {
+     "start": 48887,
+     "dur": 68
+    },
+    {
+     "start": 49041,
+     "dur": 81
+    },
+    {
+     "start": 49174,
+     "dur": 79
+    },
+    {
+     "start": 49311,
+     "dur": 69
+    },
+    {
+     "start": 49434,
+     "dur": 55
+    },
+    {
+     "start": 49524,
+     "dur": 53
+    },
+    {
+     "start": 49601,
+     "dur": 87
+    },
+    {
+     "start": 49738,
+     "dur": 79
+    },
+    {
+     "start": 49868,
+     "dur": 53
+    },
+    {
+     "start": 50025,
+     "dur": 76
+    },
+    {
+     "start": 50159,
+     "dur": 58
+    },
+    {
+     "start": 50265,
+     "dur": 71
+    },
+    {
+     "start": 50389,
+     "dur": 51
+    },
+    {
+     "start": 50525,
+     "dur": 82
+    },
+    {
+     "start": 50652,
+     "dur": 76
+    },
+    {
+     "start": 50747,
+     "dur": 73
+    },
+    {
+     "start": 50866,
+     "dur": 55
+    },
+    {
+     "start": 51006,
+     "dur": 67
+    },
+    {
+     "start": 51118,
+     "dur": 78
+    },
+    {
+     "start": 51218,
+     "dur": 69
+    },
+    {
+     "start": 51344,
+     "dur": 54
+    },
+    {
+     "start": 51478,
+     "dur": 68
+    },
+    {
+     "start": 51604,
+     "dur": 72
+    },
+    {
+     "start": 51726,
+     "dur": 74
+    },
+    {
+     "start": 51859,
+     "dur": 62
+    },
+    {
+     "start": 51995,
+     "dur": 88
+    },
+    {
+     "start": 52138,
+     "dur": 82
+    },
+    {
+     "start": 52291,
+     "dur": 87
+    },
+    {
+     "start": 52444,
+     "dur": 53
+    },
+    {
+     "start": 52582,
+     "dur": 64
+    },
+    {
+     "start": 52707,
+     "dur": 79
+    },
+    {
+     "start": 52866,
+     "dur": 73
+    },
+    {
+     "start": 53000,
+     "dur": 56
+    },
+    {
+     "start": 53139,
+     "dur": 89
+    },
+    {
+     "start": 53287,
+     "dur": 82
+    },
+    {
+     "start": 53426,
+     "dur": 81
+    },
+    {
+     "start": 53572,
+     "dur": 54
+    },
+    {
+     "start": 53703,
+     "dur": 74
+    },
+    {
+     "start": 53829,
+     "dur": 64
+    },
+    {
+     "start": 53951,
+     "dur": 84
+    },
+    {
+     "start": 54089,
+     "dur": 71
+    },
+    {
+     "start": 54232,
+     "dur": 73
+    },
+    {
+     "start": 54354,
+     "dur": 64
+    },
+    {
+     "start": 54449,
+     "dur": 64
+    },
+    {
+     "start": 54568,
+     "dur": 51
+    },
+    {
+     "start": 54703,
+     "dur": 82
+    },
+    {
+     "start": 54843,
+     "dur": 81
+    },
+    {
+     "start": 54988,
+     "dur": 92
+    },
+    {
+     "start": 55165,
+     "dur": 67
+    },
+    {
+     "start": 55319,
+     "dur": 66
+    },
+    {
+     "start": 55461,
+     "dur": 75
+    },
+    {
+     "start": 55607,
+     "dur": 62
+    }
+   ],
+   "longTaskMs": 4401,
+   "frames": {
+    "n": 71,
+    "mean": 125.6,
+    "median": 135.5,
+    "p95": 189.7,
+    "max": 325.3
+   },
+   "inputs": [
+    {
+     "name": "pointerout",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "pointerleave",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "pointerover",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "pointerenter",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "pointerenter",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "pointerenter",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "pointerenter",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "mouseout",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "mouseover",
+     "start": 47604,
+     "wait": 25,
+     "dur": 72
+    },
+    {
+     "name": "pointerdown",
+     "start": 47630,
+     "wait": 28,
+     "dur": 56
+    },
+    {
+     "name": "mousedown",
+     "start": 47630,
+     "wait": 28,
+     "dur": 56
+    },
+    {
+     "name": "pointerup",
+     "start": 47658,
+     "wait": 23,
+     "dur": 256
+    },
+    {
+     "name": "mouseup",
+     "start": 47658,
+     "wait": 23,
+     "dur": 256
+    },
+    {
+     "name": "click",
+     "start": 47658,
+     "wait": 23,
+     "dur": 256
+    },
+    {
+     "name": "pointerover",
+     "start": 48441,
+     "wait": 1,
+     "dur": 88
+    },
+    {
+     "name": "pointerenter",
+     "start": 48441,
+     "wait": 2,
+     "dur": 88
+    },
+    {
+     "name": "pointerenter",
+     "start": 48441,
+     "wait": 2,
+     "dur": 88
+    },
+    {
+     "name": "pointerenter",
+     "start": 48441,
+     "wait": 2,
+     "dur": 88
+    },
+    {
+     "name": "pointerenter",
+     "start": 48441,
+     "wait": 2,
+     "dur": 88
+    },
+    {
+     "name": "pointerenter",
+     "start": 48441,
+     "wait": 2,
+     "dur": 88
+    },
+    {
+     "name": "pointerenter",
+     "start": 48441,
+     "wait": 2,
+     "dur": 88
+    },
+    {
+     "name": "mouseover",
+     "start": 48441,
+     "wait": 2,
+     "dur": 88
+    }
+   ],
+   "rest": {
+    "frames": {
+     "n": 28,
+     "mean": 74.1,
+     "median": 40.7,
+     "p95": 176.1,
+     "max": 176.3
+    },
+    "longTaskMs": 774,
+    "longTasks": 10
+   },
+   "profile": {
+    "total": 8764.6,
+    "functions": [
+     {
+      "name": "getVectorType /node_modules/.vite/deps/three_webgpu.js:37852",
+      "ms": 3438.7
+     },
+     {
+      "name": "(program) :0",
+      "ms": 393.1
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:1584",
+      "ms": 370.7
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:45457",
+      "ms": 249.3
+     },
+     {
+      "name": "(garbage collector) :0",
+      "ms": 247.9
+     },
+     {
+      "name": "writeBuffer :0",
+      "ms": 213.3
+     },
+     {
+      "name": "_getChildren /node_modules/.vite/deps/three_webgpu.js:1291",
+      "ms": 173.8
+     },
+     {
+      "name": "updateMatrixWorld /node_modules/.vite/deps/three.core-D5jE5TYE.js:10058",
+      "ms": 165.8
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:10823",
+      "ms": 163.5
+     },
+     {
+      "name": "getDataFromNode /node_modules/.vite/deps/three_webgpu.js:38022",
+      "ms": 142.7
+     },
+     {
+      "name": "analyze /node_modules/.vite/deps/three_webgpu.js:1511",
+      "ms": 131.5
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:1911",
+      "ms": 104.4
+     },
+     {
+      "name": "_renderObjectDirect /node_modules/.vite/deps/three_webgpu.js:44928",
+      "ms": 102.6
+     },
+     {
+      "name": "_projectObject /node_modules/.vite/deps/three_webgpu.js:44638",
+      "ms": 100.3
+     },
+     {
+      "name": "getNodeType /node_modules/.vite/deps/three_webgpu.js:1422",
+      "ms": 81.6
+     },
+     {
+      "name": "getNodeFromHash /node_modules/.vite/deps/three_webgpu.js:37404",
+      "ms": 80.4
+     },
+     {
+      "name": "getChildren /node_modules/.vite/deps/three_webgpu.js:1259",
+      "ms": 72.5
+     },
+     {
+      "name": "multiplyMatrices /node_modules/.vite/deps/three.core-D5jE5TYE.js:8264",
+      "ms": 70
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:5932",
+      "ms": 62.5
+     },
+     {
+      "name": "_update /node_modules/.vite/deps/three_webgpu.js:22753",
+      "ms": 59.6
+     },
+     {
+      "name": "getNodeProperties /node_modules/.vite/deps/three_webgpu.js:38053",
+      "ms": 53
+     },
+     {
+      "name": "console.<computed> /@vite/client:356",
+      "ms": 50
+     },
+     {
+      "name": "getHash /node_modules/.vite/deps/three_webgpu.js:1363",
+      "ms": 49.5
+     },
+     {
+      "name": "fn /node_modules/.vite/deps/three_webgpu.js:2601",
+      "ms": 48.7
+     },
+     {
+      "name": "getShared /node_modules/.vite/deps/three_webgpu.js:1463",
+      "ms": 46.9
+     },
+     {
+      "name": "updateForRender /node_modules/.vite/deps/three_webgpu.js:40371",
+      "ms": 43.9
+     },
+     {
+      "name": "setHashNode /node_modules/.vite/deps/three_webgpu.js:37284",
+      "ms": 43.2
+     },
+     {
+      "name": "fn /node_modules/.vite/deps/three_webgpu.js:2593",
+      "ms": 42.8
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:24291",
+      "ms": 41.4
+     },
+     {
+      "name": "generateNodeType /node_modules/.vite/deps/three_webgpu.js:4101",
+      "ms": 40.8
+     },
+     {
+      "name": "setup /node_modules/.vite/deps/three_webgpu.js:1498",
+      "ms": 39.7
+     },
+     {
+      "name": "updateVector3 /node_modules/.vite/deps/three_webgpu.js:45533",
+      "ms": 38.7
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:2697",
+      "ms": 35.3
+     },
+     {
+      "name": "setData /node_modules/.vite/deps/three_webgpu.js:36091",
+      "ms": 32.6
+     },
+     {
+      "name": "getInputType /node_modules/.vite/deps/three_webgpu.js:4558",
+      "ms": 31.2
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 28.9
+     },
+     {
+      "name": "registerDeclaration /node_modules/.vite/deps/three_webgpu.js:38223",
+      "ms": 28.2
+     },
+     {
+      "name": "setVertexBuffer :0",
+      "ms": 23.1
+     },
+     {
+      "name": "setup /node_modules/.vite/deps/three_webgpu.js:5680",
+      "ms": 23
+     },
+     {
+      "name": "RenderObject /node_modules/.vite/deps/three_webgpu.js:20566",
+      "ms": 22
+     }
+    ],
+    "files": [
+     {
+      "name": "/node_modules/.vite/deps/three_webgpu.js",
+      "ms": 6974.6
+     },
+     {
+      "name": "((program))",
+      "ms": 393.1
+     },
+     {
+      "name": "/node_modules/.vite/deps/three.core-D5jE5TYE.js",
+      "ms": 342.3
+     },
+     {
+      "name": "((garbage collector))",
+      "ms": 247.9
+     },
+     {
+      "name": "(writeBuffer)",
+      "ms": 213.3
+     },
+     {
+      "name": "/node_modules/@dimforge/rapier3d-simd/rapier_wasm3d_bg.wasm",
+      "ms": 112.1
+     },
+     {
+      "name": "/@vite/client",
+      "ms": 52.8
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 31.7
+     },
+     {
+      "name": "(setVertexBuffer)",
+      "ms": 23.1
+     },
+     {
+      "name": "/src/lib/three/pipelineGuard.js",
+      "ms": 22.6
+     },
+     {
+      "name": "(writeTexture)",
+      "ms": 19.2
+     },
+     {
+      "name": "(submit)",
+      "ms": 18.4
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 17.7
+     },
+     {
+      "name": "/node_modules/@dimforge/rapier3d-simd/rapier_wasm3d_bg.js",
+      "ms": 17.7
+     },
+     {
+      "name": "/src/components/galaxy/surface/level/levelScene.js",
+      "ms": 15.1
+     },
+     {
+      "name": "/node_modules/.vite/deps/three_addons_lighting_ClusteredLighting__js.js",
+      "ms": 14.1
+     },
+     {
+      "name": "(setIndexBuffer)",
+      "ms": 13.8
+     },
+     {
+      "name": "(setBindGroup)",
+      "ms": 12.6
+     },
+     {
+      "name": "(beginRenderPass)",
+      "ms": 11.1
+     },
+     {
+      "name": "((idle))",
+      "ms": 11
+     },
+     {
+      "name": "(setPipeline)",
+      "ms": 10.7
+     },
+     {
+      "name": "/src/lib/wasm/navsearch/navsearch_bg.wasm",
+      "ms": 8.8
+     },
+     {
+      "name": "/src/lib/battlefront/nav.js",
+      "ms": 7.3
+     },
+     {
+      "name": "/src/components/battlefront/figures/figures.js",
+      "ms": 6.6
+     },
+     {
+      "name": "(createCommandEncoder)",
+      "ms": 6.4
+     }
+    ]
+   }
+  },
+  {
+   "name": "ingame-menu",
+   "toPaint": 1185,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 12,
+    "mean": 101.7,
+    "median": 40.7,
+    "p95": 718.5,
+    "max": 718.5
+   },
+   "inputs": [
+    {
+     "name": "keydown",
+     "start": 61288,
+     "wait": 40,
+     "dur": 104
+    },
+    {
+     "name": "pointerout",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerleave",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerleave",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerleave",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerleave",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerleave",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerleave",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerover",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "mouseout",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "mouseover",
+     "start": 61354,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "keyup",
+     "start": 61357,
+     "wait": 29,
+     "dur": 64
+    }
+   ],
+   "rest": {
+    "frames": {
+     "n": 48,
+     "mean": 41.5,
+     "median": 40.7,
+     "p95": 54.3,
+     "max": 67.7
+    },
+    "longTaskMs": 0,
+    "longTasks": 0
+   },
+   "profile": {
+    "total": 1195.2,
+    "functions": [
+     {
+      "name": "(program) :0",
+      "ms": 691.4
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:45457",
+      "ms": 50.1
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:10823",
+      "ms": 42.2
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 40
+     },
+     {
+      "name": "writeBuffer :0",
+      "ms": 32.2
+     },
+     {
+      "name": "updateMatrixWorld /node_modules/.vite/deps/three.core-D5jE5TYE.js:10058",
+      "ms": 29.9
+     },
+     {
+      "name": "_renderObjectDirect /node_modules/.vite/deps/three_webgpu.js:44928",
+      "ms": 17.3
+     },
+     {
+      "name": "_projectObject /node_modules/.vite/deps/three_webgpu.js:44638",
+      "ms": 15.8
+     },
+     {
+      "name": "_update /node_modules/.vite/deps/three_webgpu.js:22753",
+      "ms": 15.3
+     },
+     {
+      "name": "updateVector3 /node_modules/.vite/deps/three_webgpu.js:45533",
+      "ms": 9.7
+     },
+     {
+      "name": "updateForRender /node_modules/.vite/deps/three_webgpu.js:40371",
+      "ms": 8.6
+     },
+     {
+      "name": "(garbage collector) :0",
+      "ms": 7.8
+     },
+     {
+      "name": "multiplyMatrices /node_modules/.vite/deps/three.core-D5jE5TYE.js:8264",
+      "ms": 7.1
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:1584",
+      "ms": 7
+     },
+     {
+      "name": "setBindGroup :0",
+      "ms": 5.4
+     },
+     {
+      "name": "updateReference /node_modules/.vite/deps/three_webgpu.js:10804",
+      "ms": 5.4
+     },
+     {
+      "name": "focus :0",
+      "ms": 5.1
+     },
+     {
+      "name": "_getChildren /node_modules/.vite/deps/three_webgpu.js:1291",
+      "ms": 4.5
+     },
+     {
+      "name": "run :0",
+      "ms": 3.9
+     },
+     {
+      "name": "_updateBindings /node_modules/.vite/deps/three_webgpu.js:22744",
+      "ms": 3.9
+     },
+     {
+      "name": "exports.createElement /node_modules/.vite/deps/react.js:624",
+      "ms": 3.9
+     },
+     {
+      "name": "getDataFromNode /node_modules/.vite/deps/three_webgpu.js:38022",
+      "ms": 3.4
+     },
+     {
+      "name": "_getWeakMap /node_modules/.vite/deps/three_webgpu.js:20457",
+      "ms": 3.3
+     },
+     {
+      "name": "updateBinding /node_modules/.vite/deps/three_webgpu.js:57533",
+      "ms": 3.3
+     },
+     {
+      "name": "setVertexBuffer :0",
+      "ms": 3.2
+     },
+     {
+      "name": "updateBefore /node_modules/.vite/deps/three_webgpu.js:18783",
+      "ms": 3.2
+     },
+     {
+      "name": "updateLightsTexture /node_modules/.vite/deps/three_addons_lighting_ClusteredLighting__js.js:61",
+      "ms": 3.2
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:45903",
+      "ms": 3.2
+     },
+     {
+      "name": "stats /src/components/galaxy/surface/level/levelPhysics.js:238",
+      "ms": 3
+     },
+     {
+      "name": "createTask :0",
+      "ms": 2.9
+     },
+     {
+      "name": "addObjectDiffToProperties /node_modules/.vite/deps/react-dom_client.js:2561",
+      "ms": 2.9
+     },
+     {
+      "name": "evaluate /node_modules/.vite/deps/three.core-D5jE5TYE.js:30098",
+      "ms": 2.8
+     },
+     {
+      "name": "ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:105",
+      "ms": 2.7
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:1911",
+      "ms": 2.3
+     },
+     {
+      "name": "react_stack_bottom_frame /node_modules/.vite/deps/react-dom_client.js:14138",
+      "ms": 2.2
+     },
+     {
+      "name": "getChildren /node_modules/.vite/deps/three_webgpu.js:1259",
+      "ms": 2.2
+     },
+     {
+      "name": "renderObject /node_modules/.vite/deps/three_webgpu.js:44846",
+      "ms": 2.2
+     },
+     {
+      "name": "renderer._renderObjectDirect /src/lib/three/pipelineGuard.js:181",
+      "ms": 2.2
+     },
+     {
+      "name": "updateAfter /node_modules/.vite/deps/three_webgpu.js:40330",
+      "ms": 2.2
+     },
+     {
+      "name": "getPreviousMatrix /node_modules/.vite/deps/three_webgpu.js:28260",
+      "ms": 2.2
+     }
+    ],
+    "files": [
+     {
+      "name": "((program))",
+      "ms": 691.4
+     },
+     {
+      "name": "/node_modules/.vite/deps/three_webgpu.js",
+      "ms": 269.5
+     },
+     {
+      "name": "/node_modules/.vite/deps/three.core-D5jE5TYE.js",
+      "ms": 54.1
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 44.3
+     },
+     {
+      "name": "(writeBuffer)",
+      "ms": 32.2
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 23.6
+     },
+     {
+      "name": "((garbage collector))",
+      "ms": 7.8
+     },
+     {
+      "name": "(setBindGroup)",
+      "ms": 5.4
+     },
+     {
+      "name": "(focus)",
+      "ms": 5.1
+     },
+     {
+      "name": "/node_modules/.vite/deps/react.js",
+      "ms": 4.4
+     },
+     {
+      "name": "(run)",
+      "ms": 3.9
+     },
+     {
+      "name": "/node_modules/.vite/deps/three_addons_lighting_ClusteredLighting__js.js",
+      "ms": 3.8
+     },
+     {
+      "name": "(setVertexBuffer)",
+      "ms": 3.2
+     },
+     {
+      "name": "/src/lib/three/pipelineGuard.js",
+      "ms": 3.2
+     },
+     {
+      "name": "/src/components/galaxy/surface/level/levelPhysics.js",
+      "ms": 3
+     },
+     {
+      "name": "(createTask)",
+      "ms": 2.9
+     },
+     {
+      "name": "(submit)",
+      "ms": 1.8
+     },
+     {
+      "name": "/src/runtime/hud/Screen.jsx",
+      "ms": 1.7
+     },
+     {
+      "name": "/src/components/battlefront/module.js",
+      "ms": 1.7
+     },
+     {
+      "name": "/src/components/battlefront/screens/tree.js",
+      "ms": 1.7
+     },
+     {
+      "name": "(getGamepads)",
+      "ms": 1.6
+     },
+     {
+      "name": "(setPipeline)",
+      "ms": 1.6
+     },
+     {
+      "name": "/src/components/battlefront/figures/figures.js",
+      "ms": 1.6
+     },
+     {
+      "name": "/src/lib/wasm/navsearch/navsearch_bg.wasm",
+      "ms": 1.6
+     },
+     {
+      "name": "(requestAnimationFrame)",
+      "ms": 1.6
+     }
+    ]
+   }
+  },
+  {
+   "name": "resume",
+   "toPaint": 1545,
+   "longTasks": [],
+   "longTaskMs": 0,
+   "frames": {
+    "n": 22,
+    "mean": 72.1,
+    "median": 40.7,
+    "p95": 67.8,
+    "max": 786.1
+   },
+   "inputs": [
+    {
+     "name": "pointerout",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerleave",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerleave",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerleave",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerover",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerenter",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerenter",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "mouseout",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "mouseover",
+     "start": 65567,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerdown",
+     "start": 65568,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "mousedown",
+     "start": 65568,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerup",
+     "start": 65568,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "mouseup",
+     "start": 65568,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "click",
+     "start": 65568,
+     "wait": 24,
+     "dur": 64
+    },
+    {
+     "name": "pointerover",
+     "start": 65568,
+     "wait": 28,
+     "dur": 64
+    },
+    {
+     "name": "mouseover",
+     "start": 65568,
+     "wait": 28,
+     "dur": 64
+    },
+    {
+     "name": "pointerout",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerover",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "pointerenter",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "mouseout",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    },
+    {
+     "name": "mouseover",
+     "start": 65596,
+     "wait": 0,
+     "dur": 40
+    }
+   ],
+   "rest": {
+    "frames": {
+     "n": 76,
+     "mean": 26,
+     "median": 27.1,
+     "p95": 40.7,
+     "max": 54.2
+    },
+    "longTaskMs": 0,
+    "longTasks": 0
+   },
+   "profile": {
+    "total": 1540.8,
+    "functions": [
+     {
+      "name": "(program) :0",
+      "ms": 761.9
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:45457",
+      "ms": 101.4
+     },
+     {
+      "name": "writeBuffer :0",
+      "ms": 70.4
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:10823",
+      "ms": 65.3
+     },
+     {
+      "name": "updateMatrixWorld /node_modules/.vite/deps/three.core-D5jE5TYE.js:10058",
+      "ms": 52.4
+     },
+     {
+      "name": "_projectObject /node_modules/.vite/deps/three_webgpu.js:44638",
+      "ms": 34.8
+     },
+     {
+      "name": "exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:192",
+      "ms": 31.2
+     },
+     {
+      "name": "_renderObjectDirect /node_modules/.vite/deps/three_webgpu.js:44928",
+      "ms": 30.7
+     },
+     {
+      "name": "multiplyMatrices /node_modules/.vite/deps/three.core-D5jE5TYE.js:8264",
+      "ms": 24.6
+     },
+     {
+      "name": "_update /node_modules/.vite/deps/three_webgpu.js:22753",
+      "ms": 20.8
+     },
+     {
+      "name": "updateVector3 /node_modules/.vite/deps/three_webgpu.js:45533",
+      "ms": 20.7
+     },
+     {
+      "name": "updateForRender /node_modules/.vite/deps/three_webgpu.js:40371",
+      "ms": 17.6
+     },
+     {
+      "name": "_getChildren /node_modules/.vite/deps/three_webgpu.js:1291",
+      "ms": 9.4
+     },
+     {
+      "name": "_updateBindings /node_modules/.vite/deps/three_webgpu.js:22744",
+      "ms": 8.4
+     },
+     {
+      "name": "updateReference /node_modules/.vite/deps/three_webgpu.js:10804",
+      "ms": 8.2
+     },
+     {
+      "name": "setBindGroup :0",
+      "ms": 8.1
+     },
+     {
+      "name": "(garbage collector) :0",
+      "ms": 7.1
+     },
+     {
+      "name": "renderer._renderObjectDirect /src/lib/three/pipelineGuard.js:181",
+      "ms": 6.6
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:8953",
+      "ms": 6.5
+     },
+     {
+      "name": "updateBinding /node_modules/.vite/deps/three_webgpu.js:57533",
+      "ms": 6.5
+     },
+     {
+      "name": "getNodeBuilderState /node_modules/.vite/deps/three_webgpu.js:20839",
+      "ms": 6.5
+     },
+     {
+      "name": "updateBefore /node_modules/.vite/deps/three_webgpu.js:18783",
+      "ms": 5.9
+     },
+     {
+      "name": "run :0",
+      "ms": 5.9
+     },
+     {
+      "name": "setVertexBuffer :0",
+      "ms": 5.5
+     },
+     {
+      "name": "updateLightsTexture /node_modules/.vite/deps/three_addons_lighting_ClusteredLighting__js.js:61",
+      "ms": 5.5
+     },
+     {
+      "name": "wasm-function[31] /src/lib/wasm/navsearch/navsearch_bg.wasm:1",
+      "ms": 5.4
+     },
+     {
+      "name": "evaluate /node_modules/.vite/deps/three.core-D5jE5TYE.js:30098",
+      "ms": 5
+     },
+     {
+      "name": "addUniformUpdateRange /node_modules/.vite/deps/three_webgpu.js:45358",
+      "ms": 4.4
+     },
+     {
+      "name": "updateMatrix3 /node_modules/.vite/deps/three_webgpu.js:45599",
+      "ms": 4.4
+     },
+     {
+      "name": "_getWeakMap /node_modules/.vite/deps/three_webgpu.js:20457",
+      "ms": 4.4
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:52410",
+      "ms": 4.4
+     },
+     {
+      "name": "ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:105",
+      "ms": 4.4
+     },
+     {
+      "name": "_draw /node_modules/.vite/deps/three_webgpu.js:59997",
+      "ms": 4
+     },
+     {
+      "name": "build /node_modules/.vite/deps/three_webgpu.js:1584",
+      "ms": 3.9
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three_webgpu.js:45903",
+      "ms": 3.9
+     },
+     {
+      "name": "updateAttributes /node_modules/.vite/deps/three_webgpu.js:21613",
+      "ms": 3.9
+     },
+     {
+      "name": "toArray /node_modules/.vite/deps/three.core-D5jE5TYE.js:8776",
+      "ms": 3.8
+     },
+     {
+      "name": "setPipeline :0",
+      "ms": 3.8
+     },
+     {
+      "name": "stats /src/components/galaxy/surface/level/levelPhysics.js:238",
+      "ms": 3.8
+     },
+     {
+      "name": "update /node_modules/.vite/deps/three.core-D5jE5TYE.js:38446",
+      "ms": 3.8
+     }
+    ],
+    "files": [
+     {
+      "name": "((program))",
+      "ms": 761.9
+     },
+     {
+      "name": "/node_modules/.vite/deps/three_webgpu.js",
+      "ms": 450.3
+     },
+     {
+      "name": "/node_modules/.vite/deps/three.core-D5jE5TYE.js",
+      "ms": 109
+     },
+     {
+      "name": "(writeBuffer)",
+      "ms": 70.4
+     },
+     {
+      "name": "/node_modules/.vite/deps/react_jsx-dev-runtime.js",
+      "ms": 35.6
+     },
+     {
+      "name": "/node_modules/.vite/deps/react-dom_client.js",
+      "ms": 16.4
+     },
+     {
+      "name": "(setBindGroup)",
+      "ms": 8.1
+     },
+     {
+      "name": "/src/lib/three/pipelineGuard.js",
+      "ms": 7.1
+     },
+     {
+      "name": "((garbage collector))",
+      "ms": 7.1
+     },
+     {
+      "name": "/src/lib/wasm/navsearch/navsearch_bg.wasm",
+      "ms": 6.5
+     },
+     {
+      "name": "/node_modules/.vite/deps/three_addons_lighting_ClusteredLighting__js.js",
+      "ms": 6.1
+     },
+     {
+      "name": "(run)",
+      "ms": 5.9
+     },
+     {
+      "name": "(setVertexBuffer)",
+      "ms": 5.5
+     },
+     {
+      "name": "(setPipeline)",
+      "ms": 3.8
+     },
+     {
+      "name": "/src/components/galaxy/surface/level/levelPhysics.js",
+      "ms": 3.8
+     },
+     {
+      "name": "/src/lib/battlefront/nav.js",
+      "ms": 3.5
+     },
+     {
+      "name": "(beginRenderPass)",
+      "ms": 3.3
+     },
+     {
+      "name": "/src/components/battlefront/module.js",
+      "ms": 1.7
+     },
+     {
+      "name": "(finish)",
+      "ms": 1.7
+     },
+     {
+      "name": "(getGamepads)",
+      "ms": 1.7
+     },
+     {
+      "name": "/src/components/battlefront/screens/tree.js",
+      "ms": 1.6
+     },
+     {
+      "name": "/src/lib/battlefront/ai/soldierBrain.js",
+      "ms": 1.6
+     },
+     {
+      "name": "/src/components/battlefront/battle.js",
+      "ms": 1.6
+     },
+     {
+      "name": "/src/lib/battlefront/battlePoints.js",
+      "ms": 1.5
+     },
+     {
+      "name": "(requestAnimationFrame)",
+      "ms": 1.1
+     }
+    ]
+   }
+  }
+ ],
+ "loadingBehind": {
+  "hooked": {
+   "keys": [
+    "ready",
+    "resize",
+    "step",
+    "draw",
+    "wants",
+    "do",
+    "view",
+    "onVideo",
+    "lowerQuality",
+    "dispose"
+   ],
+   "chain": 10,
+   "pace": 0
+  },
+  "samples": [
+   {
+    "t": 19242,
+    "loaded": false,
+    "progress": 0,
+    "stats": {
+     "loaded": false,
+     "progress": 0,
+     "tris": 0,
+     "calls": 0,
+     "instances": 0,
+     "physics": {
+      "cells": 0,
+      "bodies": 0,
+      "colliders": 0,
+      "queued": 0,
+      "mask": true
+     }
+    },
+    "draws": 0,
+    "drawMs": null,
+    "lastDraw": null
+   },
+   {
+    "t": 20853,
+    "loaded": false,
+    "progress": 0,
+    "stats": {
+     "loaded": false,
+     "progress": 0,
+     "tris": 0,
+     "calls": 0,
+     "instances": 0,
+     "physics": {
+      "cells": 0,
+      "bodies": 0,
+      "colliders": 0,
+      "queued": 0,
+      "mask": true
+     }
+    },
+    "draws": 3,
+    "drawMs": 138.5,
+    "lastDraw": {
+     "t": 20739,
+     "ms": 28.9,
+     "calls": 475,
+     "tris": 0,
+     "backend": null
+    }
+   },
+   {
+    "t": 22277,
+    "loaded": false,
+    "progress": 0,
+    "stats": {
+     "loaded": false,
+     "progress": 0,
+     "tris": 0,
+     "calls": 0,
+     "instances": 0,
+     "physics": {
+      "cells": 0,
+      "bodies": 0,
+      "colliders": 0,
+      "queued": 0,
+      "mask": true
+     }
+    },
+    "draws": 33,
+    "drawMs": 21.84,
+    "lastDraw": {
+     "t": 22265,
+     "ms": 10.7,
+     "calls": 1546,
+     "tris": 2238,
+     "backend": null
+    }
+   },
+   {
+    "t": 23478,
+    "loaded": false,
+    "progress": 0.24,
+    "stats": {
+     "loaded": false,
+     "progress": 0.24,
+     "tris": 479393,
+     "calls": 68,
+     "instances": 1818,
+     "physics": {
+      "cells": 6,
+      "bodies": 0,
+      "colliders": 0,
+      "queued": 0,
+      "mask": true
+     }
+    },
+    "draws": 48,
+    "drawMs": 21.81,
+    "lastDraw": {
+     "t": 23413,
+     "ms": 60.3,
+     "calls": 2117,
+     "tris": 1790848,
+     "backend": null
+    }
+   },
+   {
+    "t": 26960,
+    "loaded": true,
+    "progress": 0.56,
+    "stats": {
+     "loaded": true,
+     "progress": 0.56,
+     "tris": 531651,
+     "calls": 70,
+     "instances": 1920,
+     "physics": {
+      "cells": 9,
+      "bodies": 4,
+      "colliders": 72,
+      "queued": 0,
+      "mask": true
+     }
+    },
+    "draws": 78,
+    "drawMs": 13.82,
+    "lastDraw": {
+     "t": 26946,
+     "ms": 12.5,
+     "calls": 3563,
+     "tris": 1929132,
+     "backend": null
+    }
+   }
+  ],
+  "frames": {
+   "n": 148,
+   "mean": 56.5,
+   "median": 13.6,
+   "p95": 162.5,
+   "max": 488
+  },
+  "longTasks": 54,
+  "longTaskMs": 4483,
+  "worst": [
+   {
+    "start": 20297,
+    "dur": 335
+   },
+   {
+    "start": 22012,
+    "dur": 124
+   },
+   {
+    "start": 21011,
+    "dur": 117
+   },
+   {
+    "start": 21628,
+    "dur": 101
+   },
+   {
+    "start": 25108,
+    "dur": 99
+   },
+   {
+    "start": 23708,
+    "dur": 91
+   },
+   {
+    "start": 26996,
+    "dur": 91
+   },
+   {
+    "start": 20207,
+    "dur": 90
+   },
+   {
+    "start": 26249,
+    "dur": 90
+   },
+   {
+    "start": 25749,
+    "dur": 89
+   }
+  ]
+ },
+ "spawnDraws": {
+  "n": 120,
+  "calls": 13305,
+  "tris": 5635231,
+  "drawMs": 19.86
+ },
+ "spawnSettle": {
+  "settleMs": 7515,
+  "settled": true,
+  "rows": [
+   {
+    "t": 38807,
+    "held": 4,
+    "pending": 0,
+    "frames": 1426
+   },
+   {
+    "t": 39499,
+    "held": 1,
+    "pending": 9,
+    "frames": 1432
+   },
+   {
+    "t": 39920,
+    "held": 0,
+    "pending": 3,
+    "frames": 1435
+   },
+   {
+    "t": 40626,
+    "held": 2,
+    "pending": 3,
+    "frames": 1444
+   },
+   {
+    "t": 40910,
+    "held": 5,
+    "pending": 14,
+    "frames": 1447
+   },
+   {
+    "t": 41998,
+    "held": 1,
+    "pending": 11,
+    "frames": 1458
+   },
+   {
+    "t": 43437,
+    "held": 2,
+    "pending": 20,
+    "frames": 1472
+   },
+   {
+    "t": 43737,
+    "held": 0,
+    "pending": 19,
+    "frames": 1474
+   },
+   {
+    "t": 47002,
+    "held": 0,
+    "pending": 0,
+    "frames": 1567
+   }
+  ]
+ },
+ "deployed": {
+  "by": "click",
+  "parts": {
+   "box": 167,
+   "move": 193,
+   "down": 221,
+   "up": 246
+  },
+  "after": [
+   {
+    "t": 83,
+    "state": "deploying",
+    "open": true,
+    "loaded": true,
+    "spawn": true,
+    "loading": false,
+    "reticle": 0,
+    "frames": 1575,
+    "lt": 163
+   },
+   {
+    "t": 989,
+    "state": "alive",
+    "open": false,
+    "loaded": true,
+    "spawn": true,
+    "loading": false,
+    "reticle": 0,
+    "frames": 1585,
+    "lt": 163
+   },
+   {
+    "t": 1523,
+    "state": "alive",
+    "open": false,
+    "loaded": true,
+    "spawn": false,
+    "loading": false,
+    "reticle": 1,
+    "frames": 1589,
+    "lt": 168
+   }
+  ],
+  "driverClickMs": 246,
+  "clickToReticleMs": 749,
+  "stamps": {
+   "clickAt": 47681.70000000112,
+   "reticleAt": 48430.59999999963
+  },
+  "aliveAfter": 0,
+  "reticleAfter": 0,
+  "timeline": [
+   {
+    "t": 48436,
+    "state": "alive",
+    "open": false,
+    "loaded": true,
+    "progress": 0.15789473684210525,
+    "reticle": 1,
+    "loadingScreen": false,
+    "spawnScreen": false,
+    "frames": 1585,
+    "longTasks": 163
+   }
+  ]
+ },
+ "deploySettle": {
+  "settleMs": 412,
+  "settled": true,
+  "rows": [
+   {
+    "t": 59317,
+    "held": 0,
+    "pending": 2,
+    "frames": 1687
+   },
+   {
+    "t": 60450,
+    "held": 0,
+    "pending": 0,
+    "frames": 1724
+   }
+  ]
+ },
+ "hudDraws": {
+  "n": 120,
+  "calls": 19790,
+  "tris": 6561611,
+  "drawMs": 27.49
+ },
+ "pace": [
+  {
+   "t": 19752,
+   "level": 0,
+   "internal": 1,
+   "source": "gpu",
+   "step": 0,
+   "chain": 10
+  }
+ ],
+ "console": [
+  {
+   "n": 852,
+   "text": "warning: THREE.TSL: Return statement used in an inline 'Fn()'. Define a layout struct to allow return values. Stack trace not available. Enable \"THREE.Node.capt"
+  },
+  {
+   "n": 3,
+   "text": "warning: The powerPreference option is currently ignored when calling requestAdapter() on Windows. See https://crbug.com/369219127"
+  },
+  {
+   "n": 1,
+   "text": "warning: THREE.TSL: \"directionToColor()\" has been renamed to \"packNormalToRGB()\". Stack trace not available. Enable \"THREE.Node.captureStackTrace\" to capture st"
+  },
+  {
+   "n": 1,
+   "text": "warning: THREE.TSL: \"colorToDirection()\" has been renamed to \"unpackRGBToNormal()\". Stack trace not available. Enable \"THREE.Node.captureStackTrace\" to capture "
+  },
+  {
+   "n": 1,
+   "text": "warning: level hoth: a map did not load, tex/t_arcticbase_rockwall_large_lod_03_n__normal.ktx2: Error: tex/t_arcticbase_rockwall_large_lod_03_n__normal.2048.ktx"
+  }
+ ]
+}

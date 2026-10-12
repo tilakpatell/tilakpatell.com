@@ -92,7 +92,7 @@
 // server (npx vite --port 5188 --strictPort --host 127.0.0.1).
 
 import { Logger, NodeIO } from '@gltf-transform/core';
-import { ALL_EXTENSIONS, KHRTextureBasisu } from '@gltf-transform/extensions';
+import { ALL_EXTENSIONS, KHRMaterialsSpecular, KHRTextureBasisu } from '@gltf-transform/extensions';
 import { dedup, dequantize, flatten, join, listTextureSlots, mergeDocuments, meshopt, metalRough, prune, textureCompress, unpartition, weld } from '@gltf-transform/functions';
 import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
 import { existsSync } from 'node:fs';
@@ -104,7 +104,7 @@ import { overCaps } from './lib/bf2017-caps.mjs';
 import { parseArgs } from './lib/args.mjs';
 import { isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-paths.mjs';
-import { resolveImage, weaponRecipes } from './lib/bf2017-textures.mjs';
+import { resolveImage, specularFactorOf, weaponMaterial } from './lib/bf2017-textures.mjs';
 import { meshBindings } from './lib/bf2017-variations.mjs';
 import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { loadGameWord, slotTransfer, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -223,12 +223,10 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
   const json = glbJson(glb);
   const at0 = 20 + glb.readUInt32LE(12);
   const resources = { '@glb.bin': new Uint8Array(glb.buffer, glb.byteOffset + at0 + 8, glb.readUInt32LE(at0)) };
-  // (a weapon's ORM recipe mended from its materials: the metal is in the _Mask, not the NAM)
-  const recipes = weaponRecipes(derived, json.materials);
   for (const [i, img] of (json.images ?? []).entries()) {
     const at = imagePath(img.uri, inBucket(file));
     if (!at) continue;
-    const found = await resolveImage(at, { root, derived: recipes, unpackDir });
+    const found = await resolveImage(at, { root, derived, unpackDir });
     const uri = `image${i}.png`;
     if (found) {
       resources[uri] = new Uint8Array(found.png);
@@ -273,6 +271,16 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
       } else m.setBaseColorFactor([0.16, 0.12, 0.1, 1]);
       m.setRoughnessFactor(0.15).setMetallicFactor(0);
     }
+    // a Walrus weapon (lib/bf2017-textures.mjs weaponMaterial): the game's
+    // preset has no occlusion (the ORM's red is the NAM's alpha, 255 all
+    // over) and a constant reflectance, which glTF holds as a specular
+    // factor: written only where it is under the default's 1
+    const weapon = weaponMaterial(shader);
+    if (weapon) {
+      if (!weapon.occlusion) m.setOcclusionTexture(null);
+      const factor = specularFactorOf(weapon.reflectance);
+      if (factor < 1) m.setExtension('KHR_materials_specular', doc.createExtension(KHRMaterialsSpecular).createSpecular().setSpecularFactor(factor));
+    }
     // (Frostbite's shader preset and source maps: nothing the site reads but
     // a decal's, which lib/bf2017-dressing.mjs draws as the game does)
     m.setExtras(decalOf(shader) ? { decal: decalOf(shader) } : {});
@@ -283,7 +291,7 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
     const byIndex = (byIndexOf[`#${index}`] ?? []).filter((b) => lacks[b.slot]);
     for (const { slot, name } of [...(textures?.[m.getName()] ?? []), ...byIndex]) {
       const at = overridePath(name, slot);
-      const found = await resolveImage(at, { root, derived: recipes, unpackDir });
+      const found = await resolveImage(at, { root, derived, unpackDir });
       if (!found) {
         said.missing.add(at);
         continue;

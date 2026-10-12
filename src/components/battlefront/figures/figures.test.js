@@ -265,6 +265,51 @@ describe('a soldier’s stride against the ground', () => {
     expect(f.actions.get('idle').timeScale).toBe(1);
   });
 
+  it('blends the nearest directions and gaits on one phase: a turn or a speed change moves weights, never cuts a clip', async () => {
+    const clips = { idle: clip('idle'), walk: walking('walk', [0, 2]), 'walk.right': walking('walk.right', [-2, 0]), 'walk.back': walking('walk.back', [0, -1.6]), 'walk.left': walking('walk.left', [2, 0]), run: walking('run', [0, 4]) };
+    const figs = paced(clips);
+    figs.update([runner({ vel: [0, 2] })], 0.1);
+    await settle();
+    // ahead at the walk's pace: the walk alone, every loco action made and in step
+    figs.update([runner({ vel: [0, 2] })], 0.1);
+    const f = figs.figure(4);
+    expect(f.clip).toBe('walk');
+    expect([...f.loco].sort()).toEqual(['run', 'walk', 'walk.back', 'walk.left', 'walk.right']);
+    const w = (n) => f.weights.get(n) ?? 0;
+    expect(w('walk')).toBeCloseTo(1, 9);
+    for (const n of f.loco) expect(f.actions.get(n).timeScale, n).toBeCloseTo(1, 9);
+    expect(f.phase).toBeCloseTo(0.1, 9);
+    // a step to the right-ahead at the walk's diagonal pace: half the walk, half the right strafe, eased over CROSSFADE, the sum one
+    const diag = [-1, 1];
+    figs.update([runner({ vel: diag, t: 1 })], 0.05);
+    expect(w('walk')).toBeCloseTo(1 - 0.05 / 0.15, 6);
+    expect(w('walk.right')).toBeCloseTo(0.05 / 0.15, 6);
+    figs.update([runner({ vel: diag, t: 2 })], 0.05);
+    figs.update([runner({ vel: diag, t: 3 })], 0.05);
+    expect(w('walk')).toBeCloseTo(0.5, 6);
+    expect(w('walk.right')).toBeCloseTo(0.5, 6);
+    expect([...f.weights.values()].reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6);
+    // (the walk kept running through it: never stopped or restarted)
+    expect(f.actions.get('walk').isRunning()).toBe(true);
+    expect(f.actions.get('walk').time).toBeCloseTo(0.1 + 0.15, 6);
+    // faster, ahead: the run comes in by speed, the phase runs on at the body's speed over the blend's pace
+    figs.update([runner({ vel: [0, 3], t: 4 })], 0.1);
+    const run = f.actions.get('run');
+    expect(run.timeScale).toBeGreaterThan(0);
+    expect(f.actions.get('walk').timeScale).toBeCloseTo(run.timeScale, 9);
+    expect(f.phase).toBeGreaterThan(0.25);
+    // stood still: the idle, the loco actions held
+    figs.update([runner({ t: 5 })], 0.1);
+    expect(f.clip).toBe('idle');
+    expect(run.timeScale).toBe(0);
+    expect(f.walking).toBe(false);
+    // off again: from the feet passing (phase 0), every loco action seated there
+    figs.update([runner({ vel: [0, 2], t: 6 })], 0.1);
+    expect(f.walking).toBe(true);
+    expect(f.phase).toBeCloseTo(0.1, 9);
+    expect(f.actions.get('walk').time).toBeCloseTo(0.1, 9);
+  });
+
   it('plays a run clip with no root travel at its own pace', async () => {
     const figs = paced({ idle: clip('idle'), run: clip('run') });
     figs.update([runner({ vel: [0, 3.8] })], 0.1);
