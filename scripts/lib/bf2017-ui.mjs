@@ -289,3 +289,6 @@ export function vttOf(ssa, say = (key) => key) {
 // bitmaps are the game's world's to ask for by name.)
 const BITMAPS = /^UI\/(Bitmaps\/(Portraits|GameModeTiles|ChooseSideTiles|SupplyCrateIcons)|Art\/(HUD|LoadingScreens))\//;
 export const bitmapWanted = (name) => BITMAPS.test(name) && !isSequelUi(name);
+// the card and menu bitmaps the Collection asks for by name (its star cards'
+// art: src/data/bf2017/collection.json's `image`s), the sequel's left out
+export const collectionImages = (book) => new Set(Object.values(book?.cards ?? {}).flatMap((c) => [c.image]).filter((n) => n && !isSequelUi(n)));
