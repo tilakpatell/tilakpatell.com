@@ -17,6 +17,7 @@
 // and wait: figures/ragdolls.js).
 
 import * as THREE from 'three';
+import { device } from '../../lib/device.js';
 import { textureTier } from '../../lib/video.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
 import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf } from '../../lib/battlefront/rulebook.js';
@@ -89,7 +90,11 @@ export default {
     // them; lane L's instanced path draws until that is found)
     const flags = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search) : null;
     const gpuScene = rt.gfx.backend === 'webgpu' && flags?.get('level') === 'gpu';
-    const level = createLevel({ scene, tier, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
+    // (?ground=flat: the ground in its flat colour, the game's snow maps left
+    // off, for a check that measures what the snow costs; `detail` is the
+    // quality level in force, 'ultra' on a strong card where the tier is
+    // 'high': the ground's 1 m patch and its map sizes read it)
+    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     const figures = createFigures({ scene, ragdolls });

@@ -6,6 +6,6 @@
 export { createLevelLoader } from '../surface/level/levelGltf';
 export { createLevelScene } from '../surface/level/levelScene';
 export { createLevelStream } from '../surface/level/levelStream';
-export { packUrl, wanted } from '../surface/level/levelPack';
+export { packUrl, tierTexture, wanted } from '../surface/level/levelPack';
 export { bytesOf as packBytes, imageLayerOf } from '../surface/level/index';
 export { createLevelPhysics, wantsEngine } from '../surface/level/levelPhysics';
