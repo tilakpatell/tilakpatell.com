@@ -44,6 +44,8 @@ import { STEP, addPlayer, createBattle, deploy, spawnFor, step, view } from './b
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
+import { isNoGpu, noGpuNow, noGpuRatio } from './noGpu.js';
+import { device } from '../../lib/device.js';
 import { litWith, picturesOf } from './picture.js';
 import { headroom, upscaleKind } from '../../lib/three/light/post.js';
 import { headroomAt } from '../../runtime/quality.js';
@@ -66,13 +68,19 @@ export default {
   // ratio was for.
   sharpness: 'own',
   // (read as the world starts: the screen the window is on then)
+  // (no graphics chip, the low tier in software: a 640 × 360 buffer whatever
+  // the window, stretched by the page; noGpu.js has what was measured)
   get ratio() {
-    return typeof window !== 'undefined' ? Math.max(1, Math.min(2, window.devicePixelRatio || 1)) : 1;
+    if (typeof window === 'undefined') return 1;
+    if (noGpuNow()) return noGpuRatio(window.innerWidth, window.innerHeight);
+    return Math.max(1, Math.min(2, window.devicePixelRatio || 1));
   },
   label: 'Hoth from Star Wars Battlefront II (2017), drawn from the game’s own level, light and figures. W A S D to move, the mouse to look and fire, Enter to deploy.',
   async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault', weather: askedWeather = null } = {}) {
     const renderer = rt.gfx.renderer;
     const tier = rt.quality?.tier ?? 'high';
+    // (a device with no graphics chip: no lamps and no chain, noGpu.js)
+    const soft = isNoGpu({ tier, why: device().why });
     // (the meshopt decoder and the Basis transcoder up beside the level's
     // first fetches, not behind its first model: lib/three/wasmDecoders.js)
     preloadDecoders({ renderer, basis: true });
@@ -191,7 +199,7 @@ export default {
     const first = lit(weather);
     // (cadence: lane N3's far cascades drawn every fourth frame, the near
     // ones every frame; the whole level was drawn into all four each frame)
-    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, lights: lightsJsonOf(lighting.lights), picture: first.picture, cadence: true, onChain: (passes) => swapPost(passes) });
+    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, lights: soft ? null : lightsJsonOf(lighting.lights), post: !soft, picture: first.picture, cadence: true, onChain: (passes) => swapPost(passes) });
     // (?post=off in the address: the scene drawn with no chain, for a check)
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
     // The pace's level on the chain (runtime/quality's headroomAt): first
@@ -427,7 +435,8 @@ export default {
       },
     };
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    // (`scene`, `camera`, `noGpu`: what is drawn where there is no chain to read them off)
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, scene, camera, noGpu: soft, get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     return world;
   },
 };
