@@ -54,7 +54,9 @@ export default function WaitingScreen({
   const tell = useRef(null);
   tell.current = () => first && onPick?.(first);
   const firstId = first?.id ?? null;
-  useEffect(() => tell.current(), [firstId]);
+  useEffect(() => {
+    tell.current();
+  }, [firstId]);
   useEffect(() => {
     ref.current?.querySelector('button:not([aria-disabled="true"])')?.focus({ preventScroll: true });
   }, []);
@@ -129,7 +131,7 @@ export default function WaitingScreen({
         <p className="bf-waiting-recommend">
           <span>{recommendation}</span>
           {onApply && (
-            <button type="button" className="hud-btn bf-waiting-apply" onClick={onApply} disabled={!canApply || applied} aria-disabled={!canApply || applied || undefined}>
+            <button type="button" className="bf-waiting-apply" onClick={onApply} disabled={!canApply || applied} aria-disabled={!canApply || applied || undefined}>
               {applied ? 'Applied' : 'Apply'}
             </button>
           )}
