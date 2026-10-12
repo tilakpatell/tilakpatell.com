@@ -76,9 +76,21 @@ function boxOf(el, at, path, ctx, slots) {
   return box;
 }
 
+// A box's id among its siblings: the export names siblings alike (a
+// footer's two Select cells, a stack's DecoLineSeparation lines, 405 pairs
+// over the screens), and a second of a name is `name#2`, so no two boxes
+// under one parent share an id (the page keys its children by it; a
+// duplicate key was a warning a render and a box drawn twice or not at all).
+const unique = (sibs, id) => {
+  const n = (sibs.get(id) ?? 0) + 1;
+  sibs.set(id, n);
+  return n > 1 ? `${id}#${n}` : id;
+};
+
 function expand(elements, parent, path, ctx, slots = {}, seen = new Set(), depth = 0) {
   if (depth > MAX_DEPTH) return [];
   const out = [];
+  const sibs = new Map();
   // (a stack lays its children one after another along its direction)
   let cursor = 0;
   for (const el of elements ?? []) {
@@ -91,6 +103,7 @@ function expand(elements, parent, path, ctx, slots = {}, seen = new Set(), depth
       cursor += (down ? size[1] : size[0]) + parent.stack.spacing * ctx.k;
     } else at = placeIn(widgetSized(el), parent, ctx.k);
     const box = boxOf(el, at, path, ctx, slots);
+    box.id = unique(sibs, box.id);
     const inner = { ...at, ...(el.stack ? { stack: el.stack } : {}) };
     if (el.widget) {
       const w = ROWS.widgets[el.widget];
@@ -139,6 +152,7 @@ function cellSize(w, label) {
 
 function cellsOf(list, at, path, ctx, seen, depth) {
   let cursor = 0;
+  const sibs = new Map();
   return list.cells.map((c) => {
     const w = ROWS.widgets[c.widget];
     const key = Object.values(c.binds ?? {})[0];
@@ -146,7 +160,7 @@ function cellsOf(list, at, path, ctx, seen, depth) {
     const [cw, ch] = cellSize(w, label).map((v) => v * ctx.k);
     const box = list.horizontal ? { x: at.x + cursor, y: at.y, w: cw, h: Math.min(ch, at.h || ch) } : { x: at.x, y: at.y + cursor, w: Math.min(cw, at.w || cw), h: ch };
     cursor += (list.horizontal ? cw : ch) + list.spacing * ctx.k;
-    const cell = { id: `${path}/${c.id}`, type: 'cell', ...box, label, ...(key ? { key } : {}) };
+    const cell = { id: unique(sibs, `${path}/${c.id}`), type: 'cell', ...box, label, ...(key ? { key } : {}) };
     if (c.link) {
       cell.link = c.link;
       cell.screen = ROWS.links[c.link] ?? null;

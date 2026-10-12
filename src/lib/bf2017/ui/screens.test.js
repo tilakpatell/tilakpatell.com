@@ -82,6 +82,27 @@ describe("a screen's tree, resolved", () => {
     expect(faceFor('Univers620BoldCondensed30px').family).toBe('var(--font-bf-hud)');
   });
 
+  it('gives no two siblings one id, in any screen: a second of a name is name#2', () => {
+    const dups = [];
+    for (const name of SCREENS) {
+      const walk = (boxes, parent) => {
+        const seen = new Set();
+        for (const b of boxes ?? []) {
+          if (seen.has(b.id)) dups.push(`${name} ${parent}/${b.id.split('/').pop()}`);
+          seen.add(b.id);
+          walk(b.children, b.id);
+        }
+      };
+      walk(screen(name).boxes, '');
+    }
+    expect(dups).toEqual([]);
+    // (the in-game menu holds siblings the export names alike, the page keyed them twice)
+    const menu = flat(screen('IngameMenuMPScreen').boxes).map((b) => b.id);
+    const second = menu.find((id) => /#2$/.test(id));
+    expect(second).toBeDefined();
+    expect(menu).toContain(second.replace(/#2$/, ''));
+  });
+
   it('returns null for a screen it does not hold', () => {
     expect(screen('NoSuchScreen')).toBeNull();
   });
