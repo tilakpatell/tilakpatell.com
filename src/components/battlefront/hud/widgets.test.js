@@ -1,6 +1,65 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { REF, heatColour, markerProjection, meterThirds, offerRows, placeWidget, squadListRows } from './widgets.js';
+import { REF, crosshairKind, heatCells, heatColour, killLogRows, killMessageOf, markerProjection, markerScale, meterThirds, offerRows, placeWidget, radarPoint, referenceScale, squadListRows } from './widgets.js';
+
+describe('the game’s HUD records, as rules', () => {
+  it('scales the HUD by the viewport’s shorter side against the reference’s 1080', () => {
+    expect(referenceScale(1920, 1080)).toBe(1);
+    expect(referenceScale(1280, 720)).toBeCloseTo(2 / 3, 6);
+    expect(referenceScale(1080, 1920)).toBe(1);
+  });
+
+  it('puts the radar’s soldiers on its disc: 50 m to the rim, ahead up, the right to the right', () => {
+    const me = { at: [10, 0, 10], yaw: 0 };
+    const ahead = radarPoint(me, [10, 0, 60], { radius: 100 });
+    expect(ahead.x).toBeCloseTo(0, 6);
+    expect(ahead.y).toBeCloseTo(-100, 6);
+    expect(ahead.inside).toBe(true);
+    expect(radarPoint(me, [10, 0, 61], { radius: 100 }).inside).toBe(false);
+    // (the export's +X is the player's left at yaw 0: the markers' projection says so too)
+    expect(radarPoint(me, [-15, 0, 10], { radius: 100 }).x).toBeCloseTo(50, 6);
+    // (the sim's yaw grows to the left: turned a quarter, what was ahead is now on the right)
+    const turned = radarPoint({ at: [10, 0, 10], yaw: Math.PI / 2 }, [10, 0, 60], { radius: 100 });
+    expect(turned.x).toBeCloseTo(100, 6);
+    expect(turned.y).toBeCloseTo(0, 6);
+  });
+
+  it('scales an in-world marker from 1 at 10 m to a half at 200 m', () => {
+    expect(markerScale(0)).toBe(1);
+    expect(markerScale(10)).toBe(1);
+    expect(markerScale(105)).toBeCloseTo(0.75, 6);
+    expect(markerScale(200)).toBe(0.5);
+    expect(markerScale(900)).toBe(0.5);
+  });
+
+  it('lights the heat bar’s 32 cells to the heat, in the alarm colour past the warning', () => {
+    expect(heatCells(0)).toHaveLength(32);
+    expect(heatCells(0).every((c) => c === 'off')).toBe(true);
+    expect(heatCells(0.5, 0.75).filter((c) => c === 'on')).toHaveLength(16);
+    expect(heatCells(0.5, 0.75).filter((c) => c === 'warn')).toHaveLength(0);
+    expect(heatCells(0.8, 0.75).filter((c) => c === 'warn')).toHaveLength(26);
+    expect(heatCells(1.4, 0.75).every((c) => c === 'warn')).toBe(true);
+  });
+
+  it('keeps the kill log to ten rows shown for five seconds, and the player’s own kill as the message', () => {
+    const entries = Array.from({ length: 14 }, (_, i) => ({ id: `k${i}`, t: i, killer: i === 12 ? 'You' : 'A', victim: 'B' }));
+    const rows = killLogRows(entries, 13.5);
+    expect(rows.map((e) => e.id)).toEqual(['k9', 'k10', 'k11', 'k12', 'k13']);
+    expect(killLogRows(entries, 2)).toHaveLength(10);
+    expect(killLogRows([{ id: 'old', killer: 'A', victim: 'B' }], 999)).toHaveLength(1);
+    expect(killMessageOf(entries, 13.5)?.id).toBe('k12');
+    expect(killMessageOf(entries, 18)).toBeNull();
+    expect(killMessageOf(entries.filter((e) => e.killer !== 'You'), 13.5)).toBeNull();
+  });
+
+  it('gives each class its gun’s crosshair screen', () => {
+    expect(crosshairKind('assault')).toBe('rifle');
+    expect(crosshairKind('heavy')).toBe('heavy');
+    expect(crosshairKind('officer')).toBe('pistol');
+    expect(crosshairKind('specialist')).toBe('default');
+    expect(crosshairKind(null)).toBe('default');
+  });
+});
 
 describe('the game’s widgets, placed and filled', () => {
   it('anchors a bottom-right widget to the viewport’s bottom right, scaled by the shorter side', () => {

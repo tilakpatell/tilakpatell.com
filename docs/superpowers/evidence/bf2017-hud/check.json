@@ -1,0 +1,352 @@
+{
+  "backend": "webgpu",
+  "errors": [],
+  "fonts": [
+    "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+  ],
+  "loadedMs": 17524,
+  "deploy": {
+    "ok": true
+  },
+  "advance": {
+    "ok": true,
+    "time": 37.85
+  },
+  "view": {
+    "player": {
+      "id": "p0",
+      "state": "alive",
+      "at": [
+        -32.134,
+        313.5422697867767,
+        -957.0956
+      ],
+      "yaw": 2.7471,
+      "team": 2,
+      "hp": 150,
+      "hpMax": 150,
+      "heat": 0,
+      "warning": 0.7,
+      "overheated": false,
+      "coolWindow": [
+        0.65,
+        0.8
+      ],
+      "cls": "d-orig-assault",
+      "weapon": "e11",
+      "hitAt": null,
+      "killAt": null,
+      "evade": 2,
+      "abilities": [
+        {
+          "slot": 1,
+          "recharge": 1,
+          "ready": true
+        },
+        {
+          "slot": 2,
+          "recharge": 1,
+          "ready": true
+        },
+        {
+          "slot": 3,
+          "recharge": 1,
+          "ready": true
+        }
+      ]
+    },
+    "stage": "TAKE OUT ANY THREATS TO THE AT-ATS",
+    "objectives": [
+      {
+        "id": "FantasyBattle_Logic:274",
+        "name": "A",
+        "meter": 0,
+        "at": [
+          175.057,
+          331.6959,
+          -1302.05818
+        ]
+      },
+      {
+        "id": "FantasyBattle_Logic:105",
+        "name": "B",
+        "meter": 0,
+        "at": [
+          118.14388,
+          330.24,
+          -1310.3579399999999
+        ]
+      },
+      {
+        "id": "FantasyBattle_Logic:69",
+        "name": "C",
+        "meter": 0,
+        "at": [
+          242.97925999999998,
+          335.3306,
+          -1310.0647400000003
+        ]
+      },
+      {
+        "id": "FantasyBattle_Logic:61",
+        "name": "D",
+        "meter": 0,
+        "at": [
+          125.019,
+          329.0325,
+          -1350.7571799999998
+        ]
+      },
+      {
+        "id": "FantasyBattle_Logic:30",
+        "name": "E",
+        "meter": 0,
+        "at": [
+          242.3953,
+          344.6505,
+          -1423.421875
+        ]
+      },
+      {
+        "id": "FantasyBattle_Logic:166",
+        "name": "F",
+        "meter": 0,
+        "at": [
+          172.37601999999998,
+          344,
+          -1476.20474
+        ]
+      }
+    ],
+    "entities": 17,
+    "near": [
+      {
+        "id": "b14",
+        "team": 2,
+        "alive": true,
+        "firing": false,
+        "dist": 232
+      },
+      {
+        "id": "b10",
+        "team": 2,
+        "alive": true,
+        "firing": false,
+        "dist": 237
+      },
+      {
+        "id": "b11",
+        "team": 2,
+        "alive": true,
+        "firing": false,
+        "dist": 238
+      },
+      {
+        "id": "b13",
+        "team": 2,
+        "alive": true,
+        "firing": false,
+        "dist": 238
+      },
+      {
+        "id": "b16",
+        "team": 2,
+        "alive": true,
+        "firing": false,
+        "dist": 251
+      },
+      {
+        "id": "b1",
+        "team": 1,
+        "alive": true,
+        "firing": false,
+        "dist": 289
+      },
+      {
+        "id": "b5",
+        "team": 1,
+        "alive": true,
+        "firing": false,
+        "dist": 291
+      },
+      {
+        "id": "b9",
+        "team": 2,
+        "alive": false,
+        "firing": false,
+        "dist": 291
+      }
+    ],
+    "markers": [
+      {
+        "id": "FantasyBattle_Logic:274",
+        "label": "A",
+        "dist": 402.4019036749906,
+        "x": 1072.492011880971,
+        "y": 507.9319521606866,
+        "onScreen": true,
+        "edgeAngle": null
+      },
+      {
+        "id": "FantasyBattle_Logic:105",
+        "label": "B",
+        "dist": 383.8980620940537,
+        "x": 965.0316776024586,
+        "y": 509.66415493940343,
+        "onScreen": true,
+        "edgeAngle": null
+      },
+      {
+        "id": "FantasyBattle_Logic:69",
+        "label": "C",
+        "dist": 447.5204125178732,
+        "x": 1170.037009941051,
+        "y": 503.9372155448325,
+        "onScreen": true,
+        "edgeAngle": null
+      },
+      {
+        "id": "FantasyBattle_Logic:61",
+        "label": "D",
+        "dist": 423.8708588439364,
+        "x": 947.9019619508557,
+        "y": 514.7057279044515,
+        "onScreen": true,
+        "edgeAngle": null
+      },
+      {
+        "id": "FantasyBattle_Logic:30",
+        "label": "E",
+        "dist": 541.134485422862,
+        "x": 1065.8928323143214,
+        "y": 497.56811232441663,
+        "onScreen": true,
+        "edgeAngle": null
+      },
+      {
+        "id": "FantasyBattle_Logic:166",
+        "label": "F",
+        "dist": 557.9414373497814,
+        "x": 944.6013647932342,
+        "y": 500.12146614043763,
+        "onScreen": true,
+        "edgeAngle": null
+      }
+    ],
+    "killLog": [
+      {
+        "id": "22.95:b12",
+        "t": 22.95,
+        "killer": "Aran Gunnar",
+        "killerTeam": 1,
+        "victim": "TK-909",
+        "victimTeam": 2
+      },
+      {
+        "id": "27.1:b15",
+        "t": 27.1,
+        "killer": "Aran Gunnar",
+        "killerTeam": 1,
+        "victim": "TK-709",
+        "victimTeam": 2
+      },
+      {
+        "id": "37.5:b9",
+        "t": 37.5,
+        "killer": "Aran Gunnar",
+        "killerTeam": 1,
+        "victim": "TK-301",
+        "victimTeam": 2
+      }
+    ],
+    "level": {
+      "loaded": true,
+      "progress": 1,
+      "tris": 1411207,
+      "calls": 152,
+      "instances": 6022,
+      "physics": {
+        "cells": 8,
+        "bodies": 153,
+        "colliders": 1203,
+        "queued": 0,
+        "mask": true
+      }
+    }
+  },
+  "boxes": {
+    ".bf-radar": {
+      "x": 90,
+      "y": 834,
+      "w": 200,
+      "h": 200
+    },
+    ".bf-health": {
+      "x": 735,
+      "y": 991,
+      "w": 450,
+      "h": 39
+    },
+    ".bf-abilities": {
+      "x": 1525,
+      "y": 801,
+      "w": 310,
+      "h": 207
+    },
+    ".bf-killlog": {
+      "x": 1485,
+      "y": 135,
+      "w": 350,
+      "h": 0
+    },
+    ".bf-objectives": {
+      "x": 768,
+      "y": 116,
+      "w": 384,
+      "h": 99
+    },
+    ".bf-heat": {
+      "x": 832,
+      "y": 660,
+      "w": 256,
+      "h": 12
+    },
+    ".hud-reticle": {
+      "x": 960,
+      "y": 540,
+      "w": 0,
+      "h": 0
+    },
+    ".bf-soldier": {
+      "x": 342,
+      "y": 906,
+      "w": 320,
+      "h": 128
+    }
+  },
+  "fontsLoaded": [
+    "Archivo Variable 100 900",
+    "JetBrains Mono 400",
+    "JetBrains Mono 500",
+    "BF Univers Condensed 400",
+    "BF Univers Condensed 500",
+    "BF Univers Condensed 700",
+    "BF Univers Condensed 800"
+  ],
+  "reticle": {
+    "html": "<div class=\"hud-reticle hud-reticle-shape\" data-shape=\"Crosshairs_Dot+Crosshairs_LineShort+Crosshairs_LineShort+Crosshairs_LineShort\" aria-hidden=\"true\" style=\"--tight: 0;\"><svg viewBox=\"-32 -32 64 64\" focusable=\"false\"><path d=\"M0 2L2 4L4 2L2 0Z\" transform=\"translate(-2.5 -2.5) scale(1.25)\" fill=\"rgb(0 81 106)\" fill-rule=\"evenodd\" opacity=\"0.85\"></path><path d=\"M2 3L3 2L2 1L1 2Z\" transform=\"translate(-2.5 -2.5) scale(1.25)\" fill=\"currentColor\" fill-rule=\"evenodd\" opacity=\"1\"></path><path d=\"M1.5 1.5L1.5 14.5\" transform=\"translate(-22.285 4) scale(1) rotate(240 1.5 8)\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"square\" opacity=\"0.8\"></path><path d=\"M1.5 1.5L1.5 14.5\" transform=\"translate(-22.285 4) scale(1) rotate(240 1.5 8)\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1\" stroke-linecap=\"square\" opacity=\"1\"></path><path d=\"M1.5 1.5L1.5 14.5\" transform=\"translate(-1.5 -32) scale(1) rotate(360 1.5 8)\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"square\" opacity=\"0.8\"></path><path d=\"M1.5 1.5L1.5 14.5\" transform=\"translate(-1.5 -32) scale(1) rotate(360 1.5 8)\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1\" stroke-linecap=\"square\" o",
+    "box": {
+      "x": 928,
+      "y": 508,
+      "w": 64,
+      "h": 64
+    },
+    "style": "rgb(210, 220, 225)"
+  },
+  "abilityUse": {
+    "href": "/ui/bf2017/troopers.svg#trooperabilityicons-mki-troopers-12-thermaldetonator",
+    "w": 35.98749542236328,
+    "h": 39.618751525878906,
+    "color": "rgb(252, 252, 255)"
+  }
+}

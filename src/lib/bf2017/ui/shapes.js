@@ -83,6 +83,33 @@ export const blasterCrosshair = () =>
     '-20 -20 40 40',
   );
 
+// The game's own crosshairs, as its crosshair widgets build them
+// (UI/InGame/Hud/Weapons/Widgets/Crosshairs): each a RepeatShape of one
+// part spread radially (StartAngle, RotationAngle between copies, Spacing
+// from the middle; 0° is up, clockwise), over the dot. The parts are placed
+// by their middles; a part's own axis points up, so its turn is its angle.
+//   rifle    CrosshairBlasterRifles: the dot (5) and Crosshairs_LineShort (3 × 16) at 24, from 240° every 120°
+//   heavy    CrosshairHeavyBlasters: Crosshairs_ArcShort (32 × 6) at 32, from 0° every 120°, no dot
+//   pistol   CrosshairPistol: the dot and Crosshairs_LineShort at 24, from 90° every 90° (left, below, right)
+//   default  CrosshairDefault: the dot
+const DOT = { name: 'Crosshairs_Dot', at: [-2.5, -2.5], scale: 1.25 }; // the widget draws the 4-unit shape at 5
+const radial = (name, size, r, from, step, copies, scale = 1) =>
+  Array.from({ length: copies }, (_, i) => {
+    const a = ((from + step * i) * Math.PI) / 180;
+    const w = size[0] * scale;
+    const h = size[1] * scale;
+    const round = (v) => Math.round(v * 1000) / 1000;
+    return { name, at: [round(Math.sin(a) * r - w / 2), round(-Math.cos(a) * r - h / 2)], turn: from + step * i, scale };
+  });
+const CROSSHAIRS = {
+  rifle: () => [DOT, ...radial('Crosshairs_LineShort', [3, 16], 24, 240, 120, 3)],
+  heavy: () => radial('Crosshairs_ArcShort', [38, 6], 32, 0, 120, 3, 32 / 38),
+  pistol: () => [DOT, ...radial('Crosshairs_LineShort', [3, 16], 24, 90, 90, 3)],
+  default: () => [DOT],
+};
+export const CROSSHAIR_BOX = '-32 -32 64 64'; // the widgets' 64 × 64
+export const crosshairFor = (kind) => composeShapes((CROSSHAIRS[kind] ?? CROSSHAIRS.default)(), CROSSHAIR_BOX);
+
 // The hit marker as the HUD's crosshair widget draws it from the game's
 // parts: four tapered ticks (Crosshairs_MarkerHit_Horizontal, its point at
 // +x) on the diagonals round the middle, each pointing out; and the kill

@@ -1,40 +1,46 @@
 /* The Battlefront world's skin on the HUD kit (docs/health/RULES.md, "The
-   worlds' HUDs"): the game's faces from public/battlefront/fonts/, text on
-   glass at 0.8, nothing a player reads under 0.7 rem. */
-@font-face {
-  font-family: 'LinotypeUnivers-520CnMedium';
-  src: url('/battlefront/fonts/LinotypeUnivers-520CnMedium.ttf') format('truetype');
-  font-display: swap;
-}
-@font-face {
-  font-family: 'LinotypeUnivers-620CnBold';
-  src: url('/battlefront/fonts/LinotypeUnivers-620CnBold.ttf') format('truetype');
-  font-display: swap;
-}
-@font-face {
-  font-family: 'RaxusPrimeNumericalMonospace_Regular';
-  src: url('/battlefront/fonts/RaxusPrimeNumericalMonospace_Regular.ttf') format('truetype');
-  font-display: swap;
-}
-
+   worlds' HUDs"): the game's faces from src/lib/bf2017/fonts.css (the
+   drop's own files under /fonts/bf2017/), its palette
+   (UI/Styles/Colors/UIColorPalette: 33 the ink, 34 the rim, 13 the
+   friendly blue, 11 the enemy red, 12 the alarm, 54 the message white),
+   text on glass at 0.8, nothing a player reads under 0.7 rem. The widgets
+   are laid out on the game's 1920 × 1080 reference and scaled by the
+   viewport's shorter side (--bf-u, one reference pixel; widgets.js referenceScale), as
+   UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget places them. */
 .bf-hud {
-  --bf-font-label: 'LinotypeUnivers-520CnMedium', 'Arial Narrow', sans-serif;
-  --bf-font-bold: 'LinotypeUnivers-620CnBold', 'Arial Narrow', sans-serif;
-  --bf-font-number: 'RaxusPrimeNumericalMonospace_Regular', ui-monospace, monospace;
-  --bf-glass: rgba(8, 12, 18, 0.8);
-  --bf-ink: #f2f5f8;
-  --bf-muted: #b9c2cc;
-  --bf-friend: #2f7bff;
-  --bf-foe: #ff3b30;
-  --bf-warn: #ff7a1a;
+  --bf-u: calc(min(100vw, 100svh) / 1080); /* one pixel of the game’s 1080-tall reference */
+  --bf-font-label: var(--font-bf-hud, 'Arial Narrow', sans-serif);
+  --bf-font-bold: var(--font-bf-hud, 'Arial Narrow', sans-serif);
+  --bf-font-number: var(--font-bf-numerals, ui-monospace, monospace);
+  --bf-glass: rgba(10, 14, 18, 0.8);
+  --bf-ink: rgb(210 220 225); /* palette 33 */
+  --bf-white: rgb(252 252 255); /* palette 54 */
+  --bf-muted: rgb(120 130 135); /* palette 34 */
+  --bf-friend: rgb(0 130 255); /* palette 13 */
+  --bf-foe: rgb(180 44 24); /* palette 11 */
+  --bf-warn: rgb(255 50 0); /* palette 12 */
+  --hud-ink: var(--bf-ink);
+  --hud-bad: var(--bf-white);
   --hud-key-face: var(--bf-font-bold);
+  --hud-key-weight: 700;
+  --reticle-size: calc(64 * var(--bf-u)); /* the crosshair widgets' 64 × 64 */
   font-family: var(--bf-font-label);
+  font-weight: 500;
   color: var(--bf-ink);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 .bf-hud.hud {
-  /* (under the site's bar, which floats over every page) */
+  /* (under the site's bar, which floats over every page; what sits at the
+     middle of the view, the crosshair, the heat and the hit arcs, is lifted
+     half the bar back so it meets the camera's middle) */
   top: var(--nav-h, 68px);
+  --bf-middle: calc(50% - var(--nav-h, 68px) / 2);
+}
+.bf-hud .hud-reticle,
+.bf-hud .bf-heat,
+.bf-hud .bf-damage,
+.bf-hud .bf-killmessage {
+  top: var(--bf-middle, 50%);
 }
 .bf-glass {
   background: var(--bf-glass);
@@ -43,6 +49,13 @@
 }
 .bf-num {
   font-family: var(--bf-font-number);
+  font-variant-numeric: tabular-nums;
+}
+.bf-friend {
+  color: var(--bf-friend);
+}
+.bf-foe {
+  color: var(--bf-foe);
 }
 
 /* the stage: the whole viewport under the site's bar */
@@ -57,158 +70,426 @@
   left: 50%;
   bottom: 18%;
   transform: translateX(-50%);
-  font-family: 'LinotypeUnivers-520CnMedium', 'Arial Narrow', sans-serif;
+  font-family: var(--font-bf-hud, 'Arial Narrow', sans-serif);
   color: #f2f5f8;
   font-size: 0.9rem;
 }
 
-/* the objective bar: top centre */
+/* the mode's bar, top middle: the tickets at 40, the stage at 86, the objectives under */
 .bf-objectives {
   position: absolute;
-  top: var(--hud-pad, 16px);
+  top: calc(40 * var(--bf-u));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
+  gap: calc(6 * var(--bf-u));
   pointer-events: none;
 }
+.bf-tickets {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  height: calc(40 * var(--bf-u));
+  min-width: calc(176 * var(--bf-u));
+  padding: 0 calc(12 * var(--bf-u));
+  border-radius: 1px;
+  background: var(--bf-glass);
+  font-weight: 700;
+  font-size: max(0.8rem, calc(24 * var(--bf-u)));
+  opacity: 0.9;
+}
+.bf-tickets svg {
+  width: calc(48 * var(--bf-u));
+  height: calc(24 * var(--bf-u));
+}
 .bf-stage-name {
-  font-size: 0.9rem;
+  min-width: calc(300 * var(--bf-u));
+  padding: 0.3rem 0.8rem;
+  border-radius: 2px;
+  background: var(--bf-glass);
+  font-weight: 700;
+  font-size: max(0.75rem, calc(22 * var(--bf-u)));
+  text-align: center;
   text-transform: uppercase;
 }
 .bf-obj-row {
   display: flex;
-  gap: 0.5rem;
+  gap: calc(10 * var(--bf-u));
 }
 .bf-obj {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  font-size: 0.75rem;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(48 * var(--bf-u));
+  height: calc(48 * var(--bf-u));
+  color: var(--bf-white);
 }
-.bf-thirds {
-  display: flex;
-  gap: 2px;
+.bf-obj > * {
+  grid-area: 1 / 1;
 }
-.bf-third {
-  width: 14px;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.25);
+.bf-obj svg {
+  width: 100%;
+  height: 100%;
 }
-.bf-third[data-on] {
-  background: var(--bf-ink);
-}
-.bf-tickets {
-  font-size: 1rem;
+.bf-obj b {
+  color: #0b0f14;
+  font-weight: 700;
+  font-size: max(0.75rem, calc(22 * var(--bf-u)));
 }
 
-/* the heat arc under the reticle */
+/* the heat bar under the middle of the view: 256 × 12, 120 down */
 .bf-heat {
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, 24px);
+  width: calc(256 * var(--bf-u));
+  height: calc(12 * var(--bf-u));
+  transform: translate(-50%, calc(120 * var(--bf-u)));
   pointer-events: none;
+  transition: opacity 0.75s ease-out; /* PF_Hud_CrosshairAlpha: 0.75 s Expo ease out */
 }
-.bf-heat[data-warn] path.bf-heat-fill {
-  stroke: var(--bf-foe);
+.bf-heat[data-cool] {
+  opacity: 0;
 }
-.bf-heat-label {
-  font-size: 0.75rem;
-  text-align: center;
+.bf-heat-cells {
+  display: grid;
+  grid-template-columns: repeat(32, 1fr);
+  gap: 1px;
+  height: 100%;
+}
+.bf-heat-cell {
+  position: relative;
+  background: rgba(0, 0, 0, 0.5);
+}
+.bf-heat-cell[data-on]::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 calc(100% - 4 * var(--bf-u));
+  background: var(--bf-ink);
+}
+.bf-heat-cell[data-on='warn'] {
+  background: var(--bf-warn);
+}
+.bf-heat-cell[data-on='warn']::after {
+  background: var(--bf-white);
+}
+.bf-heat-window {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--bf-friend);
+  opacity: 0.85;
+}
+.bf-heat-scrubber {
+  position: absolute;
+  top: -2px;
+  width: calc(24 * var(--bf-u));
+  height: calc(100% + 4px);
+  margin-left: calc(-12 * var(--bf-u));
+  background: var(--bf-white);
 }
 
-/* the soldier's corner: health and the abilities, bottom left */
-.bf-soldier {
+/* the crosshair in the game's shape; the hit and kill markers over it */
+.bf-hud .hud-reticle-shape svg {
+  filter: none;
+}
+.bf-hitmarker {
+  --reticle-size: calc(64 * var(--bf-u));
+}
+.bf-hitmarker svg {
+  color: var(--bf-white);
+}
+
+/* the health, bottom middle (PlayerRoundWidget: 450 × 104, 50 up; PlayerHealth 450 × 39) */
+.bf-health {
   position: absolute;
-  left: var(--hud-pad, 16px);
-  bottom: var(--hud-foot, 16px);
+  left: 50%;
+  bottom: calc(50 * var(--bf-u));
+  transform: translateX(-50%);
   display: flex;
-  align-items: flex-end;
-  gap: 0.8rem;
+  align-items: center;
+  width: calc(450 * var(--bf-u));
+  height: calc(39 * var(--bf-u));
+  border-radius: calc(6 * var(--bf-u));
+  background: var(--bf-glass);
   pointer-events: none;
 }
-.bf-health {
-  min-width: 11rem;
+.bf-health-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--bf-muted);
+}
+.bf-health-num {
+  width: calc(48 * var(--bf-u));
+  margin-left: calc(32 * var(--bf-u));
+  font-family: var(--bf-font-label);
+  font-weight: 500;
+  font-size: max(0.9rem, calc(24 * var(--bf-u)));
+  text-align: right;
+}
+.bf-health[data-low] .bf-health-num {
+  color: var(--bf-warn);
 }
 .bf-health-bar {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.2);
+  margin-left: calc(4 * var(--bf-u));
+  width: calc(330 * var(--bf-u));
+  height: calc(8 * var(--bf-u));
+  /* the three dashes of 98 with 2 between (SegmentedHealthBar's BaseHealth) */
+  background: repeating-linear-gradient(to right, rgba(255, 255, 255, 0.08) 0 calc(98 * var(--bf-u)), transparent calc(98 * var(--bf-u)) calc(100 * var(--bf-u)));
 }
 .bf-health-bar > span {
   display: block;
   height: 100%;
-  background: var(--bf-ink);
+  background: repeating-linear-gradient(to right, var(--bf-ink) 0 calc(98 * var(--bf-u)), transparent calc(98 * var(--bf-u)) calc(100 * var(--bf-u)));
 }
-.bf-health-num {
-  font-size: 1.4rem;
-}
-.bf-abilities {
-  display: flex;
-  gap: 0.5rem;
-}
-.bf-ability {
-  position: relative;
-  width: 52px;
-  height: 52px;
+.bf-evade {
+  position: absolute;
+  right: calc(4 * var(--bf-u));
+  top: 50%;
   display: grid;
   place-items: center;
-  font-size: 0.75rem;
+  width: calc(30 * var(--bf-u));
+  height: calc(30 * var(--bf-u));
+  transform: translateY(-50%);
+  color: var(--bf-white);
 }
-.bf-ability svg {
-  position: absolute;
-  inset: 0;
+.bf-evade > * {
+  grid-area: 1 / 1;
+}
+.bf-evade svg {
+  width: 100%;
+  height: 100%;
+}
+.bf-evade b {
+  font-weight: 700;
+  font-size: max(0.7rem, calc(22 * var(--bf-u)));
+  line-height: 1;
 }
 
-/* the kill log, top left under the row; the damage arcs round the middle */
-.bf-killlog {
+/* the abilities, bottom right (AbilitiesWidget 310 × 207 at 85 in, 48 up;
+   above the guide's corner on a narrow screen) */
+.bf-abilities {
   position: absolute;
-  left: var(--hud-pad, 16px);
-  top: calc(var(--hud-under, 64px) + 8px);
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.8rem;
+  right: calc(85 * var(--bf-u));
+  bottom: max(calc(48 * var(--bf-u)), var(--guide-clear, 0px));
+  width: calc(310 * var(--bf-u));
+  height: calc(207 * var(--bf-u));
   pointer-events: none;
 }
-.bf-killlog .bf-friend {
-  color: var(--bf-friend);
+.bf-ability {
+  position: absolute;
+  width: calc(116 * var(--bf-u));
+  height: calc(100 * var(--bf-u));
+  color: var(--bf-muted);
 }
-.bf-killlog .bf-foe {
-  color: var(--bf-foe);
+.bf-ability[data-at='left'] {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
+.bf-ability[data-at='middle'] {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+.bf-ability[data-at='right'] {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.bf-ability[data-ready] {
+  color: var(--bf-ink);
+}
+.bf-ability svg {
+  width: 100%;
+  height: 100%;
+}
+.bf-ability-glass {
+  fill: var(--bf-glass);
+}
+.bf-ability-icon {
+  color: var(--bf-white);
+  opacity: 0.5;
+}
+.bf-ability[data-ready] .bf-ability-icon {
+  opacity: 1;
+}
+/* the key beside each hexagon (the house cap inside, untouched: one key cap) */
+.bf-ability-key {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, 2px);
+  font-size: max(0.7rem, calc(16 * var(--bf-u)));
+}
+.bf-ability[data-at='left'] .bf-ability-key {
+  left: 0;
+  bottom: auto;
+  top: 100%;
+  transform: translate(0, -2px);
+}
+.bf-ability[data-at='right'] .bf-ability-key {
+  left: auto;
+  right: 0;
+  bottom: auto;
+  top: 100%;
+  transform: translate(0, -2px);
+}
+.bf-ability-charges {
+  position: absolute;
+  right: calc(6 * var(--bf-u));
+  bottom: calc(4 * var(--bf-u));
+  font-weight: 700;
+  font-size: max(0.7rem, calc(18 * var(--bf-u)));
+  color: var(--bf-white);
+}
+
+/* the radar, bottom left (DefaultSoldierHudWidget: 90 in, 46 up), the
+   squad list 32 to its right; the kit's minimap unmade into the game's
+   square with its corners cut (the canvas draws the RadarMask) */
+.bf-radar.hud-minimap {
+  left: calc(90 * var(--bf-u));
+  right: auto;
+  top: auto;
+  bottom: calc(46 * var(--bf-u));
+  gap: 0;
+}
+.bf-radar .hud-minimap-disc {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.bf-soldier {
+  position: absolute;
+  left: calc(342 * var(--bf-u));
+  bottom: calc(46 * var(--bf-u));
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+/* the kill log, top right (KillLogScreen: 85 in, 58 down, 350 wide, rows of 30) */
+.bf-killlog {
+  position: absolute;
+  right: calc(85 * var(--bf-u));
+  top: max(calc(58 * var(--bf-u)), var(--hud-under, 64px));
+  width: calc(350 * var(--bf-u));
+  display: flex;
+  flex-direction: column;
+  font-size: max(0.75rem, calc(18 * var(--bf-u)));
+  text-align: right;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+.bf-kill {
+  height: calc(30 * var(--bf-u));
+  line-height: calc(30 * var(--bf-u));
+  white-space: nowrap;
+}
+.bf-kill-verb {
+  color: var(--bf-white);
+}
+.bf-killmessage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, calc(170 * var(--bf-u)));
+  font-size: max(1rem, calc(36 * var(--bf-u)));
+  white-space: nowrap;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 1px 3px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+/* the damage indicator: chevrons 157 out from the middle toward the hit */
 .bf-damage {
   position: absolute;
   left: 50%;
   top: 50%;
   width: 0;
   height: 0;
+  color: var(--bf-warn);
   pointer-events: none;
 }
-.bf-damage > span {
+.bf-damage-hit {
   position: absolute;
-  width: 90px;
-  height: 6px;
-  margin: -3px 0 0 -45px;
-  background: var(--bf-foe);
-  border-radius: 3px;
+  left: 0;
+  top: 0;
+}
+.bf-damage-mark {
+  position: absolute;
+  left: calc(-7 * var(--bf-u));
+  top: calc(-14 * var(--bf-u));
+  width: calc(14 * var(--bf-u));
+  height: calc(28 * var(--bf-u));
+  transform-origin: 50% calc(14 * var(--bf-u));
+}
+.bf-damage-mark[data-outer] {
+  width: calc(12 * var(--bf-u));
+  height: calc(12 * var(--bf-u));
+  left: calc(-6 * var(--bf-u));
+  top: calc(-6 * var(--bf-u));
+  transform-origin: 50% calc(6 * var(--bf-u));
 }
 
-/* the in-world markers */
+/* the in-world markers: a hexagon with the letter, the distance above */
 .bf-marker {
   position: absolute;
+  width: calc(64 * var(--bf-u) * var(--bf-marker-scale, 1));
+  height: calc(64 * var(--bf-u) * var(--bf-marker-scale, 1));
   transform: translate(-50%, -50%);
-  font-size: 0.75rem;
+  display: grid;
+  place-items: center;
+  color: var(--bf-white);
   pointer-events: none;
-  text-align: center;
 }
-.bf-marker b {
-  display: block;
-  font-family: var(--bf-font-bold);
-  font-size: 0.9rem;
+.bf-marker > * {
+  grid-area: 1 / 1;
+}
+.bf-marker-hex {
+  width: 100%;
+  height: 100%;
+}
+.bf-marker-letter {
+  color: #0b0f14;
+  font-weight: 700;
+  font-size: max(0.75rem, calc(24 * var(--bf-u) * var(--bf-marker-scale, 1)));
+}
+.bf-marker-dist {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, calc(-3 * var(--bf-u)));
+  font-size: max(0.7rem, calc(18 * var(--bf-u)));
+  white-space: nowrap;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+.bf-marker-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin: -5px 0 0 -5px;
+  border: 5px solid transparent;
+  border-left: 10px solid var(--bf-white);
+  transform-origin: 5px 5px;
+}
+.bf-marker-arrow::before {
+  content: '';
+  position: absolute;
+  left: calc(44 * var(--bf-u));
+  top: -5px;
+  border: 5px solid transparent;
+  border-left: 10px solid var(--bf-white);
+}
+.bf-marker[data-off] .bf-marker-hex,
+.bf-marker[data-off] .bf-marker-letter {
+  opacity: 0.6;
 }
 
 /* the deploy screen, the scoreboard, the end of round: over the 3D on glass */
@@ -228,6 +509,7 @@
 }
 .bf-panel h2 {
   font-family: var(--bf-font-bold);
+  font-weight: 700;
   font-size: 1.3rem;
   text-transform: uppercase;
   margin: 0 0 0.6rem;
@@ -294,6 +576,7 @@
 }
 .bf-outcome {
   font-family: var(--bf-font-bold);
+  font-weight: 700;
   font-size: 2rem;
   text-align: center;
   text-transform: uppercase;
@@ -306,9 +589,9 @@
   text-align: center;
 }
 
-/* the squad list (SquadList.jsx), right of the soldier's corner: a row a
-   member, the pin and the class icon, the name on a bar of glass that fades
-   out past the record's solid part (SquadListBG: solid to 40 of 64), no blur
+/* the squad list (SquadList.jsx), right of the radar: a row a member, the
+   pin and the class icon, the name on a bar of glass that fades out past
+   the record's solid part (SquadListBG: solid to 40 of 64), no blur
    (docs/health/RULES.md: text over the 3D sits on glass, never blurred) */
 .bf-squad {
   list-style: none;
@@ -358,6 +641,7 @@
 .bf-squad-letter {
   color: var(--bf-squad-out);
   font-family: var(--bf-font-bold);
+  font-weight: 700;
   font-size: 0.9rem;
   opacity: 0;
 }
@@ -395,6 +679,9 @@
     animation: none;
     opacity: 1;
   }
+  .bf-heat {
+    transition: none;
+  }
 }
 .bf-squad-name {
   position: absolute;
@@ -407,6 +694,7 @@
 }
 .bf-squad-row[data-local] .bf-squad-name {
   font-family: var(--bf-font-bold);
+  font-weight: 700;
 }
 
 /* where to deploy, under the offers: the HQ, then the squadmates */

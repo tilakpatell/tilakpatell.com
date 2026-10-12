@@ -187,10 +187,15 @@ export function step(b, inputs = []) {
       b.falls.set(e.target, { t, part: e.part ?? null, dir: e.dir ?? null, at: e.at ?? null, weapon: e.weapon ?? null });
       const killer = b.sim.entities.get(e.by);
       const victim = b.sim.entities.get(e.target);
-      b.killLog.push({ id: `${t}:${e.target}`, killer: nameOf(b, e.by), killerTeam: killer?.team, victim: nameOf(b, e.target), victimTeam: victim?.team });
+      b.killLog.push({ id: `${t}:${e.target}`, t, killer: nameOf(b, e.by), killerTeam: killer?.team, victim: nameOf(b, e.target), victimTeam: victim?.team });
       if (b.killLog.length > KILL_LOG) b.killLog.shift();
-      if (p && e.by === p.id) p.earned += b.points.earn?.kill ?? 0;
+      if (p && e.by === p.id) {
+        p.earned += b.points.earn?.kill ?? 0;
+        p.killAt = t;
+      }
     }
+    // (a hit the player lands: the HUD's hit marker)
+    if (e.type === 'hit' && p && e.by === p.id && e.target !== p.id) p.hitAt = t;
     if (e.type === 'hit' && p && e.target === p.id) {
       const by = b.sim.entities.get(e.by);
       const angle = by && me ? Math.atan2(-(by.at[0] - me.at[0]), by.at[2] - me.at[2]) - me.yaw : 0;
@@ -242,6 +247,7 @@ export function view(b) {
   const t = b.sim.time;
   for (const e of v.entities) {
     const s = b.sim.entities.get(e.id);
+    e.alive = Boolean(s?.alive);
     e.vel = [s?.vel?.[0] ?? 0, s?.vel?.[2] ?? 0];
     e.weapon = s?.gun?.row?.id ?? null;
     e.t = t;
@@ -296,6 +302,8 @@ export function view(b) {
     weapon: gun?.row?.id ?? null,
     earned: p.earned,
     hits: p.hits.map((h) => ({ id: h.id, angle: h.angle, age: t - h.t })),
+    hitAt: p.hitAt ?? null,
+    killAt: p.killAt ?? null,
   };
   const attacking = p ? SIDES[p.team] === b.ga?.attackers : true;
   out.mode = b.stage ? { stage: 0, stageName: stringOf(b.rulebook, attacking ? b.stage.name : b.stage.nameDefend), objectives: b.objectives, tickets: b.stage.tickets ?? null, result: b.result } : null;
