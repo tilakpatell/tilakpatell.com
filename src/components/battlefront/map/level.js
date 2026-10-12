@@ -7,10 +7,12 @@
 // round the player nearest first; the horizon last) and keeps every cell's
 // bytes once fetched; this hands it the player's place in the pack's frame.
 // The ground is the pack's two heightmaps (the `image` layer), drawn here
-// (ground.js) since the pack carries no ground mesh: the galaxy draws its
-// own over it.
+// (ground.js) since the pack carries no ground mesh, in the game's snow on
+// the node renderer: the galaxy draws its own over it.
 //
-//   createLevel({ scene, tier, texTier, renderer, world = 'hoth', ground = true, onCell, onDrop, deps })
+//   createLevel({ scene, tier, detail, texTier, renderer, world = 'hoth', ground = true, snow = true, onCell, onDrop, deps })
+//   (snow: the ground in the game's snow maps on the node renderer; false, the flat colour;
+//    detail: the quality level, 'ultra' where the tier is 'high' on a strong card, for the ground)
 //     → { ready: Promise, group, origin, pack, update([x, y, z]), heightAt(x, z),
 //         loadBin(path), navOf() → Promise<mask | null>, progress(), loaded(), stats(), dispose() }
 //   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
@@ -56,6 +58,8 @@ export function createLevel({
   renderer = null,
   world = "hoth",
   ground = true,
+  snow = true,
+  detail = null,
   gpuScene = false,
   onCell = () => {},
   onDrop = () => {},
@@ -116,7 +120,7 @@ export function createLevel({
       onDrop,
     });
     if (ground && layer) {
-      groundMesh = buildGround(layer, pack.terrain);
+      groundMesh = buildGround(layer, pack.terrain, { world, pack, tier: detail ?? tier, renderer: snow ? renderer : null });
       group.add(groundMesh);
     }
     if (last) update(last);
@@ -128,6 +132,7 @@ export function createLevel({
     const p = toPack(pack, at);
     stream.update(p, tier);
     level.update(p);
+    groundMesh?.update(p);
   }
 
   return {
@@ -165,12 +170,7 @@ export function createLevel({
       stream?.dispose();
       level?.dispose();
       loader?.dispose();
-      if (groundMesh) {
-        groundMesh.traverse((o) => {
-          o.geometry?.dispose();
-          o.material?.dispose();
-        });
-      }
+      groundMesh?.dispose();
       group.removeFromParent();
     },
   };
