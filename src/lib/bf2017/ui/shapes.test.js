@@ -63,6 +63,27 @@ describe('every shape’s view box', () => {
   });
 });
 
+describe('the game’s crosshairs put together as its widgets build them', () => {
+  it('gives the blaster rifle its dot and three short lines at 24, the heavy blaster three arcs, the pistol lines left, below and right, the default the dot', async () => {
+    const { crosshairFor, CROSSHAIR_BOX } = await import('./shapes');
+    const rifle = crosshairFor('rifle');
+    expect(rifle.viewBox).toBe(CROSSHAIR_BOX);
+    // (the dot's two paths and three lines of two each)
+    expect(rifle.paths).toHaveLength(2 + 3 * 2);
+    for (const turn of [240, 360, 480]) expect(rifle.paths.filter((p) => new RegExp(`rotate\\(${turn} `).test(p.transform))).toHaveLength(2);
+    // (the line at 0° stands 24 above the middle: its 3 × 16 box's top-left at (-1.5, -32))
+    expect(rifle.paths.find((p) => / rotate\(360 /.test(p.transform)).transform).toMatch(/^translate\(-1\.5 -32\)/);
+    const heavy = crosshairFor('heavy');
+    expect(heavy.paths).toHaveLength(3 * 2);
+    expect(heavy.name).toBe('Crosshairs_ArcShort+Crosshairs_ArcShort+Crosshairs_ArcShort');
+    const pistol = crosshairFor('pistol');
+    expect(pistol.paths).toHaveLength(2 + 3 * 2);
+    for (const turn of [90, 180, 270]) expect(pistol.paths.filter((p) => new RegExp(`rotate\\(${turn} `).test(p.transform))).toHaveLength(2);
+    expect(crosshairFor('default').paths).toHaveLength(2);
+    expect(crosshairFor('nonsense').paths).toHaveLength(2);
+  });
+});
+
 describe('the hit and kill markers put together from the game’s parts', () => {
   it('sets four ticks on the diagonals round the middle, each turned to point out', async () => {
     const { hitMarker, killMarker } = await import('./shapes');

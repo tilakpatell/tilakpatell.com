@@ -133,10 +133,14 @@ describe('with no screens (a failed import)', () => {
     expect(h).toContain('bf-offers');
   });
 
-  it('loads the screens and the crosshair when the import works', async () => {
+  it('loads the screens and the crosshairs when the import works: a class’s gun’s, made once', async () => {
     const s = await loadScreens();
     expect(typeof s.Spawn).toBe('function');
-    expect(s.reticle.viewBox).toBe('-20 -20 40 40');
+    // (the crosshair widgets' 64 × 64; the blaster rifle's is the dot and three lines)
+    expect(s.reticle.viewBox).toBe('-32 -32 64 64');
+    expect(s.crosshair('assault')).toBe(s.reticle);
+    expect(s.crosshair('heavy').name).toMatch(/^Crosshairs_ArcShort/);
+    expect(s.crosshair('specialist').paths).toHaveLength(2);
   });
 });
 

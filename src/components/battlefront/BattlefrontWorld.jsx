@@ -27,6 +27,8 @@ const WORDS = {
   total: stringOf(rb, 'ID_DEATH_TOTAL_BATTLE_POINTS'),
   offer: offerName,
   outcome: { won: stringOf(rb, 'ID_DOMINATION_GMTEXT_ROUND_WON'), lost: stringOf(rb, 'ID_DOMINATION_GMTEXT_ROUND_LOST'), draw: stringOf(rb, 'ID_MODE6_ROUND_DRAW') },
+  // (the kill log's "defeated" is the game's string C998664F, which the site's table keeps under no key)
+  kill: { defeated: 'defeated', killed: stringOf(rb, 'ID_HUD_KILLED') },
 };
 
 // the kill log's line for the player's death, if there is one
@@ -88,10 +90,10 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
           onDeploy={(o) => send('deploy', o.kind === 'class' ? { classId: o.id } : {})}
           onPick={(o) => send('pick', o.kind === 'class' ? o.id : null)}
           onSpawn={(c) => send('spawn', c.kind === 'mate' ? c.id : null)}
-          readRadar={() => ({ me: snap.player, entities: [], objectives: (snap.mode?.objectives ?? []).map((o) => ({ ...o, label: o.name })) })}
+          readRadar={() => ({ me: snap.player, entities: snap.entities ?? [], objectives: (snap.mode?.objectives ?? []).map((o) => ({ ...o, label: o.name })) })}
           way={way}
           touch={touch}
-          {...(screens ? { deployAs: screens.Spawn, roundAs: null, reticle: screens.reticle } : {})}
+          {...(screens ? { deployAs: screens.Spawn, roundAs: null, reticle: screens.crosshair(snap.player?.cls ?? null) } : {})}
         />
       )}
       {KillScreen && !loading && snap?.player?.state === 'down' && !result && <KillScreen killer={killerOf(snap)} earned={snap.player.earned ?? 0} />}
