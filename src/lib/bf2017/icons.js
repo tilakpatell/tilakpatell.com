@@ -74,11 +74,25 @@ export const ICON_FOR = {
   'side:dark': 'Factions/Icon_GalacticEmpire',
   'side:republic': 'Factions/Icon_GalacticRepublic',
   'side:separatists': 'Factions/Icon_Separatists',
+  // (the galaxy's wars name the same two sides by who they are, sides.js;
+  // the New Republic, the Remnant and the Hutts have no icon in the game)
+  'side:rebel': 'Factions/Icon_RebelAlliance',
+  'side:empire': 'Factions/Icon_GalacticEmpire',
   'vehicle:speeder': 'Speeders/Icon_74-Z_SpeederBike',
   'vehicle:snowspeeder': 'Speeders/Icon_T-47_AirSpeeder',
   'vehicle:landspeeder': 'Speeders/Icon_X-34_LandSpeeder',
   'vehicle:turret': 'StationaryWeapons/Icon_StationaryGroundTurret',
   'points': 'Shared/battle_points',
+  // the galaxy's own (lane S3): the starfighter HUD's speed bar on the flight
+  // cluster's speed line; the objective bar's attack, defend and lock marks on
+  // the war's HUD. (No planet: the drop's nine Planets/Planets_* drawings are
+  // all one, the Galactic Republic's crest, byte for byte: a placeholder, so
+  // a world's name keeps no icon until the sprite is cut again; icons.test.js
+  // holds a galaxy row to a drawing of its own.)
+  'hud:speed': 'SPaceBattles/Icon_HUD_SpeedBar',
+  'objective:attack': 'GameMode/GameMode_Attack',
+  'objective:defend': 'GameMode/GameMode_Defend',
+  'objective:locked': 'GameMode/GameMode_Lock',
 };
 
 export function icon(name, { icons = ICONS, map = ICON_FOR } = {}) {

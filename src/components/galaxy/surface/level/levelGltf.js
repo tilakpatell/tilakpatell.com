@@ -8,8 +8,24 @@
 // linear, and read as linear they came out washed pale (bindSlot).
 //
 //   createLevelLoader({ world, tier, renderer, fetchBytes, sizes, recipes, materialFor }) → { load(glbPath) → Promise<{ scene } | null>,
-//     texture(packPath, sizes?) → Promise<Texture | null>, counts(), dispose() }
-//   (sizes: level.json's `tex`, each map's size per tier)
+//     parse(bytes, glbPath) → Promise<{ scene } | null>, texture(packPath, sizes?) → Promise<Texture | null>,
+//     has(glbPath), settled(glbPath), busy(), refresh(), atlas(path), counts(), dispose() }
+//   (sizes: level.json's `tex`, each map's size per tier; fetchBytes(path,
+//   { glb }) is told which GLB a file is for, so the stream can rank it
+//   (lane N4); parse: a file the stream fetched itself, a coarse cell; has:
+//   a GLB loaded; busy: the loads not yet bound, which the boot waits for)
+//
+// (lane N4) Every map comes at its smallest row first (levelPack.js's
+// firstTexture) and answers at once; the tier's row (tierTexture: UASTC for
+// a data map on mid and up, where the chip takes it) is then fetched as
+// detail and swapped into the same texture (swapInto), so every material
+// and node that holds it draws the finer one from the next frame. A
+// promotion that lands for a map no one shown wears (`wanted(path, glbs)`)
+// is kept, not uploaded, and bound by refresh() once one is.
+//   texture(path, sizes?, { of, coarse }): of, the GLB asking (for the stream's rank)
+//   refresh(): the kept promotions now wanted, bound
+//   (parseKtx2(bytes) → Promise<Texture> and formats: the KTX2 loader's
+//   parse and textureFormats(renderer) by default; tests give their own)
 //   counts() → { asked, loaded, failed, why }: the pack's maps so far, each
 //     path once (failed: those not had now; why: the first of them's name
 //     and words), for the evidence (level/index.js's stats().maps)
@@ -47,10 +63,10 @@
 import { DoubleSide, NoColorSpace, SRGBColorSpace } from 'three';
 import { BUDGETS } from '../../../../lib/device.js';
 import { COLOUR_MAP_KEYS } from '../../../../lib/three/surface/families.js';
-import { gltfLoader, ktx2Loader } from '../../../../lib/three/gltf.js';
+import { gltfLoader, ktx2Loader, textureFormats } from '../../../../lib/three/gltf.js';
 import { anisotropyFor } from '../../../../lib/three/textures.js';
 import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
-import { packUrl, splitTextures, tierTexture } from './levelPack.js';
+import { firstTexture, isDataMap, packUrl, splitTextures, tierTexture } from './levelPack.js';
 import { applyVariation } from './levelVariations.js';
 import { hasUv1, withBaked } from '../../../../lib/three/light/baked.js';
 import { loadThree } from '../../../../lib/three/light/three.js';
@@ -216,6 +232,31 @@ export async function recipeMaps(recipe, { maps = {}, texture, keys = null }) {
   return out;
 }
 
+// (lane N4) a finer row swapped into the texture already bound: its GPU
+// copy let go (three uploads a disposed texture again when next drawn, on
+// either backend), then its source and mips the new one's
+export function swapInto(tex, next, row = null) {
+  tex.dispose();
+  tex.source = next.source;
+  tex.mipmaps = next.mipmaps;
+  tex.format = next.format;
+  tex.type = next.type;
+  tex.needsUpdate = true;
+  if (row != null) tex.userData.row = row;
+  return tex;
+}
+
+// a KTX2's twelve-byte identifier (the Khronos container's), so bytes that
+// are something else (a site answering a missing file with its page) fail
+// here and are never handed to the transcoder, whose worker may not answer
+const KTX2_ID = [0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a];
+export function isKtx2(bytes) {
+  const b = bytes instanceof ArrayBuffer ? new Uint8Array(bytes, 0, Math.min(12, bytes.byteLength)) : new Uint8Array(bytes?.buffer ?? new ArrayBuffer(0), bytes?.byteOffset ?? 0, Math.min(12, bytes?.byteLength ?? 0));
+  return b.length === 12 && KTX2_ID.every((v, i) => b[i] === v);
+}
+
+const rowOf = (file) => Number(String(file).match(/\.(\d+)(\.uastc)?\.ktx2$/)?.[1] ?? 0) || null;
+
 // The atlas on a GLB's game materials: each material all of whose meshes
 // carry a second uv set, where the set has the GLB's chart
 async function bakeMeshes(scene, glbPath, materials, baked, applyBaked) {
@@ -260,7 +301,23 @@ export function bareGlb(scene, indexOf, named) {
 const whyOf = (e) => (e instanceof Error ? `${e.name}${e.reason ? ` (${e.reason})` : ''}: ${e.message}` : String(e));
 
 // (texTier: the video setting's texture quality, lib/video.js's textureTier, over the tier for the maps' sizes alone)
-export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {}, recipes = null, materialFor = null, mapKeys = null, variations = null, baked = null, applyBaked = null, texTier = null }) {
+export function createLevelLoader({
+  world,
+  tier,
+  renderer,
+  fetchBytes,
+  sizes = {},
+  recipes = null,
+  materialFor = null,
+  mapKeys = null,
+  variations = null,
+  baked = null,
+  applyBaked = null,
+  texTier = null,
+  wanted = () => true,
+  parseKtx2 = (bytes) => ktx2Loader({ renderer }).then((k) => new Promise((ok, no) => k.parse(bytes, ok, no))),
+  formats = textureFormats(renderer),
+}) {
   applyBaked ??= async (m, chart) => withBaked(m, baked, { chart, three: await loadThree() });
   // (mapKeys: the recipe maps the tier draws; null, all of them)
   if (recipes?.tex) sizes = { ...sizes, ...recipes.tex };
@@ -272,7 +329,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
   // what the pack's maps came to (counts()), and what has been said of them
   const asked = new Set(); // every path asked
   const failing = new Set(); // the paths not had now
-  let loaded = 0;
+  let mapsLoaded = 0;
   let why = null;
   let told = null; // null, 'map' or 'transcoder'
 
@@ -296,35 +353,69 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     return null;
   }
 
+  const users = new Map(); // pack path → Set of the GLBs that wear it
+  const kept = new Map(); // pack path → { tex, next, row }: promotions not yet wanted
+
   // (a part's own maps say their sizes beside them: `own`)
-  function texture(path, own = sizes) {
+  function texture(path, own = sizes, { of = null, coarse = false } = {}) {
     // (after dispose nothing new is fetched, so nothing is left undisposed)
     if (gone) return Promise.resolve(null);
+    if (of) (users.get(path) ?? users.set(path, new Set()).get(path)).add(of);
     if (!textures.has(path)) {
       asked.add(path);
-      const local = packUrl(world, tierTexture(path, texTier ?? tier, own));
-      const got = ktx2Loader({ renderer }).then(
-        (k) =>
-          withFallback((u) => k.loadAsync(u))(local)
-            .then((t) => gameWordOf(t, sizes, path))
-            .then((t) => sharpenPack(t, tier, renderer))
-            .then((t) => {
-              loaded++;
-              failing.delete(path);
-              if (!failing.size) why = null;
-              return t;
-            })
-            .catch((e) => missed(path, e)),
-        (e) => {
+      const slug = path.split('/').pop().replace(/\.ktx2$/, '');
+      const data = isDataMap(null, own?.[slug] ?? sizes?.[slug], slug);
+      const first = firstTexture(path, own);
+      const target = tierTexture(path, texTier ?? tier, own, { formats, data });
+      const get = (file, promote) =>
+        Promise.resolve(fetchBytes(file, { glb: of, promote, ...(coarse ? { coarse } : {}) })).then((bytes) => {
+          if (!isKtx2(bytes)) throw new Error(`${file} is not a KTX2`);
+          return parseKtx2(bytes);
+        });
+      let held = first;
+      const p = get(first, false)
+        .catch((e) => {
+          // (no first row to be had: the tier's, at once)
+          held = target;
+          if (first === target) throw e;
+          return get(target, false);
+        })
+        .then((t) => {
+          t.userData.row = rowOf(held);
+          mapsLoaded++;
+          failing.delete(path);
+          if (!failing.size) why = null;
+          // (lane D2's anisotropy, once: a promotion swaps the source, not the texture)
+          return sharpenPack(gameWordOf(t, sizes, path), tier, renderer);
+        })
+        .catch((e) => {
           // (the KTX2 loader's failure, not the map's: gltf.js lets that
           // loader go, so the next ask of this path tries it again)
-          if (textures.get(path) === got) textures.delete(path);
-          return missed(path, e, true);
-        },
-      );
-      textures.set(path, got);
+          const transcoder = e?.name === 'KTX2SupportError' || e?.name === 'WasmError';
+          if (transcoder && textures.get(path) === p) textures.delete(path);
+          return missed(path, e, transcoder);
+        });
+      textures.set(path, p);
+      p.then((t) => {
+        if (!t || gone || held === target) return;
+        get(target, true)
+          .then((next) => {
+            if (gone || !next) return;
+            if (wanted(path, users.get(path) ?? new Set())) swapInto(t, next, rowOf(target));
+            else kept.set(path, { tex: t, next, row: rowOf(target) });
+          })
+          .catch(() => {}); // (the first row stays)
+      });
     }
     return textures.get(path);
+  }
+
+  function refresh() {
+    for (const [path, k] of kept) {
+      if (!wanted(path, users.get(path) ?? new Set())) continue;
+      swapInto(k.tex, k.next, k.row);
+      kept.delete(path);
+    }
   }
 
   // A GLB's maps bound from the cache, to each material and the loader's
@@ -345,7 +436,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     });
     await Promise.all(
       slots.map(async ({ material, slot, uri }) => {
-        const [mat, tex] = await Promise.all([gltf.parser.getDependency('material', material), texture(inPack(glbPath, uri))]);
+        const [mat, tex] = await Promise.all([gltf.parser.getDependency('material', material), texture(inPack(glbPath, uri), sizes, { of: glbPath })]);
         if (gone) return;
         if (!tex) {
           if (slot === 'map') lost.add(material);
@@ -384,7 +475,7 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     const swap = new Map();
     await Promise.all(
       [...used].map(async ([glb, recipe]) => {
-        const maps = { glb, ...(await recipeMaps(recipe, { maps: mapsOf, texture, keys: mapKeys })) };
+        const maps = { glb, ...(await recipeMaps(recipe, { maps: mapsOf, texture: (p) => texture(p, sizes, { of: glbPath }), keys: mapKeys })) };
         if (gone) return;
         if (!glb.map && !glb.vertexColors && !maps.color) {
           if (glb.side === DoubleSide) return;
@@ -411,27 +502,47 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
     if (baked) await bakeMeshes(gltf.scene, glbPath, new Set(swap.values()), baked, applyBaked);
   }
 
+  // a GLB's bytes to a scene: parsed without its textures, its maps bound
+  // from the cache, its materials the game's where the pack has recipes
+  async function fromBytes(bytes, glbPath) {
+    const { buffer, slots } = splitTextures(bytes);
+    const gltf = await gltfLoader().parseAsync(buffer, '');
+    const lost = await bind(gltf, slots, glbPath);
+    if (recipes && materialFor) await gameMaterials(gltf, glbPath);
+    // (a colour map named and lost counts as none named)
+    bareGlb(gltf.scene, (m) => gltf.parser.associations.get(m)?.materials, new Set(slots.filter((x) => x.slot === 'map' && !lost.has(x.material)).map((x) => x.material)));
+    return gltf;
+  }
+
+  const loaded = new Set(); // glb paths whose scene is up
+  const settled = new Set(); // and those that could not be had too
+  let pending = 0;
+  function track(glbPath, p) {
+    pending++;
+    return p
+      .then((gltf) => {
+        if (gltf) loaded.add(glbPath);
+        return gltf;
+      })
+      .catch((e) => {
+        if (import.meta.env?.DEV) console.warn('level mesh failed', glbPath, e);
+        return null;
+      })
+      .finally(() => {
+        pending--;
+        settled.add(glbPath);
+      });
+  }
+
   function load(glbPath) {
     if (gone) return Promise.resolve(null);
-    if (!meshes.has(glbPath)) {
-      meshes.set(
-        glbPath,
-        fetchBytes(glbPath)
-          .then(async (bytes) => {
-            const { buffer, slots } = splitTextures(bytes);
-            const gltf = await gltfLoader().parseAsync(buffer, '');
-            const lost = await bind(gltf, slots, glbPath);
-            if (recipes && materialFor) await gameMaterials(gltf, glbPath);
-            // (a colour map named and lost counts as none named)
-            bareGlb(gltf.scene, (m) => gltf.parser.associations.get(m)?.materials, new Set(slots.filter((x) => x.slot === 'map' && !lost.has(x.material)).map((x) => x.material)));
-            return gltf;
-          })
-          .catch((e) => {
-            if (import.meta.env?.DEV) console.warn('level mesh failed', glbPath, e);
-            return null;
-          }),
-      );
-    }
+    if (!meshes.has(glbPath)) meshes.set(glbPath, track(glbPath, Promise.resolve(fetchBytes(glbPath, { glb: glbPath })).then((bytes) => fromBytes(bytes, glbPath))));
+    return meshes.get(glbPath);
+  }
+
+  function parse(bytes, glbPath) {
+    if (gone) return Promise.resolve(null);
+    if (!meshes.has(glbPath)) meshes.set(glbPath, track(glbPath, fromBytes(bytes, glbPath)));
     return meshes.get(glbPath);
   }
 
@@ -457,14 +568,22 @@ export function createLevelLoader({ world, tier, renderer, fetchBytes, sizes = {
 
   return {
     load,
+    parse,
     texture,
+    refresh,
+    has: (glbPath) => loaded.has(glbPath),
+    // (loaded or failed: nothing more will come of it)
+    settled: (glbPath) => settled.has(glbPath),
+    busy: () => pending,
     atlas,
     // (the remote name of a pack file, for the evidence)
     url: (path) => assetUrl(packUrl(world, path)),
-    counts: () => ({ asked: asked.size, loaded, failed: failing.size, why }),
+    counts: () => ({ asked: asked.size, loaded: mapsLoaded, failed: failing.size, why }),
     async dispose() {
       gone = true;
       for (const t of await Promise.all(textures.values())) t?.dispose();
+      for (const k of kept.values()) k.next.dispose();
+      kept.clear();
       for (const g of await Promise.all(meshes.values())) {
         g?.scene.traverse((o) => {
           if (!o.isMesh) return;

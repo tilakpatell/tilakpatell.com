@@ -288,3 +288,17 @@ describe('the batched path (lane U)', () => {
     level.dispose();
   });
 });
+
+describe('setHorizon with a coarse cell (lane N4)', () => {
+  it('draws the cell under the level’s root and hands back the layer, the horizon list untouched', () => {
+    const scene = new THREE.Scene();
+    const level = createLevelScene({ scene, pack: { meshes: [], far: { draws: [] }, horizon: { draws: [] } }, loadGltf: () => null, tier: 'high' });
+    const cell = new THREE.Group();
+    cell.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    const layer = level.setHorizon({ coarse: { index: { cells: { '0,0': { meshes: [1] } } } }, key: '0,0', gltf: { scene: cell } });
+    expect(level.root.children).toContain(cell);
+    expect(layer.stats()).toMatchObject({ cells: 1, shown: 1 });
+    expect(level.setHorizon({ coarse: {}, key: null })).toBe(layer);
+    level.dispose();
+  });
+});

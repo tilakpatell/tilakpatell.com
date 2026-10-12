@@ -47,3 +47,26 @@ describe('the service worker’s registration', () => {
     expect(reg.unregister).toHaveBeenCalled();
   });
 });
+
+describe('the world being played (lane N4)', () => {
+  it('registers the worker and tells it the world, in production only', async () => {
+    const post = vi.fn();
+    const nav = { serviceWorker: { register: vi.fn(async () => ({ active: { postMessage: post } })), getRegistrations: vi.fn(async () => []), controller: null } };
+    const sw = createWorkerSwitch({ nav, caches: cachesOf([]), prod: true });
+    await sw.playing('hoth');
+    expect(nav.serviceWorker.register).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenCalledWith({ type: 'tp-play', world: 'hoth' });
+    const dev = createWorkerSwitch({ nav: navOf(), caches: cachesOf([]), prod: false });
+    expect(await dev.playing('hoth')).toBeNull();
+  });
+
+  it('comes back for a visitor who has played a world, and stays while one is kept', async () => {
+    const nav = navOf();
+    const sw = createWorkerSwitch({ nav, caches: cachesOf(['tp-play-hoth']), prod: true });
+    await sw.start();
+    expect(nav.serviceWorker.register).toHaveBeenCalledTimes(1);
+    const reg = { unregister: vi.fn(async () => true), active: { scriptURL: 'http://x/sw.js' } };
+    await createWorkerSwitch({ nav: navOf([reg]), caches: cachesOf(['tp-play-hoth']), prod: true }).tidy();
+    expect(reg.unregister).not.toHaveBeenCalled();
+  });
+});

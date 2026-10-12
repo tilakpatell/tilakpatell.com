@@ -144,7 +144,7 @@ run takes it again.
 
 What only the desktop can make for the Star Wars worlds’ picture (the
 picture-everywhere design, §7: `docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.md`),
-as seven jobs of one workflow, **bf2017 desktop** (`.github/workflows/bf2017-desktop.yml`).
+as eight jobs of one workflow, **bf2017 desktop** (`.github/workflows/bf2017-desktop.yml`).
 They are not issues: the owner starts them, from the Actions tab
 (*bf2017 desktop* → *Run workflow*, pick the job) or
 `gh workflow run bf2017-desktop.yml -f job=panoramas` (`-f only=hoth`,
@@ -162,6 +162,7 @@ as gen3d does; a run with nothing new opens none.
 | `uastc` | the packs’ 220 colour maps as UASTC at 2,048, measured (PSNR) against the BC7 master and the served ETC1S, kept at 3 dB or better | the export’s PNGs, toktx | each pack’s `tex/<slug>.2048.uastc.ktx2` published by hash, its `level.json` `tex` row gaining `ultra` |
 | `depots` | the depot probe resolved, the share said of all and of the rest | `maps_work\shaderdepots.jsonl` | `src/data/bf2017/shaderParams.json` |
 | `gate` | every Star Wars world at ultra on this chip, ANGLE d3d11 and WebGPU, held to 16.7 ms p95 | the dev server, Chrome, `scripts/galaxy-check.mjs` | `docs/superpowers/evidence/bf2017-picture/gate/`, the ultra baseline the first time; red when a world is over |
+| `horizon` | each surface pack’s coarse horizon grid (lane N4: 512 m cells of merged last LODs, the kit’s repeated props as octahedral impostors, 16 × 16 views at 2,048) with its impostors drawn on the chip (ANGLE d3d11); not in `all` (a bake is long) | `scripts/bf2017-horizon.mjs`, Chrome, the pack’s files from the bucket | each pack’s `horizon/` published by hash (its `index.json` committed), `level.json` gaining `coarse` |
 | `stream` | lane R2’s sender (`bf2017-stream.mjs`, PR #908): a world at ultra, or the game’s own window (`stream_source`), streamed to a phone over WebRTC for `stream_minutes`; not in `all` (it needs a phone) | the full checkout, `npm ci`, the dev server, Chrome | the numbers (`r2/<name>.json`) as the run’s artifact; until #908 is on main the job says so and stops |
 
 What they need on the desktop, all checked by the doctor’s `bf2017` group
