@@ -272,7 +272,8 @@ export function think(brain, world, now) {
     // (a new target's first shot waits the difficulty's reaction at its distance)
     const ready = !brain.difficulty || now - brain.targetSince >= brain.difficulty.reaction(dist);
     intent.fire = ready && b.visible && dist <= range && world.lineClear(from, v3(b));
-    if (brain.pve) intent.ability = pressAbility(brain, { target: b, now });
+    // (a Skirmish bot's class abilities; the online fill's AutoPlayers press the officer's turret alone: ai/throw.js)
+    if (s.abilities.list.length > 1) intent.ability = pressAbility(brain, { target: b, now, world, autoPlayer: !brain.pve });
   }
   if (mode === 'flee') {
     const slot = findCover('flee');
@@ -448,5 +449,7 @@ export function act(brain, intent, s, dt, world, now) {
   const firing = patternStep(brain);
   // (its own gun's recoil kicks its view as a player's: weapons.js's amplitude on the aim point)
   const from = world.muzzle ? world.muzzle(s) : chestOf(s);
-  if (intent.fire && firing && intent.aim && world.lineClear(from, intent.aim)) world.shoot(s, kickAim(s.gun, from, intent.aim));
+  // (a flashed bot fires nothing for the flash's 5 s: kit.js)
+  const flashed = (s.flashedUntil ?? -Infinity) > now;
+  if (intent.fire && firing && !flashed && intent.aim && world.lineClear(from, intent.aim)) world.shoot(s, kickAim(s.gun, from, intent.aim));
 }

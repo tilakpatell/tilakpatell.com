@@ -210,7 +210,7 @@ export default {
         squad: v.squad,
         points: v.points,
         // (evade: the game's two rolls, HealthEvade's charges; the sim's rolls are not counted, so the two stand)
-        player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, hitAt: p.hitAt, killAt: p.killAt, evade: 2, abilities: [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })) },
+        player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, hitAt: p.hitAt, killAt: p.killAt, evade: 2, abilities: p.abilities?.length ? p.abilities : [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })), shield: p.shield, over: p.over, flashed: p.flashed, ability: p.ability },
         mode: v.mode && { stageName: v.mode.stageName, objectives: v.mode.objectives.map((o) => ({ id: o.id, name: o.name, meter: o.meter, at: o.at })), tickets: v.mode.tickets, result: v.mode.result },
         // (the radar's soldiers: who, where, which side, up or down, firing)
         entities: v.entities.map((e) => ({ id: e.id, team: e.team, kind: e.kind, at: e.at, alive: e.alive, firing: e.firing })),

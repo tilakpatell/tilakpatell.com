@@ -21,6 +21,14 @@
 // camera's spring (`SpringConstant 3000`, `SpringDamping 0.84`, the row's
 // `recoil`), and `RecoilFollowsDispersion` gives the kick the dispersion
 // sample's side, so the bolt and the view jump the same way. No pattern.
+//
+// The rate is the record's whatever the sim's step: the next bolt is owed
+// from the last one's time while the trigger stays down, so 900 rpm on a
+// 50 ms step is three bolts in four steps, not one in two. A row with
+// `firing.preFire` (the sentry's `UseChargeUpLogic`, `PreFireDelay 1`;
+// finding 33) spins up before the first bolt of a pull: the wait is the
+// delay less what spin the barrel has left, which falls by `chargeDown` a
+// second with the trigger up (`gun.spin` 0…1, for the drawing too).
 
 const DEG = Math.PI / 180;
 
@@ -51,6 +59,8 @@ export const RECOIL = {
 // weapon's `WeaponProjectileModifier` when a bot holds it: 18 → 10 against
 // the A280's 36 → 19, finding 34 §1): a bot's bolt deals half.
 export const AI_DAMAGE_SCALE = 0.5;
+// How long without a pull the trigger counts as let go, seconds: a step and a half of the sim's. By hand.
+export const PULL_GAP = 0.075;
 
 export function createGun(row, { rand = Math.random } = {}) {
   return {
@@ -63,6 +73,10 @@ export function createGun(row, { rand = Math.random } = {}) {
     spread: 0, // degrees the shots have added to the cone
     recoil: [0, 0], // degrees of kick the shots have left: yaw (the dispersion's frame, + toward +X at yaw 0), pitch (up positive)
     coolMul: 1, // a cooling-power affector's multiplier on the heat's fall (the officer's presence)
+    spin: 0, // the barrel's spin, 0…1 (a row with `firing.preFire`)
+    spinAt: 0,
+    pullAt: -Infinity,
+    lastPull: -Infinity,
     successes: 0,
     cooling: null,
     until: 0,
@@ -136,11 +150,23 @@ function overheat(gun, now) {
 export function fire(gun, now, { stance = 'stand', moving = false } = {}) {
   if (gun.state !== 'ready') return null;
   const f = gun.row.firing ?? {};
+  if (f.preFire) {
+    // (a new pull: the wait starts again, ResetPreFireWaitOnRelease, less the spin the barrel kept)
+    if (now - gun.lastPull > PULL_GAP + EDGE) {
+      gun.pullAt = now;
+      gun.spinAt = gun.spin;
+    }
+    gun.lastPull = now;
+    const wait = f.preFire * (1 - gun.spinAt);
+    gun.spin = Math.min(1, gun.spinAt + (now - gun.pullAt) / f.preFire);
+    if (now - gun.pullAt < wait - EDGE) return null;
+  }
   const rof = f.rof ?? 600;
   const burst = f.mode === 'burst' ? (f.burst ?? 1) : 1;
   const gap = burst > 1 && f.burstsPerMinute ? 60 / f.burstsPerMinute : 60 / rof;
   if (now - gun.lastFire < gap - EDGE) return null;
-  gun.lastFire = now;
+  // (the trigger held: the next bolt is owed from the last one's time, so a rate between steps is kept)
+  gun.lastFire = now - gun.lastFire < 2 * gap - EDGE ? gun.lastFire + gap : now;
   const shots = [];
   const sway = swayOf(gun.row, stance, moving);
   const rr = recoilRow(gun.row, stance, moving);
@@ -175,6 +201,9 @@ export function fire(gun, now, { stance = 'stand', moving = false } = {}) {
 
 export function tick(gun, dt, now) {
   const h = gun.row.heat;
+  const f = gun.row.firing;
+  // (the barrel winds down with the trigger up: ChargeUpDecrease)
+  if (f?.preFire && now - gun.lastPull > PULL_GAP + EDGE) gun.spin = Math.max(0, gun.spin - (f.chargeDown ?? 0) * dt);
   const sway = swayOf(gun.row, 'stand', false);
   // (a negative decay is the sentry's: the cone opens again when the trigger drops)
   if (now - gun.lastShot >= sway.noFireDelay) gun.spread = sway.decay >= 0 ? Math.max(0, gun.spread - sway.decay * dt) : Math.min(0, gun.spread - sway.decay * dt);
