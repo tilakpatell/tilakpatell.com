@@ -1,0 +1,180 @@
+{
+  "tag": "before",
+  "errors": [],
+  "shots": {
+    "sun": "C:\\Users\\tilak\\source\\repos\\new-portfolio-website\\.claude\\worktrees\\agent-ac429e5b34dc44370\\docs\\superpowers\\evidence\\bf2017-sky-2026-10-12\\sun-before.png",
+    "sunward": "C:\\Users\\tilak\\source\\repos\\new-portfolio-website\\.claude\\worktrees\\agent-ac429e5b34dc44370\\docs\\superpowers\\evidence\\bf2017-sky-2026-10-12\\sunward-before.png",
+    "away": "C:\\Users\\tilak\\source\\repos\\new-portfolio-website\\.claude\\worktrees\\agent-ac429e5b34dc44370\\docs\\superpowers\\evidence\\bf2017-sky-2026-10-12\\away-before.png",
+    "up": "C:\\Users\\tilak\\source\\repos\\new-portfolio-website\\.claude\\worktrees\\agent-ac429e5b34dc44370\\docs\\superpowers\\evidence\\bf2017-sky-2026-10-12\\up-before.png",
+    "sunset-sun": "C:\\Users\\tilak\\source\\repos\\new-portfolio-website\\.claude\\worktrees\\agent-ac429e5b34dc44370\\docs\\superpowers\\evidence\\bf2017-sky-2026-10-12\\sunset-sun-before.png",
+    "sunset-level": "C:\\Users\\tilak\\source\\repos\\new-portfolio-website\\.claude\\worktrees\\agent-ac429e5b34dc44370\\docs\\superpowers\\evidence\\bf2017-sky-2026-10-12\\sunset-level-before.png"
+  },
+  "samples": {
+    "sun": {
+      "disc": [
+        255,
+        255,
+        255
+      ],
+      "ring5deg": [
+        255,
+        255,
+        255
+      ],
+      "top": [
+        251,
+        252,
+        251
+      ],
+      "low": [
+        189,
+        193,
+        197
+      ]
+    },
+    "sunward": {
+      "top": [
+        251,
+        252,
+        251
+      ],
+      "aboveHorizon": [
+        213,
+        216,
+        220
+      ],
+      "horizon": [
+        213,
+        216,
+        221
+      ]
+    },
+    "away": {
+      "top": [
+        243,
+        249,
+        251
+      ],
+      "aboveHorizon": [
+        202,
+        210,
+        220
+      ],
+      "horizon": [
+        204,
+        211,
+        220
+      ]
+    },
+    "up": {
+      "zenith": [
+        176,
+        209,
+        255
+      ]
+    },
+    "sunset-sun": {
+      "disc": [
+        255,
+        255,
+        245
+      ],
+      "ring5deg": [
+        255,
+        255,
+        250
+      ],
+      "top": [
+        242,
+        238,
+        243
+      ],
+      "low": [
+        236,
+        150,
+        125
+      ]
+    },
+    "sunset-level": {
+      "top": [
+        251,
+        250,
+        248
+      ],
+      "aboveHorizon": [
+        224,
+        174,
+        152
+      ],
+      "horizon": [
+        169,
+        138,
+        143
+      ]
+    }
+  },
+  "backend": "webgpu",
+  "picture": {
+    "lut": true,
+    "panorama": true,
+    "gradient": true,
+    "cloudShadow": true,
+    "gain": 2.5175717510507374,
+    "missing": [],
+    "urls": {
+      "lut": "/textures/galaxy/bf2017/light/hoth/sunny.lut33.png",
+      "panorama": "/textures/galaxy/bf2017/light/hoth/sunny.panorama.ktx2",
+      "gradient": "/textures/galaxy/bf2017/light/hoth/sunny.gradient.ktx2",
+      "cloudShadow": "/textures/galaxy/bf2017/light/hoth/sunny.clouds.ktx2"
+    }
+  },
+  "sky": {
+    "luminance": 2.5175717510507374,
+    "sunScale": 8.6316745750311,
+    "sunSize": 0.004,
+    "panoramaGain": 2.5175717510507374,
+    "sunDir": [
+      -0.8367498389307678,
+      0.5438044245607414,
+      -0.06423748810075837
+    ],
+    "sunColor": [
+      1,
+      0.9559066,
+      0.917619944
+    ]
+  },
+  "params": {
+    "gameToSite": 0.0000719306214585925,
+    "sunIntensity": 9.20711954669984,
+    "skyLuminance": 2.5175717510507374,
+    "sunScale": 8.6316745750311
+  },
+  "chain": [
+    "render",
+    "ssgi",
+    "ao",
+    "ssr",
+    "bloom",
+    "lensflare",
+    "tonemap",
+    "lut",
+    "traa",
+    "output"
+  ],
+  "sunset": {
+    "yaw": 1.9198621771937625,
+    "pitch": 0.17889624832941875,
+    "luminance": 3.7004798987070253,
+    "sunScale": 27.75359924030269,
+    "panoramaGain": 3.7004798987070253,
+    "format": null,
+    "urls": {
+      "lut": "/textures/galaxy/bf2017/light/hoth/sunset.lut33.png",
+      "panorama": "/textures/galaxy/bf2017/light/hoth/sunset.panorama.ktx2",
+      "gradient": "/textures/galaxy/bf2017/light/hoth/sunset.gradient.ktx2",
+      "cloudShadow": "/textures/galaxy/bf2017/light/hoth/sunset.clouds.ktx2"
+    },
+    "missing": []
+  }
+}
