@@ -38,6 +38,10 @@ The frames after the wipe are the world's steady frame on this drawing buffer: t
 
 The load itself is the level's stream (33 s of the 41 s are its fetches and decodes; `check-sunset.json`'s `sampled` has the bar's timeline: the stream to 19 s, 130 to 166 pipelines pending while the far list builds, the cells to 22 s, the builds draining to 36 s). That is the next thing to shorten, not this screen's.
 
+## After the rebase onto main (#948 to #952)
+
+The same script on the branch rebased onto the HUD port, the HDR sky, the walk blend and the page-turn change, the sunset by name: Ready at 71 s (the HDR panorama and the guard's runs make the load longer), Deploy pressed to the first drawn field frame 504 ms (the swap 439 ms, the first frame 65 ms after it), nothing pending, held or building after the swap; but the world's draw is 40 to 48 ms a frame there where it was 22 to 33 before the merges, both in the darkroom and on the field, so the 3 s after the wipe read a median of 54 ms, a p95 of 95 and a worst of 203 (a 118 ms draw at 0.9 s), thirty frames over 50. Main itself with no screen, deployed through the dev door 15 s after the level's far list (`bf-steady.mjs`), draws a 4 s window after that at a median frame of 176 ms and a worst of 529 as the builds land round the player. The screen removes the builds; the steady frame's cost is the renderer's per-draw JavaScript on a 5K buffer and main's new work in the draw, not the arrival's.
+
 ## The pictures (`bf2017-waiting-screen/`, at 1,920 wide from 5,120)
 
 | shot | what it is |
