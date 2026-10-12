@@ -1,0 +1,551 @@
+{
+  "url": "http://127.0.0.1:5588/#/battlefront/hoth/galacticAssault?from=%2Fgalaxy%2Fhoth",
+  "day": "sunny",
+  "tDoorMs": 6140,
+  "tReadyMs": 40534,
+  "before": {
+    "machine": {
+      "backend": "webgpu",
+      "tier": "T2",
+      "level": 0,
+      "internal": 1,
+      "source": "gpu",
+      "gpuMs": 6.841840000000001,
+      "pixels": 7372800,
+      "adapter": null
+    },
+    "shaders": {
+      "pending": 0,
+      "held": 0,
+      "building": 0
+    },
+    "weather": "sunny",
+    "parked": true,
+    "lines": [
+      "your machine: ultra tier (T2), ANGLE (NVIDIA, NVIDIA GeForce RTX 5090, 5,120 × 1,440 on WebGPU",
+      "recommended: ultra at 100 % · 6.9 ms a frame on the chip",
+      "Ready · 100 per cent"
+    ]
+  },
+  "after": {
+    "clickToSwap": 379.5,
+    "clickToFirstField": 409.19999999925494,
+    "playwrightToPress": 304.59999999962747,
+    "swapToFirstField": 29.699999999254942,
+    "frames3s": 94,
+    "worst": 935.2000000000044,
+    "over50": 1,
+    "median": 27.099999999998545,
+    "p95": 27.299999999995634,
+    "worstFromSwap": 935.2000000000044,
+    "over50FromSwap": 4,
+    "deltas": [
+      13.4,
+      27.2,
+      27.1,
+      27.1,
+      13.6,
+      27.1,
+      27.1,
+      13.5,
+      27.2,
+      13.5,
+      27.1,
+      27.1,
+      935.2,
+      13.6,
+      27.1,
+      27.2,
+      27.1,
+      13.5,
+      13.6,
+      27.1,
+      13.5,
+      27.2,
+      27,
+      13.6,
+      13.5,
+      27.3,
+      13.4,
+      27.1,
+      27.2,
+      13.7,
+      26.9,
+      13.6,
+      27.1,
+      13.6,
+      13.4,
+      27.2,
+      13.6,
+      13.5,
+      13.5,
+      27.2,
+      13.5,
+      27.1,
+      27.1,
+      13.5,
+      27.2,
+      27.1,
+      27,
+      27.2,
+      40.7,
+      13.5,
+      27.1,
+      27.1,
+      13.5,
+      27.2,
+      27.1,
+      13.6,
+      27,
+      13.8,
+      26.9,
+      27.1,
+      27.1,
+      13.7,
+      13.4,
+      27.2,
+      13.6,
+      27.1,
+      27.1,
+      13.5,
+      27.1,
+      13.5,
+      27.2,
+      13.5,
+      27.1,
+      27.1,
+      27.4,
+      26.9,
+      13.5,
+      13.6,
+      27,
+      27.1,
+      13.7,
+      27.1,
+      13.5,
+      27.1,
+      13.6,
+      27,
+      27.2,
+      27.1,
+      13.6,
+      40.6,
+      27.1,
+      27.1,
+      27.1,
+      27.1
+    ],
+    "machine": {
+      "backend": "webgpu",
+      "tier": "T2",
+      "level": 0,
+      "internal": 1,
+      "source": "gpu",
+      "gpuMs": 7.548431999999999,
+      "pixels": 7372800,
+      "adapter": null
+    },
+    "shaders": {
+      "pending": 0,
+      "held": 0,
+      "building": 0
+    },
+    "player": "alive",
+    "weather": "sunny",
+    "exposure": null
+  },
+  "sampled": [
+    {
+      "t": 6766.0999999996275,
+      "loaded": false,
+      "progress": 0,
+      "shaders": {
+        "pending": 0,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": null,
+        "pixels": 4,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Bringing the level in · 0 per cent · 0 per cent",
+      "bar": "0"
+    },
+    {
+      "t": 8782.099999999627,
+      "loaded": false,
+      "progress": 0,
+      "shaders": {
+        "pending": 1,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": null,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Bringing the level in · 0 per cent · 0 per cent",
+      "bar": "0"
+    },
+    {
+      "t": 13652.900000000373,
+      "loaded": false,
+      "progress": 0,
+      "shaders": {
+        "pending": 85,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": null,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Bringing the level in · 0 per cent · 0 per cent",
+      "bar": "0"
+    },
+    {
+      "t": 14261.800000000745,
+      "loaded": false,
+      "progress": 0,
+      "shaders": {
+        "pending": 94,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": null,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Bringing the level in · 0 per cent · 0 per cent",
+      "bar": "0"
+    },
+    {
+      "t": 18462.300000000745,
+      "loaded": false,
+      "progress": 0.3157894736842105,
+      "shaders": {
+        "pending": 84,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 9.220192,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Bringing the level in · 0 per cent · 0 per cent",
+      "bar": "0"
+    },
+    {
+      "t": 19683.099999999627,
+      "loaded": false,
+      "progress": 0.3157894736842105,
+      "shaders": {
+        "pending": 103,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 9.220192,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Bringing the level in · 0 per cent · 0 per cent",
+      "bar": "0"
+    },
+    {
+      "t": 19830.900000000373,
+      "loaded": false,
+      "progress": 0.3157894736842105,
+      "shaders": {
+        "pending": 103,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 9.220192,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Bringing the level in · 32 per cent · 27 per cent",
+      "bar": "27"
+    },
+    {
+      "t": 21132,
+      "loaded": true,
+      "progress": 0.631578947368421,
+      "shaders": {
+        "pending": 11,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 12.517727999999998,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 8 to go · 92 per cent",
+      "bar": "92"
+    },
+    {
+      "t": 23227.400000000373,
+      "loaded": true,
+      "progress": 0.9473684210526315,
+      "shaders": {
+        "pending": 20,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 12.848575999999998,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 21 to go · 91 per cent",
+      "bar": "91"
+    },
+    {
+      "t": 25617,
+      "loaded": true,
+      "progress": 1,
+      "shaders": {
+        "pending": 26,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 12.633392,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 26 to go · 91 per cent",
+      "bar": "91"
+    },
+    {
+      "t": 27979.599999999627,
+      "loaded": true,
+      "progress": 1,
+      "shaders": {
+        "pending": 38,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 12.633392,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 26 to go · 91 per cent",
+      "bar": "91"
+    },
+    {
+      "t": 30336.699999999255,
+      "loaded": true,
+      "progress": 1,
+      "shaders": {
+        "pending": 26,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 13.367615999999996,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 13 to go · 92 per cent",
+      "bar": "92"
+    },
+    {
+      "t": 31753.599999999627,
+      "loaded": true,
+      "progress": 1,
+      "shaders": {
+        "pending": 28,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 13.179424,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 7 to go · 92 per cent",
+      "bar": "92"
+    },
+    {
+      "t": 33151.59999999963,
+      "loaded": true,
+      "progress": 1,
+      "shaders": {
+        "pending": 4,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 12.633392,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 8 to go · 92 per cent",
+      "bar": "92"
+    },
+    {
+      "t": 35166.800000000745,
+      "loaded": true,
+      "progress": 1,
+      "shaders": {
+        "pending": 6,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 12.409248,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 4 to go · 92 per cent",
+      "bar": "92"
+    },
+    {
+      "t": 37149.59999999963,
+      "loaded": true,
+      "progress": 1,
+      "shaders": {
+        "pending": 0,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 7.186479999999998,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Settling · 99 per cent",
+      "bar": "99"
+    },
+    {
+      "t": 39284.90000000037,
+      "loaded": true,
+      "progress": 1,
+      "shaders": {
+        "pending": 4,
+        "held": 0,
+        "building": 0
+      },
+      "machine": {
+        "backend": "webgpu",
+        "tier": "T2",
+        "level": 0,
+        "internal": 1,
+        "source": "gpu",
+        "gpuMs": 7.011296000000001,
+        "pixels": 7372800,
+        "adapter": null
+      },
+      "weather": "sunny",
+      "line": "Building the shaders · 3 to go · 92 per cent",
+      "bar": "92"
+    }
+  ],
+  "errors": []
+}

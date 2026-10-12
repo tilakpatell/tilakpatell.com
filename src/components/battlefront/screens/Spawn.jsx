@@ -37,7 +37,10 @@ function SpawnTree({ tree, deploy, points = 0, name = (o) => o.id, title = 'Depl
   const tell = useRef(null);
   tell.current = () => first && onPick?.(first);
   const firstId = first?.id ?? null;
-  useEffect(() => tell.current(), [firstId]);
+  // (in braces: onPick answers with the world's reply, which an effect must not return)
+  useEffect(() => {
+    tell.current();
+  }, [firstId]);
   const chosen = rows.find((r) => r.id === picked && r.affordable) ?? first;
   const pick = (o) => {
     if (!o.affordable) return;

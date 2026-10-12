@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { basisuPath, encodeImage } from '../ktx2.mjs';
-import { normalPng, ormPng, parseDerived, unpackKtx2, weaponRecipes } from './bf2017-textures.mjs';
+import { normalPng, ormPng, parseDerived, specularFactorOf, unpackKtx2, weaponMaterial } from './bf2017-textures.mjs';
 
 const sharp = createRequire(createRequire(import.meta.url).resolve('ndarray-pixels'))('sharp');
 const png = (size, rgba) => sharp({ create: { width: size, height: size, channels: 4, background: { r: rgba[0], g: rgba[1], b: rgba[2], alpha: rgba[3] / 255 } } }).png().toBuffer();
@@ -28,23 +28,23 @@ describe('the 2017 drop’s textures', () => {
     expect(parseDerived(undefined)).toEqual({ normal: [], orm: [] });
   });
 
-  it('mends a weapon preset’s ORM recipe: the metal from the _Mask’s green, rebuilt', () => {
-    // (the E-11 as the export writes it: the uploader read the metal from the NAM's blue, the wear mask)
-    const derived = ['normal:Gameplay/Equipment/Rifles/E11/T_E11_NAM', 'orm:Gameplay/Equipment/Rifles/E11/T_E11_NAM:ao=Gameplay/Equipment/Rifles/E11/T_E11_NAM|a;rough=Gameplay/Equipment/Rifles/E11/T_E11_CS|a;metal=Gameplay/Equipment/Rifles/E11/T_E11_NAM|b'];
-    const weapon = { name: 'M_E11', extras: { shader: 'Shaders/Presets/Walrus/SS_WeaponsPreset', textures: { _BaseColor: 'textures/gameplay/equipment/rifles/e11/t_e11_cs.png', _Mask: 'textures/gameplay/equipment/rifles/e11/t_e11_rgb.png', _Normal: 'textures/gameplay/equipment/rifles/e11/t_e11_nam.png' } } };
-    expect(weaponRecipes(derived, [weapon])).toEqual([...derived, 'orm:Gameplay/Equipment/Rifles/E11/T_E11_NAM:ao=Gameplay/Equipment/Rifles/E11/T_E11_NAM|a;rough=Gameplay/Equipment/Rifles/E11/T_E11_CS|a;metal=gameplay/equipment/rifles/e11/t_e11_rgb|g;rebuild']);
-    // the alpha and transparent presets too; a lens (no maps) and a mended line pass through
-    const alpha = { extras: { ...weapon.extras, shader: 'Shaders/Presets/Walrus/SS_WeaponsPreset_Alpha' } };
-    const lens = { extras: { shader: 'Shaders/Presets/Walrus/SS_WeaponPresetLens', textures: {} } };
-    const once = weaponRecipes(derived, [lens, alpha]);
-    expect(once).toHaveLength(3);
-    expect(weaponRecipes(once, [alpha])).toEqual(once);
-    // another shader's ORM, and a NAM the weapon does not bind (the DLT-19X carries the DLT-19's), stay as they were
-    const soldier = { extras: { shader: 'Shaders/presets/SS_CharactersPreset_MSRAO', textures: { MSRAO: 'textures/characters/x/t_x_msr.png' } } };
-    expect(weaponRecipes(derived, [soldier])).toBe(derived);
-    const other = ['orm:Gameplay/Equipment/Heavy/DLT19/T_DLT19_NAM:ao=Gameplay/Equipment/Heavy/DLT19/T_DLT19_NAM|a;metal=Gameplay/Equipment/Heavy/DLT19/T_DLT19_NAM|b'];
-    expect(weaponRecipes(other, [weapon])).toEqual(other);
-    expect(weaponRecipes(undefined, undefined)).toEqual([]);
+  it('knows a Walrus weapon preset: no occlusion, the game’s reflectance 0.5, the uploader’s channels kept', () => {
+    // (the game's shader: metal = NAM.b, smoothness = CS.a, reflectance 0.5, no occlusion;
+    // the _Mask gates the weathering only: bf2-re findings/18-textures.md)
+    for (const s of ['Shaders/Presets/Walrus/SS_WeaponsPreset', 'Shaders/Presets/Walrus/SS_WeaponsPreset_Alpha', 'Shaders/Presets/Walrus/SS_WeaponsPreset_TransparentDepth', 'Shaders/Presets/Walrus/SS_WeaponPreset_Transparancy']) expect(weaponMaterial(s), s).toEqual({ reflectance: 0.5, occlusion: false });
+    for (const s of ['Shaders/presets/SS_CharactersPreset_MSRAO', 'Shaders/Presets/SS_PropsPreset', '', undefined]) expect(weaponMaterial(s), String(s)).toBe(null);
+    // the uploader's recipe for a weapon is the game's: nothing is marked to rebuild
+    const [e11] = parseDerived(['orm:Gameplay/Equipment/Rifles/E11/T_E11_NAM:ao=Gameplay/Equipment/Rifles/E11/T_E11_NAM|a;rough=Gameplay/Equipment/Rifles/E11/T_E11_CS|a;metal=Gameplay/Equipment/Rifles/E11/T_E11_NAM|b']).orm;
+    expect(e11).toMatchObject({ metal: { map: 'Gameplay/Equipment/Rifles/E11/T_E11_NAM', ch: 'b' }, rough: { map: 'Gameplay/Equipment/Rifles/E11/T_E11_CS', ch: 'a' }, rebuild: false });
+  });
+
+  it('turns Frostbite’s reflectance into glTF’s specular factor', () => {
+    // F0 = 0.16·r² against glTF's 0.04: a weapon's 0.5 is the default, 0.25 a quarter of it, above 0.5 clamped
+    expect(specularFactorOf(0.5)).toBe(1);
+    expect(specularFactorOf(0.25)).toBeCloseTo(0.25, 6);
+    expect(specularFactorOf(0.4)).toBeCloseTo(0.64, 6);
+    expect(specularFactorOf(1)).toBe(1);
+    expect(specularFactorOf(0)).toBe(0);
   });
 
   it('packs occlusion, roughness (from smoothness) and metal as glTF wants them', async () => {
@@ -55,7 +55,7 @@ describe('the 2017 drop’s textures', () => {
     expect((await pixel(plain)).slice(0, 3)).toEqual([255, 128, 128]);
   });
 
-  it('builds a mended ORM from its sources before the uploader’s own PNG', async () => {
+  it('builds an ORM marked rebuild from its sources before the uploader’s own PNG', async () => {
     const { mkdir } = await import('node:fs/promises');
     const { resolveImage } = await import('./bf2017-textures.mjs');
     const root = await mkdtemp(join(tmpdir(), 'bf2017-orm-'));
@@ -70,14 +70,16 @@ describe('the 2017 drop’s textures', () => {
     const own = await resolveImage(at, { root, derived: [stale], unpackDir: join(root, 'unpacked') });
     expect(own.from).toBe('x_nam__orm_ab12.png');
     expect((await pixel(own.png)).slice(0, 3)).toEqual([255, 200, 7]);
-    const mended = await resolveImage(at, { root, derived: weaponRecipes([stale], [{ extras: { shader: 'SS_WeaponsPreset', textures: { _Normal: 'textures/a/x_nam.png', _Mask: 'textures/a/x_rgb.png' } } }]), unpackDir: join(root, 'unpacked') });
+    // (a recipe of the site's own, marked rebuild, wins over the uploader's PNG)
+    const rebuilt = [stale, 'orm:A/x_nam:ao=A/x_nam|a;rough=A/x_cs|a;metal=A/x_rgb|g;rebuild'];
+    const mended = await resolveImage(at, { root, derived: rebuilt, unpackDir: join(root, 'unpacked') });
     expect(mended.from).toBe('x_nam.png + x_cs.png + x_rgb.png (orm, rebuilt)');
     expect((await pixel(mended.png)).slice(0, 3)).toEqual([255, 200, 230]);
     // (the export's own GLBs name the derived map as the uploader's PNG)
-    const asPng = await resolveImage(at.replace(/\.ktx2$/, '.png'), { root, derived: weaponRecipes([stale], [{ extras: { shader: 'SS_WeaponsPreset', textures: { _Normal: 'textures/a/x_nam.png', _Mask: 'textures/a/x_rgb.png' } } }]), unpackDir: join(root, 'unpacked') });
+    const asPng = await resolveImage(at.replace(/\.ktx2$/, '.png'), { root, derived: rebuilt, unpackDir: join(root, 'unpacked') });
     expect((await pixel(asPng.png)).slice(0, 3)).toEqual([255, 200, 230]);
-    // a mask not on disk: the uploader's own PNG, else its recipe, as before
-    const gone = weaponRecipes([stale], [{ extras: { shader: 'SS_WeaponsPreset', textures: { _Normal: 'textures/a/x_nam.png', _Mask: 'textures/a/x_missing.png' } } }]);
+    // a map not on disk: the uploader's own PNG, else its recipe, as before
+    const gone = [stale, 'orm:A/x_nam:ao=A/x_nam|a;rough=A/x_cs|a;metal=A/x_missing|g;rebuild'];
     expect((await resolveImage(at, { root, derived: gone, unpackDir: join(root, 'unpacked') })).from).toBe('x_nam__orm_ab12.png');
     const { rm } = await import('node:fs/promises');
     await rm(join(dir, 'x_nam__orm_ab12.png'));

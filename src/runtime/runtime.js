@@ -488,6 +488,12 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     get tier() {
       return tier;
     },
+    // (the chip's own clock on the renderer that is up, lib/three/gpuTime,
+    // or null: a world's waiting screen reads its median for the pace's
+    // recommendation)
+    get gpuClock() {
+      return gfx?.renderer ? (clocks.get(gfx.renderer) ?? null) : null;
+    },
     get failure() {
       return failure;
     },

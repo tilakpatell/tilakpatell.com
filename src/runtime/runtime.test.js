@@ -1004,6 +1004,7 @@ describe('the picture’s source and cadence (lane N2)', () => {
     expect(gpuClock).toHaveBeenCalledTimes(1);
     expect(gpuClock).toHaveBeenCalledWith(gfx.renderer);
     expect(quality.setSource).toHaveBeenLastCalledWith('gpu', expect.objectContaining({ gpuTime: clock, fps: null, tier: null }));
+    expect(rt.gpuClock).toBe(clock);
   });
 
   it('without a clock a node world keeps the pace, and the classic renderer says so', async () => {

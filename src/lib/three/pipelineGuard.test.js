@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { guardPipelines, rendererAs } from './pipelineGuard';
+import { guardOf, guardPipelines, rendererAs } from './pipelineGuard';
 
 // three's renderer, as far as the guard sees it: Pipelines asked with no
 // promise list makes the pipeline in the frame and given one pushes a
@@ -20,9 +20,10 @@ const fakeRenderer = ({ webgl = false } = {}) => {
   const nodes = {
     nodeBuilderCache: new Map(),
     builds: 0,
+    started: [],
     seen: [],
-    queue: [],
-    busy: false,
+    _buildQueue: [],
+    _buildInProgress: false,
     get: (ro) => states.get(ro) ?? states.set(ro, {}).get(ro),
     getForRenderCacheKey: (ro) => ro.key,
     _createNodeBuilder: (ro, material) => ({ renderer, material, ro }),
@@ -31,14 +32,15 @@ const fakeRenderer = ({ webgl = false } = {}) => {
       nodes.seen.push({ id: ro.id, mrt: b.renderer.getMRT(), target: b.renderer.getRenderTarget(), real: b.renderer === renderer });
       return new Promise((res) => setTimeout(() => res(nodes.nodeBuilderCache.get(ro.key)), 0));
     },
-    process() {
-      if (nodes.busy || !nodes.queue.length) return;
-      nodes.busy = true;
+    // (three's chain: the next build in the microtask of the last one's landing)
+    _processBuildQueue() {
+      if (nodes._buildInProgress || !nodes._buildQueue.length) return;
+      nodes._buildInProgress = true;
       nodes
-        .queue.shift()()
+        ._buildQueue.shift()()
         .then(() => {
-          nodes.busy = false;
-          nodes.process();
+          nodes._buildInProgress = false;
+          nodes._processBuildQueue();
         });
     },
     getForRenderDeferred(ro) {
@@ -49,13 +51,14 @@ const fakeRenderer = ({ webgl = false } = {}) => {
       if (!data.pending) {
         data.pending = true;
         nodes.builds++;
-        nodes.queue.push(() =>
-          nodes.build(ro).then(() => {
+        nodes._buildQueue.push(() => {
+          nodes.started.push({ id: ro.id, at: performance.now() });
+          return nodes.build(ro).then(() => {
             nodes.nodeBuilderCache.set(ro.key, { key: ro.key });
             data.pending = false;
-          }),
-        );
-        nodes.process();
+          });
+        });
+        nodes._processBuildQueue();
       }
       return null;
     },
@@ -187,6 +190,9 @@ describe('guardPipelines', () => {
     expect(list).toHaveLength(1);
     expect(guard.pending()).toBe(0);
     expect(guardPipelines(r)).toBe(guard);
+    expect(guardOf(r)).toBe(guard);
+    expect(guardOf(null)).toBe(null);
+    expect(guardOf({})).toBe(null);
   });
 
   it('leaves an object out of the frame while its shader builds off it, and draws it once built', async () => {
@@ -199,7 +205,7 @@ describe('guardPipelines', () => {
     expect(guard.held()).toBe(3);
     // (nothing is queued until the frame is over)
     expect(r._nodes.builds).toBe(0);
-    await tick(40);
+    await tick(150);
     expect(r._nodes.builds).toBe(2);
     draw(r, 'a');
     draw(r, 'b');
@@ -207,6 +213,23 @@ describe('guardPipelines', () => {
     draw(r, 'c', 'a');
     expect(r.drawn).toEqual(['a', 'b', 'c']);
     expect(r._nodes.builds).toBe(2);
+  });
+
+  it('breaks three’s chain of builds every `run` for a timer task, and puts the chain back when undone', async () => {
+    const r = fakeRenderer();
+    const timers = vi.spyOn(globalThis, 'setTimeout');
+    const guard = guardPipelines(r, { run: 2 });
+    const wrapped = r._nodes._processBuildQueue;
+    for (const id of ['a', 'b', 'c', 'd', 'e']) draw(r, id);
+    await tick(150);
+    expect(r._nodes.started.map((s) => s.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    // (a and b back to back from the queue, c from a timer after b, d from c's landing, e from a timer)
+    const breaks = timers.mock.calls.filter(([fn, ms]) => ms === 0 && String(fn).includes('origProcess')).length;
+    expect(breaks).toBe(2);
+    timers.mockRestore();
+    guard.dispose();
+    expect(r._nodes._processBuildQueue).not.toBe(wrapped);
+    expect(r._nodes._buildQueue).toEqual([]);
   });
 
   it('builds each object under the pass it was drawn in, through a stand-in, and never moves the renderer', async () => {
@@ -223,7 +246,7 @@ describe('guardPipelines', () => {
     // (the frame over: the renderer back at nothing)
     r._mrt = null;
     r._renderTarget = null;
-    await tick(40);
+    await tick(150);
     expect(r._nodes.seen).toEqual([
       { id: 'a', ...lit, real: false },
       { id: 'b', ...plain, real: false },

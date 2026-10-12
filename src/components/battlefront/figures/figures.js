@@ -3,10 +3,20 @@
 // pack: the game's own clips under the site's names) as locomotion.js says
 // from what the sim says. One figure an entity, made when it first appears
 // in the view and freed when it leaves; placed between the sim's last two
-// steps by `alpha`. A walking clip plays at the pace that puts its feet on
-// the ground the body crosses (locomotion.js's rateFor over its clipSpeed):
-// the pack's clips play in place while the sim moves the body, so a clip at
-// its own pace under a body moved at another slides.
+// steps by `alpha`.
+//
+// The walk is the game's blend (locomotion.js's locoBlend, from bf2-re's
+// finding 24): on the move every loco clip the pack has is an action on
+// the mixer, the two nearest directions weighted by the velocity's angle
+// against the facing, the gaits by speed between the clips' own paces, all
+// of them slaved to one stride phase (each clip's timeScale is the phase's
+// rate times its own stride period, measured on the body by stride.js, and
+// each starts at its own offset), so a change of direction or gait moves
+// weights and never cuts a clip; the weights ease over CROSSFADE. The
+// pack's clips play in place while the sim moves the body, and the phase
+// runs at the body's speed over the blend's pace (rateFor), so the feet
+// stay on the ground the body crosses. Standing, falling, rolling and dying
+// are one clip at a time, eased in the same way.
 //
 // Bodies: Hoth's Galactic Assault puts the Empire (team 2, the attackers:
 // maps/hoth.stages.json) in snowtroopers and the Rebels (team 1) in Hoth
@@ -37,7 +47,8 @@ import { stancePackUrl } from '../../../lib/three/walrusStance.js';
 import { stanceClips } from '../../../lib/three/walrusSets/stance.js';
 import { faceAlongZ } from './facing.js';
 import { createHeld, heldOf } from './held.js';
-import { CROSSFADE, clipSpeed, packClip, packFallback, rateFor, stateFor } from './locomotion.js';
+import { CROSSFADE, LOCO_STATES, clipSpeed, locoBlend, locoClips, packClip, packFallback, relAngle, stateFor, timeAt } from './locomotion.js';
+import { strideOf } from './stride.js';
 
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
 export const KINDS = { dark: 'snowtrooper', light: 'hothtrooper' };
@@ -95,7 +106,10 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
   let gone = false;
 
   function make(e) {
-    const f = { model: null, mixer: null, clips: null, sockets: null, actions: new Map(), speeds: new Map(), clip: null, last: null, cur: null, weapon: null, stance: null };
+    // (actions: every clip played so far; weights: each one's, eased;
+    // loco: the names on the stride phase; phase in strides; walking: on
+    // the move last frame, so a start seats every loco action at the phase)
+    const f = { model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null };
     figs.set(e.id, f);
     const kind = kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
     loadBody(bodyUrl(kind))
@@ -150,30 +164,94 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
     return f.speeds.get(clip);
   };
 
-  // s: stateFor's { state, speed }, the speed setting the pace every frame
-  function play(f, name, s) {
-    const has = (n) => Boolean(f.clips[n]);
-    const fallback = packFallback(name);
-    const clip = resolveClip(name, has) ?? (fallback && resolveClip(fallback, has)) ?? (has('idle') ? 'idle' : null);
-    if (!clip) return;
-    if (clip !== f.clip) start(f, clip);
-    f.actions.get(clip).timeScale = rateFor(s.state, s.speed, paceOf(f, clip));
+  // a clip's pace and its stride's period, for the blend
+  const infoOf = (f, name) => ({ pace: paceOf(f, name), period: strideOf(f.model, name, f.clips[name])?.period ?? f.clips[name].duration });
+
+  // the rings a stance plays on this body, kept while its clips are the same
+  function ringsOf(f, stance) {
+    const key = `${stance}:${f.stance}:${Object.keys(f.clips).length}`;
+    if (f.ringsKey !== key) {
+      f.rings = locoClips(stance, { key: f.stance, has: (n) => Boolean(f.clips[n]) });
+      f.ringsKey = key;
+      f.loco = new Set(f.rings.flat().map((r) => r.name));
+    }
+    return f.rings;
   }
 
-  function start(f, clip) {
-    let a = f.actions.get(clip);
+  // an action playing at no weight, made once; a loco one seated on the phase
+  function ensure(f, name) {
+    let a = f.actions.get(name);
     if (!a) {
-      a = f.mixer.clipAction(f.clips[clip]);
-      if (ONCE.has(clip)) {
+      a = f.mixer.clipAction(f.clips[name]);
+      if (ONCE.has(name)) {
         a.setLoop(THREE.LoopOnce, 1);
         a.clampWhenFinished = true;
       }
-      f.actions.set(clip, a);
+      a.play();
+      a.setEffectiveWeight(0);
+      f.actions.set(name, a);
+      f.weights.set(name, 0);
+      if (f.loco.has(name)) a.time = timeAt(strideOf(f.model, name, f.clips[name]), f.phase, f.clips[name].duration);
     }
-    const was = f.clip ? f.actions.get(f.clip) : null;
-    a.reset().play();
-    if (was) a.crossFadeFrom(was, CROSSFADE, false);
+    return a;
+  }
+
+  // what a frame wants playing: on the move the blend's weights, every loco
+  // action in step on the phase; else one clip. Sets f.clip to the lead.
+  function wanted(f, e, s, dt) {
+    const has = (n) => Boolean(f.clips[n]);
+    if (LOCO_STATES.has(s.state) && s.speed > 0.2) {
+      const rings = ringsOf(f, s.state === 'crouchWalk' ? 'crouch' : 'stand');
+      if (rings.length) {
+        const b = locoBlend({ state: s.state, speed: s.speed, angle: relAngle(e.yaw ?? 0, e.vel ?? [0, 0]) }, rings, (n) => infoOf(f, n));
+        // (from a stand: the feet passing, every loco action seated there)
+        const seat = !f.walking;
+        if (seat) f.phase = 0;
+        f.walking = true;
+        for (const name of f.loco) {
+          const a = ensure(f, name);
+          const clip = f.clips[name];
+          if (seat) a.time = timeAt(strideOf(f.model, name, clip), f.phase, clip.duration);
+          a.timeScale = b.rate * (infoOf(f, name).period ?? clip.duration);
+        }
+        f.phase += b.rate * dt;
+        let lead = null;
+        for (const [name, w] of Object.entries(b.weights)) if (!lead || w > b.weights[lead]) lead = name;
+        f.clip = lead;
+        return b.weights;
+      }
+    }
+    f.walking = false;
+    for (const name of f.loco) if (f.actions.has(name)) f.actions.get(name).timeScale = 0;
+    const name = packClip(s, { stance: f.stance });
+    const fallback = packFallback(name);
+    const clip = resolveClip(name, has) ?? (fallback && resolveClip(fallback, has)) ?? (has('idle') ? 'idle' : null);
+    if (!clip) return {};
+    const a = ensure(f, clip);
+    if (clip !== f.clip) {
+      // (a one-shot from its start; a loop where it was)
+      if (ONCE.has(clip) || !a.isRunning()) a.reset();
+      a.play();
+      a.timeScale = 1;
+    }
     f.clip = clip;
+    return { [clip]: 1 };
+  }
+
+  // every action's weight toward what the frame wants, CROSSFADE from 0 to
+  // 1; a one-clip action faded out is stopped, a loco one stays in step
+  function blendTo(f, targets, dt) {
+    // (nothing playing yet, a body just made: its first pose at once, not eased up from the bind pose)
+    let step = CROSSFADE > 0 ? dt / CROSSFADE : 1;
+    if (![...f.weights.values()].some((w) => w > 0)) step = 1;
+    for (const [name, a] of f.actions) {
+      const want = targets[name] ?? 0;
+      const was = f.weights.get(name) ?? 0;
+      const w = was + Math.max(-step, Math.min(step, want - was));
+      f.weights.set(name, w);
+      a.setEffectiveWeight(w);
+      if (w <= 0 && want <= 0 && !f.loco.has(name) && a.isRunning()) a.stop();
+    }
   }
 
   return {
@@ -217,7 +295,7 @@ export function createFigures({ scene, loadBody = (url) => loadWalrusBody(url, {
         f.model.visible = e.visible !== false;
         arm(f, e.weapon ?? null);
         const s = stateFor(e);
-        play(f, packClip(s, { stance: f.stance }), s);
+        blendTo(f, wanted(f, e, s, dt), dt);
         f.mixer.update(dt);
       }
       for (const [id, f] of figs) {

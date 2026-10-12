@@ -15,26 +15,29 @@
 // scattering alone puts it at twelve times the zenith; a real sky's
 // extinction and second bounce keep it near three). Below the horizon,
 // the ground colour; the record's first cloud layer tints the upper sky by
-// the entry's cover. The disc is the record's SunScale (its luminance),
-// dimmed by the air between.
+// the entry's cover. The sun is the game's (the owner's bf2-re study,
+// findings 02: the sky program's disc): a Henyey–Greenstein lobe about the
+// sun's direction with g = 1 − SunSize, (1 − g²)² / (4π (1 + g² − 2 g c)^1.5)
+// clamped to 1, in SunColor × SunScale (the record's 120,000 nits on Hoth,
+// at the site's exposure: entry.js's sunScale), added to the dome, the
+// painted or the modelled, with no air between (`sunLobe`, pure).
 //
 // The record's painted panorama (lane Q6, `panorama`: grade.js's
 // pictureOf(...).panorama with its loaded `texture`): drawn behind the sun's
 // disc, over the scattering above the horizon, faded in over
 // PANORAMA_FADE so the ground's colour below the horizon stays the model's.
-// The painted sky is 0…1 (the bucket's KTX2 is clamped), so it is scaled to
-// the model where the two meet: `gain` makes the panorama's horizon row
-// (its linear mean, measured on the texture: `horizon`) as bright as the
-// model's sky at PANORAMA_MEET, averaged round the horizon (panoramaGain,
-// pure, from the same calibrated luminance as the model: the record's
-// LuminanceScale through calibrate.js), so the blend shows no band; the
-// gain follows a weather's crossfade. The mapping is grade.js's
-// panoramaUV, mirrored in the shader. The model's disc stays on top (the
-// painted sun is clipped at 1).
+// The painting is scaled by the record's LuminanceScale at the site's
+// exposure (`gain`: panoramaGain, pure, the same calibrated luminance as the
+// model's, through calibrate.js), as the game's sky shader scales it; the
+// gain follows a weather's crossfade. The bucket's UASTC copy is 0…1 (its
+// sun and bright cloud clipped at white); lane W's HDR copy keeps them
+// (apply.js picks it by tier). The mapping is grade.js's panoramaUV,
+// mirrored in the shader. The sun's lobe is added over either.
 //
 // createSky(entry, { radius, panorama }) → Promise<{ mesh, uniforms, set(params), setHorizon(h), setPanorama({ texture, rotation, horizon }), update(camera), envTexture(renderer), dispose }>
 // skyUniforms(params) → the uniforms' plain values   (pure)
 // skyRadiance(dir, values, { disc }) → [r, g, b]   (pure: the shader's sky, for the gain and the tests)
+// sunLobe(c, sunSize) → the sun's share at the cosine c to its direction, 0…1   (pure: the game's HG disc)
 // panoramaGain(params, horizon) → the panorama's scale to the model's horizon   (pure)
 
 import { readEntry } from './entry.js';
@@ -63,6 +66,18 @@ const airMassAt = (c) => {
 };
 const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 
+// The game's sun (findings 02): a Henyey–Greenstein lobe with g = 1 − SunSize,
+// (1 − g²)² over 4π (1 + g² − 2 g c)^1.5, clamped to 1, so the disc is flat
+// at SunScale out to where the lobe falls under 1 (Hoth's SunSize 0.004:
+// about 1°) and a halo past it (12 % at 2°, under 1 % at 5°). The study's
+// listing writes the denominator's product as g·c; read as the HG phase's
+// 2 g c, since with g·c the lobe never reaches 1 and the game draws a disc.
+export function sunLobe(c, sunSize) {
+  const g = 1 - sunSize;
+  const d = Math.max(0, 1 + g * g - 2 * g * c);
+  return Math.min(1, (1 - g * g) ** 2 / (4 * Math.PI * d ** 1.5));
+}
+
 // The shader's skyColor below, on the CPU (keep the two alike)
 export function skyRadiance(dir, v, { disc: withDisc = true } = {}) {
   const l = Math.hypot(dir[0], dir[1], dir[2]) || 1;
@@ -82,8 +97,8 @@ export function skyRadiance(dir, v, { disc: withDisc = true } = {}) {
   const phaseM = (1 - g * g) / (1 + g * g - 2 * g * c) ** 1.5;
   const ms = airMassAt(Math.max(sd[1], 0.02));
   const sunT = ext.map((e) => Math.exp(-e * ms) / Math.exp(-e));
-  const disc = withDisc ? smoothstep(Math.cos(v.sunSize * 1.5), Math.cos(v.sunSize), c) * v.sunScale : 0;
-  const lit = [0, 1, 2].map((i) => ((bR[i] * phaseR + bM * phaseM) / (bR[i] + bM)) * depth[i] * sunT[i] * v.sunColor[i] * v.luminance * ZENITH_SHARE + fex[i] * v.sunColor[i] * disc);
+  const disc = withDisc ? sunLobe(c, v.sunSize) * v.sunScale : 0;
+  const lit = [0, 1, 2].map((i) => ((bR[i] * phaseR + bM * phaseM) / (bR[i] + bM)) * depth[i] * sunT[i] * v.sunColor[i] * v.luminance * ZENITH_SHARE + v.sunColor[i] * disc);
   const cw = v.cover * smoothstep(0, 0.4, d[1]);
   const clouds = lit.map((x, i) => x + (v.cloud[i] * v.luminance * ZENITH_SHARE * (sunT[1] * 0.5 + 0.3) - x) * cw);
   const below = smoothstep(0.02, -0.08, d[1]);
@@ -200,8 +215,11 @@ export async function createSky(entry, { radius = 1000, panorama = null } = {}) 
     const ext = betaR.mul(u.heightR).add(betaM.mul(u.heightM));
     const sunT = exp(ext.mul(ms).negate()).div(exp(ext.negate()));
     const sky = scatter.mul(depth).mul(sunT).mul(u.sunColor).mul(u.luminance).mul(ZENITH_SHARE);
-    const disc = smoothstep(cos(u.sunSize.mul(1.5)), cos(u.sunSize), c).mul(u.sunScale);
-    const sunDisc = fex.mul(u.sunColor).mul(disc);
+    // the game's sun: the HG lobe (sunLobe above, kept alike), flat at SunScale, no air between
+    const gs = float(1).sub(u.sunSize);
+    const gg = gs.mul(gs);
+    const lobe = gg.oneMinus().mul(gg.oneMinus()).div(pow(max(gg.add(1).sub(gs.mul(c).mul(2)), 0), 1.5).mul(4 * Math.PI)).min(1);
+    const sunDisc = u.sunColor.mul(lobe.mul(u.sunScale));
     const lit = sky.add(sunDisc);
     let clouds = mix(lit, u.cloud.mul(u.luminance).mul(ZENITH_SHARE).mul(sunT.y.mul(0.5).add(0.3)), u.cover.mul(smoothstep(0, 0.4, dir.y)));
     if (painted) clouds = mix(clouds, painted(dir).add(sunDisc), smoothstep(PANORAMA_FADE[0], PANORAMA_FADE[1], dir.y));
