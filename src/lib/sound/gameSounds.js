@@ -30,15 +30,23 @@ const lines = () => Object.fromEntries(SITUATIONS.map((s) => [s, null]));
 
 const names = (where, list) => Object.fromEntries(list.map((n) => [`${where}${n}`, null]));
 
+// The Hoth set (scripts/bf2017-sounds.mjs, src/data/bf2017/sounds.json: the
+// Battlefront world plays the whole set by its own names) gives these their
+// first takes: the E-11's close layer, the snow walk, the hit and kill cues.
 export const GAME_SOUNDS = {
   // the saber, its strokes and the duel
   ...names('surface.saber:', ['ignite', 'off', 'swing', 'throw', 'clash', 'deflect']),
   ...names('surface.combat:', ['heavy', 'parry', 'force', 'vent', 'perfect', 'lock', 'boom', 'hit', 'kill', 'dodge', 'broken']),
+  'surface.combat:hit': 'hit-hit-01.mp3',
+  'surface.combat:kill': 'hit-kill-01.mp3',
   // feet on each ground, a blaster's shot, the beasts, the gate
   ...names('surface.step:', ['sand', 'snow', 'grass', 'stone', 'metal', 'mud']),
+  'surface.step:snow': 'step-walk-01.mp3',
   ...names('surface.', ['blast', 'roar', 'crash']),
   // the blasters by weapon, the ships' engines, a fly-by, a hit, a blast
   ...names('universe.gunSound:', ['blaster', 'bowcaster', 'sniper', 'smg', 'westar']),
+  'universe.gunSound:blaster': 'blaster-e11-close-01.mp3',
+  'universe.gunSound:sniper': 'blaster-dlt19x-close-01.mp3',
   ...names('universe.shipEngine:', ['xwing', 'falcon']),
   ...names('universe.', ['flybySound', 'impactSound', 'boomSound']),
   ...names('sfx.', ['laser', 'blast', 'boom', 'saber', 'flyby', 'torpedo', 'hyperspace']),

@@ -1,0 +1,1984 @@
+{
+  "route": "/battlefront/hoth/galacticAssault?gpu=webgpu",
+  "mode": "whole",
+  "quality": "ultra",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "errors": [],
+  "missing": [],
+  "phases": {
+    "waiting": {
+      "sounds": {
+        "played": {},
+        "kinds": {},
+        "starts": 0,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 0,
+        "duck": "none",
+        "music": null,
+        "window": {
+          "top": 20,
+          "until": 0
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "yaw": 0
+        }
+      },
+      "hook": {
+        "buffers": 0,
+        "elements": 3,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3"
+        ]
+      },
+      "parked": true
+    },
+    "ready": {
+      "sounds": {
+        "played": {},
+        "kinds": {},
+        "starts": 0,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 0,
+        "duck": "none",
+        "music": null,
+        "window": {
+          "top": 20,
+          "until": 0
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "yaw": 0
+        }
+      },
+      "hook": {
+        "buffers": 0,
+        "elements": 3,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3"
+        ]
+      },
+      "ready": true
+    },
+    "deployed": {
+      "sounds": {
+        "played": {
+          "ambience.bed": 1,
+          "music.medium": 1,
+          "blaster.rk3.distant": 1,
+          "blaster.noise.distant": 1,
+          "ambience.alien.wampa": 1
+        },
+        "kinds": {
+          "ambience": 2,
+          "music": 1,
+          "blaster": 2
+        },
+        "starts": 5,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 3,
+        "duck": "none",
+        "music": "music.medium",
+        "window": {
+          "top": 79.11906615463104,
+          "until": 13.649999999999999
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            -32.134,
+            313.5422697867767,
+            -957.0956
+          ],
+          "yaw": 2.7471
+        }
+      },
+      "hook": {
+        "buffers": 4,
+        "elements": 4,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ]
+      }
+    },
+    "walked": {
+      "sounds": {
+        "played": {
+          "ambience.bed": 1,
+          "music.medium": 1,
+          "blaster.rk3.distant": 6,
+          "blaster.noise.distant": 3,
+          "ambience.alien.wampa": 1,
+          "step.jog": 11,
+          "ambience.wind.moleWind": 1,
+          "ambience.wind.gusts": 1,
+          "blaster.dlt20a.distant": 7,
+          "step.sprint": 11,
+          "blaster.dlt19x.distant": 3,
+          "ambience.wind.flutters": 1,
+          "blaster.a280.distant": 20,
+          "blaster.e11.distant": 6,
+          "blaster.dlt19.distant": 45,
+          "cloth.crouchDown": 1,
+          "step.walk": 9,
+          "blaster.dh17.distant": 1,
+          "cloth.crouchUp": 1
+        },
+        "kinds": {
+          "ambience": 5,
+          "music": 1,
+          "blaster": 91,
+          "step": 31,
+          "cloth": 2
+        },
+        "starts": 130,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 8,
+        "duck": "none",
+        "music": "music.medium",
+        "window": {
+          "top": 82.76134199024344,
+          "until": 26.55
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            -14.977914183459461,
+            312.05332752988653,
+            -998.3048454225503
+          ],
+          "yaw": 2.7471
+        }
+      },
+      "hook": {
+        "buffers": 129,
+        "elements": 4,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ]
+      },
+      "feet": {
+        "jog": {
+          "moved": 15.2,
+          "seconds": 4,
+          "steps": {
+            "step.jog": 11
+          },
+          "suppressed": 0
+        },
+        "sprint": {
+          "moved": 19.69,
+          "seconds": 3.5,
+          "steps": {
+            "step.sprint": 11
+          },
+          "suppressed": 0
+        },
+        "crouch": {
+          "moved": 9.75,
+          "seconds": 4,
+          "steps": {
+            "cloth.crouchDown": 1,
+            "step.walk": 9,
+            "cloth.crouchUp": 1
+          },
+          "suppressed": 0
+        }
+      }
+    },
+    "fired": {
+      "sounds": {
+        "played": {
+          "ambience.bed": 1,
+          "music.medium": 1,
+          "blaster.rk3.distant": 6,
+          "blaster.noise.distant": 3,
+          "ambience.alien.wampa": 1,
+          "step.jog": 11,
+          "ambience.wind.moleWind": 1,
+          "ambience.wind.gusts": 1,
+          "blaster.dlt20a.distant": 10,
+          "step.sprint": 11,
+          "blaster.dlt19x.distant": 3,
+          "ambience.wind.flutters": 1,
+          "blaster.a280.distant": 27,
+          "blaster.e11.distant": 12,
+          "blaster.dlt19.distant": 45,
+          "cloth.crouchDown": 1,
+          "step.walk": 9,
+          "blaster.dh17.distant": 1,
+          "cloth.crouchUp": 1,
+          "blaster.e11.close": 20,
+          "blaster.hifi": 20,
+          "blaster.noise.close": 20,
+          "overheat.warning": 1,
+          "overheat.overheated": 1,
+          "ambience.ice.pings": 1,
+          "blaster.rt97c.distant": 2,
+          "overheat.reset": 1
+        },
+        "kinds": {
+          "ambience": 6,
+          "music": 1,
+          "blaster": 169,
+          "step": 31,
+          "cloth": 2,
+          "overheat": 3
+        },
+        "starts": 212,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 3,
+        "duck": "none",
+        "music": "music.medium",
+        "window": {
+          "top": 80.45167360550202,
+          "until": 34.6
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            -14.977914183459461,
+            312.05332752988653,
+            -998.3048454225503
+          ],
+          "yaw": 2.7471
+        }
+      },
+      "hook": {
+        "buffers": 211,
+        "elements": 4,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ]
+      },
+      "overheated": true,
+      "cleared": true
+    },
+    "died": {
+      "sounds": {
+        "played": {
+          "ambience.bed": 1,
+          "music.medium": 1,
+          "blaster.rk3.distant": 6,
+          "blaster.noise.distant": 3,
+          "ambience.alien.wampa": 1,
+          "step.jog": 11,
+          "ambience.wind.moleWind": 1,
+          "ambience.wind.gusts": 1,
+          "blaster.dlt20a.distant": 10,
+          "step.sprint": 11,
+          "blaster.dlt19x.distant": 3,
+          "ambience.wind.flutters": 1,
+          "blaster.a280.distant": 27,
+          "blaster.e11.distant": 12,
+          "blaster.dlt19.distant": 45,
+          "cloth.crouchDown": 1,
+          "step.walk": 9,
+          "blaster.dh17.distant": 1,
+          "cloth.crouchUp": 1,
+          "blaster.e11.close": 20,
+          "blaster.hifi": 20,
+          "blaster.noise.close": 20,
+          "overheat.warning": 1,
+          "overheat.overheated": 1,
+          "ambience.ice.pings": 1,
+          "blaster.rt97c.distant": 2,
+          "overheat.reset": 1,
+          "death.scream": 1,
+          "death.fall": 1,
+          "step.land": 1
+        },
+        "kinds": {
+          "ambience": 6,
+          "music": 1,
+          "blaster": 169,
+          "step": 32,
+          "cloth": 2,
+          "overheat": 3,
+          "death": 2
+        },
+        "starts": 215,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 1,
+        "duck": "death",
+        "music": "music.medium",
+        "window": {
+          "top": 92,
+          "until": 36.9
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            -14.977914183459461,
+            312.05332752988653,
+            -998.3048454225503
+          ],
+          "yaw": 2.7471
+        }
+      },
+      "hook": {
+        "buffers": 214,
+        "elements": 4,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ]
+      },
+      "state": "down"
+    },
+    "hunted": {
+      "sounds": {
+        "played": {
+          "ambience.bed": 1,
+          "music.medium": 1,
+          "blaster.rk3.distant": 6,
+          "blaster.noise.distant": 3,
+          "ambience.alien.wampa": 1,
+          "step.jog": 11,
+          "ambience.wind.moleWind": 1,
+          "ambience.wind.gusts": 1,
+          "blaster.dlt20a.distant": 10,
+          "step.sprint": 12,
+          "blaster.dlt19x.distant": 3,
+          "ambience.wind.flutters": 2,
+          "blaster.a280.distant": 28,
+          "blaster.e11.distant": 12,
+          "blaster.dlt19.distant": 52,
+          "cloth.crouchDown": 1,
+          "step.walk": 9,
+          "blaster.dh17.distant": 1,
+          "cloth.crouchUp": 1,
+          "blaster.e11.close": 76,
+          "blaster.hifi": 163,
+          "blaster.noise.close": 117,
+          "overheat.warning": 1,
+          "overheat.overheated": 1,
+          "ambience.ice.pings": 1,
+          "blaster.rt97c.distant": 48,
+          "overheat.reset": 1,
+          "death.scream": 4,
+          "death.fall": 1,
+          "step.land": 1,
+          "ambience.alien.beluga": 1,
+          "ambience.alien.skuaCalls": 1,
+          "blaster.dlt19.close": 40,
+          "hit.first": 1,
+          "hit.hit": 4,
+          "blaster.rt97c.close": 1,
+          "hit.killed": 1,
+          "hit.kill": 1
+        },
+        "kinds": {
+          "ambience": 9,
+          "music": 1,
+          "blaster": 560,
+          "step": 33,
+          "cloth": 2,
+          "overheat": 3,
+          "death": 5,
+          "hit": 7
+        },
+        "starts": 620,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 7,
+        "duck": "none",
+        "music": "music.medium",
+        "window": {
+          "top": 100.82785370316451,
+          "until": 63.300000000000004
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            61.76605716161708,
+            321.9605838115825,
+            -1174.098653718756
+          ],
+          "yaw": -3.127279557435068
+        }
+      },
+      "hook": {
+        "buffers": 619,
+        "elements": 4,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ]
+      },
+      "hunt": {
+        "mate": {
+          "id": "b11",
+          "foe": 58
+        },
+        "deploy": {
+          "ok": true
+        },
+        "looks": 34,
+        "first": 58,
+        "nearest": 19,
+        "bursts": 17,
+        "deaths": 0,
+        "moved": 2
+      }
+    },
+    "battle": {
+      "sounds": {
+        "played": {
+          "ambience.bed": 1,
+          "music.medium": 1,
+          "blaster.rk3.distant": 6,
+          "blaster.noise.distant": 3,
+          "ambience.alien.wampa": 1,
+          "step.jog": 11,
+          "ambience.wind.moleWind": 1,
+          "ambience.wind.gusts": 1,
+          "blaster.dlt20a.distant": 11,
+          "step.sprint": 12,
+          "blaster.dlt19x.distant": 3,
+          "ambience.wind.flutters": 2,
+          "blaster.a280.distant": 28,
+          "blaster.e11.distant": 12,
+          "blaster.dlt19.distant": 52,
+          "cloth.crouchDown": 1,
+          "step.walk": 9,
+          "blaster.dh17.distant": 2,
+          "cloth.crouchUp": 1,
+          "blaster.e11.close": 81,
+          "blaster.hifi": 176,
+          "blaster.noise.close": 126,
+          "overheat.warning": 1,
+          "overheat.overheated": 1,
+          "ambience.ice.pings": 1,
+          "blaster.rt97c.distant": 50,
+          "overheat.reset": 1,
+          "death.scream": 4,
+          "death.fall": 1,
+          "step.land": 1,
+          "ambience.alien.beluga": 1,
+          "ambience.alien.skuaCalls": 1,
+          "blaster.dlt19.close": 44,
+          "hit.first": 1,
+          "hit.hit": 4,
+          "blaster.rt97c.close": 1,
+          "hit.killed": 1,
+          "hit.kill": 1
+        },
+        "kinds": {
+          "ambience": 9,
+          "music": 1,
+          "blaster": 595,
+          "step": 33,
+          "cloth": 2,
+          "overheat": 3,
+          "death": 5,
+          "hit": 7
+        },
+        "starts": 655,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 19,
+        "duck": "none",
+        "music": "music.medium",
+        "window": {
+          "top": 100.45109890355323,
+          "until": 70.60000000000001
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            61.76605716161708,
+            321.9605838115825,
+            -1174.098653718756
+          ],
+          "yaw": -3.127279557435068
+        }
+      },
+      "hook": {
+        "buffers": 657,
+        "elements": 4,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-medium-01.mp3"
+        ]
+      }
+    },
+    "won": {
+      "sounds": {
+        "played": {
+          "ambience.bed": 1,
+          "music.medium": 1,
+          "blaster.rk3.distant": 6,
+          "blaster.noise.distant": 3,
+          "ambience.alien.wampa": 1,
+          "step.jog": 11,
+          "ambience.wind.moleWind": 1,
+          "ambience.wind.gusts": 1,
+          "blaster.dlt20a.distant": 11,
+          "step.sprint": 12,
+          "blaster.dlt19x.distant": 3,
+          "ambience.wind.flutters": 2,
+          "blaster.a280.distant": 28,
+          "blaster.e11.distant": 12,
+          "blaster.dlt19.distant": 52,
+          "cloth.crouchDown": 1,
+          "step.walk": 9,
+          "blaster.dh17.distant": 2,
+          "cloth.crouchUp": 1,
+          "blaster.e11.close": 81,
+          "blaster.hifi": 184,
+          "blaster.noise.close": 134,
+          "overheat.warning": 1,
+          "overheat.overheated": 1,
+          "ambience.ice.pings": 1,
+          "blaster.rt97c.distant": 50,
+          "overheat.reset": 1,
+          "death.scream": 5,
+          "death.fall": 1,
+          "step.land": 1,
+          "ambience.alien.beluga": 1,
+          "ambience.alien.skuaCalls": 1,
+          "blaster.dlt19.close": 52,
+          "hit.first": 1,
+          "hit.hit": 4,
+          "blaster.rt97c.close": 1,
+          "hit.killed": 1,
+          "hit.kill": 1,
+          "music.eor.win": 1
+        },
+        "kinds": {
+          "ambience": 9,
+          "music": 2,
+          "blaster": 619,
+          "step": 33,
+          "cloth": 2,
+          "overheat": 3,
+          "death": 6,
+          "hit": 7
+        },
+        "starts": 681,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 0,
+        "asleep": 0,
+        "buffers": 241,
+        "live": 1,
+        "duck": "none",
+        "music": "music.eor.win",
+        "window": {
+          "top": 97.11102242328639,
+          "until": 72.15
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            61.76605716161708,
+            321.9605838115825,
+            -1174.098653718756
+          ],
+          "yaw": -3.127279557435068
+        }
+      },
+      "hook": {
+        "buffers": 679,
+        "elements": 5,
+        "elementUrls": [
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-intro-01.mp3",
+          "/audio/galaxy/bf2017/music-loading-loop-01.mp3",
+          "/audio/galaxy/bf2017/music-medium-01.mp3",
+          "/audio/galaxy/bf2017/music-eor-win-01.mp3"
+        ],
+        "playing": [
+          "/audio/galaxy/bf2017/music-eor-win-01.mp3"
+        ]
+      }
+    }
+  },
+  "backend": "webgpu",
+  "upMs": 22833,
+  "loadedMs": 32553,
+  "readyMs": 47412,
+  "deploy": {
+    "ok": true,
+    "by": "the waiting screen"
+  },
+  "view": {
+    "player": {
+      "state": "alive",
+      "heat": 0,
+      "overheated": false,
+      "weapon": "e11"
+    },
+    "stage": "TAKE OUT ANY THREATS TO THE AT-ATS",
+    "result": {
+      "winner": 2,
+      "why": "forced"
+    },
+    "entities": 17,
+    "weather": "sunny",
+    "waiting": false
+  },
+  "seconds": 117,
+  "audioRequests": {
+    "/audio/galaxy/bf2017/ambience-alien-beluga-01.mp3": {
+      "bytes": 34892,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-beluga-02.mp3": {
+      "bytes": 37196,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-rayboo-01.mp3": {
+      "bytes": 46412,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-rayboo-02.mp3": {
+      "bytes": 49292,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-skuaCalls-01.mp3": {
+      "bytes": 41516,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-skuaCalls-02.mp3": {
+      "bytes": 40364,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-skuaRoar-01.mp3": {
+      "bytes": 51020,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-skuaRoar-02.mp3": {
+      "bytes": 48428,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-wampa-01.mp3": {
+      "bytes": 43820,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-alien-wampa-02.mp3": {
+      "bytes": 62828,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-bed-01.mp3": {
+      "bytes": 336716,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-cave-01.mp3": {
+      "bytes": 168716,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-ice-cracks-01.mp3": {
+      "bytes": 33740,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-ice-cracks-02.mp3": {
+      "bytes": 55916,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-ice-pings-01.mp3": {
+      "bytes": 3500,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-ice-pings-02.mp3": {
+      "bytes": 6380,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-ice-pings-03.mp3": {
+      "bytes": 6956,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-flutters-01.mp3": {
+      "bytes": 80396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-flutters-02.mp3": {
+      "bytes": 57932,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-gusts-01.mp3": {
+      "bytes": 59660,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-gusts-02.mp3": {
+      "bytes": 70604,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-gusts-03.mp3": {
+      "bytes": 60812,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-moleWind-01.mp3": {
+      "bytes": 32012,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-moleWind-02.mp3": {
+      "bytes": 17036,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-moleWind-03.mp3": {
+      "bytes": 25388,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-wisps-01.mp3": {
+      "bytes": 39212,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/ambience-wind-wisps-02.mp3": {
+      "bytes": 78380,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-close-01.mp3": {
+      "bytes": 8972,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-close-02.mp3": {
+      "bytes": 8108,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-close-03.mp3": {
+      "bytes": 6956,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-close-04.mp3": {
+      "bytes": 8108,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-close-05.mp3": {
+      "bytes": 8684,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-close-06.mp3": {
+      "bytes": 9548,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-distant-01.mp3": {
+      "bytes": 16748,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-distant-02.mp3": {
+      "bytes": 17900,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-distant-03.mp3": {
+      "bytes": 15308,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-distant-04.mp3": {
+      "bytes": 13580,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-distant-05.mp3": {
+      "bytes": 14444,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-a280-distant-06.mp3": {
+      "bytes": 15020,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-close-01.mp3": {
+      "bytes": 9548,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-close-02.mp3": {
+      "bytes": 9548,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-close-03.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-close-04.mp3": {
+      "bytes": 9836,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-close-05.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-close-06.mp3": {
+      "bytes": 9836,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-distant-01.mp3": {
+      "bytes": 19628,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-distant-02.mp3": {
+      "bytes": 19628,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-distant-03.mp3": {
+      "bytes": 18764,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-distant-04.mp3": {
+      "bytes": 21068,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-distant-05.mp3": {
+      "bytes": 19340,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dh17-distant-06.mp3": {
+      "bytes": 19052,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-close-01.mp3": {
+      "bytes": 9260,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-close-02.mp3": {
+      "bytes": 8684,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-close-03.mp3": {
+      "bytes": 8972,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-close-04.mp3": {
+      "bytes": 9260,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-close-05.mp3": {
+      "bytes": 9836,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-close-06.mp3": {
+      "bytes": 10700,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-distant-01.mp3": {
+      "bytes": 9836,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-distant-02.mp3": {
+      "bytes": 10124,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-distant-03.mp3": {
+      "bytes": 8972,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-distant-04.mp3": {
+      "bytes": 7820,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-distant-05.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19-distant-06.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19x-close-01.mp3": {
+      "bytes": 21068,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19x-close-02.mp3": {
+      "bytes": 23948,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19x-close-03.mp3": {
+      "bytes": 23948,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19x-close-04.mp3": {
+      "bytes": 21356,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19x-distant-01.mp3": {
+      "bytes": 21356,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19x-distant-02.mp3": {
+      "bytes": 21932,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19x-distant-03.mp3": {
+      "bytes": 27116,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt19x-distant-04.mp3": {
+      "bytes": 27692,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-close-01.mp3": {
+      "bytes": 9548,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-close-02.mp3": {
+      "bytes": 10700,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-close-03.mp3": {
+      "bytes": 11276,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-close-04.mp3": {
+      "bytes": 10700,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-close-05.mp3": {
+      "bytes": 10700,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-close-06.mp3": {
+      "bytes": 12716,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-distant-01.mp3": {
+      "bytes": 20204,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-distant-02.mp3": {
+      "bytes": 19052,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-distant-03.mp3": {
+      "bytes": 18476,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-distant-04.mp3": {
+      "bytes": 18764,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-distant-05.mp3": {
+      "bytes": 18476,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-dlt20a-distant-06.mp3": {
+      "bytes": 19052,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-close-01.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-close-02.mp3": {
+      "bytes": 8108,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-close-03.mp3": {
+      "bytes": 8108,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-close-04.mp3": {
+      "bytes": 7820,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-close-05.mp3": {
+      "bytes": 8684,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-close-06.mp3": {
+      "bytes": 9548,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-distant-01.mp3": {
+      "bytes": 8108,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-distant-02.mp3": {
+      "bytes": 8108,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-distant-03.mp3": {
+      "bytes": 9260,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-distant-04.mp3": {
+      "bytes": 8108,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-distant-05.mp3": {
+      "bytes": 8972,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-e11-distant-06.mp3": {
+      "bytes": 9836,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-hifi-01.mp3": {
+      "bytes": 2636,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-hifi-02.mp3": {
+      "bytes": 2636,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-hifi-03.mp3": {
+      "bytes": 2924,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-hifi-04.mp3": {
+      "bytes": 2924,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-hifi-05.mp3": {
+      "bytes": 3500,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-hifi-06.mp3": {
+      "bytes": 2636,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-hifi-07.mp3": {
+      "bytes": 2636,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-hifi-08.mp3": {
+      "bytes": 3212,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-close-01.mp3": {
+      "bytes": 8972,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-close-02.mp3": {
+      "bytes": 10124,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-close-03.mp3": {
+      "bytes": 9260,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-close-04.mp3": {
+      "bytes": 8684,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-close-05.mp3": {
+      "bytes": 8972,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-close-06.mp3": {
+      "bytes": 8972,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-distant-01.mp3": {
+      "bytes": 48716,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-distant-02.mp3": {
+      "bytes": 29996,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-distant-03.mp3": {
+      "bytes": 32300,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-distant-04.mp3": {
+      "bytes": 34604,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-distant-05.mp3": {
+      "bytes": 30860,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-noise-distant-06.mp3": {
+      "bytes": 36908,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-passby-01.mp3": {
+      "bytes": 3500,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-passby-02.mp3": {
+      "bytes": 2924,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-passby-03.mp3": {
+      "bytes": 3500,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-passby-04.mp3": {
+      "bytes": 4076,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-passby-05.mp3": {
+      "bytes": 3500,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-passby-06.mp3": {
+      "bytes": 2924,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-passby-07.mp3": {
+      "bytes": 2924,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-passby-08.mp3": {
+      "bytes": 2924,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-reflection-01.mp3": {
+      "bytes": 39212,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-reflection-02.mp3": {
+      "bytes": 40364,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-reflection-03.mp3": {
+      "bytes": 43244,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-reflection-04.mp3": {
+      "bytes": 37484,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-close-01.mp3": {
+      "bytes": 14444,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-close-02.mp3": {
+      "bytes": 14732,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-close-03.mp3": {
+      "bytes": 14732,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-close-04.mp3": {
+      "bytes": 14732,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-close-05.mp3": {
+      "bytes": 14444,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-close-06.mp3": {
+      "bytes": 14732,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-distant-01.mp3": {
+      "bytes": 17900,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-distant-02.mp3": {
+      "bytes": 17900,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-distant-03.mp3": {
+      "bytes": 17036,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-distant-04.mp3": {
+      "bytes": 17900,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-distant-05.mp3": {
+      "bytes": 17900,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rk3-distant-06.mp3": {
+      "bytes": 17036,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-close-01.mp3": {
+      "bytes": 14156,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-close-02.mp3": {
+      "bytes": 13868,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-close-03.mp3": {
+      "bytes": 14732,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-close-04.mp3": {
+      "bytes": 14444,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-close-05.mp3": {
+      "bytes": 15020,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-close-06.mp3": {
+      "bytes": 13292,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-distant-01.mp3": {
+      "bytes": 16460,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-distant-02.mp3": {
+      "bytes": 15884,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-distant-03.mp3": {
+      "bytes": 16172,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-distant-04.mp3": {
+      "bytes": 16172,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-distant-05.mp3": {
+      "bytes": 16172,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/blaster-rt97c-distant-06.mp3": {
+      "bytes": 16460,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-crouchDown-01.mp3": {
+      "bytes": 14732,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-crouchDown-02.mp3": {
+      "bytes": 13868,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-crouchDown-03.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-crouchDown-04.mp3": {
+      "bytes": 16172,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-crouchUp-01.mp3": {
+      "bytes": 9260,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-crouchUp-02.mp3": {
+      "bytes": 11852,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-crouchUp-03.mp3": {
+      "bytes": 12140,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-crouchUp-04.mp3": {
+      "bytes": 13580,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-jump-01.mp3": {
+      "bytes": 13004,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-jump-02.mp3": {
+      "bytes": 13004,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-jump-03.mp3": {
+      "bytes": 10700,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-jump-04.mp3": {
+      "bytes": 10988,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-land-01.mp3": {
+      "bytes": 9836,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-land-02.mp3": {
+      "bytes": 12428,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-land-03.mp3": {
+      "bytes": 15596,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/cloth-land-04.mp3": {
+      "bytes": 17900,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-fall-01.mp3": {
+      "bytes": 14444,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-fall-02.mp3": {
+      "bytes": 21356,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-fall-03.mp3": {
+      "bytes": 21644,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-fall-04.mp3": {
+      "bytes": 17036,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-scream-01.mp3": {
+      "bytes": 20492,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-scream-02.mp3": {
+      "bytes": 21932,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-scream-03.mp3": {
+      "bytes": 22508,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-scream-04.mp3": {
+      "bytes": 19628,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-scream-05.mp3": {
+      "bytes": 20780,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-scream-06.mp3": {
+      "bytes": 18188,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-scream-07.mp3": {
+      "bytes": 18476,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/death-scream-08.mp3": {
+      "bytes": 19340,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-first-01.mp3": {
+      "bytes": 22076,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-first-02.mp3": {
+      "bytes": 21644,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-hit-01.mp3": {
+      "bytes": 2636,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-hit-02.mp3": {
+      "bytes": 2636,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-hit-03.mp3": {
+      "bytes": 2636,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-hit-04.mp3": {
+      "bytes": 2348,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-hit-05.mp3": {
+      "bytes": 2348,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-hit-06.mp3": {
+      "bytes": 2636,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-kill-01.mp3": {
+      "bytes": 13580,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-killed-01.mp3": {
+      "bytes": 8108,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-killed-02.mp3": {
+      "bytes": 10412,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-killed-03.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/hit-killed-04.mp3": {
+      "bytes": 10124,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/music-eor-win-01.mp3": {
+      "bytes": 226172,
+      "status": 206,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/music-loading-intro-01.mp3": {
+      "bytes": 58508,
+      "status": 206,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/music-loading-loop-01.mp3": {
+      "bytes": 1780172,
+      "status": 206,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/music-medium-01.mp3": {
+      "bytes": 508748,
+      "status": 206,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-manual-01.mp3": {
+      "bytes": 19916,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-manual-02.mp3": {
+      "bytes": 16748,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-manual-03.mp3": {
+      "bytes": 17324,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-manual-04.mp3": {
+      "bytes": 16748,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-overheated-01.mp3": {
+      "bytes": 19340,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-overheated-02.mp3": {
+      "bytes": 21932,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-overheated-03.mp3": {
+      "bytes": 27404,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-overheated-04.mp3": {
+      "bytes": 29420,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-reset-01.mp3": {
+      "bytes": 11852,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-reset-02.mp3": {
+      "bytes": 13004,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-reset-03.mp3": {
+      "bytes": 12716,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-reset-04.mp3": {
+      "bytes": 11852,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-warning-01.mp3": {
+      "bytes": 4940,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-warning-02.mp3": {
+      "bytes": 5228,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-warning-03.mp3": {
+      "bytes": 5228,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-warning-04.mp3": {
+      "bytes": 4940,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/overheat-warning-05.mp3": {
+      "bytes": 5228,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jog-01.mp3": {
+      "bytes": 8684,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jog-02.mp3": {
+      "bytes": 8684,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jog-03.mp3": {
+      "bytes": 7820,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jog-04.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jog-05.mp3": {
+      "bytes": 8684,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jog-06.mp3": {
+      "bytes": 8396,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jog-07.mp3": {
+      "bytes": 9548,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jog-08.mp3": {
+      "bytes": 7820,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jump-01.mp3": {
+      "bytes": 12716,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jump-02.mp3": {
+      "bytes": 10412,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jump-03.mp3": {
+      "bytes": 10412,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-jump-04.mp3": {
+      "bytes": 15308,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-land-01.mp3": {
+      "bytes": 10124,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-land-02.mp3": {
+      "bytes": 10124,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-land-03.mp3": {
+      "bytes": 10412,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-land-04.mp3": {
+      "bytes": 8684,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-sprint-01.mp3": {
+      "bytes": 4940,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-sprint-02.mp3": {
+      "bytes": 4940,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-sprint-03.mp3": {
+      "bytes": 4652,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-sprint-04.mp3": {
+      "bytes": 4652,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-sprint-05.mp3": {
+      "bytes": 4652,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-sprint-06.mp3": {
+      "bytes": 4652,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-sprint-07.mp3": {
+      "bytes": 4940,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-sprint-08.mp3": {
+      "bytes": 4652,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-walk-01.mp3": {
+      "bytes": 9836,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-walk-02.mp3": {
+      "bytes": 10124,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-walk-03.mp3": {
+      "bytes": 11276,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-walk-04.mp3": {
+      "bytes": 12716,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-walk-05.mp3": {
+      "bytes": 10988,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-walk-06.mp3": {
+      "bytes": 10988,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-walk-07.mp3": {
+      "bytes": 12140,
+      "status": 200,
+      "type": "audio/mpeg"
+    },
+    "/audio/galaxy/bf2017/step-walk-08.mp3": {
+      "bytes": 12428,
+      "status": 200,
+      "type": "audio/mpeg"
+    }
+  },
+  "summary": {
+    "kinds": {
+      "ambience": 9,
+      "music": 2,
+      "blaster": 619,
+      "step": 33,
+      "cloth": 2,
+      "overheat": 3,
+      "death": 6,
+      "hit": 7
+    },
+    "starts": 681,
+    "names": 39,
+    "late": 0,
+    "failed": 0,
+    "missing": 0,
+    "absent": 0,
+    "asleep": 0,
+    "suppressed": 0,
+    "buffers": 241,
+    "hookBuffers": 679,
+    "hookElements": 5,
+    "files": 245,
+    "bytes": 6992380,
+    "stemFiles": 4,
+    "stemBytes": 2573600,
+    "statuses": {
+      "200": 241,
+      "206": 4
+    },
+    "notFound": 0,
+    "errors": 0
+  }
+}

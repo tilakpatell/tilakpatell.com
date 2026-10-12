@@ -14,7 +14,7 @@
 // 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
 // screen), 'weather' name, 'look' { yaw, pitch } (the player's view, for
 // a shot toward the sun), 'gpu', 'ragdolls' (how many bodies fall, lie
-// and wait: figures/ragdolls.js).
+// and wait: figures/ragdolls.js); `sounds()` the sound player's counter.
 //
 // Until the first deploy the camera is parked in the soldier's own pose at
 // the side's spawn (the game's darkroom: the waiting screen covers it),
@@ -40,10 +40,13 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { STEP, addPlayer, createBattle, deploy, spawnFor, step, view } from './battle.js';
+import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
+import { createSoundPlayer } from './sound/player.js';
+import { PRELOAD, createDirector } from './sound/director.js';
+import { NAMES } from './sound/sounds.js';
 import { litWith, picturesOf } from './picture.js';
 import { headroom, upscaleKind } from '../../lib/three/light/post.js';
 import { headroomAt } from '../../runtime/quality.js';
@@ -56,7 +59,7 @@ const MAX_STEPS = 10; // the sim's steps at most a frame (a tab back from the ba
 export default {
   id: 'battlefront',
   shading: 'nodes',
-  mb: 0,
+  mb: 13, // (WORLD_MB['/battlefront']: the game's sounds; the level pack streams by cell)
   // The pace's steps are the chain's (lowerQuality): the canvas keeps its
   // size and the chain draws under it, upscaled back (lane U's headroom),
   // then sheds passes. Drawn at the screen's own pixels and no sharper:
@@ -124,6 +127,14 @@ export default {
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
     const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask });
     const me = addPlayer(sim, { team: PLAYER_TEAM });
+    // the game's sounds (sound/): the player on the runtime's bus, the
+    // director on the sim's events; the one-shots the first minute needs
+    // fetched now, the stems streamed as they play; nothing heard behind
+    // the waiting screen, where the page plays the loading cue
+    const sound = createSoundPlayer({ context: rt.audio.context, output: () => rt.audio.bus(), load: (url) => rt.assets.audio(url) });
+    // (`me` to the sim is the input's 'player'; the soldier the events name is PLAYER_ID)
+    const director = createDirector({ player: sound, me: PLAYER_ID, team: PLAYER_TEAM });
+    sound.preload([...PRELOAD, ...NAMES.filter((n) => (n.startsWith('blaster.') || n.startsWith('ambience.')) && !PRELOAD.includes(n))]).catch(() => {});
     // the player's soldier in lane 1's sim, once deployed
     const body = () => (sim.player?.id ? sim.sim.entities.get(sim.player.id) : null);
     let picked = null;
@@ -293,13 +304,17 @@ export default {
         if (v.deploy.open && read.deploy && !parked) doDeploy();
         acc = Math.min(acc + dt, STEP * MAX_STEPS);
         let first = true;
+        let stepped = 0;
+        const heard = [];
         while (acc >= STEP) {
           acc -= STEP;
+          stepped += STEP;
           lastAt = body()?.at.slice() ?? null;
           const once = first ? read : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
           first = false;
-          step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]);
+          heard.push(...step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, vent: once.vent, ability: once.ability }]));
         }
+        if (stepped > 0) director.update(view(sim), heard, stepped, { waiting: parked });
         collision?.update(4);
         // (the view again, after the steps: its entities' `at` are the sim's
         // own arrays, live, while their step time `t` and the rest are read
@@ -413,6 +428,8 @@ export default {
       dispose() {
         look.detach();
         input.detach();
+        director.dispose();
+        sound.dispose();
         renderer.toneMappingExposure = baseExposure;
         post?.dispose?.();
         post = null;
@@ -427,7 +444,8 @@ export default {
       },
     };
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    // (`sounds`: the player's counter by name and kind, the duck and the stem in force, the HDR window, for scripts/bf2017-sound-check.mjs)
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     return world;
   },
 };

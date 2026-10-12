@@ -1,0 +1,75 @@
+{
+  "route": "/battlefront/hoth/galacticAssault?gpu=webgpu",
+  "mode": "gone",
+  "quality": "ultra",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "errors": [],
+  "missing": [],
+  "phases": {
+    "short": {
+      "sounds": {
+        "played": {},
+        "kinds": {},
+        "starts": 0,
+        "late": 0,
+        "lateNames": {},
+        "failed": 0,
+        "missing": 0,
+        "absent": 51,
+        "asleep": 0,
+        "buffers": 0,
+        "live": 0,
+        "duck": "none",
+        "music": "music.medium",
+        "window": {
+          "top": 20,
+          "until": 0
+        },
+        "suppressed": 0,
+        "listener": {
+          "at": [
+            -30.60048395736358,
+            313.39957235164695,
+            -960.7791347897072
+          ],
+          "yaw": 2.7471
+        }
+      },
+      "hook": {
+        "buffers": 0,
+        "elements": 0,
+        "elementUrls": [],
+        "playing": []
+      },
+      "moved": 3.99
+    }
+  },
+  "backend": "webgpu",
+  "upMs": 25990,
+  "deploy": {
+    "ok": true
+  },
+  "seconds": 37,
+  "audioRequests": {},
+  "summary": {
+    "kinds": {},
+    "starts": 0,
+    "names": 0,
+    "late": 0,
+    "failed": 0,
+    "missing": 0,
+    "absent": 51,
+    "asleep": 0,
+    "suppressed": 0,
+    "buffers": 0,
+    "hookBuffers": 0,
+    "hookElements": 0,
+    "files": 0,
+    "bytes": 0,
+    "stemFiles": 0,
+    "stemBytes": 0,
+    "statuses": {},
+    "notFound": 0,
+    "errors": 0
+  }
+}
