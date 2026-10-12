@@ -11,7 +11,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { sliceFor } from './lib/library-slice.mjs';
 
 export const SPECIFIER = 'virtual:bf2017-published';
@@ -23,7 +23,10 @@ export const USED = 'src/data/bf2017/library-used.json';
 const read = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
 export async function sliceCode(root = ROOT) {
-  const { gameUrl } = await import(`${root}/src/components/galaxy/surface/catalog/bf2017-slug.js`);
+  // (a file URL, as prerender.mjs and packs.mjs import: a bare Windows path
+  // is "protocol c:" to Node's loader, and every Star Wars surface failed
+  // in the dev server on the owner's desktop)
+  const { gameUrl } = await import(pathToFileURL(join(root, 'src/components/galaxy/surface/catalog/bf2017-slug.js')).href);
   const slice = sliceFor(read(join(root, PUBLISHED)), read(join(root, USED)), { urlFor: gameUrl });
   return `export default ${JSON.stringify(slice)};\n`;
 }
