@@ -12,7 +12,7 @@
 // (lane L's InstancedMeshes) and the ground's own triangles are indexed on
 // the page and a ray is cast down each point, so the answer is what is
 // drawn, at the level of detail it is drawn at, not a mesh's box. The sums
-// are scripts/lib/bf2017-collision.mjs's.
+// are scripts/lib/bf2017-collision-probe.mjs's.
 //
 //   node scripts/bf2017-collision-probe.mjs [--base http://127.0.0.1:5622] [--world hoth] [--mode galacticAssault]
 //     [--at 'x,z;x,z'] [--radius 100] [--step 0.5] [--walks 6] [--quality ultra] [--out <json>] [--chrome <msedge.exe>]
@@ -27,7 +27,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { parseArgs } from './lib/args.mjs';
-import { buriedOf, clustersOf, lookedAt, tableOf, wallsOf } from './lib/bf2017-collision.mjs';
+import { buriedOf, clustersOf, lookedAt, tableOf, wallsOf } from './lib/bf2017-collision-probe.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const BASE = args.base ?? 'http://127.0.0.1:5622';
