@@ -36,7 +36,7 @@ export const WORLD_MB = {
   '/dot-matrix/64': 7, // the castle's and Bob-omb Ridge's texture sets at phone size, two skies, and Mario, the cast and the props (fan-made Sketchfab models, 2 MB)
   '/earth': 2, // NASA's globe at phone size, the stars and the plane
   '/dot-matrix/minecraft': 2, // drawn in code from the pack's tiles: the block strip, the skins and the sky's and HUD's sprites (under a tenth of an MB today)
-  '/battlefront': 1, // Hoth's snow maps at a phone's size (the game's seven ground maps, 0.8 MB at mid; 3.0 at high, 6.7 at ultra: scripts/bf2017-snow.mjs); the level pack itself streams by cell and is not counted here (the world gates nothing: its module's mb is 0)
+  '/battlefront': 1, // Hoth's snow maps at a phone's size (the two normal maps a mid tier reads, 0.25 MB; high's five maps 1.5, ultra's 4.6: scripts/bf2017-snow.mjs prints them; nothing until the owner has published them); the level pack itself streams by cell and is not counted here (the world gates nothing: its module's mb is 0)
 };
 
 // The world a path is in: '/middle-earth/moria' is Middle-earth. Some
