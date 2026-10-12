@@ -35,8 +35,13 @@
 // pipelines link in the frame either way, and its draw never waits on a
 // promise.
 //
-// guardPipelines(renderer, { invalidate }) → { pending(), held(), dispose() } | null
+// guardPipelines(renderer, { invalidate, run }) → { pending(), held(), dispose() } | null
 // rendererAs(renderer, pass) → the stand-in: getMRT() and getRenderTarget() answer the pass's, the rest is the renderer's
+
+// builds three runs back to back before the chain breaks for a timer
+// task: a run is the most the page waits for a turn (four builds of 40
+// to 90 ms)
+const RUN = 4;
 
 export function rendererAs(renderer, pass) {
   // (a build that draws for itself, as the PMREM generator does, saves
@@ -78,7 +83,7 @@ export function rendererAs(renderer, pass) {
   });
 }
 
-export function guardPipelines(renderer, { invalidate = null } = {}) {
+export function guardPipelines(renderer, { invalidate = null, run = RUN } = {}) {
   const pipelines = renderer?._pipelines;
   if (!pipelines || typeof pipelines.getForRender !== 'function') return null;
   if (renderer.backend?.isWebGLBackend) return null;
@@ -115,7 +120,18 @@ export function guardPipelines(renderer, { invalidate = null } = {}) {
     if (builder && ro?.__pass) builder.renderer = rendererAs(renderer, ro.__pass);
     return builder;
   };
-  // (the builds are queued once the frame is over, so the frame's own draw never starts one)
+  // The builds are queued once the frame is over, so the frame's own draw
+  // never starts one. three's buildAsync yields between its stages with
+  // scheduler.yield(), whose continuations go ahead of any new task of
+  // their priority, and its chain goes on to the next queued build in the
+  // microtask of the last one's landing: the whole queue was one run of
+  // continuations until the last build landed, and for those seconds
+  // nothing of normal priority ran: not React's commits (the HUD stood on
+  // the spawn screen 6 to 9 s after the deploy the sim had taken at once),
+  // not a timer. The chain is kept (a build handed over on its own, from a
+  // timer or a frame callback, took 150 to 300 ms where the chain's take
+  // 40, and Hoth's props stayed out of the picture for half a minute) and
+  // broken every RUN builds for a timer task instead (processInRuns).
   const queued = [];
   let scheduled = false;
   const queue = (ro) => {
@@ -127,6 +143,27 @@ export function guardPipelines(renderer, { invalidate = null } = {}) {
       const list = queued.splice(0);
       for (const r of list) nodes.getForRenderDeferred(r);
     });
+  };
+  // three's chain goes on to the next queued build in the microtask of the
+  // last one's landing; every RUN builds it goes on from a timer task
+  // instead, in line with the page's own, so React commits and timers fire
+  // within a run's worth
+  const origProcess = nodes?._processBuildQueue;
+  let done = 0;
+  const processInRuns = function () {
+    if (this._buildInProgress) return;
+    if (this._buildQueue.length === 0) {
+      done = 0;
+      return;
+    }
+    if (done >= run) {
+      // (the build the timer starts is the first of the next run)
+      done = 1;
+      setTimeout(() => origProcess.call(this), 0);
+      return;
+    }
+    done++;
+    origProcess.call(this);
   };
   // (a frame asked for once the held objects may have landed)
   const rearm = () => {
@@ -161,6 +198,7 @@ export function guardPipelines(renderer, { invalidate = null } = {}) {
     // (three keeps the entry in a field of its own, set at construction)
     if (handled) renderer._handleObjectFunction = renderer._renderObjectDirect;
     nodes._createNodeBuilder = createAs;
+    if (typeof origProcess === 'function') nodes._processBuildQueue = processInRuns;
   }
   const guard = {
     pending: () => pending,
@@ -171,6 +209,7 @@ export function guardPipelines(renderer, { invalidate = null } = {}) {
         renderer._renderObjectDirect = origDraw;
         if (renderer._handleObjectFunction === guard.wrappedDraw) renderer._handleObjectFunction = origDraw;
         if (nodes._createNodeBuilder === createAs) nodes._createNodeBuilder = origCreate;
+        if (nodes._processBuildQueue === processInRuns) nodes._processBuildQueue = origProcess;
       }
       delete pipelines.__guard;
     },
