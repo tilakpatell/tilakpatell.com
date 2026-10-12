@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readEntry } from './entry';
 import * as THREE from 'three/webgpu';
-import { PANORAMA_MEET, ZENITH_SHARE, createSky, panoramaGain, skyRadiance, skyUniforms } from './sky';
+import { PANORAMA_MEET, ZENITH_SHARE, createSky, meetGain, panoramaGain, skyRadiance, skyUniforms } from './sky';
 import { panoramaOf } from './grade';
 import hoth from './fixtures/hoth.ve.json';
 
@@ -59,10 +59,14 @@ describe('the painted panorama (lane Q6)', () => {
     // the disc only toward the sun
     expect(lum(skyRadiance(v.sunDir, v))).toBeGreaterThan(lum(skyRadiance(v.sunDir, v, { disc: false })) * 2);
   });
-  it('the gain brings the panorama’s horizon to the model’s where they meet, through the calibrated luminance', () => {
+  it('the gain is the record’s luminance scale, as the game’s sky shader multiplies its painting; meetGain keeps the old fit', () => {
     const p = readEntry(hoth.sunny);
     const v = skyUniforms(p);
-    const g = panoramaGain(p, HORIZON);
+    expect(panoramaGain(p, HORIZON)).toBeCloseTo(p.sky.luminance, 9);
+    // (calibrate.js's factor reaches it: twice the sky's luminance, twice the gain)
+    expect(panoramaGain({ ...p, sky: { ...p.sky, luminance: p.sky.luminance * 2 } }, HORIZON)).toBeCloseTo(p.sky.luminance * 2, 6);
+    expect(panoramaGain(p, null)).toBe(1);
+    const g = meetGain(p, HORIZON);
     let s = 0;
     for (let i = 0; i < 32; i++) {
       const a = (i / 32) * Math.PI * 2;
@@ -70,9 +74,7 @@ describe('the painted panorama (lane Q6)', () => {
       s += lum(skyRadiance([r * Math.sin(a), PANORAMA_MEET, r * Math.cos(a)], v, { disc: false }));
     }
     expect(Math.abs((g * lum(HORIZON)) / (s / 32) - 1)).toBeLessThan(1e-9);
-    // (calibrate.js's factor reaches it: twice the sky's luminance, twice the gain)
-    expect(panoramaGain({ ...p, sky: { ...p.sky, luminance: p.sky.luminance * 2 } }, HORIZON)).toBeCloseTo(g * 2, 6);
-    expect(panoramaGain(p, null)).toBe(1);
+    expect(meetGain(p, null)).toBe(1);
   });
   it('createSky takes the panorama behind the disc, its gain following the weather; without one the sky is as it was', async () => {
     const texture = new THREE.Texture();

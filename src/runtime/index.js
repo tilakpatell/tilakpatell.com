@@ -14,6 +14,7 @@ import { createInput } from './input';
 import { createQuality } from './quality';
 import { readFps } from './cadence';
 import { createPace } from '../lib/three/pace';
+import { createGpuTime } from '../lib/three/gpuTime';
 import { localSaves, worldStore, winOf } from './local';
 import { createAssets } from './assets';
 import { createAudioBus } from './audio';
@@ -87,6 +88,11 @@ export function runtime() {
     calibrate: !/[?&]calibrate=off\b/.test(`${win?.location.search ?? ''}&${win?.location.hash ?? ''}`),
     // (the renderer tier, lib/gpuProbe: probed once on the first 'nodes' world)
     tier: (gfx) => browser().then((m) => m.rendererTier(gfx)),
+    // the chip's own frame time (lib/three/gpuTime) for a node world on
+    // WebGPU: the dynamic-resolution controller steps on it (quality.js's
+    // source 'gpu'); without it every such world paced on the CPU's frame
+    // time, which the renderer's own submit cost dominates
+    gpuClock: (renderer) => createGpuTime(renderer),
   });
   // a world's install (install.js): the same one the gate and /worlds use
   instance.install = installer();
