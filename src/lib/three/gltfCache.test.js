@@ -124,4 +124,25 @@ describe('cloneScene', () => {
     expect(mesh.material).not.toBe(gltf.mesh.material);
     expect(mesh.geometry).toBe(gltf.mesh.geometry);
   });
+
+  it('keeps the parts of a body on one skeleton sharing one in the copy', () => {
+    const gltf = skinned();
+    // (a second part on the same skin, as a glTF mesh of several primitives is)
+    const part = new THREE.SkinnedMesh(gltf.mesh.geometry, new THREE.MeshStandardMaterial());
+    part.bind(gltf.mesh.skeleton);
+    gltf.scene.add(part);
+    // (and one on a skin of its own, which keeps its own)
+    const other = new THREE.Bone();
+    const lone = new THREE.SkinnedMesh(gltf.mesh.geometry, new THREE.MeshStandardMaterial());
+    lone.add(other);
+    lone.bind(new THREE.Skeleton([other]));
+    gltf.scene.add(lone);
+    const clone = cloneScene(gltf);
+    const [a, b, c] = clone.children;
+    expect(a.skeleton).toBe(b.skeleton);
+    expect(a.skeleton).not.toBe(gltf.mesh.skeleton);
+    expect(a.skeleton.bones[0]).toBe(a.children[0]);
+    expect(c.skeleton).not.toBe(a.skeleton);
+    expect(c.skeleton.bones[0]).toBe(c.children[0]);
+  });
 });

@@ -80,7 +80,15 @@ export default {
     // brings them)
     let collision = null;
     let physics = null;
-    const level = createLevel({ scene, tier, texTier: textureTier(tier, rt.video), renderer, world: levelName, onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
+    // (?level=gpu in the address: the level on GPU-first lane N1's scene,
+    // the rows culled by compute and one indirect draw a material group, so
+    // the level costs the frame no JavaScript a draw. Wired, not yet the
+    // default: on Hoth its cull keeps every row out (5,813 of 6,050 culled,
+    // nothing drawn) and the textures its groups hold are disposed under
+    // them; lane L's instanced path draws until that is found)
+    const flags = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search) : null;
+    const gpuScene = rt.gfx.backend === 'webgpu' && flags?.get('level') === 'gpu';
+    const level = createLevel({ scene, tier, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     const figures = createFigures({ scene, ragdolls });
@@ -264,8 +272,10 @@ export default {
         }
       },
       draw({ renderer: r }) {
+        level.beforeRender(camera);
         if (post) post.render();
         else r.render(scene, camera);
+        level.afterRender();
       },
       wants: () => true,
       do(action, arg) {

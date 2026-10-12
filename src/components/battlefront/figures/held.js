@@ -56,11 +56,9 @@ export function createHeld({ load = (url) => loadGLTF(url) } = {}) {
         if (armed.get(fig) !== a || !gltf?.scene) return null;
         const gun = cloneScene(gltf);
         gun.name = `held.${id}`;
+        // (culled by its own bounds at the hand: a gun off screen is not drawn)
         gun.traverse((o) => {
-          if (o.isMesh) {
-            o.castShadow = true;
-            o.frustumCulled = false;
-          }
+          if (o.isMesh) o.castShadow = true;
         });
         socket.updateWorldMatrix(true, false);
         const k = 1 / (socket.getWorldScale(scaleOf).x || 1);
