@@ -194,10 +194,20 @@ const waveTable = (sim, team) => {
   return r.wavesBy ? r.wavesBy[sim.M.sideOf(sim.ga, team)][Math.min(sim.ga.stage ?? 0, r.wavesBy.attack.length - 1)] : r.waves[team];
 };
 
+// A round's length and rate on a battle: the Battle Points' rate, and on a mode that counts
+// reinforcements (Supremacy's ground) how many a side has and how fast the side behind bleeds
+export function applyRound(sim, round) {
+  if (sim.bp) sim.bp.rate = round.bpRate;
+  const m = sim.ga;
+  if (m?.tickets) for (const k of Object.keys(m.tickets)) m.tickets[k] = round.tickets;
+  if (m?.bleedEvery) m.bleedEvery /= round.bleed;
+}
+
 // An Instant Action round's hold on the battle (instantAction.js): each side's caps are its commander's
 // (the bots') and the offers' (the side's), and its AutoPlayers' waves bring its fallen back
 function roundIn(sim) {
   const r = sim.instantAction;
+  applyRound(sim, r);
   sim.bp.limits = {};
   sim.waves = {};
   for (const team of [1, 2]) {
@@ -259,13 +269,15 @@ export function squadBlocks(sim, id, team) {
   return (sq?.members ?? []).filter((m) => m !== id).map((m) => ({ id: m, blocked: blocked(sim.entities.get(m) ?? null, { enemies, now: sim.time }) }));
 }
 
-// what a team has out: heroes and reinforcements standing, with those chosen this wave
-function outOf(sim, team, extra = { heroes: 0, reinforcements: 0 }) {
-  const out = { ...extra };
+// what a team has out: heroes and reinforcements standing, with those chosen
+// this wave, and which ones (a hero is one of a kind: kits.json's MaxCount 1)
+export function outOf(sim, team, extra = { heroes: 0, reinforcements: 0 }) {
+  const out = { heroes: extra.heroes ?? 0, reinforcements: extra.reinforcements ?? 0, units: new Set(extra.units ?? []) };
   for (const e of sim.entities.values()) {
     if (e.team !== team || !e.alive) continue;
     if (e.unit === 'hero') out.heroes++;
     if (e.unit === 'reinforcement') out.reinforcements++;
+    if (e.unit) out.units.add(e.unitId);
   }
   return out;
 }
@@ -311,6 +323,8 @@ export function deploy(sim, id, choice) {
     s.unit = cls.unit;
     s.unitId = cls.unitId;
   }
+  // (the Collection's pick, a crew kind the figure wears: the screens' appearance, carried and nothing else)
+  s.appearance = choice.appearance ?? null;
   protect(s, sim.time);
   if (entry.bot) {
     // a fresh bot takes its squad's orders at once
@@ -332,7 +346,8 @@ export function removeEntity(sim, id) {
 function emit(sim, e) {
   const ev = { t: Math.round(sim.time * 1000) / 1000, ...e };
   sim.events.push(ev);
-  sim.out.push(ev);
+  // (a deploy before the first step: the page's first, from the waiting screen)
+  (sim.out ??= []).push(ev);
 }
 
 // a direction turned by small yaw and pitch offsets (radians)
@@ -377,8 +392,8 @@ function applyInput(sim, inp) {
   if (inp.aim) s.aim = inp.aim;
   s.abilityHeld = inp.abilityHeld ?? 0;
   if (inp.ability) press(s.abilities, inp.ability, sim.time);
-  if (inp.vent) vent(s.gun, sim.time);
-  if (inp.cool) coolPress(s.gun, sim.time);
+  if (inp.vent && s.gun) vent(s.gun, sim.time);
+  if (inp.cool && s.gun) coolPress(s.gun, sim.time);
   if (s.state !== 'roll') move(s, inp.move ?? [0, 0], STEP, sim.nav);
   if (inp.fire) shoot(sim, s, inp.aim ?? chestAhead(s));
   s.interact = !!inp.interact;
@@ -561,7 +576,7 @@ function stepMode(sim) {
       // (an Instant Action round: the AutoPlayers' waves, ai/waves.js, each bot by its own wait; else the ten-second wave)
       const w = sim.waves?.[team] ?? null;
       if (!w && !wave(c, sim.time)) continue;
-      const chosen = { heroes: 0, reinforcements: 0 };
+      const chosen = { heroes: 0, reinforcements: 0, units: [] };
       const squadPicks = new Map();
       for (const entry of [...sim.deploying.values()]) {
         if (entry.team !== team || !entry.bot) continue;
@@ -582,6 +597,7 @@ function stepMode(sim) {
         if (!r.ok) continue;
         if (choice.kind === 'hero') chosen.heroes++;
         if (choice.kind === 'reinforcement') chosen.reinforcements++;
+        if (choice.kind !== 'class') chosen.units.push(choice.id);
         picks.push(sim.entities.get(entry.id).cls.cls);
         squadPicks.set(sq, picks);
       }
@@ -665,6 +681,7 @@ export function view(sim, { player = null } = {}) {
     e.mode = s.brain?.intent?.mode ?? null;
     e.unit = s.unit ?? null;
     e.unitId = s.unitId ?? null; // (the rulebook's hero or reinforcement: the body the figure wears)
+    e.appearance = s.appearance ?? null; // (a skin picked in the Collection: its crew kind)
     e.name = s.name ?? null;
     e.cls = s.cls?.cls ?? null;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;

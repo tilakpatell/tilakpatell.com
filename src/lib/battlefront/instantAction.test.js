@@ -107,14 +107,20 @@ describe('the options', () => {
   const opts = optionsFor(gs, { rulebook: rb, level: 'hoth' });
   const of = (id) => opts.find((o) => o.id === id);
 
-  it('are the game’s own setup options, in the screen’s order', () => {
+  it('are the game’s own setup options, in the screen’s order: the enemy’s before the player’s side’s', () => {
     expect(opts.map((o) => o.id)).toEqual([
-      'mode', 'era', 'team', 'difficulty', 'length', 'bpRate', 'allEraHeroes',
-      'bots.friendly', 'bots.enemy',
-      'heroes.friendly', 'heroes.friendlyCount', 'heroes.enemy', 'heroes.enemyCount',
-      'reinforcements.friendlyCount', 'reinforcements.enemyCount',
-      'vehicles.friendly', 'vehicles.friendlyCount', 'vehicles.enemy', 'vehicles.enemyCount',
+      'mode', 'difficulty', 'length',
+      'bpRate', 'bots.enemy', 'bots.friendly',
+      'heroes.enemyCount', 'heroes.friendlyCount',
+      'reinforcements.enemyCount', 'reinforcements.friendlyCount',
+      'vehicles.enemyCount', 'vehicles.friendlyCount',
+      'heroes.enemy', 'heroes.friendly', 'vehicles.enemy', 'vehicles.friendly', 'allEraHeroes',
+      'team', 'era',
     ]);
+    // (the screen's two headings, and what the game's screen has no row for)
+    expect(opts.filter((o) => o.group === 'modifiers').map((o) => o.id)).toEqual(['mode', 'difficulty', 'length']);
+    expect(opts.filter((o) => o.group === 'site').map((o) => o.id)).toEqual(['era']);
+    expect(of('bpRate').group).toBe('advanced');
     expect(of('difficulty').option).toBe('InstantActionDifficulty');
     expect(of('heroes.enemy').option).toBe('InstantActionEnemyHeroes');
     expect(of('bots.enemy').option).toBe('InstantActionNumEnemyAI_PC');
@@ -125,7 +131,10 @@ describe('the options', () => {
     // (the screen's first difficulty, its Normal, is the AutoPlayers' Rookie row)
     expect(of('difficulty').default).toBe(of('difficulty').choices[ia.InstantActionDifficulty.default]);
     expect(of('difficulty').default).toBe('rookie');
-    expect(of('difficulty').labels).toEqual(ia.InstantActionDifficulty.items.map((id) => rb.strings[id] ?? id));
+    // (names only where the strings table holds every one: the difficulty's are not in it, and its values are the screen's own words)
+    expect(of('difficulty').labels).toBeUndefined();
+    expect(of('length').labels).toEqual(['SHORT', 'MEDIUM', 'LONG']);
+    expect(of('bpRate').labels).toEqual(['SLOW', 'DEFAULT', 'FAST']);
     expect(of('length').default).toBe('medium');
     expect(of('bpRate').default).toBe('default');
     expect(of('heroes.enemy').default).toBe(true);

@@ -51,7 +51,7 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, spawnFor, step, view } from './battle.js';
+import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, grant, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
@@ -129,7 +129,7 @@ export default {
     const kitFx = createKitFx(scene);
     const booms = []; // the steps' explosions since the last frame drawn
     // (a press read on a frame with no step of the sim's, two frames in three at 60 Hz, waits for the next that has one)
-    const pressed = { ability: 0, roll: false, vent: false };
+    const pressed = { ability: 0, roll: false, vent: false, jump: false };
     const rig = createCameraRig(camera);
     const input = createInput({ maxPitch: (cams.soldier.maxPitch * Math.PI) / 180 });
     input.attach();
@@ -205,9 +205,13 @@ export default {
       }
       return appearanceOf(store, c.id, { faction: c.faction });
     };
-    const doDeploy = (classId = picked, appearance = null) => {
-      const look = appearance ?? pickedLook(classId);
-      const base = classId ? { classId, ...(look ? { appearance: look } : {}) } : {};
+    // (a choice: an offer { kind, id } from the deploy screen, { classId }, a class id, or nothing for the side's first class)
+    const choiceOf = (c) => (typeof c === 'string' ? { classId: c } : c?.kind ? { kind: c.kind, id: c.id } : c?.classId ? { classId: c.classId } : {});
+    const doDeploy = (choice = picked, appearance = null) => {
+      const base = choiceOf(choice);
+      // (the skin the Collection keeps for what is deployed, where the screen sent none)
+      const look = appearance ?? pickedLook(base.id ?? base.classId ?? null);
+      if (look) base.appearance = look;
       let r = deploy(sim, me, mate ? { ...base, spawn: 'squad', mate } : base);
       // (a mate who cannot be spawned on by now: the HQ, as the game falls back, SpawnOnSpawnEntityIfSpawnOnPlayerFails)
       if (!r.ok && mate && squadsOf(rb).fallbackToPoint) r = deploy(sim, me, base);
@@ -349,6 +353,7 @@ export default {
         pressed.ability = v.deploy.open ? 0 : read.ability || pressed.ability;
         pressed.roll = !v.deploy.open && (read.roll || pressed.roll);
         pressed.vent = !v.deploy.open && (read.vent || pressed.vent);
+        pressed.jump = !v.deploy.open && (read.jump || pressed.jump);
         let first = true;
         let stepped = 0;
         const heard = [];
@@ -357,10 +362,10 @@ export default {
           stepped += STEP;
           lastAt = body()?.at.slice() ?? null;
           const once = first ? { ...read, ...pressed } : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
-          if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false });
+          if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false, jump: false });
           first = false;
           // (every event to the sound director; the explosions to the kit drawing too)
-          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }]);
+          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, jump: once.jump, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }]);
           heard.push(...events);
           for (const e of events) if (e.type === 'explosion') booms.push(e);
         }
@@ -426,7 +431,10 @@ export default {
       do(action, arg) {
         switch (action) {
           case 'deploy':
-            return doDeploy(arg?.classId ?? picked, arg?.appearance ?? null);
+            return doDeploy(arg?.kind || arg?.classId ? arg : picked, arg?.appearance ?? null);
+          case 'points':
+            // (a check's Battle Points for the player, to buy a hero: battle.js's grant)
+            return { ok: true, points: grant(sim, arg ?? 0) };
           case 'pick':
             picked = arg;
             return { ok: true };

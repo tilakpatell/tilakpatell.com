@@ -50,11 +50,12 @@
 // Pure: no three.js, no DOM.
 //
 //   erasFor(rulebook, level) → ['Orig', …]
-//   optionsFor(gs, { rulebook, level, team }) → [{ id, kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source }]
+//   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source }]
+//     (in the game's screen's order, the enemy's of a pair before the player's side's)
 //     (a dotted id is a nested field: `heroes.enemyCount` is choice.heroes.enemyCount)
 //   roundFor(gs, choice) → round      (throws on a choice that is not one of the options')
 //   startInstantAction({ rulebook, gs, nav, seed, spawns, ...choice }) → { sim, round }
-//   applyRound(sim, round)      (the round's length and rate put on a battle already made)
+//   applyRound(sim, round)      (sim.js's: the round's length and rate on a battle, as the sim does at its making)
 //   loadSettings() → Promise<gs>      (gameSettings.json, a chunk of its own: 68 KB the page asks for with the setup screen)
 //     choice: { level, mode, era, team, difficulty: 'rookie' | 'normal' | 'expert', length: 'short' | 'medium' | 'long',
 //       bpRate: 'slow' | 'default' | 'fast', allEraHeroes, bots: { friendly, enemy },
@@ -67,6 +68,8 @@ import { wavesFor } from './ai/waves.js';
 import { MODES } from './modes/index.js';
 import { levelKey, modesOf } from './rulebook.js';
 import { createSim } from './sim.js';
+
+export { applyRound } from './sim.js';
 
 export const loadSettings = () => import('../../data/bf2017/gameSettings.json').then((m) => m.default);
 
@@ -133,7 +136,8 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
   const pick = (id, option, choices, fallback) => {
     const row = profile[option];
     const at = row && row.default >= 0 && row.default < choices.length ? choices[row.default] : fallback;
-    const labels = row?.items?.length === choices.length ? row.items.map(text) : null;
+    // (names only where the strings table holds every one: the difficulty's ids are not in it, and its values, rookie, normal and expert, are the screen's own words)
+    const labels = row?.items?.length === choices.length && row.items.every((i) => rulebook?.strings?.[i]) ? row.items.map(text) : null;
     return { id, kind: 'choice', choices: [...choices], ...(labels ? { labels } : {}), default: at, option, source: row ? PROFILE + option : 'hand' };
   };
   const flag = (id, option, fallback) => {
@@ -146,27 +150,36 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
   const mine = g('mine', ['TeamSize_RealPlayer_Easy_Mode8', 'TeamSize_RealPlayer_Mode8'], 12);
   const friend = rowsFor(g, team);
   const foe = rowsFor(g, 3 - team);
-  return [
-    { id: 'mode', kind: 'choice', choices: modes, default: modes.includes(OWN_MODE) ? OWN_MODE : modes[0], option: 'InstantActionModeToPlay', source: 'modes.json' },
-    { id: 'era', kind: 'choice', choices: eras, default: eras.includes(DEFAULTS.era) ? DEFAULTS.era : eras[0], option: null, source: 'teams.json' },
-    { id: 'team', kind: 'choice', choices: [1, 2], default: DEFAULTS.team, option: 'PlayerProfileInstantActionParamsPlayerTeam', source: 'hand' },
-    pick('difficulty', 'InstantActionDifficulty', DIFFICULTIES, DEFAULTS.difficulty),
-    pick('length', 'InstantActionTimeLimit', LENGTHS, DEFAULTS.length),
-    pick('bpRate', 'InstantActionBPRate', RATES, DEFAULTS.bpRate),
-    flag('allEraHeroes', 'InstantActionAllEraHeroes', DEFAULTS.allEraHeroes),
-    number('bots.friendly', 'InstantActionNumFriendlyAI_PC', Math.max(0, mine - 1), 0, MAX_SIDE, sources.mine),
-    number('bots.enemy', 'InstantActionNumEnemyAI_PC', size, 1, MAX_SIDE, sources.size),
-    flag('heroes.friendly', 'InstantActionFriendlyHeroes', true),
-    number('heroes.friendlyCount', 'InstantActionFriendlyHeroCount', friend.heroes.bots, 0, friend.heroes.max, sources[`heroes.bots.${team}`]),
-    flag('heroes.enemy', 'InstantActionEnemyHeroes', true),
-    number('heroes.enemyCount', 'InstantActionEnemyHeroCount', foe.heroes.bots, 0, foe.heroes.max, sources[`heroes.bots.${3 - team}`]),
-    number('reinforcements.friendlyCount', 'InstantActionFriendlyReinforcementCount', friend.reinforcements.bots, 0, friend.reinforcements.max, sources[`reinforcements.bots.${team}`]),
-    number('reinforcements.enemyCount', 'InstantActionEnemyReinforcementCount', foe.reinforcements.bots, 0, foe.reinforcements.max, sources[`reinforcements.bots.${3 - team}`]),
-    flag('vehicles.friendly', 'InstantActionFriendlyVehicles', true),
-    number('vehicles.friendlyCount', 'InstantActionFriendlyVehicleCount', friend.vehicles.bots, 0, friend.vehicles.bots, sources[`vehicles.bots.${team}`]),
-    flag('vehicles.enemy', 'InstantActionEnemyVehicles', true),
-    number('vehicles.enemyCount', 'InstantActionEnemyVehicleCount', foe.vehicles.bots, 0, foe.vehicles.bots, sources[`vehicles.bots.${3 - team}`]),
-  ];
+  // The screen's order (the game's Instant Action screen as it draws them, NOTES.md): Game Modifiers, then
+  // Advanced Settings with the enemy's of each pair before the player's side's; the switches, which the
+  // screen draws past what was seen of it, after the counts; the side is the screen's Change Faction; the
+  // era is the site's own row.
+  const rows = {
+    modifiers: [
+      { id: 'mode', kind: 'choice', choices: modes, default: modes.includes(OWN_MODE) ? OWN_MODE : modes[0], option: 'InstantActionModeToPlay', source: 'modes.json' },
+      pick('difficulty', 'InstantActionDifficulty', DIFFICULTIES, DEFAULTS.difficulty),
+      pick('length', 'InstantActionTimeLimit', LENGTHS, DEFAULTS.length),
+    ],
+    advanced: [
+      pick('bpRate', 'InstantActionBPRate', RATES, DEFAULTS.bpRate),
+      number('bots.enemy', 'InstantActionNumEnemyAI_PC', size, 1, MAX_SIDE, sources.size),
+      number('bots.friendly', 'InstantActionNumFriendlyAI_PC', Math.max(0, mine - 1), 0, MAX_SIDE, sources.mine),
+      number('heroes.enemyCount', 'InstantActionEnemyHeroCount', foe.heroes.bots, 0, foe.heroes.max, sources[`heroes.bots.${3 - team}`]),
+      number('heroes.friendlyCount', 'InstantActionFriendlyHeroCount', friend.heroes.bots, 0, friend.heroes.max, sources[`heroes.bots.${team}`]),
+      number('reinforcements.enemyCount', 'InstantActionEnemyReinforcementCount', foe.reinforcements.bots, 0, foe.reinforcements.max, sources[`reinforcements.bots.${3 - team}`]),
+      number('reinforcements.friendlyCount', 'InstantActionFriendlyReinforcementCount', friend.reinforcements.bots, 0, friend.reinforcements.max, sources[`reinforcements.bots.${team}`]),
+      number('vehicles.enemyCount', 'InstantActionEnemyVehicleCount', foe.vehicles.bots, 0, foe.vehicles.bots, sources[`vehicles.bots.${3 - team}`]),
+      number('vehicles.friendlyCount', 'InstantActionFriendlyVehicleCount', friend.vehicles.bots, 0, friend.vehicles.bots, sources[`vehicles.bots.${team}`]),
+      flag('heroes.enemy', 'InstantActionEnemyHeroes', true),
+      flag('heroes.friendly', 'InstantActionFriendlyHeroes', true),
+      flag('vehicles.enemy', 'InstantActionEnemyVehicles', true),
+      flag('vehicles.friendly', 'InstantActionFriendlyVehicles', true),
+      flag('allEraHeroes', 'InstantActionAllEraHeroes', DEFAULTS.allEraHeroes),
+    ],
+    faction: [{ id: 'team', kind: 'choice', choices: [1, 2], default: DEFAULTS.team, option: 'PlayerProfileInstantActionParamsPlayerTeam', source: 'hand' }],
+    site: [{ id: 'era', kind: 'choice', choices: eras, default: eras.includes(DEFAULTS.era) ? DEFAULTS.era : eras[0], option: null, source: 'teams.json' }],
+  };
+  return Object.entries(rows).flatMap(([group, list]) => list.map((o) => ({ ...o, group })));
 }
 
 const oneOf = (what, value, list) => {
@@ -245,17 +258,8 @@ export function roundFor(gs, choice = {}) {
 // The round started: the sim made for it, the round on it for what reads the rest
 export function startInstantAction({ rulebook, gs, nav = null, seed = 1, spawns = null, teams = null, ...choice }) {
   const round = roundFor(gs, choice);
-  // (AutoPlayers, not the Arcade's Skirmish bots: `pve` off; the difficulty's row is the multiplayer one of its name)
+  // (AutoPlayers, not the Arcade's Skirmish bots: `pve` off; the difficulty's row is the multiplayer one of its
+  // name. The sim takes the round at its making: its rate, its length, its caps and its waves, sim.js's roundIn)
   const sim = createSim({ rulebook, level: round.level, era: round.era, nav, seed, teams, spawns, bots: round.bots, mode: round.mode, difficulty: round.difficulty, pve: false, instantAction: round });
-  applyRound(sim, round);
   return { sim, round };
-}
-
-// The round's length and rate on a battle: the Battle Points' rate, and on a mode that counts
-// reinforcements (Supremacy's ground) how many a side has and how fast the side behind bleeds
-export function applyRound(sim, round) {
-  if (sim.bp) sim.bp.rate = round.bpRate;
-  const m = sim.ga;
-  if (m?.tickets) for (const k of Object.keys(m.tickets)) m.tickets[k] = round.tickets;
-  if (m?.bleedEvery) m.bleedEvery /= round.bleed;
 }
