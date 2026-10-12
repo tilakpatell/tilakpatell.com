@@ -36,12 +36,16 @@
 // promise.
 //
 // guardPipelines(renderer, { invalidate, run }) → { pending(), held(), dispose() } | null
+// guardOf(renderer) → the guard on a renderer, or null (a world's waiting
+//   screen reads pending() and held() to know when its first frames will not hitch)
 // rendererAs(renderer, pass) → the stand-in: getMRT() and getRenderTarget() answer the pass's, the rest is the renderer's
 
 // builds three runs back to back before the chain breaks for a timer
 // task: a run is the most the page waits for a turn (four builds of 40
 // to 90 ms)
 const RUN = 4;
+
+export const guardOf = (renderer) => renderer?._pipelines?.__guard ?? null;
 
 export function rendererAs(renderer, pass) {
   // (a build that draws for itself, as the PMREM generator does, saves
