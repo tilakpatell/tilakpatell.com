@@ -116,7 +116,9 @@ Edge 154 headless on the RTX 5090, WebGPU, 2,560 × 1,440, uncapped, local dev, 
 | the same, per-object binding updates, ms a frame | 6.3 and 4.6 | 0.9 and 1.7 | the same, the walk's CPU profile |
 | the chip's own time a frame (`timestamp-query`) | 2.2 to 3.3 ms | 3.8 to 4.9 ms | the page's `machine.gpuMs` |
 
-Not fixed here: every walk still has one frame gap of 0.7 s (node shaders built in play, `buildAsync`), and each cascade's `_projectObject` still visits every bone and placed light (1.2 to 1.4 ms a frame; hiding the bones from that walk was tried in the page and gave back 0.1 ms, so it was left).
+The 0.4 to 1.1 s frame gap at the start of every profiled walk was the probe's own: it falls where the CPU profiler starts and is not there with the profiler off (the longest gap of a 12 s walk 47 to 76 ms, three runs, against 778 and 841 ms with it on: `.scratch-check/hitch.mjs`). What is the page's: frames of 85 to 155 ms in the first ten seconds after a deploy, while three builds node shaders in slices (`Scheduler.yield.then` in the browser's long-frame entries).
+
+Not fixed here: those frames after the deploy, and each cascade's `_projectObject` still visits every bone and placed light (1.2 to 1.4 ms a frame; hiding the bones from that walk was tried in the page and gave back 0.1 ms, so it was left).
 
 ## The desk, 2026-10-13: a part's skin cut to the joints it uses
 
