@@ -9,7 +9,7 @@ import { supremacy } from './fixtures/modeLevels.js';
 import { DEFAULTS, applyRound, roundFor, startInstantAction } from './instantAction.js';
 import { BLEED_SECONDS, SETUP_SECONDS, createMode, tick } from './modes/supremacy.js';
 import { loadRulebook } from './rulebook.js';
-import { step } from './sim.js';
+import { createSim, step } from './sim.js';
 import { TIME_FOR_CORPSE } from './soldier.js';
 
 const rb = loadRulebook();
@@ -48,6 +48,21 @@ describe('a round’s caps', () => {
   it('set each side’s own limit on what it may have out', () => {
     const { sim } = start();
     expect(sim.bp.limits[ME]).toEqual({ heroesPerTeam: 4, reinforcementsPerTeam: 12 });
+  });
+});
+
+describe('a round’s ways', () => {
+  it('are kept by its commanders, where a battle that is no round’s keeps none', () => {
+    // (what a commander asked to keep its ways says of its orders: ai/commander.test.js)
+    const { sim } = start();
+    for (const team of [1, 2]) expect(sim.commanders[team].ways).toBe(true);
+    const plain = createSim({ rulebook: rb, nav: hothFlatNav(rb), seed: 5, mode: 'galacticAssault', bots: { 1: 4, 2: 4 } });
+    for (const team of [1, 2]) expect(plain.commanders[team].ways).toBe(false);
+    for (let i = 0; i < 40; i++) step(plain);
+    const tasks = [...plain.entities.values()].filter((e) => e.bot && e.brain?.task).map((e) => e.brain.task);
+    expect(tasks.length).toBeGreaterThan(0);
+    for (const t of tasks) expect(t.stays).toBeUndefined();
+    expect(plain.nav.fields).toBeUndefined();
   });
 });
 

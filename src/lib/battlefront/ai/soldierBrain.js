@@ -31,6 +31,7 @@ import { pick } from '../../ai/utility.js';
 import { createSenses } from '../../ai/perception.js';
 import { lead } from '../../combat/aim.js';
 import { findPath, heightAt, walkable, cellAt, nearestWalkable } from '../nav.js';
+import { fieldTo, legAlong } from '../navField.js';
 import { chestOf, move } from '../soldier.js';
 import { kickAim } from '../weapons.js';
 import { clock, profile } from '../core.js';
@@ -67,6 +68,8 @@ export const INTERACT_CLEAR = 10;
 // search, so a long walk across a Galactic Assault map never floods A*. By hand.
 export const FAR = 80;
 export const LEG = 40;
+// How near the round of the place it was sent to a bot leaves that place's field for a search of its own, m (by hand).
+const SENT_NEAR = 4;
 // The cells one of those searches may open before it gives up, by hand.
 export const SEARCH_CELLS = 6000;
 // A waypoint cell a bot has failed to step into (open on the grid, too
@@ -523,8 +526,22 @@ function plan(brain, world, s, goal, now) {
   const from = flat(s.at);
   const blocked = blockedCells(world, s, goal, now < (brain.avoidUntil ?? -Infinity) ? brain.avoid : null);
   const d = d2(from, goal);
-  let path = d <= FAR ? findPath(world.nav, from, goal, { blocked, max: SEARCH_CELLS }) : null;
-  // too far for one search, or walled off for now: a leg toward it
+  // (sent to a place that stays, a post or a fixed objective (its order says so), and not yet round it: its way is the place's
+  // field first, which goes round what one search does not, a way too long for its cells and a wall thinner
+  // than a cell, which the search walks into (a bot sent past either stood at the wall). navField.js: one
+  // field for every bot sent there, kept on the navgrid; round the place itself a search of its own is
+  // enough. A place that moves, a walker's or a crowd's middle, has no field: one would be made for each
+  // place it passes)
+  const t = world.task;
+  const sent = t?.stays && d2(goal, t.at) <= (t.radius ?? 0) + 2 && d2(from, t.at) > (t.radius ?? 0) + SENT_NEAR ? t.at : null;
+  let path = null;
+  if (sent) {
+    const f = fieldTo(world.nav, sent);
+    path = f ? legAlong(world.nav, f, from, LEG) : null;
+    if (path && path.length < 2) path = null;
+  }
+  if (!path && d <= FAR) path = findPath(world.nav, from, goal, { blocked, max: SEARCH_CELLS });
+  // too far for one search, or walled off for now, and no field's way: a leg in a line toward it
   if (!path) {
     const k = Math.min(1, LEG / (d || 1));
     const mid = nearestWalkable(world.nav, from[0] + (goal[0] - from[0]) * k, from[1] + (goal[1] - from[1]) * k, 8);
@@ -593,11 +610,13 @@ export function act(brain, intent, s, dt, world, now) {
     aim = null;
     if (e?.alive) {
       const at = chestOf(e);
-      viewStep(brain.apAim, brain.ap, { from, point: aimPoint(brain.ap, { from, at, vel: e.vel, noise: brain.apNoise, rand: brain.rand }), dt });
+      // (its weapon class's noise, by its side's scale where the round draws one: the world's `aimScale`)
+      const noise = brain.apNoise * (world.aimScale ?? 1);
+      viewStep(brain.apAim, brain.ap, { from, point: aimPoint(brain.ap, { from, at, vel: e.vel, noise, rand: brain.rand }), dt });
       const miss = viewMiss(brain.apAim, from, at);
       aim = viewPoint(brain.apAim, from, Math.max(AHEAD, miss.along));
       const flag = lofStep(brain.apLof, brain.ap, { clear: world.lineClear(from, at), now });
-      start = !!intent.fire && flag && mayFire(brain.apClass, brain.apNoise, miss);
+      start = !!intent.fire && flag && mayFire(brain.apClass, noise, miss);
     }
     fire = burstStep(brain.apBurst, brain.apClass, { start, now }) && !!aim;
   }
