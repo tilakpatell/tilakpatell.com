@@ -36,6 +36,10 @@ import { SNOW, SNOW_BASE, SNOW_MAPS } from '../../../lib/three/ground/snowMaps.j
 import { packUrl, tierTexture } from '../../galaxy/shared/level.js';
 
 export const NEAR_STEP = 4; // m between the near grid's vertices (the map is 1 m a pixel)
+// (Low is the floor: 8 m, a quarter of the 4 m grid's 0.82 M triangles over
+// Hoth's near map, which was most of Low's frame; the soldiers stand on the
+// map's own heights, lib/land/layers, whatever the grid between them)
+export const nearStep = (tier) => (tier === 'low' ? NEAR_STEP * 2 : NEAR_STEP);
 export const FAR_STEP = 32; // m: the world map's grid (4 m a pixel)
 export const FAR_DROP = 1.5; // m the far grid sits under the near one
 export const PATCH_M = 300; // m a side: the 1 m patch round the player on ultra (150 m each way)
@@ -88,7 +92,7 @@ export function buildGround(layer, terrain = {}, { world = 'hoth', pack = null, 
     pieces[name] = { flat: mesh, snow: null };
   };
   const near = terrain.near;
-  if (near?.min && near?.size) piece('near', grid(layer, near.min, (near.size[0] - 1) * near.metresPerPixel, NEAR_STEP, patched ? PATCH_UNDER : 0));
+  if (near?.min && near?.size) piece('near', grid(layer, near.min, (near.size[0] - 1) * near.metresPerPixel, nearStep(tier), patched ? PATCH_UNDER : 0));
   const far = terrain.far;
   if (far?.min && far?.size) piece('far', grid(layer, far.min, (far.size[0] - 1) * far.metresPerPixel, FAR_STEP, FAR_DROP + (patched ? PATCH_UNDER : 0)));
 

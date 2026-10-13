@@ -40,6 +40,7 @@
 
 import * as THREE from 'three';
 import { device } from '../../lib/device.js';
+import { floorRatio } from '../../lib/floorRatio.js';
 import { CAPPING } from '../../lib/gpuProbe.js';
 import { textureTier } from '../../lib/video.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
@@ -58,7 +59,7 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
+import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
@@ -87,9 +88,11 @@ export default {
   // chain of thirty passes; TRAA already smooths the edges that extra
   // ratio was for.
   sharpness: 'own',
-  // (read as the world starts: the screen the window is on then)
+  // (read as the world starts: the screen the window is on then; at Low,
+  // the floor, 1,280 × 720 at most, lib/floorRatio)
   get ratio() {
-    return typeof window !== 'undefined' ? Math.max(1, Math.min(2, window.devicePixelRatio || 1)) : 1;
+    if (typeof window === 'undefined') return 1;
+    return floorRatio(Math.max(1, Math.min(2, window.devicePixelRatio || 1)), { w: window.innerWidth, h: window.innerHeight, detail: device().detail });
   },
   label: 'Hoth from Star Wars Battlefront II (2017), drawn from the game’s own level, light and figures. W A S D to move, the mouse to look and fire, Enter to deploy.',
   async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault', weather: askedWeather = null, instantAction = null } = {}) {
@@ -186,7 +189,7 @@ export default {
     const elsewhere = battleLevel !== levelKey(levelName);
     if (elsewhere) await loadLevel(battleLevel);
     const worldSides = elsewhere ? teamsFor(rb, levelName, round?.era ?? 'Orig') : null;
-    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : {}) });
+    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : { bots: botsAt(device().detail) }) });
     let me = addPlayer(sim, { team });
     // the game's sounds (sound/): the player on the runtime's bus, the
     // director on the sim's events; the one-shots the first minute needs

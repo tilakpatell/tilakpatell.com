@@ -366,7 +366,9 @@ export function createLevelLoader({
       const slug = path.split('/').pop().replace(/\.ktx2$/, '');
       const data = isDataMap(null, own?.[slug] ?? sizes?.[slug], slug);
       const first = firstTexture(path, own);
-      const target = tierTexture(path, texTier ?? tier, own, { formats, data });
+      // (Low is the floor, the most compressed web settings: a map stays at
+      // its first row there, half the fetches and uploads of a promotion)
+      const target = (texTier ?? tier) === 'low' ? first : tierTexture(path, texTier ?? tier, own, { formats, data });
       const get = (file, promote) =>
         Promise.resolve(fetchBytes(file, { glb: of, promote, ...(coarse ? { coarse } : {}) })).then((bytes) => {
           if (!isKtx2(bytes)) throw new Error(`${file} is not a KTX2`);
