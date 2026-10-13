@@ -41,6 +41,10 @@ function SpawnTree({ tree, deploy, points = 0, name = (o) => o.id, title = 'Depl
   useEffect(() => {
     tell.current();
   }, [firstId]);
+  // (the keys go to the list from the first: Enter deploys the cell in focus, the first that can be afforded)
+  useEffect(() => {
+    list.current?.querySelector('button:not([aria-disabled="true"])')?.focus({ preventScroll: true });
+  }, []);
   const chosen = rows.find((r) => r.id === picked && r.affordable) ?? first;
   const pick = (o) => {
     if (!o.affordable) return;

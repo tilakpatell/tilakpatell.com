@@ -7,10 +7,11 @@ import GameScreen from './GameScreen.jsx';
 // The loading screen: the level's planet film, one of the game's hints for
 // the mode in the tree's hint box (LoadingScreenWrapperWidget), the level's
 // name, and the bar the game draws for it carrying the level's real progress
-// (the world's own count; `waiting` is the veil's line when it waits on
-// something, as lane F's rule has it). (The loading cue plays under the
-// waiting screen, WaitingScreen.jsx, which is the way in now; this veil
-// comes up over a battle already heard.)
+// (the world's own count; `waiting` is the line under the bar when it waits
+// on something: the way in's readiness, waiting.js). It stands on the way
+// in until the level is ready (the page plays the loading cue under it,
+// BattlefrontWorld.jsx), and comes up again as a veil over a battle whose
+// level has fallen behind.
 export default function Loading({ mode = 'galacticAssault', level = 'hoth', progress = 0, waiting = null }) {
   const [seed] = useState(() => Math.floor(Math.random() * 1e6));
   const l = loading(mode, level, { seed });
