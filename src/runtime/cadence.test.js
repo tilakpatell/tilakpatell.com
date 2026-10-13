@@ -160,14 +160,15 @@ describe('createCadence: 60 where the chip holds it, an even 30 where it cannot'
     expect(sixty.every).toBe(1);
   });
 
-  it('holds a pinned 60 at 60 on a fast display, and a pinned 30 at 30', () => {
+  // (the owner's word: 60 at the least on a strong chip, 30 on a weak one, and faster is fine)
+  it('draws a pinned 60 at every beat on a fast display, and holds a pinned 30 at 30', () => {
     const at = (hz, fps) => {
       const c = createCadence({ fps, warmMs: 0 });
       c.frame(0, { interval: 1000 / hz, beatMs: 1000 / hz });
       return c.every;
     };
-    expect(at(120, 60)).toBe(2);
-    expect(at(240, 60)).toBe(4);
+    expect(at(120, 60)).toBe(1);
+    expect(at(240, 60)).toBe(1);
     expect(at(60, 60)).toBe(1);
     expect(at(120, 30)).toBe(4);
     expect(at(144, 30)).toBe(5);
