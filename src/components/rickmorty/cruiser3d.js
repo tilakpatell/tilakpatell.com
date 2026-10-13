@@ -74,7 +74,7 @@ export const buildCruiser = buildCruiserWith({ createMeshyCast, inkHull, glassDo
 export async function createCruiser3D(canvas) {
   let renderer;
   try {
-    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' }));
+    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }));
   } catch {
     return null;
   }

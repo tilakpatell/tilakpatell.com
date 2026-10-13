@@ -146,19 +146,26 @@ export function preloadDecoders({ renderer = null, basis = false } = {}) {
 // What the graphics chip can take GPU-compressed textures as, read the way
 // three's KTX2Loader reads it from a renderer, from any object with
 // `extensions.has(name)` (a renderer, or the probe below).
-function probeRenderer() {
+// (the chip that will draw: the high-performance one; its formats are read
+// at once and the context let go, so a probe never holds one of the
+// browser's few live contexts)
+export const COMPRESSED = ['WEBGL_compressed_texture_astc', 'WEBGL_compressed_texture_etc', 'WEBGL_compressed_texture_etc1', 'WEBGL_compressed_texture_s3tc', 'WEBGL_compressed_texture_s3tc_srgb', 'EXT_texture_compression_bptc', 'EXT_texture_compression_rgtc', 'WEBGL_compressed_texture_pvrtc', 'WEBKIT_WEBGL_compressed_texture_pvrtc'];
+export function probeRenderer(doc = typeof document !== 'undefined' ? document : null) {
   let gl = null;
   try {
-    const canvas = document.createElement('canvas');
-    gl = canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) ?? canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
+    const canvas = doc.createElement('canvas');
+    const ask = { failIfMajorPerformanceCaveat: false, powerPreference: 'high-performance' };
+    gl = canvas.getContext('webgl2', ask) ?? canvas.getContext('webgl', ask);
   } catch {
     gl = null;
   }
-  const got = new Map();
-  const get = (name) => {
-    if (!got.has(name)) got.set(name, gl ? gl.getExtension(name) : null);
-    return got.get(name);
-  };
+  const got = new Map(COMPRESSED.map((name) => [name, gl ? (gl.getExtension(name) ?? null) : null]));
+  try {
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+  } catch {
+    /* let go by the page's end instead */
+  }
+  const get = (name) => got.get(name) ?? null;
   return { isWebGPURenderer: false, extensions: { has: (name) => Boolean(get(name)), get } };
 }
 

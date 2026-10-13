@@ -24,4 +24,11 @@ describe('the card for a device that cannot run a Star Wars world', () => {
     expect(html).toContain('Try anyway');
     expect(html).toContain('role="alert"');
   });
+
+  it('gives a weak built-in chip the way onto a graphics card, and no other reason', () => {
+    const steps = renderToStaticMarkup(<UnfitCard name="Battlefront" why="weak" way={{ label: 'Universe map', to: '/universe' }} onTry={() => {}} steps={{ os: 'windows', browser: 'edge' }} />);
+    expect(steps).toContain('the browser isn’t using it');
+    expect(steps).toContain('edge://flags/#force-high-performance-gpu');
+    expect(card('weak')).not.toContain('Display, Graphics');
+  });
 });

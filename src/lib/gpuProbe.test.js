@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { adapterFacts, CAPPING, SLOW_DAYS, classifyTier, decideTier, judgeTier, keepTier, LOST_DAYS, lostTwice, nameScore, nameVendor, noteLoss, PROBE, probeTier, readTier, tierHold, TIER_KEY } from './gpuProbe';
+import { adapterFacts, CAPPING, SLOW_DAYS, classifyTier, decideTier, judgeTier, keepTier, lossHolds, LOST_DAYS, lostTwice, nameScore, nameVendor, noteLoss, PROBE, probeTier, readTier, tierHold, TIER_KEY } from './gpuProbe';
 
 const TS = 'timestamp-query';
 const set = (...f) => new Set(f);
@@ -275,5 +275,17 @@ describe('a weak chip by its name, the reason kept, and a lost device', () => {
     const lost = JSON.stringify({ tier: 'T0', info: NVIDIA, why: 'lost', losses: 1, lostAt: 0 });
     expect(readTier('', '', lost, NVIDIA, DAY)).toMatchObject({ tier: 'T0', fresh: false, why: 'lost' });
     expect(readTier('', '', lost, NVIDIA, 8 * DAY).fresh).toBe(true);
+  });
+});
+
+// (the owner's word, 2026-10-13: a loss holds a weak chip at Low, never a strong one)
+describe('a loss holds a weak chip only', () => {
+  it('holds a T0 chip and one its name does not grade; never a T1 or T2 chip, nor a strong name with no tier yet', () => {
+    expect(lossHolds({ tier: 'T0', name: R5090 })).toBe(true);
+    expect(lossHolds({ tier: 'T1', name: R740M })).toBe(false);
+    expect(lossHolds({ tier: 'T2' })).toBe(false);
+    expect(lossHolds({ tier: null, name: R5090 })).toBe(false);
+    expect(lossHolds({ tier: null, name: R740M })).toBe(true);
+    expect(lossHolds({ tier: null, name: 'Some New GPU' })).toBe(true);
   });
 });

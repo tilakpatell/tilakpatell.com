@@ -40,7 +40,7 @@ const rgb = (v, k = 1) => new THREE.Color(v[0] * k, v[1] * k, v[2] * k);
 export function createHeroStage(canvas, { level = 'high', reduced = false } = {}) {
   let renderer;
   try {
-    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false }));
+    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' }));
   } catch {
     return null;
   }

@@ -566,6 +566,20 @@ describe('createRuntime', () => {
     expect(rt.status).toBe('ready');
   });
 
+  it('the visit’s first loss on WebGL is recoverable (a driver’s reset), its second is not', async () => {
+    const { rt, makeBackend } = make();
+    await rt.mount({ id: 'g', create: () => fakeWorld() }, {}, fakeHost());
+    makeBackend.mock.calls[0][1].onLost();
+    expect(rt.status).toBe('lost');
+    expect(rt.recoverable).toBe(true);
+    expect(rt.lostModule).toBe('g');
+    await rt.mount({ id: 'g', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls[1][0]).toBe('webgl');
+    expect(rt.status).toBe('ready');
+    makeBackend.mock.calls[1][1].onLost();
+    expect(rt.recoverable).toBe(false);
+  });
+
   it('a loss on WebGL 2 has nowhere left to go: not recoverable', async () => {
     const { rt, makeBackend } = make({ gpu: true });
     await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
