@@ -4,6 +4,16 @@
    (src/lib/bf2017/fonts.css) and the world's ink (../hud/battlefront.css). */
 .bf-game-screen { position: fixed; inset: 0; z-index: var(--z-dialog); /* over the world's canvas and HUD */ color: var(--bf-ink, #f2f5f8); font-family: var(--font-bf-hud, sans-serif); font-variant-ligatures: no-common-ligatures; /* (the game's Univers has no fi or fl: the ligature draws blank) */ background: radial-gradient(120% 90% at 30% 20%, #18222e 0%, #070a0e 70%); overflow: hidden; }
 .bf-game-screen:focus { outline: none; } /* (the frame holds the focus only where a screen has nothing to press) */
+/* the loading screen, as the game draws it: the planet, the map and the mode's words at the top left; a striped mark at the bottom right */
+.bf-loading-name { position: absolute; left: 6.7%; top: 19%; display: grid; gap: 0.15rem; max-width: min(30rem, 28%); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
+.bf-loading-planet { font-size: clamp(1.8rem, 3.6vw, 3.4rem); font-weight: 800; line-height: 1; letter-spacing: 0.02em; }
+.bf-loading-level { font-size: clamp(0.9rem, 1.5vw, 1.45rem); font-weight: 700; letter-spacing: 0.03em; }
+.bf-loading-about { margin: 1rem 0 0; font-family: var(--font-bf-text, sans-serif); font-size: clamp(0.7rem, 0.95vw, 0.9rem); line-height: 1.4; }
+.bf-loading-mark { position: absolute; right: 5.2%; bottom: 5.4%; width: 2.4rem; aspect-ratio: 1; border-radius: 50%; opacity: 0.55; background: repeating-linear-gradient(0deg, #f2f5f8 0 2px, transparent 2px 5px); }
+@media (prefers-reduced-motion: no-preference) {
+  .bf-loading-mark { animation: bf-loading-mark 1.6s ease-in-out infinite alternate; }
+}
+@keyframes bf-loading-mark { from { opacity: 0.25; } to { opacity: 0.7; } }
 .bf-game-screen:focus-visible { outline: none; }
 .bf-game-backdrop { position: absolute; inset: 0; }
 .bf-game-film { position: absolute; inset: 0; opacity: 0.7; }
@@ -37,12 +47,6 @@
 .bf-level-list .bf-card { min-height: 8rem; }
 
 /* loading */
-.bf-loading-name { position: absolute; left: 6%; top: 14%; display: grid; gap: 0.4rem; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
-.bf-loading-mode { font-size: 1rem; letter-spacing: 0.3em; color: var(--bf-muted, #b9c2cc); }
-.bf-loading-level { font-size: clamp(2rem, 4.5vw, 4rem); font-weight: 800; letter-spacing: 0.06em; }
-.bf-loading-bar { position: absolute; left: 6%; right: 6%; bottom: 8%; height: 4px; background: rgba(242, 245, 248, 0.18); }
-.bf-loading-bar i { display: block; height: 100%; background: var(--bf-ink, #f2f5f8); transition: width 400ms linear; }
-.bf-loading-line { position: absolute; left: 6%; bottom: 3.5%; margin: 0; font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
 
 /* spawn */
 .bf-spawn-screen { background: linear-gradient(90deg, rgba(4, 7, 10, 0.82) 0%, rgba(4, 7, 10, 0.15) 45%, transparent 70%); }
@@ -78,5 +82,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bf-start-line { animation: none; }
-  .bf-card, .bf-loading-bar i { transition: none; }
+  .bf-card { transition: none; }
 }

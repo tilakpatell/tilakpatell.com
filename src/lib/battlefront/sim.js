@@ -395,7 +395,8 @@ export function deploy(sim, id, choice) {
     const r = squadSpot(sim, id, team, choice.mate);
     if (r.why) return { ok: false, why: r.why };
     spot = r.spot;
-  } else spot = pickSpawn({ map: mapOf(sim.rb, sim.level), ids: sim.M.spawnSets(sim.ga)[sim.M.sideOf(sim.ga, team)], team, enemies, rand: sim.rand, mode: sim.mode });
+    // (a side comes back in at its own first places, or on a command post it holds: the post's own spawn points)
+  } else spot = pickSpawn({ map: mapOf(sim.rb, sim.level), ids: sim.M.spawnSets(sim.ga)[sim.M.sideOf(sim.ga, team)], team, enemies, rand: sim.rand, mode: sim.mode, extra: sim.M.postSpawns?.(sim.ga, sim.M.sideOf(sim.ga, team)) ?? [] });
   if (!spot) return { ok: false, why: 'nowhere' };
   buy(sim.bp, id, offer);
   const base = classOf(sim.rb, sim.teams[team].classes[0]);
@@ -700,7 +701,10 @@ function stepMode(sim) {
         const choice = spend(c, entry.id, { squadClasses, out });
         const enemies = enemiesOf(sim, team);
         const mates = (sq?.members ?? []).map((m) => sim.entities.get(m)).filter(Boolean);
-        const spawn = squadSpawn({ squad: mates, me: entry.id, enemies, now: sim.time, walkable: standable(sim) }) ? 'squad' : 'point';
+        // (on a squadmate where one is free; a round's bot only as often as its side's numbers say, the settings'
+        // AP_SquadSpawnProbability, half the time in Instant Action: else at a spawn point, a post its side holds)
+        const onMate = sim.instantAction?.ap?.[team]?.spawn?.squad ?? 1;
+        const spawn = squadSpawn({ squad: mates, me: entry.id, enemies, now: sim.time, walkable: standable(sim) }) && (onMate >= 1 || sim.rand() < onMate) ? 'squad' : 'point';
         let r = deploy(sim, entry.id, { ...choice, spawn });
         if (!r.ok) r = deploy(sim, entry.id, { kind: 'class', id: sim.teams[team].classes[0], spawn: 'point' });
         if (!r.ok) continue;
