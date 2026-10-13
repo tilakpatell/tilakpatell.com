@@ -54,6 +54,9 @@ Read as: on Hoth, the galaxy goes from the planet straight to the game's menu; t
 ## What other lanes are asked for
 
 - **The sim's lane (tilak-a6, `claude/bf-instant-action`)**: one action, `world.do('round', options)` → a promise of `{ ok, round }` or `{ ok: false, why }`, which replaces the battle's sim in place and leaves the level and everything drawn as it is. Its `instantActionSchema` and `optionsFor` are used as they stand.
+  - That lane's answer (2026-10-13): feasible, not small, not built. `battle.js` is ready for it (`createBattle` is a pure constructor; the first battle's `nav` passed back in keeps the grid). The work is in `module.js`: its `sim` is held by a dozen closures and must become a battle that can be bound again, and everything that mirrors the old one is cleared at the swap (the figures and their ragdolls, the bolts and the kit's drawing, the sound director's state, the player, and the camera back to its parked pose). The level, the light, the post chain, the physics world and the built shaders stay.
+  - Its risk: a round may draw bodies the first battle did not (another class or side), fetched and their shaders built at Start, so the round's first seconds can hitch. So the setup screen warms the bodies of the round it shows before Start is offered (phase 3).
+  - Its order: the same hunks of `module.js` are touched by this lane's front-end wiring and by the heroes' lane, so one session makes the change, after phase 1 has landed.
 - **The frame-time lane (tilak-19)**: nothing asked. It is sent the numbers from Checks, 3.
 
 ## Phases, one pull request each
@@ -62,7 +65,7 @@ Read as: on Hoth, the galaxy goes from the planet straight to the game's menu; t
 | --- | --- | --- |
 | 1 | Hoth's two ways down go to `/battlefront/hoth`; the page mounts the world behind the game's main menu; Play still leads to Galactic Assault as today; the waiting screen is deleted and the first life uses the loading and spawn screens; `/galaxy/hoth/surface` redirects | the tests of `battlefront/`, `pages/`, `galaxy/surface/modes`; Checks 1 to 4 |
 | 2 | The Instant Action setup screen on the game's tree, from `optionsFor()`; Start mounts again with the options | the screen's tests; a walk in the browser: every option changes the round it starts |
-| 3 | Start in place (`world.do('round')`, when the sim's lane has it); the approach's prefetch | Check 2 again: Start to spawn screen |
+| 3 | Start in place (`world.do('round')`, made by one session after phase 1); the round's bodies warmed before Start; the approach's prefetch | Check 2 again: Start to spawn screen, and the first five seconds of the round with no frame over 50 ms |
 | 4 | The Instant Action Overhaul V2's options on the same screen, when bf2-re findings 53 names them | the screen's tests |
 
 ## Checks (headless Edge on the desktop, 2560×1440, the bucket's base set, numbers written into the pull request)
