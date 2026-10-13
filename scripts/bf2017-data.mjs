@@ -33,7 +33,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { cutAsset, isSequel, loadAsset, readWebJson, resolveStrings, rootOf, webFile } from './lib/bf2017-ebx.mjs';
-import { abilityRow, cardRow, classRow, heroRow, indexOf, reinforcementRow, teamRow, vehicleRow, weaponRow } from './lib/bf2017-rulebook.mjs';
+import { abilityRow, cardRow, classRow, heroRow, indexOf, linkBlocks, reinforcementRow, teamRow, vehicleRow, weaponRow } from './lib/bf2017-rulebook.mjs';
 import { aiCreatures, aiNames, aiRulebook, aiSquadron } from './lib/bf2017-rulebook-ai.mjs';
 import { airRulebook } from './lib/bf2017-rulebook-air.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
@@ -163,7 +163,8 @@ const BUILD = {
     const rows = rowsOf(ctx, names, (n) => weaponRow(p.root, n));
     return p.only ? Object.fromEntries(Object.entries(rows).filter(([id]) => p.only.has(id))) : rows;
   },
-  abilities: (p, ctx) => rowsOf(ctx, uniq([...Object.values(ctx.classes), ...Object.values(ctx.heroes), ...Object.values(ctx.reinforcements)].flatMap((k) => (k.abilities ?? []).map((a) => a.asset))), (n) => abilityRow(p.root, n)),
+  // (each row with whom it blocks and when, the ids named among the rows themselves: linkBlocks)
+  abilities: (p, ctx) => linkBlocks(p.root, rowsOf(ctx, uniq([...Object.values(ctx.classes), ...Object.values(ctx.heroes), ...Object.values(ctx.reinforcements)].flatMap((k) => (k.abilities ?? []).map((a) => a.asset))), (n) => abilityRow(p.root, n))),
   cards: (p, ctx) => rowsOf(ctx, uniq(Object.values(ctx.classes).flatMap((k) => k.cardAssets ?? [])), (n) => cardRow(p.root, n)),
   ai: (p) => aiRulebook(p.root),
   aiNames: (p, ctx) => aiNames(p.root, ctx.$strings),

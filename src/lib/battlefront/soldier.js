@@ -55,7 +55,8 @@ export function newSoldier(cls, { id, team, at, yaw = 0, rand = Math.random, bot
     sprint: false,
     gun: weapon ? createGun(weapon, { rand }) : null,
     weapon,
-    abilities: createAbilities(abilities, { rand }),
+    // (a human's press that cannot act yet is held half a second; a bot's is its brain's to make again: abilities.js)
+    abilities: createAbilities(abilities, { rand, hold: !bot }),
     stack: createStack(),
     lastHurt: -Infinity,
     lastBy: null,

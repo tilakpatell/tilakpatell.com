@@ -37,7 +37,7 @@ const HAND = {
   'leia.2': { type: 'T9', target: 'Ability_Leia_BubbleShield', property: 'health', op: 'mul', how: 'more' },
   'leia.4': { type: 'T5', target: 'Ability_Leia_ThermalDetonator_Fake', property: 'radius', op: 'add', how: 'add' },
   'leia.6': { type: 'T7', target: 'self', property: 'damageTaken', op: 'mul', how: 'rank', while: 'Ability_BlasterRifle_E11_Leia' },
-  'lando.1': { type: 'T3', target: 'Ability_GrenadeSmoke_Lando', property: 'hand.seconds', op: 'add', how: 'add' },
+  'lando.1': { type: 'T3', target: 'Ability_GrenadeSmoke_Lando', property: 'seconds', op: 'add', how: 'add' },
   'lando.2': { type: 'T5', target: 'Ability_GrenadeSmoke_Lando', property: 'radius', op: 'mul', how: 'more' },
   'lando.6': { type: 'T5', target: 'Ability_Lando_SharpShot', property: 'range', op: 'mul', how: 'more' },
   'lando.9': { type: 'T9', target: 'self', property: 'maxHealth', op: 'add', how: 'add' },
@@ -94,8 +94,12 @@ function replacements(root, rec, abilities) {
 
 const close = (a, b) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
 
+// A card whose better time comes with a penalty its records hold elsewhere is not its gain alone: left out, as a
+// card that only lengthens recharges is (Vader's card 1: Focused Rage lasts longer and its bonus damage is less).
+export const WITH_A_PENALTY = ['darthvader.1'];
+
 export function cardEffect(root, id, card, { name, abilities = [] } = {}) {
-  const rec = name ? cardRecord(root, name) : null;
+  const rec = name && !WITH_A_PENALTY.includes(id) ? cardRecord(root, name) : null;
   if (!rec) return null;
   // a card that is one ability's time, replaced: sooner back (T1), or longer lasting (T3)
   const times = replacements(root, rec, abilities);

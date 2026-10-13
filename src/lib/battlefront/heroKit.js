@@ -17,7 +17,9 @@
 //   onHeroAbility(sim, s, e) → requests            (an ability event from the soldier's tick)
 //   stepHeroes(sim) → requests                     (every hero's saber, beam, jump and effects; every shove)
 //   deflect(sim, target, hit) → bool               (a bolt turned on the block: no damage, the round sent back)
-//   domed(sim, target, bolt) → bool                (a bolt stopped at a bubble shield it began outside)
+//   heroTakes(sim, target, hit, damage) → bool     (a bolt a block turned or a Squad Shield took: gone, burst and all)
+//   burstAt(sim, hit, { shooter, scale, grace })   (a round that bursts where it lands, under the rules its bolt obeyed)
+//   viewHero(e, s, now)                            (the view's entity: its act, when it was struck, its lift, whether smoke hides it)
 //   actOf(s, now) → { strike, strikeT, blocking, ability, abilityT, slot, air, thrown, lift } | null   (the view's, for the figures)
 
 import KIT from '../../data/bf2017/heroKit.json';
@@ -28,11 +30,15 @@ import { apply } from './affectors.js';
 import { fire as fireBolt } from './bolts.js';
 import { heightAt } from './nav.js';
 import { chestOf } from './soldier.js';
-import { damageAt } from './weapons.js';
+import { STEP } from './core.js';
+import { AI_DAMAGE_SCALE, damageAt } from './weapons.js';
 import { aimYaw, enemiesOf, fireAbility, inReach, slide, startAbility, stepEffects } from './heroAbilities.js';
 import { domed, dropBlaster, onBlaster, pressBlaster, stepBlaster } from './heroBlaster.js';
 
 export { domed };
+// (the hero's class row and abilities, and its star cards, for the sim: one door to the hero's files)
+export { heroAbilities, heroClass } from './hero.js';
+export { cardsFor, equip } from './cards.js';
 
 const T = KIT.strike;
 const D = KIT.deflect;
@@ -43,6 +49,8 @@ const BEAM = FX.heroes.palpatine.abilities.find((a) => a.kind === 'lightning');
 
 export function createHero(s, id) {
   const k = KIT.heroes[id];
+  s.unit = 'hero';
+  s.unitId = id;
   s.hero = {
     id,
     kit: k,
@@ -62,6 +70,7 @@ export function createHero(s, id) {
     barrage: null,
     dome: null,
     mines: [],
+    flurry: null,
     stunned: false,
   };
   return s.hero;
@@ -228,7 +237,7 @@ function stepBeam(sim, s, now, out) {
 
 export function stepHeroes(sim) {
   const now = sim.time;
-  const dt = 0.05;
+  const dt = STEP;
   const out = [];
   for (const s of sim.entities.values()) {
     if (s.kind !== 'soldier') continue;
@@ -304,4 +313,25 @@ export function actOf(s, now) {
     thrown: H.thrown ? H.thrown.at : null,
     rush: Boolean(H.rush),
   };
+}
+
+// a bolt a saber hero's block turned, or a Squad Shield took from outside it: that bolt is gone
+export const heroTakes = (sim, target, hit, damage) => Boolean((target.hero && deflect(sim, target, hit)) || domed(sim, target, hit.bolt, damage));
+
+// A round that bursts where it lands (the bowcaster's bolt, a micro-grenade, the pulse cannon's): its blast is the
+// kit's to apply, by the factor its bolt had: a bot's half (the AI's bolt), the difficulty's scale on a human, and
+// nothing at all while the buckets' grace holds the bolt itself to nothing.
+export function burstAt(sim, hit, { shooter = null, scale = 1, grace = true } = {}) {
+  const blast = hit.bolt.weapon?.damage?.blast;
+  const k = grace ? (shooter?.bot && !hit.bolt.weapon.aiDamage ? AI_DAMAGE_SCALE : 1) * scale : 0;
+  if (!(blast?.damage > 0) || !(k > 0)) return;
+  sim.kit.blasts.push({ by: hit.bolt.owner, team: hit.bolt.team, at: hit.at.slice(), row: { id: 'bolt', inner: blast.inner, damage: blast.damage * k, radius: blast.radius, multiplier: 1 } });
+}
+
+export function viewHero(e, s, now) {
+  e.act = s.hero ? actOf(s, now) : null;
+  e.struckAt = s.hitReactAt ?? null;
+  e.lift = s.lift ?? 0;
+  // (inside Lando's smoke, of either side: kit.js's field sets it while the smoke stands)
+  e.smoked = (s.hiddenUntil ?? -Infinity) > now;
 }

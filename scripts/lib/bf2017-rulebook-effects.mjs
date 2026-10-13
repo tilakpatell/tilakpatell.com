@@ -9,10 +9,11 @@
 // detonators Leia holds) is in the block's `hand`, with its line in
 // src/data/bf2017/NOTES.md.
 //
-// A read is `[key, record, type, path, { is }]`: the first object of that
-// type in the record, or with `is` the first whose field has that value (a
-// prefab holds several queries and delays; the source then says which,
-// `Type[n]`). A swapped weapon is a whole weapon row (`weaponRow`).
+// A read is `[key, record, type, path, { is, affector }]`: the first object
+// of that type in the record, or with `is` the first whose field has that
+// value (a prefab holds several queries and delays; the source then says
+// which, `Type[n]`), or with `affector` the apply that names that affector.
+// A swapped weapon is a whole weapon row (`weaponRow`).
 //
 //   KINDS                                  the fourteen kinds
 //   effectOf(root, id, { weaponRow }) → { kind, … } | null   (id: the ability's short name)
@@ -57,7 +58,8 @@ export const EFFECTS = {
           ['reach', `${K}HanSolo/PF_ShoulderCharge_HanSolo`, 'SphereQueryEntityData', 'Radius'],
           ['damage.trooper', `${A}Affector_Damage_HanSolo_ShoulderCharge_Troopers`, 'DamageAffectorAsset', 'RankData.0.InitialDamage'],
           ['damage.hero', `${A}Affector_Damage_HanSolo_ShoulderCharge`, 'DamageAffectorAsset', 'RankData.0.InitialDamage'],
-          ['held', `${K}HanSolo/PF_ShoulderCharge_HanSolo`, 'AffectorApplyEntityData', 'Duration', { is: 3 }],
+          // (how long the prefab keeps the pushed state on the one it hit: the apply that names that affector)
+          ['held', `${K}HanSolo/PF_ShoulderCharge_HanSolo`, 'AffectorApplyEntityData', 'Duration', { affector: 'Affector_ForcePushed_3m' }],
         ],
       },
       taken(`${A}Affector_HanSolo_SharpshooterDMGReduction1`),
@@ -75,11 +77,8 @@ export const EFFECTS = {
     // (how many she holds is the ability's text, "up to three"; the fuse is the trooper's detonator's, 0.7 s at rest)
     hand: { count: 3, fuse: 0.7 },
   },
-  Ability_BlasterRifle_E11_Leia: {
-    kind: 'weaponSwap',
-    weapon: `${E}E11Leia/W_BlasterRifle_E11_Leia`,
-    ...merge({ read: [['seconds', `${K}Leia/Ability_BlasterRifle_E11_Leia`, 'PlayerAbilityPropertyModifierActiveValue', 'ActiveTime', { is: 13 }]] }, taken(`${K}Affector_Leia_DmgReduction1`)),
-  },
+  // (no timed length: the record's active time is flagged infinite, so the E-11's own heat ends it)
+  Ability_BlasterRifle_E11_Leia: { kind: 'weaponSwap', weapon: `${E}E11Leia/W_BlasterRifle_E11_Leia`, ...taken(`${K}Affector_Leia_DmgReduction1`) },
   Ability_Leia_BubbleShield: {
     kind: 'deployShield',
     read: [
@@ -96,17 +95,24 @@ export const EFFECTS = {
     read: [
       ['radius', 'Gameplay/Equipment/Grenades/Smoke/Lando_Smoke_Projectile', 'ExplosionEntityData', 'BlastRadius'],
       ['unseen', 'Gameplay/Equipment/Grenades/Smoke/Lando_Smoke_Projectile', 'BlockSpottingEntityData', 'Radius'],
+      // (the graph's two floats: the smoke stands 7 s from its first bounce, and hides those within 6 m of it)
+      ['seconds', 'Gameplay/Equipment/Grenades/Smoke/Lando_Smoke_Projectile', 'FloatEntityData', 'DefaultValue', { is: 7 }],
+      ['hides', 'Gameplay/Equipment/Grenades/Smoke/Lando_Smoke_Projectile', 'FloatEntityData', 'DefaultValue', { is: 6 }],
+      ['ttl', 'Gameplay/Equipment/Grenades/Smoke/Lando_Smoke_Projectile', 'WSGrenadeEntityData', 'TimeToLive'],
     ],
-    // (how long the smoke hangs is its effect's, not a field: by hand)
-    hand: { seconds: 15 },
   },
   Ability_Lando_SharpShot: {
     kind: 'marks',
     read: [
       ['range', `${K}Lando/Prefabs/PF_SharpShot_Lando`, 'SphereQueryEntityData', 'Radius', { is: 40 }],
       ['marked', `${K}Lando/Prefabs/PF_SharpShot_Lando`, 'AffectorApplyEntityData', 'Duration', { is: 6 }],
+      // (the flurry: one shot of the ability's own round at each mark, this far apart; set off by a second press
+      // once the retrigger cooldown has passed, or by the active time's end)
+      ['damage', 'Gameplay/Equipment/Shared/Projectiles/BlasterProjectile_Lando_Sharpshot', 'WSBulletEntityData', 'StartDamage'],
+      ['every', `${K}Lando/Prefabs/PF_SharpShot_Lando`, 'DelayEntityData', 'Delay', { is: 0.15 }],
+      ['retrigger', `${K}Lando/Ability_Lando_SharpShot`, 'RetriggerablePlayerAbilityAsset', 'RetriggerCooldown'],
     ],
-    // (the ability's text: "up to five"; each mark takes one bolt of his own blaster)
+    // (the ability's text: "up to five"; he marks what is inside 45° of his aim)
     hand: { count: 5, cone: 45 },
   },
   Ability_Lando_Disruptor: {
@@ -125,9 +131,14 @@ export const EFFECTS = {
       ['radius', `${K}Chewbacca/Grenade_Projectile_ChewbaccaGrenadeStun_Main`, 'ExplosionEntityData', 'BlastRadius'],
       ['ttl', `${K}Chewbacca/Grenade_Projectile_ChewbaccaGrenadeStun_Main`, 'WSGrenadeEntityData', 'TimeToLive'],
       ['gravity', `${K}Chewbacca/Grenade_Projectile_ChewbaccaGrenadeStun_Main`, 'WSGrenadeEntityData', 'Gravity'],
+      // (it splits into this many; each shocks for `shock` seconds within `reach`, and no one twice inside `immune`)
+      ['splits', `${K}Chewbacca/Grenade_Projectile_ChewbaccaGrenadeStun_Main`, 'IntEntityData', 'DefaultValue', { is: 6 }],
+      ['shock', `${K}Chewbacca/Ability_Chewbacca_GrenadeStun`, 'PlayerAbilityPropertyOutputFloatModifierValue', 'Value', { is: 0.75 }],
+      ['reach', `${K}Chewbacca/Ability_Chewbacca_GrenadeStun`, 'PlayerAbilityPropertyOutputFloatModifierValue', 'Value', { is: 3 }],
+      ['immune', `${K}Chewbacca/Grenade_Projectile_ChewbaccaGrenadeStun_Scatter`, 'AffectorApplyEntityData', 'Duration', { is: 3.5 }],
     ],
-    // (how long the shock holds is the state machine's reaction: the class's shock grenade's 1.1 s; one grenade, its split not played)
-    hand: { count: 1, fuse: 0, shock: 1.1 },
+    // (one grenade, split where it first lands; how the six fly out is the officer's flash grenade's split, by hand: grenades.js)
+    hand: { count: 1, fuse: 0 },
   },
   Ability_Weapon_FuriousBowcaster: { kind: 'weaponSwap', weapon: `${E}FuriousBowcaster/W_BlasterRifle_Bowcaster_Furious_Chewbacca` },
   Ability_Chewbacca_Leap: {
@@ -181,7 +192,9 @@ export const EFFECTS = {
     read: [
       ['radius', `${E}DioxisGrenadeBossk/Bossk_Projectile_DioxisGrenade`, 'ExplosionEntityData', 'BlastRadius'],
       ['reach', `${E}DioxisGrenadeBossk/Bossk_Projectile_DioxisGrenade`, 'SphereQueryEntityData', 'Radius'],
-      ['seconds', `${E}DioxisGrenadeBossk/Bossk_Projectile_DioxisGrenade`, 'WSGrenadeEntityData', 'TimeToLive'],
+      // (the cloud stays the graph's 6 s after it bursts; the record's TimeToLive is the grenade's flight fuse)
+      ['seconds', `${E}DioxisGrenadeBossk/Bossk_Projectile_DioxisGrenade`, 'FloatEntityData', 'DefaultValue', { is: 6 }],
+      ['ttl', `${E}DioxisGrenadeBossk/Bossk_Projectile_DioxisGrenade`, 'WSGrenadeEntityData', 'TimeToLive'],
       ['first', `${A}Affector_Damage_Bossk_DioxisGrenade`, 'DamageAffectorAsset', 'RankData.0.InitialDamage'],
       ['perSecond', `${A}Affector_Damage_Bossk_DioxisGrenade`, 'DamageAffectorAsset', 'RankData.0.DamageToDealPerSecond'],
       ['tick', `${A}Affector_Damage_Bossk_DioxisGrenade`, 'DamageAffectorAsset', 'RankData.0.DamageInterval'],
@@ -206,8 +219,9 @@ export const EFFECTS = {
       ['shock', `${K}Iden/Prefabs/PF_IdenDroid_Shared`, 'AffectorApplyEntityData', 'Duration', { is: 0.9 }],
       ['chain', `${K}Iden/Prefabs/PF_IdenDroid_Shared`, 'SphereQueryEntityData', 'Radius', { is: 5 }],
     ],
-    // (how far ahead the droid finds its mark is its flight, not a field: 20 m inside 30° by hand)
-    hand: { range: 20, cone: 30 },
+    // (how far ahead the droid finds its mark is its flight, not a field: 20 m inside 30° by hand. The record's
+    // ActivationTime of 10 s is how long the droid may be held looking; here it finds its mark at the press)
+    hand: { range: 20, cone: 30, activation: 0 },
   },
   Ability_Iden_Pulse_Cannon: { kind: 'weaponSwap', weapon: `${E}Iden_Pulse_Cannon/W_Iden_Pulse_Cannon` },
   Ability_Iden_Droid_Shield: { kind: 'selfShield', read: [['health', `${K}Iden/Iden_Shield_BurstShield`, 'ShieldHealthComponentData', 'MaxHealth']] },
@@ -223,10 +237,11 @@ function put(row, key, value, source) {
   at[`${last}_source`] = source;
 }
 
-// the object a read names, and its place among the record's objects of that type
-function find(asset, type, path, is) {
+// the object a read names, and its place among the record's objects of that type: the first, the first whose
+// field has the value `is`, or the one that applies the affector named
+function find(asset, type, path, { is, affector } = {}) {
   const list = objectsOf(asset, type);
-  const n = is === undefined ? (list.length ? 0 : -1) : list.findIndex((o) => pick(o, path) === is);
+  const n = affector ? list.findIndex((o) => shortName(o.Affector?.$asset ?? '') === affector) : is === undefined ? (list.length ? 0 : -1) : list.findIndex((o) => pick(o, path) === is);
   return n < 0 ? null : { obj: list[n], n };
 }
 
@@ -235,14 +250,14 @@ export function effectOf(root, id, { weaponRow = null } = {}) {
   if (!spec) return null;
   const row = { kind: spec.kind };
   const missing = [];
-  const value = (rec, type, path, is) => {
+  const value = (rec, type, path, opt) => {
     const asset = follow(root, rec);
-    const hit = asset && find(asset, type, path, is);
+    const hit = asset && find(asset, type, path, opt);
     const v = hit ? pick(hit.obj, path) : undefined;
     return typeof v === 'number' ? { v, source: `${rec}#${type}${hit.n ? `[${hit.n}]` : ''}.${path}` } : null;
   };
   for (const [key, rec, type, path, opt] of spec.read ?? []) {
-    const r = value(rec, type, path, opt?.is);
+    const r = value(rec, type, path, opt);
     if (r) put(row, key, r.v, r.source);
     else missing.push(`${key}: ${rec}#${type}.${path}`);
   }

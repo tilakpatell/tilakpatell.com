@@ -21,7 +21,7 @@
 import { end as endAbility } from './abilities.js';
 import { remove } from './affectors.js';
 import { fire as fireBolt } from './bolts.js';
-import { createGrenade, throwFrom } from './grenades.js';
+import { SPLIT, createGrenade, throwFrom } from './grenades.js';
 import { heightAt } from './nav.js';
 import { syncGun } from './kit.js';
 import { chestOf, eyeOf } from './soldier.js';
@@ -35,6 +35,8 @@ export const BOT_CHARGE = 3;
 export const BOT_WEAPON = 10;
 // The gap between a bot's detonators (a player throws one a press): by hand.
 export const BOT_THROW = 0.5;
+// How often the smoke looks for who stands in it, seconds: by hand.
+export const SMOKE_TICK = 0.5;
 // A fuse that never runs: the round waits for its ability (a charge, a device).
 const NEVER = { on: 'never', delay: 0 };
 const ON_HIT = { on: 'collision', delay: 0 };
@@ -82,14 +84,16 @@ const ROUNDS = {
   Ability_HanSolo_DemolitionGrenade: (fx) => blastRow('detonite', fx, { fuse: NEVER, stick: true, ttl: Infinity, gravity: fx.gravity }),
   // Leia's detonators: the trooper's fuse, her own blast
   Ability_Leia_ThermalDetonator_Fake: (fx) => blastRow('thermal', fx, { fuse: { on: 'sleep', delay: fx.hand.fuse }, ttl: fx.ttl, gravity: fx.gravity }),
-  // Chewbacca's shock grenade: no damage, those in its burst held
-  Ability_Chewbacca_GrenadeStun: (fx) => blastRow('shock', { radius: fx.radius }, { fuse: ON_HIT, ttl: fx.ttl, gravity: fx.gravity, field: { radius: fx.radius, perSecond: 0, tick: 0.1, apply: fx.hand.shock, seconds: 0.1 } }),
+  // Chewbacca's shock grenade: no damage; where it first lands it splits (as the officer's flash does, kit.js), and
+  // each of its six shocks those within its reach, no one twice inside the immunity it leaves
+  Ability_Chewbacca_GrenadeStun: (fx) =>
+    blastRow('shock', { radius: fx.radius }, { fuse: ON_HIT, ttl: fx.ttl, gravity: fx.gravity, splits: fx.splits, sub: blastRow('shockSub', { radius: fx.radius }, { fuse: { on: 'timer', delay: SPLIT.fuse }, ttl: fx.ttl, field: { radius: fx.reach, perSecond: 0, tick: 0.1, apply: fx.shock, immune: fx.immune, seconds: 0.1 } }) }),
   // Boba Fett's concussion rocket: those facing it flashed, the blasters in its burst held down
   Ability_BobaFett_Concussion_Rocket: (fx) => blastRow('rocket', { radius: fx.radius }, { fuse: ON_HIT, ttl: fx.ttl, gravity: fx.gravity, flash: { range: fx.flash.range, angle: fx.flash.angle, seconds: fx.flash.seconds }, field: { radius: fx.radius, perSecond: 0, tick: 0.1, noFire: fx.disrupt, seconds: 0.1 } }),
-  // Bossk's Dioxis: the cloud its first touch and then its rate, for the grenade's life
-  Ability_Bossk_GrenadeDioxis: (fx) => blastRow('dioxis', { radius: fx.radius }, { fuse: ON_HIT, ttl: fx.seconds, field: { radius: fx.reach, first: fx.first, perSecond: fx.perSecond, tick: fx.tick, seconds: fx.seconds } }),
-  // Lando's smoke: a cloud that hurts no one
-  Ability_GrenadeSmoke_Lando: (fx) => blastRow('smoke', { radius: fx.radius }, { fuse: ON_HIT, ttl: fx.hand.seconds, field: { radius: fx.radius, perSecond: 0, tick: 0.5, seconds: fx.hand.seconds } }),
+  // Bossk's Dioxis: the cloud its first touch and then its rate, for its seconds after the burst (the flight has its own fuse)
+  Ability_Bossk_GrenadeDioxis: (fx) => blastRow('dioxis', { radius: fx.radius }, { fuse: ON_HIT, ttl: fx.ttl, field: { radius: fx.reach, first: fx.first, perSecond: fx.perSecond, tick: fx.tick, seconds: fx.seconds } }),
+  // Lando's smoke: a cloud that hurts no one and hides whoever stands within its `hides`, for its seconds from the first bounce
+  Ability_GrenadeSmoke_Lando: (fx) => blastRow('smoke', { radius: fx.radius }, { fuse: ON_HIT, ttl: fx.ttl, field: { radius: fx.radius, perSecond: 0, tick: SMOKE_TICK, seconds: fx.seconds, hides: fx.hides } }),
   // Lando's disabler: it sticks and waits, as the charge does
   Ability_Lando_Disruptor: (fx) => blastRow('disabler', { radius: fx.radius }, { fuse: NEVER, stick: true, ttl: Infinity }),
   // Boba Fett's barrage: a rocket that flies flat and bursts on what it meets
@@ -106,7 +110,9 @@ function throwNext(sim, s, a, now) {
   a.nextThrow = now + BOT_THROW;
   if (a.thrown >= fx.hand.count) {
     a.thrown = 0;
-    if (a.phase === 'active') endAbility(s.abilities, a.slot, now, 'thrown');
+    // (the last one thrown ends an ability the record holds active for ever, Leia's detonators; one with an
+    // active time of its own, Chewbacca's second, runs it out)
+    if (a.phase === 'active' && a.row.active > 60) endAbility(s.abilities, a.slot, now, 'thrown');
   }
 }
 
@@ -151,20 +157,22 @@ export const BLASTER = {
       return [];
     },
   },
-  // the ability's own weapon in the hand until its heat ends it, its seconds run out, or the second press
+  // the ability's own weapon in the hand until its heat ends it or the second press puts it away
   weaponSwap: {
     fire(sim, s, a) {
-      a.gun = createGun(fxOf(a).weapon, { rand: sim.rand });
+      const w = fxOf(a).weapon;
+      // (its overheat is the ability's end, not a bar to cool by hand: the gun is made with no active cooling)
+      a.gun = createGun(w.heat?.cooling ? { ...w, heat: { ...w.heat, cooling: null } } : w, { rand: sim.rand });
       syncGun(s);
       return [];
     },
     step(sim, s, a, now) {
       const g = a.gun;
       if (a.phase !== 'active' || !g) return [];
-      const fx = fxOf(a);
       const hot = Boolean(g.row.heat) && (g.state !== 'ready' || g.heat >= g.row.heat.threshold - 1e-9);
       if (hot) endAbility(s.abilities, a.slot, now, 'heat');
-      else if (now - a.activeAt >= (fx.seconds ?? (s.bot && !g.row.heat ? BOT_WEAPON : Infinity)) - 1e-9) endAbility(s.abilities, a.slot, now, 'time');
+      // (a weapon with no heat, Iden's pulse cannon, is a bot's to put away after a while)
+      else if (s.bot && !g.row.heat && now - a.activeAt >= BOT_WEAPON - 1e-9) endAbility(s.abilities, a.slot, now, 'time');
       return [];
     },
     end(sim, s, a) {
@@ -209,7 +217,8 @@ export const BLASTER = {
       return [];
     },
   },
-  // a sticky device that shows and jams those near it; the second press overcharges it, and they are shocked
+  // a sticky device that shows and jams those near it; the second press overcharges it and they are shocked, as
+  // they are when its time runs out (its card's own text: it "auto-detonates")
   reveal: {
     fire(sim, s, a, now) {
       a.device = toss(sim, s, roundOf(a), now);
@@ -225,12 +234,11 @@ export const BLASTER = {
       }
       return [];
     },
-    end(sim, s, a, now, why) {
+    end(sim, s, a, now) {
       const g = a.device;
       a.device = null;
       if (!g || g.dead) return [];
       g.dead = true;
-      if (why !== 'retrigger') return [];
       const fx = fxOf(a);
       for (const o of enemiesNear(sim, s, g.at, fx.radius)) hold(o, now + fx.shock, 'shocked');
       sim.out?.push({ t: now, type: 'explosion', by: s.id, kind: 'disabler', at: [...g.at], radius: fx.radius });
@@ -296,29 +304,55 @@ export const BLASTER = {
       return [];
     },
   },
-  // the enemies in view marked, nearest first, and a bolt of the hero's own blaster at each
+  // the enemies in view marked while it lasts, nearest first, as many as it holds; then the flurry, one shot of
+  // the ability's own round at each whose mark still stands, when it is pressed again or its time runs out
   marks: {
     fire(sim, s, a, now) {
+      a.marks = [];
+      markMore(sim, s, a, now);
+      return [];
+    },
+    step(sim, s, a, now) {
+      if (a.phase === 'active' && a.marks) markMore(sim, s, a, now);
+      return [];
+    },
+    end(sim, s, a, now) {
       const fx = fxOf(a);
-      const row = s.gun?.row;
-      const yaw = aimYaw(s);
-      const marks = enemiesOf(sim, s)
-        .filter((o) => inReach(sim, s, o, { range: fx.range, cone: fx.hand.cone, yaw }))
-        .sort((p, q) => dist(p.at, s.at) - dist(q.at, s.at))
-        .slice(0, fx.hand.count);
-      for (const o of marks) {
-        o.markedUntil = Math.max(o.markedUntil ?? 0, now + fx.marked);
-        if (!row) continue;
-        const from = chestOf(s);
-        const to = chestOf(o);
-        const d = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
-        const L = Math.hypot(...d) || 1;
-        fireBolt(sim.bolts, { from, dir: d.map((v) => v / L), speed: row.firing?.speed ?? 700, range: row.range ?? 200, ttl: row.damage?.timeToLive ?? 3, team: s.team, owner: s.id, weapon: row, colour: row.colour, now });
-      }
+      const targets = (a.marks ?? []).filter((m) => m.until > now).map((m) => m.id);
+      a.marks = null;
+      if (targets.length) s.hero.flurry = { targets, next: now, every: fx.every, damage: fx.damage };
       return [];
     },
   },
 };
+
+// those in view marked, nearest first, up to the count; a mark is kept up while its body stays in view, and
+// stands its seconds after it has left
+function markMore(sim, s, a, now) {
+  const fx = fxOf(a);
+  const yaw = aimYaw(s);
+  const seen = enemiesOf(sim, s)
+    .filter((o) => inReach(sim, s, o, { range: fx.range, cone: fx.hand.cone, yaw }))
+    .sort((p, q) => dist(p.at, s.at) - dist(q.at, s.at));
+  for (const o of seen) {
+    let m = a.marks.find((x) => x.id === o.id);
+    if (!m && a.marks.length < fx.hand.count) a.marks.push((m = { id: o.id, until: 0 }));
+    if (!m) continue;
+    m.until = now + fx.marked;
+    o.markedUntil = Math.max(o.markedUntil ?? 0, m.until);
+  }
+}
+
+// one shot of Sharp Shot's round at a mark: the hero's own gun's bolt, at the round's damage whatever the range
+function sharpShot(sim, s, o, damage, now) {
+  const row = (s.gunBase ?? s.gun)?.row ?? {};
+  const from = chestOf(s);
+  const to = chestOf(o);
+  const d = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+  const L = Math.hypot(...d) || 1;
+  fireBolt(sim.bolts, { from, dir: d.map((v) => v / L), speed: row.firing?.speed ?? 700, range: row.range ?? 200, ttl: row.damage?.timeToLive ?? 3, team: s.team, owner: s.id, weapon: { id: 'sharpShot', family: 'hero', damage: { start: damage, end: damage, startDistance: 0, endDistance: 1, min: 1, max: 1 } }, colour: row.colour, now });
+  sim.out?.push({ t: now, type: 'shot', by: s.id });
+}
 
 export function onBlaster(sim, s, a, e) {
   const h = BLASTER[fxOf(a)?.kind];
@@ -380,6 +414,15 @@ export function stepBlaster(sim, s, now) {
     }
     if (b.left <= 0) H.barrage = null;
   }
+  const f = H.flurry;
+  if (f) {
+    while (f.targets.length && now + 1e-9 >= f.next) {
+      f.next += f.every;
+      const o = sim.entities.get(f.targets.shift());
+      if (o?.alive) sharpShot(sim, s, o, f.damage, now);
+    }
+    if (!f.targets.length) H.flurry = null;
+  }
   return out;
 }
 
@@ -392,6 +435,7 @@ export function dropBlaster(sim, s) {
   H.dome = null;
   H.mines = [];
   H.barrage = null;
+  H.flurry = null;
 }
 
 export function domed(sim, t, bolt, damage = 0) {

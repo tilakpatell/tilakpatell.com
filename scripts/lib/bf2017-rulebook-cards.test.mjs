@@ -41,6 +41,11 @@ describe('what a card changes', () => {
     expect(e).toBe(null);
   });
 
+  it('a card whose better time comes with a penalty is left out, whatever its records hold', () => {
+    // (Vader's card 1 lengthens Focused Rage and lessens its damage: the same records under its id give nothing)
+    expect(cardEffect(ROOT, 'darthvader.1', { levels: [10, 15, 20, 30], _source: META }, { name: `${LEIA}StarCards/StarCard_Leia_1_ShieldLifetime`, abilities: [`${LEIA}Ability_Leia_BubbleShield`] })).toBe(null);
+  });
+
   it('the DL-44’s heat a bullet is the card’s own four factors', () => {
     const e = cardEffect(ROOT, 'hansolo.1', { levels: [10, 14, 18, 25], _source: META }, { name: `${HAN}StarCards/StarCard_HanSolo_1_LessOverheat`, abilities: [] });
     expect(e).toEqual({ type: 'T10', target: 'primary', property: 'heat.perBullet', op: 'mul', values: [0.9, 0.86, 0.82, 0.75], values_source: `${HAN}StarCards/StarCard_HanSolo_1_LessOverheat#PlayerAbilityPropertyOutputModifier.Values` });

@@ -127,33 +127,88 @@ describe('abilities', () => {
       return n;
     };
     // pressed 0.4 s before it is ready again: held, and it goes off the step it is ready
-    const held = createAbilities(rows);
+    const held = createAbilities(rows, { hold: true });
     expect(press(held, 1, 0).fired).toBe(true);
     // (the first press's own start, read off before the count begins)
     expect(tick(held, 0, 0).map((e) => e.phase)).toEqual(['start', 'end']);
     expect(starts(held, 0, 0.6)).toBe(0);
-    expect(press(held, 1, 0.6)).toEqual({ fired: false, why: 'recharging' });
+    expect(press(held, 1, 0.6)).toEqual({ fired: false, why: 'recharging', held: true });
     expect(starts(held, 0.6, 0.95)).toBe(0);
     expect(starts(held, 0.95, 1)).toBe(1);
     // pressed 0.6 s before: dropped, and the ability is ready and not used
-    const dropped = createAbilities(rows);
+    const dropped = createAbilities(rows, { hold: true });
     press(dropped, 1, 0);
     starts(dropped, 0, 0.4);
-    expect(press(dropped, 1, 0.4)).toEqual({ fired: false, why: 'recharging' });
+    expect(press(dropped, 1, 0.4)).toEqual({ fired: false, why: 'recharging', held: true });
     expect(starts(dropped, 0.4, 1.5)).toBe(0);
     expect(state(dropped, 1)).toBe('ready');
+    // (exactly half a second before is in time, whatever the floats make of 1.1 − 0.6)
+    const edge = createAbilities([ROLL, { id: 'x', slot: 1, activation: 0, active: 0, recharge: 1, channels: [] }], { hold: true });
+    tick(edge, 0.1, 0.1);
+    press(edge, 1, 0.1);
+    tick(edge, 0, 0.1);
+    starts(edge, 0.1, 0.6);
+    expect(press(edge, 1, 0.6).held).toBe(true);
+    expect(starts(edge, 0.6, 1.1)).toBe(1);
     // blocked by another ability on its channel: it goes off when that one ends, if that is within the half second
-    const two = createAbilities([ROLL, { id: 'a', slot: 1, activation: 0, active: 1, recharge: 5, channels: ['c'] }, { id: 'b', slot: 2, activation: 0, active: 0, recharge: 5, channels: ['c'] }]);
+    const two = createAbilities([ROLL, { id: 'a', slot: 1, activation: 0, active: 1, recharge: 5, channels: ['c'] }, { id: 'b', slot: 2, activation: 0, active: 0, recharge: 5, channels: ['c'] }], { hold: true });
     press(two, 1, 0);
     starts(two, 0, 0.7);
-    expect(press(two, 2, 0.7)).toEqual({ fired: false, why: 'blocked' });
+    expect(press(two, 2, 0.7)).toEqual({ fired: false, why: 'blocked', held: true });
     expect(starts(two, 0.7, 1.05)).toBe(1);
     // (the roll is the caller's to act on at the press: a roll with no charge is not held)
-    const roll = createAbilities(rows);
+    const roll = createAbilities(rows, { hold: true });
     press(roll, 0, 0);
     press(roll, 0, 0.01);
-    expect(press(roll, 0, 0.02).fired).toBe(false);
+    expect(press(roll, 0, 0.02)).toEqual({ fired: false, why: 'recharging' });
     expect(roll.queue).toHaveLength(0);
+  });
+
+  // (a bot's brain takes `fired: false` as "did not happen" and presses again when it means to: nothing of its is held)
+  it('holds nothing where the abilities were not made to: a bot’s press that fails is over', () => {
+    const abs = createAbilities([ROLL, { id: 'x', slot: 1, activation: 0, active: 0, recharge: 1, channels: [] }]);
+    press(abs, 1, 0);
+    tick(abs, 0, 0);
+    for (let i = 1; i <= 12; i++) tick(abs, 0.05, i * 0.05);
+    expect(press(abs, 1, 0.6)).toEqual({ fired: false, why: 'recharging' });
+    expect(abs.queue).toHaveLength(0);
+    let started = 0;
+    for (let i = 13; i <= 30; i++) started += tick(abs, 0.05, Math.round(i * 0.05 * 1e6) / 1e6).filter((e) => e.phase === 'start').length;
+    expect(started).toBe(0);
+    expect(state(abs, 1)).toBe('ready');
+  });
+
+  // (the roll is the caller's to perform at the press: one pressed while another ability is activating used to wait in
+  // the queue and then spend a charge with no roll. The game blocks the dodge through most abilities' activation.)
+  it('refuses the roll while another ability is activating: no charge spent, nothing queued', () => {
+    const abs = createAbilities([ROLL, { id: 'slow', slot: 1, activation: 0.5, active: 0, recharge: 4, channels: [] }]);
+    expect(press(abs, 1, 0).fired).toBe(true);
+    expect(press(abs, 0, 0.15)).toEqual({ fired: false, why: 'blocked' });
+    expect(abs.queue).toHaveLength(0);
+    const ev = [];
+    for (let i = 1; i <= 20; i++) ev.push(...tick(abs, 0.05, Math.round(i * 0.05 * 1e6) / 1e6));
+    expect(ev.filter((e) => e.id === ROLL.id)).toEqual([]);
+    expect(charges(abs, 0)).toBe(2);
+    // (once the activation is over the roll is the player's again)
+    expect(press(abs, 0, 1).fired).toBe(true);
+  });
+
+  // (a hero's rows carry their record's two flags: ApplyBlockPlayerAbilitiesDuringActivation and …DuringActive)
+  it('holds an ability’s blocks only while its record says: through its activation, or through its active time too', () => {
+    const disabler = { id: 'disabler', slot: 1, activation: 0.4, active: 25, recharge: 19, channels: [], blocks: ['smoke'], blocksWhile: { activation: true, active: false } };
+    const sharp = { id: 'sharp', slot: 1, activation: 0.4, active: 7, recharge: 12, channels: [], blocks: ['smoke'], blocksWhile: { activation: true, active: true } };
+    const smoke = { id: 'smoke', slot: 2, activation: 0, active: 0, recharge: 14, channels: [] };
+    for (const [first, later] of [
+      [disabler, 'ready'],
+      [sharp, 'blocked'],
+    ]) {
+      const abs = createAbilities([ROLL, first, smoke]);
+      press(abs, 1, 0);
+      expect(state(abs, 2)).toBe('blocked');
+      for (let i = 1; i <= 20; i++) tick(abs, 0.05, i * 0.05);
+      expect(state(abs, 1)).toBe('active');
+      expect(state(abs, 2)).toBe(later);
+    }
   });
 
   // (the game's own ability, read from its code: one state and one timer, Activating then Active then Recharge then

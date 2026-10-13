@@ -2,7 +2,7 @@ import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { abilityRow, cardRow, checkSources, classRow, heroRow, kitRow, reinforcementRow, teamRow, vehicleRow, weaponRow } from './bf2017-rulebook.mjs';
+import { abilityRow, cardRow, checkSources, classRow, heroRow, kitRow, linkBlocks, reinforcementRow, teamRow, vehicleRow, weaponRow } from './bf2017-rulebook.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
 const A280C = 'Gameplay/Equipment/Rifles/A280C/Ability_Weapon_BlasterRifle_A280C';
@@ -139,6 +139,28 @@ describe('a blaster hero’s ability, with what it does', () => {
     expect(e.weapon.heat).toMatchObject({ perBullet: 0.08, risePerSecond: 0.04, dropPerSecond: 0, dropDelay: 0.7, threshold: 0.8 });
     expect(e.weapon.heat.perBullet_source).toBe('Gameplay/Equipment/Heroes/DL44/W_Pistol_DL44_HanSolo_Sharpshooterz#OverheatConfig.HeatPerBullet');
     expect(checkSources(e)).toEqual([]);
+  });
+
+  it('names whom an ability blocks and when, from its record’s list and two flags', () => {
+    const names = ['Ability_HanSolo_DemolitionGrenade', 'Ability_HanSolo_Sharpshooterz', 'Ability_HanSolo_ShoulderCharges'];
+    const rows = linkBlocks(ROOT, Object.fromEntries(names.map((n) => [n, abilityRow(ROOT, `${HAN}${n}`)])));
+    // (the charge blocks the other two and the dodge, named from its own record, through its activation alone)
+    expect(rows.Ability_HanSolo_DemolitionGrenade.blocking).toEqual({ whom: ['Ability_HanSolo_Sharpshooterz', 'Ability_HanSolo_ShoulderCharges', 'Ability_Evade_CharacterState'], activation: true, active: false });
+    expect(linkBlocks(ROOT, { x: abilityRow(ROOT, `${HAN}Ability_HanSolo_DemolitionGrenade`) }, []).x.blocking.whom).toEqual([]);
+    expect(rows.Ability_HanSolo_Sharpshooterz.blocking).toMatchObject({ activation: true, active: true });
+    expect(new Set(rows.Ability_HanSolo_Sharpshooterz.blocking.whom)).toEqual(new Set(['Ability_HanSolo_ShoulderCharges', 'Ability_HanSolo_DemolitionGrenade']));
+    for (const r of Object.values(rows)) expect(checkSources(r)).toEqual([]);
+  });
+
+  it('gives a weapon active cooling only where its config holds the super zone the cooling is played in', () => {
+    expect(weaponRow(ROOT, A280C).heat.cooling.super).toEqual([0.4, 0.3]);
+    const root = rootWith('Gameplay/Equipment/Rifles/A280C/OverheatConfig_Rifle_A280C', (a) => {
+      for (const o of a.objects) for (const band of o?.ActiveCooldownSettings?.DifficultyInterval ?? []) band.SuperZoneInterval = null;
+      return a;
+    });
+    const w = weaponRow(root, A280C);
+    expect(w.heat).toMatchObject({ perBullet: 0.03334, threshold: 0.8, penalty: 3 });
+    expect(w.heat.cooling).toBeUndefined();
   });
 
   it('leaves out a number its record lacks and says so; an ability with no effect listed has none', () => {

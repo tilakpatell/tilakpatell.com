@@ -18,8 +18,7 @@
 // three.js, no DOM.
 //
 //   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve, instantAction }) → sim
-//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate, appearance, cards }) → { ok, why }
-//     (appearance: the Collection's skin, carried to the view; cards: the star card ids picked for a hero, cards.js)
+//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate, appearance, cards }) → { ok, why }   (cards: a hero's star card ids, cards.js)
 //   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, abilityHeld, vent, cool }]
 //     (the class abilities, kit.js: 'ability' { id, slot, phase, why }, 'throw', 'explosion', 'split', 'turret', 'turretDown',
 //     'turretGone'; a blast's hit has part 'blast'; a bot's bolt on a human waits its bucket, ai/buckets.js)
@@ -49,9 +48,7 @@ import { SPREAD, createDealer, dealFor, nextFor, ownerChanged, stepDealer } from
 import { fieldTo } from './navField.js';
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
-import { heroAbilities, heroClass } from './hero.js';
-import { cardsFor, equip } from './cards.js';
-import { actOf, createHero, deflect, domed, heroInput, heroPress, heroRoll, onHeroAbility, stepHeroes } from './heroKit.js';
+import { burstAt, cardsFor, createHero, equip, heroAbilities, heroClass, heroInput, heroPress, heroRoll, heroTakes, onHeroAbility, stepHeroes, viewHero } from './heroKit.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
 import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
 import { modeFor } from './modes/index.js';
@@ -186,11 +183,7 @@ function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id:
   const abilities = cls.hero ? { abilities: heroAbilities(sim.rb, cls.hero) } : cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
   const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: cls.weapon ? weaponOf(sim.rb, cls.weapon) : null, ...abilities });
   s.kit = sim.kit;
-  if (cls.hero) {
-    createHero(s, cls.hero);
-    s.unit = 'hero';
-    s.unitId = cls.hero;
-  }
+  if (cls.hero) createHero(s, cls.hero);
   // (the difficulty's health for a player)
   if (!bot && sim.difficulty && sim.difficulty.health !== 1) s.hp = s.hpMax = s.hpMax * sim.difficulty.health;
   s.capsules = capsulesOf(s);
@@ -427,8 +420,7 @@ export function deploy(sim, id, choice) {
   }
   // (the Collection's pick, a crew kind the figure wears: the screens' appearance, carried and nothing else)
   s.appearance = choice.appearance ?? null;
-  // (the star cards the Collection keeps for a hero: its own of those picked, three at most, each one's modifiers
-  // on this soldier once, cards.js; a bot has no store and carries none)
+  // (the star cards the Collection keeps for a hero, three at most, on this soldier once: cards.js; a bot carries none)
   if (cls.hero && !entry.bot) equip(s, cardsFor(cls.hero, choice.cards, sim.rb));
   protect(s, sim.time);
   if (entry.bot) {
@@ -493,13 +485,11 @@ function applyInput(sim, inp) {
   s.sprint = !!inp.sprint;
   if (inp.roll && press(s.abilities, 0, sim.time).fired) {
     roll(s, inp.move ?? [Math.sin(s.yaw), Math.cos(s.yaw)], sim.time);
-    if (s.hero) heroRoll(s, sim.time);
-    else onRoll(s, sim.time);
+    (s.hero ? heroRoll : onRoll)(s, sim.time);
   }
   if (inp.aim) s.aim = inp.aim;
   s.abilityHeld = inp.abilityHeld ?? 0;
-  // (a press a hero's active ability takes for itself, its next detonator, is not the abilities' own: heroKit.js)
-  if (inp.ability && !heroPress(sim, s, inp.ability)) press(s.abilities, inp.ability, sim.time);
+  if (inp.ability && !heroPress(sim, s, inp.ability)) press(s.abilities, inp.ability, sim.time); // (a hero's active ability may take the press for itself, its next detonator: heroKit.js)
   if (inp.vent && s.gun) vent(s.gun, sim.time);
   if (inp.cool && s.gun) coolPress(s.gun, sim.time);
   // (a hero's saber, block, beam and jump: heroKit.js; its rush carries it on its own)
@@ -560,9 +550,8 @@ function resolveBolts(sim) {
   const evs = stepBolts(sim.bolts, STEP, { bodies, nav: sim.nav, now: sim.time });
   if (profile.on) profile.bolts += clock() - t0;
   for (const e of evs) {
-    // (a round that bursts where it lands, the bowcaster's bolt, a micro-grenade: its blast is the kit's to apply)
-    const burst = e.type === 'hit' || e.type === 'wall' ? e.bolt.weapon?.damage?.blast : null;
-    if (burst?.damage > 0) sim.kit.blasts.push({ by: e.bolt.owner, team: e.bolt.team, at: e.at.slice(), row: { id: 'bolt', inner: burst.inner, damage: burst.damage, radius: burst.radius, multiplier: 1 } });
+    // (a round that bursts where it lands, the bowcaster's bolt, a micro-grenade, bursts on a wall too: heroKit.js)
+    if (e.type === 'wall') burstAt(sim, e, { shooter: sim.entities.get(e.bolt.owner) });
     if (e.type === 'hit') {
       const target = sim.entities.get(e.target);
       // (a turret an earlier bolt of this step shot down)
@@ -576,15 +565,15 @@ function resolveBolts(sim) {
       const scale = sim.difficulty && target.bot === false && shooter?.bot ? sim.difficulty.damage : 1;
       const grace = mayHurt(sim.buckets, { shooter, target, shotAt: e.bolt.born, now: sim.time });
       let damage = grace ? damageAt(e.bolt.weapon, e.dist, { bot: !!shooter?.bot }) * scale : 0;
+      // (a bolt a saber's block turns or a Squad Shield takes is gone; any other that bursts does so by its bolt's own factor: heroKit.js)
+      if (heroTakes(sim, target, e, damage)) continue;
+      burstAt(sim, e, { shooter, scale, grace });
       if (target.kind === 'turret') {
         const r = hurtTurret(sim, target, damage);
         emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: 'body', damage: Math.round(damage * 100) / 100 });
         if (r === 'down') emit(sim, { type: 'turretDown', by: e.bolt.owner, target: e.target });
         continue;
       }
-      // (a saber hero's block turns a bolt from the front; a Squad Shield takes one from outside it: heroKit.js)
-      if (target.hero && deflect(sim, target, e)) continue;
-      if (domed(sim, target, e.bolt, damage)) continue;
       damage = absorb(target, damage, { dir: e.dir, now: sim.time });
       const r = hurt(target, { damage, part: e.part, by: e.bolt.owner, now: sim.time });
       // (both in combat: no squad spawns on either for a while)
@@ -640,8 +629,7 @@ function applyKit(sim, r) {
     const damage = absorb(target, h.damage, { dir: h.dir, now: sim.time });
     const was = hurt(target, { damage, part: 'chest', by: r.by, now: sim.time });
     target.combatAt = sim.time;
-    // (a hero's: part 'saber' or 'force', heroKit.js)
-    const part = r.part ?? 'blast';
+    const part = r.part ?? 'blast'; // (a hero's: 'saber' or 'force', heroKit.js)
     if (r.type === 'blast') emit(sim, { type: 'hit', by: r.by, target: h.id, part, damage: Math.round(damage * 100) / 100, dir: h.dir, at: [...r.at] });
     if (sim.bp && r.by !== h.id) bpHit(sim.bp, target.id, r.by, sim.time);
     if (was === 'down') downed(sim, target, r.by, part, null, null);
@@ -824,10 +812,8 @@ export function view(sim, { player = null } = {}) {
     e.hidden = !!s.hidden;
     e.ability = s.kitActive?.id ?? null;
     e.weapon = s.gun?.row?.id ?? null;
-    // (a hero's strike, block, ability, jump and throw, for its figure; a choked body's lift)
-    e.act = s.hero ? actOf(s, sim.time) : null;
-    e.struckAt = s.hitReactAt ?? null;
-    e.lift = s.lift ?? 0;
+    // (a hero's strike, block, ability, jump and throw for its figure, a choked body's lift, one the smoke hides: heroKit.js)
+    viewHero(e, s, sim.time);
     e.oob = s.oobSince != null ? Math.max(0, OOB_SECONDS - (sim.time - s.oobSince)) : null;
   }
   v.entities.length = i;

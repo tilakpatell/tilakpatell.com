@@ -21,8 +21,9 @@
 // (`hold`: a grenade still in the hand) stays active past its `ActiveTime`
 // until it is let go. Pure.
 //
-//   createAbilities(rows, { rand }) → abs     (rows: ability rows, each with an optional `slot`)
-//   press(abs, slot, now) → { fired, why?: 'recharging' | 'blocked' | 'queued' | 'retriggered' }
+//   createAbilities(rows, { rand, hold }) → abs     (rows: ability rows, each with an optional `slot`; hold: whether a
+//     press that cannot act yet waits its half second, a human's; a bot's press is its brain's to make again)
+//   press(abs, slot, now) → { fired, why?: 'recharging' | 'blocked' | 'queued' | 'retriggered', held? }   (held: it waits)
 //   tick(abs, dt, now) → events [{ type: 'ability', id, slot, phase: 'start' | 'active' | 'end', why? }]
 //   end(abs, slot, now, why?) → bool (an active ability ended by its event; the recharge starts)
 //   hold(abs, slot, on) → void (an active ability kept past its ActiveTime while `on`)
@@ -45,9 +46,10 @@ export const STATES = ['disabled', 'recharge', 'blocked', 'ready', 'activating',
 // `Affector_Evading_DMGMultiplier` (0.8 of the damage taken) for 2 s.
 export const ROLL = { id: 'Ability_Assault_CombatRoll_CharacterState', kind: 'state', activation: 0, active: 0.1, recharge: 4, cost: 0.5, channels: [], evade: { taken: 0.8, seconds: 2 } };
 
-export function createAbilities(rows, { rand = null } = {}) {
+export function createAbilities(rows, { rand = null, hold = false } = {}) {
   return {
     rand,
+    hold,
     list: rows.map((row, i) => ({ row, slot: row.slot ?? i, bar: 1, phase: 'idle', until: 0, startedAt: -Infinity, activeAt: -Infinity, held: false })),
     queue: [],
     events: [],
@@ -57,6 +59,9 @@ export function createAbilities(rows, { rand = null } = {}) {
 const find = (abs, slot) => abs.list.find((a) => a.slot === slot) ?? abs.list[slot] ?? null;
 const costOf = (a) => a.row.cost ?? 1;
 const busy = (a) => a.phase !== 'idle';
+// whether a busy ability holds its blocks now: all the while by default; a row that carries its record's two flags
+// (`blocksWhile`, a hero's: ApplyBlockPlayerAbilitiesDuringActivation and …DuringActive) only where they say so
+const blocking = (o) => (o.row.blocksWhile ? (o.phase === 'activating' ? o.row.blocksWhile.activation : o.phase === 'active' && o.row.blocksWhile.active) : busy(o));
 
 export const charges = (abs, slot) => {
   const a = find(abs, slot);
@@ -74,7 +79,7 @@ export function blocked(abs, slot) {
   const a = find(abs, slot);
   if (!a) return true;
   // (an active ability that names this one: BlockedPlayerAbilityIds, held through its activation too)
-  if (abs.list.some((o) => o !== a && busy(o) && (o.row.blocks ?? []).includes(a.row.id))) return true;
+  if (abs.list.some((o) => o !== a && blocking(o) && (o.row.blocks ?? []).includes(a.row.id))) return true;
   const mine = a.row.channels ?? [];
   if (!mine.length) return false;
   return abs.list.some((o) => o !== a && busy(o) && (o.row.channels ?? []).some((c) => mine.includes(c)));
@@ -150,16 +155,20 @@ export function press(abs, slot, now) {
     return { fired: false, why: 'retriggered' };
   }
   if (abs.list.some((o) => o.phase === 'activating')) {
-    if (abs.queue.length >= QUEUE) return { fired: false, why: 'blocked' };
+    // (the roll is the caller's to perform at the press, so it cannot wait in the queue: during another ability's
+    // activation it is refused, as the game's records have it, the dodge in most abilities' blocked list then)
+    if (a.slot === 0 || abs.queue.length >= QUEUE) return { fired: false, why: 'blocked' };
     abs.queue.push({ slot: a.slot, at: now });
     return { fired: false, why: 'queued' };
   }
   const r = attempt(abs, a, now);
-  // (a press that cannot act yet, the ability recharging or blocked, is held as the game holds it and acts if the
-  // ability becomes able inside QUEUE_TIMEOUT: watched in the running game. The roll's press is the caller's to act
-  // on there and then, so a roll with no charge is not held.)
-  if (!r.fired && a.slot !== 0 && abs.queue.length < QUEUE) abs.queue.push({ slot: a.slot, at: now });
-  return r;
+  // (a human's press that cannot act yet, the ability recharging or blocked, is held as the game holds it and acts
+  // if the ability becomes able inside QUEUE_TIMEOUT: watched in the running game. Not a bot's: its brain takes
+  // `fired: false` as final and presses again when it means to; whether the game holds an AutoPlayer's press was
+  // not read. The roll's press is the caller's to act on there and then, so a roll with no charge is not held.)
+  if (r.fired || !abs.hold || a.slot === 0 || abs.queue.length >= QUEUE) return r;
+  abs.queue.push({ slot: a.slot, at: now });
+  return { ...r, held: true };
 }
 
 export function tick(abs, dt, now) {
@@ -177,11 +186,14 @@ export function tick(abs, dt, now) {
     const rt = a.row.recharge ?? 0;
     if (!busy(a)) a.bar = rt > 0 ? Math.min(1, a.bar + Math.max(0, Math.min(dt, now - (a.idleAt ?? -Infinity))) / rt) : 1;
   }
-  abs.queue = abs.queue.filter((q) => now - q.at <= QUEUE_TIMEOUT);
-  // (each held press is tried again, in order, while no ability is activating: one that still cannot act waits out
-  // its half second)
+  abs.queue = abs.queue.filter((q) => now - q.at <= QUEUE_TIMEOUT + 1e-9);
+  // (each waiting press is tried again, in order, while no ability is activating: a human's that still cannot act
+  // waits out its half second; a bot's is tried the once, as before)
   const waiting = [];
-  for (const q of abs.queue) if (abs.list.some((o) => o.phase === 'activating') || !attempt(abs, find(abs, q.slot), now).fired) waiting.push(q);
+  for (const q of abs.queue) {
+    if (abs.list.some((o) => o.phase === 'activating')) waiting.push(q);
+    else if (!attempt(abs, find(abs, q.slot), now).fired && abs.hold) waiting.push(q);
+  }
   abs.queue = waiting;
   const out = abs.events;
   abs.events = [];

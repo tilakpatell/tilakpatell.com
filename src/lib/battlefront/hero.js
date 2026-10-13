@@ -32,13 +32,18 @@ function blasterRow(row) {
   const out = { ...row, hero: fx };
   // (a charge and a device wait for the second press, `RetriggerCooldown` after the first; the record's `InfiniteActiveTime`)
   if (fx.kind === 'charge') Object.assign(out, { active: Infinity, retrigger: { cooldown: fx.retrigger } });
-  if (fx.kind === 'reveal') out.retrigger = { cooldown: fx.retrigger };
-  // (a swapped weapon stays in the hand until its heat or its seconds end it, or it is put away)
+  // (the Disabler's second press overcharges it, Sharp Shot's lets the flurry go: `RetriggerCooldown` after the first)
+  if (fx.kind === 'reveal' || fx.kind === 'marks') out.retrigger = { cooldown: fx.retrigger };
+  // (a swapped weapon stays in the hand until its heat ends it, or it is put away)
   if (fx.kind === 'weaponSwap') Object.assign(out, { active: Infinity, retrigger: { cooldown: 0 } });
-  // (the record's ten seconds are how long Iden's droid may look for its mark: here it finds it at once)
-  if (fx.kind === 'stunDroid') out.activation = 0;
+  // (the record's ten seconds are how long Iden's droid may be held looking for its mark: by hand it finds it at the press)
+  if (fx.hand?.activation != null) out.activation = fx.hand.activation;
   return out;
 }
+
+// Whom a hero's ability blocks, and when: its record's list and two flags (abilities.json's `blocking`), in place of
+// the channel every hero ability shares, which the game does not read as "one at a time".
+const blocksOf = (row) => ({ channels: [], blocks: row.blocking?.whom ?? [], blocksWhile: { activation: row.blocking?.activation ?? true, active: row.blocking?.active ?? true } });
 
 export function heroAbilities(rb, id) {
   const k = kitOf(id);
@@ -48,11 +53,11 @@ export function heroAbilities(rb, id) {
   const rows = heroOf(rb, id).abilities.map((a, i) => {
     const row = abilityOf(rb, a.id);
     const slot = SLOTS[a.slot] ?? i + 1;
-    if (row.effect) return { ...blasterRow(row), slot };
+    if (row.effect) return { ...blasterRow(row), ...blocksOf(row), slot };
     const f = fx.find((x) => x.asset === a.id) ?? null;
     // (its numbers; the times are abilities.json's own, and where each was read stays in bf2017Abilities.json)
     const nums = f ? Object.fromEntries(Object.entries(f).filter(([key]) => !TIMES.has(key))) : { kind: null };
-    return { ...row, slot, hero: nums };
+    return { ...row, ...blocksOf(row), slot, hero: nums };
   });
   return [evade, ...rows.sort((p, q) => p.slot - q.slot)];
 }
@@ -67,7 +72,7 @@ export function heroClass(rb, id, base) {
     id,
     cls: 'hero',
     health: h.health,
-    // (Leia's record names no regen affector: the side's class's, by hand)
+    // (its own regeneration; Leia's kit applies none on spawn, and the rulebook reads her own record for it)
     regen: h.regen ?? base.regen,
     // (a blaster hero's own gun: the weapons rulebook's row for its primary)
     weapon: h.weapon ?? null,

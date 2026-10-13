@@ -245,18 +245,20 @@ function heatOf(root, blueprint, firing, fn, missing) {
   take(heat, 'overheatedDrop', conf.asset, cfg, 'OverheatedDropMultiplier');
   take(heat, 'warning', conf.asset, cfg, 'HeatWarningThreshold');
   const ac = cfg.ActiveCooldownSettings;
-  if (ac?.EnableActiveCooldown) {
+  const band = ac?.DifficultyInterval?.[0];
+  const sup = band && deref(conf.asset, band.SuperZoneInterval);
+  // (active cooling is its window and the super zone inside it: a config that gives no super zone, Bossk's
+  // micro-grenades', the dual RK-3's, has no cooling the gun model can run, and the row says none)
+  if (ac?.EnableActiveCooldown && sup) {
     const c = (heat.cooling = {});
-    const band = ac.DifficultyInterval?.[0];
-    if (band) withSources(Object.assign(c, { window: [band.Start, band.End] }), { window: where(conf.asset, cfg, 'ActiveCooldownSettings.DifficultyInterval.0.{Start,End}') });
+    withSources(Object.assign(c, { window: [band.Start, band.End] }), { window: where(conf.asset, cfg, 'ActiveCooldownSettings.DifficultyInterval.0.{Start,End}') });
     take(c, 'shrink', conf.asset, cfg, 'ActiveCooldownSettings.DifficultyIncrementation.OnSuccess');
     take(c, 'reset', conf.asset, cfg, 'ActiveCooldownSettings.DifficultyIncrementation.OnFailure');
     take(c, 'successPenalty', conf.asset, cfg, 'ActiveCooldownSettings.SuccessPenaltyTime');
     take(c, 'failurePenalty', conf.asset, cfg, 'ActiveCooldownSettings.FailurePenaltyTime');
     take(c, 'minHeat', conf.asset, cfg, 'ActiveCooldownSettings.MinimumTriggerHeat');
     if (cfg.VentingSettings?.EnableVenting) take(c, 'vent', conf.asset, cfg, 'VentingSettings.Duration');
-    const sup = band && deref(conf.asset, band.SuperZoneInterval);
-    if (sup) withSources(Object.assign(c, { super: [sup.Start, sup.End] }), { super: where(conf.asset, sup, '{Start,End}') });
+    withSources(Object.assign(c, { super: [sup.Start, sup.End] }), { super: where(conf.asset, sup, '{Start,End}') });
   }
   return heat;
 }
@@ -311,6 +313,29 @@ export function abilityRow(root, name) {
   const effect = effectOf(root, row.id, { weaponRow });
   if (effect) row.effect = effect;
   return row;
+}
+
+// Whom an ability blocks, and when: the record's `BlockedPlayerAbilityIds` (each the `Identifier` of another
+// ability's record) with its two flags, `ApplyBlockPlayerAbilitiesDuringActivation` and `…DuringActive`. The ids
+// are named among the rows given and the records in `also` (the heroes' dodge, which no kit lists among its
+// three); an id none of them carries (an emote, a melee) is left out. Each row gains
+// `blocking: { whom: [ability ids], activation, active }`.
+export const BLOCKABLE = ['Gameplay/Kits/Hero/Ability_Evade_CharacterState'];
+export function linkBlocks(root, rows, also = BLOCKABLE) {
+  const named = new Map();
+  const idOf = (name) => {
+    const asset = follow(root, name);
+    return asset && typeof rootOf(asset).Identifier === 'number' ? rootOf(asset).Identifier >>> 0 : null;
+  };
+  for (const r of Object.values(rows)) if (idOf(r.asset) !== null) named.set(idOf(r.asset), r.id);
+  for (const name of also) if (idOf(name) !== null) named.set(idOf(name), shortName(name));
+  for (const r of Object.values(rows)) {
+    const a = follow(root, r.asset);
+    const rec = a && rootOf(a);
+    if (!rec) continue;
+    r.blocking = { whom: [...new Set((rec.BlockedPlayerAbilityIds ?? []).map((id) => named.get(id >>> 0)).filter(Boolean))], activation: Boolean(rec.ApplyBlockPlayerAbilitiesDuringActivation), active: Boolean(rec.ApplyBlockPlayerAbilitiesDuringActive) };
+  }
+  return rows;
 }
 
 // A star card: an `SC_*` ability, or a `U_*` unlock naming one.
@@ -435,6 +460,15 @@ export function heroRow(root, kitName, { side = null } = {}) {
   const deflect = names.find((n) => /\/U_Lightsaber_Deflect_[^/]*$/.test(n));
   const primary = base.primaryAsset;
   const id = folder.split('/')[3].toLowerCase();
+  // (a hero whose kit applies no regeneration on spawn, Leia: her own regeneration record in her folder)
+  if (!base.regen) {
+    const own = names.filter((n) => /\/Affector_[^/]*HealthRegen$/.test(n)).map((n) => follow(root, n)).find((a) => a && rootOf(a).$type === 'SoldierHealthRegenerationAffectorAsset');
+    if (own) {
+      base.regen = {};
+      take(base.regen, 'rate', own, rootOf(own), 'RankData.0.RegenerationRate');
+      take(base.regen, 'delay', own, rootOf(own), 'RankData.0.RegenerationDelay');
+    }
+  }
   return {
     ...base,
     id,
