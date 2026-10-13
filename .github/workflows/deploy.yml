@@ -10,9 +10,14 @@ permissions:
   pages: write
   id-token: write
 
+# A deploy takes about forty minutes, and a merge to main lands more often
+# than that when several sessions work at once: with the running deploy
+# cancelled by each new one, nothing reached the site for hours (2026-10-13:
+# five merges, four deploys cancelled, none finished). So the running one
+# finishes, and of those waiting only the newest is kept.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
