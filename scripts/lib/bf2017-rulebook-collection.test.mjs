@@ -60,6 +60,13 @@ function exportRoot() {
     str(0x40),
   ]);
   put('UI/Metadata/VoiceLinesUIMetaData', 'UIMetaDataAsset', [{ $type: 'UIMetaDataAsset', Items: [] }]);
+  put('UI/Metadata/CharacterUIMetaData', 'UIMetaDataAsset', [
+    { $type: 'UIMetaDataAsset', Items: [] },
+    { $type: 'UICharacterMetaData', NameUpperLocalizedStringId: ref(6), DescriptionLocalizedStringId: ref(7), Identifiers: [20], TelemetryId: 'Luke' },
+    ...['Assault', 'Heavy', 'Officer', 'Specialist'].map((t, i) => ({ $type: 'UICharacterMetaData', NameUpperLocalizedStringId: ref(6), Identifiers: [21 + i], TelemetryId: t })),
+    str(0x60),
+    str(0x61),
+  ]);
   put('UI/Metadata/KitAppearanceSkinUIMetaData', 'UIMetaDataAsset', [{ $type: 'UIMetaDataAsset', Items: [], Assets: [at('UI/MetaData/Unlocks/Assault_Orig_SkinUIMetaData')] }]);
   put('UI/MetaData/Unlocks/Assault_Orig_SkinUIMetaData', 'UIMetaDataAsset', [
     { $type: 'UIMetaDataAsset', Items: [] },
@@ -72,7 +79,7 @@ function exportRoot() {
   return root;
 }
 
-const STRINGS = { strings: { '00000010': 'JEDI', '00000011': 'YAVIN CEREMONY', '00000020': 'PUSH', '00000021': 'RUSH IMMUNITY', '00000030': 'NOT THE DROIDS', '00000040': 'I AM READY', '00000050': 'SNOWTROOPER' } };
+const STRINGS = { strings: { '00000060': 'LUKE SKYWALKER', '00000061': 'A Jedi.', '00000010': 'JEDI', '00000011': 'YAVIN CEREMONY', '00000020': 'PUSH', '00000021': 'RUSH IMMUNITY', '00000030': 'NOT THE DROIDS', '00000040': 'I AM READY', '00000050': 'SNOWTROOPER' } };
 const CREDITS = {
   'bf2017-luke': { title: 'Star Wars Battlefront II (2017): characters/hero/luke/luke_rotj_01/luke_rotj_01_mesh', file: '/models/galaxy/bf2017/crew/luke.glb' },
   'bf2017-snowtrooper': { title: 'Star Wars Battlefront II (2017): characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_mesh', file: '/models/galaxy/bf2017/crew/snowtrooper.glb' },
@@ -123,7 +130,7 @@ describe('the collection rulebook', () => {
 
   it('gives a hero its looks with the game’s names, rarities and the site’s bodies', () => {
     const luke = book.characters.luke;
-    expect(luke).toMatchObject({ kind: 'hero', side: 'light', skins: ['VUR_Luke_ROTJ_01', 'VUR_Luke_Yavin_01'] });
+    expect(luke).toMatchObject({ kind: 'hero', side: 'light', name: '#00000060', description: '#00000061', skins: ['VUR_Luke_ROTJ_01', 'VUR_Luke_Yavin_01'] });
     expect(book.skins.VUR_Luke_ROTJ_01).toMatchObject({ of: 'luke', name: '#00000010', rarity: 'common', body: 'luke' });
     expect(book.skins.VUR_Luke_Yavin_01).toMatchObject({ name: '#00000011', rarity: 'epic', aurebesh: 'YAVIN CEREMONY', body: null });
     expect(book.strings['#00000011']).toBe('YAVIN CEREMONY');

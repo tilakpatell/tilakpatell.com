@@ -12,7 +12,8 @@
 //                   look, body, _source } }
 //     emotes, poses, voiceLines  { [id]: { of, n, name, rarity, ability, _source } }
 //     cards       { [id]: { of, n, name, description, rarity, ability, _source } } (the heroes' star cards)
-//     strings     the English of every key the rows name
+//     labels      the screens' own words the trees leave to run time (LABELS)
+//     strings     the English of every key the rows and labels name
 //     _skipped    the sequel era's rows, left out (isEra)
 //     _missing    a metadata row no record matches, or a record no row names
 //
@@ -45,11 +46,16 @@ export const META = {
   emotes: 'UI/Metadata/EmotesUIMetaData',
   poses: 'UI/Metadata/VictoryPosesUIMetaData',
   voiceLines: 'UI/Metadata/VoiceLinesUIMetaData',
+  characters: 'UI/Metadata/CharacterUIMetaData',
 };
 // a hero's ability screen (`UI/Metadata/LukeAbilityUIMetaData`); the
 // troopers', the specials', the vehicles' and the campaign's are not a hero's
 const ABILITY_META = /^UI\/Metadata\/(?!Character|Trooper|Specials|Mount|Vehicle|Weapon|SP)([A-Za-z]+)AbilityUIMetaData$/;
 const SLOTS = { PlayerAbilityCategory_Left: 'left', PlayerAbilityCategory_Middle: 'middle', PlayerAbilityCategory_Right: 'right' };
+// The Collection's words the screens' trees do not name (the trees fill
+// them at run time), by their localisation hashes: EQUIP STAR CARDS,
+// EQUIPPED CARDS, REINFORCEMENTS, EQUIPPED, HEROES AND VILLAINS, STAR CARD
+export const LABELS = { equipCards: '#D6D01734', equippedCards: '#042C1F72', reinforcements: '#3E94F3E6', equipped: '#AE29E47F', heroesAndVillains: '#6DC433AB', starCard: '#1FBD97EC' };
 const SLOT_ORDER = ['left', 'middle', 'right'];
 const RARITY = { RarityType_Common: 'common', RarityType_Uncommon: 'uncommon', RarityType_Rare: 'rare', RarityType_Epic: 'epic', RarityType_Legendary: 'legendary' };
 export const CLASSES = ['Assault', 'Heavy', 'Officer', 'Specialist'];
@@ -353,6 +359,8 @@ export function collectionRulebook(root, { books = {}, strings = null, credits =
         const prefix = new RegExp(`^(${cls}${cls === 'Heavy' ? '|Heay' : ''})_`, 'i');
         const inSet = set.startsWith(`${id}_`) || (set.startsWith('droid_b1') && faction === 'cis');
         if (!inSet || !prefix.test(t)) continue;
+        // (the clones' looks by phase, <Class>_PHA_Preq, replaced the class's first legion set)
+        if (set === `${id}_preq_skinuimetadata` && trooperRows.some((x) => x.set.toLowerCase() === `${id}_pha_preq_skinuimetadata`)) continue;
         if (rowSide(set, t, r.row.AurebeshName) !== side || rowEra(set) !== era) continue;
         const look = set.startsWith('droid_b1') ? { paint: t.replace(prefix, '') } : lookOf(t, r.row.AurebeshName);
         const kit = look?.planet && look.planet !== 'default' ? planetOf(look.planet) : null;
@@ -387,6 +395,9 @@ export function collectionRulebook(root, { books = {}, strings = null, credits =
         };
         skins.push(skinId);
       }
+      // (the class's default look first, as the game equips it: DEFAULT APPEARANCE)
+      const isDefault = (sid) => out.skins[sid].aurebesh === 'DEFAULT APPEARANCE' || out.skins[sid].look?.planet === 'default';
+      skins.sort((a, b) => Number(isDefault(b)) - Number(isDefault(a)));
       row.factions[faction] = { side: side === 'L' ? 'light' : 'dark', era: era.toLowerCase(), kits, skins };
     }
     out.characters[id] = row;
@@ -416,6 +427,25 @@ export function collectionRulebook(root, { books = {}, strings = null, credits =
     ch.skins.push(skinId);
   }
 
+  // ── every one's name and words, as the game's character screen gives them
+  // (`UI/Metadata/CharacterUIMetaData`, by its telemetry: 'Luke',
+  // 'Obi-Wan', 'Hansolo', 'ARC Trooper', 'Clone Jumptrooper aka Jet Trooper') ──
+  const people = metaRows(root, META.characters);
+  for (const [id, ch] of Object.entries(out.characters)) {
+    const k = squeeze(id);
+    const r = people.find((x) => squeeze(x.row.TelemetryId) === k) ?? people.find((x) => squeeze(x.row.TelemetryId).startsWith(k));
+    if (!r) {
+      missing.push(`character row: ${id}`);
+      continue;
+    }
+    ch.name = keyOf(r.asset, r.row.NameUpperLocalizedStringId, keys) ?? keyOf(r.asset, r.row.NameLocalizedStringId, keys) ?? ch.name;
+    const about = keyOf(r.asset, r.row.DescriptionLocalizedStringId, keys);
+    if (about) ch.description = about;
+    ch._name = r.where;
+  }
+
+  out.labels = { ...LABELS };
+  for (const k of Object.values(LABELS)) keys.add(k);
   out.strings = {};
   for (const k of [...keys].sort()) {
     const t = englishOf(k, strings);
