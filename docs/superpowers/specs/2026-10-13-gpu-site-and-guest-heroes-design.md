@@ -105,9 +105,9 @@ Each lands on Hoth first, with its number taken as section 5 says, and goes to t
 | **A9. Off the main thread** | Rapier in the worker lane N5 built and left off, first where a level's collision is stepped every frame; particles, bolts and kit effects on the compute emitters N5 built, which no world imports. | `lib/physics/world.js`, `galaxy/surface/level/index.js`, `battlefront/fx/*`, `lib/three/particles/*` | Measured in the cloud only (physics on the main thread 1.4 to 0.1 ms p50; the CPU particle path 1.5 ms for 16,000 slots). |
 | **A10. The tier table** | Lane N6, never started: one table says which of these paths a device takes (no WebGPU, a built-in chip, a laptop chip, the 5090), so no world decides for itself as `battlefront/module.js` does today. The unfinished no-GPU path (`claude/bf-perf-tiers`) is finished under it. | new `runtime/tiers.js`, `level/levelScene.js`, `light/post.js` | His own ask: "super ultra quality" on the 5090, playable on a Mac's chip and on the 740M laptop. Nothing measured on either yet. |
 
-### The frame the 5090 should hold (a proposal, for him to set)
+### The frame the 5090 should hold
 
-The game aims its dynamic resolution at 16.6 ms a frame and never goes under nine tenths of the set scale (`FUN_141506f00`, `FUN_147c2c580`, read in code). His screen is 5,120 × 1,440 at 240 Hz. Proposed: at 2,560 × 1,440 a walking frame of 6.9 ms p50 and 10 ms p95 (144 a second) with every pass on; at 5,120 × 1,440 the same 6.9 ms, which the chip's 9.4 to 10.4 ms does not allow at full scale, so the site's GPU-time controller (lane N2) holds it by internal scale, to a floor of 0.77 with TAAU. He left the choice to the design ("whatever is more performant and quality"): the controller holds the 6.9 ms, at full scale whenever the chip allows it and scaled inside only while it does not, never under 0.77.
+The game aims its dynamic resolution at 16.6 ms a frame and never goes under nine tenths of the set scale (`FUN_141506f00`, `FUN_147c2c580`, read in code). His screen is 5,120 × 1,440 at 240 Hz. The target: at 2,560 × 1,440 a walking frame of 6.9 ms p50 and 10 ms p95 (144 a second) with every pass on; at 5,120 × 1,440 the same 6.9 ms, which the chip's 9.4 to 10.4 ms does not allow at full scale, so the site's GPU-time controller (lane N2) holds it by internal scale, to a floor of 0.77 with TAAU. He left the choice to the design ("whatever is more performant and quality"): the controller holds the 6.9 ms, at full scale whenever the chip allows it and scaled inside only while it does not, never under 0.77.
 
 ## 4. Part B: the site's own cast as Battlefront units
 
@@ -144,9 +144,9 @@ Made by Meshy from the site's own concept pictures, with Meshy's own rig (`scrip
 | the clips | The game's, by name. Rotation channels as they are; the ten position channels refit to the guest's size, once, offline | Baked per guest onto 24 joints: every clip resampled through a role map | The game's |
 | what works without new code | The rig check, sockets, the gun in the hand, stance packs, the additive layer, ragdolls, the cut swap, the Collection's stage | Nothing that reads a bone name: each of those needs a second path | Nothing on the site: the result is a mod for the retail game |
 | what it costs | Two scripts and their tests; one body size per unit in the sim | A second figure path through `figures.js`, `held.js`, `ragdolls.js`, the stage | A different project |
-| against the rulings | The game's rig whole and unrenamed; no Meshy clip on it; the position refit is a retarget of ten channels, for guests only (question 5) | Clips retargeted wholesale | Not applicable |
+| against the rulings | The game's rig whole and unrenamed; no Meshy clip on it; the position refit is a retarget of ten channels, for guests only (his answer 5, section 8) | Clips retargeted wholesale | Not applicable |
 
-**Recommended: the first.** It is the game's own answer for the Ewok (the same names, its own lengths, its own clips) with the clips derived from the game's instead of authored, and it is the only one under which a guest is, to every system in the page, a hero like any other. The third is what "open in Frosty" would mean; it is left out unless he wants Rick in the retail game too (question 7).
+**Recommended: the first.** It is the game's own answer for the Ewok (the same names, its own lengths, its own clips) with the clips derived from the game's instead of authored, and it is the only one under which a guest is, to every system in the page, a hero like any other. The third is what "open in Frosty" would mean; it is left out: the site needs nothing from it (answer 7, section 8).
 
 ### The design
 
@@ -157,7 +157,7 @@ Made by Meshy from the site's own concept pictures, with Meshy's own rig (`scrip
 3. *The weights.* Each Meshy joint's weight moves to its counterpart: the three spine joints, in the order the file's own hierarchy climbs the back (not by their names), to `Spine`, `Spine1` and `Spine2`, `neck` to `Neck`, the limbs one for one. Hands stay on the hand bone: no finger is weighted. The skin then goes through `pruneSkin` like any other part.
 4. *The sockets.* `Wep_Root`, `Wep_Muzzle`, `Wep_Aim` and the two IK joints at the game's rest; where they sit in play is the clips' to say.
 
-Deterministic, with no service called (the rigging lane's rules: no paid service, byte-identical bakes). Its other bodies (Tiny Rick, Evil Morty and the rest) go through the same script and become the unit's skins.
+Deterministic, with no service called (the rigging lane's rules: no paid service, byte-identical bakes). Its other bodies (Tiny Rick, Evil Morty, Heisenberg and the rest: twenty files for the four) go through the same script, one fitted body each, and are what the Wardrobe's `body` picks between.
 
 **B2. `scripts/guest-clips.mjs`: the game's clips, at the guest's size.** In: the game's packs a blaster hero plays (`clips-humanoid`, the pistol stance pack, a host hero's own pack for its dodges, deaths and emotes) and the guest's fitted skeleton. Out: `clips-guest-<id>.glb`, the same clip names. Rotation channels are copied bit for bit. The position channels are refit: `Hips` by the ratio of leg lengths (so the feet meet the ground the clip meant), `Spine` and `Spine1` by the torso's, and each weapon and hand socket re-expressed from the game man's hand into the guest's hand, so a gun stays in the grip it was animated in. The clips' recorded root travel and stride contacts (`extras.root`, `rootHips`, the strokes' `contact`) scale with the legs. `walrus.js`'s `packUrls` learns one new case: a body whose row says its pack is whole loads that pack alone.
 
@@ -167,16 +167,57 @@ Deterministic, with no service called (the rigging lane's rules: no paid service
 
 **B5. Star cards that do something.** Today a card is text: `cardOf` has no caller. A picked card becomes one or more modifiers on the stack `affectors.js` already has (a recharge's rate, a health's cap, an ability's length), applied at the deploy from the three slots the Collection stores (`bf-collection`), at top rank as the game design rules. Built for the game's heroes and classes first (their numbers are in `collection.json` and `cards.json`), then a guest's nine cards are rows of the same shape.
 
-**B6. Where a guest shows.** On the deploy list as a hero offer at its price; in the HUD with its own three ability icons (a per-unit lookup the heroes also lack); in the Collection with a portrait, its skins, its cards and its abilities, standing on the stage (which already draws anything on the game's rig); and in the picked skin actually worn, which needs the hop `figures.js` is missing for every unit today (`kindOf` reads the view's `appearance`). Portraits and ability icons are rendered from the guest's own model and gear by a script, in the game icons' frame. The screens themselves are the UI lane's; this design supplies rows, pictures and the lookup.
+**B6. Where a guest shows.** On the deploy list as a hero offer at its price; in the HUD with its own three ability icons (a per-unit lookup the heroes also lack); in the Collection with a portrait, its cards and its abilities, standing on the stage (which already draws anything on the game's rig) in the look the Wardrobe keeps, with a way into the Wardrobe from there in place of a list of skins; and on the field in that same look, read at the deploy through `lookFor` and put on with `dress`. A game hero's picked skin being worn is a separate hop, the UI lane's (section 7). Portraits and ability icons are rendered from the guest's own model and gear by a script, in the game icons' frame. The screens themselves are the UI lane's; this design supplies rows, pictures and the lookup.
 
-### A first roster (a proposal; every line is his to change)
+### The guests' kits, drafted on the game's own rows
 
-| unit | side | wears | weapon | abilities (kind) |
+He asked for a full table "similar to the game". So nothing below is invented where the game has a row to copy: each guest stands on one game hero's frame, each ability takes its timings from a named game ability's row and its effect numbers from that ability's export record, and each card is a named game card's kind with that card's own four levels (the top one, `levels[3]`, is what plays). The names and the fiction are by hand; so is anything marked so. The game's rows, with their records, are in `docs/superpowers/evidence/hero-kit/README.md`. A guest is offered on whichever side the player is on, at a hero's price (4,000), and what it looks like is the Wardrobe's business, not this table's.
+
+**Rick** (on Han Solo's frame: health 650, regeneration after 5 s at 50 a second)
+
+| | name | what it does | the game row it is | numbers |
 | --- | --- | --- | --- | --- |
-| Rick | light | Han's clip set | a laser pistol (the DL-44's row) | Portal (blink); Freeze Ray (a stun, the flash kind); Meeseeks Box (an ally for a while, the turret kind) |
-| Morty | light | Lando's clip set | a blaster pistol | Panic (a sprint that takes less damage, the rage kind); Mega Seeds (a team buff, the command kind); Plumbus (a thrown stun, the grenade kind) |
-| Evil Morty | dark | Morty's body rows, his own skin and cards | the same | after question 6 |
-| Walt, Jesse | dark, light | Bossk's and Han's clip sets | after question 6 | after question 6 |
+| primary | Laser pistol (or the portal gun, if the Wardrobe's look holds it) | single shots | `weapons.json` `hansolo` (the DL-44) | 175 a minute; 80 to 55 over 20 to 50 m; heat 0.13 a shot |
+| left | MEESEEKS BOX | a Mr. Meeseeks appears where Rick points and shoots for him until it is destroyed | the officer's Blaster Turret | activation 0.4, recharge 25; bursts of 5 at 340 a minute, 25 to 15 over 10 to 30 m, locks in 1 s out to 60 m, health 250 |
+| middle | PORTAL | steps through a portal to the place aimed at | timings from Han's Shoulder Charge; the move is the one new kind, a blink | activation 0.5, recharge 10; reach 20 m, by hand (the galaxy's `hop` is the same idea and its number is taken if it has one) |
+| right | FREEZE RAY | a shot that dazes those in its blast and stops their blasters | Boba Fett's Concussion Rocket | activation 0.7, recharge 15; radius 5; dazed 3 s within 18 m and 90°; blasters off 1.2 s; no damage |
+
+Rick's cards: 1 CONCENTRATED DARK MATTER, the pistol builds 25 % less heat (Han's 1: 10 / 14 / 18 / 25). 2 CAN DO, the Meeseeks Box recharges 30 % sooner (Leia's 1: 10 / 15 / 20 / 30). 3 EXISTENCE IS PAIN, a Meeseeks has 25 % more health (Leia's 2: 10 / 15 / 20 / 25). 4 WUBBA LUBBA, Rick takes 40 % less damage for two seconds after a Portal (Han's 4: 25 / 30 / 35 / 40; the two seconds by hand). 5 PORTAL FLUID, the Portal reaches 40 % farther (Lando's 6: 25 / 30 / 35 / 40). 6 QUICK EXIT, the Portal's recharge is 1.5 s shorter (Leia's 5: 0.5 / 1 / 1.25 / 1.5). 7 WIDE BEAM, the Freeze Ray's blast is 30 % wider (Lando's 2: 15 / 20 / 25 / 30). 8 COLD SNAP, the frozen stay dazed 2 s longer (Boba Fett's 3: 0.5 / 1 / 1.5 / 2). 9 SCIENTIST'S LIVER, 150 more maximum health (Lando's 9: 50 / 75 / 100 / 150).
+
+**Morty** (on Leia's frame at the game's lowest hero health: 600, as Boba Fett and Bossk have; regeneration after 5 s at 50)
+
+| | name | what it does | the game row it is | numbers |
+| --- | --- | --- | --- | --- |
+| primary | Laser pistol | bursts of two | `weapons.json` `leia` (the Defender) | 700 a minute in bursts of 2 at 200; 40 to 20 over 20 to 40 m; heat 0.03 a shot |
+| left | PLUMBUS | thrown; shocks those near where it lands | timings from Chewbacca's Shock Grenade, the effect from the specialist's Shock Grenade (Chewbacca's own shock time is not in a named field) | activation 0.4, recharge 15; 30 damage within 5 m; a field of 2 m for 3.7 s at 10 a second |
+| middle | MEGA SEEDS | Morty and the allies round him gain health over their own | the officer's Battle Command | active 1, recharge 40; radius 13; 100 over-health for 4 s |
+| right | PURGE MODE | his pistol fires without pause for a while, and he takes less | Leia's Rapid Fire | recharge 15; lasts 13 s; 650 a minute, 36 to 19 over 20 to 40 m; damage taken × 0.75 |
+
+Morty's cards: 1 AW JEEZ, Mega Seeds recharges 30 % sooner (Leia's 1). 2 GRANDSON, regenerates 100 more health (Leia's 3: 25 / 50 / 75 / 100). 3 EVERYONE HAS ONE, the Plumbus's blast is 1 m wider (Leia's 4: 0.25 / 0.5 / 0.75 / 1). 4 SPARE PLUMBUS, its recharge is 1.5 s shorter (Leia's 5). 5 ONE TRUE MORTY, 25 % less damage in Purge Mode (Leia's 6: 10 / 15 / 20 / 25). 6 KEEP SHOOTING, Purge Mode loses 55 % less time a shot (Leia's 7: 25 / 35 / 45 / 55; a kind the first build does not model). 7 STAY CLOSE, within 15 m of two allies all three take 10 % less (Leia's 8: 4 / 6 / 8 / 10; not modelled at first). 8 STEADY HANDS, the pistol builds 25 % less heat (Han's 1). 9 TOUGHER THAN HE LOOKS, 150 more maximum health (Lando's 9).
+
+**Walt** (on Bossk's frame: health 600, regeneration after 5 s at 25)
+
+| | name | what it does | the game row it is | numbers |
+| --- | --- | --- | --- | --- |
+| primary | Revolver | single heavy shots | `weapons.json` `s5` (the officer's S-5) | 140 a minute; 67 to 45 over 15 to 50 m; heat 0.1 a shot |
+| left | BLUE CLOUD | a cloud that hurts those who stand in it | Bossk's Dioxis Grenade | activation 0.4, recharge 20; radius 10; 15 at once, then 5 a second; lasts 10 s |
+| middle | SAY MY NAME | the enemies round him are shown to his whole side, and he leaves their radars | Boba Fett's For the Hunt, without the jetpack | activation 0.5, lasts 8 s, recharge 10; 30 m |
+| right | FULMINATED MERCURY | a thrown charge he sets off when he likes | Han's Detonite Charge | activation 0.4, recharge 18; 200 at the centre, full within 5 m, nothing past 10 m |
+
+Walt's cards: 1 PURE PRODUCT, the cloud is 20 % larger (Bossk's 1: 10 / 13 / 16 / 20). 2 IT LINGERS, the cloud lasts 6 s longer (Bossk's 2: 2 / 3 / 4 / 6). 3 RESPIRATOR, he regains 30 health a second in his own cloud (Bossk's 5: 15 / 20 / 25 / 30). 4 THIS IS NOT METH, the charge set off in the air deals 20 % more (Han's 7: 10 / 13 / 16 / 20). 5 A LITTLE TWEAK OF CHEMISTRY, its blast is 25 % wider after five seconds stuck (Han's 8: 10 / 15 / 20 / 25). 6 THE ONE WHO KNOCKS, Say My Name lasts 5 s longer (Yoda's 4: 2 / 3 / 4 / 5). 7 A MAN PROVIDES, the revolver builds 25 % less heat (Han's 1). 8 EMPIRE BUSINESS, every ability recharges 10 % sooner (Maul's 9: 5 / 7 / 9 / 10). 9 I AM THE DANGER, 150 more maximum health (Lando's 9).
+
+**Jesse** (on Lando's frame: health 650, regeneration after 5 s at 50)
+
+| | name | what it does | the game row it is | numbers |
+| --- | --- | --- | --- | --- |
+| primary | Pistol | quick single shots | `weapons.json` `x8nightsniper` (Lando's X-8) | 400 a minute; 40 to 25 over 20 to 50 m; heat 0.07 a shot |
+| left | COOK SMOKE | smoke that hides the enemy's view | Lando's Smoke Grenade | activation 0.4, recharge 14; radius 10; how long it lasts is not in a named field of the export, so that one number is by hand until it is found |
+| middle | MAGNETS | a stuck device that shows nearby enemies and scrambles their radars; set off, it shocks them | Lando's Disabler | activation 0.4, lasts 40 s at top rank, recharge 19; radius 12; shock 1.1 s, radar 2 s, shown 2 s |
+| right | THERMITE | up to three thrown | Leia's Thermal Detonators | recharge 13 once all are thrown; 250 at the centre, full within 2.5 m, nothing past 7 m |
+
+Jesse's cards: 1 SLOW BURN, the smoke lasts 6 s longer (Lando's 1: 2 / 3 / 4 / 6). 2 HOTBOX, the smoke is 30 % larger (Lando's 2). 3 YEAH, SCIENCE, Magnets last 15 s longer (Lando's 3: 8 / 10 / 12 / 15). 4 BIGGER MAGNET, their reach grows 30 % in the first five seconds (Lando's 4: 15 / 20 / 25 / 30). 5 QUICK SHOCK, they shock 30 % longer if set off within five seconds (Lando's 5; a kind the first build does not model). 6 MELT THE LOCK, Thermite's blast is 1 m wider (Leia's 4). 7 ANOTHER BATCH, its recharge is 1.5 s shorter (Leia's 5). 8 ON A ROLL, each defeat takes 2 % off the pistol's heat a shot, up to 34 %, lost on defeat (Lando's 8: 10 / 18 / 26 / 34; not modelled at first). 9 CAP'N COOK, 150 more maximum health (Lando's 9).
+
+What the first build of the cards models is seven of the game's thirteen kinds (a recharge, a length, a reach, damage, damage taken while an ability runs, health, the primary's heat), for the game's heroes and the guests alike; the four guest cards above that need another kind say so, and work when that kind does.
 
 ### What "done" is for a guest
 
@@ -199,7 +240,7 @@ Deterministic, with no service called (the rigging lane's rules: no paid service
 
 - The Frostbite source he is downloading: not read, not planned on.
 - The running game's memory: not read, not dumped. Its window is photographed; its exported records and the existing analysed image are read.
-- Guests in the retail game through Frosty (question 7).
+- Guests in the retail game through Frosty (answer 7).
 - Porting the classic-renderer worlds to the node renderer.
 - The troops, vehicles and landing lanes, which other sessions hold.
 - Any world but Hoth, until Hoth's number for a lane is in.
@@ -210,7 +251,7 @@ Deterministic, with no service called (the rigging lane's rules: no paid service
 
 1. #962 is merged (2026-10-13 05:44 UTC, on his word: "merget o main").
 2. Part A's lanes A1, A2, A5 and A8 are this session's, one PR each, in that order; A3 waits on one function being read; A4 is its own plan after A1 to A3 show what is left of the soldiers; A6, A7, A9 and A10 are planned when Hoth's numbers for the first four are in.
-3. Part B's B1 and B2 touch no file another lane holds (two new scripts, new files under `crew/`, one case in `walrus.js`) and can start as soon as he has answered questions 1 and 5.
+3. Part B's B1 and B2 touch no file another lane holds (two new scripts, new files under `crew/`, one case in `walrus.js`) and can start now: he has answered what they waited on (section 8, rows 1 and 5).
 4. B4 and B5 are this session's: the sim lane was offered them and passed them back (`tilak-a6`, 2026-10-13: "take B4 and B5 yourself; I am not holding them"). They start after #966 is on `main`, and meet three things it brings: a round's bot thinks in `soldierBrain.js`'s `thinkAutoPlayer`, so a hero bot's rules for a round go there and not in the BattleAI modes; `module.js`'s `sim`, `me`, `team`, `director`, `park` and `castArm` are rebindable, because a round is swapped in place; and a round's size comes from `instantAction.js`'s `SIDE_BY_DETAIL` (5, 8, 13 and 24 a side from low to ultra, by hand). B6's rows and pictures are handed to the UI lane for its phase 2b.
 5. The picked skin being worn is the UI lane's (`tilak-b4`, 2026-10-13: "it is the Collection lane's promise"). It takes `figures.js`'s `BODIES` table and `kindOf` and nothing else there: 43 crew kinds among the Collection's 213 skins, 29 of them not yet in `BODIES`. Lane A2 leaves those two alone and builds on the view's `appearance` being honoured, so a guest's body, and each of its skins, needs only its `BODIES` row.
 6. The stopped hero branch (`claude/bf-heroes-deploy`, with uncommitted files in its worktree) is merged forward by whoever takes B4, not rewritten.
@@ -219,13 +260,17 @@ Two things the sim lane found that bear on this design and that nobody holds yet
 
 Three implementation plans come out of this, not one, each written and reviewed on its own: Part A's first four lanes; the guest's rig and clips (B1, B2); the units' rules, kit, cards and screens (B3 to B6).
 
-## 8. Questions for him
+## 8. What he answered (2026-10-13), and what was decided from it
 
-1. **Who are the main characters?** Proposed: Rick and Morty first, then Walt and Jesse, then Mark and Aragorn by the same two scripts.
-2. **The wide screen's frame:** 144 a second with the picture scaled inside (to no less than 0.77), or full scale at about 100?
-3. **Sides and the roster above:** as proposed, or his own?
-4. **Their look on Hoth:** their own flat colours under the game's light, or with the ink outline they wear in their own worlds (a second draw a guest)? Proposed: without it first, and he decides from the pictures.
-5. **The ruling:** a guest's clips are the game's, with ten position channels refit to its body. Is that inside "nothing is retargeted", for guests only?
-6. **Abilities and cards:** does he want to write them, or approve a full table written from the proposal?
-7. **Frosty:** the site does not need it. Does he also want a guest in the retail game as a mod? Proposed: no.
-8. **#962:** merge it?
+| the question | his words | what this design does with them |
+| --- | --- | --- |
+| 1. Who are the main characters? | "yes main characters are correct." | Rick and Morty first, then Walt and Jesse; Mark and Aragorn by the same two scripts when he asks. |
+| 2. The wide screen's frame | "whatever is more performant and quality" | The controller holds 6.9 ms a frame: full scale whenever the chip allows it, scaled inside (never under 0.77, brought back up by TAAU) only while it does not. Section 3. |
+| 3. Sides and the roster | "Whatever the user chooses for skin in the character designer (we have one already)." | The designer is the Wardrobe. A guest on Hoth wears the look kept there (`tp-wardrobe`: a body, five colours, three pieces of gear), read and put on by the calls the galaxy's surfaces already use (`lookFor`, `dress`). So a guest's other bodies (Tiny Rick, Evil Morty, Heisenberg) are looks, not units, and nothing fixes a guest to a side: it is offered on whichever side the player is on. That last step is this design's reading, not his words. |
+| 4. Their look on Hoth | "whatever looks better and like the game" | Lane B1's evidence shows the guest three ways beside the game's own hero under Hoth's light: its toon paint and rim as on the galaxy's worlds, the same paint under the game's light with no rim, and with the ink outline. The one nearest the game's picture ships; he sees the three. |
+| 5. The clips' ten position channels | "idk whta this even means just figure it out" | Decided: yes, for guests only. In plain terms: the game's animations are made for a man 1.77 m tall. Morty is 1.47 m. Every turn of every joint is the game's, untouched; what is shrunk to fit is how high the hips ride and where the gun sits in the hand, so his feet reach the ground and the gun stays in his grip. The game's own soldiers and heroes are not touched. |
+| 6. Abilities and cards | "you draft a full table similar to the game (use Ghidra and other things to figure it out live game is open)" | Drafted in section 4, each row a named game row with its numbers; the game's rows and their export records are in `docs/superpowers/evidence/hero-kit/README.md`. Read from the export's records: the runtime ability classes have no reflected names in the analysed image and were never decompiled, and the game's window showed only the pre-round card screen, so neither had more to give than the records. |
+| 7. Frosty | "Idk what you mean by 7." | It asked whether he also wants Rick inside the real game on his PC, as a mod made with the Frosty tools. The site does not need Frosty for anything here, so nothing is done about it. |
+| 8. #962 | "merge after its done", then "merget o main" | Merged 2026-10-13 05:44 UTC. |
+
+Then, the same morning, of the hero kit and star cards, the soldiers' cost at 24 a side, and the bots' line of fire: "fix all of this". Three plans, one each, in `docs/superpowers/plans/` (`2026-10-13-hero-kit-and-star-cards.md`, `-far-soldiers-as-rows.md`, `-bots-line-of-fire.md`), each being built on its own branch.
