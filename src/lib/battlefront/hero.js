@@ -59,8 +59,8 @@ export function heroClass(rb, id, base) {
     drive: KIT.drives[k?.drive ?? 'saber'],
     blockDrive: KIT.drives.blocking,
     roll: { speed: KIT.drives.evade.speed, time: evade.active },
-    height: body.height,
-    eye: body.eye,
+    // (its physics row's height and eye; a hero's crouch does not shrink it: soldier.js's bodyOf)
+    body: { stand: body.height, crouch: body.height, eye: body.eye },
     jump: KIT.jumps[k?.jump ?? 'force'],
   };
 }

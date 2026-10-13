@@ -750,6 +750,7 @@ export function view(sim, { player = null } = {}) {
     e.unit = s.unit ?? null;
     e.unitId = s.unitId ?? null; // (the rulebook's hero or reinforcement: the body the figure wears)
     e.appearance = s.appearance ?? null; // (a skin picked in the Collection: its crew kind)
+    e.body = s.body ?? null; // (how tall it stands and crouches, its aim's height and its eye: soldier.js's bodyOf)
     e.name = s.name ?? null;
     e.cls = s.cls?.cls ?? null;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;

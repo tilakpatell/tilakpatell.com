@@ -7,6 +7,7 @@
 // skeleton by stance since the sim poses no bones. Pure.
 //
 //   newSoldier(classRow, { id, team, at, yaw, rand, bot, weapon, abilities }) → s
+//   bodyOf(row) → { stand, crouch, chest, eye } metres (a row's `body`, the soldier's where it has none)
 //   capsulesOf(s) → [{ part, a, b, r }]    hurt(s, { damage, part, from, by, now }) → 'hurt' | 'down' | null
 //   tick(s, dt, now)    speedOf(s) → m/s    move(s, dir, dt, nav) → metres moved    stanceOf(s)
 
@@ -42,6 +43,7 @@ export function newSoldier(cls, { id, team, at, yaw = 0, rand = Math.random, bot
     kind: 'soldier',
     bot,
     cls,
+    body: bodyOf(cls),
     at: [...at],
     yaw,
     vel: [0, 0, 0],
@@ -83,19 +85,36 @@ function skeleton(H) {
   ];
 }
 
-const SKELETON = { stand: skeleton(POSES.stand.height), crouch: skeleton(POSES.crouch.height) };
-// (a hero's body is its own height, standing or crouched: its physics row's, hero.js)
-const TALL = new Map();
-const heroSkeleton = (H) => {
-  if (!TALL.has(H)) TALL.set(H, skeleton(H));
-  return TALL.get(H);
+// A unit's body, metres: how tall it stands and crouches, the height a
+// player's aim leaves it from (the page's 1.4 m, by hand) and its eye. A row
+// with no `body` is the soldier's (DefaultSoldierPhysics); a row's `body`
+// (a hero's physics row, hero.js; a guest's own height) gives what it has
+// and takes the rest in the soldier's proportions to its `stand`.
+export const AIM_HEIGHT = 1.4;
+const SOLDIER = { stand: POSES.stand.height, crouch: POSES.crouch.height, chest: AIM_HEIGHT, eye: POSES.stand.eye[1] };
+
+export function bodyOf(row) {
+  const b = row?.body;
+  if (!b) return { ...SOLDIER };
+  const stand = b.stand ?? SOLDIER.stand;
+  const k = stand / SOLDIER.stand;
+  return { stand, crouch: b.crouch ?? SOLDIER.crouch * k, chest: b.chest ?? SOLDIER.chest * k, eye: b.eye ?? SOLDIER.eye * k };
+}
+
+// (a skeleton a height, made once)
+const SKELETONS = new Map();
+const skeletonOf = (H) => {
+  if (!SKELETONS.has(H)) SKELETONS.set(H, skeleton(H));
+  return SKELETONS.get(H);
 };
+const low = (s) => s.stance === 'crouch';
 
 export function capsulesOf(s, out = []) {
   const c = Math.cos(s.yaw);
   const n = Math.sin(s.yaw);
   const place = (p) => [s.at[0] + p[0] * c + p[2] * n, s.at[1] + p[1], s.at[2] - p[0] * n + p[2] * c];
-  const parts = s.cls?.height ? heroSkeleton(s.cls.height) : SKELETON[s.stance === 'crouch' || s.state === 'roll' ? 'crouch' : 'stand'];
+  const body = s.body ?? SOLDIER;
+  const parts = skeletonOf(low(s) || s.state === 'roll' ? body.crouch : body.stand);
   out.length = parts.length;
   for (let i = 0; i < parts.length; i++) {
     const [part, a, b, r] = parts[i];
@@ -105,8 +124,10 @@ export function capsulesOf(s, out = []) {
 }
 
 // the chest's middle, where a bot aims and a line of sight is drawn to
-export const chestOf = (s) => [s.at[0], s.at[1] + (s.cls?.height ?? (s.stance === 'crouch' ? POSES.crouch.height : POSES.stand.height)) * 0.7, s.at[2]];
-export const eyeOf = (s) => [s.at[0], s.at[1] + (s.cls?.eye ?? (s.stance === 'crouch' ? POSES.crouch.eye[1] : POSES.stand.eye[1])), s.at[2]];
+export const chestOf = (s) => [s.at[0], s.at[1] + (low(s) ? (s.body ?? SOLDIER).crouch : (s.body ?? SOLDIER).stand) * 0.7, s.at[2]];
+// (crouched, the soldier's eye is its record's; a body of its own brings its eye down as far as it crouches)
+const eyeLow = (s) => (s.cls?.body ? (s.body.eye * s.body.crouch) / s.body.stand : POSES.crouch.eye[1]);
+export const eyeOf = (s) => [s.at[0], s.at[1] + (low(s) ? eyeLow(s) : (s.body ?? SOLDIER).eye), s.at[2]];
 
 export function hurt(s, { damage, part = 'chest', by = null, now = 0 }) {
   if (!s.alive) return null;

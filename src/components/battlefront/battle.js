@@ -201,7 +201,8 @@ export function step(b, inputs = []) {
     if (inp.id !== 'player' || !me?.alive) continue;
     const yaw = inp.yaw ?? me.yaw;
     const pitch = inp.pitch ?? 0;
-    const chest = [me.at[0], me.at[1] + 1.4, me.at[2]];
+    // (the aim leaves the player's own body: a soldier's 1.4 m, a taller or shorter unit's by its height)
+    const chest = [me.at[0], me.at[1] + me.body.chest, me.at[2]];
     mapped.push({
       id: me.id,
       move: worldMove(inp.move ?? [0, 0], yaw),

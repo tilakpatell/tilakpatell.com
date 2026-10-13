@@ -41,11 +41,11 @@ describe('a hero deploys on its own kit', () => {
 
   it('gives a blaster hero its own weapon, and every hero its health, body and drive from the records', () => {
     const base = rb.classes['l-orig-assault'];
-    expect(heroClass(rb, 'hansolo', base)).toMatchObject({ weapon: 'hansolo', health: 650, height: 1.7, drive: { speed: 4.25 } });
+    expect(heroClass(rb, 'hansolo', base)).toMatchObject({ weapon: 'hansolo', health: 650, body: { stand: 1.7 }, drive: { speed: 4.25 } });
     expect(heroClass(rb, 'bobafett', base).weapon).toBe('boba');
     expect(heroClass(rb, 'bossk', base)).toMatchObject({ weapon: 'v10', drive: { speed: 4.35 } });
-    expect(heroClass(rb, 'darthvader', base)).toMatchObject({ weapon: null, health: 800, height: 1.95, drive: { speed: 4.25 } });
-    expect(heroClass(rb, 'yoda', base)).toMatchObject({ height: 1.2, jump: { height: 1.6 } });
+    expect(heroClass(rb, 'darthvader', base)).toMatchObject({ weapon: null, health: 800, body: { stand: 1.95 }, drive: { speed: 4.25 } });
+    expect(heroClass(rb, 'yoda', base)).toMatchObject({ body: { stand: 1.2 }, jump: { height: 1.6 } });
     expect(heroClass(rb, 'luke', base)).toMatchObject({ drive: { speed: 4.725, back: 0.89, strafe: 0.935, sprint: 1.7 } });
     for (const id of Object.keys(HERO_KIT.heroes)) {
       const rows = heroAbilities(rb, id);

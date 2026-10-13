@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadRulebook } from '../../lib/battlefront/rulebook.js';
 import { hothFlatNav } from '../../lib/battlefront/fixtures/hothFlat.js';
 import { addPlayer as addSoldier } from '../../lib/battlefront/sim.js';
-import { STEP, addPlayer, createBattle, deploy, step, view, worldMove } from './battle.js';
+import { STEP, addPlayer, createBattle, deploy, grant, step, view, worldMove } from './battle.js';
 import { LEVEL_MODES, MODES } from './index.js';
 import naboo from '../../data/bf2017/maps/naboo.json';
 
@@ -131,6 +131,20 @@ describe('the battle on the sim in its own mode, with the page’s deploy screen
     expect(view(b).entities.filter((e) => e.kind === 'soldier')).toHaveLength(4);
     b.force('win', 2);
     expect(view(b).mode.result).toEqual({ winner: 2, why: 'forced' });
+  });
+
+  it('aims from the player’s own body: a soldier’s 1.4 m, Yoda’s by his 1.2 m', () => {
+    const aimHeight = (choice) => {
+      const b = make();
+      addPlayer(b, { team: 1 });
+      grant(b, 4000);
+      expect(deploy(b, 'player', choice).ok).toBe(true);
+      step(b, [{ id: 'player', move: [0, 0], yaw: 0, pitch: 0 }]);
+      const me = b.sim.entities.get(b.player.id);
+      return me.aim[1] - me.at[1];
+    };
+    expect(aimHeight({ classId: 'l-orig-assault' })).toBeCloseTo(1.4, 9);
+    expect(aimHeight({ kind: 'hero', id: 'yoda' })).toBeCloseTo((1.4 * 1.2) / 1.7, 9);
   });
 
   it('puts the player down when told, for the kill screen', () => {
