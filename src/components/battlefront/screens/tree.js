@@ -37,6 +37,25 @@ export function percentOf(tree, box) {
   return { left: p(box.x / w), top: p(box.y / h), width: p(box.w / w), height: p(box.h / h) };
 }
 
+// The room a screen leaves for its 3D figure (the Collection's: the game
+// draws its character there), in per cent of the tree's frame, the height
+// of `left`: between `left` and `right` where a quarter of the frame or
+// more lies between them (the appearances' list and info panel), else from
+// `right`'s right edge to the frame's margin (the emotes' panel sits by the
+// list); null with no `left`
+export function between(tree, left, right = null, margin = 96) {
+  if (!tree || !left) return null;
+  const [w] = tree.size;
+  const x0 = left.x + left.w;
+  let from = x0;
+  let to = w - margin;
+  if (right) {
+    if (right.x - x0 >= w * 0.25) to = right.x;
+    else from = Math.max(x0, right.x + right.w);
+  }
+  return percentOf(tree, { x: from, y: left.y, w: Math.max(0, to - from), h: left.h });
+}
+
 // The parts of the front end's trees the site leaves out: the footer of
 // controller prompts (the site writes its own keys), the online, store and
 // debug cells.

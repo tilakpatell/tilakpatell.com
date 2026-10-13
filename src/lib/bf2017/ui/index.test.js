@@ -34,7 +34,8 @@ describe('the game’s HUD widgets, for its world', () => {
     expect(colour(999)).toBeNull();
   });
 
-  it('has no portrait until the bucket has the bitmaps', () => {
-    expect(portrait('DarthVader')).toBeNull();
+  it('gives a hero’s portrait from the bitmaps the cut has, and none for one it has not', () => {
+    expect(portrait('DarthVader')).toMatch(/^\/ui\/bf2017\/bitmaps\/[a-z0-9-]+\.webp$/);
+    expect(portrait('NoSuchHero')).toBeNull();
   });
 });

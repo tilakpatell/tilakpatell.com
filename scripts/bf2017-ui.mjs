@@ -34,11 +34,13 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { globMatch } from './lib/bf2017-paths.mjs';
 import { stringHash } from './lib/bf2017-ebx.mjs';
-import { SITE_FAMILIES, bitmapWanted, excludedFilms, filmRows, fontLicence, iconFamily, iconName, isSequelUi, slugOf, spriteOf, stringTables, vttOf } from './lib/bf2017-ui.mjs';
+import { SITE_FAMILIES, bitmapWanted, collectionImages, excludedFilms, filmRows, fontLicence, iconFamily, iconName, isSequelUi, slugOf, spriteOf, stringTables, vttOf } from './lib/bf2017-ui.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const LAB = join(ROOT, 'lab', 'assets', 'bf2017');
-const WEB = join(LAB, 'web');
+// (BF2017_WEB: the owner's desktop export, Downloads/BF2_Extract/web, read in
+// place of the bucket's copy: it holds the UI bitmaps the bucket never got)
+const WEB = process.env.BF2017_WEB ? resolve(process.env.BF2017_WEB) : join(LAB, 'web');
 const PUBLIC = join(ROOT, 'public');
 const DATA = join(ROOT, 'src', 'data', 'bf2017');
 const FROM = { export: 'build 489592', date: '2026-10-10' };
@@ -251,7 +253,10 @@ export function strings({ dry = false, say = console.log } = {}) {
 // ---- bitmaps ----
 
 export function bitmaps({ dry = false, say = console.log } = {}) {
-  const tex = readJsonl('textures.jsonl').filter((r) => bitmapWanted(r.name));
+  // (and the art the Collection names: its star cards', collection.json)
+  const book = join(DATA, 'collection.json');
+  const named = collectionImages(existsSync(book) ? JSON.parse(readFileSync(book, 'utf8')) : null);
+  const tex = readJsonl('textures.jsonl').filter((r) => bitmapWanted(r.name) || named.has(r.name));
   say(`bitmaps: ${tex.length} the site’s parts name`);
   if (dry) return tex;
   const want = tex.filter((r) => !onDisk(r.file));

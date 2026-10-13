@@ -9,7 +9,7 @@
 //   node scripts/bf2017-data.mjs <rulebook> --root <dir> …        one rulebook (and what it needs, unwritten)
 //   node scripts/bf2017-data.mjs fixture <record name> [--cut root] [--root <dir>]
 //   node scripts/bf2017-data.mjs modes [--root <dir>] [--out src/data/bf2017]   the levels' mode layers (scripts/lib/bf2017-modes.mjs): web/maps/index.json and each level's manifest
-//   node scripts/bf2017-data.mjs points | kits | arcade [--root <dir>] [--out src/data/bf2017] [--dry]
+//   node scripts/bf2017-data.mjs points | kits | arcade | collection [--root <dir>] [--out src/data/bf2017] [--dry]
 //          the costs and the Arcade from their records (scripts/lib/bf2017-rulebook-costs.mjs,
 //          bf2017-arcade.mjs): Online/BattlepointCostData, the PF_KitLimitations_* prefabs,
 //          the Skirmish scenarios and parameters
@@ -46,6 +46,7 @@ import { arcadeRulebook } from './lib/bf2017-arcade.mjs';
 import { USABLE, levelKey, rulebookFile } from './lib/bf2017-map-audit.mjs';
 import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
 import { settingsRulebook } from './lib/bf2017-rulebook-settings.mjs';
+import { collectionRulebook } from './lib/bf2017-rulebook-collection.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'build 489592';
@@ -267,6 +268,13 @@ export const RECORDS = {
     const { missing, ...book } = settingsRulebook(root);
     for (const m of missing) console.log(`  missing: ${m}`);
     return book;
+  },
+  // the Collection's appearances, abilities, star cards, emotes, poses and
+  // voice lines (scripts/lib/bf2017-rulebook-collection.mjs), each skin with
+  // the crew file cut from its folder where there is one
+  collection: (root, { out = join('src', 'data', 'bf2017') } = {}) => {
+    const { _skipped, ...book } = collectionRulebook(root, { books: booksIn(out), strings: readWebJson(root, 'strings/English.json'), credits: JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'modelCredits.json'), 'utf8')) });
+    return { ...book, refused: _skipped };
   },
 };
 
