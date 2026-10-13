@@ -132,6 +132,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
     setSnap(null);
     seen.current = { peak: 0, quietSince: null, loadedAt: null };
     arrived.current = false;
+    told.current = false; // (the world mounted again says its own load line)
     setPhase('pre');
   }, [status]);
   const dead = status === 'failed' || (status === 'lost' && !rt?.recoverable);

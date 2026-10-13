@@ -16,11 +16,14 @@
 // where the work at 30 is only the main thread's and says little of the
 // chip; a climb that fails (a drop within CADENCE.failMs of it) doubles the
 // next wait, to CADENCE.maxClimbMs at most, so 60 is tried again now and
-// then and never see-saws. A pin is held.
+// then and never see-saws. A pin is held. On a 120 or 144 Hz screen (the
+// display's own beat, `beatMs`: lib/three/loop's `beat`) the steps are
+// every beat, an even 60, an even 30, each by that beat; on 60 Hz they are
+// every beat and every second, as ever.
 //
 // readFps(win) → 30 | 60 | null
 // cadenceFor({ fps }) → 1 | 2
-// createCadence({ fps, …CADENCE }) → { every, frame(now, { interval, cpuMs, gpuMs, floored }) → 1 | 2 | null }
+// createCadence({ fps, …CADENCE }) → { every, frame(now, { interval, cpuMs, gpuMs, floored, beatMs }) → the new cadence | null }
 
 export const FPS_KEY = 'tp-fps';
 export const PINS = [30, 60];
@@ -61,53 +64,79 @@ const median = (xs) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
+// the cadences a beat can step through: every beat, an even 60, an even 30
+export function ladder(beatMs = CADENCE.budgetMs) {
+  const b = beatMs > 0 ? beatMs : CADENCE.budgetMs;
+  return [...new Set([1, Math.max(1, Math.round(1000 / 60 / b)), Math.max(2, Math.round(1000 / 30 / b))])].sort((a, z) => a - z);
+}
+
 export function createCadence({ fps = null, budgetMs = CADENCE.budgetMs, slowMs = CADENCE.slowMs, dropMs = CADENCE.dropMs, climbMs = CADENCE.climbMs, blindClimbMs = CADENCE.blindClimbMs, failMs = CADENCE.failMs, maxClimbMs = CADENCE.maxClimbMs, climb = CADENCE.climb, warmMs = CADENCE.warmMs, window = CADENCE.window, pauseMs = CADENCE.pauseMs } = {}) {
   const pinned = fps === 30 || fps === 60;
   let every = cadenceFor({ fps });
   let first = null;
-  let since = null; // when the frames first called for a change
-  let climbedAt = null; // the last climb to every beat
+  let dropSince = null; // when the frames first called for a lower cadence
+  let climbSince = null; // and for a higher one
+  let climbedAt = null; // the last climb
   let backoff = 1; // the climb's wait multiplied, after each climb that failed
-  let clocked = false; // a GPU time seen at every second beat
-  const xs = [];
+  const ints = []; // the drawn frames' intervals
+  const works = []; // and their work, the longer of the main thread's and the chip's
+  const push = (xs, x) => {
+    xs.push(x);
+    if (xs.length > window) xs.shift();
+  };
+  const settle = (next) => {
+    every = next;
+    dropSince = null;
+    climbSince = null;
+    ints.length = 0;
+    works.length = 0;
+    return every;
+  };
   return {
     get every() {
       return every;
     },
-    frame(now, { interval = 0, cpuMs = 0, gpuMs = null, floored = false } = {}) {
-      if (pinned) return null;
+    frame(now, { interval = 0, cpuMs = 0, gpuMs = null, floored = false, beatMs = budgetMs } = {}) {
+      const steps = ladder(beatMs);
+      if (pinned) {
+        const want = fps === 30 ? steps.at(-1) : 1;
+        return want === every ? null : settle(want);
+      }
       first ??= now;
       if (now - first < warmMs) return null;
-      // at every beat the frames' interval says whether 60 holds; at every
-      // second the interval is 33.3 by construction, so the work says
-      const x = every === 1 ? interval : Math.max(cpuMs ?? 0, gpuMs ?? 0);
-      if (!(x > 0) || x > pauseMs) return null;
-      if (every === 2) clocked = gpuMs != null;
-      xs.push(x);
-      if (xs.length > window) xs.shift();
-      const m = xs.length >= window / 2 ? median(xs) : null;
+      if (!(interval > 0) || interval > pauseMs) return null;
+      const work = Math.max(cpuMs ?? 0, gpuMs ?? 0);
+      push(ints, interval);
+      if (work > 0 && work <= pauseMs) push(works, work);
+      const full = (xs) => xs.length >= window / 2;
+      const beat = beatMs > 0 ? beatMs : budgetMs;
+      const lower = steps.find((x) => x > every) ?? null;
+      const higher = [...steps].reverse().find((x) => x < every) ?? null;
       // (a frame the chip draws slowly is the resolution's to fix first; one
       // with no clock to say is the pace's, until it has floored)
       const gpuBound = gpuMs == null || gpuMs >= cpuMs;
-      const wants = m !== null && (every === 1 ? m > slowMs && (floored || !gpuBound) : m < climb * budgetMs);
-      if (!wants) {
-        since = null;
-        return null;
-      }
-      since ??= now;
-      const wait = every === 1 ? dropMs : Math.min(maxClimbMs, (clocked ? climbMs : blindClimbMs) * backoff);
-      if (now - since < wait) return null;
-      if (every === 1) {
+      // (not keeping this cadence: under 50 fps at every beat of a 60 Hz screen, slowMs)
+      const late = Math.max(slowMs * (every * beat) / budgetMs, every * beat * 1.2);
+      const wantsDown = lower !== null && full(ints) && median(ints) > late && (floored || !gpuBound);
+      const wantsUp = !wantsDown && higher !== null && full(works) && median(works) < climb * higher * beat;
+      if (wantsDown) {
+        climbSince = null;
+        dropSince ??= now;
+        if (now - dropSince < dropMs) return null;
         // (down again this soon after a climb: the climb failed, and the next waits twice as long)
         backoff = climbedAt !== null && now - climbedAt < failMs ? Math.min(backoff * 2, maxClimbMs / climbMs) : 1;
-        every = 2;
-      } else {
-        climbedAt = now;
-        every = 1;
+        return settle(lower);
       }
-      since = null;
-      xs.length = 0;
-      return every;
+      dropSince = null;
+      if (!wantsUp) {
+        climbSince = null;
+        return null;
+      }
+      climbSince ??= now;
+      const clocked = gpuMs != null;
+      if (now - climbSince < Math.min(maxClimbMs, (clocked ? climbMs : blindClimbMs) * backoff)) return null;
+      climbedAt = now;
+      return settle(higher);
     },
   };
 }

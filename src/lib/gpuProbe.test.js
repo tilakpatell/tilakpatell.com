@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { adapterFacts, CAPPING, classifyTier, decideTier, judgeTier, keepTier, LOST_DAYS, lostTwice, nameScore, nameVendor, noteLoss, PROBE, probeTier, readTier, tierHold, TIER_KEY } from './gpuProbe';
+import { adapterFacts, CAPPING, SLOW_DAYS, classifyTier, decideTier, judgeTier, keepTier, LOST_DAYS, lostTwice, nameScore, nameVendor, noteLoss, PROBE, probeTier, readTier, tierHold, TIER_KEY } from './gpuProbe';
 
 const TS = 'timestamp-query';
 const set = (...f) => new Set(f);
@@ -243,6 +243,18 @@ describe('a weak chip by its name, the reason kept, and a lost device', () => {
     const lost = JSON.stringify({ tier: 'T0', info: AMD, why: 'lost', losses: 1, lostAt: 0 });
     expect(await decideTier({ stored: lost, facts: { features: set(TS), limits: {}, info: AMD }, name: R740M, probe: vi.fn(), keep, now: DAY })).toEqual({ tier: 'T0', probed: false, pinned: false, why: 'lost' });
     expect(keep).not.toHaveBeenCalled();
+  });
+
+  it('judges a slow chip again after SLOW_DAYS: one busy probe does not hold it at Low for good', async () => {
+    expect(SLOW_DAYS).toBe(30);
+    const store = new Map();
+    const storage = { setItem: (k, v) => store.set(k, v), getItem: (k) => store.get(k) ?? null };
+    const keep = (tier, info, extra) => keepTier(tier, info, storage, extra);
+    await decideTier({ facts: { features: set(TS), limits: {}, info: NVIDIA }, probe: async () => 12, keep, now: 0 });
+    expect(JSON.parse(store.get(TIER_KEY))).toMatchObject({ tier: 'T0', why: 'slow', at: 0 });
+    expect(tierHold(store.get(TIER_KEY), 29 * DAY)).toBe('low');
+    expect(tierHold(store.get(TIER_KEY), 31 * DAY)).toBe(null);
+    expect(readTier('', '', store.get(TIER_KEY), NVIDIA, 31 * DAY).fresh).toBe(true);
   });
 
   it('reads a kept lost tier as fresh once its seven days are gone (the chip is probed again)', () => {

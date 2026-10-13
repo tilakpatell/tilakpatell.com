@@ -43,9 +43,9 @@ describe('the rules of the way in', () => {
   // past the level's arrival and SHADER_WAIT_S; a laptop compiling every
   // pipeline through D3D12 waited minutes, the owner's 2026-10-13 report)
   it('says in one line where the way in spent its time', () => {
-    const line = loadLine({ now: 23400, marks: { madeAt: 6100, levelAt: 18200 }, level: { stream: { bytes: 31.04e6 }, maps: { loaded: 412 } }, shaders: { pending: 4, held: 8, building: 0 }, machine: { backend: 'webgpu', tier: 'T0' }, detail: 'low' });
-    expect(line).toBe('[battlefront] in at 23.4 s: the world made at 6.1 s, the level in at 18.2 s (31.0 MB, 412 maps), 12 shaders still building; webgpu, T0, low');
-    expect(loadLine({ now: 1000, marks: {}, level: {}, shaders: {}, machine: {} })).toBe('[battlefront] in at 1.0 s: the world made at ?, the level in at ? (0.0 MB, 0 maps), 0 shaders still building; ?, ?, ?');
+    const line = loadLine({ now: 23400, marks: { madeAt: 6100, levelAt: 18200 }, level: { bytes: 31.04e6, tris: 1.46e6 }, shaders: { pending: 4, held: 8, building: 0 }, machine: { backend: 'webgpu', tier: 'T0' }, detail: 'low' });
+    expect(line).toBe('[battlefront] in at 23.4 s: the world made at 6.1 s, the level in at 18.2 s (31.0 MB, 1.46 M triangles), 12 shaders still building; webgpu, T0, low');
+    expect(loadLine({ now: 1000, marks: {}, level: {}, shaders: {}, machine: {} })).toBe('[battlefront] in at 1.0 s: the world made at ?, the level in at ? (0.0 MB, 0.00 M triangles), 0 shaders still building; ?, ?, ?');
   });
 
   it('opens SHADER_WAIT_S after the level is in, whatever is still building', () => {

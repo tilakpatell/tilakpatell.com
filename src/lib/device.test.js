@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BUDGETS, budget, classifyDevice, pixelRatio, quality, rendererTier, resetDevice, setQuality, sharpness, signals, worldCheck } from './device';
+import { BUDGETS, budget, classifyDevice, device, holdAuto, pixelRatio, quality, rendererTier, resetDevice, setQuality, sharpness, signals, worldCheck } from './device';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const PIXEL = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36';
@@ -86,6 +86,21 @@ describe('the detail level: the tier, graded by the graphics chip', () => {
     expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: RTX5090, hold: 'low' })).toMatchObject({ tier: 'high', detail: 'low', auto: 'low' });
     expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: RTX5090, hold: 'low', override: 'ultra' })).toMatchObject({ detail: 'ultra', auto: 'low' });
     expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: RTX5090, hold: null }).detail).toBe('ultra');
+  });
+
+  // (storage blocked, a private window: the hold this page decided still holds this page)
+  it('holds Auto at low for the page where nothing can be kept', () => {
+    vi.stubGlobal('window', { location: { search: '', hash: '' }, navigator: { userAgent: WINDOWS, hardwareConcurrency: 8 }, matchMedia: () => ({ matches: false }), screen: { width: 1920, height: 1080 }, innerWidth: 1920, get localStorage() { throw new Error('denied'); } });
+    try {
+      resetDevice();
+      expect(device().detail).toBe('ultra');
+      holdAuto('low');
+      expect(device().detail).toBe('low');
+    } finally {
+      holdAuto(null);
+      resetDevice();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('reads the hold from the kept tier', () => {

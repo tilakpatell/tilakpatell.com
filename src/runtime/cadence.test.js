@@ -113,6 +113,33 @@ describe('createCadence: 60 where the chip holds it, an even 30 where it cannot'
     expect(again[0][0] - down[0][0]).toBeGreaterThanOrEqual(2 * CADENCE.climbMs);
   });
 
+  // (on a 120 or 144 Hz screen every second beat is 60 or 72: the drop goes
+  // to an even 60 first, then an even 30, by the display's own beat)
+  it('on a 120 Hz screen steps a 40 fps frame down to an even 60, then an even 30', () => {
+    const c = createCadence({ warmMs: 0 });
+    const changes = [];
+    for (let t = 0; t < 20000; t += 25) {
+      const next = c.frame(t, { interval: 25, cpuMs: 4, gpuMs: 22, floored: true, beatMs: 1000 / 120 });
+      if (next !== null) changes.push(next);
+    }
+    expect(changes).toEqual([2, 4]);
+  });
+
+  it('on a 144 Hz screen settles at every fifth beat, near 30', () => {
+    const c = createCadence({ warmMs: 0 });
+    const changes = [];
+    for (let t = 0; t < 20000; t += 25) {
+      const next = c.frame(t, { interval: 25, cpuMs: 4, gpuMs: 22, floored: true, beatMs: 1000 / 144 });
+      if (next !== null) changes.push(next);
+    }
+    expect(changes.at(-1)).toBe(5);
+  });
+
+  it('on a 120 Hz screen leaves a frame that keeps every beat alone', () => {
+    const c = createCadence({ warmMs: 0 });
+    expect(run(c, { ms: 8000, interval: 8.3, cpuMs: 4, gpuMs: 5, floored: true })).toEqual([]);
+  });
+
   it('lets a hitch go by', () => {
     const c = createCadence({ warmMs: 0 });
     const changes = [];

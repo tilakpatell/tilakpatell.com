@@ -94,6 +94,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   // week starts on the node renderer over WebGL 2, lib/gpuProbe's lostTwice)
   let lostWebGPU = Boolean(startLost);
   let lastLoss = null; // the backend kind the last loss was on
+  let lostModule = null; // the id of the world up, or being made, when it was
   let status = 'idle';
   let failure = null; // { world, name, message, module }: why the last world failed
   const failed = (mod, err) => {
@@ -197,7 +198,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     // behind this one, whose making these frames carry
     if (pacer && !rt.loading) {
       const clock = gfx.renderer ? clocks.get(gfx.renderer) : null;
-      const next = pacer.frame(t, { interval, cpuMs, gpuMs: clock?.available ? (clock.last ?? null) : null, floored: Boolean(quality.floored) });
+      const next = pacer.frame(t, { interval, cpuMs, gpuMs: clock?.available ? (clock.last ?? null) : null, floored: Boolean(quality.floored), beatMs: loop.beat ?? undefined });
       if (next !== null) loop.setCadence?.(next);
     }
     // (the cover is read after the draw, in the frame's own task: see cover())
@@ -530,6 +531,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     get recoverable() {
       return lastLoss === 'webgpu';
     },
+    // (whose world that was: only its page mounts again, useWorld's recoverNow)
+    get lostModule() {
+      return lostModule;
+    },
     // (the chip's own clock on the renderer that is up, lib/three/gpuTime,
     // or null: a world's waiting screen reads its median for the pace's
     // recommendation)
@@ -578,6 +583,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       const on = kind;
       if (on === 'webgpu') lostWebGPU = true;
       lastLoss = on;
+      lostModule = (current?.module ?? (making?.token === seq ? making.module : null))?.id ?? null;
       seq += 1;
       making = null;
       coming = null;

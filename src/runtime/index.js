@@ -21,8 +21,8 @@ import { createAudioBus } from './audio';
 import { createRuntime } from './runtime';
 import { createWorkerPool, poolSize } from './workers';
 import { readOverride } from './backend';
-import { device, quality, resetDevice } from '../lib/device';
-import { lostTwice, noteLoss, TIER_KEY } from '../lib/gpuProbe';
+import { device, holdAuto, quality, resetDevice } from '../lib/device';
+import { CAPPING, lostTwice, noteLoss, TIER_KEY } from '../lib/gpuProbe';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
 import './runtime.css';
@@ -48,7 +48,9 @@ let instance = null;
 // it again): a change is taken by the runtime's quality and its video
 // values before the next world is made, never by the world that is up
 // (a handover's old world draws on as it was)
-function held() {
+function held(decided = null) {
+  // (this page holds too, where storage keeps nothing: lib/device's holdAuto)
+  if (decided?.tier === 'T0' && CAPPING.has(decided.why)) holdAuto('low');
   const was = device().detail;
   resetDevice();
   const now = device().detail;
@@ -99,7 +101,7 @@ export function runtime() {
     gpu: Boolean(win?.navigator?.gpu),
     override,
     // (a chip whose WebGPU device was lost twice this week starts on WebGL 2;
-    // ?gpu=webgpu asks for WebGPU anyway)
+    // ?gpu=webgpu in the address, or 'webgpu' kept as tp-gpu, asks for WebGPU anyway)
     lost: override !== 'webgpu' && lostTwice(keptTier),
     // (a WebGPU device lost: kept for its chip, which holds Auto at Low for
     // the rest of the week, taken up at once so the world mounted again
@@ -107,7 +109,7 @@ export function runtime() {
     onLoss: (loss) => {
       if (loss?.kind !== 'webgpu') return;
       noteLoss(loss.adapter ?? {});
-      held();
+      held({ tier: 'T0', why: 'lost' });
     },
     visible: () => !(typeof document !== 'undefined' && document.hidden) && !covered(),
     // (?calibrate=off: the QA scripts measure at the sharpest step, not a chip's own)
@@ -121,7 +123,7 @@ export function runtime() {
       browser()
         .then((m) => m.rendererTier(gfx))
         .then((decided) => {
-          held();
+          held(decided);
           return decided;
         }),
     // the chip's own frame time (lib/three/gpuTime) for a node world on

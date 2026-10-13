@@ -32,10 +32,12 @@ describe('which world on the runtime a page may adopt', () => {
 // node renderer over WebGL 2; a second loss leaves the page's own fallback
 describe('when a page mounts its world again after a loss', () => {
   it('once, after a loss the runtime can come back from', () => {
-    expect(recoverNow({ status: 'lost', recoverable: true, tried: false })).toBe(true);
-    expect(recoverNow({ status: 'lost', recoverable: true, tried: true })).toBe(false);
-    expect(recoverNow({ status: 'lost', recoverable: false, tried: false })).toBe(false);
-    expect(recoverNow({ status: 'failed', recoverable: true, tried: false })).toBe(false);
-    expect(recoverNow({ status: 'on', recoverable: true, tried: false })).toBe(false);
+    expect(recoverNow({ status: 'lost', recoverable: true, tried: false, mine: true })).toBe(true);
+    // (a page opened while another page's world is lost: that page's to mount again, not this one's)
+    expect(recoverNow({ status: 'lost', recoverable: true, tried: false, mine: false })).toBe(false);
+    expect(recoverNow({ status: 'lost', recoverable: true, tried: true, mine: true })).toBe(false);
+    expect(recoverNow({ status: 'lost', recoverable: false, tried: false, mine: true })).toBe(false);
+    expect(recoverNow({ status: 'failed', recoverable: true, tried: false, mine: true })).toBe(false);
+    expect(recoverNow({ status: 'on', recoverable: true, tried: false, mine: true })).toBe(false);
   });
 });

@@ -26,8 +26,9 @@
 //   (`waited`: seconds of the page's own clock since the level came in)
 //   loadLine({ now, marks, level, shaders, machine, detail }) → the one line the page logs once the
 //   field is first ready: when the world was made and the level came in (ms
-//   of the page's clock, the world's marks), the level's bytes and maps, the
-//   shaders still building, the backend, the renderer tier and the level
+//   of the page's clock, the world's marks), the level's bytes fetched and
+//   triangles drawn, the shaders still building, the backend, the renderer
+//   tier and the level
 //   pickVariant(random) → 'sunset' | 'sunny'
 //   arrivalExposure(t, { stops, seconds }) → the exposure's multiplier t seconds after the wipe
 //   stopsFrom(minEv) → the stops the darkroom's EV 8 is under the day's clamp
@@ -80,9 +81,10 @@ export function readiness({ loaded = false, progress = 0, pending = 0, held = 0,
 
 const secs = (ms) => (Number.isFinite(ms) ? `${(ms / 1000).toFixed(1)} s` : '?');
 export function loadLine({ now = 0, marks = {}, level = {}, shaders = {}, machine = {}, detail = null } = {}) {
-  const mb = ((level?.stream?.bytes ?? 0) / 1e6).toFixed(1);
+  const mb = ((level?.bytes ?? 0) / 1e6).toFixed(1);
+  const tris = ((level?.tris ?? 0) / 1e6).toFixed(2);
   const building = (shaders?.pending ?? 0) + (shaders?.held ?? 0) + (shaders?.building ?? 0);
-  return `[battlefront] in at ${secs(now)}: the world made at ${secs(marks?.madeAt)}, the level in at ${secs(marks?.levelAt)} (${mb} MB, ${level?.maps?.loaded ?? 0} maps), ${building} shaders still building; ${machine?.backend ?? '?'}, ${machine?.tier ?? '?'}, ${detail ?? '?'}`;
+  return `[battlefront] in at ${secs(now)}: the world made at ${secs(marks?.madeAt)}, the level in at ${secs(marks?.levelAt)} (${mb} MB, ${tris} M triangles), ${building} shaders still building; ${machine?.backend ?? '?'}, ${machine?.tier ?? '?'}, ${detail ?? '?'}`;
 }
 
 // the darkroom's EV 8 to the day's clamp: 3 stops over on the clear day (MinEV 11), 1.5 at the sunset (9.5)

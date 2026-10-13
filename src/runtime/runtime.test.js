@@ -542,6 +542,7 @@ describe('createRuntime', () => {
     makeBackend.mock.calls[0][1].onLost({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG', adapter: { vendor: 'amd', architecture: 'rdna-3' } });
     expect(rt.status).toBe('lost');
     expect(rt.recoverable).toBe(true);
+    expect(rt.lostModule).toBe('n');
     expect(onLoss).toHaveBeenCalledTimes(1);
     expect(onLoss).toHaveBeenCalledWith(expect.objectContaining({ kind: 'webgpu', reason: 'unknown', adapter: { vendor: 'amd', architecture: 'rdna-3' } }));
   });

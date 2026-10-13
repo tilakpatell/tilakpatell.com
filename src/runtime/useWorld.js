@@ -30,7 +30,9 @@ const hold = (module, by) => holders.set(module, Math.max(0, (holders.get(module
 // what each world a page made or adopted was for (its `rebuild`); a world
 // handed over by a page that's going has none, and is adopted whatever's asked
 export const madeFor = new WeakMap();
-export const recoverNow = ({ status, recoverable, tried }) => status === 'lost' && Boolean(recoverable) && !tried;
+// (`mine`: the world lost was this page's module, so a page opened while
+// another's is lost does not mount twice: the review's minor 4)
+export const recoverNow = ({ status, recoverable, tried, mine }) => status === 'lost' && Boolean(recoverable) && !tried && Boolean(mine);
 export const adoptable = (current, module, rebuild) => Boolean(current && current.module === module && (!madeFor.has(current.world) || madeFor.get(current.world) === rebuild));
 
 // How far a module's prepare has got (the runtime's 'prepare' events), for a
@@ -68,10 +70,11 @@ export function useWorld(module, { props, enabled = true, onEvent = null, attemp
   const tried = useRef(false);
   useEffect(() => {
     if (!on || typeof window === 'undefined') return;
-    if (!recoverNow({ status, recoverable: runtime().recoverable, tried: tried.current })) return;
+    const rt = runtime();
+    if (!recoverNow({ status, recoverable: rt.recoverable, tried: tried.current, mine: rt.lostModule === module?.id })) return;
     tried.current = true;
     setAgain((n) => n + 1);
-  }, [on, status]);
+  }, [on, status, module]);
 
   // handed over already: into this box before the page is painted, so the
   // cover over it never leaves the screen

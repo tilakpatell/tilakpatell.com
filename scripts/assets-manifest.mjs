@@ -58,7 +58,11 @@ export default function assetManifest() {
       return got && slashed(got.id.split('?')[0]) === slashed(file) ? VIRTUAL : null;
     },
     load(id) {
-      if (id === VIRTUAL) return `export default JSON.parse(${JSON.stringify(JSON.stringify(bundledManifest(root, publicDir)))});`;
+      if (id === VIRTUAL) {
+        // (the dev server reloads it when the manifest is written again)
+        this?.addWatchFile?.(file);
+        return `export default JSON.parse(${JSON.stringify(JSON.stringify(bundledManifest(root, publicDir)))});`;
+      }
       if (slashed(id.split('?')[0]) !== slashed(file)) return null;
       return base ? JSON.stringify(bundledManifest(root, publicDir)) : '{}';
     },

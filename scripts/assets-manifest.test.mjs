@@ -37,7 +37,10 @@ describe('the manifest the build bundles', () => {
     const ctx = { resolve: async () => ({ id: file }) };
     const id = await p.resolveId.call(ctx, '../data/assets-manifest.json', join(root, 'src/lib/assetBase.js'), {});
     expect(id).toBeTruthy();
-    const code = p.load(id);
+    const watched = [];
+    const code = p.load.call({ addWatchFile: (f) => watched.push(f) }, id);
+    // (the dev server reloads it when the manifest is written again)
+    expect(watched).toEqual([file]);
     expect(code.startsWith('export default JSON.parse(')).toBe(true);
     expect(JSON.parse(JSON.parse(code.slice('export default JSON.parse('.length, -2)))).toEqual({ 'kit/a.glb': manifest['kit/a.glb'] });
     // (another file, or no base: left to Vite's own resolution)

@@ -54,6 +54,7 @@ export const PROBE = {
 const LIMITS = ['maxStorageBuffersPerShaderStage', 'maxColorAttachmentBytesPerSample'];
 export const CAPPING = new Set(['name', 'slow', 'lost']);
 export const LOST_DAYS = 7; // _source: the every-chip-plays design: a loss holds the chip at Low, and two send it to WebGL 2, for a week
+export const SLOW_DAYS = 30; // _source: the review's minor 2: one busy probe must not hold a chip at Low for good
 const DAY_MS = 86400000;
 
 export function judgeTier({ features = new Set(), limits = {}, medianMs = null, phone = false, info = {}, score = null } = {}) {
@@ -111,7 +112,8 @@ const parse = (stored) => {
   }
 };
 // (a loss is kept for LOST_DAYS: after that the chip is judged afresh)
-const stale = (kept, now) => kept?.why === 'lost' && !(now - (kept.lostAt ?? 0) < LOST_DAYS * DAY_MS);
+// (and a slow probe for SLOW_DAYS: the chip is probed again after)
+const stale = (kept, now) => (kept?.why === 'lost' && !(now - (kept.lostAt ?? 0) < LOST_DAYS * DAY_MS)) || (kept?.why === 'slow' && kept.at != null && !(now - kept.at < SLOW_DAYS * DAY_MS));
 
 export function readTier(search = '', hash = '', stored = null, info = null, now = Date.now()) {
   const q = new URLSearchParams(search).get('tier') ?? new URLSearchParams(String(hash).split('?')[1] ?? '').get('tier');
@@ -222,6 +224,6 @@ export async function decideTier({ search = '', hash = '', stored = null, facts 
     return { tier: 'T0', probed: false, pinned: false, why: 'probe' };
   }
   const { tier, why } = judgeTier({ ...plain, medianMs });
-  keep(tier, facts.info, { why });
+  keep(tier, facts.info, { why, ...(why === 'slow' ? { at: now } : {}) });
   return { tier, probed: true, pinned: false, why };
 }

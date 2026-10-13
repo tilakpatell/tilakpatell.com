@@ -176,12 +176,13 @@ export function signals(gpuInfo = {}) {
     software: Boolean(gpuInfo.software),
     override: readOverride(),
     cap: readCap(),
-    hold: tierHold(readKey(TIER_KEY)),
+    hold: tierHold(readKey(TIER_KEY)) ?? pageHold,
   };
 }
 
 let cached = null;
 let gpuLook = null;
+let pageHold = null; // (holdAuto's: this page's hold, where storage keeps none)
 
 // The device, looked at once. lib/gpu hands over its look at the graphics
 // chip when it makes one, which can sharpen the answer (a weak phone chip,
@@ -193,6 +194,17 @@ export function device() {
 export function noteGpu(info) {
   gpuLook = info;
   cached = null;
+}
+
+// Hold Auto at `level` for this page (runtime/index.js, once the renderer
+// tier or a loss says so), beside the hold read from the kept tier: with
+// storage blocked (a private window) that one is never kept, and the page
+// that decided it would have drawn above it (the review's minor 1).
+// null lets go.
+export function holdAuto(level) {
+  pageHold = LEVELS.includes(level) ? level : null;
+  cached = null;
+  videoCache = null;
 }
 
 // Look again from scratch (the tests; a mode just changed).

@@ -378,7 +378,8 @@ export default {
         source: rt.quality?.source ?? 'cpu',
         gpuMs: gpuClock?.available ? (gpuClock.median ?? null) : null,
         pixels: pixels(),
-        adapter: renderer.backend?.adapter?.info?.description || renderer.backend?.adapter?.info?.device || null,
+        // (three keeps the adapter's info on the device, not on its backend: runtime/webgpu.js)
+        adapter: (({ description, device } = {}) => description || device || null)(renderer.backend?.device?.adapterInfo ?? renderer.backend?.adapter?.info),
       };
     };
 
