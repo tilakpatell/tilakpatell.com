@@ -15,8 +15,9 @@
 //            of theirs will ever cover the view, so the page's stand-ins must show
 //
 //   menu     draw the front end
-//   rest     the world rests under the menu: made and ready, and not drawn, so the menu has the whole frame
-//            (while it loads it draws: the shaders of what the camera sees build from what is drawn)
+//   rest     the world rests: made and ready, and neither stepped nor drawn. Under the menu, so the menu has the
+//            whole frame (while it loads it draws: the shaders of what the camera sees build from what is drawn);
+//            and under the first spawn screen, the dark room, as the game's pre-round holds the battle
 //   loading  draw the game's loading screen: on the way in, or as a veil in the field
 //   spawn    the first life's spawn screen stands (kept under the wipe's black on its way down)
 //   wipe     'down' | 'up' | null
@@ -30,9 +31,11 @@
 
 export function standing({ inMenu = false, phase = 'pre', ready = false, loaded = true, screens = true } = {}) {
   const menu = Boolean(inMenu) && screens !== false;
-  const rest = menu && Boolean(ready);
   const loading = !menu && ((phase === 'pre' && !ready) || (phase === 'in' && !loaded));
   const spawn = !menu && ((phase === 'pre' && ready) || phase === 'down');
+  // (under the menu once ready; and under the first spawn screen, the game's dark room, where its own screen covers
+  // the view: the game's pre-round holds the battle the same way. It wakes as the wipe goes down.)
+  const rest = (menu && Boolean(ready)) || (spawn && phase === 'pre' && screens === true);
   const wipe = phase === 'down' || phase === 'up' ? phase : null;
   const cover = screens == null && (phase === 'pre' || phase === 'down');
   const name = menu ? 'menu' : loading ? 'loading' : spawn ? 'spawn' : 'field';

@@ -50,3 +50,11 @@ Walked in headless Edge at 1,600 × 900 on the dev server, from `/battlefront/ho
 ## Phase 2b, the loading screen (2026-10-13)
 
 `loading.webp`, at the game window's own size (1,306 × 791), beside the game's (`.scratch-check/out/game/03-loading-hoth.png` on the desktop): the planet's film; HOTH, OUTPOST DELTA and the game's words for Instant Action at the top left; a hint in the yellow box; the striped mark at the bottom right. The site's bar and its "per cent" line are gone, as the game shows neither; what the load waits on is said for a screen reader alone.
+
+## Phase 2b, the first spawn screen (2026-10-13)
+
+`spawn.webp`, at the game window's own size (1,306 × 733), beside the game's (`.scratch-check/out/game/04-preround-spawn.png` on the desktop): the pre-round line; the panel with the class in hand and its three card slots; the strip, four class tiles with the game's class icons (the one in hand ticked) and the ten portraits, hatched with their price while their Battle Points are not earned; the Battle Points over the strip's end; SELECT, VIEW ABILITIES and APPEARANCES at the foot (the last two not in this world yet); and the class in hand standing on the right in the dark room, the body it will wear in the field (Hoth's snowtrooper for the Empire's assault).
+
+Checked in headless Edge: the stage draws the body; the battle's clock holds while the screen stands (6.1 s and 6.1 s two seconds apart), as the game's pre-round holds the battle; Enter deploys through the wipe and the clock goes on (8.6 s), the player alive. No page errors.
+
+Not as the game has it yet: the panel's level badge, its weapon and the EQUIP CARDS and EQUIP WEAPONS buttons; the Aurebesh line is the name set in the game's Aurebesh face.
