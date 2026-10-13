@@ -66,7 +66,8 @@ export const TUNING = {
 };
 
 export function tuned(ap, steps = {}) {
-  const out = { ...ap, sideScale: 1 };
+  // (the mod's own base settings beside its steps: a fallen bot always comes in on a squadmate where one is free)
+  const out = { ...ap, sideScale: 1, spawn: { ...ap.spawn, squad: 1 } };
   for (const [option, rows] of Object.entries(TUNING)) {
     const k = STEPS.indexOf(steps[option] ?? 'medium');
     for (const [field, values] of Object.entries(rows)) if (values[k] !== null) out[field] = values[k];

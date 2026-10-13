@@ -45,7 +45,9 @@
 // (AutoPlayers: `pve` off), the difficulty, the Battle Points' rate, the
 // reinforcements and their bleed on a mode that counts them, each side's caps
 // (its commander's for the bots, the offers' for the side), the AutoPlayers'
-// waves for a fallen bot's return and for a hero's or a reinforcement's, and
+// waves for a fallen bot's return and for a hero's or a reinforcement's, how
+// often it comes in on a squadmate (`AP_SquadSpawnProbability`: else at a
+// spawn point, a command post its side holds, modes/supremacy.js), and
 // their aim, line of fire and strafe (ai/soldierBrain.js reads each side's
 // numbers off `sim.instantAction`). On command posts (Supremacy, Instant
 // Action's own mode) each bot's post is the game's bot logic's, on its spawn
