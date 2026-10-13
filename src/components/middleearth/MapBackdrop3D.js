@@ -26,7 +26,7 @@ const at = (x, y) => [(x - SHEET.w / 2) / SCALE, (y - SHEET.h / 2) / SCALE];
 export { mapFont };
 
 export function createMapBackdrop(canvas, { onLost } = {}) {
-  const renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'low-power', stencil: false }));
+  const renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false }));
   // (what arrives late is held back until it's ready, not waited for: lib/three/frameGuard)
   guard(renderer);
   renderer.outputColorSpace = THREE.SRGBColorSpace;

@@ -29,7 +29,7 @@ const STUDIO = { rickmorty: { base: 0x2a2234, ring: 0x97ce4c, rim: 0x9dff5a }, b
 export function createWardrobePreview(canvas, { reduced = false } = {}) {
   let renderer;
   try {
-    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }));
+    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }));
   } catch {
     return null;
   }

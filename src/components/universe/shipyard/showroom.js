@@ -29,7 +29,7 @@ const PULSE_COLOR = new THREE.Color('#7cc8ff');
 export function createShowroom(canvas, { reduced = false } = {}) {
   let renderer;
   try {
-    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }));
+    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }));
   } catch {
     return null;
   }

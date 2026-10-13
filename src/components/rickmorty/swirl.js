@@ -42,7 +42,7 @@ function sharedGL() {
   let gl = null;
   try {
     // a full-screen triangle has no edges to smooth: no multisampling
-    gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
+    gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false, powerPreference: 'high-performance' });
   } catch {
     gl = null;
   }

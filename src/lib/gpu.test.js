@@ -87,3 +87,31 @@ describe('choosing 3D or 2D', () => {
     expect(resolve3D('on', none)).toBe(false);
   });
 });
+
+// (the owner's word, 2026-10-13: the site asks for the high-performance chip
+// everywhere. A page cannot force it, lib/gpuHint says why, but no context
+// may ask for less: on a Mac a low-power one keeps the built-in chip awake
+// beside the card, and the frames cross between the two)
+describe('every context the site makes', () => {
+  it('asks for the high-performance chip, and none for low power', async () => {
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const root = new URL('..', import.meta.url).pathname;
+    const files = [];
+    const walk = (dir) => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.(js|jsx)$/.test(name) && !/\.test\./.test(name)) files.push(p);
+      }
+    };
+    walk(root);
+    const MAKES = /new (?:THREE\.)?WebGLRenderer\(|new WebGPURenderer\(|getContext\(\s*['"](?:webgl2?|experimental-webgl|webgpu)['"]/;
+    const makers = files.filter((f) => MAKES.test(readFileSync(f, 'utf8')));
+    expect(makers.length).toBeGreaterThanOrEqual(15); // (the walk found them: 20 on 2026-10-13)
+    const asksLess = files.filter((f) => /powerPreference:\s*['"]low-power['"]/.test(readFileSync(f, 'utf8')));
+    const asksNothing = makers.filter((f) => !readFileSync(f, 'utf8').includes('high-performance'));
+    expect(asksLess.map((f) => f.slice(root.length))).toEqual([]);
+    expect(asksNothing.map((f) => f.slice(root.length))).toEqual([]);
+  });
+});
