@@ -191,3 +191,25 @@ Written by `node scripts/bf2017-data.mjs saber` (`scripts/lib/bf2017-rulebook-sa
 - **`hand.standIn`** `luke`: a figure on the game’s rig with no saber of its own in the game (the Emperor, a clone) fences by Luke’s row, so there is one set of rules.
 - **`hand.combo`** 0.45 s: after a strike ends, how long the next continues the chain rather than starting it again. The chain is the Ant state machine’s (`HeroMelee_Attack_StrikeIndex` counts it), not exported; this is the site’s number from before, kept.
 - **`hand.roll`** 3.5 m over 0.63 s: the dodge of a figure with no dodge clip of the game’s (the crews from elsewhere, on the clip library’s `roll`). Every figure on the game’s rig dodges by its own pack’s `dodge.<way>` clip and that clip’s root travel (Luke’s: 3.3–3.5 m by 0.6–0.7 s); this is Luke’s `dodge.front`, measured from `clips-luke.glb`, so the others dodge as far.
+
+## The AutoPlayers (`gameSettings.json`, read by `lib/battlefront/ai/autoPlayer.js` and `ai/waves.js`)
+
+Written by `node scripts/bf2017-data.mjs gameSettings` (`scripts/lib/bf2017-rulebook-settings.mjs`, which says how the settings' tree is read). The rows are the game's; these readings of them are by hand:
+
+- **The noise's unit and wander**: `AP_*AimNoise` × `AP_AimNoiseScale` is read as degrees of the view, a fresh offset drawn in that disc every `AP_AimLapTime` and eased toward over the next.
+- **`AIM_GATE`** 5°: the view's error under which an AutoPlayer presses the trigger. The settings hold no row for it; it is BattleAI's `AimingAtAngleThreshold`.
+- **The difficulty's names**: the rows are `Rookie`, `Normal` and `Expert`; `easy` and `medium` are read as `Rookie` and `Normal`.
+- **A row's choice**: the most particular the settings hold, `<base>_<side>_<difficulty>_<mode>` down to `<base>`. The game picks them by its `GameSettingsEntityData` choices at round start, which are not read.
+- **A wave's missing phase**: a row the settings lack for a phase is the nearest earlier phase's that they hold.
+- **Not read**: the kill-ratio rows (`AP_Waves_KillRatio_*`), what they change being in the bot logic's graph; the graph's wiring itself (`botLogic.mode8`'s splits and objectives are in the record, no reader yet).
+
+## Instant Action (`lib/battlefront/instantAction.js`)
+
+The round's numbers are `gameSettings.json`'s `_Mode8` rows (the settings' group `GameMode/PvE/Instant_Action_Supremacy`), each named in the round's `sources`. By hand:
+
+- **The sides' sizes**: `TeamSize_RealPlayer_<…>_Mode8` is read as the size of the player's side with the player in it (so one fewer bots beside them), `TeamSize_AutoPlayers_<…>_Mode8` as the other side's. The settings also hold `TeamSize1_AP_Mode8` and `TeamSize2_AP_Mode8` (12 each), not read.
+- **The screen's difficulty**: the team-size rows are `Easy`, `Normal` and `Hard`; they are paired in order with the AutoPlayers' `Rookie`, `Normal` and `Expert`.
+- **`MAX_SIDE`** 24: the most bots a side may be asked for, the game's largest AutoPlayer team (`TeamSizeAP_BotTeam_Large`).
+- **The waves' side on an objective mode**: the dark side attacks, as on Hoth, until the sim's own mode says which side does.
+- **The page's side**: the Empire's (the module's `PLAYER_TEAM`); the setup screen is not offered the choice.
+- **Not acted on yet**: the reinforcements' count and bleed off Supremacy, the heroes', reinforcements' and vehicles' caps, the AutoPlayers' aim and the waves. The round carries them on `sim.instantAction`; the brains, the commander and the heroes' and vehicles' lanes do not read them yet.
