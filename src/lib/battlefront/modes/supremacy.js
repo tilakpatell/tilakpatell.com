@@ -60,6 +60,8 @@ export function createMode({ rulebook = null, level = null, map = null }) {
   m.objectives = posts.map((p, i) => post.create({ at: xz(p.at), seconds: p.inputs?.CaptureDuration ?? CAPTURE_DURATION, index: p.inputs?.ObjectiveIndex ?? i + 1 }));
   m.tickets = { attack: max, defend: max };
   m.bleed = 0;
+  // (seconds a reinforcement: the game's, or a round's that sets its own, Instant Action's length)
+  m.bleedEvery = BLEED_SECONDS;
   m.gaps = [`the capital ship’s boarding (MaxBoardingTickets ${ui?.inputs?.MaxBoardingTickets ?? '–'}) is not played`];
   return m;
 }
@@ -90,8 +92,8 @@ export function tick(m, dt, world = { soldiers: [], alive: { attack: 0, defend: 
   const [a, d] = [held('attack'), held('defend')];
   if (a !== d) {
     m.bleed += dt;
-    while (m.bleed >= BLEED_SECONDS - 1e-9) {
-      m.bleed -= BLEED_SECONDS;
+    while (m.bleed >= m.bleedEvery - 1e-9) {
+      m.bleed -= m.bleedEvery;
       const side = a < d ? 'attack' : 'defend';
       m.tickets[side] = Math.max(0, m.tickets[side] - 1);
     }
