@@ -5,9 +5,12 @@
 // a press runs `ActivationTime` then `ActiveTime`; an ability on a channel
 // another ability is using, or named in an active ability's
 // `BlockedPlayerAbilityIds` (a grenade in the hand blocks the class's
-// middle and right), is blocked; a press while one is activating waits in
-// the game's input queue (`WSPlayerAbilitySetComponentData`: three presses
-// for half a second). The game's states (`PlayerAbilityState`): Disabled 0,
+// middle and right), is blocked; a press while one is activating, or that
+// cannot act yet (its ability recharging or blocked), waits in the game's
+// input queue (`WSPlayerAbilitySetComponentData`: three presses for half a
+// second) and acts if the ability becomes able in that time. The recharge
+// begins when the active time ends, the timer reloaded at each change of
+// state. The game's states (`PlayerAbilityState`): Disabled 0,
 // Recharge 1, Blocked 2, Ready 3, Activating 4, Active 5. An ability with
 // `InfiniteActiveTime` (`active: Infinity`: the sentry, the vanguard,
 // infiltration, the shield, the turret, the binoculars) stays active until
@@ -151,7 +154,12 @@ export function press(abs, slot, now) {
     abs.queue.push({ slot: a.slot, at: now });
     return { fired: false, why: 'queued' };
   }
-  return attempt(abs, a, now);
+  const r = attempt(abs, a, now);
+  // (a press that cannot act yet, the ability recharging or blocked, is held as the game holds it and acts if the
+  // ability becomes able inside QUEUE_TIMEOUT: watched in the running game. The roll's press is the caller's to act
+  // on there and then, so a roll with no charge is not held.)
+  if (!r.fired && a.slot !== 0 && abs.queue.length < QUEUE) abs.queue.push({ slot: a.slot, at: now });
+  return r;
 }
 
 export function tick(abs, dt, now) {
@@ -170,10 +178,11 @@ export function tick(abs, dt, now) {
     if (!busy(a)) a.bar = rt > 0 ? Math.min(1, a.bar + Math.max(0, Math.min(dt, now - (a.idleAt ?? -Infinity))) / rt) : 1;
   }
   abs.queue = abs.queue.filter((q) => now - q.at <= QUEUE_TIMEOUT);
-  while (abs.queue.length && !abs.list.some((o) => o.phase === 'activating')) {
-    const q = abs.queue.shift();
-    attempt(abs, find(abs, q.slot), now);
-  }
+  // (each held press is tried again, in order, while no ability is activating: one that still cannot act waits out
+  // its half second)
+  const waiting = [];
+  for (const q of abs.queue) if (abs.list.some((o) => o.phase === 'activating') || !attempt(abs, find(abs, q.slot), now).fired) waiting.push(q);
+  abs.queue = waiting;
   const out = abs.events;
   abs.events = [];
   return out;

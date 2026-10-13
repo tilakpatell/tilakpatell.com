@@ -117,6 +117,45 @@ describe('abilities', () => {
     expect(state(abs, 0)).toBe('recharge');
   });
 
+  // (watched in the running game: a press that cannot act, the ability recharging or another one active on its
+  // channel, is held for half a second and acts if the ability becomes able in that time; otherwise it is dropped)
+  it('holds a press that cannot act yet for half a second, and drops it after', () => {
+    const rows = [ROLL, { id: 'x', slot: 1, activation: 0, active: 0, recharge: 1, channels: [] }];
+    const starts = (abs, from, to) => {
+      let n = 0;
+      for (let i = Math.round(from / 0.05) + 1; i <= Math.round(to / 0.05); i++) n += tick(abs, 0.05, Math.round(i * 0.05 * 1e6) / 1e6).filter((e) => e.phase === 'start').length;
+      return n;
+    };
+    // pressed 0.4 s before it is ready again: held, and it goes off the step it is ready
+    const held = createAbilities(rows);
+    expect(press(held, 1, 0).fired).toBe(true);
+    // (the first press's own start, read off before the count begins)
+    expect(tick(held, 0, 0).map((e) => e.phase)).toEqual(['start', 'end']);
+    expect(starts(held, 0, 0.6)).toBe(0);
+    expect(press(held, 1, 0.6)).toEqual({ fired: false, why: 'recharging' });
+    expect(starts(held, 0.6, 0.95)).toBe(0);
+    expect(starts(held, 0.95, 1)).toBe(1);
+    // pressed 0.6 s before: dropped, and the ability is ready and not used
+    const dropped = createAbilities(rows);
+    press(dropped, 1, 0);
+    starts(dropped, 0, 0.4);
+    expect(press(dropped, 1, 0.4)).toEqual({ fired: false, why: 'recharging' });
+    expect(starts(dropped, 0.4, 1.5)).toBe(0);
+    expect(state(dropped, 1)).toBe('ready');
+    // blocked by another ability on its channel: it goes off when that one ends, if that is within the half second
+    const two = createAbilities([ROLL, { id: 'a', slot: 1, activation: 0, active: 1, recharge: 5, channels: ['c'] }, { id: 'b', slot: 2, activation: 0, active: 0, recharge: 5, channels: ['c'] }]);
+    press(two, 1, 0);
+    starts(two, 0, 0.7);
+    expect(press(two, 2, 0.7)).toEqual({ fired: false, why: 'blocked' });
+    expect(starts(two, 0.7, 1.05)).toBe(1);
+    // (the roll is the caller's to act on at the press: a roll with no charge is not held)
+    const roll = createAbilities(rows);
+    press(roll, 0, 0);
+    press(roll, 0, 0.01);
+    expect(press(roll, 0, 0.02).fired).toBe(false);
+    expect(roll.queue).toHaveLength(0);
+  });
+
   // (the game's own ability, read from its code: one state and one timer, Activating then Active then Recharge then
   // Ready, each for its own time; the recharge begins when the active time ends, not at the press)
   it('runs its activation, then its active time, and only then its recharge: 0.5 + 8 + 10 s to ready again', () => {
