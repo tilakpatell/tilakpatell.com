@@ -45,6 +45,7 @@ import { createBuckets, mayHurt } from './ai/buckets.js';
 import { createWaves, mayDeploy, stage as stageWaves, unitOpen } from './ai/waves.js';
 import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.js';
 import { SPREAD, createDealer, dealFor, nextFor, ownerChanged, stepDealer } from './ai/botLogicOverhaul.js';
+import { fieldTo } from './navField.js';
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
@@ -219,6 +220,8 @@ function roundIn(sim) {
     sim.waves[team] = createWaves(waveTable(sim, team), sim.time);
   }
   if (!r.botLogic || !postsOf(sim).length) return;
+  // (the way to each post, found once here and not in the step its first bots are sent: navField.js)
+  if (sim.nav) for (const o of postsOf(sim)) fieldTo(sim.nav, o.at);
   if (r.botLogic.kind === 'overhaul') {
     // (the Overhaul's: one dealer for both sides, ai/botLogicOverhaul.js; no bot has a post before its first deal)
     if (postsOf(sim).length !== 5) throw new Error(`Instant Action: the Overhaul's table is of five posts, and ${sim.level} has ${postsOf(sim).length}`);
@@ -256,7 +259,7 @@ function taskAt(sim, i) {
 // with no objective is not read)
 function holdTask(sim, s) {
   const at = [s.at[0], s.at[2]];
-  return { key: 'hold', at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false };
+  return { key: 'hold', at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false, shared: false };
 }
 
 // a bot's order from the bot logic: the game's pick for it, or the Overhaul's table's next entry (its
