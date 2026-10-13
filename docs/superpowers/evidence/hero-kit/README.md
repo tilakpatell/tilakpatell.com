@@ -109,7 +109,7 @@ The thirteen kinds of effect across all sixteen heroes' cards, with one example 
 | T12 an extra charge or count, with a stated penalty | hansolo.9; bossk.4 |
 | T13 an enemy made weaker, revealed or held longer | lando.5 |
 
-**How the game applies a card** (records, not code; the runtime ability classes have no reflected vtable and were never decompiled): a card is its own `PassivePlayerAbilityAsset` in the kit's `PlayerAbilityCustomization.AdditionalAbilities`, with an unlock and a list of modifiers of four kinds. A `PlayerAbilityPropertyOutputModifier` sets a named float the ability's prefab reads, one value a level (`StarCard_HanSolo_1_LessOverheat`: 0.9 / 0.86 / 0.82 / 0.75, the card's 10 to 25 %). A `PlayerAbilityPropertyModifier` on the ability itself, gated by the card's unlock id, replaces a timer (`Ability_HanSolo_Sharpshooterz`: recharge 18.5 / 18 / 17.5 / 17 under card 9). A damage-taken card is a rank on an affector the ability's prefab applies (`Affector_HanSolo_SharpshooterDMGReduction1`: 0.75 / 0.7 / 0.65 / 0.6). A card that needs another round swaps the projectile's blueprint (Bossk's wider mines).
+**How the game applies a card** (this paragraph is from the records; what the code and the running game add is in section 7): a card is its own `PassivePlayerAbilityAsset` in the kit's `PlayerAbilityCustomization.AdditionalAbilities`, with an unlock and a list of modifiers of four kinds. A `PlayerAbilityPropertyOutputModifier` sets a named float the ability's prefab reads, one value a level (`StarCard_HanSolo_1_LessOverheat`: 0.9 / 0.86 / 0.82 / 0.75, the card's 10 to 25 %). A `PlayerAbilityPropertyModifier` on the ability itself, gated by the card's unlock id, replaces a timer (`Ability_HanSolo_Sharpshooterz`: recharge 18.5 / 18 / 17.5 / 17 under card 9). A damage-taken card is a rank on an affector the ability's prefab applies (`Affector_HanSolo_SharpshooterDMGReduction1`: 0.75 / 0.7 / 0.65 / 0.6). A card that needs another round swaps the projectile's blueprint (Bossk's wider mines).
 
 ## 6. The site's Wardrobe, which a guest's look comes from
 
@@ -121,3 +121,40 @@ The owner, 2026-10-13: a guest wears "whatever the user chooses for skin in the 
 - The galaxy's surfaces already dress the party through `figuresWith({ bodyAsset, bodyKind, dress })` (`galaxy/surface/nodes/figures.js:11`). `galaxy/heroes.js:90` already holds rows for all four (weapons portal, laser, revolver, pistol; abilities hop / overcharge, sprint / medpack, fulminate / overcharge, sprint / overcharge). Nothing under `components/battlefront`, `lib/battlefront` or `lib/bf2017` names any of them.
 - The Battlefront Collection is a second, separate store (`bf-collection`): a skin there is a whole other body file, and it has cards, poses and emotes but no colours or gear. The wardrobe has colours and gear but no cards.
 - The Wardrobe's figures wear a toon paint and a rim light, and no outline, on the galaxy's worlds today; the inverted-hull outline (`lib/three/ink.js`) is drawn only in the cruiser.
+
+## 7. What the game's code and the running game add (2026-10-13)
+
+Sections 2 to 5 are from the exported records. This section is from two other sources, and each line says which: **CODE** is the game's decompiled code (the named Ghidra image; pseudocode under `D:\bf2-ghidra\abil63\out\core\`), **LIVE** is a read-only read of the running game's memory in an offline round (`D:\bf2-ghidra\abil63\live\reads.md`, with every address and raw value). Neither folder is in this repository.
+
+**An ability is one state and one timer.**
+
+- CODE + LIVE. The state is one of six: 0 Disabled, 1 Recharge, 2 Blocked, 3 Ready, 4 Activating, 5 Active. The previous state is kept beside it.
+- CODE. The timer is the seconds left in the current state. One function ticks it (`145b68520`), one changes the state (`145b67a10`), one sets the timer (`145b68fd0`). The durations come from the ability's asset: ActivationTime, ActiveTime, RechargeTime, each with an "infinite" flag.
+- CODE. The recharge begins when Active ends, not when the ability is pressed.
+- CODE. A card's value object replaces a duration outright; it does not scale it. This agrees with the records' `PlayerAbilityPropertyModifier` in section 5 (Sharpshooter's recharge 18.5 / 18 / 17.5 / 17 under a card).
+- Not yet LIVE: a non-zero timer was never caught (no ability was pressed during the two windows that watched the authoritative copy). A longer watch while abilities are pressed is the next read.
+
+**The durations in the records are the ones the game runs on.** LIVE, on Lando in a round, the three assets held Sharp Shot 0 / 7 / 12 s, Smoke Grenade 0.4 / 0 / 14 s and Disabler 0.4 / 25 / 19 s (activation / active / recharge), the same as his rows in section 2. No number in this file moves.
+
+**A soldier carries eighteen ability slots, and more things are abilities than the three on the HUD.** LIVE, Lando's slots:
+
+| slot | what | the game's class | activation / active / recharge |
+| --- | --- | --- | --- |
+| 0, 6 | passives | `PassivePlayerAbility` | none |
+| 1 | the primary weapon | `SoldierWeaponPlayerAbility` | infinite active; always Active |
+| 2 | Sharp Shot (the middle ability) | `RetriggerablePlayerAbility` | 0 / 7 / 12 |
+| 3 | Smoke Grenade (left) | `InactiveSoldierWeaponPlayerAbility` | 0.4 / 0 / 14 |
+| 4 | Disabler (right) | `DemolitionChargePlayerAbility` | 0.4 / 25 / 19 |
+| 5 | very likely the dodge | `CharacterStatePlayerAbility` | 0 / 0.4 / 2.2 |
+| 7, 8 | two more character-state abilities, not identified | `CharacterStatePlayerAbility` | 0.4 / 0 / 0 and 1 / 0.1 / 0 |
+| 9 | not identified | `BasicPlayerAbility` | 0 / 0 / 0 |
+| 10 | the emote | `EmoteCharacterStatePlayerAbility` | 0.3 / 0 / 1 |
+| 11 | the voice line | `VoiceLinePlayerAbility` | 0.3 / 5 / 0 |
+
+So the slot order is middle, left, right (2, 3, 4), not the order of the Category enum; and the primary weapon and (very likely) the dodge run on the same state and timer as the three abilities. For the site: one state machine serves all of them, and a hero's dodge is a row with 0.4 s active and 2.2 s recharge until a read says otherwise.
+
+**The server's copy is the one that counts.** LIVE: in an offline round the server runs in the same process, and each ability's state lives twice, once in the server's ability-set component (the eighteen states in a row) and once in the client's ability object. CODE: the three functions above write the server's copy. The site has no such split and needs none; it matters only for where the next read looks.
+
+**Every ability carried a level of 3 and a mask of 0x1F in this round.** LIVE. What the level changes was not read. Nothing in the kit is built on it.
+
+**Also read LIVE, for the render lanes:** `SunShadowmapLevel` is 3 at the game's Ultra preset (`WorldRenderSettings` +0x40), with `ShadowmapResolution` 2048, `ShadowmapSliceCount` 5, `ShadowmapViewDistance` 100 and `DistantShadowCacheResolution` 6400 in the same object. The level's own visual environment can lay a shorter distance over the settings' 100 (its record says 70 for Hoth); which of the two the frame used was not read.
