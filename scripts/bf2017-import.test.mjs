@@ -296,3 +296,39 @@ describe('--variations: index bindings reach only the model they were read for',
     expect(indexBindings(null, own, 16)).toEqual({});
   });
 });
+
+describe('--outfit: a kit skin’s maps over the GLB’s own', () => {
+  it('reads each material’s colour, normal and emissive by parameter, a visor’s colour too, one of each', async () => {
+    const { outfitMaps, skinOf } = await import('./bf2017-import.mjs');
+    const outfit = {
+      skins: [
+        { name: 'default', default: true, maps: {} },
+        { name: 'hoth', default: false, maps: { 'm/headgear_03_mesh': [[{ parameter: 'BaseColor', texture: 'T/T_Headgear_03_HO_CS' }, { parameter: 'Normal', texture: 'T/T_Headgear_03_NAOSL' }, { parameter: 'AOSlice', texture: 'T/T_AOSL' }, { parameter: 'Color', texture: 'T/T_Other_CS' }], [{ parameter: 'ColorSmoothness', texture: 'T/T_Headgear_03_HO_CS' }]] } },
+      ],
+    };
+    expect(skinOf(outfit).name).toBe('default');
+    expect(skinOf(outfit, 'hoth').name).toBe('hoth');
+    expect(skinOf(outfit, 'none')).toBe(null);
+    expect(outfitMaps(skinOf(outfit, 'hoth'))).toEqual({
+      'm/headgear_03_mesh': [
+        [
+          { slot: 'color', name: 'T/T_Headgear_03_HO_CS' },
+          { slot: 'normal', name: 'T/T_Headgear_03_NAOSL' },
+        ],
+        [{ slot: 'color', name: 'T/T_Headgear_03_HO_CS' }],
+      ],
+    });
+  });
+
+  it('binds them only on the mesh’s own files with as many materials, and knows a map by its stem', async () => {
+    const { outfitBindings, mapStem } = await import('./bf2017-import.mjs');
+    const maps = { 'characters/bodyparts/legs_03/legs_03_mesh': [[{ slot: 'color', name: 'T_Legs_03_DS_CS' }]] };
+    expect(outfitBindings(maps, 'models/characters/bodyparts/legs_03/legs_03_mesh_lod4.glb', 1)).toEqual({ '#0': [{ slot: 'color', name: 'T_Legs_03_DS_CS' }] });
+    expect(outfitBindings(maps, 'models/characters/bodyparts/legs_03/legs_03_mesh.glb', 2)).toEqual({});
+    expect(outfitBindings(maps, 'models/characters/bodyparts/torso_05/torso_05_mesh.glb', 1)).toEqual({});
+    expect(outfitBindings(null, 'x', 1)).toEqual({});
+    expect(mapStem('ktx2:web/textures/characters/bodyparts/legs_03/texture/t_legs_03_naosl__normal.ktx2')).toBe('t_legs_03_naosl');
+    expect(mapStem('Characters/BodyParts/Legs_03/Texture/T_Legs_03_NAOSL')).toBe('t_legs_03_naosl');
+    expect(mapStem('ktx2:web/textures/x/t_a_cs__orm_9a86af0c.png')).toBe('t_a_cs');
+  });
+});

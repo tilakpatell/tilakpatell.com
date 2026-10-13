@@ -1,0 +1,1203 @@
+{
+ "_from": {
+  "export": "build 489592",
+  "date": "2026-10-13",
+  "script": "scripts/bf2017-troops.mjs"
+ },
+ "classes": {
+  "d-orig-assault": {
+   "side": "dark",
+   "era": "Orig",
+   "cls": "assault",
+   "planets": {
+    "DS": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Orig_DS",
+     "player": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "bots": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-Vanguard"
+     ]
+    },
+    "EN": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Orig_EN",
+     "player": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "bots": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-Vanguard"
+     ]
+    },
+    "HO": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Orig_HO",
+     "player": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "bots": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01-AP-HOTH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-AcidLauncher-HOTH",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-Vanguard-HOTH"
+     ]
+    },
+    "MOS": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Orig_MOS",
+     "player": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "bots": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-Vanguard"
+     ]
+    },
+    "SCAR": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Orig_SCAR",
+     "player": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "bots": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01-SCAR-AP",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-AcidLauncher-SCAR",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-Vanguard-SCAR"
+     ]
+    },
+    "YA": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Orig_YA",
+     "player": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "bots": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_D_Assault_OT_AP-Vanguard"
+     ]
+    }
+   }
+  },
+  "d-preq-assault": {
+   "side": "dark",
+   "era": "Preq",
+   "cls": "assault",
+   "planets": {
+    "KAM": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Preq_KAM",
+     "player": "Characters/Dark/D_Assault_Preq/D_Assault_Preq_01/MPVUR_D_Assault_Preq_01",
+     "bots": "Characters/Dark/D_Assault_Preq/D_Assault_Preq_01/MPVUR_D_Assault_Preq_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/Kit_D_Assault_Preq_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/Kit_D_Assault_Preq_AP-Vanguard"
+     ]
+    },
+    "KASH": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Preq_KASH",
+     "player": "Characters/Dark/D_Assault_Preq/D_Assault_Preq_01/MPVUR_D_Assault_Preq_01",
+     "bots": "Characters/Dark/D_Assault_Preq/D_Assault_Preq_01/MPVUR_D_Assault_Preq_01_AP_KASH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/Kit_D_Assault_Preq_KASH_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/Kit_D_Assault_Preq_KASH_AP-Vanguard"
+     ]
+    },
+    "THEE": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_D_Assault_Preq_THEE",
+     "player": "Characters/Dark/D_Assault_Preq/D_Assault_Preq_01/MPVUR_D_Assault_Preq_01",
+     "bots": "Characters/Dark/D_Assault_Preq/D_Assault_Preq_01/MPVUR_D_Assault_Preq_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/Kit_D_Assault_Preq_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/Kit_D_Assault_Preq_AP-Vanguard"
+     ]
+    },
+    "GEO": {
+     "kit": "S5_1/Gameplay/Kits/MP/Assault/Kit_D_Assault_Preq_GEO",
+     "player": "Characters/Dark/D_Assault_Preq/D_Assault_Preq_01/MPVUR_D_Assault_Preq_01",
+     "bots": "Characters/Dark/D_Assault_Preq/D_Assault_Preq_01/MPVUR_D_Assault_Preq_01_AP_GEO",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/Kit_D_Assault_Preq_GEO_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/Kit_D_Assault_Preq_GEO_AP-Vanguard"
+     ]
+    }
+   }
+  },
+  "l-orig-assault": {
+   "side": "light",
+   "era": "Orig",
+   "cls": "assault",
+   "planets": {
+    "DS": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Orig_DS",
+     "player": "Characters/Light/L_Assault_Orig/L_Assault_Orig_DS_01/MPVUR_L_Assault_Orig_DS_01",
+     "bots": "Characters/Light/L_Assault_Orig/L_Assault_Orig_DS_01/MPVUR_L_Assault_Orig_DS_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-AcidLauncher-DS",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-Vanguard-DS"
+     ]
+    },
+    "EN": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Orig_EN",
+     "player": "Characters/Light/L_Assault_Orig/L_Assault_Orig_EN_01/MPVUR_L_Assault_Orig_EN_01",
+     "bots": "Characters/Light/L_Assault_Orig/L_Assault_Orig_EN_01/MPVUR_L_Assault_Orig_EN_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-AcidLauncher-ENDOR",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-Vanguard-ENDOR"
+     ]
+    },
+    "HO": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Orig_HO",
+     "player": "Characters/Light/L_Assault_Orig/L_Assault_Orig_HO_01/MPVUR_L_Assault_Orig_HO_01",
+     "bots": "Characters/Light/L_Assault_Orig/L_Assault_Orig_HO_01/MPVUR_L_Assault_Orig_HO_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-AcidLauncher-HOTH",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-Vanguard-HOTH"
+     ]
+    },
+    "MOS": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Orig_MOS",
+     "player": "Characters/Light/L_Assault_Orig/L_Assault_Orig_MOS_01/MPVUR_L_Assault_Orig_MOS_01",
+     "bots": "Characters/Light/L_Assault_Orig/L_Assault_Orig_MOS_01/MPVUR_L_Assault_Orig_MOS_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-Vanguard"
+     ]
+    },
+    "SCAR": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Orig_SCAR",
+     "player": "Characters/Light/L_Assault_Orig/L_Assault_Orig_Pathfinder_01/MPVUR_L_Assault_Orig_SCAR_01",
+     "bots": "Characters/Light/L_Assault_Orig/L_Assault_Orig_Pathfinder_01/MPVUR_L_Assault_Orig_SCAR_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-AcidLauncher-SCAR",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-Vanguard-SCAR"
+     ]
+    },
+    "YA": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Orig_YA",
+     "player": "Characters/Light/L_Assault_Orig/L_Assault_Orig_YA_01/MPVUR_L_Assault_Orig_YA_01",
+     "bots": "Characters/Light/L_Assault_Orig/L_Assault_Orig_YA_01/MPVUR_L_Assault_Orig_YA_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-AcidLauncher-YAV",
+      "S7_2/Gameplay/Kits/AI/Assault/OT/Kit_L_Assault_OT_AP-Vanguard-YAV"
+     ]
+    }
+   }
+  },
+  "l-preq-assault": {
+   "side": "light",
+   "era": "Preq",
+   "cls": "assault",
+   "planets": {
+    "KAM": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Preq_KAM",
+     "player": "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_02",
+     "bots": "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_01_AP_KAM",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_KAM_AP_PHA_01-AcidLauncher",
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_KAM_AP_PHA_01-Vanguard",
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_KAM_AP_PHA_02-AcidLauncher",
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_KAM_AP_PHA_02-Vanguard"
+     ],
+     "botRecords": [
+      "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_01_AP_KAM",
+      "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_02_AP_KAM"
+     ]
+    },
+    "KASH": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Preq_KASH",
+     "player": "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_01",
+     "bots": "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_02_AP_KASH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_KASH_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_KASH_AP-Vanguard"
+     ]
+    },
+    "THEE": {
+     "kit": "Gameplay/Kits/MP/Assault/Kit_L_Assault_Preq_THEE",
+     "player": "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_01",
+     "bots": "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_02_AP_THEE",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_THEE_AP-AcidLauncher",
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_THEE_AP-Vanguard"
+     ]
+    },
+    "GEO": {
+     "kit": "S5_1/Gameplay/Kits/MP/Assault/Kit_L_Assault_Preq_GEO",
+     "player": "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_02",
+     "bots": "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_01_AP_GEO",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_GEO_AP_PHA_01-AcidLauncher",
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_GEO_AP_PHA_01-Vanguard",
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_GEO_AP_PHA_02-AcidLauncher",
+      "S7_2/Gameplay/Kits/AP/Assault/Kit_L_Assault_Preq_GEO_AP_PHA_02-Vanguard"
+     ],
+     "botRecords": [
+      "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_01_AP_GEO",
+      "Characters/Light/L_Assault_Preq/L_Assault_Preq_PHA_01/MPVUR_L_Assault_Preq_PHA_02_AP_GEO"
+     ]
+    }
+   }
+  },
+  "d-orig-heavy": {
+   "side": "dark",
+   "era": "Orig",
+   "cls": "heavy",
+   "planets": {
+    "DS": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Orig_DS",
+     "player": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+     "bots": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-AntiVehicle",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-Mobile"
+     ]
+    },
+    "EN": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Orig_EN",
+     "player": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+     "bots": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-AntiVehicle",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-Mobile"
+     ]
+    },
+    "HO": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Orig_HO",
+     "player": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+     "bots": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_HO_01/MPVUR_D_Heavy_Orig_HO_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-AntiVehicle-HOTH",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-HOTH",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-Mobile-HOTH"
+     ]
+    },
+    "MOS": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Orig_MOS",
+     "player": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+     "bots": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_MOS_01/MPVUR_D_Heavy_Orig_MOS_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-AntiVehicle-MOS",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-MOS",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-Mobile-MOS"
+     ]
+    },
+    "YA": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Orig_YA",
+     "player": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+     "bots": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-AntiVehicle",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_D_Heavy_OT_AP-Mobile"
+     ]
+    }
+   }
+  },
+  "d-preq-heavy": {
+   "side": "dark",
+   "era": "Preq",
+   "cls": "heavy",
+   "planets": {
+    "KAM": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Preq_KAM",
+     "player": "Characters/Dark/D_Heavy_Preq/D_Heavy_Preq_01/MPVUR_D_Heavy_Preq_01",
+     "bots": "Characters/Dark/D_Heavy_Preq/D_Heavy_Preq_01/MPVUR_D_Heavy_Preq_01",
+     "botKits": []
+    },
+    "KASH": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Preq_KASH",
+     "player": "Characters/Dark/D_Heavy_Preq/D_Heavy_Preq_01/MPVUR_D_Heavy_Preq_01",
+     "bots": "Characters/Dark/D_Heavy_Preq/D_Heavy_Preq_01/MPVUR_D_Heavy_Preq_01_AP_KASH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_KASH_AP",
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_KASH_AP-AntiVehicle",
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_KASH_AP-Mobile"
+     ]
+    },
+    "THEE": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Preq_THEE",
+     "player": "Characters/Dark/D_Heavy_Preq/D_Heavy_Preq_01/MPVUR_D_Heavy_Preq_01",
+     "bots": "Characters/Dark/D_Heavy_Preq/D_Heavy_Preq_01/MPVUR_D_Heavy_Preq_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_THEE_AP",
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_THEE_AP-AntiVehicle",
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_THEE_AP-Mobile"
+     ]
+    },
+    "GEO": {
+     "kit": "S5_1/Gameplay/Kits/MP/Heavy/Kit_D_Heavy_Preq_GEO",
+     "player": "Characters/Dark/D_Heavy_Preq/D_Heavy_Preq_01/MPVUR_D_Heavy_Preq_01",
+     "bots": "Characters/Dark/D_Heavy_Preq/D_Heavy_Preq_01/MPVUR_D_Heavy_Preq_01_AP_GEO",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_GEO_AP",
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_GEO_AP-AntiVehicle",
+      "S7_2/Gameplay/Kits/AI/Heavy/Kit_D_Heavy_Preq_GEO_AP-Mobile"
+     ]
+    }
+   }
+  },
+  "l-orig-heavy": {
+   "side": "light",
+   "era": "Orig",
+   "cls": "heavy",
+   "planets": {
+    "DS": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Orig_DS",
+     "player": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_DS_01/MPVUR_L_Heavy_Orig_DS_01",
+     "bots": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_DS_01/MPVUR_L_Heavy_Orig_DS_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-DS",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-Mobile-DS"
+     ]
+    },
+    "EN": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Orig_EN",
+     "player": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_EN_01/MPVUR_L_Heavy_Orig_EN_01",
+     "bots": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_EN_01/MPVUR_L_Heavy_Orig_EN_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-AntiVehicle-ENDOR",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-ENDOR",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-Mobile-ENDOR"
+     ]
+    },
+    "HO": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Orig_HO",
+     "player": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_HO_01/MPVUR_L_Heavy_Orig_HO_01",
+     "bots": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_HO_01/MPVUR_L_Heavy_Orig_HO_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-AntiVehicle-HOTH",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-HOTH",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-Mobile-HOTH"
+     ]
+    },
+    "MOS": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Orig_MOS",
+     "player": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_MOS_01/MPVUR_L_Heavy_Orig_MOS_01",
+     "bots": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_MOS_01/MPVUR_L_Heavy_Orig_MOS_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-Mobile"
+     ]
+    },
+    "SCAR": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Orig_SCAR",
+     "player": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_Pathfinder_01/MPVUR_L_Heavy_Orig_SCAR_01",
+     "bots": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_Pathfinder_01/MPVUR_L_Heavy_Orig_SCAR_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-AntiVehicle-SCAR",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-Mobile-SCAR",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-SCAR"
+     ]
+    },
+    "YA": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Orig_YA",
+     "player": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_YA_01/MPVUR_L_Heavy_Orig_YA_01",
+     "bots": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_YA_01/MPVUR_L_Heavy_Orig_YA_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-AntiVehicle-YAV",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-Mobile-YAV",
+      "S7_2/Gameplay/Kits/AI/Heavy/OT/Kit_L_Heavy_OT_AP-YAV"
+     ]
+    }
+   }
+  },
+  "l-preq-heavy": {
+   "side": "light",
+   "era": "Preq",
+   "cls": "heavy",
+   "planets": {
+    "KAM": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Preq_KAM",
+     "player": "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_02",
+     "bots": "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_01_AP_KAM",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_KAM_AP_PHA_01",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_KAM_AP_PHA_01-Mobile",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_KAM_AP_PHA_02",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_KAM_AP_PHA_02-Mobile"
+     ],
+     "botRecords": [
+      "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_01_AP_KAM",
+      "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_02_AP_KAM"
+     ]
+    },
+    "KASH": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Preq_KASH",
+     "player": "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_01",
+     "bots": "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_02_AP_KASH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_KASH_AP",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_KASH_AP-AntiVehicle",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_KASH_AP-Mobile"
+     ]
+    },
+    "THEE": {
+     "kit": "Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Preq_THEE",
+     "player": "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_01",
+     "bots": "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_02_AP_THEE",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_THEE_AP",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_THEE_AP-AntiVehicle",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_THEE_AP-Mobile"
+     ]
+    },
+    "GEO": {
+     "kit": "S5_1/Gameplay/Kits/MP/Heavy/Kit_L_Heavy_Preq_GEO",
+     "player": "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_02",
+     "bots": "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_01_AP_GEO",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_GEO_AP_PHA_01",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_GEO_AP_PHA_01-AntiVehicle",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_GEO_AP_PHA_01-Mobile",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_GEO_AP_PHA_02",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_GEO_AP_PHA_02-AntiVehicle",
+      "S7_2/Gameplay/Kits/AP/Heavy/Kit_L_Heavy_Preq_GEO_AP_PHA_02-Mobile"
+     ],
+     "botRecords": [
+      "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_01_AP_GEO",
+      "Characters/Light/L_Heavy_Preq/L_Heavy_Preq_PHA_01/MPVUR_L_Heavy_Preq_PHA_02_AP_GEO"
+     ]
+    }
+   }
+  },
+  "d-orig-officer": {
+   "side": "dark",
+   "era": "Orig",
+   "cls": "officer",
+   "planets": {
+    "DS": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_D_Officer_Orig_DS",
+     "player": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_DS_01/MPVUR_D_Officer_Orig_DS_01",
+     "bots": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_01/MPVUR_D_Officer_Orig_01-AP",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Defuser",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Shield"
+     ]
+    },
+    "EN": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_D_Officer_Orig_EN",
+     "player": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_01/MPVUR_D_Officer_Orig_01",
+     "bots": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_01/MPVUR_D_Officer_Orig_01-AP",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Defuser",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Shield"
+     ]
+    },
+    "HO": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_D_Officer_Orig_HO",
+     "player": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_HO_01/MPVUR_D_Officer_Orig_HO_01",
+     "bots": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_01/MPVUR_D_Officer_Orig_01-AP",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Defuser",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Shield"
+     ]
+    },
+    "MOS": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_D_Officer_Orig_MOS",
+     "player": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_01/MPVUR_D_Officer_Orig_01",
+     "bots": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_01/MPVUR_D_Officer_Orig_01-AP",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Defuser",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Shield"
+     ]
+    },
+    "YA": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_D_Officer_Orig_YA",
+     "player": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_YA_01/MPVUR_D_Officer_Orig_YA_01",
+     "bots": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_01/MPVUR_D_Officer_Orig_01-AP",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Defuser",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_D_Officer_OT_AP-Shield"
+     ]
+    }
+   }
+  },
+  "d-preq-officer": {
+   "side": "dark",
+   "era": "Preq",
+   "cls": "officer",
+   "planets": {
+    "KAM": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_D_Officer_Preq_KAM",
+     "player": "Characters/Dark/D_Officer_Preq/D_Officer_Preq_01/MPVUR_D_Officer_Preq_01",
+     "bots": "Characters/Dark/D_Officer_Preq/D_Officer_Preq_01/MPVUR_D_Officer_Preq_01",
+     "botKits": []
+    },
+    "KASH": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_D_Officer_Preq_KASH",
+     "player": "Characters/Dark/D_Officer_Preq/D_Officer_Preq_01/MPVUR_D_Officer_Preq_01",
+     "bots": "Characters/Dark/D_Officer_Preq/D_Officer_Preq_01/MPVUR_D_Officer_Preq_01_AP_KASH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_KASH_AP-Defuser",
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_KASH_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_KASH_AP-Shield"
+     ]
+    },
+    "THEE": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_D_Officer_Preq_THEE",
+     "player": "Characters/Dark/D_Officer_Preq/D_Officer_Preq_01/MPVUR_D_Officer_Preq_01",
+     "bots": "Characters/Dark/D_Officer_Preq/D_Officer_Preq_01/MPVUR_D_Officer_Preq_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_THEE_AP-Defuser",
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_THEE_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_THEE_AP-Shield"
+     ]
+    },
+    "GEO": {
+     "kit": "S5_1/Gameplay/Kits/MP/Officer/Kit_D_Officer_Preq_GEO",
+     "player": "Characters/Dark/D_Officer_Preq/D_Officer_Preq_01/MPVUR_D_Officer_Preq_01",
+     "bots": "Characters/Dark/D_Officer_Preq/D_Officer_Preq_01/MPVUR_D_Officer_Preq_01_AP_GEO",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_GEO_AP-Defuser",
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_GEO_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AI/Officer/Kit_D_Officer_Preq_GEO_AP-Shield"
+     ]
+    }
+   }
+  },
+  "l-orig-officer": {
+   "side": "light",
+   "era": "Orig",
+   "cls": "officer",
+   "planets": {
+    "DS": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_L_Officer_Orig_DS",
+     "player": "Characters/Light/L_Officer_Orig/L_Officer_Orig_01/MPVUR_L_Officer_Orig_Whiteshark_01",
+     "bots": "Characters/Light/L_Officer_Orig/L_Officer_Orig_DS_01/MPVUR_L_Officer_Orig_DS_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Defuser-DS",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Disrupt-DS",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Shield-DS"
+     ]
+    },
+    "EN": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_L_Officer_Orig_EN",
+     "player": "Characters/Light/L_Officer_Orig/L_Officer_Orig_01/MPVUR_L_Officer_Orig_Whiteshark_01",
+     "bots": "Characters/Light/L_Officer_Orig/L_Officer_Orig_EN_01/MPVUR_L_Officer_Orig_EN_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Defuser-ENDOR",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Disrupt-ENDOR",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Shield-ENDOR"
+     ]
+    },
+    "HO": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_L_Officer_Orig_HO",
+     "player": "Characters/Light/L_Officer_Orig/L_Officer_Orig_HO_01/MPVUR_L_Officer_Orig_HO_01",
+     "bots": "Characters/Light/L_Officer_Orig/L_Officer_Orig_HO_01/MPVUR_L_Officer_Orig_HO_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Defuser-HOTH",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Disrupt-HOTH",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Shield-HOTH"
+     ]
+    },
+    "MOS": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_L_Officer_Orig_MOS",
+     "player": "Characters/Light/L_Officer_Orig/L_Officer_Orig_01/MPVUR_L_Officer_Orig_Whiteshark_01",
+     "bots": "Characters/Light/L_Officer_Orig/L_Officer_Orig_01/MPVUR_L_Officer_Orig_Whiteshark_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Defuser-MOS",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Disrupt-MOS",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Shield-MOS"
+     ]
+    },
+    "YA": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_L_Officer_Orig_YA",
+     "player": "Characters/Light/L_Officer_Orig/L_Officer_Orig_01/MPVUR_L_Officer_Orig_Whiteshark_01",
+     "bots": "Characters/Light/L_Officer_Orig/L_Officer_Orig_01/MPVUR_L_Officer_Orig_Whiteshark_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Defuser-YAV",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Disrupt-YAV",
+      "S7_2/Gameplay/Kits/AI/Officer/OT/Kit_L_Officer_OT_AP-Shield-YAV"
+     ]
+    }
+   }
+  },
+  "l-preq-officer": {
+   "side": "light",
+   "era": "Preq",
+   "cls": "officer",
+   "planets": {
+    "KAM": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_L_Officer_Preq_KAM",
+     "player": "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_02",
+     "bots": "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_01_AP_KAM",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_KAM_AP_PHA_01-Defuser",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_KAM_AP_PHA_01-Disrupt",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_KAM_AP_PHA_02-Defuser",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_KAM_AP_PHA_02-Disrupt",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_KAM_AP_PHA_02-Shield"
+     ],
+     "botRecords": [
+      "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_01_AP_KAM",
+      "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_02_AP_KAM"
+     ]
+    },
+    "KASH": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_L_Officer_Preq_KASH",
+     "player": "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_01",
+     "bots": "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_02_AP_KASH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_KASH_AP-Defuser",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_KASH_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_KASH_AP-Shield"
+     ]
+    },
+    "THEE": {
+     "kit": "Gameplay/Kits/MP/Officer/Kit_L_Officer_Preq_THEE",
+     "player": "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_01",
+     "bots": "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_02_AP_THEE",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_THEE_AP-Defuser",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_THEE_AP-Disrupt",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_THEE_AP-Shield"
+     ]
+    },
+    "GEO": {
+     "kit": "S5_1/Gameplay/Kits/MP/Officer/Kit_L_Officer_Preq_GEO",
+     "player": "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_02",
+     "bots": "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_01_AP_GEO",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_GEO_AP_PHA_01-Defuser",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_GEO_AP_PHA_01-Disrupt",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_GEO_AP_PHA_01-Shield",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_GEO_AP_PHA_02-Defuser",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_GEO_AP_PHA_02-Disrupt",
+      "S7_2/Gameplay/Kits/AP/Officer/Kit_L_Officer_Preq_GEO_AP_PHA_02-Shield"
+     ],
+     "botRecords": [
+      "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_01_AP_GEO",
+      "Characters/Light/L_Officer_Preq/L_Officer_Preq_PHA_01/MPVUR_L_Officer_Preq_PHA_02_AP_GEO"
+     ]
+    }
+   }
+  },
+  "d-orig-specialist": {
+   "side": "dark",
+   "era": "Orig",
+   "cls": "specialist",
+   "planets": {
+    "DS": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Orig_DS",
+     "player": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "bots": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_D_Specialist_OT_AP"
+     ]
+    },
+    "EN": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Orig_EN",
+     "player": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "bots": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_D_Specialist_OT_AP"
+     ]
+    },
+    "HO": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Orig_HO",
+     "player": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "bots": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_D_Specialist_OT_AP"
+     ]
+    },
+    "MOS": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Orig_MOS",
+     "player": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "bots": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_D_Specialist_OT_AP"
+     ]
+    },
+    "YA": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Orig_YA",
+     "player": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "bots": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_D_Specialist_OT_AP"
+     ]
+    }
+   }
+  },
+  "d-preq-specialist": {
+   "side": "dark",
+   "era": "Preq",
+   "cls": "specialist",
+   "planets": {
+    "KAM": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Preq_KAM",
+     "player": "Characters/Dark/D_Specialist_Preq/D_Specialist_Preq_01/MPVUR_D_Specialist_Preq_01",
+     "bots": "Characters/Dark/D_Specialist_Preq/D_Specialist_Preq_01/MPVUR_D_Specialist_Preq_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/Kit_D_Specialist_Preq_AP"
+     ]
+    },
+    "KASH": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Preq_KASH",
+     "player": "Characters/Dark/D_Specialist_Preq/D_Specialist_Preq_01/MPVUR_D_Specialist_Preq_01",
+     "bots": "Characters/Dark/D_Specialist_Preq/D_Specialist_Preq_01/MPVUR_D_Specialist_Preq_01_AP_KASH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/Kit_D_Specialist_Preq_KASH_AP"
+     ]
+    },
+    "THEE": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Preq_THEE",
+     "player": "Characters/Dark/D_Specialist_Preq/D_Specialist_Preq_01/MPVUR_D_Specialist_Preq_01",
+     "bots": "Characters/Dark/D_Specialist_Preq/D_Specialist_Preq_01/MPVUR_D_Specialist_Preq_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/Kit_D_Specialist_Preq_AP"
+     ]
+    },
+    "GEO": {
+     "kit": "S5_1/Gameplay/Kits/MP/Specialist/Kit_D_Specialist_Preq_GEO",
+     "player": "Characters/Dark/D_Specialist_Preq/D_Specialist_Preq_01/MPVUR_D_Specialist_Preq_01",
+     "bots": "Characters/Dark/D_Specialist_Preq/D_Specialist_Preq_01/MPVUR_D_Specialist_Preq_01_AP_GEO",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/Kit_D_Specialist_Preq_GEO_AP"
+     ]
+    }
+   }
+  },
+  "l-orig-specialist": {
+   "side": "light",
+   "era": "Orig",
+   "cls": "specialist",
+   "planets": {
+    "DS": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Orig_DS",
+     "player": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_DS_01/MPVUR_L_Specialist_Orig_DS_01",
+     "bots": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_DS_01/MPVUR_L_Specialist_Orig_DS_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_L_Specialist_OT_AP-DS"
+     ]
+    },
+    "EN": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Orig_EN",
+     "player": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_01/MPVUR_L_Specialist_Orig_01",
+     "bots": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_01/MPVUR_L_Specialist_Orig_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_L_Specialist_OT_AP-ENDOR"
+     ]
+    },
+    "HO": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Orig_HO",
+     "player": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_HO_01/MPVUR_L_Specialist_Orig_HO_01",
+     "bots": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_HO_01/MPVUR_L_Specialist_Orig_HO_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_L_Specialist_OT_AP-HOTH"
+     ]
+    },
+    "MOS": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Orig_MOS",
+     "player": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_MOS_01/MPVUR_L_Specialist_Orig_MOS_01",
+     "bots": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_MOS_01/MPVUR_L_Specialist_Orig_MOS_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_L_Specialist_OT_AP-MOS"
+     ]
+    },
+    "SCAR": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Orig_SCAR",
+     "player": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_01_Pathfinder_01/MPVUR_L_Specialist_Orig_SCAR_01",
+     "bots": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_01_Pathfinder_01/MPVUR_L_Specialist_Orig_SCAR_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_L_Specialist_OT_AP-SCAR"
+     ]
+    },
+    "YA": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Orig_YA",
+     "player": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_YA_01/MPVUR_L_Specialist_Orig_YA_01",
+     "bots": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_YA_01/MPVUR_L_Specialist_Orig_YA_01",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AI/Specialist/OT/Kit_L_Specialist_OT_AP-YAV"
+     ]
+    }
+   }
+  },
+  "l-preq-specialist": {
+   "side": "light",
+   "era": "Preq",
+   "cls": "specialist",
+   "planets": {
+    "KAM": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Preq_KAM",
+     "player": "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_02",
+     "bots": "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_01_AP_KAM",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Specialist/Kit_L_Specialist_Preq_KAM_AP_PHA_01",
+      "S7_2/Gameplay/Kits/AP/Specialist/Kit_L_Specialist_Preq_KAM_AP_PHA_02"
+     ],
+     "botRecords": [
+      "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_01_AP_KAM",
+      "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_02_AP_KAM"
+     ]
+    },
+    "KASH": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Preq_KASH",
+     "player": "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_01",
+     "bots": "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_02_AP_KASH",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Specialist/Kit_L_Specialist_Preq_KASH_AP"
+     ]
+    },
+    "THEE": {
+     "kit": "Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Preq_THEE",
+     "player": "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_01",
+     "bots": "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_02_AP_THEE",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Specialist/Kit_L_Specialist_Preq_THEE_AP"
+     ]
+    },
+    "GEO": {
+     "kit": "S5_1/Gameplay/Kits/MP/Specialist/Kit_L_Specialist_Preq_GEO",
+     "player": "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_02",
+     "bots": "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_01_AP_GEO",
+     "botKits": [
+      "S7_2/Gameplay/Kits/AP/Specialist/Kit_L_Specialist_Preq_GEO_AP_PHA_01",
+      "S7_2/Gameplay/Kits/AP/Specialist/Kit_L_Specialist_Preq_GEO_AP_PHA_02"
+     ],
+     "botRecords": [
+      "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_01_AP_GEO",
+      "Characters/Light/L_Specialist_Preq/L_Specialist_Preq_PHA_01/MPVUR_L_Specialist_Preq_PHA_02_AP_GEO"
+     ]
+    }
+   }
+  }
+ },
+ "specials": {
+  "ARC": {
+   "kit": "Gameplay/Kits/Specials/ARC/Kit_Special_ARC",
+   "side": "light",
+   "record": "Characters/Hero/ARCTrooper/ARCTrooper_01/VUR_ARCTrooper_01"
+  },
+  "B2": {
+   "kit": "Gameplay/Kits/Specials/B2/Kit_Special_B2",
+   "side": null,
+   "record": "Characters/Hero/B2/B2_01/VUR_B2_01"
+  },
+  "BX": {
+   "kit": "Gameplay/Kits/Specials/BX/Kit_Special_BX",
+   "side": "dark",
+   "record": "Characters/Hero/BXCommandDroid/BXCommandDroid_01/VUR_BX_CommandDroid"
+  },
+  "CloneCommando": {
+   "kit": "Gameplay/Kits/Specials/CloneCommando/Kit_Special_CloneCommando",
+   "side": "light",
+   "record": "Characters/Hero/CloneCommando/CloneCommando_01/VUR_CloneCommando_01"
+  },
+  "CloneJumpTrooper": {
+   "kit": "Gameplay/Kits/Specials/CloneJumpTrooper/Kit_Special_CloneJumpTrooper",
+   "side": "light",
+   "record": "Characters/Hero/CloneJetTrooper/CloneJetTrooper_01/VUR_CloneJetTrooper_PHA_01"
+  },
+  "DeathTrooper": {
+   "kit": "Gameplay/Kits/Specials/DeathTrooper/Kit_Special_DeathTrooper",
+   "side": null,
+   "record": "Characters/Hero/DeathTrooper/DeathTrooper_01/VUR_DeathTrooper_01"
+  },
+  "Droideka": {
+   "kit": "Gameplay/Kits/Specials/Droideka/Kit_Special_Droideka",
+   "side": "dark",
+   "record": "Gameplay/Vehicles/Ground/Droideka_01/VUR_Droideka_01"
+  },
+  "EwokRebel": {
+   "kit": "Gameplay/Kits/Specials/EwokRebel/Kit_Special_EwokRebel",
+   "side": null,
+   "record": "Characters/Hero/Ewok/Ewok_01/VUR_Ewok_Rebel_01"
+  },
+  "ISBAgent": {
+   "kit": "Gameplay/Kits/Specials/ISBAgent/Kit_Special_ISBAgent",
+   "side": null,
+   "record": "Characters/Hero/ISBAgent/ISBAgent_01/VUR_ISBAgent_01"
+  },
+  "JumpTrooper": {
+   "kit": "Gameplay/Kits/Specials/JumpTrooper/Kit_Special_JumpTrooper",
+   "side": "dark",
+   "record": "Characters/Hero/Skytrooper_01/VUR_Skytrooper_01"
+  },
+  "RebelJumpTrooper": {
+   "kit": "Gameplay/Kits/Specials/RebelJumpTrooper/Kit_Special_RebelJumpTrooper",
+   "side": null,
+   "record": "Characters/Hero/Jumptroopers/Jumptrooper_Rebel_01/VUR_Jumptrooper_Rebel_01"
+  },
+  "WookieWarrior": {
+   "kit": "Gameplay/Kits/Specials/WookieWarrior/Kit_Special_WookieWarrior",
+   "side": "light",
+   "record": "Characters/Hero/WookieWarrior/WookieWarrior_01/VUR_WookieWarrior_01"
+  }
+ },
+ "wear": {
+  "DS": {
+   "d-orig-assault": {
+    "player": "stormtroopermp",
+    "bots": "stormtroopermp"
+   },
+   "d-orig-heavy": {
+    "player": "heavystormtrooper",
+    "bots": "heavystormtrooper"
+   },
+   "d-orig-officer": {
+    "player": null,
+    "bots": "imperialofficer"
+   },
+   "d-orig-specialist": {
+    "player": "scoutspecialist",
+    "bots": "scoutspecialist"
+   }
+  },
+  "EN": {
+   "d-orig-assault": {
+    "player": "stormtroopermp",
+    "bots": "stormtroopermp"
+   },
+   "d-orig-heavy": {
+    "player": "heavystormtrooper",
+    "bots": "heavystormtrooper"
+   },
+   "d-orig-officer": {
+    "player": "imperialofficer",
+    "bots": "imperialofficer"
+   },
+   "d-orig-specialist": {
+    "player": "scoutspecialist",
+    "bots": "scoutspecialist"
+   }
+  },
+  "HO": {
+   "d-orig-assault": {
+    "player": "stormtroopermp",
+    "bots": "snowtrooper"
+   },
+   "l-orig-assault": {
+    "player": "hothtrooper",
+    "bots": "hothtrooper"
+   },
+   "d-orig-heavy": {
+    "player": "heavystormtrooper",
+    "bots": "heavysnowtrooper"
+   },
+   "l-orig-heavy": {
+    "player": "hothheavy",
+    "bots": "hothheavy"
+   },
+   "d-orig-officer": {
+    "player": "imperialofficer",
+    "bots": "imperialofficer"
+   },
+   "l-orig-officer": {
+    "player": "hothofficer",
+    "bots": "hothofficer"
+   },
+   "d-orig-specialist": {
+    "player": "scoutspecialist",
+    "bots": "scoutspecialist"
+   },
+   "l-orig-specialist": {
+    "player": "hothspecialist",
+    "bots": "hothspecialist"
+   }
+  },
+  "MOS": {
+   "d-orig-assault": {
+    "player": "stormtroopermp",
+    "bots": "stormtroopermp"
+   },
+   "d-orig-heavy": {
+    "player": "heavystormtrooper",
+    "bots": null
+   },
+   "d-orig-officer": {
+    "player": "imperialofficer",
+    "bots": "imperialofficer"
+   },
+   "d-orig-specialist": {
+    "player": "scoutspecialist",
+    "bots": "scoutspecialist"
+   }
+  },
+  "SCAR": {
+   "d-orig-assault": {
+    "player": "stormtroopermp",
+    "bots": null
+   }
+  },
+  "YA": {
+   "d-orig-assault": {
+    "player": "stormtroopermp",
+    "bots": "stormtroopermp"
+   },
+   "d-orig-heavy": {
+    "player": "heavystormtrooper",
+    "bots": "heavystormtrooper"
+   },
+   "d-orig-officer": {
+    "player": "imperialofficer",
+    "bots": "imperialofficer"
+   },
+   "d-orig-specialist": {
+    "player": "scoutspecialist",
+    "bots": "scoutspecialist"
+   }
+  }
+ },
+ "bodies": {
+  "stormtroopermp": {
+   "record": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_01/MPVUR_D_Assault_Orig_01",
+   "skin": "default",
+   "parts": [
+    "characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_helmet_mesh#t_d_assault_orig_01_helmet_cs",
+    "characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_mesh#t_d_assault_orig_01_body_cs+t_d_assault_orig_01_hands_cs"
+   ]
+  },
+  "snowtrooper": {
+   "record": "Characters/Dark/D_Assault_Orig/D_Assault_Orig_HO_01/MPVUR_D_Assault_Orig_HO_01",
+   "parts": [
+    "characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_cape_mesh#t_d_assault_orig_ho_01_cape_cs",
+    "characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_helmet_mesh#t_d_assault_orig_ho_01_helmet_cs",
+    "characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_mesh#t_d_assault_orig_ho_01_body_cs+t_d_assault_orig_ho_01_glove_cs",
+    "characters/dark/d_heavy_orig/d_heavy_orig_ho_01/d_heavy_orig_ho_01_backpack_mesh#t_d_heavy_orig_ho_01_backpack_cs"
+   ]
+  },
+  "heavystormtrooper": {
+   "record": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_01/MPVUR_D_Heavy_Orig_01",
+   "skin": "default",
+   "parts": [
+    "characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_helmet_mesh#t_d_assault_orig_01_helmet_cs",
+    "characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_mesh#t_d_assault_orig_01_body_cs+t_d_assault_orig_01_hands_cs",
+    "characters/dark/d_heavy_orig/d_heavy_orig_01/d_heavy_orig_01_backpack_mesh#t_d_heavy_orig_01_backpack_cs",
+    "characters/dark/d_heavy_orig/d_heavy_orig_01/d_heavy_orig_01_parts_mesh#t_d_heavy_orig_ho_01_parts_cs"
+   ]
+  },
+  "heavysnowtrooper": {
+   "record": "Characters/Dark/D_Heavy_Orig/D_Heavy_Orig_HO_01/MPVUR_D_Heavy_Orig_HO_01",
+   "parts": [
+    "characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_cape_mesh#t_d_assault_orig_ho_01_cape_cs",
+    "characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_mesh#t_d_assault_orig_ho_01_body_cs+t_d_assault_orig_ho_01_glove_cs",
+    "characters/dark/d_heavy_orig/d_heavy_orig_ho_01/d_heavy_orig_ho_01_backpack_mesh#t_d_heavy_orig_ho_01_backpack_cs",
+    "characters/dark/d_heavy_orig/d_heavy_orig_ho_01/d_heavy_orig_ho_01_helmet_mesh#t_d_assault_orig_ho_01_helmet_cs",
+    "characters/dark/d_heavy_orig/d_heavy_orig_ho_01/d_heavy_orig_ho_01_parts_mesh#t_d_heavy_orig_ho_01_parts_cs"
+   ]
+  },
+  "imperialofficer": {
+   "record": "Characters/Dark/D_Officer_Orig/D_Officer_Orig_01/MPVUR_D_Officer_Orig_01",
+   "skin": "viktor",
+   "parts": [
+    "characters/bodyparts/gloves_03/gloves_03_mesh#t_glove_03_cs",
+    "characters/bodyparts/headgear_11/headgear_11_mesh#t_headgear_11_cs",
+    "characters/bodyparts/legs_03/legs_03_mesh~legs_03_ds#t_legs_03_ds_cs",
+    "characters/bodyparts/torso_05/torso_05_mesh#t_torso_05_cs",
+    "characters/dark/d_officer_orig/d_officer_orig_01/d_officer_orig_01_parts_mesh#t_d_officer_orig_01_parts_cs",
+    "characters/heads/heads_viktor/heads_viktor_01_mesh#t_heads_viktor_01_c+-+-"
+   ]
+  },
+  "scoutspecialist": {
+   "record": "Characters/Dark/D_Specialist_Orig/D_Specialist_Orig_01/MPVUR_D_Specialist_Orig_01",
+   "skin": "default",
+   "parts": [
+    "characters/dark/d_specialist_orig/d_specialist_orig_01/d_specialist_orig_01_mesh#t_d_specialist_orig_01_body_cs+t_d_specialist_orig_01_helmet_cs+t_d_specialist_orig_01_hands_cs"
+   ]
+  },
+  "hothtrooper": {
+   "record": "Characters/Light/L_Assault_Orig/L_Assault_Orig_HO_01/MPVUR_L_Assault_Orig_HO_01",
+   "skin": "charlie",
+   "parts": [
+    "characters/bodyparts/backpack_06/backpack_06_mesh#t_backpack_01_cs",
+    "characters/bodyparts/gloves_02/gloves_02_mesh#t_gloves_02_cs",
+    "characters/bodyparts/headgear_12/headgear_12_mesh#t_headgear_12_cs+t_headgear_12_cs",
+    "characters/bodyparts/legs_02/legs_02_mesh#t_legs_02_cs",
+    "characters/bodyparts/torso_02/torso_02_mesh#t_torso_02_cs",
+    "characters/heads/heads_charlie/heads_charlie_01/heads_charlie_01_mesh#t_heads_charlie_01_c+-+-"
+   ]
+  },
+  "hothheavy": {
+   "record": "Characters/Light/L_Heavy_Orig/L_Heavy_Orig_HO_01/MPVUR_L_Heavy_Orig_HO_01",
+   "skin": "juan",
+   "parts": [
+    "characters/bodyparts/backpack_01/backpack_01_mesh#t_backpack_01_parts_cs+t_backpack_01_cs",
+    "characters/bodyparts/gloves_02/gloves_02_mesh#t_gloves_02_cs",
+    "characters/bodyparts/headgear_15/headgear_15_mesh#t_headgear_12_cs+t_headgear_12_cs+t_headgear_15_cs",
+    "characters/bodyparts/legs_02/legs_02_mesh#t_legs_02_cs",
+    "characters/bodyparts/torso_02/torso_02_mesh#t_torso_02_cs",
+    "characters/heads/heads_juan/heads_juan_01/heads_juan_01_mesh#t_heads_juan_01_cs+-+-+t_beard_juan_01_planes_c"
+   ]
+  },
+  "hothofficer": {
+   "record": "Characters/Light/L_Officer_Orig/L_Officer_Orig_HO_01/MPVUR_L_Officer_Orig_HO_01",
+   "skin": "hector",
+   "parts": [
+    "characters/bodyparts/gloves_02/gloves_02_mesh#t_gloves_02_cs",
+    "characters/bodyparts/headgear_12/headgear_12_mesh#t_headgear_12_cs+t_headgear_12_cs",
+    "characters/bodyparts/legs_02/legs_02_mesh#t_legs_02_cs",
+    "characters/bodyparts/torso_03/torso_03_mesh#t_torso_03_cs+t_torso_03_furcards_c+t_l_officer_orig_whiteshark_01_emblem_cs",
+    "characters/heads/heads_hector/heads_hector_mesh#t_heads_hector_01_c+-+-"
+   ]
+  },
+  "hothspecialist": {
+   "record": "Characters/Light/L_Specialist_Orig/L_Specialist_Orig_HO_01/MPVUR_L_Specialist_Orig_HO_01",
+   "skin": "jingxu",
+   "parts": [
+    "characters/bodyparts/backpack_03/backpack_03_mesh~backpack_03_ho#t_backpack_03_ho_cs",
+    "characters/bodyparts/gloves_02/gloves_02_mesh#t_gloves_02_cs",
+    "characters/bodyparts/headgear_03/headgear_03_mesh~headgear_03_ho#t_headgear_03_ho_cs+t_headgear_03_ho_cs",
+    "characters/bodyparts/legs_04/legs_04_mesh#t_legs_04_cs",
+    "characters/bodyparts/torso_16/torso_16_mesh#t_torso_02_cs",
+    "characters/heads/_shared/hair/hatbun_01/hatbun_01_mesh#t_hair_rey_01_cap_c+t_hair_rey_01_planes_c",
+    "characters/heads/heads_jingxu/heads_jingxu_01/heads_jingxu_01_mesh#t_heads_jingxu_01_wounded_cs+-+-"
+   ]
+  },
+  "deathtrooper": {
+   "record": "Characters/Hero/DeathTrooper/DeathTrooper_01/VUR_DeathTrooper_01",
+   "parts": [
+    "characters/hero/deathtrooper/deathtrooper_01/deathtrooper_01_mesh#t_deathtrooper_01_body_cs+t_deathtrooper_01_helmet_cs+t_deathtrooper_01_gloves_cs"
+   ]
+  },
+  "wookiee": {
+   "record": "Characters/Hero/WookieWarrior/WookieWarrior_01/VUR_WookieWarrior_01",
+   "skin": "warrior",
+   "parts": [
+    "characters/hero/wookiewarrior/wookiewarrior_01/wookiewarrior_01_haircards_cloth_mesh#t_wookiewarrior_01_haircards_c",
+    "characters/hero/wookiewarrior/wookiewarrior_01/wookiewarrior_01_mesh#t_wookiewarrior_01_cs+t_wookiewarrior_01_haircards_c+t_lodcaps_wookiewarrior_c+t_eyes_luke_c+t_wookiewarrior_01_basesheets_cs+t_wookiewarrior_01_body_cs+t_wookiewarrior_01_head_cs+-"
+   ]
+  },
+  "shoretrooper": {
+   "parts": [
+    "characters/imperial/imperial_beachtrooper/imperial_beachtrooper_mesh"
+   ]
+  },
+  "sandtrooper": {
+   "parts": [
+    "characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_helmet_mesh",
+    "characters/dark/d_heavy_orig/d_heavy_orig_01/d_heavy_orig_01_backpack_mesh",
+    "characters/dark/d_heavy_orig/d_heavy_orig_01/d_heavy_orig_01_parts_mesh",
+    "characters/dark/d_heavy_orig/d_heavy_orig_mos_01/d_heavy_orig_mos_01_mesh"
+   ]
+  },
+  "rebel": {
+   "parts": [
+    "characters/bodyparts/hands_01/hands_01_mesh",
+    "characters/bodyparts/headgear_05/headgear_05_mesh",
+    "characters/heads/heads_hakan/heads_hakan_01_mesh",
+    "characters/light/l_assault_orig/l_assault_orig_ds_01/l_assault_orig_ds_01_mesh"
+   ]
+  },
+  "clone": {
+   "parts": [
+    "characters/bodyparts/gloves_05/gloves_05_mesh",
+    "characters/light/l_assault_preq/l_assault_preq_01/l_assault_preq_01_helmet_mesh",
+    "characters/light/l_assault_preq/l_assault_preq_01/l_assault_preq_01_mesh"
+   ]
+  },
+  "clonephase1": {
+   "parts": [
+    "characters/bodyparts/gloves_05/gloves_05_mesh",
+    "characters/light/l_assault_preq/l_assault_preq_01/l_assault_preq_01_mesh",
+    "characters/light/l_assault_preq/l_assault_preq_01/l_assault_preq_02_helmet_mesh"
+   ]
+  },
+  "ewok": {
+   "parts": [
+    "characters/hero/ewok/ewok_01/ewok_01_mesh",
+    "characters/hero/ewok/ewok_01/ewok_hood_01_cloth_brown_mesh"
+   ]
+  },
+  "superdroid": {
+   "parts": [
+    "characters/hero/b2/b2_01/b2_01_mesh"
+   ]
+  }
+ },
+ "missing": []
+}

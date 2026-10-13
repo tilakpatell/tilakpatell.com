@@ -1445,6 +1445,36 @@
     "from": "characters/hero/hansolo/hansolo_young_02/hansolo_young_02_mesh",
     "tier": "ultra"
   },
+  "models/galaxy/bf2017/crew/heavysnowtrooper.glb": {
+    "hash": "f51341abb006",
+    "bytes": 20909456,
+    "from": "characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/heavystormtrooper.glb": {
+    "hash": "ff99883f510c",
+    "bytes": 17559312,
+    "from": "characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/hothheavy.glb": {
+    "hash": "8069ab9d9985",
+    "bytes": 32111172,
+    "from": "characters/bodyparts/backpack_01/backpack_01_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/hothofficer.glb": {
+    "hash": "cdd85cf7d230",
+    "bytes": 24875004,
+    "from": "characters/bodyparts/torso_03/torso_03_mesh",
+    "tier": "crew"
+  },
+  "models/galaxy/bf2017/crew/hothspecialist.glb": {
+    "hash": "67728620124a",
+    "bytes": 40580000,
+    "from": "characters/bodyparts/torso_16/torso_16_mesh",
+    "tier": "crew"
+  },
   "models/galaxy/bf2017/crew/hothtrooper.glb": {
     "hash": "eb6fc724ad49",
     "bytes": 28270872,
@@ -1456,6 +1486,12 @@
     "bytes": 13858,
     "from": "models/galaxy/bf2017/crew/hothtrooper.recipes.json",
     "tier": "pack"
+  },
+  "models/galaxy/bf2017/crew/imperialofficer.glb": {
+    "hash": "913a629aeb71",
+    "bytes": 25128852,
+    "from": "characters/heads/heads_viktor/heads_viktor_01_mesh",
+    "tier": "crew"
   },
   "models/galaxy/bf2017/crew/lando.glb": {
     "hash": "5aae2ffed10e",
@@ -2069,6 +2105,12 @@
     "from": "models/galaxy/bf2017/crew/sandtrooper.recipes.json",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/crew/scoutspecialist.glb": {
+    "hash": "e2105b14965a",
+    "bytes": 13969644,
+    "from": "characters/dark/d_specialist_orig/d_specialist_orig_01/d_specialist_orig_01_mesh",
+    "tier": "crew"
+  },
   "models/galaxy/bf2017/crew/scouttrooper.glb": {
     "hash": "7d4766bc28d3",
     "bytes": 26686024,
@@ -2152,6 +2194,12 @@
     "bytes": 7556,
     "from": "models/galaxy/bf2017/crew/stormtrooper.recipes.json",
     "tier": "pack"
+  },
+  "models/galaxy/bf2017/crew/stormtroopermp.glb": {
+    "hash": "391de7f1c359",
+    "bytes": 11706652,
+    "from": "characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_mesh",
+    "tier": "crew"
   },
   "models/galaxy/bf2017/crew/superdroid.glb": {
     "hash": "218022aa46b8",

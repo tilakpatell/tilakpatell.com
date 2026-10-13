@@ -18,9 +18,12 @@
 // stay on the ground the body crosses. Standing, falling, rolling and dying
 // are one clip at a time, eased in the same way.
 //
-// Bodies: Hoth's Galactic Assault puts the Empire (team 2, the attackers:
-// maps/hoth.stages.json) in snowtroopers and the Rebels (team 1) in Hoth
-// troopers, every class alike until the class kits' own bodies are imported.
+// Bodies: each class its own, as the game dresses it on the planet (the
+// class kits' outfits and the game's bots' kits: CLASS_KINDS below); on
+// Hoth the Empire (team 2, the attackers: maps/hoth.stages.json) fields
+// snowtroopers, heavy snowtroopers, officers and scout troopers, and you
+// deploy as the class kit's stormtrooper; the Rebels (team 1) wear Hoth's
+// gear, a class each.
 // A body comes up on its light cut (public/models/galaxy/bf2017/crew/, the
 // game's LOD4: 1,500 triangles, its cloth and coat skinned whole to the leg
 // bones) and, with `cuts`, takes the cut its distance from the eye wants
@@ -63,6 +66,7 @@ import { faceAlongZ } from './facing.js';
 import { createHeld, heldOf } from './held.js';
 import { CROSSFADE, LOCO_STATES, clipSpeed, locoBlend, locoClips, packClip, packFallback, relAngle, stateFor, timeAt } from './locomotion.js';
 import { strideOf } from './stride.js';
+import { wear as WEAR } from '../../../data/bf2017/troops.json';
 
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
 export const KINDS = { dark: 'snowtrooper', light: 'hothtrooper' };
@@ -78,14 +82,34 @@ export const BODIES = {
   hothtrooper: { url: crew('hothtrooper'), cuts: { lod: true, far: true, full: true, fullMB: 50, fullDL: 27 } },
   deathtrooper: { url: crew('deathtrooper'), cuts: { lod: true, far: true, full: true, fullMB: 21, fullDL: 13 } },
   wookiee: { url: crew('wookiee'), cuts: { lod: true, full: true, fullMB: 34, fullDL: 19 } },
+  // (each class its own: the class kits' outfits, src/data/bf2017/troops.json's bodies)
+  stormtroopermp: { url: crew('stormtroopermp'), cuts: { lod: true, far: true, full: true, fullMB: 21, fullDL: 12 } },
+  heavystormtrooper: { url: crew('heavystormtrooper'), cuts: { lod: true, far: true, full: true, fullMB: 29, fullDL: 17 } },
+  heavysnowtrooper: { url: crew('heavysnowtrooper'), cuts: { lod: true, far: true, full: true, fullMB: 30, fullDL: 20 } },
+  imperialofficer: { url: crew('imperialofficer'), cuts: { lod: true, far: true, full: true, fullMB: 49, fullDL: 24 } },
+  scoutspecialist: { url: crew('scoutspecialist'), cuts: { lod: true, far: true, full: true, fullMB: 21, fullDL: 14 } },
+  hothheavy: { url: crew('hothheavy'), cuts: { lod: true, far: true, full: true, fullMB: 49, fullDL: 31 } },
+  hothofficer: { url: crew('hothofficer'), cuts: { lod: true, far: true, full: true, fullMB: 46, fullDL: 24 } },
+  hothspecialist: { url: crew('hothspecialist'), cuts: { lod: true, far: true, full: true, fullMB: 78, fullDL: 39 } },
   ...Object.fromEntries(['luke', 'leia', 'han', 'chewie', 'lando', 'obiwan', 'anakin', 'bobafett', 'bossk', 'vader', 'palpatine', 'maul', 'dooku'].map((k) => [k, { url: crew(k), pack: k }])),
 };
 // The body a deployed unit wears: the rulebook's hero or reinforcement id
 // (sim.js's unitId) to its kind; a unit with none here yet (Yoda, Iden,
 // Grievous, the jump troopers, the ISB agent, the Ewok on its own rig) and
-// every class wear their side's trooper
+// wear their side's trooper
 export const UNIT_KINDS = { luke: 'luke', leia: 'leia', hansolo: 'han', chewbacca: 'chewie', lando: 'lando', obiwan: 'obiwan', anakin: 'anakin', bobafett: 'bobafett', bossk: 'bossk', darthvader: 'vader', emperor: 'palpatine', maul: 'maul', dooku: 'dooku', DeathTrooper: 'deathtrooper', WookieWarrior: 'wookiee' };
-export const kindOf = (e, kinds = KINDS) => UNIT_KINDS[e.unitId] ?? kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
+// The body a class wears on a planet (the kits' code: HO Hoth), as the game
+// dresses it: troops.json's `wear` (scripts/bf2017-troops.mjs, from each class
+// kit's outfit and the game's own bots' kit there), you (`bot: false`) in
+// the class kit's, the bots in theirs: on Hoth you are a stormtrooper and the
+// Empire's bots snowtroopers. The view's `classId` is the rulebook's
+// ('d-orig-assault'); a class with no body there wears its side's trooper.
+export const CLASS_KINDS = WEAR;
+export const classKind = (e, planet = 'HO') => {
+  const w = CLASS_KINDS[planet]?.[e.classId];
+  return w ? ((e.bot === false ? w.player : w.bots) ?? w.bots ?? w.player ?? null) : null;
+};
+export const kindOf = (e, kinds = KINDS, planet = 'HO') => UNIT_KINDS[e.unitId] ?? classKind(e, planet) ?? kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
 export const figureCuts = ({ level, lowData = false }) => ({ of: (kind) => BODIES[kind]?.cuts ?? null, level, lowData, load: (url) => loadGLTF(url) });
 const loadKind = (url, kind) => loadWalrusBody(url, { packs: packUrls(BODIES[kind]?.pack ?? null) });
 const ONCE = new Set(['die.fwd', 'die.back', 'die', 'dodge.front', 'hit.chest', 'crouch']);
@@ -148,7 +172,7 @@ function dress(model) {
   cullBy(model);
 }
 
-export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null } = {}) {
+export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, planet = 'HO', held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null } = {}) {
   const root = new THREE.Group();
   root.name = 'figures';
   scene.add(root);
@@ -159,7 +183,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     // (actions: every clip played so far; weights: each one's, eased;
     // loco: the names on the stride phase; phase in strides; walking: on
     // the move last frame, so a start seats every loco action at the phase)
-    const kind = kindOf(e, kinds);
+    const kind = kindOf(e, kinds, planet);
     const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null };
     figs.set(e.id, f);
     loadBody(bodyUrl(kind), kind)
@@ -168,6 +192,8 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         if (gone || figs.get(e.id) !== f) return;
         faceAlongZ(model);
         dress(model);
+        // (which body, for a check: scripts' shots find a class's figure by it)
+        model.userData.kind = kind;
         f.model = model;
         f.clips = clips;
         f.sockets = sockets ?? null;
@@ -342,7 +368,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         seen.add(e.id);
         let f = figs.get(e.id);
         // (the id deployed again as another unit, a hero after a trooper: its own body, from the light cut up)
-        if (f && !DEAD.has(e.state) && f.kind !== kindOf(e, kinds)) {
+        if (f && !DEAD.has(e.state) && f.kind !== kindOf(e, kinds, planet)) {
           drop(e.id, f);
           f = null;
         }

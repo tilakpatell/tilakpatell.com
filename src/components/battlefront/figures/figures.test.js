@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
 import { AITRAJECTORY_TURN } from './facing.js';
-import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf } from './figures.js';
+import { BODIES, BODY_MIDDLE, BODY_REACH, CLASS_KINDS, UNIT_KINDS, createFigures, cullBy, kindOf } from './figures.js';
 import { createHeld, weaponUrl } from './held.js';
 
 const settle = async () => {
@@ -396,6 +396,22 @@ describe('the body a unit wears', () => {
     expect(kindOf({ team: 1, unitId: 'yoda' })).toBe('hothtrooper');
     expect(kindOf({ team: 2, unitId: null })).toBe('snowtrooper');
     for (const kind of Object.values(UNIT_KINDS)) expect(BODIES[kind]).toBeTruthy();
+  });
+
+  it('is each class’s own on Hoth, as the game dresses it: you in the class kit’s, the bots in the game’s bots’ kit', () => {
+    // (the Empire's assault and heavy: you a stormtrooper, the bots snowtroopers)
+    expect(kindOf({ team: 2, classId: 'd-orig-assault', bot: false })).toBe('stormtroopermp');
+    expect(kindOf({ team: 2, classId: 'd-orig-assault', bot: true })).toBe('snowtrooper');
+    expect(kindOf({ team: 2, classId: 'd-orig-heavy', bot: true })).toBe('heavysnowtrooper');
+    expect(kindOf({ team: 2, classId: 'd-orig-heavy', bot: false })).toBe('heavystormtrooper');
+    expect(kindOf({ team: 2, classId: 'd-orig-officer' })).toBe('imperialofficer');
+    expect(kindOf({ team: 2, classId: 'd-orig-specialist' })).toBe('scoutspecialist');
+    expect(['l-orig-assault', 'l-orig-heavy', 'l-orig-officer', 'l-orig-specialist'].map((classId) => kindOf({ team: 1, classId }))).toEqual(['hothtrooper', 'hothheavy', 'hothofficer', 'hothspecialist']);
+    // (a reinforcement over its class; a class with no body on a planet: the side's trooper)
+    expect(kindOf({ team: 2, classId: 'd-orig-assault', unitId: 'DeathTrooper' })).toBe('deathtrooper');
+    expect(kindOf({ team: 1, classId: 'l-orig-heavy' }, undefined, 'SCAR')).toBe('hothtrooper');
+    // (every body a class wears anywhere is one the figures can draw)
+    for (const rows of Object.values(CLASS_KINDS)) for (const w of Object.values(rows)) for (const kind of [w.player, w.bots].filter(Boolean)) expect(BODIES[kind], kind).toBeTruthy();
   });
 
   it('loads a hero on its light cut with its own clips, and builds the figure again when the id comes back as another unit', async () => {

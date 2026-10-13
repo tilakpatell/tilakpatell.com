@@ -103,18 +103,18 @@ import { Logger, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRMaterialsSpecular, KHRTextureBasisu } from '@gltf-transform/extensions';
 import { dedup, dequantize, flatten, join, listTextureSlots, mergeDocuments, meshopt, metalRough, prune, textureCompress, unpartition, weld } from '@gltf-transform/functions';
 import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, stat, unlink } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join as path, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gunzipSync } from 'node:zlib';
 import { overCaps } from './lib/bf2017-caps.mjs';
 import { parseArgs } from './lib/args.mjs';
 import { isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-paths.mjs';
 import { resolveImage, slotOfParameter, specularFactorOf, weaponMaterial } from './lib/bf2017-textures.mjs';
 import { outfitOf } from './lib/bf2017-outfits.mjs';
+import { readRecordAt } from './lib/bf2017-records.mjs';
 import { meshBindings } from './lib/bf2017-variations.mjs';
 import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { loadGameWord, slotTransfer, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -229,23 +229,6 @@ async function texturesOpt(opts, mesh) {
 // officer's Death Star legs, the Hoth specialist's backpack) replace the
 // GLB's own where they differ, material by material. The records are read
 // from the root (web/data/ or data/, as the drop or the fetch keeps them).
-export function readRecordAt(root) {
-  return (path) => {
-    for (const at of [`web/data/${path}.json`, `data/${path}.json`]) {
-      const file = localPath(root, at);
-      if (existsSync(file)) {
-        try {
-          return JSON.parse(readFileSync(file, 'utf8'));
-        } catch {
-          return null;
-        }
-      }
-    }
-    const gz = localPath(root, `data/${path}.json.gz`);
-    if (existsSync(gz)) return JSON.parse(gunzipSync(readFileSync(gz)).toString('utf8'));
-    return null;
-  };
-}
 // skinOf(outfit, name?) → the skin: by name, else the outfit's default
 export const skinOf = (outfit, name = null) => outfit?.skins.find((s) => (name ? s.name === name : s.default)) ?? (name ? null : outfit?.skins[0] ?? null);
 // outfitMaps(skin) → { [mesh]: [[{ slot, name }]] }: each material's colour,
@@ -255,7 +238,8 @@ export function outfitMaps(skin) {
   for (const [mesh, mats] of Object.entries(skin?.maps ?? {}))
     out[mesh] = mats.map((list) =>
       list
-        .map(({ parameter, texture }) => ({ slot: slotOfParameter(parameter), name: texture }))
+        // (a glass or visor's colour is its `ColorSmoothness`)
+        .map(({ parameter, texture }) => ({ slot: /^ColorSmoothness$/i.test(parameter) ? 'color' : slotOfParameter(parameter), name: texture }))
         .filter((b) => ['color', 'normal', 'emissive'].includes(b.slot))
         .filter((b, i, all) => all.findIndex((x) => x.slot === b.slot) === i),
     );
@@ -504,8 +488,9 @@ export async function nativeMaps(doc, spec) {
     // (or the web build's copy: --native-root, the export's web_opt/, which
     // holds the bucket's KTX2 where the drop's web/ has the PNGs)
     // (the drop's own GLBs name the PNGs: the KTX2 is the same path's)
-    let file = localPath(spec.root, name.slice(NATIVE.length));
-    if (!existsSync(file) && spec.nativeRoot) file = path(spec.nativeRoot, name.slice(NATIVE.length).replace(/^web\//, '').replace(/\.png$/, '.ktx2'));
+    const at = name.slice(NATIVE.length).replace(/\.png$/, '.ktx2');
+    let file = localPath(spec.root, at);
+    if (!existsSync(file) && spec.nativeRoot) file = path(spec.nativeRoot, at.replace(/^web\//, ''));
     if (!file.endsWith('.ktx2') || !existsSync(file)) continue;
     const bytes = new Uint8Array(await readFile(file));
     const { width, scheme } = ktx2Info(bytes);
@@ -524,7 +509,7 @@ export async function nativeMaps(doc, spec) {
     // wrote: a base colour or emissive map sRGB, the rest linear, so a loader
     // that trusts the file reads it right; ktx2-colour.mjs)
     const stamped = withTransfer(Buffer.from(dropLevels(bytes, drop)), colour ? 'srgb' : 'linear');
-    t.setImage(new Uint8Array(stamped.buffer, stamped.byteOffset, stamped.length)).setMimeType('image/ktx2').setName(name.slice(NATIVE.length).split('/').pop());
+    t.setImage(new Uint8Array(stamped.buffer, stamped.byteOffset, stamped.length)).setMimeType('image/ktx2').setName(at.split('/').pop());
     n++;
   }
   if (n) doc.createExtension(KHRTextureBasisu).setRequired(true);

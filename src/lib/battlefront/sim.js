@@ -634,6 +634,8 @@ export function view(sim, { player = null } = {}) {
     e.unitId = s.unitId ?? null; // (the rulebook's hero or reinforcement: the body the figure wears)
     e.name = s.name ?? null;
     e.cls = s.cls?.cls ?? null;
+    e.classId = s.cls?.id ?? null; // (the rulebook's class: the body a figure wears, figures.js's classKind)
+    e.bot = s.bot !== false;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;
     // (the kit's marks on a body: the shield up, flashed, stunned, marked, hidden, an ability's weapon in hand)
     e.shield = s.shield ? s.shield.hp / s.shield.max : null;

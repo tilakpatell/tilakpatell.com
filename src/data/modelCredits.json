@@ -662,6 +662,81 @@
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
+  "bf2017-heavysnowtrooper": {
+    "title": "Star Wars Battlefront II (2017): characters/dark/d_assault_orig/d_assault_orig_ho_01/d_assault_orig_ho_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "A heavy snowtrooper (the Imperial heavy on Hoth)",
+    "file": "/models/galaxy/bf2017/crew/heavysnowtrooper.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-heavystormtrooper": {
+    "title": "Star Wars Battlefront II (2017): characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "A heavy stormtrooper (the Imperial heavy class)",
+    "file": "/models/galaxy/bf2017/crew/heavystormtrooper.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-hothheavy": {
+    "title": "Star Wars Battlefront II (2017): characters/bodyparts/backpack_01/backpack_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "A Rebel heavy on Hoth",
+    "file": "/models/galaxy/bf2017/crew/hothheavy.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-hothofficer": {
+    "title": "Star Wars Battlefront II (2017): characters/bodyparts/torso_03/torso_03_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "A Rebel officer on Hoth",
+    "file": "/models/galaxy/bf2017/crew/hothofficer.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-hothspecialist": {
+    "title": "Star Wars Battlefront II (2017): characters/bodyparts/torso_16/torso_16_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "A Rebel specialist on Hoth",
+    "file": "/models/galaxy/bf2017/crew/hothspecialist.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
   "bf2017-hothtrooper": {
     "title": "Star Wars Battlefront II (2017): characters/bodyparts/torso_02/torso_02_mesh",
     "author": "EA DICE",
@@ -672,6 +747,21 @@
     "where": "galaxy-surface",
     "as": "A Rebel trooper on Hoth",
     "file": "/models/galaxy/bf2017/crew/hothtrooper.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-imperialofficer": {
+    "title": "Star Wars Battlefront II (2017): characters/heads/heads_viktor/heads_viktor_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "An Imperial officer",
+    "file": "/models/galaxy/bf2017/crew/imperialofficer.glb",
     "also": [
       "galaxy"
     ],
@@ -1142,6 +1232,21 @@
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
+  "bf2017-scoutspecialist": {
+    "title": "Star Wars Battlefront II (2017): characters/dark/d_specialist_orig/d_specialist_orig_01/d_specialist_orig_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "A scout trooper (the Imperial specialist class)",
+    "file": "/models/galaxy/bf2017/crew/scoutspecialist.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
   "bf2017-scouttrooper": {
     "title": "Star Wars Battlefront II (2017): characters/imperial/imperial_scoutrooper/imperial_scoutrooper_male_01/imperial_scoutrooper_male_01_mesh",
     "author": "EA DICE",
@@ -1242,6 +1347,21 @@
     "where": "galaxy-surface",
     "as": "A stormtrooper",
     "file": "/models/galaxy/bf2017/crew/stormtrooper.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-stormtroopermp": {
+    "title": "Star Wars Battlefront II (2017): characters/dark/d_assault_orig/d_assault_orig_01/d_assault_orig_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "A stormtrooper (the Imperial assault class)",
+    "file": "/models/galaxy/bf2017/crew/stormtroopermp.glb",
     "also": [
       "galaxy"
     ],

@@ -309,8 +309,14 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/crew/hanyoung2.lod1.glb
 /public/models/galaxy/bf2017/crew/hanyoung2.recipes.json
 /public/models/galaxy/bf2017/crew/hanyoung2.ultra.glb
+/public/models/galaxy/bf2017/crew/heavysnowtrooper.glb
+/public/models/galaxy/bf2017/crew/heavystormtrooper.glb
+/public/models/galaxy/bf2017/crew/hothheavy.glb
+/public/models/galaxy/bf2017/crew/hothofficer.glb
+/public/models/galaxy/bf2017/crew/hothspecialist.glb
 /public/models/galaxy/bf2017/crew/hothtrooper.glb
 /public/models/galaxy/bf2017/crew/hothtrooper.recipes.json
+/public/models/galaxy/bf2017/crew/imperialofficer.glb
 /public/models/galaxy/bf2017/crew/lando.glb
 /public/models/galaxy/bf2017/crew/lando.lod1.glb
 /public/models/galaxy/bf2017/crew/lando.recipes.json
@@ -413,6 +419,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/crew/runyip.recipes.json
 /public/models/galaxy/bf2017/crew/sandtrooper.glb
 /public/models/galaxy/bf2017/crew/sandtrooper.recipes.json
+/public/models/galaxy/bf2017/crew/scoutspecialist.glb
 /public/models/galaxy/bf2017/crew/scouttrooper.glb
 /public/models/galaxy/bf2017/crew/scouttrooper.recipes.json
 /public/models/galaxy/bf2017/crew/scurrier.glb
@@ -427,6 +434,7 @@ scripts/twin-parity/out/
 /public/models/galaxy/bf2017/crew/stintarils.recipes.json
 /public/models/galaxy/bf2017/crew/stormtrooper.glb
 /public/models/galaxy/bf2017/crew/stormtrooper.recipes.json
+/public/models/galaxy/bf2017/crew/stormtroopermp.glb
 /public/models/galaxy/bf2017/crew/superdroid.glb
 /public/models/galaxy/bf2017/crew/superdroid.recipes.json
 /public/models/galaxy/bf2017/crew/tach.glb
