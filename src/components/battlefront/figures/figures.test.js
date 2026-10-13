@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
 import { AITRAJECTORY_TURN } from './facing.js';
-import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf } from './figures.js';
+import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf, preloadBody } from './figures.js';
 import { createHeld, weaponUrl } from './held.js';
 
 const settle = async () => {
@@ -413,5 +413,17 @@ describe('the body a unit wears', () => {
     expect(figs.figure(3)).not.toBe(trooper);
     expect(figs.figure(3).kind).toBe('vader');
     expect(trooper.model.parent).toBe(null);
+  });
+});
+
+describe('the near body fetched ahead', () => {
+  const cutsAt = (level, asked) => ({ of: (kind) => (kind === 'snowtrooper' ? { lod: true, far: true, full: true, fullMB: 1, fullDL: 1 } : null), level, lowData: false, load: (u) => (asked.push(u), Promise.resolve({})) });
+  it('asks for the kind’s LOD0 on a level that draws it near, and nothing on one that never does', async () => {
+    const asked = [];
+    await preloadBody('snowtrooper', cutsAt('high', asked));
+    expect(asked).toEqual([BODIES.snowtrooper.url]);
+    expect(preloadBody('snowtrooper', cutsAt('low', asked))).toBe(null);
+    expect(preloadBody('hothtrooper', cutsAt('high', asked))).toBe(null);
+    expect(asked).toHaveLength(1);
   });
 });
