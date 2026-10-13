@@ -116,4 +116,16 @@ Edge 154 headless on the RTX 5090, WebGPU, 2,560 × 1,440, uncapped, local dev, 
 | the same, per-object binding updates, ms a frame | 6.3 and 4.6 | 0.9 and 1.7 | the same, the walk's CPU profile |
 | the chip's own time a frame (`timestamp-query`) | 2.2 to 3.3 ms | 3.8 to 4.9 ms | the page's `machine.gpuMs` |
 
-Not fixed here: every walk still has one frame gap of 0.7 s (node shaders built in play, `buildAsync`), and each cascade's `_projectObject` still visits every bone and placed light (1.2 to 1.4 ms a frame).
+Not fixed here: every walk still has one frame gap of 0.7 s (node shaders built in play, `buildAsync`), and each cascade's `_projectObject` still visits every bone and placed light (1.2 to 1.4 ms a frame; hiding the bones from that walk was tried in the page and gave back 0.1 ms, so it was left).
+
+## The desk, 2026-10-13: a part's skin cut to the joints it uses
+
+With the level on the GPU scene, the soldiers were what the frame's JavaScript was spent on: 17 of them, 16 between 230 and 360 m from the eye, each the game's LOD4 in 5 to 7 parts (`lib/budgets.js` holds the light cut to 400 m at ultra), every part bound to the whole rig. three sends a drawn part's joint list to the chip each frame, and the frame before's beside it for the velocity pass. Counted in the page from three's decoded geometry (the files are meshopt-packed): a trooper's backpack uses 1 joint of 252, its cape 4, a helmet 6 to 13, the legs 13, the body 25 to 46, the gloves 46 to 48, a head 51. `lib/three/skinPrune.js` cuts each part's skeleton to those, once a geometry, after the cloth's re-weighting; `?skin=whole` keeps the file's rig for a check. No vertex moves (`skinPrune.test.js` holds a posed part to the same place before and after), and the same view with and without shows the same body (looked at, not scored).
+
+| measure (the GPU scene, 2,560 × 1,440, the soldiers hidden and shown every 4 s in one page, five rounds) | whole rig (`?skin=whole`) | cut skins | `_source` |
+|---|---|---|---|
+| what the 17 soldiers cost a frame, p50 | 3.1 and 2.5 ms | 1.3 and 1.3 ms | `.scratch-check/lag-ab4.mjs`, two runs each, interleaved, 2026-10-13 |
+| the same, mean | 3.8 and 3.6 ms | 1.8 and 2.1 ms | the same |
+| the frame, p50 / p95 | 8.6 / 13.9 and 8.1 / 14.7 ms | 6.9 / 10.7 and 6.9 / 12.4 ms | the same |
+
+An earlier run of the same test, with the game itself open on the machine and every frame about twice as long, put the soldiers at 11 ms of a 19 ms frame on the whole rig: their share, not the figure, is what carries.

@@ -127,7 +127,8 @@ export default {
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
     const cuts = figureCuts({ level: device().detail, lowData: Boolean(device().saveData) });
-    const figures = createFigures({ scene, ragdolls, cuts });
+    // (?skin=whole in the address: every part on the file's whole rig, for a check that measures what the cut skins save)
+    const figures = createFigures({ scene, ragdolls, cuts, prune: flags?.get('skin') !== 'whole' });
     // (the player's side's near body fetched behind the waiting screen, so the first deploy is already on it)
     preloadBody(KINDS[SIDE_OF_TEAM[PLAYER_TEAM]], cuts);
     const bolts = createBolts(scene);

@@ -45,7 +45,7 @@
 // hand once they have the body (no figure to hold it, no muzzle to fire
 // from), and comes back with the view's `weapon` if it stands again.
 //
-//   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls, cuts }) →
+//   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls, cuts, prune }) →
 //     { update(entities, dt, alpha, eye), figure(id), muzzleOf(id, out), count(), dispose() }
 //   cuts: { of(kind) → its cut row | null, level, lowData, load(url) → glTF } or
 //     null (every body on its light cut); figureCuts({ level, lowData }) the page's
@@ -57,6 +57,7 @@ import { cloneScene, loadGLTF } from '../../../lib/three/gltfCache.js';
 import { clipsFor, cutsToLoad, loadWalrusBody, loadWalrusPacks, packUrls, PACK_DIR, swapBody } from '../../../lib/three/walrus.js';
 import { createCutter, cutWanted, ledgerFor } from '../../../lib/three/walrusCuts.js';
 import { CLOTH_PART, reskinCloth } from '../../../lib/three/clothFallback.js';
+import { pruneSkin } from '../../../lib/three/skinPrune.js';
 import { resolveClip } from '../../../lib/three/walrusRig.js';
 import { stancePackUrl } from '../../../lib/three/walrusStance.js';
 import { stanceClips } from '../../../lib/three/walrusSets/stance.js';
@@ -150,19 +151,23 @@ const DEAD = new Set(['dying', 'down']);
 // a body's meshes as the figures draw them: each casts and takes shadows,
 // its cloth on lib/three/clothFallback's skin (the game simulates it; drawn
 // on the file's fallback skin it webs between the legs), the whole culled by
-// one sphere
-function dress(model) {
+// one sphere; and, with `prune`, each part's skin cut to the joints its
+// vertices use (lib/three/skinPrune: every part is exported on the whole
+// 248-joint rig, and each drawn part sends its whole list to the chip every
+// frame), after the cloth's re-weighting, which reads the whole rig
+function dress(model, prune = true) {
   model.traverse((o) => {
     if (o.isMesh) {
       o.castShadow = true;
       o.receiveShadow = true;
     }
     if (o.isSkinnedMesh && [].concat(o.material).some((m) => CLOTH_PART.test(m?.name ?? ''))) reskinCloth(o);
+    if (prune && o.isSkinnedMesh) pruneSkin(o);
   });
   cullBy(model);
 }
 
-export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null } = {}) {
+export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null, prune = true } = {}) {
   const root = new THREE.Group();
   root.name = 'figures';
   scene.add(root);
@@ -181,7 +186,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         // (gone, or this id's figure made again for another unit since)
         if (gone || figs.get(e.id) !== f) return;
         faceAlongZ(model);
-        dress(model);
+        dress(model, prune);
         f.model = model;
         f.clips = clips;
         f.sockets = sockets ?? null;
@@ -221,7 +226,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
       return;
     }
     for (const o of old) for (const m of [].concat(o.material)) m.dispose();
-    dress(f.model);
+    dress(f.model, prune);
   }
 
   // the weapon the view says it holds, and that weapon's stance
