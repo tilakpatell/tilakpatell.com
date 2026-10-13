@@ -1,11 +1,18 @@
 // The game's clips at a guest's size, measured: the committed humanoid pack
-// (public/models/galaxy/bf2017/clips-humanoid.glb) refit to the committed
-// fitted Morty and Rick, each posed through its clips on its own skeleton
-// beside the game's man on his.
+// (public/models/galaxy/bf2017/clips-humanoid.glb) refit to each committed
+// fitted body, posed through its clips on its own skeleton beside the game's
+// man on his, its feet by their soles' probes and the rest of it by its
+// mesh, skinned at the frame.
+//
+// Each bound says which it is. A REQUIREMENT is the plan's, or the least
+// that is right; a PIN is today's output, rounded up, held so a change that
+// moves it is seen: a pin that fails after a change to the refit is read
+// again, not loosened.
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { readBody, readPack } from './guest-file.mjs';
-import { GAME_GRIP, SINK, bulkProbes, lowest, posed, refit, rigOf, soleProbes } from './guest-clips.mjs';
+import { GAME_GRIP, SINK, lowest, meshLows, meshOf, posed, refit, rigOf, soleProbes } from './guest-clips.mjs';
 import { legRatio } from './guest-skeleton.mjs';
 
 const DIR = 'public/models/galaxy/bf2017';
@@ -17,13 +24,19 @@ beforeAll(async () => {
   // (the game's skeleton as its packs carry it: walrus.glb's)
   man = { rows: pack.rows, soles: soleProbes(pack.rows) };
   guests = {};
-  for (const [who, grip] of [['morty', [0.069, 0.026, 0.024]], ['rick', [0.087, 0.033, 0.031]]]) {
+  for (const { who, grip } of JSON.parse(readFileSync('scripts/guests.json', 'utf8')).rows) {
     const body = await readBody(`public/models/guests/${who}.glb`);
-    guests[who] = { ...body, grip, soles: soleProbes(body.rows, body.surface), bulk: bulkProbes(body.rows, body.surface) };
+    guests[who] = { ...body, grip, soles: soleProbes(body.rows, body.surface), mesh: meshOf(body.rows, body.surface) };
   }
 }, 30000);
 const clipOf = (name) => pack.clips.find((c) => c.name === name);
-const fit = (who, clip) => refit(clip, man.rows, guests[who].rows, { grip: guests[who].grip, probes: { game: man.soles, guest: guests[who].soles, bulk: guests[who].bulk } });
+// (a clip refit once a guest: the tests below ask for the same ones)
+const fitted = new Map();
+const fit = (who, clip) => {
+  const key = `${who} ${clip.name}`;
+  if (!fitted.has(key)) fitted.set(key, refit(clip, man.rows, guests[who].rows, { grip: guests[who].grip, probes: { game: man.soles, guest: guests[who].soles, mesh: guests[who].mesh } }));
+  return fitted.get(key);
+};
 const at = (rig, name) => rig.objs.get(name).getWorldPosition(new THREE.Vector3());
 // every frame of a clip on a rig: f(rig, t) → value
 const through = (rows, clip, f) => {
@@ -61,22 +74,25 @@ describe('a clip refit to a guest', () => {
   });
 
   it('is the same every time', () => {
-    const [a, b] = [fit('rick', clipOf('run')), fit('rick', clipOf('run'))];
+    const again = () => refit(clipOf('run'), man.rows, guests.rick.rows, { grip: guests.rick.grip, probes: { game: man.soles, guest: guests.rick.soles, mesh: guests.rick.mesh } });
+    const [a, b] = [again(), again()];
     a.tracks.forEach((t, i) => expect([...t.values]).toEqual([...b.tracks[i].values]));
   });
 });
 
-describe('Morty’s feet, on the game’s walk, run and sprint', () => {
+describe('a guest’s feet, on the game’s walk, run and sprint', () => {
   // a body's soles through a clip: the lowest of each foot's heel, ball and toes' tip, frame by frame
   const soles = (who, clip) => (who ? through(guests[who].rows, fit(who, clip), (rig) => lowest(rig, guests[who].soles)) : through(man.rows, clip, (rig) => lowest(rig, man.soles)));
   const hips = (rows, clip) => through(rows, clip, (rig) => at(rig, 'Hips').y);
   // the sharpest change of pace between three frames: what a jolt is
   const sharpest = (ys) => Math.max(...ys.slice(2).map((y, i) => Math.abs(y - 2 * ys[i + 1] + ys[i])));
+  const GAITS = ['walk', 'run', 'sprint'];
 
-  it.each(['walk', 'run', 'sprint'])('%s: his lower foot is within 2 cm of the ground on every frame the game’s man’s is', (name) => {
-    const clip = clipOf(name);
-    const game = soles(null, clip);
-    const guest = soles('morty', clip);
+  // REQUIREMENT: 2 cm, the plan's (it names Morty; all four are held to it).
+  // The refit aims at 1.5 cm (guest-clips.mjs's NEAR) and reaches it.
+  it.each(['morty', 'rick', 'walt', 'jesse'].flatMap((who) => GAITS.map((name) => [who, name])))('%s, %s: the lower foot is within 2 cm of the ground on every frame the game’s man’s is', (who, name) => {
+    const game = soles(null, clipOf(name));
+    const guest = soles(who, clipOf(name));
     let planted = 0;
     let worst = 0;
     game.forEach((y, i) => {
@@ -86,24 +102,37 @@ describe('Morty’s feet, on the game’s walk, run and sprint', () => {
     });
     // (the sprint is mostly flight: 13 of its 57 frames)
     expect(planted).toBeGreaterThan(10);
-    expect(worst, `${name}: ${(worst * 100).toFixed(2)} cm`).toBeLessThan(0.02);
+    expect(worst, `${(worst * 100).toFixed(2)} cm`).toBeLessThan(0.02);
   });
 
-  it.each(['walk', 'run', 'sprint'])('%s: Rick’s is too', (name) => {
-    const game = soles(null, clipOf(name));
-    const guest = soles('rick', clipOf(name));
-    game.forEach((y, i) => Math.abs(y) <= 0.02 && expect(Math.abs(guest[i]), `frame ${i}`).toBeLessThan(0.02));
-  });
-
-  it('is not jolted to get there: his hips change pace no more sharply than the game’s man’s, at his size', () => {
+  // REQUIREMENT: Morty's hips change pace no more sharply than the game's
+  // man's do at his size, within half a centimetre (today: 1.1, 1.9, 1.9 cm
+  // against 1.2, 1.9, 1.8).
+  it('does not jolt Morty to get there', () => {
     const k = legRatio(man.rows, guests.morty.rows);
-    for (const name of ['walk', 'run', 'sprint']) {
+    for (const name of GAITS) {
       const game = sharpest(hips(man.rows, clipOf(name))) * k;
       const guest = sharpest(hips(guests.morty.rows, fit('morty', clipOf(name))));
       expect(guest, `${name}: ${(guest * 100).toFixed(1)} cm against ${(game * 100).toFixed(1)}`).toBeLessThan(game + 0.005);
     }
   });
 
+  // A KNOWN FAULT, and a PIN of it: the three adults fail the requirement
+  // above in the sprint. Holding a planted foot within 1.5 cm jolts their
+  // hips between frames: Rick 5.1 cm against the game's man's 2.2 at his
+  // size, Jesse 6.0 against 2.3, Walt 7.5 against 2.3 (and in the run 2.8,
+  // 3.5 and 3.4 against 2.3 to 2.4). The pistol's sprint, whose pack is in
+  // the bucket and is not read here, is worse: Walt 8.4 against 1.8, Jesse
+  // 7.3 against 1.7 (the review of 2026-10-13). The numbers below are
+  // today's, rounded up: lower is better, and a change that lowers one
+  // should lower its pin.
+  it.each([['rick', 0.056], ['jesse', 0.066], ['walt', 0.083]])('jolts %s’s hips in the sprint: more sharply than the game’s man’s, and no worse than today', (who, pin) => {
+    const k = legRatio(man.rows, guests[who].rows);
+    const game = sharpest(hips(man.rows, clipOf('sprint'))) * k;
+    const guest = sharpest(hips(guests[who].rows, fit(who, clipOf('sprint'))));
+    expect(guest, 'fixed? then move this guest to the requirement above').toBeGreaterThan(game + 0.005);
+    expect(guest, `${(guest * 100).toFixed(1)} cm`).toBeLessThan(pin);
+  });
   it('sizes the hips by the legs alone when it is given nothing to find the ground by', () => {
     const k = legRatio(man.rows, guests.morty.rows);
     const mid = (rig) => at(rig, 'LeftUpLeg').add(at(rig, 'RightUpLeg')).multiplyScalar(0.5);
@@ -207,31 +236,71 @@ describe('the gun in a guest’s hand', () => {
   });
 });
 
-describe('a guest fallen', () => {
-  // a guest's lowest point: its soles, and the balls in its pelvis, trunk and head
-  const low = (who, clip) => through(guests[who].rows, clip, (rig) => Math.min(lowest(rig, guests[who].soles), lowest(rig, guests[who].bulk)));
+describe('a guest fallen and rolling, by its mesh', () => {
+  // each part's lowest vertex through a clip, the mesh skinned at every frame
+  const lows = (who, clip) => through(guests[who].rows, clip, (rig) => meshLows(rig, guests[who].mesh));
+  const FALLS = ['die', 'die.back', 'die.blown', 'dodge.back', 'dodge.front', 'dodge.left', 'dodge.right'];
+  const ALL = ['rick', 'morty', 'walt', 'jesse'];
+  // (each guest's falls skinned once: several tests read them)
+  const fell = new Map();
+  const fall = (who, name) => {
+    const key = `${who} ${name}`;
+    if (!fell.has(key)) fell.set(key, lows(who, fit(who, clipOf(name))));
+    return fell.get(key);
+  };
+  const deepest = (who, part) => Math.min(...FALLS.flatMap((name) => fall(who, name).map((l) => l[part])));
 
-  it('has a ball in the pelvis, the trunk and the head, each as wide as that part of his own mesh is thin', () => {
-    const { bulk } = guests.morty;
-    expect(bulk.map((b) => b.bone)).toEqual(['Hips', 'Spine1', 'Head']);
-    // (Morty's head is 38 cm through: twice the game's man's)
-    expect(bulk[2].radius).toBeCloseTo(0.19, 2);
-    expect(bulk[0].radius).toBeGreaterThan(0.07);
-    expect(bulk[0].radius).toBeLessThan(0.13);
+  it('tells each vertex which part of the body it is of, by the bone that moves it most', () => {
+    const { mesh, rows } = guests.morty;
+    const rest = meshLows(rigOf(rows), mesh);
+    // (at rest: the soles on the ground, the head's chin over a metre up on Morty)
+    expect(Math.abs(rest.feet)).toBeLessThan(0.005);
+    expect(rest.head).toBeGreaterThan(1);
+    expect(rest.hands).toBeGreaterThan(0.6);
+    expect(Object.keys(rest)).toEqual(['head', 'trunk', 'pelvis', 'arms', 'hands', 'legs', 'feet']);
   });
 
-  it.each(['morty', 'rick'])('%s lies on the ground through the game’s deaths and rolls, never more than a centimetre in it', (who) => {
-    for (const name of ['die', 'die.back', 'die.blown', 'dodge.front']) {
-      // (his body's balls; a sole may dig as far as the game's own does at his size, as in a roll's push)
-      const ys = through(guests[who].rows, fit(who, clipOf(name)), (rig) => lowest(rig, guests[who].bulk));
-      expect(Math.min(...ys), name).toBeGreaterThan(-SINK - 1e-4);
+  // REQUIREMENT: 3 cm. A roll puts the hands on the ground every few
+  // seconds; by the legs' ratio alone Walt's go 20 cm under it. (Today the
+  // deepest is 1.0 cm, and 1.2 where a hand is under a planted foot.)
+  it.each(ALL)('%s: no vertex of the trunk, the pelvis, an arm or a hand is more than 3 cm under the ground in any roll or death', (who) => {
+    for (const part of ['trunk', 'pelvis', 'arms', 'hands']) expect(deepest(who, part), part).toBeGreaterThan(-0.03);
+  });
+
+  // A PIN, not a requirement: the head does go into the ground where the
+  // body is down, because a guest's head is bigger than the game's man's and
+  // its neck turns as his does. Rick's hair goes 11.1 cm in at the deepest
+  // moment of a fall on his back, Morty's head 8.6 cm; Walt's and Jesse's
+  // heads are the man's size, and stay within 1.0 and 2.5 cm.
+  it.each([['rick', 0.12], ['morty', 0.095], ['walt', 0.02], ['jesse', 0.035]])('%s: the head goes no deeper into the ground than today', (who, pin) => {
+    expect(deepest(who, 'head')).toBeGreaterThan(-pin);
+  });
+
+  // REQUIREMENT: where the head is let into the ground it is traded evenly,
+  // the body as far over the ground as the head is in it (within the 2.5 cm
+  // the two bounds allow). And a PIN of how far that is at each death's end:
+  // Rick 10.3 cm in and 10.8 over blown off his feet, Morty 7.9 and 8.4.
+  it.each([['rick', 0.12], ['morty', 0.095]])('%s lies at a death’s end with his head as far in the ground as his body is over it', (who, pin) => {
+    for (const name of ['die', 'die.back', 'die.blown']) {
+      const end = fall(who, name).at(-1);
+      const body = Math.min(end.trunk, end.pelvis);
+      expect(end.head, name).toBeLessThan(-SINK);
+      expect(Math.abs(body + end.head), `${name}: head ${(end.head * 100).toFixed(1)}, body ${(body * 100).toFixed(1)}`).toBeLessThan(0.026);
+      expect(body, name).toBeLessThan(pin);
     }
-    // (and comes to rest on it, not over it)
-    for (const name of ['die', 'die.back', 'die.blown']) expect(Math.abs(low(who, fit(who, clipOf(name))).at(-1)), name).toBeLessThan(0.02);
   });
 
-  it('would lie in it by the legs’ ratio alone: Morty’s head a hand deep', () => {
-    const plain = refit(clipOf('die.back'), man.rows, guests.morty.rows, { grip: guests.morty.grip });
-    expect(Math.min(...low('morty', plain))).toBeLessThan(-0.1);
+  // REQUIREMENT: a body whose head is the man's size comes to rest on the ground: within 3 cm of it.
+  it.each(['walt', 'jesse'])('%s comes to rest on the ground at a death’s end', (who) => {
+    for (const name of ['die', 'die.back', 'die.blown']) {
+      const end = fall(who, name).at(-1);
+      expect(Math.abs(Math.min(end.trunk, end.pelvis)), name).toBeLessThan(0.03);
+    }
+  });
+
+  it('would lie in it by the legs’ ratio alone: Morty’s head a hand deep, Walt’s hands two in a roll', () => {
+    const plain = (who, name) => refit(clipOf(name), man.rows, guests[who].rows, { grip: guests[who].grip });
+    expect(Math.min(...lows('morty', plain('morty', 'die.back')).map((l) => l.head))).toBeLessThan(-0.15);
+    expect(Math.min(...lows('walt', plain('walt', 'dodge.front')).map((l) => Math.min(l.hands, l.arms)))).toBeLessThan(-0.15);
   });
 });

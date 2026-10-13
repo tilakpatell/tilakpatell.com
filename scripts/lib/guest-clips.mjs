@@ -14,16 +14,23 @@
 //   Hips        the guest's hip joints go where the game's are, times the
 //               legs' ratio (guest-skeleton.mjs's legRatio): its travel and
 //               its height. The ratio alone is right only where thigh, shin
-//               and foot are all in it: on the game's run Morty's planted
-//               foot is up to 2.8 cm off the ground and Rick's 4.9, and
-//               fallen, Morty's head (twice the man's) lies 14 cm in the
-//               floor. So the body is then lifted or lowered, by as little
-//               and as smoothly as will do (eased, below): where the game's
-//               man's foot is planted (his soles' lowest point within
-//               PLANTED of the ground) the guest's is brought within NEAR of
-//               it, and nowhere does the guest's lowest point (its soles,
-//               and a ball each for its pelvis, trunk and head, all from
-//               its own mesh: the `probes`) go more than SINK under.
+//               and foot are all in it: in the game's sprint it leaves
+//               Morty's planted foot 2.1 cm off the ground and Rick's 5.4,
+//               in a roll Walt's hands 20 cm under it, and fallen on his
+//               back Morty's head 17 cm in it. So the body is
+//               then lifted or lowered, by as little and as smoothly as
+//               will do (eased, below). Where the game's man's foot is
+//               planted (his soles' lowest point within PLANTED of the
+//               ground) the guest's is brought within NEAR of it. No vertex
+//               of the guest's trunk, pelvis, arms or hands is left more
+//               than SINK under the ground (measured on its mesh, skinned
+//               at the frame: `probes.mesh`); a hand under a planted foot
+//               is met halfway. The head is brought up too, but where the
+//               body is down it is let into the ground as far as that
+//               leaves the body over it: a guest's head is bigger than the
+//               man's and its neck may not be turned, so one of the two is
+//               had, and the worse is made smallest. Not the legs: Rick's
+//               coat and Walt's trouser cuffs hang from them.
 //   a body bone its place less the game's rest, sized as the fitted skeleton
 //               sized the bone, on the guest's rest (the back's links hold
 //               their rest to a few millimetres in every clip)
@@ -52,12 +59,15 @@
 //   soleProbes(rows, surface?) → [{ bone, at, radius: 0 }]: each foot's heel,
 //     ball and toes' tip on the ground at rest: under the joints, or with a
 //     mesh the sole's own rearmost and foremost points
-//   bulkProbes(rows, surface) → [{ bone, at, radius }]: a ball in the pelvis, the trunk and the head
 //   lowest(rig, probes) → the lowest probe's height
-//   refit(clip, walrus, fitted, { grip, probes: { game, guest, bulk } }) → clip
-//     (probes: the game's soles, the guest's, and the guest's balls; with
+//   meshOf(rows, surface) → a body's mesh, each vertex told which part it is
+//     of (head, trunk, pelvis, arms, hands, legs, feet) by the bone that
+//     moves it most
+//   meshLows(rig, mesh) → { part: its lowest vertex's height } as the rig is posed
+//   refit(clip, walrus, fitted, { grip, probes: { game, guest, mesh } }) → clip
+//     (probes: the game's soles, the guest's, and the guest's mesh; with
 //     none the hips are sized by the legs' ratio alone)
-//   GAME_GRIP, HELD, LOOSE, PLANTED, NEAR, SINK
+//   GAME_GRIP, HELD, LOOSE, PLANTED, NEAR, SINK, REST
 
 import * as THREE from 'three';
 import { SIDES, legRatio } from './guest-skeleton.mjs';
@@ -70,12 +80,19 @@ export const HELD = 0.12;
 export const LOOSE = 0.5;
 // The ground. The game's man's foot is planted when its lowest point is
 // within PLANTED of the ground; the guest's is then held within NEAR of it
-// (under the acceptance's 2 cm, with room), and no part of the guest goes
-// more than SINK under the ground at any frame. The lift that does it is
-// eased over EASE frames either side.
+// (under the acceptance's 2 cm, with room), and its trunk, pelvis, arms and
+// hands are kept from going more than SINK under the ground. The lift that
+// does it is eased over EASE frames either side.
 export const PLANTED = 0.02;
 export const NEAR = 0.015;
 export const SINK = 0.01;
+// how near the ground the legs' ratio alone must lay the trunk or the pelvis
+// for the body to be down. Rick, narrow, lies 5 to 9 cm over it on his side
+// by the ratio; a squat or a roll's tuck holds the pelvis 20 cm up and more.
+export const REST = 0.1;
+// the parts of the mesh kept out of the ground. Not the legs: Rick's coat
+// and Walt's trouser cuffs hang from them, and the feet are the soles' business
+const KEPT_UP = ['trunk', 'pelvis', 'arms', 'hands'];
 const EASE = 2;
 const LET_GO = 0.9;
 
@@ -174,42 +191,12 @@ export function soleProbes(rows, surface = null) {
   return out;
 }
 
-// the parts a body lies on, each by the bones whose vertices make it up
-const BULK = [
-  { bone: 'Hips', of: /^(Hips|(Left|Right)HipsRoll)$/ },
-  { bone: 'Spine1', of: /^(Spine|Spine1|Spine2|(Left|Right)Shoulder)$/ },
-  { bone: 'Head', of: /^(Head|HeadEnd|Neck1|FACIAL_.*)$/ },
-];
-
-export function bulkProbes(rows, surface) {
-  const rig = rigOf(rows);
-  const part = surface.joints.map((n) => BULK.findIndex((b) => b.of.test(n)));
-  const boxes = BULK.map(() => new THREE.Box3());
-  const p = new THREE.Vector3();
-  for (let v = 0; v < surface.positions.length / 3; v++) {
-    // (the joint that moves it most, the first of equals)
-    let best = 0;
-    for (let k = 1; k < 4; k++) if (surface.skinWeight[v * 4 + k] > surface.skinWeight[v * 4 + best]) best = k;
-    const b = part[surface.skinIndex[v * 4 + best]];
-    if (b >= 0) boxes[b].expandByPoint(p.fromArray(surface.positions, v * 3));
-  }
-  const out = [];
-  BULK.forEach(({ bone }, i) => {
-    if (boxes[i].isEmpty() || !rig.objs.has(bone)) return;
-    const size = boxes[i].getSize(new THREE.Vector3());
-    // (a ball as wide as the part is thin: what it rests on when it lies on its back or its front)
-    out.push({ bone, at: rig.objs.get(bone).worldToLocal(boxes[i].getCenter(new THREE.Vector3())).toArray(), radius: Math.min(size.x, size.y, size.z) / 2 });
-  });
-  return out;
-}
-
 const probeAt = new THREE.Vector3();
 export function lowest(rig, probes) {
   let y = Infinity;
-  for (const probe of probes) y = Math.min(y, rig.objs.get(probe.bone).localToWorld(probeAt.fromArray(probe.at)).y - probe.radius);
+  for (const probe of probes) y = Math.min(y, rig.objs.get(probe.bone).localToWorld(probeAt.fromArray(probe.at)).y);
   return y;
 }
-
 const hipJoints = (rig) => placeOf(rig, 'LeftUpLeg').add(placeOf(rig, 'RightUpLeg')).multiplyScalar(0.5);
 const smooth = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -305,11 +292,38 @@ export function refit(clip, walrus, fitted, { grip = GAME_GRIP, probes = null, n
       const theirs = lowest(game, probes.game);
       const planted = Math.abs(theirs) <= PLANTED;
       const soles = lowest(guest, probes.guest);
-      const bulk = probes.bulk?.length ? lowest(guest, probes.bulk) : Infinity;
-      // (a sole may dig as the game's own does at this size: its sprint drives the toes 7 cm under at each push)
-      lo.push(Math.max(-bulk - SINK, -soles + Math.min(-SINK, k * theirs), planted ? -soles - near : -Infinity));
-      hi.push(Math.max(lo[f], planted ? -soles + near : Infinity));
-      seen.push([Math.min(soles, bulk), placeOf(guest, 'Hips').y]);
+      // what must come up: a sole no deeper than the game's own digs at this
+      // size (its sprint drives the toes 7 cm under at each push), a planted
+      // one within `near`, and no vertex of the trunk, the pelvis, an arm
+      // or a hand more than SINK under
+      let up = Math.max(-soles + Math.min(-SINK, k * theirs), planted ? -soles - near : -Infinity);
+      // what must stay down: a planted sole
+      const down = planted ? -soles + near : Infinity;
+      let low = soles;
+      if (probes.mesh) {
+        const lows = meshLows(guest, probes.mesh);
+        for (const part of KEPT_UP) {
+          up = Math.max(up, -lows[part] - SINK);
+          low = Math.min(low, lows[part]);
+        }
+        // The head comes up too, but not at any price. A guest's head is
+        // bigger than the man's (Morty's twice, Rick's with 8 cm of hair
+        // each way) and its neck turns as his does, so where the body is
+        // down (its trunk or pelvis within REST of the ground by the legs'
+        // ratio alone) the head cannot lie flat beside it: it is let into
+        // the ground as far as that leaves the body over it, the worse of
+        // the two made smallest.
+        const lying = Math.min(lows.trunk, lows.pelvis);
+        const head = -lows.head - SINK;
+        const rest = -lying + near;
+        up = Math.max(up, lying <= REST && head > rest ? (head + rest) / 2 : head);
+        low = Math.min(low, lows.head);
+      }
+      // (and a roll's hand under a planted foot the same: as far in the ground as the foot is over it)
+      if (up > down) up = (up + down) / 2;
+      lo.push(up);
+      hi.push(Math.max(up, down));
+      seen.push([low, placeOf(guest, 'Hips').y]);
     }
     // (a cycle, its last frame its first again, is eased round its end)
     const round = times.length > 2 && seen[0].every((y, i) => Math.abs(y - seen.at(-1)[i]) < 1e-3);
@@ -349,4 +363,62 @@ export function refit(clip, walrus, fitted, { grip = GAME_GRIP, probes = null, n
     extras.rootHips = +(placeOf(guest, 'Hips').y - Math.min(placeOf(guest, 'LeftToeBase').y, placeOf(guest, 'RightToeBase').y)).toFixed(4);
   }
   return { ...clip, tracks, extras };
+}
+
+// A body's mesh as its skeleton is posed, for measuring what the probes
+// only stand for: each vertex where linear blend skinning puts it (the
+// mesh is bound at the skeleton's rest), and the lowest of them in each
+// part of the body, a part being the vertices one group of bones moves most.
+const PARTS = {
+  head: /^(Head|Neck|Neck1)$/,
+  trunk: /^(Spine|Spine1|Spine2|(Left|Right)Shoulder)$/,
+  pelvis: /^Hips$/,
+  arms: /^(Left|Right)(Arm|ForeArm)$/,
+  hands: /^(Left|Right)Hand$/,
+  legs: /^(Left|Right)(UpLeg|Leg)$/,
+  feet: /^(Left|Right)(Foot|ToeBase)$/,
+};
+
+export function meshOf(rows, surface) {
+  const rig = rigOf(rows);
+  const names = Object.keys(PARTS);
+  const count = surface.positions.length / 3;
+  const part = new Int8Array(count).fill(-1);
+  const used = new Set();
+  for (let v = 0; v < count; v++) {
+    let best = 0;
+    for (let k = 0; k < 4; k++) {
+      if (surface.skinWeight[v * 4 + k] > 0) used.add(surface.skinIndex[v * 4 + k]);
+      if (surface.skinWeight[v * 4 + k] > surface.skinWeight[v * 4 + best]) best = k;
+    }
+    part[v] = names.findIndex((n) => PARTS[n].test(surface.joints[surface.skinIndex[v * 4 + best]]));
+  }
+  // (each joint's rest, undone: a vertex is carried by where its joint has gone since)
+  const undo = new Map([...used].map((j) => [j, rig.objs.get(surface.joints[j]).matrixWorld.clone().invert()]));
+  return { surface, names, part, undo };
+}
+
+const carried = new THREE.Matrix4();
+export function meshLows(rig, mesh) {
+  const { surface, names, part, undo } = mesh;
+  // the height a joint gives a vertex: the second row of where it has gone × its rest undone
+  const rowY = new Map();
+  for (const [j, inverse] of undo) {
+    const e = carried.multiplyMatrices(rig.objs.get(surface.joints[j]).matrixWorld, inverse).elements;
+    rowY.set(j, [e[1], e[5], e[9], e[13]]);
+  }
+  const lows = names.map(() => Infinity);
+  const p = surface.positions;
+  for (let v = 0; v < part.length; v++) {
+    if (part[v] < 0) continue;
+    let y = 0;
+    for (let k = 0; k < 4; k++) {
+      const w = surface.skinWeight[v * 4 + k];
+      if (!(w > 0)) continue;
+      const r = rowY.get(surface.skinIndex[v * 4 + k]);
+      y += w * (r[0] * p[v * 3] + r[1] * p[v * 3 + 1] + r[2] * p[v * 3 + 2] + r[3]);
+    }
+    if (y < lows[part[v]]) lows[part[v]] = y;
+  }
+  return Object.fromEntries(names.map((n, i) => [n, lows[i]]));
 }

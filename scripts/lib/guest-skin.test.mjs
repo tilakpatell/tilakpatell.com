@@ -214,7 +214,18 @@ describe.each([['Rick', 'public/games/meshy/rick.glb'], ['Morty', 'public/games/
       const b = along.clone().cross(a);
       const before = ring(s.positions, verts, J, a, b);
       const after = ring(out.positions, verts, at(fit, joint), a.clone().applyQuaternion(turn), b.clone().applyQuaternion(turn));
+      // REQUIREMENT, 1 cm: the plan's bound, on a ring moving with its joint
+      // (Meshy's own joints are not at their rings' middles). It is near:
+      // today's worst is 0.94 cm, at Rick's left ankle, where the shin is
+      // turned 7.6° and the foot not at all; every other ring is under 0.6.
       expect(after.middle.distanceTo(before.middle.clone().applyQuaternion(turn)), `${joint} ring off its joint`).toBeLessThan(0.01);
+      // PINS of today's output, not requirements: a sleeve keeps 0.85 to
+      // 1.15 of its girth. The low end is the roll of the forearm that
+      // faces Rick's and Morty's palms as the game's man's: 0.852 at Rick's
+      // right elbow, 0.90 to 0.94 at their other elbows and wrists (Walt's
+      // and Jesse's, not rolled, keep 0.98 to 1.00). Under 0.85 a sleeve
+      // would be seen to pinch; a change that moves this is looked at in a
+      // picture before the number is.
       expect(after.girth / before.girth, `${joint} girth`).toBeGreaterThan(0.85);
       expect(after.girth / before.girth, `${joint} girth`).toBeLessThan(1.15);
     }
