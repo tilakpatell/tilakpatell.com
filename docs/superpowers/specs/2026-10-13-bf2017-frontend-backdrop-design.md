@@ -1,6 +1,6 @@
 # The front end's room behind the menus: the design and the plan
 
-Date: 2026-10-13. Status: **approved by the owner in conversation on 2026-10-13 (“Yes, build it now”), with no separate review of this written copy, which is the record; being built.** Branch `claude/magical-curie-arkgxh`. It follows the canvas design (`2026-10-13-bf2017-ui-canvas-design.md`), whose screens it goes behind.
+Date: 2026-10-13. Status: **approved by the owner in conversation on 2026-10-13 (“Yes, build it now”), with no separate review of this written copy, which is the record; the room, the figure and the governor landed, lit from the game's records (`src/data/bf2017/backdrop.json`), the camera the front end's own (decisions 2 and 3 went that way rather than by hand); Chewbacca's lighting and the rest are in `HANDOFF-bf2017-front-end-canvas.md`.** Branch `claude/magical-curie-arkgxh`. It follows the canvas design (`2026-10-13-bf2017-ui-canvas-design.md`), whose screens it goes behind.
 
 ## What the owner asked
 

@@ -1,6 +1,6 @@
 # The Battlefront screens as the game draws them: one layout, a Canvas 2D painter. The design
 
-Date: 2026-10-13. Status: **the design approved by the owner in conversation on 2026-10-13; this written spec waits on the owner's review; no code written yet.** Branch `claude/magical-curie-arkgxh`. It follows the landing design (`2026-10-13-hoth-landing-game-menu-design.md`), whose decisions 4, 5, 7, 9 and 11 stand, and the screens lane of the accuracy design (`2026-10-10-bf2017-accuracy-design.md`). It changes how the game's screens are drawn, not which screens there are or the way through them.
+Date: 2026-10-13. Status: **approved by the owner on 2026-10-13; phase 1 landed (Start, HOME, Play and Single Player on the canvas); what is left is in `HANDOFF-bf2017-front-end-canvas.md`.** Branch `claude/magical-curie-arkgxh`. It follows the landing design (`2026-10-13-hoth-landing-game-menu-design.md`), whose decisions 4, 5, 7, 9 and 11 stand, and the screens lane of the accuracy design (`2026-10-10-bf2017-accuracy-design.md`). It changes how the game's screens are drawn, not which screens there are or the way through them.
 
 ## What the owner asked
 
