@@ -26,25 +26,42 @@ const OFFERS = [
 const TEAMS = { 1: { name: 'REBELS', rows: [{ id: 'a', name: 'Trooper 1', kills: 3, deaths: 1, points: 300 }] }, 2: { name: 'EMPIRE', rows: [{ id: 'b', name: 'You', kills: 5, deaths: 0, points: 900 }] } };
 
 describe("the game's screens, each from its tree", () => {
-  it('starts with the press-start line in the game’s words, the keyboard’s key named', () => {
+  it('starts on the game’s press-start screen, its line in the game’s words, the keyboard’s key named', () => {
     expect(pressStart()).toBe('PRESS ENTER TO START');
     const h = html(<Start onNext={() => {}} />);
+    expect(h).toContain('data-screen="UI/Frontend/Screens/StartFlow/PairingScreen"');
     expect(h).toContain('PRESS ENTER TO START');
     expect(h).toMatch(/role="dialog"/);
+    expect(h).not.toContain('ACCOUNT PICKER');
   });
 
-  it("draws the main menu's tabs as the game's cells, Play among them", () => {
+  it("draws the main menu's tabs as buttons over the game's cells, HOME's page under them", () => {
     const h = html(<MainMenu />);
-    expect(h).toContain('data-screen="UI/Frontend/Screens/Start/MainMenuScreen"');
-    expect(h).toMatch(/data-link="UI\/Data\/LinkAssets\/Play\/PlayScreen"/);
+    expect(h).toContain('data-layers="UI/Frontend/Screens/Start/MainMenuScreen UI/Frontend/Screens/Start/StartScreen"');
+    expect(h).toMatch(/class="hud-screen-hit"[^>]*data-link="UI\/Data\/LinkAssets\/Play\/PlayScreen"/);
     expect(h).not.toContain('OPEN SOCIAL HUB');
+    expect(h).not.toMatch(/aria-label="Store"/);
+    // HOME's page offline, as the game draws it without a connection: one news tile of the two it holds there, no loader
+    expect(h).toContain('CONNECT FOR MORE FEATURES');
+    expect(h).not.toContain('LEAP INTO GALACTIC ASSAULT');
+    expect(h).not.toContain('CONNECTING...');
   });
 
-  it("draws Play's tiles in the boxes its tree gives them, Multiplayer live and the rest greyed", () => {
+  it("draws Play's tiles from their tree under the tabs, Multiplayer live and the rest greyed", () => {
     const h = html(<Play />);
-    expect(h).toMatch(/data-tile="Multiplayer"/);
-    expect(h).toContain('MULTIPLAYER');
-    expect(h).toMatch(/<button[^>]*aria-disabled="true"[^>]*data-tile="COOP"/);
+    expect(h).toMatch(/aria-label="MULTIPLAYER"/);
+    expect(h).toMatch(/aria-label="CO-OP MISSIONS"[^>]*aria-disabled="true"/);
+    expect(h).toMatch(/aria-label="SINGLE PLAYER"/);
+    expect(h).toMatch(/aria-label="PLAY"/);
+    expect(h).toContain('A selection of multiplayer modes');
+  });
+
+  it('draws Single Player under the breadcrumb, and no tabs', () => {
+    const h = html(<Play at="single" />);
+    expect(h).toMatch(/aria-label="SINGLE PLAYER"/);
+    expect(h).not.toMatch(/aria-label="CAREER"/);
+    expect(h).toMatch(/aria-label="INSTANT ACTION"/);
+    expect(h).toMatch(/aria-label="CAMPAIGN"[^>]*aria-disabled="true"/);
   });
 
   it("puts each mode's card in its list's box on the multiplayer screen", () => {
@@ -207,7 +224,7 @@ describe('the front end over a world', () => {
   it('lands in the main menu when asked, drawn from the game’s tree', () => {
     const h = html(<FrontEnd start="menu" onExit={() => {}} />);
     expect(h).toContain('data-front-end="menu"');
-    expect(h).toContain('data-screen="UI/Frontend/Screens/Start/MainMenuScreen"');
+    expect(h).toMatch(/data-layers="UI\/Frontend\/Screens\/Start\/MainMenuScreen /);
   });
   it('opens on the Start screen when it stands alone', () => {
     expect(html(<FrontEnd />)).toContain('data-front-end="start"');

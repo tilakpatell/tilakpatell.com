@@ -141,8 +141,13 @@ UI/Data/GameModes/PlanetaryBattles	GameModeInformationAsset	data/UI/Data/GameMod
 UI/Data/GameModes/Planets/Hoth	PlanetInformationAsset	data/UI/Data/GameModes/Planets/Hoth.json	411
 UI/Data/GameModes/SpaceBattles	GameModeInformationAsset	data/UI/Data/GameModes/SpaceBattles.json	1843
 UI/Frontend/Screens/Start/MainMenuScreen	UIWidgetBlueprint	data/UI/Frontend/Screens/Start/MainMenuScreen.json	9405
+UI/Frontend/Screens/StartFlow/PairingScreen	UIWidgetBlueprint	data/UI/Frontend/Screens/StartFlow/PairingScreen.json	13747
+UI/Frontend/Widgets/Breadcrumbs/BreadcrumbListCell	UIWidgetBlueprint	data/UI/Frontend/Widgets/Breadcrumbs/BreadcrumbListCell.json	30581
+UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget	UIWidgetBlueprint	data/UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget.json	16076
 UI/Frontend/Widgets/MainMenu/MainMenuButtonCell	UIWidgetBlueprint	data/UI/Frontend/Widgets/MainMenu/MainMenuButtonCell.json	51507
 UI/Frontend/Widgets/MainMenu/MainMenuWidget	UIWidgetBlueprint	data/UI/Frontend/Widgets/MainMenu/MainMenuWidget.json	52257
+UI/Frontend/Widgets/Play/PlayTile	UIWidgetBlueprint	data/UI/Frontend/Widgets/Play/PlayTile.json	58110
+UI/Frontend/Widgets/Play/PlayTileVideoWidget	UIWidgetBlueprint	data/UI/Frontend/Widgets/Play/PlayTileVideoWidget.json	5974
 UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget	UIWidgetBlueprint	data/UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget.json	41771
 UI/InGame/Hud/SquadMemberList/SquadMemberList	UIWidgetBlueprint	data/UI/InGame/Hud/SquadMemberList/SquadMemberList.json	5789
 UI/InGame/Hud/SquadMemberList/SquadMemberListCell	UIWidgetBlueprint	data/UI/InGame/Hud/SquadMemberList/SquadMemberListCell.json	12875
@@ -160,3 +165,4 @@ UI/Shapes/InGame/HUD/SquadList/SquadListBG	DiceUIVectorShapeAsset	data/UI/Shapes
 UI/Styles/Colors/UIColorPalette	UIColorPalette	data/UI/Styles/Colors/UIColorPalette.json	24816
 levels/lighting/hoth/prefabs/pf_lightceiling_m_01_hoth_lit_nongroupable_autogen_gen4	SpatialPrefabBlueprint	data/levels/lighting/hoth/prefabs/pf_lightceiling_m_01_hoth_lit_nongroupable_autogen_gen4.json	1975
 levels/lighting/hoth/prefabs/pf_lightwall_s_01_hoth_lit_nongroupable_autogen_gen4	SpatialPrefabBlueprint	data/levels/lighting/hoth/prefabs/pf_lightwall_s_01_hoth_lit_nongroupable_autogen_gen4.json	1975
+ui/frontend/screens/startflow/pairingscreen_automapping	UITextureMappingAsset	data/ui/frontend/screens/startflow/pairingscreen_automapping.json	506

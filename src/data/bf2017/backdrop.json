@@ -1,0 +1,45 @@
+{
+  "_from": {
+    "export": "build 489592",
+    "date": "2026-10-13",
+    "records": [
+      "Levels/Frontend/Lighting/VE_FrostEnd (VisualEnvironmentBlueprint: TonemapComponentData, DofComponentData, VignetteComponentData, FilmGrainComponentData, OutdoorLightComponentData)",
+      "Levels/Frontend/Lighting (LayerData: SimpleVolumetricsEntityData, LocalPlanarReflectionEntityData, PbrSpotLightEntityData)",
+      "web/materials.jsonl: levels/frontend/objects/nowheredome_01/nowheredome_01_mesh, levels/frontend/objects/nowherepilllights_01/nowherepilllights_01_mesh",
+      "levels/frontend/frontend.extras.json (sub-level 0): the hero's key spot",
+      "Levels/Frontend/Default (CameraEntityData: the front end's physical camera, its body and lens presets)"
+    ],
+    "frame": "metres from the dome's foot (the dome at [0.426, -3.627, -2.799] in the level), as src/data/bf2017/stage.json"
+  },
+  "about": "How the game lights the front end's room (Backdrop_01): the pill lights are its one light, emissive at 1,500 nits; the floor is a near mirror (a planar reflection) and the walls glossy; a teal simple-volumetrics sphere glows in front of the pills; the camera is a fixed exposure (EV 8, -0.35) through a linear tone map with an approximate gamma, a five-Gaussian bloom, a physical depth of field (5 m, f/2), the Walrus base grade, a vignette and film grain. The hero is lit by one white spot beside him and by the room.",
+  "exposure": { "ev": 8, "compensation": -0.35, "tonemap": "TonemapMethod_LinearApproxGamma" },
+  "bloom": {
+    "scale": 0.193,
+    "gaussians": [
+      { "weight": 0.919, "color": [0.863, 0.69, 0.461] },
+      { "weight": 1, "color": [0.275, 0.249, 0.168] },
+      { "weight": 0.883, "color": [0.16, 0.145, 0.097] },
+      { "weight": 0.568, "color": [0.16, 0.145, 0.097] },
+      { "weight": 0.311, "color": [0.16, 0.145, 0.097] }
+    ]
+  },
+  "camera": { "body": "Cinematics/Cameras/Body/CamBody_Cine", "sensor": [36, 20.25], "lens": "Cinematics/Cameras/Lens/CamLens_FrontEnd", "focal": 173.913, "fstop": 6.2953, "focus": 12.52909, "pitch": 2 },
+  "dof": { "focus": 5, "fstop": 2, "film": 36 },
+  "vignette": { "opacity": 0.194, "scale": [2, 2], "exponent": 0.2 },
+  "grain": { "scale": 0.5, "shadow": 0.8, "highlight": 0.1, "shadowFrom": 0.2, "highlightFrom": 0.6 },
+  "pills": { "emissive": 1500 },
+  "dome": {
+    "floor": { "tiling": 44, "smoothness": [0.98, 1.2] },
+    "walls": { "tiling": 44, "smoothness": [1, 1.25] }
+  },
+  "planar": { "size": [23.401, 32.94] },
+  "haze": { "at": [-0.7, 4.14, 6.4], "radius": 8.878, "emission": [0.6, 0.885, 1], "scale": 2, "exponent": 2 },
+  "key": { "at": [0.9, 1.67, -0.67], "aim": [-0.23, 1, 0.21], "lumens": 1500, "color": [1, 1, 1], "cone": 76.204, "reach": 5 },
+  "ambient": { "sky": [0.318, 0.341, 0.4], "ground": [0.05, 0.05, 0.05] },
+  "calibrated": {
+    "about": "Fitted to the game's HOME capture (refs main-menu.png, band-averaged rows 0 to 60 at ten points from x 650 to 1880; mean error 11 of 255): the record's units for these two are not the site's.",
+    "pills": 0.5,
+    "haze": 3,
+    "panel": 18.5
+  }
+}
