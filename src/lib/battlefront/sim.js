@@ -160,7 +160,7 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     sim.commanders = {};
     for (const team of [1, 2]) {
       const squads = sim.brains.squads.list.filter((q) => q.team === team);
-      sim.commanders[team] = createCommander({ team, side: sim.M.sideOf(sim.ga, team), ga: sim.ga, squads, bp: sim.bp, rand: sim.rand, nav, rulebook: rb });
+      sim.commanders[team] = createCommander({ team, side: sim.M.sideOf(sim.ga, team), ga: sim.ga, squads, bp: sim.bp, rand: sim.rand, nav, rulebook: rb, ways: !!sim.instantAction });
     }
     if (sim.instantAction) roundIn(sim);
     addWalkers(sim);
