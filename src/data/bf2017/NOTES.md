@@ -234,7 +234,7 @@ The round's numbers are `gameSettings.json`'s `_Mode8` rows (the settings' group
 - **The trigger after the line is lost**: an AutoPlayer fires on at where the target was for `AP_LofTimeoutS`, into what now hides it.
 - **The waves in the sim** (`sim.js`'s `stepMode`): a fallen bot of a round comes back when `ai/waves.js`'s `mayDeploy` says so, in place of the ten-second wave; a bot buys a hero or a reinforcement only while that kind's own wave is open. A wave no bot was waiting in passes unused.
 - **The bleed** (`modes/supremacy.js`'s `bleedEvery`): the site's 5 s a reinforcement (itself by hand) divided by `TicketBleedMult_<length>_Mode8`.
-- **Not acted on yet**: the vehicles' caps (no vehicle deploys in the sim), all-era heroes, and the AutoPlayers' dodge roll and jump. The page's battle hands the round to the sim, so its bots aim as AutoPlayers; its sim runs no mode yet, so there the round's length, rate, caps and waves change nothing until the page's battle runs the mode.
+- **Not acted on yet**: the vehicles' caps (no vehicle deploys in the sim), all-era heroes (the hero rows hold no era) and the jump (its odds are 0 in these modes). The page's battle runs the sim's own mode and hands it the round, so on the page a round's sizes, difficulty, rate, caps, waves and bots are the sim's; its length acts where the mode counts reinforcements a side (Supremacy).
 
 ## `collection.json` (the Collection: `scripts/lib/bf2017-rulebook-collection.mjs`)
 
