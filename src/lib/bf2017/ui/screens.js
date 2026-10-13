@@ -68,6 +68,8 @@ function boxOf(el, at, path, ctx, slots) {
     const key = slots[el.id] ?? el.text ?? null;
     if (key) box.key = key;
     box.text = ctx.data?.[el.id] ?? (key ? say(key, ctx) : (el.literal ?? ''));
+    // (a cell of a list the code fills: its empty words are the datum's)
+    if (!box.text && ctx.blank) box.text = ctx.blank;
     if (el.font) box.font = faceFor(el.font);
     if (el.align) box.align = el.align;
     if (el.wrap) box.wrap = true;
@@ -104,11 +106,15 @@ function expand(elements, parent, path, ctx, slots = {}, seen = new Set(), depth
     } else at = placeIn(widgetSized(el), parent, ctx.k);
     const box = boxOf(el, at, path, ctx, slots);
     box.id = unique(sibs, box.id);
-    const inner = { ...at, ...(el.stack ? { stack: el.stack } : {}) };
+    // (a root box the tree expands over the whole frame: drawn over the whole window)
+    if (depth === 0 && !path && el.layout?.fill && String(el.layout.expansion) === '0,0,1,1') box.bleed = true;
+    const inner = { ...at, ...(el.stack ? { stack: el.stack } : {}), ...(el.size ? { design: el.size } : {}) };
     if (el.widget) {
       const w = ROWS.widgets[el.widget];
       box.widget = el.widget;
-      if (w && !seen.has(el.widget)) box.children = expand(w.elements, inner, box.id, ctx, slotTexts(el.binds, w.slots), new Set([...seen, el.widget]), depth + 1);
+      if (w && !seen.has(el.widget)) box.children = expand(w.elements, { ...inner, design: w.size ?? inner.design }, box.id, ctx, slotTexts(el.binds, w.slots), new Set([...seen, el.widget]), depth + 1);
+    } else if (el.dynamic && ctx.items?.[el.id]) {
+      box.children = itemsOf(el.dynamic, ctx.items[el.id], inner, box.id, ctx, seen, depth);
     } else if (el.list) {
       box.children = cellsOf(el.list, inner, box.id, ctx, seen, depth);
     } else if (el.children?.length) {
@@ -165,18 +171,36 @@ function cellsOf(list, at, path, ctx, seen, depth) {
       cell.link = c.link;
       cell.screen = ROWS.links[c.link] ?? null;
     }
-    if (w && !seen.has(c.widget)) cell.children = expand(w.elements, box, cell.id, ctx, slotTexts(c.binds, w.slots), new Set([...seen, c.widget]), depth + 1);
+    if (w && !seen.has(c.widget)) cell.children = expand(w.elements, { ...box, ...(w.size ? { design: w.size } : {}) }, cell.id, ctx, slotTexts(c.binds, w.slots), new Set([...seen, c.widget]), depth + 1);
     return cell;
   });
 }
 
-export function screen(name, { viewport = { width: 1920, height: 1080 }, data = null, strings = null } = {}) {
+// A list the game's code fills (the breadcrumb): one cell a datum
+// ({ id, label, link? }), each made from the list's template, sized to its
+// words where the list's cells are (the letters' estimate, cellSize's), laid
+// along the list
+function itemsOf(dyn, items, at, path, ctx, seen, depth) {
+  const w = ROWS.widgets[dyn.template];
+  let cursor = 0;
+  const sibs = new Map();
+  return items.map((it) => {
+    const [cw, ch] = (dyn.sized ? [cellSize(null, it.label)[0], dyn.cellSize[1]] : dyn.cellSize).map((v) => v * ctx.k);
+    const box = dyn.horizontal ? { x: at.x + cursor, y: at.y, w: cw, h: ch } : { x: at.x, y: at.y + cursor, w: cw, h: ch };
+    cursor += (dyn.horizontal ? cw : ch) + dyn.spacing * ctx.k;
+    const cell = { id: unique(sibs, `${path}/${it.id}`), type: 'cell', ...box, label: it.label, ...(it.link ? { link: it.link } : {}) };
+    if (w && !seen.has(dyn.template)) cell.children = expand(w.elements, { ...box, ...(w.size ? { design: w.size } : {}) }, cell.id, { ...ctx, blank: it.label }, {}, new Set([...seen, dyn.template]), depth + 1);
+    return cell;
+  });
+}
+
+export function screen(name, { viewport = { width: 1920, height: 1080 }, data = null, strings = null, items = null } = {}) {
   const s = findScreen(name);
   if (!s) return null;
   const { width, height } = viewport;
-  const ctx = { k: Math.min(width, height) / 1080, data, strings: strings ?? TABLE };
+  const ctx = { k: Math.min(width, height) / 1080, data, strings: strings ?? TABLE, items };
   const full = fullName(name);
-  const boxes = expand(s.elements, { x: 0, y: 0, w: width, h: height }, '', ctx, {}, new Set([full]));
+  const boxes = expand(s.elements, { x: 0, y: 0, w: width, h: height, ...(s.size ? { design: s.size } : {}) }, '', ctx, {}, new Set([full]));
   return {
     name: full,
     size: [width, height],

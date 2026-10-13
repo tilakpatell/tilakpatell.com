@@ -13,6 +13,30 @@ const flat = (boxes, out = []) => {
 const byId = (boxes, id) => flat(boxes).find((b) => b.id.endsWith(id));
 const near = (a, b) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
 
+const boxesUnder = (box) => flat(box.children ?? []);
+const findBox = (tree, name) => flat(tree.boxes).find((b) => b.id.split('/').pop() === name);
+
+describe('the parts that grow, the lists the code fills, the boxes that bleed', () => {
+  it('draws a Play tile’s outline round the whole tile', () => {
+    const tree = screen('PlayScreen');
+    const tile = findBox(tree, 'Multiplayer');
+    const outline = boxesUnder(tile).find((b) => b.id.endsWith('/Outline'));
+    expect([outline.x, outline.y, outline.w, outline.h]).toEqual([tile.x, tile.y, tile.w, tile.h]);
+  });
+
+  it('lays a dynamic list’s cells from its template, the crumbs’ words in its empty texts', () => {
+    const tree = screen('MainMenuScreen', { items: { BreadcrumbList: [{ id: 'play', label: 'PLAY' }, { id: 'single', label: 'SINGLE PLAYER' }] } });
+    const cells = findBox(tree, 'BreadcrumbList').children;
+    expect(cells.map((c) => c.label)).toEqual(['PLAY', 'SINGLE PLAYER']);
+    expect(cells[1].x).toBeGreaterThan(cells[0].x);
+    expect(boxesUnder(cells[0]).some((b) => b.type === 'text' && b.text === 'PLAY')).toBe(true);
+  });
+
+  it('marks a root box the tree expands over the whole frame as bleeding to the window', () => {
+    expect(findBox(screen('PairingScreen'), 'Background').bleed).toBe(true);
+  });
+});
+
 describe("a screen's tree, resolved", () => {
   it('holds the front end and the in-game screens the era rule allows', () => {
     expect(SCREENS).toContain('UI/Frontend/Screens/Start/MainMenuScreen');
