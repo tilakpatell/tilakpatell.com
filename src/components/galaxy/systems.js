@@ -34,7 +34,7 @@
 // at Endor, so it stands beside Return of the Jedi)
 
 import { fitSystem } from './fit.js'; // (with its extension: the prerender reads this file in Node)
-import { GAME_MENU } from './gameLevels';
+import { GAME_MENU } from './gameLevels.js'; // (with its extension, as above)
 
 export const FILMS = {
   tpm: { title: 'The Phantom Menace', episode: 'I', year: -32, era: 'republic' },
