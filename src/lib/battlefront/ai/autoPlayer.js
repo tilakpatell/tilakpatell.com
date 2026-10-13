@@ -18,10 +18,15 @@
 // while the line of fire is clear, once it has been for AP_LofReactionTimeS
 // (0.05 s), and for AP_LofTimeoutS (1.5 s) after it is lost, at where the
 // target was; the gun's own rate, heat and spread do the rest (weapons.js).
-// Its evasion while it fights: a strafe whose side flips every
-// AP_EvasiveManeuversInvertStrafeDuration (1.5 to 3.5 s), the ground checked
-// AP_EvasiveManeuversGroundCheckDistanceM (2.5 m) to that side first; a
-// dodge roll at AP_EvasiveManeuversDodgeRollProbability (0.2) when hit.
+// Its evasion while it fights, read from the game's own step (the decompile
+// of FUN_145571ea0, NOTES.md): a strafe of two legs, each for a time drawn in
+// AP_EvasiveManeuversInvertStrafeDuration (1.5 to 3.5 s); the ground
+// AP_EvasiveManeuversGroundCheckDistanceM (2.5 m) to the leg's side probed
+// every step from AP_…GroundCheckHeightOffsetM (1.5 m) above the feet down
+// AP_…GroundCheckHeightDistanceM (3.5 m); a failed probe ends the leg and
+// bars that side for AP_…GroundCheckCooldownS (3 s); both barred, no strafe.
+// The dodge roll's trigger (AP_EvasiveManeuversDodgeRollProbability, 0.2) is
+// not in the functions read: `dodges` draws it, nothing calls it yet.
 //
 // Read by hand (src/data/bf2017/NOTES.md, "The AutoPlayers"): the noise's
 // unit (degrees of the view) and its wander (a fresh offset each lap time,
@@ -36,7 +41,8 @@
 //   noiseOf(ap, family) → degrees       weaponClass(family, weaponId) → 'blaster' | 'lmg' | 'shotgun' | 'sniper' | 'launcher'
 //   createAim() → aim      aimStep(aim, ap, { from, at, vel, noise, dt, rand }) → { point, error }  (error: degrees off the led target)
 //   createLof() → lof      lofStep(lof, ap, { clear, now }) → fire?
-//   createEvasion() → ev   strafeSide(ev, ap, { now, rand, ground(side) }) → -1 | 1      dodges(ap, rand) → bool
+//   createEvasion() → ev   strafeSide(ev, ap, { now, rand, ground(side) }) → -1 | 1 | 0 (no strafe)
+//   groundOk(ap, dy) → bool (the probe's rule for ground dy m above the feet)      dodges(ap, rand) → bool
 
 // The site's modes → the settings' suffix: Instant Action's rows for its own and the modes it plays on
 // the multiplayer maps, Supremacy's (Mode1) for Supremacy, Co-op's (Mode9) for Co-op.
@@ -93,6 +99,7 @@ export function autoPlayerFor(gs, { mode = 'galacticAssault', difficulty = null,
       on: get('groundCheck.on', 'AP_EvasiveManeuversGroundCheckEnabled', true),
       distance: get('groundCheck.distance', 'AP_EvasiveManeuversGroundCheckDistanceM', 2.5),
       drop: get('groundCheck.drop', 'AP_EvasiveManeuversGroundCheckHeightDistanceM', 3.5),
+      offset: get('groundCheck.offset', 'AP_EvasiveManeuversGroundCheckHeightOffsetM', 1.5),
       cooldown: get('groundCheck.cooldown', 'AP_EvasiveManeuversGroundCheckCooldownS', 3),
     },
     melee: { on: get('melee.on', 'AP_CombatUseMelee', false), distance: get('melee.distance', 'AP_MeleeDistanceM', 1.5), interval: get('melee.interval', 'AP_MeleeIntervalS', 0.5) },
@@ -191,20 +198,35 @@ export function lofStep(lof, ap, { clear, now }) {
   return now - lof.lostAt <= ap.lofTimeout;
 }
 
-export const createEvasion = () => ({ side: 1, until: -Infinity, checkedAt: -Infinity });
+export const createEvasion = () => ({ side: 0, until: -Infinity, barred: { '-1': -Infinity, 1: -Infinity } });
 
-// the strafe's side: flipped when its time is up, or when the ground that way falls away (checked on the cooldown)
+// The strafe's side this step, as the game's step has it (bf2-re's decompile of FUN_145571ea0): two legs, one
+// a side, each for a time drawn afresh between the two durations; when a leg's time is up the other starts,
+// unless the other side is cooling, and then the leg goes on past its time. The ground to the leg's side is
+// probed every step: a failed probe ends the leg at once and starts that side's cooldown. 0: both sides are
+// cooling, and the bot does not strafe.
 export function strafeSide(ev, ap, { now, rand = Math.random, ground = null }) {
-  if (now >= ev.until) {
-    ev.side = -ev.side;
+  const cooling = (s) => now < ev.barred[s];
+  const start = (s) => {
+    ev.side = s;
     const [lo, hi] = ap.strafeInvert;
     ev.until = now + lo + rand() * Math.max(0, hi - lo);
+  };
+  // (the leg to run: the first one, the other when this one's time is up, this one still while the other cools)
+  if (ev.side === 0) start(1);
+  else if (now >= ev.until && !cooling(-ev.side)) start(-ev.side);
+  for (let tries = 0; tries < 2; tries++) {
+    if (!cooling(ev.side) && (!ground || !ap.groundCheck.on || ground(ev.side))) return ev.side;
+    if (!cooling(ev.side)) ev.barred[ev.side] = now + ap.groundCheck.cooldown;
+    if (cooling(-ev.side)) break;
+    start(-ev.side);
   }
-  if (ground && ap.groundCheck.on && now - ev.checkedAt >= ap.groundCheck.cooldown) {
-    ev.checkedAt = now;
-    if (!ground(ev.side)) ev.side = -ev.side;
-  }
-  return ev.side;
+  ev.side = 0;
+  return 0;
 }
+
+// The ground probe's rule (the same step): from the check's height above the feet, ground within the check's
+// distance below that point. `dy`: the ground at the probed spot against the feet, m (up positive).
+export const groundOk = (ap, dy) => dy <= ap.groundCheck.offset && dy >= ap.groundCheck.offset - ap.groundCheck.drop;
 
 export const dodges = (ap, rand = Math.random) => rand() < ap.dodgeRoll;

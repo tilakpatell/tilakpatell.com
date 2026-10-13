@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import gs from '../../../data/bf2017/gameSettings.json';
 import { seeded } from '../../seeded.js';
-import { AIM_GATE, aimStep, autoPlayerFor, createAim, createEvasion, createLof, dodges, lofStep, noiseOf, rowOf, setting, strafeSide, suffixOf, weaponClass } from './autoPlayer.js';
+import { AIM_GATE, aimStep, autoPlayerFor, createAim, createEvasion, createLof, dodges, groundOk, lofStep, noiseOf, rowOf, setting, strafeSide, suffixOf, weaponClass } from './autoPlayer.js';
 
 describe('the AutoPlayer’s settings', () => {
   it('takes the most particular row the server holds', () => {
@@ -80,7 +80,7 @@ describe('the tracker', () => {
 describe('the evasion', () => {
   const ap = autoPlayerFor(gs, { difficulty: 'normal' });
 
-  it('flips its strafe every 1.5 to 3.5 s, and away from a drop', () => {
+  it('flips its strafe every 1.5 to 3.5 s', () => {
     const ev = createEvasion();
     const rand = seeded(1);
     const flips = [];
@@ -93,8 +93,38 @@ describe('the evasion', () => {
     const gaps = flips.slice(1).map((t, i) => t - flips[i]);
     expect(Math.min(...gaps)).toBeGreaterThanOrEqual(1.5 - 0.06);
     expect(Math.max(...gaps)).toBeLessThanOrEqual(3.5 + 0.06);
-    const cliff = createEvasion();
-    expect(strafeSide(cliff, ap, { now: 0, rand: () => 0, ground: (s) => s === -1 })).toBe(-1);
+  });
+
+  // (the game's step, FUN_145571ea0: the ground is probed every step of a leg; a failed probe ends the leg and
+  // starts that side's cooldown, the other leg starting at once if its own side is not cooling)
+  it('leaves a side whose ground fails at once, and stays on the other while that side cools', () => {
+    const ev = createEvasion();
+    // (the shortest legs, so the open side's time is up twice while the other cools)
+    const rand = () => 0;
+    const ground = (s) => s === -1;
+    const sides = [];
+    for (let t = 0; t < ap.groundCheck.cooldown - 0.01; t += 0.05) sides.push(strafeSide(ev, ap, { now: t, rand, ground }));
+    expect(new Set(sides)).toEqual(new Set([-1]));
+  });
+
+  it('ends the strafe with no ground either side, until a side has cooled', () => {
+    const ev = createEvasion();
+    const rand = seeded(3);
+    let ok = false;
+    const ground = () => ok;
+    for (let t = 0; t < ap.groundCheck.cooldown - 0.01; t += 0.05) expect(strafeSide(ev, ap, { now: t, rand, ground })).toBe(0);
+    ok = true;
+    expect(Math.abs(strafeSide(ev, ap, { now: ap.groundCheck.cooldown + 0.05, rand, ground }))).toBe(1);
+  });
+
+  it('probes from the check’s height above the feet, down the check’s distance', () => {
+    expect(ap.groundCheck).toMatchObject({ distance: 2.5, drop: 3.5, offset: 1.5, cooldown: 3 });
+    expect(ap.sources['groundCheck.offset']).toBe('AP_EvasiveManeuversGroundCheckHeightOffsetM');
+    // (ground this far above or below the feet, m)
+    expect(groundOk(ap, -1.9)).toBe(true);
+    expect(groundOk(ap, -2.1)).toBe(false);
+    expect(groundOk(ap, 1.4)).toBe(true);
+    expect(groundOk(ap, 1.6)).toBe(false);
   });
 
   it('rolls at the dodge probability', () => {

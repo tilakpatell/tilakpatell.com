@@ -38,7 +38,7 @@ import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
-import { AIM_GATE, aimStep, createAim, createEvasion, createLof, lofStep, noiseOf, strafeSide, weaponClass } from './autoPlayer.js';
+import { AIM_GATE, aimStep, createAim, createEvasion, createLof, groundOk, lofStep, noiseOf, strafeSide, weaponClass } from './autoPlayer.js';
 
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
@@ -345,13 +345,13 @@ export function think(brain, world, now) {
       const az = tgt[1] - me[1];
       const L = Math.hypot(ax, az) || 1;
       if (brain.ap) {
-        // (an AutoPlayer's: the side flipped when AP_EvasiveManeuversInvertStrafeDuration is up, and
-        // turned back where the ground that way is not to be stood on or falls away, checked on its cooldown)
+        // (an AutoPlayer's, autoPlayer.js's strafeSide: a leg a side for the settings' time, the ground that
+        // way probed each time it thinks; a failed probe bars the side, both barred and it stands)
         const g = brain.ap.groundCheck;
         const stands = (side) => {
           const x = me[0] + (az / L) * g.distance * side;
           const z = me[1] - (ax / L) * g.distance * side;
-          return walkable(world.nav, x, z) && s.at[1] - heightAt(world.nav, x, z) <= g.drop;
+          return walkable(world.nav, x, z) && groundOk(brain.ap, heightAt(world.nav, x, z) - s.at[1]);
         };
         brain.strafe = strafeSide(brain.apEvade, brain.ap, { now, rand: brain.rand, ground: world.nav ? stands : null });
       } else if (now >= brain.strafeAt) {
