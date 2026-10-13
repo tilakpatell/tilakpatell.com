@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { device } from '../../lib/device';
 import { mayPlay } from '../../lib/bf2017/films';
 import { prefersReducedMotion } from '../../lib/hooks';
@@ -26,6 +26,7 @@ const css = (name) => (typeof document === 'undefined' ? '' : getComputedStyle(d
 const startSize = () => (typeof window === 'undefined' ? { width: 1920, height: 1080 } : { width: window.innerWidth || 1920, height: window.innerHeight || 1080 });
 
 export default function ScreenCanvas({ layers, label = '', values = null, active = [], onLink = null, onAction = null, contextOf = (c) => c.getContext?.('2d') ?? null, fonts = typeof document === 'undefined' ? null : document.fonts, className = '', children = null }) {
+  const uid = useId();
   const root = useRef(null);
   const canvas = useRef(null);
   const painter = useRef(null);
@@ -114,9 +115,14 @@ export default function ScreenCanvas({ layers, label = '', values = null, active
   }, [planKey]);
 
   const said = items.filter((i) => i.type === 'text' && i.text && !i.cell).map((i) => i.text);
+  // a cell's other words (a tile's description): its button's description
+  const about = new Map();
+  for (const i of items) if (i.type === 'text' && i.text && i.cell) about.set(i.cell, [...(about.get(i.cell) ?? []), i.text]);
+  const describe = navs.map((n, k) => ({ n, id: `${uid}-d${k}`, words: (about.get(n.id) ?? []).filter((t) => t !== n.label) })).filter((d) => d.words.length);
+  const describedBy = new Map(describe.map((d) => [d.n.id, d.id]));
   const firsts = new Set();
   return (
-    <div ref={root} className={`hud-screen-canvas ${className}`.trim()} role="region" aria-label={label || undefined} data-screen={layers.at(-1)?.name}>
+    <div ref={root} className={`hud-screen-canvas ${className}`.trim()} role="region" aria-label={label || undefined} data-screen={layers.at(-1)?.name} data-layers={layers.map((l) => l?.name).join(' ')}>
       <canvas ref={canvas} className="hud-screen-canvas-paint" aria-hidden="true" />
       {navs.map((n) => {
         const first = !firsts.has(n.group) && (firsts.add(n.group), true);
@@ -129,7 +135,10 @@ export default function ScreenCanvas({ layers, label = '', values = null, active
             aria-label={n.label}
             data-id={ownId(n.id)}
             data-link={n.link ?? undefined}
+            aria-describedby={describedBy.get(n.id)}
             aria-disabled={n.coming || undefined}
+            data-coming={n.coming || undefined}
+            data-tile={n.tile ? ownId(n.id).slice(ownId(n.id).lastIndexOf('/') + 1) : undefined}
             tabIndex={first ? 0 : -1}
             style={buttonStyle(n, frame)}
             onFocus={() => setFocus(n.id)}
@@ -147,6 +156,11 @@ export default function ScreenCanvas({ layers, label = '', values = null, active
       <div className="sr-only">
         {said.map((t, i) => (
           <p key={i}>{t}</p>
+        ))}
+        {describe.map((d) => (
+          <p key={d.id} id={d.id}>
+            {d.words.join(' ')}
+          </p>
         ))}
       </div>
       {children}

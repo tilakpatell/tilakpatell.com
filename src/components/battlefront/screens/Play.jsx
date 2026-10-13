@@ -4,8 +4,11 @@ import { tilesFor } from '../../../lib/bf2017/films';
 import { info } from '../../../lib/bf2017/ui/info';
 import { word } from '../../../lib/bf2017/ui/screens';
 import { levelCards, MODE_LISTS, SITE_MODE } from './cards';
+import { navigables } from '../../../lib/bf2017/ui/layout';
+import { tabWays } from './menuHeader';
+import { tileValues } from './tiles';
 import { findBox, OFFLINE, percentOf, prune } from './tree';
-import { useTree } from './useTree';
+import { useFrameTree, useMenuHeader, useTree } from './useTree';
 import GameScreen from './GameScreen.jsx';
 
 // Play, as the game goes through it: the Play screen's tiles (Multiplayer,
@@ -19,7 +22,18 @@ import GameScreen from './GameScreen.jsx';
 // game's (info.json); a card this world cannot play yet is greyed and says
 // so. `playable(level, mode)` says which it can; `onPlay(level, mode)` goes.
 //
-// <Play playable={(siteLevel, siteMode) => bool} onPlay={(level, mode) => …} onInstantAction={…} onBack={…} at="play" | "single" />
+// The tiles' screens (Play, its multiplayer category, Single Player) are
+// painted on the canvas from their trees under the main menu's header (the
+// tabs, PLAY open, on Play's own page; the breadcrumb deeper in): each tile
+// is the game's PlayTile with its own title and description, the table
+// below filling only what the game's code fills (a title the tree leaves
+// empty, the Aurebesh line, the tile's film) and marking the tiles this
+// world has not got (the tile's NotInBeta line says so; hand). The tiles'
+// online, split-screen, scenario and faction parts are left out (hand: the
+// game's code shows them for the tiles that have them). `onTab(to, cell)`
+// is a tab pressed (the main menu's ways).
+//
+// <Play playable={(siteLevel, siteMode) => bool} onPlay={(level, mode) => …} onInstantAction={…} onBack={…} onTab={…} at="play" | "single" />
 
 const NOT_YET = 'Not in this world yet';
 
@@ -36,12 +50,16 @@ function Card({ title, blurb = null, film = null, coming = false, onGo, data = {
 
 // (the game's string table in the export holds no title for the tile, only its description)
 const SINGLE_PLAYER = 'SINGLE PLAYER';
-
-export default function Play({ playable = () => false, onPlay, onBack, onInstantAction = null, at = 'play' }) {
+// (a page's focus starts on its first tile this world has, as the game's does, not on the tabs over it)
+const FIRST_TILE = '.hud-screen-hit[data-tile]:not([aria-disabled="true"])';
+export default function Play({ playable = () => false, onPlay, onBack, onInstantAction = null, onTab = null, at = 'play' }) {
   const [stage, setStage] = useState(at);
   const [modeId, setModeId] = useState(null);
   const names = { play: 'PlayScreen', single: 'PlaySinglePlayerCategoryScreen', category: 'PlayMultiplayerCategoryScreen', modes: 'PlayMultiplayerScreen', levels: 'PlayMultiplayerScreen' };
   const raw = useTree(names[stage]);
+  const page = useFrameTree(names[stage]);
+  const crumbs = { single: [word('ID_MAINMENU_SCR_PLAY'), SINGLE_PLAYER], category: [word('ID_MAINMENU_SCR_PLAY'), word('ID_PLAY_SCR_MULTIPLAYER')] }[stage] ?? null;
+  const header = useMenuHeader({ tab: 'Play', crumbs });
   const back = { play: onBack, single: () => setStage('play'), category: () => setStage('play'), modes: () => setStage('category'), levels: () => setStage('modes') }[stage];
 
   if (stage === 'play' || stage === 'category' || stage === 'single') {
@@ -51,11 +69,13 @@ export default function Play({ playable = () => false, onPlay, onBack, onInstant
         : stage === 'play'
         ? { Multiplayer: { title: word('ID_PLAY_SCR_MULTIPLAYER'), film: tilesFor('assault')[0], go: () => setStage('category') }, COOP: { title: word('#19A64FB1'), film: tilesFor('coop')[0] }, Campaign: { title: SINGLE_PLAYER, film: tilesFor('campaign')[0], go: () => setStage('single') } }
         : { 'Assault Cat': { title: info('mode', 'PlanetaryBattles')?.title, film: tilesFor('assault')[0], go: () => setStage('modes') }, 'HvsV Cat': { title: info('mode', 'HeroesVersusVillains')?.title, film: tilesFor('heroes')[0] }, 'Sandbox Cat': { title: word('ID_PLAY_SCR_SKIRMISH'), film: tilesFor('arcade')[0] } };
-    const fill = (box) => {
-      const t = box.type === 'widget' ? tiles[box.id.split('/').pop()] : null;
-      return t ? <Card title={t.title} film={t.film ?? null} coming={!t.go} onGo={t.go} data={{ 'data-tile': box.id.split('/').pop() }} large /> : null;
-    };
-    return <GameScreen tree={prune(raw, OFFLINE)} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} fill={fill} className="bf-play" />;
+    // (each tile's Aurebesh line spells the title it draws: the tree's own where it has one)
+    const drawn = Object.fromEntries(navigables([page]).filter((n) => n.tile).map((n) => [n.id.slice(n.id.lastIndexOf('/') + 1), n.label]));
+    const own = tileValues(Object.fromEntries(Object.entries(tiles).map(([k, t]) => [k, { ...t, aurebesh: drawn[k] ?? t.title }])));
+    const values = (b, path) => header.values(b, path) ?? own(b, path);
+    // (a tile pressed goes where its row goes; the breadcrumb's first crumb goes back to Play)
+    const onAction = (name) => (name === 'crumb0' ? setStage('play') : tiles[name]?.go?.());
+    return <GameScreen layers={[header.tree, page]} values={values} active={header.active} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} onLink={onTab ?? tabWays({ onPlay: () => setStage('play'), onStart: onBack })} onAction={onAction} first={FIRST_TILE} className="bf-play" />;
   }
 
   // the multiplayer screen: its lists' boxes hold the mode cards
@@ -95,3 +115,4 @@ export default function Play({ playable = () => false, onPlay, onBack, onInstant
     </GameScreen>
   );
 }
+

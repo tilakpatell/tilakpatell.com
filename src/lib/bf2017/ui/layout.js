@@ -12,7 +12,8 @@
 //   cell }] in frame px, in drawing order; `id` is `<layer>:<box id>`, `cell`
 //   the navigable it is in (or null)
 // navigables(layers, { values }) → [{ id, layer, x, y, w, h, label, link,
-//   screen, group, index, horizontal, coming }]
+//   screen, group, index, horizontal, coming, tile }]: `tile` a widget the
+//   game walks by its navigation zone (a Play tile), not a list's cell
 // values(box, path) → { text?, hidden?, film?, coming? } | null: what a screen
 //   fills a box with (the game's code does it at run time), `path` the ids'
 //   last parts from the layer's root down to the box
@@ -93,12 +94,20 @@ export function drawList(layers, { selected = new Set(), values = null } = {}) {
   return items;
 }
 
-// a navigable's words: the cell's own, else its Title, else its first words
-function labelOf(b) {
+// a navigable's words: the cell's own, else its Title, else its first
+// words, as the screen's values fill them
+function labelOf(b, path, values) {
   if (b.label) return b.label;
   const texts = [];
-  const walk = (bs) => bs?.forEach((c) => (c.type === 'text' && c.text && !c.hidden && texts.push(c), walk(c.children)));
-  walk(b.children);
+  const walk = (bs, at) =>
+    bs?.forEach((raw) => {
+      const here = [...at, nameOf(raw.id)];
+      const c = patched(raw, here, values);
+      if (c.hidden) return;
+      if (c.type === 'text' && c.text) texts.push(c);
+      walk(c.children, here);
+    });
+  walk(b.children, path);
   return (texts.find((t) => nameOf(t.id) === 'Title') ?? texts[0])?.text ?? nameOf(b.id);
 }
 
@@ -111,7 +120,7 @@ export function navigables(layers, { values = null } = {}) {
         const b = patched(raw, [...path, nameOf(raw.id)], values);
         if (b.hidden === true) continue;
         if (navs.has(b.id)) {
-          out.push({ id: `${layer}:${b.id}`, layer, x: b.x, y: b.y, w: b.w, h: b.h, label: labelOf(b), link: b.link ?? null, screen: b.screen ?? null, group: `${layer}:${parent}`, coming: Boolean(b.coming) });
+          out.push({ id: `${layer}:${b.id}`, layer, x: b.x, y: b.y, w: b.w, h: b.h, label: labelOf(b, [...path, nameOf(raw.id)], values), link: b.link ?? null, screen: b.screen ?? null, group: `${layer}:${parent}`, coming: Boolean(b.coming), tile: b.type !== 'cell' });
           continue;
         }
         walk(b.children, [...path, nameOf(b.id)], b.id);

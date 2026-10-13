@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { screen } from '../../../lib/bf2017/ui/screens';
+import { crumbItems, menuHeader } from './menuHeader';
 
 // The window's size, kept as it changes (1920 × 1080 where there is no
 // window: a test, the server).
@@ -22,4 +23,23 @@ export function useTree(name, data = null) {
   const key = JSON.stringify(data);
   const { width, height } = viewport;
   return useMemo(() => screen(name, { viewport: { width, height }, data: JSON.parse(key ?? 'null') }), [name, width, height, key]);
+}
+
+// One of the game's screens resolved at its own 1920 × 1080, for the
+// canvas (the kit's ScreenCanvas fits that frame to the window): `data`
+// its texts by id, `items` the lists the game's code fills.
+export function useFrameTree(name, { data = null, items = null } = {}) {
+  const key = JSON.stringify({ data, items });
+  return useMemo(() => {
+    const o = JSON.parse(key);
+    return screen(name, { viewport: { width: 1920, height: 1080 }, data: o.data, items: o.items });
+  }, [name, key]);
+}
+
+// The main menu's header for a page (./menuHeader.js): its tree, what fills
+// it and the open tab.
+export function useMenuHeader({ tab, crumbs = null }) {
+  const tree = useFrameTree('MainMenuScreen', { items: crumbItems(crumbs) });
+  const words = (crumbs ?? []).join('|');
+  return useMemo(() => ({ tree, ...menuHeader({ tree, tab, crumbs: words ? words.split('|') : null }) }), [tree, tab, words]);
 }

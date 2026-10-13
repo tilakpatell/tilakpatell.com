@@ -102,6 +102,9 @@ describe('the navigable cells', () => {
     expect(tiles.map((n) => n.id.split('/').pop())).toEqual(['Multiplayer', 'COOP', 'Campaign']);
     expect(tiles.every((n) => n.horizontal)).toBe(true);
     expect(tiles.map((n) => n.index)).toEqual([0, 1, 2]);
+    // (a tile is a widget the game walks by its zone; a cell is a list's)
+    expect(tiles.every((n) => n.tile)).toBe(true);
+    expect(tabs.some((n) => n.tile)).toBe(false);
   });
 
   it('draws a tab’s selected line and bold words only when it is selected', () => {
@@ -112,6 +115,12 @@ describe('the navigable cells', () => {
     expect(of([])).not.toContain('SelectedLineLeft');
     expect(of([play.id])).toEqual(expect.arrayContaining(['SelectedLineLeft', 'MenuTextSelected']));
     expect(of([play.id])).not.toContain('MenuText');
+  });
+
+  it('names a tile by its Title as the screen’s values fill it', () => {
+    const values = (b, path) => (path.includes('Campaign') && path.at(-1) === 'Title' ? { text: 'OTHER WORDS' } : null);
+    const tile = navigables([screen('PlayScreen')], { values }).find((n) => n.id.endsWith('/Campaign'));
+    expect(tile.label).toBe('OTHER WORDS');
   });
 
   it('carries a cell’s link and words, leaves out a hidden one and marks one still to come', () => {

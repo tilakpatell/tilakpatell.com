@@ -62,11 +62,9 @@
 .bf-game-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4, 7, 10, 0.86) 0%, rgba(4, 7, 10, 0.35) 55%, rgba(4, 7, 10, 0.6) 100%); }
 .bf-game-keys { position: absolute; left: 5%; bottom: 3%; display: flex; gap: 1.5rem; margin: 0; font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
 
-/* start */
-.bf-start-press { position: absolute; left: 50%; top: 60%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 1.25rem; padding: 1rem 2rem; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
-.bf-start-title { font-size: clamp(1.6rem, 4vw, 3.4rem); font-weight: 800; letter-spacing: 0.18em; }
-.bf-start-line { font-size: 1rem; letter-spacing: 0.3em; animation: bf-breathe 2.4s ease-in-out infinite; }
-@keyframes bf-breathe { 50% { opacity: 0.55; } }
+/* start: the whole screen goes on to the main menu (the game's press line is painted from its tree) */
+.bf-start-press { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: pointer; }
+.bf-start-press:focus-visible { outline: none; } /* (the frame's own: the press line says what to do) */
 
 /* cards: a tile, a mode, a level */
 .bf-cards, .bf-menu-items { position: absolute; inset: 0; pointer-events: none; }
@@ -113,6 +111,5 @@
 .bf-kill-points { margin: 0; color: var(--bf-muted, #b9c2cc); }
 
 @media (prefers-reduced-motion: reduce) {
-  .bf-start-line { animation: none; }
   .bf-card { transition: none; }
 }

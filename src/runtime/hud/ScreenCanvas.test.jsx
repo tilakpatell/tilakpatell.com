@@ -21,6 +21,20 @@ describe('the canvas screen', () => {
     expect(h).toMatch(/aria-label="CAREER"[^>]*aria-disabled="true"|aria-disabled="true"[^>]*aria-label="CAREER"/);
   });
 
+  it('describes a tile’s button by the words drawn in it besides its name', () => {
+    const h = html(<ScreenCanvas layers={[screen('PlayScreen')]} />);
+    const id = h.match(/aria-label="MULTIPLAYER"[^>]*aria-describedby="([^"]+)"/)?.[1];
+    expect(id).toBeTruthy();
+    expect(h).toMatch(new RegExp(`<p id="${id}">[^<]*A selection of multiplayer modes`));
+  });
+
+  it('names a tile’s button by the tile, and marks one still to come, for the checks that walk the screens', () => {
+    const values = (b, path) => (path.at(-1) === 'COOP' ? { coming: true } : null);
+    const h = html(<ScreenCanvas layers={[screen('PlayScreen')]} values={values} />);
+    expect(h).toMatch(/<button[^>]*data-coming="true"[^>]*data-tile="COOP"/);
+    expect(h).toMatch(/data-tile="Multiplayer"/);
+  });
+
   it('gives the screen reader the words drawn outside the cells', () => {
     const h = html(<ScreenCanvas layers={[PRESS]} values={(b) => (b.id === '/Press' ? { text: 'PRESS ENTER TO START' } : null)} />);
     expect(h).toMatch(/class="sr-only"[^>]*>.*PRESS ENTER TO START/);

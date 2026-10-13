@@ -6,3 +6,5 @@
 :where(.hud-screen-canvas-paint):not(hud-none) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 :where(.hud-screen-hit):not(hud-none) { position: absolute; margin: 0; padding: 0; border: 0; background: transparent; color: transparent; outline: none; cursor: pointer; }
 :where(.hud-screen-hit[aria-disabled]):not(hud-none) { cursor: default; }
+/* (the site's focus ring, :focus-visible in src/index.css, outweighs the kit's :where(): the cell's own highlight is the ring here) */
+.hud-screen-hit:focus-visible { outline: none; }
