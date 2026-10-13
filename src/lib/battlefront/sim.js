@@ -45,6 +45,8 @@ import { abilitiesFor } from './ai/skirmish.js';
 import { createBuckets, mayHurt } from './ai/buckets.js';
 import { createWaves, mayDeploy, stage as stageWaves, unitOpen } from './ai/waves.js';
 import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.js';
+import { SPREAD, createDealer, dealFor, nextFor, ownerChanged, stepDealer } from './ai/botLogicOverhaul.js';
+import { fieldTo } from './navField.js';
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { heroAbilities, heroClass } from './hero.js';
@@ -162,7 +164,7 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     sim.commanders = {};
     for (const team of [1, 2]) {
       const squads = sim.brains.squads.list.filter((q) => q.team === team);
-      sim.commanders[team] = createCommander({ team, side: sim.M.sideOf(sim.ga, team), ga: sim.ga, squads, bp: sim.bp, rand: sim.rand, nav, rulebook: rb });
+      sim.commanders[team] = createCommander({ team, side: sim.M.sideOf(sim.ga, team), ga: sim.ga, squads, bp: sim.bp, rand: sim.rand, nav, rulebook: rb, ways: !!sim.instantAction });
     }
     if (sim.instantAction) roundIn(sim);
     addWalkers(sim);
@@ -227,12 +229,22 @@ function roundIn(sim) {
     sim.bp.limits[team] = { heroesPerTeam: k.heroes.max, reinforcementsPerTeam: k.reinforcements.max };
     sim.waves[team] = createWaves(waveTable(sim, team), sim.time);
   }
-  // (on command posts the bots take their posts from the game's bot logic, a logic a side: ai/botLogic.js)
-  if (r.botLogic && postsOf(sim).length) {
-    sim.botLogic = { owners: postsOf(sim).map((o) => o.owner), 1: null, 2: null };
-    for (const team of [1, 2]) sim.botLogic[team] = createBotLogic({ team, rand: sim.rand, timers: r.botLogic.timers });
-    for (const s of sim.entities.values()) if (s.bot && s.brain) s.brain.task = postTask(sim, s.team, 'spawn');
+  if (!r.botLogic || !postsOf(sim).length) return;
+  // (the way to each post, found once here and not in the step its first bots are sent: navField.js)
+  if (sim.nav) for (const o of postsOf(sim)) fieldTo(sim.nav, o.at);
+  if (r.botLogic.kind === 'overhaul') {
+    // (the Overhaul's: one dealer for both sides, ai/botLogicOverhaul.js; no bot has a post before its first deal)
+    if (postsOf(sim).length !== 5) throw new Error(`Instant Action: the Overhaul's table is of five posts, and ${sim.level} has ${postsOf(sim).length}`);
+    sim.botLogic = { kind: 'overhaul', owners: ownersOf(sim), dealer: createDealer(sim.time) };
+    // (its spread: each side's aim noise scale, first drawn a tenth of a second in)
+    if (r.botLogic.spread) sim.aimSpread = { 1: 1, 2: 1, next: sim.time + 0.1 };
+    for (const s of sim.entities.values()) if (s.bot && s.brain) s.brain.task = holdTask(sim, s);
+    return;
   }
+  // (on command posts the bots take their posts from the game's bot logic, a logic a side: ai/botLogic.js)
+  sim.botLogic = { kind: 'game', owners: postsOf(sim).map((o) => o.owner), 1: null, 2: null };
+  for (const team of [1, 2]) sim.botLogic[team] = createBotLogic({ team, rand: sim.rand, timers: r.botLogic.timers });
+  for (const s of sim.entities.values()) if (s.bot && s.brain) s.brain.task = postTask(sim, s.team, 'spawn');
 }
 
 // The command posts as the bot logic's slots, A to E in their order: each enabled, its owner's team
@@ -244,18 +256,52 @@ function slotsOf(sim) {
   return postsOf(sim).map((o) => ({ enabled: true, owner: teamOf(o.owner), beingCaptured: o.contested || (o.moving !== null && o.moving !== o.owner), progress: attack === 1 ? o.meter : -o.meter }));
 }
 
-// a bot's order from the bot logic: to its post, within the level's radius
-function postTask(sim, team, why) {
-  const posts = postsOf(sim);
-  const i = pickSlot(sim.botLogic[team], slotsOf(sim), sim.time, why) % posts.length;
-  const at = posts[i].at;
-  return { key: `post${i}`, at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false };
+// each post's team, A to E (0 no one's)
+const ownersOf = (sim) => slotsOf(sim).map((p) => p.owner);
+
+// a bot's order to a post, within the round's radius of it
+function taskAt(sim, i) {
+  const at = postsOf(sim)[i].at;
+  // (a post's place stays: its way is found once for every bot sent there, navField.js)
+  return { key: `post${i}`, at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false, stays: true };
+}
+
+// a bot the Overhaul has dealt no post yet: it keeps to where it stands (by hand: what the game's bot does
+// with no objective is not read)
+function holdTask(sim, s) {
+  const at = [s.at[0], s.at[2]];
+  return { key: 'hold', at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false };
+}
+
+// a bot's order from the bot logic: the game's pick for it, or the Overhaul's table's next entry (its
+// place where it stands before the first deal)
+function postTask(sim, team, why, s = null) {
+  const L = sim.botLogic;
+  if (L.kind === 'overhaul') return L.dealer.dealt ? taskAt(sim, nextFor(L.dealer, team, ownersOf(sim))) : holdTask(sim, s);
+  return taskAt(sim, pickSlot(L[team], slotsOf(sim), sim.time, why) % postsOf(sim).length);
+}
+
+// a step of the Overhaul's dealer: a post that changed hands asks for a deal; a deal gives every living
+// bot of both sides its post by the table, a side's bots in the order the sim holds them
+function dealOrders(sim) {
+  const L = sim.botLogic;
+  const owners = ownersOf(sim);
+  if (owners.some((o, i) => o !== L.owners[i])) ownerChanged(L.dealer, sim.time);
+  L.owners = owners;
+  if (!stepDealer(L.dealer, sim.time)) return;
+  L.dealer.dealt = true;
+  for (const team of [1, 2]) {
+    const bots = [...sim.entities.values()].filter((s) => s.bot && s.alive && s.team === team && s.brain);
+    const to = dealFor(L.dealer, team, owners, bots.length);
+    bots.forEach((s, k) => (s.brain.task = taskAt(sim, to[k])));
+  }
 }
 
 // a step of the bot logic: a post that changed hands tells both sides; a side whose orphans are called
 // sends every bot it has out again, each by the orphan's split
 function botOrders(sim) {
   const L = sim.botLogic;
+  if (L.kind === 'overhaul') return dealOrders(sim);
   const slots = slotsOf(sim);
   const owners = postsOf(sim).map((o) => o.owner);
   if (owners.some((o, i) => o !== L.owners[i])) for (const team of [1, 2]) captured(L[team], sim.time);
@@ -390,7 +436,7 @@ export function deploy(sim, id, choice) {
     const b = addBrain(sim, s);
     const sq = squadOf(sim.brains.squads, id);
     // (on command posts in an Instant Action round, its own from the bot logic)
-    b.task = sim.botLogic ? postTask(sim, s.team, 'spawn') : ((sq?.members ?? []).map((m) => sim.entities.get(m)?.brain?.task).find(Boolean) ?? null);
+    b.task = sim.botLogic ? postTask(sim, s.team, 'spawn', s) : ((sq?.members ?? []).map((m) => sim.entities.get(m)?.brain?.task).find(Boolean) ?? null);
   }
   if (spot.mate) earn(sim.bp, spot.mate, 'squadSpawn');
   sim.deploying.delete(id);
@@ -716,6 +762,12 @@ function stepMode(sim) {
     if (!sim.botLogic && sim.time + 1e-9 >= c.nextAssign) assign(c, { entities: [...sim.entities.values()], now: sim.time });
   }
   if (sim.botLogic) botOrders(sim);
+  // (the Overhaul's spread: each side's aim noise scale drawn again, evenly, one of its ten)
+  const sp = sim.aimSpread;
+  if (sp && sim.time + 1e-9 >= sp.next) {
+    for (const team of [1, 2]) sp[team] = SPREAD.scales[Math.floor(sim.rand() * SPREAD.scales.length)];
+    sp.next += SPREAD.every;
+  }
 }
 
 export function drain(sim) {

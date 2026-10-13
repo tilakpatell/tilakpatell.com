@@ -1,0 +1,10 @@
+/* The game's wipe (Wipe.jsx; waiting.js's WIPE: 0.05 s, 0.3 s down, 0.4 s up). */
+.bf-wipe { position: fixed; inset: 0; z-index: var(--z-top); /* over every screen and the HUD: the game's black between the darkroom and the field */ background: #000; opacity: 0; pointer-events: none; }
+.bf-wipe[data-wipe='down'] { opacity: 1; transition: opacity 300ms ease-in 50ms; }
+.bf-wipe[data-wipe='up'] { opacity: 0; transition: opacity 400ms ease-out; }
+@starting-style {
+  .bf-wipe[data-wipe='up'] { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bf-wipe[data-wipe] { transition: none; }
+}
