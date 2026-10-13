@@ -5,7 +5,7 @@
 // screen for the first life, its black wipe at Deploy, the field
 // (docs/superpowers/specs/2026-10-13-hoth-landing-game-menu-design.md).
 //
-// standing({ inMenu, phase, ready, loaded, screens }) → { menu, loading, spawn, wipe, cover, name }
+// standing({ inMenu, phase, ready, loaded, screens }) → { menu, rest, loading, spawn, wipe, cover, name }
 //   inMenu   the game's front end is open over the world
 //   phase    'pre' (before the first deploy) | 'down' (the wipe going black) | 'up' (lifting) | 'in' (the field)
 //   ready    waiting.js's readiness: the level in and nothing left to build
@@ -13,6 +13,8 @@
 //   screens  the game's screens have loaded (their code comes apart from the world's)
 //
 //   menu     draw the front end
+//   rest     the world rests under the menu: made and ready, and not drawn, so the menu has the whole frame
+//            (while it loads it draws: the shaders of what the camera sees build from what is drawn)
 //   loading  draw the game's loading screen: on the way in, or as a veil in the field
 //   spawn    the first life's spawn screen stands (kept under the wipe's black on its way down)
 //   wipe     'down' | 'up' | null
@@ -21,10 +23,11 @@
 
 export function standing({ inMenu = false, phase = 'pre', ready = false, loaded = true, screens = true } = {}) {
   const menu = Boolean(inMenu);
+  const rest = menu && Boolean(ready);
   const loading = !menu && ((phase === 'pre' && !ready) || (phase === 'in' && !loaded));
   const spawn = !menu && ((phase === 'pre' && ready) || phase === 'down');
   const wipe = phase === 'down' || phase === 'up' ? phase : null;
   const cover = !screens && (phase === 'pre' || phase === 'down');
   const name = menu ? 'menu' : loading ? 'loading' : spawn ? 'spawn' : 'field';
-  return { menu, loading, spawn, wipe, cover, name };
+  return { menu, rest, loading, spawn, wipe, cover, name };
 }

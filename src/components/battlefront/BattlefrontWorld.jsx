@@ -94,6 +94,15 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   const progress = readiness({ loaded: Boolean(snap?.level?.loaded), progress: snap?.level?.progress ?? 0, pending: snap?.shaders?.pending ?? 0, held: snap?.shaders?.held ?? 0, building: snap?.shaders?.building ?? 0, peak: seen.current.peak, quietFor });
   // what stands over the world (stage.js)
   const st = standing({ inMenu, phase, ready: progress.ready, loaded: !loading, screens: Boolean(screens) });
+  // the world rests under the menu once it is ready (stage.js's rest): the runtime's loop is told its box is out of
+  // sight, so it neither steps nor draws until Play, and the menu has the machine to itself
+  const resting = st.rest;
+  const rt = world.rt;
+  useEffect(() => {
+    if (!resting) return undefined;
+    rt?.setVisible(false);
+    return () => rt?.setVisible(true);
+  }, [resting, rt]);
   // The first life's Deploy: the game's wipe, the world's deploy at its swap
   const deployThrough = (o) => {
     if (phase !== 'pre' || !progress.ready) return;
@@ -127,7 +136,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   const EndOfRound = screens?.EndOfRound;
   const Scoreboard = screens?.Scoreboard;
   return (
-    <WorldHost world={world} className="bf-stage" data-bf-stage={st.name}>
+    <WorldHost world={world} className="bf-stage" data-bf-stage={st.name} data-bf-ready={progress.ready || undefined}>
       {st.cover && <div className="bf-cover" aria-hidden="true" />}
       {st.menu && FrontEnd && <FrontEnd start="menu" playable={playable} onPlay={() => setInMenu(false)} onExit={() => navigate(way.to)} />}
       <Wipe phase={st.wipe} />

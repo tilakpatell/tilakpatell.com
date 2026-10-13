@@ -8,6 +8,13 @@ describe('what stands over the Battlefront world', () => {
     expect(s({ inMenu: true, ready: true })).toMatchObject({ menu: true, loading: false, spawn: false, wipe: null, name: 'menu' });
     expect(s({ inMenu: true })).toMatchObject({ menu: true, loading: false, spawn: false, name: 'menu' });
   });
+  it('rests the world under the menu once the level is ready: made, and not drawn, so the menu has the frame', () => {
+    expect(s({ inMenu: true, ready: true })).toMatchObject({ rest: true });
+    // (while it loads it draws: the shaders of what the camera sees build from what is drawn)
+    expect(s({ inMenu: true })).toMatchObject({ rest: false });
+    expect(s({ ready: true })).toMatchObject({ rest: false });
+    expect(s({ ready: true, phase: 'in' })).toMatchObject({ rest: false });
+  });
   it('out of the menu before the level is ready: the loading screen, never the spawn screen', () => {
     expect(s({})).toMatchObject({ menu: false, loading: true, spawn: false, wipe: null, name: 'loading' });
   });
