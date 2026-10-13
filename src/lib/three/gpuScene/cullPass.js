@@ -116,7 +116,9 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
         const prev = st.x.shiftRight(uint(4)).bitAnd(uint(15)).toVar();
         const changed = bitcast(st.y, 'float').toVar();
         const done = bool(head.w.lessThan(0).or(d.greaterThan(u.K.mul(R)))).toVar();
-        If(done, () => stat(1));
+        If(done, () => {
+          stat(1);
+        });
         const base = m.mul(uint(MESH_U32));
         const keyAt = (k) => tab.element(base.add(uint(MAX_LODS)).add(k.mul(2)).add(mir));
         const loaded = (k) => k.lessThan(uint(MAX_LODS)).and(keyAt(min(k, uint(MAX_LODS - 1))).notEqual(uint(0)));
@@ -128,8 +130,12 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
           // nearest coarser loaded, the nearest finer)
           const coarser = uint(NONE).toVar();
           const finer = uint(NONE).toVar();
-          for (let f = MAX_LODS - 1; f >= 0; f--) If(uint(f).greaterThan(want).and(loaded(uint(f))), () => coarser.assign(uint(f)));
-          for (let f = 0; f < MAX_LODS; f++) If(uint(f).lessThan(want).and(loaded(uint(f))), () => finer.assign(uint(f)));
+          for (let f = MAX_LODS - 1; f >= 0; f--) If(uint(f).greaterThan(want).and(loaded(uint(f))), () => {
+              coarser.assign(uint(f));
+            });
+          for (let f = 0; f < MAX_LODS; f++) If(uint(f).lessThan(want).and(loaded(uint(f))), () => {
+              finer.assign(uint(f));
+            });
           k.assign(select(loaded(want), want, select(loaded(old), old, select(coarser.notEqual(uint(NONE)), coarser, finer))));
           If(k.equal(uint(NONE)), () => {
             done.assign(true);
@@ -142,12 +148,18 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
             changed.assign(u.now);
           });
           const key = keyAt(k).sub(uint(1)).toVar();
-          If(d.sub(R).lessThanEqual(u.reach).and(flags.bitAnd(uint(FLAG.horizon)).equal(uint(0))), () => emit(key, i, true));
+          If(d.sub(R).lessThanEqual(u.reach).and(flags.bitAnd(uint(FLAG.horizon)).equal(uint(0))), () => {
+            emit(key, i, true);
+          });
           Loop(6, ({ i: j }) => {
             const pl = u.planes.element(j);
-            If(dot(pl.xyz, c).add(pl.w).lessThan(R.negate()), () => done.assign(true));
+            If(dot(pl.xyz, c).add(pl.w).lessThan(R.negate()), () => {
+              done.assign(true);
+            });
           });
-          If(done, () => stat(1));
+          If(done, () => {
+            stat(1);
+          });
           if (hzb) {
             If(done.not().and(u.hzbOn.equal(uint(1))), () => {
               const v = u.view.mul(vec4(c, 1)).xyz.toVar();
@@ -174,7 +186,9 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
           If(done.not(), () => {
             stat(3);
             emit(key, i, false);
-            If(prev.notEqual(uint(NONE)).and(prev.notEqual(k)).and(u.now.sub(changed).lessThan(u.fade)).and(loaded(prev)), () => emit(keyAt(prev).sub(uint(1)), i, false));
+            If(prev.notEqual(uint(NONE)).and(prev.notEqual(k)).and(u.now.sub(changed).lessThan(u.fade)).and(loaded(prev)), () => {
+              emit(keyAt(prev).sub(uint(1)), i, false);
+            });
           });
         });
         st.assign(tsl.uvec2(k.bitOr(prev.shiftLeft(uint(4))), bitcast(changed, 'uint')));

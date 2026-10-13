@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { meshTable } from './cull.js';
 import { createCull } from './cullPass.js';
 import { createGpuScene } from './scene.js';
@@ -33,6 +33,31 @@ describe('createCull', () => {
     // (one span over slots 1 to 5: each key with it, as the GPU will read them)
     expect(cull.slotKeys.updateRanges).toEqual([{ start: 1, count: 5 }]);
     expect(cull.slotCount).toBe(6);
+  });
+
+  // (an If whose callback hands back a node, `() => x.assign(y)`, is taken
+  // by three as a return from an inline Fn: commented out, and a console
+  // warning each, nineteen on Hoth's first frame)
+  it('builds its three kernels to WGSL with no stray return', async () => {
+    const { three, cull, dispatched } = await made();
+    cull.run(new three.THREE.PerspectiveCamera(), { now: 0, width: 64, height: 32, occlude: false });
+    const canvas = { style: {}, addEventListener() {}, removeEventListener() {}, getContext: () => null, width: 1, height: 1 };
+    const r = new three.THREE.WebGPURenderer({ canvas });
+    // (no device in Node: the builder asks for features and is told none)
+    r.hasFeature = () => false;
+    r.backend.renderer = r;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      for (const node of dispatched) {
+        const b = new three.THREE.WGSLNodeBuilder(null, r);
+        b.compute = node;
+        b.build();
+        expect(b.computeShader).not.toMatch(/\/\/ return /);
+      }
+      expect(warn.mock.calls.filter((c) => /Return statement/.test(String(c[0])))).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('sends nothing of the keys on a frame that set none', async () => {
