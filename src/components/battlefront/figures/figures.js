@@ -46,7 +46,7 @@
 // from), and comes back with the view's `weapon` if it stands again.
 //
 // The far: with `rows` (lib/three/figureRows) a living soldier past the
-// band (band.js: the game's last character LOD distance) is not drawn as a
+// band (band.js: the site's own distance, 91 m at ultra) is not drawn as a
 // figure. Its body is hidden whole, and every part of it, its gun's meshes
 // too, is an instance of that part's one draw, placed from its own bones
 // once a frame (place, after the scene's world matrices are worked out).

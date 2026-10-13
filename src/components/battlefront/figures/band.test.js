@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BACK, ROWS_FROM, bandOf, onFeet, rowsFrom } from './band.js';
 
 describe('the band a soldier is a row in', () => {
-  it('starts at the game’s last character LOD distance times the preset’s LOD scale', () => {
+  it('starts at the character LOD group’s sixth distance times the preset’s LOD scale: the site’s own choice from the game’s table', () => {
     const scale = { low: 0.425, mid: 0.75, high: 1.2, ultra: 1.75 };
     for (const [level, k] of Object.entries(scale)) expect(ROWS_FROM[level], level).toBe(Math.round(52 * k));
     expect(rowsFrom('ultra')).toBe(91);

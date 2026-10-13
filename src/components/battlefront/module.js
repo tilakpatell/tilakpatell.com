@@ -138,9 +138,12 @@ export default {
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
     const cuts = figureCuts({ level: device().detail, lowData: Boolean(device().saveData) });
-    // (a soldier past the game's last character LOD distance is a row of an instanced draw, not a figure:
-    // lib/three/figureRows, figures/band.js. ?rows=off in the address keeps every soldier a figure, for
-    // a check; a backend that is not WebGPU keeps them so always: rows.js's canDrawRows)
+    // (a soldier past the band's distance, 91 m at ultra, is a row of an instanced draw, not a figure: the
+    // site's own economy, lib/three/figureRows, figures/band.js. A round of 24 a side on the owner's 5090, 2,560 × 1,440, the
+    // game open beside it: in one page, 18 to 28 ms off a 40 to 64 ms frame, the soldiers' drawn cost a
+    // quarter to under a half of what it is as figures (docs/superpowers/evidence/gpu-first/N1, which
+    // also says what is not shown). ?rows=off in the address keeps every soldier a figure, for a check;
+    // a backend that is not WebGPU keeps them so always: rows.js's canDrawRows)
     const rows = flags?.get('rows') !== 'off' && canDrawRows(renderer) ? createFigureRows({ scene, renderer, tsl: (await loadThree()).tsl }) : null;
     // (?skin=whole in the address: every part on the file's whole rig, for a check that measures what the cut skins save)
     const figures = createFigures({ scene, ragdolls, cuts, prune: flags?.get('skin') !== 'whole', rows });

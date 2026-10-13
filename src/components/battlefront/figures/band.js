@@ -1,16 +1,24 @@
 // Where a soldier stops being a figure and becomes a row (figures.js hands
-// it to lib/three/figureRows): past the distance at which the game puts a
-// character on its last mesh LOD. From there the game itself runs only a
-// soldier's locomotion and weapon pose (ant/layers/3P.Soldier.Layer.json:
-// every other layer is off by 57.5 m) and casts no shadow from it (the
-// character LOD group's ShadowDistance, 80 m), so nothing a figure has that
-// a row lacks is seen out there.
+// it to lib/three/figureRows). The distance is the site's own economy, not
+// the game's: the game turns a far soldier into nothing else. It draws a
+// trooper's last mesh LOD, skinned, from 42 m at Ultra until its size cull
+// near 500 m (the reading of its code in D:\bf2-ghidra\lod64\DECISIONS.md,
+// 2026-10-13).
 //
-// ROWS_FROM is the game's last character LOD distance, 52 m
-// (LodGroups/LodGroupCharacters.json, Lod6Distance), times Mesh.GlobalLodScale
-// at each preset: 0.425, 0.75, 1.2, 1.75 (Low to Ultra). That the scale
-// multiplies the table is two notes' reading and not yet read in the game's
-// code; this table is the one place it is used.
+// ROWS_FROM is the character LOD group's sixth table distance, 52 m
+// (LodGroups/LodGroupCharacters.json, Lod6Distance), times
+// Mesh.GlobalLodScale at each preset: 0.425, 0.75, 1.2, 1.75 (Low to Ultra).
+// A trooper's mesh has five LODs and never reads that entry, so the number
+// is a choice of where the site stops paying for a figure, taken from a
+// table the game holds. What makes it a fair place: past 57.5 m the game
+// itself runs only a soldier's locomotion, weapon pose and deploy
+// (ant/layers/3P.Soldier.Layer.json), and a character casts no shadow once
+// its sphere is 80 m from the camera at Ultra, so nothing a figure has that
+// a row lacks is something the game shows out there.
+//
+// The distance is the plain one from the eye to the soldier's feet. The
+// game measures to the body's sphere and scales by the field of view
+// (tan(fovY / 2) / tan(27.5°), 1 at the 55° every soldier camera here has).
 //
 // A soldier is a row past ROWS_FROM and a figure again inside BACK of it, so
 // one walking the line does not change every step. Only the living on their
