@@ -12,7 +12,8 @@
 //   createBattle({ rulebook, level, mode, heightAt, bots, seed, cell, nav, mask, teams, era, difficulty, instantAction }) → battle   (mode: any of modes/index.js's)
 //   (mask: the pack's nav.bin, navMask.js's; one built for another grid is
 //   left out, with a warning, and the navgrid is the ground's alone)
-//   addPlayer(battle, { team }) → id ; deploy(battle, id, { kind, id, classId, spawn: 'point' | 'squad', mate }) → { ok, why? }
+//   addPlayer(battle, { team }) → id ; deploy(battle, id, { kind, id, classId, spawn: 'point' | 'squad', mate, appearance, cards }) → { ok, why? }
+//   (cards: a hero's star card ids from the Collection's store; the view's player carries `abilities` with the game's names and `cards`)
 //   (kind 'class' | 'reinforcement' | 'hero', the offer's id; `classId` alone is a class; nothing is the side's first class)
 //   (the player keeps one soldier id, PLAYER_ID, life to life, in one squad from the start)
 //   step(battle, inputs) → events ; view(battle) → the page's view (each fallen
@@ -30,7 +31,7 @@ import { hurt } from '../../lib/battlefront/soldier.js';
 import { slotsOf } from '../../lib/battlefront/kit.js';
 import { charges } from '../../lib/battlefront/abilities.js';
 import { modeFor } from '../../lib/battlefront/modes/index.js';
-import { abilitiesFor } from '../../lib/bf2017/collection.js';
+import { abilitiesFor, say } from '../../lib/bf2017/collection.js';
 import { KINDS } from '../../lib/battlefront/modes/objectives.js';
 
 export { STEP };
@@ -169,14 +170,15 @@ export function addPlayer(b, { team = 2 } = {}) {
   return 'player';
 }
 
-export function deploy(b, _id, { kind = null, id = null, classId = null, spawn = 'point', mate = null, appearance = null } = {}) {
+export function deploy(b, _id, { kind = null, id = null, classId = null, spawn = 'point', mate = null, appearance = null, cards = null } = {}) {
   const p = b.player;
   if (!p || p.state !== 'deploying') return { ok: false, why: 'not deploying' };
   waitToDeploy(b);
   const side = b.sides[SIDES[p.team]];
   const as = kind ? { kind, id } : { kind: 'class', id: classId ?? side.classes[0] };
   // (appearance: a crew kind the Collection keeps, carried to the soldier and its view row)
-  const r = deploySim(b.sim, p.id, { ...as, spawn: spawn === 'squad' ? 'squad' : 'point', mate, appearance });
+  // (cards: the star card ids the Collection keeps for a hero; the sim wears its own of them, three at most)
+  const r = deploySim(b.sim, p.id, { ...as, spawn: spawn === 'squad' ? 'squad' : 'point', mate, appearance, cards });
   if (!r.ok) return r;
   Object.assign(p, { state: 'alive', cls: as.id, unit: as.kind, earned: 0, earnedAt: b.sim.bp ? earnedBy(b.sim.bp, p.id) : 0, hits: [] });
   return { ok: true };
@@ -384,6 +386,8 @@ export function view(b) {
     // (the three abilities, a class's or a hero's own: the game's state each, the recharge sweep, the charges; kit.js;
     // a hero's with the name the game's Collection gives it, for the HUD)
     abilities: me ? slotsOf(me).map((a) => ({ ...a, name: p.unit === 'hero' ? (namesOf(p.cls)[a.slot] ?? null) : null })) : [],
+    // (the star cards this life wears, by the Collection's names)
+    cards: (me?.cards?.list ?? []).map((c) => ({ id: c.id, name: say(c.name) || c.id })),
     shield: me?.shield ? me.shield.hp / me.shield.max : null,
     over: me?.over?.hp ?? 0,
     flashed: me ? (me.flashedUntil ?? -Infinity) > t : false,

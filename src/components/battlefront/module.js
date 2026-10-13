@@ -47,7 +47,7 @@ import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
-import { appearanceOf, characterOfOffer, readStore } from '../../lib/bf2017/collection.js';
+import { appearanceOf, characterOfOffer, picksOf, readStore } from '../../lib/bf2017/collection.js';
 import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
@@ -233,6 +233,16 @@ export default {
       }
       return appearanceOf(store, c.id, { faction: c.faction });
     };
+    // the Collection's star cards for a hero a deploy is: their ids, in the store's order (the sim wears three of its own)
+    const pickedCards = (id) => {
+      const c = id ? characterOfOffer({ id }) : null;
+      if (!c) return [];
+      try {
+        return picksOf(readStore(window.localStorage), c.id, { faction: c.faction }).cards;
+      } catch {
+        return [];
+      }
+    };
     // (a choice: an offer { kind, id } from the deploy screen, { classId }, a class id, or nothing for the side's first class)
     const choiceOf = (c) => (typeof c === 'string' ? { classId: c } : c?.kind ? { kind: c.kind, id: c.id } : c?.classId ? { classId: c.classId } : {});
     const doDeploy = (choice = picked, appearance = null) => {
@@ -240,6 +250,8 @@ export default {
       // (the skin the Collection keeps for what is deployed, where the screen sent none)
       const look = appearance ?? pickedLook(base.id ?? base.classId ?? null);
       if (look) base.appearance = look;
+      // (a hero's star cards, as the Collection keeps them)
+      if (base.kind === 'hero') base.cards = pickedCards(base.id);
       let r = deploy(sim, me, mate ? { ...base, spawn: 'squad', mate } : base);
       // (a mate who cannot be spawned on by now: the HQ, as the game falls back, SpawnOnSpawnEntityIfSpawnOnPlayerFails)
       if (!r.ok && mate && squadsOf(rb).fallbackToPoint) r = deploy(sim, me, base);

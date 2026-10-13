@@ -18,7 +18,8 @@
 // three.js, no DOM.
 //
 //   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve, instantAction }) → sim
-//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate }) → { ok, why }
+//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate, appearance, cards }) → { ok, why }
+//     (appearance: the Collection's skin, carried to the view; cards: the star card ids picked for a hero, cards.js)
 //   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, abilityHeld, vent, cool }]
 //     (the class abilities, kit.js: 'ability' { id, slot, phase, why }, 'throw', 'explosion', 'split', 'turret', 'turretDown',
 //     'turretGone'; a blast's hit has part 'blast'; a bot's bolt on a human waits its bucket, ai/buckets.js)
@@ -47,6 +48,7 @@ import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { heroAbilities, heroClass } from './hero.js';
+import { cardsFor, equip } from './cards.js';
 import { actOf, createHero, deflect, domed, heroInput, heroPress, heroRoll, onHeroAbility, stepHeroes } from './heroKit.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
 import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
@@ -379,6 +381,9 @@ export function deploy(sim, id, choice) {
   }
   // (the Collection's pick, a crew kind the figure wears: the screens' appearance, carried and nothing else)
   s.appearance = choice.appearance ?? null;
+  // (the star cards the Collection keeps for a hero: its own of those picked, three at most, each one's modifiers
+  // on this soldier once, cards.js; a bot has no store and carries none)
+  if (cls.hero && !entry.bot) equip(s, cardsFor(cls.hero, choice.cards, sim.rb));
   protect(s, sim.time);
   if (entry.bot) {
     // a fresh bot takes its squad's orders at once

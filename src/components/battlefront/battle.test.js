@@ -163,6 +163,18 @@ describe('the battle on the sim in its own mode, with the page’s deploy screen
     const after = view(b).player;
     expect(after.abilities[1]).toMatchObject({ active: true, ready: false });
     expect(after.weapon).toBe('W_Pistol_DL44_HanSolo_Sharpshooterz');
+    expect(v.player.cards).toEqual([]);
+    // (deployed with the Collection's picks: the cards this life wears, by name, and what the first one does)
+    const d = make();
+    addPlayer(d, { team: 1 });
+    grant(d, 4000);
+    deploy(d, 'player', { kind: 'hero', id: 'hansolo', cards: ['hansolo.1', 'hansolo.4', 'leia.1'] });
+    expect(view(d).player.cards).toEqual([
+      { id: 'hansolo.1', name: 'HEAVILY MODIFIED BLASTER' },
+      { id: 'hansolo.4', name: 'BROAD SHOULDERS' },
+    ]);
+    step(d, [{ id: 'player', move: [0, 0], yaw: 0, fire: true }]);
+    expect(view(d).player.heat).toBeCloseTo(0.13 * 0.75, 9);
     // (a class's abilities have no name of the Collection's)
     const c = make();
     addPlayer(c, { team: 1 });
