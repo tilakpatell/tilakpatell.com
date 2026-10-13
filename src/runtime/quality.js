@@ -151,6 +151,11 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     get source() {
       return onGpu() ? 'gpu' : 'cpu';
     },
+    // (nothing left to lower: the GPU controller at its floor, or the pace
+    // at its last step: runtime/cadence.js's createCadence reads it)
+    get floored() {
+      return onGpu() ? Boolean(dyn.floored) : floored || level >= last;
+    },
     // (the post chain's internal scale: the controller's on the GPU clock, else headroomAt's)
     get internal() {
       return internal();

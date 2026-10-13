@@ -23,7 +23,7 @@
 //
 // createDynres({ budgetMs, headroom, threshold, minPeriod, history, panic,
 //   floor, ceiling, steps }) → { frame(gpuMs) → the new scale | null, scale,
-//   level, frames, set(level), reset() }
+//   level, floored, frames, set(level), reset() }
 // dynresFor({ tier, fps }) → the options for a tier and a pinned rate
 // `level` is the index into `steps` (RESOLUTION_STEPS: 1, .77, .67, .5), the
 // level headroomAt takes; steps outside floor…ceiling are never used.
@@ -60,7 +60,8 @@ const isT0 = (tier) => tier === 'T0';
 
 export function dynresFor({ tier = null, fps = null } = {}) {
   return {
-    budgetMs: fps === 30 || isT0(tier) ? DYNRES_30.budgetMs : DYNRES.budgetMs,
+    // (T0 aims at 60 too, under its lower floor: the cadence takes it to 30 when it cannot)
+    budgetMs: fps === 30 ? DYNRES_30.budgetMs : DYNRES.budgetMs,
     floor: isT0(tier) ? FLOOR_T0.floor : DYNRES.floor,
   };
 }
@@ -108,6 +109,10 @@ export function createDynres({ budgetMs = DYNRES.budgetMs, headroom = DYNRES.hea
     },
     get level() {
       return usable[at][1];
+    },
+    // (at the floor: nothing left to lower)
+    get floored() {
+      return at === usable.length - 1;
     },
     get frames() {
       return costs.length;

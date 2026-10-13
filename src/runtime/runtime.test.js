@@ -556,6 +556,18 @@ describe('createRuntime', () => {
     expect(makeBackend.mock.calls[3][0]).toBe('webgl');
   });
 
+  it('settles on an even 30 when the frames stay under 50 fps with nothing left to lower, and starts at every beat', async () => {
+    const loop = fakeLoop();
+    loop.ctl.setCadence = vi.fn();
+    const quality = fakeQuality();
+    quality.floored = true;
+    const { rt } = make({ loop: loop.create, quality });
+    await rt.mount({ id: 'a', create: () => fakeWorld({ wants: () => true }) }, {}, fakeHost());
+    expect(loop.ctl.setCadence).toHaveBeenLastCalledWith(1);
+    for (let t = 0; t < 8000; t += 25) loop.tick(t);
+    expect(loop.ctl.setCadence).toHaveBeenLastCalledWith(2);
+  });
+
   it('a create that throws fails the mount', async () => {
     const { rt } = make();
     await rt.mount({ id: 'a', create: () => { throw new Error('nope'); } }, {}, fakeHost());

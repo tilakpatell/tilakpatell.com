@@ -314,11 +314,16 @@ describe('the GPU clock as the source (lane N2)', () => {
     expect(q.level).toBe(1);
   });
 
-  it('takes lane G1’s renderer tier when the runtime has one: T0 budgets 33.3 ms', () => {
+  // (T0 budgets 16.7 ms like the rest since 2026-10-13, under its own floor:
+  // the cadence, not the budget, takes it to 30 when the floor cannot hold 60)
+  it('takes lane G1’s renderer tier when the runtime has one: T0 comes down to its floor, never under', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null]) });
     q.setSource('gpu', { gpuTime: fakeClock([25]), tier: 'T0' });
-    for (let t = 1; t <= 40; t++) q.frame(t * 33);
-    expect(q.level).toBe(0);
+    expect(q.floored).toBe(false);
+    for (let t = 1; t <= 200; t++) q.frame(t * 33);
+    expect(q.internal).toBeGreaterThanOrEqual(0.58);
+    expect(q.internal).toBeLessThan(1);
+    expect(q.floored).toBe(true);
   });
 
   it('a hold lets the GPU’s frames go by too', () => {
