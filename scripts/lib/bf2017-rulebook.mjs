@@ -452,6 +452,21 @@ const ROLES = { EST_Driver: 'driver', EST_Gunner: 'gunner', EST_Passenger: 'pass
 // components in `EntryOrderNumber` order, weapons from each
 // `WeaponComponentData`'s firing data (inline in the blueprint), abilities
 // from the ability set component, overheat from the blueprint's config.
+// Beside those, what a vehicle's rules read (lib/battlefront/vehicles/): a
+// seat's place on the vehicle, whether its rider can be shot, its stances
+// and whether a human may take it; a weapon's magazine and reload (the
+// AT-AT's chin cannon: one round, two seconds), its bolt's life and
+// fall-off, its blast's radii; the vehicle's regeneration and its time
+// critical before it blows; the rail driver's numbers where it has one
+// (`SimpleDriverComponentData`: the AT-AT's).
+const vec3 = (v) => (v && typeof v.x === 'number' ? [v.x, v.y, v.z] : null);
+function takeVec(row, key, asset, obj, path) {
+  const v = vec3(obj ? pick(obj, path) : null);
+  if (!v) return undefined;
+  row[key] = v;
+  row[`${key}_source`] = where(asset, obj, path);
+  return v;
+}
 export function vehicleRow(root, name) {
   const first = follow(root, name);
   if (!first) return null;
@@ -466,7 +481,15 @@ export function vehicleRow(root, name) {
   row.seats = bp.objects
     .filter((o) => /EntryComponentData$/.test(o?.$type ?? ''))
     .sort((a, b) => (a.EntryOrderNumber ?? 0) - (b.EntryOrderNumber ?? 0))
-    .map((e) => ({ role: ROLES[e.HudData?.SeatType] ?? (e.EntryOrderNumber === 0 ? 'driver' : 'gunner'), camera: e.CameraIndex ?? null, _source: where(bp, e, 'EntryOrderNumber') }));
+    .map((e) => {
+      const seat = { role: ROLES[e.HudData?.SeatType] ?? (e.EntryOrderNumber === 0 ? 'driver' : 'gunner'), camera: e.CameraIndex ?? null, _source: where(bp, e, 'EntryOrderNumber') };
+      takeVec(seat, 'at', bp, e, 'Transform.trans');
+      take(seat, 'stances', bp, e, 'NumberOfStances');
+      if (typeof e.IsShielded === 'boolean') seat.shielded = e.IsShielded;
+      if (typeof e.ShowSoldierInEntry === 'boolean') seat.shown = e.ShowSoldierInEntry;
+      if (e.ForbiddenForHuman === true) seat.ai = true;
+      return seat;
+    });
   row.weapons = objectsOf(bp, 'WeaponComponentData').map((w) => {
     const wfd = deref(bp, w.WeaponFiring);
     const fn = wfd && deref(bp, wfd.PrimaryFire);
@@ -474,17 +497,73 @@ export function vehicleRow(root, name) {
     if (!fn) return out;
     take(out, 'rof', bp, fn, 'FireLogic.RateOfFire');
     take(out, 'speed', bp, fn, 'Shot.InitialSpeed.z');
+    // (a magazine of -1 is endless: no reload; a positive one empties and reloads)
+    if ((fn.Ammo?.MagazineCapacity ?? -1) > 0) {
+      take(out, 'magazine', bp, fn, 'Ammo.MagazineCapacity');
+      take(out, 'reload', bp, fn, 'FireLogic.ReloadTime');
+    }
     const bolt = fn.Shot?.ProjectileData;
     const bullet = bolt?.$ref !== undefined ? { asset: bp, obj: deref(bp, bolt) } : reach(root, bolt, missing, 'vehicle projectile');
     const b = bullet?.obj && (bullet.obj.$type === 'GameDataContainerAsset' ? deref(bullet.asset, bullet.obj.Data) : bullet.obj);
     if (b) {
       take(out, 'damage', bullet.asset, b, 'StartDamage');
       take(out, 'damageEnd', bullet.asset, b, 'EndDamage');
+      if (b.DamageFalloffEndDistance > 0) {
+        take(out, 'falloffStart', bullet.asset, b, 'DamageFalloffStartDistance');
+        take(out, 'falloffEnd', bullet.asset, b, 'DamageFalloffEndDistance');
+      }
+      if (b.TimeToLive > 0) take(out, 'ttl', bullet.asset, b, 'TimeToLive');
       const blast = b.Explosion?.$ref !== undefined ? { asset: bullet.asset, obj: deref(bullet.asset, b.Explosion) } : reach(root, b.Explosion, missing, 'explosion');
-      if (blast?.obj) take(out, 'blast', blast.asset, blast.obj, 'BlastDamage');
+      if (blast?.obj) {
+        take(out, 'blast', blast.asset, blast.obj, 'BlastDamage');
+        if (blast.obj.BlastDamage > 0) {
+          take(out, 'blastRadius', blast.asset, blast.obj, 'BlastRadius');
+          take(out, 'blastInner', blast.asset, blast.obj, 'InnerBlastRadius');
+        }
+      }
     }
     return out;
   });
+  const ve = objectsOf(bp, 'VehicleEntityData')[0];
+  if (ve) {
+    take(row, 'regenDelay', bp, ve, 'RegenerationDelay');
+    take(row, 'regenRate', bp, ve, 'RegenerationRate');
+    take(row, 'preExplosion', bp, ve, 'PreExplosionTime');
+  }
+  const driver = objectsOf(bp, 'SimpleDriverComponentData')[0];
+  if (driver) {
+    row.driver = {};
+    take(row.driver, 'reach', bp, driver, 'ReachWaypointRadius');
+    take(row.driver, 'p', bp, driver, 'PValue');
+    take(row.driver, 'i', bp, driver, 'IValue');
+    take(row.driver, 'speedMultiplier', bp, driver, 'SpeedMultiplier');
+    if (typeof driver.OnlyDriveForward === 'boolean') row.driver.forwardOnly = driver.OnlyDriveForward;
+  }
+  // (a walker's support rays, forward and left of its middle, whose ground
+  // the body follows with the inertia: the AT-AT's three, a triangle)
+  const walker = objectsOf(bp, 'WalkerComponentData')[0];
+  const nd = walker?.NavigationData;
+  if (nd) {
+    row.walker = { rays: [1, 2, 3].filter((k) => typeof nd[`SupportRay${k}ForwardOffset`] === 'number').map((k) => [nd[`SupportRay${k}ForwardOffset`], nd[`SupportRay${k}LeftOffset`] ?? 0]), rays_source: where(bp, walker, 'NavigationData.SupportRay*ForwardOffset, *LeftOffset') };
+    take(row.walker, 'inertia', bp, walker, 'NavigationData.SupportFollowTerrainInertia');
+    if (typeof nd.EnableObstacleDetection === 'boolean') row.walker.obstacles = nd.EnableObstacleDetection;
+  }
+  // (the physics bodies' places, each once: a server body and its client
+  // proxy share one; the AT-AT's head and four legs are keyframed to its bones)
+  const seen = new Set();
+  const bodies = [];
+  for (const o of objectsOf(bp, 'RigidBodyData')) {
+    const at = vec3(o.Transform?.trans);
+    if (!at) continue;
+    const key = `${at.map((v) => v.toFixed(2)).join(',')}:${o.MotionType}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const b = { motion: String(o.MotionType ?? '').replace(/^RigidBodyMotionType_/, '').toLowerCase() || null };
+    takeVec(b, 'at', bp, o, 'Transform.trans');
+    take(b, 'mass', bp, o, 'Mass');
+    bodies.push(b);
+  }
+  if (bodies.length) row.bodies = bodies;
   const set = objectsOf(bp, 'WSNonCustomizablePlayerAbilitySetComponentData')[0];
   row.abilities = (set?.Abilities ?? []).filter((v) => v?.$asset).map((v) => shortName(v.$asset));
   const oh = objectsOf(bp, 'OverheatConfig')[0];

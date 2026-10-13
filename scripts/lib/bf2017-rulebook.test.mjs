@@ -151,6 +151,20 @@ describe('heroes, reinforcements, vehicles and teams', () => {
     expect(v.weapons[0].rof).toBeGreaterThan(0);
     expect(checkSources(v)).toEqual([]);
   });
+
+  it('reads what a vehicle’s rules need: the seat’s place and exposure, regeneration, the bodies', () => {
+    const v = vehicleRow(ROOT, 'Gameplay/Kits/Vehicle/ATRT/Kit_Vehicle_ATRT_Rebel');
+    // (the AT-RT's rider sits in the open: shown, not shielded, one stance)
+    expect(v.seats[0]).toMatchObject({ at: [0, 0, 0], stances: 1, shielded: false, shown: true });
+    expect(v.regenDelay).toBe(10);
+    expect(v.regenRate).toBe(100);
+    expect(v.preExplosion).toBe(20);
+    // (a body and its client proxy: each place once by its motion)
+    expect(v.bodies.map((b) => b.motion).sort()).toEqual(['dynamic', 'keyframed']);
+    // (an endless magazine reads no reload)
+    expect(v.weapons.every((w) => w.reload === undefined)).toBe(true);
+    expect(checkSources(v)).toEqual([]);
+  });
 });
 
 describe('broken chains and sources, from the final review', () => {
