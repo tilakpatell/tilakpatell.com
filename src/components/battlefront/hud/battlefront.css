@@ -65,6 +65,8 @@
   overflow: hidden;
   background: #b4c3d6;
 }
+/* black over the parked camera's view until the game's screens have come to cover it (stage.js's cover) */
+.bf-cover { position: fixed; inset: 0; z-index: var(--z-dialog); background: #000; }
 .bf-loading {
   position: absolute;
   left: 50%;

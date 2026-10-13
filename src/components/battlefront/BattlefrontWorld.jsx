@@ -12,6 +12,7 @@ import battlefrontModule from './module.js';
 import { useGameScreens, wantsMenu } from './useGameScreens.js';
 import { offerNameOf } from './hud/widgets.js';
 import { sendTo } from './send.js';
+import { standing } from './stage.js';
 import WaitingScreen, { Wipe } from './WaitingScreen.jsx';
 import { COIN, HUD_QUIET, WIPE, machineLine, pickVariant, readiness, recommend, recommendationLine } from './waiting.js';
 import '../../lib/bf2017/fonts.css';
@@ -53,11 +54,13 @@ const killerOf = (snap) => {
 // (the waiting screen's deploy slot in the HUD while it is up: nothing)
 const Nothing = () => null;
 
-export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssault', back = null }) {
+export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssault', back = null, menu: startInMenu = false, playable = () => true }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const navigate = useNavigate();
   const screens = useGameScreens();
   const [snap, setSnap] = useState(null);
+  // the game's front end over the world: the way in when the address names no mode (the level loads behind it)
+  const [inMenu, setInMenu] = useState(startInMenu);
   const [menu, setMenu] = useState(false);
   const [board, setBoard] = useState(false);
   // the waiting screen's phase: 'waiting' | 'down' (the wipe in) | 'up' (the wipe out) | 'in' (the field)
@@ -133,14 +136,19 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
       document.removeEventListener('pointerlockchange', on);
     };
   }, [screens, alive, result]);
+  // what stands over the world (stage.js)
+  const st = standing({ inMenu, phase: phase === 'waiting' ? 'pre' : phase, ready: progress.ready, loaded: Boolean(snap?.level?.loaded), screens: Boolean(screens) });
+  const FrontEnd = screens?.FrontEnd;
   const Loading = screens?.Loading;
   const InGameMenu = screens?.InGameMenu;
   const KillScreen = screens?.KillScreen;
   const EndOfRound = screens?.EndOfRound;
   const Scoreboard = screens?.Scoreboard;
   return (
-    <WorldHost world={world} className="bf-stage">
-      {waiting && (
+    <WorldHost world={world} className="bf-stage" data-bf-stage={st.name}>
+      {st.cover && <div className="bf-cover" aria-hidden="true" />}
+      {st.menu && FrontEnd && <FrontEnd start="menu" playable={playable} onPlay={() => setInMenu(false)} onExit={() => navigate(way.to)} />}
+      {waiting && !inMenu && (
         <WaitingScreen
           level={level}
           mode={mode}

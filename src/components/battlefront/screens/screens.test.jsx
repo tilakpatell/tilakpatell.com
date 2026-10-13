@@ -6,6 +6,7 @@ import { levelCards, menuItems, MODE_LISTS, pressStart } from './cards';
 import { EOR_STEPS, findBox, skipTo, stepAt } from './tree';
 import { screen } from '../../../lib/bf2017/ui/screens';
 import EndOfRound from './EndOfRound.jsx';
+import FrontEnd from './FrontEnd.jsx';
 import InGameMenu from './InGameMenu.jsx';
 import KillScreen from './KillScreen.jsx';
 import Loading from './Loading.jsx';
@@ -161,3 +162,13 @@ describe('the pause menu’s way in', () => {
   });
 });
 
+describe('the front end over a world', () => {
+  it('lands in the main menu when asked, drawn from the game’s tree', () => {
+    const h = html(<FrontEnd start="menu" onExit={() => {}} />);
+    expect(h).toContain('data-front-end="menu"');
+    expect(h).toContain('data-screen="UI/Frontend/Screens/Start/MainMenuScreen"');
+  });
+  it('opens on the Start screen when it stands alone', () => {
+    expect(html(<FrontEnd />)).toContain('data-front-end="start"');
+  });
+});
