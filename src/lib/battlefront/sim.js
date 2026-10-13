@@ -43,6 +43,7 @@ import { difficultyFor } from './ai/difficulty.js';
 import { abilitiesFor } from './ai/skirmish.js';
 import { createBuckets, mayHurt } from './ai/buckets.js';
 import { createWaves, mayDeploy, stage as stageWaves, unitOpen } from './ai/waves.js';
+import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.js';
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
@@ -216,6 +217,43 @@ function roundIn(sim) {
     sim.bp.limits[team] = { heroesPerTeam: k.heroes.max, reinforcementsPerTeam: k.reinforcements.max };
     sim.waves[team] = createWaves(waveTable(sim, team), sim.time);
   }
+  // (on command posts the bots take their posts from the game's bot logic, a logic a side: ai/botLogic.js)
+  if (r.botLogic && postsOf(sim).length) {
+    sim.botLogic = { owners: postsOf(sim).map((o) => o.owner), 1: null, 2: null };
+    for (const team of [1, 2]) sim.botLogic[team] = createBotLogic({ team, rand: sim.rand, timers: r.botLogic.timers });
+    for (const s of sim.entities.values()) if (s.bot && s.brain) s.brain.task = postTask(sim, s.team, 'spawn');
+  }
+}
+
+// The command posts as the bot logic's slots, A to E in their order: each enabled, its owner's team
+// (0 no one's), whether it is being captured, and its progress toward team 1
+const postsOf = (sim) => (sim.ga.objectives ?? []).filter((o) => o.type === 'capture');
+function slotsOf(sim) {
+  const attack = sim.ga.attack;
+  const teamOf = (side) => (side === 'attack' ? attack : side === 'defend' ? 3 - attack : 0);
+  return postsOf(sim).map((o) => ({ enabled: true, owner: teamOf(o.owner), beingCaptured: o.contested || (o.moving !== null && o.moving !== o.owner), progress: attack === 1 ? o.meter : -o.meter }));
+}
+
+// a bot's order from the bot logic: to its post, within the level's radius
+function postTask(sim, team, why) {
+  const posts = postsOf(sim);
+  const i = pickSlot(sim.botLogic[team], slotsOf(sim), sim.time, why) % posts.length;
+  const at = posts[i].at;
+  return { key: `post${i}`, at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false };
+}
+
+// a step of the bot logic: a post that changed hands tells both sides; a side whose orphans are called
+// sends every bot it has out again, each by the orphan's split
+function botOrders(sim) {
+  const L = sim.botLogic;
+  const slots = slotsOf(sim);
+  const owners = postsOf(sim).map((o) => o.owner);
+  if (owners.some((o, i) => o !== L.owners[i])) for (const team of [1, 2]) captured(L[team], sim.time);
+  L.owners = owners;
+  for (const team of [1, 2]) {
+    if (!stepBotLogic(L[team], slots, sim.time)) continue;
+    for (const s of sim.entities.values()) if (s.bot && s.alive && s.team === team && s.brain) s.brain.task = postTask(sim, team, 'orphan');
+  }
 }
 
 // the live stage's walkers as bodies in the battle (the escort objective moves them)
@@ -330,7 +368,8 @@ export function deploy(sim, id, choice) {
     // a fresh bot takes its squad's orders at once
     const b = addBrain(sim, s);
     const sq = squadOf(sim.brains.squads, id);
-    b.task = (sq?.members ?? []).map((m) => sim.entities.get(m)?.brain?.task).find(Boolean) ?? null;
+    // (on command posts in an Instant Action round, its own from the bot logic)
+    b.task = sim.botLogic ? postTask(sim, s.team, 'spawn') : ((sq?.members ?? []).map((m) => sim.entities.get(m)?.brain?.task).find(Boolean) ?? null);
   }
   if (spot.mate) earn(sim.bp, spot.mate, 'squadSpawn');
   sim.deploying.delete(id);
@@ -637,8 +676,10 @@ function stepMode(sim) {
     // (Strike's second round swaps the sides)
     const side = sim.M.sideOf(ga, team);
     if (c.side !== side) [c.side, c.nextAssign] = [side, 0];
-    if (sim.time + 1e-9 >= c.nextAssign) assign(c, { entities: [...sim.entities.values()], now: sim.time });
+    // (the bot logic's orders are each bot's own: the commander's plan by squads is not laid over them)
+    if (!sim.botLogic && sim.time + 1e-9 >= c.nextAssign) assign(c, { entities: [...sim.entities.values()], now: sim.time });
   }
+  if (sim.botLogic) botOrders(sim);
 }
 
 export function drain(sim) {

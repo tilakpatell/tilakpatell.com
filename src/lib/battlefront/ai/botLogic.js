@@ -56,6 +56,8 @@ export const ENEMIES_OFF = 5;
 export const ORPHANS_FIRST = 0.5;
 export const AFTER_CAPTURE = 1;
 export const CAPTURE_COOL_DOWN = 20;
+// How near its post a bot is sent: every level's CapturePoint<slot>_Radius but one (Kamino's E, 2 m), m.
+export const POST_RADIUS = 8;
 const SLOTS = 5;
 
 export function timersFor(gs) {

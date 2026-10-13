@@ -45,7 +45,10 @@
 // (its commander's for the bots, the offers' for the side), the AutoPlayers'
 // waves for a fallen bot's return and for a hero's or a reinforcement's, and
 // their aim, line of fire and strafe (ai/soldierBrain.js reads each side's
-// numbers off `sim.instantAction`). Carried, not acted on: the vehicles' caps
+// numbers off `sim.instantAction`). On command posts (Supremacy, Instant
+// Action's own mode) each bot's post is the game's bot logic's, on its spawn
+// and when the orphans are called (ai/botLogic.js, `round.botLogic`), in
+// place of the commander's plan. Carried, not acted on: the vehicles' caps
 // (no vehicle deploys yet), all-era heroes, the dodge roll.
 // Pure: no three.js, no DOM.
 //
@@ -65,6 +68,7 @@
 
 import { autoPlayerFor } from './ai/autoPlayer.js';
 import { wavesFor } from './ai/waves.js';
+import { POST_RADIUS, timersFor } from './ai/botLogic.js';
 import { MODES } from './modes/index.js';
 import { levelKey, modesOf } from './rulebook.js';
 import { createSim } from './sim.js';
@@ -251,6 +255,8 @@ export function roundFor(gs, choice = {}) {
     waves: { [team]: wavesOf(team), [other]: wavesOf(other) },
     // (an objective mode's waves by the side a team plays and its stage, for the sim to take as the round moves; the command posts' are one table)
     wavesBy: cp ? null : { attack: byPhase('attack'), defend: byPhase('defend') },
+    // (the command posts' bot logic, the game's graph: ai/botLogic.js; an objective mode's bots are the commander's)
+    botLogic: cp ? { timers: timersFor(gs), radius: POST_RADIUS } : null,
     sources,
   };
 }
