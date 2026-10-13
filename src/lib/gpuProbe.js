@@ -5,22 +5,40 @@
 // quality level stays the visitor’s (lib/device’s `tp-quality`); the tier
 // says which paths a level may use: lane N6’s table reads it.
 //
-//   T0  a phone, no timestamp-query, the software adapter, or a chip the
-//       probe scene kept busy over 8 ms (an integrated chip, a weak one)
+//   T0  a phone, no timestamp-query, the software adapter, a chip whose
+//       WebGL name grades under lib/gpuGrade's high line (the Radeon 740M,
+//       Iris Xe: no probe needed), a chip the probe scene kept busy over
+//       8 ms (an integrated chip, a weak one), or one whose WebGPU device
+//       was lost in the last seven days
 //   T1  a discrete chip: the GPU scene, SSGI and SSR
 //   T2  T1 plus 64-bit min-max atomics, subgroups and 16 storage buffers a
 //       stage: the cluster tier’s compute rasteriser (lane N7)
+//
+// The tier keeps its reason (`why`): 'phone', 'fallback', 'features',
+// 'name', 'slow', 'probe' (nothing measured), 'lost', 'pinned', or null
+// for T1 and T2. A T0 for 'name', 'slow' or 'lost' (CAPPING) holds Auto at
+// Low (lib/device reads `tierHold` of the kept record): the owner's word,
+// 2026-10-13, after a 740M hung on the High chain
+// (docs/superpowers/specs/2026-10-13-every-chip-plays-design.md). A loss
+// is counted for its chip: two within LOST_DAYS start the next visits on
+// the node renderer over WebGL 2 (`lostTwice`, runtime/index.js).
 //
 // The pure rules are here, tested in Node; the scene drawn and the clock it
 // is timed by are passed in (src/lib knows no three.js: the runtime’s
 // browser.js hands over the lit fixture’s probeScene and lib/three/gpuTime).
 //
-// classifyTier({ features, limits, medianMs, phone, info }) → 'T0' | 'T1' | 'T2'
-// readTier(search, hash, stored, info) → { tier, fresh, pinned }
-// keepTier(tier, info, storage)
+// judgeTier({ features, limits, medianMs, phone, info, score }) → { tier, why }
+// classifyTier(same) → 'T0' | 'T1' | 'T2'
+// nameVendor(name) → 'nvidia' | 'amd' | 'intel' | 'apple' | 'qualcomm' | null
+// nameScore(name, adapterVendor) → lib/gpuGrade's score, or null when the name is another chip's
+// readTier(search, hash, stored, info, now) → { tier, fresh, pinned, why }
+// keepTier(tier, info, storage, { why })
+// tierHold(stored, now) → 'low' | null   noteLoss(info, storage, now) → record   lostTwice(stored, now) → boolean
 // adapterFacts(adapter) → { features, limits, info: { vendor, architecture, fallback } }
 // probeTier({ renderer, scene, camera, gpuTime, target, ms, now }) → Promise<median ms | null>
-// decideTier({ search, hash, stored, facts, phone, probe, keep }) → Promise<{ tier, probed, pinned }>
+// decideTier({ search, hash, stored, facts, phone, name, probe, keep, now }) → Promise<{ tier, probed, pinned, why }>
+
+import { GRADE_AT, gpuScore } from './gpuGrade';
 
 export const TIERS = ['T0', 'T1', 'T2'];
 export const TIER_KEY = 'tp-tier'; // beside lib/device’s 'tp-quality'
@@ -34,12 +52,44 @@ export const PROBE = {
 };
 
 const LIMITS = ['maxStorageBuffersPerShaderStage', 'maxColorAttachmentBytesPerSample'];
+export const CAPPING = new Set(['name', 'slow', 'lost']);
+export const LOST_DAYS = 7; // _source: the every-chip-plays design: a loss holds the chip at Low, and two send it to WebGL 2, for a week
+const DAY_MS = 86400000;
 
-export function classifyTier({ features = new Set(), limits = {}, medianMs = null, phone = false, info = {} } = {}) {
-  if (phone || info?.fallback || !features.has('timestamp-query')) return 'T0';
-  if (!Number.isFinite(medianMs) || medianMs > PROBE.slowMs) return 'T0';
-  if (features.has('atomic-vec2u-min-max') && features.has('subgroups') && (limits.maxStorageBuffersPerShaderStage ?? 0) >= PROBE.storageBuffers) return 'T2';
-  return 'T1';
+export function judgeTier({ features = new Set(), limits = {}, medianMs = null, phone = false, info = {}, score = null } = {}) {
+  if (phone) return { tier: 'T0', why: 'phone' };
+  if (info?.fallback) return { tier: 'T0', why: 'fallback' };
+  if (!features.has('timestamp-query')) return { tier: 'T0', why: 'features' };
+  if (Number.isFinite(score) && score < GRADE_AT.high) return { tier: 'T0', why: 'name' };
+  if (!Number.isFinite(medianMs)) return { tier: 'T0', why: 'probe' };
+  if (medianMs > PROBE.slowMs) return { tier: 'T0', why: 'slow' };
+  if (features.has('atomic-vec2u-min-max') && features.has('subgroups') && (limits.maxStorageBuffersPerShaderStage ?? 0) >= PROBE.storageBuffers) return { tier: 'T2', why: null };
+  return { tier: 'T1', why: null };
+}
+
+export const classifyTier = (facts) => judgeTier(facts).tier;
+
+// (the vendor a WebGL renderer name is, as WebGPU's adapter.info.vendor spells it)
+const VENDORS = [
+  ['nvidia', /nvidia|geforce|quadro|\brtx\b|\bgtx\b/i],
+  ['amd', /\bamd\b|radeon|\bati\b/i],
+  ['intel', /intel|iris|\buhd\b|\barc\b/i],
+  ['apple', /apple/i],
+  ['qualcomm', /qualcomm|adreno/i],
+];
+export function nameVendor(name = '') {
+  for (const [v, re] of VENDORS) if (re.test(String(name ?? ''))) return v;
+  return null;
+}
+
+// the name's grade only when it names the WebGPU adapter's chip: a laptop
+// whose WebGL is on its NVIDIA chip and its WebGPU on the Intel one (or the
+// reverse) is the probe's to judge, not the name's
+export function nameScore(name, adapterVendor = '') {
+  const v = String(adapterVendor ?? '').toLowerCase();
+  const n = nameVendor(name);
+  if (v && n && v !== n) return null;
+  return gpuScore(name);
 }
 
 // (the chip a kept tier was decided on: a different vendor or architecture
@@ -53,26 +103,71 @@ const sameChip = (a, b) => {
 
 // ?tier= in the search, or after the ? in the hash (the site’s routes are
 // hashes), as ?quality= and ?gpu= are read; an unknown value pins nothing.
-export function readTier(search = '', hash = '', stored = null, info = null) {
+const parse = (stored) => {
+  try {
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+// (a loss is kept for LOST_DAYS: after that the chip is judged afresh)
+const stale = (kept, now) => kept?.why === 'lost' && !(now - (kept.lostAt ?? 0) < LOST_DAYS * DAY_MS);
+
+export function readTier(search = '', hash = '', stored = null, info = null, now = Date.now()) {
   const q = new URLSearchParams(search).get('tier') ?? new URLSearchParams(String(hash).split('?')[1] ?? '').get('tier');
   if (TIERS.includes(q)) return { tier: q, fresh: false, pinned: true };
-  let kept = null;
-  try {
-    kept = stored ? JSON.parse(stored) : null;
-  } catch {
-    kept = null;
-  }
-  if (kept && TIERS.includes(kept.tier) && (info == null || sameChip(kept.info, info))) return { tier: kept.tier, fresh: false, pinned: false };
+  const kept = parse(stored);
+  if (kept && TIERS.includes(kept.tier) && (info == null || sameChip(kept.info, info)) && !stale(kept, now)) return { tier: kept.tier, fresh: false, pinned: false, why: kept.why };
   return { tier: null, fresh: true, pinned: false };
 }
 
-export function keepTier(tier, info, storage = typeof window !== 'undefined' ? window.localStorage : null) {
+const pageStorage = () => {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+};
+
+export function keepTier(tier, info, storage = pageStorage(), { why = null, ...rest } = {}) {
   if (!TIERS.includes(tier)) return;
   try {
-    storage?.setItem(TIER_KEY, JSON.stringify({ tier, info: chip(info) }));
+    storage?.setItem(TIER_KEY, JSON.stringify({ tier, info: chip(info), ...(why ? { why } : {}), ...rest }));
   } catch {
     /* storage unavailable: probed again next visit */
   }
+}
+
+// Auto's ceiling from the kept tier: Low for a chip that is weak by its
+// name, slow on the probe, or lost in the last LOST_DAYS; else none
+export function tierHold(stored, now = Date.now()) {
+  const kept = parse(stored);
+  if (kept?.tier !== 'T0' || !CAPPING.has(kept.why) || stale(kept, now)) return null;
+  return 'low';
+}
+
+// A WebGPU device lost (not destroyed by the site): the chip is T0 for
+// LOST_DAYS, its losses counted from the first in that span
+export function noteLoss(info, storage = pageStorage(), now = Date.now()) {
+  let kept = null;
+  try {
+    kept = parse(storage?.getItem(TIER_KEY));
+  } catch {
+    kept = null;
+  }
+  const again = kept?.why === 'lost' && sameChip(kept.info, info) && !stale(kept, now);
+  const record = { tier: 'T0', info: chip(info), why: 'lost', losses: again ? (kept.losses ?? 1) + 1 : 1, lostAt: now };
+  try {
+    storage?.setItem(TIER_KEY, JSON.stringify(record));
+  } catch {
+    /* storage unavailable: the loss lasts for this page */
+  }
+  return record;
+}
+
+export function lostTwice(stored, now = Date.now()) {
+  const kept = parse(stored);
+  return kept?.why === 'lost' && (kept.losses ?? 0) >= 2 && !stale(kept, now);
 }
 
 export function adapterFacts(adapter) {
@@ -102,24 +197,28 @@ export async function probeTier({ renderer, scene, camera, gpuTime, target = nul
   return gpuTime.median;
 }
 
-// The tier for this page: the address’s pin, else the kept one from this
-// chip, else decided now (no probe when the facts alone say T0) and kept.
-export async function decideTier({ search = '', hash = '', stored = null, facts = adapterFacts(null), phone = false, probe, keep = keepTier }) {
-  const read = readTier(search, hash, stored, facts.info);
-  if (!read.fresh) return { tier: read.tier, probed: false, pinned: read.pinned };
-  const plain = { ...facts, phone };
-  if (classifyTier({ ...plain, medianMs: 0 }) === 'T0') {
-    keep('T0', facts.info);
-    return { tier: 'T0', probed: false, pinned: false };
+// The tier for this page: the address’s pin; else the facts alone when
+// they say T0 (a phone, no clock, a weak chip by its WebGL `name`: decided
+// before a kept tier, so one kept under an older rule is put right); else
+// the kept one from this chip; else decided now by the probe, and kept.
+export async function decideTier({ search = '', hash = '', stored = null, facts = adapterFacts(null), phone = false, name = '', probe, keep = keepTier, now = Date.now() }) {
+  const read = readTier(search, hash, stored, facts.info, now);
+  if (read.pinned) return { tier: read.tier, probed: false, pinned: true, why: 'pinned' };
+  const plain = { ...facts, phone, score: nameScore(name, facts.info?.vendor) };
+  const known = judgeTier({ ...plain, medianMs: 0 });
+  if (known.tier === 'T0') {
+    keep('T0', facts.info, { why: known.why });
+    return { tier: 'T0', probed: false, pinned: false, why: known.why };
   }
+  if (!read.fresh) return { tier: read.tier, probed: false, pinned: false, why: read.why ?? null };
   let medianMs = null;
   try {
     medianMs = await probe();
   } catch {
     // (a probe that failed says nothing of the chip: T0 for this page, asked again on the next)
-    return { tier: 'T0', probed: false, pinned: false };
+    return { tier: 'T0', probed: false, pinned: false, why: 'probe' };
   }
-  const tier = classifyTier({ ...plain, medianMs });
-  keep(tier, facts.info);
-  return { tier, probed: true, pinned: false };
+  const { tier, why } = judgeTier({ ...plain, medianMs });
+  keep(tier, facts.info, { why });
+  return { tier, probed: true, pinned: false, why };
 }
