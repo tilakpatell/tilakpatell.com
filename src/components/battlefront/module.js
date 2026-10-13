@@ -167,7 +167,8 @@ export default {
     // server's rows for them, and the sim takes the round at its making: sim.js's roundIn)
     // (the machine's share of a round's bots, by its quality level: every bot is a body drawn and a mind stepped)
     const cap = sideCap(device().detail);
-    const round = instantAction ? roundFor(await loadSettings(), { ...instantAction, level: levelName, mode, team: instantAction.team ?? PLAYER_TEAM }, { cap }) : null;
+    const profile = rb.ai?.instantAction ?? null;
+    const round = instantAction ? roundFor(await loadSettings(), { ...instantAction, level: levelName, mode, team: instantAction.team ?? PLAYER_TEAM }, { cap, profile }) : null;
     // (the player's side: the round's, the screen's Change Faction; the Empire's where none is asked)
     let team = round?.team ?? PLAYER_TEAM;
     // (the mode played: the route's, then a round's begun in place)
@@ -320,7 +321,7 @@ export default {
       let next;
       let fresh;
       try {
-        next = roundFor(await loadSettings(), { ...options, level: levelName, mode: options.mode ?? battleMode, team: options.team ?? team }, { cap });
+        next = roundFor(await loadSettings(), { ...options, level: levelName, mode: options.mode ?? battleMode, team: options.team ?? team }, { cap, profile });
         await loadLevel(levelForMode(rb, levelName, next.mode));
         fresh = roundBattle(sim, next, { heightAt: (x, z) => level.heightAt(x, z), mask });
       } catch (err) {
@@ -557,7 +558,7 @@ export default {
             // (the choices checked: the props to mount the round with, or why not)
             return loadSettings().then((gs) => {
               try {
-                const r = roundFor(gs, { ...arg, level: arg?.level ?? levelName, mode: arg?.mode ?? battleMode, team: arg?.team ?? team }, { cap });
+                const r = roundFor(gs, { ...arg, level: arg?.level ?? levelName, mode: arg?.mode ?? battleMode, team: arg?.team ?? team }, { cap, profile });
                 return { ok: true, props: { level: r.level, mode: r.mode, instantAction: { ...arg } }, round: r };
               } catch (err) {
                 return { ok: false, why: err.message };

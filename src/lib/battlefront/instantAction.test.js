@@ -103,6 +103,36 @@ describe('the round', () => {
   });
 });
 
+describe('the game’s own counts', () => {
+  const profile = aiOf(rb).instantAction;
+
+  it('are read with their least, most and starting value', () => {
+    expect(profile.InstantActionNumEnemyAI_PC).toMatchObject({ value: 20, min: 0, max: 32, step: 1 });
+    expect(profile.InstantActionEnemyHeroCount).toMatchObject({ value: 2, min: 0, max: 4 });
+    expect(profile.InstantActionFriendlyReinforcementCount).toMatchObject({ value: 4, min: 0, max: 20 });
+    expect(profile.InstantActionEnemyVehicleCount).toMatchObject({ value: 1, min: 0, max: 2 });
+  });
+
+  it('a round with them starts where they start: 20 bots a side, 2 heroes, 4 reinforcements, 1 vehicle', () => {
+    const r = roundFor(gs, {}, { profile });
+    expect(r.bots).toEqual({ [ME]: 20, [THEM]: 20 });
+    for (const n of [1, 2]) expect(r.caps[n]).toEqual({ heroes: { max: 4, bots: 2 }, reinforcements: { max: 12, bots: 4 }, vehicles: { bots: 1 } });
+    expect(r.sources['size.theirs']).toBe('Gameplay/Profiles/InstantActionParams/InstantActionNumEnemyAI_PC');
+    expect(r.scaled).toBe(false);
+  });
+
+  it('take a count up to the option’s most and no further', () => {
+    expect(roundFor(gs, { reinforcements: { enemyCount: 20 } }, { profile }).caps[THEM].reinforcements).toEqual({ max: 20, bots: 20 });
+    expect(() => roundFor(gs, { reinforcements: { enemyCount: 21 } }, { profile })).toThrow(/reinforcements\.enemyCount 21/);
+    expect(() => roundFor(gs, { heroes: { friendlyCount: 5 } }, { profile })).toThrow(/heroes\.friendlyCount 5/);
+    expect(roundFor(gs, { bots: { enemy: 0, friendly: 32 } }, { profile }).bots).toEqual({ [ME]: 32, [THEM]: 0 });
+  });
+
+  it('come down to the machine’s share', () => {
+    expect(roundFor(gs, {}, { profile, cap: 8 })).toMatchObject({ bots: { [ME]: 8, [THEM]: 8 }, scaled: true });
+  });
+});
+
 describe('the machine’s share', () => {
   it('lets a weaker machine draw fewer soldiers a side, the strongest the game’s most', () => {
     expect(sideCap('low')).toBeLessThan(sideCap('mid'));
@@ -170,8 +200,12 @@ describe('the options', () => {
     expect(of('bpRate').default).toBe('default');
     expect(of('heroes.enemy').default).toBe(true);
     expect(of('allEraHeroes').default).toBe(false);
-    expect(of('heroes.enemyCount')).toMatchObject({ kind: 'count', min: 0, max: 4, default: 3 });
-    expect(of('reinforcements.friendlyCount')).toMatchObject({ min: 0, max: 12, default: 10 });
+    // (the counts are the game's own options': their least, most and starting value)
+    expect(of('bots.enemy')).toMatchObject({ kind: 'count', min: 0, max: 32, default: 20, source: 'Gameplay/Profiles/InstantActionParams/InstantActionNumEnemyAI_PC' });
+    expect(of('bots.friendly')).toMatchObject({ min: 0, max: 32, default: 20 });
+    expect(of('heroes.enemyCount')).toMatchObject({ kind: 'count', min: 0, max: 4, default: 2 });
+    expect(of('reinforcements.friendlyCount')).toMatchObject({ min: 0, max: 20, default: 4 });
+    expect(of('vehicles.enemyCount')).toMatchObject({ min: 0, max: 2, default: 1 });
   });
 
   it('every option’s default is a choice the round takes', () => {
