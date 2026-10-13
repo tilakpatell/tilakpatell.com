@@ -96,6 +96,8 @@ function worldFor(sim, b, s) {
     objective: b.task?.at ?? sim.objective?.[s.team] ?? sim.brains.objective[s.team],
     task: b.task ?? null,
     enemies: sim.cache.enemies[s.team],
+    // (every living enemy, where it is: an AutoPlayer's tracker picks its target from these, soldierBrain.js)
+    targets: sim.cache.targets[s.team],
     others: sim.cache.all,
     taken: sim.brains.taken,
     muzzle: muzzleOf,
