@@ -171,7 +171,7 @@ describe('the options', () => {
 
   it('are the game’s own setup options, in the screen’s order: the enemy’s before the player’s side’s', () => {
     expect(opts.map((o) => o.id)).toEqual([
-      'mode', 'difficulty', 'length',
+      'mode', 'level', 'difficulty', 'length',
       'bpRate', 'bots.enemy', 'bots.friendly',
       'heroes.enemyCount', 'heroes.friendlyCount',
       'reinforcements.enemyCount', 'reinforcements.friendlyCount',
@@ -181,7 +181,7 @@ describe('the options', () => {
       'overhaul.aim', 'overhaul.reaction', 'overhaul.dodging', 'overhaul.spread',
     ]);
     // (the screen's two headings, and what the game's screen has no row for)
-    expect(opts.filter((o) => o.group === 'modifiers').map((o) => o.id)).toEqual(['mode', 'difficulty', 'length']);
+    expect(opts.filter((o) => o.group === 'modifiers').map((o) => o.id)).toEqual(['mode', 'level', 'difficulty', 'length']);
     expect(opts.filter((o) => o.group === 'site').map((o) => o.id)).toEqual(['era', 'botLogic']);
     expect(of('bpRate').group).toBe('advanced');
     expect(of('difficulty').option).toBe('InstantActionDifficulty');
@@ -194,8 +194,8 @@ describe('the options', () => {
     // (the screen's first difficulty, its Normal, is the AutoPlayers' Rookie row)
     expect(of('difficulty').default).toBe(of('difficulty').choices[ia.InstantActionDifficulty.default]);
     expect(of('difficulty').default).toBe('rookie');
-    // (names only where the strings table holds every one: the difficulty's are not in it, and its values are the screen's own words)
-    expect(of('difficulty').labels).toBeUndefined();
+    // (the items' own names: the difficulty's ids end NORMAL, HARD and EXPERT, and the game's words for them are these)
+    expect(of('difficulty').labels).toEqual(['ROOKIE', 'NORMAL', 'EXPERT']);
     expect(of('length').labels).toEqual(['SHORT', 'MEDIUM', 'LONG']);
     expect(of('bpRate').labels).toEqual(['SLOW', 'DEFAULT', 'FAST']);
     expect(of('length').default).toBe('medium');
@@ -237,6 +237,51 @@ describe('the options', () => {
     expect(erasFor(rb, 'hoth')).toEqual(['Orig']);
     expect(of('era').choices).toEqual(['Orig']);
     expect(() => startInstantAction({ rulebook: rb, gs, nav: hothFlatNav(rb), mode: 'galacticAssault', era: 'Prequel' })).toThrow(/teams Prequel:hoth_01/);
+  });
+});
+
+describe('the rows’ words', () => {
+  const opts = optionsFor(gs, { rulebook: rb, level: 'hoth' });
+  const of = (id) => opts.find((o) => o.id === id);
+
+  it('are the game’s own for its rows: the title and the help line under the list', () => {
+    expect(of('mode')).toMatchObject({ label: 'MODE', help: 'Select gamemode.' });
+    expect(of('difficulty')).toMatchObject({ label: 'AI DIFFICULTY', help: 'Change the difficulty of combat to your preferred setting.' });
+    expect(of('length')).toMatchObject({ label: 'ROUND LENGTH', help: 'Choose between short, medium and long matches.' });
+    expect(of('bpRate')).toMatchObject({ label: 'BATTLE POINTS', help: 'Set the rate of earning Battle Points.' });
+    expect(of('bots.enemy')).toMatchObject({ label: 'ENEMY AI COUNT', help: 'Maximum number of enemy AI. This will affect performance.' });
+    expect(of('reinforcements.friendlyCount').label).toBe('FRIENDLY REINFORCEMENT COUNT');
+    expect(of('allEraHeroes')).toMatchObject({ label: 'ENABLE HEROES FROM ANY ERA', help: 'Enable the use of heroes from any Star Wars era' });
+    // (the table holds no help line for the two friendly switches)
+    expect(of('heroes.friendly')).toMatchObject({ label: 'FRIENDLY HEROES', help: null });
+    for (const o of opts) expect(typeof o.label).toBe('string');
+  });
+
+  it('a switch’s two words are the game’s OFF and ON; a mode’s name is the game’s for it', () => {
+    expect(of('heroes.enemy').labels).toEqual(['OFF', 'ON']);
+    expect(of('mode').labels[of('mode').choices.indexOf('supremacy')]).toBe('SUPREMACY');
+    expect(of('mode').labels[of('mode').choices.indexOf('galacticAssault')]).toBe('GALACTIC ASSAULT');
+  });
+
+  it('the location is a row of one choice, the page’s level by its world’s name', () => {
+    expect(of('level')).toMatchObject({ group: 'modifiers', kind: 'choice', choices: ['hoth'], labels: ['HOTH'], default: 'hoth', label: 'LOCATION', help: 'Set the map to play.', option: 'InstantActionLevelToPlay' });
+  });
+
+  it('say what the sim does not act on yet, and what a row waits on', () => {
+    expect(opts.filter((o) => o.carried).map((o) => o.id)).toEqual(['vehicles.enemyCount', 'vehicles.friendlyCount', 'vehicles.enemy', 'vehicles.friendly', 'allEraHeroes']);
+    expect(of('botLogic').when).toEqual({ mode: 'supremacy' });
+    expect(of('overhaul.spread').when).toEqual({ mode: 'supremacy', botLogic: 'overhaul' });
+    expect(of('difficulty').when).toBeUndefined();
+  });
+
+  it('take the profile’s words where it holds them, whatever the site would have said', () => {
+    const ia = rb.ai.instantAction;
+    const told = { ...rb, ai: { ...rb.ai, instantAction: { ...ia, InstantActionBPRate: { ...ia.InstantActionBPRate, title: { text: 'THE GAME’S WORD' }, help: { text: 'Its line.' } } } } };
+    expect(optionsFor(gs, { rulebook: told, level: 'hoth' }).find((o) => o.id === 'bpRate')).toMatchObject({ label: 'THE GAME’S WORD', help: 'Its line.' });
+  });
+
+  it('with no rulebook every row still has a name, the site’s own', () => {
+    for (const o of optionsFor(gs)) expect(o.label.length).toBeGreaterThan(0);
   });
 });
 
