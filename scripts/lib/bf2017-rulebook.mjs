@@ -29,6 +29,7 @@
 // A weapon's display name is the string `ID_W_<id>` (ID_W_A280C → "A280C").
 
 import { assetRefs, deref, follow, isSequel as isSequelName, objectsOf, pick, pointee, readIndex, rootOf, shortName } from './bf2017-ebx.mjs';
+import { effectOf } from './bf2017-rulebook-effects.mjs';
 
 export { isSequel } from './bf2017-ebx.mjs';
 
@@ -156,8 +157,15 @@ export function weaponRow(root, name) {
     f.mode = fn.FireLogic.FireLogicType.replace(/^flt/, '').replace(/Fire$/, '').toLowerCase();
 
     const capacity = fn.Ammo?.MagazineCapacity;
+    // (a magazine of −1 is a blaster that heats; so is one whose own overheat config heats a bullet, whatever
+    // magazine its firing data keeps: Boba Fett's EE-3 holds 10,000, Bossk's micro-grenades 1,000)
+    const lost = [];
+    const heats = capacity !== -1 && objectsOf(blueprint, 'OverheatComponentData').length ? heatOf(root, blueprint, firing, fn, lost) : null;
     if (capacity === -1) row.heat = heatOf(root, blueprint, firing, fn, missing);
-    else {
+    else if (heats?.perBullet > 0) {
+      row.heat = heats;
+      missing.push(...lost);
+    } else {
       row.ammo = {};
       take(row.ammo, 'magazine', firing, fn, 'Ammo.MagazineCapacity');
       take(row.ammo, 'magazines', firing, fn, 'Ammo.NumberOfMagazines');
@@ -176,7 +184,9 @@ export function weaponRow(root, name) {
       const blaster = objectsOf(blueprint, 'BlasterWeaponData')[0];
       take(d, 'min', blueprint, blaster, 'ProjectileParameters.MinDamageMultiplier');
       take(d, 'max', blueprint, blaster, 'ProjectileParameters.MaxDamageMultiplier');
-      const blast = reach(root, bullet.Explosion, missing, 'explosion');
+      // (the explosion a record of its own, or kept in the projectile's: the bowcaster's bolt, a micro-grenade)
+      const inner = deref(bolt.asset, bullet.Explosion);
+      const blast = inner ? { asset: bolt.asset, obj: inner } : reach(root, bullet.Explosion, missing, 'explosion');
       if (blast) {
         d.blast = {};
         for (const [k, p] of [['damage', 'BlastDamage'], ['inner', 'InnerBlastRadius'], ['radius', 'BlastRadius'], ['shockwave', 'ShockwaveRadius'], ['impulse', 'BlastImpulse']]) take(d.blast, k, blast.asset, blast.obj, p);
@@ -214,14 +224,19 @@ export function weaponRow(root, name) {
 function heatOf(root, blueprint, firing, fn, missing) {
   const heat = {};
   const mod = objectsOf(blueprint, 'WeaponOverheatModifier')[0];
-  const conf = reach(root, objectsOf(blueprint, 'OverheatComponentData')[0]?.OverheatConfig, missing, 'overheat config');
-  const cfg = conf && (deref(conf.asset, rootOf(conf.asset).Data) ?? conf.obj);
+  const ref = objectsOf(blueprint, 'OverheatComponentData')[0]?.OverheatConfig;
+  // (a hero's ability weapon keeps its config in the blueprint itself, a `$ref` and not a record of its own)
+  const own = deref(blueprint, ref);
+  const conf = own ? { asset: blueprint, obj: own } : reach(root, ref, missing, 'overheat config');
+  const cfg = conf && (own ?? deref(conf.asset, rootOf(conf.asset).Data) ?? conf.obj);
   const or = (key, a, aPath, b, bObj, bPath) => (pick(a.obj, aPath) > 0 ? take(heat, key, a.asset, a.obj, aPath) : bObj && take(heat, key, b, bObj, bPath));
   if (mod?.HeatPerBullet > 0) take(heat, 'perBullet', blueprint, mod, 'HeatPerBullet');
   else if (cfg) take(heat, 'perBullet', conf.asset, cfg, 'HeatPerBullet');
   if (cfg) {
     take(heat, 'dropPerSecond', conf.asset, cfg, 'HeatDropPerSecond');
     take(heat, 'dropDelay', conf.asset, cfg, 'OverheatDropDelay');
+    // (a weapon whose heat rises on its own is an ability's clock: Sharpshooter's 0.04 a second)
+    if (cfg.HeatIncreasePerSecond > 0) take(heat, 'risePerSecond', conf.asset, cfg, 'HeatIncreasePerSecond');
   } else take(heat, 'dropPerSecond', firing, fn, 'OverHeat.HeatDropPerSecond');
   // (the firing data's threshold and penalty, the config's when it has none)
   or('threshold', { asset: firing, obj: fn }, 'OverHeat.OverHeatThreshold', conf?.asset, cfg, 'OverHeatThreshold');
@@ -292,6 +307,9 @@ export function abilityRow(root, name) {
     }
   }
   row.ranks = [...ranks.keys()].sort((a, b) => a - b).map((level) => ({ level, level_source: `${asset.name}#PlayerAbilityPropertyOutputModifier.Values.MinAbilityLevel`, modifiers: ranks.get(level) }));
+  // (what a blaster hero's ability does, from the records its prefab reaches: bf2017-rulebook-effects.mjs)
+  const effect = effectOf(root, row.id, { weaponRow });
+  if (effect) row.effect = effect;
   return row;
 }
 
