@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasIndirect, indirectOf, loadGpuThree, setIndirect, upload } from './three.js';
+import { hasIndirect, indirectOf, loadGpuThree, setIndirect, upload, widen } from './three.js';
 
 // The hooks this folder takes from three r186; a three upgrade that moves
 // one fails here first (docs/stack/three.md, "Upgrading").
@@ -33,6 +33,14 @@ describe('gpuScene/three.js', () => {
     upload(a, { start: 3, count: 2 }, 2);
     expect(a.updateRanges).toEqual([{ start: 24, count: 16 }]);
     expect(a.version).toBe(1);
+  });
+
+  it('widens one span over the elements set one by one, for one upload', () => {
+    let span = null;
+    for (const s of [60, 61, 139]) span = widen(span, s);
+    expect(span).toEqual({ start: 60, count: 80 });
+    expect(widen({ start: 4, count: 2 }, 1, 2)).toEqual({ start: 1, count: 5 });
+    expect(widen(null, 7, 3)).toEqual({ start: 7, count: 3 });
   });
 
   it('draws indirect only on WebGPU', () => {
