@@ -146,10 +146,10 @@ export default {
     // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
     // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
-    // server's rows for them. The page's side is the Empire's; the sides' sizes, the era and the
-    // difficulty reach the sim, the rest of the round waits on the lanes that read it)
+    // server's rows for them. The page's side is the Empire's; the sides' sizes, the era, the
+    // difficulty and the AutoPlayers' aim reach the sim, the rest of the round waits on the lanes that read it)
     const round = instantAction ? roundFor(await loadSettings(), { ...instantAction, level: levelName, mode, team: PLAYER_TEAM }) : null;
-    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty } : {}) });
+    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : {}) });
     const me = addPlayer(sim, { team: PLAYER_TEAM });
     // the game's sounds (sound/): the player on the runtime's bus, the
     // director on the sim's events; the one-shots the first minute needs

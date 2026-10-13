@@ -37,7 +37,8 @@ function nameOf(sim, s) {
 
 function brainFor(sim, ai, s) {
   s.name = nameOf(sim, s);
-  const brain = createBrain(s, { ai, rand: sim.rand, aimScale: sim.aimScale ?? 1, difficulty: sim.difficulty ?? null, pve: !!sim.pve });
+  // (ap: an Instant Action round's AutoPlayer numbers for this bot's side, instantAction.js's; none otherwise)
+  const brain = createBrain(s, { ai, rand: sim.rand, aimScale: sim.aimScale ?? 1, difficulty: sim.difficulty ?? null, pve: !!sim.pve, ap: sim.instantAction?.ap?.[s.team] ?? null });
   brain.name = s.name;
   brain.nextSense = sim.time + sim.rand() * SENSE;
   brain.nextThink = sim.time + sim.rand() * THINK;

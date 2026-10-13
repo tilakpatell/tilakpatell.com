@@ -17,7 +17,7 @@
 // with their PvE templates and their abilities (`ai/skirmish.js`). Pure: no
 // three.js, no DOM.
 //
-//   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve }) → sim
+//   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve, instantAction }) → sim
 //   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate }) → { ok, why }
 //   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, abilityHeld, vent, cool }]
 //     (the class abilities, kit.js: 'ability' { id, slot, phase, why }, 'throw', 'explosion', 'split', 'turret', 'turretDown',
@@ -90,7 +90,7 @@ function openingSpawns(map) {
   return out;
 }
 
-export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 1, teams = null, bots = { 1: 0, 2: 0 }, mode = null, spawns = null, oob = null, difficulty = null, pve = false }) {
+export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 1, teams = null, bots = { 1: 0, 2: 0 }, mode = null, spawns = null, oob = null, difficulty = null, pve = false, instantAction = null }) {
   const rb = rulebook;
   const sides = teams ?? (() => {
     const t = teamsFor(rb, level, era);
@@ -119,6 +119,8 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     stats: new Map(),
     difficulty: difficulty ? difficultyFor(difficulty, aiOf(rb)) : null,
     pve: !!pve,
+    // (an Instant Action round, instantAction.js's: its AutoPlayers' numbers are the brains' from their making)
+    instantAction,
     // (the kit: the class abilities' effects, the grenades in the air; the bots' damage buckets)
     kit: createKit(),
     buckets: createBuckets(),

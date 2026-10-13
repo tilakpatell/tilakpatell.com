@@ -16,10 +16,12 @@
 // turns following into going to the objective and staying on it, firing
 // on the way, and holding the interaction there when no enemy is close.
 //
-//   createBrain(s, { ai, role, rand, aimScale, system, difficulty, pve }) → brain   (aimScale widens the aim box: a
+//   createBrain(s, { ai, role, rand, aimScale, system, difficulty, pve, ap }) → brain   (aimScale widens the aim box: a
 //     mode's lethality lever; system: the AI system row, ai.system by default, AISystem_PvE for a pve bot;
 //     difficulty: `difficulty.js`'s row, which times the first shot at a new target, the aim's settling and
-//     widens the aim at a target that sprints or crouches; pve: the Skirmish template, tactics and abilities)
+//     widens the aim at a target that sprints or crouches; pve: the Skirmish template, tactics and abilities;
+//     ap: the AutoPlayers' numbers, autoPlayer.js's, for a bot of an Instant Action round: its view is then the
+//     tracker's and its trigger the line of fire's, stepped in act, in place of the aim box and the reaction)
 //   think(brain, world, now) → intent { mode, target, goal, stance, fire, aim }
 //   act(brain, intent, s, dt, world, now)        patternStep(brain) → fire this frame?
 //   world: { nav, lineClear(a, b), squad: { centre, leader, posture } | null, objective, task, enemies, others, shoot(s, aim), who(id) }
@@ -36,6 +38,7 @@ import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
+import { AIM_GATE, aimStep, createAim, createLof, lofStep, noiseOf, weaponClass } from './autoPlayer.js';
 
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
@@ -70,7 +73,7 @@ export const SEARCH_CELLS = 6000;
 // narrow for its body) is left out of its paths this long, by hand.
 export const AVOID = 10;
 
-export function createBrain(s, { ai, role: given = null, rand = Math.random, aimScale = 1, system: sys = null, difficulty = null, pve = false }) {
+export function createBrain(s, { ai, role: given = null, rand = Math.random, aimScale = 1, system: sys = null, difficulty = null, pve = false, ap = null }) {
   // a Skirmish bot plays its class's PvE template, tactics and AI weapon, under the PvE AI system
   const pveRole = pve ? skirmishRole(s.cls ?? {}) : null;
   const pveTemplate = pve ? ai.skirmish?.templates?.[pveRole] : null;
@@ -90,6 +93,11 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     difficulty,
     pve: !!pveTemplate,
     skirmish: pveTemplate ? ai.skirmish : null,
+    // (an AutoPlayer's: its numbers, its tracker, its line of fire and its weapon class's noise in degrees)
+    ap,
+    apAim: ap ? createAim() : null,
+    apLof: ap ? createLof() : null,
+    apNoise: ap ? noiseOf(ap, weaponClass(family, s.weapon?.id)) : 0,
     target: null,
     targetSince: 0,
     assigned: null,
@@ -177,6 +185,14 @@ function penalty(brain, e) {
   if (e.stance === 'prone') return a.prone;
   if (e.stance === 'crouch') return a.crouch;
   return 1;
+}
+
+// An AutoPlayer's engaging distance: AP_MaxTargetEngagingDistanceScale × its AI weapon's preferred
+// range, the far end of that row's { Start, Ideal, End } (by hand, NOTES.md), never past the gun's own.
+export function engaging(brain, range) {
+  const p = brain.preferred;
+  const far = typeof p === 'number' ? p : (p?.End ?? null);
+  return far == null ? range : Math.min(range, brain.ap.engageScale * far);
 }
 
 export function aimAt(brain, from, belief, now, who = null) {
@@ -269,9 +285,15 @@ export function think(brain, world, now) {
   if (b) {
     const from = world.muzzle ? world.muzzle(s) : chestOf(s);
     intent.aim = aimAt(brain, from, b, now, world.who?.(b.id) ?? null);
-    // (a new target's first shot waits the difficulty's reaction at its distance)
-    const ready = !brain.difficulty || now - brain.targetSince >= brain.difficulty.reaction(dist);
-    intent.fire = ready && b.visible && dist <= range && world.lineClear(from, v3(b));
+    if (brain.ap) {
+      // (an AutoPlayer: whether it may fire at all, inside its engaging distance; the reaction and the
+      // line's loss are the line of fire's, stepped in act)
+      intent.fire = dist <= engaging(brain, range);
+    } else {
+      // (a new target's first shot waits the difficulty's reaction at its distance)
+      const ready = !brain.difficulty || now - brain.targetSince >= brain.difficulty.reaction(dist);
+      intent.fire = ready && b.visible && dist <= range && world.lineClear(from, v3(b));
+    }
     // (a Skirmish bot's class abilities; the online fill's AutoPlayers press the officer's turret alone: ai/throw.js)
     if (s.abilities.list.length > 1) intent.ability = pressAbility(brain, { target: b, now, world, autoPlayer: !brain.pve });
   }
@@ -442,14 +464,30 @@ export function act(brain, intent, s, dt, world, now) {
   // a bot walks upright and crouches where it means to stay
   s.stance = intent.stance === 'crouch' && (arrived || intent.mode === 'attack') ? 'crouch' : 'stand';
   navigate(brain, world, s, intent.goal, dt, now);
-  const look = intent.aim ?? (s.moving ? [s.at[0] + s.vel[0], 0, s.at[2] + s.vel[2]] : null);
-  if (look) s.yaw = Math.atan2(look[0] - s.at[0], look[2] - s.at[2]);
-  s.aim = intent.aim;
-  s.interact = !!intent.interact && !!intent.goal && d2(flat(s.at), intent.goal) < NEAR_GOAL + 2;
-  const firing = patternStep(brain);
   // (its own gun's recoil kicks its view as a player's: weapons.js's amplitude on the aim point)
   const from = world.muzzle ? world.muzzle(s) : chestOf(s);
+  let aim = intent.aim;
+  let fire = intent.fire && !!aim && world.lineClear(from, aim);
+  if (brain.ap) {
+    // (an AutoPlayer: the view eased onto the led target under its noise each step, the trigger held
+    // once the line has been clear for the reaction and for the timeout after it is lost, at where
+    // the target was; it presses only with the view inside AIM_GATE of the target)
+    const b = intent.target ? brain.me.beliefs[intent.target] : null;
+    fire = false;
+    if (b) {
+      const at = v3(b);
+      const t = aimStep(brain.apAim, brain.ap, { from, at, vel: [b.vel?.x ?? 0, 0, b.vel?.z ?? 0], noise: brain.apNoise, dt, rand: brain.rand });
+      aim = t.point;
+      const held = lofStep(brain.apLof, brain.ap, { clear: !!b.visible && world.lineClear(from, at), now });
+      fire = intent.fire && held && t.error <= AIM_GATE;
+    }
+  }
+  const look = aim ?? (s.moving ? [s.at[0] + s.vel[0], 0, s.at[2] + s.vel[2]] : null);
+  if (look) s.yaw = Math.atan2(look[0] - s.at[0], look[2] - s.at[2]);
+  s.aim = aim;
+  s.interact = !!intent.interact && !!intent.goal && d2(flat(s.at), intent.goal) < NEAR_GOAL + 2;
+  const firing = patternStep(brain);
   // (a flashed bot fires nothing for the flash's 5 s: kit.js)
   const flashed = (s.flashedUntil ?? -Infinity) > now;
-  if (intent.fire && firing && !flashed && intent.aim && world.lineClear(from, intent.aim)) world.shoot(s, kickAim(s.gun, from, intent.aim));
+  if (fire && firing && !flashed) world.shoot(s, kickAim(s.gun, from, aim));
 }

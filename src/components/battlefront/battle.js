@@ -6,7 +6,7 @@
 // round when the check forces it. Lane 2's `mode`, `deploy` and `points`
 // replace those pieces; the page reads only `view()`.
 //
-//   createBattle({ rulebook, level, mode, heightAt, bots, seed, cell, nav, mask, teams, era, difficulty }) → battle   (mode: any of modes/index.js's)
+//   createBattle({ rulebook, level, mode, heightAt, bots, seed, cell, nav, mask, teams, era, difficulty, instantAction }) → battle   (mode: any of modes/index.js's)
 //   (mask: the pack's nav.bin, navMask.js's; one built for another grid is
 //   left out, with a warning, and the navgrid is the ground's alone)
 //   addPlayer(battle, { team }) → id ; deploy(battle, id, { classId, spawn: 'point' | 'squad', mate }) → { ok, why? }
@@ -74,7 +74,7 @@ export function worldMove([x, y], yaw) {
   return [y * s - x * c, y * c + x * s];
 }
 
-export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault', heightAt = () => 0, bots = { 1: BOTS, 2: BOTS }, seed = 1, cell = NAV_CELL, nav = null, mask = null, teams = null, era = 'Orig', difficulty = null } = {}) {
+export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault', heightAt = () => 0, bots = { 1: BOTS, 2: BOTS }, seed = 1, cell = NAV_CELL, nav = null, mask = null, teams = null, era = 'Orig', difficulty = null, instantAction = null } = {}) {
   const map = mapOf(rulebook, level);
   if (!modeFor(mode)) throw new Error(`mode ${mode}: not one the game world runs`);
   const ga = stagesOf(rulebook, level, mode);
@@ -82,8 +82,8 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
   const grid = nav ?? buildNav({ heightAt, bounds: { min: map.bounds.min, max: map.bounds.max }, cell, cover: aiOf(rulebook).cover.constants, mask });
   if (mask && !grid.mask) console.warn(`battlefront: the nav mask (${mask.cols} × ${mask.rows} of ${mask.cell} m) is not this map's grid; walking the ground alone`);
   // (teams: { 1, 2 } where the level has no row of its own in teams.json, which holds Hoth's alone)
-  // (era, difficulty: an Instant Action round's, lib/battlefront/instantAction.js; the game's own where none is asked)
-  const sim = createSim({ rulebook, level, era, nav: grid, seed, bots, teams, difficulty });
+  // (era, difficulty, instantAction: an Instant Action round's, lib/battlefront/instantAction.js; the game's own where none is asked)
+  const sim = createSim({ rulebook, level, era, nav: grid, seed, bots, teams, difficulty, instantAction });
   let letter = 0;
   // (the other modes, lane 6's: their objectives as the mode reads them from the map rulebook)
   const other = mode === 'galacticAssault' ? [] : modeFor(mode).create({ rulebook, level }).objectives.map((o) => ({ id: o.name, type: o.type, name: String.fromCharCode(65 + letter++), meter: 0, at: [o.at[0], 0, o.at[1]] }));

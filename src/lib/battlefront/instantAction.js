@@ -30,10 +30,11 @@
 // Expert rows in order; the most a side's count may be asked (MAX_SIDE).
 //
 // What the sim acts on today: the level, the mode, the era, the sides' bots
-// (AutoPlayers: `pve` off), the difficulty, the Battle Points' rate, and the
-// reinforcements on a mode that counts them. The rest is carried on
-// `sim.instantAction` for the brains, the commander and the heroes' and
-// vehicles' lanes to read: the AutoPlayers' numbers, the waves, the caps.
+// (AutoPlayers: `pve` off), the difficulty, the Battle Points' rate, the
+// reinforcements on a mode that counts them, and the AutoPlayers' aim and
+// line of fire (ai/soldierBrain.js reads each side's numbers off
+// `sim.instantAction`). The rest is carried there for the commander and the
+// heroes' and vehicles' lanes to read: the waves, the caps, the evasion.
 // Pure: no three.js, no DOM.
 //
 //   erasFor(rulebook, level) → ['Orig', …]
@@ -174,8 +175,7 @@ export function roundFor(gs, choice = {}) {
 export function startInstantAction({ rulebook, gs, nav = null, seed = 1, spawns = null, teams = null, ...choice }) {
   const round = roundFor(gs, choice);
   // (AutoPlayers, not the Arcade's Skirmish bots: `pve` off; the difficulty's row is the multiplayer one of its name)
-  const sim = createSim({ rulebook, level: round.level, era: round.era, nav, seed, teams, spawns, bots: round.bots, mode: round.mode, difficulty: round.difficulty, pve: false });
-  sim.instantAction = round;
+  const sim = createSim({ rulebook, level: round.level, era: round.era, nav, seed, teams, spawns, bots: round.bots, mode: round.mode, difficulty: round.difficulty, pve: false, instantAction: round });
   if (sim.bp) sim.bp.rate = round.bpRate;
   // (a mode that counts reinforcements, Supremacy's ground: the round's length is theirs)
   if (sim.ga?.tickets) for (const k of Object.keys(sim.ga.tickets)) sim.ga.tickets[k] = round.tickets;
