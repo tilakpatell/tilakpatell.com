@@ -44,8 +44,19 @@ What is left of the frame's JavaScript on Hoth, from the same evidence file: the
 
 ### The picture
 
-No picture of the game at full size exists to score the site against: `docs/superpowers/evidence/gpu-first/reference/` holds only the lit fixture, `D:\bf-frames` is empty, and the game's window tonight was 640 × 360 on the pre-round card screen. Section 5 says how one is taken. Until then "quality" here is a list of what the page draws on the 5090 (tier T2, internal scale 1, a chain of 10 to 11 passes: TRAA, SSGI, SSR, ambient occlusion, bloom; four sun cascades of 2,048 with two redrawn every frame and two every fourth), not a score.
+Eight full-size pictures of the game on Hoth exist after all (`bf2-re\data\live\2026-10-12\field-01` to `field-08`, 1,920 × 1,080, taken by an earlier session; found on 2026-10-13 after this section first said there were none). They are not at the site's camera places, so nothing can be scored pixel against pixel yet; section 5 says how a matched pair is taken. Looked at side by side with the site's own frame of the same sky (Hoth at sunset, the trooper from behind, `.scratch-check/out/perf-pr-1440-b.png` on `claude/bf-frame-once`), what the game's frame has that the site's does not:
 
+| in the game's frame | on the site today | whose it is |
+| --- | --- | --- |
+| Two Star Destroyers and a third hull filling the sky | an empty sky | no lane yet |
+| Black smoke standing from every wreck, falling snow, sparks at the fight | none | lane A9 (the compute emitters exist and no world uses them) |
+| The trooper's and the rocks' shadows long and soft across the snow, out to the middle distance | short, hard to see | lane A1 (the game's own far shadow) and the sun's angle |
+| Snow with drift lines, footprints' relief and a glitter in the light | a smooth pink surface | the ground lane (`claude/bf-ground-snow` merged the maps; the relief does not read yet) |
+| Rocks capped and streaked with snow | dark blocks with coarse faces | no lane yet |
+| Distance fading into a lit haze | a clear horizon | the light stack's fog; not measured |
+| A soft filmic frame (temporal anti-aliasing, grain) | a sharper, cleaner one | by choice so far |
+
+The HUD is close: the objective letters, the squad list, the minimap, the three ability hexagons and the health bar are in the game's places. What the page draws on the 5090 is tier T2, internal scale 1, a chain of 10 to 11 passes (TRAA, SSGI, SSR, ambient occlusion, bloom) and four sun cascades of 2,048 with two redrawn every frame and two every fourth.
 ### The other lanes (read from their branches and transcripts)
 
 | lane | holds | touches |
