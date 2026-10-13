@@ -13,7 +13,7 @@ Line numbers below are as of 2026-10-13, `origin/main` after the pull request th
 
 ## Left: the ports to the node renderer
 
-Each world is its own pull request, in this order, merged only when all three gates hold (the addendum): every twin at `scripts/twin-parity.mjs`'s line (32 dB, under 2 % of pixels off) and the world at `scripts/gpu-parity.mjs`; `scripts/perf-probe.mjs` no slower on the node renderer than the classic one, main thread and GPU, at Low and High (a world that is slower is rebuilt the node renderer’s way first: `BundleGroup` round what never moves, instancing for what repeats, the GPU scene for a level); `src/runtime/shading.test.js` clean and `glsl-sites` lower by the world’s count.
+Each world is its own pull request, in this order, merged only when all three gates hold (the addendum): every twin at `scripts/twin-parity.mjs`’s line (32 dB, under 2 % of pixels off) and the world at `scripts/gpu-parity.mjs`; `scripts/perf-probe.mjs` no slower on the node renderer than the classic one, main thread and GPU, at Low and High (a world that is slower is rebuilt the node renderer’s way first: `BundleGroup` round what never moves, instancing for what repeats, the GPU scene for a level); `src/runtime/shading.test.js` clean and `glsl-sites` lower by the world’s count.
 
 The method is lane T’s (`docs/superpowers/plans/2026-10-10-galaxy-engine-laneT-surface-port.md`): a twin is a new file (`<name>Nodes.js` beside a shared original in `src/lib/three/`, or `nodes.js` beside a world’s scene), a factory returning a node material and its uniform nodes under the names the frame code already writes; the GLSL original is never edited while another world draws with it; the module flips to `shading: 'nodes'` last. Twins that exist already: `src/lib/three/{core,dust,foliage,grass,groundLook,groundingBake,grounding,groundmap,groundwork,hook,house,ink,kit,matcap,portalFx,puffs,recolour,scans,splat,wind}Nodes.js` and `src/components/galaxy/surface/nodes/` (sky, skyfog, water, weather, props, post, figures, kit, missions, activity, hvv).
 
@@ -24,7 +24,7 @@ GLSL sites in each module’s import closure (`src/runtime/shadingClosure.js`):
 | world | module | files in the closure with GLSL | what it needs |
 |---|---|---|---|
 | /fly (the Expanse flight) | `components/expanse/flight/module.js:134` | 14 | its own two: the sky dome’s `ShaderMaterial` (`flight/scene.js:21`) and the city’s `onBeforeCompile` (`flight/ground.js:143`); the rest are shared files with twins (`lib/three` core, foliage, groundLook, groundmap, house, puffs, recolour, wind; the surface’s props `shaders.js`, `windows.js`, `weather.js`): it reaches them through `galaxy/shared/models.js` and `galaxy/shared/weather.js`, re-exports of the surface’s GLSL files, so the flight needs a nodes path to those (the surface’s own module imports the twins directly) |
-| /dot-matrix/64, the tribute view | `components/mario64/module.js:63` | 3 | `mario64/scene.js` and `models/things.js` (`onBeforeCompile`), and `looks.js`'s `EffectComposer` with `UnrealBloomPass`: the post through `rt.gfx.post` (the runtime’s node chain) |
+| /dot-matrix/64, the tribute view | `components/mario64/module.js:63` | 3 | `mario64/scene.js` and `models/things.js` (`onBeforeCompile`), and `looks.js`’s `EffectComposer` with `UnrealBloomPass`: the post through `rt.gfx.post` (the runtime’s node chain) |
 | /deathstar/inside | `components/deathstar/inside/module.js:91` | 13 | `ShaderMaterial` in shaft/depths, deep/parts, ds2/space, hangar, views, saber, fx; `onBeforeCompile` in deep/compactor, views; `lib/three` explosions (no twin yet), dye (no twin yet), house, groundmap |
 | /galaxy | `components/galaxy/module.js` (fromScene’s default) | 54 | the galaxy’s own (levelArea, areaWeather, skyStreaks, world, fx, rocks, rocksPlaced, placesDraw, bodies, surface/sky), `lib/three` atmosphere (no twin), ink, recolour, puffs, wind, foliage, core, and what it borrows: the cockpit’s vehicles and space, the Rick and Morty cruiser, wardrobe dress, portal toon and meshyCast. The biggest; last of these four |
 
@@ -68,7 +68,7 @@ Most valuable first. Each item says where; measure before and after (`scripts/pe
 ### Battlefront
 
 6. **The HUD’s snapshot**: 8 a second (`battlefront/module.js:74`, `:500-505`) to `setSnap` (`BattlefrontWorld.jsx:83-84`), so the whole HUD tree renders 8 times a second, each snapshot allocating every soldier’s row, the objectives, the kill log and `machine()` (whose `gpuClock.median` sorts a copy). Split it: what changes every snapshot (health, ammo, the radar) to the parts that show it, through refs; what changes rarely (the scoreboard, the objectives) only on change.
-7. **`battle.js:315-406` `view()`** still rebuilds every entity’s `vel` array, the objectives, `deploy`'s offers and spawns, the squad rows, the player and the scoreboard on each call, now once or twice a frame. Reuse the arrays; build `deploy` only while deploying, the scoreboard only when it is open.
+7. **`battle.js:315-406` `view()`** still rebuilds every entity’s `vel` array, the objectives, `deploy`’s offers and spawns, the squad rows, the player and the scoreboard on each call, now once or twice a frame. Reuse the arrays; build `deploy` only while deploying, the scoreboard only when it is open.
 8. **The front-end’s hero stage** (`galaxy/surface/heroStage.js:173-181`): a second WebGL context drawing every frame beside the runtime’s while the Collection is open. Stop it when its canvas is out of view, draw on change under reduced motion as it does, and consider drawing it through the runtime’s renderer instead of its own context.
 
 ### WebGPU, from the research
@@ -97,9 +97,9 @@ Most valuable first. Each item says where; measure before and after (`scripts/pe
 - **A world moved to WebGPU unchanged where it measures slower** (the addendum).
 - **The renderer in an OffscreenCanvas worker** before the ports: a large refactor of input, audio and the React HUD; worth it for one heavy world once the ports are done.
 
-## Open for the owner
+## Settled with the owner
 
-- A WebGPU loss on any chip, the 5090 included, holds Auto at Low for the page and the week (`runtime/index.js`'s `onLoss`, `lib/gpuProbe.js`'s `noteLoss`), and two in a week start the chip on WebGL 2. Should a loss on a strong chip (T1, T2) hold it at Low, or only a weak one?
+- A WebGPU loss holds a weak chip only (2026-10-13): a T1 or T2 chip, or one whose name grades 50 or more before a tier is decided, gets its world back once on WebGL 2 and keeps everything else (`lib/gpuProbe.js`’s `lossHolds`, `runtime/index.js`’s `onLoss`).
 
 ## Checks
 
