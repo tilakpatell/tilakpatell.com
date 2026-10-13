@@ -8,6 +8,7 @@ import { buildFigure } from '../figures';
 import { SURFACE_MODELS } from '../catalog';
 import { PROPS } from '../props';
 import { siteOf } from '../sites';
+import { gameMenuFor } from '../../gameLevels';
 import { REACH, makeHeight } from '../terrain';
 import { createSolids } from '../walker';
 import { MODE_WORLDS, SYSTEMS } from '../../systems';
@@ -147,16 +148,19 @@ describe('missions played as quests', () => {
     for (const [system, list] of Object.entries(MISSIONS))
       for (const m of Object.values(list)) {
         const sys = SYSTEMS.find((s) => s.id === system);
+        // (a world that lands in the game's menu has no surface page: its briefing links the menu and none of these,
+        // which stay in the table unreached, kept for the free-roam mode: gameLevels.js, the 2026-10-13 design)
+        if (gameMenuFor(system)) {
+          expect([sys.game.to, ...(sys.game.also ?? []).map((a) => a.to)].join(' '), `${system} ${m.id}`).not.toContain(`/galaxy/${system}/surface`);
+          continue;
+        }
         // (the briefing's own game, or another mission it carries beside it: game.also,
         // which the briefing shows whether or not its own game is live yet)
         const also = (sys.game.also ?? []).map((a) => a.to);
         const links = [sys.game.to, ...also];
         const own = `/galaxy/${system}/surface?mission=${m.id}`;
-        // (a galactic assault the Battlefront world plays on the game's own
-        // level is linked there instead: Hoth's, 2026-10-11's deploy-flow design)
-        const game = m.kind === 'assault' ? links.find((l) => new RegExp(`^/battlefront/${system}/galacticAssault`).test(l ?? '')) : null;
-        if (!game) expect(links, `${system} ${m.id}`).toContain(own);
-        if (!also.includes(own) && !also.includes(game)) expect(sys.game.status, `${system} ${m.id}`).toBe('live');
+        expect(links, `${system} ${m.id}`).toContain(own);
+        if (!also.includes(own)) expect(sys.game.status, `${system} ${m.id}`).toBe('live');
         if (m.achievement) expect(ACHIEVEMENTS[m.achievement], `${m.id} achievement`).toBeTruthy();
       }
   });

@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { crosshairKind } from './hud/widgets.js';
 
 // The game's own screens (./screens/) and the HUD's crosshairs, loaded once
-// and apart from the world: `loadScreens` resolves to them, or to null when
-// the import fails, and then lane 5's deploy screen, loading line and end
-// of round stand in. `crosshair(cls)` is the class's gun's crosshair as the
+// and apart from the world: `loadScreens` resolves to them, or to false when
+// the import fails (the hook's null is not yet), and then lane 5's deploy
+// screen and end of round stand in. `crosshair(cls)` is the class's gun's crosshair as the
 // game's crosshair screens build it (shapes.js crosshairFor, one shape a
 // kind, made once); `reticle` the blaster rifle's, as before.
 const LOAD = () => Promise.all([import('./screens/index.js'), import('../../lib/bf2017/ui/shapes.js')]);
@@ -21,7 +21,7 @@ export const loadScreens = (load = LOAD) =>
       };
       return { ...m, reticle: crosshair('assault'), crosshair };
     })
-    .catch(() => null);
+    .catch(() => false);
 
 export function useGameScreens(load = LOAD) {
   const [screens, setScreens] = useState(null);

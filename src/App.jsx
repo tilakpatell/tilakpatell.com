@@ -36,7 +36,8 @@ const DeathStar = lazy(() => import('./pages/DeathStar'));
 const DeathStarInside = lazy(() => import('./pages/DeathStarInside'));
 const Galaxy = lazy(() => import('./pages/Galaxy'));
 const GalaxyMission = lazy(() => import('./pages/GalaxyMission'));
-const GalaxySurface = lazy(() => import('./pages/GalaxySurface'));
+// (a world on the game's own level goes to the game's menu from here: pages/GalaxyLanding.jsx)
+const GalaxySurface = lazy(() => import('./pages/GalaxyLanding'));
 const Music = lazy(() => import('./pages/Music'));
 const MiddleEarth = lazy(() => import('./pages/MiddleEarth'));
 const Scranton = lazy(() => import('./pages/Scranton'));

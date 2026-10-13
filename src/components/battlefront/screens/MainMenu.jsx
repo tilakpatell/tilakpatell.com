@@ -6,8 +6,11 @@ import GameScreen from './GameScreen.jsx';
 // The main menu: the game's tabs (Start, Play, Characters, Career, Options,
 // Store) as its tree lays them, on the multiplayer tile's film. Play and
 // the Collection (the Characters tab, its link CharacterScreen) go on; the
-// tabs this world does not have yet say so (`onComing`).
-export default function MainMenu({ onPlay, onStart, onCollection, onComing }) {
+// tabs this world does not have yet say so (`onComing`). The HOME tab
+// (`onStart`) and Escape (`onBack`) are two things: over a level's world
+// the first goes nowhere and the second is the way out (cards.js's
+// frontEndWays); `first` is where the focus starts.
+export default function MainMenu({ onPlay, onStart, onBack = onStart, onCollection, onComing, first = null }) {
   // (a tab the game names at run time, the store's, is left out)
   const tree = prune(useTree('MainMenuScreen'), (b) => OFFLINE(b) || (b.type === 'cell' && !b.key));
   const onLink = (to, cell) => {
@@ -16,5 +19,5 @@ export default function MainMenu({ onPlay, onStart, onCollection, onComing }) {
     else if (/\/CharacterScreen$/.test(to ?? '') && onCollection) onCollection();
     else onComing?.(cell.label);
   };
-  return <GameScreen tree={tree} label="Main menu" backdrop={tilesFor('assault')[0] ?? null} onBack={onStart} onLink={onLink} onAction={(id, cell) => onComing?.(cell.label)} className="bf-main-menu" />;
+  return <GameScreen tree={tree} label="Main menu" backdrop={tilesFor('assault')[0] ?? null} onBack={onBack} first={first} onLink={onLink} onAction={(id, cell) => onComing?.(cell.label)} className="bf-main-menu" />;
 }
