@@ -112,7 +112,8 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     coverScores: ai.coverScores ?? {},
     preferred: aiWeapon?.outdoorPreferredRange ?? aiWeapon?.preferredRange ?? system?.preferredRange ?? null,
     rand,
-    senses: createSenses({ sight: { range: SIGHT, cone: CONE, far: 1 }, hearing: { range: HEARING }, memory: template.targetLostTime, intuition: 2.5 }),
+    // (an AutoPlayer sees inside its tracker's field of view, AP_TargetTrackerFieldOfViewDegrees: by hand, the setting's name, NOTES.md)
+    senses: createSenses({ sight: { range: SIGHT, cone: ap ? Math.cos((ap.fov / 2) * (Math.PI / 180)) : CONE, far: 1 }, hearing: { range: HEARING }, memory: template.targetLostTime, intuition: 2.5 }),
     me: { pos: { x: 0, y: 0, z: 0 }, dir: { x: 0, y: 0, z: 1 }, beliefs: {} },
     intent: { mode: 'follow', target: null, goal: null, stance: 'stand', fire: false, aim: null },
     current: null,

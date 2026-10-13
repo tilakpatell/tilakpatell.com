@@ -11,7 +11,7 @@ import { roundFor, startInstantAction } from '../instantAction.js';
 import { newSoldier } from '../soldier.js';
 import { STEP } from '../core.js';
 import { autoPlayerFor } from './autoPlayer.js';
-import { act, createBrain, think } from './soldierBrain.js';
+import { CONE, act, createBrain, think } from './soldierBrain.js';
 
 const rb = loadRulebook();
 const ai = aiOf(rb);
@@ -133,6 +133,13 @@ describe('a bot on the AutoPlayers’ numbers', () => {
       expect(i.mode).toBe('attack');
       expect(i.goal[0]).toBeLessThan(98.5);
     }
+  });
+
+  it('sees inside the tracker’s field of view, 140°, where a bot with no numbers keeps its own', () => {
+    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
+    expect(ap.fov).toBe(140);
+    expect(bot([0, 0, 0], { ap }).senses.sight.cone).toBeCloseTo(Math.cos((70 * Math.PI) / 180), 9);
+    expect(bot([0, 0, 0]).senses.sight.cone).toBe(CONE);
   });
 
   it('does not fire past its engaging distance', () => {
