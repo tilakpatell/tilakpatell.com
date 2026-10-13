@@ -161,6 +161,20 @@ describe('a bot on the AutoPlayers’ numbers', () => {
     expect(bot([0, 0, 0]).senses.sight.cone).toBe(CONE);
   });
 
+  // (the game's tracker: FUN_140280090 keeps the target it has while that holds; FUN_145562920 takes the nearest inside its field of view)
+  it('takes the nearest enemy it sees, and keeps it for as long as it believes in it though another is nearer', () => {
+    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
+    const b = bot([0, 0, -50], { ap });
+    see(b, 'far', [0, 1.2, -10]);
+    see(b, 'near', [5, 1.2, -35]);
+    expect(think(b, world(), 0).target).toBe('near');
+    see(b, 'nearer', [-3, 1.2, -42]);
+    expect(think(b, world(), 0.3).target).toBe('near');
+    expect(think(b, world(), 100).target).toBe('near');
+    delete b.me.beliefs.near;
+    expect(think(b, world(), 100.3).target).toBe('nearer');
+  });
+
   it('does not fire past its engaging distance', () => {
     const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
     const b = bot([0, 0, -90], { ap });

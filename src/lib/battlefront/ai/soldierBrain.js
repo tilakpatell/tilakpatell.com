@@ -251,11 +251,30 @@ function fallBack(nav, from, threat, centre, by = 8) {
   return (nav && nearestWalkable(nav, goal[0], goal[1], 6)) ?? goal;
 }
 
+// An AutoPlayer's target as the game's tracker has it (the decompiles of FUN_140280090 and FUN_145562920): the
+// one it has for as long as that holds, else the nearest of those inside its field of view (here: those it
+// believes in, its sight being that field).
+function trackerTarget(brain, seen, me, now) {
+  let id = brain.target != null && seen.some((b) => b.id === brain.target) ? brain.target : null;
+  if (id === null) {
+    let best = Infinity;
+    for (const b of seen) {
+      const d = Math.hypot(b.at.x - me[0], b.at.z - me[1]);
+      if (d < best) [id, best] = [b.id, d];
+    }
+  }
+  if (id !== brain.target) {
+    brain.target = id;
+    brain.targetSince = now;
+  }
+  return id;
+}
+
 export function think(brain, world, now) {
   const s = brain.s;
   const me = flat(s.at);
   const seen = Object.values(brain.me.beliefs ?? {}).filter((x) => x.hostile);
-  const id = pickTarget(brain, seen, { system: brain.system, who: world.who, now, assigned: brain.assigned });
+  const id = brain.ap ? trackerTarget(brain, seen, me, now) : pickTarget(brain, seen, { system: brain.system, who: world.who, now, assigned: brain.assigned });
   const b = id ? brain.me.beliefs[id] : null;
   const tgt = b ? [b.at.x, b.at.z] : null;
   const dist = tgt ? d2(me, tgt) : Infinity;
