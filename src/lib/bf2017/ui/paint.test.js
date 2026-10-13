@@ -59,6 +59,14 @@ describe('the painter', () => {
     expect(ctx.calls.some((c) => c[0] === 'strokeRect')).toBe(false);
   });
 
+  it('draws a single-pixel line along its box, a pixel of the window thick, through its middle', () => {
+    const ctx = fakeContext();
+    const r = paint(ctx, [item({ type: 'singlePixelLine', colour: 'rgb(50 60 65)', x: 127, y: 711, w: 28, h: 20 }), item({ type: 'singlePixelLine', colour: 'grey', x: 10, y: 0, w: 1, h: 40 })], at(1920, 1080));
+    expect(ctx.calls).toContainEqual(['fillRect', 127, 720.5, 28, 1]);
+    expect(ctx.calls).toContainEqual(['fillRect', 10, 0, 1, 40]);
+    expect(r.drawn).toBe(2);
+  });
+
   it('draws nothing for a blurred backing, and counts it unless the frosted panels under the canvas draw it', () => {
     const ctx = fakeContext();
     expect(paint(ctx, [item({ type: 'rectangle', fill: 'blurred' })], at(1920, 1080)).skipped).toEqual({ blurred: 1 });
@@ -99,6 +107,14 @@ describe('the painter', () => {
     const r = paint(ctx, [item({ type: 'texture', texture, x: 0, y: 0, w: 1920, h: 1080 })], { ...at(1920, 1080), media: { '/k.webp': img }, pictureOf });
     expect(ctx.calls).toContainEqual(['drawImage', img, 0, 0, 2048, 2048, 0, 0, 1920, 1080]);
     expect(r.drawn).toBe(1);
+  });
+
+  it('draws a picture made ready ahead (an ImageBitmap, its own width and height)', () => {
+    const bitmap = { width: 960, height: 540 };
+    const ctx = fakeContext();
+    const texture = { id: 1, ref: null, uv: [0, 0, 1, 1], align: 'stretch' };
+    paint(ctx, [item({ type: 'texture', texture, x: 0, y: 0, w: 1920, h: 1080 })], { ...at(1920, 1080), media: { '/k.webp': bitmap }, pictureOf: () => ({ url: '/k.webp' }) });
+    expect(ctx.calls).toContainEqual(['drawImage', bitmap, 0, 0, 960, 540, 0, 0, 1920, 1080]);
   });
 
   it('counts a texture with no picture, and draws nothing for one still loading', () => {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fakeContext } from '../../lib/bf2017/ui/fixtures/fakeContext';
 import { drawList, frameOf, navigables } from '../../lib/bf2017/ui/layout';
 import { screen } from '../../lib/bf2017/ui/screens';
-import { activate, buttonStyle, createPainter, filmPlan, fontsOf, frostOf, keyOn, splitGlow } from './screenCanvas';
+import { activate, buttonStyle, createPainter, filmPlan, fontsOf, frostOf, keyOn, pictureSizes, splitGlow } from './screenCanvas';
 
 const MENU = screen('MainMenuScreen');
 const PLAY = screen('PlayScreen');
@@ -105,6 +105,18 @@ describe('the paints', () => {
     const items = [{ type: 'texture', texture: { id: 1 } }, { type: 'texture', texture: { id: 1 } }, { type: 'texture', texture: { id: 2 } }];
     const pictureOf = (i) => (i.texture.id === 1 ? { url: '/one.webp' } : null);
     expect(filmPlan(items, { play: true, pictureOf })).toEqual({ videos: [], posters: ['/one.webp'] });
+  });
+});
+
+describe('the pictures made ready', () => {
+  it('sizes each picture to the largest box it is drawn in, in the device’s pixels', () => {
+    const items = [
+      { type: 'texture', texture: { id: 1 }, w: 576, h: 480 },
+      { type: 'texture', texture: { id: 1 }, w: 288, h: 240 },
+      { type: 'video', film: { url: 'f.mp4', poster: '/p.jpg' }, w: 504, h: 400 },
+    ];
+    const pictureOf = () => ({ url: '/one.webp' });
+    expect(pictureSizes(items, frameOf({ width: 960, height: 540 }), 2, pictureOf)).toEqual({ '/one.webp': [576, 480], '/p.jpg': [504, 400] });
   });
 });
 

@@ -11,6 +11,9 @@
 // filmPlan(items, { play, pictureOf }) → { videos: [url], posters: [url] }: the
 //   films to play, and the pictures to load (the films' posters, the texture
 //   boxes' pictures)
+// pictureSizes(items, frame, ratio, pictureOf) → { url: [w, h] }: each picture
+//   (a texture's, a film's poster) at the largest box it is drawn in, in the
+//   device's pixels, so it is decoded and scaled once, not at every paint
 // splitGlow(items) → { base, glow }: what the game adds onto what is under it
 //   (its additive blend: a tile's line drawing, a glow) goes on a canvas of
 //   its own, laid on the page by the browser's screen blend, so its black adds
@@ -61,6 +64,18 @@ export function filmPlan(items, { play, pictureOf = pictureOfDefault }) {
   const pictures = items.filter((i) => i.type === 'texture').map((i) => pictureOf(i)?.url);
   const uniq = (xs) => [...new Set(xs.filter(Boolean))];
   return { videos: play ? uniq(films.map((f) => f.film.url)) : [], posters: uniq([...films.map((f) => f.film.poster), ...pictures]) };
+}
+
+export function pictureSizes(items, frame, ratio, pictureOf = pictureOfDefault) {
+  const out = {};
+  for (const i of items) {
+    const url = i.type === 'texture' ? pictureOf(i)?.url : i.type === 'video' ? i.film?.poster : null;
+    if (!url) continue;
+    const [w, h] = [i.w, i.h].map((v) => Math.round(v * frame.k * ratio));
+    const was = out[url] ?? [0, 0];
+    out[url] = [Math.max(was[0], w), Math.max(was[1], h)];
+  }
+  return out;
 }
 
 export function splitGlow(items) {

@@ -149,8 +149,21 @@ function film(ctx, it, r, media) {
   const v = it.film ? media[it.film.url] : null;
   if (v && v.readyState >= 2 && v.videoWidth) return cover(ctx, v, v.videoWidth, v.videoHeight, r), true;
   const p = it.film ? media[it.film.poster] : null;
-  if (p && p.complete && p.naturalWidth) return cover(ctx, p, p.naturalWidth, p.naturalHeight, r), true;
+  const pw = p?.naturalWidth ?? p?.width;
+  if (p && p.complete !== false && pw) return cover(ctx, p, pw, p.naturalHeight ?? p.height, r), true;
   return false;
+}
+
+// a single-pixel line: along the box's long side, one pixel of the window
+// thick, through the box's middle (hand: where in its box the game draws it
+// is its renderer's; the captures' rule under a tile's title sits there)
+function pixelLine(ctx, it, k) {
+  if (!it.colour) return false;
+  const t = 1 / k;
+  ctx.fillStyle = it.colour;
+  if (it.w >= it.h) ctx.fillRect(it.x, it.y + (it.h - t) / 2, it.w, t);
+  else ctx.fillRect(it.x + (it.w - t) / 2, it.y, t, it.h);
+  return true;
 }
 
 // a texture box's picture, stretched over the box from its UV rectangle
@@ -158,10 +171,11 @@ function picture(ctx, it, r, media, pictureOf, missing) {
   const p = pictureOf(it);
   if (!p) return (missing.textures += 1), false;
   const img = media[p.url];
-  if (!img || !img.complete || !img.naturalWidth) return false;
+  // (an Image once loaded, or an ImageBitmap made ready at the size it is drawn)
+  const w = img?.naturalWidth ?? img?.width;
+  const h = img?.naturalHeight ?? img?.height;
+  if (!img || img.complete === false || !w) return false;
   const [u0, v0, u1, v1] = it.texture?.uv ?? [0, 0, 1, 1];
-  const w = img.naturalWidth;
-  const h = img.naturalHeight;
   ctx.drawImage(img, u0 * w, v0 * h, (u1 - u0) * w, (v1 - v0) * h, r.x, r.y, r.w, r.h);
   return true;
 }
@@ -186,6 +200,7 @@ export function paint(ctx, items, { frame, window: win, ratio = 1, read = () => 
     else if (it.type === 'vectorShape') did = it.shape ? vector(ctx, it, makePath, missing) : false;
     else if (it.type === 'video') did = film(ctx, it, r, media);
     else if (it.type === 'texture') did = picture(ctx, it, r, media, pictureOf, missing);
+    else if (it.type === 'singlePixelLine') did = pixelLine(ctx, it, frame.k);
     else skipped[it.type] = (skipped[it.type] ?? 0) + 1;
     if (did) drawn += 1;
     ctx.globalCompositeOperation = 'source-over';

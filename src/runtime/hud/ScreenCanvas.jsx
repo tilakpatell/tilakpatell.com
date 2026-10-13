@@ -4,7 +4,7 @@ import { mayPlay } from '../../lib/bf2017/films';
 import { prefersReducedMotion } from '../../lib/hooks';
 import { drawList, frameOf, navigables } from '../../lib/bf2017/ui/layout';
 import { fitCanvas } from './canvas';
-import { activate, buttonStyle, createPainter, filmPlan, frostOf, keyOn, splitGlow } from './screenCanvas';
+import { activate, buttonStyle, createPainter, filmPlan, frostOf, keyOn, pictureSizes, splitGlow } from './screenCanvas';
 import './screenCanvas.css';
 
 // One or more of the 2017 game's screens painted on one canvas (the
@@ -44,7 +44,9 @@ export default function ScreenCanvas({ layers, label = '', values = null, active
   const items = useMemo(() => drawList(layers, { selected: new Set(lit ? lit.split('|') : []), open: new Set(opened ? opened.split('|') : []), values }), [layers, values, lit, opened]);
   const navs = useMemo(() => navigables(layers, { values }), [layers, values]);
   const plan = filmPlan(items, { play: mayPlay({ reduced: prefersReducedMotion(), saveData: Boolean(device().saveData) }) });
-  const planKey = JSON.stringify(plan);
+  // (each picture decoded and scaled once, to the largest box it is drawn in)
+  const ratio = typeof window === 'undefined' ? 1 : Math.min(3, window.devicePixelRatio || 1);
+  const planKey = JSON.stringify({ ...plan, sizes: pictureSizes(items, frame, ratio) });
 
   // the painters, made once for the canvases (with the context and fonts they were first given)
   const made = useRef({ contextOf, fonts });
@@ -90,19 +92,36 @@ export default function ScreenCanvas({ layers, label = '', values = null, active
 
   // the films: a poster each, a muted looping video each when films may play
   useEffect(() => {
-    const { videos, posters } = JSON.parse(planKey);
+    const { videos, posters, sizes } = JSON.parse(planKey);
     const made = [];
     const repaint = () => each((x) => x?.p.repaint());
     const playing = () => {
       const on = made.some((m) => m instanceof HTMLVideoElement && !m.paused && m.readyState >= 2);
       each((x) => x?.p.playing(on));
     };
+    let gone = false;
     for (const url of posters) {
       const img = new Image();
       img.decoding = 'async';
-      img.onload = repaint;
+      img.onload = () => {
+        const [w, h] = sizes[url] ?? [0, 0];
+        // (made ready at its drawn size where the browser can, so a paint only copies it)
+        if (typeof createImageBitmap === 'function' && w > 0 && h > 0)
+          createImageBitmap(img, { resizeWidth: Math.min(w, img.naturalWidth), resizeHeight: Math.min(h, img.naturalHeight), resizeQuality: 'high' })
+            .then((bmp) => {
+              if (gone) return bmp.close?.();
+              media.current[url] = bmp;
+              made.push(bmp);
+              repaint();
+            })
+            .catch(() => ((media.current[url] = img), repaint()));
+        else {
+          media.current[url] = img;
+          repaint();
+        }
+      };
+      // (in media only once it is ready: a paint never decodes or scales it)
       img.src = url;
-      media.current[url] = img;
       made.push(img);
     }
     for (const url of videos) {
@@ -115,13 +134,15 @@ export default function ScreenCanvas({ layers, label = '', values = null, active
       made.push(v);
     }
     return () => {
+      gone = true;
       for (const m of made) {
         if (m instanceof HTMLVideoElement) {
           m.pause();
           m.removeAttribute('src');
           m.load();
         }
-        m.onload = null;
+        if (m instanceof HTMLImageElement) m.onload = null;
+        else m.close?.();
       }
       each((x) => x?.p.playing(false));
       media.current = {};
