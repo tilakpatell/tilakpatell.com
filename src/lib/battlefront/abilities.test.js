@@ -9,9 +9,12 @@ describe('abilities', () => {
     expect(press(abs, 0, 0).fired).toBe(true);
     expect(press(abs, 0, 0.01).fired).toBe(true);
     expect(press(abs, 0, 0.02)).toEqual({ fired: false, why: 'recharging' });
+    // (the second roll is active until 0.11 s: the recharge begins then, a charge every 2 s after)
     tick(abs, 2, 2);
+    expect(charges(abs, 0)).toBe(0);
+    tick(abs, 0.11, 2.11);
     expect(charges(abs, 0)).toBe(1);
-    tick(abs, 2, 4);
+    tick(abs, 2, 4.11);
     expect(charges(abs, 0)).toBe(2);
   });
 
@@ -112,5 +115,27 @@ describe('abilities', () => {
     hold(abs, 0, false);
     expect(tick(abs, 0.05, 2.37).map((e) => e.phase)).toEqual(['end']);
     expect(state(abs, 0)).toBe('recharge');
+  });
+
+  // (the game's own ability, read from its code: one state and one timer, Activating then Active then Recharge then
+  // Ready, each for its own time; the recharge begins when the active time ends, not at the press)
+  it('runs its activation, then its active time, and only then its recharge: 0.5 + 8 + 10 s to ready again', () => {
+    const abs = createAbilities([{ id: 'x', activation: 0.5, active: 8, recharge: 10, channels: [] }]);
+    const at = new Map();
+    expect(press(abs, 0, 0).fired).toBe(true);
+    let was = state(abs, 0);
+    at.set(was, 0);
+    for (let i = 1; i <= 400; i++) {
+      const now = Math.round(i * 0.05 * 1e6) / 1e6;
+      tick(abs, 0.05, now);
+      const s = state(abs, 0);
+      if (s !== was) at.set(s, now);
+      was = s;
+    }
+    expect([...at.keys()]).toEqual(['activating', 'active', 'recharge', 'ready']);
+    expect(at.get('active')).toBeCloseTo(0.5, 9);
+    expect(at.get('recharge')).toBeCloseTo(8.5, 9);
+    // (not at 10 s, a recharge begun at the press)
+    expect(at.get('ready')).toBeCloseTo(18.5, 6);
   });
 });

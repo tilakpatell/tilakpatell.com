@@ -96,6 +96,7 @@ function activate(abs, a, now) {
     push(abs, a, 'active');
   } else {
     a.phase = 'idle';
+    a.idleAt = now;
     push(abs, a, 'end');
   }
 }
@@ -124,6 +125,7 @@ export function end(abs, slot, now, why = 'event') {
   if (!a || a.phase !== 'active') return false;
   a.phase = 'idle';
   a.until = now;
+  a.idleAt = now;
   a.held = false;
   push(abs, a, 'end', { why });
   return true;
@@ -157,11 +159,15 @@ export function tick(abs, dt, now) {
     if (a.phase === 'activating' && now >= a.until) activate(abs, a, a.until);
     if (a.phase === 'active' && now >= a.until && !a.held) {
       a.phase = 'idle';
+      // (its active time's own end, or this step's start where something held it past that)
+      a.idleAt = Math.max(a.until, now - dt);
       push(abs, a, 'end');
     }
-    // (the recharge runs while the ability is not activating or active: Active → Recharge → Ready)
+    // (the recharge runs while the ability is not activating or active: Active → Recharge → Ready. It begins when
+    // the active time ends, as the game's timer is reloaded on the change of state: of the step the ability went
+    // idle in, only what was left of it recharges, so a press is ready again exactly its three times later)
     const rt = a.row.recharge ?? 0;
-    if (!busy(a)) a.bar = rt > 0 ? Math.min(1, a.bar + dt / rt) : 1;
+    if (!busy(a)) a.bar = rt > 0 ? Math.min(1, a.bar + Math.max(0, Math.min(dt, now - (a.idleAt ?? -Infinity))) / rt) : 1;
   }
   abs.queue = abs.queue.filter((q) => now - q.at <= QUEUE_TIMEOUT);
   while (abs.queue.length && !abs.list.some((o) => o.phase === 'activating')) {
