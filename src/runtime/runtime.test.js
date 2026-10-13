@@ -534,6 +534,52 @@ describe('createRuntime', () => {
     expect(rt.status).toBe('ready');
   });
 
+  it('a WebGPU loss with a world up: lost, recoverable, and the loss told once with its kind', async () => {
+    const onLoss = vi.fn();
+    const { rt, makeBackend } = make({ gpu: true, onLoss });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(rt.recoverable).toBe(false);
+    makeBackend.mock.calls[0][1].onLost({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG', adapter: { vendor: 'amd', architecture: 'rdna-3' } });
+    expect(rt.status).toBe('lost');
+    expect(rt.recoverable).toBe(true);
+    expect(onLoss).toHaveBeenCalledTimes(1);
+    expect(onLoss).toHaveBeenCalledWith(expect.objectContaining({ kind: 'webgpu', reason: 'unknown', adapter: { vendor: 'amd', architecture: 'rdna-3' } }));
+  });
+
+  it('a loss while the world is still being made ends that make quietly: lost, not failed', async () => {
+    const { rt, makeBackend } = make({ gpu: true });
+    let finish;
+    const pending = new Promise((r) => (finish = r));
+    const late = fakeWorld();
+    const mounting = rt.mount({ id: 'n', shading: 'nodes', create: () => pending }, {}, fakeHost());
+    await flush();
+    makeBackend.mock.calls[0][1].onLost({ reason: 'unknown' });
+    finish(late);
+    expect(await mounting).toBe(false);
+    expect(rt.status).toBe('lost');
+    expect(rt.current).toBe(null);
+    expect(late.dispose).toHaveBeenCalled();
+    // (and the next mount comes up on WebGL 2)
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls[1][0]).toBe('nodes-webgl');
+    expect(rt.status).toBe('ready');
+  });
+
+  it('a loss on WebGL 2 has nowhere left to go: not recoverable', async () => {
+    const { rt, makeBackend } = make({ gpu: true });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    makeBackend.mock.calls[0][1].onLost();
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    makeBackend.mock.calls[1][1].onLost();
+    expect(rt.recoverable).toBe(false);
+  });
+
+  it('a chip lost twice this week starts on WebGL 2 (lost at creation)', async () => {
+    const { rt, makeBackend } = make({ gpu: true, lost: true });
+    await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls[0][0]).toBe('nodes-webgl');
+  });
+
   it('a nodes module without a gpu mounts on nodes-webgl', async () => {
     const { rt, makeBackend } = make({ gpu: false });
     await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());

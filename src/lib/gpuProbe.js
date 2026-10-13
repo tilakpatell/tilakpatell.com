@@ -197,13 +197,16 @@ export async function probeTier({ renderer, scene, camera, gpuTime, target = nul
   return gpuTime.median;
 }
 
-// The tier for this page: the address’s pin; else the facts alone when
+// The tier for this page: the address’s pin; else a loss kept in its
+// LOST_DAYS; else the facts alone when
 // they say T0 (a phone, no clock, a weak chip by its WebGL `name`: decided
 // before a kept tier, so one kept under an older rule is put right); else
 // the kept one from this chip; else decided now by the probe, and kept.
 export async function decideTier({ search = '', hash = '', stored = null, facts = adapterFacts(null), phone = false, name = '', probe, keep = keepTier, now = Date.now() }) {
   const read = readTier(search, hash, stored, facts.info, now);
   if (read.pinned) return { tier: read.tier, probed: false, pinned: true, why: 'pinned' };
+  // (a loss in its seven days stands as it is, its count with it)
+  if (!read.fresh && read.why === 'lost') return { tier: read.tier, probed: false, pinned: false, why: 'lost' };
   const plain = { ...facts, phone, score: nameScore(name, facts.info?.vendor) };
   const known = judgeTier({ ...plain, medianMs: 0 });
   if (known.tier === 'T0') {

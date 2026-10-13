@@ -238,6 +238,13 @@ describe('a weak chip by its name, the reason kept, and a lost device', () => {
     expect(() => noteLoss(NVIDIA, { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } }, 0)).not.toThrow();
   });
 
+  it('keeps a live loss over the name rule, so its count survives the next visit', async () => {
+    const keep = vi.fn();
+    const lost = JSON.stringify({ tier: 'T0', info: AMD, why: 'lost', losses: 1, lostAt: 0 });
+    expect(await decideTier({ stored: lost, facts: { features: set(TS), limits: {}, info: AMD }, name: R740M, probe: vi.fn(), keep, now: DAY })).toEqual({ tier: 'T0', probed: false, pinned: false, why: 'lost' });
+    expect(keep).not.toHaveBeenCalled();
+  });
+
   it('reads a kept lost tier as fresh once its seven days are gone (the chip is probed again)', () => {
     const lost = JSON.stringify({ tier: 'T0', info: NVIDIA, why: 'lost', losses: 1, lostAt: 0 });
     expect(readTier('', '', lost, NVIDIA, DAY)).toMatchObject({ tier: 'T0', fresh: false, why: 'lost' });

@@ -13,6 +13,8 @@ vi.mock('three/webgpu', () => ({
       this.backend = fallBack ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost } };
       // (a device destroyed on dispose says it's lost, as a real one does)
       this.destroy = () => destroyed({ reason: 'destroyed' });
+      // (and one lost while drawing says why: a hung chip's 'unknown')
+      this.lose = () => destroyed({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG' });
       this.init = vi.fn(async () => {});
       this.setPixelRatio = vi.fn();
       this.setSize = vi.fn();
@@ -99,9 +101,10 @@ describe('createWebGPU', () => {
   it('a device lost while drawing is reported, and one destroyed by its own dispose is not', async () => {
     const onLost = vi.fn();
     const gfx = await createWebGPU(fakeCanvas(), { onLost });
-    made[0].destroy();
+    made[0].lose();
     await Promise.resolve();
     expect(onLost).toHaveBeenCalledTimes(1);
+    expect(onLost).toHaveBeenCalledWith(expect.objectContaining({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG' }));
     const onLost2 = vi.fn();
     const gfx2 = await createWebGPU(fakeCanvas(), { onLost: onLost2 });
     gfx2.dispose();

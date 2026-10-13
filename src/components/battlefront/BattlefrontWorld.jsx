@@ -111,6 +111,19 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   // sight, so it neither steps nor draws until Play, and the menu has the machine to itself
   const resting = st.rest;
   const rt = world.rt;
+  // (the chip lost: the snapshot of the world that went goes with it, and the
+  // way in starts over on the one the runtime mounts again on WebGL 2,
+  // useWorld's recovery; a loss it cannot come back from, or a world that
+  // could not start, says so instead of leaving the last frame's HUD up)
+  const status = world.status;
+  useEffect(() => {
+    if (status !== 'lost') return;
+    setSnap(null);
+    seen.current = { peak: 0, quietSince: null };
+    arrived.current = false;
+    setPhase('pre');
+  }, [status]);
+  const dead = status === 'failed' || (status === 'lost' && !rt?.recoverable);
   useEffect(() => {
     if (!resting) return undefined;
     rt?.setVisible(false);
@@ -227,6 +240,14 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
       )}
       {Scoreboard && !result && st.name === 'field' && (board || snap?.showScoreboard) && <Scoreboard teams={snap?.scoreboard ?? {}} onBack={board ? () => setBoard(false) : null} />}
       {EndOfRound && result && <EndOfRound result={result} mine={snap.player?.team ?? 2} teams={snap.scoreboard ?? {}} words={WORDS.outcome} />}
+      {dead && (
+        <div className="notice bf-dead" role="alert">
+          <p>{status === 'lost' ? 'The graphics chip reset, and the game couldn’t come back on it.' : 'The game couldn’t start its 3D here.'}</p>
+          <button type="button" className="btn" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+        </div>
+      )}
     </WorldHost>
   );
 }

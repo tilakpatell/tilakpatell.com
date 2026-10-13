@@ -150,16 +150,21 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   const onWebGL = forceWebGL || Boolean(renderer.backend?.isWebGLBackend);
   let lost = false;
   let released = false; // (disposing destroys the device, and a destroyed device says it's lost: not a loss)
-  const gone = () => {
-    if (lost || released) return;
+  // (what was lost, for the chip's record: the device's reason and message,
+  // a hung chip's DXGI_ERROR_DEVICE_HUNG among them, and the adapter's
+  // vendor and architecture; lib/gpuProbe's noteLoss keeps it)
+  const info = renderer.backend?.adapter?.info ?? null;
+  const adapter = info ? { vendor: String(info.vendor ?? ''), architecture: String(info.architecture ?? '') } : null;
+  const gone = (why) => {
+    if (lost || released || why?.reason === 'destroyed') return;
     lost = true;
-    onLost?.();
+    onLost?.({ reason: why?.reason ?? null, message: why?.message ?? null, adapter });
   };
   // on WebGL 2 the canvas says when the context goes (as the classic
   // renderer's does); on WebGPU the device does
   const onContextLost = (e) => {
     e.preventDefault();
-    gone();
+    gone({ reason: 'context', message: e.statusMessage ?? null });
   };
   if (onWebGL) canvas.addEventListener('webglcontextlost', onContextLost);
   else renderer.backend?.device?.lost?.then(gone);

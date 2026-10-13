@@ -22,6 +22,7 @@ import { createRuntime } from './runtime';
 import { createWorkerPool, poolSize } from './workers';
 import { readOverride } from './backend';
 import { device, quality, resetDevice } from '../lib/device';
+import { lostTwice, noteLoss, TIER_KEY } from '../lib/gpuProbe';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
 import './runtime.css';
@@ -64,11 +65,14 @@ export function runtime() {
   if (instance) return instance;
   const win = winOf();
   let stored = null;
+  let keptTier = null;
   try {
     stored = win?.localStorage.getItem(GPU_KEY);
+    keptTier = win?.localStorage.getItem(TIER_KEY);
   } catch {
     /* storage unavailable */
   }
+  const override = readOverride(win?.location.search ?? '', win?.location.hash ?? '', stored);
   const loaders = {
     texture: (url, opts) => browser().then((m) => m.loaders.texture(url, { renderer: instance?.gfx?.renderer ?? null, ...opts })),
     gltf: (url, opts) => browser().then((m) => m.loaders.gltf(url, { renderer: instance?.gfx?.renderer ?? null, ...opts })),
@@ -93,7 +97,18 @@ export function runtime() {
     // the visitor's video settings, resolved under this device's ceiling (lane V1)
     video: videoNow(),
     gpu: Boolean(win?.navigator?.gpu),
-    override: readOverride(win?.location.search ?? '', win?.location.hash ?? '', stored),
+    override,
+    // (a chip whose WebGPU device was lost twice this week starts on WebGL 2;
+    // ?gpu=webgpu asks for WebGPU anyway)
+    lost: override !== 'webgpu' && lostTwice(keptTier),
+    // (a WebGPU device lost: kept for its chip, which holds Auto at Low for
+    // the rest of the week, taken up at once so the world mounted again
+    // after it, on WebGL 2, is built at Low: held)
+    onLoss: (loss) => {
+      if (loss?.kind !== 'webgpu') return;
+      noteLoss(loss.adapter ?? {});
+      held();
+    },
     visible: () => !(typeof document !== 'undefined' && document.hidden) && !covered(),
     // (?calibrate=off: the QA scripts measure at the sharpest step, not a chip's own)
     // (a visitor who pins 30: every second beat, the controller's 33.3 ms budget)

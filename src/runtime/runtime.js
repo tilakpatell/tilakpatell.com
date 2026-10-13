@@ -84,12 +84,15 @@ export function createEvents() {
   };
 }
 
-export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, video = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null }) {
+export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, video = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null, onLoss = null, lost: startLost = false }) {
   let gfx = null;
   const clocks = new WeakMap(); // a renderer's GPU clock, made once (it turns on its timestamps)
   let kind = null; // the backend asked for
   let coming = null; // { kind, promise }: a backend still being made, for every mount that asks meanwhile
-  let lostWebGPU = false;
+  // (`lost` at creation: a chip whose WebGPU device was lost twice this
+  // week starts on the node renderer over WebGL 2, lib/gpuProbe's lostTwice)
+  let lostWebGPU = Boolean(startLost);
+  let lastLoss = null; // the backend kind the last loss was on
   let status = 'idle';
   let failure = null; // { world, name, message, module }: why the last world failed
   const failed = (mod, err) => {
@@ -304,7 +307,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     kind = want;
     const asked = { kind: want, promise: null };
     coming = asked;
-    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: () => rt.lost(), hdr: rt.video?.hdr === 'on' }))).then(
+    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: (loss) => rt.lost(loss), hdr: rt.video?.hdr === 'on' }))).then(
       (made) => {
         // another kind asked for since (or the runtime let go): this one goes too
         if (coming !== asked) {
@@ -505,6 +508,12 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     get tier() {
       return tier;
     },
+    // (a loss there is somewhere to come back from: one on WebGPU, whose
+    // next backend is the node renderer over WebGL 2; useWorld mounts its
+    // page's world again once)
+    get recoverable() {
+      return lastLoss === 'webgpu';
+    },
     // (the chip's own clock on the renderer that is up, lib/three/gpuTime,
     // or null: a world's waiting screen reads its median for the pace's
     // recommendation)
@@ -544,9 +553,18 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       current?.world.setVisible?.(shown);
       if (shown) loop.kick();
     },
-    // the context is gone: the world with it; the next mount makes a backend afresh
-    lost() {
-      if (kind === 'webgpu') lostWebGPU = true;
+    // the context is gone: the world with it, and any world still being
+    // made on it (its make ends at its next check, quietly: the status is
+    // 'lost', not 'failed'); the next mount makes a backend afresh. `loss`
+    // ({ reason, message, adapter }, webgpu.js's) goes to onLoss with the
+    // kind it was on, for the chip's record (runtime/index.js)
+    lost(loss = {}) {
+      const on = kind;
+      if (on === 'webgpu') lostWebGPU = true;
+      lastLoss = on;
+      seq += 1;
+      making = null;
+      coming = null;
       const was = current;
       current = null;
       clearHost();
@@ -555,6 +573,11 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       gfx?.dispose();
       gfx = null;
       setStatus('lost');
+      try {
+        onLoss?.({ ...(loss ?? {}), kind: on });
+      } catch (err) {
+        if (dev) console.warn('the loss could not be kept', err);
+      }
     },
     async mount(module, props = {}, host) {
       const mod = validateModule(module);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adoptable, madeFor } from './useWorld';
+import { adoptable, madeFor, recoverNow } from './useWorld';
 
 // A page mounting a module finds a world of that module already on the
 // runtime: one handed over to it (adopt it), or one made for something else
@@ -25,5 +25,17 @@ describe('which world on the runtime a page may adopt', () => {
   it('another module’s, or none: not adopted', () => {
     expect(adoptable({ module: { id: 'earth' }, world: world() }, mod, null)).toBe(false);
     expect(adoptable(null, mod, null)).toBe(false);
+  });
+});
+
+// A lost device on WebGPU: the page mounts its world again, once, on the
+// node renderer over WebGL 2; a second loss leaves the page's own fallback
+describe('when a page mounts its world again after a loss', () => {
+  it('once, after a loss the runtime can come back from', () => {
+    expect(recoverNow({ status: 'lost', recoverable: true, tried: false })).toBe(true);
+    expect(recoverNow({ status: 'lost', recoverable: true, tried: true })).toBe(false);
+    expect(recoverNow({ status: 'lost', recoverable: false, tried: false })).toBe(false);
+    expect(recoverNow({ status: 'failed', recoverable: true, tried: false })).toBe(false);
+    expect(recoverNow({ status: 'on', recoverable: true, tried: false })).toBe(false);
   });
 });
