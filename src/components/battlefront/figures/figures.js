@@ -58,7 +58,7 @@
 // its rows, never both and never neither.
 //
 //   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls, cuts, prune, rows, from }) →
-//     { update(entities, dt, alpha, eye), place(camera), figure(id), muzzleOf(id, out), count(),
+//     { update(entities, dt, alpha, eye, zoom), place(camera), figure(id), muzzleOf(id, out), count(),
 //       setRows(on), stats() → { soldiers, rows, placed, on }, dispose() }
 //   rows: createFigureRows(…) or null (every soldier a figure); from: the band's metres (band.js's by `cuts.level`)
 //   cuts: { of(kind) → its cut row | null, level, lowData, load(url) → glTF } or
@@ -453,7 +453,8 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     root,
     // entities: the view's (id, team, kind, at, yaw, state, stance, vel, aim, …);
     // the last step's places are kept so a frame between two steps is smooth
-    update(entities, dt, alpha = 1, eye = null) {
+    // (zoom: band.js's zoomOf of the camera's field of view, for the rows' band alone)
+    update(entities, dt, alpha = 1, eye = null, zoom = 1) {
       updates++;
       const seen = new Set();
       for (const e of entities) {
@@ -477,7 +478,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         // (a row or a figure this frame: the living on their feet past the band, once every part of the
         // body has been drawn; one leaving the rows is seen as a figure at once, whatever follows)
         f.shown = e.visible !== false;
-        const far = rowsOn && eye && f.shown && !f.fell && onFeet(e) && bandOf(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z), f.row ? 'row' : 'figure', from) === 'row';
+        const far = rowsOn && eye && f.shown && !f.fell && onFeet(e) && bandOf(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z) * zoom, f.row ? 'row' : 'figure', from) === 'row';
         const parts = far ? partsOf(f) : null;
         const row = Boolean(parts?.length) && parts.every((p) => p.part.ready);
         if (f.row && !row) f.model.visible = f.shown;

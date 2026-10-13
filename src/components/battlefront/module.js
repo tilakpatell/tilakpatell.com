@@ -52,6 +52,7 @@ import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
 import { appearanceOf, characterOfOffer, readStore } from '../../lib/bf2017/collection.js';
 import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
+import { zoomOf } from './figures/band.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { createKitFx } from './fx/kit.js';
@@ -483,7 +484,8 @@ export default {
         }
         if (pose) rig.set(pose);
         rig.update(dt);
-        figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position);
+        // (the rows' band by the camera's own field of view, as the rig has just set it: one at the game's 55°)
+        figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position, zoomOf(camera.fov));
         ragdolls.update(dt);
         clock += dt;
         // (each bolt leaves its owner's gun: fx/bolts.js)

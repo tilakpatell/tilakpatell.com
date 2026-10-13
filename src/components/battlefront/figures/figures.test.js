@@ -630,6 +630,23 @@ describe('the far soldiers as rows', () => {
     expect(rows.frame.placed.map((p) => p.was)).toEqual([0, 0]);
   });
 
+  it('measures the band through the camera’s lens: a soldier seen enlarged is a figure, not a row seen enlarged', async () => {
+    const { scene, figs, rows } = field();
+    // a frame with the field-of-view factor the world passes (band.js's zoomOf: 1 at 55°, 0.34 at 20°)
+    const run = async (zoom, t) => {
+      figs.update([{ ...at(100), t }], 0.016, 1, eye, zoom);
+      await settle();
+      scene.updateMatrixWorld();
+      figs.place();
+    };
+    for (let t = 0; t < 3; t++) await run(1, t);
+    expect(drawnOnce(figs, rows)).toBe('row');
+    await run(0.34, 3);
+    expect(drawnOnce(figs, rows)).toBe('figure');
+    await run(1, 4);
+    expect(drawnOnce(figs, rows)).toBe('row');
+  });
+
   it('keeps every soldier a figure with no rows, with the rows switched off, and where a part cannot be made', async () => {
     const none = field({ rows: null });
     await none.run([at(200)]);

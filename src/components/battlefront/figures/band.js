@@ -16,9 +16,12 @@
 // its sphere is 80 m from the camera at Ultra, so nothing a figure has that
 // a row lacks is something the game shows out there.
 //
-// The distance is the plain one from the eye to the soldier's feet. The
-// game measures to the body's sphere and scales by the field of view
-// (tan(fovY / 2) / tan(27.5°), 1 at the 55° every soldier camera here has).
+// The distance is from the eye to the soldier's feet, times the game's own
+// field-of-view factor, tan(fovY / 2) / tan(27.5°) (zoomOf): 1 at the 55°
+// every soldier camera here has today, less through a lens, so a soldier
+// seen enlarged is a figure and not a row seen enlarged. The game measures
+// to the body's sphere (about a metre nearer than its feet); that is not
+// taken off here.
 //
 // A soldier is a row past ROWS_FROM and a figure again inside BACK of it, so
 // one walking the line does not change every step. Only the living on their
@@ -27,11 +30,15 @@
 // state brings.
 //
 //   rowsFrom(level) → metres
+//   zoomOf(fovDegrees) → the factor a distance is scaled by (1 at 55°, and for no field of view)
 //   bandOf(distance, was, from) → 'figure' | 'row'
 //   onFeet(entity) → boolean
 
 export const ROWS_FROM = { low: 22, mid: 39, high: 62, ultra: 91 };
 export const BACK = 0.9;
+export const REFERENCE_FOV = 55; // degrees, vertical: the game's reference for its LOD distances
+const halfTan = (degrees) => Math.tan((degrees * Math.PI) / 360);
+export const zoomOf = (fov) => (fov > 0 && fov < 180 ? halfTan(fov) / halfTan(REFERENCE_FOV) : 1);
 export const ON_FEET = new Set(['alive', 'stand', 'crouch', 'roll']);
 
 export const rowsFrom = (level) => ROWS_FROM[level] ?? ROWS_FROM.high;

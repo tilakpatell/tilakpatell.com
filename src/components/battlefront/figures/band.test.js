@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BACK, ROWS_FROM, bandOf, onFeet, rowsFrom } from './band.js';
+import { BACK, REFERENCE_FOV, ROWS_FROM, bandOf, onFeet, rowsFrom, zoomOf } from './band.js';
 
 describe('the band a soldier is a row in', () => {
   it('starts at the character LOD group’s sixth distance times the preset’s LOD scale: the site’s own choice from the game’s table', () => {
@@ -40,6 +40,18 @@ describe('the band a soldier is a row in', () => {
     }
     expect(changes).toBe(2);
     expect(was).toBe('figure');
+  });
+
+  it('scales a distance by the game’s field-of-view factor: one at its 55°, less through a lens', () => {
+    expect(REFERENCE_FOV).toBe(55);
+    expect(zoomOf(55)).toBe(1);
+    // (the value the running game holds at its 45° pre-round camera: D:\bf2-ghidra\lod64\DECISIONS.md)
+    expect(zoomOf(45)).toBeCloseTo(0.7957, 4);
+    expect(zoomOf(20)).toBeCloseTo(0.3387, 4);
+    for (const none of [undefined, null, 0, -5, 180, NaN]) expect(zoomOf(none)).toBe(1);
+    // a soldier 100 m off: a row to the eye, a figure through a 20° lens (as large as one 34 m off)
+    expect(bandOf(100 * zoomOf(55), 'figure', 91)).toBe('row');
+    expect(bandOf(100 * zoomOf(20), 'row', 91)).toBe('figure');
   });
 
   it('is a figure with no distance to go by', () => {
