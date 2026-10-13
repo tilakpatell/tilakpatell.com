@@ -15,7 +15,8 @@
 //   (prepare: before an install begins; notify(what): after one ends or a pack goes)
 //   → { supported, pack(to), installed(to), install(to, { onProgress }), uninstall(to), list(), estimate() }
 
-import { WAIT_MS, isDown, markDown } from '../lib/assetBase';
+// (the bucket's state alone: lib/assetBase would bring the whole manifest onto every page)
+import { WAIT_MS, isDown, markDown } from '../lib/assetDown';
 import { workerSwitch } from '../lib/sw';
 
 export const PREFIX = 'tp-pack-';

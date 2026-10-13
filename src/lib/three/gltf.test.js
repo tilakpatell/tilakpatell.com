@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { SHIP_PROFILE, detectSupport, ktx2Loader, loadGltf, loadGltfFile, tune, tuneTree, usesBasisu } from './gltf';
+import { SHIP_PROFILE, detectSupport, ktx2Loader, loadGltf, loadGltfFile, meshoptWorkers, tune, tuneTree, usesBasisu } from './gltf';
 
 // (the Basis transcoder taken as up: the KTX2 loader's tests ask nothing of it)
 vi.mock('./wasmDecoders.js', async (importOriginal) => ({ ...(await importOriginal()), basisUp: async (k) => k }));
@@ -243,5 +243,17 @@ describe('the chip’s KTX2 formats', () => {
     await expect(ktx2Loader({ renderer: nodeRenderer({ fails: true }) })).rejects.toMatchObject({ name: 'KTX2SupportError' });
     const k = await ktx2Loader({ renderer: nodeRenderer() });
     expect(k.workerConfig).toMatchObject({ bptcSupported: true, astcSupported: false });
+  });
+});
+
+// (every GLB here is meshopt-compressed: its decode in the decoder's own
+// workers, off the main thread, one fewer than the cores and two at most)
+describe('the meshopt decoder’s workers', () => {
+  it('takes one fewer than the cores, two at most, one at least, none without Worker', () => {
+    expect(meshoptWorkers(8, true)).toBe(2);
+    expect(meshoptWorkers(2, true)).toBe(1);
+    expect(meshoptWorkers(1, true)).toBe(1);
+    expect(meshoptWorkers(undefined, true)).toBe(1);
+    expect(meshoptWorkers(8, false)).toBe(0);
   });
 });

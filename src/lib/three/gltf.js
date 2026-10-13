@@ -110,10 +110,23 @@ class SiteGLTFLoader extends GLTFLoader {
   }
 }
 
+// (every GLB here is meshopt-compressed: its decode in the decoder's own
+// workers, off the main thread, one fewer than the cores and two at most;
+// GLTFLoader takes decodeGltfBufferAsync, which they answer)
+export const meshoptWorkers = (cores, canWork = typeof Worker !== 'undefined') => (canWork ? Math.max(1, Math.min(2, (cores || 2) - 1)) : 0);
+
 export function gltfLoader() {
   if (!loader) {
     loader = new SiteGLTFLoader();
     loader.setMeshoptDecoder(MeshoptDecoder);
+    const n = meshoptWorkers(typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 0);
+    // (meshopt's useWorkers, by another name: it is no React hook, whatever the lint reads in its name)
+    const spread = MeshoptDecoder.useWorkers;
+    try {
+      if (n) spread?.call(MeshoptDecoder, n);
+    } catch {
+      /* no workers to be had: the decode stays on the main thread */
+    }
   }
   return loader;
 }

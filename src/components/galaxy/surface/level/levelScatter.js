@@ -12,7 +12,7 @@
 //   (wind: the world's lib/three/wind.js; the sway's clock runs faster as it blows harder)
 
 import { withFallback } from '../../../../lib/assetBase.js';
-import { decodePng16 } from '../../../../lib/level/png16.js';
+import { decodePng16Off as decodePng16 } from '../../../../lib/level/png16Off.js'; // (off the main thread: png16Off.js)
 import { createLevelLoader } from './levelGltf.js';
 import { packUrl } from './levelPack.js';
 

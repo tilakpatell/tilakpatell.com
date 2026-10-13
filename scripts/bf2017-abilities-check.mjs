@@ -54,6 +54,7 @@ await ctx.addInitScript((q) => {
   window.localStorage.setItem('tp-intro', '1');
   window.localStorage.setItem('tp-start', '"universe"');
   window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+  window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
   window.localStorage.setItem('tp-quality', q);
 }, QUALITY);
 const page = await ctx.newPage();

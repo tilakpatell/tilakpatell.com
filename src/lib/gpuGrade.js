@@ -132,7 +132,21 @@ function intel(s) {
   if ((m = s.match(/Iris\s*(?:\(R\)\s*)?Xe\s*(MAX)?/i))) return m[1] ? 50 : 40;
   if (/Iris\s*(?:\(R\)\s*)?(?:Plus|Pro)/i.test(s)) return 22;
   if ((m = s.match(/UHD\s*Graphics\s*(\d)?/i))) return m[1] === '7' ? 20 : m[1] === '6' ? 11 : 12;
-  if (/HD\s*Graphics/i.test(s)) return 8;
+  // (HD Graphics by its generation, the number after it: Kaby Lake's 6xx
+  // about a UHD 6xx, Skylake's 5xx a little under, then Broadwell's
+  // 5x00 and 6000, Haswell's 4x00 and 5000, Ivy Bridge's 4000 and 2500,
+  // Sandy Bridge's 2000 and 3000; a bare name is an Atom's or a Celeron's.
+  // lib/fit's floor, 10, falls between Skylake and Broadwell)
+  if ((m = s.match(/HD\s*Graphics\s*(\d{3,4})?/i))) {
+    const n = m[1] ?? '';
+    if (/^6\d\d$/.test(n)) return 11;
+    if (/^5\d\d$/.test(n)) return 10;
+    if (/^(4000|2500)$/.test(n)) return 4;
+    if (/^(2000|3000)$/.test(n)) return 3;
+    if (/^(5[1-9]00|6[01]00)$/.test(n)) return 7;
+    if (/^(4\d{3}|5000)$/.test(n)) return 6;
+    return n ? 6 : 5;
+  }
   return null;
 }
 

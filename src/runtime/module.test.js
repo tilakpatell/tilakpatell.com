@@ -10,6 +10,15 @@ describe('validateModule', () => {
     expect(validateModule({ id: 'x', create() {} })).toMatchObject({ id: 'x', shading: 'glsl', mb: 0 });
     expect(validateModule({ id: 'x', create() {}, shading: 'nodes', mb: 3 }).shading).toBe('nodes');
   });
+
+  it('keeps a module’s getter live: its ratio read as the world starts, not when the mount began', () => {
+    let detail = 'high';
+    const mod = { id: 'x', create() {}, get ratio() { return detail === 'low' ? 1 : 1.5; } };
+    const valid = validateModule(mod);
+    expect(valid.ratio).toBe(1.5);
+    detail = 'low';
+    expect(valid.ratio).toBe(1);
+  });
 });
 
 describe('validateWorld', () => {

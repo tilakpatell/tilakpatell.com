@@ -28,7 +28,10 @@ export function validateModule(mod) {
   if (missing.length) throw new Error(`world module needs ${missing.join(', ')}`);
   const shading = mod.shading ?? 'glsl';
   if (!SHADINGS.includes(shading)) throw new Error(`world module ${mod.id}: shading must be glsl or nodes`);
-  return { ...mod, shading, mb: mod.mb ?? 0 };
+  // (a getter stays one: a module's ratio is read as each world starts, after
+  // the renderer tier has set the level, not when the mount began)
+  const live = Object.fromEntries(Object.entries(Object.getOwnPropertyDescriptors(mod)).filter(([k, d]) => d.get && k !== 'shading' && k !== 'mb'));
+  return Object.defineProperties({ ...mod, shading, mb: mod.mb ?? 0 }, live);
 }
 
 export function validateWorld(world) {

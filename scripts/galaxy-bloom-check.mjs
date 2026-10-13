@@ -40,6 +40,7 @@ await ctx.addInitScript(() => {
   window.localStorage.removeItem('tp-gcw');
   window.sessionStorage.setItem('tp-galaxy-intro', '1');
   window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking)
+  window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
 });
 const page = await ctx.newPage();
 page.on('pageerror', (e) => console.log('pageerror', String(e).slice(0, 200)));

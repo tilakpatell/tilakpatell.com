@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { imageLayerFrom } from '../../../lib/land/layers.js';
 import { mapsFor } from '../../../lib/three/ground/snow.js';
 import { SNOW_BASE, SNOW_MAPS, SNOW_ROLES } from '../../../lib/three/ground/snowMaps.js';
-import { FAR_DROP, LAND_QUIET, LAND_UNDER, PATCH_M, PATCH_MOVE, PATCH_UNDER, buildGround, canAsk, needsPatch, patchOrigin } from './ground.js';
+import { FAR_DROP, LAND_QUIET, LAND_UNDER, NEAR_STEP, PATCH_M, PATCH_MOVE, PATCH_UNDER, buildGround, canAsk, nearStep, needsPatch, patchOrigin } from './ground.js';
 
 // (the transcoder is the browser's: here a map's bytes parse to a bare texture)
 vi.mock('../../../lib/three/gltf.js', () => ({
@@ -164,5 +164,15 @@ describe('the snow’s landing', () => {
     for (let i = 0; i < LAND_QUIET; i++) g.update([0, 0]);
     expect(g.getObjectByName('ground:near:flat')).toBeFalsy();
     g.dispose();
+  });
+});
+
+// (Low is the floor: the near grid at 8 m, a quarter of the 4 m grid's
+// 0.82 M triangles over Hoth's near map, the most of Low's frame)
+describe('the near grid’s spacing by tier', () => {
+  it('is 8 m at Low and 4 m above it', () => {
+    expect(NEAR_STEP).toBe(4);
+    expect(nearStep('low')).toBe(8);
+    for (const t of ['mid', 'high', 'ultra']) expect(nearStep(t)).toBe(4);
   });
 });
