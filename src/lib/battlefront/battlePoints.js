@@ -74,7 +74,8 @@ function costOf(bp, kind, id) {
 export function offers(bp, id, team, { out = { heroes: 0, reinforcements: 0 } } = {}) {
   const side = bp.teams[team];
   const have = balance(bp, id);
-  const lim = bp.table.limits;
+  // (a round that sets each side's own, Instant Action's: bp.limits by team; else the rulebook's)
+  const lim = bp.limits?.[team] ?? bp.table.limits;
   const list = [];
   const add = (kind, rid, limited) => {
     const cost = costOf(bp, kind, rid);

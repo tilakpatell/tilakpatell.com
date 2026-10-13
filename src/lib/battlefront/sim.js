@@ -42,6 +42,7 @@ import { changeSides, joinSquad, squadOf, squadRows } from './ai/squad.js';
 import { difficultyFor } from './ai/difficulty.js';
 import { abilitiesFor } from './ai/skirmish.js';
 import { createBuckets, mayHurt } from './ai/buckets.js';
+import { createWaves, mayDeploy, stage as stageWaves, unitOpen } from './ai/waves.js';
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
@@ -158,6 +159,7 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
       const squads = sim.brains.squads.list.filter((q) => q.team === team);
       sim.commanders[team] = createCommander({ team, side: sim.M.sideOf(sim.ga, team), ga: sim.ga, squads, bp: sim.bp, rand: sim.rand, nav, rulebook: rb });
     }
+    if (sim.instantAction) roundIn(sim);
     addWalkers(sim);
   }
   return sim;
@@ -184,6 +186,26 @@ function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id:
   sim.stats.get(id).cls = cls.unitId ?? cls.id;
   sim.stats.get(id).team = team;
   return s;
+}
+
+// A team's wave table in an Instant Action round: the command posts' one, or an objective mode's by the side it plays and the stage
+const waveTable = (sim, team) => {
+  const r = sim.instantAction;
+  return r.wavesBy ? r.wavesBy[sim.M.sideOf(sim.ga, team)][Math.min(sim.ga.stage ?? 0, r.wavesBy.attack.length - 1)] : r.waves[team];
+};
+
+// An Instant Action round's hold on the battle (instantAction.js): each side's caps are its commander's
+// (the bots') and the offers' (the side's), and its AutoPlayers' waves bring its fallen back
+function roundIn(sim) {
+  const r = sim.instantAction;
+  sim.bp.limits = {};
+  sim.waves = {};
+  for (const team of [1, 2]) {
+    const k = r.caps[team];
+    sim.commanders[team].caps = { heroes: k.heroes.bots, reinforcements: k.reinforcements.bots };
+    sim.bp.limits[team] = { heroesPerTeam: k.heroes.max, reinforcementsPerTeam: k.reinforcements.max };
+    sim.waves[team] = createWaves(waveTable(sim, team), sim.time);
+  }
 }
 
 // the live stage's walkers as bodies in the battle (the escort objective moves them)
@@ -536,15 +558,22 @@ function stepMode(sim) {
   if (ga.phase !== 'over')
     for (const team of [1, 2]) {
       const c = sim.commanders[team];
-      if (!wave(c, sim.time)) continue;
+      // (an Instant Action round: the AutoPlayers' waves, ai/waves.js, each bot by its own wait; else the ten-second wave)
+      const w = sim.waves?.[team] ?? null;
+      if (!w && !wave(c, sim.time)) continue;
       const chosen = { heroes: 0, reinforcements: 0 };
       const squadPicks = new Map();
       for (const entry of [...sim.deploying.values()]) {
         if (entry.team !== team || !entry.bot) continue;
+        if (w && !mayDeploy(w, { since: entry.since, now: sim.time })) continue;
         const sq = squadOf(sim.brains.squads, entry.id);
         const picks = squadPicks.get(sq) ?? [];
         const squadClasses = [...picks, ...(sq?.members ?? []).map((m) => sim.entities.get(m)).filter((m) => m?.alive).map((m) => m.cls.cls)];
-        const choice = spend(c, entry.id, { squadClasses, out: outOf(sim, team, chosen) });
+        const out = outOf(sim, team, chosen);
+        // (a hero or a reinforcement only while its own wave is open)
+        if (w && !unitOpen(w, 'hero', sim.time)) out.heroes = Infinity;
+        if (w && !unitOpen(w, 'special', sim.time)) out.reinforcements = Infinity;
+        const choice = spend(c, entry.id, { squadClasses, out });
         const enemies = enemiesOf(sim, team);
         const mates = (sq?.members ?? []).map((m) => sim.entities.get(m)).filter(Boolean);
         const spawn = squadSpawn({ squad: mates, me: entry.id, enemies, now: sim.time, walkable: standable(sim) }) ? 'squad' : 'point';
@@ -574,6 +603,8 @@ function stepMode(sim) {
   if (ga.stage !== stage) {
     addWalkers(sim);
     for (const c of Object.values(sim.commanders)) c.nextAssign = 0;
+    // (a new stage: each side's waves on its rows)
+    if (sim.waves) for (const team of [1, 2]) stageWaves(sim.waves[team], waveTable(sim, team), sim.time);
   }
   for (const w of sim.M.walkersOf(ga)) {
     if (sim.nav) w.at[1] = heightOf(sim, w.at);

@@ -208,13 +208,18 @@ Written by `node scripts/bf2017-data.mjs gameSettings` (`scripts/lib/bf2017-rule
 The round's numbers are `gameSettings.json`'s `_Mode8` rows (the settings' group `GameMode/PvE/Instant_Action_Supremacy`), each named in the round's `sources`. By hand:
 
 - **The sides' sizes**: `TeamSize_RealPlayer_<…>_Mode8` is read as the size of the player's side with the player in it (so one fewer bots beside them), `TeamSize_AutoPlayers_<…>_Mode8` as the other side's. The settings also hold `TeamSize1_AP_Mode8` and `TeamSize2_AP_Mode8` (12 each), not read.
-- **The screen's difficulty**: the team-size rows are `Easy`, `Normal` and `Hard`; they are paired in order with the AutoPlayers' `Rookie`, `Normal` and `Expert`.
+- **The screen's difficulty**: the profile's `InstantActionDifficulty` offers Normal, Hard and Expert; the AutoPlayers' rows are `Rookie`, `Normal` and `Expert` and the team-size rows `Easy`, `Normal` and `Hard`. The three lists are paired in order, so the screen's Normal (its default) is the `Rookie` and `Easy` rows.
+- **The screen's length**: `InstantActionTimeLimit` offers Short, Medium and Long; the rows are `Short`, `Normal` and `Long`.
+- **A count the profile leaves open** (`InstantAction*Count`, `InstantActionNum*AI_PC`, default −1): offered at the rows' number, up to the rows' most. For the vehicles the rows hold one number, taken as both.
+- **The reinforcements' off**: the screen has no switch for them; a count of none is read as that side's off (none for its player either).
 - **`MAX_SIDE`** 24: the most bots a side may be asked for, the game's largest AutoPlayer team (`TeamSizeAP_BotTeam_Large`).
 - **The waves' side on an objective mode**: the dark side attacks, as on Hoth, until the sim's own mode says which side does.
 - **The page's side**: the Empire's (the module's `PLAYER_TEAM`); the setup screen is not offered the choice.
 - **The engaging distance** (`ai/soldierBrain.js`'s `engaging`): `AP_MaxTargetEngagingDistanceScale` × the far end (`End`) of the AI weapon's `PreferredRange { Start, Ideal, End }`, 2.5 × 40 m for the rifle, never past the gun's own range.
 - **The trigger after the line is lost**: an AutoPlayer fires on at where the target was for `AP_LofTimeoutS`, into what now hides it.
-- **Not acted on yet**: the reinforcements' count and bleed off Supremacy, the heroes', reinforcements' and vehicles' caps, the waves, and the AutoPlayers' dodge roll and jump when hit (their strafe's flips and its ground check are the brain's). The round carries them on `sim.instantAction`; the commander and the heroes' and vehicles' lanes do not read them yet. The page's battle hands the round to the sim, so its bots aim as AutoPlayers too; its sim runs no mode yet, so the round's length and Battle Point rate change nothing there.
+- **The waves in the sim** (`sim.js`'s `stepMode`): a fallen bot of a round comes back when `ai/waves.js`'s `mayDeploy` says so, in place of the ten-second wave; a bot buys a hero or a reinforcement only while that kind's own wave is open. A wave no bot was waiting in passes unused.
+- **The bleed** (`modes/supremacy.js`'s `bleedEvery`): the site's 5 s a reinforcement (itself by hand) divided by `TicketBleedMult_<length>_Mode8`.
+- **Not acted on yet**: the vehicles' caps (no vehicle deploys in the sim), all-era heroes, and the AutoPlayers' dodge roll and jump. The page's battle hands the round to the sim, so its bots aim as AutoPlayers; its sim runs no mode yet, so there the round's length, rate, caps and waves change nothing until the page's battle runs the mode.
 
 ## `collection.json` (the Collection: `scripts/lib/bf2017-rulebook-collection.mjs`)
 
