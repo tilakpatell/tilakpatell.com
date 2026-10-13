@@ -1,0 +1,8 @@
+/* One of the game's screens on a canvas (ScreenCanvas.jsx): the canvas
+   fills the screen, and a button with nothing of a button's own look lies
+   over each cell. Their focus and hover are drawn on the canvas as the
+   game draws a selected cell, so a button draws no ring of its own. */
+:where(.hud-screen-canvas):not(hud-none) { position: absolute; inset: 0; overflow: hidden; pointer-events: auto; }
+:where(.hud-screen-canvas-paint):not(hud-none) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+:where(.hud-screen-hit):not(hud-none) { position: absolute; margin: 0; padding: 0; border: 0; background: transparent; color: transparent; outline: none; cursor: pointer; }
+:where(.hud-screen-hit[aria-disabled]):not(hud-none) { cursor: default; }
