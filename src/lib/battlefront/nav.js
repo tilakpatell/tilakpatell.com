@@ -336,7 +336,8 @@ function maskAt(nav, a, b, t) {
   const x = a[0] + (b[0] - a[0]) * t;
   const z = a[2] + (b[2] - a[2]) * t;
   const i = indexAt(nav, x, z);
-  if (i < 0 || !m.top[i] || a[1] + (b[1] - a[1]) * t >= nav.height[i] + m.top[i] / 10) return 0;
+  // (not under the top, said this way round: a cell with no height stops nothing, as before)
+  if (i < 0 || !m.top[i] || !(a[1] + (b[1] - a[1]) * t < nav.height[i] + m.top[i] / 10)) return 0;
   return m.top[i] !== nav.unmeasured || !m.fine || fineBlocked(m, x, z) ? 2 : 1;
 }
 
@@ -366,7 +367,10 @@ export function firstSolid(nav, a, b) {
       const now = maskAt(nav, a, b, t);
       // (the entry, to an eighth of a cell: back from this sample towards the
       // last; beside a narrowed column those points are tried though this
-      // sample is clear, its fine cells being a quarter of a cell wide)
+      // sample is clear, its fine cells being a quarter of a cell wide: on
+      // the way into the column, `now`, and on the way out of it, `was`. The
+      // third point only tells for a clip shorter than a fine cell is wide,
+      // and no test holds it)
       let tt = now === 2 ? t : -1;
       for (let q = 1; k > 0 && (now || was) && q <= 3; q++) {
         const t2 = (k - 1 + q / 4) / steps;

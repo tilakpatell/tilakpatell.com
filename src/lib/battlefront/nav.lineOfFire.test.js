@@ -70,6 +70,19 @@ describe('a line of fire over the ground', () => {
     const holed = buildNav({ heightAt: (x, z) => (z > 20 ? NaN : 0), bounds: BOUNDS });
     expect(lineClear(holed, [0, 1.2, 0], [0, 1.2, 30])).toBe(true);
   });
+
+  it('is not stopped by a masked cell where the ground has no height, as before', () => {
+    // a block 2.5 m tall on the ground with no height: a top is counted from its cell's ground, and with none it stops nothing
+    const holed = buildNav({ heightAt: (x, z) => (z > 20 ? NaN : 0), bounds: BOUNDS, mask: maskOf([{ x: [-3, 3], z: [24.2, 27.8], top: 2.5 }]) });
+    const [c, r] = cellAt(holed, 0.5, 25);
+    expect([holed.height[r * holed.cols + c], holed.mask.top[r * holed.cols + c]]).toEqual([NaN, 25]);
+    expect(lineClear(holed, [0.5, 1.2, 0], [0.5, 1.2, 30])).toBe(true);
+    expect(lineClear(holed, [0.5, 500, 0], [0.5, 500, 30])).toBe(true);
+    // (the same block on ground that has a height stops the low line and not the high one)
+    const whole = buildNav({ heightAt: flat, bounds: BOUNDS, mask: holed.mask });
+    expect(lineClear(whole, [0.5, 1.2, 0], [0.5, 1.2, 30])).toBe(false);
+    expect(lineClear(whole, [0.5, 500, 0], [0.5, 500, 30])).toBe(true);
+  });
 });
 
 describe('a line of fire across the mask', () => {
@@ -142,6 +155,22 @@ describe('a line of fire across the mask', () => {
     expect(lineClear(nav, [0.75, 1.2, -38], [0.75, 1.2, -22])).toBe(true);
   });
 
+  it('is stopped by a shape it crosses on its way out of a narrowed cell, and on its way in', () => {
+    // through the middle of the sheet's last blocked fine cell (x 1.0…1.5, z -24.5…-24.0), on a slant into the
+    // cell beyond the sheet's end, which has no top: one sample falls in the narrowed cell's open side and the
+    // next outside the cell, the shape between them
+    expect(top(1, -25)).toBe(17);
+    expect(top(1, -23)).toBe(0);
+    expect(fineBlocked(mask, 1.25, -24.25)).toBe(true);
+    for (let k = 1; k <= 20; k++) {
+      const s = k / 20;
+      const a = [1.25 - 0.8 * (10 + s), 1.2, -24.25 - 0.6 * (10 + s)];
+      const b = [1.25 + 0.8 * (11 - s), 1.2, -24.25 + 0.6 * (11 - s)];
+      expect(lineClear(nav, a, b)).toBe(false);
+      expect(lineClear(nav, b, a)).toBe(false);
+    }
+  });
+
   it('keeps the whole cell where the mask names no capsule or holds no fine grid', () => {
     const bare = buildNav({ heightAt: flat, bounds: BOUNDS, mask: maskOf([WALL], {}) });
     expect(lineClear(bare, [0.5, 1.2, -18], [0.5, 1.2, 18])).toBe(false);
@@ -194,8 +223,12 @@ describe('on Hoth’s own ground', () => {
     expect(count.wronglyStopped).toBeLessThanOrEqual(30);
   });
 
-  it('lets no more lines through what the level stops than it did', () => {
-    // (the thirty are over shapes the grid does not hold: low ones a soldier steps on, in cells with no top)
+  it('lets thirty lines through what the level stops, two more than before the narrowing', () => {
+    // Before the narrowing, 28. The two more (pairs 687 and 703) strike a low shape in a cell with no top,
+    // further along the line; an unmeasured cell that is not where that shape stands stopped them before.
+    // What the thirty strike, cast on the pack: a shape in a cell with no top 17, a shape in a cell with a
+    // top 11 (over that top, or under it between two samples; all eleven passed before too), the ground 2.
+    // Of the 28 that strike a shape, 14 do so 0.4 m or less over the ground.
     expect(count.wronglyClear).toBeLessThanOrEqual(30);
   });
 
