@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { addZones } from '../../src/components/rickmorty/wardrobe/dressCore.js';
 import { glbJson } from './bf2017-paths.mjs';
 import { meshyRig } from './fixtures/meshy-rig.mjs';
 import { readGuest } from './guest-file.mjs';
@@ -98,8 +99,15 @@ describe('a guest’s weights on the game’s bones', () => {
   it('moves a weight to the joint’s counterpart, numbered as the game’s skeleton is', () => {
     const v = one([0, 0, 0], { B: 0.25, LeftUpLeg: 0.75 });
     const out = moveWeights(v.skinIndex, v.skinWeight, MAP, gameIndexOf, JOINTS);
-    expect(names(out)).toEqual(['LeftUpLeg', 'Spine']);
-    expect([...out.skinWeight]).toEqual([0.75, 0.25, 0, 0]);
+    expect(names(out)).toEqual(['Spine', 'LeftUpLeg']);
+    expect([...out.skinWeight]).toEqual([0.25, 0.75, 0, 0]);
+  });
+
+  it('keeps a vertex’s joints in the order the file has them, so an even split is told apart as it was', () => {
+    // (the Wardrobe reads a vertex's zone off its strongest joint, the first of equals)
+    const v = one([0, 0, 0], { neck: 1 / 3, LeftShoulder: 1 / 3, C: 1 / 3 });
+    const out = moveWeights(v.skinIndex, v.skinWeight, MAP, gameIndexOf, JOINTS);
+    expect(names(out)).toEqual(['Neck', 'LeftShoulder', 'Spine2']);
   });
 
   it('gives an unmapped joint’s weight to its parent’s counterpart, and keeps the sum at one', () => {
@@ -117,6 +125,7 @@ describe('a guest’s weights on the game’s bones', () => {
     expect(names(out).length).toBe(4);
     expect([...out.skinWeight].reduce((s, w) => s + w, 0)).toBeCloseTo(1, 6);
     expect(out.skinWeight[0]).toBeCloseTo(1 / 3, 6);
+    expect(out.skinWeight[3]).toBeCloseTo(1 / 6, 6);
     // (a slot with no weight reads joint 0, times nothing)
     const lone = moveWeights(...Object.values(one([0, 0, 0], { Hips: 1 })).slice(2), MAP, gameIndexOf, JOINTS);
     expect([...lone.skinIndex].slice(1)).toEqual([0, 0, 0]);
@@ -229,5 +238,27 @@ describe.each([['Rick', 'public/games/meshy/rick.glb'], ['Morty', 'public/games/
     expect(used.has('Head')).toBe(true);
     expect(used.size).toBeLessThanOrEqual(22);
     expect([...used].every((n) => [...JOINT_MAP(guest.rows).values()].includes(n))).toBe(true);
+  });
+
+  it('leaves every vertex in the zone the Wardrobe paints it by on Meshy’s rig', () => {
+    const s = guest.surface;
+    const names = [...fit.keys()];
+    const moved = moveWeights(s.skinIndex, s.skinWeight, JOINT_MAP(guest.rows), (n) => names.indexOf(n), guest.joints);
+    const zoned = (skinIndex, skinWeight, bones) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(s.positions, 3));
+      g.setAttribute('skinIndex', new THREE.BufferAttribute(skinIndex, 4));
+      g.setAttribute('skinWeight', new THREE.BufferAttribute(skinWeight, 4));
+      return addZones(g, bones).attributes;
+    };
+    const was = zoned(s.skinIndex, s.skinWeight, s.joints);
+    const is = zoned(moved.skinIndex, moved.skinWeight, names);
+    let off = 0;
+    for (let v = 0; v < s.positions.length / 3; v++) {
+      if (was.zone.getX(v) !== is.zone.getX(v)) off++;
+      if (Math.abs(was.lower.getX(v) - is.lower.getX(v)) > 1e-5 || Math.abs(was.upper.getX(v) - is.upper.getX(v)) > 1e-5) throw new Error(`vertex ${v}: lower ${was.lower.getX(v)} → ${is.lower.getX(v)}, upper ${was.upper.getX(v)} → ${is.upper.getX(v)}`);
+    }
+    // (but where the head's helpers' weight, now the head's, outweighs a joint that led it before)
+    expect(off).toBeLessThanOrEqual(2);
   });
 });

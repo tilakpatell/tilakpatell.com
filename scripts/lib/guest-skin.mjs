@@ -23,8 +23,8 @@
 //   targetsOf(joints, map) → [game bone…]: where each of the skin's joints
 //     ({ name, parent }, in its order) sends its weight
 //   moveWeights(skinIndex, skinWeight, map, gameIndexOf, joints)
-//     → { skinIndex, skinWeight }: the weights on the game's bones, heaviest
-//     first, four at most, summing to one
+//     → { skinIndex, skinWeight }: the weights on the game's bones, in the
+//     file's own order, four at most, summing to one
 
 import * as THREE from 'three';
 import { turnsOf, worldsOf } from './guest-skeleton.mjs';
@@ -130,8 +130,10 @@ export function moveWeights(skinIndex, skinWeight, map, gameIndexOf, joints) {
       const w = skinWeight[v * 4 + k];
       if (w > 0) acc.set(targets[skinIndex[v * 4 + k]], (acc.get(targets[skinIndex[v * 4 + k]]) ?? 0) + w);
     }
-    // (heaviest first, a tie by the bone's number, so the same file gives the same bytes)
-    const top = [...acc.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, MOST);
+    // (in the order the file has them: joints only ever merge, so there are
+    // never more than it had, and the first of two equal weights stays first,
+    // which is the one the Wardrobe reads a vertex's zone from)
+    const top = [...acc.entries()].slice(0, MOST);
     const sum = top.reduce((s, [, w]) => s + w, 0);
     if (!(sum > 0)) throw new Error(`vertex ${v} has no weight`);
     top.forEach(([j, w], k) => {
