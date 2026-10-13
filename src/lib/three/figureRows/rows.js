@@ -13,10 +13,20 @@
 //   place(part, i, skeleton, root, was)   instance i's pose; `was`: the instance it was last frame (-1: new this frame)
 //   send()                                the counts to the meshes, the rows in use to the chip, once
 //
-// with the instances packed from 0 by the caller, so a part draws exactly
-// what was placed this frame and nothing is drawn twice or left over. An
-// instance new this frame has no "before": it is given its own pose, the
-// camera's movement alone for one frame.
+// with the instances packed from 0 by the caller (part.n is how many are
+// placed so far this frame), so a part draws exactly what was placed this
+// frame and nothing is drawn twice or left over. An instance new this frame
+// has no "before": it is given its own pose, the camera's movement alone
+// for one frame.
+//
+// A part is not ready when it is made. three builds a material's shader the
+// first time it draws it and makes its pipeline after that, and on WebGPU
+// the site leaves an object out of the frame until both have landed
+// (pipelineGuard.js); a figure hidden for a row that is not drawn yet would
+// be drawn by nobody. So a new part is drawn with no instances until three
+// has really drawn it once, and part.ready says so: the caller hands a
+// figure over only when every part of it is ready. A part that never
+// builds never takes one.
 //
 // The root of a skin is the part's own node, and only its place: three
 // skins in the node's frame (bindMatrixInverse) and comes back out through
@@ -39,7 +49,8 @@
 //   canDrawRows(renderer) → boolean: the node renderer on WebGPU
 //   createFigureRows({ scene, tsl, renderer = null, capacity = 64 }) → {
 //     group,
-//     part(key, geometry, material, { joints = 0, bindMatrix = null }) → part (one a key),
+//     part(key, geometry, material, { joints = 0, bindMatrix = null, receiveShadow = true, renderOrder = 0 }) → part
+//       (one a key; part.ready, part.n; the last two as the figure's own mesh has them),
 //     begin(), place(part, i, skeleton | null, root: Matrix4, was = -1), count(part, n), send(),
 //     drop(key), stats() → { parts, rows, draws, capacity, sent: { bytes, whole } }, dispose() }
 //   sendRows(renderer, texture, data, rows) → 'rows' | 'whole'
@@ -120,20 +131,25 @@ export function createFigureRows({ scene, tsl, renderer = null, capacity = 64 } 
 
   return {
     group,
-    part(key, geometry, material, { joints = 0, bindMatrix = null } = {}) {
+    part(key, geometry, material, { joints = 0, bindMatrix = null, receiveShadow = true, renderOrder = 0 } = {}) {
       const had = parts.get(key);
       if (had) return had;
       const skinned = Boolean(joints > 0 && geometry.attributes.skinIndex && geometry.attributes.skinWeight);
       const layout = rowLayout(skinned ? joints : 0);
       const size = Math.max(1, capacity) * ROWS_AN_INSTANCE * layout.floatsARow;
-      const p = { key, skinned, layout, capacity: Math.max(1, capacity), data: new Float32Array(size), last: new Float32Array(size), n: 0, lastN: 0, texture: null, nodes: null, mesh: null };
+      const p = { key, skinned, layout, capacity: Math.max(1, capacity), data: new Float32Array(size), last: new Float32Array(size), n: 0, lastN: 0, ready: false, texture: null, nodes: null, mesh: null };
       p.texture = textureFor(p);
-      p.nodes = rowNodes(tsl, { map: p.texture, skinned, bindMatrix: bindMatrix && !bindMatrix.equals(_place.identity()) ? bindMatrix.clone() : null });
+      const onDrawn = () => {
+        p.ready = true;
+      };
+      p.nodes = rowNodes(tsl, { map: p.texture, skinned, onDrawn, bindMatrix: bindMatrix && !bindMatrix.equals(_place.identity()) ? bindMatrix.clone() : null });
       const mesh = new THREE.Mesh(geometry, materialFor(material, p.nodes));
       mesh.name = `figureRows:${key}`;
       mesh.frustumCulled = false;
       mesh.castShadow = false;
-      mesh.receiveShadow = true;
+      // (as the figure's own mesh takes shadow and is ordered: a gun in the hand takes none)
+      mesh.receiveShadow = receiveShadow;
+      mesh.renderOrder = renderOrder;
       mesh.matrixAutoUpdate = false;
       mesh.count = 0;
       p.mesh = mesh;

@@ -26,8 +26,13 @@
 // material's positionNode. The drawn Mesh stands at the origin: the root is
 // the whole of the model matrix.
 //
+// `onDrawn` is called each time three has really drawn the Mesh (after the
+// object's update, which a pass skips while the shader is unbuilt or the
+// pipeline unmade; a Mesh of no instances goes through it too): rows.js
+// reads a part as ready from it.
+//
 //   ROWS_AN_INSTANCE: 2 (now, before)
-//   rowNodes(tsl, { map, skinned, bindMatrix = null }) → { rows, position }
+//   rowNodes(tsl, { map, skinned, bindMatrix = null, onDrawn = null }) → { rows, position }
 //     map: the DataTexture; rows: its texture node (rows.value = a grown one);
 //     position(): the node for material.positionNode
 //   rowVertex(array, layout, instance, { index, weight, position, bind, before }) → [x, y, z]
@@ -55,8 +60,8 @@ export function rowVertex(array, layout, instance, { index = null, weight = null
   return times(array, base + layout.rootAt, p).slice(0, 3);
 }
 
-export function rowNodes(tsl, { map, skinned, bindMatrix = null }) {
-  const { Fn, add, attribute, instanceIndex, int, ivec2, mat3, mat4, normalLocal, positionLocal, positionPrevious, tangentLocal, texture, transformNormal, uniform, vec4 } = tsl;
+export function rowNodes(tsl, { map, skinned, bindMatrix = null, onDrawn = null }) {
+  const { Fn, OnAfterObjectUpdate, add, attribute, instanceIndex, int, ivec2, mat3, mat4, normalLocal, positionLocal, positionPrevious, tangentLocal, texture, transformNormal, uniform, vec4 } = tsl;
   const rows = texture(map);
   const bind = bindMatrix ? uniform(bindMatrix) : null;
   // a matrix of row `y`, its four texels from `x` on
@@ -70,6 +75,7 @@ export function rowNodes(tsl, { map, skinned, bindMatrix = null }) {
     const hasNormal = builder.hasGeometryAttribute('normal');
     const hasTangent = hasNormal && builder.hasGeometryAttribute('tangent');
     const root = rootOf(now);
+    if (onDrawn) OnAfterObjectUpdate(onDrawn);
 
     if (!skinned) {
       if (previous) positionPrevious.assign(rootOf(before).mul(vec4(positionPrevious, 1)).xyz);

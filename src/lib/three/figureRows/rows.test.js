@@ -34,6 +34,8 @@ describe('a part of the rows', () => {
     expect(p.mesh.castShadow).toBe(false);
     expect(p.mesh.receiveShadow).toBe(true);
     expect(p.mesh.count).toBe(0);
+    // (not ready until three has really drawn it: nothing here draws)
+    expect(p.ready).toBe(false);
     expect(p.mesh.material).not.toBe(mesh.material);
     expect(p.mesh.material.name).toBe('mat_body');
     expect(p.mesh.material.positionNode.isNode).toBe(true);
@@ -43,6 +45,15 @@ describe('a part of the rows', () => {
     expect(p.texture.image.height).toBe(8 * ROWS_AN_INSTANCE);
     expect(p.texture.type).toBe(THREE.FloatType);
     expect(rows.stats()).toMatchObject({ parts: 1, rows: 0, draws: 0 });
+  });
+
+  it('takes shadow and is ordered as the figure’s own mesh is: a gun in the hand takes none', async () => {
+    const { rows } = await made();
+    const { gun } = body();
+    const p = rows.part('gun', gun.geometry, gun.material, { receiveShadow: false, renderOrder: 3 });
+    expect(p.mesh.receiveShadow).toBe(false);
+    expect(p.mesh.castShadow).toBe(false);
+    expect(p.mesh.renderOrder).toBe(3);
   });
 
   it('takes the node material three would make of the part’s own', async () => {

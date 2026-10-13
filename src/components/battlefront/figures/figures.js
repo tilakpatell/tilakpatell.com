@@ -45,8 +45,22 @@
 // hand once they have the body (no figure to hold it, no muzzle to fire
 // from), and comes back with the view's `weapon` if it stands again.
 //
-//   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls, cuts, prune }) →
-//     { update(entities, dt, alpha, eye), figure(id), muzzleOf(id, out), count(), dispose() }
+// The far: with `rows` (lib/three/figureRows) a living soldier past the
+// band (band.js: the game's last character LOD distance) is not drawn as a
+// figure. Its body is hidden whole, and every part of it, its gun's meshes
+// too, is an instance of that part's one draw, placed from its own bones
+// once a frame (place, after the scene's world matrices are worked out).
+// Its mixer and its bones go on as before, so the frame it is a figure
+// again, dies or is thrown, it is in the pose it had. A row casts no
+// shadow. A soldier is handed over only when every part of it has been
+// drawn once (a part's shader is built off the frame), and only what the
+// camera sees is placed: each frame a soldier is drawn by its figure or by
+// its rows, never both and never neither.
+//
+//   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls, cuts, prune, rows, from }) →
+//     { update(entities, dt, alpha, eye), place(camera), figure(id), muzzleOf(id, out), count(),
+//       setRows(on), stats() → { soldiers, rows, placed, on }, dispose() }
+//   rows: createFigureRows(…) or null (every soldier a figure); from: the band's metres (band.js's by `cuts.level`)
 //   cuts: { of(kind) → its cut row | null, level, lowData, load(url) → glTF } or
 //     null (every body on its light cut); figureCuts({ level, lowData }) the page's
 //   BODIES: a kind's plain file and cut row (crewList.js's rows for the same files)
@@ -61,6 +75,7 @@ import { pruneSkin } from '../../../lib/three/skinPrune.js';
 import { resolveClip } from '../../../lib/three/walrusRig.js';
 import { stancePackUrl } from '../../../lib/three/walrusStance.js';
 import { stanceClips } from '../../../lib/three/walrusSets/stance.js';
+import { bandOf, onFeet, rowsFrom } from './band.js';
 import { faceAlongZ } from './facing.js';
 import { createHeld, heldOf } from './held.js';
 import { CROSSFADE, LOCO_STATES, clipSpeed, locoBlend, locoClips, packClip, packFallback, relAngle, stateFor, timeAt } from './locomotion.js';
@@ -118,6 +133,7 @@ export const BODY_MIDDLE = [0, 1, 0]; // m above the body's feet, in the body's 
 const _at = new THREE.Vector3();
 const _scale = new THREE.Vector3();
 const _inv = new THREE.Matrix4();
+const _frustum = new THREE.Frustum();
 export function cullBy(model) {
   const parts = [];
   model.traverse((o) => o.isSkinnedMesh && parts.push(o));
@@ -167,19 +183,97 @@ function dress(model, prune = true) {
   cullBy(model);
 }
 
-export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null, prune = true } = {}) {
+export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null, prune = true, rows = null, from = rowsFrom(cuts?.level) } = {}) {
   const root = new THREE.Group();
   root.name = 'figures';
   scene.add(root);
   const figs = new Map(); // id → { model, mixer, actions, clip, prev: { at, yaw }, cur }
   let gone = false;
+  // the rows: on unless a check turns them off or a part fails to be made; `users`: a part's key → the
+  // figures standing on it; `frame`: place's count, so an instance knows the one it was last frame
+  let rowsOn = Boolean(rows);
+  const users = new Map();
+  let frame = 0;
+  let placed = 0;
+
+  // A figure's meshes as the rows' parts, found once and kept until its meshes change (a cut swapped, a
+  // gun taken or put down): every skinned part and every mesh of its gun. A part is one a geometry and
+  // material: the file's geometry is every copy's, so the soldiers of a kind on one cut share its parts.
+  // An empty list is a body that cannot be a row (a mesh on several materials).
+  function partsOf(f) {
+    if (f.parts) return f.parts;
+    const list = [];
+    let whole = true;
+    const walk = (o) => {
+      // (what the figure itself would not draw is no part; the body's own flag is the hand-over's)
+      if (o !== f.model && !o.visible) return;
+      if (o.isMesh) {
+        if (!o.material || Array.isArray(o.material)) whole = false;
+        else list.push({ key: `${o.geometry.uuid}:${o.material.name}:${o.material.map?.uuid ?? ''}`, mesh: o, part: null, was: -1, frame: -1 });
+      }
+      for (const c of o.children) walk(c);
+    };
+    walk(f.model);
+    f.parts = whole ? list : [];
+    try {
+      for (const p of f.parts) p.part = rows.part(p.key, p.mesh.geometry, p.mesh.material, { joints: p.mesh.isSkinnedMesh ? p.mesh.skeleton.bones.length : 0, bindMatrix: p.mesh.isSkinnedMesh ? p.mesh.bindMatrix : null, receiveShadow: p.mesh.receiveShadow, renderOrder: p.mesh.renderOrder });
+    } catch (err) {
+      // (the row path does not build here: what was made is let go and every soldier stays a figure)
+      if (import.meta.env?.DEV) console.warn('figure rows off', err);
+      for (const p of f.parts) if (p.part && !users.has(p.key)) rows.drop(p.key);
+      f.parts = [];
+      rowsOn = false;
+    }
+    for (const p of f.parts) users.set(p.key, (users.get(p.key) ?? 0) + 1);
+    return f.parts;
+  }
+
+  // a figure's parts let go (its meshes changed, or it left); the figure is a figure until its parts are
+  // found again. A part nobody stands on is dropped, its material and its texture freed, once an update
+  // has gone by with nobody taking it, and not before: a soldier whose gun has just landed lets go and
+  // takes the same body parts again in the next update, and a part dropped between the two would be
+  // built twice.
+  const idle = new Map(); // a part's key → the update it was last let go in
+  let updates = 0;
+  function release(f) {
+    if (!f.parts) return;
+    for (const p of f.parts) {
+      const n = (users.get(p.key) ?? 0) - 1;
+      if (n > 0) users.set(p.key, n);
+      else if (users.delete(p.key)) idle.set(p.key, updates);
+    }
+    f.parts = null;
+    if (f.row) {
+      f.row = false;
+      if (f.model) f.model.visible = f.shown !== false;
+    }
+  }
+  function sweep(all = false) {
+    for (const [key, at] of idle) {
+      if (users.has(key)) idle.delete(key);
+      else if (all || updates > at) {
+        rows.drop(key);
+        idle.delete(key);
+      }
+    }
+  }
+
+  // one sphere a body against the camera's four sides (cullBy's sphere, where the body stands now)
+  const inView = (model) => {
+    _at.fromArray(BODY_MIDDLE).applyMatrix4(model.matrixWorld);
+    const reach = BODY_REACH * (model.scale.x || 1);
+    for (let k = 0; k < 4; k++) if (_frustum.planes[k].distanceToPoint(_at) < -reach) return false;
+    return true;
+  };
 
   function make(e) {
     // (actions: every clip played so far; weights: each one's, eased;
     // loco: the names on the stride phase; phase in strides; walking: on
-    // the move last frame, so a start seats every loco action at the phase)
+    // the move last frame, so a start seats every loco action at the phase;
+    // row: drawn by the rows this frame; parts: its meshes as their parts;
+    // shown: the sim's own say on whether it is seen)
     const kind = kindOf(e, kinds);
-    const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null };
+    const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null, row: false, parts: null, shown: true };
     figs.set(e.id, f);
     loadBody(bodyUrl(kind), kind)
       .then(({ model, clips, sockets }) => {
@@ -206,8 +300,9 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     return f;
   }
 
-  // a figure let go: its gun, its ragdoll, its body
+  // a figure let go: its rows, its gun, its ragdoll, its body
   function drop(id, f) {
+    release(f);
     held.disarm(f);
     if (f.fell === true) ragdolls?.drop(id);
     f.model?.removeFromParent();
@@ -227,18 +322,24 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     }
     for (const o of old) for (const m of [].concat(o.material)) m.dispose();
     dress(f.model, prune);
+    // (its rows are the new cut's from the next frame; the old cut's parts go with their last soldier)
+    release(f);
   }
 
   // the weapon the view says it holds, and that weapon's stance
   function arm(f, id) {
     if (f.weapon === id) return;
     f.weapon = id;
+    // (the gun is one of its parts: found again now, and once the new one is in the hand)
+    release(f);
     if (!id) {
       held.disarm(f);
       f.stance = null;
       return;
     }
-    held.arm(f, id);
+    Promise.resolve(held.arm(f, id))
+      .then(() => release(f))
+      .catch(() => {});
     const key = heldOf(id)?.stance ?? null;
     f.stance = key;
     if (!key || f.clips[`stance.${key}.idle`]) return;
@@ -353,6 +454,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     // entities: the view's (id, team, kind, at, yaw, state, stance, vel, aim, …);
     // the last step's places are kept so a frame between two steps is smooth
     update(entities, dt, alpha = 1, eye = null) {
+      updates++;
       const seen = new Set();
       for (const e of entities) {
         // (a soldier only: the walkers and the turrets are lane 4's)
@@ -372,6 +474,14 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
           f.cur = { at: e.at.slice(), yaw: e.yaw ?? 0, t: e.t };
         }
         if (!f.model) continue;
+        // (a row or a figure this frame: the living on their feet past the band, once every part of the
+        // body has been drawn; one leaving the rows is seen as a figure at once, whatever follows)
+        f.shown = e.visible !== false;
+        const far = rowsOn && eye && f.shown && !f.fell && onFeet(e) && bandOf(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z), f.row ? 'row' : 'figure', from) === 'row';
+        const parts = far ? partsOf(f) : null;
+        const row = Boolean(parts?.length) && parts.every((p) => p.part.ready);
+        if (f.row && !row) f.model.visible = f.shown;
+        f.row = row;
         if (ragdolls) {
           // (asked once per death: a refused body is 'refused', plays its death
           // clip and is not offered again, so a long-dead corpse never jumps)
@@ -397,7 +507,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         }
         f.model.position.set(lerp(f.last.at[0], f.cur.at[0], alpha), lerp(f.last.at[1], f.cur.at[1], alpha), lerp(f.last.at[2], f.cur.at[2], alpha));
         f.model.rotation.y = lerpAngle(f.last.yaw, f.cur.yaw, alpha);
-        f.model.visible = e.visible !== false;
+        f.model.visible = f.shown && !f.row;
         arm(f, e.weapon ?? null);
         const s = stateFor(e);
         blendTo(f, wanted(f, e, s, dt), dt);
@@ -405,6 +515,36 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
       }
       for (const [id, f] of figs) if (!seen.has(id)) drop(id, f);
     },
+    // The rows written, once a frame, after the scene's world matrices are worked out: each row soldier
+    // the camera sees, every part of it at the next instance of that part, with the instance it was
+    // last frame (for the pose of the frame before). A soldier out of view is placed nowhere.
+    place(camera = null) {
+      if (!rows) return;
+      frame++;
+      placed = 0;
+      sweep();
+      rows.begin();
+      if (camera) {
+        camera.updateMatrixWorld();
+        _frustum.setFromProjectionMatrix(_inv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+      }
+      for (const f of figs.values()) {
+        if (!f.row || !f.parts || (camera && !inView(f.model))) continue;
+        for (const p of f.parts) {
+          const i = p.part.n;
+          rows.place(p.part, i, p.mesh.isSkinnedMesh ? p.mesh.skeleton : null, p.mesh.matrixWorld, p.frame === frame - 1 ? p.was : -1);
+          p.was = i;
+          p.frame = frame;
+        }
+        placed++;
+      }
+      rows.send();
+    },
+    // (a check's switch: off, every soldier is a figure from the next update)
+    setRows(on) {
+      rowsOn = Boolean(rows) && Boolean(on);
+    },
+    stats: () => ({ soldiers: figs.size, rows: [...figs.values()].filter((f) => f.row).length, placed, on: rowsOn }),
     figure: (id) => figs.get(id) ?? null,
     // where a soldier's gun's muzzle is in the world, or null (no figure, no gun yet)
     muzzleOf: (id, out) => {
@@ -416,11 +556,13 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
       gone = true;
       held.dispose();
       for (const [id, f] of figs) {
+        release(f);
         if (f.fell === true) ragdolls?.drop(id);
         f.mixer?.stopAllAction();
         f.model?.removeFromParent();
       }
       figs.clear();
+      if (rows) sweep(true);
       root.removeFromParent();
     },
   };
