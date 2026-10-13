@@ -34,6 +34,7 @@
 // at Endor, so it stands beside Return of the Jedi)
 
 import { fitSystem } from './fit.js'; // (with its extension: the prerender reads this file in Node)
+import { GAME_MENU } from './gameLevels';
 
 export const FILMS = {
   tpm: { title: 'The Phantom Menace', episode: 'I', year: -32, era: 'republic' },
@@ -224,17 +225,17 @@ const AS_SET = [
     war: { worth: 2, weight: 4, kind: 'evacuation', area: 'anoat' },
     traffic: ['transport', 'xwing', 'tie'],
     game: {
-      id: 'transport',
-      objectives: ['Get the last of the cargo aboard the first transport', 'Hold off the snowtroopers coming over the ridge', 'Run for the ion cannon and fire it before the Star Destroyer closes the way'],
-      title: 'The First Transport',
+      // (Hoth's ground is the 2017 game's own level: landing there opens the game's menu, gameLevels.js; the site's own
+      // Hoth and its first-transport mission are no longer a place: the 2026-10-13 design)
+      id: 'assault',
+      objectives: ['Bring the walkers through to the uplinks', 'Break into the hangars', 'Stop the transports before they lift'],
+      title: 'The Battle of Hoth',
       film: 'esb',
-      role: 'Echo Base ground crew, on foot',
-      pitch: 'The Empire has found Echo Base, and the first transport has to go now, cargo or no cargo. Load it, keep the snowtroopers off its ramp, then run across the ice to the ion cannon and clear its way past the blockade.',
-      how: 'On foot, against the clock: a blaster for the snowtroopers, and a long run to the cannon once the transport lifts.',
+      role: 'A trooper in the battle, one of the four classes',
+      pitch: 'Galactic Assault on the game’s own Outpost Delta: the Empire comes in behind the walkers for the uplinks, the hangars and the transports, and the Rebellion holds each as long as it can.',
+      how: 'The game’s own menu, level and deploy screen: choose what to play, deploy as one of the four classes, and a hero once your Battle Points afford one.',
       status: 'live',
-      to: '/galaxy/hoth/surface?mission=transport',
-      // (and the ground battle, on the same world: both from the briefing)
-      also: [{ id: 'assault', title: 'The Battle of Hoth', text: 'Galactic Assault on the game’s own Outpost Delta: the Empire comes in behind the walkers for the uplinks, the hangars and the transports, and the Rebellion holds each as long as it can. Deploy as one of the four classes; a hero once your Battle Points afford one.', to: '/battlefront/hoth/galacticAssault?from=%2Fgalaxy%2Fhoth', go: 'Fight it now' }],
+      to: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth',
     },
   },
   {
@@ -1215,10 +1216,11 @@ export const SYSTEMS = AS_SET.map(fitSystem);
 
 // The 2017 game's Heroes vs Villains and Blast on each world whose level has
 // their grounds (surface/missions/arenas.js's GROUNDS; their rows are
-// missions/index.js's), as two more lines on its briefing.
+// missions/index.js's), as two more lines on its briefing. (Not on a world
+// that lands in the game's own menu, gameLevels.js: its surface is no place.)
 export const MODE_WORLDS = ['hoth', 'endor', 'tatooine', 'geonosis', 'kashyyyk'];
 for (const s of SYSTEMS)
-  if (MODE_WORLDS.includes(s.id))
+  if (MODE_WORLDS.includes(s.id) && !GAME_MENU[s.id])
     s.game.also = [
       ...(s.game.also ?? []),
       { id: 'hvv', title: 'Heroes vs Villains', text: 'Four heroes against four villains in the level’s own hero arena. Each side has a target: bring theirs down for a point, keep yours alive. First to ten.', to: `/galaxy/${s.id}/surface?mission=hvv`, go: 'Play it now' },
