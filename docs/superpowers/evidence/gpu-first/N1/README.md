@@ -138,7 +138,29 @@ The plan: `docs/superpowers/plans/2026-10-13-far-soldiers-as-rows.md` (on `claud
 
 Everything below was taken with the game itself open on the machine and other sessions using it. Between pages ten minutes apart the same mode's frame moved from 9 to 26 ms, so **a number is comparable only with another from the same page**, and a gain in milliseconds grows with the load it was taken under. Edge 154 headless, the RTX 5090, WebGPU, 2,560 × 1,440, uncapped, local dev (`--mode bucketcheck`), `tp-quality` ultra, Hoth, a round begun in place at 24 a side (`do('round', { mode: 'supremacy', bots: { friendly: 23, enemy: 24 } })`): 48 soldiers, 358 meshes. The scripts and their JSON are in the worktree's `.scratch-check/` (git-excluded, as this file's other sources are): they are named here, not committed.
 
-### What the soldiers cost, and what rows take off
+### Two faults of the measuring itself, found late
+
+- **The dev server drew the level without its compressed textures.** Its `node_modules` is a junction to another worktree's, and vite refused the Basis transcoder as outside its serving list (a 403 in every page; the server's log: "the snow did not land"). The ground was flat and the rocks bare in every picture. So every dev-server frame below, the first two sections' and the walk's, is of a lighter picture than a visitor's. The comparisons inside one page had the same picture on both sides; the "visitor's frame" is not a visitor's picture. The built site serves the transcoder (no response refused) and is what the last table here was taken on.
+- **Every page test before the merge was on the dev server at the old base.** On the built, merged site the only things checked are the round-size table below, when the rows arrive, and that no soldier was neither a row nor a visible figure in 35 s by the branch's own bookkeeping.
+
+### The round's size, rows off and on (the built site, the merged branch)
+
+tilak-a6's `frames.mjs` (`lag-cpu-path/.scratch-check`), with the rows switched off and on in 4 s windows, four pairs a size, inside the same page (`frames-rows.mjs`, `out/frames-rows-built-<n>.json`). `vite build --mode bucketcheck` of `2d09ca6db` (this branch with `main` at `b0a8474dc` merged), `vite preview`, Edge headless, 1,920 × 1,080, the quality level not pinned, a round begun through the door at each size and 40 s given for the rows to arrive. The game open on the same card: relative numbers. Each size had the player alive and the pace level at 1 in every window.
+
+| a side | living bots | every soldier a figure, frame p50 (two runs) | rows on (two runs) |
+|---|---|---|---|
+| 8 | 13 / 14 | 12.2 / 21.7 ms | 7.0 / 13.7 ms |
+| 13 | 22 / 23 | 19.8 / 27.2 | 9.3 / 15.7 |
+| 20 | 37 / 37 | 27.8 / 27.8 | 12.5 / 12.8 |
+| 32 | 61 / 61 | 46.3 / 44.8 | 21.6 / 21.7 |
+
+The two larger sizes repeat. The two smaller do not: in the second run they are slower than the first's and, with rows, 13 a side is slower than 20, which more bots cannot explain; they ran first in that page. From 37 to 61 bots a bot costs 0.71 to 0.77 ms a frame as a figure (tilak-a6 measured 0.75) and 0.37 to 0.38 ms as a row.
+
+**This is the most favourable view there is for rows, and not a round's cost.** In this flow the player stands where the round deploys them and the bots go to their posts: 45 s in, the nearest bot was 118 m from the camera and all 39 were rows (`where.mjs`). A bot within the band is a figure and costs a figure's rate or more, so a round costs between the two columns by how many bots are near. The pages before the merge, where 8 to 18 soldiers stood within 80 m, left the soldiers at 26 to 45 % of their cost as figures. What the 0.37 ms a row is spent on was not profiled on this build; the timers below, from the old base, put it in the mixers, the matrix walk and the placing.
+
+When the rows arrive (`rows-arrive.mjs`, `rows-dip.mjs`, 20 a side): none for the first 6 s, while the shaders of the level and of the rows' own parts are built off the frame (up to 217 pending); twenty by 10 s; all the far soldiers from 30 s. In one run no soldier was a row at 15 s either, though twenty had been at 10 s and 14 of the 15 parts read as ready: **not explained**, and a second run's record ran out before that moment.
+
+### What the soldiers cost, and what rows take off (the dev server, before the merge)
 
 One page, the mode switched every 4 s for five rounds. "Hidden": no soldier drawn. `_source`: `.scratch-check/soldiers-ab.mjs`, `out/soldiers-ab-<tag>.json`.
 
@@ -232,6 +254,8 @@ The plan builds it only if stage 1 shows the mixers and the bones are what is le
 - Whether the goal is met (above).
 - Why skinned figures write the velocity they do. It is on `main` and outside this branch; it makes the plan's picture test unpassable with the chain on and makes the hand-over visible.
 - The hand-over at a visitor's field of view and in motion; the far soldiers' missing shadows on the snow (at low and mid the game's own shadow distance is past the band, so rows casting none is a loss there by the plan's own count).
-- A single missing frame on screen at the hand-over (the accounting is bookkeeping).
+- A single missing frame on screen at the hand-over (the accounting is bookkeeping). A part is marked ready the first time three draws it in any pass; the guard holds objects by pass and was still holding 2 to 24 in most frames after the rows arrived. Whether a row can be ready in one pass and held out of the picture's own is not ruled out.
+- The lens factor on the band (`band.js`'s `zoomOf`) in the page: every soldier camera is at 55° today, where it is exactly 1. Unit tests only.
+- A frame at 63 bots taken apart, on the merged build.
 - The row path on WebGL 2; a kind whose body is swapped while its rows are drawn, in the page (covered by `figures.test.js` against a stand-in only); more soldiers of a kind than 64 in the page (`rows.test.js` only).
 - What the probe's timers cost.
