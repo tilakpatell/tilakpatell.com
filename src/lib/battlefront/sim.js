@@ -252,14 +252,15 @@ const ownersOf = (sim) => slotsOf(sim).map((p) => p.owner);
 // a bot's order to a post, within the round's radius of it
 function taskAt(sim, i) {
   const at = postsOf(sim)[i].at;
-  return { key: `post${i}`, at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false };
+  // (a post's place stays: its way is found once for every bot sent there, navField.js)
+  return { key: `post${i}`, at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false, stays: true };
 }
 
 // a bot the Overhaul has dealt no post yet: it keeps to where it stands (by hand: what the game's bot does
 // with no objective is not read)
 function holdTask(sim, s) {
   const at = [s.at[0], s.at[2]];
-  return { key: 'hold', at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false, shared: false };
+  return { key: 'hold', at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false };
 }
 
 // a bot's order from the bot logic: the game's pick for it, or the Overhaul's table's next entry (its

@@ -223,6 +223,16 @@ describe('the options', () => {
     expect(of('mode').choices.every((m) => MODES.includes(m))).toBe(true);
   });
 
+  it('the modes on offer are the world’s, Instant Action’s own first: Hoth’s page offers Supremacy, its second level’s', () => {
+    expect(of('mode').choices[0]).toBe('supremacy');
+    expect(of('mode').default).toBe('supremacy');
+    expect(of('mode').choices).toContain('galacticAssault');
+    expect(new Set(of('mode').choices).size).toBe(of('mode').choices.length);
+    // (a level whose world holds no Supremacy starts on its own first mode)
+    const kamino = optionsFor(gs, { rulebook: rb, level: 'kamino_01' }).find((o) => o.id === 'mode');
+    expect(kamino.choices.includes('supremacy') ? kamino.default : kamino.choices[0]).toBe(kamino.default);
+  });
+
   it('the eras on offer are the ones the teams table holds for the level', () => {
     expect(erasFor(rb, 'hoth')).toEqual(['Orig']);
     expect(of('era').choices).toEqual(['Orig']);

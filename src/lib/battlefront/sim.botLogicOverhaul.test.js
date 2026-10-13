@@ -56,7 +56,10 @@ describe('a round on the Overhaul’s logic', () => {
       for (const s of bots(sim, team)) {
         expect(postOf(sim, s)).toBeGreaterThanOrEqual(0);
         expect(s.brain.task.radius).toBe(10);
+        expect(s.brain.task.stays).toBe(true);
       }
+    // (and the place a bot kept to before it is not one that stays: no way is kept for it)
+    for (const s of bots(start().sim, 1)) expect(s.brain.task.stays).toBeUndefined();
   });
 
   it('deals a side that holds nothing its two near posts and the middle, each side from its own end', () => {

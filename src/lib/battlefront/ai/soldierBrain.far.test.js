@@ -33,7 +33,7 @@ function bot(at, over = {}) {
 }
 
 const world = (task, on = nav) => ({ nav: on, lineClear: (a, b) => lineClear(on, a, b), shields, squad: null, objective: null, task, enemies: [], targets: [], others: [], taken: new Map(), who: () => null, shoot: () => {} });
-const postAt = (at) => ({ key: 'post', at, spot: at, role: 'defend', radius: 10, reach: 0, interact: false });
+const postAt = (at) => ({ key: 'post', at, spot: at, role: 'defend', radius: 10, reach: 0, interact: false, stays: true });
 
 // the bot thinks and acts for `seconds`; how near its post it came
 function walk(b, w, seconds) {
@@ -66,14 +66,15 @@ describe('a bot sent past a long wall', () => {
     expect(walk(b, w, 150)).toBeLessThanOrEqual(10);
   });
 
-  it('finds the way once for every bot sent there, and keeps none for a place of a bot’s own', () => {
+  it('finds the way once for every bot sent there, and keeps none for a place that is not said to stay', () => {
     const own = make();
     walk(bot([141, 0, -45], { ap: ap() }), world(postAt([141, 45]), own), 10);
     walk(bot([120, 0, -30], { ap: ap() }), world(postAt([141, 45]), own), 10);
     expect(own.fields.size).toBe(1);
-    const lone = make();
-    walk(bot([141, 0, -45], { ap: ap() }), world({ ...postAt([141, 45]), shared: false }, lone), 10);
-    expect(lone.fields).toBeUndefined();
+    // (a walker's place, a crowd's middle: a field made for each place it passes would be made over and over)
+    const moving = make();
+    walk(bot([141, 0, -45], { ap: ap() }), world({ ...postAt([141, 45]), stays: undefined }, moving), 10);
+    expect(moving.fields).toBeUndefined();
   });
 
   it('sent past a wall thinner than a cell, which one search walks into: it goes round by the field', () => {

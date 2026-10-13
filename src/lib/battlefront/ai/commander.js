@@ -110,9 +110,11 @@ function orders(c, o, role) {
   if (o.type === 'carry') return task(c, `o${i}:${role}:${o.carrier ? 'to' : 'at'}`, { at, spot: at, role, radius: role === 'take' && !o.carrier ? 0 : HOLD_RADIUS });
   if (o.type === 'arm' || o.type === 'uplink') {
     const interact = role === 'take';
-    return task(c, `o${i}:${role}`, { at, spot: spotOf(c, o), role, interact, radius: interact ? 0 : HOLD_RADIUS + INTERACT_REACH });
+    return task(c, `o${i}:${role}`, { at, spot: spotOf(c, o), role, interact, radius: interact ? 0 : HOLD_RADIUS + INTERACT_REACH, stays: true });
   }
-  return task(c, `o${i}`, { at, spot: at, role, radius: HOLD_RADIUS });
+  // (`stays`: the place does not move, so the brain keeps one way to it for every bot sent, navField.js;
+  // a walker's place, a carried thing's and a counter's crowd move, and say nothing)
+  return task(c, `o${i}`, { at, spot: at, role, radius: HOLD_RADIUS, ...(o.type === 'escort' ? {} : { stays: true }) });
 }
 
 // the attackers' plan: each squad to the objective with the most weight left for it

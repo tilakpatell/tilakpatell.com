@@ -526,13 +526,14 @@ function plan(brain, world, s, goal, now) {
   const from = flat(s.at);
   const blocked = blockedCells(world, s, goal, now < (brain.avoidUntil ?? -Infinity) ? brain.avoid : null);
   const d = d2(from, goal);
-  // (sent to a place others are sent to, a post or an objective, and not yet round it: its way is the place's
+  // (sent to a place that stays, a post or a fixed objective (its order says so), and not yet round it: its way is the place's
   // field first, which goes round what one search does not, a way too long for its cells and a wall thinner
   // than a cell, which the search walks into (a bot sent past either stood at the wall). navField.js: one
   // field for every bot sent there, kept on the navgrid; round the place itself a search of its own is
-  // enough. A place of the bot's own, `shared: false`, has no field kept for it)
+  // enough. A place that moves, a walker's or a crowd's middle, has no field: one would be made for each
+  // place it passes)
   const t = world.task;
-  const sent = t && t.shared !== false && d2(goal, t.at) <= (t.radius ?? 0) + 2 && d2(from, t.at) > (t.radius ?? 0) + SENT_NEAR ? t.at : null;
+  const sent = t?.stays && d2(goal, t.at) <= (t.radius ?? 0) + 2 && d2(from, t.at) > (t.radius ?? 0) + SENT_NEAR ? t.at : null;
   let path = null;
   if (sent) {
     const f = fieldTo(world.nav, sent);

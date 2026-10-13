@@ -52,6 +52,20 @@ describe('the commander', () => {
     expect(Math.abs(plan.get('1.2').task.at[0])).toBeLessThan(5);
   });
 
+  it('says of an order whether its place stays: a point’s does, a counter’s on the crowd and a carried thing’s do not', () => {
+    const A = capture.create({ volume: box(0, 0) });
+    const B = capture.create({ volume: box(200, 0) });
+    const squads = [sq('1.1', [0, 60]), sq('1.2', [200, 60]), sq('1.3', [100, 60])];
+    const c = createCommander({ team: 1, side: 'defend', ga: ga([A, B]), squads });
+    const plan = assign(c, { entities: [soldier('a', 2, [1, 0]), soldier('b', 2, [2, 2]), soldier('c', 2, [-3, 1])], now: 0 });
+    expect(plan.get('1.1').task.stays).toBe(true);
+    expect(plan.get('1.2').role).toBe('counter');
+    expect(plan.get('1.2').task.stays).toBeUndefined();
+    const o = carry.create({ at: [10, 0], to: [90, 0] });
+    const d = createCommander({ team: 2, side: 'attack', ga: ga([o]), squads: [sq('2.1', [0, -50])] });
+    expect(assign(d, { entities: [], now: 0 }).get('2.1').task.stays).toBeUndefined();
+  });
+
   it('gives each member of a squad its task', () => {
     const A = capture.create({ volume: box(0, 0) });
     const s = newSoldier(classOf(rb, 'd-orig-assault'), { id: 'b1', team: 2, at: [0, 0, -40], weapon: weaponOf(rb, classOf(rb, 'd-orig-assault').weapon) });

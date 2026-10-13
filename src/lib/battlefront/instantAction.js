@@ -82,7 +82,7 @@ import { wavesFor } from './ai/waves.js';
 import { POST_RADIUS, timersFor } from './ai/botLogic.js';
 import * as Overhaul from './ai/botLogicOverhaul.js';
 import { MODES } from './modes/index.js';
-import { levelKey, modesOf } from './rulebook.js';
+import { levelKey, worldModesOf } from './rulebook.js';
 import { createSim } from './sim.js';
 
 export { applyRound } from './sim.js';
@@ -134,10 +134,12 @@ export function erasFor(rulebook, level) {
   return eras.length ? eras : [DEFAULTS.era];
 }
 
-// the modes a level's round may be: the game's own for that level that the sim runs
+// the modes a level's round may be: the game's own for that level's world that the sim runs (a mode is
+// played on the level of the world that holds it: rulebook.js's levelForMode), Instant Action's own first
 function modesFor(rulebook, level) {
-  const own = rulebook ? modesOf(rulebook, level).filter((m) => MODES.includes(m)) : [];
-  return own.length ? own : [...MODES];
+  const own = rulebook ? worldModesOf(rulebook, level).filter((m) => MODES.includes(m)) : [];
+  const list = own.length ? own : [...MODES];
+  return list.includes(OWN_MODE) ? [OWN_MODE, ...list.filter((m) => m !== OWN_MODE)] : list;
 }
 
 // what a side may have out and how many of them bots, from the rows (the round's caps before any choice)
