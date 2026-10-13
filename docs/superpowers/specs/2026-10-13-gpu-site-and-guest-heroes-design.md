@@ -195,25 +195,25 @@ He asked for a full table "similar to the game". So nothing below is invented wh
 | middle | PORTAL | steps through a portal to the place aimed at | timings from Han's Shoulder Charge; the move is the one new kind, a blink | activation 0.5, recharge 10; reach 20 m, by hand (the galaxy's `hop` is the same idea and its number is taken if it has one) |
 | right | FREEZE RAY | a shot that dazes those in its blast and stops their blasters | Boba Fett's Concussion Rocket | activation 0.7, recharge 15; radius 5; dazed 3 s within 18 m and 90°; blasters off 1.2 s; no damage |
 
-Rick's cards: 1 CONCENTRATED DARK MATTER, the pistol builds 25 % less heat (Han's 1: 10 / 14 / 18 / 25). 2 CAN DO, the Meeseeks Box recharges 30 % sooner (Leia's 1: 10 / 15 / 20 / 30). 3 EXISTENCE IS PAIN, a Meeseeks has 25 % more health (Leia's 2: 10 / 15 / 20 / 25). 4 WUBBA LUBBA, Rick takes 40 % less damage for two seconds after a Portal (Han's 4: 25 / 30 / 35 / 40; the two seconds by hand). 5 PORTAL FLUID, the Portal reaches 40 % farther (Lando's 6: 25 / 30 / 35 / 40). 6 QUICK EXIT, the Portal's recharge is 1.5 s shorter (Leia's 5: 0.5 / 1 / 1.25 / 1.5). 7 WIDE BEAM, the Freeze Ray's blast is 30 % wider (Lando's 2: 15 / 20 / 25 / 30). 8 COLD SNAP, the frozen stay dazed 2 s longer (Boba Fett's 3: 0.5 / 1 / 1.5 / 2). 9 SCIENTIST'S LIVER, 150 more maximum health (Lando's 9: 50 / 75 / 100 / 150).
+Rick's cards: 1 CONCENTRATED DARK MATTER, the pistol builds 25 % less heat (Han's 1: 10 / 14 / 18 / 25). 2 CAN DO, the Meeseeks Box recharges 25 % sooner (Leia's 1: 10 / 15 / 20 / 25 as the ability's record runs it, a recharge of 18 / 17 / 16 / 15 of 20; the card's own text says 30 at the top). 3 EXISTENCE IS PAIN, a Meeseeks has 25 % more health (Leia's 2: 10 / 15 / 20 / 25). 4 WUBBA LUBBA, Rick takes 40 % less damage for two seconds after a Portal (Han's 4: 25 / 30 / 35 / 40; the two seconds by hand). 5 PORTAL FLUID, the Portal reaches 40 % farther (Lando's 6: 25 / 30 / 35 / 40). 6 QUICK EXIT, the Portal's recharge is 1.5 s shorter (Leia's 5: 0.5 / 1 / 1.25 / 1.5). 7 WIDE BEAM, the Freeze Ray's blast is 30 % wider (Lando's 2: 15 / 20 / 25 / 30). 8 COLD SNAP, the frozen stay dazed 2 s longer (Boba Fett's 3: 0.5 / 1 / 1.5 / 2). 9 SCIENTIST'S LIVER, 150 more maximum health (Lando's 9: 50 / 75 / 100 / 150).
 
 **Morty** (on Leia's frame at the game's lowest hero health: 600, as Boba Fett and Bossk have; regeneration after 5 s at 50)
 
 | | name | what it does | the game row it is | numbers |
 | --- | --- | --- | --- | --- |
 | primary | Laser pistol | bursts of two | `weapons.json` `leia` (the Defender) | 700 a minute in bursts of 2 at 200; 40 to 20 over 20 to 40 m; heat 0.03 a shot |
-| left | PLUMBUS | thrown; shocks those near where it lands | timings from Chewbacca's Shock Grenade, the effect from the specialist's Shock Grenade (Chewbacca's own shock time is not in a named field) | activation 0.4, recharge 15; 30 damage within 5 m; a field of 2 m for 3.7 s at 10 a second |
+| left | PLUMBUS | thrown; it splits, and each piece shocks those near where it lands | Chewbacca's Shock Grenade (its shock time and reach were found in the grenade's graph on 2026-10-13, so the specialist's grenade is no longer borrowed) | activation 0.4, recharge 15; splits into six; each shocks 0.75 s within 3 m; no damage; the same target is not shocked again for 3.5 s |
 | middle | MEGA SEEDS | Morty and the allies round him gain health over their own | the officer's Battle Command | active 1, recharge 40; radius 13; 100 over-health for 4 s |
 | right | PURGE MODE | his pistol fires without pause for a while, and he takes less | Leia's Rapid Fire | recharge 15; lasts 13 s; 650 a minute, 36 to 19 over 20 to 40 m; damage taken × 0.75 |
 
-Morty's cards: 1 AW JEEZ, Mega Seeds recharges 30 % sooner (Leia's 1). 2 GRANDSON, regenerates 100 more health (Leia's 3: 25 / 50 / 75 / 100). 3 EVERYONE HAS ONE, the Plumbus's blast is 1 m wider (Leia's 4: 0.25 / 0.5 / 0.75 / 1). 4 SPARE PLUMBUS, its recharge is 1.5 s shorter (Leia's 5). 5 ONE TRUE MORTY, 25 % less damage in Purge Mode (Leia's 6: 10 / 15 / 20 / 25). 6 KEEP SHOOTING, Purge Mode loses 55 % less time a shot (Leia's 7: 25 / 35 / 45 / 55; a kind the first build does not model). 7 STAY CLOSE, within 15 m of two allies all three take 10 % less (Leia's 8: 4 / 6 / 8 / 10; not modelled at first). 8 STEADY HANDS, the pistol builds 25 % less heat (Han's 1). 9 TOUGHER THAN HE LOOKS, 150 more maximum health (Lando's 9).
+Morty's cards: 1 AW JEEZ, Mega Seeds recharges 25 % sooner (Leia's 1). 2 GRANDSON, regenerates 100 more health (Leia's 3: 25 / 50 / 75 / 100). 3 EVERYONE HAS ONE, the Plumbus's blast is 1 m wider (Leia's 4: 0.25 / 0.5 / 0.75 / 1). 4 SPARE PLUMBUS, its recharge is 1.5 s shorter (Leia's 5). 5 ONE TRUE MORTY, 25 % less damage in Purge Mode (Leia's 6: 10 / 15 / 20 / 25). 6 KEEP SHOOTING, Purge Mode loses 55 % less time a shot (Leia's 7: 25 / 35 / 45 / 55; a kind the first build does not model). 7 STAY CLOSE, within 15 m of two allies all three take 10 % less (Leia's 8: 4 / 6 / 8 / 10; not modelled at first). 8 STEADY HANDS, the pistol builds 25 % less heat (Han's 1). 9 TOUGHER THAN HE LOOKS, 150 more maximum health (Lando's 9).
 
 **Walt** (on Bossk's frame: health 600, regeneration after 5 s at 25)
 
 | | name | what it does | the game row it is | numbers |
 | --- | --- | --- | --- | --- |
 | primary | Revolver | single heavy shots | `weapons.json` `s5` (the officer's S-5) | 140 a minute; 67 to 45 over 15 to 50 m; heat 0.1 a shot |
-| left | BLUE CLOUD | a cloud that hurts those who stand in it | Bossk's Dioxis Grenade | activation 0.4, recharge 20; radius 10; 15 at once, then 5 a second; lasts 10 s |
+| left | BLUE CLOUD | a cloud that hurts those who stand in it | Bossk's Dioxis Grenade | activation 0.4, recharge 20; radius 10; 15 at once, then 5 a second; the cloud stays 6 s after it bursts (the record's 10 s is the grenade's flight fuse) |
 | middle | SAY MY NAME | the enemies round him are shown to his whole side, and he leaves their radars | Boba Fett's For the Hunt, without the jetpack | activation 0.5, lasts 8 s, recharge 10; 30 m |
 | right | FULMINATED MERCURY | a thrown charge he sets off when he likes | Han's Detonite Charge | activation 0.4, recharge 18; 200 at the centre, full within 5 m, nothing past 10 m |
 
@@ -224,7 +224,7 @@ Walt's cards: 1 PURE PRODUCT, the cloud is 20 % larger (Bossk's 1: 10 / 13 / 16 
 | | name | what it does | the game row it is | numbers |
 | --- | --- | --- | --- | --- |
 | primary | Pistol | quick single shots | `weapons.json` `x8nightsniper` (Lando's X-8) | 400 a minute; 40 to 25 over 20 to 50 m; heat 0.07 a shot |
-| left | COOK SMOKE | smoke that hides the enemy's view | Lando's Smoke Grenade | activation 0.4, recharge 14; radius 10; how long it lasts is not in a named field of the export, so that one number is by hand until it is found |
+| left | COOK SMOKE | smoke that hides the enemy's view | Lando's Smoke Grenade | activation 0.4, recharge 14; radius 10, hides within 6 m and blocks spotting within 8 m; lasts 7 s from its first bounce (found in the grenade's graph on 2026-10-13) |
 | middle | MAGNETS | a stuck device that shows nearby enemies and scrambles their radars; set off, it shocks them | Lando's Disabler | activation 0.4, lasts 40 s at top rank, recharge 19; radius 12; shock 1.1 s, radar 2 s, shown 2 s |
 | right | THERMITE | up to three thrown | Leia's Thermal Detonators | recharge 13 once all are thrown; 250 at the centre, full within 2.5 m, nothing past 7 m |
 
