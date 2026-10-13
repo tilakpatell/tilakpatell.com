@@ -58,7 +58,10 @@
 // Pure: no three.js, no DOM.
 //
 //   erasFor(rulebook, level) → ['Orig', …]
-//   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site' | 'overhaul', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source }]
+//   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site' | 'overhaul', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source,
+//     label, help, carried?, when? }]   (label, help: the row's own words on the game's screen, the string table's;
+//     carried: the sim does not act on it yet; when: what else must be chosen for it to act; the screen's logic
+//     over these rows is instantActionForm.js)
 //     (in the game's screen's order, the enemy's of a pair before the player's side's)
 //     (a dotted id is a nested field: `heroes.enemyCount` is choice.heroes.enemyCount)
 //   roundFor(gs, choice, { cap, profile }) → round      (throws on a choice that is not one of the options';
@@ -82,7 +85,7 @@ import { wavesFor } from './ai/waves.js';
 import { POST_RADIUS, timersFor } from './ai/botLogic.js';
 import * as Overhaul from './ai/botLogicOverhaul.js';
 import { MODES } from './modes/index.js';
-import { levelKey, worldModesOf } from './rulebook.js';
+import { levelKey, modeName, worldModesOf, worldName } from './rulebook.js';
 import { createSim } from './sim.js';
 
 export { applyRound } from './sim.js';
@@ -157,28 +160,37 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
   const modes = modesFor(rulebook, level);
   const eras = erasFor(rulebook, level);
   const profile = rulebook?.ai?.instantAction ?? {};
-  const text = (id) => rulebook?.strings?.[id] ?? id;
   const PROFILE = 'Gameplay/Profiles/InstantActionParams/';
+  // a row's own words on the game's screen (ai.json's `title` and `help`: the string table's), else the site's
+  const words = (option, mine) => ({ label: profile[option]?.title?.text ?? mine, help: profile[option]?.help?.text ?? null });
   // a choice the game's profile holds: its default by the option's index, its items' own names
-  const pick = (id, option, choices, fallback) => {
+  const pick = (id, option, choices, fallback, mine) => {
     const row = profile[option];
     const at = row && row.default >= 0 && row.default < choices.length ? choices[row.default] : fallback;
-    // (names only where the strings table holds every one: the difficulty's ids are not in it, and its values, rookie, normal and expert, are the screen's own words)
-    const labels = row?.items?.length === choices.length && row.items.every((i) => rulebook?.strings?.[i]) ? row.items.map(text) : null;
-    return { id, kind: 'choice', choices: [...choices], ...(labels ? { labels } : {}), default: at, option, source: row ? PROFILE + option : 'hand' };
+    // (the items' names where the profile holds one for each: the game's words, ROOKIE for the difficulty's first)
+    const labels = row?.labels?.length === choices.length ? [...row.labels] : null;
+    return { id, kind: 'choice', choices: [...choices], ...(labels ? { labels } : {}), default: at, option, source: row ? PROFILE + option : 'hand', ...words(option, mine) };
   };
-  const flag = (id, option, fallback) => {
+  const flag = (id, option, fallback, mine) => {
     const row = profile[option];
-    return { id, kind: 'toggle', default: row && row.default >= 0 ? row.default === 1 : fallback, option, source: row ? PROFILE + option : 'hand' };
+    // (a switch's two words: the game's OFF and ON)
+    const labels = row?.labels?.length === 2 ? [...row.labels] : ['OFF', 'ON'];
+    return { id, kind: 'toggle', labels, default: row && row.default >= 0 ? row.default === 1 : fallback, option, source: row ? PROFILE + option : 'hand', ...words(option, mine) };
   };
   // a count: the game's own option's least, most and starting value where the rulebook holds them
   // (ProfileOptionDataFloat's Min, Max and Value), else the settings' rows; `most` is the machine's share
-  const number = (id, option, value, min, max, source, most = Infinity) => {
+  const number = (id, option, value, min, max, source, most = Infinity, mine = id) => {
     const row = profile[option];
     const own = typeof row?.value === 'number';
     const top = Math.min(own ? (row.max ?? max) : max, most);
-    return { id, kind: 'count', min: own ? (row.min ?? min) : min, max: top, default: Math.min(own ? row.value : value, top), option, source: own ? PROFILE + option : source };
+    return { id, kind: 'count', min: own ? (row.min ?? min) : min, max: top, default: Math.min(own ? row.value : value, top), option, source: own ? PROFILE + option : source, ...words(option, mine) };
   };
+  // (what the sim carries and does not act on yet: no vehicle deploys, and a hero's row holds no era)
+  const carried = (o) => ({ ...o, carried: true });
+  // (the site's own rows, and the mod's: a name by hand; `when`: what else must be chosen for the row to act)
+  const STEP_WORDS = ['VERY EASY', 'EASY', 'MEDIUM', 'HARD', 'VERY HARD'];
+  const modeWord = (m) => (rulebook && modeName(rulebook, m) ? modeName(rulebook, m).toUpperCase() : String(m).toUpperCase());
+  const place = (rulebook && worldName(rulebook, level)) || String(level);
   const size = g('size', ['TeamSize_AutoPlayers_Easy_Mode8', 'TeamSize_AutoPlayers_Mode8'], 13);
   const mine = g('mine', ['TeamSize_RealPlayer_Easy_Mode8', 'TeamSize_RealPlayer_Mode8'], 12);
   const friend = rowsFor(g, team);
@@ -190,40 +202,47 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
   // era is the site's own row.
   const rows = {
     modifiers: [
-      { id: 'mode', kind: 'choice', choices: modes, default: modes.includes(OWN_MODE) ? OWN_MODE : modes[0], option: 'InstantActionModeToPlay', source: 'modes.json' },
-      pick('difficulty', 'InstantActionDifficulty', DIFFICULTIES, DEFAULTS.difficulty),
-      pick('length', 'InstantActionTimeLimit', LENGTHS, DEFAULTS.length),
+      // (the modes' names are the game's for each, modes.json's: its own list of this option is Supremacy and its two Missions)
+      { id: 'mode', kind: 'choice', choices: modes, labels: modes.map(modeWord), default: modes.includes(OWN_MODE) ? OWN_MODE : modes[0], option: 'InstantActionModeToPlay', source: 'modes.json', ...words('InstantActionModeToPlay', 'MODE') },
+      // (the location: the page's own level, a row of one choice until a round may move to another)
+      { id: 'level', kind: 'choice', choices: [level], labels: [place.toUpperCase()], default: level, option: 'InstantActionLevelToPlay', source: 'modes.json', ...words('InstantActionLevelToPlay', 'LOCATION') },
+      pick('difficulty', 'InstantActionDifficulty', DIFFICULTIES, DEFAULTS.difficulty, 'AI DIFFICULTY'),
+      pick('length', 'InstantActionTimeLimit', LENGTHS, DEFAULTS.length, 'ROUND LENGTH'),
     ],
     advanced: [
-      pick('bpRate', 'InstantActionBPRate', RATES, DEFAULTS.bpRate),
+      pick('bpRate', 'InstantActionBPRate', RATES, DEFAULTS.bpRate, 'BATTLE POINTS'),
       // (the sides' sizes, no more than the machine is given: the module passes its share, `cap`)
-      number('bots.enemy', 'InstantActionNumEnemyAI_PC', size, 1, MAX_SIDE, sources.size, most),
-      number('bots.friendly', 'InstantActionNumFriendlyAI_PC', Math.max(0, mine - 1), 0, MAX_SIDE, sources.mine, most),
-      number('heroes.enemyCount', 'InstantActionEnemyHeroCount', foe.heroes.bots, 0, foe.heroes.max, sources[`heroes.bots.${3 - team}`]),
-      number('heroes.friendlyCount', 'InstantActionFriendlyHeroCount', friend.heroes.bots, 0, friend.heroes.max, sources[`heroes.bots.${team}`]),
-      number('reinforcements.enemyCount', 'InstantActionEnemyReinforcementCount', foe.reinforcements.bots, 0, foe.reinforcements.max, sources[`reinforcements.bots.${3 - team}`]),
-      number('reinforcements.friendlyCount', 'InstantActionFriendlyReinforcementCount', friend.reinforcements.bots, 0, friend.reinforcements.max, sources[`reinforcements.bots.${team}`]),
-      number('vehicles.enemyCount', 'InstantActionEnemyVehicleCount', foe.vehicles.bots, 0, foe.vehicles.bots, sources[`vehicles.bots.${3 - team}`]),
-      number('vehicles.friendlyCount', 'InstantActionFriendlyVehicleCount', friend.vehicles.bots, 0, friend.vehicles.bots, sources[`vehicles.bots.${team}`]),
-      flag('heroes.enemy', 'InstantActionEnemyHeroes', true),
-      flag('heroes.friendly', 'InstantActionFriendlyHeroes', true),
-      flag('vehicles.enemy', 'InstantActionEnemyVehicles', true),
-      flag('vehicles.friendly', 'InstantActionFriendlyVehicles', true),
-      flag('allEraHeroes', 'InstantActionAllEraHeroes', DEFAULTS.allEraHeroes),
+      number('bots.enemy', 'InstantActionNumEnemyAI_PC', size, 1, MAX_SIDE, sources.size, most, 'ENEMY AI COUNT'),
+      number('bots.friendly', 'InstantActionNumFriendlyAI_PC', Math.max(0, mine - 1), 0, MAX_SIDE, sources.mine, most, 'FRIENDLY AI COUNT'),
+      number('heroes.enemyCount', 'InstantActionEnemyHeroCount', foe.heroes.bots, 0, foe.heroes.max, sources[`heroes.bots.${3 - team}`], Infinity, 'ENEMY HERO COUNT'),
+      number('heroes.friendlyCount', 'InstantActionFriendlyHeroCount', friend.heroes.bots, 0, friend.heroes.max, sources[`heroes.bots.${team}`], Infinity, 'FRIENDLY HERO COUNT'),
+      number('reinforcements.enemyCount', 'InstantActionEnemyReinforcementCount', foe.reinforcements.bots, 0, foe.reinforcements.max, sources[`reinforcements.bots.${3 - team}`], Infinity, 'ENEMY REINFORCEMENT COUNT'),
+      number('reinforcements.friendlyCount', 'InstantActionFriendlyReinforcementCount', friend.reinforcements.bots, 0, friend.reinforcements.max, sources[`reinforcements.bots.${team}`], Infinity, 'FRIENDLY REINFORCEMENT COUNT'),
+      carried(number('vehicles.enemyCount', 'InstantActionEnemyVehicleCount', foe.vehicles.bots, 0, foe.vehicles.bots, sources[`vehicles.bots.${3 - team}`], Infinity, 'ENEMY VEHICLE COUNT')),
+      carried(number('vehicles.friendlyCount', 'InstantActionFriendlyVehicleCount', friend.vehicles.bots, 0, friend.vehicles.bots, sources[`vehicles.bots.${team}`], Infinity, 'FRIENDLY VEHICLE COUNT')),
+      flag('heroes.enemy', 'InstantActionEnemyHeroes', true, 'ENEMY HEROES'),
+      flag('heroes.friendly', 'InstantActionFriendlyHeroes', true, 'FRIENDLY HEROES'),
+      carried(flag('vehicles.enemy', 'InstantActionEnemyVehicles', true, 'ENEMY VEHICLES')),
+      carried(flag('vehicles.friendly', 'InstantActionFriendlyVehicles', true, 'FRIENDLY VEHICLES')),
+      carried(flag('allEraHeroes', 'InstantActionAllEraHeroes', DEFAULTS.allEraHeroes, 'ENABLE HEROES FROM ANY ERA')),
     ],
-    faction: [{ id: 'team', kind: 'choice', choices: [1, 2], default: DEFAULTS.team, option: 'PlayerProfileInstantActionParamsPlayerTeam', source: 'hand' }],
+    // (the side: the screen's Change Faction button, not a row of its list)
+    faction: [{ id: 'team', kind: 'choice', choices: [1, 2], default: DEFAULTS.team, option: 'PlayerProfileInstantActionParamsPlayerTeam', source: 'hand', label: rulebook?.ai?.instantAction?.$screen?.faction?.text ?? 'CHANGE FACTION', help: null }],
     site: [
-      { id: 'era', kind: 'choice', choices: eras, default: eras.includes(DEFAULTS.era) ? DEFAULTS.era : eras[0], option: null, source: 'teams.json' },
+      { id: 'era', kind: 'choice', choices: eras, default: eras.includes(DEFAULTS.era) ? DEFAULTS.era : eras[0], option: null, source: 'teams.json', label: 'ERA', help: null },
       // (the command posts' bot logic: the game's, or the Instant Action Overhaul V2's, ai/botLogicOverhaul.js)
-      { id: 'botLogic', kind: 'choice', choices: [...BOT_LOGICS], default: DEFAULTS.botLogic, option: null, source: 'hand' },
+      { id: 'botLogic', kind: 'choice', choices: [...BOT_LOGICS], labels: ['GAME', 'OVERHAUL'], default: DEFAULTS.botLogic, option: null, source: 'hand', label: 'BOT LOGIC', help: null, when: { mode: OWN_MODE } },
     ],
-    // (the mod's own rows, read where its logic is the round's: three of its five-step options, and its spread)
+    // (the mod's own rows, read where its logic is the round's: three of its five-step options, and its
+    // spread. Their names are by hand: the mod's own are in its string handler, not linked to its options)
     overhaul: [
-      { id: 'overhaul.aim', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIDifficulty', source: 'iao-v2' },
-      { id: 'overhaul.reaction', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIReactionTimes', source: 'iao-v2' },
-      { id: 'overhaul.dodging', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIDodging', source: 'iao-v2' },
-      { id: 'overhaul.spread', kind: 'toggle', default: true, option: 'IAIAIAdaptiveDifficulty', source: 'iao-v2' },
-    ],
+      { id: 'overhaul.aim', option: 'IAIAIDifficulty', label: 'AI AIM' },
+      { id: 'overhaul.reaction', option: 'IAIAIReactionTimes', label: 'AI REACTION' },
+      { id: 'overhaul.dodging', option: 'IAIAIDodging', label: 'AI DODGING' },
+    ]
+      .map((o) => ({ ...o, kind: 'choice', choices: [...Overhaul.STEPS], labels: [...STEP_WORDS], default: 'medium' }))
+      .concat([{ id: 'overhaul.spread', kind: 'toggle', labels: ['OFF', 'ON'], default: true, option: 'IAIAIAdaptiveDifficulty', label: 'AI DIFFICULTY SPREAD' }])
+      .map((o) => ({ ...o, source: 'iao-v2', help: null, when: { mode: OWN_MODE, botLogic: 'overhaul' } })),
   };
   return Object.entries(rows).flatMap(([group, list]) => list.map((o) => ({ ...o, group })));
 }
