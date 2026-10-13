@@ -212,7 +212,8 @@ Deterministic, with no service called (the rigging lane's rules: no paid service
 2. Part A's lanes A1, A2, A5 and A8 are this session's, one PR each, in that order; A3 waits on one function being read; A4 is its own plan after A1 to A3 show what is left of the soldiers; A6, A7, A9 and A10 are planned when Hoth's numbers for the first four are in.
 3. Part B's B1 and B2 touch no file another lane holds (two new scripts, new files under `crew/`, one case in `walrus.js`) and can start as soon as he has answered questions 1 and 5.
 4. B4 and B5 are offered to the sim lane, since they finish the hero kit it sits beside; if it declines, they are this session's after #966 is in. B6's rows and pictures are handed to the UI lane for its phase 2b.
-5. The stopped hero branch (`claude/bf-heroes-deploy`, with uncommitted files in its worktree) is merged forward by whoever takes B4, not rewritten.
+5. The picked skin being worn is the UI lane's (`tilak-b4`, 2026-10-13: "it is the Collection lane's promise"). It takes `figures.js`'s `BODIES` table and `kindOf` and nothing else there: 43 crew kinds among the Collection's 213 skins, 29 of them not yet in `BODIES`. Lane A2 leaves those two alone and builds on the view's `appearance` being honoured, so a guest's body, and each of its skins, needs only its `BODIES` row.
+6. The stopped hero branch (`claude/bf-heroes-deploy`, with uncommitted files in its worktree) is merged forward by whoever takes B4, not rewritten.
 
 Three implementation plans come out of this, not one, each written and reviewed on its own: Part A's first four lanes; the guest's rig and clips (B1, B2); the units' rules, kit, cards and screens (B3 to B6).
 
