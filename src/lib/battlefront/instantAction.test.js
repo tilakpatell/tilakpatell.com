@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import gs from '../../data/bf2017/gameSettings.json';
 import { hothFlatNav } from './fixtures/hothFlat.js';
-import { DEFAULTS, MAX_SIDE, erasFor, optionsFor, roundFor, startInstantAction } from './instantAction.js';
+import { DEFAULTS, MAX_SIDE, erasFor, optionsFor, roundFor, sideCap, startInstantAction } from './instantAction.js';
 import { MODES } from './modes/index.js';
 import { aiOf, loadRulebook } from './rulebook.js';
 import { step } from './sim.js';
@@ -100,6 +100,37 @@ describe('the round', () => {
     expect(r.tickets).toBe(100);
     expect(r.bots).toEqual({ [ME]: 11, [THEM]: 13 });
     expect(new Set(Object.values(r.sources))).toEqual(new Set(['hand']));
+  });
+});
+
+describe('the machine’s share', () => {
+  it('lets a weaker machine draw fewer soldiers a side, the strongest the game’s most', () => {
+    expect(sideCap('low')).toBeLessThan(sideCap('mid'));
+    expect(sideCap('mid')).toBeLessThan(sideCap('high'));
+    expect(sideCap('high')).toBeLessThanOrEqual(sideCap('ultra'));
+    expect(sideCap('ultra')).toBe(MAX_SIDE);
+    expect(sideCap('no such level')).toBe(sideCap('mid'));
+  });
+
+  it('brings a round’s own sizes down to it, and says so', () => {
+    const r = roundFor(gs, { difficulty: 'normal' }, { cap: 5 });
+    expect(r.bots).toEqual({ [ME]: 5, [THEM]: 5 });
+    expect(r.cap).toBe(5);
+    expect(r.scaled).toBe(true);
+    const full = roundFor(gs, { difficulty: 'normal' }, { cap: MAX_SIDE });
+    expect(full.bots).toEqual({ [ME]: 11, [THEM]: 13 });
+    expect(full.scaled).toBe(false);
+    expect(roundFor(gs, { difficulty: 'normal' }).cap).toBe(MAX_SIDE);
+  });
+
+  it('refuses a count asked past it, and offers none past it', () => {
+    expect(() => roundFor(gs, { bots: { enemy: 9 } }, { cap: 8 })).toThrow(/bots\.enemy 9 is not a whole number from 1 to 8/);
+    expect(roundFor(gs, { bots: { enemy: 8, friendly: 2 } }, { cap: 8 }).bots).toEqual({ [ME]: 2, [THEM]: 8 });
+    const opts = optionsFor(gs, { rulebook: rb, level: 'hoth', cap: 8 });
+    const of = (id) => opts.find((o) => o.id === id);
+    expect(of('bots.enemy')).toMatchObject({ max: 8, default: 8 });
+    expect(of('bots.friendly')).toMatchObject({ max: 8, default: 8 });
+    expect(optionsFor(gs, { rulebook: rb, level: 'hoth' }).find((o) => o.id === 'bots.enemy').max).toBe(MAX_SIDE);
   });
 });
 

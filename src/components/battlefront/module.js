@@ -66,7 +66,7 @@ import { NAMES } from './sound/sounds.js';
 import { litWith, picturesOf } from './picture.js';
 import { headroom, upscaleKind } from '../../lib/three/light/post.js';
 import { headroomAt } from '../../runtime/quality.js';
-import { loadSettings, optionsFor, roundFor } from '../../lib/battlefront/instantAction.js';
+import { loadSettings, optionsFor, roundFor, sideCap } from '../../lib/battlefront/instantAction.js';
 
 export const HUD_HZ = 8; // snapshots a second to the page
 export const PLAYER_TEAM = 2; // the attackers on Hoth, the Empire (maps/hoth.stages.json)
@@ -165,7 +165,9 @@ export default {
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
     // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
     // server's rows for them, and the sim takes the round at its making: sim.js's roundIn)
-    const round = instantAction ? roundFor(await loadSettings(), { ...instantAction, level: levelName, mode, team: instantAction.team ?? PLAYER_TEAM }) : null;
+    // (the machine's share of a round's bots, by its quality level: every bot is a body drawn and a mind stepped)
+    const cap = sideCap(device().detail);
+    const round = instantAction ? roundFor(await loadSettings(), { ...instantAction, level: levelName, mode, team: instantAction.team ?? PLAYER_TEAM }, { cap }) : null;
     // (the player's side: the round's, the screen's Change Faction; the Empire's where none is asked)
     let team = round?.team ?? PLAYER_TEAM;
     // (the mode played: the route's, then a round's begun in place)
@@ -318,7 +320,7 @@ export default {
       let next;
       let fresh;
       try {
-        next = roundFor(await loadSettings(), { ...options, level: levelName, mode: options.mode ?? battleMode, team: options.team ?? team });
+        next = roundFor(await loadSettings(), { ...options, level: levelName, mode: options.mode ?? battleMode, team: options.team ?? team }, { cap });
         await loadLevel(levelForMode(rb, levelName, next.mode));
         fresh = roundBattle(sim, next, { heightAt: (x, z) => level.heightAt(x, z), mask });
       } catch (err) {
@@ -550,12 +552,12 @@ export default {
             return { drawn: kitFx.counts(), grenades: view(sim).grenades.map((g) => ({ id: g.id, kind: g.kind, at: g.at.slice(), resting: g.resting })), state: body()?.state ?? null, gun: body()?.gun?.row?.id ?? null, heat: body()?.gun?.heat ?? null, spin: body()?.gun?.spin ?? null, hp: body()?.hp ?? null, shield: body()?.shield?.hp ?? null, over: body()?.over?.hp ?? 0 };
           case 'instantActionSchema':
             // (the setup screen's options, each with the row it reads; a promise, the settings being a chunk of their own)
-            return loadSettings().then((gs) => optionsFor(gs, { rulebook: rb, level: levelName, team }));
+            return loadSettings().then((gs) => optionsFor(gs, { rulebook: rb, level: levelName, team, cap }));
           case 'instantAction':
             // (the choices checked: the props to mount the round with, or why not)
             return loadSettings().then((gs) => {
               try {
-                const r = roundFor(gs, { ...arg, level: arg?.level ?? levelName, mode: arg?.mode ?? battleMode, team: arg?.team ?? team });
+                const r = roundFor(gs, { ...arg, level: arg?.level ?? levelName, mode: arg?.mode ?? battleMode, team: arg?.team ?? team }, { cap });
                 return { ok: true, props: { level: r.level, mode: r.mode, instantAction: { ...arg } }, round: r };
               } catch (err) {
                 return { ok: false, why: err.message };

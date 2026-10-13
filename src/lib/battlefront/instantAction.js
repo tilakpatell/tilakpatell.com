@@ -56,7 +56,10 @@
 //   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source }]
 //     (in the game's screen's order, the enemy's of a pair before the player's side's)
 //     (a dotted id is a nested field: `heroes.enemyCount` is choice.heroes.enemyCount)
-//   roundFor(gs, choice) → round      (throws on a choice that is not one of the options')
+//   roundFor(gs, choice, { cap }) → round      (throws on a choice that is not one of the options')
+//   sideCap(detail) → the most bots a side for a machine's quality level ('low' | 'mid' | 'high' | 'ultra'); `cap` in
+//     optionsFor, roundFor and startInstantAction is that number: a round's own sizes come down to it
+//     (`round.scaled`), a count asked past it is refused, and the options offer none past it
 //   startInstantAction({ rulebook, gs, nav, seed, spawns, ...choice }) → { sim, round }
 //   applyRound(sim, round)      (sim.js's: the round's length and rate on a battle, as the sim does at its making)
 //   loadSettings() → Promise<gs>      (gameSettings.json, a chunk of its own: 68 KB the page asks for with the setup screen)
@@ -82,6 +85,11 @@ export const LENGTHS = ['short', 'medium', 'long'];
 export const RATES = ['slow', 'default', 'fast'];
 // The most bots a side may be asked for, by hand: the game's largest AutoPlayer team (TeamSizeAP_BotTeam_Large, 24).
 export const MAX_SIDE = 24;
+// The most bots a side a machine is given, by its quality level (lib/device.js's `detail`), by hand: every
+// bot is a skinned body on the game's rig and the frame is the processor's. The strongest has the game's
+// most, a high one the game's own sides, a middling one the eight a side the page has always drawn.
+export const SIDE_BY_DETAIL = { low: 5, mid: 8, high: 13, ultra: 24 };
+export const sideCap = (detail) => SIDE_BY_DETAIL[detail] ?? SIDE_BY_DETAIL.mid;
 // Instant Action's own mode: Supremacy's command posts.
 export const OWN_MODE = 'supremacy';
 // The mode the AutoPlayers' rows are asked by: none of autoPlayer.js's SUFFIX, so the settings' `_Mode8`.
@@ -128,7 +136,7 @@ function rowsFor(g, n) {
   };
 }
 
-export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team = DEFAULTS.team } = {}) {
+export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team = DEFAULTS.team, cap = MAX_SIDE } = {}) {
   const sources = {};
   const g = reader(gs, sources);
   const modes = modesFor(rulebook, level);
@@ -154,6 +162,7 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
   const mine = g('mine', ['TeamSize_RealPlayer_Easy_Mode8', 'TeamSize_RealPlayer_Mode8'], 12);
   const friend = rowsFor(g, team);
   const foe = rowsFor(g, 3 - team);
+  const most = Math.max(1, Math.min(MAX_SIDE, cap));
   // The screen's order (the game's Instant Action screen as it draws them, NOTES.md): Game Modifiers, then
   // Advanced Settings with the enemy's of each pair before the player's side's; the switches, which the
   // screen draws past what was seen of it, after the counts; the side is the screen's Change Faction; the
@@ -166,8 +175,9 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
     ],
     advanced: [
       pick('bpRate', 'InstantActionBPRate', RATES, DEFAULTS.bpRate),
-      number('bots.enemy', 'InstantActionNumEnemyAI_PC', size, 1, MAX_SIDE, sources.size),
-      number('bots.friendly', 'InstantActionNumFriendlyAI_PC', Math.max(0, mine - 1), 0, MAX_SIDE, sources.mine),
+      // (the sides' sizes, no more than the machine is given: the module passes its share, `cap`)
+      number('bots.enemy', 'InstantActionNumEnemyAI_PC', Math.min(size, most), 1, most, sources.size),
+      number('bots.friendly', 'InstantActionNumFriendlyAI_PC', Math.min(Math.max(0, mine - 1), most), 0, most, sources.mine),
       number('heroes.enemyCount', 'InstantActionEnemyHeroCount', foe.heroes.bots, 0, foe.heroes.max, sources[`heroes.bots.${3 - team}`]),
       number('heroes.friendlyCount', 'InstantActionFriendlyHeroCount', friend.heroes.bots, 0, friend.heroes.max, sources[`heroes.bots.${team}`]),
       number('reinforcements.enemyCount', 'InstantActionEnemyReinforcementCount', foe.reinforcements.bots, 0, foe.reinforcements.max, sources[`reinforcements.bots.${3 - team}`]),
@@ -199,7 +209,7 @@ const count = (what, value, min, max = MAX_SIDE) => {
 // a side's switch and count out of a choice: a bare boolean is both sides' switch (the first screen's shape)
 const sideOf = (v, who) => (v !== null && typeof v === 'object' ? { on: v[who] ?? true, count: v[`${who}Count`] ?? null } : { on: v !== false, count: null });
 
-export function roundFor(gs, choice = {}) {
+export function roundFor(gs, choice = {}, { cap = MAX_SIDE } = {}) {
   const c = { ...DEFAULTS, ...choice };
   const difficulty = oneOf('difficulty', c.difficulty, DIFFICULTIES);
   // (the rows' Normal is the screen's medium: either name is taken)
@@ -215,8 +225,11 @@ export function roundFor(gs, choice = {}) {
   const D = SCREEN[difficulty];
   const mine = g('size.mine', [`TeamSize_RealPlayer_${D}_Mode8`, 'TeamSize_RealPlayer_Mode8'], 12);
   const theirs = g('size.theirs', [`TeamSize_AutoPlayers_${D}_Mode8`, 'TeamSize_AutoPlayers_Mode8'], 13);
-  const friendly = c.bots?.friendly != null ? count('bots.friendly', c.bots.friendly, 0) : Math.max(0, mine - 1);
-  const enemy = c.bots?.enemy != null ? count('bots.enemy', c.bots.enemy, 1) : theirs;
+  // (the machine's share: a round's own sizes come down to it, a count asked past it is refused)
+  const most = Math.max(1, Math.min(MAX_SIDE, cap));
+  const friendly = c.bots?.friendly != null ? count('bots.friendly', c.bots.friendly, 0, most) : Math.min(Math.max(0, mine - 1), most);
+  const enemy = c.bots?.enemy != null ? count('bots.enemy', c.bots.enemy, 1, most) : Math.min(theirs, most);
+  const scaled = (c.bots?.friendly == null && mine - 1 > most) || (c.bots?.enemy == null && theirs > most);
   // a side's caps: the rows', none where its switch is off, its bots' the count asked where one is
   const side = (n) => {
     const who = n === team ? 'friendly' : 'enemy';
@@ -244,6 +257,8 @@ export function roundFor(gs, choice = {}) {
     length,
     allEraHeroes: !!c.allEraHeroes,
     bots: { [team]: friendly, [other]: enemy },
+    cap: most,
+    scaled,
     tickets: g('tickets', [`ConquestMaxTickets_${LENGTH[length]}_Mode8`, 'ConquestMaxTickets_Mode8'], 100),
     bleed: g('bleed', [`TicketBleedMult_${LENGTH[length]}_Mode8`], 1),
     bpRate: g('bpRate', [`BPRate_${RATE[rate]}_Mode8`], 1),
@@ -262,8 +277,8 @@ export function roundFor(gs, choice = {}) {
 }
 
 // The round started: the sim made for it, the round on it for what reads the rest
-export function startInstantAction({ rulebook, gs, nav = null, seed = 1, spawns = null, teams = null, ...choice }) {
-  const round = roundFor(gs, choice);
+export function startInstantAction({ rulebook, gs, nav = null, seed = 1, spawns = null, teams = null, cap = MAX_SIDE, ...choice }) {
+  const round = roundFor(gs, choice, { cap });
   // (AutoPlayers, not the Arcade's Skirmish bots: `pve` off; the difficulty's row is the multiplayer one of its
   // name. The sim takes the round at its making: its rate, its length, its caps and its waves, sim.js's roundIn)
   const sim = createSim({ rulebook, level: round.level, era: round.era, nav, seed, teams, spawns, bots: round.bots, mode: round.mode, difficulty: round.difficulty, pve: false, instantAction: round });
