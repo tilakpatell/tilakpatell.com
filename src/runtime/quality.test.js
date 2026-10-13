@@ -186,6 +186,25 @@ describe('a quality level changed while a world is up', () => {
     expect(q.budget.ratio).toBe(2);
   });
 
+  // (a world built after the change reads the tier for its chain, its cut
+  // and its boot: Low picked mid-visit built High's level until 2026-10-13)
+  it('moves its tier with the level, ultra being the high tier', () => {
+    const q = createQuality({ tier: 'high', detail: 'high', pace: fakePace([null]) });
+    q.retune('low');
+    expect(q.tier).toBe('low');
+    q.retune('mid');
+    expect(q.tier).toBe('mid');
+    q.retune('ultra');
+    expect(q.tier).toBe('high');
+    q.retune('nonsense');
+    expect(q.tier).toBe('high');
+  });
+
+  it('takes its tier from a level given alone (a held Low on a laptop whose device tier is high)', () => {
+    expect(createQuality({ detail: 'low', pace: fakePace([null]) }).tier).toBe('low');
+    expect(createQuality({ detail: 'ultra', pace: fakePace([null]) }).tier).toBe('high');
+  });
+
   it('draws sharper or softer by the sharpness, never past the level’s ratio', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null]), dpr: 1, sharp: 1.5 });
     expect(q.ratio).toBe(1.5);
