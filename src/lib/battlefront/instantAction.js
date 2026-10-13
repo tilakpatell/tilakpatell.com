@@ -50,12 +50,15 @@
 // numbers off `sim.instantAction`). On command posts (Supremacy, Instant
 // Action's own mode) each bot's post is the game's bot logic's, on its spawn
 // and when the orphans are called (ai/botLogic.js, `round.botLogic`), in
-// place of the commander's plan. Carried, not acted on: the vehicles' caps
+// place of the commander's plan; a round that asks for it (`botLogic:
+// 'overhaul'`) has the Instant Action Overhaul V2's in the game's place
+// (ai/botLogicOverhaul.js: its deal, its six seconds, its steps and its
+// spread). Carried, not acted on: the vehicles' caps
 // (no vehicle deploys yet), all-era heroes, the dodge roll.
 // Pure: no three.js, no DOM.
 //
 //   erasFor(rulebook, level) → ['Orig', …]
-//   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source }]
+//   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site' | 'overhaul', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source }]
 //     (in the game's screen's order, the enemy's of a pair before the player's side's)
 //     (a dotted id is a nested field: `heroes.enemyCount` is choice.heroes.enemyCount)
 //   roundFor(gs, choice, { cap, profile }) → round      (throws on a choice that is not one of the options';
@@ -70,12 +73,14 @@
 //     choice: { level, mode, era, team, difficulty: 'rookie' | 'normal' | 'expert', length: 'short' | 'medium' | 'long',
 //       bpRate: 'slow' | 'default' | 'fast', allEraHeroes, bots: { friendly, enemy },
 //       heroes: { friendly, enemy, friendlyCount, enemyCount }, reinforcements: { friendlyCount, enemyCount },
-//       vehicles: { friendly, enemy, friendlyCount, enemyCount } }   (a bare boolean for heroes, reinforcements
-//       or vehicles is both sides' switch; 'normal' is taken for the medium length)
+//       vehicles: { friendly, enemy, friendlyCount, enemyCount }, botLogic: 'game' | 'overhaul',
+//       overhaul: { aim, reaction, dodging: 'veryEasy' … 'veryHard', spread } }   (a bare boolean for heroes,
+//       reinforcements or vehicles is both sides' switch; 'normal' is taken for the medium length)
 
 import { autoPlayerFor } from './ai/autoPlayer.js';
 import { wavesFor } from './ai/waves.js';
 import { POST_RADIUS, timersFor } from './ai/botLogic.js';
+import * as Overhaul from './ai/botLogicOverhaul.js';
 import { MODES } from './modes/index.js';
 import { levelKey, modesOf } from './rulebook.js';
 import { createSim } from './sim.js';
@@ -102,7 +107,10 @@ const AP_ROWS = 'instantAction';
 // The stages an objective mode's waves are held for (the settings' `_Phase<n>` rows).
 const PHASES = 5;
 
-export const DEFAULTS = { level: 'hoth', mode: OWN_MODE, era: 'Orig', team: 2, difficulty: 'rookie', length: 'medium', bpRate: 'default', allEraHeroes: false, heroes: true, vehicles: true, reinforcements: true, bots: null };
+// The command posts' bot logic a round may ask for: the game's own, or the Instant Action Overhaul V2's.
+export const BOT_LOGICS = ['game', 'overhaul'];
+
+export const DEFAULTS = { level: 'hoth', mode: OWN_MODE, era: 'Orig', team: 2, difficulty: 'rookie', length: 'medium', bpRate: 'default', allEraHeroes: false, heroes: true, vehicles: true, reinforcements: true, bots: null, botLogic: 'game', overhaul: null };
 
 // the screen's difficulty for the team-size rows, the lengths and the rates as the rows spell them
 const SCREEN = { rookie: 'Easy', normal: 'Normal', expert: 'Hard' };
@@ -202,7 +210,18 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
       flag('allEraHeroes', 'InstantActionAllEraHeroes', DEFAULTS.allEraHeroes),
     ],
     faction: [{ id: 'team', kind: 'choice', choices: [1, 2], default: DEFAULTS.team, option: 'PlayerProfileInstantActionParamsPlayerTeam', source: 'hand' }],
-    site: [{ id: 'era', kind: 'choice', choices: eras, default: eras.includes(DEFAULTS.era) ? DEFAULTS.era : eras[0], option: null, source: 'teams.json' }],
+    site: [
+      { id: 'era', kind: 'choice', choices: eras, default: eras.includes(DEFAULTS.era) ? DEFAULTS.era : eras[0], option: null, source: 'teams.json' },
+      // (the command posts' bot logic: the game's, or the Instant Action Overhaul V2's, ai/botLogicOverhaul.js)
+      { id: 'botLogic', kind: 'choice', choices: [...BOT_LOGICS], default: DEFAULTS.botLogic, option: null, source: 'hand' },
+    ],
+    // (the mod's own rows, read where its logic is the round's: three of its five-step options, and its spread)
+    overhaul: [
+      { id: 'overhaul.aim', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIDifficulty', source: 'iao-v2' },
+      { id: 'overhaul.reaction', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIReactionTimes', source: 'iao-v2' },
+      { id: 'overhaul.dodging', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIDodging', source: 'iao-v2' },
+      { id: 'overhaul.spread', kind: 'toggle', default: true, option: 'IAIAIAdaptiveDifficulty', source: 'iao-v2' },
+    ],
   };
   return Object.entries(rows).flatMap(([group, list]) => list.map((o) => ({ ...o, group })));
 }
@@ -271,8 +290,21 @@ export function roundFor(gs, choice = {}, { cap = MAX_SIDE, profile = null } = {
     return { heroes: unit('heroes', c.heroes, rows.heroes), reinforcements: unit('reinforcements', c.reinforcements, rows.reinforcements), vehicles: unit('vehicles', c.vehicles, rows.vehicles) };
   };
   const cp = mode === OWN_MODE;
+  // (the mod's logic is the command posts' alone; its steps and its spread are read where it is the round's)
+  const overhaul = oneOf('botLogic', c.botLogic, BOT_LOGICS) === 'overhaul' && cp;
+  const steps = {};
+  for (const k of ['aim', 'reaction', 'dodging']) steps[k] = oneOf(`overhaul.${k}`, c.overhaul?.[k] ?? 'medium', Overhaul.STEPS);
+  const spread = oneOf('overhaul.spread', c.overhaul?.spread ?? true, [true, false]);
+  const apOf = (side) => {
+    const ap = autoPlayerFor(gs, { mode: AP_ROWS, difficulty, side });
+    return overhaul ? Overhaul.tuned(ap, steps) : ap;
+  };
   // (the waves' side on an objective mode before the sim has made it: the dark side attacks, as on Hoth)
-  const wavesOf = (n) => wavesFor(gs, { cp, side: n === 2 ? 'attack' : 'defend', phase: 1, length, human: n === team });
+  const wavesOf = (n) => {
+    const w = wavesFor(gs, { cp, side: n === 2 ? 'attack' : 'defend', phase: 1, length, human: n === team });
+    // (the mod's: a fallen bot back after its six seconds, with no window to wait on)
+    return overhaul ? { ...w, soldiers: { ...w.soldiers, pause: 0, delay: Overhaul.RESPAWN } } : w;
+  };
   const byPhase = (s) => Array.from({ length: PHASES }, (_, i) => wavesFor(gs, { cp: false, side: s, phase: i + 1, length }));
   return {
     level: c.level,
@@ -292,12 +324,13 @@ export function roundFor(gs, choice = {}, { cap = MAX_SIDE, profile = null } = {
     // (the bots facing the player and the bots beside them: the settings' two aim rows. Instant Action's
     // own rows, `_Mode8`, whatever mode the round plays: autoPlayer.js reads a bare 'supremacy' as the
     // multiplayer Supremacy's `_Mode1`, which holds no row by difficulty)
-    ap: { [team]: autoPlayerFor(gs, { mode: AP_ROWS, difficulty, side: 'Friendlies' }), [other]: autoPlayerFor(gs, { mode: AP_ROWS, difficulty, side: 'Enemies' }) },
+    ap: { [team]: apOf('Friendlies'), [other]: apOf('Enemies') },
     waves: { [team]: wavesOf(team), [other]: wavesOf(other) },
     // (an objective mode's waves by the side a team plays and its stage, for the sim to take as the round moves; the command posts' are one table)
     wavesBy: cp ? null : { attack: byPhase('attack'), defend: byPhase('defend') },
-    // (the command posts' bot logic, the game's graph: ai/botLogic.js; an objective mode's bots are the commander's)
-    botLogic: cp ? { timers: timersFor(gs), radius: POST_RADIUS } : null,
+    // (the command posts' bot logic: the game's graph, ai/botLogic.js, or the mod's deal where it is asked for,
+    // ai/botLogicOverhaul.js; an objective mode's bots are the commander's)
+    botLogic: overhaul ? { kind: 'overhaul', radius: Overhaul.POST_RADIUS, spread } : cp ? { kind: 'game', timers: timersFor(gs), radius: POST_RADIUS } : null,
     sources,
   };
 }

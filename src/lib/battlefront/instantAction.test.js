@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import gs from '../../data/bf2017/gameSettings.json';
 import { hothFlatNav } from './fixtures/hothFlat.js';
 import { DEFAULTS, MAX_SIDE, erasFor, optionsFor, roundFor, sideCap, startInstantAction } from './instantAction.js';
+import { STEPS } from './ai/botLogicOverhaul.js';
 import { MODES } from './modes/index.js';
 import { aiOf, loadRulebook } from './rulebook.js';
 import { step } from './sim.js';
@@ -176,11 +177,12 @@ describe('the options', () => {
       'reinforcements.enemyCount', 'reinforcements.friendlyCount',
       'vehicles.enemyCount', 'vehicles.friendlyCount',
       'heroes.enemy', 'heroes.friendly', 'vehicles.enemy', 'vehicles.friendly', 'allEraHeroes',
-      'team', 'era',
+      'team', 'era', 'botLogic',
+      'overhaul.aim', 'overhaul.reaction', 'overhaul.dodging', 'overhaul.spread',
     ]);
     // (the screen's two headings, and what the game's screen has no row for)
     expect(opts.filter((o) => o.group === 'modifiers').map((o) => o.id)).toEqual(['mode', 'difficulty', 'length']);
-    expect(opts.filter((o) => o.group === 'site').map((o) => o.id)).toEqual(['era']);
+    expect(opts.filter((o) => o.group === 'site').map((o) => o.id)).toEqual(['era', 'botLogic']);
     expect(of('bpRate').group).toBe('advanced');
     expect(of('difficulty').option).toBe('InstantActionDifficulty');
     expect(of('heroes.enemy').option).toBe('InstantActionEnemyHeroes');
@@ -225,6 +227,58 @@ describe('the options', () => {
     expect(erasFor(rb, 'hoth')).toEqual(['Orig']);
     expect(of('era').choices).toEqual(['Orig']);
     expect(() => startInstantAction({ rulebook: rb, gs, nav: hothFlatNav(rb), mode: 'galacticAssault', era: 'Prequel' })).toThrow(/teams Prequel:hoth_01/);
+  });
+});
+
+describe('the Overhaul’s logic', () => {
+  const opts = optionsFor(gs, { rulebook: rb, level: 'hoth' });
+  const of = (id) => opts.find((o) => o.id === id);
+  const ask = (overhaul) => roundFor(gs, { mode: 'supremacy', botLogic: 'overhaul', ...(overhaul ? { overhaul } : {}) });
+
+  it('is the site’s own choice, and the game’s logic unless asked', () => {
+    expect(of('botLogic')).toMatchObject({ group: 'site', kind: 'choice', choices: ['game', 'overhaul'], default: 'game', source: 'hand' });
+    expect(roundFor(gs, { mode: 'supremacy' }).botLogic).toMatchObject({ kind: 'game', radius: 8 });
+  });
+
+  it('has the mod’s rows: three of its five steps, and its spread', () => {
+    expect(opts.filter((o) => o.group === 'overhaul').map((o) => o.id)).toEqual(['overhaul.aim', 'overhaul.reaction', 'overhaul.dodging', 'overhaul.spread']);
+    expect(STEPS).toEqual(['veryEasy', 'easy', 'medium', 'hard', 'veryHard']);
+    for (const id of ['overhaul.aim', 'overhaul.reaction', 'overhaul.dodging']) expect(of(id)).toMatchObject({ kind: 'choice', choices: STEPS, default: 'medium' });
+    expect(of('overhaul.spread')).toMatchObject({ kind: 'toggle', default: true });
+  });
+
+  it('asked for, the round carries the mod’s numbers: its radius, its six seconds, its middle steps', () => {
+    const r = ask();
+    expect(r.botLogic).toEqual({ kind: 'overhaul', radius: 10, spread: true });
+    for (const team of [1, 2]) {
+      expect(r.waves[team].soldiers).toMatchObject({ pause: 0, delay: 6 });
+      // (the mod's own scale in place of the rows': 1, and no row by side: the spread is the side's)
+      expect(r.ap[team]).toMatchObject({ noiseScale: 1, sideScale: 1, fov: 110, lofReaction: 0.1, dodgeRoll: 0.05 });
+    }
+  });
+
+  it('a step asked for is the mod’s table’s', () => {
+    const r = ask({ aim: 'veryHard', reaction: 'veryEasy', dodging: 'hard', spread: false });
+    expect(r.ap[1]).toMatchObject({ noiseScale: 0.125, fov: 180, lofReaction: 0.5, dodgeRoll: 0.1 });
+    expect(r.ap[2]).toMatchObject({ noiseScale: 0.125, fov: 180, lofReaction: 0.5, dodgeRoll: 0.1 });
+    expect(r.botLogic.spread).toBe(false);
+    expect(ask({ aim: 'veryEasy' }).ap[1]).toMatchObject({ noiseScale: 100, fov: 40 });
+    // (the mod holds a field of view for Hard and never applies it: the rows' own stays)
+    expect(ask({ aim: 'hard' }).ap[1].noiseScale).toBe(0.5);
+    expect(ask({ aim: 'hard' }).ap[1].fov).toBe(roundFor(gs, { mode: 'supremacy' }).ap[1].fov);
+  });
+
+  it('a logic or a step that is not one is refused', () => {
+    expect(() => roundFor(gs, { mode: 'supremacy', botLogic: 'mine' })).toThrow(/botLogic mine/);
+    expect(() => ask({ aim: 'harder' })).toThrow(/overhaul.aim harder/);
+    expect(() => ask({ spread: 'yes' })).toThrow(/overhaul.spread/);
+  });
+
+  it('is the command posts’ alone: an objective mode’s round is as it was', () => {
+    const r = roundFor(gs, { mode: 'galacticAssault', botLogic: 'overhaul', overhaul: { aim: 'veryHard' } });
+    expect(r.botLogic).toBeNull();
+    expect(r.ap).toEqual(roundFor(gs, { mode: 'galacticAssault' }).ap);
+    expect(r.wavesBy).toEqual(roundFor(gs, { mode: 'galacticAssault' }).wavesBy);
   });
 });
 

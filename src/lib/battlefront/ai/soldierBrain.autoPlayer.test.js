@@ -141,6 +141,28 @@ describe('the tracker’s target', () => {
   });
 });
 
+describe('a side’s noise scale', () => {
+  // how far from its target's chest a bot's shots are aimed, at most, over a few seconds
+  const widest = (extra) => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const e = enemy('e', [0, 0, 0]);
+    const w = world([e], extra);
+    run(b, w, 8);
+    const c = chestOf(e);
+    expect(w.shots.length).toBeGreaterThan(5);
+    return Math.max(...w.shots.map((a) => Math.hypot(a[0] - c[0], a[1] - c[1])));
+  };
+
+  it('is laid on the weapon’s noise: none of it a truer aim, more of it a wider one', () => {
+    expect(widest({ aimScale: 0 })).toBeLessThan(widest({ aimScale: 1 }));
+    expect(widest({ aimScale: 1 })).toBeLessThan(widest({ aimScale: 2.5 }));
+  });
+
+  it('is one where the world gives none', () => {
+    expect(widest({})).toBe(widest({ aimScale: 1 }));
+  });
+});
+
 describe('the trigger', () => {
   it('waits for the line of fire, then fires in the weapon’s bursts: 0.2 s held, 0.1 s let go', () => {
     const ap = { ...normal(), noise: { blaster: 0, lmg: 0, shotgun: 0, sniper: 0, launcher: 0 } };

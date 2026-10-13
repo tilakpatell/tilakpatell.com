@@ -593,11 +593,13 @@ export function act(brain, intent, s, dt, world, now) {
     aim = null;
     if (e?.alive) {
       const at = chestOf(e);
-      viewStep(brain.apAim, brain.ap, { from, point: aimPoint(brain.ap, { from, at, vel: e.vel, noise: brain.apNoise, rand: brain.rand }), dt });
+      // (its weapon class's noise, by its side's scale where the round draws one: the world's `aimScale`)
+      const noise = brain.apNoise * (world.aimScale ?? 1);
+      viewStep(brain.apAim, brain.ap, { from, point: aimPoint(brain.ap, { from, at, vel: e.vel, noise, rand: brain.rand }), dt });
       const miss = viewMiss(brain.apAim, from, at);
       aim = viewPoint(brain.apAim, from, Math.max(AHEAD, miss.along));
       const flag = lofStep(brain.apLof, brain.ap, { clear: world.lineClear(from, at), now });
-      start = !!intent.fire && flag && mayFire(brain.apClass, brain.apNoise, miss);
+      start = !!intent.fire && flag && mayFire(brain.apClass, noise, miss);
     }
     fire = burstStep(brain.apBurst, brain.apClass, { start, now }) && !!aim;
   }
