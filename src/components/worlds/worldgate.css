@@ -62,3 +62,10 @@
 @media (prefers-reduced-motion: reduce) { .install-bar > span { transition: none; } }
 @keyframes world-gate-in { from { opacity: 0; transform: translateY(16px); } }
 @media (prefers-reduced-motion: reduce) { .world-gate { animation: none; } }
+
+/* a Star Wars world on a device it cannot run on (UnfitCard): the house notice, alone on the page */
+.world-unfit { display: grid; place-items: center; min-height: calc(100svh - var(--page-top, 4rem)); padding: 1rem; }
+.world-unfit-card { display: flex; flex-direction: column; gap: 0.75rem; width: min(32rem, 100%); padding: 1.25rem 1.5rem; }
+.world-unfit-title { display: flex; align-items: center; gap: 0.5rem; }
+.world-unfit-text { line-height: 1.5; color: var(--muted); }
+.world-unfit-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }

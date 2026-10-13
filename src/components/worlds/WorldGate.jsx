@@ -5,7 +5,9 @@ import { gpu, Hold3D } from '../../lib/gpu';
 import { device, storageFree, worldCheck } from '../../lib/device';
 import { local, storage } from '../../lib/hooks';
 import { byPath } from '../universe/universes';
-import { WORLD_MB, worldAt } from './worlds';
+import { WORLD_MB, needsGpu, wayOut, worldAt } from './worlds';
+import { FIT_KEY, readTry, starWarsFit } from '../../lib/fit';
+import UnfitCard from './UnfitCard';
 import { cardState, sizeText, usePack } from './usePack';
 import { InstallCard, InstallPill } from './InstallCard';
 import './worldgate.css';
@@ -45,7 +47,22 @@ const WHY = {
   storage: 'This device is short on space, so it waits for you.',
 };
 
+// (a Star Wars world on a device lib/fit says cannot run it: the card
+// instead of the page, so nothing of the world is fetched; ?software=on, or
+// the card's Try anyway, kept for the visit, lets it in)
+const fitFor = (pathname) => {
+  if (!needsGpu(pathname)) return { ok: true, why: null };
+  const { search, hash } = typeof window !== 'undefined' ? window.location : { search: '', hash: '' };
+  return starWarsFit({ gpu: gpu(), device: look(), tryAnyway: readTry(search, hash, local.get(FIT_KEY) ?? storage.get(FIT_KEY)) });
+};
+
 export default function WorldGate({ pathname, children }) {
+  const [fit, setFit] = useState(() => fitFor(pathname));
+  useEffect(() => setFit(fitFor(pathname)), [pathname]);
+  const tryAnyway = () => {
+    storage.set(FIT_KEY, 'on');
+    setFit(fitFor(pathname));
+  };
   const world = worldAt(pathname);
   const to = world?.to ?? null;
   const mb = to ? WORLD_MB[to] ?? 1 : 0;
@@ -137,6 +154,7 @@ export default function WorldGate({ pathname, children }) {
     prompt = <InstallPill state={state} pack={p.pack} progress={p.progress} onInstall={p.install} onClose={noOffer} />;
   }
 
+  if (!fit.ok) return <UnfitCard name={name ?? 'This world'} why={fit.why} way={wayOut(pathname)} onTry={tryAnyway} />;
   return (
     <Hold3D.Provider value={hold}>
       {children}

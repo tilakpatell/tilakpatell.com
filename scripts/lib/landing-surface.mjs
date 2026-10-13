@@ -35,6 +35,7 @@ export async function run(args) {
       window.localStorage.setItem('tp-galaxy-panel', JSON.stringify('tucked'));
       window.sessionStorage.setItem('tp-galaxy-intro', '1');
       window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+      window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
       window.localStorage.setItem('tp-galaxy-mode-ask', JSON.stringify('never'));
       if (h) window.localStorage.setItem('tp-galaxy-hero', JSON.stringify({ id: h }));
       // (the prepare's steps as they come, timed from the page's start)

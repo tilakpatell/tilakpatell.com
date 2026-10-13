@@ -40,6 +40,7 @@ await ctx.addInitScript(() => {
   localStorage.setItem('tp-galaxy-panel', '"tucked"');
   sessionStorage.setItem('tp-galaxy-intro', '1');
   localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking)
+  localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
   localStorage.setItem('tp-galaxy-mode-ask', JSON.stringify('never')); // (free roam, without the battle menu over the view)
   const held = Date.UTC(2026, 9, 5, 12);
   Date.now = () => held;
