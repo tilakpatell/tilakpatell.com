@@ -22,7 +22,8 @@ import { createRuntime } from './runtime';
 import { createWorkerPool, poolSize } from './workers';
 import { readOverride } from './backend';
 import { device, holdAuto, quality, resetDevice } from '../lib/device';
-import { CAPPING, lostTwice, noteLoss, TIER_KEY } from '../lib/gpuProbe';
+import { CAPPING, lossHolds, lostTwice, noteLoss, TIER_KEY } from '../lib/gpuProbe';
+import { gpu } from '../lib/gpu';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
 import './runtime.css';
@@ -103,11 +104,13 @@ export function runtime() {
     // (a chip whose WebGPU device was lost twice this week starts on WebGL 2;
     // ?gpu=webgpu in the address, or 'webgpu' kept as tp-gpu, asks for WebGPU anyway)
     lost: override !== 'webgpu' && lostTwice(keptTier),
-    // (a WebGPU device lost: kept for its chip, which holds Auto at Low for
-    // the rest of the week, taken up at once so the world mounted again
-    // after it, on WebGL 2, is built at Low: held)
+    // (a WebGPU device lost on a weak chip: kept for it, which holds Auto at
+    // Low for the rest of the week, taken up at once so the world mounted
+    // again after it, on WebGL 2, is built at Low: held. A strong chip, T1
+    // or T2, keeps everything: the owner's word, lib/gpuProbe's lossHolds)
     onLoss: (loss) => {
       if (loss?.kind !== 'webgpu') return;
+      if (!lossHolds({ tier: instance?.tier ?? null, name: gpu().renderer })) return;
       noteLoss(loss.adapter ?? {});
       held({ tier: 'T0', why: 'lost' });
     },

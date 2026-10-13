@@ -167,6 +167,19 @@ export function noteLoss(info, storage = pageStorage(), now = Date.now()) {
   return record;
 }
 
+// Whether a lost device holds its chip at Low and is kept against it (the
+// owner's word, 2026-10-13: a weak chip only). A chip the renderer tier put
+// at T1 or T2 this page, or, where none was decided yet, one whose name
+// grades at High's line or above, keeps everything: its world still comes
+// back once on WebGL 2 for the page (the runtime's recovery), and nothing
+// is kept. A chip at T0, or one its name does not grade, is held.
+export function lossHolds({ tier = null, name = '' } = {}) {
+  if (tier === 'T1' || tier === 'T2') return false;
+  if (tier === 'T0') return true;
+  const score = gpuScore(name);
+  return !(Number.isFinite(score) && score >= GRADE_AT.high);
+}
+
 export function lostTwice(stored, now = Date.now()) {
   const kept = parse(stored);
   return kept?.why === 'lost' && (kept.losses ?? 0) >= 2 && !stale(kept, now);
