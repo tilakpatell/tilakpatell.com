@@ -253,7 +253,9 @@ export function step(b, inputs = []) {
 function offers(b, team) {
   const sim = b.sim;
   const reinf = b.rulebook.reinforcements;
-  const list = sim.bp ? offersOf(sim.bp, PLAYER_ID, team, { out: outOf(sim, team) }) : b.sides[SIDES[team]].classes.map((id) => ({ kind: 'class', id, cost: 0, available: true }));
+  const all = sim.bp ? offersOf(sim.bp, PLAYER_ID, team, { out: outOf(sim, team) }) : b.sides[SIDES[team]].classes.map((id) => ({ kind: 'class', id, cost: 0, available: true }));
+  // (what the sim prices but cannot deploy yet, the vehicles until their lane, is left off the screen)
+  const list = all.filter((o) => o.why !== 'vehicles');
   return list.map((o) => {
     const row = { ...o };
     if (o.kind === 'class') row.cls = classOf(b.rulebook, o.id).cls;

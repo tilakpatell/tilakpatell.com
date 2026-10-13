@@ -33,6 +33,14 @@ describe('the page’s battle on an Instant Action round', () => {
     expect(b.sim.waves[TEAM].table).toBe(round.wavesBy[b.sim.M.sideOf(b.sim.ga, TEAM)][0]);
   });
 
+  it('the deploy screen is offered what can be deployed: no vehicle while none can', () => {
+    const { b } = battle();
+    addPlayer(b, { team: TEAM });
+    const kinds = new Set(view(b).deploy.offers.map((o) => o.kind));
+    expect(kinds.has('class') && kinds.has('hero') && kinds.has('reinforcement')).toBe(true);
+    expect(kinds.has('vehicle')).toBe(false);
+  });
+
   it('the player deploys into it and the round goes on', () => {
     const { b } = battle();
     addPlayer(b, { team: TEAM });
