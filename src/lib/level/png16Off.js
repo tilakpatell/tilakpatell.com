@@ -37,10 +37,11 @@ export function createPng16Off({ make = makeWorker, onMain = decodePng16 } = {})
       const w = waiting.get(m?.id);
       if (!w) return;
       waiting.delete(m.id);
-      if (m.error) w.reject(new Error(m.error));
+      if ('error' in m) w.reject(new Error(m.error || 'the PNG could not be decoded'));
       else w.resolve({ data: m.data, w: m.w, h: m.h });
     };
     worker.onerror = fallBack;
+    worker.onmessageerror = fallBack;
     return worker;
   };
   return {

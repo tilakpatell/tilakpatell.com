@@ -113,7 +113,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   useEffect(() => {
     if (!ready || told.current || !snap) return;
     told.current = true;
-    console.info(loadLine({ now: performance.now(), marks: snap.marks, level: snap.level, shaders: snap.shaders, machine: snap.machine, detail: device().detail }));
+    console.info(loadLine({ now: performance.now(), marks: snap.marks, shaders: snap.shaders, machine: snap.machine, detail: device().detail }));
   }, [ready, snap]);
   // what stands over the world (stage.js)
   // (the screens: true once they have come, null until then, false if their import failed)

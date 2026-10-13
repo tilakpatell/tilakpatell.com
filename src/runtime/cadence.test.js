@@ -159,4 +159,17 @@ describe('createCadence: 60 where the chip holds it, an even 30 where it cannot'
     expect(run(sixty, { ms: 6000, interval: 40, cpuMs: 38, gpuMs: 2, floored: true })).toEqual([]);
     expect(sixty.every).toBe(1);
   });
+
+  it('holds a pinned 60 at 60 on a fast display, and a pinned 30 at 30', () => {
+    const at = (hz, fps) => {
+      const c = createCadence({ fps, warmMs: 0 });
+      c.frame(0, { interval: 1000 / hz, beatMs: 1000 / hz });
+      return c.every;
+    };
+    expect(at(120, 60)).toBe(2);
+    expect(at(240, 60)).toBe(4);
+    expect(at(60, 60)).toBe(1);
+    expect(at(120, 30)).toBe(4);
+    expect(at(144, 30)).toBe(5);
+  });
 });

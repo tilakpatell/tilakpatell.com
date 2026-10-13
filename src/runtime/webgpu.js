@@ -111,17 +111,27 @@ export function buildLitPost(renderer, passes) {
 // world's chain can exceed at the defaults. Nothing when there is no WebGPU
 // (the renderer then draws on WebGL 2) or the adapter will not say.
 export const RAISED_LIMITS = ['maxColorAttachmentBytesPerSample', 'maxColorAttachments', 'maxStorageBuffersPerShaderStage'];
-export async function adapterLimits(gpu = typeof navigator !== 'undefined' ? navigator.gpu : undefined) {
+const navigatorGpu = () => (typeof navigator !== 'undefined' ? navigator.gpu : undefined);
+async function firstAdapter(gpu = navigatorGpu()) {
   try {
-    const adapter = await gpu?.requestAdapter?.({ powerPreference: 'high-performance' });
-    if (!adapter?.limits) return undefined;
-    const limits = {};
-    for (const k of RAISED_LIMITS) if (typeof adapter.limits[k] === 'number') limits[k] = adapter.limits[k];
-    return Object.keys(limits).length ? limits : undefined;
+    return (await gpu?.requestAdapter?.({ powerPreference: 'high-performance' })) ?? null;
   } catch {
-    return undefined;
+    return null;
   }
 }
+function limitsOf(adapter) {
+  if (!adapter?.limits) return undefined;
+  const limits = {};
+  for (const k of RAISED_LIMITS) if (typeof adapter.limits[k] === 'number') limits[k] = adapter.limits[k];
+  return Object.keys(limits).length ? limits : undefined;
+}
+export async function adapterLimits(gpu = navigatorGpu()) {
+  return limitsOf(await firstAdapter(gpu));
+}
+// (a fallback adapter, WebGPU drawn on the CPU: the adapter's info says so
+// where the browser follows the spec's newer shape, the adapter itself
+// where it follows the older one, and the device's adapterInfo after init)
+export const isFallback = (adapter, device = null) => Boolean(device?.adapterInfo?.isFallbackAdapter ?? adapter?.info?.isFallbackAdapter ?? adapter?.isFallbackAdapter);
 
 // (hdr, lane H1: a half-float canvas, which three configures with the
 // 'extended' tone-mapping mode, so an HDR display shows the chain's range)
@@ -131,7 +141,12 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   // tighter than the chip: a post chain's five colour targets cost more a
   // sample than the default 32 bytes on some chains, and a chip that can
   // take 128 should (the laptop's did not, and drew black, until asked).
-  const requiredLimits = forceWebGL ? undefined : await adapterLimits();
+  const chosen = forceWebGL ? null : await firstAdapter();
+  // (a fallback adapter is WebGPU drawn on the CPU: no GPU, so the make is
+  // refused before a renderer is made, and the runtime makes the node
+  // renderer over WebGL 2 instead)
+  if (isFallback(chosen)) throw new Error('a fallback adapter: no GPU under WebGPU');
+  const requiredLimits = limitsOf(chosen);
   // (no adapter, no limits: three would fall back to WebGL 2 by itself, so the standard buffer there)
   // (asked for outright, it is honoured over WebGL 2 too: the fixture's measurement there)
   const asked = Boolean(reversedDepth ?? (!forceWebGL && requiredLimits !== undefined));
@@ -141,9 +156,8 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   renderer.toneMappingExposure = exposure;
   if (alpha) renderer.setClearColor(0x000000, 0);
   await renderer.init();
-  // (a fallback adapter is WebGPU drawn on the CPU: no GPU, so the make is
-  // refused and the runtime makes the node renderer over WebGL 2 instead)
-  if (!forceWebGL && renderer.backend?.device?.adapterInfo?.isFallbackAdapter) {
+  // (and the device's own word after init: three asked for its adapter itself)
+  if (!forceWebGL && isFallback(null, renderer.backend?.device)) {
     renderer.dispose();
     throw new Error('a fallback adapter: no GPU under WebGPU');
   }
@@ -162,7 +176,7 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   // (three r186 keeps no adapter on its backend; the device's adapterInfo
   // names the chip: without it every loss was kept for a blank chip, and
   // the next visit's tier, judged for the real one, wrote over its count)
-  const info = renderer.backend?.device?.adapterInfo ?? renderer.backend?.adapter?.info ?? null;
+  const info = renderer.backend?.device?.adapterInfo ?? chosen?.info ?? null;
   const adapter = info ? { vendor: String(info.vendor ?? ''), architecture: String(info.architecture ?? '') } : null;
   const gone = (why) => {
     if (lost || released || why?.reason === 'destroyed') return;

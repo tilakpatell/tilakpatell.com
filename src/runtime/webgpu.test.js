@@ -38,7 +38,7 @@ vi.mock('../lib/three/light/passes.js', () => ({
   }),
 }));
 
-const { adapterLimits, buildPostProcessing, createWebGPU, RAISED_LIMITS } = await import('./webgpu');
+const { adapterLimits, buildPostProcessing, createWebGPU, isFallback, RAISED_LIMITS } = await import('./webgpu');
 const { mipBias, setMipState } = await import('../lib/three/mipBias');
 
 const fakeCanvas = () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() });
@@ -108,6 +108,23 @@ describe('createWebGPU', () => {
     } finally {
       software = false;
     }
+  });
+
+  it('a fallback adapter is refused before a renderer is made, by the adapter’s info or its own flag', async () => {
+    const was = globalThis.navigator;
+    for (const adapter of [{ limits: {}, info: { isFallbackAdapter: true } }, { limits: {}, isFallbackAdapter: true }]) {
+      Object.defineProperty(globalThis, 'navigator', { value: { gpu: { requestAdapter: async () => adapter } }, configurable: true });
+      const before = made.length;
+      try {
+        await expect(createWebGPU(fakeCanvas(), {})).rejects.toThrow(/fallback adapter/);
+        expect(made.length).toBe(before);
+      } finally {
+        Object.defineProperty(globalThis, 'navigator', { value: was, configurable: true });
+      }
+    }
+    // (a hardware adapter's info is the chip named in a loss, where the device has none)
+    expect(isFallback({ info: { isFallbackAdapter: false } })).toBe(false);
+    expect(isFallback(null, { adapterInfo: { isFallbackAdapter: true } })).toBe(true);
   });
 
   it('a device lost while drawing is reported, and one destroyed by its own dispose is not', async () => {

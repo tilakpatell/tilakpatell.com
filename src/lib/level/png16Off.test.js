@@ -51,4 +51,22 @@ describe('the 16-bit PNG decode off the main thread', () => {
     const off = createPng16Off({ make: () => w, onMain: vi.fn() });
     await expect(off.decode(new Uint8Array(1))).rejects.toThrow('not a PNG');
   });
+
+  it('rejects an error with no message too, never answering with no heights', async () => {
+    const w = fakeWorker({ answer: { id: 0, error: '' } });
+    const off = createPng16Off({ make: () => w, onMain: vi.fn() });
+    await expect(off.decode(new Uint8Array(1))).rejects.toThrow(/could not be decoded/);
+  });
+
+  it('falls back to the main thread when a message cannot be read', async () => {
+    const onMain = vi.fn(async () => ({ data: new Uint16Array(1), w: 1, h: 1 }));
+    const w = fakeWorker();
+    w.postMessage = (msg, transfer) => {
+      w.posted.push({ msg, transfer });
+      setTimeout(() => w.onmessageerror?.({}), 0);
+    };
+    const off = createPng16Off({ make: () => w, onMain });
+    expect((await off.decode(new Uint8Array(1))).w).toBe(1);
+    expect(onMain).toHaveBeenCalledTimes(1);
+  });
 });

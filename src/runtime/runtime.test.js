@@ -587,6 +587,14 @@ describe('createRuntime', () => {
     expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu', 'nodes-webgl']);
   });
 
+  it('?gpu=webgpu asked for WebGPU outright: a device that cannot be made fails the mount, not WebGL 2', async () => {
+    const makeBackend = vi.fn((kind) => (kind === 'webgpu' ? Promise.reject(new Error('requestDevice failed')) : fakeBackend()));
+    const { rt } = make({ gpu: true, makeBackend, override: 'webgpu' });
+    expect(await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost())).toBe(false);
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu']);
+    expect(rt.status).toBe('failed');
+  });
+
   it('a WebGL 2 backend that cannot be made either fails the mount, once', async () => {
     const makeBackend = vi.fn(() => Promise.reject(new Error('no context')));
     const { rt } = make({ gpu: true, makeBackend });

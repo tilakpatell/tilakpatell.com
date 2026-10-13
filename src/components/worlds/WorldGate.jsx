@@ -59,9 +59,11 @@ const fitFor = (pathname) => {
 export default function WorldGate({ pathname, children }) {
   const [fit, setFit] = useState(() => fitFor(pathname));
   useEffect(() => setFit(fitFor(pathname)), [pathname]);
+  // (let in at once: the write is for the rest of the visit, and a blocked
+  // storage keeps nothing, which must not keep the card up)
   const tryAnyway = () => {
     storage.set(FIT_KEY, 'on');
-    setFit(fitFor(pathname));
+    setFit({ ok: true, why: null });
   };
   const world = worldAt(pathname);
   const to = world?.to ?? null;

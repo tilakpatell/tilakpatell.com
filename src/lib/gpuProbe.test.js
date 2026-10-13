@@ -257,6 +257,20 @@ describe('a weak chip by its name, the reason kept, and a lost device', () => {
     expect(readTier('', '', store.get(TIER_KEY), NVIDIA, 31 * DAY).fresh).toBe(true);
   });
 
+  // (the review's finding: keep's third argument is the extras, keepTier's the storage)
+  it('keeps the tier in the page’s storage when no keep is passed (the runtime passes none)', async () => {
+    const store = new Map();
+    vi.stubGlobal('window', { localStorage: { setItem: (k, v) => store.set(k, v), getItem: (k) => store.get(k) ?? null } });
+    try {
+      await decideTier({ facts: { features: set(TS), limits: {}, info: NVIDIA }, probe: async () => 12, now: 0 });
+      expect(JSON.parse(store.get(TIER_KEY))).toMatchObject({ tier: 'T0', why: 'slow', at: 0, info: { vendor: 'nvidia' } });
+      await decideTier({ facts: { features: set(TS), limits: {}, info: AMD }, name: R740M, probe: async () => 1 });
+      expect(JSON.parse(store.get(TIER_KEY))).toMatchObject({ tier: 'T0', why: 'name' });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('reads a kept lost tier as fresh once its seven days are gone (the chip is probed again)', () => {
     const lost = JSON.stringify({ tier: 'T0', info: NVIDIA, why: 'lost', losses: 1, lostAt: 0 });
     expect(readTier('', '', lost, NVIDIA, DAY)).toMatchObject({ tier: 'T0', fresh: false, why: 'lost' });

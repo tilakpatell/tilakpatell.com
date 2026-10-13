@@ -159,8 +159,7 @@ export function createLevel({
     },
     loaded: () => stream?.ready() ?? false,
     progress: () => stream?.progress() ?? 0,
-    // (and the bytes the stream has fetched: the load line's, waiting.js)
-    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), bytes: stream?.status?.().bytes ?? 0 }),
+    stats: () => level?.stats() ?? { tris: 0, calls: 0, instances: 0 },
     // (the GPU scene's frame: the occluders' depth, the pyramid and the cull
     // before the scene is drawn, the queries read after; nothing on the other paths)
     beforeRender: (camera) => level?.beforeRender?.(camera),

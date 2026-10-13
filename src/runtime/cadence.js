@@ -99,7 +99,8 @@ export function createCadence({ fps = null, budgetMs = CADENCE.budgetMs, slowMs 
     frame(now, { interval = 0, cpuMs = 0, gpuMs = null, floored = false, beatMs = budgetMs } = {}) {
       const steps = ladder(beatMs);
       if (pinned) {
-        const want = fps === 30 ? steps.at(-1) : 1;
+        // (the pin's own rung: every second beat at 120 Hz is its 60, as every one is at 60 Hz)
+        const want = fps === 30 ? steps.at(-1) : Math.max(1, Math.round(1000 / 60 / (beatMs > 0 ? beatMs : budgetMs)));
         return want === every ? null : settle(want);
       }
       first ??= now;

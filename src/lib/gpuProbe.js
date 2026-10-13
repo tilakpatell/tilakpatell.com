@@ -204,7 +204,10 @@ export async function probeTier({ renderer, scene, camera, gpuTime, target = nul
 // they say T0 (a phone, no clock, a weak chip by its WebGL `name`: decided
 // before a kept tier, so one kept under an older rule is put right); else
 // the kept one from this chip; else decided now by the probe, and kept.
-export async function decideTier({ search = '', hash = '', stored = null, facts = adapterFacts(null), phone = false, name = '', probe, keep = keepTier, now = Date.now() }) {
+// (keep's third argument is the record's extras, why and when: keepTier's
+// own third is the storage, so the default puts the page's in between)
+const keepOnPage = (tier, info, extra) => keepTier(tier, info, pageStorage(), extra);
+export async function decideTier({ search = '', hash = '', stored = null, facts = adapterFacts(null), phone = false, name = '', probe, keep = keepOnPage, now = Date.now() }) {
   const read = readTier(search, hash, stored, facts.info, now);
   if (read.pinned) return { tier: read.tier, probed: false, pinned: true, why: 'pinned' };
   // (a loss in its seven days stands as it is, its count with it)
