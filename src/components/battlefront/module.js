@@ -38,7 +38,7 @@ import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
-import { createFigures, figureCuts } from './figures/figures.js';
+import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { createKitFx } from './fx/kit.js';
@@ -117,7 +117,10 @@ export default {
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
-    const figures = createFigures({ scene, ragdolls, cuts: figureCuts({ level: device().detail, lowData: Boolean(device().saveData) }) });
+    const cuts = figureCuts({ level: device().detail, lowData: Boolean(device().saveData) });
+    const figures = createFigures({ scene, ragdolls, cuts });
+    // (the player's side's near body fetched behind the waiting screen, so the first deploy is already on it)
+    preloadBody(KINDS[SIDE_OF_TEAM[PLAYER_TEAM]], cuts);
     const bolts = createBolts(scene);
     // (the grenades, their blasts, the turrets and the shields: fx/kit.js)
     const kitFx = createKitFx(scene);

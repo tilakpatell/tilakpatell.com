@@ -50,11 +50,12 @@
 //   cuts: { of(kind) → its cut row | null, level, lowData, load(url) → glTF } or
 //     null (every body on its light cut); figureCuts({ level, lowData }) the page's
 //   BODIES: a kind's plain file and cut row (crewList.js's rows for the same files)
+//   preloadBody(kind, cuts) → Promise | null: that kind's near cut fetched ahead
 
 import * as THREE from 'three';
 import { cloneScene, loadGLTF } from '../../../lib/three/gltfCache.js';
 import { clipsFor, cutsToLoad, loadWalrusBody, loadWalrusPacks, packUrls, PACK_DIR, swapBody } from '../../../lib/three/walrus.js';
-import { createCutter } from '../../../lib/three/walrusCuts.js';
+import { createCutter, cutWanted, ledgerFor } from '../../../lib/three/walrusCuts.js';
 import { CLOTH_PART, reskinCloth } from '../../../lib/three/clothFallback.js';
 import { resolveClip } from '../../../lib/three/walrusRig.js';
 import { stancePackUrl } from '../../../lib/three/walrusStance.js';
@@ -87,6 +88,19 @@ export const BODIES = {
 export const UNIT_KINDS = { luke: 'luke', leia: 'leia', hansolo: 'han', chewbacca: 'chewie', lando: 'lando', obiwan: 'obiwan', anakin: 'anakin', bobafett: 'bobafett', bossk: 'bossk', darthvader: 'vader', emperor: 'palpatine', maul: 'maul', dooku: 'dooku', DeathTrooper: 'deathtrooper', WookieWarrior: 'wookiee' };
 export const kindOf = (e, kinds = KINDS) => UNIT_KINDS[e.unitId] ?? kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
 export const figureCuts = ({ level, lowData = false }) => ({ of: (kind) => BODIES[kind]?.cuts ?? null, level, lowData, load: (url) => loadGLTF(url) });
+// The near cut a kind's figures will want, fetched ahead (the waiting
+// screen's minute: the player otherwise deployed on the light cut and the
+// 18 MB LOD0 landed 10 to 25 s later), admitted to the level's share under
+// the key the figures' cutters use, and left in the page's cache for them.
+// Null where the level never draws it near.
+export function preloadBody(kind, cuts) {
+  const row = cuts?.of(kind);
+  const url = BODIES[kind]?.url;
+  if (!row || !url) return null;
+  if (cutWanted(0, cuts.level, { hasLod: Boolean(row.lod), hasFar: Boolean(row.far), lowData: cuts.lowData, admitted: true }) !== 'plain') return null;
+  if (!ledgerFor(cuts.level).admit(url, { gpu: row.fullMB ?? 0, download: row.fullDL ?? 0 })) return null;
+  return Promise.resolve(cuts.load(url)).catch(() => null);
+}
 const loadKind = (url, kind) => loadWalrusBody(url, { packs: packUrls(BODIES[kind]?.pack ?? null) });
 const ONCE = new Set(['die.fwd', 'die.back', 'die', 'dodge.front', 'hit.chest', 'crouch']);
 
