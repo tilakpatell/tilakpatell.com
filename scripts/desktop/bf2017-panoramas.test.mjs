@@ -14,6 +14,21 @@ const records = {
   frontend: { weathers: { sunny: { sky: { panorama: 'shaders/T_DefaultBlack_C', gradient: 'shaders/T_DefaultBlack_C' } } } },
 };
 
+// A key, by its shape: a JWT's header and payload (the three letters every
+// one begins with are not enough: the plan holds the test's own folder,
+// whose random name spelled them once, /tmp/w-pan-meyJHn, and failed CI),
+// or one of Supabase's own names. (In halves: the guard in assets-upload.test.mjs.)
+const KEY = new RegExp(['ey' + 'J[\\w-]{10,}\\.[\\w-]{10,}', 'service' + '_role', 'sb_' + 'secret'].join('|'));
+
+describe('a key’s shape', () => {
+  it('is a JWT’s header and payload or a Supabase name, never three letters of a folder’s name', () => {
+    expect('/tmp/w-pan-meyJHn/no-export/web/textures.jsonl').not.toMatch(KEY);
+    expect(`${'ey' + 'J'}${'a'.repeat(20)}.${'b'.repeat(40)}.${'c'.repeat(20)}`).toMatch(KEY);
+    expect(`a ${'service' + '_role'} key`).toMatch(KEY);
+    expect(`${'sb_' + 'secret'}_x`).toMatch(KEY);
+  });
+});
+
 describe('the panoramas job', () => {
   it('lists each sky once, with every world and weather that names it, the placeholder left out', () => {
     const s = skies(records);
@@ -69,6 +84,6 @@ describe('the panoramas job', () => {
     expect(r.checks.find((c) => c.name === 'the export').ok).toBe(false);
     const plan = JSON.parse(readFileSync(join(out, 'plan.json'), 'utf8'));
     expect(plan._source).toMatch(/--dry/);
-    expect(JSON.stringify(plan)).not.toMatch(new RegExp(['eyJ', 'service' + '_role', 'sb_' + 'secret'].join('|'))); // never a key (in halves: the guard in assets-upload.test.mjs)
+    expect(JSON.stringify(plan)).not.toMatch(KEY); // never a key
   });
 });

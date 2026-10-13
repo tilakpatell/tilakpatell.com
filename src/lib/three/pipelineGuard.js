@@ -8,7 +8,7 @@
 // (Hoth at ultra: 14 s of the 20 s load inside such frames, and a 4.5 s one
 // as the first soldiers arrived), and again whenever something new came
 // into view. The classic renderer has lib/three/frameGuard for this; this
-// is the node renderer's, in two parts, both paths three has already:
+// is the node renderer's, in three parts, the first two paths three has already:
 //
 // - Shaders are built off the frame. An object whose shader is neither
 //   built nor cached under its key is left out of the frame, and once the
@@ -29,6 +29,11 @@
 //   of an object whose pipeline is not ready (`Pipelines.isReady`). The
 //   guard turns that on for every draw: `Pipelines.getForRender`, asked
 //   with no promise list (the frame's own path), is given one.
+//
+// - Nothing is built to be thrown away. Disposing a material three has a
+//   render object for asks that object for its bindings, and one the guard
+//   held out has none: three would build its shader in that call. Such an
+//   object is forgotten without it.
 //
 // Each landing asks for a frame (`invalidate`), so a still world shows
 // what it held back. Only on a WebGPU backend: the WebGL 2 backend's
@@ -204,6 +209,21 @@ export function guardPipelines(renderer, { invalidate = null, run = RUN } = {}) 
     nodes._createNodeBuilder = createAs;
     if (typeof origProcess === 'function') nodes._processBuildQueue = processInRuns;
   }
+  // A render object held out of every frame was never built, and three's
+  // Bindings.deleteForRender asks it for its bindings to destroy them,
+  // which builds its shader there and then to throw it away (a soldier's
+  // first cut disposed as the level's cut lands: each held material of the
+  // body, in each pass, built in the one task: 2.5 s on Hoth's built site,
+  // where the level's cut arrives before the first one's builds have run).
+  // One with no bindings and no builder state has nothing to destroy, and
+  // is forgotten as it is.
+  const bindings = renderer._bindings;
+  const origDelete = bindings?.deleteForRender;
+  const deleteBuilt = function (ro) {
+    if (!ro._bindings && !ro._nodeBuilderState && nodes?.get(ro).nodeBuilderState === undefined) return this.delete(ro);
+    return origDelete.call(this, ro);
+  };
+  if (typeof origDelete === 'function' && typeof bindings.delete === 'function') bindings.deleteForRender = deleteBuilt;
   const guard = {
     pending: () => pending,
     held: () => held,
@@ -215,6 +235,7 @@ export function guardPipelines(renderer, { invalidate = null, run = RUN } = {}) 
         if (nodes._createNodeBuilder === createAs) nodes._createNodeBuilder = origCreate;
         if (nodes._processBuildQueue === processInRuns) nodes._processBuildQueue = origProcess;
       }
+      if (bindings && bindings.deleteForRender === deleteBuilt) bindings.deleteForRender = origDelete;
       delete pipelines.__guard;
     },
   };

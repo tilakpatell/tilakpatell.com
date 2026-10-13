@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { groupsOf, mergeParts, texturesOf } from './draws.js';
+import { createDraws, groupsOf, mergeParts, sampledBy, texturesOf } from './draws.js';
+import { loadGpuThree } from './three.js';
 
 const tex = (name) => Object.assign(new THREE.Texture(), { name });
 const box = () => new THREE.BoxGeometry(1, 1, 1);
@@ -77,5 +78,53 @@ describe('mergeParts', () => {
     expect(geometry.attributes.position.array).toBeInstanceOf(Float32Array);
     expect(geometry.attributes.position.getX(0)).toBeCloseTo(1);
     expect(geometry.index.count).toBe(3);
+  });
+});
+
+describe('sampledBy', () => {
+  it('finds the maps a node material reads through its nodes as well as its own fields', async () => {
+    const { THREE: T, tsl } = await loadGpuThree();
+    const [own, colour, normal] = ['own', 'colour', 'normal'].map((name) => Object.assign(new T.Texture(), { name }));
+    const m = new T.MeshStandardNodeMaterial();
+    m.map = own;
+    const shared = tsl.texture(colour, tsl.uv());
+    // (a game material's colour and its normal reading the same node twice)
+    m.colorNode = shared.mul(tsl.vec3(0.5)).add(shared.mul(0.1));
+    m.normalNode = tsl.texture(normal).xyz;
+    const found = sampledBy(m);
+    expect([...found].map((t) => t.name).sort()).toEqual(['colour', 'normal', 'own']);
+    expect(texturesOf(m).size).toBe(1);
+  });
+});
+
+describe('createDraws', () => {
+  // (the vertex pull's buffers, never drawn here: the nodes are made, not built)
+  async function made() {
+    const three = await loadGpuThree();
+    const { THREE: T, tsl } = three;
+    const store = (n, item, type) => tsl.storage(new T.StorageBufferAttribute(new Uint32Array(n * item), item), type, n).toReadOnly();
+    const slots = [];
+    const cull = { nodes: { rows: store(4, 4, 'uvec4'), visibleRead: store(4, 1, 'uint'), stateRead: store(4, 2, 'uvec2') }, uniforms: { now: tsl.uniform(0) }, slots: 8, setSlot: (s, v) => slots.push([s, v]), indirect: new T.IndirectStorageBufferAttribute(16, 5) };
+    const draws = createDraws({ library: { fromMaterial: (m) => m } }, { cull, three, parent: new T.Group(), keyOf: (m) => m.uuid });
+    return { T, draws, slots };
+  }
+
+  it('records the bundle again when a texture it samples is let go (a finer row swapped in)', async () => {
+    const { T, draws, slots } = await made();
+    const map = new T.Texture();
+    const material = new T.MeshStandardNodeMaterial();
+    material.map = map;
+    draws.add([{ geometry: new T.BoxGeometry(), material, local: new T.Matrix4() }], [{ key: 0, file: 0, mirrored: false }]);
+    expect(slots.map(([s]) => s)).toEqual([0]);
+    expect(draws.groups[0].mesh.parent).toBe(draws.bundle);
+    const was = draws.bundle.version;
+    // (levelGltf.js's swapInto: dispose, then the new source)
+    map.dispose();
+    expect(draws.bundle.version).toBe(was + 1);
+    expect(draws.stats().rerecords).toBe(1);
+    // (and no more once the draws are gone)
+    draws.dispose();
+    map.dispose();
+    expect(draws.stats().rerecords).toBe(1);
   });
 });

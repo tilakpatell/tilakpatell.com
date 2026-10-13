@@ -48,7 +48,7 @@ import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
 import { appearanceOf, characterOfOffer, readStore } from '../../lib/bf2017/collection.js';
-import { createFigures, figureCuts } from './figures/figures.js';
+import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { createKitFx } from './fx/kit.js';
@@ -106,20 +106,27 @@ export default {
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0.7, 0.78, 0.88);
+    // (the graph's world matrices once a frame, in draw: three works them
+    // out on every render() call, the field's pass and each shadow cascade,
+    // 5,700 objects walked three or four times a frame)
+    scene.matrixWorldAutoUpdate = false;
     const camera = new THREE.PerspectiveCamera(70, 1, 0.1, FAR);
     // (the level's shapes round the player, for the camera's arm: lane P0's
     // engine where the tier and the screen take it, the cells as the stream
     // brings them)
     let collision = null;
     let physics = null;
-    // (?level=gpu in the address: the level on GPU-first lane N1's scene,
-    // the rows culled by compute and one indirect draw a material group, so
-    // the level costs the frame no JavaScript a draw. Wired, not yet the
-    // default: on Hoth its cull keeps every row out (5,813 of 6,050 culled,
-    // nothing drawn) and the textures its groups hold are disposed under
-    // them; lane L's instanced path draws until that is found)
+    // (on WebGPU the level is GPU-first lane N1's scene: the rows culled by
+    // compute and one indirect draw a material group, so the level costs
+    // the frame no JavaScript a draw; Hoth at ultra on the owner's 5090,
+    // 1,600 × 900: 12.3 ms a frame against lane L's instanced path's 32.1,
+    // the world's draw 9.7 ms of JavaScript against 27.9, the picture the
+    // same to 46.7 dB with the chain off (docs/superpowers/evidence/gpu-first/N1).
+    // ?level=cpu in the address keeps the instanced path, for a check; a
+    // device without indirect-first-instance and WebGL 2 keep it always:
+    // levelScene.js's canDrawGpuScene)
     const flags = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search) : null;
-    const gpuScene = rt.gfx.backend === 'webgpu' && flags?.get('level') === 'gpu';
+    const gpuScene = rt.gfx.backend === 'webgpu' && flags?.get('level') !== 'cpu';
     // (?ground=flat: the ground in its flat colour, the game's snow maps left
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
@@ -128,7 +135,11 @@ export default {
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
-    const figures = createFigures({ scene, ragdolls, cuts: figureCuts({ level: device().detail, lowData: Boolean(device().saveData) }) });
+    const cuts = figureCuts({ level: device().detail, lowData: Boolean(device().saveData) });
+    // (?skin=whole in the address: every part on the file's whole rig, for a check that measures what the cut skins save)
+    const figures = createFigures({ scene, ragdolls, cuts, prune: flags?.get('skin') !== 'whole' });
+    // (the player's side's near body fetched behind the waiting screen, so the first deploy is already on it)
+    preloadBody(KINDS[SIDE_OF_TEAM[PLAYER_TEAM]], cuts);
     const bolts = createBolts(scene);
     // (the grenades, their blasts, the turrets and the shields: fx/kit.js)
     const kitFx = createKitFx(scene);
@@ -478,6 +489,7 @@ export default {
       },
       draw({ renderer: r }) {
         level.beforeRender(camera);
+        scene.updateMatrixWorld();
         if (post) post.render();
         else r.render(scene, camera);
         level.afterRender();
