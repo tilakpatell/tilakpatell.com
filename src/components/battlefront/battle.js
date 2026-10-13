@@ -12,7 +12,9 @@
 //   createBattle({ rulebook, level, mode, heightAt, bots, seed, cell, nav, mask, teams }) → battle   (mode: any of modes/index.js's)
 //   (mask: the pack's nav.bin, navMask.js's; one built for another grid is
 //   left out, with a warning, and the navgrid is the ground's alone)
-//   addPlayer(battle, { team }) → id ; deploy(battle, id, { kind, id, classId, spawn: 'point' | 'squad', mate }) → { ok, why? }
+//   addPlayer(battle, { team }) → id ; deploy(battle, id, { kind, id, classId, spawn: 'point' | 'squad', mate, appearance }) → { ok, why? }
+//   (appearance: a crew kind the Collection screen picked, carried to the soldier and its view row)
+//   grant(battle, n) → the player's Battle Points after n more (a check's door)
 //   (kind 'class' | 'reinforcement' | 'hero', the offer's id; `classId` alone is a class; nothing is the side's first class)
 //   (the player keeps one soldier id, PLAYER_ID, life to life, in one squad from the start)
 //   step(battle, inputs) → events ; view(battle) → the page's view (each fallen
@@ -156,13 +158,13 @@ export function addPlayer(b, { team = 2 } = {}) {
   return 'player';
 }
 
-export function deploy(b, _id, { kind = null, id = null, classId = null, spawn = 'point', mate = null } = {}) {
+export function deploy(b, _id, { kind = null, id = null, classId = null, spawn = 'point', mate = null, appearance = null } = {}) {
   const p = b.player;
   if (!p || p.state !== 'deploying') return { ok: false, why: 'not deploying' };
   waitToDeploy(b);
   const side = b.sides[SIDES[p.team]];
   const as = kind ? { kind, id } : { kind: 'class', id: classId ?? side.classes[0] };
-  const r = deploySim(b.sim, p.id, { ...as, spawn: spawn === 'squad' ? 'squad' : 'point', mate });
+  const r = deploySim(b.sim, p.id, { ...as, spawn: spawn === 'squad' ? 'squad' : 'point', mate, appearance });
   if (!r.ok) return r;
   Object.assign(p, { state: 'alive', cls: as.id, unit: as.kind, earned: 0, earnedAt: b.sim.bp ? earnedBy(b.sim.bp, p.id) : 0, hits: [] });
   return { ok: true };

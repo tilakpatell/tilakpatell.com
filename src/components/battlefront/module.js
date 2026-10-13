@@ -184,7 +184,8 @@ export default {
     const castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
 
     // (a choice: an offer { kind, id } from the deploy screen, { classId }, a class id, or nothing for the side's first class)
-    const choiceOf = (c) => (typeof c === 'string' ? { classId: c } : c?.kind ? { kind: c.kind, id: c.id } : c?.classId ? { classId: c.classId } : {});
+    // (with the Collection's `appearance`, a crew kind, carried to the soldier)
+    const choiceOf = (c) => ({ ...(typeof c === 'string' ? { classId: c } : c?.kind ? { kind: c.kind, id: c.id } : c?.classId ? { classId: c.classId } : {}), ...(c?.appearance ? { appearance: c.appearance } : {}) });
     const doDeploy = (choice = picked) => {
       const base = choiceOf(choice);
       let r = deploy(sim, me, mate ? { ...base, spawn: 'squad', mate } : base);

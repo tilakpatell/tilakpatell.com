@@ -84,12 +84,18 @@ function skeleton(H) {
 }
 
 const SKELETON = { stand: skeleton(POSES.stand.height), crouch: skeleton(POSES.crouch.height) };
+// (a hero's body is its own height, standing or crouched: its physics row's, hero.js)
+const TALL = new Map();
+const heroSkeleton = (H) => {
+  if (!TALL.has(H)) TALL.set(H, skeleton(H));
+  return TALL.get(H);
+};
 
 export function capsulesOf(s, out = []) {
   const c = Math.cos(s.yaw);
   const n = Math.sin(s.yaw);
   const place = (p) => [s.at[0] + p[0] * c + p[2] * n, s.at[1] + p[1], s.at[2] - p[0] * n + p[2] * c];
-  const parts = SKELETON[s.stance === 'crouch' || s.state === 'roll' ? 'crouch' : 'stand'];
+  const parts = s.cls?.height ? heroSkeleton(s.cls.height) : SKELETON[s.stance === 'crouch' || s.state === 'roll' ? 'crouch' : 'stand'];
   out.length = parts.length;
   for (let i = 0; i < parts.length; i++) {
     const [part, a, b, r] = parts[i];
@@ -99,8 +105,8 @@ export function capsulesOf(s, out = []) {
 }
 
 // the chest's middle, where a bot aims and a line of sight is drawn to
-export const chestOf = (s) => [s.at[0], s.at[1] + (s.stance === 'crouch' ? POSES.crouch.height : POSES.stand.height) * 0.7, s.at[2]];
-export const eyeOf = (s) => [s.at[0], s.at[1] + (s.stance === 'crouch' ? POSES.crouch.eye[1] : POSES.stand.eye[1]), s.at[2]];
+export const chestOf = (s) => [s.at[0], s.at[1] + (s.cls?.height ?? (s.stance === 'crouch' ? POSES.crouch.height : POSES.stand.height)) * 0.7, s.at[2]];
+export const eyeOf = (s) => [s.at[0], s.at[1] + (s.cls?.eye ?? (s.stance === 'crouch' ? POSES.crouch.eye[1] : POSES.stand.eye[1])), s.at[2]];
 
 export function hurt(s, { damage, part = 'chest', by = null, now = 0 }) {
   if (!s.alive) return null;
@@ -118,7 +124,13 @@ export function hurt(s, { damage, part = 'chest', by = null, now = 0 }) {
 }
 
 export function speedOf(s) {
-  if (s.state === 'roll') return ROLL_SPEED;
+  if (s.state === 'roll') return s.cls?.roll?.speed ?? ROLL_SPEED;
+  // a hero's own drive (heroKit.json): its pace whatever the stance, the Blocking drive's while its saber is up
+  const d = s.cls?.drive;
+  if (d) {
+    const row = s.blocking && s.cls.blockDrive ? s.cls.blockDrive : d;
+    return resolve(s.stack, 'speed', row.speed * (s.sprint && !s.blocking ? row.sprint : 1));
+  }
   const pose = s.stance === 'crouch' ? GROUND.crouch : GROUND.stand;
   // (an ability's AbilitySprintSpeedMultiplier, the vanguard's and infiltration's 1.3, on the sprint alone)
   const sprint = s.sprint && pose.sprintMultiplier > 0 ? pose.sprintMultiplier * resolve(s.stack, 'sprint', 1) : 1;
@@ -140,14 +152,26 @@ export function tick(s, dt, now) {
 
 export function roll(s, dir, now) {
   s.state = 'roll';
-  s.rollUntil = now + ROLL_TIME;
+  s.rollUntil = now + (s.cls?.roll?.time ?? ROLL_TIME);
   s.rollDir = [...dir];
+}
+
+// a hero's drive by the way it moves against the way it faces: ahead at its
+// speed, backward at `back` of it, sideways at `strafe` (DriveWithInput's
+// scaling f/b/l/r), between them by the angle's square; a trooper's 1
+function driveScale(s, dir, len) {
+  const d = s.cls?.drive;
+  if (!d || s.state === 'roll' || len < 1e-9) return 1;
+  const row = s.blocking && s.cls.blockDrive ? s.cls.blockDrive : d;
+  const f = (dir[0] * Math.sin(s.yaw) + dir[1] * Math.cos(s.yaw)) / len;
+  const f2 = f * f;
+  return f2 * (f >= 0 ? 1 : (row.back ?? 1)) + (1 - f2) * (row.strafe ?? 1);
 }
 
 // a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it
 export function move(s, dir, dt, nav) {
-  const step = speedOf(s) * dt;
   const len = Math.hypot(dir[0], dir[1]);
+  const step = speedOf(s) * dt * driveScale(s, dir, len);
   if (!s.alive || len < 1e-9 || step <= 0) {
     s.moving = false;
     s.vel[0] = s.vel[2] = 0;
@@ -167,7 +191,8 @@ export function move(s, dir, dt, nav) {
     if (!walkable(nav, x, z)) continue;
     s.at[0] = x;
     s.at[2] = z;
-    s.at[1] = heightAt(nav, x, z);
+    // (a hero off the ground keeps its height: heroKit.js's jump)
+    if (!s.hero?.air) s.at[1] = heightAt(nav, x, z);
     s.vel[0] = mx / dt;
     s.vel[2] = mz / dt;
     s.moving = true;
