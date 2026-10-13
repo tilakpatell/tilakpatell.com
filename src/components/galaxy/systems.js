@@ -236,6 +236,7 @@ const AS_SET = [
       how: 'The game’s own menu, level and deploy screen: choose what to play, deploy as one of the four classes, and a hero once your Battle Points afford one.',
       status: 'live',
       to: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth',
+      go: 'Fight it now',
     },
   },
   {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GAME_MENU, gameMenuFor, wayDown } from './gameLevels';
+import { GAME_MENU, gameMenuFor, landsOnSurface, wayDown } from './gameLevels';
 import { canLand } from './surface/sites';
 
 describe('the worlds that land in the game', () => {
@@ -9,6 +9,10 @@ describe('the worlds that land in the game', () => {
     expect(gameMenuFor('endor')).toBe(null);
     expect(gameMenuFor(undefined)).toBe(null);
     for (const s of Object.keys(GAME_MENU)) expect(canLand(s)).toBe(true);
+  });
+  it('a game world has no surface to list or to land on: its briefing shows neither', () => {
+    expect(landsOnSurface('hoth')).toBe(false);
+    expect(landsOnSurface('endor')).toBe(true);
   });
   it('the way down: the game’s menu for Hoth whatever the district, the surface for the rest', () => {
     expect(wayDown('hoth')).toEqual({ to: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth', game: true });

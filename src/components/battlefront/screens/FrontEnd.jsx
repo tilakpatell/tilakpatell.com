@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Toast } from '../../../runtime/hud';
+import { frontEndWays } from './cards';
 import Collection from './Collection.jsx';
 import MainMenu from './MainMenu.jsx';
 import Play from './Play.jsx';
@@ -26,11 +27,12 @@ export default function FrontEnd({ playable, onPlay, start = 'start', onExit = n
     const id = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(id);
   }, [toast]);
+  const ways = frontEndWays({ toStart: () => setAt('start'), onExit });
   const coming = (label) => setToast({ key: Date.now(), text: `${label ?? 'That'}: not in this world yet` });
   return (
     <div className="bf-front-end" data-front-end={at}>
       {at === 'start' && <Start onNext={() => setAt('menu')} />}
-      {at === 'menu' && <MainMenu onPlay={() => setAt('play')} onStart={onExit ?? (() => setAt('start'))} onCollection={() => setAt('collection')} onComing={coming} />}
+      {at === 'menu' && <MainMenu onPlay={() => setAt('play')} onStart={ways.home} onBack={ways.back} first={ways.first} onCollection={() => setAt('collection')} onComing={coming} />}
       {at === 'play' && <Play playable={playable} onPlay={onPlay} onBack={() => setAt('menu')} />}
       {at === 'collection' && <Collection onBack={() => setAt('menu')} />}
       <Toast toast={toast} />

@@ -26,7 +26,7 @@ export default function Spawn({ screen = 'SpawnOverlayScreen', ...props }) {
   return <SpawnTree tree={prune(raw, (b) => PRE_ROUND.test(b.id.split('/').pop()) || /FooterBar/.test(b.id))} {...props} />;
 }
 
-function SpawnTree({ tree, deploy, points = 0, name = (o) => o.id, title = 'Deploy', onDeploy, onPick, onSpawn }) {
+function SpawnTree({ tree, deploy, points = 0, name = (o) => o.id, title = 'Deploy', onDeploy, onPick, onSpawn, onBack = null }) {
   const spawns = deploy?.spawns ?? [];
   const [at, setAt] = useState('hq');
   const where = spawns.find((c) => c.id === at && !c.blocked) ?? spawns[0] ?? null;
@@ -60,7 +60,7 @@ function SpawnTree({ tree, deploy, points = 0, name = (o) => o.id, title = 'Depl
     }
   };
   return (
-    <GameScreen tree={tree} label={title} keys={[['↑↓', 'Choose'], ['Enter', title]]} className="bf-spawn-screen">
+    <GameScreen tree={tree} label={title} keys={[['↑↓', 'Choose'], ['Enter', title], onBack ? ['Esc', 'Back'] : null]} onBack={onBack} className="bf-spawn-screen">
       <ul ref={list} className="bf-spawn-screen-list" onKeyDown={onKeyDown}>
         {rows.map((o) => (
           <li key={`${o.kind}:${o.id}`}>

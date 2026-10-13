@@ -10,7 +10,9 @@
 //   phase    'pre' (before the first deploy) | 'down' (the wipe going black) | 'up' (lifting) | 'in' (the field)
 //   ready    waiting.js's readiness: the level in and nothing left to build
 //   loaded   the level's stream has what the camera needs (false again when it falls behind in the field)
-//   screens  the game's screens have loaded (their code comes apart from the world's)
+//   screens  the game's screens (their code comes apart from the world's): true, they have come; null, not yet;
+//            false, they cannot (the import failed): the menu cannot be drawn, so it is not stood in, and nothing
+//            of theirs will ever cover the view, so the page's stand-ins must show
 //
 //   menu     draw the front end
 //   rest     the world rests under the menu: made and ready, and not drawn, so the menu has the whole frame
@@ -22,14 +24,16 @@
 //   name     'menu' | 'loading' | 'spawn' | 'field': the stage's mark for the checks (data-bf-stage)
 //
 // latch(was, { inMenu, phase, ready }) → the way in has been ready once the spawn screen could stand
+// deploysThrough(phase) → a Deploy goes through the wipe (until the field)
+// phaseFor(phase, { parked }) → the phase, given what the world says of its camera
 
 export function standing({ inMenu = false, phase = 'pre', ready = false, loaded = true, screens = true } = {}) {
-  const menu = Boolean(inMenu);
+  const menu = Boolean(inMenu) && screens !== false;
   const rest = menu && Boolean(ready);
   const loading = !menu && ((phase === 'pre' && !ready) || (phase === 'in' && !loaded));
   const spawn = !menu && ((phase === 'pre' && ready) || phase === 'down');
   const wipe = phase === 'down' || phase === 'up' ? phase : null;
-  const cover = !screens && (phase === 'pre' || phase === 'down');
+  const cover = screens == null && (phase === 'pre' || phase === 'down');
   const name = menu ? 'menu' : loading ? 'loading' : spawn ? 'spawn' : 'field';
   return { menu, rest, loading, spawn, wipe, cover, name };
 }
@@ -41,3 +45,13 @@ export function standing({ inMenu = false, phase = 'pre', ready = false, loaded 
 // waiting screen dropped a click made then). Not held under the menu, where
 // nothing shows it and the level may still be building.
 export const latch = (was, { inMenu = false, phase = 'pre', ready = false } = {}) => Boolean(was) || (!inMenu && phase === 'pre' && Boolean(ready));
+
+// A Deploy before the field is the wipe's: the first click starts it, and a
+// second on the way down or up is its to refuse (sent straight to the world
+// it deployed at once under a half-black wipe, and the wipe's own deploy
+// followed it).
+export const deploysThrough = (phase) => phase !== 'in';
+
+// The page's phase follows the world: a soldier deployed some other way (a
+// check's door on the world) has left the dark room, and the way in is over.
+export const phaseFor = (phase, { parked } = {}) => (phase === 'pre' && parked === false ? 'in' : phase);

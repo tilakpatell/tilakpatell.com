@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WorldHost, useWorld } from '../../runtime';
 import { loadRulebook, stringOf } from '../../lib/battlefront/rulebook.js';
@@ -10,7 +10,7 @@ import { useGameScreens, wantsMenu } from './useGameScreens.js';
 import { offerNameOf } from './hud/widgets.js';
 import { sendTo } from './send.js';
 import { startLoadingMusic } from './sound/loading.js';
-import { latch, standing } from './stage.js';
+import { deploysThrough, latch, phaseFor, standing } from './stage.js';
 import Wipe from './Wipe.jsx';
 import { HUD_QUIET, WIPE, pickVariant, readiness } from './waiting.js';
 import '../../lib/bf2017/fonts.css';
@@ -56,7 +56,7 @@ const killerOf = (snap) => {
 // (the HUD's deploy slot while the menu or the loading screen stands: nothing)
 const Nothing = () => null;
 
-export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssault', back = null, menu: startInMenu = false, playable = () => true }) {
+export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssault', back = null, menu: startInMenu = false, playable = () => true, onOther = null }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const navigate = useNavigate();
   const screens = useGameScreens();
@@ -97,7 +97,8 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   arrived.current = latch(arrived.current, { inMenu, phase, ready: progress.ready });
   const ready = progress.ready || arrived.current;
   // what stands over the world (stage.js)
-  const st = standing({ inMenu, phase, ready, loaded: !loading, screens: Boolean(screens) });
+  // (the screens: true once they have come, null until then, false if their import failed)
+  const st = standing({ inMenu, phase, ready, loaded: !loading, screens: screens === false ? false : screens ? true : null });
   // the world rests under the menu once it is ready (stage.js's rest): the runtime's loop is told its box is out of
   // sight, so it neither steps nor draws until Play, and the menu has the machine to itself
   const resting = st.rest;
@@ -107,6 +108,12 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
     rt?.setVisible(false);
     return () => rt?.setVisible(true);
   }, [resting, rt]);
+  // (a soldier deployed some other way, a check's door on the world, ends the way in: stage.js's phaseFor)
+  const parked = snap?.parked;
+  useEffect(() => {
+    const next = phaseFor(phase, { parked });
+    if (next !== phase) setPhase(next);
+  }, [phase, parked]);
   // The first life's Deploy: the game's wipe, the world's deploy at its swap
   const deployThrough = (o) => {
     if (phase !== 'pre' || !ready) return;
@@ -119,6 +126,14 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
       setTimeout(() => setPhase('in'), WIPE.up * 1000);
     }, (WIPE.delay + WIPE.down) * 1000);
   };
+  // Escape on the way in (the loading screen, the first spawn screen): back to the menu it came from, else out to
+  // the world that sent the player. After the first life there is the in-game menu.
+  const backOut = () => (startInMenu && screens ? setInMenu(true) : navigate(way.to));
+  const backRef = useRef(null);
+  backRef.current = phase === 'pre' ? backOut : null;
+  const SpawnScreen = screens ? screens.Spawn : null;
+  // (one component for the HUD's deploy slot, the same from render to render: a new one each time would be mounted again at every snapshot)
+  const FirstSpawn = useMemo(() => (SpawnScreen ? (p) => <SpawnScreen {...p} onBack={backRef.current ? () => backRef.current?.() : null} /> : null), [SpawnScreen]);
   // the level's loading cue, from the menu's end to the wipe's swap (never under the menu; the world is unheard until then: sound/director.js)
   const cued = !inMenu && (phase === 'pre' || phase === 'down');
   useEffect(() => (cued ? startLoadingMusic(level) : undefined), [cued, level]);
@@ -142,9 +157,9 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   return (
     <WorldHost world={world} className="bf-stage" data-bf-stage={st.name} data-bf-ready={ready || undefined}>
       {st.cover && <div className="bf-cover" aria-hidden="true" />}
-      {st.menu && FrontEnd && <FrontEnd start="menu" playable={playable} onPlay={() => setInMenu(false)} onExit={() => navigate(way.to)} />}
+      {st.menu && FrontEnd && <FrontEnd start="menu" playable={playable} onPlay={(l, m) => (onOther && (l !== level || m !== mode) ? onOther(l, m) : setInMenu(false))} onExit={() => navigate(way.to)} />}
       <Wipe phase={st.wipe} />
-      {st.loading && Loading && <Loading mode={mode} level={level} progress={progress.value} waiting={phase === 'pre' ? progress.line : null} />}
+      {st.loading && Loading && <Loading mode={mode} level={level} progress={progress.value} waiting={phase === 'pre' ? progress.line : null} onBack={phase === 'pre' ? backOut : null} />}
       {snap && (
         <BattlefrontHud
           view={snap}
@@ -152,13 +167,13 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
           words={WORDS}
           markers={snap.markers ?? []}
           scoreboard={screens ? false : snap.showScoreboard}
-          onDeploy={(o) => (phase === 'pre' ? deployThrough(o) : send('deploy', { kind: o.kind, id: o.id }))}
+          onDeploy={(o) => (deploysThrough(phase) ? deployThrough(o) : send('deploy', { kind: o.kind, id: o.id }))}
           onPick={(o) => send('pick', { kind: o.kind, id: o.id })}
           onSpawn={(c) => send('spawn', c.kind === 'mate' ? c.id : null)}
           readRadar={() => ({ me: snap.player, entities: snap.entities ?? [], objectives: (snap.mode?.objectives ?? []).map((o) => ({ ...o, label: o.name })) })}
           way={way}
           touch={touch}
-          {...(st.menu || st.loading ? { deployAs: Nothing } : screens ? { deployAs: screens.Spawn, roundAs: null, reticle: screens.crosshair(snap.player?.cls ?? null) } : {})}
+          {...(st.menu || st.loading ? { deployAs: Nothing } : screens ? { deployAs: FirstSpawn, roundAs: null, reticle: screens.crosshair(snap.player?.cls ?? null) } : {})}
         />
       )}
       {KillScreen && !loading && snap?.player?.state === 'down' && !result && <KillScreen killer={killerOf(snap)} earned={snap.player.earned ?? 0} />}
@@ -179,7 +194,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
           onComing={() => setMenu(false)}
         />
       )}
-      {Scoreboard && !result && (board || snap?.showScoreboard) && <Scoreboard teams={snap?.scoreboard ?? {}} onBack={board ? () => setBoard(false) : null} />}
+      {Scoreboard && !result && st.name === 'field' && (board || snap?.showScoreboard) && <Scoreboard teams={snap?.scoreboard ?? {}} onBack={board ? () => setBoard(false) : null} />}
       {EndOfRound && result && <EndOfRound result={result} mine={snap.player?.team ?? 2} teams={snap.scoreboard ?? {}} words={WORDS.outcome} />}
     </WorldHost>
   );

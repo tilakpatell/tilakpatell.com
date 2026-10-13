@@ -8,11 +8,14 @@
 // Battlefront world's own route. Pure.
 //
 //   gameMenuFor(system) → the address, or null for a world that lands on its surface
+//   landsOnSurface(system) → false for a game world: a page lists nothing of a surface for it
 //   wayDown(system, district) → { to, game }: where the galaxy goes when you land
 
 export const GAME_MENU = { hoth: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth' };
 
 export const gameMenuFor = (system) => GAME_MENU[system] ?? null;
+
+export const landsOnSurface = (system) => !GAME_MENU[system];
 
 export function wayDown(system, district = null) {
   const menu = gameMenuFor(system);

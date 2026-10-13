@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { latch, standing } from './stage';
+import { deploysThrough, latch, phaseFor, standing } from './stage';
 
 const s = (o) => standing({ inMenu: false, phase: 'pre', ready: false, ...o });
 
@@ -30,10 +30,16 @@ describe('what stands over the Battlefront world', () => {
     expect(s({ ready: false, phase: 'in', loaded: false })).toMatchObject({ loading: true, spawn: false, name: 'loading' });
   });
   it('covers the parked camera until the game’s screens have come, and not after the first deploy', () => {
-    expect(s({ screens: false })).toMatchObject({ cover: true });
-    expect(s({ inMenu: true, screens: false })).toMatchObject({ cover: true });
+    expect(s({ screens: null })).toMatchObject({ cover: true });
+    expect(s({ inMenu: true, screens: null })).toMatchObject({ cover: true, menu: true });
     expect(s({ screens: true })).toMatchObject({ cover: false });
-    expect(s({ ready: true, phase: 'in', screens: false })).toMatchObject({ cover: false });
+    expect(s({ ready: true, phase: 'in', screens: null })).toMatchObject({ cover: false });
+  });
+  it('when the game’s screens cannot come at all: no menu to be stuck in, no cover over the stand-in deploy screen', () => {
+    // (the menu cannot be drawn, so the way in goes on without it: the loading line, then the HUD's own deploy screen)
+    expect(s({ inMenu: true, screens: false })).toMatchObject({ menu: false, rest: false, cover: false, loading: true, name: 'loading' });
+    expect(s({ inMenu: true, screens: false, ready: true })).toMatchObject({ menu: false, cover: false, spawn: true, name: 'spawn' });
+    expect(s({ screens: false })).toMatchObject({ cover: false });
   });
 });
 
@@ -51,5 +57,22 @@ describe('the way in, once it has been ready', () => {
   });
   it('is not held under the menu, where nothing shows it and the level may still be building', () => {
     expect(latch(false, { inMenu: true, phase: 'pre', ready: true })).toBe(false);
+  });
+});
+
+describe('the first life’s Deploy', () => {
+  it('goes through the wipe until the field, so a second click on the way down is the wipe’s to refuse', () => {
+    expect(deploysThrough('pre')).toBe(true);
+    expect(deploysThrough('down')).toBe(true);
+    expect(deploysThrough('up')).toBe(true);
+    expect(deploysThrough('in')).toBe(false);
+  });
+  it('a soldier deployed some other way (a check’s door) ends the way in', () => {
+    expect(phaseFor('pre', { parked: false })).toBe('in');
+    expect(phaseFor('pre', { parked: true })).toBe('pre');
+    expect(phaseFor('pre', {})).toBe('pre');
+    // (the wipe runs its own course)
+    expect(phaseFor('down', { parked: false })).toBe('down');
+    expect(phaseFor('in', { parked: false })).toBe('in');
   });
 });

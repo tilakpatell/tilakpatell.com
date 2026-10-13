@@ -40,7 +40,7 @@ export default function Battlefront() {
     return (
       <main className="bf-page">
         <h1 className="sr-only">Star Wars Battlefront II</h1>
-        <BattlefrontWorld level={level} mode={firstModeOf(level)} menu back={back} playable={playable} />
+        <BattlefrontWorld level={level} mode={firstModeOf(level)} menu back={back} playable={playable} onOther={(l, m) => navigate(`${routeFor(l, m)}${search}`)} />
       </main>
     );
   if (!playable(level, mode)) return <Navigate to={routeFor()} replace />;
