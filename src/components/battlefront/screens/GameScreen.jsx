@@ -9,10 +9,11 @@ import './screens.css';
 // tree drawn by the kit's Screen, the screen's own cards over it, and the
 // keys at the foot in the site's words. A modal dialog: the focus starts on
 // the first thing to press (or on `first`, a selector, where a screen names
-// one); Escape goes back when there is a back. In the
+// one); Escape goes back when there is a back, and a screen's own keys are
+// heard wherever in it the focus is (`onKey`). In the
 // page it is put at the body's end (the page's main is a stacking context
 // under the site's bar; the game's screen covers the bar, as the game's do).
-export default function GameScreen({ tree, label, backdrop = null, onBack = null, onLink = null, onAction = null, fill = null, keys = null, className = '', children = null, first = null }) {
+export default function GameScreen({ tree, label, backdrop = null, onBack = null, onLink = null, onAction = null, fill = null, keys = null, className = '', children = null, first = null, onKey = null }) {
   const ref = useRef(null);
   useEffect(() => {
     const el = (first && ref.current?.querySelector(first)) || ref.current?.querySelector('button:not([aria-disabled="true"]), [tabindex="0"]');
@@ -24,7 +25,7 @@ export default function GameScreen({ tree, label, backdrop = null, onBack = null
       e.preventDefault();
       e.stopPropagation();
       onBack();
-    }
+    } else onKey?.(e);
   };
   const node = (
     <div ref={ref} tabIndex={-1} className={`bf-game-screen ${className}`.trim()} role="dialog" aria-modal="true" aria-label={label} onKeyDown={onKeyDown} data-game-screen={tree?.name ?? label}>
