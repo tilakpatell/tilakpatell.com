@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Toast } from '../../../runtime/hud';
+import { frontEndWays } from './cards';
 import Collection from './Collection.jsx';
 import MainMenu from './MainMenu.jsx';
 import Play from './Play.jsx';
@@ -12,8 +13,13 @@ import Start from './Start.jsx';
 // poses and voice lines, kept for the battle's deploy). A tab or card this
 // world has not got yet says so in a toast.
 //
-// <FrontEnd playable={(level, mode) => bool} onPlay={(level, mode) => …} />
-export default function FrontEnd({ playable, onPlay, start = 'start' }) {
+// Over a level's world (BattlefrontWorld.jsx: the player has landed, the
+// level loads behind) it opens on the main menu (`start="menu"`), and the
+// main menu's back is the way out of the world (`onExit`) and not the Start
+// screen.
+//
+// <FrontEnd playable={(level, mode) => bool} onPlay={(level, mode) => …} start="start" | "menu" onExit={() => …} />
+export default function FrontEnd({ playable, onPlay, start = 'start', onExit = null }) {
   const [at, setAt] = useState(start);
   const [toast, setToast] = useState(null);
   useEffect(() => {
@@ -21,11 +27,12 @@ export default function FrontEnd({ playable, onPlay, start = 'start' }) {
     const id = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(id);
   }, [toast]);
+  const ways = frontEndWays({ toStart: () => setAt('start'), onExit });
   const coming = (label) => setToast({ key: Date.now(), text: `${label ?? 'That'}: not in this world yet` });
   return (
     <div className="bf-front-end" data-front-end={at}>
       {at === 'start' && <Start onNext={() => setAt('menu')} />}
-      {at === 'menu' && <MainMenu onPlay={() => setAt('play')} onStart={() => setAt('start')} onCollection={() => setAt('collection')} onComing={coming} />}
+      {at === 'menu' && <MainMenu onPlay={() => setAt('play')} onStart={ways.home} onBack={ways.back} first={ways.first} onCollection={() => setAt('collection')} onComing={coming} />}
       {at === 'play' && <Play playable={playable} onPlay={onPlay} onBack={() => setAt('menu')} />}
       {at === 'collection' && <Collection onBack={() => setAt('menu')} />}
       <Toast toast={toast} />

@@ -16,6 +16,7 @@ import { Film } from '../../runtime/hud';
 import { filmFor, tilesFor } from '../../lib/bf2017/films';
 import '../../lib/bf2017/fonts.css';
 import { landLine } from './surface/landLine';
+import { gameMenuFor } from './gameLevels';
 
 // Beside the galaxy (a bottom sheet on a phone): the system you're in, as
 // its card: the game's loading film of it (Battlefront II's, where the game
@@ -54,7 +55,7 @@ function Ships({ ship, onShip }) {
 // plays as the 2017 game's own multiplayer tile does
 function ModeTile({ game }) {
   // (the galaxy's own battle, or the game's level in the Battlefront world)
-  const assault = [game, ...(game.also ?? [])].find((x) => x.to?.includes('mission=assault') || /^\/battlefront\/[a-z0-9-]+\/galacticAssault/.test(x.to ?? ''));
+  const assault = [game, ...(game.also ?? [])].find((x) => x.to?.includes('mission=assault') || /^\/battlefront\/[a-z0-9-]+(\/galacticAssault|\?|$)/.test(x.to ?? ''));
   const tile = assault ? tilesFor('assault')[0] : null;
   if (!tile) return null;
   return (
@@ -249,7 +250,7 @@ export default function GalaxyPanel({ system, at, ship, onShip, onHangar = null,
           </button>
         )}
         {/* (what's played down there: the landing's menu, surface/modes.js) */}
-        {crew && onLand && landLine(system) && <p className="w-full text-xs text-muted">Down there: {landLine(system)} · Free roam</p>}
+        {crew && onLand && landLine(system) && <p className="w-full text-xs text-muted">Down there: {landLine(system)}{gameMenuFor(system.id) ? '' : ' · Free roam'}</p>}
         {crew &&
           onLand &&
           districts.map((d) => (

@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import BattlefrontHud from '../hud/BattlefrontHud.jsx';
 import { loadScreens, wantsMenu } from '../useGameScreens.js';
-import { levelCards, menuItems, MODE_LISTS, pressStart } from './cards';
+import { frontEndWays, levelCards, menuItems, MODE_LISTS, pressStart } from './cards';
 import { EOR_STEPS, findBox, skipTo, stepAt } from './tree';
 import { screen } from '../../../lib/bf2017/ui/screens';
 import EndOfRound from './EndOfRound.jsx';
+import FrontEnd from './FrontEnd.jsx';
 import InGameMenu from './InGameMenu.jsx';
 import KillScreen from './KillScreen.jsx';
 import Loading from './Loading.jsx';
@@ -126,8 +127,8 @@ describe('the end of round, on the clock', () => {
 });
 
 describe('with no screens (a failed import)', () => {
-  it('loads to null, and the HUD keeps lane 5’s deploy screen', async () => {
-    expect(await loadScreens(() => Promise.reject(new Error('chunk failed')))).toBeNull();
+  it('loads to false when the import fails (null is not yet), and the HUD keeps lane 5’s deploy screen', async () => {
+    expect(await loadScreens(() => Promise.reject(new Error('chunk failed')))).toBe(false);
     const view = { deploy: { open: true, offers: OFFERS }, points: 0, player: { state: 'deploying', team: 2 }, mode: null, killLog: [] };
     const h = html(<BattlefrontHud view={view} words={{ title: 'Hoth', deploy: 'Deploy', offer: (o) => o.id, outcome: {} }} />);
     expect(h).toContain('bf-offers');
@@ -161,3 +162,32 @@ describe('the pause menu’s way in', () => {
   });
 });
 
+describe('the front end over a world', () => {
+  it('lands in the main menu when asked, drawn from the game’s tree', () => {
+    const h = html(<FrontEnd start="menu" onExit={() => {}} />);
+    expect(h).toContain('data-front-end="menu"');
+    expect(h).toContain('data-screen="UI/Frontend/Screens/Start/MainMenuScreen"');
+  });
+  it('opens on the Start screen when it stands alone', () => {
+    expect(html(<FrontEnd />)).toContain('data-front-end="start"');
+  });
+});
+
+describe('the front end’s ways out', () => {
+  it('alone: HOME and Escape both go to the Start screen, and the first thing in focus is the frame’s own', () => {
+    const toStart = () => 'start';
+    const w = frontEndWays({ toStart });
+    expect(w.home).toBe(toStart);
+    expect(w.back).toBe(toStart);
+    expect(w.first).toBe(null);
+  });
+  it('over a world: Escape is the way out, HOME goes nowhere, and the focus starts on PLAY', () => {
+    const toStart = () => 'start';
+    const onExit = () => 'out';
+    const w = frontEndWays({ toStart, onExit });
+    // (HOME is the first tab and held the focus: Enter on arriving left the game and threw the loaded level away)
+    expect(w.home).toBe(null);
+    expect(w.back).toBe(onExit);
+    expect(w.first).toBe('[data-link$="/PlayScreen"]');
+  });
+});
