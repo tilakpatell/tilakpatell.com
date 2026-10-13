@@ -130,9 +130,14 @@ Sections 2 to 5 are from the exported records. This section is from two other so
 
 - CODE + LIVE. The state is one of six: 0 Disabled, 1 Recharge, 2 Blocked, 3 Ready, 4 Activating, 5 Active. The previous state is kept beside it.
 - CODE. The timer is the seconds left in the current state. One function ticks it (`145b68520`), one changes the state (`145b67a10`), one sets the timer (`145b68fd0`). The durations come from the ability's asset: ActivationTime, ActiveTime, RechargeTime, each with an "infinite" flag.
-- CODE. The recharge begins when Active ends, not when the ability is pressed.
-- CODE. A card's value object replaces a duration outright; it does not scale it. This agrees with the records' `PlayerAbilityPropertyModifier` in section 5 (Sharpshooter's recharge 18.5 / 18 / 17.5 / 17 under a card).
-- Not yet LIVE: a non-zero timer was never caught (no ability was pressed during the two windows that watched the authoritative copy). A longer watch while abilities are pressed is the next read.
+- CODE + LIVE. The timer counts down and is loaded afresh at each change of state. The recharge begins at the full RechargeTime when Active ends, not when the ability is pressed. Watched for ten minutes at 20 samples a second while Lando's abilities were pressed (`poll-server.txt`):
+  - Sharp Shot (0 / 7 / 12): Ready to Active at once (a zero ActivationTime skips Activating), Active for 7.03 s, Recharge for 11.98 s, Ready. Five cycles, each within 0.1 s of 7 and 12.
+  - Smoke Grenade (0.4 / 0 / 14): Activating for 0.44 s, then straight to Recharge for 13.97 s (a zero ActiveTime gives Active no length). Six cycles.
+  - Disabler (0.4 / 25 / 19): Activating 0.41 s, Active 24.93 s, Recharge 19.05 s. Pressed again 4.6 s into Active (the detonation), Active ended at once and the full 19 s recharge began; the unused 20 s of Active were not given back.
+- LIVE. A press that cannot act is held for half a second: a second timer is set to 0.5 s and runs down (the smoke and the Disabler pressed during Sharp Shot's Active, the Disabler pressed while recharging).
+- CODE. Six events force a state from outside (GotoDisabled, GotoRecharge, GotoBlocked, GotoReady, GotoActivating, GotoActive), and two are sent out (OnActiveTimeFinished, OnDeactivated).
+- CODE. A card's value object replaces a duration outright; it does not scale it. This agrees with the records' `PlayerAbilityPropertyModifier` in section 5 (Sharpshooter's recharge 18.5 / 18 / 17.5 / 17 under a card). A value is chosen by level: the first whose MinAbilityLevel to MaxAbilityLevel holds the ability's level, counted from zero. Not LIVE: no card was worn in the round watched, so no card's effect was seen.
+- CODE. Damage-multiplier affectors on one soldier combine as a product, each taking its rank's value with the rank held inside the list.
 
 **The durations in the records are the ones the game runs on.** LIVE, on Lando in a round, the three assets held Sharp Shot 0 / 7 / 12 s, Smoke Grenade 0.4 / 0 / 14 s and Disabler 0.4 / 25 / 19 s (activation / active / recharge), the same as his rows in section 2. No number in this file moves.
 
@@ -145,16 +150,18 @@ Sections 2 to 5 are from the exported records. This section is from two other so
 | 2 | Sharp Shot (the middle ability) | `RetriggerablePlayerAbility` | 0 / 7 / 12 |
 | 3 | Smoke Grenade (left) | `InactiveSoldierWeaponPlayerAbility` | 0.4 / 0 / 14 |
 | 4 | Disabler (right) | `DemolitionChargePlayerAbility` | 0.4 / 25 / 19 |
-| 5 | very likely the dodge | `CharacterStatePlayerAbility` | 0 / 0.4 / 2.2 |
+| 5 | the dodge roll | `CharacterStatePlayerAbility` | 0 / 0.4 / 2.2 |
 | 7, 8 | two more character-state abilities, not identified | `CharacterStatePlayerAbility` | 0.4 / 0 / 0 and 1 / 0.1 / 0 |
 | 9 | not identified | `BasicPlayerAbility` | 0 / 0 / 0 |
 | 10 | the emote | `EmoteCharacterStatePlayerAbility` | 0.3 / 0 / 1 |
 | 11 | the voice line | `VoiceLinePlayerAbility` | 0.3 / 5 / 0 |
 
-So the slot order is middle, left, right (2, 3, 4), not the order of the Category enum; and the primary weapon and (very likely) the dodge run on the same state and timer as the three abilities. For the site: one state machine serves all of them, and a hero's dodge is a row with 0.4 s active and 2.2 s recharge until a read says otherwise.
+So the slot order is middle, left, right (2, 3, 4), not the order of the Category enum; and the primary weapon and the dodge run on the same state and timer as the three abilities. For the site: one state machine serves all of them.
+
+**The dodge is not read like the other three.** LIVE, two rolls: it rests in Recharge with a timer of zero and never shows Ready; a roll takes it to Active with the timer counting up to 0.4, and 1.26 s after the press it is back in Recharge with 1.1 s on the timer (half of its 2.2), counting down. So a character-state ability's readiness is a charge, not the Ready state, and each of the two rolls costs half the recharge. How the charges are counted was not read; the site's dodge keeps two charges that each come back in 1.1 s until a read says otherwise.
 
 **The server's copy is the one that counts.** LIVE: in an offline round the server runs in the same process, and each ability's state lives twice, once in the server's ability-set component (the eighteen states in a row) and once in the client's ability object. CODE: the three functions above write the server's copy. The site has no such split and needs none; it matters only for where the next read looks.
 
-**Every ability carried a level of 3 and a mask of 0x1F in this round.** LIVE. What the level changes was not read. Nothing in the kit is built on it.
+**Every ability carried a level of 3 and a mask of 0x1F in this round, with no card worn.** LIVE. CODE: levels count from zero, so 3 is the fourth and last (`PlayerAbilityLevel_4`), which agrees with section 5's rule that the top rank is `levels[3]`.
 
 **Also read LIVE, for the render lanes:** `SunShadowmapLevel` is 3 at the game's Ultra preset (`WorldRenderSettings` +0x40), with `ShadowmapResolution` 2048, `ShadowmapSliceCount` 5, `ShadowmapViewDistance` 100 and `DistantShadowCacheResolution` 6400 in the same object. The level's own visual environment can lay a shorter distance over the settings' 100 (its record says 70 for Hoth); which of the two the frame used was not read.
