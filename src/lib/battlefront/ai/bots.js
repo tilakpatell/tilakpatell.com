@@ -179,7 +179,7 @@ export function stepBrains(sim) {
       sim.thinks = (sim.thinks ?? 0) + 1;
     }
     // (a hero bot: its saber's way to the mark, its buttons, its abilities: heroBrain.js; a rush carries it on its own)
-    if (s.hero) heroIntent(sim, b, s, sim.time);
+    if (s.hero) heroIntent(sim, b, s);
     if (!s.hero?.rush) act(b, b.intent, s, STEP, world, sim.time);
     if (s.hero) heroAct(sim, b, s, sim.time);
   }

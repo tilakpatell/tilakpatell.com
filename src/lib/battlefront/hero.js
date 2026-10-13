@@ -1,11 +1,13 @@
 // A hero or a villain as the sim deploys one: the class row a soldier is
-// made from (heroes.json's health and regen, the weapon heroKit.json names
-// from weapons.json, or none for a saber hero), the drive, the body's height
+// made from (heroes.json's health, regen and its own gun's row in
+// weapons.json, or none for a saber hero), the drive, the body's height
 // and the jump (heroKit.json, from the game's state machine), and the
 // abilities: the hero's dodge (Ability_Evade_CharacterState, saber.json's)
 // on slot 0, then its three from abilities.json on slots 1 to 3 (left,
 // middle, right: Q, E, F), each carrying what it does (`hero`: its kind and
-// numbers from bf2017Abilities.json, heroAbilities.js plays them). Pure.
+// numbers). A blaster hero's are the row's own `effect`, read from the
+// game's records (heroBlaster.js plays them); a saber hero's are
+// bf2017Abilities.json's (heroAbilities.js). Pure.
 //
 //   HERO_KIT                      heroKit.json
 //   kitOf(id) → its row, or null  isSaberHero(id)
@@ -24,6 +26,20 @@ const TIMES = new Set(['from', 'asset', 'slot', 'recharge', 'activation', 'activ
 export const kitOf = (id) => KIT.heroes[id] ?? null;
 export const isSaberHero = (id) => Boolean(kitOf(id)?.saber);
 
+// A blaster hero's ability row as the sim runs it: the record's times, with what its kind needs of them.
+function blasterRow(row) {
+  const fx = row.effect;
+  const out = { ...row, hero: fx };
+  // (a charge and a device wait for the second press, `RetriggerCooldown` after the first; the record's `InfiniteActiveTime`)
+  if (fx.kind === 'charge') Object.assign(out, { active: Infinity, retrigger: { cooldown: fx.retrigger } });
+  if (fx.kind === 'reveal') out.retrigger = { cooldown: fx.retrigger };
+  // (a swapped weapon stays in the hand until its heat or its seconds end it, or it is put away)
+  if (fx.kind === 'weaponSwap') Object.assign(out, { active: Infinity, retrigger: { cooldown: 0 } });
+  // (the record's ten seconds are how long Iden's droid may look for its mark: here it finds it at once)
+  if (fx.kind === 'stunDroid') out.activation = 0;
+  return out;
+}
+
 export function heroAbilities(rb, id) {
   const k = kitOf(id);
   const fx = FX.heroes[k?.abilities]?.abilities ?? [];
@@ -31,10 +47,12 @@ export function heroAbilities(rb, id) {
   const evade = { id: 'Ability_Evade_CharacterState', kind: 'state', activation: 0, active: rules.evade.active, recharge: rules.evade.recharge, cost: rules.evade.cost, channels: [], slot: 0, hero: { kind: 'evade', taken: rules.evading.taken } };
   const rows = heroOf(rb, id).abilities.map((a, i) => {
     const row = abilityOf(rb, a.id);
+    const slot = SLOTS[a.slot] ?? i + 1;
+    if (row.effect) return { ...blasterRow(row), slot };
     const f = fx.find((x) => x.asset === a.id) ?? null;
     // (its numbers; the times are abilities.json's own, and where each was read stays in bf2017Abilities.json)
     const nums = f ? Object.fromEntries(Object.entries(f).filter(([key]) => !TIMES.has(key))) : { kind: null };
-    return { ...row, slot: SLOTS[a.slot] ?? i + 1, hero: nums };
+    return { ...row, slot, hero: nums };
   });
   return [evade, ...rows.sort((p, q) => p.slot - q.slot)];
 }
@@ -51,7 +69,8 @@ export function heroClass(rb, id, base) {
     health: h.health,
     // (Leia's record names no regen affector: the side's class's, by hand)
     regen: h.regen ?? base.regen,
-    weapon: k?.weapon ?? null,
+    // (a blaster hero's own gun: the weapons rulebook's row for its primary)
+    weapon: h.weapon ?? null,
     abilities: null,
     unit: 'hero',
     unitId: id,

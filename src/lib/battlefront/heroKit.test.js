@@ -150,12 +150,12 @@ describe('the abilities, on the records’ numbers', () => {
     expect(ev.find((e) => e.type === 'hit' && e.target === t.id)).toMatchObject({ damage: 100 });
   });
 
-  it('Han throws his detonator, which bursts where it rests', () => {
+  it('Han throws his charge, which lies where it sticks until the second press sets it off', () => {
     const sim = fresh();
     const id = addPlayer(sim, { team: 2, hero: 'hansolo', at: AT });
-    const ev = run(sim, 80, (i) => [{ id, move: [0, 0], look: 0, aim: [AT[0], 1.4, AT[2] + 20], ability: i === 0 ? 1 : 0 }]);
+    const ev = run(sim, 80, (i) => [{ id, move: [0, 0], look: 0, aim: [AT[0], 1.4, AT[2] + 20], ability: i === 0 || i === 60 ? 1 : 0 }]);
     expect(ev.find((e) => e.type === 'throw' && e.by === id)).toBeTruthy();
-    expect(ev.find((e) => e.type === 'explosion' && e.by === id)).toBeTruthy();
+    expect(ev.find((e) => e.type === 'explosion' && e.by === id).t).toBeCloseTo(61 * 0.05, 5);
   });
 
   it('Vader’s throw flies out and back, cutting what it passes', () => {

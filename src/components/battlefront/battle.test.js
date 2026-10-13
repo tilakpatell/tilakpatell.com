@@ -147,6 +147,29 @@ describe('the battle on the sim in its own mode, with the page’s deploy screen
     expect(aimHeight({ kind: 'hero', id: 'yoda' })).toBeCloseTo((1.4 * 1.2) / 1.7, 9);
   });
 
+  it('a hero in the view: his own blaster, and his three abilities by the game’s names with their states', () => {
+    const b = make();
+    addPlayer(b, { team: 1 });
+    grant(b, 4000);
+    expect(deploy(b, 'player', { kind: 'hero', id: 'hansolo' }).ok).toBe(true);
+    const v = view(b);
+    expect(v.player).toMatchObject({ unit: 'hero', cls: 'hansolo', weapon: 'hansolo', hpMax: 650 });
+    expect(v.player.abilities.map((a) => [a.slot, a.id, a.name, a.ready, a.active])).toEqual([
+      [1, 'Ability_HanSolo_DemolitionGrenade', 'DETONITE CHARGE', true, false],
+      [2, 'Ability_HanSolo_Sharpshooterz', 'SHARPSHOOTER', true, false],
+      [3, 'Ability_HanSolo_ShoulderCharges', 'SHOULDER CHARGE', true, false],
+    ]);
+    step(b, [{ id: 'player', move: [0, 0], yaw: 0, ability: 2 }]);
+    const after = view(b).player;
+    expect(after.abilities[1]).toMatchObject({ active: true, ready: false });
+    expect(after.weapon).toBe('W_Pistol_DL44_HanSolo_Sharpshooterz');
+    // (a class's abilities have no name of the Collection's)
+    const c = make();
+    addPlayer(c, { team: 1 });
+    deploy(c, 'player', { classId: 'l-orig-assault' });
+    expect(view(c).player.abilities.map((a) => a.name)).toEqual([null, null, null]);
+  });
+
   it('puts the player down when told, for the kill screen', () => {
     const b = make({ 1: 1, 2: 1 });
     addPlayer(b, { team: 2 });

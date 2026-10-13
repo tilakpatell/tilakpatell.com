@@ -30,6 +30,7 @@ import { hurt } from '../../lib/battlefront/soldier.js';
 import { slotsOf } from '../../lib/battlefront/kit.js';
 import { charges } from '../../lib/battlefront/abilities.js';
 import { modeFor } from '../../lib/battlefront/modes/index.js';
+import { abilitiesFor } from '../../lib/bf2017/collection.js';
 import { KINDS } from '../../lib/battlefront/modes/objectives.js';
 
 export { STEP };
@@ -188,6 +189,14 @@ export function grant(b, n) {
   if (!bp || !b.player) return 0;
   bp.balances.set(b.player.id, balance(bp, b.player.id) + Math.max(0, Number(n) || 0));
   return balance(bp, b.player.id);
+}
+
+// a hero's ability names by the sim's slot (1 left, 2 middle, 3 right), from the Collection's book, read once a hero
+const SLOT_OF = { left: 1, middle: 2, right: 3 };
+const NAMES = new Map();
+function namesOf(hero) {
+  if (!NAMES.has(hero)) NAMES.set(hero, Object.fromEntries(abilitiesFor(hero).map((a) => [SLOT_OF[a.slot], a.name])));
+  return NAMES.get(hero);
 }
 
 // (a bot's name is its own from the game's lists, ai/names.js; yours is You)
@@ -372,8 +381,9 @@ export function view(b) {
     hits: p.hits.map((h) => ({ id: h.id, angle: h.angle, age: t - h.t })),
     hitAt: p.hitAt ?? null,
     killAt: p.killAt ?? null,
-    // (the three class abilities: the game's state each, the recharge sweep, the charges; kit.js)
-    abilities: me ? slotsOf(me) : [],
+    // (the three abilities, a class's or a hero's own: the game's state each, the recharge sweep, the charges; kit.js;
+    // a hero's with the name the game's Collection gives it, for the HUD)
+    abilities: me ? slotsOf(me).map((a) => ({ ...a, name: p.unit === 'hero' ? (namesOf(p.cls)[a.slot] ?? null) : null })) : [],
     shield: me?.shield ? me.shield.hp / me.shield.max : null,
     over: me?.over?.hp ?? 0,
     flashed: me ? (me.flashedUntil ?? -Infinity) > t : false,

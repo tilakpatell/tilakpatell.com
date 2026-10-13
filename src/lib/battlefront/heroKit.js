@@ -30,6 +30,9 @@ import { heightAt } from './nav.js';
 import { chestOf } from './soldier.js';
 import { damageAt } from './weapons.js';
 import { aimYaw, enemiesOf, fireAbility, inReach, slide, startAbility, stepEffects } from './heroAbilities.js';
+import { domed, dropBlaster, onBlaster, pressBlaster, stepBlaster } from './heroBlaster.js';
+
+export { domed };
 
 const T = KIT.strike;
 const D = KIT.deflect;
@@ -55,10 +58,10 @@ export function createHero(s, id) {
     choke: null,
     rage: null,
     aura: null,
+    // (a blaster hero's: its rockets still to fly, its Squad Shield, its mines: heroBlaster.js)
     barrage: null,
     dome: null,
     mines: [],
-    gunUntil: null,
     stunned: false,
   };
   return s.hero;
@@ -124,6 +127,9 @@ export function onHeroAbility(sim, s, e) {
     startAbility(sim, s, a, now);
     return [];
   }
+  // (a blaster hero's kinds: heroBlaster.js)
+  const blaster = onBlaster(sim, s, a, e);
+  if (blaster) return blaster;
   if (a.fired || (e.phase === 'end' && e.why)) return [];
   if (e.phase !== 'active' && e.phase !== 'end') return [];
   a.fired = true;
@@ -232,14 +238,24 @@ export function stepHeroes(sim) {
       else slide(sim.nav, s, s.knock.v[0] * dt, s.knock.v[1] * dt);
     }
     const H = s.hero;
-    if (!H || !s.alive) continue;
+    if (!H) continue;
+    if (!s.alive) {
+      // (what a fallen hero left out goes with it, once)
+      if (!H.dropped) dropBlaster(sim, s);
+      H.dropped = true;
+      continue;
+    }
     if (H.air) stepAir(sim, s, now, dt);
     if (H.saber) stepSaber(sim, s, now, dt, out);
     if (H.lightning) stepBeam(sim, s, now, out);
     for (const r of stepEffects(sim, s, now, dt)) out.push(r);
+    for (const r of stepBlaster(sim, s, now)) out.push(r);
   }
   return out;
 }
+
+// a press an active ability takes for itself (Leia's next detonator): the abilities' own press is skipped
+export const heroPress = (sim, s, slot, now = sim.time) => Boolean(s.hero) && pressBlaster(sim, s, slot, now);
 
 export function deflect(sim, t, hit) {
   const H = t.hero;
@@ -269,16 +285,6 @@ export function deflect(sim, t, hit) {
   fireBolt(sim.bolts, { from, dir, speed: D.speed, range: DEFLECTED.range, ttl: D.ttl, team: t.team, owner: t.id, weapon: DEFLECTED, colour: hit.bolt.colour, now: sim.time });
   sim.out?.push({ t: sim.time, type: 'deflect', by: t.id, target: hit.bolt.owner ?? null, at: hit.at ? [...hit.at] : null });
   return true;
-}
-
-export function domed(sim, t, bolt) {
-  for (const o of sim.entities.values()) {
-    const dome = o.hero?.dome;
-    if (!dome || o.team !== t.team || !o.alive) continue;
-    const inside = (p) => Math.hypot(p[0] - dome.at[0], p[2] - dome.at[2]) <= dome.radius;
-    if (inside(t.at) && !inside(bolt.from)) return true;
-  }
-  return false;
 }
 
 export function actOf(s, now) {

@@ -8,7 +8,7 @@
 // whichever is more) when they are ready, and dodges a fifth of the times
 // it is hurt. A blaster hero shoots as a soldier does. Pure.
 //
-//   heroIntent(sim, brain, s, now)   (the soldier brain's intent, bent for a saber hero: the mark itself the goal)
+//   heroIntent(sim, brain, s)        (the soldier brain's intent, bent for a saber hero: the mark itself the goal)
 //   heroAct(sim, brain, s, now)      (the buttons: strike, block, jump, the abilities, the dodge)
 
 import KIT from '../../../data/bf2017/heroKit.json';
@@ -18,6 +18,10 @@ import { roll } from '../soldier.js';
 
 const AI = KIT.ai;
 const between = (rand, [a, b]) => a + (b - a) * rand();
+// How far off a blaster hero's bot uses what it throws, fires or raises, metres, where the ability's own
+// numbers hold no range: by hand (the AutoPlayers' 10 m is the saber heroes' and a dash's).
+const FAR = { charge: 20, thrown: 25, cloud: 25, barrage: 30, weaponSwap: 30, reveal: 20, deployShield: 30, selfShield: 30 };
+const reachOf = (fx) => Math.max(AI.abilities, fx?.range ?? fx?.hand?.range ?? FAR[fx?.kind] ?? fx?.reach ?? 0);
 
 function mindOf(brain, s) {
   if (brain.hero) return brain.hero;
@@ -28,7 +32,7 @@ function mindOf(brain, s) {
 
 const markOf = (sim, brain) => (brain.intent?.target ? sim.entities.get(brain.intent.target) : null);
 
-export function heroIntent(sim, brain, s, now) {
+export function heroIntent(sim, brain, s) {
   const H = s.hero;
   if (!H?.saber && !H?.lightning) return;
   const m = mindOf(brain, s);
@@ -79,7 +83,7 @@ export function heroAct(sim, brain, s, now) {
   // the abilities, on a mark in reach, one a poll
   if (!t?.alive || now < m.nextAbility) return;
   m.nextAbility = now + 1 + r() * 2;
-  const ready = s.abilities.list.filter((a) => a.slot >= 1 && state(s.abilities, a.slot) === 'ready' && d <= Math.max(AI.abilities, a.row.hero?.range ?? a.row.hero?.reach ?? 0));
+  const ready = s.abilities.list.filter((a) => a.slot >= 1 && state(s.abilities, a.slot) === 'ready' && d <= reachOf(a.row.hero));
   if (!ready.length) return;
   const pick = ready[Math.floor(r() * ready.length)];
   s.aim = [t.at[0], t.at[1] + 1.2, t.at[2]];

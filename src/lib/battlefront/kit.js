@@ -82,7 +82,8 @@ function aimAngles(s) {
 }
 
 // the gun in the hand: the latest pressed ability's that is still up, else the soldier's own
-function syncGun(s) {
+// (a hero's swapped weapon too: heroBlaster.js)
+export function syncGun(s) {
   let top = null;
   for (const a of s.abilities.list) if (a.gun && a.phase !== 'idle' && (!top || a.startedAt >= top.startedAt)) top = a;
   if (top) {
@@ -342,9 +343,17 @@ function stepFields(sim, K, now, requests) {
     f.next += f.row.tick;
     for (const o of sim.entities.values()) {
       if (o.kind !== 'soldier' || !o.alive || o.team === f.team || dist3(chestOf(o), f.at) > f.row.radius) continue;
-      apply(o.stack, { id: 'Stunned', property: 'speed', op: 'set', value: 0, until: now + f.row.apply });
-      o.stunnedUntil = now + f.row.apply;
-      requests.push({ type: 'field', by: f.by, id: o.id, damage: f.row.perSecond * f.row.tick, at: f.at });
+      // (the shock's field stuns; a hero's cloud does not, and one may only hold a blaster down: heroBlaster.js)
+      if (f.row.apply > 0) {
+        apply(o.stack, { id: 'Stunned', property: 'speed', op: 'set', value: 0, until: now + f.row.apply });
+        o.stunnedUntil = now + f.row.apply;
+      }
+      if (f.row.noFire > 0) o.noFireUntil = Math.max(o.noFireUntil ?? 0, now + f.row.noFire);
+      // (a cloud's first touch is its `InitialDamage`, each tick after it the rate's share)
+      const first = f.row.first != null && !(f.seen ??= new Set()).has(o.id);
+      if (first) f.seen.add(o.id);
+      const damage = first ? f.row.first : f.row.perSecond * f.row.tick;
+      if (damage > 0) requests.push({ type: 'field', by: f.by, id: o.id, damage, at: f.at });
     }
   }
   K.spots = K.spots.filter((p) => p.until > now);

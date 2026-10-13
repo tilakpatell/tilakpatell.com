@@ -444,6 +444,8 @@ export function heroRow(root, kitName, { side = null } = {}) {
     ...(armour.length ? { armour_source: armour.map((n) => `${n}#MaxHealthAffectorAsset.MaxHealth`).join(' ') } : {}),
     primary: primary ? shortName(primary) : null,
     primaryAsset: primary,
+    // (the weapons rulebook's row for that primary: a blaster hero's own gun)
+    ...(primary && weaponChain(root, primary).blueprint ? { weapon: weaponId(weaponChain(root, primary).blueprint.name), weapon_source: `${primary}#${rootOf(follow(root, primary)).$type}.Unlock` } : {}),
     saber: /Lightsaber/.test(blueprint) ? { blueprint: shortName(blueprint), deflect: deflect ? shortName(deflect) : null } : null,
     clipPrefix: shortName(blueprint).replace(/^Hero_(Lightsaber|Weapon)_?/, '') || null,
   };

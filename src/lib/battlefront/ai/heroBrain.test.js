@@ -25,12 +25,14 @@ describe('a hero bot', () => {
     expect(ev.some((e) => e.type === 'ability' && e.by === luke && e.phase === 'start' && e.slot >= 1)).toBe(true);
   });
 
-  it('Han shoots his DL-44 at a trooper', () => {
+  it('Han shoots his DL-44 at a trooper, uses his abilities, and brings him down', () => {
     const sim = createSim({ rulebook: rb, nav, seed: 2 });
     const han = addPlayer(sim, { team: 1, hero: 'hansolo', at: [-60, 0, -60], bot: true });
     addPlayer(sim, { team: 2, classId: 'd-orig-assault', at: [-60, 0, -40], yaw: Math.PI, bot: true });
     const ev = run(sim, 30);
     expect(ev.some((e) => e.type === 'shot' && e.by === han)).toBe(true);
+    expect(ev.some((e) => e.type === 'ability' && e.by === han && e.phase === 'start' && e.slot >= 1)).toBe(true);
+    expect(ev.some((e) => e.type === 'kill' && e.by === han)).toBe(true);
   });
 
   it('two saber bots fight to a finish: Vader against Luke', () => {

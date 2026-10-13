@@ -47,7 +47,7 @@ import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { heroAbilities, heroClass } from './hero.js';
-import { actOf, createHero, deflect, domed, heroInput, heroRoll, onHeroAbility, stepHeroes } from './heroKit.js';
+import { actOf, createHero, deflect, domed, heroInput, heroPress, heroRoll, onHeroAbility, stepHeroes } from './heroKit.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
 import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
 import { modeFor } from './modes/index.js';
@@ -447,7 +447,8 @@ function applyInput(sim, inp) {
   }
   if (inp.aim) s.aim = inp.aim;
   s.abilityHeld = inp.abilityHeld ?? 0;
-  if (inp.ability) press(s.abilities, inp.ability, sim.time);
+  // (a press a hero's active ability takes for itself, its next detonator, is not the abilities' own: heroKit.js)
+  if (inp.ability && !heroPress(sim, s, inp.ability)) press(s.abilities, inp.ability, sim.time);
   if (inp.vent && s.gun) vent(s.gun, sim.time);
   if (inp.cool && s.gun) coolPress(s.gun, sim.time);
   // (a hero's saber, block, beam and jump: heroKit.js; its rush carries it on its own)
@@ -508,6 +509,9 @@ function resolveBolts(sim) {
   const evs = stepBolts(sim.bolts, STEP, { bodies, nav: sim.nav, now: sim.time });
   if (profile.on) profile.bolts += clock() - t0;
   for (const e of evs) {
+    // (a round that bursts where it lands, the bowcaster's bolt, a micro-grenade: its blast is the kit's to apply)
+    const burst = e.type === 'hit' || e.type === 'wall' ? e.bolt.weapon?.damage?.blast : null;
+    if (burst?.damage > 0) sim.kit.blasts.push({ by: e.bolt.owner, team: e.bolt.team, at: e.at.slice(), row: { id: 'bolt', inner: burst.inner, damage: burst.damage, radius: burst.radius, multiplier: 1 } });
     if (e.type === 'hit') {
       const target = sim.entities.get(e.target);
       // (a turret an earlier bolt of this step shot down)
@@ -527,9 +531,9 @@ function resolveBolts(sim) {
         if (r === 'down') emit(sim, { type: 'turretDown', by: e.bolt.owner, target: e.target });
         continue;
       }
-      // (a saber hero's block turns a bolt from the front; a bubble shield stops one from outside: heroKit.js)
+      // (a saber hero's block turns a bolt from the front; a Squad Shield takes one from outside it: heroKit.js)
       if (target.hero && deflect(sim, target, e)) continue;
-      if (domed(sim, target, e.bolt)) continue;
+      if (domed(sim, target, e.bolt, damage)) continue;
       damage = absorb(target, damage, { dir: e.dir, now: sim.time });
       const r = hurt(target, { damage, part: e.part, by: e.bolt.owner, now: sim.time });
       // (both in combat: no squad spawns on either for a while)

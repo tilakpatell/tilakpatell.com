@@ -1,4 +1,6 @@
-// What each hero's and villain's three abilities do once they go off, by
+// What a saber hero's three abilities do once they go off (and the two a
+// blaster hero shares with them, its dash and its slam: heroBlaster.js has
+// the rest of the blaster heroes'), by
 // the kind the game's records give them (src/data/bf2017Abilities.json,
 // scripts/bf2017-abilities.mjs: the reach, the cone, the damage to a hero
 // and to a trooper, the knockback, the active time, the projectile's speed,
@@ -11,23 +13,20 @@
 //   KINDS                       every kind a hero's ability plays
 //   fireAbility(sim, s, a, now) → requests      (a: the ability's slot entry; at the end of its activation)
 //   startAbility(sim, s, a, now)                (its press: the damage taken while it winds up and lasts)
-//   stepEffects(sim, s, now) → requests          (what goes on: a choke, a rush, a thrown saber, an aura, a barrage, a mine)
+//   stepEffects(sim, s, now) → requests          (what goes on: a choke, a rush, a thrown saber, the rage's cuts, an aura)
 //   dmgFor(damage, target) → the record's damage for that target (a hero's or a trooper's)
 //   inReach(s, o, { range, cone, yaw }) → bool   enemiesOf(sim, s) → the living enemy soldiers
 
 import KIT from '../../data/bf2017/heroKit.json';
-import { createGrenade, GRENADES, throwFrom } from './grenades.js';
 import { apply } from './affectors.js';
-import { fire as fireBolt } from './bolts.js';
 import { heightAt, lineClear, walkable } from './nav.js';
 import { chestOf, eyeOf } from './soldier.js';
-import { createGun } from './weapons.js';
 
 const H = KIT.hand;
 const DEG = Math.PI / 180;
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
-export const KINDS = ['push', 'repulse', 'pull', 'slam', 'choke', 'rush', 'saberThrow', 'rage', 'mindTrick', 'strike', 'electrocute', 'weaken', 'chainLightning', 'aura', 'charge', 'detonator', 'overcharge', 'barrier', 'rifle', 'sharpShot', 'smoke', 'pulse', 'scan', 'rocket', 'barrage', 'mine', 'absorb'];
+export const KINDS = ['push', 'repulse', 'pull', 'slam', 'choke', 'rush', 'dash', 'saberThrow', 'rage', 'mindTrick', 'strike', 'electrocute', 'weaken', 'chainLightning', 'aura', 'barrier', 'absorb'];
 
 export function dmgFor(d, o) {
   if (d == null) return 0;
@@ -44,7 +43,7 @@ export function aimYaw(s) {
   if (!s.aim) return s.yaw;
   return Math.atan2(s.aim[0] - s.at[0], s.aim[2] - s.at[2]);
 }
-function aimPitch(s) {
+export function aimPitch(s) {
   const eye = eyeOf(s);
   if (!s.aim) return 0;
   const d = [s.aim[0] - eye[0], s.aim[1] - eye[1], s.aim[2] - eye[2]];
@@ -100,55 +99,16 @@ export function slide(nav, s, dx, dz) {
   return false;
 }
 
-// the gun swapped for a while (Sharpshooter, Leia's E-11) and back
-function swapGun(sim, s, row, until) {
-  s.gunBase ??= s.gun;
-  s.gun = createGun(row, { rand: sim.rand });
-  s.weapon = row;
-  s.hero.gunUntil = until;
-}
-export function restoreGun(s) {
-  if (!s.gunBase) return;
-  s.gun = s.gunBase;
-  s.gunBase = null;
-  s.weapon = s.gun?.row ?? s.weapon;
-  s.hero.gunUntil = null;
-}
-
-// a grenade from the hero's hand along its aim (the kit's thrown rounds fly and burst as the trooper's: grenades.js, kit.js)
-function lob(sim, s, row, now, { speed = null } = {}) {
-  const K = sim.kit;
-  const eye = eyeOf(s);
-  let at;
-  let vel;
-  if (speed) {
-    const yaw = aimYaw(s);
-    const pitch = aimPitch(s);
-    at = [eye[0] + Math.sin(yaw) * 0.5, eye[1] - 0.2, eye[2] + Math.cos(yaw) * 0.5];
-    vel = [Math.sin(yaw) * Math.cos(pitch) * speed, Math.sin(pitch) * speed, Math.cos(yaw) * Math.cos(pitch) * speed];
-  } else ({ at, vel } = throwFrom(eye, aimYaw(s), aimPitch(s)));
-  const g = Object.assign(createGrenade(row, { at, vel, owner: s.id, team: s.team, now, bot: s.bot }), { id: K.next++ });
-  K.grenades.push(g);
-  sim.out?.push({ t: now, type: 'throw', by: s.id, kind: row.id, at: [...at] });
-  return g;
-}
-
-// the rounds the records leave to the kit's rows (heroKit.json's hand for what differs)
-const ROUNDS = {
-  thermal: GRENADES.thermal,
-  shock: GRENADES.shock,
-  smoke: { ...GRENADES.flashSub, id: 'smoke', fuse: { on: 'sleep', delay: 0.5 }, ttl: 7 },
-  rocket: { ...GRENADES.impact, id: 'rocket', gravity: 0, inner: 1, damage: H.rocket.damage, radius: H.rocket.radius, ttl: 3 },
-  barrage: { ...GRENADES.impact, id: 'barrage', gravity: 0, inner: 0.5, damage: H.barrage.damage, radius: H.barrage.radius, ttl: 3 },
-};
-// which round each thrower's detonator is
-const DETONATOR = { Ability_HanSolo_DemolitionGrenade: 'thermal', Ability_Leia_ThermalDetonator_Fake: 'thermal', Ability_Chewbacca_GrenadeStun: 'shock', Ability_Bossk_GrenadeDioxis: 'shock' };
-
-// the damage taken while an ability winds up and lasts (its record's `taken`: Luke's rush, Obi-Wan's push, Anakin's slam)
+// the damage taken while an ability winds up and lasts (its record's `taken`: Luke's rush, Obi-Wan's push, Anakin's
+// slam; a star card that is a rank of that affector gives its own in its place: cards.js)
+export const takenOf = (s, a) => s.cards?.taken?.[a.row.id] ?? a.row.hero?.taken ?? null;
+// (the kinds that carry the hero on after the ability's own times: the damage taken lasts the carry too)
+const CARRIED = ['rush', 'dash', 'slam'];
 export function startAbility(sim, s, a, now) {
   const fx = a.row.hero ?? {};
   s.hero.act = { kind: fx.kind ?? null, slot: a.slot, id: a.row.id, since: now };
-  if (fx.taken != null && fx.kind !== 'weaken' && fx.kind !== 'scan') apply(s.stack, { id: `${a.row.id}:taken`, property: 'ArmorMultiplier', op: 'mul', value: fx.taken, until: now + (a.row.activation ?? 0) + Math.max(a.row.active ?? 0, fx.kind === 'rush' || fx.kind === 'charge' ? H.rush.seconds : 0) });
+  const taken = takenOf(s, a);
+  if (taken != null && fx.kind !== 'weaken' && fx.kind !== 'scan') apply(s.stack, { id: `${a.row.id}:taken`, property: 'ArmorMultiplier', op: 'mul', value: taken, until: now + (a.row.activation ?? 0) + Math.max(a.row.active ?? 0, CARRIED.includes(fx.kind) ? H.rush.seconds : 0) });
   // (Yoda's absorb: nothing lands while he draws it in)
   if (fx.kind === 'absorb') apply(s.stack, { id: `${a.row.id}:absorb`, property: 'ArmorMultiplier', op: 'set', value: 0, until: now + (a.row.activation ?? 0) });
 }
@@ -189,7 +149,7 @@ export function fireAbility(sim, s, a, now) {
     case 'slam': {
       // (Chewbacca's leap lands ahead first; Anakin's Heroic Impact comes down where he stands)
       if (a.row.id === 'Ability_Chewbacca_Leap') {
-        H2.rush = { dir: [Math.sin(yaw), Math.cos(yaw)], speed: H.slam.leap / H.rush.seconds, until: now + H.rush.seconds, reach: 0, damage: 0, hits: new Set(), then: { range: 3, damage: fx.damage, knock: fx.knock ?? 3 } };
+        H2.rush = { dir: [Math.sin(yaw), Math.cos(yaw)], speed: fx.hand.leap / H.rush.seconds, until: now + H.rush.seconds, reach: 0, damage: 0, hits: new Set(), then: { range: fx.radius, damage: fx.damage, knock: fx.knock ?? 3 } };
         break;
       }
       for (const o of them) {
@@ -211,13 +171,14 @@ export function fireAbility(sim, s, a, now) {
       break;
     }
     case 'rush':
-    case 'charge': {
+    case 'dash': {
+      // (a blaster hero's dash, Han Solo's Shoulder Charge, stops at the first it meets and knocks it back)
       const secs = active > 0 ? active : H.rush.seconds;
       // (toward the nearest in a 40° cone within 10 m, the lunge's pick; else along the aim)
       const mark = them.filter((o) => inReach(sim, s, o, { range: 10, cone: 40, yaw })).sort((p, q) => Math.hypot(p.at[0] - s.at[0], p.at[2] - s.at[2]) - Math.hypot(q.at[0] - s.at[0], q.at[2] - s.at[2]))[0];
       const dir = mark ? dirTo(s, mark) : [Math.sin(yaw), 0, Math.cos(yaw)];
       s.yaw = Math.atan2(dir[0], dir[2]);
-      H2.rush = { dir: [dir[0], dir[2]], speed: H.rush.speed, until: now + secs, reach: (fx.reach ?? 1.5) + 0.3, damage: fx.damage, knock: fx.kind === 'charge' ? (fx.knock ?? 3) : 0, hits: new Set(), mark: mark?.id ?? null, one: fx.kind === 'charge' };
+      H2.rush = { dir: [dir[0], dir[2]], speed: H.rush.speed, until: now + secs, reach: (fx.reach ?? 1.5) + 0.3, damage: fx.damage, knock: fx.kind === 'dash' ? (fx.knock ?? 3) : 0, hits: new Set(), mark: mark?.id ?? null, one: fx.kind === 'dash' };
       break;
     }
     case 'saberThrow': {
@@ -273,49 +234,9 @@ export function fireAbility(sim, s, a, now) {
     case 'aura':
       H2.aura = { until: now + Math.max(active, 1), range: fx.range ?? 10, damage: fx.damage ?? 0, next: now };
       break;
-    case 'detonator':
-      lob(sim, s, ROUNDS[DETONATOR[a.row.id] ?? 'thermal'], now);
-      break;
-    case 'smoke':
-      lob(sim, s, ROUNDS.smoke, now);
-      break;
-    case 'overcharge': {
-      const row = s.gunBase?.row ?? s.gun?.row;
-      if (!row) break;
-      const k = H.overcharge.damage;
-      swapGun(sim, s, { ...row, id: row.id, heat: null, damage: row.damage ? { ...row.damage, start: row.damage.start * k, end: row.damage.end * k } : row.damage }, now + H.overcharge.seconds);
-      break;
-    }
-    case 'rifle': {
-      if (a.row.id === 'Ability_Iden_Pulse_Cannon') {
-        // (one charged round from her TL-50)
-        const row = s.gun?.row;
-        if (row) fireBolt(sim.bolts, { from: chestOf(s), dir: [Math.sin(yaw) * Math.cos(aimPitch(s)), Math.sin(aimPitch(s)), Math.cos(yaw) * Math.cos(aimPitch(s))], speed: row.firing?.speed ?? 700, range: row.range ?? 200, ttl: 3, team: s.team, owner: s.id, weapon: { ...row, damage: row.damage ? { ...row.damage, start: 150, end: 150 } : row.damage }, colour: row.colour, now });
-        break;
-      }
-      const e11 = sim.rb.weapons?.e11;
-      if (e11) swapGun(sim, s, e11, now + H.rifle.seconds);
-      break;
-    }
-    case 'sharpShot': {
-      const row = s.gun?.row;
-      if (!row) break;
-      const marks = them.filter((o) => inReach(sim, s, o, { range: fx.reach ?? 40, cone: 60, yaw })).slice(0, 3);
-      for (const o of marks) {
-        const from = chestOf(s);
-        const to = chestOf(o);
-        const d = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
-        const L = Math.hypot(...d) || 1;
-        fireBolt(sim.bolts, { from, dir: d.map((v) => v / L), speed: row.firing?.speed ?? 700, range: row.range ?? 200, ttl: 3, team: s.team, owner: s.id, weapon: row, colour: row.colour, now });
-      }
-      break;
-    }
     case 'barrier': {
+      // (Yoda's Presence: overhealth for him and the friends in its reach)
       const secs = Math.max(active, 0) > 1 ? active : H.barrier.seconds;
-      if (a.row.id === 'Ability_Leia_BubbleShield') {
-        H2.dome = { at: s.at.slice(), radius: H.barrier.radius, until: now + secs };
-        break;
-      }
       const shield = fx.shield ?? 150;
       const range = fx.range ?? 0;
       for (const o of sim.entities.values()) {
@@ -325,36 +246,6 @@ export function fireAbility(sim, s, a, now) {
       }
       break;
     }
-    case 'pulse': {
-      // (Iden's droid flies to the aim and stuns round it; Lando's disruptor empties the abilities near him)
-      const iden = a.row.id === 'Ability_Iden_Droid_Stun';
-      const at = iden ? [s.at[0] + Math.sin(yaw) * 10, s.at[1], s.at[2] + Math.cos(yaw) * 10] : s.at;
-      const range = iden ? (fx.reach ?? 5) : (fx.range ?? 18);
-      for (const o of them) {
-        if (Math.hypot(o.at[0] - at[0], o.at[2] - at[2]) > range) continue;
-        if (iden) {
-          hits.push({ id: o.id, damage: dmgFor(fx.damage, o), dir: dirTo(s, o) });
-          hold(o, now + Math.max(active, 1), 'stunned');
-        } else for (const x of o.abilities?.list ?? []) if (x.slot >= 1 && x.phase === 'idle') x.bar = 0;
-      }
-      break;
-    }
-    case 'scan': {
-      const secs = active > 0 ? active : H.scan.seconds;
-      const range = fx.range ?? fx.reach ?? 30;
-      for (const o of them) if (Math.hypot(o.at[0] - s.at[0], o.at[2] - s.at[2]) <= range) o.markedUntil = Math.max(o.markedUntil ?? 0, now + secs);
-      if (fx.taken != null) apply(s.stack, { id: `${a.row.id}:taken`, property: 'ArmorMultiplier', op: 'mul', value: fx.taken, until: now + secs });
-      break;
-    }
-    case 'rocket':
-      lob(sim, s, ROUNDS.rocket, now, { speed: H.rocket.speed });
-      break;
-    case 'barrage':
-      H2.barrage = { left: H.barrage.count, every: Math.max(active, 0.4) / H.barrage.count, next: now, aim: s.aim ? s.aim.slice() : null };
-      break;
-    case 'mine':
-      H2.mines = (H2.mines ?? []).filter((m) => m.until > now).concat([{ at: s.at.slice(), until: now + H.mine.life }]);
-      break;
     default:
       break;
   }
@@ -363,7 +254,7 @@ export function fireAbility(sim, s, a, now) {
 }
 
 // what goes on between steps: a choke's grip, a rush's run, a thrown saber, the rage's
-// cuts, an aura, a barrage, the traps; the victims' shoves
+// cuts, an aura
 export function stepEffects(sim, s, now, dt) {
   const H2 = s.hero;
   const out = [];
@@ -447,35 +338,5 @@ export function stepEffects(sim, s, now, dt) {
       if (hits.length) out.push(blast(s, hits, 'aura'));
     }
   }
-  if (H2.barrage) {
-    const b = H2.barrage;
-    while (b.left > 0 && now >= b.next) {
-      b.left--;
-      b.next += b.every;
-      const aim = b.aim ?? [s.at[0] + Math.sin(s.yaw) * 20, s.at[1], s.at[2] + Math.cos(s.yaw) * 20];
-      const spread = H.barrage.spread;
-      const keep = s.aim;
-      s.aim = [aim[0] + (sim.rand() - 0.5) * 2 * spread, aim[1], aim[2] + (sim.rand() - 0.5) * 2 * spread];
-      lob(sim, s, ROUNDS.barrage, now, { speed: H.rocket.speed });
-      s.aim = keep;
-    }
-    if (b.left <= 0) H2.barrage = null;
-  }
-  if (H2.mines?.length) {
-    const keep = [];
-    for (const m of H2.mines) {
-      if (m.until <= now) continue;
-      const trip = them.some((o) => Math.hypot(o.at[0] - m.at[0], o.at[2] - m.at[2]) <= H.mine.trigger);
-      if (!trip) {
-        keep.push(m);
-        continue;
-      }
-      sim.kit.blasts.push({ by: s.id, team: s.team, at: [m.at[0], m.at[1] + 0.2, m.at[2]], row: { id: 'mine', inner: 1, damage: H.mine.damage, radius: H.mine.radius, multiplier: 1 }, multiplier: 1 });
-      sim.out?.push({ t: now, type: 'explosion', by: s.id, kind: 'mine', at: m.at.slice(), radius: H.mine.radius });
-    }
-    H2.mines = keep;
-  }
-  if (H2.dome && now >= H2.dome.until) H2.dome = null;
-  if (H2.gunUntil != null && now >= H2.gunUntil) restoreGun(s);
   return out;
 }
