@@ -1,0 +1,7 @@
+{
+  "about": "The site's own cast as bodies on Star Wars Battlefront II (2017)'s skeleton (scripts/guest-rig.mjs, scripts/guest-clips.mjs). A row a person: the Wardrobe's body ids (src/components/rickmorty/wardrobe/looks.js) with the Meshy file each is made from, the game hero whose own pack its clips are taken with, and the grip: where a gun's grip (the game's Wep_Root) sits in the right hand bone's own frame, metres, placed by hand on the pictures (docs/superpowers/evidence/guests/README.md). The game's man holds his at 0.087, 0.033, 0.031.",
+  "rows": [
+    { "who": "rick", "host": "han", "bodies": { "rick": "public/games/meshy/rick.glb" }, "grip": [0.087, 0.033, 0.031], "source": "hand" },
+    { "who": "morty", "host": "lando", "bodies": { "morty": "public/games/meshy/morty.glb" }, "grip": [0.069, 0.026, 0.024], "source": "hand" }
+  ]
+}
