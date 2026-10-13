@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { standing } from './stage';
+import { latch, standing } from './stage';
 
 const s = (o) => standing({ inMenu: false, phase: 'pre', ready: false, ...o });
 
@@ -34,5 +34,22 @@ describe('what stands over the Battlefront world', () => {
     expect(s({ inMenu: true, screens: false })).toMatchObject({ cover: true });
     expect(s({ screens: true })).toMatchObject({ cover: false });
     expect(s({ ready: true, phase: 'in', screens: false })).toMatchObject({ cover: false });
+  });
+});
+
+describe('the way in, once it has been ready', () => {
+  it('stays ready: a late shader does not take the spawn screen away, nor refuse its Deploy', () => {
+    let was = false;
+    was = latch(was, { inMenu: false, phase: 'pre', ready: false });
+    expect(was).toBe(false);
+    was = latch(was, { inMenu: false, phase: 'pre', ready: true });
+    expect(was).toBe(true);
+    // (readiness goes false again for a beat whenever something new is built)
+    was = latch(was, { inMenu: false, phase: 'pre', ready: false });
+    expect(was).toBe(true);
+    expect(standing({ inMenu: false, phase: 'pre', ready: was })).toMatchObject({ spawn: true, loading: false });
+  });
+  it('is not held under the menu, where nothing shows it and the level may still be building', () => {
+    expect(latch(false, { inMenu: true, phase: 'pre', ready: true })).toBe(false);
   });
 });

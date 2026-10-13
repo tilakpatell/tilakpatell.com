@@ -10,7 +10,7 @@ import { useGameScreens, wantsMenu } from './useGameScreens.js';
 import { offerNameOf } from './hud/widgets.js';
 import { sendTo } from './send.js';
 import { startLoadingMusic } from './sound/loading.js';
-import { standing } from './stage.js';
+import { latch, standing } from './stage.js';
 import Wipe from './Wipe.jsx';
 import { HUD_QUIET, WIPE, pickVariant, readiness } from './waiting.js';
 import '../../lib/bf2017/fonts.css';
@@ -70,6 +70,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   // the day: the game's coin, rolled once at mount
   const [day] = useState(() => pickVariant());
   const picked = useRef(null);
+  const arrived = useRef(false);
   // the readiness's memory: the most building seen, and how long it has been quiet
   const seen = useRef({ peak: 0, quietSince: null });
   const onEvent = useCallback((e) => {
@@ -92,8 +93,11 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   }
   const quietFor = snap && seen.current.quietSince != null ? Math.max(0, snap.time - seen.current.quietSince) + HUD_QUIET : 0;
   const progress = readiness({ loaded: Boolean(snap?.level?.loaded), progress: snap?.level?.progress ?? 0, pending: snap?.shaders?.pending ?? 0, held: snap?.shaders?.held ?? 0, building: snap?.shaders?.building ?? 0, peak: seen.current.peak, quietFor });
+  // (once the spawn screen could stand, the way in stays ready: stage.js's latch)
+  arrived.current = latch(arrived.current, { inMenu, phase, ready: progress.ready });
+  const ready = progress.ready || arrived.current;
   // what stands over the world (stage.js)
-  const st = standing({ inMenu, phase, ready: progress.ready, loaded: !loading, screens: Boolean(screens) });
+  const st = standing({ inMenu, phase, ready, loaded: !loading, screens: Boolean(screens) });
   // the world rests under the menu once it is ready (stage.js's rest): the runtime's loop is told its box is out of
   // sight, so it neither steps nor draws until Play, and the menu has the machine to itself
   const resting = st.rest;
@@ -105,7 +109,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   }, [resting, rt]);
   // The first life's Deploy: the game's wipe, the world's deploy at its swap
   const deployThrough = (o) => {
-    if (phase !== 'pre' || !progress.ready) return;
+    if (phase !== 'pre' || !ready) return;
     picked.current = { kind: o.kind, id: o.id };
     send('pick', { kind: o.kind, id: o.id });
     setPhase('down');
@@ -136,7 +140,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   const EndOfRound = screens?.EndOfRound;
   const Scoreboard = screens?.Scoreboard;
   return (
-    <WorldHost world={world} className="bf-stage" data-bf-stage={st.name} data-bf-ready={progress.ready || undefined}>
+    <WorldHost world={world} className="bf-stage" data-bf-stage={st.name} data-bf-ready={ready || undefined}>
       {st.cover && <div className="bf-cover" aria-hidden="true" />}
       {st.menu && FrontEnd && <FrontEnd start="menu" playable={playable} onPlay={() => setInMenu(false)} onExit={() => navigate(way.to)} />}
       <Wipe phase={st.wipe} />

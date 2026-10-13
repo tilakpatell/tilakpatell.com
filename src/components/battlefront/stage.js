@@ -20,6 +20,8 @@
 //   wipe     'down' | 'up' | null
 //   cover    black over the parked camera's view: the screens' code has not come and nothing of theirs can cover it
 //   name     'menu' | 'loading' | 'spawn' | 'field': the stage's mark for the checks (data-bf-stage)
+//
+// latch(was, { inMenu, phase, ready }) → the way in has been ready once the spawn screen could stand
 
 export function standing({ inMenu = false, phase = 'pre', ready = false, loaded = true, screens = true } = {}) {
   const menu = Boolean(inMenu);
@@ -31,3 +33,11 @@ export function standing({ inMenu = false, phase = 'pre', ready = false, loaded 
   const name = menu ? 'menu' : loading ? 'loading' : spawn ? 'spawn' : 'field';
   return { menu, rest, loading, spawn, wipe, cover, name };
 }
+
+// Readiness is not a one-way thing: it goes false again for a beat whenever
+// something new is built (a late cell's material, a body's own cut). Once the
+// first spawn screen has stood it stays: it is not swapped for the loading
+// screen and back, and its Deploy is not refused in such a beat (the old
+// waiting screen dropped a click made then). Not held under the menu, where
+// nothing shows it and the level may still be building.
+export const latch = (was, { inMenu = false, phase = 'pre', ready = false } = {}) => Boolean(was) || (!inMenu && phase === 'pre' && Boolean(ready));
