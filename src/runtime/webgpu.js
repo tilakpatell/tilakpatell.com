@@ -141,6 +141,12 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   renderer.toneMappingExposure = exposure;
   if (alpha) renderer.setClearColor(0x000000, 0);
   await renderer.init();
+  // (a fallback adapter is WebGPU drawn on the CPU: no GPU, so the make is
+  // refused and the runtime makes the node renderer over WebGL 2 instead)
+  if (!forceWebGL && renderer.backend?.device?.adapterInfo?.isFallbackAdapter) {
+    renderer.dispose();
+    throw new Error('a fallback adapter: no GPU under WebGPU');
+  }
   // (no frame waits for a pipeline: lib/three/pipelineGuard, the node
   // renderer's frame guard; a WebGL 2 backend is left alone by it)
   const guard = guardPipelines(renderer, { invalidate });

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 // WebGPURenderer needs a browser; a stand-in records what it was made with
 const made = [];
 let fallBack = false; // (three's renderer, finding no adapter, on its WebGL 2 backend)
+let software = false; // (a fallback adapter: WebGPU drawn on the CPU)
 vi.mock('three/webgpu', () => ({
   WebGPURenderer: class {
     constructor(options) {
@@ -11,7 +12,7 @@ vi.mock('three/webgpu', () => ({
       let destroyed;
       const lost = new Promise((resolve) => (destroyed = resolve));
       // (three r186 keeps no adapter on its backend: the device's adapterInfo is the chip)
-      this.backend = fallBack ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost, adapterInfo: { vendor: 'amd', architecture: 'rdna-3', description: '' } } };
+      this.backend = fallBack ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost, adapterInfo: { vendor: 'amd', architecture: 'rdna-3', description: '', isFallbackAdapter: software } } };
       // (a device destroyed on dispose says it's lost, as a real one does)
       this.destroy = () => destroyed({ reason: 'destroyed' });
       // (and one lost while drawing says why: a hung chip's 'unknown')
@@ -97,6 +98,16 @@ describe('createWebGPU', () => {
     expect(gfx.backend).toBe('webgpu');
     expect(made[0].options.forceWebGL).toBe(false);
     expect(canvas.addEventListener).not.toHaveBeenCalled(); // (the device says when it's lost)
+  });
+
+  it('a fallback adapter is no GPU: the renderer let go and the make refused, for WebGL 2 to be made instead', async () => {
+    software = true;
+    try {
+      await expect(createWebGPU(fakeCanvas(), {})).rejects.toThrow(/fallback adapter/);
+      expect(made.at(-1).dispose).toHaveBeenCalled();
+    } finally {
+      software = false;
+    }
   });
 
   it('a device lost while drawing is reported, and one destroyed by its own dispose is not', async () => {

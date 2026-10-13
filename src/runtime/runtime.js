@@ -322,6 +322,14 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       },
       (err) => {
         if (coming === asked) coming = null; // (the next mount tries again)
+        // (WebGPU tried and not had: no device, an init that threw, a
+        // fallback adapter: the node renderer over WebGL 2 at once, and for
+        // the rest of the page, the owner's order of the two)
+        if (want === 'webgpu' && (coming === null || coming === asked)) {
+          if (dev) console.warn('WebGPU could not be had: the node renderer over WebGL 2', err);
+          lostWebGPU = true;
+          return backendFor(module);
+        }
         throw err;
       },
     );

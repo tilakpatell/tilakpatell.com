@@ -574,6 +574,26 @@ describe('createRuntime', () => {
     expect(rt.recoverable).toBe(false);
   });
 
+  // (the owner's word: WebGPU wherever a GPU is detected, tried; WebGL 2 when that fails)
+  it('a WebGPU device that cannot be made is WebGL 2 at once, for the page, not a failed mount', async () => {
+    const makeBackend = vi.fn((kind) => (kind === 'webgpu' ? Promise.reject(new Error('requestDevice failed')) : fakeBackend()));
+    const { rt } = make({ gpu: true, makeBackend });
+    expect(await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost())).toBe(true);
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu', 'nodes-webgl']);
+    expect(rt.status).toBe('ready');
+    // (and the next world goes straight to WebGL 2)
+    await rt.mount({ id: 'm', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu', 'nodes-webgl']);
+  });
+
+  it('a WebGL 2 backend that cannot be made either fails the mount, once', async () => {
+    const makeBackend = vi.fn(() => Promise.reject(new Error('no context')));
+    const { rt } = make({ gpu: true, makeBackend });
+    expect(await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost())).toBe(false);
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu', 'nodes-webgl']);
+    expect(rt.status).toBe('failed');
+  });
+
   it('a chip lost twice this week starts on WebGL 2 (lost at creation)', async () => {
     const { rt, makeBackend } = make({ gpu: true, lost: true });
     await rt.mount({ id: 'n', shading: 'nodes', create: () => fakeWorld() }, {}, fakeHost());
