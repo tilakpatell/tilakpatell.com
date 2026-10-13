@@ -288,16 +288,89 @@ function trackerTarget(brain, world, s, me, from, now) {
   return pick ? { id: pick.id, at: pick.at, vel: pick.vel, visible: true, confidence: 1, hostile: true } : null;
 }
 
+// An AutoPlayer's think (the game's own bot, NOTES.md: it has no cover, no hiding and no fleeing). Its target is
+// the tracker's. It keeps to its way, the post or the objective it was sent to, and fires at its target as it
+// goes; while it and its target each face the other inside 45° it leaves its way to strafe (autoPlayer.js's
+// strafeSide: a leg a side for the settings' time, the ground that way probed each think and a failed side
+// barred; the leg may also go forward or back, crouched or not, and open with its dodge roll). The aim point,
+// the view and the trigger are stepped in act. By hand: it sprints with no target, far from where it is
+// going; at an objective to be worked on it works, as the other bots do, with no enemy near.
+function thinkAutoPlayer(brain, world, now) {
+  const s = brain.s;
+  const me = flat(s.at);
+  const from = world.muzzle ? world.muzzle(s) : chestOf(s);
+  const b = trackerTarget(brain, world, s, me, from, now);
+  const task = world.task ?? null;
+  const fromTask = task ? d2(me, task.at) : Infinity;
+  const tgt = b ? [b.at.x, b.at.z] : null;
+  const dist = tgt ? d2(me, tgt) : Infinity;
+  const intent = { mode: b ? 'attack' : task ? 'objective' : 'follow', target: b?.id ?? null, goal: null, stance: 'stand', fire: !!b, aim: b ? v3(b) : null, sprint: false, interact: false };
+  brain.strafe = 0;
+  if (b) {
+    const ax = tgt[0] - me[0];
+    const az = tgt[1] - me[1];
+    const L = Math.hypot(ax, az) || 1;
+    const toT = Math.atan2(ax, az);
+    const who = world.who?.(b.id) ?? null;
+    const facing = Math.abs(wrap(toT - s.yaw)) <= FACING && (!who || Math.abs(wrap(toT + Math.PI - (who.yaw ?? 0))) <= FACING);
+    if (!facing) brain.apEvade = createEvasion();
+    else {
+      const g = brain.ap.groundCheck;
+      const stands = (side) => {
+        const x = me[0] + (az / L) * g.distance * side;
+        const z = me[1] - (ax / L) * g.distance * side;
+        return walkable(world.nav, x, z) && groundOk(brain.ap, heightAt(world.nav, x, z) - s.at[1]);
+      };
+      brain.strafe = strafeSide(brain.apEvade, brain.ap, { now, rand: brain.rand, ground: world.nav ? stands : null });
+    }
+    if (brain.strafe) {
+      // (the stick: the leg's side across the line to the target, and forward or back along it)
+      const fwd = brain.apEvade.fwd;
+      const stick = [(az / L) * brain.strafe + (ax / L) * fwd, -(ax / L) * brain.strafe + (az / L) * fwd];
+      const n = Math.hypot(stick[0], stick[1]) || 1;
+      intent.goal = [me[0] + (stick[0] / n) * STRAFE, me[1] + (stick[1] / n) * STRAFE];
+      intent.stance = crouched(brain.apEvade) ? 'crouch' : 'stand';
+      if (takeRoll(brain.apEvade)) intent.roll = [stick[0] / n, stick[1] / n];
+    }
+  } else brain.apEvade = createEvasion();
+  if (!brain.strafe) {
+    if (task?.interact && fromTask <= (task.reach ?? 3) && dist > INTERACT_CLEAR) {
+      intent.mode = 'interact';
+      intent.goal = task.spot ?? task.at;
+      intent.stance = 'crouch';
+      intent.interact = true;
+      intent.fire = false;
+    } else if (task) {
+      // (its post: there, then round it inside its radius)
+      if (task.interact || !task.radius) intent.goal = task.spot ?? task.at;
+      else {
+        if (!brain.wander || brain.wanderFor !== task || d2(me, brain.wander) < 2 || d2(brain.wander, task.at) > task.radius + 1) {
+          const a = brain.rand() * Math.PI * 2;
+          const r = brain.rand() * task.radius;
+          brain.wander = (world.nav && nearestWalkable(world.nav, task.at[0] + Math.cos(a) * r, task.at[1] + Math.sin(a) * r, 6)) ?? task.spot ?? task.at;
+          brain.wanderFor = task;
+        }
+        intent.goal = brain.wander;
+      }
+      intent.sprint = !b && fromTask > (task.radius ?? 0) + TASK_SLACK + 20;
+    } else if (world.objective) {
+      intent.goal = world.objective;
+      intent.sprint = !b && d2(me, world.objective) > TASK_SLACK + 20;
+    }
+  }
+  brain.cover = null;
+  brain.current = intent.mode;
+  brain.intent = intent;
+  return intent;
+}
+
 export function think(brain, world, now) {
+  if (brain.ap) return thinkAutoPlayer(brain, world, now);
   const s = brain.s;
   const me = flat(s.at);
   const seen = Object.values(brain.me.beliefs ?? {}).filter((x) => x.hostile);
-  let b;
-  if (brain.ap) b = trackerTarget(brain, world, s, me, world.muzzle ? world.muzzle(s) : chestOf(s), now);
-  else {
-    const id = pickTarget(brain, seen, { system: brain.system, who: world.who, now, assigned: brain.assigned });
-    b = id ? brain.me.beliefs[id] : null;
-  }
+  const id = pickTarget(brain, seen, { system: brain.system, who: world.who, now, assigned: brain.assigned });
+  const b = id ? brain.me.beliefs[id] : null;
   const tgt = b ? [b.at.x, b.at.z] : null;
   const dist = tgt ? d2(me, tgt) : Infinity;
   const task = world.task ?? null;
@@ -327,17 +400,10 @@ export function think(brain, world, now) {
     pickCover(world.nav, coverCtx(brain.queries[state]));
   if (b) {
     const from = world.muzzle ? world.muzzle(s) : chestOf(s);
-    if (brain.ap) {
-      // (an AutoPlayer: its target is the tracker's, already inside its engaging distance with its line of
-      // fire; the aim point, the view and the trigger are stepped in act)
-      intent.aim = v3(b);
-      intent.fire = true;
-    } else {
-      intent.aim = aimAt(brain, from, b, now, world.who?.(b.id) ?? null);
-      // (a new target's first shot waits the difficulty's reaction at its distance)
-      const ready = !brain.difficulty || now - brain.targetSince >= brain.difficulty.reaction(dist);
-      intent.fire = ready && b.visible && dist <= range && world.lineClear(from, v3(b));
-    }
+    intent.aim = aimAt(brain, from, b, now, world.who?.(b.id) ?? null);
+    // (a new target's first shot waits the difficulty's reaction at its distance)
+    const ready = !brain.difficulty || now - brain.targetSince >= brain.difficulty.reaction(dist);
+    intent.fire = ready && b.visible && dist <= range && world.lineClear(from, v3(b));
     // (a Skirmish bot's class abilities; the online fill's AutoPlayers press the officer's turret alone: ai/throw.js)
     if (s.abilities.list.length > 1) intent.ability = pressAbility(brain, { target: b, now, world, autoPlayer: !brain.pve });
   }
@@ -387,46 +453,12 @@ export function think(brain, world, now) {
       const ax = tgt[0] - me[0];
       const az = tgt[1] - me[1];
       const L = Math.hypot(ax, az) || 1;
-      if (brain.ap) {
-        // (an AutoPlayer's evasion, the game's own: it runs while the bot and its target each face the
-        // other inside 45°; autoPlayer.js's strafeSide gives the leg, a side for the settings' time, the
-        // ground that way probed each think, a failed side barred; the leg may also go forward or back,
-        // crouched or not, and open with its dodge roll. Not evading, the bot keeps to its way)
-        const toT = Math.atan2(ax, az);
-        const who = world.who?.(b.id) ?? null;
-        const facing = Math.abs(wrap(toT - s.yaw)) <= FACING && (!who || Math.abs(wrap(toT + Math.PI - (who.yaw ?? 0))) <= FACING);
-        if (!facing) {
-          brain.apEvade = createEvasion();
-          brain.strafe = 0;
-        } else {
-          const g = brain.ap.groundCheck;
-          const stands = (side) => {
-            const x = me[0] + (az / L) * g.distance * side;
-            const z = me[1] - (ax / L) * g.distance * side;
-            return walkable(world.nav, x, z) && groundOk(brain.ap, heightAt(world.nav, x, z) - s.at[1]);
-          };
-          brain.strafe = strafeSide(brain.apEvade, brain.ap, { now, rand: brain.rand, ground: world.nav ? stands : null });
-        }
-        if (brain.strafe) {
-          // (the stick: the leg's side across the line to the target, and forward or back along it)
-          const fwd = brain.apEvade.fwd;
-          const stick = [(az / L) * brain.strafe + (ax / L) * fwd, -(ax / L) * brain.strafe + (az / L) * fwd];
-          const n = Math.hypot(stick[0], stick[1]) || 1;
-          intent.goal = [me[0] + (stick[0] / n) * STRAFE, me[1] + (stick[1] / n) * STRAFE];
-          intent.stance = crouched(brain.apEvade) ? 'crouch' : 'stand';
-          if (takeRoll(brain.apEvade)) intent.roll = [stick[0] / n, stick[1] / n];
-        } else {
-          intent.goal = world.objective ?? null;
-          intent.stance = 'stand';
-        }
-      } else {
-        if (now >= brain.strafeAt) {
-          brain.strafe = brain.rand() < 0.5 ? -1 : 1;
-          brain.strafeAt = now + 1.5 + brain.rand() * 2;
-        }
-        intent.goal = [me[0] + (az / L) * STRAFE * brain.strafe, me[1] - (ax / L) * STRAFE * brain.strafe];
-        intent.stance = 'crouch';
+      if (now >= brain.strafeAt) {
+        brain.strafe = brain.rand() < 0.5 ? -1 : 1;
+        brain.strafeAt = now + 1.5 + brain.rand() * 2;
       }
+      intent.goal = [me[0] + (az / L) * STRAFE * brain.strafe, me[1] - (ax / L) * STRAFE * brain.strafe];
+      intent.stance = 'crouch';
     }
   } else if (mode === 'interact') {
     intent.goal = task.spot ?? task.at;

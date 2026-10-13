@@ -192,6 +192,33 @@ describe('the trigger', () => {
   });
 });
 
+describe('its way', () => {
+  it('has no hiding, fleeing or closing in: hurt and under fire it keeps its target and its way', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const w = world([enemy('them', [0, 0, -30], { yaw: 0 })], { objective: [0, 100], squad: { centre: [0, -60], posture: 'retreat' } });
+    b.s.suppressed = 1;
+    b.s.hp = b.s.hpMax * 0.1;
+    think(b, w, 0);
+    for (let t = THINK; t < 3; t += THINK) {
+      const i = think(b, w, t);
+      expect(i.mode).toBe('attack');
+      expect(i.target).toBe('them');
+      expect(i.fire).toBe(true);
+      expect(i.goal).toEqual([0, 100]);
+    }
+  });
+
+  it('goes to the post it was sent to and round it inside its radius, sprinting with no target while far', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const task = { key: 'post1', at: [0, 80], spot: [0, 80], role: 'defend', radius: 8, reach: 0, interact: false };
+    const far = think(b, world([], { task }), 0);
+    expect(far).toMatchObject({ mode: 'objective', target: null, fire: false, sprint: true });
+    expect(Math.hypot(far.goal[0] - 0, far.goal[1] - 80)).toBeLessThanOrEqual(8 + 6);
+    const there = bot([0, 0, 79], { ap: normal() });
+    expect(think(there, world([], { task }), 0).sprint).toBe(false);
+  });
+});
+
 describe('the strafe', () => {
   const open2 = (b, w, seconds) => {
     const goals = [];
