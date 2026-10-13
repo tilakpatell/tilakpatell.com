@@ -9,14 +9,17 @@ import { useTree } from './useTree';
 import GameScreen from './GameScreen.jsx';
 
 // Play, as the game goes through it: the Play screen's tiles (Multiplayer,
-// Co-op, Campaign), the multiplayer category (Assault, Heroes vs Villains,
+// Co-op Missions, Single Player: the running game's third tile, photographed
+// 2026-10-13; its box in the tree is still named Campaign), Single Player's
+// own (Campaign, Instant Action, Arcade: Instant Action goes on to its setup
+// screen, `onInstantAction`), the multiplayer category (Assault, Heroes vs Villains,
 // Sandbox), the multiplayer screen's mode cards (Galactic Assault large, the
 // four beside it, each in the box its tree gives that mode's list), then the
 // mode's levels as the game lists them. Each card's name and words are the
 // game's (info.json); a card this world cannot play yet is greyed and says
 // so. `playable(level, mode)` says which it can; `onPlay(level, mode)` goes.
 //
-// <Play playable={(siteLevel, siteMode) => bool} onPlay={(level, mode) => …} onBack={…} />
+// <Play playable={(siteLevel, siteMode) => bool} onPlay={(level, mode) => …} onInstantAction={…} onBack={…} at="play" | "single" />
 
 const NOT_YET = 'Not in this world yet';
 
@@ -31,23 +34,28 @@ function Card({ title, blurb = null, film = null, coming = false, onGo, data = {
   );
 }
 
-export default function Play({ playable = () => false, onPlay, onBack }) {
-  const [stage, setStage] = useState('play');
-  const [modeId, setModeId] = useState(null);
-  const names = { play: 'PlayScreen', category: 'PlayMultiplayerCategoryScreen', modes: 'PlayMultiplayerScreen', levels: 'PlayMultiplayerScreen' };
-  const raw = useTree(names[stage]);
-  const back = { play: onBack, category: () => setStage('play'), modes: () => setStage('category'), levels: () => setStage('modes') }[stage];
+// (the game's string table in the export holds no title for the tile, only its description)
+const SINGLE_PLAYER = 'SINGLE PLAYER';
 
-  if (stage === 'play' || stage === 'category') {
+export default function Play({ playable = () => false, onPlay, onBack, onInstantAction = null, at = 'play' }) {
+  const [stage, setStage] = useState(at);
+  const [modeId, setModeId] = useState(null);
+  const names = { play: 'PlayScreen', single: 'PlaySinglePlayerCategoryScreen', category: 'PlayMultiplayerCategoryScreen', modes: 'PlayMultiplayerScreen', levels: 'PlayMultiplayerScreen' };
+  const raw = useTree(names[stage]);
+  const back = { play: onBack, single: () => setStage('play'), category: () => setStage('play'), modes: () => setStage('category'), levels: () => setStage('modes') }[stage];
+
+  if (stage === 'play' || stage === 'category' || stage === 'single') {
     const tiles =
-      stage === 'play'
-        ? { Multiplayer: { title: word('ID_PLAY_SCR_MULTIPLAYER'), film: tilesFor('assault')[0], go: () => setStage('category') }, COOP: { title: word('#19A64FB1'), film: tilesFor('coop')[0] }, Campaign: { title: word('ID_PLAY_SCR_CAMPAIGN'), film: tilesFor('campaign')[0] } }
+      stage === 'single'
+        ? { Campaign: { title: word('ID_PLAY_SCR_CAMPAIGN'), film: tilesFor('campaign')[0] }, 'Instant Action': { title: info('mode', 'Mode8')?.title, film: tilesFor('assault')[0], go: onInstantAction }, Arcade: { title: word('ID_PLAY_SCR_SKIRMISH'), film: tilesFor('arcade')[0] } }
+        : stage === 'play'
+        ? { Multiplayer: { title: word('ID_PLAY_SCR_MULTIPLAYER'), film: tilesFor('assault')[0], go: () => setStage('category') }, COOP: { title: word('#19A64FB1'), film: tilesFor('coop')[0] }, Campaign: { title: SINGLE_PLAYER, film: tilesFor('campaign')[0], go: () => setStage('single') } }
         : { 'Assault Cat': { title: info('mode', 'PlanetaryBattles')?.title, film: tilesFor('assault')[0], go: () => setStage('modes') }, 'HvsV Cat': { title: info('mode', 'HeroesVersusVillains')?.title, film: tilesFor('heroes')[0] }, 'Sandbox Cat': { title: word('ID_PLAY_SCR_SKIRMISH'), film: tilesFor('arcade')[0] } };
     const fill = (box) => {
       const t = box.type === 'widget' ? tiles[box.id.split('/').pop()] : null;
       return t ? <Card title={t.title} film={t.film ?? null} coming={!t.go} onGo={t.go} data={{ 'data-tile': box.id.split('/').pop() }} large /> : null;
     };
-    return <GameScreen tree={prune(raw, OFFLINE)} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} fill={fill} className="bf-play" />;
+    return <GameScreen tree={prune(raw, OFFLINE)} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} fill={fill} className="bf-play" />;
   }
 
   // the multiplayer screen: its lists' boxes hold the mode cards

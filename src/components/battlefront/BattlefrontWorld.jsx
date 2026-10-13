@@ -10,7 +10,7 @@ import { useGameScreens, wantsMenu } from './useGameScreens.js';
 import { offerNameOf } from './hud/widgets.js';
 import { sendTo } from './send.js';
 import { startLoadingMusic } from './sound/loading.js';
-import { deploysThrough, latch, phaseFor, standing } from './stage.js';
+import { deploysThrough, latch, phaseFor, playWay, standing } from './stage.js';
 import Wipe from './Wipe.jsx';
 import { HUD_QUIET, WIPE, pickVariant, readiness } from './waiting.js';
 import '../../lib/bf2017/fonts.css';
@@ -36,6 +36,8 @@ import './hud/battlefront.css';
 const rb = loadRulebook();
 // the game's word for an offer (hud/widgets.js's offerNameOf: its strings, in its capitals)
 const offerName = (o) => offerNameOf(rb, o);
+// (the stage's name at the top left follows the round's mode)
+const MODES_SAID = { galacticAssault: 'Galactic Assault', supremacy: 'Supremacy', strike: 'Strike', extraction: 'Extraction', ewokHunt: 'Ewok Hunt', hvv: 'Heroes vs Villains', blast: 'Blast' };
 const WORDS = {
   title: 'Hoth · Galactic Assault',
   deploy: 'Deploy',
@@ -56,13 +58,17 @@ const killerOf = (snap) => {
 // (the HUD's deploy slot while the menu or the loading screen stands: nothing)
 const Nothing = () => null;
 
-export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssault', back = null, menu: startInMenu = false, playable = () => true, onOther = null }) {
+export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssault', back = null, menu: startInMenu = false, playable = () => true, onOther = null, round: startRound = null }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const navigate = useNavigate();
   const screens = useGameScreens();
   const [snap, setSnap] = useState(null);
   // the game's front end over the world: the way in when the address names no mode (the level loads behind it)
-  const [inMenu, setInMenu] = useState(startInMenu);
+  const [inMenu, setInMenu] = useState(startInMenu && !startRound);
+  // a round asked for at Instant Action's setup screen: begun in the world that is there (its `round`) once the
+  // level is in, the loading screen standing until it has; then the mode it is
+  const [pending, setPending] = useState(startRound);
+  const [roundMode, setRoundMode] = useState(null);
   const [menu, setMenu] = useState(false);
   const [board, setBoard] = useState(false);
   // the way in's phase: 'pre' (before the first deploy) | 'down' (the wipe in) | 'up' (the wipe out) | 'in' (the field)
@@ -79,6 +85,8 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   const world = useWorld(battlefrontModule, { props: { level, mode, weather: day }, onEvent, rebuild: `${level}/${mode}` });
   // (the handle's `world` is a ref to the mounted world; send.js)
   const send = (action, arg) => sendTo(world, action, arg);
+  const sendRef = useRef(send);
+  sendRef.current = send;
   // (the galaxy world that sent the player is the way out; else the view's)
   const way = back ?? wayOut('/battlefront');
   const loading = !snap || !snap.level?.loaded;
@@ -94,8 +102,8 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   const quietFor = snap && seen.current.quietSince != null ? Math.max(0, snap.time - seen.current.quietSince) + HUD_QUIET : 0;
   const progress = readiness({ loaded: Boolean(snap?.level?.loaded), progress: snap?.level?.progress ?? 0, pending: snap?.shaders?.pending ?? 0, held: snap?.shaders?.held ?? 0, building: snap?.shaders?.building ?? 0, peak: seen.current.peak, quietFor });
   // (once the spawn screen could stand, the way in stays ready: stage.js's latch)
-  arrived.current = latch(arrived.current, { inMenu, phase, ready: progress.ready });
-  const ready = progress.ready || arrived.current;
+  arrived.current = latch(arrived.current, { inMenu, phase, ready: progress.ready && !pending });
+  const ready = (progress.ready || arrived.current) && !pending;
   // what stands over the world (stage.js)
   // (the screens: true once they have come, null until then, false if their import failed)
   const st = standing({ inMenu, phase, ready, loaded: !loading, screens: screens === false ? false : screens ? true : null });
@@ -108,6 +116,22 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
     rt?.setVisible(false);
     return () => rt?.setVisible(true);
   }, [resting, rt]);
+  const levelIn = Boolean(snap?.level?.loaded);
+  useEffect(() => {
+    if (!pending || !levelIn) return undefined;
+    let live = true;
+    Promise.resolve(sendRef.current('round', pending)).then((r) => {
+      if (!live) return;
+      // (the world is at its park again with the deploy open: the way in starts over, from the spawn screen)
+      if (r?.ok) setRoundMode(r.round?.mode ?? pending.mode ?? null);
+      arrived.current = false;
+      setPhase('pre');
+      setPending(null);
+    });
+    return () => {
+      live = false;
+    };
+  }, [pending, levelIn]);
   // (a soldier deployed some other way, a check's door on the world, ends the way in: stage.js's phaseFor)
   const parked = snap?.parked;
   useEffect(() => {
@@ -148,6 +172,13 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
       document.removeEventListener('pointerlockchange', on);
     };
   }, [screens, alive, result]);
+  const onPlay = (l, m, options = null) => {
+    const how = playWay({ level, mode }, l, m, options);
+    if (how === 'other' && onOther) return onOther(l, m);
+    if (how === 'round') setPending(options);
+    return setInMenu(false);
+  };
+  const words = { ...WORDS, title: `Hoth · ${MODES_SAID[roundMode ?? mode] ?? ''}` };
   const FrontEnd = screens?.FrontEnd;
   const Loading = screens?.Loading;
   const InGameMenu = screens?.InGameMenu;
@@ -157,14 +188,14 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   return (
     <WorldHost world={world} className="bf-stage" data-bf-stage={st.name} data-bf-ready={ready || undefined}>
       {st.cover && <div className="bf-cover" aria-hidden="true" />}
-      {st.menu && FrontEnd && <FrontEnd start="menu" playable={playable} onPlay={(l, m) => (onOther && (l !== level || m !== mode) ? onOther(l, m) : setInMenu(false))} onExit={() => navigate(way.to)} />}
+      {st.menu && FrontEnd && <FrontEnd start="menu" playable={playable} level={level} onPlay={onPlay} onExit={() => navigate(way.to)} />}
       <Wipe phase={st.wipe} />
-      {st.loading && Loading && <Loading mode={mode} level={level} progress={progress.value} waiting={phase === 'pre' ? progress.line : null} onBack={phase === 'pre' ? backOut : null} />}
+      {st.loading && Loading && <Loading mode={pending?.mode ?? roundMode ?? mode} level={level} progress={progress.value} waiting={phase === 'pre' ? progress.line : null} onBack={phase === 'pre' ? backOut : null} />}
       {snap && (
         <BattlefrontHud
           view={snap}
           mine={snap.player?.team ?? 2}
-          words={WORDS}
+          words={words}
           markers={snap.markers ?? []}
           scoreboard={screens ? false : snap.showScoreboard}
           onDeploy={(o) => (deploysThrough(phase) ? deployThrough(o) : send('deploy', { kind: o.kind, id: o.id }))}

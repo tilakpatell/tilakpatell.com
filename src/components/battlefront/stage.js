@@ -26,6 +26,7 @@
 // latch(was, { inMenu, phase, ready }) → the way in has been ready once the spawn screen could stand
 // deploysThrough(phase) → a Deploy goes through the wipe (until the field)
 // phaseFor(phase, { parked }) → the phase, given what the world says of its camera
+// playWay(mounted, level, mode, options) → 'round' | 'same' | 'other': what Play in the menu does
 
 export function standing({ inMenu = false, phase = 'pre', ready = false, loaded = true, screens = true } = {}) {
   const menu = Boolean(inMenu) && screens !== false;
@@ -55,3 +56,9 @@ export const deploysThrough = (phase) => phase !== 'in';
 // The page's phase follows the world: a soldier deployed some other way (a
 // check's door on the world) has left the dark room, and the way in is over.
 export const phaseFor = (phase, { parked } = {}) => (phase === 'pre' && parked === false ? 'in' : phase);
+
+// Play in the menu over a world. A round's options (Instant Action's setup
+// screen) begin a round in the world that is there, with nothing loaded
+// again (the world's `round`). The level and mode that are mounted: the menu
+// closes over them. Anything else goes by its address.
+export const playWay = (mounted, level, mode, options = null) => (options ? 'round' : level !== mounted.level || (mode ?? mounted.mode) !== mounted.mode ? 'other' : 'same');
