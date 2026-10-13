@@ -20,6 +20,7 @@ Read as: on Hoth, the galaxy goes from the planet straight to the game's menu; t
 - **The world already loads behind a cover.** Until the first deploy the camera is parked at the spawn and the level streams and its shaders build behind the waiting screen; `waiting.js`'s `readiness()` says when nothing is left to build. That rule is pure and stays.
 - **The Instant Action Overhaul V2 mod is extracted** (`bf2-re/data/mods/iao-v2/`, 44,126 resources) but its options are not yet summarised (bf2-re findings 53 has not landed).
 - **Only Hoth has a game level** (`battlefront/index.js`, `LEVELS = ['hoth']`).
+- **The load today, measured by the frame-time lane** (session tilak-19, 2026-10-13: headless Edge on the RTX 5090, WebGPU, 2560×1440, the dev server, a shared machine, so sizes and not exact figures). From the address to the level loaded: 22 to 40 s, with one gap between frames of 3.4 to 3.6 s in each of two runs (not yet traced to a function), 75 to 85 gaps over 100 ms, and a 95th-percentile gap of 120 to 130 ms. On the waiting screen with the level loaded, one run in five held 10 frames a second for 22 s; no cause found. In play, one gap of 0.4 to 1.0 s in every walk, from shaders built late (about 1 s of builds over 16 s). The HUD's React work is about 0.6 ms a frame and is not the cost.
 
 ## Decisions
 
@@ -31,7 +32,8 @@ Read as: on Hoth, the galaxy goes from the planet straight to the game's menu; t
 6. **Start begins the round in place.** The setup's Start sends the options to the world, which makes the round's sim again and keeps the level, its light, its shaders and its bodies. This needs one new action in the sim's lane (below). Until it lands, Start mounts the world again with the options; the browser's cache keeps the level's files, so that costs the build and not the download.
 7. **After Start, the game's order.** If the level is not ready, the game's loading screen (the planet's film, a hint, the bar fed by `readiness()`) until it is; then the game's spawn screen for the first life as for every later one; Deploy runs the game's wipe into the field.
 8. **The site's waiting screen is deleted**, and with it the day picker, the machine's line and the quality recommendation with its button. The game's coin picks the day, as the game does. Nothing replaces them on the way in. (The video settings in the site's Menu are not part of this and stay.)
-9. **The menu must answer while the level loads.** A click or a key in the menu is answered within 100 ms throughout the load. This is measured, not assumed (see Checks); if the load's work on the main thread breaks it, the cause is named and goes to the frame-time lane.
+9. **The menu must answer while the level loads.** A click or a key in the menu is answered within 100 ms throughout the load. Today's load does not allow that (the gaps above), so phase 1 traces the 3.5 s gap and the gaps over 100 ms to the work that makes them and splits or moves that work; what belongs to the render path goes to the frame-time lane with the trace. The target is checked, not assumed (see Checks).
+10. **What the player will see first is built behind the menu.** The bodies of the round and the materials of the cells round the spawn are warmed before Start is offered, so the walk's late shader builds (0.4 to 1.0 s) do not land in the first life.
 
 ## The flow, step by step
 
