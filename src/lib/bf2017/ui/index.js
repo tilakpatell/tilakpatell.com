@@ -3,8 +3,9 @@
 // each widget's elements with their anchors, sizes, offsets, colours from
 // the game's palette, fonts and string ids), with the text resolved through
 // the game's strings, the fonts mapped onto the open faces the site ships,
-// and the UI bitmaps the cut has (src/data/bf2017/bitmaps.json; none yet:
-// the bucket has not got UI/Bitmaps) and the icons (../icons.js).
+// and the UI bitmaps the cut has (src/data/bf2017/bitmaps.json: the
+// portraits, tiles and HUD art, and the Collection's star-card art, cut from
+// the desktop's export by scripts/bf2017-ui.mjs bitmaps) and the icons (../icons.js).
 //
 // widget(name) → { name, asset, layout, children, texts: { [id]: text },
 //   bitmaps: [url] } | null

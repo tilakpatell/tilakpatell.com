@@ -276,7 +276,9 @@ function treeOf(root, name, ctx) {
 // The screens the site draws: the front end's, and the in-game ones the
 // battle uses (the spawn overlay, the in-game menu, the end of round, the
 // scoreboard and the kill card).
-export const SCREEN_GLOB = /^UI\/(Frontend\/Screens\/.+|LoadingScreens\/MPLoadLevel\/.+|InGame\/(Spawn|InGameMenu|EndOfRound|Scoreboard|Death)\/.+|Customize\/Screens\/SpawnOverlayScreen)$/;
+// (the Customize screens are the Collection's: the appearances, emotes,
+// voice lines, victory poses and star cards, src/data/bf2017/collection.json)
+export const SCREEN_GLOB = /^UI\/(Frontend\/Screens\/.+|LoadingScreens\/MPLoadLevel\/.+|InGame\/(Spawn|InGameMenu|EndOfRound|Scoreboard|Death)\/.+|Customize\/Screens\/.+)$/;
 
 // The words the site's front end says that no tree names (the trees fill
 // them at run time): the Play screen's tiles, press-start, the outcome and
