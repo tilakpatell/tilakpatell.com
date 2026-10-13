@@ -20,7 +20,7 @@
 //   living, and `hitDir`, the shot's way, for the death clip's side)
 //   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, abilityHeld, vent })
 
-import { classOf, mapOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
+import { classOf, levelForMode, mapOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
 import { balance, earnedBy, offers as offersOf } from '../../lib/battlefront/battlePoints.js';
 import { buildNav, heightAt } from '../../lib/battlefront/nav.js';
 import { STEP, createSim, deploy as deploySim, outOf, squadBlocks, step as stepSim, view as viewSim } from '../../lib/battlefront/sim.js';
@@ -146,6 +146,17 @@ function waitToDeploy(b) {
   const me = sim.entities.get(p.id);
   if (me?.alive || me?.respawn === false) return;
   sim.deploying.set(p.id, { id: p.id, team: p.team, bot: false, since: sim.time });
+}
+
+// A round's battle made beside the one the page has (the setup screen's Start, in place: module.js swaps
+// them): the round's mode on the level of this world that holds it (lib/battlefront/rulebook.js's
+// levelForMode, loaded by the caller), on the first battle's navgrid where the two levels share their
+// ground, with the world's own sides. The first battle is left as it was.
+export function roundBattle(b, round, { heightAt = () => 0, mask = null, seed = b.sim.seed + 1 } = {}) {
+  const level = levelForMode(b.rulebook, b.level, round.mode);
+  const map = mapOf(b.rulebook, level);
+  const same = ['min', 'max'].every((k) => map.bounds[k][0] === b.map.bounds[k][0] && map.bounds[k][1] === b.map.bounds[k][1]);
+  return createBattle({ rulebook: b.rulebook, level, mode: round.mode, heightAt, nav: same ? b.nav : null, mask, seed, teams: { 1: b.sides.light, 2: b.sides.dark }, bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round });
 }
 
 export function addPlayer(b, { team = 2 } = {}) {
@@ -287,7 +298,11 @@ function modeOf(b, v, p) {
   const attacking = p && b.sim.ga && b.sim.M?.sideOf ? b.sim.M.sideOf(b.sim.ga, p.team) === 'attack' : true;
   const stage = m.stage ?? null;
   const words = stage ? stringOf(b.rulebook, attacking ? stage.name : (stage.nameDefend ?? stage.name)) : null;
-  return { stage: stage?.index ?? 0, stageName: words, objectives: b.objectives, tickets: m.tickets ?? null, phase: m.phase ?? null, timer: m.timer ?? null, result: m.result ?? null };
+  // (the bar draws one number: where a mode counts reinforcements a side, Supremacy, the player's side's;
+  // both sides' go beside it for a bar that draws the two)
+  const t = m.tickets ?? null;
+  const bySide = t !== null && typeof t === 'object' ? t : null;
+  return { stage: stage?.index ?? 0, stageName: words, objectives: b.objectives, tickets: bySide ? (bySide[attacking ? 'attack' : 'defend'] ?? null) : t, ticketsBySide: bySide, phase: m.phase ?? null, timer: m.timer ?? null, result: m.result ?? null };
 }
 
 export function view(b) {
