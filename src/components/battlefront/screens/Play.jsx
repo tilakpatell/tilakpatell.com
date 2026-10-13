@@ -5,6 +5,7 @@ import { info } from '../../../lib/bf2017/ui/info';
 import { word } from '../../../lib/bf2017/ui/screens';
 import { levelCards, MODE_LISTS, SITE_MODE } from './cards';
 import { navigables } from '../../../lib/bf2017/ui/layout';
+import { FOOTER_DROP, footerValues } from './footer';
 import { tabWays } from './menuHeader';
 import { tileValues } from './tiles';
 import { findBox, OFFLINE, percentOf, prune } from './tree';
@@ -57,7 +58,7 @@ export default function Play({ playable = () => false, onPlay, onBack, onInstant
   const [modeId, setModeId] = useState(null);
   const names = { play: 'PlayScreen', single: 'PlaySinglePlayerCategoryScreen', category: 'PlayMultiplayerCategoryScreen', modes: 'PlayMultiplayerScreen', levels: 'PlayMultiplayerScreen' };
   const raw = useTree(names[stage]);
-  const page = useFrameTree(names[stage]);
+  const page = useFrameTree(names[stage], { drop: FOOTER_DROP });
   const crumbs = { single: [word('ID_MAINMENU_SCR_PLAY'), SINGLE_PLAYER], category: [word('ID_MAINMENU_SCR_PLAY'), word('ID_PLAY_SCR_MULTIPLAYER')] }[stage] ?? null;
   const header = useMenuHeader({ tab: 'Play', crumbs });
   const back = { play: onBack, single: () => setStage('play'), category: () => setStage('play'), modes: () => setStage('category'), levels: () => setStage('modes') }[stage];
@@ -72,10 +73,11 @@ export default function Play({ playable = () => false, onPlay, onBack, onInstant
     // (each tile's Aurebesh line spells the title it draws: the tree's own where it has one)
     const drawn = Object.fromEntries(navigables([page]).filter((n) => n.tile).map((n) => [n.id.slice(n.id.lastIndexOf('/') + 1), n.label]));
     const own = tileValues(Object.fromEntries(Object.entries(tiles).map(([k, t]) => [k, { ...t, aurebesh: drawn[k] ?? t.title }])));
-    const values = (b, path) => header.values(b, path) ?? own(b, path);
-    // (a tile pressed goes where its row goes; the breadcrumb's first crumb goes back to Play)
-    const onAction = (name) => (name === 'crumb0' ? setStage('play') : tiles[name]?.go?.());
-    return <GameScreen layers={[header.tree, page]} values={values} active={header.active} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} onLink={onTab ?? tabWays({ onPlay: () => setStage('play'), onStart: onBack })} onAction={onAction} first={FIRST_TILE} className="bf-play" />;
+    const foot = footerValues(word('ID_S_UPPER_BACK'), page);
+    const values = (b, path) => header.values(b, path) ?? foot(b, path) ?? own(b, path);
+    // (a tile pressed goes where its row goes; the breadcrumb's first crumb goes back to Play; BACK goes back)
+    const onAction = (name) => (name === 'Back' ? back?.() : name === 'crumb0' ? setStage('play') : tiles[name]?.go?.());
+    return <GameScreen layers={[header.tree, page]} values={values} active={header.active} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} onLink={onTab ?? tabWays({ onPlay: () => setStage('play'), onStart: onBack })} onAction={onAction} first={FIRST_TILE} keys={false} className="bf-play" />;
   }
 
   // the multiplayer screen: its lists' boxes hold the mode cards

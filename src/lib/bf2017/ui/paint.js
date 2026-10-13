@@ -4,17 +4,25 @@
 // with, so the move changes no look but the frame's. No React: the kit's
 // ScreenCanvas holds the canvas and calls this when something changed.
 //
-// paint(ctx, items, { frame, window, ratio, read, media, makePath }) →
-//   { ms, drawn, skipped: { [type]: n }, missing: { shapes: n } }
+// paint(ctx, items, { frame, window, ratio, read, media, makePath, pictureOf }) →
+//   { ms, drawn, skipped: { [type]: n }, missing: { shapes: n, textures: n } }
 //   frame   frameOf(window); ratio the device's pixels a CSS pixel
 //   read    (name) → a CSS custom property's value (the fonts' variables)
 //   media   by URL: a <video> (drawn once it has a frame) or an Image (a
-//           film's poster)
+//           film's poster, a texture's picture)
+//   pictureOf (item) → { url } | null: a texture box's picture (./textures.js)
+//   frost   true where the blurred backings are drawn under the canvas (the
+//           kit's frosted panels): they are not counted as skipped
+// A box's blend (the game's additive, multiplicative, subtractive) is the
+// context's composite operation while it is drawn.
 //   makePath (d) → Path2D (a test gives its own)
 // resolveFamily(value, read) → the family list with every var() put in
 // fontOf(item, k, read) → the item's CSS font, never under 0.7 rem in the window
 
 import { shape as shapeOf } from './shapes';
+import { pictureOf as pictureOfDefault } from './textures';
+
+const BLEND = { additive: 'lighter', multiplicative: 'multiply', subtractive: 'difference' };
 
 const MIN_PX = 11.2; // 0.7 rem: nothing a player reads is smaller (RULES.md, the worlds' HUDs)
 const LINE = 1.25; // a wrapped text's lines (the DOM screens': hand)
@@ -74,8 +82,8 @@ function text(ctx, it, k, read) {
 // the item's box, or the window's whole rect in frame px for one that bleeds
 const rectOf = (it, frame, win) => (it.bleed ? { x: (0 - frame.x) / frame.k, y: (0 - frame.y) / frame.k, w: win.width / frame.k, h: win.height / frame.k } : it);
 
-function rect(ctx, it, r, k, skipped) {
-  if (it.fill === 'blurred') return (skipped.blurred = (skipped.blurred ?? 0) + 1), false;
+function rect(ctx, it, r, k, skipped, frost) {
+  if (it.fill === 'blurred') return frost ? false : ((skipped.blurred = (skipped.blurred ?? 0) + 1), false);
   if (it.fill !== 'none' && it.colour) {
     ctx.fillStyle = it.colour;
     if (it.type === 'circle') {
@@ -145,26 +153,42 @@ function film(ctx, it, r, media) {
   return false;
 }
 
+// a texture box's picture, stretched over the box from its UV rectangle
+function picture(ctx, it, r, media, pictureOf, missing) {
+  const p = pictureOf(it);
+  if (!p) return (missing.textures += 1), false;
+  const img = media[p.url];
+  if (!img || !img.complete || !img.naturalWidth) return false;
+  const [u0, v0, u1, v1] = it.texture?.uv ?? [0, 0, 1, 1];
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  ctx.drawImage(img, u0 * w, v0 * h, (u1 - u0) * w, (v1 - v0) * h, r.x, r.y, r.w, r.h);
+  return true;
+}
+
 const now = () => (typeof performance === 'undefined' ? Date.now() : performance.now());
 
-export function paint(ctx, items, { frame, window: win, ratio = 1, read = () => '', media = {}, makePath = (d) => new Path2D(d) }) {
+export function paint(ctx, items, { frame, window: win, ratio = 1, read = () => '', media = {}, makePath = (d) => new Path2D(d), pictureOf = pictureOfDefault, frost = false }) {
   const start = now();
   const skipped = {};
-  const missing = { shapes: 0 };
+  const missing = { shapes: 0, textures: 0 };
   let drawn = 0;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, win.width * ratio, win.height * ratio);
   ctx.setTransform(ratio * frame.k, 0, 0, ratio * frame.k, ratio * frame.x, ratio * frame.y);
   for (const it of items) {
     ctx.globalAlpha = it.alpha ?? 1;
+    ctx.globalCompositeOperation = BLEND[it.blend] ?? 'source-over';
     const r = rectOf(it, frame, win);
     let did = false;
-    if (it.type === 'rectangle' || it.type === 'fill' || it.type === 'circle') did = rect(ctx, it, r, frame.k, skipped);
+    if (it.type === 'rectangle' || it.type === 'fill' || it.type === 'circle') did = rect(ctx, it, r, frame.k, skipped, frost);
     else if (it.type === 'text') did = text(ctx, it, frame.k, read);
     else if (it.type === 'vectorShape') did = it.shape ? vector(ctx, it, makePath, missing) : false;
     else if (it.type === 'video') did = film(ctx, it, r, media);
+    else if (it.type === 'texture') did = picture(ctx, it, r, media, pictureOf, missing);
     else skipped[it.type] = (skipped[it.type] ?? 0) + 1;
     if (did) drawn += 1;
+    ctx.globalCompositeOperation = 'source-over';
   }
   ctx.globalAlpha = 1;
   const end = now();

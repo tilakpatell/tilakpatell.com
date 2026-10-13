@@ -59,9 +59,10 @@ describe('the painter', () => {
     expect(ctx.calls.some((c) => c[0] === 'strokeRect')).toBe(false);
   });
 
-  it('draws nothing for a blurred backing yet, and counts it', () => {
+  it('draws nothing for a blurred backing, and counts it unless the frosted panels under the canvas draw it', () => {
     const ctx = fakeContext();
     expect(paint(ctx, [item({ type: 'rectangle', fill: 'blurred' })], at(1920, 1080)).skipped).toEqual({ blurred: 1 });
+    expect(paint(ctx, [item({ type: 'rectangle', fill: 'blurred' })], { ...at(1920, 1080), frost: true }).skipped).toEqual({});
   });
 
   it('wraps words at the box’s width, a line and a quarter apart', () => {
@@ -87,7 +88,35 @@ describe('the painter', () => {
     const ctx = fakeContext();
     const r = paint(ctx, [item({ type: 'vectorShape', shape: 'NewThingAvailable', colour: 'rgb(255 255 255)' }), item({ type: 'vectorShape', shape: 'NoSuchShape' })], at(1920, 1080));
     expect(ctx.calls).toContainEqual(['set', 'fillStyle', 'rgb(255 255 255)']);
-    expect(r.missing).toEqual({ shapes: 1 });
+    expect(r.missing).toEqual({ shapes: 1, textures: 0 });
+  });
+
+  it('draws a texture box’s picture stretched over its box, by its UV', () => {
+    const img = { complete: true, naturalWidth: 2048, naturalHeight: 2048 };
+    const ctx = fakeContext();
+    const texture = { id: 2069381427, ref: '3D80EC7618F789C7', uv: [0, 0, 1, 1], align: 'stretch' };
+    const pictureOf = () => ({ url: '/k.webp' });
+    const r = paint(ctx, [item({ type: 'texture', texture, x: 0, y: 0, w: 1920, h: 1080 })], { ...at(1920, 1080), media: { '/k.webp': img }, pictureOf });
+    expect(ctx.calls).toContainEqual(['drawImage', img, 0, 0, 2048, 2048, 0, 0, 1920, 1080]);
+    expect(r.drawn).toBe(1);
+  });
+
+  it('counts a texture with no picture, and draws nothing for one still loading', () => {
+    const ctx = fakeContext();
+    const texture = { id: 1, ref: null, uv: [0, 0, 1, 1], align: 'stretch' };
+    const none = paint(ctx, [item({ type: 'texture', texture })], { ...at(1920, 1080), pictureOf: () => null });
+    expect(none.missing.textures).toBe(1);
+    const loading = paint(fakeContext(), [item({ type: 'texture', texture })], { ...at(1920, 1080), pictureOf: () => ({ url: '/x.webp' }) });
+    expect(loading.missing.textures).toBe(0);
+  });
+
+  it('lays an additive film on what is under it, and puts the blend back after', () => {
+    const film = { url: 'f.mp4', poster: 'f.jpg' };
+    const poster = { complete: true, naturalWidth: 100, naturalHeight: 100 };
+    const ctx = fakeContext();
+    paint(ctx, [item({ type: 'video', film, blend: 'additive' }), item({ type: 'fill', colour: 'red' })], { ...at(1920, 1080), media: { 'f.jpg': poster } });
+    const ops = ctx.calls.filter((c) => c[0] === 'set' && c[1] === 'globalCompositeOperation').map((c) => c[2]);
+    expect(ops).toEqual(['lighter', 'source-over', 'source-over', 'source-over']);
   });
 
   it('draws a film’s poster to cover its box when no video is ready, the video once one is', () => {

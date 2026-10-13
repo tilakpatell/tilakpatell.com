@@ -27,12 +27,13 @@ export function useTree(name, data = null) {
 
 // One of the game's screens resolved at its own 1920 × 1080, for the
 // canvas (the kit's ScreenCanvas fits that frame to the window): `data`
-// its texts by id, `items` the lists the game's code fills.
-export function useFrameTree(name, { data = null, items = null } = {}) {
-  const key = JSON.stringify({ data, items });
+// its texts by id, `items` the lists the game's code fills, `drop` the parts
+// it leaves out by the box they are in.
+export function useFrameTree(name, { data = null, items = null, drop = null } = {}) {
+  const key = JSON.stringify({ data, items, drop });
   return useMemo(() => {
     const o = JSON.parse(key);
-    return screen(name, { viewport: { width: 1920, height: 1080 }, data: o.data, items: o.items });
+    return screen(name, { viewport: { width: 1920, height: 1080 }, data: o.data, items: o.items, drop: o.drop });
   }, [name, key]);
 }
 

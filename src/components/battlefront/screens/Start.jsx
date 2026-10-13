@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { tilesFor } from '../../../lib/bf2017/films';
 import { pressStart } from './cards';
 import { useFrameTree } from './useTree';
 import GameScreen from './GameScreen.jsx';
@@ -8,9 +7,9 @@ import GameScreen from './GameScreen.jsx';
 // painted from its tree, its press line the game's own words with the
 // keyboard's key named. The console's account picker and the beta's
 // disclaimer (and the box it sits in, `e1`) are left out: hand, this is the
-// PC's game and its release. Until its Background texture is drawn (the
-// canvas design's phase 2) the menus' film stands behind it. Any key or a
-// click goes on to the main menu.
+// PC's game and its release. Its Background is the game's key art
+// (UI/Bitmaps/Frontend/4k_KeyArtPairingScreen, by its mapping's TextureRef).
+// Any key or a click goes on to the main menu.
 
 const CONSOLE = new Set(['Open Account Picker', 'OPEN BETA DISCLAIMER', 'e1']);
 const values = (b, path) => {
@@ -31,7 +30,7 @@ export default function Start({ onNext }) {
     return () => window.removeEventListener('keydown', on);
   }, [onNext]);
   return (
-    <GameScreen layers={[tree]} values={values} label="Star Wars Battlefront II" backdrop={tilesFor('assault')[0] ?? null} keys={[['Enter', 'Start']]} className="bf-start">
+    <GameScreen layers={[tree]} values={values} label="Star Wars Battlefront II" keys={false} className="bf-start">
       <button type="button" className="bf-start-press" aria-label={pressStart()} onClick={() => onNext?.()} />
     </GameScreen>
   );

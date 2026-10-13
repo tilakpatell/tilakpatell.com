@@ -81,6 +81,13 @@ describe('the draw list', () => {
     expect(ids(drawList([tree([mark])], { values: (b) => (b.id === '/NewThingAvailable' ? { hidden: false } : null) }))).toEqual(['s']);
   });
 
+  it('carries a box’s picture and blend to the painter, and a texture a value names', () => {
+    const t = tree([box('/Image', 'texture', { texture: { id: 0, ref: null, uv: [0, 0, 1, 1], align: 'stretch' } }), box('/Video', 'video', { blend: 'additive' })]);
+    const items = drawList([t], { values: (b) => (b.id === '/Image' ? { image: 'UI/Bitmaps/Frontend/Tiles/Backup-Arcade' } : null) });
+    expect(items[0]).toMatchObject({ texture: { align: 'stretch' }, image: 'UI/Bitmaps/Frontend/Tiles/Backup-Arcade' });
+    expect(items[1].blend).toBe('additive');
+  });
+
   it('keeps each layer’s ids apart and draws the layers in order', () => {
     const a = tree([box('/r', 'rectangle')]);
     const items = drawList([a, a]);
@@ -121,6 +128,15 @@ describe('the navigable cells', () => {
     const values = (b, path) => (path.includes('Campaign') && path.at(-1) === 'Title' ? { text: 'OTHER WORDS' } : null);
     const tile = navigables([screen('PlayScreen')], { values }).find((n) => n.id.endsWith('/Campaign'));
     expect(tile.label).toBe('OTHER WORDS');
+  });
+
+  it('draws the open tab lit but without the focus’s edges, as the capture shows HOME', () => {
+    const t = screen('MainMenuScreen');
+    const home = navigables([t]).find((n) => n.label === 'HOME');
+    const of = (opts) => ids(drawList([t], opts).filter((i) => i.cell === home.id));
+    expect(of({ open: new Set([home.id]) })).toEqual(expect.arrayContaining(['MenuTextSelected']));
+    expect(of({ open: new Set([home.id]) })).not.toContain('SelectedLineLeft');
+    expect(of({ open: new Set([home.id]), selected: new Set([home.id]) })).toContain('SelectedLineLeft');
   });
 
   it('carries a cell’s link and words, leaves out a hidden one and marks one still to come', () => {

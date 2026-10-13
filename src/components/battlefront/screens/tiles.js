@@ -24,6 +24,8 @@ export function tileValues(tiles, { notYet = 'NOT IN THIS WORLD YET' } = {}) {
     if (part === 'AurebeshTitle') return { text: t.aurebesh ?? t.title };
     if (part === 'Video' && path.includes('VideoWidget')) return t.film ? { film: t.film } : null;
     if (part === 'NotInBeta') return t.go ? { hidden: true } : { text: notYet };
+    // (the arrow that says Enter plays it, on a tile that plays: the NotInBeta line stands in its place)
+    if (part === 'Play prompt') return t.go ? null : { hidden: true };
     return TILE_PARTS_LEFT_OUT.has(part) ? { hidden: true } : null;
   };
 }

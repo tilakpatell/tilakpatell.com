@@ -32,6 +32,27 @@ describe('the parts that grow, the lists the code fills, the boxes that bleed', 
     expect(boxesUnder(cells[0]).some((b) => b.type === 'text' && b.text === 'PLAY')).toBe(true);
   });
 
+  it('lays a padded container’s parts inside its padding: a tile’s words 30 px in', () => {
+    const tile = findBox(screen('PlayScreen'), 'Multiplayer');
+    const title = boxesUnder(tile).find((b) => b.id.endsWith('/Title'));
+    expect(title.x).toBe(tile.x + 30);
+  });
+
+  it('carries a box’s picture and its blend', () => {
+    expect(findBox(screen('PairingScreen'), 'Background').texture).toMatchObject({ ref: '3D80EC7618F789C7', align: 'stretch' });
+    const video = boxesUnder(findBox(screen('PlayScreen'), 'Multiplayer')).find((b) => b.type === 'video');
+    expect(video.blend).toBe('additive');
+  });
+
+  it('drops the parts a screen leaves out inside a named box, so they take no room: the footer’s BACK first', () => {
+    const tree = screen('PlayScreen', { drop: { FooterBar: ['Select', 'Edit', 'View', 'Select#2', 'Back#2', 'Select#3', 'Back#3', 'c11'] } });
+    const cells = flat(findBox(tree, 'SocialHubTargetedList').children).filter((b) => b.type === 'cell');
+    expect(cells.map((c) => c.id.split('/').pop())).toEqual(['Back']);
+    expect(cells[0].x).toBe(97);
+    // (outside the named box, a part of the same name stays)
+    expect(findBox(screen('PlayScreen', { drop: { NoSuchBox: ['Multiplayer'] } }), 'Multiplayer')).toBeTruthy();
+  });
+
   it('marks a root box the tree expands over the whole frame as bleeding to the window', () => {
     expect(findBox(screen('PairingScreen'), 'Background').bleed).toBe(true);
   });

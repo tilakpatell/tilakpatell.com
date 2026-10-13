@@ -8,11 +8,20 @@
 // keyOn(e, nav, navs, { onLink, onAction }) → { focus: navId } | { activated } | null
 // activate(nav, { onLink, onAction }): a press (a link goes, else the cell's name)
 // fontsOf(items, k, read) → the CSS fonts the texts draw in, once each
-// filmPlan(items, { play }) → { videos: [url], posters: [url] }
+// filmPlan(items, { play, pictureOf }) → { videos: [url], posters: [url] }: the
+//   films to play, and the pictures to load (the films' posters, the texture
+//   boxes' pictures)
+// splitGlow(items) → { base, glow }: what the game adds onto what is under it
+//   (its additive blend: a tile's line drawing, a glow) goes on a canvas of
+//   its own, laid on the page by the browser's screen blend, so its black adds
+//   nothing to the frosted panels and the backdrop under the base canvas
+// frostOf(items, frame) → [{ id, style }]: a blurring panel under each box the
+//   game blurs what is behind (`fill: 'blurred'`), in the window's px
 // createPainter({ ctx, read, fonts, raf, caf }) → { draw(args), repaint(),
 //   playing(on), last(), destroy() }: `args` paint()'s, kept for the repaints
 
 import { fontOf, paint } from '../../lib/bf2017/ui/paint';
+import { pictureOf as pictureOfDefault } from '../../lib/bf2017/ui/textures';
 import { screenKey } from './screenKey';
 
 const px = (v) => `${Math.round(v * 100) / 100}px`;
@@ -47,10 +56,32 @@ export function fontsOf(items, k, read) {
   return [...new Set(items.filter((i) => i.type === 'text' && i.text).map((i) => fontOf(i, k, read)))];
 }
 
-export function filmPlan(items, { play }) {
+export function filmPlan(items, { play, pictureOf = pictureOfDefault }) {
   const films = items.filter((i) => i.type === 'video' && i.film);
+  const pictures = items.filter((i) => i.type === 'texture').map((i) => pictureOf(i)?.url);
   const uniq = (xs) => [...new Set(xs.filter(Boolean))];
-  return { videos: play ? uniq(films.map((f) => f.film.url)) : [], posters: uniq(films.map((f) => f.film.poster)) };
+  return { videos: play ? uniq(films.map((f) => f.film.url)) : [], posters: uniq([...films.map((f) => f.film.poster), ...pictures]) };
+}
+
+export function splitGlow(items) {
+  const base = [];
+  const glow = [];
+  for (const i of items) (i.blend === 'additive' ? glow : base).push(i);
+  return { base, glow };
+}
+
+// The game blurs what is behind its panels (WSUIRenderingSettings'
+// BackgroundBlurRadius, kernel 7 on its blur's buffer): a blur of 24 px at the
+// frame's 1080 (hand: read from the captures), the browser's own, under the
+// canvas.
+const FROST_PX = 24;
+export function frostOf(items, frame) {
+  return items
+    .filter((i) => i.fill === 'blurred' && i.w > 0 && i.h > 0)
+    .map((i) => {
+      const blur = `blur(${Math.round(FROST_PX * frame.k * 100) / 100}px)`;
+      return { id: i.id, style: { ...buttonStyle(i, frame), opacity: i.alpha ?? 1, backdropFilter: blur, WebkitBackdropFilter: blur } };
+    });
 }
 
 export function createPainter({ ctx, read, fonts = null, raf = (f) => requestAnimationFrame(f), caf = (id) => cancelAnimationFrame(id) }) {

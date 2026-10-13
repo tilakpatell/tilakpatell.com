@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fakeContext } from '../../lib/bf2017/ui/fixtures/fakeContext';
 import { drawList, frameOf, navigables } from '../../lib/bf2017/ui/layout';
 import { screen } from '../../lib/bf2017/ui/screens';
-import { activate, buttonStyle, createPainter, filmPlan, fontsOf, keyOn } from './screenCanvas';
+import { activate, buttonStyle, createPainter, filmPlan, fontsOf, frostOf, keyOn, splitGlow } from './screenCanvas';
 
 const MENU = screen('MainMenuScreen');
 const PLAY = screen('PlayScreen');
@@ -99,5 +99,30 @@ describe('the paints', () => {
     const items = [{ type: 'video', film: { url: 'a.mp4', poster: 'a.jpg' } }, { type: 'video', film: { url: 'a.mp4', poster: 'a.jpg' } }];
     expect(filmPlan(items, { play: true })).toEqual({ videos: ['a.mp4'], posters: ['a.jpg'] });
     expect(filmPlan(items, { play: false })).toEqual({ videos: [], posters: ['a.jpg'] });
+  });
+
+  it('loads each texture box’s picture once, with the films’ posters', () => {
+    const items = [{ type: 'texture', texture: { id: 1 } }, { type: 'texture', texture: { id: 1 } }, { type: 'texture', texture: { id: 2 } }];
+    const pictureOf = (i) => (i.texture.id === 1 ? { url: '/one.webp' } : null);
+    expect(filmPlan(items, { play: true, pictureOf })).toEqual({ videos: [], posters: ['/one.webp'] });
+  });
+});
+
+describe('the additive layer', () => {
+  it('puts what the game adds onto what is under it on a canvas of its own, in order, the rest on the base', () => {
+    const items = [{ id: 'a', type: 'video', blend: 'additive' }, { id: 'b', type: 'text' }, { id: 'c', type: 'fill', blend: 'additive' }, { id: 'd', type: 'fill', blend: 'multiplicative' }];
+    const { base, glow } = splitGlow(items);
+    expect(base.map((i) => i.id)).toEqual(['b', 'd']);
+    expect(glow.map((i) => i.id)).toEqual(['a', 'c']);
+  });
+});
+
+describe('the frosted panels', () => {
+  it('lays a blurring panel under each box the game blurs what is behind, in the window’s pixels', () => {
+    const items = [{ id: '0:a', type: 'rectangle', fill: 'blurred', x: 97, y: 224, w: 504, h: 736, alpha: 1 }, { id: '0:b', type: 'rectangle', fill: 'color', x: 0, y: 0, w: 1, h: 1, alpha: 1 }];
+    const f = frostOf(items, frameOf({ width: 2560, height: 1080 }));
+    expect(f).toHaveLength(1);
+    expect(f[0]).toMatchObject({ id: '0:a', style: { left: '417px', top: '224px', width: '504px', height: '736px', opacity: 1 } });
+    expect(f[0].style.backdropFilter).toMatch(/^blur\(\d+(\.\d+)?px\)/);
   });
 });

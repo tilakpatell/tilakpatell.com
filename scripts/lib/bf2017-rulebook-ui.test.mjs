@@ -140,6 +140,25 @@ describe('the screens', () => {
   });
 });
 
+describe('the textures, the blends and the padding', () => {
+  const byId = (els, id) => els.reduce((hit, e) => hit ?? (e.id === id ? e : byId(e.children ?? [], id)), null);
+  it('keeps a texture box’s picture: its Id, the TextureRef its widget’s mapping gives it, its UV and its fit', () => {
+    const book = screensOf(ROOT, { names: ['UI/Frontend/Screens/StartFlow/PairingScreen'], strings: STRINGS });
+    const bg = byId(book.screens['UI/Frontend/Screens/StartFlow/PairingScreen'].elements, 'Background');
+    expect(bg.texture).toEqual({ id: 2069381427, ref: '3D80EC7618F789C7', uv: [0, 0, 1, 1], align: 'stretch' });
+  });
+
+  it('keeps a film drawn additive, and a padded container’s padding', () => {
+    const book = screensOf(ROOT, { names: ['UI/Frontend/Widgets/Play/PlayTile'], strings: STRINGS });
+    const tile = book.screens['UI/Frontend/Widgets/Play/PlayTile'];
+    expect(byId(tile.elements, 'Texts').padding).toEqual([30, 0, 30, 0]);
+    const video = book.widgets['UI/Frontend/Widgets/Play/PlayTileVideoWidget'];
+    expect(byId(video.elements, 'Video').blend).toBe('additive');
+    // (alpha blend is the default, and is not written)
+    expect(byId(tile.elements, 'Title').blend).toBeUndefined();
+  });
+});
+
 describe('the shapes', () => {
   const { shapes, _missing } = shapesOf(ROOT, ['UI/Shapes/InGame/HUD/Crosshairs/Crosshairs_Ability_Dooku', 'UI/Shapes/Icons/Shared/Checkmark']);
 

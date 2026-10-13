@@ -19,8 +19,12 @@ describe('a Play tile’s values', () => {
     expect(v({ id: '/COOP/NotInBeta', type: 'text' }, ['COOP', 'NotInBeta'])).toEqual({ text: 'NOT IN THIS WORLD YET' });
     expect(v({ id: '/Multiplayer/NotInBeta', type: 'text' }, ['Multiplayer', 'NotInBeta'])).toEqual({ hidden: true });
   });
-  it('leaves out the parts the game shows on other tiles, and the online footer', () => {
+  it('shows the play arrow only on a tile this world has', () => {
+    expect(v({ id: '/COOP/Play prompt', type: 'widget' }, ['COOP', 'AnimContainer', 'Play prompt'])).toEqual({ hidden: true });
+    expect(v({ id: '/Multiplayer/Play prompt', type: 'widget' }, ['Multiplayer', 'AnimContainer', 'Play prompt'])).toBeNull();
+  });
+
+  it('leaves out the parts the game shows on other tiles', () => {
     for (const part of ['RequiresConnection', 'SplitScreen', 'PlayScenarioWidget', 'EmblemsWidget']) expect(v({ id: `/COOP/${part}` }, ['COOP', part]), part).toEqual({ hidden: true });
-    expect(v({ id: '/FooterBar', type: 'widget' }, ['FooterBar'])).toEqual({ hidden: true });
   });
 });

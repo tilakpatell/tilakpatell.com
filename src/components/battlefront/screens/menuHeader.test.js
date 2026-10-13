@@ -19,7 +19,12 @@ describe('the main menu’s header', () => {
 
   it('deeper in: the breadcrumb with the crumbs’ words, and no tabs', () => {
     const h = header('Play', ['PLAY', 'SINGLE PLAYER']);
-    expect(crumbItems(['PLAY', 'SINGLE PLAYER'])).toEqual({ BreadcrumbList: [{ id: 'crumb0', label: 'PLAY' }, { id: 'crumb1', label: 'SINGLE PLAYER' }] });
+    expect(crumbItems(['PLAY', 'SINGLE PLAYER'])).toEqual({
+      BreadcrumbList: [
+        { id: 'crumb0', label: 'PLAY', hide: ['RankLevel', 'Divider', 'BreadcrumbTextActive'] },
+        { id: 'crumb1', label: 'SINGLE PLAYER', hide: ['RankLevel', 'BreadcrumbTextInactive'] },
+      ],
+    });
     expect(labels(h)).toEqual(['PLAY', 'SINGLE PLAYER']);
     expect(h.active).toEqual([]);
     expect(drawList([h.tree], { values: h.values }).some((i) => i.id.includes('/MainMenuWidget/'))).toBe(false);
@@ -35,6 +40,18 @@ describe('the main menu’s header', () => {
     ]);
   });
 
+  it('lays the crumbs as the game does: each part its words’ width, the box ending after the last (the capture: PLAY at 113, the slash at 165, SINGLE PLAYER at 179)', () => {
+    const h = header('Play', ['PLAY', 'SINGLE PLAYER']);
+    const items = drawList([h.tree], { values: h.values });
+    const at = (t) => items.find((i) => i.type === 'text' && i.text === t);
+    expect(Math.abs(at('PLAY').x - 113)).toBeLessThanOrEqual(2);
+    expect(Math.abs(at('/').x + at('/').w / 2 - 168)).toBeLessThanOrEqual(6);
+    expect(Math.abs(at('SINGLE PLAYER').x - 179)).toBeLessThanOrEqual(3);
+    const end = at('SINGLE PLAYER').x + at('SINGLE PLAYER').w;
+    const line = items.find((i) => i.id.endsWith('/BGContainer/BackgroundLineRight'));
+    expect(Math.abs(line.x - (end + 15))).toBeLessThanOrEqual(3);
+  });
+
   it('goes where a tab links, and says a tab this world has not got is coming', () => {
     const ways = { onPlay: vi.fn(), onStart: vi.fn(), onCollection: vi.fn(), onComing: vi.fn() };
     const go = tabWays(ways);
@@ -47,7 +64,8 @@ describe('the main menu’s header', () => {
   });
 
   it('leaves out the front end’s online parts', () => {
-    expect(offline({ id: '/FooterBar', type: 'widget' }, ['FooterBar'])).toEqual({ hidden: true });
+    // (the footer is drawn: footer.js keeps its one button)
+    expect(offline({ id: '/FooterBar', type: 'widget' }, ['FooterBar'])).toBeNull();
     expect(offline({ id: '/x/SocialHubList', type: 'widget' }, ['x', 'SocialHubList'])).toEqual({ hidden: true });
     expect(offline({ id: '/x/Debug', type: 'cell', label: 'DEBUG MENU' }, ['x', 'Debug'])).toEqual({ hidden: true });
     expect(offline({ id: '/x/Title', type: 'text' }, ['x', 'Title'])).toBeNull();

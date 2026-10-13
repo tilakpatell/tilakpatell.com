@@ -7,14 +7,14 @@
 //
 // frameOf({ width, height }) → { k, x, y, w, h }: the frame scaled to fit the
 //   window and centred in it
-// drawList(layers, { selected, values }) → [{ id, layer, type, x, y, w, h,
+// drawList(layers, { selected, open, values }) → [{ id, layer, type, x, y, w, h,
 //   alpha, colour, text, font, align, wrap, shape, film, fill, line, bleed,
 //   cell }] in frame px, in drawing order; `id` is `<layer>:<box id>`, `cell`
 //   the navigable it is in (or null)
 // navigables(layers, { values }) → [{ id, layer, x, y, w, h, label, link,
 //   screen, group, index, horizontal, coming, tile }]: `tile` a widget the
 //   game walks by its navigation zone (a Play tile), not a list's cell
-// values(box, path) → { text?, hidden?, film?, coming? } | null: what a screen
+// values(box, path) → { text?, hidden?, film?, image?, coming? } | null: what a screen
 //   fills a box with (the game's code does it at run time), `path` the ids'
 //   last parts from the layer's root down to the box
 
@@ -31,8 +31,11 @@ const HOLDS = new Set(['widget', 'container', 'stack', 'staticList', 'staticTabL
 // the game's highlight layers, shown on the selected cell (hand: the DOM
 // screens' rule, made exact, until the cells' schematics are read)
 const SELECT = /^Select|Selected/;
+// (an open cell that is not the focus, the tab whose page is shown, is lit
+// without the focus's own edges and dots: hand, the capture's HOME)
+const FOCUS_MARK = /Line|Dot/;
 const NEW_MARK = 'UI/Frontend/Widgets/Shared/NewThingAvailable';
-const KEEP = ['type', 'x', 'y', 'w', 'h', 'colour', 'text', 'font', 'align', 'wrap', 'shape', 'svg', 'film', 'fill', 'line', 'points', 'bleed'];
+const KEEP = ['type', 'x', 'y', 'w', 'h', 'colour', 'text', 'font', 'align', 'wrap', 'shape', 'svg', 'film', 'fill', 'line', 'points', 'bleed', 'texture', 'blend', 'image'];
 
 const nameOf = (id) => id.slice(id.lastIndexOf('/') + 1).replace(/#\d+$/, '');
 
@@ -61,20 +64,22 @@ const patched = (b, path, values) => {
   return p ? { ...b, ...p, forced: p.hidden === true } : b;
 };
 
-export function drawList(layers, { selected = new Set(), values = null } = {}) {
+export function drawList(layers, { selected = new Set(), open = new Set(), values = null } = {}) {
   const items = [];
   layers.forEach((tree, layer) => {
     const navs = navIds(tree);
-    const walk = (boxes, path, alpha, cell, on) => {
+    const walk = (boxes, path, alpha, cell, on, focused) => {
       const kids = (boxes ?? []).map((b) => patched(b, [...path, nameOf(b.id)], values));
       const names = new Set(kids.map((b) => nameOf(b.id)));
       for (const b of kids) {
         const name = nameOf(b.id);
         const here = navs.has(b.id) ? `${layer}:${b.id}` : cell;
-        const lit = navs.has(b.id) ? selected.has(here) : on;
+        const isFocus = navs.has(b.id) ? selected.has(here) : focused;
+        const lit = navs.has(b.id) ? isFocus || open.has(here) : on;
         const inCell = here !== null;
         const highlight = inCell && SELECT.test(name);
         if (highlight && !lit) continue;
+        if (highlight && !isFocus && FOCUS_MARK.test(name)) continue;
         if (inCell && lit && (names.has(`${name}Selected`) || names.has(`Selected${name}`))) continue;
         if (b.hidden && !(highlight && lit && !b.forced)) continue;
         if (b.widget === NEW_MARK && b.hidden !== false) continue;
@@ -86,10 +91,10 @@ export function drawList(layers, { selected = new Set(), values = null } = {}) {
           for (const k of KEEP) if (b[k] !== undefined) item[k] = b[k];
           items.push(item);
         }
-        walk(b.children, [...path, name], a, here, lit);
+        walk(b.children, [...path, name], a, here, lit, isFocus);
       }
     };
-    walk(tree?.boxes, [], 1, null, false);
+    walk(tree?.boxes, [], 1, null, false, false);
   });
   return items;
 }
