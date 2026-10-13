@@ -95,6 +95,10 @@ export default {
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0.7, 0.78, 0.88);
+    // (the graph's world matrices once a frame, in draw: three works them
+    // out on every render() call, the field's pass and each shadow cascade,
+    // 5,700 objects walked three or four times a frame)
+    scene.matrixWorldAutoUpdate = false;
     const camera = new THREE.PerspectiveCamera(70, 1, 0.1, FAR);
     // (the level's shapes round the player, for the camera's arm: lane P0's
     // engine where the tier and the screen take it, the cells as the stream
@@ -394,6 +398,7 @@ export default {
       },
       draw({ renderer: r }) {
         level.beforeRender(camera);
+        scene.updateMatrixWorld();
         if (post) post.render();
         else r.render(scene, camera);
         level.afterRender();
