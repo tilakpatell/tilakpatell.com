@@ -19,7 +19,7 @@
 //   indirect  the draws' arguments, five u32 a slot (camera slots, then shadow): three.js's IndirectStorageBufferAttribute
 //
 // createCull(renderer, { scene, table, hzb, three, slots }) → {
-//   nodes: { rows, visible, state, visibleRead, stateRead } (draws.js's vertex pull), uniforms, indirect,
+//   nodes: { rows, visible, state, visibleRead, stateRead } (draws.js's vertex pull), uniforms, indirect, slotKeys,
 //   setSlot(s, { key, indexCount, firstIndex, baseVertex }), slotCount,
 //   run(camera, { now, width, height, occlude }), stats() → { tested, culled, occluded, drawn } (read every 30 frames),
 //   read() → Promise<every buffer as u32> (the parity check's),
@@ -29,7 +29,7 @@ import { FADE, JITTER, MESH_U32, NONE, SHADOW_REACH } from './cull.js';
 import { MIN_RADIUS } from '../../level/lod.js';
 import { MAX_LODS, lodIndexNode } from './lodRule.js';
 import { FLAG } from './pack.js';
-import { upload } from './three.js';
+import { upload, widen } from './three.js';
 
 // frames between two reads of the stats (a read waits on the GPU: never every frame)
 export const STATS_EVERY = 30;
@@ -200,6 +200,10 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
   let reading = false;
   let tableVersion = -1;
   let slotCount = 0;
+  // (the slots' keys set since the last run, sent as one span then: upload()
+  // keeps one range a call, so a group of parts set in one frame sent only
+  // its last slot's key, and the others drew key 0's rows with their mesh)
+  let slotsDirty = null;
   const _m = new THREE.Matrix4();
   const _f = new THREE.Frustum();
 
@@ -207,6 +211,8 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
     // (the vertex stage reads storage read-only: views of the same buffers)
     nodes: { rows, visible, state, visibleRead: storage(visibleAttr, 'uint', Math.max(1, table.room * 2)).toReadOnly(), stateRead: storage(stateAttr, 'uvec2', cap).toReadOnly() },
     uniforms: u,
+    // (the slots' keys as the CPU holds them and the span still to send: the tests')
+    slotKeys: slotKeyAttr,
     indirect,
     slots,
     keys,
@@ -218,7 +224,7 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
     setSlot(s, { key, indexCount, firstIndex, baseVertex }) {
       if (s >= slots) throw new Error(`the GPU scene holds ${slots} draw slots`);
       slotKeyAttr.array[s] = key;
-      upload(slotKeyAttr, { start: s, count: 1 });
+      slotsDirty = widen(slotsDirty, s);
       for (const at of [s, slots + s]) {
         indirect.array.set([indexCount, 0, firstIndex, baseVertex, 0], at * 5);
       }
@@ -229,6 +235,8 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
     run(camera, { now = 0, width, height, occlude = true } = {}) {
       if (scene.capacity !== cap) throw new Error('the GPU scene grew: make the cull again');
       upload(rowsAttr, scene.takeDirty(), 2);
+      upload(slotKeyAttr, slotsDirty);
+      slotsDirty = null;
       if (table.version !== tableVersion) {
         tableAttr.needsUpdate = true;
         tableVersion = table.version;

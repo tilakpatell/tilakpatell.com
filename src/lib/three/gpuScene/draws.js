@@ -15,25 +15,28 @@
 //
 // The vertex pulls its row: instance_index (which carries firstInstance)
 // into the key's list, the list into the rows; the row's quaternion and
-// three scales turn the vertex, the normal by the inverse scale (as an
-// instance matrix's normal matrix would), the previous position the same
+// three scales turn the vertex and its tangent, the normal by the inverse
+// scale (as an instance matrix's normal matrix would), the previous position the same
 // (a level's rows do not move, so the velocity is the camera's, as N2's TRAA
 // wants). lodFade.js's dither keeps the fading files' pixels apart.
 //
 // The shadow pass draws the same Mesh from the shadow lists (onBeforeShadow
 // swaps the offsets; a caster out of view still casts). Static groups sit
-// in one BundleGroup, recorded again only when a part comes (the arguments
-// change on the GPU, the commands do not). The prepass draws the opaque
+// in one BundleGroup, recorded again only when a part comes or a texture
+// they sample is let go (sampledBy: the arguments change on the GPU, the
+// commands do not, and a bundle keeps the bind groups it was recorded
+// with). The prepass draws the opaque
 // groups' steady rows (no fading, no cut-out) into a depth target with this
 // frame's camera, the occluders for the pyramid: last frame's visible rows,
 // where they are now, so nothing visible is hidden by a stale depth.
 //
 //   texturesOf(material) → Set (the maps it samples, by its own fields)
+//   sampledBy(material) → Set (those and the ones its nodes read)
 //   groupsOf(parts, { keyOf, maxTextures = 16 }) → { groups: [{ key, parts, material, textures }], refused: parts }
 //   mergeParts(THREE, [{ geometry, local, file, mirrored }]) → { geometry, ranges: [{ baseVertex, firstIndex, indexCount, mirrored? }] }
 //   createDraws(renderer, { cull, three, parent, keyOf, bundle = true }) → {
 //     add(parts, keys) → slots added, groups, meshes, bundle, setStatic(groupKey, on), rerecord(),
-//     prepass(camera, width, height) → depthTexture | null, stats() → { groups, slots, refused }, dispose() }
+//     prepass(camera, width, height) → depthTexture | null, stats() → { groups, slots, refused, rerecords }, dispose() }
 
 import { FADE } from './cull.js';
 import { fadeNodes } from './lodFade.js';
@@ -44,6 +47,29 @@ export const MAX_TEXTURES = 16;
 export function texturesOf(material) {
   const out = new Set();
   for (const v of Object.values(material)) if (v?.isTexture) out.add(v);
+  return out;
+}
+
+// Every texture a material samples: its own fields' and the ones its nodes
+// read (a game material's maps sit in its colour and normal nodes, not in
+// `map`). A texture let go under a recorded bundle leaves the bundle bound
+// to a destroyed GPU texture ("Destroyed texture used in a submit"), since a
+// bundle replays its bind groups as recorded: the level's loader does that
+// whenever a finer row comes (levelGltf.js's swapInto), so the bundle is
+// recorded again on every such dispose.
+export function sampledBy(material) {
+  const out = texturesOf(material);
+  // (each node once: a material's graph shares its nodes, and three's own
+  // traverse would walk a shared one again from every parent)
+  const seen = new Set();
+  const stack = Object.values(material).filter((v) => v?.isNode);
+  while (stack.length) {
+    const n = stack.pop();
+    if (seen.has(n)) continue;
+    seen.add(n);
+    if (n.isTextureNode && n.value?.isTexture) out.add(n.value);
+    for (const c of n.getChildren?.() ?? []) if (c?.isNode && !seen.has(c)) stack.push(c);
+  }
   return out;
 }
 
@@ -134,7 +160,7 @@ export function mergeParts(THREE, parts) {
 // instancing would set (positionLocal, positionPrevious, normalLocal), from
 // the row this instance_index names; and the fade's share
 function pullNodes(tsl, cull, { fade = FADE } = {}) {
-  const { Fn, instanceIndex, uint, vec3, vec4, float, select, unpackHalf2x16, bitcast, positionLocal, positionPrevious, normalLocal, attribute, clamp } = tsl;
+  const { Fn, instanceIndex, uint, vec3, vec4, float, select, unpackHalf2x16, bitcast, positionLocal, positionPrevious, normalLocal, tangentLocal, attribute, clamp } = tsl;
   const { rows, visibleRead, stateRead } = cull.nodes;
   const row = () => {
     const i = visibleRead.element(instanceIndex);
@@ -157,10 +183,14 @@ function pullNodes(tsl, cull, { fade = FADE } = {}) {
     // (incoming when this file is the row's own; the old file's draw fades out)
     return { age, incoming: select(mine.equal(cur), float(1), float(0)) };
   };
-  const position = Fn(() => {
+  // (the tangent turned as the position is, as three's BatchNode turns it:
+  // a normal map shades from the tangent frame, so a turned row left with
+  // its file's tangents lit its maps as if it had never been turned)
+  const position = Fn((builder) => {
     const { p, q, s } = row();
     positionPrevious.assign(turn(q, positionPrevious.mul(s)).add(p));
     normalLocal.assign(turn(q, normalLocal.div(s)));
+    if (builder.geometry?.hasAttribute?.('tangent')) tangentLocal.assign(turn(q, tangentLocal.mul(s)));
     return turn(q, positionLocal.mul(s)).add(p);
   });
   // (the prepass's: steady rows only; a fading one collapses to a point and draws nothing)
@@ -194,6 +224,21 @@ export function createDraws(renderer, { cull, three, parent, keyOf, bundle: useB
   let slots = 0;
   const prepassScene = new THREE.Scene();
   let target = null;
+  // (the bundle's textures, each watched once: a dispose records it again)
+  const watched = new Set();
+  let rerecords = 0;
+  const onTextureGone = () => {
+    if (!bundle) return;
+    bundle.needsUpdate = true;
+    rerecords++;
+  };
+  const watch = (material) => {
+    for (const t of sampledBy(material)) {
+      if (watched.has(t)) continue;
+      watched.add(t);
+      t.addEventListener('dispose', onTextureGone);
+    }
+  };
 
   const fadeKeep = pull.keep();
 
@@ -239,6 +284,7 @@ export function createDraws(renderer, { cull, three, parent, keyOf, bundle: useB
       group.mesh.onBeforeShadow = () => (group.mesh.geometry.indirectOffset = group.shadowOffsets);
       group.mesh.onAfterShadow = () => (group.mesh.geometry.indirectOffset = group.cameraOffsets);
       (group.static && bundle ? bundle : root).add(group.mesh);
+      watch(group.mesh.material);
       const dm = depthFor(group.material);
       if (dm) {
         group.depth = new THREE.Mesh(geometry, dm);
@@ -308,8 +354,10 @@ export function createDraws(renderer, { cull, three, parent, keyOf, bundle: useB
       renderer.setRenderTarget(was);
       return target.depthTexture;
     },
-    stats: () => ({ groups: groups.size, slots, refused: refused.length }),
+    stats: () => ({ groups: groups.size, slots, refused: refused.length, rerecords }),
     dispose() {
+      for (const t of watched) t.removeEventListener('dispose', onTextureGone);
+      watched.clear();
       for (const g of groups.values()) {
         g.mesh?.geometry.dispose();
         g.mesh?.material.dispose();

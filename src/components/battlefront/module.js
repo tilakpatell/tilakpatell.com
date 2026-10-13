@@ -101,14 +101,17 @@ export default {
     // brings them)
     let collision = null;
     let physics = null;
-    // (?level=gpu in the address: the level on GPU-first lane N1's scene,
-    // the rows culled by compute and one indirect draw a material group, so
-    // the level costs the frame no JavaScript a draw. Wired, not yet the
-    // default: on Hoth its cull keeps every row out (5,813 of 6,050 culled,
-    // nothing drawn) and the textures its groups hold are disposed under
-    // them; lane L's instanced path draws until that is found)
+    // (on WebGPU the level is GPU-first lane N1's scene: the rows culled by
+    // compute and one indirect draw a material group, so the level costs
+    // the frame no JavaScript a draw; Hoth at ultra on the owner's 5090,
+    // 1,600 × 900: 12.3 ms a frame against lane L's instanced path's 32.1,
+    // the world's draw 9.7 ms of JavaScript against 27.9, the picture the
+    // same to 46.7 dB with the chain off (docs/superpowers/evidence/gpu-first/N1).
+    // ?level=cpu in the address keeps the instanced path, for a check; a
+    // device without indirect-first-instance and WebGL 2 keep it always:
+    // levelScene.js's canDrawGpuScene)
     const flags = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search) : null;
-    const gpuScene = rt.gfx.backend === 'webgpu' && flags?.get('level') === 'gpu';
+    const gpuScene = rt.gfx.backend === 'webgpu' && flags?.get('level') !== 'cpu';
     // (?ground=flat: the ground in its flat colour, the game's snow maps left
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
