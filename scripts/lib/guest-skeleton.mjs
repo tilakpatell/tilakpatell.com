@@ -40,9 +40,12 @@
 //     joints }: the mesh at its bind) the height is the mesh's and the hand
 //     is the wrist to its furthest vertex, without one the crown joint's and
 //     the game's share of the forearm
-//   turnsOf(joints, walrusNodes) → { game bone: Quaternion }: the turn (in
-//     the world) that stands each long bone as the game's; a bone not named
-//     is not turned
+//   turnsOf(joints, walrusNodes, palms?) → { game bone: Quaternion }: the
+//     turn (in the world) that stands each long bone as the game's, and
+//     with the guest's palms (measure's, read off its mesh: Meshy's face
+//     forward, the game's man's down and in) the roll about the forearm
+//     that faces them as his, whole at the wrist and half at the elbow; a
+//     bone not named is not turned
 //   fitSkeleton(walrusNodes, measured) → rows: the game's 254 and the head's
 //     two helpers (head_end, headfront: the Wardrobe's gear takes its frame
 //     from them), hips at the guest's height, soles on the ground
@@ -139,6 +142,27 @@ export function JOINT_MAP(meshyNodes) {
   return new Map(meshyNodes.filter((r) => map.has(r.name)).map((r) => [r.name, map.get(r.name)]));
 }
 
+// The line a flat thing is thinnest along, among those across `along` (a
+// hand's, across its forearm's line): tried a degree at a time. Either way
+// along it: the caller says which.
+export function thinSide(points, along) {
+  const a = new THREE.Vector3(0, 0, 1).addScaledVector(along, -along.z).normalize();
+  const b = along.clone().cross(a);
+  let thin = a;
+  let least = Infinity;
+  for (let deg = 0; deg < 180; deg++) {
+    const d = a.clone().multiplyScalar(Math.cos((deg * Math.PI) / 180)).addScaledVector(b, Math.sin((deg * Math.PI) / 180));
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const at of points) {
+      lo = Math.min(lo, at.dot(d));
+      hi = Math.max(hi, at.dot(d));
+    }
+    if (hi - lo < least) [least, thin] = [hi - lo, d];
+  }
+  return thin;
+}
+
 export function measure(meshyNodes, surface = null) {
   const map = JOINT_MAP(meshyNodes);
   const worlds = worldsOf(meshyNodes);
@@ -148,10 +172,12 @@ export function measure(meshyNodes, surface = null) {
   let sole = 0;
   let top = filed.get('head_end').y;
   const reach = { Left: 0, Right: 0 };
+  let palms = null;
   if (surface) {
     sole = Infinity;
     top = -Infinity;
     const hands = SIDES.map((s) => surface.joints.indexOf([...map].find(([, to]) => to === `${s}Hand`)[0]));
+    const of = { Left: [], Right: [] };
     const p = new THREE.Vector3();
     for (let v = 0; v < surface.positions.length / 3; v++) {
       p.fromArray(surface.positions, v * 3);
@@ -161,7 +187,19 @@ export function measure(meshyNodes, surface = null) {
         const side = hands.indexOf(surface.skinIndex[v * 4 + k]);
         if (side < 0 || surface.skinWeight[v * 4 + k] < 0.5) continue;
         reach[SIDES[side]] = Math.max(reach[SIDES[side]], p.distanceTo(filed.get(`${SIDES[side]}Hand`)));
+        of[SIDES[side]].push(p.clone());
       }
+    }
+    // Which way each palm faces: a hand is flat, so across its thin side,
+    // the way (of the two) that is forward or down. Meshy stands a figure
+    // with its arms out and its palms forward; the game's man rests with
+    // his down and in, so a hand is rolled about its forearm to match
+    // (turnsOf), or a gun would lie on an open palm.
+    // (a mesh with no hand on one side, a test's, has no palms to read: no roll then)
+    palms = SIDES.every((s) => of[s].length > 2) ? {} : null;
+    for (const s of palms ? SIDES : []) {
+      const thin = thinSide(of[s], filed.get(`${s}Hand`).clone().sub(filed.get(`${s}ForeArm`)).normalize());
+      palms[s] = (thin.z - 0.5 * thin.y < 0 ? thin.negate() : thin).toArray();
     }
   }
   const len = (a, b) => filed.get(b).distanceTo(filed.get(a));
@@ -187,10 +225,19 @@ export function measure(meshyNodes, surface = null) {
     hipsHeight: joints.Hips[1],
     height: top - sole,
     joints,
+    palms,
   };
 }
 
-export function turnsOf(joints, walrusNodes) {
+// the way the game's palm faces at rest: the way its fingers curl, across the hand
+function gamePalm(game, s) {
+  const hand = placeOf(game.get(`${s}Hand`));
+  const finger = placeOf(game.get(`${s}HandMiddle1`)).sub(hand).normalize();
+  const curl = placeOf(game.get(`${s}HandMiddle4`)).sub(placeOf(game.get(`${s}HandMiddle1`)));
+  return curl.addScaledVector(finger, -curl.dot(finger)).normalize();
+}
+
+export function turnsOf(joints, walrusNodes, palms = null) {
   const game = worldsOf(walrusNodes);
   const turns = {};
   for (const [bone, to] of LONG) {
@@ -205,6 +252,27 @@ export function turnsOf(joints, walrusNodes) {
     }
   }
   for (const s of SIDES) turns[`${s}Hand`] = turns[`${s}ForeArm`].clone();
+  if (palms) {
+    // the roll about each forearm that faces the guest's palm as the game's:
+    // the mean of the two sides again (they mirror), the whole of it at the
+    // wrist and half at the elbow, as a forearm turns over
+    const about = {};
+    const roll = {};
+    for (const s of SIDES) {
+      const axis = new THREE.Vector3(1, 0, 0).transformDirection(game.get(`${s}ForeArm`));
+      const across = (v) => v.addScaledVector(axis, -v.dot(axis)).normalize();
+      const from = across(V(palms[s]).applyQuaternion(turns[`${s}ForeArm`]));
+      const to = across(gamePalm(game, s));
+      about[s] = axis;
+      roll[s] = Math.atan2(from.clone().cross(to).dot(axis), from.dot(to));
+    }
+    const mean = (roll.Left - roll.Right) / 2;
+    for (const s of SIDES) {
+      const angle = s === 'Left' ? mean : -mean;
+      turns[`${s}Hand`].premultiply(new THREE.Quaternion().setFromAxisAngle(about[s], angle));
+      turns[`${s}ForeArm`].premultiply(new THREE.Quaternion().setFromAxisAngle(about[s], angle / 2));
+    }
+  }
   return turns;
 }
 
@@ -238,7 +306,7 @@ export function fitSkeleton(walrusNodes, measured) {
   const game = worldsOf(walrusNodes);
   const gameAt = (n) => placeOf(game.get(n));
   const own = (n) => V(measured.joints[n]);
-  const turns = turnsOf(measured.joints, walrusNodes);
+  const turns = turnsOf(measured.joints, walrusNodes, measured.palms);
   const still = new THREE.Quaternion();
 
   // the guest's joints stood as the game's man stands: each from its parent,

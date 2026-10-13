@@ -5,7 +5,7 @@ import { addZones } from '../../src/components/rickmorty/wardrobe/dressCore.js';
 import { glbJson } from './bf2017-paths.mjs';
 import { meshyRig } from './fixtures/meshy-rig.mjs';
 import { readGuest } from './guest-file.mjs';
-import { JOINT_MAP, fitSkeleton, measure, rowsOf, turnsOf, worldsOf } from './guest-skeleton.mjs';
+import { JOINT_MAP, fitSkeleton, measure, rowsOf, thinSide, turnsOf, worldsOf } from './guest-skeleton.mjs';
 import { bakeBind, bindPose, moveWeights, restPose, targetsOf } from './guest-skin.mjs';
 
 const WALRUS = rowsOf(glbJson(readFileSync('public/models/galaxy/bf2017/walrus.glb')));
@@ -168,9 +168,9 @@ describe.each([['Rick', 'public/games/meshy/rick.glb'], ['Morty', 'public/games/
     const m = measure(guest.rows, guest.surface);
     const fitted = fitSkeleton(WALRUS, m);
     fit = worldsOf(fitted);
-    turns = turnsOf(m.joints, WALRUS);
+    turns = turnsOf(m.joints, WALRUS, m.palms);
     const s = guest.surface;
-    out = bakeBind(s.positions, s.normals, s.skinIndex, s.skinWeight, bindPose(guest.rows), restPose(guest.rows, fitted, JOINT_MAP(guest.rows)), s.joints);
+    out = bakeBind(s.positions, s.normals, s.skinIndex, s.skinWeight, bindPose(guest.rows), restPose(guest.rows, fitted, JOINT_MAP(guest.rows), m.palms), s.joints);
   });
 
   it('is read at its bind, in metres, its soles on the ground', () => {
@@ -217,6 +217,25 @@ describe.each([['Rick', 'public/games/meshy/rick.glb'], ['Morty', 'public/games/
       expect(after.middle.distanceTo(before.middle.clone().applyQuaternion(turn)), `${joint} ring off its joint`).toBeLessThan(0.01);
       expect(after.girth / before.girth, `${joint} girth`).toBeGreaterThan(0.85);
       expect(after.girth / before.girth, `${joint} girth`).toBeLessThan(1.15);
+    }
+  });
+
+  it('turns its palms from forward, as Meshy stood it, to down and in, as the game’s man rests his', () => {
+    const s = guest.surface;
+    const game = worldsOf(WALRUS);
+    for (const side of ['Left', 'Right']) {
+      const j = s.joints.indexOf(`${side}Hand`);
+      const hand = [];
+      for (let v = 0; v < s.positions.length / 3; v++) for (let k = 0; k < 4; k++) if (s.skinIndex[v * 4 + k] === j && s.skinWeight[v * 4 + k] >= 0.5) hand.push(new THREE.Vector3().fromArray(out.positions, v * 3));
+      const along = at(fit, `${side}Hand`).sub(at(fit, `${side}ForeArm`)).normalize();
+      const thin = thinSide(hand, along);
+      // (the game's palm: the way its fingers curl, across the hand)
+      const finger = at(game, `${side}HandMiddle1`).sub(at(game, `${side}Hand`)).normalize();
+      const curl = at(game, `${side}HandMiddle4`).sub(at(game, `${side}HandMiddle1`));
+      const palm = curl.addScaledVector(finger, -curl.dot(finger)).normalize();
+      const across = palm.addScaledVector(along, -palm.dot(along)).normalize();
+      const off = (Math.acos(Math.min(1, Math.abs(thin.dot(across)))) * 180) / Math.PI;
+      expect(off, `${side} palm ${off.toFixed(1)}° off the game’s`).toBeLessThan(12);
     }
   });
 

@@ -14,9 +14,11 @@
 //
 //   bindPose(meshySkeleton) → Map<Meshy joint, Matrix4>: each node at rest,
 //     in metres (the root's scale taken out of the matrix)
-//   restPose(meshySkeleton, fitted, map) → Map<Meshy joint, Matrix4>: each
-//     joint from the hips down at the fitted joint, turned as its long bone
-//     is turned; a joint with no counterpart goes with its parent
+//   restPose(meshySkeleton, fitted, map, palms?) → Map<Meshy joint, Matrix4>:
+//     each joint from the hips down at the fitted joint, turned as its long
+//     bone is turned (and its hand rolled to the game's palm, given the
+//     guest's: guest-skeleton.mjs's measure); a joint with no counterpart
+//     goes with its parent
 //   bakeBind(positions, normals, skinIndex, skinWeight, meshyBind, restPose, joints)
 //     → { positions, normals }: the mesh posed from the one to the other
 //     (joints: the skin's joint names, in its order)
@@ -45,14 +47,14 @@ export function bindPose(meshySkeleton) {
   return out;
 }
 
-export function restPose(meshySkeleton, fitted, map) {
+export function restPose(meshySkeleton, fitted, map, palms = null) {
   const own = bindPose(meshySkeleton);
   const fit = worldsOf(fitted);
   const place = (m) => new THREE.Vector3().setFromMatrixPosition(m);
   const joints = {};
   for (const [from, to] of map) joints[to] = place(own.get(from)).toArray();
   // (the fitted skeleton rests as the game's does, so its long bones point the game's way)
-  const turns = turnsOf(joints, fitted);
+  const turns = turnsOf(joints, fitted, palms);
   const still = new THREE.Quaternion();
   const turned = new Map();
   const out = new Map();

@@ -182,6 +182,50 @@ describe('the game’s skeleton, fitted to a guest', () => {
     expect(turns.LeftArm.z).toBeCloseTo(-turns.RightArm.z, 4);
   });
 
+  it('reads which way a guest’s palms face off its mesh: across the hand’s thin side, forward or down', () => {
+    // a flat hand on each wrist of the hand-made rig: 16 cm down the arm, 8 cm wide, 2 cm thick through z
+    const rig = made();
+    const own = worldsOf(rig);
+    const names = ['LeftHand', 'RightHand'];
+    const positions = [];
+    const skinIndex = [];
+    const skinWeight = [];
+    names.forEach((n, j) => {
+      const wrist = at(own, n);
+      const along = wrist.clone().sub(at(own, n.replace('Hand', 'ForeArm'))).normalize();
+      const across = new THREE.Vector3(0, 0, 1).cross(along);
+      for (const a of [0, 0.16]) for (const b of [-0.04, 0.04]) for (const c of [-0.01, 0.01]) {
+        positions.push(...wrist.clone().addScaledVector(along, a).addScaledVector(across, b).add(new THREE.Vector3(0, 0, c)).toArray());
+        skinIndex.push(j, 0, 0, 0);
+        skinWeight.push(1, 0, 0, 0);
+      }
+    });
+    const m = measure(rig, { positions, skinIndex, skinWeight, joints: names });
+    for (const s of ['Left', 'Right']) expect(new THREE.Vector3(...m.palms[s]).distanceTo(new THREE.Vector3(0, 0, 1)), s).toBeLessThan(0.02);
+    expect(measure(rig).palms).toBe(null);
+
+    // and the hand is rolled about its forearm so that palm faces as the game's man's does at rest, the forearm half as far
+    const turns = turnsOf(m.joints, WALRUS, m.palms);
+    const plain = turnsOf(m.joints, WALRUS);
+    const game = worldsOf(WALRUS);
+    for (const s of ['Left', 'Right']) {
+      const axis = new THREE.Vector3(1, 0, 0).transformDirection(game.get(`${s}ForeArm`));
+      const across = (v) => v.clone().addScaledVector(axis, -v.dot(axis)).normalize();
+      // (the game's palm: the way its fingers curl, across the hand)
+      const finger = at(game, `${s}HandMiddle1`).sub(at(game, `${s}Hand`)).normalize();
+      const curl = at(game, `${s}HandMiddle4`).sub(at(game, `${s}HandMiddle1`));
+      const palm = curl.addScaledVector(finger, -curl.dot(finger)).normalize();
+      const faces = (q) => across(new THREE.Vector3(...m.palms[s]).applyQuaternion(q));
+      expect(degrees(faces(turns[`${s}Hand`]), across(palm)), s).toBeLessThan(0.5);
+      expect(degrees(faces(plain[`${s}Hand`]), across(palm)), s).toBeGreaterThan(20);
+      const whole = degrees(faces(plain[`${s}Hand`]), across(palm));
+      expect(degrees(faces(turns[`${s}ForeArm`]), across(palm)), s).toBeCloseTo(whole / 2, 0);
+      // (a roll about the bone's own line: it points where it did)
+      const own = new THREE.Vector3(...m.joints[`${s}Hand`]).sub(new THREE.Vector3(...m.joints[`${s}ForeArm`])).normalize();
+      expect(degrees(own.clone().applyQuaternion(turns[`${s}ForeArm`]), own.clone().applyQuaternion(plain[`${s}ForeArm`]))).toBeLessThan(0.01);
+    }
+  });
+
   it('reads the same turns off a fitted skeleton as off the game’s, though a guest’s two sides differ', () => {
     // (Morty's two shins are 9° apart in his file: a fitted skeleton's joints are not where the game's bones point)
     const m = measure(MORTY);

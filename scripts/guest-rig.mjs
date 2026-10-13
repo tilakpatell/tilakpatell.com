@@ -71,7 +71,7 @@ export async function rigGuest(who, { body = Object.keys(guestRow(who).bodies)[0
   const check = checkWalrus(names);
   if (!check.ok || !isWalrus(names)) throw new Error(`${body}: the fitted skeleton is not the game’s (it lacks ${check.missing.join(', ')})`);
   const map = JOINT_MAP(guest.rows);
-  const posed = bakeBind(surface.positions, surface.normals, surface.skinIndex, surface.skinWeight, bindPose(guest.rows), restPose(guest.rows, fitted, map), surface.joints);
+  const posed = bakeBind(surface.positions, surface.normals, surface.skinIndex, surface.skinWeight, bindPose(guest.rows), restPose(guest.rows, fitted, map, measured.palms), surface.joints);
   const weights = moveWeights(surface.skinIndex, surface.skinWeight, map, (n) => names.indexOf(n), guest.joints);
 
   // the fitted skeleton as the file's nodes, Reference at the scene's root
