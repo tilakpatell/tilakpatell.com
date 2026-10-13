@@ -17,7 +17,9 @@ import { sense } from '../../ai/perception.js';
 import { SENSE, SQUAD, STEP, THINK, clock, muzzleOf, profile, shoot } from '../core.js';
 import { aiOf } from '../rulebook.js';
 import { lineClear, shields } from '../nav.js';
-import { chestOf, eyeOf } from '../soldier.js';
+import { chestOf, eyeOf, roll } from '../soldier.js';
+import { press } from '../abilities.js';
+import { onRoll } from '../kit.js';
 import { act, createBrain, think } from './soldierBrain.js';
 import { alert, createSquads, deliver, squadOf, update } from './squad.js';
 import { factionOf, nameFor } from './names.js';
@@ -37,7 +39,8 @@ function nameOf(sim, s) {
 
 function brainFor(sim, ai, s) {
   s.name = nameOf(sim, s);
-  const brain = createBrain(s, { ai, rand: sim.rand, aimScale: sim.aimScale ?? 1, difficulty: sim.difficulty ?? null, pve: !!sim.pve });
+  // (ap: an Instant Action round's AutoPlayer numbers for this bot's side, instantAction.js's; none otherwise)
+  const brain = createBrain(s, { ai, rand: sim.rand, aimScale: sim.aimScale ?? 1, difficulty: sim.difficulty ?? null, pve: !!sim.pve, ap: sim.instantAction?.ap?.[s.team] ?? null });
   brain.name = s.name;
   brain.nextSense = sim.time + sim.rand() * SENSE;
   brain.nextThink = sim.time + sim.rand() * THINK;
@@ -95,6 +98,13 @@ function worldFor(sim, b, s) {
     taken: sim.brains.taken,
     muzzle: muzzleOf,
     shoot: (who, aim) => shoot(sim, who, aim),
+    // (a bot's dodge roll, as a player's: its evade's charge spent, sim.js's applyInput)
+    roll: (who, dir) => {
+      if (!press(who.abilities, 0, sim.time).fired) return false;
+      roll(who, dir, sim.time);
+      onRoll(who, sim.time);
+      return true;
+    },
     who: (id) => sim.entities.get(id) ?? null,
   };
 }

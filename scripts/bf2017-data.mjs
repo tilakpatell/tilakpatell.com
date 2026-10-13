@@ -13,6 +13,10 @@
 //          the costs and the Arcade from their records (scripts/lib/bf2017-rulebook-costs.mjs,
 //          bf2017-arcade.mjs): Online/BattlepointCostData, the PF_KitLimitations_* prefabs,
 //          the Skirmish scenarios and parameters
+//   node scripts/bf2017-data.mjs gameSettings [--root <dir>] [--out src/data/bf2017] [--dry]
+//          the server's settings (Online/GameSettingsContainer: the AutoPlayers' AP_* rows,
+//          Instant Action's *_Mode8, the waves) and Instant Action's bot logic
+//          (scripts/lib/bf2017-rulebook-settings.mjs): gameSettings.json
 //   node scripts/bf2017-data.mjs saber [--root <dir>] [--out src/data/bf2017]   the lightsaber's rulebook (scripts/lib/bf2017-rulebook-saber.mjs): saber.json
 //
 //   root   the export: data.tsv and data/<Name>.json(.gz), with the web build
@@ -41,6 +45,7 @@ import { kitsRulebook, pointsRulebook } from './lib/bf2017-rulebook-costs.mjs';
 import { arcadeRulebook } from './lib/bf2017-arcade.mjs';
 import { USABLE, levelKey, rulebookFile } from './lib/bf2017-map-audit.mjs';
 import { saberRulebook } from './lib/bf2017-rulebook-saber.mjs';
+import { settingsRulebook } from './lib/bf2017-rulebook-settings.mjs';
 import { collectionRulebook } from './lib/bf2017-rulebook-collection.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -258,6 +263,12 @@ export const RECORDS = {
   kits: (root, { out = join('src', 'data', 'bf2017') } = {}) =>
     kitsRulebook(root, { books: booksIn(out), gameplay: [...indexOf(root)].filter(([, e]) => /CustomizationGameplayAsset$/.test(e.type)).map(([n]) => n) }),
   arcade: (root, { out = join('src', 'data', 'bf2017') } = {}) => arcadeRulebook(root, { books: booksIn(out) }),
+  // (the server's settings, the AutoPlayers' among them, and Instant Action's bot logic: lib/bf2017-rulebook-settings.mjs)
+  gameSettings: (root) => {
+    const { missing, ...book } = settingsRulebook(root);
+    for (const m of missing) console.log(`  missing: ${m}`);
+    return book;
+  },
   // the Collection's appearances, abilities, star cards, emotes, poses and
   // voice lines (scripts/lib/bf2017-rulebook-collection.mjs), each skin with
   // the crew file cut from its folder where there is one

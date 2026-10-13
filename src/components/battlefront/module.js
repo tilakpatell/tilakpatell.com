@@ -17,7 +17,10 @@
 // a shot toward the sun; it answers with the recoil), 'fire' { on } (the
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
-// 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js).
+// 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
+// 'instantActionSchema' (a promise of the setup screen's options) and
+// 'instantAction' options (a promise of { ok, props } to mount the round with:
+// create's `instantAction`, lib/battlefront/instantAction.js).
 // `sounds()` is the sound player's counter.
 //
 // Until the first deploy the camera is parked in the soldier's own pose at
@@ -48,7 +51,7 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, spawnFor, step, view } from './battle.js';
+import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, grant, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
@@ -58,6 +61,7 @@ import { NAMES } from './sound/sounds.js';
 import { litWith, picturesOf } from './picture.js';
 import { headroom, upscaleKind } from '../../lib/three/light/post.js';
 import { headroomAt } from '../../runtime/quality.js';
+import { loadSettings, optionsFor, roundFor } from '../../lib/battlefront/instantAction.js';
 
 export const HUD_HZ = 8; // snapshots a second to the page
 export const PLAYER_TEAM = 2; // the attackers on Hoth, the Empire (maps/hoth.stages.json)
@@ -81,7 +85,7 @@ export default {
     return typeof window !== 'undefined' ? Math.max(1, Math.min(2, window.devicePixelRatio || 1)) : 1;
   },
   label: 'Hoth from Star Wars Battlefront II (2017), drawn from the game’s own level, light and figures. W A S D to move, the mouse to look and fire, Enter to deploy.',
-  async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault', weather: askedWeather = null } = {}) {
+  async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault', weather: askedWeather = null, instantAction = null } = {}) {
     const renderer = rt.gfx.renderer;
     const tier = rt.quality?.tier ?? 'high';
     // (the meshopt decoder and the Basis transcoder up beside the level's
@@ -154,7 +158,11 @@ export default {
     };
     // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
-    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask });
+    // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
+    // server's rows for them. The page's side is the Empire's; the sides' sizes, the era, the
+    // difficulty and the AutoPlayers' aim reach the sim, the rest of the round waits on the lanes that read it)
+    const round = instantAction ? roundFor(await loadSettings(), { ...instantAction, level: levelName, mode, team: PLAYER_TEAM }) : null;
+    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : {}) });
     const me = addPlayer(sim, { team: PLAYER_TEAM });
     // the game's sounds (sound/): the player on the runtime's bus, the
     // director on the sim's events; the one-shots the first minute needs
@@ -208,9 +216,13 @@ export default {
       }
       return appearanceOf(store, c.id, { faction: c.faction });
     };
-    const doDeploy = (classId = picked, appearance = null) => {
-      const look = appearance ?? pickedLook(classId);
-      const base = classId ? { classId, ...(look ? { appearance: look } : {}) } : {};
+    // (a choice: an offer { kind, id } from the deploy screen, { classId }, a class id, or nothing for the side's first class)
+    const choiceOf = (c) => (typeof c === 'string' ? { classId: c } : c?.kind ? { kind: c.kind, id: c.id } : c?.classId ? { classId: c.classId } : {});
+    const doDeploy = (choice = picked, appearance = null) => {
+      const base = choiceOf(choice);
+      // (the skin the Collection keeps for what is deployed, where the screen sent none)
+      const look = appearance ?? pickedLook(base.id ?? base.classId ?? null);
+      if (look) base.appearance = look;
       let r = deploy(sim, me, mate ? { ...base, spawn: 'squad', mate } : base);
       // (a mate who cannot be spawned on by now: the HQ, as the game falls back, SpawnOnSpawnEntityIfSpawnOnPlayerFails)
       if (!r.ok && mate && squadsOf(rb).fallbackToPoint) r = deploy(sim, me, base);
@@ -430,7 +442,10 @@ export default {
       do(action, arg) {
         switch (action) {
           case 'deploy':
-            return doDeploy(arg?.classId ?? picked, arg?.appearance ?? null);
+            return doDeploy(arg?.kind || arg?.classId ? arg : picked, arg?.appearance ?? null);
+          case 'points':
+            // (a check's Battle Points for the player, to buy a hero: battle.js's grant)
+            return { ok: true, points: grant(sim, arg ?? 0) };
           case 'pick':
             picked = arg;
             return { ok: true };
@@ -476,6 +491,19 @@ export default {
           case 'kit':
             // (what the kit draws, and the player's soldier as the sim has it: for a check)
             return { drawn: kitFx.counts(), grenades: view(sim).grenades.map((g) => ({ id: g.id, kind: g.kind, at: g.at.slice(), resting: g.resting })), state: body()?.state ?? null, gun: body()?.gun?.row?.id ?? null, heat: body()?.gun?.heat ?? null, spin: body()?.gun?.spin ?? null, hp: body()?.hp ?? null, shield: body()?.shield?.hp ?? null, over: body()?.over?.hp ?? 0 };
+          case 'instantActionSchema':
+            // (the setup screen's options, each with the row it reads; a promise, the settings being a chunk of their own)
+            return loadSettings().then((gs) => optionsFor(gs, { rulebook: rb, level: levelName }).filter((o) => o.id !== 'team'));
+          case 'instantAction':
+            // (the choices checked: the props to mount the round with, or why not)
+            return loadSettings().then((gs) => {
+              try {
+                const r = roundFor(gs, { ...arg, level: arg?.level ?? levelName, mode: arg?.mode ?? mode, team: PLAYER_TEAM });
+                return { ok: true, props: { level: r.level, mode: r.mode, instantAction: { ...arg } }, round: r };
+              } catch (err) {
+                return { ok: false, why: err.message };
+              }
+            });
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':
