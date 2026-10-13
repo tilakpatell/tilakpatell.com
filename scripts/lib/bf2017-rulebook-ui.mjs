@@ -194,6 +194,13 @@ function elementOf(a, i, ctx, w, depth = 0) {
     }
     ctx.want.add(name);
   }
+  // a list the game's code fills, one cell a datum, each made from the
+  // template (the breadcrumb's crumbs): the page lays it from its own data
+  if (o.$type === 'StandardListElementData' && asset(o.CellTemplate) && !isEra(asset(o.CellTemplate))) {
+    const template = asset(o.CellTemplate);
+    el.dynamic = { template, cellSize: xy(o.CellSize, 'X', 'Y'), spacing: o.Spacing ?? 0, horizontal: Boolean(o.Horizontal), sized: Boolean(o.CellsUseDynamicSize) };
+    ctx.want.add(template);
+  }
   if (/^Static(Tab)?ListElementData$/.test(o.$type)) {
     // the list's cells are the widget's StaticListCellEntityData components
     // (those whose events go to this list, when any does), in the order the

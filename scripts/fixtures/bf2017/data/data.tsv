@@ -141,6 +141,8 @@ UI/Data/GameModes/PlanetaryBattles	GameModeInformationAsset	data/UI/Data/GameMod
 UI/Data/GameModes/Planets/Hoth	PlanetInformationAsset	data/UI/Data/GameModes/Planets/Hoth.json	411
 UI/Data/GameModes/SpaceBattles	GameModeInformationAsset	data/UI/Data/GameModes/SpaceBattles.json	1843
 UI/Frontend/Screens/Start/MainMenuScreen	UIWidgetBlueprint	data/UI/Frontend/Screens/Start/MainMenuScreen.json	9405
+UI/Frontend/Widgets/Breadcrumbs/BreadcrumbListCell	UIWidgetBlueprint	data/UI/Frontend/Widgets/Breadcrumbs/BreadcrumbListCell.json	30581
+UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget	UIWidgetBlueprint	data/UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget.json	16076
 UI/Frontend/Widgets/MainMenu/MainMenuButtonCell	UIWidgetBlueprint	data/UI/Frontend/Widgets/MainMenu/MainMenuButtonCell.json	51507
 UI/Frontend/Widgets/MainMenu/MainMenuWidget	UIWidgetBlueprint	data/UI/Frontend/Widgets/MainMenu/MainMenuWidget.json	52257
 UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget	UIWidgetBlueprint	data/UI/InGame/Hud/Soldier/Screens/DefaultSoldierHudWidget.json	41771

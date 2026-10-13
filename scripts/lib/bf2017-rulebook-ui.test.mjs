@@ -68,7 +68,15 @@ describe('the screens', () => {
     const field = Object.keys(cells.Play.binds)[0];
     expect(cell.slots[field]).toContain('MenuText');
     expect(book.strings.ID_MAINMENU_SCR_PLAY).toBe('PLAY');
-    expect(book._missing).toContain('widget: UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget');
+    expect(book._missing).not.toContain('widget: UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget');
+  });
+
+  it('keeps a dynamic list’s cell template, its cell size and direction, and reads the template as a widget', () => {
+    const byId = (els, id) => els.reduce((hit, e) => hit ?? (e.id === id ? e : byId(e.children ?? [], id)), null);
+    const crumbs = book.widgets['UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget'];
+    const list = byId(crumbs.elements, 'BreadcrumbList');
+    expect(list.dynamic).toEqual({ template: 'UI/Frontend/Widgets/Breadcrumbs/BreadcrumbListCell', cellSize: [200, 32], spacing: 0, horizontal: true, sized: true });
+    expect(book.widgets['UI/Frontend/Widgets/Breadcrumbs/BreadcrumbListCell']).toBeTruthy();
   });
 
   it('pairs a link with the screen of its name', () => {
