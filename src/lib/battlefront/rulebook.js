@@ -147,6 +147,14 @@ export async function loadLevel(level) {
 // (lane F's) until G1's frontend.json, read from the inclusion options, lands
 export const levelsFor = (system) => [...(modes.worlds[system]?.ground ?? [])];
 export const modesOf = (rb, level) => [...(modes.levels[levelKey(level)]?.modes ?? [])];
+// The level of a world that holds a mode: the level itself where it does, else the first of its world's
+// that does (Hoth's Supremacy is its second level's, on the same ground); the level itself where none does
+export function levelForMode(rb, level, mode) {
+  const key = levelKey(level);
+  if (modes.levels[key]?.modes?.includes(mode)) return key;
+  const first = modes.worlds[modes.levels[key]?.world]?.ground?.[0] ?? key;
+  return (modes.worlds[modes.levels[key]?.world]?.ground ?? []).find((k) => modes.levels[k]?.modes?.includes(mode)) ?? first;
+}
 
 export function teamsFor(rb, level, era = 'Orig') {
   const t = pick(rb.teams, `${era}:${levelKey(level)}`, 'teams');

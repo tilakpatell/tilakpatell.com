@@ -20,5 +20,5 @@ export const LEVELS = ['hoth'];
 // the modes the game world runs (src/lib/battlefront/modes/index.js), and those each level's pack plays:
 // a level's own modes are its map rulebook's (modes.json); a pack that lands adds its row
 export const MODES = ['galacticAssault', 'strike', 'extraction', 'ewokHunt', 'supremacy'];
-export const LEVEL_MODES = { hoth: ['galacticAssault'] };
+export const LEVEL_MODES = { hoth: ['galacticAssault', 'supremacy'] };
 export { default as battlefrontModule } from './module.js';
