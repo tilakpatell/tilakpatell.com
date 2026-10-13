@@ -100,6 +100,41 @@ describe('a bot on the AutoPlayers’ numbers', () => {
     expect(w.shots).toHaveLength(0);
   });
 
+  it('strafes one way then the other, each for the settings’ time', () => {
+    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
+    const b = bot([0, 0, -50], { ap });
+    see(b, 'them', [0, 1.2, -30]);
+    const w = world();
+    const flips = [];
+    let was = null;
+    for (let t = 0; t < 20; t += 0.25) {
+      const i = think(b, w, t);
+      expect(i.mode).toBe('attack');
+      const side = Math.sign(i.goal[0]);
+      if (was !== null && side !== was) flips.push(t);
+      was = side;
+    }
+    expect(flips.length).toBeGreaterThanOrEqual(4);
+    const [lo, hi] = ap.strafeInvert;
+    for (let k = 1; k < flips.length; k++) {
+      expect(flips[k] - flips[k - 1]).toBeGreaterThanOrEqual(lo - 0.25);
+      expect(flips[k] - flips[k - 1]).toBeLessThanOrEqual(hi + 0.25);
+    }
+  });
+
+  it('turns its strafe back from ground it cannot stand on', () => {
+    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
+    // (at the grid's edge: the ground to the +x side, the check's 2.5 m off, is outside it)
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const b = bot([98.5, 0, -50], { ap, rand: seeded(seed) });
+      b.patterns = [{ bits: [true], delay: 0, intensity: 'High' }];
+      see(b, 'them', [98.5, 1.2, -30]);
+      const i = think(b, world(), 0);
+      expect(i.mode).toBe('attack');
+      expect(i.goal[0]).toBeLessThan(98.5);
+    }
+  });
+
   it('does not fire past its engaging distance', () => {
     const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
     const b = bot([0, 0, -90], { ap });

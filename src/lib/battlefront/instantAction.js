@@ -31,10 +31,10 @@
 //
 // What the sim acts on today: the level, the mode, the era, the sides' bots
 // (AutoPlayers: `pve` off), the difficulty, the Battle Points' rate, the
-// reinforcements on a mode that counts them, and the AutoPlayers' aim and
-// line of fire (ai/soldierBrain.js reads each side's numbers off
+// reinforcements on a mode that counts them, and the AutoPlayers' aim, line
+// of fire and strafe (ai/soldierBrain.js reads each side's numbers off
 // `sim.instantAction`). The rest is carried there for the commander and the
-// heroes' and vehicles' lanes to read: the waves, the caps, the evasion.
+// heroes' and vehicles' lanes to read: the waves, the caps, the dodge roll.
 // Pure: no three.js, no DOM.
 //
 //   erasFor(rulebook, level) → ['Orig', …]

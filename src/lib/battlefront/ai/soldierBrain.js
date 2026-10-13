@@ -30,7 +30,7 @@
 import { pick } from '../../ai/utility.js';
 import { createSenses } from '../../ai/perception.js';
 import { lead } from '../../combat/aim.js';
-import { findPath, walkable, cellAt, nearestWalkable } from '../nav.js';
+import { findPath, heightAt, walkable, cellAt, nearestWalkable } from '../nav.js';
 import { chestOf, move } from '../soldier.js';
 import { kickAim } from '../weapons.js';
 import { clock, profile } from '../core.js';
@@ -38,7 +38,7 @@ import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
-import { AIM_GATE, aimStep, createAim, createLof, lofStep, noiseOf, weaponClass } from './autoPlayer.js';
+import { AIM_GATE, aimStep, createAim, createEvasion, createLof, lofStep, noiseOf, strafeSide, weaponClass } from './autoPlayer.js';
 
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
@@ -97,6 +97,7 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     ap,
     apAim: ap ? createAim() : null,
     apLof: ap ? createLof() : null,
+    apEvade: ap ? createEvasion() : null,
     apNoise: ap ? noiseOf(ap, weaponClass(family, s.weapon?.id)) : 0,
     target: null,
     targetSince: 0,
@@ -340,13 +341,23 @@ export function think(brain, world, now) {
       intent.stance = slot.height === 'crouch' ? 'crouch' : 'stand';
     } else {
       // in the open: step aside across the line of fire, the side changing every few seconds
-      if (now >= brain.strafeAt) {
-        brain.strafe = brain.rand() < 0.5 ? -1 : 1;
-        brain.strafeAt = now + 1.5 + brain.rand() * 2;
-      }
       const ax = tgt[0] - me[0];
       const az = tgt[1] - me[1];
       const L = Math.hypot(ax, az) || 1;
+      if (brain.ap) {
+        // (an AutoPlayer's: the side flipped when AP_EvasiveManeuversInvertStrafeDuration is up, and
+        // turned back where the ground that way is not to be stood on or falls away, checked on its cooldown)
+        const g = brain.ap.groundCheck;
+        const stands = (side) => {
+          const x = me[0] + (az / L) * g.distance * side;
+          const z = me[1] - (ax / L) * g.distance * side;
+          return walkable(world.nav, x, z) && s.at[1] - heightAt(world.nav, x, z) <= g.drop;
+        };
+        brain.strafe = strafeSide(brain.apEvade, brain.ap, { now, rand: brain.rand, ground: world.nav ? stands : null });
+      } else if (now >= brain.strafeAt) {
+        brain.strafe = brain.rand() < 0.5 ? -1 : 1;
+        brain.strafeAt = now + 1.5 + brain.rand() * 2;
+      }
       intent.goal = [me[0] + (az / L) * STRAFE * brain.strafe, me[1] - (ax / L) * STRAFE * brain.strafe];
       intent.stance = 'crouch';
     }
