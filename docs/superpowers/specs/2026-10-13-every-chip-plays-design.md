@@ -85,9 +85,9 @@ Low is the most compressed the web build goes:
 
 ### The gate
 
-`lib/fit.js` (pure): `starWarsFit({ gpu, device, adapter }) → { ok, why }`. It is not ok for:
+`lib/fit.js` (pure): `starWarsFit({ gpu, device, webgpu, tryAnyway }) → { ok, why }`. It is not ok for:
 - 'none': no WebGL 2 and no WebGPU;
-- 'software': lib/gpu's software flag, or a fallback adapter on its own;
+- 'software': lib/gpu's software flag (a fallback WebGPU adapter is the runtime's: it makes WebGL 2 instead, below);
 - 'weak': a chip whose name scores under MIN_SCORE (10);
 - 'cpu': two cores or fewer;
 - 'memory': 2 GB or less, where the browser says.
