@@ -17,7 +17,7 @@
 // with their PvE templates and their abilities (`ai/skirmish.js`). Pure: no
 // three.js, no DOM.
 //
-//   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve }) → sim
+//   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve, instantAction }) → sim
 //   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate }) → { ok, why }
 //   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, abilityHeld, vent, cool }]
 //     (the class abilities, kit.js: 'ability' { id, slot, phase, why }, 'throw', 'explosion', 'split', 'turret', 'turretDown',
@@ -42,6 +42,8 @@ import { changeSides, joinSquad, squadOf, squadRows } from './ai/squad.js';
 import { difficultyFor } from './ai/difficulty.js';
 import { abilitiesFor } from './ai/skirmish.js';
 import { createBuckets, mayHurt } from './ai/buckets.js';
+import { createWaves, mayDeploy, stage as stageWaves, unitOpen } from './ai/waves.js';
+import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.js';
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
@@ -90,7 +92,7 @@ function openingSpawns(map) {
   return out;
 }
 
-export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 1, teams = null, bots = { 1: 0, 2: 0 }, mode = null, spawns = null, oob = null, difficulty = null, pve = false }) {
+export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 1, teams = null, bots = { 1: 0, 2: 0 }, mode = null, spawns = null, oob = null, difficulty = null, pve = false, instantAction = null }) {
   const rb = rulebook;
   const sides = teams ?? (() => {
     const t = teamsFor(rb, level, era);
@@ -119,6 +121,8 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
     stats: new Map(),
     difficulty: difficulty ? difficultyFor(difficulty, aiOf(rb)) : null,
     pve: !!pve,
+    // (an Instant Action round, instantAction.js's: its AutoPlayers' numbers are the brains' from their making)
+    instantAction,
     // (the kit: the class abilities' effects, the grenades in the air; the bots' damage buckets)
     kit: createKit(),
     buckets: createBuckets(),
@@ -156,6 +160,7 @@ export function createSim({ rulebook, level = 'hoth', era = 'Orig', nav, seed = 
       const squads = sim.brains.squads.list.filter((q) => q.team === team);
       sim.commanders[team] = createCommander({ team, side: sim.M.sideOf(sim.ga, team), ga: sim.ga, squads, bp: sim.bp, rand: sim.rand, nav, rulebook: rb });
     }
+    if (sim.instantAction) roundIn(sim);
     addWalkers(sim);
   }
   return sim;
@@ -182,6 +187,73 @@ function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id:
   sim.stats.get(id).cls = cls.unitId ?? cls.id;
   sim.stats.get(id).team = team;
   return s;
+}
+
+// A team's wave table in an Instant Action round: the command posts' one, or an objective mode's by the side it plays and the stage
+const waveTable = (sim, team) => {
+  const r = sim.instantAction;
+  return r.wavesBy ? r.wavesBy[sim.M.sideOf(sim.ga, team)][Math.min(sim.ga.stage ?? 0, r.wavesBy.attack.length - 1)] : r.waves[team];
+};
+
+// A round's length and rate on a battle: the Battle Points' rate, and on a mode that counts
+// reinforcements (Supremacy's ground) how many a side has and how fast the side behind bleeds
+export function applyRound(sim, round) {
+  if (sim.bp) sim.bp.rate = round.bpRate;
+  const m = sim.ga;
+  if (m?.tickets) for (const k of Object.keys(m.tickets)) m.tickets[k] = round.tickets;
+  if (m?.bleedEvery) m.bleedEvery /= round.bleed;
+}
+
+// An Instant Action round's hold on the battle (instantAction.js): each side's caps are its commander's
+// (the bots') and the offers' (the side's), and its AutoPlayers' waves bring its fallen back
+function roundIn(sim) {
+  const r = sim.instantAction;
+  applyRound(sim, r);
+  sim.bp.limits = {};
+  sim.waves = {};
+  for (const team of [1, 2]) {
+    const k = r.caps[team];
+    sim.commanders[team].caps = { heroes: k.heroes.bots, reinforcements: k.reinforcements.bots };
+    sim.bp.limits[team] = { heroesPerTeam: k.heroes.max, reinforcementsPerTeam: k.reinforcements.max };
+    sim.waves[team] = createWaves(waveTable(sim, team), sim.time);
+  }
+  // (on command posts the bots take their posts from the game's bot logic, a logic a side: ai/botLogic.js)
+  if (r.botLogic && postsOf(sim).length) {
+    sim.botLogic = { owners: postsOf(sim).map((o) => o.owner), 1: null, 2: null };
+    for (const team of [1, 2]) sim.botLogic[team] = createBotLogic({ team, rand: sim.rand, timers: r.botLogic.timers });
+    for (const s of sim.entities.values()) if (s.bot && s.brain) s.brain.task = postTask(sim, s.team, 'spawn');
+  }
+}
+
+// The command posts as the bot logic's slots, A to E in their order: each enabled, its owner's team
+// (0 no one's), whether it is being captured, and its progress toward team 1
+const postsOf = (sim) => (sim.ga.objectives ?? []).filter((o) => o.type === 'capture');
+function slotsOf(sim) {
+  const attack = sim.ga.attack;
+  const teamOf = (side) => (side === 'attack' ? attack : side === 'defend' ? 3 - attack : 0);
+  return postsOf(sim).map((o) => ({ enabled: true, owner: teamOf(o.owner), beingCaptured: o.contested || (o.moving !== null && o.moving !== o.owner), progress: attack === 1 ? o.meter : -o.meter }));
+}
+
+// a bot's order from the bot logic: to its post, within the level's radius
+function postTask(sim, team, why) {
+  const posts = postsOf(sim);
+  const i = pickSlot(sim.botLogic[team], slotsOf(sim), sim.time, why) % posts.length;
+  const at = posts[i].at;
+  return { key: `post${i}`, at, spot: at, role: 'defend', radius: sim.instantAction.botLogic.radius, reach: 0, interact: false };
+}
+
+// a step of the bot logic: a post that changed hands tells both sides; a side whose orphans are called
+// sends every bot it has out again, each by the orphan's split
+function botOrders(sim) {
+  const L = sim.botLogic;
+  const slots = slotsOf(sim);
+  const owners = postsOf(sim).map((o) => o.owner);
+  if (owners.some((o, i) => o !== L.owners[i])) for (const team of [1, 2]) captured(L[team], sim.time);
+  L.owners = owners;
+  for (const team of [1, 2]) {
+    if (!stepBotLogic(L[team], slots, sim.time)) continue;
+    for (const s of sim.entities.values()) if (s.bot && s.alive && s.team === team && s.brain) s.brain.task = postTask(sim, team, 'orphan');
+  }
 }
 
 // the live stage's walkers as bodies in the battle (the escort objective moves them)
@@ -235,13 +307,15 @@ export function squadBlocks(sim, id, team) {
   return (sq?.members ?? []).filter((m) => m !== id).map((m) => ({ id: m, blocked: blocked(sim.entities.get(m) ?? null, { enemies, now: sim.time }) }));
 }
 
-// what a team has out: heroes and reinforcements standing, with those chosen this wave
-function outOf(sim, team, extra = { heroes: 0, reinforcements: 0 }) {
-  const out = { ...extra };
+// what a team has out: heroes and reinforcements standing, with those chosen
+// this wave, and which ones (a hero is one of a kind: kits.json's MaxCount 1)
+export function outOf(sim, team, extra = { heroes: 0, reinforcements: 0 }) {
+  const out = { heroes: extra.heroes ?? 0, reinforcements: extra.reinforcements ?? 0, units: new Set(extra.units ?? []) };
   for (const e of sim.entities.values()) {
     if (e.team !== team || !e.alive) continue;
     if (e.unit === 'hero') out.heroes++;
     if (e.unit === 'reinforcement') out.reinforcements++;
+    if (e.unit) out.units.add(e.unitId);
   }
   return out;
 }
@@ -287,12 +361,15 @@ export function deploy(sim, id, choice) {
     s.unit = cls.unit;
     s.unitId = cls.unitId;
   }
+  // (the Collection's pick, a crew kind the figure wears: the screens' appearance, carried and nothing else)
+  s.appearance = choice.appearance ?? null;
   protect(s, sim.time);
   if (entry.bot) {
     // a fresh bot takes its squad's orders at once
     const b = addBrain(sim, s);
     const sq = squadOf(sim.brains.squads, id);
-    b.task = (sq?.members ?? []).map((m) => sim.entities.get(m)?.brain?.task).find(Boolean) ?? null;
+    // (on command posts in an Instant Action round, its own from the bot logic)
+    b.task = sim.botLogic ? postTask(sim, s.team, 'spawn') : ((sq?.members ?? []).map((m) => sim.entities.get(m)?.brain?.task).find(Boolean) ?? null);
   }
   if (spot.mate) earn(sim.bp, spot.mate, 'squadSpawn');
   sim.deploying.delete(id);
@@ -308,7 +385,8 @@ export function removeEntity(sim, id) {
 function emit(sim, e) {
   const ev = { t: Math.round(sim.time * 1000) / 1000, ...e };
   sim.events.push(ev);
-  sim.out.push(ev);
+  // (a deploy before the first step: the page's first, from the waiting screen)
+  (sim.out ??= []).push(ev);
 }
 
 // a direction turned by small yaw and pitch offsets (radians)
@@ -353,8 +431,8 @@ function applyInput(sim, inp) {
   if (inp.aim) s.aim = inp.aim;
   s.abilityHeld = inp.abilityHeld ?? 0;
   if (inp.ability) press(s.abilities, inp.ability, sim.time);
-  if (inp.vent) vent(s.gun, sim.time);
-  if (inp.cool) coolPress(s.gun, sim.time);
+  if (inp.vent && s.gun) vent(s.gun, sim.time);
+  if (inp.cool && s.gun) coolPress(s.gun, sim.time);
   if (s.state !== 'roll') move(s, inp.move ?? [0, 0], STEP, sim.nav);
   if (inp.fire) shoot(sim, s, inp.aim ?? chestAhead(s));
   s.interact = !!inp.interact;
@@ -534,15 +612,22 @@ function stepMode(sim) {
   if (ga.phase !== 'over')
     for (const team of [1, 2]) {
       const c = sim.commanders[team];
-      if (!wave(c, sim.time)) continue;
-      const chosen = { heroes: 0, reinforcements: 0 };
+      // (an Instant Action round: the AutoPlayers' waves, ai/waves.js, each bot by its own wait; else the ten-second wave)
+      const w = sim.waves?.[team] ?? null;
+      if (!w && !wave(c, sim.time)) continue;
+      const chosen = { heroes: 0, reinforcements: 0, units: [] };
       const squadPicks = new Map();
       for (const entry of [...sim.deploying.values()]) {
         if (entry.team !== team || !entry.bot) continue;
+        if (w && !mayDeploy(w, { since: entry.since, now: sim.time })) continue;
         const sq = squadOf(sim.brains.squads, entry.id);
         const picks = squadPicks.get(sq) ?? [];
         const squadClasses = [...picks, ...(sq?.members ?? []).map((m) => sim.entities.get(m)).filter((m) => m?.alive).map((m) => m.cls.cls)];
-        const choice = spend(c, entry.id, { squadClasses, out: outOf(sim, team, chosen) });
+        const out = outOf(sim, team, chosen);
+        // (a hero or a reinforcement only while its own wave is open)
+        if (w && !unitOpen(w, 'hero', sim.time)) out.heroes = Infinity;
+        if (w && !unitOpen(w, 'special', sim.time)) out.reinforcements = Infinity;
+        const choice = spend(c, entry.id, { squadClasses, out });
         const enemies = enemiesOf(sim, team);
         const mates = (sq?.members ?? []).map((m) => sim.entities.get(m)).filter(Boolean);
         const spawn = squadSpawn({ squad: mates, me: entry.id, enemies, now: sim.time, walkable: standable(sim) }) ? 'squad' : 'point';
@@ -551,6 +636,7 @@ function stepMode(sim) {
         if (!r.ok) continue;
         if (choice.kind === 'hero') chosen.heroes++;
         if (choice.kind === 'reinforcement') chosen.reinforcements++;
+        if (choice.kind !== 'class') chosen.units.push(choice.id);
         picks.push(sim.entities.get(entry.id).cls.cls);
         squadPicks.set(sq, picks);
       }
@@ -572,6 +658,8 @@ function stepMode(sim) {
   if (ga.stage !== stage) {
     addWalkers(sim);
     for (const c of Object.values(sim.commanders)) c.nextAssign = 0;
+    // (a new stage: each side's waves on its rows)
+    if (sim.waves) for (const team of [1, 2]) stageWaves(sim.waves[team], waveTable(sim, team), sim.time);
   }
   for (const w of sim.M.walkersOf(ga)) {
     if (sim.nav) w.at[1] = heightOf(sim, w.at);
@@ -588,8 +676,10 @@ function stepMode(sim) {
     // (Strike's second round swaps the sides)
     const side = sim.M.sideOf(ga, team);
     if (c.side !== side) [c.side, c.nextAssign] = [side, 0];
-    if (sim.time + 1e-9 >= c.nextAssign) assign(c, { entities: [...sim.entities.values()], now: sim.time });
+    // (the bot logic's orders are each bot's own: the commander's plan by squads is not laid over them)
+    if (!sim.botLogic && sim.time + 1e-9 >= c.nextAssign) assign(c, { entities: [...sim.entities.values()], now: sim.time });
   }
+  if (sim.botLogic) botOrders(sim);
 }
 
 export function drain(sim) {
@@ -632,6 +722,7 @@ export function view(sim, { player = null } = {}) {
     e.mode = s.brain?.intent?.mode ?? null;
     e.unit = s.unit ?? null;
     e.unitId = s.unitId ?? null; // (the rulebook's hero or reinforcement: the body the figure wears)
+    e.appearance = s.appearance ?? null; // (a skin picked in the Collection: its crew kind)
     e.name = s.name ?? null;
     e.cls = s.cls?.cls ?? null;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;
