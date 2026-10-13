@@ -1,6 +1,6 @@
 # The site on the GPU, the game's methods tested, and the site's own cast as Battlefront units. The design
 
-Date: 2026-10-13. Status: a design for the owner to review; nothing in it is built. Written by the session `tilak-19` from `origin/main` at `c79955622` (#965) and from PR #962 (`claude/bf-frame-once`, open, CI green). Builds on `2026-10-11-gpu-first-renderer-design.md` (lanes G1, N1 to N7), `2026-10-08-npc-player-rigging-design.md` (the site's cast on one skeleton), `2026-10-10-battlefront-game-design.md` and the UI lane's `2026-10-13-hoth-landing-game-menu-design.md` (on `claude/bf-landing-menu`, approved, not on `main` yet). Every number below names where it came from; a number with no source is a proposal and says so.
+Date: 2026-10-13. Status: read by the owner on 2026-10-13, his answers in section 8; nothing in it is built. Written by the session `tilak-19` from `origin/main` at `c79955622` (#965) and from PR #962 (`claude/bf-frame-once`, merged on his word 2026-10-13 05:44 UTC as `64bdba15a`). Builds on `2026-10-11-gpu-first-renderer-design.md` (lanes G1, N1 to N7), `2026-10-08-npc-player-rigging-design.md` (the site's cast on one skeleton), `2026-10-10-battlefront-game-design.md` and the UI lane's `2026-10-13-hoth-landing-game-menu-design.md` (on `claude/bf-landing-menu`, approved, not on `main` yet). Every number below names where it came from; a number with no source is a proposal and says so.
 
 ## What the owner asked
 
@@ -107,7 +107,7 @@ Each lands on Hoth first, with its number taken as section 5 says, and goes to t
 
 ### The frame the 5090 should hold (a proposal, for him to set)
 
-The game aims its dynamic resolution at 16.6 ms a frame and never goes under nine tenths of the set scale (`FUN_141506f00`, `FUN_147c2c580`, read in code). His screen is 5,120 × 1,440 at 240 Hz. Proposed: at 2,560 × 1,440 a walking frame of 6.9 ms p50 and 10 ms p95 (144 a second) with every pass on; at 5,120 × 1,440 the same 6.9 ms, which the chip's 9.4 to 10.4 ms does not allow at full scale, so the site's GPU-time controller (lane N2) holds it by internal scale, to a floor of 0.77 with TAAU. Whether he would rather have full scale at 100 a second on the wide screen is question 2.
+The game aims its dynamic resolution at 16.6 ms a frame and never goes under nine tenths of the set scale (`FUN_141506f00`, `FUN_147c2c580`, read in code). His screen is 5,120 × 1,440 at 240 Hz. Proposed: at 2,560 × 1,440 a walking frame of 6.9 ms p50 and 10 ms p95 (144 a second) with every pass on; at 5,120 × 1,440 the same 6.9 ms, which the chip's 9.4 to 10.4 ms does not allow at full scale, so the site's GPU-time controller (lane N2) holds it by internal scale, to a floor of 0.77 with TAAU. He left the choice to the design ("whatever is more performant and quality"): the controller holds the 6.9 ms, at full scale whenever the chip allows it and scaled inside only while it does not, never under 0.77.
 
 ## 4. Part B: the site's own cast as Battlefront units
 
@@ -208,12 +208,14 @@ Deterministic, with no service called (the rigging lane's rules: no paid service
 
 `battlefront/module.js` is edited by this session (#962), the sim lane (#966) and two stopped branches; `figures/figures.js` by this session and the stopped troops branch; the spawn screen and the Collection's screens by the UI lane; `sim.js`, `kit.js` and `soldier.js` by the sim lane and the stopped hero branch. So:
 
-1. #962 merges first (it is green and waits only on his word).
+1. #962 is merged (2026-10-13 05:44 UTC, on his word: "merget o main").
 2. Part A's lanes A1, A2, A5 and A8 are this session's, one PR each, in that order; A3 waits on one function being read; A4 is its own plan after A1 to A3 show what is left of the soldiers; A6, A7, A9 and A10 are planned when Hoth's numbers for the first four are in.
 3. Part B's B1 and B2 touch no file another lane holds (two new scripts, new files under `crew/`, one case in `walrus.js`) and can start as soon as he has answered questions 1 and 5.
-4. B4 and B5 are offered to the sim lane, since they finish the hero kit it sits beside; if it declines, they are this session's after #966 is in. B6's rows and pictures are handed to the UI lane for its phase 2b.
+4. B4 and B5 are this session's: the sim lane was offered them and passed them back (`tilak-a6`, 2026-10-13: "take B4 and B5 yourself; I am not holding them"). They start after #966 is on `main`, and meet three things it brings: a round's bot thinks in `soldierBrain.js`'s `thinkAutoPlayer`, so a hero bot's rules for a round go there and not in the BattleAI modes; `module.js`'s `sim`, `me`, `team`, `director`, `park` and `castArm` are rebindable, because a round is swapped in place; and a round's size comes from `instantAction.js`'s `SIDE_BY_DETAIL` (5, 8, 13 and 24 a side from low to ultra, by hand). B6's rows and pictures are handed to the UI lane for its phase 2b.
 5. The picked skin being worn is the UI lane's (`tilak-b4`, 2026-10-13: "it is the Collection lane's promise"). It takes `figures.js`'s `BODIES` table and `kindOf` and nothing else there: 43 crew kinds among the Collection's 213 skins, 29 of them not yet in `BODIES`. Lane A2 leaves those two alone and builds on the view's `appearance` being honoured, so a guest's body, and each of its skins, needs only its `BODIES` row.
 6. The stopped hero branch (`claude/bf-heroes-deploy`, with uncommitted files in its worktree) is merged forward by whoever takes B4, not rewritten.
+
+Two things the sim lane found that bear on this design and that nobody holds yet. A round at ultra is 24 soldiers a side, 48 where tonight's numbers had 17 to 20, so the soldiers' share of the frame is nearer three times what section 1 measured, and lane A4 matters that much more; the table of sizes is the one place to change if a tier cannot hold its count. And on the level's real ground a round's bots seldom have a line of fire (about one in three of those within 60 m of an enemy), where on flat ground in the sim they fire about 850 shots a minute: the page's `lineClear` over its navgrid says no, and whether the grid's heights or its mask block it has not been looked into. That is a fault in the battle, not in the frame, and it is listed here so it is not lost.
 
 Three implementation plans come out of this, not one, each written and reviewed on its own: Part A's first four lanes; the guest's rig and clips (B1, B2); the units' rules, kit, cards and screens (B3 to B6).
 
