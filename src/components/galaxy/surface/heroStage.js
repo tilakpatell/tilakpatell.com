@@ -10,7 +10,8 @@
 //   stage for this hero at this level (a figure on the game's skeleton, at
 //   mid and over), and the clip it stands in
 // STAGE: where the pieces stand, from the level (relative to the dome)
-// createHeroStage(canvas, { level, reduced }) → { show(spec), resize(), dispose() } | null
+// createHeroStage(canvas, { level, reduced }) → { show(spec), play(clip), resize(), dispose() } | null
+//   play(clip): one of the figure's clips once ('emote.2', 'victory.1'), then its idle again
 
 import * as THREE from 'three';
 import { KITS } from './catalog/bf2017-frontend';
@@ -92,11 +93,41 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
   let figure = null;
   let mixer = null;
   let wanted = null;
+  let clips = null;
+  let idle = null;
+  let asked = null; // (a clip asked for before the figure landed)
   const clear = () => {
     if (figure) turn.remove(figure);
     mixer?.stopAllAction();
     figure = null;
     mixer = null;
+    clips = null;
+    idle = null;
+  };
+  // one of the figure's clips once (an emote, a victory pose: the Collection's
+  // preview), eased in from the idle and back to it; nothing for a clip the
+  // figure's packs lack
+  const play = (name) => {
+    asked = name ?? null;
+    const clip = name && clips?.[name];
+    if (!mixer || !clip) return false;
+    const a = mixer.clipAction(clip);
+    a.reset();
+    a.setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = true;
+    a.play();
+    if (idle && idle !== a) a.crossFadeFrom(idle, 0.25, false);
+    const back = (e) => {
+      if (e.action !== a) return;
+      mixer?.removeEventListener('finished', back);
+      if (!idle || idle === a) return;
+      idle.reset().play();
+      idle.crossFadeFrom(a, 0.3, false);
+    };
+    mixer.addEventListener('finished', back);
+    asked = null;
+    draw();
+    return true;
   };
   const show = (spec) => {
     const url = spec?.src?.url;
@@ -115,9 +146,11 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
         });
         turn.add(figure);
         mixer = new THREE.AnimationMixer(figure);
+        clips = body.clips;
         const clip = POSES.map((n) => body.clips[n]).find(Boolean);
-        if (clip) mixer.clipAction(clip).play();
+        if (clip) (idle = mixer.clipAction(clip)).play();
         mixer.update(reduced ? 0 : 0.01);
+        if (asked) play(asked);
         draw();
       })
       .catch(() => {});
@@ -162,6 +195,7 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
 
   return {
     show,
+    play,
     resize,
     dispose() {
       alive = false;

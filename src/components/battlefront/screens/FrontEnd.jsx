@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Toast } from '../../../runtime/hud';
+import Collection from './Collection.jsx';
 import MainMenu from './MainMenu.jsx';
 import Play from './Play.jsx';
 import Start from './Start.jsx';
 
 // The front end, as the game walks it: Start → the main menu → Play (its
 // tiles, the multiplayer category, the mode cards, a mode's levels) → the
-// battle (`onPlay(level, mode)`, which the page turns into the route). A tab
-// or card this world has not got yet says so in a toast.
+// battle (`onPlay(level, mode)`, which the page turns into the route), or
+// the main menu's COLLECTION (the characters' skins, star cards, emotes,
+// poses and voice lines, kept for the battle's deploy). A tab or card this
+// world has not got yet says so in a toast.
 //
 // <FrontEnd playable={(level, mode) => bool} onPlay={(level, mode) => …} />
 export default function FrontEnd({ playable, onPlay, start = 'start' }) {
@@ -22,8 +25,9 @@ export default function FrontEnd({ playable, onPlay, start = 'start' }) {
   return (
     <div className="bf-front-end" data-front-end={at}>
       {at === 'start' && <Start onNext={() => setAt('menu')} />}
-      {at === 'menu' && <MainMenu onPlay={() => setAt('play')} onStart={() => setAt('start')} onComing={coming} />}
+      {at === 'menu' && <MainMenu onPlay={() => setAt('play')} onStart={() => setAt('start')} onCollection={() => setAt('collection')} onComing={coming} />}
       {at === 'play' && <Play playable={playable} onPlay={onPlay} onBack={() => setAt('menu')} />}
+      {at === 'collection' && <Collection onBack={() => setAt('menu')} />}
       <Toast toast={toast} />
     </div>
   );

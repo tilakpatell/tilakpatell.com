@@ -10,7 +10,8 @@
 // snapshot a few times a second, and sends the deploy screen's choices
 // through world.do. `window.__battlefront` is the same door for
 // scripts/battlefront-check.mjs: { view(), do(action, arg) } with 'deploy'
-// { classId }, 'pick' id, 'spawn' a squadmate's id (null for the HQ),
+// { classId, appearance } (the crew kind to wear; without one, the skin the
+// Collection keeps for that class: screens/Collection.jsx), 'pick' id, 'spawn' a squadmate's id (null for the HQ),
 // 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
 // screen), 'weather' name, 'look' { yaw, pitch } (the player's view, for
 // a shot toward the sun; it answers with the recoil), 'fire' { on } (the
@@ -38,6 +39,7 @@ import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
+import { appearanceOf, characterOfOffer, readStore } from '../../lib/bf2017/collection.js';
 import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
@@ -193,8 +195,21 @@ export default {
     // the camera's arm against the ground and the level's shapes (the navgrid's with no engine)
     const castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
 
-    const doDeploy = (classId = picked) => {
-      const base = classId ? { classId } : {};
+    // the Collection's skin for the class or hero a deploy is, as the crew kind it wears
+    const pickedLook = (id) => {
+      const c = id ? characterOfOffer({ id }) : null;
+      if (!c) return null;
+      let store = {};
+      try {
+        store = readStore(window.localStorage);
+      } catch {
+        store = {};
+      }
+      return appearanceOf(store, c.id, { faction: c.faction });
+    };
+    const doDeploy = (classId = picked, appearance = null) => {
+      const look = appearance ?? pickedLook(classId);
+      const base = classId ? { classId, ...(look ? { appearance: look } : {}) } : {};
       let r = deploy(sim, me, mate ? { ...base, spawn: 'squad', mate } : base);
       // (a mate who cannot be spawned on by now: the HQ, as the game falls back, SpawnOnSpawnEntityIfSpawnOnPlayerFails)
       if (!r.ok && mate && squadsOf(rb).fallbackToPoint) r = deploy(sim, me, base);
@@ -414,7 +429,7 @@ export default {
       do(action, arg) {
         switch (action) {
           case 'deploy':
-            return doDeploy(arg?.classId ?? picked);
+            return doDeploy(arg?.classId ?? picked, arg?.appearance ?? null);
           case 'pick':
             picked = arg;
             return { ok: true };

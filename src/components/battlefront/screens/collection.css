@@ -1,0 +1,92 @@
+/* The Collection (./Collection*.jsx): the game's Characters tab and its
+   customisation screens, laid over the boxes their trees give them, in the
+   game's faces and the world's ink (screens.css's), with the rarities in the
+   game's colours (common to legendary). */
+.bf-collection { --rarity: rgba(242, 245, 248, 0.55); }
+/* (the site's headings take the page's ink; these are the game's, on its dark) */
+.bf-collection :is(h2, h3) { color: var(--bf-ink, #f2f5f8); }
+.bf-collection [data-rarity='common'] { --rarity: #c9d1d9; }
+.bf-collection [data-rarity='uncommon'] { --rarity: #6fd06b; }
+.bf-collection [data-rarity='rare'] { --rarity: #4aa3ff; }
+.bf-collection [data-rarity='epic'] { --rarity: #b56cff; }
+.bf-collection [data-rarity='legendary'] { --rarity: #f2b13c; }
+
+.bf-collection-title { position: absolute; left: 5%; top: 9%; margin: 0; display: flex; gap: 1.5rem; align-items: baseline; font-size: clamp(1.4rem, 2.4vw, 2.4rem); font-weight: 800; letter-spacing: 0.12em; }
+.bf-collection-title span { font-size: 0.9rem; letter-spacing: 0.1em; color: var(--bf-muted, #b9c2cc); }
+.bf-collection-head { margin: 0 0 0.4rem; font-size: 1rem; font-weight: 700; letter-spacing: 0.14em; color: var(--bf-muted, #b9c2cc); }
+
+/* the characters: the classes and the reinforcements down the left, the heroes' grid */
+.bf-collection-column { position: absolute; display: flex; flex-direction: column; gap: 0.5rem; overflow: auto; }
+.bf-collection-classes, .bf-collection-specials, .bf-collection-heroes { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.bf-collection-classes li, .bf-collection-specials li { height: 2.4rem; }
+.bf-collection-column .bf-collection-head { margin: 0.75rem 0 0; }
+.bf-collection-heroes { position: absolute; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; align-content: start; overflow: auto; }
+.bf-collection-tile { position: relative; container-type: inline-size; display: grid; grid-template-rows: minmax(0, 1fr) auto; width: 100%; aspect-ratio: 4 / 5; padding: 0; border: 1px solid rgba(242, 245, 248, 0.22); background: rgba(8, 12, 18, 0.66); color: inherit; font: inherit; cursor: pointer; overflow: hidden; transition: border-color var(--t-fast, 120ms) ease; }
+.bf-collection-tile img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: cover; object-position: top; }
+.bf-collection-tile-blank { background: linear-gradient(160deg, #1c2733, #0b1016); }
+.bf-collection-tile-name { min-height: 2.3em; padding: 0.3rem 6cqw; font-size: clamp(0.4rem, 13.5cqw, 0.72rem); font-weight: 700; line-height: 1.15; letter-spacing: 0.02em; text-align: left; background: rgba(4, 7, 10, 0.82); }
+.bf-collection-tile[data-side='dark'] .bf-collection-tile-name { box-shadow: inset 0 2px 0 #c0392b; }
+.bf-collection-tile[data-side='light'] .bf-collection-tile-name { box-shadow: inset 0 2px 0 #3d8bd9; }
+.bf-collection-tile-wide { container-type: normal; grid-template-columns: 2.4rem minmax(0, 1fr); grid-template-rows: 100%; aspect-ratio: auto; height: 100%; }
+.bf-collection-tile-wide img, .bf-collection-tile-wide .bf-collection-tile-blank { width: 2.4rem; height: 100%; }
+.bf-collection-tile-icon { box-sizing: border-box; width: 2.4rem; height: 100%; padding: 0.4rem; fill: currentColor; }
+.bf-collection-tile-wide .bf-collection-tile-name { display: flex; align-items: center; min-height: 0; padding: 0 0.75rem; background: none; font-size: 0.95rem; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bf-collection-tile:is(:hover, :focus-visible), .bf-collection-row:is(:hover, :focus-visible), .bf-collection-menu-row:is(:hover, :focus-visible), .bf-collection-card:is(:hover, :focus-visible) { border-color: var(--bf-ink, #f2f5f8); outline: none; }
+
+/* the customisation: the menu, the character's box, the faction tabs */
+.bf-collection-menu, .bf-collection-list { position: absolute; display: grid; gap: 3px; align-content: start; margin: 0; padding: 0; list-style: none; overflow: auto; }
+.bf-collection-menu-row, .bf-collection-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.2rem 0.75rem; width: 100%; padding: 0.7rem 1rem; border: 1px solid transparent; border-left: 3px solid var(--rarity); background: rgba(8, 12, 18, 0.78); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.bf-collection-menu-row { grid-template-columns: 1fr; border-left-color: rgba(242, 245, 248, 0.4); }
+.bf-collection-menu-head { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.08em; }
+.bf-collection-menu-now { font-family: var(--font-bf-text, sans-serif); font-size: 0.85rem; color: var(--bf-muted, #b9c2cc); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bf-collection-row[aria-pressed='true'] { background: rgba(40, 52, 66, 0.9); }
+.bf-collection-row-name { font-size: 1rem; font-weight: 700; letter-spacing: 0.06em; }
+.bf-collection-row-tag { grid-column: 1; font-family: var(--font-bf-text, sans-serif); font-size: 0.75rem; color: var(--bf-muted, #b9c2cc); }
+.bf-collection-row-on { grid-column: 2; grid-row: 1; font-size: 0.72rem; letter-spacing: 0.14em; color: var(--bf-ink, #f2f5f8); }
+.bf-collection-tabs { position: absolute; display: flex; gap: 4px; }
+.bf-collection-tab { padding: 0.45rem 0.9rem; border: 1px solid rgba(242, 245, 248, 0.25); background: rgba(8, 12, 18, 0.7); color: var(--bf-muted, #b9c2cc); font: inherit; font-size: 0.8rem; letter-spacing: 0.1em; cursor: pointer; }
+.bf-collection-tab[aria-selected='true'] { border-color: var(--bf-ink, #f2f5f8); color: var(--bf-ink, #f2f5f8); }
+
+/* the info panel: the focused pick's (or the character's) name and words */
+.bf-collection-info { position: absolute; display: grid; gap: 0.6rem; align-content: start; padding: 1.25rem 1.5rem; background: rgba(8, 12, 18, 0.78); border-top: 3px solid var(--rarity); overflow: auto; }
+.bf-collection-rarity { margin: 0; font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--rarity); }
+.bf-collection-info-name { margin: 0; font-size: clamp(1.3rem, 2vw, 2rem); font-weight: 800; letter-spacing: 0.08em; }
+.bf-collection-info-about { margin: 0; font-family: var(--font-bf-text, sans-serif); font-size: 0.95rem; line-height: 1.4; color: var(--bf-muted, #b9c2cc); }
+.bf-collection-character { min-height: 40%; }
+.bf-collection-info-note { margin: 0.2rem 0 0; font-size: 0.78rem; letter-spacing: 0.16em; color: var(--bf-muted, #b9c2cc); }
+.bf-collection-abilities { display: grid; gap: 0.6rem; margin: 0.4rem 0 0; padding: 0; list-style: none; font-family: var(--font-bf-text, sans-serif); font-size: 0.85rem; line-height: 1.35; }
+.bf-collection-abilities li { display: grid; grid-template-columns: 2.25rem 1fr; gap: 0.6rem; align-items: start; }
+.bf-collection-abilities b { font-family: var(--font-bf-hud, sans-serif); letter-spacing: 0.06em; }
+.bf-collection-ability-icon { width: 2.25rem; height: 2.25rem; }
+.bf-collection-equipped-cards { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.bf-collection-equipped-cards img { width: 3.5rem; aspect-ratio: 4 / 5; object-fit: cover; border: 1px solid rgba(242, 245, 248, 0.3); }
+
+/* the figure: the hero-select stage, or the portrait where there is none */
+.bf-collection-stage { position: absolute; display: grid; place-items: center; pointer-events: auto; }
+.bf-collection-stage-canvas { width: 100%; height: 100%; display: block; }
+.bf-collection-still { max-width: 70%; max-height: 90%; object-fit: contain; opacity: 0.9; filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.6)); }
+
+/* the star cards */
+/* (three by three cards of the game's 4:5, as tall as the screen allows) */
+.bf-collection-cards { position: absolute; left: 5%; top: 17%; height: 71%; max-width: 56vw; aspect-ratio: 4 / 5; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.bf-collection-cards li { min-height: 0; }
+.bf-collection-card { position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; width: 100%; height: 100%; padding: 0; border: 1px solid rgba(242, 245, 248, 0.22); background: rgba(8, 12, 18, 0.66); color: inherit; font: inherit; cursor: pointer; overflow: hidden; }
+.bf-collection-card img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: cover; }
+.bf-collection-card[aria-pressed='true'] { border-color: var(--bf-ink, #f2f5f8); box-shadow: inset 0 0 0 2px var(--bf-ink, #f2f5f8); }
+.bf-collection-card[aria-disabled='true'] { cursor: default; }
+.bf-collection-card[aria-disabled='true'] img { filter: grayscale(0.7) brightness(0.6); }
+.bf-collection-card-name { padding: 0.45rem 0.6rem; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; text-align: left; background: rgba(4, 7, 10, 0.86); }
+.bf-collection-card .bf-collection-row-on { position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.2rem 0.45rem; background: rgba(4, 7, 10, 0.85); }
+.bf-collection-card-info { right: 5%; top: 17%; width: min(26rem, 32vw); }
+.bf-collection-levels { display: grid; gap: 0.45rem; margin: 0.2rem 0 0; padding: 0; list-style: none; font-family: var(--font-bf-text, sans-serif); font-size: 0.85rem; line-height: 1.35; }
+.bf-collection-levels li { padding-left: 0.6rem; border-left: 3px solid var(--rarity); }
+.bf-collection-levels span { display: block; font-family: var(--font-bf-hud, sans-serif); font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--rarity); }
+
+@media (max-width: 760px) {
+  .bf-collection-heroes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .bf-collection-cards { width: 90%; grid-template-columns: repeat(2, 1fr); }
+  .bf-collection-card-info { left: 5%; right: 5%; top: auto; bottom: 10%; width: auto; max-height: 30%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bf-collection-tile { transition: none; }
+}
