@@ -21,16 +21,16 @@
 .bf-collection-classes li, .bf-collection-specials li { height: 2.4rem; }
 .bf-collection-column .bf-collection-head { margin: 0.75rem 0 0; }
 .bf-collection-heroes { position: absolute; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; align-content: start; overflow: auto; }
-.bf-collection-tile { position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; width: 100%; aspect-ratio: 4 / 5; padding: 0; border: 1px solid rgba(242, 245, 248, 0.22); background: rgba(8, 12, 18, 0.66); color: inherit; font: inherit; cursor: pointer; overflow: hidden; transition: border-color var(--t-fast, 120ms) ease; }
+.bf-collection-tile { position: relative; container-type: inline-size; display: grid; grid-template-rows: minmax(0, 1fr) auto; width: 100%; aspect-ratio: 4 / 5; padding: 0; border: 1px solid rgba(242, 245, 248, 0.22); background: rgba(8, 12, 18, 0.66); color: inherit; font: inherit; cursor: pointer; overflow: hidden; transition: border-color var(--t-fast, 120ms) ease; }
 .bf-collection-tile img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: cover; object-position: top; }
 .bf-collection-tile-blank { background: linear-gradient(160deg, #1c2733, #0b1016); }
-.bf-collection-tile-name { min-height: 2.3em; padding: 0.3rem 0.4rem; font-size: 0.68rem; font-weight: 700; line-height: 1.15; letter-spacing: 0.05em; text-align: left; background: rgba(4, 7, 10, 0.82); }
+.bf-collection-tile-name { min-height: 2.3em; padding: 0.3rem 6cqw; font-size: clamp(0.4rem, 13.5cqw, 0.72rem); font-weight: 700; line-height: 1.15; letter-spacing: 0.02em; text-align: left; background: rgba(4, 7, 10, 0.82); }
 .bf-collection-tile[data-side='dark'] .bf-collection-tile-name { box-shadow: inset 0 2px 0 #c0392b; }
 .bf-collection-tile[data-side='light'] .bf-collection-tile-name { box-shadow: inset 0 2px 0 #3d8bd9; }
-.bf-collection-tile-wide { grid-template-columns: 2.4rem minmax(0, 1fr); grid-template-rows: 100%; aspect-ratio: auto; height: 100%; }
+.bf-collection-tile-wide { container-type: normal; grid-template-columns: 2.4rem minmax(0, 1fr); grid-template-rows: 100%; aspect-ratio: auto; height: 100%; }
 .bf-collection-tile-wide img, .bf-collection-tile-wide .bf-collection-tile-blank { width: 2.4rem; height: 100%; }
 .bf-collection-tile-icon { box-sizing: border-box; width: 2.4rem; height: 100%; padding: 0.4rem; fill: currentColor; }
-.bf-collection-tile-wide .bf-collection-tile-name { display: flex; align-items: center; min-height: 0; padding: 0 0.75rem; background: none; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bf-collection-tile-wide .bf-collection-tile-name { display: flex; align-items: center; min-height: 0; padding: 0 0.75rem; background: none; font-size: 0.95rem; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bf-collection-tile:is(:hover, :focus-visible), .bf-collection-row:is(:hover, :focus-visible), .bf-collection-menu-row:is(:hover, :focus-visible), .bf-collection-card:is(:hover, :focus-visible) { border-color: var(--bf-ink, #f2f5f8); outline: none; }
 
 /* the customisation: the menu, the character's box, the faction tabs */
