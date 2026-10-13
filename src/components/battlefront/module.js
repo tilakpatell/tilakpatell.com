@@ -433,7 +433,8 @@ export default {
         const v = view(sim);
         input.swallow(v.deploy.open);
         // (the first deploy is the waiting screen's, through the wipe: the input's Enter waits for it)
-        if (v.deploy.open && read.deploy && !parked) doDeploy();
+        const deploying = v.deploy.open && read.deploy && !parked;
+        if (deploying) doDeploy();
         acc = Math.min(acc + dt, STEP * MAX_STEPS);
         pressed.ability = v.deploy.open ? 0 : read.ability || pressed.ability;
         pressed.roll = !v.deploy.open && (read.roll || pressed.roll);
@@ -453,14 +454,20 @@ export default {
           heard.push(...events);
           for (const e of events) if (e.type === 'explosion') booms.push(e);
         }
-        if (stepped > 0) director.update(view(sim), heard, stepped, { waiting: parked });
-        collision?.update(4);
         // (the view again, after the steps: its entities' `at` are the sim's
         // own arrays, live, while their step time `t` and the rest are read
         // when it is taken; the figures pair a step's place with its time to
         // glide between two steps, and read before the steps the pair was
-        // one step out, the body drawn a step forward then a step back)
-        const drawn = view(sim);
+        // one step out, the body drawn a step forward then a step back. One
+        // view after the steps serves the sound and the drawing, the
+        // colliders' streaming between them touching no sim; a frame with
+        // no step and no deploy draws the view it began with: the view is
+        // one object refilled, and building it three times a frame was the
+        // world's own main-thread cost)
+        const after = stepped > 0 || deploying ? view(sim) : v;
+        if (stepped > 0) director.update(after, heard, stepped, { waiting: parked });
+        collision?.update(4);
+        const drawn = after;
         const p = body();
         if (sim.player.state === 'alive' && p) {
           const look = input.look();

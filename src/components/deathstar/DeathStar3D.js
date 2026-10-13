@@ -670,7 +670,7 @@ export function createDeathStar3D(canvas, { onLost } = {}) {
     if (perf.acc < 3000 || perf.n < 4) return;
     const avg = perf.acc / perf.n;
     perf.acc = perf.n = 0;
-    if (avg < 40) return; // a battery-saving 30 fps cap isn't struggling
+    if (avg < 36) return; // a battery-saving 30 fps cap (33.3 ms) isn't struggling; under 28 fps is, the site's floor being 30
     if (ratio > 1) {
       ratio = 1;
       resize(size.w, size.h, frame);

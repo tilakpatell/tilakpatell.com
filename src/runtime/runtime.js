@@ -94,6 +94,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   // week starts on the node renderer over WebGL 2, lib/gpuProbe's lostTwice)
   let lostWebGPU = Boolean(startLost);
   let lastLoss = null; // the backend kind the last loss was on
+  let losses = 0; // this visit's, of any kind
   let lostModule = null; // the id of the world up, or being made, when it was
   let status = 'idle';
   let failure = null; // { world, name, message, module }: why the last world failed
@@ -527,10 +528,12 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       return tierWhy;
     },
     // (a loss there is somewhere to come back from: one on WebGPU, whose
-    // next backend is the node renderer over WebGL 2; useWorld mounts its
-    // page's world again once)
+    // next backend is the node renderer over WebGL 2, or the visit's first
+    // on WebGL, a driver's reset that a fresh context on a fresh canvas
+    // outlives; useWorld mounts its page's world again once. A second on
+    // WebGL is the chip's answer: the page says so, with Reload)
     get recoverable() {
-      return lastLoss === 'webgpu';
+      return lastLoss === 'webgpu' || (lastLoss != null && losses === 1);
     },
     // (whose world that was: only its page mounts again, useWorld's recoverNow)
     get lostModule() {
@@ -584,6 +587,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       const on = kind;
       if (on === 'webgpu') lostWebGPU = true;
       lastLoss = on;
+      losses += 1;
       lostModule = (current?.module ?? (making?.token === seq ? making.module : null))?.id ?? null;
       seq += 1;
       making = null;

@@ -52,29 +52,41 @@ export default function Presence({ online }) {
   useEffect(() => {
     if (!client || !count) return undefined;
     let raf = 0;
+    // (each pointer's last state as written: a frame writes only what
+    // changed, so a page with pilots at rest restyles nothing)
+    const written = new WeakMap();
     const frame = () => {
       raf = requestAnimationFrame(frame);
       const now = performance.now();
       const w = window.innerWidth;
       const h = window.innerHeight;
+      const top = window.scrollY;
       for (const [id, el] of els.current) {
         const cur = client.peers.get(id)?.cur;
         const age = cur ? now - cur.at : Infinity;
         if (age > GONE_MS) {
-          el.removeAttribute('data-on');
+          if (written.get(el) !== 'gone') {
+            el.removeAttribute('data-on');
+            written.set(el, 'gone');
+          }
           continue;
         }
         let x = cur.touch ? 10 : w / 2 + cur.x;
-        let y = cur.y - window.scrollY;
+        let y = cur.y - top;
         const off = y < TOP ? 'up' : y > h - 44 ? 'down' : null;
         y = Math.min(h - 44, Math.max(TOP, y));
         x = Math.min(w - 48, Math.max(6, x));
-        el.style.transform = `translate3d(${x.toFixed(0)}px, ${y.toFixed(0)}px, 0)`;
+        const transform = `translate3d(${x.toFixed(0)}px, ${y.toFixed(0)}px, 0)`;
+        const idle = age > IDLE_MS;
+        const state = `${transform}|${off}|${idle}|${Boolean(cur.touch)}`;
+        if (written.get(el) === state) continue;
+        written.set(el, state);
+        el.style.transform = transform;
         el.setAttribute('data-on', '');
         if (off) el.setAttribute('data-off', off);
         else el.removeAttribute('data-off');
-        el.toggleAttribute('data-idle', age > IDLE_MS);
-        el.toggleAttribute('data-touch', cur.touch);
+        el.toggleAttribute('data-idle', idle);
+        el.toggleAttribute('data-touch', Boolean(cur.touch));
       }
     };
     raf = requestAnimationFrame(frame);
