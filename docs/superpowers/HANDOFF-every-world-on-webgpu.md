@@ -2,6 +2,8 @@
 
 The design: `docs/superpowers/specs/2026-10-08-webgpu-acceleration-design.md` and its addendum of 2026-10-13 (“every world, by its measure”). The research: `docs/research/2026-10-13-webgpu-wasm-and-engines.md` (eighteen agent skill files and about ninety primary sources: WebGPU, WebAssembly, web engines, AAA techniques, profiling). The decisions of the day: `docs/decisions/2026-10-13-every-chip-plays.md`, `2026-10-13-the-star-wars-worlds-need-a-real-gpu.md`, `2026-10-13-the-browser-is-told-how-to-reach-the-card.md`. The rules every change keeps: `docs/health/RULES.md`, `.claude/skills/autopilot/SKILL.md`.
 
+The lanes that cut this into one session each: `docs/superpowers/HANDOFF-performance-lanes.md`.
+
 The owner’s word (2026-10-13): every world defaults to WebGPU, choosing whatever gives the best quality for the performance; a TSL shader is as good as the GLSL it replaces or better, never worse; at least 60 fps on a strong chip and 30 on a weak one, and faster is fine; the GPU asked for everywhere; no lag from a busy main thread; merge each task as it is finished.
 
 Line numbers below are as of 2026-10-13, `origin/main` after the pull request that carries this file.
