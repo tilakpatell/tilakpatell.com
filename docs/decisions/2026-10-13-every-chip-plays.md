@@ -8,11 +8,11 @@ The owner played Hoth on a work laptop, a Ryzen 5's Radeon 740M (four compute un
 
 ## Decision
 
-Auto is graded by the chip: under 50 on lib/gpuGrade's score Low, under 100 Mid, and Low for a chip the renderer tier keeps as weak by its name, slow on its probe, or lost in the last week. A T0 chip draws the level the plain way. Frames start at every beat everywhere and settle on an even 30 only when 60 cannot hold with nothing left to lower. A lost WebGPU device brings its world back once on WebGL 2; two losses in a week start the chip there. The quality's tier follows the level. The fetch pool is the connection's, the manifest leaves the first load and is one `JSON.parse`, and Battlefront's door opens five seconds after the level is in, whatever is still building.
+Auto is graded by the chip: under 50 on lib/gpuGrade's score Low, and Low for a chip the renderer tier keeps as weak by its name, slow on its probe, or lost in the last week. A T0 chip draws the level the plain way. Frames start at every beat everywhere and settle on an even 30 only when 60 cannot hold with nothing left to lower. A lost WebGPU device brings its world back once on WebGL 2; two losses in a week start the chip there. The quality's tier follows the level. The fetch pool is the connection's, the manifest leaves the first load and is one `JSON.parse`, and Battlefront's door opens five seconds after the level is in, whatever is still building.
 
 ## Consequences
 
-- The 740M, Iris Xe and the UHD chips start on Low, the 780M and Arc's built-in chips on Mid; the 5090 and every chip scoring 100 or more keep Ultra. A hand-picked level is never held.
+- The 740M, Iris Xe and the UHD chips start on Low; every chip scoring 50 or more keeps its Auto as before (the 780M and the entry cards Ultra, under the probe and the pace), the 5090 included. A hand-picked level is never held.
 - This replaces two rules of the 2026-10-11 GPU-first lanes: T0's pinned 30 fps cadence and 33.3 ms budget (it now aims at 60), and lib/device's “a chip that grades mid is held at High”.
 - It replaces the 2026-10-12 waiting-screen rule that Deploy takes only once nothing has built for 0.6 s: after five seconds with the level in, the guard's held objects appear as they build. The field's first seconds can show them arriving.
 - Measured in the container (software GL, the film blocked): the manifest's evaluation 554–610 ms → 305–352 ms, and the classic home page no longer preloads it. The laptop's own numbers are its line in the console (`[battlefront] in at …`).
@@ -21,5 +21,5 @@ Auto is graded by the chip: under 50 on lib/gpuGrade's score Low, under 100 Mid,
 ## Revisit when
 
 - The laptop's load line names the next wait (the D3D12 pipeline builds, the boot's binding on the main thread).
-- A chip graded Mid or Low by its name proves it can take more (the probe's median under 8 ms at High).
+- A chip held at Low by its name proves it can take more (the probe's median under 8 ms at High), or a chip scoring 50 to 100 hangs or stutters at Ultra (then a Mid band for them).
 - Lane N6's full table lands: this is its Auto row, its T0 level path and its fallback, not the rest.

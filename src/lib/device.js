@@ -19,8 +19,7 @@
 //   detail    the quality level in force: 'low', 'mid', 'high' or 'ultra'.
 //             Auto gives a laptop or desktop with a graphics chip 'ultra',
 //             but by the chip's name (lib/gpuGrade's score, AUTO_BY_SCORE)
-//             a weak built-in one 'low' and a strong built-in or entry one
-//             'mid'; a phone or a small computer its tier, software WebGL
+//             a weak one 'low'; a phone or a small computer its tier, software WebGL
 //             'low'; and 'low' for a chip the renderer tier kept as weak,
 //             slow or lost (lib/gpuProbe's tierHold: the owner's word on
 //             2026-10-13, a weak chip or none is Low under Auto).
@@ -73,16 +72,14 @@ export const BUDGETS = {
 
 // Auto by the chip's score where its name gives one (lib/gpuGrade, a GTX
 // 1060 at 100): under 50 (old and basic built-in graphics, the Radeon 740M,
-// Iris Xe) Low, under 100 (the strong built-in chips, the 780M, Arc's, and
-// the entry cards) Mid. _source: the every-chip-plays design (2026-10-13):
-// a 740M given High hung its GPU in Hoth; the owner: a weak chip is Low.
-export const AUTO_BY_SCORE = [
-  [50, 'low'],
-  [100, 'mid'],
-];
+// Iris Xe) Low. _source: the every-chip-plays design (2026-10-13): a 740M
+// given High hung its GPU in Hoth; the owner: a weak chip is Low. (A band
+// at Mid for 50 to 100 would take the entry discrete cards too, the GTX
+// 1650 and the RTX 3050 laptop's: not asked for.)
+export const AUTO_BY_SCORE = [[50, 'low']];
 
 // What Auto picks from the tier and the chip: a laptop or desktop with a
-// graphics chip ultra, unless its score says lower (AUTO_BY_SCORE);
+// graphics chip ultra, unless its score says Low (AUTO_BY_SCORE);
 // anything else its tier. A hold from the renderer tier (lib/gpuProbe's
 // tierHold) and a cap (`{ renderer, level }`, kept when this chip struggled
 // at ultra) hold it down, the cap for that chip only.

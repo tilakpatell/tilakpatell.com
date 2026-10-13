@@ -45,7 +45,8 @@
 // tier (lib/gpuProbe, the GPU-first design's G1), asked once a page, before
 // the first 'nodes' world is made, so its one-second probe runs under the
 // loading screen and never in a world's frames; `rt.tier` holds the answer
-// (null until then, or when it could not say). A classic world never asks.
+// (null until then, or when it could not say), `rt.tierWhy` its reason
+// where the decider returns { tier, why }. A classic world never asks.
 
 import { createLoop } from '../lib/three/loop';
 import { createCadence } from './cadence';
@@ -114,6 +115,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   let fresh = null; // the box of a mount not yet drawn, marked data-fresh
   let resized = null; // { w, h }: the box's new size, for the next frame to take
   let tier = null; // the renderer tier, once asked (decideTier)
+  let tierWhy = null; // and its reason, where the decider gives one ({ tier, why }: lib/gpuProbe's)
   let pacer = null; // the cadence's judge for the world that is up (createCadence)
   const clockNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
   let tiering = null; // its one asking, shared by every mount meanwhile
@@ -359,7 +361,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       tiering ??= Promise.resolve()
         .then(() => decideTier(made))
         .then(
-          (t) => (tier = t ?? null),
+          (t) => {
+            tier = (t && typeof t === 'object' ? t.tier : t) ?? null;
+            tierWhy = (t && typeof t === 'object' ? t.why : null) ?? null;
+          },
           (err) => {
             if (dev) console.warn('the renderer tier could not be decided', err);
           },
@@ -507,6 +512,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     },
     get tier() {
       return tier;
+    },
+    get tierWhy() {
+      return tierWhy;
     },
     // (a loss there is somewhere to come back from: one on WebGPU, whose
     // next backend is the node renderer over WebGL 2; useWorld mounts its

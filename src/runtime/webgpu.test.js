@@ -10,7 +10,8 @@ vi.mock('three/webgpu', () => ({
       this.options = options;
       let destroyed;
       const lost = new Promise((resolve) => (destroyed = resolve));
-      this.backend = fallBack ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost } };
+      // (three r186 keeps no adapter on its backend: the device's adapterInfo is the chip)
+      this.backend = fallBack ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost, adapterInfo: { vendor: 'amd', architecture: 'rdna-3', description: '' } } };
       // (a device destroyed on dispose says it's lost, as a real one does)
       this.destroy = () => destroyed({ reason: 'destroyed' });
       // (and one lost while drawing says why: a hung chip's 'unknown')
@@ -104,7 +105,7 @@ describe('createWebGPU', () => {
     made[0].lose();
     await Promise.resolve();
     expect(onLost).toHaveBeenCalledTimes(1);
-    expect(onLost).toHaveBeenCalledWith(expect.objectContaining({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG' }));
+    expect(onLost).toHaveBeenCalledWith(expect.objectContaining({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG', adapter: { vendor: 'amd', architecture: 'rdna-3' } }));
     const onLost2 = vi.fn();
     const gfx2 = await createWebGPU(fakeCanvas(), { onLost: onLost2 });
     gfx2.dispose();

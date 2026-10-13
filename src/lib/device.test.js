@@ -73,10 +73,11 @@ describe('the detail level: the tier, graded by the graphics chip', () => {
 
   // (the owner's word, 2026-10-13: a weak chip, or none, is Low under Auto;
   // a Radeon 740M on High hung its GPU in Hoth)
-  it('puts a weak built-in chip on low and a strong built-in one on mid, leaving the tier alone', () => {
+  it('puts a weak chip on low, leaving the tier alone, and a stronger one where it was', () => {
     expect(classifyDevice({ ua: WINDOWS, memory: 8, cores: 4, renderer: UHD620 })).toMatchObject({ tier: 'high', grade: 'mid', detail: 'low', auto: 'low' });
     expect(classifyDevice({ ua: WINDOWS, memory: 32, cores: 12, renderer: R740M })).toMatchObject({ tier: 'high', detail: 'low', auto: 'low' });
-    expect(classifyDevice({ ua: WINDOWS, memory: 32, renderer: R780M })).toMatchObject({ tier: 'high', detail: 'mid', auto: 'mid' });
+    // (the 780M, 71, and the entry cards: Ultra as before, the probe and the pace after it)
+    expect(classifyDevice({ ua: WINDOWS, memory: 32, renderer: R780M })).toMatchObject({ tier: 'high', detail: 'ultra', auto: 'ultra' });
     // (a GTX 1060, 100, and up: as before)
     expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 6GB Direct3D11)' }).detail).toBe('ultra');
   });

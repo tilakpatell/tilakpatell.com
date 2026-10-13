@@ -80,6 +80,39 @@ describe('createCadence: 60 where the chip holds it, an even 30 where it cannot'
     expect(run(c, { t0: 3000, ms: 8000, interval: 33.3, cpuMs: 15, gpuMs: 14 })).toEqual([]);
   });
 
+  // (with no GPU clock, WebGL 2 and the classic renderer, the work at 30 is
+  // only the main thread's: a frame bound by the chip looked light there,
+  // climbed and dropped again every 6 s for as long as it ran)
+  it('without a GPU clock, climbs back rarely, and more rarely after each failed climb', () => {
+    const c = createCadence({ warmMs: 0 });
+    const changes = [];
+    for (let t = 0; t < 300000; ) {
+      const interval = c.every === 1 ? 25 : 33.3;
+      const next = c.frame(t, { interval, cpuMs: 6, gpuMs: null, floored: true });
+      if (next !== null) changes.push([t, next]);
+      t += interval;
+    }
+    expect(changes[0][1]).toBe(2);
+    expect(changes.length).toBeLessThanOrEqual(8); // (stays of 30, 60 and 120 s, three probes of 60 between)
+    // (each stay at 30 longer than the one before)
+    const stays = [];
+    for (let i = 0; i + 1 < changes.length; i += 2) stays.push(changes[i + 1][0] - changes[i][0]);
+    for (let i = 1; i < stays.length; i++) expect(stays[i]).toBeGreaterThan(stays[i - 1] * 1.5);
+    expect(stays[0]).toBeGreaterThanOrEqual(CADENCE.blindClimbMs);
+  });
+
+  it('with a clock, a climb that fails doubles the next wait', () => {
+    const c = createCadence({ warmMs: 0 });
+    run(c, { ms: 3000, interval: 25, cpuMs: 24, gpuMs: 5 });
+    const up = run(c, { t0: 3000, ms: 5000, interval: 33.3, cpuMs: 9, gpuMs: 10 });
+    expect(up.map((x) => x[1])).toEqual([1]);
+    // (60 does not hold: down again within moments)
+    const down = run(c, { t0: up[0][0], ms: 4000, interval: 25, cpuMs: 24, gpuMs: 5 });
+    expect(down.map((x) => x[1])).toEqual([2]);
+    const again = run(c, { t0: down[0][0], ms: 20000, interval: 33.3, cpuMs: 9, gpuMs: 10 });
+    expect(again[0][0] - down[0][0]).toBeGreaterThanOrEqual(2 * CADENCE.climbMs);
+  });
+
   it('lets a hitch go by', () => {
     const c = createCadence({ warmMs: 0 });
     const changes = [];

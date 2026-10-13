@@ -11,7 +11,12 @@
 // thread, which no resolution helps), every second beat, an even 30 rather
 // than a ragged 40; back to every beat once the frame's own work (the GPU
 // clock's time or the main thread's, whichever is longer) has been under
-// CADENCE.climb of the 60 fps budget for CADENCE.climbMs. A pin is held.
+// CADENCE.climb of the 60 fps budget for CADENCE.climbMs, or for
+// CADENCE.blindClimbMs with no GPU clock (WebGL 2, the classic renderer),
+// where the work at 30 is only the main thread's and says little of the
+// chip; a climb that fails (a drop within CADENCE.failMs of it) doubles the
+// next wait, to CADENCE.maxClimbMs at most, so 60 is tried again now and
+// then and never see-saws. A pin is held.
 //
 // readFps(win) → 30 | 60 | null
 // cadenceFor({ fps }) → 1 | 2
@@ -42,6 +47,9 @@ export const CADENCE = {
   climbMs: 3000,
   climb: 0.8, // of the budget, the work's median before a climb (headroom: no see-saw)
   warmMs: 3000, // a world's first frames carry its arrival (the runtime's WARM_UP)
+  blindClimbMs: 30000, // the climb's wait with no GPU clock to say what the chip has left
+  failMs: 10000, // a drop this soon after a climb says the climb failed
+  maxClimbMs: 300000,
   window: 30, // frames the medians are taken over
   pauseMs: 250, // a frame this long is a pause, not a frame (pace.js's cut)
   _source: 'the every-chip-plays design (2026-10-13): 60 where the chip holds it, an even 30 where it cannot',
@@ -53,11 +61,14 @@ const median = (xs) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
-export function createCadence({ fps = null, budgetMs = CADENCE.budgetMs, slowMs = CADENCE.slowMs, dropMs = CADENCE.dropMs, climbMs = CADENCE.climbMs, climb = CADENCE.climb, warmMs = CADENCE.warmMs, window = CADENCE.window, pauseMs = CADENCE.pauseMs } = {}) {
+export function createCadence({ fps = null, budgetMs = CADENCE.budgetMs, slowMs = CADENCE.slowMs, dropMs = CADENCE.dropMs, climbMs = CADENCE.climbMs, blindClimbMs = CADENCE.blindClimbMs, failMs = CADENCE.failMs, maxClimbMs = CADENCE.maxClimbMs, climb = CADENCE.climb, warmMs = CADENCE.warmMs, window = CADENCE.window, pauseMs = CADENCE.pauseMs } = {}) {
   const pinned = fps === 30 || fps === 60;
   let every = cadenceFor({ fps });
   let first = null;
   let since = null; // when the frames first called for a change
+  let climbedAt = null; // the last climb to every beat
+  let backoff = 1; // the climb's wait multiplied, after each climb that failed
+  let clocked = false; // a GPU time seen at every second beat
   const xs = [];
   return {
     get every() {
@@ -71,6 +82,7 @@ export function createCadence({ fps = null, budgetMs = CADENCE.budgetMs, slowMs 
       // second the interval is 33.3 by construction, so the work says
       const x = every === 1 ? interval : Math.max(cpuMs ?? 0, gpuMs ?? 0);
       if (!(x > 0) || x > pauseMs) return null;
+      if (every === 2) clocked = gpuMs != null;
       xs.push(x);
       if (xs.length > window) xs.shift();
       const m = xs.length >= window / 2 ? median(xs) : null;
@@ -83,8 +95,16 @@ export function createCadence({ fps = null, budgetMs = CADENCE.budgetMs, slowMs 
         return null;
       }
       since ??= now;
-      if (now - since < (every === 1 ? dropMs : climbMs)) return null;
-      every = every === 1 ? 2 : 1;
+      const wait = every === 1 ? dropMs : Math.min(maxClimbMs, (clocked ? climbMs : blindClimbMs) * backoff);
+      if (now - since < wait) return null;
+      if (every === 1) {
+        // (down again this soon after a climb: the climb failed, and the next waits twice as long)
+        backoff = climbedAt !== null && now - climbedAt < failMs ? Math.min(backoff * 2, maxClimbMs / climbMs) : 1;
+        every = 2;
+      } else {
+        climbedAt = now;
+        every = 1;
+      }
       since = null;
       xs.length = 0;
       return every;

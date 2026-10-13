@@ -120,9 +120,9 @@ export function runtime() {
     tier: (gfx) =>
       browser()
         .then((m) => m.rendererTier(gfx))
-        .then(({ tier }) => {
+        .then((decided) => {
           held();
-          return tier;
+          return decided;
         }),
     // the chip's own frame time (lib/three/gpuTime) for a node world on
     // WebGPU: the dynamic-resolution controller steps on it (quality.js's

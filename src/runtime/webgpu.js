@@ -153,7 +153,10 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   // (what was lost, for the chip's record: the device's reason and message,
   // a hung chip's DXGI_ERROR_DEVICE_HUNG among them, and the adapter's
   // vendor and architecture; lib/gpuProbe's noteLoss keeps it)
-  const info = renderer.backend?.adapter?.info ?? null;
+  // (three r186 keeps no adapter on its backend; the device's adapterInfo
+  // names the chip: without it every loss was kept for a blank chip, and
+  // the next visit's tier, judged for the real one, wrote over its count)
+  const info = renderer.backend?.device?.adapterInfo ?? renderer.backend?.adapter?.info ?? null;
   const adapter = info ? { vendor: String(info.vendor ?? ''), architecture: String(info.architecture ?? '') } : null;
   const gone = (why) => {
     if (lost || released || why?.reason === 'destroyed') return;

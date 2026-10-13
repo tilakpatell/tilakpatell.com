@@ -40,6 +40,7 @@
 
 import * as THREE from 'three';
 import { device } from '../../lib/device.js';
+import { CAPPING } from '../../lib/gpuProbe.js';
 import { textureTier } from '../../lib/video.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
 import { camerasOf, levelForMode, levelKey, lightingOf, loadLevel, loadRulebook, mapOf, squadsOf, teamsFor } from '../../lib/battlefront/rulebook.js';
@@ -125,11 +126,14 @@ export default {
     // same to 46.7 dB with the chain off (docs/superpowers/evidence/gpu-first/N1).
     // ?level=cpu in the address keeps the instanced path, for a check; a
     // device without indirect-first-instance and WebGL 2 keep it always:
-    // levelScene.js's canDrawGpuScene; and a T0 chip, integrated or weak,
-    // whose compute cull and depth pyramid cost it more than they save:
-    // GPU-first lane N6's table, “level path: batched” on T0)
+    // levelScene.js's canDrawGpuScene; and a chip that is T0 for being weak
+    // by its name, slow on the probe or lost (lib/gpuProbe's CAPPING), whose
+    // compute cull and depth pyramid cost it more than they save: GPU-first
+    // lane N6's “level path: batched” on T0. A T0 for want of a feature, a
+    // strong desktop's WebGPU without timestamp-query, keeps the GPU scene)
     const flags = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search) : null;
-    const gpuScene = rt.gfx.backend === 'webgpu' && rt.tier !== 'T0' && flags?.get('level') !== 'cpu';
+    const weak = rt.tier === 'T0' && CAPPING.has(rt.tierWhy);
+    const gpuScene = rt.gfx.backend === 'webgpu' && !weak && flags?.get('level') !== 'cpu';
     // (?ground=flat: the ground in its flat colour, the game's snow maps left
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
