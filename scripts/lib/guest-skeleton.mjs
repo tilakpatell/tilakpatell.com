@@ -26,7 +26,8 @@
 // the limb's; the weapon sockets rest where the game rests them, at the
 // model's origin, since every clip says where they are.
 //
-//   rowsOf(json) → rows: a glTF's nodes, from its default scene down
+//   rowsOf(json, from?) → rows: a glTF's nodes, from its default scene down
+//     (or the tree of the node named `from`, stood at the origin)
 //   worldsOf(rows) → Map<name, Matrix4>: each node at rest
 //   JOINT_MAP(meshyNodes) → Map<Meshy joint, game bone>: the back in the
 //     order the file climbs it (never by its joints' names: Meshy calls the
@@ -80,14 +81,21 @@ const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
 const mirror = (v) => new THREE.Vector3(-v.x, v.y, v.z);
 const placeOf = (m) => new THREE.Vector3().setFromMatrixPosition(m);
 
-export function rowsOf(json) {
+export function rowsOf(json, from = null) {
   const rows = [];
   const walk = (i, parent) => {
     const n = json.nodes[i];
     rows.push({ name: n.name, parent, translation: n.translation ?? [0, 0, 0], rotation: n.rotation ?? [0, 0, 0, 1], scale: n.scale ?? [1, 1, 1] });
     for (const c of n.children ?? []) walk(c, n.name);
   };
-  for (const i of json.scenes[json.scene ?? 0].nodes) walk(i, null);
+  if (from == null) for (const i of json.scenes[json.scene ?? 0].nodes) walk(i, null);
+  else {
+    // (that node's own tree, stood at the origin: a body's skeleton out from under whatever its file hangs it on)
+    const top = json.nodes.findIndex((n) => n.name === from);
+    if (top < 0) throw new Error(`no ${from} node`);
+    walk(top, null);
+    Object.assign(rows[0], { translation: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] });
+  }
   return rows;
 }
 
