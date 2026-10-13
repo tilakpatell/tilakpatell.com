@@ -157,7 +157,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   backRef.current = phase === 'pre' ? backOut : null;
   const SpawnScreen = screens ? screens.Spawn : null;
   // (one component for the HUD's deploy slot, the same from render to render: a new one each time would be mounted again at every snapshot)
-  const FirstSpawn = useMemo(() => (SpawnScreen ? (p) => <SpawnScreen {...p} onBack={backRef.current ? () => backRef.current?.() : null} /> : null), [SpawnScreen]);
+  const FirstSpawn = useMemo(() => (SpawnScreen ? (p) => <SpawnScreen {...p} first={Boolean(backRef.current)} onBack={backRef.current ? () => backRef.current?.() : null} /> : null), [SpawnScreen]);
   // the level's loading cue, from the menu's end to the wipe's swap (never under the menu; the world is unheard until then: sound/director.js)
   const cued = !inMenu && (phase === 'pre' || phase === 'down');
   useEffect(() => (cued ? startLoadingMusic(level) : undefined), [cued, level]);

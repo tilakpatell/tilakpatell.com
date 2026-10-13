@@ -14,6 +14,48 @@
   .bf-loading-mark { animation: bf-loading-mark 1.6s ease-in-out infinite alternate; }
 }
 @keyframes bf-loading-mark { from { opacity: 0.25; } to { opacity: 0.7; } }
+/* The spawn screen, as the running game draws it (Spawn.jsx; measured on its window, 1,306 x 733: the panel 5.9 to
+   32 % across and 5.7 to 57 % down, the strip 5.9 to 60 % across and 64 to 84.4 % down, the foot at 91.5 %): the
+   dark room the game shows it in, the offer in hand in a panel, the classes as tiles and the rest as portraits. */
+.bf-spawn-screen { background: radial-gradient(90% 120% at 78% 40%, #1b2a36 0%, #0a1016 45%, #04070a 100%); }
+.bf-spawn-screen .bf-game-backdrop { display: none; }
+.bf-spawn-figure { position: absolute; left: 38%; top: 0; z-index: -1; /* behind the screen's own words and boxes */ width: 62%; height: 100%; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28%); mask-image: linear-gradient(90deg, transparent 0, #000 28%); /* (the stage's own dark has an edge: it fades into the room's) */ }
+.bf-spawn-figure > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bf-spawn-panel { position: absolute; left: 5.9%; top: 5.7%; box-sizing: border-box; width: 26.1%; min-width: 15rem; padding: 0.5rem 0.8rem 0.9rem; border-top: 2px solid rgba(242, 245, 248, 0.9); border-bottom: 1px solid rgba(242, 245, 248, 0.6); background: rgba(3, 5, 8, 0.82); }
+.bf-spawn-aurebesh { margin: 0; overflow: hidden; height: 0.9rem; font-family: 'BF Aurebesh', var(--font-bf-hud, sans-serif); font-size: 0.6rem; letter-spacing: 0.1em; white-space: nowrap; color: var(--bf-muted, #b9c2cc); }
+.bf-spawn-panel h2 { margin: 0 0 0.6rem; color: var(--bf-ink, #f2f5f8); font-size: clamp(1.1rem, 2.3vw, 2.1rem); font-weight: 800; line-height: 1.05; letter-spacing: 0.02em; }
+.bf-spawn-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12%; margin: 0; padding: 0.6rem 0.2rem 0.2rem; border-top: 1px solid rgba(242, 245, 248, 0.3); list-style: none; }
+.bf-spawn-slot { aspect-ratio: 7 / 10; border: 1px solid rgba(242, 245, 248, 0.85); border-radius: 0.2rem; overflow: hidden; }
+.bf-spawn-slot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.bf-spawn-screen-where { display: grid; gap: 2px; margin: 0.8rem 0 0; padding: 0.6rem 0 0; border-top: 1px solid rgba(242, 245, 248, 0.3); list-style: none; }
+.bf-spawn-where { display: flex; justify-content: space-between; gap: 0.75rem; width: 100%; padding: 0.35rem 0.6rem; border: 0; border-left: 2px solid transparent; background: rgba(8, 12, 18, 0.66); color: inherit; font: inherit; font-size: 0.8rem; letter-spacing: 0.05em; text-align: left; cursor: pointer; }
+.bf-spawn-where[aria-pressed='true'], .bf-spawn-where:focus-visible { border-left-color: var(--bf-ink, #f2f5f8); background: rgba(40, 52, 66, 0.86); outline: none; }
+.bf-spawn-where[aria-disabled] { color: var(--bf-muted, #b9c2cc); cursor: default; }
+.bf-spawn-points { position: absolute; left: 5.9%; top: 57.6%; width: 54.1%; margin: 0; display: grid; justify-items: end; line-height: 1; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
+.bf-spawn-points b { font-size: clamp(1rem, 1.9vw, 1.7rem); }
+.bf-spawn-points span { font-size: clamp(0.5rem, 0.7vw, 0.68rem); letter-spacing: 0.08em; }
+.bf-spawn-strip { position: absolute; left: 5.9%; top: 64%; display: grid; grid-template-columns: 47% 53%; width: 54.1%; height: 20.4%; border: 1px solid rgba(242, 245, 248, 0.85); background: rgba(3, 5, 8, 0.85); }
+.bf-spawn-strip ul { display: grid; margin: 0; padding: 0; list-style: none; min-height: 0; }
+.bf-spawn-strip li { display: grid; min-width: 0; min-height: 0; }
+.bf-spawn-classes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bf-spawn-faces { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.bf-spawn-screen-cell { position: relative; display: grid; place-items: center; align-content: center; gap: 0.5rem; width: 100%; height: 100%; padding: 0; border: 0; border-right: 1px solid rgba(242, 245, 248, 0.5); background: none; color: inherit; font: inherit; cursor: pointer; overflow: hidden; }
+.bf-spawn-screen-cell[aria-pressed='true'] { background: rgba(120, 128, 136, 0.62); box-shadow: inset 0 0 0 2px var(--bf-ink, #f2f5f8); }
+.bf-spawn-screen-cell:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #ffd84a; }
+.bf-spawn-tile[data-kind='class'][aria-pressed='true']::after { content: '✓'; position: absolute; top: 0.3rem; right: 0.3rem; display: grid; place-items: center; width: 0.95rem; height: 0.95rem; border-radius: 50%; background: var(--bf-ink, #f2f5f8); color: #10151b; font-size: 0.6rem; font-weight: 800; }
+.bf-spawn-class-icon, .bf-spawn-tile-icon { width: clamp(1.2rem, 2.3vw, 2.1rem); height: clamp(1.2rem, 2.3vw, 2.1rem); fill: currentColor; }
+.bf-spawn-tile-icon { filter: invert(1); }
+.bf-spawn-screen-name { font-size: clamp(0.5rem, 0.85vw, 0.8rem); font-weight: 700; letter-spacing: 0.04em; }
+.bf-spawn-face { border-bottom: 1px solid rgba(242, 245, 248, 0.5); }
+.bf-spawn-face > img:not(.bf-spawn-tile-icon) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.bf-spawn-face[aria-disabled] { cursor: default; }
+.bf-spawn-face[aria-disabled] > img { filter: grayscale(1) brightness(0.75); }
+.bf-spawn-face[aria-disabled]::before { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-linear-gradient(135deg, rgba(4, 7, 10, 0.55) 0 2px, transparent 2px 7px); }
+.bf-spawn-cost { position: absolute; right: 0.2rem; bottom: 0.15rem; z-index: 2; font-size: clamp(0.45rem, 0.62vw, 0.62rem); text-shadow: 0 0 3px #000, 0 0 1px #000; }
+.bf-spawn-foot { position: absolute; left: 5.9%; top: 91.5%; display: flex; gap: 0.3rem; margin: 0; }
+.bf-spawn-foot button { padding: 0.32rem 0.95rem; border: 2px solid rgba(242, 245, 248, 0.9); border-radius: 0.3rem 0.3rem 0.75rem 0.3rem; background: rgba(3, 5, 8, 0.7); color: inherit; font: inherit; font-size: clamp(0.6rem, 0.95vw, 0.9rem); font-weight: 700; letter-spacing: 0.05em; cursor: pointer; }
+.bf-spawn-foot button:is(:hover, :focus-visible):not([aria-disabled]) { border-color: #ffd84a; color: #ffd84a; outline: none; }
+.bf-spawn-foot button[aria-disabled] { opacity: 0.5; cursor: default; }
 .bf-game-screen:focus-visible { outline: none; }
 .bf-game-backdrop { position: absolute; inset: 0; }
 .bf-game-film { position: absolute; inset: 0; opacity: 0.7; }
@@ -49,16 +91,6 @@
 /* loading */
 
 /* spawn */
-.bf-spawn-screen { background: linear-gradient(90deg, rgba(4, 7, 10, 0.82) 0%, rgba(4, 7, 10, 0.15) 45%, transparent 70%); }
-.bf-spawn-screen .bf-game-backdrop { display: none; }
-.bf-spawn-screen-list { position: absolute; left: 5%; top: 17.8%; width: min(22rem, 40vw); max-height: 70%; margin: 0; padding: 0; overflow: auto; list-style: none; }
-.bf-spawn-screen-cell { display: grid; grid-template-columns: 2.5rem 1fr auto; align-items: center; gap: 0.75rem; width: 100%; min-height: 3.5rem; padding: 0.4rem 1rem; border: 0; border-left: 2px solid transparent; background: rgba(8, 12, 18, 0.78); color: inherit; font: inherit; font-size: 1.1rem; letter-spacing: 0.05em; text-align: left; cursor: pointer; }
-.bf-spawn-screen-cell + .bf-spawn-screen-cell, li + li .bf-spawn-screen-cell { margin-top: 2px; }
-.bf-spawn-screen-cell[aria-pressed='true'], .bf-spawn-screen-cell:focus-visible { border-left-color: var(--bf-ink, #f2f5f8); background: rgba(40, 52, 66, 0.86); outline: none; }
-.bf-spawn-screen-cell[aria-disabled] { color: var(--bf-muted, #b9c2cc); cursor: default; }
-.bf-spawn-screen-cell img { filter: invert(1); }
-.bf-spawn-screen-where { position: absolute; left: calc(5% + min(22rem, 40vw) + 1rem); top: 17.8%; width: min(16rem, 30vw); margin: 0; padding: 0; list-style: none; }
-.bf-spawn-screen-points { position: absolute; left: 5%; bottom: 8%; margin: 0; letter-spacing: 0.08em; }
 
 /* the in-game menu's items: a button over each of the tree's boxes */
 .bf-menu-item { position: absolute; padding: 0; border: 0; background: transparent; cursor: pointer; pointer-events: auto; }
