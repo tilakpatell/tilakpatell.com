@@ -13,7 +13,8 @@ import Loading from './Loading.jsx';
 import MainMenu from './MainMenu.jsx';
 import Play from './Play.jsx';
 import Scoreboard from './Scoreboard.jsx';
-import Spawn, { figureOf } from './Spawn.jsx';
+import Spawn from './Spawn.jsx';
+import { figureOf } from './spawnFigure';
 import Start from './Start.jsx';
 
 const html = (el) => renderToStaticMarkup(el);

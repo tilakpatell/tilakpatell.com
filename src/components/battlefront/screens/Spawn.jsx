@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { GameIcon } from '../../../runtime/hud';
-import { appearanceOf, cardsFor, characterOfOffer, picksOf, portraitOf } from '../../../lib/bf2017/collection';
-import { BODIES, kindOf } from '../figures/figures.js';
+import { cardsFor, characterOfOffer, picksOf, portraitOf } from '../../../lib/bf2017/collection';
 import DeployScreen from '../hud/DeployScreen.jsx';
 import { offerIcon } from '../hud/icons.js';
 import { offerRows } from '../hud/widgets.js';
 import { prune } from './tree';
-import { readPicks } from './useCollection';
+import { figureOf, kept } from './spawnFigure';
 import { useTree } from './useTree';
 import CollectionStage from './CollectionStage.jsx';
 import GameScreen from './GameScreen.jsx';
@@ -20,7 +19,7 @@ import GameScreen from './GameScreen.jsx';
 // as portraits, hatched while their Battle Points are not earned, with the
 // Battle Points over the strip's end; at the foot SELECT, VIEW ABILITIES
 // and APPEARANCES; and on the right, in the dark room, the offer in hand
-// standing: the body it would wear in the field (figureOf), on the stage the
+// standing: the body it would wear in the field (spawnFigure.js), on the stage the
 // Collection draws its characters on. The arrows move through the
 // strip, Enter deploys the one in focus (the page's input hears Enter too,
 // as before). With no tree it is lane 5's DeployScreen, which takes the
@@ -43,25 +42,6 @@ export default function Spawn({ screen = 'SpawnOverlayScreen', first = false, ..
   if (!raw || !props.deploy?.open) return raw ? null : <DeployScreen {...props} />;
   const out = first ? LATER : PRE_ROUND;
   return <SpawnTree tree={prune(raw, (b) => out.test(b.id.split('/').pop()) || /FooterBar|TimeWidget|LoadingSpinner|BreadcrumbWidget/.test(b.id))} {...props} />;
-}
-
-const kept = () => {
-  try {
-    return readPicks();
-  } catch {
-    // (no storage: no picks)
-    return {};
-  }
-};
-
-// The body an offer would wear in the field, as the stage's spec: the skin the Collection keeps for it, else the
-// unit's own, else its side's trooper (figures.js's kindOf, the same rule the field draws by).
-export function figureOf(offer, team, store = kept()) {
-  const c = characterOfOffer(offer);
-  const look = c ? appearanceOf(store, c.id, { faction: c.faction }) : null;
-  const kind = kindOf({ team, unitId: offer.kind === 'class' ? null : offer.id, appearance: look });
-  const body = BODIES[kind];
-  return body ? { name: kind, rig: 'walrus', src: { url: body.url }, pack: body.pack ?? null, kind } : null;
 }
 
 // the star cards the Collection keeps for an offer's character, with their art
