@@ -13,7 +13,7 @@
 // BigInt (JSON.parse would round it), signed as the export writes it (-1 is
 // all 64 bits), trimmed after the highest set bit.
 
-import { byGuid, deref, follow, isSequel, loadText, numbersOf, objectsOf, readWebJson, rootOf, shortName } from './bf2017-ebx.mjs';
+import { byGuid, deref, follow, isSequel, loadText, numbersOf, objectsOf, readWebJson, rootOf, shortName, stringHash } from './bf2017-ebx.mjs';
 import { indexOf } from './bf2017-rulebook.mjs';
 
 const where = (asset, obj) => `${asset.name}#${obj.$type}`;
@@ -137,8 +137,55 @@ function queryRow(root, name) {
   return { terms, _source: `${name}#CoverQueryData` };
 }
 
+// The setup screen's words for an option's row: its title, and the help line under the list while the row
+// is the chosen one. The screen's record names neither (its cells take them in code), so they are found in
+// the string table: by their key where the key was recovered from its hash (`ID_MODE8_OPTION_<name>` and
+// its `_DESC`, the mode's `_TITLE` and `_DESCRIPTION`, the Arcade's `ID_M_SKIRMISH_SETTING_*` for the two
+// rows the screens share), else by the table's own id (`#…`), matched to the option by its words (by hand:
+// src/data/bf2017/NOTES.md). The two friendly switches have no help line in the table.
+const IA_WORDS = {
+  InstantActionModeToPlay: ['ID_MODE8_OPTION_MODE_TITLE', 'ID_MODE8_OPTION_MODE_DESCRIPTION'],
+  InstantActionLevelToPlay: ['ID_M_SKIRMISH_SETTING_LEVEL_LABEL', 'ID_M_SKIRMISH_SETTING_LEVEL_DESC'],
+  InstantActionDifficulty: ['ID_M_SKIRMISH_SETTING_DIFFICULTY_LABEL', 'ID_DIFFICULTY_DESC'],
+  InstantActionTimeLimit: ['ID_MODE8_OPTION_TIME', 'ID_MODE8_OPTION_TIME_DESC'],
+  InstantActionBPRate: ['ID_MODE8_OPTION_BP_RATE', 'ID_MODE8_OPTION_BP_RATE_DESC'],
+  InstantActionNumEnemyAI_PC: ['#F4BC940D', '#AAE9B64B'],
+  InstantActionNumFriendlyAI_PC: ['#5BC3A8A0', '#8C639EBE'],
+  InstantActionNumEnemyAI_Console: ['#F4BC940D', '#AAE9B64B'],
+  InstantActionNumFriendlyAI_Console: ['#5BC3A8A0', '#8C639EBE'],
+  InstantActionEnemyHeroCount: ['#2CCB29EF', '#BB8B496D'],
+  InstantActionFriendlyHeroCount: ['#00688EB3', '#665A48B1'],
+  InstantActionEnemyReinforcementCount: ['#E389CD23', '#0B340D21'],
+  InstantActionFriendlyReinforcementCount: ['#4C995FE2', '#C4582F40'],
+  InstantActionEnemyVehicleCount: ['#305B5106', '#A7F276E4'],
+  InstantActionFriendlyVehicleCount: ['#12992805', '#FB198543'],
+  InstantActionEnemyHeroes: ['#7A0BDD49', '#AE242507'],
+  InstantActionFriendlyHeroes: ['#80E1035C', null],
+  InstantActionEnemyVehicles: ['#0050A136', '#643C8189'],
+  InstantActionFriendlyVehicles: ['#11079809', null],
+  InstantActionAllEraHeroes: ['#514DA716', '#B443AE49'],
+};
+// The screen's own words beside its rows: its two headings, its four buttons and its reset's question.
+const IA_SCREEN = {
+  modifiers: 'ID_PLAY_SCR_SKIRMISH_SETTINGS_GAME_RULES',
+  advanced: 'ID_M_OPTIONS_VIDEO_HEADER_ADVANCED_SETTINGS',
+  play: 'ID_MAINMENU_SCR_PLAY',
+  reset: 'ID_OPTIONS_SCR_RESET_TO_DEFAULT',
+  resetAsk: 'ID_OPTIONS_SCR_RESET_CONFIRMATION',
+  faction: 'ID_PLAY_SCR_SKIRMISH_CHANGE_FACTION',
+};
+
+// a string of the table by its key, or by the table's own id (`#…`): its text and where it is
+function wordOf(strings, ref) {
+  if (!ref || !strings) return null;
+  const id = ref.startsWith('#') ? ref.slice(1) : stringHash(ref);
+  const text = (strings.strings ?? strings)[id];
+  return text === undefined ? null : { text: text.trim(), _source: `Localization/WSLocalization_English#${ref.startsWith('#') ? id : ref}` };
+}
+
 function instantActionOf(root) {
   const out = {};
+  const strings = readWebJson(root, 'strings/English.json');
   for (const n of named(root, /^Gameplay\/Profiles\/InstantActionParams\/[^/]+$/)) {
     const a = follow(root, n);
     const o = a && rootOf(a);
@@ -146,7 +193,16 @@ function instantActionOf(root) {
     out[shortName(n)] = { items: (o.Items ?? []).map((i) => i.DisplayName ?? null), default: (o.Items ?? []).findIndex((i) => i.Default), default_source: `${n}#${o.$type}.Items` };
     // (a number's option, ProfileOptionDataFloat or …Int: its own least, most, step and the value it starts at)
     if (typeof o.Value === 'number') Object.assign(out[shortName(n)], { value: o.Value, min: o.Min ?? null, max: o.Max ?? null, step: o.Step ?? null, _source: `${n}#${o.$type}` });
+    // (the row's own words on the setup screen, and each of its items' where the table holds them)
+    const [title, help] = IA_WORDS[shortName(n)] ?? [];
+    const words = { title: wordOf(strings, title), help: wordOf(strings, help) };
+    if (words.title) Object.assign(out[shortName(n)], words);
+    const labels = (o.Items ?? []).map((i) => wordOf(strings, i.DisplayName)?.text ?? null);
+    if (labels.length && labels.every(Boolean)) out[shortName(n)].labels = labels;
   }
+  // (the screen itself: `UI/Frontend/Screens/Play/InstantAction/InstantActionSettingsScreen` names these six)
+  const screen = Object.fromEntries(Object.entries(IA_SCREEN).map(([k, id]) => [k, wordOf(strings, id)]).filter(([, w]) => w));
+  if (Object.keys(screen).length) out.$screen = { ...screen, _source: 'UI/Frontend/Screens/Play/InstantAction/InstantActionSettingsScreen#CheckedLocalizedStringEntityData.Sid' };
   return out;
 }
 
