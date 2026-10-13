@@ -209,6 +209,9 @@ export default {
     let arrival = null; // { t, stops }: the exposure adapting after the wipe's swap
     let arrivedAt = null; // ms (performance.now) of the first deploy, and of the first frame drawn after it
     let firstFieldAt = null;
+    // (the way in's marks, ms of the page's clock: the world made, the level's boot in; waiting.js's loadLine)
+    let madeAt = null;
+    let levelAt = null;
     let building = 0; // post chains being built (a weather's, the pace's)
     const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -398,7 +401,7 @@ export default {
         level: { loaded: level.loaded(), progress: level.progress(), ...level.stats(), physics: physicsStats() },
         shaders: { pending: guard?.pending() ?? 0, held: guard?.held() ?? 0, building },
         machine: machine(),
-        marks: { arrivedAt, firstFieldAt },
+        marks: { arrivedAt, firstFieldAt, madeAt, levelAt: (levelAt ??= level.loaded() ? now() : null) },
         backend: rt.gfx.backend,
         weather,
         parked,
@@ -621,6 +624,7 @@ export default {
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
     // (`sounds`: the player's counter by name and kind, the duck and the stem in force, the HDR window, for scripts/bf2017-sound-check.mjs)
     if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    madeAt = now();
     return world;
   },
 };

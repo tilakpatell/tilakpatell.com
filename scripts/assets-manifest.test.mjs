@@ -28,6 +28,23 @@ describe('the manifest the build bundles', () => {
     expect(JSON.parse(out)).toEqual({ 'kit/a.glb': manifest['kit/a.glb'] });
   });
 
+  // (an object literal of 77,510 entries took V8 525 ms to evaluate, one
+  // JSON.parse of the same text 220 to 275: the every-chip-plays design)
+  it('with a base, is served as one JSON.parse of the same text, under a module of its own', async () => {
+    const { root, manifest } = project();
+    const p = made(root, 'https://bucket.test');
+    const file = join(root, 'src/data/assets-manifest.json');
+    const ctx = { resolve: async () => ({ id: file }) };
+    const id = await p.resolveId.call(ctx, '../data/assets-manifest.json', join(root, 'src/lib/assetBase.js'), {});
+    expect(id).toBeTruthy();
+    const code = p.load(id);
+    expect(code.startsWith('export default JSON.parse(')).toBe(true);
+    expect(JSON.parse(JSON.parse(code.slice('export default JSON.parse('.length, -2)))).toEqual({ 'kit/a.glb': manifest['kit/a.glb'] });
+    // (another file, or no base: left to Vite's own resolution)
+    expect(await p.resolveId.call(ctx, './other.json', file, {})).toBeNull();
+    expect(await made(root, '').resolveId.call(ctx, '../data/assets-manifest.json', file, {})).toBeNull();
+  });
+
   it('without one, is empty, so the bundle carries nothing it will not use', () => {
     const { root } = project();
     expect(made(root, '').load(join(root, 'src/data/assets-manifest.json'))).toBe('{}');

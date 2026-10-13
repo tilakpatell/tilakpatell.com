@@ -26,6 +26,12 @@ export function bundledManifest(root, publicDir, env = process.env) {
 }
 
 const slashed = (p) => String(p).replace(/\\/g, '/');
+// (with a base, the manifest is a module of its own whose default is one
+// JSON.parse of its text: V8 evaluated the 77,510 entries as Vite's object
+// literal in 525 ms, as JSON.parse in 220 to 275; the every-chip-plays
+// design, 2026-10-13. Vite 8 keeps a JSON module an object literal
+// whatever json.stringify says, so the text is served as script here.)
+const VIRTUAL = '\0tp-asset-manifest.js';
 
 export default function assetManifest() {
   let file = null;
@@ -46,7 +52,13 @@ export default function assetManifest() {
     // join gives Windows its backslashes, so both are read the one way: on a
     // Windows checkout the plugin never answered and the bundle carried an
     // empty manifest, every bucket file asked of the site instead)
+    async resolveId(source, importer, opts) {
+      if (!base || !String(source).endsWith('assets-manifest.json')) return null;
+      const got = await this.resolve(source, importer, { ...opts, skipSelf: true });
+      return got && slashed(got.id.split('?')[0]) === slashed(file) ? VIRTUAL : null;
+    },
     load(id) {
+      if (id === VIRTUAL) return `export default JSON.parse(${JSON.stringify(JSON.stringify(bundledManifest(root, publicDir)))});`;
       if (slashed(id.split('?')[0]) !== slashed(file)) return null;
       return base ? JSON.stringify(bundledManifest(root, publicDir)) : '{}';
     },

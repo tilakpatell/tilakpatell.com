@@ -12,7 +12,8 @@ import { sendTo } from './send.js';
 import { startLoadingMusic } from './sound/loading.js';
 import { deploysThrough, latch, phaseFor, playWay, standing } from './stage.js';
 import Wipe from './Wipe.jsx';
-import { HUD_QUIET, WIPE, pickVariant, readiness } from './waiting.js';
+import { HUD_QUIET, WIPE, loadLine, pickVariant, readiness } from './waiting.js';
+import { device } from '../../lib/device.js';
 import '../../lib/bf2017/fonts.css';
 import './hud/battlefront.css';
 
@@ -78,7 +79,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   const picked = useRef(null);
   const arrived = useRef(false);
   // the readiness's memory: the most building seen, and how long it has been quiet
-  const seen = useRef({ peak: 0, quietSince: null });
+  const seen = useRef({ peak: 0, quietSince: null, loadedAt: null });
   const onEvent = useCallback((e) => {
     if (e.type === 'hud') setSnap(e);
   }, []);
@@ -95,15 +96,25 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   // what the bar shows and whether Deploy takes (waiting.js's readiness, fed by each snapshot)
   const busy = (snap?.shaders?.pending ?? 0) + (snap?.shaders?.held ?? 0) + (snap?.shaders?.building ?? 0);
   if (snap) {
+    // (the page's own clock from the level's arrival: the door opens SHADER_WAIT_S after it, waiting.js)
+    if (snap.level?.loaded) seen.current.loadedAt ??= performance.now();
     seen.current.peak = Math.max(seen.current.peak, busy);
     if (busy > 0 || !snap.level?.loaded) seen.current.quietSince = null;
     else seen.current.quietSince ??= snap.time;
   }
   const quietFor = snap && seen.current.quietSince != null ? Math.max(0, snap.time - seen.current.quietSince) + HUD_QUIET : 0;
-  const progress = readiness({ loaded: Boolean(snap?.level?.loaded), progress: snap?.level?.progress ?? 0, pending: snap?.shaders?.pending ?? 0, held: snap?.shaders?.held ?? 0, building: snap?.shaders?.building ?? 0, peak: seen.current.peak, quietFor });
+  const waited = seen.current.loadedAt != null ? (performance.now() - seen.current.loadedAt) / 1000 : 0;
+  const progress = readiness({ loaded: Boolean(snap?.level?.loaded), progress: snap?.level?.progress ?? 0, pending: snap?.shaders?.pending ?? 0, held: snap?.shaders?.held ?? 0, building: snap?.shaders?.building ?? 0, peak: seen.current.peak, quietFor, waited });
   // (once the spawn screen could stand, the way in stays ready: stage.js's latch)
   arrived.current = latch(arrived.current, { inMenu, phase, ready: progress.ready && !pending });
   const ready = (progress.ready || arrived.current) && !pending;
+  // (once, the first time the field could stand: where the way in spent its time, for the owner's laptop to say)
+  const told = useRef(false);
+  useEffect(() => {
+    if (!ready || told.current || !snap) return;
+    told.current = true;
+    console.info(loadLine({ now: performance.now(), marks: snap.marks, level: snap.level, shaders: snap.shaders, machine: snap.machine, detail: device().detail }));
+  }, [ready, snap]);
   // what stands over the world (stage.js)
   // (the screens: true once they have come, null until then, false if their import failed)
   const st = standing({ inMenu, phase, ready, loaded: !loading, screens: screens === false ? false : screens ? true : null });
@@ -119,7 +130,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
   useEffect(() => {
     if (status !== 'lost') return;
     setSnap(null);
-    seen.current = { peak: 0, quietSince: null };
+    seen.current = { peak: 0, quietSince: null, loadedAt: null };
     arrived.current = false;
     setPhase('pre');
   }, [status]);
