@@ -63,6 +63,21 @@ const fakeRenderer = ({ webgl = false } = {}) => {
       return null;
     },
   };
+  // (three's Bindings: deleteForRender asks the render object for its
+  // bindings, which builds the shader of one never built, destroys them
+  // and forgets the object)
+  const bindings = {
+    destroyed: [],
+    forgotten: [],
+    deleteForRender(ro) {
+      ro.getBindings();
+      bindings.destroyed.push(ro.id);
+      this.delete(ro);
+    },
+    delete(ro) {
+      bindings.forgotten.push(ro.id);
+    },
+  };
   const ros = new Map();
   const objects = { get: (object, material) => ros.get(object.id) ?? ros.set(object.id, { id: object.id, key: material.key }).get(object.id) };
   const renderer = {
@@ -71,6 +86,7 @@ const fakeRenderer = ({ webgl = false } = {}) => {
     _pipelines: pipelines,
     _nodes: nodes,
     _objects: objects,
+    _bindings: bindings,
     _currentRenderContext: {},
     backend: { isWebGLBackend: webgl },
     getMRT() {
@@ -268,6 +284,30 @@ describe('guardPipelines', () => {
     expect(r.drawn).toEqual(['a', 'q']);
     await tick();
     expect(r._nodes.builds).toBe(0);
+  });
+
+  it('forgets a render object that was never built without building its shader to throw away', () => {
+    const renderer = fakeRenderer();
+    const three = renderer._bindings.deleteForRender;
+    const guard = guardPipelines(renderer);
+    const built = vi.fn(() => []);
+    // (held out of every frame: no bindings, no builder state of its own or in the manager)
+    const held = { id: 'first-cut', key: 'k1', _bindings: null, _nodeBuilderState: null, getBindings: built };
+    renderer._bindings.deleteForRender(held);
+    expect(built).not.toHaveBeenCalled();
+    expect(renderer._bindings.destroyed).toEqual([]);
+    expect(renderer._bindings.forgotten).toEqual(['first-cut']);
+    // one that was drawn has bindings to destroy: three's own way
+    const drawn = { id: 'drawn', key: 'k2', _bindings: [{}], _nodeBuilderState: {}, getBindings: built };
+    renderer._bindings.deleteForRender(drawn);
+    expect(built).toHaveBeenCalledTimes(1);
+    expect(renderer._bindings.destroyed).toEqual(['drawn']);
+    // one whose shader is built but whose bindings were never made: three's own way too (nothing is built for it)
+    const state = { id: 'state', key: 'k3', _bindings: null, _nodeBuilderState: {}, getBindings: built };
+    renderer._bindings.deleteForRender(state);
+    expect(built).toHaveBeenCalledTimes(2);
+    guard.dispose();
+    expect(renderer._bindings.deleteForRender).toBe(three);
   });
 
   it('does nothing on the WebGL 2 backend or the classic renderer, and can be undone', () => {
