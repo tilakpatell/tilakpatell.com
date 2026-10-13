@@ -24,7 +24,7 @@
 //     tracker's and its trigger the line of fire's, stepped in act, in place of the aim box and the reaction)
 //   think(brain, world, now) → intent { mode, target, goal, stance, fire, aim }
 //   act(brain, intent, s, dt, world, now)        patternStep(brain) → fire this frame?
-//   world: { nav, lineClear(a, b), squad: { centre, leader, posture } | null, objective, task, enemies, others, shoot(s, aim), who(id) }
+//   world: { nav, lineClear(a, b), squad: { centre, leader, posture } | null, objective, task, enemies, others, shoot(s, aim), who(id), roll(s, dir) }
 //   task: { at: [x, z], spot: [x, z], radius, interact, reach, role }
 
 import { pick } from '../../ai/utility.js';
@@ -38,7 +38,7 @@ import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
-import { AIM_GATE, aimStep, createAim, createEvasion, createLof, groundOk, lofStep, noiseOf, strafeSide, weaponClass } from './autoPlayer.js';
+import { AIM_GATE, aimStep, createAim, createEvasion, createLof, groundOk, lofStep, noiseOf, strafeSide, takeRoll, weaponClass } from './autoPlayer.js';
 
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
@@ -355,6 +355,8 @@ export function think(brain, world, now) {
           return walkable(world.nav, x, z) && groundOk(brain.ap, heightAt(world.nav, x, z) - s.at[1]);
         };
         brain.strafe = strafeSide(brain.apEvade, brain.ap, { now, rand: brain.rand, ground: world.nav ? stands : null });
+        // (a leg that drew its dodge roll opens with it, the way the leg goes)
+        if (brain.strafe && takeRoll(brain.apEvade)) intent.roll = [(az / L) * brain.strafe, -(ax / L) * brain.strafe];
       } else if (now >= brain.strafeAt) {
         brain.strafe = brain.rand() < 0.5 ? -1 : 1;
         brain.strafeAt = now + 1.5 + brain.rand() * 2;
@@ -476,6 +478,11 @@ export function act(brain, intent, s, dt, world, now) {
   // a bot walks upright and crouches where it means to stay
   s.stance = intent.stance === 'crouch' && (arrived || intent.mode === 'attack') ? 'crouch' : 'stand';
   navigate(brain, world, s, intent.goal, dt, now);
+  // (an AutoPlayer's dodge roll, drawn with its strafe leg: asked of the world once, which rolls it if its evade is charged)
+  if (intent.roll) {
+    world.roll?.(s, intent.roll);
+    intent.roll = null;
+  }
   // (its own gun's recoil kicks its view as a player's: weapons.js's amplitude on the aim point)
   const from = world.muzzle ? world.muzzle(s) : chestOf(s);
   let aim = intent.aim;

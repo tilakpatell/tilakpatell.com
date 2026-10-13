@@ -25,8 +25,11 @@
 // every step from AP_…GroundCheckHeightOffsetM (1.5 m) above the feet down
 // AP_…GroundCheckHeightDistanceM (3.5 m); a failed probe ends the leg and
 // bars that side for AP_…GroundCheckCooldownS (3 s); both barred, no strafe.
-// The dodge roll's trigger (AP_EvasiveManeuversDodgeRollProbability, 0.2) is
-// not in the functions read: `dodges` draws it, nothing calls it yet.
+// As each leg starts the game draws that leg's dodge roll
+// (AP_EvasiveManeuversDodgeRollProbability, 0.2) and its jump (0 in these
+// modes) (FUN_14556df20): `takeRoll` hands the roll over once. That the bot
+// then rolls the way the leg goes is by hand: what reads the drawn flag was
+// not read.
 //
 // Read by hand (src/data/bf2017/NOTES.md, "The AutoPlayers"): the noise's
 // unit (degrees of the view) and its wander (a fresh offset each lap time,
@@ -42,7 +45,8 @@
 //   createAim() → aim      aimStep(aim, ap, { from, at, vel, noise, dt, rand }) → { point, error }  (error: degrees off the led target)
 //   createLof() → lof      lofStep(lof, ap, { clear, now }) → fire?
 //   createEvasion() → ev   strafeSide(ev, ap, { now, rand, ground(side) }) → -1 | 1 | 0 (no strafe)
-//   groundOk(ap, dy) → bool (the probe's rule for ground dy m above the feet)      dodges(ap, rand) → bool
+//   groundOk(ap, dy) → bool (the probe's rule for ground dy m above the feet)      takeRoll(ev) → bool (the leg's dodge roll, once)
+//   dodges(ap, rand) → bool
 
 // The site's modes → the settings' suffix: Instant Action's rows for its own and the modes it plays on
 // the multiplayer maps, Supremacy's (Mode1) for Supremacy, Co-op's (Mode9) for Co-op.
@@ -198,7 +202,7 @@ export function lofStep(lof, ap, { clear, now }) {
   return now - lof.lostAt <= ap.lofTimeout;
 }
 
-export const createEvasion = () => ({ side: 0, until: -Infinity, barred: { '-1': -Infinity, 1: -Infinity } });
+export const createEvasion = () => ({ side: 0, until: -Infinity, barred: { '-1': -Infinity, 1: -Infinity }, roll: false, jump: false });
 
 // The strafe's side this step, as the game's step has it (bf2-re's decompile of FUN_145571ea0): two legs, one
 // a side, each for a time drawn afresh between the two durations; when a leg's time is up the other starts,
@@ -211,6 +215,9 @@ export function strafeSide(ev, ap, { now, rand = Math.random, ground = null }) {
     ev.side = s;
     const [lo, hi] = ap.strafeInvert;
     ev.until = now + lo + rand() * Math.max(0, hi - lo);
+    // (as each leg starts the game draws its jump and its dodge roll, FUN_14556df20: once a leg, at the settings' odds)
+    ev.jump = rand() < ap.jump;
+    ev.roll = rand() < ap.dodgeRoll;
   };
   // (the leg to run: the first one, the other when this one's time is up, this one still while the other cools)
   if (ev.side === 0) start(1);
@@ -222,7 +229,15 @@ export function strafeSide(ev, ap, { now, rand = Math.random, ground = null }) {
     start(-ev.side);
   }
   ev.side = 0;
+  ev.roll = ev.jump = false;
   return 0;
+}
+
+// the leg's dodge roll, handed over once (the leg that drew it opens with it)
+export function takeRoll(ev) {
+  const roll = ev.roll;
+  ev.roll = false;
+  return roll;
 }
 
 // The ground probe's rule (the same step): from the check's height above the feet, ground within the check's

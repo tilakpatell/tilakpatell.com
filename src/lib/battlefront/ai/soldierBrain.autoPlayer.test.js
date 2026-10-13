@@ -122,6 +122,25 @@ describe('a bot on the AutoPlayers’ numbers', () => {
     }
   });
 
+  it('opens a strafe leg with a roll to the leg’s side when the leg’s draw says so, once', () => {
+    const rolled = (dodgeRoll) => {
+      const ap = { ...autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' }), dodgeRoll };
+      const b = bot([0, 0, -50], { ap });
+      see(b, 'them', [0, 1.2, -30]);
+      const rolls = [];
+      const w = world({ roll: (s, dir) => rolls.push(dir) });
+      b.intent = think(b, w, 0);
+      for (let t = 0; t < 0.5; t += STEP) act(b, b.intent, b.s, STEP, w, t);
+      return { rolls, goal: b.intent.goal };
+    };
+    const yes = rolled(1);
+    expect(yes.rolls).toHaveLength(1);
+    // (across the line to the target, the way the leg goes)
+    expect(Math.sign(yes.rolls[0][0])).toBe(Math.sign(yes.goal[0]));
+    expect(Math.abs(yes.rolls[0][1])).toBeLessThan(1e-9);
+    expect(rolled(0).rolls).toHaveLength(0);
+  });
+
   it('turns its strafe back from ground it cannot stand on', () => {
     const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
     // (at the grid's edge: the ground to the +x side, the check's 2.5 m off, is outside it)

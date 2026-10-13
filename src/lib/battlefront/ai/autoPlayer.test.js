@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import gs from '../../../data/bf2017/gameSettings.json';
 import { seeded } from '../../seeded.js';
-import { AIM_GATE, aimStep, autoPlayerFor, createAim, createEvasion, createLof, dodges, groundOk, lofStep, noiseOf, rowOf, setting, strafeSide, suffixOf, weaponClass } from './autoPlayer.js';
+import { AIM_GATE, aimStep, autoPlayerFor, createAim, createEvasion, createLof, dodges, groundOk, lofStep, noiseOf, rowOf, setting, strafeSide, suffixOf, takeRoll, weaponClass } from './autoPlayer.js';
 
 describe('the AutoPlayer’s settings', () => {
   it('takes the most particular row the server holds', () => {
@@ -125,6 +125,25 @@ describe('the evasion', () => {
     expect(groundOk(ap, -2.1)).toBe(false);
     expect(groundOk(ap, 1.4)).toBe(true);
     expect(groundOk(ap, 1.6)).toBe(false);
+  });
+
+  // (the game's FUN_14556df20, called as each leg starts: the roll and the jump are drawn there, once a leg)
+  it('draws the dodge roll as a leg starts, one leg in five, and hands it over once', () => {
+    const ev = createEvasion();
+    const rand = seeded(5);
+    let legs = 0;
+    let rolls = 0;
+    let side = 0;
+    for (let t = 0; t < 4000; t += 0.05) {
+      const s = strafeSide(ev, ap, { now: t, rand });
+      if (s !== side) legs++;
+      side = s;
+      if (takeRoll(ev)) rolls++;
+      expect(takeRoll(ev)).toBe(false);
+    }
+    expect(legs).toBeGreaterThan(1000);
+    expect(rolls / legs).toBeGreaterThan(0.2 - 0.03);
+    expect(rolls / legs).toBeLessThan(0.2 + 0.03);
   });
 
   it('rolls at the dodge probability', () => {
