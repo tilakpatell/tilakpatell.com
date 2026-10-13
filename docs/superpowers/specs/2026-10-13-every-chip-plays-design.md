@@ -54,6 +54,64 @@ Read in the code and measured on the branch’s base (`1a471eee`), the productio
 - **The shaders no longer hold the door.** `readiness` calls the field ready once the level is in and either nothing has been building for `QUIET_S`, or `SHADER_WAIT_S` (5 s) has passed since the level came in. What is still building is held back by the pipeline guard and appears as it lands; no frame waits for it.
 - **The load says where its time went.** When the field is first ready the world logs one line (`console.info`): the seconds to the world made, to the level in, to ready, the requests and megabytes, and the shaders still building; the snapshot’s `marks` carry the same. The owner’s laptop then tells the next session what to cut next.
 
+## Addendum, the same day: a GPU to play on, Low as the floor, and work off the main thread
+
+The owner's word after the first build: the site draws on WebGPU wherever a GPU is detected, tries to connect to it, and falls back to WebGL 2 when that fails; the Star Wars worlds need a real GPU because their assets are so heavy, and a device without one is told so (“for now”: something else may stand in later); a real GPU is any integrated or discrete chip that runs the game at the most compressed web settings, and most laptops but the complete potatoes should hold 30 fps there, looking rough; heavy work goes off the main thread so a busy main thread does not lag the game; and the review's minor findings are done too.
+
+### The floor: what Low draws in the Star Wars worlds
+
+Low is the most compressed the web build goes:
+
+| what | at Low |
+| --- | --- |
+| drawing buffer | at most 1,280 × 720 (921,600 pixels), stretched to the screen; the HUD is the DOM's and stays sharp; the controller's floor (0.58 on T0) under that |
+| post chain | the scene, the record's tone map and LUT, the output: no bloom, no anti-aliasing (video Low's bloom row is Off, as BUDGETS.low.bloom already is on the classic renderer) |
+| light | no shadows of any kind; the level's lamps the nearest 8 points and 2 spots |
+| textures | each map's first row (256 px or under on 118 of Hoth's 144), never promoted |
+| ground | the flat colour (already), its near grid at 8 m, not 4 |
+| level | Low's cut (a 1 m thing to 35 m, a 20 m one to 700 m) and the horizon grid |
+| soldiers | lod1 bodies, five bots a side (`SIDE_BY_DETAIL.low`), two ragdolls |
+| frames | 60 aimed for, an even 30 where it cannot hold (createCadence) |
+
+### The minimum chip, worked out
+
+- Measured (the 2026-10-12 tiers decision, its gpu-low row): the 5090, score 1,170, drew Hoth at Low in 0.6 ms of GPU time, at 5,120 × 1,440 (7.37 M pixels), with 1.46 M triangles, of which the ground's two grids were about 0.95 M.
+- The model: a chip of score S takes 1,170 ÷ S times as long. The 0.6 ms is pixel work, which shrinks with the buffer, plus vertex work, which does not; the split was not measured, so half each is taken.
+- At the floor: 720p is an eighth of those pixels, and the 8 m near grid takes the triangles from 1.46 M to about 0.85 M. The frame's GPU work is then 0.6 × (0.5 × 0.85 ÷ 1.46 + 0.5 ÷ 8) ≈ 0.21 ms on the 5090.
+- A 30 fps frame is 33.3 ms. The GPU keeps 25 ms of it, leaving the main thread's share that does not overlap.
+- So 0.21 × 1,170 ÷ S ≤ 25, and **S ≥ 10**. That is Intel's HD 5xx and 6xx and every UHD, Iris, Vega, Radeon 6x0M and 7x0M, Arc, MX and discrete card. The controller's floor and the 30 fps lock give the borderline ones their room.
+- The CPU side is the other half: two cores or fewer, or 2 GB or less, is a potato however good the chip.
+- lib/gpuGrade scores Intel's older HD generations by their number (Broadwell's 5500 and 6000 at 7, Haswell's 4x00 at 6, Ivy Bridge's 4000 and 2500 at 4, Sandy Bridge's 2000 and 3000 at 3, the bare “HD Graphics” of Atoms and Celerons at 5), so the floor can tell them apart.
+
+### The gate
+
+`lib/fit.js` (pure): `starWarsFit({ gpu, device, adapter }) → { ok, why }`. It is not ok for:
+- 'none': no WebGL 2 and no WebGPU;
+- 'software': lib/gpu's software flag, or a fallback adapter on its own;
+- 'weak': a chip whose name scores under MIN_SCORE (10);
+- 'cpu': two cores or fewer;
+- 'memory': 2 GB or less, where the browser says.
+
+A chip its name does not grade is let in. WorldGate holds the Star Wars worlds (`NEEDS_GPU` in worlds.js: /galaxy and everything under it, /battlefront, /deathstar/inside) behind a card that says why and offers the way back. Its “Try anyway” and `?software=on` (kept as `tp-software`, which the QA scripts set) let them in.
+
+### WebGPU first, then WebGL 2
+
+A 'nodes' world asks for WebGPU wherever `navigator.gpu` is. A device three cannot make (requestDevice fails, or init throws), and a fallback adapter (software WebGPU), are failures. The runtime then makes the node renderer over WebGL 2 at once, for the page, instead of failing the mount; a loss later is the recovery above.
+
+### Off the main thread
+
+Measured in the container, Hoth's terrain decode is 394–843 ms for `near.png` and about 405 ms for `far.png` of main-thread JavaScript (lib/level/png16's unfiltering). It moves to a module worker (`png16.worker.js`), the result transferred back, with the main thread as the fallback where no worker can be made. Meshopt's decoder takes its own workers (`MeshoptDecoder.useWorkers`), two at most. The rest of the load's main-thread time is three's own: building shaders, drawing, and (on WebGL 2 without KHR_parallel_shader_compile) waiting on links. That needs the renderer itself in a worker (an OffscreenCanvas with input, audio and the HUD bridged), which is the next lane, not this one.
+
+### The review's minors
+
+1. The hold is applied for the page even where storage is blocked (lib/device's page hold).
+2. A slow T0 is judged again after 30 days.
+3. On a 120 or 144 Hz screen the drop goes to an even 60 first, then an even 30, by the display's own beat.
+4. A page opened while the runtime is still lost does not mount twice: only the page whose world was lost mounts again.
+5. The world mounted again after a loss logs its own load line.
+6. The dev server watches the manifest behind its virtual module.
+7. The lost-twice comment names the stored `tp-gpu` as well as `?gpu=webgpu`.
+
 ## What does not change
 
 - The 5090 and any chip that probes `T1` or `T2`: the same Auto (Ultra), the same chain, the same GPU scene, the same pool of 8.
