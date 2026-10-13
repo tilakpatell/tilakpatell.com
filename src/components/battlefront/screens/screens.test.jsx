@@ -53,12 +53,22 @@ describe("the game's screens, each from its tree", () => {
     expect(hoth).toMatchObject({ key: 'Hoth_01', playable: true, title: 'OUTPOST DELTA' });
   });
 
-  it('loads with the planet’s film and a hint in the hint box', () => {
-    const h = html(<Loading mode="galacticAssault" level="hoth" progress={0.4} />);
-    expect(h).toContain('aria-valuenow="40"');
+  it('loads as the game draws it: the planet’s film, the planet, the map and the mode’s words, a hint in its box, and neither a bar nor a number', () => {
+    const h = html(<Loading mode="galacticAssault" level="hoth" progress={0.4} waiting="Building the shaders · 3 to go" />);
     expect(h).toMatch(/planet-hoth/);
-    expect(h).toContain('OUTPOST DELTA');
+    expect(h).toMatch(/class="bf-loading-planet"[^>]*>HOTH</);
+    expect(h).toMatch(/class="bf-loading-level"[^>]*>OUTPOST DELTA</);
+    expect(h).toMatch(/class="bf-loading-about"[^>]*>[^<]{20,}/);
     expect(h).toMatch(/data-id="[^"]*hintbody"[^>]*>.*<span class="hud-screen-text">[^<]{10,}/);
+    // (the running game shows no bar and no percentage, photographed 2026-10-13: what the load waits on is said for a screen reader alone)
+    expect(h).not.toContain('bf-loading-bar');
+    expect(h).not.toMatch(/per cent/);
+    expect(h).toMatch(/<p class="sr-only" role="status"[^>]*>Building the shaders/);
+    expect(h).toContain('bf-loading-mark');
+  });
+
+  it('an Instant Action round’s loading screen says the game’s words for Instant Action', () => {
+    expect(html(<Loading mode="supremacy" level="hoth" />)).toContain('Single player epic battles against AI opponents offline.');
   });
 
   it("lists the offers in the spawn screen's cells over its tree, and falls back to lane 5's deploy screen with no tree", () => {
