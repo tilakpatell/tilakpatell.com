@@ -54,8 +54,6 @@ const BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m]));
 // Battlefront game's own route for a Galactic Assault, flipped here alone
 // when lane 5's lands)
 export const STARFIGHTER = Object.fromEntries(Object.keys(FLOWN).map((sys) => [sys, `/galaxy/${sys}?battle=starfighter`]));
-// (Hoth's is the game's own level, screens and spawn flow: the 2026-10-11 deploy-flow design, decision 1; its `from` is the way back)
-export const BATTLEFRONT = { hoth: '/battlefront/hoth/galacticAssault?from=%2Fgalaxy%2Fhoth' };
 
 // a mission's kind → the mode it is
 const KIND_MODE = { assault: 'galacticAssault', hvv: 'hvv', blast: 'blast', chase: 'story', quest: 'story', strike: 'strike', extraction: 'extraction', ewokHunt: 'ewokHunt', supremacy: 'supremacy' };
@@ -69,7 +67,7 @@ export function missionForMode(system, mode, missions = MISSIONS) {
 
 const surface = (system, q) => `/galaxy/${system}/surface?${q}`;
 
-export function modesFor(system, { missions = MISSIONS, book = BOOK, starfighter = STARFIGHTER, battlefront = BATTLEFRONT } = {}) {
+export function modesFor(system, { missions = MISSIONS, book = BOOK, starfighter = STARFIGHTER } = {}) {
   const game = book.worlds?.[system]?.modes ?? [];
   const place = book.names?.worlds?.[system]?.text ?? systemById(system)?.name ?? 'this world';
   const brief = systemById(system)?.game ?? null;
@@ -83,7 +81,6 @@ export function modesFor(system, { missions = MISSIONS, book = BOOK, starfighter
       return options.length ? { ...card, state: 'live', to: options[0].to, options } : { ...card, why: 'No story mission on this world yet.' };
     }
     if (m.id === 'starfighter' && starfighter[system]) return { ...card, state: 'live', to: starfighter[system] };
-    if (m.id === 'galacticAssault' && battlefront[system]) return { ...card, state: 'live', to: battlefront[system] };
     const here = ofMode(system, m.id, missions)[0];
     if (here) return { ...card, state: 'live', to: surface(system, `mode=${m.id}`), mission: here.id };
     if (game.includes(m.id)) return { ...card, state: 'soon', why: `The game fights it on ${place}; the site’s map of it isn’t made yet.` };

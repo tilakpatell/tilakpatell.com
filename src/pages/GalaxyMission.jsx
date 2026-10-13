@@ -5,6 +5,7 @@ import { useDocumentTitle } from '../lib/hooks';
 import { audioContext } from '../lib/audio';
 import { FILMS, SYSTEMS, eraById, eraOf, filmLabel, parseSystem, systemById, yearLabel } from '../components/galaxy/systems';
 import { canLand } from '../components/galaxy/surface/sites';
+import { landsOnSurface } from '../components/galaxy/gameLevels';
 import { modesFor } from '../components/galaxy/surface/modes';
 import { starfighterAt } from '../components/galaxy/surface/missions/starfighterMaps';
 import { CRAWLS } from '../components/galaxy/crawls';
@@ -98,7 +99,7 @@ export default function GalaxyMission() {
                   <RiFilmLine className="h-4 w-4" aria-hidden="true" /> Play its opening crawl
                 </button>
               )}
-              {canLand(sys.id) && (
+              {canLand(sys.id) && landsOnSurface(sys.id) && (
                 <Link to={`/galaxy/${sys.id}/surface`} className="btn btn-ghost">
                   <RiArrowDownLine className="h-4 w-4" aria-hidden="true" /> Land on {sys.id === 'bespin' ? 'Cloud City' : sys.name} and look round
                 </Link>
@@ -156,8 +157,8 @@ export default function GalaxyMission() {
           </section>
         </div>
 
-        {/* what's played down there, as the landing's menu has it (modes.js) */}
-        {canLand(sys.id) && (
+        {/* what's played down there, as the landing's menu has it (modes.js); a world that lands in the game's own menu has no such menu (gameLevels.js) */}
+        {canLand(sys.id) && landsOnSurface(sys.id) && (
           <section className="mission-card" aria-labelledby="mission-modes">
             <h2 id="mission-modes" className="mission-h">
               Down on {sys.name}

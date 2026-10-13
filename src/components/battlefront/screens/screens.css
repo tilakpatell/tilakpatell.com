@@ -3,6 +3,7 @@
    cards and lists a screen lays over it here, in the game's faces
    (src/lib/bf2017/fonts.css) and the world's ink (../hud/battlefront.css). */
 .bf-game-screen { position: fixed; inset: 0; z-index: var(--z-dialog); /* over the world's canvas and HUD */ color: var(--bf-ink, #f2f5f8); font-family: var(--font-bf-hud, sans-serif); font-variant-ligatures: no-common-ligatures; /* (the game's Univers has no fi or fl: the ligature draws blank) */ background: radial-gradient(120% 90% at 30% 20%, #18222e 0%, #070a0e 70%); overflow: hidden; }
+.bf-game-screen:focus { outline: none; } /* (the frame holds the focus only where a screen has nothing to press) */
 .bf-game-screen:focus-visible { outline: none; }
 .bf-game-backdrop { position: absolute; inset: 0; }
 .bf-game-film { position: absolute; inset: 0; opacity: 0.7; }

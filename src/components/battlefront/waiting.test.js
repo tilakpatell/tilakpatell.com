@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ADAPT_S, DARKROOM_EV, QUIET_S, VARIANTS, WIPE, arrivalExposure, machineLine, pickVariant, readiness, recommend, recommendationLine, stopsFrom } from './waiting.js';
+import { ADAPT_S, DARKROOM_EV, QUIET_S, VARIANTS, WIPE, arrivalExposure, pickVariant, readiness, stopsFrom } from './waiting.js';
 
-describe('the waiting screen’s rules', () => {
+describe('the rules of the way in', () => {
   it('keeps the game’s numbers: the darkroom’s EV, the wipe’s three delays, the adaptation', () => {
     expect(DARKROOM_EV).toBe(8);
     expect(WIPE.delay + WIPE.down + WIPE.up).toBeCloseTo(0.75);
@@ -48,25 +48,9 @@ describe('the waiting screen’s rules', () => {
     expect(arrivalExposure(1, { stops: 3 })).toBe(1);
   });
 
-  it('recommends the sharpest step whose predicted frame fits, from the chip’s time at the scale it was measured', () => {
-    // the owner's desk: 9.2 ms measured at 0.77 on ultra (the 2026-10-12 shader-guard note)
-    const desk = recommend({ level: 'ultra', gpuMs: 9.2, scale: 0.77, steps: [0.77, 0.67, 0.5] });
-    expect(desk).toMatchObject({ level: 'ultra', scale: 0.77 });
-    expect(desk.ms).toBeCloseTo(9.2);
-    // a chip with room at the sharpest step goes a level up
-    expect(recommend({ level: 'high', gpuMs: 5, scale: 1 })).toMatchObject({ level: 'ultra', scale: 1 });
-    // one over the budget at every step goes a level down at the softest
-    expect(recommend({ level: 'ultra', gpuMs: 70, scale: 1 })).toMatchObject({ level: 'high', scale: 0.5 });
-    // one that fits only under the screen stays at its level there
-    expect(recommend({ level: 'ultra', gpuMs: 20, scale: 1 })).toMatchObject({ level: 'ultra', scale: 0.77 });
-    expect(recommend({ level: 'ultra', gpuMs: null })).toMatchObject({ level: 'ultra', measuring: true });
-    expect(recommendationLine(recommend({ level: 'ultra', gpuMs: null }))).toContain('measuring');
-    expect(recommendationLine(desk)).toBe('recommended: ultra at 77 % · 9.2 ms a frame on the chip');
-  });
-
-  it('names the machine in one line, the chip’s name cleaned of the driver’s suffixes', () => {
-    const line = machineLine({ detail: 'ultra', tier: 'T2', renderer: 'NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11', width: 2560, height: 720, dpr: 2, backend: 'webgpu' });
-    expect(line).toBe('your machine: ultra tier (T2), NVIDIA GeForce RTX 5090, 5,120 × 1,440 on WebGPU');
-    expect(machineLine({})).toBe('your machine: high tier, an unnamed chip, an unknown size');
+  it('keeps the rules of the way in and none of the old screen’s lines', async () => {
+    const m = await import('./waiting.js');
+    for (const gone of ['recommend', 'machineLine', 'recommendationLine', 'COIN']) expect(m[gone]).toBeUndefined();
+    for (const kept of ['readiness', 'pickVariant', 'WIPE', 'arrivalExposure', 'stopsFrom']) expect(m[kept]).toBeDefined();
   });
 });
