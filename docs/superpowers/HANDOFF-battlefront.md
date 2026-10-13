@@ -150,7 +150,7 @@ The game reads assets through one adapter, `src/components/battlefront/assets.js
 ## Checking it
 
 - Lane 0: `npx vitest run scripts/lib/bf2017-ebx.test.mjs scripts/lib/bf2017-rulebook.test.mjs scripts/lib/bf2017-rulebook-ai.test.mjs scripts/lib/bf2017-rulebook-map.test.mjs scripts/lib/bf2017-rulebook-look.test.mjs scripts/bf2017-data.test.mjs src/data/bf2017 src/lib/battlefront/rulebook.test.js` (fixtures only, no export needed).
-- The world’s ragdolls: `npx vitest run src/components/battlefront/figures src/lib/three/ragdoll2017.test.js scripts/lib/bf2017-physics-rules.death.test.mjs`; `window.__battlefront.do('ragdolls')` gives `{ active, settled, waiting }`. The sim’s `TIME_FOR_CORPSE` is still the hero’s 4.5 s and `battle.js` still passes no `mode`, so the sim never removes a corpse: the trooper’s 10 s (`src/data/bf2017/physics/death.json`) is the owner’s call for lanes 1 and 2.
+- The world’s ragdolls: `npx vitest run src/components/battlefront/figures src/lib/three/ragdoll2017.test.js scripts/lib/bf2017-physics-rules.death.test.mjs`; `window.__battlefront.do('ragdolls')` gives `{ active, settled, waiting }`. The sim’s `TIME_FOR_CORPSE` is still the hero’s 4.5 s and since 2026-10-13 `battle.js` passes the `mode` (the page's battle runs the sim's own), so the sim removes a corpse after it: the trooper’s 10 s (`src/data/bf2017/physics/death.json`) is the owner’s call for lanes 1 and 2.
 - Lanes 1 and 2: `npx vitest run src/lib/battlefront` and `npm run test:ai -- src/lib/battlefront` (the arena); `node scripts/battlefront-balance.mjs --skirmish` and `--assault` for the tables.
 - Always: `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`.
 

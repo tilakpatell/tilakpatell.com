@@ -32,7 +32,8 @@ describe('a round’s caps', () => {
   it('are each side’s commander’s: the bots’ heroes and reinforcements', () => {
     const { sim } = start({ heroes: { enemy: false }, reinforcements: { enemyCount: 2 } });
     expect(sim.commanders[THEM].caps).toEqual({ heroes: 0, reinforcements: 2 });
-    expect(sim.commanders[ME].caps).toEqual({ heroes: 3, reinforcements: 10 });
+    // (the side left alone has the game's own options' counts: 2 heroes, 4 reinforcements)
+    expect(sim.commanders[ME].caps).toEqual({ heroes: 2, reinforcements: 4 });
   });
 
   it('are the offers’ limits: a side with its heroes off is offered none', () => {

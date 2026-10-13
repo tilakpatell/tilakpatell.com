@@ -144,6 +144,8 @@ function instantActionOf(root) {
     const o = a && rootOf(a);
     if (!o) continue;
     out[shortName(n)] = { items: (o.Items ?? []).map((i) => i.DisplayName ?? null), default: (o.Items ?? []).findIndex((i) => i.Default), default_source: `${n}#${o.$type}.Items` };
+    // (a number's option, ProfileOptionDataFloat or …Int: its own least, most, step and the value it starts at)
+    if (typeof o.Value === 'number') Object.assign(out[shortName(n)], { value: o.Value, min: o.Min ?? null, max: o.Max ?? null, step: o.Step ?? null, _source: `${n}#${o.$type}` });
   }
   return out;
 }
