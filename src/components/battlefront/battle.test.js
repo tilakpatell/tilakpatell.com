@@ -201,9 +201,9 @@ describe('the pieces together: the squad list, the figures and the fallen', () =
 });
 
 describe('the other modes on the game world’s route (lane 6)', () => {
-  it('knows their ids; a level plays the modes its pack has (Hoth’s Galactic Assault today)', () => {
+  it('knows their ids; a level plays the modes its world has a level for (Hoth’s Galactic Assault, and Supremacy on its second level)', () => {
     expect(MODES).toEqual(['galacticAssault', 'strike', 'extraction', 'ewokHunt', 'supremacy']);
-    expect(LEVEL_MODES).toEqual({ hoth: ['galacticAssault'] });
+    expect(LEVEL_MODES).toEqual({ hoth: ['galacticAssault', 'supremacy'] });
   });
   it('a battle in Strike takes the mode’s objectives from the level’s map rulebook', () => {
     const book = { ...rb, maps: { ...rb.maps, naboo: { map: naboo.rows, stages: {} } } };

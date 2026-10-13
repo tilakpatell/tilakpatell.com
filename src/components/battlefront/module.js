@@ -18,9 +18,13 @@
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
-// 'instantActionSchema' (a promise of the setup screen's options) and
+// 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
-// create's `instantAction`, lib/battlefront/instantAction.js).
+// create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
+// options (a promise of { ok, round }: the round begun in place, the battle
+// made again for it and everything drawn from the old one let go, the level,
+// its light and its shaders kept; the world is then as before a first
+// deploy).
 // `sounds()` is the sound player's counter.
 //
 // Until the first deploy the camera is parked in the soldier's own pose at
@@ -36,7 +40,7 @@ import * as THREE from 'three';
 import { device } from '../../lib/device.js';
 import { textureTier } from '../../lib/video.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
-import { camerasOf, lightingOf, loadRulebook, mapOf, squadsOf } from '../../lib/battlefront/rulebook.js';
+import { camerasOf, levelForMode, levelKey, lightingOf, loadLevel, loadRulebook, mapOf, squadsOf, teamsFor } from '../../lib/battlefront/rulebook.js';
 import { preloadDecoders } from '../../lib/three/gltf.js';
 import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
@@ -51,7 +55,7 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, grant, spawnFor, step, view } from './battle.js';
+import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
@@ -148,18 +152,27 @@ export default {
     // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
     // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
-    // server's rows for them. The page's side is the Empire's; the sides' sizes, the era, the
-    // difficulty and the AutoPlayers' aim reach the sim, the rest of the round waits on the lanes that read it)
-    const round = instantAction ? roundFor(await loadSettings(), { ...instantAction, level: levelName, mode, team: PLAYER_TEAM }) : null;
-    const sim = createBattle({ rulebook: rb, level: levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : {}) });
-    const me = addPlayer(sim, { team: PLAYER_TEAM });
+    // server's rows for them, and the sim takes the round at its making: sim.js's roundIn)
+    const round = instantAction ? roundFor(await loadSettings(), { ...instantAction, level: levelName, mode, team: instantAction.team ?? PLAYER_TEAM }) : null;
+    // (the player's side: the round's, the screen's Change Faction; the Empire's where none is asked)
+    let team = round?.team ?? PLAYER_TEAM;
+    // (the mode played: the route's, then a round's begun in place)
+    let battleMode = mode;
+    // (the level of this world that holds the mode: Hoth's Supremacy is its second level's, on the same
+    // ground, played with the world's own sides, the teams table holding the first level's alone)
+    const battleLevel = levelForMode(rb, levelName, mode);
+    const elsewhere = battleLevel !== levelKey(levelName);
+    if (elsewhere) await loadLevel(battleLevel);
+    const worldSides = elsewhere ? teamsFor(rb, levelName, round?.era ?? 'Orig') : null;
+    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : {}) });
+    let me = addPlayer(sim, { team });
     // the game's sounds (sound/): the player on the runtime's bus, the
     // director on the sim's events; the one-shots the first minute needs
     // fetched now, the stems streamed as they play; nothing heard behind
     // the waiting screen, where the page plays the loading cue
     const sound = createSoundPlayer({ context: rt.audio.context, output: () => rt.audio.bus(), load: (url) => rt.assets.audio(url) });
     // (`me` to the sim is the input's 'player'; the soldier the events name is PLAYER_ID)
-    const director = createDirector({ player: sound, me: PLAYER_ID, team: PLAYER_TEAM });
+    let director = createDirector({ player: sound, me: PLAYER_ID, team });
     sound.preload([...PRELOAD, ...NAMES.filter((n) => (n.startsWith('blaster.') || n.startsWith('ambience.')) && !PRELOAD.includes(n))]).catch(() => {});
     // the player's soldier in lane 1's sim, once deployed
     const body = () => (sim.player?.id ? sim.sim.entities.get(sim.player.id) : null);
@@ -191,7 +204,7 @@ export default {
     look.attach();
 
     // the camera's arm against the ground and the level's shapes (the navgrid's with no engine)
-    const castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
+    let castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
 
     // the Collection's skin for the class or hero a deploy is, as the crew kind it wears
     const pickedLook = (id) => {
@@ -279,10 +292,53 @@ export default {
         });
     }
     // where the side deploys: the camera's park until the first deploy
-    const park = (() => {
-      const s = spawnFor(sim.map, sim.stage, PLAYER_TEAM, sim.ga?.attackers);
+    const parkOf = () => {
+      const s = spawnFor(sim.map, sim.stage, team, sim.ga?.attackers);
       return { at: [s.at[0], level.heightAt(s.at[0], s.at[2]), s.at[2]], yaw: s.yaw };
-    })();
+    };
+    let park = parkOf();
+
+    // A round begun in place (the setup screen's Start): the battle made again for the round on the same
+    // navgrid (battle.js's roundBattle), and what mirrored the old one let go: its bodies and their
+    // ragdolls, its bolts, its sounds' bed, the player's seat and the deploy screen's picks. The level, its
+    // light, the chain and the shaders stay; the camera parks again and the world waits for a first deploy.
+    async function beginRound(options = {}) {
+      let next;
+      let fresh;
+      try {
+        next = roundFor(await loadSettings(), { ...options, level: levelName, mode: options.mode ?? battleMode, team: options.team ?? team });
+        await loadLevel(levelForMode(rb, levelName, next.mode));
+        fresh = roundBattle(sim, next, { heightAt: (x, z) => level.heightAt(x, z), mask });
+      } catch (err) {
+        return { ok: false, why: err.message };
+      }
+      figures.update([], 0);
+      bolts.update([], { muzzleOf: figures.muzzleOf, now: clock });
+      director.dispose();
+      sim = fresh;
+      team = next.team;
+      battleMode = next.mode;
+      me = addPlayer(sim, { team });
+      director = createDirector({ player: sound, me: PLAYER_ID, team });
+      castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
+      park = parkOf();
+      picked = null;
+      mate = null;
+      lastAt = null;
+      pose = null;
+      acc = 0;
+      Object.assign(pressed, { ability: 0, roll: false, vent: false });
+      booms.length = 0;
+      parked = true;
+      arrival = null;
+      arrivedAt = null;
+      firstFieldAt = null;
+      renderer.toneMappingExposure = baseExposure;
+      input.swallow(true);
+      kitFx.update(view(sim), { now: clock, alpha: 1, events: [] });
+      rt.events.emit('hud', snapshot());
+      return { ok: true, round: next };
+    }
     const guard = guardOf(renderer);
     const machine = () => {
       const gpuClock = rt.gpuClock ?? null;
@@ -448,7 +504,7 @@ export default {
           case 'win':
           case 'lose':
           case 'die':
-            sim.force(action, PLAYER_TEAM);
+            sim.force(action, team);
             rt.events.emit('hud', snapshot());
             return { ok: true };
           case 'weather': {
@@ -481,17 +537,20 @@ export default {
             return { drawn: kitFx.counts(), grenades: view(sim).grenades.map((g) => ({ id: g.id, kind: g.kind, at: g.at.slice(), resting: g.resting })), state: body()?.state ?? null, gun: body()?.gun?.row?.id ?? null, heat: body()?.gun?.heat ?? null, spin: body()?.gun?.spin ?? null, hp: body()?.hp ?? null, shield: body()?.shield?.hp ?? null, over: body()?.over?.hp ?? 0 };
           case 'instantActionSchema':
             // (the setup screen's options, each with the row it reads; a promise, the settings being a chunk of their own)
-            return loadSettings().then((gs) => optionsFor(gs, { rulebook: rb, level: levelName }).filter((o) => o.id !== 'team'));
+            return loadSettings().then((gs) => optionsFor(gs, { rulebook: rb, level: levelName, team }));
           case 'instantAction':
             // (the choices checked: the props to mount the round with, or why not)
             return loadSettings().then((gs) => {
               try {
-                const r = roundFor(gs, { ...arg, level: arg?.level ?? levelName, mode: arg?.mode ?? mode, team: PLAYER_TEAM });
+                const r = roundFor(gs, { ...arg, level: arg?.level ?? levelName, mode: arg?.mode ?? battleMode, team: arg?.team ?? team });
                 return { ok: true, props: { level: r.level, mode: r.mode, instantAction: { ...arg } }, round: r };
               } catch (err) {
                 return { ok: false, why: err.message };
               }
             });
+          case 'round':
+            // (the round begun in place: a promise of { ok, round } or { ok: false, why })
+            return beginRound(arg ?? {});
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':
