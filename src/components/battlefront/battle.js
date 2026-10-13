@@ -30,10 +30,17 @@ import { hurt } from '../../lib/battlefront/soldier.js';
 import { slotsOf } from '../../lib/battlefront/kit.js';
 import { charges } from '../../lib/battlefront/abilities.js';
 import { modeFor } from '../../lib/battlefront/modes/index.js';
+import { SIDE_BY_DETAIL } from '../../lib/battlefront/instantAction.js';
 import { KINDS } from '../../lib/battlefront/modes/objectives.js';
 
 export { STEP };
 export const BOTS = 8; // bots a side on the page (the arena runs 20; the page draws each as a figure)
+// (Low is the floor: every bot is a body drawn and a mind stepped, so Low
+// takes Instant Action's own cap, five a side; the page's eight above)
+export const botsAt = (detail) => {
+  const n = Math.min(BOTS, SIDE_BY_DETAIL[detail] ?? BOTS);
+  return { 1: n, 2: n };
+};
 export const NAV_CELL = 2; // m: the design's navgrid (decision 7)
 export const BACK_TO_DEPLOY = 3; // s after the player goes down before the deploy screen comes back
 export const KILL_LOG = 6; // lines kept

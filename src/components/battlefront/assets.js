@@ -26,7 +26,7 @@
 // (`rows` is the heightmap's height in pixels: the contract's `height` is
 // the samples.)
 
-import { decodePng16 } from '../../lib/level/png16.js';
+import { decodePng16Off as decodePng16 } from '../../lib/level/png16Off.js'; // (off the main thread: png16Off.js)
 
 export const BACKENDS = ['dev', 'bucket'];
 

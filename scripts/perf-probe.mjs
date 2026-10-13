@@ -568,6 +568,7 @@ try {
       set('tp-start', '"universe"');
       set('tp-sound', 'off');
       set('tp-worlds', JSON.stringify('load'));
+      set('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
       set('tp-tour', 'skipped');
       set('tp-universe-ship', JSON.stringify('xwing'));
       // (no reading back every shader's log: the built site doesn't, and it waits on each link)

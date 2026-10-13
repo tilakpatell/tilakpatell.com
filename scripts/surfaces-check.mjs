@@ -28,6 +28,7 @@ await page.addInitScript(() => {
   window.localStorage.setItem('tp-intro', '1');
   window.localStorage.setItem('tp-galaxy-panel', JSON.stringify('tucked'));
   window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking)
+  window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
 });
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));

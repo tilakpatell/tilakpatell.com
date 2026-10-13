@@ -164,7 +164,9 @@ export async function pcssFilter(filter) {
       const open = float(0).toVar();
       Loop({ start: int(0), end: int(samples), type: 'int', condition: '<' }, ({ i }) => {
         const d = depthAt(shadowCoord.xy.add(vogelDiskSample(i, int(samples), phi).mul(radius)));
-        If(blocks(d, z).not(), () => open.addAssign(1));
+        If(blocks(d, z).not(), () => {
+          open.addAssign(1);
+        });
       });
       lit.assign(open.div(samples));
     });
@@ -275,7 +277,9 @@ export async function createFarCache(row, { loadPng, groundY = 0, shadowDir = nu
         const lq = local(q);
         const d = texture(tex, lq.xy).r;
         const height = zero === 'bottom' ? d : float(1).sub(d);
-        If(height.greaterThan(lq.z.add(bias)), () => lit.assign(0));
+        If(height.greaterThan(lq.z.add(bias)), () => {
+          lit.assign(0);
+        });
       });
     });
     return vec4(lit);

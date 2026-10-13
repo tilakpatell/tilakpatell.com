@@ -24,6 +24,7 @@ const ctx = await browser.newContext({ viewport: size, deviceScaleFactor: 1 });
 await ctx.addInitScript((seed) => {
   window.localStorage.setItem('tp-intro', '1');
   window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+  window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
   // (the guide's note for a first visit would sit over the shots)
   window.localStorage.setItem('tp-guide-seen', JSON.stringify(['/dot-matrix/minecraft']));
   // a known world, so the shots compare from run to run (once: a reload must find the save)

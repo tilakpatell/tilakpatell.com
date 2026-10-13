@@ -366,7 +366,11 @@ export function createLevelLoader({
       const slug = path.split('/').pop().replace(/\.ktx2$/, '');
       const data = isDataMap(null, own?.[slug] ?? sizes?.[slug], slug);
       const first = firstTexture(path, own);
-      const target = tierTexture(path, texTier ?? tier, own, { formats, data });
+      // (Low is the floor, the most compressed web settings: a map stays at
+      // its first row there, half the fetches and uploads of a promotion;
+      // the tier's row is still the one fetched when the first is missing)
+      const row = tierTexture(path, texTier ?? tier, own, { formats, data });
+      const target = (texTier ?? tier) === 'low' ? first : row;
       const get = (file, promote) =>
         Promise.resolve(fetchBytes(file, { glb: of, promote, ...(coarse ? { coarse } : {}) })).then((bytes) => {
           if (!isKtx2(bytes)) throw new Error(`${file} is not a KTX2`);
@@ -376,9 +380,9 @@ export function createLevelLoader({
       const p = get(first, false)
         .catch((e) => {
           // (no first row to be had: the tier's, at once)
-          held = target;
-          if (first === target) throw e;
-          return get(target, false);
+          held = row;
+          if (first === row) throw e;
+          return get(row, false);
         })
         .then((t) => {
           t.userData.row = rowOf(held);
@@ -397,7 +401,7 @@ export function createLevelLoader({
         });
       textures.set(path, p);
       p.then((t) => {
-        if (!t || gone || held === target) return;
+        if (!t || gone || held !== first || held === target) return;
         get(target, true)
           .then((next) => {
             if (gone || !next) return;

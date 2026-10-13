@@ -40,6 +40,8 @@
 
 import * as THREE from 'three';
 import { device } from '../../lib/device.js';
+import { floorRatio } from '../../lib/floorRatio.js';
+import { CAPPING } from '../../lib/gpuProbe.js';
 import { textureTier } from '../../lib/video.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
 import { camerasOf, levelForMode, levelKey, lightingOf, loadLevel, loadRulebook, mapOf, squadsOf, teamsFor } from '../../lib/battlefront/rulebook.js';
@@ -57,7 +59,7 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
+import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
@@ -86,9 +88,11 @@ export default {
   // chain of thirty passes; TRAA already smooths the edges that extra
   // ratio was for.
   sharpness: 'own',
-  // (read as the world starts: the screen the window is on then)
+  // (read as the world starts: the screen the window is on then; at Low,
+  // the floor, 1,280 × 720 at most, lib/floorRatio)
   get ratio() {
-    return typeof window !== 'undefined' ? Math.max(1, Math.min(2, window.devicePixelRatio || 1)) : 1;
+    if (typeof window === 'undefined') return 1;
+    return floorRatio(Math.max(1, Math.min(2, window.devicePixelRatio || 1)), { w: window.innerWidth, h: window.innerHeight, detail: device().detail });
   },
   label: 'Hoth from Star Wars Battlefront II (2017), drawn from the game’s own level, light and figures. W A S D to move, the mouse to look and fire, Enter to deploy.',
   async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault', weather: askedWeather = null, instantAction = null } = {}) {
@@ -125,9 +129,14 @@ export default {
     // same to 46.7 dB with the chain off (docs/superpowers/evidence/gpu-first/N1).
     // ?level=cpu in the address keeps the instanced path, for a check; a
     // device without indirect-first-instance and WebGL 2 keep it always:
-    // levelScene.js's canDrawGpuScene)
+    // levelScene.js's canDrawGpuScene; and a chip that is T0 for being weak
+    // by its name, slow on the probe or lost (lib/gpuProbe's CAPPING), whose
+    // compute cull and depth pyramid cost it more than they save: GPU-first
+    // lane N6's “level path: batched” on T0. A T0 for want of a feature, a
+    // strong desktop's WebGPU without timestamp-query, keeps the GPU scene)
     const flags = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search) : null;
-    const gpuScene = rt.gfx.backend === 'webgpu' && flags?.get('level') !== 'cpu';
+    const weak = rt.tier === 'T0' && CAPPING.has(rt.tierWhy);
+    const gpuScene = rt.gfx.backend === 'webgpu' && !weak && flags?.get('level') !== 'cpu';
     // (?ground=flat: the ground in its flat colour, the game's snow maps left
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
@@ -180,7 +189,7 @@ export default {
     const elsewhere = battleLevel !== levelKey(levelName);
     if (elsewhere) await loadLevel(battleLevel);
     const worldSides = elsewhere ? teamsFor(rb, levelName, round?.era ?? 'Orig') : null;
-    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : {}) });
+    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : { bots: botsAt(device().detail) }) });
     let me = addPlayer(sim, { team });
     // the game's sounds (sound/): the player on the runtime's bus, the
     // director on the sim's events; the one-shots the first minute needs
@@ -207,6 +216,9 @@ export default {
     let arrival = null; // { t, stops }: the exposure adapting after the wipe's swap
     let arrivedAt = null; // ms (performance.now) of the first deploy, and of the first frame drawn after it
     let firstFieldAt = null;
+    // (the way in's marks, ms of the page's clock: the world made, the level's boot in; waiting.js's loadLine)
+    let madeAt = null;
+    let levelAt = null;
     let building = 0; // post chains being built (a weather's, the pace's)
     const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -366,7 +378,8 @@ export default {
         source: rt.quality?.source ?? 'cpu',
         gpuMs: gpuClock?.available ? (gpuClock.median ?? null) : null,
         pixels: pixels(),
-        adapter: renderer.backend?.adapter?.info?.description || renderer.backend?.adapter?.info?.device || null,
+        // (three keeps the adapter's info on the device, not on its backend: runtime/webgpu.js)
+        adapter: (({ description, device } = {}) => description || device || null)(renderer.backend?.device?.adapterInfo ?? renderer.backend?.adapter?.info),
       };
     };
 
@@ -396,7 +409,7 @@ export default {
         level: { loaded: level.loaded(), progress: level.progress(), ...level.stats(), physics: physicsStats() },
         shaders: { pending: guard?.pending() ?? 0, held: guard?.held() ?? 0, building },
         machine: machine(),
-        marks: { arrivedAt, firstFieldAt },
+        marks: { arrivedAt, firstFieldAt, madeAt, levelAt: (levelAt ??= level.loaded() ? now() : null) },
         backend: rt.gfx.backend,
         weather,
         parked,
@@ -619,6 +632,7 @@ export default {
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
     // (`sounds`: the player's counter by name and kind, the duck and the stem in force, the HDR window, for scripts/bf2017-sound-check.mjs)
     if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    madeAt = now();
     return world;
   },
 };
