@@ -86,6 +86,14 @@
 //   keep-origin  not grounded: the model keeps the game's own origin, axes
 //              and metres (a hilt or a blaster, modelled for the Wep_Root
 //              socket with its grip at the origin and its barrel up +y)
+//   outfit     <MPVUR record>[#<skin>]: a soldier as its multiplayer kit
+//              dresses it (lib/bf2017-outfits.mjs): the skin's meshes are
+//              the body (the heaviest, when no name is given) and the parts,
+//              and the maps its mesh variation databases bind replace the
+//              GLB's own where they differ (the colour chain for a skin)
+//   metres game  the figure at the game's own size (no scaling)
+//   native-root  where the game's KTX2 maps are when the root has the PNGs
+//              alone (the export's web_opt/, the bucket's web/ on disk)
 //
 // It refuses the sequel era (the site shows none of it). Look at what came
 // out with node scripts/glb-shot.mjs <file> out.png three, through the dev
@@ -95,16 +103,18 @@ import { Logger, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRMaterialsSpecular, KHRTextureBasisu } from '@gltf-transform/extensions';
 import { dedup, dequantize, flatten, join, listTextureSlots, mergeDocuments, meshopt, metalRough, prune, textureCompress, unpartition, weld } from '@gltf-transform/functions';
 import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, stat, unlink } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join as path, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gunzipSync } from 'node:zlib';
 import { overCaps } from './lib/bf2017-caps.mjs';
 import { parseArgs } from './lib/args.mjs';
 import { isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-paths.mjs';
-import { resolveImage, specularFactorOf, weaponMaterial } from './lib/bf2017-textures.mjs';
+import { resolveImage, slotOfParameter, specularFactorOf, weaponMaterial } from './lib/bf2017-textures.mjs';
+import { outfitOf } from './lib/bf2017-outfits.mjs';
 import { meshBindings } from './lib/bf2017-variations.mjs';
 import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { loadGameWord, slotTransfer, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -212,11 +222,69 @@ async function texturesOpt(opts, mesh) {
   return Object.keys(hand).length ? hand : null;
 }
 
+// --outfit <MPVUR record>[#<skin>]: a soldier as a multiplayer kit dresses it
+// (lib/bf2017-outfits.mjs): the skin's meshes (the default skin's, or the one
+// named: 'hoth', 'hakan', …) are the body and its parts, and the maps its
+// mesh variation databases bind (the skin's colour on a shared mesh: the
+// officer's Death Star legs, the Hoth specialist's backpack) replace the
+// GLB's own where they differ, material by material. The records are read
+// from the root (web/data/ or data/, as the drop or the fetch keeps them).
+export function readRecordAt(root) {
+  return (path) => {
+    for (const at of [`web/data/${path}.json`, `data/${path}.json`]) {
+      const file = localPath(root, at);
+      if (existsSync(file)) {
+        try {
+          return JSON.parse(readFileSync(file, 'utf8'));
+        } catch {
+          return null;
+        }
+      }
+    }
+    const gz = localPath(root, `data/${path}.json.gz`);
+    if (existsSync(gz)) return JSON.parse(gunzipSync(readFileSync(gz)).toString('utf8'));
+    return null;
+  };
+}
+// skinOf(outfit, name?) → the skin: by name, else the outfit's default
+export const skinOf = (outfit, name = null) => outfit?.skins.find((s) => (name ? s.name === name : s.default)) ?? (name ? null : outfit?.skins[0] ?? null);
+// outfitMaps(skin) → { [mesh]: [[{ slot, name }]] }: each material's colour,
+// normal and emissive by the shader's parameter names
+export function outfitMaps(skin) {
+  const out = {};
+  for (const [mesh, mats] of Object.entries(skin?.maps ?? {}))
+    out[mesh] = mats.map((list) =>
+      list
+        .map(({ parameter, texture }) => ({ slot: slotOfParameter(parameter), name: texture }))
+        .filter((b) => ['color', 'normal', 'emissive'].includes(b.slot))
+        .filter((b, i, all) => all.findIndex((x) => x.slot === b.slot) === i),
+    );
+  return out;
+}
+// a map's stem: 'ktx2:web/textures/…/t_legs_03_naosl__normal.ktx2' → 't_legs_03_naosl'
+export const mapStem = (name) =>
+  String(name ?? '')
+    .replace(/^ktx2:/, '')
+    .split('/')
+    .pop()
+    .toLowerCase()
+    .replace(/\.(ktx2|png)$/, '')
+    .replace(/__(normal|orm_[0-9a-f]+)$/, '');
+// the outfit's bindings a GLB file takes, by material index ({ '#<i>': [{ slot, name }] }):
+// its own mesh's, when the counts agree
+export function outfitBindings(maps, file, count) {
+  if (!maps) return {};
+  const f = String(file).toLowerCase();
+  const mesh = Object.keys(maps).find((m) => f.includes(`${m}.`) || f.includes(`${m}_lod`));
+  if (!mesh || maps[mesh].length !== count) return {};
+  return Object.fromEntries(maps[mesh].map((list, i) => [`#${i}`, list]).filter(([, l]) => l.length));
+}
+
 // the bucket path of a named map in the slot's form: a normal map as the
 // pipeline's derived `__normal` (its z rebuilt; the KTX2 under that name)
 export const overridePath = (name, slot) => (slot === 'normal' ? mapPath(name).replace(/\.png$/, '__normal.ktx2') : mapPath(name).replace(/\.png$/, '.ktx2'));
 
-export async function readLod(io, file, { root, derived, unpackDir, said, eyes = null, textures = null }) {
+export async function readLod(io, file, { root, derived, unpackDir, said, eyes = null, textures = null, outfit = null }) {
   const glb = await readFile(localPath(root, inBucket(file)));
   // (the GLB read by hand: glTF-Transform's own reader will not open one whose
   // images are outside it; chunk 0 is the JSON, chunk 1 the binary buffer)
@@ -251,6 +319,7 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
   const doc = await io.readJSON({ json, resources });
   // a map not there yet: the material goes without it rather than wear grey
   const byIndexOf = indexBindings(textures, file, doc.getRoot().listMaterials().length);
+  const byOutfit = outfitBindings(outfit, file, doc.getRoot().listMaterials().length);
   for (const [index, m] of doc.getRoot().listMaterials().entries()) {
     for (const slot of SLOTS) if (m[`get${slot}Texture`]()?.getName() === MISSING) m[`set${slot}Texture`](null);
     const shader = String(m.getExtras()?.shader ?? '');
@@ -289,7 +358,10 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
     // (and --variations' by the material's index, where the GLB has none in that slot)
     const lacks = { color: !m.getBaseColorTexture(), normal: !m.getNormalTexture(), emissive: !m.getEmissiveTexture() };
     const byIndex = (byIndexOf[`#${index}`] ?? []).filter((b) => lacks[b.slot]);
-    for (const { slot, name } of [...(textures?.[m.getName()] ?? []), ...byIndex]) {
+    // (--outfit's: the skin's map where the GLB's own is another, or none)
+    const now = { color: m.getBaseColorTexture(), normal: m.getNormalTexture(), emissive: m.getEmissiveTexture() };
+    const bySkin = (byOutfit[`#${index}`] ?? []).filter((b) => !now[b.slot] || mapStem(now[b.slot].getName()) !== mapStem(b.name));
+    for (const { slot, name } of [...(textures?.[m.getName()] ?? []), ...byIndex, ...bySkin]) {
       const at = overridePath(name, slot);
       const found = await resolveImage(at, { root, derived, unpackDir });
       if (!found) {
@@ -429,7 +501,11 @@ export async function nativeMaps(doc, spec) {
   for (const t of doc.getRoot().listTextures()) {
     const name = t.getName();
     if (!name.startsWith(NATIVE)) continue;
-    const file = localPath(spec.root, name.slice(NATIVE.length));
+    // (or the web build's copy: --native-root, the export's web_opt/, which
+    // holds the bucket's KTX2 where the drop's web/ has the PNGs)
+    // (the drop's own GLBs name the PNGs: the KTX2 is the same path's)
+    let file = localPath(spec.root, name.slice(NATIVE.length));
+    if (!existsSync(file) && spec.nativeRoot) file = path(spec.nativeRoot, name.slice(NATIVE.length).replace(/^web\//, '').replace(/\.png$/, '.ktx2'));
     if (!file.endsWith('.ktx2') || !existsSync(file)) continue;
     const bytes = new Uint8Array(await readFile(file));
     const { width, scheme } = ktx2Info(bytes);
@@ -586,11 +662,24 @@ export async function importModel(name, opts) {
   const manifestFile = localPath(root, 'web/models.jsonl');
   if (!existsSync(manifestFile)) throw new Error(`no manifest at ${manifestFile}: node --env-file=.env.local scripts/bf2017-fetch.mjs manifest`);
   const manifest = readManifest(await readFile(manifestFile, 'utf8'));
+  // (--outfit: the skin's meshes, the heaviest the body when no name is given)
+  let skin = null;
+  if (typeof opts.outfit === 'string') {
+    const [record, want] = opts.outfit.split('#');
+    const outfit = outfitOf(readRecordAt(root), record);
+    skin = skinOf(outfit, want ?? null);
+    if (!skin) throw new Error(`--outfit: no skin ${want ?? '(default)'} in ${record} (${outfit ? outfit.skins.map((s) => s.name).join(', ') : 'no record'})`);
+    const tris = (m) => manifest.get(m)?.lods?.[0]?.triangles ?? -1;
+    if (!name || name === '-') name = [...skin.parts].sort((a, b) => tris(b.mesh) - tris(a.mesh))[0].mesh;
+    console.log(`  outfit ${record.split('/').pop()}, skin ${skin.name}: ${skin.parts.map((p) => p.mesh.split('/').pop() + (p.variation ? ` (${p.variation.split('/').pop()})` : '')).join(', ')}`);
+  }
   const entry = manifest.get(name);
   if (!entry) throw new Error(`${name}: not in the manifest (node scripts/bf2017-fetch.mjs --list '<glob>')`);
   const rig = Boolean(opts.rig);
-  const parts = typeof opts.parts === 'string' ? partsOf(manifest, name, opts.parts.split(',')).filter((p) => !isSequel(p.name)) : [];
-  const metres = opts.metres !== undefined && opts.metres !== true ? Number(opts.metres) : Number((entry.max[1] - entry.min[1]).toFixed(3));
+  const partNames = typeof opts.parts === 'string' ? opts.parts.split(',') : skin ? skin.parts.map((p) => p.mesh).filter((m) => m !== name) : [];
+  const parts = partNames.length ? partsOf(manifest, name, partNames).filter((p) => !isSequel(p.name)) : [];
+  // (--metres game: the game's own size, the figure as its skeleton stands)
+  const metres = opts.metres === 'game' ? null : opts.metres !== undefined && opts.metres !== true ? Number(opts.metres) : Number((entry.max[1] - entry.min[1]).toFixed(3));
   const tex = Number(opts.tex ?? 1024);
   const maps = Number(opts.maps ?? tex / 2);
   const spec = {
@@ -610,6 +699,9 @@ export async function importModel(name, opts) {
     // (maps a shader graph binds, by material name: --textures)
     // (and those the game's mesh variation database binds: --variations <record>)
     textures: await texturesOpt(opts, name),
+    // (--outfit's maps, by mesh and material: they replace the GLB's own where they differ)
+    outfit: skin ? outfitMaps(skin) : null,
+    nativeRoot: typeof opts.nativeRoot === 'string' ? resolve(opts.nativeRoot) : null,
     // (WebP quality: colour, then the rest; a hero at the game's full maps takes more)
     quality: Number(opts.quality ?? 82),
     mapsQuality: Number(opts.mapsQuality ?? opts.quality ?? 80),
@@ -720,11 +812,12 @@ export async function importModel(name, opts) {
   const fullDL = full ? Math.ceil(plain.bytes / MB) : 0;
   if (full) console.log(`  the full cut: ${fullDL} MB to download, its maps ${fullMB} MB on the GPU`);
   const more = `${lod ? ', lod: true' : ''}${far ? ', far: true' : ''}${full ? `, full: true, fullMB: ${fullMB}, fullDL: ${fullDL}` : ''}`;
-  if (opts.crew) console.log(`the CREW row (src/components/galaxy/surface/crewList.js):\n  ${kind}: { url: '${file}', tall: ${metres}${rig ? `, rig: 'walrus'${opts.hero ? `, pack: '${kind}'` : ''}` : ''}${more} },`);
+  const tall = metres ?? Number(plain.size[1].toFixed(3));
+  if (opts.crew) console.log(`the CREW row (src/components/galaxy/surface/crewList.js):\n  ${kind}: { url: '${file}', tall: ${tall}${rig ? `, rig: 'walrus'${opts.hero ? `, pack: '${kind}'` : ''}` : ''}${more} },`);
   // (catalog: false, the object library's: its row is the index's, catalog/bf2017-library.js)
   else if (opts.catalog !== false) {
     // (a vehicle's the file's own count, after its markers and normal-only decals are gone)
-    const row = { made: 'bf2017', as: opts.as, metres, along: spec.along, yaw: 0, tris: opts.vehicle ? plain.tris : cuts.plain.triangles, tex };
+    const row = { made: 'bf2017', as: opts.as, metres: tall, along: spec.along, yaw: 0, tris: opts.vehicle ? plain.tris : cuts.plain.triangles, tex };
     if (rig || spec.skeleton) row.rig = true;
     if (far) row.far = true;
     if (spec.frame && spec.frame.name !== name) row.hull = spec.frame.name;
@@ -757,11 +850,11 @@ export async function importModel(name, opts) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = parseArgs(process.argv.slice(2));
   const [name] = args._;
-  if (!name) {
+  if (!name && typeof args.outfit !== 'string') {
     console.error("usage: node scripts/bf2017-import.mjs <manifest name> --kind <kind> --as '<what it is>' [--asis | --metres <m>] [--rig] [--crew] [--hero] [--ultra] [--tex 1024] [--maps 512] [--parts '<glob>,…']");
     process.exit(1);
   }
-  if (isSequel(name)) {
+  if (name && isSequel(name)) {
     console.error(`${name} is sequel-era; the site shows none of it (autopilot rules)`);
     process.exit(2);
   }

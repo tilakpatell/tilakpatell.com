@@ -233,7 +233,8 @@ export const grounded = ({ metres, along = 'y', yaw = 0, up = 'y' }) => (doc) =>
   const size = { x: max[0] - min[0], y: max[1] - min[1], z: max[2] - min[2] };
   const measured = along === 'max' ? Math.max(size.x, size.z) : size[along];
   if (!(measured > 0)) throw new Error(`along: '${along}'? (y, x, z or max)`);
-  const k = metres / measured;
+  // (metres null: the model's own size, as the game made it)
+  const k = metres == null ? 1 : metres / measured;
   ground.setScale([k, k, k]);
   ground.setTranslation([(-k * (min[0] + max[0])) / 2, -k * min[1], (-k * (min[2] + max[2])) / 2]);
 };
