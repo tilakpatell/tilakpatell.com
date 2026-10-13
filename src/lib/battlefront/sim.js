@@ -631,6 +631,7 @@ export function view(sim, { player = null } = {}) {
     e.heat = s.gun?.heat ?? 0;
     e.mode = s.brain?.intent?.mode ?? null;
     e.unit = s.unit ?? null;
+    e.unitId = s.unitId ?? null; // (the rulebook's hero or reinforcement: the body the figure wears)
     e.name = s.name ?? null;
     e.cls = s.cls?.cls ?? null;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;

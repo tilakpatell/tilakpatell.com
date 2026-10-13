@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
 import { AITRAJECTORY_TURN } from './facing.js';
-import { BODY_MIDDLE, BODY_REACH, createFigures, cullBy } from './figures.js';
+import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf } from './figures.js';
 import { createHeld, weaponUrl } from './held.js';
 
 const settle = async () => {
@@ -362,5 +362,56 @@ describe('cullBy', () => {
     const bare = new THREE.Group();
     bare.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
     expect(cullBy(bare)).toBeNull();
+  });
+});
+
+describe('a soldier’s cut by its distance from the eye', () => {
+  const run = async (eye) => {
+    const asked = [];
+    const cuts = { of: (kind) => (kind === 'snowtrooper' ? { lod: true, far: true, full: true, fullMB: 1, fullDL: 1 } : null), level: 'high', lowData: false, load: (u) => (asked.push(u), Promise.resolve(null)) };
+    const figs = createFigures({ scene: new THREE.Scene(), loadBody: async () => body(), held: createHeld({ load: () => Promise.resolve({ scene: new THREE.Group(), animations: [] }) }), loadStance: () => Promise.resolve(new Map()), cuts });
+    figs.update([soldier], 0.016, 1, eye);
+    await settle();
+    figs.update([{ ...soldier, t: 1 }], 0.016, 1, eye);
+    await settle();
+    return asked;
+  };
+
+  it('asks for the game’s LOD0 near and the far cut past the level’s mid', async () => {
+    expect(await run(new THREE.Vector3(5, 1.6, 3))).toEqual([BODIES.snowtrooper.url]);
+    expect(await run(new THREE.Vector3(500, 1.6, 1))).toEqual([BODIES.snowtrooper.url.replace(/\.glb$/, '.far.glb')]);
+  });
+
+  it('asks nothing without an eye or a row', async () => {
+    expect(await run(null)).toEqual([]);
+  });
+});
+
+describe('the body a unit wears', () => {
+  it('is the hero’s or the reinforcement’s own, else the side’s trooper', () => {
+    expect(kindOf({ team: 2, unitId: 'darthvader' })).toBe('vader');
+    expect(kindOf({ team: 1, unitId: 'hansolo' })).toBe('han');
+    expect(kindOf({ team: 2, unitId: 'DeathTrooper' })).toBe('deathtrooper');
+    // (one with no body here yet, and a class)
+    expect(kindOf({ team: 1, unitId: 'yoda' })).toBe('hothtrooper');
+    expect(kindOf({ team: 2, unitId: null })).toBe('snowtrooper');
+    for (const kind of Object.values(UNIT_KINDS)) expect(BODIES[kind]).toBeTruthy();
+  });
+
+  it('loads a hero on its light cut with its own clips, and builds the figure again when the id comes back as another unit', async () => {
+    const loads = [];
+    const figs = createFigures({ scene: new THREE.Scene(), loadBody: async (url, kind) => (loads.push([url, kind]), body()), held: createHeld({ load: () => Promise.resolve({ scene: new THREE.Group(), animations: [] }) }), loadStance: () => Promise.resolve(new Map()) });
+    figs.update([soldier], 0.016);
+    await settle();
+    const trooper = figs.figure(3);
+    figs.update([{ ...soldier, unitId: 'darthvader', t: 1 }], 0.016);
+    await settle();
+    expect(loads).toEqual([
+      ['/models/galaxy/bf2017/crew/snowtrooper.lod1.glb', 'snowtrooper'],
+      ['/models/galaxy/bf2017/crew/vader.lod1.glb', 'vader'],
+    ]);
+    expect(figs.figure(3)).not.toBe(trooper);
+    expect(figs.figure(3).kind).toBe('vader');
+    expect(trooper.model.parent).toBe(null);
   });
 });

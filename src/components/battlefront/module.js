@@ -38,7 +38,7 @@ import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
-import { createFigures } from './figures/figures.js';
+import { createFigures, figureCuts } from './figures/figures.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { createKitFx } from './fx/kit.js';
@@ -119,7 +119,8 @@ export default {
     const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
-    const figures = createFigures({ scene, ragdolls });
+    // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
+    const figures = createFigures({ scene, ragdolls, cuts: figureCuts({ level: device().detail, lowData: Boolean(device().saveData) }) });
     const bolts = createBolts(scene);
     // (the grenades, their blasts, the turrets and the shields: fx/kit.js)
     const kitFx = createKitFx(scene);
