@@ -13,9 +13,11 @@
 //   say(key) → a key's English (the book's own, else the game's table)
 //   stageSpec(id, skinId) → the hero-select stage's figure for that skin, or null
 //   portraitOf(id, faction) → its portrait's url (a class's by faction), or null; iconKey(svgAsset)
-//   picksOf(store, id) → { skin, emote, pose, voiceLine, cards } with the game's defaults
-//   pick(store, id, field, value) → the store with that pick (cards: one toggled, three at most)
-//   appearanceOf(store, id) → the crew kind the pick wears in the field, or null
+//   picksOf(store, id, { faction }) → { faction, skin, pose, cards, emotes, voiceLines } with the game's defaults
+//   pick(store, id, field, value, { faction }) → the store with that pick (a slot field toggled, SLOTS at most)
+//   appearanceOf(store, id, { faction }) → the crew kind the pick wears in the field, or null
+//   characterOfOffer(offer) → { id, faction } | null: a deploy offer's character
+//   label(name) → one of the screens' run-time words (EQUIP STAR CARDS, REINFORCEMENTS …)
 //   readStore(storage), writeStore(storage, store): `bf-collection`, never throwing
 
 import BOOK from '../../data/bf2017/collection.json';
@@ -27,6 +29,8 @@ export const CARD_SLOTS = 3; // (a hero carries three of its nine)
 export const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 export const FACTIONS = ['rebel', 'empire', 'republic', 'cis'];
 export const FACTION_SIDE = { rebel: 'light', empire: 'dark', republic: 'light', cis: 'dark' };
+// (the four sides as the game's choose-side tiles name them: CSTile_OT_LightSide_RebelAlliance …)
+export const FACTION_NAMES = { rebel: 'REBEL ALLIANCE', empire: 'GALACTIC EMPIRE', republic: 'GALACTIC REPUBLIC', cis: 'SEPARATISTS' };
 
 // a hero's clip pack on the site (galaxy/surface/crewList.js's `pack`s; the
 // heroes with none of their own stand in the humanoid's)
@@ -43,9 +47,14 @@ const C = BOOK.characters;
 const ORDER = ['luke', 'leia', 'hansolo', 'chewbacca', 'lando', 'yoda', 'obiwan', 'anakin', 'darthvader', 'emperor', 'bobafett', 'bossk', 'iden', 'maul', 'dooku', 'grievous'];
 const rank = (id) => (ORDER.includes(id) ? ORDER.indexOf(id) : ORDER.length);
 
+// (the game's text spells "fl" and "fi" with their ligatures, which the
+// site's open text face has no glyph for: Deﬂecting would read "De ecting")
+const LIGATURES = { 'ﬀ': 'ff', 'ﬁ': 'fi', 'ﬂ': 'fl', 'ﬃ': 'ffi', 'ﬄ': 'ffl' };
+const plain = (s) => s.replace(/[ﬀ-ﬄ]/g, (c) => LIGATURES[c]);
+
 export function say(key) {
   if (!key) return '';
-  return BOOK.strings[key] ?? text(key);
+  return plain(BOOK.strings[key] ?? text(key));
 }
 
 export function roster() {
@@ -60,7 +69,7 @@ export function roster() {
 
 export function character(id) {
   const c = C[id];
-  return c ? { id, ...c, title: say(c.name) || id } : null;
+  return c ? { id, ...c, title: say(c.name) || id, about: say(c.description) } : null;
 }
 
 export const factionsOf = (id) => FACTIONS.filter((f) => C[id]?.factions?.[f]?.skins?.length);
@@ -112,35 +121,62 @@ export function stageSpec(id, skinId) {
 }
 
 // ── the picks ──
+// (kept by character, a trooper class's by faction too: `assault.empire`,
+// as the game keeps a class's look for each side it fights on; the cards,
+// emotes and voice lines are slots the game fills that many of: three
+// cards, four emotes and four voice lines on the commo rose, one pose)
+
+export const SLOTS = { cards: CARD_SLOTS, emotes: 4, voiceLines: 4 };
+export const keyOf = (id, faction = null) => (C[id]?.kind === 'trooper' ? `${id}.${faction ?? factionsOf(id)[0]}` : id);
 
 export function picksOf(store, id, { faction = null } = {}) {
-  const own = store?.[id] ?? {};
-  const skins = skinsFor(id, { faction: faction ?? own.faction ?? null });
+  const f = C[id]?.kind === 'trooper' ? (faction ?? factionsOf(id)[0] ?? null) : null;
+  const own = store?.[keyOf(id, f)] ?? {};
+  const skins = skinsFor(id, { faction: f });
+  const kept = (field) => {
+    const have = new Set(field === 'cards' ? (C[id]?.cards ?? []) : (C[id]?.[field] ?? []));
+    return (own[field] ?? []).filter((k) => have.has(k)).slice(0, SLOTS[field]);
+  };
   return {
-    faction: C[id]?.kind === 'trooper' ? (faction ?? own.faction ?? factionsOf(id)[0] ?? null) : null,
+    faction: f,
     skin: skins.some((s) => s.id === own.skin) ? own.skin : (skins[0]?.id ?? null),
-    emote: own.emote ?? null,
     pose: own.pose ?? picksFor(id, 'poses')[0]?.id ?? null,
-    voiceLine: own.voiceLine ?? null,
-    cards: (own.cards ?? []).filter((k) => C[id]?.cards?.includes(k)).slice(0, CARD_SLOTS),
+    cards: kept('cards'),
+    emotes: kept('emotes'),
+    voiceLines: kept('voiceLines'),
   };
 }
 
-export function pick(store, id, field, value) {
-  const was = store?.[id] ?? {};
-  let next;
-  if (field === 'cards') {
-    const cards = was.cards ?? [];
-    next = cards.includes(value) ? cards.filter((k) => k !== value) : cards.length < CARD_SLOTS ? [...cards, value] : cards;
-  } else next = value;
-  return { ...(store ?? {}), [id]: { ...was, [field]: next } };
+export function pick(store, id, field, value, { faction = null } = {}) {
+  const key = keyOf(id, faction);
+  const was = store?.[key] ?? {};
+  let next = value;
+  if (SLOTS[field]) {
+    const have = was[field] ?? [];
+    next = have.includes(value) ? have.filter((k) => k !== value) : have.length < SLOTS[field] ? [...have, value] : have;
+  }
+  return { ...(store ?? {}), [key]: { ...was, [field]: next } };
 }
 
-export function appearanceOf(store, id) {
-  const p = picksOf(store, id);
+export function appearanceOf(store, id, { faction = null } = {}) {
+  const p = picksOf(store, id, { faction });
   const s = p.skin ? skinRow(p.skin) : null;
   return s?.body ?? s?.stand ?? null;
 }
+
+// a deploy screen's offer → its Collection character and faction: a class's
+// id ('l-orig-assault', the rulebook's), a hero's or a reinforcement's id
+const ERA_SIDE = { 'l-orig': 'rebel', 'd-orig': 'empire', 'l-preq': 'republic', 'd-preq': 'cis' };
+export function characterOfOffer(o) {
+  if (!o?.id) return null;
+  const m = /^([ld]-(?:orig|preq))-([a-z]+)$/.exec(o.id);
+  if (m && C[m[2]]) return { id: m[2], faction: ERA_SIDE[m[1]] };
+  const id = Object.keys(C).find((k) => k.toLowerCase() === String(o.id).toLowerCase());
+  return id ? { id, faction: null } : null;
+}
+
+// the words the screens' trees leave to run time (collection.json's labels)
+export const label = (name) => say(BOOK.labels?.[name]);
 
 export function readStore(storage) {
   try {

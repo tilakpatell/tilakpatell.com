@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARD_SLOTS, STORE_KEY, abilitiesFor, appearanceOf, cardLine, cardsFor, character, factionsOf, pick, picksFor, picksOf, readStore, roster, skinsFor, stageSpec, writeStore } from './collection';
+import { CARD_SLOTS, STORE_KEY, abilitiesFor, appearanceOf, cardLine, cardsFor, character, characterOfOffer, factionsOf, label, pick, picksFor, picksOf, readStore, roster, skinsFor, stageSpec, writeStore } from './collection';
 
 describe('the Collection', () => {
   it('lists the heroes by side, the four classes and the reinforcements, the sequel’s left out', () => {
@@ -40,7 +40,7 @@ describe('the Collection', () => {
   });
 
   it('keeps the picks: a skin, the cards three at most, the game’s defaults where none is kept', () => {
-    expect(picksOf({}, 'luke')).toMatchObject({ skin: 'VUR_Luke_ROTJ_01', cards: [] });
+    expect(picksOf({}, 'luke')).toMatchObject({ skin: 'VUR_Luke_ROTJ_01', cards: [], emotes: [], pose: 'luke.1' });
     let s = pick({}, 'luke', 'skin', 'VUR_Luke_Hoth_01');
     expect(appearanceOf(s, 'luke')).toBe('lukehoth');
     for (const c of ['luke.1', 'luke.2', 'luke.3', 'luke.4']) s = pick(s, 'luke', 'cards', c);
@@ -48,6 +48,21 @@ describe('the Collection', () => {
     s = pick(s, 'luke', 'cards', 'luke.1');
     expect(picksOf(s, 'luke').cards).toEqual(['luke.2', 'luke.3']);
     expect(picksOf({ luke: { skin: 'not-a-skin' } }, 'luke').skin).toBe('VUR_Luke_ROTJ_01');
+  });
+
+  it('keeps a class’s look for each side, and finds a deploy offer’s character', () => {
+    const s = pick({}, 'assault', 'skin', 'assault.empire.snowtrooper', { faction: 'empire' });
+    expect(Object.keys(s)).toEqual(['assault.empire']);
+    expect(appearanceOf(s, 'assault', { faction: 'empire' })).toBe('snowtrooper');
+    expect(picksOf(s, 'assault', { faction: 'rebel' }).skin).not.toBe('assault.empire.snowtrooper');
+    expect(characterOfOffer({ kind: 'class', id: 'd-orig-assault' })).toEqual({ id: 'assault', faction: 'empire' });
+    expect(characterOfOffer({ kind: 'hero', id: 'luke' })).toEqual({ id: 'luke', faction: null });
+    expect(characterOfOffer({ id: 'nobody' })).toBeNull();
+  });
+
+  it('carries the screens’ run-time words', () => {
+    expect(label('equipCards')).toBe('EQUIP STAR CARDS');
+    expect(label('reinforcements')).toBe('REINFORCEMENTS');
   });
 
   it('puts a skin on the hero-select stage with its hero’s clips', () => {
