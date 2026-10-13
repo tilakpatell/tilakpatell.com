@@ -147,6 +147,16 @@ export async function loadLevel(level) {
 // (lane F's) until G1's frontend.json, read from the inclusion options, lands
 export const levelsFor = (system) => [...(modes.worlds[system]?.ground ?? [])];
 export const modesOf = (rb, level) => [...(modes.levels[levelKey(level)]?.modes ?? [])];
+// The game's names for a mode and for a level's world (modes.json's `names`), as the screens write them
+export const modeName = (rb, mode) => modes.names?.modes?.[mode]?.text ?? null;
+export const worldName = (rb, level) => modes.names?.worlds?.[modes.levels[levelKey(level)]?.world]?.text ?? null;
+// The modes a level's world holds on its ground, the level's own first (Hoth's Supremacy is its second level's)
+export function worldModesOf(rb, level) {
+  const own = modesOf(rb, level);
+  const world = modes.worlds[modes.levels[levelKey(level)]?.world];
+  const ground = (world?.ground ?? []).flatMap((k) => modes.levels[k]?.modes ?? []);
+  return [...new Set([...own, ...ground])];
+}
 // The level of a world that holds a mode: the level itself where it does, else the first of its world's
 // that does (Hoth's Supremacy is its second level's, on the same ground); the level itself where none does
 export function levelForMode(rb, level, mode) {

@@ -1,6 +1,7 @@
-// A bot given the AutoPlayers' numbers (an Instant Action round's): its
-// trigger is the line of fire's and its view the tracker's; a bot given none
-// is the bot it was.
+// A bot given the AutoPlayers' numbers (an Instant Action round's) is run by
+// the game's own rules, read from its code (NOTES.md, "The AutoPlayers"): the
+// tracker's target, the noisy aim point, the trigger's tolerance and cadence,
+// the line of fire's flag, the strafe. A bot given none is the bot it was.
 import { describe, expect, it } from 'vitest';
 import gs from '../../../data/bf2017/gameSettings.json';
 import { seeded } from '../../seeded.js';
@@ -8,39 +9,61 @@ import { aiOf, classOf, loadRulebook, weaponOf } from '../rulebook.js';
 import { buildNav, lineClear, shields } from '../nav.js';
 import { hothFlatNav } from '../fixtures/hothFlat.js';
 import { roundFor, startInstantAction } from '../instantAction.js';
-import { newSoldier } from '../soldier.js';
-import { STEP } from '../core.js';
+import { chestOf, newSoldier } from '../soldier.js';
+import { STEP, THINK } from '../core.js';
 import { autoPlayerFor } from './autoPlayer.js';
-import { CONE, act, createBrain, think } from './soldierBrain.js';
+import { CONE, act, createBrain, engaging, think } from './soldierBrain.js';
 
 const rb = loadRulebook();
 const ai = aiOf(rb);
-const open = buildNav({ heightAt: () => 0, bounds: { min: [-100, -100], max: [100, 100] }, cell: 2, solids: [], cover: ai.cover.constants });
+const open = buildNav({ heightAt: () => 0, bounds: { min: [-600, -600], max: [600, 600] }, cell: 4, solids: [], cover: ai.cover.constants });
+const normal = () => autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
 
 function bot(at, over = {}) {
   const cls = classOf(rb, 'l-orig-assault');
   const s = newSoldier(cls, { id: 'me', team: 1, at, weapon: weaponOf(rb, cls.weapon), rand: seeded(1) });
-  const b = createBrain(s, { ai, rand: seeded(1), ...over });
-  // (every frame a firing one, so the trigger alone decides)
-  b.patterns = [{ bits: [true], delay: 0, intensity: 'High' }];
-  b.pattern = b.patterns[0];
-  return b;
+  return createBrain(s, { ai, rand: seeded(1), ...over });
 }
 
-const see = (brain, id, at, visible = true) => {
-  brain.me.beliefs[id] = { id, at: { x: at[0], y: at[1], z: at[2] }, vel: { x: 0, y: 0, z: 0 }, confidence: 1, visible, seenAt: 0, hostile: true };
-};
+// an enemy soldier, facing back down −z (toward a bot south of it) unless told
+function enemy(id, at, over = {}) {
+  const cls = classOf(rb, 'd-orig-assault');
+  const e = newSoldier(cls, { id, team: 2, at, yaw: Math.PI, weapon: weaponOf(rb, cls.weapon), rand: seeded(2) });
+  return Object.assign(e, over);
+}
 
-function world(extra = {}) {
+function world(enemies = [], extra = {}) {
   const shots = [];
-  return { shots, nav: open, lineClear: (a, b) => lineClear(open, a, b), shields, squad: null, objective: null, enemies: [], taken: new Map(), shoot: (s, aim) => shots.push(aim), ...extra };
+  const by = new Map(enemies.map((e) => [e.id, e]));
+  const v = (p) => ({ x: p[0], y: p[1], z: p[2] });
+  return {
+    shots,
+    nav: open,
+    lineClear: (a, b) => lineClear(open, a, b),
+    shields,
+    squad: null,
+    objective: null,
+    enemies: enemies.map((e) => [e.at[0], e.at[2]]),
+    taken: new Map(),
+    // (as the sim gathers them each step: every living enemy, where its chest is)
+    get targets() {
+      return [...by.values()].filter((e) => e.alive).map((e) => ({ id: e.id, at: v(chestOf(e)), vel: { x: e.vel[0], y: 0, z: e.vel[2] }, hostile: true }));
+    },
+    who: (id) => by.get(id) ?? null,
+    shoot: (s, aim) => shots.push(aim),
+    ...extra,
+  };
 }
 
-// the bot thinks once, then acts every step for `seconds`; the times of its shots
+// the bot thinks every THINK and acts every step for `seconds`; the times of its shots
 function run(b, w, seconds, from = 0) {
   const at = [];
+  let next = from;
   for (let t = from; t < from + seconds - 1e-9; t += STEP) {
-    if (t === from) b.intent = think(b, w, t);
+    if (t + 1e-9 >= next) {
+      b.intent = think(b, w, t);
+      next += THINK;
+    }
     const n = w.shots.length;
     act(b, b.intent, b.s, STEP, w, t);
     if (w.shots.length > n) at.push(Math.round(t * 1000) / 1000);
@@ -48,139 +71,239 @@ function run(b, w, seconds, from = 0) {
   return at;
 }
 
-describe('a bot on the AutoPlayers’ numbers', () => {
-  it('a bot given none carries none', () => {
+describe('a bot with no numbers', () => {
+  it('carries none and sees by its own cone', () => {
     const b = bot([0, 0, -50]);
     expect(b.ap).toBeNull();
     expect(b.apAim).toBeNull();
+    expect(b.senses.sight.cone).toBe(CONE);
+  });
+});
+
+describe('the tracker’s target', () => {
+  it('reaches as far as the scale times the gun’s own range', () => {
+    const b = bot([0, 0, 0], { ap: normal() });
+    expect(engaging(b, b.s.weapon.range)).toBe(2.5 * b.s.weapon.range);
   });
 
-  it('holds its fire for the line of fire’s reaction, then fires', () => {
-    const ap = { ...autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'rookie', side: 'Enemies' }), lofReaction: 0.2 };
-    const b = bot([0, 0, -50], { ap });
-    see(b, 'them', [0, 1.2, -30]);
-    const shots = run(b, world(), 1);
-    expect(shots.length).toBeGreaterThan(0);
-    expect(shots[0]).toBeGreaterThanOrEqual(0.2);
-    expect(shots[0]).toBeLessThan(0.5);
+  it('is the nearest enemy inside the field of view whose line of fire it has, taken once that line has been clear the reaction', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const w = world([enemy('far', [0, 0, 40]), enemy('near', [5, 0, -20])]);
+    expect(think(b, w, 0).target).toBe(null);
+    expect(think(b, w, THINK).target).toBe('near');
   });
 
-  it('keeps firing where the target was for the timeout after the line is lost, then stops', () => {
-    const ap = { ...autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'expert', side: 'Enemies' }), lofTimeout: 0.5 };
+  it('is an enemy far past its sight, inside the engaging distance', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const w = world([enemy('far', [0, 0, 300])]);
+    think(b, w, 0);
+    expect(think(b, w, THINK).target).toBe('far');
+    const c = bot([0, 0, -50], { ap: normal() });
+    const out = world([enemy('out', [0, 0, 500])]);
+    think(c, out, 0);
+    expect(think(c, out, THINK).target).toBe(null);
+  });
+
+  it('is kept two seconds, then picked again every time: the nearest now', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const near = enemy('near', [5, 0, -20]);
+    const w = world([near]);
+    think(b, w, 0);
+    expect(think(b, w, THINK).target).toBe('near');
+    const nearer = enemy('nearer', [-3, 0, -35]);
+    const w2 = world([near, nearer]);
+    expect(think(b, w2, THINK + 1).target).toBe('near');
+    // (past its two seconds: the nearer one is looked at, its line not yet clear the reaction, so none; then it)
+    expect(think(b, w2, THINK + 2.2).target).toBe(null);
+    expect(think(b, w2, THINK + 2.2 + THINK).target).toBe('nearer');
+  });
+
+  it('is none when the nearest in view has no line of fire, though a farther one stands in the open', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const near = enemy('near', [0, 0, -20]);
+    const far = enemy('far', [30, 0, 0]);
+    const w = world([near, far], { lineClear: (a, c) => Math.abs(c[2] - chestOf(near)[2]) > 1 });
+    for (let t = 0; t < 2; t += THINK) expect(think(b, w, t).target).toBe(null);
+  });
+
+  it('is not one behind it past the field of view, 140° either side', () => {
+    const ap = normal();
+    expect(ap.fov).toBe(140);
     const b = bot([0, 0, -50], { ap });
-    see(b, 'them', [0, 1.2, -30]);
-    const w = world();
+    // (the bot faces +z: an enemy straight behind is 180° off)
+    const w = world([enemy('behind', [0, 0, -90])]);
+    think(b, w, 0);
+    expect(think(b, w, THINK).target).toBe(null);
+    const side = world([enemy('side', [40, 0, -70])]);
+    think(b, side, 0);
+    expect(think(b, side, THINK).target).toBe('side');
+    expect(b.senses.sight.cone).toBeCloseTo(Math.cos((140 * Math.PI) / 180), 9);
+  });
+});
+
+describe('a side’s noise scale', () => {
+  // how far from its target's chest a bot's shots are aimed, at most, over a few seconds
+  const widest = (extra) => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const e = enemy('e', [0, 0, 0]);
+    const w = world([e], extra);
+    run(b, w, 8);
+    const c = chestOf(e);
+    expect(w.shots.length).toBeGreaterThan(5);
+    return Math.max(...w.shots.map((a) => Math.hypot(a[0] - c[0], a[1] - c[1])));
+  };
+
+  it('is laid on the weapon’s noise: none of it a truer aim, more of it a wider one', () => {
+    expect(widest({ aimScale: 0 })).toBeLessThan(widest({ aimScale: 1 }));
+    expect(widest({ aimScale: 1 })).toBeLessThan(widest({ aimScale: 2.5 }));
+  });
+
+  it('is one where the world gives none', () => {
+    expect(widest({})).toBe(widest({ aimScale: 1 }));
+  });
+});
+
+describe('the trigger', () => {
+  it('waits for the line of fire, then fires in the weapon’s bursts: 0.2 s held, 0.1 s let go', () => {
+    const ap = { ...normal(), noise: { blaster: 0, lmg: 0, shotgun: 0, sniper: 0, launcher: 0 } };
+    const b = bot([0, 0, -50], { ap });
+    const shots = run(b, world([enemy('them', [0, 0, -30])]), 2);
+    expect(shots[0]).toBeGreaterThanOrEqual(THINK - 1e-9);
+    // (four steps held, two let go)
+    const first = shots[0];
+    const steps = shots.filter((t) => t < first + 0.6 - 1e-9).map((t) => Math.round((t - first) / STEP));
+    expect(steps).toEqual([0, 1, 2, 3, 6, 7, 8, 9]);
+  });
+
+  it('fires at where the target is for the timeout after its line is lost, then stops', () => {
+    const ap = { ...normal(), lofTimeout: 0.5, noise: { blaster: 0, lmg: 0, shotgun: 0, sniper: 0, launcher: 0 } };
+    const b = bot([0, 0, -50], { ap });
+    const them = enemy('them', [0, 0, -30]);
+    let hidden = false;
+    const w = world([them], { lineClear: () => !hidden });
     run(b, w, 1);
-    // (the target steps out of sight)
-    b.me.beliefs.them.visible = false;
+    expect(w.shots.length).toBeGreaterThan(0);
+    hidden = true;
+    them.at[0] = 3; // (it moves behind its wall: the bot's aim goes with it)
     const after = run(b, w, 2, 1);
     expect(after.length).toBeGreaterThan(0);
-    expect(after.at(-1)).toBeLessThanOrEqual(1.5 + STEP);
-    expect(after.at(-1)).toBeGreaterThanOrEqual(1.3);
+    expect(after.at(-1)).toBeLessThan(1.5 + 0.2 + STEP);
+    expect(w.shots.at(-1)[0]).toBeGreaterThan(1.5);
   });
 
-  it('a rookie’s view wanders wider than an expert’s', () => {
+  it('a rookie’s shots go wider than an expert’s', () => {
     const spread = (difficulty) => {
       const b = bot([0, 0, -50], { ap: autoPlayerFor(gs, { mode: 'instantAction', difficulty, side: 'Enemies' }) });
-      see(b, 'them', [0, 1.2, -20]);
-      const w = world();
-      run(b, w, 12);
-      // (how far from the target's chest the shots were put, across the line)
-      return w.shots.reduce((n, a) => n + Math.abs(a[0]), 0) / Math.max(1, w.shots.length);
+      const w = world([enemy('them', [0, 0, -20])]);
+      run(b, w, 20);
+      expect(w.shots.length).toBeGreaterThan(20);
+      return w.shots.reduce((n, a) => n + Math.abs(a[0]), 0) / w.shots.length;
     };
     expect(spread('rookie')).toBeGreaterThan(spread('expert') * 1.5);
   });
 
   it('fires nothing where its mode holds its fire', () => {
-    const b = bot([0, 0, -50], { ap: autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' }) });
-    see(b, 'them', [0, 1.2, -30]);
-    const w = world();
-    b.intent = { ...think(b, w, 0), fire: false };
-    for (let t = 0; t < 1; t += STEP) act(b, b.intent, b.s, STEP, w, t);
+    const b = bot([0, 0, -50], { ap: normal() });
+    const w = world([enemy('them', [0, 0, -30])]);
+    think(b, w, 0);
+    for (let t = THINK; t < 1.5; t += STEP) {
+      if (Math.abs(t / THINK - Math.round(t / THINK)) < 1e-6) b.intent = { ...think(b, w, t), fire: false };
+      if (b.intent) act(b, b.intent, b.s, STEP, w, t);
+    }
     expect(w.shots).toHaveLength(0);
   });
+});
 
-  it('strafes one way then the other, each for the settings’ time', () => {
-    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
-    const b = bot([0, 0, -50], { ap });
-    see(b, 'them', [0, 1.2, -30]);
-    const w = world();
-    const flips = [];
-    let was = null;
-    for (let t = 0; t < 20; t += 0.25) {
+describe('its way', () => {
+  it('has no hiding, fleeing or closing in: hurt and under fire it keeps its target and its way', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const w = world([enemy('them', [0, 0, -30], { yaw: 0 })], { objective: [0, 100], squad: { centre: [0, -60], posture: 'retreat' } });
+    b.s.suppressed = 1;
+    b.s.hp = b.s.hpMax * 0.1;
+    think(b, w, 0);
+    for (let t = THINK; t < 3; t += THINK) {
       const i = think(b, w, t);
       expect(i.mode).toBe('attack');
-      const side = Math.sign(i.goal[0]);
-      if (was !== null && side !== was) flips.push(t);
-      was = side;
+      expect(i.target).toBe('them');
+      expect(i.fire).toBe(true);
+      expect(i.goal).toEqual([0, 100]);
     }
+  });
+
+  it('goes to the post it was sent to and round it inside its radius, sprinting with no target while far', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const task = { key: 'post1', at: [0, 80], spot: [0, 80], role: 'defend', radius: 8, reach: 0, interact: false };
+    const far = think(b, world([], { task }), 0);
+    expect(far).toMatchObject({ mode: 'objective', target: null, fire: false, sprint: true });
+    expect(Math.hypot(far.goal[0] - 0, far.goal[1] - 80)).toBeLessThanOrEqual(8 + 6);
+    const there = bot([0, 0, 79], { ap: normal() });
+    expect(think(there, world([], { task }), 0).sprint).toBe(false);
+  });
+});
+
+describe('the strafe', () => {
+  const open2 = (b, w, seconds) => {
+    const goals = [];
+    for (let t = 0; t < seconds; t += THINK) {
+      const i = think(b, w, t);
+      if (i.target) goals.push({ t, mode: i.mode, goal: i.goal, stance: i.stance });
+    }
+    return goals;
+  };
+
+  it('runs when the bot and its target face each other, one way then the other for the settings’ time', () => {
+    const ap = normal();
+    const b = bot([0, 0, -50], { ap });
+    const goals = open2(b, world([enemy('them', [0, 0, -30])]), 24).filter((g) => g.mode === 'attack');
+    const sides = goals.map((g) => Math.sign(g.goal[0]));
+    expect(new Set(sides)).toEqual(new Set([-1, 1]));
+    const flips = goals.filter((g, k) => k > 0 && Math.sign(g.goal[0]) !== Math.sign(goals[k - 1].goal[0])).map((g) => g.t);
     expect(flips.length).toBeGreaterThanOrEqual(4);
     const [lo, hi] = ap.strafeInvert;
     for (let k = 1; k < flips.length; k++) {
-      expect(flips[k] - flips[k - 1]).toBeGreaterThanOrEqual(lo - 0.25);
-      expect(flips[k] - flips[k - 1]).toBeLessThanOrEqual(hi + 0.25);
+      expect(flips[k] - flips[k - 1]).toBeGreaterThanOrEqual(lo - THINK - 1e-9);
+      expect(flips[k] - flips[k - 1]).toBeLessThanOrEqual(hi + THINK + 1e-9);
     }
+    // (a third of the legs go forward with it, a third back: the goal is not always dead abeam)
+    const along = new Set(goals.map((g) => Math.sign(Math.round((g.goal[1] + 50) * 100) / 100)));
+    expect(along).toEqual(new Set([-1, 0, 1]));
+    // (crouched on some legs, upright on others)
+    expect(new Set(goals.map((g) => g.stance))).toEqual(new Set(['stand', 'crouch']));
   });
 
-  it('opens a strafe leg with a roll to the leg’s side when the leg’s draw says so, once', () => {
+  it('does not run at a target that looks away: the bot keeps to its way', () => {
+    const b = bot([0, 0, -50], { ap: normal() });
+    const away = enemy('them', [0, 0, -30], { yaw: 0 });
+    const goals = open2(b, world([away], { objective: [0, 100] }), 6).filter((g) => g.mode === 'attack');
+    expect(goals.length).toBeGreaterThan(0);
+    for (const g of goals) expect(g.goal).toEqual([0, 100]);
+  });
+
+  it('opens a leg with a roll the way its stick points when the leg’s draw says so, once a leg', () => {
     const rolled = (dodgeRoll) => {
-      const ap = { ...autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' }), dodgeRoll };
-      const b = bot([0, 0, -50], { ap });
-      see(b, 'them', [0, 1.2, -30]);
+      const b = bot([0, 0, -50], { ap: { ...normal(), dodgeRoll } });
       const rolls = [];
-      const w = world({ roll: (s, dir) => rolls.push(dir) });
-      b.intent = think(b, w, 0);
-      for (let t = 0; t < 0.5; t += STEP) act(b, b.intent, b.s, STEP, w, t);
-      return { rolls, goal: b.intent.goal };
+      const w = world([enemy('them', [0, 0, -30])], { roll: (s, dir) => rolls.push(dir) });
+      run(b, w, 1.2);
+      return rolls;
     };
     const yes = rolled(1);
-    expect(yes.rolls).toHaveLength(1);
-    // (across the line to the target, the way the leg goes)
-    expect(Math.sign(yes.rolls[0][0])).toBe(Math.sign(yes.goal[0]));
-    expect(Math.abs(yes.rolls[0][1])).toBeLessThan(1e-9);
-    expect(rolled(0).rolls).toHaveLength(0);
+    expect(yes).toHaveLength(1);
+    expect(Math.abs(yes[0][0])).toBeGreaterThan(0.5);
+    expect(Math.hypot(yes[0][0], yes[0][1])).toBeCloseTo(1, 6);
+    expect(rolled(0)).toHaveLength(0);
   });
 
-  it('turns its strafe back from ground it cannot stand on', () => {
-    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
-    // (at the grid's edge: the ground to the +x side, the check's 2.5 m off, is outside it)
+  it('turns back from ground it cannot stand on', () => {
     for (const seed of [1, 2, 3, 4, 5, 6]) {
-      const b = bot([98.5, 0, -50], { ap, rand: seeded(seed) });
-      b.patterns = [{ bits: [true], delay: 0, intensity: 'High' }];
-      see(b, 'them', [98.5, 1.2, -30]);
-      const i = think(b, world(), 0);
+      // (at the grid's edge: the ground to the +x side, the check's 2.5 m off, is outside it)
+      const b = bot([598.5, 0, -50], { ap: normal(), rand: seeded(seed) });
+      const w = world([enemy('them', [598.5, 0, -30])]);
+      think(b, w, 0);
+      const i = think(b, w, THINK);
       expect(i.mode).toBe('attack');
-      expect(i.goal[0]).toBeLessThan(98.5);
+      expect(i.goal[0]).toBeLessThan(598.5);
     }
-  });
-
-  it('sees inside the tracker’s field of view, 140°, where a bot with no numbers keeps its own', () => {
-    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
-    expect(ap.fov).toBe(140);
-    expect(bot([0, 0, 0], { ap }).senses.sight.cone).toBeCloseTo(Math.cos((70 * Math.PI) / 180), 9);
-    expect(bot([0, 0, 0]).senses.sight.cone).toBe(CONE);
-  });
-
-  // (the game's tracker: FUN_140280090 keeps the target it has while that holds; FUN_145562920 takes the nearest inside its field of view)
-  it('takes the nearest enemy it sees, and keeps it for as long as it believes in it though another is nearer', () => {
-    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
-    const b = bot([0, 0, -50], { ap });
-    see(b, 'far', [0, 1.2, -10]);
-    see(b, 'near', [5, 1.2, -35]);
-    expect(think(b, world(), 0).target).toBe('near');
-    see(b, 'nearer', [-3, 1.2, -42]);
-    expect(think(b, world(), 0.3).target).toBe('near');
-    expect(think(b, world(), 100).target).toBe('near');
-    delete b.me.beliefs.near;
-    expect(think(b, world(), 100.3).target).toBe('nearer');
-  });
-
-  it('does not fire past its engaging distance', () => {
-    const ap = autoPlayerFor(gs, { mode: 'instantAction', difficulty: 'normal', side: 'Enemies' });
-    const b = bot([0, 0, -90], { ap });
-    const far = ap.engageScale * (b.preferred ?? b.s.weapon.range) + 10;
-    see(b, 'them', [0, 1.2, -90 + far]);
-    expect(think(b, world(), 0).fire).toBe(false);
   });
 });
 

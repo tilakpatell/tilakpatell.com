@@ -320,3 +320,13 @@ describe('kindsIn', () => {
     }
   });
 });
+
+describe('a world on the game’s own level', () => {
+  it('Hoth’s briefing is the battle, and its way in is the game’s menu', async () => {
+    const { GAME_MENU } = await import('./gameLevels');
+    const g = systemById('hoth').game;
+    expect(g).toMatchObject({ id: 'assault', status: 'live', to: GAME_MENU.hoth, title: 'The Battle of Hoth' });
+    expect(g.also ?? []).toEqual([]);
+    expect(JSON.stringify(g)).not.toContain('/galaxy/hoth/surface');
+  });
+});
