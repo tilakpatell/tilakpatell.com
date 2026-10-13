@@ -129,7 +129,7 @@ export default {
     const kitFx = createKitFx(scene);
     const booms = []; // the steps' explosions since the last frame drawn
     // (a press read on a frame with no step of the sim's, two frames in three at 60 Hz, waits for the next that has one)
-    const pressed = { ability: 0, roll: false, vent: false, jump: false };
+    const pressed = { ability: 0, roll: false, vent: false };
     const rig = createCameraRig(camera);
     const input = createInput({ maxPitch: (cams.soldier.maxPitch * Math.PI) / 180 });
     input.attach();
@@ -353,7 +353,6 @@ export default {
         pressed.ability = v.deploy.open ? 0 : read.ability || pressed.ability;
         pressed.roll = !v.deploy.open && (read.roll || pressed.roll);
         pressed.vent = !v.deploy.open && (read.vent || pressed.vent);
-        pressed.jump = !v.deploy.open && (read.jump || pressed.jump);
         let first = true;
         let stepped = 0;
         const heard = [];
@@ -362,10 +361,10 @@ export default {
           stepped += STEP;
           lastAt = body()?.at.slice() ?? null;
           const once = first ? { ...read, ...pressed } : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
-          if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false, jump: false });
+          if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false });
           first = false;
           // (every event to the sound director; the explosions to the kit drawing too)
-          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, jump: once.jump, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }]);
+          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }]);
           heard.push(...events);
           for (const e of events) if (e.type === 'explosion') booms.push(e);
         }
