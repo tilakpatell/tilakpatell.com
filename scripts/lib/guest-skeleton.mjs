@@ -190,7 +190,9 @@ export function turnsOf(joints, walrusNodes) {
     // (the mean of the two sides, the right one seen in a mirror)
     const mean = own('Left').add(mirror(own('Right'))).normalize();
     for (const s of SIDES) {
-      const want = placeOf(game.get(s + to)).sub(placeOf(game.get(s + bone))).normalize();
+      // (the game's bones run along their own +x: read from the bone's rest
+      // turn, which a fitted skeleton keeps, not from where its joints are)
+      const want = new THREE.Vector3(1, 0, 0).transformDirection(game.get(s + bone));
       turns[s + bone] = new THREE.Quaternion().setFromUnitVectors(s === 'Left' ? mean : mirror(mean), want);
     }
   }

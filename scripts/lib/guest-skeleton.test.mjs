@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { BODY, checkWalrus, isWalrus } from '../../src/lib/three/walrusRig.js';
 import { glbJson } from './bf2017-paths.mjs';
+import { meshyRig as made } from './fixtures/meshy-rig.mjs';
 import { JOINT_MAP, fitSkeleton, legRatio, measure, rowsOf, turnsOf, worldsOf } from './guest-skeleton.mjs';
 
 const rows = (file) => rowsOf(glbJson(readFileSync(file)));
@@ -13,35 +14,6 @@ const MORTY = rows('public/games/meshy/morty.glb');
 const at = (worlds, name) => new THREE.Vector3().setFromMatrixPosition(worlds.get(name));
 const dir = (worlds, a, b) => at(worlds, b).sub(at(worlds, a)).normalize();
 const degrees = (a, b) => (Math.acos(Math.min(1, a.dot(b))) * 180) / Math.PI;
-
-// a rig of Meshy's shape, its back named in no order at all
-const row = (name, parent, translation) => ({ name, parent, translation, rotation: [0, 0, 0, 1], scale: [1, 1, 1] });
-const limbs = (top) =>
-  ['Left', 'Right'].flatMap((s, i) => {
-    const x = i ? -1 : 1;
-    return [
-      row(`${s}Shoulder`, top, [3 * x, 2, 0]),
-      row(`${s}Arm`, `${s}Shoulder`, [10 * x, 0, 0]),
-      row(`${s}ForeArm`, `${s}Arm`, [18 * x, -18, 0]),
-      row(`${s}Hand`, `${s}ForeArm`, [18 * x, -18, 0]),
-      row(`${s}UpLeg`, 'Hips', [6 * x, -8, 0]),
-      row(`${s}Leg`, `${s}UpLeg`, [0, -36, 0]),
-      row(`${s}Foot`, `${s}Leg`, [0, -36, 0]),
-      row(`${s}ToeBase`, `${s}Foot`, [0, -8, 10]),
-    ];
-  });
-const made = (back = ['B', 'A', 'C']) => [
-  { ...row('Armature', null, [0, 0, 0]), scale: [0.01, 0.01, 0.01] },
-  row('Hips', 'Armature', [0, 90, 0]),
-  row(back[0], 'Hips', [0, 10, 0]),
-  row(back[1], back[0], [0, 10, 0]),
-  row(back[2], back[1], [0, 10, 0]),
-  row('neck', back[2], [0, 5, 0]),
-  row('Head', 'neck', [0, 8, 0]),
-  row('head_end', 'Head', [0, 25, 0]),
-  row('headfront', 'Head', [0, 2, 12]),
-  ...limbs(back[2]),
-];
 
 describe('the joint map, read from the hierarchy', () => {
   it('climbs Meshy’s back in the file’s own order, whatever the joints are called', () => {
@@ -208,6 +180,14 @@ describe('the game’s skeleton, fitted to a guest', () => {
     expect(turns.LeftArm.x).toBeCloseTo(turns.RightArm.x, 4);
     expect(turns.LeftArm.y).toBeCloseTo(-turns.RightArm.y, 4);
     expect(turns.LeftArm.z).toBeCloseTo(-turns.RightArm.z, 4);
+  });
+
+  it('reads the same turns off a fitted skeleton as off the game’s, though a guest’s two sides differ', () => {
+    // (Morty's two shins are 9° apart in his file: a fitted skeleton's joints are not where the game's bones point)
+    const m = measure(MORTY);
+    const a = turnsOf(m.joints, WALRUS);
+    const b = turnsOf(m.joints, fitSkeleton(WALRUS, m));
+    for (const n of Object.keys(a)) expect(a[n].angleTo(b[n]), n).toBeLessThan(1e-6);
   });
 
   it('gives the same skeleton for the same file, every time', () => {
