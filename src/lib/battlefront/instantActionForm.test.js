@@ -44,6 +44,16 @@ describe('the rows', () => {
     expect(rows.map((r) => r.group).filter((g, i, a) => a.indexOf(g) === i)).toEqual(['modifiers', 'advanced', 'faction', 'site', 'overhaul']);
   });
 
+  it('say which the game’s own screen lists', () => {
+    expect(rows.filter((r) => r.listed).map((r) => r.label)).toEqual([
+      'MODE', 'LOCATION', 'AI DIFFICULTY', 'ROUND LENGTH', 'BATTLE POINTS',
+      'ENEMY AI COUNT', 'FRIENDLY AI COUNT', 'ENEMY HERO COUNT', 'FRIENDLY HERO COUNT',
+      'ENEMY REINFORCEMENT COUNT', 'FRIENDLY REINFORCEMENT COUNT', 'ENEMY VEHICLE COUNT', 'FRIENDLY VEHICLE COUNT',
+    ]);
+    expect(row(start, 'heroes.enemy').listed).toBe(false);
+    expect(row(start, 'era').listed).toBe(false);
+  });
+
   it('show what each is set to in the game’s words: a choice’s name, a number, ON or OFF', () => {
     expect(row(start, 'mode')).toMatchObject({ kind: 'choice', text: 'SUPREMACY', value: 'supremacy' });
     expect(row(start, 'level')).toMatchObject({ kind: 'choice', text: 'HOTH', value: 'hoth', choices: ['hoth'] });
