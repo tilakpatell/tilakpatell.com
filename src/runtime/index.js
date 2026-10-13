@@ -21,7 +21,7 @@ import { createAudioBus } from './audio';
 import { createRuntime } from './runtime';
 import { createWorkerPool, poolSize } from './workers';
 import { readOverride } from './backend';
-import { device, quality } from '../lib/device';
+import { device, quality, resetDevice } from '../lib/device';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
 import './runtime.css';
@@ -42,6 +42,19 @@ const browser = () => import('./browser');
 const covered = () => typeof document !== 'undefined' && 'covered' in document.documentElement.dataset;
 
 let instance = null;
+
+// The level Auto holds now that the renderer tier is kept (lib/device reads
+// it again): a change is taken by the runtime's quality and its video
+// values before the next world is made, never by the world that is up
+// (a handover's old world draws on as it was)
+function held() {
+  const was = device().detail;
+  resetDevice();
+  const now = device().detail;
+  if (now === was || !instance) return;
+  instance.quality.retune?.(now);
+  instance.video = videoNow();
+}
 
 // The runtime if a world has made it, without making one (the settings
 // panel's readout reads its renderer's counts).
@@ -86,8 +99,16 @@ export function runtime() {
     // (a visitor who pins 30: every second beat, the controller's 33.3 ms budget)
     fps: readFps(win),
     calibrate: !/[?&]calibrate=off\b/.test(`${win?.location.search ?? ''}&${win?.location.hash ?? ''}`),
-    // (the renderer tier, lib/gpuProbe: probed once on the first 'nodes' world)
-    tier: (gfx) => browser().then((m) => m.rendererTier(gfx)),
+    // (the renderer tier, lib/gpuProbe: probed once on the first 'nodes' world;
+    // a chip it keeps as weak, slow or lost holds Auto at Low, lib/device's
+    // hold, taken up here before the world is made: held)
+    tier: (gfx) =>
+      browser()
+        .then((m) => m.rendererTier(gfx))
+        .then(({ tier }) => {
+          held();
+          return tier;
+        }),
     // the chip's own frame time (lib/three/gpuTime) for a node world on
     // WebGPU: the dynamic-resolution controller steps on it (quality.js's
     // source 'gpu'); without it every such world paced on the CPU's frame
