@@ -150,7 +150,7 @@ The game reads assets through one adapter, `src/components/battlefront/assets.js
 ## Checking it
 
 - Lane 0: `npx vitest run scripts/lib/bf2017-ebx.test.mjs scripts/lib/bf2017-rulebook.test.mjs scripts/lib/bf2017-rulebook-ai.test.mjs scripts/lib/bf2017-rulebook-map.test.mjs scripts/lib/bf2017-rulebook-look.test.mjs scripts/bf2017-data.test.mjs src/data/bf2017 src/lib/battlefront/rulebook.test.js` (fixtures only, no export needed).
-- The world’s ragdolls: `npx vitest run src/components/battlefront/figures src/lib/three/ragdoll2017.test.js scripts/lib/bf2017-physics-rules.death.test.mjs`; `window.__battlefront.do('ragdolls')` gives `{ active, settled, waiting }`. The sim’s `TIME_FOR_CORPSE` is still the hero’s 4.5 s and `battle.js` still passes no `mode`, so the sim never removes a corpse: the trooper’s 10 s (`src/data/bf2017/physics/death.json`) is the owner’s call for lanes 1 and 2.
+- The world’s ragdolls: `npx vitest run src/components/battlefront/figures src/lib/three/ragdoll2017.test.js scripts/lib/bf2017-physics-rules.death.test.mjs`; `window.__battlefront.do('ragdolls')` gives `{ active, settled, waiting }`. The sim’s `TIME_FOR_CORPSE` is still the hero’s 4.5 s and since 2026-10-13 `battle.js` passes the `mode` (the page's battle runs the sim's own), so the sim removes a corpse after it: the trooper’s 10 s (`src/data/bf2017/physics/death.json`) is the owner’s call for lanes 1 and 2.
 - Lanes 1 and 2: `npx vitest run src/lib/battlefront` and `npm run test:ai -- src/lib/battlefront` (the arena); `node scripts/battlefront-balance.mjs --skirmish` and `--assault` for the tables.
 - Always: `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`.
 
@@ -161,3 +161,12 @@ The game reads assets through one adapter, `src/components/battlefront/assets.js
 - No sequel era; `isSequel` refuses it in the extractor and the rulebook test.
 - No budget rows for this world (the owner, 2026-10-10); files still under 800 lines and the layer rules still hold.
 - Nothing of the galaxy, the universe or any other world changes.
+
+## The way in is the game's own (2026-10-13)
+
+The design is `specs/2026-10-13-hoth-landing-game-menu-design.md` (approved by the owner that day), its phase 1 the plan `plans/2026-10-13-hoth-landing-game-menu-phase1.md`, its numbers `evidence/bf-landing-menu/README.md`.
+
+- **What phase 1 did.** Flying into Hoth, or landing on it, goes to `/battlefront/hoth?from=/galaxy/hoth` (`components/galaxy/gameLevels.js` is the table of worlds that land in the game; `pages/GalaxyLanding.jsx` sends the old `/galaxy/hoth/surface` there). That address mounts Hoth's world once and draws the game's front end over it, opened on the main menu; `/battlefront/hoth/<mode>` is still the straight way into a battle. What stands over the world is `components/battlefront/stage.js` (menu, loading, spawn, wipe, field; the world rests under the menu once it is ready). The site's waiting screen is deleted: the first life goes through the game's loading screen and spawn screen, and the day is the game's coin.
+- **For a check.** The stage carries `data-bf-stage="menu|loading|spawn|field"` and `data-bf-ready`; the first life's Deploy is `.bf-spawn-screen-cell[data-kind="class"]`, or Enter. `scripts/bf-landing-check.mjs` walks and times an address (in Git Bash on Windows, with `MSYS_NO_PATHCONV=1`).
+- **Left in the tree, unreached.** Hoth's old surface missions (`surface/missions/index.js`, `MISSIONS.hoth`: the first transport, with its achievement) and the code that makes Hoth's ground: the owner keeps them for a free-roam mode. `module.js`'s comments still say "the waiting screen".
+- **Next.** Phase 2: PLAY → SINGLE PLAYER → INSTANT ACTION as the game has it, and the setup screen on the game's tree, drawn from `lib/battlefront/instantActionForm.js` (the sim lane's) and started with `world.do('round')`. Phase 2b: the loading screen and the first spawn screen laid out as the game draws them (the pictures are on the desktop, `.scratch-check/out/game/` in the lane's worktree). Then the skins worn in battle (`figures.js`'s `BODIES` and `kindOf`), and the Instant Action Overhaul's options.

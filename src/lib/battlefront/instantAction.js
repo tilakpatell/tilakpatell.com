@@ -29,8 +29,10 @@
 // The options are the game's own (ai.json's `instantAction`, the profile's
 // `Gameplay/Profiles/InstantActionParams/*`): each carries the option it is
 // (`option`), its default by that option's index and its items' names from
-// the game's strings (`labels`). A count the profile leaves to the settings
-// (its default −1) is offered at the rows' number, up to the rows' most.
+// the game's strings (`labels`). A count is the option's own (its Min, Max
+// and Value: 20 bots a side of 0 to 32, 2 heroes of 0 to 4, 4 reinforcements
+// of 0 to 20, 1 vehicle of 0 to 2), the settings' rows where the rulebook
+// holds no such option.
 //
 // Read by hand (src/data/bf2017/NOTES.md, "Instant Action"): that the
 // RealPlayer row is the player's side's size with the player in it; that the
@@ -48,29 +50,39 @@
 // numbers off `sim.instantAction`). On command posts (Supremacy, Instant
 // Action's own mode) each bot's post is the game's bot logic's, on its spawn
 // and when the orphans are called (ai/botLogic.js, `round.botLogic`), in
-// place of the commander's plan. Carried, not acted on: the vehicles' caps
+// place of the commander's plan; a round that asks for it (`botLogic:
+// 'overhaul'`) has the Instant Action Overhaul V2's in the game's place
+// (ai/botLogicOverhaul.js: its deal, its six seconds, its steps and its
+// spread). Carried, not acted on: the vehicles' caps
 // (no vehicle deploys yet), all-era heroes, the dodge roll.
 // Pure: no three.js, no DOM.
 //
 //   erasFor(rulebook, level) → ['Orig', …]
-//   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source }]
+//   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site' | 'overhaul', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source }]
 //     (in the game's screen's order, the enemy's of a pair before the player's side's)
 //     (a dotted id is a nested field: `heroes.enemyCount` is choice.heroes.enemyCount)
-//   roundFor(gs, choice) → round      (throws on a choice that is not one of the options')
+//   roundFor(gs, choice, { cap, profile }) → round      (throws on a choice that is not one of the options';
+//     profile: the rulebook's ai.instantAction, the game's own options: with it a count not asked for is the
+//     option's own starting value, 20 bots a side, 2 heroes, 4 reinforcements, 1 vehicle; without it the rows')
+//   sideCap(detail) → the most bots a side for a machine's quality level ('low' | 'mid' | 'high' | 'ultra'); `cap` in
+//     optionsFor, roundFor and startInstantAction is that number: a round's own sizes come down to it
+//     (`round.scaled`), a count asked past it is refused, and the options offer none past it
 //   startInstantAction({ rulebook, gs, nav, seed, spawns, ...choice }) → { sim, round }
 //   applyRound(sim, round)      (sim.js's: the round's length and rate on a battle, as the sim does at its making)
 //   loadSettings() → Promise<gs>      (gameSettings.json, a chunk of its own: 68 KB the page asks for with the setup screen)
 //     choice: { level, mode, era, team, difficulty: 'rookie' | 'normal' | 'expert', length: 'short' | 'medium' | 'long',
 //       bpRate: 'slow' | 'default' | 'fast', allEraHeroes, bots: { friendly, enemy },
 //       heroes: { friendly, enemy, friendlyCount, enemyCount }, reinforcements: { friendlyCount, enemyCount },
-//       vehicles: { friendly, enemy, friendlyCount, enemyCount } }   (a bare boolean for heroes, reinforcements
-//       or vehicles is both sides' switch; 'normal' is taken for the medium length)
+//       vehicles: { friendly, enemy, friendlyCount, enemyCount }, botLogic: 'game' | 'overhaul',
+//       overhaul: { aim, reaction, dodging: 'veryEasy' … 'veryHard', spread } }   (a bare boolean for heroes,
+//       reinforcements or vehicles is both sides' switch; 'normal' is taken for the medium length)
 
 import { autoPlayerFor } from './ai/autoPlayer.js';
 import { wavesFor } from './ai/waves.js';
 import { POST_RADIUS, timersFor } from './ai/botLogic.js';
+import * as Overhaul from './ai/botLogicOverhaul.js';
 import { MODES } from './modes/index.js';
-import { levelKey, modesOf } from './rulebook.js';
+import { levelKey, worldModesOf } from './rulebook.js';
 import { createSim } from './sim.js';
 
 export { applyRound } from './sim.js';
@@ -80,8 +92,14 @@ export const loadSettings = () => import('../../data/bf2017/gameSettings.json').
 export const DIFFICULTIES = ['rookie', 'normal', 'expert'];
 export const LENGTHS = ['short', 'medium', 'long'];
 export const RATES = ['slow', 'default', 'fast'];
-// The most bots a side may be asked for, by hand: the game's largest AutoPlayer team (TeamSizeAP_BotTeam_Large, 24).
-export const MAX_SIDE = 24;
+// The most bots a side may be asked for: the game's own, the most of its AI count options (InstantActionNum…AI_PC).
+export const MAX_SIDE = 32;
+// The most bots a side a machine is given, by its quality level (lib/device.js's `detail`), by hand: every
+// bot is a skinned body on the game's rig and the frame is the processor's. The strongest has the game's
+// most, a high one thirteen a side (the settings' own AutoPlayer side), a middling one the eight a side the
+// page has always drawn.
+export const SIDE_BY_DETAIL = { low: 5, mid: 8, high: 13, ultra: MAX_SIDE };
+export const sideCap = (detail) => SIDE_BY_DETAIL[detail] ?? SIDE_BY_DETAIL.mid;
 // Instant Action's own mode: Supremacy's command posts.
 export const OWN_MODE = 'supremacy';
 // The mode the AutoPlayers' rows are asked by: none of autoPlayer.js's SUFFIX, so the settings' `_Mode8`.
@@ -89,7 +107,10 @@ const AP_ROWS = 'instantAction';
 // The stages an objective mode's waves are held for (the settings' `_Phase<n>` rows).
 const PHASES = 5;
 
-export const DEFAULTS = { level: 'hoth', mode: OWN_MODE, era: 'Orig', team: 2, difficulty: 'rookie', length: 'medium', bpRate: 'default', allEraHeroes: false, heroes: true, vehicles: true, reinforcements: true, bots: null };
+// The command posts' bot logic a round may ask for: the game's own, or the Instant Action Overhaul V2's.
+export const BOT_LOGICS = ['game', 'overhaul'];
+
+export const DEFAULTS = { level: 'hoth', mode: OWN_MODE, era: 'Orig', team: 2, difficulty: 'rookie', length: 'medium', bpRate: 'default', allEraHeroes: false, heroes: true, vehicles: true, reinforcements: true, bots: null, botLogic: 'game', overhaul: null };
 
 // the screen's difficulty for the team-size rows, the lengths and the rates as the rows spell them
 const SCREEN = { rookie: 'Easy', normal: 'Normal', expert: 'Hard' };
@@ -113,10 +134,12 @@ export function erasFor(rulebook, level) {
   return eras.length ? eras : [DEFAULTS.era];
 }
 
-// the modes a level's round may be: the game's own for that level that the sim runs
+// the modes a level's round may be: the game's own for that level's world that the sim runs (a mode is
+// played on the level of the world that holds it: rulebook.js's levelForMode), Instant Action's own first
 function modesFor(rulebook, level) {
-  const own = rulebook ? modesOf(rulebook, level).filter((m) => MODES.includes(m)) : [];
-  return own.length ? own : [...MODES];
+  const own = rulebook ? worldModesOf(rulebook, level).filter((m) => MODES.includes(m)) : [];
+  const list = own.length ? own : [...MODES];
+  return list.includes(OWN_MODE) ? [OWN_MODE, ...list.filter((m) => m !== OWN_MODE)] : list;
 }
 
 // what a side may have out and how many of them bots, from the rows (the round's caps before any choice)
@@ -128,7 +151,7 @@ function rowsFor(g, n) {
   };
 }
 
-export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team = DEFAULTS.team } = {}) {
+export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team = DEFAULTS.team, cap = MAX_SIDE } = {}) {
   const sources = {};
   const g = reader(gs, sources);
   const modes = modesFor(rulebook, level);
@@ -148,12 +171,19 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
     const row = profile[option];
     return { id, kind: 'toggle', default: row && row.default >= 0 ? row.default === 1 : fallback, option, source: row ? PROFILE + option : 'hand' };
   };
-  // a count the profile leaves to the settings (-1): the rows' number, to the rows' most
-  const number = (id, option, value, min, max, source) => ({ id, kind: 'count', min, max, default: value, option, source });
+  // a count: the game's own option's least, most and starting value where the rulebook holds them
+  // (ProfileOptionDataFloat's Min, Max and Value), else the settings' rows; `most` is the machine's share
+  const number = (id, option, value, min, max, source, most = Infinity) => {
+    const row = profile[option];
+    const own = typeof row?.value === 'number';
+    const top = Math.min(own ? (row.max ?? max) : max, most);
+    return { id, kind: 'count', min: own ? (row.min ?? min) : min, max: top, default: Math.min(own ? row.value : value, top), option, source: own ? PROFILE + option : source };
+  };
   const size = g('size', ['TeamSize_AutoPlayers_Easy_Mode8', 'TeamSize_AutoPlayers_Mode8'], 13);
   const mine = g('mine', ['TeamSize_RealPlayer_Easy_Mode8', 'TeamSize_RealPlayer_Mode8'], 12);
   const friend = rowsFor(g, team);
   const foe = rowsFor(g, 3 - team);
+  const most = Math.max(1, Math.min(MAX_SIDE, cap));
   // The screen's order (the game's Instant Action screen as it draws them, NOTES.md): Game Modifiers, then
   // Advanced Settings with the enemy's of each pair before the player's side's; the switches, which the
   // screen draws past what was seen of it, after the counts; the side is the screen's Change Faction; the
@@ -166,8 +196,9 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
     ],
     advanced: [
       pick('bpRate', 'InstantActionBPRate', RATES, DEFAULTS.bpRate),
-      number('bots.enemy', 'InstantActionNumEnemyAI_PC', size, 1, MAX_SIDE, sources.size),
-      number('bots.friendly', 'InstantActionNumFriendlyAI_PC', Math.max(0, mine - 1), 0, MAX_SIDE, sources.mine),
+      // (the sides' sizes, no more than the machine is given: the module passes its share, `cap`)
+      number('bots.enemy', 'InstantActionNumEnemyAI_PC', size, 1, MAX_SIDE, sources.size, most),
+      number('bots.friendly', 'InstantActionNumFriendlyAI_PC', Math.max(0, mine - 1), 0, MAX_SIDE, sources.mine, most),
       number('heroes.enemyCount', 'InstantActionEnemyHeroCount', foe.heroes.bots, 0, foe.heroes.max, sources[`heroes.bots.${3 - team}`]),
       number('heroes.friendlyCount', 'InstantActionFriendlyHeroCount', friend.heroes.bots, 0, friend.heroes.max, sources[`heroes.bots.${team}`]),
       number('reinforcements.enemyCount', 'InstantActionEnemyReinforcementCount', foe.reinforcements.bots, 0, foe.reinforcements.max, sources[`reinforcements.bots.${3 - team}`]),
@@ -181,7 +212,18 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
       flag('allEraHeroes', 'InstantActionAllEraHeroes', DEFAULTS.allEraHeroes),
     ],
     faction: [{ id: 'team', kind: 'choice', choices: [1, 2], default: DEFAULTS.team, option: 'PlayerProfileInstantActionParamsPlayerTeam', source: 'hand' }],
-    site: [{ id: 'era', kind: 'choice', choices: eras, default: eras.includes(DEFAULTS.era) ? DEFAULTS.era : eras[0], option: null, source: 'teams.json' }],
+    site: [
+      { id: 'era', kind: 'choice', choices: eras, default: eras.includes(DEFAULTS.era) ? DEFAULTS.era : eras[0], option: null, source: 'teams.json' },
+      // (the command posts' bot logic: the game's, or the Instant Action Overhaul V2's, ai/botLogicOverhaul.js)
+      { id: 'botLogic', kind: 'choice', choices: [...BOT_LOGICS], default: DEFAULTS.botLogic, option: null, source: 'hand' },
+    ],
+    // (the mod's own rows, read where its logic is the round's: three of its five-step options, and its spread)
+    overhaul: [
+      { id: 'overhaul.aim', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIDifficulty', source: 'iao-v2' },
+      { id: 'overhaul.reaction', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIReactionTimes', source: 'iao-v2' },
+      { id: 'overhaul.dodging', kind: 'choice', choices: [...Overhaul.STEPS], default: 'medium', option: 'IAIAIDodging', source: 'iao-v2' },
+      { id: 'overhaul.spread', kind: 'toggle', default: true, option: 'IAIAIAdaptiveDifficulty', source: 'iao-v2' },
+    ],
   };
   return Object.entries(rows).flatMap(([group, list]) => list.map((o) => ({ ...o, group })));
 }
@@ -199,7 +241,7 @@ const count = (what, value, min, max = MAX_SIDE) => {
 // a side's switch and count out of a choice: a bare boolean is both sides' switch (the first screen's shape)
 const sideOf = (v, who) => (v !== null && typeof v === 'object' ? { on: v[who] ?? true, count: v[`${who}Count`] ?? null } : { on: v !== false, count: null });
 
-export function roundFor(gs, choice = {}) {
+export function roundFor(gs, choice = {}, { cap = MAX_SIDE, profile = null } = {}) {
   const c = { ...DEFAULTS, ...choice };
   const difficulty = oneOf('difficulty', c.difficulty, DIFFICULTIES);
   // (the rows' Normal is the screen's medium: either name is taken)
@@ -215,25 +257,56 @@ export function roundFor(gs, choice = {}) {
   const D = SCREEN[difficulty];
   const mine = g('size.mine', [`TeamSize_RealPlayer_${D}_Mode8`, 'TeamSize_RealPlayer_Mode8'], 12);
   const theirs = g('size.theirs', [`TeamSize_AutoPlayers_${D}_Mode8`, 'TeamSize_AutoPlayers_Mode8'], 13);
-  const friendly = c.bots?.friendly != null ? count('bots.friendly', c.bots.friendly, 0) : Math.max(0, mine - 1);
-  const enemy = c.bots?.enemy != null ? count('bots.enemy', c.bots.enemy, 1) : theirs;
+  // (the machine's share: a round's own sizes come down to it, a count asked past it is refused)
+  const most = Math.max(1, Math.min(MAX_SIDE, cap));
+  // (the game's own option where the rulebook's profile holds it: its starting value and its least; else the rows)
+  const own = (option, key) => {
+    const row = profile?.[option];
+    if (typeof row?.value !== 'number') return null;
+    sources[key] = `Gameplay/Profiles/InstantActionParams/${option}`;
+    return row;
+  };
+  const mineOpt = own('InstantActionNumFriendlyAI_PC', 'size.mine');
+  const theirsOpt = own('InstantActionNumEnemyAI_PC', 'size.theirs');
+  const wantMine = mineOpt ? mineOpt.value : Math.max(0, mine - 1);
+  const wantTheirs = theirsOpt ? theirsOpt.value : theirs;
+  const friendly = c.bots?.friendly != null ? count('bots.friendly', c.bots.friendly, 0, most) : Math.min(wantMine, most);
+  const enemy = c.bots?.enemy != null ? count('bots.enemy', c.bots.enemy, theirsOpt ? (theirsOpt.min ?? 0) : 1, most) : Math.min(wantTheirs, most);
+  const scaled = (c.bots?.friendly == null && wantMine > most) || (c.bots?.enemy == null && wantTheirs > most);
   // a side's caps: the rows', none where its switch is off, its bots' the count asked where one is
   const side = (n) => {
     const who = n === team ? 'friendly' : 'enemy';
     const rows = rowsFor(g, n);
+    const OPTION = { heroes: 'Hero', reinforcements: 'Reinforcement', vehicles: 'Vehicle' };
     const unit = (kind, v, row) => {
       const { on, count: asked } = sideOf(v, who);
       if (!on) return { ...(row.max != null ? { max: 0 } : {}), bots: 0 };
-      if (asked == null) return row;
-      const bots = count(`${kind}.${who}Count`, asked, 0, row.max ?? row.bots);
-      // (the screen has no switch for the reinforcements: a count of none is that side's off)
-      return { ...(row.max != null ? { max: bots === 0 && kind === 'reinforcements' ? 0 : row.max } : {}), bots };
+      // (the game's own count option for this side and kind: what it starts at and its most)
+      const opt = own(`InstantAction${who === 'friendly' ? 'Friendly' : 'Enemy'}${OPTION[kind]}Count`, `${kind}.bots.${n}`);
+      const top = opt ? (opt.max ?? row.max ?? row.bots) : (row.max ?? row.bots);
+      const bots = asked != null ? count(`${kind}.${who}Count`, asked, 0, top) : opt ? opt.value : row.bots;
+      // (the screen has no switch for the reinforcements: a count of none is that side's off; a side may
+      // have out at least as many as its bots are given)
+      return { ...(row.max != null ? { max: bots === 0 && kind === 'reinforcements' ? 0 : Math.max(row.max, bots) } : {}), bots };
     };
     return { heroes: unit('heroes', c.heroes, rows.heroes), reinforcements: unit('reinforcements', c.reinforcements, rows.reinforcements), vehicles: unit('vehicles', c.vehicles, rows.vehicles) };
   };
   const cp = mode === OWN_MODE;
+  // (the mod's logic is the command posts' alone; its steps and its spread are read where it is the round's)
+  const overhaul = oneOf('botLogic', c.botLogic, BOT_LOGICS) === 'overhaul' && cp;
+  const steps = {};
+  for (const k of ['aim', 'reaction', 'dodging']) steps[k] = oneOf(`overhaul.${k}`, c.overhaul?.[k] ?? 'medium', Overhaul.STEPS);
+  const spread = oneOf('overhaul.spread', c.overhaul?.spread ?? true, [true, false]);
+  const apOf = (side) => {
+    const ap = autoPlayerFor(gs, { mode: AP_ROWS, difficulty, side });
+    return overhaul ? Overhaul.tuned(ap, steps) : ap;
+  };
   // (the waves' side on an objective mode before the sim has made it: the dark side attacks, as on Hoth)
-  const wavesOf = (n) => wavesFor(gs, { cp, side: n === 2 ? 'attack' : 'defend', phase: 1, length, human: n === team });
+  const wavesOf = (n) => {
+    const w = wavesFor(gs, { cp, side: n === 2 ? 'attack' : 'defend', phase: 1, length, human: n === team });
+    // (the mod's: a fallen bot back after its six seconds, with no window to wait on)
+    return overhaul ? { ...w, soldiers: { ...w.soldiers, pause: 0, delay: Overhaul.RESPAWN } } : w;
+  };
   const byPhase = (s) => Array.from({ length: PHASES }, (_, i) => wavesFor(gs, { cp: false, side: s, phase: i + 1, length }));
   return {
     level: c.level,
@@ -244,6 +317,8 @@ export function roundFor(gs, choice = {}) {
     length,
     allEraHeroes: !!c.allEraHeroes,
     bots: { [team]: friendly, [other]: enemy },
+    cap: most,
+    scaled,
     tickets: g('tickets', [`ConquestMaxTickets_${LENGTH[length]}_Mode8`, 'ConquestMaxTickets_Mode8'], 100),
     bleed: g('bleed', [`TicketBleedMult_${LENGTH[length]}_Mode8`], 1),
     bpRate: g('bpRate', [`BPRate_${RATE[rate]}_Mode8`], 1),
@@ -251,19 +326,20 @@ export function roundFor(gs, choice = {}) {
     // (the bots facing the player and the bots beside them: the settings' two aim rows. Instant Action's
     // own rows, `_Mode8`, whatever mode the round plays: autoPlayer.js reads a bare 'supremacy' as the
     // multiplayer Supremacy's `_Mode1`, which holds no row by difficulty)
-    ap: { [team]: autoPlayerFor(gs, { mode: AP_ROWS, difficulty, side: 'Friendlies' }), [other]: autoPlayerFor(gs, { mode: AP_ROWS, difficulty, side: 'Enemies' }) },
+    ap: { [team]: apOf('Friendlies'), [other]: apOf('Enemies') },
     waves: { [team]: wavesOf(team), [other]: wavesOf(other) },
     // (an objective mode's waves by the side a team plays and its stage, for the sim to take as the round moves; the command posts' are one table)
     wavesBy: cp ? null : { attack: byPhase('attack'), defend: byPhase('defend') },
-    // (the command posts' bot logic, the game's graph: ai/botLogic.js; an objective mode's bots are the commander's)
-    botLogic: cp ? { timers: timersFor(gs), radius: POST_RADIUS } : null,
+    // (the command posts' bot logic: the game's graph, ai/botLogic.js, or the mod's deal where it is asked for,
+    // ai/botLogicOverhaul.js; an objective mode's bots are the commander's)
+    botLogic: overhaul ? { kind: 'overhaul', radius: Overhaul.POST_RADIUS, spread } : cp ? { kind: 'game', timers: timersFor(gs), radius: POST_RADIUS } : null,
     sources,
   };
 }
 
 // The round started: the sim made for it, the round on it for what reads the rest
-export function startInstantAction({ rulebook, gs, nav = null, seed = 1, spawns = null, teams = null, ...choice }) {
-  const round = roundFor(gs, choice);
+export function startInstantAction({ rulebook, gs, nav = null, seed = 1, spawns = null, teams = null, cap = MAX_SIDE, ...choice }) {
+  const round = roundFor(gs, choice, { cap, profile: rulebook?.ai?.instantAction ?? null });
   // (AutoPlayers, not the Arcade's Skirmish bots: `pve` off; the difficulty's row is the multiplayer one of its
   // name. The sim takes the round at its making: its rate, its length, its caps and its waves, sim.js's roundIn)
   const sim = createSim({ rulebook, level: round.level, era: round.era, nav, seed, teams, spawns, bots: round.bots, mode: round.mode, difficulty: round.difficulty, pve: false, instantAction: round });

@@ -38,7 +38,7 @@ const ONE_A_SQUAD = new Set(['officer', 'specialist']);
 const d2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const xz = (e) => [e.at[0], e.at[2]];
 
-export function createCommander({ team, side, ga, squads, bp, rand = Math.random, nav = null, rulebook = null }) {
+export function createCommander({ team, side, ga, squads, bp, rand = Math.random, nav = null, rulebook = null, ways = false }) {
   const ia = rulebook ? aiOf(rulebook).instantAction : null;
   const cap = (key, limit) => {
     const v = ia?.[key]?.default ?? -1;
@@ -53,6 +53,9 @@ export function createCommander({ team, side, ga, squads, bp, rand = Math.random
     bp,
     rand,
     nav,
+    // (its orders say which places stay, so the brain keeps one way to each for every bot sent, navField.js:
+    // an Instant Action round's. A battle that is no round's plans as it did, its balance being measured so)
+    ways,
     caps: { heroes: cap('InstantActionEnemyHeroCount', limits.heroesPerTeam), reinforcements: cap('InstantActionEnemyReinforcementCount', limits.reinforcementsPerTeam) },
     next: 0,
     nextWave: 0,
@@ -110,9 +113,11 @@ function orders(c, o, role) {
   if (o.type === 'carry') return task(c, `o${i}:${role}:${o.carrier ? 'to' : 'at'}`, { at, spot: at, role, radius: role === 'take' && !o.carrier ? 0 : HOLD_RADIUS });
   if (o.type === 'arm' || o.type === 'uplink') {
     const interact = role === 'take';
-    return task(c, `o${i}:${role}`, { at, spot: spotOf(c, o), role, interact, radius: interact ? 0 : HOLD_RADIUS + INTERACT_REACH });
+    return task(c, `o${i}:${role}`, { at, spot: spotOf(c, o), role, interact, radius: interact ? 0 : HOLD_RADIUS + INTERACT_REACH, ...(c.ways ? { stays: true } : {}) });
   }
-  return task(c, `o${i}`, { at, spot: at, role, radius: HOLD_RADIUS });
+  // (`stays`: the place does not move; a walker's place, a carried thing's and a counter's crowd move, and
+  // say nothing)
+  return task(c, `o${i}`, { at, spot: at, role, radius: HOLD_RADIUS, ...(c.ways && o.type !== 'escort' ? { stays: true } : {}) });
 }
 
 // the attackers' plan: each squad to the objective with the most weight left for it

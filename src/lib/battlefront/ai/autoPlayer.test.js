@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import gs from '../../../data/bf2017/gameSettings.json';
 import { seeded } from '../../seeded.js';
-import { AIM_GATE, aimStep, autoPlayerFor, createAim, createEvasion, createLof, dodges, groundOk, lofStep, noiseOf, rowOf, setting, strafeSide, suffixOf, takeRoll, weaponClass } from './autoPlayer.js';
+import { BURSTS, TOLERANCE, aimPoint, autoPlayerFor, burstStep, createAim, createBurst, createEvasion, createLof, dodges, groundOk, lofStep, mayFire, noiseOf, rowOf, setting, strafeSide, suffixOf, takeRoll, viewMiss, viewStep, weaponClass } from './autoPlayer.js';
 
 describe('the AutoPlayer’s settings', () => {
   it('takes the most particular row the server holds', () => {
@@ -36,44 +36,114 @@ describe('the AutoPlayer’s settings', () => {
     expect(noiseOf(ap, weaponClass('heavy', 'dlt19'))).toBeCloseTo(4.5);
     expect(noiseOf(ap, weaponClass('sniper', 'nt242'))).toBeCloseTo(3);
     expect(weaponClass('pistol', 'blurrg1120')).toBe('shotgun');
-    expect(weaponClass('special', 'smartrocket')).toBe('launcher');
+    // (a launcher takes the blaster's numbers: the game's own fall-through)
+    expect(weaponClass('special', 'smartrocket')).toBe('blaster');
   });
 });
 
-describe('the tracker', () => {
+// (the game's own update, read from its code: NOTES.md, "The AutoPlayers")
+describe('the aim', () => {
   const ap = autoPlayerFor(gs, { difficulty: 'normal' });
+  const RAD = Math.PI / 180;
+  const from = [0, 1.6, 0];
+  const at = [0, 1.4, 30];
+  const off = (p) => ({ yaw: Math.atan2(p[0] - from[0], p[2] - from[2]) / RAD, pitch: (Math.atan2(p[1] - from[1], Math.hypot(p[0] - from[0], p[2] - from[2])) - Math.atan2(at[1] - from[1], 30)) / RAD });
 
-  it('turns onto a target inside a second, and holds it inside the noise', () => {
-    const aim = createAim();
-    aim.yaw = Math.PI / 2; // looking 90° away
-    aim.pitch = 0;
+  it('is drawn afresh every update, inside the noise on the yaw and on the pitch each', () => {
     const rand = seeded(3);
-    let t = 0;
-    let on = null;
-    const errors = [];
-    for (let i = 0; i < 60; i++) {
-      const r = aimStep(aim, ap, { from: [0, 1.6, 0], at: [0, 1.4, 30], noise: noiseOf(ap, 'blaster'), dt: 0.05, rand });
-      t += 0.05;
-      if (on === null && r.error < AIM_GATE + noiseOf(ap, 'blaster')) on = t;
-      if (t > 1.5) errors.push(r.error);
-    }
-    expect(on).toBeLessThan(1);
-    expect(Math.max(...errors)).toBeLessThan(noiseOf(ap, 'blaster') + 0.5);
+    const draws = Array.from({ length: 2000 }, () => off(aimPoint(ap, { from, at, noise: 4, rand })));
+    expect(Math.max(...draws.map((d) => Math.abs(d.yaw)))).toBeLessThanOrEqual(4 + 1e-6);
+    expect(Math.max(...draws.map((d) => Math.abs(d.pitch)))).toBeLessThanOrEqual(4 + 1e-3);
+    // (a square, not a disc: both near their most at once does happen)
+    expect(draws.some((d) => Math.abs(d.yaw) > 3.2 && Math.abs(d.pitch) > 3.2)).toBe(true);
+    // (no memory: one draw says nothing of the next)
+    expect(new Set(draws.slice(0, 50).map((d) => d.yaw.toFixed(4))).size).toBe(50);
+    expect(aimPoint(ap, { from, at, noise: 0, rand })).toEqual(at);
   });
 
   it('leads a moving target by the prediction time', () => {
-    const aim = createAim();
-    const r = aimStep(aim, { ...ap, aimLap: 1e-6 }, { from: [0, 0, 0], at: [0, 0, 20], vel: [10, 0, 0], noise: 0, dt: 0.05 });
-    expect(r.point[0]).toBeCloseTo(1.5, 1);
+    const p = aimPoint(ap, { from: [0, 0, 0], at: [0, 0, 20], vel: [10, 0, 0], noise: 0 });
+    expect(p[0]).toBeCloseTo(10 * ap.lead, 6);
   });
 
-  it('fires once the line has been clear for the reaction, and for the timeout after it is lost', () => {
+  it('the view turns onto it no faster than a lap every AimLapTime, a quarter of that in pitch', () => {
+    const aim = createAim();
+    aim.yaw = Math.PI / 2;
+    aim.pitch = 0;
+    const slow = { ...ap, aimLap: 4 };
+    viewStep(aim, slow, { from, point: at, dt: 0.05 });
+    expect(Math.PI / 2 - aim.yaw).toBeCloseTo(((2 * Math.PI) / 4) * 0.05, 9);
+    for (let i = 0; i < 100; i++) viewStep(aim, slow, { from, point: at, dt: 0.05 });
+    expect(aim.yaw).toBeCloseTo(0, 6);
+    const up = createAim();
+    up.yaw = 0;
+    up.pitch = 1;
+    viewStep(up, slow, { from, point: at, dt: 0.05 });
+    expect(1 - up.pitch).toBeCloseTo(((2 * Math.PI) / 4 / 4) * 0.05, 9);
+  });
+});
+
+describe('the trigger', () => {
+  const ap = autoPlayerFor(gs, { difficulty: 'normal' });
+
+  it('measures how far the view line passes from the target, and that the target is ahead', () => {
+    const aim = createAim();
+    aim.yaw = 0;
+    aim.pitch = 0;
+    expect(viewMiss(aim, [0, 0, 0], [1, 0, 20])).toMatchObject({ ahead: true });
+    expect(viewMiss(aim, [0, 0, 0], [1, 0, 20]).miss2).toBeCloseTo(1, 9);
+    expect(viewMiss(aim, [0, 0, 0], [0, 0, 0.5]).ahead).toBe(false);
+    expect(viewMiss(aim, [0, 0, 0], [0, 0, -20]).ahead).toBe(false);
+  });
+
+  it('fires with the view line inside the weapon’s tolerance of the target, wider under noise, at any range', () => {
+    expect(TOLERANCE).toEqual({ blaster: 2, lmg: 1, shotgun: 1, sniper: 0.15 });
+    expect(mayFire('blaster', 1, { miss2: 1.9, ahead: true })).toBe(true);
+    expect(mayFire('blaster', 1, { miss2: 2.1, ahead: true })).toBe(false);
+    expect(mayFire('sniper', 0, { miss2: 0.2, ahead: true })).toBe(false);
+    // (the tolerance times the noise where that is over one)
+    expect(mayFire('blaster', 4.5, { miss2: 8.9, ahead: true })).toBe(true);
+    expect(mayFire('blaster', 4.5, { miss2: 9.1, ahead: true })).toBe(false);
+    expect(mayFire('blaster', 4.5, { miss2: 0, ahead: false })).toBe(false);
+  });
+
+  it('holds the trigger a burst and lets it go a pause: a blaster 0.2 s on and 0.1 off, a shotgun 0.2 s every 2.2', () => {
+    const held = (cls, seconds) => {
+      const b = createBurst();
+      const on = [];
+      for (let t = 0; t < seconds - 1e-9; t += 0.05) on.push(burstStep(b, cls, { start: true, now: t }) ? 1 : 0);
+      return on.join('');
+    };
+    expect(BURSTS.blaster).toEqual({ hold: 0.2, pause: 0.1 });
+    expect(held('blaster', 0.9)).toBe('111100111100111100');
+    // (four steps held, off until 2.2 s, four held again, then off)
+    expect(held('shotgun', 2.6).replace(/0+/g, '0')).toBe('1111011110');
+    expect(held('shotgun', 2.6).indexOf('1', 4)).toBe(44);
+    // (nothing to fire at: a burst begun runs out, none begins)
+    const b = createBurst();
+    expect(burstStep(b, 'blaster', { start: true, now: 0 })).toBe(true);
+    expect(burstStep(b, 'blaster', { start: false, now: 0.1 })).toBe(true);
+    expect(burstStep(b, 'blaster', { start: false, now: 0.25 })).toBe(false);
+    expect(burstStep(b, 'blaster', { start: false, now: 5 })).toBe(false);
+  });
+
+  it('has its line of fire once the line has been clear past the reaction, and for the timeout after it is lost', () => {
     const lof = createLof();
     expect(lofStep(lof, ap, { clear: true, now: 0 })).toBe(false);
-    expect(lofStep(lof, ap, { clear: true, now: 0.05 })).toBe(true);
+    expect(lofStep(lof, ap, { clear: true, now: 0.1 })).toBe(true);
     expect(lofStep(lof, ap, { clear: false, now: 1 })).toBe(true);
-    expect(lofStep(lof, ap, { clear: false, now: 1.6 })).toBe(false);
+    expect(lofStep(lof, ap, { clear: false, now: 1.7 })).toBe(false);
     expect(lofStep(createLof(), ap, { clear: false, now: 5 })).toBe(false);
+  });
+
+  it('a line lost before the reaction was up gives nothing after, and the reaction is waited again when it clears', () => {
+    const slow = { ...ap, lofReaction: 0.5 };
+    const lof = createLof();
+    expect(lofStep(lof, slow, { clear: true, now: 0 })).toBe(false);
+    expect(lofStep(lof, slow, { clear: false, now: 0.2 })).toBe(false);
+    expect(lofStep(lof, slow, { clear: true, now: 0.3 })).toBe(false);
+    expect(lofStep(lof, slow, { clear: true, now: 0.7 })).toBe(false);
+    expect(lofStep(lof, slow, { clear: true, now: 0.85 })).toBe(true);
   });
 });
 
