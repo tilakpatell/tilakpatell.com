@@ -4,6 +4,7 @@ import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
 import { AITRAJECTORY_TURN } from './facing.js';
 import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf, preloadBody } from './figures.js';
 import { createHeld, weaponUrl } from './held.js';
+import { skinBodies } from '../../../lib/bf2017/collection.js';
 
 const settle = async () => {
   for (let i = 0; i < 6; i++) await Promise.resolve();
@@ -396,6 +397,30 @@ describe('the body a unit wears', () => {
     expect(kindOf({ team: 1, unitId: 'yoda' })).toBe('hothtrooper');
     expect(kindOf({ team: 2, unitId: null })).toBe('snowtrooper');
     for (const kind of Object.values(UNIT_KINDS)) expect(BODIES[kind]).toBeTruthy();
+  });
+
+  it('is the skin picked in the Collection, where the site has that body', () => {
+    expect(kindOf({ team: 1, unitId: 'luke', appearance: 'lukehoth' })).toBe('lukehoth');
+    expect(kindOf({ team: 2, unitId: null, appearance: 'stormtrooper' })).toBe('stormtrooper');
+    // (a look with no body here, or none picked: the unit's own, as before)
+    expect(kindOf({ team: 1, unitId: 'luke', appearance: 'nosuchbody' })).toBe('luke');
+    expect(kindOf({ team: 2, unitId: null, appearance: null })).toBe('snowtrooper');
+    expect(kindOf({ team: 2, unitId: 'darthvader' })).toBe('vader');
+  });
+
+  it('has a body for every skin the Collection can pick: a hero’s look on its hero’s own clips, a trooper’s on its light cuts', () => {
+    const rows = skinBodies();
+    expect(rows.length).toBeGreaterThanOrEqual(40);
+    for (const { kind, pack } of rows) {
+      expect(BODIES[kind], kind).toBeTruthy();
+      expect(BODIES[kind].url, kind).toBe(`/models/galaxy/bf2017/crew/${kind}.glb`);
+      if (pack) expect(BODIES[kind].pack, kind).toBe(pack);
+      else expect(BODIES[kind].cuts?.lod, kind).toBe(true);
+    }
+    expect(BODIES.lukehoth).toEqual({ url: '/models/galaxy/bf2017/crew/lukehoth.glb', pack: 'luke' });
+    expect(BODIES.stormtrooper).toEqual({ url: '/models/galaxy/bf2017/crew/stormtrooper.glb', cuts: { lod: true, far: true } });
+    // (the rows the table had are its own: the snowtrooper keeps its full cut)
+    expect(BODIES.snowtrooper.cuts.full).toBe(true);
   });
 
   it('loads a hero on its light cut with its own clips, and builds the figure again when the id comes back as another unit', async () => {

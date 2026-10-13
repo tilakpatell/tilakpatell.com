@@ -89,3 +89,32 @@ describe('the Collection', () => {
     expect(readStore({ getItem: () => '[1]' })).toEqual({});
   });
 });
+
+describe('the bodies the skins wear', () => {
+  it('lists each once: a hero’s look with its hero’s clip pack, a trooper’s with none', async () => {
+    const { skinBodies } = await import('./collection');
+    const rows = skinBodies();
+    const kinds = rows.map((r) => r.kind);
+    expect(new Set(kinds).size).toBe(kinds.length);
+    expect(rows).toContainEqual({ kind: 'lukehoth', pack: 'luke' });
+    expect(rows).toContainEqual({ kind: 'hanhoth', pack: 'han' });
+    expect(rows).toContainEqual({ kind: 'stormtrooper', pack: null });
+    expect(rows).toContainEqual({ kind: 'luke', pack: 'luke' });
+  });
+});
+
+describe('the look worn in the field', () => {
+  it('is a skin that was picked; the default appearance is the level’s own trooper, or the hero’s own body', () => {
+    // (nothing kept: the Collection shows the first skin, and the field wears what the level gives)
+    expect(appearanceOf({}, 'assault', { faction: 'empire' })).toBe(null);
+    expect(appearanceOf({}, 'luke')).toBe(null);
+    // (the default appearance picked: the same)
+    const first = skinsFor('assault', { faction: 'empire' })[0].id;
+    expect(appearanceOf(pick({}, 'assault', 'skin', first, { faction: 'empire' }), 'assault', { faction: 'empire' })).toBe(null);
+    // (a skin of its own: its body)
+    expect(appearanceOf(pick({}, 'assault', 'skin', 'assault.empire.snowtrooper', { faction: 'empire' }), 'assault', { faction: 'empire' })).toBe('snowtrooper');
+    expect(appearanceOf(pick({}, 'luke', 'skin', 'VUR_Luke_Hoth_01'), 'luke')).toBe('lukehoth');
+    // (one side's pick is not the other's)
+    expect(appearanceOf(pick({}, 'assault', 'skin', 'assault.empire.snowtrooper', { faction: 'empire' }), 'assault', { faction: 'rebel' })).toBe(null);
+  });
+});
