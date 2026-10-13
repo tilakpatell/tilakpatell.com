@@ -67,15 +67,6 @@
 }
 /* black over the parked camera's view until the game's screens have come to cover it (stage.js's cover) */
 .bf-cover { position: absolute; inset: 0; z-index: 1; /* over the canvas, under the HUD: its stand-in deploy screen shows if the game's screens never come */ background: #000; }
-.bf-loading {
-  position: absolute;
-  left: 50%;
-  bottom: 18%;
-  transform: translateX(-50%);
-  font-family: var(--font-bf-hud, 'Arial Narrow', sans-serif);
-  color: #f2f5f8;
-  font-size: 0.9rem;
-}
 
 /* the mode's bar, top middle: the tickets at 40, the stage at 86, the objectives under */
 .bf-objectives {

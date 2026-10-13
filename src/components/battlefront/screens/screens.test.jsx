@@ -55,7 +55,9 @@ describe("the game's screens, each from its tree", () => {
   });
 
   it('loads as the game draws it: the planet’s film, the planet, the map and the mode’s words, a hint in its box, and neither a bar nor a number', () => {
-    const h = html(<Loading mode="galacticAssault" level="hoth" progress={0.4} waiting="Building the shaders · 3 to go" />);
+    const h = html(<Loading mode="galacticAssault" level="hoth" waiting="Building the shaders · 3 to go" />);
+    // (with nothing said of what it waits on, the game's own word and no number: the game shows none)
+    expect(html(<Loading mode="galacticAssault" level="hoth" />)).toMatch(/<p class="sr-only" role="status"[^>]*>LOADING<\/p>/);
     expect(h).toMatch(/planet-hoth/);
     expect(h).toMatch(/class="bf-loading-planet"[^>]*>HOTH</);
     expect(h).toMatch(/class="bf-loading-level"[^>]*>OUTPOST DELTA</);

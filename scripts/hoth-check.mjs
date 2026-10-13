@@ -7,6 +7,11 @@
 // (exit 1) if anything built is drawn, a person has no figure after the
 // wait, or a ride has none. Through the dev server (npm run dev).
 //
+// Since 2026-10-13 Hoth's surface address goes on to the game's menu
+// (src/components/galaxy/gameLevels.js): the surface is kept in the tree for
+// the free roam to come and has no route until then, so this says so and
+// stops (exit 2) rather than wait out the landing.
+//
 //   node scripts/hoth-check.mjs
 //   QUALITY=low …   BASE=http://localhost:5173 …   CHROME=<chromium> …
 //   WAIT=30000 …    (ms each count waits for the figures to come in)
@@ -70,7 +75,12 @@ const report = (label, got) => {
 
 const land = async (hash) => {
   await page.goto(`${base}/?quality=${quality}#${hash}`, { waitUntil: 'domcontentloaded', timeout: 240000 });
-  await page.waitForFunction(() => window.__surface?.()?.phase, null, { timeout: Number(process.env.PHASE_WAIT ?? 180000) });
+  await page.waitForFunction(() => window.__surface?.()?.phase || !window.location.hash.includes('/surface'), null, { timeout: Number(process.env.PHASE_WAIT ?? 180000) });
+  if (!page.url().includes('/surface')) {
+    console.log(`\nNo surface at ${hash}: it went on to ${page.url().replace(base, '')} (the game's menu). Nothing to count until Hoth's free roam has a route.`);
+    await browser.close();
+    process.exit(2);
+  }
 };
 
 // ── out on the ice ──
