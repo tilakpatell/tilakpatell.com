@@ -60,6 +60,8 @@
 .bf-game-backdrop { position: absolute; inset: 0; }
 .bf-game-film { position: absolute; inset: 0; opacity: 0.7; }
 .bf-game-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4, 7, 10, 0.86) 0%, rgba(4, 7, 10, 0.35) 55%, rgba(4, 7, 10, 0.6) 100%); }
+/* over the 3D room (../backdrop): only the tiles' side shaded, the figure on the right left as lit */
+.bf-game-room::after { background: linear-gradient(90deg, rgba(4, 7, 10, 0.5) 0%, rgba(4, 7, 10, 0.2) 45%, rgba(4, 7, 10, 0) 62%); }
 .bf-game-keys { position: absolute; left: 5%; bottom: 3%; display: flex; gap: 1.5rem; margin: 0; font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bf-muted, #b9c2cc); }
 
 /* start: the whole screen goes on to the main menu (the game's press line is painted from its tree) */

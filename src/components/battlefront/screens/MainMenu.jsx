@@ -8,8 +8,8 @@ import GameScreen from './GameScreen.jsx';
 
 // The main menu, HOME open: the game's header (its tabs: HOME, PLAY,
 // COLLECTION, CAREER, OPTIONS) over HOME's own page, the game's StartScreen
-// (the tab's link), painted from their trees over the menus' dark (the
-// game's own ground is its 3D front end, not built here yet: hand). The page's online parts (the footer of controller prompts, the
+// (the tab's link), painted from their trees over the game's 3D front end
+// (../backdrop: its room, Chewbacca on the right). The page's online parts (the footer of controller prompts, the
 // timed challenges, the loot boxes) are left out: the site is offline. Play
 // and the Collection go on; the tabs this world does not have yet say so
 // (`onComing`). The HOME tab (`onStart`) and Escape (`onBack`) are two
@@ -38,6 +38,7 @@ export default function MainMenu({ onPlay, onStart, onBack = onStart, onCollecti
       onLink={tabWays({ onPlay, onStart, onCollection, onComing })}
       onAction={(id, cell) => (id === 'Back' ? onBack?.() : onComing?.(cell.label))}
       keys={false}
+      room
       className="bf-main-menu"
     />
   );

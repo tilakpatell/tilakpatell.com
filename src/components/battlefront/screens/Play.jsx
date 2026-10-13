@@ -77,7 +77,7 @@ export default function Play({ playable = () => false, onPlay, onBack, onInstant
     const values = (b, path) => header.values(b, path) ?? foot(b, path) ?? own(b, path);
     // (a tile pressed goes where its row goes; the breadcrumb's first crumb goes back to Play; BACK goes back)
     const onAction = (name) => (name === 'Back' ? back?.() : name === 'crumb0' ? setStage('play') : tiles[name]?.go?.());
-    return <GameScreen layers={[header.tree, page]} values={values} active={header.active} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} onLink={onTab ?? tabWays({ onPlay: () => setStage('play'), onStart: onBack })} onAction={onAction} first={FIRST_TILE} keys={false} className="bf-play" />;
+    return <GameScreen layers={[header.tree, page]} values={values} active={header.active} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} onLink={onTab ?? tabWays({ onPlay: () => setStage('play'), onStart: onBack })} onAction={onAction} first={FIRST_TILE} keys={false} room className="bf-play" />;
   }
 
   // the multiplayer screen: its lists' boxes hold the mode cards
