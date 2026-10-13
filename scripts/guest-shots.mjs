@@ -5,12 +5,13 @@
 // collapsed sleeve, a head off the neck). It drives scripts/preview/
 // guest.html through the dev server, which must be up in the bucket check's
 // mode (the trooper's pistol stance and the host hero's pack are in the
-// asset bucket):
+// asset bucket), and the guest's own pack must have been made
+// (node scripts/guest-clips.mjs <who>: it is written under lab/, out of git):
 //
 //   node node_modules/vite/bin/vite.js --mode bucketcheck --port 5460 --strictPort --host 127.0.0.1
 //   node scripts/guest-shots.mjs <who> <out.png> [--host han] [--shots rest,walk@0,…]
 //     [--views front,side] [--look lit|toon|ink] [--gun rk3|none] [--beside <url>|none]
-//     [--w 420] [--h 460] [--bones] [--body <id>]
+//     [--w 420] [--h 460] [--tall 2.2] [--spread 0.62] [--focus <bone>] [--bones] [--body <id>] [--pack <url>]
 //
 // BASE names the server (http://127.0.0.1:5460). It prints, for each
 // moment, each figure's lowest foot joint and its weapon socket's distance
@@ -28,7 +29,7 @@ if (!who || !out) {
   process.exit(1);
 }
 const query = new URLSearchParams({ who });
-for (const k of ['host', 'shots', 'views', 'look', 'gun', 'beside', 'w', 'h', 'body', 'tall', 'spread', 'focus']) if (typeof args[k] === 'string') query.set(k, args[k]);
+for (const k of ['host', 'shots', 'views', 'look', 'gun', 'beside', 'w', 'h', 'body', 'tall', 'spread', 'focus', 'pack']) if (typeof args[k] === 'string') query.set(k, args[k]);
 if (args.bones) query.set('bones', '1');
 
 const browser = await chromium.launch({ executablePath: findChromium(), args: launchArgs({ angle: angleFor() }) });

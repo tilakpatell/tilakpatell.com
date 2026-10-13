@@ -14,7 +14,14 @@
 // packUrls(hero, { whole })), since the game's packs, made for its 1.77 m
 // man, must not be laid over it. It carries the fitted skeleton's nodes, as
 // a game pack carries the game's, and is written without meshopt's filters,
-// which would round the turns again.
+// which would round the turns again. Once written it is read back, and
+// every turn of every clip compared with the pack it came from, to the bit
+// and key for key: the command fails on one that differs (sameTurns).
+//
+// The pack is the game's own clips, so it is kept as the game's own packs
+// are: out of git. It is written under lab/assets/packs/guests/, which git
+// ignores; publishing it to the asset bucket is its own step, taken when a
+// guest is made playable.
 //
 // A pack that is only in the asset bucket (src/data/galaxyAssets.json names
 // its hash) is fetched once from the base the dev server uses
@@ -23,10 +30,10 @@
 // asked of any network, and the same files in give the same bytes out.
 //
 //   node scripts/guest-clips.mjs <who> [--host <hero>] [--packs humanoid,stance-p,<host>]
-//     [--body <id>] [--only <clip>,…] [--out public/models/guests]
+//     [--body <id>] [--only <clip>,…] [--out lab/assets/packs/guests] [--bodies public/models/guests]
 //
 //   who     a row of scripts/guests.json; the pack is <out>/clips-<who>.glb
-//   body    the fitted body the clips are sized to (<out>/<id>.glb; the
+//   body    the fitted body the clips are sized to (<bodies>/<id>.glb; the
 //           row's first when left out). A body other than the first is
 //           written its own pack, clips-<id>.glb: one whose limbs differ
 //           from the first's by more than 2 % needs one
@@ -34,8 +41,12 @@
 // It prints each clip, the game's name for it and its frames, and the pack.
 //
 //   packFile(name, { root, fetch }) → the pack's file, fetched if it must be
+//   PACKS_OUT: where a guest's pack is written unless said
 //   packGuest(who, { host, packs, body, only, out, bodies, files, log }) → { file, bytes, clips, aliases }
-//     (bodies: where the fitted bodies are, out unless said; files: { pack: file } for a pack read from elsewhere)
+//     (bodies: where the fitted bodies are; files: { pack: file } for a pack read from elsewhere)
+//   sameTurns(made, sources) → how many turns were compared; throws on the
+//     first that is not its source's (made: readPack's of the written file;
+//     sources: Map<clip name, the game's clip>)
 
 import { Document, Logger } from '@gltf-transform/core';
 import { meshopt, prune } from '@gltf-transform/functions';
@@ -46,13 +57,14 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { hashOf } from './lib/asset-manifest.mjs';
-import { bulkProbes, refit, soleProbes } from './lib/guest-clips.mjs';
+import { meshOf, refit, soleProbes } from './lib/guest-clips.mjs';
 import { io, readBody, readPack } from './lib/guest-file.mjs';
 import { legRatio } from './lib/guest-skeleton.mjs';
 import { OUT, guestRow } from './guest-rig.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKS = 'models/galaxy/bf2017';
+export const PACKS_OUT = join(ROOT, 'lab', 'assets', 'packs', 'guests');
 
 // the base the dev server asks the bucket by: the shell's, or the bucket check's own file
 function assetBase(root) {
@@ -82,10 +94,27 @@ export async function packFile(name, { root = ROOT, fetch = globalThis.fetch } =
   return kept;
 }
 
-export async function packGuest(who, { host = guestRow(who).host, packs = ['humanoid', 'stance-p', host], body = Object.keys(guestRow(who).bodies)[0], only = null, out = OUT, bodies = out, files = null, log = console.log } = {}) {
+export function sameTurns(made, sources) {
+  let turns = 0;
+  for (const [name, source] of sources) {
+    const clip = made.clips.find((c) => c.name === name);
+    if (!clip) throw new Error(`${name}: not in the pack that was written`);
+    const got = new Map(clip.tracks.filter((t) => t.path === 'rotation').map((t) => [t.node, t]));
+    for (const t of source.tracks) {
+      if (t.path !== 'rotation') continue;
+      const is = got.get(t.node);
+      const same = (a, b) => a.length === b.length && a.constructor === b.constructor && a.every((v, i) => v === b[i]);
+      if (!is || is.normalized !== t.normalized || !same(is.values, t.values) || !same(is.times, t.times)) throw new Error(`${name}: ${t.node}’s turn is not the game’s to the bit`);
+      turns++;
+    }
+  }
+  return turns;
+}
+
+export async function packGuest(who, { host = guestRow(who).host, packs = ['humanoid', 'stance-p', host], body = Object.keys(guestRow(who).bodies)[0], only = null, out = PACKS_OUT, bodies = OUT, files = null, log = console.log } = {}) {
   const row = guestRow(who);
   const fitted = await readBody(join(bodies, `${body}.glb`));
-  const probes = { guest: soleProbes(fitted.rows, fitted.surface), bulk: bulkProbes(fitted.rows, fitted.surface) };
+  const probes = { guest: soleProbes(fitted.rows, fitted.surface), mesh: meshOf(fitted.rows, fitted.surface) };
 
   // the game's clips by name, a later pack's over an earlier one's, where the first of the name stood
   const clips = new Map();
@@ -139,18 +168,20 @@ export async function packGuest(who, { host = guestRow(who).host, packs = ['huma
   const file = join(out, `clips-${body === first ? who : body}.glb`);
   await mkdir(dirname(file), { recursive: true });
   await (await io()).write(file, doc);
+  // (what was written, read as the page will read it, against what it was made from)
+  const turns = sameTurns(await readPack(file), new Map([...clips].map(([name, { clip }]) => [name, clip])));
   const bytes = (await stat(file)).size;
   for (const m of made) log(`${m.name.padEnd(22)} ${m.source.padEnd(50)} ${String(m.frames).padStart(4)} frames`);
   for (const [a, b] of Object.entries(aliases)) log(`${a.padEnd(22)} = ${b}`);
-  log(`${relative(ROOT, file)}: ${made.length} clips from ${packs.join(', ')} at ${legs.toFixed(4)} of the game's legs, ${(bytes / 1024).toFixed(1)} KB`);
-  return { file, bytes, clips: made, aliases };
+  log(`${relative(ROOT, file)}: ${made.length} clips from ${packs.join(', ')} at ${legs.toFixed(4)} of the game's legs, ${turns} turns the game's to the bit, ${(bytes / 1024).toFixed(1)} KB`);
+  return { file, bytes, clips: made, aliases, turns };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = parseArgs(process.argv.slice(2));
   const [who] = args._;
   if (!who) {
-    console.error('usage: node scripts/guest-clips.mjs <who> [--host <hero>] [--packs humanoid,stance-p,<host>] [--body <id>] [--only a,b] [--out public/models/guests]');
+    console.error('usage: node scripts/guest-clips.mjs <who> [--host <hero>] [--packs humanoid,stance-p,<host>] [--body <id>] [--only a,b] [--out lab/assets/packs/guests] [--bodies public/models/guests]');
     process.exit(1);
   }
   try {
@@ -160,7 +191,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       packs: typeof args.packs === 'string' ? args.packs.split(',') : ['humanoid', 'stance-p', host],
       ...(typeof args.body === 'string' ? { body: args.body } : {}),
       only: typeof args.only === 'string' ? args.only.split(',') : null,
-      out: resolve(args.out ?? OUT),
+      out: resolve(args.out ?? PACKS_OUT),
+      bodies: resolve(args.bodies ?? OUT),
     });
   } catch (e) {
     console.error(e.message);

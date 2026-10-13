@@ -27,7 +27,8 @@
          under it is not seen, and a foot over it shows the gap.
          ?who=rick&host=han&shots=rest,walk@0,walk@0.33,stance.p.aim@0,die@1
            &views=front,side&look=lit|toon|ink&gun=rk3&w=420&h=460
-           [&body=<id>] [&beside=<url>|none] [&bones=1] -->
+           [&body=<id>] [&beside=<url>|none] [&bones=1] [&pack=<url>]
+           [&tall=2.2] [&spread=0.62] [&focus=<bone>] -->
     <script type="module">
       import * as THREE from 'three';
       import { RIM, lightRamp } from '/src/components/rickmorty/portal/meshyCastCore.js';
@@ -51,7 +52,10 @@
       const beside = q.get('beside') ?? '/models/galaxy/bf2017/crew/snowtrooper.lod1.glb';
       const gunId = q.get('gun') ?? 'rk3';
 
-      const guest = await loadWalrusBody(`/models/guests/${body}.glb`, { packs: packUrls(null, { whole: `/models/guests/clips-${who}.glb` }) });
+      // (a guest's pack is the game's own clips and is not in git: scripts/guest-clips.mjs
+      // writes it under lab/, which the dev server serves as it serves this page)
+      const pack = q.get('pack') ?? `/lab/assets/packs/guests/clips-${who}.glb`;
+      const guest = await loadWalrusBody(`/models/guests/${body}.glb`, { packs: packUrls(null, { whole: pack }) });
       // (the trooper on the game's own packs, the same names: the humanoid's, the pistol's stance, the host hero's)
       const man = beside === 'none' ? null : await loadWalrusBody(beside, { packs: [`${PACK_DIR}/clips-humanoid.glb`, `${PACK_DIR}/clips-stance-p.glb`, `${PACK_DIR}/clips-${host}.glb`] });
       const figures = [guest, man].filter(Boolean);
