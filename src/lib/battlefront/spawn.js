@@ -52,8 +52,11 @@ function pointsIn(map, ids, team, mode) {
   return out;
 }
 
-export function pickSpawn({ map, ids, team, enemies = [], rand = Math.random, mode = 'galacticAssault' }) {
-  const { areas, points } = pointsIn(map, ids, team, mode);
+export function pickSpawn({ map, ids, team, enemies = [], rand = Math.random, mode = 'galacticAssault', extra = [] }) {
+  const set = pointsIn(map, ids, team, mode);
+  const areas = set.areas;
+  // (points given beside the set's own: the command posts' the side holds, modes/supremacy.js)
+  const points = extra.length ? [...set.points, ...extra] : set.points;
   const safe = points.filter((s) => nearest([s.at[0], s.at[2]], enemies) >= SAFE);
   if (safe.length) {
     const top = Math.max(...safe.map((s) => s.priority ?? 0));
