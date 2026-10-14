@@ -115,4 +115,23 @@ describe('the soldiers on Hoth’s navmesh', () => {
     expect(s.at[1]).toBeLessThan(360);
     expect(s.link ?? null).toBeNull();
   });
+  it('lands a walker over the east gate’s doorway on the base’s floor: the link’s inner end, 5 cm off it, snapped to the mesh', () => {
+    const nav = navOf();
+    const EAST = hoth.rows.gates.find((g) => g.id === 'FantasyBattle_Logic:307');
+    doorway(nav, EAST);
+    const path = meshPath(nav, [250.88, -1578], [252.9, -1600], { fromY: 359.2 });
+    expect(path).toBeTruthy();
+    const s = soldier([250.88, 359.2, -1578]);
+    let wp = 1;
+    for (let i = 0; i < 400 && wp < path.length; i++) {
+      const p = path[wp];
+      if (Math.hypot(s.at[0] - p[0], s.at[2] - p[1]) < 0.6) {
+        wp++;
+        continue;
+      }
+      expect(meshMove(s, [p[0] - s.at[0], p[1] - s.at[2]], 1 / 20, nav, 3.8)).not.toBeNull();
+    }
+    expect(s.at[2]).toBeLessThan(-1598);
+    expect(s.link ?? null).toBeNull();
+  });
 });
