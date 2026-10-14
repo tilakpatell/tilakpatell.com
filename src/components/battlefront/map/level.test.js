@@ -44,7 +44,7 @@ describe('the whole map from lane L’s pack', () => {
 
   it('streams round the player in the pack’s frame, the far list first', async () => {
     const { deps, log } = fakes();
-    const level = createLevel({ scene: new THREE.Scene(), tier: 'high', deps, ground: false });
+    const level = createLevel({ scene: new THREE.Scene(), tier: 'high', deps, ground: false, inside: null });
     level.update([215, 380, -1530]);
     await level.ready;
     expect(log[0]).toEqual(['stream', 10, 10]);
@@ -55,7 +55,7 @@ describe('the whole map from lane L’s pack', () => {
   it('hands the stream’s cells on, with their band, and what it drops', async () => {
     const { deps } = fakes();
     const cells = [];
-    const level = createLevel({ scene: new THREE.Scene(), tier: 'high', deps, ground: false, onCell: (k, b, band) => cells.push(['add', k, b.byteLength, band]), onDrop: (k) => cells.push(['drop', k]) });
+    const level = createLevel({ scene: new THREE.Scene(), tier: 'high', deps, ground: false, inside: null, onCell: (k, b, band) => cells.push(['add', k, b.byteLength, band]), onDrop: (k) => cells.push(['drop', k]) });
     await level.ready;
     level.update([215, 380, -1530]);
     expect(cells).toEqual([
@@ -81,5 +81,22 @@ describe('the whole map from lane L’s pack', () => {
     expect(level.heightAt(205, -1540)).toBe(0);
     await level.ready;
     expect(level.heightAt(205, -1540)).toBeCloseTo(364.3, 5);
+  });
+
+  it('streams the level’s interior with it, in the same frame, its cells named as the interior’s', async () => {
+    const { deps } = fakes();
+    const worlds = [];
+    const cells = [];
+    const scene = new THREE.Scene();
+    const level = createLevel({ scene, tier: 'high', ground: false, deps: { ...deps, packOf: async (w) => (worlds.push(w), PACK) }, onCell: (k, b, band, part) => cells.push([k, part ?? 'outside']) });
+    await level.ready;
+    level.update([215, 380, -1530]);
+    expect(worlds.sort()).toEqual(['hoth', 'hoth/base']);
+    expect(cells).toEqual([
+      ['0,0', 'inside'],
+      ['0,0', 'outside'],
+    ]);
+    expect(level.inner.pack).toBe(PACK);
+    expect(scene.children.map((g) => g.name).sort()).toEqual(['level:hoth', 'level:hoth/base']);
   });
 });
