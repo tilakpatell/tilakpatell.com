@@ -207,6 +207,7 @@ export default {
     let ship = spawnOf(spec, groundAt);
     let hudIn = 0;
     let adoptIn = 0;
+    let held = false; // (a parity view's: world.view, development's)
     let down = false; // crashed: put back up once the ground under it is in
     let touchThrottle = 0; // the touch buttons' (FlightHud), −1, 0 or 1
     const tell = (type, data) => rt.events?.emit(type, data);
@@ -254,6 +255,14 @@ export default {
             down = false;
           }
           view.place(ship, rt.origin?.at ?? [0, 0, 0], dt);
+          return;
+        }
+        // (a parity view holds the ship where it put it: development's)
+        if (held) {
+          const at = rt.origin?.at ?? [0, 0, 0];
+          ground.update(ship);
+          view.place(ship, at, dt);
+          water?.place(ship, at);
           return;
         }
         const input = inputOf(snap);
@@ -321,6 +330,21 @@ export default {
       },
     };
     view.place(ship, rt.origin?.at ?? [0, 0, 0]);
+    // (development: a named view for scripts/gpu-parity.mjs, the ship put
+    // where it starts, level, nose north and still, so two renders of the
+    // flight can be compared; and settled(): the ground under it all in)
+    if (import.meta.env.DEV) {
+      world.view = (name) => {
+        if (name !== 'start') throw new Error(`no view ${name}`);
+        ship = { ...spawnOf(spec, groundAt), speed: 0 };
+        held = true;
+        view.place(ship, rt.origin?.at ?? [0, 0, 0], 0);
+      };
+      world.settled = () => {
+        const s = ground.stats();
+        return s.leaves > 0 && !s.pending && !s.flying;
+      };
+    }
     // (the dev hook the checks fly by: scripts/autopilot-check's smoke, scripts/perf-probe's journey)
     if (typeof window !== 'undefined') window.__FLIGHT__ = world;
     return world;
