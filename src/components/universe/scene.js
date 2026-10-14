@@ -68,7 +68,8 @@
 //   everyone's sky: yours go out to the others (net.pack), theirs are
 //   drawn here and can be shot at, the hit told to whoever they're after.
 //
-// A scene module for lib/three/useScene: create(canvas, ctx) returns
+// A scene module, a world on the world runtime through ./module.js: create(
+// canvas, ctx) draws with the runtime’s renderer (ctx.rt.gfx) and returns
 // { resize, render, update, setVisible, lowerQuality, hover, dive, escape,
 //   whole, boost, climb, fire, dispose }.
 // Props: selected (an id or null), ship (a crew id or null), loadout (what's
@@ -96,12 +97,13 @@ import { plan as cockpitPlan } from '../cockpit/timeline';
 import { freeKit } from '../cockpit/kit';
 import { audioContext } from '../../lib/audio';
 import { takeArrival } from '../../lib/arrival';
-import { clamp01, createRenderer, disposeTree, easeOut, precompile, precompilePasses, singlePass, uploadTextures } from '../../lib/three/renderer';
+import { clamp01, disposeTree, easeOut, precompile, precompilePasses, singlePass, uploadTextures } from '../../lib/three/renderer';
 import { prepareScene, uploadSlices } from '../../lib/three/gpuWork';
-import { calibrate, calibrationKey, recall, remember } from '../../lib/three/calibrate';
+import { prepFrame } from './prepFrame';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
-import { createPace } from '../../lib/three/pace';
+import { stepAt } from './qualityStep';
+import { borrow } from './borrow';
 import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewPose, poseAt, startFlight, worldPos } from './flight';
 import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, SUN, inExpanse, mapSectorOf, sectorOf } from './layout';
 import { HOME_SPREAD } from './scale';
@@ -475,13 +477,13 @@ export async function create(canvas, ctx) {
   let props = ctx;
   let disposed = false;
 
-  // (at most 1.5 device pixels to a CSS one: the whole sky, bloom and all,
-  // filling a retina screen at 2 is more than most graphics chips draw
-  // smoothly while flying, and the names and the HUD are crisp DOM anyway;
-  // and no antialiasing on the canvas: the post's target has its own, post.js)
-  const gl = createRenderer(canvas, { ratio: 1.5, antialias: false, onLost: ctx.onLost, onSlow: ctx.onSlow, guard: { invalidate: ctx.invalidate } });
-  const { renderer } = gl;
-  renderer.info.autoReset = false;
+  // the runtime’s renderer, at most 1.5 device pixels to a CSS one (module.js:
+  // the whole sky, bloom and all, at a retina 2 is more than most graphics
+  // chips draw smoothly while flying, and the names and the HUD are crisp
+  // DOM anyway), its size and sharpness the runtime’s; what the map sets on
+  // it goes back as it was when the map goes (./borrow.js)
+  const { renderer } = ctx.rt.gfx;
+  const giveBack = borrow(renderer);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.08, 45000); // (out to the far side of deep space; the near plane follows the view, place())
   scene.add(camera); // it carries the streaks
@@ -644,7 +646,7 @@ export async function create(canvas, ctx) {
   // with the camera, baked once into a cube
   const sky = createSky({ small, level: device().detail, renderer, beacons: false });
   sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
-  sky.setRatio(gl.ratio);
+  sky.setRatio(post.ratio);
   map.add(sky.group);
   sky.prepare(renderer).then(() => sky.bake(renderer));
 
@@ -1253,9 +1255,10 @@ export async function create(canvas, ctx) {
   // The open part of the canvas: the panel covers the right side on a
   // desktop and the bottom on a phone (or, put away, a corner or a slim
   // bar), the nav the top.
-  const panelEl = () => ctx.el.closest('.universe-page')?.querySelector('.universe-panel');
+  // (the box it’s in now: the runtime’s host, which a page adopting the map moves)
+  const panelEl = () => (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-panel');
   const measure = () => {
-    const box = ctx.el.getBoundingClientRect();
+    const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
     const panel = panelEl()?.getBoundingClientRect();
     const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 68;
     let side = 0;
@@ -4799,9 +4802,9 @@ export async function create(canvas, ctx) {
   // ── Frames ──
   const still = () => reduced || state.low;
   let last = 0;
-  // drawn less sharp, at once, while frames come late (a fight, a boost),
-  // and sharp again once they don't (lib/three/pace)
-  const pace = createPace();
+  // (a dive’s pose, written over each frame of it rather than made anew)
+  const divePose = { target: [0, 0, 0], dist: 1, pitch: 0 };
+  const diveTo = [0, 0, 0];
 
   // The finish (post.js): grain and the edges' aberration with the boost's
   // rush and a hit; the glare in the lens (lib/three/flare) of the two stars
@@ -4950,20 +4953,20 @@ export async function create(canvas, ctx) {
     state.model?.rim({ colour: fill.color, dir: lightNow.fill, key: key.color });
   };
 
-  // the pace's step on everything that follows it
-  const paceTo = () => {
-    post.sharpness = pace.scale;
-    post.setLevel(pace.level);
-    blasts.setMode(pace.level >= 2 || tier === 'low' || state.low ? 'pop' : 'full');
+  // the runtime’s quality level on everything that follows it (./qualityStep.js)
+  const paceTo = (level) => {
+    const at = stepAt(level, { tier, low: state.low });
+    post.sharpness = at.sharpness;
+    post.setLevel(at.step);
+    blasts.setMode(at.blasts);
     // (the rocks' relief flat from the pace's step 3, and back: lib/three/rock)
-    ROCK_RELIEF.value = pace.level >= 3 ? 0 : 1;
+    ROCK_RELIEF.value = at.relief;
     // (the planets' ground detail goes at the pace's step 2, their real air for
     // the old halo and their clouds' shadows at 3, and they come back)
-    for (const p of planets) p.setLevel(pace.level);
+    for (const p of planets) p.setLevel(at.step);
+    return at;
   };
   function render(ms, now) {
-    gl.watch(now);
-    if (pace.frame(now) !== null) paceTo();
     const dt = ms / 1000;
     const t = reduced ? 0 : state.low ? state.tLow : (now - t0) / 1000;
     // (the Twins' suns going round each other: their solids where they're drawn, deep.js)
@@ -5040,13 +5043,12 @@ export async function create(canvas, ctx) {
       const d = state.dive;
       const k = clamp01((now - d.start) / DIVE_MS);
       const e = k * k * k;
-      const to = worldPos(d.id, state.yaw);
+      const to = worldPos(d.id, state.yaw, diveTo);
       const end = byId(d.id).size * 1.05;
-      pose = {
-        target: d.from.target.map((x, i) => x + (to[i] - x) * Math.min(1, e * 1.5)),
-        dist: Math.exp(Math.log(d.from.dist) + (Math.log(end) - Math.log(d.from.dist)) * e),
-        pitch: d.from.pitch,
-      };
+      pose = divePose;
+      for (let i = 0; i < 3; i++) pose.target[i] = d.from.target[i] + (to[i] - d.from.target[i]) * Math.min(1, e * 1.5);
+      pose.dist = Math.exp(Math.log(d.from.dist) + (Math.log(end) - Math.log(d.from.dist)) * e);
+      pose.pitch = d.from.pitch;
       // the ship goes in first
       if (state.model) {
         const [px, py, pz] = POSITIONS[d.id];
@@ -5191,7 +5193,7 @@ export async function create(canvas, ctx) {
     const launching = moveMissiles(dt);
     if (armory) armory.update(dt);
     sun.update(t, camera);
-    sky.setRatio(gl.ratio); // (the watchdog may have changed it)
+    sky.setRatio(post.ratio); // (its points sized in the pixels the post draws at: the quality may have softened them)
     // each place's own motion (a station's lights, particles, its screen)
     // only while it's in view and more than a speck
     viewFrustum.setFromProjectionMatrix(viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -5273,7 +5275,7 @@ export async function create(canvas, ctx) {
     sky.group.position.copy(camLocal);
     const dustWant = !reduced && flying() && !onFoot() && state.view !== 'map' ? 0.35 + 0.65 * clamp01(Math.abs(state.ship.speed) / SHIP.cruise) : 0;
     dustAmount += (dustWant - dustAmount) * clamp01(dt * 3);
-    dust.update(camLocal, dustAmount, gl.ratio);
+    dust.update(camLocal, dustAmount, post.ratio);
     belt.update(t);
     rim.update(t);
     rim.group.visible = Math.hypot(camLocal.x, camLocal.z) > RIM.inner * 0.6; // (from deep inside the map its rocks are under a pixel: not drawn)
@@ -5790,7 +5792,7 @@ export async function create(canvas, ctx) {
       triangles: renderer.info.render.triangles,
       geometries: renderer.info.memory.geometries,
       textures: renderer.info.memory.textures,
-      ratio: gl.ratio,
+      ratio: renderer.getPixelRatio(),
       sharpness: post.sharpness,
       ship: state.ship && { ...state.ship },
       at: state.at,
