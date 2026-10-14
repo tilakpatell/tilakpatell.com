@@ -86,7 +86,7 @@ describe('abilities', () => {
     expect(state(abs, 1)).toBe('ready');
     press(abs, 1, 1);
     const ev = tick(abs, 0.5, 1.5, { held: 1 });
-    expect(ev.map((e) => e.phase)).toEqual(['start', 'end']);
+    expect(ev.map((e) => e.phase)).toEqual(['start', 'active', 'end']);
     expect(state(abs, 1)).toBe('recharge');
   });
 

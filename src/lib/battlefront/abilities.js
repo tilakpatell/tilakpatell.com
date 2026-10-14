@@ -152,11 +152,11 @@ function activate(abs, a, now) {
   a.activeAt = now;
   a.triggers = 0;
   const active = infinite(a.row) ? Infinity : (a.row.active ?? 0);
-  if (active > 0) {
-    a.phase = 'active';
-    a.until = now + active;
-    push(abs, a, 'active');
-  } else finish(abs, a, now);
+  // (Active is entered even for an ActiveTime of 0: the push's prefab fires on it, then the recharge starts)
+  a.phase = 'active';
+  a.until = now + active;
+  push(abs, a, 'active');
+  if (!(active > 0)) finish(abs, a, now);
 }
 
 function start(abs, a, now) {

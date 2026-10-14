@@ -172,31 +172,34 @@ export function inReach(sim, s, { range, cone = null, allies = false, from = nul
 
 const isHero = (o) => o.unit === 'hero';
 
+// the sim's book of what the unit abilities have running (one shape, made once)
+export const unitsOf = (sim) => (sim.units ??= { moves: [], holds: [], repeats: [], throws: [], dots: [], heals: [], held: [], swings: [] });
+
 // one effect on one body: damage as a request (the sim applies it through the shield and the overhealth), the rest on it
 export function affect(sim, giver, o, e, now, out, ability = null) {
   if (e.vs === 'hero' && !isHero(o)) return;
   if (e.vs === 'trooper' && isHero(o)) return;
-  sim.units ??= {};
+  const U = unitsOf(sim);
   const until = (d) => now + (d > 0 ? d : (e.seconds ?? 0));
   switch (e.type) {
     case 'damage': {
       if (e.damage > 0) out.push({ type: 'blast', by: giver.id, team: giver.team, at: chestOf(o), kind: ability ?? e.name, hits: [{ id: o.id, damage: e.damage, dir: dirTo(giver, o) }] });
-      if (e.perSecond > 0 && e.duration > 0) (sim.units.dots ??= []).push({ by: giver.id, team: giver.team, id: o.id, perSecond: e.perSecond, every: e.interval || 0.5, next: now + (e.interval || 0.5), until: now + e.duration, kind: ability ?? e.name });
+      if (e.perSecond > 0 && e.duration > 0) U.dots.push({ by: giver.id, team: giver.team, id: o.id, perSecond: e.perSecond, every: e.interval || 0.5, next: now + (e.interval || 0.5), until: now + e.duration, kind: ability ?? e.name });
       return;
     }
     case 'taken':
       apply(o.stack, { id: `${ability}:${e.name}`, property: 'ArmorMultiplier', op: 'mul', value: e.multiplier, until: e.whileActive || !(e.duration > 0) ? undefined : until(e.duration) });
-      if (e.whileActive || !(e.duration > 0)) (sim.units.held ??= []).push({ id: o.id, key: `${ability}:${e.name}`, ability, owner: giver.id });
+      if (e.whileActive || !(e.duration > 0)) U.held.push({ id: o.id, key: `${ability}:${e.name}`, ability, owner: giver.id });
       return;
     case 'shield':
       o.over = { hp: e.start, max: e.full, since: now, step: e.chargeStep, every: e.chargeEvery || STEP, drainAfter: e.drainAfter, drainStep: e.drainStep, drainEvery: e.drainEvery || STEP, next: now };
       return;
     case 'heal':
       if (e.heal > 0) o.hp = Math.min(o.hpMax, o.hp + e.heal);
-      if (e.perSecond > 0) (sim.units.heals ??= []).push({ id: o.id, perSecond: e.perSecond, until: until(e.duration) });
+      if (e.perSecond > 0) U.heals.push({ id: o.id, perSecond: e.perSecond, until: until(e.duration) });
       return;
     case 'regen':
-      (sim.units.heals ??= []).push({ id: o.id, perSecond: e.rate, until: until(e.duration) });
+      U.heals.push({ id: o.id, perSecond: e.rate, until: until(e.duration) });
       return;
     case 'shove':
       shove(sim, giver, o, e, now);

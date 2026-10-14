@@ -46,7 +46,7 @@ import { createWaves, mayDeploy, stage as stageWaves, unitOpen } from './ai/wave
 import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.js';
 import { SPREAD, createDealer, dealFor, nextFor, ownerChanged, stepDealer } from './ai/botLogicOverhaul.js';
 import { fieldTo } from './navField.js';
-import { absorb, createKit, grenadesOf, hurtTurret, kitOfUnit, onAbility, onRoll, stepKit } from './kit.js';
+import { absorb, createKit, evadeRow, grenadesOf, hurtTurret, kitOfUnit, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
 import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
@@ -178,7 +178,8 @@ function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id:
   const where = spot ? [spot[0], 0, spot[1]] : [...at];
   if (sim.nav) where[1] = heightOf(sim, where);
   // (every soldier carries its class's abilities: a player presses them, a Skirmish bot's brain does, an AutoPlayer's the turret alone)
-  const abilities = cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
+  // (a hero's or a reinforcement's evade in the roll's slot: kit.js's evadeRow)
+  const abilities = cls.abilities ? { abilities: abilitiesFor(sim.rb, cls).map((r) => (r.slot === 0 && cls.evade ? { ...evadeRow(cls.evade), slot: 0 } : r)) } : {};
   const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: cls.weapon ? weaponOf(sim.rb, cls.weapon) : null, ...abilities });
   s.kit = sim.kit;
   // (the difficulty's health for a player)
@@ -396,7 +397,7 @@ export function deploy(sim, id, choice) {
   else {
     // a hero or a reinforcement deploys on its own health and kit: its abilities, its gun (none for a saber or the lightning)
     const unit = offer.kind === 'hero' ? heroOf(sim.rb, offer.id) : reinforcementOf(sim.rb, offer.id);
-    cls = { ...base, health: unit.health, regen: unit.regen ?? base.regen, unit: offer.kind, unitId: offer.id, abilities: unit.abilities, weapon: kitOfUnit(offer.id)?.primary ?? null };
+    cls = { ...base, health: unit.health, regen: unit.regen ?? base.regen, unit: offer.kind, unitId: offer.id, abilities: unit.abilities, weapon: kitOfUnit(offer.id)?.primary ?? null, evade: kitOfUnit(offer.id)?.evade ?? null };
   }
   const at = [...spot.at];
   if (choice.spawn !== 'squad') {

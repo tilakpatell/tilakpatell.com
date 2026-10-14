@@ -20,9 +20,9 @@
 //   shielded(sim, o) → dome | null     the bubble o stands in, if any (kit.js's absorb)
 //   RUSH, JUMP_PACK, STRIKE, CHAIN
 
-import SABER from '../../data/bf2017/saber.json';
+import { lungePick, saberOf, strikeZone } from '../combat/saber2017.js';
 import { end } from './abilities.js';
-import { affect, burst, inReach, kitOfUnit, outputOf, release, specOf, unitWeapon } from './abilitiesUnit.js';
+import { affect, burst, inReach, kitOfUnit, outputOf, release, specOf, unitWeapon, unitsOf } from './abilitiesUnit.js';
 import { STEP } from './core.js';
 import { heightAt, walkable } from './nav.js';
 import { chestOf } from './soldier.js';
@@ -48,7 +48,7 @@ export const CHAIN = { hops: 5 };
 export const BUBBLE_LIFE = 10;
 const SABER_KEY = { darthvader: 'vader' };
 
-const units = (sim) => (sim.units ??= { moves: [], holds: [], repeats: [], throws: [], dots: [], heals: [], held: [] });
+const units = unitsOf;
 const domesOf = (sim) => ((sim.kit ??= {}).domes ??= []);
 const fwd = (s) => [Math.sin(s.yaw), 0, Math.cos(s.yaw)];
 
@@ -338,44 +338,61 @@ export function fireUnit(sim, s, aim) {
   return true;
 }
 
-// a saber hero's strike (finding 41, saber.json): the query's sphere of `radius` about a point `anchor` m along its facing,
-// past `near` of that point and within `cone`° of the facing; the hit's damage, the from-behind bonus within `behind`°
-// of the victim's own facing; one strike each `every` seconds while the trigger is down, the hit at `hit` s in
+// The six strikes of a hero's chain (finding 41: Strike_1 → … → 6, the next open from tick 30 of 60) as the packs name them.
+export const STRIKES = ['sword.light.a', 'sword.light.b', 'sword.light.c', 'sword.a', 'sword.b', 'sword.uppercut'];
+// Where a lunge sets the hero down short of its pick, metres: inside the strike's wedge (0–1.5 m ahead of the hero, the
+// 3 m sphere 1.5 m behind it less its 1.5 m core). The warp's own stretch is the clip's root motion, not exported: NOTES.md.
+export const LUNGE_STOP = 1.1;
+
+const enemiesOf = (sim, s) => {
+  const out = [];
+  for (const o of sim.entities.values()) if (o.alive && o.kind === 'soldier' && o.team !== s.team) out.push({ id: o.id, x: o.at[0], y: o.at[1], z: o.at[2], yaw: o.yaw, o });
+  return out;
+};
+
+// a saber hero's strike (finding 41; saber.json through src/lib/combat/saber2017.js, the galaxy's duels' engine): one each
+// `every` seconds while the trigger is down. The lunge's pick (8 m, 40°, scored 0.2·d + 2·angle) turns the hero to it and
+// carries it there by the kill window; the hit is the query's wedge at the window (0.42 s) plus the affector's delay
 export function strike(sim, s, aim) {
-  void aim;
-  const key = SABER_KEY[s.unitId] ?? s.unitId;
-  const row = SABER.heroes[key];
-  if (!row || !s.alive) return false;
+  const rules = saberOf(SABER_KEY[s.unitId] ?? s.unitId);
+  if (rules.standIn || !s.alive) return false;
   const now = sim.time;
   if (now < (s.strikeAt ?? -Infinity) + STRIKE.every - 1e-9) return false;
   if ((s.stunnedUntil ?? -Infinity) > now) return false;
   s.strikeAt = now;
   s.strikes = (s.strikes ?? 0) + 1;
-  (sim.units ??= { moves: [], holds: [], repeats: [], throws: [], domes: [], dots: [], heals: [], held: [] }).swings ??= [];
-  sim.units.swings.push({ by: s.id, at: now + STRIKE.hit + (row.damage.hit.delay ?? 0), row });
+  const yaw = aim ? Math.atan2(aim[0] - s.at[0], aim[2] - s.at[2]) : s.yaw;
+  const pick = lungePick(rules.query, { x: s.at[0], z: s.at[2], yaw }, enemiesOf(sim, s), { aim: yaw });
+  const U = unitsOf(sim);
+  if (pick) {
+    const dx = pick.x - s.at[0];
+    const dz = pick.z - s.at[2];
+    const L = Math.hypot(dx, dz);
+    s.yaw = Math.atan2(dx, dz);
+    if (L > LUNGE_STOP) U.moves.push({ by: s.id, ability: 'lunge', dir: [dx / L, 0, dz / L], speed: (L - LUNGE_STOP) / STRIKE.hit, until: now + STRIKE.hit, reach: 0, hit: new Set(), spec: { targets: [] } });
+  }
+  s.act = { clip: STRIKES[(s.strikes - 1) % STRIKES.length], since: now, id: 'strike' };
+  U.swings.push({ by: s.id, at: now + STRIKE.hit + (rules.damage.hit.delay ?? 0), rules });
   return true;
 }
 
-// the swings' hits once each lands
+// the swings' hits once each lands: every enemy in the wedge (saber2017's strikeZone), from behind with its bonus
 export function stepSwings(sim) {
   const U = sim.units;
   if (!U?.swings?.length) return [];
   const out = [];
   const now = sim.time;
-  const q = SABER.query.hit;
   U.swings = U.swings.filter((w) => {
     if (now + 1e-9 < w.at) return true;
     const s = sim.entities.get(w.by);
     if (!s?.alive) return false;
-    const f = fwd(s);
-    const apex = [s.at[0] + f[0] * SABER.query.anchor, s.at[1], s.at[2] + f[2] * SABER.query.anchor];
-    for (const o of inReach(sim, s, { range: q.radius, cone: q.cone, from: apex })) {
-      const d = Math.hypot(o.at[0] - apex[0], o.at[2] - apex[2]);
-      if (d < q.near) continue;
-      const behind = Math.cos((q.behind * Math.PI) / 180) < Math.sin(o.yaw) * f[0] + Math.cos(o.yaw) * f[2];
-      const damage = w.row.damage.hit.damage + (behind ? (w.row.damage.behind?.damage ?? 0) : 0);
-      out.push({ type: 'blast', by: s.id, team: s.team, at: chestOf(o), kind: 'saber', hits: [{ id: o.id, damage, dir: f }] });
-      o.stunnedUntil = Math.max(o.stunnedUntil ?? -Infinity, now + (w.row.react?.hit ?? 0.7));
+    const me = { x: s.at[0], y: s.at[1], z: s.at[2], yaw: s.yaw };
+    for (const t of enemiesOf(sim, s)) {
+      const z = strikeZone(w.rules.query, me, t);
+      if (!z.in) continue;
+      const damage = w.rules.damage.hit.damage + (z.behind ? (w.rules.damage.behind?.damage ?? 0) : 0);
+      out.push({ type: 'blast', by: s.id, team: s.team, at: chestOf(t.o), kind: 'saber', hits: [{ id: t.id, damage, dir: fwd(s) }] });
+      t.o.stunnedUntil = Math.max(t.o.stunnedUntil ?? -Infinity, now + (w.rules.react?.hit ?? 0.7));
     }
     return false;
   });

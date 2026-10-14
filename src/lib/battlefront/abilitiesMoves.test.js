@@ -66,8 +66,10 @@ describe('the heroes’ and reinforcements’ abilities, played', () => {
     run(sim, press(me, SLOT.right), 4);
     expect(t.heldBy).toBe(me);
     const at = [...t.at];
-    run(sim, (i) => [idle(me), { id: t.id, move: [0, 1] }], 30);
+    // (pressed at 0.05, the grip from 0.15 to 1.65: it walks nowhere until then)
+    run(sim, () => [idle(me), { id: t.id, move: [0, 1] }], 28);
     expect(Math.hypot(t.at[0] - at[0], t.at[2] - at[2])).toBeLessThan(0.05);
+    run(sim, () => [idle(me)], 2);
     // (1 up front, then 86 a second in 0.5 s ticks over the 1.5 s grip)
     expect(1000 - t.hp).toBeCloseTo(1 + 86 * 1.5, 6);
     expect(t.heldBy ?? null).toBe(null);
@@ -82,13 +84,17 @@ describe('the heroes’ and reinforcements’ abilities, played', () => {
     expect(t.hpMax - t.hp).toBeCloseTo(100, 6);
   });
 
-  it('cuts with a saber hero’s trigger: 130 at the strike’s window, one strike each half second', () => {
-    const { sim, t, me } = duel('luke', { gap: 2.5 });
+  // (the strikes from 0.05 s, each half second; each lands at the window, 0.42 s, plus the affector's 0.09)
+  it('cuts with a saber hero’s trigger: 130 at the strike’s window, one strike each half second, lunging onto one 5 m off', () => {
+    const { sim, s, t, me } = duel('luke', { gap: 5 });
     t.hp = t.hpMax = 1000;
-    const ev = run(sim, () => [{ id: me, move: [0, 0], fire: true, aim: [t.at[0], t.at[1] + 1.2, t.at[2]] }], 20);
+    const ev = run(sim, () => [{ id: me, move: [0, 0], fire: true, aim: [t.at[0], t.at[1] + 1.2, t.at[2]] }], 30);
     const hits = ev.filter((e) => e.type === 'hit' && e.by === me);
-    expect(hits.length).toBe(Math.floor((20 * 0.05 - STRIKE.hit) / STRIKE.every) + 1);
+    expect(hits.length).toBe(Math.floor((30 * 0.05 - 0.05 - STRIKE.hit - 0.09) / STRIKE.every) + 1);
     expect(hits[0].damage).toBeCloseTo(130, 6);
+    expect(hits[0].t).toBeCloseTo(0.05 + STRIKE.hit + 0.09, 1);
+    // (the lunge set him down inside the wedge)
+    expect(Math.hypot(t.at[0] - s.at[0], t.at[2] - s.at[2])).toBeLessThan(1.6);
   });
 
   it('strikes with the Emperor’s lightning, 14 every tenth of a second, on the one in his cone', () => {

@@ -18,6 +18,7 @@
 // 0.34 of the throw. Pure: the sim's entities and navgrid go in, damage
 // requests come out for the sim to apply.
 //
+//   evadeRow(evade) → a unit's evade as the roll's slot-0 row (the trooper's ROLL without one)
 //   kitRow(row) → the ability row with the kit's fields (`active: Infinity`, `retrigger`, `blocks`, `kit`)
 //   kitWeapon(id) → a weapon row of the kit (sentry, hunter, ee4, pinglauncher, turret)
 //   createKit() → kit     (the grenades in the air, the fields, the spots, the teams' grenade tokens)
@@ -30,7 +31,7 @@
 //   grenadesOf(kit) → [{ id, at, kind, owner, team, spin, resting }]   (the grenades in the air, for the view)
 
 import kit from '../../data/bf2017/trooperKit.json';
-import { charges, end, hold, recharge, state } from './abilities.js';
+import { ROLL, charges, end, hold, recharge, state } from './abilities.js';
 import { apply, remove } from './affectors.js';
 import { STEP } from './core.js';
 import { GRENADES, SPLIT, THROW, createGrenade, explode, stepGrenade, throwFrom } from './grenades.js';
@@ -49,6 +50,16 @@ export const BOT_BINOCULARS = 3;
 // Where a turret's gun sits over its foot, and its body for the bolts, metres: by hand (no mesh is measured).
 export const TURRET_BODY = { eye: 1.0, low: 0.2, high: 1.1, radius: 0.45 };
 const DEG = Math.PI / 180;
+
+// A hero's or a reinforcement's evade in the roll's place (its kit's Category Evade row, unitKit.json's `evade`: the
+// heroes' Ability_Evade_CharacterState, TriggerCost 0.5, ActiveTime 0.4, RechargeTime 2.2): its own bar and its own
+// blocks; the travel and the 0.8 of the damage taken are the roll's (soldier.js, ROLL.evade)
+export function evadeRow(e) {
+  if (!e) return ROLL;
+  const { _missing, ranks, channels, slot, kind, asset, ...own } = e;
+  void _missing, ranks, channels, slot, kind, asset;
+  return { ...ROLL, ...own, kind: 'state', channels: [], evade: ROLL.evade };
+}
 
 export function kitRow(row) {
   const extra = kit.abilities[row.id];

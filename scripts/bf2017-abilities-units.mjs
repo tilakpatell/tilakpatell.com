@@ -15,7 +15,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from './lib/args.mjs';
 import { UNIT_KIND, affectorRow, effectOf } from './lib/bf2017-abilities-units.mjs';
-import { checkSources, weaponRow } from './lib/bf2017-rulebook.mjs';
+import { abilityRow, checkSources, weaponRow } from './lib/bf2017-rulebook.mjs';
+import { follow, rootOf } from './lib/bf2017-ebx.mjs';
 
 const EXPORT = 'build 489592';
 const args = parseArgs(process.argv.slice(2));
@@ -42,10 +43,28 @@ function weaponOf(asset) {
 const abilities = {};
 const affectors = {};
 const kits = {};
+// the kit's evade (Category Evade: the heroes' Ability_Evade_CharacterState, Dooku's own; a reinforcement's roll), as abilities.json reads a row
+function evadeOf(kit) {
+  const k = kit ? follow(root, kit) : null;
+  const gp = k ? follow(root, rootOf(k).Gameplay?.$asset) : null;
+  const col = gp?.objects.find((o) => o.$type === 'PlayerAbilityCollection');
+  for (const a of col?.Abilities ?? []) {
+    const doc = a?.$asset ? follow(root, a.$asset) : null;
+    if (doc && rootOf(doc).Category === 'PlayerAbilityCategory_Evade') return abilityRow(root, a.$asset);
+  }
+  return null;
+}
+
 // (a hero with no gun and no saber fires a passive of its kit: the Emperor's Force lightning, the one such on Hoth)
 const PASSIVES = { emperor: 'Gameplay/Kits/Hero/Emperor/Ability_Emperor_ForceLightning' };
 for (const u of units) {
   kits[u.id] = { unit: u.unit, primary: weaponOf(u.primaryAsset), abilities: u.abilities.map((a) => a.id) };
+  const evade = evadeOf(u.kit);
+  if (evade) {
+    const { ranks, ...row } = evade;
+    void ranks;
+    kits[u.id].evade = row;
+  } else console.error(`${u.id}: no evade in its kit`);
   if (PASSIVES[u.id]) {
     const id = PASSIVES[u.id].split('/').pop();
     kits[u.id].fire = id;
