@@ -153,6 +153,20 @@ describe('a fuel charge, as its core runs it', () => {
     expect(o.fuse).toBeCloseTo(45, 1);
   });
 
+  it('starts over for the next holder when the one holding lets go', () => {
+    const o = arm.create({ at: [0, 0], charge: row });
+    steps(o, 5, none);
+    steps(o, 1.5, by('attack', 'a', 'b'));
+    expect(o.holder).toBe('a');
+    // (a lets go, b holds on: b's hold begins again, one step of it)
+    steps(o, 0.05, by('attack', 'b'));
+    expect(o.holder).toBe('b');
+    expect(o.progress).toBeCloseTo(0.025, 6);
+    expect(steps(o, 1.9, by('attack', 'b'))).toEqual([]);
+    expect(steps(o, 0.3, by('attack', 'b'))).toEqual(['armed']);
+    expect(o.by).toEqual(['b']);
+  });
+
   it('starts the hold over when it is let go, and a defender cannot touch it unarmed', () => {
     const o = arm.create({ at: [0, 0], charge: row });
     steps(o, 5, none);

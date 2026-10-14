@@ -127,13 +127,16 @@ export const arm = {
     // (who holds: the side the keypad is for, the one already at it, else the first)
     const side = o.armed ? 'defend' : 'attack';
     const held = (interactions ?? []).filter((i) => i.held && i.side === side);
+    const key = o.armed ? 'defuse' : 'progress';
     let holding;
     if (R.one) {
+      const had = o.holder;
       if (o.holder && !held.some((i) => i.id === o.holder)) o.holder = null;
       if (!o.holder && held.length) o.holder = held[0].id;
       holding = Boolean(o.holder);
+      // (the one who held it let go: the next starts over, the button's StopWatch reset on OnInteractStop)
+      if (had && o.holder !== had && !R.keep && o.settling === null) o[key] = 0;
     } else holding = held.length > 0;
-    const key = o.armed ? 'defuse' : 'progress';
     if (!holding && !R.keep && o.settling === null) o[key] = 0;
     else if (holding && o.settling === null) {
       o[key] = Math.min(1, o[key] + dt / (o.armed ? R.defuse : R.arm));
