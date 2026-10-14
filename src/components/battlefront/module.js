@@ -14,7 +14,9 @@
 // Collection keeps for that class: screens/Collection.jsx), 'pick' id, 'spawn' a squadmate's id (null for the HQ),
 // 'advance' seconds, 'win', 'lose', 'die' (the player down: the kill
 // screen), 'weather' name, 'look' { yaw, pitch } (the player's view, for
-// a shot toward the sun; it answers with the recoil), 'fire' { on } (the
+// a shot toward the sun; it answers with the recoil), 'eye' { yaw, dist,
+// height, look, fov } (the camera round the player's figure, for a shot of
+// it; null gives the game's camera back), 'fire' { on } (the
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
@@ -205,6 +207,7 @@ export default {
     let mate = null; // the squadmate the deploy screen would spawn the player on (null: the HQ)
     let lastAt = null; // the player's place before the last step
     let pose = null;
+    let eye = null; // (a check's camera round the player: 'eye')
     let acc = 0;
     let size = { w: 1, h: 1 };
     let sinceHud = Infinity;
@@ -490,7 +493,7 @@ export default {
           if (pose) level.update(pose.at);
           rig.aim([0, 0]);
         }
-        if (pose) rig.set(pose);
+        if (pose) rig.set(eye && p ? { at: [p.at[0] + Math.sin(eye.yaw ?? 0) * (eye.dist ?? 3), p.at[1] + (eye.height ?? 1.1), p.at[2] + Math.cos(eye.yaw ?? 0) * (eye.dist ?? 3)], lookAt: [p.at[0], p.at[1] + (eye.look ?? 1), p.at[2]], fov: eye.fov ?? 35 } : pose);
         rig.update(dt);
         figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position);
         ragdolls.update(dt);
@@ -557,6 +560,10 @@ export default {
             input.setLook(arg?.yaw ?? l.yaw, arg?.pitch ?? l.pitch);
             return { ok: true, ...input.look(), recoil: rig.offset(), amplitude: recoilOf(body()?.gun) };
           }
+          case 'eye':
+            // (a check's camera on the player's figure from { yaw, dist, height, look, fov }; null: the game's own)
+            eye = arg ?? null;
+            return { ok: true };
           case 'fire':
             // (a check's trigger: held down until told to let go)
             input.button('left', Boolean(arg?.on ?? true));
@@ -638,7 +645,8 @@ export default {
     };
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
     // (`sounds`: the player's counter by name and kind, the duck and the stem in force, the HDR window, for scripts/bf2017-sound-check.mjs)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    // (`figures`: the soldiers' bodies, figures.js's, for a check of what each wears)
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; }, figures };
     madeAt = now();
     return world;
   },

@@ -178,6 +178,8 @@ export function recipeOf(row, i, { shaderMaps = null, world = null } = {}) {
     scalar('detail.smoothness');
   }
   scalar('detail.strength');
+  // (the soldier's AO in its albedo: absent, none; the preset's own default is not in the dump)
+  if (family === 'character') scalar('colorAO');
   if (recipe.maps.detail || recipe.maps.detailArray) {
     orDefault('params.detail.tiling', [DETAIL_TILING, DETAIL_TILING], 'DETAIL_TILING');
     orDefault('params.detail.normal', DETAIL_NORMAL, 'DETAIL_NORMAL');

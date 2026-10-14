@@ -5,6 +5,7 @@ import * as fight from './fight';
 import * as weather from './weather';
 import * as level from './level';
 import * as stage from './stage';
+import * as crew from './crew';
 
 // The galaxy's face: exactly these names and nothing else, so a world that
 // reads the galaxy through it knows what it may lean on
@@ -15,6 +16,7 @@ const FACE = [
   [weather, ['createWeather', 'strikeAt']],
   [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'packBytes', 'packUrl', 'tierTexture', 'wantsEngine', 'wanted']],
   [stage, ['HeroStage', 'stageFor']],
+  [crew, ['dressCrew', 'watchCrew']],
 ];
 
 describe('galaxy/shared', () => {

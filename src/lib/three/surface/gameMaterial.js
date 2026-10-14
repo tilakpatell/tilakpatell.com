@@ -38,8 +38,9 @@
 import { loadThree } from '../light/three.js';
 import { biasedTexture, composeOverlays, overlayName, specularAA } from './compose.js';
 import { dsiColor, dsiMetal, dsiNodes, dsiRoughness } from './dsi.js';
-import { AOSLICE_LEVELS, EMISSIVE_EXPOSURE, EMISSIVE_MAX, METAL_CHANNEL, PAINT_CHANNEL, PARALLAX_STEPS } from './families.js';
+import { EMISSIVE_EXPOSURE, EMISSIVE_MAX, METAL_CHANNEL, PAINT_CHANNEL, PARALLAX_STEPS } from './families.js';
 import { SNOW_FULL, variationParams } from './variation.js';
+import { walrusAlbedo, walrusDetail, walrusOverlay, walrusSmooth } from './walrusCharacter.js';
 import { snowOverlay } from './weather.js';
 
 // ---- the site's weights where the recipe has a switch and no number
@@ -69,7 +70,7 @@ export const TRANSLUCENCY_WEIGHT = 0.25;
 // the most slices a detail array is sampled at (the characters' have 3)
 export const MAX_SLICES = 4;
 
-const ON_MID = new Set(['detail', 'detailArray', 'emissive']);
+const ON_MID = new Set(['detail', 'detailArray', 'emissive', 'colorAO']);
 // the recipe maps each tier draws, for the loader to fetch no more (low: none;
 // a variation's own colour and normal from mid up)
 export const TIER_MAPS = {
@@ -260,6 +261,8 @@ export function createGameMaterial(recipe, maps = {}, { tier = 'high', overlays 
   let roughness = glb?.roughnessMap ? texture(glb.roughnessMap, uv0).g.mul(float(m.roughness)) : float(m.roughness);
   let metalness = glb?.metalnessMap ? texture(glb.metalnessMap, uv0).b.mul(float(m.metalness)) : float(m.metalness);
   const ao = glb?.aoMap ? texture(glb.aoMap, uv(glb.aoMap.channel ?? 0)).r : float(1);
+  // (a soldier's AO in its albedo too, at the material's ColorAO: walrusCharacter.js)
+  if (want('colorAO', recipe.family === 'character' && p.colorAO > 0 && !!glb?.aoMap)) color = walrusAlbedo(tsl, color, ao, p.colorAO);
   let emissive = vec3(m.emissive.r, m.emissive.g, m.emissive.b).mul(float(m.emissiveIntensity ?? 1));
   if (glb?.emissiveMap) emissive = emissive.mul(texture(glb.emissiveMap, uv0).rgb);
   // the tangent-space normal, before normalMap's transform
@@ -282,25 +285,24 @@ export function createGameMaterial(recipe, maps = {}, { tier = 'high', overlays 
   const slices = (maps.detailSlices ?? []).filter(Boolean).slice(0, MAX_SLICES);
   const perTexel = slices.length && maps.aoSlice && recipe.maps?.detailSlice === 'aoSlice';
   if (perTexel && want(detailKind, !!p.detail)) {
+    // (the WalrusMetallic front end as the game compiles it: walrusCharacter.js)
     const per = p.detail.perSlice ?? {};
-    const level = texture(maps.aoSlice, uv0).g;
-    // (the level's index: a step at each midpoint between AOSLICE_LEVELS)
-    let k = float(0);
-    for (let j = 1; j < AOSLICE_LEVELS.length; j++) k = k.add(step(float((AOSLICE_LEVELS[j - 1] + AOSLICE_LEVELS[j]) / 2), level));
-    let xy = vec2(0, 0);
-    let smooth = float(0);
-    slices.forEach((t, i) => {
-      const w = saturate(float(1).sub(k.sub(i).abs()));
-      const tile = per.tiling?.[i] || p.detail.tiling?.[0] || 1;
-      const s = (per.normal?.[i] ?? p.detail.normal ?? 1) * (p.detail.strength ?? 1);
-      const d = texture(t, uvD.mul(vec2(tile, tile))).xy.mul(2).sub(1);
-      xy = xy.add(d.mul(w.mul(s)));
-      smooth = smooth.add(w.mul((per.smoothness?.[i] ?? p.detail.smoothness ?? 0) * (p.detail.strength ?? 1)));
+    const all = (v) => [v, v, v];
+    const d = walrusDetail(tsl, {
+      sample: texture,
+      level: texture(maps.aoSlice, uv0).g,
+      uv: uvD,
+      slices,
+      per: { tiling: per.tiling ?? all(p.detail.tiling?.[0] ?? 1), normal: per.normal ?? all(p.detail.normal ?? 1), smoothness: per.smoothness ?? all(p.detail.smoothness ?? 0) },
+      strength: p.detail.strength ?? 1,
     });
-    tn = normalize(vec3(tn.xy.add(xy), tn.z));
+    tn = normalize(vec3(tn.xy.add(d.xy), tn.z));
     tangentDirty = true;
-    roughness = roughness.mul(float(1).sub(saturate(smooth.mul(DETAIL_SMOOTHNESS_WEIGHT))));
+    // (the array's blue: an overlay on the albedo and twice the smoothness, at SmoothnessDetail_Intensity)
+    color = walrusOverlay(tsl, color, d.blue, d.k);
+    roughness = float(1).sub(walrusSmooth(tsl, float(1).sub(roughness), d.blue, d.k));
     game.slices = slices.length;
+    game.walrus = true;
   } else if (want(detailKind, !!(maps.detail ?? slices[0]) && !!p.detail)) {
     maps = { ...maps, detail: maps.detail ?? slices[0] };
     game.slices = 1;

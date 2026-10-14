@@ -227,6 +227,8 @@ export const PARAMS = {
   'backface.subsurface': ['SubsurfaceBackfaceScale'],
   'backface.smoothness': ['SmoothnessBackfaceScale'],
   aoDirt: ['AODirtColor'],
+  // (a soldier's AO in its albedo, SS_CharactersPreset_WalrusMetallic's cb1[2].x: walrusCharacter.js)
+  colorAO: ['ColorAO'],
   'hair.melanin': ['MelaninXY'],
   'hair.tip': ['TintTipColor'],
   'hair.tipMin': ['TintTipColorMin'],

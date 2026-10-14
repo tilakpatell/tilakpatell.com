@@ -66,6 +66,7 @@ import { createHeld, heldOf } from './held.js';
 import { CROSSFADE, LOCO_STATES, clipSpeed, locoBlend, locoClips, packClip, packFallback, relAngle, stateFor, timeAt } from './locomotion.js';
 import { strideOf } from './stride.js';
 import { skinBodies } from '../../../lib/bf2017/collection.js';
+import { dressCrew, watchCrew } from '../../galaxy/shared/crew.js';
 
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
 export const KINDS = { dark: 'snowtrooper', light: 'hothtrooper' };
@@ -176,7 +177,24 @@ function dress(model, prune = true) {
   cullBy(model);
 }
 
-export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null, prune = true } = {}) {
+// A body in the game's own surface shader (the galaxy's crew dresser: its
+// kind's recipes.json, the WalrusMetallic front end of
+// lib/three/surface/walrusCharacter.js on a soldier) the first time the node
+// renderer draws it, and each cut swapped in after. One game material a
+// kind's part and cut, shared by every figure that wears it (each figure's
+// GLB materials are copies, cloneScene's, of the cut's one set: keyed by the
+// part's name and its colour map, which the copies share), so forty bots of
+// a kind build its five shaders once.
+export const gameKey = (m) => `${m?.name ?? ''}|${m?.map?.uuid ?? ''}`;
+const looks = new Map(); // tier → Map(gameKey → Promise<game material>)
+export function lookCache(tier) {
+  if (!looks.has(tier)) looks.set(tier, new Map());
+  const byKey = looks.get(tier);
+  return { has: (m) => byKey.has(gameKey(m)), get: (m) => byKey.get(gameKey(m)), set: (m, v) => byKey.set(gameKey(m), v) };
+}
+export const wearGame = (model, kind, { tierOf, dress = dressCrew, watch = watchCrew } = {}) => watch(model, kind, { tierOf, dress: (m, k, o) => dress(m, k, { ...o, cache: lookCache(o.tier) }) });
+
+export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null, prune = true, look = wearGame } = {}) {
   const root = new THREE.Group();
   root.name = 'figures';
   scene.add(root);
@@ -196,6 +214,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         if (gone || figs.get(e.id) !== f) return;
         faceAlongZ(model);
         dress(model, prune);
+        look?.(model, kind, { tierOf: () => cuts?.level ?? 'high' });
         f.model = model;
         f.clips = clips;
         f.sockets = sockets ?? null;
@@ -234,7 +253,8 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
       next.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => m.dispose()));
       return;
     }
-    for (const o of old) for (const m of [].concat(o.material)) m.dispose();
+    // (a game material is the kind's, shared by its figures: kept)
+    for (const o of old) for (const m of [].concat(o.material)) if (!m.userData?.game) m.dispose();
     dress(f.model, prune);
   }
 
