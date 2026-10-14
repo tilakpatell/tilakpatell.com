@@ -114,4 +114,53 @@ describe('Galactic Assault', () => {
     for (const st of file.stages)
       for (const o of st.objectives) if (o.volume) expect(volumeOf(map, o.volume).points.length).toBeGreaterThan(2);
   });
+
+  // the level's own spawn logic (maps/hoth.json's spawnLogic: bf2-re findings/55)
+  const areas = (ga, side) => spawnSets(ga)[side].filter((id) => id.startsWith('FantasyBattle_Shapes:')).map((id) => Number(id.split(':')[1])).sort((a, b) => a - b);
+
+  it('takes Hoth’s spawn sets from the level’s graph: one area a side for the opening, then the walkers’ first step', () => {
+    const ga = createAssault({ rulebook: rb });
+    expect(ga.logic).toBeTruthy();
+    live(ga);
+    expect([areas(ga, 'attack'), areas(ga, 'defend')]).toEqual([[9], [11]]);
+    expect(spawnSets(ga).attack.filter((id) => id.startsWith('FantasyBattle_Logic:'))).toHaveLength(28);
+    run(ga, 25.1);
+    expect([areas(ga, 'attack'), areas(ga, 'defend')]).toEqual([
+      [40, 49, 70],
+      [27, 37, 64],
+    ]);
+  });
+
+  it('moves the sets up as the lead walker passes its path’s triggers', () => {
+    const ga = createAssault({ rulebook: rb });
+    live(ga);
+    run(ga, 25.1);
+    const a = ga.objectives.find((o) => o.def.waypoints === 'FantasyBattle_Logic:123');
+    const p = a.path;
+    // (waypoint by waypoint to 3, its path's triggers at 1 and 3: the graph's 1 s delay drops a second change inside it, as the game's does)
+    let d = 0;
+    for (let i = 1; i <= 3; i++) {
+      d += Math.hypot(p[i][0] - p[i - 1][0], p[i][2] - p[i - 1][2]);
+      a.walker.dist = d + 1;
+      run(ga, 1.2);
+    }
+    expect([areas(ga, 'attack'), areas(ga, 'defend')]).toEqual([
+      [18, 34, 42],
+      [4, 56, 63],
+    ]);
+  });
+
+  it('an attacker in the approach’s box closes the Rebels’ opening before the 25 s', () => {
+    const ga = createAssault({ rulebook: rb });
+    live(ga);
+    const box = map.boxes.find((b) => b.id === 'FantasyBattle_Shapes:26');
+    run(ga, 1, { soldiers: [{ id: 'e1', side: 'attack', at: [...box.at], alive: true }], alive: { attack: 1, defend: 1 } });
+    expect(areas(ga, 'defend')).not.toEqual([11]);
+  });
+
+  it('a cut-down stage list keeps the files’ own sets', () => {
+    const ga = createAssault({ rulebook: rb, stages: { attackers: 'dark', stages: [file.stages[1]] } });
+    expect(ga.logic).toBeUndefined();
+    expect(spawnSets(ga)).toBe(file.stages[1].spawns);
+  });
 });
