@@ -47,9 +47,11 @@ const farClip = (u, world) => {
   return vec4(clip.xy, clip.w.mul(0.99999), clip.w);
 };
 
-// (a ShaderMaterial’s defaults: opaque, front faces, no fog, tone-mapped; the
-// node renderer tone-maps the whole frame at its end, as the bloom chain’s
-// output pass does on the classic one)
+// (a ShaderMaterial’s defaults: opaque, front faces, no fog, no light (a
+// basic node material that took the scene’s lights, using none, would still
+// be built again whenever the lamps change), tone-mapped; the node renderer
+// tone-maps the whole frame at its end, as the bloom chain’s output pass
+// does on the classic one)
 const farMaterial = (u, params = {}) => {
   const m = new MeshBasicNodeMaterial({ lights: false, depthWrite: false, fog: false, ...params });
   m.uniforms = { uOrigin: u.uOrigin };

@@ -21,7 +21,7 @@
 //   stepClose(k, dt, on, { close, open }) → k   0 open to 1 shut: `close` seconds in, `open` back
 //   flagsOf(ctx) → Set   the story’s flags, on the frame (ctx.flags) or its game (ctx.g.flags)
 //   openOf(ctx, doorId) → 0..1   how open the game has a door
-//   hazeMaterial({ color, strength, flat }) → ShaderMaterial   light in the air (or on a floor, flat), added
+//   hazeMaterial({ color, strength, flat }) → a node material   light in the air (or on a floor, flat), added
 //     to what is behind it, brightest at its uv’s v 1 and gone by v 0; uniforms uTime, uStrength
 //   finish(kit, room, parts, { lamps, own, maps, extra, probeAt, renderer, update, dispose }) → the room
 
@@ -160,64 +160,9 @@ export function openOf(ctx, id) {
 
 // ── light in the air ──
 
-const HAZE_VERT = /* glsl */ `
-varying vec2 vUv;
-varying vec3 vN;
-varying vec3 vV;
-varying vec3 vW;
-void main() {
-  vUv = uv;
-  vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  vV = -mv.xyz;
-  vN = normalMatrix * normal;
-  vW = (modelMatrix * vec4(position, 1.0)).xyz;
-  gl_Position = projectionMatrix * mv;
-}`;
-
-// motes drifting in it, and (unless it lies flat) brightest where it is
-// seen through most of its depth, so a cone or a slab has no hard edge
-const HAZE_FRAG = /* glsl */ `
-uniform vec3 uColor;
-uniform float uStrength;
-uniform float uTime;
-uniform float uFlat;
-varying vec2 vUv;
-varying vec3 vN;
-varying vec3 vV;
-varying vec3 vW;
-float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
-float noise(vec3 p) {
-  vec3 i = floor(p);
-  vec3 f = fract(p);
-  vec3 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(mix(hash(i), hash(i + vec3(1, 0, 0)), u.x), mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), u.x), u.y),
-             mix(mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), u.x), mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), u.x), u.y), u.z);
-}
-void main() {
-  float face = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);
-  float sides = smoothstep(0.0, 0.3, vUv.x) * smoothstep(0.0, 0.3, 1.0 - vUv.x);
-  float shape = mix(face, sides, uFlat);
-  float along = smoothstep(0.0, 0.85, vUv.y);
-  float motes = 0.7 + 0.3 * noise(vW * 2.5 + vec3(0.0, -uTime * 0.12, uTime * 0.05));
-  float a = uStrength * shape * along * along * motes;
-  // added as it is (blending multiplies by alpha, so alpha stays 1 or the light would count twice)
-  gl_FragColor = vec4(uColor * a, 1.0);
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
-}`;
-
-export function hazeMaterial({ color = 0xdfe8ff, strength = 0.2, flat = false } = {}) {
-  return new THREE.ShaderMaterial({
-    name: 'ds-haze',
-    uniforms: { uColor: { value: new THREE.Color(color) }, uStrength: { value: strength }, uTime: { value: 0 }, uFlat: { value: flat ? 1 : 0 } },
-    vertexShader: HAZE_VERT,
-    fragmentShader: HAZE_FRAG,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
-  });
-}
+// (TSL, the node renderer’s: ../../nodes/rooms.js; the GLSL it was is
+// ../../glsl/rooms.js, for the parity check)
+export { hazeMaterial } from '../../nodes/rooms';
 
 // ── the end of every room ──
 

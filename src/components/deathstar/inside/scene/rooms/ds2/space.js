@@ -13,49 +13,13 @@ import * as THREE from 'three';
 import { seeded } from '../../../../../../lib/seeded';
 import { sharpen } from '../../../../../../lib/three/textures';
 import { starSprite } from '../../../../plating';
-
-const VERT = /* glsl */ `
-varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
+import { ds2Field, starPoints } from '../../nodes/rooms';
 
 // ripples climbing the sheet, added over what lies beyond it so the stars
 // still show through; strongest where the emitters at its rim hold it
-const FRAG = /* glsl */ `
-uniform float uTime;
-uniform vec3 uColor;
-uniform float uStrength;
-varying vec2 vUv;
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
-}
-void main() {
-  vec2 p = vUv * vec2(32.0, 11.0);
-  float n = noise(p + vec2(0.0, uTime * 0.3)) * 0.6 + noise(p * 2.1 - vec2(uTime * 0.45, 0.0)) * 0.4;
-  float bands = 0.5 + 0.5 * sin(vUv.y * 70.0 - uTime * 1.4 + n * 3.0);
-  float inner = smoothstep(0.0, 0.04, vUv.x) * smoothstep(0.0, 0.04, 1.0 - vUv.x) * smoothstep(0.0, 0.07, vUv.y) * smoothstep(0.0, 0.07, 1.0 - vUv.y);
-  float a = uStrength * ((0.25 + 0.75 * bands * n) * (0.4 + 0.6 * inner) + (1.0 - inner) * 0.7);
-  gl_FragColor = vec4(uColor * a, a);
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
-}`;
-
+// (../../nodes/rooms.js’s ds2Field)
 export function fieldOver(mouth) {
-  const material = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(0.3, 0.55, 1) }, uStrength: { value: 0.16 } },
-    vertexShader: VERT,
-    fragmentShader: FRAG,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
-  });
+  const material = ds2Field();
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(mouth.w, mouth.h), material);
   mesh.position.set(mouth.x, mouth.y + mouth.h / 2, mouth.z);
   mesh.rotation.y = mouth.axis === 'x' ? 0 : Math.PI / 2;
@@ -107,19 +71,16 @@ export function starsRound(renderer, at, { small = false, seed = 1983, radius = 
     const tint = rand();
     col.set(tint < 0.1 ? [k, k * 0.85, k * 0.68] : tint < 0.25 ? [k * 0.78, k * 0.87, k] : [k, k, k], i * 3);
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   const sprite = sharpen(new THREE.CanvasTexture(starSprite(32)), { renderer, color: true });
-  const material = new THREE.PointsMaterial({ size: 2.2, sizeAttenuation: false, map: sprite, vertexColors: true, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending });
-  const points = new THREE.Points(geo, material);
+  // (each a quad the size a point was: ../../nodes/rooms.js’s starPoints)
+  const points = starPoints(pos, col, sprite, { size: 2.2 });
   points.frustumCulled = false;
   points.name = 'stars';
   return {
     points,
     dispose() {
-      geo.dispose();
-      material.dispose();
+      points.geometry.dispose();
+      points.material.dispose();
       sprite.dispose();
     },
   };

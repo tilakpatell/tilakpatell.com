@@ -22,6 +22,7 @@ import { sharpen } from '../../../../../lib/three/textures';
 import { starSprite } from '../../../plating';
 import { flights, roomWalls, solidRects, windowsOf } from '../kit';
 import { probeRoom } from '../probe';
+import { bayField, starPoints } from '../nodes/rooms';
 
 export const FALCON = { url: '/models/universe/falcon.glb', length: 34.75 };
 
@@ -224,49 +225,11 @@ function mouthOf(kit, mouth, room) {
   return kit.place(local, kit.at(mouth.x, mouth.y, mouth.z, turn));
 }
 
-const FIELD_VERT = /* glsl */ `
-varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
-
 // Slow ripples climbing a faint blue sheet, brighter at its rim where the
-// emitters hold it; added over what lies beyond, never hiding the stars.
-const FIELD_FRAG = /* glsl */ `
-uniform float uTime;
-uniform vec3 uColor;
-uniform float uStrength;
-varying vec2 vUv;
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
-}
-void main() {
-  vec2 p = vUv * vec2(28.0, 10.0);
-  float n = noise(p + vec2(0.0, uTime * 0.35)) * 0.6 + noise(p * 2.3 - vec2(uTime * 0.5, 0.0)) * 0.4;
-  float bands = 0.5 + 0.5 * sin(vUv.y * 60.0 - uTime * 1.6 + n * 3.0);
-  float inner = smoothstep(0.0, 0.05, vUv.x) * smoothstep(0.0, 0.05, 1.0 - vUv.x) * smoothstep(0.0, 0.08, vUv.y) * smoothstep(0.0, 0.08, 1.0 - vUv.y);
-  float a = uStrength * ((0.3 + 0.7 * bands * n) * (0.45 + 0.55 * inner) + (1.0 - inner) * 0.6);
-  gl_FragColor = vec4(uColor * a, a);
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
-}`;
-
+// emitters hold it; added over what lies beyond, never hiding the stars
+// (../nodes/rooms.js’s bayField).
 function fieldOf(mouth, turn) {
-  const material = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(0.22, 0.52, 1) }, uStrength: { value: 0.22 } },
-    vertexShader: FIELD_VERT,
-    fragmentShader: FIELD_FRAG,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
-  });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(mouth.w, mouth.h), material);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(mouth.w, mouth.h), bayField());
   mesh.position.set(mouth.x, mouth.y + mouth.h / 2, mouth.z);
   mesh.rotation.y = turn;
   mesh.renderOrder = 2;
@@ -290,19 +253,16 @@ function starsOf(renderer, room, small) {
     const tint = rand();
     col.set(tint < 0.12 ? [k, k * 0.86, k * 0.7] : tint < 0.24 ? [k * 0.8, k * 0.88, k] : [k, k, k], i * 3);
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   const sprite = sharpen(new THREE.CanvasTexture(starSprite(32)), { renderer, color: true });
-  const material = new THREE.PointsMaterial({ size: 2.2, sizeAttenuation: false, map: sprite, vertexColors: true, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending });
-  const points = new THREE.Points(geo, material);
+  // (each a quad the size a point was: ../nodes/rooms.js’s starPoints)
+  const points = starPoints(pos, col, sprite, { size: 2.2 });
   points.frustumCulled = false;
   points.name = 'stars';
   return {
     points,
     dispose() {
-      geo.dispose();
-      material.dispose();
+      points.geometry.dispose();
+      points.material.dispose();
       sprite.dispose();
     },
   };

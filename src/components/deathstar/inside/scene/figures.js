@@ -40,6 +40,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createAnimator } from '../../../../lib/three/animator';
+import { asNode } from '../../../../lib/three/hookNodes';
 import { RICK_HIPS, borrowClips, faceForward, heading, preload, retarget } from '../../../../lib/three/clipLibrary';
 import { loadGltf } from '../../../../lib/three/gltf';
 import { rigRagdoll } from '../../../../lib/three/ragdollPhysics';
@@ -351,7 +352,9 @@ function rig(model, walkClips, { kind, tall, tint, dye, gloss, key }) {
     const swap = (mat) => {
       // Meshy’s colours carry their own shading: matte, but armour keeps a plastic sheen
       const finish = { roughness: gloss ? 0.42 : 0.85, metalness: 0 };
-      const c = dye ? dyed(mat, { ...finish, ...dye }) : Object.assign(mat.clone(), finish);
+      // (node materials from the start, as the dye’s are: the fade writes its own copies each
+      // frame, and the house look would put its own in their place, which those writes never reach)
+      const c = dye ? dyed(mat, { ...finish, ...dye }) : asNode(Object.assign(mat.clone(), finish));
       if (!dye && tint != null) c.color?.multiply(new THREE.Color(tint));
       owned.push(c);
       return c;
@@ -397,7 +400,7 @@ function rig(model, walkClips, { kind, tall, tint, dye, gloss, key }) {
 function standIn(kind, tall, tint) {
   const color = new THREE.Color(kind === 'stormtrooper' ? 0xe6e8ea : 0x8a8f96);
   if (tint != null) color.multiply(new THREE.Color(tint));
-  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+  const mat = asNode(new THREE.MeshStandardMaterial({ color, roughness: 0.6 }));
   const head = tall * 0.13;
   const r = tall * 0.12;
   const object = new THREE.Group();

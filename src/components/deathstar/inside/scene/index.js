@@ -11,8 +11,9 @@
 // shoulder or at the eyes, kept out of the walls (camera.js). The game
 // steps at 30 Hz and a frame falls between two steps, so the player is
 // drawn between where the last two steps put them. Everything is in the
-// house look (lib/three/house.js); bloom is the module’s (rt.gfx.post), so
-// render() draws just the scene through the camera.
+// house look (lib/three/houseNodes.js: the station is drawn on the node
+// renderer); bloom is the module’s (rt.gfx.post), so render() draws just
+// the scene through the camera.
 //
 //   leafPlaces(door, open) → [{ x0, x1, y0, y1, lead, swing? }]   pure: the leaves’ rects still in the
 //     doorway (x along the door from its middle, y up from its floor), `lead` the edge that moves;
@@ -39,7 +40,7 @@
 //     resize(w, h), render(), dispose() (puts the renderer’s tone mapping back as it found it)
 
 import * as THREE from 'three';
-import { houseOn } from '../../../../lib/three/house';
+import { houseOn } from '../../../../lib/three/houseNodes';
 import { passable } from '../rules/doors';
 import { buildLayout, offTags } from '../rules/layout';
 import { seatOf } from '../rules/seats';
@@ -65,6 +66,11 @@ const THICK = { slide: 0.08, hatch: 0.1, blast: 0.3 }; // a leaf’s thickness
 const LEAF = { color: 0x666b72, roughness: 0.42, metalness: 0.45 }; // the leaves’ grey: lighter than the trim, darker than the walls
 const SWING = (100 * Math.PI) / 180; // how far an open hatch has turned on its hinge: past square, back towards the wall
 const TINY = 1e-3; // metres: a leaf thinner than this has gone into the wall
+// frames between walks of the scene for what has come into it since: the
+// node house has no frame guard to put the look on a thing before it is
+// first drawn, so what comes in late (the Falcon, a loaded prop) is in the
+// look within a few frames, not half a second
+const ADOPT_EVERY = 4;
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -414,8 +420,9 @@ export function createScene(renderer, { tier = 'high', small = false, station = 
     fx.update(dt);
     show.sync({ g, at, yaw, crouch: you.crouch, rooms, dt, t: now, hand: person && person.object.visible && !person.fallen ? person.hand : null });
     // a room just built, the Falcon berthed late, a reflection made again:
-    // each brings materials the house look hasn’t met (adopting is once a material)
-    if (frames++ % 30 === 0 || stream.built.size !== seenRooms) {
+    // each brings materials the house look hasn’t met (adopting is once a
+    // material: a walk past what it has met is cheap)
+    if (frames++ % ADOPT_EVERY === 0 || stream.built.size !== seenRooms) {
       seenRooms = stream.built.size;
       house.adopt(scene);
     }

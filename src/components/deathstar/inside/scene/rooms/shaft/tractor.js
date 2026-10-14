@@ -14,6 +14,7 @@
 //   buildShaft(kit, room, layout, { renderer }) → { group, lamps, update(t, dt, ctx), dispose() }
 
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { seeded } from '../../../../../../lib/seeded';
 import { detailCanvas, sharpen } from '../../../../../../lib/three/textures';
 import { furnish } from '../../../rules/furnish';
@@ -208,12 +209,15 @@ export function buildShaft(kit, room, layout, { renderer = null } = {}) {
 
   const blue = new THREE.MeshStandardMaterial({ color: 0x080b12, emissive: BLUE, emissiveIntensity: 4, roughness: 0.3, metalness: 0, name: 'ds-tractor-blue' });
   const { face: faceTex, board: boardTex } = paintFaces(kit, renderer);
-  const faceMat = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, map: faceTex, emissive: 0xffffff, emissiveMap: faceTex, emissiveIntensity: GLOW.on, roughness: 0.42, metalness: 0.25, name: 'ds-tractor-face' });
+  // (the face, the board and the lamps are node materials from the start: they
+  // glow and go dark each frame, and the house look puts its own copy of a
+  // classic material in its place, which these writes would never reach)
+  const faceMat = new MeshStandardNodeMaterial({ color: 0x9aa3ad, map: faceTex, emissive: 0xffffff, emissiveMap: faceTex, emissiveIntensity: GLOW.on, roughness: 0.42, metalness: 0.25, name: 'ds-tractor-face' });
   const boardMat = faceMat.clone();
   boardMat.map = boardTex;
   boardMat.emissiveMap = boardTex;
   boardMat.name = 'ds-tractor-board';
-  const lampMat = new THREE.MeshStandardMaterial({ color: 0x1a0606, emissive: 0xff5a3c, emissiveIntensity: 2.6, roughness: 0.4, name: 'ds-tractor-lamp' });
+  const lampMat = new MeshStandardNodeMaterial({ color: 0x1a0606, emissive: 0xff5a3c, emissiveIntensity: 2.6, roughness: 0.4, name: 'ds-tractor-lamp' });
 
   // the walls, shell and depths; the ledge and platform as slabs with lit lips; no ceiling
   const parts = kit.shell(room, layout, { floor: false, ceiling: false, bay: 2.4, rib: 0.34, ribDepth: 0.22, kick: 0.3, band: 0.5, tall: 1.9, lights: false, seed: 6 });

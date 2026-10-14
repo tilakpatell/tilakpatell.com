@@ -15,9 +15,11 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
 import { Fn, abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, exp, floor, fract, length, mat3, max, mix, modelNormalMatrix, modelWorldMatrix, normalGeometry, normalView, normalWorldGeometry, normalize, positionGeometry, positionView, positionWorld, pow, screenDPR, select, sin, smoothstep, texture, uniform, uv, varying, varyingProperty, vec2, vec3, vec4, viewportSize } from 'three/tsl';
 
-// (a ShaderMaterial has no fog unless asked; the node renderer tone-maps and
-// encodes the whole frame at its end, as the bloom chain’s output pass does
-// on the classic one, so the GLSL’s tone-mapping and colour-space chunks have
+// (a ShaderMaterial has no fog unless asked and takes no light: a basic node
+// material that took the scene’s lights, using none, would still be built
+// again whenever the lamps change; the node renderer tone-maps and encodes
+// the whole frame at its end, as the bloom chain’s output pass does on the
+// classic one, so the GLSL’s tone-mapping and colour-space chunks have
 // nothing to do here)
 const added = (params) => new MeshBasicNodeMaterial({ lights: false, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false, ...params });
 

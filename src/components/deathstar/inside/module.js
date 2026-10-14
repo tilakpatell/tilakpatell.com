@@ -103,7 +103,7 @@ const freshSeed = () => Math.floor(Math.random() * 2 ** 31);
 
 export default {
   id: 'deathstar-inside',
-  shading: 'glsl',
+  shading: 'nodes', // (everything it reaches is TSL: scene/nodes and lib/three’s twins; the node renderer, on WebGPU or WebGL 2)
   mb: 6, // (WORLD_MB['/deathstar/inside']: the first room’s kit and the cast)
   label: 'Aboard the Death Star',
   async create(rt, props = {}) {

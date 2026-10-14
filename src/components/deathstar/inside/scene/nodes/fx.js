@@ -23,7 +23,9 @@ export const keepPremultiplied = (m) => {
   return m;
 };
 
-// (a ShaderMaterial has no fog; the node renderer tone-maps and encodes the
+// (a ShaderMaterial has no fog and takes no light: a basic node material
+// that took the scene’s lights, using none, would still be built again
+// whenever the lamps change; the node renderer tone-maps and encodes the
 // whole frame at its end, as the bloom chain’s output pass does on the
 // classic one, so the GLSL’s colour-space chunk has nothing to do here)
 const material = (params) => new MeshBasicNodeMaterial({ lights: false, transparent: true, depthWrite: false, toneMapped: false, fog: false, ...params });
