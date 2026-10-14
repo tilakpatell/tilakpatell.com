@@ -23,7 +23,8 @@
 //   pass's override material (the shadow depth material, whose nodes three
 //   swaps per object inside the draw) and a post pass's own quad keep the
 //   frame's build: an override read later would be another object's, and
-//   the chain's quads are few, built once.
+//   the chain's quads are few, built once. A scene's lights are kept on it
+//   between frames, so a build off the frame lights what it draws.
 // - Pipelines are made asynchronously. `compileAsync` makes them through
 //   `createRenderPipelineAsync`, and `_renderObjectDirect` skips the draw
 //   of an object whose pipeline is not ready (`Pipelines.isReady`). The
@@ -224,6 +225,43 @@ export function guardPipelines(renderer, { invalidate = null, run = RUN } = {}) 
     return origDelete.call(this, ro);
   };
   if (typeof origDelete === 'function' && typeof bindings.delete === 'function') bindings.deleteForRender = deleteBuilt;
+  // A build off the frame reads the lights from its scene's LightsNode,
+  // which three empties again as each render of the scene ends
+  // (Lighting.finishRender puts back what it held before the render, and
+  // before the first frame that is nothing). So every material built off
+  // the frame was built with no lights, and kept under the key of the
+  // lights it had been drawn with: the Death Star's lamps lit nothing on
+  // WebGPU, the rooms only their shadow colour. Once the outermost render
+  // of a scene ends, its LightsNode keeps that render's lights for the
+  // builds that come after it; a render of the scene inside another (a pass
+  // drawn from inside the post chain's quad) still has its outer lights
+  // put back.
+  const lighting = renderer.lighting;
+  const origBegin = lighting?.beginRender;
+  const origFinish = lighting?.finishRender;
+  const depth = new WeakMap();
+  const beginKept = function (s) {
+    if (s && typeof s === 'object') depth.set(s, (depth.get(s) ?? 0) + 1);
+    return origBegin.call(this, s);
+  };
+  const finishKept = function (s) {
+    const node = this.getNode(s);
+    const drawn = node?.getLights?.();
+    const out = origFinish.call(this, s);
+    const d = s && typeof s === 'object' ? (depth.get(s) ?? 1) - 1 : 0;
+    if (d > 0) depth.set(s, d);
+    else {
+      if (s && typeof s === 'object') depth.delete(s);
+      // (a scene's or a group's own node: anything else shares three's default, which no frame lights)
+      if ((s?.isScene === true || s?.isGroup === true) && drawn) node.setLights(drawn);
+    }
+    return out;
+  };
+  const keepLights = deferred && typeof origBegin === 'function' && typeof origFinish === 'function' && typeof lighting.getNode === 'function';
+  if (keepLights) {
+    lighting.beginRender = beginKept;
+    lighting.finishRender = finishKept;
+  }
   const guard = {
     pending: () => pending,
     held: () => held,
@@ -236,6 +274,8 @@ export function guardPipelines(renderer, { invalidate = null, run = RUN } = {}) 
         if (nodes._processBuildQueue === processInRuns) nodes._processBuildQueue = origProcess;
       }
       if (bindings && bindings.deleteForRender === deleteBuilt) bindings.deleteForRender = origDelete;
+      if (keepLights && lighting.beginRender === beginKept) lighting.beginRender = origBegin;
+      if (keepLights && lighting.finishRender === finishKept) lighting.finishRender = origFinish;
       delete pipelines.__guard;
     },
   };

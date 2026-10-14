@@ -310,6 +310,52 @@ describe('guardPipelines', () => {
     expect(renderer._bindings.deleteForRender).toBe(three);
   });
 
+  it('keeps a scene’s lights on it between frames, for the builds off the frame, and its outer lights for a render inside one', () => {
+    // (three's Lighting: a LightsNode a scene, its lights saved as a render
+    // begins and put back as it ends; the render list sets the frame's)
+    const nodes = new Map();
+    const lightsOf = (s) => nodes.get(s) ?? nodes.set(s, { lights: [], getLights() { return this.lights; }, setLights(l) { this.lights = l; } }).get(s);
+    const saved = [];
+    const lighting = {
+      getNode: lightsOf,
+      beginRender(s) { saved.push(lightsOf(s).getLights()); },
+      finishRender(s) { lightsOf(s).setLights(saved.pop()); },
+    };
+    const r = Object.assign(fakeRenderer(), { lighting });
+    const room = { isScene: true };
+    const lamps = ['lamp', 'strip'];
+    const render = (s, lights, inner) => {
+      lighting.beginRender(s);
+      lightsOf(s).setLights(lights);
+      inner?.();
+      lighting.finishRender(s);
+    };
+    // three's own: the scene's lights put back to none once the frame is over
+    render(room, lamps);
+    expect(lightsOf(room).getLights()).toEqual([]);
+    const guard = guardPipelines(r);
+    render(room, lamps);
+    expect(lightsOf(room).getLights()).toBe(lamps);
+    // (inside another render of it, a render with other lights puts the outer's back)
+    render(room, lamps, () => render(room, ['torch']));
+    expect(lightsOf(room).getLights()).toBe(lamps);
+    let inner = null;
+    render(room, lamps, () => {
+      render(room, ['torch']);
+      inner = lightsOf(room).getLights();
+    });
+    expect(inner).toBe(lamps);
+    // (what is not a scene or a group shares three's default node: left as three leaves it)
+    const quad = { isQuadMesh: true };
+    render(quad, ['nothing']);
+    expect(lightsOf(quad).getLights()).toEqual([]);
+    guard.dispose();
+    render(room, lamps);
+    expect(lightsOf(room).getLights()).toBe(lamps);
+    render(room, ['torch']);
+    expect(lightsOf(room).getLights()).toBe(lamps);
+  });
+
   it('does nothing on the WebGL 2 backend or the classic renderer, and can be undone', () => {
     expect(guardPipelines(fakeRenderer({ webgl: true }))).toBeNull();
     expect(guardPipelines({})).toBeNull();
