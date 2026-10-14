@@ -656,6 +656,23 @@ const JOURNEYS = {
     }
     mark('end');
   },
+  // the Mario 64 tribute (lane P1's second port): started from its title,
+  // then the castle grounds walked about
+  async mario64(page, mark) {
+    mark('load');
+    await page.goto(`${this.base}/${this.q}#/dot-matrix/64`, { waitUntil: 'domcontentloaded' });
+    await page.click('.m64-start', { timeout: 240000 });
+    await page.waitForFunction(() => window.__RUNTIME__?.status === 'on' && window.__RUNTIME__.current?.world?.game?.mode === 'play', null, { timeout: 240000 });
+    mark('settle');
+    await wait(page, 4000);
+    mark('idle');
+    await wait(page, 6000);
+    mark('move');
+    await hold(page, 'KeyW', 3000);
+    await hold(page, 'KeyA', 1500);
+    await hold(page, 'KeyW', 3000);
+    mark('end');
+  },
   music: worldPage('/music'),
   scranton: worldPage('/scranton'),
   citadel: worldPage('/c-137/citadel'),

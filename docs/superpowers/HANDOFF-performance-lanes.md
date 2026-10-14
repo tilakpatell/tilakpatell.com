@@ -29,6 +29,20 @@ So: measure first (lane P0), then the lanes below, each measured before and afte
 
 A lane that needs a file another lane owns asks in that lane’s pull request, or waits for it to merge; every lane merges `origin/main` before its pull request, keeping both sides.
 
+### Where each lane stands
+
+One line a lane, filled as it lands: the pull request, what it measured, what is left.
+
+- **P0**: pull request #989 (2026-10-13). The probe reports the worst 1 %, the main thread’s and the GPU’s ms, WebGPU’s draws and pipelines, the pipelines made late; `--heavy` runs the nine heavy worlds (`/galaxy/hoth/surface` sends the visitor to Battlefront’s Hoth now, so it is measured once); the RTX 5090’s baseline is in `docs/superpowers/evidence/perf/README.md`. Left: the Radeon 740M’s rows, the owner’s to run.
+- **P1**: not started.
+- **P2**: not started.
+- **P3**: not started. Found while scoping it (2026-10-13): Battlefront’s map loads Hoth’s level with the GLB’s own materials, not the game materials, so the GPU scene already draws it in about 69 groups (`materialKey`: type, maps, scalars); the 209 are the indirect sub-draws inside them (N1’s table). Arrays per shape would have to be per size, colour space and transcoded format, and a map’s size changes mid-play as it is promoted (`levelGltf.js`’s swap). Measure Battlefront’s draws by pass before deciding it is worth it.
+- **P4**: not started.
+- **P5**: not started.
+- **P6**: waits for the laptop’s rows.
+- **P7**: not started.
+- **P8**: not started.
+
 ### P0, the measure
 
 1. `scripts/perf-probe.mjs` gains, per route and backend: the median frame and its worst 1 %, the main thread’s milliseconds (Long Animation Frames where Chrome has them), the GPU’s (the G1 clock), draws, programs, and pipelines made after the first second.
