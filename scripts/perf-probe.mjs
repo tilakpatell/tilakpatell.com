@@ -564,13 +564,17 @@ const JOURNEYS = {
   // Battlefront on Hoth, the heaviest world: the mode in the address skips
   // the game's front end, the spawn screen's first open class is taken (a
   // click, as a player deploys: the loop rests while that screen is up), then
-  // the round on foot. /galaxy/hoth/surface is this same world now (it sends
-  // the visitor here, src/pages/GalaxyLanding.jsx), so it is measured once.
+  // the round on foot. The game's screens are portalled to the page's body
+  // (screens/GameScreen.jsx), so the cell is waited for on its own, once the
+  // stage says it is at the spawn. /galaxy/hoth/surface is this same world
+  // now (it sends the visitor here, src/pages/GalaxyLanding.jsx), so it is
+  // measured once.
   async battlefront(page, mark) {
     mark('load');
     await page.goto(`${this.base}/${this.q}#/battlefront/hoth/galacticAssault`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('.bf-stage[data-bf-ready] .bf-spawn-screen-cell:not([aria-disabled])', { timeout: 300000 });
-    await page.click('.bf-spawn-screen-cell:not([aria-disabled])');
+    await page.waitForSelector('.bf-stage[data-bf-stage="spawn"]', { timeout: 300000 });
+    await page.waitForSelector('.bf-spawn-screen-cell[data-kind="class"]:not([aria-disabled])', { timeout: 60000 });
+    await page.click('.bf-spawn-screen-cell[data-kind="class"]:not([aria-disabled])');
     await page.waitForFunction(() => document.querySelector('.bf-stage[data-bf-stage="field"]') && window.__battlefront?.view().player?.state === 'alive' && window.__battlefront.view().parked === false, null, { timeout: 120000 });
     mark('settle');
     await wait(page, 4000);
