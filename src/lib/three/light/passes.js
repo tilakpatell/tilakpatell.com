@@ -177,7 +177,7 @@ export async function buildChain(renderer, passes) {
   const { THREE, tsl } = await loadThree();
   const mods = {};
   await Promise.all([...kinds].filter((k) => ADDONS[k]).map(async (k) => (mods[k] = await ADDONS[k]())));
-  const { pass, mrt, output, normalView, directionToColor, colorToDirection, diffuseColor, velocity, metalness, roughness, vec2, vec3, vec4, sample, texture3D } = tsl;
+  const { pass, mrt, output, normalView, packNormalToRGB, unpackRGBToNormal, diffuseColor, velocity, metalness, roughness, vec2, vec3, vec4, sample, texture3D } = tsl;
   const Pipeline = THREE.RenderPipeline ?? THREE.PostProcessing;
   const pipeline = new Pipeline(renderer);
   const nodes = []; // (made here, disposed here)
@@ -234,7 +234,7 @@ export async function buildChain(renderer, passes) {
         const scenePass = keep(pass(p.scene, p.camera, antialias(passes) ? {} : { samples: 0 }));
         if (under < 1) scenePass.setResolutionScale(under);
         const outs = { output };
-        if (needs.normal) outs.normal = directionToColor(normalView);
+        if (needs.normal) outs.normal = packNormalToRGB(normalView);
         if (needs.diffuse) outs.diffuse = diffuseColor;
         if (needs.velocity) outs.velocity = velocity;
         if (needs.metalRough) outs.metalRough = vec2(metalness, roughness);
@@ -258,7 +258,7 @@ export async function buildChain(renderer, passes) {
         g.depth = renderer.reversedDepthBuffer === true ? keep(standardDepth(tsl, THREE, g.rawDepth, under)) : g.rawDepth;
         if (outs.normal) {
           const packed = scenePass.getTextureNode('normal');
-          g.normal = sample((uv) => colorToDirection(packed.sample(uv)));
+          g.normal = sample((uv) => unpackRGBToNormal(packed.sample(uv)));
         }
         if (outs.diffuse) g.diffuse = scenePass.getTextureNode('diffuse');
         if (outs.velocity) g.velocity = scenePass.getTextureNode('velocity');
