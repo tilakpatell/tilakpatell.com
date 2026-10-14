@@ -83,8 +83,11 @@ describe('the galaxy’s models', () => {
     const HIGH = modelsAt('high');
 
     it('draws the war’s capitals from the space levels’ kits at the fleet’s cut, bow to +z, and the Lucrehulk and the Arquitens as before', () => {
-      for (const kind of ['destroyer', 'moncal', 'venator', 'corvette', 'providence', 'lucrehulk']) expect(HIGH[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: 0 });
+      for (const kind of ['destroyer', 'venator', 'corvette', 'providence', 'lucrehulk']) expect(HIGH[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: 0 });
       expect(HIGH.lightcruiser).toEqual({ url: '/models/galaxy/lightcruiser.glb', nose: -Math.PI / 2 });
+      // (the MC80's kit comes engines to +z: turned round, its ultra cut with it)
+      expect(HIGH.moncal).toEqual({ url: '/models/galaxy/moncal.glb', nose: Math.PI });
+      expect(modelsAt('ultra').moncal).toEqual({ url: '/models/galaxy/moncal.ultra.glb', nose: Math.PI });
       // (the universe map keeps its own Star Destroyer and Venator: the galaxy's rows are the game's)
       for (const detail of ['low', 'mid', 'high', 'ultra']) {
         expect(modelsAt(detail).destroyer.url, detail).not.toBe('/models/universe/star-destroyer.glb');

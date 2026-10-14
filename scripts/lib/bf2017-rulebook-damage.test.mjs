@@ -213,7 +213,7 @@ describe('src/data/bf2017/damage.json', () => {
     const { venator, moncal, lucrehulk, destroyer } = damage.capitals;
     // (the deflector's base, #1, does not spend the dome's state 0)
     expect(destroyer.site['gen-port'].states).toEqual(['stardestroyer_deflectorshield_01#0', 'stardestroyer_deflectorshield_01#1']);
-    expect(moncal.site['gen-port'].states).toEqual(['mc80_largenodule_03#1', 'mc80_largenodule_03#0', 'mc80_largenodule_03#2']);
+    expect(moncal.site['gen-port'].states).toEqual(['mc80_largenodule_01#1', 'mc80_largenodule_01#0', 'mc80_largenodule_01#2']);
     // (a site hull's own part, and a level's object outside the kit, take any routed hit)
     expect(lucrehulk.site.reactor.states).toBeUndefined();
     expect(venator.site.bridge.states).toBeUndefined();

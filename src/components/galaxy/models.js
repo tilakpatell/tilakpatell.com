@@ -43,7 +43,10 @@ export const MODELS = {
   // the universe map keeps its own Star Destroyer and Venator)
   destroyer: { url: '/models/galaxy/destroyer.glb', nose: 0 },
   venator: { url: '/models/galaxy/venator.glb', nose: 0 },
-  moncal: { url: '/models/galaxy/moncal.glb', nose: 0 },
+  // (the MC80's kit comes engines to +z, the one capital of the three that
+  // does: turned round, so it flies bow first and the war's bridge, up front,
+  // and reactor, among the engines, sit on the modules they are)
+  moncal: { url: '/models/galaxy/moncal.glb', nose: Math.PI },
   // the game's fighters as lane V imported them, native (surface/: facing +z);
   // Slave I stands as it lands, the way it flies here (shipFit.js's BY_SPAN)
   xwing: { url: '/models/galaxy/surface/xwing.glb', nose: 0 },
