@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { readHull } from '../../src/lib/physics/shapesBin.js';
 import { CAPITAL_KITS, SITE_OVER_GAME, headerFile, partName, readHeader, rosterKinds } from './bf2017-hulls.mjs';
 import { checkSources } from './bf2017-rulebook.mjs';
-import { FIGHTERS, SITE_NAMES, STAND, cutGrid, damageRulebook, gridOf, propertyOf } from './bf2017-rulebook-damage.mjs';
+import { FIGHTERS, SITE_NAMES, STAND, cutGrid, damageRulebook, gridOf, propertyOf, turretRow } from './bf2017-rulebook-damage.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'damage');
 const header = (res) => {
@@ -120,6 +120,16 @@ it('says what it could not read rather than leave it out', () => {
   expect(thin.capitals.corvette.turrets).toEqual({});
 });
 
+it('says so of a turret that fires nothing, rather than give it no bolts', () => {
+  // (the fixture's top turret with its projectile override taken away: no override, no firing function's shot)
+  const top = JSON.parse(readFileSync(join(ROOT, 'data', `${TOP}.json`), 'utf8'));
+  const unarmed = { ...top, objects: top.objects.map((o) => (o?.$type === 'FireProjectileEntityOverrideData' ? { $type: 'Removed' } : o)) };
+  const missing = [];
+  expect(turretRow(ROOT, unarmed, { missing })).toBe(null);
+  expect(missing).toEqual([`turret: ${top.name} fires no bolt`]);
+  expect(turretRow(ROOT, TOP, { missing: [] }).bolts).toHaveLength(1);
+});
+
 describe('src/data/bf2017/damage.json', () => {
   const damage = JSON.parse(readFileSync(join(import.meta.dirname, '..', '..', 'src', 'data', 'bf2017', 'damage.json'), 'utf8'));
 
@@ -167,8 +177,11 @@ describe('src/data/bf2017/damage.json', () => {
   });
 
   it('marks the site’s choices as the site’s, says so in its notes, and says how a blast applies', () => {
-    expect(damage._notes.some((n) => /`site` and `turretParts` blocks are the site’s choices/.test(n))).toBe(true);
-    expect(damage._notes.some((n) => /blast/.test(n) && /slot 43/.test(n))).toBe(true);
+    // (by key: what reads them reads them by key)
+    expect(Object.keys(damage._notes)).toEqual(['bolt', 'fighter', 'capital', 'chain', 'blast', 'site', 'precedence', 'assumed', 'dropped']);
+    expect(damage._notes.site).toMatch(/`site` and `turretParts` blocks are the site’s choices/);
+    expect(damage._notes.blast).toMatch(/slot 43/);
+    expect(damage._notes.precedence).toMatch(/spends that entry’s chain .* not the part’s own chain/);
     for (const [k, c] of Object.entries(damage.capitals)) {
       for (const name of SITE_NAMES) {
         const s = c.site[name];
@@ -183,8 +196,8 @@ describe('src/data/bf2017/damage.json', () => {
   it('gives the war’s objectives the game’s objective records where it has them', () => {
     const { venator, moncal, lucrehulk, destroyer } = damage.capitals;
     expect(venator.site.bridge).toMatchObject({ health: [700, 699, 0], properties: [132, 206, 132], squad: true });
-    expect(venator.site.bridge.record).toMatch(/VenatorControlTowerRight_HealthState$/);
-    expect(venator.site.bridge.parts).toContain('venatorstardestroyer_controltower_right#0');
+    expect(venator.site.bridge.record).toMatch(/VenatorControlTowerLeft_HealthState$/);
+    expect(venator.site.bridge.parts).toContain('venatorstardestroyer_controltower_left#0');
     expect(venator.site.reactor).toMatchObject({ health: [500, 0], properties: [206, 132] });
     expect(venator.site.reactor.parts).toContain('venatorstardestroyer_engine_01');
     expect(moncal.site.reactor).toMatchObject({ health: [251, 250, 0], properties: [132, 206, null] });
@@ -212,6 +225,6 @@ describe('src/data/bf2017/damage.json', () => {
       const named = new Set([...Object.values(c.site).flatMap((s) => s.parts), ...Object.keys(c.turretParts?.parts ?? {})]);
       for (const [name, p] of Object.entries(c.parts)) if (p.properties.every((x) => harmless.has(x))) expect(named.has(name), `${k} ${name}`).toBe(true);
     }
-    expect(damage._notes.at(-1)).toMatch(/^\d+ capital parts are left out/);
+    expect(damage._notes.dropped).toMatch(/^\d+ capital parts are left out/);
   });
 });

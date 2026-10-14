@@ -157,8 +157,8 @@ export const SITE = {
   },
   moncal: {
     hull: { record: `${MC80}/MC80_MainHull_01`, why: 'the site maps the war’s hull to the MC80’s main hull module because no record of the game’s makes its hull an objective; the module is p132' },
-    'gen-port': { record: `${MC80}/MC80_LargeNodule_01`, objective: `${SB}/SB_Endor_01/Objectives/PF_SpaceBattles_MC80_target_TL01`, why: 'the site maps the war’s port shield generator to the top port nodule because SB_Endor_01’s MC80 targets are its nodules and the war puts its generators on the ship’s back' },
-    'gen-star': { record: `${MC80}/MC80_LargeNodule_04`, objective: `${SB}/SB_Endor_01/Objectives/PF_SpaceBattles_MC80_target_TR01`, why: 'the site maps the war’s starboard shield generator to the top starboard nodule because SB_Endor_01’s MC80 targets are its nodules and the war puts its generators on the ship’s back' },
+    'gen-port': { record: `${MC80}/MC80_LargeNodule_03`, objective: `${SB}/SB_Endor_01/Objectives/PF_SpaceBattles_MC80_target_TR02`, why: 'the site maps the war’s gen-port to the nodule nearest its marker on the drawn MC80 (SB_Endor_01’s target TR02) because SB_Endor_01’s MC80 targets are its nodules and the war puts its generators on the ship’s back' },
+    'gen-star': { record: `${MC80}/MC80_LargeNodule_02`, objective: `${SB}/SB_Endor_01/Objectives/PF_SpaceBattles_MC80_target_TL02`, why: 'the site maps the war’s gen-star to the nodule nearest its marker on the drawn MC80 (SB_Endor_01’s target TL02) because SB_Endor_01’s MC80 targets are its nodules and the war puts its generators on the ship’s back' },
     bridge: { record: null, why: 'no record of the game’s makes the MC80’s bridge an objective or a module of its own, so the war keeps its own bridge' },
     reactor: { record: `${SB}/SB_Endor_01/Objects/Endor_Engine_targetCollision`, objective: `${SB}/SB_Endor_01/Objectives/PF_SpaceBattles_MC80_Target_FinalStage_Engines`, why: 'the site maps the war’s reactor to the game’s last MC80 target, its engines, because the game has no reactor objective and the war puts its reactor among the engines' },
   },
@@ -166,7 +166,7 @@ export const SITE = {
     hull: { record: 'Gameplay/Vehicles/Capital/VenatorClass_StarDestroyer/VenatorStarDestroyer_Hull_01', why: 'the site maps the war’s hull to the Venator’s main hull module because no record of the game’s makes its hull an objective; the module is p132' },
     'gen-port': { record: null, why: 'the game’s Venator has no shield objective (SB_Kamino_01’s are its two bridge towers, its engines and its hangar laser), so the war keeps its own generators on the towers’ domes' },
     'gen-star': { record: null, why: 'the game’s Venator has no shield objective, so the war keeps its own generators on the towers’ domes' },
-    bridge: { record: `${VENATOR}/HealthStateCollisionObjects/VenatorControlTowerRight_HealthState`, objective: `${VENATOR}/PF_SB_Venator_Bridge_Right`, why: 'the site maps the war’s bridge to SB_Kamino_01’s starboard bridge objective because the war puts its bridge in the starboard tower’s face; the port tower’s (PF_SB_Venator_Bridge_Left) has no war part to take it' },
+    bridge: { record: `${VENATOR}/HealthStateCollisionObjects/VenatorControlTowerLeft_HealthState`, objective: `${VENATOR}/PF_SB_Venator_Bridge_Left`, why: 'the site maps the war’s bridge to SB_Kamino_01’s Left bridge objective because the war’s bridge marker stands on that tower, on the drawn model’s +x side (wars.js calls it starboard; facing +z it is the ship’s left, the game’s Left); the other tower’s objective (PF_SB_Venator_Bridge_Right) has no war part to take it' },
     reactor: { record: `${VENATOR}/HealthStateCollisionObjects/VenatorStarDestroyer_EnginesLeft_HealthState`, objective: `${VENATOR}/PF_SB_Venator_Engines_Left`, why: 'the site maps the war’s reactor to the first of SB_Kamino_01’s two engine objectives because the game has no reactor and puts the Venator’s last objectives at its engines; the kit’s engine modules are one set of names, so a hit on either side’s engines is a hit on it' },
   },
   providence: {
@@ -206,16 +206,17 @@ export const TURRET_PARTS = {
   venator: { parts: { ventatorstardestroyer_turret_01_wreck: 'VenatorStarDestroyer_HeavyTurret' }, why: 'the site gives the kit’s turret modules (wrecks) the Venator’s heavy turret, the gun SB_Kamino_01 mounts on its Venator; the side turret has no kit part' },
 };
 
-// The notes the file opens with
-const NOTES = [
-  'A bolt’s damage is `damage` out to falloff[0] metres, falling to damageFar at falloff[1] and damageFar beyond. What it hits takes the cell’s multiplier × that when the product reaches the cell’s threshold, else nothing; a pair with no relation takes noRelation’s cell, 0× under 2 (findings/62 §3).',
-  'A fighter’s health loses multiplier(bolt.property, fighter.property) × damage × vehicleDamageModifier when multiplier × damage reaches the threshold. fighter.property is the property of its VehicleEntityData.MaterialPair, whichever part the bolt met, because a part’s own relation spends only that part’s states, which reach the health only through a weak spot, and no starfighter has one (findings/62 §2). A friend’s bolt is × friendlyDamageModifier while friendly fire is off. A turret is a vehicle and takes a bolt the same way, against its own property.',
-  'A capital’s part (a static model’s) loses multiplier(bolt.property, part.property) × damage when that reaches the threshold, then × (1 + n × squadBonus.perMate) where `squad` (n the shooter’s squadmates who hit it within squadBonus.cooldown seconds, at most 1 unless eachMate) and × damageMultiplier; a friend’s bolt does nothing unless friendlyFire (findings/62 §4).',
-  'A part starts at health[0] and is spent down its states: a hit never takes it past the next state’s health, where it is held and moves to that state, and the rest of the hit goes back through the same rule (the threshold checked again, so a rest under it is dropped; the squad bonus and damageMultiplier applied again); in the last state it falls to 0. Only a hit on the part its state names (`states`, null for the whole object) spends it, and a state whose part is no longer the part hit sends its `children` FLT_MAX (findings/62 §4). A chain whose first state is one more than its second on a part no bolt hurts (an MC80 nodule’s 201 then 200, a Venator bridge’s 700 then 699) cannot be started by a bolt; what moves it on was not read.',
-  'A blast (a bolt’s `blast`, its ExplosionEntityData) reaches a vehicle through its health component’s slot 43 (FUN_141bea1c0), which applies the record’s damage without a grid multiplier; that was read only so far (findings/62 §3), and whether a blast is held to the grid on a static model was not: `blast` is the record’s, its property beside it, for the damage rules to apply as they rule.',
-  'The `site` and `turretParts` blocks are the site’s choices (source: site), not records: which game record each of the war’s part names takes (its numbers then the record’s, with their sources) and which hull parts a turret record stands for, each with why. A hull part no site entry names counts as the hull.',
-  'Assumed, as findings/62 leaves it open: a hit’s part is the Havok instance tag’s bits 0–15 (the exporter’s reading of hknpShape::m_userData, PhysicsExport.cs:367, which the data fits); the game’s code that keeps it was not followed.',
-];
+// The notes the file opens with, by a key each (what reads them reads them by key)
+const NOTES = {
+  bolt: 'A bolt’s damage is `damage` out to falloff[0] metres, falling to damageFar at falloff[1] and damageFar beyond. What it hits takes the cell’s multiplier × that when the product reaches the cell’s threshold, else nothing; a pair with no relation takes noRelation’s cell, 0× under 2 (findings/62 §3).',
+  fighter: 'A fighter’s health loses multiplier(bolt.property, fighter.property) × damage × vehicleDamageModifier when multiplier × damage reaches the threshold. fighter.property is the property of its VehicleEntityData.MaterialPair, whichever part the bolt met, because a part’s own relation spends only that part’s states, which reach the health only through a weak spot, and no starfighter has one (findings/62 §2). A friend’s bolt is × friendlyDamageModifier while friendly fire is off. A turret is a vehicle and takes a bolt the same way, against its own property.',
+  capital: 'A capital’s part (a static model’s) loses multiplier(bolt.property, part.property) × damage when that reaches the threshold, then × (1 + n × squadBonus.perMate) where `squad` (n the shooter’s squadmates who hit it within squadBonus.cooldown seconds, at most 1 unless eachMate) and × damageMultiplier; a friend’s bolt does nothing unless friendlyFire (findings/62 §4).',
+  chain: 'A part starts at health[0] and is spent down its states: a hit never takes it past the next state’s health, where it is held and moves to that state, and the rest of the hit goes back through the same rule (the threshold checked again, so a rest under it is dropped; the squad bonus and damageMultiplier applied again); in the last state it falls to 0. Only a hit on the part its state names (`states`, null for the whole object) spends it, and a state whose part is no longer the part hit sends its `children` FLT_MAX (findings/62 §4). A chain whose first state is one more than its second on a part no bolt hurts (an MC80 nodule’s 201 then 200, a Venator bridge’s 700 then 699) cannot be started by a bolt; what moves it on was not read.',
+  blast: 'A blast (a bolt’s `blast`, its ExplosionEntityData) reaches a vehicle through its health component’s slot 43 (FUN_141bea1c0), which applies the record’s damage without a grid multiplier; that was read only so far (findings/62 §3), and whether a blast is held to the grid on a static model was not: `blast` is the record’s, its property beside it, for the damage rules to apply as they rule.',
+  site: 'The `site` and `turretParts` blocks are the site’s choices (source: site), not records: which game record each of the war’s part names takes (its numbers then the record’s, with their sources) and which hull parts a turret record stands for, each with why. A hull part no site entry names counts as the hull.',
+  precedence: 'A hit on a part a `site` entry names spends that entry’s chain (the war’s part), not the part’s own chain in `parts`, which stays as the record has it; a hit on a part `turretParts` names is a hit on that turret.',
+  assumed: 'Assumed, as findings/62 leaves it open: a hit’s part is the Havok instance tag’s bits 0–15 (the exporter’s reading of hknpShape::m_userData, PhysicsExport.cs:367, which the data fits); the game’s code that keeps it was not followed.',
+};
 
 // ── the grid ──
 
@@ -504,11 +505,12 @@ export function moduleParts(root, file, ctx) {
 // bolts its override fires (the list where the record overrides the list,
 // else the one; with no override, its firing functions' shots)
 export function turretRow(root, blueprint, { missing }) {
-  const bp = follow(root, blueprint);
+  const bp = typeof blueprint === 'string' ? follow(root, blueprint) : blueprint;
+  const name = typeof blueprint === 'string' ? blueprint : blueprint?.name;
   const hc = bp && objectsOf(bp, 'WSVehicleHealthComponentData')[0];
   const v = bp && objectsOf(bp, 'VehicleEntityData')[0];
   if (!hc || !v) {
-    missing.push(`turret: ${blueprint}`);
+    missing.push(`turret: ${name}`);
     return null;
   }
   const o = objectsOf(bp, 'FireProjectileEntityOverrideData')[0];
@@ -526,7 +528,7 @@ export function turretRow(root, blueprint, { missing }) {
     .map(([p, speed, at]) => boltRow(root, p, speed, at, missing))
     .filter(Boolean);
   if (!bolts.length) {
-    missing.push(`turret: ${blueprint} fires no bolt`);
+    missing.push(`turret: ${name} fires no bolt`);
     return null;
   }
   return { hp: hc.MaxHealth, hp_source: where(bp, hc, 'MaxHealth'), property: propertyOf(v.MaterialPair?.Packed ?? 0), property_source: where(bp, v, 'MaterialPair'), bolts };
@@ -705,7 +707,7 @@ export function damageRulebook(root, { kits = {}, header = () => null, fighters 
   if (!squadBonus) missing.push(`squad bonus: ${SQUAD_BONUS}`);
 
   return {
-    _notes: [...NOTES, `${dropped} capital parts are left out: every state on a property no bolt here hurts (p132, p0, p34), and neither the site nor a turret names them; a hit on one does nothing.`],
+    _notes: { ...NOTES, dropped: `${dropped} capital parts are left out: every state on a property no bolt here hurts (p132, p0, p34), and neither the site nor a turret names them; a hit on one does nothing.` },
     gridFrom: { grid: GRID, indexMap: `${asset.name}#MaterialGridData.MaterialIndexMap`, agrees },
     grid,
     noRelation,
