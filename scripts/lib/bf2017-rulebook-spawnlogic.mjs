@@ -77,12 +77,13 @@ const ROLES = [
 
 const fieldName = (id) => BY_HASH.get(s32(id)) ?? String(s32(id));
 
-export function spawnLogic(root, dir, sub) {
+// the sub-world's graph: its objects by guid (each connection names its object's layer and guid),
+// and its property inputs, event inputs and links by object id; null when it is no sub-world
+export function graphOf(root, dir, sub) {
   const subName = `${dir}${sub}`;
   const asset = follow(root, subName);
   const top = asset?.objects?.[0];
   if (!top || top.$type !== 'SubWorldData') return null;
-  // the sub-world's layers and objects by guid (each connection names its object's layer and guid)
   const byGuid = new Map();
   const assets = new Map();
   const layers = new Set();
@@ -119,6 +120,13 @@ export function spawnLogic(root, dir, sub) {
     const t = at(c.Target);
     if (s && t) links.set(s.id, [...(links.get(s.id) ?? []), { t, field: c.TargetFieldId }]);
   }
+  return { subName, byGuid, assets, pin, evin, links };
+}
+
+export function spawnLogic(root, dir, sub) {
+  const graph = graphOf(root, dir, sub);
+  if (!graph) return null;
+  const { subName, byGuid, assets, pin, evin, links } = graph;
 
   // the spawn records of the mode's layers that something switches
   const prefix = `${sub}_`.toLowerCase();

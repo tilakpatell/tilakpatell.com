@@ -10,8 +10,11 @@
 // sub-world's own graph: bf2-re findings/55), the spawn sets are the graph's,
 // run as the game runs it: the stage's ports, the escort's lead walker, the
 // capture points' owners, the charges spent and the geometry triggers feed
-// it each step. Pure: the sim hands it who stands where a step and the
-// deaths as they happen.
+// it each step. The map's interact gates (Hoth's hangar blast doors,
+// lib/battlefront/gates.js) unlock as their walker finishes its route and
+// open at their panel; an opened gate is the spawn logic's 'opened' and an
+// event out (`gate`: the sim joins the navmesh through its doorway). Pure:
+// the sim hands it who stands where a step and the deaths as they happen.
 //
 //   createAssault({ rulebook, level, stages, map, attackers, teams }) → ga
 //   tick(ga, dt, world)    world: { soldiers: [{ id, side, at, alive, interact }], alive: { attack, defend } }
@@ -21,6 +24,7 @@
 
 import { mapOf, stagesOf, vehicleOf, volumeOf } from '../rulebook.js';
 import { createLogic, enabled, escortLead, fireEvent, portsOf, setInput, setStage, tick as tickLogic } from '../spawnLogic.js';
+import { arrive, createGates, openness, tick as tickGates } from '../gates.js';
 import { BOMBING_RUN, ESCORT_REACH, UPLINK_RANGE, INTERACT_REACH, KINDS, VULNERABLE_SECONDS, insidePolygon } from './objectives.js';
 
 // `PF_GameMode_Conquest_Staged`'s delays: 12 s before the first stage, 6 s between stages.
@@ -156,6 +160,8 @@ export function createAssault({ rulebook, level = 'hoth', stages = null, map = n
     time: 0,
     result: null,
     out: [],
+    // (the map's interact gates, their state kept through the stages)
+    gates: createGates(stages ? [] : (m.gates ?? [])),
   };
   ga.objectives = build(rulebook, m, ga.stages[0]);
   // (the level's own graph, when the stages are the level's own: a test's cut-down list keeps the files' sets)
@@ -264,6 +270,13 @@ export function tick(ga, dt, world = { soldiers: [], alive: { attack: 0, defend:
     }
     if (o.type === 'arm' && o.armed !== was.armed) ga.out.push({ type: o.armed ? 'armed' : 'defused', name: o.name });
     if (o.done && !was.done) ga.out.push({ type: 'objective', kind: o.type, name: o.name });
+    // (a walker home: its route's gate unlocks, the other's is barred)
+    if (o.type === 'escort' && o.done && !was.done && o.def?.waypoints) ga.out.push(...arrive(ga.gates, o.def.waypoints));
+  }
+  for (const e of tickGates(ga.gates, dt, world.soldiers)) {
+    ga.out.push(e);
+    if (e.state !== 'opened' || !ga.logic) continue;
+    for (const p of portsOf(ga.logic.vm, 'opened')) if (p.id === e.id) fireEvent(ga.logic.vm, p.ref);
   }
   for (const w of walkersOf(ga)) w.vulnerable = w.alive && ga.time < ga.vulnerableUntil;
   if (ga.logic) {
@@ -315,6 +328,7 @@ export function view(ga) {
   return {
     stage: { id: st.id, name: st.name, nameDefend: st.nameDefend, index: ga.stage, count: ga.stages.length },
     objectives: ga.objectives.map((o) => KINDS[o.type].view(o)),
+    gates: ga.gates.list.map((g) => ({ id: g.id, state: g.state, open: openness(g) })),
     tickets: ga.tickets,
     phase: ga.phase,
     timer: ga.phase === 'live' ? ga.stageTimer : Math.max(0, ga.timer),

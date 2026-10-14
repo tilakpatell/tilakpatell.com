@@ -163,4 +163,28 @@ describe('Galactic Assault', () => {
     expect(ga.logic).toBeUndefined();
     expect(spawnSets(ga)).toBe(file.stages[1].spawns);
   });
+
+  it('a walker home unlocks its gate; a second at its panel opens it, and the Empire’s points inside it come on', () => {
+    const ga = createAssault({ rulebook: rb });
+    live(ga);
+    run(ga, 25.1);
+    // (the east route's walker, FantasyBattle_Logic:123, home: the west gate, :91, unlocks and the east one is barred)
+    const a = ga.objectives.find((o) => o.def.waypoints === 'FantasyBattle_Logic:123');
+    a.walker.dist = a.walker.length;
+    const out = [];
+    for (let t = 0; t < 0.2; t += 0.05) out.push(...tick(ga, 0.05, nobody));
+    expect(out).toEqual(expect.arrayContaining([{ type: 'gate', id: 'FantasyBattle_Logic:91', state: 'unlocked' }, { type: 'gate', id: 'FantasyBattle_Logic:307', state: 'barred' }]));
+    run(ga, STAGE_PAUSE + 0.1);
+    expect(view(ga).stage.id).toBe('hangars');
+    const inside = ['FantasyBattle_Logic:173', 'FantasyBattle_Logic:204', 'FantasyBattle_Logic:258'];
+    expect(spawnSets(ga).attack).not.toEqual(expect.arrayContaining(inside));
+    const panel = ga.gates.list.find((g) => g.id === 'FantasyBattle_Logic:91').panel.at;
+    const at = { soldiers: [{ id: 'e1', side: 'attack', at: [...panel], alive: true, interact: true }], alive: { attack: 1, defend: 1 } };
+    const opened = [];
+    for (let t = 0; t < 1.2; t += 0.05) opened.push(...tick(ga, 0.05, at));
+    expect(opened).toContainEqual({ type: 'gate', id: 'FantasyBattle_Logic:91', state: 'opened' });
+    expect(spawnSets(ga).attack).toEqual(expect.arrayContaining(inside));
+    run(ga, 1.6);
+    expect(view(ga).gates.find((g) => g.id === 'FantasyBattle_Logic:91')).toMatchObject({ state: 'open', open: 1 });
+  });
 });

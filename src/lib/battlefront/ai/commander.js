@@ -16,13 +16,15 @@ import { nearestWalkable } from '../nav.js';
 import { balance, offers } from '../battlePoints.js';
 import { INTERACT_REACH, UPLINK_RANGE, insidePolygon } from '../modes/objectives.js';
 import { WAVE } from '../spawn.js';
+import { REACH as GATE_REACH } from '../gates.js';
 
 // Seconds between the commander's orders, by hand.
 export const ASSIGN = 5;
 // The attackers' weights by objective (the plan's, by hand): a capture to
 // take, an arm to set, a set arm or a taken point to guard, a walker to
-// escort (one squad each), an uplink to deny the defenders.
-export const WEIGHTS = { capture: 1, arm: 1.2, guard: 0.3, escort: 1, uplink: 0.3 };
+// escort (one squad each), an uplink to deny the defenders, an unlocked
+// gate's panel to hold (one squad: the way into the base, lib/battlefront/gates.js).
+export const WEIGHTS = { capture: 1, arm: 1.2, guard: 0.3, escort: 1, uplink: 0.3, gate: 2 };
 // How wide a squad spreads round its objective: a point's middle, a walker, a crowd. By hand.
 export const HOLD_RADIUS = 5;
 export const ESCORT_RADIUS = 20;
@@ -106,8 +108,16 @@ function task(c, key, fields) {
   return t;
 }
 
+// an unlocked gate's panel as an objective the attackers can be sent to (one object a gate, for the tasks' cache)
+function gateObjective(c, g) {
+  c.gateObjectives ??= new Map();
+  if (!c.gateObjectives.has(g.id)) c.gateObjectives.set(g.id, { type: 'gate', id: g.id, at: [g.panel.at[0], g.panel.at[2]] });
+  return c.gateObjectives.get(g.id);
+}
+
 function orders(c, o, role) {
   const at = pointOf(o);
+  if (o.type === 'gate') return task(c, `gate:${o.id}`, { at, spot: at, role, interact: true, radius: 0, reach: GATE_REACH });
   const i = c.ga.objectives.indexOf(o);
   if (role === 'escort') return task(c, `o${i}`, { at, role, radius: ESCORT_RADIUS });
   if (o.type === 'carry') return task(c, `o${i}:${role}:${o.carrier ? 'to' : 'at'}`, { at, spot: at, role, radius: role === 'take' && !o.carrier ? 0 : HOLD_RADIUS });
@@ -132,6 +142,7 @@ function attackPlan(c, live, alive) {
     else if (o.type === 'carry' && !o.done) options.push({ o, w: WEIGHTS.arm, role: 'take' });
     else if (o.type === 'uplink') options.push({ o, w: WEIGHTS.uplink, role: 'hold' });
   }
+  for (const g of c.ga.gates?.list ?? []) if (g.state === 'unlocked' && g.panel) options.push({ o: gateObjective(c, g), w: WEIGHTS.gate, role: 'take', max: 1 });
   const plan = new Map();
   if (!options.length) return plan;
   const count = new Map();
