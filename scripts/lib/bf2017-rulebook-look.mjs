@@ -61,6 +61,91 @@ function weatherOf(asset) {
   return w;
 }
 
+// A visual environment as the patch it is: per component, only the fields
+// its PropertyOverrides name, at their values (a VE sets those and leaves
+// the rest to the VEs under it: findings 22 §1), with the blueprint's own
+// Priority and ExplicitPriorityEnable.
+const valueOf = (v) => (v && typeof v === 'object' ? (v.$asset ? v.$asset : 'x' in v ? ['x', 'y', 'z', 'w'].filter((k) => k in v).map((k) => r4(v[k])) : null) : typeof v === 'number' ? r4(v) : v);
+export function patchOf(asset) {
+  const ve = objectsOf(asset, 'VisualEnvironmentEntityData')[0];
+  const out = { ve: asset.name, priority: ve?.Priority ?? 0, explicit: ve?.ExplicitPriorityEnable === true, components: {}, _source: ve ? where(asset, ve) : asset.name };
+  for (const o of asset.objects) {
+    if (!o || !Array.isArray(o.PropertyOverrides) || !/ComponentData$/.test(o.$type)) continue;
+    const fields = {};
+    for (const f of o.PropertyOverrides) if (f in o && valueOf(o[f]) !== null) fields[f] = valueOf(o[f]);
+    if (Object.keys(fields).length) out.components[o.$type.replace(/ComponentData$/, '')] = { ...fields, _source: where(asset, o) };
+  }
+  return out;
+}
+
+// The proximity blends: each AreaProximityEntityData of the lighting layers
+// whose Out (0x0b87df4b) drives a VE reference's Visibility (0x65d22203),
+// and the shapes its Areas link (0x31fb3b9f) names. The connections sit in
+// whatever holds the layers (Hoth's in the LevelData). The runtime's
+// visibility is the record's: max(0, 1 − d / ProximityDistance), d the
+// view's distance to the nearest shape, 0 inside one (the per-entity update
+// FUN_140b75090 and the shape distance FUN_146a198a0 in the live image).
+// LocalPlayerId_1's copies are the split screen's and are left out.
+const OUT = '0x0b87df4b';
+const VISIBILITY = '0x65d22203';
+const AREAS = '0x31fb3b9f';
+export function areasOf(layers, holders) {
+  const byKey = new Map();
+  for (const { name, asset } of layers) for (const o of asset.objects) if (o?.$guid) byKey.set(`${name.toLowerCase()}|${o.$guid}`, { o, asset });
+  // (an end is an object of a layer, `$asset` and `$class`, or within a prefab its `$ref`)
+  const end = (p, holder) => (typeof p?.$ref === 'number' ? (holder.objects[p.$ref] ? { o: holder.objects[p.$ref], asset: holder } : null) : byKey.get(`${String(p?.$asset).toLowerCase()}|${p?.$class}`) ?? null);
+  const props = new Map();
+  const links = new Map();
+  for (const h of holders) {
+    for (const o of h.objects) {
+      for (const c of o?.PropertyConnections ?? []) {
+        if (c.SourceField !== OUT || c.TargetField !== VISIBILITY) continue;
+        const s = end(c.Source, h)?.o;
+        const t = end(c.Target, h);
+        if (s && t) props.set(s, [...(props.get(s) ?? []), t]);
+      }
+      for (const c of o?.LinkConnections ?? []) {
+        if (c.SourceField !== AREAS) continue;
+        const s = end(c.Source, h)?.o;
+        const t = end(c.Target, h);
+        if (s && t) links.set(s, [...(links.get(s) ?? []), t]);
+      }
+    }
+  }
+  const uniq = (list) => [...new Set(list)];
+  const out = [];
+  for (const { name, asset } of layers) {
+    asset.objects.forEach((o, i) => {
+      if (o?.$type !== 'AreaProximityEntityData' || o.LocalPlayerId === 'LocalPlayerId_1') return;
+      const ves = uniq(props.get(o) ?? [])
+        .filter((t) => t.o.$type === 'VisualEnvironmentReferenceObjectData' && t.o.Blueprint?.$asset)
+        .map((t) => ({ ve: t.o.Blueprint.$asset, priority: t.o.Priority ?? 0, _source: where(t.asset, t.o) }));
+      const shapes = uniq(links.get(o) ?? [])
+        .map(({ o: s, asset: a }) =>
+          s.$type === 'OBBData' && s.Transform
+            ? { kind: 'box', at: v3(s.Transform.trans).map(r4), basis: [s.Transform.right, s.Transform.up, s.Transform.forward].map((v) => v3(v).map(r4)), half: v3(s.HalfExtents).map(r4), _source: where(a, s) }
+            : s.$type === 'SphereData'
+              ? { kind: 'sphere', at: v3(s.Position).map(r4), r: s.Radius, _source: where(a, s) }
+              : null,
+        )
+        .filter(Boolean);
+      if (ves.length && shapes.length) out.push({ id: `${shortName(name)}:${i}`, proximity: o.ProximityDistance, ves, shapes, _source: where(asset, o) });
+    });
+  }
+  return out;
+}
+
+// A prefab's areas in the frame it is placed in (its 3×4 transform)
+export function placeAreas(areas, t, id) {
+  const [r, u, f, p] = [t.right, t.up, t.forward, t.trans].map(v3);
+  const apply = (v) => [0, 1, 2].map((k) => r[k] * v[0] + u[k] * v[1] + f[k] * v[2]);
+  return areas.map((a) => ({
+    ...a,
+    id: `${id}/${a.id}`,
+    shapes: a.shapes.map((s) => ({ ...s, at: apply(s.at).map((v, k) => r4(v + p[k])), ...(s.basis ? { basis: s.basis.map((b) => apply(b).map(r4)) } : {}) })),
+  }));
+}
+
 // A light, in the frame it is placed in.
 function lightOf(asset, o, layer, id) {
   const t = transformOf(o);
@@ -73,6 +158,14 @@ function lightOf(asset, o, layer, id) {
     pitch: r4(Math.asin(Math.max(-1, Math.min(1, o.Transform.forward.y)))),
     colour: (v3(o.Color) ?? [1, 1, 1]).map(r4),
     intensity: o.Intensity,
+    // (the record's switches: a light that is off, or lights neither the
+    // diffuse nor the specular, is the bounce's only, Enlighten's
+    // AffectRadiosity, and the frame never draws it; its Dimmer and
+    // ExposureCompensation scale the lumens)
+    enabled: o.Enabled !== false,
+    affect: { diffuse: o.AffectDiffuse !== false, specular: o.AffectSpecular !== false, radiosity: o.AffectRadiosity !== false },
+    dimmer: o.Dimmer ?? 1,
+    ec: o.ExposureCompensation ?? 0,
     radius: o.AttenuationRadius,
     ...(spot ? { inner: o.InnerAngle, outer: o.OuterAngle } : {}),
     shadow: { near: o.ShadowNearRadius, far: o.ShadowFarRadius, dimmer: o.ShadowDimmer },
@@ -110,7 +203,7 @@ function prefabLights(root, name, frame = null, depth = 4, out = []) {
 
 export function lightingRow(root, level) {
   const name = levelName(root, level);
-  if (!name) return { level: null, weathers: {}, default: null, lights: [], volumetrics: [], probes: [], prefabs: [], prefabLights: {}, _missing: [`level: ${level}`] };
+  if (!name) return { level: null, weathers: {}, default: null, lights: [], volumetrics: [], probes: [], prefabs: [], prefabLights: {}, areas: [], patches: {}, _missing: [`level: ${level}`] };
   const dir = name.slice(0, name.lastIndexOf('/') + 1);
   const row = { level: name, weathers: {}, default: null, lights: [], volumetrics: [], probes: [], prefabs: [], prefabLights: {}, _missing: [] };
   const manifest = readWebJson(root, `maps/${name.toLowerCase()}.json`);
@@ -144,13 +237,39 @@ export function lightingRow(root, level) {
       } else if (o.$type === 'SpatialPrefabReferenceObjectData' && /\/pf_light/i.test(o.Blueprint?.$asset ?? '')) {
         const t = transformOf(o);
         const bp = o.Blueprint.$asset;
-        row.prefabs.push({ id, name: shortName(bp), at: t.at.map(r4), yaw: r4(t.yaw), layer: lay, _source: where(asset, o) });
+        // (the whole turn, not the yaw alone: 120 of Hoth's 416 lamps are tilted on their walls and ceilings)
+        const m = o.BlueprintTransform ?? o.Transform;
+        row.prefabs.push({ id, name: shortName(bp), at: t.at.map(r4), yaw: r4(t.yaw), basis: [m.right, m.up, m.forward].map((v) => v3(v).map(r4)), layer: lay, _source: where(asset, o) });
         if (!seen.has(bp)) {
           seen.add(bp);
           row.prefabLights[shortName(bp)] = prefabLights(root, bp);
         }
       }
     });
+  }
+  // (the interiors' VEs, blended in by the view's place: their areas and patches)
+  const index = indexOf(root);
+  const loaded = layers.map((n) => ({ name: n, asset: follow(root, n) })).filter((l) => l.asset);
+  const holders = [name, ...[...index.keys()].filter((n) => n.startsWith(dir) && !n.slice(dir.length).includes('/') && /^(SubWorldData|LevelData)$/.test(index.get(n)?.type ?? ''))].map((n) => follow(root, n)).filter(Boolean);
+  row.areas = areasOf(loaded, [...holders, ...loaded.map((l) => l.asset)]);
+  // (and those inside the prefabs the layers place: Hoth's two ice caves, pf_icecave_01/02, each its own interior VE)
+  for (const { name: ln, asset } of loaded) {
+    asset.objects.forEach((o, i) => {
+      if (o?.$type !== 'SpatialPrefabReferenceObjectData' || /\/pf_light/i.test(o.Blueprint?.$asset ?? '')) return;
+      const bp = follow(root, o.Blueprint);
+      if (!bp?.objects.some((x) => x?.$type === 'AreaProximityEntityData')) return;
+      const t = o.BlueprintTransform ?? o.Transform;
+      row.areas.push(...placeAreas(areasOf([{ name: bp.name, asset: bp }], [bp]), t, `${shortName(ln)}:${i}`));
+    });
+  }
+  row.patches = {};
+  for (const a of row.areas) {
+    for (const { ve } of a.ves) {
+      if (row.patches[ve]) continue;
+      const asset = follow(root, ve);
+      if (asset) row.patches[ve] = patchOf(asset);
+      else row._missing.push(`patch: ${ve}`);
+    }
   }
   return row;
 }
