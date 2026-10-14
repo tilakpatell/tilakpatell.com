@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { hullOf, segmentHit } from '../../src/lib/combat/hulls.js';
 import { readHull } from '../../src/lib/physics/shapesBin.js';
 import { readPhysicsGlb } from './bf2017-physics.mjs';
-import { FIGHTER_PHYSICS, TIE, WAYS, assemble, boxOf, drawnPoints, facing, fitShapes, frameOf, gameToGlb, headerFile, offBy, partProperties, readHeader, resOf, rosterKinds } from './bf2017-hulls.mjs';
+import { FIGHTER_PHYSICS, TIE, WAYS, assemble, boxOf, drawnPoints, facing, fitShapes, frameOf, gameToGlb, headerFile, offBy, partName, partProperties, readHeader, resOf, rosterKinds } from './bf2017-hulls.mjs';
 
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'bf2017', 'physics');
 const readFixture = (name) => readFileSync(join(DIR, name));
@@ -83,6 +83,24 @@ describe('a physics asset’s header', () => {
   it('refuses a part whose slot is past the table, and a header with too few slots', () => {
     expect(() => partProperties({ parts: 2, slots: [0, 4], materials: [0x1100e820] }, 'a ship')).toThrow(/a ship: part 1’s slot 4 is past its table of 1/);
     expect(() => partProperties({ parts: 2, slots: [0], materials: [0x1100e820] }, 'a ship')).toThrow(/a ship: 2 parts, 1 slot/);
+  });
+});
+
+describe('a capital’s parts’ names', () => {
+  it('names a part for its module’s file, with its index where the module’s asset has more than one', () => {
+    const shield = 'models/objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_deflectorshield_01_mesh.glb';
+    expect(partName(shield, 0, 2)).toBe('stardestroyer_deflectorshield_01#0');
+    expect(partName(shield, 1, 2)).toBe('stardestroyer_deflectorshield_01#1');
+    expect(partName('models/gameplay/vehicles/capital/providenceclassdreadnaught/providenceclassdreadnaught_01_mesh.glb', 0, 1)).toBe('providenceclassdreadnaught_01');
+    // (the module's blueprint, its physics asset and a LOD's file name it the same)
+    expect(partName('Objects/Props/Landmarks/_GalacticEmpire/StarDestroyer_01/StarDestroyer_DeflectorShield_01', 1, 2)).toBe('stardestroyer_deflectorshield_01#1');
+    expect(partName('objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_deflectorshield_01_physics_win32', 0, 2)).toBe('stardestroyer_deflectorshield_01#0');
+    expect(partName('models/gameplay/vehicles/capital/mc80/mc80_largenodule_03_mesh_lod2.glb', 0, 3)).toBe('mc80_largenodule_03#0');
+  });
+
+  it('refuses a part its module hasn’t', () => {
+    expect(() => partName('a_mesh.glb', 2, 2)).toThrow(/part 2 of 2/);
+    expect(() => partName('a_mesh.glb', 0, 0)).toThrow(/part 0 of 0/);
   });
 });
 

@@ -35,6 +35,8 @@
 //   facing(hullPoints, drawnPoints) → { placed, ways, better }: a turn or a
 //     mirror that fits the drawing better than the hull as placed
 //   assemble(shapes, properties) → { radius, parts, shapes } for packHull
+//   partName(file, index, count) → a capital's part's name: its module's
+//     file slug, `#<index>` after it where the module's asset has more parts
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -454,6 +456,30 @@ export function facing(hull, drawn, { tie = TIE } = {}) {
 }
 
 // ── the hull ──
+
+// A capital's part is one part of one of its kit's modules (the module's
+// physics asset has parts of its own, each with its own property: the
+// Venator's control towers mix p206, the default slot and p132), named for
+// the module's file: `stardestroyer_solarionizationreactor_01#0` (its asset's
+// part 0 of 2), or the bare slug where the asset has one part
+// (`corvettecr90_01` has two, `providenceclassdreadnaught_01` one). A model
+// file, a blueprint or a physics asset of the module gives the same slug:
+// the last of its path, lower case, without `.glb`, `_physics_win32`, a LOD's
+// `_lod<n>` or `_mesh`. (src/data/bf2017/damage.json keys a capital's parts'
+// health by these names.)
+export const slugOfFile = (file) =>
+  String(file)
+    .split('/')
+    .pop()
+    .toLowerCase()
+    .replace(/\.glb$/, '')
+    .replace(/_physics_win32$/, '')
+    .replace(/_lod\d+$/, '')
+    .replace(/_mesh$/, '');
+export function partName(file, index, count) {
+  if (!(Number.isInteger(count) && count >= 1 && Number.isInteger(index) && index >= 0 && index < count)) throw new Error(`${file}: part ${index} of ${count}`);
+  return count === 1 ? slugOfFile(file) : `${slugOfFile(file)}#${index}`;
+}
 
 // The shapes with each one's material set to its part's property, the
 // parts list (`part<N>` a part, each with its property, as the shapes bin's
