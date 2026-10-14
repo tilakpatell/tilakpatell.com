@@ -13,6 +13,7 @@ import { createGun } from './weapons.js';
 const rb = loadRulebook();
 const SLOT = { left: 1, middle: 2, right: 3 };
 const idle = (id) => ({ id, move: [0, 0] });
+const of = (ev, type) => ev.filter((e) => e.type === type);
 const run = (sim, inputs, n) => {
   const out = [];
   for (let i = 0; i < n; i++) out.push(...step(sim, inputs(i)));
@@ -38,26 +39,26 @@ function duel(unitId, { gap = 6, kind = 'hero', foe = 'd-orig-assault', team = 1
 const press = (id, slot, held = slot) => (i) => [{ id, move: [0, 0], ability: i === 0 ? slot : 0, abilityHeld: held }];
 
 describe('the heroes’ and reinforcements’ abilities, played', () => {
-  it('pushes a trooper in front of Luke off his feet for 150, once the key is held through the 0.5 s wind-up', () => {
+  // (A.Luke.ForcePush.SEQ: the machine takes the request at once, CurrentAbility 4 for 56 ticks, TriggerAffectorEnum 1 at tick 10)
+  it('pushes a trooper in front of Luke off his feet for 150 at the push’s tenth tick, Active while the move holds it', () => {
     const { sim, s, t, me } = duel('luke', { gap: 6 });
     const before = t.at[2];
-    run(sim, press(me, SLOT.left), 14);
-    expect(t.hpMax - t.hp).toBeCloseTo(150, 6);
-    expect(t.alive).toBe(true === t.hp > 0);
+    const ev = run(sim, (i) => [{ id: me, move: [0, 0], ability: i === 0 ? SLOT.left : 0 }], 6);
+    // (pressed in the step to 0.05: active then, the push 10 ticks on, told by the step after 0.217)
+    expect(of(ev, 'ability').map((e) => e.phase)).toEqual(['start', 'active']);
+    const hit = ev.find((e) => e.type === 'hit' && e.by === me);
+    expect(hit.damage).toBeCloseTo(150, 6);
+    expect(hit.t).toBeCloseTo(0.25, 6);
+    expect(state(s.abilities, SLOT.left)).toBe('active');
+    const rest = run(sim, () => [idle(me)], 20);
+    expect(of(rest, 'ability').find((e) => e.phase === 'end').t).toBeCloseTo(1.0, 1);
     expect(state(s.abilities, SLOT.left)).toBe('recharge');
     const other = duel('luke', { gap: 6 });
     other.t.hp = other.t.hpMax = 400;
-    run(other.sim, press(other.me, SLOT.left), 14);
+    run(other.sim, press(other.me, SLOT.left), 8);
     // (shoved away from Luke, and down for the request's second)
-    expect(other.t.at[2]).toBeGreaterThan(before + 1);
+    expect(other.t.at[2]).toBeGreaterThan(before + 0.5);
     expect(other.t.disabledUntil).toBeGreaterThan(other.sim.time);
-  });
-
-  it('calls Luke’s push off when the key is let go in its wind-up', () => {
-    const { sim, s, t, me } = duel('luke', { gap: 6 });
-    run(sim, (i) => [{ id: me, move: [0, 0], ability: i === 0 ? SLOT.left : 0, abilityHeld: i < 3 ? SLOT.left : 0 }], 14);
-    expect(t.hp).toBe(t.hpMax);
-    expect(state(s.abilities, SLOT.left)).toBe('ready');
   });
 
   it('chokes the one in front of Vader for 1.5 s: held where he stands, 86 a second', () => {

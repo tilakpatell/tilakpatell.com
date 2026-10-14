@@ -16,7 +16,8 @@
 // (the rush, the choke, the chain, the throw, the jump pack) are
 // abilitiesMoves.js. Pure: the sim's entities go in, damage requests come out.
 //
-//   unitRow(row) → the ability row with `unit` (its spec) where unitKit.json has it
+//   unitRow(row) → the ability row with `unit` (its spec) where unitKit.json has it, and `move` (moves.json) where it is a move
+//   moveOf(abilityId), evadeMove(unitId), rollMove(cls) → a move of moves.json | null
 //   specOf(id) → { id, kind, range, cone, reach, max, self: [effect], targets: [effect], projectile, fired, weapon, spot }
 //   unitWeapon(id) → a weapon row unitKit.json keeps (the weapons a weapon ability swaps to)
 //   kitOfUnit(unitId) → { unit, primary, abilities } (the kit a hero or reinforcement deploys with)
@@ -27,6 +28,7 @@
 
 import UNIT from '../../data/bf2017/unitKit.json';
 import ABILITIES from '../../data/bf2017/abilities.json';
+import MOVES from '../../data/bf2017/moves.json';
 import { apply, remove } from './affectors.js';
 import { STEP } from './core.js';
 import { lineClear } from './nav.js';
@@ -135,11 +137,30 @@ export function specOf(id) {
 export const unitWeapon = (id) => UNIT.weapons[id] ?? null;
 export const kitOfUnit = (unitId) => UNIT.kits[unitId] ?? null;
 
+// A character-state ability's move (moves.json, scripts/bf2017-moves.mjs: the soldier state machine's node that holds
+// its CurrentAbility): the ability turns Active as the machine takes the request (the next tick: its ActivationTime
+// is the window the machine has to, held for a hold-to-charge one), stays Active while the move holds CurrentAbility
+// (CharacterStateDrivesActiveTime) or its own ActiveTime where that is longer, and its prefab's affectors land at the
+// move's TriggerAffectorEnum keys; the move's root carries the body.
+const MOVE_OF = new Map();
+for (const r of Object.values(MOVES.moves)) for (const [id, mv] of Object.entries(r)) if (id !== 'evade' && !MOVE_OF.has(id)) MOVE_OF.set(id, mv);
+export const moveOf = (abilityId) => MOVE_OF.get(abilityId) ?? null;
+// the evade's move: the unit's own dodge, else the class's (the trooper's rifle dodge, the heavy's gunner's)
+export const evadeMove = (unitId) => MOVES.moves[unitId]?.evade ?? null;
+export const rollMove = (cls) => MOVES.moves[cls === 'heavy' ? 'heavy' : 'trooper']?.evade ?? null;
+
 export function unitRow(row) {
   const spec = specOf(row.id);
   if (!spec) return row;
   const out = { ...row, unit: spec };
   if (row.infinite) out.active = Infinity;
+  const move = moveOf(row.id);
+  if (move) {
+    out.move = move;
+    out.window = row.activation ?? 0;
+    out.activation = 0;
+    if (!row.infinite) out.active = Math.max(row.active ?? 0, move.active ?? 0) || (row.active ?? 0);
+  }
   return out;
 }
 
@@ -173,7 +194,7 @@ export function inReach(sim, s, { range, cone = null, allies = false, from = nul
 const isHero = (o) => o.unit === 'hero';
 
 // the sim's book of what the unit abilities have running (one shape, made once)
-export const unitsOf = (sim) => (sim.units ??= { moves: [], holds: [], repeats: [], throws: [], dots: [], heals: [], held: [], swings: [] });
+export const unitsOf = (sim) => (sim.units ??= { moves: [], holds: [], repeats: [], throws: [], dots: [], heals: [], held: [], swings: [], timelines: [] });
 
 // one effect on one body: damage as a request (the sim applies it through the shield and the overhealth), the rest on it
 export function affect(sim, giver, o, e, now, out, ability = null) {

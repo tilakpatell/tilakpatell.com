@@ -22,6 +22,7 @@
 
 import { lungePick, saberOf, strikeZone } from '../combat/saber2017.js';
 import { end } from './abilities.js';
+import { apply } from './affectors.js';
 import { affect, burst, inReach, kitOfUnit, outputOf, release, specOf, unitWeapon, unitsOf } from './abilitiesUnit.js';
 import { STEP } from './core.js';
 import { heightAt, walkable } from './nav.js';
@@ -46,6 +47,23 @@ export const STRIKE = { every: 0.5, hit: 0.42 };
 export const CHAIN = { hops: 5 };
 // How long a bubble stands where the record does not say (Leia's shield vehicle's life is not read): NOTES.md.
 export const BUBBLE_LIFE = 10;
+// A move whose root carries the body more than this (metres) holds the stick off while it does: the dashes, the
+// charges, the leaps; a push's 0.65 m step is the figure's own (the body keeps the stick)
+export const MOVE_HOLD = 1;
+
+// the root's travel ahead at t s into a move (its keys every tenth of a second, between them straight)
+export function rootAt(root, t) {
+  if (!root?.length) return 0;
+  if (t <= root[0][0]) return root[0][3];
+  for (let i = 1; i < root.length; i++) {
+    if (t <= root[i][0]) {
+      const [t0, , , z0] = root[i - 1];
+      const [t1, , , z1] = root[i];
+      return t1 > t0 ? z0 + ((z1 - z0) * (t - t0)) / (t1 - t0) : z1;
+    }
+  }
+  return root[root.length - 1][3];
+}
 const SABER_KEY = { darthvader: 'vader' };
 
 const units = unitsOf;
@@ -100,6 +118,20 @@ export function onUnit(sim, s, a, e) {
     return;
   }
   if (e.phase !== 'active') return;
+  // (a move: the state machine's figure plays it; its prefab's work waits for the move's TriggerAffectorEnum keys)
+  const mv = a.row.move;
+  if (mv) {
+    s.act = { game: mv.clip?.name ?? null, offset: mv.clip?.offset ?? 0, since: now, id: spec.id, until: now + Math.max(mv.length ?? 0, mv.active ?? 0) };
+    U.timelines.push({ by: s.id, slot: a.slot, ability: spec.id, t0: now, move: mv, fired: 0, yaw: s.yaw, travelled: 0, hit: new Set(), window: -1 });
+    if (!mv.triggers.length || spec.kind === 'rush') fireMove(sim, s, a, spec, now, out);
+    return;
+  }
+  fireMove(sim, s, a, spec, now, out);
+}
+
+// what an ability does once its moment comes: at once for a basic one, at its move's trigger for a character state
+function fireMove(sim, s, a, spec, now, out) {
+  const U = units(sim);
   const active = Number.isFinite(a.row.active) ? a.row.active : 0;
   const rest = spec.self.filter((fx) => fx.type !== 'taken');
   switch (spec.kind) {
@@ -123,6 +155,7 @@ export function onUnit(sim, s, a, e) {
       break;
     case 'rush':
       for (const fx of rest) affect(sim, s, s, fx, now, out, spec.id);
+      if (a.row.move?.root?.length) break;
       U.moves.push({ by: s.id, ability: spec.id, dir: fwd(s), speed: RUSH.speed, until: now + (active > 0 ? Math.min(active, 1.2) : RUSH.time), reach: spec.reach ?? 1.5, hit: new Set(), spec });
       break;
     case 'choke': {
@@ -228,6 +261,34 @@ export function stepUnits(sim) {
       for (const fx of m.spec.targets) affect(sim, s, o, fx, now, out, m.ability);
     }
     return true;
+  });
+  // moves (moves.json): the root carries the body along its facing at the press, the stick held off while it does; the
+  // prefab's work at the first TriggerAffectorEnum key, a rush's hits in each key's window (each enemy once)
+  U.timelines = U.timelines.filter((tl) => {
+    const s = get(tl.by);
+    if (!s?.alive) return false;
+    const mv = tl.move;
+    const t = now - tl.t0;
+    const a = s.abilities?.list.find((x) => x.slot === tl.slot);
+    const spec = a?.row.unit;
+    if (!spec) return false;
+    const z = rootAt(mv.root, t);
+    const travel = mv.root.length ? mv.root[mv.root.length - 1][3] : 0;
+    if (travel > MOVE_HOLD && z > tl.travelled) {
+      apply(s.stack, { id: `move:${tl.ability}`, property: 'speed', op: 'set', value: 0, until: now + STEP * 1.5 });
+      slide(sim, s, Math.sin(tl.yaw) * (z - tl.travelled), Math.cos(tl.yaw) * (z - tl.travelled));
+    }
+    tl.travelled = z;
+    for (; tl.fired < mv.triggers.length && t + 1e-9 >= mv.triggers[tl.fired].at; tl.fired++) if (tl.fired === 0 && spec.kind !== 'rush') fireMove(sim, s, a, spec, now, out);
+    if (spec.kind === 'rush' && mv.triggers.some((k) => t + 1e-9 >= k.at && t <= k.at + Math.max(k.length, STEP) + 1e-9)) {
+      for (const o of inReach(sim, s, { range: (spec.reach ?? 1.5) + 0.5 })) {
+        if (tl.hit.has(o.id)) continue;
+        tl.hit.add(o.id);
+        for (const fx of spec.targets) affect(sim, s, o, fx, now, out, spec.id);
+      }
+    }
+    const last = Math.max(mv.root.at(-1)?.[0] ?? 0, ...mv.triggers.map((k) => k.at + k.length), mv.active ?? 0);
+    return t < last;
   });
   // chokes and holds: the held stay held, lifted, until the grip ends
   U.holds = U.holds.filter((h) => {
