@@ -1,5 +1,5 @@
 // A mode's interact gates (maps/<level>.json `gates`): Hoth's two hangar blast
-// doors as the game wires them (bf2-re findings/58), read out of the mode
+// doors as the game wires them (bf2-re findings/59), read out of the mode
 // sub-world's own graph, beside its spawn logic (bf2017-rulebook-spawnlogic.mjs).
 //
 // A PF_InteractGate_* prefab's input -1960580174 is its door core's Enabled
@@ -8,9 +8,13 @@
 // Bool is set by an EventGate whose In is a walker's FollowWaypoints route
 // event (1762125924): the gate unlocks when that walker finishes its route.
 // The EventGate's Close is the other walker's route event (through a
-// splitter): the first walker home unlocks its gate and bars the other. The
-// gate's output -1157191321 is the door opened at its panel (the spawn
-// logic's 'opened' port).
+// splitter): the first walker home unlocks the gate it unlocks and bars the
+// other. The gate's input -1756439259 is its leaves' Enabled (both
+// ObjectReferences'), through a SyncedBool from a Bool the barring walker's
+// route sets false a delay later: that walker's gate is blown (Hoth: the
+// east walker at the east door, a second after it is home; the west panel
+// unlocks). The gate's output -1157191321 is the door opened at its panel
+// (the spawn logic's 'opened' port).
 //
 // The panel's interaction is the button's WorldInteraction: within
 // InteractionMaxDistance of its transform and InteractionMaxAngle of its
@@ -28,7 +32,7 @@
 // web/models.jsonl).
 //
 //   gatesOf(root, dir, sub) → [{ id, name, at, yaw, panel: { id, at, yaw }, unlock: path id | null,
-//     barredBy: [path id], interact: { distance, scale, angle, hold, _source } | null,
+//     barredBy: [path id], blownBy: [{ path, after: s }], interact: { distance, scale, angle, hold, _source } | null,
 //     door: { seconds, slide, curve, mode, overlap, _source } | null, _source }] | []
 
 import { readFileSync } from 'node:fs';
@@ -42,6 +46,7 @@ export const GATE_ENABLED = -1960580174;
 export const GATE_PANEL = [1485282277, 1485282278];
 export const GATE_OPENED = -1157191321;
 export const ROUTE_DONE = 1762125924;
+export const LEAVES_ENABLED = -1756439259;
 const SPLIT_OUT = -137490305;
 const SPLIT_IN = 1723395486;
 
@@ -151,6 +156,29 @@ export function gatesOf(root, dir, sub) {
     walk(id, event, 0);
     return out;
   };
+  // the routes whose end blows a gate: back from the leaves' Enabled (through its SyncedBool) to the Bool
+  // set false, through delays (adding up), event gates and splitters, to a walker's route done
+  const blowsOf = (gateId) => {
+    let src = (pin.get(gateId) ?? []).find((p) => s32(p.field) === LEAVES_ENABLED)?.src ?? null;
+    if (src?.o.$type === 'SyncedBoolEntityData') src = (pin.get(src.id) ?? []).find((p) => s32(p.field) === H('In'))?.src ?? null;
+    if (src?.o.$type !== 'BoolEntityData') return [];
+    const out = [];
+    const back = (to, ev, after, depth) => {
+      if (depth > 8) return;
+      for (const v of evin.get(to) ?? []) {
+        if (s32(v.event) !== s32(ev)) continue;
+        const t = v.src.o.$type;
+        if (t === 'FollowWaypointsEntityData' && s32(v.srcEvent) === ROUTE_DONE) {
+          const p = pathOf(v.src);
+          if (p && !out.some((x) => x.path === p)) out.push({ path: p, after: r3(after) });
+        } else if (t === 'EventSplitterEntityData' && s32(v.srcEvent) === SPLIT_OUT) back(v.src.id, SPLIT_IN, after, depth + 1);
+        else if (t === 'DelayEntityData' && s32(v.srcEvent) === H('Out')) back(v.src.id, H('In'), after + (v.src.o.Delay ?? 0), depth + 1);
+        else if (t === 'EventGateEntityData' && s32(v.srcEvent) === H('Out')) back(v.src.id, H('In'), after, depth + 1);
+      }
+    };
+    back(src.id, H('SetFalse'), 0, 0);
+    return out;
+  };
   const gates = [];
   for (const e of byGuid.values()) {
     const name = shortName(e.o.Blueprint?.$asset ?? '');
@@ -177,9 +205,10 @@ export function gatesOf(root, dir, sub) {
       panel: lt ? { id: loc.id, at: lt.at.map(r3), yaw: r3(lt.yaw) } : null,
       unlock,
       barredBy,
+      blownBy: blowsOf(e.id),
       interact: interactOf(root, e.o.Blueprint),
       door: doorOf(root, e.o.Blueprint),
-      _source: `${g.subName}#PropertyConnections+EventConnections (${name}: its Enabled's Bool, the EventGate that sets it, the routes into its In and Close; its panel's locator)`,
+      _source: `${g.subName}#PropertyConnections+EventConnections (${name}: its Enabled's Bool, the EventGate that sets it, the routes into its In and Close; its leaves' Enabled's Bool and the routes that set it false; its panel's locator)`,
     });
   }
   return gates.sort((a, b) => a.id.localeCompare(b.id));
