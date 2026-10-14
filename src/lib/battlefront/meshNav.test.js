@@ -5,6 +5,7 @@ import hoth from '../../data/bf2017/maps/hoth.json';
 import { load } from './navmesh.js';
 import { canUse } from './gates.js';
 import { LIFT, attachMesh, doorway, gateStand, meshMove, meshNearest, meshPath, meshStand } from './meshNav.js';
+import { lineClear } from './nav.js';
 
 // (Hoth's playthrough mesh alone, cut from the bucket's navmesh.bin: scripts/bf2017-navmesh-cut.mjs)
 const BIN = join(import.meta.dirname, '../../../scripts/fixtures/bf2017/navmesh/hoth-playthrough.bin');
@@ -133,5 +134,24 @@ describe('the soldiers on Hoth’s navmesh', () => {
     }
     expect(s.at[2]).toBeLessThan(-1598);
     expect(s.link ?? null).toBeNull();
+  });
+
+  it('sees across Echo Base under the mountain where the mesh certifies the air, and not through what it leaves out', () => {
+    // (a 2 m grid whose ground is the snow over the fuel rooms, 435 m, as the page's terrain is)
+    const snow = () => ({ cols: 120, rows: 160, origin: [100, -1850], cell: 2, height: new Float32Array(120 * 160).fill(435), near: new Map() });
+    const nav = attachMesh(snow(), load(bytes, { mesh: 'playthrough' }));
+    expect(nav.mesh.height).toBeCloseTo(1.8, 5);
+    const at = (x, z) => meshStand(nav, [x, 359.2, z], 3);
+    const eye = (p) => [p[0], p[1] + 1.6, p[2]];
+    const chest = (p) => [p[0], p[1] + 1.2, p[2]];
+    const depot = at(208.75, -1761.88);
+    // (the depot's keypad's stand and a soldier 4 m off it in the room; the hangar from side to side)
+    expect(lineClear(nav, eye(depot), chest(at(205, -1760)))).toBe(true);
+    expect(lineClear(nav, eye(at(215, -1650)), chest(at(240, -1650)))).toBe(true);
+    expect(lineClear(snow(), eye(depot), chest(at(205, -1760)))).toBe(false);
+    // (through the rock to the next fuel room, and up past the agent's 1.8 m: shut)
+    expect(lineClear(nav, eye(depot), chest(at(143, -1771)))).toBe(false);
+    expect(nav.open(depot[0], depot[1] + 1.2, depot[2])).toBe(true);
+    expect(nav.open(depot[0], depot[1] + 3, depot[2])).toBe(false);
   });
 });

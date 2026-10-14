@@ -8,7 +8,13 @@
 // floors of a place one over another (Echo Base under the mountain's snow),
 // which the 2D grid on the terrain's heightmap never did; the grid is still
 // what a soldier off the mesh walks, and what the line of sight and the cover
-// read.
+// read, but under the terrain a point is open where the mesh certifies it:
+// NavPower bakes a polygon only where its agent stands, so the agent's
+// height (the mesh's `height`, 1.8 m on Hoth's playthrough mesh) over a
+// polygon is free of the level (`open`, which nav.js's firstSolid asks
+// before it takes the terrain for the ground). Without it the grid took the
+// mountain's snow, 75 m over the fuel rooms, for the ground of every line in
+// Echo Base: no bot there saw or hit anyone.
 //
 // Feet stand on the ground, not on the mesh: NavPower's polygons ride 0.07 to
 // 0.62 m over the floor they were baked from (findings/57). Where the
@@ -17,6 +23,7 @@
 // (the page's physics, round the player); else the mesh less LIFT.
 //
 //   attachMesh(nav, mesh, { floor }) → nav     floor(x, y, z) → the floor's height under a point, or null
+//     (and nav.open(x, y, z) → whether a point is within the mesh's agent height over a polygon)
 //   meshMove(s, dir, dt, nav, speed) → metres moved, or null off the mesh (the grid's step then)
 //   meshPath(nav, from, to, { fromY, toY }) → [[x, z]] | null (no way), undefined (no mesh)
 //     (toY left out: the goal's floor is the one the walker can reach nearest its own height)
@@ -42,9 +49,27 @@ const SNAP = 4;
 // m: how near a link's end a walker steps onto it, its way's next point the other end (by hand)
 const LINK_NEAR = 1.5;
 
+// m: the agent a mesh was baked for, where it says none (findings/57: Hoth's playthrough mesh, 1.8 high, 0.4 round)
+const AGENT_HEIGHT = 1.8;
+const AGENT_RADIUS = 0.4;
+
 export function attachMesh(nav, mesh, { floor = null } = {}) {
   nav.mesh = mesh;
   nav.floor = floor;
+  // (the agent's column over a polygon, and its radius beyond the polygon's rim, which the bake erodes the floor by)
+  const h = mesh?.height > 0 ? mesh.height : AGENT_HEIGHT;
+  const r = mesh?.radius > 0 ? mesh.radius : AGENT_RADIUS;
+  nav.open = mesh
+    ? (x, y, z) => {
+        const p = mesh.toPack([x, y, z]);
+        if (mesh.locate(p[0], p[1], p[2], { above: 0, below: h }) >= 0) return true;
+        const under = (poly) => {
+          const f = mesh.heightOn(poly, p[0], p[2]);
+          return f <= p[1] && f >= p[1] - h;
+        };
+        return mesh.nearest(p[0], p[1], p[2], { radius: r, flat: true, accept: under }) !== null;
+      }
+    : null;
   return nav;
 }
 
