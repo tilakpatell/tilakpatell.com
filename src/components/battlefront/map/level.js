@@ -10,10 +10,14 @@
 // (ground.js) since the pack carries no ground mesh, in the game's snow on
 // the node renderer: the galaxy draws its own over it.
 //
-//   createLevel({ scene, tier, detail, texTier, renderer, world = 'hoth', ground = true, snow = true, onCell, onDrop, deps })
+//   createLevel({ scene, tier, detail, texTier, renderer, world = 'hoth', inside = INSIDE[world], ground = true, snow = true, onCell, onDrop, deps })
+//   (inside: the level's interior, a district pack in the same frame drawn and
+//    streamed with it: Hoth's Echo Base, `hoth/base`, which the pack builder
+//    cuts from under the ground with --inside; its cells reach onCell and
+//    onDrop with a fourth argument, 'inside', its keys being its own)
 //   (snow: the ground in the game's snow maps on the node renderer; false, the flat colour;
 //    detail: the quality level, 'ultra' where the tier is 'high' on a strong card, for the ground)
-//     → { ready: Promise, group, origin, pack, update([x, y, z]), heightAt(x, z),
+//     → { ready: Promise, group, origin, pack, inner: { pack, loadBin } | null, update([x, y, z]), heightAt(x, z),
 //         loadBin(path), navOf() → Promise<mask | null>, progress(), loaded(), stats(), dispose() }
 //   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
 //   and go, for the collision; navOf: the pack's nav.bin, navMask.js's)
@@ -24,6 +28,11 @@ import { LAYERS } from "../../../lib/land/layers.js";
 import { inflateMask } from "../../../lib/battlefront/navMask.js";
 import * as laneL from "../../galaxy/shared/level.js";
 import { buildGround } from "./ground.js";
+
+// The levels whose interior is a pack of its own (scripts/bf2017-level.mjs
+// --district <name> --inside: the instances under the ground), by hand: the
+// pack does not name its interior.
+export const INSIDE = { hoth: 'base' };
 
 export function toPack(pack, [x, , z]) {
   const [ox, , oz] = pack.origin ?? [0, 0, 0];
@@ -51,12 +60,21 @@ const DEPS = {
   navOf: (world) => bytes(world)("nav.bin").then(inflateMask),
 };
 
+// the two parts' numbers added (a count each; the rest the outside's)
+function sum(a, b) {
+  if (!b) return a;
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) if (typeof v === 'number' && typeof a[k] === 'number') out[k] = a[k] + v;
+  return out;
+}
+
 export function createLevel({
   scene,
   tier = "high",
   texTier = null,
   renderer = null,
   world = "hoth",
+  inside = INSIDE[world] ?? null,
   ground = true,
   snow = true,
   detail = null,
@@ -78,8 +96,12 @@ export function createLevel({
   let last = null;
   let gone = false;
   const fetchBytes = bytes(world);
+  // (the interior, in the same frame: its cells told apart from the outside's, whose keys it shares)
+  const sub = inside
+    ? createLevel({ scene, tier, texTier, renderer, world: `${world}/${inside}`, inside: null, ground: false, gpuScene, onCell: (k, b, band) => onCell(k, b, band, 'inside'), onDrop: (k) => onDrop(k, 'inside'), deps })
+    : null;
 
-  const ready = (async () => {
+  const outside = (async () => {
     const [p, img] = await Promise.all([
       d.packOf(world),
       d.imageLayer(world).catch(() => null),
@@ -125,9 +147,11 @@ export function createLevel({
     }
     if (last) update(last);
   })();
+  const ready = Promise.all([outside, sub?.ready]).then(() => {});
 
   function update(at) {
     last = at;
+    sub?.update(at);
     if (!stream) return;
     const p = toPack(pack, at);
     stream.update(p, tier);
@@ -144,6 +168,9 @@ export function createLevel({
     get pack() {
       return pack;
     },
+    get inner() {
+      return sub?.pack ? { pack: sub.pack, loadBin: sub.loadBin } : null;
+    },
     loadBin: fetchBytes,
     navOf: () =>
       Promise.resolve()
@@ -157,16 +184,23 @@ export function createLevel({
       const [px, pz] = toPack(pack, [x, 0, z]);
       return LAYERS.image(px, pz, layer) + (pack.origin?.[1] ?? 0);
     },
-    loaded: () => stream?.ready() ?? false,
-    progress: () => stream?.progress() ?? 0,
-    stats: () => level?.stats() ?? { tris: 0, calls: 0, instances: 0 },
+    loaded: () => (stream?.ready() ?? false) && (!sub || sub.loaded()),
+    progress: () => (sub ? ((stream?.progress() ?? 0) + sub.progress()) / 2 : (stream?.progress() ?? 0)),
+    stats: () => sum(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }, sub?.stats()),
     // (the GPU scene's frame: the occluders' depth, the pyramid and the cull
     // before the scene is drawn, the queries read after; nothing on the other paths)
-    beforeRender: (camera) => level?.beforeRender?.(camera),
-    afterRender: () => level?.afterRender?.(),
+    beforeRender: (camera) => {
+      level?.beforeRender?.(camera);
+      sub?.beforeRender(camera);
+    },
+    afterRender: () => {
+      level?.afterRender?.();
+      sub?.afterRender();
+    },
     debug: () => level?.debug?.() ?? null,
     dispose() {
       gone = true;
+      sub?.dispose();
       stream?.dispose();
       level?.dispose();
       loader?.dispose();

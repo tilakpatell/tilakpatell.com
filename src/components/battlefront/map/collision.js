@@ -11,6 +11,10 @@
 //     → { add(key, bin, band) → Promise, drop(key), update(ms = 4) → bodies added,
 //         sweep(from, dir, len, r) → metres along dir to the first shape | null,
 //         stats(), dispose() }
+//   createPartsCollision({ parts: { outside: { pack, loadBin }, inside: { pack, loadBin } | null }, physics, tier, deps })
+//     → the same face, for a level and its interior (map/level.js's `inner`):
+//       add(key, bin, band, part) and drop(key, part) by the part the stream
+//       names ('inside', else the outside), the sweep the nearer of the two
 //   armCaster({ heightAt, collision, nav, clear, step, radius }) → castArm(from, dir, len)
 //     the nearer of a march over the ground and a ball swept through the
 //     shapes (with no engine: the navgrid's solids and mask, firstSolid)
@@ -76,6 +80,36 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
       near.clear();
       lp.dispose();
     },
+  };
+}
+
+export function createPartsCollision({ parts, physics, tier = 'high', deps = {} }) {
+  const each = Object.fromEntries(
+    Object.entries(parts)
+      .filter(([, p]) => p?.pack)
+      .map(([name, p]) => [name, createLevelCollision({ pack: p.pack, loadBin: p.loadBin, physics, tier, deps })]),
+  );
+  const all = Object.values(each);
+  const of = (part) => each[part === 'inside' ? 'inside' : 'outside'];
+  return {
+    add: (key, bin, band, part) => of(part)?.add(key, bin, band) ?? Promise.resolve(),
+    drop: (key, part) => of(part)?.drop(key),
+    // (the frame's slice of time shared between the parts)
+    update: (ms = 4) => all.reduce((n, c) => n + c.update(ms / all.length), 0),
+    sweep(from, dir, len, r) {
+      let best = null;
+      for (const c of all) {
+        const d = c.sweep(from, dir, len, r);
+        if (d != null && (best == null || d < best)) best = d;
+      }
+      return best;
+    },
+    stats() {
+      const out = {};
+      for (const c of all) for (const [k, v] of Object.entries(c.stats() ?? {})) if (typeof v === 'number') out[k] = (out[k] ?? 0) + v;
+      return out;
+    },
+    dispose: () => all.forEach((c) => c.dispose()),
   };
 }
 

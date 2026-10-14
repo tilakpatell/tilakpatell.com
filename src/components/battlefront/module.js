@@ -58,7 +58,7 @@ import { createKitFx } from './fx/kit.js';
 import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
-import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
+import { armCaster, createPartsCollision, wantsEngine } from './map/collision.js';
 import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
@@ -142,7 +142,7 @@ export default {
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
     // 'high': the ground's 1 m patch and its map sizes read it)
-    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
+    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', onCell: (k, b, band, part) => collision?.add(k, b, band, part), onDrop: (k, part) => collision?.drop(k, part) });
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
@@ -170,7 +170,8 @@ export default {
       const { createPhysics, preload } = await import('../../lib/physics/world.js');
       await preload();
       physics = await createPhysics();
-      collision = createLevelCollision({ pack: level.pack, loadBin: level.loadBin, physics, tier });
+      // (the outside's and its interior's, Hoth's Echo Base: map/level.js's inner)
+      collision = createPartsCollision({ parts: { outside: { pack: level.pack, loadBin: level.loadBin }, inside: level.inner }, physics, tier });
     };
     // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
