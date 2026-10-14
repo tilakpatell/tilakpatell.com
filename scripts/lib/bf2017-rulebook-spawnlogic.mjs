@@ -12,10 +12,14 @@
 // points in stage 2, the fuel charges in stage 3).
 //
 //   spawnLogic(root, dir, sub, { targets }?) → { nodes, inputs, events, enables, trackers, unsupported, _source } | null
-//   (targets: ['<layer>:<index>', …], the placements whose Enabled the graph is read back
-//    from instead of the spawn records': a mode part's pickups, scripts/lib/bf2017-level-mode.mjs;
-//    a WaypointTriggerEntityData is then a node of its own, `waypoint`, its path and the
-//    waypoint it names, for the page to fire as a walker passes it)
+//   (targets: what the graph is read back from instead of the spawn records' Enabled, for a
+//    mode part (scripts/bf2017-level-mode.mjs): '<layer>:<index>' a placement's Enabled,
+//    { id, field } another field of it (enables['<id>.<field>']), { id, event } an event
+//    into it (fires['<id>.<event>']: the outputs that fire it). Read so, a
+//    WaypointTriggerEntityData is a node of its own, `waypoint` (its path and the waypoint
+//    it names, fired by the page as a walker passes it), a FollowWaypointsEntityData a
+//    `route` (its path, fired when the walker on it reaches its end) and a
+//    SyncedBoolEntityData a `synced` bool (its In passed through until an event sets it))
 //
 // The graph's ids are the map rulebook's own (`<layer>:<object index>`);
 // fields and events keep their names where the djb2-xor hash is a known one
@@ -126,15 +130,26 @@ export function spawnLogic(root, dir, sub, { targets = null } = {}) {
 
   // the spawn records of the mode's layers that something switches (or the placements asked for)
   const prefix = `${sub}_`.toLowerCase();
-  const asked = targets ? new Set(targets) : null;
-  const records = [...byGuid.values()].filter((e) => (asked ? asked.has(e.id) : SPAWNS.has(e.o.$type) && e.layer.toLowerCase().startsWith(prefix)) && !IGNORED.test(e.layer));
+  const asked = targets ? targets.map((t) => (typeof t === 'string' ? { id: t, field: H('Enabled'), key: t } : t)) : null;
+  const askedIds = asked ? new Set(asked.map((t) => t.id)) : null;
+  const records = [...byGuid.values()].filter((e) => (asked ? askedIds.has(e.id) : SPAWNS.has(e.o.$type) && e.layer.toLowerCase().startsWith(prefix)) && !IGNORED.test(e.layer));
   const enables = {};
+  const fires = {};
   const want = [];
   for (const r of records) {
-    const into = (pin.get(r.id) ?? []).find((p) => s32(p.field) === H('Enabled'));
-    if (!into) continue;
-    enables[r.id] = `${into.src.id}.${fieldName(into.srcField)}`;
-    want.push(into.src);
+    for (const t of asked ? asked.filter((x) => x.id === r.id) : [{ field: H('Enabled'), key: r.id }]) {
+      if (t.event != null) {
+        const ins = (evin.get(r.id) ?? []).filter((v) => s32(v.event) === s32(t.event) && !IGNORED.test(v.src.layer));
+        if (!ins.length) continue;
+        fires[`${r.id}.${fieldName(t.event)}`] = ins.map((v) => `${v.src.id}.${outEvent(v.src, v.srcEvent)}`);
+        want.push(...ins.map((v) => v.src));
+        continue;
+      }
+      const into = (pin.get(r.id) ?? []).find((p) => s32(p.field) === s32(t.field));
+      if (!into) continue;
+      enables[t.key ?? `${r.id}.${fieldName(t.field)}`] = `${into.src.id}.${fieldName(into.srcField)}`;
+      want.push(into.src);
+    }
   }
   if (!want.length) return null;
 
@@ -158,7 +173,7 @@ export function spawnLogic(root, dir, sub, { targets = null } = {}) {
     const e = stack.pop();
     if (seen.has(e.id)) continue;
     seen.add(e.id);
-    const kind = asked && e.o.$type === 'WaypointTriggerEntityData' ? 'waypoint' : KINDS[e.o.$type];
+    const kind = (asked && PART_KINDS[e.o.$type]) || KINDS[e.o.$type];
     if (IGNORED.test(e.layer) || IGNORED.test(e.o.$type) || IGNORED.test(e.o.Blueprint?.$asset ?? '')) {
       nodes[e.id] = { type: 'ignored', record: e.o.$type };
       continue;
@@ -172,8 +187,8 @@ export function spawnLogic(root, dir, sub, { targets = null } = {}) {
       nodes[e.id] ??= nodeOf(kind, e, links);
       continue;
     }
-    if (kind === 'waypoint') {
-      nodes[e.id] = waypointOf(e, links, assets);
+    if (kind === 'waypoint' || kind === 'route') {
+      nodes[e.id] = kind === 'waypoint' ? waypointOf(e, links, assets) : routeOf(e, links);
       continue;
     }
     nodes[e.id] = nodeOf(kind, e, links);
@@ -194,7 +209,17 @@ export function spawnLogic(root, dir, sub, { targets = null } = {}) {
   // the escort trackers' walkers: which waypoint triggers count for which walker
   const trackers = {};
   for (const [id, n] of Object.entries(nodes)) if (n.type === 'prefab' && n.name === 'PF_EscortTracker') trackers[id] = escortTracker(assets, evin, links, id);
-  return { nodes, inputs, events, enables, trackers, unsupported: [...unsupported].sort(), _source: `${subName}#PropertyConnections+EventConnections+LinkConnections (back from each ${asked ? 'placement asked for' : 'spawn record'}'s Enabled)` };
+  return { nodes, inputs, events, enables, ...(asked ? { fires } : {}), trackers, unsupported: [...unsupported].sort(), _source: `${subName}#PropertyConnections+EventConnections+LinkConnections (back from ${asked ? 'each field and event asked for' : "each spawn record's Enabled"})` };
+}
+
+// the record types a mode part's reading adds (spawnLogic's `targets`)
+const PART_KINDS = { WaypointTriggerEntityData: 'waypoint', FollowWaypointsEntityData: 'route', SyncedBoolEntityData: 'synced' };
+
+// a FollowWaypointsEntityData: the path its link names; its out event the one the graph listens to
+const ROUTE_DONE = 1762125924;
+function routeOf(e, links) {
+  const path = (links.get(e.id) ?? []).find((l) => s32(l.field) === 0 && l.t.o.$type === 'AIWaypointsShapeData');
+  return { type: 'route', path: path?.t.id ?? null, out: fieldName(ROUTE_DONE) };
 }
 
 // a WaypointTriggerEntityData: the path and the waypoint its link names (the
@@ -221,6 +246,7 @@ function nodeOf(kind, e, links) {
     case 'not':
       return { type: kind, value: Boolean(o.In) };
     case 'bool':
+    case 'synced':
       return { type: kind, value: Boolean(o.DefaultValue) };
     case 'splitter':
       return { type: kind, once: Boolean(o.RunOnce) };

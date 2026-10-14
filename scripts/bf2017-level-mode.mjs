@@ -26,6 +26,10 @@ import { follow } from './lib/bf2017-ebx.mjs';
 import { NEVER, STILL_SKINNED } from './lib/bf2017-level.mjs';
 import { fromManifest, readMode } from './lib/bf2017-level-mode.mjs';
 import { spawnLogic } from './lib/bf2017-rulebook-spawnlogic.mjs';
+import { fieldHash as H } from './lib/bf2017-abilities.mjs';
+
+// PF_InteractGate_Hoth_01's field that switches its leaves (its two ObjectReferences' Enabled)
+const LEAVES_ENABLED = -1756439259;
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const SECTION = '<!-- mode -->';
@@ -87,9 +91,17 @@ async function main(args) {
   const load = (name) => (name ? follow(root, name) : null);
   const instances = instancesOf(manifest, `${dir}${subName}`);
   const mode = readMode(load, { sub: `${dir}${subName}`, instances, origin: level.origin, layers });
-  // (the pickups' Enabled, read back through the level's graph the way the spawn records' is: the page runs it)
-  const pickups = mode.props.filter((p) => p.kind === 'pickup' && p.enabled && typeof p.enabled === 'object').map((p) => p.id);
-  mode.logic = pickups.length ? spawnLogic(root, dir, subName, { targets: pickups }) : null;
+  // (what the level's graph decides, read back through it the way the spawn records' Enabled is,
+  // for the page to run with lib/battlefront/spawnLogic.js: the pickups' Enabled, the gates'
+  // leaves' Enabled and their ruins' IsDestroyed, the doors' OpenDoor and CloseDoor)
+  const live = (v) => v && typeof v === 'object';
+  const targets = [
+    ...mode.props.filter((p) => p.kind === 'pickup' && live(p.enabled)).map((p) => p.id),
+    ...mode.props.filter((p) => p.kind === 'gateRuin').map((p) => ({ id: p.id, field: H('IsDestroyed') })),
+    ...mode.gates.filter((g) => live(g.leavesEnabled)).map((g) => ({ id: g.id, field: LEAVES_ENABLED })),
+    ...mode.doors.flatMap((d) => [{ id: d.id, event: H('OpenDoor') }, { id: d.id, event: H('CloseDoor') }]),
+  ];
+  mode.logic = targets.length ? spawnLogic(root, dir, subName, { targets }) : null;
   const cmd = `node scripts/bf2017-level-mode.mjs ${process.argv.slice(2).join(' ')}`;
   const json = { _from: { map: level.map, sub: `${dir}${subName}`, manifest: `web/maps/${level.map}/${level.map.split('/').pop()}.json`, frame: 'the pack’s: the export’s minus level.json’s origin' }, ...mode };
   console.log(`${pack}: ${mode.doors.length} doors, ${mode.gates.length} gates, ${mode.props.length} props, ${mode.boxes.length} walls, ${mode.unmatched.length} meshes unmatched`);
