@@ -1,0 +1,114 @@
+{
+  "arc170": {
+    "source": "game",
+    "bytes": 15624,
+    "parts": 11,
+    "radius": 0.9614,
+    "from": "gameplay/vehicles/air/arc170/vehicle_air_arc170_physics_win32"
+  },
+  "awing": {
+    "source": "game",
+    "bytes": 15512,
+    "parts": 18,
+    "radius": 0.5586,
+    "from": "gameplay/vehicles/air/awing/vehicle_air_awing_physics_win32"
+  },
+  "falcon": {
+    "source": "game",
+    "bytes": 37256,
+    "parts": 39,
+    "radius": 0.5011,
+    "from": "gameplay/vehicles/air/millenniumfalcon/vehicle_air_millenniumfalcon_physics_win32"
+  },
+  "hyena": {
+    "source": "game",
+    "bytes": 26668,
+    "parts": 7,
+    "radius": 0.6078,
+    "from": "gameplay/vehicles/air/hyenabomber/vehicle_air_hyenabomber_physics_win32"
+  },
+  "n1": {
+    "source": "game",
+    "bytes": 17240,
+    "parts": 6,
+    "radius": 0.5579,
+    "from": "gameplay/vehicles/air/n1starfighter/vehicle_air_n1starfighter_physics_win32"
+  },
+  "slave1": {
+    "source": "game",
+    "bytes": 21012,
+    "parts": 17,
+    "radius": 0.5372,
+    "from": "gameplay/vehicles/air/slave1/vehicle_air_slave1_physics_win32"
+  },
+  "tie": {
+    "source": "game",
+    "bytes": 16604,
+    "parts": 3,
+    "radius": 0.8236,
+    "from": "gameplay/vehicles/air/tiefighter/vehicle_air_tiefighter_physics_win32"
+  },
+  "tieadvanced": {
+    "source": "game",
+    "bytes": 18148,
+    "parts": 3,
+    "radius": 0.7126,
+    "from": "gameplay/vehicles/air/tieadvancedx1/vehicle_air_tieadvancedx1_physics_win32"
+  },
+  "tiebomber": {
+    "source": "game",
+    "bytes": 43900,
+    "parts": 1,
+    "radius": 0.7949,
+    "from": "gameplay/vehicles/air/tiebomber/vehicle_air_tiebomber_physics_win32"
+  },
+  "trifighter": {
+    "source": "game",
+    "bytes": 27388,
+    "parts": 1,
+    "radius": 0.5184,
+    "from": "gameplay/vehicles/air/droidtrifighter/vehicle_air_droidtrifighter_physics_win32"
+  },
+  "uwing": {
+    "source": "game",
+    "bytes": 68024,
+    "parts": 6,
+    "radius": 0.5239,
+    "from": "gameplay/vehicles/air/uwing/vehicle_air_uwing_gunship_physics_win32"
+  },
+  "vulture": {
+    "source": "game",
+    "bytes": 30748,
+    "parts": 6,
+    "radius": 0.5652,
+    "from": "gameplay/vehicles/air/vulturedroid/vehicle_air_vulturedroid_physics_win32"
+  },
+  "vwing": {
+    "source": "game",
+    "bytes": 14272,
+    "parts": 13,
+    "radius": 0.538,
+    "from": "gameplay/vehicles/air/vwing/vehicle_air_vwing_physics_win32"
+  },
+  "xwing": {
+    "source": "game",
+    "bytes": 9024,
+    "parts": 8,
+    "radius": 0.6856,
+    "from": "gameplay/vehicles/air/xwing_t65/vehicle_air_xwing_t65_physics_win32"
+  },
+  "xwing65": {
+    "source": "game",
+    "bytes": 9024,
+    "parts": 8,
+    "radius": 0.6852,
+    "from": "gameplay/vehicles/air/xwing_t65/vehicle_air_xwing_t65_physics_win32"
+  },
+  "ywing": {
+    "source": "game",
+    "bytes": 20116,
+    "parts": 10,
+    "radius": 0.5605,
+    "from": "gameplay/vehicles/air/ywing/vehicle_air_ywing_physics_win32"
+  }
+}
