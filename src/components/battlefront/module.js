@@ -490,6 +490,7 @@ export default {
         if (stepped > 0) director.update(after, heard, stepped, { waiting: parked });
         // (a soldier held in the air for want of a floor gets the frame's time for the shapes under it)
         collision?.update(walker?.held ? 16 : 4, body()?.at ?? null);
+        walker?.step();
         const drawn = after;
         const p = body();
         if (sim.player.state === 'alive' && p) {

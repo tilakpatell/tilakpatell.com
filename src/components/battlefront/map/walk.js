@@ -18,6 +18,7 @@
 //
 //   createWalker({ physics, pack, row, at = [0, 0, 0], ground(x, z) → the terrain's height }) → {
 //     mover(s, dir, dt, nav) → metres moved   (sim.js's signature for move)
+//     step() (the world stepped once a frame: what the stream added becomes solid to the next move),
 //     held (true while it waits in the air for something under it), ready(), dispose() }
 //   toPackFrame(pack, [x, y, z]) / fromPackFrame(pack, [x, y, z])   (pure)
 
@@ -82,6 +83,7 @@ export function createWalker({ physics, pack, row, at = [0, 0, 0], ground = null
       return held;
     },
     ready: () => true,
+    step: () => world.step(),
     mover(sol, dir, dt, nav) {
       if (!sol.alive) return move(sol, dir, dt, nav);
       if (!wrote || Math.hypot(sol.at[0] - wrote[0], sol.at[1] - wrote[1], sol.at[2] - wrote[2]) > MOVED) {
@@ -103,11 +105,11 @@ export function createWalker({ physics, pack, row, at = [0, 0, 0], ground = null
       const wz = len > 1e-9 ? (dir[1] / len) * speed : 0;
       // (the wish in the pack's frame: turned by its yaw as toPackFrame turns a place)
       ch.move({ vel: { x: wx * c + wz * s, z: -wx * s + wz * c }, face: null }, dt);
-      // (the world stepped: the body goes where the controller said, and the shapes and ground the
-      // stream added since are in the engine's queries for the next move; fixed bodies and one
-      // kinematic capsule, so a step is cheap)
-      world.step();
-      const n = rb.translation();
+      // (the body taken where the controller said at once, so a second move in the same frame starts
+      // from it; the world itself is stepped once a frame by its owner, which puts the shapes the
+      // stream added into the engine's queries: step())
+      const n = rb.nextTranslation();
+      rb.setTranslation(n, true);
       let feet = fromPackFrame(pack, [n.x, n.y - lift, n.z]);
       const floor = ground?.(feet[0], feet[2]);
       if (Number.isFinite(floor) && !ch.grounded && ch.vy < FALLING && feet[1] < floor - LOST) {

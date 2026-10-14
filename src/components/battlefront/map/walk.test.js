@@ -35,7 +35,7 @@ describe('the player on the soldier’s body', () => {
     physics.world.step();
     const s = soldier(fromPackFrame(PACK, [0, 0, 0]));
     const w = createWalker({ physics, pack: PACK, row: ROW, at: s.at });
-    for (let i = 0; i < 30; i++) w.mover(s, [0, 1], DT);
+    for (let i = 0; i < 30; i++) (w.mover(s, [0, 1], DT), w.step());
     const p = toPackFrame(PACK, s.at);
     // (a second of walking ahead (+z) at the record's walk, 3.8 m/s, on the ground)
     expect(p[2]).toBeGreaterThan(3);
@@ -52,7 +52,7 @@ describe('the player on the soldier’s body', () => {
     physics.world.step();
     const s = soldier(fromPackFrame(PACK, [0, 0, 0]));
     const w = createWalker({ physics, pack: PACK, row: ROW, at: s.at });
-    for (let i = 0; i < 60; i++) w.mover(s, [0, 1], DT);
+    for (let i = 0; i < 60; i++) (w.mover(s, [0, 1], DT), w.step());
     expect(toPackFrame(PACK, s.at)[2]).toBeLessThan(2 - 0.1 - ROW.radius + 0.05);
     w.dispose();
     physics.remove(wall);
@@ -62,13 +62,13 @@ describe('the player on the soldier’s body', () => {
   it('is held in the air while nothing is under it, and drops when a floor comes', () => {
     const s = soldier(fromPackFrame(PACK, [100, 10, 100]));
     const w = createWalker({ physics, pack: PACK, row: ROW, at: s.at });
-    for (let i = 0; i < 30; i++) w.mover(s, [0, 0], DT);
+    for (let i = 0; i < 30; i++) (w.mover(s, [0, 0], DT), w.step());
     expect(w.held).toBe(true);
     expect(toPackFrame(PACK, s.at)[1]).toBeCloseTo(10, 0);
     // (the stream brings the floor under it)
     const g = ground(68, 68, 0);
     physics.world.step();
-    for (let i = 0; i < 90; i++) w.mover(s, [0, 0], DT);
+    for (let i = 0; i < 90; i++) (w.mover(s, [0, 0], DT), w.step());
     expect(w.held).toBe(false);
     expect(Math.abs(toPackFrame(PACK, s.at)[1])).toBeLessThan(0.1);
     w.dispose();
@@ -80,9 +80,9 @@ describe('the player on the soldier’s body', () => {
     physics.world.step();
     const s = soldier(fromPackFrame(PACK, [0, 0, 0]));
     const w = createWalker({ physics, pack: PACK, row: ROW, at: s.at });
-    w.mover(s, [0, 0], DT);
+    (w.mover(s, [0, 0], DT), w.step());
     s.at = fromPackFrame(PACK, [10, 0, -10]);
-    for (let i = 0; i < 5; i++) w.mover(s, [0, 0], DT);
+    for (let i = 0; i < 5; i++) (w.mover(s, [0, 0], DT), w.step());
     const p = toPackFrame(PACK, s.at);
     expect(p[0]).toBeCloseTo(10, 1);
     expect(p[2]).toBeCloseTo(-10, 1);
