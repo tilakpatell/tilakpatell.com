@@ -18,6 +18,7 @@
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
+// 'orbit' { yaw, dist, height } (a check's camera round the player, side-on or in front; null gives the game's back: figures/orbit.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
 // 'nav' (the battle's navgrid, for a check),
 // 'instantActionSchema' (a promise of the setup screen's options),
@@ -52,6 +53,7 @@ import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
 import { appearanceOf, characterOfOffer, readStore } from '../../lib/bf2017/collection.js';
 import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
+import { orbitPose } from './figures/orbit.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { createKitFx } from './fx/kit.js';
@@ -205,6 +207,7 @@ export default {
     let mate = null; // the squadmate the deploy screen would spawn the player on (null: the HQ)
     let lastAt = null; // the player's place before the last step
     let pose = null;
+    let orbit = null; // (a check's camera round the player: the door's 'orbit', figures/orbit.js)
     let acc = 0;
     let size = { w: 1, h: 1 };
     let sinceHud = Infinity;
@@ -477,6 +480,7 @@ export default {
           const from = lastAt ?? p.at;
           const drawn = { ...p, at: p.at.map((v, i) => from[i] + (v - from[i]) * k) };
           pose = soldierPose(drawn, cams, { yaw: look.yaw, pitch: look.pitch, aiming: read.aim, weaponId: p.weapon, dt, prev: pose, castArm });
+          if (orbit) pose = orbitPose(drawn, orbit);
           // (the gun's recoil amplitude is the camera spring's target: the climb and the recovery)
           rig.aim(recoilOf(p.gun));
           level.update(p.at);
@@ -598,6 +602,9 @@ export default {
             return rt.gfx.backend;
           case 'ragdolls':
             return ragdolls.count();
+          case 'orbit':
+            orbit = arg ?? null;
+            return { ok: true };
           default:
             return { ok: false, why: `no action ${action}` };
         }
