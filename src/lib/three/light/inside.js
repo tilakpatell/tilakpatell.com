@@ -68,7 +68,7 @@ export function visibilities(areas, p) {
   return out;
 }
 
-const mix = (a, b, t) => a + (b - a) * t;
+const mix = (a, b, t) => (t >= 1 ? b : a + (b - a) * t);
 function blend(from, to, t) {
   if (typeof to === 'number' && typeof from === 'number') return mix(from, to, t);
   if (Array.isArray(to) && Array.isArray(from) && to.length === from.length && to.every((v) => typeof v === 'number')) return from.map((v, i) => mix(v, to[i], t));

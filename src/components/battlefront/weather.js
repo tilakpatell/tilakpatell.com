@@ -127,7 +127,8 @@ export function probeVolumesOf(probes, pack) {
     const o = packToWorld(pack, [0, 0, 0]);
     const axes = p.axes.map((a) => packToWorld(pack, a).map((v, k) => v - o[k]));
     const half = [0, 1, 2].map((k) => axes.reduce((sum, a) => sum + Math.abs(a[k]), 0));
-    return { id: p.id, faces: p.faces, ultra: p.ultra ?? null, min: c.map((v, k) => v - half[k]), max: c.map((v, k) => v + half[k]) };
+    // (and the cube's own radiance summary, the game's nits: lane G's zenith, horizon and ground)
+    return { id: p.id, faces: p.faces, ultra: p.ultra ?? null, min: c.map((v, k) => v - half[k]), max: c.map((v, k) => v + half[k]), zenith: p.zenith ?? null, horizon: p.horizon ?? null, ground: p.ground ?? null };
   });
 }
 

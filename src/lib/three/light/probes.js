@@ -46,7 +46,10 @@
 // give the frame's base; a frame that draws probes costs its `last` less
 // that base. Without the clock, the CPU's ms to issue the bakes stands in.
 //
-// probeFor(volumes, pos) → { i, blend }      (pure)
+// probeFor(volumes, pos, { nearest }) → { i, blend }      (pure)
+// createProbeFill(volume, k) → { sky, ground, intensity } | null   (pure: a volume's capture as the hemisphere's fill:
+//   its zenith and ground as the tints, its horizon's luminance in the game's nits by k as the level, lane G's
+//   reading of a probe, gameLight.js's siteLightFrom)
 // scheduleProbes(stale: [{ age, distance }], n) → indices   (pure: age −1 is done)
 // probesPerFrame(lastMs, budgetMs, current, most = Infinity) → n   (pure)
 // recentre(pos, spacing) → the cascade's centre   (pure)
@@ -73,16 +76,38 @@ const volumeOf = (v) => (v.max[0] - v.min[0]) * (v.max[1] - v.min[1]) * (v.max[2
 
 // volumes: [{ min: [x, y, z], max: [x, y, z] }]; the smallest holding pos,
 // and how far in it is (0 at a face, 1 from EDGE in); -1 when none does
-export function probeFor(volumes, pos) {
+// (`nearest`: where none holds it, the nearest box's, blend 0: under the rock,
+// where the sky's environment does not reach, the interior's nearest capture
+// stands in for the bounce the game's Enlighten gives a room with no volume of its own; hand)
+export function probeFor(volumes, pos, { nearest = false } = {}) {
   let best = -1;
   for (let i = 0; i < (volumes?.length ?? 0); i++) {
     if (inside(volumes[i], pos) && (best < 0 || volumeOf(volumes[i]) < volumeOf(volumes[best]))) best = i;
+  }
+  if (best < 0 && nearest) {
+    let far = Infinity;
+    for (let i = 0; i < (volumes?.length ?? 0); i++) {
+      const v = volumes[i];
+      const d = Math.hypot(...[0, 1, 2].map((a) => Math.max(0, v.min[a] - pos[a], pos[a] - v.max[a])));
+      if (d < far) (far = d), (best = i);
+    }
+    return { i: best, blend: 0 };
   }
   if (best < 0) return { i: -1, blend: 0 };
   const v = volumes[best];
   let d = Infinity;
   for (let a = 0; a < 3; a++) d = Math.min(d, pos[a] - v.min[a], v.max[a] - pos[a]);
   return { i: best, blend: Math.min(1, d / EDGE) };
+}
+
+const lumOf = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+const tintOf = (c) => {
+  const m = Math.max(c[0], c[1], c[2]);
+  return m > 0 ? c.map((v) => v / m) : [1, 1, 1];
+};
+export function createProbeFill(volume, k) {
+  if (!volume?.horizon) return null;
+  return { sky: tintOf(volume.zenith ?? volume.horizon), ground: tintOf(volume.ground ?? volume.horizon), intensity: lumOf(volume.horizon) * k };
 }
 
 export function scheduleProbes(stale, n) {
@@ -172,8 +197,8 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
   }
 
   return {
-    update(pos, dt) {
-      const { i } = probeFor(volumes, pos);
+    update(pos, dt, { nearest = false } = {}) {
+      const { i } = probeFor(volumes, pos, { nearest });
       if (i !== want) {
         want = i;
         pick(i);

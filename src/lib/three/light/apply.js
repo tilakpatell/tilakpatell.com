@@ -49,7 +49,7 @@ import { createContactShadows } from './contact.js';
 import { createFog } from './fog.js';
 import { createPlacedLights, lampPool } from './placed.js';
 import { passesFor, raysLight } from './post.js';
-import { createProbeGrid, createProbes } from './probes.js';
+import { createProbeGrid, createProbeFill, createProbes, probeFor } from './probes.js';
 import { filterFor, pcssFilter, readPcss, vsmFallback } from './shadows.js';
 import { createSky } from './sky.js';
 import { createSun, readShadowRecord } from './sun.js';
@@ -59,6 +59,7 @@ import { backendOf, loadThree, registerLights } from './three.js';
 import { patchRecord, skyShare, visibilities } from './inside.js';
 
 export const WEATHER_FADE = 20; // s: lane G's crossfade between two weathers
+export const VOLUME_TEXTURES = 24; // the sampled textures a stage the chain needs with the volumes in (Hoth's ultra chain asked 22 in its bloom)
 const ENV_EVERY = 2; // s: the sky's environment re-baked this often while a weather fades
 
 // (the picture's loaders, imported once, when a picture is first asked for)
@@ -210,6 +211,8 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   if (sky) scene.add(sky.mesh);
   let env = sky && canDraw ? sky.envTexture(renderer) : null;
   let envK = params.gameToSite; // (the exposure the sky's environment was baked at)
+  let fillAt = -1; // (the volume whose capture fills where none holds the view, -1 none)
+  const fill = inside && volumes?.length ? (k) => (fillAt >= 0 ? createProbeFill(volumes[fillAt], k) : null) : null;
   const probes = volumes?.length && loadCube ? await createProbes(scene, volumes, loadCube, { fallback: env }) : null;
   if (!probes && env) scene.environment = env;
   // (the interior's grade: its LUT read beside the weather's and mixed by the patch's visibility,
@@ -231,7 +234,10 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   // (the volumes draw only through the post chain)
   // (the video's volumetric quality: low marches as high did, high as ultra; off none)
   const volTier = vid?.volumetric ? { off: null, low: 'high', high: 'ultra' }[vid.volumetric] ?? tier : tier;
-  const vols = post && volumetrics && volTier && CONES_LIT[volTier] && backend !== 'webgl' ? await createVolumetrics(scene, renderer, { tier: volTier, source: volumetrics, lights, scale: params.gameToSite }) : null;
+  // (the volumes' march and its upsampling read their own targets inline in the passes after them: on a device held to
+  // WebGPU's 16 sampled textures a stage, the bloom's and SSGI's pipelines overflow and fail, so the volumes need more)
+  const sampled = renderer.backend?.device?.limits?.maxSampledTexturesPerShaderStage ?? Infinity; // (a renderer with no device, a test's: no limit to keep to)
+  const vols = post && volumetrics && volTier && CONES_LIT[volTier] && backend !== 'webgl' && sampled >= VOLUME_TEXTURES ? await createVolumetrics(scene, renderer, { tier: volTier, source: volumetrics, lights, scale: params.gameToSite, shadows: (renderer.backend?.device?.limits?.maxSamplersPerShaderStage ?? Infinity) > 16 }) : null;
   let lastEntry = entry;
   const chainFor = (e) => {
     lastEntry = e;
@@ -267,8 +273,14 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
     sun.set(p);
     hemi.color.setRGB(...p.ambient.sky);
     hemi.groundColor.setRGB(...p.ambient.ground);
-    // (the sky's fill and environment as far as the view still has the sky: none under the rock)
-    hemi.intensity = p.ambient.intensity * skyLeft;
+    // (the sky's fill and environment as far as the view still has the sky: none under the rock; there, where
+    // no reflection volume holds the view, the nearest volume's capture of the room's light is the fill)
+    const f = fill && skyLeft < 1 ? fill(p.gameToSite) : null;
+    hemi.intensity = p.ambient.intensity * skyLeft + (f ? f.intensity * (1 - skyLeft) : 0);
+    if (f && skyLeft < 0.5) {
+      hemi.color.setRGB(...f.sky);
+      hemi.groundColor.setRGB(...f.ground);
+    }
     const envShare = (skyLeft * p.gameToSite) / Math.max(1e-12, envK);
     if (probes) probes.setScales?.({ probe: p.gameToSite, fallback: envShare });
     else if (env && inside) scene.environmentIntensity = envShare;
@@ -360,7 +372,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       volumetrics: vols,
       // (the interiors at the view: each VE's visibility, the sky the view still has, the exposure as adapted)
       get inside() {
-        return inside ? { vis: { ...vis }, sky: skyLeft, gameToSite: adapted, target: target.gameToSite, lut: Boolean(insideLut), lutWeight: lutWeight?.value ?? 0, weight: lutWeight } : null;
+        return inside ? { vis: { ...vis }, sky: skyLeft, gameToSite: adapted, target: target.gameToSite, lut: Boolean(insideLut), lutWeight: lutWeight?.value ?? 0 } : null;
       },
       get grade() {
         return pic?.grade ?? null;
@@ -422,7 +434,13 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
         pos[0] = cam.position.x;
         pos[1] = cam.position.y;
         pos[2] = cam.position.z;
-        probes.update(pos, dt);
+        probes.update(pos, dt, { nearest: skyLeft < 0.5 });
+        // (the fill: only where no volume holds the view, whose cube is then the light)
+        const at = fill && skyLeft < 1 && probeFor(volumes, pos).i < 0 ? probeFor(volumes, pos, { nearest: true }).i : -1;
+        if (at !== fillAt) {
+          fillAt = at;
+          show(params);
+        }
       }
     },
     // the next weather, eased in over `seconds` (0: at once); with its

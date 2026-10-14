@@ -9,7 +9,9 @@
 // export's frame.
 //
 //   levelLightOf({ lighting, pictures, level, tier, off, deps }) → Promise<{ lights, inside, volumes, loadCube, volumetrics }>
-//     (off: 'lamps,inside,probes,volumes', any of them, left out: a check's measure of each)
+//     (off: 'lamps,inside,probes', any of them, left out: a check's measure of each; volumes: the
+//      volumetrics marched, off unless asked: on this world their glows blow out at either exposure,
+//      lane V's gains being the galaxy's, not yet measured here)
 //     (lighting: the rulebook's; pictures: the level's picture manifest; level: map/level.js's,
 //      ready; world: its pack name; deps: { loadHdr(bytes) → DataTexture-like } for the tests)
 //   lutFor(pictures, inside) → { url, size } | null   (pure: the picture whose grade the patch names)
@@ -35,7 +37,7 @@ async function hdrLoader() {
   return { THREE, parse: (bytes) => loader.parse(bytes) };
 }
 
-export async function levelLightOf({ lighting, pictures = null, level = null, tier = 'high', off = null, deps = {} }) {
+export async function levelLightOf({ lighting, pictures = null, level = null, tier = 'high', off = null, volumes: marched = false, deps = {} }) {
   const no = new Set(String(off ?? '').split(','));
   const lights = lightsJsonOf(no.has('lamps') ? lighting?.lights ?? [] : lampRows(lighting));
   const found = no.has('inside') ? null : insideOf(lighting);
@@ -73,7 +75,7 @@ export async function levelLightOf({ lighting, pictures = null, level = null, ti
       };
     }
   }
-  const raw = level?.loadBin && !no.has('volumes')
+  const raw = level?.loadBin && marched
     ? await level
         .loadBin('volumes.json')
         .then(json)
