@@ -193,6 +193,9 @@ async function main() {
   const file = join(packDir, 'navmesh.bin');
   await writeFile(file, out);
   console.log(`wrote ${file} (${(await stat(file)).size} bytes)`);
+  // (the pack says it has one, so a page asks for it only where it does: battlefront/module.js)
+  pack.navmesh = { file: 'navmesh.bin', meshes: meshes.map((m) => m.name) };
+  await writeFile(join(packDir, 'level.json'), `${JSON.stringify(pack)}\n`);
 }
 
 // ---- the measures ----

@@ -192,7 +192,9 @@ export default {
       walker = createWalker({ physics, pack: level.pack, row: SOLDIER_BODY.rows[SOLDIER_BODY.default], ground: (x, z) => level.heightAt(x, z) });
     };
     // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
-    const [mask, navBytes] = await Promise.all([level.navOf(), level.loadBin('navmesh.bin').catch(() => null), engine().catch(() => null)]);
+    // (the navmesh asked for only where the pack says it has one: Hoth's, scripts/bf2017-navmesh.mjs)
+    const meshFile = level.pack?.navmesh?.file ?? null;
+    const [mask, navBytes] = await Promise.all([level.navOf(), meshFile ? level.loadBin(meshFile).catch(() => null) : null, engine().catch(() => null)]);
     // (the level's own navmesh, its NavPower polygons: the bots' floors one over another, battle.js's NAVMESH_OF;
     // their feet on the level's shapes where the engine has them round the player)
     const navmesh = navBytes ? { bytes: new Uint8Array(navBytes), floor: (x, y, z) => collision?.floor(x, y, z) ?? null } : null;

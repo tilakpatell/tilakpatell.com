@@ -17,8 +17,9 @@ describe('Hoth’s hangar gates', () => {
     expect(g.list.every((x) => x.state === 'locked' && x.panel)).toBe(true);
   });
 
-  it('the first walker home unlocks its gate and bars the other', () => {
+  it('the first walker home unlocks the other gate’s panel and blows its own a second later', () => {
     const g = createGates(rows());
+    expect(gateOf(g, EAST).blownBy).toEqual([{ path: 'FantasyBattle_Logic:123', after: 1 }]);
     expect(arrive(g, 'FantasyBattle_Logic:123')).toEqual([
       { type: 'gate', id: EAST, state: 'barred' },
       { type: 'gate', id: WEST, state: 'unlocked' },
@@ -26,6 +27,13 @@ describe('Hoth’s hangar gates', () => {
     // (the second home changes nothing)
     expect(arrive(g, 'FantasyBattle_Logic:303')).toEqual([]);
     expect(gateOf(g, EAST).state).toBe('barred');
+    expect(tick(g, 0.9, [])).toEqual([]);
+    expect(tick(g, 0.2, [])).toEqual([
+      { type: 'gate', id: EAST, state: 'blown' },
+      { type: 'gate', id: EAST, state: 'passable' },
+    ]);
+    expect(openness(gateOf(g, EAST))).toBe(1);
+    expect(gateOf(g, WEST).state).toBe('unlocked');
   });
 
   it('a locked gate does not open, however long it is held', () => {
@@ -69,16 +77,18 @@ describe('Hoth’s hangar gates', () => {
     let opened = [];
     for (let t = 0; t < HOLD - 0.15; t += 0.1) opened = tick(g, 0.1, [holder(by)]);
     expect(w.state).toBe('unlocked');
+    // (the east gate, blown by the walker home a second after, says its own)
+    const west = (events) => events.filter((e) => e.id === WEST);
     opened = tick(g, 0.2, [holder(by)]);
-    expect(opened).toEqual([{ type: 'gate', id: WEST, state: 'opened' }]);
+    expect(west(opened)).toEqual([{ type: 'gate', id: WEST, state: 'opened' }]);
     // (the leaves 2 m apart overlap still: no way through till they have slid that and a soldier more)
-    expect(tick(g, 6.3, [])).toEqual([]);
+    expect(west(tick(g, 6.3, []))).toEqual([]);
     expect(gap(w)).toBeLessThan(PASS);
-    expect(tick(g, 0.4, [])).toEqual([{ type: 'gate', id: WEST, state: 'passable' }]);
+    expect(west(tick(g, 0.4, []))).toEqual([{ type: 'gate', id: WEST, state: 'passable' }]);
     expect(gap(w)).toBeGreaterThanOrEqual(PASS);
     tick(g, 35 - 6.7, []);
     expect(openness(w)).toBeCloseTo(Math.sin(Math.PI / 4), 5);
-    expect(tick(g, 35, [])).toEqual([{ type: 'gate', id: WEST, state: 'open' }]);
+    expect(west(tick(g, 35, []))).toEqual([{ type: 'gate', id: WEST, state: 'open' }]);
     expect(openness(w)).toBe(1);
   });
 
@@ -88,7 +98,7 @@ describe('Hoth’s hangar gates', () => {
     const w = gateOf(g, WEST);
     tick(g, 1.1, [holder(w.panel.at.map((v, i) => (i === 2 ? v + 3 : v)))]);
     expect(w.state).toBe('opening');
-    expect(tick(g, OPEN_SECONDS, [])).toEqual([
+    expect(tick(g, OPEN_SECONDS, []).filter((e) => e.id === WEST)).toEqual([
       { type: 'gate', id: WEST, state: 'passable' },
       { type: 'gate', id: WEST, state: 'open' },
     ]);

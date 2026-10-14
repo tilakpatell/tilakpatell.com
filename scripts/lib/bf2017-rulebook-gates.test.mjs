@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { fieldHash as H } from './bf2017-abilities.mjs';
-import { GATE_ENABLED, GATE_PANEL, ROUTE_DONE, doorOf, gatesOf, interactOf } from './bf2017-rulebook-gates.mjs';
+import { GATE_ENABLED, GATE_PANEL, LEAVES_ENABLED, ROUTE_DONE, doorOf, gatesOf, interactOf } from './bf2017-rulebook-gates.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
 const SPLIT_IN = 1723395486;
@@ -87,6 +87,10 @@ function level() {
       { $type: 'EventSplitterEntityData', $guid: g(7) },
       { $type: 'AIWaypointsShapeData', $guid: g(8), Points: [] },
       { $type: 'AIWaypointsShapeData', $guid: g(9), Points: [] },
+      // (the leaves' Enabled: a Bool through a SyncedBool, set false a second after walker B is home)
+      { $type: 'BoolEntityData', $guid: g(10), DefaultValue: true },
+      { $type: 'SyncedBoolEntityData', $guid: g(11) },
+      { $type: 'DelayEntityData', $guid: g(12), Delay: 1 },
     ],
   });
   const end = (n) => ({ $asset: `${d}/FantasyBattle_Logic`, $assetType: 'LayerData', $class: g(n) });
@@ -97,8 +101,8 @@ function level() {
     objects: [
       {
         $type: 'SubWorldData',
-        PropertyConnections: [prop(2, H('Transform'), 1, GATE_PANEL[0]), prop(2, H('Transform'), 1, GATE_PANEL[1]), prop(3, H('Value'), 1, GATE_ENABLED)],
-        EventConnections: [ev(4, H('Out'), 3, H('SetTrue')), ev(5, ROUTE_DONE, 4, H('In')), ev(6, ROUTE_DONE, 7, SPLIT_IN), ev(7, SPLIT_OUT, 4, H('Close'))],
+        PropertyConnections: [prop(2, H('Transform'), 1, GATE_PANEL[0]), prop(2, H('Transform'), 1, GATE_PANEL[1]), prop(3, H('Value'), 1, GATE_ENABLED), prop(10, H('Value'), 11, H('In')), prop(11, H('Out'), 1, LEAVES_ENABLED)],
+        EventConnections: [ev(4, H('Out'), 3, H('SetTrue')), ev(5, ROUTE_DONE, 4, H('In')), ev(6, ROUTE_DONE, 7, SPLIT_IN), ev(7, SPLIT_OUT, 4, H('Close')), ev(6, ROUTE_DONE, 12, H('In')), ev(12, H('Out'), 10, H('SetFalse'))],
         LinkConnections: [
           { Source: end(5), Target: end(8), SourceFieldId: 0, TargetFieldId: 0 },
           { Source: end(6), Target: end(9), SourceFieldId: 0, TargetFieldId: 0 },
@@ -121,6 +125,10 @@ describe('the interact gates’ reader', () => {
   it('unlocks it with walker A’s route and bars it with walker B’s, through the EventGate and its splitter', () => {
     expect(gate.unlock).toBe('FantasyBattle_Logic:8');
     expect(gate.barredBy).toEqual(['FantasyBattle_Logic:9']);
+  });
+
+  it('is blown by walker B’s route a second on: its leaves’ Enabled set false, back through the delay', () => {
+    expect(gate.blownBy).toEqual([{ path: 'FantasyBattle_Logic:9', after: 1 }]);
   });
 
   it('reads the panel’s interaction off the door core’s button: its distance, its transform’s 3× scale, its angle and hold', () => {

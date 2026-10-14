@@ -1,8 +1,10 @@
 // A mode's interact gates, run as the game runs them (bf2-re findings/59):
 // Hoth's two hangar blast doors (the map rulebook's `gates`, read from the
 // mode sub-world's graph by scripts/lib/bf2017-rulebook-gates.mjs). A gate is
-// locked until the walker on its route finishes it; the first walker home
-// unlocks its own gate and bars the other (the EventGate's Close). An
+// locked until a walker finishes its route; the first walker home unlocks the
+// gate its route unlocks and bars the other (the EventGate's Close), and the
+// gate it reached is blown a second later (its leaves' Enabled set false: the
+// walker's fire), open from then on. An
 // unlocked gate opens when anyone holds the interaction at its panel for a
 // second (PF_Interact_Button: its StopWatch's TriggerOnTime 1, EnabledTeam
 // TeamNeutral), in front of the panel (its WorldInteraction's
@@ -22,7 +24,7 @@
 //   createGates(rows) → gates
 //   arrive(gates, path) → events   a walker finished its route (path: its AIWaypointsShapeData id)
 //   tick(gates, dt, soldiers) → events   soldiers: [{ at: [x, y, z], alive, interact }]
-//     events: { type: 'gate', id, state: 'unlocked' | 'barred' | 'opened' | 'passable' | 'open' }
+//     events: { type: 'gate', id, state: 'unlocked' | 'barred' | 'blown' | 'opened' | 'passable' | 'open' }
 //   openness(gate) → 0…1 (the leaves' slide, eased)     gap(gate) → m between the leaves     gateOf(gates, id)
 //   reachOf(gate) → m      canUse(gate, at) → whether a soldier at [x, y, z] can hold its panel
 
@@ -40,7 +42,7 @@ export const OPEN_SECONDS = 1.5;
 export const PASS = 0.6;
 
 export function createGates(rows = []) {
-  return { list: rows.map((r) => ({ ...r, state: 'locked', hold: 0, t: 0, passable: false })) };
+  return { list: rows.map((r) => ({ ...r, state: 'locked', hold: 0, t: 0, passable: false, blowIn: null })) };
 }
 
 export const gateOf = (gates, id) => gates.list.find((g) => g.id === id) ?? null;
@@ -55,6 +57,8 @@ export function arrive(gates, path) {
       out.push({ type: 'gate', id: g.id, state: 'unlocked' });
     } else if (g.barredBy?.includes(path)) {
       g.state = 'barred';
+      // (the walker at this gate blows it, its delay on: the row's blownBy)
+      g.blowIn = g.blownBy?.find((b) => b.path === path)?.after ?? null;
       out.push({ type: 'gate', id: g.id, state: 'barred' });
     }
   }
@@ -79,7 +83,15 @@ export function canUse(g, at) {
 export function tick(gates, dt, soldiers = []) {
   const out = [];
   for (const g of gates.list) {
-    if (g.state === 'unlocked') {
+    if (g.state === 'barred' && g.blowIn !== null) {
+      g.blowIn -= dt;
+      if (g.blowIn <= 1e-9) {
+        g.state = 'blown';
+        g.blowIn = null;
+        g.passable = true;
+        out.push({ type: 'gate', id: g.id, state: 'blown' }, { type: 'gate', id: g.id, state: 'passable' });
+      }
+    } else if (g.state === 'unlocked') {
       const held = soldiers.some((s) => s.alive && s.interact && canUse(g, s.at));
       g.hold = held ? g.hold + dt : 0;
       if (g.hold >= (g.interact?.hold ?? HOLD) - 1e-9) {
@@ -104,7 +116,7 @@ export function tick(gates, dt, soldiers = []) {
 const secondsOf = (g) => g.door?.seconds ?? OPEN_SECONDS;
 
 export function openness(g) {
-  if (g.state === 'open') return 1;
+  if (g.state === 'open' || g.state === 'blown') return 1;
   if (g.state !== 'opening') return 0;
   // (the game's Sine EaseOut: 1 − f(1 − t) of the ease-in 1 − cos(tπ/2), sin(tπ/2))
   return Math.sin((Math.PI / 2) * Math.min(1, g.t / secondsOf(g)));
@@ -113,6 +125,7 @@ export function openness(g) {
 // the leaves' gap: each slid its way by the eased run, less what they overlap shut (none known: shut till open)
 export function gap(g) {
   const { slide, overlap } = g.door ?? {};
+  if (g.state === 'blown') return Infinity;
   if (!slide || overlap === null || overlap === undefined) return g.state === 'open' ? Infinity : 0;
   return Math.max(0, 2 * slide * openness(g) - overlap);
 }

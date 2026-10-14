@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import hoth from '../../data/bf2017/maps/hoth.json';
 import { decodeNavmesh, encodeNavmesh, load } from './navmesh.js';
 
-const BIN = join(import.meta.dirname, '../../../public/models/galaxy/bf2017/levels/hoth/navmesh.bin');
+// (Hoth's playthrough mesh alone, the bucket's navmesh.bin cut by scripts/bf2017-navmesh-cut.mjs: the bytes are not in git)
+const BIN = join(import.meta.dirname, '../../../scripts/fixtures/bf2017/navmesh/hoth-playthrough.bin');
 const bytes = readFileSync(BIN);
 
 // two unit squares side by side at height 0 and a third over the first at 3 m (a floor above), joined to nothing
