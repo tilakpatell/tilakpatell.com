@@ -13,7 +13,9 @@ export { createPlacer, loadModel, usesModel, clusterSpecs } from '../surface/pla
 // the code-built props, for a check that a kind is drawable either way
 export { PROPS } from '../surface/props';
 // the kit: a world's set of pieces, keyed
-export { createKit } from '../surface/kit';
+// (the node kit, ../surface/nodes/kit: the flight to the planets, its one
+// borrower, draws on the node renderer; the GLSL kit is the same kit's)
+export { createKit } from '../surface/nodes/kit';
 // the people
 export { FIGURES, buildFigure } from '../surface/figures';
 // the ships

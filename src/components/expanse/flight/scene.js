@@ -12,38 +12,11 @@ import { forwardOf } from './flightRules';
 import { createLandmarks } from './landmarkScene';
 import { withLife } from './lifeScene';
 import { withOccurrences } from './occurrenceScene';
+import { skyDome } from './nodes';
 
 const SKY_R = 40000; // m: inside the camera's far plane, round the camera
 export const FOG = { near: 1500, far: 21000 }; // m: the far ground melts into the sky before the last leaves end
 
-// the sky: the horizon colour below, a gradient to the zenith above
-export function skyDome(low, high) {
-  const material = new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    depthWrite: false,
-    fog: false,
-    uniforms: { uLow: { value: new THREE.Color(low) }, uHigh: { value: new THREE.Color(high) } },
-    vertexShader: /* glsl */ `
-      varying vec3 vDir;
-      void main() {
-        vDir = normalize(position);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }`,
-    fragmentShader: /* glsl */ `
-      uniform vec3 uLow;
-      uniform vec3 uHigh;
-      varying vec3 vDir;
-      void main() {
-        float t = smoothstep(-0.02, 0.45, vDir.y);
-        gl_FragColor = vec4(mix(uLow, uHigh, t), 1.0);
-        #include <colorspace_fragment>
-      }`,
-  });
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(SKY_R, 32, 16), material);
-  mesh.frustumCulled = false;
-  mesh.renderOrder = -1;
-  return mesh;
-}
 
 // the ship: a wedge of a hull, swept wings, a canopy and two engines, about
 // 12 m nose to tail, its nose down −z (forwardOf's yaw 0)
@@ -78,7 +51,7 @@ function shipModel(c) {
   return g;
 }
 
-export function createFlightScene({ spec, palette }) {
+export function createFlightScene({ spec, palette, house = null }) {
   const p = spec.palette;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(62, 1, 1, SKY_R * 1.2);
@@ -98,7 +71,7 @@ export function createFlightScene({ spec, palette }) {
   const ship = shipModel({ hull: palette[1], wing: palette[2], canopy: palette[4], glow: palette[6] });
   scene.add(ship);
   // (the POIs' buildings, streamed in round the ship: ./landmarkScene.js)
-  const landmarks = createLandmarks(scene, { spec });
+  const landmarks = createLandmarks(scene, { spec, house });
 
   const eye = new THREE.Vector3();
   const look = new THREE.Vector3();

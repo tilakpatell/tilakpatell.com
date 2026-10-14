@@ -16,7 +16,7 @@
 // `throttle(v)` (the touch buttons'); ?debug shows the ground's numbers.
 
 import * as THREE from 'three';
-import { houseOn } from '../../../lib/three/house';
+import { houseOn } from '../../../lib/three/houseNodes';
 import { planetField } from '../../../lib/land/flight/field';
 import { seeded } from '../../../lib/seeded';
 import { LEVELS } from '../../../lib/device';
@@ -44,6 +44,7 @@ export const KEYS = {
 export const AXES = { pitch: ['noseDown', 'noseUp'], roll: ['rollLeft', 'rollRight'], yaw: ['yawRight', 'yawLeft'], throttle: ['slower', 'faster'] };
 
 const HUD_EVERY = 0.1; // s
+const ADOPT_EVERY = 12; // frames: what came into the scene put in the look within a fifth of a second
 
 // where a place's buildings stand: a part's `count` of them seeded round the
 // place, between `inner` and `outer` of its r (0.12 and 0.7 unless the part
@@ -131,7 +132,7 @@ export function inputOf(snap) {
 
 export default {
   id: 'flight',
-  shading: 'glsl',
+  shading: 'nodes', // (everything it reaches is TSL: ./nodes.js and lib/three's twins; the node renderer, on WebGPU or WebGL 2)
   mb: 22, // (WORLD_MB['/fly']: the scans a planet wears, Coruscant's models, the heaviest planet's landmarks)
   label: 'A ship flying low over an endless planet',
   async create(rt, props = {}) {
@@ -141,13 +142,17 @@ export default {
     const was = { toneMapping: renderer.toneMapping, exposure: renderer.toneMappingExposure, shadows: renderer.shadowMap.enabled };
     renderer.shadowMap.enabled = false;
 
-    const view = createFlightScene({ spec, palette: STRIP });
+    // (the house before the ground: the kits' pools are made in its look, and
+    // the landmarks' placer takes it when it is first asked for; the node
+    // renderer has no frame guard to put the look on as a thing first draws)
+    let house = null;
+    const view = createFlightScene({ spec, palette: STRIP, house: () => house });
+    house = houseOn({ renderer, scene: view.scene, sun: view.sun, hemi: view.hemi, look: { fog: true } });
     const tier = LEVELS.includes(rt.quality?.tier) ? rt.quality.tier : 'mid';
-    const ground = createGround(view.scene, { rt, spec, tier, palette: STRIP });
+    const ground = createGround(view.scene, { rt, spec, tier, palette: STRIP, house });
     // the planet map's rasters, asked of the ground's worker behind its leaves (./map.js; the HUD draws it)
     const map = createMap({ spec, workers: rt.workers });
     const water = createWater(view.scene, spec);
-    let house = null;
     // the planet's models (Coruscant's: the Senate, the Jedi Temple, its
     // nearest towers), fetched behind the first frames; a planet without
     // them, or a fetch that fails, flies on without
@@ -194,8 +199,6 @@ export default {
       return Number.isFinite(h) ? h : field.heightAt(x, z);
     };
 
-    // (declared before the models' fetches above resolve; assigned here)
-    house = houseOn({ renderer, scene: view.scene, sun: view.sun, hemi: view.hemi, look: { fog: true } });
     // (the ground's and the clutter's materials, on no leaf yet: in the look before their first draw)
     for (const m of [...ground.materials, ...(water ? [water.mesh.material] : [])]) house.adopt(new THREE.Mesh(undefined, m));
     house.sky({ low: new THREE.Color(spec.palette.skyLow ?? spec.palette.low), high: new THREE.Color(spec.palette.skyHigh ?? STRIP[3]), sunDir: view.sunDir });
@@ -203,6 +206,7 @@ export default {
     rt.input.bind({ ...KEYS, ...SHARED_KEYS }, { axes: AXES });
     let ship = spawnOf(spec, groundAt);
     let hudIn = 0;
+    let adoptIn = 0;
     let down = false; // crashed: put back up once the ground under it is in
     let touchThrottle = 0; // the touch buttons' (FlightHud), −1, 0 or 1
     const tell = (type, data) => rt.events?.emit(type, data);
@@ -276,6 +280,15 @@ export default {
       draw(frame) {
         renderer = frame?.renderer ?? rt.gfx.renderer;
         shared.draw(rt.origin?.at ?? [0, 0, 0]);
+        // (what came into the scene since, put in the house's look: the GLSL
+        // house's frame guard did it before a material's first frame, and the
+        // node renderer has none; a few times a second, the scene walked and
+        // each material already in the look passed by: life, occurrences,
+        // the other pilots' ships)
+        if (++adoptIn >= ADOPT_EVERY) {
+          adoptIn = 0;
+          house.adopt(view.scene);
+        }
         renderer.render(view.scene, view.camera);
       },
       wants: () => true,

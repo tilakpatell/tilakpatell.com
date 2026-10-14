@@ -7,6 +7,7 @@
 //   createWater(scene, spec) → { place(ship, at), dispose() } | null (no water)
 
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
 
 const SIZE = 60000; // m: past the fog's far edge either way
 const SNAP = 1000;
@@ -22,7 +23,7 @@ export function createWater(scene, spec) {
   const w = spec.water;
   const look = w && LOOKS[w.kind];
   if (!look) return null;
-  const material = new THREE.MeshStandardMaterial({
+  const material = new MeshStandardNodeMaterial({
     color: new THREE.Color(look.color).lerp(new THREE.Color(spec.palette.accent), 0.15),
     roughness: look.roughness,
     metalness: 0,

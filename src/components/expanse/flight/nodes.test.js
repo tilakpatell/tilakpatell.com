@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { cityMaterial as cityGlsl } from './ground.js';
-import { skyDome as skyGlsl } from './scene.js';
+import { cityMaterial as cityGlsl, skyDome as skyGlsl } from './glsl.js';
 import { cityMaterial, skyDome } from './nodes.js';
 
 // The flight's two shaders of its own as nodes, against the GLSL ones: the

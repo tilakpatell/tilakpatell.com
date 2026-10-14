@@ -171,7 +171,8 @@ export function createLandmarks(scene, { spec, heightAt = null, placer = null, p
   let makePlacer = placer;
   // (the prop kit paints its maps on a canvas: with no page, in Node, nothing is drawn)
   const drawable = Boolean(placer) || typeof document !== 'undefined';
-  const placerOf = () => (makePlacer ??= galaxyPlacer({ kit: (kit = createKit({ seed: 31, scans: false })), house }));
+  // (the house, or a getter of it: the flight makes its house after its scene)
+  const placerOf = () => (makePlacer ??= galaxyPlacer({ kit: (kit = createKit({ seed: 31, scans: false })), house: typeof house === 'function' ? house() : house }));
   let t = 0;
 
   return {
