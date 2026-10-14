@@ -18,6 +18,7 @@
 //   onEvent(ga, { type: 'down', side }) → { respawn }      canRespawn(ga, side)
 //   spawnSets(ga) → { attack: ids, defend: ids }    sideOf(ga, team)    teamOf(ga, side)
 //   view(ga) → the HUD's objective bar        force(ga) (tests: every live objective done)
+//   feed(ga, soldiers), passedOf(path, dist): a graph fed from the round, and a walker's last waypoint passed
 
 import { mapOf, stagesOf, vehicleOf, volumeOf } from '../rulebook.js';
 import { createLogic, enabled, escortLead, fireEvent, portsOf, setInput, setStage, tick as tickLogic } from '../spawnLogic.js';
@@ -72,7 +73,7 @@ function make(rb, map, def) {
 }
 
 // the waypoint a walker has passed on its path (the last one at or behind it)
-function passedOf(path, dist) {
+export function passedOf(path, dist) {
   let left = dist;
   for (let i = 1; i < path.length; i++) {
     left -= Math.hypot(path[i][0] - path[i - 1][0], path[i][2] - path[i - 1][2]);
@@ -91,7 +92,8 @@ function insideBox(b, p) {
 }
 
 // the level's spawn logic, fed from the round: the escort's lead, the owners, the charges, the triggers
-function feed(ga, soldiers) {
+// (map/doors.js feeds the mode part's own graph the same way: { ...ga, logic })
+export function feed(ga, soldiers) {
   const L = ga.logic;
   const { vm, spec } = L;
   for (const [id, tracker] of Object.entries(spec.trackers ?? {})) {
