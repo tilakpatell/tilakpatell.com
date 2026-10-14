@@ -11,7 +11,7 @@
 //     (null for a lamp the frame never draws: off, or the bounce's only, lighting neither the
 //     diffuse nor the specular; its Dimmer and ExposureCompensation scale its lumens)
 //   lightsJsonOf(rows, { cell }) → { format: 1, cell, cells }
-//   prefabRows(lighting) → the lamps inside the lighting prefabs (Hoth: 416 placed), each in the
+//   prefabRows(lighting) → the lamps inside the lighting prefabs (Hoth: 414 placed), each in the
 //     export's frame by its placement's whole turn (the rulebook's `basis`), as rows
 //   lampRows(lighting) → the level's lamps: its own and its prefabs'
 //   packToWorld(pack, [x, y, z]) → the export's frame; probeVolumesOf(probes, pack) → probes.js's

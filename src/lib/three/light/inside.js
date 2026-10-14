@@ -10,15 +10,21 @@
 // turned into each OBB's frame, FUN_146a198a0's point-to-box distance, the
 // least kept, 1 − d / distance clamped at 0). Hoth: VE_PV_Hoth_Interior_01
 // over 20 m and VE_No_Sun over 1 m of the same nine boxes (the hangars, the
-// corridors, the fuel rooms), and the interior VE again in the two ice caves.
+// corridors, the fuel rooms). The two ice caves' areas follow no player's
+// view (LocalPlayerId_Invalid: the rulebook leaves them out, its areasOf).
 //
 // A VE is a patch (findings 22 §1): it lerps only the fields its
 // PropertyOverrides name toward its values, by its visibility, over what the
 // VEs under it gave. Under it here is the weather (Hoth's variant, its
 // reference at 8000); the patches' references are at 0, which the fold puts
-// on top (the lower number last: the spawn wipe's VE_SpawnScreen_BlackFade_01,
-// an explicit 1000, must cover the field's 8000 for the wipe to go black).
-// Fields that do not lerp (a switch, a texture) take the patch's value from
+// on top (the lower number last). Hand: the VE manager's sort is not read.
+// The records' own case for it: the interior VE and VE_No_Sun set fields the
+// weather sets too (MinEV, MaxEV, ExposureCompensation, the LUT, SunIntensity,
+// SunColor, CloudShadowEnable), and every Galactic Assault level places its
+// interior VEs at 0 under weathers at 7,500 to 8,000, so with the higher
+// number on top they would do nothing anywhere. Against it, findings 22 §2's
+// +10,000,000 for a VE no reference places (an effect's), which reads as
+// floating above. Fields that do not lerp (a switch, a texture) take the patch's value from
 // half visibility (hand: the fold's rule for them is not read). A value the
 // patch itself turns off is not taken: the interior's FogColor (1, 1, 1)
 // beside its FogColorEnable false, its ForwardLightScattering… beside

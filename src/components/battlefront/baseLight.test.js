@@ -12,7 +12,8 @@ describe('the level’s light beyond its weather', () => {
     expect(lampRows(lighting).length).toBe(lighting.lights.length + lighting.prefabs.reduce((n, p) => n + (lighting.prefabLights[p.name]?.length ?? 0), 0));
     const { lights } = await levelLightOf({ lighting });
     const n = Object.values(lights.cells).reduce((a, c) => a + c.length, 0);
-    expect(n).toBe(480);
+    // (the 414 lamp prefabs of every layer, Hangar_01_Props_04's one with them, and the layers' own 67 drawn)
+    expect(n).toBe(481);
   });
 
   it('names the interior grade’s LUT from the picture manifest by the patch’s own', () => {

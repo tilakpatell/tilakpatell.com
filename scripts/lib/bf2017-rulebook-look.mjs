@@ -85,7 +85,15 @@ export function patchOf(asset) {
 // visibility is the record's: max(0, 1 − d / ProximityDistance), d the
 // view's distance to the nearest shape, 0 inside one (the per-entity update
 // FUN_140b75090 and the shape distance FUN_146a198a0 in the live image).
-// LocalPlayerId_1's copies are the split screen's and are left out.
+// An area measures from its LocalPlayerId's view: the camera manager's
+// transform by player (PTR_PTR_143ef81f8's slot 0x18, FUN_140a7bfe0) walks
+// the cameras for one whose player is that id, exactly, and failing one
+// (FUN_1465bbea0 returns none) hands back the identity, the world's origin.
+// So only LocalPlayerId_0's areas follow the one player the site has:
+// LocalPlayerId_1's copies are the split screen's, and the ice caves' areas
+// (pf_icecave_01/02, LocalPlayerId_Invalid, 255: no camera's) measure from
+// the origin, 1,200 m off, and never bring their VE in; both are left out.
+const FOLLOWS = 'LocalPlayerId_0';
 const OUT = '0x0b87df4b';
 const VISIBILITY = '0x65d22203';
 const AREAS = '0x31fb3b9f';
@@ -116,7 +124,7 @@ export function areasOf(layers, holders) {
   const out = [];
   for (const { name, asset } of layers) {
     asset.objects.forEach((o, i) => {
-      if (o?.$type !== 'AreaProximityEntityData' || o.LocalPlayerId === 'LocalPlayerId_1') return;
+      if (o?.$type !== 'AreaProximityEntityData' || o.LocalPlayerId !== FOLLOWS) return;
       const ves = uniq(props.get(o) ?? [])
         .filter((t) => t.o.$type === 'VisualEnvironmentReferenceObjectData' && t.o.Blueprint?.$asset)
         .map((t) => ({ ve: t.o.Blueprint.$asset, priority: t.o.Priority ?? 0, _source: where(t.asset, t.o) }));
@@ -215,13 +223,18 @@ export function lightingRow(root, level) {
     row.default ??= asset ? key : null;
   }
   const layers = [...indexOf(root).keys()].filter((n) => n.startsWith(dir) && !n.slice(dir.length).includes('/') && /(Lighting(?!_Schematic)|^Hangar_\d+_Architecture$)/.test(shortName(n)));
+  // (the lamp prefabs any of the level's layers place: Hoth's 413 in Default_Lighting and
+  // one more, a pf_lightwall_s_01 between the gate hall and the fuel rooms, in Hangar_01_Props_04)
+  const lampLayers = [...indexOf(root).entries()].filter(([n, v]) => n.startsWith(dir) && !n.slice(dir.length).includes('/') && v?.type === 'LayerData' && !layers.includes(n)).map(([n]) => n);
   const seen = new Set();
-  for (const ln of layers) {
+  for (const ln of [...layers, ...lampLayers]) {
     const asset = follow(root, ln);
     if (!asset) continue;
     const lay = shortName(ln);
+    const lampsOnly = !layers.includes(ln);
     asset.objects.forEach((o, i) => {
       if (!o) return;
+      if (lampsOnly && !(o.$type === 'SpatialPrefabReferenceObjectData' && /\/pf_light/i.test(o.Blueprint?.$asset ?? ''))) return;
       const id = `${lay}:${i}`;
       if (/^(PbrSphereLight|PbrSpotLight|SimpleVolumetrics)EntityData$|^LightProbeVolumeData$|^SpatialPrefabReferenceObjectData$/.test(o.$type) && !transformOf(o)) {
         row._missing.push(`transform: ${id}`);

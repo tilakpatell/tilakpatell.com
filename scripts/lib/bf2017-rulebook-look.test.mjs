@@ -115,8 +115,11 @@ describe('the interiors’ proximity blends', () => {
     expect(areas[0].shapes[0]).toMatchObject({ kind: 'box', at: [217.6719, 374.9233, -1770.4879], half: [58.8856, 15.9026, 97.0492] });
   });
 
-  it('places a prefab’s areas by its transform, the $ref ends resolved inside it', () => {
-    const pf = { name: 'levels/mp/hoth_01/prefabs/pf_icecave_02', objects: [{ $type: 'SpatialPrefabBlueprint', PropertyConnections: [{ Source: { $ref: 1 }, Target: { $ref: 2 }, SourceField: '0x0b87df4b', TargetField: '0x65d22203' }], LinkConnections: [{ Source: { $ref: 1 }, Target: { $ref: 3 }, SourceField: '0x31fb3b9f' }] }, { $type: 'AreaProximityEntityData', ProximityDistance: 3, LocalPlayerId: 'LocalPlayerId_Invalid' }, { $type: 'VisualEnvironmentReferenceObjectData', Priority: 0, Blueprint: { $asset: 'Levels/Lighting/Hoth/Interior_01/VE_PV_Hoth_Interior_01' } }, { $type: 'OBBData', Transform: T({ x: 1, y: 2, z: 3 }), HalfExtents: { x: 1, y: 1, z: 1 } }] };
+  it('places a prefab’s areas by its transform, the $ref ends resolved inside it; one that follows no player’s view (LocalPlayerId_Invalid, the ice caves’) left out', () => {
+    const pfOf = (player) => ({ name: 'levels/mp/hoth_01/prefabs/pf_icecave_02', objects: [{ $type: 'SpatialPrefabBlueprint', PropertyConnections: [{ Source: { $ref: 1 }, Target: { $ref: 2 }, SourceField: '0x0b87df4b', TargetField: '0x65d22203' }], LinkConnections: [{ Source: { $ref: 1 }, Target: { $ref: 3 }, SourceField: '0x31fb3b9f' }] }, { $type: 'AreaProximityEntityData', ProximityDistance: 3, LocalPlayerId: player }, { $type: 'VisualEnvironmentReferenceObjectData', Priority: 0, Blueprint: { $asset: 'Levels/Lighting/Hoth/Interior_01/VE_PV_Hoth_Interior_01' } }, { $type: 'OBBData', Transform: T({ x: 1, y: 2, z: 3 }), HalfExtents: { x: 1, y: 1, z: 1 } }] });
+    const invalid = pfOf('LocalPlayerId_Invalid');
+    expect(areasOf([{ name: invalid.name, asset: invalid }], [invalid])).toEqual([]);
+    const pf = pfOf('LocalPlayerId_0');
     const turned = { right: { x: 0, y: 0, z: -1 }, up: { x: 0, y: 1, z: 0 }, forward: { x: 1, y: 0, z: 0 }, trans: { x: 10, y: 300, z: -1000 } };
     const [a] = placeAreas(areasOf([{ name: pf.name, asset: pf }], [pf]), turned, 'Default_Lighting:377');
     expect(a.proximity).toBe(3);

@@ -1,6 +1,6 @@
 // The level's light beyond its weather, as applyGameLight takes it: the
 // lamps (the lighting layers' own and the lamps inside the lighting
-// prefabs: Hoth's 416 placements), the interiors' visual environments
+// prefabs: Hoth's 414 placements, 413 in Default_Lighting and one in Hangar_01_Props_04), the interiors' visual environments
 // (inside.js: Echo Base's VE_PV_Hoth_Interior_01 and VE_No_Sun by the view's
 // place, with the interior grade's LUT from the picture manifest), the
 // reflection volumes of the level's interior pack (its baked cubes, the
