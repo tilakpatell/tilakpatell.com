@@ -21,7 +21,7 @@ const sky = (make) => ({ scene, camera }) => {
   dome.material.uniforms.uLow.value.lerp(new THREE.Color('#e8c9a0'), 0.3);
 };
 
-// three towers on a lot line, instanced as the city's pools are, scaled
+// three towers on a lot line and a needle, instanced as the city’s pools are, scaled
 // tall as the leaves scale them, lit as the flight lights them (a sun and
 // the sky's light), seen near enough for their panes and far enough for
 // the far one's glow
@@ -46,6 +46,11 @@ const city = (make) => ({ scene, camera }) => {
     towers.setMatrixAt(i, m);
   });
   scene.add(towers);
+  // and a round needle (ground.js's, at a pool's uniform scale): smooth
+  // normals, whose sides pick their window axis by the normal's x
+  const needle = new THREE.InstancedMesh(new THREE.CylinderGeometry(9 * 0.65, 9, 88, 12).translate(0, 44, 0), make('#8a8f99'), 1);
+  needle.setMatrixAt(0, m.compose(new THREE.Vector3(10, 0, 45), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.3), new THREE.Vector3(1.2, 1.2, 1.2)));
+  scene.add(needle);
 };
 
 export default {

@@ -13,7 +13,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
-import { abs, clamp, dot, floor, fract, fwidth, materialColor, max, mix, normalWorld, normalize, positionLocal, positionWorld, select, smoothstep, step, uniform, varying, vec2, vec3 } from 'three/tsl';
+import { abs, clamp, dot, floor, fract, fwidth, materialColor, max, mix, modelWorldMatrix, normalLocal, normalize, positionLocal, positionWorld, select, smoothstep, step, uniform, varying, vec2, vec3, vec4 } from 'three/tsl';
 
 const SKY_R = 40000; // m: as scene.js's
 
@@ -35,11 +35,12 @@ export function skyDome(low, high) {
   return mesh;
 }
 
-// ground.js's hash, as nodes
+// ground.js's hash, as nodes: its `p +=` written as a sum, since an
+// assignment outside a Fn() has no stack to go on and three drops it
 const cityHash = (p) => {
-  const a = fract(p.mul(vec2(123.34, 456.21))).toVar();
-  a.addAssign(dot(a, a.add(45.32)));
-  return fract(a.x.mul(a.y));
+  const a = fract(p.mul(vec2(123.34, 456.21)));
+  const b = a.add(dot(a, a.add(45.32)));
+  return fract(b.x.mul(b.y));
 };
 
 // A city's facades: lit windows read from where a face is in the world, so
@@ -49,7 +50,13 @@ export function cityMaterial(colour) {
   const m = new MeshStandardNodeMaterial({ color: colour, roughness: 0.7, metalness: 0.15 });
   m.name = 'flight-city';
   const w = positionWorld;
-  const n = normalWorld;
+  // the face's way in the world as the GLSL city's vCityN: the model's
+  // matrix on the (instanced) normal, made unit at the vertex and carried
+  // to the pixel as it falls, not made unit again there as normalWorld is,
+  // so a round needle's sides choose their axis where the GLSL ones do
+  // (the instance's own turn: three's normal matrix and the GLSL's mat3 of
+  // it agree in direction for the uniform scales the pools place)
+  const n = varying(modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz.normalize());
   const lot = floor(w.xz.div(150));
   // each tower its own stone: a tint by the lot it stands on
   const tint = mix(vec3(0.82, 0.8, 0.84), vec3(1.18, 1.12, 1.04), cityHash(lot.add(7.3)));
