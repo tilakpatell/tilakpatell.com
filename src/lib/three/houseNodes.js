@@ -38,7 +38,8 @@ export const LOOK = {
 const lookLuma = (c) => dot(c, vec3(0.2126, 0.7152, 0.0722));
 
 // houseSky: the sky along a direction, as the fog sees it
-const houseSky = (u, d) => {
+// (u: a house's uniforms; the flight's fog, drawn as the classic renderer drew it, reads it too)
+export const houseSky = (u, d) => {
   const c = select(d.y.lessThan(0), u.uLookFogLow.mul(u.uLookFogBelow), mix(u.uLookFogLow, u.uLookFogHigh, pow(max(d.y, 0), 0.5)));
   return c.add(u.uLookHalo.mul(pow(max(dot(d, u.uLookSunDir), 0), 6)));
 };

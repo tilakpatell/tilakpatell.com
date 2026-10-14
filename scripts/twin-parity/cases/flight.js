@@ -2,11 +2,16 @@
 // its sky dome and its city's lit windows, each built once with the GLSL
 // original (scene.js's skyDome, ground.js's cityMaterial) and once with its
 // twin (the originals kept in glsl.js, which the flight no longer
-// imports). On the flight's island (scripts/lib/flight-island.mjs): it goes
-// with the flight.
+// imports); and the two drawn as the flight draws them, straight to the
+// canvas, the house's fog and the dome as the classic renderer showed them
+// (drawn.js). On the flight's island (scripts/lib/flight-island.mjs): it
+// goes with the flight.
 import * as THREE from 'three';
 import { cityMaterial as cityO, skyDome as skyO } from '../../../src/components/expanse/flight/glsl.js';
 import { cityMaterial as cityN, skyDome as skyN } from '../../../src/components/expanse/flight/nodes.js';
+import { drawnAsClassic } from '../../../src/components/expanse/flight/drawn.js';
+import * as HO from '../../../src/lib/three/house.js';
+import * as HN from '../../../src/lib/three/houseNodes.js';
 
 // the dome round the camera, looking a little up from the horizon, so the
 // gradient's whole run is in the picture (Hoth's colours, a tint after)
@@ -53,7 +58,39 @@ const city = (make) => ({ scene, camera }) => {
   scene.add(needle);
 };
 
+// the flight as it is drawn: straight to the canvas under the house's tone
+// mapping (Neutral, at its exposure of 1.4), not through a post chain, so
+// the classic side tone maps and encodes each fragment and fogs it after,
+// and leaves the dome as it is; a plain out to the horizon in the house's
+// look and its fog, a block on it, the dome over them (Hoth's colours).
+// The node side's fog and dome go through ../src/components/expanse/flight/drawn.js
+const drawn = (make, H, classic) => ({ scene, camera, sun, renderer }) => {
+  camera.position.set(0, 300, 0);
+  camera.far = 50000;
+  camera.updateProjectionMatrix();
+  camera.lookAt(0, 230, -2000);
+  scene.fog = new THREE.Fog(0xe8eef6, 1500, 21000);
+  scene.add(make('#cfd9e6', '#5a7fb3'));
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#eef2f8', roughness: 0.94 })));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(300, 200, 300).translate(250, 100, -3000), new THREE.MeshLambertMaterial({ color: '#7a6a5a' })));
+  const house = H.createHouse({ fog: true });
+  house.light({ sun, hemi: scene.children.find((o) => o.isHemisphereLight) });
+  house.sky({ low: new THREE.Color('#cfd9e6'), high: new THREE.Color('#5a7fb3'), sunDir: sun.position.clone().normalize() });
+  (classic ? house : drawnAsClassic(house)).adopt(scene);
+  return {
+    // (the house's tone mapping for this case's draws only: the renderers are every case's)
+    render() {
+      const was = [renderer.toneMapping, renderer.toneMappingExposure];
+      renderer.toneMapping = THREE.NeutralToneMapping;
+      renderer.toneMappingExposure = 1.4;
+      renderer.render(scene, camera);
+      [renderer.toneMapping, renderer.toneMappingExposure] = was;
+    },
+  };
+};
+
 export default {
   'flight:sky': { node: sky(skyN), classic: sky(skyO) },
   'flight:city': { node: city(cityN), classic: city(cityO) },
+  'flight:drawn': { node: drawn(skyN, HN, false), classic: drawn(skyO, HO, true) },
 };

@@ -25,6 +25,7 @@ import { createFlightScene } from './scene';
 import { createGround, heroOf } from './ground';
 import { createMap } from './map';
 import { createWater } from './water';
+import { drawnAsClassic } from './drawn';
 import { STRIP } from './look';
 import { SHARED_KEYS, createSharedWorld } from './shared';
 import { createFlightOnline } from './online';
@@ -147,7 +148,10 @@ export default {
     // renderer has no frame guard to put the look on as a thing first draws)
     let house = null;
     const view = createFlightScene({ spec, palette: STRIP, house: () => house });
-    house = houseOn({ renderer, scene: view.scene, sun: view.sun, hemi: view.hemi, look: { fog: true } });
+    // (its fog mixed as the classic renderer mixed it, after the frame's
+    // tone mapping, for everything the house adopts or makes: ./drawn.js)
+    house = drawnAsClassic(houseOn({ renderer, scene: view.scene, sun: view.sun, hemi: view.hemi, look: { fog: true } }));
+    house.adopt(view.scene);
     const tier = LEVELS.includes(rt.quality?.tier) ? rt.quality.tier : 'mid';
     const ground = createGround(view.scene, { rt, spec, tier, palette: STRIP, house });
     // the planet map's rasters, asked of the ground's worker behind its leaves (./map.js; the HUD draws it)
