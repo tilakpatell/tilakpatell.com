@@ -63,7 +63,7 @@ The game's shapes (`node scripts/bf2017-physics.mjs`).
 <!-- mode -->
 ## The mode
 
-What each mesh is in the game (`node scripts/bf2017-level-mode.mjs hoth/ga`, scripts/lib/bf2017-level-mode.mjs; bf2-re findings/58): mode.json.
+What each mesh is in the game (`node scripts/bf2017-level-mode.mjs hoth/ga`, scripts/lib/bf2017-level-mode.mjs; bf2-re findings/61): mode.json.
 
 | | count | the rule |
 | --- | --- | --- |

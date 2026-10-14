@@ -313,7 +313,7 @@ Read 2026-10-13 (the design: `docs/superpowers/specs/2026-10-13-bf2017-ui-canvas
 
 ## Galactic Assault's own part of Hoth (`levels/hoth/ga/mode.json`, `scripts/lib/bf2017-level-mode.mjs`; `battlefront/map/doors.js`, `doorsTable.js`, `doorsScene.js`)
 
-Read 2026-10-14 from the FantasyBattle sub-world (bf2-re findings/58). Every door, gate and prop number comes out of the records with its `_source` (the door's team, duration and slide through `PF_AutomaticDoubleDoor_Hoth` / `PF_AutomaticSingleDoor_Hoth` / `PF_InteractGate_Hoth_01` → the core → `PF_AutomaticDoor_Controller`; the trigger box; the OpenDoor delays; the props' switches; the 104 walls). **By hand**, or read and then decided:
+Read 2026-10-14 from the FantasyBattle sub-world (bf2-re findings/61). Every door, gate and prop number comes out of the records with its `_source` (the door's team, duration and slide through `PF_AutomaticDoubleDoor_Hoth` / `PF_AutomaticSingleDoor_Hoth` / `PF_InteractGate_Hoth_01` → the core → `PF_AutomaticDoor_Controller`; the trigger box; the OpenDoor delays; the props' switches; the 104 walls). **By hand**, or read and then decided:
 
 - **Two connections into one field**: the single door's duration is fed twice (its interface's 0.8 and its `-141474860`'s 1), the double door's twice with the same 1. The last connection in the prefab's list is taken, as a later write over an earlier: 1 s. The game's resolution of the two is not decompiled.
 - **The curve's mode**: the Sine ease-in is the game's own (`0x14820bd60`, the table at `0x14317a070` by `InterpolationType`: 1 − cos(tπ/2) by a parabola fit); the EaseOut is taken as 1 − f(1 − t), sin(tπ/2), the usual composition: the code that applies `InterpolationMode` was not found in the dump.

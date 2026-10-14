@@ -59,7 +59,7 @@ export function readmeSection(mode, cmd) {
     SECTION,
     '## The mode',
     '',
-    `What each mesh is in the game (\`${cmd}\`, scripts/lib/bf2017-level-mode.mjs; bf2-re findings/58): mode.json.`,
+    `What each mesh is in the game (\`${cmd}\`, scripts/lib/bf2017-level-mode.mjs; bf2-re findings/61): mode.json.`,
     '',
     '| | count | the rule |',
     '| --- | --- | --- |',

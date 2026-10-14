@@ -9,7 +9,7 @@
 // pickups and the charges an objective holds; and the mode's invisible
 // collision (the OBBCollisionEntityData of its layers). Pure: the records
 // come through `load(name) → asset | null` (bf2017-ebx.mjs's follow), the
-// manifest's instances through `instances`. bf2-re findings/58 is the worked
+// manifest's instances through `instances`. bf2-re findings/61 is the worked
 // example.
 //
 //   readMode(load, { sub, instances, origin, layers }) → mode.json's
@@ -205,7 +205,7 @@ const plain = (v) => (v && typeof v === 'object' ? (v.value ?? undefined) : v);
 // ── the door controller ──
 
 // Gameplay/GameModes/Shared/Doors/PF_AutomaticDoor_Controller's interface, by the
-// graph inside it (findings/58 §2): the three team bools the core sets from the
+// graph inside it (findings/61 §2): the three team bools the core sets from the
 // door's TeamId (TeamIdToInt → IntToEvent 0, 1, 2), the duration into its
 // FloatInterpolator, the two slides (Vec3Builders into the leaves'
 // TransformBuilders: the left leaf's blend takes the first, the right's the

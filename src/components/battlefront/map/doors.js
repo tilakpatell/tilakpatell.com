@@ -1,5 +1,5 @@
 // Galactic Assault's doors, gates and state props as the game runs them
-// (bf2-re findings/58), from the mode part's mode.json (scripts/bf2017-
+// (bf2-re findings/61), from the mode part's mode.json (scripts/bf2017-
 // level-mode.mjs: the FantasyBattle sub-world's records). Pure: no three, no
 // physics; map/doorsScene.js draws and moves what this says.
 //
@@ -146,7 +146,7 @@ export function createDoors(mode, { origin = [0, 0, 0] } = {}) {
   };
 }
 
-// the door's interpolator's In, by the controller's ConditionalFloat (findings/58 §2)
+// the door's interpolator's In, by the controller's ConditionalFloat (findings/61 §2)
 function doorTarget(door, soldiers) {
   if (door.forced === 'open') return 1;
   if (door.forced === 'closed') return 0;
