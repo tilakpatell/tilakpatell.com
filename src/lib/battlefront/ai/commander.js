@@ -16,7 +16,8 @@ import { nearestWalkable } from '../nav.js';
 import { balance, offers } from '../battlePoints.js';
 import { INTERACT_REACH, UPLINK_RANGE, insidePolygon } from '../modes/objectives.js';
 import { WAVE } from '../spawn.js';
-import { REACH as GATE_REACH } from '../gates.js';
+import { reachOf } from '../gates.js';
+import { gateStand, meshPath } from '../meshNav.js';
 
 // Seconds between the commander's orders, by hand.
 export const ASSIGN = 5;
@@ -34,6 +35,10 @@ export const COUNTER_RADIUS = 15;
 export const THREAT = 25;
 export const CLUSTER = 40;
 export const UPLINK_SQUADS = 2;
+// m: how near its place a bot comes before it holds a gate's panel (the AutoPlayers' own:
+// Automation/Autoplayers/Prefabs/PlanetaryBattles/AutoPlayer_HackObjective's
+// AutoPlayerInteractObjectiveEntityData.InteractionStartRadius)
+export const GATE_START = 1;
 // The officer and the specialist are one a squad, as the game's squads deploy.
 const ONE_A_SQUAD = new Set(['officer', 'specialist']);
 
@@ -108,16 +113,24 @@ function task(c, key, fields) {
   return t;
 }
 
-// an unlocked gate's panel as an objective the attackers can be sent to (one object a gate, for the tasks' cache)
+// an unlocked gate's panel as an objective the attackers can be sent to (one object a gate, for the tasks' cache):
+// its place the floor on the gate's outer side nearest the panel it reaches (meshNav.js's gateStand), else
+// half its reach out in front of it
 function gateObjective(c, g) {
   c.gateObjectives ??= new Map();
-  if (!c.gateObjectives.has(g.id)) c.gateObjectives.set(g.id, { type: 'gate', id: g.id, at: [g.panel.at[0], g.panel.at[2]] });
+  if (!c.gateObjectives.has(g.id)) {
+    const stand = gateStand(c.nav, g);
+    const out = reachOf(g) / 2;
+    const yaw = g.panel.yaw ?? 0;
+    const at = stand ? [stand[0], stand[2]] : [g.panel.at[0] + Math.sin(yaw) * out, g.panel.at[2] + Math.cos(yaw) * out];
+    c.gateObjectives.set(g.id, { type: 'gate', id: g.id, at });
+  }
   return c.gateObjectives.get(g.id);
 }
 
 function orders(c, o, role) {
   const at = pointOf(o);
-  if (o.type === 'gate') return task(c, `gate:${o.id}`, { at, spot: at, role, interact: true, radius: 0, reach: GATE_REACH });
+  if (o.type === 'gate') return task(c, `gate:${o.id}`, { at, spot: at, role, interact: true, radius: 0, reach: GATE_START });
   const i = c.ga.objectives.indexOf(o);
   if (role === 'escort') return task(c, `o${i}`, { at, role, radius: ESCORT_RADIUS });
   if (o.type === 'carry') return task(c, `o${i}:${role}:${o.carrier ? 'to' : 'at'}`, { at, spot: at, role, radius: role === 'take' && !o.carrier ? 0 : HOLD_RADIUS });
@@ -130,10 +143,29 @@ function orders(c, o, role) {
   return task(c, `o${i}`, { at, spot: at, role, radius: HOLD_RADIUS, ...(c.ways && o.type !== 'escort' ? { stays: true } : {}) });
 }
 
-// the attackers' plan: each squad to the objective with the most weight left for it
+// whether an objective stands behind an unlocked gate still shut: no way to it on the navmesh from the
+// gate's outer side (Hoth's hangar posts behind its blast doors). Kept until the mesh's links change (a
+// doorway opened).
+function shutBehind(c, o) {
+  const gate = c.nav?.mesh ? (c.ga.gates?.list ?? []).find((g) => g.state === 'unlocked' && g.panel) : null;
+  const stand = gate ? gateStand(c.nav, gate) : null;
+  if (!stand) return false;
+  c.behind ??= new Map();
+  const key = `${c.ga.objectives.indexOf(o)}:${gate.id}:${c.nav.mesh.links.length}`;
+  if (!c.behind.has(key)) c.behind.set(key, meshPath(c.nav, [stand[0], stand[2]], pointOf(o), { fromY: stand[1] }) === null);
+  return c.behind.get(key);
+}
+
+// the attackers' plan: each squad to the objective with the most weight left for it; an objective behind
+// a shut gate is no squad's while its gate is to open, and every squad it would have had goes to the gate
 function attackPlan(c, live, alive) {
   const options = [];
+  let behind = 0;
   for (const o of live) {
+    if (o.type !== 'escort' && o.type !== 'uplink' && !o.done && shutBehind(c, o)) {
+      behind++;
+      continue;
+    }
     if (o.type === 'escort') {
       if (o.walker.alive && !o.done) options.push({ o, w: WEIGHTS.escort, role: 'escort', max: 1 });
     } else if (o.type === 'capture') options.push({ o, w: o.done ? WEIGHTS.guard : WEIGHTS.capture, role: o.done ? 'hold' : 'take' });
@@ -142,7 +174,7 @@ function attackPlan(c, live, alive) {
     else if (o.type === 'carry' && !o.done) options.push({ o, w: WEIGHTS.arm, role: 'take' });
     else if (o.type === 'uplink') options.push({ o, w: WEIGHTS.uplink, role: 'hold' });
   }
-  for (const g of c.ga.gates?.list ?? []) if (g.state === 'unlocked' && g.panel) options.push({ o: gateObjective(c, g), w: WEIGHTS.gate, role: 'take', max: 1 });
+  for (const g of c.ga.gates?.list ?? []) if (g.state === 'unlocked' && g.panel) options.push({ o: gateObjective(c, g), w: WEIGHTS.gate, role: 'take', ...(behind ? {} : { max: 1 }) });
   const plan = new Map();
   if (!options.length) return plan;
   const count = new Map();

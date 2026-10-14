@@ -9,6 +9,13 @@ import { createBrain, think } from './soldierBrain.js';
 import { aiOf, classOf, weaponOf } from '../rulebook.js';
 import { newSoldier } from '../soldier.js';
 import { WAVE } from '../spawn.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import hoth from '../../../data/bf2017/maps/hoth.json';
+import { arrive, createGates, gateOf } from '../gates.js';
+import { attachMesh, doorway } from '../meshNav.js';
+import { load as loadNavmesh } from '../navmesh.js';
+import { GATE_START } from './commander.js';
 
 const rb = loadRulebook();
 const t = teamsFor(rb, 'hoth');
@@ -121,5 +128,28 @@ describe('the commander', () => {
     const intent = think(b, { nav, lineClear: (x, y) => lineClear(nav, x, y), shields, squad: null, objective: b.task.at, task: b.task, enemies: [], taken: new Map() }, 1);
     expect(intent.mode).toBe('interact');
     expect(intent.interact).toBe(true);
+  });
+
+  it('sends every attacker squad to an unlocked gate while the stage’s posts stand behind it shut, and through it once it opens', () => {
+    const bytes = readFileSync(join(import.meta.dirname, '../../../../public/models/galaxy/bf2017/levels/hoth/navmesh.bin'));
+    const grid = { cols: 1, rows: 1, origin: [-1e6, -1e6], cell: 2e6, height: new Float32Array([-1000]) };
+    const nav = attachMesh(grid, loadNavmesh(bytes, { mesh: 'playthrough' }));
+    const gates = createGates(hoth.rows.gates);
+    arrive(gates, 'FantasyBattle_Logic:123');
+    // (the west hangar's post, behind the west gate)
+    const post = capture.create({ volume: box(179.2, -1593.2) });
+    const squads = [sq('2.1', [60, -1150]), sq('2.2', [100, -1250])];
+    const c = createCommander({ team: 2, side: 'attack', ga: { ...ga([post]), gates }, squads, nav });
+    const plan = assign(c, { entities: [], now: 0 });
+    for (const id of ['2.1', '2.2']) {
+      expect(plan.get(id).task).toMatchObject({ key: 'gate:FantasyBattle_Logic:91', interact: true, reach: GATE_START });
+      // (the floor on the field by the door's jamb, the panel in reach)
+      expect(plan.get(id).task.at).toEqual([expect.closeTo(187.4, 0), expect.closeTo(-1568.6, 0)]);
+    }
+    const west = gateOf(gates, 'FantasyBattle_Logic:91');
+    west.state = 'open';
+    doorway(nav, west);
+    const after = assign(c, { entities: [], now: 5 });
+    expect([after.get('2.1').objective, after.get('2.2').objective]).toEqual([0, 0]);
   });
 });

@@ -30,11 +30,13 @@
 //                   source, radius, snap }] }) → Uint8Array
 //   decodeNavmesh(buffer) → the same shape (typed arrays)
 //   load(buffer, { mesh, links, cell }) → a navmesh (below); every point is [x, y, z] in the pack's frame
-//     .locate(x, y, z, { above, below }) → the polygon under the point (the nearest floor in height), or −1
+//     .locate(x, y, z, { above, below, accept }) → the polygon under the point (the nearest floor in height), or −1
 //     .heightOn(poly, x, z) → the polygon's plane's height there
-//     .nearest(x, y, z, { radius }) → { poly, point, distance } | null
+//     .nearest(x, y, z, { radius, accept, flat }) → { poly, point, distance } | null   accept(poly): which polygons
+//       count; flat: the distance on x–z alone (its height the tie-break)
 //     .raycast(from, to) → { hit, t, point, poly, edge } along the mesh, stopped by the first wall
 //     .route(from, to, { snap, dense, maxExpand }) → { points, polys, links, length, expanded } | null
+//       (the goal snapped to the start's island within snap: no way when nothing it reaches is that near)
 //     .findPath(from, to, opts) → [[x, y, z], …] | null
 //     .addLink({ points, both, snap }) → a link added at run time (a door opened), the islands joined again
 //     .island(poly), .polygon(poly), .toPack([x, y, z]), .toGame([x, y, z])
@@ -318,14 +320,14 @@ export function load(buffer, { mesh = 0, links: useLinks = true, cell = 4 } = {}
     return true;
   };
 
-  function locate(x, y, z, { above = 1, below = 3 } = {}) {
+  function locate(x, y, z, { above = 1, below = 3, accept = null } = {}) {
     if (x < gx0 - 1 || x > gx1 + 1 || z < gz0 - 1 || z > gz1 + 1) return -1;
     const c = cellZ(z) * GW + cellX(x);
     let best = -1;
     let bestD = Infinity;
     for (let k = cellCount[c]; k < cellCount[c + 1]; k++) {
       const p = cellPolys[k];
-      if (!inside(p, x, z)) continue;
+      if (!inside(p, x, z) || (accept && !accept(p))) continue;
       const h = heightOn(p, x, z);
       if (h > y + above || h < y - below) continue;
       const d = Math.abs(h - y);
@@ -364,7 +366,7 @@ export function load(buffer, { mesh = 0, links: useLinks = true, cell = 4 } = {}
 
   const seenStamp = new Uint32Array(P);
   let stamp = 0;
-  function nearest(x, y, z, { radius = 8 } = {}) {
+  function nearest(x, y, z, { radius = 8, accept = null, flat = false } = {}) {
     stamp++;
     const i0 = cellX(x - radius);
     const i1 = cellX(x + radius);
@@ -379,10 +381,12 @@ export function load(buffer, { mesh = 0, links: useLinks = true, cell = 4 } = {}
           if (seenStamp[p] === stamp) continue;
           seenStamp[p] = stamp;
           if (box[p * 4] > x + radius || box[p * 4 + 2] < x - radius || box[p * 4 + 1] > z + radius || box[p * 4 + 3] < z - radius) continue;
+          if (accept && !accept(p)) continue;
           const [qx, qz] = closestOn(p, x, z);
           const qy = heightOn(p, qx, qz);
-          const d = Math.hypot(qx - x, qy - y, qz - z);
-          if (d <= radius && (!best || d < best.distance)) best = { poly: p, point: [qx, qy, qz], distance: d };
+          const d = flat ? Math.hypot(qx - x, qz - z) : Math.hypot(qx - x, qy - y, qz - z);
+          const tie = flat ? Math.abs(qy - y) : 0;
+          if (d <= radius && (!best || d < best.distance - 1e-6 || (d < best.distance + 1e-6 && tie < best.tie))) best = { poly: p, point: [qx, qy, qz], distance: d, tie };
         }
       }
     }
@@ -528,15 +532,17 @@ export function load(buffer, { mesh = 0, links: useLinks = true, cell = 4 } = {}
   };
 
   // where a point is on the mesh: the floor under it, else the nearest within snap
-  const onMesh = (q, snap) => {
-    const p = locate(q[0], q[1], q[2]);
+  const onMesh = (q, snap, accept = null) => {
+    const p = locate(q[0], q[1], q[2], { accept });
     if (p >= 0) return { poly: p, point: [q[0], heightOn(p, q[0], q[2]), q[2]] };
-    return nearest(q[0], q[1], q[2], { radius: snap });
+    return nearest(q[0], q[1], q[2], { radius: snap, accept });
   };
 
   function route(from, to, { snap = 4, dense = true, maxExpand = Infinity } = {}) {
     const sn = onMesh(from, snap);
-    const tn = onMesh(to, snap);
+    // (the goal on the floor the start can reach, within the snap: a capture point's own patch of
+    // polygons cut off by its prop stands a metre from the floor round it)
+    const tn = sn ? onMesh(to, snap, (p) => island[p] === island[sn.poly]) : null;
     if (!sn || !tn) return null;
     const S = sn.poly;
     const T = tn.poly;

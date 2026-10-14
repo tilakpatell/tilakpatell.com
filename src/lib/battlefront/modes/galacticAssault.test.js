@@ -123,7 +123,9 @@ describe('Galactic Assault', () => {
     expect(ga.logic).toBeTruthy();
     live(ga);
     expect([areas(ga, 'attack'), areas(ga, 'defend')]).toEqual([[9], [11]]);
-    expect(spawnSets(ga).attack.filter((id) => id.startsWith('FantasyBattle_Logic:'))).toHaveLength(28);
+    // (28 of the level's, less the mode prefab's far list, the Empire's two starfighter points 500 m up)
+    expect(spawnSets(ga).attack.filter((id) => id.startsWith('FantasyBattle_Logic:'))).toHaveLength(26);
+    expect(spawnSets(ga).attack).not.toContain('FantasyBattle_Logic:17');
     run(ga, 25.1);
     expect([areas(ga, 'attack'), areas(ga, 'defend')]).toEqual([
       [40, 49, 70],

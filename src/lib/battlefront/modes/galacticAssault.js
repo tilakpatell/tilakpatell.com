@@ -129,8 +129,10 @@ function logicSets(ga) {
   const { vm, spec } = ga.logic;
   const teamOfRecord = (id) => (ga.map.spawns.find((s) => s.id === id) ?? ga.map.polygons.find((s) => s.id === id))?.team;
   const sets = { attack: [], defend: [] };
+  // (the mode prefab's far list is the starfighters', 900 m out: never a soldier's)
+  const far = new Set(spec.far ?? []);
   for (const id of Object.keys(spec.enables)) {
-    if (!enabled(vm, id)) continue;
+    if (far.has(id) || !enabled(vm, id)) continue;
     const team = teamOfRecord(id);
     if (team === undefined) continue;
     if (team === ga.attack || !team) sets.attack.push(id);

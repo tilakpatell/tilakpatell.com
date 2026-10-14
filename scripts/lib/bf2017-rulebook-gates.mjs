@@ -12,11 +12,19 @@
 // gate's output -1157191321 is the door opened at its panel (the spawn
 // logic's 'opened' port).
 //
-//   gatesOf(root, dir, sub) → [{ id, name, at, yaw, panel: { id, at }, unlock: path id | null,
-//     barredBy: [path id], _source }] | []
+// The panel's interaction is the button's WorldInteraction: within
+// InteractionMaxDistance of its transform and InteractionMaxAngle of its
+// facing, for the StopWatch's TriggerOnTime. That transform is the panel's
+// own (In2 of a TransformMultiplier) under the multiplier's In1, a 3× scale,
+// so the reach in the world is the distance times that scale: Hoth's panels
+// sit in the wall beside each door, facing the field, 4.3 m from the nearest
+// floor in front of them (bf2-re findings/58).
+//
+//   gatesOf(root, dir, sub) → [{ id, name, at, yaw, panel: { id, at, yaw }, unlock: path id | null,
+//     barredBy: [path id], interact: { distance, scale, angle, hold, _source } | null, _source }] | []
 
 import { fieldHash as H } from './bf2017-abilities.mjs';
-import { shortName, transformOf } from './bf2017-ebx.mjs';
+import { follow, objectsOf, shortName, transformOf } from './bf2017-ebx.mjs';
 import { graphOf } from './bf2017-rulebook-spawnlogic.mjs';
 
 const s32 = (h) => h | 0;
@@ -27,6 +35,27 @@ export const GATE_OPENED = -1157191321;
 export const ROUTE_DONE = 1762125924;
 const SPLIT_OUT = -137490305;
 const SPLIT_IN = 1723395486;
+
+// a prefab's reference to another prefab, by the referenced one's name
+const refTo = (asset, re) => (asset?.objects ?? []).find((o) => re.test(o?.Blueprint?.$asset ?? ''))?.Blueprint ?? null;
+const len = (v) => (v ? Math.hypot(v.x, v.y, v.z) : 1);
+
+// the interaction a gate's panels carry: PF_InteractGate_* → its PF_InteractDoor_Core → its PF_Interact_Button
+export function interactOf(root, gate) {
+  const core = refTo(follow(root, gate), /PF_InteractDoor_Core$/);
+  const button = core ? follow(root, refTo(follow(root, core), /PF_Interact_Button$/)) : null;
+  const wi = button ? objectsOf(button, 'WorldInteractionEntityData')[0] : null;
+  if (!wi) return null;
+  const mul = objectsOf(button, 'TransformMultiplierEntityData')[0];
+  const watch = objectsOf(button, 'StopWatchEntityData')[0];
+  return {
+    distance: wi.InteractionMaxDistance,
+    scale: r3(len(mul?.In1?.right)),
+    angle: wi.InteractionMaxAngle,
+    hold: watch?.TriggerOnTime ?? 1,
+    _source: `${button.name}: WorldInteractionEntityData.InteractionMaxDistance, .InteractionMaxAngle; TransformMultiplierEntityData.In1's scale (on the interaction's Transform); StopWatchEntityData.TriggerOnTime`,
+  };
+}
 
 export function gatesOf(root, dir, sub) {
   const g = graphOf(root, dir, sub);
@@ -74,9 +103,10 @@ export function gatesOf(root, dir, sub) {
       name,
       at: t.at.map(r3),
       yaw: r3(t.yaw),
-      panel: lt ? { id: loc.id, at: lt.at.map(r3) } : null,
+      panel: lt ? { id: loc.id, at: lt.at.map(r3), yaw: r3(lt.yaw) } : null,
       unlock,
       barredBy,
+      interact: interactOf(root, e.o.Blueprint),
       _source: `${g.subName}#PropertyConnections+EventConnections (${name}: its Enabled's Bool, the EventGate that sets it, the routes into its In and Close; its panel's locator)`,
     });
   }

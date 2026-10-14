@@ -11,7 +11,8 @@
 // example (Hoth: eight walker steps in stage 1, the gates and the hangar
 // points in stage 2, the fuel charges in stage 3).
 //
-//   spawnLogic(root, dir, sub) → { nodes, inputs, events, enables, trackers, unsupported, _source } | null
+//   spawnLogic(root, dir, sub) → { nodes, inputs, events, enables, trackers, far, unsupported, _source } | null
+//   (far: the spawn points the mode prefab links as its far list, the starfighters', which a soldier never takes)
 //
 // The graph's ids are the map rulebook's own (`<layer>:<object index>`);
 // fields and events keep their names where the djb2-xor hash is a known one
@@ -64,6 +65,9 @@ export const GA_PREFAB = 'PF_GameMode_Conquest_Staged';
 const PORT_BASE = { 1: 985615985, 2: 985719506 };
 export const stagePort = (team, n) => s32((PORT_BASE[team] >>> 0) ^ (49 ^ (48 + n)));
 export const STAGE_CHANGED = -474851384;
+// the mode prefab's link port holding the far spawn points: the starfighters' (the deploy screen's
+// UseFarSpawnPoints), 900 m out over the ground; never a soldier's (Hoth: FantasyBattle_Logic:17, :68, :293, :327)
+export const FAR_SPAWNS = -1877245525;
 const ROLES = [
   // the escort tracker's lead: the furthest walker's count of waypoint triggers passed (PF_EscortTracker's SelectInt)
   { prefab: /^PF_EscortTracker$/, field: -827789024, role: 'lead' },
@@ -114,11 +118,11 @@ export function graphOf(root, dir, sub) {
     if (!evin.has(t.id)) evin.set(t.id, []);
     evin.get(t.id).push({ event: c.TargetEvent.Id, src: s, srcEvent: c.SourceEvent.Id });
   }
-  const links = new Map(); // source id → [{ t: the target, field: the target's field }]
+  const links = new Map(); // source id → [{ t: the target, field: the target's field, from: the source's }]
   for (const c of conns.link) {
     const s = at(c.Source);
     const t = at(c.Target);
-    if (s && t) links.set(s.id, [...(links.get(s.id) ?? []), { t, field: c.TargetFieldId }]);
+    if (s && t) links.set(s.id, [...(links.get(s.id) ?? []), { t, field: c.TargetFieldId, from: c.SourceFieldId }]);
   }
   return { subName, byGuid, assets, pin, evin, links };
 }
@@ -193,7 +197,14 @@ export function spawnLogic(root, dir, sub) {
   // the escort trackers' walkers: which waypoint triggers count for which walker
   const trackers = {};
   for (const [id, n] of Object.entries(nodes)) if (n.type === 'prefab' && n.name === 'PF_EscortTracker') trackers[id] = escortTracker(assets, evin, links, id);
-  return { nodes, inputs, events, enables, trackers, unsupported: [...unsupported].sort(), _source: `${subName}#PropertyConnections+EventConnections+LinkConnections (back from each spawn record's Enabled)` };
+  // (the far spawn points: what the mode prefab links into its far list)
+  const far = [];
+  for (const e of byGuid.values()) {
+    if (shortName(e.o.Blueprint?.$asset ?? '') !== GA_PREFAB || !e.layer.toLowerCase().startsWith(prefix)) continue;
+    for (const l of links.get(e.id) ?? []) if (s32(l.from) === FAR_SPAWNS && !far.includes(l.t.id)) far.push(l.t.id);
+  }
+  far.sort();
+  return { nodes, inputs, events, enables, trackers, far, unsupported: [...unsupported].sort(), _source: `${subName}#PropertyConnections+EventConnections+LinkConnections (back from each spawn record's Enabled)` };
 }
 
 // a node's own settings, as the page runs it
