@@ -10,15 +10,15 @@
 // grid’s cell for (the bolt’s property, the target’s): multiplier × damage,
 // and only when that reaches the cell’s threshold, else nothing. A pair with
 // no relation is the (default, default) cell, 0× under 2: no damage, not 1×
-// (findings/62 §3, _notes[0]).
+// (findings/62 §3; damage.json’s note on the grid).
 //
 // A fighter, or a turret (a vehicle too), is judged against its own pair’s
 // property, `VehicleEntityData.MaterialPair`, whatever part the bolt met: a
 // part’s own relation spends only that part’s states, which reach a fighter’s
-// health through a weak spot, and no starfighter has one (findings/62 §2,
-// _notes[1]). Then × the difficulty’s VehicleDamageModifier, and a friend’s
-// bolt × its FriendlyDamageModifier (friendly fire off, as the game’s
-// multiplayer).
+// health through a weak spot, and no starfighter has one (findings/62 §2;
+// the note on a fighter). Then × the difficulty’s VehicleDamageModifier,
+// and a friend’s bolt × its FriendlyDamageModifier (friendly fire off, as
+// the game’s multiplayer).
 //
 // A capital’s part (a static model’s) is judged against the hull part the
 // bolt met, × (1 + n × perMate) where the part is linked to the squad bonus
@@ -28,15 +28,18 @@
 // under it is dropped; the bonus and the multiplier applied again); in the
 // last state it falls to 0. Only a hit on the part its state names spends
 // it, and a friend’s bolt does nothing unless the part has friendly fire
-// (findings/62 §4, _notes[2–3]). When a hit moves a part into a state naming
-// another part, the game breaks its `children` (FLT_MAX each: the caller’s,
-// `spend(childState, Infinity)`).
+// (findings/62 §4; the notes on a capital’s part and its states). When a
+// hit moves a part into a state naming another part, the game breaks its
+// `children` (FLT_MAX each: the caller’s, `spend(childState, Infinity)`).
+// A site entry, the war’s subsystem on a game record, names no part a
+// state: a hit on a part in its `parts` spends the entry’s chain, the
+// caller routing it (the note on `site`).
 //
 // A blast reaches a vehicle as its record’s damage, no grid (slot 43,
-// FUN_141bea1c0, _notes[4]); whether a static model holds a blast to the grid
-// was not read, so blastDamage takes the caller’s choice: give it a target
-// property and the grid rules, give it none and it doesn’t. Where a blast
-// reaches is the caller’s.
+// FUN_141bea1c0; the note on a blast); whether a static model holds a blast
+// to the grid was not read, so blastDamage takes the caller’s choice: give
+// it a target property and the grid rules, give it none and it doesn’t.
+// Where a blast reaches is the caller’s.
 //
 //   boltDamage(bolt, metres)                  → the bolt’s damage at that range
 //   multiplier(attackerProperty, targetProperty) → the grid’s cell { multiplier, threshold, collision, _source }
@@ -48,7 +51,8 @@
 //   partsHealth(chain)                        → { hp, stage, floors }: a part’s state at its first health
 //   spend(state, dmg, threshold = 0, scale = 1) → the state after dmg (a new one; the given one is kept)
 //   partHit(part, state, hit, bolt, metres, mates = 0, friend = false) → the part’s state after the bolt
-//                                               (hit: the hull’s part met, { name, property }; the same state when nothing is spent)
+//                                               (part: a `parts` row or a `site` entry; hit: the hull’s part met,
+//                                               { name, property }; the same state when nothing is spent)
 //   kindDamage(kind)                          → the kind’s fighters/capitals row, through `stand`; null for none
 //   capitalSite(kind, id)                     → the kind’s `site` entry for a war subsystem, or null
 //   turretOf(kind, partName)                  → the turret a hull part stands for (`turretParts`), or null
@@ -161,21 +165,23 @@ export function spend(state, dmg, threshold = 0, scale = 1) {
 // most one unless the bonus is each mate’s
 export function partHit(part, state, hit, bolt, metres, mates = 0, friend = false) {
   if (friend && !part.friendlyFire) return state;
-  if (part.states[state.stage] !== hit.name) return state;
+  // a site entry names no part a state; the caller routes a hit to it by its `parts`
+  const states = part.states ?? null;
+  if (states && states[state.stage] !== hit.name) return state;
   const cell = multiplier(bolt.property, hit.property);
   const d = cell.multiplier * boltDamage(bolt, metres);
   if (!(d > 0) || d < cell.threshold) return state;
   const n = SQUAD.eachMate ? mates : Math.min(mates, 1);
   const scale = (part.squad ? 1 + n * SQUAD.perMate : 1) * (part.damageMultiplier ?? 1);
-  return run(state, d * scale, cell.threshold, scale, part.states, hit.name);
+  return run(state, d * scale, cell.threshold, scale, states, hit.name);
 }
 
 export function kindDamage(kind) {
   return KINDS.get(kind) ?? null;
 }
 
-// the site’s choices (_notes[5]), not records: which game record a war
-// subsystem takes, and which turret a hull part stands for
+// the site’s choices (the note on `site`), not records: which game record a
+// war subsystem takes, and which turret a hull part stands for
 export function capitalSite(kind, id) {
   return kindDamage(kind)?.site?.[id] ?? null;
 }

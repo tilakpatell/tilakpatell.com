@@ -209,6 +209,17 @@ describe('a bolt on a capital’s part', () => {
     expect(partHit(hull, s, { name: 'stardestroyer_hull_01_sb_endor#1', property: 132 }, heavy, 0)).toBe(s);
   });
 
+  it('spends a site entry (no `states`) on any hit routed to it by its parts', () => {
+    const reactor = capitalSite('lucrehulk', 'reactor');
+    expect(reactor.states).toBeUndefined();
+    expect(reactor.parts).toEqual(['reactor']);
+    const s = partHit(reactor, partsHealth(reactor.health), { name: 'reactor', property: 206 }, xwingBolt, 300);
+    expect(s.hp).toBeCloseTo(449.25, 12);
+    const held = partHit(reactor, { hp: 204.5, stage: 0, floors: [204, 102, 0] }, { name: 'reactor', property: 206 }, xwingBolt, 300);
+    expect(held.stage).toBe(1);
+    expect(held.hp).toBeCloseTo(203.75, 12); // held at 204, the rest (0.25) carried on
+  });
+
   it('takes no friend’s bolt unless the part has friendly fire', () => {
     const s = partsHealth(cr90.health);
     expect(partHit(cr90, s, cr90Hull, xwingBolt, 300, 0, true)).toBe(s);
