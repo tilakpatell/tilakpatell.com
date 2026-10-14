@@ -42,10 +42,15 @@ const noise = (x, seed) => {
 // The sky pinned round the eye (it never shifts as you walk past a window)
 // and put on the far plane, behind everything the room has drawn: a world
 // point (w 1) to the clip space the GLSL’s farClip made.
-const farClip = (u, world) => {
+const farClip = (builder, u, world) => {
   const clip = cameraProjectionMatrix.mul(cameraViewMatrix.mul(vec4(world.xyz.add(cameraPosition).sub(u.uOrigin), 1)));
-  return vec4(clip.xy, clip.w.mul(0.99999), clip.w);
+  return vec4(clip.xy, farZ(builder, clip), clip.w);
 };
+// (a hair inside the far plane: w × 0.99999 as the GLSL put it, or, on a
+// reversed depth buffer, w × 0.00001: the runtime reverses it on a WebGPU
+// device (runtime/webgpu.js), the far plane at 0, where 0.99999 was all
+// but the near plane and the sky was drawn over the whole room)
+const farZ = (builder, clip) => clip.w.mul(builder.renderer?.reversedDepthBuffer === true ? 1e-5 : 0.99999);
 
 // (a ShaderMaterial’s defaults: opaque, front faces, no fog, no light (a
 // basic node material that took the scene’s lights, using none, would still
@@ -74,10 +79,10 @@ export function starsMesh(pos, colour, size, u, px) {
   const mat = farMaterial(u, { blending: THREE.AdditiveBlending, toneMapped: false });
   const vC = varyingProperty('vec3', 'vStarColour');
   const vP = varyingProperty('vec2', 'vStarCorner');
-  mat.vertexNode = Fn(() => {
+  mat.vertexNode = Fn((builder) => {
     vC.assign(attribute('aColour', 'vec3'));
     vP.assign(positionGeometry.xy);
-    const clip = farClip(u, modelWorldMatrix.mul(vec4(attribute('aStar', 'vec3'), 1)));
+    const clip = farClip(builder, u, modelWorldMatrix.mul(vec4(attribute('aStar', 'vec3'), 1)));
     // (its corners `aSize × uPx` pixels apart on the screen, as gl_PointSize drew it)
     const off = positionGeometry.xy.mul(attribute('aSize', 'float').mul(uPx)).div(viewportSize).mul(clip.w);
     return vec4(clip.xy.add(off), clip.z, clip.w);
@@ -95,9 +100,9 @@ export function bandMaterial(u, pole) {
   const uSeed = uniform(new THREE.Vector3(3, 7, 11));
   const m = farMaterial(u, { side: THREE.BackSide, blending: THREE.AdditiveBlending, toneMapped: false });
   const vDir = varyingProperty('vec3', 'vBandDir');
-  m.vertexNode = Fn(() => {
+  m.vertexNode = Fn((builder) => {
     vDir.assign(positionGeometry);
-    return farClip(u, modelWorldMatrix.mul(vec4(positionGeometry, 1)));
+    return farClip(builder, u, modelWorldMatrix.mul(vec4(positionGeometry, 1)));
   })();
   const d = normalize(vDir);
   const lat = dot(d, uPole);
@@ -117,12 +122,12 @@ export function sunMaterial(u, size) {
   const uSize = uniform(size);
   const m = farMaterial(u, { blending: THREE.AdditiveBlending, toneMapped: false });
   const vUv = varyingProperty('vec2', 'vSunUv');
-  m.vertexNode = Fn(() => {
+  m.vertexNode = Fn((builder) => {
     vUv.assign(positionGeometry.xy);
     const w = modelWorldMatrix.mul(vec4(0, 0, 0, 1)).xyz.add(cameraPosition).sub(u.uOrigin);
     const mv = cameraViewMatrix.mul(vec4(w, 1));
     const clip = cameraProjectionMatrix.mul(vec4(mv.xy.add(positionGeometry.xy.mul(uSize)), mv.z, mv.w));
-    return vec4(clip.xy, clip.w.mul(0.99999), clip.w);
+    return vec4(clip.xy, farZ(builder, clip), clip.w);
   })();
   // a white disc half a degree across, hot enough to bloom, in a wide soft glow
   const d = length(vUv);
@@ -144,7 +149,7 @@ function bodyVertex(m, u) {
   const vB = varyingProperty('vec3', 'vBodyB');
   const vW = varyingProperty('vec3', 'vBodyW');
   const vC = varyingProperty('vec3', 'vBodyC');
-  m.vertexNode = Fn(() => {
+  m.vertexNode = Fn((builder) => {
     const on = normalize(normalGeometry);
     const ot = vec3(on.z, 0, on.x.negate());
     const east = select(dot(ot, ot).greaterThan(1e-8), normalize(ot), vec3(1, 0, 0));
@@ -156,7 +161,7 @@ function bodyVertex(m, u) {
     vC.assign(modelWorldMatrix.element(3).xyz.add(cameraPosition).sub(u.uOrigin));
     const w = modelWorldMatrix.mul(vec4(positionGeometry, 1));
     vW.assign(w.xyz.add(cameraPosition).sub(u.uOrigin));
-    return farClip(u, w);
+    return farClip(builder, u, w);
   })();
   return { vN, vT, vB, vW, vC };
 }
