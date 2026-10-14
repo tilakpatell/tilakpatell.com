@@ -43,9 +43,3 @@
 - [x] The static: noise made once (`noiseUrl`, 80 × 60, tiled twice), `rm-static-jump` moving it.
 - [x] The hangar, the wardrobe and the hero stage on `shownLoop`; the wardrobe and the hero at 30 a second unless dragged.
 - [ ] Measure before and after (`portal`, `wardrobe`, `hangar`, `collection`); the four checks; pull request; merge on green.
-</content>
-</invoke>
-<invoke name="Bash">
-<parameter name="command">cd "C:/Users/tilak/source/repos/new-portfolio-website/.claude/worktrees/delete-old-workflows-828863"; git add docs/superpowers/plans/2026-10-13-perf-lane-p8-small-loops.md && git commit -q -m "The plan of lane P8, the small loops
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" && git switch -q claude/perf-p4-main-thread && git log --oneline -1
