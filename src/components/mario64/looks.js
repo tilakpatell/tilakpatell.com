@@ -1,47 +1,69 @@
-// How the picture is finished. Modern: the scene, a light bloom, ACES tone
-// mapping (in the output pass). Ultra and N64 come with the looks slice; until
-// then they draw as Modern.
+// How the picture is finished. Modern: the scene, a light bloom (the look’s,
+// ./look.js), then the renderer’s tone mapping and colour space, as the
+// runtime’s node post chain (rt.gfx.post: its passes as data, runtime/
+// webgpu.js). The EffectComposer it replaces is ./glsl.js’s makeLook, kept
+// for the parity check. Ultra and N64 come with the looks slice; until then
+// they draw as Modern.
 //
-// makeLook(renderer, scene, camera, { bloom }) → { render(), setSize(w, h),
-//   setLook(name), dispose() }
+// makeLook(post, scene, camera, { bloom }) → { render(), setSize(w, h),
+//   setLook(name), setBloom(on), look, ready, passes, dispose() }
+//   (post: rt.gfx.post, passes → a chain { ready, passes, render(),
+//   setSize(), dispose() })
+// passesFor(scene, camera, bloom) → the chain’s passes
 
-import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { LOOK } from './look';
 
 export const LOOK_NAMES = ['modern', 'ultra', 'n64'];
 
-export function makeLook(renderer, scene, camera, { bloom = true } = {}) {
-  const size = renderer.getSize(new THREE.Vector2());
-  const composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  const glow = new UnrealBloomPass(new THREE.Vector2(Math.max(1, size.x), Math.max(1, size.y)), 0.32, 0.55, 0.92);
-  glow.enabled = bloom;
-  composer.addPass(glow);
-  composer.addPass(new OutputPass());
+export const passesFor = (scene, camera, bloom) => [{ kind: 'render', scene, camera }, ...(bloom ? [{ kind: 'bloom', ...LOOK.bloom }] : []), { kind: 'output' }];
+
+export function makeLook(post, scene, camera, { bloom = true } = {}) {
+  let glow = Boolean(bloom);
+  let chain = post(passesFor(scene, camera, glow));
+  // (a chain being built, its bloom put on or taken off: the one before
+  // draws until it is, as the composer's bloom was switched between frames)
+  let coming = null;
   let look = 'modern';
   return {
     render() {
-      composer.render();
+      chain.render();
     },
+    // (the node chain takes the renderer's size and ratio as it draws)
     setSize(w, h) {
-      composer.setPixelRatio(renderer.getPixelRatio());
-      composer.setSize(w, h);
+      chain.setSize?.(w, h);
     },
     setLook(name) {
       look = LOOK_NAMES.includes(name) ? name : 'modern';
       return look;
     },
     setBloom(on) {
-      glow.enabled = on;
+      if (Boolean(on) === glow) return;
+      glow = Boolean(on);
+      coming?.dispose();
+      const next = post(passesFor(scene, camera, glow));
+      coming = next;
+      Promise.resolve(next.ready)
+        .catch(() => null)
+        .then(() => {
+          if (coming !== next) return;
+          coming = null;
+          chain.dispose();
+          chain = next;
+        });
     },
     get look() {
       return look;
     },
+    get ready() {
+      return chain.ready;
+    },
+    get passes() {
+      return chain.passes;
+    },
     dispose() {
-      composer.dispose();
+      coming?.dispose();
+      coming = null;
+      chain.dispose();
     },
   };
 }

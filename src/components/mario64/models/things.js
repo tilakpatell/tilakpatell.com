@@ -7,6 +7,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { paintingMaterial, waterfallMaterial } from '../nodes';
 import { COLORS, canvasTexture, cone, cylinder, mesh, pbr, sphere, starShape, torus } from './common';
 
 const COIN = { yellow: '#ffc93a', red: '#ff2b2b', blue: '#3b7bff' };
@@ -357,17 +358,8 @@ function painting(a) {
   });
   const root = new THREE.Group();
   const canvas = new THREE.PlaneGeometry(pw, ph, 48, 48);
-  const mat = art ? new THREE.MeshStandardMaterial({ map: art, roughness: 0.7 }) : new THREE.MeshStandardMaterial({ color: '#7fb0e0' });
-  const uniforms = { uRipple: { value: 0 }, uTime: { value: 0 } };
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uRipple = uniforms.uRipple;
-    shader.uniforms.uTime = uniforms.uTime;
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uRipple; uniform float uTime;')
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-        float d = length(position.xy);
-        transformed.z += uRipple * 0.12 * sin(d * 9.0 - uTime * 10.0) * exp(-d * 0.6);`);
-  };
+  // (the ripple pushes the canvas's vertices: ../nodes.js)
+  const { material: mat, uniforms } = paintingMaterial(art);
   const pic = mesh(canvas, mat, { y: ph / 2, z: 0.06, shadow: false });
   pic.userData.own = true;
   root.add(pic);
@@ -483,18 +475,8 @@ function flag() {
 
 function waterfall() {
   const root = new THREE.Group();
-  const mat = new THREE.MeshPhysicalMaterial({ color: '#cfeeff', roughness: 0.1, transmission: 0.4, transparent: true, opacity: 0.75, emissive: '#7fc8ff', emissiveIntensity: 0.15 });
-  const uniforms = { uTime: { value: 0 } };
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uTime = uniforms.uTime;
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime; varying vec2 vUv2;')
-      .replace('#include <dithering_fragment>', `#include <dithering_fragment>
-        float streak = sin(vUv2.x * 80.0) * 0.5 + 0.5;
-        float flow = fract(vUv2.y * 3.0 + uTime * 1.6 + streak * 0.3);
-        gl_FragColor.rgb += vec3(0.25) * smoothstep(0.7, 1.0, flow) * streak;`);
-    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vUv2;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvUv2 = uv;');
-  };
+  // (the streaks run down it in its output: ../nodes.js)
+  const { material: mat, uniforms } = waterfallMaterial();
   const sheet = mesh(new THREE.PlaneGeometry(3, 8, 1, 1), mat, { y: 4, shadow: false });
   sheet.userData.own = true;
   root.add(sheet);

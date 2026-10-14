@@ -61,7 +61,7 @@ function soundOf(e) {
 
 export default {
   id: 'mario64',
-  shading: 'glsl',
+  shading: 'nodes', // (everything it reaches is TSL: ./nodes.js, and the runtime's chain through ./looks.js; the node renderer, on WebGPU or WebGL 2)
   mb: 7,
   label: 'Super Mario 64, a fan tribute: Mario at Peach’s castle',
   async create(rt, props = {}) {
@@ -75,7 +75,7 @@ export default {
     rt.saves?.register({ key: SAVE, version: SAVE_VERSION, migrate: (old) => clean(old) });
     const save = clean(rt.saves?.get(SAVE, null) ?? blank());
     const small = Boolean(props.small) || rt.quality?.tier === 'low';
-    const scene = createScene(renderer, { small });
+    const scene = createScene(renderer, { small, post: rt.gfx.post });
     scene.setLook(save.look);
     const g = newGame({ save });
     await scene.setArea(g.areaId);
@@ -200,6 +200,8 @@ export default {
 
     const world = {
       game: g,
+      // (the look's chain built before the first frame: runtime.js waits for it)
+      ready: scene.ready,
       scene,
       tune: () => [
         { name: 'camera', items: [zoom(0, 'near'), zoom(1, 'middle'), zoom(2, 'far')] },

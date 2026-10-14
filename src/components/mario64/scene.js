@@ -16,18 +16,25 @@
 // long they've been at what they're doing and how fast they're going, so
 // their feet and bobs keep to the ground and their reactions run on time.
 //
-// createScene(renderer, { small }) → { setArea(id) → Promise, sync(g, alpha),
-//   render(), resize(w, h), setLook(name), fx(type, at), dispose() }
+// It draws on the node renderer (module.js says 'nodes'): the terrain’s
+// splat is ./nodes.js’s, the sky’s light is made by three’s node PMREM
+// generator, and the picture is finished by the runtime’s chain through
+// ./looks.js (`post`: rt.gfx.post). The GLSL it had is ./glsl.js.
+//
+// createScene(renderer, { small, post }) → { setArea(id) → Promise, sync(g, alpha),
+//   render(), resize(w, h), setLook(name), fx(type, at), ready, dispose() }
 
 import * as THREE from 'three';
+import { PMREMGenerator } from 'three/webgpu';
 import { loadSet, loadSky } from '../avengers/hq/assets';
-import { AREAS, SCALE, buildArea } from './courses/index';
+import { AREAS, buildArea } from './courses/index';
 import { makeLook } from './looks';
 import { hdTemplate, loadHd } from './models/hd';
 import { makeActor, makeMario, makeProp } from './models/index';
 import { makeHdMario } from './models/mario-hd';
 import { canvasTexture } from './models/common';
 import { createMarioBody, easeFace, faceFor, lookFor } from './motion';
+import { splatMaterial } from './nodes';
 import { MATS } from './textures';
 
 export const S = 0.01;
@@ -79,87 +86,6 @@ function stainedGlass() {
       g.stroke();
     }
   });
-}
-
-// The terrain's material: three sets blended by the splat attribute. The
-// first is the base (its uv is the kit's, x/z over its scale); the others are
-// sampled at their own scales, and the second (rock) is projected on three
-// planes by the normal, so cliffs aren't stretched.
-async function splatMaterial(mats, small) {
-  const sets = await Promise.all(mats.map((k) => loadSet(MATS[k]?.set, { small })));
-  const tint = mats.map((k) => new THREE.Color(MATS[k]?.tint ?? '#ffffff').multiplyScalar(MATS[k]?.boost ?? 1));
-  const base = sets[0];
-  const m = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
-  if (!base || !sets[1] || !sets[2]) {
-    m.color = tint[0];
-    return m;
-  }
-  m.map = base.map;
-  m.normalMap = base.normalMap;
-  m.roughnessMap = base.arm;
-  m.aoMap = base.arm;
-  const s0 = SCALE[mats[0]] ?? 500;
-  const uniforms = {
-    uMap1: { value: sets[1].map },
-    uMap2: { value: sets[2].map },
-    uNrm1: { value: sets[1].normalMap },
-    uNrm2: { value: sets[2].normalMap },
-    uArm1: { value: sets[1].arm },
-    uArm2: { value: sets[2].arm },
-    uTint0: { value: tint[0] },
-    uTint1: { value: tint[1] },
-    uTint2: { value: tint[2] },
-    uS1: { value: s0 / (SCALE[mats[1]] ?? 500) },
-    uS2: { value: s0 / (SCALE[mats[2]] ?? 500) },
-    uRockScale: { value: 1 / ((SCALE[mats[1]] ?? 600) * S) },
-  };
-  m.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec3 splat;\nvarying vec3 vSplat;\nvarying vec3 vWPos;\nvarying vec3 vWNrm;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSplat = splat;\nvWPos = (modelMatrix * vec4(position, 1.0)).xyz;\nvWNrm = normalize(mat3(modelMatrix) * normal);');
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        `#include <common>
-        uniform sampler2D uMap1, uMap2, uNrm1, uNrm2, uArm1, uArm2;
-        uniform vec3 uTint0, uTint1, uTint2;
-        uniform float uS1, uS2, uRockScale;
-        varying vec3 vSplat;
-        varying vec3 vWPos;
-        varying vec3 vWNrm;
-        vec4 tri(sampler2D t) {
-          vec3 w = pow(abs(vWNrm), vec3(4.0));
-          w /= (w.x + w.y + w.z);
-          vec3 p = vWPos * uRockScale;
-          return texture2D(t, p.zy) * w.x + texture2D(t, p.xz) * w.y + texture2D(t, p.xy) * w.z;
-        }`,
-      )
-      .replace(
-        '#include <map_fragment>',
-        `vec4 c0 = texture2D(map, vMapUv) * vec4(uTint0, 1.0);
-        vec4 c1 = tri(uMap1) * vec4(uTint1, 1.0);
-        vec4 c2 = texture2D(uMap2, vMapUv * uS2) * vec4(uTint2, 1.0);
-        // the rock shows through where the splat says, sharpened by the texture's own light and dark
-        vec3 sw = vSplat;
-        sw.y = clamp(sw.y * (0.7 + c1.g * 0.6), 0.0, 1.0);
-        sw /= max(0.001, sw.x + sw.y + sw.z);
-        diffuseColor *= c0 * sw.x + c1 * sw.y + c2 * sw.z;`,
-      )
-      .replace(
-        'vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;',
-        'vec3 mapN = (texture2D( normalMap, vNormalMapUv ).xyz * sw.x + texture2D( uNrm1, vNormalMapUv * uS1 ).xyz * sw.y + texture2D( uNrm2, vNormalMapUv * uS2 ).xyz * sw.z) * 2.0 - 1.0;',
-      )
-      .replace(
-        'vec4 texelRoughness = texture2D( roughnessMap, vRoughnessMapUv );',
-        'vec4 texelRoughness = texture2D( roughnessMap, vRoughnessMapUv ) * sw.x + tri( uArm1 ) * sw.y + texture2D( uArm2, vRoughnessMapUv * uS2 ) * sw.z;',
-      )
-      .replace(
-        'float ambientOcclusion = ( texture2D( aoMap, vAoMapUv ).r - 1.0 ) * aoMapIntensity + 1.0;',
-        'float ambientOcclusion = ( (texture2D( aoMap, vAoMapUv ).r * sw.x + tri( uArm1 ).r * sw.y + texture2D( uArm2, vAoMapUv * uS2 ).r * sw.z) - 1.0 ) * aoMapIntensity + 1.0;',
-      );
-  };
-  return m;
 }
 
 // water: a deep clear blue, two layers of ripples crossing in its normals
@@ -220,12 +146,13 @@ function geometryOf({ pos, nrm, uv }, index) {
 }
 
 // ─── The scene ─────────────────────────────────────────────────────────────
-export function createScene(renderer, { small = false } = {}) {
+export function createScene(renderer, { small = false, post } = {}) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 700);
   camera.position.set(0, 5, 10);
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const look = makeLook(renderer, scene, camera, { bloom: !small });
+  // (the node renderer's own generator: the classic one draws with GLSL)
+  const pmrem = new PMREMGenerator(renderer);
+  const look = makeLook(post, scene, camera, { bloom: !small });
 
   const sun = new THREE.DirectionalLight('#fff6e8', 3);
   sun.castShadow = true;
@@ -505,6 +432,10 @@ export function createScene(renderer, { small = false } = {}) {
     },
     setLook: (name) => look.setLook(name),
     setBloom: (on) => look.setBloom(on),
+    // (the chain built: the runtime waits for it before the first frame)
+    get ready() {
+      return look.ready;
+    },
     dispose() {
       clear(world);
       clear(props);
