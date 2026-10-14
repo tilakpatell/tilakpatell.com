@@ -199,8 +199,8 @@ export default {
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
     // (the mode part's doors, gates and state props: map/doors.js's rule, map/doorsScene.js's things, a round's own state)
     const part = level.modePart;
-    const doorsFor = () => (part?.mode ? createDoors(part.mode, { origin: part.pack.origin }) : null);
-    let doors = doorsFor();
+    const doorsFor = (m) => (part?.mode && m === 'galacticAssault' ? createDoors(part.mode, { origin: part.pack.origin }) : null);
+    let doors = doorsFor(mode);
     const doorsScene = part?.mode ? createDoorsScene({ part, physics }) : null;
     // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
     // server's rows for them, and the sim takes the round at its making: sim.js's roundIn)
@@ -378,7 +378,7 @@ export default {
       me = addPlayer(sim, { team });
       director = createDirector({ player: sound, me: PLAYER_ID, team });
       castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
-      doors = doorsFor();
+      doors = doorsFor(battleMode);
       park = parkOf();
       picked = null;
       mate = null;
