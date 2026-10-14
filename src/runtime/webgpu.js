@@ -34,6 +34,20 @@ import { createJitter } from '../lib/three/jitter';
 
 export const hasWebGPU = () => typeof navigator !== 'undefined' && Boolean(navigator.gpu);
 
+// What a bloom pass adds on this backend: the glow the WebGL backend's
+// UnrealBloomPass adds, so a world's bloom is the same on either. BloomNode
+// blurs and weighs the mips as that pass does, but hands back strength ×
+// the mips; UnrealBloomPass composites 3 × strength × the mips (its
+// “backwards compatibility” with an older alpha-based glow), the brightest
+// of their channels as its alpha, and adds both to the picture (additive,
+// premultiplied: one and one). Plain BloomNode drew every glow at a third
+// of the composer’s (Mario 64’s look: 18 dB off it, 32 dB and over with
+// this; twin-parity’s mario64:look).
+export function composerGlow(tsl, glow) {
+  const g = glow.rgb.mul(3);
+  return tsl.vec4(g, tsl.max(g.r, tsl.max(g.g, g.b)));
+}
+
 // the chain as data → a PostProcessing graph; `ready` resolves once the
 // nodes are loaded, and render() draws nothing until then. A chain with any
 // of the game light's passes goes to buildLitPost.
@@ -53,7 +67,7 @@ export function buildPostProcessing(renderer, passes) {
         node = scenePass.getTextureNode();
       } else if (p.kind === 'bloom') {
         if (!node) throw new Error('a bloom pass needs a render pass first');
-        node = node.add(bloomMod.bloom(node, p.strength ?? BLOOM.strength, p.radius ?? BLOOM.radius, p.threshold ?? BLOOM.threshold));
+        node = node.add(composerGlow(tsl, bloomMod.bloom(node, p.strength ?? BLOOM.strength, p.radius ?? BLOOM.radius, p.threshold ?? BLOOM.threshold)));
       } else if (p.kind === 'output') {
         // (the output transform is the renderer's own on this backend)
       } else if (p.kind === 'shader') throw new Error('a shader pass needs the webgl backend');

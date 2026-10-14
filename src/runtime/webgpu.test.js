@@ -38,7 +38,7 @@ vi.mock('../lib/three/light/passes.js', () => ({
   }),
 }));
 
-const { adapterLimits, buildPostProcessing, createWebGPU, isFallback, RAISED_LIMITS } = await import('./webgpu');
+const { adapterLimits, buildPostProcessing, composerGlow, createWebGPU, isFallback, RAISED_LIMITS } = await import('./webgpu');
 const { mipBias, setMipState } = await import('../lib/three/mipBias');
 
 const fakeCanvas = () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() });
@@ -192,6 +192,14 @@ describe('buildPostProcessing', () => {
     expect(mipBias()).toBe(0);
     await smaa.ready;
     smaa.dispose();
+  });
+  it('adds the bloom the WebGL backend’s UnrealBloomPass adds: 3 × the glow, its brightest channel on the alpha', () => {
+    // (numbers standing in for nodes: the arithmetic is the point, the
+    // picture is twin-parity's mario64:look)
+    const rgb = (r, g, b) => ({ r, g, b, mul: (k) => rgb(r * k, g * k, b * k), list: [r, g, b] });
+    const tsl = { max: Math.max, vec4: (v, a) => [...v.list, a] };
+    const out = composerGlow(tsl, { rgb: rgb(0.1, 0.4, 0.2) });
+    expect(out.map((v) => +v.toFixed(6))).toEqual([0.3, 1.2, 0.6, 1.2]);
   });
 });
 
