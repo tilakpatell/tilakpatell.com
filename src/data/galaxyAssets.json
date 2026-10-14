@@ -188855,6 +188855,12 @@
     "from": "models/galaxy/bf2017/levels/hoth/nav.bin",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/navmesh.bin": {
+    "hash": "f89713c640cc",
+    "bytes": 1823700,
+    "from": "models/galaxy/bf2017/levels/hoth/navmesh.bin",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/outpost/cells/-1_-1.bin": {
     "hash": "2a51e3490882",
     "bytes": 11552,
