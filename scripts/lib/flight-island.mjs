@@ -57,6 +57,8 @@ export const ISLAND = {
     'scripts/health.mjs',
     'scripts/online-check.mjs',
     'scripts/perf-probe.mjs',
+    'scripts/lib/perf-routes.mjs',
+    'scripts/lib/perf-routes.test.mjs',
     'scripts/stack-census.mjs',
     'scripts/supabase-check.mjs',
     'src/App.jsx',
