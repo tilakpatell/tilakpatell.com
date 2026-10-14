@@ -65,6 +65,7 @@ import { faceAlongZ } from './facing.js';
 import { createHeld, heldOf } from './held.js';
 import { CROSSFADE, LOCO_STATES, clipSpeed, locoBlend, locoClips, packClip, packFallback, relAngle, stateFor, timeAt } from './locomotion.js';
 import { strideOf } from './stride.js';
+import { animDue, animEvery, quietBones } from './lod.js';
 import { skinBodies } from '../../../lib/bf2017/collection.js';
 
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
@@ -146,6 +147,9 @@ export function cullBy(model) {
   return whole;
 }
 
+// (a figure's sockets, the things put on its bones: their chains stay in three's walk)
+const socketsOf = (f) => Object.values(f.sockets ?? {}).filter((o) => o?.isObject3D);
+
 const lerp = (a, b, t) => a + (b - a) * t;
 const lerpAngle = (a, b, t) => {
   let d = b - a;
@@ -182,13 +186,17 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
   scene.add(root);
   const figs = new Map(); // id → { model, mixer, actions, clip, prev: { at, yaw }, cur }
   let gone = false;
+  // (the frames update() has been asked for, and each figure's slot among
+  // them: the far ones are animated on their own frames, ./lod.js)
+  let frame = 0;
+  let slots = 0;
 
   function make(e) {
     // (actions: every clip played so far; weights: each one's, eased;
     // loco: the names on the stride phase; phase in strides; walking: on
     // the move last frame, so a start seats every loco action at the phase)
     const kind = kindOf(e, kinds);
-    const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null };
+    const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null, slot: slots++, owed: 0 };
     figs.set(e.id, f);
     loadBody(bodyUrl(kind), kind)
       .then(({ model, clips, sockets }) => {
@@ -199,6 +207,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         f.model = model;
         f.clips = clips;
         f.sockets = sockets ?? null;
+        quietBones(model, socketsOf(f));
         f.mixer = new THREE.AnimationMixer(model);
         root.add(model);
         const row = cuts?.of(kind);
@@ -236,6 +245,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     }
     for (const o of old) for (const m of [].concat(o.material)) m.dispose();
     dress(f.model, prune);
+    quietBones(f.model, socketsOf(f));
   }
 
   // the weapon the view says it holds, and that weapon's stance
@@ -363,6 +373,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     // the last step's places are kept so a frame between two steps is smooth
     update(entities, dt, alpha = 1, eye = null) {
       const seen = new Set();
+      frame++;
       for (const e of entities) {
         // (a soldier only: the walkers and the turrets are lane 4's)
         if (e.kind && e.kind !== 'soldier') continue;
@@ -404,13 +415,23 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
           f.cutAsked = e.t;
           f.cutter.at(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z));
         }
-        f.model.position.set(lerp(f.last.at[0], f.cur.at[0], alpha), lerp(f.last.at[1], f.cur.at[1], alpha), lerp(f.last.at[2], f.cur.at[2], alpha));
-        f.model.rotation.y = lerpAngle(f.last.yaw, f.cur.yaw, alpha);
         f.model.visible = e.visible !== false;
         arm(f, e.weapon ?? null);
+        // (moved and posed at its distance's rate, ./lod.js: between its
+        // frames a far body keeps its last place and pose, and three makes
+        // none of its matrices; the time between is played when it comes)
+        f.owed += dt;
+        const every = eye ? animEvery(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z)) : 1;
+        const due = animDue(frame, every, f.slot);
+        f.model.matrixWorldAutoUpdate = due;
+        if (!due) continue;
+        const step = f.owed;
+        f.owed = 0;
+        f.model.position.set(lerp(f.last.at[0], f.cur.at[0], alpha), lerp(f.last.at[1], f.cur.at[1], alpha), lerp(f.last.at[2], f.cur.at[2], alpha));
+        f.model.rotation.y = lerpAngle(f.last.yaw, f.cur.yaw, alpha);
         const s = stateFor(e);
-        blendTo(f, wanted(f, e, s, dt), dt);
-        f.mixer.update(dt);
+        blendTo(f, wanted(f, e, s, step), step);
+        f.mixer.update(step);
       }
       for (const [id, f] of figs) if (!seen.has(id)) drop(id, f);
     },
