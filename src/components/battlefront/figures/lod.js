@@ -14,7 +14,9 @@
 // animEvery(distance) → frames between a soldier's animation updates: every
 //   frame near, every second further out, every fourth far off (ANIM_BANDS),
 //   as a game's animation level of detail does; animDue(frame, every, slot)
-//   spreads the soldiers of one band over its frames by their slot.
+//   spreads the soldiers of one band over its frames by their slot. A body
+//   not due is passed by in the graph's walk (figures.js's root), its bones
+//   keeping the matrices of the frame it last moved.
 
 // [up to this many metres, animated every this many frames]
 export const ANIM_BANDS = [

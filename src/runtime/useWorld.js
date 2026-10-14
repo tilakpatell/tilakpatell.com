@@ -157,15 +157,19 @@ export function useWorld(module, { props, enabled = true, onEvent = null, attemp
   }, [on, module, attempt, rebuild, again]);
 
   // the page's props, without re-rendering anything, when one has changed
-  // since this world was last given them (sameProps)
+  // since this world was last given them (sameProps); and a frame asked for
+  // after every render, as before: a world that has stopped drawing (the
+  // galaxy at rest, frozen) fills what the page has just mounted for it, and
+  // a frame asked of a running loop costs nothing (lib/three/loop's kick)
   const given = useRef(null);
   useEffect(() => {
     const rt = typeof window !== 'undefined' ? runtime() : null;
     if (rt?.current?.module !== module) return;
     const now = rt.current.world;
-    if (given.current?.world === now && sameProps(given.current.props, props)) return;
-    given.current = { world: now, props };
-    now.update?.(props);
+    if (given.current?.world !== now || !sameProps(given.current.props, props)) {
+      given.current = { world: now, props };
+      now.update?.(props);
+    }
     rt.invalidate();
   });
 

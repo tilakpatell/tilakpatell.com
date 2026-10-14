@@ -30,15 +30,21 @@ export default function MiniMap({ size = MINIMAP.size, draw, onOpen = null, hz =
   // every-world hand-off's performance item 4).
   useEffect(() => {
     const c = canvas.current;
+    // (measured just before a draw, never in the observer: fitCanvas sizes
+    // the buffer, which clears it, and the minimap was blank until its next
+    // tick; and again when the screen's pixel ratio changes, which a
+    // content box's observer does not hear: a zoom, another screen)
     let box = null;
-    const measure = () => {
-      box = fitCanvas(c);
-    };
-    const sizes = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    let ratio = 0;
+    const sizes = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => (box = null)) : null;
     sizes?.observe(c);
     const tick = () => {
+      const now = window.devicePixelRatio || 1;
       // (no observer: measured each draw, as before)
-      if (!sizes || !box) measure();
+      if (!sizes || !box || now !== ratio) {
+        box = fitCanvas(c);
+        ratio = now;
+      }
       const ctx = box && c.getContext('2d');
       if (!ctx) return;
       ctx.setTransform(box.s, 0, 0, box.s, 0, 0);

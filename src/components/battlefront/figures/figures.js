@@ -184,6 +184,32 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
   const root = new THREE.Group();
   root.name = 'figures';
   scene.add(root);
+  // The graph under the root walked only where a body moved this frame
+  // (./lod.js): in three r186 a node whose matrix updates itself forces its
+  // whole subtree, and every child is walked whatever its own flags, so a
+  // far body's bones were recomposed on the frames it was not moved. The
+  // root stands still at the origin, and its walk passes a resting body by:
+  // its bones keep the matrices of the frame it last moved, which its skin
+  // reads.
+  // (a scene recomposes its own matrix every frame and forces its whole
+  // graph whether it moved or not: a force from a parent that has not
+  // moved since the last walk is not a move)
+  const resting = new WeakSet();
+  const parentWas = new THREE.Matrix4();
+  let walked = false;
+  root.matrixAutoUpdate = false;
+  root.updateMatrixWorld = function (force = false) {
+    if (force && walked && !this.matrixWorldNeedsUpdate && this.parent?.matrixWorld.equals(parentWas)) force = false;
+    if (this.parent) parentWas.copy(this.parent.matrixWorld);
+    walked = true;
+    if (this.matrixWorldNeedsUpdate || force) {
+      if (this.parent === null) this.matrixWorld.copy(this.matrix);
+      else this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix);
+      this.matrixWorldNeedsUpdate = false;
+      force = true;
+    }
+    for (const child of this.children) if (force || !resting.has(child)) child.updateMatrixWorld(force);
+  };
   const figs = new Map(); // id → { model, mixer, actions, clip, prev: { at, yaw }, cur }
   let gone = false;
   // (the frames update() has been asked for, and each figure's slot among
@@ -196,7 +222,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     // loco: the names on the stride phase; phase in strides; walking: on
     // the move last frame, so a start seats every loco action at the phase)
     const kind = kindOf(e, kinds);
-    const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null, slot: slots++, owed: 0 };
+    const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null, slot: slots++, owed: 0, posed: false };
     figs.set(e.id, f);
     loadBody(bodyUrl(kind), kind)
       .then(({ model, clips, sockets }) => {
@@ -403,10 +429,14 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
             f.clip = null;
             f.model.visible = true;
             f.last = f.cur = { at: e.at.slice(), yaw: e.yaw ?? 0, t: e.t };
+            // (placed and posed at once where it stands, not left at the corpse)
+            f.posed = false;
           }
           if (f.fell === true && ragdolls.handed(e.id)) {
-            // (the ragdoll has the body: the gun leaves the hand)
+            // (the ragdoll has the body: the gun leaves the hand; the body is
+            // walked every frame, the ragdoll's sink among what it moves)
             arm(f, null);
+            resting.delete(f.model);
             continue;
           }
         }
@@ -418,13 +448,17 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         f.model.visible = e.visible !== false;
         arm(f, e.weapon ?? null);
         // (moved and posed at its distance's rate, ./lod.js: between its
-        // frames a far body keeps its last place and pose, and three makes
-        // none of its matrices; the time between is played when it comes)
+        // frames a far body keeps its last place and pose and the graph's
+        // walk passes it by; the time between is played when it comes. Every
+        // frame on its first, and while it dies, so a ragdoll takes its fall
+        // at the clip's speed)
         f.owed += dt;
-        const every = eye ? animEvery(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z)) : 1;
-        const due = animDue(frame, every, f.slot);
-        f.model.matrixWorldAutoUpdate = due;
-        if (!due) continue;
+        const every = eye && f.posed && !DEAD.has(e.state) ? animEvery(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z)) : 1;
+        if (!animDue(frame, every, f.slot)) {
+          resting.add(f.model);
+          continue;
+        }
+        resting.delete(f.model);
         const step = f.owed;
         f.owed = 0;
         f.model.position.set(lerp(f.last.at[0], f.cur.at[0], alpha), lerp(f.last.at[1], f.cur.at[1], alpha), lerp(f.last.at[2], f.cur.at[2], alpha));
@@ -432,6 +466,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         const s = stateFor(e);
         blendTo(f, wanted(f, e, s, step), step);
         f.mixer.update(step);
+        f.posed = true;
       }
       for (const [id, f] of figs) if (!seen.has(id)) drop(id, f);
     },
