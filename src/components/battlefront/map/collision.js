@@ -8,7 +8,7 @@
 // camera's arm must not pass through.
 //
 //   createLevelCollision({ pack, loadBin, physics, tier, deps })
-//     → { add(key, bin, band) → Promise, drop(key), update(ms = 4) → bodies added,
+//     → { add(key, bin, band) → Promise, drop(key), update(ms = 4, at = the player's [x, y, z]) → bodies added,
 //         sweep(from, dir, len, r) → metres along dir to the first shape | null,
 //         stats(), dispose() }
 //   createPartsCollision({ parts: { outside: { pack, loadBin }, inside: { pack, loadBin } | null }, physics, tier, deps })
@@ -60,9 +60,10 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
       near.delete(key);
       lp.drop(key);
     },
-    update(ms = 4) {
+    update(ms = 4, at = null) {
       if (gone) return 0;
-      const added = lp.update(ms);
+      // (the cells nearest the player first: the floor under them before the far side of the map)
+      const added = lp.update(ms, at ? turn(at[0] - ox, at[2] - oz) : null);
       // (the engine sees a body only after a step)
       if (added) world.step();
       return added;
@@ -97,8 +98,10 @@ export function createPartsCollision({ parts, physics, tier = 'high', deps = {} 
   return {
     add: (key, bin, band, part) => of(part)?.add(key, bin, band) ?? Promise.resolve(),
     drop: (key, part) => of(part)?.drop(key),
-    // (the frame's slice of time shared between the parts)
-    update: (ms = 4) => all.reduce((n, c) => n + c.update(ms / all.length), 0),
+    // (the frame's slice of time shared between the parts, the nearest cells first)
+    update: (ms = 4, at = null) => all.reduce((n, c) => n + c.update(ms / all.length, at), 0),
+    // (bodies still waiting to go into the world: the walk holds a soldier in the air until they are in)
+    queued: () => all.reduce((n, c) => n + (c.stats()?.queued ?? 0), 0),
     sweep(from, dir, len, r) {
       let best = null;
       for (const c of all) {

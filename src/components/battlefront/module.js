@@ -486,7 +486,8 @@ export default {
         // world's own main-thread cost)
         const after = stepped > 0 || deploying ? view(sim) : v;
         if (stepped > 0) director.update(after, heard, stepped, { waiting: parked });
-        collision?.update(4);
+        // (a soldier held in the air for want of a floor gets the frame's time for the shapes under it)
+        collision?.update(walker?.held ? 16 : 4, body()?.at ?? null);
         const drawn = after;
         const p = body();
         if (sim.player.state === 'alive' && p) {
