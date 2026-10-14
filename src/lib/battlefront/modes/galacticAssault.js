@@ -21,6 +21,8 @@
 //   onEvent(ga, { type: 'down', side }) → { respawn }      canRespawn(ga, side)
 //   spawnSets(ga) → { attack: ids, defend: ids }    sideOf(ga, team)    teamOf(ga, side)
 //   view(ga) → the HUD's objective bar        force(ga) (tests: every live objective done)
+//   sounds(ga) → [{ type, at: { x, y, z }, from, radius }]   what the round makes heard: a fuel charge's keypad
+//     while one holds it (its button's interaction sound, the charges rows' `sound`), heard by the holder's enemies
 
 import { mapOf, stagesOf, vehicleOf, volumeOf } from '../rulebook.js';
 import { createLogic, enabled, escortLead, fireEvent, portsOf, setInput, setStage, tick as tickLogic } from '../spawnLogic.js';
@@ -329,6 +331,19 @@ export function force(ga) {
     }
     if (o.type === 'hold') o.held = o.seconds;
   }
+}
+
+// (the keypad sounds from its button from OnInteractStart to OnInteractStop, the patch's attenuation falling out to
+// `reach` m: the bots' senses take it as a stimulus from the one holding it, out to there)
+export function sounds(ga) {
+  const out = [];
+  for (const o of ga.objectives ?? []) {
+    const snd = o.charge?.sound;
+    if (o.type !== 'arm' || o.done || !o.holder || !snd?.whileHeld || !(snd.reach > 0)) continue;
+    const [x, y, z] = o.charge.keypad.at;
+    out.push({ type: 'keypad', at: { x, y, z }, from: o.holder, radius: snd.reach });
+  }
+  return out;
 }
 
 export function view(ga) {

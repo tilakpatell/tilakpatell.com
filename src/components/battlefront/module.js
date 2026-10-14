@@ -18,7 +18,7 @@
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
-// 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
+// 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), its yaw, health, whether it interacts and the enemies it believes in (`+` seen), and for a round's bot the enemy whose line it watches and whether that line is clear),
 // 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2), 'captured' (each capture point of the stage at a full meter: a check's way into stage 3), 'objectives' (the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
@@ -623,7 +623,7 @@ export default {
             return beginRound(arg ?? {});
           case 'bots':
             // (the bots as the sim has them, for a check: each one's side, what it is doing, whom it is after, whether it is firing)
-            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null, way: e.brain?.path ? { n: e.brain.path.length, wp: e.brain.wp, goal: e.brain.intent?.goal?.map((n) => Math.round(n)) ?? null, stuck: Math.round((e.brain.stuck ?? 0) * 10) / 10 } : null }));
+            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null, yaw: Math.round((e.yaw ?? 0) * 100) / 100, hp: Math.round(e.hp ?? 0), interact: !!e.interact, believes: Object.values(e.brain?.me?.beliefs ?? {}).filter((b) => b.hostile).map((b) => `${b.id}${b.visible ? '+' : ''}`), way: e.brain?.path ? { n: e.brain.path.length, wp: e.brain.wp, goal: e.brain.intent?.goal?.map((n) => Math.round(n)) ?? null, stuck: Math.round((e.brain.stuck ?? 0) * 10) / 10 } : null }));
           case 'nav':
             // (the battle's navgrid itself, for a check of a way over it; its navmesh by name only)
             return { ...sim.nav, mesh: sim.nav.mesh ? { name: sim.nav.mesh.name, polys: sim.nav.mesh.polyCount, links: sim.nav.mesh.links.length } : null };

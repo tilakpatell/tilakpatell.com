@@ -137,6 +137,7 @@ Online/BattlepointCostData	BattlepointCostData	data/Online/BattlepointCostData.j
 Online/Killswitches/SquadSpawn_InCombat_WhenAffectorAppliedToMe	KillswitchData	data/Online/Killswitches/SquadSpawn_InCombat_WhenAffectorAppliedToMe.json	375
 Online/Killswitches/SquadSpawn_InCombat_WhenAppliedAffectorToOpponent	KillswitchData	data/Online/Killswitches/SquadSpawn_InCombat_WhenAppliedAffectorToOpponent.json	393
 Online/Killswitches/SquadSpawn_InCombat_WhenNearGrenade	KillswitchData	data/Online/Killswitches/SquadSpawn_InCombat_WhenNearGrenade.json	351
+Sound/Gamemodes/Shared/SW02_Gamemodes_Shared_Interaction_01	SoundPatchAsset	data/Sound/Gamemodes/Shared/SW02_Gamemodes_Shared_Interaction_01.json	12111
 UI/Customize/Screens/SpawnOverlayScreen	UIWidgetBlueprint	data/UI/Customize/Screens/SpawnOverlayScreen.json	54772
 UI/Data/GameModes/GameModes	GameModesListInformationAsset	data/UI/Data/GameModes/GameModes.json	3213
 UI/Data/GameModes/Levels/EchoBase	LevelInformationAsset	data/UI/Data/GameModes/Levels/EchoBase.json	2935

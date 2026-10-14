@@ -87,6 +87,10 @@ describe('the fuel charges’ reader', () => {
     expect(R.settle._source).toMatch(/EventMemoryEntityData\.23/);
   });
 
+  it('reads the keypad’s sound while it is held: the button’s interaction patch, looping, its attenuation out to 31.4 m', () => {
+    expect(R.sound).toMatchObject({ patch: 'Sound/Gamemodes/Shared/SW02_Gamemodes_Shared_Interaction_01', whileHeld: true, looping: true, loudness: 95, reach: 31.4035, floor: -56.9288 });
+  });
+
   it('places the keypad in the level by the charge’s own transform, and reads its locator, switch, name and round; the rules once, by prefab', () => {
     const { dir, d } = level();
     const { list, rules } = chargesOf(dir, `${d}/`, 'FantasyBattle');

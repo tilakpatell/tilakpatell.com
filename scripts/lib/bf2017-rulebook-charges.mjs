@@ -228,6 +228,29 @@ function fuseOf(root, B, ci, C, ki) {
   };
 }
 
+// the button's sound while it is held: its SoundEntityData started by the EventSplitter on its WorldInteraction's
+// OnInteractStart and stopped by the one on OnInteractStop; its patch's Loudness and IsLooping, and the last point
+// of its ObjectOutputNodeData's AttenuationCurve (dB by metres), where the curve stops falling
+function soundOf(root, U, wi) {
+  const snd = typed(U, 'SoundEntityData')[0];
+  if (snd === undefined) return null;
+  const by = (ev, on) => evInto(U, snd, H(ev)).some((e) => U.objects[e.Source.$ref]?.$type === 'EventSplitterEntityData' && evInto(U, e.Source.$ref).some((x) => x.Source.$ref === wi && s32(x.SourceEvent.Id) === H(on)));
+  const P = U.objects[snd].Sound?.$asset ? loadAsset(root, U.objects[snd].Sound.$asset) : null;
+  const patch = P?.objects?.[0];
+  const out = (patch?.OutputNodes ?? []).map((r) => objOf(P, r)).find((o) => o?.$type === 'ObjectOutputNodeData');
+  const curve = out ? objOf(P, out.AttenuationCurve) : null;
+  const last = curve?.Points?.at(-1) ?? null;
+  return {
+    patch: U.objects[snd].Sound?.$asset ?? null,
+    whileHeld: by('Start', 'OnInteractStart') && by('Stop', 'OnInteractStop'),
+    looping: Boolean(patch?.IsLooping),
+    loudness: patch?.Loudness ?? null,
+    reach: last ? r3(last.X) : null,
+    floor: last ? r3(last.Y) : null,
+    _source: `${U.name}#SoundEntityData.${snd} (Start, Stop ← the EventSplitters on OnInteractStart, OnInteractStop); ${P?.name ?? '?'}#SoundPatchAsset.Loudness, IsLooping, ObjectOutputNodeData.AttenuationCurve (its last point: metres, dB)`,
+  };
+}
+
 // the interaction the charges of one prefab share: charge → core → keypad → button
 export function chargeRules(root, bomb) {
   const B = follow(root, bomb);
@@ -343,6 +366,7 @@ export function chargeRules(root, bomb) {
     clear: memIn('ClearMemory', (e) => e.Source.$ref === wi && s32(e.SourceEvent.Id) === H('OnInteractStop')),
   };
   const fuse = fuseOf(root, B, ci, C, ki);
+  const sound = soundOf(root, U, wi);
 
   // the markers' delays: the core's Delay on the fuse's OnTrigger (the blast marker's SyncedBool off after it), and
   // the client's Delay on the CompareBool of the Or that enables PF_UI_Bomb_Marker (its HUD string off after it)
@@ -375,6 +399,7 @@ export function chargeRules(root, bomb) {
       memory,
       _source: `${K.name}#DelayEntityData.${settleRef} on the button's ${BUTTON_DONE} into the armed/defused EventGates; ${U.name}#EventMemoryEntityData.${memRef ?? '?'} (OnMemoryEvent → ${BUTTON_DONE}; LoadMemory ← OnInteractStart, FireMemory ← the StopWatch's OnTrigger, ClearMemory ← OnInteractStop; the event names by their hashes, their handling the image's 0x140ae4f10)`,
     },
+    ...(sound ? { sound } : {}),
     marker: {
       blast: blastRef !== undefined ? delayOf(C, blastRef) : null,
       linger: lingerRef !== undefined ? delayOf(C, lingerRef) : null,
