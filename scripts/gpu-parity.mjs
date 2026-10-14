@@ -129,8 +129,10 @@ async function shoot(browser, base, leg) {
     const on = await page.evaluate(() => window.__RUNTIME__?.status === 'on' && Boolean(window.__RUNTIME__.current?.world));
     if (on) break;
     if (Date.now() - started > 240000) throw new Error(`${leg}: the world never came on`);
-    // (a world behind a gate with a way through for everyone: Minecraft's password, past to the tribute)
-    if (!gated) gated = await page.getByRole('button', { name: /Walk the tribute/ }).click({ timeout: 200 }).then(() => true, () => false);
+    // (a world behind a gate with a way through for everyone: Minecraft's
+    // password, past to the tribute; the N64 at /dot-matrix/64, asking for
+    // a ROM, past to the Mario 64 tribute, by either of the page's buttons)
+    if (!gated) gated = await page.getByRole('button', { name: /Walk the tribute|play the fan tribute/i }).first().click({ timeout: 200 }).then(() => true, () => false);
     await page.clock.runFor(16);
     await page.waitForTimeout(25);
   }

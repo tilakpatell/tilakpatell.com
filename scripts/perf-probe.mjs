@@ -661,6 +661,9 @@ const JOURNEYS = {
   async mario64(page, mark) {
     mark('load');
     await page.goto(`${this.base}/${this.q}#/dot-matrix/64`, { waitUntil: 'domcontentloaded' });
+    // (the page opens on the N64, asking for a ROM: past it to the tribute,
+    // by either of its buttons, then its title's Start)
+    await page.getByRole('button', { name: /play the fan tribute/i }).first().click({ timeout: 120000 });
     await page.click('.m64-start', { timeout: 240000 });
     await page.waitForFunction(() => window.__RUNTIME__?.status === 'on' && window.__RUNTIME__.current?.world?.game?.mode === 'play', null, { timeout: 240000 });
     mark('settle');
