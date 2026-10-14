@@ -60,6 +60,7 @@ import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createPartsCollision, wantsEngine } from './map/collision.js';
 import { createWalker } from './map/walk.js';
+import { holesOf } from '../../lib/land/holes.js';
 import SOLDIER_BODY from '../../data/bf2017/physics/soldier.json';
 import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
@@ -185,7 +186,8 @@ export default {
       physics = await createPhysics();
       // (the outside's and its interior's, Hoth's Echo Base: map/level.js's inner)
       collision = createPartsCollision({ parts: { outside: { pack: level.pack, loadBin: level.loadBin }, inside: level.inner }, physics, tier });
-      collision.setTerrain((px, pz) => level.packHeightAt(px, pz) ?? 0);
+      // (the ground's own holes left out of its collider: the hangar mouths and the trench tunnels, lib/land/holes.js)
+      collision.setTerrain((px, pz) => level.packHeightAt(px, pz) ?? 0, { holes: holesOf(level.pack.terrain) });
       for (const a of streamed.values()) collision.add(...a);
       walker = createWalker({ physics, pack: level.pack, row: SOLDIER_BODY.rows[SOLDIER_BODY.default], ground: (x, z) => level.heightAt(x, z) });
     };

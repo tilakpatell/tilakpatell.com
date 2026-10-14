@@ -77,7 +77,7 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
       return h ? h.time_of_impact * len : null;
     },
     // (the ground's heights in the pack's frame, for the walk: a heightfield a 64 m square in each near cell)
-    setTerrain: (heightAt) => lp.setTerrain(heightAt),
+    setTerrain: (heightAt, opts) => lp.setTerrain(heightAt, opts),
     stats: () => lp.stats(),
     dispose() {
       gone = true;
@@ -116,7 +116,7 @@ export function createPartsCollision({ parts, physics, tier = 'high', deps = {} 
       return out;
     },
     // (the ground is the outside's: the interior has none of its own)
-    setTerrain: (heightAt) => each.outside?.setTerrain(heightAt),
+    setTerrain: (heightAt, opts) => each.outside?.setTerrain(heightAt, opts),
     dispose: () => all.forEach((c) => c.dispose()),
   };
 }
