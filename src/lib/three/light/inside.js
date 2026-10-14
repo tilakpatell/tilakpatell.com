@@ -1,5 +1,5 @@
 // The interiors' visual environments, blended in by where the view stands:
-// the game's AreaProximityEntityData (findings 58). Each area names the VEs
+// the game's AreaProximityEntityData (bf2-re findings 60). Each area names the VEs
 // its Out drives (a reference's Visibility) and the shapes it measures from;
 // its visibility is
 //
