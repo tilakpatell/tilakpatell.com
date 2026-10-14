@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { createServer } from 'vite';
 import librarySlice from './library-slice.mjs';
+import { findChromium } from './lib/chromium.mjs';
 import { readPng } from './twin-parity/png.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -59,7 +60,10 @@ const server = await createServer({
 await server.listen();
 const args = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
 if (webgpu) args.push('--enable-unsafe-webgpu', '--disable-blink-features=WebGPUExperimentalFeatures');
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM ?? '/opt/pw-browsers/chromium', args });
+// (the machine's own Chromium where CHROMIUM is not set: Edge or Chrome on
+// Windows, Playwright's on a Mac, /opt/pw-browsers in the cloud; the
+// pictures are compared, not timed, so the GL stays SwiftShader's)
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM ?? findChromium() ?? '/opt/pw-browsers/chromium', args });
 let failed = false;
 try {
   const page = await browser.newPage({ viewport: { width: 520, height: 260 } });
