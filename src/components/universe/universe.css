@@ -62,7 +62,10 @@
    up in the corner) or, on a phone, all but a slim bar at the bottom */
 .universe-page[data-tucked] { --panel-w: 0px; --tab-w: 230px; --sheet-h: calc(56px + env(safe-area-inset-bottom, 0px)); }
 .universe-map { position: absolute; inset: 0; }
-.universe-map > .scene-canvas {
+/* the map on the world runtime: its box, and the one canvas moved into it
+   (the galaxy's box is a .universe-map too: galaxy.css) */
+.universe-map.world-host { position: absolute; inset: 0; }
+.universe-map > .world-canvas {
   position: absolute;
   inset: 0;
   display: block;

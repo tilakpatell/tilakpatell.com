@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useScene } from '../../lib/three/useScene';
-import { local } from '../../lib/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { WorldHost, useWorld } from '../../runtime';
+import universeModule from './module';
+import { local, useReducedMotion } from '../../lib/hooks';
 import { CONTROLS_KEY, readControls } from './controls';
 import { useEconomy } from './EconomyProvider';
 import FlightSettings from './FlightSettings';
@@ -14,7 +15,8 @@ import LoadingVeil from '../worlds/LoadingVeil';
 import { Prompt, Reticle } from '../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 
-// The map: the 3D scene (scene.js and planets.js, through useScene) with the
+// The map: the 3D scene (scene.js and planets.js, a world module on the
+// world runtime: ./module.js, mounted with useWorld) with the
 // planets' names as buttons over it. React renders the names once; the
 // scene moves them as it draws. The names are one focus group: the arrow
 // keys step through the universes, Home and End jump to the ends. With a
@@ -34,7 +36,6 @@ import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 // The map button (and M) opens the nav map (the page's: NavMap.jsx); `drive`
 // is the one picked there, how the ship goes anywhere it's sent, and
 // `charting` says the nav map's open (the director holds off meanwhile).
-const load = () => import('./scene');
 
 export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null }) {
   const labels = useRef({});
@@ -84,11 +85,11 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   );
   const events = useRef(onEvent);
   events.current = onEvent;
-  const { wrap, on, meant, view, status, progress } = useScene(load, {
-    id: 'universe',
-    near: '0px',
+  const reduced = useReducedMotion();
+  const { host, on, meant, rt, progress } = useWorld(universeModule, {
     props: {
       universe, // (the Expanse's seed: a pocket universe's, or the shared one; read once, the map is keyed on it)
+      reduced,
       selected,
       ship,
       loadout,
@@ -116,26 +117,39 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       onOpen,
       onLand,
       onCrash,
-      onEvent: (e) => {
-        if (e.type === 'launch') setFlown(true);
-        if (e.type === 'aim') setAim(e.id ? { id: e.id, name: e.name } : null);
-        if (e.type === 'landable') setLandable(e.id);
-        if (e.type === 'look') setLooking(e);
-        if (e.type === 'reticle') setReticle(e.state);
-        if (e.type === 'phone' && e.what !== 'open') setPhoneNear(e.what === 'near');
-        if (e.type === 'foot' && e.id === 'arrive') setArrive({ title: e.title, sub: e.sub, at: Date.now() });
-        if (e.type === 'foot' && e.id === 'out') {
-          setOnFoot(true);
-          setFootHint(true);
-        }
-        if (e.type === 'foot' && (e.id === 'off' || e.id === 'in')) {
-          setOnFoot(false);
-          setArrive(null);
-        }
-        events.current?.(e);
-      },
+    },
+    // (a pocket universe is a map of its own: made afresh for its seed, never
+    // the last one's adopted, which a remount for a new key would have had)
+    rebuild: universe,
+    // (what the scene says comes out through the runtime's events: useWorld's, not a prop)
+    onEvent: (e) => {
+      if (e.type === 'launch') setFlown(true);
+      if (e.type === 'aim') setAim(e.id ? { id: e.id, name: e.name } : null);
+      if (e.type === 'landable') setLandable(e.id);
+      if (e.type === 'look') setLooking(e);
+      if (e.type === 'reticle') setReticle(e.state);
+      if (e.type === 'phone' && e.what !== 'open') setPhoneNear(e.what === 'near');
+      if (e.type === 'foot' && e.id === 'arrive') setArrive({ title: e.title, sub: e.sub, at: Date.now() });
+      if (e.type === 'foot' && e.id === 'out') {
+        setOnFoot(true);
+        setFootHint(true);
+      }
+      if (e.type === 'foot' && (e.id === 'off' || e.id === 'in')) {
+        setOnFoot(false);
+        setArrive(null);
+      }
+      events.current?.(e);
     },
   });
+  // the scene itself, while it's the world on the runtime: its own calls (dive, travel, fire…)
+  const view = useMemo(
+    () => ({
+      get current() {
+        return rt?.current?.module === universeModule ? rt.current.world.scene : null;
+      },
+    }),
+    [rt],
+  );
 
   useEffect(() => {
     setFlown(false);
@@ -211,11 +225,11 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   );
 
   return (
-    <div ref={wrap} className="universe-map" data-ship={ship || undefined} data-foot={onFoot || undefined}>
+    <WorldHost world={{ host }} className="universe-map" data-ship={ship || undefined} data-foot={onFoot || undefined}>
       {meant ? (
         <>
           {/* (until the map is drawing: everything sent to the graphics chip first, so it flies smoothly from its first frame) */}
-          <LoadingVeil className="universe-loading" shown={!on} progress={status === 'preparing' ? progress.value : 0} step={status === 'preparing' ? progress.step : 'load'} title="Charting the universe" />
+          <LoadingVeil className="universe-loading" shown={!on} progress={progress.value} step={progress.step} title="Charting the universe" />
           <ul className="universe-labels" aria-label="Universes" onKeyDown={onKeyDown}>
             {UNIVERSES.map((u) => (
               <li key={u.id}>
@@ -442,6 +456,6 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
           <MiniMap selected={selected} onSelect={onSelect} />
         </div>
       )}
-    </div>
+    </WorldHost>
   );
 }

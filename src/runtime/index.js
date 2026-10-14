@@ -41,7 +41,10 @@ export { createDebug } from './debug';
 
 const GPU_KEY = 'tp-gpu';
 const browser = () => import('./browser');
-const covered = () => typeof document !== 'undefined' && 'covered' in document.documentElement.dataset;
+// (the intro's cover, html[data-covered], or a tour's card in the middle,
+// html[data-tour-still]: nothing lit to watch, so the world under it holds
+// still, as lib/three/useScene's scenes did; each sends tp:uncover as it goes)
+const covered = () => typeof document !== 'undefined' && ('covered' in document.documentElement.dataset || 'tourStill' in document.documentElement.dataset);
 
 let instance = null;
 
