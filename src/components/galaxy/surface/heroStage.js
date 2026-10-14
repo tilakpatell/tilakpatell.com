@@ -37,6 +37,11 @@ export function stageFor({ level, hero }) {
 }
 
 const rgb = (v, k = 1) => new THREE.Color(v[0] * k, v[1] * k, v[2] * k);
+// the idle is drawn at most this often, and at the display's own rate while
+// the stage is dragged: a hero breathing needs no 144 frames a second from a
+// second GL context beside the runtime's (the hangar's turntable is drawn at
+// 30 too, universe/shipyard/showroomRules)
+const FPS = 30;
 
 export function createHeroStage(canvas, { level = 'high', reduced = false } = {}) {
   let renderer;
@@ -175,6 +180,7 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
   // put away or not)
   let last = performance.now();
   const tick = (now) => {
+    if (drag == null && now - last < 1000 / FPS - 1) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     mixer?.update(dt);

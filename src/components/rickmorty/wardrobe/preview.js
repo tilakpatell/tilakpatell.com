@@ -24,6 +24,11 @@ const ALL = Object.values(BODIES).flat();
 const KINDS = Object.fromEntries(ALL.map((b) => [b.id, { a: b.asset, h: b.h }]));
 const RIGGED = new Set(ALL.map((b) => b.asset));
 const TALL = 1.7; // (every body shown the same height, so the gear's what changes)
+// a turntable turning slowly is drawn at most this often (the hangar's
+// rate, universe/shipyard/showroomRules), and at the display's own while it
+// is dragged: drawn on every beat of a 144 Hz screen, a small figure turning
+// cost a second GL context's work 144 times a second
+const FPS = 30;
 // each cast’s studio: the disc, its ring, the light from behind
 const STUDIO = { rickmorty: { base: 0x2a2234, ring: 0x97ce4c, rim: 0x9dff5a }, breakingbad: { base: 0x3b2c22, ring: 0x5fc8ef, rim: 0xffc27a } };
 
@@ -121,10 +126,12 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
   canvas.addEventListener('pointercancel', up);
 
   // (drawn only while the canvas is in view and the tab showing,
-  // lib/shownLoop: a closed or scrolled-away wardrobe draws nothing)
+  // lib/shownLoop: a closed or scrolled-away wardrobe draws nothing; at FPS
+  // unless dragged)
   let last = performance.now();
   const t0 = last;
   const frame = (now) => {
+    if (!drag && now - last < 1000 / FPS - 1) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     yaw += spin * dt;
