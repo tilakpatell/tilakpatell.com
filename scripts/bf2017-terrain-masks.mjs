@@ -12,11 +12,11 @@
 //   far   from the 8 m level's, 2 m a texel (the whole painted extent,
 //         2,560 m a side; nothing is painted past it: layer 0 there)
 //
-// The game's virtual texture draws a tile at the quadtree level its
-// distance asks for (findings/11, 63): past the play strip only its coarse
-// levels are ever on screen, so the 1 m level's ring round the strip (its
-// own frame until 2026-10-14, a third of the array) is drawn from its 2 m
-// mean, as the game's coarser tiles hold it.
+// The game streams the tree's levels by the camera's distance (findings/11:
+// the streaming tree's priorities, the virtual texture's tiles at the level
+// their distance asks for). The 1 m level's ring round the strip (its own
+// frame until 2026-10-14, a third of the array) lies past the 0.5 m frame,
+// 230 m and more from the walkers' start: it is drawn from its 2 m mean.
 //
 // as the four layers of one KTX2 array (UASTC, linear, mipmapped: a texel
 // the mean of the game's own finer texels, as a parent raster is): each

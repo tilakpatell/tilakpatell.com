@@ -10,11 +10,10 @@
 // mask array and its hole mask (a WebGPU stage binds 16 textures, and the
 // sun's cascades, its distant cache and the probes take nine of them; the
 // shader's 18 maps would not fit), written at each size its tiers read
-// (tex/<slug>.<size>.ktx2). An array is one size: a map smaller than its
-// array is scaled up to it (the 1 m detail and the sparkle, 512 in the
-// export, in a 1024 array: 2 mm a texel either way), a bigger one down (the
-// packed smoothness, 2048), and the flow map, sRGB in the game, is decoded
-// to linear as it is packed (the GPU filters it linear either way). Slot
+// (tex/<slug>.<size>.ktx2). An array is one size: a map bigger than its
+// array is scaled down to it (the packed smoothness, 2048, and the trampled
+// snow in the 512 data array), and the flow map, sRGB in the game, is
+// decoded to linear as it is packed (the GPU filters it linear either way). Slot
 // names are the listing's registers; three of them (t14, t16, t18) the RVM
 // database does not name, and findings/58 reads them from the shaders'
 // depots by elimination: t8 is SnowRough_03_N (every depot has it, and the

@@ -24,7 +24,7 @@
 // where layer 8 or 7 is) dips the roughness on the near band; on ultra the
 // near patch's vertices are displaced by the 4 m map's blue.
 //
-//   createSnowGround({ maps, masks, tier, three, far, displace, dynamic, debug }) → { material, samples, flat, dispose }
+//   createSnowGround({ maps, masks, tier, three, far, displace, dynamic, debug }) → { material, samples (reads of normal maps, of the rest, of the masks), gated (the reads inside a layer's block), flat, dispose }
 //     maps: { normals, colours, data } (snowMaps.js's files by kind, 2-D arrays),
 //       masks: [{ texture, layers: [a, b], corner: [x, z], extent: [w, h] }] finest
 //       first, in the game's frame (two layers of the mask array each: masks 1–4, 5–8);
@@ -181,6 +181,7 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
   const wisps = WISPS[tier] ?? true;
   const has = (kind) => plan.has(kind) && Boolean(maps[kind]);
   const samples = { normal: 0, data: 0, mask: 0 };
+  const gated = new Set(); // the reads in a layer's block
   material.colorNode = vec3(colour);
   // (without the normals there is no layer to draw: the record's colour, as the ground was)
   const flat = !has('normals');
@@ -230,7 +231,6 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
   const rough5 = read('trampledDetail');
   const rockyPacked = read('rockyPacked');
   const rocky = read('rocky');
-  const gated = new Set();
   const gate = (key, uv = null) => {
     const r = READS[key];
     const at = mapAt(r.map);
@@ -416,6 +416,7 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
     return {
       material,
       samples,
+      gated: [...gated],
       flat,
       dispose() {
         material.dispose();

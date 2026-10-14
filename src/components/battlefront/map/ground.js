@@ -3,8 +3,8 @@
 // world map, a little lower so the two never fight where they overlap. On
 // the node renderer the grids wear the game's terrain (lib/three/ground/
 // snow.js: its nine layers blended by the masks the game paints in its
-// TerrainStreamingTree, laid into the pack's three mask frames, each layer's
-// maps at the listing's tilings from the pack's four map arrays, fetched at
+// TerrainStreamingTree, laid into the pack's two mask frames, each layer's
+// maps at the listing's tilings from the pack's three map arrays, fetched at
 // the tier's size from its tex rows); the classic renderer keeps the flat
 // colour. On ultra a 1 m patch follows the player within PATCH_M (the
 // heightmap is 1 m a pixel: the 4 m grid flattens it), its vertices
