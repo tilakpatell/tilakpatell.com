@@ -1,4 +1,4 @@
-/* global window, document, requestAnimationFrame, WebGL2RenderingContext, WebGLRenderingContext, HTMLImageElement, HTMLCanvasElement */
+/* global window, document, WebGL2RenderingContext, WebGLRenderingContext, HTMLImageElement, HTMLCanvasElement, GPUDevice, GPURenderPassEncoder, GPURenderBundleEncoder */
 // How smooth the worlds draw, measured in a real browser on the real
 // graphics chip: every frame's time, and what the graphics chip was sent in
 // it (shaders linked, pictures and buffers uploaded, draws and triangles),
@@ -27,7 +27,8 @@
 // waits on the graphics chip: a stall with no GL call named in it).
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { frameStdev } from './lib/perf-stats.mjs';
+import { late, mdRow, playOf, summarise } from './lib/perf-stats.mjs';
+import { HEAVY } from './lib/perf-routes.mjs';
 
 const argv = process.argv.slice(2);
 const profile = Boolean(process.env.PROFILE);
@@ -42,20 +43,45 @@ const [vw, vh, vdpr] = (process.env.VIEW ?? '1470x956@2').match(/(\d+)x(\d+)(?:@
 // uploads) counted and timed per frame, draws and triangles counted, and
 // the browser's long animation frames with the scripts in them.
 function recorder() {
-  const zero = () => ({ links: 0, compiles: 0, glMs: 0, drawMs: 0, tex: 0, texBytes: 0, buf: 0, bufBytes: 0, draws: 0, tris: 0, slow: '', sized: new Set() });
+  const zero = () => ({ links: 0, compiles: 0, glMs: 0, drawMs: 0, tex: 0, texBytes: 0, buf: 0, bufBytes: 0, draws: 0, tris: 0, slow: '', sized: new Set(), main: 0, pipes: 0 });
   let cur = zero();
   // (mid: the shaders three made in the middle of a frame so far, as the
   // frame guard counts them in development: lib/three/frameGuard.js)
-  const frames = []; // [t, links, texUploads, texMB, bufMB, draws, tris, glMs, drawMs, slow, mid, sizes]
+  // (the fields' order is scripts/lib/perf-stats.mjs's F)
+  const frames = []; // [t, links, texUploads, texMB, bufMB, draws, tris, glMs, drawMs, slow, mid, sizes, main, gpu, pipes, progs]
   const stacks = new Map(); // a slow GL call's callers → ms
   const loaf = [];
+  // (programs live: GL's made less deleted, and WebGPU's pipelines made,
+  // which three keeps for the page's life)
+  let glLive = 0;
+  let gpuMade = 0;
+  // (the chip's own time where the runtime keeps the G1 clock, lib/three/
+  // gpuTime: a 'nodes' world on WebGPU; null anywhere else, never 0)
+  const gpuNow = () => {
+    const clock = window.__RUNTIME__?.gpuClock;
+    return clock?.available ? (clock.last ?? null) : null;
+  };
+  // Every requestAnimationFrame callback timed: the main thread's share of a
+  // frame, whoever's loop it is (the runtime's, three's setAnimationLoop, a
+  // world's own), where a long frame's attribution (LoAF) says only that a
+  // frame was long. The recorder's own tick goes through the untouched one.
+  const raf = window.requestAnimationFrame.bind(window);
+  window.requestAnimationFrame = (cb) =>
+    raf((t) => {
+      const t0 = performance.now();
+      try {
+        return cb(t);
+      } finally {
+        cur.main += performance.now() - t0;
+      }
+    });
   const tick = () => {
     const c = cur;
-    frames.push([performance.now(), c.links, c.tex, c.texBytes / 1048576, c.bufBytes / 1048576, c.draws, c.tris, c.glMs, c.drawMs, c.slow, window.__tpGuardSlips ?? 0, c.sized.size]);
+    frames.push([performance.now(), c.links, c.tex, c.texBytes / 1048576, c.bufBytes / 1048576, c.draws, c.tris, c.glMs, c.drawMs, c.slow, window.__tpGuardSlips ?? 0, c.sized.size, c.main, gpuNow(), c.pipes, glLive + gpuMade]);
     cur = zero();
-    requestAnimationFrame(tick);
+    raf(tick);
   };
-  requestAnimationFrame(tick);
+  raf(tick);
   const timed = (proto, name, add) => {
     const fn = proto[name];
     if (typeof fn !== 'function') return;
@@ -90,9 +116,10 @@ function recorder() {
   const counted = (proto, name, add) => {
     const fn = proto[name];
     if (typeof fn !== 'function') return;
+    // (add is called on the object called, so an encoder's counts can be its own)
     proto[name] = trace
       ? function (...a) {
-          add(a);
+          add.call(this, a);
           const t0 = performance.now();
           try {
             return fn.apply(this, a);
@@ -101,7 +128,7 @@ function recorder() {
           }
         }
       : function (...a) {
-          add(a);
+          add.call(this, a);
           return fn.apply(this, a);
         };
   };
@@ -117,10 +144,14 @@ function recorder() {
   // again, which waits on the graphics chip, a stall with no GL call in it;
   // counted once a canvas a frame)
   const webgl = new WeakSet();
+  // (the kinds of context the page made, for a world off the runtime, which
+  // has no rt.gfx to say what it drew on)
+  const kinds = new Set();
   const getContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, ...a) {
     const ctx = getContext.call(this, type, ...a);
     if (ctx && /webgl/.test(type)) webgl.add(this);
+    if (ctx && /webgl|webgpu/.test(type)) kinds.add(type);
     return ctx;
   };
   for (const k of ['width', 'height']) {
@@ -203,6 +234,98 @@ function recorder() {
       cur.draws += 1;
       if (a[0] === TRIANGLES) cur.tris += (a[2] / 3) * a[3];
     });
+    counted(p, 'createProgram', () => (glLive += 1));
+    counted(p, 'deleteProgram', (a) => a[0] && (glLive -= 1));
+  }
+  // The same on WebGPU: pipelines made (each a shader build and a driver
+  // compile: a hitch when it comes in play, the every-world hand-off's item
+  // 1), draws and triangles from the pass encoders, and a render bundle's
+  // draws counted on every frame that executes it (encoded once, drawn each
+  // time). A pipeline's topology is kept so only triangle lists count as
+  // triangles, as GL's TRIANGLES does.
+  if (typeof GPUDevice !== 'undefined') {
+    const topology = new WeakMap(); // pipeline → its primitive topology
+    const using = new WeakMap(); // encoder → the topology of its pipeline
+    const inBundle = new WeakMap(); // bundle encoder, then bundle → { draws, tris }
+    const kept = (d) => d?.primitive?.topology ?? 'triangle-list';
+    for (const name of ['createRenderPipeline', 'createComputePipeline']) {
+      const fn = GPUDevice.prototype[name];
+      if (typeof fn !== 'function') continue;
+      GPUDevice.prototype[name] = function (d, ...a) {
+        cur.pipes += 1;
+        gpuMade += 1;
+        const t0 = performance.now();
+        const made = fn.call(this, d, ...a);
+        const ms = performance.now() - t0;
+        cur.glMs += ms;
+        if (ms > 20) cur.slow += `${name} ${Math.round(ms)}ms `;
+        if (name === 'createRenderPipeline') topology.set(made, kept(d));
+        return made;
+      };
+    }
+    for (const name of ['createRenderPipelineAsync', 'createComputePipelineAsync']) {
+      const fn = GPUDevice.prototype[name];
+      if (typeof fn !== 'function') continue;
+      GPUDevice.prototype[name] = function (d, ...a) {
+        cur.pipes += 1;
+        gpuMade += 1;
+        const made = fn.call(this, d, ...a);
+        if (name === 'createRenderPipelineAsync') made.then((pl) => topology.set(pl, kept(d))).catch(() => {});
+        return made;
+      };
+    }
+    const into = (counts, verts, instances) => {
+      counts.draws += 1;
+      counts.tris += (verts / 3) * (instances ?? 1);
+    };
+    const encoders = [typeof GPURenderPassEncoder !== 'undefined' ? GPURenderPassEncoder : null, typeof GPURenderBundleEncoder !== 'undefined' ? GPURenderBundleEncoder : null];
+    for (const E of encoders) {
+      if (!E) continue;
+      const q = E.prototype;
+      const bundle = E !== encoders[0];
+      const counts = (enc) => {
+        if (!bundle) return cur;
+        let c = inBundle.get(enc);
+        if (!c) inBundle.set(enc, (c = { draws: 0, tris: 0 }));
+        return c;
+      };
+      counted(q, 'setPipeline', function (a) {
+        using.set(this, topology.get(a[0]) ?? 'triangle-list');
+      });
+      for (const [name, verts, inst] of [
+        ['draw', 0, 1],
+        ['drawIndexed', 0, 1],
+      ]) {
+        counted(q, name, function (a) {
+          const c = counts(this);
+          if ((using.get(this) ?? 'triangle-list') === 'triangle-list') into(c, a[verts] || 0, a[inst]);
+          else c.draws += 1;
+        });
+      }
+      for (const name of ['drawIndirect', 'drawIndexedIndirect']) {
+        counted(q, name, function () {
+          counts(this).draws += 1;
+        });
+      }
+      if (bundle) {
+        const finish = q.finish;
+        q.finish = function (...a) {
+          const made = finish.apply(this, a);
+          inBundle.set(made, inBundle.get(this) ?? { draws: 0, tris: 0 });
+          return made;
+        };
+      }
+    }
+    if (encoders[0]) {
+      counted(encoders[0].prototype, 'executeBundles', (a) => {
+        for (const b of a[0] ?? []) {
+          const c = inBundle.get(b);
+          if (!c) continue;
+          cur.draws += c.draws;
+          cur.tris += c.tris;
+        }
+      });
+    }
   }
   try {
     new PerformanceObserver((list) => {
@@ -222,7 +345,7 @@ function recorder() {
   }
   window.__probe = {
     take() {
-      return { frames, loaf, origin: performance.timeOrigin, heap: performance.memory?.usedJSHeapSize ?? null, stacks: [...stacks.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8) };
+      return { frames, loaf, kinds: [...kinds], origin: performance.timeOrigin, heap: performance.memory?.usedJSHeapSize ?? null, stacks: [...stacks.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8) };
     },
   };
 }
@@ -248,55 +371,6 @@ function hot(profile, top = 12) {
     .join(' | ');
 }
 
-// ── the numbers per phase ──
-const pct = (sorted, p) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] : 0);
-const r1 = (n) => Math.round(n * 10) / 10;
-function phases({ frames, marks, loaf }) {
-  const rows = [];
-  for (let i = 0; i < marks.length - 1; i++) {
-    const [name, t0] = marks[i];
-    const t1 = marks[i + 1][1];
-    const fs = frames.filter((f) => f[0] > t0 && f[0] <= t1);
-    const before = frames.filter((f) => f[0] <= t0).at(-1);
-    const gaps = [];
-    for (let k = 1; k < fs.length; k++) gaps.push({ ms: fs[k][0] - fs[k - 1][0], f: fs[k] });
-    const ms = gaps.map((g) => g.ms).sort((a, b) => a - b);
-    const sum = (j) => fs.reduce((s, f) => s + f[j], 0);
-    const worst = gaps
-      .slice()
-      .sort((a, b) => b.ms - a.ms)
-      .slice(0, 5)
-      .map((g) => {
-        const lf = loaf.find((l) => g.f[0] >= l.t && g.f[0] <= l.t + l.ms + 20);
-        return { ms: Math.round(g.ms), links: g.f[1], tex: g.f[2], texMB: r1(g.f[3]), bufMB: r1(g.f[4]), glMs: Math.round(g.f[7]), drawMs: Math.round(g.f[8]), slow: g.f[9], scripts: lf?.scripts?.slice(0, 3) ?? [] };
-      });
-    const secs = (t1 - t0) / 1000;
-    rows.push({
-      phase: name,
-      secs: r1(secs),
-      frames: fs.length,
-      fps: r1(gaps.length / Math.max(0.001, gaps.reduce((s, g) => s + g.ms, 0) / 1000)),
-      p50: r1(pct(ms, 0.5)),
-      p95: r1(pct(ms, 0.95)),
-      // (the frame-to-frame spread, pauses over 250 ms dropped: lib/perf-stats)
-      stdev: r1(frameStdev(gaps.map((g) => g.ms)) ?? 0),
-      p99: r1(pct(ms, 0.99)),
-      max: Math.round(ms[ms.length - 1] ?? 0),
-      over50: ms.filter((m) => m > 50).length,
-      over100: ms.filter((m) => m > 100).length,
-      links: sum(1),
-      mid: fs.length ? fs[fs.length - 1][10] - (before?.[10] ?? 0) : 0,
-      texMB: r1(sum(3)),
-      bufMB: r1(sum(4)),
-      draws: Math.round(sum(5) / Math.max(1, fs.length)),
-      ktris: Math.round(sum(6) / Math.max(1, fs.length) / 1000),
-      sizes: sum(11),
-      worst,
-    });
-  }
-  return rows;
-}
-
 // ── the journeys ──
 // Each is (page, mark, h) => ..., h has the helpers. A phase runs from one
 // mark to the next; the journey's last mark ends the last phase.
@@ -309,7 +383,9 @@ const hold = async (page, key, ms) => {
 const canvasUp = (page, timeout = 180000) => page.waitForFunction(() => [...document.querySelectorAll('canvas')].some((c) => c.width > 300 && c.height > 200), null, { timeout });
 
 // a world page: the load (from the address to its first frames), resting, then walking about
-const worldPage = (route, { ready = canvasUp, move = 'KeyW' } = {}) =>
+// (click: false where a click on the screen's middle would do something,
+// Middle-earth's map flying into the place under it)
+const worldPage = (route, { ready = canvasUp, move = 'KeyW', click = true } = {}) =>
   async function (page, mark) {
     mark('load');
     await page.goto(`${this.base}/${this.q}#${route}`, { waitUntil: 'domcontentloaded' });
@@ -319,7 +395,7 @@ const worldPage = (route, { ready = canvasUp, move = 'KeyW' } = {}) =>
     mark('idle');
     await wait(page, 6000);
     mark('move');
-    await page.mouse.click(vw / 2, vh / 2).catch(() => {});
+    if (click) await page.mouse.click(vw / 2, vh / 2).catch(() => {});
     await hold(page, move, 3000);
     await hold(page, 'KeyA', 1500);
     await hold(page, move, 3000);
@@ -485,8 +561,60 @@ const JOURNEYS = {
     await hold(page, 'KeyW', 10000);
     mark('end');
   },
-  avengers: worldPage('/avengers'),
+  // Battlefront on Hoth, the heaviest world: the mode in the address skips
+  // the game's front end, the spawn screen's first open class is taken (a
+  // click, as a player deploys: the loop rests while that screen is up), then
+  // the round on foot. /galaxy/hoth/surface is this same world now (it sends
+  // the visitor here, src/pages/GalaxyLanding.jsx), so it is measured once.
+  async battlefront(page, mark) {
+    mark('load');
+    await page.goto(`${this.base}/${this.q}#/battlefront/hoth/galacticAssault`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.bf-stage[data-bf-ready] .bf-spawn-screen-cell:not([aria-disabled])', { timeout: 300000 });
+    await page.click('.bf-spawn-screen-cell:not([aria-disabled])');
+    await page.waitForFunction(() => document.querySelector('.bf-stage[data-bf-stage="field"]') && window.__battlefront?.view().player?.state === 'alive' && window.__battlefront.view().parked === false, null, { timeout: 120000 });
+    mark('settle');
+    await wait(page, 4000);
+    mark('idle');
+    await wait(page, 6000);
+    mark('move');
+    await hold(page, 'KeyW', 3000);
+    await hold(page, 'KeyA', 1500);
+    await page.keyboard.down('ShiftLeft');
+    await hold(page, 'KeyW', 3000);
+    await page.keyboard.up('ShiftLeft');
+    mark('end');
+  },
+  avengers: worldPage('/avengers', { ready: (p) => p.waitForSelector('.cw-canvas[data-on]', { timeout: 300000 }) }),
   shire: worldPage('/middle-earth/shire'),
+  // Middle-earth's map, the hub of its places: the opening flight skipped
+  // (tp-me-opening), Frodo walked on the 3D map; no click, which would fly
+  // into whatever place was under it
+  middleEarth: worldPage('/middle-earth', { click: false, ready: (p) => p.waitForFunction(() => !document.querySelector('.me-page[data-opening]') && document.querySelector('.me-atlas canvas[data-layer="gl"][data-on]'), null, { timeout: 300000 }) }),
+  // the Death Star's page: its hero (a passive scene, scrolled past), then
+  // the trench run below it, started and flown with the guns going
+  async deathstar(page, mark) {
+    mark('load');
+    await page.goto(`${this.base}/${this.q}#/deathstar`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.ds-gl canvas[data-on]', { timeout: 240000 });
+    mark('settle');
+    await wait(page, 4000);
+    mark('idle');
+    await wait(page, 6000);
+    mark('trench');
+    await page.evaluate(() => document.querySelector('.trench-screen')?.scrollIntoView({ block: 'center' }));
+    await page.waitForSelector('.trench-gl[data-on]', { timeout: 120000 });
+    await page.click('.trench-go');
+    await hold(page, 'KeyA', 1500);
+    await page.keyboard.down('Space');
+    await hold(page, 'KeyD', 3000);
+    await hold(page, 'KeyW', 2000);
+    await page.keyboard.up('Space');
+    await wait(page, 4000);
+    mark('end');
+  },
+  // inside the Death Star: the start screen skipped by its own deep link,
+  // roaming (a story's conversations would stop the walk) as a rebel on the first station
+  deathstarInside: worldPage('/deathstar/inside?side=rebel&station=ds1&mode=roam', { ready: (p) => p.waitForFunction(() => window.__RUNTIME__?.status === 'on' && window.__deathstar?.info().mode === 'play' && !document.querySelector('.ds-cover'), null, { timeout: 300000 }) }),
   abq: worldPage('/albuquerque'),
   // (ready once the world's canvas is live, its loading screen gone: the
   // galaxy behind the page is a big canvas long before the street is)
@@ -536,7 +664,11 @@ if (argv.includes('--list')) {
   process.exit(0);
 }
 const picked = argv.filter((a) => !a.startsWith('--'));
-const names = picked.length ? picked : Object.keys(JOURNEYS);
+// (--heavy: the worlds the performance lanes are judged on, scripts/lib/perf-routes.mjs)
+const names = argv.includes('--heavy') ? HEAVY.map((h) => h.journey) : picked.length ? picked : Object.keys(JOURNEYS);
+const routeOf = (n) => HEAVY.find((h) => h.journey === n)?.route ?? n;
+// (MACHINE names the chip in the evidence table's rows: "RTX 5090", "Radeon 740M")
+const machine = process.env.MACHINE ?? '';
 for (const n of names) if (!JOURNEYS[n]) throw new Error(`no journey ${n} (--list)`);
 
 let server = null;
@@ -574,6 +706,10 @@ try {
       // (no reading back every shader's log: the built site doesn't, and it waits on each link)
       window.__tpNoShaderChecks = true;
       window.sessionStorage.setItem('tp-galaxy-intro', '1');
+      // (Middle-earth's opening flight skipped, and its 3D map drawn even on
+      // a software GL, which it otherwise leaves out for the flat one)
+      window.sessionStorage.setItem('tp-me-opening', '1');
+      set('tp-map3d', 'force');
     });
     if (trace) await ctx.addInitScript(() => (window.__probeTrace = true));
     await ctx.addInitScript(recorder);
@@ -618,22 +754,35 @@ try {
       failed = String(err).split('\n')[0];
       mark('end');
     }
-    // (the backend the world was drawn on: rt.gfx's kind, and whether three found a WebGPU device under it)
-    const drawnOn = await page.evaluate(() => (window.__RUNTIME__?.gfx ? `${window.__RUNTIME__.gfx.backend}${window.__RUNTIME__.gfx.renderer?.backend?.isWebGPUBackend ? ' (WebGPU device)' : ''}` : null)).catch(() => null);
+    // (the backend the world was drawn on: rt.gfx's kind while a world is
+    // mounted on the runtime, and whether three found a WebGPU device under
+    // it; else the contexts the page made, a world with a renderer of its own)
+    const onRuntime = await page.evaluate(() => (window.__RUNTIME__?.current && window.__RUNTIME__?.gfx ? `${window.__RUNTIME__.gfx.backend}${window.__RUNTIME__.gfx.renderer?.backend?.isWebGPUBackend ? ' (WebGPU device)' : ''}` : null)).catch(() => null);
     const data = await page.evaluate(() => window.__probe?.take()).catch(() => null);
-    const rows = data ? phases({ ...data, marks: marks.map(([n, t]) => [n, t - data.origin]) }) : [];
+    const drawnOn = onRuntime ?? (data?.kinds?.length ? `own: ${data.kinds.join('+')}` : null);
+    const pageMarks = data ? marks.map(([n, t]) => [n, t - data.origin]) : [];
+    const rows = data ? summarise({ ...data, marks: pageMarks }) : [];
+    // (the play: the frames after the world settled, summed as one phase)
+    const span = playOf(pageMarks);
+    const play = data && span && !failed ? (summarise({ ...data, marks: [['play', span[0]], ['end', span[1]]] })[0] ?? null) : null;
+    const lateMade = data ? late(data.frames, pageMarks) : null;
     const ready = data && marks.find((m) => m[0] === 'settle');
     if (cdp) {
       await new Promise((r) => setTimeout(r, 300));
       for (const [phase, p] of profiles) console.log(`  cpu in ${phase}: ${hot(p)}`);
     }
-    report[name] = { backend: gpu ?? 'default', drawnOn, rows, errors, failed, secs: Math.round((Date.now() - t0) / 1000), readyS: ready ? r1((ready[1] - data.origin) / 1000) : null, heapMB: data?.heap ? Math.round(data.heap / 1048576) : null };
-    console.log(`\n== ${name}${failed ? `  (stopped: ${failed})` : ''}  on ${drawnOn ?? '?'}  ready ${report[name].readyS}s  total ${report[name].secs}s  heap ${report[name].heapMB} MB${errors.length ? `  errors ${errors.length}` : ''}`);
+    report[name] = { route: routeOf(name), machine, quality, backend: gpu ?? 'default', drawnOn, rows, play, late: lateMade, errors, failed, secs: Math.round((Date.now() - t0) / 1000), readyS: ready ? Math.round((ready[1] - data.origin) / 100) / 10 : null, heapMB: data?.heap ? Math.round(data.heap / 1048576) : null };
+    console.log(`\n== ${name}${failed ? `  (stopped: ${failed})` : ''}  on ${drawnOn ?? '?'}  ready ${report[name].readyS}s  total ${report[name].secs}s  heap ${report[name].heapMB} MB  late pipelines ${lateMade ?? '-'}${errors.length ? `  errors ${errors.length}` : ''}`);
     const pw = Math.max(9, ...rows.map((r) => r.phase.length));
-    console.log(`${'phase'.padEnd(pw)}  secs  fps    p50   p95 stdev   p99   max  >50 >100 links   mid texMB bufMB draws ktris sizes`);
-    for (const r of rows) {
+    // (main: the ms a frame spent in requestAnimationFrame callbacks; gpu:
+    // the G1 clock's, a dash off it; w1: the worst 1 %'s mean; loafs and
+    // block: the long animation frames and their blocking ms; pipes: WebGPU
+    // pipelines made; progs: programs live, GL's and WebGPU's pipelines)
+    const col = (v, n) => String(v ?? '-').padStart(n);
+    console.log(`${'phase'.padEnd(pw)}  secs  fps    p50   p95 stdev   p99    w1   max  >50 >100  main   gpu loafs block links pipes progs   mid texMB bufMB draws ktris sizes`);
+    for (const r of [...rows, ...(play ? [play] : [])]) {
       console.log(
-        [r.phase.padEnd(pw), String(r.secs).padStart(5), String(r.fps).padStart(5), String(r.p50).padStart(6), String(r.p95).padStart(5), String(r.stdev).padStart(5), String(r.p99).padStart(5), String(r.max).padStart(5), String(r.over50).padStart(4), String(r.over100).padStart(4), String(r.links).padStart(5), String(r.mid).padStart(5), String(r.texMB).padStart(5), String(r.bufMB).padStart(5), String(r.draws).padStart(5), String(r.ktris).padStart(5), String(r.sizes).padStart(5)].join(' '),
+        [r.phase.padEnd(pw), col(r.secs, 5), col(r.fps, 5), col(r.p50, 6), col(r.p95, 5), col(r.stdev, 5), col(r.p99, 5), col(r.w1, 5), col(r.max, 5), col(r.over50, 4), col(r.over100, 4), col(r.main, 5), col(r.gpu, 5), col(r.loafs, 5), col(r.block, 5), col(r.links, 5), col(r.pipes, 5), col(r.progs, 5), col(r.mid, 5), col(r.texMB, 5), col(r.bufMB, 5), col(r.draws, 5), col(r.ktris, 5), col(r.sizes, 5)].join(' '),
       );
     }
     for (const r of rows) {
@@ -653,7 +802,11 @@ try {
     await ctx.close();
   }
 } finally {
-  writeFileSync(`${out}/perf-probe.json`, JSON.stringify({ view: { vw, vh, vdpr }, quality, gpu: gpu ?? 'default', report }, null, 1));
+  writeFileSync(`${out}/perf-probe.json`, JSON.stringify({ view: { vw, vh, vdpr }, machine, quality, gpu: gpu ?? 'default', report }, null, 1));
+  // the rows for docs/superpowers/evidence/perf/README.md's table: each journey's play
+  const md = ['| route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |', ...Object.entries(report).map(([n, run]) => mdRow(n, run))];
+  writeFileSync(`${out}/perf-probe.md`, `${md.join('\n')}\n`);
+  console.log(`\n${md.join('\n')}`);
   await browser.close();
   await server?.close();
 }
