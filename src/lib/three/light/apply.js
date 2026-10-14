@@ -57,8 +57,11 @@ import { CONES_LIT, createVolumetrics } from './volumetrics.js';
 import { panoramaSource, pictureOf } from './grade.js';
 import { backendOf, loadThree, registerLights } from './three.js';
 import { patchRecord, skyShare, visibilities } from './inside.js';
+import { frameNits } from './calibrate.js';
+import { METER_SIZE } from './passes.js';
 
 export const WEATHER_FADE = 20; // s: lane G's crossfade between two weathers
+export const METER_EVERY = 0.2; // s: the frame's meter read back this often under the rock (hand)
 export const VOLUME_TEXTURES = 24; // the sampled textures a stage the chain needs with the volumes in (Hoth's ultra chain asked 22 in its bloom)
 const ENV_EVERY = 2; // s: the sky's environment re-baked this often while a weather fades
 
@@ -161,16 +164,25 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
 
   // The interiors (inside.js): each patch folded into the weather's record by
   // its visibility at the view, the meter's sky cut by what of it the view
-  // still has and the room seen in its place (the nits of the game's own
-  // capture of the room: the reflection volume holding the view, else the
-  // nearest; the game's histogram meters the room it draws, the site's meter
-  // reads the game's picture of it), and the exposure adapting to the result
-  // at the record's Dark/LightAdaptationTime (the one state the game's
-  // renderer smooths: findings 22 §2). With no `inside`, the weather's record
-  // as it was.
+  // still has and the room seen in its place, and the exposure adapting to
+  // the result at the record's Dark/LightAdaptationTime (the one state the
+  // game's renderer smooths: findings 22 §2). The room is the frame as drawn:
+  // the game's auto exposure meters the picture it draws (the record's
+  // SpotMeterScale, the middle 0.7 of the screen), so the chain's meter
+  // (passes.js) reads back the scene's own colour, its log luminance over
+  // that middle, in the game's nits; until the first reading, the nits of
+  // the game's own capture of the room stand in (the reflection volume
+  // holding the view, else the nearest). With no `inside`, the weather's
+  // record as it was.
   let vis = {};
   let skyLeft = 1;
-  let room = null; // (the nits of the room the view is in or nearest, its capture's horizon)
+  let room = null; // (the room's nits as the meter sees them: the frame's, else the capture's)
+  let captured = null; // (the capture's horizon, the stand-in)
+  let drawn = null; // (the frame's, read back)
+  // (the frame's meter, filled in by the chain: its target; read every METER_EVERY s under the rock)
+  const meter = inside && post && backend !== 'webgl' ? { spot: Number(entry?.record?.TonemapComponentData?.[0]?.SpotMeterScale ?? 1), target: null } : null;
+  let meterClock = 0;
+  let reading = false;
   let cur = entry; // (the weather the stack shows, or fades to)
   const litOf = (e) => {
     if (!inside || !e) return e;
@@ -244,7 +256,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   let lastEntry = entry;
   const chainFor = (e) => {
     lastEntry = e;
-    const out = post ? passesFor(tier, e, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, lutInside: insideLut && lutWeight ? { texture: insideLut, weight: lutWeight } : null, volumetrics: vols, grade: pic?.grade ?? null, video: vid }) : [];
+    const out = post ? passesFor(tier, e, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, lutInside: insideLut && lutWeight ? { texture: insideLut, weight: lutWeight } : null, volumetrics: vols, grade: pic?.grade ?? null, video: vid, meter }) : [];
     // (the bloom's threshold from the record's grade: calibrate.js; the
     // record's own Gaussians have none)
     for (const p of out) if (p.kind === 'bloom' && !p.gaussians) p.threshold = params.grade.bloomThreshold;
@@ -371,7 +383,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       volumetrics: vols,
       // (the interiors at the view: each VE's visibility, the sky the view still has, the exposure as adapted)
       get inside() {
-        return inside ? { vis: { ...vis }, sky: skyLeft, gameToSite: adapted, target: target.gameToSite, lut: Boolean(insideLut), lutWeight: lutWeight?.value ?? 0 } : null;
+        return inside ? { vis: { ...vis }, sky: skyLeft, gameToSite: adapted, target: target.gameToSite, lut: Boolean(insideLut), lutWeight: lutWeight?.value ?? 0, room, drawn, captured, metered: Boolean(meter?.target) } : null;
       },
       get grade() {
         return pic?.grade ?? null;
@@ -393,11 +405,27 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
           if (lutWeight) lutWeight.value = lutVe ? (vis[lutVe] ?? 0) : 0;
           dirty = true;
         }
-        // (the room the meter sees under the rock: the volume holding the view, else the nearest)
-        const r = skyLeft < 1 && volumes?.length ? roomNits(volumes[probeFor(volumes, pos, { nearest: true }).i]) : null;
+        // (the room the meter sees under the rock: the frame as drawn, read back; before it, the capture)
+        captured = skyLeft < 1 && volumes?.length ? roomNits(volumes[probeFor(volumes, pos, { nearest: true }).i]) : null;
+        if (skyLeft >= 1) drawn = null;
+        const r = skyLeft < 1 ? (drawn ?? captured) : null;
         if (r !== room) {
           room = r;
           dirty = true;
+        }
+        meterClock += dt;
+        if (skyLeft < 1 && meter?.target?.renderTarget && !reading && meterClock >= METER_EVERY && typeof renderer.readRenderTargetPixelsAsync === 'function') {
+          meterClock = 0;
+          reading = true;
+          const k = adapted; // (the exposure the frame read was drawn at)
+          renderer
+            .readRenderTargetPixelsAsync(meter.target.renderTarget, 0, 0, METER_SIZE[0], METER_SIZE[1])
+            .then((px) => {
+              const nits = frameNits(px, k);
+              if (nits != null && skyLeft < 1) drawn = nits;
+            })
+            .catch(() => {})
+            .finally(() => (reading = false));
         }
       }
       if (fade) {

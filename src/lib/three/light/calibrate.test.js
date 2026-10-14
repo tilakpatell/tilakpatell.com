@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BLOOM } from '../bloom.js';
 import { siteLightFrom, weatherEntry } from '../gameLight.js';
 import hothLight from '../../../data/bf2017/light/hoth.json';
-import { bloomThreshold, calibrate, gameToSite, luminanceScale, meteredEV, skyScale, sunIntensity } from './calibrate';
+import { bloomThreshold, calibrate, frameNits, gameToSite, luminanceScale, meteredEV, skyScale, sunIntensity } from './calibrate';
 import { readEntry } from './entry';
 import hoth from './fixtures/hoth.ve.json';
 
@@ -25,6 +25,15 @@ describe('luminanceScale', () => {
     expect(meteredEV(tone, { lux: 0.001, el: 33, sky: 0, room: 151 })).toBeCloseTo(Math.log2(151 * 8), 2);
     // (the command block's long room, 367: clamped at MaxEV 10.5)
     expect(meteredEV(tone, { lux: 0.001, el: 33, sky: 0, room: 367 })).toBeCloseTo(10.5, 6);
+  });
+
+  it('reads the frame’s meter back to the game’s nits: the log luminances’ mean, over the exposure it was drawn at', () => {
+    // (two texels at 0.25 and 1 in the site's units: their log mean 0.5; drawn at gameToSite 0.0025, 200 nits)
+    const px = new Float32Array([Math.log2(0.25), 0, 0, 1, Math.log2(1), 0, 0, 1]);
+    expect(frameNits(px, 0.0025)).toBeCloseTo(200, 6);
+    expect(frameNits(new Float32Array([NaN, 0, 0, 1, 0, 0, 0, 1]), 0.5)).toBeCloseTo(2, 6);
+    expect(frameNits(new Float32Array(0), 1)).toBe(null);
+    expect(frameNits(px, 0)).toBe(null);
   });
 
   it('a record that exposes by hand keeps its EV; none gives null', () => {

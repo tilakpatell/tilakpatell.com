@@ -163,6 +163,9 @@ export function standardDepth(tsl, THREE, raw, under = 1) {
 // a chain's targets are held under the default maxColorAttachmentBytesPerSample
 // of 32. textures: [{ channels: 1 | 2 | 4, half: bool }].
 export const MRT_RG = true;
+// the frame's meter (a render pass's `meter`, apply.js's): the log luminance of the scene's own colour
+// over the middle `spot` of the screen (the record's SpotMeterScale), drawn each frame into this many texels
+export const METER_SIZE = [32, 18];
 export const ATTACHMENT_LIMIT = 32;
 export const attachmentCost = (textures) => textures.reduce((sum, t) => sum + (t.channels === 1 ? (t.half ? 2 : 1) : t.channels === 2 ? (t.half ? 4 : 2) : 8), 0);
 
@@ -265,6 +268,13 @@ export async function buildChain(renderer, passes) {
         if (outs.metalRough) g.metalRough = scenePass.getTextureNode('metalRough');
         g.scenePass = scenePass;
         node = g.color;
+        if (p.meter) {
+          const s = Number.isFinite(p.meter.spot) && p.meter.spot > 0 ? p.meter.spot : 1;
+          const at = tsl.uv().sub(0.5).mul(s).add(0.5);
+          const lum = tsl.log2(tsl.max(tsl.luminance(g.color.sample(at).rgb), tsl.float(1e-8)));
+          g.meter = keep(tsl.rtt(vec4(lum, 0, 0, 1), METER_SIZE[0], METER_SIZE[1], { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false }));
+          p.meter.target = g.meter;
+        }
         break;
       }
       case 'ssgi': {
@@ -429,6 +439,8 @@ export async function buildChain(renderer, passes) {
   // last step; graded through the LUT, the picture is the display's already)
   if (toned && !graded) node = display(node);
   else if (graded) shown = true;
+  // (the meter read into the picture at no weight, so its target is drawn every frame)
+  if (g.meter) node = node.add(vec4(g.meter.sample(vec2(0.5, 0.5)).r.mul(0), 0, 0, 0));
   pipeline.outputNode = node;
   return {
     pipeline,

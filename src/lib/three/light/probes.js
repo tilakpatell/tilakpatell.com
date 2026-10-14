@@ -198,10 +198,8 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
   let rebind = 0;
   const swapped = () => (rebind = 2);
   const parts = [f ? f.mul(sf) : null, nodes ? tsl.mix(nodes[0], nodes[1], t).mul(sp) : null].filter(Boolean);
-  if (parts.length) {
-    scene.environmentNode = parts.length > 1 ? parts[0].add(parts[1]) : parts[0];
-    swapped();
-  }
+  // (made once, before the level's bundle settles: the GPU scene records it again as its parts stream in)
+  if (parts.length) scene.environmentNode = parts.length > 1 ? parts[0].add(parts[1]) : parts[0];
   const scale = () => {
     sp.value = scales.probe * weight;
     sf.value = scales.fallback;

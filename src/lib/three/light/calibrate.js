@@ -21,6 +21,8 @@
 // luminanceScale(tonemap, { lux, el, sky, room }) → k | null      (the record's TonemapComponentData; the scene the meter sees)
 // meteredEV(tonemap, { lux, el, sky, room }) → EV | null
 // sunIntensity(outdoor, k), skyScale(sky, k), gameToSite(k), bloomThreshold(grading)
+// frameNits(texels, gameToSite) → nits | null   (pure: the meter's log luminances, RGBA, their mean as a
+//   luminance, back to the game's nits by the exposure the frame was drawn at)
 // calibrate(record, { sky, room }) → { k, ev, sun, sky, gameToSite, bloomThreshold } | null   (a VE record's components;
 //   `sky`, the luminance the meter sees of the sky where the view sees less of it than the record's:
 //   the interiors' share, inside.js's skyShare; `room`, the nits of the room it sees in its place, the
@@ -71,6 +73,20 @@ export const gameToSite = (k) => 1 / k;
 export const sunIntensity = (outdoor, k) => (n(outdoor?.SunIntensity) ?? 0) * gameToSite(k);
 export const skyScale = (sky, k) => (n(sky?.LuminanceScale) ?? 0) / k;
 export const bloomThreshold = (grading) => (n(grading?.ColorGradingMaxHdrValue) ?? 1) * BLOOM.threshold;
+
+export function frameNits(texels, k) {
+  if (!texels?.length || !(k > 0)) return null;
+  let s = 0;
+  let n = 0;
+  for (let i = 0; i < texels.length; i += 4) {
+    const v = texels[i];
+    if (Number.isFinite(v)) {
+      s += v;
+      n++;
+    }
+  }
+  return n ? 2 ** (s / n) / k : null;
+}
 
 export function calibrate(record, { sky: seen, room } = {}) {
   const c = (name) => first(record?.[`${name}ComponentData`]) ?? {};

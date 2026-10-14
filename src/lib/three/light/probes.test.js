@@ -76,13 +76,7 @@ describe('createProbes', () => {
     const bundle = { isBundleGroup: true, needsUpdate: false };
     const scene = { environment: cube('sky'), environmentNode: null, traverse: (fn) => [scene, bundle].forEach(fn) };
     const probes = await createProbes(scene, [hall, room], async (v, i) => cube(`probe${i}`));
-    probes.update([50, 2, 50], 0); // (the node made: recorded, and the frame after)
-    expect(bundle.needsUpdate).toBe(true);
-    bundle.needsUpdate = false;
-    probes.update([50, 2, 50], 0);
-    expect(bundle.needsUpdate).toBe(true);
-    bundle.needsUpdate = false;
-    probes.update([50, 2, 50], 0);
+    probes.update([50, 2, 50], 0); // (the node made before the level settles: its own streaming records it)
     expect(bundle.needsUpdate).toBe(false);
     // (a crossing copies faces of the slots' size into a slot: nothing bound changes)
     probes.update([14, 2, 14], 0);
@@ -90,10 +84,16 @@ describe('createProbes', () => {
     probes.update([14, 2, 14], 0);
     probes.update([14, 2, 14], 0);
     expect(bundle.needsUpdate).toBe(false);
-    // (a new sky: its PMREM is another texture, bound again)
+    // (a new sky: its PMREM is another texture, bound again, then and the frame after)
     probes.setFallback(cube('sky2'));
     probes.update([14, 2, 14], 0);
     expect(bundle.needsUpdate).toBe(true);
+    bundle.needsUpdate = false;
+    probes.update([14, 2, 14], 0);
+    expect(bundle.needsUpdate).toBe(true);
+    bundle.needsUpdate = false;
+    probes.update([14, 2, 14], 0);
+    expect(bundle.needsUpdate).toBe(false);
   });
 
   it('a quick crossing shows only the last volume asked for', async () => {
