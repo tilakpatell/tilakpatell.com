@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { fieldHash as H } from './bf2017-abilities.mjs';
 import { mapRow } from './bf2017-rulebook-map.mjs';
-import { STAGE_CHANGED, spawnLogic, stagePort } from './bf2017-rulebook-spawnlogic.mjs';
+import { FAR_SPAWNS, STAGE_CHANGED, spawnLogic, stagePort } from './bf2017-rulebook-spawnlogic.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
 
@@ -23,6 +23,7 @@ function level() {
   layer('FantasyBattle_Logic', [
     { $type: 'SpatialPrefabReferenceObjectData', $guid: g(1), Blueprint: { $asset: 'Gameplay/GameModes/FantasyBattles/PF_GameMode_Conquest_Staged' }, BlueprintTransform: tf(0, 0) },
     { $type: 'AlternateSpawnEntityData', $guid: g(2), Team: 'Team2', Priority: 1, Enabled: false, Transform: tf(10, 0) },
+    { $type: 'AlternateSpawnEntityData', $guid: g(3), Team: 'Team1', Priority: 1, Enabled: true, Transform: tf(900, 0) },
   ]);
   layer('FantasyBattle_Spawns', [
     { $type: 'AndEntityData', $guid: g(11), InputCount: 2 },
@@ -54,7 +55,7 @@ function level() {
           $type: 'SubWorldData',
           PropertyConnections: [prop(ga, stagePort(2, 1), and, H('In1')), prop(bool, H('Value'), and, H('In2')), prop(and, H('Out'), pt, H('Enabled')), prop(and, H('Out'), area, H('Enabled')), prop(and, H('Out'), qa, H('Enabled'))],
           EventConnections: [ev(ga, STAGE_CHANGED, delay, H('In')), ev(delay, H('Out'), split, 1723395486), ev(trig, H('OnEnter'), split, 1723395486), ev(split, -137490305, bool, H('SetTrue')), ev(cons, 669233475, bool, H('SetTrue'))],
-          LinkConnections: [{ Source: trig, Target: box, SourceFieldId: 838548383, TargetFieldId: 0 }],
+          LinkConnections: [{ Source: trig, Target: box, SourceFieldId: 838548383, TargetFieldId: 0 }, { Source: ga, Target: end('FantasyBattle_Logic', 3), SourceFieldId: FAR_SPAWNS, TargetFieldId: 0 }],
         },
       ],
     }),
@@ -90,6 +91,10 @@ describe('the spawn logic’s reader', () => {
     expect(g.events['FantasyBattle_Spawns:3.Out']).toEqual(['FantasyBattle_Spawns:2.SetTrue']);
     expect(g.events['FantasyBattle_Spawns:5.OnEnter']).toEqual(['FantasyBattle_Spawns:3.In']);
     expect(g.nodes['FantasyBattle_Spawns:5']).toMatchObject({ type: 'trigger', shapes: ['FantasyBattle_Shapes:2'], allies: 1, once: true });
+  });
+
+  it('keeps the mode prefab’s far list: the starfighters’ spawn points, never a soldier’s', () => {
+    expect(g.far).toEqual(['FantasyBattle_Logic:3']);
   });
 
   it('leaves out QA’s records and the console’s commands', () => {

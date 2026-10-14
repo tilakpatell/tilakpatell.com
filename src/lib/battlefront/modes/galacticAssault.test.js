@@ -123,7 +123,9 @@ describe('Galactic Assault', () => {
     expect(ga.logic).toBeTruthy();
     live(ga);
     expect([areas(ga, 'attack'), areas(ga, 'defend')]).toEqual([[9], [11]]);
-    expect(spawnSets(ga).attack.filter((id) => id.startsWith('FantasyBattle_Logic:'))).toHaveLength(28);
+    // (28 of the level's, less the mode prefab's far list, the Empire's two starfighter points 500 m up)
+    expect(spawnSets(ga).attack.filter((id) => id.startsWith('FantasyBattle_Logic:'))).toHaveLength(26);
+    expect(spawnSets(ga).attack).not.toContain('FantasyBattle_Logic:17');
     run(ga, 25.1);
     expect([areas(ga, 'attack'), areas(ga, 'defend')]).toEqual([
       [40, 49, 70],
@@ -162,5 +164,30 @@ describe('Galactic Assault', () => {
     const ga = createAssault({ rulebook: rb, stages: { attackers: 'dark', stages: [file.stages[1]] } });
     expect(ga.logic).toBeUndefined();
     expect(spawnSets(ga)).toBe(file.stages[1].spawns);
+  });
+
+  it('a walker home unlocks its gate; a second at its panel opens it, and the Empire’s points inside it come on', () => {
+    const ga = createAssault({ rulebook: rb });
+    live(ga);
+    run(ga, 25.1);
+    // (the east route's walker, FantasyBattle_Logic:123, home: the west gate, :91, unlocks and the east one is barred)
+    const a = ga.objectives.find((o) => o.def.waypoints === 'FantasyBattle_Logic:123');
+    a.walker.dist = a.walker.length;
+    const out = [];
+    for (let t = 0; t < 0.2; t += 0.05) out.push(...tick(ga, 0.05, nobody));
+    expect(out).toEqual(expect.arrayContaining([{ type: 'gate', id: 'FantasyBattle_Logic:91', state: 'unlocked' }, { type: 'gate', id: 'FantasyBattle_Logic:307', state: 'barred' }]));
+    run(ga, STAGE_PAUSE + 0.1);
+    expect(view(ga).stage.id).toBe('hangars');
+    const inside = ['FantasyBattle_Logic:173', 'FantasyBattle_Logic:204', 'FantasyBattle_Logic:258'];
+    expect(spawnSets(ga).attack).not.toEqual(expect.arrayContaining(inside));
+    const panel = ga.gates.list.find((g) => g.id === 'FantasyBattle_Logic:91').panel.at;
+    const at = { soldiers: [{ id: 'e1', side: 'attack', at: [...panel], alive: true, interact: true }], alive: { attack: 1, defend: 1 } };
+    const opened = [];
+    for (let t = 0; t < 1.2; t += 0.05) opened.push(...tick(ga, 0.05, at));
+    expect(opened).toContainEqual({ type: 'gate', id: 'FantasyBattle_Logic:91', state: 'opened' });
+    expect(spawnSets(ga).attack).toEqual(expect.arrayContaining(inside));
+    // (the gate's own run: 70 s, gates.js)
+    run(ga, 70);
+    expect(view(ga).gates.find((g) => g.id === 'FantasyBattle_Logic:91')).toMatchObject({ state: 'open', open: 1 });
   });
 });

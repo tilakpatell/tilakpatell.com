@@ -19,7 +19,7 @@
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
-// 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes),
+// 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
 // create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
@@ -192,7 +192,12 @@ export default {
       walker = createWalker({ physics, pack: level.pack, row: SOLDIER_BODY.rows[SOLDIER_BODY.default], ground: (x, z) => level.heightAt(x, z) });
     };
     // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
-    const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
+    // (the navmesh asked for only where the pack says it has one: Hoth's, scripts/bf2017-navmesh.mjs)
+    const meshFile = level.pack?.navmesh?.file ?? null;
+    const [mask, navBytes] = await Promise.all([level.navOf(), meshFile ? level.loadBin(meshFile).catch(() => null) : null, engine().catch(() => null)]);
+    // (the level's own navmesh, its NavPower polygons: the bots' floors one over another, battle.js's NAVMESH_OF;
+    // their feet on the level's shapes where the engine has them round the player)
+    const navmesh = navBytes ? { bytes: new Uint8Array(navBytes), floor: (x, y, z) => collision?.floor(x, y, z) ?? null } : null;
     // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
     // server's rows for them, and the sim takes the round at its making: sim.js's roundIn)
     // (the machine's share of a round's bots, by its quality level: every bot is a body drawn and a mind stepped)
@@ -209,7 +214,7 @@ export default {
     const elsewhere = battleLevel !== levelKey(levelName);
     if (elsewhere) await loadLevel(battleLevel);
     const worldSides = elsewhere ? teamsFor(rb, levelName, round?.era ?? 'Orig') : null;
-    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : { bots: botsAt(device().detail) }) });
+    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, navmesh, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : { bots: botsAt(device().detail) }) });
     let me = addPlayer(sim, { team });
     // the game's sounds (sound/): the player on the runtime's bus, the
     // director on the sim's events; the one-shots the first minute needs
@@ -419,7 +424,7 @@ export default {
         points: v.points,
         // (evade: the game's two rolls, HealthEvade's charges; the sim's rolls are not counted, so the two stand)
         player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, hitAt: p.hitAt, killAt: p.killAt, evade: p.evade, abilities: p.abilities?.length ? p.abilities : [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })), shield: p.shield, over: p.over, flashed: p.flashed, flash: p.flash, ability: p.ability },
-        mode: v.mode && { stageName: v.mode.stageName, objectives: v.mode.objectives.map((o) => ({ id: o.id, name: o.name, meter: o.meter, at: o.at })), tickets: v.mode.tickets, result: v.mode.result },
+        mode: v.mode && { stageName: v.mode.stageName, objectives: v.mode.objectives.map((o) => ({ id: o.id, name: o.name, meter: o.meter, at: o.at })), tickets: v.mode.tickets, result: v.mode.result, gates: v.mode.gates },
         // (the radar's soldiers: who, where, which side, up or down, firing)
         entities: v.entities.map((e) => ({ id: e.id, team: e.team, kind: e.kind, at: e.at, alive: e.alive, firing: e.firing })),
         killLog: v.killLog.slice(),
@@ -472,7 +477,7 @@ export default {
           if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false });
           first = false;
           // (every event to the sound director; the explosions to the kit drawing too)
-          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }]);
+          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld, interact: once.interact, interactHeld: once.interactHeld }]);
           heard.push(...events);
           for (const e of events) if (e.type === 'explosion') booms.push(e);
         }
@@ -585,6 +590,10 @@ export default {
             // (a check's trigger: held down until told to let go)
             input.button('left', Boolean(arg?.on ?? true));
             return { ok: true, on: Boolean(arg?.on ?? true) };
+          case 'interact':
+            // (a check's finger on the interact: held down until told to let go)
+            input.holdInteract(Boolean(arg?.on ?? true));
+            return { ok: true, on: Boolean(arg?.on ?? true) };
           case 'ability':
             // (a check's finger on an ability key: { slot } pressed, held until { slot: 0 }; { tap: slot } pressed and let go)
             if (arg?.tap) input.press('ability', arg.tap);
@@ -614,14 +623,22 @@ export default {
             return beginRound(arg ?? {});
           case 'bots':
             // (the bots as the sim has them, for a check: each one's side, what it is doing, whom it is after, whether it is firing)
-            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null }));
+            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null, way: e.brain?.path ? { n: e.brain.path.length, wp: e.brain.wp, goal: e.brain.intent?.goal?.map((n) => Math.round(n)) ?? null, stuck: Math.round((e.brain.stuck ?? 0) * 10) / 10 } : null }));
           case 'nav':
-            // (the battle's navgrid itself, for a check of a way over it)
-            return sim.nav;
+            // (the battle's navgrid itself, for a check of a way over it; its navmesh by name only)
+            return { ...sim.nav, mesh: sim.nav.mesh ? { name: sim.nav.mesh.name, polys: sim.nav.mesh.polyCount, links: sim.nav.mesh.links.length } : null };
+          case 'walkersHome': {
+            // (a check's way into stage 2: each escort's walker at the end of its route, so its gate unlocks)
+            const ga = sim.sim.ga;
+            if (!ga?.objectives) return { ok: false, why: 'no Galactic Assault' };
+            const homed = ga.objectives.filter((o) => o.type === 'escort' && o.walker?.alive);
+            for (const o of homed) o.walker.dist = o.walker.length;
+            return { ok: true, walkers: homed.length };
+          }
           case 'where': {
             // (a check's read of the player: the place, and whether the body on the level's shapes moves it)
             const b = body();
-            return b ? { at: b.at.map((v) => Math.round(v * 100) / 100), body: Boolean(b.mover), grounded: b.grounded ?? null } : null;
+            return b ? { at: b.at.map((v) => Math.round(v * 100) / 100), body: Boolean(b.mover), grounded: b.grounded ?? null, interact: Boolean(b.interact) } : null;
           }
           case 'place': {
             // (a check's walk of the map: the player's soldier stood at [x, z] on the sim's ground, and what the ground and the mask say there)
