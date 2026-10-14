@@ -18,7 +18,8 @@
 //       centres; where there are none, the farthest corner along 26
 //       directions and the middle of the box);
 //     solids: root 0’s convex hulls as [{ planes (nx, ny, nz, d each: inside
-//       where n·p ≤ d), part, box }], empty where the bin has one root.
+//       where n·p ≤ d), part, box }], empty where the bin has one root
+//       (contact then reads the ray triangles as a closed mesh).
 //   hullFromTriangles(positions, indices, { maxTris, property, name }) → Hull:
 //     a drawn model’s triangles, clustered on a grid until under `maxTris`.
 //   segmentHit(hull, pose, a, b) → { t, part, property, point, normal } | null
@@ -28,9 +29,11 @@ import { readHull } from '../physics/shapesBin.js';
 
 const LEAF = 4; // triangles a leaf
 const SLACK = 1e-7; // a triangle widened by this in its corners’ weights, so a bolt down a shared edge meets one of the two
-// contact on ray triangles leaves the probe this far outside (a share of the
-// big ship’s length), so the next step’s sweep starts in front of the surface
+// a contact leaves the probe this far outside (a share of the big ship’s
+// length), so the next step’s sweep starts in front of the surface; a probe
+// this near a face, or nearer, counts as on it
 export const SKIN = 1e-3;
+const GRID = 2 ** 15; // convex()’s grid steps either side of a hull’s middle: its side tests stay under 2^53
 
 // the 26 ways out of a cube’s middle: a sphere’s or capsule’s corners, and
 // the directions a mesh’s probes are its farthest corners along
@@ -45,8 +48,13 @@ for (let x = -1; x <= 1; x++)
 // scratch for the queries (they never nest): a median-split tree is about
 // log2(n) deep, so 64 is past any hull
 const STACK = new Int32Array(64);
-let found = 0; // the last nearest()’s t
+let found = 0; // the last cast()’s t
 const N = new Float64Array(3); // the last normalOf()
+const flip = () => {
+  for (let k = 0; k < 3; k++) N[k] = -N[k];
+};
+const C = new Float64Array(4); // the last closest(): the point, and its distance squared
+const T = new Float64Array(3); // the last onTriangle()
 let seg = new Float64Array(6 * 64); // the probes’ paths in the big ship’s frame
 const M = new Float64Array(9); // the small ship’s frame into the big one’s
 const SWEPT = new Float64Array(6); // the box every probe’s path lies in
@@ -101,14 +109,16 @@ function treeOf(tris, part, property) {
   return { count: n, nodes, tris: t, part: pa, property: pr, box: box.slice(0, nodes * 6), node: node.slice(0, nodes * 2) };
 }
 
-// The nearest triangle along o + t·d, t in [0, 1] (Möller–Trumbore), or −1;
-// its t is left in `found`. `cull` meets only a triangle’s front (wound
-// outward), so a probe leaving through a face is let go.
-function nearest(tree, ox, oy, oz, dx, dy, dz, cull) {
-  if (!tree.nodes) return -1;
+// Along o + t·d, t in [0, 1] (Möller–Trumbore, either side of a triangle):
+// the nearest triangle, or −1, its t left in `found`; or with `count`, how
+// many triangles the path crosses (no slack then, so a crossing on a shared
+// edge isn’t counted twice).
+function cast(tree, ox, oy, oz, dx, dy, dz, count) {
+  if (!tree.nodes) return count ? 0 : -1;
   const { box, node, tris } = tree;
+  const slack = count ? 0 : SLACK;
   const ix = 1 / (dx || 1e-30), iy = 1 / (dy || 1e-30), iz = 1 / (dz || 1e-30);
-  let best = 1, hit = -1, sp = 0;
+  let best = 1, hit = -1, crossed = 0, sp = 0;
   STACK[sp++] = 0;
   while (sp) {
     const i = STACK[--sp];
@@ -138,23 +148,102 @@ function nearest(tree, ox, oy, oz, dx, dy, dz, cull) {
       const e1x = tris[o + 3] - vx, e1y = tris[o + 4] - vy, e1z = tris[o + 5] - vz;
       const e2x = tris[o + 6] - vx, e2y = tris[o + 7] - vy, e2z = tris[o + 8] - vz;
       const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x;
-      const det = e1x * px + e1y * py + e1z * pz; // −d·(e1 × e2): over 0 when the path meets the front
-      if (cull ? det <= 0 : det === 0) continue;
+      const det = e1x * px + e1y * py + e1z * pz;
+      if (det === 0) continue;
       const inv = 1 / det;
       const sx = ox - vx, sy = oy - vy, sz = oz - vz;
       const u = (sx * px + sy * py + sz * pz) * inv;
-      if (u < -SLACK || u > 1 + SLACK) continue;
+      if (u < -slack || u > 1 + slack) continue;
       const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
       const v = (dx * qx + dy * qy + dz * qz) * inv;
-      if (v < -SLACK || u + v > 1 + SLACK) continue;
+      if (v < -slack || u + v > 1 + slack) continue;
       const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
       if (t < 0 || t > best) continue;
-      best = t;
-      hit = k;
+      if (count) crossed++;
+      else {
+        best = t;
+        hit = k;
+      }
     }
   }
   found = best;
+  return count ? crossed : hit;
+}
+
+// Inside a mesh: in its box, and two of three rays out of the point cross it
+// an odd number of times (one ray can be fooled by an open mesh or a grazed
+// edge). The rays lean a little off the axes, so they don’t run down a box’s
+// edges.
+const RAYS = [1, 0.0123, 0.0071, 0.0089, 1, 0.0137, 0.0113, 0.0067, 1];
+function inside(tree, x, y, z) {
+  const b = tree.box;
+  if (!tree.nodes || x < b[0] || x > b[3] || y < b[1] || y > b[4] || z < b[2] || z > b[5]) return false;
+  const L = 2 * Math.hypot(b[3] - b[0], b[4] - b[1], b[5] - b[2]);
+  let odd = 0;
+  for (let r = 0; r < 3 && odd < 2 && odd + 3 - r >= 2; r++) odd += cast(tree, x, y, z, RAYS[r * 3] * L, RAYS[r * 3 + 1] * L, RAYS[r * 3 + 2] * L, true) & 1;
+  return odd >= 2;
+}
+
+// The point of the mesh nearest (px, py, pz): its triangle, the point and its
+// distance squared left in C.
+function closest(tree, px, py, pz) {
+  const { box, node, tris } = tree;
+  let best = Infinity, hit = -1, sp = 0;
+  STACK[sp++] = 0;
+  while (sp) {
+    const i = STACK[--sp];
+    const b = i * 6;
+    const gx = Math.max(box[b] - px, 0, px - box[b + 3]), gy = Math.max(box[b + 1] - py, 0, py - box[b + 4]), gz = Math.max(box[b + 2] - pz, 0, pz - box[b + 5]);
+    if (gx * gx + gy * gy + gz * gz >= best) continue;
+    const c = node[i * 2 + 1];
+    if (!c) {
+      STACK[sp++] = node[i * 2];
+      STACK[sp++] = i + 1;
+      continue;
+    }
+    for (let k = node[i * 2], end = k + c; k < end; k++) {
+      const d = onTriangle(tris, k * 9, px, py, pz);
+      if (d < best) {
+        best = d;
+        hit = k;
+        C.set(T);
+      }
+    }
+  }
+  C[3] = best;
   return hit;
+}
+
+// the point of the triangle at tris[o…o + 8] nearest p, into T, and its
+// distance squared (by the regions of Ericson’s Real-Time Collision Detection, 5.1.5)
+function onTriangle(t, o, px, py, pz) {
+  const ax = t[o], ay = t[o + 1], az = t[o + 2];
+  const abx = t[o + 3] - ax, aby = t[o + 4] - ay, abz = t[o + 5] - az;
+  const acx = t[o + 6] - ax, acy = t[o + 7] - ay, acz = t[o + 8] - az;
+  const apx = px - ax, apy = py - ay, apz = pz - az;
+  const d1 = abx * apx + aby * apy + abz * apz, d2 = acx * apx + acy * apy + acz * apz;
+  const abac = abx * acx + aby * acy + abz * acz;
+  const d3 = d1 - (abx * abx + aby * aby + abz * abz), d4 = d2 - abac; // ab·bp, ac·bp
+  const d5 = d1 - abac, d6 = d2 - (acx * acx + acy * acy + acz * acz); // ab·cp, ac·cp
+  const va = d3 * d6 - d5 * d4, vb = d5 * d2 - d1 * d6, vc = d1 * d4 - d3 * d2;
+  let v = 0, w = 0; // T = a + v·ab + w·ac
+  if (d1 > 0 || d2 > 0) {
+    if (d3 >= 0 && d4 <= d3) v = 1;
+    else if (d6 >= 0 && d5 <= d6) w = 1;
+    else if (vc <= 0 && d1 >= 0 && d3 <= 0) v = d1 / (d1 - d3);
+    else if (vb <= 0 && d2 >= 0 && d6 <= 0) w = d2 / (d2 - d6);
+    else if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+      w = (d4 - d3) / (d4 - d3 + d5 - d6);
+      v = 1 - w;
+    } else {
+      v = vb / (va + vb + vc);
+      w = vc / (va + vb + vc);
+    }
+  }
+  T[0] = ax + abx * v + acx * w;
+  T[1] = ay + aby * v + acy * w;
+  T[2] = az + abz * v + acz * w;
+  return (T[0] - px) ** 2 + (T[1] - py) ** 2 + (T[2] - pz) ** 2;
 }
 
 // triangle k’s unit normal by its winding (e1 × e2), into N
@@ -171,61 +260,68 @@ function normalOf(tris, k) {
 
 // The convex hull of `pts` (xyz): { pts, faces: [{ a, b, c, nx, ny, nz, d }]
 // wound outward }, or null for a line or a point. Each point outside the
-// hull so far replaces the faces it sees with a fan from their rim. A flat
-// set is given a thousandth of its size in thickness first, so it is still a
-// solid and still met.
+// hull so far replaces the faces it sees with a fan from their rim. The side
+// tests run on the points put on a grid of GRID steps either side of their
+// box’s middle, where every product is a whole number under 2^53 and so
+// exact in doubles: the hull is truly convex at every step, so the faces a
+// point sees are one patch with one rim. (Rounded, a sliver on a turned
+// cylinder’s end saw a point it shouldn’t, and the fans from two rims folded
+// the hull through itself.) A flat set is given a thousandth of its size in
+// thickness first, so it is still a solid and still met. Every point is
+// checked inside every plane after (to two grid steps), and a hull that
+// fails throws: a wrong solid is worse than none.
 function convex(pts) {
   const n = pts.length / 3;
   if (n < 3) return null;
-  const P = (i, k) => pts[i * 3 + k];
+  const box = empty();
+  for (let i = 0; i < n; i++) grow(box, pts, i * 3);
+  const half = Math.max(box[3] - box[0], box[4] - box[1], box[5] - box[2]) / 2;
+  if (!(half > 1e-12)) return null;
+  const mid = [0, 1, 2].map((k) => (box[k] + box[k + 3]) / 2);
+  const s = GRID / half;
+  const q = new Float64Array(n * 3);
+  for (let i = 0; i < n * 3; i++) q[i] = Math.round((pts[i] - mid[i % 3]) * s);
+  const face = (a, b, c) => {
+    const ux = q[b * 3] - q[a * 3], uy = q[b * 3 + 1] - q[a * 3 + 1], uz = q[b * 3 + 2] - q[a * 3 + 2];
+    const vx = q[c * 3] - q[a * 3], vy = q[c * 3 + 1] - q[a * 3 + 1], vz = q[c * 3 + 2] - q[a * 3 + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    return { a, b, c, nx, ny, nz, d: nx * q[a * 3] + ny * q[a * 3 + 1] + nz * q[a * 3 + 2] };
+  };
+  const side = (f, i) => f.nx * q[i * 3] + f.ny * q[i * 3 + 1] + f.nz * q[i * 3 + 2] - f.d; // exact: over 0 is outside
   const far = (score) => {
     let best = -Infinity, at = 0;
     for (let i = 0; i < n; i++) {
-      const s = score(P(i, 0), P(i, 1), P(i, 2));
-      if (s > best) [best, at] = [s, i];
+      const v = score(i);
+      if (v > best) [best, at] = [v, i];
     }
     return [at, best];
   };
-  const [i0] = far((x) => -x);
-  const [x0, y0, z0] = [P(i0, 0), P(i0, 1), P(i0, 2)];
-  const [i1, d1] = far((x, y, z) => (x - x0) ** 2 + (y - y0) ** 2 + (z - z0) ** 2);
-  const size = Math.sqrt(d1);
-  const eps = size * 1e-6;
-  if (!(size > 1e-12)) return null;
-  const [ux, uy, uz] = [(P(i1, 0) - x0) / size, (P(i1, 1) - y0) / size, (P(i1, 2) - z0) / size];
-  const [i2, d2] = far((x, y, z) => Math.hypot((y - y0) * uz - (z - z0) * uy, (z - z0) * ux - (x - x0) * uz, (x - x0) * uy - (y - y0) * ux));
-  if (d2 < eps) return null;
-  const face = (a, b, c) => {
-    const [ax, ay, az] = [P(a, 0), P(a, 1), P(a, 2)];
-    const [px, py, pz] = [P(b, 0) - ax, P(b, 1) - ay, P(b, 2) - az];
-    const [qx, qy, qz] = [P(c, 0) - ax, P(c, 1) - ay, P(c, 2) - az];
-    const [nx, ny, nz] = [py * qz - pz * qy, pz * qx - px * qz, px * qy - py * qx];
-    const l = Math.hypot(nx, ny, nz) || Infinity; // a sliver keeps a zero normal: it sees nothing
-    return { a, b, c, nx: nx / l, ny: ny / l, nz: nz / l, d: (nx * ax + ny * ay + nz * az) / l };
-  };
+  const [i0] = far((i) => -q[i * 3]);
+  const [i1] = far((i) => (q[i * 3] - q[i0 * 3]) ** 2 + (q[i * 3 + 1] - q[i0 * 3 + 1]) ** 2 + (q[i * 3 + 2] - q[i0 * 3 + 2]) ** 2);
+  const [i2, w2] = far((i) => {
+    const f = face(i0, i1, i);
+    return f.nx * f.nx + f.ny * f.ny + f.nz * f.nz;
+  });
+  if (!w2) return null; // a line or a point
   const base = face(i0, i1, i2);
-  const [i3, d3] = far((x, y, z) => Math.abs(base.nx * x + base.ny * y + base.nz * z - base.d));
-  if (d3 < eps) {
-    const h = size * 1e-3;
+  const [i3, w3] = far((i) => Math.abs(side(base, i)));
+  if (!w3) {
+    const l = Math.hypot(base.nx, base.ny, base.nz);
+    const up = [base.nx / l, base.ny / l, base.nz / l].map((v) => v * half * 2e-3);
     const thick = new Float32Array(n * 6);
     thick.set(pts);
-    for (let i = 0; i < n; i++) thick.set([P(i, 0) + base.nx * h, P(i, 1) + base.ny * h, P(i, 2) + base.nz * h], (n + i) * 3);
+    for (let i = 0; i < n * 3; i++) thick[n * 3 + i] = pts[i] + up[i % 3];
     return convex(thick);
   }
-  const mid = [0, 1, 2].map((k) => (P(i0, k) + P(i1, k) + P(i2, k) + P(i3, k)) / 4);
   let faces = [
-    [i0, i1, i2],
-    [i0, i2, i3],
-    [i0, i3, i1],
-    [i1, i3, i2],
-  ].map(([a, b, c]) => {
-    const f = face(a, b, c);
-    return f.nx * mid[0] + f.ny * mid[1] + f.nz * mid[2] - f.d > 0 ? face(a, c, b) : f;
-  });
+    [i0, i1, i2, i3],
+    [i0, i2, i3, i1],
+    [i0, i3, i1, i2],
+    [i1, i3, i2, i0],
+  ].map(([a, b, c, o]) => (side(face(a, b, c), o) > 0 ? face(a, c, b) : face(a, b, c)));
   for (let i = 0; i < n; i++) {
     if (i === i0 || i === i1 || i === i2 || i === i3) continue;
-    const [x, y, z] = [P(i, 0), P(i, 1), P(i, 2)];
-    const seen = faces.filter((f) => f.nx * x + f.ny * y + f.nz * z - f.d > eps);
+    const seen = faces.filter((f) => side(f, i) > 0);
     if (!seen.length) continue;
     const edges = new Set();
     for (const f of seen) edges.add(f.a * n + f.b).add(f.b * n + f.c).add(f.c * n + f.a);
@@ -240,6 +336,15 @@ function convex(pts) {
       }
     }
     faces = kept;
+  }
+  // the planes back in the points’ frame, unit, and every point inside each
+  for (const f of faces) {
+    const l = Math.hypot(f.nx, f.ny, f.nz);
+    [f.nx, f.ny, f.nz] = [f.nx / l, f.ny / l, f.nz / l];
+    f.d = f.d / (l * s) + f.nx * mid[0] + f.ny * mid[1] + f.nz * mid[2];
+    for (let i = 0; i < n; i++) {
+      if (!(f.nx * pts[i * 3] + f.ny * pts[i * 3 + 1] + f.nz * pts[i * 3 + 2] - f.d <= 2 / s)) throw new Error(`hulls: a convex hull left point ${i} of ${n} outside a face`);
+    }
   }
   return { pts, faces };
 }
@@ -390,7 +495,7 @@ export function segmentHit(hull, { at0, at1, basis: m, scale }, a, b) {
   const bx = b[0] - at1[0], by = b[1] - at1[1], bz = b[2] - at1[2];
   const ox = (m[0] * ax + m[1] * ay + m[2] * az) * s, oy = (m[3] * ax + m[4] * ay + m[5] * az) * s, oz = (m[6] * ax + m[7] * ay + m[8] * az) * s;
   const dx = (m[0] * bx + m[1] * by + m[2] * bz) * s - ox, dy = (m[3] * bx + m[4] * by + m[5] * bz) * s - oy, dz = (m[6] * bx + m[7] * by + m[8] * bz) * s - oz;
-  const k = nearest(hull.rays, ox, oy, oz, dx, dy, dz, false);
+  const k = cast(hull.rays, ox, oy, oz, dx, dy, dz, false);
   if (k < 0) return null;
   const t = found;
   normalOf(hull.rays.tris, k);
@@ -410,13 +515,17 @@ export function segmentHit(hull, { at0, at1, basis: m, scale }, a, b) {
 // Each of the small ship’s probes, from where it was (smallPose.at0) to
 // where it is (at1), in the big ship’s moving frame, against its solids:
 // the path clipped by each solid’s planes. A probe that came in from outside
-// is put back out through the plane it entered by (a thin wall crossed in
-// one step pushes it back the side it came from); one that was already
-// inside and stays is put out by its nearest face (a ship arriving inside);
-// one on its way out is let go. Where the big ship has no solids, a probe’s
-// path against its ray triangles’ fronts: pushed back along the face it
-// crossed by how far behind it the probe ended, and SKIN more. The deepest
-// wins; `at` is where it is put, on the big ship’s surface at the step’s end.
+// (or from on a face, within SKIN, where the last push left it) is put back
+// out through the plane it entered by: a thin wall crossed in one step
+// pushes it back the side it came from. One already inside that stays is
+// put out by its nearest face (a ship arriving inside); one on its way out
+// is let go. Where the big ship has no solids (a drawn hull), against its
+// ray triangles, whichever way they are wound: a probe that starts outside
+// and crosses a face from either side is pushed back the side it came from,
+// by how far behind the face it ended; one that starts and stays inside the
+// mesh is put out through the nearest point of it. Every push leaves the
+// probe SKIN outside, so the next step’s sweep starts in front of the
+// surface. The deepest probe wins; `at` is where it is put, at the step’s end.
 export function hullContact(small, sp, big, bp) {
   const pr = small.probes;
   const n = pr.length / 3;
@@ -442,23 +551,25 @@ export function hullContact(small, sp, big, bp) {
     }
   }
   let deepest = 0, part = -1, at = -1, nx = 0, ny = 0, nz = 0;
-  const { solids } = big;
+  const { solids, rays } = big;
   for (let s = 0; s < solids.length; s++) {
     const { planes: pl, box: b } = solids[s];
-    if (b[0] > SWEPT[3] || b[3] < SWEPT[0] || b[1] > SWEPT[4] || b[4] < SWEPT[1] || b[2] > SWEPT[5] || b[5] < SWEPT[2]) continue;
+    if (b[0] > SWEPT[3] + SKIN || b[3] < SWEPT[0] - SKIN || b[1] > SWEPT[4] + SKIN || b[4] < SWEPT[1] - SKIN || b[2] > SWEPT[5] + SKIN || b[5] < SWEPT[2] - SKIN) continue;
     for (let p = 0; p < n; p++) {
       const o = p * 6;
       const sx = seg[o], sy = seg[o + 1], sz = seg[o + 2];
       const ex = seg[o + 3], ey = seg[o + 4], ez = seg[o + 5];
-      if (Math.max(sx, ex) < b[0] || Math.min(sx, ex) > b[3] || Math.max(sy, ey) < b[1] || Math.min(sy, ey) > b[4] || Math.max(sz, ez) < b[2] || Math.min(sz, ez) > b[5]) continue;
+      if (Math.max(sx, ex) < b[0] - SKIN || Math.min(sx, ex) > b[3] + SKIN || Math.max(sy, ey) < b[1] - SKIN || Math.min(sy, ey) > b[4] + SKIN || Math.max(sz, ez) < b[2] - SKIN || Math.min(sz, ez) > b[5] + SKIN) continue;
       let tIn = 0, tOut = 1, enter = -1, least = Infinity, way = -1, j = 0;
       for (; j < pl.length; j += 4) {
         const ds = pl[j] * sx + pl[j + 1] * sy + pl[j + 2] * sz - pl[j + 3];
         const de = pl[j] * ex + pl[j + 1] * ey + pl[j + 2] * ez - pl[j + 3];
-        if (ds > 0) {
-          if (de > 0) break;
-          if (ds / (ds - de) > tIn) {
-            tIn = ds / (ds - de);
+        if (ds > -SKIN) {
+          // out of this face at the start, or on it: a way in
+          if (de > 0) break; // and out of it at the end: the path passed the solid by
+          const t = ds > 0 ? ds / (ds - de) : 0;
+          if (enter < 0 || t > tIn) {
+            tIn = t;
             enter = j;
           }
         } else if (de > 0) tOut = Math.min(tOut, ds / (ds - de));
@@ -473,27 +584,41 @@ export function hullContact(small, sp, big, bp) {
       // out by its nearest face; inside and leaving: let go
       const w = enter >= 0 ? enter : tOut === 1 ? way : -1;
       if (w < 0) continue;
-      const depth = pl[w + 3] - (pl[w] * ex + pl[w + 1] * ey + pl[w + 2] * ez);
+      const depth = pl[w + 3] - (pl[w] * ex + pl[w + 1] * ey + pl[w + 2] * ez) + SKIN;
       if (depth > deepest) [deepest, part, at, nx, ny, nz] = [depth, solids[s].part, p, pl[w], pl[w + 1], pl[w + 2]];
     }
   }
-  if (!solids.length) {
-    for (let p = 0; p < n; p++) {
-      const o = p * 6;
-      const dx = seg[o + 3] - seg[o], dy = seg[o + 4] - seg[o + 1], dz = seg[o + 5] - seg[o + 2];
-      const h = nearest(big.rays, seg[o], seg[o + 1], seg[o + 2], dx, dy, dz, true);
+  for (let p = 0; p < n && !solids.length; p++) {
+    const o = p * 6;
+    const sx = seg[o], sy = seg[o + 1], sz = seg[o + 2];
+    const ex = seg[o + 3], ey = seg[o + 4], ez = seg[o + 5];
+    let h = -1, depth = 0;
+    if (!inside(rays, sx, sy, sz)) {
+      h = cast(rays, sx, sy, sz, ex - sx, ey - sy, ez - sz, false);
       if (h < 0) continue;
-      normalOf(big.rays.tris, h);
-      // how far behind the face it crossed the probe ended, and SKIN more
-      const depth = (found - 1) * (dx * N[0] + dy * N[1] + dz * N[2]) + SKIN;
-      if (depth > deepest) [deepest, part, at, nx, ny, nz] = [depth, big.rays.part[h], p, N[0], N[1], N[2]];
-    }
+      normalOf(rays.tris, h);
+      const along = (ex - sx) * N[0] + (ey - sy) * N[1] + (ez - sz) * N[2];
+      if (along > 0) flip(); // facing back the way it came
+      depth = (1 - found) * Math.abs(along) + SKIN;
+    } else if (inside(rays, ex, ey, ez)) {
+      h = closest(rays, ex, ey, ez);
+      const l = Math.sqrt(C[3]);
+      if (l > 1e-9) for (let k = 0; k < 3; k++) N[k] = (C[k] - seg[o + 3 + k]) / l;
+      else {
+        // on the face itself: its normal, turned away from the middle of the mesh
+        normalOf(rays.tris, h);
+        const b = rays.box;
+        if (N[0] * (ex - (b[0] + b[3]) / 2) + N[1] * (ey - (b[1] + b[4]) / 2) + N[2] * (ez - (b[2] + b[5]) / 2) < 0) flip();
+      }
+      depth = l + SKIN;
+    } else continue; // inside and leaving: let go
+    if (depth > deepest) [deepest, part, at, nx, ny, nz] = [depth, rays.part[h], p, N[0], N[1], N[2]];
   }
   if (part < 0) return null;
   const wx = r[0] * nx + r[3] * ny + r[6] * nz, wy = r[1] * nx + r[4] * ny + r[7] * nz, wz = r[2] * nx + r[5] * ny + r[8] * nz;
   const l = Math.sqrt(wx * wx + wy * wy + wz * wz) || 1;
   const s = bp.scale;
-  // the deepest probe put back out: on the big ship’s surface, at the step’s end
+  // the deepest probe put back out: SKIN off the big ship’s surface, at the step’s end
   const ox = seg[at * 6 + 3] + nx * deepest, oy = seg[at * 6 + 4] + ny * deepest, oz = seg[at * 6 + 5] + nz * deepest;
   return {
     normal: [wx / l + 0, wy / l + 0, wz / l + 0],

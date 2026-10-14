@@ -114,6 +114,19 @@ describe('segmentHit', () => {
     expect(segmentHit(h, pose([0, 0, -3], [0, 0, -3], I, 2), [-5, 0, 0], [5, 0, 0])).toBeNull();
   });
 
+  it('turns the ship by its basis, not its transpose', () => {
+    // a block out along the nose, the ship turned 60° about y: a bolt down that way meets it at 0.8
+    const a = Math.PI / 3;
+    const fwd = { x: Math.sin(a), y: 0, z: Math.cos(a) };
+    const { points, indices } = boxMesh(0.1, 0.1, 0.3);
+    const h = hullOf(packHull({ radius: 1, parts: [{ name: 'p', property: 1 }], shapes: [{ kind: 'mesh', root: 1, points: points.map((v, i) => (i % 3 === 2 ? v + 0.5 : v)), indices }] }));
+    const p = pose([0, 0, 0], [0, 0, 0], basisOf(fwd, { x: 0, y: 1, z: 0 }));
+    const hit = segmentHit(h, p, [fwd.x * 5, 0, fwd.z * 5], [0, 0, 0]);
+    expect(hit.t).toBeCloseTo((5 - 0.8) / 5, 5);
+    close(hit.normal, [fwd.x, 0, fwd.z]);
+    expect(segmentHit(h, p, [-fwd.x * 5, 0, fwd.z * 5], [0, 0, 0])).toBeNull();
+  });
+
   it('takes points as [x, y, z] or { x, y, z }', () => {
     const h = hullOf(boxBin());
     const hit = segmentHit(h, pose([0, 0, 0], [0, 0, 0], I, 2), { x: -5, y: 0, z: 0 }, { x: 5, y: 0, z: 0 });
@@ -175,8 +188,8 @@ describe('hullContact', () => {
     expect(c).not.toBeNull();
     close(c.normal, [0, 0, -1]);
     expect(c.depth).toBeGreaterThan(0);
-    expect(c.depth).toBeCloseTo(1.015, 5); // its leading corners put back on the near face
-    expect(c.at[2]).toBeCloseTo(-0.005, 5);
+    expect(c.depth).toBeCloseTo(1.015 + 0.001, 5); // its leading corners put back on the near face, and SKIN past it
+    expect(c.at[2]).toBeCloseTo(-0.006, 5);
     expect(c.part).toBe(0);
     // stopped short of it, nothing
     expect(hullContact(probe(), pose([0, 0, -1], [0, 0, -0.1]), plate, pose([0, 0, 0]))).toBeNull();
@@ -188,15 +201,15 @@ describe('hullContact', () => {
     const c = hullContact(probe(), pose([8, 0, 0], [12, 0, 0]), plate, pose([10, 0, 0], [10, 0, 0], turned, 4));
     expect(c).not.toBeNull();
     close(c.normal, [-1, 0, 0]);
-    expect(c.depth).toBeCloseTo(12.01 - (10 - 0.02), 4);
+    expect(c.depth).toBeCloseTo(12.01 - (10 - 0.02) + 0.004, 4);
   });
 
   it('puts a ship that arrives inside out by the nearest face', () => {
     const big = hullOf(solidBin(0.5));
     const c = hullContact(probe(), pose([0.9, 0, 0.2]), big, pose([0, 0, 0], [0, 0, 0], I, 2));
     close(c.normal, [1, 0, 0]);
-    expect(c.depth).toBeCloseTo(0.11, 5);
-    expect(c.at[0]).toBeCloseTo(1, 5);
+    expect(c.depth).toBeCloseTo(0.11 + 0.002, 5);
+    expect(c.at[0]).toBeCloseTo(1.002, 5);
     // and one on its way out is let go
     expect(hullContact(probe(), pose([0.9, 0, 0], [1.5, 0, 0]), big, pose([0, 0, 0], [0, 0, 0], I, 2))).toBeNull();
   });
@@ -210,6 +223,141 @@ describe('hullContact', () => {
     expect(c.depth).toBeCloseTo(0.51 + 0.002, 5);
     // a probe leaving through a face is not caught on it
     expect(hullContact(probe(), pose([0, 0, 0], [3, 0, 0]), big, pose([0, 0, 0], [0, 0, 0], I, 2))).toBeNull();
+  });
+
+  it('keeps a ship that rests on a wall out of it, step after step, whether the wall is thinner than a step or than two', () => {
+    // a 12 m fighter at 3.3 m a step against a plate on a 100 m capital (as the review found it)
+    const fighter = hullOf(solidBin(0.5));
+    for (const thick of [3, 5]) {
+      const plate = hullOf(solidBin(0.5, 0.5, thick / 200));
+      const near = -thick / 2;
+      for (const start of [-20, -19.3, -18.05, -17.77]) {
+        let z = start;
+        let met = 0;
+        for (let step = 0; step < 12; step++) {
+          const c = hullContact(fighter, pose([0, 0, z], [0, 0, z + 3.3], I, 12), plate, pose([0, 0, 0], [0, 0, 0], I, 100));
+          z += 3.3;
+          if (c) {
+            met++;
+            close(c.normal, [0, 0, -1]);
+            z -= c.depth;
+          }
+          expect(z + 6).toBeLessThanOrEqual(near + 1e-6); // its nose never inside the plate or past it (the plate is float32)
+        }
+        expect(met).toBeGreaterThan(5);
+      }
+    }
+  });
+
+  it('turns the small ship and the big one each by its own basis, not its transpose', () => {
+    // a solid out along the big ship's nose, turned 60° about y: met along that way, not its mirror
+    const a = Math.PI / 3;
+    const fwd = { x: Math.sin(a), y: 0, z: Math.cos(a) };
+    const out = boxMesh(0.1).points.map((v, i) => (i % 3 === 2 ? v + 0.5 : v));
+    const along = hullOf(packHull({ radius: 1, parts: [{ name: 'p', property: 1 }], shapes: [{ kind: 'hull', root: 0, points: out }, { kind: 'mesh', root: 1, ...boxMesh(0.1) }] }));
+    const big = pose([0, 0, 0], [0, 0, 0], basisOf(fwd, { x: 0, y: 1, z: 0 }), 2);
+    const to = (d, x = fwd.x) => [x * d, 0, fwd.z * d];
+    const c = hullContact(probe(), pose(to(3), to(0.95)), along, big);
+    expect(c).not.toBeNull();
+    close(c.normal, [fwd.x, 0, fwd.z]);
+    expect(hullContact(probe(), pose(to(3, -fwd.x), to(0.95, -fwd.x)), along, big)).toBeNull();
+    // and the small ship's own turn: a rod reaching out along its nose, turned so its tip comes in at the solid
+    const rod = hullOf(packHull({ radius: 1, parts: [], shapes: [{ kind: 'hull', root: 0, points: boxMesh(0.01, 0.01, 0.5).points.map((v, i) => (i % 3 === 2 ? v + 0.5 : v)) }, { kind: 'mesh', root: 1, ...boxMesh(0.01) }] }));
+    const spot = to(1);
+    const from = [spot[0] - 2, 0, spot[2]];
+    const into = [spot[0] - 0.9, 0, spot[2]];
+    expect(hullContact(rod, pose(from, into, basisOf({ x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 })), along, big)).not.toBeNull();
+    expect(hullContact(rod, pose(from, into, basisOf({ x: -1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 })), along, big)).toBeNull();
+  });
+});
+
+describe('hullContact on a hull with no solids', () => {
+  const probe = () => hullOf(solidBin(0.01));
+  const drawnBox = (flip = false) => {
+    const { points, indices } = boxMesh(0.5);
+    const idx = flip ? Uint32Array.from(indices, (_, i) => indices[i - (i % 3) + [0, 2, 1][i % 3]]) : indices;
+    return hullFromTriangles(points, idx);
+  };
+  const at2 = pose([0, 0, 0], [0, 0, 0], I, 2);
+
+  it('pushes a probe sitting still inside it out through the nearest face', () => {
+    for (const big of [drawnBox(), drawnBox(true)]) {
+      const c = hullContact(probe(), pose([0.7, 0.1, -0.2]), big, at2);
+      expect(c).not.toBeNull();
+      close(c.normal, [1, 0, 0]);
+      expect(c.depth).toBeCloseTo(0.31 + 0.002, 5); // the probe farthest from the face, and SKIN
+      expect(c.at[0]).toBeCloseTo(1.002, 5);
+    }
+  });
+
+  it('treats a box with every triangle wound backwards as the box: an entry is caught, an exit is let go', () => {
+    for (const big of [drawnBox(), drawnBox(true)]) {
+      const c = hullContact(probe(), pose([-2, 0, 0], [-0.5, 0, 0]), big, at2);
+      close(c.normal, [-1, 0, 0]);
+      expect(c.depth).toBeCloseTo(0.51 + 0.002, 5);
+      expect(hullContact(probe(), pose([0, 0, 0], [3, 0, 0]), big, at2)).toBeNull();
+      expect(hullContact(probe(), pose([0.5, 0, 0], [0.9, 0.3, 0]), big, at2)).not.toBeNull(); // inside and staying: put out
+      expect(hullContact(probe(), pose([3, 0, 0], [5, 0, 0]), big, at2)).toBeNull();
+    }
+  });
+
+  it('meets a single-sided sheet from either side', () => {
+    const sheet = hullFromTriangles(Float32Array.from([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]), Uint32Array.from([0, 1, 2, 0, 2, 3]));
+    close(hullContact(probe(), pose([0, 0, -1], [0, 0, 1]), sheet, pose([0, 0, 0])).normal, [0, 0, -1]);
+    close(hullContact(probe(), pose([0, 0, 1], [0, 0, -1]), sheet, pose([0, 0, 0])).normal, [0, 0, 1]);
+  });
+});
+
+describe('convex hulls', () => {
+  // a ring of k points at each end of a cylinder (a prism where k is small), turned by `basis`
+  const turned = (k, rad, len, basis) => {
+    const out = new Float32Array(k * 6);
+    for (let e = 0; e < 2; e++) {
+      for (let j = 0; j < k; j++) {
+        const l = [rad * Math.cos((2 * Math.PI * j) / k), rad * Math.sin((2 * Math.PI * j) / k), (e - 0.5) * len];
+        out.set([0, 1, 2].map((i) => basis[i] * l[0] + basis[3 + i] * l[1] + basis[6 + i] * l[2]), (e * k + j) * 3);
+      }
+    }
+    return out;
+  };
+
+  it('holds every point of a 32-sided cylinder and a 24-sided prism, turned many ways, and meets a probe inside', () => {
+    const r = rnd(17);
+    let built = 0;
+    for (const [k, rad, len] of [
+      [32, 0.3, 1],
+      [24, 0.45, 0.4],
+    ]) {
+      for (let n = 0; n < 60; n++) {
+        const basis = n < 30 ? basisOf({ x: Math.sin(n * 0.0654), y: 0, z: Math.cos(n * 0.0654) }, { x: 0, y: 1, z: 0 }) : basisOf({ x: r(), y: r(), z: r() }, { x: r(), y: r(), z: r() }, r() * 3);
+        const points = turned(k, rad, len, basis);
+        const h = hullOf(packHull({ radius: 1, parts: [{ name: 'c', property: 1 }], shapes: [{ kind: 'hull', root: 0, points }, { kind: 'hull', root: 1, points }] }));
+        const pl = h.solids[0].planes;
+        let worst = -Infinity;
+        for (let i = 0; i < points.length; i += 3) for (let j = 0; j < pl.length; j += 4) worst = Math.max(worst, pl[j] * points[i] + pl[j + 1] * points[i + 1] + pl[j + 2] * points[i + 2] - pl[j + 3]);
+        expect(worst).toBeLessThan(1e-4);
+        // closed, and wound outward (the middle, the origin, behind every face)
+        const t = h.rays.tris;
+        const key = (o) => `${t[o]},${t[o + 1]},${t[o + 2]}`;
+        const edges = new Set();
+        for (let q = 0; q < h.rays.count; q++) for (let e = 0; e < 3; e++) edges.add(key(q * 9 + e * 3) + '>' + key(q * 9 + ((e + 1) % 3) * 3));
+        let open = 0;
+        for (const e of edges) if (!edges.has(e.split('>').reverse().join('>'))) open++;
+        expect(open).toBe(0);
+        for (let q = 0; q < h.rays.count; q++) {
+          const o = q * 9;
+          const e1 = [0, 1, 2].map((i) => t[o + 3 + i] - t[o + i]);
+          const e2 = [0, 1, 2].map((i) => t[o + 6 + i] - t[o + i]);
+          const nn = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+          expect(nn[0] * t[o] + nn[1] * t[o + 1] + nn[2] * t[o + 2]).toBeGreaterThan(0);
+        }
+        // a speck sitting near the axis is inside, and put out
+        const near = [basis[6] * len * 0.2, basis[7] * len * 0.2, basis[8] * len * 0.2];
+        expect(hullContact(hullOf(solidBin(0.005)), pose(near), h, pose([0, 0, 0]))).not.toBeNull();
+        built++;
+      }
+    }
+    expect(built).toBe(120);
   });
 });
 
@@ -247,7 +395,6 @@ describe('hullFromTriangles', () => {
     const t0 = performance.now();
     for (const [a, b] of segs) if (segmentHit(h, p, a, b)) hits++;
     const ms = performance.now() - t0;
-    console.log(`hulls: 10,000 segments against 1,000 triangles in ${ms.toFixed(1)} ms (${hits} hits)`);
     expect(hits).toBeGreaterThan(1000);
     expect(ms).toBeLessThan(50);
   });
