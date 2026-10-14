@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Open arena</title>
+    <link rel="icon" href="data:," />
+    <style>
+      html, body { margin: 0; height: 100%; background: #0f1722; color: #e6edf6; font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
+      canvas { width: 100%; height: 100%; display: block; }
+      #hud { position: fixed; top: 12px; left: 12px; right: 12px; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 34, 0.7); pointer-events: none; }
+      #help { position: fixed; bottom: 12px; left: 12px; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 34, 0.7); pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div id="hud"></div>
+    <div id="help">Click to look · W A S D move · click or space to fire · placeholder shapes only</div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
