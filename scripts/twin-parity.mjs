@@ -10,6 +10,7 @@
 //   node scripts/twin-parity.mjs                    every case, the node side on WebGL 2
 //   node scripts/twin-parity.mjs house sky          the cases whose names hold these
 //   GPU=webgpu node scripts/twin-parity.mjs         the node side on WebGPU, where Chromium has an adapter
+//   ANGLE=d3d11 GPU=webgpu node scripts/twin-parity.mjs   the same on Windows, where it has one only on the chip
 //   CHROMIUM=/path/to/chrome, PORT=5198, OUT=dir (default scripts/twin-parity/out: the pictures)
 //
 // Exit 1 when a case errors or throws; the numbers are for the reader (a
@@ -58,7 +59,12 @@ const server = await createServer({
   logLevel: 'error',
 });
 await server.listen();
-const args = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
+// (ANGLE=d3d11 on Windows for the WebGPU leg: Chromium there offers no
+// WebGPU adapter while its GL is SwiftShader's, and three's renderer falls
+// back to WebGL 2 without a word, so the "WebGPU" pictures were WebGL 2's)
+const angle = process.env.ANGLE ?? 'swiftshader';
+const args = ['--use-gl=angle', `--use-angle=${angle}`, '--ignore-gpu-blocklist'];
+if (angle === 'swiftshader') args.push('--enable-unsafe-swiftshader');
 if (webgpu) args.push('--enable-unsafe-webgpu', '--disable-blink-features=WebGPUExperimentalFeatures');
 // (the machine's own Chromium where CHROMIUM is not set: Edge or Chrome on
 // Windows, Playwright's on a Mac, /opt/pw-browsers in the cloud; the
@@ -74,6 +80,8 @@ try {
   await page.goto(`http://localhost:${PORT}/${webgpu ? '?gpu=webgpu' : ''}`);
   await page.waitForFunction(() => window.__out?.ready, null, { timeout: 60000 });
   const names = (await page.evaluate(() => window.names)).filter((n) => !want.length || want.some((w) => n.includes(w)));
+  const backend = await page.evaluate(() => window.backend);
+  console.log(`the node side on ${backend}${webgpu && backend !== 'WebGPU' ? ' (no WebGPU adapter: on Windows, ANGLE=d3d11)' : ''}\n`);
   mkdirSync(OUT, { recursive: true });
   console.log('| Case | Status | PSNR | Off |\n|---|---|---|---|');
   for (const name of names) {

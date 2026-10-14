@@ -19,6 +19,8 @@ const cases = (await import('./cases.js')).default;
 // (?gpu=webgpu draws the node side on WebGPU, where the browser has it; WebGL 2 otherwise)
 const node = new WebGPURenderer({ canvas: document.getElementById('a'), forceWebGL: !location.search.includes('gpu=webgpu'), antialias: false });
 await node.init();
+// (what the node side drew on: three falls back to WebGL 2 where WebGPU has no adapter)
+window.backend = node.backend.isWebGPUBackend ? 'WebGPU' : 'WebGL 2';
 const classic = new THREE.WebGLRenderer({ canvas: document.getElementById('b'), antialias: false, preserveDrawingBuffer: true });
 for (const r of [node, classic]) { r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; }
 const world = () => {
