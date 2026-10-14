@@ -11,7 +11,11 @@
 // example (Hoth: eight walker steps in stage 1, the gates and the hangar
 // points in stage 2, the fuel charges in stage 3).
 //
-//   spawnLogic(root, dir, sub) → { nodes, inputs, events, enables, trackers, unsupported, _source } | null
+//   spawnLogic(root, dir, sub, { targets }?) → { nodes, inputs, events, enables, trackers, unsupported, _source } | null
+//   (targets: ['<layer>:<index>', …], the placements whose Enabled the graph is read back
+//    from instead of the spawn records': a mode part's pickups, scripts/lib/bf2017-level-mode.mjs;
+//    a WaypointTriggerEntityData is then a node of its own, `waypoint`, its path and the
+//    waypoint it names, for the page to fire as a walker passes it)
 //
 // The graph's ids are the map rulebook's own (`<layer>:<object index>`);
 // fields and events keep their names where the djb2-xor hash is a known one
@@ -77,7 +81,7 @@ const ROLES = [
 
 const fieldName = (id) => BY_HASH.get(s32(id)) ?? String(s32(id));
 
-export function spawnLogic(root, dir, sub) {
+export function spawnLogic(root, dir, sub, { targets = null } = {}) {
   const subName = `${dir}${sub}`;
   const asset = follow(root, subName);
   const top = asset?.objects?.[0];
@@ -120,9 +124,10 @@ export function spawnLogic(root, dir, sub) {
     if (s && t) links.set(s.id, [...(links.get(s.id) ?? []), { t, field: c.TargetFieldId }]);
   }
 
-  // the spawn records of the mode's layers that something switches
+  // the spawn records of the mode's layers that something switches (or the placements asked for)
   const prefix = `${sub}_`.toLowerCase();
-  const records = [...byGuid.values()].filter((e) => SPAWNS.has(e.o.$type) && e.layer.toLowerCase().startsWith(prefix) && !IGNORED.test(e.layer));
+  const asked = targets ? new Set(targets) : null;
+  const records = [...byGuid.values()].filter((e) => (asked ? asked.has(e.id) : SPAWNS.has(e.o.$type) && e.layer.toLowerCase().startsWith(prefix)) && !IGNORED.test(e.layer));
   const enables = {};
   const want = [];
   for (const r of records) {
@@ -153,7 +158,7 @@ export function spawnLogic(root, dir, sub) {
     const e = stack.pop();
     if (seen.has(e.id)) continue;
     seen.add(e.id);
-    const kind = KINDS[e.o.$type];
+    const kind = asked && e.o.$type === 'WaypointTriggerEntityData' ? 'waypoint' : KINDS[e.o.$type];
     if (IGNORED.test(e.layer) || IGNORED.test(e.o.$type) || IGNORED.test(e.o.Blueprint?.$asset ?? '')) {
       nodes[e.id] = { type: 'ignored', record: e.o.$type };
       continue;
@@ -165,6 +170,10 @@ export function spawnLogic(root, dir, sub) {
     }
     if (kind === 'prefab') {
       nodes[e.id] ??= nodeOf(kind, e, links);
+      continue;
+    }
+    if (kind === 'waypoint') {
+      nodes[e.id] = waypointOf(e, links, assets);
       continue;
     }
     nodes[e.id] = nodeOf(kind, e, links);
@@ -185,7 +194,21 @@ export function spawnLogic(root, dir, sub) {
   // the escort trackers' walkers: which waypoint triggers count for which walker
   const trackers = {};
   for (const [id, n] of Object.entries(nodes)) if (n.type === 'prefab' && n.name === 'PF_EscortTracker') trackers[id] = escortTracker(assets, evin, links, id);
-  return { nodes, inputs, events, enables, trackers, unsupported: [...unsupported].sort(), _source: `${subName}#PropertyConnections+EventConnections+LinkConnections (back from each spawn record's Enabled)` };
+  return { nodes, inputs, events, enables, trackers, unsupported: [...unsupported].sort(), _source: `${subName}#PropertyConnections+EventConnections+LinkConnections (back from each ${asked ? 'placement asked for' : 'spawn record'}'s Enabled)` };
+}
+
+// a WaypointTriggerEntityData: the path and the waypoint its link names (the
+// VehicleWaypointData's SchematicsNameHash, as the escort tracker's), its out event
+// the one the graph listens to (fired by the page as a walker passes the waypoint)
+const WAYPOINT_OUT = 914475960;
+function waypointOf(e, links, assets) {
+  for (const { t: path, field } of links.get(e.id) ?? []) {
+    if (path.o.$type !== 'AIWaypointsShapeData') continue;
+    const objects = assets.get(path.layer)?.objects ?? [];
+    const at = (path.o.Waypoints ?? []).findIndex((r) => r && s32(objects[r.$ref]?.SchematicsNameHash ?? NaN) === s32(field));
+    return { type: 'waypoint', path: path.id, at, out: fieldName(WAYPOINT_OUT) };
+  }
+  return { type: 'waypoint', path: null, at: -1, out: fieldName(WAYPOINT_OUT) };
 }
 
 // a node's own settings, as the page runs it

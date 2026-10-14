@@ -6,7 +6,7 @@
 // those two; .gitignore's block hides the rest). The work is in scripts/lib/bf2017-level.mjs (pure,
 // tested); this fetches, reads and writes.
 //
-//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--keep m] [--share 1 | low=0.5,…] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]
+//   node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside | --part] [--subs a,b] [--drop m,sub:m] [--keep m] [--share 1 | low=0.5,…] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]
 //
 //   map     the map's folder under web/maps/ (levels/mp/hoth_01)
 //   world   the site's world (hoth): the pack's folder and its credit
@@ -22,6 +22,10 @@
 //           Galactic Assault); weather: the probes' and shadow's (sunny)
 //   inside  an interior: no terrain, its bounds the pieces' extent, and where
 //           the map has ground, only what is buried under it (Hoth's base)
+//   part    a mode's part (a district beside the level's own packs, streamed
+//           with them when the mode is played): as --inside, but what its
+//           sub-levels hold above the ground and under it both (Hoth's
+//           Galactic Assault, `--district ga --subs FantasyBattle --part`)
 //   subs    the sub-levels that are the arena (default: the level's own and Content)
 //   drop    meshes left out, `<mesh>` or `<sub>:<mesh>` (`*` for any run): what the
 //           site draws itself (a space level's corvettes, the battle's), the end
@@ -71,7 +75,7 @@ import { encodePng16 } from './lib/png16.mjs';
 import { writeParts } from './bf2017-level-parts.mjs';
 import { main as writePhysics } from './bf2017-physics.mjs';
 
-const USAGE = 'node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside] [--subs a,b] [--drop m,sub:m] [--keep m] [--share low=0.5 | 0.5] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]';
+const USAGE = 'node scripts/bf2017-level.mjs <map> --world <id> (--spot <x> <z> | --spawn) [--district <id>] [--inside | --part] [--subs a,b] [--drop m,sub:m] [--keep m] [--share low=0.5 | 0.5] [--arena 1024] [--floor y] [--walk 640] [--yaw 0] [--ultra] [--parts] [--dry]';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = join(ROOT, 'lab', 'assets', 'bf2017');
 const PERMISSION = 'From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.';
@@ -287,7 +291,9 @@ async function main(args) {
   const [mapName] = args._;
   const world = args.world;
   const district = typeof args.district === 'string' ? args.district : 'main';
-  const inside = Boolean(args.inside);
+  // (a mode's part is an interior that keeps the outside's pieces too: no ground of its own, no horizon)
+  const part = Boolean(args.part);
+  const inside = Boolean(args.inside) || part;
   let spot = [Number(args.spot), Number(args._[1])];
   if (!mapName || !world || (spot.some(Number.isNaN) && !args.spawn)) {
     console.error(`usage: ${USAGE}`);
@@ -488,7 +494,7 @@ async function main(args) {
     drop,
     keep,
     terrain: terrain?.json ?? null,
-    groundAt: terrain ? (x, z) => LAYERS.image(x, z, terrain.layer) : null,
+    groundAt: terrain && !part ? (x, z) => LAYERS.image(x, z, terrain.layer) : null,
     holeAt: terrain?.holeAt ?? null,
   });
   // (only the meshes the pack still holds, on some tier, ship)
@@ -591,7 +597,7 @@ async function main(args) {
     '',
     `From \`${mapName}\` (Star Wars Battlefront II, 2017, EA DICE; ${PERMISSION.split(';')[0].replace('From EA DICE’s Star Wars Battlefront II (2017), ', '')}). Written by \`node scripts/bf2017-level.mjs ${process.argv.slice(2).join(' ')}\`; do not edit by hand.`,
     '',
-    `- ${pack.counts.arena} instances in the arena (±${arena} m), ${pack.counts.horizon} beyond it (the horizon), ${record ? `${pack.counts.buried} ${inside ? 'left out above the ground (the world outside: its own pack)' : 'left out under the ground (an interior: its own pack, `--inside`)'}` : 'no terrain: no ground layer, the instances alone'}, ${pack.counts.cells} cells of ${pack.json.cell} m`,
+    `- ${pack.counts.arena} instances in the arena (±${arena} m), ${pack.counts.horizon} beyond it (the horizon), ${record && !part ? `${pack.counts.buried} ${inside ? 'left out above the ground (the world outside: its own pack)' : 'left out under the ground (an interior: its own pack, `--inside`)'}` : part ? 'a mode’s part: above the ground and under it, no ground layer of its own' : 'no terrain: no ground layer, the instances alone'}, ${pack.counts.cells} cells of ${pack.json.cell} m`,
     ...(drop.length ? [`- left out: ${drop.join(', ')}`] : []),
     `- proxies by their shaders, never drawn (materials.jsonl: SS_Shadowmesh casts shadows only, SS_VirtualTextureOnly paints the terrain's virtual texture only): ${meshes.filter((m) => /proxy|virtual texture/.test(m.missing ?? '')).map((m) => `${lastOf(m.name).replace(/_mesh\.glb$/, '')} (${m.missing})`).join(', ') || 'none'}`,
     `- never drawn as themselves (the NEVER rule: lighting proxies, light blockers, occluders, invisible collision, shadow-only meshes, destruction stages): ${neverOf(map, { subs }).map((n) => `${n.name} ×${n.count}`).join(', ') || 'none'}`,
