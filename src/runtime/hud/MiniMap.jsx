@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { fitCanvas } from './canvas';
+import { paced } from './clock';
 import { MINIMAP } from './hud';
 
 // A minimap: a disc on glass under the HUD's top row on the right (at
@@ -21,15 +22,23 @@ export default function MiniMap({ size = MINIMAP.size, draw, onOpen = null, hz =
   const drawRef = useRef(draw);
   drawRef.current = draw;
 
+  // Drawn on ./clock's paced beat (a timer between draws, the draw in a
+  // frame: not a second requestAnimationFrame chain woken every display
+  // beat), in a box measured when the canvas changes size, not on every
+  // draw: a layout read ten times a second, under a HUD React had just
+  // changed, made the browser lay the page out there and then (the
+  // every-world hand-off's performance item 4).
   useEffect(() => {
-    let raf = 0;
-    let last = -Infinity;
-    const tick = (t) => {
-      raf = requestAnimationFrame(tick);
-      if (t - last < 1000 / hz) return;
-      last = t;
-      const c = canvas.current;
-      const box = fitCanvas(c);
+    const c = canvas.current;
+    let box = null;
+    const measure = () => {
+      box = fitCanvas(c);
+    };
+    const sizes = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    sizes?.observe(c);
+    const tick = () => {
+      // (no observer: measured each draw, as before)
+      if (!sizes || !box) measure();
       const ctx = box && c.getContext('2d');
       if (!ctx) return;
       ctx.setTransform(box.s, 0, 0, box.s, 0, 0);
@@ -40,8 +49,11 @@ export default function MiniMap({ size = MINIMAP.size, draw, onOpen = null, hz =
       if (root.current && root.current.dataset.empty !== empty) root.current.dataset.empty = empty;
       if (caption.current && typeof text === 'string' && caption.current.textContent !== text) caption.current.textContent = text;
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const stop = paced(hz, tick);
+    return () => {
+      stop();
+      sizes?.disconnect();
+    };
   }, [hz]);
 
   return (
