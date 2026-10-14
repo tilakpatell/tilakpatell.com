@@ -36,9 +36,12 @@
 //   object is forgotten without it.
 //
 // Each landing asks for a frame (`invalidate`), so a still world shows
-// what it held back. Only on a WebGPU backend: the WebGL 2 backend's
-// pipelines link in the frame either way, and its draw never waits on a
-// promise.
+// what it held back. On both of the node renderer's backends: three's WebGL
+// 2 backend links a program asynchronously too when it is given a list
+// (KHR_parallel_shader_compile, polled a frame at a time; without the
+// extension it links at once, as before), and its TSL is built the same way.
+// Unguarded there, Battlefront at High took 154 s to come in and its worst
+// frames were 5.5 s on the desktop's RTX 5090 (the performance lanes' P5).
 //
 // guardPipelines(renderer, { invalidate, run }) → { pending(), held(), dispose() } | null
 // guardOf(renderer) → the guard on a renderer, or null (a world's waiting
@@ -95,7 +98,6 @@ export function rendererAs(renderer, pass) {
 export function guardPipelines(renderer, { invalidate = null, run = RUN } = {}) {
   const pipelines = renderer?._pipelines;
   if (!pipelines || typeof pipelines.getForRender !== 'function') return null;
-  if (renderer.backend?.isWebGLBackend) return null;
   if (pipelines.__guard) return pipelines.__guard;
   const origGet = pipelines.getForRender;
   // (the draw's own entry, after three has swapped in a pass's override

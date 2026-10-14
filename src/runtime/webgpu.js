@@ -162,7 +162,7 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
     throw new Error('a fallback adapter: no GPU under WebGPU');
   }
   // (no frame waits for a pipeline: lib/three/pipelineGuard, the node
-  // renderer's frame guard; a WebGL 2 backend is left alone by it)
+  // renderer's frame guard, on WebGPU and on WebGL 2 alike)
   const guard = guardPipelines(renderer, { invalidate });
   // (three's renderer, asked for WebGPU and finding no adapter, quietly
   // draws on its WebGL 2 backend: that's the nodes-webgl kind, whatever

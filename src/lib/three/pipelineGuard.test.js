@@ -310,8 +310,18 @@ describe('guardPipelines', () => {
     expect(renderer._bindings.deleteForRender).toBe(three);
   });
 
-  it('does nothing on the WebGL 2 backend or the classic renderer, and can be undone', () => {
-    expect(guardPipelines(fakeRenderer({ webgl: true }))).toBeNull();
+  // (three's WebGL 2 backend links a program asynchronously too when given a
+  // list, KHR_parallel_shader_compile, and builds its TSL the same way:
+  // unguarded, Battlefront at High took 154 s to come in on it, its worst
+  // frames 5.5 s, on the desktop's RTX 5090)
+  it('guards the node renderer on its WebGL 2 backend too', () => {
+    const r = fakeRenderer({ webgl: true });
+    const origGet = r._pipelines.getForRender;
+    expect(guardPipelines(r)).not.toBeNull();
+    expect(r._pipelines.getForRender).not.toBe(origGet);
+  });
+
+  it('does nothing on the classic renderer, and can be undone', () => {
     expect(guardPipelines({})).toBeNull();
     expect(guardPipelines(null)).toBeNull();
     const r = fakeRenderer();
