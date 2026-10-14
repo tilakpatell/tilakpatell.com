@@ -21,6 +21,7 @@ import { cutFor, loadWalrusBody, packUrls } from '../../../lib/three/walrus';
 import { ktx2Loader, loadGltf } from '../../../lib/three/gltf';
 import { pixelRatio } from '../../../lib/device';
 import { quiet, releaseContext } from '../../../lib/three/renderer';
+import { shownLoop } from '../../../lib/shownLoop';
 
 // where the pieces stand: src/data/bf2017/stage.json (the level's own
 // placings, from the dome's foot; the hero at its middle)
@@ -168,17 +169,18 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
     if (alive) renderer.render(scene, camera);
   }
   // (still under reduced motion: one frame a change; else the idle breathes
-  // and the stage turns a little toward the drag)
-  let raf = 0;
+  // and the stage turns a little toward the drag, only while the canvas is in
+  // view and the tab showing: lib/shownLoop. A second GL context beside the
+  // runtime's, it drew every frame while the Collection was open, its tab
+  // put away or not)
   let last = performance.now();
   const tick = (now) => {
-    raf = requestAnimationFrame(tick);
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     mixer?.update(dt);
     draw();
   };
-  if (!reduced) raf = requestAnimationFrame(tick);
+  const loop = reduced ? null : shownLoop(canvas, tick);
   let drag = null;
   const down = (e) => (drag = e.clientX);
   const move = (e) => {
@@ -199,7 +201,7 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
     resize,
     dispose() {
       alive = false;
-      cancelAnimationFrame(raf);
+      loop?.stop();
       canvas.removeEventListener('pointerdown', down);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);

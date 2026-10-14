@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { createMeshyCast } from '../portal/meshyCast';
 import { pixelRatio } from '../../../lib/device';
+import { shownLoop } from '../../../lib/shownLoop';
 import { quiet, releaseContext } from '../../../lib/three/renderer';
 import { BODIES, castOf, gearWorn } from './looks';
 import { dressColors } from './dress';
@@ -119,11 +120,11 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
 
-  let raf = 0;
+  // (drawn only while the canvas is in view and the tab showing,
+  // lib/shownLoop: a closed or scrolled-away wardrobe draws nothing)
   let last = performance.now();
   const t0 = last;
   const frame = (now) => {
-    raf = requestAnimationFrame(frame);
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     yaw += spin * dt;
@@ -131,7 +132,7 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
     figure?.update?.((now - t0) / 1000, 0, 0);
     renderer.render(scene, camera);
   };
-  raf = requestAnimationFrame(frame);
+  const loop = shownLoop(canvas, frame);
 
   return {
     async show(look) {
@@ -168,7 +169,7 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
       if (changed && !reduced) wave();
     },
     dispose() {
-      cancelAnimationFrame(raf);
+      loop.stop();
       sizing.disconnect();
       canvas.removeEventListener('pointerdown', down);
       canvas.removeEventListener('pointermove', move);
