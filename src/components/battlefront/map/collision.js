@@ -10,6 +10,7 @@
 //   createLevelCollision({ pack, loadBin, physics, tier, deps })
 //     → { add(key, bin, band) → Promise, drop(key), update(ms = 4, at = the player's [x, y, z]) → bodies added,
 //         sweep(from, dir, len, r) → metres along dir to the first shape | null,
+//         floor(x, y, z, reach = 3) → the height of the first shape or ground under a point (the export's frame) | null,
 //         stats(), dispose() }
 //   createPartsCollision({ parts: { outside: { pack, loadBin }, inside: { pack, loadBin } | null, mode: { pack, loadBin, mode, match } | null }, physics, tier, deps })
 //     → the same face, for a level, its interior (map/level.js's `inner`) and
@@ -57,6 +58,7 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
   // (map/level.js's toPack, with the height and for a direction too)
   const turn = (x, z) => [x * c + z * s, -x * s + z * c];
   const near = new Set();
+  const down = new RAPIER.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 });
   let gone = false;
 
   return {
@@ -88,6 +90,15 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
       const [dx, dz] = turn(dir[0], dir[2]);
       const h = world.castShape({ x: px, y: from[1] - oy, z: pz }, I, { x: dx * len, y: dir[1] * len, z: dz * len }, balls.get(r), 0, 1, true, undefined, ARM_GROUPS);
       return h ? h.time_of_impact * len : null;
+    },
+    floor(x, y, z, reach = 3) {
+      if (gone) return null;
+      const [px, pz] = turn(x - ox, z - oz);
+      down.origin.x = px;
+      down.origin.y = y - oy;
+      down.origin.z = pz;
+      const h = world.castRay(down, reach, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+      return h ? y - h.timeOfImpact : null;
     },
     // (the ground's heights in the pack's frame, for the walk: a heightfield a 64 m square in each near cell)
     setTerrain: (heightAt, opts) => lp.setTerrain(heightAt, opts),
@@ -134,6 +145,8 @@ export function createPartsCollision({ parts, physics, tier = 'high', deps = {} 
     drop: (key, part) => of(part)?.drop(key),
     // (the frame's slice of time shared between the parts, the nearest cells first)
     update: (ms = 4, at = null) => all.reduce((n, c) => n + c.update(ms / all.length, at), 0),
+    // (one engine for every part: the first part's ray sees them all)
+    floor: (x, y, z, reach) => all[0]?.floor(x, y, z, reach) ?? null,
     // (bodies still waiting to go into the world: the walk holds a soldier in the air until they are in)
     queued: () => all.reduce((n, c) => n + (c.stats()?.queued ?? 0), 0),
     sweep(from, dir, len, r) {
