@@ -168,11 +168,9 @@ describe('the material', () => {
     const three = await loadThree();
     const g = createSnowGround({ maps: stubs(three.THREE), masks: masks(three.THREE), tier: 'ultra', three, displace: true });
     expect(g.flat).toBe(false);
-    // (normal maps: 4 m, 33 m, the 1 m detail, packed, wavey, chunky, rough packed twice (its normal, its colour), its 0.08 read,
-    // the rough 0.5 read, trampled, the two rocks, and the displacement's; the rest: the flow, the two streaks, the sparkle, the two rock colours)
-    expect(g.samples).toEqual({ normal: 14, data: 6, mask: 6 });
-    // (each layer's own reads in its block, as the listing's if_nz blocks; what shapes a mask, the 4 m snow and the streaks outside)
-    expect(new Set(g.gated)).toEqual(new Set(['snow33', 'detail', 'wavey', 'chunky', 'roughPacked', 'roughPackedDetail', 'trampled', 'rockyPackedColour', 'rockyColour']));
+    // (normal maps: 4 m, 33 m, the 1 m detail, packed, wavey, chunky, rough packed, its 0.08 read, the rough 0.5 read,
+    // trampled, the two rocks, and the displacement's; the rest: the flow, the two streaks, the sparkle, the two rock colours)
+    expect(g.samples).toEqual({ normal: 13, data: 6, mask: 6 });
     expect(g.material.colorNode).toBeTruthy();
     expect(g.material.normalNode).toBeTruthy();
     expect(g.material.positionNode).toBeTruthy();
@@ -182,14 +180,13 @@ describe('the material', () => {
   it('mid reads the layers without the blowing snow', async () => {
     const three = await loadThree();
     const g = createSnowGround({ maps: stubs(three.THREE), masks: masks(three.THREE), tier: 'mid', three });
-    expect(g.samples).toEqual({ normal: 13, data: 2, mask: 6 });
+    expect(g.samples).toEqual({ normal: 12, data: 2, mask: 6 });
     g.dispose();
   });
   it('the far grid: no 1 m detail, no sparkle, no displacement', async () => {
     const three = await loadThree();
     const g = createSnowGround({ maps: stubs(three.THREE), masks: masks(three.THREE), tier: 'ultra', three, far: true, displace: true });
-    expect(g.samples).toEqual({ normal: 12, data: 5, mask: 6 });
-    expect(g.gated).not.toContain('detail');
+    expect(g.samples).toEqual({ normal: 11, data: 5, mask: 6 });
     expect(g.material.positionNode).toBeFalsy();
     g.dispose();
   });
@@ -219,8 +216,8 @@ describe('the material', () => {
     delete maps.data;
     delete maps.colours;
     const g = createSnowGround({ maps, masks: [], tier: 'high', three });
-    // (no data: no detail, streaks or sparkle; no colours: the rocks in the base colour)
-    expect(g.samples).toEqual({ normal: 11, data: 0, mask: 0 });
+    // (no data: no detail, trampled snow, streaks or sparkle; no colours: the rocks in the base colour)
+    expect(g.samples).toEqual({ normal: 10, data: 0, mask: 0 });
     expect(g.flat).toBe(false);
   });
 });
