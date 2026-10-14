@@ -174,6 +174,6 @@ describe('a markdown row for the evidence table', () => {
   });
 
   it('marks a journey with no play as stopped', () => {
-    expect(mdRow('fly', { route: '/fly', machine: 'x', drawnOn: null, quality: '', readyS: null, late: null, play: null, failed: 'timeout' })).toBe('| /fly | x | - | - | - | stopped: timeout | | | | | | | |');
+    expect(mdRow('avengers', { route: '/avengers', machine: 'x', drawnOn: null, quality: '', readyS: null, late: null, play: null, failed: 'timeout' })).toBe('| /avengers | x | - | - | - | stopped: timeout | | | | | | | |');
   });
 });

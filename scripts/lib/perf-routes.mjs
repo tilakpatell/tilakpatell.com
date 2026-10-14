@@ -6,14 +6,14 @@
 //
 // (the galaxy’s is a system, Tatooine’s: /galaxy alone sends the visitor
 // to the last system flown, and the flown galaxy is what its port is
-// about; /fly’s is Hoth, the planet its journey defaults to. The lanes’
-// /galaxy/hoth/surface is not here: it sends the visitor to Battlefront’s
-// Hoth now, src/pages/GalaxyLanding.jsx, the world measured first)
+// about. The lanes’ /galaxy/hoth/surface is not here: it sends the visitor
+// to Battlefront’s Hoth now, src/pages/GalaxyLanding.jsx, the world
+// measured first)
 
 export const HEAVY = [
   { journey: 'battlefront', route: '/battlefront/hoth' },
   { journey: 'galaxy', route: '/galaxy/tatooine' },
-  { journey: 'fly', route: '/fly/hoth' },
+  { journey: 'fly', route: '/fly/hoth' }, // planet flight (Hoth, the planet its journey defaults to)
   { journey: 'universe', route: '/universe' },
   { journey: 'middleEarth', route: '/middle-earth' },
   { journey: 'c137', route: '/c-137' },
