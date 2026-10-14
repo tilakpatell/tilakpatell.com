@@ -17,7 +17,7 @@ const SKY_R = 40000; // m: inside the camera's far plane, round the camera
 export const FOG = { near: 1500, far: 21000 }; // m: the far ground melts into the sky before the last leaves end
 
 // the sky: the horizon colour below, a gradient to the zenith above
-function skyDome(low, high) {
+export function skyDome(low, high) {
   const material = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
