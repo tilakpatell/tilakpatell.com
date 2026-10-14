@@ -15,67 +15,100 @@ describe('probeFor', () => {
   });
 });
 
-const cube = (name) => Object.assign(new THREE.CubeTexture(), { name });
+const cube = (name, n = 4) => {
+  const c = new THREE.CubeTexture([0, 1, 2, 3, 4, 5].map(() => new THREE.DataTexture(new Uint16Array(n * n * 4), n, n, THREE.RGBAFormat, THREE.HalfFloatType)));
+  c.name = name;
+  return c;
+};
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe('createProbes', () => {
-  it('starts on the fallback, crossfades into a volume’s cube over FADE and swaps in place', async () => {
+  it('starts on the fallback, fades a volume’s cube in over FADE, its faces copied into a slot in place; the node never changes', async () => {
     const scene = { environment: cube('sky'), environmentNode: null };
     const loaded = [];
+    const made = {};
     const probes = await createProbes(scene, [hall, room], async (v, i) => {
       loaded.push(i);
-      return cube(`probe${i}`);
+      return (made[i] ??= cube(`probe${i}`));
     });
+    // (the first volume's cube read at once: its faces say the slots' size)
+    expect(loaded).toEqual([0]);
     const node = scene.environmentNode;
     expect(node).not.toBe(null);
+    probes.setScales({ probe: 2, fallback: 1 });
+    expect(probes.state).toMatchObject({ weight: 0, probe: 0, fallback: 1 });
     probes.update([14, 2, 14], 0);
     await flush();
-    expect(loaded).toEqual([1]);
+    expect(loaded).toEqual([0, 1]);
     expect(probes.current).toBe(1);
     probes.update([14, 2, 14], FADE / 2);
-    expect(probes.fade).toBeCloseTo(0.5);
+    expect(probes.state.weight).toBeCloseTo(0.5);
+    expect(probes.state.probe).toBeCloseTo(1);
     probes.update([14, 2, 14], FADE);
-    expect(probes.fade).toBe(0);
-    // (the same node throughout: nothing recompiles)
-    expect(scene.environmentNode).toBe(node);
-    // back out to the hall, then back in: the room's cube is not loaded twice
+    expect(probes.state.weight).toBe(1);
+    const into = probes.state.front;
+    expect(probes.state.shows[into]).toBe(1);
+    // across into the hall: its cube into the other slot, crossfaded over FADE
     probes.update([30, 2, 30], 0);
     await flush();
+    expect(probes.state.toward).toBe(1 - into);
+    expect(probes.state.shows[1 - into]).toBe(0);
+    probes.update([30, 2, 30], FADE / 2);
+    expect(probes.fade).toBeCloseTo(0.5);
+    probes.update([30, 2, 30], FADE);
+    expect(probes.state.front).toBe(1 - into);
+    // (the same node throughout: nothing recompiles, nothing the materials bind is swapped)
+    expect(scene.environmentNode).toBe(node);
+    // back out of both: the volumes' share eases out, the fallback stays
+    probes.update([50, 2, 50], 0);
+    await flush();
+    probes.update([50, 2, 50], FADE);
+    expect(probes.state).toMatchObject({ weight: 0, probe: 0, fallback: 1 });
+    // and back into the room: its cube is not loaded twice
     probes.update([14, 2, 14], 0);
     await flush();
-    expect(loaded).toEqual([1, 0]);
+    expect(loaded).toEqual([0, 1]);
     await probes.dispose();
     expect(scene.environmentNode).toBe(null);
   });
-  it('has the scene’s render bundles recorded again at a swap and the frame after, so a bundled level sees the new cube', async () => {
+
+  it('records the scene’s render bundles again where what the materials bind changes, and not at a crossing', async () => {
     const bundle = { isBundleGroup: true, needsUpdate: false };
     const scene = { environment: cube('sky'), environmentNode: null, traverse: (fn) => [scene, bundle].forEach(fn) };
     const probes = await createProbes(scene, [hall, room], async (v, i) => cube(`probe${i}`));
-    probes.update([50, 2, 50], 0); // (the start, on the fallback)
+    probes.update([50, 2, 50], 0); // (the node made: recorded, and the frame after)
     expect(bundle.needsUpdate).toBe(true);
     bundle.needsUpdate = false;
     probes.update([50, 2, 50], 0);
-    expect(bundle.needsUpdate).toBe(true); // (the frame after)
+    expect(bundle.needsUpdate).toBe(true);
     bundle.needsUpdate = false;
-    await flush();
     probes.update([50, 2, 50], 0);
-    expect(bundle.needsUpdate).toBe(false); // (nothing swapped: nothing recorded)
+    expect(bundle.needsUpdate).toBe(false);
+    // (a crossing copies faces of the slots' size into a slot: nothing bound changes)
     probes.update([14, 2, 14], 0);
     await flush();
     probes.update([14, 2, 14], 0);
-    expect(bundle.needsUpdate).toBe(true); // (the room's cube in)
+    probes.update([14, 2, 14], 0);
+    expect(bundle.needsUpdate).toBe(false);
+    // (a new sky: its PMREM is another texture, bound again)
+    probes.setFallback(cube('sky2'));
+    probes.update([14, 2, 14], 0);
+    expect(bundle.needsUpdate).toBe(true);
   });
+
   it('a quick crossing shows only the last volume asked for', async () => {
     const scene = { environment: null };
     let release;
     const slow = new Promise((r) => (release = r));
-    const probes = await createProbes(scene, [hall, room], (v, i) => (i === 0 ? slow : Promise.resolve(cube('room'))));
+    const probes = await createProbes(scene, [hall, room], (v, i) => (i === 0 ? slow : Promise.resolve(cube('room'))), { size: 4 });
     probes.update([30, 2, 30], 0);
     probes.update([14, 2, 14], 0);
     await flush();
     release(cube('hall'));
     await flush();
     expect(probes.current).toBe(1);
+    expect(probes.state.shows).toContain(1);
+    expect(probes.state.shows).not.toContain(0);
   });
 });
 

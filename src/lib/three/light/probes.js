@@ -5,8 +5,8 @@
 // probes, `textures/levels/`). The one the visitor stands in (the smallest
 // that holds them) is the environment, crossfaded over FADE seconds when
 // they cross into another: `scene.environmentNode` is a mix of two
-// pmremTexture nodes whose cubes are swapped in place, so a crossing
-// changes two textures and a uniform and compiles nothing. PMREMNode
+// pmremTexture nodes over two slot cubes whose faces are copied in place,
+// so a crossing changes their data and a uniform and compiles nothing. PMREMNode
 // prefilters a plain cube itself on the node renderer, so `loadCube(volume)`
 // hands back the HDR cube as loaded, not a PMREM (lane G's probeEnv.js
 // prefilters with the classic renderer's PMREMGenerator and keeps one cube
@@ -53,14 +53,17 @@
 // probesPerFrame(lastMs, budgetMs, current, most = Infinity) → n   (pure)
 // recentre(pos, spacing) → the cascade's centre   (pure)
 // runsOf(indices) → [{ start, count }]; probeIndex(x, y, z, res) → index   (pure)
-// createProbes(scene, volumes, loadCube, { fallback, fade }) → Promise<{ update(pos, dt, { nearest }), current, setFallback(tex), setScales({ probe, fallback }), dispose }>
-//   (setScales: what each side of the crossfade is multiplied by, by what it shows: a volume's cube, in the
-//   game's units, by the light's gameToSite; the fallback, the site's own sky, by the sky the view still has)
+// createProbes(scene, volumes, loadCube, { fallback, fade, size }) → Promise<{ update(pos, dt, { nearest }), current, fade, state,
+//     setFallback(tex), setScales({ probe, fallback }), dispose }>
+//   (setScales: a volume's cube, in the game's units, by the light's gameToSite; the fallback, the site's own
+//   sky, by the sky the view still has: the environment is the fallback's share plus the volumes')
 //   A level drawn by the GPU scene (gpuScene/draws.js) draws its static groups from one render bundle,
-//   which keeps the bind groups it was recorded with: a cube swapped into the crossfade after the
-//   bundle was recorded never reached the level's materials (the hangars drew with no environment
-//   at all, whatever its scale). So each swap has the scene's bundles recorded again, at the swap and
-//   the frame after (once the node has made the new cube's PMREM).
+//   which keeps the bind groups it was recorded with: a cube swapped into a pmremTexture node after
+//   the bundle was recorded never reached the level's materials (the hangars drew with no environment
+//   at all, whatever its scale; a bundle recorded again caught the swap only sometimes). So the
+//   crossfade runs between two slots, cubes made once whose faces are copied in place: their PMREMs
+//   are made again into the same targets, and nothing the materials bind changes. Where it does
+//   (a new fallback, a slot resized), the scene's bundles are recorded again, then and the frame after.
 // createProbeGrid(scene, renderer, bounds, res = PROBE_GRID, { cubemapSize, far, budget: { ms, gpuTime }, cascades })
 //   → Promise<{ grid, bake(), update(camera, dt), stats() → { probesPerFrame, ms, sweeps, cascades }, dispose }>
 
@@ -136,85 +139,137 @@ export function runsOf(indices) {
 // LightProbeGrid's order: along x, then z, then y (its bake's `start`)
 export const probeIndex = (x, y, z, res) => x + z * res[0] + y * res[0] * res[2];
 
-export async function createProbes(scene, volumes, loadCube, { fallback = scene.environment, fade = FADE } = {}) {
-  const { tsl } = await loadThree();
+export async function createProbes(scene, volumes, loadCube, { fallback = scene.environment, fade = FADE, size = null, renderer = null } = {}) {
+  const { THREE, tsl } = await loadThree();
   const cubes = new Map(); // volume → its cube, once loaded
   let base = fallback;
-  let a = null; // the pmremTexture nodes, made once there is a texture to start them on
-  let b = null;
-  const t = tsl.uniform(0);
-  const sa = tsl.uniform(1); // (each side's scale, by what it shows)
-  const sb = tsl.uniform(1);
-  const scales = { probe: 1, fallback: 1 };
-  const scaleOf = (i) => (i < 0 ? scales.fallback : scales.probe);
-  let aShows = -1;
-  let bShows = -1;
-  let want = -1;
-  let showing = -1;
-  let fading = false;
-  let disposed = false;
-  const before = scene.environmentNode;
-  // (the bundles to record again: at a swap and the frame after)
-  let rebind = 0;
-  const swapped = () => (rebind = 2);
-
-  const start = (tex, i) => {
-    a = tsl.pmremTexture(tex);
-    b = tsl.pmremTexture(tex);
-    aShows = bShows = i;
-    sa.value = sb.value = scaleOf(i);
-    scene.environmentNode = tsl.mix(a.mul(sa), b.mul(sb), t);
-    swapped();
+  // The two slots the crossfade runs between: cubes made once, at the volumes'
+  // face size, whose faces are copied in place (`size`: the faces' width; else
+  // the first volume's cube, loaded now, says it). Their PMREMs are made into
+  // the same targets each time, so the textures the materials bind never change.
+  let faceSize = size;
+  if (!faceSize && volumes?.length) {
+    const first = await Promise.resolve(loadCube(volumes[0], 0)).catch(() => null);
+    if (first) cubes.set(0, Promise.resolve(first));
+    faceSize = widthOf(first) ?? 64;
+  }
+  const blank = () => {
+    const n = faceSize ?? 1;
+    const d = new THREE.DataTexture(new Uint16Array(n * n * 4), n, n, THREE.RGBAFormat, THREE.HalfFloatType);
+    d.needsUpdate = true;
+    return d;
   };
-  if (base) start(base, -1);
-
-  const show = (i, tex) => {
-    if (!tex) return;
-    if (!a) {
-      start(tex, i);
-      showing = i;
+  const slot = () => {
+    const c = new THREE.CubeTexture([0, 1, 2, 3, 4, 5].map(blank));
+    Object.assign(c, { type: THREE.HalfFloatType, format: THREE.RGBAFormat, colorSpace: THREE.LinearSRGBColorSpace, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false });
+    c.needsUpdate = true;
+    return c;
+  };
+  const slots = volumes?.length ? [slot(), slot()] : null;
+  // (with the renderer: each slot's PMREM made here, into a target of its own the node reads as it is, so
+  // the texture the materials bind is that target's from their first build on; made again a moment
+  // after each copy, since a PMREM drawn while its pipelines are still being made is left black)
+  const gen = slots && renderer?.backend && THREE.PMREMGenerator ? new THREE.PMREMGenerator(renderer) : null;
+  const targets = gen ? slots.map((c) => gen.fromCubemap(c)) : null;
+  const nodes = slots ? slots.map((c, k) => tsl.pmremTexture(targets ? targets[k].texture : c)) : null;
+  const again = []; // [{ k, at }]: the slots' PMREMs to make again
+  let clock = 0;
+  const remake = (k) => {
+    if (!gen) {
+      slots[k].needsPMREMUpdate = true;
       return;
     }
-    // (a crossing mid-fade keeps whichever cube shows more, rather than
-    // jumping back to where the fade began)
-    if (fading && t.value >= 0.5) {
-      a.value = b.value;
-      aShows = bShows;
-      sa.value = sb.value;
-    }
-    b.value = tex;
-    bShows = i;
-    sb.value = scaleOf(i);
-    t.value = 0;
-    fading = true;
-    showing = i;
+    gen.fromCubemap(slots[k], targets[k]);
+  };
+  const f = base ? tsl.pmremTexture(base) : null;
+  const t = tsl.uniform(0); // 0: slot 0 shows, 1: slot 1
+  const sp = tsl.uniform(0); // the slots' scale: the light's gameToSite × how much a volume shows
+  const sf = tsl.uniform(1); // the fallback's
+  const scales = { probe: 1, fallback: 1 };
+  let weight = 0; // (how much a volume shows: 0 where none does, eased over FADE)
+  const shows = [-1, -1];
+  let front = 0; // (the slot the fade rests on)
+  let toward = 0;
+  let want = -1;
+  let showing = -1;
+  let disposed = false;
+  const before = scene.environmentNode;
+  // (the bundles to record again: at a change of the textures bound, and the frame after)
+  let rebind = 0;
+  const swapped = () => (rebind = 2);
+  const parts = [f ? f.mul(sf) : null, nodes ? tsl.mix(nodes[0], nodes[1], t).mul(sp) : null].filter(Boolean);
+  if (parts.length) {
+    scene.environmentNode = parts.length > 1 ? parts[0].add(parts[1]) : parts[0];
     swapped();
+  }
+  const scale = () => {
+    sp.value = scales.probe * weight;
+    sf.value = scales.fallback;
+  };
+  scale();
+
+  // a cube's faces into a slot, in place (a cube of another size: the slot's PMREM made anew, so bound again)
+  const copyInto = (k, cube) => {
+    const c = slots[k];
+    if (widthOf(cube) !== widthOf(c)) swapped();
+    c.images = cube.images.slice(0, 6);
+    c.needsUpdate = true;
+    remake(k);
+    for (const dt of [0.25, 1, 3]) again.push({ k, at: clock + dt });
+  };
+
+  const show = (i, tex) => {
+    if (!nodes) return;
+    showing = i;
+    if (i < 0 || !tex) return;
+    // (a crossing mid-fade keeps whichever slot shows more and fades on from it)
+    if (t.value !== front) front = t.value >= 0.5 ? 1 : 0;
+    if (shows[front] === i) {
+      toward = front;
+      return;
+    }
+    const back = 1 - front;
+    copyInto(back, tex);
+    shows[back] = i;
+    toward = back;
+    // (the first volume shown comes in by the volumes' share alone: the slots were empty before it)
+    if (weight === 0) {
+      t.value = back;
+      front = back;
+    }
   };
 
   async function pick(i) {
-    if (i < 0) return show(-1, base);
-    if (!cubes.has(i)) cubes.set(i, loadCube(volumes[i], i));
+    if (i < 0) return show(-1, null);
+    if (!cubes.has(i)) cubes.set(i, Promise.resolve(loadCube(volumes[i], i)));
     const tex = await cubes.get(i);
     if (!disposed && want === i) show(i, tex);
   }
 
   return {
     update(pos, dt, { nearest = false } = {}) {
+      clock += dt;
+      for (let n = again.length - 1; n >= 0; n--) {
+        if (again[n].at > clock) continue;
+        remake(again[n].k);
+        again.splice(n, 1);
+      }
       const { i } = probeFor(volumes, pos, { nearest });
       if (i !== want) {
         want = i;
         pick(i);
       }
-      if (fading) {
-        t.value = Math.min(1, t.value + dt / fade);
-        if (t.value >= 1) {
-          a.value = b.value;
-          aShows = bShows;
-          sa.value = sb.value;
-          t.value = 0;
-          fading = false;
-          swapped();
-        }
+      const step = fade > 0 ? dt / fade : 1;
+      // (the crossfade between the slots; the slot it reaches is the front)
+      if (t.value !== toward) {
+        t.value = toward > t.value ? Math.min(toward, t.value + step) : Math.max(toward, t.value - step);
+        if (t.value === toward) front = toward;
+      }
+      // (the volumes' share: in as one shows, out where none does)
+      const goal = showing >= 0 && shows[toward] >= 0 ? 1 : 0;
+      if (weight !== goal) {
+        weight = goal > weight ? Math.min(goal, weight + step) : Math.max(goal, weight - step);
+        scale();
       }
       if (rebind > 0) {
         rebind--;
@@ -230,27 +285,38 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
     get fade() {
       return t.value;
     },
+    // (for a check: the slots, the volume each holds, the volumes' share)
+    get state() {
+      return { shows: shows.slice(), front, toward, t: t.value, weight, probe: sp.value, fallback: sf.value };
+    },
     // a new fallback (the sky's environment after a weather change)
     setFallback(tex) {
       base = tex;
-      if (showing < 0) show(-1, tex);
+      if (f && tex && f.value !== tex) {
+        f.value = tex;
+        swapped();
+      }
     },
-    setScales({ probe = scales.probe, fallback = scales.fallback } = {}) {
+    setScales({ probe = scales.probe, fallback: fb = scales.fallback } = {}) {
       scales.probe = probe;
-      scales.fallback = fallback;
-      sa.value = scaleOf(aShows);
-      sb.value = scaleOf(bShows);
+      scales.fallback = fb;
+      scale();
     },
     async dispose() {
       disposed = true;
       scene.environmentNode = before;
-      a?.dispose();
-      b?.dispose();
+      nodes?.forEach((n) => n.dispose());
+      f?.dispose();
+      for (const c of slots ?? []) c.dispose();
+      for (const t of targets ?? []) t.dispose();
+      gen?.dispose();
       for (const p of cubes.values()) (await p)?.dispose?.();
       cubes.clear();
     },
   };
 }
+
+const widthOf = (cube) => cube?.images?.[0]?.image?.width ?? cube?.images?.[0]?.width ?? null;
 
 // bounds: { min, max } (the pack's arena); res: probes per axis
 export async function createProbeGrid(scene, renderer, bounds, res = PROBE_GRID, { cubemapSize = 8, far = 600, budget = null, cascades = null } = {}) {

@@ -216,7 +216,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   if (sky) scene.add(sky.mesh);
   let env = sky && canDraw ? sky.envTexture(renderer) : null;
   let envK = params.gameToSite; // (the exposure the sky's environment was baked at)
-  const probes = volumes?.length && loadCube ? await createProbes(scene, volumes, loadCube, { fallback: env }) : null;
+  const probes = volumes?.length && loadCube ? await createProbes(scene, volumes, loadCube, { fallback: env, renderer: canDraw && backend !== 'webgl' ? renderer : null }) : null;
   if (!probes && env) scene.environment = env;
   // (the interior's grade: its LUT read beside the weather's and mixed by the patch's visibility,
   // as the game's colour-cube builder weighs one cube a VE, findings 02's g_weights)
