@@ -99,6 +99,8 @@ describe('a capital', () => {
     expect(c.site.hull).toMatchObject({ source: 'site', record: 'Gameplay/Vehicles/Corvette/CorvetteCR90/CorvetteCR90_01', health: [500, 1, 0], properties: [206, 206, null], squad: true, damageMultiplier: 1 });
     expect(c.site.hull._source).toMatch(/CorvetteCR90_01#PartComponentData\[\d+\]\.HealthStates$/);
     expect(c.site.hull.parts).toEqual([partName(CR90, 0, 2), partName(CR90, 1, 2)]);
+    // (the hull part each state names: a hit spends the chain only on it; the last state the whole object)
+    expect(c.site.hull.states).toEqual(['corvettecr90_01#0', 'corvettecr90_01#0', null]);
     expect(c.site.hull.why).toMatch(/^the site maps the war’s hull to .* because /);
     // (the CR90 has no objective for the war's generators, bridge or reactor: the war keeps its own)
     for (const name of SITE_NAMES.slice(1)) expect(c.site[name]).toMatchObject({ source: 'site', record: null, parts: [] });
@@ -205,6 +207,23 @@ describe('src/data/bf2017/damage.json', () => {
     expect(lucrehulk.site.reactor).toMatchObject({ health: [450, 204, 102, 0], parts: ['reactor'] });
     expect(destroyer.site.reactor).toMatchObject({ health: [300, 0], squad: true });
     expect(destroyer.site['gen-port'].parts).toEqual(['stardestroyer_deflectorshield_01#0', 'stardestroyer_deflectorshield_01#1']);
+  });
+
+  it('gates a site entry on the part its state names where its record is a kit module, and only there', () => {
+    const { venator, moncal, lucrehulk, destroyer } = damage.capitals;
+    // (the deflector's base, #1, does not spend the dome's state 0)
+    expect(destroyer.site['gen-port'].states).toEqual(['stardestroyer_deflectorshield_01#0', 'stardestroyer_deflectorshield_01#1']);
+    expect(moncal.site['gen-port'].states).toEqual(['mc80_largenodule_03#1', 'mc80_largenodule_03#0', 'mc80_largenodule_03#2']);
+    // (a site hull's own part, and a level's object outside the kit, take any routed hit)
+    expect(lucrehulk.site.reactor.states).toBeUndefined();
+    expect(venator.site.bridge.states).toBeUndefined();
+    expect(damage._notes.site).toMatch(/one without takes any hit on its `parts`/);
+    for (const [k, c] of Object.entries(damage.capitals))
+      for (const [id, s] of Object.entries(c.site)) {
+        if (!s.states) continue;
+        expect(s.states.length, `${k} ${id}`).toBe(s.health.length);
+        for (const p of s.states) if (p !== null) expect(s.parts, `${k} ${id} ${p}`).toContain(p);
+      }
   });
 
   it('names, on a game hull, only parts that hull has; on a site hull, the part of the name', () => {

@@ -36,7 +36,9 @@
 //   records): site[name] for the war's part names (`hull` and universe/
 //   wars.js's SUBSYSTEMS ids), each the game record whose numbers it takes
 //   ({ record, objective, health, properties, squad, … }, or record null
-//   where the game has none) and the hull `parts` a hit on it is; and
+//   where the game has none) and the hull `parts` a hit on it is (with
+//   `states`, the hull part each state names, where the record is a kit
+//   module: the part a hit must be on to spend it); and
 //   turretParts, the hull parts each turret record stands for.
 // - stand[kind]: { as, why }: the game kind a kind the game never had takes
 //   its numbers from.
@@ -213,7 +215,7 @@ const NOTES = {
   capital: 'A capital’s part (a static model’s) loses multiplier(bolt.property, part.property) × damage when that reaches the threshold, then × (1 + n × squadBonus.perMate) where `squad` (n the shooter’s squadmates who hit it within squadBonus.cooldown seconds, at most 1 unless eachMate) and × damageMultiplier; a friend’s bolt does nothing unless friendlyFire (findings/62 §4).',
   chain: 'A part starts at health[0] and is spent down its states: a hit never takes it past the next state’s health, where it is held and moves to that state, and the rest of the hit goes back through the same rule (the threshold checked again, so a rest under it is dropped; the squad bonus and damageMultiplier applied again); in the last state it falls to 0. Only a hit on the part its state names (`states`, null for the whole object) spends it, and a state whose part is no longer the part hit sends its `children` FLT_MAX (findings/62 §4). A chain whose first state is one more than its second on a part no bolt hurts (an MC80 nodule’s 201 then 200, a Venator bridge’s 700 then 699) cannot be started by a bolt; what moves it on was not read.',
   blast: 'A blast (a bolt’s `blast`, its ExplosionEntityData) reaches a vehicle through its health component’s slot 43 (FUN_141bea1c0), which applies the record’s damage without a grid multiplier; that was read only so far (findings/62 §3), and whether a blast is held to the grid on a static model was not: `blast` is the record’s, its property beside it, for the damage rules to apply as they rule.',
-  site: 'The `site` and `turretParts` blocks are the site’s choices (source: site), not records: which game record each of the war’s part names takes (its numbers then the record’s, with their sources) and which hull parts a turret record stands for, each with why. A hull part no site entry names counts as the hull.',
+  site: 'The `site` and `turretParts` blocks are the site’s choices (source: site), not records: which game record each of the war’s part names takes (its numbers then the record’s, with their sources) and which hull parts a turret record stands for, each with why. A hull part no site entry names counts as the hull. An entry with `states` (its record a kit module) spends its chain only on a hit on the hull part its current state names, as the game does (findings/62 §4); one without takes any hit on its `parts`: a site hull’s own part (the Lucrehulk’s, the Arquitens’, a stand-in’s subsystems), or a level’s object outside the kit (the Venator’s bridge and engines, the MC80’s engines), whose states name that object’s own parts, not the hull’s.',
   precedence: 'A hit on a part a `site` entry names spends that entry’s chain (the war’s part), not the part’s own chain in `parts`, which stays as the record has it; a hit on a part `turretParts` names is a hit on that turret.',
   assumed: 'Assumed, as findings/62 leaves it open: a hit’s part is the Havok instance tag’s bits 0–15 (the exporter’s reading of hknpShape::m_userData, PhysicsExport.cs:367, which the data fits); the game’s code that keeps it was not followed.',
 };
@@ -559,7 +561,9 @@ function siteRow(root, kind, id, { files, inside }, ctx) {
         const n = ctx.header(/_physics_win32$/i.test(f) ? String(f).toLowerCase() : physicsKey(f))?.parts ?? 0;
         return Array.from({ length: n }, (_, i) => partName(f, i, n));
       });
-  return { ...out, ...chainRow(r, c), parts: [...new Set(parts)] };
+  // (the hull part each state names, where the record is a kit module: a hit spends the chain only on the part its current state names, findings/62 §4)
+  const states = own && !SITE_OVER_GAME[kind] ? { states: c.indices.map((i) => (i === null ? null : partName(own, i, r.h.parts))) } : {};
+  return { ...out, ...chainRow(r, c), ...states, parts: [...new Set(parts)] };
 }
 
 // A capital: its modules' parts, its turrets, the war's names on them and
