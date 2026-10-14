@@ -173,7 +173,7 @@ export const LAYER_DEBUG = [
 
 export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, far = false, displace = false, dynamic = null, debug = null }) {
   const { THREE, tsl } = three;
-  const { uniform, texture, vec2, vec3, vec4, float, int, select, positionWorld, positionGeometry, normalGeometry, normalWorldGeometry, modelWorldMatrix, cameraPosition, transformNormalToView, mix, smoothstep, normalize, time } = tsl;
+  const { uniform, texture, vec2, vec3, vec4, float, int, select, positionWorld, positionGeometry, normalGeometry, normalWorldGeometry, modelWorldMatrix, cameraPosition, transformNormalToView, mix, smoothstep, normalize, time, Fn, If, dFdx, dFdy } = tsl;
   const material = new THREE.MeshStandardNodeMaterial({ metalness: 0 });
   material.name = `snow-ground:${far ? 'far' : 'near'}:${tier}`;
   const colour = uniform(new THREE.Color(...SNOW.colour));
@@ -217,24 +217,44 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
     samples.mask += 2;
   }
 
-  // the reads
+  // The reads. The listing reads unconditionally what shapes a mask (the
+  // 4 m snow, Packed_04_N's blue, the rough map's alpha at 0.5, the rocks'
+  // heights) and the streaks; each layer's own maps sit in a block entered
+  // only where its weight passes 0.01 (`lt …, l(0.01), w; if_nz`), so a
+  // pixel pays for the layers it has. The gated reads take the world's
+  // derivatives from outside their block (a sample in non-uniform flow
+  // needs explicit gradients: WGSL's rule, and Firefox enforces it).
   const snow4 = read('snow4');
-  const n4 = tangent(snow4);
-  const z4 = zOf(n4);
-  const n33 = tangent(read('snow33'));
-  const detail = far ? null : read('detail');
   const packed = read('packed');
-  const wavey = read('wavey');
-  const chunky = read('chunky');
-  const roughPacked = read('roughPacked');
-  const roughDetail = read('roughPackedDetail');
   // (t8's alpha and t18 are the rough map at 0.5/m: one read)
   const rough5 = read('trampledDetail');
-  const trampled = read('trampled');
   const rockyPacked = read('rockyPacked');
   const rocky = read('rocky');
-  const rockyPackedC = read('rockyPackedColour');
-  const rockyC = read('rockyColour');
+  const gated = new Set();
+  const gate = (key, uv = null) => {
+    const r = READS[key];
+    const at = mapAt(r.map);
+    if (!at || !has(at.kind)) return null;
+    samples[at.kind === 'normals' || /_n$/.test(r.map) ? 'normal' : 'data']++;
+    gated.add(key);
+    // (made inside its block: a node shared by two blocks would be declared in the first)
+    return (gx, gy) => {
+      const c = cyclesOf(r.cycles);
+      const node = texture(maps[at.kind], uv ?? xz.mul(c)).grad(gx.mul(c), gy.mul(c));
+      return SNOW_FILES[at.slug].layers ? node.depth(int(at.layer)) : node;
+    };
+  };
+  const snow33 = gate('snow33');
+  const detail = far ? null : gate('detail');
+  const wavey = gate('wavey');
+  const chunky = gate('chunky');
+  const roughPacked = gate('roughPacked');
+  const roughDetail = gate('roughPackedDetail');
+  const trampled = gate('trampled');
+  // (layer 3's colour, the rough packed map's alpha, is read again in the colour's block)
+  const roughPackedColour = gate('roughPacked');
+  const rockyPackedC = gate('rockyPackedColour');
+  const rockyC = gate('rockyColour');
 
   // the blowing snow's streaks: the flow's offset, the two reads, the listing's term
   let streak = float(0);
@@ -274,27 +294,49 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
     rest = rest.sub(w[k + 1]);
   }
   w[0] = rest;
+  const OPEN = 0.01; // the listing's: a layer's block runs where its weight passes this
 
-  // each layer's normal in the shader's frame, not yet unit
+  // a block's frame: the shared values held in variables before any block,
+  // the world's derivatives for the gated reads
+  const frame = () => {
+    const v = { w: w.map((x) => x.toVar()), gx: dFdx(xz).toVar(), gy: dFdy(xz).toVar() };
+    v.n4 = tangent(snow4).toVar();
+    v.z4 = zOf(v.n4).toVar();
+    return v;
+  };
   const nWith = (xy, z) => vec3(xy.x, xy.y, z);
-  const nd = detail ? tangent(detail) : vec2(0, 0);
-  const np = packed ? tangent(packed) : null;
-  const nc = chunky ? tangent(chunky) : null;
-  const nt = trampled ? tangent(trampled) : null;
-  const nr5 = rockyPacked ? tangent(rockyPacked) : null;
-  const nr6 = rocky ? tangent(rocky) : null;
-  const normals = [
-    nWith(n4.add(nd).add(n33), z4),
-    np ? nWith(np.add(n4).add(wavey ? tangent(wavey) : vec2(0, 0)), zOf(np)) : nWith(n4, z4),
-    nc ? nWith(nc.mul(LAYERS.chunkyGain).add(n4), z4) : nWith(n4, z4),
-    roughPacked ? nWith(tangent(roughPacked).add(n4).add(roughDetail ? tangent(roughDetail).mul(LAYERS.roughPackedDetailGain) : vec2(0, 0)), z4) : nWith(n4, z4),
-    nt ? nWith(nt.add(rough5 ? tangent(rough5) : vec2(0, 0)), zOf(nt)) : nWith(n4, z4),
-    nr5 ? nWith(nr5.add(n4), zOf(nr5)) : nWith(n4, z4),
-    nr6 ? nWith(nr6, zOf(nr6)) : nWith(n4, z4),
-    vec3(0, 0, 1),
-  ];
-  let bend = normals[0].mul(w[0]);
-  for (let k = 1; k < 8; k++) bend = bend.add(normals[k].mul(w[k]));
+
+  // the normal: each layer's in the shader's frame, weighted, its own reads in its block
+  const bend = Fn(() => {
+    const f = frame();
+    const { n4, z4, gx, gy } = f;
+    const acc = vec3(0, 0, 0).toVar();
+    const add = (k, body) =>
+      If(f.w[k].greaterThan(OPEN), () => {
+        acc.addAssign(body().mul(f.w[k]));
+      });
+    add(0, () => nWith(n4.add(detail ? tangent(detail(gx, gy)) : vec2(0, 0)).add(snow33 ? tangent(snow33(gx, gy)) : vec2(0, 0)), z4));
+    add(1, () => {
+      const np = packed ? tangent(packed) : null;
+      return np ? nWith(np.add(n4).add(wavey ? tangent(wavey(gx, gy)) : vec2(0, 0)), zOf(np)) : nWith(n4, z4);
+    });
+    add(2, () => (chunky ? nWith(tangent(chunky(gx, gy)).mul(LAYERS.chunkyGain).add(n4), z4) : nWith(n4, z4)));
+    add(3, () => (roughPacked ? nWith(tangent(roughPacked(gx, gy)).add(n4).add(roughDetail ? tangent(roughDetail(gx, gy)).mul(LAYERS.roughPackedDetailGain) : vec2(0, 0)), z4) : nWith(n4, z4)));
+    add(4, () => {
+      const nt = trampled ? tangent(trampled(gx, gy)) : null;
+      return nt ? nWith(nt.add(rough5 ? tangent(rough5) : vec2(0, 0)), zOf(nt)) : nWith(n4, z4);
+    });
+    add(5, () => {
+      const nr5 = rockyPacked ? tangent(rockyPacked) : null;
+      return nr5 ? nWith(nr5.add(n4), zOf(nr5)) : nWith(n4, z4);
+    });
+    add(6, () => {
+      const nr6 = rocky ? tangent(rocky) : null;
+      return nr6 ? nWith(nr6, zOf(nr6)) : nWith(n4, z4);
+    });
+    acc.addAssign(vec3(0, 0, 1).mul(f.w[7]));
+    return acc;
+  })();
 
   // each layer's colour and smoothness (texelOf), and the dynamic mask's S where one is given
   const base = vec3(colour);
@@ -315,13 +357,21 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
     under = vec3(g, g.mul(one.sub(k.mul(1 - LAYERS.brown[1]))), g.mul(one.sub(k.mul(1 - LAYERS.brown[2]))));
   }
   const touched = (c) => (S ? mix(under, c, S.clamp(0, 1)) : c);
-  const c0 = touched(base);
-  const c3 = roughPacked ? touched(vec3(roughPacked.w)) : c0;
-  const c5 = rockyPackedC ? rockyPackedC.rgb : base;
-  const c6 = rockyC ? touched(rockyC.rgb.mul(LAYERS.rockyColour)) : c0;
-  const cols = [c0, c0, c0, c3, c0, c5, c6, base];
-  let albedo = cols[0].mul(w[0]);
-  for (let k = 1; k < 8; k++) albedo = albedo.add(cols[k].mul(w[k]));
+  // (layers 0, 1, 2, 4 and 7 are the base colour, which no read gates; 3, 5 and 6 read theirs in their blocks)
+  const albedo = Fn(() => {
+    const f = frame();
+    const { gx, gy } = f;
+    const c0 = touched(base).toVar();
+    const acc = c0.mul(f.w[0].add(f.w[1]).add(f.w[2]).add(f.w[4])).add(base.mul(f.w[7])).toVar();
+    const add = (k, body) =>
+      If(f.w[k].greaterThan(OPEN), () => {
+        acc.addAssign(body().mul(f.w[k]));
+      });
+    add(3, () => (roughPackedColour ? touched(vec3(roughPackedColour(gx, gy).w)) : c0));
+    add(5, () => (rockyPackedC ? rockyPackedC(gx, gy).rgb : base));
+    add(6, () => (rockyC ? touched(rockyC(gx, gy).rgb.mul(LAYERS.rockyColour)) : c0));
+    return acc;
+  })();
   material.colorNode = albedo.clamp(0, 1);
   if (debug === 'layers') {
     let shown = vec3(...LAYER_DEBUG[0]).mul(w[0]);

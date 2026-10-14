@@ -199818,20 +199818,20 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/terrain/masks.1408.ktx2": {
-    "hash": "4c1b1c8ebbe9",
-    "bytes": 2313814,
+    "hash": "c3fe5dbfdc9b",
+    "bytes": 1793657,
     "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.1408.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/terrain/masks.352.ktx2": {
-    "hash": "a7c5d9feb5bd",
-    "bytes": 234577,
+    "hash": "e5197eed4dce",
+    "bytes": 181404,
     "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.352.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/terrain/masks.704.ktx2": {
-    "hash": "e7b2d6fa578c",
-    "bytes": 725967,
+    "hash": "d4b30fc8b025",
+    "bytes": 564677,
     "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.704.ktx2",
     "tier": "pack"
   },
@@ -199842,20 +199842,20 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.1024.ktx2": {
-    "hash": "7d7c5fe50d15",
-    "bytes": 1778638,
+    "hash": "39d0e98f4be1",
+    "bytes": 412092,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.2048.ktx2": {
-    "hash": "a1af1c050926",
-    "bytes": 5649706,
+    "hash": "a8397ada4139",
+    "bytes": 1506811,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.2048.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.512.ktx2": {
-    "hash": "1cf338ecda2d",
-    "bytes": 466418,
+    "hash": "728ba03de62a",
+    "bytes": 129384,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.512.ktx2",
     "tier": "pack"
   },
@@ -199866,26 +199866,26 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.512.ktx2": {
-    "hash": "aed8e258fda1",
-    "bytes": 1140933,
+    "hash": "7491044012a8",
+    "bytes": 1111628,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.1024.ktx2": {
-    "hash": "fff1ff3a54b2",
-    "bytes": 10150936,
+    "hash": "05f15d213d5f",
+    "bytes": 8872818,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.2048.ktx2": {
-    "hash": "95dc5e673972",
-    "bytes": 39572549,
+    "hash": "533e8f03cb01",
+    "bytes": 34724689,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.2048.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.512.ktx2": {
-    "hash": "f411e6b7fef7",
-    "bytes": 2576988,
+    "hash": "71cac2e3f9fe",
+    "bytes": 2252745,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.512.ktx2",
     "tier": "pack"
   },
