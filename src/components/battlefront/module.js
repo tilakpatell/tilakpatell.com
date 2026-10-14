@@ -19,7 +19,7 @@
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
-// 'nav' (the battle's navgrid, for a check),
+// 'nav' (the battle's navgrid, for a check), 'place' [x, z] (the player's soldier stood there on the sim's ground: a check's walk of the map),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
 // create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
@@ -70,6 +70,7 @@ import { litWith, picturesOf } from './picture.js';
 import { headroom, upscaleKind } from '../../lib/three/light/post.js';
 import { headroomAt } from '../../runtime/quality.js';
 import { loadSettings, optionsFor, roundFor, sideCap } from '../../lib/battlefront/instantAction.js';
+import { heightAt as navHeight, walkable } from '../../lib/battlefront/nav.js';
 
 export const HUD_HZ = 8; // snapshots a second to the page
 export const PLAYER_TEAM = 2; // the attackers on Hoth, the Empire (maps/hoth.stages.json)
@@ -594,6 +595,16 @@ export default {
           case 'nav':
             // (the battle's navgrid itself, for a check of a way over it)
             return sim.nav;
+          case 'place': {
+            // (a check's walk of the map: the player's soldier stood at [x, z] on the sim's ground, and what the ground and the mask say there)
+            const b = body();
+            if (!b || !sim.nav) return { ok: false, why: b ? 'no nav' : 'not deployed' };
+            const [x, z] = arg;
+            b.at[0] = x;
+            b.at[2] = z;
+            b.at[1] = navHeight(sim.nav, x, z);
+            return { ok: true, at: b.at.slice(), terrain: level.heightAt(x, z), walkable: walkable(sim.nav, x, z) };
+          }
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':
