@@ -709,8 +709,8 @@ function stepMode(sim) {
     emit(sim, e);
     if (e.type === 'objective' && e.kind === 'capture') for (const o of ga.objectives) if (o.name === e.name) for (const id of o.inside.attack) sim.stats.get(id).captures++;
     if (e.type === 'armed') for (const o of ga.objectives) if (o.name === e.name) for (const i of o.interactions) sim.stats.get(i.id).arms++;
-    // (a gate opened: the way through its doorway joins the navmesh's two sides, the field and the base)
-    if (e.type === 'gate' && e.state === 'opened' && sim.nav?.mesh) doorway(sim.nav, ga.gates.list.find((g) => g.id === e.id));
+    // (a gate's leaves wide enough apart for a soldier: the way through its doorway joins the navmesh's two sides)
+    if (e.type === 'gate' && e.state === 'passable' && sim.nav?.mesh) doorway(sim.nav, ga.gates.list.find((g) => g.id === e.id));
   }
   if (ga.stage !== stage) {
     addWalkers(sim);

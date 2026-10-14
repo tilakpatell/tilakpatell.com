@@ -1,4 +1,4 @@
-// A mode's interact gates, run as the game runs them (bf2-re findings/58):
+// A mode's interact gates, run as the game runs them (bf2-re findings/59):
 // Hoth's two hangar blast doors (the map rulebook's `gates`, read from the
 // mode sub-world's graph by scripts/lib/bf2017-rulebook-gates.mjs). A gate is
 // locked until the walker on its route finishes it; the first walker home
@@ -11,16 +11,19 @@
 // scales 3× (its TransformMultiplier's In1), so 6 m in the world. Hoth's
 // panels are set in the wall beside each door, facing the field: 4.3 m from
 // the nearest floor in front of them, 0.6 m from the base's floor behind.
-// The gate's leaves then slide open over a second and a half, the door
-// controller's interpolator (PF_AutomaticDoor_Controller: Sine, EaseOut,
-// Duration 1.5). The row's `interact` carries the numbers; these are the
-// button's own where a row has none. Pure.
+// The gate's leaves then slide apart, the door controller's interpolator
+// (PF_AutomaticDoor_Controller: Sine, EaseOut) over the gate's own run:
+// Hoth's sets 70 s and 8.96 m a leaf where the controller says 1.5 s. Its
+// way through is open to a soldier once the leaves' gap, less their closed
+// overlap, passes one (`passable`: the doorway the navmesh then joins). The
+// row's `interact` and `door` carry the numbers; these are the prefabs' own
+// where a row has none. Pure.
 //
 //   createGates(rows) → gates
 //   arrive(gates, path) → events   a walker finished its route (path: its AIWaypointsShapeData id)
 //   tick(gates, dt, soldiers) → events   soldiers: [{ at: [x, y, z], alive, interact }]
-//     events: { type: 'gate', id, state: 'unlocked' | 'barred' | 'opened' | 'open' }
-//   openness(gate) → 0…1 (the leaves' slide, eased)     gateOf(gates, id)
+//     events: { type: 'gate', id, state: 'unlocked' | 'barred' | 'opened' | 'passable' | 'open' }
+//   openness(gate) → 0…1 (the leaves' slide, eased)     gap(gate) → m between the leaves     gateOf(gates, id)
 //   reachOf(gate) → m      canUse(gate, at) → whether a soldier at [x, y, z] can hold its panel
 
 // m: the interaction's distance on its own transform (PF_Interact_Button's WorldInteractionEntityData.InteractionMaxDistance)
@@ -31,11 +34,13 @@ export const SCALE = 3;
 export const ANGLE = 90;
 // s: the hold (PF_Interact_Button's StopWatchEntityData.TriggerOnTime)
 export const HOLD = 1;
-// s: the leaves' slide (PF_AutomaticDoor_Controller's FloatInterpolatorEntityData.Duration, Sine EaseOut)
+// s: the leaves' slide where the gate sets none (PF_AutomaticDoor_Controller's FloatInterpolatorEntityData.Duration, Sine EaseOut)
 export const OPEN_SECONDS = 1.5;
+// m: the gap a soldier passes, its capsule's width (DefaultSoldierPhysics#CharacterPhysicsData.PhysicalRadius 0.3, twice)
+export const PASS = 0.6;
 
 export function createGates(rows = []) {
-  return { list: rows.map((r) => ({ ...r, state: 'locked', hold: 0, t: 0 })) };
+  return { list: rows.map((r) => ({ ...r, state: 'locked', hold: 0, t: 0, passable: false })) };
 }
 
 export const gateOf = (gates, id) => gates.list.find((g) => g.id === id) ?? null;
@@ -84,17 +89,30 @@ export function tick(gates, dt, soldiers = []) {
       }
     } else if (g.state === 'opening') {
       g.t += dt;
-      if (g.t >= OPEN_SECONDS - 1e-9) {
-        g.state = 'open';
-        out.push({ type: 'gate', id: g.id, state: 'open' });
+      const done = g.t >= secondsOf(g) - 1e-9;
+      if (done) g.state = 'open';
+      if (!g.passable && (done || gap(g) >= PASS - 1e-9)) {
+        g.passable = true;
+        out.push({ type: 'gate', id: g.id, state: 'passable' });
       }
+      if (done) out.push({ type: 'gate', id: g.id, state: 'open' });
     }
   }
   return out;
 }
 
+const secondsOf = (g) => g.door?.seconds ?? OPEN_SECONDS;
+
 export function openness(g) {
   if (g.state === 'open') return 1;
   if (g.state !== 'opening') return 0;
-  return Math.sin((Math.PI / 2) * Math.min(1, g.t / OPEN_SECONDS));
+  // (the game's Sine EaseOut: 1 − f(1 − t) of the ease-in 1 − cos(tπ/2), sin(tπ/2))
+  return Math.sin((Math.PI / 2) * Math.min(1, g.t / secondsOf(g)));
+}
+
+// the leaves' gap: each slid its way by the eased run, less what they overlap shut (none known: shut till open)
+export function gap(g) {
+  const { slide, overlap } = g.door ?? {};
+  if (!slide || overlap === null || overlap === undefined) return g.state === 'open' ? Infinity : 0;
+  return Math.max(0, 2 * slide * openness(g) - overlap);
 }

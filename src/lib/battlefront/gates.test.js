@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import hoth from '../../data/bf2017/maps/hoth.json';
-import { ANGLE, HOLD, OPEN_SECONDS, REACH, SCALE, arrive, canUse, createGates, gateOf, openness, reachOf, tick } from './gates.js';
+import { ANGLE, HOLD, OPEN_SECONDS, PASS, REACH, SCALE, arrive, canUse, createGates, gap, gateOf, openness, reachOf, tick } from './gates.js';
 
 const rows = () => hoth.rows.gates;
 const WEST = 'FantasyBattle_Logic:91';
@@ -54,7 +54,14 @@ describe('Hoth’s hangar gates', () => {
     expect(canUse(w, [189.5, 359.27, -1572.42])).toBe(false);
   });
 
-  it('opens after a second’s hold within reach of its panel, then slides open over 1.5 s', () => {
+  it('reads the leaves’ run off the gate: 70 s and 8.96 m a leaf where the door controller says 1.5 s, Sine EaseOut', () => {
+    const w = gateOf(createGates(rows()), WEST);
+    expect(w.door).toMatchObject({ seconds: 70, slide: 8.96, curve: 'Sine', mode: 'EaseOut' });
+    // (shut, the leaves reach past the middle by their meshes: 1.018 m and 0.997 m)
+    expect(w.door.overlap).toBeCloseTo(2.015, 2);
+  });
+
+  it('opens after a second’s hold within reach of its panel, a soldier’s way through 6.5 s in, wide open at 70 s', () => {
     const g = createGates(rows());
     arrive(g, 'FantasyBattle_Logic:123');
     const w = gateOf(g, WEST);
@@ -64,10 +71,27 @@ describe('Hoth’s hangar gates', () => {
     expect(w.state).toBe('unlocked');
     opened = tick(g, 0.2, [holder(by)]);
     expect(opened).toEqual([{ type: 'gate', id: WEST, state: 'opened' }]);
-    tick(g, OPEN_SECONDS / 2, []);
+    // (the leaves 2 m apart overlap still: no way through till they have slid that and a soldier more)
+    expect(tick(g, 6.3, [])).toEqual([]);
+    expect(gap(w)).toBeLessThan(PASS);
+    expect(tick(g, 0.4, [])).toEqual([{ type: 'gate', id: WEST, state: 'passable' }]);
+    expect(gap(w)).toBeGreaterThanOrEqual(PASS);
+    tick(g, 35 - 6.7, []);
     expect(openness(w)).toBeCloseTo(Math.sin(Math.PI / 4), 5);
-    expect(tick(g, OPEN_SECONDS, [])).toEqual([{ type: 'gate', id: WEST, state: 'open' }]);
+    expect(tick(g, 35, [])).toEqual([{ type: 'gate', id: WEST, state: 'open' }]);
     expect(openness(w)).toBe(1);
+  });
+
+  it('a gate whose row has no run slides over the controller’s own 1.5 s, passable once open', () => {
+    const g = createGates(rows().map((r) => ({ ...r, door: null })));
+    arrive(g, 'FantasyBattle_Logic:123');
+    const w = gateOf(g, WEST);
+    tick(g, 1.1, [holder(w.panel.at.map((v, i) => (i === 2 ? v + 3 : v)))]);
+    expect(w.state).toBe('opening');
+    expect(tick(g, OPEN_SECONDS, [])).toEqual([
+      { type: 'gate', id: WEST, state: 'passable' },
+      { type: 'gate', id: WEST, state: 'open' },
+    ]);
   });
 
   it('a hold broken off, or out of reach, starts again', () => {

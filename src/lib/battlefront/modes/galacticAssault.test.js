@@ -186,7 +186,8 @@ describe('Galactic Assault', () => {
     for (let t = 0; t < 1.2; t += 0.05) opened.push(...tick(ga, 0.05, at));
     expect(opened).toContainEqual({ type: 'gate', id: 'FantasyBattle_Logic:91', state: 'opened' });
     expect(spawnSets(ga).attack).toEqual(expect.arrayContaining(inside));
-    run(ga, 1.6);
+    // (the gate's own run: 70 s, gates.js)
+    run(ga, 70);
     expect(view(ga).gates.find((g) => g.id === 'FantasyBattle_Logic:91')).toMatchObject({ state: 'open', open: 1 });
   });
 });

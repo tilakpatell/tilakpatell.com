@@ -143,11 +143,14 @@ function orders(c, o, role) {
   return task(c, `o${i}`, { at, spot: at, role, radius: HOLD_RADIUS, ...(c.ways && o.type !== 'escort' ? { stays: true } : {}) });
 }
 
-// whether an objective stands behind an unlocked gate still shut: no way to it on the navmesh from the
-// gate's outer side (Hoth's hangar posts behind its blast doors). Kept until the mesh's links change (a
+// a gate the attackers wait at: unlocked, or opening and its leaves not yet a soldier apart (gates.js)
+const waiting = (g) => g.panel && (g.state === 'unlocked' || (g.state === 'opening' && !g.passable));
+
+// whether an objective stands behind a gate still shut: no way to it on the navmesh from the gate's
+// outer side (Hoth's hangar posts behind its blast doors). Kept until the mesh's links change (a
 // doorway opened).
 function shutBehind(c, o) {
-  const gate = c.nav?.mesh ? (c.ga.gates?.list ?? []).find((g) => g.state === 'unlocked' && g.panel) : null;
+  const gate = c.nav?.mesh ? (c.ga.gates?.list ?? []).find(waiting) : null;
   const stand = gate ? gateStand(c.nav, gate) : null;
   if (!stand) return false;
   c.behind ??= new Map();
@@ -174,7 +177,7 @@ function attackPlan(c, live, alive) {
     else if (o.type === 'carry' && !o.done) options.push({ o, w: WEIGHTS.arm, role: 'take' });
     else if (o.type === 'uplink') options.push({ o, w: WEIGHTS.uplink, role: 'hold' });
   }
-  for (const g of c.ga.gates?.list ?? []) if (g.state === 'unlocked' && g.panel) options.push({ o: gateObjective(c, g), w: WEIGHTS.gate, role: 'take', ...(behind ? {} : { max: 1 }) });
+  for (const g of c.ga.gates?.list ?? []) if (waiting(g)) options.push({ o: gateObjective(c, g), w: WEIGHTS.gate, role: 'take', ...(behind ? {} : { max: 1 }) });
   const plan = new Map();
   if (!options.length) return plan;
   const count = new Map();

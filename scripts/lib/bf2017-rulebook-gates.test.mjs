@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { fieldHash as H } from './bf2017-abilities.mjs';
-import { GATE_ENABLED, GATE_PANEL, ROUTE_DONE, gatesOf, interactOf } from './bf2017-rulebook-gates.mjs';
+import { GATE_ENABLED, GATE_PANEL, ROUTE_DONE, doorOf, gatesOf, interactOf } from './bf2017-rulebook-gates.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
 const SPLIT_IN = 1723395486;
@@ -28,8 +28,50 @@ function level() {
     { $type: 'TransformMultiplierEntityData', In1: tf(0, 0, 0, 3), In2: tf(0, 0, 0) },
     { $type: 'StopWatchEntityData', TriggerOnTime: 1, Multiplier: 1 },
   ]);
-  prefab('Gameplay/GameModes/Shared/Doors/PF_InteractDoor_Core', [{ $type: 'SpatialPrefabReferenceObjectData', Blueprint: { $asset: 'Gameplay/GameModes/Shared/Interacts/PF_Interact_Button' } }]);
-  prefab('Gameplay/Prefabs/GameModes/Shared/PF_InteractGate_Fixture', [{ $type: 'SpatialPrefabReferenceObjectData', Blueprint: { $asset: 'Gameplay/GameModes/Shared/Doors/PF_InteractDoor_Core' }, BlueprintTransform: tf(0, 0, -4.4) }]);
+  // (the door's run: the gate's interface → the core's → the controller's interpolator and its leaves' slide)
+  const DUR = 1350828081;
+  const SLIDE = -1015536881;
+  const iface = (fields) => ({ $type: 'InterfaceDescriptorData', Fields: fields.map(([Id, Value]) => ({ Id, Value })) });
+  const wire = (from, field, to, toField) => ({ Source: { $ref: from }, Target: { $ref: to }, SourceFieldId: field, TargetFieldId: toField });
+  write('Gameplay/GameModes/Shared/Doors/PF_AutomaticDoor_Controller', {
+    type: 'LogicPrefabBlueprint',
+    objects: [
+      { $type: 'LogicPrefabBlueprint', PropertyConnections: [wire(3, DUR, 1, H('Duration')), wire(3, SLIDE, 2, 177663)] },
+      { $type: 'FloatInterpolatorEntityData', Duration: 1.5, InterpolationType: 'PropertyInterpolationType_Sine', InterpolationMode: 'PropertyInterpolationMode_EaseOut' },
+      { $type: 'Vec3BuilderEntityData' },
+      iface([[DUR, ''], [SLIDE, '']]),
+    ],
+  });
+  write('Gameplay/GameModes/Shared/Doors/PF_InteractDoor_Core', {
+    type: 'SpatialPrefabBlueprint',
+    objects: [
+      { $type: 'SpatialPrefabBlueprint', PropertyConnections: [wire(3, DUR, 2, DUR), wire(3, SLIDE, 2, SLIDE)] },
+      { $type: 'SpatialPrefabReferenceObjectData', Blueprint: { $asset: 'Gameplay/GameModes/Shared/Interacts/PF_Interact_Button' } },
+      { $type: 'LogicPrefabReferenceObjectData', Blueprint: { $asset: 'Gameplay/GameModes/Shared/Doors/PF_AutomaticDoor_Controller' } },
+      iface([[DUR, ''], [SLIDE, 'Float32 3']]),
+    ],
+  });
+  for (const side of ['Left', 'Right']) {
+    write(`Objects/Fixture/Blastdoor_${side}`, { type: 'ObjectBlueprint', objects: [{ $type: 'ObjectBlueprint' }, { $type: 'StaticModelEntityData', Mesh: { $asset: `objects/fixture/blastdoor_${side.toLowerCase()}_mesh` } }] });
+  }
+  mkdirSync(join(dir, 'web'), { recursive: true });
+  writeFileSync(
+    join(dir, 'web', 'models.jsonl'),
+    [
+      { name: 'objects/fixture/blastdoor_right_mesh', min: [-9.12, 0, -0.2], max: [1.018, 6.4, 0.2] },
+      { name: 'objects/fixture/blastdoor_left_mesh', min: [-0.997, 0, -0.2], max: [9.12, 6.4, 0.2] },
+    ].map((r) => JSON.stringify(r)).join('\n'),
+  );
+  write('Gameplay/Prefabs/GameModes/Shared/PF_InteractGate_Fixture', {
+    type: 'SpatialPrefabBlueprint',
+    objects: [
+      { $type: 'SpatialPrefabBlueprint', PropertyConnections: [wire(4, -141474857, 1, DUR), wire(4, -141474858, 1, SLIDE)] },
+      { $type: 'SpatialPrefabReferenceObjectData', Blueprint: { $asset: 'Gameplay/GameModes/Shared/Doors/PF_InteractDoor_Core' }, BlueprintTransform: tf(0, 0, -4.4) },
+      { $type: 'ObjectReferenceObjectData', Blueprint: { $asset: 'Objects/Fixture/Blastdoor_Right' } },
+      { $type: 'ObjectReferenceObjectData', Blueprint: { $asset: 'Objects/Fixture/Blastdoor_Left' } },
+      iface([[-141474857, 'Float32 70'], [-141474858, 'Float32 8.96']]),
+    ],
+  });
   const d = 'Levels/MP/Fixture_04';
   const g = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, '0')}`;
   write(`${d}/FantasyBattle_Logic`, {
@@ -85,6 +127,14 @@ describe('the interact gates’ reader', () => {
     expect(gate.interact).toMatchObject({ distance: 2, scale: 3, angle: 90, hold: 1 });
     expect(gate.interact._source).toMatch(/PF_Interact_Button/);
     expect(interactOf(dir, { $asset: 'Gameplay/GameModes/Shared/Doors/PF_InteractDoor_Core' })).toBeNull();
+  });
+
+  it('reads the leaves’ run as the gate sets it through its door core: 70 s and 8.96 m over the controller’s own 1.5 s and the core’s 3 m', () => {
+    expect(gate.door).toMatchObject({ seconds: 70, slide: 8.96, curve: 'Sine', mode: 'EaseOut' });
+    // (shut, the leaves reach past the gate's middle by their meshes' bounds)
+    expect(gate.door.overlap).toBeCloseTo(2.015, 3);
+    // (the core alone: its own slide, the controller's own run)
+    expect(doorOf(dir, { $asset: 'Gameplay/GameModes/Shared/Doors/PF_InteractDoor_Core' })).toBeNull();
   });
 
   it('a level with no such sub-world has none', () => {
