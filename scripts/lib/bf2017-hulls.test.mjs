@@ -1,15 +1,55 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Document } from '@gltf-transform/core';
+import { Document, NodeIO } from '@gltf-transform/core';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { MeshoptDecoder } from 'meshoptimizer';
 import { describe, expect, it } from 'vitest';
 import { hullOf, segmentHit } from '../../src/lib/combat/hulls.js';
 import { readHull } from '../../src/lib/physics/shapesBin.js';
-import { readPhysicsGlb } from './bf2017-physics.mjs';
-import { FIGHTER_PHYSICS, TIE, WAYS, assemble, boxOf, drawnPoints, facing, fitShapes, frameOf, gameToGlb, headerFile, offBy, partName, partProperties, readHeader, resOf, rosterKinds } from './bf2017-hulls.mjs';
+import { FLEET } from '../bf2017-fleet.mjs';
+import { physicsKey, readPhysicsGlb } from './bf2017-physics.mjs';
+import {
+  CAPITAL_KITS,
+  FIGHTER_PHYSICS,
+  OBJECTIVE,
+  SITE_OVER_GAME,
+  TIE,
+  WAYS,
+  assemble,
+  bothRoots,
+  boxOf,
+  capitalKinds,
+  drawnPoints,
+  facing,
+  fitShapes,
+  frameOf,
+  gameToGlb,
+  headerFile,
+  hunterCuts,
+  kitShapes,
+  offBy,
+  partName,
+  partProperties,
+  readHeader,
+  resOf,
+  rosterKinds,
+  wingEdge,
+} from './bf2017-hulls.mjs';
+import { siteHull, subsystemParts } from './bf2017-hulls-site.mjs';
 
-const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'bf2017', 'physics');
+const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const DIR = join(REPO, 'scripts', 'fixtures', 'bf2017', 'physics');
 const readFixture = (name) => readFileSync(join(DIR, name));
+const HULLS = JSON.parse(readFileSync(join(REPO, 'src/data/galaxyHulls.json'), 'utf8'));
+const hullBin = (key) => readFileSync(join(REPO, 'public/models/galaxy/hulls', `${key}.bin`));
+// a GLB in public/ (the site's own, in git)
+const readGlb = async (path) => {
+  await MeshoptDecoder.ready;
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
+  return io.readBinary(new Uint8Array(readFileSync(join(REPO, 'public', path))));
+};
+const importRepo = (path) => import(new URL(`../../${path}`, import.meta.url).href);
 const XWING = 'Gameplay/Vehicles/Air/XWing_T65/Vehicle_Air_XWing_T65_Physics_Win32';
 // the X-wing's render cuts as the CLI measured them (bf2017-hulls.mjs: each
 // cut's box in its GLB's frame, and the game box it was put on)
@@ -101,6 +141,213 @@ describe('a capital’s parts’ names', () => {
   it('refuses a part its module hasn’t', () => {
     expect(() => partName('a_mesh.glb', 2, 2)).toThrow(/part 2 of 2/);
     expect(() => partName('a_mesh.glb', 0, 0)).toThrow(/part 0 of 0/);
+  });
+});
+
+describe('the capitals’ kits', () => {
+  it('CAPITAL_KITS names the kit each capital’s fleet file was made from (bf2017-fleet.mjs)', () => {
+    for (const [file, , , from] of FLEET) if (from.space) expect(CAPITAL_KITS[file], file).toEqual({ space: from.space, model: from.model });
+    expect(CAPITAL_KITS.destroyer).toEqual({ space: 'endor', model: 'endor-isd' });
+    expect(CAPITAL_KITS.lightcruiser).toEqual({ space: 'fondor', model: 'fondor-arquitens' });
+    expect(CAPITAL_KITS.nebulon.physics).toBe('Objects/Props/Landmarks/_RebelAlliance/BD_FrigateNebulonB_01/FrigateNebulonB_01_Physics_Win32');
+    expect(CAPITAL_KITS['hq/nebulon'].physics).toBe(CAPITAL_KITS.nebulon.physics);
+  });
+
+  // a kit of three modules: a shield placed twice (turned a quarter about y
+  // and doubled; as it is) and a window with no physics asset; the shield's
+  // asset two parts (p130 and p132) on two roots
+  const SHIELD = 'models/objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_deflectorshield_01_mesh.glb';
+  const WINDOW = 'models/objects/props/landmarks/_galacticempire/stardestroyer_01/stardestroyer_windows_01_mesh.glb';
+  const q = Math.SQRT1_2;
+  const space = {
+    models: {
+      'endor-isd': {
+        parts: [
+          { file: SHIELD, at: [10, 0, 0], quaternion: [0, q, 0, q], scale: [2, 2, 2] },
+          { file: SHIELD, at: [-10, 0, 0], quaternion: [0, 0, 0, 1], scale: [1, 1, 1] },
+          { file: WINDOW, at: [0, 0, 0], quaternion: [0, 0, 0, 1], scale: [1, 1, 1] },
+        ],
+      },
+    },
+  };
+  const shapes = [
+    { kind: 'hull', root: 0, part: 0, instance: 0, material: 3, points: Float32Array.from([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]) },
+    { kind: 'sphere', root: 0, part: 0, instance: 0, material: 3, points: Float32Array.from([0, 0, 1]), centre: [0, 0, 1], radius: 0.5 },
+    { kind: 'mesh', root: 1, part: 1, instance: 0, material: 3, points: Float32Array.from([1, 0, 0, 0, 1, 0, 0, 0, 1]), indices: Uint32Array.from([0, 1, 2]) },
+  ];
+  const assets = new Map([[physicsKey(SHIELD), { shapes, properties: [130, 132] }]]);
+
+  it('kitShapes: each module’s parts its own, named for the module and with its own property', () => {
+    const kit = kitShapes(space, 'endor-isd', assets);
+    expect(kit.parts).toEqual([
+      { name: 'stardestroyer_deflectorshield_01#0', property: 130 },
+      { name: 'stardestroyer_deflectorshield_01#1', property: 132 },
+      { name: 'stardestroyer_deflectorshield_01#0', property: 130 },
+      { name: 'stardestroyer_deflectorshield_01#1', property: 132 },
+    ]);
+    expect(kit.missing).toEqual(['stardestroyer_windows_01']);
+    expect(kit.shapes.map((s) => [s.kind, s.root, s.part, s.material])).toEqual([
+      ['hull', 0, 0, 130],
+      ['sphere', 0, 0, 130],
+      ['mesh', 1, 1, 132],
+      ['hull', 0, 2, 130],
+      ['sphere', 0, 2, 130],
+      ['mesh', 1, 3, 132],
+    ]);
+  });
+
+  it('kitShapes puts each module’s shapes where the kit places it: turned, scaled, moved', () => {
+    const [hull, sphere, , moved] = kitShapes(space, 'endor-isd', assets).shapes;
+    // (a quarter about y takes +x to −z, doubled, then 10 along x)
+    [10, 0, -2].forEach((v, k) => expect(hull.points[k]).toBeCloseTo(v, 6));
+    [12, 0, 0].forEach((v, k) => expect(sphere.centre[k]).toBeCloseTo(v, 6));
+    expect(sphere.radius).toBeCloseTo(1, 6);
+    [-9, 0, 0].forEach((v, k) => expect(moved.points[k]).toBeCloseTo(v, 6));
+  });
+
+  it('a module whose asset has one root is met on it both ways: bolts and contact', () => {
+    const one = [
+      { kind: 'hull', root: 0, part: 0, points: Float32Array.from([0, 0, 0]) },
+      { kind: 'mesh', root: 0, part: 0, points: Float32Array.from([0, 0, 0]), indices: Uint32Array.from([0, 0, 0]) },
+    ];
+    expect(
+      bothRoots(one)
+        .map((s) => `${s.kind} ${s.root}`)
+        .sort(),
+    ).toEqual(['hull 0', 'hull 1', 'mesh 1']);
+    // (one with two keeps them)
+    expect(bothRoots(shapes)).toEqual(shapes);
+  });
+
+  it('capitalKinds: the kinds the battles fly as flagships and escorts', async () => {
+    const k = await capitalKinds();
+    for (const kind of ['destroyer', 'executor', 'interdictor', 'moncal', 'nebulon', 'corvette', 'gozanti', 'hammerhead', 'transport', 'acclamator', 'munificent', 'venator', 'providence', 'lucrehulk', 'lightcruiser']) expect(k).toContain(kind);
+    for (const kind of ['xwing', 'bwing', 'delta7', 'shuttle', 'ghost', 'ig2000']) expect(k).not.toContain(kind);
+  }, 30000);
+});
+
+// The Star Destroyer's hull cut to the modules the test needs (the full one
+// is the game's shapes of 81 modules, 2.8 MB, published and not committed):
+// the hull itself (the widest section), both deflector shields and the
+// reactor, as `node scripts/bf2017-hulls.mjs --only destroyer --fixture` cut
+// it, and the boxes of the cuts it is drawn in
+describe('the Star Destroyer', () => {
+  const cuts = () => JSON.parse(readFixture('destroyer-cuts.json')).cuts;
+  const bin = () => readFixture('destroyer-hull.bin');
+
+  it('has parts named for its deflector shields and its reactor, each with its module’s property', () => {
+    const { parts } = readHull(bin());
+    // (two domes, each its module's part 0, p130; the reactor's part 0 p206: findings/62 §7)
+    expect(parts.filter((p) => p.name === 'stardestroyer_deflectorshield_01#0').map((p) => p.property)).toEqual([130, 130]);
+    expect(parts.filter((p) => p.name === 'stardestroyer_solarionizationreactor_01#0').map((p) => p.property)).toEqual([206]);
+    expect(parts.some((p) => p.name.startsWith('stardestroyer_hull_01_sb_endor#') && p.property === 132)).toBe(true);
+  });
+
+  it('covers its render box within 2 % on every cut', () => {
+    const shapes = readHull(bin()).shapes.filter((s) => s.root === 1);
+    expect(cuts().length).toBeGreaterThanOrEqual(2);
+    for (const cut of cuts()) {
+      const { off, face } = offBy(boxOf(shapes), frameOf(boxDoc(cut), cut.nose, 'destroyer'));
+      expect(off, `${cut.url}: ${face}`).toBeLessThan(0.02);
+    }
+  });
+
+  it('a point at x = ±0.27 of its length on its widest section is inside a root 0 solid', () => {
+    const edges = wingEdge(hullOf(bin()), 0.27);
+    expect(edges).toHaveLength(2);
+    for (const e of edges) {
+      expect(Math.abs(e.widest)).toBeGreaterThan(0.27);
+      expect(e.inside, `${e.side} at ${e.at.map((v) => v.toFixed(4))}`).toBe(true);
+    }
+  });
+});
+
+describe('the ships the game never had', () => {
+  it('a site hull of the B-wing: at most 600 triangles, one part, its box within 3 % of the model’s', async () => {
+    const doc = await readGlb('models/galaxy/bwing.glb');
+    const shapes = await siteHull(doc, 'bwing', { maxTris: 600 });
+    const [mesh, ...rest] = shapes.filter((s) => s.root === 1);
+    expect(rest).toHaveLength(0);
+    expect(mesh.indices.length / 3).toBeLessThanOrEqual(600);
+    expect(shapes.every((s) => s.part === 0)).toBe(true);
+    const solids = shapes.filter((s) => s.root === 0);
+    expect(solids.length).toBeGreaterThan(0);
+    expect(solids.length).toBeLessThanOrEqual(8);
+    for (const s of solids) expect(s.points.length / 3).toBeLessThanOrEqual(64);
+    const { off, face } = offBy(boxOf([mesh]), frameOf(doc, 0, 'bwing'));
+    expect(off, face).toBeLessThan(0.03);
+  });
+
+  it('subsystemParts: the war’s subsystems as small parts at their shares, named for them', () => {
+    const subs = [
+      { id: 'gen-port', at: [-0.1, 0.2, -0.3], r: 0.03 },
+      { id: 'reactor', at: [0, -0.1, 0], r: 0.05 },
+    ];
+    const { parts, shapes } = subsystemParts(subs, 1);
+    expect(parts).toEqual([
+      { name: 'gen-port', property: OBJECTIVE },
+      { name: 'reactor', property: OBJECTIVE },
+    ]);
+    expect(shapes.map((s) => [s.kind, s.root, s.part])).toEqual([
+      ['hull', 1, 1],
+      ['hull', 1, 2],
+    ]);
+    const box = boxOf([shapes[0]]);
+    [-0.13, 0.17, -0.33].forEach((v, k) => expect(box.min[k]).toBeCloseTo(v, 6));
+    [-0.07, 0.23, -0.27].forEach((v, k) => expect(box.max[k]).toBeCloseTo(v, 6));
+  });
+
+  it('the Executor’s hull names the war’s subsystems: a bolt down onto its port generator hits it', async () => {
+    const { SUBSYSTEMS } = await importRepo('src/components/universe/wars.js');
+    const h = hullOf(hullBin('executor'));
+    expect(h.parts.map((p) => p.name)).toEqual(['hull', 'gen-port', 'gen-star', 'bridge', 'reactor']);
+    const gen = SUBSYSTEMS.executor.find((s) => s.id === 'gen-port');
+    const hit = segmentHit(h, pose(1), [gen.at[0], 1, gen.at[2]], [gen.at[0], -1, gen.at[2]]);
+    expect(h.parts[hit.part].name).toBe('gen-port');
+    expect(hit.property).toBe(OBJECTIVE);
+  }, 30000);
+
+  it('hunterCuts: the hunters whose model is not the galaxy’s cut of their kind (Slave I: the universe map’s)', async () => {
+    const galaxy = await importRepo('src/components/galaxy/models.js');
+    expect(hunterCuts(galaxy.HUNTER_GLB, galaxy)).toEqual([{ kind: 'slave1', url: '/models/universe/slave1.glb', nose: 0 }]);
+  }, 30000);
+
+  it('hq/nebulon sits on the HQ model: its box within 2 %, and point by point the way it is drawn', async () => {
+    expect(HULLS['hq/nebulon'].from).toBe('/models/galaxy/hq/nebulon.glb');
+    const hq = await readGlb('models/galaxy/hq/nebulon.glb');
+    const frame = frameOf(hq, 0, 'nebulon');
+    const shapes = readHull(hullBin('hq/nebulon')).shapes.filter((s) => s.root === 1);
+    expect(offBy(boxOf(shapes), frame).off).toBeLessThan(0.02);
+    const way = facing(Float32Array.from(shapes.flatMap((s) => [...s.points])), drawnPoints(hq, frame));
+    expect(way.better).toBeNull();
+    expect(way.placed).toBeLessThan(0.002);
+  }, 30000);
+});
+
+describe('every kind the galaxy flies has a hull', () => {
+  it('every roster kind but the Death Stars (the world draws their sphere) has its row in galaxyHulls.json', async () => {
+    const roster = await rosterKinds();
+    const missing = roster.filter((k) => !['deathstar', 'deathstar2'].includes(k) && !HULLS[k]);
+    expect(missing).toEqual([]);
+    // (and the close-up Nebulon-B, and the hunters drawn as another model)
+    expect(HULLS['hq/nebulon']).toBeTruthy();
+    expect(HULLS['hunter/slave1']).toBeTruthy();
+  }, 30000);
+
+  it('a site hull is committed beside its model, unless its model is published only', () => {
+    for (const [key, row] of Object.entries(HULLS)) {
+      if (row.source !== 'site' || row.publish) continue;
+      expect(existsSync(join(REPO, 'public', row.from)), `${key}: ${row.from}`).toBe(true);
+      expect(hullBin(key).byteLength, key).toBe(row.bytes);
+    }
+  });
+
+  it('a kind the game has, drawn on the site’s hull, says why and keeps the game’s property', () => {
+    expect(HULLS.interceptor).toMatchObject({ source: 'site', property: 68, publish: true });
+    for (const kind of Object.keys(SITE_OVER_GAME)) {
+      expect(HULLS[kind].source, kind).toBe('site');
+      expect(HULLS[kind].why, kind).toBe(SITE_OVER_GAME[kind]);
+    }
   });
 });
 

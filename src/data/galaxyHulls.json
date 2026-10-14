@@ -1,4 +1,12 @@
 {
+  "acclamator": {
+    "source": "site",
+    "bytes": 81328,
+    "parts": 1,
+    "radius": 0.5017,
+    "from": "/models/galaxy/acclamator.glb",
+    "property": 132
+  },
   "arc170": {
     "source": "game",
     "bytes": 15624,
@@ -13,12 +21,109 @@
     "radius": 0.5586,
     "from": "gameplay/vehicles/air/awing/vehicle_air_awing_physics_win32"
   },
+  "bwing": {
+    "source": "site",
+    "bytes": 18724,
+    "parts": 1,
+    "radius": 0.5088,
+    "from": "/models/galaxy/bwing.glb",
+    "property": 68
+  },
+  "corvette": {
+    "source": "game",
+    "bytes": 6156,
+    "parts": 2,
+    "radius": 0.5499,
+    "from": "levels/space/sb_endor_01/sb_endor_01#corvettecr90-01"
+  },
+  "delta7": {
+    "source": "site",
+    "bytes": 17908,
+    "parts": 1,
+    "radius": 0.5011,
+    "from": "/models/galaxy/delta7.glb",
+    "property": 68
+  },
+  "destroyer": {
+    "source": "game",
+    "bytes": 2867340,
+    "parts": 123,
+    "radius": 0.5196,
+    "from": "levels/space/sb_endor_01/sb_endor_01#endor-isd"
+  },
+  "executor": {
+    "source": "site",
+    "bytes": 94632,
+    "parts": 5,
+    "radius": 0.5006,
+    "from": "/models/galaxy/executor.glb",
+    "property": 132
+  },
   "falcon": {
     "source": "game",
     "bytes": 37256,
     "parts": 39,
     "radius": 0.5011,
     "from": "gameplay/vehicles/air/millenniumfalcon/vehicle_air_millenniumfalcon_physics_win32"
+  },
+  "ghost": {
+    "source": "site",
+    "bytes": 20692,
+    "parts": 1,
+    "radius": 0.5053,
+    "from": "/models/galaxy/ghost.glb",
+    "property": 68
+  },
+  "gozanti": {
+    "source": "site",
+    "bytes": 90636,
+    "parts": 5,
+    "radius": 0.5011,
+    "from": "/models/galaxy/gozanti.glb",
+    "property": 132
+  },
+  "gunboat": {
+    "source": "site",
+    "bytes": 17464,
+    "parts": 1,
+    "radius": 0.9606,
+    "from": "/models/galaxy/gunboat.glb",
+    "property": 68
+  },
+  "hammerhead": {
+    "source": "site",
+    "bytes": 77332,
+    "parts": 1,
+    "radius": 0.5227,
+    "from": "/models/galaxy/hammerhead.glb",
+    "property": 132
+  },
+  "houndstooth": {
+    "source": "site",
+    "bytes": 17236,
+    "parts": 1,
+    "radius": 0.5417,
+    "from": "/models/galaxy/houndstooth.glb",
+    "property": 68
+  },
+  "hq/nebulon": {
+    "source": "site",
+    "bytes": 100036,
+    "parts": 1,
+    "radius": 0.5131,
+    "from": "/models/galaxy/hq/nebulon.glb",
+    "property": 34,
+    "why": "the game's Nebulon-B has no shape over its engine block (a model of its own with no physics), which the close-up draws",
+    "game": "3.77 % off at z max 0.4623 against 0.5000 on hq/nebulon.glb"
+  },
+  "hunter/slave1": {
+    "source": "site",
+    "bytes": 16276,
+    "parts": 1,
+    "radius": 0.5489,
+    "from": "/models/universe/slave1.glb",
+    "property": 68,
+    "why": "the hunters draw /models/universe/slave1.glb (models.js HUNTER_GLB), not the galaxy's cut of the kind"
   },
   "hyena": {
     "source": "game",
@@ -27,12 +132,104 @@
     "radius": 0.6078,
     "from": "gameplay/vehicles/air/hyenabomber/vehicle_air_hyenabomber_physics_win32"
   },
+  "ig2000": {
+    "source": "site",
+    "bytes": 19228,
+    "parts": 1,
+    "radius": 0.5507,
+    "from": "/models/galaxy/ig2000.glb",
+    "property": 68
+  },
+  "interceptor": {
+    "source": "site",
+    "bytes": 21484,
+    "parts": 1,
+    "radius": 0.6137,
+    "from": "/models/galaxy/surface/tieinterceptor.glb",
+    "property": 68,
+    "why": "the game's bolt shapes stop short of the forward wing tips the galaxy draws",
+    "game": "5.94 % off at z max 0.4406 against 0.5000 on surface/tieinterceptor.lod1.glb",
+    "publish": true
+  },
+  "interdictor": {
+    "source": "site",
+    "bytes": 77820,
+    "parts": 5,
+    "radius": 0.5106,
+    "from": "/models/galaxy/interdictor.glb",
+    "property": 132
+  },
+  "lightcruiser": {
+    "source": "site",
+    "bytes": 107512,
+    "parts": 1,
+    "radius": 0.5314,
+    "from": "/models/galaxy/lightcruiser.glb",
+    "property": 206,
+    "why": "the game's Arquitens has no shape over its command bridge (the module has no physics; only the campaign's prefab places a bridge's), which the galaxy draws",
+    "game": "2.12 % off at y max 0.0759 against 0.0971 on lightcruiser.glb"
+  },
+  "lucrehulk": {
+    "source": "site",
+    "bytes": 112224,
+    "parts": 5,
+    "radius": 0.51,
+    "from": "/models/galaxy/lucrehulk.glb",
+    "property": 132,
+    "why": "the game's forward control tower reaches higher than the galaxy's cut of the Lucrehulk draws it (the fleet's 24,000-triangle cut stops 703 m up, where the tower and the space level's own cut reach 816 m)",
+    "game": "3.16 % off at y max 0.1858 against 0.1541 on lucrehulk.glb"
+  },
+  "moncal": {
+    "source": "game",
+    "bytes": 586024,
+    "parts": 35,
+    "radius": 0.5017,
+    "from": "levels/space/sb_endor_01/sb_endor_01#endor-mc80"
+  },
+  "munificent": {
+    "source": "site",
+    "bytes": 76204,
+    "parts": 1,
+    "radius": 0.5039,
+    "from": "/models/galaxy/munificent.glb",
+    "property": 132
+  },
   "n1": {
     "source": "game",
     "bytes": 17240,
     "parts": 6,
     "radius": 0.5579,
     "from": "gameplay/vehicles/air/n1starfighter/vehicle_air_n1starfighter_physics_win32"
+  },
+  "nebulon": {
+    "source": "game",
+    "bytes": 5104,
+    "parts": 1,
+    "radius": 0.5168,
+    "from": "objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_physics_win32"
+  },
+  "providence": {
+    "source": "game",
+    "bytes": 4852,
+    "parts": 1,
+    "radius": 0.505,
+    "from": "levels/space/sb_kamino_01/sb_kamino_01#providenceclassdreadnaught-01"
+  },
+  "punishingone": {
+    "source": "site",
+    "bytes": 17224,
+    "parts": 1,
+    "radius": 0.5215,
+    "from": "/models/galaxy/punishingone.glb",
+    "property": 68
+  },
+  "shuttle": {
+    "source": "site",
+    "bytes": 18472,
+    "parts": 1,
+    "radius": 0.7706,
+    "from": "/models/galaxy/shuttle.glb",
+    "property": 68
   },
   "slave1": {
     "source": "game",
@@ -62,6 +259,14 @@
     "radius": 0.7949,
     "from": "gameplay/vehicles/air/tiebomber/vehicle_air_tiebomber_physics_win32"
   },
+  "transport": {
+    "source": "site",
+    "bytes": 87136,
+    "parts": 1,
+    "radius": 0.5001,
+    "from": "/models/galaxy/transport.glb",
+    "property": 132
+  },
   "trifighter": {
     "source": "game",
     "bytes": 27388,
@@ -75,6 +280,13 @@
     "parts": 6,
     "radius": 0.5239,
     "from": "gameplay/vehicles/air/uwing/vehicle_air_uwing_gunship_physics_win32"
+  },
+  "venator": {
+    "source": "game",
+    "bytes": 377356,
+    "parts": 54,
+    "radius": 0.507,
+    "from": "levels/space/sb_kamino_01/sb_kamino_01#kamino-venator"
   },
   "vulture": {
     "source": "game",
