@@ -20,6 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { createServer } from 'vite';
+import librarySlice from './library-slice.mjs';
 import { readPng } from './twin-parity/png.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -50,6 +51,9 @@ const server = await createServer({
   publicDir: join(ROOT, 'public'),
   server: { port: PORT, strictPort: true, fs: { allow: [ROOT] } },
   resolve: { dedupe: ['three'] },
+  // (the site's virtual:bf2017-published, which a case reaching the
+  // galaxy's catalogue imports: without it the whole page failed to load)
+  plugins: [librarySlice()],
   logLevel: 'error',
 });
 await server.listen();
