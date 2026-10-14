@@ -26,7 +26,9 @@ import { MATS } from './textures';
 // The terrain's material: three sets blended by the splat attribute. The
 // first is the base (its uv is the kit's, x/z over its scale); the others are
 // sampled at their own scales, and the second (rock) is projected on three
-// planes by the normal, so cliffs aren't stretched.
+// planes by the normal, so cliffs aren't stretched. (Only the colour’s
+// patch ever took: the normal’s, roughness’s and ao’s look for lines that
+// are still #include lines when onBeforeCompile sees them; ./nodes.js.)
 export async function splatMaterial(mats, small) {
   const sets = await Promise.all(mats.map((k) => loadSet(MATS[k]?.set, { small })));
   const tint = mats.map((k) => new THREE.Color(MATS[k]?.tint ?? '#ffffff').multiplyScalar(MATS[k]?.boost ?? 1));

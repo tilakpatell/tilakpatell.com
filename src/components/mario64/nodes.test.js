@@ -81,7 +81,7 @@ function build(mesh) {
 const MATS = ['grass', 'rock', 'path']; // (Bob-omb Ridge's; the castle's lawn has cobble for path)
 
 describe('the terrain’s splat as nodes', () => {
-  it('is the GLSL one’s standard material: its flags and its maps, the blend as nodes', async () => {
+  it('is the GLSL one’s standard material: its flags and its maps, the colours’ blend as nodes', async () => {
     const original = await glsl.splatMaterial(MATS, false);
     const twin = await nodes.splatMaterial(MATS, false);
     expect(twin.isMeshStandardNodeMaterial).toBe(true);
@@ -89,7 +89,27 @@ describe('the terrain’s splat as nodes', () => {
     for (const k of ['map', 'normalMap', 'roughnessMap', 'aoMap']) expect(twin[k], k).toBe(original[k]);
     expect(twin.aoMapIntensity).toBe(original.aoMapIntensity);
     expect(twin.normalScale.equals(original.normalScale)).toBe(true);
-    for (const k of ['colorNode', 'normalNode', 'roughnessNode', 'aoNode']) expect(twin[k]?.isNode, k).toBe(true);
+    expect(twin.colorNode?.isNode).toBe(true);
+    // (the normal, roughness and ao are the material's own maps', as below)
+    for (const k of ['normalNode', 'roughnessNode', 'aoNode']) expect(twin[k], k).toBe(null);
+  });
+
+  it('is lit by the base set alone, as the GLSL one was: its normal, roughness and ao patches never matched', async () => {
+    // WebGLRenderer hands onBeforeCompile the shader with its #include
+    // lines in (WebGLProgram expands them after): the colour's patch
+    // replaces an #include and takes; the other three look for lines inside
+    // the chunks and find nothing there
+    const original = await glsl.splatMaterial(MATS, false);
+    const shader = { uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader };
+    original.onBeforeCompile(shader);
+    const frag = shader.fragmentShader;
+    expect(frag).not.toMatch('#include <map_fragment>');
+    expect(frag).toMatch('diffuseColor *= c0 * sw.x');
+    for (const chunk of ['normal_fragment_maps', 'roughnessmap_fragment', 'aomap_fragment']) expect(frag, chunk).toMatch(`#include <${chunk}>`);
+    // (the other sets' normal and packed maps declared, never read)
+    for (const u of ['uNrm1', 'uNrm2']) expect(frag.split(u).length - 1, u).toBe(1);
+    // (and what they looked for is in the chunks: they'd have taken, expanded)
+    expect(THREE.ShaderChunk.normal_fragment_maps).toMatch('vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;');
   });
 
   it('keeps its twelve uniforms under the GLSL names, each the GLSL one’s value (scene.js’s scale among them)', async () => {
@@ -115,10 +135,10 @@ describe('the terrain’s splat as nodes', () => {
     geo.setAttribute('splat', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count * 3).fill(1 / 3), 3));
     const b = build(new THREE.Mesh(geo, twin));
     expect(b.vertexShader).toMatch(/splat/);
-    // each set’s colour, normal and arm, the rock’s colour and arm on three
-    // planes: thirteen reads (a texture with no filtering, as the test’s
-    // 1 × 1 ones, is read with textureLoad)
-    expect(b.fragmentShader.match(/texture(Sample|Load)\(/g).length).toBeGreaterThanOrEqual(13);
+    // each set’s colour, the rock’s on three planes, and the base set’s
+    // normal, roughness and ao: eight reads (a texture with no filtering, as
+    // the test’s 1 × 1 ones, is read with textureLoad)
+    expect(b.fragmentShader.match(/texture(Sample|Load)\(/g).length).toBeGreaterThanOrEqual(8);
     expect(b.fragmentShader).toMatch(/pow\(/);
   });
 });

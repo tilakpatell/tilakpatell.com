@@ -15,7 +15,7 @@
 
 import * as THREE from 'three';
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
-import { abs, attribute, clamp, exp, fract, length, materialReference, max, modelWorldMatrix, normalGeometry, normalMap, output, positionLocal, positionWorld, pow, sin, smoothstep, texture, uniform, uv, varying, vec3, vec4 } from 'three/tsl';
+import { abs, attribute, clamp, exp, fract, length, materialReference, max, modelWorldMatrix, normalGeometry, output, positionLocal, positionWorld, pow, sin, smoothstep, texture, uniform, uv, varying, vec3, vec4 } from 'three/tsl';
 import { loadSet } from '../avengers/hq/assets';
 import { SCALE } from './courses/index';
 import { MATS } from './textures';
@@ -27,14 +27,23 @@ const S = 0.01; // metres a game unit: scene.js’s S (the test holds the two to
 // reaching it
 const at = (t, coord) => t.sample(coord).setUpdateMatrix(false);
 
-// The terrain's material: three sets blended by the splat attribute (the
-// GLSL one’s map_fragment, normal, roughness and ao chunks swapped for the
-// blend). The first is the base, at the kit’s uv; the second (rock) is
-// projected on three planes by the normal, so cliffs aren't stretched; the
-// third is at its own scale. Each map’s uv is the mesh’s: the GLSL reads
-// vMapUv, vNormalMapUv… through each map’s transform, and loadSet’s sets are
-// never tiled (avengers/hq/assets’ pbr() tiles its own clones), so those
-// transforms are all the identity.
+// The terrain's material: three sets’ colours blended by the splat
+// attribute (the GLSL one’s map_fragment swapped for the blend). The first
+// is the base, at the kit’s uv; the second (rock) is projected on three
+// planes by the normal, so cliffs aren't stretched; the third is at its own
+// scale. Each map’s uv is the mesh’s: the GLSL reads vMapUv through the
+// map’s transform, and loadSet’s sets are never tiled (avengers/hq/assets’
+// pbr() tiles its own clones), so that transform is the identity.
+//
+// Only the colour is blended. The GLSL meant to blend the normal, roughness
+// and ao maps too, but its patches for them look for lines inside
+// normal_fragment_maps, roughnessmap_fragment and aomap_fragment, and
+// onBeforeCompile is handed the shader with its #include lines still in
+// (three expands them after it): those three replaces never found anything,
+// so the castle has always been lit by the base set’s normal, roughness
+// and ao alone, which is what the material’s own maps draw here. Blending
+// them is a change to the look, for after the port (its uniforms are kept,
+// under the GLSL names, for it).
 export async function splatMaterial(mats, small) {
   const sets = await Promise.all(mats.map((k) => loadSet(MATS[k]?.set, { small })));
   const tint = mats.map((k) => new THREE.Color(MATS[k]?.tint ?? '#ffffff').multiplyScalar(MATS[k]?.boost ?? 1));
@@ -87,15 +96,7 @@ export async function splatMaterial(mats, small) {
   // (diffuseColor is vec4(color, opacity) before the GLSL multiplies it by
   // the blend; the node material multiplies the opacity in after)
   m.colorNode = vec4(materialReference('color', 'color'), 1).mul(c0.mul(sw.x).add(c1.mul(sw.y)).add(c2.mul(sw.z)));
-  // the three normal maps blended before they are unpacked, then the
-  // material's normal scale and the tangent frame from the uv’s
-  // derivatives, as normal_fragment_maps does with no tangents
-  const nrm = texture(base.normalMap, vUv).xyz.mul(sw.x).add(at(u.uNrm1, vUv.mul(u.uS1)).xyz.mul(sw.y)).add(at(u.uNrm2, vUv.mul(u.uS2)).xyz.mul(sw.z));
-  m.normalNode = normalMap(nrm, materialReference('normalScale', 'vec2'));
-  // the packed maps: roughness from green, ambient occlusion from red
-  const arm = texture(base.arm, vUv).mul(sw.x).add(tri(u.uArm1).mul(sw.y)).add(at(u.uArm2, vUv.mul(u.uS2)).mul(sw.z));
-  m.roughnessNode = materialReference('roughness', 'float').mul(arm.g);
-  m.aoNode = arm.r.sub(1).mul(materialReference('aoMapIntensity', 'float')).add(1);
+  // (the normal, roughness and ao: the base set’s maps, as above)
   return m;
 }
 
