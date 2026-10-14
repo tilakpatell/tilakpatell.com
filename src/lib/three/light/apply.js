@@ -28,6 +28,9 @@
 //                                   parts.picture.missing). None: nothing here changes.
 //   onChain,                        (passes) => …: the chain built again when a weather's picture
 //                                   lands at a crossfade's end (its LUT and Gaussians), for rt.gfx.post
+//   inside,                         the interiors' visual environments (inside.js's insideOf: { areas, patches },
+//                                   and `lut`, { url, size }, the interior grade's 33³ strip): folded into the
+//                                   weather by the view's place each frame, the exposure adapting to it
 //   video,                          lib/video.js's resolved values (lane V1): the shadows' quality and
 //                                   distance, the contact and cloud shadows, the volumetric quality, the
 //                                   lights' pool and the chain's fields, each over the tier's; none, the tier's
@@ -53,6 +56,7 @@ import { createSun, readShadowRecord } from './sun.js';
 import { CONES_LIT, createVolumetrics } from './volumetrics.js';
 import { panoramaSource, pictureOf } from './grade.js';
 import { backendOf, loadThree, registerLights } from './three.js';
+import { patchRecord, skyShare, visibilities } from './inside.js';
 
 export const WEATHER_FADE = 20; // s: lane G's crossfade between two weathers
 const ENV_EVERY = 2; // s: the sky's environment re-baked this often while a weather fades
@@ -124,6 +128,17 @@ async function loadPicture(pic, renderer, THREE, have = null, tier = 'high') {
   return out;
 }
 
+// The interior's grading LUT ({ url, size }, the picture manifest's), or null where it fails
+async function loadInsideLut({ url, size }) {
+  try {
+    const { loadLut } = await gameLut();
+    const { withFallback } = await import('../../assetBase.js');
+    return await withFallback((u) => loadLut(u, size))(site(url));
+  } catch {
+    return null;
+  }
+}
+
 // (what the painted sky was loaded as: the evidence reads it off the dev door)
 const formatOf = (t, THREE) => (t ? (t.type === THREE.HalfFloatType ? 'rgba16f' : t.type === THREE.FloatType ? 'rgba32f' : 'uastc') : null);
 
@@ -131,18 +146,37 @@ const formatOf = (t, THREE) => (t ? (t.type === THREE.HalfFloatType ? 'rgba16f' 
 const site = (url) => (/^(\/|[a-z]+:)/i.test(url) ? url : `/${url}`);
 const lerp3 = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 
-export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null, onChain = null, cadence = null, farCache = null, video = null } = {}) {
-  const { THREE } = await loadThree();
+export async function applyGameLight(scene, renderer, entry, { tier = 'high', camera = null, origin, lights = null, clustered, volumes = null, loadCube = null, volumetrics = null, arena = null, grid = false, sky: withSky = true, post = true, lut = null, filter: forced = null, picture = null, onChain = null, cadence = null, farCache = null, video = null, inside = null } = {}) {
+  const { THREE, tsl } = await loadThree();
   const backend = backendOf(renderer);
   await registerLights(renderer);
   // (the record's picture, lane Q6: only where asked and only on the node renderer)
   let pic = backend !== 'webgl' ? pictureOf(entry, picture) : null;
   let tex = await loadPicture(pic, renderer, THREE, null, tier);
-  const was = { shadows: renderer.shadowMap?.enabled, shadowType: renderer.shadowMap?.type, environment: scene.environment, fogNode: scene.fogNode };
+  const was = { shadows: renderer.shadowMap?.enabled, shadowType: renderer.shadowMap?.type, environment: scene.environment, environmentIntensity: scene.environmentIntensity, fogNode: scene.fogNode };
   // (the video settings, lib/video.js: each reader takes its field over the tier's)
   let vid = video;
   if (renderer.shadowMap) renderer.shadowMap.enabled = vid?.shadows ? vid.shadows !== 'off' : tier !== 'low';
-  let params = readEntry(entry, { origin });
+
+  // The interiors (inside.js): each patch folded into the weather's record by
+  // its visibility at the view, the meter's sky cut by what of it the view
+  // still has, and the exposure adapting to the result at the record's
+  // Dark/LightAdaptationTime (the one state the game's renderer smooths:
+  // findings 22 §2). With no `inside`, the weather's record as it was.
+  let vis = {};
+  let skyLeft = 1;
+  let cur = entry; // (the weather the stack shows, or fades to)
+  const litOf = (e) => {
+    if (!inside || !e) return e;
+    const record = patchRecord(e.record ?? {}, inside.patches, vis);
+    const lum = e.record?.SkyComponentData?.[0]?.LuminanceScale;
+    return { ...e, record, ...(skyLeft < 1 && lum != null ? { meter: { sky: lum * skyLeft } } : {}) };
+  };
+  const readLit = (e) => readEntry(litOf(e), { origin });
+  let target = readLit(entry); // (the light at the view, before the exposure adapts to it)
+  let adapted = target.gameToSite;
+  let params = target;
+  let toneNow = litOf(entry)?.record?.TonemapComponentData?.[0] ?? {};
   const rays = post && tier === 'ultra';
 
   // the sun's soft shadow by tier (shadows.js): PCSS on ultra and high, PCF on mid
@@ -175,8 +209,14 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   const sky = withSky ? await createSky(entry, { panorama: tex.panorama ? { ...pic.panorama, texture: tex.panorama } : null }) : null;
   if (sky) scene.add(sky.mesh);
   let env = sky && canDraw ? sky.envTexture(renderer) : null;
+  let envK = params.gameToSite; // (the exposure the sky's environment was baked at)
   const probes = volumes?.length && loadCube ? await createProbes(scene, volumes, loadCube, { fallback: env }) : null;
   if (!probes && env) scene.environment = env;
+  // (the interior's grade: its LUT read beside the weather's and mixed by the patch's visibility,
+  // as the game's colour-cube builder weighs one cube a VE, findings 02's g_weights)
+  const lutVe = inside ? Object.keys(inside.patches).find((ve) => inside.patches[ve].components?.ColorCorrection?.HdrColorGradingLut) : null;
+  const lutWeight = tsl?.uniform ? tsl.uniform(0) : null;
+  const insideLut = lutVe && inside.lut && backend !== 'webgl' ? await loadInsideLut(inside.lut) : null;
   const gradient = tex.gradient ? { texture: tex.gradient, rotation: pic.gradient.rotation, gain: sky?.uniforms.panoramaGain ?? 1 } : null;
   const fog = withSky ? await createFog(entry, { origin, gradient }) : null;
   if (fog) scene.fogNode = fog.node;
@@ -195,7 +235,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   let lastEntry = entry;
   const chainFor = (e) => {
     lastEntry = e;
-    const out = post ? passesFor(tier, e, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, volumetrics: vols, grade: pic?.grade ?? null, video: vid }) : [];
+    const out = post ? passesFor(tier, e, backend, { scene, camera, light: raysLight(sun), lut: lut ?? tex.lut, lutInside: insideLut && lutWeight ? { texture: insideLut, weight: lutWeight } : null, volumetrics: vols, grade: pic?.grade ?? null, video: vid }) : [];
     // (the bloom's threshold from the record's grade: calibrate.js; the
     // record's own Gaussians have none)
     for (const p of out) if (p.kind === 'bloom' && !p.gaussians) p.threshold = params.grade.bloomThreshold;
@@ -227,11 +267,44 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
     sun.set(p);
     hemi.color.setRGB(...p.ambient.sky);
     hemi.groundColor.setRGB(...p.ambient.ground);
-    hemi.intensity = p.ambient.intensity;
+    // (the sky's fill and environment as far as the view still has the sky: none under the rock)
+    hemi.intensity = p.ambient.intensity * skyLeft;
+    const envShare = (skyLeft * p.gameToSite) / Math.max(1e-12, envK);
+    if (probes) probes.setScales?.({ probe: p.gameToSite, fallback: envShare });
+    else if (env && inside) scene.environmentIntensity = envShare;
     sky?.set(p);
     fog?.set(p);
     placed?.setScale(p.gameToSite);
     vols?.setScale(p.gameToSite);
+  };
+  show(params);
+
+  // The light at the view: the weather (or the fade between two), each with
+  // the interiors folded in, then exposed at the adapted exposure: the sun,
+  // the sky and its fill, the lamps all go by one factor (calibrate.js).
+  const targetOf = () => (fade ? lerpEntry(fade.from, readLit(fade.toEntry), fade.t) : readLit(cur));
+  const exposed = (p, g) => {
+    const r = g / p.gameToSite;
+    if (!(Math.abs(r - 1) > 1e-6)) return p;
+    return { ...p, sun: { ...p.sun, intensity: p.sun.intensity * r }, ambient: { ...p.ambient, intensity: p.ambient.intensity * r }, sky: { ...p.sky, luminance: p.sky.luminance * r, sunScale: p.sky.sunScale * r }, gameToSite: g };
+  };
+  // (the record's adaptation times: Hoth's day 0.25 s either way; the eye opening up is the dark one)
+  // (with no interiors, none: the weather's crossfade is the only change, and it is its own ease)
+  const adapt = (dt) => {
+    if (!inside) {
+      const changed = adapted !== target.gameToSite;
+      adapted = target.gameToSite;
+      return changed;
+    }
+    const tone = toneNow;
+    const opening = target.gameToSite > adapted;
+    const tau = Math.max(1e-3, Number((opening ? tone.DarkAdaptationTime : tone.LightAdaptationTime) ?? 0.25));
+    const ev = Math.log2(adapted);
+    const to = Math.log2(target.gameToSite);
+    const next = Math.abs(to - ev) < 1e-3 ? to : ev + (to - ev) * (1 - Math.exp(-dt / tau));
+    const changed = next !== ev;
+    adapted = 2 ** next;
+    return changed;
   };
 
   let fade = null; // { from, to, t, seconds, since, picture }
@@ -285,6 +358,10 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       grid: probeGrid,
       gridBake,
       volumetrics: vols,
+      // (the interiors at the view: each VE's visibility, the sky the view still has, the exposure as adapted)
+      get inside() {
+        return inside ? { vis: { ...vis }, sky: skyLeft, gameToSite: adapted, target: target.gameToSite, lut: Boolean(insideLut), lutWeight: lutWeight?.value ?? 0, weight: lutWeight } : null;
+      },
       get grade() {
         return pic?.grade ?? null;
       },
@@ -293,16 +370,41 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       },
     },
     update(dt, cam = camera) {
+      let dirty = false;
+      if (inside && cam) {
+        pos[0] = cam.position.x;
+        pos[1] = cam.position.y;
+        pos[2] = cam.position.z;
+        const next = visibilities(inside.areas, pos);
+        if (Object.keys(next).some((ve) => Math.abs(next[ve] - (vis[ve] ?? 0)) > 1e-3) || Object.keys(vis).some((ve) => !(ve in next))) {
+          vis = next;
+          skyLeft = skyShare(inside.patches, vis);
+          if (lutWeight) lutWeight.value = lutVe ? (vis[lutVe] ?? 0) : 0;
+          dirty = true;
+        }
+      }
       if (fade) {
         fade.t = Math.min(1, fade.t + dt / fade.seconds);
-        params = lerpEntry(fade.from, fade.to, fade.t);
         // (the painted sky's gain eased toward the next panorama's horizon)
         if (fade.horizon) sky?.setHorizon(lerp3(fade.horizon[0], fade.horizon[1], fade.t));
+        dirty = true;
+      }
+      if (dirty) {
+        target = targetOf();
+        toneNow = litOf(cur)?.record?.TonemapComponentData?.[0] ?? {};
+      }
+      if (adapt(dt) || dirty) {
+        params = exposed(target, adapted);
         show(params);
+      }
+      if (fade) {
         fade.since += dt;
         if (sky && canDraw && (fade.since >= ENV_EVERY || fade.t >= 1)) {
           fade.since = 0;
           env = sky.envTexture(renderer);
+          envK = params.gameToSite;
+          probes?.setFallback(env);
+          if (!probes && env) scene.environment = env;
         }
         if (fade.t >= 1) {
           finish(fade);
@@ -328,24 +430,35 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
     // the painted sky's gain eased across, and at the fade's end the
     // textures swapped and the chain built again once (onChain)
     setWeather(next, seconds = WEATHER_FADE, { picture: nextAsk = null } = {}) {
-      const to = readEntry(next, { origin });
+      // (from what shows now, to the next weather with the interiors folded in as the view moves)
+      const from = target;
+      cur = next;
       // (the shadow sun turns at once; the cloud layers' numbers stay the first weather's: lane S's Left)
       sun.setShadowSun(readShadowRecord(next).shadowSun);
       const nextPic = pic && backend !== 'webgl' ? pictureOf(next, nextAsk) : null;
       const ask = ++turned;
       const picture = nextPic ? { pic: nextPic, entry: next, ask, ahead: loadPicture(nextPic, renderer, THREE, tex, tier) } : null;
-      const from = pic?.panorama?.horizon ?? null;
-      const horizon = from && nextPic?.panorama?.horizon ? [from, nextPic.panorama.horizon] : null;
+      const fromHorizon = pic?.panorama?.horizon ?? null;
+      const horizon = fromHorizon && nextPic?.panorama?.horizon ? [fromHorizon, nextPic.panorama.horizon] : null;
       if (!(seconds > 0)) {
         fade = null;
-        params = to;
+        // (at once: the exposure too)
+        target = readLit(cur);
+        adapted = target.gameToSite;
+        params = target;
         if (horizon) sky?.setHorizon(horizon[1]);
         show(params);
-        if (sky && canDraw) env = sky.envTexture(renderer);
+        if (sky && canDraw) {
+          env = sky.envTexture(renderer);
+          envK = params.gameToSite;
+          probes?.setFallback(env);
+          if (!probes && env) scene.environment = env;
+          show(params);
+        }
         if (picture) finish({ picture });
         return;
       }
-      fade = { from: params, to, t: 0, seconds, since: 0, picture, horizon };
+      fade = { from, toEntry: next, t: 0, seconds, since: 0, picture, horizon };
     },
     dispose() {
       contact.dispose();
@@ -362,6 +475,8 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
       // (a LUT handed in is the caller's; one loaded here is ours)
       tex.lut?.dispose();
       scene.environment = was.environment;
+      scene.environmentIntensity = was.environmentIntensity ?? 1;
+      insideLut?.dispose();
       scene.fogNode = was.fogNode;
       if (renderer.shadowMap) Object.assign(renderer.shadowMap, { enabled: was.shadows, type: was.shadowType });
     },

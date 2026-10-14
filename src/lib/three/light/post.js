@@ -266,7 +266,7 @@ export function passesFor(tier, entry, backend = 'webgpu', refs = {}) {
       const flare = rec ? flareElements(rec) : null;
       return { kind: 'lensflare', threshold: 0.5, ghostSamples: 4, ghostSpacing: 0.25, ...(flare?.elements.length ? { ...lensflareParams(flare), flare, sunDir: p.sun.dir.slice(), camera: refs.camera } : {}) };
     },
-    lut: () => ({ kind: 'lut', texture: refs.lut ?? p.grade.lut ?? null, intensity: 1 }),
+    lut: () => ({ kind: 'lut', texture: refs.lut ?? p.grade.lut ?? null, intensity: 1, ...(refs.lutInside?.texture ? { inside: refs.lutInside } : {}) }),
     traa: () => ({ kind: 'traa', camera: refs.camera }),
     smaa: () => ({ kind: 'smaa' }),
     output: () => ({ kind: 'output' }),

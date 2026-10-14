@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOW_LAMPS, POINT_FALLBACK, POINT_POOL, appendLights, cellOf, cellsNear, createPlacedLights, lampPool, lightsFor, lumensToCandela, screenArea } from './placed';
+import { LOW_LAMPS, POINT_FALLBACK, POINT_POOL, SPOTS_BY_TIER, appendLights, cellOf, cellsNear, createPlacedLights, lampPool, lightsFor, lumensToCandela, screenArea } from './placed';
 
 describe('lumensToCandela', () => {
   it('a 1,000 lm sphere is 79.6 cd; a 1,000 lm 60° cone 1,188 cd', () => {
@@ -138,8 +138,9 @@ describe('the lamps a tier draws', () => {
   it('is the nearest 8 points and 2 spots at Low, the video setting’s nearest pool, or the backend’s own', () => {
     expect(LOW_LAMPS).toEqual({ points: 8, spots: 2 });
     expect(lampPool('low', { localLights: 'all' })).toEqual(LOW_LAMPS);
-    expect(lampPool('high', { localLights: 'nearest' })).toEqual({ points: POINT_FALLBACK });
-    expect(lampPool('high', { localLights: 'all' })).toEqual({});
-    expect(lampPool('ultra', null)).toEqual({});
+    expect(lampPool('high', { localLights: 'nearest' })).toEqual({ points: POINT_FALLBACK, spots: SPOTS_BY_TIER.high });
+    expect(lampPool('high', { localLights: 'all' })).toEqual({ spots: 32 });
+    expect(lampPool('ultra', null)).toEqual({ spots: 48 });
+    expect(lampPool('mid', null)).toEqual({});
   });
 });

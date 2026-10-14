@@ -51,7 +51,9 @@
 // probesPerFrame(lastMs, budgetMs, current, most = Infinity) → n   (pure)
 // recentre(pos, spacing) → the cascade's centre   (pure)
 // runsOf(indices) → [{ start, count }]; probeIndex(x, y, z, res) → index   (pure)
-// createProbes(scene, volumes, loadCube, { fallback, fade }) → Promise<{ update(pos, dt), current, dispose }>
+// createProbes(scene, volumes, loadCube, { fallback, fade }) → Promise<{ update(pos, dt), current, setFallback(tex), setScales({ probe, fallback }), dispose }>
+//   (setScales: what each side of the crossfade is multiplied by, by what it shows: a volume's cube, in the
+//   game's units, by the light's gameToSite; the fallback, the site's own sky, by the sky the view still has)
 // createProbeGrid(scene, renderer, bounds, res = PROBE_GRID, { cubemapSize, far, budget: { ms, gpuTime }, cascades })
 //   → Promise<{ grid, bake(), update(camera, dt), stats() → { probesPerFrame, ms, sweeps, cascades }, dispose }>
 
@@ -119,30 +121,44 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
   let a = null; // the pmremTexture nodes, made once there is a texture to start them on
   let b = null;
   const t = tsl.uniform(0);
+  const sa = tsl.uniform(1); // (each side's scale, by what it shows)
+  const sb = tsl.uniform(1);
+  const scales = { probe: 1, fallback: 1 };
+  const scaleOf = (i) => (i < 0 ? scales.fallback : scales.probe);
+  let aShows = -1;
+  let bShows = -1;
   let want = -1;
   let showing = -1;
   let fading = false;
   let disposed = false;
   const before = scene.environmentNode;
 
-  const start = (tex) => {
+  const start = (tex, i) => {
     a = tsl.pmremTexture(tex);
     b = tsl.pmremTexture(tex);
-    scene.environmentNode = tsl.mix(a, b, t);
+    aShows = bShows = i;
+    sa.value = sb.value = scaleOf(i);
+    scene.environmentNode = tsl.mix(a.mul(sa), b.mul(sb), t);
   };
-  if (base) start(base);
+  if (base) start(base, -1);
 
   const show = (i, tex) => {
     if (!tex) return;
     if (!a) {
-      start(tex);
+      start(tex, i);
       showing = i;
       return;
     }
     // (a crossing mid-fade keeps whichever cube shows more, rather than
     // jumping back to where the fade began)
-    if (fading && t.value >= 0.5) a.value = b.value;
+    if (fading && t.value >= 0.5) {
+      a.value = b.value;
+      aShows = bShows;
+      sa.value = sb.value;
+    }
     b.value = tex;
+    bShows = i;
+    sb.value = scaleOf(i);
     t.value = 0;
     fading = true;
     showing = i;
@@ -166,6 +182,8 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
         t.value = Math.min(1, t.value + dt / fade);
         if (t.value >= 1) {
           a.value = b.value;
+          aShows = bShows;
+          sa.value = sb.value;
           t.value = 0;
           fading = false;
         }
@@ -182,6 +200,12 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
     setFallback(tex) {
       base = tex;
       if (showing < 0) show(-1, tex);
+    },
+    setScales({ probe = scales.probe, fallback = scales.fallback } = {}) {
+      scales.probe = probe;
+      scales.fallback = fallback;
+      sa.value = scaleOf(aShows);
+      sb.value = scaleOf(bShows);
     },
     async dispose() {
       disposed = true;

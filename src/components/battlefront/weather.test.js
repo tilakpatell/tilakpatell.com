@@ -42,7 +42,9 @@ describe('the game’s weather, for lane R’s light', () => {
   it('bins Hoth’s placed lights by the 128 m cell, every one kept', () => {
     const json = lightsJsonOf(lighting.lights);
     const n = Object.values(json.cells).reduce((a, c) => a + c.length, 0);
-    expect(n).toBe(lighting.lights.filter((l) => l.intensity > 0).length);
+    // (every one the frame draws: the bounce's only, lighting neither the diffuse nor the specular, left out)
+    expect(n).toBe(lighting.lights.filter((l) => l.intensity > 0 && l.enabled !== false && (l.affect?.diffuse !== false || l.affect?.specular !== false)).length);
+    expect(n).toBe(67);
     expect(json.cell).toBe(128);
   });
 

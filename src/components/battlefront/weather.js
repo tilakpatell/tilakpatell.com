@@ -8,7 +8,14 @@
 //     `Field.x` keys folded back, its transform and source left out
 //   entryFor(lighting, name) → { name, record }
 //   readLightRow(row) → { kind: 'point' | 'spot', pos, color, candela, range, cone?, dir? } | null
+//     (null for a lamp the frame never draws: off, or the bounce's only, lighting neither the
+//     diffuse nor the specular; its Dimmer and ExposureCompensation scale its lumens)
 //   lightsJsonOf(rows, { cell }) → { format: 1, cell, cells }
+//   prefabRows(lighting) → the lamps inside the lighting prefabs (Hoth: 416 placed), each in the
+//     export's frame by its placement's whole turn (the rulebook's `basis`), as rows
+//   lampRows(lighting) → the level's lamps: its own and its prefabs'
+//   packToWorld(pack, [x, y, z]) → the export's frame; probeVolumesOf(probes, pack) → probes.js's
+//     volumes ({ min, max, id, faces }); volumesToWorld(json, pack) → volumes.json in the export's frame
 
 import { lumensToCandela } from '../../lib/three/light/placed.js';
 
@@ -59,9 +66,10 @@ const forward = (yaw, pitch) => [Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch
 // the hangar draws white. The lumens go to candela over the sphere or the
 // cone; a spot shines along its −forward
 export function readLightRow(row) {
+  if (row.enabled === false || (row.affect && row.affect.diffuse === false && row.affect.specular === false)) return null;
   const colour = row.colour ?? [1, 1, 1];
   const peak = Math.max(...colour);
-  const lm = peak > 0 ? (row.intensity ?? 0) : 0;
+  const lm = peak > 0 ? (row.intensity ?? 0) * (row.dimmer ?? 1) * 2 ** (row.ec ?? 0) : 0;
   if (!(lm > 0)) return null;
   const base = { pos: row.at.slice(), color: colour.map((c) => c / peak), range: row.radius ?? 10 };
   if (row.kind === 'spot') {
@@ -81,4 +89,62 @@ export function lightsJsonOf(rows, { cell = CELL } = {}) {
     (cells[`${Math.floor(l.pos[0] / cell)},${Math.floor(l.pos[2] / cell)}`] ??= []).push(l);
   }
   return { format: 1, cell, cells };
+}
+
+// a placement's 3×3 (right, up, forward) on a vector; a placement without one turns by its yaw
+const turnBy = (basis, yaw, v) =>
+  basis
+    ? [0, 1, 2].map((k) => basis[0][k] * v[0] + basis[1][k] * v[1] + basis[2][k] * v[2])
+    : [v[0] * Math.cos(yaw ?? 0) + v[2] * Math.sin(yaw ?? 0), v[1], -v[0] * Math.sin(yaw ?? 0) + v[2] * Math.cos(yaw ?? 0)];
+
+export function prefabRows(lighting) {
+  const out = [];
+  for (const p of lighting?.prefabs ?? []) {
+    for (const l of lighting.prefabLights?.[p.name] ?? []) {
+      const at = turnBy(p.basis, p.yaw, l.at).map((v, k) => v + p.at[k]);
+      const f = turnBy(p.basis, p.yaw, forward(l.yaw ?? 0, l.pitch ?? 0));
+      out.push({ ...l, id: `${p.id}/${l.id}`, at, yaw: Math.atan2(f[0], f[2]), pitch: Math.asin(Math.max(-1, Math.min(1, f[1]))) });
+    }
+  }
+  return out;
+}
+
+export const lampRows = (lighting) => [...(lighting?.lights ?? []), ...prefabRows(lighting)];
+
+// A pack's frame (lane L's: the origin taken away, turned by yaw) back to the export's
+export function packToWorld(pack, [x, y, z]) {
+  const [ox, oy, oz] = pack?.origin ?? [0, 0, 0];
+  const c = Math.cos(pack?.yaw ?? 0);
+  const s = Math.sin(pack?.yaw ?? 0);
+  return [x * c - z * s + ox, y + oy, x * s + z * c + oz];
+}
+
+// a pack's reflection volumes (probes.json: a centre and three half axes) as probes.js's boxes
+export function probeVolumesOf(probes, pack) {
+  return (probes?.probes ?? []).map((p) => {
+    const c = packToWorld(pack, p.centre);
+    // (each half axis turned into the export's frame: packToWorld without the origin)
+    const o = packToWorld(pack, [0, 0, 0]);
+    const axes = p.axes.map((a) => packToWorld(pack, a).map((v, k) => v - o[k]));
+    const half = [0, 1, 2].map((k) => axes.reduce((sum, a) => sum + Math.abs(a[k]), 0));
+    return { id: p.id, faces: p.faces, ultra: p.ultra ?? null, min: c.map((v, k) => v - half[k]), max: c.map((v, k) => v + half[k]) };
+  });
+}
+
+// volumes.json (scripts/bf2017-volumes.mjs: per 128 m cell of the pack's frame) in the export's frame
+export function volumesToWorld(json, pack, { cell = CELL } = {}) {
+  if (!json?.cells) return null;
+  const yaw = pack?.yaw ?? 0;
+  // (a yaw about +Y as a quaternion, for the cones' turn)
+  const q = [0, -Math.sin(yaw / 2), 0, Math.cos(yaw / 2)];
+  const mul = (a, b) => [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0], a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
+  const cells = {};
+  for (const list of Object.values(json.cells)) {
+    for (const v of list) {
+      const pos = packToWorld(pack, v.pos);
+      const out = { ...v, pos, ...(v.quat && yaw ? { quat: mul(q, v.quat) } : {}) };
+      (cells[`${Math.floor(pos[0] / cell)},${Math.floor(pos[2] / cell)}`] ??= []).push(out);
+    }
+  }
+  return { ...json, cell, cells };
 }

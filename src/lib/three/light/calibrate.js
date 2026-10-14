@@ -21,7 +21,9 @@
 // luminanceScale(tonemap, { lux, el, sky }) → k | null      (the record's TonemapComponentData; the scene the meter sees)
 // meteredEV(tonemap, { lux, el, sky }) → EV | null
 // sunIntensity(outdoor, k), skyScale(sky, k), gameToSite(k), bloomThreshold(grading)
-// calibrate(record) → { k, ev, sun, sky, gameToSite, bloomThreshold } | null   (a VE record's components)
+// calibrate(record, { sky }) → { k, ev, sun, sky, gameToSite, bloomThreshold } | null   (a VE record's components;
+//   `sky`, the luminance the meter sees of the sky where the view sees less of it than the record's:
+//   the interiors' share, inside.js's skyShare)
 
 import { BLOOM } from '../bloom.js';
 import { exposureOf } from '../gameLight.js';
@@ -68,12 +70,12 @@ export const sunIntensity = (outdoor, k) => (n(outdoor?.SunIntensity) ?? 0) * ga
 export const skyScale = (sky, k) => (n(sky?.LuminanceScale) ?? 0) / k;
 export const bloomThreshold = (grading) => (n(grading?.ColorGradingMaxHdrValue) ?? 1) * BLOOM.threshold;
 
-export function calibrate(record) {
+export function calibrate(record, { sky: seen } = {}) {
   const c = (name) => first(record?.[`${name}ComponentData`]) ?? {};
   const tone = c('Tonemap');
   const outdoor = c('OutdoorLight');
   const sky = c('Sky');
-  const scene = { lux: outdoor.SunIntensity, el: outdoor.SunRotationY, sky: sky.LuminanceScale };
+  const scene = { lux: outdoor.SunIntensity, el: outdoor.SunRotationY, sky: seen ?? sky.LuminanceScale };
   // (a record with neither a tone map nor a sun has nothing to calibrate)
   if (!record?.TonemapComponentData && n(outdoor.SunIntensity) === undefined) return null;
   const k = luminanceScale(tone, scene);
