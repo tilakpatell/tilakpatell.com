@@ -9,6 +9,13 @@
 // pixel: the 4 m grid flattens it), its vertices displaced by the snow's
 // height, and the 4 m grid sits PATCH_UNDER below it there.
 //
+// Where the game's terrain has a hole (the pack's `terrain.holes`: the
+// hangar mouths and the trench tunnels, lib/land/holes.js) no ground is
+// drawn: each material, the snow's and the flat one's, discards a fragment
+// over a hole by a half-metre mask in the export's frame (the node
+// material's maskNode), so whatever the grid's spacing the cut is the
+// game's. The floor there is the level's own meshes.
+//
 // The flat colour is what is drawn until the snow has landed, and all that
 // is drawn when it cannot: a map is asked for only where it can be (the
 // pack lists it, and on the published site the bucket has it: canAsk), and
@@ -18,6 +25,7 @@
 // frame while its shader is built: swapped in place, the ground would be
 // gone for those frames).
 //
+//   holeMaskNode({ THREE, tsl }, holes, origin) → { node (false over a hole), texture }
 //   buildGround(layer, terrain, { world, pack, tier, renderer } = {}) → Group
 //     { update([x, z] in the pack's frame), ready: Promise<the snow | null>, dispose() }
 //   patchOrigin([x, z], step) → the patch's corner, snapped to the step (pure)
@@ -26,6 +34,7 @@
 
 import * as THREE from 'three';
 import { LAYERS } from '../../../lib/land/layers.js';
+import { holesOf } from '../../../lib/land/holes.js';
 import { assetUrl, withFallback } from '../../../lib/assetBase.js';
 import { BUDGETS } from '../../../lib/device.js';
 import { anisotropyFor } from '../../../lib/three/textures.js';
@@ -71,8 +80,25 @@ export const needsPatch = (at, have) => !have || Math.hypot(at[0] - have[0], at[
 // and is asked. A file that is not asked for is no 404 in the console.
 export const canAsk = (url, listed, { dev = Boolean(import.meta.env?.DEV), remote = assetUrl } = {}) => Boolean(listed) && (dev || remote(url) !== url);
 
+// a fragment kept where the ground is (false over a hole): the holes' grid as an 8-bit mask, sampled by the world's x, z
+export function holeMaskNode({ THREE, tsl }, holes, origin = [0, 0, 0]) {
+  const { texture, positionWorld, vec2 } = tsl;
+  const tex = new THREE.DataTexture(holes.bits, holes.w, holes.h, THREE.RedFormat, THREE.UnsignedByteType);
+  tex.magFilter = tex.minFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  tex.needsUpdate = true;
+  const m = holes.metresPerPixel;
+  // (sample i covers i ± half a pixel: the mask's corner half a pixel before the first)
+  const corner = vec2(origin[0] + holes.min[0] - m / 2, origin[2] + holes.min[1] - m / 2);
+  const uv = positionWorld.xz.sub(corner).div(vec2(holes.w * m, holes.h * m));
+  const inside = uv.x.greaterThanEqual(0).and(uv.x.lessThan(1)).and(uv.y.greaterThanEqual(0)).and(uv.y.lessThan(1));
+  return { node: inside.not().or(texture(tex, uv).r.lessThan(0.5)), texture: tex };
+}
+
 export function buildGround(layer, terrain = {}, { world = 'hoth', pack = null, tier = 'high', renderer = null } = {}) {
-  const flat = new THREE.MeshStandardMaterial({ color: SNOW_COLOUR, roughness: 1 - SNOW.smoothness, metalness: 0 });
+  let flat = new THREE.MeshStandardMaterial({ color: SNOW_COLOUR, roughness: 1 - SNOW.smoothness, metalness: 0 });
+  const holes = holesOf(terrain);
+  let mask = null; // the hole mask's node, once the node build is in
   const out = new THREE.Group();
   out.name = 'ground';
   const snow = Boolean(renderer) && backendOf(renderer) !== 'webgl' && mapsFor(tier).length > 0;
@@ -95,6 +121,25 @@ export function buildGround(layer, terrain = {}, { world = 'hoth', pack = null, 
   if (near?.min && near?.size) piece('near', grid(layer, near.min, (near.size[0] - 1) * near.metresPerPixel, nearStep(tier), patched ? PATCH_UNDER : 0));
   const far = terrain.far;
   if (far?.min && far?.size) piece('far', grid(layer, far.min, (far.size[0] - 1) * far.metresPerPixel, FAR_STEP, FAR_DROP + (patched ? PATCH_UNDER : 0)));
+
+  // (the flat ground masked by the holes too: a node material on the node renderer, the classic one has no mask)
+  const masked =
+    holes && renderer && backendOf(renderer) !== 'webgl'
+      ? loadThree()
+          .then((three) => {
+            if (gone) return null;
+            const made = holeMaskNode(three, holes, pack?.origin);
+            owned.push(made.texture);
+            mask = made.node;
+            const was = flat;
+            flat = new three.THREE.MeshStandardNodeMaterial({ color: SNOW_COLOUR, roughness: 1 - SNOW.smoothness, metalness: 0 });
+            flat.maskNode = mask;
+            for (const p of Object.values(pieces)) if (p.flat) p.flat.material = flat;
+            was.dispose();
+            return mask;
+          })
+          .catch(() => null)
+      : Promise.resolve(null);
 
   // a piece's snow over its flat mesh (the same geometry), the flat one a little under
   const lay = (name) => {
@@ -163,6 +208,9 @@ export function buildGround(layer, terrain = {}, { world = 'hoth', pack = null, 
       far: createSnowGround({ maps, tier, three, far: true }),
       patch: patched ? createSnowGround({ maps, tier, three, displace: true }) : null,
     };
+    // (the holes cut from the snow as from the flat ground)
+    const cut = await masked;
+    if (cut) for (const b of Object.values(built)) if (b?.material) b.material.maskNode = cut;
     for (const name of Object.keys(pieces)) lay(name);
     landing = { quiet: 0 };
     return built;

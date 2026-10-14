@@ -4,6 +4,17 @@ Written 2026-10-13, as a session ran out, for whoever picks Hoth up next. The ow
 
 ## What is done
 
+On branch `claude/hoth-map` (pushed; it builds on #990), as of 2026-10-14:
+
+- **Echo Base streams with the outside.** `map/level.js` loads `INSIDE.hoth = 'base'` in the same frame, and `map/collision.js`'s `createPartsCollision` gives each pack its own collision.
+- **The player walks on a Rapier body** (`map/walk.js`, sim.js's `mover`), on both packs' shapes and the terrain's heightfields (`setTerrain`, which was never called before). The body is held over the void until the shapes under it stream in, and the collision fills the cells nearest the player first. Measured: the fuel room's floor at 359.15 m, walked; the trenches; from the snow into the west hangar's mouth, up to the closed blast door.
+- **The terrain's holes are back** (`scripts/bf2017-holes.mjs` writes `terrain.holes` into level.json; `lib/land/holes.js` reads it; `map/ground.js` discards fragments over them through a maskNode; a 64 m terrain collider holding one becomes a trimesh, `addHoledGround`). The flat plates over the trench tunnels and across the hangar mouths are gone.
+- **The local Rapier tests run on Windows again** (`lib/wasm/instantiate.js` pathOf kept a slash before the drive).
+
+Running when this was written (workflows; their transcripts and journals are under the session's subagents/workflows folder): `hoth-game-exact-lanes` (wf_3b64fcf3-7f1: abilities, animations, skins/textures, from main), `hoth-terrain-and-interior-light` (wf_3bf27686-adc: the nine terrain layers' masks decoded from the streaming tree; Echo Base lit by its interior VE and lamps; based on claude/hoth-map), `hoth-navpower-navmesh` (wf_757b82d2-c8b: Hoth's NavPower blobs decoded into navmesh.bin and a pure `lib/battlefront/navmesh.js`). Resume one with `Workflow({ scriptPath, resumeFromRunId })`.
+
+Still open on the map: bots stand on the terrain (they need bodies and the navmesh, which the main session wires in); the soldier sinks into the ultra 1 m patch's displaced snow at the trenches; the gates' interact event never fires.
+
 - **The spawn logic** (PR #990, branch `claude/caveman-reverse-engineer-7df20d`): Galactic Assault's spawn sets come from the sub-world's own graph, run on the page (`lib/battlefront/spawnLogic.js`, bf2-re findings/55).
 - **The dev door's `place`** [x, z] (same branch): stands the player at a spot and answers with the sim's ground, the terrain's and the mask's say there.
 
