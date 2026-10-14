@@ -274,8 +274,8 @@ export function tick(ga, dt, world = { soldiers: [], alive: { attack: 0, defend:
       for (const w of walkersOf(ga)) if (w.alive) w.hp = Math.max(0, w.hp - BOMBING_RUN * w.hpMax);
       ga.out.push({ type: 'uplink', name: o.name, by: o.interactions.filter((i) => i.side === 'defend').map((i) => i.id) });
     }
-    // (a charge's step: armed, defused, its fuse's sound, detonated)
-    if (o.type === 'arm') for (const f of o.fired ?? []) ga.out.push({ type: f, name: o.name, id: o.def?.prefab ?? null, by: o.interactions.filter((i) => i.side === (f === 'armed' ? 'attack' : 'defend')).map((i) => i.id) });
+    // (a charge's step: armed, defused, its fuse's sound, detonated; by whoever finished the hold that armed or defused it)
+    if (o.type === 'arm') for (const f of o.fired ?? []) ga.out.push({ type: f, name: o.name, id: o.def?.prefab ?? null, by: [...(o.by ?? [])] });
     if (o.done && !was.done) ga.out.push({ type: 'objective', kind: o.type, name: o.name });
     // (a walker home: its route's gate unlocks, the other's is barred)
     if (o.type === 'escort' && o.done && !was.done && o.def?.waypoints) ga.out.push(...arrive(ga.gates, o.def.waypoints));

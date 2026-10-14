@@ -1,6 +1,6 @@
 // A Galactic Assault level's fuel charges (maps/<level>.json `charges`):
 // Hoth's three PF_Interact_PlanetaryBattle_Bomb in the stage-3 fuel rooms,
-// read as the game wires them (bf2-re findings/61), beside the gates
+// read as the game wires them (bf2-re findings/63), beside the gates
 // (bf2017-rulebook-gates.mjs) and the spawn logic out of the same sub-world.
 //
 // A charge prefab holds PF_Interact_PlanetaryBattle_Core, which holds
@@ -10,19 +10,26 @@
 //                 is the charge model's; the keypad sits in the core at its own
 //                 BlueprintTransform, the button in the keypad at its own.
 //   the reach     the keypad sets the button's InteractionMaxDistance (1) and
-//                 InteractionMaxAngle (360); the button scales its interaction's
-//                 transform by its TransformMultiplier's In1 (3×), so 3 m, any side.
-//   who           the keypad's PropertySelect gives the button the attackers' team
-//                 while the charge is off and the defenders' once it is armed (its
-//                 EventGates on the armed and defused events); one at a time (the
-//                 button's AllowMoreInteractors is a Bool set false on
-//                 OnInteractStart); a hold let go starts again (the button's
-//                 EventGate resets its StopWatch on OnInteractStop).
+//                 InteractionMaxAngle (360) over the button's own (2, 90); the button
+//                 scales its interaction's transform by its TransformMultiplier's In1
+//                 (3×), so 3 m, any side.
+//   who           the core's TeamId constant on the keypad's AttackingTeam (Team2);
+//                 the keypad's PropertySelect gives the button that team while the
+//                 charge is off and the other (its CompareInt on the team against 1)
+//                 once it is armed (its EventGates on the armed and defused events),
+//                 the attackers' again after a defuse; one at a time (the button's
+//                 AllowMoreInteractors is a Bool set false on OnInteractStart); a hold
+//                 let go starts again (the button's EventGate resets its StopWatch on
+//                 OnInteractStart and OnInteractStop, through its CompareBools on the
+//                 keypad's field the core sets to Not(is a bomb): false for a charge).
 //   the holds     the keypad's ConditionalFloat: ValueIfFalse while the charge is
 //                 off (the arm), ValueIfTrue once armed (the defuse; its EventSwitch
 //                 on the button's Success sets the Bool), from the core's
 //                 SelectFloats' "Bomb: " inputs, each a BattlepointUnitCost
-//                 (GLOBAL_BOMB_INTERACT_TIME_OFF, _ON) of Online/BattlepointCostData.
+//                 (GLOBAL_BOMB_INTERACT_TIME_OFF, _ON) of Online/BattlepointCostData;
+//                 the keypad's Math into the button's hold halves it (iff(b, t/2, t))
+//                 for a player whose WSRemotePlayerAbilityState is on (BB-8's and
+//                 BB-9E's default hero abilities).
 //   the fuse      the core's StopWatch whose OnTrigger sets IsDestroyed: started on
 //                 the keypad's armed event, its TriggerOnTime the SelectFloat input
 //                 a charge selects (GLOBAL_BOMB_DETONATE_TIME), its Multiplier a
@@ -33,13 +40,15 @@
 //                 the explosion's sound.
 //   the delays    the keypad comes on a Delay chain after the charge is enabled (5 s);
 //                 the keypad's Delay between a finished hold and the armed or defused
-//                 event (0.1 s).
+//                 event (0.1 s); the core's Delay from the detonation to its blast
+//                 marker's off (5 s) and, on the client, from the objective marker's
+//                 off to its HUD string's (3 s).
 //   the round     the charges' detonated event (628087861) into an EventAndGate: its
 //                 EventCount is how many must go (Hoth: all three).
 //
-//   chargeRules(root, bomb) → { local, interact, arm, defuse, fuse, live, settle, _source } | null
+//   chargeRules(root, bomb) → { local, teams, interact, arm, defuse, fuse, live, settle, marker, _source } | null
 //   chargesOf(root, dir, sub) → [{ id, name, at, yaw, label, charge, keypad, enabledBy,
-//     interact, arm, defuse, fuse, live, settle, win, _source }] | []
+//     teams, interact, arm, defuse, fuse, live, settle, marker, win, _source }] | []
 
 import { fieldHash as H } from './bf2017-abilities.mjs';
 import { follow, loadAsset, objectsOf, rootOf, shortName } from './bf2017-ebx.mjs';
@@ -58,9 +67,12 @@ export const DEFUSED = 243521495;
 const KEYPAD_ENABLE = 112496486;
 const HOLD_ON = 557666635;
 const HOLD_OFF = 1223129541;
-// the button's: its completion (the keypad's Delay on it), whether a hold survives a let-go
+// the button's: its completion (the keypad's Delay on it), whether a hold survives a let-go (the field that
+// closes its reset's EventGate, and the one its CompareBools on OnInteractStart/Stop read: false resets), its hold
 const BUTTON_DONE = 918477720;
 const BUTTON_KEEP = 679638177;
+const BUTTON_KEEP_IF = -1246365565;
+const BUTTON_HOLD = 690704266;
 const COSTS = 'Online/BattlepointCostData';
 const ON_START = H('OnInteractStart');
 // the keypad's own server events for the button's OnInteractStart and OnInteractStop
@@ -202,6 +214,7 @@ function fuseOf(root, B, ci, C, ki) {
   const sub = warnRef !== undefined ? into(C, warnRef, H('TriggerOnTime'))[0]?.Source.$ref : undefined;
   const warn = sub !== undefined && C.objects[sub]?.$type === 'MathOpEntityData' ? (ifaceInto(C, sub, H('In1'))?.[0] ?? null) : null;
   return {
+    ref: fuseRef,
     seconds: seconds?.value ?? null,
     ...(seconds?.setting ? { setting: seconds.setting } : {}),
     multiplier,
@@ -251,8 +264,45 @@ export function chargeRules(root, bomb) {
   // (one at a time: the Bool on AllowMoreInteractors is set false when an interaction starts)
   const allow = into(U, wi, H('AllowMoreInteractors'))[0]?.Source.$ref;
   const one = allow !== undefined && evInto(U, allow, H('SetFalse')).some((e) => e.Source.$ref === wi && s32(e.SourceEvent.Id) === ON_START);
-  // (a hold let go starts again unless the keypad sets the button's keep field)
-  const keep = Boolean(kv(BUTTON_KEEP));
+  // (a hold let go starts again: the button's CompareBools on its BUTTON_KEEP_IF reset its StopWatch on their
+  // false branch, through an EventGate the keypad's BUTTON_KEEP would close; the keypad passes the button the
+  // core's value of that field: for a charge Not(is a bomb), false)
+  const keepIf = ifaceInto(K, bi, BUTTON_KEEP_IF);
+  const keepSrc = keepIf ? into(C, ki, keepIf[1])[0]?.Source.$ref : undefined;
+  const keepNot = keepSrc !== undefined && C.objects[keepSrc]?.$type === 'NotEntityData' ? ifaceInto(C, keepSrc, H('In')) : null;
+  const keep = Boolean(kv(BUTTON_KEEP)) || (keepNot ? !coreValue(B, ci, C, keepNot[1]) : Boolean(keepIf?.[0]));
+
+  // who: the TeamId the core sets on the keypad's AttackingTeam (its own constant; the charge's AttackingTeam,
+  // which the level leaves unset, passes TeamNeutral) arms; the other (the keypad's CompareInt of that team's
+  // int against 1: greater, Team1; equal, Team2) defuses
+  const teamSet = into(C, ki, H('AttackingTeam'))
+    .filter((c) => isIface(C, c.Source))
+    .map((c) => [valueOf(ifaceField(C, c.SourceFieldId)?.Value), c.SourceFieldId])
+    .find(([v]) => /Team[12]$/.test(String(v ?? '')));
+  const armTeam = teamSet ? Number(/Team([12])$/.exec(teamSet[0])[1]) : null;
+  const teams = {
+    arm: armTeam,
+    defuse: armTeam ? 3 - armTeam : null,
+    _source: `${C.name}#InterfaceDescriptorData field ${teamSet ? s32(teamSet[1]) : '?'} (${teamSet?.[0] ?? '?'}) into ${K.name}'s AttackingTeam; its PropertySelect (Select2 the team, Select1 its CompareInt's other on the armed EventGate, Select2 again on the defused) into the button's EnabledTeam`,
+  };
+
+  // (the hold halved for a player whose ability state is on: the keypad's Math into the button's hold, iff(b, t / k, t),
+  // b an Or of WSRemotePlayerAbilityStates)
+  const mathRef = into(K, bi, BUTTON_HOLD)
+    .map((c) => c.Source.$ref)
+    .find((r) => K.objects[r]?.$type === 'MathEntityData');
+  let fast = null;
+  if (mathRef !== undefined) {
+    const code = K.objects[mathRef].Assembly?.Instructions ?? [];
+    const flag = code.find((x) => x.Code === 'MathOpCode_InputB')?.Param1;
+    const k = code.find((x) => x.Code === 'MathOpCode_ConstF')?.Param1;
+    const by = flag !== undefined ? into(K, mathRef, flag)[0]?.Source.$ref : undefined;
+    const states = by !== undefined ? into(K, by).map((c) => K.objects[c.Source.$ref]).filter((o) => o?.$type === 'WSRemotePlayerAbilityStateEntityData') : [];
+    if (states.length && k !== undefined && code.some((x) => x.Code === 'MathOpCode_DivF')) {
+      const divisor = new Float32Array(new Uint32Array([k >>> 0]).buffer)[0];
+      fast = { factor: r3(1 / divisor), abilities: states.map((o) => o.PlayerAbilityIdentifier), _source: `${K.name}#MathEntityData.${mathRef} (iff(its InputB, ${BUTTON_HOLD} / ${divisor}, ${BUTTON_HOLD})) into ${U.name}'s ${BUTTON_HOLD}; its InputB an Or of WSRemotePlayerAbilityStateEntityData.PlayerAbilityIdentifier` };
+    }
+  }
 
   // the holds: the keypad's ConditionalFloat on the button's hold, OFF while the charge is off, ON once it is armed
   const condRef = K.objects.findIndex((o, i) => o?.$type === 'ConditionalFloatEntityData' && into(K, i, H('ValueIfFalse')).some((c) => isIface(K, c.Source) && s32(c.SourceFieldId) === HOLD_OFF));
@@ -278,9 +328,20 @@ export function chargeRules(root, bomb) {
   }
   // the keypad's Delay between the button's finished hold and its armed/defused EventGates
   const settleRef = K.objects.findIndex((o, i) => o?.$type === 'DelayEntityData' && evInto(K, i, H('In')).some((e) => e.Source.$ref === bi && s32(e.SourceEvent.Id) === BUTTON_DONE));
+  const fuse = fuseOf(root, B, ci, C, ki);
+
+  // the markers' delays: the core's Delay on the fuse's OnTrigger (the blast marker's SyncedBool off after it), and
+  // the client's Delay on the CompareBool of the Or that enables PF_UI_Bomb_Marker (its HUD string off after it)
+  const delays = typed(C, 'DelayEntityData');
+  const blastRef = fuse?.ref !== undefined ? delays.find((d) => evInto(C, d, H('In')).some((e) => e.Source.$ref === fuse.ref && s32(e.SourceEvent.Id) === H('OnTrigger'))) : undefined;
+  const markerRef = indexOfRef(C, /PF_UI_Bomb_Marker$/);
+  const orRef = markerRef >= 0 ? into(C, markerRef, H('Enabled'))[0]?.Source.$ref : undefined;
+  const lingerRef = orRef !== undefined ? delays.find((d) => evInto(C, d, H('In')).some((e) => C.objects[e.Source.$ref]?.$type === 'CompareBoolEntityData' && into(C, e.Source.$ref, H('Bool')).some((c) => c.Source.$ref === orRef))) : undefined;
+  const fuseRow = fuse ? Object.fromEntries(Object.entries(fuse).filter(([k]) => k !== 'ref')) : null;
 
   return {
     local,
+    teams,
     interact: {
       distance,
       scale: r3(len(mul?.In1?.right)),
@@ -288,13 +349,19 @@ export function chargeRules(root, bomb) {
       facing,
       one,
       keep,
-      _source: `${chain}: the keypad's InteractionMaxDistance and InteractionMaxAngle into the button's WorldInteractionEntityData; the button's TransformMultiplierEntityData.In1 (the interaction's Transform); the charge's SelectFloat into InteractionFacingMaxAngle; the Bool on AllowMoreInteractors set false on OnInteractStart; the button's EventGate resetting its StopWatch on OnInteractStop`,
+      ...(fast ? { fast } : {}),
+      _source: `${chain}: the keypad's InteractionMaxDistance and InteractionMaxAngle into the button's WorldInteractionEntityData (its own ${W.InteractionMaxDistance}, ${W.InteractionMaxAngle}); the button's TransformMultiplierEntityData.In1 (the interaction's Transform); the charge's SelectFloat into InteractionFacingMaxAngle; the Bool on AllowMoreInteractors set false on OnInteractStart; the button's CompareBools on ${BUTTON_KEEP_IF} resetting its StopWatch on OnInteractStart/Stop, the core's Not(${IS_BOMB}) into it`,
     },
     arm: { hold: off?.value ?? null, by: 'attack', ...(off?.setting ? { setting: off.setting } : {}), _source: `${K.name}#ConditionalFloatEntityData.${condRef}.ValueIfFalse (the charge off) ← ${C.name}'s SelectFloat "Bomb: " ← ${off?._source ?? '?'}` },
     defuse: { hold: on?.value ?? null, by: 'defend', ...(on?.setting ? { setting: on.setting } : {}), _source: `${K.name}#ConditionalFloatEntityData.${condRef}.ValueIfTrue (armed: its EventSwitch on the button's Success) ← ${C.name}'s SelectFloat "Bomb: " ← ${on?._source ?? '?'}` },
-    fuse: fuseOf(root, B, ci, C, ki),
+    fuse: fuseRow,
     live: { seconds: live, _source: `${C.name}#DelayEntityData: the chain from the charge's enable to the Bool on the keypad's enable (${KEYPAD_ENABLE})` },
     settle: { seconds: settleRef >= 0 ? K.objects[settleRef].Delay : 0, _source: `${K.name}#DelayEntityData.${settleRef} on the button's ${BUTTON_DONE} into the armed/defused EventGates` },
+    marker: {
+      blast: blastRef !== undefined ? delayOf(C, blastRef) : null,
+      linger: lingerRef !== undefined ? delayOf(C, lingerRef) : null,
+      _source: `${C.name}#DelayEntityData.${blastRef ?? '?'} (the fuse's OnTrigger → the blast marker's SyncedBool off), DelayEntityData.${lingerRef ?? '?'} (the client's: the CompareBool on PF_UI_Bomb_Marker's Enabled OnFalse → its HUD string's Bool off)`,
+    },
     _source: chain,
   };
 }
@@ -327,7 +394,8 @@ export function chargesOf(root, dir, sub) {
       if (t?.o.$type !== 'EventAndGateEntityData' || !list.some((v) => v.src.id === e.id && s32(v.srcEvent) === DETONATED)) continue;
       win = { gate: id, of: t.o.EventCount ?? null, _source: `${g.subName}#EventConnections (the charges' ${DETONATED} into ${id}, EventAndGateEntityData.EventCount)` };
     }
-    const { local, _source: chain, ...shared } = R ?? {};
+    const chain = R?._source;
+    const shared = Object.fromEntries(Object.entries(R ?? {}).filter(([k]) => k !== 'local' && k !== '_source'));
     out.push({
       id: e.id,
       name,

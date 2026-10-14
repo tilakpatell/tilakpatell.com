@@ -82,14 +82,15 @@ export const capture = {
 
 // -- arm: an attacker holds the interaction to arm, a defender to defuse; the fuse runs out and it is done --
 //
-// With a row of the map rulebook's `charges` (Hoth's fuel charges, bf2-re findings/61) the charge runs as the
+// With a row of the map rulebook's `charges` (Hoth's fuel charges, bf2-re findings/63) the charge runs as the
 // game's PF_Interact_PlanetaryBattle_Core does: its keypad comes on `live` seconds after the stage enables it;
 // one soldier holds it at a time (the button's AllowMoreInteractors off while one does), the attackers while
 // it is off (the arm hold) and the defenders once armed (the defuse hold); a hold let go starts again; a
 // finished hold arms or defuses `settle` seconds later (the keypad's Delay); the fuse stops while a defender
-// holds the keypad and runs on when they let go; a defuse resets it. Without one (Strike's bombs) the hand
-// values above: anyone of the side, the fuse running through a defuse.
-//   arm.create({ at, name, charge }) → o      o.fired: the step's events ('armed', 'defused', 'detonated', 'warn')
+// holds the keypad and runs on when they let go; a defuse resets it, and the attackers may arm it again.
+// Without one (Strike's bombs) the hand values above: anyone of the side, the fuse running through a defuse.
+//   arm.create({ at, name, charge }) → o      o.fired: the step's events ('armed', 'defused', 'detonated', 'warn');
+//   o.by: who finished the hold that armed or defused it
 
 export function armRules(charge = null) {
   if (!charge) return { arm: ARM_SECONDS, defuse: DEFUSE_SECONDS, fuse: FUSE_SECONDS, live: 0, settle: 0, one: false, keep: false, pause: false, reset: true, warn: 0 };
@@ -112,14 +113,15 @@ export function armRules(charge = null) {
 export const arm = {
   create({ at, name = null, charge = null }) {
     const rules = armRules(charge);
-    return { type: 'arm', name, at, charge, rules, armed: false, fuse: 0, elapsed: 0, progress: 0, defuse: 0, holder: null, paused: false, wait: rules.live, settling: null, warned: false, fired: [], done: false };
+    return { type: 'arm', name, at, charge, rules, armed: false, fuse: 0, elapsed: 0, progress: 0, defuse: 0, holder: null, by: [], paused: false, wait: rules.live, settling: null, warned: false, fired: [], done: false };
   },
   tick(o, dt, { interactions }) {
     o.fired = [];
     if (o.done) return;
     const R = o.rules ?? armRules(o.charge);
-    if (o.wait > 0) {
-      o.wait = Math.max(0, o.wait - dt);
+    if (o.wait > 1e-9) {
+      o.wait -= dt;
+      if (o.wait <= 1e-9) o.wait = 0;
       return;
     }
     // (who holds: the side the keypad is for, the one already at it, else the first)
@@ -135,7 +137,10 @@ export const arm = {
     if (!holding && !R.keep && o.settling === null) o[key] = 0;
     else if (holding && o.settling === null) {
       o[key] = Math.min(1, o[key] + dt / (o.armed ? R.defuse : R.arm));
-      if (o[key] >= 1 - 1e-9) o.settling = R.settle;
+      if (o[key] >= 1 - 1e-9) {
+        o.settling = R.settle;
+        o.by = R.one ? [o.holder] : held.map((i) => i.id);
+      }
     }
     o.paused = o.armed && R.pause && holding;
     if (o.settling !== null) {

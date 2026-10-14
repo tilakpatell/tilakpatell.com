@@ -1,5 +1,5 @@
 // A Galactic Assault charge's keypad, as the game reaches it (bf2-re
-// findings/61): the map rulebook's `charges` rows (Hoth's three fuel charges,
+// findings/63): the map rulebook's `charges` rows (Hoth's three fuel charges,
 // read by scripts/lib/bf2017-rulebook-charges.mjs). The keypad's button holds
 // a WorldInteraction whose InteractionMaxDistance the keypad sets to 1 on a
 // transform the button scales 3× (its TransformMultiplier's In1), so 3 m in
