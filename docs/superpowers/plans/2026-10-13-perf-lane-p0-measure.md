@@ -60,5 +60,3 @@
 
 - [ ] Run `--heavy` on the desktop at Low and High, WebGL and WebGPU; fill the desktop’s rows; leave the laptop’s with its commands.
 - [ ] The four checks; pull request; merge on green.
-</content>
-</invoke>

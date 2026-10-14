@@ -103,5 +103,3 @@ To be run by the owner with the commands above.
 
 | route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-</content>
-</invoke>
