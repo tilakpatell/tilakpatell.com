@@ -14,7 +14,8 @@
 //   createPartsCollision({ parts: { outside: { pack, loadBin }, inside: { pack, loadBin } | null }, physics, tier, deps })
 //     → the same face, for a level and its interior (map/level.js's `inner`):
 //       add(key, bin, band, part) and drop(key, part) by the part the stream
-//       names ('inside', else the outside), the sweep the nearer of the two
+//       names ('inside', else the outside), the sweep the nearer of the two,
+//       setTerrain(heightAt) the outside's (a pack-frame sampler)
 //   armCaster({ heightAt, collision, nav, clear, step, radius }) → castArm(from, dir, len)
 //     the nearer of a march over the ground and a ball swept through the
 //     shapes (with no engine: the navgrid's solids and mask, firstSolid)
@@ -74,6 +75,8 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
       const h = world.castShape({ x: px, y: from[1] - oy, z: pz }, I, { x: dx * len, y: dir[1] * len, z: dz * len }, balls.get(r), 0, 1, true);
       return h ? h.time_of_impact * len : null;
     },
+    // (the ground's heights in the pack's frame, for the walk: a heightfield a 64 m square in each near cell)
+    setTerrain: (heightAt) => lp.setTerrain(heightAt),
     stats: () => lp.stats(),
     dispose() {
       gone = true;
@@ -109,6 +112,8 @@ export function createPartsCollision({ parts, physics, tier = 'high', deps = {} 
       for (const c of all) for (const [k, v] of Object.entries(c.stats() ?? {})) if (typeof v === 'number') out[k] = (out[k] ?? 0) + v;
       return out;
     },
+    // (the ground is the outside's: the interior has none of its own)
+    setTerrain: (heightAt) => each.outside?.setTerrain(heightAt),
     dispose: () => all.forEach((c) => c.dispose()),
   };
 }

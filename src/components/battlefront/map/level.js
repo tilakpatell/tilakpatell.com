@@ -17,7 +17,7 @@
 //    onDrop with a fourth argument, 'inside', its keys being its own)
 //   (snow: the ground in the game's snow maps on the node renderer; false, the flat colour;
 //    detail: the quality level, 'ultra' where the tier is 'high' on a strong card, for the ground)
-//     → { ready: Promise, group, origin, pack, inner: { pack, loadBin } | null, update([x, y, z]), heightAt(x, z),
+//     → { ready: Promise, group, origin, pack, inner: { pack, loadBin } | null, update([x, y, z]), heightAt(x, z), packHeightAt(px, pz),
 //         loadBin(path), navOf() → Promise<mask | null>, progress(), loaded(), stats(), dispose() }
 //   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
 //   and go, for the collision; navOf: the pack's nav.bin, navMask.js's)
@@ -184,6 +184,8 @@ export function createLevel({
       const [px, pz] = toPack(pack, [x, 0, z]);
       return LAYERS.image(px, pz, layer) + (pack.origin?.[1] ?? 0);
     },
+    // the ground's height in the pack's frame (its origin's height off), for the physics' heightfields; null until it is in
+    packHeightAt: (px, pz) => (layer ? LAYERS.image(px, pz, layer) : null),
     loaded: () => (stream?.ready() ?? false) && (!sub || sub.loaded()),
     progress: () => (sub ? ((stream?.progress() ?? 0) + sub.progress()) / 2 : (stream?.progress() ?? 0)),
     stats: () => sum(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }, sub?.stats()),

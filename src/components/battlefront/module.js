@@ -19,7 +19,7 @@
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
-// 'nav' (the battle's navgrid, for a check), 'place' [x, z] (the player's soldier stood there on the sim's ground: a check's walk of the map),
+// 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
 // create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
@@ -59,6 +59,8 @@ import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createPartsCollision, wantsEngine } from './map/collision.js';
+import { createWalker } from './map/walk.js';
+import SOLDIER_BODY from '../../data/bf2017/physics/soldier.json';
 import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
@@ -122,6 +124,9 @@ export default {
     // brings them)
     let collision = null;
     let physics = null;
+    let walker = null; // the player's body on the level's shapes (map/walk.js), with the engine
+    // (the cells the stream has handed on, kept so a collision made after them is given them too)
+    const streamed = new Map();
     // (on WebGPU the level is GPU-first lane N1's scene: the rows culled by
     // compute and one indirect draw a material group, so the level costs
     // the frame no JavaScript a draw; Hoth at ultra on the owner's 5090,
@@ -142,7 +147,15 @@ export default {
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
     // 'high': the ground's 1 m patch and its map sizes read it)
-    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', onCell: (k, b, band, part) => collision?.add(k, b, band, part), onDrop: (k, part) => collision?.drop(k, part) });
+    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', onCell: (k, b, band, part) => {
+        streamed.set(`${part}|${k}`, [k, b, band, part]);
+        collision?.add(k, b, band, part);
+      },
+      onDrop: (k, part) => {
+        streamed.delete(`${part}|${k}`);
+        collision?.drop(k, part);
+      },
+    });
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
@@ -172,6 +185,9 @@ export default {
       physics = await createPhysics();
       // (the outside's and its interior's, Hoth's Echo Base: map/level.js's inner)
       collision = createPartsCollision({ parts: { outside: { pack: level.pack, loadBin: level.loadBin }, inside: level.inner }, physics, tier });
+      collision.setTerrain((px, pz) => level.packHeightAt(px, pz) ?? 0);
+      for (const a of streamed.values()) collision.add(...a);
+      walker = createWalker({ physics, pack: level.pack, row: SOLDIER_BODY.rows[SOLDIER_BODY.default], ground: (x, z) => level.heightAt(x, z) });
     };
     // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
     const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
@@ -448,6 +464,8 @@ export default {
           acc -= STEP;
           stepped += STEP;
           lastAt = body()?.at.slice() ?? null;
+          // (the player walks the level's shapes where the engine is: map/walk.js)
+          if (walker && body() && body().mover !== walker.mover) body().mover = walker.mover;
           const once = first ? { ...read, ...pressed } : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
           if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false });
           first = false;
@@ -596,14 +614,19 @@ export default {
           case 'nav':
             // (the battle's navgrid itself, for a check of a way over it)
             return sim.nav;
+          case 'where': {
+            // (a check's read of the player: the place, and whether the body on the level's shapes moves it)
+            const b = body();
+            return b ? { at: b.at.map((v) => Math.round(v * 100) / 100), body: Boolean(b.mover), grounded: b.grounded ?? null } : null;
+          }
           case 'place': {
             // (a check's walk of the map: the player's soldier stood at [x, z] on the sim's ground, and what the ground and the mask say there)
             const b = body();
             if (!b || !sim.nav) return { ok: false, why: b ? 'no nav' : 'not deployed' };
-            const [x, z] = arg;
+            const [x, z, y = null] = arg;
             b.at[0] = x;
             b.at[2] = z;
-            b.at[1] = navHeight(sim.nav, x, z);
+            b.at[1] = y ?? navHeight(sim.nav, x, z);
             return { ok: true, at: b.at.slice(), terrain: level.heightAt(x, z), walkable: walkable(sim.nav, x, z) };
           }
           case 'gpu':
@@ -643,6 +666,7 @@ export default {
         figures.dispose();
         ragdolls.dispose();
         level.dispose();
+        walker?.dispose();
         collision?.dispose();
         physics?.dispose();
         if (typeof window !== 'undefined' && window.__battlefront?.world === world) delete window.__battlefront;
