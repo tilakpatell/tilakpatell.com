@@ -6,7 +6,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { describe, expect, it } from 'vitest';
 import { hullOf, segmentHit } from '../../src/lib/combat/hulls.js';
-import { readHull } from '../../src/lib/physics/shapesBin.js';
+import { packHull, readHull } from '../../src/lib/physics/shapesBin.js';
 import { FLEET } from '../bf2017-fleet.mjs';
 import { physicsKey, readPhysicsGlb } from './bf2017-physics.mjs';
 import {
@@ -36,7 +36,7 @@ import {
   rosterKinds,
   wingEdge,
 } from './bf2017-hulls.mjs';
-import { siteHull, subsystemParts } from './bf2017-hulls-site.mjs';
+import { capitalBudget, siteHull, subsystemParts } from './bf2017-hulls-site.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DIR = join(REPO, 'scripts', 'fixtures', 'bf2017', 'physics');
@@ -226,14 +226,92 @@ describe('the capitals’ kits', () => {
   }, 30000);
 });
 
-// The Star Destroyer's hull cut to the modules the test needs (the full one
-// is the game's shapes of 81 modules, 2.8 MB, published and not committed):
-// the hull itself (the widest section), both deflector shields and the
-// reactor, as `node scripts/bf2017-hulls.mjs --only destroyer --fixture` cut
-// it, and the boxes of the cuts it is drawn in
+// a flat grid of n × n squares (2n² triangles) across `size` about `at`, in
+// y = at[1], as a mesh shape of `part` on root 1
+function grid(n, size, at, part) {
+  const points = [];
+  const indices = [];
+  for (let i = 0; i <= n; i++) for (let j = 0; j <= n; j++) points.push(at[0] + (i / n - 0.5) * size, at[1], at[2] + (j / n - 0.5) * size);
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      const a = i * (n + 1) + j;
+      indices.push(a, a + 1, a + n + 2, a, a + n + 2, a + n + 1);
+    }
+  return { kind: 'mesh', root: 1, part, instance: 0, material: 0, points: Float32Array.from(points), indices: Uint32Array.from(indices) };
+}
+// a cube `size` across about `at`, a convex shape of `part` on root 0
+function cube(size, at, part) {
+  const points = [];
+  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) points.push(at[0] + (x * size) / 2, at[1] + (y * size) / 2, at[2] + (z * size) / 2);
+  return { kind: 'hull', root: 0, part, instance: 0, material: 0, points: Float32Array.from(points) };
+}
+
+describe('a game capital’s hull to the budget', () => {
+  // three parts on root 1: a broad deck of 1,800 triangles, a smaller plate
+  // of 450 and a turret of 200 a hundredth across; on root 0, 12 blocks,
+  // 20 greebles a two-hundredth across and 10 small blocks among the big
+  const shapes = [grid(30, 1, [0, 0, 0], 0), grid(15, 0.3, [0.2, 0.05, 0.1], 1), grid(10, 0.01, [-0.3, 0.02, -0.3], 2)];
+  for (let i = 0; i < 12; i++) shapes.push(cube(0.08, [-0.44 + i * 0.08, -0.02, 0], 0));
+  for (let i = 0; i < 20; i++) shapes.push(cube(0.005, [-0.4 + i * 0.04, 0.03, 0.3], 1));
+  for (let i = 0; i < 10; i++) shapes.push(cube(0.02, [-0.4 + i * 0.08, -0.02, -0.2], 2));
+  const hull = assemble(shapes, [132, 206, 129], ['deck', 'plate', 'turret']);
+
+  it('cuts root 1 to its triangles, every part kept, named and hittable', () => {
+    const { hull: cut, said } = capitalBudget(hull, { maxTris: 300, maxSolids: 16 });
+    const h = hullOf(packHull(cut));
+    expect(said.tris).toEqual([2450, h.rays.count]);
+    expect(h.rays.count).toBeLessThanOrEqual(300);
+    expect(cut.parts).toEqual(hull.parts);
+    for (const part of [0, 1, 2]) expect(Array.from(h.rays.part).filter((p) => p === part).length, `part ${part}`).toBeGreaterThanOrEqual(4);
+    // (a bolt down onto the turret names it)
+    const hit = segmentHit(h, pose(1), [-0.3, 1, -0.3], [-0.3, -1, -0.3]);
+    expect(h.parts[hit.part].name).toBe('turret');
+    expect(hit.property).toBe(129);
+    // (and the bolts' box is the game's)
+    const before = boxOf(hull.shapes.filter((s) => s.root === 1));
+    const after = boxOf(cut.shapes.filter((s) => s.root === 1));
+    for (const end of ['min', 'max']) after[end].forEach((v, k) => expect(v).toBeCloseTo(before[end][k], 6));
+  });
+
+  it('drops root 0’s greebles, then merges its smallest into their neighbours', () => {
+    const { hull: cut, said } = capitalBudget(hull, { maxTris: 300, maxSolids: 16 });
+    expect(said.solids).toEqual([42, 16]);
+    expect(said.greebles).toBe(20);
+    expect(said.merges).toBe(6);
+    expect(hullOf(packHull(cut)).solids).toHaveLength(16);
+    // (every solid still a convex shape of at most 64 points, on a part of the hull)
+    for (const s of cut.shapes.filter((x) => x.root === 0)) {
+      expect(s.points.length / 3).toBeLessThanOrEqual(64);
+      expect(s.part).toBeLessThan(3);
+    }
+  });
+
+  it('leaves a hull within the budget as it is', () => {
+    const { hull: same, said } = capitalBudget(hull, { maxTris: 5000, maxSolids: 64 });
+    expect(same).toBe(hull);
+    expect(said.tris).toEqual([2450, 2450]);
+  });
+});
+
+// The Star Destroyer's hull as the CLI writes it (`node scripts/bf2017-hulls.mjs
+// --only destroyer --fixture`: its 81 modules' shapes cut to a capital's
+// budget), and the boxes of the cuts it is drawn in
 describe('the Star Destroyer', () => {
   const cuts = () => JSON.parse(readFixture('destroyer-cuts.json')).cuts;
   const bin = () => readFixture('destroyer-hull.bin');
+
+  it('is within a capital’s budget: 4,000 bolt triangles, 256 solids, about 120 KB', () => {
+    const h = hullOf(bin());
+    expect(h.rays.count).toBeLessThanOrEqual(4000);
+    expect(h.solids.length).toBeLessThanOrEqual(256);
+    expect(bin().byteLength).toBeLessThanOrEqual(125000);
+    // (every module's part with bolt triangles before keeps some: 123 parts, a turret's among them)
+    expect(new Set(h.rays.part).size).toBeGreaterThan(100);
+    // (built in well under the 291 ms the modules' own shapes took: 20 ms on the machine that wrote it, room here for a slower one)
+    const t = performance.now();
+    hullOf(bin());
+    expect(performance.now() - t).toBeLessThan(100);
+  });
 
   it('has parts named for its deflector shields and its reactor, each with its module’s property', () => {
     const { parts } = readHull(bin());

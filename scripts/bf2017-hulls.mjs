@@ -10,8 +10,10 @@
 //   findings/62 §7, copied to lab/, git-ignored);
 // - a game capital: its kit's modules' shapes, the kit read from its space
 //   level's map (`--maps`), every part of every module its own part, named
-//   for its module;
-// - the Nebulon-B: its one asset's shapes, on the fleet's cut;
+//   for its module, cut to a capital's budget (bf2017-hulls-site.mjs's
+//   capitalBudget: 4,000 bolt triangles, 256 solids, 120 KB) before it is
+//   held to its drawing;
+// - the Nebulon-B: its one asset's shapes, on the fleet's cut (within the budget as it is);
 // - a ship the game never had, a hunter drawn as another model
 //   (`hunter/<kind>`), and a kind whose game shapes miss its drawing
 //   (SITE_OVER_GAME, measured each run): its drawn model simplified, one
@@ -44,8 +46,7 @@
 //             fighter and capital the game has)
 //   dry       measure and say, write nothing
 //   fixture   write the test fixtures too (scripts/fixtures/bf2017/physics/: the X-wing's
-//             xwing-hull.bin and xwing-cuts.json; the Star Destroyer's hull cut to its
-//             widest section, its deflector shields and its reactor, destroyer-hull.bin,
+//             xwing-hull.bin and xwing-cuts.json; the Star Destroyer's, destroyer-hull.bin,
 //             and destroyer-cuts.json, the cuts' boxes)
 
 import { existsSync } from 'node:fs';
@@ -92,7 +93,7 @@ import {
   sceneBox,
   wingEdge,
 } from './lib/bf2017-hulls.mjs';
-import { siteHull, subsystemParts } from './lib/bf2017-hulls-site.mjs';
+import { capitalBudget, siteHull, subsystemParts } from './lib/bf2017-hulls-site.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'C:/Users/tilak/Downloads/BF2_Extract/web';
@@ -106,8 +107,9 @@ const BUDGET = { fighter: 600, capital: 4000 };
 // _source: the hulls plan's Task 6 test (a bolt at a Star Destroyer's wing edge,
 // 0.27 of its length off the centre line, meets its hull: Task 10's battle test)
 const WING_EDGE = { destroyer: 0.27 };
-// the Star Destroyer's modules its test fixture keeps
-const FIXTURE_MODULES = /^stardestroyer_(hull_01_sb_endor|deflectorshield_01|solarionizationreactor_01)(#|$)/;
+// a test fixture's most bytes (the constraint's: game shapes committed as a
+// fixture stay small)
+const FIXTURE_BYTES = 200000;
 const FIXTURES = join(ROOT, 'scripts/fixtures/bf2017/physics');
 const DEATH_STARS = ['deathstar', 'deathstar2'];
 
@@ -376,19 +378,27 @@ try {
       if (game && !SITE_OVER_GAME[key]) {
         // the game's shapes, held to every cut and to the drawing
         const g = await gameHull(key);
-        const m = await measure(key, g.fitted, g.frame, g.cuts);
+        if (g.properties.length > 256) throw new Error(`${g.properties.length} parts: a hull's parts are counted in a byte`);
+        // (a capital's modules' shapes cut to a capital's budget, then held
+        // to the drawing as they will be drawn: the fit and the facing are the cut hull's)
+        const { hull, said } = CAPITAL_KITS[key] ? capitalBudget(assemble(g.fitted, g.properties, g.names)) : { hull: assemble(g.fitted, g.properties, g.names), said: null };
+        const m = await measure(key, hull.shapes, g.frame, g.cuts);
         if (!(m.worst.off <= FIT)) throw new Error(`off by ${(m.worst.off * 100).toFixed(2)} % on ${short(m.worst.url)} (${m.worst.face}); fit ${fitLine(m.fits)}`);
         if (m.way.better) throw new Error(`the hull fits the drawing better ${m.way.better.name} (chamfer ${m.way.better.chamfer.toFixed(4)} against ${m.way.placed.toFixed(4)} as placed): a turn or a mirror its frame doesn't know`);
-        if (g.properties.length > 256) throw new Error(`${g.properties.length} parts: a hull's parts are counted in a byte`);
-        const hull = assemble(g.fitted, g.properties, g.names);
         const bin = packHull(hull);
+        const t0 = performance.now();
+        const built = hullOf(bin);
+        const ms = performance.now() - t0;
         if (WING_EDGE[key]) {
-          const edges = wingEdge(hullOf(bin), WING_EDGE[key]);
+          const edges = wingEdge(built, WING_EDGE[key]);
           const out = edges.filter((e) => !e.inside);
           if (out.length) throw new Error(`a point ${WING_EDGE[key]} of its length out on its widest section is in no root 0 solid: ${out.map((e) => `${e.side} at ${e.at.map((v) => v.toFixed(4)).join(', ')}`).join('; ')}`);
         }
         const next = m.way.ways.reduce((a, b) => (b.chamfer < a.chamfer ? b : a));
-        made = { hull, bin, row: { source: 'game', from: g.from }, say: `fit ${fitLine(m.fits)}; chamfer ${m.way.placed.toFixed(4)}, ${next.name} ${next.chamfer.toFixed(4)}; ${g.note}` };
+        // (a capital's cut: its bolts' triangles and its solids before and after, and its build)
+        const out = said && [said.flat && `${said.flat} flat`, said.contained && `${said.contained} inside another`, said.greebles && `${said.greebles} greebles`].filter(Boolean).join(', ');
+        const budget = said ? `; ${said.tris[0]} → ${said.tris[1]} bolt triangles${said.boxes ? ` (${said.boxes} parts a box)` : ''}, ${said.solids[0]} → ${said.solids[1]} solids${out ? ` (out: ${out}; ${said.merges} merged; at most ${said.points} points a solid)` : ''}, built in ${ms.toFixed(1)} ms` : '';
+        made = { hull, bin, row: { source: 'game', from: g.from }, say: `fit ${fitLine(m.fits)}; chamfer ${m.way.placed.toFixed(4)}, ${next.name} ${next.chamfer.toFixed(4)}; ${g.note}${budget}` };
       } else {
         // the site's hull of the drawn model, its property the game's where the game has the kind
         let property = SITE_PROPERTY[capitals.has(kind) ? 'capital' : 'fighter'];
@@ -396,7 +406,11 @@ try {
         let why = SITE_OVER_GAME[key] ?? null;
         if (SITE_OVER_GAME[key]) {
           const g = await gameHull(key);
-          const m = await measure(key, g.fitted, g.frame, g.cuts, { way: false });
+          // (a capital's game shapes measured as they would be written, cut to
+          // the budget; a kit of more parts than a byte counts can't be)
+          let shapes = g.fitted;
+          if (CAPITAL_KITS[key] && g.properties.length <= 256) shapes = capitalBudget(assemble(g.fitted, g.properties, g.names)).hull.shapes;
+          const m = await measure(key, shapes, g.frame, g.cuts, { way: false });
           property = majority(g.properties);
           gameSaid = `${(m.worst.off * 100).toFixed(2)} % off at ${m.worst.face} on ${short(m.worst.url)}`;
           if (m.worst.off <= FIT) console.log(`${key}: the game's shapes fit now (${gameSaid}): take it out of SITE_OVER_GAME`);
@@ -443,8 +457,8 @@ try {
     }
   }
 
-  // The test fixtures: the X-wing's hull, and the Star Destroyer's cut to
-  // the modules its test needs; each with the boxes of the cuts it is drawn in
+  // The test fixtures: the X-wing's hull and the Star Destroyer's, each with
+  // the boxes of the cuts it is drawn in
   async function writeFixture(key, hull, bin) {
     const round = (v) => Number(v.toFixed(6));
     const cuts = [];
@@ -467,19 +481,13 @@ try {
       await writeFile(join(FIXTURES, 'xwing-cuts.json'), `${JSON.stringify(fixture, null, 2)}\n`);
       return;
     }
-    // (the parts kept, renumbered in their order)
-    const keep = hull.parts.map((p, i) => (FIXTURE_MODULES.test(p.name) ? i : -1)).filter((i) => i >= 0);
-    const at = new Map(keep.map((i, n) => [i, n]));
-    const cut = assemble(
-      hull.shapes.filter((s) => at.has(s.part)).map((s) => ({ ...s, part: at.get(s.part) })),
-      keep.map((i) => hull.parts[i].property),
-      keep.map((i) => hull.parts[i].name),
-    );
-    await writeFile(join(FIXTURES, 'destroyer-hull.bin'), new Uint8Array(packHull(cut)));
+    // (the whole hull, cut to a capital's budget: a fixture is a few KB to a couple of hundred)
+    if (bin.byteLength > FIXTURE_BYTES) throw new Error(`destroyer: its hull's ${bin.byteLength} bytes are over a fixture's ${FIXTURE_BYTES}`);
+    await writeFile(join(FIXTURES, 'destroyer-hull.bin'), new Uint8Array(bin));
     const fixture = {
-      _source: `node scripts/bf2017-hulls.mjs --only destroyer --fixture: the Star Destroyer's hull (${CAPITAL_KITS.destroyer.model}, ${hull.parts.length} parts) cut to its modules ${FIXTURE_MODULES}, and each cut's box as galaxy/models.js's normalise measures it`,
+      _source: `node scripts/bf2017-hulls.mjs --only destroyer --fixture: the Star Destroyer's hull (${CAPITAL_KITS.destroyer.model}'s modules' shapes cut to a capital's budget, ${hull.parts.length} parts) as written, and each cut's box as galaxy/models.js's normalise measures it`,
       kind: 'destroyer',
-      parts: cut.parts.length,
+      parts: hull.parts.length,
       cuts,
     };
     await writeFile(join(FIXTURES, 'destroyer-cuts.json'), `${JSON.stringify(fixture, null, 2)}\n`);
