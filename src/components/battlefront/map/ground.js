@@ -85,16 +85,23 @@ export const needsPatch = (at, have) => !have || Math.hypot(at[0] - have[0], at[
 export const canAsk = (url, listed, { dev = Boolean(import.meta.env?.DEV), remote = assetUrl } = {}) => Boolean(listed) && (dev || remote(url) !== url);
 
 // the pack's mask frames a tier reads, finest first, in the game's frame
-// (level.json's terrain.masks: each frame's corner in the pack's frame, its
-// texel size and texels; low reads none)
+// (level.json's terrain.masks: one array, each frame two of its layers from
+// a corner in the pack's frame at its own texel size; low reads none)
 export const MASK_ORDER = ['near', 'mid', 'far'];
 export function maskFrames(masks, origin = [0, 0, 0], tier = 'high') {
-  if (!masks?.frames || tier === 'low') return [];
+  if (!masks?.frames || !masks.size || tier === 'low') return [];
   return MASK_ORDER.filter((n) => masks.frames[n]).map((name) => {
     const f = masks.frames[name];
-    return { name, tex: f.tex, corner: [f.corner[0] + origin[0], f.corner[1] + origin[2]], extent: [f.size[0] * f.metresPerPixel, f.size[1] * f.metresPerPixel] };
+    return { name, layers: f.layers, corner: [f.corner[0] + origin[0], f.corner[1] + origin[2]], extent: [masks.size[0] * f.metresPerPixel, masks.size[1] * f.metresPerPixel] };
   });
 }
+
+// (?ground=layers: the layers' weights in their colours, snow.js's LAYER_DEBUG)
+const debugView = () => {
+  if (typeof window === 'undefined') return null;
+  const q = new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search);
+  return q.get('ground') === 'layers' ? 'layers' : null;
+};
 
 // a fragment kept where the ground is (false over a hole): the holes' grid as an 8-bit mask, sampled by the world's x, z
 export function holeMaskNode({ THREE, tsl }, holes, origin = [0, 0, 0]) {
@@ -194,7 +201,8 @@ export function buildGround(layer, terrain = {}, { world = 'hoth', pack = null, 
     const slugOf = (path) => path.split('/').pop().replace(/\.ktx2$/, '');
     const asked = mapsFor(tier).filter((slug) => canAsk(urlOf(`tex/${slug}.ktx2`), pack?.tex?.[slug]));
     if (!asked.includes(SNOW_KIND.normals)) return null;
-    const frames = maskFrames(pack?.terrain?.masks, pack?.origin, tier).filter((f) => canAsk(urlOf(f.tex), pack?.tex?.[slugOf(f.tex)]));
+    const maskTex = pack?.terrain?.masks?.tex;
+    const frames = maskTex && canAsk(urlOf(maskTex), pack?.tex?.[slugOf(maskTex)]) ? maskFrames(pack.terrain.masks, pack?.origin, tier) : [];
     const three = await loadThree();
     const ktx = await import('../../../lib/three/gltf.js').then((m) => m.ktx2Loader({ renderer }));
     const max = renderer?.getMaxAnisotropy?.() ?? 16;
@@ -219,17 +227,18 @@ export function buildGround(layer, terrain = {}, { world = 'hoth', pack = null, 
         })
         .catch(() => null);
     const maps = {};
-    const masks = [];
+    let maskTexture = null;
     await Promise.all([
       ...asked.map(async (slug) => (maps[SNOW_FILES[slug].kind] = await load(`tex/${slug}.ktx2`, { srgb: SNOW_FILES[slug].srgb }))),
-      ...frames.map(async (f, i) => (masks[i] = { ...f, texture: await load(f.tex, { wrap: THREE.ClampToEdgeWrapping }) })),
+      frames.length ? load(maskTex, { wrap: THREE.ClampToEdgeWrapping }).then((t) => (maskTexture = t)) : null,
     ]);
     if (gone || !maps.normals) return null;
-    const landed = masks.filter((m) => m?.texture);
+    const landed = maskTexture ? frames.map((f) => ({ ...f, texture: maskTexture })) : [];
+    const debug = debugView();
     built = {
-      near: createSnowGround({ maps, masks: landed, tier, three }),
-      far: createSnowGround({ maps, masks: landed, tier, three, far: true }),
-      patch: patched ? createSnowGround({ maps, masks: landed, tier, three, displace: true }) : null,
+      near: createSnowGround({ maps, masks: landed, tier, three, debug }),
+      far: createSnowGround({ maps, masks: landed, tier, three, far: true, debug }),
+      patch: patched ? createSnowGround({ maps, masks: landed, tier, three, displace: true, debug }) : null,
     };
     // (the holes cut from the snow as from the flat ground)
     const cut = await masked;

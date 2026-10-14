@@ -4,21 +4,23 @@
 // each of its eight painted layers as 72² u8 rasters on a quadtree, 8 m to
 // 0.5 m a texel; the tile shader blends the nine layers by them
 // (findings/35; src/lib/three/ground/snow.js draws the same). Here the
-// rasters are laid into three frames, each the extent of one level of the
-// tree, at that level's own texel size:
+// rasters are laid into three frames, each from the corner of one level of
+// the tree, at that level's own texel size, all the size of the finest
+// (one KTX2 array binds once: the ground's textures are counted, ground.js):
 //
-//   near  the 0.5 m level's extent, 0.5 m a texel (the play strip)
-//   mid   the 1 m level's, 1 m a texel
-//   far   the 8 m level's, 4 m a texel (nothing is painted past it: layer 0 there)
+//   near  from the 0.5 m level's corner, 0.5 m a texel (its extent: the play strip)
+//   mid   from the 1 m level's, 1 m a texel (past its extent, the coarser levels)
+//   far   from the 8 m level's, 4 m a texel (nothing is painted past it: layer 0 there)
 //
-// each a two-layer KTX2 array (UASTC, linear, mipmapped: a texel the mean
-// of the game's own finer texels, as a parent raster is): layer 0 holds
-// masks 1–4 in RGBA, layer 1 masks 5–8. A frame is written at each size its
-// tiers read (terrain/masks_<frame>.<width>.ktx2, the bigger file's mips
-// dropped), level.json's terrain.masks says where each lies (its corner and
-// texel size in the pack's frame, as terrain.holes does) and tex rows its
-// sizes. The colour tree (the resource's far colour) is read and counted:
-// on Hoth it is white, so it is not written (findings/58).
+// as the six layers of one KTX2 array (UASTC, linear, mipmapped: a texel
+// the mean of the game's own finer texels, as a parent raster is): each
+// frame's masks 1–4 in one layer's RGBA, 5–8 in the next. It is written at
+// each size its tiers read (terrain/masks.<width>.ktx2, the bigger file's
+// mips dropped), level.json's terrain.masks says where each frame lies (its
+// corner and texel size in the pack's frame, as terrain.holes does, and its
+// two layers) and a tex row its sizes. The colour tree (the resource's far
+// colour) is read and counted: on Hoth it is white, so it is not written
+// (findings/58).
 //
 //   node scripts/bf2017-terrain-masks.mjs [hoth] [--tree <file>] [--preview <dir>] [--check]
 //
@@ -30,7 +32,7 @@
 //
 // Then publish the files (the key from the environment):
 //
-//   node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/hoth/terrain/masks_*'
+//   node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/hoth/terrain/masks.*'
 
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -59,11 +61,12 @@ export const GROUPS = [
   [5, 6, 7, 8],
 ];
 
-// a frame over a level's extent, in the game's frame
-export function frameOf(rasters, { level, mpp }) {
+// a frame from a level's corner, in the game's frame: its own extent, or w × h texels
+export function frameOf(rasters, { level, mpp }, size = null) {
   const f = framesOf(rasters, level);
   if (!f) return null;
-  return { minX: f.minX, minZ: f.minZ, mpp, w: Math.round((f.maxX - f.minX) / mpp), h: Math.round((f.maxZ - f.minZ) / mpp) };
+  const [w, h] = size ?? [Math.round((f.maxX - f.minX) / mpp), Math.round((f.maxZ - f.minZ) / mpp)];
+  return { minX: f.minX, minZ: f.minZ, mpp, w, h };
 }
 
 // a tier's width of a frame, held to a multiple of 4 (a block) by its mips
@@ -118,41 +121,46 @@ async function main(args) {
   await mkdir(join(pack, 'terrain'), { recursive: true });
   const masks = {
     _source: 'TerrainStreamingTree (Levels/MP/Hoth_01/Hoth_01_Terrain), section 1: the layer-mask rasters (scripts/bf2017-terrain-masks.mjs, bf2-re/findings/58)',
-    layers: GROUPS,
+    groups: GROUPS,
+    tex: 'terrain/masks.ktx2',
     frames: {},
   };
+  const finest = frameOf(rasters, FRAMES.near);
+  const size = [finest.w, finest.h];
+  const layers = [];
   for (const [name, spec] of Object.entries(FRAMES)) {
-    const f = frameOf(rasters, spec);
+    const f = frameOf(rasters, spec, size);
     if (!f) continue;
-    const layers = GROUPS.map((g) => composeMasks(buf, rasters, g, f));
+    const pair = GROUPS.map((g) => composeMasks(buf, rasters, g, f));
     if (args.preview) {
       await mkdir(args.preview, { recursive: true });
       for (const [gi, g] of GROUPS.entries()) {
         for (const [ch, layer] of g.entries()) {
           const grey = new Uint8Array(f.w * f.h);
-          for (let i = 0; i < grey.length; i++) grey[i] = layers[gi][i * 4 + ch];
+          for (let i = 0; i < grey.length; i++) grey[i] = pair[gi][i * 4 + ch];
           await sharp(Buffer.from(grey), { raw: { width: f.w, height: f.h, channels: 1 } })
             .png()
             .toFile(join(args.preview, `${name}-layer${layer}.png`));
         }
       }
     }
-    const ktx2 = await encodeArray(layers, f.w, f.h);
-    const info = ktx2Info(ktx2);
-    const slug = `masks_${name}`;
-    const widths = tierWidths(f.w);
-    const sizes = [...new Set(Object.values(widths))];
-    for (const s of sizes) await writeFile(join(pack, 'terrain', `${slug}.${s}.ktx2`), dropMips(ktx2, Math.min(mipsToFit(info.width, s), info.levels - 1)));
-    level.tex[slug] = { ...widths, srgb: false };
     masks.frames[name] = {
-      tex: `terrain/${slug}.ktx2`,
       // (the corner of texel 0, in the pack's frame: the game's less the pack's origin)
       corner: [f.minX - origin[0], f.minZ - origin[2]],
       metresPerPixel: f.mpp,
-      size: [f.w, f.h],
+      layers: [layers.length, layers.length + 1],
     };
-    console.log(`${name}: ${f.w} × ${f.h} at ${f.mpp} m from (${f.minX}, ${f.minZ}) → ${sizes.map((s) => `${s} px`).join(', ')}`);
+    layers.push(...pair);
+    console.log(`${name}: ${f.w} × ${f.h} at ${f.mpp} m from (${f.minX}, ${f.minZ})`);
   }
+  masks.size = size;
+  const ktx2 = await encodeArray(layers, size[0], size[1]);
+  const info = ktx2Info(ktx2);
+  const widths = tierWidths(size[0]);
+  const sizes = [...new Set(Object.values(widths))];
+  for (const s of sizes) await writeFile(join(pack, 'terrain', `masks.${s}.ktx2`), dropMips(ktx2, Math.min(mipsToFit(info.width, s), info.levels - 1)));
+  level.tex.masks = { ...widths, srgb: false };
+  console.log(`masks: ${layers.length} layers of ${size[0]} × ${size[1]} → ${sizes.map((s) => `${s} px`).join(', ')}`);
   level.terrain.masks = masks;
   await writeFile(join(pack, 'level.json'), `${JSON.stringify(level)}\n`);
   console.log(`${world}: level.json's terrain.masks and tex rows written`);

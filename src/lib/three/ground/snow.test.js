@@ -4,11 +4,11 @@ import { LAYERS, READS, SNOW, SNOW_FILES, SNOW_KIND, mapAt } from './snowMaps.js
 import { NEAR_BAND, createSnowGround, displaceHeight, dynamicS, layerMasks, layerWeights, mapsFor, nearBand, streakTerm, streakUv, texelOf, tileUv, windFrame, worldNormal } from './snow.js';
 
 describe('the record (snowMaps.js)', () => {
-  it('packs the listing’s maps into four arrays and the flow map, the _C maps sRGB, the rest linear', () => {
-    expect(Object.keys(SNOW_FILES)).toHaveLength(5);
+  it('packs the listing’s maps into three arrays: the _C maps sRGB (the flow map decoded into the linear one), the rest linear', () => {
+    expect(Object.keys(SNOW_FILES)).toHaveLength(3);
     expect(SNOW_FILES[SNOW_KIND.normals].layers).toHaveLength(9);
     for (const [slug, f] of Object.entries(SNOW_FILES)) {
-      for (const m of f.layers ?? [slug]) expect(Boolean(f.srgb), m).toBe(/_c$/.test(m));
+      for (const m of f.layers) expect(Boolean(f.srgb || f.linearised?.includes(m)), m).toBe(/_c$/.test(m));
       expect(Object.keys(f.sizes), slug).toEqual(['low', 'mid', 'high', 'ultra']);
       for (const s of Object.values(f.sizes)) expect(s <= 2048 && (s & (s - 1)) === 0, `${slug} ${s}`).toBe(true);
     }
@@ -19,7 +19,7 @@ describe('the record (snowMaps.js)', () => {
       else expect(mapAt(r.map), key).toBeTruthy();
     }
     expect(mapAt('t_arcticbase_snowrough_03_n')).toEqual({ slug: SNOW_KIND.normals, kind: 'normals', layer: 1 });
-    expect(mapAt('t_blowingsnowflowmap_01_c')).toEqual({ slug: SNOW_KIND.flow, kind: 'flow', layer: 0 });
+    expect(mapAt('t_blowingsnowflowmap_01_c')).toEqual({ slug: SNOW_KIND.data, kind: 'data', layer: 4 });
   });
   it('carries the listing’s tilings', () => {
     expect([READS.snow4.cycles, READS.snow33.cycles, READS.detail.cycles]).toEqual([0.25, 0.03, 1]);
@@ -29,8 +29,11 @@ describe('the record (snowMaps.js)', () => {
     expect(READS.streakB).toMatchObject({ cycles: [0.02, 0.08], rate: 0.2 });
     expect(READS.flow).toMatchObject({ cycles: [0.08, 0.04], rate: 0.06 });
   });
-  it('carries the record’s colour, smoothness and the streaks’ frame', () => {
-    expect(SNOW.colour.map((v) => +v.toFixed(3))).toEqual([0.547, 0.594, 0.644]);
+  it('carries the base colour, the smoothness and the streaks’ frame', () => {
+    // (the rocky packed colour map's snow fill, sRGB 241, 242, 243, as linear)
+    const lin = (v) => ((v / 255 + 0.055) / 1.055) ** 2.4;
+    SNOW.colour.forEach((c, i) => expect(c).toBeCloseTo(lin([241, 242, 243][i]), 5));
+    expect(SNOW.enlighten.map((v) => +v.toFixed(3))).toEqual([0.547, 0.594, 0.644]);
     expect(SNOW.smoothness).toBe(0.26);
     expect(SNOW.streakSmoothness).toBe(0.25);
     expect(Math.cos(SNOW.windRad)).toBeCloseTo(-0.989992, 6);
@@ -129,18 +132,18 @@ describe('the layers (the listing’s blocks)', () => {
     expect(displaceHeight(0.5)).toBeCloseTo(0, 6);
     expect(displaceHeight(1)).toBeCloseTo(0.35 * 0.175, 6);
   });
-  it('each tier reads its files: low none, mid the layers without the wisps, high and ultra all five; the far grid no small maps', () => {
+  it('each tier reads its files: low none, the rest the three arrays', () => {
     expect(mapsFor('low')).toEqual([]);
-    expect(mapsFor('mid')).toEqual([SNOW_KIND.normals, SNOW_KIND.colours, SNOW_KIND.small]);
-    expect([...mapsFor('high')].sort()).toEqual(Object.keys(SNOW_FILES).sort());
-    expect(mapsFor('ultra')).toEqual(mapsFor('high'));
-    expect(mapsFor('ultra', { far: true })).not.toContain(SNOW_KIND.small);
+    for (const t of ['mid', 'high', 'ultra']) expect(mapsFor(t)).toEqual([SNOW_KIND.normals, SNOW_KIND.colours, SNOW_KIND.data]);
   });
 });
 
 describe('the material', () => {
   const stubs = (THREE) => Object.fromEntries(Object.values(SNOW_FILES).map((f) => [f.kind, new THREE.Texture()]));
-  const masks = (THREE) => ['near', 'mid', 'far'].map((n, i) => ({ name: n, texture: new THREE.Texture(), corner: [-100 * (i + 1), -100 * (i + 1)], extent: [200 * (i + 1), 200 * (i + 1)] }));
+  const masks = (THREE) => {
+    const texture = new THREE.Texture();
+    return ['near', 'mid', 'far'].map((n, i) => ({ name: n, texture, layers: [2 * i, 2 * i + 1], corner: [-100 * (i + 1), -100 * (i + 1)], extent: [200 * (i + 1), 200 * (i + 1)] }));
+  };
   it('reads every layer’s maps on ultra, the masks of every frame, and displaces', async () => {
     const three = await loadThree();
     const g = createSnowGround({ maps: stubs(three.THREE), masks: masks(three.THREE), tier: 'ultra', three, displace: true });
@@ -189,11 +192,11 @@ describe('the material', () => {
   it('a file that did not land leaves its terms out, the rest drawn', async () => {
     const three = await loadThree();
     const maps = stubs(three.THREE);
-    delete maps.flow;
+    delete maps.data;
     delete maps.colours;
     const g = createSnowGround({ maps, masks: [], tier: 'high', three });
-    // (no flow: no streaks; no colours: the rocks in the base colour; the detail and the sparkle stay)
-    expect(g.samples).toEqual({ normal: 11, data: 2, mask: 0 });
+    // (no data: no detail, streaks or sparkle; no colours: the rocks in the base colour)
+    expect(g.samples).toEqual({ normal: 11, data: 0, mask: 0 });
     expect(g.flat).toBe(false);
   });
 });

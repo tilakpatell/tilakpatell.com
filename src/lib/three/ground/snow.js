@@ -24,10 +24,10 @@
 // where layer 8 or 7 is) dips the roughness on the near band; on ultra the
 // near patch's vertices are displaced by the 4 m map's blue.
 //
-//   createSnowGround({ maps, masks, tier, three, far, displace, dynamic }) → { material, samples, flat, dispose }
-//     maps: { normals, colours, data, small, flow } (snowMaps.js's files by kind; the
-//       first four 2-D arrays), masks: [{ texture, corner: [x, z], extent: [w, h] }]
-//       finest first, in the game's frame (a two-layer array each: masks 1–4, 5–8);
+//   createSnowGround({ maps, masks, tier, three, far, displace, dynamic, debug }) → { material, samples, flat, dispose }
+//     maps: { normals, colours, data } (snowMaps.js's files by kind, 2-D arrays),
+//       masks: [{ texture, layers: [a, b], corner: [x, z], extent: [w, h] }] finest
+//       first, in the game's frame (two layers of the mask array each: masks 1–4, 5–8);
 //       dynamic: { texture, corner, extent } (its alpha the game's D) and maps.soot
 //     far: the coarse grid's (no 1 m detail, no sparkle); flat: no normals map, the colour alone
 //
@@ -36,7 +36,7 @@
 // displacement. A file that did not land leaves its terms out; without the
 // normals nothing is read.
 //
-// Pure, for the tests: mapsFor(tier, { far }), tileUv(p, cycles),
+// Pure, for the tests: mapsFor(tier), tileUv(p, cycles),
 // windFrame(p, rad), streakUv(p, cycles, rate, t), streakTerm(a, b),
 // layerMasks(masks, maps), layerWeights(edged), dynamicS(d, rough, soot),
 // texelOf(weights, maps), worldNormal(n, ground), nearBand(d, band),
@@ -60,16 +60,14 @@ const smooth = (a, b, x) => {
 };
 const sat = (x) => Math.min(1, Math.max(0, x));
 
-const PLAN = {
-  low: [],
-  mid: ['normals', 'colours', 'small'],
-  high: ['normals', 'colours', 'data', 'small', 'flow'],
-  ultra: ['normals', 'colours', 'data', 'small', 'flow'],
-};
-const FAR_PLAN = { low: [], mid: ['normals', 'colours'], high: ['normals', 'colours', 'data', 'flow'], ultra: ['normals', 'colours', 'data', 'flow'] };
+const ALL = ['normals', 'colours', 'data'];
+const PLAN = { low: [], mid: ALL, high: ALL, ultra: ALL };
+// (mid draws no blowing snow and no sparkle: the data array for the 1 m detail alone)
+const WISPS = { low: false, mid: false, high: true, ultra: true };
 
 // the files a tier's material reads (snowMaps.js's slugs)
-export const mapsFor = (tier, { far = false } = {}) => ((far ? FAR_PLAN : PLAN)[tier] ?? PLAN.high).map((k) => SNOW_KIND[k]);
+// (the far grid reads the same files: it draws no 1 m detail and no sparkle)
+export const mapsFor = (tier) => (PLAN[tier] ?? PLAN.high).map((k) => SNOW_KIND[k]);
 
 export const tileUv = ([x, z], cycles) => (Array.isArray(cycles) ? [x * cycles[0], z * cycles[1]] : [x * cycles, z * cycles]);
 
@@ -159,13 +157,28 @@ export const nearBand = (d, [a, b] = NEAR_BAND) => 1 - smooth(a, b, d);
 // the displacement in metres from the height map's blue, about a mid grey
 export const displaceHeight = (b, scale = DISPLACE_M) => (b * SNOW.displacement.gain + SNOW.displacement.lift - DISPLACE_MID) * scale;
 
-export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, far = false, displace = false, dynamic = null }) {
+// (?ground=layers: each layer's weight in its own colour, a check's view of the masks: 0 white,
+// 1 packed red, 2 chunky green, 3 rough packed blue, 4 trampled yellow, 5 rocky packed magenta,
+// 6 rocky cyan, 7 blowing snow orange)
+export const LAYER_DEBUG = [
+  [1, 1, 1],
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+  [1, 1, 0],
+  [1, 0, 1],
+  [0, 1, 1],
+  [1, 0.5, 0],
+];
+
+export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, far = false, displace = false, dynamic = null, debug = null }) {
   const { THREE, tsl } = three;
   const { uniform, texture, vec2, vec3, vec4, float, int, select, positionWorld, positionGeometry, normalGeometry, normalWorldGeometry, modelWorldMatrix, cameraPosition, transformNormalToView, mix, smoothstep, normalize, time } = tsl;
   const material = new THREE.MeshStandardNodeMaterial({ metalness: 0 });
   material.name = `snow-ground:${far ? 'far' : 'near'}:${tier}`;
   const colour = uniform(new THREE.Color(...SNOW.colour));
-  const plan = new Set(mapsFor(tier, { far }).map((slug) => SNOW_FILES[slug].kind));
+  const plan = new Set(mapsFor(tier).map((slug) => SNOW_FILES[slug].kind));
+  const wisps = WISPS[tier] ?? true;
   const has = (kind) => plan.has(kind) && Boolean(maps[kind]);
   const samples = { normal: 0, data: 0, mask: 0 };
   material.colorNode = vec3(colour);
@@ -198,8 +211,9 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
   for (const f of [...masks].reverse()) {
     const uv = xz.sub(vec2(...f.corner)).div(vec2(...f.extent));
     const inside = uv.x.greaterThan(0).and(uv.x.lessThan(1)).and(uv.y.greaterThan(0)).and(uv.y.lessThan(1));
-    ma = select(inside, texture(f.texture, uv).depth(int(0)), ma);
-    mb = select(inside, texture(f.texture, uv).depth(int(1)), mb);
+    const [la, lb] = f.layers ?? [0, 1];
+    ma = select(inside, texture(f.texture, uv).depth(int(la)), ma);
+    mb = select(inside, texture(f.texture, uv).depth(int(lb)), mb);
     samples.mask += 2;
   }
 
@@ -224,7 +238,7 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
 
   // the blowing snow's streaks: the flow's offset, the two reads, the listing's term
   let streak = float(0);
-  if (has('data') && has('flow')) {
+  if (wisps && has('data')) {
     const c = Math.cos(SNOW.windRad);
     const s = Math.sin(SNOW.windRad);
     const turned = vec2(xz.x.mul(c).sub(xz.y.mul(s)), xz.x.mul(s).add(xz.y.mul(c)));
@@ -309,6 +323,11 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
   let albedo = cols[0].mul(w[0]);
   for (let k = 1; k < 8; k++) albedo = albedo.add(cols[k].mul(w[k]));
   material.colorNode = albedo.clamp(0, 1);
+  if (debug === 'layers') {
+    let shown = vec3(...LAYER_DEBUG[0]).mul(w[0]);
+    for (let k = 1; k < 8; k++) shown = shown.add(vec3(...LAYER_DEBUG[k]).mul(w[k]));
+    material.colorNode = shown.mul(0.8).clamp(0, 1);
+  }
 
   const sm = float(SNOW.smoothness);
   const sS = S ? sm.mul(S) : sm;
@@ -319,7 +338,7 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
   let r = one.sub(smoothness.clamp(0, 1));
 
   // the sparkle: the on-screen pass of the layers that carry it (8, and 7's), on the near band
-  const crystal = far || tier === 'mid' ? null : read('sparkle');
+  const crystal = far || !wisps ? null : read('sparkle');
   if (crystal) {
     const dist = positionWorld.sub(cameraPosition).length();
     const near = one.sub(smoothstep(NEAR_BAND[0], NEAR_BAND[1], dist));

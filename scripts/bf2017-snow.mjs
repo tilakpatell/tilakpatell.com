@@ -6,8 +6,9 @@
 // array (snowMaps.js's SNOW_FILES: a WebGPU stage binds 16 textures, and the
 // shader reads 18 maps): each read from the owner's export as the drop's
 // PNG (the _N maps packed as the game's, R G the normal, B a height, A a
-// mask), made the array's size where the export's is bigger (the packed
-// smoothness, 2048, in a 1024 array), encoded as the site's KTX2 (UASTC,
+// mask), made the array's size (the packed smoothness, 2048, down to 1024;
+// the detail and the sparkle, 512, up; the flow map decoded from sRGB to
+// linear for the linear array), encoded as the site's KTX2 (UASTC,
 // mipmapped; _N and _RGBM linear, _C sRGB) and written at each size its
 // tiers read (tex/<slug>.<size>.ktx2, the bigger file's mips dropped), with
 // a `tex` row in level.json saying the sizes and the colour space. A file
@@ -16,7 +17,7 @@
 //
 // Then the owner publishes the new files (the key from the environment):
 //
-//   node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/hoth/tex/hoth_snow_*'
+//   node scripts/assets-publish.mjs --only 'models/galaxy/bf2017/levels/hoth/tex/hoth_snow_*,models/galaxy/bf2017/levels/hoth/terrain/masks.*'
 //
 // which registers them by hash in src/data/galaxyAssets.json and rewrites
 // .gitignore's block: commit both. Until then the published site draws the
@@ -42,8 +43,19 @@ import { SNOW_FILES } from '../src/lib/three/ground/snowMaps.js';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'C:/Users/tilak/Downloads/BF2_Extract/web';
 
-// the export's maps as one KTX2 array of side × side layers
-async function encodeArray(files, side, { srgb }) {
+// sRGB bytes to linear ones (the GPU's decode, done before the pack: RGB, not alpha)
+export function linearise(rgba) {
+  const lut = Uint8Array.from({ length: 256 }, (_, v) => {
+    const c = v / 255;
+    return Math.round(255 * (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  });
+  const out = Buffer.from(rgba);
+  for (let i = 0; i < out.length; i += 4) for (let k = 0; k < 3; k++) out[i + k] = lut[out[i + k]];
+  return out;
+}
+
+// the export's maps as one KTX2 array of side × side layers (each made that size)
+async function encodeArray(files, side, { srgb, linear = [] }) {
   const tmp = await mkdtemp(join(tmpdir(), 'snow-'));
   try {
     const args = [];
@@ -51,7 +63,13 @@ async function encodeArray(files, side, { srgb }) {
       const png = join(tmp, `l${i}.png`);
       const img = sharp(await readFile(file)).ensureAlpha();
       const meta = await img.metadata();
-      await (meta.width === side ? img : img.resize(side, side, { kernel: 'lanczos3' })).png().toFile(png);
+      const sized = meta.width === side ? img : img.resize(side, side, { kernel: 'lanczos3' });
+      if (linear[i]) {
+        const { data, info } = await sized.raw().toBuffer({ resolveWithObject: true });
+        await sharp(linearise(data), { raw: { width: info.width, height: info.height, channels: 4 } })
+          .png()
+          .toFile(png);
+      } else await sized.png().toFile(png);
       args.push('-file', png);
     }
     const out = join(tmp, 'out.ktx2');
@@ -86,14 +104,15 @@ async function main(args) {
   for (const [slug, m] of Object.entries(SNOW_FILES)) {
     const rows = (m.layers ?? [slug]).map(rowOf);
     const top = Math.max(...Object.values(m.sizes));
-    const side = Math.min(top, ...rows.map((r) => r.width));
+    const side = Math.min(top, Math.max(...rows.map((r) => r.width)));
     const sizes = Object.fromEntries(Object.entries(m.sizes).map(([t, s]) => [t, Math.min(s, side)]));
     const want = [...new Set(Object.values(sizes))];
     const file = (s) => join(pack, 'tex', `${slug}.${s}.ktx2`);
     const inBucket = want.every((s) => published[site(slug, s)]);
     const here = want.every((s) => existsSync(file(s)));
     if (!inBucket && (!here || args.force)) {
-      const ktx2 = m.layers ? await encodeArray(rows.map((r) => join(from, r.file)), side, m) : (await encodeImage(await readFile(join(from, rows[0].file)), { role: m.srgb ? 'color' : 'other' })).ktx2;
+      const linear = (m.layers ?? []).map((map) => Boolean(m.linearised?.includes(map)));
+      const ktx2 = m.layers ? await encodeArray(rows.map((r) => join(from, r.file)), side, { srgb: m.srgb, linear }) : (await encodeImage(await readFile(join(from, rows[0].file)), { role: m.srgb ? 'color' : 'other' })).ktx2;
       const info = ktx2Info(ktx2);
       for (const s of want) await writeFile(file(s), dropMips(ktx2, Math.min(mipsToFit(info.width, s), info.levels - 1)));
       made += want.length;

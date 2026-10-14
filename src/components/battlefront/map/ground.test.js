@@ -18,18 +18,15 @@ const renderer = { isWebGPURenderer: true, getMaxAnisotropy: () => 16 };
 // the pack's rows as the import writes them
 const rows = {
   ...Object.fromEntries(Object.entries(SNOW_FILES).map(([slug, m]) => [slug, { ...m.sizes, srgb: Boolean(m.srgb) }])),
-  masks_near: { mid: 352, high: 704, ultra: 1408, srgb: false },
-  masks_far: { mid: 160, high: 320, ultra: 640, srgb: false },
+  masks: { mid: 352, high: 704, ultra: 1408, srgb: false },
 };
 // level.json's terrain.masks as the masks script writes it (two of the three frames)
 const masks = {
-  layers: [
-    [1, 2, 3, 4],
-    [5, 6, 7, 8],
-  ],
+  tex: 'terrain/masks.ktx2',
+  size: [1408, 2304],
   frames: {
-    near: { tex: 'terrain/masks_near.ktx2', corner: [-397, -380], metresPerPixel: 0.5, size: [1408, 2304] },
-    far: { tex: 'terrain/masks_far.ktx2', corner: [-1229, -1020], metresPerPixel: 4, size: [640, 640] },
+    near: { corner: [-397, -380], metresPerPixel: 0.5, layers: [0, 1] },
+    far: { corner: [-1229, -1020], metresPerPixel: 4, layers: [4, 5] },
   },
 };
 const origin = [205, 362.296875, -1540];
@@ -75,8 +72,8 @@ describe('what may be asked for', () => {
 describe('the mask frames', () => {
   it('lays each frame in the game’s frame, finest first; low reads none', () => {
     expect(maskFrames(masks, origin, 'ultra')).toEqual([
-      { name: 'near', tex: 'terrain/masks_near.ktx2', corner: [-192, -1920], extent: [704, 1152] },
-      { name: 'far', tex: 'terrain/masks_far.ktx2', corner: [-1024, -2560], extent: [2560, 2560] },
+      { name: 'near', layers: [0, 1], corner: [-192, -1920], extent: [704, 1152] },
+      { name: 'far', layers: [4, 5], corner: [-1024, -2560], extent: [5632, 9216] },
     ]);
     expect(maskFrames(masks, origin, 'low')).toEqual([]);
     expect(maskFrames(undefined, origin, 'ultra')).toEqual([]);
@@ -124,8 +121,8 @@ describe('the snow’s landing', () => {
     const g = buildGround(layer, terrain, { world: 'hoth', pack: { tex: rows, terrain: { masks }, origin }, tier: 'ultra', renderer });
     g.update([0, 0]);
     await expect(g.ready).resolves.toBeNull();
-    // (each file asked for, of the bucket first where the manifest names it, then of the site: the maps and the two mask frames)
-    expect(new Set(asked.map((u) => u.split('/').pop())).size).toBe(mapsFor('ultra').length + 2);
+    // (each file asked for, of the bucket first where the manifest names it, then of the site: the maps and the mask array)
+    expect(new Set(asked.map((u) => u.split('/').pop())).size).toBe(mapsFor('ultra').length + 1);
     expect(warn).not.toHaveBeenCalled();
     for (const name of ['near', 'far', 'patch']) {
       expect(g.getObjectByName(`ground:${name}`).material.isNodeMaterial, name).toBeFalsy();
@@ -149,7 +146,7 @@ describe('the snow’s landing', () => {
     expect(built.near.flat).toBe(false);
     expect(built.near.samples.mask).toBe(4);
     expect(asked.some((u) => u.endsWith(`tex/${SNOW_KIND.normals}.2048.ktx2`))).toBe(true);
-    expect(asked.some((u) => u.endsWith('terrain/masks_near.1408.ktx2'))).toBe(true);
+    expect(asked.filter((u) => u.endsWith('terrain/masks.1408.ktx2'))).toHaveLength(1);
     for (const name of ['near', 'far', 'patch']) {
       const snow = g.getObjectByName(`ground:${name}`);
       const was = g.getObjectByName(`ground:${name}:flat`);

@@ -5,11 +5,17 @@
 // packs them. Data only: the material is snow.js, the import
 // scripts/bf2017-snow.mjs, the masks scripts/bf2017-terrain-masks.mjs.
 //
-// The site's files: the game's maps of one size and colour space packed as
-// the layers of one KTX2 array (a WebGPU stage binds 16 textures; the
-// shader's 18 maps would not fit beside the masks and the sun's cascades),
-// written at each size its tiers read (tex/<slug>.<size>.ktx2). Slot names
-// are the listing's registers; three of them (t14, t16, t18) the RVM
+// The site's files: the game's maps of one colour space packed as the
+// layers of one KTX2 array, so the ground binds three map textures, its
+// mask array and its hole mask (a WebGPU stage binds 16 textures, and the
+// sun's cascades, its distant cache and the probes take nine of them; the
+// shader's 18 maps would not fit), written at each size its tiers read
+// (tex/<slug>.<size>.ktx2). An array is one size: a map smaller than its
+// array is scaled up to it (the 1 m detail and the sparkle, 512 in the
+// export, in a 1024 array: 2 mm a texel either way), a bigger one down (the
+// packed smoothness, 2048), and the flow map, sRGB in the game, is decoded
+// to linear as it is packed (the GPU filters it linear either way). Slot
+// names are the listing's registers; three of them (t14, t16, t18) the RVM
 // database does not name, and findings/58 reads them from the shaders'
 // depots by elimination: t8 is SnowRough_03_N (every depot has it, and the
 // 3-layer shader's six slots are its six names), t14 SnowSmoothnessVirtual-
@@ -17,13 +23,19 @@
 // rough map again (sampler s4, the one name left).
 //
 // The constants the listing compiles in (smoothness, the mask edges, the
-// blowing snow's frame and rates) are in SNOW and LAYERS below; the one it
-// does not, the base colour cb1[13], is the record's TerrainColor (the clamp
-// decision, 2026-10-12: src/data/bf2017/NOTES.md).
+// blowing snow's frame and rates) are in SNOW and LAYERS below. The one it
+// does not, the base colour cb1[13] (engine-fed, in no resource), is the
+// snow the layers' own colour maps are painted to meet: SnowRocky_04_C, the
+// rocky packed layer's colour, is snow over 28 % of its texels in one flat
+// fill, sRGB (241, 242, 243), and the rough packed layer's colour (its
+// map's alpha) has its median at 0.906; a base layer of the record's
+// TerrainColor (0.547, 0.594, 0.644, Enlighten's bounce albedo) would be a
+// third darker than both, every layer edge a seam (findings/58;
+// src/data/bf2017/NOTES.md).
 
 const SIZES = { low: 512, mid: 512, high: 1024, ultra: 2048 };
 
-// file slug → { kind, srgb, sizes, layers (the export's maps, in array order) }
+// file slug → { kind, srgb, sizes, layers (the export's maps, in array order), linearised }
 export const SNOW_FILES = {
   hoth_snow_normals: {
     kind: 'normals',
@@ -42,11 +54,13 @@ export const SNOW_FILES = {
     ],
   },
   hoth_snow_colours: { kind: 'colours', srgb: true, sizes: SIZES, layers: ['t_arcticbase_snowrocky_04_c', 't_arcticbase_snowrocky_02_c'] },
-  // (the packed smoothness is 2048 in the export, the virtual-texture one 1024: an array is one size)
-  hoth_snow_data: { kind: 'data', srgb: false, sizes: { low: 512, mid: 512, high: 512, ultra: 1024 }, layers: ['t_arcticbase_snowpackedsmoothness_01_rgbm', 't_arcticbase_snowsmoothnessvirtualtexture_01_rgbm'] },
-  hoth_snow_small: { kind: 'small', srgb: false, sizes: { low: 256, mid: 256, high: 512, ultra: 512 }, layers: ['t_arcticbase_snowdetail_01_n', 't_arcticbase_snowsparkle_03_rgbm'] },
-  // (one map: the pack's row from before, published already)
-  t_blowingsnowflowmap_01_c: { kind: 'flow', srgb: true, sizes: { low: 512, mid: 512, high: 512, ultra: 512 }, layers: null },
+  hoth_snow_data: {
+    kind: 'data',
+    srgb: false,
+    sizes: { low: 512, mid: 512, high: 512, ultra: 1024 },
+    layers: ['t_arcticbase_snowpackedsmoothness_01_rgbm', 't_arcticbase_snowsmoothnessvirtualtexture_01_rgbm', 't_arcticbase_snowdetail_01_n', 't_arcticbase_snowsparkle_03_rgbm', 't_blowingsnowflowmap_01_c'],
+    linearised: ['t_blowingsnowflowmap_01_c'],
+  },
 };
 export const SNOW_KIND = Object.fromEntries(Object.entries(SNOW_FILES).map(([slug, f]) => [f.kind, slug]));
 
@@ -89,7 +103,10 @@ export const READS = {
 
 // the record's numbers and the listing's immediates
 export const SNOW = {
-  colour: [0.546830952, 0.594003737, 0.644479752], // TerrainColor, VE_Sky_Arctic_Sunny_01's EnlightenComponentData (cb1[13]'s stand-in)
+  // cb1[13]'s stand-in: T_ArcticBase_SnowRocky_04_C's snow fill, its modal texel sRGB (241, 242, 243) as linear
+  colour: [0.879622, 0.887923, 0.896269],
+  // (VE_Sky_Arctic_Sunny_01's EnlightenComponentData TerrainColor: the bounce solver's albedo, the base colour before the layers were read)
+  enlighten: [0.546830952, 0.594003737, 0.644479752],
   smoothness: 0.26,
   streakSmoothness: 0.25,
   windRad: 3, // the streaks' frame: the listing's (−0.989992, 0.141120) is (cos 3, sin 3)
