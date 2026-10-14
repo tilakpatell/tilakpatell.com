@@ -11,7 +11,10 @@
 // second and asks `pace` (governor.js) how much to draw.
 //
 // HOME: where the camera and the figure stand
-// createBackdrop(canvas, { width, height, ratio, level, step, reduced, raf, caf, onStep, onReady }) → { resize(w, h, ratio), visible(on), dispose() } | null
+// createBackdrop(canvas, { width, height, ratio, level, step, reduced, camera, raf, caf, onStep, onReady }) → { resize(w, h, ratio), visible(on), camera(name), dispose() } | null
+//   (`camera` the locator it starts at, home by default; camera(name) moves there as the game does)
+// cameraOf(name) → a view: { name, fov, camera, look, up, focus, aperture, character }; CAMERAS: the names
+// spreadOf(view) → the room's blur for that view's depth of field
 
 import * as THREE from 'three';
 import { KITS } from '../../galaxy/surface/catalog/bf2017-frontend';
@@ -28,38 +31,73 @@ import { disposeTree, quiet, releaseContext } from '../../../lib/three/renderer'
 import { STEPS, createGovernor } from './governor';
 import { BLOOM, BLUR, FINISH, HAZE, LIGHT, MIRROR, bloomWeights, candelaOf, exposureOf, fullScreen } from './light';
 
-// Where the camera and the figure stand: the front end's own camera
-// (Levels/Frontend/Default's CameraEntityData: a 36 × 20.25 mm body behind a
-// 173.9 mm lens, 6.67° high, focused at 12.53 m, pitched 2° up), 12.53 m
-// back from him, its frame's middle at his chest, looking down +z past him at
-// the pill lights (the screen's right is the world's -x). Where he stands is
-// fitted to the game's HOME capture: the pill panel's five columns about
-// 150 px apart behind him (18.5 m behind him: LIGHT.calibrated.panel). `turn` is past square to the camera
-// (toward the screen's left); `loopFrom` where his idle's pose is its last's.
-const CAM = LIGHT.camera;
-const FOV = (2 * Math.atan(CAM.sensor[1] / 2 / CAM.focal) * 180) / Math.PI;
-const AT = [0.42, 0, STAGE_DATA.pieces.nowherepilllights_01.at[2] - LIGHT.calibrated.panel];
-// (the camera across from the panel where its columns fall at x 1250, 1400,
-// 1550, 1700 and 1850 of the capture's 1920; he 0.84 of the way across, his
-// head at x 1610 as there)
-const MID = 1.68; // (the frame's middle on him: his head 15 px under its top, as the capture's)
-const EYE = [1.27, MID - CAM.focus * Math.tan((CAM.pitch * Math.PI) / 180), AT[2] - CAM.focus];
+// Where the camera and the figure stand, as the game moves its camera
+// (LIGHT.frontend, read from Levels/Frontend/Camera and the LevelData: one
+// PF_UI_CameraLocator a screen, its place, FocusDistance and Aperture, and
+// whether the character shows; the camera a 50 mm lens on the CamBody_Cine's
+// 36 × 20.25 mm, PF_UI_CameraFocalLength's at 16:9). The game's positions
+// less the dome's place are the stage's; its cameras look down −forward. He
+// stands on the Camera layer's inspect pivot, 2.2 m in front of HOME's camera
+// (its focus) and some 6 m before the pill panel. Checked against the live
+// game: HOME puts him at 0.82 of the width (Obi-Wan, the 2026-10-13 capture),
+// OPTIONS the pills at the right edge, PLAY shows no one. `turn` is past
+// square to the camera (toward the screen's left); `loopFrom` where his idle's
+// pose is its last's.
+const FE = LIGHT.frontend;
+const toStage = (p) => p.map((v, i) => v - FE.origin[i]);
+const FOV = (2 * Math.atan(FE.lens.sensor[1] / 2 / FE.lens.focal) * 180) / Math.PI;
+export const CAMERAS = Object.keys(FE.cameras).filter((n) => !n.includes('.'));
+// The character's kit (KitUIMetaData): its KitSize picks HOME's locator (a
+// tall one, Chewbacca's, stands the camera 0.66 m further back and 0.11 m
+// higher), its CustomizationTransform moves him off the pivot (Chewbacca
+// 0.25 m down).
+const KIT = FE.kits?.chewie ?? { size: 'Normal', offset: [0, 0, 0] };
+// a front-end camera by its locator's name (home, play, options, career…)
+export function cameraOf(name, size = KIT.size) {
+  const key = name === 'home' && FE.cameras[`home.${size}`] ? `home.${size}` : name;
+  const c = FE.cameras[key] ?? FE.cameras.home;
+  const at = toStage(c.at);
+  // (the camera entity takes the locator through PF_CameraInspectLogic, which
+  // rebuilds it from its TransformToRotation angles: the heading is −forward's,
+  // the pitch comes out the other way, up where the locator's forward tips
+  // down. The live game shows it: Obi-Wan's eyes at 30 % of the height on
+  // HOME, where −forward's pitch would put them at the top edge, and each kit
+  // size's locator then puts its hero's eyes at that same line)
+  const dir = [-c.forward[0], c.forward[1], -c.forward[2]];
+  return { name: FE.cameras[name] ? name : 'home', fov: FOV, camera: at, look: at.map((v, i) => v + dir[i] * c.focus), up: [0, 1, 0], focus: c.focus, aperture: c.aperture, character: c.character };
+}
+const PIVOT = toStage(FE.pivot);
 export const HOME = {
-  fov: FOV,
-  camera: EYE,
-  look: [EYE[0], MID, AT[2]],
-  figure: { url: '/models/galaxy/bf2017/crew/chewie.glb', packs: packUrls('chewie'), weapon: '/models/galaxy/surface/bowcaster.glb', at: AT, turn: -0.12, loopFrom: 3.04 },
+  ...cameraOf('home'),
+  figure: { url: '/models/galaxy/bf2017/crew/chewie.glb', packs: packUrls('chewie'), weapon: '/models/galaxy/surface/bowcaster.glb', at: PIVOT.map((v, i) => v + KIT.offset[i]), turn: -0.12, loopFrom: 3.04 },
 };
+// The depth of field on the room behind him: the circle of confusion of the
+// pill panel (a thin lens: f/N · |d − s| / d · f / (s − f)) in the frame's
+// pixels at 1080, drawn as a Gaussian of a quarter of its diameter; the
+// room's blur (three passes at half the view, σ 6.14 of its texels, 12.3 px)
+// scaled to it. HOME's (2.2 m at f/1.8, the panel 8.5 m off) is 25 px across.
+const PANEL = STAGE_DATA.pieces.nowherepilllights_01.at;
+export function spreadOf(v) {
+  const f = FE.lens.focal / 1000;
+  const d = Math.hypot(PANEL[0] - v.camera[0], PANEL[2] - v.camera[2]);
+  const coc = (f / v.aperture) * (Math.abs(d - v.focus) / d) * (f / Math.max(v.focus - f, 1e-3));
+  return ((coc * 1000) / FE.lens.sensor[1]) * 1080 / 4 / 12.3;
+}
 const POSES = ['frontend.idle', 'idle'];
 // (the game's main-menu idle turns him in over its first seconds and is not
 // a loop: it plays once, then from `loopFrom`, where its pose is its last
 // one's, to its end, again and again; a still is that pose)
 const FPS = 24;
-// The room drawn at 1/div of the view and blurred once: the game's depth of
-// field (a physical camera at f/2 focused on him at 5 m: LIGHT.dof), its
-// spread on the pill lights' edges measured on the capture (about 14 px at
-// 1080: an eighth of the view and one pass).
-const ROOM = { div: 8, passes: 1 };
+// The room drawn at half the view and blurred: the game's depth of field
+// (its spread on the pill lights' edges measured on the capture, about 14 px
+// at 1080: a Gaussian of σ 13 px; the blur's 9 taps are σ 1.64 texels a pass
+// at its first step, three passes at steps 1, 2 and 3 σ 6.1 of half the
+// view's). At half the view, not an eighth: the bloom's pyramid starts from
+// it, and the game's GaussianSimple levels are 1/2 to 1/32 of the screen
+// (bf2-re findings/02 and 14: the finest, Gaussian1, is the tight warm halo
+// round the pills, weight 0.919, colour 0.86/0.69/0.46); from an eighth the
+// finest level was the game's fourth and the halo never showed.
+const ROOM = { div: 2, passes: 3 };
 const STAGE = STAGE_DATA.pieces;
 // (his fur and skin, matte: the import's metalness of a half and its
 // roughness map are not the game's hair and skin shaders)
@@ -85,7 +123,7 @@ const fovFor = (fov, w, h) => {
   return (2 * Math.atan(Math.tan((fov * Math.PI) / 360) * (h / f.h)) * 180) / Math.PI;
 };
 
-export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1, level = 'high', step = 0, reduced = false, view = HOME, raf, caf, now = () => performance.now(), onStep = null, onReady = null } = {}) {
+export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1, level = 'high', step = 0, reduced = false, camera: first = 'home', view: given = null, raf, caf, now = () => performance.now(), onStep = null, onReady = null } = {}) {
   let renderer;
   try {
     // (no multisampling on the canvas: the scene's target has it, the canvas only the last pass)
@@ -101,9 +139,15 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
   renderer.toneMapping = THREE.NoToneMapping;
   const ve = FRONTEND.weathers[FRONTEND.main];
 
-  const camera = new THREE.PerspectiveCamera(view.fov, width / height, 0.5, 120);
-  camera.position.fromArray(view.camera);
-  camera.lookAt(new THREE.Vector3().fromArray(view.look));
+  let view = given ?? { ...HOME, ...cameraOf(first) };
+  const camera = new THREE.PerspectiveCamera(view.fov, width / height, 0.05, 120);
+  const place = (v) => {
+    camera.up.fromArray(v.up ?? [0, 1, 0]);
+    camera.position.fromArray(v.camera);
+    camera.lookAt(new THREE.Vector3().fromArray(v.look));
+    camera.updateMatrixWorld();
+  };
+  place(view);
   const mirrorCam = new THREE.PerspectiveCamera();
 
   // The room, its own scene drawn once into the small targets: the pill
@@ -201,13 +245,13 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
     run(blur, into);
   };
   // `passes` blurs of a pair of targets, each wider than the last; the result in pair[0]
-  const blurPair = (two, w, h, passes) => {
+  const blurPair = (two, w, h, passes, spread = 1) => {
     for (let i = 0; i < passes; i++) {
       blur.uniforms.map.value = two[0].texture;
-      blur.uniforms.dir.value.set((i + 1) / w, 0);
+      blur.uniforms.dir.value.set(((i + 1) * spread) / w, 0);
       run(blur, two[1]);
       blur.uniforms.map.value = two[1].texture;
-      blur.uniforms.dir.value.set(0, (i + 1) / h);
+      blur.uniforms.dir.value.set(0, ((i + 1) * spread) / h);
       run(blur, two[0]);
     }
   };
@@ -244,7 +288,8 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
     haze.uniforms.uCam.value.copy(camera.position);
     haze.uniforms.uEmission.value.fromArray(LIGHT.haze.emission).multiplyScalar(LIGHT.haze.scale * LIGHT.calibrated.haze * (view.haze ?? 1));
     run(haze, pair[0]);
-    blurPair(pair, w, h, r.passes);
+    // (the depth of field of this camera's focus and aperture on the panel)
+    blurPair(pair, w, h, r.passes, view.spread ?? spreadOf(view));
     // (the bloom: five levels, each half the last's size, each blurred once)
     let from = pair[0];
     levels.forEach((two, i) => {
@@ -301,7 +346,7 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
           t.offset.y = 1;
           t.needsUpdate = true;
         }
-        m.emissiveIntensity = (LIGHT.pills.emissive / Math.PI) * LIGHT.calibrated.pills * (view.pills ?? 1);
+        m.emissiveIntensity = LIGHT.pills.emissive * (view.pills ?? 1);
         m.color.setScalar(0);
       } else if (/DomeWalls/i.test(m.name)) {
         for (const t of [m.map, m.roughnessMap, m.metalnessMap, m.aoMap]) tiled(t, LIGHT.dome.walls.tiling);
@@ -348,8 +393,9 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
   const bone = (body, name) => body.getObjectByName(name);
   let facing = null;
   // (the turn that squares him to the camera, and `view.figure.turn` more)
+  // (squared to HOME's camera, the one he is posed for, whichever the room starts at)
   const aim = () => {
-    const to = new THREE.Vector3().fromArray(view.camera).sub(turn.position);
+    const to = new THREE.Vector3().fromArray(HOME.camera).sub(turn.position);
     turn.rotation.y = (facing == null ? 0 : Math.atan2(to.x, to.z) - facing) + (view.figure.turn ?? 0);
     turn.updateMatrixWorld(true);
   };
@@ -417,6 +463,8 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
   let mixer = null;
   const turn = new THREE.Group();
   turn.position.fromArray(view.figure.at);
+  // (the camera's locator says whether he shows: HOME's and CAREER's do, PLAY's and OPTIONS' not)
+  turn.visible = view.character !== false;
   scene.add(turn);
   const spec = view.figure;
   loadWalrusBody(cutFor(spec.url, level), { packs: spec.packs })
@@ -485,6 +533,7 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
     if (last && dt < FRAME - 2) return;
     last = t;
     mixer?.update(Math.min(0.1, dt / 1000));
+    if (move) glide();
     draw();
     const next = pace.frame(dt, Math.max(FRAME, display));
     if (next != null && next !== at) {
@@ -500,6 +549,35 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
       last = 0;
       id = raf(tick);
     }
+  };
+
+  // The camera's move to another screen's locator, as Camera_Schematic's
+  // TransformInterpolator makes it: Expo, ease-out (1 − 2^(−10 t)), over
+  // LIGHT.frontend.move.seconds; the place lerped, the turn slerped, the
+  // focus and aperture with them; the room drawn again each frame of it.
+  let move = null;
+  const MOVE_MS = (FE.move?.seconds ?? 1) * 1000;
+  const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t));
+  function glide() {
+    const k = easeOutExpo(Math.min(1, (now() - move.t0) / MOVE_MS));
+    camera.position.lerpVectors(move.from.p, move.to.p, k);
+    camera.quaternion.slerpQuaternions(move.from.q, move.to.q, k);
+    camera.updateMatrixWorld();
+    view = { ...view, focus: move.from.focus + (move.to.view.focus - move.from.focus) * k, aperture: move.from.aperture + (move.to.view.aperture - move.from.aperture) * k, camera: camera.position.toArray() };
+    if (k >= 1) {
+      view = move.to.view;
+      place(view);
+      move = null;
+    }
+    drawRoom();
+  }
+  // where a camera stands and turns, without moving to it
+  const poseOf = (v) => {
+    const c = new THREE.PerspectiveCamera();
+    c.up.fromArray(v.up ?? [0, 1, 0]);
+    c.position.fromArray(v.camera);
+    c.lookAt(new THREE.Vector3().fromArray(v.look));
+    return { p: c.position.clone(), q: c.quaternion.clone() };
   };
 
   fit();
@@ -524,16 +602,34 @@ export function createBackdrop(canvas, { width = 1920, height = 1080, ratio = 1,
         start();
       }
     },
+    // (another screen's camera: moved to as the game moves it, or set at once
+    // where nothing is drawn moving: reduced motion, a still step, unseen;
+    // the character shown or hidden as that locator says)
+    camera(name) {
+      const next = { ...view, ...cameraOf(name) };
+      if (next.name === view.name && !move) return;
+      turn.visible = next.character !== false;
+      if (still() || !seen) {
+        move = null;
+        view = next;
+        place(view);
+        drawRoom();
+        draw();
+        return;
+      }
+      // (from wherever the camera is now: a move cut short by another starts there)
+      move = { t0: now(), from: { p: camera.position.clone(), q: camera.quaternion.clone(), focus: view.focus, aperture: view.aperture }, to: { ...poseOf(next), view: next } };
+      start();
+    },
     // (another camera and placing: development's tuning against the capture)
     view(v) {
       view = { ...view, ...v, figure: { ...view.figure, ...v.figure } };
-      camera.position.fromArray(view.camera);
-      camera.lookAt(new THREE.Vector3().fromArray(view.look));
+      place(view);
       turn.position.fromArray(view.figure.at);
       aim();
       light();
       finish.uniforms.uExposure.value = exposureOf(LIGHT.exposure) * (view.exposure ?? 1);
-      for (const m of pills) m.emissiveIntensity = (LIGHT.pills.emissive / Math.PI) * LIGHT.calibrated.pills * (view.pills ?? 1);
+      for (const m of pills) m.emissiveIntensity = LIGHT.pills.emissive * (view.pills ?? 1);
       fit();
       draw();
     },

@@ -27,6 +27,7 @@
 
 import { deref, follow, isSequel, rootOf, shortName, stringHash } from './bf2017-ebx.mjs';
 import { typeOf } from './bf2017-rulebook-look.mjs';
+import { stateTables } from './bf2017-ui-logic.mjs';
 
 const r2 = (v) => Math.round(v * 100) / 100;
 const r4 = (v) => Math.round(v * 10000) / 10000;
@@ -79,8 +80,11 @@ function wiring(a) {
   const idx = (ref) => (ref && typeof ref.$ref === 'number' ? ref.$ref : -1);
   const strings = new Map(); // target object index → [{ field, key }]
   const gotos = new Map(); // source object index → [link]
+  const pcPick = pcSelects(a);
   for (const c of r.PropertyConnections ?? []) {
-    const s = a.objects[idx(c.Source)];
+    let s = a.objects[idx(c.Source)];
+    // (a string the platform picks: the PC's, the select's input its splitter's PC event chooses)
+    if (s?.$type === 'PropertySelectEntityData' && pcPick.has(idx(c.Source))) s = pcPick.get(idx(c.Source));
     if (s?.$type === 'CheckedLocalizedStringEntityData' && s.Sid) {
       const t = idx(c.Target);
       if (!strings.has(t)) strings.set(t, []);
@@ -98,17 +102,60 @@ function wiring(a) {
       gotos.get(s).push(asset(t.LinkTarget));
     }
   }
-  // the widget's interface: a field it takes from outside → the elements it feeds
+  // the widget's interface: a field it takes from outside → the elements it
+  // feeds; and what its own constants set on the widgets it places (a Play
+  // screen gives each tile its film and its outer corners' rounding)
   const slots = {};
+  const sets = new Map(); // target object index → { film?, corners? }
   const iface = deref(a, r.Interface);
   for (const c of r.PropertyConnections ?? []) {
     if (iface && a.objects[idx(c.Source)] === iface) {
-      const el = a.objects[idx(c.Target)];
-      if (el?.$type === 'TextElementData') (slots[c.SourceField] ??= []).push(elementId(a, idx(c.Target)));
+      const t = idx(c.Target);
+      const el = a.objects[t];
+      if (el?.$type === 'TextElementData') (slots[c.SourceField] ??= []).push(elementId(a, t));
+      if (el?.$type !== 'UIElementWidgetReferenceEntityData') continue;
+      // (a field passed on to a widget it places, `<that widget's id>><its field>`: a tile's player count to its label)
+      if (!f0(iface, c.SourceField)?.ValueRef && !/\S/.test(f0(iface, c.SourceField)?.Value ?? '')) (slots[c.SourceField] ??= []).push(`${elementId(a, t)}>${c.TargetField}`);
+      const f = (iface.Fields ?? []).find((x) => x.Name === c.SourceField);
+      if (!f) continue;
+      const s = sets.get(t) ?? {};
+      if (c.TargetField === SET.Movie && asset(f.ValueRef)) s.film = shortName(asset(f.ValueRef));
+      const corner = SET.corners.indexOf(c.TargetField);
+      const n = Number(String(f.Value ?? '').match(/^Float32 (-?[\d.]+)$/)?.[1]);
+      if (corner >= 0 && Number.isFinite(n)) (s.corners ??= [0, 0, 0, 0])[corner] = n;
+      if (Object.keys(s).length) sets.set(t, s);
     }
   }
-  return { strings, gotos, slots, feeds };
+  return { strings, gotos, slots, feeds, sets };
 }
+
+// A PropertySelect a PlatformSplitter drives → the object on its input the
+// PC picks. The splitter's PC event is 0x8a16ee34 (the live game on the
+// owner's PC, 2026-10-13: Arcade's tile says ID_PLAY_SCR_SKIRMISH_PLAYER_COUNT_1,
+// "1 PLAYER", the input that event selects; the other is the console's
+// split-screen count); SelectN (fieldHash 'Select0' …) takes input InN.
+const PC_EVENT = '0x8a16ee34';
+const f0 = (iface, name) => (iface?.Fields ?? []).find((x) => x.Name === name);
+const SELECT_EVENTS = ['0xa5bf143d', '0xa5bf143c', '0xa5bf143f', '0xa5bf143e']; // Select0..Select3
+const SELECT_INS = ['0x0b87d372', '0x0b87d373', '0x0b87d370', '0x0b87d371']; // In0..In3
+function pcSelects(a) {
+  const r = rootOf(a);
+  const idx = (ref) => (ref && typeof ref.$ref === 'number' ? ref.$ref : -1);
+  const out = new Map();
+  for (const e of r.EventConnections ?? []) {
+    if (a.objects[idx(e.Source)]?.$type !== 'PlatformSplitterEntityData' || e.SourceEvent?.Name !== PC_EVENT) continue;
+    const n = SELECT_EVENTS.indexOf(e.TargetEvent?.Name);
+    if (n < 0) continue;
+    const feed = (r.PropertyConnections ?? []).find((c) => idx(c.Target) === idx(e.Target) && c.TargetField === SELECT_INS[n]);
+    if (feed) out.set(idx(e.Target), a.objects[idx(feed.Source)]);
+  }
+  return out;
+}
+
+// the fields a screen's interface sets on the widgets it places: Movie, and
+// the four corners' rounding (Top-Left, Top-Right, Bottom-Right, Bottom-Left
+// CornerRoundness), by their field hashes
+const SET = { Movie: '0x0c84d03d', corners: ['0x3e5e959b', '0x3bbd0f20', '0x2ac2bd24', '0x8999f41f'] };
 
 function elementId(a, i) {
   const o = a.objects[i];
@@ -135,6 +182,11 @@ function elementOf(a, i, ctx, w, depth = 0) {
   if (o.Visible === false) el.visible = false;
   // (how the box is laid on what is under it; alpha blend, the default, is not written)
   if (typeof o.BlendMode === 'string' && o.BlendMode !== 'WSUIBlendMode_AlphaBlend') el.blend = o.BlendMode.replace(/^WSUIBlendMode_/, '').toLowerCase();
+  // (what the widget's logic sets by the state of the cell it is in: ./bf2017-ui-logic.mjs)
+  if (w.states?.has(i)) el.states = w.states.get(i);
+  if (w.sets?.has(i)) Object.assign(el, w.sets.get(i));
+  if (o.$type === 'CrtTrailContainerData') el.trail = trailOf(ctx.root, o);
+  if (o.ExcludeFromCrtTrailContainer) el.noTrail = true;
   if (o.$type === 'PaddingContainerData' && o.Padding) el.padding = [o.Padding.PaddingLeft, o.Padding.PaddingTop, o.Padding.PaddingRight, o.Padding.PaddingBottom].map((v) => r2(v ?? 0));
   if (o.$type === 'TextureElementData') {
     // its picture: the Id (the field hash of the texture's short name), and
@@ -187,12 +239,20 @@ function elementOf(a, i, ctx, w, depth = 0) {
         .toLowerCase() || null;
     if (o.LineWidth) el.line = o.LineWidth;
     if (o.Radius) el.radius = o.Radius;
+    const c = o.UseSeparateCornerRoundness ? [o.TopLeftCornerRoundness, o.TopRightCornerRoundness, o.BottomRightCornerRoundness, o.BottomLeftCornerRoundness] : Array(4).fill(o.CornerRoundness);
+    if (c.some((v) => v > 0)) el.corners = c.map((v) => r2(v ?? 0));
   }
-  if (o.$type === 'LineElementData' && o.StaticPoints)
+  if (o.$type === 'LineElementData' && o.StaticPoints) {
+    // (a line given fewer points than it has starts at its box's corner: the
+    // tile's top line is one point, its length; relative points are in parts of the box)
+    const pts = o.StaticPoints.map((p) => [r2(p.x), r2(p.y)]);
     Object.assign(el, {
-      points: o.StaticPoints.map((p) => [r2(p.x), r2(p.y)]),
+      points: pts.length < (o.NrOfPoints ?? 0) ? [[0, 0], ...pts] : pts,
       line: o.LineWidth,
+      ...(o.CapType === 'LineElementCapType_Rounded' ? { cap: 'round' } : {}),
+      ...(o.RelativeCoordinates ? { relative: true } : {}),
     });
+  }
   if (o.$type === 'StackingContainerData')
     el.stack = {
       direction: String(o.Direction ?? '').replace(/^StackingContainerDirection_/, ''),
@@ -263,6 +323,31 @@ function elementOf(a, i, ctx, w, depth = 0) {
   return el;
 }
 
+// A CRT trail container's glow (`CrtTrailContainerData` and its
+// `CrtTrailSettingsAsset`; the UI shader's crtTrail* permutations, bf2-re
+// findings/53): what is the key colour's (`key`, a palette index, within the
+// hue tolerance) is added, each frame at `scale` of the resolution, into a
+// trail that keeps `decay` of its blurred self and takes `gain` of the new,
+// laid on the screen in `colour` with every `scanlines.spacing`-th row set off.
+function trailOf(root, o) {
+  const a = root && asset(o.CrtTrailSettings) ? follow(root, o.CrtTrailSettings) : null;
+  const s = a ? rootOf(a) : null;
+  const t = { colour: v3(o.TrailColor) };
+  if (!s) return t;
+  return {
+    ...t,
+    settings: shortName(asset(o.CrtTrailSettings)),
+    key: s.UseKeyColor ? s.KeyColorPaletteIndex : null,
+    hue: s.KeyColorHueTolerance,
+    alpha: s.TrailAlpha,
+    decay: s.PreviousFrameWeight,
+    gain: s.CurrentFrameWeight,
+    scale: s.ResolutionScale,
+    kernel: [s.HalfKernel?.x, s.HalfKernel?.y, s.HalfKernel?.z].map((v) => r4(v ?? 0)),
+    ...(s.UseScanlines ? { scanlines: { width: s.ScanlinesWidth, spacing: s.ScanlinesSpacing, off: s.ScanlinesOffAlpha } } : {}),
+  };
+}
+
 // The TextureRef a widget's texture mappings give a texture Id: the
 // mappings it names, then its own `<name>_automapping` (the export indexes
 // those in lower case), or null.
@@ -286,7 +371,7 @@ function treeOf(root, name, ctx) {
   }
   const r = rootOf(a);
   const top = deref(a, r.Object);
-  const w = wiring(a);
+  const w = { ...wiring(a), states: stateTables(root, a) };
   const layers = (top?.Layers ?? []).map((l) => deref(a, l)).filter(Boolean);
   const elements = layers.flatMap((l) =>
     (l.Elements ?? [])

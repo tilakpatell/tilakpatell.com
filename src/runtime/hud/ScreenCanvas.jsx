@@ -4,7 +4,7 @@ import { mayPlay } from '../../lib/bf2017/films';
 import { prefersReducedMotion } from '../../lib/hooks';
 import { drawList, frameOf, navigables } from '../../lib/bf2017/ui/layout';
 import { fitCanvas } from './canvas';
-import { activate, buttonStyle, createPainter, filmPlan, frostOf, keyOn, pictureSizes, splitGlow } from './screenCanvas';
+import { activate, buttonStyle, createPainter, filmPlan, frostOf, keyOn, pictureSizes, splitGlow, trailOf } from './screenCanvas';
 import './screenCanvas.css';
 
 // One or more of the 2017 game's screens painted on one canvas (the
@@ -39,7 +39,9 @@ export default function ScreenCanvas({ layers, label = '', values = null, active
   const [focus, setFocus] = useState(null);
   const [hover, setHover] = useState(null);
   const frame = frameOf(win);
-  const lit = [focus, hover].filter(Boolean).join('|');
+  // (the pointer takes the focus while it is over a cell, the game's
+  // NavigatableElementMousePolicy_FocusWhileHovering: one cell lit, not two)
+  const lit = hover ?? focus ?? '';
   const opened = active.join('|');
   const items = useMemo(() => drawList(layers, { selected: new Set(lit ? lit.split('|') : []), open: new Set(opened ? opened.split('|') : []), values }), [layers, values, lit, opened]);
   const navs = useMemo(() => navigables(layers, { values }), [layers, values]);
@@ -76,13 +78,15 @@ export default function ScreenCanvas({ layers, label = '', values = null, active
   // a paint whenever what is drawn or where changed
   useEffect(() => {
     const { base, glow } = splitGlow(items);
+    // (the CRT trail's glow is added, so it goes on the glow canvas)
+    const trail = trailOf(items);
     let ms = 0;
     let missing = 0;
     [base, glow].forEach((list, i) => {
       const x = painters.current[i];
       const fit = x ? fitCanvas(x.c) : null;
       if (!fit) return;
-      const r = x.p.draw({ items: list, frame, window: win, ratio: fit.s, media: media.current, frost: true });
+      const r = x.p.draw({ items: list, frame, window: win, ratio: fit.s, media: media.current, frost: true, trail: i === 1 ? trail : null });
       if (!r) return;
       ms += r.ms;
       missing += Object.values(r.skipped).reduce((a, b) => a + b, 0) + r.missing.shapes + r.missing.textures;

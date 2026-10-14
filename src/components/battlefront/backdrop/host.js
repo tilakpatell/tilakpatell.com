@@ -6,11 +6,13 @@
 // worker; else, or when the worker can't draw, scene.js on the page, one
 // step down. A hidden tab, or no screen holding it, draws nothing.
 //
-// adopt(box, { level, reduced }) → release(): the room's canvas in `box`
-//   (filling it) until release
+// adopt(box, { level, reduced, camera }) → release(): the room's canvas in `box`
+//   (filling it) until release, seen from that screen's camera (home, play…)
 // roomState() → { mode: 'worker' | 'page' | null, step, ready } (the checks)
 
+import { manifestSlice } from '../../../lib/assetBase';
 import { pixelRatio } from '../../../lib/device';
+import { ROOM_ASSETS } from './assets';
 import { startStep } from './governor';
 
 export const LINGER_MS = 15000;
@@ -36,6 +38,7 @@ function onPage(r, step) {
       r.scene = createBackdrop(r.canvas, {
         ...sizeOf(r.box),
         level: r.level,
+        camera: r.cameraName ?? 'home',
         step,
         reduced: r.reduced,
         raf: (f) => requestAnimationFrame(f),
@@ -44,13 +47,16 @@ function onPage(r, step) {
         onReady: () => (r.ready = true),
       });
       if (!r.scene) r.mode = null;
-      else r.scene.visible(r.seen());
+      else {
+        r.scene.visible(r.seen());
+        r.scene.camera(r.cameraName ?? 'home');
+      }
     })
     .catch(() => (r.mode = null));
 }
 
-function make({ level, reduced }) {
-  const r = { mode: null, canvas: null, worker: null, scene: null, box: null, timer: 0, step: 0, ready: false, level, reduced, ro: null };
+function make({ level, reduced, camera = 'home' }) {
+  const r = { mode: null, canvas: null, worker: null, scene: null, box: null, timer: 0, step: 0, ready: false, level, reduced, ro: null, cameraName: camera };
   r.seen = () => Boolean(r.box) && document.visibilityState !== 'hidden';
   r.send = (msg) => r.worker?.postMessage(msg);
   r.resize = () => {
@@ -84,7 +90,8 @@ function make({ level, reduced }) {
         else if (m.type === 'failed') fallBack(r);
       };
       r.worker.onerror = () => fallBack(r);
-      r.worker.postMessage({ type: 'start', canvas: off, ...sizeOf(null), level, step, reduced }, [off]);
+      // (with the manifest's entries it loads: its own bundle has none)
+      r.worker.postMessage({ type: 'start', canvas: off, ...sizeOf(null), level, step, reduced, camera, manifest: manifestSlice(ROOM_ASSETS) }, [off]);
       return r;
     } catch {
       r.worker?.terminate();
@@ -118,14 +125,14 @@ function drop(r) {
   r.canvas?.remove();
 }
 
-export function adopt(box, { level = 'high', reduced = false } = {}) {
+export function adopt(box, { level = 'high', reduced = false, camera = 'home' } = {}) {
   if (!box || typeof document === 'undefined') return () => {};
   if (room && (room.level !== level || room.reduced !== reduced)) {
     clearTimeout(room.timer);
     drop(room);
     room = null;
   }
-  room ??= make({ level, reduced });
+  room ??= make({ level, reduced, camera });
   const r = room;
   clearTimeout(r.timer);
   r.box = box;
@@ -134,6 +141,10 @@ export function adopt(box, { level = 'high', reduced = false } = {}) {
   r.ro?.observe(box);
   r.resize();
   r.show();
+  // (the screen's camera, moved to as the game moves it: HOME's with the character on the right, PLAY's the room alone)
+  r.cameraName = camera;
+  if (r.worker) r.send({ type: 'camera', name: camera });
+  else r.scene?.camera(camera);
   return () => {
     if (r.box !== box) return;
     r.box = null;
@@ -152,4 +163,5 @@ export const roomState = () => ({ mode: room?.mode ?? null, step: room?.step ?? 
 if (typeof window !== 'undefined' && import.meta.env?.DEV) {
   window.__bfRoom = roomState;
   window.__bfRoomView = (view) => (room?.worker ? room.send({ type: 'view', view }) : room?.scene?.view(view));
+  window.__bfRoomCamera = (name) => (room?.worker ? room.send({ type: 'camera', name }) : room?.scene?.camera(name));
 }

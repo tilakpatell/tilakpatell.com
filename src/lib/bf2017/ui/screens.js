@@ -85,8 +85,30 @@ function boxOf(el, at, path, ctx, slots) {
     if (el.align) box.align = el.align;
     if (el.wrap) box.wrap = true;
   }
-  for (const k of ['shape', 'svg', 'film', 'fill', 'line', 'points', 'texture', 'blend']) if (el[k] !== undefined) box[k] = el[k];
+  for (const k of ['shape', 'svg', 'fill', 'line', 'points', 'texture', 'blend', 'cap', 'corners', 'relative', 'noTrail']) if (el[k] !== undefined) box[k] = el[k];
+  // (a CRT trail container: its key colour as the painter compares it)
+  if (el.trail) box.trail = { ...el.trail, ...(typeof el.trail.key === 'number' ? { keyColour: colour(el.trail.key) } : {}) };
+  // (a film the tree names, or the one the screen gives the widget it is in:
+  // the Play screens give each tile its own, UI/Video/Tiles/Tile_Solo)
+  const film = el.type === 'video' ? (el.film ?? ctx.film) : el.widget ? null : el.film;
+  if (film) box.film = film;
+  if (el.states) box.states = statesOf(el.states, ctx.corners);
   return box;
+}
+
+// A box's looks by the state of the cell it is in (the widget's logic,
+// scripts/lib/bf2017-ui-logic.mjs): its palette turned into colours, the
+// rest as the logic sets them, each four values (normal, selected, focused,
+// disabled). A corner the logic leaves alone is the one the screen gave the
+// widget (`own`: a row of tiles rounds its outer corners).
+const CORNERS = ['TopLeftCornerRoundness', 'TopRightCornerRoundness', 'BottomRightCornerRoundness', 'BottomLeftCornerRoundness'];
+function statesOf(s, own = null) {
+  const out = { ...s };
+  if (s.palette) out.colour = s.palette.map((p) => colour(p));
+  delete out.palette;
+  if (CORNERS.some((k) => s[k])) out.corners = [0, 1, 2, 3].map((i) => CORNERS.map((k, c) => Math.max(s[k]?.[i] ?? 0, own?.[c] ?? 0)));
+  for (const k of CORNERS) delete out[k];
+  return out;
 }
 
 // a padded container's inner box: its parts are laid inside the padding
@@ -146,11 +168,15 @@ function expand(elements, parent, path, ctx, slots = {}, seen = new Set(), depth
     // (a root box the tree expands over the whole frame: drawn over the whole window)
     if (depth === 0 && !path && el.layout?.fill && String(el.layout.expansion) === '0,0,1,1') box.bleed = true;
     const inner = { ...padded(at, el.padding, ctx.k), ...(el.stack ? { stack: el.stack } : {}), ...(el.size ? { design: paddedSize(el.size, el.padding) } : {}) };
-    const sub = scoped(el, ctx);
+    // (what the screen sets on a widget it places reaches the parts inside it)
+    const set = el.widget && (el.film || el.corners) ? { ...(el.film ? { film: el.film } : {}), ...(el.corners ? { corners: el.corners } : {}) } : null;
+    const sub = set ? { ...scoped(el, ctx), ...set } : scoped(el, ctx);
     if (el.widget) {
       const w = ROWS.widgets[el.widget];
       box.widget = el.widget;
-      if (w && !seen.has(el.widget)) box.children = expand(w.elements, { ...inner, design: w.size ?? inner.design }, box.id, sub, slotTexts(el.binds, w.slots), new Set([...seen, el.widget]), depth + 1);
+      // (what the widget it is in passes on to it: a tile's player count to its label)
+      const passed = Object.fromEntries(Object.entries(slots).flatMap(([k, v]) => (k.startsWith(`${el.id}>`) ? [[k.slice(el.id.length + 1), v]] : [])));
+      if (w && !seen.has(el.widget)) box.children = expand(w.elements, { ...inner, design: w.size ?? inner.design }, box.id, sub, slotTexts({ ...el.binds, ...passed }, w.slots), new Set([...seen, el.widget]), depth + 1);
     } else if (el.dynamic && ctx.items?.[el.id]) {
       box.children = itemsOf(el.dynamic, ctx.items[el.id], inner, box.id, sub, seen, depth);
     } else if (el.list) {

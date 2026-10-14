@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { drawList, frameOf, navigables } from './layout';
+import { colour } from './index';
+import { drawList, frameOf, navigables, stateOf } from './layout';
 import { screen } from './screens';
 
 // a resolved tree by hand: boxes as screen() gives them
@@ -114,14 +115,18 @@ describe('the navigable cells', () => {
     expect(tabs.some((n) => n.tile)).toBe(false);
   });
 
-  it('draws a tab’s selected line and bold words only when it is selected', () => {
+  it('draws a focused tab’s edges and words in the key colour, as the live game does under the pointer', () => {
     const t = screen('MainMenuScreen');
     const play = navigables([t]).find((n) => n.label === 'PLAY');
-    const of = (sel) => ids(drawList([t], { selected: new Set(sel) }).filter((i) => i.cell === play.id));
+    const list = (sel) => drawList([t], { selected: new Set(sel) }).filter((i) => i.cell === play.id);
+    const of = (sel) => ids(list(sel));
     expect(of([])).toContain('MenuText');
     expect(of([])).not.toContain('SelectedLineLeft');
-    expect(of([play.id])).toEqual(expect.arrayContaining(['SelectedLineLeft', 'MenuTextSelected']));
-    expect(of([play.id])).not.toContain('MenuText');
+    expect(of([play.id])).toEqual(expect.arrayContaining(['SelectedLineLeft', 'SelectedLineRight', 'MenuText']));
+    expect(of([play.id])).not.toContain('MenuTextSelected');
+    const byName = (n) => list([play.id]).find((i) => i.id.endsWith(`/${n}`));
+    expect(byName('MenuText').colour).toBe(colour(2));
+    expect(byName('SelectedLineLeft').colour).toBe(colour(2));
   });
 
   it('names a tile by its Title as the screen’s values fill it', () => {
@@ -130,13 +135,39 @@ describe('the navigable cells', () => {
     expect(tile.label).toBe('OTHER WORDS');
   });
 
-  it('draws the open tab lit but without the focus’s edges, as the capture shows HOME', () => {
+  it('shows by the selection first and looks by the focus first, a disabled cell neither', () => {
+    expect(stateOf({})).toEqual({ show: 0, look: 0 });
+    expect(stateOf({ open: true, focus: true })).toEqual({ show: 1, look: 2 });
+    expect(stateOf({ focus: true })).toEqual({ show: 2, look: 2 });
+    expect(stateOf({ off: true, focus: true })).toEqual({ show: 3, look: 3 });
+  });
+
+  it('draws the open tab as the live game does: its backing, bold words, dots and light edges; the key colour once focused', () => {
     const t = screen('MainMenuScreen');
     const home = navigables([t]).find((n) => n.label === 'HOME');
-    const of = (opts) => ids(drawList([t], opts).filter((i) => i.cell === home.id));
-    expect(of({ open: new Set([home.id]) })).toEqual(expect.arrayContaining(['MenuTextSelected']));
-    expect(of({ open: new Set([home.id]) })).not.toContain('SelectedLineLeft');
-    expect(of({ open: new Set([home.id]), selected: new Set([home.id]) })).toContain('SelectedLineLeft');
+    const list = (opts) => drawList([t], opts).filter((i) => i.cell === home.id);
+    const open = { open: new Set([home.id]) };
+    expect(ids(list(open))).toEqual(expect.arrayContaining(['SelectedBackground', 'MenuTextSelected', 'LeftDot', 'RightDot', 'SelectedLineLeft']));
+    expect(ids(list(open))).not.toContain('MenuText');
+    const edge = (opts) => list(opts).find((i) => i.id.endsWith('/SelectedLineLeft')).colour;
+    expect(edge(open)).toBe(colour(38));
+    expect(edge({ ...open, selected: new Set([home.id]) })).toBe(colour(2));
+  });
+
+  it('draws a tile in its state by its logic: the focused one’s outline, top line and title in the key colour, a disabled one dim', () => {
+    const values = (b, path) => (path.at(-1) === 'COOP' ? { coming: true } : null);
+    const t = screen('PlayScreen');
+    const navs = navigables([t], { values });
+    const mp = navs.find((n) => n.id.endsWith('/Multiplayer'));
+    const coop = navs.find((n) => n.id.endsWith('/COOP'));
+    const list = drawList([t], { selected: new Set([mp.id]), values });
+    const part = (cell, n) => list.find((i) => i.cell === cell.id && i.id.endsWith(`/${n}`));
+    expect(part(mp, 'Outline')).toMatchObject({ colour: colour(2), line: 2 });
+    expect(part(mp, 'SelectedTopLine')).toMatchObject({ colour: colour(2), alpha: 1 });
+    expect(part(mp, 'Title').colour).toBe(colour(2));
+    expect(part(coop, 'Title').colour).toBe(colour(40));
+    expect(part(coop, 'Outline')).toBeUndefined();
+    expect(part(coop, 'DisabledOutline')).toBeDefined();
   });
 
   it('carries a cell’s link and words, leaves out a hidden one and marks one still to come', () => {

@@ -11,6 +11,7 @@
 // briefingFor(system) → [film] in scene order (empty for a world the
 //   campaign never went to)
 // tilesFor(mode) → [film]: the menu's tiles for a mode of play
+// filmNamed(name) → film | null: by the game's own short name (Tile_Solo)
 // tutorials() → [film]; logo() → film | null
 // mayPlay({ reduced, saveData }) → whether a film may play at all (never
 //   with reduced motion, never on a saver connection)
@@ -69,6 +70,8 @@ export function filmFor(ask = {}, { variant = null, films = FILMS } = {}) {
   return null;
 }
 
+// a film by the game's name for it (the trees' `Tile_Solo`, a record's short name), or null
+export const filmNamed = (name, films = FILMS) => filmOf(films.find((f) => f.name?.split('/').pop() === name));
 export const tilesFor = (mode, films = FILMS) => (MODE_TILES[mode] ?? []).map((t) => filmFor({ tile: t }, { films })).filter(Boolean);
 export const tutorials = (films = FILMS) => films.filter((f) => f.kind === 'tutorial').map(filmOf);
 export const logo = (films = FILMS) => filmOf(films.find((f) => f.kind === 'logo'));

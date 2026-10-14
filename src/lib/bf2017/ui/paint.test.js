@@ -31,12 +31,63 @@ describe('the painter', () => {
 
   it('scales to the frame and the pixel ratio, and counts what it cannot draw yet', () => {
     const ctx = fakeContext();
-    const r = paint(ctx, [item({ type: 'line' })], { ...at(2560, 1080), ratio: 2 });
+    const r = paint(ctx, [item({ type: 'arc' })], { ...at(2560, 1080), ratio: 2 });
     expect(ctx.calls).toContainEqual(['clearRect', 0, 0, 5120, 2160]);
     expect(ctx.calls).toContainEqual(['setTransform', 2, 0, 0, 2, 640, 0]);
-    expect(r.skipped).toEqual({ line: 1 });
+    expect(r.skipped).toEqual({ arc: 1 });
     expect(r.drawn).toBe(0);
     expect(typeof r.ms).toBe('number');
+  });
+
+  it('rounds a box’s corners by its corners, the tile row’s outer ones', () => {
+    const ctx = fakeContext();
+    paint(ctx, [item({ type: 'rectangle', fill: 'none', line: 1, colour: 'white', x: 0, y: 0, w: 100, h: 50, corners: [4, 0, 0, 4] })], at(1920, 1080));
+    expect(ctx.calls.filter((c) => c[0] === 'arcTo')).toHaveLength(2);
+    expect(ctx.calls).toContainEqual(['stroke']);
+    expect(ctx.calls.some((c) => c[0] === 'strokeRect')).toBe(false);
+  });
+
+  it('draws a line through its points, a tile’s top line as long as its title', () => {
+    const ctx = fakeContext();
+    const title = item({ id: '0:/T/Title', cell: 't', type: 'text', text: 'MULTIPLAYER', x: 30, y: 400, w: 450, h: 48, font: { family: 'BF', size: 48, weight: 700 } });
+    const top = item({ id: '0:/T/TileWidget/SelectedTopLine', cell: 't', type: 'line', x: 32, y: 1, w: 470, h: 5, points: [[0, 0], [10, 0]], line: 6, cap: 'round', follow: 'Title', colour: 'rgb(242 174 10)' });
+    paint(ctx, [top, title], at(1920, 1080));
+    expect(ctx.calls).toContainEqual(['moveTo', 32, 1]);
+    expect(ctx.calls).toContainEqual(['lineTo', 142, 1]);
+    expect(ctx.calls).toContainEqual(['set', 'lineCap', 'round']);
+    expect(ctx.calls).toContainEqual(['set', 'lineWidth', 6]);
+  });
+
+  const scratch = () => {
+    const made = [];
+    return { made, makeCanvas: (w, h) => (made.push(fakeContext()), { width: w, height: h, ctx: made.at(-1), getContext() { return this.ctx; } }) };
+  };
+  const poster = { naturalWidth: 100, naturalHeight: 80, complete: true };
+
+  it('turns a film its widget colours that colour, multiplied on a canvas of its own', () => {
+    const ctx = fakeContext();
+    const s = scratch();
+    paint(ctx, [item({ id: '0:/tile/Video', type: 'video', x: 0, y: 0, w: 100, h: 80, film: { url: 'v.webm', poster: 'p.webp' }, tint: 'rgb(242 174 10)' })], { ...at(1920, 1080), media: { 'p.webp': poster }, makeCanvas: s.makeCanvas });
+    expect(s.made[0].calls).toContainEqual(['set', 'globalCompositeOperation', 'multiply']);
+    expect(s.made[0].calls).toContainEqual(['set', 'fillStyle', 'rgb(242 174 10)']);
+    expect(ctx.calls.some((c) => c[0] === 'drawImage' && c[1]?.ctx === s.made[0])).toBe(true);
+  });
+
+  it('adds the CRT trail’s glow over the key colour’s parts, blurred, in the trail’s colour, with its scanlines', () => {
+    const ctx = fakeContext();
+    const s = scratch();
+    const word = item({ id: '0:/tab/MenuText', type: 'text', text: 'PLAY', x: 0, y: 0, w: 190, h: 48, colour: 'rgb(242 174 10)', font: { family: 'BF', size: 24 } });
+    const trail = { items: [word], colour: [1, 0.5, 0.5], scale: 0.5, alpha: 1, scanlines: { width: 1, spacing: 2, off: 0.75 } };
+    paint(ctx, [], { ...at(1920, 1080), trail, makeCanvas: s.makeCanvas });
+    const [keyed, blur] = s.made;
+    expect(keyed.calls).toContainEqual(['set', 'fillStyle', 'rgb(242 87 5)']);
+    expect(blur.calls).toContainEqual(['set', 'filter', 'blur(5px)']);
+    expect(blur.calls).toContainEqual(['set', 'globalCompositeOperation', 'destination-out']);
+    expect(ctx.calls).toContainEqual(['set', 'globalCompositeOperation', 'lighter']);
+    // (with no canvas to draw it on, no glow)
+    const bare = fakeContext();
+    paint(bare, [], { ...at(1920, 1080), trail, makeCanvas: () => null });
+    expect(bare.calls).not.toContainEqual(['set', 'globalCompositeOperation', 'lighter']);
   });
 
   it('draws a bleeding box over the whole window', () => {

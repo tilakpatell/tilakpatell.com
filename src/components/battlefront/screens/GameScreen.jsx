@@ -19,7 +19,9 @@ import './screens.css';
 // code fills and `active` the cells drawn open (the 2026-10-13 canvas
 // design); with `tree` it is drawn by the kit's Screen, as before. `room`
 // puts the front end's 3D room behind it (../backdrop, the 2026-10-13
-// backdrop design) where there is no film.
+// backdrop design) where there is no film, seen from that screen's camera:
+// `room` true is HOME's, `room="play"` PLAY's (the game moves its camera
+// between them, and PLAY's shows the room alone).
 export default function GameScreen({ tree = null, layers = null, values = null, active = [], label, backdrop = null, room = false, onBack = null, onLink = null, onAction = null, fill = null, keys = null, className = '', children = null, first = null, onKey = null }) {
   const name = layers ? layers.at(-1)?.name : tree?.name;
   const ref = useRef(null);
@@ -38,7 +40,7 @@ export default function GameScreen({ tree = null, layers = null, values = null, 
   const node = (
     <div ref={ref} tabIndex={-1} className={`bf-game-screen ${className}`.trim()} role="dialog" aria-modal="true" aria-label={label} onKeyDown={onKeyDown} data-game-screen={name ?? label}>
       <div className={`bf-game-backdrop${room && !backdrop ? ' bf-game-room' : ''}`} aria-hidden="true">
-        {backdrop ? <Film film={backdrop} className="bf-game-film" /> : room ? <FrontEndBackdrop /> : null}
+        {backdrop ? <Film film={backdrop} className="bf-game-film" /> : room ? <FrontEndBackdrop camera={typeof room === 'string' ? room : 'home'} /> : null}
       </div>
       {layers ? <ScreenCanvas layers={layers.filter(Boolean)} label={label} values={values} active={active} onLink={onLink} onAction={onAction} /> : <Screen tree={tree} label={label} onLink={onLink} onAction={onAction} fill={fill} />}
       {children}

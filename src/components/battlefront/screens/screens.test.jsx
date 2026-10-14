@@ -232,12 +232,13 @@ describe('the front end over a world', () => {
 });
 
 describe('the front end’s ways out', () => {
-  it('alone: HOME and Escape both go to the Start screen, and the first thing in focus is the frame’s own', () => {
+  it('alone: HOME and Escape both go to the Start screen, and the focus starts on HOME’s first tile', () => {
     const toStart = () => 'start';
     const w = frontEndWays({ toStart });
     expect(w.home).toBe(toStart);
     expect(w.back).toBe(toStart);
-    expect(w.first).toBe(null);
+    // (HOME's first tile, as the live game's focus starts: not the HOME tab)
+    expect(w.first).toBe('.hud-screen-hit[data-tile]:not([aria-disabled="true"])');
   });
   it('over a world: Escape is the way out, HOME goes nowhere, and the focus starts on PLAY', () => {
     const toStart = () => 'start';

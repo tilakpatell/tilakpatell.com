@@ -21,6 +21,8 @@ export function fakeContext() {
         calls.push(['set', name, value]);
         return true;
       },
+      // (a real context has every property: `'filter' in ctx` is asked)
+      has: () => true,
     },
   );
 }

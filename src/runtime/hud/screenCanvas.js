@@ -18,6 +18,8 @@
 //   (its additive blend: a tile's line drawing, a glow) goes on a canvas of
 //   its own, laid on the page by the browser's screen blend, so its black adds
 //   nothing to the frosted panels and the backdrop under the base canvas
+// trailOf(items) → { …settings, items } | null: what the CRT trail glows
+//   over (the key colour's parts of a trail container), for the glow canvas
 // frostOf(items, frame) → [{ id, style }]: a blurring panel under each box the
 //   game blurs what is behind (`fill: 'blurred'`), in the window's px
 // createPainter({ ctx, read, fonts, raf, caf }) → { draw(args), repaint(),
@@ -78,6 +80,15 @@ export function pictureSizes(items, frame, ratio, pictureOf = pictureOfDefault) 
   return out;
 }
 
+// The CRT trail's glow (paint.js's trailGlow): the parts of a trail
+// container drawn in its key colour (the game's FrontendKeycolorGlow keys
+// its palette's yellow: the focused tab's and tile's lines, words and line
+// drawing), with the container's settings; null when nothing is keyed.
+export function trailOf(items) {
+  const keyed = items.filter((i) => i.trail?.keyColour && (i.colour === i.trail.keyColour || i.tint === i.trail.keyColour));
+  return keyed.length ? { ...keyed[0].trail, items: keyed } : null;
+}
+
 export function splitGlow(items) {
   const base = [];
   const glow = [];
@@ -88,13 +99,20 @@ export function splitGlow(items) {
 // The game blurs what is behind its panels (WSUIRenderingSettings'
 // BackgroundBlurRadius, kernel 7 on its blur's buffer): a blur of 24 px at the
 // frame's 1080 (hand: read from the captures), the browser's own, under the
-// canvas.
+// canvas. Then its blur-lightness pass (the UI shader's blurLightness
+// permutation, bf2-re findings/53: out = Lightness · b^Contrast /
+// (lum(b)^DynamicCurvature + DynamicLightness), MenuHighlightLightness 0.1,
+// 0.9, 2, 10,000 on the scene's nits): whatever is bright behind a panel
+// comes out about 0.1 of white whatever its own brightness (the pill lights
+// as grey bars) and the dark next to nothing. On the room's display values
+// that is about a third of them, the darks near black: `brightness`.
 const FROST_PX = 24;
+const FROST_LIGHT = 0.35;
 export function frostOf(items, frame) {
   return items
     .filter((i) => i.fill === 'blurred' && i.w > 0 && i.h > 0)
     .map((i) => {
-      const blur = `blur(${Math.round(FROST_PX * frame.k * 100) / 100}px)`;
+      const blur = `blur(${Math.round(FROST_PX * frame.k * 100) / 100}px) brightness(${FROST_LIGHT})`;
       return { id: i.id, style: { ...buttonStyle(i, frame), opacity: i.alpha ?? 1, backdropFilter: blur, WebkitBackdropFilter: blur } };
     });
 }

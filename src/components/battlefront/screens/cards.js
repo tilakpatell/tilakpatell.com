@@ -42,5 +42,8 @@ export const menuItems = (tree) =>
 // both go back to the Start screen. Over a level's world (`onExit`) Escape is
 // the way out of the world, HOME goes nowhere (it is the first tab and held
 // the focus: Enter on arriving left the game and threw the loaded level
-// away), and the focus starts on PLAY.
-export const frontEndWays = ({ toStart, onExit = null }) => ({ home: onExit ? null : toStart, back: onExit ?? toStart, first: onExit ? '[data-link$="/PlayScreen"]' : null });
+// away), and the focus starts on PLAY. Alone, the focus starts on HOME's
+// first tile, as the live game's does (its tabs take the bumpers, not the
+// focus: a focused tab is drawn in the key colour, the open one is not).
+export const FIRST_HOME_TILE = '.hud-screen-hit[data-tile]:not([aria-disabled="true"])';
+export const frontEndWays = ({ toStart, onExit = null }) => ({ home: onExit ? null : toStart, back: onExit ?? toStart, first: onExit ? '[data-link$="/PlayScreen"]' : FIRST_HOME_TILE });

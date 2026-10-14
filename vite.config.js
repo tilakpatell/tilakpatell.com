@@ -54,7 +54,11 @@ export default defineConfig({
   // workers as ES modules, so one that loads a module dynamically shares its
   // chunk with the page (the physics worker's Rapier: as an iife, both
   // builds were inlined into one 9 MB worker); every worker is made with
-  // { type: 'module' }
+  // { type: 'module' }. A worker is built without these plugins, so its
+  // src/data/assets-manifest.json is the committed `{}`: a worker that
+  // loads from the bucket is handed its entries by its page
+  // (lib/assetBase's addManifest; the front end's room, backdrop/assets.js),
+  // the 9 MB manifest kept out of every worker
   worker: { format: 'es' },
   // the skills and the other branches' worktrees under .claude, and the
   // scratch checkouts under lab/, bring their own tests; the AI tiers are

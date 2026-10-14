@@ -12,6 +12,8 @@
 // to the site; an abort (its world left) is passed on, never a fallback.
 //
 // assetUrl(path, { base, manifest }) → the URL to fetch
+// addManifest(entries): entries handed to a worker by its page; manifestEntry(key) → { hash, bytes } | undefined
+// manifestSlice(prefixes) → the bundle's entries under those paths
 // withFallback(load, { base, manifest, wait }) → (path) => load(remote), else load(path) once
 //   (the remote given `wait` ms until the bucket has answered once this visit)
 // markDown(), isDown(), forgetDown() (a new visit; tests): lib/assetDown's, re-exported
@@ -25,7 +27,21 @@ import { WAIT_MS, answered, isDown, markAnswered, markDown } from './assetDown';
 // re-exported here, so a caller of either reads the one state)
 export { SLOW_RATE, WAIT_MS, answered, forgetDown, isDown, markAnswered, markDown, waitFor } from './assetDown';
 
-export function assetUrl(path, { base = import.meta.env?.VITE_ASSET_BASE, manifest = MANIFEST } = {}) {
+// Entries handed over at run time: a worker's own bundle carries the
+// committed, empty manifest (Vite builds a worker without the page's
+// plugins, so scripts/assets-manifest.mjs never fills it there), and the
+// page that starts it hands it the slice it loads from (the front end's
+// room: backdrop/assets.js). Looked up after the bundle's own.
+const handed = {};
+export function addManifest(entries) {
+  Object.assign(handed, entries ?? {});
+}
+export const manifestEntry = (key) => MANIFEST[key] ?? handed[key];
+// the bundle's entries under any of `prefixes`, for a worker to be handed
+export const manifestSlice = (prefixes) => Object.fromEntries(Object.entries(MANIFEST).filter(([k]) => prefixes.some((p) => k.startsWith(p))));
+const LOOKUP = new Proxy(MANIFEST, { get: (m, key) => m[key] ?? handed[key] });
+
+export function assetUrl(path, { base = import.meta.env?.VITE_ASSET_BASE, manifest = LOOKUP } = {}) {
   return isDown() ? path : remotePath(path, base, manifest);
 }
 

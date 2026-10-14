@@ -5,9 +5,11 @@ import { adopt } from './host';
 import './backdrop.css';
 
 // The front end's room behind a screen (the 2026-10-13 backdrop design):
-// the one room host.js keeps, its canvas held here while this screen is up.
-export default function FrontEndBackdrop() {
+// the one room host.js keeps, its canvas held here while this screen is up,
+// seen from the screen's camera as the game's front end moves it (`camera`:
+// home, play, options… scene.js's CAMERAS).
+export default function FrontEndBackdrop({ camera = 'home' }) {
   const box = useRef(null);
-  useEffect(() => adopt(box.current, { level: device().detail, reduced: prefersReducedMotion() }), []);
+  useEffect(() => adopt(box.current, { level: device().detail, reduced: prefersReducedMotion(), camera }), [camera]);
   return <div ref={box} className="bf-room" aria-hidden="true" />;
 }

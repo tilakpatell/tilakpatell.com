@@ -1,22 +1,29 @@
 // The layout core of the game's screens on the canvas (the 2026-10-13 canvas
 // design, docs/superpowers/specs/2026-10-13-bf2017-ui-canvas-design.md): the
-// game's 1920 × 1080 frame in a window, and the trees screen() resolves at
+// game's 1920 Ã— 1080 frame in a window, and the trees screen() resolves at
 // that size made into one flat list to draw and the cells to press. Pure: the
 // painter (./paint.js) draws the list, the kit's ScreenCanvas puts a button
 // over each cell, so what is drawn and what is pressed come from one place.
 //
-// frameOf({ width, height }) → { k, x, y, w, h }: the frame scaled to fit the
+// frameOf({ width, height }) â†’ { k, x, y, w, h }: the frame scaled to fit the
 //   window and centred in it
-// drawList(layers, { selected, open, values }) → [{ id, layer, type, x, y, w, h,
+// drawList(layers, { selected, open, values }) â†’ [{ id, layer, type, x, y, w, h,
 //   alpha, colour, text, font, align, wrap, shape, film, fill, line, bleed,
 //   cell }] in frame px, in drawing order; `id` is `<layer>:<box id>`, `cell`
 //   the navigable it is in (or null)
-// navigables(layers, { values }) → [{ id, layer, x, y, w, h, label, link,
+// navigables(layers, { values }) â†’ [{ id, layer, x, y, w, h, label, link,
 //   screen, group, index, horizontal, coming, tile }]: `tile` a widget the
 //   game walks by its navigation zone (a Play tile), not a list's cell
-// values(box, path) → { text?, hidden?, film?, image?, coming? } | null: what a screen
+// values(box, path) â†’ { text?, hidden?, film?, image?, coming? } | null: what a screen
 //   fills a box with (the game's code does it at run time), `path` the ids'
 //   last parts from the layer's root down to the box
+// stateOf({ focus, open, off }) â†’ { show, look }: the state (0 normal, 1
+//   selected, 2 focused, 3 disabled) a box's `states` are read at
+// A box with `states` (the widget's logic, from the rulebook) is drawn in
+// its cell's state: its colour, alpha, line, corners and whether it shows;
+// a film in a widget the logic colours carries that colour as `tint`.
+
+import { filmNamed } from '../films';
 
 export const FRAME = [1920, 1080];
 
@@ -35,7 +42,7 @@ const SELECT = /^Select|Selected/;
 // without the focus's own edges and dots: hand, the capture's HOME)
 const FOCUS_MARK = /Line|Dot/;
 const NEW_MARK = 'UI/Frontend/Widgets/Shared/NewThingAvailable';
-const KEEP = ['type', 'x', 'y', 'w', 'h', 'colour', 'text', 'font', 'align', 'wrap', 'shape', 'svg', 'film', 'fill', 'line', 'points', 'bleed', 'texture', 'blend', 'image'];
+const KEEP = ['type', 'x', 'y', 'w', 'h', 'colour', 'text', 'font', 'align', 'wrap', 'shape', 'svg', 'film', 'fill', 'line', 'points', 'bleed', 'texture', 'blend', 'image', 'cap', 'corners', 'follow', 'relative', 'linear'];
 
 const nameOf = (id) => id.slice(id.lastIndexOf('/') + 1).replace(/#\d+$/, '');
 
@@ -64,37 +71,82 @@ const patched = (b, path, values) => {
   return p ? { ...b, ...p, forced: p.hidden === true } : b;
 };
 
+// The state a box is drawn in, by the cell it is in (the widget's logic,
+// scripts/lib/bf2017-ui-logic.mjs: normal 0, selected 1, focused 2,
+// disabled 3). What shows goes by the selection first (an open tab shows
+// its open parts while the pointer is on it), how it looks by the focus
+// first (the game's state is `focused ? 2 : selected ? 1 : 0` for its
+// colours); a cell that cannot be pressed is disabled.
+export const stateOf = ({ focus = false, open = false, off = false }) => ({ show: off ? 3 : open ? 1 : focus ? 2 : 0, look: off ? 3 : focus ? 2 : open ? 1 : 0 });
+
+// a box's own look in its state: its colour, alpha, line and corners as the
+// logic sets them
+function inState(b, s) {
+  const st = b.states;
+  if (!st) return b;
+  const out = { ...b };
+  if (st.colour) out.colour = st.colour[s.look];
+  if (st.line) out.line = st.line[s.look];
+  if (st.corners) out.corners = st.corners[s.look];
+  if (st.alpha) out.alpha = st.alpha[s.look];
+  // (a colour fill the logic shows with no colour of its own is the record's
+  // white: the open tab's SelectedBackgroundLight; the game shades the UI in
+  // linear space, GameRenderSettings.UIShadeInLinearSpaceEnabled, so its 2 %
+  // lights the panel as 2 % of light does, not 2 % of the 8-bit value)
+  if ((b.type === 'rectangle' || b.type === 'fill') && b.fill === 'color' && !out.colour) out.colour = 'rgb(255 255 255)';
+  out.linear = true;
+  return out;
+}
+
 export function drawList(layers, { selected = new Set(), open = new Set(), values = null } = {}) {
   const items = [];
   layers.forEach((tree, layer) => {
     const navs = navIds(tree);
-    const walk = (boxes, path, alpha, cell, on, focused) => {
+    const walk = (boxes, path, alpha, cell, on, focused, opened, off, tint, trail) => {
       const kids = (boxes ?? []).map((b) => patched(b, [...path, nameOf(b.id)], values));
       const names = new Set(kids.map((b) => nameOf(b.id)));
-      for (const b of kids) {
-        const name = nameOf(b.id);
-        const here = navs.has(b.id) ? `${layer}:${b.id}` : cell;
-        const isFocus = navs.has(b.id) ? selected.has(here) : focused;
-        const lit = navs.has(b.id) ? isFocus || open.has(here) : on;
+      for (const raw of kids) {
+        const name = nameOf(raw.id);
+        const nav = navs.has(raw.id);
+        const here = nav ? `${layer}:${raw.id}` : cell;
+        const isFocus = nav ? selected.has(here) : focused;
+        const isOpen = nav ? open.has(here) : opened;
+        const isOff = nav ? Boolean(raw.coming) : off;
+        const lit = nav ? isFocus || isOpen : on;
+        const s = stateOf({ focus: isFocus, open: isOpen, off: isOff });
+        const b = inState(raw, s);
         const inCell = here !== null;
         const highlight = inCell && SELECT.test(name);
-        if (highlight && !lit) continue;
-        if (highlight && !isFocus && FOCUS_MARK.test(name)) continue;
-        if (inCell && lit && (names.has(`${name}Selected`) || names.has(`Selected${name}`))) continue;
-        if (b.hidden && !(highlight && lit && !b.forced)) continue;
+        if (b.states?.visible) {
+          // (the logic says what shows: the hand rules below are for the cells it does not reach)
+          if (!b.states.visible[s.show] || b.forced) continue;
+        } else {
+          if (highlight && !lit) continue;
+          if (highlight && !isFocus && FOCUS_MARK.test(name)) continue;
+          if (inCell && lit && (names.has(`${name}Selected`) || names.has(`Selected${name}`))) continue;
+          if (b.hidden && !(highlight && lit && !b.forced)) continue;
+        }
         if (b.widget === NEW_MARK && b.hidden !== false) continue;
         // (an enter animation's end: a widget faded in from 0, a revealed box)
-        const own = b.reveal || (b.type === 'widget' && b.alpha === 0) || (highlight && b.alpha === 0) ? 1 : (b.alpha ?? 1);
+        const own = b.reveal || (b.type === 'widget' && b.alpha === 0) || (highlight && b.alpha === 0 && !b.states?.alpha) ? 1 : (b.alpha ?? 1);
         const a = alpha * own;
         if (!PASSIVE.has(b.type) && !HOLDS.has(b.type)) {
           const item = { id: `${layer}:${b.id}`, layer, alpha: a, cell: here };
           for (const k of KEEP) if (b[k] !== undefined) item[k] = b[k];
+          if (typeof item.film === 'string') item.film = filmNamed(item.film) ?? undefined;
+          if (item.film === undefined) delete item.film;
+          // (a film inside a widget the logic colours: drawn in that colour, the tile's yellow line drawing)
+          if (tint && b.type === 'video') item.tint = tint;
+          // (the CRT trail container it is in, unless it is left out of it)
+          if (trail && !b.noTrail) item.trail = trail;
           items.push(item);
         }
-        walk(b.children, [...path, name], a, here, lit, isFocus);
+        // (a widget the logic colours colours what it holds: its Color multiplies theirs)
+        const holds = b.type === 'widget' && b.states?.colour ? b.colour : tint;
+        walk(b.children, [...path, name], a, here, lit, isFocus, isOpen, isOff, holds, b.noTrail ? null : (b.trail ?? trail));
       }
     };
-    walk(tree?.boxes, [], 1, null, false, false);
+    walk(tree?.boxes, [], 1, null, false, false, false, false, null, null);
   });
   return items;
 }

@@ -26,10 +26,13 @@ import GameScreen from './GameScreen.jsx';
 // The tiles' screens (Play, its multiplayer category, Single Player) are
 // painted on the canvas from their trees under the main menu's header (the
 // tabs, PLAY open, on Play's own page; the breadcrumb deeper in): each tile
-// is the game's PlayTile with its own title and description, the table
-// below filling only what the game's code fills (a title the tree leaves
-// empty, the Aurebesh line, the tile's film) and marking the tiles this
-// world has not got (the tile's NotInBeta line says so; hand). The tiles'
+// is the game's PlayTile with the title, description, player count, film
+// and outer corners its screen gives it (the screen's interface, read into
+// the rulebook), drawn in its state by its logic (PF_FrontendStates: yellow
+// when focused, dim when disabled); the table below fills only what the
+// game's code fills (a title the tree leaves empty, the Aurebesh line) and
+// marks the tiles this world has not got (disabled, and the tile's
+// NotInBeta line says so; hand). The tiles'
 // online, split-screen, scenario and faction parts are left out (hand: the
 // game's code shows them for the tiles that have them). `onTab(to, cell)`
 // is a tab pressed (the main menu's ways).
@@ -66,10 +69,10 @@ export default function Play({ playable = () => false, onPlay, onBack, onInstant
   if (stage === 'play' || stage === 'category' || stage === 'single') {
     const tiles =
       stage === 'single'
-        ? { Campaign: { title: word('ID_PLAY_SCR_CAMPAIGN'), film: tilesFor('campaign')[0] }, 'Instant Action': { title: info('mode', 'Mode8')?.title, film: tilesFor('assault')[0], go: onInstantAction }, Arcade: { title: word('ID_PLAY_SCR_SKIRMISH'), film: tilesFor('arcade')[0] } }
+        ? { Campaign: { title: word('ID_PLAY_SCR_CAMPAIGN') }, 'Instant Action': { title: info('mode', 'Mode8')?.title, go: onInstantAction }, Arcade: { title: word('ID_PLAY_SCR_SKIRMISH') } }
         : stage === 'play'
-        ? { Multiplayer: { title: word('ID_PLAY_SCR_MULTIPLAYER'), film: tilesFor('assault')[0], go: () => setStage('category') }, COOP: { title: word('#19A64FB1'), film: tilesFor('coop')[0] }, Campaign: { title: SINGLE_PLAYER, film: tilesFor('campaign')[0], go: () => setStage('single') } }
-        : { 'Assault Cat': { title: info('mode', 'PlanetaryBattles')?.title, film: tilesFor('assault')[0], go: () => setStage('modes') }, 'HvsV Cat': { title: info('mode', 'HeroesVersusVillains')?.title, film: tilesFor('heroes')[0] }, 'Sandbox Cat': { title: word('ID_PLAY_SCR_SKIRMISH'), film: tilesFor('arcade')[0] } };
+        ? { Multiplayer: { title: word('ID_PLAY_SCR_MULTIPLAYER'), go: () => setStage('category') }, COOP: { title: word('#19A64FB1') }, Campaign: { title: SINGLE_PLAYER, go: () => setStage('single') } }
+        : { 'Assault Cat': { title: info('mode', 'PlanetaryBattles')?.title, go: () => setStage('modes') }, 'HvsV Cat': { title: info('mode', 'HeroesVersusVillains')?.title }, 'Sandbox Cat': { title: word('ID_PLAY_SCR_SKIRMISH') } };
     // (each tile's Aurebesh line spells the title it draws: the tree's own where it has one)
     const drawn = Object.fromEntries(navigables([page]).filter((n) => n.tile).map((n) => [n.id.slice(n.id.lastIndexOf('/') + 1), n.label]));
     const own = tileValues(Object.fromEntries(Object.entries(tiles).map(([k, t]) => [k, { ...t, aurebesh: drawn[k] ?? t.title }])));
@@ -77,7 +80,7 @@ export default function Play({ playable = () => false, onPlay, onBack, onInstant
     const values = (b, path) => header.values(b, path) ?? foot(b, path) ?? own(b, path);
     // (a tile pressed goes where its row goes; the breadcrumb's first crumb goes back to Play; BACK goes back)
     const onAction = (name) => (name === 'Back' ? back?.() : name === 'crumb0' ? setStage('play') : tiles[name]?.go?.());
-    return <GameScreen layers={[header.tree, page]} values={values} active={header.active} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} onLink={onTab ?? tabWays({ onPlay: () => setStage('play'), onStart: onBack })} onAction={onAction} first={FIRST_TILE} keys={false} room className="bf-play" />;
+    return <GameScreen layers={[header.tree, page]} values={values} active={header.active} label={stage === 'play' ? word('ID_MAINMENU_SCR_PLAY') : stage === 'single' ? SINGLE_PLAYER : word('ID_PLAY_SCR_MULTIPLAYER')} onBack={back} onLink={onTab ?? tabWays({ onPlay: () => setStage('play'), onStart: onBack })} onAction={onAction} first={FIRST_TILE} keys={false} room="play" className="bf-play" />;
   }
 
   // the multiplayer screen: its lists' boxes hold the mode cards

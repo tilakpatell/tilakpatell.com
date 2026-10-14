@@ -12,34 +12,539 @@
     "frame": "metres from the dome's foot (the dome at [0.426, -3.627, -2.799] in the level), as src/data/bf2017/stage.json"
   },
   "about": "How the game lights the front end's room (Backdrop_01): the pill lights are its one light, emissive at 1,500 nits; the floor is a near mirror (a planar reflection) and the walls glossy; a teal simple-volumetrics sphere glows in front of the pills; the camera is a fixed exposure (EV 8, -0.35) through a linear tone map with an approximate gamma, a five-Gaussian bloom, a physical depth of field (5 m, f/2), the Walrus base grade, a vignette and film grain. The hero is lit by one white spot beside him and by the room.",
-  "exposure": { "ev": 8, "compensation": -0.35, "tonemap": "TonemapMethod_LinearApproxGamma" },
+  "exposure": {
+    "ev": 8,
+    "compensation": -0.35,
+    "tonemap": "TonemapMethod_LinearApproxGamma"
+  },
   "bloom": {
     "scale": 0.193,
     "gaussians": [
-      { "weight": 0.919, "color": [0.863, 0.69, 0.461] },
-      { "weight": 1, "color": [0.275, 0.249, 0.168] },
-      { "weight": 0.883, "color": [0.16, 0.145, 0.097] },
-      { "weight": 0.568, "color": [0.16, 0.145, 0.097] },
-      { "weight": 0.311, "color": [0.16, 0.145, 0.097] }
+      {
+        "weight": 0.919,
+        "color": [
+          0.863,
+          0.69,
+          0.461
+        ]
+      },
+      {
+        "weight": 1,
+        "color": [
+          0.275,
+          0.249,
+          0.168
+        ]
+      },
+      {
+        "weight": 0.883,
+        "color": [
+          0.16,
+          0.145,
+          0.097
+        ]
+      },
+      {
+        "weight": 0.568,
+        "color": [
+          0.16,
+          0.145,
+          0.097
+        ]
+      },
+      {
+        "weight": 0.311,
+        "color": [
+          0.16,
+          0.145,
+          0.097
+        ]
+      }
     ]
   },
-  "camera": { "body": "Cinematics/Cameras/Body/CamBody_Cine", "sensor": [36, 20.25], "lens": "Cinematics/Cameras/Lens/CamLens_FrontEnd", "focal": 173.913, "fstop": 6.2953, "focus": 12.52909, "pitch": 2 },
-  "dof": { "focus": 5, "fstop": 2, "film": 36 },
-  "vignette": { "opacity": 0.194, "scale": [2, 2], "exponent": 0.2 },
-  "grain": { "scale": 0.5, "shadow": 0.8, "highlight": 0.1, "shadowFrom": 0.2, "highlightFrom": 0.6 },
-  "pills": { "emissive": 1500 },
-  "dome": {
-    "floor": { "tiling": 44, "smoothness": [0.98, 1.2] },
-    "walls": { "tiling": 44, "smoothness": [1, 1.25] }
+  "camera": {
+    "body": "Cinematics/Cameras/Body/CamBody_Cine",
+    "sensor": [
+      36,
+      20.25
+    ],
+    "lens": "Cinematics/Cameras/Lens/CamLens_FrontEnd",
+    "focal": 173.913,
+    "fstop": 6.2953,
+    "focus": 12.52909,
+    "pitch": 2
   },
-  "planar": { "size": [23.401, 32.94] },
-  "haze": { "at": [-0.7, 4.14, 6.4], "radius": 8.878, "emission": [0.6, 0.885, 1], "scale": 2, "exponent": 2 },
-  "key": { "at": [0.9, 1.67, -0.67], "aim": [-0.23, 1, 0.21], "lumens": 1500, "color": [1, 1, 1], "cone": 76.204, "reach": 5 },
-  "ambient": { "sky": [0.318, 0.341, 0.4], "ground": [0.05, 0.05, 0.05] },
+  "dof": {
+    "focus": 5,
+    "fstop": 2,
+    "film": 36
+  },
+  "vignette": {
+    "opacity": 0.194,
+    "scale": [
+      2,
+      2
+    ],
+    "exponent": 0.2
+  },
+  "grain": {
+    "scale": 0.5,
+    "shadow": 0.8,
+    "highlight": 0.1,
+    "shadowFrom": 0.2,
+    "highlightFrom": 0.6
+  },
+  "pills": {
+    "emissive": 1500
+  },
+  "dome": {
+    "floor": {
+      "tiling": 44,
+      "smoothness": [
+        0.98,
+        1.2
+      ]
+    },
+    "walls": {
+      "tiling": 44,
+      "smoothness": [
+        1,
+        1.25
+      ]
+    }
+  },
+  "planar": {
+    "size": [
+      23.401,
+      32.94
+    ]
+  },
+  "haze": {
+    "at": [
+      -0.7,
+      4.14,
+      6.4
+    ],
+    "radius": 8.878,
+    "emission": [
+      0.6,
+      0.885,
+      1
+    ],
+    "scale": 2,
+    "exponent": 2
+  },
+  "key": {
+    "at": [
+      0.9,
+      1.67,
+      -0.67
+    ],
+    "aim": [
+      -0.23,
+      1,
+      0.21
+    ],
+    "lumens": 1500,
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "cone": 76.204,
+    "reach": 5
+  },
+  "ambient": {
+    "sky": [
+      0.318,
+      0.341,
+      0.4
+    ],
+    "ground": [
+      0.05,
+      0.05,
+      0.05
+    ]
+  },
   "calibrated": {
-    "about": "Fitted to the game's HOME capture (refs main-menu.png, band-averaged rows 0 to 60 at ten points from x 650 to 1880; mean error 11 of 255): the record's units for these two are not the site's.",
-    "pills": 0.5,
+    "about": "Fitted to the game's HOME capture (refs main-menu.png, band-averaged rows 0 to 60 at ten points from x 650 to 1880; mean error 11 of 255): the record's units for the haze are not the site's. The pills are no longer fitted: they are the material's EmissiveIntensity in nits (1,500), as Frostbite's emissive is, far over white at the front end's EV 8 (-0.35), which is why the game's are white with a halo; the capture they had been fitted to was taken off an HDR swap chain (DisplayMappingHdr10PeakLuma 5000.5) and clipped, so its band averages were low (bf2-re findings/53).",
     "haze": 3,
     "panel": 18.5
+  },
+  "frontend": {
+    "about": "The front end’s cameras as the game moves them (bf2-re findings/53): each screen requests a camera by name (UICameraRequestState); the PF_UI_CameraLocator of that name in Levels/Frontend/Camera writes UIActiveCameraState (its transform, FocusDistance, Aperture, whether the character shows: the LevelData’s interface constants); Camera_Schematic moves the camera entity there with a TransformInterpolator (Expo, ease-out, 1 s between these screens) and sets its FocalLength through PF_UI_CameraFocalLength (50 mm at 16:9) on the CamBody_Cine sensor. Positions are the game’s world: the stage frame is the world less origin (Backdrop_01’s dome); pivot is where the character stands (the Camera layer’s inspect locator). A camera looks down −forward. The collection’s cameras follow the character’s bones and are left out. HOME has a locator for each UICharacterKitSize but Normal (home.Small, home.Tall, home.ExtraTall: Camera_Schematic enables one by the character’s KitSize), and each kit stands at the pivot moved by its KitUIMetaData CustomizationTransform (kits).",
+    "origin": [
+      0.42596,
+      -3.62698,
+      -2.79881
+    ],
+    "pivot": [
+      -0.02997,
+      -3.59032,
+      -0.05141
+    ],
+    "lens": {
+      "focal": 50,
+      "sensor": [
+        36,
+        20.25
+      ]
+    },
+    "move": {
+      "seconds": 1,
+      "ease": "PropertyInterpolationType_Expo, EaseOut"
+    },
+    "cameras": {
+      "startup": {
+        "at": [
+          2.74511,
+          -3.14035,
+          -7.12082
+        ],
+        "forward": [
+          0.23468,
+          -0.03392,
+          -0.97148
+        ],
+        "up": [
+          0,
+          0.99939,
+          -0.0349
+        ],
+        "focus": 4,
+        "aperture": 1.8,
+        "character": false
+      },
+      "skirmish": {
+        "at": [
+          -0.71375,
+          -2.9168,
+          -5.41721
+        ],
+        "forward": [
+          -0.34282,
+          -0.00488,
+          -0.93939
+        ],
+        "up": [
+          -0.00175,
+          0.99999,
+          -0.00456
+        ],
+        "focus": 5.541148,
+        "aperture": 5,
+        "character": false
+      },
+      "home": {
+        "at": [
+          0.02639,
+          -2.26002,
+          -2.25909
+        ],
+        "forward": [
+          -0.18035,
+          0.03982,
+          -0.9828
+        ],
+        "up": [
+          0,
+          0.99918,
+          0.04049
+        ],
+        "focus": 2.2,
+        "aperture": 1.8,
+        "character": true
+      },
+      "emotes": {
+        "at": [
+          -0.10466,
+          -2.75461,
+          -5.74675
+        ],
+        "forward": [
+          -0.26724,
+          0,
+          -0.96363
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "focus": 5.541148,
+        "aperture": 5,
+        "character": true
+      },
+      "play": {
+        "at": [
+          2.11522,
+          -3.08711,
+          -5.84968
+        ],
+        "forward": [
+          0.12739,
+          -0.02048,
+          -0.99164
+        ],
+        "up": [
+          -0.00069,
+          0.99979,
+          -0.02074
+        ],
+        "focus": 3,
+        "aperture": 2.4,
+        "character": false
+      },
+      "career": {
+        "at": [
+          0.02639,
+          -2.26002,
+          -2.25909
+        ],
+        "forward": [
+          -0.18035,
+          0.03982,
+          -0.9828
+        ],
+        "up": [
+          0,
+          0.99918,
+          0.04049
+        ],
+        "focus": 2.2,
+        "aperture": 1.8,
+        "character": true
+      },
+      "options": {
+        "at": [
+          -1.74993,
+          -3.19516,
+          -5.5107
+        ],
+        "forward": [
+          -0.45571,
+          -0.02513,
+          -0.88977
+        ],
+        "up": [
+          -0.00604,
+          0.99967,
+          -0.02513
+        ],
+        "focus": 2,
+        "aperture": 1.8,
+        "character": false
+      },
+      "victoryposes": {
+        "at": [
+          0.13235,
+          -2.44841,
+          -5.70044
+        ],
+        "forward": [
+          0.02493,
+          -0.05705,
+          -0.99806
+        ],
+        "up": [
+          0,
+          0.99837,
+          -0.05706
+        ],
+        "focus": 5,
+        "aperture": 1.8,
+        "character": true
+      },
+      "missionselect": {
+        "at": [
+          1.27553,
+          -2.98713,
+          -5.48044
+        ],
+        "forward": [
+          0.02426,
+          -0.00497,
+          -0.99969
+        ],
+        "up": [
+          -0.00006,
+          0.99999,
+          -0.00497
+        ],
+        "focus": 5.541148,
+        "aperture": 5,
+        "character": false
+      },
+      "credits": {
+        "at": [
+          -0.01158,
+          -2.33696,
+          5.40916
+        ],
+        "forward": [
+          -0.18216,
+          -0.02581,
+          -0.98293
+        ],
+        "up": [
+          -0.00604,
+          0.99967,
+          -0.02513
+        ],
+        "focus": 2,
+        "aperture": 1.8,
+        "character": false
+      },
+      "selectcard": {
+        "at": [
+          -0.71326,
+          -3.20013,
+          -5.41591
+        ],
+        "forward": [
+          -0.34283,
+          0,
+          -0.9394
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "focus": 5.541148,
+        "aperture": 5,
+        "character": false
+      },
+      "craftcard": {
+        "at": [
+          -1.26048,
+          -3.17099,
+          -4.67396
+        ],
+        "forward": [
+          -0.32649,
+          0,
+          -0.9452
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "focus": 5.541148,
+        "aperture": 5,
+        "character": false
+      },
+      "home.Small": {
+        "at": [
+          0.11024,
+          -3.15726,
+          -1.62067
+        ],
+        "forward": [
+          -0.18036,
+          0.03982,
+          -0.98279
+        ],
+        "up": [
+          0.00001,
+          0.99918,
+          0.04049
+        ],
+        "focus": 2.2,
+        "aperture": 1.8,
+        "character": true
+      },
+      "home.Tall": {
+        "at": [
+          0.11024,
+          -2.14726,
+          -2.92067
+        ],
+        "forward": [
+          -0.18036,
+          0.03982,
+          -0.98279
+        ],
+        "up": [
+          0.00001,
+          0.99918,
+          0.04049
+        ],
+        "focus": 2.2,
+        "aperture": 1.8,
+        "character": true
+      },
+      "home.ExtraTall": {
+        "at": [
+          0.11024,
+          -2.23726,
+          -2.82067
+        ],
+        "forward": [
+          -0.18035,
+          0.03982,
+          -0.9828
+        ],
+        "up": [
+          0,
+          0.99918,
+          0.04049
+        ],
+        "focus": 2.2,
+        "aperture": 1.8,
+        "character": true
+      }
+    },
+    "kits": {
+      "chewie": {
+        "size": "Tall",
+        "offset": [
+          0,
+          -0.25,
+          0
+        ]
+      },
+      "obiwan": {
+        "size": "Undefined",
+        "offset": [
+          0,
+          -0.05,
+          0
+        ]
+      },
+      "luke": {
+        "size": "Normal",
+        "offset": [
+          0,
+          0,
+          0
+        ]
+      },
+      "vader": {
+        "size": "Normal",
+        "offset": [
+          0,
+          -0.225,
+          0
+        ]
+      },
+      "yoda": {
+        "size": "Small",
+        "offset": [
+          0,
+          0.2,
+          0
+        ]
+      },
+      "grievous": {
+        "size": "ExtraTall",
+        "offset": [
+          0,
+          -0.25,
+          0
+        ]
+      }
+    }
   }
 }
