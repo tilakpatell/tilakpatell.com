@@ -278,7 +278,8 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
       for (const cap of battle.capitals) {
         const s = slots.get(cap);
         if (!s || !s.holder.visible || cap.gone || cap.jumped) continue;
-        const bob = bobOf(cap, t, reduced);
+        // (by the battle's clock, as its hits have it: what's drawn is what's hit, lib/combat/pose.js)
+        const bob = bobOf(cap, battle.clock, reduced);
         s.holder.position.set(cap.pos.x, cap.pos.y + bob, cap.pos.z);
         if (cap.moved) orient(s.holder, cap.fwd, cap.up); // (turned by a set piece, the Scarif ram, the Executor's dive, or the fleet's push)
         if (cap.dying > 0 && chain <= 0) flashes.at(onHull(cap, pt), { size: 1.5 + Math.random() * cap.size * 0.08, life: 0.9 + Math.random() * 0.6 });

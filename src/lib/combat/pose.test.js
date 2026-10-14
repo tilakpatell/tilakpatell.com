@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { basisOf, bobOf, capitalPose, fighterPose, runnerPose, hunterPose, playerPose } from './pose.js';
+import { basisOf, bobOf, capitalPose, fighterPose, newPose, runnerPose, hunterPose, playerPose } from './pose.js';
 
 // the battle scene's old orient, kept here as the reference it must equal
 const oldOrient = (fwd, up, bank = 0) => {
@@ -93,5 +93,23 @@ describe('poses', () => {
     expect(p.at1).toEqual([5, 6, 7]);
     expect(p.scale).toBe(1);
     expect(playerPose(s, [4, 6, 7]).at0).toEqual([4, 6, 7]);
+  });
+  it('fills an `out` pose in place, the same numbers as a new one (the war asks every step)', () => {
+    const out = newPose();
+    const cap = { id: 2, pos: { x: 1, y: 2, z: 3 }, fwd: { x: 0.3, y: 0, z: 1 }, up: { x: 0, y: 1, z: 0 }, size: 40 };
+    const { basis, at0, at1 } = out;
+    expect(capitalPose(cap, 4, false, out)).toBe(out);
+    expect(out).toEqual({ ...capitalPose(cap, 4, false) });
+    const f = { prev: { x: 0, y: 0, z: 0 }, pos: { x: 3, y: 0, z: 0 }, seen: { x: 1, y: 0, z: 0 }, fwd: { x: 1, y: 0.2, z: 0.5 }, bank: 0.4, size: 2 };
+    expect(fighterPose(f, 0, out)).toBe(out);
+    expect(out).toEqual({ ...fighterPose(f) });
+    const r = { prev: { x: 0, y: 0, z: 0 }, pos: { x: 1, y: 1, z: 1 }, fwd: { x: 0, y: 0, z: 1 }, size: 5 };
+    expect(runnerPose(r, out)).toBe(out);
+    expect(out).toEqual({ ...runnerPose(r) });
+    // (the same arrays, filled again)
+    expect(out.basis).toBe(basis);
+    expect(out.at0).toBe(at0);
+    expect(out.at1).toBe(at1);
+    expect(basisOf(f.fwd, { x: 0, y: 1, z: 0 }, 0.4, basis)).toBe(basis);
   });
 });

@@ -16,9 +16,19 @@
 // shiftCapital(cap, d) and turnCapitalBy(cap, axis, a) move one with everything
 // on it. With the battle fought as a fleet (k.fleet, battleFleet.js) a battery
 // fires where the fleet says.
+//
+// A ship the game has carries its records (battleHits.js's armCapital): its
+// hull's, its objectives', its batteries' (each hit as the turret firing its
+// turbolaser), and its batteries fire the game's bolts (battleKit.js's
+// capitalGuns). The spheres (wars.js's HULLS) are the ship's shape for flying
+// round and aiming at; it is hit on its hull where that has loaded
+// (battleHits.js), on them where not; a hull part stands for an objective
+// and a turret by its name. hullHit is the war's own numbers, on a ship the
+// game has no record of.
 
 import { HULLS, SUBSYSTEMS, TURRETS } from './wars';
 import { BATTLE, UP, copy, cross, dist2, dot, len, norm, set, v3, widthOf } from './battleKit';
+import { armCapital } from './battleHits';
 
 // a point on a capital ship's hull, from its own frame (shares of its length) into the battle's
 export const place = (cap, l, o = v3()) => set(o, cap.pos.x + (cap.right.x * l[0] + cap.up.x * l[1] + cap.fwd.x * l[2]) * cap.size, cap.pos.y + (cap.right.y * l[0] + cap.up.y * l[1] + cap.fwd.y * l[2]) * cap.size, cap.pos.z + (cap.right.z * l[0] + cap.up.z * l[1] + cap.fwd.z * l[2]) * cap.size);
@@ -75,9 +85,10 @@ export function layCapitals(k, objectivesOn) {
       // (`pos`, the same point as `at`: a battery's a target a fighter can strafe, battleTactics.js)
       cap.turrets = (TURRETS[c.kind] ?? []).map((l) => {
         const at = place(cap, l);
-        return { num: k.newId(), at, pos: at, r: Math.max(0.35, 0.012 * c.size), turbo: between([0.5, 3.5]), flak: between([0, 0.6]), hp: BATTLE.turretHp, alive: true, cap, battery: true };
+        return { num: k.newId(), at, pos: at, r: Math.max(0.35, 0.012 * c.size), turbo: between([0.5, 3.5]), flak: between([0, 0.6]), hp: BATTLE.turretHp, hpMax: BATTLE.turretHp, alive: true, cap, battery: true };
       });
-      if (i === objective) cap.subs = (SUBSYSTEMS[c.kind] ?? []).map((s, n) => ({ id: s.id, num: 3e6 + n, kind: s.kind, phase: s.phase, pos: place(cap, s.at), r: Math.max(0.6, s.r * c.size), hp: s.hp, hpMax: s.hp, dealt: 0, alive: true, cap }));
+      if (i === objective) cap.subs = (SUBSYSTEMS[c.kind] ?? []).map((s, n) => ({ id: s.id, num: 3e6 + n, kind: s.kind, phase: s.phase, pos: place(cap, s.at), r: Math.max(0.6, s.r * c.size), hp: s.hp, hpMax: s.hp, dealt: 0, alive: true, cap, row: null }));
+      armCapital(cap);
       b.capitals.push(cap);
     });
   });
@@ -122,7 +133,7 @@ export function fireBatteries(k, cap, dt) {
         // somewhere on it, or a near miss
         const miss = !aim?.focus && rand() < 0.4 ? foe.size * 0.25 : 0;
         set(aimAt, sp.c.x + (rand() - 0.5) * (sp.r + miss), sp.c.y + (rand() - 0.5) * (sp.r + miss), sp.c.z + (rand() - 0.5) * (sp.r + miss));
-        b.fire(cap.team, tu.at, set(tmp, aimAt.x - tu.at.x, aimAt.y - tu.at.y, aimAt.z - tu.at.z), 'turbo');
+        b.fire(cap.team, tu.at, set(tmp, aimAt.x - tu.at.x, aimAt.y - tu.at.y, aimAt.z - tu.at.z), 'turbo', null, cap.guns?.turbo);
       }
     }
     if (tu.flak <= 0) {
@@ -147,7 +158,7 @@ export function fireBatteries(k, cap, dt) {
         set(tmp, tp.x - tu.at.x, tp.y - tu.at.y, tp.z - tu.at.z);
         const l = len(tmp);
         set(tmp, tmp.x / l + (rand() - 0.5) * s, tmp.y / l + (rand() - 0.5) * s, tmp.z / l + (rand() - 0.5) * s);
-        b.fire(cap.team, tu.at, tmp, 'flak');
+        b.fire(cap.team, tu.at, tmp, 'flak', null, cap.guns?.flak);
       }
     }
   }

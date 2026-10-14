@@ -382,6 +382,9 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
     battle = createBattle({
       ...laid,
       rand: seeded(b.id),
+      // (every ship met on its hull once loaded, where it's drawn: models.js's hulls, the bob still where reduced)
+      hulls: models?.hulls ?? null,
+      reduced,
       plan: director.plan,
       director: { state: shared },
       // (its fighters flown with tactics, in flights, and its capital ships as

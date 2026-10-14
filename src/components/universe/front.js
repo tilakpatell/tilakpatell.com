@@ -176,7 +176,8 @@ export function createFront(map, { side, war: given = null, beacons = null, mode
       placeBeacon();
     }
     battleAt = spot();
-    battle = makeBattle({ war, attacker: state.attacker, at: battleAt, axis, perSide: perSide(tier) });
+    // (each ship on its hull, where its loader has one: galaxy/models.js's hulls)
+    battle = makeBattle({ war, attacker: state.attacker, at: battleAt, axis, perSide: perSide(tier), hulls: models?.hulls ?? null, reduced });
     joined = null;
     shown = false;
   };

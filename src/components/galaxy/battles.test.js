@@ -12,6 +12,7 @@ import { WAR_SYSTEMS, teamsOf } from './gcw';
 import { SIDES, WARS, WAR_IDS } from './sides';
 import { systemById } from './systems';
 import { BATTLE_KINDS, HUTTS, SIZE, TEMPLATES, kindFor, layBattle, obstacles, templateFor } from './battles';
+import { hitDamage, kindDamage } from '../../lib/combat/damage';
 
 const KNOWN = new Set([...Object.keys(MODELS), ...GALAXY_KINDS, ...BUILT_KINDS, ...Object.keys(STAND_IN)]);
 // a battle as gcw.js's battleAt has it
@@ -133,7 +134,15 @@ describe('the flagships’ objectives, from outside', () => {
         }
         expect(reached / Math.max(1, reached + stopped), `${ship.kind} ${s.id}`).toBeGreaterThan(0.25);
       }
-      for (const s of ship.subs.filter((o) => o.phase === phase)) for (let i = 0; i < 400 && s.alive; i++) b.hit(s.pos, { x: s.pos.x, y: s.pos.y - 0.01, z: s.pos.z }, 5);
+      // (each taken out point-blank; one whose game record no blaster hurts,
+      // the Star Destroyer's bridge on p132 and its stand-ins', taken down by
+      // hand to look at the next)
+      for (const s of ship.subs.filter((o) => o.phase === phase)) {
+        for (let i = 0; i < 400 && s.alive; i++) b.hit(s.pos, { x: s.pos.x, y: s.pos.y - 0.01, z: s.pos.z }, 5);
+        if (!s.alive) continue;
+        expect(s.row?.properties.every((q) => q === null || hitDamage(kindDamage('xwing').bolt, 0, q) === 0), `${ship.kind} ${s.id} holds`).toBe(true);
+        s.alive = false;
+      }
       b.update(0.1, null);
       expect(b.phase, `${ship.kind} past phase ${phase}`).toBe(phase + 1);
     }

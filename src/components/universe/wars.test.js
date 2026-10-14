@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SYSTEMS } from '../galaxy/systems';
 import { WONDERS, reachOf } from './deep';
 import { HOME_RADIUS, POSITIONS, RIM, sectorOf } from './layout';
+import { kindDamage } from '../../lib/combat/damage';
 import { FIGHTERS, HULLS, SUBSYSTEMS, TURRETS, WARS, warFor } from './wars';
 
 const all = Object.values(WARS);
@@ -39,6 +40,19 @@ describe('the wars', () => {
         expect(s.laser).toHaveLength(3);
         expect(s.turbo).toHaveLength(3);
       }
+  });
+
+  it('gives a fighter the game flies (or stands in for) the game’s hit points, and the rest the war’s', () => {
+    expect(FIGHTERS.xwing.hp).toBe(kindDamage('xwing').hp);
+    expect(FIGHTERS.xwing.hp).toBe(1200);
+    expect(FIGHTERS.tie.hp).toBe(1000);
+    expect(FIGHTERS.bwing.hp).toBe(kindDamage('ywing').hp); // (the Y-wing’s, its stand-in’s)
+    expect(FIGHTERS.ghost.hp).toBe(kindDamage('falcon').hp);
+    // (the kinds the game never had a record for keep the war’s, in its bolts)
+    expect(kindDamage('councilship')).toBeNull();
+    expect(FIGHTERS.councilship.hp).toBe(6);
+    expect(FIGHTERS.skiff.hp).toBe(5);
+    for (const [kind, f] of Object.entries(FIGHTERS)) expect(f.hp, kind).toBeGreaterThan(0);
   });
 
   it('gives every flagship two shield generators, then a bridge, then a reactor', () => {

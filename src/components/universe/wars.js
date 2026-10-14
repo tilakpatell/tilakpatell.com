@@ -22,6 +22,7 @@
 // round, as spheres along its length ([z, radius], shares of its length;
 // the galaxy's set pieces fly round the same ones).
 
+import { kindDamage } from '../../lib/combat/damage';
 import { paced } from './ship';
 import { POSITIONS } from './layout';
 import { SPREAD } from './scale';
@@ -238,40 +239,45 @@ export const WARS = {
 export const warFor = (sideId) => (sideId && Object.hasOwn(WARS, sideId) ? WARS[sideId] : null);
 
 // How each fighter flies and fights: size (map units), speed (its top, in
-// the fight), accel, turn (radians a second at its top speed), hp (bolts it
+// the fight), accel, turn (radians a second at its top speed), hp (what it
 // takes), burst ([seconds between shots in a burst, seconds' rest after
 // three]), range (how far it opens fire), cone (radians: how near its nose
-// must be), damage (a bolt's), and for a bomber its torpedoes (seconds
-// between runs' shots: `reload`)
+// must be), damage (a bolt's, in the war's own numbers), and for a bomber
+// its torpedoes (seconds between runs' shots: `reload`)
 // (at the ship's pace: ship.js's PACE)
+// A kind the game flies, or stands in for, has the game's hit points
+// (src/data/bf2017/damage.json through kindDamage: the X-wing's 1,200, its
+// StarfighterHealthComponentData.MaxHealth) and takes the game's damage
+// (battleHits.js); a kind the game never had keeps the war's own `hp`,
+// counted in the war's own bolts.
 const F = (o) => paced({ accel: o.speed * 0.8, burst: [0.12, 0.7], range: 14, cone: 0.1, damage: 1, ...o });
-export const FIGHTERS = {
+const KINDS = {
   // Star Wars
-  xwing: F({ size: 0.36, speed: 20, turn: 2.3, hp: 5 }),
-  awing: F({ size: 0.3, speed: 25, turn: 2.9, hp: 4, burst: [0.1, 0.6] }),
-  ywing: F({ size: 0.42, speed: 15, turn: 1.7, hp: 9, reload: 1.2 }),
-  bwing: F({ size: 0.5, speed: 16, turn: 1.8, hp: 10, reload: 1.1 }),
-  tie: F({ size: 0.3, speed: 21, turn: 2.6, hp: 5 }),
-  interceptor: F({ size: 0.32, speed: 25, turn: 3, hp: 4, burst: [0.1, 0.55] }),
-  tiebomber: F({ size: 0.38, speed: 15, turn: 1.7, hp: 9, reload: 1.2 }),
-  uwing: F({ size: 0.5, speed: 17, turn: 1.9, hp: 8 }),
-  tieadvanced: F({ size: 0.32, speed: 23, turn: 3, hp: 8, burst: [0.1, 0.5] }),
+  xwing: F({ size: 0.36, speed: 20, turn: 2.3 }),
+  awing: F({ size: 0.3, speed: 25, turn: 2.9, burst: [0.1, 0.6] }),
+  ywing: F({ size: 0.42, speed: 15, turn: 1.7, reload: 1.2 }),
+  bwing: F({ size: 0.5, speed: 16, turn: 1.8, reload: 1.1 }),
+  tie: F({ size: 0.3, speed: 21, turn: 2.6 }),
+  interceptor: F({ size: 0.32, speed: 25, turn: 3, burst: [0.1, 0.55] }),
+  tiebomber: F({ size: 0.38, speed: 15, turn: 1.7, reload: 1.2 }),
+  uwing: F({ size: 0.5, speed: 17, turn: 1.9 }),
+  tieadvanced: F({ size: 0.32, speed: 23, turn: 3, burst: [0.1, 0.5] }),
   tiedefender: F({ size: 0.34, speed: 26, turn: 3.1, hp: 10, burst: [0.09, 0.45] }), // (the Remnant's ace's: galaxy/battlePlans.js)
   // (and the galaxy's other wars': the Clone Wars' droids and clones, the
   // Hutts' Weequay skiffs, the Ghost with Hera at the controls)
-  vulture: F({ size: 0.3, speed: 21, turn: 2.6, hp: 3, reload: 1.4 }),
-  trifighter: F({ size: 0.32, speed: 25, turn: 2.9, hp: 5, burst: [0.1, 0.55] }),
-  arc170: F({ size: 0.46, speed: 18, turn: 2.1, hp: 8, reload: 1.3 }),
-  delta7: F({ size: 0.3, speed: 25, turn: 3, hp: 5, burst: [0.1, 0.55] }),
+  vulture: F({ size: 0.3, speed: 21, turn: 2.6, reload: 1.4 }),
+  trifighter: F({ size: 0.32, speed: 25, turn: 2.9, burst: [0.1, 0.55] }),
+  arc170: F({ size: 0.46, speed: 18, turn: 2.1, reload: 1.3 }),
+  delta7: F({ size: 0.3, speed: 25, turn: 3, burst: [0.1, 0.55] }),
   // (Starfighter Assault's kits the rows above lack, galaxy/surface/missions/
   // starfighterKits.js: each as the row whose game handling it shares,
   // src/data/bf2017/air.json: the V-wing the A-wing's, 115 m/s and its turn
   // rates; the Hyena the Y-wing's, 90 m/s; the T-65 the X-wing's own)
-  xwing65: F({ size: 0.36, speed: 20, turn: 2.3, hp: 5 }),
-  vwing: F({ size: 0.3, speed: 25, turn: 2.9, hp: 4, burst: [0.1, 0.6] }),
-  hyena: F({ size: 0.4, speed: 15, turn: 1.7, hp: 7, reload: 1.2 }),
+  xwing65: F({ size: 0.36, speed: 20, turn: 2.3 }),
+  vwing: F({ size: 0.3, speed: 25, turn: 2.9, burst: [0.1, 0.6] }),
+  hyena: F({ size: 0.4, speed: 15, turn: 1.7, reload: 1.2 }),
   skiff: F({ size: 0.4, speed: 18, turn: 2.2, hp: 5, reload: 1.5 }),
-  ghost: F({ size: 0.8, speed: 17, turn: 1.8, hp: 14, burst: [0.1, 0.5] }),
+  ghost: F({ size: 0.8, speed: 17, turn: 1.8, burst: [0.1, 0.5] }),
   // Rick and Morty
   councilship: F({ size: 0.42, speed: 21, turn: 2.4, hp: 6 }),
   meeseeks: F({ size: 0.34, speed: 24, turn: 2.9, hp: 4, burst: [0.1, 0.6] }),
@@ -287,6 +293,7 @@ export const FIGHTERS = {
   cousins: F({ size: 0.6, speed: 24, turn: 2.6, hp: 8, burst: [0.1, 0.5] }),
   pickup: F({ size: 0.32, speed: 15, turn: 1.7, hp: 8, reload: 1.2 }),
 };
+export const FIGHTERS = Object.fromEntries(Object.entries(KINDS).map(([kind, f]) => [kind, { ...f, hp: kindDamage(kind)?.hp ?? f.hp }]));
 
 // what each is called on the targeting bracket
 export const NAMES = {

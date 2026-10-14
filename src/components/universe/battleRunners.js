@@ -138,7 +138,8 @@ export function createRunners(k, runners, shared = null) {
           if (!s.launched || seen.has(i)) return;
           seen.add(i);
           if (s.out || s.down) return;
-          r = b.addRunner({ team: R.team, kind: R.kind, size: R.size, hp: R.hp, from: way[0], route: way.slice(1), speed: total / R.duration });
+          // (`shared`: its hull the director's, not its kind's record: battle.js)
+          r = b.addRunner({ team: R.team, kind: R.kind, size: R.size, hp: R.hp, from: way[0], route: way.slice(1), speed: total / R.duration, shared: true });
           Object.assign(r, { slot: i, shared: true });
           bySlot.set(i, r);
           place(r, i, s.k);

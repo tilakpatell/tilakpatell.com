@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { BATTLE, createBattle } from './battle';
+import { createBattle } from './battle';
 import { seededRand } from './battleKit';
 import { TACTICS } from './battleTactics';
 import { WARS } from './wars';
@@ -24,8 +24,11 @@ const isFighter = (t) => t && t.team !== undefined && t.type;
 
 describe('a fighter’s commitment (tactics)', () => {
   it('a dogfighter sticks with what it’s after: no more than a switch every four seconds, well under the untactical AI’s rate', () => {
+    // (on a war of the war's own numbers: on the game's, a fighter outlives
+    // what it switches from far more often than its 5 hp did, and the count
+    // below reads that as switching, the untactical AI's and the flights' alike)
     const rate = (tactics) => {
-      const b = make({ tactics, perSide: 10 });
+      const b = make({ war: WARS.rickmorty, tactics, perSide: 10 });
       const prev = new Map();
       let switches = 0;
       let alive = 0;
@@ -48,7 +51,7 @@ describe('a fighter’s commitment (tactics)', () => {
     const now = rate(true);
     expect(now).toBeLessThanOrEqual(0.25);
     // (counted as here, from one still there to another, the untactical AI
-    // switched about 0.27 a second; a flight's wingmen now follow their
+    // switched about 0.19 a second; a flight's wingmen now follow their
     // leader's switches and whoever gets on its tail, so not quite half)
     expect(now).toBeLessThan(old * 0.6);
   });
@@ -145,8 +148,9 @@ describe('a fighter’s commitment (tactics)', () => {
       }
     });
     expect(worst).toBeLessThanOrEqual(3);
+    // (a battery's hit points its turret's record's, the game's: below them, it's been strafed)
     const turrets = b.capitals.filter((c) => c.team === 1).flatMap((c) => c.turrets);
-    expect(turrets.some((t) => !t.alive || t.hp < BATTLE.turretHp)).toBe(true);
+    expect(turrets.some((t) => !t.alive || t.hp < t.hpMax)).toBe(true);
   });
 
   it('is the galaxy’s to ask for: a battle without tactics flies as it always has', () => {

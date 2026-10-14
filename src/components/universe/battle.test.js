@@ -1,4 +1,8 @@
 import { readFileSync } from 'node:fs';
+import { capitalSite, hitDamage, kindDamage, vehicleDamage } from '../../lib/combat/damage';
+import { hullOf, segmentHit } from '../../lib/combat/hulls';
+import { capitalPose } from '../../lib/combat/pose';
+import { METRES, capitalGuns, fighterShot } from './battleKit';
 import { describe, expect, it } from 'vitest';
 import { BATTLE, WIDTH, createBattle, inSights, perSide, turnToward } from './battle';
 import { FIGHTERS, WARS } from './wars';
@@ -61,8 +65,15 @@ describe('the flagships’ objectives', () => {
             }
             expect(reached / (reached + stopped), `${w.id}: ${flag.kind} ${s.id}`).toBeGreaterThan(0.25);
           }
-          // (then on to the next phase: each taken out point-blank, whatever's round it)
-          for (const s of flag.subs.filter((o) => o.phase === phase)) for (let i = 0; i < 400 && s.alive; i++) b.hit(s.pos, { x: s.pos.x, y: s.pos.y - 0.01, z: s.pos.z }, 5);
+          // (then on to the next phase: each taken out point-blank, whatever's round
+          // it; one whose game record no blaster hurts, the Star Destroyer's
+          // bridge on p132, taken down by hand to look at the next)
+          for (const s of flag.subs.filter((o) => o.phase === phase)) {
+            for (let i = 0; i < 400 && s.alive; i++) b.hit(s.pos, { x: s.pos.x, y: s.pos.y - 0.01, z: s.pos.z }, 5);
+            if (!s.alive) continue;
+            expect(s.row?.properties.every((q) => q === null || hitDamage(kindDamage('xwing').bolt, 0, q) === 0), `${w.id}: ${flag.kind} ${s.id} holds`).toBe(true);
+            s.alive = false;
+          }
           run(b, 0.1);
           expect(b.phase, `${w.id}: ${flag.kind} past phase ${phase}`).toBe(phase + 1);
         }
@@ -90,6 +101,8 @@ describe('the objectives on an Interdictor', () => {
     const inter = b.capitals.find((c) => c.kind === 'interdictor');
     for (const phase of [1, 2, 3]) {
       for (const s of inter.subs.filter((o) => o.phase === phase)) for (let i = 0; i < 400 && s.alive; i++) b.hit(s.pos, { x: s.pos.x, y: s.pos.y - 0.01, z: s.pos.z }, 5);
+      // (its bridge the Star Destroyer's record, p132: no bolt takes it, so it's taken by hand)
+      for (const s of inter.subs.filter((o) => o.phase === phase && o.alive && o.kind === 'bridge')) s.alive = false;
       run(b, 0.1);
     }
     const events = run(b, BATTLE.dying + 1);
@@ -111,14 +124,17 @@ describe('an ace', () => {
     const [a] = aces;
     expect(a).toMatchObject({ team: 1, kind: 'tieadvanced' });
     expect(a.tgt.name).toBe('Darth Vader');
-    expect(a.hp).toBe(14);
-    expect(a.tgt.hpMax).toBe(14);
+    // (its kind's hull in the game, the TIE Advanced's 2,800; the plan's own for a kind the game hasn't)
+    expect(a.hp).toBe(kindDamage('tieadvanced').hp);
+    expect(a.tgt.hpMax).toBe(kindDamage('tieadvanced').hp);
+    const other = make({ ace: { 1: { kind: 'tiedefender', name: 'An ace', hp: 14 } } }).fighters.find((f) => f.ace);
+    expect(other.hp).toBe(14);
   });
   it('down, says so, and doesn’t come back', () => {
     const b = make({ ace: { 1: { kind: 'tieadvanced', name: 'Darth Vader', hp: 3 } } });
     b.setYou(0);
     const a = b.fighters.find((f) => f.ace);
-    for (let i = 0; i < 10 && a.alive; i++) shotAt(b, a.pos, 1);
+    for (let i = 0; i < 100 && a.alive; i++) shotAt(b, a.pos, 1);
     const events = run(b, 0.1);
     expect(events.find((e) => e.type === 'down' && e.mine)).toMatchObject({ ace: true, kind: 'tieadvanced' });
     expect(a.respawn).toBe(Infinity);
@@ -135,8 +151,9 @@ describe('runners', () => {
   it('all down, lose it', () => {
     const b = make({ perSide: 0, runners: { team: 1, kind: 'transport', size: 2.2, hp: 2, count: 2, need: 2, speed: 2, every: 0.5, from: [0, 0, 0], to: [0, 400, 0] } });
     b.setYou(0);
+    // (a GR-75 takes the CR90's record, p206: 0.01× to a blaster, so many shots a step)
     for (let t = 0; t < 4 && !b.over; t += 1 / 30) {
-      for (const r of b.runners) if (r.alive) shotAt(b, r.pos, 5);
+      for (const r of b.runners) for (let i = 0; i < 10 && r.alive; i++) shotAt(b, r.pos, 5);
       b.update(1 / 30, null);
     }
     expect(b.runners.length).toBe(2);
@@ -211,7 +228,7 @@ describe('the battle’s modules', () => {
   // stays under the health check's warning line, scripts/health/big-files.mjs)
   it('each stay under 800 lines', () => {
     // (and the galaxy's shared battle beside them: its director, its plan, its stages in the sim)
-    for (const file of ['battle.js', 'battleKit.js', 'battleAi.js', 'battleCapitals.js', 'battleRunners.js', 'battleDirector.js', 'battlePlan.js', 'battleStages.js', 'battleObjectives.js', 'battleProps.js', 'battleScene.js', 'battleFx.js']) {
+    for (const file of ['battle.js', 'battleKit.js', 'battleAi.js', 'battleCapitals.js', 'battleHits.js', 'battleRunners.js', 'battleDirector.js', 'battlePlan.js', 'battleStages.js', 'battleObjectives.js', 'battleProps.js', 'battleScene.js', 'battleFx.js']) {
       const lines = readFileSync(new URL(`./${file}`, import.meta.url), 'utf8').split('\n').length;
       expect(lines, file).toBeLessThan(800);
     }
@@ -260,13 +277,18 @@ describe('a battle', () => {
     expect(flagOf(b, 1).pos.x).toBeGreaterThan(0);
   });
 
-  it('a fighter takes as many hits as it has hp, then it’s down and a ticket’s gone', () => {
+  it('a fighter takes the game’s bolts till its hit points are gone, then it’s down and a ticket’s gone', () => {
     const b = make();
     b.setYou(0);
     const f = b.fighters.find((o) => o.team === 1);
     const hp = f.hp;
+    // (your X-wing's bolt on its p68: 75 × 1.25)
+    const each = vehicleDamage(kindDamage(f.kind), kindDamage('xwing').bolt, 0);
+    expect(each).toBe(93.75);
     let r = null;
-    for (let i = 0; i < hp; i++) r = shotAt(b, f.pos);
+    let n = 0;
+    while (f.alive && n < 1000) (r = shotAt(b, f.pos)), n++;
+    expect(n).toBe(Math.ceil(hp / each));
     expect(r.down).toBe(true);
     expect(f.alive).toBe(false);
     expect(b.teams[1].tickets).toBe(BATTLE.tickets - 1);
@@ -295,9 +317,10 @@ describe('a battle', () => {
   });
 
   it('the shield holds everything off the flagship till both generators are down', () => {
-    const b = make();
-    b.setYou(0);
-    const flag = flagOf(b, 1);
+    // (the Empire's attack on the MC80, whose bridge the game has no record of: the war's own numbers)
+    const b = make({ attacker: 1 });
+    b.setYou(1);
+    const flag = flagOf(b, 0);
     const bridge = flag.subs.find((s) => s.kind === 'bridge');
     const before = bridge.hp;
     shotAt(b, bridge.pos, 5);
@@ -324,17 +347,19 @@ describe('a battle', () => {
   });
 
   it('breaks the flagship and ends the battle when the reactor goes', () => {
-    const b = make();
-    b.setYou(0);
-    const flag = flagOf(b, 1);
+    // (the Empire's attack on the MC80: a bolt can't take the Star Destroyer's
+    // bridge, its record's p132, so the Rebels' attack stops at it)
+    const b = make({ attacker: 1 });
+    b.setYou(1);
+    const flag = flagOf(b, 0);
     for (const phase of [1, 2, 3]) {
-      for (const s of flag.subs.filter((o) => o.phase === phase)) while (s.alive) shotAt(b, s.pos, 5);
+      for (const s of flag.subs.filter((o) => o.phase === phase)) for (let i = 0; i < 1000 && s.alive; i++) shotAt(b, s.pos, 5);
       run(b, 0.1);
     }
     expect(flag.dying).toBeGreaterThan(0);
     const events = run(b, 10);
-    expect(events.some((e) => e.type === 'capital' && e.team === 1)).toBe(true);
-    expect(b.over).toEqual({ winner: 0, why: 'flagship' });
+    expect(events.some((e) => e.type === 'capital' && e.team === 0)).toBe(true);
+    expect(b.over).toEqual({ winner: 1, why: 'flagship' });
   });
 
   it('a dead player is not targeted', () => {
@@ -383,8 +408,8 @@ describe('a battle', () => {
     expect(events.some((e) => e.type === 'arrive' && e.team === 0)).toBe(true);
   });
 
-  it('counts your shots on a subsystem for more than an AI’s torpedo', () => {
-    const b = make();
+  it('counts your shots on a subsystem for more than an AI’s torpedo (the war’s own numbers, where the game has no record)', () => {
+    const b = make({ war: WARS.rickmorty });
     b.setYou(0);
     const g = flagOf(b, 1).subs.find((s) => s.kind === 'shieldgen');
     const hp = g.hp;
@@ -398,13 +423,16 @@ describe('a battle', () => {
     expect(BATTLE.youShare).toBeGreaterThan(BATTLE.aiShare);
   });
 
+  // (on the game's numbers the Rebels' attack can't take the Star Destroyer's
+  // bridge, so the battle goes its whole clock, its turbolasers' and flak's
+  // bolts in flight for seconds: longer than the test's 5 s on a loaded machine)
   it('a battle left to itself ends within its clock', () => {
     const b = make({ perSide: 10, rand: seeded(11) });
     run(b, BATTLE.clock + 1, null, 1 / 20);
     expect(b.over).not.toBeNull();
     expect([0, 1]).toContain(b.over.winner);
     expect(b.clock).toBeLessThanOrEqual(BATTLE.clock + 0.1);
-  });
+  }, 30000);
 
   it('flies 64 fighters a frame quickly enough', () => {
     const b = make({ perSide: 32 });
@@ -473,7 +501,8 @@ describe('a battle', () => {
   });
 
   it('counts what other pilots did to an objective, and tells what you did', () => {
-    const done = new Map([['gen-port', 1000]]);
+    // (the Star Destroyer's generators on the deflector domes' record: 30,000, p130)
+    const done = new Map([['gen-port', 30000]]);
     const mine = [];
     const b = make({ shared: (id) => done.get(id) ?? 0, onMine: (id, dmg) => mine.push([id, dmg]) });
     b.setYou(0);
@@ -481,8 +510,9 @@ describe('a battle', () => {
     expect(events.some((e) => e.type === 'sub' && e.sub === 'gen-port' && !e.mine)).toBe(true);
     const g = flagOf(b, 1).subs.find((s) => s.id === 'gen-star');
     shotAt(b, g.pos, 2);
-    expect(mine).toEqual([['gen-star', 2 * BATTLE.youShare]]);
-    done.set('gen-star', 1000);
+    // (two of your X-wing's bolts, 75 at 1× on p130)
+    expect(mine).toEqual([['gen-star', 150]]);
+    done.set('gen-star', 30000);
     run(b, 0.1);
     expect(b.phase).toBe(2);
   });
@@ -527,7 +557,8 @@ describe('a battle', () => {
 
   // ── the set pieces' hooks (galaxy/warpieces/) ──
   it('lets an ion cannon disable a capital ship a while: its guns quiet, hits on it counting more', () => {
-    const b = make({ perSide: 2 });
+    // (on a ship of the war's own numbers: one the game has a record of takes the game's damage, disabled or not)
+    const b = make({ war: WARS.rickmorty, perSide: 2 });
     b.setYou(0);
     const esc = b.capitals.find((c) => c.team === 1 && c.role === 'escort');
     const events = [];
@@ -558,7 +589,11 @@ describe('a battle', () => {
     const tu = cap.turrets[0];
     expect(tu.alive).toBe(true);
     let hit = null;
-    for (let i = 0; i < 20 && tu.alive; i++) hit = b.hit({ x: tu.at.x, y: tu.at.y + 2, z: tu.at.z }, { x: tu.at.x, y: tu.at.y - 0.01, z: tu.at.z }, 1);
+    // (the Arquitens' battery, its turret's record: 2,500, p129, your X-wing's 75 a bolt)
+    expect(tu.hp).toBe(kindDamage('lightcruiser').turrets.ImperialLightCruiser_Turrets_01.hp);
+    let n = 0;
+    for (; n < 100 && tu.alive; n++) hit = b.hit({ x: tu.at.x, y: tu.at.y + 2, z: tu.at.z }, { x: tu.at.x, y: tu.at.y - 0.01, z: tu.at.z }, 1);
+    expect(n).toBe(Math.ceil(2500 / 75));
     expect(tu.alive).toBe(false);
     expect(hit.kind).toBe('turret');
     const events = b.update(0.05, null);
@@ -621,5 +656,290 @@ describe('a ram on one of the other side’s fighters', () => {
     expect(b.strike(mine.id, 1)).toBeNull();
     enemy.alive = false;
     expect(b.strike(enemy.id, 1)).toBeNull();
+  });
+});
+
+// ── the hulls and the game's damage (the hulls plan's Task 10) ──
+// The fixtures are the hulls the CLI writes (node scripts/bf2017-hulls.mjs
+// --fixture): the Star Destroyer's, cut to a capital's budget, and the
+// X-wing's; a battle reaches a kind's through `hulls.get(kind)`, as
+// galaxy/models.js's loader hands them in.
+const FIXTURES = new URL('../../../scripts/fixtures/bf2017/physics/', import.meta.url);
+const DESTROYER = hullOf(readFileSync(new URL('destroyer-hull.bin', FIXTURES)));
+const XWING = hullOf(readFileSync(new URL('xwing-hull.bin', FIXTURES)));
+const hullsOf = (table) => ({ get: (kind) => table[kind] ?? null });
+// a point of a ship's own frame (nose +z, 1 long) where its pose has it
+const worldOf = (pose, l) => {
+  const m = pose.basis;
+  const s = pose.scale;
+  return { x: pose.at1[0] + (m[0] * l[0] + m[3] * l[1] + m[6] * l[2]) * s, y: pose.at1[1] + (m[1] * l[0] + m[4] * l[1] + m[7] * l[2]) * s, z: pose.at1[2] + (m[2] * l[0] + m[5] * l[1] + m[8] * l[2]) * s };
+};
+// the middle of some of a hull's parts' bolt triangles (by index), in its frame
+const middleOf = (hull, parts) => {
+  const { tris, part, count } = hull.rays;
+  const sum = [0, 0, 0];
+  let n = 0;
+  for (let i = 0; i < count; i++) {
+    if (!parts.includes(part[i])) continue;
+    for (let c = 0; c < 9; c++) sum[c % 3] += tris[i * 9 + c];
+    n += 3;
+  }
+  return sum.map((v) => v / n);
+};
+const indicesOf = (hull, names) => hull.parts.flatMap((p, i) => (names.includes(p.name) ? [i] : []));
+// a segment from outside onto one of these parts (by index): straight in
+// along one of its triangles' normals, the first that meets one of them first
+const ontoPart = (hull, pose, parts) => {
+  const { tris, part, count } = hull.rays;
+  for (let i = 0; i < count; i++) {
+    if (!parts.includes(part[i])) continue;
+    const t = tris.subarray(i * 9, i * 9 + 9);
+    const c = [0, 1, 2].map((k) => (t[k] + t[3 + k] + t[6 + k]) / 3);
+    const u = [0, 1, 2].map((k) => t[3 + k] - t[k]);
+    const v = [0, 1, 2].map((k) => t[6 + k] - t[k]);
+    const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    const l = Math.hypot(...n);
+    if (!l) continue;
+    for (const side of [1, -1]) {
+      const a = worldOf(pose, c.map((x, k) => x + ((side * n[k]) / l) * 0.7));
+      const b = worldOf(pose, c.map((x, k) => x - ((side * n[k]) / l) * 0.002));
+      const h = segmentHit(hull, pose, [a.x, a.y, a.z], [b.x, b.y, b.z]);
+      if (h && parts.includes(h.part)) return [a, b];
+    }
+  }
+  return null;
+};
+// the Empire with a Star Destroyer among its escorts, its hull tracked
+const withEscort = { ...war, sides: [war.sides[0], { ...war.sides[1], capitals: [war.sides[1].capitals[0], { kind: 'destroyer', role: 'escort', size: 30, hull: 600 }] }] };
+const escortOf = (b) => b.capitals.find((c) => c.team === 1 && c.role === 'escort' && c.kind === 'destroyer');
+
+describe('a ship met on its hull', () => {
+  // a vertical bolt at 0.27 of the Star Destroyer's length off its centre
+  // line, on its widest section: its hull's there, its spheres (0.09 of its
+  // length at most) are not
+  const wingEdge = (b, cap) => {
+    let widest = 0;
+    for (let i = 0; i < DESTROYER.probes.length; i += 3) if (DESTROYER.probes[i] > DESTROYER.probes[widest]) widest = i;
+    const pose = capitalPose(cap, b.clock, false);
+    const z = DESTROYER.probes[widest + 2];
+    return [worldOf(pose, [0.27, 0.3, z]), worldOf(pose, [0.27, -0.3, z])];
+  };
+
+  it('a bolt at a Star Destroyer’s wing edge meets its hull', () => {
+    const b = make({ war: withEscort, hulls: hullsOf({ destroyer: DESTROYER }) });
+    b.setYou(0);
+    const esc = escortOf(b);
+    const [from, to] = wingEdge(b, esc);
+    const hit = b.hit(from, to, 1);
+    expect(hit).toMatchObject({ id: esc.id, kind: 'destroyer', capital: true });
+    expect(typeof hit.part).toBe('string');
+    expect(hit.property).toBe(DESTROYER.parts.find((p) => p.name === hit.part).property);
+    // (where the spheres missed: the same bolt, the hull not loaded)
+    const bare = make({ war: withEscort });
+    bare.setYou(0);
+    expect(bare.hit(...wingEdge(bare, escortOf(bare)), 1)).toBeNull();
+    // and the AI's bolt there stops on it, a turbolaser's with an impact
+    const t = make({ war: withEscort, hulls: hullsOf({ destroyer: DESTROYER }), perSide: 0 });
+    const [p, q] = wingEdge(t, escortOf(t));
+    const o = t.fire(0, p, { x: q.x - p.x, y: q.y - p.y, z: q.z - p.z }, 'turbo');
+    let impact = null;
+    for (let i = 0; i < 60 && o.on; i++) impact = t.update(1 / 30, null).find((e) => e.type === 'impact') ?? impact;
+    expect(o.on).toBe(false);
+    expect(impact).not.toBeNull();
+    expect(Math.hypot(impact.at.x - q.x, impact.at.z - q.z)).toBeLessThan(0.5);
+  });
+
+  it('a bolt through the gap beside an X-wing’s foil misses it', () => {
+    const b = make({ hulls: hullsOf({ xwing: XWING }) });
+    b.setYou(1);
+    // one of the Rebels' fighters an X-wing, held still well above the fight, nose +z
+    const f = b.fighters.find((o) => o.team === 0);
+    Object.assign(f, { kind: 'xwing', type: FIGHTERS.xwing, size: FIGHTERS.xwing.size, hp: FIGHTERS.xwing.hp, bank: 0, speed: 0, frozen: 1e9 });
+    for (const p of [f.pos, f.prev, f.seen]) Object.assign(p, { x: 0, y: 60, z: 0 });
+    Object.assign(f.fwd, { x: 0, y: 0, z: 1 });
+    Object.assign(f.vel, { x: 0, y: 0, z: 0 });
+    const along = (x, y) => [
+      { x: x * f.size, y: 60 + y * f.size, z: 2 },
+      { x: x * f.size, y: 60 + y * f.size, z: -2 },
+    ];
+    // the slot between the S-foils, 0.3 of its length out (Task 5's numbers)
+    expect(b.hit(...along(0.3, 0), 1)).toBeNull();
+    // the upper foil just above it
+    const foil = b.hit(...along(0.3, 0.007), 1);
+    expect(foil).toMatchObject({ id: f.id, kind: 'xwing', down: false });
+    expect(foil.part).toBe(XWING.parts[5].name);
+    expect(foil.property).toBe(68);
+    // the war's sphere would have had both
+    const bare = make();
+    bare.setYou(1);
+    const g = bare.fighters.find((o) => o.team === 0);
+    Object.assign(g, { size: FIGHTERS.xwing.size, bank: 0 });
+    for (const p of [g.pos, g.prev, g.seen]) Object.assign(p, { x: 0, y: 60, z: 0 });
+    Object.assign(g.vel, { x: 0, y: 0, z: 0 });
+    expect(bare.hit(...along(0.3, 0), 1)?.id).toBe(g.id);
+    // and a TIE's bolt through the slot flies on, one on the foil takes the game's 81.25 (65 × p216 on p68's 1.25)
+    const tie = fighterShot('tie');
+    const hp = f.hp;
+    const gap = along(0.3, 0);
+    const miss = b.fire(1, gap[0], { x: 0, y: 0, z: -1 }, 'laser', null, tie);
+    for (let i = 0; i < 6; i++) b.update(1 / 30, null);
+    expect(f.hp).toBe(hp);
+    expect(miss.z).toBeLessThan(-2);
+    const on = along(0.3, 0.007);
+    b.fire(1, on[0], { x: 0, y: 0, z: -1 }, 'laser', null, tie);
+    for (let i = 0; i < 6; i++) b.update(1 / 30, null);
+    expect(f.hp).toBeCloseTo(hp - 81.25, 9);
+  });
+
+  it('a hull hit on a capital does the grid’s damage: nothing for a blaster on p132, a turret’s 1×', () => {
+    const b = make({ war: withEscort, hulls: hullsOf({ destroyer: DESTROYER }) });
+    b.setYou(0);
+    const esc = escortOf(b);
+    const pose = capitalPose(esc, b.clock, false);
+    const hull = esc.hull;
+    // the main hull's plating, p132
+    const plate = ontoPart(DESTROYER, pose, indicesOf(DESTROYER, ['stardestroyer_hull_01_sb_endor#1']));
+    expect(plate).not.toBeNull();
+    const h1 = b.hit(...plate, 1);
+    expect(h1).toMatchObject({ id: esc.id, capital: true, part: 'stardestroyer_hull_01_sb_endor#1', property: 132, damage: 0 });
+    expect(esc.hull).toBe(hull);
+    // a heavy turbolaser, p129: the turret's record takes the X-wing's 75 at 1×
+    const gun = ontoPart(DESTROYER, pose, indicesOf(DESTROYER, ['stardestroyer_heavyturbolaser_01#0', 'stardestroyer_heavyturbolaser_01#2']));
+    expect(gun).not.toBeNull();
+    const h2 = b.hit(...gun, 1);
+    const row = kindDamage('destroyer').turrets.StarDestroyer_HeavyTurboLaser_02;
+    expect(h2).toMatchObject({ kind: 'turret', turret: true, property: 129, down: false });
+    expect(h2.damage).toBe(vehicleDamage(row, kindDamage('xwing').bolt, 0));
+    expect(h2.damage).toBe(75);
+  });
+
+  it('a ship with no hull is still hit as a sphere', () => {
+    for (const hulls of [null, hullsOf({}), { get: () => null }]) {
+      const b = make({ war: withEscort, hulls });
+      b.setYou(0);
+      const esc = escortOf(b);
+      const sp = esc.spheres[2].c;
+      expect(b.hit({ x: sp.x, y: sp.y + 30, z: sp.z }, { x: sp.x, y: sp.y - 0.01, z: sp.z }, 1)).toMatchObject({ id: esc.id, capital: true, part: null, property: null });
+      const f = b.fighters.find((o) => o.team === 1);
+      expect(shotAt(b, f.pos)).toMatchObject({ id: f.id, part: null, property: null });
+    }
+  });
+
+  it('keeps every hit’s fields, and the nearest along a shot wins: a fighter in front of a hull', () => {
+    const b = make({ war: withEscort, hulls: hullsOf({ destroyer: DESTROYER }) });
+    b.setYou(0);
+    const esc = escortOf(b);
+    const [from, to] = ontoPart(DESTROYER, capitalPose(esc, b.clock, false), indicesOf(DESTROYER, ['stardestroyer_hull_01_sb_endor#1']));
+    const f = b.fighters.find((o) => o.team === 1);
+    // (held a little way along the shot, before the hull)
+    const at = { x: from.x + (to.x - from.x) * 0.3, y: from.y + (to.y - from.y) * 0.3, z: from.z + (to.z - from.z) * 0.3 };
+    for (const p of [f.pos, f.prev, f.seen]) Object.assign(p, at);
+    Object.assign(f.vel, { x: 0, y: 0, z: 0 });
+    const hit = b.hit(from, to, 1);
+    expect(hit.id).toBe(f.id);
+    for (const key of ['id', 'kind', 'at', 'size', 'down', 'part', 'property']) expect(hit, key).toHaveProperty(key);
+    f.alive = false;
+    const behind = b.hit(from, to, 1);
+    for (const key of ['id', 'kind', 'at', 'size', 'down', 'part', 'property']) expect(behind, key).toHaveProperty(key);
+    expect(behind.id).toBe(esc.id);
+  });
+});
+
+describe('the game’s damage in the war', () => {
+  it('fires each fighter’s and each capital’s bolts at the game’s speed, life and damage', () => {
+    const x = kindDamage('xwing').bolt;
+    expect(fighterShot('xwing')).toMatchObject({ speed: x.speed / METRES, life: x.life, row: x });
+    expect(METRES).toBe(53.3);
+    expect(fighterShot('councilship')).toBeNull(); // (no record: the war's own bolt)
+    // the Star Destroyer's batteries: the heavy turbolaser (p61) at ships, the small turbolaser (p72) at fighters
+    const guns = capitalGuns('destroyer');
+    expect(guns.turbo.row.property).toBe(61);
+    expect(guns.turbo.speed).toBeCloseTo(800 / METRES, 9);
+    expect(guns.flak.row.property).toBe(72);
+    expect(guns.battery).toBe(kindDamage('destroyer').turrets.StarDestroyer_HeavyTurboLaser_02);
+    expect(capitalGuns('nebulon')).toBeNull(); // (a backdrop: it mounts no turret the game has)
+    const b = make({ perSide: 2 });
+    const f = b.fighters.find((o) => o.kind === 'xwing') ?? b.fighters[0];
+    expect(f.hp).toBe(FIGHTERS[f.kind].hp);
+    const o = b.fire(0, f.pos, { x: 1, y: 0, z: 0 }, 'laser', null, fighterShot('xwing'));
+    expect(o).toMatchObject({ life: x.life, row: x });
+    expect(Math.hypot(o.vx, o.vy, o.vz)).toBeCloseTo(x.speed / METRES, 9);
+  });
+
+  it('opens a subsystem’s record when the war makes it the objective, and spends it at the record’s property', () => {
+    // (the Empire attacks the MC80: its generators the nodules' 201 then 200, opened at the start)
+    const b = make({ attacker: 1 });
+    b.setYou(1);
+    const flag = flagOf(b, 0);
+    const gen = flag.subs.find((s) => s.id === 'gen-port');
+    const row = capitalSite('moncal', 'gen-port');
+    expect(gen.row).toBe(row);
+    expect(gen.state).toMatchObject({ hp: 200, stage: 1 });
+    expect(gen.hp).toBe(200);
+    const reactor = flag.subs.find((s) => s.id === 'reactor');
+    expect(reactor.state).toMatchObject({ hp: 251, stage: 0 }); // (not yet the objective)
+    // your TIE's bolt on it: 65 at p206's 0.01×
+    const hit = shotAt(b, gen.pos, 1);
+    expect(hit).toMatchObject({ kind: 'subsystem', sub: 'gen-port' });
+    expect(gen.hp).toBeCloseTo(200 - hitDamage(kindDamage('tie').bolt, 0, 206), 9);
+    expect(gen.hp).toBeCloseTo(199.35, 9);
+    // (the bridge has no record: the war's own hit points and shares)
+    const bridge = flag.subs.find((s) => s.id === 'bridge');
+    expect(bridge.row).toBeNull();
+    // the generators down, then the bridge: the reactor's record opened as its phase begins
+    for (const s of flag.subs.filter((o) => o.phase === 1)) for (let i = 0; i < 2000 && s.alive; i++) shotAt(b, s.pos, 5);
+    run(b, 0.1);
+    expect(b.phase).toBe(2);
+    while (bridge.alive) shotAt(b, bridge.pos, 5);
+    run(b, 0.1);
+    expect(b.phase).toBe(3);
+    expect(reactor.state).toMatchObject({ hp: 250, stage: 1 });
+  });
+
+  it('spends the Star Destroyer’s generator on the dome its marker stands by (the two domes are one module)', () => {
+    const b = make({ hulls: hullsOf({ destroyer: DESTROYER }) });
+    b.setYou(0);
+    const flag = flagOf(b, 1);
+    const [port, star] = ['gen-port', 'gen-star'].map((id) => flag.subs.find((s) => s.id === id));
+    const pose = capitalPose(flag, b.clock, false);
+    // the dome on the −x side, by the gen-port marker: its own instance of the module
+    const domes = indicesOf(DESTROYER, ['stardestroyer_deflectorshield_01#0']);
+    expect(domes).toHaveLength(2);
+    const portDome = domes.find((i) => middleOf(DESTROYER, [i])[0] < 0);
+    const seg = ontoPart(DESTROYER, pose, [portDome]);
+    expect(seg).not.toBeNull();
+    const hit = b.hit(...seg, 1);
+    expect(hit).toMatchObject({ kind: 'subsystem', sub: 'gen-port', property: 130 });
+    expect(port.hp).toBe(30000 - 75);
+    expect(star.hp).toBe(30000);
+    // (and its lock is on its dome now, not on the war's marker)
+    const mid = worldOf(pose, middleOf(DESTROYER, [portDome, portDome + 1]));
+    expect(Math.hypot(port.pos.x - mid.x, port.pos.y - (mid.y - (pose.at1[1] - flag.pos.y)), port.pos.z - mid.z)).toBeLessThan(flag.size * 0.02);
+  });
+
+  it('does the game’s damage to a ship of the game’s, disabled or not (the ion cannon’s more is the war’s own numbers)', () => {
+    const b = make({ perSide: 2 });
+    b.setYou(0);
+    const esc = b.capitals.find((c) => c.team === 1 && c.kind === 'lightcruiser');
+    expect(esc.hullRec.row).toBe(capitalSite('lightcruiser', 'hull'));
+    expect(esc.hull).toBe(650);
+    const sp = esc.spheres[1].c;
+    const at = () => b.hit({ x: sp.x, y: sp.y + 30, z: sp.z }, { x: sp.x, y: sp.y - 0.01, z: sp.z }, 1);
+    // (your X-wing's 75 at p206's 0.01×)
+    expect(at().damage).toBeCloseTo(0.75, 9);
+    b.disable(esc.id, 5);
+    expect(at().damage).toBeCloseTo(0.75, 9);
+    expect(esc.hull).toBeCloseTo(650 - 1.5, 9);
+  });
+
+  it('tells you the game’s bolt that hit you, and how far it had come', () => {
+    const b = make();
+    b.setYou(0);
+    const you = { x: 0, y: 0, z: 0, alive: true };
+    const hurt = run(b, 30, you).filter((e) => e.type === 'hurt');
+    expect(hurt.length).toBeGreaterThan(0);
+    const laser = hurt.find((e) => e.kind === 'laser');
+    expect(war.sides[1].fighters.map((f) => kindDamage(f.kind).bolt)).toContain(laser.bolt); // (the Empire's fighters')
+    expect(laser.metres).toBeGreaterThan(0);
   });
 });

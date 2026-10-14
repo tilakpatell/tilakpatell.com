@@ -22,8 +22,9 @@
 // life each; flyFighter(k, f, dt) flies one a step (one that's `frozen`, a
 // droid whose control relay's gone, drifts on as it was, after nothing).
 
+import { kindDamage } from '../../lib/combat/damage';
 import { FIGHTERS, NAMES } from './wars';
-import { BATTLE, UP, ZERO, copy, cross, dist2, dot, inSights, len, norm, pick, set, turnToward, v3 } from './battleKit';
+import { BATTLE, UP, ZERO, copy, cross, dist2, dot, fighterShot, inSights, len, norm, pick, set, turnToward, v3 } from './battleKit';
 import { TACTICS } from './battleTactics';
 
 export function spawn(k, f, first) {
@@ -119,11 +120,15 @@ export function muster(k, n, ace) {
     let f = b.fighters.find((o) => o.team === team);
     if (!f) b.fighters.push((f = makeFighter(k, team)));
     f.kind = a.kind;
-    f.type = { ...FIGHTERS[a.kind], hp: a.hp };
+    // (its hit points its kind's in the game where the game has the kind,
+    // FIGHTERS'; the plan's own where it hasn't, and in the galaxy's shared
+    // battle, where its hull is the director's)
+    const hp = k.decides !== false && kindDamage(a.kind)?.hp ? FIGHTERS[a.kind].hp : a.hp;
+    f.type = { ...FIGHTERS[a.kind], hp };
     f.size = f.type.size;
-    f.hp = a.hp;
+    f.hp = hp;
     f.ace = true;
-    Object.assign(f.tgt, { kind: a.kind, name: a.name, size: f.size, hpMax: a.hp });
+    Object.assign(f.tgt, { kind: a.kind, name: a.name, size: f.size, hpMax: hp });
   }
 }
 
@@ -217,7 +222,7 @@ export function flyFighter(k, f, dt) {
   if (tp) {
     // where to point: where it'll be by the time a bolt gets there
     dist = Math.sqrt(dist2(tp, f.pos));
-    const lead = f.role === 'bomber' ? dist / BATTLE.bolts.torpedo.speed : dist / BATTLE.bolts.laser.speed;
+    const lead = dist / (f.role === 'bomber' ? BATTLE.bolts.torpedo.speed : (fighterShot(f.kind) ?? BATTLE.bolts.laser).speed);
     set(f.aim, tp.x + tv.x * lead, tp.y + tv.y * lead, tp.z + tv.z * lead);
     if (t !== b.you && t.team !== undefined && dist < 10) {
       t.chased = b.clock; // (someone on its tail)
@@ -331,7 +336,8 @@ export function flyFighter(k, f, dt) {
   const spread = t === b.you && k.pressure ? k.pressure.spread : 0.02;
   set(tmp, tmp.x / len(tmp) + (rand() - 0.5) * spread * 2, tmp.y / len(tmp) + (rand() - 0.5) * spread * 2, tmp.z / len(tmp) + (rand() - 0.5) * spread * 2);
   // (a battery strafed: the bolt knows what it's at, so it can take the battery's hp)
-  b.fire(f.team, { x: f.pos.x + f.fwd.x * f.size * 0.6, y: f.pos.y + f.fwd.y * f.size * 0.6, z: f.pos.z + f.fwd.z * f.size * 0.6 }, tmp, 'laser', t?.battery ? t : null);
+  // (its kind's bolt in the game: its speed, its life, its damage)
+  b.fire(f.team, { x: f.pos.x + f.fwd.x * f.size * 0.6, y: f.pos.y + f.fwd.y * f.size * 0.6, z: f.pos.z + f.fwd.z * f.size * 0.6 }, tmp, 'laser', t?.battery ? t : null, fighterShot(f.kind));
   f.shots += 1;
   if (f.shots >= 3) {
     f.shots = 0;
