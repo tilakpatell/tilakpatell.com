@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import mode from '../../../../public/models/galaxy/bf2017/levels/hoth/ga/mode.json';
 import level from '../../../../public/models/galaxy/bf2017/levels/hoth/ga/level.json';
+import hoth from '../../../data/bf2017/maps/hoth.json';
 import { setInput } from '../../../lib/battlefront/spawnLogic.js';
 import { EASE, advance, controlled, createDoors, doorFraction, gateStands, inBox, interpolator, leafAt, retarget, shown, stepDoors } from './doors.js';
 
@@ -49,6 +50,16 @@ describe('mode.json, read from the records', () => {
     expect(door('FantasyBattle_Logic:26').team).toBe(1);
     expect(door('FantasyBattle_Logic:11').team).toBe(0);
     expect(mode.unmatched).toEqual([]);
+  });
+
+  it('stands every door, gate and state prop where the map rulebook’s own reading puts its prefab', () => {
+    const things = [...mode.doors, ...mode.gates, ...mode.props.filter((p) => ['pickup', 'charge', 'wreck', 'gateRuin', 'walker'].includes(p.kind))];
+    expect(things).toHaveLength(10 + 2 + 11 + 3 + 17 + 2 + 2);
+    for (const x of things) {
+      const row = hoth.rows.prefabs.find((r) => r.id === x.id);
+      expect(row, x.id).toBeTruthy();
+      for (let k = 0; k < 3; k++) expect(x.at[k] + origin[k]).toBeCloseTo(row.at[k], 2);
+    }
   });
 
   it('keeps every changing instance out of the still art', () => {
@@ -140,6 +151,18 @@ describe('the gates', () => {
     expect(doorFraction(s, g.id)).toBe(0.25);
   });
 
+  it('takes gates.js’s run as Galactic Assault’s view lists it, and fires the opened port once', () => {
+    const s = createDoors(mode, { origin });
+    const id = 'FantasyBattle_Logic:91';
+    const fired = () => s.logic.vm.fired.filter((r) => r === `${id}.-1157191321`).length;
+    stepDoors(s, 0.1, { ga: ga(1), gates: [{ id, state: 'unlocked', open: 0 }] });
+    expect(doorFraction(s, id)).toBe(0);
+    stepDoors(s, 0.1, { ga: ga(1), gates: [{ id, state: 'opening', open: 0.3 }] });
+    stepDoors(s, 0.1, { ga: ga(1), gates: [{ id, state: 'opening', open: 0.4 }] });
+    expect(doorFraction(s, id)).toBe(0.4);
+    expect(fired()).toBe(1);
+  });
+
   it('the other gate is blown a second after the first walker reaches its gate: its leaves go, its ruin comes', () => {
     const s = createDoors(mode, { origin });
     const path = mode.logic.nodes['FantasyBattle_Gameplay:56'].path;
@@ -147,7 +170,7 @@ describe('the gates', () => {
     const escort = { type: 'escort', def: { waypoints: path }, path: [[0, 0, 0], [100, 0, 0]], walker };
     run(s, 0.5, { soldiers: [], ga: ga(0, { objectives: [escort] }) });
     run(s, 1.2, { soldiers: [], ga: ga(0, { objectives: [escort] }) });
-    // (walker :59 on :123 unlocks the west gate, :91; the east one, :307, is blown and its ruin, :297, stands)
+    // (route :123 ends by the east gate, :307: walker :59 home first blows it, its ruin :297 comes, and the west gate's panel, :91's, is unlocked)
     expect(gateStands(s, 'FantasyBattle_Logic:91')).toBe(true);
     expect(gateStands(s, 'FantasyBattle_Logic:307')).toBe(false);
     expect(shown(s, prop('FantasyBattle_Logic:297'), prop('FantasyBattle_Logic:297').parts[0])).toBe(true);

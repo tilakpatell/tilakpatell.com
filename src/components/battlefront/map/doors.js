@@ -21,13 +21,15 @@
 //
 // The hangar gates are the same controller over 70 s; when one opens is the
 // main session's (lib/battlefront/gates.js: its walker at the end of its
-// route, the panel held 1 s); here `gates[id]` is { open } (0 or 1, the
-// controller's In) or { fraction } (the leaves' place as given).
+// route, the panel held 1 s); here `gates` is Galactic Assault's view of
+// them ([{ id, state, open }], `open` gates.js's eased run, the leaves'
+// place) or a map, `gates[id]` { open } (0 or 1, the controller's In) or
+// { fraction } (the leaves' place as given).
 //
 // The level's graph (mode.json's `logic`, run by lib/battlefront/spawnLogic.js
 // and fed as Galactic Assault feeds its spawn graph) says when the base doors
-// are opened (OpenDoor 10 s and 15 s into stage 3), the pickups' Enabled,
-// each gate's leaves' Enabled (off: blown, the other walker first) and its
+// are opened (OpenDoor 10 s and 15 s after both hangars fall), the pickups' Enabled,
+// each gate's leaves' Enabled (off: blown, a second after a walker reaches the end of its route by it; the other gate's panel is the one unlocked) and its
 // ruin's IsDestroyed; the page fires its waypoint and route nodes from the
 // walkers.
 //
@@ -36,6 +38,7 @@
 //   inBox(box, p, height) → bool  (box: { at, half, rotation }, in the pack's frame)
 //   createDoors(mode, { origin }) → state
 //   stepDoors(state, dt, { soldiers: [{ at, team, side, alive }], ga, gates, opened })
+//     (gates: [{ id, state, open }] or { [id]: { open } | { fraction } })
 //     (soldiers in the export's frame; ga: the sim's Galactic Assault state, its stage and
 //      objectives; opened: the gate ids whose panel was used, gates.js's)
 //   leafAt(leaf, k) → [x, y, z]; doorFraction(state, id) → 0…1
@@ -185,7 +188,27 @@ function forced(state) {
   }
 }
 
-export function stepDoors(state, dt, { soldiers = [], ga = null, gates = {}, opened = [] } = {}) {
+// lib/battlefront/gates.js's gates as Galactic Assault's view lists them ([{ id, state, open }]: open
+// its eased run) into the doors' own: each one's leaves' place, and those whose panel was used
+// (fired into the graph once, as the game's `opened` port: it bars nothing here, the walkers did)
+function gatesIn(state, gates) {
+  if (!Array.isArray(gates)) return { map: gates ?? {}, opened: [] };
+  const map = {};
+  const opened = [];
+  state.used ??= new Set();
+  for (const g of gates) {
+    map[g.id] = { fraction: g.open ?? 0 };
+    if ((g.state === 'opening' || g.state === 'open') && !state.used.has(g.id)) {
+      state.used.add(g.id);
+      opened.push(g.id);
+    }
+  }
+  return { map, opened };
+}
+
+export function stepDoors(state, dt, { soldiers = [], ga = null, gates: given = {}, opened: told = [] } = {}) {
+  const { map: gates, opened: used } = gatesIn(state, given);
+  const opened = [...told, ...used];
   const [ox, oy, oz] = state.origin;
   const here = soldiers.map((s) => ({ ...s, at: [s.at[0] - ox, s.at[1] - oy, s.at[2] - oz] }));
   const L = state.logic;
@@ -221,7 +244,7 @@ export function stepDoors(state, dt, { soldiers = [], ga = null, gates = {}, ope
 export const leafAt = (leaf, k) => [leaf.at[0] + leaf.slide[0] * k, leaf.at[1] + leaf.slide[1] * k, leaf.at[2] + leaf.slide[2] * k];
 export const doorFraction = (state, id) => (state.doors.find((d) => d.def.id === id) ?? state.gates.find((d) => d.def.id === id))?.ip.value ?? 0;
 
-// a gate's leaves stand until the graph blows the gate (the other walker arrived first)
+// a gate's leaves stand until the graph blows the gate (its walker, home first, arrived at it)
 export function gateStands(state, id) {
   const L = state.logic;
   const key = `${id}.${LEAVES_ENABLED}`;

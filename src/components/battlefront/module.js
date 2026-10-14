@@ -499,12 +499,14 @@ export default {
         const after = stepped > 0 || deploying ? view(sim) : v;
         if (stepped > 0) director.update(after, heard, stepped, { waiting: parked });
         // (the doors moved before the world steps: a leaf's body goes where it is drawn; the
-        // gates' open fractions are lib/battlefront/gates.js's, once it lands: until then shut)
+        // gates' run is lib/battlefront/gates.js's, through Galactic Assault's view where the
+        // sim has them: until then shut)
         if (doors) {
           const ga = sim.sim.ga ?? null;
           const soldiers = [];
           for (const e of sim.sim.entities.values()) if (e.kind === 'soldier' && e.alive) soldiers.push({ at: e.at, team: e.team, side: ga ? sideOf(ga, e.team) : null, alive: true });
-          stepDoors(doors, dt, { soldiers, ga, gates: {}, opened: [] });
+          const gates = ga?.gates && sim.sim.M?.view ? (sim.sim.M.view(ga).gates ?? []) : {};
+          stepDoors(doors, dt, { soldiers, ga, gates });
           doorsScene?.update(doors);
         }
         // (a soldier held in the air for want of a floor gets the frame's time for the shapes under it)
