@@ -165,15 +165,20 @@ export function runSwirl(canvas, { size, seed, open = () => 1, calm = false, onF
   const s = createSwirl(canvas, { size, seed, onFail });
   if (!s) return null;
   const t0 = performance.now();
-  // (the still frame's last drawing: the opening and the box it was drawn for)
+  // (the still frame's last drawing: the opening, the box and the pixel
+  // ratio it was drawn for; a 2D canvas whose context the browser restores
+  // comes back empty, so it is drawn again then)
   let still = null;
+  const restored = () => (still = null);
+  canvas.addEventListener('contextrestored', restored);
   const frame = (now) => {
     const k = open(now);
     if (calm) {
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
-      if (still && still.k === k && still.w === w && still.h === h) return;
-      if (s.draw(3, k)) still = { k, w, h };
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (still && still.k === k && still.w === w && still.h === h && still.dpr === dpr) return;
+      if (s.draw(3, k)) still = { k, w, h, dpr };
       return;
     }
     s.draw((now - t0) / 1000, k);
@@ -182,6 +187,7 @@ export function runSwirl(canvas, { size, seed, open = () => 1, calm = false, onF
   return {
     stop() {
       loop.stop();
+      canvas.removeEventListener('contextrestored', restored);
       s.dispose();
     },
   };

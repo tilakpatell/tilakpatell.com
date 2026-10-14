@@ -100,6 +100,9 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
     camera.position.set(0, 1.0, dist);
     camera.lookAt(0, 0.86, 0);
     camera.updateProjectionMatrix();
+    // (a new size clears the drawing buffer: drawn again at once, not at the
+    // loop's next 30th of a second, which left it blank a few beats)
+    renderer.render(scene, camera);
   };
   fit();
   const sizing = new ResizeObserver(fit);

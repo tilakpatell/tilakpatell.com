@@ -199,6 +199,9 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
   canvas.addEventListener('pointerdown', down);
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);
+  // (a swipe the page takes, touch-action pan-y, ends in a cancel, not an
+  // up: a drag left set would hold the stage at the display's rate)
+  window.addEventListener('pointercancel', up);
   resize();
 
   return {
@@ -211,6 +214,7 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
       canvas.removeEventListener('pointerdown', down);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       clear();
       renderer.dispose();
       releaseContext(renderer);
