@@ -98,6 +98,7 @@ Gameplay/Prefabs/Affectors/States/Affector_Damage_Lightsaber_Luke_FromBehind	Dam
 Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier	DamageMultiplierAffectorAsset	data/Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier.json	575
 Gameplay/Profiles/ui/OptionHUDSquadListVisibility	ProfileOptionDataEnum	data/Gameplay/Profiles/ui/OptionHUDSquadListVisibility.json	537
 Gameplay/Settings/GameDifficultySettings	DifficultyDatas	data/Gameplay/Settings/GameDifficultySettings.json	23295
+Gameplay/SoldierStateMachine/PublicChannels	DataContainerAsset	data/Gameplay/SoldierStateMachine/PublicChannels.json	24936
 Gameplay/SquadronAI/AIChannels/FollowPath_AIChannel	AIChannelAsset	data/Gameplay/SquadronAI/AIChannels/FollowPath_AIChannel.json	351
 Gameplay/SquadronAI/Behaviours/PF_DogfightBehaviour	SquadronAIBehaviourBlueprint	data/Gameplay/SquadronAI/Behaviours/PF_DogfightBehaviour.json	9859
 Gameplay/Teams/MP/BattleScenarios/Heroes_Dark_BSC_7	WSSoldierCustomizationKitList	data/Gameplay/Teams/MP/BattleScenarios/Heroes_Dark_BSC_7.json	472

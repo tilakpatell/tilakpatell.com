@@ -259,6 +259,73 @@ const slotOf = (category) => (category ?? '').replace(/^PlayerAbilityCategory_/,
 const levelOf = (s) => Number(String(s ?? '').replace(/^PlayerAbilityLevel_/, '')) || 0;
 const hex = (n) => (n >>> 0).toString(16).toUpperCase().padStart(8, '0');
 
+// A state-machine channel by its name (`Gameplay/SoldierStateMachine/PublicChannels`' object whose $guid the pointer's $class is).
+function channelName(root, c) {
+  const p = c?.$asset ? pointee(root, c) : null;
+  return p?.obj?.Name ?? (c?.$class ? `${shortName(c.$asset)}:${c.$class}` : null);
+}
+
+// A channel condition (`CharacterState*RequiredChannelValueData`, or an `…OrRequiredData` of them): which values of
+// which channel it is met by. In `BlockingChannels` the ability is blocked while it is met (the grenades: BlockAbilities
+// true, or CurrentAbility not 0); in `RequiredForActive` the ability turns active once it is.
+function conditionOf(root, asset, o) {
+  if (!o) return null;
+  if (o.$type === 'CharacterStateOrRequiredData') return { or: (o.OrValues ?? []).map((v) => conditionOf(root, asset, deref(asset, v))).filter(Boolean), invert: Boolean(o.InvertConditions), _source: where(asset, o, 'OrValues') };
+  return { channel: channelName(root, o.Channel), values: o.AllowedValues ?? [], invert: Boolean(o.InvertConditions), _source: where(asset, o, 'AllowedValues') };
+}
+
+// A channel written (`CharacterState*ChannelValueData`): the value while the ability holds it, and back after.
+const channelSet = (root, asset, o) => (o ? { channel: channelName(root, o.Channel), value: o.Value, reset: o.ResetValue ?? null, _source: where(asset, o, 'Value') } : null);
+
+// The ability's own state machine as its record has it (finding 33): what blocks it, what it blocks and when, its
+// retrigger, its holds, the channels it writes, the character state it waits for. Booleans keep their record too.
+function stateMachineOf(root, row, asset, r) {
+  const flag = (key, field) => {
+    if (r[field]) {
+      row[key] = true;
+      row[`${key}_source`] = where(asset, r, field);
+    }
+  };
+  take(row, 'identifier', asset, r, 'Identifier');
+  flag('infinite', 'InfiniteActiveTime');
+  flag('infiniteActivation', 'InfiniteActivationTime');
+  flag('holdActivation', 'RequireHoldDuringActivationTime');
+  flag('holdActive', 'RequireHoldDuringActiveTime');
+  flag('queue', 'SupportsInputQueue');
+  flag('onDown', 'ActivateWhenButtonIsDown');
+  flag('drivesActive', 'CharacterStateDrivesActiveTime');
+  flag('stopOnState', 'StopOnCharacterStateInactive');
+  flag('deploy', 'StayInActivatingDuringDeploy');
+  flag('autoFire', 'AutomaticallyFire');
+  flag('rechargeOnRemoval', 'EnterRechargeOnProjectileRemoval');
+  flag('switchBackOnEmpty', 'AutomaticallySwitchBackOnOutOfAmmo');
+  flag('ai', 'IsSupportedOnAIPlayers');
+  if (r.InputQueueApplyOrder) take(row, 'queueOrder', asset, r, 'InputQueueApplyOrder');
+  if ((r.BlockedPlayerAbilityIds ?? []).length) {
+    row.blocks = { ids: r.BlockedPlayerAbilityIds.map((n) => n >>> 0), activation: Boolean(r.ApplyBlockPlayerAbilitiesDuringActivation), active: Boolean(r.ApplyBlockPlayerAbilitiesDuringActive), _source: where(asset, r, 'BlockedPlayerAbilityIds') };
+  }
+  const rules = (r.BlockPlayerAbilitiesRules ?? []).map((v) => deref(asset, v) ?? v).filter((x) => x?.AbilityIds?.length);
+  if (rules.length) row.blockRules = rules.map((x) => ({ ids: x.AbilityIds.map((n) => n >>> 0), activation: Boolean(x.BlockDuringActivation), active: Boolean(x.BlockDuringActive), recharge: Boolean(x.BlockDuringRecharging), ready: Boolean(x.BlockDuringReady), _source: `${asset.name}#${r.$type}.BlockPlayerAbilitiesRules` }));
+  if (r.RetriggerableCount) {
+    row.retrigger = { count: r.RetriggerableCount, cooldown: r.RetriggerCooldown ?? 0, _source: where(asset, r, 'RetriggerableCount') };
+    if (r.RequireHoldDuringRetrigger) row.retrigger.hold = r.RequireHoldDuringRetriggerTime ?? 0;
+    if (r.RechargeOnRetriggerCountZero) row.retrigger.rechargeAtZero = true;
+  } else if (r.RetriggerCount) take(row, 'retriggerCount', asset, r, 'RetriggerCount');
+  const conds = (r.BlockingChannels ?? []).map((v) => conditionOf(root, asset, deref(asset, v))).filter(Boolean);
+  if (conds.length) row.blockedWhen = conds;
+  const req = (r.RequiredForActive ?? []).map((v) => conditionOf(root, asset, deref(asset, v))).filter(Boolean);
+  if (req.length) row.activeWhen = req;
+  for (const [key, field] of [
+    ['setActivating', 'SetChannelsWhenActivating'],
+    ['setActive', 'SetChannelsWhenActive'],
+    ['setOnTry', 'SetChannelValuesOnTryActivate'],
+    ['setOnFinish', 'SetChannelValuesOnActiveTimeFinished'],
+  ]) {
+    const sets = (r[field] ?? []).map((v) => channelSet(root, asset, deref(asset, v))).filter(Boolean);
+    if (sets.length) row[key] = sets;
+  }
+}
+
 export function abilityRow(root, name) {
   const asset = follow(root, name);
   if (!asset) return null;
@@ -269,6 +336,7 @@ export function abilityRow(root, name) {
   take(row, 'recharge', asset, r, 'RechargeTime');
   if (r.TriggerCost !== undefined) take(row, 'cost', asset, r, 'TriggerCost');
   row.channels = (r.BlockingChannels ?? []).map((ref) => deref(asset, ref)?.Channel).filter(Boolean).map((c) => `${shortName(c.$asset)}:${c.$class}`);
+  stateMachineOf(root, row, asset, r);
   if (row.kind === 'weapon') {
     const { blueprint } = weaponChain(root, name);
     if (blueprint) row.weapon = weaponId(blueprint.name);

@@ -91,6 +91,19 @@ describe('abilities, cards and classes', () => {
     expect(a.ranks[0].modifiers.map((m) => m.value)).toContain(0.95);
   });
 
+  it('reads the state machine an ability record carries: its id, what it blocks, the channels it waits on', () => {
+    const v = abilityRow(ROOT, 'Gameplay/Kits/Hero/DarthVader/Ability_DarthVader_ForceChoke_02');
+    expect(typeof v.identifier).toBe('number');
+    expect(v.identifier_source).toMatch(/#BasicPlayerAbilityAsset\.Identifier$/);
+    for (const c of v.blockedWhen ?? []) expect(c.channel === undefined || typeof c.channel === 'string').toBe(true);
+    const roll = abilityRow(ROOT, 'Gameplay/Kits/MP/Assault/Ability_Assault_CombatRoll_CharacterState');
+    expect(roll.drivesActive).toBe(true);
+    // (the roll turns active once the state machine's CurrentAbility is the roll's 17, and ends crouched)
+    expect(roll.activeWhen?.[0]).toMatchObject({ channel: 'CurrentAbility', values: [17], invert: false });
+    expect(checkSources(roll)).toEqual([]);
+    expect(checkSources(v)).toEqual([]);
+  });
+
   it('reads a star card', () => {
     const c = cardRow(ROOT, 'Gameplay/Equipment/Abilities/Ability_AssaultTraining/SC_Trooper_01_AssaultTraining');
     expect(c).toMatchObject({ id: 'SC_Trooper_01_AssaultTraining', kind: 'passive' });
