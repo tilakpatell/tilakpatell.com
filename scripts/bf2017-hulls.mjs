@@ -10,9 +10,10 @@
 //   findings/62 §7, copied to lab/, git-ignored);
 // - a game capital: its kit's modules' shapes, the kit read from its space
 //   level's map (`--maps`), every part of every module its own part, named
-//   for its module, cut to a capital's budget (bf2017-hulls-site.mjs's
+//   for its module, cut to a capital's budget (bf2017-hulls-budget.mjs's
 //   capitalBudget: 4,000 bolt triangles, 256 solids, 120 KB) before it is
-//   held to its drawing;
+//   held to its drawing, and its contact to the uncut one's (a fighter flown
+//   down lines through its bolts gets through no more often);
 // - the Nebulon-B: its one asset's shapes, on the fleet's cut (within the budget as it is);
 // - a ship the game never had, a hunter drawn as another model
 //   (`hunter/<kind>`), and a kind whose game shapes miss its drawing
@@ -93,7 +94,8 @@ import {
   sceneBox,
   wingEdge,
 } from './lib/bf2017-hulls.mjs';
-import { capitalBudget, siteHull, subsystemParts } from './lib/bf2017-hulls-site.mjs';
+import { capitalBudget, passThrough, sinkIn } from './lib/bf2017-hulls-budget.mjs';
+import { siteHull, subsystemParts } from './lib/bf2017-hulls-site.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'C:/Users/tilak/Downloads/BF2_Extract/web';
@@ -121,6 +123,8 @@ const headers = typeof args.headers === 'string' ? args.headers : join(ROOT, 'la
 await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
 const manifest = JSON.parse(await readFile(join(ROOT, 'src/data/galaxyAssets.json'), 'utf8'));
+// the fighter a cut capital's contact is tried with: the X-wing's hull (its committed fixture)
+const FIGHTER = hullOf(await readFile(join(FIXTURES, 'xwing-hull.bin')));
 
 // a render GLB's bytes: public/ where it is there, else the bucket's copy
 const inPublic = (url) => existsSync(join(ROOT, 'public', url));
@@ -381,7 +385,8 @@ try {
         if (g.properties.length > 256) throw new Error(`${g.properties.length} parts: a hull's parts are counted in a byte`);
         // (a capital's modules' shapes cut to a capital's budget, then held
         // to the drawing as they will be drawn: the fit and the facing are the cut hull's)
-        const { hull, said } = CAPITAL_KITS[key] ? capitalBudget(assemble(g.fitted, g.properties, g.names)) : { hull: assemble(g.fitted, g.properties, g.names), said: null };
+        const whole = assemble(g.fitted, g.properties, g.names);
+        const { hull, said } = CAPITAL_KITS[key] ? await capitalBudget(whole) : { hull: whole, said: null };
         const m = await measure(key, hull.shapes, g.frame, g.cuts);
         if (!(m.worst.off <= FIT)) throw new Error(`off by ${(m.worst.off * 100).toFixed(2)} % on ${short(m.worst.url)} (${m.worst.face}); fit ${fitLine(m.fits)}`);
         if (m.way.better) throw new Error(`the hull fits the drawing better ${m.way.better.name} (chamfer ${m.way.better.chamfer.toFixed(4)} against ${m.way.placed.toFixed(4)} as placed): a turn or a mirror its frame doesn't know`);
@@ -394,10 +399,22 @@ try {
           const out = edges.filter((e) => !e.inside);
           if (out.length) throw new Error(`a point ${WING_EDGE[key]} of its length out on its widest section is in no root 0 solid: ${out.map((e) => `${e.side} at ${e.at.map((v) => v.toFixed(4)).join(', ')}`).join('; ')}`);
         }
+        // (a cut hull still keeps a fighter out where the game's shapes do:
+        // the X-wing at a hundredth of the length flown down the lines through
+        // the cut hull's bolts and none of its solids, through each hull; and
+        // how deep a ship sinks into the bolts' surface before contact stops it)
+        let contactSaid = '';
+        if (hull !== whole) {
+          const uncut = hullOf(packHull(whole));
+          const pass = passThrough(built, uncut, FIGHTER);
+          const sunk = [sinkIn(built), sinkIn(uncut)].map((v) => `${(v * 100).toFixed(1)} %`);
+          contactSaid = `; a fighter through ${pass.cut} of ${pass.lines} lines (uncut ${pass.uncut}), sinking in ${sunk[0]} (uncut ${sunk[1]})`;
+          if (pass.cut > pass.uncut) throw new Error(`the cut lets a fighter through on ${pass.cut} of ${pass.lines} lines where the game's shapes let it through on ${pass.uncut}`);
+        }
         const next = m.way.ways.reduce((a, b) => (b.chamfer < a.chamfer ? b : a));
         // (a capital's cut: its bolts' triangles and its solids before and after, and its build)
         const out = said && [said.flat && `${said.flat} flat`, said.contained && `${said.contained} inside another`, said.greebles && `${said.greebles} greebles`].filter(Boolean).join(', ');
-        const budget = said ? `; ${said.tris[0]} → ${said.tris[1]} bolt triangles${said.boxes ? ` (${said.boxes} parts a box)` : ''}, ${said.solids[0]} → ${said.solids[1]} solids${out ? ` (out: ${out}; ${said.merges} merged; at most ${said.points} points a solid)` : ''}, built in ${ms.toFixed(1)} ms` : '';
+        const budget = said ? `; ${said.tris[0]} → ${said.tris[1]} bolt triangles${said.boxes ? ` (${said.boxes} parts a box)` : ''}, ${said.solids[0]} → ${said.solids[1]} solids${out ? ` (out: ${out}; ${said.merges} merged; at most ${said.points} points a solid)` : ''}, built in ${ms.toFixed(1)} ms${contactSaid}` : '';
         made = { hull, bin, row: { source: 'game', from: g.from }, say: `fit ${fitLine(m.fits)}; chamfer ${m.way.placed.toFixed(4)}, ${next.name} ${next.chamfer.toFixed(4)}; ${g.note}${budget}` };
       } else {
         // the site's hull of the drawn model, its property the game's where the game has the kind
@@ -409,7 +426,7 @@ try {
           // (a capital's game shapes measured as they would be written, cut to
           // the budget; a kit of more parts than a byte counts can't be)
           let shapes = g.fitted;
-          if (CAPITAL_KITS[key] && g.properties.length <= 256) shapes = capitalBudget(assemble(g.fitted, g.properties, g.names)).hull.shapes;
+          if (CAPITAL_KITS[key] && g.properties.length <= 256) shapes = (await capitalBudget(assemble(g.fitted, g.properties, g.names))).hull.shapes;
           const m = await measure(key, shapes, g.frame, g.cuts, { way: false });
           property = majority(g.properties);
           gameSaid = `${(m.worst.off * 100).toFixed(2)} % off at ${m.worst.face} on ${short(m.worst.url)}`;

@@ -20,6 +20,7 @@ import {
   bothRoots,
   boxOf,
   capitalKinds,
+  cutsOf,
   drawnPoints,
   facing,
   fitShapes,
@@ -36,7 +37,8 @@ import {
   rosterKinds,
   wingEdge,
 } from './bf2017-hulls.mjs';
-import { capitalBudget, siteHull, subsystemParts } from './bf2017-hulls-site.mjs';
+import { capitalBudget, passThrough, sinkIn } from './bf2017-hulls-budget.mjs';
+import { siteHull, subsystemParts } from './bf2017-hulls-site.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DIR = join(REPO, 'scripts', 'fixtures', 'bf2017', 'physics');
@@ -256,8 +258,8 @@ describe('a game capital’s hull to the budget', () => {
   for (let i = 0; i < 10; i++) shapes.push(cube(0.02, [-0.4 + i * 0.08, -0.02, -0.2], 2));
   const hull = assemble(shapes, [132, 206, 129], ['deck', 'plate', 'turret']);
 
-  it('cuts root 1 to its triangles, every part kept, named and hittable', () => {
-    const { hull: cut, said } = capitalBudget(hull, { maxTris: 300, maxSolids: 16 });
+  it('cuts root 1 to its triangles, every part kept, named and hittable', async () => {
+    const { hull: cut, said } = await capitalBudget(hull, { maxTris: 300, maxSolids: 16 });
     const h = hullOf(packHull(cut));
     expect(said.tris).toEqual([2450, h.rays.count]);
     expect(h.rays.count).toBeLessThanOrEqual(300);
@@ -273,8 +275,8 @@ describe('a game capital’s hull to the budget', () => {
     for (const end of ['min', 'max']) after[end].forEach((v, k) => expect(v).toBeCloseTo(before[end][k], 6));
   });
 
-  it('drops root 0’s greebles, then merges its smallest into their neighbours', () => {
-    const { hull: cut, said } = capitalBudget(hull, { maxTris: 300, maxSolids: 16 });
+  it('drops root 0’s greebles, then merges its smallest into their neighbours', async () => {
+    const { hull: cut, said } = await capitalBudget(hull, { maxTris: 300, maxSolids: 16 });
     expect(said.solids).toEqual([42, 16]);
     expect(said.greebles).toBe(20);
     expect(said.merges).toBe(6);
@@ -286,10 +288,61 @@ describe('a game capital’s hull to the budget', () => {
     }
   });
 
-  it('leaves a hull within the budget as it is', () => {
-    const { hull: same, said } = capitalBudget(hull, { maxTris: 5000, maxSolids: 64 });
+  it('leaves a hull within the budget as it is', async () => {
+    const { hull: same, said } = await capitalBudget(hull, { maxTris: 5000, maxSolids: 64 });
     expect(same).toBe(hull);
     expect(said.tris).toEqual([2450, 2450]);
+  });
+
+  it('over its bytes, gives up bolt triangles before a solid’s points (contact’s fidelity last)', async () => {
+    // (a deck of 1,800 triangles over twelve solids of 64 points each, 42 KB in all, to fit in 30,000 bytes)
+    const round = (at, part) => {
+      const points = [];
+      for (let i = 0; i < 64; i++) {
+        const y = 1 - (2 * (i + 0.5)) / 64;
+        const r = Math.sqrt(1 - y * y);
+        points.push(at[0] + 0.04 * r * Math.cos(i * 2.4), at[1] + 0.04 * y, at[2] + 0.04 * r * Math.sin(i * 2.4));
+      }
+      return { kind: 'hull', root: 0, part, instance: 0, material: 0, points: Float32Array.from(points) };
+    };
+    const heavy = assemble([grid(30, 1, [0, 0, 0], 0), ...Array.from({ length: 12 }, (_, i) => round([-0.44 + i * 0.08, -0.04, 0], 0))], [132], ['deck']);
+    expect(packHull(heavy).byteLength).toBeGreaterThan(30000);
+    const { hull: cut, said } = await capitalBudget(heavy, { maxTris: 1800, maxSolids: 256, maxBytes: 30000 });
+    expect(packHull(cut).byteLength).toBeLessThanOrEqual(30000);
+    expect(said.points).toBe(64);
+    expect(said.solids).toEqual([12, 12]);
+    expect(said.tris[1]).toBeLessThan(1800);
+    for (const s of cut.shapes.filter((x) => x.root === 0)) expect(s.points.length / 3).toBe(64);
+  });
+});
+
+// A deck on root 1 in a slab of solid on root 0, and the same deck in the
+// slab split by a gap a fighter fits through (0.04 of the length; the
+// X-wing flown at a hundredth): the gate that holds a cut hull's contact to
+// the uncut one's
+describe('a cut hull still keeps a fighter out', () => {
+  const slab = (x0, x1) => {
+    const points = [];
+    for (const x of [x0, x1]) for (const y of [-0.02, 0.02]) for (const z of [-0.5, 0.5]) points.push(x, y, z);
+    return { kind: 'hull', root: 0, part: 0, instance: 0, material: 0, points: Float32Array.from(points) };
+  };
+  const whole = hullOf(packHull(assemble([grid(20, 1, [0, 0, 0], 0), slab(-0.5, 0.5)], [132], ['deck'])));
+  const gapped = hullOf(packHull(assemble([grid(20, 1, [0, 0, 0], 0), slab(-0.5, -0.02), slab(0.02, 0.5)], [132], ['deck'])));
+  const fighter = hullOf(readFixture('xwing-hull.bin'));
+
+  it('passThrough: a fighter goes through the gap the cut opened, and not through the whole slab', () => {
+    const through = passThrough(gapped, whole, fighter, { lines: 2000 });
+    expect(through.lines).toBeGreaterThan(0);
+    expect(through.cut).toBeGreaterThan(through.uncut);
+    expect(through.uncut).toBe(0);
+    // (the whole slab against itself lets nothing more through)
+    const same = passThrough(whole, whole, fighter, { lines: 2000 });
+    expect(same.cut).toBe(same.uncut);
+  }, 60000);
+
+  it('sinkIn: the bolts over the gap have no solid behind them', () => {
+    expect(sinkIn(whole, { lines: 4000 })).toBe(0);
+    expect(sinkIn(gapped, { lines: 4000 })).toBeGreaterThan(0.01);
   });
 });
 
@@ -419,6 +472,26 @@ describe('every kind the galaxy flies has a hull', () => {
       expect(hullBin(key).byteLength, key).toBe(row.bytes);
     }
   });
+
+  it('every committed site hull sits on its model within 2 %, the way round it is drawn', async () => {
+    const galaxy = await importRepo('src/components/galaxy/models.js');
+    let n = 0;
+    for (const [key, row] of Object.entries(HULLS)) {
+      if (row.source !== 'site' || row.publish) continue;
+      const kind = key.split('/').pop();
+      const nose = key.startsWith('hunter/') ? (galaxy.HUNTER_GLB[kind].nose ?? 0) : key.startsWith('hq/') ? (galaxy.HQ[kind].nose ?? 0) : cutsOf(galaxy, kind)[0].nose;
+      const doc = await readGlb(row.from.slice(1));
+      const frame = frameOf(doc, nose, kind);
+      // (the drawn hull's own part: the war's subsystems sit where the war puts them)
+      const { parts, shapes } = readHull(hullBin(key));
+      const own = shapes.filter((x) => x.root === 1 && parts[x.part].name === 'hull');
+      const { off, face } = offBy(boxOf(own), frame);
+      expect(off, `${key}: ${face}`).toBeLessThan(0.02);
+      expect(facing(Float32Array.from(own.flatMap((x) => [...x.points])), drawnPoints(doc, frame)).better, key).toBeNull();
+      n++;
+    }
+    expect(n).toBe(19);
+  }, 120000);
 
   it('a kind the game has, drawn on the site’s hull, says why and keeps the game’s property', () => {
     expect(HULLS.interceptor).toMatchObject({ source: 'site', property: 68, publish: true });

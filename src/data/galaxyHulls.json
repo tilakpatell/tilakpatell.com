@@ -46,7 +46,7 @@
   },
   "destroyer": {
     "source": "game",
-    "bytes": 115816,
+    "bytes": 114904,
     "parts": 123,
     "radius": 0.5196,
     "from": "levels/space/sb_endor_01/sb_endor_01#endor-isd"
@@ -181,7 +181,7 @@
   },
   "moncal": {
     "source": "game",
-    "bytes": 118924,
+    "bytes": 107320,
     "parts": 35,
     "radius": 0.5017,
     "from": "levels/space/sb_endor_01/sb_endor_01#endor-mc80"
@@ -283,7 +283,7 @@
   },
   "venator": {
     "source": "game",
-    "bytes": 119692,
+    "bytes": 117172,
     "parts": 54,
     "radius": 0.507,
     "from": "levels/space/sb_kamino_01/sb_kamino_01#kamino-venator"
