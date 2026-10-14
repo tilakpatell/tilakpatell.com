@@ -1,6 +1,7 @@
 // What the sim and the bots share: the clock's constants, the muzzle and the trigger. Pure.
 //   STEP, THINK, SENSE, SQUAD (seconds)    profile, clock()    muzzleOf(s) → [x, y, z]    shoot(sim, s, aim) → bool
 
+import { fireUnit } from './abilitiesMoves.js';
 import { eyeOf } from './soldier.js';
 import { fire as fireGun } from './weapons.js';
 
@@ -23,6 +24,8 @@ export function muzzleOf(s) {
 
 // pull the trigger toward a point: the gun says whether and how many bolts, and when
 export function shoot(sim, s, aim) {
+  // (a hero with no gun: its saber's strike, or the Emperor's lightning: abilitiesMoves.js)
+  if (s.alive && !s.gun && s.unit === 'hero' && aim) return fireUnit(sim, s, aim);
   if (!s.alive || !s.gun || !aim) return false;
   // (the rifle is lowered behind the shield; a stunned soldier fires nothing; an ability's weapon is still coming up: kit.js)
   if (s.shield || (s.stunnedUntil ?? -Infinity) > sim.time || (s.deployUntil ?? -Infinity) > sim.time + 1e-9) return false;

@@ -15,7 +15,7 @@
 //   affectorRow(root, name)         → { type, ranks: [...], request?, descriptors, stacking, _source } | null
 //   requestOf(root, ref)            → { trigger, floats, ints, maxDuration } (an `AllRequests` character-state request)
 
-import { fieldHash, outputRoles } from './bf2017-abilities.mjs';
+import { fieldHash, outputRoles, readAbility } from './bf2017-abilities.mjs';
 import { deref, follow, pointee, rootOf, shortName } from './bf2017-ebx.mjs';
 
 const TARGET_LIST = fieldHash('TargetList');
@@ -100,7 +100,7 @@ const FOLLOW = /^Gameplay\/(Kits|Prefabs\/Abilities|Prefabs\/Projectiles|Equipme
 const SKIP = /PF_AOE_|PF_BB_|_VFX|VFXLogic|\/FX_|Sound|_VO_|Hud|\/UI_|Rumble|LatencyCompensation|_FX$|_FX_/i;
 
 // the records an ability's work runs through, each once: [{ name, doc, depth }]
-export function docsOf(root, abilityName, maxDepth = 3) {
+export function docsOf(root, abilityName, maxDepth = 6) {
   const out = [];
   const seen = new Set();
   const visit = (name, depth) => {
@@ -189,6 +189,9 @@ export function effectOf(root, abilityName, identifier = null) {
   const ability = docs[0]?.doc;
   if (!ability) return fx;
   fx.prefab = rootOf(ability).Blueprint?.$asset ?? null;
+  // (the ability's outputs as it comes, level one: the cone, the range and the rest its prefab reads by hash)
+  const own = readAbility(ability).outputs;
+  if (Object.keys(own).length) fx.values = { ...own, _source: `${ability.name}#${rootOf(ability).$type}.AbilityModifiers` };
   for (const { name, doc } of docs) {
     const r = rootOf(doc);
     if (r.$type === 'ProjectileBlueprint') fx.projectiles.push(projectileOf(name, doc));

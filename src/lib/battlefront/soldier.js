@@ -12,7 +12,7 @@
 
 import bones from '../../data/bf2017/physics/bones.json';
 import physics from '../../data/bf2017/physics/soldier.json';
-import { ROLL, createAbilities, tick as tickAbilities } from './abilities.js';
+import { ROLL, createAbilities, setChannel, tick as tickAbilities } from './abilities.js';
 import { createStack, resolve, tick as tickStack } from './affectors.js';
 import { heightAt, walkable } from './nav.js';
 import { createGun, tick as tickGun } from './weapons.js';
@@ -135,7 +135,10 @@ export function tick(s, dt, now) {
   if (r && now - s.lastHurt >= r.delay) s.hp = Math.min(s.hpMax, s.hp + r.rate * dt);
   if (s.gun) tickGun(s.gun, dt, now);
   if (s.state === 'roll' && now >= s.rollUntil) s.state = s.stance;
-  return tickAbilities(s.abilities, dt, now);
+  // (the state machine's BlockAbilities while a soldier is disabled: stunned, choked, frozen, thrown; the key held, for
+  // a hold-to-charge ability's activation and a held retrigger: a bot's finger never lifts)
+  setChannel(s.abilities, 'BlockAbilities', (s.disabledUntil ?? -Infinity) > now);
+  return tickAbilities(s.abilities, dt, now, { held: s.bot ? null : (s.abilityHeld ?? 0) });
 }
 
 export function roll(s, dir, now) {

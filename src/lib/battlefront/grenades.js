@@ -52,9 +52,11 @@ export const GRENADES = {
   shock: { id: 'shock', fuse: { on: 'sleep', delay: 1.2 }, inner: 2.5, damage: 30, radius: 5, multiplier: 1, impulse: 200, ttl: 30, owner: true, throughProps: true, field: { radius: 2, perSecond: 10, tick: 0.1, apply: 1.1, seconds: 3.7 } },
   // `Thermal_Detonator_Projectile_AI` (a bot's, `AIProjectileComponentData`): blast 100, 1–5 m, half the player's
   botThermal: { id: 'botThermal', fuse: { on: 'sleep', delay: 0.7 }, inner: 1, damage: 100, radius: 5, multiplier: 1, impulse: 1500, ttl: 7, owner: true },
-  // `PingLauncher_Missile_Projectile` (the scan dart): 42 m/s, no bounce; the sphere its prefab spots in is not in the
-  // finding (`PF_Apply_Sonar_*`): 20 m by hand; `Affector_Ping_Hero` 1.1 s re-applied
-  dart: { id: 'dart', fuse: { on: 'collision', delay: 0 }, inner: 0, damage: 0, radius: 0, multiplier: 1, impulse: 0, ttl: 3, speed: 42, gravity: 0, stick: true, spot: { radius: 20, seconds: 1.1, life: 8 } },
+  // `PingLauncher_Missile_Projectile` (the scan dart, WSMissileEntityData): 42 m/s (the firing's Shot.InitialSpeed),
+  // Gravity −5, TimeToLive 5, sticks; the dart it leaves (`PingLauncher_Attached_Projectile`) queries 18 m of characters
+  // every 2 s (its Delay 2 → SphereQuery Radius 18) and spots them for 1.75 s (SpottingEntityData.Duration); how long it
+  // stays is an ability output this read does not resolve: 8 s by hand (NOTES.md)
+  dart: { id: 'dart', fuse: { on: 'collision', delay: 0 }, inner: 0, damage: 0, radius: 0, multiplier: 1, impulse: 0, ttl: 5, speed: 42, gravity: -5, stick: true, spot: { radius: 18, seconds: 1.75, every: 2, life: 8 } },
 };
 
 // seconds after the press the round leaves: at least the delay, at most the hold

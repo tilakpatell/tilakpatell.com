@@ -43,9 +43,16 @@ describe('the kit (finding 33)', () => {
     const shield = kitRow({ id: 'DefaultAbility_Heavy_CombatShield', recharge: 30 });
     expect(shield.retrigger).toEqual({ count: 1, cooldown: 2 });
     expect(shield.kit.shield.health).toBe(250);
-    const nade = kitRow({ id: 'DefaultAbility_Assault_ThermalDetonator', activation: 0.32, active: 0.7, recharge: 35 });
-    expect(nade.blocks).toEqual(['DefaultAbility_Assault_Vanguard', 'DefaultAbility_Assault_ScanDart']);
+    // (the blocks are the record's own: BlockedPlayerAbilityIds by Identifier, through the pull alone)
+    const nade = kitRow(rb.abilities.DefaultAbility_Assault_ThermalDetonator);
+    expect(nade.blocks).toMatchObject({ activation: true, active: false });
+    expect(nade.blocks.ids).toContain(rb.abilities.DefaultAbility_Assault_Vanguard.identifier);
+    // (StayInActivatingDuringDeploy: the vanguard's activation is the hunter's DeployTime 1)
+    expect(kitRow(rb.abilities.DefaultAbility_Assault_Vanguard).activation).toBe(1);
+    expect(kitRow(rb.abilities.DefaultAbility_Specialist_Infiltration).activation).toBe(1.4);
     expect(kitRow({ id: 'other' })).toEqual({ id: 'other' });
+    expect(kitWeapon('sentry').damage).toMatchObject({ start: 19, end: 15 });
+    expect(kitWeapon('ee4').damage).toMatchObject({ start: 20, end: 7 });
     expect(kitWeapon('sentry').firing).toMatchObject({ rof: 900, preFire: 1 });
     expect(kitWeapon('sentry').heat.perBullet).toBe(0.0035);
     expect(kitWeapon('turret').lock.time).toBe(1);
@@ -61,9 +68,9 @@ describe('the kit (finding 33)', () => {
     expect(thrown.kind).toBe('thermal');
     // (pressed at 0.05, pulled 0.32: the first step past 0.37)
     expect(thrown.t).toBeCloseTo(0.4, 6);
-    // (the throw's 0.7 s: active to 1.07, the middle and the right blocked meanwhile)
+    // (the throw's 0.7 s: active to 1.07; the record blocks the middle and the right through the pull, not the throw)
     expect(state(s.abilities, SLOT.left)).toBe('active');
-    expect(state(s.abilities, SLOT.middle)).toBe('blocked');
+    expect(state(s.abilities, SLOT.middle)).toBe('ready');
     const more = run(sim, () => [idle(me)], 80);
     expect(of(more, 'ability').find((e) => e.phase === 'end').t).toBeCloseTo(1.1, 6);
     expect(state(s.abilities, SLOT.left)).toBe('recharge');
@@ -146,8 +153,8 @@ describe('the kit (finding 33)', () => {
     const { sim, s, t, me, them } = pair('heavy', { gap: 20 });
     step(sim, [{ id: me, move: [0, 0], ability: SLOT.right }]);
     expect(s.shield).toMatchObject({ hp: 250, max: 250 });
-    // (the sentry shares its channel: blocked while the shield is up)
-    expect(state(s.abilities, SLOT.middle)).toBe('blocked');
+    // (the shield's BlockedPlayerAbilityIds name neither the impact grenade nor the default sentry: both stay ready)
+    expect(state(s.abilities, SLOT.middle)).toBe('ready');
     const before = s.hp;
     run(sim, () => [idle(me), { id: them, move: [0, 0], fire: true, aim: aimAt(t, s) }], 20);
     expect(s.hp).toBe(before);
@@ -207,10 +214,13 @@ describe('the kit (finding 33)', () => {
     expect(of(down, 'ability').find((e) => e.phase === 'end').why).toBe('destroyed');
   });
 
-  it('picks the turret up on a second press after 2 s, and gives a bot’s turret the AutoPlayer’s bolt', () => {
+  // RetriggerCooldown 2, RequireHoldDuringRetrigger with RequireHoldDuringRetriggerTime 0.5
+  it('picks the turret up on a second press held half a second after 2 s, and gives a bot’s turret the AutoPlayer’s bolt', () => {
     const { sim, s, me } = pair('officer', { gap: 80 });
     run(sim, (i) => [{ id: me, move: [0, 0], ability: i === 0 ? SLOT.right : 0 }], 50);
-    const ev = step(sim, [{ id: me, move: [0, 0], ability: SLOT.right }]);
+    // (a tap does not)
+    expect(of(run(sim, (i) => [{ id: me, move: [0, 0], ability: i === 0 ? SLOT.right : 0 }], 12), 'turretGone')).toHaveLength(0);
+    const ev = run(sim, (i) => [{ id: me, move: [0, 0], ability: i === 0 ? SLOT.right : 0, abilityHeld: SLOT.right }], 12);
     expect(of(ev, 'turretGone')[0]).toMatchObject({ why: 'removed' });
     expect([...sim.entities.values()].some((e) => e.kind === 'turret')).toBe(false);
     expect(state(s.abilities, SLOT.right)).toBe('recharge');
@@ -242,19 +252,23 @@ describe('the kit (finding 33)', () => {
     expect(s.gun.coolMul).toBe(1);
   });
 
-  it('runs the vanguard’s scattergun of 21 pellets for 12.5 s and infiltration’s EE-4 for 16.7 s, sprinting 1.3 times as fast, then gives the rifle back', () => {
+  // the hunter's DeployTime 1 is the vanguard's activation; its heat (0.08 a second, 0.066 a shot) its life
+  it('runs the vanguard’s scattergun of 21 pellets until its heat is full, and infiltration’s EE-4, sprinting 1.3 times as fast, then gives the rifle back', () => {
     const { sim, s, t, me } = pair('assault', { gap: 8 });
     const base = s.gun.row.id;
-    const ev = run(sim, (i) => [{ id: me, move: [0, 0], aim: aimAt(s, t), ability: i === 0 ? SLOT.middle : 0, fire: i === 2 }], 4);
+    const ev = run(sim, (i) => [{ id: me, move: [0, 0], aim: aimAt(s, t), ability: i === 0 ? SLOT.middle : 0, fire: i === 22 }], 24);
     expect(s.gun.row.id).toBe('hunter');
+    // (pressed at 0.05, up at 1.05: no shot through the deploy, then one shell of 21)
+    expect(ev.filter((e) => e.type === 'shot' && e.by === me && e.t < 1.05)).toHaveLength(0);
     expect(ev.filter((e) => e.type === 'shot' && e.by === me)).toHaveLength(21);
     const walk = speedOf(s);
     s.sprint = true;
     const sprint = speedOf(s);
     s.sprint = false;
     const more = run(sim, () => [idle(me)], 260);
-    // (pressed at 0.05: over at 12.55, told the step after)
-    expect(of(more, 'ability').find((e) => e.phase === 'end').t).toBeCloseTo(12.6, 6);
+    const h = kitWeapon('hunter').heat;
+    const ends = 1.05 + (1 - h.perBullet) / h.perSecond;
+    expect(Math.abs(of(more, 'ability').find((e) => e.phase === 'end').t - ends)).toBeLessThan(0.11);
     expect(s.gun.row.id).toBe(base);
     expect(state(s.abilities, SLOT.middle)).toBe('recharge');
     s.sprint = true;
@@ -267,8 +281,12 @@ describe('the kit (finding 33)', () => {
     expect(spec.s.hidden).toBe(true);
     // (the EE-4's own DeployTime 1.4: pressed at 0.05, its first burst at 1.45)
     expect(first[0].t).toBeCloseTo(1.45, 6);
+    // (its heat: the shots' 0.04 each, then 0.06 a second to the full bar)
+    const e = kitWeapon('ee4').heat;
+    expect(spec.s.gun.heat).toBeGreaterThan(0.1);
+    const ends2 = spec.sim.time + (1 - spec.s.gun.heat) / e.perSecond;
     const rest = run(spec.sim, () => [idle(spec.me)], 300);
-    expect(of(rest, 'ability').find((e) => e.phase === 'end').t).toBeCloseTo(16.8, 6);
+    expect(Math.abs(of(rest, 'ability').find((x) => x.phase === 'end').t - ends2)).toBeLessThan(0.2);
     expect(spec.s.gun.row.id).not.toBe('ee4');
     expect(spec.s.hidden).toBe(false);
   });

@@ -38,6 +38,8 @@ import { firstSolid, heightAt, lineClear } from './nav.js';
 import { chestOf, eyeOf } from './soldier.js';
 import { createGun, fire as fireGun, tick as tickGun } from './weapons.js';
 import { createTokens, grenadeGone, grenadeOut } from './ai/throw.js';
+import { affect, inReach, unitRow } from './abilitiesUnit.js';
+import { endUnitWeapons, onUnit, shielded, stepSwings, stepUnits } from './abilitiesMoves.js';
 
 export const KIT = kit;
 // `Affector_CoolingPowerMultiplier_BattleCommand`'s multiplier is not in the finding: by hand.
@@ -50,15 +52,17 @@ const DEG = Math.PI / 180;
 
 export function kitRow(row) {
   const extra = kit.abilities[row.id];
-  if (!extra) return row;
+  if (!extra) return unitRow(row);
   const { _source, ...k } = extra;
   void _source;
   const out = { ...row, kit: k };
-  if (k.active === 'infinite') out.active = Infinity;
+  if (k.active === 'infinite' || row.infinite) out.active = Infinity;
   else if (k.active != null) out.active = k.active;
+  // (StayInActivatingDuringDeploy: the weapon's DeployTime is the activation; the kit's own where it names one)
   if (k.activation != null) out.activation = k.activation;
-  if (k.retrigger) out.retrigger = k.retrigger;
-  if (k.blocks) out.blocks = k.blocks;
+  else if (row.deploy && k.weapon) out.activation = kitWeapon(k.weapon)?.firing?.deploy ?? row.activation;
+  // (the record's retrigger; the binoculars' by hand, NOTES.md)
+  if (!out.retrigger && k.retrigger) out.retrigger = k.retrigger;
   if (k.channels) out.channels = k.channels;
   return out;
 }
@@ -107,6 +111,8 @@ function throwNow(sim, s, entry, now, power = THROW.power) {
   }
   s.throwPlan = null;
   const g = born(K, createGrenade(row, { at, vel, owner: s.id, team: s.team, now, bot: s.bot }));
+  // (the ability it came from: the flash's recharge waits for it and its five to be gone, EnterRechargeOnProjectileRemoval)
+  g.from = { slot: entry.slot, id: entry.row.id, removal: Boolean(entry.row.rechargeOnRemoval) };
   // (a bot's grenade holds its team's token while it is out)
   if (s.bot) {
     g.token = true;
@@ -158,8 +164,14 @@ export function onRoll(s, now) {
 export function onAbility(sim, s, e) {
   const a = slotOf(s, e.id);
   const k = a?.row.kit;
-  if (!k) return;
+  // (a hero's or a reinforcement's: abilitiesMoves.js plays it from its records)
+  if (!k) return void onUnit(sim, s, a, e);
   const now = sim.time;
+  if (e.phase === 'retrigger') {
+    // (the flash's second press: the carrier splits now)
+    for (const g of sim.kit.grenades) if (g.owner === s.id && g.from?.id === e.id && g.row.splits && !g.dead) g.fuseAt = now;
+    return;
+  }
   if (e.phase === 'start') {
     if (k.weapon) {
       const row = kitWeapon(k.weapon);
@@ -246,6 +258,8 @@ export function hurtTurret(sim, t, damage) {
 // the shield in front, then the overhealth, take the damage first
 export function absorb(s, damage, { dir = null, now = 0 } = {}) {
   let left = damage;
+  // (inside its side's bubble nothing reaches it: Leia's shield, Iden's droid's)
+  if (left > 0 && shielded(s.kit?.domes, s)) return 0;
   if (s.shield && left > 0) {
     // (a shot from the front: the bolt flies against the heavy's facing)
     const front = !dir || dir[0] * Math.sin(s.yaw) + dir[2] * Math.cos(s.yaw) < 0;
@@ -303,23 +317,44 @@ function flashAt(sim, at, row, team, now) {
   }
 }
 
+// a unit projectile's blast: its prefab's affectors on the enemies it reaches
+function unitBlast(sim, g, at, row, now, requests) {
+  const s = sim.entities.get(g.owner);
+  if (!s) return;
+  const out = [];
+  for (const o of inReach(sim, s, { range: row.radius, from: at })) for (const fx of row.effects) affect(sim, s, o, fx, now, out, row.id);
+  requests.push(...out);
+}
+
+// (a unit's rocket meets a body: its OnCollision is a character's too)
+function touches(sim, g) {
+  for (const o of sim.entities.values()) if (o.alive && o.kind === 'soldier' && o.team !== g.team && dist3(chestOf(o), g.at) < 1) return true;
+  return false;
+}
+
 function stepGrenades(sim, K, now, requests) {
   const world = { heightAt: (x, z) => (sim.nav ? heightAt(sim.nav, x, z) : 0), solid: sim.nav ? (a, b) => firstSolid(sim.nav, a, b) : null, now };
   const keep = [];
+  const was = K.grenades;
   for (const g of K.grenades) {
+    if (g.row.unit && g.row.fuse.on === 'collision' && !g.collided && touches(sim, g)) g.collided = true;
     for (const ev of stepGrenade(g, STEP, world)) {
       if (ev.type === 'split') {
         for (let i = 0; i < ev.count; i++) {
           const a = (i / ev.count) * Math.PI * 2;
-          keep.push(born(K, createGrenade(GRENADES.flashSub, { at: [ev.at[0], ev.at[1] + 0.3, ev.at[2]], vel: [Math.cos(a) * SPLIT.speed * 0.5, SPLIT.speed, Math.sin(a) * SPLIT.speed * 0.5], owner: g.owner, team: g.team, now, bot: g.bot })));
+          const sub = born(K, createGrenade(GRENADES.flashSub, { at: [ev.at[0], ev.at[1] + 0.3, ev.at[2]], vel: [Math.cos(a) * SPLIT.speed * 0.5, SPLIT.speed, Math.sin(a) * SPLIT.speed * 0.5], owner: g.owner, team: g.team, now, bot: g.bot }));
+          sub.from = g.from;
+          keep.push(sub);
         }
         sim.out.push({ t: now, type: 'split', by: g.owner, at: ev.at });
       } else if (ev.type === 'explode') {
         const row = g.row;
         if (row.flash) flashAt(sim, ev.at, row.flash, g.team, now);
-        if (row.spot) K.spots.push({ at: ev.at, team: g.team, radius: row.spot.radius, seconds: row.spot.seconds, until: now + row.spot.life });
+        if (row.spot) K.spots.push({ at: ev.at, team: g.team, radius: row.spot.radius, seconds: row.spot.seconds, every: row.spot.every, next: now, until: now + row.spot.life });
         if (row.damage > 0) K.blasts.push({ by: g.owner, team: g.team, at: ev.at, row, multiplier: g.multiplier });
         if (row.field) K.fields.push({ at: ev.at, by: g.owner, team: g.team, row: row.field, until: now + row.field.seconds, next: now });
+        // (a unit's projectile: the affectors its prefab lays on what the blast reaches)
+        if (row.effects?.length) unitBlast(sim, g, ev.at, row, now, requests);
         sim.out.push({ t: now, type: 'explosion', by: g.owner, kind: row.id, at: ev.at, radius: row.flash ? row.flash.range : row.radius * (g.multiplier ?? 1) });
       }
     }
@@ -327,6 +362,12 @@ function stepGrenades(sim, K, now, requests) {
     else if (g.token) grenadeGone(K.tokens, g.team);
   }
   K.grenades = keep;
+  // (an ability that recharges on its projectile's removal: once the last of its grenades is gone)
+  for (const g of was) {
+    if (!g.dead || !g.from?.removal || keep.some((o) => o.owner === g.owner && o.from?.id === g.from.id)) continue;
+    const s = sim.entities.get(g.owner);
+    if (s?.abilities) end(s.abilities, g.from.slot, now, 'removal');
+  }
   const bodies = K.blasts.length ? bodiesOf(sim) : null;
   for (const b of K.blasts) {
     const hits = explode(b.row, b.at, bodies, { occluded: sim.nav ? (a, c) => !lineClear(sim.nav, a, c) : null, multiplier: b.multiplier ?? b.row.multiplier ?? 1, owner: b.by, team: b.team });
@@ -344,11 +385,18 @@ function stepFields(sim, K, now, requests) {
       if (o.kind !== 'soldier' || !o.alive || o.team === f.team || dist3(chestOf(o), f.at) > f.row.radius) continue;
       apply(o.stack, { id: 'Stunned', property: 'speed', op: 'set', value: 0, until: now + f.row.apply });
       o.stunnedUntil = now + f.row.apply;
+      // (Affector_Stunned's descriptors are the disabled set the hero moves' holds share: no abilities while it lasts)
+      o.disabledUntil = Math.max(o.disabledUntil ?? -Infinity, now + f.row.apply);
       requests.push({ type: 'field', by: f.by, id: o.id, damage: f.row.perSecond * f.row.tick, at: f.at });
     }
   }
   K.spots = K.spots.filter((p) => p.until > now);
-  for (const p of K.spots) for (const o of sim.entities.values()) if (o.kind === 'soldier' && o.alive && o.team !== p.team && dist3(o.at, p.at) <= p.radius) o.markedUntil = Math.max(o.markedUntil ?? 0, now + p.seconds);
+  for (const p of K.spots) {
+    // (the dart's query pulses every `every` seconds and spots for `seconds`)
+    if (now + 1e-9 < (p.next ?? now)) continue;
+    p.next = now + (p.every ?? STEP);
+    for (const o of sim.entities.values()) if (o.kind === 'soldier' && o.alive && o.team !== p.team && dist3(o.at, p.at) <= p.radius) o.markedUntil = Math.max(o.markedUntil ?? 0, now + p.seconds);
+  }
 }
 
 function stepTurret(sim, t, now) {
@@ -359,7 +407,8 @@ function stepTurret(sim, t, now) {
   tickGun(t.gun, STEP, now);
   let best = null;
   for (const e of sim.entities.values()) {
-    if (!e.alive || e.team === t.team || e.kind !== 'soldier' || e.hidden) continue;
+    // (infiltration hides a soldier from the radar, `Affector_IsInfiltration`, not from a turret's sight)
+    if (!e.alive || e.team === t.team || e.kind !== 'soldier') continue;
     const c = chestOf(e);
     const d = dist3(c, t.eye);
     if (d > row.lock.ray || (best && d >= best.d)) continue;
@@ -408,12 +457,15 @@ function stepSoldier(sim, s, now) {
       throwNow(sim, s, armed, now);
     }
   }
-  // each ability that is up, by its own event: the sentry's heat, the vanguard's and infiltration's time, the binoculars' mark
+  endUnitWeapons(sim, s);
+  // each ability that is up, by its own event: its weapon's heat (the sentry's bolts; the vanguard's and infiltration's
+  // bar that fills by the second and by the shot: HeatIncreasePerSecond and HeatPerBullet), the binoculars' mark
   for (const a of s.abilities.list) {
     const k = a.row.kit;
     if (!k || a.phase !== 'active') continue;
-    if (k.weapon === 'sentry' && a.gun && (a.gun.state !== 'ready' || a.gun.heat >= (a.gun.row.heat?.threshold ?? 1) - 1e-9)) end(s.abilities, a.slot, now, 'heat');
-    else if (k.life != null && now - a.startedAt >= k.life - 1e-9) end(s.abilities, a.slot, now, 'heat');
+    const h = a.gun?.row.heat;
+    if (h && h.perSecond > 0 && a.gun.state === 'ready') a.gun.heat = Math.min(1, a.gun.heat + h.perSecond * STEP);
+    if (h && k.weapon && (a.gun.state === 'overheated' || a.gun.heat >= (h.threshold ?? 1) - 1e-9)) end(s.abilities, a.slot, now, 'heat');
     else if (k.mark) {
       if (now + 1e-9 >= (a.markAt ?? -Infinity)) {
         a.markAt = now + k.mark.every;
@@ -446,9 +498,14 @@ export function stepKit(sim) {
     if (e.kind === 'soldier') stepSoldier(sim, e, now);
     else if (e.kind === 'turret') stepTurret(sim, e, now);
   }
+  // (a unit's grenades, rockets and traps: thrown by abilitiesMoves.js, flown as the class grenades are)
+  for (const u of K.unitThrows ?? []) K.grenades.push(born(K, createGrenade(u.row, { at: u.at, vel: u.vel, owner: u.owner, team: u.team, now: u.now })));
+  K.unitThrows = [];
+  requests.push(...stepUnits(sim), ...stepSwings(sim));
   stepGrenades(sim, K, now, requests);
   stepFields(sim, K, now, requests);
   return requests;
 }
 
 export const grenadesOf = (K) => (K ? K.grenades.map((g) => ({ id: g.id, at: g.at, kind: g.row.id, owner: g.owner, team: g.team, spin: g.spin, resting: g.resting })) : []);
+export { kitOfUnit } from './abilitiesUnit.js';

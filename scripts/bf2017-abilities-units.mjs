@@ -42,8 +42,17 @@ function weaponOf(asset) {
 const abilities = {};
 const affectors = {};
 const kits = {};
+// (a hero with no gun and no saber fires a passive of its kit: the Emperor's Force lightning, the one such on Hoth)
+const PASSIVES = { emperor: 'Gameplay/Kits/Hero/Emperor/Ability_Emperor_ForceLightning' };
 for (const u of units) {
   kits[u.id] = { unit: u.unit, primary: weaponOf(u.primaryAsset), abilities: u.abilities.map((a) => a.id) };
+  if (PASSIVES[u.id]) {
+    const id = PASSIVES[u.id].split('/').pop();
+    kits[u.id].fire = id;
+    const fx = effectOf(root, PASSIVES[u.id], null);
+    for (const ap of fx.applies) affectors[ap.affector] ??= affectorRow(root, ap.affector);
+    abilities[id] = { kind: 'lightning', ...fx };
+  }
   for (const a of u.abilities) {
     if (abilities[a.id]) continue;
     const row = rows[a.id];

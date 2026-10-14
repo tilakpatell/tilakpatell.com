@@ -46,7 +46,7 @@ import { createWaves, mayDeploy, stage as stageWaves, unitOpen } from './ai/wave
 import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.js';
 import { SPREAD, createDealer, dealFor, nextFor, ownerChanged, stepDealer } from './ai/botLogicOverhaul.js';
 import { fieldTo } from './navField.js';
-import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
+import { absorb, createKit, grenadesOf, hurtTurret, kitOfUnit, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
 import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
@@ -179,7 +179,7 @@ function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id:
   if (sim.nav) where[1] = heightOf(sim, where);
   // (every soldier carries its class's abilities: a player presses them, a Skirmish bot's brain does, an AutoPlayer's the turret alone)
   const abilities = cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
-  const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: weaponOf(sim.rb, cls.weapon), ...abilities });
+  const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: cls.weapon ? weaponOf(sim.rb, cls.weapon) : null, ...abilities });
   s.kit = sim.kit;
   // (the difficulty's health for a player)
   if (!bot && sim.difficulty && sim.difficulty.health !== 1) s.hp = s.hpMax = s.hpMax * sim.difficulty.health;
@@ -394,9 +394,9 @@ export function deploy(sim, id, choice) {
   let cls = null;
   if (offer.kind === 'class') cls = classOf(sim.rb, offer.id);
   else {
-    // a hero or a reinforcement deploys on its own health, as its side's first class until lanes 3 and 4 give it its own kit
+    // a hero or a reinforcement deploys on its own health and kit: its abilities, its gun (none for a saber or the lightning)
     const unit = offer.kind === 'hero' ? heroOf(sim.rb, offer.id) : reinforcementOf(sim.rb, offer.id);
-    cls = { ...base, health: unit.health, regen: unit.regen ?? base.regen, unit: offer.kind, unitId: offer.id };
+    cls = { ...base, health: unit.health, regen: unit.regen ?? base.regen, unit: offer.kind, unitId: offer.id, abilities: unit.abilities, weapon: kitOfUnit(offer.id)?.primary ?? null };
   }
   const at = [...spot.at];
   if (choice.spawn !== 'squad') {
