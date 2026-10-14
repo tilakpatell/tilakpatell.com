@@ -55,7 +55,7 @@ export function linearise(rgba) {
 }
 
 // the export's maps as one KTX2 array of side × side layers (each made that size)
-async function encodeArray(files, side, { srgb, linear = [] }) {
+async function encodeArray(files, side, { srgb, linear = [], etc1s = false, rdo }) {
   const tmp = await mkdtemp(join(tmpdir(), 'snow-'));
   try {
     const args = [];
@@ -73,7 +73,7 @@ async function encodeArray(files, side, { srgb, linear = [] }) {
       args.push('-file', png);
     }
     const out = join(tmp, 'out.ktx2');
-    execFileSync(basisuPath(), [...encodeArgs({ role: srgb ? 'color' : 'other' }), '-tex_type', '2darray', ...args, '-output_file', out], { stdio: 'ignore' });
+    execFileSync(basisuPath(), [...encodeArgs({ role: srgb ? 'color' : 'other', etc1s, ...(rdo != null ? { rdo } : {}) }), '-tex_type', '2darray', ...args, '-output_file', out], { stdio: 'ignore' });
     return await readFile(out);
   } finally {
     await rm(tmp, { recursive: true, force: true });
@@ -108,11 +108,12 @@ async function main(args) {
     const sizes = Object.fromEntries(Object.entries(m.sizes).map(([t, s]) => [t, Math.min(s, side)]));
     const want = [...new Set(Object.values(sizes))];
     const file = (s) => join(pack, 'tex', `${slug}.${s}.ktx2`);
-    const inBucket = want.every((s) => published[site(slug, s)]);
+    // (--force makes every file again, the bucket's too: a file whose layers changed keeps its name)
+    const inBucket = !args.force && want.every((s) => published[site(slug, s)]);
     const here = want.every((s) => existsSync(file(s)));
     if (!inBucket && (!here || args.force)) {
       const linear = (m.layers ?? []).map((map) => Boolean(m.linearised?.includes(map)));
-      const ktx2 = m.layers ? await encodeArray(rows.map((r) => join(from, r.file)), side, { srgb: m.srgb, linear }) : (await encodeImage(await readFile(join(from, rows[0].file)), { role: m.srgb ? 'color' : 'other' })).ktx2;
+      const ktx2 = m.layers ? await encodeArray(rows.map((r) => join(from, r.file)), side, { srgb: m.srgb, linear, etc1s: Boolean(m.etc1s), rdo: m.rdo ?? (args.rdo != null ? Number(args.rdo) : undefined) }) : (await encodeImage(await readFile(join(from, rows[0].file)), { role: m.srgb ? 'color' : 'other', etc1s: Boolean(m.etc1s) })).ktx2;
       const info = ktx2Info(ktx2);
       for (const s of want) await writeFile(file(s), dropMips(ktx2, Math.min(mipsToFit(info.width, s), info.levels - 1)));
       made += want.length;

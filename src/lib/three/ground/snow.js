@@ -199,7 +199,7 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
     const tex = at && has(at.kind) ? maps[at.kind] : null;
     if (!tex) return null;
     const node = texture(tex, uv ?? xz.mul(cyclesOf(r.cycles)));
-    samples[at.kind === 'normals' ? 'normal' : 'data']++;
+    samples[at.kind === 'normals' || /_n$/.test(r.map) ? 'normal' : 'data']++;
     return SNOW_FILES[at.slug].layers ? node.depth(int(at.layer)) : node;
   };
   const tangent = (s) => s.xy.mul(2).sub(1);

@@ -33,9 +33,23 @@
 // third darker than both, every layer edge a seam (findings/58;
 // src/data/bf2017/NOTES.md).
 
+// The ground's texel density by tier, as the game's tiers keep one: its
+// layers are drawn into the virtual texture's 256-texel tiles (findings/11,
+// 63), so what reaches the screen is the tile's density, never a map's own.
+// Here an array is the size that gives its maps' tilings the tier's
+// density: the 0.2–0.25 cycles a metre maps (and the 0.03 swells, which
+// keep every texel) at SIZES; the rough map with them, for its 0.08 read
+// (t16) keeps its texels too. The trampled snow, read at 0.5 alone, has
+// the density of the 4 m snow at a quarter of its size: it rides in the data
+// array at 512 with the maps that are 512 in the export (the 1 m detail,
+// the sparkle, the flow map) and the packed smoothness (2048, its streaks
+// soft at any size: bf2-re/findings/63 measures each).
 const SIZES = { low: 512, mid: 512, high: 1024, ultra: 2048 };
+const DATA = { low: 512, mid: 512, high: 512, ultra: 512 };
 
-// file slug → { kind, srgb, sizes, layers (the export's maps, in array order), linearised }
+// file slug → { kind, srgb, sizes, layers (the export's maps, in array order), linearised, etc1s }
+// (etc1s: the rock colours' encoding, the site's for colour, which a
+// desktop gets as BC1; the normals and the data UASTC, which it gets as BC7)
 export const SNOW_FILES = {
   hoth_snow_normals: {
     kind: 'normals',
@@ -48,17 +62,17 @@ export const SNOW_FILES = {
       't_arcticbase_snowwavey_02_n',
       't_arcticbase_snowchunkywind_01_n',
       't_arcticbase_snowroughpacked_03_n',
-      't_arcticbase_snowtrampled_01_n',
       't_arcticbase_snowrockypacked_04_n',
       't_arcticbase_snowrocky_02_n',
     ],
   },
-  hoth_snow_colours: { kind: 'colours', srgb: true, sizes: SIZES, layers: ['t_arcticbase_snowrocky_04_c', 't_arcticbase_snowrocky_02_c'] },
+  hoth_snow_colours: { kind: 'colours', srgb: true, sizes: SIZES, etc1s: true, layers: ['t_arcticbase_snowrocky_04_c', 't_arcticbase_snowrocky_02_c'] },
+  // (SnowSmoothnessVirtualTexture_01_RGBM, t14, feeds only layer 2's material2, which the site does not draw: not packed)
   hoth_snow_data: {
     kind: 'data',
     srgb: false,
-    sizes: { low: 512, mid: 512, high: 512, ultra: 1024 },
-    layers: ['t_arcticbase_snowpackedsmoothness_01_rgbm', 't_arcticbase_snowsmoothnessvirtualtexture_01_rgbm', 't_arcticbase_snowdetail_01_n', 't_arcticbase_snowsparkle_03_rgbm', 't_blowingsnowflowmap_01_c'],
+    sizes: DATA,
+    layers: ['t_arcticbase_snowpackedsmoothness_01_rgbm', 't_arcticbase_snowdetail_01_n', 't_arcticbase_snowsparkle_03_rgbm', 't_blowingsnowflowmap_01_c', 't_arcticbase_snowtrampled_01_n'],
     linearised: ['t_blowingsnowflowmap_01_c'],
   },
 };

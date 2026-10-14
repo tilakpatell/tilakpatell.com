@@ -4,15 +4,21 @@
 // each of its eight painted layers as 72² u8 rasters on a quadtree, 8 m to
 // 0.5 m a texel; the tile shader blends the nine layers by them
 // (findings/35; src/lib/three/ground/snow.js draws the same). Here the
-// rasters are laid into three frames, each from the corner of one level of
-// the tree, at that level's own texel size, all the size of the finest
-// (one KTX2 array binds once: the ground's textures are counted, ground.js):
+// rasters are laid into two frames, each from the corner of one level of
+// the tree, all the size of the finest (one KTX2 array binds once: the
+// ground's textures are counted, ground.js):
 //
 //   near  from the 0.5 m level's corner, 0.5 m a texel (its extent: the play strip)
-//   mid   from the 1 m level's, 1 m a texel (past its extent, the coarser levels)
-//   far   from the 8 m level's, 4 m a texel (nothing is painted past it: layer 0 there)
+//   far   from the 8 m level's, 2 m a texel (the whole painted extent,
+//         2,560 m a side; nothing is painted past it: layer 0 there)
 //
-// as the six layers of one KTX2 array (UASTC, linear, mipmapped: a texel
+// The game's virtual texture draws a tile at the quadtree level its
+// distance asks for (findings/11, 63): past the play strip only its coarse
+// levels are ever on screen, so the 1 m level's ring round the strip (its
+// own frame until 2026-10-14, a third of the array) is drawn from its 2 m
+// mean, as the game's coarser tiles hold it.
+//
+// as the four layers of one KTX2 array (UASTC, linear, mipmapped: a texel
 // the mean of the game's own finer texels, as a parent raster is): each
 // frame's masks 1–4 in one layer's RGBA, 5–8 in the next. It is written at
 // each size its tiers read (terrain/masks.<width>.ktx2, the bigger file's
@@ -51,8 +57,7 @@ const TREE = 'C:/Users/tilak/source/repos/bf2-re/data/tools-eval/FrostyToolsuite
 // the frames: the tree level whose extent each covers, and its texel size
 export const FRAMES = {
   near: { level: 0.5, mpp: 0.5 },
-  mid: { level: 1, mpp: 1 },
-  far: { level: 8, mpp: 4 },
+  far: { level: 8, mpp: 2 },
 };
 // the width each tier reads, as a fraction of the frame's own (low draws no masks)
 export const TIER_SCALE = { mid: 0.25, high: 0.5, ultra: 1 };
