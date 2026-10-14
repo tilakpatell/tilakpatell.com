@@ -28,7 +28,8 @@
 //       `game` for the checks
 //   In development, window.__deathstar: { g, teleport(where, x, z), do(name, arg), info() }:
 //     do calls one of the page’s calls by name, or presses an action (use, helmet…) for a step;
-//     info() → { calls, triangles, room, mode } of the last frame drawn
+//     info() → { calls, triangles, room, mode } of the last frame drawn; and world.view(name)
+//     ('bay', 'tractor', 'throne': VIEWS below) and world.settled() for scripts/gpu-parity.mjs
 
 import { STEP, alertOf, drain, newGame, objectiveOf, promptOf, step, teleport, ticksFor } from './rules/game';
 import { SAVE, SAVE_VERSION, blank, clean } from './rules/save';
@@ -81,6 +82,20 @@ const STRIDE = 0.75; // metres between footfalls heard
 // who a conversation is with, by the talk’s speaker, for the talk box
 const speaker = (who) => (who === 'keypad' ? 'The hatch’s keypad' : (WHO[who] ?? who ?? null));
 
+// The parity check’s views (development’s: scripts/gpu-parity.mjs), each a
+// game on a fixed seed, you put at a spot and turned, so every leg draws
+// the same picture: the bay with the Falcon and the field across its mouth,
+// over your shoulder; the tractor beam’s shaft from its ledge, its glow and
+// haze below; the throne room’s window onto the battle of Endor.
+const VIEWS = {
+  bay: { station: 'ds1', at: 'ranks', yaw: -Math.PI / 2, pitch: 0.12, view: 'third' },
+  tractor: { station: 'ds1', at: 'tractor-ledge', yaw: 0, pitch: -0.35, view: 'first' },
+  throne: { station: 'ds2', at: 'under-stairs', yaw: 0, pitch: 0.3, view: 'first' },
+};
+const VIEW_SEED = 1977;
+const VIEW_RUN = 60; // steps of the scene’s clock a view runs on before it is held: its rooms built, its lamps up
+const VIEW_CALM = 60; // frames with nothing new in the scene before a view says it has settled
+
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const round = (v, k = 100) => Math.round(v * k) / k;
@@ -120,6 +135,7 @@ export default {
     let aiming = false;
     let drawn = { calls: 0, triangles: 0 };
     let gone = false;
+    let held = null; // a parity view (development’s): { view }, the game taking no step while it holds
     const was = { autoReset: renderer.info?.autoReset };
 
     // what the world says before the page is listening waits for the first step
@@ -169,6 +185,7 @@ export default {
       const own = side === 'imperial' ? 'imperial' : 'rebel';
       if (fresh && play === 'story') save[id].story[own] = null;
       g = newGame({ station: id, side: own, mode: play, hero, seed: freshSeed(), save });
+      held = null;
       sceneFor(g.station);
       look.yaw = g.you.yaw;
       look.pitch = 0;
@@ -468,7 +485,7 @@ export default {
         menuKeys(snap);
         touch.pressed.clear();
         aiming = mode === 'play' && (touch.held.has('aim') || Boolean(snap?.pad?.lt));
-        if (mode === 'play') {
+        if (mode === 'play' && !held) {
           const pad = snap?.pad;
           if (pad && !mapOpen && (pad.rx || pad.ry)) {
             look.yaw += pad.rx * PAD_TURN * dt;
@@ -504,7 +521,7 @@ export default {
           was.autoReset = r.info?.autoReset;
           makePost();
         }
-        view.sync(g, mode === 'play' ? acc / STEP : 1, { yaw: look.yaw, pitch: look.pitch, view: save.settings.view, aim: aiming });
+        view.sync(g, mode === 'play' ? acc / STEP : 1, { yaw: look.yaw, pitch: look.pitch, view: held?.view ?? save.settings.view, aim: aiming });
         // (after the camera has taken this frame's place)
         mark();
         // counted over the whole frame (bloom draws several times), for the budget checks
@@ -612,6 +629,44 @@ export default {
           return this.info();
         },
         info: () => ({ ...drawn, room: g.you.room, mode }),
+      };
+      let calm = { count: -1, frames: 0 }; // (the meshes counted last frame, and for how many frames)
+      // A named view for scripts/gpu-parity.mjs: the game made again on a
+      // fixed seed and you put at the view’s spot, the scene run on a couple
+      // of seconds of its own clock a step at a time (its rooms built a frame
+      // at a time, its lamps eased up), then held: no step taken and its
+      // clock stopped, so the people, the doors, the glows and the ripples
+      // stand still for the picture whatever frames come after.
+      world.view = async (name) => {
+        const v = VIEWS[name];
+        if (!v) throw new Error(`no view ${name}`);
+        // (held from the first: no step may move the new game while its rooms load)
+        held = { view: v.view };
+        acc = 0;
+        g = newGame({ station: v.station, side: 'imperial', mode: 'roam', seed: VIEW_SEED, save });
+        sceneFor(g.station);
+        await view.ready;
+        teleport(g, v.at, undefined, undefined, v.yaw);
+        Object.assign(look, { yaw: v.yaw, pitch: v.pitch });
+        chosen = { station: g.station, side: g.side, hero: g.you.hero, play: g.mode };
+        Object.assign(touch, { x: 0, y: 0 });
+        mode = 'play';
+        mapOpen = false;
+        calm = { count: -1, frames: 0 };
+        for (let i = 0; i < VIEW_RUN; i++) {
+          g.time += STEP;
+          view.sync(g, 1, { yaw: look.yaw, pitch: look.pitch, view: v.view, aim: false });
+        }
+      };
+      // settled once nothing has come into the scene for VIEW_CALM frames:
+      // the figures, the Falcon and the windows’ ships load behind the view
+      world.settled = () => {
+        let n = 0;
+        view.scene.traverse((o) => {
+          if (o.isMesh || o.isPoints) n += 1;
+        });
+        calm = n === calm.count ? { count: n, frames: calm.frames + 1 } : { count: n, frames: 0 };
+        return calm.frames >= VIEW_CALM;
       };
     }
     return world;
