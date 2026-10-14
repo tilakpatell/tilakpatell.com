@@ -11,16 +11,37 @@ vi.mock('three/webgpu', () => ({
       this.options = options;
       let destroyed;
       const lost = new Promise((resolve) => (destroyed = resolve));
+      const onWebGL = fallBack || options.forceWebGL;
       // (three r186 keeps no adapter on its backend: the device's adapterInfo is the chip)
-      this.backend = fallBack ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost, adapterInfo: { vendor: 'amd', architecture: 'rdna-3', description: '', isFallbackAdapter: software } } };
+      this.backend = onWebGL ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost, adapterInfo: { vendor: 'amd', architecture: 'rdna-3', description: '', isFallbackAdapter: software } } };
+      // (three's public loss hook, its default keeping the renderer's own flag)
+      this._onDeviceLost = vi.fn(() => (this._isDeviceLost = true));
+      this.onDeviceLost = this._onDeviceLost;
+      // (as three's WebGPU backend: the device's loss told to onDeviceLost,
+      // one destroyed by its own dispose not)
+      lost.then((info) => {
+        if (info.reason === 'destroyed') return;
+        this.onDeviceLost({ api: 'WebGPU', message: info.message || 'Unknown reason', reason: info.reason || null, originalEvent: info });
+      });
       // (a device destroyed on dispose says it's lost, as a real one does)
       this.destroy = () => destroyed({ reason: 'destroyed' });
       // (and one lost while drawing says why: a hung chip's 'unknown')
       this.lose = () => destroyed({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG' });
-      this.init = vi.fn(async () => {});
+      // (as three's WebGL 2 backend: the canvas's loss heard at init, its
+      // default prevented, told to onDeviceLost; the listener let go on dispose)
+      const contextLost = (event) => {
+        event.preventDefault();
+        this.onDeviceLost({ api: 'WebGL', message: event.statusMessage || 'Unknown reason', reason: null, originalEvent: event });
+      };
+      this.init = vi.fn(async () => {
+        if (onWebGL) options.canvas?.addEventListener('webglcontextlost', contextLost, false);
+      });
       this.setPixelRatio = vi.fn();
       this.setSize = vi.fn();
-      this.dispose = vi.fn(() => this.destroy());
+      this.dispose = vi.fn(() => {
+        if (onWebGL) options.canvas?.removeEventListener('webglcontextlost', contextLost);
+        this.destroy();
+      });
       this.getPixelRatio = vi.fn(() => 1);
       this.setClearColor = vi.fn();
       made.push(this);
@@ -134,6 +155,11 @@ describe('createWebGPU', () => {
     await Promise.resolve();
     expect(onLost).toHaveBeenCalledTimes(1);
     expect(onLost).toHaveBeenCalledWith(expect.objectContaining({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG', adapter: { vendor: 'amd', architecture: 'rdna-3' } }));
+    // (heard through three's public hook, not the device it keeps inside its
+    // backend, and three's own default still run: its renderer knows it is lost)
+    expect(made[0].onDeviceLost).not.toBe(made[0]._onDeviceLost);
+    expect(made[0]._onDeviceLost).toHaveBeenCalledTimes(1);
+    expect(made[0]._isDeviceLost).toBe(true);
     const onLost2 = vi.fn();
     const gfx2 = await createWebGPU(fakeCanvas(), { onLost: onLost2 });
     gfx2.dispose();
@@ -161,8 +187,11 @@ describe('createWebGPU', () => {
     const preventDefault = vi.fn();
     handler({ preventDefault });
     expect(onLost).toHaveBeenCalledTimes(1);
+    expect(onLost).toHaveBeenCalledWith(expect.objectContaining({ reason: 'context' }));
     expect(preventDefault).toHaveBeenCalled();
     expect(gfx.lost).toBe(true);
+    // (one listener on the canvas: three's, not a second of the runtime's)
+    expect(canvas.addEventListener.mock.calls.filter((c) => c[0] === 'webglcontextlost')).toHaveLength(1);
     gfx.dispose();
     expect(canvas.removeEventListener).toHaveBeenCalledWith('webglcontextlost', handler);
   });

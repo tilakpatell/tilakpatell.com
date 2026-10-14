@@ -50,4 +50,11 @@ describe('gpuScene/three.js', () => {
     expect(hasIndirect({ isWebGPURenderer: true, backend: { hasFeature: (f) => f !== 'indirect-first-instance' } })).toBe(false);
     expect(hasIndirect({ isWebGPURenderer: true, backend: { hasFeature: () => true } })).toBe(true);
   });
+
+  // (a compatibility-mode device, Chrome 146's on OpenGL ES 3.1: no storage
+  // buffers in the vertex stage, where the scene pulls each instance's row)
+  it('not on a compatibility-mode device, whatever its features', () => {
+    expect(hasIndirect({ isWebGPURenderer: true, backend: { compatibilityMode: true, hasFeature: () => true } })).toBe(false);
+    expect(hasIndirect({ isWebGPURenderer: true, backend: { compatibilityMode: false, hasFeature: () => true } })).toBe(true);
+  });
 });

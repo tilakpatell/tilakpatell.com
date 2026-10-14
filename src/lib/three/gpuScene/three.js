@@ -49,8 +49,13 @@ export function indirectOf(renderObject) {
 // node renderer there warns and draws nothing, so the path is never taken;
 // and a sub-draw's base rides in firstInstance, which WebGPU honours only
 // with indirect-first-instance, an optional feature three asks for wherever
-// the adapter has it: 99.99 % of web3dsurvey's reports, the research note's §1)
-export const hasIndirect = (renderer) => backendOf(renderer) === 'webgpu' && renderer.backend?.hasFeature?.('indirect-first-instance') !== false;
+// the adapter has it: 99.99 % of web3dsurvey's reports, the research note's §1;
+// and not on a compatibility-mode device (Chrome 146's, on OpenGL ES 3.1:
+// three asks for compatibility first and sets compatibilityMode where the
+// device lacks core-features-and-limits), which has no storage buffers in the
+// vertex stage, where each instance's row is pulled: the research note's
+// §2f item 9, the every-world hand-off's performance item 10)
+export const hasIndirect = (renderer) => backendOf(renderer) === 'webgpu' && renderer.backend?.compatibilityMode !== true && renderer.backend?.hasFeature?.('indirect-first-instance') !== false;
 
 // one span over every element touched since the last send (upload keeps one
 // range a call: elements set one by one in a frame are widened into one)

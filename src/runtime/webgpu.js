@@ -166,7 +166,7 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
   const guard = guardPipelines(renderer, { invalidate });
   // (three's renderer, asked for WebGPU and finding no adapter, quietly
   // draws on its WebGL 2 backend: that's the nodes-webgl kind, whatever
-  // was asked, and the canvas is what says it's lost)
+  // was asked, and its loss is the canvas's context)
   const onWebGL = forceWebGL || Boolean(renderer.backend?.isWebGLBackend);
   let lost = false;
   let released = false; // (disposing destroys the device, and a destroyed device says it's lost: not a loss)
@@ -183,14 +183,18 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
     lost = true;
     onLost?.({ reason: why?.reason ?? null, message: why?.message ?? null, adapter });
   };
-  // on WebGL 2 the canvas says when the context goes (as the classic
-  // renderer's does); on WebGPU the device does
-  const onContextLost = (e) => {
-    e.preventDefault();
-    gone({ reason: 'context', message: e.statusMessage ?? null });
+  // Told through three's public hook (r186's onDeviceLost), not by reaching
+  // into the device its backend keeps: the WebGPU backend calls it when the
+  // device goes (one destroyed by its own dispose left out), the WebGL 2
+  // backend when the canvas's context does, its default prevented so a
+  // context can come back (the every-world hand-off's performance item 14).
+  // three's own default runs first: it marks the renderer lost, so neither
+  // a compile nor a frame is tried on a dead device meanwhile.
+  const threes = renderer.onDeviceLost;
+  renderer.onDeviceLost = (info) => {
+    threes?.call(renderer, info);
+    gone({ reason: info?.reason ?? (onWebGL ? 'context' : null), message: info?.message ?? null });
   };
-  if (onWebGL) canvas.addEventListener('webglcontextlost', onContextLost);
-  else renderer.backend?.device?.lost?.then(gone);
   let jitter = null; // (made on the first gfx.jitter: until then render is three's own)
   const gfx = makeGfx({
     backend: onWebGL ? 'nodes-webgl' : 'webgpu',
@@ -217,7 +221,6 @@ export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneM
       released = true;
       guard?.dispose();
       jitter?.dispose();
-      if (onWebGL) canvas.removeEventListener('webglcontextlost', onContextLost);
     },
   });
   gfx.reversedDepth = (renderer.reversedDepthBuffer ?? asked) === true;
