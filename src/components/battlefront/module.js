@@ -60,7 +60,7 @@ import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createPartsCollision, wantsEngine } from './map/collision.js';
 import { createWalker } from './map/walk.js';
-import { createDoors, stepDoors } from './map/doors.js';
+import { arrive as arriveRoute, createDoors, destroy as destroyVehicle, stepDoors } from './map/doors.js';
 import { createDoorsScene } from './map/doorsScene.js';
 import { sideOf } from '../../lib/battlefront/modes/galacticAssault.js';
 import { holesOf } from '../../lib/land/holes.js';
@@ -640,7 +640,10 @@ export default {
             // (the battle's navgrid itself, for a check of a way over it)
             return sim.nav;
           case 'doors':
-            // (a check's read of the mode part: each door's and gate's open fraction, the scene's counts)
+            // (a check's read of the mode part: each door's and gate's open fraction, the scene's counts;
+            // { arrive: path } a walker home by its route, { destroyed: [spawner ids] } their vehicles down, as the game's events)
+            if (doors && arg?.arrive) arriveRoute(doors, arg.arrive);
+            if (doors && arg?.destroyed) for (const id of arg.destroyed) destroyVehicle(doors, id);
             return doors ? { doors: Object.fromEntries([...doors.doors, ...doors.gates].map((d) => [d.def.id, Math.round(d.ip.value * 1000) / 1000])), stage: doors.stage, scene: doorsScene?.stats() ?? null } : null;
           case 'where': {
             // (a check's read of the player: the place, and whether the body on the level's shapes moves it)

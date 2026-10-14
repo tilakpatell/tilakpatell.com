@@ -3,7 +3,7 @@ import mode from '../../../../public/models/galaxy/bf2017/levels/hoth/ga/mode.js
 import level from '../../../../public/models/galaxy/bf2017/levels/hoth/ga/level.json';
 import hoth from '../../../data/bf2017/maps/hoth.json';
 import { setInput } from '../../../lib/battlefront/spawnLogic.js';
-import { EASE, advance, controlled, createDoors, doorFraction, gateStands, inBox, interpolator, leafAt, retarget, shown, stepDoors } from './doors.js';
+import { EASE, advance, arrive, controlled, createDoors, destroy, doorFraction, gateStands, inBox, interpolator, leafAt, retarget, shown, stepDoors } from './doors.js';
 
 const origin = level.origin;
 const door = (id) => mode.doors.find((d) => d.id === id);
@@ -175,6 +175,22 @@ describe('the gates', () => {
     expect(gateStands(s, 'FantasyBattle_Logic:307')).toBe(false);
     expect(shown(s, prop('FantasyBattle_Logic:297'), prop('FantasyBattle_Logic:297').parts[0])).toBe(true);
     expect(shown(s, prop('FantasyBattle_Logic:121'), prop('FantasyBattle_Logic:121').parts[0])).toBe(false);
+  });
+});
+
+describe('a check’s replays of the game’s events', () => {
+  it('a walker home by its route, and a vehicle down and back', () => {
+    const s = createDoors(mode, { origin });
+    arrive(s, 'FantasyBattle_Logic:303');
+    run(s, 1.2, { soldiers: [], ga: ga(0) });
+    // (route :303 ends by the west gate: it is blown, the east one's panel unlocked)
+    expect(gateStands(s, 'FantasyBattle_Logic:91')).toBe(false);
+    expect(gateStands(s, 'FantasyBattle_Logic:307')).toBe(true);
+    const df9 = prop('FantasyBattle_Logic:5');
+    destroy(s, df9.id);
+    expect(shown(s, df9, df9.parts[0])).toBe(true);
+    destroy(s, df9.id, false);
+    expect(shown(s, df9, df9.parts[0])).toBe(false);
   });
 });
 

@@ -41,6 +41,8 @@
 //     (gates: [{ id, state, open }] or { [id]: { open } | { fraction } })
 //     (soldiers in the export's frame; ga: the sim's Galactic Assault state, its stage and
 //      objectives; opened: the gate ids whose panel was used, gates.js's)
+//   arrive(state, path): a walker at the end of its route (the graph's route node fired, once);
+//   destroy(state, spawner, down = true): a vehicle spawner's vehicle down (its wreck shows) or back
 //   leafAt(leaf, k) → [x, y, z]; doorFraction(state, id) → 0…1
 //   shown(state, prop, part) → bool: a prop's part drawn now
 //   controlled(mode) → [{ mesh, at, kind, id, leaf?, prop?, part? }]: the instances this moves or switches
@@ -169,6 +171,21 @@ function walkers(state, ga) {
     done[id] = true;
     fireEvent(L.vm, `${id}.${n.out}`);
   }
+}
+
+export function arrive(state, path) {
+  const L = state.logic;
+  if (!L) return;
+  for (const [id, n] of Object.entries(L.spec.nodes)) {
+    if (n.type !== 'route' || n.path !== path || state.routes[id]) continue;
+    state.routes[id] = true;
+    fireEvent(L.vm, `${id}.${n.out}`);
+  }
+}
+
+export function destroy(state, spawner, down = true) {
+  if (down) state.destroyed.add(spawner);
+  else state.destroyed.delete(spawner);
 }
 
 // the events the graph fired since the last look: the doors' OpenDoor and CloseDoor
