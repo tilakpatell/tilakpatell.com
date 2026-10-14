@@ -38,7 +38,7 @@ import { MeshoptDecoder } from 'meshoptimizer';
 import { packHull } from '../src/lib/physics/shapesBin.js';
 import { parseArgs } from './lib/args.mjs';
 import { readPhysicsGlb } from './lib/bf2017-physics.mjs';
-import { AIR, FIGHTER_PHYSICS, RENDER_MODEL, assemble, boxOf, cutsOf, fitShapes, frameOf, gameToGlb, headerFile, offBy, partProperties, readHeader, resOf, rosterKinds, sceneBox } from './lib/bf2017-hulls.mjs';
+import { AIR, FIGHTER_PHYSICS, RENDER_MODEL, assemble, boxOf, cutsOf, drawnPoints, facing, fitShapes, frameOf, gameToGlb, headerFile, offBy, partProperties, readHeader, resOf, rosterKinds, sceneBox } from './lib/bf2017-hulls.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'C:/Users/tilak/Downloads/BF2_Extract/web';
@@ -167,14 +167,19 @@ try {
     const frame = frameOf(plainDoc, cuts[0].nose, kind);
     const fitted = fitShapes(shapes, matrix, frame);
     // (bolts meet root 1 where there are two roots, findings/62 §5)
-    const bolts = boxOf(fitted.filter((s) => s.root === 1).length ? fitted.filter((s) => s.root === 1) : fitted);
+    const shot = fitted.filter((s) => s.root === 1).length ? fitted.filter((s) => s.root === 1) : fitted;
+    const bolts = boxOf(shot);
     const fits = [];
     for (const cut of cuts) {
       const doc = await glbDoc(cut.url);
       fits.push({ ...cut, box: sceneBox(doc), ...offBy(bolts, cut === cuts[0] ? frame : frameOf(doc, cut.nose, kind)) });
     }
+    // (the boxes can't see a hull turned half round or mirrored: its points
+    // against the plain cut's vertices can)
+    const way = facing(Float32Array.from(shot.flatMap((s) => [...s.points])), drawnPoints(plainDoc, frame));
+    if (way.better) throw new Error(`the hull fits the drawing better ${way.better.name} (chamfer ${way.better.chamfer.toFixed(4)} against ${way.placed.toFixed(4)} as placed): a turn or a mirror its frame doesn't know`);
     const hull = assemble(fitted, properties);
-    return { hull, bin: packHull(hull), fits, model, lod, game: box, scale: Math.hypot(matrix[0], matrix[1], matrix[2]), from: resOf(name) };
+    return { hull, bin: packHull(hull), fits, way, model, lod, game: box, scale: Math.hypot(matrix[0], matrix[1], matrix[2]), from: resOf(name) };
   }
 
   const rows = {};
@@ -192,20 +197,23 @@ try {
       failed.push(kind);
       continue;
     }
-    const { hull, bin, fits, model, lod, game, scale, from } = made;
+    const { hull, bin, fits, way, model, lod, game, scale, from } = made;
     const short = (url) => url.replace(/^\/models\/galaxy\//, '');
     const fit = fits.map((f) => `${short(f.url)} ${(f.off * 100).toFixed(2)} % at ${f.face.split(' ').slice(0, 2).join(' ')}`).join(', ');
     // (each property and how many parts are on it)
     const counts = new Map();
     for (const p of hull.parts) counts.set(p.property, (counts.get(p.property) ?? 0) + 1);
     const properties = [...counts].map(([p, n]) => `p${p} × ${n}`).join(', ');
-    const worst = fits.reduce((a, b) => (b.off > a.off ? b : a));
-    if (worst.off > FIT) {
+    // (a fit that isn't a number is the worst, and fails)
+    const worst = fits.find((f) => Number.isNaN(f.off)) ?? fits.reduce((a, b) => (b.off > a.off ? b : a));
+    if (!(worst.off <= FIT)) {
       console.error(`${kind}: off by ${(worst.off * 100).toFixed(2)} % on ${short(worst.url)} (${worst.face}); fit ${fit}`);
       failed.push(kind);
       continue;
     }
-    console.log(`${kind} ${bin.byteLength} B, ${hull.parts.length} parts, radius ${hull.radius.toFixed(4)} (${properties}; fit ${fit}; the game's ${model.split('/').pop()} LOD${lod}${Math.abs(scale - 1) < 1e-6 ? '' : ` × ${scale.toFixed(4)}`})`);
+    const next = way.ways.reduce((a, b) => (b.chamfer < a.chamfer ? b : a));
+    const n = hull.parts.length;
+    console.log(`${kind} ${bin.byteLength} B, ${n} part${n === 1 ? '' : 's'}, radius ${hull.radius.toFixed(4)} (${properties}; fit ${fit}; chamfer ${way.placed.toFixed(4)}, ${next.name} ${next.chamfer.toFixed(4)}; the game's ${model.split('/').pop()} LOD${lod}${Math.abs(scale - 1) < 1e-6 ? '' : ` × ${scale.toFixed(4)}`})`);
     rows[kind] = { source: 'game', bytes: bin.byteLength, parts: hull.parts.length, radius: Number(hull.radius.toFixed(4)), from };
     if (args.dry) continue;
     await mkdir(join(ROOT, 'public/models/galaxy/hulls'), { recursive: true });

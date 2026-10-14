@@ -31,6 +31,9 @@
 //   gameToGlb(doc, gameBox) → a column-major 4 × 4 matrix
 //   fitShapes(shapes, matrix, frame) → shapes
 //   offBy(hullBox, frame) → { off, face }
+//   drawnPoints(doc, frame) → Float32Array, nearestOf(points) → (x, y, z) → distance
+//   facing(hullPoints, drawnPoints) → { placed, ways, better }: a turn or a
+//     mirror that fits the drawing better than the hull as placed
 //   assemble(shapes, properties) → { radius, parts, shapes } for packHull
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -328,20 +331,126 @@ export function boxOf(shapes) {
 // size × k): the worst of its six faces, as a share of the length the ship
 // is drawn at (1 in this frame: a fighter's nose to tail, a ship fitted by
 // its biggest side that side).
+// (A face that isn't a number is the worst: a NaN fails the 2 % gate, not passes it.)
 export function offBy(hullBox, { size, k }) {
-  let off = 0;
-  let face = null;
+  const faces = [];
   for (let a = 0; a < 3; a++) {
     const half = (size[a] * k) / 2;
     for (const [end, v, drawn] of [
       ['min', hullBox.min[a], -half],
       ['max', hullBox.max[a], half],
-    ]) {
-      const d = Math.abs(v - drawn);
-      if (face === null || d > off) [off, face] = [d, `${'xyz'[a]} ${end} ${v.toFixed(4)} against ${drawn.toFixed(4)}`];
+    ])
+      faces.push({ off: Math.abs(v - drawn), face: `${'xyz'[a]} ${end} ${v.toFixed(4)} against ${drawn.toFixed(4)}` });
+  }
+  return faces.find((f) => Number.isNaN(f.off)) ?? faces.reduce((a, b) => (b.off > a.off ? b : a));
+}
+
+// ── which way round ──
+
+// The drawn model's vertices in the frame normalise() draws it in (each
+// through its node's world matrix, turned by the nose, less the centre,
+// times k): what a hull's shapes are held to point by point.
+export function drawnPoints(doc, { nose, centre, k }) {
+  const out = [];
+  const e = [0, 0, 0];
+  for (const node of doc.getRoot().listNodes()) {
+    const mesh = node.getMesh();
+    if (!mesh) continue;
+    const m = node.getWorldMatrix();
+    for (const prim of mesh.listPrimitives()) {
+      const pos = prim.getAttribute('POSITION');
+      if (!pos) continue;
+      for (let i = 0; i < pos.getCount(); i++) {
+        pos.getElement(i, e);
+        const p = turnY(nose, apply(m, e[0], e[1], e[2]));
+        out.push((p[0] - centre[0]) * k, (p[1] - centre[1]) * k, (p[2] - centre[2]) * k);
+      }
     }
   }
-  return { off, face };
+  return Float32Array.from(out);
+}
+
+// The distance from a point to the nearest of `points` (xyz runs): the
+// points bucketed on a grid of `cell`, searched a ring of cells at a time
+// out from the point's cell (clamped into the grid: a point outside it is
+// at least as far from every cell as its clamp is), till the next ring can
+// hold nothing nearer.
+export function nearestOf(points, cell = 0.02) {
+  const n = points.length / 3;
+  if (!n) throw new Error('no points to be near');
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < n * 3; i++) {
+    lo[i % 3] = Math.min(lo[i % 3], points[i]);
+    hi[i % 3] = Math.max(hi[i % 3], points[i]);
+  }
+  const dim = [0, 1, 2].map((a) => Math.max(1, Math.floor((hi[a] - lo[a]) / cell) + 1));
+  const at = (v, a) => Math.min(dim[a] - 1, Math.max(0, Math.floor((v - lo[a]) / cell)));
+  const key = (i, j, l) => (l * dim[1] + j) * dim[0] + i;
+  // (a counting sort: each cell's points a run of `order`, from `start`)
+  const start = new Int32Array(dim[0] * dim[1] * dim[2] + 1);
+  const of = new Int32Array(n);
+  for (let p = 0; p < n; p++) start[(of[p] = key(at(points[p * 3], 0), at(points[p * 3 + 1], 1), at(points[p * 3 + 2], 2))) + 1]++;
+  for (let c = 1; c < start.length; c++) start[c] += start[c - 1];
+  const fill = start.slice(0, -1);
+  const order = new Int32Array(n);
+  for (let p = 0; p < n; p++) order[fill[of[p]]++] = p;
+  const reach = Math.max(...dim);
+  return (x, y, z) => {
+    // (a point that isn't a number is nowhere: NaN, which fails what it reaches)
+    if (!(Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z))) return NaN;
+    const c = [at(x, 0), at(y, 1), at(z, 2)];
+    let best = Infinity;
+    for (let r = 0; r <= reach; r++) {
+      for (let l = Math.max(0, c[2] - r); l <= Math.min(dim[2] - 1, c[2] + r); l++)
+        for (let j = Math.max(0, c[1] - r); j <= Math.min(dim[1] - 1, c[1] + r); j++)
+          for (let i = Math.max(0, c[0] - r); i <= Math.min(dim[0] - 1, c[0] + r); i++) {
+            if (Math.max(Math.abs(i - c[0]), Math.abs(j - c[1]), Math.abs(l - c[2])) !== r) continue;
+            const k = key(i, j, l);
+            for (let s = start[k]; s < start[k + 1]; s++) {
+              const p = order[s] * 3;
+              best = Math.min(best, (points[p] - x) ** 2 + (points[p + 1] - y) ** 2 + (points[p + 2] - z) ** 2);
+            }
+          }
+      if (best <= (r * cell) ** 2) break;
+    }
+    return Math.sqrt(best);
+  };
+}
+
+// The hull as placed, and each way round a frame that is off could have put
+// it instead: turned half round (nose for tail), a quarter either way, and
+// mirrored across x or z (a re-import that baked a turn or a flip into its
+// vertices and wrote no `nose` node: the boxes alone can't tell, a ship's
+// box being the same turned half round or mirrored).
+export const WAYS = {
+  'turned π': (x, y, z) => [-x, y, -z],
+  'turned π/2': (x, y, z) => [z, y, -x],
+  'turned −π/2': (x, y, z) => [-z, y, x],
+  'mirrored in x': (x, y, z) => [-x, y, z],
+  'mirrored in z': (x, y, z) => [x, y, -z],
+};
+// a way round that beats the hull as placed by no more than this (a share
+// of the length) is a tie, not a better fit: a ship that is the same
+// mirrored, as nearly every one is across x, ties by its meshes' rounding
+export const TIE = 0.0005;
+
+// Which way round the hull's points sit best on the drawn model's: each
+// way's one-way chamfer (the mean distance from a hull point to the nearest
+// drawn vertex), and `better`, a way that beats the hull as placed by more
+// than TIE, if one does. A hull that a turn or a mirror would fit better is
+// on a frame the boxes didn't see was wrong.
+export function facing(hull, drawn, { tie = TIE } = {}) {
+  const near = nearestOf(drawn);
+  const chamfer = (way) => {
+    let sum = 0;
+    for (let i = 0; i < hull.length; i += 3) sum += near(...way(hull[i], hull[i + 1], hull[i + 2]));
+    return sum / (hull.length / 3);
+  };
+  const placed = chamfer((x, y, z) => [x, y, z]);
+  const ways = Object.entries(WAYS).map(([name, way]) => ({ name, chamfer: chamfer(way) }));
+  const best = ways.reduce((a, b) => (b.chamfer < a.chamfer ? b : a));
+  return { placed, ways, better: !(best.chamfer >= placed - tie) ? best : null };
 }
 
 // ── the hull ──

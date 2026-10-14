@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { hullOf, segmentHit } from '../../src/lib/combat/hulls.js';
 import { readHull } from '../../src/lib/physics/shapesBin.js';
 import { readPhysicsGlb } from './bf2017-physics.mjs';
-import { FIGHTER_PHYSICS, assemble, boxOf, fitShapes, frameOf, gameToGlb, headerFile, offBy, partProperties, readHeader, resOf, rosterKinds } from './bf2017-hulls.mjs';
+import { FIGHTER_PHYSICS, TIE, WAYS, assemble, boxOf, drawnPoints, facing, fitShapes, frameOf, gameToGlb, headerFile, offBy, partProperties, readHeader, resOf, rosterKinds } from './bf2017-hulls.mjs';
 
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'bf2017', 'physics');
 const readFixture = (name) => readFileSync(join(DIR, name));
@@ -113,10 +113,10 @@ describe('the frame each kind is drawn in', () => {
   });
 
   it('gameToGlb takes a scale the three sides agree on', () => {
-    // (lane V's light cut of the vulture: the game's LOD stood at LOD0's height, 1.0185 × it)
-    const m = gameToGlb(boxDoc({ min: [-1.0185, 0, -2.037], max: [1.0185, 1.0185, 2.037] }), { min: [-1, -0.5, -2], max: [1, 0.5, 2] });
-    expect(m[0]).toBeCloseTo(1.0185, 6);
-    expect(m[5]).toBeCloseTo(1.0185, 6);
+    // (lane V's light cut of the vulture: the game's LOD3 stood at LOD0's height, 1.0183 × it)
+    const m = gameToGlb(boxDoc({ min: [-1.0183, 0, -2.0366], max: [1.0183, 1.0183, 2.0366] }), { min: [-1, -0.5, -2], max: [1, 0.5, 2] });
+    expect(m[0]).toBeCloseTo(1.0183, 6);
+    expect(m[5]).toBeCloseTo(1.0183, 6);
   });
 
   it('gameToGlb refuses boxes of different sizes', () => {
@@ -124,6 +124,63 @@ describe('the frame each kind is drawn in', () => {
     expect(() => gameToGlb(doc, { min: [-1, -0.5, -2.5], max: [1, 0.5, 2.5] })).toThrow(/1 %/);
     // (a turn it doesn't know: x and z swapped)
     expect(() => gameToGlb(doc, { min: [-2, -0.5, -1], max: [2, 0.5, 1] })).toThrow(/1 %/);
+  });
+});
+
+// A wedge, drawn as its edges: a flat back at z = −0.5 (x from −0.3 to
+// `right`, y ±0.1) running to a nose edge at z = +0.5 (x = `nose`, y ±0.1).
+// Its hull: its six corners and its edges' middles. Lopsided across x
+// (right 0.15, nose 0.05), a turn and a mirror are told apart; even
+// (right 0.3, nose 0), it is the same mirrored across x.
+function wedge(right, nose) {
+  const back = [[-0.3, -0.1, -0.5], [right, -0.1, -0.5], [right, 0.1, -0.5], [-0.3, 0.1, -0.5]];
+  const tip = [[nose, -0.1, 0.5], [nose, 0.1, 0.5]];
+  const edges = [[back[0], back[1]], [back[1], back[2]], [back[2], back[3]], [back[3], back[0]], [back[0], tip[0]], [back[1], tip[0]], [back[2], tip[1]], [back[3], tip[1]], [tip[0], tip[1]]];
+  const drawn = [];
+  for (const [a, b] of edges) for (let t = 0; t <= 1; t += 1 / 64) drawn.push(...a.map((v, k) => v + (b[k] - v) * t));
+  const hull = [...back, ...tip].flat();
+  for (const [a, b] of edges) hull.push(...a.map((v, k) => (v + b[k]) / 2));
+  return { drawn: Float32Array.from(drawn), hull: Float32Array.from(hull) };
+}
+const moved = (points, way) => {
+  const out = new Float32Array(points.length);
+  for (let i = 0; i < points.length; i += 3) out.set(way(points[i], points[i + 1], points[i + 2]), i);
+  return out;
+};
+
+describe('which way round', () => {
+  it('a hull as placed on its drawing wins, and a ship the same mirrored ties without failing', () => {
+    const { drawn, hull } = wedge(0.15, 0.05);
+    const f = facing(hull, drawn);
+    expect(f.better).toBeNull();
+    for (const w of f.ways) expect(w.chamfer).toBeGreaterThan(f.placed + TIE);
+    const even = wedge(0.3, 0);
+    const g = facing(even.hull, even.drawn);
+    expect(g.ways.find((w) => w.name === 'mirrored in x').chamfer).toBeCloseTo(g.placed, 6);
+    expect(g.better).toBeNull();
+  });
+
+  it('a hull turned half round on its drawing fails: turned back it fits better', () => {
+    const { drawn, hull } = wedge(0.15, 0.05);
+    const f = facing(moved(hull, WAYS['turned π']), drawn);
+    expect(f.better?.name).toBe('turned π');
+    expect(f.better.chamfer).toBeLessThan(f.placed - TIE);
+    // (and a mirror, and a quarter turn, each found as the way back)
+    expect(facing(moved(hull, WAYS['mirrored in z']), drawn).better?.name).toBe('mirrored in z');
+    expect(facing(moved(hull, WAYS['turned π/2']), drawn).better?.name).toBe('turned −π/2');
+  });
+
+  it('a NaN fails the 2 % gate, and a turn its check', () => {
+    expect(Number.isNaN(offBy({ min: [NaN, 0, 0], max: [0, 0, 0] }, { size: [1, 1, 1], k: 1 }).off)).toBe(true);
+    const { drawn, hull } = wedge(0.15, 0.05);
+    expect(facing(Float32Array.from([NaN, 0, 0, ...hull]), drawn).better).not.toBeNull();
+  });
+
+  it('drawnPoints puts the model where frameOf says normalise does', () => {
+    const doc = boxDoc({ min: [1, 0, 0], max: [3, 1, 4] }, { at: [1, 0, 0] });
+    const box = boxOf([{ kind: 'hull', points: drawnPoints(doc, frameOf(doc, Math.PI / 2, 'xwing')) }]);
+    [-1, -0.25, -0.5].forEach((v, k) => expect(box.min[k]).toBeCloseTo(v, 6));
+    [1, 0.25, 0.5].forEach((v, k) => expect(box.max[k]).toBeCloseTo(v, 6));
   });
 });
 
