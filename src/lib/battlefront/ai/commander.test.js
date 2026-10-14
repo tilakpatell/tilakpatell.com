@@ -131,7 +131,7 @@ describe('the commander', () => {
   });
 
   it('sends every attacker squad to an unlocked gate while the stage’s posts stand behind it shut, and through it once it opens', () => {
-    const bytes = readFileSync(join(import.meta.dirname, '../../../../public/models/galaxy/bf2017/levels/hoth/navmesh.bin'));
+    const bytes = readFileSync(join(import.meta.dirname, '../../../../scripts/fixtures/bf2017/navmesh/hoth-playthrough.bin'));
     const grid = { cols: 1, rows: 1, origin: [-1e6, -1e6], cell: 2e6, height: new Float32Array([-1000]) };
     const nav = attachMesh(grid, loadNavmesh(bytes, { mesh: 'playthrough' }));
     const gates = createGates(hoth.rows.gates);

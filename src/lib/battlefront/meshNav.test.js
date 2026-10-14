@@ -6,7 +6,8 @@ import { load } from './navmesh.js';
 import { canUse } from './gates.js';
 import { LIFT, attachMesh, doorway, gateStand, meshMove, meshNearest, meshPath, meshStand } from './meshNav.js';
 
-const BIN = join(import.meta.dirname, '../../../public/models/galaxy/bf2017/levels/hoth/navmesh.bin');
+// (Hoth's playthrough mesh alone, cut from the bucket's navmesh.bin: scripts/bf2017-navmesh-cut.mjs)
+const BIN = join(import.meta.dirname, '../../../scripts/fixtures/bf2017/navmesh/hoth-playthrough.bin');
 const bytes = readFileSync(BIN);
 // (a grid with no ground anywhere: the feet are the mesh's, less its lift, or the floor probe's)
 const grid = () => ({ cols: 1, rows: 1, origin: [-1e6, -1e6], cell: 2e6, height: new Float32Array([-1000]) });
