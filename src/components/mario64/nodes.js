@@ -15,7 +15,7 @@
 
 import * as THREE from 'three';
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
-import { abs, attribute, clamp, exp, fract, length, materialReference, max, modelWorldMatrix, normalGeometry, output, positionLocal, positionWorld, pow, sin, smoothstep, texture, uniform, uv, varying, vec3, vec4 } from 'three/tsl';
+import { abs, attribute, clamp, exp, fract, length, max, modelWorldMatrix, normalGeometry, output, positionLocal, positionWorld, pow, reference, sin, smoothstep, texture, uniform, uv, varying, vec3, vec4 } from 'three/tsl';
 import { loadSet } from '../avengers/hq/assets';
 import { SCALE } from './courses/index';
 import { MATS } from './textures';
@@ -94,8 +94,12 @@ export async function splatMaterial(mats, small) {
   const sw0 = vec3(vSplat.x, clamp(vSplat.y.mul(c1.g.mul(0.6).add(0.7)), 0, 1), vSplat.z);
   const sw = sw0.div(max(0.001, sw0.x.add(sw0.y).add(sw0.z)));
   // (diffuseColor is vec4(color, opacity) before the GLSL multiplies it by
-  // the blend; the node material multiplies the opacity in after)
-  m.colorNode = vec4(materialReference('color', 'color'), 1).mul(c0.mul(sw.x).add(c1.mul(sw.y)).add(c2.mul(sw.z)));
+  // the blend; the node material multiplies the opacity in after. The
+  // colour is this material’s by name, not the drawing material’s: the
+  // shadow pass draws the terrain with its own material, reading this
+  // colorNode’s alpha, and that material has no colour, which on WebGL 2
+  // threw on the castle’s first frame)
+  m.colorNode = vec4(reference('color', 'color', m), 1).mul(c0.mul(sw.x).add(c1.mul(sw.y)).add(c2.mul(sw.z)));
   // (the normal, roughness and ao: the base set’s maps, as above)
   return m;
 }
