@@ -148,7 +148,7 @@ export default {
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
     // 'high': the ground's 1 m patch and its map sizes read it)
-    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', onCell: (k, b, band, part) => {
+    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', ...(flags?.get('inside') === 'off' ? { inside: null } : {}) /* (?inside=off: the level without its interior pack, a check's measure of what Echo Base costs) */, onCell: (k, b, band, part) => {
         streamed.set(`${part}|${k}`, [k, b, band, part]);
         collision?.add(k, b, band, part);
       },
