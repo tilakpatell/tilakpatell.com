@@ -472,13 +472,19 @@ export function readMode(load, { sub, instances, origin = [0, 0, 0], layers = []
   };
 }
 
-// An OBBCollisionEntityData as a box: its transform's middle and turn, its
+// An OBBCollisionEntityData as a box (a SphereCollisionEntityData as a ball): its transform's middle and turn, its
 // half extents times its axes' scale; `layer`: the game's collision layer
 // (CharacterCollisionGeometry meets characters and ragdolls only, findings/46's
 // pair table; Static meets everything)
 export function boxesOf(layer, origin = [0, 0, 0]) {
   if (!layer) return [];
   return layer.objects.flatMap((o, i) => {
+    const layerOf = /CharacterCollisionGeometry/.test(o?.CollisionLayer ?? '') ? 'character' : 'static';
+    // (a SphereCollisionEntityData: its Position and Radius)
+    if (o?.$type === 'SphereCollisionEntityData' && o.Enabled !== false) {
+      const p = v3(o.Position);
+      return [{ at: round([p[0] - origin[0], p[1] - origin[1], p[2] - origin[2]]), radius: r4(o.Radius ?? 0), layer: layerOf, _source: `${layer.name}#SphereCollisionEntityData[${i}]` }];
+    }
     if (o?.$type !== 'OBBCollisionEntityData' || o.Enabled === false) return [];
     const t = T(o.Transform);
     return [
@@ -486,7 +492,7 @@ export function boxesOf(layer, origin = [0, 0, 0]) {
         at: round([t.t[0] - origin[0], t.t[1] - origin[1], t.t[2] - origin[2]]),
         half: round(v3(o.HalfExtents).map((h, k) => h * len([t.r, t.u, t.f][k]))),
         rotation: round(quatOf(t)),
-        layer: /CharacterCollisionGeometry/.test(o.CollisionLayer ?? '') ? 'character' : 'static',
+        layer: layerOf,
         _source: `${layer.name}#OBBCollisionEntityData[${i}]`,
       },
     ];

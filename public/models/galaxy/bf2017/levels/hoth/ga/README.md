@@ -75,5 +75,5 @@ What each mesh is in the game (`node scripts/bf2017-level-mode.mjs hoth/ga`, scr
 | wreck | 17 | shown once its vehicle is destroyed, until it spawns again |
 | walker | 42 | a walker’s destruction stages and its fall’s dressing: hidden, played where the walker falls (its own rows) |
 | gateRuin | 2 | shown once its gate is destroyed |
-| walls | 103 (78 soldiers only) | OBBCollisionEntityData, fixed |
+| walls | 104 (78 soldiers only) | OBBCollisionEntityData, fixed |
 | unmatched | 0 | |

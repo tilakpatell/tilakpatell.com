@@ -1,7 +1,7 @@
 // The mode part's moving and switching things drawn and made solid (map/
 // doors.js says where and whether): each instance the part's far table gave
 // up (map/level.js's `modePart.rows`, doorsTable.js's split) one object of
-// its mesh's first shipped LOD under the part's group, in the pack's frame,
+// its mesh's coarsest shipped LOD at once and its finest after, under the part's group, in the pack's frame,
 // and one body of its mesh's own shapes (the pack's physics section, lane
 // P0's havok.js) in the physics world, which is that frame too: a door's or
 // a gate's leaf a kinematic body moved with it, a prop a fixed body there
@@ -15,8 +15,10 @@
 import { collidersOf, instanceBody, readShapes } from '../../../lib/physics/havok.js';
 import { gateStands, shown } from './doors.js';
 
-// the first LOD the pack ships of a mesh (a pack built without --ultra holds none under the high cap)
-const fileOf = (mesh) => (mesh?.glb ?? []).find(Boolean) ?? null;
+// (a part no round shows, the end of round's room, a walker's fall: never loaded)
+const never = (is) => is.kind === 'prop' && (is.prop.kind === 'walker' || is.part.switch?.never);
+// (the GLBs fetched this many at a time)
+const AT_ONCE = 6;
 
 export function createDoorsScene({ part, physics = null }) {
   const items = [];
@@ -32,30 +34,64 @@ export function createDoorsScene({ part, physics = null }) {
     return shapes.get(key);
   };
 
-  const ready = Promise.resolve(part.rows).then(async (rows) => {
-    for (const row of rows ?? []) {
-      if (gone) return;
-      const item = { row, object: null, body: null, colliders: null, on: null, leaf: row.is.kind === 'leaf' };
-      items.push(item);
-      const file = fileOf(part.pack.meshes[row.mesh]);
-      const [gltf, colliders] = await Promise.all([file ? part.loadGltf(file).catch(() => null) : null, physics ? collidersFor(row.mesh) : null]);
-      if (gone) return;
-      if (gltf?.scene) {
-        const o = gltf.scene.clone(true);
-        o.name = `mode:${row.is.id}`;
-        o.position.fromArray(row.position);
-        o.quaternion.fromArray(row.quaternion).normalize();
-        o.scale.fromArray(row.scale);
-        o.traverse((m) => {
-          if (!m.isMesh) return;
-          m.castShadow = true;
-          m.receiveShadow = true;
+  // a mesh drawn at an instance's place: its coarsest shipped LOD at once, its finest swapped in after
+  const place = (item, scene) => {
+    const { row } = item;
+    const o = scene.clone(true);
+    o.name = `mode:${row.is.id}`;
+    o.position.copy(item.object?.position ?? o.position.fromArray(row.position));
+    o.quaternion.fromArray(row.quaternion).normalize();
+    o.scale.fromArray(row.scale);
+    o.traverse((m) => {
+      if (!m.isMesh) return;
+      m.castShadow = true;
+      m.receiveShadow = true;
+    });
+    o.visible = Boolean(item.on);
+    item.object?.removeFromParent();
+    part.group.add(o);
+    item.object = o;
+  };
+  const lods = (item) => (part.pack.meshes[item.row.mesh]?.glb ?? []).filter(Boolean);
+  // (the meshes fetched a few at a time, each thing's coarsest LOD then its finest; a door's
+  // leaves at once, a prop the first time it is shown: a wreck no one destroys costs nothing)
+  const queue = [];
+  let running = 0;
+  const pump = () => {
+    while (!gone && running < AT_ONCE && queue.length) {
+      const [item, file, then] = queue.shift();
+      running++;
+      Promise.resolve(part.loadGltf(file))
+        .catch(() => null)
+        .then((gltf) => {
+          if (!gone && gltf?.scene) place(item, gltf.scene);
+          if (then) queue.push([item, then, null]);
+        })
+        .finally(() => {
+          running--;
+          pump();
         });
-        o.visible = false;
-        part.group.add(o);
-        item.object = o;
-      }
-      item.colliders = colliders?.length ? colliders : null;
+    }
+  };
+  const want = (item) => {
+    if (item.wanted) return;
+    item.wanted = true;
+    const files = lods(item);
+    if (!files.length) return;
+    queue.push([item, files.at(-1), files.length > 1 ? files[0] : null]);
+    pump();
+  };
+  const ready = Promise.resolve(part.rows).then((rows) => {
+    for (const row of rows ?? []) {
+      if (gone || never(row.is)) continue;
+      const item = { row, object: null, body: null, colliders: null, on: null, wanted: false, leaf: row.is.kind === 'leaf' };
+      items.push(item);
+      // (the shapes on their own: a door blocks as soon as its shapes are in)
+      if (physics)
+        collidersFor(row.mesh).then((c) => {
+          if (!gone) item.colliders = c?.length ? c : null;
+        });
+      if (item.leaf) want(item);
     }
   });
 
@@ -93,8 +129,9 @@ export function createDoorsScene({ part, physics = null }) {
             b?.body.setNextKinematicTranslation({ x: p[0], y: p[1], z: p[2] });
           }
         } else on = shown(state, is.prop, is.part);
-        if (on === item.on) continue;
         item.on = on;
+        if (on) want(item);
+        // (each frame: a thing whose mesh or shapes came after it was switched is put right too)
         if (item.object) item.object.visible = on;
         if (on) bodyOf(item);
         else drop(item);

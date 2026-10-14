@@ -21,10 +21,9 @@
 //       map/doorsScene.js's bodies), and its mode.json's walls, the mode's
 //       OBBCollisionEntityData, go in at once as fixed boxes (modeBoxes):
 //       the Static layer's meet everything, the CharacterCollisionGeometry
-//       layer's (findings/46's pair table: characters and ragdolls only) wear
-//       the physics groups' zone membership, a solid collider a character's
-//       filter names and the floor's, the objects', a bolt's and a sight's do
-//       not; the camera's sweep passes them, as the game's CameraCollision layer does
+//       layer's (findings/46's pair table: characters and ragdolls only) are
+//       the physics groups' barriers, which only a character meets; the camera's
+//       sweep passes them, as the game's CameraCollision layer does
 //   modeBoxes(boxes) → [body desc]: those walls as lane P0's world takes them (pure)
 //   armCaster({ heightAt, collision, nav, clear, step, radius }) → castArm(from, dir, len)
 //     the nearer of a march over the ground and a ball swept through the
@@ -42,8 +41,8 @@ export const ARM_STEP = 0.2; // m the camera's ray marches along the arm over th
 export const ARM_CLEAR = 0.25; // m above the ground the camera keeps (hand)
 
 const I = { x: 0, y: 0, z: 0, w: 1 };
-// (the camera's sweep: everything it met before but the zones' membership, which the soldiers-only walls wear)
-const ARM_GROUPS = filterOf('floor', 'object', 'bumper', 'character', 'hurtbox', 'projectile', 'sight');
+// (the camera's sweep: everything it met before but a soldiers-only wall)
+const ARM_GROUPS = filterOf('floor', 'object', 'bumper', 'character', 'hurtbox', 'zone', 'projectile', 'sight');
 
 export const wantsEngine = (opts) => laneL.wantsEngine(opts);
 
@@ -104,10 +103,10 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
 export function modeBoxes(boxes = []) {
   return boxes.map((b) => ({
     type: 'fixed',
-    group: b.layer === 'character' ? 'zone' : 'floor',
+    group: b.layer === 'character' ? 'barrier' : 'floor',
     position: [...b.at],
-    rotation: [...b.rotation],
-    colliders: [{ shape: 'cuboid', args: [...b.half] }],
+    rotation: b.rotation ? [...b.rotation] : [0, 0, 0, 1],
+    colliders: [b.radius ? { shape: 'ball', args: [b.radius] } : { shape: 'cuboid', args: [...b.half] }],
   }));
 }
 
