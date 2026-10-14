@@ -33,6 +33,21 @@ So neither bloom nor depth of field causes the width. Even unclipped, the site's
 
 The site's room is also darker between the pills (floor 60–100) than the game's (125–135). The game's whites reach 255. The site's tops stop at about 206, which points at the Walrus LUT or the way it is applied.
 
+### Later on 2026-10-13
+
+- **The 206 cap, fixed.** The cap was the vignette (1 − 0.194 = 0.806 at the frame's top), applied after the clamp. FINISH in `light.js` now darkens the light before the clamp, and the pill cores reach 255 as the game's do.
+- **The texture is ruled out.** The kit's emissive (512 × 1024 webp) has the same profile as the source. Its pills are 0.57 of their pitch wide at half their linear peak, the same as the game's on screen (40 / 70).
+- **The width is still open.** With the vignette fixed, on PLAY:
+
+| Emission | Pill width | Floor between pills |
+|---|---|---|
+| 1 | 52–58 px | 115–142 |
+| 0.5 | 45–51 px | 87–108 |
+| 0.25 (unclipped) | 44–49 px | |
+| Game | 40–42 px | 125–132 |
+
+So the game has narrow cores, so a moderate peak, and a wide low glow that lifts the gaps. The site spreads its light short-range: its pills fatten before the gaps lift. Look at the bloom's widest levels (weights, sizes), the haze, and the pill material's metalness. The kit has metallicFactor 0.5 on `Nowhere`, and `dress` keeps it.
+
 Leads, in order:
 
 1. **Texture.** The source texture `BF2_Extract/web/textures/levels/frontend/objects/nowherepilllights_01/t_nowherepilllights_01_e.png` is BC7_SRGB at 1024 × 2048. Its row profile is a smooth bump: it peaks at about sRGB 175/188/199 and is about 92 texels wide at half its linear peak. Check which texture size and filtering the kit GLB (`models/galaxy/kits/frontendstage.glb`) carries, and whether its UVs cover the same number of pills as the game's panel. Count the pill columns across the panel in both frames.

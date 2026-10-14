@@ -137,10 +137,11 @@ export const FINISH = {
     uniform sampler2D tScene; uniform sampler3D tLut; uniform float uLutSize, uLutMix, uExposure, uGrainScale, uTime;
     uniform vec4 uVignette, uGrain; varying vec2 vUv;
     void main() {
-      vec3 c = pow(clamp(texture2D(tScene, vUv).rgb * uExposure, 0.0, 1.0), vec3(1.0 / 2.2));
-      if (uLutMix > 0.0) c = mix(c, texture(tLut, (c * (uLutSize - 1.0) + 0.5) / uLutSize).rgb, uLutMix);
+      // (the vignette on the light, before the clamp: the game's pills stay white
+      // at the frame's top, where after it they had stopped at 0.806 of white)
       float v = pow(clamp(length((vUv - 0.5) * uVignette.xy), 0.0, 1.0), uVignette.z);
-      c *= 1.0 - v * uVignette.w;
+      vec3 c = pow(clamp(texture2D(tScene, vUv).rgb * uExposure * (1.0 - v * uVignette.w), 0.0, 1.0), vec3(1.0 / 2.2));
+      if (uLutMix > 0.0) c = mix(c, texture(tLut, (c * (uLutSize - 1.0) + 0.5) / uLutSize).rgb, uLutMix);
       float l = dot(c, vec3(0.299, 0.587, 0.114));
       float n = fract(sin(dot(gl_FragCoord.xy + uTime * 61.0, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
       c += n * uGrainScale * mix(uGrain.x, uGrain.y, smoothstep(uGrain.z, uGrain.w, l));
