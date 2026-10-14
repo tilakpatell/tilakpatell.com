@@ -29,6 +29,7 @@
 import { readFileSync } from 'node:fs';
 import { follow, isSequel, pointsOf, readWebJson, shortName, transformOf, webFile } from './bf2017-ebx.mjs';
 import { indexOf } from './bf2017-rulebook.mjs';
+import { gatesOf } from './bf2017-rulebook-gates.mjs';
 import { spawnLogic } from './bf2017-rulebook-spawnlogic.mjs';
 
 // The mode layers by the game's own mode ids (UI/Data/GameModes/<id>'s
@@ -242,6 +243,9 @@ export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
     // (any case: the droid battleship's are `Spacebattle_Phase1`)
     const graph = mode === 'galacticAssault' ? spawnLogic(root, dir, layer) : null;
     if (graph) logic[mode] = graph;
+    // (the mode's interact gates, from the same graph: Hoth's hangar blast doors)
+    const gates = mode === 'galacticAssault' ? gatesOf(root, dir, layer) : [];
+    if (gates.length) row.gates = gates.map((g) => ({ ...g, mode }));
     // (and the layers holding the records that graph switches: Kamino's `_Zone<n>`, Endor's `_W<n>`, Crait's `_Phase_<n>`)
     const switched = new Set(Object.keys(graph?.enables ?? {}).map((id) => id.slice(0, id.lastIndexOf(':')).toLowerCase()));
     const layers = names.filter((n) => shortName(n).toLowerCase().startsWith(`${layer}_`.toLowerCase()) && (RULE_LAYER.test(shortName(n)) || switched.has(shortName(n).toLowerCase()))).concat((EXTRA_LAYERS[layer] ?? []).map((l) => `${dir}${l}`).filter((n) => names.includes(n)));

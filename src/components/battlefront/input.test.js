@@ -37,6 +37,21 @@ describe('the player’s hands', () => {
     expect(input.read().abilityHeld).toBe(0);
   });
 
+  it('reads E as an interact held for as long as it is down: a gate’s panel is held a second', () => {
+    const { input, key } = harness();
+    key('KeyE', true);
+    expect(input.read()).toMatchObject({ interact: true, interactHeld: true });
+    expect(input.read()).toMatchObject({ interact: false, interactHeld: true });
+    key('KeyE', false);
+    expect(input.read().interactHeld).toBe(false);
+    // (a check's finger)
+    input.holdInteract(true);
+    expect(input.read()).toMatchObject({ interact: true, interactHeld: true });
+    expect(input.read().interactHeld).toBe(true);
+    input.holdInteract(false);
+    expect(input.read().interactHeld).toBe(false);
+  });
+
   it('walks forward on W and strafes on D', () => {
     const { input, key } = harness();
     key('KeyW', true);
