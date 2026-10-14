@@ -7,6 +7,7 @@
 // hold it, how long, and the fuse are the arm objective's
 // (modes/objectives.js). Pure.
 //
+//   chargeOf(map, id) → row | null   a charge's row with its prefab's rules (the map's `chargeRules`, kept once)
 //   reachOf(row) → m          canUse(row, at) → whether a soldier at [x, y, z] reaches the keypad
 //   keypadStand(nav, row) → [x, y, z] | null   the floor on the navmesh nearest the keypad that reaches it
 
@@ -18,6 +19,14 @@ export const REACH = 1;
 export const SCALE = 3;
 // degrees: off the keypad's facing an interactor may stand (PF_Interact_Keypad's InteractionMaxAngle)
 export const ANGLE = 360;
+
+export function chargeOf(map, id) {
+  const c = (map?.charges ?? []).find((x) => x.id === id);
+  if (!c) return null;
+  // (the prefab's rules but its keypad's place in the charge, which the row has in the world, and its chain)
+  const rules = Object.entries(map.chargeRules?.[c.rules] ?? {}).filter(([k]) => k !== 'local' && k !== '_source');
+  return { ...Object.fromEntries(rules), ...c };
+}
 
 export const reachOf = (row) => (row?.interact?.distance ?? REACH) * (row?.interact?.scale ?? SCALE);
 

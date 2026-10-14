@@ -4,14 +4,14 @@ import { describe, expect, it } from 'vitest';
 import hoth from '../../data/bf2017/maps/hoth.json';
 import { load } from './navmesh.js';
 import { attachMesh, meshPath } from './meshNav.js';
-import { ANGLE, REACH, SCALE, canUse, keypadStand, reachOf } from './charges.js';
+import { ANGLE, REACH, SCALE, canUse, chargeOf, keypadStand, reachOf } from './charges.js';
 
 // (Hoth's playthrough mesh alone, cut from the bucket's navmesh.bin: scripts/bf2017-navmesh-cut.mjs)
 const BIN = join(import.meta.dirname, '../../../scripts/fixtures/bf2017/navmesh/hoth-playthrough.bin');
 const bytes = readFileSync(BIN);
 const grid = () => ({ cols: 1, rows: 1, origin: [-1e6, -1e6], cell: 2e6, height: new Float32Array([-1000]) });
 const navOf = () => attachMesh(grid(), load(bytes, { mesh: 'playthrough' }));
-const CHARGES = hoth.rows.charges;
+const CHARGES = hoth.rows.charges.map((c) => chargeOf(hoth.rows, c.id));
 
 describe('a fuel charge’s keypad', () => {
   it('is read for each of Hoth’s three charges, the keypad by its charge', () => {
@@ -23,9 +23,17 @@ describe('a fuel charge’s keypad', () => {
     }
   });
 
+  it('takes its prefab’s rules from the map’s chargeRules, kept once', () => {
+    expect(hoth.rows.charges.every((c) => c.rules === 'PF_Interact_PlanetaryBattle_Bomb' && c.interact === undefined)).toBe(true);
+    for (const c of CHARGES) expect(c).toMatchObject({ interact: { distance: 1, scale: 3, angle: 360 }, arm: { hold: 2 }, defuse: { hold: 3 }, fuse: { seconds: 45 } });
+    expect(CHARGES[0].local).toBeUndefined();
+    expect(chargeOf(hoth.rows, 'nope')).toBeNull();
+  });
+
   it('reaches 3 m from any side: the keypad’s 1 m on the button’s 3× transform, its 360°', () => {
     const c = CHARGES[0];
     expect([REACH, SCALE, ANGLE]).toEqual([1, 3, 360]);
+    expect(c.interact).toMatchObject({ distance: 1, scale: 3, angle: 360 });
     expect(reachOf(c)).toBe(3);
     const [x, y, z] = c.keypad.at;
     expect(canUse(c, [x + 2.9, y, z])).toBe(true);

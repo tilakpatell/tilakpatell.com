@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import hoth from '../../../data/bf2017/maps/hoth.json';
+import { chargeOf } from '../charges.js';
 import { ARM_SECONDS, CAPTURE_SECONDS, DEFUSE_SECONDS, FUSE_SECONDS, WALKER_SPEED, arm, armRules, capture, escort, hold, insidePolygon, uplink } from './objectives.js';
 
 const square = { points: [[0, 0], [10, 0], [10, 10], [0, 10]] };
@@ -115,7 +116,7 @@ describe('the objectives', () => {
 
 // Hoth's fuel charge as the map rulebook reads it (PF_Interact_PlanetaryBattle_Core: bf2-re findings/63)
 describe('a fuel charge, as its core runs it', () => {
-  const row = hoth.rows.charges.find((c) => c.id === 'FantasyBattle_Logic:131');
+  const row = chargeOf(hoth.rows, 'FantasyBattle_Logic:131');
   const by = (side, ...ids) => ({ interactions: ids.map((id) => ({ side, id, held: true })) });
   const none = { interactions: [] };
   // (a step of 0.05 s: the events it fires)

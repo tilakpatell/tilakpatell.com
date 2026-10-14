@@ -47,8 +47,10 @@
 //                 EventCount is how many must go (Hoth: all three).
 //
 //   chargeRules(root, bomb) → { local, teams, interact, arm, defuse, fuse, live, settle, marker, _source } | null
-//   chargesOf(root, dir, sub) → [{ id, name, at, yaw, label, charge, keypad, enabledBy,
-//     teams, interact, arm, defuse, fuse, live, settle, marker, win, _source }] | []
+//   chargesOf(root, dir, sub) → { list: [{ id, name, at, yaw, label, charge, keypad, enabledBy, rules, unread?, win, _source }],
+//     rules: { [prefab]: chargeRules (local as { at, yaw }) } }: a charge's rules are its prefab's, kept once
+//     (the map row's `chargeRules`), as long as the level wires nothing into the charge but its locator, its
+//     Enabled and its ObjectiveName (any other field it sets is in the charge's `unread`)
 
 import { fieldHash as H } from './bf2017-abilities.mjs';
 import { follow, loadAsset, objectsOf, rootOf, shortName } from './bf2017-ebx.mjs';
@@ -328,6 +330,18 @@ export function chargeRules(root, bomb) {
   }
   // the keypad's Delay between the button's finished hold and its armed/defused EventGates
   const settleRef = K.objects.findIndex((o, i) => o?.$type === 'DelayEntityData' && evInto(K, i, H('In')).some((e) => e.Source.$ref === bi && s32(e.SourceEvent.Id) === BUTTON_DONE));
+  // (the button's finished hold: its EventMemory whose OnMemoryEvent is the button's BUTTON_DONE, loaded on the
+  // interaction's OnInteractStart, fired by the hold's StopWatch OnTrigger, cleared on OnInteractStop. The image's
+  // handler of the three events (0x140ae4f10, the one function that tests their hashes): LoadMemory keeps a copy of
+  // the event it is sent, the player with it, renamed OnMemoryEvent; FireMemory sends the copy and lets it go;
+  // ClearMemory lets it go. So the hold ends in the event of the one who started it, once, and a let-go loses it.)
+  const memRef = typed(U, 'EventMemoryEntityData').find((m) => evFrom(U, m, H('OnMemoryEvent')).some((e) => isIface(U, e.Target) && s32(e.TargetEvent.Id) === BUTTON_DONE));
+  const memIn = (ev, ok) => memRef !== undefined && evInto(U, memRef, H(ev)).some(ok);
+  const memory = {
+    load: memIn('LoadMemory', (e) => e.Source.$ref === wi && s32(e.SourceEvent.Id) === ON_START),
+    fire: memIn('FireMemory', (e) => U.objects[e.Source.$ref]?.$type === 'StopWatchEntityData' && s32(e.SourceEvent.Id) === H('OnTrigger')),
+    clear: memIn('ClearMemory', (e) => e.Source.$ref === wi && s32(e.SourceEvent.Id) === H('OnInteractStop')),
+  };
   const fuse = fuseOf(root, B, ci, C, ki);
 
   // the markers' delays: the core's Delay on the fuse's OnTrigger (the blast marker's SyncedBool off after it), and
@@ -356,7 +370,11 @@ export function chargeRules(root, bomb) {
     defuse: { hold: on?.value ?? null, by: 'defend', ...(on?.setting ? { setting: on.setting } : {}), _source: `${K.name}#ConditionalFloatEntityData.${condRef}.ValueIfTrue (armed: its EventSwitch on the button's Success) ← ${C.name}'s SelectFloat "Bomb: " ← ${on?._source ?? '?'}` },
     fuse: fuseRow,
     live: { seconds: live, _source: `${C.name}#DelayEntityData: the chain from the charge's enable to the Bool on the keypad's enable (${KEYPAD_ENABLE})` },
-    settle: { seconds: settleRef >= 0 ? K.objects[settleRef].Delay : 0, _source: `${K.name}#DelayEntityData.${settleRef} on the button's ${BUTTON_DONE} into the armed/defused EventGates` },
+    settle: {
+      seconds: settleRef >= 0 ? K.objects[settleRef].Delay : 0,
+      memory,
+      _source: `${K.name}#DelayEntityData.${settleRef} on the button's ${BUTTON_DONE} into the armed/defused EventGates; ${U.name}#EventMemoryEntityData.${memRef ?? '?'} (OnMemoryEvent → ${BUTTON_DONE}; LoadMemory ← OnInteractStart, FireMemory ← the StopWatch's OnTrigger, ClearMemory ← OnInteractStop; the event names by their hashes, their handling the image's 0x140ae4f10)`,
+    },
     marker: {
       blast: blastRef !== undefined ? delayOf(C, blastRef) : null,
       linger: lingerRef !== undefined ? delayOf(C, lingerRef) : null,
@@ -368,12 +386,14 @@ export function chargeRules(root, bomb) {
 
 export function chargesOf(root, dir, sub) {
   const g = graphOf(root, dir, sub);
-  if (!g) return [];
+  if (!g) return { list: [], rules: {} };
   const { byGuid, pin, evin } = g;
   const byId = new Map([...byGuid.values()].map((e) => [e.id, e]));
   const prefix = `${sub}_`.toLowerCase();
   const rules = new Map();
   const out = [];
+  // (the fields a charge's level wiring is read for; any other the level sets is listed in the row's `unread`)
+  const read = new Set([CHARGE_LOCATOR, H('Enabled'), H('ObjectiveName')].map(s32));
   for (const e of byGuid.values()) {
     const name = shortName(e.o.Blueprint?.$asset ?? '');
     if (!/^PF_Interact_PlanetaryBattle_Bomb/.test(name) || !e.layer.toLowerCase().startsWith(prefix)) continue;
@@ -386,16 +406,15 @@ export function chargesOf(root, dir, sub) {
     const loc = ins.find((p) => s32(p.field) === CHARGE_LOCATOR)?.src ?? null;
     const enabled = ins.find((p) => s32(p.field) === H('Enabled'))?.src ?? null;
     const label = ins.find((p) => s32(p.field) === H('ObjectiveName'))?.src?.o?.Sid ?? null;
+    const unread = [...new Set(ins.filter((p) => !read.has(s32(p.field))).map((p) => s32(p.field)))];
     const world = R ? compose(tf(T), R.local) : null;
     // (the charges' detonated event into an EventAndGate: its EventCount)
     let win = null;
     for (const [id, list] of evin) {
       const t = byId.get(id);
       if (t?.o.$type !== 'EventAndGateEntityData' || !list.some((v) => v.src.id === e.id && s32(v.srcEvent) === DETONATED)) continue;
-      win = { gate: id, of: t.o.EventCount ?? null, _source: `${g.subName}#EventConnections (the charges' ${DETONATED} into ${id}, EventAndGateEntityData.EventCount)` };
+      win = { gate: id, of: t.o.EventCount ?? null, _source: `${g.subName}#EventConnections (${DETONATED} into ${id}'s EventAndGateEntityData.EventCount)` };
     }
-    const chain = R?._source;
-    const shared = Object.fromEntries(Object.entries(R ?? {}).filter(([k]) => k !== 'local' && k !== '_source'));
     out.push({
       id: e.id,
       name,
@@ -405,10 +424,15 @@ export function chargesOf(root, dir, sub) {
       charge: loc?.o?.Transform ? { id: loc.id, at: [loc.o.Transform.trans.x, loc.o.Transform.trans.y, loc.o.Transform.trans.z].map(r3) } : null,
       keypad: world ? { at: [world.t.x, world.t.y, world.t.z].map(r3), yaw: r3(yawOf(world.f)) } : null,
       enabledBy: enabled?.id ?? null,
-      ...shared,
+      // (its prefab's rules, kept once for every charge of it: the map row's chargeRules[rules])
+      rules: R ? name : null,
+      ...(unread.length ? { unread } : {}),
       win,
-      _source: `${g.subName}#PropertyConnections (${name}: the locator on its ${CHARGE_LOCATOR}, its Enabled, its ObjectiveName); ${chain ?? bp}`,
+      _source: `${g.subName}#PropertyConnections (${name}: the locator on its ${CHARGE_LOCATOR}, its Enabled, its ObjectiveName); the keypad its BlueprintTransform × chargeRules.${name}.local`,
     });
   }
-  return out.sort((a, b) => a.id.localeCompare(b.id));
+  // (each prefab's rules by its short name; the keypad's place in the charge as a point and a yaw)
+  const shared = {};
+  for (const [bp, R] of rules) if (R) shared[shortName(bp)] = { ...R, local: { at: [R.local.t.x, R.local.t.y, R.local.t.z].map(r3), yaw: r3(yawOf(R.local.f)) } };
+  return { list: out.sort((a, b) => a.id.localeCompare(b.id)), rules: shared };
 }

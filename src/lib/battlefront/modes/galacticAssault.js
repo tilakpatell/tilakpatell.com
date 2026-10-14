@@ -25,7 +25,7 @@
 import { mapOf, stagesOf, vehicleOf, volumeOf } from '../rulebook.js';
 import { createLogic, enabled, escortLead, fireEvent, portsOf, setInput, setStage, tick as tickLogic } from '../spawnLogic.js';
 import { arrive, createGates, openness, tick as tickGates } from '../gates.js';
-import { canUse as reachesKeypad } from '../charges.js';
+import { canUse as reachesKeypad, chargeOf } from '../charges.js';
 import { BOMBING_RUN, ESCORT_REACH, UPLINK_RANGE, INTERACT_REACH, KINDS, VULNERABLE_SECONDS, insidePolygon } from './objectives.js';
 
 // `PF_GameMode_Conquest_Staged`'s delays: 12 s before the first stage, 6 s between stages.
@@ -71,7 +71,7 @@ function make(rb, map, def) {
   }
   if (def.type === 'arm') {
     // (a fuel charge the map rulebook reads: its keypad's place, its label, its holds and fuse; else the prefab's place)
-    const charge = (map.charges ?? []).find((c) => c.id === def.prefab) ?? null;
+    const charge = chargeOf(map, def.prefab);
     const p = map.prefabs.find((x) => x.id === def.prefab);
     const at = charge?.keypad?.at ?? p.at;
     return KINDS.arm.create({ at: [at[0], at[2]], name: charge?.label ?? name, charge });
