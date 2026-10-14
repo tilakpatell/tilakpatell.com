@@ -6,13 +6,15 @@
 // array (snowMaps.js's SNOW_FILES: a WebGPU stage binds 16 textures, and the
 // shader reads 18 maps): each read from the owner's export as the drop's
 // PNG (the _N maps packed as the game's, R G the normal, B a height, A a
-// mask), made the array's size (the packed smoothness, 2048, down to 1024;
-// the detail and the sparkle, 512, up; the flow map decoded from sRGB to
-// linear for the linear array), encoded as the site's KTX2 (UASTC,
-// mipmapped; _N and _RGBM linear, _C sRGB) and written at each size its
-// tiers read (tex/<slug>.<size>.ktx2, the bigger file's mips dropped), with
-// a `tex` row in level.json saying the sizes and the colour space. A file
-// the bucket holds already at every size asked (the flow map) is left as it
+// mask), made the array's size (the packed smoothness and the trampled
+// snow, 2048, down; the detail and the sparkle, 512, up on ultra; the flow
+// map decoded from sRGB to linear for the linear array), encoded as the
+// site's KTX2 (UASTC, mipmapped; _N and _RGBM linear, _C sRGB) and written
+// at each size its tiers read (tex/<slug>.<size>.ktx2, the bigger file's
+// mips dropped; an array that scales a map up is made at each size from
+// the export instead, so a smaller tier never reads it scaled up and down
+// again), with a `tex` row in level.json saying the sizes and the colour
+// space. A file the bucket holds already at every size asked is left as it
 // is, not made again.
 //
 // Then the owner publishes the new files (the key from the environment):
@@ -24,7 +26,11 @@
 // ground in its flat colour (ground.js asks only for what the manifest
 // names); a checkout that ran this script reads its own copy.
 //
-//   node scripts/bf2017-snow.mjs [hoth] [--from <export's web folder>] [--force]
+//   node scripts/bf2017-snow.mjs [hoth] [--from <export's web folder>] [--force] [--only <slug,…>]
+//
+//   force  make the files again, the bucket's too (a file whose layers
+//          changed keeps its name, so the manifest cannot tell)
+//   only   make just these arrays (the others' rows are written as they are)
 
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -55,7 +61,7 @@ export function linearise(rgba) {
 }
 
 // the export's maps as one KTX2 array of side × side layers (each made that size)
-async function encodeArray(files, side, { srgb, linear = [], etc1s = false, rdo }) {
+async function encodeArray(files, side, { srgb, linear = [] }) {
   const tmp = await mkdtemp(join(tmpdir(), 'snow-'));
   try {
     const args = [];
@@ -73,7 +79,7 @@ async function encodeArray(files, side, { srgb, linear = [], etc1s = false, rdo 
       args.push('-file', png);
     }
     const out = join(tmp, 'out.ktx2');
-    execFileSync(basisuPath(), [...encodeArgs({ role: srgb ? 'color' : 'other', etc1s, ...(rdo != null ? { rdo } : {}) }), '-tex_type', '2darray', ...args, '-output_file', out], { stdio: 'ignore' });
+    execFileSync(basisuPath(), [...encodeArgs({ role: srgb ? 'color' : 'other' }), '-tex_type', '2darray', ...args, '-output_file', out], { stdio: 'ignore' });
     return await readFile(out);
   } finally {
     await rm(tmp, { recursive: true, force: true });
@@ -99,6 +105,7 @@ async function main(args) {
     return row;
   };
   await mkdir(join(pack, 'tex'), { recursive: true });
+  const only = args.only ? String(args.only).split(',') : null;
   const bytes = {};
   let made = 0;
   for (const [slug, m] of Object.entries(SNOW_FILES)) {
@@ -108,14 +115,20 @@ async function main(args) {
     const sizes = Object.fromEntries(Object.entries(m.sizes).map(([t, s]) => [t, Math.min(s, side)]));
     const want = [...new Set(Object.values(sizes))];
     const file = (s) => join(pack, 'tex', `${slug}.${s}.ktx2`);
-    // (--force makes every file again, the bucket's too: a file whose layers changed keeps its name)
     const inBucket = !args.force && want.every((s) => published[site(slug, s)]);
     const here = want.every((s) => existsSync(file(s)));
-    if (!inBucket && (!here || args.force)) {
+    const asked = !only || only.includes(slug);
+    if (asked && !inBucket && (!here || args.force)) {
       const linear = (m.layers ?? []).map((map) => Boolean(m.linearised?.includes(map)));
-      const ktx2 = m.layers ? await encodeArray(rows.map((r) => join(from, r.file)), side, { srgb: m.srgb, linear, etc1s: Boolean(m.etc1s), rdo: m.rdo ?? (args.rdo != null ? Number(args.rdo) : undefined) }) : (await encodeImage(await readFile(join(from, rows[0].file)), { role: m.srgb ? 'color' : 'other', etc1s: Boolean(m.etc1s) })).ktx2;
-      const info = ktx2Info(ktx2);
-      for (const s of want) await writeFile(file(s), dropMips(ktx2, Math.min(mipsToFit(info.width, s), info.levels - 1)));
+      const array = (s) => encodeArray(rows.map((r) => join(from, r.file)), s, { srgb: m.srgb, linear });
+      if (m.layers && rows.some((r) => r.width < side)) {
+        // (a map scaled up for the top size: each size made from the export)
+        for (const s of want) await writeFile(file(s), await array(s));
+      } else {
+        const ktx2 = m.layers ? await array(side) : (await encodeImage(await readFile(join(from, rows[0].file)), { role: m.srgb ? 'color' : 'other' })).ktx2;
+        const info = ktx2Info(ktx2);
+        for (const s of want) await writeFile(file(s), dropMips(ktx2, Math.min(mipsToFit(info.width, s), info.levels - 1)));
+      }
       made += want.length;
     }
     bytes[slug] = {};

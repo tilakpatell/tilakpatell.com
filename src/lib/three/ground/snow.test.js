@@ -24,12 +24,14 @@ describe('the record (snowMaps.js)', () => {
     expect(mapAt('t_blowingsnowflowmap_01_c')).toEqual({ slug: SNOW_KIND.data, kind: 'data', layer: 3 });
     expect(mapAt('t_arcticbase_snowtrampled_01_n')).toEqual({ slug: SNOW_KIND.data, kind: 'data', layer: 4 });
   });
-  it('sizes each array by its maps’ tilings: on ultra no read finer than the 4 m snow, every 0.2 map at least half its density, nothing bigger than its export', () => {
-    const native = { t_arcticbase_snowdetail_01_n: 512, t_arcticbase_snowsparkle_03_rgbm: 512, t_blowingsnowflowmap_01_c: 512 };
+  it('sizes each array by its maps’ tilings: on ultra no read finer than the 4 m snow, every 0.2 map at least half its density, the flow map whole', () => {
+    // the export's sizes (textures.jsonl's srcWidth; every other map 2048)
+    const exported = { t_arcticbase_snowdetail_01_n: 512, t_arcticbase_snowsparkle_03_rgbm: 512, t_blowingsnowflowmap_01_c: 1024 };
+    const texels = (map, tier) => Math.min(SNOW_FILES[mapAt(map).slug].sizes[tier], exported[map] ?? 2048);
     const density = (key, tier) => {
       const r = READS[key];
       const c = Array.isArray(r.cycles) ? Math.max(...r.cycles) : r.cycles;
-      return SNOW_FILES[mapAt(r.map).slug].sizes[tier] * c;
+      return texels(r.map, tier) * c;
     };
     // (the rough map's 0.5 reads are finer: it keeps its texels for its 0.08 read)
     for (const key of ['detail', 'trampled', 'sparkle', 'packed', 'rocky']) expect(density(key, 'ultra'), key).toBeLessThanOrEqual(density('snow4', 'ultra'));
@@ -37,9 +39,10 @@ describe('the record (snowMaps.js)', () => {
       for (const key of ['packed', 'chunky', 'roughPacked', 'rockyPacked', 'rocky', 'rockyColour', 'rockyPackedColour', 'trampled']) expect(density(key, tier), `${tier} ${key}`).toBeGreaterThanOrEqual(density('snow4', tier) / 2);
     // (the slow reads keep every texel: the 33 m swells and the rough map's 0.08 at the array's full size)
     for (const key of ['wavey', 'snow33', 'roughPackedDetail']) expect(SNOW_FILES[mapAt(READS[key].map).slug].sizes.ultra, key).toBe(2048);
-    for (const f of Object.values(SNOW_FILES)) for (const m of f.layers) if (native[m]) expect(f.sizes.ultra, m).toBeLessThanOrEqual(native[m]);
-    // (ETC1S for the colour maps alone, the site's rule; the normals and the data UASTC)
-    for (const [slug, f] of Object.entries(SNOW_FILES)) expect(Boolean(f.etc1s), slug).toBe(f.kind === 'colours');
+    // (the flow map, 1024 in the export and the game, read whole on ultra, as the game reads it at Texture.SkipMipmapCount 0)
+    expect(SNOW_FILES[mapAt(READS.flow.map).slug].sizes.ultra).toBe(exported.t_blowingsnowflowmap_01_c);
+    // (no array bigger than its biggest map)
+    for (const [slug, f] of Object.entries(SNOW_FILES)) expect(f.sizes.ultra, slug).toBeLessThanOrEqual(Math.max(...f.layers.map((m) => exported[m] ?? 2048)));
   });
   it('carries the listing’s tilings', () => {
     expect([READS.snow4.cycles, READS.snow33.cycles, READS.detail.cycles]).toEqual([0.25, 0.03, 1]);

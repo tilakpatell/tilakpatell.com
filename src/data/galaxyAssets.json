@@ -199842,26 +199842,26 @@
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.1024.ktx2": {
-    "hash": "39d0e98f4be1",
-    "bytes": 412092,
+    "hash": "7d7c5fe50d15",
+    "bytes": 1778638,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.1024.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.2048.ktx2": {
-    "hash": "a8397ada4139",
-    "bytes": 1506811,
+    "hash": "a1af1c050926",
+    "bytes": 5649706,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.2048.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.512.ktx2": {
-    "hash": "728ba03de62a",
-    "bytes": 129384,
+    "hash": "1cf338ecda2d",
+    "bytes": 466418,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.1024.ktx2": {
-    "hash": "7f232c986969",
-    "bytes": 4199823,
+    "hash": "642ef592b32d",
+    "bytes": 4227726,
     "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.1024.ktx2",
     "tier": "pack"
   },

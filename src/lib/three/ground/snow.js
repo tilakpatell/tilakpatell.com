@@ -5,7 +5,7 @@
 // read here is the game's read.
 //
 // The game paints eight layers over its base snow by per-texel masks (the
-// TerrainStreamingTree's rasters, laid into the pack's three mask frames by
+// TerrainStreamingTree's rasters, laid into the pack's two mask frames by
 // scripts/bf2017-terrain-masks.mjs) and blends them top down, each layer's
 // mask shaped by its own maps: 7 blowing snow (the wisps' streaks × its
 // mask), 6 rocky (height-blended by Rocky_02_N's blue), 5 rocky packed

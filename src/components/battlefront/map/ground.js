@@ -87,7 +87,7 @@ export const canAsk = (url, listed, { dev = Boolean(import.meta.env?.DEV), remot
 // the pack's mask frames a tier reads, finest first, in the game's frame
 // (level.json's terrain.masks: one array, each frame two of its layers from
 // a corner in the pack's frame at its own texel size; low reads none)
-export const MASK_ORDER = ['near', 'mid', 'far'];
+export const MASK_ORDER = ['near', 'far'];
 export function maskFrames(masks, origin = [0, 0, 0], tier = 'high') {
   if (!masks?.frames || !masks.size || tier === 'low') return [];
   return MASK_ORDER.filter((n) => masks.frames[n]).map((name) => {
