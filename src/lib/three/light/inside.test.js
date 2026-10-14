@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import lightingFile from '../../../data/bf2017/maps/hoth.lighting.json';
-import { areaDistance, areaVisibility, insideOf, patchRecord, skyShare, visibilities } from './inside.js';
+import { areaDistance, areaVisibility, insideOf, patchRecord, skyShare, switchedOff, visibilities } from './inside.js';
 
 const lighting = lightingFile.rows;
 const INTERIOR = 'Levels/Lighting/Hoth/Interior_01/VE_PV_Hoth_Interior_01';
@@ -56,6 +56,18 @@ describe('the interiors’ proximity blends', () => {
     expect(under.OutdoorLightComponentData[0]).toMatchObject({ SunIntensity: 0.001, SunColor: [0, 0, 0], SunRotationY: 32.9 });
     // (the weather's own record untouched)
     expect(record.TonemapComponentData[0].MinEV).toBe(11);
+  });
+
+  it('does not take a value its patch turns off: the interior’s FogColor beside FogColorEnable false', () => {
+    const { patches } = insideOf(lighting);
+    expect(switchedOff(patches[INTERIOR].components.Fog).sort()).toEqual(['FogColor', 'ForwardLightScattering', 'ParticipatingMedia']);
+    const record = { FogComponentData: [{ FogColor: [0.2, 0.3, 0.4], Start: 50, End: 10000, ForwardLightScatteringPresence: 0 }] };
+    const under = patchRecord(record, patches, { [INTERIOR]: 1 }).FogComponentData[0];
+    expect(under.FogColor).toEqual([0.2, 0.3, 0.4]);
+    expect(under.FogColorEnable).toBe(false);
+    expect(under.ForwardLightScatteringPresence).toBe(0);
+    expect(under.ForwardLightScatteringEnabled).toBe(false);
+    expect(under).toMatchObject({ Start: 250, End: 2500 });
   });
 
   it('gives the sky the view still has: none where the sun is put out', () => {

@@ -53,14 +53,17 @@ const tint = (c) => {
 // meters a grey card of 0.18 for the scene's mean, lit by the sun and by the
 // sky (as bright as the record's LuminanceScale, so a storm's weak sun does
 // not open it up to the sun alone), and clamps the EV to the record's range;
-// off, the record's EV. Compensation opens it up.
+// off, the record's EV. Compensation opens it up. Where the view is in a
+// room the sky does not reach (`room`: the luminance, in nits, the game's own
+// capture of that room reads: the interiors', light/apply.js), that is
+// what the meter sees, as it is.
 export function exposureOf(entry) {
   const t = entry?.tonemap ?? {};
   const comp = t.compensation ?? 0;
   let ev = t.ev ?? 12;
   if (t.auto !== false && (t.minEV !== undefined || t.maxEV !== undefined)) {
     const sun = entry?.sun ?? {};
-    const lit = Math.max(1, 0.18 * (((sun.lux ?? 0) * Math.max(0.05, Math.sin((sun.el ?? 45) * DEG))) / Math.PI + (entry?.sky?.luminance ?? 0)));
+    const lit = Math.max(1, 0.18 * (((sun.lux ?? 0) * Math.max(0.05, Math.sin((sun.el ?? 45) * DEG))) / Math.PI + (entry?.sky?.luminance ?? 0)) + (entry?.room?.luminance ?? 0));
     ev = Math.min(t.maxEV ?? Infinity, Math.max(t.minEV ?? -Infinity, Math.log2((lit * 100) / 12.5)));
   }
   return 2 ** (comp - ev);

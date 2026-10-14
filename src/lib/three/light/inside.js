@@ -19,12 +19,17 @@
 // on top (the lower number last: the spawn wipe's VE_SpawnScreen_BlackFade_01,
 // an explicit 1000, must cover the field's 8000 for the wipe to go black).
 // Fields that do not lerp (a switch, a texture) take the patch's value from
-// half visibility (hand: the fold's rule for them is not read).
+// half visibility (hand: the fold's rule for them is not read). A value the
+// patch itself turns off is not taken: the interior's FogColor (1, 1, 1)
+// beside its FogColorEnable false, its ForwardLightScattering… beside
+// ForwardLightScatteringEnabled false (a field under the prefix of a
+// `…Enable`/`…Enabled` the patch sets false); the switch itself is.
 //
 // areaDistance(shape, p) → m                      (pure)
 // areaVisibility(area, p) → 0…1                   (pure)
 // visibilities(areas, p) → { [ve]: 0…1 }          (pure: a VE's most over its areas)
 // patchRecord(record, patches, vis) → record      (pure: the weather's record with each patch folded in)
+// switchedOff(fields) → prefixes                  (pure: what a component's own switches turn off)
 // skyShare(patches, vis) → 0…1                    (pure: what of the sky the view still has)
 // insideOf(lighting) → { areas, patches } | null  (the rulebook's rows, as applyGameLight takes them)
 
@@ -78,6 +83,12 @@ function blend(from, to, t) {
 // the patches in the fold's order: the higher reference number first, the lower on top
 const ordered = (patches) => Object.entries(patches ?? {}).sort(([, a], [, b]) => (b.reference ?? 0) - (a.reference ?? 0));
 
+// the prefixes a component's own switches turn off (FogColorEnable false: 'FogColor')
+export const switchedOff = (fields) =>
+  Object.entries(fields ?? {})
+    .filter(([f, v]) => v === false && /Enabled?$/.test(f) && f !== 'Enable')
+    .map(([f]) => f.replace(/Enabled?$/, ''));
+
 export function patchRecord(record, patches, vis) {
   const out = { ...record };
   for (const [ve, patch] of ordered(patches)) {
@@ -89,8 +100,10 @@ export function patchRecord(record, patches, vis) {
       const key = `${type}ComponentData`;
       const was = out[key]?.[0] ?? {};
       const next = { ...was };
+      const off = switchedOff(fields);
       for (const [f, v] of Object.entries(fields)) {
         if (f.startsWith('_')) continue;
+        if (off.some((p) => f.startsWith(p) && !/Enabled?$/.test(f))) continue;
         next[f] = was[f] === undefined ? (t >= 0.5 ? v : undefined) : blend(was[f], v, t);
         if (next[f] === undefined) delete next[f];
       }

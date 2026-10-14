@@ -42,12 +42,7 @@ export const POINT_FALLBACK = 64; // the base lighting's pool where clustering c
 // the nearest few, the hangar's own lamps among them
 export const LOW_LAMPS = Object.freeze({ points: 8, spots: 2 });
 // the pool a tier and the video settings ask for (applyGameLight's)
-// The spots on the tiers that can carry more than the sixteen: Echo Base's lamps are
-// spots, 441 of the 480 it draws (the ceiling and wall prefabs), and a hangar holds
-// dozens in view. Hand: the game's tile lists take 64 lights a tile (findings 15);
-// three walks every spot for every pixel, so the most the tier's budget allows
-export const SPOTS_BY_TIER = Object.freeze({ ultra: 48, high: 32 });
-export const lampPool = (tier, video = null) => (tier === 'low' ? LOW_LAMPS : { ...(video?.localLights === 'nearest' ? { points: POINT_FALLBACK } : {}), ...(SPOTS_BY_TIER[tier] ? { spots: SPOTS_BY_TIER[tier] } : {}) });
+export const lampPool = (tier, video = null) => (tier === 'low' ? LOW_LAMPS : video?.localLights === 'nearest' ? { points: POINT_FALLBACK } : {});
 export const CLUSTER = { tileSize: 32, zSlices: 24, perCluster: 64 }; // three's defaults, as the design gives them
 export const CELL = 128; // m: lights.json's cell, the level pack's
 export const CULL_AREA = 0.005; // the record's CullScreenArea: under this a light is not drawn

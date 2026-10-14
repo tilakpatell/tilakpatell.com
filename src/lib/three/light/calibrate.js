@@ -18,12 +18,13 @@
 //   lamps  = their lumens or candela  × gameToSite(k), the sun's rate, so a lamp stands to the sun as the game made it
 //   bloom  = ColorGradingMaxHdrValue  × the house's threshold   (the grade covers HDR to that value; above it glows)
 //
-// luminanceScale(tonemap, { lux, el, sky }) → k | null      (the record's TonemapComponentData; the scene the meter sees)
-// meteredEV(tonemap, { lux, el, sky }) → EV | null
+// luminanceScale(tonemap, { lux, el, sky, room }) → k | null      (the record's TonemapComponentData; the scene the meter sees)
+// meteredEV(tonemap, { lux, el, sky, room }) → EV | null
 // sunIntensity(outdoor, k), skyScale(sky, k), gameToSite(k), bloomThreshold(grading)
-// calibrate(record, { sky }) → { k, ev, sun, sky, gameToSite, bloomThreshold } | null   (a VE record's components;
+// calibrate(record, { sky, room }) → { k, ev, sun, sky, gameToSite, bloomThreshold } | null   (a VE record's components;
 //   `sky`, the luminance the meter sees of the sky where the view sees less of it than the record's:
-//   the interiors' share, inside.js's skyShare)
+//   the interiors' share, inside.js's skyShare; `room`, the nits of the room it sees in its place, the
+//   game's capture of it, apply.js)
 
 import { BLOOM } from '../bloom.js';
 import { exposureOf } from '../gameLight.js';
@@ -35,15 +36,16 @@ const first = (v) => (Array.isArray(v) ? v[0] : v);
 // The record's tone map in lane G's shape, so the one meter (gameLight.js)
 // decides the EV for both stacks.
 // (a tone map without an EV meters from 12, gameLight.js's default; none at all, null)
-export function meteredEV(tone, { lux, el, sky } = {}) {
+export function meteredEV(tone, { lux, el, sky, room } = {}) {
   if (!tone) return null;
   const ev = n(tone.EV) ?? 12;
   const comp = n(tone.ExposureCompensation) ?? 0;
   // (a scene with no light to meter keeps the record’s EV, as before)
-  const lit = (n(lux) ?? 0) > 0 || (n(sky) ?? 0) > 0;
+  const lit = (n(lux) ?? 0) > 0 || (n(sky) ?? 0) > 0 || (n(room) ?? 0) > 0;
   const m = exposureOf({
     sun: { lux: n(lux) ?? 0, el: n(el) ?? 45 },
     sky: { luminance: n(sky) ?? 0 },
+    room: { luminance: n(room) ?? 0 },
     // (the record's MinEV/MaxEV clamp the metered EV only where ClampEV is
     // set: Hoth's day meters 16.3 under its 128,000 lux and 35,000 nits, and
     // clamping it to MaxEV 15 blew the snow and the sky to white)
@@ -70,12 +72,12 @@ export const sunIntensity = (outdoor, k) => (n(outdoor?.SunIntensity) ?? 0) * ga
 export const skyScale = (sky, k) => (n(sky?.LuminanceScale) ?? 0) / k;
 export const bloomThreshold = (grading) => (n(grading?.ColorGradingMaxHdrValue) ?? 1) * BLOOM.threshold;
 
-export function calibrate(record, { sky: seen } = {}) {
+export function calibrate(record, { sky: seen, room } = {}) {
   const c = (name) => first(record?.[`${name}ComponentData`]) ?? {};
   const tone = c('Tonemap');
   const outdoor = c('OutdoorLight');
   const sky = c('Sky');
-  const scene = { lux: outdoor.SunIntensity, el: outdoor.SunRotationY, sky: seen ?? sky.LuminanceScale };
+  const scene = { lux: outdoor.SunIntensity, el: outdoor.SunRotationY, sky: seen ?? sky.LuminanceScale, room };
   // (a record with neither a tone map nor a sun has nothing to calibrate)
   if (!record?.TonemapComponentData && n(outdoor.SunIntensity) === undefined) return null;
   const k = luminanceScale(tone, scene);

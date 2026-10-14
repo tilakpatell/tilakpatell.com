@@ -47,6 +47,24 @@ describe('createProbes', () => {
     await probes.dispose();
     expect(scene.environmentNode).toBe(null);
   });
+  it('has the scene’s render bundles recorded again at a swap and the frame after, so a bundled level sees the new cube', async () => {
+    const bundle = { isBundleGroup: true, needsUpdate: false };
+    const scene = { environment: cube('sky'), environmentNode: null, traverse: (fn) => [scene, bundle].forEach(fn) };
+    const probes = await createProbes(scene, [hall, room], async (v, i) => cube(`probe${i}`));
+    probes.update([50, 2, 50], 0); // (the start, on the fallback)
+    expect(bundle.needsUpdate).toBe(true);
+    bundle.needsUpdate = false;
+    probes.update([50, 2, 50], 0);
+    expect(bundle.needsUpdate).toBe(true); // (the frame after)
+    bundle.needsUpdate = false;
+    await flush();
+    probes.update([50, 2, 50], 0);
+    expect(bundle.needsUpdate).toBe(false); // (nothing swapped: nothing recorded)
+    probes.update([14, 2, 14], 0);
+    await flush();
+    probes.update([14, 2, 14], 0);
+    expect(bundle.needsUpdate).toBe(true); // (the room's cube in)
+  });
   it('a quick crossing shows only the last volume asked for', async () => {
     const scene = { environment: null };
     let release;

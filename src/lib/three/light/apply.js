@@ -49,7 +49,7 @@ import { createContactShadows } from './contact.js';
 import { createFog } from './fog.js';
 import { createPlacedLights, lampPool } from './placed.js';
 import { passesFor, raysLight } from './post.js';
-import { createProbeGrid, createProbeFill, createProbes, probeFor } from './probes.js';
+import { createProbeGrid, createProbes, probeFor, roomNits } from './probes.js';
 import { filterFor, pcssFilter, readPcss, vsmFallback } from './shadows.js';
 import { createSky } from './sky.js';
 import { createSun, readShadowRecord } from './sun.js';
@@ -161,17 +161,22 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
 
   // The interiors (inside.js): each patch folded into the weather's record by
   // its visibility at the view, the meter's sky cut by what of it the view
-  // still has, and the exposure adapting to the result at the record's
-  // Dark/LightAdaptationTime (the one state the game's renderer smooths:
-  // findings 22 §2). With no `inside`, the weather's record as it was.
+  // still has and the room seen in its place (the nits of the game's own
+  // capture of the room: the reflection volume holding the view, else the
+  // nearest; the game's histogram meters the room it draws, the site's meter
+  // reads the game's picture of it), and the exposure adapting to the result
+  // at the record's Dark/LightAdaptationTime (the one state the game's
+  // renderer smooths: findings 22 §2). With no `inside`, the weather's record
+  // as it was.
   let vis = {};
   let skyLeft = 1;
+  let room = null; // (the nits of the room the view is in or nearest, its capture's horizon)
   let cur = entry; // (the weather the stack shows, or fades to)
   const litOf = (e) => {
     if (!inside || !e) return e;
     const record = patchRecord(e.record ?? {}, inside.patches, vis);
     const lum = e.record?.SkyComponentData?.[0]?.LuminanceScale;
-    return { ...e, record, ...(skyLeft < 1 && lum != null ? { meter: { sky: lum * skyLeft } } : {}) };
+    return { ...e, record, ...(skyLeft < 1 && lum != null ? { meter: { sky: lum * skyLeft, room: (room ?? 0) * (1 - skyLeft) } } : {}) };
   };
   const readLit = (e) => readEntry(litOf(e), { origin });
   let target = readLit(entry); // (the light at the view, before the exposure adapts to it)
@@ -211,8 +216,6 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   if (sky) scene.add(sky.mesh);
   let env = sky && canDraw ? sky.envTexture(renderer) : null;
   let envK = params.gameToSite; // (the exposure the sky's environment was baked at)
-  let fillAt = -1; // (the volume whose capture fills where none holds the view, -1 none)
-  const fill = inside && volumes?.length ? (k) => (fillAt >= 0 ? createProbeFill(volumes[fillAt], k) : null) : null;
   const probes = volumes?.length && loadCube ? await createProbes(scene, volumes, loadCube, { fallback: env }) : null;
   if (!probes && env) scene.environment = env;
   // (the interior's grade: its LUT read beside the weather's and mixed by the patch's visibility,
@@ -273,14 +276,10 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
     sun.set(p);
     hemi.color.setRGB(...p.ambient.sky);
     hemi.groundColor.setRGB(...p.ambient.ground);
-    // (the sky's fill and environment as far as the view still has the sky: none under the rock; there, where
-    // no reflection volume holds the view, the nearest volume's capture of the room's light is the fill)
-    const f = fill && skyLeft < 1 ? fill(p.gameToSite) : null;
-    hemi.intensity = p.ambient.intensity * skyLeft + (f ? f.intensity * (1 - skyLeft) : 0);
-    if (f && skyLeft < 0.5) {
-      hemi.color.setRGB(...f.sky);
-      hemi.groundColor.setRGB(...f.ground);
-    }
+    // (the sky's fill and environment as far as the view still has the sky: none under the rock, where the
+    // room's light is its reflection volume's capture, the environment: probes.js; hand: the game's diffuse
+    // there is Enlighten's, whose probes hold no data in the export, findings 60 §5)
+    hemi.intensity = p.ambient.intensity * skyLeft;
     const envShare = (skyLeft * p.gameToSite) / Math.max(1e-12, envK);
     if (probes) probes.setScales?.({ probe: p.gameToSite, fallback: envShare });
     else if (env && inside) scene.environmentIntensity = envShare;
@@ -394,6 +393,12 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
           if (lutWeight) lutWeight.value = lutVe ? (vis[lutVe] ?? 0) : 0;
           dirty = true;
         }
+        // (the room the meter sees under the rock: the volume holding the view, else the nearest)
+        const r = skyLeft < 1 && volumes?.length ? roomNits(volumes[probeFor(volumes, pos, { nearest: true }).i]) : null;
+        if (r !== room) {
+          room = r;
+          dirty = true;
+        }
       }
       if (fade) {
         fade.t = Math.min(1, fade.t + dt / fade.seconds);
@@ -435,12 +440,6 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
         pos[1] = cam.position.y;
         pos[2] = cam.position.z;
         probes.update(pos, dt, { nearest: skyLeft < 0.5 });
-        // (the fill: only where no volume holds the view, whose cube is then the light)
-        const at = fill && skyLeft < 1 && probeFor(volumes, pos).i < 0 ? probeFor(volumes, pos, { nearest: true }).i : -1;
-        if (at !== fillAt) {
-          fillAt = at;
-          show(params);
-        }
       }
     },
     // the next weather, eased in over `seconds` (0: at once); with its

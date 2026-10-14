@@ -47,16 +47,20 @@
 // that base. Without the clock, the CPU's ms to issue the bakes stands in.
 //
 // probeFor(volumes, pos, { nearest }) → { i, blend }      (pure)
-// createProbeFill(volume, k) → { sky, ground, intensity } | null   (pure: a volume's capture as the hemisphere's fill:
-//   its zenith and ground as the tints, its horizon's luminance in the game's nits by k as the level, lane G's
-//   reading of a probe, gameLight.js's siteLightFrom)
+// roomNits(volume) → nits | null   (pure: the luminance of a volume's capture at its horizon, the game's own
+//   picture of the room: what the exposure meters where the sky does not reach, apply.js)
 // scheduleProbes(stale: [{ age, distance }], n) → indices   (pure: age −1 is done)
 // probesPerFrame(lastMs, budgetMs, current, most = Infinity) → n   (pure)
 // recentre(pos, spacing) → the cascade's centre   (pure)
 // runsOf(indices) → [{ start, count }]; probeIndex(x, y, z, res) → index   (pure)
-// createProbes(scene, volumes, loadCube, { fallback, fade }) → Promise<{ update(pos, dt), current, setFallback(tex), setScales({ probe, fallback }), dispose }>
+// createProbes(scene, volumes, loadCube, { fallback, fade }) → Promise<{ update(pos, dt, { nearest }), current, setFallback(tex), setScales({ probe, fallback }), dispose }>
 //   (setScales: what each side of the crossfade is multiplied by, by what it shows: a volume's cube, in the
 //   game's units, by the light's gameToSite; the fallback, the site's own sky, by the sky the view still has)
+//   A level drawn by the GPU scene (gpuScene/draws.js) draws its static groups from one render bundle,
+//   which keeps the bind groups it was recorded with: a cube swapped into the crossfade after the
+//   bundle was recorded never reached the level's materials (the hangars drew with no environment
+//   at all, whatever its scale). So each swap has the scene's bundles recorded again, at the swap and
+//   the frame after (once the node has made the new cube's PMREM).
 // createProbeGrid(scene, renderer, bounds, res = PROBE_GRID, { cubemapSize, far, budget: { ms, gpuTime }, cascades })
 //   → Promise<{ grid, bake(), update(camera, dt), stats() → { probesPerFrame, ms, sweeps, cascades }, dispose }>
 
@@ -101,14 +105,7 @@ export function probeFor(volumes, pos, { nearest = false } = {}) {
 }
 
 const lumOf = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-const tintOf = (c) => {
-  const m = Math.max(c[0], c[1], c[2]);
-  return m > 0 ? c.map((v) => v / m) : [1, 1, 1];
-};
-export function createProbeFill(volume, k) {
-  if (!volume?.horizon) return null;
-  return { sky: tintOf(volume.zenith ?? volume.horizon), ground: tintOf(volume.ground ?? volume.horizon), intensity: lumOf(volume.horizon) * k };
-}
+export const roomNits = (volume) => (Array.isArray(volume?.horizon) ? lumOf(volume.horizon) : null);
 
 export function scheduleProbes(stale, n) {
   const idx = [];
@@ -157,6 +154,9 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
   let fading = false;
   let disposed = false;
   const before = scene.environmentNode;
+  // (the bundles to record again: at a swap and the frame after)
+  let rebind = 0;
+  const swapped = () => (rebind = 2);
 
   const start = (tex, i) => {
     a = tsl.pmremTexture(tex);
@@ -164,6 +164,7 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
     aShows = bShows = i;
     sa.value = sb.value = scaleOf(i);
     scene.environmentNode = tsl.mix(a.mul(sa), b.mul(sb), t);
+    swapped();
   };
   if (base) start(base, -1);
 
@@ -187,6 +188,7 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
     t.value = 0;
     fading = true;
     showing = i;
+    swapped();
   };
 
   async function pick(i) {
@@ -211,7 +213,14 @@ export async function createProbes(scene, volumes, loadCube, { fallback = scene.
           sa.value = sb.value;
           t.value = 0;
           fading = false;
+          swapped();
         }
+      }
+      if (rebind > 0) {
+        rebind--;
+        scene.traverse?.((o) => {
+          if (o.isBundleGroup) o.needsUpdate = true;
+        });
       }
       return showing;
     },

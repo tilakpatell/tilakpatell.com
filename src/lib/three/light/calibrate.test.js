@@ -17,6 +17,16 @@ describe('luminanceScale', () => {
     expect(meteredEV({ ...tone, ClampEV: undefined }, scene)).toBeCloseTo(16.3287, 3);
     expect(luminanceScale(tone, scene)).toBeCloseTo((2 ** meteredEV(tone, scene) * 1.2) / 2 ** 1.5, 3);
   });
+  it('meters a room under the rock by the nits of the game’s capture of it, in the interior’s clamp', () => {
+    const tone = { EV: 10, ExposureCompensation: 1.5, ClampEV: true, MinEV: 8.5, MaxEV: 10.5, AutomaticExposure: true };
+    // (the sun put out, no sky: the meter pinned at MinEV 8.5, the PR's reading before)
+    expect(meteredEV(tone, { lux: 0.001, el: 33, sky: 0 })).toBeCloseTo(8.5, 6);
+    // (the west hangar's capture, 151 nits at its horizon: EV 10.24, inside the interior's 8.5…10.5)
+    expect(meteredEV(tone, { lux: 0.001, el: 33, sky: 0, room: 151 })).toBeCloseTo(Math.log2(151 * 8), 2);
+    // (the command block's long room, 367: clamped at MaxEV 10.5)
+    expect(meteredEV(tone, { lux: 0.001, el: 33, sky: 0, room: 367 })).toBeCloseTo(10.5, 6);
+  });
+
   it('a record that exposes by hand keeps its EV; none gives null', () => {
     expect(meteredEV({ EV: 12, ExposureCompensation: 0, AutomaticExposure: false }, {})).toBe(12);
     expect(luminanceScale(null, {})).toBe(null);
