@@ -87,4 +87,9 @@ describe('pathOf', () => {
     expect(pathOf('/home/u/repo/a.wasm')).toBe('/home/u/repo/a.wasm');
     expect(pathOf('/node_modules/a/b.wasm?v=1', '/root')).toBe('/root/node_modules/a/b.wasm');
   });
+
+  it('keeps no slash before a Windows drive (else Node reads C:\\C:\\…)', () => {
+    expect(pathOf('/@fs/C:/repo/node_modules/a/b.wasm')).toBe('C:/repo/node_modules/a/b.wasm');
+    expect(pathOf('file:///C:/repo/a.wasm')).toBe('C:/repo/a.wasm');
+  });
 });

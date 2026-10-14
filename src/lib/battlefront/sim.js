@@ -480,7 +480,8 @@ function applyInput(sim, inp) {
   if (inp.ability) press(s.abilities, inp.ability, sim.time);
   if (inp.vent && s.gun) vent(s.gun, sim.time);
   if (inp.cool && s.gun) coolPress(s.gun, sim.time);
-  if (s.state !== 'roll') move(s, inp.move ?? [0, 0], STEP, sim.nav);
+  // (a soldier with a body of its own, the player on the level's shapes: map/walk.js, moves by it)
+  if (s.state !== 'roll') (s.mover ?? move)(s, inp.move ?? [0, 0], STEP, sim.nav);
   if (inp.fire) shoot(sim, s, inp.aim ?? chestAhead(s));
   s.interact = !!inp.interact;
 }
@@ -577,7 +578,7 @@ export function step(sim, inputs = []) {
   stepGunners(sim);
   for (const s of sim.entities.values()) {
     if (s.kind !== 'soldier') continue;
-    if (s.state === 'roll' && s.alive) move(s, s.rollDir, STEP, sim.nav);
+    if (s.state === 'roll' && s.alive) (s.mover ?? move)(s, s.rollDir, STEP, sim.nav);
     for (const e of tickSoldier(s, STEP, sim.time)) {
       emit(sim, { ...e, by: s.id });
       if (e.type === 'ability') onAbility(sim, s, e);
