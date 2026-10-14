@@ -25,16 +25,19 @@
 //   multiplayer Normal), bolt { projectile, damage, damageFar, falloff
 //   [near, far] m, speed m/s, life s, property, blast }, ram { angle,
 //   glancing, friend, enemy }.
-// - capitals[kind]: parts[name] (a capital's hull part, named as
-//   bf2017-hulls.mjs's partName names it; a module's part with health:
-//   every one, or where the kind's hull is the site's, the ones its site map
-//   names) { health in state order, states (each state's part; null where
-//   it is the whole object), children (the parts nested under it), property,
-//   damageMultiplier, friendlyFire, squad }, turrets[blueprint] { hp,
-//   property, bolts },
-//   site[name] { part, why }: the war's part names (a site hull's, the
-//   war's objectives) on the game part whose numbers they take, or null
-//   where the game has none.
+// - capitals[kind]: parts[name] (a hull part as bf2017-hulls.mjs's partName
+//   names it, a kit module's part whose chain begins on it; none where the
+//   kind's hull is the site's, and none that no attacker can hurt unless the
+//   site names it) { health in state order, states (each state's part; null
+//   where it is the whole object), children (the parts nested under it),
+//   properties (each state's part's), property (the first's),
+//   damageMultiplier, friendlyFire, squad }; turrets[blueprint]
+//   { hp, property, bolts }; and the site's choices (`source: 'site'`, not
+//   records): site[name] for the war's part names (`hull` and universe/
+//   wars.js's SUBSYSTEMS ids), each the game record whose numbers it takes
+//   ({ record, objective, health, properties, squad, … }, or record null
+//   where the game has none) and the hull `parts` a hit on it is; and
+//   turretParts, the hull parts each turret record stands for.
 // - stand[kind]: { as, why }: the game kind a kind the game never had takes
 //   its numbers from.
 //
@@ -51,7 +54,7 @@ import { readMap } from './bf2017-level.mjs';
 import { physicsKey } from './bf2017-physics.mjs';
 import { healthRow } from './bf2017-rulebook-air.mjs';
 import { indexOf } from './bf2017-rulebook.mjs';
-import { SPACE, piecesOf } from './bf2017-space.mjs';
+import { KITS, SPACE, instanceOf, piecesOf, rotate } from './bf2017-space.mjs';
 
 // SB_Endor_01's grid, and the other space levels the era rule keeps, held to
 // the same cells (findings/62 §3: the grids agree wherever two hold a pair)
@@ -80,7 +83,7 @@ export const STAND = {
   bwing: { as: 'ywing', why: 'a Rebel bomber; the game’s Rebel bomber in Starfighter Assault is the Y-wing (Vehicles_Light_Orig_Space’s third kit)' },
   deathstar: { as: null, why: 'the world’s own sphere, flown round and never fired at: no hull (bf2017-hulls.mjs leaves it out) and no damage' },
   deathstar2: { as: null, why: 'the world’s own sphere, flown round and never fired at: no hull (bf2017-hulls.mjs leaves it out) and no damage' },
-  delta7: { as: 'vwing', why: 'a Jedi interceptor of the Republic’s; the game’s Republic interceptor in Starfighter Assault is the V-wing (Vehicles_Light_Preq_Space’s second kit)' },
+  delta7: { as: 'vwing', why: 'a Jedi interceptor the galaxy flies in the Republic’s squadrons; the game’s Republic interceptor in Starfighter Assault is the V-wing (Vehicles_Light_Preq_Space’s second kit), and Yoda’s Jedi starfighter is a hero ship with a hero’s 2,400 hit points and lighter rams, not a squadron’s' },
   executor: { as: 'destroyer', why: 'a Super Star Destroyer; the game’s Imperial flagship is the Imperial Star Destroyer (SB_Endor_01)' },
   ghost: { as: 'falcon', why: 'a Rebel light freighter flown by an ace; the game’s Rebel light freighter is the Millennium Falcon, a hero ship' },
   gozanti: { as: 'lightcruiser', why: 'an Imperial escort cruiser; the game’s Imperial escort is the Arquitens light cruiser (SB_Fondor_01)' },
@@ -110,65 +113,107 @@ export const FIGHTERS = Object.fromEntries(
 // SB_Kamino_01's own); the Nebulon-B is a backdrop and mounts none
 const CR90 = 'Gameplay/Vehicles/Corvette/CorvetteCR90';
 const KAMINO = 'Levels/Space/SB_Kamino_01/ObjectiveShips';
-const LUCREHULK = 'Gameplay/Vehicles/Capital/LucrehulkClass_DroidBattleShip/LucrehulkClass_DroidBattleShip_CannonA';
+const LUCREHULK = 'Gameplay/Vehicles/Capital/LucrehulkClass_DroidBattleShip';
 export const TURRETS = {
   destroyer: ['Gameplay/Vehicles/Capital/StarDestroyer/Turrets/StarDestroyer_TurretTurboLaser_Vehicle', 'Gameplay/Vehicles/Capital/StarDestroyer/Turrets/StarDestroyer_HeavyTurboLaser_02'],
   moncal: ['Gameplay/Vehicles/Capital/MC80/MC80_SmallGunTurret_AntiFighter', 'Gameplay/Vehicles/Capital/MC80/MC80_SmallGunTurret_Heavy'],
   corvette: ['LargeTurretTop', 'LargeTurretBottom', 'SmallTurretLeftA', 'SmallTurretLeftB', 'SmallTurretRightA', 'SmallTurretRightB'].map((t) => `${CR90}/CorvetteCR90_${t}`),
   venator: [`${KAMINO}/SpaceBattles_Venator/VenatorStarDestroyer_HeavyTurret`, `${KAMINO}/SpaceBattles_Venator/VenatorStarDestroyer_SideTurret`],
   providence: [`${KAMINO}/SpaceBattles_Dreadnaught/QuadLaser_Turret_01`, `${KAMINO}/SpaceBattles_Dreadnaught/QuadLaser_Turret_Heavy`],
-  lucrehulk: [`${LUCREHULK}/LucrehulkClass_DroidBattleShip_QuadLaserCannon_01`, `${LUCREHULK}/LucrehulkClass_DroidBattleShip_QuadLaserCannon_02`],
+  lucrehulk: [`${LUCREHULK}/LucrehulkClass_DroidBattleShip_CannonA/LucrehulkClass_DroidBattleShip_QuadLaserCannon_01`, `${LUCREHULK}/LucrehulkClass_DroidBattleShip_CannonA/LucrehulkClass_DroidBattleShip_QuadLaserCannon_02`],
   lightcruiser: ['Gameplay/Vehicles/Capital/ImperialCruiser/ImperialLightCruiser_Turrets_01'],
   nebulon: [],
 };
 
-// The war's part names (a site hull's `hull` and its objectives: universe/
-// wars.js's SUBSYSTEMS ids) on each game capital's part whose numbers they
-// take, where the game has one: the site's hull of the Lucrehulk and the
-// Arquitens (bf2017-hulls.mjs's SITE_OVER_GAME), a stand-in's, and the war's
-// objectives on a game hull
+// ── the site's choices ──
+//
+// What follows is the site's, not the game's: which game record each of the
+// war's part names takes its numbers from, and which hull parts a turret
+// record stands for. Each says why; the numbers it then carries are the
+// record's, with their sources.
+
+// The war's part names: a site hull's `hull` and its objectives (universe/
+// wars.js's SUBSYSTEMS ids)
 export const SITE_NAMES = ['hull', 'gen-port', 'gen-star', 'bridge', 'reactor'];
-const NONE = 'no part of the game’s for it: the war keeps its own';
+// Each game capital's: the record (and, for a module with several chains,
+// the part its chain begins on), the prefab that makes it the level's
+// objective where one does, and why the site chose it. The hull parts a hit
+// on it is are the record's own module's where it is a kit module, else the
+// kit modules inside the record's box where its level places it; a site
+// hull's are the part of the name. Where the game has no record for a name,
+// the war keeps its own.
+const SB = 'Levels/Space';
+const ISD = 'Objects/Props/Landmarks/_GalacticEmpire/StarDestroyer_01';
+const MC80 = 'Gameplay/Vehicles/Capital/MC80';
+const VENATOR = `${KAMINO}/SpaceBattles_Venator`;
+const OWN = (ship) => `no record of the game’s stands for it on the ${ship}, so the war keeps its own`;
 export const SITE = {
   destroyer: {
-    hull: ['stardestroyer_hull_01_sb_endor#1', 'the main hull’s plating (p132; its part 0 is the default)'],
-    'gen-port': ['stardestroyer_deflectorshield_01#0', 'the deflector shield domes on the bridge tower'],
-    'gen-star': ['stardestroyer_deflectorshield_01#0', 'the deflector shield domes on the bridge tower'],
-    bridge: ['stardestroyer_detailscommandbridge_01', 'the command bridge module (p132: no bolt hurts it in the game)'],
-    reactor: ['stardestroyer_solarionizationreactor_01#0', 'the solar ionization reactor’s bulb under the hull'],
+    hull: { record: `${ISD}/StarDestroyer_Hull_01_SB_ENDOR`, part: 1, why: 'the site maps the war’s hull to the Star Destroyer’s main hull module because no record of the game’s makes its hull an objective; the module is p132, which no bolt hurts' },
+    'gen-port': { record: `${ISD}/StarDestroyer_DeflectorShield_01`, why: 'the site maps the war’s port shield generator to the deflector shield domes on the bridge tower because they are this ship’s shield in the game (a team’s record with hit points, though no level makes it an objective) and the war puts its generators there; the two domes are one module placed twice, so both generators take the same parts' },
+    'gen-star': { record: `${ISD}/StarDestroyer_DeflectorShield_01`, why: 'the site maps the war’s starboard shield generator to the deflector shield domes because they are this ship’s shield in the game and the war puts its generators there; the two domes are one module placed twice, so both generators take the same parts' },
+    bridge: { record: `${ISD}/StarDestroyer_DetailsCommandBridge_01`, why: 'the site maps the war’s bridge to the command bridge module, where the war puts it, because no record of the game’s makes the Star Destroyer’s bridge an objective; the module is p132, so no bolt hurts it' },
+    reactor: { record: `${ISD}/StarDestroyer_SolarIonizationReactor_01`, objective: 'Gameplay/GameModes/SpaceBattles/Objectives/PF_SpaceBattles_StarDestroyer_Objective_01', why: 'the site maps the war’s reactor to the solar ionization reactor because it is the Star Destroyer’s objective in the game (SB_Fondor_01’s SpaceBattle_Logic places the prefab that links it)' },
   },
   moncal: {
-    hull: ['mc80_mainhull_01', 'the main hull'],
-    'gen-port': ['mc80_largenodule_01#1', 'the top port nodule, SB_Endor_01’s target TL01 (its first state its p132 shell)'],
-    'gen-star': ['mc80_largenodule_04#1', 'the top starboard nodule, SB_Endor_01’s target TR01 (its first state its p132 shell)'],
-    bridge: [null, 'the MC80’s bridge is its main hull’s: no module of its own'],
-    reactor: [null, 'no reactor module (SB_Endor_01’s engine target is a collision object of the level’s, not the kit’s)'],
+    hull: { record: `${MC80}/MC80_MainHull_01`, why: 'the site maps the war’s hull to the MC80’s main hull module because no record of the game’s makes its hull an objective; the module is p132' },
+    'gen-port': { record: `${MC80}/MC80_LargeNodule_01`, objective: `${SB}/SB_Endor_01/Objectives/PF_SpaceBattles_MC80_target_TL01`, why: 'the site maps the war’s port shield generator to the top port nodule because SB_Endor_01’s MC80 targets are its nodules and the war puts its generators on the ship’s back' },
+    'gen-star': { record: `${MC80}/MC80_LargeNodule_04`, objective: `${SB}/SB_Endor_01/Objectives/PF_SpaceBattles_MC80_target_TR01`, why: 'the site maps the war’s starboard shield generator to the top starboard nodule because SB_Endor_01’s MC80 targets are its nodules and the war puts its generators on the ship’s back' },
+    bridge: { record: null, why: 'no record of the game’s makes the MC80’s bridge an objective or a module of its own, so the war keeps its own bridge' },
+    reactor: { record: `${SB}/SB_Endor_01/Objects/Endor_Engine_targetCollision`, objective: `${SB}/SB_Endor_01/Objectives/PF_SpaceBattles_MC80_Target_FinalStage_Engines`, why: 'the site maps the war’s reactor to the game’s last MC80 target, its engines, because the game has no reactor objective and the war puts its reactor among the engines' },
   },
   venator: {
-    hull: ['venatorstardestroyer_hull_01', 'the main hull'],
-    'gen-port': ['venatorstardestroyer_controltower_left#0', 'the port bridge tower’s top'],
-    'gen-star': ['venatorstardestroyer_controltower_right#0', 'the starboard bridge tower’s top'],
-    bridge: ['venatorstardestroyer_controltower_01#0', 'the bridge tower module'],
-    reactor: [null, NONE],
+    hull: { record: 'Gameplay/Vehicles/Capital/VenatorClass_StarDestroyer/VenatorStarDestroyer_Hull_01', why: 'the site maps the war’s hull to the Venator’s main hull module because no record of the game’s makes its hull an objective; the module is p132' },
+    'gen-port': { record: null, why: 'the game’s Venator has no shield objective (SB_Kamino_01’s are its two bridge towers, its engines and its hangar laser), so the war keeps its own generators on the towers’ domes' },
+    'gen-star': { record: null, why: 'the game’s Venator has no shield objective, so the war keeps its own generators on the towers’ domes' },
+    bridge: { record: `${VENATOR}/HealthStateCollisionObjects/VenatorControlTowerRight_HealthState`, objective: `${VENATOR}/PF_SB_Venator_Bridge_Right`, why: 'the site maps the war’s bridge to SB_Kamino_01’s starboard bridge objective because the war puts its bridge in the starboard tower’s face; the port tower’s (PF_SB_Venator_Bridge_Left) has no war part to take it' },
+    reactor: { record: `${VENATOR}/HealthStateCollisionObjects/VenatorStarDestroyer_EnginesLeft_HealthState`, objective: `${VENATOR}/PF_SB_Venator_Engines_Left`, why: 'the site maps the war’s reactor to the first of SB_Kamino_01’s two engine objectives because the game has no reactor and puts the Venator’s last objectives at its engines; the kit’s engine modules are one set of names, so a hit on either side’s engines is a hit on it' },
   },
-  providence: { hull: ['providenceclassdreadnaught_01', 'its one module, the whole ship'] },
+  providence: {
+    hull: { record: 'Gameplay/Vehicles/Capital/ProvidenceClassDreadnaught/ProvidenceClassDreadnaught_01', objective: `${KAMINO}/SpaceBattles_Dreadnaught/PF_SpaceBattles_ProvidenceClassDreadnaught_01`, why: 'the site maps the war’s hull to the dreadnought’s one module because it is the whole ship and SB_Kamino_01’s objective; it is p132, so no bolt hurts it' },
+  },
   lucrehulk: {
-    hull: ['lucrehulkclass_droidbattleship_mainhull_01#2', 'the main hull ring’s plating'],
-    'gen-port': ['lucrehulkclass_droidbattleship_transmissiontowerpowergenerator_01#0', 'a transmission tower’s power generator, an objective of SB_DroidBattleShip_01’s'],
-    'gen-star': ['lucrehulkclass_droidbattleship_transmissiontowerpowergenerator_01#0', 'a transmission tower’s power generator, an objective of SB_DroidBattleShip_01’s'],
-    bridge: ['lucrehulkclass_droidbattleship_controlbridgetower_01_left', 'the control bridge tower’s arm, an objective of SB_DroidBattleShip_01’s'],
-    reactor: [null, 'the core is the level’s own object, not the kit’s'],
+    hull: { record: `${LUCREHULK}/LucrehulkClass_DroidBattleShip_MainHull_01`, part: 2, why: 'the site maps the war’s hull to the main hull ring’s plating because no record of the game’s makes the Lucrehulk’s hull an objective; it is p132' },
+    'gen-port': { record: `${LUCREHULK}/LucrehulkClass_DroidBattleShip_TransmissionTowerPowerGenerator_01`, objective: `${SB}/SB_DroidBattleShip_01/Objectives/PF_LucrehulkClass_DroidBattleShip_TransmissionTowerPowerGenerator`, why: 'the site maps the war’s shield generators to SB_DroidBattleShip_01’s power generators because they are the game’s generator objectives and stand on the ring either side, where the war puts its generators (the core’s protector shields sit at the core instead)' },
+    'gen-star': { record: `${LUCREHULK}/LucrehulkClass_DroidBattleShip_TransmissionTowerPowerGenerator_01`, objective: `${SB}/SB_DroidBattleShip_01/Objectives/PF_LucrehulkClass_DroidBattleShip_TransmissionTowerPowerGenerator`, why: 'the site maps the war’s starboard shield generator to SB_DroidBattleShip_01’s power generators because they are the game’s generator objectives and stand on the ring, where the war puts its generators' },
+    bridge: { record: `${LUCREHULK}/LucrehulkClass_DroidBattleShip_ControlBridgeTower_01_Left`, objective: `${SB}/SB_DroidBattleShip_01/Objectives/PF_LucrehulkClass_DroidBattleShip_ControlTower_LeftArm_01`, why: 'the site maps the war’s bridge to SB_DroidBattleShip_01’s control tower objective (its left arm, the right one’s twin) because it is the Lucrehulk’s bridge' },
+    reactor: { record: `${SB}/SB_DroidBattleShip_01/Objects/LucrehulkClass_DroidBattleShip_TheCore_ConceptObjective_01`, objective: `${SB}/SB_DroidBattleShip_01/Objects/PF_DroidBattleShip_CoreObjective_Temp_01`, why: 'the site maps the war’s reactor to SB_DroidBattleShip_01’s “Reactor” objective, the core, because it is the game’s reactor of the Lucrehulk' },
   },
-  lightcruiser: { hull: ['imperialcruiser_hull_01', 'the hull module, its only one with physics: the whole ship'] },
-  corvette: { hull: ['corvettecr90_01#0', 'the hull part, whose last state is the wreck'] },
-  nebulon: { hull: ['frigatenebulonb_01', 'its one part (p34: no relation, so no bolt hurts it)'] },
+  lightcruiser: {
+    hull: { record: 'Gameplay/Vehicles/Capital/ImperialCruiser/ImperialCruiser_Hull_01', objective: 'Gameplay/Vehicles/SpaceBattles/ImperialLightCruiser/PF_SpaceBattles_ImperialCruiser', why: 'the site maps the war’s hull to the Arquitens’ hull module because it is the whole ship and SB_Fondor_01’s cruiser objective' },
+  },
+  corvette: {
+    hull: { record: `${CR90}/CorvetteCR90_01`, part: 0, objective: `${CR90}/PF_CorvetteCR90_01`, why: 'the site maps the war’s hull to the CR90’s hull chain (its last state the wreck) because the whole corvette is the game’s objective (SB_Endor_01’s corvettes); its other part counts as the hull too' },
+  },
+  nebulon: {
+    hull: { record: 'Objects/Props/Landmarks/_RebelAlliance/BD_FrigateNebulonB_01/FrigateNebulonB_01', why: 'the site maps the war’s hull to the frigate’s one part because the game’s Nebulon-B is a backdrop with no objective; it is p34, with no relation, so no bolt hurts it' },
+  },
+};
+const SHIPS = { destroyer: 'Star Destroyer', moncal: 'MC80', venator: 'Venator', providence: 'Providence', lucrehulk: 'Lucrehulk', lightcruiser: 'Arquitens', corvette: 'CR90', nebulon: 'Nebulon-B' };
+
+// The hull parts each turret record stands for, where the kit has the gun:
+// a hit there is a hit on that turret (its hp and property, by a vehicle's
+// rule) and it fires that record's bolts. The kit's guns are props (the Star
+// Destroyer's heavy turbolaser a static model of its own 5,000, the MC80's
+// main turret p132, the Venator's turrets p0 wrecks): the vehicle record is
+// the gun the game fires.
+export const TURRET_PARTS = {
+  destroyer: {
+    parts: { 'stardestroyer_heavyturbolaser_01#0': 'StarDestroyer_HeavyTurboLaser_02', 'stardestroyer_heavyturbolaser_01#2': 'StarDestroyer_HeavyTurboLaser_02' },
+    why: 'the site gives the kit’s heavy turbolaser guns (its two, each a part) the game’s heavy turbolaser turret because that vehicle is the gun the game fires from a Star Destroyer; the small turbolaser turret has no kit part',
+  },
+  moncal: { parts: { mc80_mainturret: 'MC80_SmallGunTurret_Heavy' }, why: 'the site gives the kit’s one gun, its main turret, the MC80’s heavy turret because it fires the heavy turbolaser bolt; the anti-fighter turret has no kit part' },
+  venator: { parts: { ventatorstardestroyer_turret_01_wreck: 'VenatorStarDestroyer_HeavyTurret' }, why: 'the site gives the kit’s turret modules (wrecks) the Venator’s heavy turret, the gun SB_Kamino_01 mounts on its Venator; the side turret has no kit part' },
 };
 
+// The notes the file opens with
 const NOTES = [
   'A bolt’s damage is `damage` out to falloff[0] metres, falling to damageFar at falloff[1] and damageFar beyond. What it hits takes the cell’s multiplier × that when the product reaches the cell’s threshold, else nothing; a pair with no relation takes noRelation’s cell, 0× under 2 (findings/62 §3).',
-  'A fighter’s health loses multiplier(bolt.property, fighter.property) × damage × vehicleDamageModifier, the product held to the threshold: fighter.property is its VehicleEntityData.MaterialPair’s whichever part the bolt met, since a part’s own relation spends only that part’s states, which reach the health only through a weak spot, and no starfighter has one (findings/62 §2). A friend’s bolt is × friendlyDamageModifier while friendly fire is off. A turret is a vehicle and takes a bolt the same way, against its own property.',
+  'A fighter’s health loses multiplier(bolt.property, fighter.property) × damage × vehicleDamageModifier when multiplier × damage reaches the threshold. fighter.property is the property of its VehicleEntityData.MaterialPair, whichever part the bolt met, because a part’s own relation spends only that part’s states, which reach the health only through a weak spot, and no starfighter has one (findings/62 §2). A friend’s bolt is × friendlyDamageModifier while friendly fire is off. A turret is a vehicle and takes a bolt the same way, against its own property.',
   'A capital’s part (a static model’s) loses multiplier(bolt.property, part.property) × damage when that reaches the threshold, then × (1 + n × squadBonus.perMate) where `squad` (n the shooter’s squadmates who hit it within squadBonus.cooldown seconds, at most 1 unless eachMate) and × damageMultiplier; a friend’s bolt does nothing unless friendlyFire (findings/62 §4).',
-  'A part starts at health[0] and is spent down its states: a hit never takes it past the next state’s health, where it is held and moves to that state, and the rest of the hit goes back through the same rule (the threshold checked again, so a rest under it is dropped; the squad bonus and damageMultiplier applied again); in the last state it falls to 0. Only a hit on the part its state names (`states`, null for the whole object) spends it, and a state whose part is no longer the part hit sends its `children` FLT_MAX (findings/62 §4).',
+  'A part starts at health[0] and is spent down its states: a hit never takes it past the next state’s health, where it is held and moves to that state, and the rest of the hit goes back through the same rule (the threshold checked again, so a rest under it is dropped; the squad bonus and damageMultiplier applied again); in the last state it falls to 0. Only a hit on the part its state names (`states`, null for the whole object) spends it, and a state whose part is no longer the part hit sends its `children` FLT_MAX (findings/62 §4). A chain whose first state is one more than its second on a part no bolt hurts (an MC80 nodule’s 201 then 200, a Venator bridge’s 700 then 699) cannot be started by a bolt; what moves it on was not read.',
+  'A blast (a bolt’s `blast`, its ExplosionEntityData) reaches a vehicle through its health component’s slot 43 (FUN_141bea1c0), which applies the record’s damage without a grid multiplier; that was read only so far (findings/62 §3), and whether a blast is held to the grid on a static model was not: `blast` is the record’s, its property beside it, for the damage rules to apply as they rule.',
+  'The `site` and `turretParts` blocks are the site’s choices (source: site), not records: which game record each of the war’s part names takes (its numbers then the record’s, with their sources) and which hull parts a turret record stands for, each with why. A hull part no site entry names counts as the hull.',
   'Assumed, as findings/62 leaves it open: a hit’s part is the Havok instance tag’s bits 0–15 (the exporter’s reading of hknpShape::m_userData, PhysicsExport.cs:367, which the data fits); the game’s code that keeps it was not followed.',
 ];
 
@@ -224,6 +269,8 @@ export function cutGrid(asset, properties) {
 // ── what a bolt is ──
 
 const where = (asset, obj, path = '') => `${asset.name}#${obj.$type}${path ? `.${path}` : ''}`;
+// (one of several objects of a type: its index in the record's objects)
+const whereAt = (asset, obj, path) => `${asset.name}#${obj.$type}[${asset.objects.indexOf(obj)}].${path}`;
 
 // a projectile record's bolt: { asset, obj } of its WSBulletEntityData
 function projectileOf(root, v) {
@@ -372,57 +419,83 @@ function byLower(root) {
   return lowered.get(root);
 }
 
-// A kit module's parts with health (its blueprint's PartComponentData, one
-// a chain): each named for the physics part its first state is
-// (HealthStateData.PartIndex: the part a hit must name to spend it,
-// findings/62 §4's `iVar6 == iVar16`), with that part's property from the
-// asset's header. `file` the kit's model file (a physics asset's own name
-// for a one-asset capital); a module with no physics asset is no part of the
-// hull, and has none.
-export function moduleParts(root, file, { header, squad, missing }) {
-  const res = /_physics_win32$/i.test(file) ? String(file).toLowerCase() : physicsKey(file);
-  const name = byLower(root).get(res.replace(/_physics_win32$/, ''));
-  const bp = name && follow(root, name);
+// A record with health (a kit module's blueprint, or a level's objective
+// object): its physics asset (`res`), that asset's header and part
+// properties, and its chains, one a PartComponentData with HealthStates,
+// each begun on the part its first HealthStateData.PartIndex names (the part
+// a hit must name to spend it: findings/62 §4's `iVar6 == iVar16`). Null,
+// with a line in `missing`, where the record or its header is not there; a
+// record with no physics asset has no chains.
+function healthOf(root, name, { header, squad, missing }) {
+  const bp = follow(root, name);
   if (!bp) {
-    missing.push(`module: ${file}`);
-    return {};
+    missing.push(`record: ${name}`);
+    return null;
   }
   const rb = objectsOf(bp, 'RigidBodyData').find((r) => r.Asset?.$asset);
-  if (!rb) return {};
-  if (rb.Asset.$asset.toLowerCase() !== res) missing.push(`physics: ${name} has ${rb.Asset.$asset}`);
+  if (!rb) return { bp, chains: [] };
+  const res = rb.Asset.$asset.toLowerCase();
   const h = header(res);
   if (!h) {
     missing.push(`header: ${res}`);
-    return {};
+    return null;
   }
   const props = partProperties(h, res);
   const ws = objectsOf(bp, 'WSStaticModelHealthComponentData')[0];
-  const link = squad.get(name.toLowerCase());
   // (a state's PartIndex 4294967295, −1, is the whole object)
   const index = (s) => (s.PartIndex >= 0 && s.PartIndex < h.parts ? s.PartIndex : null);
-  const chains = new Map();
+  const chains = [];
   for (const pc of objectsOf(bp, 'PartComponentData')) {
     const states = (pc.HealthStates ?? []).map((r) => deref(bp, r)).filter(Boolean);
     if (!states.length) continue;
-    if (index(states[0]) === null) missing.push(`part: ${name}'s first state names part ${states[0].PartIndex} of ${h.parts}`);
-    else chains.set(pc, { states, name: partName(file, index(states[0]), h.parts) });
-  }
-  const out = {};
-  for (const [pc, { states, name: key }] of chains) {
     const first = index(states[0]);
-    const row = {
-      health: states.map((s) => s.Health),
-      states: states.map((s) => (index(s) === null ? null : partName(file, index(s), h.parts))),
-      _source: where(bp, pc, 'HealthStates'),
-      property: props[first],
-      property_source: `${res}#HavokPhysicsData.Materials[PartSlots[${first}]]`,
-    };
-    // (the part components nested in its Components, which a state leaving its part sends FLT_MAX: the Star Destroyer's heavy turbolaser's second gun)
-    const children = (pc.Components ?? []).map((r) => chains.get(deref(bp, r))?.name).filter(Boolean);
-    if (children.length) Object.assign(row, { children, children_source: where(bp, pc, 'Components') });
-    if (ws) Object.assign(row, { damageMultiplier: ws.DamageMultiplier, damageMultiplier_source: where(bp, ws, 'DamageMultiplier'), friendlyFire: ws.EnableFriendlyFire, friendlyFire_source: where(bp, ws, 'EnableFriendlyFire') });
-    if (link) Object.assign(row, { squad: true, squad_source: link });
-    out[key] = row;
+    if (first === null) missing.push(`part: ${bp.name}'s first state names part ${states[0].PartIndex} of ${h.parts}`);
+    else chains.push({ pc, states, first, indices: states.map(index) });
+  }
+  return { bp, res, h, props, ws, link: squad.get(bp.name.toLowerCase()), chains, index };
+}
+
+// a chain's numbers: its health and each state's property, the record's
+// multiplier, friendly fire and squad link
+function chainRow(r, c) {
+  const at = c.indices.filter((i) => i !== null);
+  const row = {
+    health: c.states.map((s) => s.Health),
+    _source: whereAt(r.bp, c.pc, 'HealthStates'),
+    properties: c.indices.map((i) => (i === null ? null : r.props[i])),
+    properties_source: `${r.res}#HavokPhysicsData.Materials[PartSlots[${[...new Set(at)].join(',')}]]`,
+  };
+  if (r.ws) Object.assign(row, { damageMultiplier: r.ws.DamageMultiplier, damageMultiplier_source: where(r.bp, r.ws, 'DamageMultiplier'), friendlyFire: r.ws.EnableFriendlyFire, friendlyFire_source: where(r.bp, r.ws, 'EnableFriendlyFire') });
+  if (r.link) Object.assign(row, { squad: true, squad_source: r.link });
+  return row;
+}
+
+// A kit module's parts with health: each chain named for the part it begins
+// on, `property` that part's, `states` each state's part. `file` the kit's
+// model file (a physics asset's own name for a one-asset capital); a module
+// with no physics asset is no part of the hull, and has none.
+export function moduleParts(root, file, ctx) {
+  const res = /_physics_win32$/i.test(file) ? String(file).toLowerCase() : physicsKey(file);
+  const name = byLower(root).get(res.replace(/_physics_win32$/, ''));
+  if (!name) {
+    ctx.missing.push(`module: ${file}`);
+    return {};
+  }
+  const r = healthOf(root, name, ctx);
+  if (!r?.h) return {};
+  if (r.res !== res) ctx.missing.push(`physics: ${name} has ${r.res}`);
+  const named = (i) => partName(file, i, r.h.parts);
+  const out = {};
+  for (const c of r.chains) {
+    const key = named(c.first);
+    if (out[key]) throw new Error(`${name}: two chains begin on part ${c.first}`);
+    const row = chainRow(r, c);
+    out[key] = { ...row, states: c.indices.map((i) => (i === null ? null : named(i))), property: row.properties[0], property_source: `${r.res}#HavokPhysicsData.Materials[PartSlots[${c.first}]]` };
+  }
+  // (the part components nested in a chain's Components, which a state leaving its part sends FLT_MAX: the Star Destroyer's heavy turbolaser's second gun)
+  for (const c of r.chains) {
+    const children = (c.pc.Components ?? []).map((ref) => r.chains.find((x) => x.pc === deref(r.bp, ref))).filter(Boolean).map((x) => named(x.first));
+    if (children.length) Object.assign(out[named(c.first)], { children, children_source: whereAt(r.bp, c.pc, 'Components') });
   }
   return out;
 }
@@ -452,51 +525,128 @@ export function turretRow(root, blueprint, { missing }) {
     .filter(([p, speed]) => !seen.has(`${p.$asset}@${speed}`) && seen.add(`${p.$asset}@${speed}`))
     .map(([p, speed, at]) => boltRow(root, p, speed, at, missing))
     .filter(Boolean);
+  if (!bolts.length) {
+    missing.push(`turret: ${blueprint} fires no bolt`);
+    return null;
+  }
   return { hp: hc.MaxHealth, hp_source: where(bp, hc, 'MaxHealth'), property: propertyOf(v.MaterialPair?.Packed ?? 0), property_source: where(bp, v, 'MaterialPair'), bolts };
 }
 
-// A capital: its modules' parts, its turrets and the war's names on its
-// parts. Where its hull is the site's (bf2017-hulls.mjs's SITE_OVER_GAME),
-// no hull part carries a module's name, so only the parts its site map
-// names are kept.
-export function capitalRow(root, kind, files, ctx) {
-  let parts = {};
-  for (const file of [...new Set(files)]) Object.assign(parts, moduleParts(root, file, ctx));
-  if (SITE_OVER_GAME[kind]) {
-    const named = new Set(Object.values(SITE[kind] ?? {}).map(([part]) => part));
-    parts = Object.fromEntries(Object.entries(parts).filter(([name]) => named.has(name)));
+// One of the war's part names on a capital (the site's choice, SITE): the
+// record's chain (its numbers and sources) and the hull parts a hit on it
+// is. `files` the kit's model files, `inside` the kit files inside each
+// level object's box (capitalModules).
+function siteRow(root, kind, id, { files, inside }, ctx) {
+  const pick = SITE[kind]?.[id] ?? { record: null, why: OWN(SHIPS[kind] ?? kind) };
+  const out = { source: 'site', why: pick.why, record: pick.record };
+  if (pick.objective) out.objective = pick.objective;
+  if (pick.record === null) return { ...out, parts: [] };
+  const r = healthOf(root, pick.record, ctx);
+  const c = r && (pick.part === undefined ? r.chains.reduce((a, b) => (b.states.length > a.states.length ? b : a), r.chains[0]) : r.chains.find((x) => x.first === pick.part));
+  if (!c) {
+    ctx.missing.push(`site: ${kind}'s ${id}: no chain in ${pick.record}`);
+    return { ...out, parts: [] };
   }
+  // (a kit module's own parts; a level object's, the kit modules inside its box; a site hull's, the name's)
+  const own = files.find((f) => physicsKey(f) === r.res || String(f).toLowerCase() === r.res);
+  const modules = own ? [own] : (inside[pick.record] ?? []);
+  if (!own && !SITE_OVER_GAME[kind] && !inside[pick.record]) ctx.missing.push(`site: ${kind}'s ${id}: where ${pick.record} stands on the kit`);
+  const parts = SITE_OVER_GAME[kind]
+    ? [id]
+    : modules.flatMap((f) => {
+        const n = ctx.header(/_physics_win32$/i.test(f) ? String(f).toLowerCase() : physicsKey(f))?.parts ?? 0;
+        return Array.from({ length: n }, (_, i) => partName(f, i, n));
+      });
+  return { ...out, ...chainRow(r, c), parts: [...new Set(parts)] };
+}
+
+// A capital: its modules' parts, its turrets, the war's names on them and
+// the turrets' parts. Where its hull is the site's (bf2017-hulls.mjs's
+// SITE_OVER_GAME), no hull part carries a module's name: its parts are its
+// site entries'.
+export function capitalRow(root, kind, kit, ctx) {
+  const k = Array.isArray(kit) ? { files: kit, inside: {} } : kit;
+  const parts = {};
+  if (!SITE_OVER_GAME[kind]) for (const file of [...new Set(k.files)]) Object.assign(parts, moduleParts(root, file, ctx));
   const turrets = {};
   for (const t of ctx.turrets[kind] ?? []) {
     const row = turretRow(root, t, ctx);
     if (row) turrets[shortName(t)] = row;
   }
-  const site = {};
-  for (const n of SITE_NAMES) {
-    const [part, why] = SITE[kind]?.[n] ?? [null, NONE];
-    if (part !== null && !parts[part]) ctx.missing.push(`site: ${kind}'s ${n} names ${part}, not a part of its`);
-    site[n] = { part, why };
+  const site = Object.fromEntries(SITE_NAMES.map((id) => [id, siteRow(root, kind, id, k, ctx)]));
+  const row = { parts, turrets, site };
+  const tp = TURRET_PARTS[kind];
+  if (tp && !SITE_OVER_GAME[kind]) {
+    for (const [part, t] of Object.entries(tp.parts)) if (!turrets[t]) ctx.missing.push(`turretParts: ${kind}'s ${part} names ${t}, not a turret of its`);
+    row.turretParts = { source: 'site', why: tp.why, parts: tp.parts };
   }
-  return { parts, turrets, site };
+  return row;
 }
 
-// Each game capital's kit modules, as its fleet file was made of them:
-// piecesOf over its space level's map (`maps` the folder holding maps/),
-// or, for one made from one asset, that asset (bf2017-hulls.mjs's CAPITAL_KITS)
-export function capitalModules(maps, kits = CAPITAL_KITS) {
+// The kit files whose meshes' centres sit inside an object's box (10 % over)
+// where its level's SpaceBattle sub-level places both: the object's place
+// in the frame of its nearest kit anchor, against the parts of the kit's
+// model (piecesOf's, in its anchor's frame)
+const qmul = (a, b) => [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0], a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
+const qinv = (q) => [-q[0], -q[1], -q[2], q[3]];
+export function filesInside(map, model, mesh, margin = 1.1) {
+  const kit = KITS.find((k) => k.kit === model.kit);
+  const sub = new Int32Array(map.instances.count).fill(-1);
+  for (const g of map.groups) sub.fill(g.sub, g.first, g.first + g.count);
+  const battle = [...Array(map.instances.count).keys()].filter((i) => /\/spacebattle$/i.test(String(map.subworlds[sub[i]]))).map((i) => instanceOf(map, i));
+  const fileOf = (x) => String(map.meshes[x.mesh]?.file ?? '').toLowerCase();
+  const want = `models/${String(mesh).toLowerCase()}.glb`;
+  const o = battle.find((x) => fileOf(x) === want);
+  const anchors = kit?.anchor ? battle.filter((x) => kit.anchor.test(fileOf(x))) : [];
+  if (!o || !anchors.length) return null;
+  const far = (x) => Math.hypot(...x.at.map((v, k) => v - o.at[k]));
+  const a = anchors.reduce((b, x) => (far(x) < far(b) ? x : b));
+  const inv = qinv(a.quaternion);
+  const at = rotate(inv, o.at.map((v, k) => v - a.at[k])).map((v, k) => v / a.scale[k]);
+  const q = qmul(inv, o.quaternion);
+  const box = map.meshes[o.mesh];
+  const mid = (m) => m.min.map((v, k) => (v + m.max[k]) / 2);
+  const meshes = new Map(map.meshes.map((m) => [m.file, m]));
+  const out = new Set();
+  for (const p of model.parts) {
+    const m = meshes.get(p.file);
+    if (!m) continue;
+    const c = rotate(p.quaternion, mid(m).map((v, k) => v * p.scale[k])).map((v, k) => v + p.at[k]);
+    const d = rotate(qinv(q), c.map((v, k) => v - at[k])).map((v, k) => v / (o.scale[k] / a.scale[k]));
+    if (d.every((v, k) => Math.abs(v - mid(box)[k]) <= ((box.max[k] - box.min[k]) / 2) * margin)) out.add(p.file);
+  }
+  return [...out];
+}
+
+// Each game capital's kit modules, as its fleet file was made of them
+// (piecesOf over its space level's map, `maps` the folder holding maps/;
+// for one made from one asset, that asset: bf2017-hulls.mjs's CAPITAL_KITS),
+// and the kit files inside each site record that is a level's object
+export function capitalModules(root, maps, kits = CAPITAL_KITS) {
   const levels = new Map();
   const out = {};
   for (const [kind, k] of Object.entries(kits)) {
     if (kind.includes('/')) continue;
     if (k.physics) {
-      out[kind] = [k.physics];
+      out[kind] = { files: [k.physics], inside: {} };
       continue;
     }
     if (!levels.has(k.space)) {
       const base = join(maps, 'maps', SPACE[k.space].map);
-      levels.set(k.space, piecesOf(readMap(JSON.parse(readFileSync(`${base}.json`, 'utf8')), readFileSync(`${base}.bin`)), { system: k.space }));
+      const map = readMap(JSON.parse(readFileSync(`${base}.json`, 'utf8')), readFileSync(`${base}.bin`));
+      levels.set(k.space, { map, pieces: piecesOf(map, { system: k.space }) });
     }
-    out[kind] = (levels.get(k.space).models[k.model]?.parts ?? []).map((p) => p.file);
+    const { map, pieces } = levels.get(k.space);
+    const model = pieces.models[k.model];
+    const files = (model?.parts ?? []).map((p) => p.file);
+    const inside = {};
+    for (const pick of Object.values(SITE[kind] ?? {})) {
+      if (!pick.record || SITE_OVER_GAME[kind] || files.some((f) => physicsKey(f) === pick.record.toLowerCase() + '_physics_win32')) continue;
+      const mesh = objectsOf(follow(root, pick.record) ?? { objects: [] }, 'StaticModelEntityData')[0]?.Mesh?.$asset;
+      const found = mesh && model && filesInside(map, model, mesh);
+      if (found) inside[pick.record] = found;
+    }
+    out[kind] = { files, inside };
   }
   return out;
 }
@@ -514,13 +664,14 @@ export function damageRulebook(root, { kits = {}, header = () => null, fighters 
     if (row) fighterRows[kind] = row;
   }
   const capitals = {};
-  for (const [kind, files] of Object.entries(kits)) capitals[kind] = capitalRow(root, kind, files, ctx);
+  for (const [kind, kit] of Object.entries(kits)) capitals[kind] = capitalRow(root, kind, kit, ctx);
 
   // the grid's cells for every property here, held to the other levels' grids
   const bolts = [...Object.values(fighterRows).map((f) => f.bolt), ...Object.values(capitals).flatMap((c) => Object.values(c.turrets).flatMap((t) => t.bolts))].filter(Boolean);
   const attackers = [...new Set([...ATTACKERS, ...bolts.flatMap((b) => [b.property, b.blast?.property])].filter((p) => p !== undefined))].sort((a, b) => a - b);
-  const hit = [...Object.values(fighterRows).map((f) => f.property), ...Object.values(capitals).flatMap((c) => [...Object.values(c.parts).map((p) => p.property), ...Object.values(c.turrets).map((t) => t.property)])];
-  const targets = [...new Set([...TARGETS, ...hit])].sort((a, b) => a - b);
+  const sited = Object.values(capitals).flatMap((c) => Object.values(c.site).flatMap((s) => s.properties ?? []));
+  const hit = [...Object.values(fighterRows).map((f) => f.property), ...sited, ...Object.values(capitals).flatMap((c) => [...Object.values(c.parts).flatMap((p) => p.properties), ...Object.values(c.turrets).map((t) => t.property)])];
+  const targets = [...new Set([...TARGETS, ...hit].filter((p) => p !== null))].sort((a, b) => a - b);
   const asset = follow(root, GRID);
   if (!asset) throw new Error(`${GRID}: not in ${root}`);
   const cell = gridOf(asset);
@@ -538,12 +689,27 @@ export function damageRulebook(root, { kits = {}, header = () => null, fighters 
     agrees.push(name.split('/')[2]);
   }
 
+  // the parts no attacker here can hurt in any state (p132, p0, p34: 0×
+  // or no relation) left out, but those the site or a turret names
+  const hurts = (p) => p !== null && attackers.some((a) => grid[a][p].multiplier > 0);
+  let dropped = 0;
+  for (const c of Object.values(capitals)) {
+    const named = new Set([...Object.values(c.site).flatMap((s) => s.parts), ...Object.keys(c.turretParts?.parts ?? {})]);
+    for (const [name, p] of Object.entries(c.parts))
+      if (!named.has(name) && !p.properties.some(hurts)) {
+        delete c.parts[name];
+        dropped++;
+      }
+  }
+  const squadBonus = squadBonusOf(root);
+  if (!squadBonus) missing.push(`squad bonus: ${SQUAD_BONUS}`);
+
   return {
-    _notes: NOTES,
+    _notes: [...NOTES, `${dropped} capital parts are left out: every state on a property no bolt here hurts (p132, p0, p34), and neither the site nor a turret names them; a hit on one does nothing.`],
     gridFrom: { grid: GRID, indexMap: `${asset.name}#MaterialGridData.MaterialIndexMap`, agrees },
     grid,
     noRelation,
-    squadBonus: squadBonusOf(root),
+    squadBonus,
     fighters: fighterRows,
     capitals,
     stand: Object.fromEntries(Object.entries(stand).map(([k, s]) => [k, { ...s }])),

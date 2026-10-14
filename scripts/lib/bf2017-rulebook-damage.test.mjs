@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { readHull } from '../../src/lib/physics/shapesBin.js';
-import { CAPITAL_KITS, headerFile, partName, readHeader, rosterKinds } from './bf2017-hulls.mjs';
+import { CAPITAL_KITS, SITE_OVER_GAME, headerFile, partName, readHeader, rosterKinds } from './bf2017-hulls.mjs';
 import { checkSources } from './bf2017-rulebook.mjs';
 import { FIGHTERS, SITE_NAMES, STAND, cutGrid, damageRulebook, gridOf, propertyOf } from './bf2017-rulebook-damage.mjs';
 
@@ -95,15 +95,29 @@ describe('a capital', () => {
     expect(t.bolts[0]).toMatchObject({ projectile: 'Projectile_CR90_LargeTurret', damage: 100, speed: 600, property: 61 });
   });
 
-  it('maps the war’s part names onto its own', () => {
-    expect(c.site.hull.part).toBe('corvettecr90_01#0');
-    for (const name of SITE_NAMES) expect(c.site[name]).toBeDefined();
+  it('gives the war’s hull the record the site chose, its numbers the record’s, on the hull parts a hit on it is', () => {
+    expect(c.site.hull).toMatchObject({ source: 'site', record: 'Gameplay/Vehicles/Corvette/CorvetteCR90/CorvetteCR90_01', health: [500, 1, 0], properties: [206, 206, null], squad: true, damageMultiplier: 1 });
+    expect(c.site.hull._source).toMatch(/CorvetteCR90_01#PartComponentData\[\d+\]\.HealthStates$/);
+    expect(c.site.hull.parts).toEqual([partName(CR90, 0, 2), partName(CR90, 1, 2)]);
+    expect(c.site.hull.why).toMatch(/^the site maps the war’s hull to .* because /);
+    // (the CR90 has no objective for the war's generators, bridge or reactor: the war keeps its own)
+    for (const name of SITE_NAMES.slice(1)) expect(c.site[name]).toMatchObject({ source: 'site', record: null, parts: [] });
+  });
+
+  it('names each chain’s source by its object, the record having several', () => {
+    expect(c.parts['corvettecr90_01#0']._source).not.toBe(c.parts['corvettecr90_01#1']._source);
   });
 });
 
 it('names a record for every number', () => {
   expect(checkSources(book)).toEqual([]);
   expect(book._missing).toEqual([]);
+});
+
+it('says what it could not read rather than leave it out', () => {
+  const thin = damageRulebook(ROOT, { fighters: {}, kits: { corvette: [CR90] }, turrets: { corvette: ['Gameplay/Vehicles/Corvette/CorvetteCR90/CorvetteCR90_Nowhere'] }, header });
+  expect(thin._missing).toContain('turret: Gameplay/Vehicles/Corvette/CorvetteCR90/CorvetteCR90_Nowhere');
+  expect(thin.capitals.corvette.turrets).toEqual({});
 });
 
 describe('src/data/bf2017/damage.json', () => {
@@ -152,11 +166,52 @@ describe('src/data/bf2017/damage.json', () => {
     expect(damage.capitals.corvette.parts['corvettecr90_01#0'].health).toEqual([500, 1, 0]);
   });
 
-  it('maps the war’s part names onto parts each capital holds', () => {
-    for (const [k, c] of Object.entries(damage.capitals))
+  it('marks the site’s choices as the site’s, says so in its notes, and says how a blast applies', () => {
+    expect(damage._notes.some((n) => /`site` and `turretParts` blocks are the site’s choices/.test(n))).toBe(true);
+    expect(damage._notes.some((n) => /blast/.test(n) && /slot 43/.test(n))).toBe(true);
+    for (const [k, c] of Object.entries(damage.capitals)) {
       for (const name of SITE_NAMES) {
-        expect(c.site[name], `${k} ${name}`).toBeDefined();
-        if (c.site[name].part !== null) expect(c.parts[c.site[name].part], `${k} ${name}`).toBeDefined();
+        const s = c.site[name];
+        expect(s, `${k} ${name}`).toMatchObject({ source: 'site' });
+        expect(s.why, `${k} ${name}`).toMatch(/^(the site maps the war’s .* because |no record of the game’s |the game’s .* has no )/);
+        if (s.record !== null) expect(s.health.length, `${k} ${name}`).toBe(s.properties.length);
       }
+      if (c.turretParts) expect(c.turretParts.source, k).toBe('site');
+    }
+  });
+
+  it('gives the war’s objectives the game’s objective records where it has them', () => {
+    const { venator, moncal, lucrehulk, destroyer } = damage.capitals;
+    expect(venator.site.bridge).toMatchObject({ health: [700, 699, 0], properties: [132, 206, 132], squad: true });
+    expect(venator.site.bridge.record).toMatch(/VenatorControlTowerRight_HealthState$/);
+    expect(venator.site.bridge.parts).toContain('venatorstardestroyer_controltower_right#0');
+    expect(venator.site.reactor).toMatchObject({ health: [500, 0], properties: [206, 132] });
+    expect(venator.site.reactor.parts).toContain('venatorstardestroyer_engine_01');
+    expect(moncal.site.reactor).toMatchObject({ health: [251, 250, 0], properties: [132, 206, null] });
+    expect(moncal.site.reactor.parts).toContain('mc80_engine_module_01');
+    expect(lucrehulk.site.reactor).toMatchObject({ health: [450, 204, 102, 0], parts: ['reactor'] });
+    expect(destroyer.site.reactor).toMatchObject({ health: [300, 0], squad: true });
+    expect(destroyer.site['gen-port'].parts).toEqual(['stardestroyer_deflectorshield_01#0', 'stardestroyer_deflectorshield_01#1']);
+  });
+
+  it('names, on a game hull, only parts that hull has; on a site hull, the part of the name', () => {
+    for (const [k, c] of Object.entries(damage.capitals)) {
+      const names = new Set([...Object.keys(c.parts), ...Object.values(c.parts).flatMap((p) => p.states)]);
+      for (const [id, s] of Object.entries(c.site))
+        for (const p of s.parts) expect(SITE_OVER_GAME[k] ? p === id : names.has(p), `${k} ${id} ${p}`).toBe(true);
+      for (const [part, turret] of Object.entries(c.turretParts?.parts ?? {})) {
+        expect(c.parts[part], `${k} ${part}`).toBeDefined();
+        expect(c.turrets[turret], `${k} ${turret}`).toBeDefined();
+      }
+    }
+  });
+
+  it('leaves out only the parts no bolt can hurt, and says how many', () => {
+    const harmless = new Set([0, 34, 131, 132]);
+    for (const [k, c] of Object.entries(damage.capitals)) {
+      const named = new Set([...Object.values(c.site).flatMap((s) => s.parts), ...Object.keys(c.turretParts?.parts ?? {})]);
+      for (const [name, p] of Object.entries(c.parts)) if (p.properties.every((x) => harmless.has(x))) expect(named.has(name), `${k} ${name}`).toBe(true);
+    }
+    expect(damage._notes.at(-1)).toMatch(/^\d+ capital parts are left out/);
   });
 });

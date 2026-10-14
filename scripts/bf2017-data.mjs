@@ -375,7 +375,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           const bytes = bytesOf(res);
           return bytes && readHeader(bytes);
         };
-        const book = damageRulebook(root, { kits: capitalModules(maps), header });
+        const book = damageRulebook(root, { kits: capitalModules(root, maps), header });
         for (const m of book._missing) console.log(`  missing: ${m}`);
         const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'damage.json');
         writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }) + '\n');
