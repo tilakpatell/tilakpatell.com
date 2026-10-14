@@ -32,6 +32,7 @@ import { createFlashes } from '../galaxy/fx';
 import { GLOW, createBoltDraw, createFires, createGlows, createMarkers, createShield, glowAt } from './battleFx';
 import { createProps } from './battleProps';
 import { titleOf } from './battleObjectives';
+import { basisOf, bobOf } from '../../lib/combat/pose';
 
 const NAMES = { shieldgen: 'Shield generator', bridge: 'Bridge', reactor: 'Reactor' };
 // a runner, as its marker names it (and its number in the battle)
@@ -68,20 +69,12 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
   const pt = new THREE.Vector3();
 
   // a slot turned to fly along `fwd`, its top toward `up`, banked by `bank`
+  // (combat/pose.js's axes: the hull tests turn a ship the same way)
   const orient = (holder, fwd, up, bank = 0) => {
-    vz.set(fwd.x, fwd.y, fwd.z).normalize();
-    vx.crossVectors(vy.set(up.x, up.y, up.z), vz);
-    if (vx.lengthSq() < 1e-8) vx.set(1, 0, 0);
-    vx.normalize();
-    vy.crossVectors(vz, vx);
-    if (bank) {
-      // rolled about the nose (into the turn)
-      const c = Math.cos(bank);
-      const s = Math.sin(bank);
-      tmp.copy(vx).multiplyScalar(c).addScaledVector(vy, s);
-      vy.multiplyScalar(c).addScaledVector(vx, -s);
-      vx.copy(tmp);
-    }
+    const b = basisOf(fwd, up, bank);
+    vx.set(b[0], b[1], b[2]);
+    vy.set(b[3], b[4], b[5]);
+    vz.set(b[6], b[7], b[8]);
     basis.makeBasis(vx, vy, vz);
     holder.quaternion.setFromRotationMatrix(basis);
   };
@@ -285,7 +278,7 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
       for (const cap of battle.capitals) {
         const s = slots.get(cap);
         if (!s || !s.holder.visible || cap.gone || cap.jumped) continue;
-        const bob = reduced ? 0 : Math.sin(t * 0.3 + cap.id) * 0.15;
+        const bob = bobOf(cap, t, reduced);
         s.holder.position.set(cap.pos.x, cap.pos.y + bob, cap.pos.z);
         if (cap.moved) orient(s.holder, cap.fwd, cap.up); // (turned by a set piece, the Scarif ram, the Executor's dive, or the fleet's push)
         if (cap.dying > 0 && chain <= 0) flashes.at(onHull(cap, pt), { size: 1.5 + Math.random() * cap.size * 0.08, life: 0.9 + Math.random() * 0.6 });
