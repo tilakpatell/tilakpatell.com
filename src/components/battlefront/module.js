@@ -19,7 +19,7 @@
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
-// 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2),
+// 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2), 'captured' (each capture point of the stage at a full meter: a check's way into stage 3), 'objectives' (the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
 // create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
@@ -634,6 +634,20 @@ export default {
             const homed = ga.objectives.filter((o) => o.type === 'escort' && o.walker?.alive);
             for (const o of homed) o.walker.dist = o.walker.length;
             return { ok: true, walkers: homed.length };
+          }
+          case 'captured': {
+            // (a check's way into the next stage: each capture point of the stage the attackers' at a full meter)
+            const ga = sim.sim.ga;
+            if (!ga?.objectives) return { ok: false, why: 'no Galactic Assault' };
+            const points = ga.objectives.filter((o) => o.type === 'capture');
+            for (const o of points) o.meter = 1;
+            return { ok: true, points: points.length, stage: ga.stage };
+          }
+          case 'objectives': {
+            // (a check's read of the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder)
+            const ga = sim.sim.ga;
+            if (!ga?.objectives) return { ok: false, why: 'no Galactic Assault' };
+            return { ok: true, stage: ga.stage, phase: ga.phase, result: ga.result, objectives: ga.objectives.map((o) => ({ type: o.type, name: o.name, id: o.def?.prefab ?? null, at: o.at, keypad: o.charge?.keypad?.at ?? null, done: o.done, armed: o.armed ?? null, wait: o.wait ?? null, progress: o.progress ?? null, defuse: o.defuse ?? null, fuse: o.fuse ?? null, paused: o.paused ?? null, holder: o.holder ?? null, by: o.by ?? null, meter: o.meter ?? null, inside: o.inside ?? null })) };
           }
           case 'where': {
             // (a check's read of the player: the place, and whether the body on the level's shapes moves it)
