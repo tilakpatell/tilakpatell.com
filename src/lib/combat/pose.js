@@ -75,21 +75,34 @@ export function hunterPose(h) {
   return { at0: prev, at1: at, basis: basisOf(moving ? h.vel : { x: 0, y: 0, z: 1 }, UP, -(h.bank || 0)), scale: h.type.size };
 }
 
-// the player: three’s 'YXZ' Euler of pitch, heading and −bank (galaxy/scene.js
-// orientOf), nose along −z. `prev` is where the ship was at the step’s start
-export function playerPose(ship, prev) {
-  const a = Math.cos(ship.pitch || 0);
-  const b = Math.sin(ship.pitch || 0);
-  const c = Math.cos(ship.heading);
-  const d = Math.sin(ship.heading);
-  const r = -(ship.bank || 0);
-  const e = Math.cos(r);
-  const f = Math.sin(r);
+// three’s 'YXZ' Euler (yaw about y, then pitch about x, then roll about z) as
+// a column-major basis: what rotation.set(pitch, yaw, roll, 'YXZ') draws
+export function yxzBasis(pitch, yaw, roll) {
+  const a = Math.cos(pitch);
+  const b = Math.sin(pitch);
+  const c = Math.cos(yaw);
+  const d = Math.sin(yaw);
+  const e = Math.cos(roll);
+  const f = Math.sin(roll);
   const ce = c * e;
   const cf = c * f;
   const de = d * e;
   const df = d * f;
-  const basis = new Float32Array([ce + df * b, a * f, cf * b - de, de * b - cf, a * e, df + ce * b, a * d, -b, a * c]);
+  return new Float32Array([ce + df * b, a * f, cf * b - de, de * b - cf, a * e, df + ce * b, a * d, -b, a * c]);
+}
+
+// the player: three’s 'YXZ' Euler of pitch, heading and −bank (galaxy/scene.js
+// orientOf), nose along −z. `prev` is where the ship was at the step’s start
+export function playerPose(ship, prev) {
+  const basis = yxzBasis(ship.pitch || 0, ship.heading, -(ship.bank || 0));
   const at1 = [ship.x, ship.y, ship.z];
   return { at0: prev ? arr(prev) : at1.slice(), at1, basis, scale: 1 };
+}
+
+// the director’s capital ship that jumps in on you (universe/capitalRules.js,
+// drawn by setpieces.js): its unit model at `len`, turned by rotation.set(pitch,
+// heading + π, roll, 'YXZ'), at `at`; still (a streak can’t be hit)
+export function pieceCapitalPose(c) {
+  const at = [c.at[0], c.at[1], c.at[2]];
+  return { at0: at, at1: at.slice(), basis: yxzBasis(c.pitch || 0, c.heading + Math.PI, c.roll || 0), scale: c.len };
 }
