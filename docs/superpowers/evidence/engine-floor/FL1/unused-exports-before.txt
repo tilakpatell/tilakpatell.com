@@ -1,0 +1,325 @@
+exports no other file names: 531 in 324 files
+  11 src/lib/three/surface/hair.js EUMELANIN PHEOMELANIN MELANIN_MAX MELANIN_PATH PRIMARY_SHIFT SECONDARY_SHIFT SECONDARY_SHARPNESS HAIR_SMOOTHNESS HAIR_SPECULAR SCATTER_TINT SCATTER_WRAP
+  10 scripts/lib/bf2017-rulebook-damage.mjs OTHER_GRIDS SQUAD_BONUS SQUAD_FIELD TURRET_PARTS fighterRow squadLinks squadBonusOf moduleParts capitalRow filesInside
+   9 src/lib/three/surface/gameMaterial.js DETAIL_SMOOTHNESS_WEIGHT GRUNGE_WEIGHT GRUNGE_ROUGHNESS EMBER_POWER EMBER_COLOR WEAR_ROUGHNESS TRANSLUCENCY_WEIGHT loadGameMaterial BLINK_MAX
+   8 src/components/battlefront/sound/mix.js HIFI TOP_SPEED WINDOW_FLOOR RELEASE_DB_PER_S TOP_RELEASE TENSION_METER HIGH_METER LAST_TICKETS
+   8 src/components/office/world/layout.js DOORWAYS MICHAEL_CHAIRS CABINET COUNTER KTABLE BTABLES RECEPTION_COUNTER DOCK_DOOR
+   8 src/lib/battlefront/ai/soldierBrain.js AI_WEAPONS PATTERN_WEAPONS HEARING SUPPRESSED WANDER TASK_SLACK FIGHT_AWAY INTERACT_CLEAR
+   7 scripts/lib/bf2017-rulebook-air.mjs AIR_REFUSED handlingRow weaponsRow targetingRow cameraRow destructionRow airRow
+   7 src/components/avengers/world/rules.js PROW_PLANT WING_PLANT SOLAR OVERHEAD BRIDGE_SPAN clearLine packById
+   6 scripts/bf2017-sky.mjs PANORAMAS PANORAMA_WIDTHS makePanorama makePanoramaWebp skinnedGlobes makeGlobes
+   6 scripts/lib/bf2017-rulebook-saber.mjs BLOCK_STAGGER COSTS AI_MELEE EVADING CAMERA_FIELDS hitReactOf
+   5 scripts/ultra/kinds.mjs NOT_BUILT GROUND_COVER TASK_NAMES LANE_ENV lanesIn
+   5 src/lib/battlefront/ai/botLogic.js ENEMIES_ON ENEMIES_OFF ORPHANS_FIRST AFTER_CAPTURE CAPTURE_COOL_DOWN
+   4 scripts/lib/bf2017-hulls-budget.mjs CAPITAL_TRIS CAPITAL_SOLIDS GREEBLE CAPITAL_BYTES
+   4 scripts/lib/bf2017-modes.mjs LAYER_MODES MODE_ORDER MODE_STRINGS LEVEL_STRINGS
+   4 scripts/lib/bf2017-ui.mjs SEQUEL_FILMS symbolId FONT_LICENCES stringFamily
+   4 src/components/avengers/widow/rules.js OPP sightClip lineOfSight biteTarget
+   4 src/components/battlefront/map/ground.js FAR_STEP PATCH_STEP MASK_ORDER holeMaskNode
+   4 src/components/mario64/courses/bobomb.js SUMMIT_R spiralR spiralH RED_STAR
+   4 src/components/mario64/rules/actors/index.js MARIO_R MARIO_H howMet tryGrab
+   4 src/components/middleearth/towns/minastirith/layout.js GATE_H ROAD_R levelY PROW_WALK
+   4 src/components/middleearth/towns/rivendell/layout.js GORGE_WALLS BRIDGE_WALLS COURT_OPEN COURT_WALLS
+   4 src/lib/battlefront/ai/commander.js HOLD_RADIUS ESCORT_RADIUS COUNTER_RADIUS THREAT
+   3 scripts/gpu-parity/diff.mjs OFF_BY MIN_PSNR MAX_OFF
+   3 scripts/lib/bf2017-ground.mjs SPARKLE_TILE_M HEIGHT_SHARPNESS BLUE_FLAT
+   3 scripts/lib/bf2017-level.mjs KMIN PROXY_SHADER DECK_BAND
+   3 scripts/lib/bf2017-navmesh-check.mjs PROBES WALKERS_START FUEL_ROOM
+   3 scripts/lib/bf2017-physics-rules.mjs assetNames SOLDIER_RECORDS FALLBACK_PROJECTILE
+   3 scripts/lib/bf2017-strokes.mjs strokeDir sweepPlane settleAfter
+   3 src/components/albuquerque/world/rules.js CRYSTAL_REACH lanePath createHank
+   3 src/components/avengers/compound/models.js canopyGeometry coniferGeometry leafNormal
+   3 src/components/battlefront/hud/widgets.js MARKER_SCALE KILL_LOG_ROWS KILL_LOG_SHOWN
+   3 src/components/galaxy/surface/ground/fight.js SUPPRESS OUT_OF_REACH ENGAGED
+   3 src/components/middleearth/shire/rules.js BENCH GARDENS LOBELIA_ROUTE
+   3 src/components/middleearth/towns/edoras/layout.js onStockade barrowHeight onBarrowRoad
+   3 src/components/middleearth/towns/weathertop/layout.js RUIN_WALLS CLEFT CRAG_WALLS
+   3 src/lib/battlefront/instantAction.js LENGTHS OWN_MODE BOT_LOGICS
+   3 src/lib/device.js AUTO_BY_SCORE videoValues resetVideo
+   3 src/lib/three/ground/layeredGround.js TRIPLANAR HEIGHT_FLAT SPARKLE
+   3 src/lib/three/light/post.js MOTION_SAMPLES FSR_SHARPNESS UPSCALERS
+   3 src/runtime/dynres.js DYNRES_30 FLOOR_T0 PAUSE_MS
+   2 scripts/anim-check.mjs MIN_TIME plainBone
+   2 scripts/bf2017-colour-check.mjs auditFolder auditRoles
+   2 scripts/bf2017-library-import.mjs readUsed writeUsed
+   2 scripts/bf2017-rigclips.mjs clipChannels packRig
+   2 scripts/bf2017-space.mjs lodFor writeTracks
+   2 scripts/bf2017-terrain-masks.mjs TIER_SCALE tierWidths
+   2 scripts/desktop/bf2017-gate.mjs FRAME_MS GATE_DIR
+   2 scripts/gen3d/bake.mjs blenderWindows blenderWsl
+   2 scripts/gen3d/generate.mjs HY3D hy3d21Ready
+   2 scripts/gen3d/vlm.mjs askFake askJson
+   2 scripts/lib/asset-manifest.mjs IGNORE_START IGNORE_END
+   2 scripts/lib/bf2017-emitters.mjs isPartition SPLINE_SAMPLES
+   2 scripts/lib/bf2017-horizon.mjs IMPOSTOR LO_TIERS
+   2 scripts/lib/bf2017-hulls-site.mjs SITE_ERROR SITE_SOLIDS
+   2 scripts/lib/bf2017-rulebook-collection.mjs META metaRows
+   2 scripts/lib/bf2017-rulebook-look.mjs ELEMENT_TYPES HUD_FONTS
+   2 scripts/lib/bf2017-rulebook.mjs MAP_CODES mapCode
+   2 scripts/lib/bf2017-scatter.mjs SURFACE_SCORE FILL_RUN
+   2 scripts/lib/chromium.mjs MAC_PLAYWRIGHT LINUX_BROWSERS
+   2 scripts/lib/rig-parts.mjs toBodyBind bindDelta
+   2 scripts/voices/export-lines.mjs WORLD_VOICED voicelineFiles
+   2 src/components/albuquerque/casa/rules.js MISS_SECONDS litLetter
+   2 src/components/ambience/setting.js ambienceOn setAmbience
+   2 src/components/avengers/tesseract/models.js plumeMaterial tesseractMaterial
+   2 src/components/avengers/tesseract/rules.js jetPoints caseBox
+   2 src/components/avengers/thwip/rules.js buildPacks buildCars
+   2 src/components/avengers/widow/models.js drawEmblem screenTexture
+   2 src/components/battlefront/battle.js BACK_TO_DEPLOY KILL_LOG
+   2 src/components/battlefront/figures/locomotion.js STRIDE_MATCH STRIDES_MAX
+   2 src/components/battlefront/fx/kit.js MAX_GRENADES MAX_BLASTS
+   2 src/components/battlefront/sound/director.js WALKER_VO_GAP ABILITY_EARSHOT
+   2 src/components/cybertron/rollout/terrain.js LAND_STEP LAND_BEHIND
+   2 src/components/dotmatrix/rules.js PIPE_H SNAKE_LOOP
+   2 src/components/galaxy/surface/level/levelGltf.js COLOUR_SLOTS isKtx2
+   2 src/components/galaxy/surface/missions/starfighterPilots.js hasSquadron loadMinds
+   2 src/components/galaxy/systems.js BULGE LY_PER_SQUARE
+   2 src/components/mario64/rules/moves/air.js FALL_HURT airControl
+   2 src/components/mario64/rules/moves/ground.js toFreefall nextJump
+   2 src/components/mario64/rules/physics.js GRAV applyGravity
+   2 src/components/middleearth/kit.js magmaTextures taperedTube
+   2 src/components/middleearth/towns/moria/layout.js HOLLY CHAMBER_COLUMNS
+   2 src/components/music/tablaRules.js strokesFor TIHAI_PHRASE
+   2 src/components/rickmorty/world/arcade.js ARCADE_LIGHT CABINET_GAMES
+   2 src/components/rickmorty/world/interiors/govportal.js PORTAL_W PORTAL_H
+   2 src/components/universe/hunterRules.js MEDIC NERVE
+   2 src/components/universe/ship.js approachAt stickToward
+   2 src/components/worlds/looks.js ARTS MIN_APART
+   2 src/data/roles.js parseMonth careerStats
+   2 src/lib/battlefront/modes/extraction.js CHECKPOINT_SECONDS CHECKPOINT_RADIUS
+   2 src/lib/battlefront/sim.js WALKER_BODY squadSpot
+   2 src/lib/bf2017/ui/screens.js WIDGETS_IN_SCREENS hintsFor
+   2 src/lib/three/camera/rig.js SHAKE_MOVE SHAKE_ROLL
+   2 src/lib/three/decals/volume.js CLIP_MIN CLIP_MAX
+   2 src/lib/three/ground/masks.js DENSITY_HIGH FIELD_M
+   2 src/lib/three/light/contact.js CONTACT_HEIGHT CONTACT_LAYER
+   2 src/lib/three/light/entry.js MIE_G SKY_TO_SUN
+   2 src/lib/three/light/placed.js CULL_AREA FADE_AREA
+   2 src/lib/three/light/volumetrics.js VOLUME_GAIN UPSAMPLE
+   2 src/lib/three/scatter/grid.js REACH_SIZE DISSOLVE
+   2 src/lib/three/scatter/scatterScene.js REPACK_M LOD1_AT
+   2 src/lib/three/surface/weather.js SNOW_COLOR SAND_COLOR
+   2 src/stages/MoreStages.jsx InodeStage PortfolioStage
+   2 src/stages/TerminalStages.jsx ShellStage SummarizerStage
+   1 scripts/ai-e2e/evals/vision.mjs resultsDir
+   1 scripts/assets-upload.mjs MIN_BYTES
+   1 scripts/bf2-dev.mjs webRoot
+   1 scripts/bf2017-abilities.mjs heroAbilities
+   1 scripts/bf2017-coverage.mjs readLedger
+   1 scripts/bf2017-data.mjs levelPath
+   1 scripts/bf2017-fauna.mjs crewRow
+   1 scripts/bf2017-fetch.mjs fetchAll
+   1 scripts/bf2017-fleet.mjs writeFleet
+   1 scripts/bf2017-holes.mjs holeRuns
+   1 scripts/bf2017-horizon.mjs ATLAS_ROWS
+   1 scripts/bf2017-navmesh.mjs wiringOf
+   1 scripts/bf2017-skeleton.mjs writeSkeleton
+   1 scripts/bf2017-strokes.mjs heroClips
+   1 scripts/bf2017-walk-check.mjs STANCE_EDGE
+   1 scripts/cc0.mjs HDRIS
+   1 scripts/clips/fetch.mjs soundOnPage
+   1 scripts/desktop/ask.mjs pipelineFor
+   1 scripts/desktop/bf2017-depots.mjs probeFile
+   1 scripts/desktop/bf2017-desk.mjs writeJson
+   1 scripts/desktop/bf2017-panoramas.mjs PANORAMA_SIZES
+   1 scripts/desktop/bf2017-stream-plan.mjs SENDER
+   1 scripts/desktop/bf2017-uastc.mjs MIN_GAIN
+   1 scripts/desktop/lib.mjs ghRetry
+   1 scripts/frame-score.mjs PPD
+   1 scripts/galaxy-map-check/lib.mjs headerProblems
+   1 scripts/galaxy-textures.mjs xlMap
+   1 scripts/gen3d/upright.mjs aboutX
+   1 scripts/gen3d/web.mjs permissive
+   1 scripts/health/hud-kit.mjs WORLD_DIRS
+   1 scripts/health/ratchet.mjs KB_STEP
+   1 scripts/kit/fbx.mjs convertPack
+   1 scripts/lib/bf2017-clip-census.mjs firstHeld
+   1 scripts/lib/bf2017-coverage.mjs pathKey
+   1 scripts/lib/bf2017-decals.mjs NORMAL_ONLY
+   1 scripts/lib/bf2017-held.mjs MUZZLE_BONE
+   1 scripts/lib/bf2017-hulls.mjs slugOfFile
+   1 scripts/lib/bf2017-library.mjs isPlaceable
+   1 scripts/lib/bf2017-map-audit.mjs modesInRecords
+   1 scripts/lib/bf2017-physics.mjs VISUAL_ONLY
+   1 scripts/lib/bf2017-picture.mjs HDR_DIR
+   1 scripts/lib/bf2017-roles.mjs BF2017_SCANS
+   1 scripts/lib/bf2017-rulebook-costs.mjs KIT_PREFABS
+   1 scripts/lib/bf2017-rulebook-gates.mjs GATE_OPENED
+   1 scripts/lib/bf2017-rulebook-settings.mjs BOT_LOGIC
+   1 scripts/lib/bf2017-rulebook-spawnlogic.mjs GA_PREFAB
+   1 scripts/lib/bf2017-rulebook-ui.mjs FRONT_END_KEYS
+   1 scripts/lib/bf2017-uv.mjs UNWRAP
+   1 scripts/lib/bf2017-volumes.mjs CONE_EXPONENT
+   1 scripts/lib/flight-island.mjs brokenMarks
+   1 scripts/library-slice.mjs sliceCode
+   1 scripts/pack-check.mjs PREFIXES
+   1 scripts/packs.mjs writePacks
+   1 scripts/pixel-measure.mjs luminanceOf
+   1 scripts/recolor.mjs linOf
+   1 src/components/albuquerque/world/plan.js TRIMS
+   1 src/components/avengers/HQBackdrop.jsx AvengersMark
+   1 src/components/avengers/hq/assets.js modelSize
+   1 src/components/avengers/hq/engine.js startTier
+   1 src/components/avengers/hq/kit/world.js TREE_KINDS
+   1 src/components/avengers/hq/stones.js STONE_FROM
+   1 src/components/avengers/lawn/models.js knotTexture
+   1 src/components/avengers/lawn/rules.js SPAWN_Z
+   1 src/components/avengers/repulsor/rules.js PRIME_Z
+   1 src/components/avengers/ricochet/rules.js BOT_R
+   1 src/components/avengers/trickshot/models.js BOW_LIMB
+   1 src/components/avengers/trickshot/rules.js TRICKS
+   1 src/components/avengers/world/castLife.js BUSY_R
+   1 src/components/battlefront/assets.js BACKENDS
+   1 src/components/battlefront/backdrop/host.js roomState
+   1 src/components/battlefront/figures/figures.js bodyUrl
+   1 src/components/battlefront/hud/icons.js ICON_BASE
+   1 src/components/battlefront/module.js PLAYER_TEAM
+   1 src/components/battlefront/screens/cards.js SITE_LEVEL
+   1 src/components/battlefront/screens/useTree.js useViewport
+   1 src/components/caribbean/tide/sea.js SKY_GLSL
+   1 src/components/cybertron/game/bodies.js CYBER_REACTIONS
+   1 src/components/cybertron/rollout/models.js buildDebris
+   1 src/components/cybertron/rollout/paint.js paintSpire
+   1 src/components/cybertron/rollout/world.js loadHdri
+   1 src/components/deathstar/inside/rules/play/beats.js finishStep
+   1 src/components/deathstar/inside/rules/play/duel.js foesOf
+   1 src/components/deathstar/inside/rules/play/plot.js heldUp
+   1 src/components/deathstar/inside/scene/figures.js GUN_KINDS
+   1 src/components/deathstar/inside/scene/index.js SQUAT
+   1 src/components/deathstar/inside/scene/probe.js applyProbe
+   1 src/components/deathstar/planetPaint.js planetLooks
+   1 src/components/dickansh/friends.js FRIENDS_AT
+   1 src/components/dickansh/gateway.js CUTOUTS
+   1 src/components/dickansh/universe.js DOC_AT
+   1 src/components/earth/nodes.js EXPOSURE
+   1 src/components/expanse/flight/ground.js SCAN_FADE
+   1 src/components/expanse/flight/landmarkScene.js prefetchModels
+   1 src/components/expanse/flight/landmarks.js flightGround
+   1 src/components/expanse/flight/life.js AWAKE
+   1 src/components/expanse/flight/online.js easePose
+   1 src/components/galaxy/pickupFx.js PICKUP_MODEL
+   1 src/components/galaxy/places.js SPACE_DIR
+   1 src/components/galaxy/skyPanorama.js PANORAMA_WIDTH
+   1 src/components/galaxy/surface/duellists.js ENGAGE
+   1 src/components/galaxy/surface/ground/bolts.js SPREAD_MAX
+   1 src/components/galaxy/surface/ground/director.js FIGHTS
+   1 src/components/galaxy/surface/ground/groundFigures.js GROUND_BODY
+   1 src/components/galaxy/surface/ground/groundScene.js RAGDOLL
+   1 src/components/galaxy/surface/level/occlusion.js KEEP_NEAR
+   1 src/components/galaxy/surface/missions/hvv.js HVV_SIDES
+   1 src/components/galaxy/surface/missions/points.js ENFORCER_ICON
+   1 src/components/galaxy/surface/pools.js POOLED
+   1 src/components/galaxy/surface/sites/deathstar2.js DEATHSTAR_FALL
+   1 src/components/galaxy/tunnel.js chamberAt
+   1 src/components/invincible/thinkmark/rules.js FLAXAN
+   1 src/components/invincible/world/brains.js BRAIN
+   1 src/components/invincible/world/ground.js LAND_FAR
+   1 src/components/invincible/world/landmarks.js addCar
+   1 src/components/invincible/world/map.js coreAt
+   1 src/components/invincible/world/npcs.js CIVS
+   1 src/components/mario64/courses/castle.js groundsHeight
+   1 src/components/mario64/looks.js LOOK_NAMES
+   1 src/components/mario64/models/common.js lowSphere
+   1 src/components/mario64/models/hd.js hdReady
+   1 src/components/mario64/models/index.js MODELLED
+   1 src/components/mario64/rules/actors/foes.js CHOMP_TELL
+   1 src/components/mario64/rules/game.js STEP_DT
+   1 src/components/mario64/rules/save.js COURSE_IDS
+   1 src/components/middleearth/mapCover.js MOSTLY
+   1 src/components/middleearth/shire/props.js flowerBed
+   1 src/components/middleearth/towns/bree/props.js BREE_LOOKS
+   1 src/components/middleearth/towns/cirithungol/layout.js STAIR_TURNS
+   1 src/components/middleearth/towns/cirithungol/sounds.js hiss2
+   1 src/components/middleearth/towns/doom/layout.js SPUR
+   1 src/components/middleearth/towns/ground.js MAX_LIGHTS
+   1 src/components/middleearth/towns/lorien/layout.js mirrorBank
+   1 src/components/middleearth/towns/marshes/rules.js LURE
+   1 src/components/middleearth/towns/marshes/sounds.js thunderClap
+   1 src/components/minecraft/rules/build.js CHEST_SLOTS
+   1 src/components/minecraft/scene/atlasTexture.js loadArray
+   1 src/components/minecraft/scene/sky.js CLOUDS_Y
+   1 src/components/music/room.js canRecord
+   1 src/components/music/tabla.js tablaReady
+   1 src/components/music/tuning.js tarabRatios
+   1 src/components/office/people.js SITTING
+   1 src/components/office/world/fixtures.js TILE_Z
+   1 src/components/projects/PeriodicStack.jsx TECH
+   1 src/components/rickmorty/citadel/layout.js FENCE
+   1 src/components/rickmorty/swirl.js createSwirl
+   1 src/components/rickmorty/wardrobe/gear.js loadGear
+   1 src/components/rickmorty/wardrobe/looks.js BB_SWATCHES
+   1 src/components/rickmorty/world/interiors/people.js hipFlask
+   1 src/components/rickmorty/world/interiors/shell.js archGeo
+   1 src/components/rickmorty/world/rmShots.js ZAP
+   1 src/components/rickmorty/world/roy/rules.js STAGE_LINES
+   1 src/components/universe/aim.js AIM_CONE
+   1 src/components/universe/catalog.js PAINT_PRICE
+   1 src/components/universe/citadelModel.js CITADEL_MODEL
+   1 src/components/universe/director.js canBe
+   1 src/components/universe/farFights.js HOT_BOLTS
+   1 src/components/universe/foot.js STANDS
+   1 src/components/universe/footFigures.js HAND_GUNS
+   1 src/components/universe/kit.js holoTile
+   1 src/components/universe/landings/canopy.js setCanopyLevel
+   1 src/components/universe/landings/furnish.js mergeStatic
+   1 src/components/universe/landings/physics.js FLOOR_CAP
+   1 src/components/universe/landings/voicelines.js FIGURE_VOICES
+   1 src/components/universe/law.js SPOTTED_FOR
+   1 src/components/universe/meteors.js METEOR
+   1 src/components/universe/nav.js sectorOfGoal
+   1 src/components/universe/online/protocol.js ARMS_GUNS
+   1 src/components/universe/portals.js isPortal
+   1 src/components/universe/powerFx.js TORPEDOES
+   1 src/components/universe/props.js gemGeometry
+   1 src/components/universe/shipPowers.js solidAhead
+   1 src/data/bf2017/strokes/index.js STROKE_TABLES
+   1 src/lib/battlefront/ai/cover.js BRANCHES
+   1 src/lib/battlefront/ai/coverQuery.js PROTECTED
+   1 src/lib/battlefront/grenades.js OCCLUSION_RADIUS
+   1 src/lib/battlefront/kit.js BOT_BINOCULARS
+   1 src/lib/battlefront/modes/ewokHunt.js EXTRACT_RADIUS
+   1 src/lib/battlefront/modes/strike.js ROUND_PAUSE
+   1 src/lib/battlefront/modes/supremacy.js CAPTURE_DURATION
+   1 src/lib/bf2017/collection.js RARITIES
+   1 src/lib/bf2017/films.js MODE_TILES
+   1 src/lib/bf2017/strings.js NAME_FOR
+   1 src/lib/bf2017/ui/info.js MODE_IDS
+   1 src/lib/bf2017/ui/shapes.js composeShapes
+   1 src/lib/flight/starfighter.js handlingOf
+   1 src/lib/land/flight/biomes.js climateOf
+   1 src/lib/land/flight/director.js CHANCE
+   1 src/lib/land/flight/eventTables.js expanseEvents
+   1 src/lib/land/flight/occurrences.js expanseOccurrences
+   1 src/lib/land/layers.js BLOCK_WALL
+   1 src/lib/sound/gameSounds.js GAME_DIR
+   1 src/lib/speech.js PRESSED
+   1 src/lib/stream/protocol.js PROTOCOL
+   1 src/lib/three/camera/cinematic.js BLUR_TIERS
+   1 src/lib/three/camera/soldier.js blendK
+   1 src/lib/three/camera/vehicle.js VEHICLE_FOV
+   1 src/lib/three/decals/decalScene.js DECAL_TIERS
+   1 src/lib/three/decals/projected.js FACING_SLACK
+   1 src/lib/three/gpuScene/cullPass.js STATS_EVERY
+   1 src/lib/three/gpuScene/draws.js MAX_TEXTURES
+   1 src/lib/three/gpuScene/hzb.js MAX_LEVELS
+   1 src/lib/three/gpuScene/pack.js ROW_BYTES
+   1 src/lib/three/groundmapNodes.js groundFns
+   1 src/lib/three/light/apply.js WEATHER_FADE
+   1 src/lib/three/light/fog.js MEDIA_REACH
+   1 src/lib/three/light/grade.js GAME_LUT_SIZE
+   1 src/lib/three/light/passes.js MRT_RG
+   1 src/lib/three/light/probes.js BAKE_BUDGET
+   1 src/lib/three/light/shadows.js VIDEO_SAMPLES
+   1 src/lib/three/light/sky.js PANORAMA_FADE
+   1 src/lib/three/particles/emitter.js spawnParticle
+   1 src/lib/three/particles/sheets.js sheetStem
+   1 src/lib/three/particles/sprites.js curveNode
+   1 src/lib/three/scatter/wind.js WIGGLE
+   1 src/lib/three/surface/families.js SLOT_FAMILIES
+   1 src/lib/three/tracks.js TRACK_FS
+   1 src/lib/three/walrusSets/additive.js AIM_RANGE
+   1 src/lib/three/windNodes.js windFns
+   1 src/runtime/cadence.js FPS_KEY
+   1 src/runtime/install.js PERSIST_KEY
+   1 src/runtime/webgpu.js buildLitPost

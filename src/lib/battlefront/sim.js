@@ -33,6 +33,7 @@ import { aiOf, classOf, heroOf, mapOf, reinforcementOf, spawnsFor, squadsOf, str
 import { press } from './abilities.js';
 import { createBolts, fire as fireBolt, step as stepBolts } from './bolts.js';
 import { heightAt, lineClear, nearestMainland, nearestWalkable, walkable } from './nav.js';
+import { doorway, meshStand } from './meshNav.js';
 import { STEP, clock, muzzleOf, profile, shoot } from './core.js';
 import { capsulesOf, chestOf, hurt, move, newSoldier, roll, tick as tickSoldier } from './soldier.js';
 import { coolPress, damageAt, vent } from './weapons.js';
@@ -174,9 +175,11 @@ function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id:
   const cls = sim.ga?.health?.[team] ? { ...base, health: sim.ga.health[team] } : base;
   const id = given ?? `${bot ? 'b' : 'p'}${sim.nextId++}`;
   // a deploy in a mode lands on the map's main walkable region, never in a pocket the made-up cover walls off
-  const spot = sim.nav ? (sim.ga ? nearestMainland(sim.nav, at[0], at[2], 12) : nearestWalkable(sim.nav, at[0], at[2], 12)) : null;
-  const where = spot ? [spot[0], 0, spot[1]] : [...at];
-  if (sim.nav) where[1] = heightOf(sim, where);
+  // (on the level's navmesh where the battle has one: the place's own floor, a hangar's under the mountain's snow)
+  const stood = sim.nav?.mesh ? meshStand(sim.nav, at, 12) : null;
+  const spot = !stood && sim.nav ? (sim.ga ? nearestMainland(sim.nav, at[0], at[2], 12) : nearestWalkable(sim.nav, at[0], at[2], 12)) : null;
+  const where = stood ?? (spot ? [spot[0], 0, spot[1]] : [...at]);
+  if (sim.nav && !stood) where[1] = heightOf(sim, where);
   // (every soldier carries its class's abilities: a player presses them, a Skirmish bot's brain does, an AutoPlayer's the turret alone)
   const abilities = cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
   const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: weaponOf(sim.rb, cls.weapon), ...abilities });
@@ -480,9 +483,11 @@ function applyInput(sim, inp) {
   if (inp.ability) press(s.abilities, inp.ability, sim.time);
   if (inp.vent && s.gun) vent(s.gun, sim.time);
   if (inp.cool && s.gun) coolPress(s.gun, sim.time);
-  if (s.state !== 'roll') move(s, inp.move ?? [0, 0], STEP, sim.nav);
+  // (a soldier with a body of its own, the player on the level's shapes: map/walk.js, moves by it)
+  if (s.state !== 'roll') (s.mover ?? move)(s, inp.move ?? [0, 0], STEP, sim.nav);
   if (inp.fire) shoot(sim, s, inp.aim ?? chestAhead(s));
-  s.interact = !!inp.interact;
+  // (an interaction is held, the key down: a gate's panel or a bomb a second and more)
+  s.interact = !!(inp.interactHeld ?? inp.interact);
 }
 
 const chestAhead = (s) => {
@@ -577,7 +582,7 @@ export function step(sim, inputs = []) {
   stepGunners(sim);
   for (const s of sim.entities.values()) {
     if (s.kind !== 'soldier') continue;
-    if (s.state === 'roll' && s.alive) move(s, s.rollDir, STEP, sim.nav);
+    if (s.state === 'roll' && s.alive) (s.mover ?? move)(s, s.rollDir, STEP, sim.nav);
     for (const e of tickSoldier(s, STEP, sim.time)) {
       emit(sim, { ...e, by: s.id });
       if (e.type === 'ability') onAbility(sim, s, e);
@@ -704,6 +709,8 @@ function stepMode(sim) {
     emit(sim, e);
     if (e.type === 'objective' && e.kind === 'capture') for (const o of ga.objectives) if (o.name === e.name) for (const id of o.inside.attack) sim.stats.get(id).captures++;
     if (e.type === 'armed') for (const o of ga.objectives) if (o.name === e.name) for (const i of o.interactions) sim.stats.get(i.id).arms++;
+    // (a gate's leaves wide enough apart for a soldier: the way through its doorway joins the navmesh's two sides)
+    if (e.type === 'gate' && e.state === 'passable' && sim.nav?.mesh) doorway(sim.nav, ga.gates.list.find((g) => g.id === e.id));
   }
   if (ga.stage !== stage) {
     addWalkers(sim);

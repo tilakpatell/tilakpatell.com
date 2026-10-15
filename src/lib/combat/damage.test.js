@@ -1,0 +1,384 @@
+import { describe, expect, it } from 'vitest';
+import DAMAGE from '../../data/bf2017/damage.json';
+import {
+  blastDamage,
+  boltDamage,
+  capitalPart,
+  capitalSite,
+  hitDamage,
+  kindDamage,
+  multiplier,
+  openSite,
+  partHit,
+  partsHealth,
+  rammed,
+  spend,
+  takes,
+  turretOf,
+  vehicleDamage,
+} from './damage';
+
+const xwing = DAMAGE.fighters.xwing;
+const xwingBolt = xwing.bolt;
+const tieBolt = DAMAGE.fighters.tie.bolt;
+const heavy = DAMAGE.capitals.destroyer.turrets.StarDestroyer_HeavyTurboLaser_02.bolts.find((b) => b.property === 61);
+const destroyer = DAMAGE.capitals.destroyer;
+// the CR90's hull part, and its row
+const CR90 = 'corvettecr90_01#0';
+const cr90 = DAMAGE.capitals.corvette.parts[CR90];
+// a bolt of the game's kind with a damage of the test's choosing
+const boltOf = (damage, property = 216) => ({ damage, damageFar: damage, falloff: [0, 0], property });
+
+describe('a bolt’s falloff', () => {
+  it('is its damage near, falling to its far damage across the falloff, and the far damage beyond', () => {
+    expect(boltDamage(xwingBolt, 300)).toBe(75);
+    expect(boltDamage(xwingBolt, 500)).toBe(70);
+    expect(boltDamage(xwingBolt, 700)).toBe(65);
+    expect(boltDamage(xwingBolt, 400)).toBe(75);
+    expect(boltDamage(xwingBolt, 600)).toBe(65);
+  });
+
+  it('takes a falloff of no length (the CR90’s large turret, 100 at any range)', () => {
+    const large = DAMAGE.capitals.corvette.turrets.CorvetteCR90_LargeTurretTop.bolts[0];
+    expect(large.falloff).toEqual([0, 0]);
+    expect(boltDamage(large, 0)).toBe(100);
+    expect(boltDamage(large, 900)).toBe(100);
+  });
+});
+
+describe('the material grid', () => {
+  it('is the cell of the attacker’s row and the target’s column', () => {
+    expect(multiplier(216, 68)).toMatchObject({ multiplier: 1.25, threshold: 0 });
+    expect(multiplier(61, 68)).toMatchObject({ multiplier: 4, threshold: 0 });
+    expect(multiplier(216, 206)).toMatchObject({ multiplier: 0.01, threshold: 0.02 });
+  });
+
+  it('gives a pair with no relation the (default, default) cell, 0× under 2, not 1×', () => {
+    for (const [a, t] of [[216, 34], [216, 999], [999, 68], [216, undefined]]) {
+      expect(multiplier(a, t)).toMatchObject({ multiplier: 0, threshold: 2 });
+    }
+    expect(multiplier(216, 999)).toBe(DAMAGE.noRelation);
+  });
+});
+
+describe('a bolt’s hit', () => {
+  it('is the falloff damage × the cell’s multiplier', () => {
+    expect(hitDamage(xwingBolt, 300, 68)).toBe(93.75);
+    expect(hitDamage(xwingBolt, 300, 206)).toBeCloseTo(0.75, 12);
+  });
+
+  it('does nothing where the product falls under the threshold', () => {
+    expect(hitDamage(xwingBolt, 300, 132)).toBe(0);
+    expect(hitDamage(boltOf(1), 0, 206)).toBe(0); // 0.01 < 0.02
+    expect(hitDamage(boltOf(2), 0, 206)).toBe(0.02); // at the threshold: applied
+  });
+
+  it('takes a heavy turbolaser on a fighter ×4', () => {
+    expect(heavy.damage).toBe(200);
+    expect(hitDamage(heavy, 0, 68)).toBe(4 * boltDamage(heavy, 0));
+    expect(hitDamage(heavy, 0, 68)).toBe(800);
+  });
+});
+
+describe('a vehicle’s loss', () => {
+  it('is the bolt against its own pair’s property × the vehicle damage modifier', () => {
+    expect(vehicleDamage(DAMAGE.fighters.tie, xwingBolt, 300)).toBe(93.75);
+    expect(vehicleDamage(xwing, tieBolt, 300)).toBe(81.25);
+  });
+
+  it('takes a turret the same way (the CR90’s turret, p129: 75)', () => {
+    expect(vehicleDamage(DAMAGE.capitals.corvette.turrets.CorvetteCR90_LargeTurretTop, xwingBolt, 300)).toBe(75);
+  });
+
+  it('is × the friendly damage modifier (0) for a friend’s bolt, friendly fire off', () => {
+    expect(vehicleDamage(xwing, tieBolt, 300, true)).toBe(0);
+    expect(vehicleDamage(DAMAGE.capitals.corvette.turrets.CorvetteCR90_LargeTurretTop, xwingBolt, 300, true)).toBe(0);
+  });
+
+  it('reads the difficulty’s modifiers from the one row every fighter carries', () => {
+    const rows = Object.values(DAMAGE.fighters);
+    expect(new Set(rows.map((f) => f.vehicleDamageModifier_source)).size).toBe(1);
+    expect(new Set(rows.map((f) => f.friendlyDamageModifier_source)).size).toBe(1);
+  });
+});
+
+describe('a blast', () => {
+  const blast = xwingBolt.blast;
+
+  it('reaches a vehicle as its record’s damage, with no grid multiplier', () => {
+    expect(blastDamage(blast)).toBe(22.5);
+  });
+
+  it('is held to the grid on its own property where the caller asks (a static model, unread)', () => {
+    expect(blastDamage(blast, 206)).toBeCloseTo(0.225, 12); // p116 on p206: 0.01× under 0.02
+    expect(blastDamage(blast, 132)).toBe(0); // p116 on p132: 0× under 2
+  });
+});
+
+describe('a ram', () => {
+  it('is 25 against an enemy under 65°, and a sixth of it past', () => {
+    expect(rammed(xwing.ram, 30, false)).toBe(25);
+    expect(rammed(xwing.ram, 80, false)).toBe(25 / 6);
+  });
+
+  it('is 20 against a friend, and a sixth of that past', () => {
+    expect(rammed(xwing.ram, 0, true)).toBe(20);
+    expect(rammed(xwing.ram, 89, true)).toBe(20 / 6);
+  });
+});
+
+describe('a part’s health chain', () => {
+  it('starts at the first state’s health, the later states’ its floors', () => {
+    expect(partsHealth([500, 1, 0])).toEqual({ hp: 500, stage: 0, floors: [1, 0] });
+  });
+
+  it('spends the CR90’s 500, then floors at 1', () => {
+    let s = spend(partsHealth([500, 1, 0]), 200);
+    expect(s).toMatchObject({ hp: 300, stage: 0 });
+    s = spend(s, 299);
+    expect(s).toMatchObject({ hp: 1, stage: 1 });
+    s = spend(s, 0.5);
+    expect(s).toMatchObject({ hp: 0.5, stage: 1 });
+    s = spend(s, 1);
+    expect(s).toMatchObject({ hp: 0, stage: 2 });
+  });
+
+  it('carries the rest of a hit past a floor on to the next state', () => {
+    expect(spend(partsHealth([500, 1, 0]), 600)).toMatchObject({ hp: 0, stage: 2 });
+    expect(spend({ hp: 1.5, stage: 0, floors: [1, 0] }, 1)).toMatchObject({ hp: 0.5, stage: 1 });
+  });
+
+  it('drops a rest under the threshold, and scales a rest it carries again', () => {
+    const at = (hp) => ({ hp, stage: 0, floors: [1, 0] });
+    expect(spend(at(1.74), 0.75, 0.02)).toMatchObject({ hp: 1, stage: 1 }); // the rest, 0.01, dropped
+    const carried = spend(at(1.7), 0.75, 0.02); // the rest, 0.05, carried
+    expect(carried.stage).toBe(1);
+    expect(carried.hp).toBeCloseTo(0.95, 12);
+    expect(spend(at(1.5), 1, 0, 1.02).hp).toBeCloseTo(1 - 0.5 * 1.02, 12);
+  });
+
+  it('falls to 0 in the last state and no further', () => {
+    expect(spend(partsHealth([100]), 150)).toMatchObject({ hp: 0, stage: 0 });
+    expect(spend(partsHealth([5000, 0]), 6000)).toMatchObject({ hp: 0, stage: 1 });
+  });
+
+  it('leaves the state it is given as it was', () => {
+    const s = partsHealth([500, 1, 0]);
+    spend(s, 600);
+    expect(s).toEqual({ hp: 500, stage: 0, floors: [1, 0] });
+  });
+});
+
+describe('a bolt on a capital’s part', () => {
+  it('spends the CR90’s hull by the grid: 0.75 an X-wing bolt on p206', () => {
+    const s = partHit(cr90, partsHealth(cr90.health), CR90, xwingBolt, 300);
+    expect(s.stage).toBe(0);
+    expect(s.hp).toBeCloseTo(499.25, 12);
+  });
+
+  it('holds the CR90’s hull at 1 and drops a rest under 0.02, the threshold checked again', () => {
+    const s = partHit(cr90, { hp: 1.74, stage: 0, floors: [1, 0] }, CR90, xwingBolt, 300);
+    expect(s).toMatchObject({ hp: 1, stage: 1 });
+    const t = partHit(cr90, { hp: 1.7, stage: 0, floors: [1, 0] }, CR90, xwingBolt, 300);
+    expect(t.stage).toBe(1);
+    expect(t.hp).toBeCloseTo(0.95, 12);
+  });
+
+  it('wrecks it at 0, and a hit on the wreck does nothing', () => {
+    const s = partHit(cr90, { hp: 0.5, stage: 1, floors: [1, 0] }, CR90, xwingBolt, 300);
+    expect(s).toMatchObject({ hp: 0, stage: 2 });
+    expect(partHit(cr90, s, CR90, xwingBolt, 300)).toBe(s);
+  });
+
+  it('takes the squad bonus where the part is linked, one mate at most', () => {
+    const s0 = partsHealth(cr90.health);
+    expect(partHit(cr90, s0, CR90, xwingBolt, 300, 1).hp).toBeCloseTo(500 - 0.75 * 1.02, 12);
+    expect(partHit(cr90, s0, CR90, xwingBolt, 300, 3).hp).toBeCloseTo(500 - 0.75 * 1.02, 12);
+    const beam = destroyer.parts['stardestroyer_tractorbeam_01#0'];
+    expect(partHit(beam, partsHealth(beam.health), 'stardestroyer_tractorbeam_01#0', xwingBolt, 300, 1).hp).toBe(2000 - 75);
+  });
+
+  it('does nothing on a part its state does not name', () => {
+    const s = partsHealth(cr90.health);
+    expect(partHit(cr90, s, 'corvettecr90_01#1', xwingBolt, 300)).toBe(s);
+    const tower = destroyer.parts['stardestroyer_communicationstower_01#0'];
+    const broken = { hp: 0, stage: 1, floors: [0] };
+    expect(partHit(tower, broken, 'stardestroyer_communicationstower_01#0', heavy, 0)).toBe(broken);
+  });
+
+  it('does nothing on p132, 0× under 2', () => {
+    const hull = destroyer.parts['stardestroyer_hull_01_sb_endor#1'];
+    const s = partsHealth(hull.health);
+    expect(partHit(hull, s, 'stardestroyer_hull_01_sb_endor#1', heavy, 0)).toBe(s);
+  });
+
+  it('takes no friend’s bolt unless the part has friendly fire', () => {
+    const s = partsHealth(cr90.health);
+    expect(partHit(cr90, s, CR90, xwingBolt, 300, 0, true)).toBe(s);
+    const tower = DAMAGE.capitals.venator.parts['venatorstardestroyer_controltower_left#0'];
+    expect(tower.friendlyFire).toBe(true);
+    const name = 'venatorstardestroyer_controltower_left#0';
+    expect(partHit(tower, partsHealth(tower.health), name, xwingBolt, 300, 0, true).hp).toBeCloseTo(499.25, 12);
+  });
+
+  it('breaks its children when a hit moves it to a state naming another part', () => {
+    const name = 'stardestroyer_heavyturbolaser_01#0';
+    const gun = destroyer.parts[name];
+    const child = destroyer.parts[gun.children[0]];
+    const next = partHit(gun, { hp: 100, stage: 0, floors: [0] }, name, heavy, 0); // p61 on p129: 1×, 200
+    expect(next).toMatchObject({ hp: 0, stage: 1 });
+    expect(gun.states[next.stage]).not.toBe(name); // the contract: the caller breaks each child
+    expect(spend(partsHealth(child.health), Infinity)).toMatchObject({ hp: 0, stage: 1 });
+    expect(spend(partsHealth([500, 1, 0]), Infinity)).toMatchObject({ hp: 0, stage: 2 });
+  });
+});
+
+describe('a bolt on a site entry (the war’s subsystem on a game record)', () => {
+  it('is judged on the record’s property for its state, not the hull part’s', () => {
+    // the Venator’s engines are p0 and p132 on the hull; the reactor’s record is p206 (0.01×)
+    const reactor = capitalSite('venator', 'reactor');
+    const s = partHit(reactor, partsHealth(reactor.health), 'venatorstardestroyer_engine_02', xwingBolt, 300);
+    expect(s.hp).toBeCloseTo(499.25, 12);
+  });
+
+  it('spends an entry with no `states` on any hit routed to it by its parts', () => {
+    const reactor = capitalSite('lucrehulk', 'reactor');
+    expect(reactor.states).toBeUndefined();
+    expect(reactor.parts).toEqual(['reactor']);
+    expect(partHit(reactor, partsHealth(reactor.health), 'reactor', xwingBolt, 300).hp).toBeCloseTo(449.25, 12);
+    const held = partHit(reactor, { hp: 204.5, stage: 0, floors: [204, 102, 0] }, 'reactor', xwingBolt, 300);
+    expect(held.stage).toBe(1);
+    expect(held.hp).toBeCloseTo(203.75, 12); // held at 204, the rest (0.25) carried on at p206
+  });
+
+  it('reads the cell again for the rest at each new state: dropped on p132, rescaled on another', () => {
+    const at = { hp: 5.5, stage: 0, floors: [5, 0] };
+    const into132 = { health: [10, 5, 0], properties: [206, 132, 206], parts: ['x'] };
+    expect(partHit(into132, at, 'x', xwingBolt, 300)).toMatchObject({ hp: 5, stage: 1 });
+    const into206 = { health: [10, 5, 0], properties: [206, 206, 206], parts: ['x'] };
+    expect(partHit(into206, at, 'x', xwingBolt, 300).hp).toBeCloseTo(4.75, 12);
+    // 0.25 left at 0.01× goes back as 25, which p68 takes at 1.25×: 31.25, past both floors
+    const into68 = { health: [10, 5, 0], properties: [206, 68, 68], parts: ['x'] };
+    expect(partHit(into68, at, 'x', xwingBolt, 300)).toMatchObject({ hp: 0, stage: 2 });
+  });
+
+  it('cannot start the MC80’s generator unopened, and spends it at 0.01× once opened', () => {
+    const gen = capitalSite('moncal', 'gen-port');
+    expect(gen.health).toEqual([201, 200, 0]);
+    const s = partsHealth(gen.health);
+    expect(partHit(gen, s, gen.states[0], xwingBolt, 300)).toBe(s); // its first state is p132
+    expect(partHit(gen, s, gen.states[1], xwingBolt, 300)).toBe(s); // the p206 nodule isn’t the state’s part yet
+    const opened = openSite(gen, s);
+    expect(opened).toMatchObject({ hp: 200, stage: 1 });
+    expect(partHit(gen, opened, gen.states[1], xwingBolt, 300).hp).toBeCloseTo(199.25, 12);
+  });
+
+  it('opens only a record whose first state is a 1-hp shell, and only once', () => {
+    const bridge = capitalSite('venator', 'bridge');
+    expect(openSite(bridge, partsHealth(bridge.health))).toMatchObject({ hp: 699, stage: 1 });
+    const engines = capitalSite('moncal', 'reactor');
+    expect(openSite(engines, partsHealth(engines.health))).toMatchObject({ hp: 250, stage: 1 });
+    const hull = capitalSite('corvette', 'hull');
+    const s = partsHealth(hull.health);
+    expect(openSite(hull, s)).toBe(s);
+    const opened = openSite(bridge, partsHealth(bridge.health));
+    expect(openSite(bridge, opened)).toBe(opened);
+  });
+
+  it('keeps the Star Destroyer’s dome in state 0 against a hit on its broken mesh (#1)', () => {
+    const gen = capitalSite('destroyer', 'gen-port');
+    const s = partsHealth(gen.health);
+    expect(takes(gen, s, 'stardestroyer_deflectorshield_01#1')).toBe(false);
+    expect(partHit(gen, s, 'stardestroyer_deflectorshield_01#1', heavy, 0)).toBe(s);
+    const where = capitalPart('destroyer', 'stardestroyer_deflectorshield_01#1');
+    expect(where.fallback).toMatchObject({ kind: 'part', key: 'stardestroyer_deflectorshield_01#0' });
+    const own = partsHealth(where.fallback.row.health);
+    expect(partHit(where.fallback.row, own, where.fallback.name, heavy, 0)).toBe(own);
+  });
+
+  it('returns the same state for a hit on a wreck', () => {
+    const gen = capitalSite('lucrehulk', 'gen-port');
+    const wreck = { hp: 0, stage: 3, floors: [262, 100, 0] };
+    expect(partHit(gen, wreck, 'gen-port', xwingBolt, 300)).toBe(wreck);
+    const flat = { hp: 0, stage: 2, floors: [1, 0] };
+    expect(spend(flat, 5)).toBe(flat);
+  });
+});
+
+describe('a capital’s hull part, routed', () => {
+  it('goes to the site entry naming it, falling to its own row where the entry’s state names another part', () => {
+    const where = capitalPart('corvette', 'corvettecr90_01#1');
+    expect(where).toMatchObject({ kind: 'site', key: 'hull', keys: ['hull'], name: 'corvettecr90_01#1' });
+    expect(where.row).toBe(DAMAGE.capitals.corvette.site.hull);
+    const site = partsHealth(where.row.health);
+    expect(takes(where.row, site, where.name)).toBe(false);
+    const own = where.fallback;
+    expect(own).toMatchObject({ kind: 'part', key: 'corvettecr90_01#1', name: 'corvettecr90_01#1' });
+    expect(partHit(own.row, partsHealth(own.row.health), own.name, xwingBolt, 300).hp).toBeCloseTo(449.25, 12);
+    expect(capitalPart('corvette', CR90)).toMatchObject({ kind: 'site', key: 'hull', fallback: { kind: 'part', key: CR90 } });
+  });
+
+  it('names both of the Star Destroyer’s generators on the one dome', () => {
+    expect(capitalPart('destroyer', 'stardestroyer_deflectorshield_01#0')).toMatchObject({
+      kind: 'site',
+      key: 'gen-port',
+      keys: ['gen-port', 'gen-star'],
+    });
+  });
+
+  it('goes to a turret before a part’s own row, and to a part’s row by any state naming it', () => {
+    const turret = capitalPart('destroyer', 'stardestroyer_heavyturbolaser_01#2');
+    expect(turret).toMatchObject({ kind: 'turret', key: 'StarDestroyer_HeavyTurboLaser_02' });
+    expect(turret.row).toBe(destroyer.turrets.StarDestroyer_HeavyTurboLaser_02);
+    const tower = capitalPart('destroyer', 'stardestroyer_communicationstower_01#1');
+    expect(tower).toMatchObject({ kind: 'part', key: 'stardestroyer_communicationstower_01#0', fallback: null });
+    expect(tower.row).toBe(destroyer.parts['stardestroyer_communicationstower_01#0']);
+    expect(capitalPart('moncal', 'mc80_largenodule_06#0')).toMatchObject({ kind: 'part', key: 'mc80_largenodule_06#1' });
+  });
+
+  it('takes a stand-in’s subsystem as the record’s current part', () => {
+    const where = capitalPart('executor', 'reactor');
+    expect(where).toMatchObject({ kind: 'site', key: 'reactor', name: null, fallback: null });
+    expect(where.row).toBe(destroyer.site.reactor);
+    expect(takes(where.row, partsHealth(where.row.health), null)).toBe(true);
+    expect(partHit(where.row, partsHealth(where.row.health), null, xwingBolt, 300).hp).toBeCloseTo(299.25, 12);
+    expect(capitalPart('lucrehulk', 'gen-port')).toMatchObject({ kind: 'site', key: 'gen-port', name: 'gen-port' });
+  });
+
+  it('is null for a part nothing names (it counts as the hull) and for a kind with no capital row', () => {
+    expect(capitalPart('destroyer', 'stardestroyer_detailsside_04')).toBeNull();
+    expect(capitalPart('corvette', 'gen-port')).toBeNull(); // the site keeps the war’s own: no record
+    expect(capitalPart('xwing', 'hull')).toBeNull();
+    expect(capitalPart('deathstar', 'hull')).toBeNull();
+  });
+});
+
+describe('a kind’s rows', () => {
+  it('is the game’s own row for a kind the game had', () => {
+    expect(kindDamage('xwing')).toBe(xwing);
+    expect(kindDamage('interceptor')).toBe(DAMAGE.fighters.interceptor);
+    expect(kindDamage('corvette')).toBe(DAMAGE.capitals.corvette);
+  });
+
+  it('is the stand-in’s row for a kind the game never had', () => {
+    expect(DAMAGE.stand.bwing.as).toBe('ywing');
+    expect(kindDamage('bwing')).toBe(DAMAGE.fighters.ywing);
+    expect(kindDamage('executor')).toBe(DAMAGE.capitals.destroyer);
+  });
+
+  it('is null for a kind with no damage (the Death Star) or none known', () => {
+    expect(kindDamage('deathstar')).toBeNull();
+    expect(kindDamage('nothing')).toBeNull();
+  });
+
+  it('finds a capital’s site entry and a turret part’s turret, through the stand-in', () => {
+    expect(capitalSite('corvette', 'hull').parts).toContain('corvettecr90_01#0');
+    expect(capitalSite('executor', 'reactor')).toBe(DAMAGE.capitals.destroyer.site.reactor);
+    expect(capitalSite('corvette', 'nothing')).toBeNull();
+    expect(capitalSite('xwing', 'hull')).toBeNull();
+    expect(turretOf('destroyer', 'stardestroyer_heavyturbolaser_01#2')).toBe(
+      DAMAGE.capitals.destroyer.turrets.StarDestroyer_HeavyTurboLaser_02,
+    );
+    expect(turretOf('corvette', 'corvettecr90_01#0')).toBeNull();
+  });
+});
