@@ -112,18 +112,31 @@ async function shoot(browser, base, t) {
     set('tp-tour', 'skipped');
     set('tp-quality', JSON.stringify(q));
     // (a seeded Math.random: scatter, sparks and crowds the same each run)
-    let s = 0x2f6b1d3 >>> 0;
-    // (and seeded again at the target's first frame: what took a number
-    // while it loaded, a toast's key, a crowd far off, took as many as the
-    // loading's real time let it, and the sparks of its first frames were
-    // drawn from wherever that left the sequence)
-    window.__fl2seed = (n) => (s = n >>> 0);
-    Math.random = () => {
-      s = (s + 0x6d2b79f5) >>> 0;
-      let x = s;
+    // Two sequences: three's own ids (generateUUID, a number for every
+    // object, material and picture made, as many as each version of the
+    // code makes and when) from one, everything else from the other, so a
+    // game's sparks don't move for an object made sooner or later
+    const seq = { game: 0x2f6b1d3 >>> 0, ids: 0x1d5 >>> 0 };
+    const next = (k) => {
+      seq[k] = (seq[k] + 0x6d2b79f5) >>> 0;
+      let x = seq[k];
       x = Math.imul(x ^ (x >>> 15), x | 1);
       x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
       return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+    // (the game's seeded again before each frame until its first: what took
+    // a number while it loaded, a toast's key, a crowd far off, took as many
+    // as the loading's real time let it)
+    window.__fl2seed = (n) => (seq.game = n >>> 0);
+    window.__fl2calls = [];
+    Math.random = () => {
+      const limit = Error.stackTraceLimit;
+      Error.stackTraceLimit = 3;
+      const stack = new Error().stack;
+      Error.stackTraceLimit = limit;
+      const k = stack.includes('generateUUID') ? 'ids' : 'game';
+      if (window.__fl2trace && k === 'game') window.__fl2calls.push(stack.split('\n')[2]?.trim().replace(/\?[^:)]*/, '').replace(/https?:\/\/[^/]+/, '').replace(/\/@fs\/tmp\/hq-shots-vite-[0-9a-f]+/, ''));
+      return next(k);
     };
     // draws to a canvas’s own buffer (no framebuffer bound), counted per canvas
     const P = WebGL2RenderingContext.prototype;
@@ -160,6 +173,18 @@ async function shoot(browser, base, t) {
   await page.clock.install({ time: CLOCK });
   await page.clock.pauseAt(new Date(CLOCK.getTime() + 1000));
   await page.goto(`${base}/?quality=${quality}#${t.route}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  // The page's time, as its frames and performance.now read it, is put
+  // before each frame until the target's first so that frame lands at T0
+  // (__fl2align): however many frames the loading took, what moves by the
+  // clock (a pulse, the rain, a bob) is where it was on every run.
+  await page.evaluate(() => {
+    const raw = performance.now.bind(performance);
+    const rawRaf = window.requestAnimationFrame.bind(window);
+    let off = 0;
+    performance.now = () => raw() + off;
+    window.requestAnimationFrame = (cb) => rawRaf((t) => cb(t + off));
+    window.__fl2align = (t0) => (off = t0 - raw() - 16);
+  });
   // The frame guard (lib/three/frameGuard) is off: it holds a material back
   // until its shader has linked on the chip, in the chip's real time, so
   // which frame a material first shows in differed run to run on main
@@ -197,15 +222,8 @@ async function shoot(browser, base, t) {
         if (!e.__fl2) {
           const f = e.render;
           window.__fl2n = 0;
-          // (the page’s time from here is the target’s own: performance.now
-          // reads T0 at its first frame, however long the loading took, for
-          // what draws by the clock and not by the frames, a pulse or a bob)
-          const raw = performance.now.bind(performance);
-          let off = 0;
-          performance.now = () => raw() + off;
           e.render = function (...a) {
             window.__fl2n++;
-            if (window.__fl2n === 1) off = 600000 - raw();
             return f.apply(this, a);
           };
           e.__fl2 = true;
@@ -230,8 +248,10 @@ async function shoot(browser, base, t) {
       // (seeded again before each frame until its first, so the first draws
       // from the same place whatever the loading took)
       await quiet();
-      if (!counted) await page.evaluate(() => window.__fl2seed(0x51ed));
+      if (!counted) await page.evaluate(() => (window.__fl2seed(0x51ed), window.__fl2align(600000)));
+      if (process.env.SHOTS_TRACE) console.log(`  trace ${t.id} between: ` + (await page.evaluate(() => { const c = window.__fl2calls.join(' | '); window.__fl2trace = true; window.__fl2calls = []; return c; })));
       await step(counted ? 50 : 25);
+      if (process.env.SHOTS_TRACE) console.log(`  trace ${t.id} frame ${counted}: ` + (await page.evaluate(() => { const c = window.__fl2calls.join(' | '); window.__fl2calls = []; return c; })));
     }
   } else {
     // (from the moment it's shown: the figure in, its screen faded up)
@@ -244,7 +264,7 @@ async function shoot(browser, base, t) {
     while (counted < FRAMES) {
       if (late()) throw new Error(`${t.id}: stuck at ${counted} frames`);
       await quiet();
-      if (!counted) await page.evaluate(() => window.__fl2seed(0x51ed));
+      if (!counted) await page.evaluate(() => (window.__fl2seed(0x51ed), window.__fl2align(600000)));
       await step(counted ? 50 : 25);
       const now = await presents();
       if (now > last) counted++;
