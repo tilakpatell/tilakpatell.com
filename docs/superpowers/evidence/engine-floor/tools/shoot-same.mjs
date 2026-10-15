@@ -238,6 +238,16 @@ try {
       }
       await page.waitForTimeout(300);
       await page.screenshot({ path: join(out, `pose-${poses[i]}${phone ? '-phone' : ''}.png`), type: 'png', animations: 'disabled', caret: 'hide', timeout: 600000 });
+      if (process.env.PROBE_POST) {
+        console.log(
+          await page.evaluate(() => {
+            const { post, renderer, state } = window.__universeDebug;
+            const val = (v) => (typeof v === 'number' ? +v.toFixed(5) : v?.isVector2 || v?.isVector3 || v?.isColor ? v.toArray().map((x) => +x.toFixed(5)) : undefined);
+            const passes = post.composer.passes.map((p) => ({ k: p.constructor.name, on: p.enabled, s: val(p.strength), r: val(p.radius), t: val(p.threshold), u: p.uniforms ? Object.fromEntries(Object.entries(p.uniforms).map(([n, u]) => [n, val(u.value)]).filter(([, v]) => v !== undefined)) : undefined }));
+            return JSON.stringify({ ratio: renderer.getPixelRatio(), sharp: post.sharpness, pr: post.ratio, view: state.view, low: state.low, passes });
+          }),
+        );
+      }
       console.log(`  pose ${poses[i]}: shot (page time ${Math.round(now)} ms)`);
     }
     report.routes[route] = { frames, pageTime: Math.round(at), errors: [...new Set(errors)] };
