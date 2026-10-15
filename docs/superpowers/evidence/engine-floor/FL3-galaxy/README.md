@@ -47,6 +47,43 @@ Each on the `webgl` leg (`nodes-webgl`, SwiftShader) in the container, `node scr
 - `noiseNodes`: `noiseWith(uSeed, { octaves })` returns the GLSL’s functions bound to one seed (`octaves` the GLSL’s `FBM_OCT`), each built once as a shader function; the seed is passed into each as an argument (read from outside a function’s body, three declares it only in the first program the function is built into, and a second, a material shared by two meshes, failed to compile).
 - `rockNodes`: `rng`, `rock` copied (as above); `ROCK_RELIEF` a uniform node whose `.value` the universe map’s pace still writes; `rockHook` returns the node material, as the other node hooks do, so its caller uses what it returns.
 
+### The galaxy’s own, what it borrows, and the cockpit’s cabs (the second pull request)
+
+| twin | original | parity cases | dB | % off (at most) |
+| --- | --- | --- | --- | --- |
+| `galaxy/nodes/sky.js` | `galaxy/sky.js` (5 sites) | `galaxy:sky:*` (4: Hoth, Kashyyyk, Tatooine, low and mid) | 49.5 to 51.5 | 0.01 |
+| `galaxy/nodes/skyStreaks.js` | `skyStreaks.js` | `galaxy:skyStreaks*` (3) | 66.6 to 75.5 | 0.00 |
+| `galaxy/nodes/fx.js` | `fx.js` | `galaxy:fx:*` (3) | 61.0 to 67.9 | 0.00 |
+| `galaxy/nodes/placesDraw.js` | `placesDraw.js` | `galaxy:places*` (3) | 54.7 to 58.0 | 0.00 |
+| `galaxy/nodes/levelArea.js`, `areaWeather.js` | `levelArea.js`, `areaWeather.js` | `galaxy:levelArea:*`, `galaxy:areaWeather:*` (9: Kamino, Fondor) | 52.2 to 68.0 | 0.03 |
+| `galaxy/nodes/interdictor.js`, `tunnel.js` | `interdictor.js`, `tunnel.js` | `galaxy-interdictor:*`, `galaxy-tunnel:*` (4) | 53.7 to 60.7 | 0.00 |
+| `galaxy/nodes/rocks.js`, `rocksPlaced.js` | `rocks.js`, `rocksPlaced.js` | `galaxy-rocks:*` (5) | 62.3 to 66.7 | 0.00 |
+| `galaxy/nodes/bodies.js`, `bodyShaders.js`, `bodyFamilies.js` | `bodies.js`, `bodyShaders.js` (the planets) | `galaxy-bodies:*` (19: every family, from orbit and near, two suns, the shield, the game’s skins, the night side) | 54.6 to 63.1 | 0.00 |
+| `galaxy/nodes/world.js`, `worldParts.js`, `spacePieces.js` | `world.js`, `spacePieces.js` | `galaxy-world:*` (10: Endor’s shield, Coruscant’s lanes, whole systems) | 52.4 to 81.9 | 0.00 |
+| `galaxy/nodes/post.js` | `universe/post.js`’s `createPost`, with the cockpit drawn over the scene | `galaxy-post:cab`, `:open` | 39.2, 40.8 | 1.11 |
+| `universe/battleFxNodes.js`, `battleSceneNodes.js` | `battleFx.js`, `battleScene.js` | `universe:battleFx:*` (5), `universe:battleScene` | 40.9 to 74.8 | 0.45 |
+| `universe/beltNodes.js`, `crashNodes.js`, `trailNodes.js` | `belt.js`, `crash.js`, `trail.js` | `universe-belt:*`, `-crash:*`, `-trail:*` (11) | 57.1 to 73.1 | 0.00 |
+| `universe/setpiecesNodes.js`, `cmeNodes.js`, `sunNodes.js` | `setpieces.js`, `cme.js`, `sun.js` | `universe:setpieces:*`, `:cme:*`, `:sun:*` (10) | 55.5 to 76.7 | 0.00 |
+| `universe/powerFxNodes.js`, `online/pilotsNodes.js` | `powerFx.js`, `online/pilots.js` (which reaches GLSL through the livery) | `universe-powerFx:*` (7), `universe-pilots:ship` | 59.9 to 81.1 | 0.00 |
+| `cockpit/kitNodes.js`, `spaceNodes.js`, `vehicles/cruiserNodes.js` (+ `Parts`) | `kit.js`, `space.js`, `vehicles/cruiser.js` | `cockpit-kit:*`, `-space:*`, `-cruiser:*` (10) | 50.1 to 66.6 | 0.06 |
+| `cockpit/vehicles/rvNodes.js` (+ eight parts, each under 800 lines) | `vehicles/rv.js` (3,024 lines) | `cockpit-rv:*` (7) | 49.7 to 54.3; the crew 36.3 to 45.0 | 1.50 |
+
+What runs differently on the node renderer, and the rule each twin keeps for it:
+
+- **Points are sprites.** The node renderer draws a point one pixel wide, so every `Points` (stars, beacons, glows, the lanes, dust, sparks, the town’s lights) is a `PointsNodeMaterial` on an instanced `Sprite`, its size the GLSL’s `gl_PointSize` over the DPR. A point whose centre is off the picture is clipped at the edge where WebGL dropped it whole; the area weather’s clouds are held to 1,024 pixels, WebGL’s own point limit on ANGLE.
+- **Sprites whose `center` differs get their own program** (`keyed`, `lib/three/hookNodes.js`): two shared one and both took the first’s.
+- **Clipping planes on a material are ignored**: the broken flagship’s halves sit in a `ClippingGroup` each.
+- **WGSL’s rules**: a falling `smoothstep` written as a rising one turned over; no texture sampled under a branch (the planets’ scans read with `textureGrad` from slopes taken before it); no `pow` of a negative.
+- **A `ShaderMaterial`’s defaults kept**: fog off, a single pass, no tone mapping where its GLSL had no such chunk.
+- **The post**: three’s TSL bloom fixes its mips’ weights, so the galaxy’s falloff goes through its per-mip tints (exact at the galaxy’s radius, 0); the cockpit pass takes the scene’s picture as its background, so the cab’s glass and additive lamps blend over the scene as they did in the composer’s buffer. Its WebGPU leg, where that background is read by screen position, is the one to watch on the owner’s machines.
+- **The crew’s case** (the RV’s, turned to Jesse and Walt) varies run to run on Jesse’s skinned model, whose textures the headless browser sometimes fails to decode; the RV’s own materials are the cab’s case, 53.2 dB.
+- **One original bug kept**: the cruiser’s ink outline never drew round a skinned mesh (three flips a skinned normal on a back-side material, so the shell went inward); the twin keeps it, so Morty matches. A fix belongs in both files at once.
+- Non-shader code a twin needs from a file that holds GLSL is copied, the unit test holding it to the original’s numbers; FL4 deletes the originals.
+
+### The second pull request’s checks
+
+`npm run lint` clean. `npm test`: eight files over their limit under the full suite’s load (the hulls’ timing test, the Blast and Galactic Assault simulations, Albuquerque’s and the map raster’s), each green run alone; none touched here.
+
 ## The checks (the shared twins’ pull request)
 
 `npm run lint` clean; `npm run build` clean; `node scripts/health.mjs --check --skip build` within budget (`glsl-sites` 619: twins are new files, and the count falls at the flip). `npm test`: 17 files over their 5 s limit under the full suite’s load (the parity builds of other twins on the same four cores), each green run alone (`npx vitest run <file>`), none of them this lane’s.
