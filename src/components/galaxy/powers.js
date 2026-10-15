@@ -46,10 +46,10 @@
 
 import * as THREE from 'three';
 import { KEPT_KEY, POWERS, aimHelp, beamOf, blastPunch, cancel as cancelAll, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain as charge, hasten, isObjective, isOn, jinkStep, mods as modsOf, pickTargets, portalExit, press as pressSlot, readCooling, readKept, shotAt, step, turretPick, view as viewOf, writeKept } from '../universe/shipPowers';
-import { createPowerFx } from '../universe/powerFx';
+import { createPowerFx } from '../universe/powerFxNodes';
 import { steer } from '../universe/weapons';
 import { assist, dirTo, intercept, nose } from '../universe/targeting';
-import { LASER } from './fx';
+import { LASER } from './nodes/fx';
 
 const SLOTS = ['primary', 'ultimate'];
 const BIG = 3; // kills from one big one that make a big haul (the crew's line for it)

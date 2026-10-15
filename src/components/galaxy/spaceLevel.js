@@ -17,7 +17,7 @@
 
 import * as THREE from 'three';
 import { createLevel, packOf } from './surface/level';
-import { createLevelArea } from './levelArea';
+import { createLevelArea } from './nodes/levelArea';
 import { LIGHTS } from '../../data/bf2017/light';
 import { METRES } from './surface/missions/starfighter';
 

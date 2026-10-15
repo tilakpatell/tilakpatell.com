@@ -34,7 +34,7 @@
 import * as THREE from 'three';
 import { sweptHit } from '../../universe/targeting';
 import { GCW, seeded } from '../gcw';
-import { tunnelPath } from '../tunnel';
+import { tunnelPath } from '../nodes/tunnel';
 import { createRun } from './run';
 import { buildBeam, createShockwave } from '../stationFx';
 

@@ -12,6 +12,6 @@ export const GAME_CABS = new Set(['xwing', 'falcon']);
 export const CABS = {
   falcon: () => import('../cockpit/vehicles/game').then((m) => m.cab('falcon')),
   xwing: () => import('../cockpit/vehicles/game').then((m) => m.cab('xwing')),
-  cruiser: () => import('../cockpit/vehicles/cruiser'),
-  rv: () => import('../cockpit/vehicles/rv'),
+  cruiser: () => import('../cockpit/vehicles/cruiserNodes'),
+  rv: () => import('../cockpit/vehicles/rvNodes'),
 };

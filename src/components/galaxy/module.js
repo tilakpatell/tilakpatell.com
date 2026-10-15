@@ -11,6 +11,7 @@
 import { fromScene } from '../../runtime/module';
 
 const galaxy = fromScene('galaxy', (canvas, ctx) => import('./scene').then((m) => m.create(canvas, ctx)), {
+  shading: 'nodes', // (everything it reaches is TSL: the twins, nodes/ and the *Nodes.js beside what it borrows; the node renderer, on WebGPU or WebGL 2)
   mb: 19, // (WORLD_MB['/galaxy']: the galaxy and its worlds' surfaces)
   ratio: 1.5,
   sharpness: 'own', // (the pace's steps are the post's: lowerQuality)

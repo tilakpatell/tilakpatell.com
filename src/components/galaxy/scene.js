@@ -70,50 +70,51 @@ import { createFeel, feelGroups } from '../../lib/three/feel';
 import { HITSTOP, MAP_FEEL, atLeast, deadZone, knockForce } from './mapFeel';
 import { local as remembered } from '../../lib/hooks';
 import { plan as cockpitPlan } from '../cockpit/timeline';
-import { freeKit } from '../cockpit/kit';
+import { freeKit } from '../cockpit/kitNodes';
 import { audioContext } from '../../lib/audio';
-import { clamp01, disposeTree, precompile, precompilePasses, singlePass } from '../../lib/three/renderer';
+import { clamp01, disposeTree, singlePass } from '../../lib/three/renderer';
+import { twinScene } from '../../lib/three/hookNodes';
+import { PMREMGenerator } from 'three/webgpu';
 import { prepareScene, warmDraw } from '../../lib/three/gpuWork';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
 import { dropTransmission } from '../../lib/three/glass';
-import { gltfStats } from '../../lib/three/gltfCache';
+import { cloneScene, gltfStats, loadGLTF } from '../../lib/three/gltfCache';
 import { STEPS } from '../../lib/three/pace';
 import { FOV } from '../universe/flight';
-import { createPost } from '../universe/post';
-import { GLOW, glowAt } from '../universe/battleFx';
+import { createPost } from './nodes/post';
+import { GLOW, glowAt } from '../universe/battleFxNodes';
 import { bloomGroups } from '../../lib/three/bloom';
 import { LOOK } from './look';
 import { followRatio } from './drawnAt';
-import { houseOn } from '../../lib/three/house';
+import { houseOn } from '../../lib/three/houseNodes';
 import { SHIP, TUNE, autopilot, forward, spawn, step } from '../universe/ship';
 import { REAIM_MS, parkBehind, pilotSpace, reached } from '../universe/pilotGoal';
 import { createHunters } from '../universe/hunters';
 import { createShipHits, solidsWith } from '../universe/shipHits';
 import { contact, keptSpeed } from '../../lib/combat/contact';
 import { createFleet } from '../universe/glbFleet';
-import { createSetPieces } from '../universe/setpieces';
-import { createCrash } from '../universe/crash';
-import { createDust } from '../universe/belt';
-import { createTrail } from '../universe/trail';
-import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModels';
-import { loadModel } from '../universe/planets';
+import { createSetPieces } from '../universe/setpiecesNodes';
+import { createCrash } from '../universe/crashNodes';
+import { createDust } from '../universe/beltNodes';
+import { createTrail } from '../universe/trailNodes';
+import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModelsNodes';
 import { lockSound, shieldSound, shipEngine } from '../universe/sounds';
 import { AIM, aimAngles, assist, assistAmount, dirTo, edgeOf, intercept, nose, onScreen, track, trackNudge } from '../universe/targeting';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from '../universe/controls';
-import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilots';
+import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilotsNodes';
 import { GUARD } from '../universe/online/protocol';
 import { paintById } from '../universe/paint';
 import { FASTEST, STOCK_LOADOUT, readLoadout, statsOf } from '../universe/outfit';
 import { readBuildWire, readTune, tuneKey, writeBuild } from '../universe/shipyard/build';
 import { SHIP_INFO, buildGalaxyShip } from './fleet';
 import { ARRIVAL, HUNTER_GLB, createModels } from './models';
-import { createSky } from './sky';
+import { createSky } from './nodes/sky';
 import { createSpeedLines } from './speedLines';
 import { T as JUMP_T } from '../hyperspace3d/timeline';
 import { DIVE, LAUNCH_KEY, diveAt, planDive } from './travel';
 import { INTERDICTION, createInterdiction, cutAt, dropPoint, holdLifts, inWell, interdictorPlace } from './interdiction';
-import { createInterdictor } from './interdictor';
+import { createInterdictor } from './nodes/interdictor';
 import { createWarFront } from './warfront';
 import { createGalaxyPowers } from './powers';
 import { createCluster } from './cluster';
@@ -126,13 +127,13 @@ import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
 import { createWingmen } from '../universe/wingmen';
-import { createBolts, createFlashes } from './fx';
-import { buildSystem } from './world';
+import { createBolts, createFlashes } from './nodes/fx';
+import { buildSystem } from './nodes/world';
 import { AHEAD, FACTIONS, KINDS, NAMES } from './hunted';
 import { createPayLedger, hunterEarn } from '../universe/earnRules';
 import { createRoam } from './roam';
 import { pick as pickFaction } from '../universe/sides';
-import { createSkyStreaks } from './skyStreaks';
+import { createSkyStreaks } from './nodes/skyStreaks';
 import { laneLinks } from './skyTraffic';
 import { FAR, PULSE, aligned, atGoal, makeSpace, parkBy, steerToward } from './space';
 import { createFinds } from './places';
@@ -196,13 +197,18 @@ function systemEnvironment(renderer, sys) {
   add(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: '#0c1220', side: THREE.BackSide }));
   sys.suns.forEach((s, i) => add(new THREE.SphereGeometry(i ? 1.1 : 1.5, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(s.color).multiplyScalar(i ? 5 : 8) }), new THREE.Vector3(...s.dir).normalize().multiplyScalar(7)));
   add(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 0.38, 0.9) }), new THREE.Vector3(...s3(sys.suns[0].dir)).multiplyScalar(-7));
-  const pmrem = new THREE.PMREMGenerator(renderer);
+  const pmrem = new PMREMGenerator(renderer);
   const rt = pmrem.fromScene(env, 0.02);
   pmrem.dispose();
   for (const x of made) x.dispose();
   return rt;
 }
 const s3 = (d) => [d[0], -d[1] * 0.5, d[2]];
+
+// One model, or null if it doesn't load: a copy of the page's one parse of it
+// (universe/planets.js's loadModel, written here: that file holds the map's
+// GLSL, and this is all the galaxy took from it)
+const loadModel = (url) => loadGLTF(url).then((g) => g && cloneScene(g));
 
 // Just taken off from a system's planet (the surface page leaves its id in
 // the session as it goes): just off the planet on its sunny side, nose
@@ -251,9 +257,13 @@ export async function create(canvas, ctx) {
   const post = createPost(renderer, scene, camera, { small, bloom: LOOK.bloom });
   // (the house look, below, on whatever's warmed: patched before it's compiled)
   let house = null;
+  // (on the node renderer: a classic material with a hook on it swapped for
+  // the twin that holds the hook, lib/three/hookNodes, then its programs made
+  // through the runtime's compileAsync, as the surface warms)
   const warm = (root, cam = camera, target = scene) => {
     house?.adopt(root);
-    return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined);
+    twinScene(root);
+    return gfx.compile ? Promise.resolve(gfx.compile(singlePass(root), cam, target)).catch(() => {}) : Promise.resolve();
   };
 
   // light: each sun from its way, and a little ambient
@@ -635,7 +645,7 @@ export async function create(canvas, ctx) {
         });
     } else if (kind === 'cruiser') {
       const model = state.model;
-      import('../rickmorty/cruiser3d')
+      import('../rickmorty/cruiser3dNodes')
         .then((m) => m.buildCruiser({ ink: BUILT / 2.7 }))
         .then((c) => {
           if (!c) return;
@@ -681,11 +691,11 @@ export async function create(canvas, ctx) {
       const mod = await CABS[kind]();
       if (disposed || cabWanted !== kind) return;
       if (!roomEnv) {
-        const pm = new THREE.PMREMGenerator(renderer);
+        const pm = new PMREMGenerator(renderer);
         roomEnv = pm.fromScene(new RoomEnvironment(), 0.04).texture;
         pm.dispose();
       }
-      const pmrem = new THREE.PMREMGenerator(renderer);
+      const pmrem = new PMREMGenerator(renderer);
       const built = await mod.build({ renderer, pmrem, rich: tier === 'high' && !coarse, reduced, coarse, say: () => {} });
       pmrem.dispose();
       if (disposed || cabWanted !== kind) {
@@ -2608,7 +2618,7 @@ export async function create(canvas, ctx) {
     }
   }
   scene.add(spares);
-  const ready = Promise.all([built, dressed, warm(scene), post.composer ? precompilePasses(renderer, post.composer, camera) : null]).then(() => {
+  const ready = Promise.all([built, dressed, warm(scene)]).then(() => {
     scene.remove(spares);
     if (disposed) return;
     for (const [k, model] of stock) fleet.stock(k, model);
