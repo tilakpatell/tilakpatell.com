@@ -42,7 +42,8 @@ describe('noiseNodes, the twin of noiseGlsl', () => {
     expect(Object.keys(nodes).sort()).toEqual(['FBM_OCT', 'M3', 'M3T', 'noiseWith']);
     expect(nodes.FBM_OCT).toBe(10);
     const fns = nodes.noiseWith(uniform(new THREE.Vector3(17, 3, 41)));
-    expect(Object.keys(fns).sort()).toEqual(['fbm', 'fbmd', 'hash13', 'hash33', 'noise', 'noised', 'noised2']);
+    expect(Object.keys(fns).sort()).toEqual(['fbm', 'fbmd', 'hash13', 'hash33', 'noise', 'noised', 'noised2', 'raw', 'seed']);
+    expect(Object.keys(fns.raw).sort()).toEqual(['fbm', 'fbmd', 'hash13', 'hash33', 'noise', 'noised', 'noised2']);
   });
 
   it('the turn between octaves is the GLSL’s mat3, column by column, and its transpose', () => {

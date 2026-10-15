@@ -161,6 +161,10 @@ export function noiseWith(uSeed, { octaves = FBM_OCT } = {}) {
   );
 
   return {
+    // (the functions as laid out, the seed their last argument, and the seed:
+    // for a caller’s own laid-out function, which must take the seed in too)
+    seed: uSeed,
+    raw: { hash13, hash33, noised, noise, fbmd, noised2, fbm },
     hash13: (p) => hash13(p, uSeed),
     hash33: (p) => hash33(p, uSeed),
     noised: (x) => noised(x, uSeed),
