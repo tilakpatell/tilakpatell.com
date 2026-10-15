@@ -12,4 +12,4 @@ Shots through the dev server in headless Chromium (software GL, the page’s clo
 
 The dev server had no `VITE_ASSET_BASE`, so a file that lives only in the public bucket came back as the page itself and the console said so (`Unexpected token '<'`); the built site reads the published files through the manifest’s base, and the smoke check of the built `/galaxy` is in the hand-off. The shot script is not committed (it lived in the ignored `lab/`); its steps are the ones `galaxy-hud-check.mjs` takes: fly two seconds, force the battle until the front reports it, then shoot.
 
-The checks on the PR’s head are in the hand-off (`docs/superpowers/HANDOFF-bf2017.md`, lane S3).
+The checks on the PR’s head are in the hand-off (`docs/superpowers/HANDOFF-battlefront.md`, lane S3).
