@@ -14,7 +14,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, SpriteNodeMaterial } from 'three/webgpu';
-import { Fn, abs, asin, atan, clamp, dot, float, normalViewGeometry, normalize, positionLocal, positionViewDirection, pow, sin, uniform } from 'three/tsl';
+import { Fn, abs, asin, atan, clamp, dot, float, max, normalViewGeometry, normalize, positionLocal, positionViewDirection, pow, sin, uniform } from 'three/tsl';
 import { INTERDICTION, interdictorSolids } from '../interdiction';
 import { JUMP, jumpSmear } from '../../universe/capitalRules';
 import { sharpen } from '../../../lib/three/textures';
@@ -26,7 +26,7 @@ const LINGER = 240; // seconds at most it stays, fighters or no
 function wellMaterial() {
   const u = { uTime: uniform(0), uAmount: uniform(0), uColor: uniform(new THREE.Color(0.55, 0.32, 1.25)) };
   const shell = Fn(() => {
-    const rim = pow(abs(dot(normalize(normalViewGeometry), positionViewDirection)).oneMinus(), 2.6);
+    const rim = pow(max(abs(dot(normalize(normalViewGeometry), positionViewDirection)).oneMinus(), 0), 2.6); // (no pow of a negative at the rim)
     const lat = asin(clamp(positionLocal.y, -1, 1));
     const lon = atan(positionLocal.z, positionLocal.x);
     const bands = sin(lat.mul(16).add(u.uTime.mul(1.4))).mul(sin(lon.mul(5).sub(u.uTime.mul(0.6)))).mul(0.5).add(0.5);

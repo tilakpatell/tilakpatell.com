@@ -117,6 +117,11 @@ export function createLevelArea(scene, { at, radius, sea = null, sky = null, fog
   let loaded = null;
   if (sky?.url)
     new THREE.TextureLoader().load(sky.url, (t) => {
+      // (come in after the area was taken down: freed, not shown)
+      if (gone) {
+        t.dispose();
+        return;
+      }
       t.colorSpace = THREE.SRGBColorSpace;
       t.wrapS = THREE.RepeatWrapping;
       loaded = t;
