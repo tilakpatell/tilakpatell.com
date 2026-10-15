@@ -1,6 +1,6 @@
 # The heavy assets are mirrored on Supabase Storage; the site stays whole
 
-Date: 2026-10-09. The plan: `docs/superpowers/plans/2026-10-09-asset-hosting.md`; where it is left: `docs/superpowers/HANDOFF-planet-flight.md` (lane I).
+Date: 2026-10-09. The plan: `docs/superpowers/plans/2026-10-09-asset-hosting.md`; where it is left: `docs/superpowers/HANDOFF-galaxy.md` (lane I).
 
 ## Context
 
