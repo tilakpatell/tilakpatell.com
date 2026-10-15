@@ -77,7 +77,7 @@ export function stampPackRows(tex, word) {
   return n;
 }
 
-export function auditFolder(dir, { formats = null, fix = false } = {}) {
+function auditFolder(dir, { formats = null, fix = false } = {}) {
   const rows = [];
   let fixed = 0;
   for (const file of walk(dir)) {
@@ -97,7 +97,7 @@ export function auditFolder(dir, { formats = null, fix = false } = {}) {
 }
 
 // every role in the index has its maps on disk, and every folder its row
-export function auditRoles(dir) {
+function auditRoles(dir) {
   const problems = [];
   const indexFile = join(dir, 'index.json');
   if (!existsSync(indexFile)) return { roles: 0, problems: [`${relative(ROOT, dir)}: no index.json`] };

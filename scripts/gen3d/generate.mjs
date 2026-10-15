@@ -21,7 +21,7 @@ export const TRELLISCPP = { exe: join(STUDIO, 'runtime', 'trellis-cli.exe'), mod
 export const WSL = { distro: process.env.GEN3D_WSL_DISTRO ?? 'Ubuntu-24.04', conda: '~/miniforge3', env: 'trellis2' };
 export const ENGINES = ['trelliscpp', 'trellis2', 'hunyuan'];
 // the Hunyuan3D-2 multi-view engine's conda env, in the same distro
-export const HY3D = { env: 'hy3d', repo: '~/Hunyuan3D-2', paintEnv: 'hy3d21', paintRepo: '~/Hunyuan3D-2.1' };
+const HY3D = { env: 'hy3d', repo: '~/Hunyuan3D-2', paintEnv: 'hy3d21', paintRepo: '~/Hunyuan3D-2.1' };
 export const VIEWS = ['front', 'left', 'back', 'right'];
 // GEN3D_ENGINE=fake (or --engine fake): a tiny GLB in under a second, for the contract tests; never chosen on its own
 const FAKE = join(HERE, '..', 'ai-e2e', 'fakes', 'engine.mjs');
@@ -40,7 +40,7 @@ export const wslPath = (p) => (/^[A-Za-z]:[\\/]/.test(p) ? `/mnt/${p[0].toLowerC
 // closely; its own flow weights sit beside TRELLIS.2's as pixal3d_*.gguf.
 // whether Hunyuan3D-2.1's paint env is in WSL (asked once)
 let hy3d21;
-export function hy3d21Ready() {
+function hy3d21Ready() {
   if (hy3d21 !== undefined) return hy3d21;
   hy3d21 = false;
   if (process.platform !== 'win32') return false;

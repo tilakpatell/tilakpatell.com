@@ -61,7 +61,6 @@ const shape = (key, make) => {
   return geos.get(key);
 };
 export const sphere = () => shape('sphere', () => new THREE.SphereGeometry(1, 40, 28));
-export const lowSphere = () => shape('lowSphere', () => new THREE.SphereGeometry(1, 20, 14));
 export const capsule = (len = 1) => shape(`capsule${len}`, () => new THREE.CapsuleGeometry(1, len, 10, 24));
 export const cylinder = (top = 1, bottom = 1, seg = 32) => shape(`cyl${top},${bottom},${seg}`, () => new THREE.CylinderGeometry(top, bottom, 1, seg, 1));
 export const torus = (tube = 0.25, arc = Math.PI * 2) => shape(`torus${tube},${arc}`, () => new THREE.TorusGeometry(1, tube, 16, 48, arc));

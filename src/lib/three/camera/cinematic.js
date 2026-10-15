@@ -22,7 +22,7 @@ export const FOCUS_DEFAULT = 1000;
 // has no such bound)
 export const MAXBLUR = 0.01;
 // (hand: the tiers the game's option turns the blur on at)
-export const BLUR_TIERS = ['ultra', 'high'];
+const BLUR_TIERS = ['ultra', 'high'];
 
 const RAD = Math.PI / 180;
 

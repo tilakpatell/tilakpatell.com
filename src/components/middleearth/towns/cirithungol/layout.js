@@ -32,7 +32,7 @@ export const CITY_YAW = Math.atan2(CITY.x - HIDE.x, CITY.z - HIDE.z);
 // ── the stairs ──
 // Switchbacks up the cliff face (which faces +z): `stairAt(s)` gives the
 // point `s` metres up the stair, as [x, y, z].
-export const STAIR_TURNS = 6;
+const STAIR_TURNS = 6;
 export const STAIR_RISE = 70;
 export function stairAt(s) {
   const k = Math.max(0, Math.min(1, s / STAIRS.len));

@@ -75,7 +75,7 @@ export const LIMIT = 0.15; // the most a planted toe may drift (m/s)
 export const PLANT = 0.03; // within this of its lowest, a toe is down (m)
 export const WINDOW = 0.6; // the lowest is looked for this far either side (s)
 export const JUMP = 1.5; // further than this between frames is a figure put somewhere else (m)
-export const MIN_TIME = 0.25; // a toe down for less time than this says nothing (s)
+const MIN_TIME = 0.25; // a toe down for less time than this says nothing (s)
 export const BIND_EPS = 0.01; // every bone this near where it was bound is the bind pose
 export const PHASE_TOL = 0.001; // two loops this near in their cycle started together
 export const LONGEST = 0.1; // what a frame counts for on the wall clock, at most (s)
@@ -188,7 +188,7 @@ export function inView(vp, eye, p, range = Infinity) {
 }
 
 // a bone's name without its rig's prefix or the number a download appended (lib/three/rig.js's)
-export function plainBone(name) {
+function plainBone(name) {
   return String(name ?? '')
     .replace(/^mixamorig\d*:?/i, '')
     .replace(/^CC_Base_/i, '')

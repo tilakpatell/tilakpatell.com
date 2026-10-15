@@ -259,7 +259,7 @@ export const asTouch = (page) =>
 
 // the header row (the title, the era chips, the Films summary, the find field, the close button), measured: any two meeting,
 // any outside the frame; the text by its words' box, not its column's
-export const headerProblems = (page) =>
+const headerProblems = (page) =>
   J(page, () => {
     const frame = document.querySelector('.holomap-frame').getBoundingClientRect();
     const textBox = (el) => {

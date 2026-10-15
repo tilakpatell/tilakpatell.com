@@ -60,7 +60,7 @@ const noise = (p) => {
 const direction = () => normalize(varying(normalize(positionLocal), 'vN'));
 const world = () => varying(positionWorld, 'vW');
 
-export const EXPOSURE = 1.05; // the classic renderer's toneMappingExposure for Earth
+const EXPOSURE = 1.05; // the classic renderer's toneMappingExposure for Earth
 
 // what a fragment wrote on the classic renderer: tone mapped (if it was),
 // then encoded as sRGB, before blending

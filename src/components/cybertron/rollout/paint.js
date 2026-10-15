@@ -553,58 +553,6 @@ export function paintFacade({ w = 256, h = 384, seed = 7, kind = 'glass' } = {})
   return { color: c, emissive: e };
 }
 
-// A Cybertronian spire: tall panels, ribs, and bands of light.
-export function paintSpire({ w = 256, h = 512, seed = 8, light = '#ff5a1f' } = {}) {
-  const c = makeCanvas(w, h);
-  const e = makeCanvas(w, h);
-  const x = c.getContext('2d');
-  const ex = e.getContext('2d');
-  let r = seed * 7919 + 13;
-  const rand = () => ((r = (r * 9301 + 49297) % 233280) / 233280);
-  const gr = x.createLinearGradient(0, 0, w, 0);
-  gr.addColorStop(0, '#24262e');
-  gr.addColorStop(0.5, '#3c3f4a');
-  gr.addColorStop(1, '#22242b');
-  x.fillStyle = gr;
-  x.fillRect(0, 0, w, h);
-  ex.fillStyle = '#000';
-  ex.fillRect(0, 0, w, h);
-  for (let i = 0; i < 6; i++) {
-    const px = (i / 6) * w;
-    x.fillStyle = 'rgba(0,0,0,0.35)';
-    x.fillRect(px, 0, 3, h);
-    x.fillStyle = 'rgba(255,255,255,0.06)';
-    x.fillRect(px + 3, 0, 2, h);
-  }
-  for (let y = 0; y < h; y += 16 + rand() * 40) {
-    x.fillStyle = 'rgba(0,0,0,0.3)';
-    x.fillRect(0, y, w, 2);
-    if (rand() < 0.35) {
-      const bh = 3 + rand() * 5;
-      x.fillStyle = light;
-      x.fillRect(0, y + 4, w, bh);
-      ex.fillStyle = light;
-      ex.globalAlpha = 0.7 + rand() * 0.3;
-      ex.fillRect(0, y + 4, w, bh);
-      ex.globalAlpha = 1;
-    }
-    // window slits
-    if (rand() < 0.5) {
-      for (let k = 0; k < 6; k++) {
-        if (rand() < 0.5) continue;
-        const sx = (k / 6) * w + w / 24;
-        ex.fillStyle = rand() < 0.5 ? light : '#7fd8ff';
-        ex.globalAlpha = 0.5;
-        ex.fillRect(sx, y + 10, w / 18, 10);
-        ex.globalAlpha = 1;
-        x.fillStyle = '#0b0c10';
-        x.fillRect(sx, y + 10, w / 18, 10);
-      }
-    }
-  }
-  return { color: c, emissive: e };
-}
-
 // ── small things ──
 
 // Armour panelling for the robots and vehicles: panel lines, rivets and

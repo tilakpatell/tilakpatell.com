@@ -254,11 +254,11 @@ function arc(a0, a1, r, thick) {
   }
   return out;
 }
-export const RUIN_WALLS = RUIN.walls.flatMap(([a0, a1]) => arc(a0, a1, RUIN.r, RUIN.thick / 2));
+const RUIN_WALLS = RUIN.walls.flatMap(([a0, a1]) => arc(a0, a1, RUIN.r, RUIN.thick / 2));
 // the stair's way through the crags, as the angles it's open between
-export const CLEFT = [1.98, 2.78];
+const CLEFT = [1.98, 2.78];
 const CRAG_R = (HILL.crag[0] + HILL.crag[1]) / 2;
-export const CRAG_WALLS = arc(CLEFT[1], CLEFT[0] + Math.PI * 2, CRAG_R, 1.1);
+const CRAG_WALLS = arc(CLEFT[1], CLEFT[0] + Math.PI * 2, CRAG_R, 1.1);
 export const WALLS = [...RUIN_WALLS, ...CRAG_WALLS];
 
 // ── the places to stop ──

@@ -158,8 +158,8 @@ export function freshGalaxy(manifest, publicDir) {
   );
 }
 
-export const IGNORE_START = '# galaxy assets (published; scripts/assets-publish.mjs)';
-export const IGNORE_END = '# end galaxy assets';
+const IGNORE_START = '# galaxy assets (published; scripts/assets-publish.mjs)';
+const IGNORE_END = '# end galaxy assets';
 // The published files that stay in git too: the skeleton and the clip
 // packs the tests read whole (walrusSocket, socket and bf2017-skeleton's:
 // under 3 MB together), which a checkout without the bucket must still have

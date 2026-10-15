@@ -61,7 +61,7 @@ export function normalise(name) {
 }
 
 // A bucket path as the listing check reads it: lowercase, under web/, no extension
-export const pathKey = (p) => lower(p).replace(/^web\//, '').replace(/\.gz$/, '').replace(EXT, '');
+const pathKey = (p) => lower(p).replace(/^web\//, '').replace(/\.gz$/, '').replace(EXT, '');
 const dirOf = (key) => key.slice(0, key.lastIndexOf('/'));
 const derivedOf = (key) => key.replace(/__(normal|orm_[0-9a-z]+)$/, '');
 

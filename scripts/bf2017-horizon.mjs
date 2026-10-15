@@ -53,7 +53,7 @@ const BASE =
   process.env.ASSET_BASE ?? process.env.VITE_ASSET_BASE ?? (process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL}/storage/v1/object/public/site-assets` : 'https://jzabcqboyemokwifmjmp.supabase.co/storage/v1/object/public/site-assets');
 // _source: the design's §4 N4 (2,048 on high and ultra); the smaller tiers
 // a step and two under, as the pack's own maps are (lod.js's texSizeFor)
-export const ATLAS_ROWS = { low: 512, mid: 1024, high: 2048, ultra: 2048 };
+const ATLAS_ROWS = { low: 512, mid: 1024, high: 2048, ultra: 2048 };
 // _source: meshopt's simplifier, error relative to the merge's extent: 1 %
 // of a 512 m cell is 5 m, under a pixel at the grid's distance (bf2017-horizon.mjs's PROXY_MIN_RADIUS)
 const SIMPLIFY_ERROR = 0.01;

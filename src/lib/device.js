@@ -76,7 +76,7 @@ export const BUDGETS = {
 // given High hung its GPU in Hoth; the owner: a weak chip is Low. (A band
 // at Mid for 50 to 100 would take the entry discrete cards too, the GTX
 // 1650 and the RTX 3050 laptop's: not asked for.)
-export const AUTO_BY_SCORE = [[50, 'low']];
+const AUTO_BY_SCORE = [[50, 'low']];
 
 // What Auto picks from the tier and the chip: a laptop or desktop with a
 // graphics chip ultra, unless its score says Low (AUTO_BY_SCORE);
@@ -294,10 +294,10 @@ export const budget = (tier, video = videoValues()) => {
 // visitor turned, so a row asked for by its tier keeps its own numbers
 // otherwise. Read once and again after a change ('tp:video') or a reset.
 let videoCache = null;
-export function videoValues() {
+function videoValues() {
   return (videoCache ??= resolveVideo(readVideo(undefined, quality().level), { ceiling: device().detail }).overridden);
 }
-export function resetVideo() {
+function resetVideo() {
   videoCache = null;
 }
 if (typeof window !== 'undefined') window.addEventListener('tp:video', resetVideo);

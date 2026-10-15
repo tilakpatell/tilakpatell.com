@@ -58,10 +58,10 @@ import { fieldHash } from './bf2017-abilities.mjs';
 const P = 'Gameplay/Prefabs/Abilities/Gameplay/';
 const K = 'Gameplay/Kits/Hero/';
 export const PHYSICAL = `${P}PF_Lightsaber_Gameplay_Physical`;
-export const BLOCK_STAGGER = `${K}PF_BlockStaggerAffectors`;
-export const COSTS = 'Online/BattlepointCostData';
-export const AI_MELEE = 'AI/BattleAI/Weapons/AIMeleeProjectile';
-export const EVADING = 'Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier';
+const BLOCK_STAGGER = `${K}PF_BlockStaggerAffectors`;
+const COSTS = 'Online/BattlepointCostData';
+const AI_MELEE = 'AI/BattleAI/Weapons/AIMeleeProjectile';
+const EVADING = 'Gameplay/Prefabs/Affectors/States/Affector_Evading_DMGMultiplier';
 const camera = (who) => `${K}Hero_Lightsaber_${who}_Camera_3P`;
 
 // (the roster's saber heroes; Palpatine has no saber in the game, and no
@@ -248,7 +248,7 @@ export function evadingOf(root) {
 // (the four floats each go to a property of the Ant game state, which isn't
 // exported: kept by that property's hash, the arm the one written 2.2–2.25 m;
 // the same hash names the same property in every hero's camera)
-export const CAMERA_FIELDS = { arm: 209679317, a: 1265228758, b: -1683887300, c: -1836133945 };
+const CAMERA_FIELDS = { arm: 209679317, a: 1265228758, b: -1683887300, c: -1836133945 };
 export function cameraOf(root, name) {
   const a = need(loadAsset(root, name), name);
   const out = {};
@@ -271,7 +271,7 @@ export function staggerOf(root) {
 }
 
 // HitByLightSaber, as a hero's saber prefab applies it to the one it strikes
-export function hitReactOf(root, prefab) {
+function hitReactOf(root, prefab) {
   const a = need(loadAsset(root, prefab), prefab);
   const ap = objectsOf(a, 'AffectorApplyEntityData').filter((o) => /HitByLightSaber$/.test(o.Affector?.$asset ?? '')).sort((x, y) => y.Duration - x.Duration)[0];
   return ap ? { hit: ap.Duration, hit_source: `${prefab}#AffectorApplyEntityData(HitByLightSaber).Duration` } : {};

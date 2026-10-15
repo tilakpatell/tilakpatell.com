@@ -54,7 +54,7 @@ const WINDOWS = [
 // move): the planted foot's speed there is the slide, its move over POP in
 // one frame a pop. `raw` is the same on the drawn body's own moves.
 export const MAX_DT = 0.05; // runtime.js's
-export const STANCE_EDGE = 0.2; // the share of a stance left out at each end
+const STANCE_EDGE = 0.2; // the share of a stance left out at each end
 export function measure(frames, { pop = POP, maxDt = MAX_DT } = {}) {
   const n = frames.length;
   if (n < 2) return { frames: n, frameMs: 0, bodySpeed: 0, toe: null, ankle: null };

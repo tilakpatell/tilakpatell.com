@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 const KEY = 'tp-ambience';
 const EVENT = 'tp:ambience';
 
-export function ambienceOn() {
+function ambienceOn() {
   try {
     return window.localStorage.getItem(KEY) !== 'off';
   } catch {
@@ -13,7 +13,7 @@ export function ambienceOn() {
   }
 }
 
-export function setAmbience(on) {
+function setAmbience(on) {
   try {
     if (on) window.localStorage.removeItem(KEY);
     else window.localStorage.setItem(KEY, 'off');

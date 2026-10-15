@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Guest</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #cfd8e3;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- One of the site's own cast on the 2017 game's skeleton (scripts/
+         guest-rig.mjs) beside one of the game's own troopers, both on the
+         same clips, a column a moment and a row a view, for
+         scripts/guest-shots.mjs (through the dev server, in the bucket
+         check's mode: the trooper's pistol stance and the host hero's pack
+         are in the asset bucket). The guest's body is loaded by
+         src/lib/three/walrus.js's loadWalrusBody and its pack by packUrls'
+         whole case, as the game will load them; the trooper plays the
+         game's packs. The floor is a slab whose top is the ground: what is
+         under it is not seen, and a foot over it shows the gap.
+         ?who=rick&host=han&shots=rest,walk@0,walk@0.33,stance.p.aim@0,die@1
+           &views=front,side&look=lit|toon|ink&gun=rk3&w=420&h=460
+           [&body=<id>] [&beside=<url>|none] [&bones=1] [&pack=<url>]
+           [&tall=2.2] [&spread=0.62] [&focus=<bone>] -->
+    <script type="module">
+      import * as THREE from 'three';
+      import { RIM, lightRamp } from '/src/components/rickmorty/portal/meshyCastCore.js';
+      import { toon } from '/src/components/rickmorty/portal/toon.js';
+      import { faceAlongZ } from '/src/components/battlefront/figures/facing.js';
+      import { weaponUrl } from '/src/components/battlefront/figures/held.js';
+      import { cloneScene, loadGLTF } from '/src/lib/three/gltfCache.js';
+      import { inkHull, rimToon } from '/src/lib/three/ink.js';
+      import { PACK_DIR, loadWalrusBody, packUrls } from '/src/lib/three/walrus.js';
+      import { WEAPON_FRAME } from '/src/lib/three/walrusRig.js';
+
+      const q = new URLSearchParams(location.search);
+      const who = q.get('who') ?? 'rick';
+      const body = q.get('body') ?? who;
+      const host = q.get('host') ?? 'han';
+      const W = Number(q.get('w') ?? 420);
+      const H = Number(q.get('h') ?? 460);
+      const shots = (q.get('shots') ?? 'rest,walk@0,walk@0.33,walk@0.66,stance.p.aim@0,die@1').split(',').map((s) => s.split('@')).map(([clip, at]) => ({ clip, at: Number(at ?? 0) }));
+      const views = (q.get('views') ?? 'front,side').split(',');
+      const look = q.get('look') ?? 'lit';
+      const beside = q.get('beside') ?? '/models/galaxy/bf2017/crew/snowtrooper.lod1.glb';
+      const gunId = q.get('gun') ?? 'rk3';
+
+      // (a guest's pack is the game's own clips and is not in git: scripts/guest-clips.mjs
+      // writes it under lab/, which the dev server serves as it serves this page)
+      const pack = q.get('pack') ?? `/lab/assets/packs/guests/clips-${who}.glb`;
+      const guest = await loadWalrusBody(`/models/guests/${body}.glb`, { packs: packUrls(null, { whole: pack }) });
+      // (the trooper on the game's own packs, the same names: the humanoid's, the pistol's stance, the host hero's)
+      const man = beside === 'none' ? null : await loadWalrusBody(beside, { packs: [`${PACK_DIR}/clips-humanoid.glb`, `${PACK_DIR}/clips-stance-p.glb`, `${PACK_DIR}/clips-${host}.glb`] });
+      const figures = [guest, man].filter(Boolean);
+
+      // the three looks: the file's own lit material; the galaxy's worlds'
+      // toon paint and rim (portal/meshyCast.js's); that with the cruiser's ink line
+      if (look !== 'lit') {
+        guest.model.traverse((o) => {
+          if (o.isSkinnedMesh) o.material = rimToon(toon(0xffffff, { map: o.material.map, gradientMap: lightRamp() }), RIM);
+        });
+        if (look === 'ink') inkHull(guest.model, 0.012);
+      }
+      // the game's pistol on each one's weapon socket, as figures/held.js hangs it
+      if (gunId !== 'none') {
+        const gltf = await loadGLTF(weaponUrl(gunId));
+        for (const f of figures) {
+          const gun = cloneScene(gltf);
+          gun.quaternion.fromArray(WEAPON_FRAME.quaternion);
+          gun.position.fromArray(WEAPON_FRAME.position);
+          f.sockets.weapon.add(gun);
+        }
+      }
+      if (q.get('bones')) {
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff2d55', depthTest: false }));
+        guest.model.traverse((o) => {
+          if (/^(Hips|Spine|Spine1|Spine2|Neck|Head|head_end|(Left|Right)(Shoulder|Arm|ForeArm|Hand|UpLeg|Leg|Foot|ToeBase)|Wep_Root)$/.test(o.name)) {
+            const d = dot.clone();
+            d.renderOrder = 10;
+            o.add(d);
+          }
+        });
+      }
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(W * shots.length, H * views.length);
+      renderer.setScissorTest(true);
+      document.body.appendChild(renderer.domElement);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#cfd8e3');
+      // (Hoth's day, near enough: a low cool sun and the snow's light from below)
+      const sun = new THREE.DirectionalLight('#fff6ea', 2.6);
+      sun.position.set(2, 4, 3);
+      scene.add(sun, new THREE.HemisphereLight('#dfe9f5', '#8f97a3', 1.5));
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(8, 1, 8), new THREE.MeshStandardMaterial({ color: '#eef2f6', roughness: 1 }));
+      floor.position.y = -0.5;
+      scene.add(floor);
+      for (const f of figures) {
+        f.mixer = new THREE.AnimationMixer(f.model);
+        f.rest = f.model.getObjectByName('AITrajectory').quaternion.clone();
+        f.model.traverse((o) => (o.frustumCulled = false));
+        scene.add(f.model);
+      }
+
+      // (no perspective, so a sole on the ground is on the slab's edge wherever the figure stands;
+      // the picture runs from 0.2 m under the ground to 2 m over it)
+      const tall = Number(q.get('tall') ?? 2.2);
+      const wide = (tall * W) / H;
+      const cam = new THREE.OrthographicCamera(-wide / 2, wide / 2, tall / 2, -tall / 2, 0.1, 30);
+      const spread = Number(q.get('spread') ?? 0.62); // how far each stands from the middle
+      const focus = q.get('focus'); // a bone of the guest's to look at closely (with a small `tall`)
+      const v = new THREE.Vector3();
+      const info = [];
+      shots.forEach(({ clip, at }, col) => {
+        const line = [`${clip}@${at}`];
+        for (const f of figures) {
+          f.mixer.stopAllAction();
+          const c = clip === 'rest' ? null : f.clips[clip];
+          // (the clips face +x; the Battlefront figures turn them to +z on the node no clip keys)
+          if (c) faceAlongZ(f.model);
+          else f.model.getObjectByName('AITrajectory').quaternion.copy(f.rest);
+          if (c) {
+            const a = f.mixer.clipAction(c);
+            a.setLoop(THREE.LoopOnce);
+            a.clampWhenFinished = true;
+            a.reset().play();
+            f.mixer.setTime(Math.min(c.duration * at, c.duration - 1e-4));
+          } else if (clip !== 'rest') line.push(`${f === guest ? who : 'trooper'} has no ${clip}`);
+        }
+        views.forEach((view, row) => {
+          // side by side across the picture, whichever way it is seen from, each
+          // with its hips over its own place (a fall carries a body a metre and more)
+          figures.forEach((f, i) => {
+            const off = figures.length > 1 ? (i ? spread : -spread) : 0;
+            f.model.position.set(0, 0, 0);
+            f.model.updateMatrixWorld(true);
+            const hips = f.model.getObjectByName('Hips').getWorldPosition(v);
+            f.model.position.set((view === 'front' ? off : 0) - hips.x, 0, (view === 'front' ? 0 : -off) - hips.z);
+            f.model.updateMatrixWorld(true);
+          });
+          const mid = focus ? guest.model.getObjectByName(focus).getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(0, tall / 2 - 0.2, 0);
+          if (view === 'front') cam.position.set(mid.x, mid.y, 8);
+          else if (view === 'back') cam.position.set(mid.x, mid.y, -8);
+          else if (view === 'top') cam.position.set(mid.x, 8, mid.z + 0.001);
+          else cam.position.set(view === 'side' ? 8 : -8, mid.y, mid.z);
+          cam.lookAt(mid.x, mid.y, mid.z);
+          const y = (views.length - 1 - row) * H;
+          renderer.setViewport(col * W, y, W, H);
+          renderer.setScissor(col * W, y, W, H);
+          renderer.render(scene, cam);
+        });
+        // what the picture should show, in numbers: each one's lowest toe or ankle joint, and its gun off its wrist
+        for (const f of figures) {
+          const low = Math.min(...['LeftToeBase', 'RightToeBase', 'LeftFoot', 'RightFoot'].map((n) => f.model.getObjectByName(n).getWorldPosition(v).y));
+          const hand = f.model.getObjectByName('RightHand').getWorldPosition(new THREE.Vector3());
+          line.push(`${f === guest ? who : 'trooper'}: lowest foot joint ${(low * 100).toFixed(1)} cm, socket ${(f.sockets.weapon.getWorldPosition(v).distanceTo(hand) * 100).toFixed(1)} cm from the wrist`);
+        }
+        info.push(line.join(' | '));
+      });
+      document.title = JSON.stringify(info);
+      window.__done = true;
+    </script>
+  </body>
+</html>

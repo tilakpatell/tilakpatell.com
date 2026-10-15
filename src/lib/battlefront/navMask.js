@@ -16,6 +16,7 @@
 //     → { version, cell, cols, rows, origin, capsule, meta, blocked, top, fine: { cell, cols, rows, bits } }
 //   encodeMask(mask) → Uint8Array ; decodeMask(bytes) → mask ; inflateMask(deflated) → Promise<mask>
 //   fineBlocked(mask, x, z) → bool ; maskFits(mask, { cell, cols, rows, origin }) → bool
+//   unmeasuredTop(mask) → the top, in decimetres, a cell carries where its builder measured none
 
 export const MASK_VERSION = 1;
 const MAGIC = 'BFNV';
@@ -67,6 +68,15 @@ export function fineBlocked(mask, x, z) {
   const j = r * f.cols + c;
   return (f.bits[j >> 3] & (1 << (j & 7))) !== 0;
 }
+
+// The top a blocked cell carries where its builder measured none: the ray down
+// the cell's middle met no shape though the capsule there did (the shape
+// stands beside the middle), and the builder wrote the capsule's own height
+// (scripts/lib/bf2017-nav.mjs's topAt; by hand, NOTES.md). In decimetres, as
+// `top` holds it; 0 for a mask that names no capsule height. A shape measured
+// exactly that tall reads the same: it is no taller than the capsule, so the
+// fine grid has all of it too.
+export const unmeasuredTop = (mask) => Math.round((mask?.capsule?.height ?? 0) * 10);
 
 export const maskFits = (mask, { cell, cols, rows, origin }) =>
   Boolean(mask && mask.cell === cell && mask.cols === cols && mask.rows === rows && Math.abs(mask.origin[0] - origin[0]) < 1e-6 && Math.abs(mask.origin[1] - origin[1]) < 1e-6);

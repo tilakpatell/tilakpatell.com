@@ -8,7 +8,7 @@ import { metric } from './context.mjs';
 
 // one folder a world (the towns of Middle-earth, Scranton and the Citadel
 // share TownHud, so they move as one; the galaxy's surface is the galaxy's)
-export const WORLD_DIRS = ['albuquerque', 'avengers', 'caribbean', 'cybertron', 'deathstar', 'dotmatrix', 'earth', 'galaxy', 'invincible', 'mario64', 'middleearth', 'minecraft', 'music', 'office', 'rickmorty'];
+const WORLD_DIRS = ['albuquerque', 'avengers', 'caribbean', 'cybertron', 'deathstar', 'dotmatrix', 'earth', 'galaxy', 'invincible', 'mario64', 'middleearth', 'minecraft', 'music', 'office', 'rickmorty'];
 
 // a world's own page, where its HUD lives there rather than in its folder
 // (the galaxy's surface: src/pages/GalaxySurface.jsx)

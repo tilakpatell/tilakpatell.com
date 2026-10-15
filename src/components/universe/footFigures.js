@@ -156,7 +156,7 @@ export function rigged(model, clips, tall, owned, { seed = seedFor('rigged'), ke
 // and not the other’s, which are then as the show has them)
 const WEARS = new Set(EVERYONE);
 export const lookFor = (who, looks) => (WEARS.has(who) ? readLooks(looks ?? local.get(LOOK_KEY))[who] : null);
-export const HAND_GUNS = { portalgun: 'portal', laserpistol: 'laser' }; // the wardrobe's hand gear that's a gun on foot
+const HAND_GUNS = { portalgun: 'portal', laserpistol: 'laser' }; // the wardrobe's hand gear that's a gun on foot
 
 // A figure from Star Wars Battlefront II (2017), on the game's whole
 // skeleton and moved by the game's own clips (lib/three/walrus.js: the

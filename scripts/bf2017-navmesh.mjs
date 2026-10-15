@@ -73,7 +73,7 @@ async function levelObjects(dir) {
 
 // what streams each blob in: the bool whose OnTrue fires its StreamIn, and the
 // settings and nodes feeding that bool (two hops back), as plain words
-export function wiringOf({ byGuid, level }) {
+function wiringOf({ byGuid, level }) {
   const events = level?.EventConnections ?? [];
   const props = level?.PropertyConnections ?? [];
   const word = (guid) => {
