@@ -152,6 +152,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     const dt = last ? Math.min(MAX_DT, (t - last) / 1000) : 0.016;
     const interval = last ? t - last : 0;
     last = t;
+    kicked = false; // (asked for before this frame: this is the frame; asked for during it: one more)
     const { world } = current;
     let cpuMs = 0;
     try {
