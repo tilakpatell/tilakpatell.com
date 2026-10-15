@@ -9,30 +9,30 @@ The owner’s word (2026-10-15): remove the bloat, every world on WebGPU, everyt
 - The inventory (the design’s §1; the evidence README): 605,667 lines of source, three floors (8 modules on the runtime, 17 renderer constructors off it, 61 frame loops, 12 post chains, 619 GLSL sites, 31 twins beside 29 originals), three copies of three.js in the build, 2.06 MB of game records parsed as JavaScript into the two biggest chunks, nine scripts nothing names, no dead source file, 1,090 MB of assets and 97.9 MB of evidence pictures in git.
 - The design: one renderer (the node renderer, WebGPU first and WebGL 2 under it), one loop, one material language, one post chain, one world shape, the measure holding it; seven lanes.
 - Plans for FL0, FL1, FL2 (one run a world), FL3 (one run a world), FL5. FL4’s and FL6’s plans are written when they start (FL4 by the session that flips the last module; FL6 by its own session, from the design’s §4.9 and the Frostbite audit’s N8).
-- No code.
+- No code. The design’s pull request: #1005. Nine sessions spawned on 2026-10-15 at 19:29 UTC from `claude/engine-floor-spec` (the table).
 
 ## The lanes
 
 | lane | what | plan | starts | session | branch | PR | state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| FL0 | the measure and the ratchet | `…-laneFL0-measure.md` | now | | `claude/engine-floor-fl0-measure` | | |
-| FL1 | the sweep: nine scripts, knip, the records out of the chunks | `…-laneFL1-sweep.md` | now | | `claude/engine-floor-fl1-sweep` | | |
-| FL2 the universe map | onto the runtime | `…-laneFL2-onto-the-runtime.md` | now, from `claude/perf-p2-universe` | | `claude/engine-floor-fl2-universe` | | |
-| FL2 Middle-earth | onto the runtime | the same | now | | `claude/engine-floor-fl2-middleearth` | | |
-| FL2 Rick and Morty | onto the runtime | the same | now | | `claude/engine-floor-fl2-rickmorty` | | |
-| FL2 the Avengers and Invincible | onto the runtime | the same | now | | `claude/engine-floor-fl2-avengers` | | |
+| FL0 | the measure and the ratchet | `…-laneFL0-measure.md` | now | `session_01YUV5yjrWyfUGMMqF5LU364` (Opus 5.5, spawned 2026-10-15 19:29 UTC) | `claude/engine-floor-fl0-measure` | | |
+| FL1 | the sweep: nine scripts, the exports scan, the records out of the chunks | `…-laneFL1-sweep.md` | now | `session_01XMU7wWCLuC4w8awvNsvgC3` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl1-sweep` | | |
+| FL2 the universe map | onto the runtime | `…-laneFL2-onto-the-runtime.md` | now, from `claude/perf-p2-universe` | `session_01Y1FH7HN9EUkZMaSmhse4xt` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-universe` | | |
+| FL2 Middle-earth | onto the runtime | the same | now | `session_01G8eoBfhJotc8EawZtkbnVz` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-middleearth` | | |
+| FL2 Rick and Morty | onto the runtime | the same | now | `session_018hxbif6MyBRqJUTqE5XcJb` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-rickmorty` | | |
+| FL2 the Avengers and Invincible | onto the runtime | the same | now | `session_01QLcK8M8uWdzhGedUeC9Uhe` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-avengers` | | |
 | FL2 Cybertron | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-cybertron` | | |
 | FL2 Scranton and Albuquerque | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-office` | | |
 | FL2 the Death Star | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-deathstar` | | |
 | FL2 the Caribbean, the music room, Dickansh, Dot Matrix | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-small` | | |
 | FL2 the page scenes | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-pages` | | |
 | FL2 Battlefront’s backdrop and the hero stage | onto the runtime | the same | after #1000 to #1004 merge | | `claude/engine-floor-fl2-bf-stages` | | |
-| FL3 /fly | the port, rebuilt | `…-laneFL3-ports.md` | now, from `claude/perf-p1-fly` | | `claude/engine-floor-fl3-fly` | | |
-| FL3 the Mario 64 tribute and the Death Star’s inside | the ports | the same | now, from `claude/perf-p1-mario64` and `claude/perf-p1-ds-inside` | | `claude/engine-floor-fl3-mario64`, `…-fl3-ds-inside` | | |
-| FL3 the galaxy | the port | the same | now | | `claude/engine-floor-fl3-galaxy` | | |
+| FL3 /fly | the port, rebuilt | `…-laneFL3-ports.md` | now, from `claude/perf-p1-fly` | `session_01JvmxqpFGWxNax2cfZ6MPFj` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl3-fly` | | |
+| FL3 the Mario 64 tribute and the Death Star’s inside | the ports | the same | now, from `claude/perf-p1-mario64` and `claude/perf-p1-ds-inside` | `session_01CuSPuDEPmbPYgn7EZHAPZJ` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl3-mario64`, `…-fl3-ds-inside` | | |
+| FL3 the galaxy | the port | the same | now | `session_01FVfsnhXZobwg2tJHpsQAkV` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl3-galaxy` | | |
 | FL3 each world FL2 lands | the port | the same, by the FL2 session that landed it | as FL2 merges | | `claude/engine-floor-fl3-<world>` | | |
 | FL4 | the classic renderer retired | written when FL3’s table is full | after FL2 and FL3 | | `claude/engine-floor-fl4-retire` | | |
-| FL5 | the frame off the main thread, a spike | `…-laneFL5-worker.md` | now | 2026-10-15 | `claude/engine-floor-fl5-worker` | #1012 | built behind `?worker=on`, off by default: the lit fixture draws in the worker (the same picture); Battlefront’s module reads `window` in `create`, so it is not a candidate yet (the list: `evidence/engine-floor/FL5/README.md`); the container’s table is SwiftShader’s shape only (the worker’s worst 1 % worse there); kept or dropped on the owner’s 5090 rows, empty |
+| FL5 | the frame off the main thread, a spike | `…-laneFL5-worker.md` | now | `session_016PMwUHmdV6TMKuTeoRKCYe` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl5-worker` | #1012 | built behind `?worker=on`, off by default: the lit fixture draws in the worker (the same picture); Battlefront’s module reads `window` in `create`, so it is not a candidate yet (the list: `evidence/engine-floor/FL5/README.md`); the container’s table is SwiftShader’s shape only (the worker’s worst 1 % worse there); kept or dropped on the owner’s 5090 rows, empty |
 | FL6 | the figures on the GPU | written by its session from the design’s §4.9 | after #1000 to #1004 merge | | `claude/engine-floor-fl6-figures` | | |
 
 Each lane fills its row (session, PR, state) in its own pull request, and merges `origin/main` before it, keeping both sides. A lane never commits `src/data/health/latest.json`.
