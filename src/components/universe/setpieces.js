@@ -43,6 +43,7 @@ import { RIFT_R, riftSpot } from './nav';
 import { SWIRL_GLSL } from '../rickmorty/swirl';
 import { createEjection } from './cme';
 import { JUMP, LENGTH, createCapital, jumpSmear } from './capitalRules';
+import { pieceCapitalPose } from '../../lib/combat/pose';
 
 export const STAR_DESTROYER = LENGTH.destroyer; // map units long
 
@@ -188,7 +189,10 @@ function tail(color, width, length) {
 
 // solids: what's solid where this flies (the map's, as it comes; a star
 // system's, in the galaxy), so a capital ship never drops in inside a planet
-export function createSetPieces(parent, { small = false, fleet = createFleet(), solids = () => SOLIDS } = {}) {
+// hulls: galaxy/hulls.js's (the galaxy's hulls design): with it a shot meets the
+// capital on the game's shapes, and `shapes` is its hull and pose for the
+// ship to be kept out of (galaxy/scene.js); without, its chain of spheres
+export function createSetPieces(parent, { small = false, fleet = createFleet(), solids = () => SOLIDS, hulls = null } = {}) {
   const made = [];
   const keep = (x) => (made.push(x), x);
   const glow = keep(glowTexture());
@@ -197,7 +201,7 @@ export function createSetPieces(parent, { small = false, fleet = createFleet(), 
   let sd = null;
   let sdKind = null; // (which capital ship sd is)
   let sdTop = 0.14; // how high its top is above its middle, as a fraction of its length (its parts sit on it)
-  const cap = createCapital();
+  const cap = createCapital({ hulls });
   // the roadblock's helicopter: hanging ahead of you ('here'), then climbing away ('out')
   let chopper = null;
   const hover = { state: null, age: 0, at: new THREE.Vector3(), heading: 0 };
@@ -290,6 +294,7 @@ export function createSetPieces(parent, { small = false, fleet = createFleet(), 
       }
       if (!sd) {
         fleet.want([kind]);
+        hulls?.want([kind]);
         sd = fleet.make(kind);
         sdKind = kind;
         // (where its top is, in its own unit frame: its parts are marked up there)
@@ -360,6 +365,12 @@ export function createSetPieces(parent, { small = false, fleet = createFleet(), 
     },
     get destroyerHere() {
       return cap.here;
+    },
+    // its hull as the game's shapes, where it's drawn, while it's here to hit:
+    // { id (its first solid's, for a crash), hull, pose, reach } or null
+    get shapes() {
+      const hull = cap.state === 'here' || cap.state === 'dying' ? hulls?.get(cap.kind) : null;
+      return hull ? { id: 'cap:hull:0', hull, pose: pieceCapitalPose(cap), reach: hull.radius * cap.len } : null;
     },
     get solids() {
       return cap.solids;

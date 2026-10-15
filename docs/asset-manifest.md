@@ -3,8 +3,7 @@
 The manifest is the authoritative index a map streams from. It lets the client
 load a small **boot slice** before the first frame and stream everything else
 on demand, instead of modules hand-feeding URL lists to the loader. It is the
-prerequisite for the boot-slice + range-streaming work (the "740 MB slice"
-idea applied to assets, not the engine).
+prerequisite for the boot-slice and range-streaming work.
 
 ## Format
 

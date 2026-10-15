@@ -1,6 +1,6 @@
 # Minecraft, a fan tribute on Dot Matrix island
 
-Date: 2026-10-07. Status: design, written for a session on Opus 5.5 to build from. The plan is `docs/superpowers/plans/2026-10-07-minecraft-world.md`; the hand-off is `docs/superpowers/HANDOFF-minecraft-world.md`.
+Date: 2026-10-07. Status: design, written for a session on Opus 5.5 to build from. The plan is `docs/superpowers/plans/2026-10-07-minecraft-world.md`; the hand-off is `docs/superpowers/HANDOFF-worlds.md`.
 
 A Minecraft-style survival world to walk, dig and build in, made for this site from scratch in Three.js on the world runtime, the way Super Mario 64 was (`2026-10-06-mario64-design.md`). An infinite seeded Overworld of one-metre blocks in 16 × 16 × 256 chunks: biomes, trees, caves, ores, water and lava, a 20-minute day, the hotbar and the inventory, crafting on the 2 × 2 and 3 × 3 grids, tools that break blocks at Minecraft's own speeds, torches that light the dark, and the mobs that come out at night. It lives under the Gaming planet beside the Mario tribute: `/dot-matrix/minecraft`, and a giant crafting table on the island that opens it.
 

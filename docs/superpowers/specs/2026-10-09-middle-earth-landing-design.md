@@ -172,7 +172,7 @@ Measured by `lab/me/measure.mjs` (dev only, git-ignored with the rest of `lab/`)
 
 New: `src/components/middleearth/hub/{Head,Marks,Card,Ribbon,Journal}.jsx`, `hub/{attention,hubState,labels}.js` with tests, `src/components/middleearth/{mapFlight,mapRoom,mapWeather,mapTerrain,mapWake,mapRoad}.js`, `mapFlight.test.js`, `src/styles/lazy/middleearth-hub.css`, `lab/me/{shots,measure}.mjs`.
 
-Changed: `MapHub.jsx` (the composer), `MapBackdrop.jsx` (two canvases, the crossfade), `MapBackdrop3D.js` (hooks: the room, the terrain, the weather, the wake, the road, the flight, `info()`), `mapPaint.js` (the edge mask, the 1024 paint), `record.js`, `src/styles/lazy/middleearth.css` (the hub’s rules move out), `docs/architecture.md`, `src/components/guide/pages.js`, `src/components/tour/briefs.js`, `docs/superpowers/HANDOFF-middle-earth-landing.md` (new, the lane’s rows).
+Changed: `MapHub.jsx` (the composer), `MapBackdrop.jsx` (two canvases, the crossfade), `MapBackdrop3D.js` (hooks: the room, the terrain, the weather, the wake, the road, the flight, `info()`), `mapPaint.js` (the edge mask, the 1024 paint), `record.js`, `src/styles/lazy/middleearth.css` (the hub’s rules move out), `docs/architecture.md`, `src/components/guide/pages.js`, `src/components/tour/briefs.js`, `docs/superpowers/HANDOFF-worlds.md` (new, the lane’s rows).
 
 ## Decisions
 

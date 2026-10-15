@@ -262,6 +262,11 @@ export function createBattleScene(parent, { models, small = false, reduced = fal
     // events: what battle.update said this frame; youTeam: the side you fly
     // for (null: not joined yet)
     update(dt, t, camera, camLocal, events = [], youTeam = null, extra = null) {
+      // (the capitals' bob is drawn by t: the hull tests read the same, battle.js's capitalPose)
+      if (battle?.drawn) {
+        battle.drawn.t = t;
+        battle.drawn.reduced = reduced;
+      }
       if (!battle) return false;
       // runners and fighters added since (the set pieces add runners as the battle goes, a plan its bomber waves)
       while (seenRunners < battle.runners.length) {
