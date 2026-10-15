@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
+import { wantsRows } from './band.js';
 import { AITRAJECTORY_TURN } from './facing.js';
 import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf, preloadBody } from './figures.js';
 import { createHeld, weaponUrl } from './held.js';
@@ -731,6 +732,29 @@ describe('the far soldiers as rows', () => {
     // (every fourth frame beyond 70 m, ./lod.js: two of eight, the rows' own placing not counted as a frame)
     expect(walked).toHaveBeenCalledTimes(2);
     expect(seen).toEqual(Array(8).fill('row'));
+  });
+
+  it('draws no row in a page whose address does not ask for them, nor on WebGL 2; far soldiers are rows with ?rows=on on WebGPU', async () => {
+    const library = { fromMaterial: () => null };
+    const webgpu = { isWebGPURenderer: true, backend: {}, library };
+    const webgl2 = { isWebGPURenderer: true, backend: { isWebGLBackend: true }, library };
+    // (the page's own choice, as module.js makes it: the rows made only when wanted)
+    const page = async (search, renderer) => {
+      const made = fakeRows();
+      const world = field({ rows: wantsRows(new URLSearchParams(search), renderer) ? made : null });
+      for (let t = 0; t < 3; t++) await world.run([at(200)], t);
+      return { ...world, made };
+    };
+    for (const [search, renderer] of [['', webgpu], ['?rows=off', webgpu], ['?rows=on', webgl2]]) {
+      const { figs, made } = await page(search, renderer);
+      expect(figs.figure(3).model.visible, search).toBe(true);
+      expect(figs.stats(), search).toEqual({ soldiers: 1, rows: 0, placed: 0, on: false });
+      expect(made.part, search).not.toHaveBeenCalled();
+      expect(made.frame.placed, search).toEqual([]);
+    }
+    const asked = await page('?rows=on', webgpu);
+    expect(drawnOnce(asked.figs, asked.made)).toBe('row');
+    expect(asked.figs.stats()).toEqual({ soldiers: 1, rows: 1, placed: 1, on: true });
   });
 
   it('keeps every soldier a figure with no rows, with the rows switched off, and where a part cannot be made', async () => {

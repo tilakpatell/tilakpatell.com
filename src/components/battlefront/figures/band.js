@@ -29,10 +29,21 @@
 // ON_FEET is a figure, with its ragdoll, its death clip and whatever a new
 // state brings.
 //
+// A page draws rows at all only when its address says ?rows=on, and only
+// on a backend that can (lib/three/figureRows's canDrawRows: the node
+// renderer on WebGPU, never on its WebGL 2 fallback). Every visitor's
+// soldiers are figures until the owner's own GPU has shown that a row is the
+// picture of the figure with the post chain on, and what rows save at 24 a
+// side (docs/superpowers/plans/2026-10-13-far-soldiers-as-rows.md, the
+// owner's ruling of 2026-10-15).
+//
 //   rowsFrom(level) → metres
 //   zoomOf(fovDegrees) → the factor a distance is scaled by (1 at 55°, and for no field of view)
 //   bandOf(distance, was, from) → 'figure' | 'row'
 //   onFeet(entity) → boolean
+//   wantsRows(flags: URLSearchParams | null, renderer) → boolean
+
+import { canDrawRows } from '../../../lib/three/figureRows/rows.js';
 
 export const ROWS_FROM = { low: 22, mid: 39, high: 62, ultra: 91 };
 export const BACK = 0.9;
@@ -50,3 +61,5 @@ export function bandOf(distance, was, from) {
 }
 
 export const onFeet = (e) => ON_FEET.has(e?.state);
+
+export const wantsRows = (flags, renderer) => flags?.get('rows') === 'on' && canDrawRows(renderer);

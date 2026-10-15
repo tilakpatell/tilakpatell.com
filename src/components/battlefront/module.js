@@ -18,8 +18,8 @@
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
-// 'rows' on (the far soldiers as rows, or every soldier a figure; it answers
-// with how many are which: figures/figures.js),
+// 'rows' on (the far soldiers as rows, or every soldier a figure, on a page
+// opened with ?rows=on; it answers with how many are which: figures/figures.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), its yaw, health, whether it interacts and the enemies it believes in (`+` seen), and for a round's bot the enemy whose line it watches and whether that line is clear),
 // 'nav' (the battle's navgrid, for a check), 'doors' (the mode part's doors and gates: each one's open fraction, and what its scene draws), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2), 'captured' (each capture point of the stage at a full meter: a check's way into stage 3), 'objectives' (the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder),
 // 'instantActionSchema' (a promise of the setup screen's options),
@@ -54,7 +54,7 @@ import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
 import { appearanceOf, characterOfOffer, picksOf, readStore } from '../../lib/bf2017/collection.js';
 import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
-import { zoomOf } from './figures/band.js';
+import { wantsRows, zoomOf } from './figures/band.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { createKitFx } from './fx/kit.js';
@@ -72,7 +72,7 @@ import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundB
 import { entryFor } from './weather.js';
 import { levelLightOf } from './baseLight.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
-import { canDrawRows, createFigureRows } from '../../lib/three/figureRows/rows.js';
+import { createFigureRows } from '../../lib/three/figureRows/rows.js';
 import { loadThree } from '../../lib/three/light/three.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
 import { createSoundPlayer } from './sound/player.js';
@@ -171,13 +171,12 @@ export default {
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
     const cuts = figureCuts({ level: device().detail, lowData: Boolean(device().saveData) });
-    // (a soldier past the band's distance, 91 m at ultra, is a row of an instanced draw, not a figure: the
-    // site's own economy, lib/three/figureRows, figures/band.js. A round of 24 a side on the owner's 5090, 2,560 × 1,440, the
-    // game open beside it: in one page, 18 to 28 ms off a 40 to 64 ms frame, the soldiers' drawn cost a
-    // quarter to under a half of what it is as figures (docs/superpowers/evidence/far-soldiers-rows, which
-    // also says what is not shown). ?rows=off in the address keeps every soldier a figure, for a check;
-    // a backend that is not WebGPU keeps them so always: rows.js's canDrawRows)
-    const rows = flags?.get('rows') !== 'off' && canDrawRows(renderer) ? createFigureRows({ scene, renderer, tsl: (await loadThree()).tsl }) : null;
+    // (with ?rows=on in the address, a soldier past the band's distance, 91 m at ultra, is a row of an
+    // instanced draw, not a figure: the site's own economy, lib/three/figureRows, figures/band.js. Off for
+    // every visitor, and always off on a backend that is not WebGPU (band.js's wantsRows), until the
+    // owner's GPU has shown a row is the figure's picture with the post chain on and what it saves at 24 a
+    // side: docs/superpowers/evidence/far-soldiers-rows, which also says what is not shown)
+    const rows = wantsRows(flags, renderer) ? createFigureRows({ scene, renderer, tsl: (await loadThree()).tsl }) : null;
     // (?skin=whole in the address: every part on the file's whole rig, for a check that measures what the cut skins save)
     const figures = createFigures({ scene, ragdolls, cuts, prune: flags?.get('skin') !== 'whole', rows });
     // (the player's side's near body fetched behind the waiting screen, so the first deploy is already on it)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BACK, REFERENCE_FOV, ROWS_FROM, bandOf, onFeet, rowsFrom, zoomOf } from './band.js';
+import { BACK, REFERENCE_FOV, ROWS_FROM, bandOf, onFeet, rowsFrom, wantsRows, zoomOf } from './band.js';
 
 describe('the band a soldier is a row in', () => {
   it('starts at the character LOD group’s sixth distance times the preset’s LOD scale: the site’s own choice from the game’s table', () => {
@@ -64,5 +64,25 @@ describe('the band a soldier is a row in', () => {
     for (const state of ['alive', 'stand', 'crouch', 'roll']) expect(onFeet({ state }), state).toBe(true);
     for (const state of ['dying', 'down', 'deploying', 'thrown', undefined]) expect(onFeet({ state }), String(state)).toBe(false);
     expect(onFeet(null)).toBe(false);
+  });
+});
+
+describe('whether a page draws rows at all', () => {
+  const library = { fromMaterial: () => null };
+  const webgpu = { isWebGPURenderer: true, backend: {}, library };
+  const address = (search) => new URLSearchParams(search);
+  it('draws none unless the address says ?rows=on: every visitor’s soldiers are figures', () => {
+    expect(wantsRows(address(''), webgpu)).toBe(false);
+    expect(wantsRows(address('?rows=off'), webgpu)).toBe(false);
+    expect(wantsRows(address('?rows=1'), webgpu)).toBe(false);
+    expect(wantsRows(address('?skin=whole'), webgpu)).toBe(false);
+    expect(wantsRows(null, webgpu)).toBe(false);
+    expect(wantsRows(address('?rows=on'), webgpu)).toBe(true);
+  });
+
+  it('draws none where the backend cannot, asked or not: the node renderer on WebGL 2, the classic renderer, none', () => {
+    expect(wantsRows(address('?rows=on'), { isWebGPURenderer: true, backend: { isWebGLBackend: true }, library })).toBe(false);
+    expect(wantsRows(address('?rows=on'), { isWebGLRenderer: true })).toBe(false);
+    expect(wantsRows(address('?rows=on'), null)).toBe(false);
   });
 });
