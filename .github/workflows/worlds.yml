@@ -11,11 +11,13 @@ name: Worlds
 # its cascades cannot be counted there, so the frame numbers are the owner's
 # laptop run's (docs/superpowers/evidence/bf2017-picture/t2/README.md).
 #
-# Nightly and by hand, all seventeen; on a pull request, ci.yml calls it with
-# three. The seventeen took CI past twenty minutes on lane T2's first runs
-# (Tatooine 53 minutes, Naboo 70, Scarif and Kamino cut off at 150), which is
-# the 2026-10-11 node-renderer decision's own line for moving them to a
-# nightly run with the pull request's gate on three worlds.
+# Nightly and by hand, all seventeen; on a pull request, ci.yml's worlds job
+# runs the same steps on three (a job of CI's own, so the guard that every CI
+# job is on GitHub's runners, scripts/ai-e2e/agent/workflows.test.mjs, reads
+# it; keep the two alike). The seventeen took CI past twenty minutes on lane
+# T2's first runs (Tatooine 53 minutes, Naboo 70, Scarif and Kamino cut off at
+# 150), which is the 2026-10-11 node-renderer decision's own line for moving
+# them to a nightly run with the pull request's gate on three worlds.
 on:
   schedule:
     - cron: '23 3 * * *'
@@ -25,12 +27,6 @@ on:
         description: 'The worlds, a JSON list (all seventeen by default)'
         type: string
         default: '["hoth","endor","yavin","bespin","dagobah","mustafar","coruscant","naboo","kashyyyk","kamino","geonosis","scarif","nevarro","mandalore","lothal","sorgan","tatooine"]'
-  workflow_call:
-    inputs:
-      worlds:
-        description: 'The worlds, a JSON list'
-        type: string
-        required: true
 
 permissions:
   contents: read
