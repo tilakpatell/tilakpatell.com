@@ -48,7 +48,30 @@ const city = (make) => ({ scene, camera }) => {
   scene.add(towers);
 };
 
+// the dome as the flight draws it: straight to the canvas, no post, under
+// the house's tone mapping (Neutral, its exposure 1.4: lib/three/
+// houseNodes). The classic dome has no tone-mapping chunk, so it goes out
+// untoned there; the node renderer tone-maps the whole frame in its own
+// framebuffer pass, the dome too. (The cases above go through a pass that
+// tone-maps the whole frame on both sides, which hid it.) The renderers'
+// own settings are put back after the third frame, for the cases after.
+const toned = (make) => async (a) => {
+  await sky(make)(a);
+  const r = a.renderer;
+  const was = [r.toneMapping, r.toneMappingExposure];
+  r.toneMapping = THREE.NeutralToneMapping;
+  r.toneMappingExposure = 1.4;
+  let n = 0;
+  return {
+    render() {
+      r.render(a.scene, a.camera);
+      if (++n === 3) [r.toneMapping, r.toneMappingExposure] = was;
+    },
+  };
+};
+
 export default {
   'flight:sky': { node: sky(skyN), classic: sky(skyO) },
+  'flight:sky:direct': { node: toned(skyN), classic: toned(skyO) },
   'flight:city': { node: city(cityN), classic: city(cityO) },
 };

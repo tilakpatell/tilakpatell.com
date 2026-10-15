@@ -13,6 +13,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
+import { untoned } from '../../../lib/three/untoneNodes';
 import { abs, clamp, dot, floor, fract, fwidth, materialColor, max, mix, normalWorld, normalize, positionLocal, positionWorld, select, smoothstep, step, uniform, varying, vec2, vec3 } from 'three/tsl';
 
 const SKY_R = 40000; // m: as scene.js's
@@ -20,14 +21,15 @@ const SKY_R = 40000; // m: as scene.js's
 // the sky: the horizon colour below, a gradient to the zenith above. The
 // direction is the vertex's, carried to the pixel unnormalised, as the GLSL
 // dome's varying is; its colour goes out with no tone mapping, as the GLSL
-// one has no tone-mapping chunk
+// one has no tone-mapping chunk (the node renderer tone-maps the whole
+// frame, so the colour is untoned first: lib/three/untoneNodes)
 export function skyDome(low, high) {
   const uLow = uniform(new THREE.Color(low));
   const uHigh = uniform(new THREE.Color(high));
   const material = new MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false });
   material.toneMapped = false;
   const dir = varying(normalize(positionLocal));
-  material.colorNode = mix(uLow, uHigh, smoothstep(-0.02, 0.45, dir.y));
+  material.colorNode = untoned(mix(uLow, uHigh, smoothstep(-0.02, 0.45, dir.y)));
   material.uniforms = { uLow, uHigh };
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(SKY_R, 32, 16), material);
   mesh.frustumCulled = false;
