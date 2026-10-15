@@ -40,7 +40,7 @@ import { deref, follow, isSequel, numbersOf, objectsOf, pointee, rootOf, shortNa
 import { indexOf } from './bf2017-rulebook.mjs';
 
 // the sequel trilogy's ships the manifest's words don't catch, and the seasons' folders (S1, A3: the sequel's)
-export const AIR_REFUSED = ['awingrz3', 'tieinterceptor_hask', 'tiestriker', 'millenniumfalcon_nt', 'kylorenship', 'resistancetransport', 'xwing_t70blackone', 'firstorder', 'resistance'];
+const AIR_REFUSED = ['awingrz3', 'tieinterceptor_hask', 'tiestriker', 'millenniumfalcon_nt', 'kylorenship', 'resistancetransport', 'xwing_t70blackone', 'firstorder', 'resistance'];
 export const refusedAir = (name) => isSequel(name) || /^(S1|A3)\//i.test(name) || AIR_REFUSED.some((k) => name.toLowerCase().includes(k));
 
 const AIR = 'Gameplay/Vehicles/Air/';
@@ -87,7 +87,7 @@ function layer(root, blueprint, suffix) {
   return hits.length ? follow(root, hits[0]) : null;
 }
 
-export function handlingRow(asset) {
+function handlingRow(asset) {
   const configs = objectsOf(asset, 'StarfighterConfigEntityData');
   if (!configs.length) return null;
   const c = configs[0];
@@ -125,7 +125,7 @@ function projectileRow(root, override, missing) {
   };
 }
 
-export function weaponsRow(root, bp, weapons, missing) {
+function weaponsRow(root, bp, weapons, missing) {
   // (the blueprint's own cannon: a WeaponComponentData whose firing is in the blueprint)
   const cannon = objectsOf(bp, 'WeaponComponentData')
     .map((w) => deref(bp, w.WeaponFiring))
@@ -165,13 +165,13 @@ export function healthRow(bp) {
   return row;
 }
 
-export function targetingRow(bp) {
+function targetingRow(bp) {
   const t = objectsOf(bp, 'LockingTargetComponentData')[0];
   if (!t) return null;
   return { radius: t.Radius, heat: t.LockableInfo?.HeatSignature ?? null, lockTimeScale: t.LockingTimeMultiplier, lockable: t.IsLockable, _source: where(bp, t) };
 }
 
-export function cameraRow(asset) {
+function cameraRow(asset) {
   if (!asset) return null;
   const out = {};
   for (const [type, key] of [['FollowCameraConfigEntityData', 'follow'], ['CockpitCameraConfigEntityData', 'cockpit'], ['RearViewCameraConfigEntityData', 'rear']]) {
@@ -181,7 +181,7 @@ export function cameraRow(asset) {
   return Object.keys(out).length ? out : null;
 }
 
-export function destructionRow(asset) {
+function destructionRow(asset) {
   if (!asset) return null;
   const out = {};
   for (const [type, key] of [['StarfighterSpinoutPhysicsActionData', 'spinout'], ['StarfighterOverlapConfigEntityData', 'overlap']]) {
@@ -238,7 +238,7 @@ function kitsOf(root) {
 
 const idOf = (blueprint) => blueprint.slice(AIR.length).split('/')[0].toLowerCase();
 
-export function airRow(root, blueprint, kit, missing = []) {
+function airRow(root, blueprint, kit, missing = []) {
   const bp = follow(root, blueprint);
   if (!bp) return null;
   const row = { id: idOf(blueprint), blueprint, kit: kit?.kit ?? null, class: kit?.class ?? null, ...(kit?.class_source ? { class_source: kit.class_source } : {}) };

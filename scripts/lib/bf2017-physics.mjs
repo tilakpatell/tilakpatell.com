@@ -43,7 +43,7 @@ import { packShapes, readShapes } from '../../src/lib/physics/shapesBin.js';
 export { packShapes, readShapes };
 
 export const MAX_HULL = 64;
-export const VISUAL_ONLY = '0xFFFF0000';
+const VISUAL_ONLY = '0xFFFF0000';
 
 let io = null;
 async function reader() {

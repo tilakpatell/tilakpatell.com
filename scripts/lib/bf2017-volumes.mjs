@@ -46,7 +46,7 @@ export const CELL = 128;
 export const CONE_EMISSION = 0.2;
 // the cone's falloff across its width where the effect is not read: the
 // volumetrics' Exponent on Hoth (2 on 49 of 56)
-export const CONE_EXPONENT = 2;
+const CONE_EXPONENT = 2;
 export const CONE_HEIGHT = 5; // m: FX_Arctic_LightCone_04's quad, the commoner of Hoth's two
 export const CONE_RE = /(^|\/)FX_[^/]*LightCone[^/]*$/i;
 
