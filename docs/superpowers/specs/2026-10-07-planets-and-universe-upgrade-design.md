@@ -1,6 +1,6 @@
 # The planets and the universe, upgraded: the design
 
-Date: 2026-10-07. Written after a pass over every unmerged branch (see "The branches" at the end), the universe handoffs (`HANDOFF-fandom-planets.md`, `HANDOFF-universe-visuals.md`, `HANDOFF-universe-expansion.md`, `HANDOFF-galaxy-surfaces.md`, `HANDOFF-galaxy-phases.md`) and the research on why other sites look expensive (`docs/research/2026-10-06-why-theirs-look-expensive.md`, on branch `claude/zen-maxwell-k827h7`), and a look at every fandom planet in `scripts/preview/planets.html` and from the Falcon at parking distance.
+Date: 2026-10-07. Written after a pass over every unmerged branch (see "The branches" at the end), the universe handoffs (`HANDOFF-universe.md`, `HANDOFF-universe.md`, `HANDOFF-universe.md`, `HANDOFF-galaxy.md`, `HANDOFF-galaxy.md`) and the research on why other sites look expensive (`docs/research/2026-10-06-why-theirs-look-expensive.md`, on branch `claude/zen-maxwell-k827h7`), and a look at every fandom planet in `scripts/preview/planets.html` and from the Falcon at parking distance.
 
 ## Where things stand
 
@@ -28,7 +28,7 @@ Three causes, in order of effect:
 Beside the planets, two more things hold the universe back:
 
 4. **The landings don't match the maps.** Fly down onto Mordor and you stand on Shire grass (`landings.js`'s one `ground` per planet). The handoff's item 4.
-5. **The galaxy's worlds are soft from orbit** (`HANDOFF-galaxy-surfaces.md`: "procedural noise per pixel, `bodies.js`: a normal or a finer octave for the near view").
+5. **The galaxy's worlds are soft from orbit** (`HANDOFF-galaxy.md`: "procedural noise per pixel, `bodies.js`: a normal or a finer octave for the near view").
 
 ## The plan, in three lanes
 
@@ -58,7 +58,7 @@ Each rebake is checked in `scripts/preview/planets.html` at `dist=2.4` (parking 
 
 **2b. The galaxy's planets, sharp from orbit.** In `bodyShaders.js` the surface is fbm per pixel with octaves by footprint. From orbit (the body 300 to 900 pixels tall) the footprint allows more octaves than the shader's cap gives it. Raise the cap on `high` and `ultra` by two octaves when the body's screen height is over 300 pixels, and add a normal from the height field's analytic finite difference (two extra fbm taps, only in that near band) so the terrain catches the sun from orbit the way the fandom planets' normal maps do. Not on `low`, not on water. Evidence: `scripts/galaxy-check.mjs` at Tatooine, Hoth and Endor parked; frame time within 1 ms of before on `high`.
 
-**2c. Three more universe events** (`HANDOFF-universe-expansion.md`'s "Steps left" 3 to 5): a minefield across a lane (shoot or weave), an escort (a freighter asks to be seen to the next place; pirates come), an eclipse (a planet crossing the sun, the key light dimming through it); a rift's exit prefers places you haven't seen (`state.saw`); the leviathans' `busy` drops once the pod is past the ship. Each is a `director.js` kind with its `happen()` in `scene.js`, the rules pure and tested.
+**2c. Three more universe events** (`HANDOFF-universe.md`'s "Steps left" 3 to 5): a minefield across a lane (shoot or weave), an escort (a freighter asks to be seen to the next place; pirates come), an eclipse (a planet crossing the sun, the key light dimming through it); a rift's exit prefers places you haven't seen (`state.saw`); the leviathans' `busy` drops once the pod is past the ship. Each is a `director.js` kind with its `happen()` in `scene.js`, the rules pure and tested.
 
 ### Lane 3: the landings match the maps (`universe/landings/`)
 
@@ -93,7 +93,7 @@ Unmerged branches that touch the universe or the galaxy, and what this design do
 | `claude/eloquent-darwin-foskak` | Meshy landmarks and crew for the galaxy's worlds | independent |
 | `claude/three-worlds-plan-9dc25b`, `inspiring-cerf-3q8ufe` | three galaxy worlds, Bruno's grass, one wind | independent; the house-material lane's ancestor |
 | `claude/inspiring-bell-ikse2c`, `vigilant-meitner-ju253t` | the rack: the same guns everywhere | independent |
-| `claude/galaxy-perf-task11-wip` | near shadow casters and zones | `HANDOFF-galaxy-upgrade.md` item 2; untouched here |
+| `claude/galaxy-perf-task11-wip` | near shadow casters and zones | `HANDOFF-galaxy.md` item 2; untouched here |
 | `claude/webgpu-3d-graphics-6r6ufb` (draft #371) | the WebGPU design | not this round |
 | `claude/zen-maxwell-k827h7`, `weather-research` (draft #335) | research only | read; cited |
 | `claude/gpu-detail-quality`, `wip/*` | WIP dumps | ignored |

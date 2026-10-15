@@ -1,6 +1,6 @@
 # The galaxy on the game's levels, under the game's light, with the game's sabers. The design, and a review of the pipeline design
 
-Date: 2026-10-10. Status: **design, written from a second count of the export on the desktop and of what shipped on `main` since the first design was written**; implementation sessions follow, one lane each (`docs/superpowers/plans/2026-10-10-bf2017-phaseL-levels.md`, `-phaseG-lighting.md`, `-phaseK-planet-skins.md`, `-phaseX-sabers.md`). It stands on `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-design.md` (the pipeline design, PR #802; phase 0 shipped as #805) and corrects it where the data says it is wrong. The hand-off is `docs/superpowers/HANDOFF-bf2017.md`.
+Date: 2026-10-10. Status: **design, written from a second count of the export on the desktop and of what shipped on `main` since the first design was written**; implementation sessions follow, one lane each (`docs/superpowers/plans/2026-10-10-bf2017-phaseL-levels.md`, `-phaseG-lighting.md`, `-phaseK-planet-skins.md`, `-phaseX-sabers.md`). It stands on `docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-design.md` (the pipeline design, PR #802; phase 0 shipped as #805) and corrects it where the data says it is wrong. The hand-off is `docs/superpowers/HANDOFF-battlefront.md`.
 
 ## What the owner asked
 
@@ -65,7 +65,7 @@ What the first design said about audio ("when it lands") and clips ("the shape i
 
 **The budget.** The rows do not move. Per tier the pack writes a `weight` per draw (instances × bounding volume); `levelPack.js`'s `fitTo(row)` drops the lightest draws (snow debris, cables, small clutter) until the cell's triangles and calls fit the row's share (a 3 × 3 of near cells takes 70% of the row; the far list 20%; the people and effects the rest), and the PR's table says what each tier dropped. `galaxy-check.mjs surface <world>` under `BUDGET=1` at every tier is the gate.
 
-**Collision.** The walk layer's solids come from the mesh's collision GLB bounds and, for the pieces you walk on (floors, ramps, stairs), its collision triangles through `walker.js`'s height-map solids (`docs/superpowers/HANDOFF-galaxy-roam.md`'s rule: solids do not step up, stairs are floors). Where the Rapier body lane (#781) is on `main`, the near cells' Havok shapes (`web/physics/`, convex polytopes) become fixed colliders through `lib/physics/fromModel.js`'s pattern, and the heightmap through `lib/physics/heightfield.js` (64 m cells, already there). The pack writes both; the scene uses what the world has.
+**Collision.** The walk layer's solids come from the mesh's collision GLB bounds and, for the pieces you walk on (floors, ramps, stairs), its collision triangles through `walker.js`'s height-map solids (`docs/superpowers/HANDOFF-galaxy.md`'s rule: solids do not step up, stairs are floors). Where the Rapier body lane (#781) is on `main`, the near cells' Havok shapes (`web/physics/`, convex polytopes) become fixed colliders through `lib/physics/fromModel.js`'s pattern, and the heightmap through `lib/physics/heightfield.js` (64 m cells, already there). The pack writes both; the scene uses what the world has.
 
 **What the site keeps.** The world's `sites/<file>.js` entry gains `level: 'hoth'` and loses its built kit list for that world; its `life`, `missions`, `zones`, `weather`, `look` stay; its `ground` becomes `{ layers: [image], flats }`. `echoLayout.js` and the Hoth props it built go when Hoth's pack draws the hangar; the deathstar interior keeps its own lane (its room layout is gameplay).
 
@@ -101,7 +101,7 @@ What the first design said about audio ("when it lands") and clips ("the shape i
 
 ### Rules kept
 
-- The pipeline design's rules (section 8), the asset host's (`HANDOFF-planet-flight.md`, lane I), the layers (`docs/health/RULES.md`): `src/lib/**` pure, worlds islands, files under 800 lines, tests beside, no key in the client, nothing raw served.
+- The pipeline design's rules (section 8), the asset host's (`HANDOFF-galaxy.md`, lane I), the layers (`docs/health/RULES.md`): `src/lib/**` pure, worlds islands, files under 800 lines, tests beside, no key in the client, nothing raw served.
 - The game first: a world on its level pack draws nothing built for what the game has.
 - Compare on the shot before replacing; the before/after sheets in `docs/superpowers/evidence/bf2017-<lane>/`.
 - One lane per PR; `origin/main` merged before opening and before merging; a conflict in `scene.js` or a site file keeps both sides.
