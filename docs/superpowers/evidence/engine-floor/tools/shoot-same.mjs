@@ -111,6 +111,19 @@ try {
       set('tp-tour', 'skipped');
       window.sessionStorage.setItem('tp-galaxy-intro', '1');
       window.__tpKeepFrames = true;
+      // (no GPU timer: main's map calibrated itself on every visit, by the
+      // chip's clock where it has one, and in software that clock wanders,
+      // so one run softened it a step and the next didn't. Without it the
+      // calibration times by the page's clock, which is stopped here: the
+      // sharpest step on both, as the runtime's ?calibrate=off has it)
+      for (const C of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+        const get = C?.prototype.getExtension;
+        if (get) {
+          C.prototype.getExtension = function (name) {
+            return /disjoint_timer_query/i.test(name) ? null : get.call(this, name);
+          };
+        }
+      }
       // (mulberry32: the same scatter on every run)
       let s = 0x2f6b1d3;
       window.__reseed = (n) => {
