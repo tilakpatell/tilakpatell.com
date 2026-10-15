@@ -79,7 +79,7 @@ What the first design said about audio ("when it lands") and clips ("the shape i
 
 **The far shadow.** The distant shadow cache (2048², 16-bit, the whole level's sun shadow) is sampled by the ground shader (`lib/three/groundLook.js`) and by the far instances' material beyond the live shadow map's extent, so the ridges shade the snow and the forest floor is dark under the redwoods at every distance. Its world bounds are measured against the heightmap once (task 3 of lane G says how) and written in the pack.
 
-**Grading and tone.** `universe/post.js`'s surface pass takes `exposure` and `bloom` from the entry; the colour-grading LUT (`T_CC_<World>_<Weather>`, if its texture is a 32³ strip the way Frostbite stores them) goes through a LUT pass on high and ultra; brightness, contrast and saturation otherwise. The site's own look rules (`look.js`, `lookOf`) read the derived sky, so the house's fog and shade follow.
+**Grading and tone.** `universe/post.js`'s surface pass takes `exposure` and `bloom` from the entry; the colour-grading LUT (`T_CC_<World>_<Weather>`, if its texture is a 32³ strip) goes through a LUT pass on high and ultra; brightness, contrast and saturation otherwise. The site's own look rules (`look.js`, `lookOf`) read the derived sky, so the house's fog and shade follow.
 
 **Weather.** The site's `weather.js` states map to the level's weathers (clear → Sunny, dusk → Sunset, overcast → Cloudy, storm → Blizzard), crossfaded over 20 s as the site crossfades today; a world with one VE keeps it.
 

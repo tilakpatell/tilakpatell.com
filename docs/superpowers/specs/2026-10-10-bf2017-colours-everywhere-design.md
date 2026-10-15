@@ -9,7 +9,7 @@ Date: 2026-10-10 (night). Status: **design and the first slice, in one PR** (`cl
 **What I understood** (the owner corrects any of it):
 
 - *All the colours*: every colour map the drop holds reaches the site through one pipeline, in the colour space the game stored it in, with the game’s own tints (the variation chain) on top; nothing is re-encoded, nothing is guessed.
-- *Correct*: measurable. A map is correct when the file says what it is (sRGB for colour, linear for data), every loader reads it that way, and the material multiplies the game’s tints in linear light as Frostbite does. The audit is the gate.
+- *Correct*: measurable. A map is correct when the file says what it is (sRGB for colour, linear for data), every loader reads it that way, and the material multiplies the game’s tints in linear light. The audit is the gate.
 - *Apply them to all the Star Wars galaxy and worlds*: every one of the seventeen landable worlds wears the game’s maps, not only the three on level packs: the people and vehicles already do (`--native`), the props’ trims and the grounds’ grain do once the world’s look says `scanned: 'bf2017'` (lane W made the 29 roles in #823; no world had turned them on).
 
 ## The colour chain, end to end
