@@ -4,11 +4,12 @@
 // posts the rest; the worker makes the runtime on an OffscreenCanvas and
 // draws there. Pure, so the shapes are tested without a worker.
 //
-// Up (page → worker): init { canvas, module, props, search, hash, dpr, w, h,
-//   level, saves }, input { snapshot }, resize { w, h, ratio }, visible { on },
+// Up (page → worker): init { canvas, module, props, w, h, dpr, detail, sharp,
+//   video, override, fps, calibrate, tier, saves }, input { snapshot, at },
+//   resize { w, h, ratio }, visible { on },
 //   quality { level }, props { props }, kick, unmount, result { id, value, error }.
-// Down (worker → page): ready { backend }, failed { message }, event { type,
-//   data }, hud { values }, frame { ms, gpu, at }, lost { reason, kind },
+// Down (worker → page): ready { backend }, failed { message }, event { name,
+//   data }, hud { values }, frame { ms, at, gpu, inputAt, drawnAt }, lost { kind, reason },
 //   call { id, name, args }, bind { actions, axes }.
 //
 // packInput(snapshot) → what structured clone carries (input.js's sample()

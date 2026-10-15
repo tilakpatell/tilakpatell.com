@@ -16,7 +16,8 @@
 // (?gpu=webgl|webgpu: a port's frame-time table is two runs of the same
 // journey; a 'glsl' world is on the classic renderer either way, and each
 // journey's report names the backend it was actually drawn on), OUT is
-// where the JSON report goes.
+// where the JSON report goes. WORKER=on adds ?worker=on (lane FL5: a world
+// with a worker door drawn off the main thread, src/runtime/worker/).
 // planet flight: begin
 // FLY picks the /fly journey's planet (default Hoth).
 // planet flight: end
@@ -36,6 +37,7 @@ const trace = Boolean(process.env.TRACE);
 const out = process.env.OUT ?? '.';
 const quality = process.env.QUALITY ?? '';
 const gpu = ['webgl', 'webgpu'].includes(process.env.GPU) ? process.env.GPU : null;
+const worker = process.env.WORKER === 'on';
 const [vw, vh, vdpr] = (process.env.VIEW ?? '1470x956@2').match(/(\d+)x(\d+)(?:@([\d.]+))?/).slice(1).map(Number);
 
 // ── what's recorded in the page ──
@@ -765,7 +767,7 @@ try {
       await cdp.send('Profiler.enable');
       await cdp.send('Profiler.setSamplingInterval', { interval: 500 });
     }
-    const h = { base, q: `?${[quality && `quality=${quality}`, gpu && `gpu=${gpu}`].filter(Boolean).join('&')}`.replace(/^\?$/, '') };
+    const h = { base, q: `?${[quality && `quality=${quality}`, gpu && `gpu=${gpu}`, worker && 'worker=on'].filter(Boolean).join('&')}`.replace(/^\?$/, '') };
     const t0 = Date.now();
     let failed = null;
     try {
