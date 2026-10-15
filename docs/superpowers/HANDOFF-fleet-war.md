@@ -57,6 +57,17 @@ The design is `docs/superpowers/specs/2026-10-06-fleet-war-design.md` and the pl
   - The ground battles count: an assault's end posts the posts your side took as points for your side's war, and a win if you won (`GalaxySurface.jsx`). The assault HUD's side buttons swear you.
   - The war's tally keeps a campaign's keys (#476). It used to keep 96, the most a message holds, and dropped every key after that without a word. Now `warState.js`'s `KEYS` is a room of pilots, each in a battle every step and winning it (23,040). Each message is a page of `TALLY.keys`: your newest shares first, then the rest in turn. A pilot heard from for the first time is owed all of it (`owing()`), a page every `warEvery`. Nothing's folded, so every pilot's `history` agrees. A fold into per-system totals was turned down: `history` applies points at their own step, and captures make the order matter.
 
+## The hulls, part 2 (2026-10-15): bolts and contacts on the game’s shapes, the game’s cut on a desktop
+
+The design: `docs/superpowers/specs/2026-10-15-galaxy-space-fidelity-design.md` (what was found: the fleet files’ 256 and 128 maps, and the hulls loaded by #1003 that nothing read).
+
+- `universe/battle.js` takes `hulls` (the war hands in `models.hulls`): a bolt meets a fighter, a runner or a capital ship on its hull through `lib/combat/pose.js`’s poses (a capital’s bob through `battle.drawn`, set by `battleScene.js`); a fighter is kept out of a capital’s hull each step. A kind whose hull is not here is hit as its sphere, as before.
+- `universe/hunterRules.js` and `universe/capitalRules.js` take `hulls` too (the hunters’ hulls asked for as a pack comes, `hunters.js`; the set piece’s capital’s as it jumps in, `setpieces.js`, which exposes `shapes`).
+- `galaxy/scene.js`’s `heldOffHulls`: your ship kept out of the war’s capitals and the set piece’s after the step, a bump or a crash by the closing speed.
+- `galaxy/models.js`: `HIGH_CUTS` (the twelve kit fighters’ plain surface cuts on high and ultra) and the kits’ `ULTRA` cuts on high.
+
+Left, the owner’s: the `high` capital cut (1,024 colour, 512 data, the fleet’s triangles) made on the desktop and published, in place of the ultra cut on high; the fleet cut raised for mid if a phone carries it; `scripts/bf2017-hulls.mjs` run to measure the surface plain cuts against the hulls; the browser and frame-time checks; then the game’s damage (the hulls design §2.4) on the `part` and `property` every hit now carries. Another pilot’s ship and the Interdictor keep their spheres.
+
 ## Revision 3: where the code differs from the plan
 
 The plan was written against an older map of the code. Where they disagreed, the code was trusted and the plan's intent kept:

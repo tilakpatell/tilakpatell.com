@@ -307,6 +307,8 @@ Starts only when Task 1 has no open question.
 
 ### Task 10: Bolts on hulls through the galaxy’s one chain
 
+*(2026-10-15, part 2: done for the war’s fighters, runners and capitals, the hunters and the set piece’s capital, with `part` and `property` on every hit; another pilot’s ship keeps its sphere and the damage numbers stay the site’s. `docs/superpowers/specs/2026-10-15-galaxy-space-fidelity-design.md`.)*
+
 **Files:**
 - Modify: `src/components/universe/battle.js` (`capitalHit` `:224-241`, `moveBolts` `:289-395`, `b.hit` `:520-602`, `createBattle` takes `{ hulls, reduced }`), `src/components/universe/battleCapitals.js` (subs and turrets found by part name; `HULLS` spheres kept as the broad phase only), `src/components/universe/battleKit.js` (`BATTLE.bolts` from `damage.json`: speed in units = m/s ÷ 53.3, life, the shooter’s bolt row), `src/components/universe/wars.js` (`FIGHTERS` hp from `kindDamage`)
 - Modify: `src/components/universe/hunterRules.js` (`hit` `:1228`, the shots at you `:1174-1219`), `src/components/universe/online/pilots.js` (`hit` `:495-517`), `src/components/galaxy/scene.js` (`strike` `:1025`: set pieces too, `pieces.hit`; `hurt` takes game damage against your kind’s hp)
@@ -332,6 +334,8 @@ Starts only when Task 1 has no open question.
 ---
 
 ### Task 11: Solid ships: nobody passes through anybody
+
+*(2026-10-15, part 2: done for a fighter against a capital’s hull and your ship against the war’s and the set piece’s capitals; the small ships keep contact.js’s spheres; the Interdictor its solids.)*
 
 **Files:**
 - Modify: `src/components/universe/shipHits.js` (`sweep` asks `hullContact` where both bodies have hulls; the ram damage from `rammed`), `src/lib/combat/contact.js` (unchanged laws; `bodyRadius` stays the broad phase)

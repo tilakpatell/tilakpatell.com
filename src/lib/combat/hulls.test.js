@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { packHull, packShapes } from '../physics/shapesBin.js';
 import { basisOf } from './pose.js';
-import { hullOf, hullFromTriangles, segmentHit, hullContact } from './hulls.js';
+import { hullOf, hullFromTriangles, probeSphere, segmentHit, hullContact } from './hulls.js';
 
 const I = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
 const pose = (at0, at1 = at0, basis = I, scale = 1) => ({ at0, at1, basis, scale });
@@ -429,5 +429,22 @@ describe('hullFromTriangles', () => {
       if (best === Infinity) expect(hit).toBeNull();
       else expect(hit.t).toBeCloseTo(best, 5);
     }
+  });
+});
+
+describe('probeSphere', () => {
+  it('is a ball of probes at its radius that a hull keeps out, by its radius', () => {
+    const ball = probeSphere(0.15);
+    expect(ball.probes.length).toBe(27 * 3);
+    expect(Math.hypot(ball.probes[0], ball.probes[1], ball.probes[2])).toBeCloseTo(0.15, 6);
+    expect(segmentHit(ball, pose([0, 0, 0]), [-1, 0, 0], [1, 0, 0])).toBeNull(); // (nothing to shoot)
+    const plate = hullOf(solidBin(0.5, 0.5, 0.005));
+    // flown at the plate (scaled ×4: its face at z = −0.02) from z = −1 to z = 0: its leading probe put back on the near face
+    const c = hullContact(ball, pose([0, 0, -1], [0, 0, 0]), plate, pose([0, 0, 0], [0, 0, 0], I, 4));
+    expect(c).not.toBeNull();
+    close(c.normal, [0, 0, -1]);
+    expect(c.depth).toBeCloseTo(0.15 + 0.02 + 0.004, 4); // (the leading probe, 0.15 ahead, back to the near face at −0.02, and SKIN × 4 past it)
+    // and short of it, nothing
+    expect(hullContact(ball, pose([0, 0, -1], [0, 0, -0.5]), plate, pose([0, 0, 0], [0, 0, 0], I, 4))).toBeNull();
   });
 });
