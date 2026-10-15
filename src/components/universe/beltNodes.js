@@ -95,10 +95,8 @@ export function createBelt({ small = false, band = BELT, seed = 1977, tones = TO
   const at = new THREE.Vector3();
   const sc = new THREE.Vector3();
   const c = new THREE.Color();
-  // (a material a shape: rockNodes’ noise functions, built once in one
-  // material’s first shader, go undeclared in a second mesh’s; the GLSL
-  // shared one material over the four)
-  const meshes = shapes.map((geo, s) => new THREE.InstancedMesh(geo, rockMaterial({ tier }), rocks.filter((o) => o.shape === s).length));
+  const mat = rockMaterial({ tier });
+  const meshes = shapes.map((geo, s) => new THREE.InstancedMesh(geo, mat, rocks.filter((o) => o.shape === s).length));
   const slot = []; // each rock's [mesh, instance]
   const filled = [0, 0, 0, 0];
   const place = (i, gone = false) => {
