@@ -17,7 +17,6 @@ describe('the tunnel as nodes, the twin of ../tunnel', () => {
     const path = glsl.tunnelPath(null, { ctrl, steps: 40 });
     expect(nodes.tunnelPath(null, { ctrl, steps: 40 })).toEqual(path);
     const tube = { path, radius: 2, chamber: 6 };
-    expect(nodes.chamberAt(tube)).toEqual(glsl.chamberAt(tube));
     for (const p of [[0, 0, 5], [3, 0, 12], [0.5, 0, -1], [30, 30, 30], [-1, 0.2, 38]]) {
       expect(nodes.nearestOn(path, p)).toEqual(glsl.nearestOn(path, p));
       expect(nodes.keepIn(tube, p)).toEqual(glsl.keepIn(tube, p));

@@ -30,7 +30,10 @@
 //     additive layer's; with { extras: false } (richClips: a phone's
 //     levels) the humanoid's and the hero's alone
 //     the additive layer's last (its clips marked `additive`: laid over the
-//     pose by lib/three/additiveLayer.js, never played as one)
+//     pose by lib/three/additiveLayer.js, never played as one); with
+//     { whole: url } that pack alone: a guest's (scripts/guest-clips.mjs),
+//     the game's clips with their position channels sized to its own body,
+//     which the game's packs, made for the 1.77 m man, must not be laid over
 //   cutFor(url, level): which of a 2017 figure's three files a device loads
 //     (lib/detail.js's level, from lib/device's tier): at ultra its
 //     `.ultra` (the game's top mesh, every map at the game's 2048, up to
@@ -45,12 +48,15 @@ import { CLIP_FALLBACK, SOCKETS, checkWalrus, isWalrus } from './walrusRig.js';
 import { EMOTE_HEROES } from './walrusSets/emotes.js';
 
 export const PACK_DIR = '/models/galaxy/bf2017';
-export const packUrls = (hero = null, { extras = true } = {}) => [
-  `${PACK_DIR}/clips-humanoid.glb`,
-  ...(hero ? [`${PACK_DIR}/clips-${hero}.glb`] : extras ? [`${PACK_DIR}/clips-npc.glb`] : []),
-  ...(extras && EMOTE_HEROES.includes(hero) ? [`${PACK_DIR}/clips-emotes-${hero}.glb`] : []),
-  ...(extras ? [`${PACK_DIR}/clips-additive.glb`] : []),
-];
+export const packUrls = (hero = null, { extras = true, whole = null } = {}) =>
+  whole
+    ? [whole]
+    : [
+        `${PACK_DIR}/clips-humanoid.glb`,
+        ...(hero ? [`${PACK_DIR}/clips-${hero}.glb`] : extras ? [`${PACK_DIR}/clips-npc.glb`] : []),
+        ...(extras && EMOTE_HEROES.includes(hero) ? [`${PACK_DIR}/clips-emotes-${hero}.glb`] : []),
+        ...(extras ? [`${PACK_DIR}/clips-additive.glb`] : []),
+      ];
 // whether a device's level loads the packs past a figure's own (the soldiers',
 // the additive layer's, the stances'): not at a phone's levels, whose
 // download the world's budget counts (worlds.js's WORLD_MB)

@@ -382,6 +382,7 @@ export function createWarFront(scene, { models, small = false, reduced = false, 
     battle = createBattle({
       ...laid,
       rand: seeded(b.id),
+      hulls: models?.hulls ?? null, // (the ships' hit shapes, loaded with their models: galaxy/hulls.js)
       plan: director.plan,
       director: { state: shared },
       // (its fighters flown with tactics, in flights, and its capital ships as

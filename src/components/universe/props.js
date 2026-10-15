@@ -15,7 +15,7 @@ import { paint, rng } from './kit';
 // An oval brilliant, a unit across its girdle the long way: a flat table on
 // top, the crown's facets down to the girdle, the pavilion's to the culet.
 // Ten facets round; flat shading shows them.
-export function gemGeometry() {
+function gemGeometry() {
   const pts = [
     [0, -0.82],
     [0.5, -0.36],

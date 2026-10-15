@@ -35,7 +35,7 @@ import { seeded } from '../../../lib/seeded';
 import { createReactions } from '../../../lib/ai/react';
 
 export const GREET_R = 9; // he's greeted (or watched) within this, on foot
-export const BUSY_R = 4.5; // or this, if they're busy
+const BUSY_R = 4.5; // or this, if they're busy
 export const LEAVE_R = 14; // and he's gone once he's this far for a couple of seconds
 const LOOK_R = 12; // they look at him going by within this
 const LAND_R = 4; // a landing this near…

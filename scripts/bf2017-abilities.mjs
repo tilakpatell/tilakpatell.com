@@ -88,7 +88,7 @@ function factsOf(load, blueprint, abilityId) {
 }
 
 // a hero's own abilities (the ones KIND names: not the weapon it carries), read
-export function heroAbilities(load, gpName) {
+function heroAbilities(load, gpName) {
   const gp = load(gpName);
   if (!gp) return null;
   const read = [];

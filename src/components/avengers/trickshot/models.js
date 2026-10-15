@@ -115,7 +115,7 @@ function limbGeometry(len, side) {
 // Hawkeye's bow, vertical, the arrow along −z, the grip at the origin.
 // `setDraw(k)` bends the limbs and pulls the string back (0 at brace, 1 at
 // full draw) and returns where the nock is, for the arrow on the string.
-export const BOW_LIMB = 0.52;
+const BOW_LIMB = 0.52;
 const BRACE = 0.19;
 const DRAW_LENGTH = 0.55;
 export function buildBow(mats) {

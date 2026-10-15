@@ -13,7 +13,7 @@ export const ROWS = ['ABCDEF', 'GHIJKL', 'MNOPQR', 'STUVWX', 'YZ'];
 export const WORDS = ['TIO', 'DING', 'GUS', 'SAUL', 'WALT', 'MIKE', 'LALO', 'HANK'];
 export const GUS_SECONDS = 2.5; // his walk in
 export const BOOM_SECONDS = 2.6; // until the smoke clears
-export const MISS_SECONDS = 5;
+const MISS_SECONDS = 5;
 const PASSES = 2; // times along a row with no ring before the nurse goes back to the rows
 
 // how long the finger stays on each row or letter, in seconds, for word w
@@ -58,7 +58,7 @@ export function stepGame(s, dt) {
 }
 
 // The lit letter, while the finger's in a row.
-export const litLetter = (s) => (s.phase === 'letters' ? ROWS[s.row][s.col % ROWS[s.row].length] : null);
+const litLetter = (s) => (s.phase === 'letters' ? ROWS[s.row][s.col % ROWS[s.row].length] : null);
 
 // A ring of the bell. Returns { state, event }: 'row' (a row picked),
 // 'letter' (the right one), 'miss', 'word' (one spelled, on to the next),

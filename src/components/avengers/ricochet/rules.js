@@ -13,7 +13,7 @@
 // clock, so where they are depends on when you throw.
 
 export const SHIELD = { r: 0.38, speed: 17, bounces: 5, reach: 130, catch: 1.0 };
-export const BOT_R = 0.45;
+const BOT_R = 0.45;
 
 const W = (a, b, kind = 'steel', id) => ({ a, b, kind, id });
 // a closed box of walls (a pillar), corners [x0, z0]–[x1, z1]

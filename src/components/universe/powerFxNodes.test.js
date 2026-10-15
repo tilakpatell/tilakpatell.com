@@ -23,7 +23,6 @@ const named = (w, name) => w.parent.getObjectByName(`power:${name}`);
 describe('powerFxNodes, the twin of powerFx', () => {
   it('exports what powerFx exports', () => {
     expect(Object.keys(nodes).sort()).toEqual(Object.keys(glsl).sort());
-    expect(nodes.TORPEDOES).toBe(glsl.TORPEDOES);
   });
 
   it('makes the same things, each under a node material with the same flags', () => {

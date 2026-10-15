@@ -61,7 +61,7 @@ import { KITS, SPACE, instanceOf, piecesOf, rotate } from './bf2017-space.mjs';
 // SB_Endor_01's grid, and the other space levels the era rule keeps, held to
 // the same cells (findings/62 §3: the grids agree wherever two hold a pair)
 export const GRID = 'levels/space/sb_endor_01/sb_endor_01/materialgrid_win32';
-export const OTHER_GRIDS = ['levels/space/sb_droidbattleship_01/sb_droidbattleship_01/materialgrid_win32', 'levels/space/sb_fondor_01/sb_fondor_01/materialgrid_win32', 'levels/space/sb_kamino_01/sb_kamino_01/materialgrid_win32'];
+const OTHER_GRIDS = ['levels/space/sb_droidbattleship_01/sb_droidbattleship_01/materialgrid_win32', 'levels/space/sb_fondor_01/sb_fondor_01/materialgrid_win32', 'levels/space/sb_kamino_01/sb_kamino_01/materialgrid_win32'];
 // The properties space's bolts carry (findings/62 §1; the projectiles'
 // MaterialPair): 216 the fighters' bolts, 72 the heavier ships' and most
 // turrets', 61 the heavy turbolasers', 116 the bolts' blasts, 6 the Y-wing's
@@ -75,8 +75,8 @@ export const TARGETS = [68, 222, 129, 130, 131, 132, 206, 34, 0];
 export const DIFFICULTY = 'Gameplay/Settings/GameDifficultySettings';
 // the static models' damage modifier, linked over this field
 // (findings/62 §4: × (1 + n × BonusPerSquadMate))
-export const SQUAD_BONUS = 'Gameplay/GameModes/SpaceBattles/Objectives/PF_SpaceBattles_Objective_SquadDamageMultiplier';
-export const SQUAD_FIELD = '0x5e24830a';
+const SQUAD_BONUS = 'Gameplay/GameModes/SpaceBattles/Objectives/PF_SpaceBattles_Objective_SquadDamageMultiplier';
+const SQUAD_FIELD = '0x5e24830a';
 
 // The kinds the game never had, each standing in for the game kind of its
 // class whose numbers it takes (the hulls design §2.4)
@@ -199,7 +199,7 @@ const SHIPS = { destroyer: 'Star Destroyer', moncal: 'MC80', venator: 'Venator',
 // Destroyer's heavy turbolaser a static model of its own 5,000, the MC80's
 // main turret p132, the Venator's turrets p0 wrecks): the vehicle record is
 // the gun the game fires.
-export const TURRET_PARTS = {
+const TURRET_PARTS = {
   destroyer: {
     parts: { 'stardestroyer_heavyturbolaser_01#0': 'StarDestroyer_HeavyTurboLaser_02', 'stardestroyer_heavyturbolaser_01#2': 'StarDestroyer_HeavyTurboLaser_02' },
     why: 'the site gives the kit’s heavy turbolaser guns (its two, each a part) the game’s heavy turbolaser turret because that vehicle is the gun the game fires from a Star Destroyer; the small turbolaser turret has no kit part',
@@ -337,7 +337,7 @@ export function difficultyOf(root) {
 
 // ── a fighter ──
 
-export function fighterRow(root, blueprint, { difficulty, missing }) {
+function fighterRow(root, blueprint, { difficulty, missing }) {
   const bp = follow(root, blueprint);
   const h = bp && healthRow(bp);
   const v = bp && objectsOf(bp, 'VehicleEntityData')[0];
@@ -377,7 +377,7 @@ export function fighterRow(root, blueprint, { difficulty, missing }) {
 // three prefabs up). Read from the blueprints under LINK_SCOPE that name
 // the field, the sequel's left out.
 const LINK_SCOPE = /^(Gameplay\/Vehicles\/(Capital|Corvette|SpaceBattles)\/|Gameplay\/GameModes\/SpaceBattles\/|Levels\/Space\/|Objects\/Props\/Landmarks\/)/i;
-export function squadLinks(root) {
+function squadLinks(root) {
   const BONUS = SQUAD_BONUS.toLowerCase();
   const edges = [];
   for (const [name, e] of indexOf(root)) {
@@ -408,7 +408,7 @@ export function squadLinks(root) {
   return new Map([...linked].map(([bp, chain]) => [bp, `${chain.at(-1)}#LinkConnections.${SQUAD_FIELD}${chain.length > 1 ? ` (through ${chain.slice(0, -1).map(shortName).join(', ')})` : ''}`]));
 }
 
-export function squadBonusOf(root) {
+function squadBonusOf(root) {
   const a = follow(root, SQUAD_BONUS);
   const m = a && objectsOf(a, 'SquadDamageBonusModifierEntityData')[0];
   return m ? { perMate: m.BonusPerSquadMate, cooldown: m.Cooldown, eachMate: m.ApplyBonusPerSquadMate, _source: where(a, m) } : null;
@@ -477,7 +477,7 @@ function chainRow(r, c) {
 // on, `property` that part's, `states` each state's part. `file` the kit's
 // model file (a physics asset's own name for a one-asset capital); a module
 // with no physics asset is no part of the hull, and has none.
-export function moduleParts(root, file, ctx) {
+function moduleParts(root, file, ctx) {
   const res = /_physics_win32$/i.test(file) ? String(file).toLowerCase() : physicsKey(file);
   const name = byLower(root).get(res.replace(/_physics_win32$/, ''));
   if (!name) {
@@ -570,7 +570,7 @@ function siteRow(root, kind, id, { files, inside }, ctx) {
 // the turrets' parts. Where its hull is the site's (bf2017-hulls.mjs's
 // SITE_OVER_GAME), no hull part carries a module's name: its parts are its
 // site entries'.
-export function capitalRow(root, kind, kit, ctx) {
+function capitalRow(root, kind, kit, ctx) {
   const k = Array.isArray(kit) ? { files: kit, inside: {} } : kit;
   const parts = {};
   if (!SITE_OVER_GAME[kind]) for (const file of [...new Set(k.files)]) Object.assign(parts, moduleParts(root, file, ctx));
@@ -595,7 +595,7 @@ export function capitalRow(root, kind, kit, ctx) {
 // model (piecesOf's, in its anchor's frame)
 const qmul = (a, b) => [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0], a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
 const qinv = (q) => [-q[0], -q[1], -q[2], q[3]];
-export function filesInside(map, model, mesh, margin = 1.1) {
+function filesInside(map, model, mesh, margin = 1.1) {
   const kit = KITS.find((k) => k.kit === model.kit);
   const sub = new Int32Array(map.instances.count).fill(-1);
   for (const g of map.groups) sub.fill(g.sub, g.first, g.first + g.count);

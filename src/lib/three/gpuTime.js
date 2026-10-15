@@ -22,6 +22,7 @@
 // sums every render pass in them: the frame) and keeps the duration in ms.
 
 const FRAMES = 32; // _source: the design’s G1 (“a ring of the last 32 frames”)
+const DONE = Promise.resolve();
 
 export function createGpuTime(renderer, { frames = FRAMES } = {}) {
   let available = false;
@@ -58,25 +59,33 @@ export function createGpuTime(renderer, { frames = FRAMES } = {}) {
     last = ms;
   };
 
+  // (the two ends of a resolve, made once: an async closure and its promise
+  // a frame were garbage on the runtime’s path, the every-world hand-off’s
+  // performance item 2)
+  const got = (value) => {
+    pending = null;
+    const ms = typeof value === 'number' ? value : renderer.info?.render?.timestamp;
+    // (0 or nothing: no render pass since the last resolve)
+    if (Number.isFinite(ms) && ms > 0) push(ms);
+  };
+  // (a lost device: the ring stays as it was, and the loss is the runtime’s to handle)
+  const missed = () => {
+    pending = null;
+  };
+
   return {
     available,
     frame() {
-      if (!available) return Promise.resolve();
+      if (!available) return DONE;
       // (one resolve at a time: three hands a second caller the first’s
       // promise, and its duration would be counted twice)
       if (pending) return pending;
-      pending = (async () => {
-        try {
-          const got = await renderer.resolveTimestampsAsync('render');
-          const ms = typeof got === 'number' ? got : renderer.info?.render?.timestamp;
-          // (0 or nothing: no render pass since the last resolve)
-          if (Number.isFinite(ms) && ms > 0) push(ms);
-        } catch {
-          // (a lost device: the ring stays as it was, and the loss is the runtime’s to handle)
-        } finally {
-          pending = null;
-        }
-      })();
+      try {
+        pending = renderer.resolveTimestampsAsync('render').then(got, missed);
+      } catch {
+        pending = null;
+        return DONE;
+      }
       return pending;
     },
     reset() {

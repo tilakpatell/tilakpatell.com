@@ -17,7 +17,7 @@
 import { rng } from '../hq/rng';
 
 export const LINE = -1.8; // the terrace's edge: a Chitauri past it gets through
-export const SPAWN_Z = -58; // the tree line
+const SPAWN_Z = -58; // the tree line
 export const LAWN = {
   hearts: 5,
   thorSpeed: 7,

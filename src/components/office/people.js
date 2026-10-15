@@ -79,7 +79,6 @@ const IDENTITY = new THREE.Quaternion();
 const CLIP_GESTURE = { wave: 'wave', cheer: 'cheer', shrug: 'shrug' };
 const SIT_IN = 'sit.enter'; // the UAL's: standing to sat (1.3 s), and back (1 s)
 const SIT_OUT = 'sit.exit';
-export const SITTING = { enter: 1.3, exit: 1.03 };
 // where the hips sit, sat on the UAL's chair, behind where its feet stand
 // (as a share of how high the hips stand): a chair's middle is this far
 // behind the feet of someone getting out of it

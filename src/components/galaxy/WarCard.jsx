@@ -5,6 +5,7 @@ import { SIDES, WARS } from './sides';
 import { ago, areaLines, battleLine, campaignLine, feedOf, newsLine, nextOpLine, oathOf, orderLine, partLine, recordLine, resultLine, standing, whose } from './warText';
 import { nearestBattle } from './warMap';
 import { templateFor } from './battles';
+import { groundBattle } from './gameLevels';
 import { jumpSeconds, systemById } from './systems';
 
 // The galaxy's wars on the holotable (HoloMap.jsx) and the panel
@@ -185,7 +186,7 @@ export default function WarCard({ table, now, oath, viewOath, suggested, record,
 export function SystemWar({ row, war, now, side, yours = true }) {
   if (!row) return null;
   const sys = systemById(row.id);
-  const ground = sys?.game?.also?.find((a) => a.id === 'assault' && a.to);
+  const ground = groundBattle(sys);
   return (
     <>
       <div>
@@ -202,7 +203,7 @@ export function SystemWar({ row, war, now, side, yours = true }) {
         <div>
           <dt>On the ground</dt>
           <dd>
-            <Link to={ground.to}>Fight it on the ground</Link>
+            <Link to={ground}>Fight it on the ground</Link>
           </dd>
         </div>
       )}

@@ -69,7 +69,7 @@ const WAR_HEROES = {
 const CLONE_WARS = new Set(['republic', 'separatists']);
 // (the game's spawn screen marks an enforcer and a hero so, whoever they are)
 const ICONS = '/battlefront/icons/UI/SVG/Classes';
-export const ENFORCER_ICON = `${ICONS}/Class_Enforcer.svg`;
+const ENFORCER_ICON = `${ICONS}/Class_Enforcer.svg`;
 export const HERO_ICON = `${ICONS}/Hero_Icon_01.svg`;
 
 export function offersFor({ mission = null, side, system = mission?.system ?? null, points = 0 }) {

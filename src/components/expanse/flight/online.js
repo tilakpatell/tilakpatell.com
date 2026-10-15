@@ -41,7 +41,7 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const lerpAngle = (a, b, k) => a + wrap(b - a) * k;
 
 // where a peer is at `t`, from its last two poses (each with `at`)
-export function easePose(a, b, t) {
+function easePose(a, b, t) {
   if (!a || t >= b.at) return b;
   const k = b.at > a.at ? Math.max(0, (t - a.at) / (b.at - a.at)) : 1;
   const lerp = (p, q) => p + (q - p) * k;

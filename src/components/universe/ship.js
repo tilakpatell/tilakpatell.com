@@ -164,7 +164,7 @@ const LANDS = PLANETS.filter((p) => {
   const u = byId(p.id);
   return u.kind !== 'core' && !u.portal && !u.airless;
 });
-export function approachAt(x, y, z) {
+function approachAt(x, y, z) {
   let k = 0;
   for (const p of LANDS) {
     const d = Math.sqrt((x - p.at[0]) ** 2 + (y - p.at[1]) ** 2 + (z - p.at[2]) ** 2);
@@ -684,7 +684,7 @@ export function clearPark(park, moving) {
 // back upright. The autopilot steers with it, and so does anything else
 // that flies the ship somewhere for a while (entry.js's descent into a
 // planet's air).
-export function stickToward(s, dir) {
+function stickToward(s, dir) {
   const q = fromAngles(s.heading, s.pitch || 0, s.bank || 0);
   const b = rotate(conj(q), dir);
   const yaw = Math.atan2(-b[0], -b[2]); // > 0: off to the left

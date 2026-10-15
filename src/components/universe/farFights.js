@@ -27,7 +27,7 @@ import { NODES } from './waypoints';
 import { regionAt } from './regions';
 
 export const FAR = 2000; // past this from the camera, a fight is its impostor
-export const HOT_BOLTS = 16; // the bolts in flight that make a fight as hot as it gets
+const HOT_BOLTS = 16; // the bolts in flight that make a fight as hot as it gets
 const POINTS = [12, 96]; // the fewest and most points a fight is drawn with
 const PER_SHIP = 4; // and how many each ship in it adds
 const FLICKER = [1.5, 12]; // how fast it flickers (Hz): calm, and at its fiercest

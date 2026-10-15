@@ -26,6 +26,32 @@ describe('zones', () => {
     // and how much the head and neck move it, for one that follows the skin’s round the neck (a collar)
     expect([...g.attributes.upper.array].map((x) => +x.toFixed(2))).toEqual([0.7, 0.1, 0, 0]);
   });
+
+  // (a guest fitted to the 2017 game's skeleton, scripts/guest-rig.mjs: the
+  // same figure, its weights on the game's bones)
+  it('sorts the 2017 game’s bones into the zones their Meshy counterparts are in', () => {
+    const pairs = { neck: 'Neck', Head: 'Head', Spine02: 'Spine', Spine01: 'Spine1', Spine: 'Spine2', LeftShoulder: 'LeftShoulder', RightForeArm: 'RightForeArm', RightHand: 'RightHand', Hips: 'Hips', LeftUpLeg: 'LeftUpLeg', RightLeg: 'RightLeg', LeftFoot: 'LeftFoot', RightToeBase: 'RightToeBase' };
+    for (const [meshy, game] of Object.entries(pairs)) expect(zoneOf(game), game).toBe(zoneOf(meshy));
+    // (the game's second neck joint and its crown, which Meshy has none for)
+    expect(['Neck1', 'HeadEnd'].map(zoneOf)).toEqual([0, 0]);
+  });
+
+  it('gives a vertex on the game’s rig the zone it has on Meshy’s', () => {
+    const zones = (bones) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(12), 3));
+      // a vertex wholly on each of the four bones
+      g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute([0, 0, 0, 0, 1, 0, 0, 0, 2, 3, 0, 0, 3, 2, 0, 0], 4));
+      g.setAttribute('skinWeight', new THREE.Float32BufferAttribute([1, 0, 0, 0, 1, 0, 0, 0, 0.6, 0.4, 0, 0, 0.7, 0.3, 0, 0], 4));
+      const a = addZones(g, bones).attributes;
+      return [[...a.zone.array], [...a.upper.array].map((x) => +x.toFixed(2))];
+    };
+    const meshy = zones(['LeftUpLeg', 'Spine01', 'neck', 'Spine']);
+    const game = zones(['LeftUpLeg', 'Spine1', 'Neck', 'Spine2']);
+    expect(game).toEqual(meshy);
+    expect(game[0]).toEqual([2, 1, 0, 1]);
+    expect(game[1]).toEqual([0, 0, 0.6, 0.3]);
+  });
 });
 
 describe('regions', () => {
