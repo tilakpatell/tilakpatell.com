@@ -108,6 +108,26 @@ try {
         return n;
       };
       window.cancelAnimationFrame = (n) => (n > 1e6 ? queue.delete(n) : realCancel(n));
+      // The grade's grain (lib/stage3d's GRADE, ../../../../src/components/
+      // rickmorty/stage.js's) counts its clock from the frames it's drawn,
+      // and a frame loop started again during the loading (a box scrolled
+      // into view, a status come back) starts on 16 ms of its own: how many
+      // times that happens is the machine's. So the grain's clock, in a
+      // program with both uTime and uGrain and in no other, is the stepped
+      // time, in the before and the after alike.
+      const grainAt = new WeakSet();
+      for (const Gl of [window.WebGLRenderingContext, window.WebGL2RenderingContext].filter(Boolean)) {
+        const where = Gl.prototype.getUniformLocation;
+        const set1 = Gl.prototype.uniform1f;
+        Gl.prototype.getUniformLocation = function (program, name) {
+          const at = where.call(this, program, name);
+          if (at && name === 'uTime' && where.call(this, program, 'uGrain')) grainAt.add(at);
+          return at;
+        };
+        Gl.prototype.uniform1f = function (at, v) {
+          return set1.call(this, at, at && grainAt.has(at) ? vt / 1000 : v);
+        };
+      }
       // (and no CSS animation or transition, before or after: theirs run on
       // the compositor's clock)
       const still = document.createElement('style');
