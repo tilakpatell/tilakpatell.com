@@ -21,8 +21,8 @@
 //   front end's. In dev, Vitest and SSR (no page to fetch from, and the
 //   tests read a record at once) a record is the JSON inline.
 // - a record whose row says `fetch: false`, inline everywhere, whole: ui.json,
-//   because the worlds' reticle (src/runtime/hud/Reticle.jsx →
-//   lib/bf2017/ui/shapes.js → ui/index.js's `css`) reaches it, so a fetch
+//   because the worlds' HUD kit reaches it (src/runtime/hud/index.js →
+//   Screen.jsx → lib/bf2017/ui/shapes.js → ui/index.js's `css`), so a fetch
 //   would hold every world with a HUD, not Battlefront alone. It is fetched
 //   once `css` no longer comes from the module that reads the widget trees.
 //

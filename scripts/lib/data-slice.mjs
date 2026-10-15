@@ -15,19 +15,18 @@
 //     `const ROWS = ident.rows`)
 //   sliceFor(record, keys) → the record with those keys and no others
 //
-// Comments are left out of the reading; a property that happens to share
-// the name (`rb.ui`, `{ ui: … }`) is not the record.
+// When in doubt the answer is “whole”: a destructure with a rest, a default
+// or a quoted or computed key, a name in a comment. A property that happens
+// to share the name (`rb.ui`, `{ ui: … }`) is not the record.
 
 const esc = (s) => s.replace(/[$]/g, '\\$');
 const LIT = /^\s*\[\s*(['"])([^'"\\]*)\1\s*\]/;
 const DOT = /^\s*\??\.\s*([A-Za-z_$][\w$]*)/;
 
-function code(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1')
-    .replace(/^\s*import\s[^;]*;?$/gm, '');
-}
+// the source with its one-line imports left out (a name in an import is not a
+// read); comments stay in, since a name they mention can only make a reader
+// read as walking more of the record, never less
+const code = (source) => source.replace(/^[ \t]*import\s[^\n]*$/gm, '');
 
 export function identOf(source, specifier) {
   const m = source.match(new RegExp(`^\\s*import\\s+([A-Za-z_$][\\w$]*)\\s+from\\s+['"]${specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'm'));
@@ -53,9 +52,13 @@ function* uses(source, ident) {
   }
 }
 
+// the keys of `const { a, b: c } = ident`, or null when a part is anything else
 const destructured = (before) => {
   const m = before.match(/\{([^{}]*)\}\s*=\s*$/);
-  return m ? m[1].split(',').map((p) => p.trim().split(/\s*:\s*/)[0]).filter((k) => /^[A-Za-z_$][\w$]*$/.test(k)) : null;
+  if (!m) return null;
+  const parts = m[1].split(',').map((p) => p.trim()).filter(Boolean);
+  if (!parts.every((p) => /^[A-Za-z_$][\w$]*(\s*:\s*[A-Za-z_$][\w$]*)?$/.test(p))) return null;
+  return parts.map((p) => p.split(/\s*:\s*/)[0]);
 };
 
 export function keysReadBy(source, ident) {

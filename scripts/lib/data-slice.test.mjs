@@ -34,6 +34,22 @@ describe('walksWhole', () => {
     }
   });
 
+  it('is true on a destructure it cannot read exactly (a rest, a default, a quoted or computed key)', () => {
+    for (const src of ['const { a, ...rest } = ai;', 'const { rows = null } = ai;', 'const { "rows": r } = ai;', 'const { [k]: v } = ai;']) {
+      expect(walksWhole(src, 'ai'), src).toBe(true);
+    }
+  });
+
+  it('is not fooled by a // inside a string', () => {
+    expect(walksWhole('const p = "a//b"; const v = ai[k];', 'ai')).toBe(true);
+  });
+
+  it('reads a reader written without semicolons', () => {
+    const src = 'import ai from "virtual:bf2017-ai"\nimport x from "y"\nconst v = Object.keys(ai)\nconst w = ai.rows.x;';
+    expect(walksWhole(src, 'ai')).toBe(true);
+    expect(keysReadBy(src, 'ai')).toEqual(['rows']);
+  });
+
   it('is false when every read is a literal key, read on', () => {
     expect(walksWhole('const a = ai.rows.cover; const b = ai["rows"].tactics; ai.rows.system.x', 'ai')).toBe(false);
   });
