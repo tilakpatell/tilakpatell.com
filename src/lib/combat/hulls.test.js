@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { packHull, packShapes } from '../physics/shapesBin.js';
 import { basisOf } from './pose.js';
-import { hullOf, hullFromTriangles, segmentHit, hullContact } from './hulls.js';
+import { hullOf, hullFromTriangles, probeSphere, segmentHit, hullContact } from './hulls.js';
 
 const I = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
 const pose = (at0, at1 = at0, basis = I, scale = 1) => ({ at0, at1, basis, scale });
@@ -383,7 +383,7 @@ describe('hullFromTriangles', () => {
     expect(hullFromTriangles(positions, indices).rays.count).toBe(1000);
   });
 
-  it('answers 10,000 segment tests against a 1,000-triangle hull in under 50 ms', () => {
+  it('answers 10,000 segment tests against a 1,000-triangle hull in under 100 ms warm, and many times faster than testing every triangle', () => {
     const { positions, indices } = sphere(0.5, 20, 26);
     const h = hullFromTriangles(positions, indices);
     expect(h.rays.count).toBe(1000);
@@ -391,19 +391,58 @@ describe('hullFromTriangles', () => {
     const p = pose([1, 2, 3], [1.1, 2, 3], basisOf({ x: 0.3, y: 0.2, z: 1 }, { x: 0, y: 1, z: 0 }, 0.4), 3);
     const segs = [];
     for (let i = 0; i < 10000; i++) segs.push([[1 + r() * 2, 2 + r() * 2, 3 + r() * 2], [1 + r() * 2, 2 + r() * 2, 3 + r() * 2]]);
-    for (let i = 0; i < 1000; i++) segmentHit(h, p, segs[i][0], segs[i][1]); // (warm)
-    // (the fastest of three passes: a shared runner's other workers can steal
-    // one pass's time, and it is the hull's speed being held, not the runner's)
-    let hits = 0;
-    let ms = Infinity;
-    for (let pass = 0; pass < 3; pass++) {
+    // (the engine warmed first, then the best of three runs: a shared CI
+    // runner's first pass is its slowest, and a bound on the wall clock
+    // alone was 65 ms there against 30 here)
+    const timed = () => {
+      let hits = 0;
       const t0 = performance.now();
-      hits = 0;
       for (const [a, b] of segs) if (segmentHit(h, p, a, b)) hits++;
-      ms = Math.min(ms, performance.now() - t0);
-    }
-    expect(hits).toBeGreaterThan(1000);
-    expect(ms).toBeLessThan(50);
+      return { ms: performance.now() - t0, hits };
+    };
+    timed();
+    const runs = [timed(), timed(), timed()];
+    expect(runs[0].hits).toBeGreaterThan(1000);
+    const ms = Math.min(...runs.map((o) => o.ms));
+    expect(ms).toBeLessThan(100);
+    // and the tree earns its place: every triangle tested instead (Möller–Trumbore
+    // in the ship's frame, the same segments) takes many times longer a query
+    const m = p.basis;
+    const inv = 1 / p.scale;
+    const t = h.rays.tris;
+    const brute = (a, b) => {
+      const ax = a[0] - p.at0[0], ay = a[1] - p.at0[1], az = a[2] - p.at0[2];
+      const bx = b[0] - p.at1[0], by = b[1] - p.at1[1], bz = b[2] - p.at1[2];
+      const ox = (m[0] * ax + m[1] * ay + m[2] * az) * inv, oy = (m[3] * ax + m[4] * ay + m[5] * az) * inv, oz = (m[6] * ax + m[7] * ay + m[8] * az) * inv;
+      const dx = (m[0] * bx + m[1] * by + m[2] * bz) * inv - ox, dy = (m[3] * bx + m[4] * by + m[5] * bz) * inv - oy, dz = (m[6] * bx + m[7] * by + m[8] * bz) * inv - oz;
+      let best = Infinity;
+      for (let i = 0; i < t.length; i += 9) {
+        const e1x = t[i + 3] - t[i], e1y = t[i + 4] - t[i + 1], e1z = t[i + 5] - t[i + 2];
+        const e2x = t[i + 6] - t[i], e2y = t[i + 7] - t[i + 1], e2z = t[i + 8] - t[i + 2];
+        const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x;
+        const det = e1x * px + e1y * py + e1z * pz;
+        if (Math.abs(det) < 1e-12) continue;
+        const f = 1 / det;
+        const sx = ox - t[i], sy = oy - t[i + 1], sz = oz - t[i + 2];
+        const u = (sx * px + sy * py + sz * pz) * f;
+        if (u < 0 || u > 1) continue;
+        const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+        const v = (dx * qx + dy * qy + dz * qz) * f;
+        if (v < 0 || u + v > 1) continue;
+        const k = (e2x * qx + e2y * qy + e2z * qz) * f;
+        if (k >= 0 && k <= 1 && k < best) best = k;
+      }
+      return best < Infinity;
+    };
+    const some = segs.slice(0, 1000);
+    const b0 = performance.now();
+    let bruteHits = 0;
+    for (const [a, b] of some) if (brute(a, b)) bruteHits++;
+    const bruteMs = (performance.now() - b0) * 10; // (a tenth of the segments: scaled to the same count)
+    let treeHits = 0;
+    for (const [a, b] of some) if (segmentHit(h, p, a, b)) treeHits++;
+    expect(treeHits).toBe(bruteHits);
+    expect(bruteMs / ms).toBeGreaterThan(4);
   });
 
   it('finds the nearest triangle the brute-force way would', () => {
@@ -436,5 +475,22 @@ describe('hullFromTriangles', () => {
       if (best === Infinity) expect(hit).toBeNull();
       else expect(hit.t).toBeCloseTo(best, 5);
     }
+  });
+});
+
+describe('probeSphere', () => {
+  it('is a ball of probes at its radius that a hull keeps out, by its radius', () => {
+    const ball = probeSphere(0.15);
+    expect(ball.probes.length).toBe(27 * 3);
+    expect(Math.hypot(ball.probes[0], ball.probes[1], ball.probes[2])).toBeCloseTo(0.15, 6);
+    expect(segmentHit(ball, pose([0, 0, 0]), [-1, 0, 0], [1, 0, 0])).toBeNull(); // (nothing to shoot)
+    const plate = hullOf(solidBin(0.5, 0.5, 0.005));
+    // flown at the plate (scaled ×4: its face at z = −0.02) from z = −1 to z = 0: its leading probe put back on the near face
+    const c = hullContact(ball, pose([0, 0, -1], [0, 0, 0]), plate, pose([0, 0, 0], [0, 0, 0], I, 4));
+    expect(c).not.toBeNull();
+    close(c.normal, [0, 0, -1]);
+    expect(c.depth).toBeCloseTo(0.15 + 0.02 + 0.004, 4); // (the leading probe, 0.15 ahead, back to the near face at −0.02, and SKIN × 4 past it)
+    // and short of it, nothing
+    expect(hullContact(ball, pose([0, 0, -1], [0, 0, -0.5]), plate, pose([0, 0, 0], [0, 0, 0], I, 4))).toBeNull();
   });
 });

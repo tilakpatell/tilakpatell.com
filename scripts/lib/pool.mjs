@@ -8,7 +8,10 @@
 //
 // createPool({ size, retries, waits, timeout, fetch, sleep, missing, files, now })
 //   → { run(job) → Promise<result>, stats() → { done, missing, failed, retried, bytes, seconds } }
-//   job: { url, method = 'GET', headers, body, bytes?, size?, to? }
+//   job: { url, method = 'GET', headers, body, bytes?, size?, to?, peek? }
+//     peek: the headers alone, the body let go unread (the asset check asks
+//       one byte of a file this way: a CDN that answers the range with the
+//       whole file, a 200, is then sent nothing of it)
 //     bytes: what the body must be (a short one is retried); size: a guess,
 //     for the timeout only (the 2017 drop's manifest gives each GLB's size
 //     before the uploader re-encoded it: Luke's lod4 is 162,996 there and
@@ -76,6 +79,10 @@ export function createPool({ size = 6, retries = 3, waits = WAITS, timeout = TIM
         return { final: { status: 'failed', bytes: 0, http: res.status, headers: res.headers, error: `HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ''}` } };
       }
       if ((job.method ?? 'GET') === 'HEAD') return { final: { status: 'fetched', bytes: 0, http: res.status, headers: res.headers } };
+      if (job.peek) {
+        await res.body?.cancel?.().catch(() => {});
+        return { final: { status: 'fetched', bytes: 0, http: res.status, headers: res.headers } };
+      }
       const buf = Buffer.from(await res.arrayBuffer());
       const told = res.headers.get('content-length');
       const want = job.bytes ?? (told != null && !res.headers.get('content-encoding') ? Number(told) : null);
