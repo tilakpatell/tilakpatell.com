@@ -5,7 +5,9 @@
 // s. A near miss fills the target's suppression by the shooter's
 // `SuppressionValue` and it fades over the target's `SuppressionTime`; a
 // hit or a near miss tells the target where the shot came from; a first
-// sight of an enemy is passed to the squad as an alert. Every bot has a name
+// sight of an enemy is passed to the squad as an alert; what the mode makes
+// heard (its `sounds`: a fuel charge's keypad while one holds it) is a
+// stimulus to the senses of that one's enemies. Every bot has a name
 // from the game's lists (`names.js`, by its team's faction and the sim's
 // `namesMode`, Skirmish by default), kept by its id across redeploys. Pure.
 //
@@ -122,7 +124,10 @@ function perceive(sim, b, s) {
   b.me.pos = toV(eye);
   b.me.dir = { x: Math.sin(s.yaw), y: 0, z: Math.cos(s.yaw) };
   const before = new Set(Object.keys(b.me.beliefs).filter((id) => b.me.beliefs[id].visible));
-  sense(b.senses, b.me, { targets: sim.cache.targets[s.team] }, SENSE, { seesThrough: (a, c) => lineClear(sim.nav, [a.x, a.y, a.z], [c.x, c.y, c.z]) });
+  // (a sound is heard within its radius of where it sounds, and believed where its one stands: the senses' own
+  // radius test is then passed)
+  const heard = (sim.cache.stims?.[s.team] ?? []).filter((n) => Math.hypot(eye[0] - n.sounds.x, eye[1] - n.sounds.y, eye[2] - n.sounds.z) <= n.radius).map((n) => ({ ...n, radius: Infinity }));
+  sense(b.senses, b.me, { targets: sim.cache.targets[s.team], stims: heard }, SENSE, { seesThrough: (a, c) => lineClear(sim.nav, [a.x, a.y, a.z], [c.x, c.y, c.z]) });
   for (const [id, belief] of Object.entries(b.me.beliefs)) {
     if (!belief.visible || before.has(id) || b.alerted.has(id)) continue;
     b.alerted.add(id);
@@ -145,7 +150,16 @@ function gather(sim) {
     targets[other].push(t);
     if (e.kind === 'soldier') enemies[other].push([e.at[0], e.at[2]]);
   }
-  sim.cache = { all, targets, enemies };
+  // (what the mode makes heard, each by the enemies of the one it comes from: a charge's keypad while held. Out
+  // to the sound's radius from where it sounds; it is believed where that one stands, which the keypad's 3 m
+  // reach puts beside it: a bot turned to the keypad itself, its back to a holder at its shoulder, would never
+  // see them. By hand)
+  const stims = { 1: [], 2: [] };
+  for (const n of sim.M?.sounds?.(sim.ga) ?? []) {
+    const by = sim.entities.get(n.from);
+    if (by?.alive) stims[by.team === 1 ? 2 : 1].push({ ...n, sounds: n.at, at: toV(chestOf(by)) });
+  }
+  sim.cache = { all, targets, enemies, stims };
 }
 
 export function stepBrains(sim) {

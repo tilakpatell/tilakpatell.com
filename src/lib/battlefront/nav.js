@@ -365,7 +365,8 @@ export function firstSolid(nav, a, b) {
       break;
     }
     const y = a[1] + (b[1] - a[1]) * t;
-    if (y < heightAt(nav, x, z) - 0.05) {
+    // (under the terrain, the navmesh's certified free space is not ground: Echo Base under the snow, meshNav.js's open)
+    if (y < heightAt(nav, x, z) - 0.05 && !nav.open?.(x, y, z)) {
       if (!best || t < best.t) best = { t, solid: -1 };
       break;
     }
