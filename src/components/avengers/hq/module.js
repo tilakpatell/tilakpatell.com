@@ -36,6 +36,7 @@ const WARM = 4000; // ms at most a game's shaders hold back its first frame
 export function hqModule({ id, route, label, load, prepare = 'warm', keep = false, first = null }) {
   let kept = null; // { renderer, view }: the world kept while another draws
   let keeping = false;
+  let area = 0; // the box's, in CSS pixels, as its page or its world last measured it
   const letGo = () => {
     const was = kept;
     kept = null;
@@ -49,9 +50,14 @@ export function hqModule({ id, route, label, load, prepare = 'warm', keep = fals
     calibrate: false,
     // (its code, fetched ahead as its page's box comes near: hq/useStage's useLive)
     warm: () => load(),
+    // (the tier's pixels over the box: the page measures it before it
+    // mounts, hq/useStage; the window's until it has)
     get ratio() {
       if (typeof window === 'undefined') return startRatio(startTier(), 1);
-      return startRatio(startTier(), window.devicePixelRatio, window.innerWidth * window.innerHeight);
+      return startRatio(startTier(), window.devicePixelRatio, area || window.innerWidth * window.innerHeight);
+    },
+    measure(w, h) {
+      if (w > 0 && h > 0) area = w * h;
     },
     // (the page holding a kept world says so while it's up, and lets go as it goes)
     keep(on) {
@@ -59,7 +65,7 @@ export function hqModule({ id, route, label, load, prepare = 'warm', keep = fals
       if (!keeping) letGo();
     },
     async create(rt, props = {}) {
-      const frame = props.frame ?? { current: null };
+      let frame = props.frame ?? { current: null };
       let view = null;
       let again = false;
       if (kept && kept.renderer === rt.gfx.renderer && !rt.gfx.lost) {
@@ -73,19 +79,45 @@ export function hqModule({ id, route, label, load, prepare = 'warm', keep = fals
       }
       const engine = view.engine;
       let gone = false;
+      let broken = false; // a frame threw: the runtime lets it go, and it's never kept
+      let shown = !first; // a world with a first frame draws it again once placed
       const world = {
         view,
-        resize: (w, h) => view.resize(w, h),
+        resize: (w, h) => {
+          area = w * h;
+          view.resize(w, h);
+        },
         // the page's frame, run from the runtime's loop; none while its
-        // page isn't drawing it (the frame kept as it was)
-        draw: (f) => frame.current?.(f.dt * 1000, f.now),
-        wants: () => Boolean(frame.current),
+        // page isn't drawing it (the frame kept as it was); `once`, a frame
+        // a page asks for when something changes (drawOnce)
+        draw: (f) => {
+          try {
+            const once = frame.once;
+            if (once) {
+              frame.once = null;
+              once(f.dt * 1000, f.now);
+            } else if (frame.current) frame.current(f.dt * 1000, f.now);
+            // (the first frame, drawn before the canvas had its size, drawn
+            // again at it: the canvas was cleared when it was sized)
+            else if (!shown) engine.renderOnce();
+            shown = true;
+          } catch (err) {
+            broken = true;
+            throw err;
+          }
+        },
+        wants: () => Boolean(frame.current || frame.once || !shown),
+        // (a page that adopted this world, React's second mount among them,
+        // hands it its own frame)
+        update: (p) => {
+          if (p?.frame) frame = p.frame;
+        },
         lowerQuality: (level) => engine.lowerQuality(level),
         tune: () => engine.tuneGroups(),
         dispose() {
           if (gone) return;
           gone = true;
-          if (keep && keeping && !rt.gfx?.lost) {
+          if (keep && keeping && !broken && !rt.gfx?.lost) {
             engine.rest();
             kept = { renderer: rt.gfx.renderer, view };
           } else view.dispose();

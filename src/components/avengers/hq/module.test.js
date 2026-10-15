@@ -16,6 +16,7 @@ const fakeRt = ({ renderer = {}, rect = { width: 800, height: 450 } } = {}) => {
 };
 const fakeView = () => {
   const engine = {
+    renderOnce: vi.fn(),
     lowerQuality: vi.fn(),
     precompile: vi.fn(() => Promise.resolve()),
     prepare: vi.fn(() => Promise.resolve()),
@@ -125,6 +126,55 @@ describe('an HQ game as a world module', () => {
     const fresh = await mod.create(fakeRt({ renderer: {} }), {});
     expect(fresh.view).toBe(views[1]);
     expect(views[0].dispose).toHaveBeenCalled();
+  });
+
+  it('runs a frame asked for once, ahead of the page’s, and takes the frame of a page that adopts it', async () => {
+    const frame = { current: vi.fn() };
+    const world = await hqModule({ id: 'g', route: '/avengers', load: async () => () => fakeView() }).create(fakeRt(), { frame });
+    const once = vi.fn();
+    frame.once = once;
+    expect(world.wants()).toBe(true);
+    world.draw({ dt: 0.016, now: 1 });
+    expect(once).toHaveBeenCalledTimes(1);
+    expect(frame.current).not.toHaveBeenCalled();
+    expect(frame.once).toBeNull();
+    const next = { current: vi.fn() };
+    world.update({ frame: next });
+    world.draw({ dt: 0.016, now: 2 });
+    expect(next.current).toHaveBeenCalledWith(16, 2);
+  });
+
+  it('draws its first frame again once placed, for a module with one', async () => {
+    const view = fakeView();
+    const first = vi.fn();
+    const world = await hqModule({ id: 'titanish', route: '/avengers', first, load: async () => () => view }).create(fakeRt(), {});
+    await world.prepare(() => {}, { alive: () => true });
+    expect(first).toHaveBeenCalledWith(view, {});
+    expect(world.wants()).toBe(true);
+    world.draw({ dt: 0, now: 0 });
+    expect(view.engine.renderOnce).toHaveBeenCalledTimes(1);
+    expect(world.wants()).toBe(false);
+  });
+
+  it('never keeps a world whose frame threw', async () => {
+    const view = fakeView();
+    const mod = hqModule({ id: 'kept', route: '/avengers', keep: true, load: async () => () => view });
+    mod.keep(true);
+    const frame = {
+      current: () => {
+        throw new Error('a bad frame');
+      },
+    };
+    const world = await mod.create(fakeRt(), { frame });
+    expect(() => world.draw({ dt: 0.016, now: 0 })).toThrow('a bad frame');
+    world.dispose();
+    expect(view.dispose).toHaveBeenCalled();
+  });
+
+  it('starts at the tier’s pixels over the box its page measured', () => {
+    const mod = hqModule({ id: 'g', route: '/avengers', load: async () => () => fakeView() });
+    mod.measure(800, 450);
+    expect(mod.ratio).toBeGreaterThan(0);
   });
 
   it('lets a world go at once when it isn’t kept', async () => {

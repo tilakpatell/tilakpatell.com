@@ -6,7 +6,7 @@
 // (useStage, through runtime/useWorld). It draws only while it's on screen;
 // the others wait with their menus over a dark screen, their code fetched
 // ahead as they come near.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useWorld } from '../../../runtime/useWorld';
 import { runtime } from '../../../runtime/index';
 
@@ -51,14 +51,24 @@ export function useLive(ref, { id, enabled = true, warm }) {
   useEffect(() => {
     const el = ref.current;
     if (!enabled || !el) return undefined;
-    if (typeof IntersectionObserver === 'undefined') {
-      setActive(true);
-      setVisible(true);
-      return undefined;
-    }
     const key = `${id}:${Math.random().toString(36).slice(2)}`;
     const st = { ratio: 0, set: setActive };
     stages.set(key, st);
+    // (no observer: every one as good as on screen, and still one at a time,
+    // the first asked for)
+    if (typeof IntersectionObserver === 'undefined') {
+      st.ratio = 1;
+      setVisible(true);
+      schedule();
+      return () => {
+        stages.delete(key);
+        if (current === key) {
+          current = null;
+          schedule();
+        }
+        setActive(false);
+      };
+    }
     const seen = new IntersectionObserver(
       ([e]) => {
         st.ratio = e.isIntersecting ? e.intersectionRatio : 0;
@@ -119,7 +129,16 @@ export function useStage(module, { enabled, id, forced = false, options = null, 
   const onEvent = useCallback((e) => {
     if (e.type === 'slow' && !forcedRef.current) setDown('slow');
   }, []);
-  const world = useWorld(module, { props, enabled: Boolean(enabled && near && !down), onEvent, attempt });
+  const mounting = Boolean(enabled && near && !down);
+  const hostOf = useRef(null); // useWorld's ref to the box
+  // (the box measured before the world is mounted: its start's sharpness
+  // is the tier's pixels over it, ./module.js; this runs before useWorld's)
+  useEffect(() => {
+    const r = hostOf.current?.current?.getBoundingClientRect?.();
+    if (mounting && r) module.measure?.(r.width, r.height);
+  }, [mounting, module]);
+  const world = useWorld(module, { props, enabled: mounting, onEvent, attempt });
+  hostOf.current = world.host;
   const rt = world.rt;
   const mine = rt?.current?.module === module;
   useEffect(() => {
@@ -154,18 +173,17 @@ export function useStage(module, { enabled, id, forced = false, options = null, 
 // page's isn't drawing). `once(fn)`: one frame now, for a page that draws
 // only when something changes (reduced motion).
 export function useStageFrame(stage, tick, active) {
-  stage.frame.current = active ? tick : null;
   const rt = stage.rt;
+  // (set as each render is committed, never from a render React may drop)
+  useLayoutEffect(() => {
+    stage.frame.current = active ? tick : null;
+  });
   useEffect(() => {
     if (active) rt?.invalidate();
   }, [active, rt]);
 }
 export function drawOnce(stage, fn) {
-  const was = stage.frame.current;
-  stage.frame.current = (ms, now) => {
-    stage.frame.current = was;
-    fn(ms, now);
-  };
+  stage.frame.once = fn;
   stage.rt?.invalidate();
 }
 

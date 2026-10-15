@@ -18,7 +18,9 @@
 // mapping and exposure the house look leaves, the shadows, the clear, the
 // frame’s info counting) in `state`: put on at its first compile or frame,
 // not as it’s made (a world made at a handover is made while another draws),
-// and given back as it was when it’s let go.
+// and held from then while it’s the world drawing (its shaders are compiled
+// for it, and a compile between two frames must see the same), given back
+// as it was when it’s let go or kept off screen (rest).
 
 import * as THREE from 'three';
 import { loadSky } from './assets';
