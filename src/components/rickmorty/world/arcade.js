@@ -15,7 +15,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, hot } from '../../../lib/stage3d';
+import { canvasTexture, hot } from '../stage';
 import { toon } from '../portal/toon';
 import { AREAS, FURNITURE } from './rules';
 import { at, batch, coloured, fitModel, glowMaterial, logoText, mergeParts, neonCopy, paint, rng } from './kit';

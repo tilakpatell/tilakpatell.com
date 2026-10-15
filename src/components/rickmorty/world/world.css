@@ -477,3 +477,6 @@
 .rm-reticle, .rm-look { --hud-ink: #fff; --hud-accent: var(--rm-lime); --hud-glass-hi: var(--rm-glass); --hud-border: 2px solid var(--rm-ink); --hud-shadow: 0 4px 0 rgba(27, 20, 36, 0.6); }
 .rm-reticle { z-index: 3; }
 .rm-look { position: absolute; left: 50%; bottom: calc(clamp(5rem, 13%, 7rem) + 4.5rem); z-index: 3; transform: translateX(-50%); font-size: 0.9rem; }
+
+/* the runtime's box where the canvas was: laid out as the canvas was (.rm-world-canvas), over the runtime's own .world-host */
+.rm-world-stage > .rm-world-canvas { position: absolute; inset: 0; }
