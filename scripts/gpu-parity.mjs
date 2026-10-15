@@ -216,6 +216,11 @@ async function shoot(browser, base, leg) {
       }
       if (more) say(`  note: ${leg}: '${view}' took ${more} frames more before nothing was held back`);
     }
+    // (the gate's button, clicked above, was scrolled into view by the
+    // click, and where the page lands as the gate gives way to the world is
+    // a race: Mario 64's legs were shot at 0, 104 and 563 px down. Every
+    // leg is shot from the top.)
+    await page.evaluate(() => window.scrollTo(0, 0));
     await frames(100);
     // (the frames drawn in that 100 ms reach the screen on the compositor's
     // next frame, in real time: the page's own rAF is the stopped clock's)
