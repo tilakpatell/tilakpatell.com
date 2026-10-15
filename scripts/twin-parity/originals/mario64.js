@@ -1,10 +1,13 @@
 // The Mario 64 tribute’s GLSL, as it was drawn on the classic renderer:
-// kept for the parity check (scripts/twin-parity/cases/mario64.js) and for
-// the tests that hold each twin to it (./nodes.test.js). The world draws on
-// the node renderer now, every one of these replaced by its twin in
-// ./nodes.js (and the look by ./looks.js’s chain), so nothing module.js
-// reaches imports this file: WebGPURenderer can’t run a patched shader or
-// an EffectComposer.
+// kept for the parity check (../cases/mario64.js) and for the tests that
+// hold each twin to it (src/components/mario64/nodes.test.js and
+// looks.test.js). The world draws on the node renderer now, every one of
+// these replaced by its twin in mario64/nodes.js (and the look by
+// mario64/looks.js’s chain), so nothing the site builds imports this file:
+// WebGPURenderer can’t run a patched shader or an EffectComposer. It lives
+// here, beside the check that reads it, and not under src/, because the
+// world’s GLSL is gone from the site once it is ported (glsl-sites counts
+// src/ only); lane FL4 deletes it with the other originals.
 //
 //   splatMaterial(mats, small) → Promise<MeshStandardMaterial>   (scene.js’s)
 //   paintingMaterial(art) → { material, uniforms: { uRipple, uTime } }   (things.js’s painting)
@@ -17,11 +20,11 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { loadSet } from '../avengers/hq/assets';
-import { SCALE } from './courses/index';
-import { LOOK_NAMES } from './looks';
-import { S } from './scene';
-import { MATS } from './textures';
+import { loadSet } from '../../../src/components/avengers/hq/assets';
+import { SCALE } from '../../../src/components/mario64/courses/index';
+import { LOOK_NAMES } from '../../../src/components/mario64/looks';
+import { S } from '../../../src/components/mario64/scene';
+import { MATS } from '../../../src/components/mario64/textures';
 
 // The terrain's material: three sets blended by the splat attribute. The
 // first is the base (its uv is the kit's, x/z over its scale); the others are

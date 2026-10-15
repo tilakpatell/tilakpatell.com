@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { WGSLNodeBuilder, WebGPURenderer } from 'three/webgpu';
 import { fog, lights, rangeFogFactor, reference } from 'three/tsl';
-import * as glsl from './glsl.js';
+import * as glsl from '../../../scripts/twin-parity/originals/mario64.js';
 import * as nodes from './nodes.js';
 
-// Mario 64’s shaders as nodes, against the GLSL ones they replace (./glsl.js):
+// Mario 64’s shaders as nodes, against the GLSL ones they replace (scripts/twin-parity/originals/mario64.js):
 // the same flags, the same uniforms under the same names and values (the
 // GLSL’s read off the shader its onBeforeCompile patches, the nodes’ off
 // .uniforms), and each built to WGSL in Node, where TSL needs no GPU, so a

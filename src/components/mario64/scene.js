@@ -19,7 +19,8 @@
 // It draws on the node renderer (module.js says 'nodes'): the terrain’s
 // splat is ./nodes.js’s, the sky’s light is made by three’s node PMREM
 // generator, and the picture is finished by the runtime’s chain through
-// ./looks.js (`post`: rt.gfx.post). The GLSL it had is ./glsl.js.
+// ./looks.js (`post`: rt.gfx.post). The GLSL it had is
+// scripts/twin-parity/originals/mario64.js.
 //
 // createScene(renderer, { small, post }) → { setArea(id) → Promise, sync(g, alpha),
 //   render(), resize(w, h), setLook(name), fx(type, at), ready, dispose() }

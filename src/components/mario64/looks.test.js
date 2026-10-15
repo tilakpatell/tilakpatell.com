@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { makeLook as composerLook } from './glsl.js';
+import { makeLook as composerLook } from '../../../scripts/twin-parity/originals/mario64.js';
 import { LOOK } from './look.js';
 import { LOOK_NAMES, makeLook, passesFor } from './looks.js';
 
 // The look’s chain (the runtime’s node post: rt.gfx.post) against the
-// EffectComposer it replaces (./glsl.js’s makeLook): the same passes in the
+// EffectComposer it replaces (scripts/twin-parity/originals/mario64.js’s
+// makeLook): the same passes in the
 // same order and the same bloom, now read from the look.
 
 // (the composer reads only its size and ratio off the renderer when it is made)
@@ -38,7 +39,8 @@ describe('the look’s chain', () => {
   it('blooms with the composer’s three numbers, read from the look', () => {
     const glow = composerLook(stubRenderer(), scene, camera).composer.passes[1];
     const bloom = passesFor(scene, camera, true)[1];
-    expect(bloom).toEqual({ kind: 'bloom', ...LOOK.bloom });
+    // (and asks for the composer’s glow, runtime/webgpu.js’s composerGlow)
+    expect(bloom).toEqual({ kind: 'bloom', ...LOOK.bloom, composer: true });
     expect(bloom.strength).toBe(glow.strength);
     expect(bloom.radius).toBe(glow.radius);
     expect(bloom.threshold).toBe(glow.threshold);

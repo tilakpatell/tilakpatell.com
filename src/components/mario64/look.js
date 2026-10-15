@@ -3,7 +3,8 @@
 // modern, the ultra and the N64 picks), under the runtime’s renderer with
 // Neutral set for the port’s own time (module.js, put back on leaving),
 // and the light bloom its chain has always drawn (./looks.js reads it from
-// here; the composer before it had the same three numbers, ./glsl.js).
+// here; the composer before it had the same three numbers,
+// scripts/twin-parity/originals/mario64.js).
 
 export const LOOK = {
   art: 'own',

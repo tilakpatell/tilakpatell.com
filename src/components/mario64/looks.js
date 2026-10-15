@@ -1,7 +1,8 @@
 // How the picture is finished. Modern: the scene, a light bloom (the look’s,
 // ./look.js), then the renderer’s tone mapping and colour space, as the
 // runtime’s node post chain (rt.gfx.post: its passes as data, runtime/
-// webgpu.js). The EffectComposer it replaces is ./glsl.js’s makeLook, kept
+// webgpu.js). The EffectComposer it replaces is
+// scripts/twin-parity/originals/mario64.js’s makeLook, kept
 // for the parity check. Ultra and N64 come with the looks slice; until then
 // they draw as Modern.
 //
@@ -15,7 +16,7 @@ import { LOOK } from './look';
 
 export const LOOK_NAMES = ['modern', 'ultra', 'n64'];
 
-export const passesFor = (scene, camera, bloom) => [{ kind: 'render', scene, camera }, ...(bloom ? [{ kind: 'bloom', ...LOOK.bloom }] : []), { kind: 'output' }];
+export const passesFor = (scene, camera, bloom) => [{ kind: 'render', scene, camera }, ...(bloom ? [{ kind: 'bloom', ...LOOK.bloom, composer: true }] : []), { kind: 'output' }];
 
 export function makeLook(post, scene, camera, { bloom = true } = {}) {
   let glow = Boolean(bloom);

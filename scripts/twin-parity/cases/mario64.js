@@ -4,7 +4,7 @@
 // the GLSL original (glsl.js, which the world no longer imports) and once
 // with its twin. The splat reads the game’s own sets from public/hq.
 import * as THREE from 'three';
-import * as O from '../../../src/components/mario64/glsl.js';
+import * as O from '../originals/mario64.js';
 import * as N from '../../../src/components/mario64/nodes.js';
 import { makeLook as chainLook } from '../../../src/components/mario64/looks.js';
 import { buildPostProcessing } from '../../../src/runtime/webgpu.js';

@@ -42,7 +42,9 @@ export const hasWebGPU = () => typeof navigator !== 'undefined' && Boolean(navig
 // of their channels as its alpha, and adds both to the picture (additive,
 // premultiplied: one and one). Plain BloomNode drew every glow at a third
 // of the composer’s (Mario 64’s look: 18 dB off it, 32 dB and over with
-// this; twin-parity’s mario64:look).
+// this; twin-parity’s mario64:look). Asked for by the pass (`composer:
+// true`), so a world tuned on this backend’s own bloom (Battlefront’s
+// chain, lib/three/light/post.js) keeps the glow it was tuned on.
 export function composerGlow(tsl, glow) {
   const g = glow.rgb.mul(3);
   return tsl.vec4(g, tsl.max(g.r, tsl.max(g.g, g.b)));
@@ -67,7 +69,8 @@ export function buildPostProcessing(renderer, passes) {
         node = scenePass.getTextureNode();
       } else if (p.kind === 'bloom') {
         if (!node) throw new Error('a bloom pass needs a render pass first');
-        node = node.add(composerGlow(tsl, bloomMod.bloom(node, p.strength ?? BLOOM.strength, p.radius ?? BLOOM.radius, p.threshold ?? BLOOM.threshold)));
+        const glow = bloomMod.bloom(node, p.strength ?? BLOOM.strength, p.radius ?? BLOOM.radius, p.threshold ?? BLOOM.threshold);
+        node = node.add(p.composer ? composerGlow(tsl, glow) : glow);
       } else if (p.kind === 'output') {
         // (the output transform is the renderer's own on this backend)
       } else if (p.kind === 'shader') throw new Error('a shader pass needs the webgl backend');

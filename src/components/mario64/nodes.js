@@ -1,9 +1,10 @@
 // The Mario 64 tribute’s own shaders on the node renderer (lane P1, the
 // port of /dot-matrix/64 by lane T’s method): the terrain’s splat, the
 // paintings’ ripple and the waterfall’s streaks, each the twin of the GLSL
-// one in ./glsl.js (scene.js’s and things.js’s, as they were) with the same
-// flags, the same uniforms under the same names and the same arithmetic,
-// so the castle draws the same picture on WebGPU and WebGL 2. The look’s
+// one in scripts/twin-parity/originals/mario64.js (scene.js’s and
+// things.js’s, as they were) with the same flags, the same uniforms under
+// the same names and the same arithmetic, so the castle draws the same
+// picture on WebGPU and WebGL 2. The look’s
 // chain is ./looks.js.
 //
 //   splatMaterial(mats, small) → Promise<MeshStandardNodeMaterial>, its
