@@ -7,7 +7,7 @@ Lane FL2 of the engine floor (`docs/superpowers/plans/2026-10-15-engine-floor-la
 - `src/components/universe/module.js`: the map’s scene (`scene.js`, written for `lib/three/useScene`) as a world module through `fromScene`, `'glsl'`, `mb` 6, `ratio` 1.5, `sharpness: 'own'`.
 - `UniverseMap.jsx` mounts it with `useWorld` in a `WorldHost`; what the scene said through callbacks comes out as `rt.events`.
 - Gone from the map: its `WebGLRenderer` (`createRenderer` in `scene.js`), its frame loop (`useScene`’s), its 22 ms watchdog and its pace and calibration (the runtime’s cadence, governor and `tune()` on the same `'universe'` key). Its post chain (`universe/post.js`, an `EffectComposer` with a grade pass that reads the scene’s depth) stays the map’s own in this lane: the runtime’s `gfx.post(passes)` on the classic backend has no pass that reads depth, and the chain is replaced by the node renderer’s at the port (FL3).
-- `src/runtime/useWorld.js` gains `near` (the map asks `'0px'`, as it asked `useScene`), and the rule for two pictures on one page (the shipyard’s showroom: a second module, its own renderer until the runtime holds a second world).
+- `src/runtime/useWorld.js` gains `near` (the map asks `'0px'`, as it asked `useScene`), and the rule for several pictures on one page, word for word as the Middle-earth lane wrote it (one world a page, each picture a view of the one canvas: `runtime/views.js` on `claude/engine-floor-fl2-middleearth`), with the shipyard’s showroom under it: a view of the map’s world once the views are on main, its own renderer until then.
 
 ## The pictures: a repair changes no pixel
 

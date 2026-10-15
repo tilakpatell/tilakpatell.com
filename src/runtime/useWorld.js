@@ -24,22 +24,20 @@
 // a handover's page can leave first and React's second run of an effect
 // in development keeps what the first one had.
 //
-// Two pictures on one page (the engine floor's design, §4.3). Where the
-// second canvas was a copy of the first (Rick and Morty's portal swirl
-// beside its backdrop), it's one module drawing one canvas. Where it's a
-// picture of its own (the shipyard's showroom, a ship on a turntable over
-// the universe map or the galaxy held still behind it; the Collection's
-// hero stage beside Battlefront's front end), it's a second module in a
-// second host, mounted by the same page through a second useWorld and
-// drawn by the runtime's one renderer, as a handover's two worlds share
-// it: on WebGPU into its own host's canvas (the node renderer's
-// CanvasTarget), on WebGL 2, which draws one canvas a context, into a
-// target copied to its host. The runtime holds one world today; the
-// second (`beside`) is the runtime's to add, and until it has, the
-// showroom keeps its own renderer, drawn only while the yard is open and
-// counted among the measure's `renderers` (decided by lane FL2's universe
-// map, 2026-10-15: a copy is not what the showroom draws, so it is never
-// folded into the map's module).
+// One world a page, however many pictures it shows. A page with several 3D
+// pictures in several boxes at once (Middle-earth: the map behind the page,
+// a town's stage, the kitchen, the bridge, the Ring) mounts one module, in
+// the box the size of the largest (the map's, fixed to the window), and
+// its world draws each picture as a view of the one canvas (./views.js):
+// the busiest view has the canvas, the others a copy of what was drawn for
+// them. A second useWorld on the same page would take the runtime from the
+// first (a mount lets go of the world that was up), and a second renderer
+// is a second context: neither is how a page shows two pictures.
+// (The universe map's shipyard showroom, a ship on a turntable over the
+// map held still behind it, is such a picture: a view of the map's world,
+// and of the galaxy's where the yard opens there, once the views are on
+// main; until then it keeps its own renderer, drawn only while the yard is
+// open. Lane FL2's universe map, 2026-10-15.)
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { use3D } from '../lib/gpu';
