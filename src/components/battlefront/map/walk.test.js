@@ -4,13 +4,16 @@ import { addHeightfield } from '../../../lib/physics/heightfield.js';
 import BODY from '../../../data/bf2017/physics/soldier.json';
 import { classOf, loadRulebook } from '../../../lib/battlefront/rulebook.js';
 import { newSoldier } from '../../../lib/battlefront/soldier.js';
+import { buildNav } from '../../../lib/battlefront/nav.js';
+import { addPlayer, createSim, step } from '../../../lib/battlefront/sim.js';
 import { createWalker, fromPackFrame, toPackFrame } from './walk.js';
 
 const ROW = BODY.rows[BODY.default];
 // (a pack at Hoth's origin, turned none: the export's frame is the pack's shifted)
 const PACK = { origin: [205, 362.3, -1540], yaw: 0 };
 const DT = 1 / 30;
-const ASSAULT = classOf(loadRulebook(), 'd-orig-assault');
+const RB = loadRulebook();
+const ASSAULT = classOf(RB, 'd-orig-assault');
 const soldier = (at) => newSoldier(ASSAULT, { id: 'p', team: 2, at: [...at] });
 
 let physics;
@@ -87,6 +90,78 @@ describe('the player on the soldier’s body', () => {
     expect(p[0]).toBeCloseTo(10, 1);
     expect(p[2]).toBeCloseTo(-10, 1);
     w.dispose();
+    physics.remove(g);
+  });
+});
+
+// A hero on the body: the sim's own soldier (its drive, its jump's arc, its rush) moved by the walker, over a
+// navgrid whose ground is 40 m over the body's, as the mountain's snow is over Echo Base's floors
+describe('a hero on the soldier’s body', () => {
+  const EAST = Math.PI / 2;
+  const hero = (id = 'luke') => {
+    const sim = createSim({ rulebook: RB, nav: buildNav({ heightAt: () => PACK.origin[1] + 40, bounds: { min: [150, -1600], max: [260, -1480] } }), seed: 7 });
+    const s = sim.entities.get(addPlayer(sim, { team: 2, hero: id, at: PACK.origin, yaw: EAST }));
+    s.at = fromPackFrame(PACK, [0, 0, 0]);
+    const w = createWalker({ physics, pack: PACK, row: ROW, at: s.at });
+    s.mover = w.mover;
+    const run = (n, input) => {
+      for (let i = 0; i < n; i++) (step(sim, [{ id: s.id, look: EAST, move: [0, 0], ...input(i) }]), w.step());
+    };
+    // (stood on the ground first)
+    run(5, () => ({}));
+    return { sim, s, w, run };
+  };
+
+  it('walks by the hero’s drive: ahead at 4.725 m/s, backing off at 0.89 of it', () => {
+    const g = ground(-32, -32);
+    physics.world.step();
+    const { s, w, run } = hero();
+    const go = (move) => {
+      const a = s.at.slice();
+      run(10, () => ({ move }));
+      return Math.hypot(s.at[0] - a[0], s.at[2] - a[2]);
+    };
+    expect(go([1, 0])).toBeCloseTo(4.725 / 2, 1);
+    expect(go([-1, 0])).toBeCloseTo((4.725 * 0.89) / 2, 1);
+    w.dispose();
+    physics.remove(g);
+  });
+
+  it('jumps on the hero’s own arc and lands on the body’s ground, never on the grid’s', () => {
+    const g = ground(-32, -32);
+    physics.world.step();
+    const { s, w, run } = hero();
+    const floor = s.at[1];
+    let top = 0;
+    run(40, (i) => {
+      top = Math.max(top, s.at[1] - floor);
+      return { jump: i === 0 };
+    });
+    expect(top).toBeGreaterThan(3);
+    expect(top).toBeLessThan(5);
+    expect(s.hero.air).toBe(null);
+    expect(s.at[1]).toBeCloseTo(floor, 1);
+    w.dispose();
+    physics.remove(g);
+  });
+
+  it('rushes on the body: Luke’s dash carries him about 5 m and stops at a wall the grid knows nothing of', () => {
+    const g = ground(-32, -32);
+    physics.world.step();
+    const { s, w, run } = hero();
+    const from = toPackFrame(PACK, s.at);
+    run(30, (i) => ({ aim: fromPackFrame(PACK, [40, 1.4, 0]), ability: i === 0 ? 3 : 0 }));
+    const p = toPackFrame(PACK, s.at);
+    expect(p[0] - from[0]).toBeGreaterThan(4);
+    expect(Math.abs(p[1])).toBeLessThan(0.1);
+    w.dispose();
+    const wall = physics.add({ type: 'fixed', position: [2, 1, 0], group: 'object', colliders: [{ shape: 'cuboid', args: [0.1, 1, 5] }] });
+    physics.world.step();
+    const b = hero();
+    b.run(30, (i) => ({ aim: fromPackFrame(PACK, [40, 1.4, 0]), ability: i === 0 ? 3 : 0 }));
+    expect(toPackFrame(PACK, b.s.at)[0]).toBeLessThan(2 - 0.1 - ROW.radius + 0.05);
+    b.w.dispose();
+    physics.remove(wall);
     physics.remove(g);
   });
 });

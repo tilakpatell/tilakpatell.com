@@ -10,11 +10,11 @@
 // mask array and its hole mask (a WebGPU stage binds 16 textures, and the
 // sun's cascades, its distant cache and the probes take nine of them; the
 // shader's 18 maps would not fit), written at each size its tiers read
-// (tex/<slug>.<size>.ktx2). An array is one size: a map smaller than its
-// array is scaled up to it (the 1 m detail and the sparkle, 512 in the
-// export, in a 1024 array: 2 mm a texel either way), a bigger one down (the
-// packed smoothness, 2048), and the flow map, sRGB in the game, is decoded
-// to linear as it is packed (the GPU filters it linear either way). Slot
+// (tex/<slug>.<size>.ktx2). An array is one size: a map bigger than its
+// array is scaled down to it (the packed smoothness and the trampled snow,
+// 2048, in the data array), a smaller one up (the 1 m detail and the
+// sparkle, 512, in ultra's 1024), and the flow map, sRGB in the game, is
+// decoded to linear as it is packed (the GPU filters it linear either way). Slot
 // names are the listing's registers; three of them (t14, t16, t18) the RVM
 // database does not name, and findings/58 reads them from the shaders'
 // depots by elimination: t8 is SnowRough_03_N (every depot has it, and the
@@ -33,9 +33,28 @@
 // third darker than both, every layer edge a seam (findings/58;
 // src/data/bf2017/NOTES.md).
 
+// The ground's texel density by tier, as the game's tiers keep one: its
+// layers are drawn into the virtual texture's 256-texel tiles (findings/11,
+// 64), so what reaches the screen is the tile's density, never a map's own.
+// Here an array is the size that gives its maps' tilings the tier's
+// density: the 0.2–0.25 cycles a metre maps (and the 0.03 swells, which
+// keep every texel) at SIZES; the rough map with them, for its 0.08 read
+// (t16) keeps its texels too. The trampled snow, read at 0.5 alone, has
+// the density of the 4 m snow at half its size: it rides in the data array
+// with the 1 m detail and the sparkle (512 in the export), the packed
+// smoothness (2048, its streaks soft at any size) and the flow map. The
+// flow map is 1024 in the export and in the game (BC7_SRGB), read by the
+// tile pass at 0.08 × 0.04 a metre, far under any tile's density, so the
+// game shows all of it where Texture.SkipMipmapCount is 0 (findings/40):
+// ultra's data array is 1024 for it, as before; high's keeps 512, as
+// before (the site's tier). bf2-re/findings/64 measures each.
 const SIZES = { low: 512, mid: 512, high: 1024, ultra: 2048 };
+const DATA = { low: 512, mid: 512, high: 512, ultra: 1024 };
 
 // file slug → { kind, srgb, sizes, layers (the export's maps, in array order), linearised }
+// (every array UASTC, which a desktop gets as BC7: ETC1S, the site's small
+// encoding, is too lossy for a map seen close, docs/stack/assets-pipeline.md,
+// and the game keeps the rock colours as BC7 and BC1)
 export const SNOW_FILES = {
   hoth_snow_normals: {
     kind: 'normals',
@@ -48,17 +67,17 @@ export const SNOW_FILES = {
       't_arcticbase_snowwavey_02_n',
       't_arcticbase_snowchunkywind_01_n',
       't_arcticbase_snowroughpacked_03_n',
-      't_arcticbase_snowtrampled_01_n',
       't_arcticbase_snowrockypacked_04_n',
       't_arcticbase_snowrocky_02_n',
     ],
   },
   hoth_snow_colours: { kind: 'colours', srgb: true, sizes: SIZES, layers: ['t_arcticbase_snowrocky_04_c', 't_arcticbase_snowrocky_02_c'] },
+  // (SnowSmoothnessVirtualTexture_01_RGBM, t14, feeds only layer 2's material2, which the site does not draw: not packed)
   hoth_snow_data: {
     kind: 'data',
     srgb: false,
-    sizes: { low: 512, mid: 512, high: 512, ultra: 1024 },
-    layers: ['t_arcticbase_snowpackedsmoothness_01_rgbm', 't_arcticbase_snowsmoothnessvirtualtexture_01_rgbm', 't_arcticbase_snowdetail_01_n', 't_arcticbase_snowsparkle_03_rgbm', 't_blowingsnowflowmap_01_c'],
+    sizes: DATA,
+    layers: ['t_arcticbase_snowpackedsmoothness_01_rgbm', 't_arcticbase_snowdetail_01_n', 't_arcticbase_snowsparkle_03_rgbm', 't_blowingsnowflowmap_01_c', 't_arcticbase_snowtrampled_01_n'],
     linearised: ['t_blowingsnowflowmap_01_c'],
   },
 };
