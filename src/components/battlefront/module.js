@@ -478,7 +478,9 @@ export default {
         const kicked = rig.offset();
         read.yaw += kicked.yaw;
         read.pitch += kicked.pitch;
-        const v = view(sim);
+        // (the frame's lean view: the HUD's snapshot alone makes the deploy
+        // screen's rows, the squad's and the scoreboard, battle.js's view)
+        const v = view(sim, { lean: true });
         input.swallow(v.deploy.open);
         // (the first deploy is the waiting screen's, through the wipe: the input's Enter waits for it)
         const deploying = v.deploy.open && read.deploy && !parked;
@@ -515,7 +517,7 @@ export default {
         // no step and no deploy draws the view it began with: the view is
         // one object refilled, and building it three times a frame was the
         // world's own main-thread cost)
-        const after = stepped > 0 || deploying ? view(sim) : v;
+        const after = stepped > 0 || deploying ? view(sim, { lean: true }) : v;
         if (stepped > 0) director.update(after, heard, stepped, { waiting: parked });
         // (the doors moved before the world steps: a leaf's body goes where it is drawn; the
         // gates' run is lib/battlefront/gates.js's, through Galactic Assault's view where the

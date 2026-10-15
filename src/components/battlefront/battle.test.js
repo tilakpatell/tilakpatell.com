@@ -20,6 +20,38 @@ describe('the battle on the sim in its own mode, with the page’s deploy screen
     expect(v.mode.stageName).toBe('TAKE OUT ANY THREATS TO THE AT-ATS');
   });
 
+  // (the frame's own view, asked for every frame and by the director twenty
+  // times a second: only what they draw from, the deploy screen's offers and
+  // spawns, the squad's rows and the scoreboard left to the HUD's view, and
+  // that one's left as it was: the every-world hand-off's performance item 7)
+  it('a lean view, the frame’s, says whether the deploy screen is open and makes none of the screens’ rows', () => {
+    const b = make();
+    addPlayer(b, { team: 2 });
+    const full = view(b);
+    const { offers, spawns } = full.deploy;
+    const { squad, scoreboard } = full;
+    const lean = view(b, { lean: true });
+    expect(lean.deploy.open).toBe(true);
+    expect(lean.deploy.team).toBe(2);
+    expect(lean.deploy.offers).toBeUndefined();
+    expect(lean.squad).toBe(squad);
+    expect(lean.scoreboard).toBe(scoreboard);
+    // (the full view's rows, held by the HUD's snapshot, untouched)
+    expect(offers.length).toBeGreaterThan(0);
+    expect(spawns[0].kind).toBe('hq');
+    expect(view(b).deploy.offers.map((o) => o.id)).toEqual(offers.map((o) => o.id));
+  });
+
+  it('keeps each soldier’s velocity in one pair, filled again by each view', () => {
+    const b = make();
+    addPlayer(b, { team: 2 });
+    deploy(b, 'player', { classId: 'd-orig-assault' });
+    const e = view(b, { lean: true }).entities[0];
+    const vel = e.vel;
+    expect(vel).toHaveLength(2);
+    expect(view(b, { lean: true }).entities[0].vel).toBe(vel);
+  });
+
   it('deploys the player into the sim as a soldier of the class picked, on the navgrid', () => {
     const b = make();
     addPlayer(b, { team: 2 });
