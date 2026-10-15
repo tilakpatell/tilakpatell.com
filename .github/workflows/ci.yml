@@ -5,8 +5,8 @@ name: CI
 # red check stops any merge from deploying something broken (deploy.yml runs
 # the same steps again on main before it publishes). Beside it, the AI's
 # tests, the multiplayer's two-browser check (evidence, not a gate), and
-# the Star Wars worlds booted on the node renderer (a gate: every world up,
-# no error; the rows reported).
+# three of the Star Wars worlds booted on the node renderer (a gate: each
+# world up, no error; the rows reported; all seventeen nightly, worlds.yml).
 on:
   pull_request:
     branches: [main]
@@ -51,81 +51,17 @@ jobs:
       # its budget is a red check, the same as a failing test (docs/health)
       - run: node scripts/health.mjs --check --skip build
 
-  # The Star Wars worlds on the node renderer (the picture-everywhere design,
-  # lane T2): each of the seventeen surfaces booted at high in software GL
-  # (SwiftShader has no WebGPU, so it is the node renderer over WebGL 2,
-  # 'nodes-webgl'), held to its row of the budget table and its baseline
-  # (scripts/galaxy-check.mjs BUDGET=1): no page error, no console error,
-  # draw calls, triangles and models within the row. A job a world, as a
-  # world with a level pack takes minutes to come up in software. The gate is
-  # that every world comes up and says no error (scripts/lib/noise.mjs's
-  # noise aside); the rows are reported, not held (BUDGET_REPORT=1): a frame
-  # through the node renderer's whole chain takes minutes on a runner's
-  # software GL and its cascades' frame cannot be counted there (Hoth at
-  # high, 2026-10-11), so the frame numbers are the owner's laptop run's
-  # (docs/superpowers/evidence/bf2017-picture/t2/README.md).
+  # The Star Wars worlds on the node renderer (worlds.yml): on a pull
+  # request three of the seventeen, a gate (each world up, no error; the
+  # rows reported): Hoth, the world with the game's level, its own picture
+  # and the cascades, and two without a pack, on the site's Rapier ground
+  # (surface/sitePhysics.js). All seventeen run nightly and by hand, as the
+  # seventeen took CI past twenty minutes (worlds.yml says why).
   worlds:
-    name: Worlds on the node renderer (${{ matrix.world }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 150
-    continue-on-error: false
-    strategy:
-      fail-fast: false
-      matrix:
-        # (a world a job: a frame of a whole level takes 5 to 50 s in software
-        # GL, so eight worlds in one 150-minute job never all came round, on
-        # 6e46fde0 shard 1 measured seven and shard 2 three before the limit,
-        # Geonosis alone 57 minutes; one each, a slow world keeps no other
-        # from being measured. Tatooine's has its own reason too: since its
-        # pack (#910) nearly every one of its materials compiles its own
-        # program, 369 for 379 against Hoth's 141 for 564, each a synchronous
-        # link in SwiftShader. docs/superpowers/evidence/bf2017-picture/t2/README.md)
-        world: [hoth, endor, yavin, bespin, dagobah, mustafar, coruscant, naboo, kashyyyk, kamino, geonosis, scarif, nevarro, mandalore, lothal, sorgan, tatooine]
-      # (DRAW_WAIT, 50 minutes: a world is prepared out of sight before it
-      # shows, a slice of its pictures and shaders a frame, and a frame of
-      # Tatooine's whole level takes 15 to 20 s here; its warm-up took most
-      # of a 54-minute run on 2026-10-11 against the 10-minute default.
-      # A ceiling, not a wait: a world that comes up sooner goes on)
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-      - run: npx playwright-core install --with-deps chromium
-
-      # the dev server with the public bucket (a variable, not a secret) as
-      # the asset base, as the deploy builds it, and a wait till it answers.
-      # (bound to 127.0.0.1, where galaxy-check asks: on the runner
-      # `localhost` answers on ::1 alone, and the check found nothing there)
-      - run: |
-          npx vite --host 127.0.0.1 --port 5188 > vite.log 2>&1 &
-          for i in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:5188/ > /dev/null; then exit 0; fi
-            sleep 2
-          done
-          cat vite.log
-          exit 1
-        env:
-          VITE_ASSET_BASE: ${{ vars.ASSET_BASE }}
-
-      - shell: bash
-        run: |
-          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 BUDGET_REPORT=1 QUALITY=high VIEW=640x360 SHOT_WAIT=900000 PHASE_WAIT=900000 DRAW_WAIT=3000000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.world }} 2>&1 | tee worlds-check.log
-          exit ${PIPESTATUS[0]}
-
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: worlds-${{ matrix.world }}
-          path: |
-            worlds/
-            worlds-check.log
-            vite.log
-          if-no-files-found: ignore
+    name: Worlds
+    uses: ./.github/workflows/worlds.yml
+    with:
+      worlds: '["hoth","dagobah","coruscant"]'
 
   # The AI and the models (scripts/ai-e2e/README.md): the pipelines with
   # fake engines, the shipped assets, the brains, the agent's guards. A job
