@@ -45,7 +45,9 @@ import { matcher, splitTable } from "./doorsTable.js";
 // pack does not name its interior.
 export const INSIDE = { hoth: 'base' };
 // The levels' mode parts (scripts/bf2017-level.mjs --district <name> --part:
-// a mode's sub-level), by mode, by hand: Galactic Assault's on Hoth
+// a mode's sub-level), by mode, by hand: Galactic Assault's on Hoth (the pack
+// /models/galaxy/bf2017/levels/hoth/ga/level.json, `node scripts/bf2017-level.mjs
+// levels/mp/hoth_01 --world hoth --district ga --subs FantasyBattle --spot 205 -1540 --part`)
 export const MODES = { hoth: { galacticAssault: 'ga' } };
 
 export function toPack(pack, [x, , z]) {

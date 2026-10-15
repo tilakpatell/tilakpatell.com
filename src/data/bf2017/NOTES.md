@@ -322,7 +322,8 @@ Read 2026-10-14 from the FantasyBattle sub-world (bf2-re findings/61). Every doo
 - **The walls' groups**: the CharacterCollisionGeometry layer (78 of the 104) as the physics groups' `barrier` (a character meets it; the camera's sweep, a bolt's flight and a sight do not), from findings/46's pair table (layer 19 meets 9, 14, 20, 29 only); the Static layer's as the floor.
 - **What is never drawn in a round**: the end of round's room inside `PF_GameMode_Conquest_Staged` (`PF_EOR_*`, the nowhere dome, the star cards) and everything under `PF_VehicleSpawner_AT-AT_MP` (the walker's destruction stages and its fall's dressing, played where the walker falls; the site's walker is the escort's own).
 - **The static group** (`FantasyBattle#StaticModelGroupEntityData[16]`: 15 instances, 4 corridor side doors that never open, 3 E-Web box ruins, 2 gate rubbles, 6 droids) stands: a group's member is switched by nothing.
-- **Not yet**: the gates open by `lib/battlefront/gates.js` (the main session's), shut until it lands; no vehicle the site has is destroyed, so no wreck or ruin shows; the HH-12 pickups show by the level's graph, never picked up.
+- **The gates** open by `lib/battlefront/gates.js`, through Galactic Assault's view (`view().mode.gates`: each one's state and open fraction); the leaves are drawn at that fraction.
+- **Not yet**: no vehicle the site has is destroyed, so no wreck or ruin shows; the HH-12 pickups show by the level's graph, never picked up.
 
 ## Echo Base's light (`maps/hoth.lighting.json`'s `areas` and `patches`; `lib/three/light/inside.js`, `apply.js`, `probes.js`; `battlefront/baseLight.js`, `weather.js`)
 
