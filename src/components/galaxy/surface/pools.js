@@ -17,7 +17,7 @@ export const POOLS = {
   bespin: ['civcity1', 'civcity3'],
 };
 
-export const POOLED = new Set(['villager', 'farmer', 'caretaker', 'jocasta', 'zam']);
+const POOLED = new Set(['villager', 'farmer', 'caretaker', 'jocasta', 'zam']);
 
 export function poolFor(kind, world, i = 0) {
   const pool = POOLED.has(kind) ? POOLS[world] : null;

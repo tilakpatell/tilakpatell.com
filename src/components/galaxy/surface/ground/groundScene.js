@@ -39,7 +39,7 @@ import { weaponOf } from '../weaponRules';
 export const BRAINS = 120; // metres from you past which nobody is stepped (its cell holds it)
 export const BOLTS = 60; // metres from you within which soldiers' bolts fly; past it, farExchange
 export const YOURS = 34; // a soldier's hp a point of your gun's damage is worth (the assault's)
-export const RAGDOLL = 40; // metres from you within which the dead fall as ragdolls (high and ultra)
+const RAGDOLL = 40; // metres from you within which the dead fall as ragdolls (high and ultra)
 const SQUADS = 0.5; // seconds between the squads' looks at their nerve, and the far fights' exchanges
 const AIM = 2.5; // how wide blaster.enemy's spread is to the fight's aim error
 const SPEED = 90; // m/s, a soldier's bolt
