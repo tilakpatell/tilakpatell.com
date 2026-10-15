@@ -87,7 +87,7 @@ const TARGETS = [
   { id: 'titan', route: '/avengers', scroll: '#thanos', engine: 'window.__HQ__?.titan?.view?.engine' },
   { id: 'invworld', route: '/invincible', engine: 'window.__INVWORLD__?.api?.engine' },
   { id: 'thinkmark', route: '/invincible', scroll: '#inv-game', engine: 'window.__HQ__?.thinkmark?.view?.engine' },
-  { id: 'viewer', route: '/invincible', scroll: '#inv-cast', engine: null, canvas: '#inv-cast canvas' },
+  { id: 'viewer', route: '/invincible', scroll: '#inv-cast', engine: null, canvas: '#inv-cast canvas', ready: '#inv-cast .hq-canvas[data-on]' },
 ];
 const only = typeof args.only === 'string' ? args.only.split(',') : null;
 const targets = TARGETS.filter((t) => !only || only.includes(t.id));
@@ -143,6 +143,20 @@ async function shoot(browser, base, t) {
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(`page error: ${e.message.split('\n')[0]}`));
+  // what's on its way over the network: a frame waits for it to land, so
+  // a model or a picture arriving mid-game arrives at the same frame each
+  // run (a figure's pose runs from when it's in)
+  const inflight = new Set();
+  page.on('request', (r) => inflight.add(r));
+  for (const ev of ['requestfinished', 'requestfailed']) page.on(ev, (r) => inflight.delete(r));
+  const quiet = async () => {
+    const t0 = Date.now();
+    let calm = 0;
+    while (calm < 3 && Date.now() - t0 < 30000) {
+      await page.waitForTimeout(50);
+      calm = inflight.size ? 0 : calm + 1;
+    }
+  };
   await page.clock.install({ time: CLOCK });
   await page.clock.pauseAt(new Date(CLOCK.getTime() + 1000));
   await page.goto(`${base}/?quality=${quality}#${t.route}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
@@ -191,10 +205,7 @@ async function shoot(browser, base, t) {
           performance.now = () => raw() + off;
           e.render = function (...a) {
             window.__fl2n++;
-            if (window.__fl2n === 1) {
-              off = 600000 - raw();
-              window.__fl2seed(0x51ed);
-            }
+            if (window.__fl2n === 1) off = 600000 - raw();
             return f.apply(this, a);
           };
           e.__fl2 = true;
@@ -216,17 +227,27 @@ async function shoot(browser, base, t) {
       }
       if (counted >= FRAMES) break;
       if (late()) throw new Error(`${t.id}: stuck at ${counted} frames`);
+      // (seeded again before each frame until its first, so the first draws
+      // from the same place whatever the loading took)
+      await quiet();
+      if (!counted) await page.evaluate(() => window.__fl2seed(0x51ed));
       await step(counted ? 50 : 25);
     }
   } else {
+    // (from the moment it's shown: the figure in, its screen faded up)
+    while (!(await page.evaluate((sel) => Boolean(document.querySelector(sel)), t.ready))) {
+      if (late()) throw new Error(`${t.id}: never shown`);
+      await step();
+    }
     const presents = () => page.evaluate((sel) => document.querySelector(sel)?.__presents ?? 0, t.canvas);
     let last = await presents();
     while (counted < FRAMES) {
       if (late()) throw new Error(`${t.id}: stuck at ${counted} frames`);
+      await quiet();
+      if (!counted) await page.evaluate(() => window.__fl2seed(0x51ed));
       await step(counted ? 50 : 25);
       const now = await presents();
       if (now > last) counted++;
-      if (counted === 1 && now > last) await page.evaluate(() => window.__fl2seed(0x51ed));
       last = now;
     }
   }
