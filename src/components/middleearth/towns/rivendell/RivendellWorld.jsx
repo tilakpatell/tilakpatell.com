@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../../Achievements';
 import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { useTick } from '../../tick';
+import { engine } from '../../module';
 import { sayVoiced, stopVoiced } from '../../../../lib/voiced';
 import { readPad, typing } from '../../../games/pad';
 import { stepGaze } from '../../shire/rules';
@@ -190,8 +192,8 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    import('./scene')
-      .then(({ createRivendellWorld }) => {
+    Promise.all([import('./scene'), engine()])
+      .then(([{ createRivendellWorld }]) => {
         if (dead || !canvas.current) return null;
         return createRivendellWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
@@ -551,7 +553,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
   }, [box, live, putRing, talkOnward, doAct, doShard, doRiddle, leaveRiddles]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -782,7 +784,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
     }
     if (++s.frame % 4 === 0 && s.mode === 'walk') drawMap(map.current, { scale: MAP_SCALE, h: s.h, markers, night: p.sky === 'dusk', base: drawValley });
     if (s.frame % 120 === 0 && s.mode === 'walk') local.set(AT, { x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // the world's own pointer: drag to look round
   const drag = useRef(null);

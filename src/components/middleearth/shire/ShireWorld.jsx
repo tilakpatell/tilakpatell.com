@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../Achievements';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
-import { local, prefersReducedMotion, useFrameLoop, useInView, useMediaQuery } from '../../../lib/hooks';
+import { local, prefersReducedMotion, useInView, useMediaQuery } from '../../../lib/hooks';
+import { useTick } from '../tick';
+import { engine } from '../module';
 import { sayVoiced, stopVoiced } from '../../../lib/voiced';
 import { useVoiced } from '../../../lib/useVoiced';
 import { readPad, typing } from '../../games/pad';
@@ -203,8 +205,8 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    import('./scene')
-      .then(({ createShireWorld }) => {
+    Promise.all([import('./scene'), engine()])
+      .then(([{ createShireWorld }]) => {
         if (dead || !canvas.current) return null;
         // (with motion turned down, the leaves lie as they fell)
         return createShireWorld(canvas.current, { onLost: () => !dead && setGl('lost'), reduced: prefersReducedMotion() });
@@ -428,7 +430,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
   }, [box, live, near, enter, leave, act, putRing]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -760,7 +762,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
     }
     if (++s.frame % 4 === 0) drawMap(map.current, s.h, markers, p, s.spoons ? lobelia : null);
     if (s.frame % 120 === 0) local.set(AT, { x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // the world's own pointer: drag to look round; in an activity, aim and act
   const drag = useRef(null);

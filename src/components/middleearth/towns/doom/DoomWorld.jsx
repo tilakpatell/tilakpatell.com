@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../../Achievements';
 import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { useTick } from '../../tick';
+import { engine } from '../../module';
 import { sayVoiced, stopVoiced } from '../../../../lib/voiced';
 import { readPad, typing } from '../../../games/pad';
 import { Convo, QuestList, Stick, Travellers } from '../TownHud';
@@ -143,8 +145,8 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    import('./scene')
-      .then(({ createDoomWorld }) => {
+    Promise.all([import('./scene'), engine()])
+      .then(([{ createDoomWorld }]) => {
         if (dead || !canvas.current) return null;
         return createDoomWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
@@ -457,7 +459,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
   }, [box, live, talkOnward, doAct, doStep, sayBack, leaveRemember, startRemember]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -673,7 +675,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       setHud({ zone: s.zone, mode: s.mode, near: s.near, moved: s.moved, talking: s.talking, line: s.talk?.at ?? null, hidden: Boolean(s.hidden), march: m ? { off: m.off, pace: m.pace, lashes: m.lashes, t: m.t } : null, search: se ? { seen: se.seen } : null, carry: c ? { s: c.s, tremor: c.tremorT > 0, last: c.last } : null, hang: g ? { grip: g.grip, arm: g.arm, phase: g.phase } : null, flight: f ? { s: f.s, hits: f.hits } : null, recall: rc ? { phase: rc.phase, round: rc.round, said: rc.said, slips: rc.slips, state: rc.state, telling: telling(rc), say: s.said } : null });
     }
     if (++s.frame % 120 === 0 && s.mode === 'walk' && s.search) local.set(AT, { zone: 'plain', x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // look round by dragging; the stick on touch
   const drag = useRef(null);

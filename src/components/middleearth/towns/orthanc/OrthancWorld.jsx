@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../../Achievements';
 import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { useTick } from '../../tick';
+import { engine } from '../../module';
 import { sayVoiced, stopVoiced } from '../../../../lib/voiced';
 import { readPad, typing } from '../../../games/pad';
 import { Convo, QuestList, Stick, Travellers } from '../TownHud';
@@ -139,8 +141,8 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    import('./scene')
-      .then(({ createOrthancWorld }) => {
+    Promise.all([import('./scene'), engine()])
+      .then(([{ createOrthancWorld }]) => {
         if (dead || !canvas.current) return null;
         return createOrthancWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
@@ -444,7 +446,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
   }, [box, live, talkOnward, doAct, doBlock, doPush, doLeap]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -674,7 +676,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
       setHud({ zone: s.zone, mode: s.mode, near: s.near, moved: s.moved, talking: s.talking, line: s.talk?.at ?? null, inLibrary: s.zone === 'hall' && s.h.x > LIB.x0, gaze: g ? { seen: g.seen, notice: g.notice, phase: g.phase, looking: g.looking } : null, duel: du ? { phase: du.phase, will: du.will, pushes: du.pushes, blockable: blockable(du) } : null, climb: c ? { s: c.s } : null, moth: m ? { x: m.x, hand: m.hand, settle: m.settle, rising: m.warned } : null, leap: l ? { under: l.under, coming: l.warned } : null });
     }
     if (++s.frame % 120 === 0 && s.mode === 'walk' && (s.zone === 'hall' || s.zone === 'top')) local.set(AT, { zone: s.zone, x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // look round by dragging; the stick on touch
   const drag = useRef(null);

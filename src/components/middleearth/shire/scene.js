@@ -14,7 +14,7 @@
 // the ground lie as they fell.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../../lib/stage3d';
+import { createStage, disposeTree } from '../stage';
 import { bake, dotTexture, farTree } from '../towns/bake';
 import { createGhosts } from '../towns/ghosts';
 import { budget, device } from '../../../lib/device';

@@ -19,6 +19,16 @@
 // (rt.unmount) a tick after the last page holding its module lets go, so
 // a handover's page can leave first and React's second run of an effect
 // in development keeps what the first one had.
+//
+// One world a page, however many pictures it shows. A page with several 3D
+// pictures in several boxes at once (Middle-earth: the map behind the page,
+// a town's stage, the kitchen, the bridge, the Ring) mounts one module, in
+// the box the size of the largest (the map's, fixed to the window), and
+// its world draws each picture as a view of the one canvas (./views.js):
+// the busiest view has the canvas, the others a copy of what was drawn for
+// them. A second useWorld on the same page would take the runtime from the
+// first (a mount lets go of the world that was up), and a second renderer
+// is a second context: neither is how a page shows two pictures.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { use3D } from '../lib/gpu';

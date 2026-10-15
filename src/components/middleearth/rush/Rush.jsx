@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../lib/hooks';
+import { useTick } from '../tick';
+import { engine } from '../module';
 import { sayVoiced, stopVoiced } from '../../../lib/voiced';
 import { createCooldownPress, pressGroups } from '../../../lib/press';
 import { readPad, typing } from '../../games/pad';
@@ -114,8 +116,8 @@ function Kitchen({ level, live, invite }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    import('./scene')
-      .then(({ createRushScene }) => {
+    Promise.all([import('./scene'), engine()])
+      .then(([{ createRushScene }]) => {
         if (dead || !canvas.current) return;
         api.current = createRushScene(canvas.current, level, { onLost: () => !dead && setGl('failed') });
         if (import.meta.env.DEV) window.__RUSH__ = { api: api.current, sim: sim.current }; // for the QA scripts
@@ -330,7 +332,7 @@ function Kitchen({ level, live, invite }) {
   };
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const sm = sim.current;
@@ -449,7 +451,7 @@ function Kitchen({ level, live, invite }) {
       hudKey.current = key;
       setHud({ left: s.left, coins: s.coins, count: Math.ceil(sm.count), orders: s.orders.map((o) => ({ ...o })), served: s.served, lapsed: s.lapsed, stars: starsOf(s), marks: starsFor(s) });
     }
-  }, live && gl === 'on');
+  }, live && gl === 'on', { canvas });
 
   // the touch controls
   const onStick = (x, y) => (sim.current.stick = { x, y });

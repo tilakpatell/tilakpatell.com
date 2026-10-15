@@ -736,7 +736,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       // (the budget first: a world mounted next is built at the new level)
       quality.retune?.(level);
       if (!current || rt.loading) return 'idle';
-      if (gfx) gfx.setRatio?.(ratioFor(current.module));
+      // (a module that keeps its canvas, `sharpness: 'own'`, softens through
+      // its own passes: a resize here, outside a frame, showed it cleared)
+      if (gfx && current.module.sharpness !== 'own') gfx.setRatio?.(ratioFor(current.module));
       const { world, module } = current;
       const tune = world.onQuality ? () => world.onQuality(level) : module.onQuality ? () => module.onQuality(level, world, rt) : null;
       if (!tune) return 'reload';
@@ -776,7 +778,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     sharpen(k) {
       quality.setSharpness?.(k);
       if (gfx && current) {
-        gfx.setRatio?.(ratioFor(current.module));
+        if (current.module.sharpness !== 'own') gfx.setRatio?.(ratioFor(current.module));
         loop.kick();
       }
     },

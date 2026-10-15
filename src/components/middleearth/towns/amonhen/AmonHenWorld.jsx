@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../../Achievements';
 import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { useTick } from '../../tick';
+import { engine } from '../../module';
 import { sayVoiced, stopVoiced } from '../../../../lib/voiced';
 import { readPad, typing } from '../../../games/pad';
 import { Bubble, Convo, QuestList, Stick, Travellers } from '../TownHud';
@@ -158,8 +160,8 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    import('./scene')
-      .then(({ createAmonHenWorld }) => {
+    Promise.all([import('./scene'), engine()])
+      .then(([{ createAmonHenWorld }]) => {
         if (dead || !canvas.current) return null;
         return createAmonHenWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
@@ -442,7 +444,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
   }, [box, live, talkOnward, doAct, doSkip, otherStone, leaveSkipping]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -708,7 +710,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       } else bubbleRef.current.style.opacity = '0';
     }
     if (++s.frame % 120 === 0 && s.mode === 'walk' && !s.ring && !s.uruks) local.set(AT, { x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // look round by dragging; the stick on touch
   const drag = useRef(null);

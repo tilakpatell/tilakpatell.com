@@ -23,6 +23,8 @@ import { prefersReducedMotion, useDocumentTitle } from '../lib/hooks';
 import '@fontsource/cinzel/600.css';
 import ScriptToggle from '../components/ScriptToggle';
 import ClipBoard from '../components/worlds/ClipBoard';
+import { useWorld } from '../runtime';
+import middleEarth, { askAgain, refuse } from '../components/middleearth/module';
 import '../styles/lazy/middleearth.css';
 
 const sfx = () => import('../lib/sfx');
@@ -100,6 +102,17 @@ export default function MiddleEarth() {
   const navigate = useNavigate();
   useDocumentTitle(here ? `${here.name} · Middle-earth` : 'Middle-earth');
   useSectionThemes();
+  // the one renderer and loop every picture on the page draws with (the
+  // runtime's), in the map's box; without it the pictures show their drawings
+  const world = useWorld(middleEarth);
+  // (refused only for good: no 3D at all, or this page's own mount failed
+  // or was lost, not a status left over from the page before)
+  const tried = useRef(false);
+  useEffect(() => {
+    if (world.status === 'loading') tried.current = true;
+    if (world.meant) askAgain();
+    else if (world.status === 'idle' || tried.current) refuse();
+  }, [world.meant, world.status]);
   const api = useRef(null);
   const frame = useRef(null);
   const [hover, setHover] = useState(null);
@@ -217,6 +230,7 @@ export default function MiddleEarth() {
   return (
     <div className="me-page relative" data-opening={opening || undefined} data-chapter={here?.id} data-flying={flying || undefined}>
       <MapBackdrop
+        host={world.host}
         api={api}
         onFrame={() => frame.current?.()}
         spot={spotAt}

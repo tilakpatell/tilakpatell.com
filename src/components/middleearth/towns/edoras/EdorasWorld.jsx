@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../../Achievements';
 import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { useTick } from '../../tick';
+import { engine } from '../../module';
 import { readPad, typing } from '../../../games/pad';
 import { Convo, QuestList, Stick, Travellers } from '../TownHud';
 import { keyDown, keyUp, moveOf, ownButton } from '../keys';
@@ -160,8 +162,8 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    import('./scene')
-      .then(({ createEdorasWorld }) => {
+    Promise.all([import('./scene'), engine()])
+      .then(([{ createEdorasWorld }]) => {
         if (dead || !canvas.current) return null;
         return createEdorasWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
@@ -528,7 +530,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
   }, [box, live, talkOnward, doAct]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -720,7 +722,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
       setHud({ zone: s.zone, mode: s.mode, near: s.near, moved: s.moved, talking: s.talking, line: s.talk?.at ?? null, picked: s.picked.length, carrying: s.carrying, brawl: b ? { felled: b.felled, reached: b.reached } : null, drink: d ? { drinks: d.drinks, spills: d.spills, legolas: d.legolas, state: d.state } : null });
     }
     if (++s.frame % 120 === 0 && s.mode === 'walk' && (s.zone === 'hill' || s.zone === 'hall')) local.set(AT, { zone: s.zone, x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // look round by dragging; the stick on touch
   const drag = useRef(null);
