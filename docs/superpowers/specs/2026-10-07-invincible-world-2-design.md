@@ -2,7 +2,7 @@
 
 Date: 2026-10-07. The ask, in the owner's words: the Invincible world “is hard to see, has bugs, and nothing to do and needs better NPC AI, missions, everything”. The references given were igloo.inc and bruno-simon.com: worlds that read at a glance, feel good to move in, and always have something next to do. Merge to main as it is built, one pull request per part.
 
-Part 1 is `2026-10-05-invincible-world-design.md` and its hand-off `docs/superpowers/HANDOFF-invincible-world.md`: the city, the flying, space, the Flaxans, Dad's rings, the title cards and the rescues. This part does not restructure any of it. It fixes what is wrong, makes the city legible, gives the people brains, and puts a season of missions on top of what exists.
+Part 1 is `2026-10-05-invincible-world-design.md` and its hand-off `docs/superpowers/HANDOFF-worlds.md`: the city, the flying, space, the Flaxans, Dad's rings, the title cards and the rescues. This part does not restructure any of it. It fixes what is wrong, makes the city legible, gives the people brains, and puts a season of missions on top of what exists.
 
 ## What is wrong today (seen in headless Chromium on 2026-10-07)
 
@@ -179,4 +179,4 @@ Interiors, online ghosts, the runtime move, voice lines, a second season, phone 
 - Pure modules, tests first: `brains.test.js`, `companions.test.js`, `foes.test.js` (the Flaxan tests from `fight.test.js` move here unchanged), `missions.test.js`, `hud.test.js`. Each mission is walked end to end in a test by feeding events; every marker is on open ground or in the air; every step's `npc` and `kind` exists.
 - `scripts/inv-world-check.mjs`: new shots `bank chase seismic maulers eveescort dadlesson gdasiege photo` and `--metrics`; the shots for the hand-off go in `docs/superpowers/shots/2026-10-07-inv-*.webp`.
 - `npm run lint`, `npm test`, `npm run build` before each merge; no console errors in the shots.
-- The hand-off `docs/superpowers/HANDOFF-invincible-world.md` is updated at each merge with what is done, the metrics, and what is left.
+- The hand-off `docs/superpowers/HANDOFF-worlds.md` is updated at each merge with what is done, the metrics, and what is left.

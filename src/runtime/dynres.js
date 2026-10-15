@@ -23,7 +23,7 @@
 //
 // createDynres({ budgetMs, headroom, threshold, minPeriod, history, panic,
 //   floor, ceiling, steps }) → { frame(gpuMs) → the new scale | null, scale,
-//   level, frames, set(level), reset() }
+//   level, floored, frames, set(level), reset() }
 // dynresFor({ tier, fps }) → the options for a tier and a pinned rate
 // `level` is the index into `steps` (RESOLUTION_STEPS: 1, .77, .67, .5), the
 // level headroomAt takes; steps outside floor…ceiling are never used.
@@ -60,16 +60,41 @@ const isT0 = (tier) => tier === 'T0';
 
 export function dynresFor({ tier = null, fps = null } = {}) {
   return {
-    budgetMs: fps === 30 || isT0(tier) ? DYNRES_30.budgetMs : DYNRES.budgetMs,
+    // (T0 aims at 60 too, under its lower floor: the cadence takes it to 30 when it cannot)
+    budgetMs: fps === 30 ? DYNRES_30.budgetMs : DYNRES.budgetMs,
     floor: isT0(tier) ? FLOOR_T0.floor : DYNRES.floor,
   };
 }
 
-const median = (xs) => {
-  const s = xs.slice().sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-};
+// The history kept sorted as it goes, a value put in and the oldest taken
+// out each frame, so its median is read, not sorted: a sorted copy every
+// frame once the history was full was garbage on the runtime's path (the
+// every-world hand-off's performance item 2). Moves in place, nothing made.
+function sortedRun() {
+  const xs = [];
+  return {
+    xs,
+    add(v) {
+      let i = xs.length;
+      xs.push(v);
+      while (i > 0 && xs[i - 1] > v) {
+        xs[i] = xs[i - 1];
+        i--;
+      }
+      xs[i] = v;
+    },
+    drop(v) {
+      const i = xs.indexOf(v);
+      if (i < 0) return;
+      for (let k = i; k < xs.length - 1; k++) xs[k] = xs[k + 1];
+      xs.length -= 1;
+    },
+    median() {
+      const m = xs.length >> 1;
+      return xs.length % 2 ? xs[m] : (xs[m - 1] + xs[m]) / 2;
+    },
+  };
+}
 
 export function createDynres({ budgetMs = DYNRES.budgetMs, headroom = DYNRES.headroom, threshold = DYNRES.threshold, minPeriod = DYNRES.minPeriod, history = DYNRES.history, panic = DYNRES.panic, floor = DYNRES.floor, ceiling = DYNRES.ceiling, steps = STEPS } = {}) {
   const top = Math.min(1, ceiling);
@@ -78,6 +103,7 @@ export function createDynres({ budgetMs = DYNRES.budgetMs, headroom = DYNRES.hea
   if (!usable.length) usable.push([steps.at(-1), steps.length - 1]);
   const target = budgetMs * (1 - headroom);
   const costs = []; // ms ÷ scale², the latest `history`
+  const run = sortedRun(); // the same, in order
   let at = 0; // index into usable
   let since = 0; // frames since the last change
   let over = 0; // frames in a row over the budget
@@ -98,6 +124,7 @@ export function createDynres({ budgetMs = DYNRES.budgetMs, headroom = DYNRES.hea
   const reset = () => {
     at = 0;
     costs.length = 0;
+    run.xs.length = 0;
     since = 0;
     over = 0;
   };
@@ -108,6 +135,10 @@ export function createDynres({ budgetMs = DYNRES.budgetMs, headroom = DYNRES.hea
     },
     get level() {
       return usable[at][1];
+    },
+    // (at the floor: nothing left to lower)
+    get floored() {
+      return at === usable.length - 1;
     },
     get frames() {
       return costs.length;
@@ -124,8 +155,10 @@ export function createDynres({ budgetMs = DYNRES.budgetMs, headroom = DYNRES.hea
         return null;
       }
       const s = scale();
-      costs.push(ms / (s * s));
-      if (costs.length > history) costs.shift();
+      const c = ms / (s * s);
+      costs.push(c);
+      run.add(c);
+      if (costs.length > history) run.drop(costs.shift());
       since += 1;
       over = ms > budgetMs ? over + 1 : 0;
       if (over >= panic) {
@@ -134,7 +167,7 @@ export function createDynres({ budgetMs = DYNRES.budgetMs, headroom = DYNRES.hea
         return down === null ? null : go(down);
       }
       if (costs.length < history || since < minPeriod) return null;
-      const cost = median(costs);
+      const cost = run.median();
       const now = cost * s * s;
       if (now > target) {
         let pick = null;

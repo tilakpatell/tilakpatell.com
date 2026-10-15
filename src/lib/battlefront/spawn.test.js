@@ -28,6 +28,14 @@ describe('spawning', () => {
     expect(d).toBeGreaterThan(50);
   });
 
+  it('takes a point given beside the set’s, a held post’s, by its priority and only while it is safe', () => {
+    const post = { id: 'post', mode: 'galacticAssault', team: 0, priority: 9, at: [150, 0, 150], yaw: 1 };
+    expect(pickSpawn({ map: map(), ids: ['A'], team: 1, rand: () => 0, extra: [post] })).toEqual({ at: [150, 0, 150], yaw: 1 });
+    // (an enemy on the post: the side's own points again)
+    expect(pickSpawn({ map: map(), ids: ['A'], team: 1, enemies: [[150, 160]], rand: () => 0, extra: [post] }).at).toEqual([10, 0, 10]);
+    expect(pickSpawn({ map: map(), ids: ['A'], team: 1, rand: () => 0, extra: [] }).at).toEqual([10, 0, 10]);
+  });
+
   it('returns null only for a set with nothing in it', () => {
     expect(pickSpawn({ map: map(), ids: ['nope'], team: 1 })).toBe(null);
   });

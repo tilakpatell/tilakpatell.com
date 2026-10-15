@@ -17,7 +17,8 @@
 // from the address to the last mark; each step's `ms` is from the step
 // before it. `longestTaskMs` and the gaps between frames are the main
 // thread's, over the whole run (the profiler is never on: it makes gaps
-// of its own). `worlds` is how many canvases were put in a world's box:
+// of its own). Only a gap over 50 ms is kept, so `p95GapMs` is the 95th
+// centile of those long gaps, not of every frame. `worlds` is how many canvases were put in a world's box:
 // one world for a visit is 1; `loads` is how many times the page loaded
 // (1: it never loaded again under the player). It exits 1 on a denied request or a page
 // error; the times are reported, not gated.
@@ -46,6 +47,7 @@ await ctx.addInitScript(() => {
   localStorage.setItem('tp-intro', '1');
   localStorage.setItem('tp-start', '"universe"');
   localStorage.setItem('tp-worlds', JSON.stringify('load'));
+  localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
   window.__check = { tasks: [], gaps: [], worlds: 0 };
   try {
     new PerformanceObserver((l) => l.getEntries().forEach((e) => window.__check.tasks.push(Math.round(e.duration)))).observe({ type: 'longtask', buffered: true });

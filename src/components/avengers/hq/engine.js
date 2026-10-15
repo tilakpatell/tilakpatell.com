@@ -29,10 +29,13 @@ const TIERS = {
 };
 const ORDER = ['high', 'medium', 'low'];
 
-// (lib/device decides, the same way for every scene on the site)
+// (lib/device decides, the same way for every scene on the site: its
+// level, which is the visitor's pick, or Auto by the chip and the renderer
+// tier's hold, not the device's class alone, which ignored both)
+export const tierOfDetail = (detail) => ({ ultra: 'high', high: 'high', mid: 'medium', low: 'low' })[detail] ?? 'medium';
 export function startTier() {
   if (typeof window === 'undefined') return 'high';
-  return { high: 'high', mid: 'medium', low: 'low' }[device().tier] ?? 'medium';
+  return tierOfDetail(device().detail);
 }
 
 // Colours above 1 for things that glow, so bloom picks them up.

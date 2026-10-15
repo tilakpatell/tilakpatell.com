@@ -1,0 +1,46 @@
+{
+  "_source": "node scripts/bf2017-hulls.mjs --only xwing --fixture: each cut's box as galaxy/models.js's normalise measures it (every vertex through its node, in its GLB's frame), and the game box its plain cut was put on (gameplay/vehicles/air/xwing_t65/vehicle_air_xwing_t65_static_donotuse_mesh LOD0: models.jsonl's)",
+  "kind": "xwing",
+  "game": {
+    "min": [
+      -5.644531,
+      -1.217773,
+      -6.15625
+    ],
+    "max": [
+      5.644531,
+      1.217773,
+      6.34375
+    ]
+  },
+  "cuts": [
+    {
+      "url": "/models/galaxy/surface/xwing.glb",
+      "nose": 0,
+      "min": [
+        -5.644522,
+        0.000077,
+        -6.25
+      ],
+      "max": [
+        5.644538,
+        2.435457,
+        6.230469
+      ]
+    },
+    {
+      "url": "/models/galaxy/surface/xwing.lod1.glb",
+      "nose": 0,
+      "min": [
+        -5.582021,
+        0.03035,
+        -6.25
+      ],
+      "max": [
+        5.581971,
+        2.405206,
+        6.222657
+      ]
+    }
+  ]
+}

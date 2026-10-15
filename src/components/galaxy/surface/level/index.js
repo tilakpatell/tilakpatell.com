@@ -35,7 +35,7 @@
 import { withFallback } from '../../../../lib/assetBase.js';
 import { playWorld } from '../../../../lib/sw.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
-import { decodePng16 } from '../../../../lib/level/png16.js';
+import { decodePng16Off as decodePng16 } from '../../../../lib/level/png16Off.js'; // (off the main thread: png16Off.js)
 import { createLevelLoader, recipesIndex } from './levelGltf.js';
 import { packUrl, placedOf, wanted, withoutProxies } from './levelPack.js';
 import { variationsIndex } from './levelVariations.js';

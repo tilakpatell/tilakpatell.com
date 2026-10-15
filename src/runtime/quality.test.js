@@ -186,6 +186,25 @@ describe('a quality level changed while a world is up', () => {
     expect(q.budget.ratio).toBe(2);
   });
 
+  // (a world built after the change reads the tier for its chain, its cut
+  // and its boot: Low picked mid-visit built High's level until 2026-10-13)
+  it('moves its tier with the level, ultra being the high tier', () => {
+    const q = createQuality({ tier: 'high', detail: 'high', pace: fakePace([null]) });
+    q.retune('low');
+    expect(q.tier).toBe('low');
+    q.retune('mid');
+    expect(q.tier).toBe('mid');
+    q.retune('ultra');
+    expect(q.tier).toBe('high');
+    q.retune('nonsense');
+    expect(q.tier).toBe('high');
+  });
+
+  it('takes its tier from a level given alone (a held Low on a laptop whose device tier is high)', () => {
+    expect(createQuality({ detail: 'low', pace: fakePace([null]) }).tier).toBe('low');
+    expect(createQuality({ detail: 'ultra', pace: fakePace([null]) }).tier).toBe('high');
+  });
+
   it('draws sharper or softer by the sharpness, never past the level’s ratio', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null]), dpr: 1, sharp: 1.5 });
     expect(q.ratio).toBe(1.5);
@@ -295,11 +314,16 @@ describe('the GPU clock as the source (lane N2)', () => {
     expect(q.level).toBe(1);
   });
 
-  it('takes lane G1’s renderer tier when the runtime has one: T0 budgets 33.3 ms', () => {
+  // (T0 budgets 16.7 ms like the rest since 2026-10-13, under its own floor:
+  // the cadence, not the budget, takes it to 30 when the floor cannot hold 60)
+  it('takes lane G1’s renderer tier when the runtime has one: T0 comes down to its floor, never under', () => {
     const q = createQuality({ tier: 'high', pace: fakePace([null]) });
     q.setSource('gpu', { gpuTime: fakeClock([25]), tier: 'T0' });
-    for (let t = 1; t <= 40; t++) q.frame(t * 33);
-    expect(q.level).toBe(0);
+    expect(q.floored).toBe(false);
+    for (let t = 1; t <= 200; t++) q.frame(t * 33);
+    expect(q.internal).toBeGreaterThanOrEqual(0.58);
+    expect(q.internal).toBeLessThan(1);
+    expect(q.floored).toBe(true);
   });
 
   it('a hold lets the GPU’s frames go by too', () => {

@@ -12,7 +12,10 @@
 // changed) is adopted, not made again: its canvas and the handover's cover
 // move into this box before the first paint (rt.adopt). One a page made for
 // another `rebuild` isn't (adoptable): a page mounting again for a new one
-// would otherwise show the old world, unchanged until a reload. The world goes
+// would otherwise show the old world, unchanged until a reload. A device
+// lost on WebGPU (the runtime's `recoverable`) mounts the page's world
+// again, once, on the node renderer over WebGL 2 (recoverNow): before
+// 2026-10-13 a hung chip left the page dead. The world goes
 // (rt.unmount) a tick after the last page holding its module lets go, so
 // a handover's page can leave first and React's second run of an effect
 // in development keeps what the first one had.
@@ -27,6 +30,22 @@ const hold = (module, by) => holders.set(module, Math.max(0, (holders.get(module
 // what each world a page made or adopted was for (its `rebuild`); a world
 // handed over by a page that's going has none, and is adopted whatever's asked
 export const madeFor = new WeakMap();
+// (`mine`: the world lost was this page's module, so a page opened while
+// another's is lost does not mount twice: the review's minor 4)
+export const recoverNow = ({ status, recoverable, tried, mine }) => status === 'lost' && Boolean(recoverable) && !tried && Boolean(mine);
+// Whether a page's props are the ones its world was last given: the same
+// names, each value the same (Object.is: a callback made anew differs). The
+// page's every render gave its world update() and a fresh frame; Battlefront
+// re-renders eight times a second for its HUD, with the same three strings
+// (the every-world hand-off's performance item 3).
+export function sameProps(a, b) {
+  if (a === b || (a == null && b == null)) return true;
+  if (a == null || b == null) return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  for (const k of ka) if (!Object.hasOwn(b, k) || !Object.is(a[k], b[k])) return false;
+  return true;
+}
 export const adoptable = (current, module, rebuild) => Boolean(current && current.module === module && (!madeFor.has(current.world) || madeFor.get(current.world) === rebuild));
 
 // How far a module's prepare has got (the runtime's 'prepare' events), for a
@@ -59,6 +78,16 @@ export function useWorld(module, { props, enabled = true, onEvent = null, attemp
   const eventRef = useRef(onEvent);
   eventRef.current = onEvent;
   const on = enabled && three.on;
+  // (bumped once after a loss the runtime can come back from: the mount below runs again)
+  const [again, setAgain] = useState(0);
+  const tried = useRef(false);
+  useEffect(() => {
+    if (!on || typeof window === 'undefined') return;
+    const rt = runtime();
+    if (!recoverNow({ status, recoverable: rt.recoverable, tried: tried.current, mine: rt.lostModule === module?.id })) return;
+    tried.current = true;
+    setAgain((n) => n + 1);
+  }, [on, status, module]);
 
   // handed over already: into this box before the page is painted, so the
   // cover over it never leaves the screen
@@ -125,13 +154,22 @@ export function useWorld(module, { props, enabled = true, onEvent = null, attemp
         else if (rt.loading === module) rt.unmount();
       }, 0);
     };
-  }, [on, module, attempt, rebuild]);
+  }, [on, module, attempt, rebuild, again]);
 
-  // the page's props, without re-rendering anything
+  // the page's props, without re-rendering anything, when one has changed
+  // since this world was last given them (sameProps); and a frame asked for
+  // after every render, as before: a world that has stopped drawing (the
+  // galaxy at rest, frozen) fills what the page has just mounted for it, and
+  // a frame asked of a running loop costs nothing (lib/three/loop's kick)
+  const given = useRef(null);
   useEffect(() => {
     const rt = typeof window !== 'undefined' ? runtime() : null;
     if (rt?.current?.module !== module) return;
-    rt.current.world.update?.(props);
+    const now = rt.current.world;
+    if (given.current?.world !== now || !sameProps(given.current.props, props)) {
+      given.current = { world: now, props };
+      now.update?.(props);
+    }
     rt.invalidate();
   });
 

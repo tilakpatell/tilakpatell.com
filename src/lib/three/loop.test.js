@@ -101,4 +101,19 @@ describe('createLoop', () => {
     loop.setCadence(0);
     expect(loop.cadence).toBe(1);
   });
+
+  // (the display's own beat, for runtime/cadence.js: the shortest of the
+  // recent beats, a heavy frame's long one never read as the screen's)
+  it('reads the display’s beat from its frames, the shortest of the recent ones', () => {
+    const asked = [];
+    const loop = createLoop(() => true, { raf: (f) => (asked.push(f), asked.length), caf: () => {} });
+    expect(loop.beat).toBe(null);
+    loop.kick();
+    let t = 0;
+    for (const dt of [8.3, 8.4, 25, 8.3, 50, 8.35]) {
+      t += dt;
+      asked.shift()(t);
+    }
+    expect(loop.beat).toBeCloseTo(8.3, 1);
+  });
 });

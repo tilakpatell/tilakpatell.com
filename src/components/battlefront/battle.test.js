@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadRulebook } from '../../lib/battlefront/rulebook.js';
 import { hothFlatNav } from '../../lib/battlefront/fixtures/hothFlat.js';
 import { addPlayer as addSoldier } from '../../lib/battlefront/sim.js';
-import { STEP, addPlayer, createBattle, deploy, step, view, worldMove } from './battle.js';
+import { BOTS, STEP, addPlayer, botsAt, createBattle, deploy, grant, step, view, worldMove } from './battle.js';
 import { LEVEL_MODES, MODES } from './index.js';
 import naboo from '../../data/bf2017/maps/naboo.json';
 
@@ -18,6 +18,38 @@ describe('the battle on the sim in its own mode, with the page’s deploy screen
     expect(v.deploy.open).toBe(true);
     expect(v.deploy.offers.filter((o) => o.kind === 'class').map((o) => o.id)).toEqual(['d-orig-assault', 'd-orig-heavy', 'd-orig-officer', 'd-orig-specialist']);
     expect(v.mode.stageName).toBe('TAKE OUT ANY THREATS TO THE AT-ATS');
+  });
+
+  // (the frame's own view, asked for every frame and by the director twenty
+  // times a second: only what they draw from, the deploy screen's offers and
+  // spawns, the squad's rows and the scoreboard left to the HUD's view, and
+  // that one's left as it was: the every-world hand-off's performance item 7)
+  it('a lean view, the frame’s, says whether the deploy screen is open and makes none of the screens’ rows', () => {
+    const b = make();
+    addPlayer(b, { team: 2 });
+    const full = view(b);
+    const { offers, spawns } = full.deploy;
+    const { squad, scoreboard } = full;
+    const lean = view(b, { lean: true });
+    expect(lean.deploy.open).toBe(true);
+    expect(lean.deploy.team).toBe(2);
+    expect(lean.deploy.offers).toBeUndefined();
+    expect(lean.squad).toBe(squad);
+    expect(lean.scoreboard).toBe(scoreboard);
+    // (the full view's rows, held by the HUD's snapshot, untouched)
+    expect(offers.length).toBeGreaterThan(0);
+    expect(spawns[0].kind).toBe('hq');
+    expect(view(b).deploy.offers.map((o) => o.id)).toEqual(offers.map((o) => o.id));
+  });
+
+  it('keeps each soldier’s velocity in one pair, filled again by each view', () => {
+    const b = make();
+    addPlayer(b, { team: 2 });
+    deploy(b, 'player', { classId: 'd-orig-assault' });
+    const e = view(b, { lean: true }).entities[0];
+    const vel = e.vel;
+    expect(vel).toHaveLength(2);
+    expect(view(b, { lean: true }).entities[0].vel).toBe(vel);
   });
 
   it('deploys the player into the sim as a soldier of the class picked, on the navgrid', () => {
@@ -133,6 +165,96 @@ describe('the battle on the sim in its own mode, with the page’s deploy screen
     expect(view(b).mode.result).toEqual({ winner: 2, why: 'forced' });
   });
 
+  it('aims from the player’s own body: a soldier’s 1.4 m, Yoda’s by his 1.2 m', () => {
+    const aimHeight = (choice) => {
+      const b = make();
+      addPlayer(b, { team: 1 });
+      grant(b, 4000);
+      expect(deploy(b, 'player', choice).ok).toBe(true);
+      step(b, [{ id: 'player', move: [0, 0], yaw: 0, pitch: 0 }]);
+      const me = b.sim.entities.get(b.player.id);
+      return me.aim[1] - me.at[1];
+    };
+    expect(aimHeight({ classId: 'l-orig-assault' })).toBeCloseTo(1.4, 9);
+    expect(aimHeight({ kind: 'hero', id: 'yoda' })).toBeCloseTo((1.4 * 1.2) / 1.7, 9);
+  });
+
+  it('a hero in the view: his own blaster, and his three abilities by the game’s names with their states', () => {
+    const b = make();
+    addPlayer(b, { team: 1 });
+    grant(b, 4000);
+    expect(deploy(b, 'player', { kind: 'hero', id: 'hansolo' }).ok).toBe(true);
+    const v = view(b);
+    expect(v.player).toMatchObject({ unit: 'hero', cls: 'hansolo', weapon: 'hansolo', hpMax: 650 });
+    expect(v.player.abilities.map((a) => [a.slot, a.id, a.name, a.ready, a.active])).toEqual([
+      [1, 'Ability_HanSolo_DemolitionGrenade', 'DETONITE CHARGE', true, false],
+      [2, 'Ability_HanSolo_Sharpshooterz', 'SHARPSHOOTER', true, false],
+      [3, 'Ability_HanSolo_ShoulderCharges', 'SHOULDER CHARGE', true, false],
+    ]);
+    step(b, [{ id: 'player', move: [0, 0], yaw: 0, ability: 2 }]);
+    const after = view(b).player;
+    expect(after.abilities[1]).toMatchObject({ active: true, ready: false });
+    expect(after.weapon).toBe('W_Pistol_DL44_HanSolo_Sharpshooterz');
+    expect(v.player.cards).toEqual([]);
+    // (deployed with the Collection's picks: the cards this life wears, by name, and what the first one does)
+    const d = make();
+    addPlayer(d, { team: 1 });
+    grant(d, 4000);
+    deploy(d, 'player', { kind: 'hero', id: 'hansolo', cards: ['hansolo.1', 'hansolo.4', 'leia.1'] });
+    expect(view(d).player.cards).toEqual([
+      { id: 'hansolo.1', name: 'HEAVILY MODIFIED BLASTER' },
+      { id: 'hansolo.4', name: 'BROAD SHOULDERS' },
+    ]);
+    step(d, [{ id: 'player', move: [0, 0], yaw: 0, fire: true }]);
+    expect(view(d).player.heat).toBeCloseTo(0.13 * 0.75, 9);
+    // (a class's abilities have no name of the Collection's)
+    const c = make();
+    addPlayer(c, { team: 1 });
+    deploy(c, 'player', { classId: 'l-orig-assault' });
+    expect(view(c).player.abilities.map((a) => a.name)).toEqual([null, null, null]);
+  });
+
+  it('jumps a hero on the page’s jump, up off the ground and down again; a trooper has no jump', () => {
+    const b = make();
+    addPlayer(b, { team: 1 });
+    grant(b, 4000);
+    expect(deploy(b, 'player', { kind: 'hero', id: 'luke' }).ok).toBe(true);
+    const me = () => view(b).entities.find((e) => e.id === b.player.id);
+    const ground = me().at[1];
+    step(b, [{ id: 'player', move: [0, 0], yaw: 0, jump: true }]);
+    expect(me().act.air).toBe(true);
+    for (let i = 0; i < 10; i++) step(b, [{ id: 'player', move: [0, 0], yaw: 0 }]);
+    expect(me().at[1] - ground).toBeGreaterThan(1);
+    for (let i = 0; i < 40; i++) step(b, [{ id: 'player', move: [0, 0], yaw: 0 }]);
+    expect(me().act.air).toBe(false);
+    const c = make();
+    addPlayer(c, { team: 1 });
+    deploy(c, 'player', { classId: 'l-orig-assault' });
+    const at = view(c).player.at[1];
+    step(c, [{ id: 'player', move: [0, 0], yaw: 0, jump: true }]);
+    expect(view(c).player.at[1]).toBeCloseTo(at, 9);
+  });
+
+  it('keeps a hero’s jump pressed a moment before he lands, and jumps as his feet touch (the site’s press buffer)', () => {
+    const hero = () => {
+      const b = make();
+      addPlayer(b, { team: 1 });
+      grant(b, 4000);
+      deploy(b, 'player', { kind: 'hero', id: 'luke' });
+      return { b, air: () => view(b).entities.find((e) => e.id === b.player.id).act.air };
+    };
+    // (how many steps a jump lasts)
+    const once = hero();
+    step(once.b, [{ id: 'player', move: [0, 0], yaw: 0, jump: true }]);
+    let n = 1;
+    while (once.air() && n < 100) (step(once.b, [{ id: 'player', move: [0, 0], yaw: 0 }]), n++);
+    expect(n).toBeLessThan(100);
+    // (pressed again on the step he comes down in, still in the air as it is read: up again on the next)
+    const again = hero();
+    for (let i = 0; i <= n; i++) step(again.b, [{ id: 'player', move: [0, 0], yaw: 0, jump: i === 0 || i === n - 1 }]);
+    expect(again.air()).toBe(true);
+  });
+
   it('puts the player down when told, for the kill screen', () => {
     const b = make({ 1: 1, 2: 1 });
     addPlayer(b, { team: 2 });
@@ -217,5 +339,14 @@ describe('the other modes on the game world’s route (lane 6)', () => {
   });
   it('refuses a mode it does not know', () => {
     expect(() => createBattle({ rulebook: rb, level: 'hoth', mode: 'conquest', nav })).toThrow(/conquest/);
+  });
+});
+
+// (Low is the floor: every bot is a body drawn and a mind stepped, so five a
+// side at Low, Instant Action's own cap, and the page's eight above)
+describe('the bots a side by the quality level', () => {
+  it('is five at Low and eight above', () => {
+    expect(botsAt('low')).toEqual({ 1: 5, 2: 5 });
+    for (const d of ['mid', 'high', 'ultra', undefined]) expect(botsAt(d)).toEqual({ 1: BOTS, 2: BOTS });
   });
 });

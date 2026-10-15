@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Film, Screen } from '../../../runtime/hud';
+import { Film, Screen, ScreenCanvas } from '../../../runtime/hud';
+import FrontEndBackdrop from '../backdrop/FrontEndBackdrop.jsx';
 import '../../../lib/bf2017/fonts.css';
 import './screens.css';
 
@@ -13,13 +14,20 @@ import './screens.css';
 // heard wherever in it the focus is (`onKey`). In the
 // page it is put at the body's end (the page's main is a stacking context
 // under the site's bar; the game's screen covers the bar, as the game's do).
-export default function GameScreen({ tree, label, backdrop = null, onBack = null, onLink = null, onAction = null, fill = null, keys = null, className = '', children = null, first = null, onKey = null }) {
+// With `layers` (trees at the frame's 1920 × 1080, useFrameTree's) the
+// screen is painted on the kit's canvas, `values` filling what the game's
+// code fills and `active` the cells drawn open (the 2026-10-13 canvas
+// design); with `tree` it is drawn by the kit's Screen, as before. `room`
+// puts the front end's 3D room behind it (../backdrop, the 2026-10-13
+// backdrop design) where there is no film.
+export default function GameScreen({ tree = null, layers = null, values = null, active = [], label, backdrop = null, room = false, onBack = null, onLink = null, onAction = null, fill = null, keys = null, className = '', children = null, first = null, onKey = null }) {
+  const name = layers ? layers.at(-1)?.name : tree?.name;
   const ref = useRef(null);
   useEffect(() => {
     const el = (first && ref.current?.querySelector(first)) || ref.current?.querySelector('button:not([aria-disabled="true"]), [tabindex="0"]');
     // (a screen with nothing to press, the loading screen, takes the focus itself: its Escape is heard)
     (el ?? ref.current)?.focus({ preventScroll: true });
-  }, [tree?.name, first]);
+  }, [name, first]);
   const onKeyDown = (e) => {
     if (e.key === 'Escape' && onBack) {
       e.preventDefault();
@@ -28,11 +36,11 @@ export default function GameScreen({ tree, label, backdrop = null, onBack = null
     } else onKey?.(e);
   };
   const node = (
-    <div ref={ref} tabIndex={-1} className={`bf-game-screen ${className}`.trim()} role="dialog" aria-modal="true" aria-label={label} onKeyDown={onKeyDown} data-game-screen={tree?.name ?? label}>
-      <div className="bf-game-backdrop" aria-hidden="true">
-        {backdrop ? <Film film={backdrop} className="bf-game-film" /> : null}
+    <div ref={ref} tabIndex={-1} className={`bf-game-screen ${className}`.trim()} role="dialog" aria-modal="true" aria-label={label} onKeyDown={onKeyDown} data-game-screen={name ?? label}>
+      <div className={`bf-game-backdrop${room && !backdrop ? ' bf-game-room' : ''}`} aria-hidden="true">
+        {backdrop ? <Film film={backdrop} className="bf-game-film" /> : room ? <FrontEndBackdrop /> : null}
       </div>
-      <Screen tree={tree} label={label} onLink={onLink} onAction={onAction} fill={fill} />
+      {layers ? <ScreenCanvas layers={layers.filter(Boolean)} label={label} values={values} active={active} onLink={onLink} onAction={onAction} /> : <Screen tree={tree} label={label} onLink={onLink} onAction={onAction} fill={fill} />}
       {children}
       {keys !== false && (
         <p className="bf-game-keys">

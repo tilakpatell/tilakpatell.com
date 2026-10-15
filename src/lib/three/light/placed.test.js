@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { POINT_FALLBACK, POINT_POOL, appendLights, cellOf, cellsNear, createPlacedLights, lightsFor, lumensToCandela, screenArea } from './placed';
+import { LOW_LAMPS, POINT_FALLBACK, POINT_POOL, appendLights, cellOf, cellsNear, createPlacedLights, lampPool, lightsFor, lumensToCandela, screenArea } from './placed';
 
 describe('lumensToCandela', () => {
   it('a 1,000 lm sphere is 79.6 cd; a 1,000 lm 60° cone 1,188 cd', () => {
@@ -81,6 +81,26 @@ describe('createPlacedLights', () => {
     placed.dispose();
     expect(renderer.lighting).toBe('base');
   });
+  // (the pool is 1,040 lights in the scene graph, still but for the few the
+  // frame moves: their matrices are made where they are moved, not
+  // recomposed every frame, which was a fifth of Battlefront's graph's)
+  it('keeps its lights’ matrices still, made again only for a light it moves', async () => {
+    const placed = await createPlacedLights(sceneStub(), { isWebGPURenderer: true, backend: { isWebGPUBackend: true } }, { points: 4, spots: 2 });
+    const all = [...placed.pools.points, ...placed.pools.spots, ...placed.pools.spots.map((s) => s.target)];
+    expect(all.every((l) => l.matrixAutoUpdate === false)).toBe(true);
+    placed.set([
+      { kind: 'point', pos: [3, 2, 1], candela: 10, range: 5 },
+      { kind: 'spot', pos: [0, 5, 0], dir: [0, -1, 0], candela: 10, range: 9 },
+    ]);
+    expect(placed.pools.points[0].matrix.elements.slice(12, 15)).toEqual([3, 2, 1]);
+    expect(placed.pools.spots[0].matrix.elements.slice(12, 15)).toEqual([0, 5, 0]);
+    expect(placed.pools.spots[0].target.matrix.elements.slice(12, 15)).toEqual([0, 4, 0]);
+    expect(placed.pools.points[0].matrixWorldNeedsUpdate).toBe(true);
+    // (one moved nowhere is not made again)
+    placed.pools.points[1].matrixWorldNeedsUpdate = false;
+    placed.set([{ kind: 'point', pos: [3, 2, 1], candela: 10, range: 5 }]);
+    expect(placed.pools.points[1].matrixWorldNeedsUpdate).toBe(false);
+  });
   it('spots go to their own pool, cone and penumbra from the record', async () => {
     const placed = await createPlacedLights(sceneStub(), { isWebGPURenderer: true, backend: { isWebGPUBackend: true } }, { points: 4 });
     placed.set([{ kind: 'spot', pos: [0, 5, 0], dir: [0, -1, 0], cone: [Math.PI / 6, Math.PI / 3], candela: 1188, range: 20, color: [1, 0.9, 0.8] }]);
@@ -129,5 +149,17 @@ describe('particle lights (the GPU-first design’s N5)', () => {
     // (the oldest spark first after the lamps)
     expect(placed.pools.points[lamps].position.x).toBe(0);
     expect(placed.update(camera)).toBe(lamps);
+  });
+});
+
+// (Low is the floor: without clustering every lit pixel walks the whole
+// pool, 64 points and 16 spots, so Low's is the nearest few)
+describe('the lamps a tier draws', () => {
+  it('is the nearest 8 points and 2 spots at Low, the video setting’s nearest pool, or the backend’s own', () => {
+    expect(LOW_LAMPS).toEqual({ points: 8, spots: 2 });
+    expect(lampPool('low', { localLights: 'all' })).toEqual(LOW_LAMPS);
+    expect(lampPool('high', { localLights: 'nearest' })).toEqual({ points: POINT_FALLBACK });
+    expect(lampPool('high', { localLights: 'all' })).toEqual({});
+    expect(lampPool('ultra', null)).toEqual({});
   });
 });

@@ -12,7 +12,7 @@ Lane K (`docs/superpowers/plans/2026-10-10-bf2017-phaseK-planet-skins.md`), 2026
 
 The counts, after against before (`galaxy-check`): draw calls unchanged on every world; textures +3 to +7; programs +0 to +1.
 
-The bucket on 2026-10-10: 103 planet textures listed, 69 non-sequel fetched, all as PNG. What the maps are and why the rest stay procedural: `docs/superpowers/HANDOFF-bf2017.md`, lane K.
+The bucket on 2026-10-10: 103 planet textures listed, 69 non-sequel fetched, all as PNG. What the maps are and why the rest stay procedural: `docs/superpowers/HANDOFF-battlefront.md`, lane K.
 
 Not shot: a grazing sun (the relief's sign, `greenDown`, is unchecked); flying down to a skinned world (the skin's ease-out is unit-tested in `bodySkin.test.js`).
 

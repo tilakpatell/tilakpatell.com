@@ -7,6 +7,7 @@
 // skeleton by stance since the sim poses no bones. Pure.
 //
 //   newSoldier(classRow, { id, team, at, yaw, rand, bot, weapon, abilities }) → s
+//   bodyOf(row) → { stand, crouch, chest, eye } metres (a row's `body`, the soldier's where it has none)
 //   capsulesOf(s) → [{ part, a, b, r }]    hurt(s, { damage, part, from, by, now }) → 'hurt' | 'down' | null
 //   tick(s, dt, now)    speedOf(s) → m/s    move(s, dir, dt, nav) → metres moved    stanceOf(s)
 
@@ -15,6 +16,7 @@ import physics from '../../data/bf2017/physics/soldier.json';
 import { ROLL, createAbilities, tick as tickAbilities } from './abilities.js';
 import { createStack, resolve, tick as tickStack } from './affectors.js';
 import { heightAt, walkable } from './nav.js';
+import { meshMove } from './meshNav.js';
 import { createGun, tick as tickGun } from './weapons.js';
 
 const BODY = physics.rows[physics.default];
@@ -42,6 +44,7 @@ export function newSoldier(cls, { id, team, at, yaw = 0, rand = Math.random, bot
     kind: 'soldier',
     bot,
     cls,
+    body: bodyOf(cls),
     at: [...at],
     yaw,
     vel: [0, 0, 0],
@@ -53,7 +56,8 @@ export function newSoldier(cls, { id, team, at, yaw = 0, rand = Math.random, bot
     sprint: false,
     gun: weapon ? createGun(weapon, { rand }) : null,
     weapon,
-    abilities: createAbilities(abilities, { rand }),
+    // (a human's press that cannot act yet is held half a second; a bot's is its brain's to make again: abilities.js)
+    abilities: createAbilities(abilities, { rand, hold: !bot }),
     stack: createStack(),
     lastHurt: -Infinity,
     lastBy: null,
@@ -83,13 +87,36 @@ function skeleton(H) {
   ];
 }
 
-const SKELETON = { stand: skeleton(POSES.stand.height), crouch: skeleton(POSES.crouch.height) };
+// A unit's body, metres: how tall it stands and crouches, the height a
+// player's aim leaves it from (the page's 1.4 m, by hand) and its eye. A row
+// with no `body` is the soldier's (DefaultSoldierPhysics); a row's `body`
+// (a hero's physics row, hero.js; a guest's own height) gives what it has
+// and takes the rest in the soldier's proportions to its `stand`.
+export const AIM_HEIGHT = 1.4;
+const SOLDIER = { stand: POSES.stand.height, crouch: POSES.crouch.height, chest: AIM_HEIGHT, eye: POSES.stand.eye[1] };
+
+export function bodyOf(row) {
+  const b = row?.body;
+  if (!b) return { ...SOLDIER };
+  const stand = b.stand ?? SOLDIER.stand;
+  const k = stand / SOLDIER.stand;
+  return { stand, crouch: b.crouch ?? SOLDIER.crouch * k, chest: b.chest ?? SOLDIER.chest * k, eye: b.eye ?? SOLDIER.eye * k };
+}
+
+// (a skeleton a height, made once)
+const SKELETONS = new Map();
+const skeletonOf = (H) => {
+  if (!SKELETONS.has(H)) SKELETONS.set(H, skeleton(H));
+  return SKELETONS.get(H);
+};
+const low = (s) => s.stance === 'crouch';
 
 export function capsulesOf(s, out = []) {
   const c = Math.cos(s.yaw);
   const n = Math.sin(s.yaw);
   const place = (p) => [s.at[0] + p[0] * c + p[2] * n, s.at[1] + p[1], s.at[2] - p[0] * n + p[2] * c];
-  const parts = SKELETON[s.stance === 'crouch' || s.state === 'roll' ? 'crouch' : 'stand'];
+  const body = s.body ?? SOLDIER;
+  const parts = skeletonOf(low(s) || s.state === 'roll' ? body.crouch : body.stand);
   out.length = parts.length;
   for (let i = 0; i < parts.length; i++) {
     const [part, a, b, r] = parts[i];
@@ -99,8 +126,10 @@ export function capsulesOf(s, out = []) {
 }
 
 // the chest's middle, where a bot aims and a line of sight is drawn to
-export const chestOf = (s) => [s.at[0], s.at[1] + (s.stance === 'crouch' ? POSES.crouch.height : POSES.stand.height) * 0.7, s.at[2]];
-export const eyeOf = (s) => [s.at[0], s.at[1] + (s.stance === 'crouch' ? POSES.crouch.eye[1] : POSES.stand.eye[1]), s.at[2]];
+export const chestOf = (s) => [s.at[0], s.at[1] + (low(s) ? (s.body ?? SOLDIER).crouch : (s.body ?? SOLDIER).stand) * 0.7, s.at[2]];
+// (crouched, the soldier's eye is its record's; a body of its own brings its eye down as far as it crouches)
+const eyeLow = (s) => (s.cls?.body ? (s.body.eye * s.body.crouch) / s.body.stand : POSES.crouch.eye[1]);
+export const eyeOf = (s) => [s.at[0], s.at[1] + (low(s) ? eyeLow(s) : (s.body ?? SOLDIER).eye), s.at[2]];
 
 export function hurt(s, { damage, part = 'chest', by = null, now = 0 }) {
   if (!s.alive) return null;
@@ -118,7 +147,13 @@ export function hurt(s, { damage, part = 'chest', by = null, now = 0 }) {
 }
 
 export function speedOf(s) {
-  if (s.state === 'roll') return ROLL_SPEED;
+  if (s.state === 'roll') return s.cls?.roll?.speed ?? ROLL_SPEED;
+  // a hero's own drive (heroKit.json): its pace whatever the stance, the Blocking drive's while its saber is up
+  const d = s.cls?.drive;
+  if (d) {
+    const row = s.blocking && s.cls.blockDrive ? s.cls.blockDrive : d;
+    return resolve(s.stack, 'speed', row.speed * (s.sprint && !s.blocking ? row.sprint : 1));
+  }
   const pose = s.stance === 'crouch' ? GROUND.crouch : GROUND.stand;
   // (an ability's AbilitySprintSpeedMultiplier, the vanguard's and infiltration's 1.3, on the sprint alone)
   const sprint = s.sprint && pose.sprintMultiplier > 0 ? pose.sprintMultiplier * resolve(s.stack, 'sprint', 1) : 1;
@@ -140,14 +175,35 @@ export function tick(s, dt, now) {
 
 export function roll(s, dir, now) {
   s.state = 'roll';
-  s.rollUntil = now + ROLL_TIME;
+  s.rollUntil = now + (s.cls?.roll?.time ?? ROLL_TIME);
   s.rollDir = [...dir];
 }
 
-// a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it
+// a hero's drive by the way it moves against the way it faces: ahead at its
+// speed, backward at `back` of it, sideways at `strafe` (DriveWithInput's
+// scaling f/b/l/r), between them by the angle's square; a trooper's 1
+function driveScale(s, dir, len) {
+  const d = s.cls?.drive;
+  if (!d || s.state === 'roll' || len < 1e-9) return 1;
+  const row = s.blocking && s.cls.blockDrive ? s.cls.blockDrive : d;
+  const f = (dir[0] * Math.sin(s.yaw) + dir[1] * Math.cos(s.yaw)) / len;
+  const f2 = f * f;
+  return f2 * (f >= 0 ? 1 : (row.back ?? 1)) + (1 - f2) * (row.strafe ?? 1);
+}
+
+// the soldier's pace going along dir: its speed, a hero's by its drive's scaling for that way (the navmesh's
+// step and the player's body, map/walk.js, take it as the navgrid's does)
+export const speedAlong = (s, dir) => speedOf(s) * driveScale(s, dir, Math.hypot(dir[0], dir[1]));
+
+// a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it: on the level's
+// navmesh where the battle has one and the soldier stands on it (meshNav.js), else on the navgrid
 export function move(s, dir, dt, nav) {
-  const step = speedOf(s) * dt;
+  if (nav?.mesh) {
+    const m = meshMove(s, dir, dt, nav, speedAlong(s, dir));
+    if (m !== null) return m;
+  }
   const len = Math.hypot(dir[0], dir[1]);
+  const step = speedOf(s) * dt * driveScale(s, dir, len);
   if (!s.alive || len < 1e-9 || step <= 0) {
     s.moving = false;
     s.vel[0] = s.vel[2] = 0;
@@ -167,7 +223,9 @@ export function move(s, dir, dt, nav) {
     if (!walkable(nav, x, z)) continue;
     s.at[0] = x;
     s.at[2] = z;
-    s.at[1] = heightAt(nav, x, z);
+    // (a hero off the ground keeps its height, the ground under it kept for its landing: heroKit.js's jump)
+    if (s.hero?.air) s.hero.air.floor = heightAt(nav, x, z);
+    else s.at[1] = heightAt(nav, x, z);
     s.vel[0] = mx / dt;
     s.vel[2] = mz / dt;
     s.moving = true;

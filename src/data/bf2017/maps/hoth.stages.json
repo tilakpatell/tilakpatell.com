@@ -129,17 +129,17 @@
         {
           "type": "arm",
           "prefab": "FantasyBattle_Logic:4",
-          "name": "ID_FANTASYBATTLES_HOTH_FUEL_DEPOT"
+          "name": "ID_FANTASYBATTLES_HOTH_FUEL_STATION"
         },
         {
           "type": "arm",
           "prefab": "FantasyBattle_Logic:131",
-          "name": "ID_FANTASYBATTLES_HOTH_FUEL_SILO"
+          "name": "ID_FANTASYBATTLES_HOTH_FUEL_DEPOT"
         },
         {
           "type": "arm",
           "prefab": "FantasyBattle_Logic:63",
-          "name": "ID_FANTASYBATTLES_HOTH_FUEL_STATION"
+          "name": "ID_FANTASYBATTLES_HOTH_FUEL_SILO"
         }
       ],
       "spawns": {

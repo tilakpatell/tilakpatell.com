@@ -54,7 +54,8 @@ export const CONTROLS = Object.freeze([
   choice('volumetric', 'Lighting', 'Volumetric light', 'The level’s lit haze and light cones.', [['off', 'Off'], ['low', 'Low'], ['high', 'High']], row('off', 'off', 'low', 'high'), true, 'light/volumetrics.js'),
   choice('fogQuality', 'Lighting', 'Fog quality', 'How finely the fog is marched.', [['low', 'Low'], ['high', 'High']], row('low', 'low', 'low', 'high'), true, 'light/fog.js'),
   choice('localLights', 'Lighting', 'Local lights', 'The level’s lamps: the nearest few, or all of them clustered.', [['nearest', 'Nearest'], ['all', 'All']], row('nearest', 'nearest', 'all', 'all'), false, 'light/placed.js'),
-  choice('bloom', 'Post', 'Bloom', 'The glow round bright things.', [['off', 'Off'], ['on', 'On']], row('on', 'on', 'on', 'on'), true, 'light/post.js', onOff),
+  // (Low is the floor since 2026-10-13, the most compressed web settings: no bloom there, as BUDGETS.low.bloom on the classic renderer)
+  choice('bloom', 'Post', 'Bloom', 'The glow round bright things.', [['off', 'Off'], ['on', 'On']], row('off', 'on', 'on', 'on'), true, 'light/post.js', onOff),
   choice('lensFlare', 'Post', 'Lens flare', 'The record’s flare off the sun.', [['off', 'Off'], ['on', 'On']], row('off', 'off', 'off', 'on'), true, 'light/post.js', onOff),
   choice('godRays', 'Post', 'God rays', 'Shafts of sunlight through the air.', [['off', 'Off'], ['on', 'On']], row('off', 'off', 'off', 'on'), true, 'light/post.js', onOff),
   choice('depthOfField', 'Post', 'Depth of field', 'Focus in the cinematic cameras.', [['off', 'Off'], ['on', 'On']], row('on', 'on', 'on', 'on'), true, 'light/post.js', onOff),

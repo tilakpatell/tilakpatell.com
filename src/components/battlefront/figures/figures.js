@@ -80,6 +80,7 @@ import { faceAlongZ } from './facing.js';
 import { createHeld, heldOf } from './held.js';
 import { CROSSFADE, LOCO_STATES, clipSpeed, locoBlend, locoClips, packClip, packFallback, relAngle, stateFor, timeAt } from './locomotion.js';
 import { strideOf } from './stride.js';
+import { animDue, animEvery, quietBones } from './lod.js';
 import { skinBodies } from '../../../lib/bf2017/collection.js';
 
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
@@ -162,6 +163,9 @@ export function cullBy(model) {
   return whole;
 }
 
+// (a figure's sockets, the things put on its bones: their chains stay in three's walk)
+const socketsOf = (f) => Object.values(f.sockets ?? {}).filter((o) => o?.isObject3D);
+
 const lerp = (a, b, t) => a + (b - a) * t;
 const lerpAngle = (a, b, t) => {
   let d = b - a;
@@ -196,13 +200,44 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
   const root = new THREE.Group();
   root.name = 'figures';
   scene.add(root);
+  // The graph under the root walked only where a body moved this frame
+  // (./lod.js): in three r186 a node whose matrix updates itself forces its
+  // whole subtree, and every child is walked whatever its own flags, so a
+  // far body's bones were recomposed on the frames it was not moved. The
+  // root stands still at the origin, and its walk passes a resting body by:
+  // its bones keep the matrices of the frame it last moved, which its skin
+  // reads.
+  // (a scene recomposes its own matrix every frame and forces its whole
+  // graph whether it moved or not: a force from a parent that has not
+  // moved since the last walk is not a move)
+  const resting = new WeakSet();
+  const parentWas = new THREE.Matrix4();
+  let walked = false;
+  root.matrixAutoUpdate = false;
+  root.updateMatrixWorld = function (force = false) {
+    if (force && walked && !this.matrixWorldNeedsUpdate && this.parent?.matrixWorld.equals(parentWas)) force = false;
+    if (this.parent) parentWas.copy(this.parent.matrixWorld);
+    walked = true;
+    if (this.matrixWorldNeedsUpdate || force) {
+      if (this.parent === null) this.matrixWorld.copy(this.matrix);
+      else this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix);
+      this.matrixWorldNeedsUpdate = false;
+      force = true;
+    }
+    for (const child of this.children) if (force || !resting.has(child)) child.updateMatrixWorld(force);
+  };
   const figs = new Map(); // id → { model, mixer, actions, clip, prev: { at, yaw }, cur }
   let gone = false;
+  // (the frames update() has been asked for, and each figure's slot among
+  // them: the far ones are animated on their own frames, ./lod.js)
+  let frame = 0;
+  let slots = 0;
+
   // the rows: on unless a check turns them off or a part fails to be made; `users`: a part's key → the
-  // figures standing on it; `frame`: place's count, so an instance knows the one it was last frame
+  // figures standing on it; `placings`: place's count, so an instance knows the one it was last frame
   let rowsOn = Boolean(rows);
   const users = new Map();
-  let frame = 0;
+  let placings = 0;
   let placed = 0;
 
   // A figure's meshes as the rows' parts, found once and kept until its meshes change (a cut swapped, a
@@ -218,7 +253,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
       if (o !== f.model && !o.visible) return;
       if (o.isMesh) {
         if (!o.material || Array.isArray(o.material)) whole = false;
-        else list.push({ key: `${o.geometry.uuid}:${o.material.name}:${o.material.map?.uuid ?? ''}`, mesh: o, part: null, was: -1, frame: -1 });
+        else list.push({ key: `${o.geometry.uuid}:${o.material.name}:${o.material.map?.uuid ?? ''}`, mesh: o, part: null, was: -1, at: -1 });
       }
       for (const c of o.children) walk(c);
     };
@@ -282,7 +317,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     // row: drawn by the rows this frame; parts: its meshes as their parts;
     // shown: the sim's own say on whether it is seen)
     const kind = kindOf(e, kinds);
-    const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null, row: false, parts: null, shown: true };
+    const f = { kind, model: null, mixer: null, clips: null, sockets: null, actions: new Map(), weights: new Map(), speeds: new Map(), loco: new Set(), rings: null, ringsKey: null, phase: 0, walking: false, clip: null, last: null, cur: null, weapon: null, stance: null, cutter: null, cutAsked: null, slot: slots++, owed: 0, posed: false, row: false, parts: null, shown: true };
     figs.set(e.id, f);
     loadBody(bodyUrl(kind), kind)
       .then(({ model, clips, sockets }) => {
@@ -293,6 +328,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         f.model = model;
         f.clips = clips;
         f.sockets = sockets ?? null;
+        quietBones(model, socketsOf(f));
         f.mixer = new THREE.AnimationMixer(model);
         root.add(model);
         const row = cuts?.of(kind);
@@ -331,6 +367,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     }
     for (const o of old) for (const m of [].concat(o.material)) m.dispose();
     dress(f.model, prune);
+    quietBones(f.model, socketsOf(f));
     // (its rows are the new cut's from the next frame; the old cut's parts go with their last soldier)
     release(f);
   }
@@ -466,6 +503,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     update(entities, dt, alpha = 1, eye = null, zoom = 1) {
       updates++;
       const seen = new Set();
+      frame++;
       for (const e of entities) {
         // (a soldier only: the walkers and the turrets are lane 4's)
         if (e.kind && e.kind !== 'soldier') continue;
@@ -503,10 +541,14 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
             f.clip = null;
             f.model.visible = true;
             f.last = f.cur = { at: e.at.slice(), yaw: e.yaw ?? 0, t: e.t };
+            // (placed and posed at once where it stands, not left at the corpse)
+            f.posed = false;
           }
           if (f.fell === true && ragdolls.handed(e.id)) {
-            // (the ragdoll has the body: the gun leaves the hand)
+            // (the ragdoll has the body: the gun leaves the hand; the body is
+            // walked every frame, the ragdoll's sink among what it moves)
             arm(f, null);
+            resting.delete(f.model);
             continue;
           }
         }
@@ -515,13 +557,29 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
           f.cutAsked = e.t;
           f.cutter.at(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z));
         }
-        f.model.position.set(lerp(f.last.at[0], f.cur.at[0], alpha), lerp(f.last.at[1], f.cur.at[1], alpha), lerp(f.last.at[2], f.cur.at[2], alpha));
-        f.model.rotation.y = lerpAngle(f.last.yaw, f.cur.yaw, alpha);
+        // (seen as a figure or as its rows on every frame, its animation's own frame or not)
         f.model.visible = f.shown && !f.row;
         arm(f, e.weapon ?? null);
+        // (moved and posed at its distance's rate, ./lod.js: between its
+        // frames a far body keeps its last place and pose and the graph's
+        // walk passes it by; the time between is played when it comes. Every
+        // frame on its first, and while it dies, so a ragdoll takes its fall
+        // at the clip's speed)
+        f.owed += dt;
+        const every = eye && f.posed && !DEAD.has(e.state) ? animEvery(Math.hypot(f.cur.at[0] - eye.x, f.cur.at[1] - eye.y, f.cur.at[2] - eye.z)) : 1;
+        if (!animDue(frame, every, f.slot)) {
+          resting.add(f.model);
+          continue;
+        }
+        resting.delete(f.model);
+        const step = f.owed;
+        f.owed = 0;
+        f.model.position.set(lerp(f.last.at[0], f.cur.at[0], alpha), lerp(f.last.at[1], f.cur.at[1], alpha), lerp(f.last.at[2], f.cur.at[2], alpha));
+        f.model.rotation.y = lerpAngle(f.last.yaw, f.cur.yaw, alpha);
         const s = stateFor(e);
-        blendTo(f, wanted(f, e, s, dt), dt);
-        f.mixer.update(dt);
+        blendTo(f, wanted(f, e, s, step), step);
+        f.mixer.update(step);
+        f.posed = true;
       }
       for (const [id, f] of figs) if (!seen.has(id)) drop(id, f);
     },
@@ -530,7 +588,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
     // last frame (for the pose of the frame before). A soldier out of view is placed nowhere.
     place(camera = null) {
       if (!rows) return;
-      frame++;
+      placings++;
       placed = 0;
       sweep();
       rows.begin();
@@ -542,9 +600,9 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         if (!f.row || !f.parts || (camera && !inView(f.model))) continue;
         for (const p of f.parts) {
           const i = p.part.n;
-          rows.place(p.part, i, p.mesh.isSkinnedMesh ? p.mesh.skeleton : null, p.mesh.matrixWorld, p.frame === frame - 1 ? p.was : -1);
+          rows.place(p.part, i, p.mesh.isSkinnedMesh ? p.mesh.skeleton : null, p.mesh.matrixWorld, p.at === placings - 1 ? p.was : -1);
           p.was = i;
-          p.frame = frame;
+          p.at = placings;
         }
         placed++;
       }

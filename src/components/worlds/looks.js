@@ -40,7 +40,7 @@ export const LOOK_FOLDERS = [
   { folder: 'universe/landings', routes: ['/universe'] },
   { folder: 'universe/shipyard', routes: ['/universe'] },
   { folder: 'galaxy', routes: ['/galaxy'] },
-  { folder: 'galaxy/surface', routes: ['/galaxy/hoth/surface'] },
+  { folder: 'galaxy/surface', routes: ['/galaxy/endor/surface'] },
   { folder: 'expanse/flight', routes: ['/fly'] }, // planet flight (scripts/flight-island.mjs removes this row)
   { folder: 'deathstar', routes: ['/deathstar'] },
   { folder: 'deathstar/inside', routes: ['/deathstar/inside'] },

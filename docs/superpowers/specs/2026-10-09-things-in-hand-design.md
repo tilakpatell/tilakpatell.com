@@ -112,4 +112,4 @@ The audit over the crews (56), the heroes (11), the troops (10) and the catalogu
 - In every Middle-earth town, C-137, the Citadel, the planets, Portal panic, every galaxy surface and the Death Star inside: the prompt names whom E addresses, E plays a line and the body answers, `anim-check --held --talk` exits 0, feet under 0.15 m/s.
 - `docs/superpowers/evidence/things-in-hand/` holds the three audits and the check JSON; `docs/superpowers/shots/things-in-hand/` the shots.
 - `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build` clean.
-- `docs/superpowers/HANDOFF-things-in-hand.md` says what's done per world, what each audit found, and what's left.
+- `docs/superpowers/HANDOFF-universe.md` says what's done per world, what each audit found, and what's left.

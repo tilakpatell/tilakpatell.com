@@ -81,6 +81,7 @@ async function visitor(name, ship = null, viewport = { width: 1280, height: 800 
     // (headless Chromium draws in software: load the worlds and play anyway,
     // as someone on a slow machine would choose to)
     window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+    window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
     window.sessionStorage.setItem('tp-gl-anyway', 'true');
   }, [name, ship]);
   // RELAY=fake: the relays faked in here, for every context alike
@@ -168,6 +169,7 @@ async function warm(path, ready) {
     window.localStorage.setItem('tp-universe-ship', JSON.stringify('xwing'));
     window.localStorage.setItem('tp-universe-online', JSON.stringify('off'));
     window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+    window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
     window.sessionStorage.setItem('tp-gl-anyway', 'true');
   });
   const page = await ctx.newPage();

@@ -134,6 +134,52 @@ function fakeRagdolls() {
   };
 }
 
+// (far bodies animated at their distance's rate, ./lod.js: the review's)
+describe('a far soldier', () => {
+  const far = (o = {}) => ({ ...soldier, at: [200, 0, 0], ...o });
+  const eye = { x: 0, y: 1.6, z: 0 };
+  it('is placed and posed on its first frame, whatever its band, not left at the origin', async () => {
+    const { figs } = setup();
+    figs.update([far()], 0.05, 1, eye);
+    await settle();
+    figs.update([far({ t: 0.05 })], 0.05, 1, eye);
+    expect(figs.figure(3).model.position.x).toBeCloseTo(200, 6);
+  });
+
+  it('is walked by the graph only on the frames it moves', async () => {
+    const scene = new THREE.Scene();
+    const figs = createFigures({ scene, loadBody: async () => body(), held: createHeld({ load: () => Promise.resolve({ scene: new THREE.Group(), animations: [] }) }), loadStance: () => new Promise(() => {}) });
+    figs.update([far()], 0.05, 1, eye);
+    await settle();
+    figs.update([far()], 0.05, 1, eye);
+    const model = figs.figure(3).model;
+    // (the first walk is whole: nothing has been seen to stand still yet)
+    scene.updateMatrixWorld();
+    const walked = vi.spyOn(model, 'updateMatrixWorld');
+    let n = 0;
+    for (let i = 0; i < 8; i++) {
+      figs.update([far()], 0.05, 1, eye);
+      scene.updateMatrixWorld();
+      n = walked.mock.calls.length;
+    }
+    // (every fourth frame beyond 70 m: two of eight)
+    expect(n).toBe(2);
+  });
+
+  it('is animated every frame while it dies, so the ragdoll takes its fall at the clip’s speed', async () => {
+    const { figs } = setup();
+    figs.update([far()], 0.05, 1, eye);
+    await settle();
+    figs.update([far()], 0.05, 1, eye);
+    const xs = [];
+    for (let i = 1; i <= 4; i++) {
+      figs.update([far({ state: 'dying', at: [200 + i, 0, 0], t: i })], 0.05, 1, eye);
+      xs.push(figs.figure(3).model.position.x);
+    }
+    expect(xs).toEqual([201, 202, 203, 204]);
+  });
+});
+
 describe('the figures and the ragdolls', () => {
   it('hands a fallen soldier to the ragdolls with how it fell, then stops placing it', async () => {
     const ragdolls = fakeRagdolls();
@@ -670,6 +716,21 @@ describe('the far soldiers as rows', () => {
     expect(drawnOnce(figs, rows)).toBe('figure');
     await run(1, 4);
     expect(drawnOnce(figs, rows)).toBe('row');
+  });
+
+  it('keeps a row’s body on its distance’s animation rate, its rows placed on every frame between', async () => {
+    const { figs, rows, run } = field();
+    for (let t = 0; t < 3; t++) await run([at(200)], t);
+    expect(figs.figure(3).row).toBe(true);
+    const walked = vi.spyOn(figs.figure(3).model, 'updateMatrixWorld');
+    const seen = [];
+    for (let t = 3; t < 11; t++) {
+      await run([at(200)], t);
+      seen.push(drawnOnce(figs, rows));
+    }
+    // (every fourth frame beyond 70 m, ./lod.js: two of eight, the rows' own placing not counted as a frame)
+    expect(walked).toHaveBeenCalledTimes(2);
+    expect(seen).toEqual(Array(8).fill('row'));
   });
 
   it('keeps every soldier a figure with no rows, with the rows switched off, and where a part cannot be made', async () => {

@@ -92,7 +92,9 @@ export function inkHull(root, width, { clipY = null, color = INK } = {}) {
   wrap(mat, 'setupPositionView', (pv) => pv.add(normalize(transformNormalToView(normalLocal)).mul(width)), 'ink:push');
   if (clipY != null) {
     onColor(mat, () => {
-      If(positionGeometry.y.toVarying('vInkY').greaterThan(clipY), () => Discard());
+      If(positionGeometry.y.toVarying('vInkY').greaterThan(clipY), () => {
+        Discard();
+      });
       return null;
     }, 'ink:clip');
   }
