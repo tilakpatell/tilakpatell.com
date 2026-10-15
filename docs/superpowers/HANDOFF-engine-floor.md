@@ -32,7 +32,7 @@ The owner’s word (2026-10-15): remove the bloat, every world on WebGPU, everyt
 | FL3 the galaxy | the port | the same | now | | `claude/engine-floor-fl3-galaxy` | | |
 | FL3 each world FL2 lands | the port | the same, by the FL2 session that landed it | as FL2 merges | | `claude/engine-floor-fl3-<world>` | | |
 | FL4 | the classic renderer retired | written when FL3’s table is full | after FL2 and FL3 | | `claude/engine-floor-fl4-retire` | | |
-| FL5 | the frame off the main thread, a spike | `…-laneFL5-worker.md` | now | 2026-10-15 | `claude/engine-floor-fl5-worker` | | built behind `?worker=on`, off by default: the lit fixture draws in the worker (the same picture); Battlefront’s module reads `window` in `create`, so it is not a candidate yet (the list: `evidence/engine-floor/FL5/README.md`); the container’s table is SwiftShader’s shape only (the worker’s worst 1 % worse there); kept or dropped on the owner’s 5090 rows, empty |
+| FL5 | the frame off the main thread, a spike | `…-laneFL5-worker.md` | now | 2026-10-15 | `claude/engine-floor-fl5-worker` | #1012 | built behind `?worker=on`, off by default: the lit fixture draws in the worker (the same picture); Battlefront’s module reads `window` in `create`, so it is not a candidate yet (the list: `evidence/engine-floor/FL5/README.md`); the container’s table is SwiftShader’s shape only (the worker’s worst 1 % worse there); kept or dropped on the owner’s 5090 rows, empty |
 | FL6 | the figures on the GPU | written by its session from the design’s §4.9 | after #1000 to #1004 merge | | `claude/engine-floor-fl6-figures` | | |
 
 Each lane fills its row (session, PR, state) in its own pull request, and merges `origin/main` before it, keeping both sides. A lane never commits `src/data/health/latest.json`.
