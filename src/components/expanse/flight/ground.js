@@ -1,7 +1,8 @@
 // The flight's ground in three.js: the sink ./groundCore.js drives. A leaf's
-// transferred buffers are wrapped as a BufferGeometry (no normals worked out
-// here: the worker's are already right at the edges), its bounds set from
-// its square and its heights, under one root group the floating origin moves.
+// transferred buffers go into a slot of one batch (./leafBatch.js: the
+// ground one object to the renderer; no normals worked out here: the
+// worker's are already right at the edges), under one root group the
+// floating origin moves.
 // One material for the whole planet: the walkable surfaces' own
 // (lib/three/groundLook.js), the planet's palette by height and slope, its
 // photo-scanned surface (sand, snow, needles, ash…) close up and seen from
@@ -11,18 +12,19 @@
 // hides.
 //
 //   createGround(scene, { rt, spec, tier, palette, warn }) → { update(ship),
-//     heightUnder(x, z), stats() (groundCore's, and `geometries`: made and
-//     not yet disposed), setTier(tier), materials, dispose() }
+//     heightUnder(x, z), stats() (groundCore's, and `geometries`: the leaves
+//     in the batch, not yet freed), setTier(tier), materials, dispose() }
 
 import * as THREE from 'three';
 import { pool } from '../../../lib/three/pool';
 import { groundMaterial as shadeGround } from '../../../lib/three/groundLookNodes';
 import { MeshLambertNodeMaterial } from 'three/webgpu';
 import { cityMaterial } from './nodes';
-import { SKIRT, CLUTTER_KINDS, SOLID } from '../../../lib/land/flight/leafMesh';
+import { CLUTTER_KINDS, SOLID } from '../../../lib/land/flight/leafMesh';
 import { MAX_DEPTH } from '../../../lib/land/flight/quadtree';
 import { WORKER, createGroundCore } from './groundCore';
 import { createKitClutter } from './kitClutter';
+import { createLeafBatch } from './leafBatch';
 
 // slots a kind, at most (halved on low)
 export const CAP = { rock: 4000, spire: 600, debris: 2000, trunk: 3000, hive: 300, crystal: 800, block: 2000, tower: 6000, slab: 4000, needle: 4000, hero: 300 };
@@ -246,10 +248,12 @@ function three(scene, spec, tier, palette, kitsOf, house) {
   const pos = [0, 0, 0];
   const q = [0, 0, 0, 1];
 
-  let live = 0; // geometries made and not yet disposed
+  // (the leaves one object, ./leafBatch.js: the node renderer pays its
+  // per-object cost once for the whole ground)
+  const leaves = createLeafBatch(material, { slots: 128, parent: root });
   return {
     root,
-    live: () => live,
+    live: () => leaves.live(),
     materials: [material, ...new Set(pools.filter(Boolean).map((p) => p.mesh.material))],
     // the film-made tower's geometry and material (heroOf's): from now on the
     // city's nearest leaves stand it in for their towers and needles
@@ -261,36 +265,13 @@ function three(scene, spec, tier, palette, kitsOf, house) {
       return hero.mesh;
     },
     add(leaf, a) {
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.BufferAttribute(a.positions, 3));
-      g.setAttribute('normal', new THREE.BufferAttribute(a.normals, 3));
-      g.setIndex(new THREE.BufferAttribute(a.indices, 1));
-      let lo = Infinity, hi = -Infinity;
-      for (const h of a.heights) {
-        if (h < lo) lo = h;
-        if (h > hi) hi = h;
-      }
-      lo -= SKIRT;
-      const half = leaf.size / 2, mid = (hi - lo) / 2;
-      g.boundingSphere = new THREE.Sphere(new THREE.Vector3(half, lo + mid, half), Math.hypot(half, half, mid));
-      g.boundingBox = new THREE.Box3(new THREE.Vector3(0, lo, 0), new THREE.Vector3(leaf.size, hi, leaf.size));
-      const mesh = new THREE.Mesh(g, material);
-      mesh.name = leaf.key;
-      mesh.position.set(leaf.x0, 0, leaf.z0);
-      mesh.matrixAutoUpdate = false;
-      mesh.updateMatrix();
-      mesh.visible = false;
-      root.add(mesh);
-      live++;
-      return mesh;
+      return leaves.add(leaf, a);
     },
-    show(mesh, on) {
-      mesh.visible = on;
+    show(slot, on) {
+      leaves.show(slot, on);
     },
-    remove(mesh) {
-      root.remove(mesh);
-      mesh.geometry.dispose();
-      live--;
+    remove(slot) {
+      leaves.remove(slot);
     },
     clutterAdd(all, leaf) {
       const slots = [];
@@ -330,6 +311,7 @@ function three(scene, spec, tier, palette, kitsOf, house) {
       for (const p of new Set(pools)) p?.dispose();
       // (the hero's geometry is ours, its material the loaded model's: the asset cache's to free)
       if (hero) hero.mesh.geometry.dispose();
+      leaves.dispose();
       material.dispose();
     },
   };

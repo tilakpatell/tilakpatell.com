@@ -79,6 +79,14 @@ try {
   await page.evaluate(() => window.__RUNTIME__.current.world.view('start'));
   await page.waitForFunction(() => window.__RUNTIME__.current.world.settled(), null, { timeout: 240000, polling: 500 });
   await page.waitForTimeout(6000);
+  // (PROFILE=1: the JavaScript's self time over the frames counted, by
+  // function, the GL calls' own natives left out)
+  const cdp = process.env.PROFILE ? await ctx.newCDPSession(page) : null;
+  if (cdp) {
+    await cdp.send('Profiler.enable');
+    await cdp.send('Profiler.setSamplingInterval', { interval: 200 });
+    await cdp.send('Profiler.start');
+  }
   // (frames counted by the page's own rAF, so a slow frame is still one frame)
   const out = await page.evaluate(
     (n) =>
@@ -99,6 +107,20 @@ try {
       }),
     FRAMES,
   );
+  let hot = null;
+  if (cdp) {
+    const { profile } = await cdp.send('Profiler.stop');
+    const self = new Map();
+    const dt = new Map();
+    profile.samples.forEach((id, i) => dt.set(id, (dt.get(id) ?? 0) + (profile.timeDeltas[i] ?? 0)));
+    for (const n of profile.nodes) {
+      const { functionName: f, url, lineNumber } = n.callFrame;
+      if (!url || f === '(program)' || f === '(idle)') continue;
+      const key = `${f || '(anon)'}@${url.split('/').pop().split('?')[0]}:${lineNumber + 1}`;
+      self.set(key, (self.get(key) ?? 0) + (dt.get(n.id) ?? 0) / 1000);
+    }
+    hot = [...self.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25).map(([k, ms]) => [k, +(ms / FRAMES).toFixed(3)]);
+  }
   const backend = await page.evaluate(() => window.__RUNTIME__.gfx?.backend);
   // (which objects draw: each mesh's onBeforeRender counted over 10 frames,
   // by the scene's top-level subtree it is under; DRAWN=1)
@@ -137,7 +159,7 @@ try {
     .sort((a, b) => b[1] - a[1]);
   const total = per.reduce((s, [, v]) => s + v, 0);
   const draws = per.filter(([k]) => k.startsWith('draw')).reduce((s, [, v]) => s + v, 0);
-  console.log(JSON.stringify({ backend, frames: FRAMES, renders: out.renders, callsPerRender: Math.round(total), drawsPerRender: Math.round(draws), callsPerDraw: +(total / draws).toFixed(2), jsMsPerRender: +((out.rafMs - out.glMs) / R).toFixed(2), glMsPerRender: +(out.glMs / R).toFixed(2), top: per.slice(0, 16).map(([k, v]) => [k, +v.toFixed(1)]), drawn }));
+  console.log(JSON.stringify({ backend, frames: FRAMES, renders: out.renders, callsPerRender: Math.round(total), drawsPerRender: Math.round(draws), callsPerDraw: +(total / draws).toFixed(2), jsMsPerRender: +((out.rafMs - out.glMs) / R).toFixed(2), glMsPerRender: +(out.glMs / R).toFixed(2), top: per.slice(0, 16).map(([k, v]) => [k, +v.toFixed(1)]), drawn, hot }));
 } finally {
   await browser.close();
   await server.close();
