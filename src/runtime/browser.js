@@ -9,12 +9,13 @@ import { createWebGL } from './webgl';
 import { createWebGPU } from './webgpu';
 
 export function makeBackend(kind, opts) {
-  const canvas = document.createElement('canvas');
+  // (`canvas`: the OffscreenCanvas a worker was handed, runtime/worker/)
+  const canvas = opts.canvas ?? document.createElement('canvas');
   canvas.className = 'world-canvas';
   // ('nodes-webgl' is the node renderer on WebGL 2: never the classic one)
   // (?traa=off, development's: the reference shots' chain without its
   // temporal pass, scripts/reference-frames.mjs)
-  const temporal = !(import.meta.env?.DEV && /[?&]traa=off\b/.test(`${window.location.search}&${window.location.hash}`));
+  const temporal = !(import.meta.env?.DEV && /[?&]traa=off\b/.test(`${globalThis.location?.search}&${globalThis.location?.hash}`));
   // (HDR output only where the display has the range: lib/video.js's hdrWanted)
   return kind === 'webgl' ? createWebGL(canvas, opts) : createWebGPU(canvas, { ...opts, forceWebGL: kind === 'nodes-webgl', temporal, hdr: hdrWanted({ hdr: opts.hdr ? 'on' : 'off' }) });
 }
