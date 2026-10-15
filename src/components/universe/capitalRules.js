@@ -39,6 +39,8 @@
 // middle, as a fraction of its length (the parts sit on it).
 
 import { segmentSphere } from './siege';
+import { segmentHit } from '../../lib/combat/hulls';
+import { pieceCapitalPose } from '../../lib/combat/pose';
 
 export const JUMP = 0.7; // seconds to come out of (or go into) hyperspace
 export const CAPITAL = {
@@ -155,7 +157,10 @@ const between = (rand, [a, b]) => a + rand() * (b - a);
 
 const NO_SOLIDS = [];
 
-export function createCapital({ rand = Math.random } = {}) {
+// (`hulls`: galaxy/hulls.js's, get(kind) → the kind's hull or null: with it a
+// shot meets the ship on the game's shapes, turned as it's drawn, and only
+// where there's none on its chain of spheres)
+export function createCapital({ rand = Math.random, hulls = null } = {}) {
   const events = [];
   const bolts = [];
   const targets = [];
@@ -439,17 +444,28 @@ export function createCapital({ rand = Math.random } = {}) {
         }
       }
       let hull = false;
-      for (const h of c.hull) {
-        const k = segmentSphere(from, to, h.at, h.r * c.len);
-        if (k !== null && k < first) {
-          first = k;
+      let on = null; // (the hull's part, where its shapes decided)
+      const shapes = hulls?.get(c.kind) ?? null;
+      if (shapes) {
+        const r = segmentHit(shapes, pieceCapitalPose(c), from, to);
+        if (r && r.t < first) {
+          first = r.t;
           hull = true;
           hit = null;
+          on = r;
         }
-      }
+      } else
+        for (const h of c.hull) {
+          const k = segmentSphere(from, to, h.at, h.r * c.len);
+          if (k !== null && k < first) {
+            first = k;
+            hull = true;
+            hit = null;
+          }
+        }
       if (hit === null && !hull) return null;
       const at = [from[0] + (to[0] - from[0]) * first, from[1] + (to[1] - from[1]) * first, from[2] + (to[2] - from[2]) * first];
-      if (hull) return { type: up ? 'shielded' : 'hull', at, down: false, left: c.parts.filter((p) => p.kind === 'shield' && p.alive).length };
+      if (hull) return { type: up ? 'shielded' : 'hull', at, down: false, left: c.parts.filter((p) => p.kind === 'shield' && p.alive).length, ...(on ? { part: on.part, property: on.property } : {}) };
       hit.hp -= punch;
       const down = hit.hp <= 0;
       if (down) {

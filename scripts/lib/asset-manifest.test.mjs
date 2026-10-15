@@ -153,4 +153,14 @@ describe('the published assets’ manifest', () => {
     const got = gameFiles({ 'level-hoth-base': { source: GAME, file: '/models/galaxy/bf2017/levels/hoth/base/level.json' } }, pub).map((f) => f.path);
     expect(got).toEqual(['models/galaxy/bf2017/levels/hoth/cells/0_0.bin']);
   });
+
+  it('takes the hulls made from the game and from a bucket-only model, not the site’s own', () => {
+    const pub = scratch();
+    for (const k of ['xwing', 'interceptor', 'tie', 'hq/nebulon']) put(pub, `models/galaxy/hulls/${k}.bin`, k);
+    const rows = { xwing: { source: 'game' }, interceptor: { source: 'site', publish: true }, tie: { source: 'site' }, 'hq/nebulon': { source: 'site' }, gone: { source: 'game' } };
+    expect(gameFiles({}, pub, rows).map((f) => [f.path, f.tier, f.from])).toEqual([
+      ['models/galaxy/hulls/interceptor.bin', 'hull', 'interceptor'],
+      ['models/galaxy/hulls/xwing.bin', 'hull', 'xwing'],
+    ]);
+  });
 });

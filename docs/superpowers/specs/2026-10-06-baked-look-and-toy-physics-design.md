@@ -393,7 +393,7 @@ match the lit buildings beside them in a side-by-side at each time.
 - Checks before each commit: `npm run lint`, `npm test`, `npm run build`, then
   `node scripts/autopilot-check.mjs --routes /albuquerque` (headless Chromium is at
   `/opt/pw-browsers/chromium`; software WebGL is slow: `--settle 8000`).
-- Browser QA recipe (from `docs/superpowers/HANDOFF-abq-city-and-invincible-planet.md`):
+- Browser QA recipe (from `docs/superpowers/HANDOFF-worlds.md`):
   localStorage `tp-intro=1`, `tp-3d=on`, `tp-worlds="load"`, `tp-quality=low`;
   `window.__ABQ__.api.settle()`; `api.peek([x, y, z], [lx, ly, lz])` pins the camera;
   `api.info()` reports draw calls and triangles; `window.__ABQ__.sim` is the car.

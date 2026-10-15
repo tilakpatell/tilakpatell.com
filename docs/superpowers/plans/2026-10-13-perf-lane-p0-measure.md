@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node, Playwright (`playwright-core`) driving the machine’s Chromium (Edge on Windows), Vitest.
 
-**Spec:** `docs/superpowers/HANDOFF-performance-lanes.md` (lane P0), `docs/superpowers/HANDOFF-every-world-on-webgpu.md` item 19.
+**Spec:** `docs/superpowers/HANDOFF-runtime.md` (lane P0), `docs/superpowers/HANDOFF-runtime.md` item 19.
 
 ## Global constraints
 

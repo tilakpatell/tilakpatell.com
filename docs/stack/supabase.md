@@ -16,7 +16,7 @@ The census row is in [README.md](README.md). The files that import it:
 - `scripts/supabase-check.mjs`: the project read from `.env.local` as Vite reads it (`scripts/assets-upload.mjs` reads it so).
 With one, it walks the flight’s schema by hand against it (`scripts/lib/durable-check.mjs`). <!-- planet flight -->
 - `scripts/assets-upload.mjs`: the heavy assets to the Storage bucket, from the owner’s shell.
-- `src/components/stream/StreamView.jsx` and `src/components/stream/send.js`: the stream spike’s signalling (lane R2), each end’s own client with no session, on Realtime broadcast (below).
+- `src/components/stream/StreamView.jsx` and `src/components/stream/send.js`: the stream spike’s signalling, each end’s own client with no session, on Realtime broadcast (below).
 
 Around them: `src/lib/durable/entityLoader.js` (a planet’s built things, cell by cell; tested against `src/lib/durable/fixtures/fakeClient.js`), `src/lib/durable/entities.js` (the grid and the rows) and `scripts/supabase-seed.mjs` (the planets, into `supabase/seed.sql`). The schema is `supabase/migrations/` (how to apply it: `supabase/README.md`); the design is `docs/superpowers/specs/2026-10-09-planet-flight-and-shared-world-design.md`, Pillar 2. <!-- planet flight -->
 
@@ -30,7 +30,7 @@ Around them: `src/lib/durable/entityLoader.js` (a planet’s built things, cell 
 - **A `security definer` function for others’ writes.** Damage goes through `damage_entity`, clamped and rate-limited in the database.
 - **Realtime as the backstop.** `postgres_changes` on `world_entities` for one planet folds others’ builds in; a Nostr hint is the fast path.
 <!-- planet flight: end -->
-- **Realtime broadcast for a stream’s signalling** (lane R2’s spike, `docs/decisions/2026-10-11-the-stream-from-the-desktop.md`). One public channel a stream, `stream:<id>`, the id drawn by crypto; the WebRTC offer, answer and ICE candidates go as broadcast messages through `src/lib/stream/realtime.js` (which takes the client and imports no Supabase). No table, no policy, nothing stored. The clients are made in the stream’s own files, not the durable world’s: the stream holds no session and must outlive that world’s removal. A product mode would move to a private channel with an RLS policy on `realtime.messages` (the owner’s to create then).
+- **Realtime broadcast for a stream’s signalling**. One public channel a stream, `stream:<id>`, the id drawn by crypto; the WebRTC offer, answer and ICE candidates go as broadcast messages through `src/lib/stream/realtime.js` (which takes the client and imports no Supabase). No table, no policy, nothing stored. The clients are made in the stream’s own files, not the durable world’s: the stream holds no session and must outlive that world’s removal. A product mode would move to a private channel with an RLS policy on `realtime.messages` (the owner’s to create then).
 
 ## What the site does not use, and why
 
@@ -44,6 +44,7 @@ Around them: `src/lib/durable/entityLoader.js` (a planet’s built things, cell 
 - Every table has RLS on (the migration enables it; `scripts/supabase-check.mjs` walks it against a project by hand).
 - No key is committed or printed: the build reads the two from the environment (`.env.local`, git-ignored; the repository secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` in `deploy.yml`). The bucket’s URL is the repository variable `ASSET_BASE` (a URL, not a secret).
 - A bucket path is a content hash and is never overwritten; old paths go only with `--prune`, after the deploy that stopped naming them is live.
+- The deploy asks the bucket only for what the manifests gained or changed since the last deploy that went out (`scripts/assets-check.mjs --since <commit>`, one byte’s range each, the body never read); every file only by hand (`deploy.yml`’s `full-check`). Nothing in a workflow, a check or a session walks the whole bucket on a schedule.
 - The durable folder (`src/lib/durable/`) imports no three.js and no React, and its tests use a fake client, never the network (`docs/health/RULES.md`). <!-- planet flight -->
 
 ## Upgrading
@@ -59,7 +60,8 @@ The site calls `createClient`, `auth.getSession`, `auth.signInAnonymously`, `rpc
 
 ## Gotchas
 
-- **Egress is the bill a level world grows** (lane N4, `docs/superpowers/evidence/gpu-first/n4/README.md`). Pro includes 250 GB of cached egress a month, then $0.03 a GB (the research note’s streaming section). Every byte a visit pulls is held to its quality level’s `visitMB` (`src/lib/budgets.js`: 40, 120, 400, 1,200 MB), and its boot slice to `bootMB` (3, 6, 12, 12): at 400 MB a visit the included 250 GB is 625 high visits a month, at 1,200 MB about 210 ultra ones; the service worker keeps the world being played (`public/sw.js`, 400 MB), so a second visit on the same machine pulls little. The hedge if it climbs is Cloudflare R2 (no egress charge, $0.015 a GB-month stored) in front of the same hashed paths; the owner’s call (the GPU-first design’s §9, question 1). The paths stay public, unsigned and hashed: Smart CDN keys a signed URL apart, and a Range request into one GLB is never made (the loader parses whole files).
+- **Egress is the bill a level world grows**. Pro includes 250 GB of cached egress a month, then $0.03 a GB. Every byte a visit pulls is held to its quality level’s `visitMB` (`src/lib/budgets.js`: 40, 120, 400, 1,200 MB), and its boot slice to `bootMB` (3, 6, 12, 12): at 400 MB a visit the included 250 GB is 625 high visits a month, at 1,200 MB about 210 ultra ones; the service worker keeps the world being played (`public/sw.js`, 400 MB), so a second visit on the same machine pulls little. The hedge if it climbs is Cloudflare R2 (no egress charge, $0.015 a GB-month stored) in front of the same hashed paths; the owner’s call. The paths stay public, unsigned and hashed: Smart CDN keys a signed URL apart, and a Range request into one GLB is never made (the loader parses whole files).
+- **The deploy’s check was the egress (2026-10-15).** `scripts/assets-check.mjs` asked one byte of every published file at every deploy: 77,545 files, half an hour, and the month’s cached egress came to 387 GB against the included 250, which is 28 deploys of the bucket’s 13.8 GB: the CDN counts a one-byte range as the whole file, or near enough. Now only the entries changed since the last deploy are asked, and the answer’s body is let go unread (the pool’s `peek`); the summary line counts answers that gave the whole file (a 200), so a deploy’s log shows whether the CDN does that. The `Cached Egress per day` chart on the organisation’s usage page is the check: a day with eight deploys read about 110 GB before, and should read under a gigabyte now.
 - **Storage’s `cacheControl` is `max-age` only.** The bucket answers `max-age=31536000`; `immutable` cannot be set through the API, and needs not be: a path never changes its bytes.
 
 - **Anonymous sign-ins are off by default.** Enable them in the project’s Authentication settings, or every write is refused (`supabase/README.md`).

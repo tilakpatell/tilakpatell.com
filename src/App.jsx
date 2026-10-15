@@ -66,6 +66,13 @@ const PortalJump = lazy(() => import('./components/jumps/PortalJump'));
 const BlueSkyJump = lazy(() => import('./components/jumps/BlueSkyJump'));
 const JUMPS = { hyper: Hyperspace, portal: PortalJump, bluesky: BlueSkyJump };
 
+// A chunk fetched ahead of need, whose failure is nobody's: a 503 from
+// Pages, or a file gone in a deploy, would otherwise show as an uncaught
+// error in the console. The visit that needs the chunk asks for it again
+// through React's lazy, where a failure is the error boundary's (a reload
+// from the new build, lib/stale), as Feed's own fetch-ahead does.
+const ahead = (p) => p.catch(() => {});
+
 const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 
 function ScrollToTop() {
@@ -200,11 +207,11 @@ function IntroJump() {
       /* storage unavailable */
     }
     if (stage === 'welcome' || stage === 'crawl') {
-      import('./components/experience/OpeningCrawl');
-      import('./pages/Front');
-      import('./components/universe/scene');
+      ahead(import('./components/experience/OpeningCrawl'));
+      ahead(import('./pages/Front'));
+      ahead(import('./components/universe/scene'));
       // (the crew, the biggest part, once the crawl's begun: the welcome may yet be skipped)
-      import('./components/cockpit/load').then((m) => m.preloadCockpit('falcon', { crew: stage === 'crawl' }));
+      ahead(import('./components/cockpit/load').then((m) => m.preloadCockpit('falcon', { crew: stage === 'crawl' })));
     }
   }, [stage]);
   useEffect(() => {
@@ -217,7 +224,7 @@ function IntroJump() {
   useEffect(() => {
     const again = (e) => {
       if (stage) return;
-      import('./components/cockpit/load').then((m) => m.preloadCockpit(e.detail?.vehicle));
+      ahead(import('./components/cockpit/load').then((m) => m.preloadCockpit(e.detail?.vehicle)));
       setRide({ vehicle: e.detail?.vehicle ?? null });
       setStage('cockpit');
     };
@@ -339,16 +346,16 @@ const pageKey = (pathname) =>
 
 // the core pages, fetched ahead so a click on one opens at once
 const fetchPages = () => {
-  import('./components/feed/Feed.jsx');
-  import('./pages/Home');
-  import('./pages/Experience');
-  import('./pages/Projects');
-  import('./pages/Resume');
-  import('./pages/Contact');
-  import('./pages/Travel');
-  import('./components/Hyperspace');
+  ahead(import('./components/feed/Feed.jsx'));
+  ahead(import('./pages/Home'));
+  ahead(import('./pages/Experience'));
+  ahead(import('./pages/Projects'));
+  ahead(import('./pages/Resume'));
+  ahead(import('./pages/Contact'));
+  ahead(import('./pages/Travel'));
+  ahead(import('./components/Hyperspace'));
   // so the first ⌘K opens at once, instead of showing nothing while it loads
-  import('./components/CommandPalette');
+  ahead(import('./components/CommandPalette'));
 };
 // (at the front door, after this long if nothing's asked for them sooner)
 const PAGES_LATER_MS = 20000;

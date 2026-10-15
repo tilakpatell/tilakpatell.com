@@ -8,7 +8,7 @@
 
 **Tech Stack:** the world runtime, three r186’s node renderer, Vitest.
 
-**Spec:** `docs/superpowers/HANDOFF-performance-lanes.md` (lane P4), `docs/superpowers/HANDOFF-every-world-on-webgpu.md` items 2, 3, 4, 6 and 7.
+**Spec:** `docs/superpowers/HANDOFF-runtime.md` (lane P4). It replaces `HANDOFF-performance-lanes.md` (lane P4) and `HANDOFF-every-world-on-webgpu.md` (performance items 2, 3, 4, 6 and 7), the hand-offs this plan was written from.
 
 ## Global constraints
 
@@ -42,4 +42,4 @@
 
 - [x] Tests (`figures/lod.test.js`: `quietBones`, `animEvery`, `animDue`; `light/placed.test.js`: the pool’s matrices still); implement; commit.
 - [x] Measure (`docs/superpowers/evidence/perf/tools/queue6.sh`): High on WebGPU 5.6 → 4.3 ms a frame, 157 → 200 fps.
-- [ ] The four checks; pull request; merge on green.
+- [x] The four checks; pull request #993; merge on green.

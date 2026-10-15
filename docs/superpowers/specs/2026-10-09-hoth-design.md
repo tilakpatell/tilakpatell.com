@@ -94,7 +94,7 @@ Why:
   at all; Luke is only the player’s pick.
 - **The famous fight is scenery.** The snowspeeders fly a fixed ring
   (`speederflight`, built); the fallen AT-AT is a prop; you cannot fly a
-  speeder or trip a walker. `HANDOFF-galaxy-surfaces.md:47` lists the tow
+  speeder or trip a walker. `HANDOFF-galaxy.md:47` lists the tow
   cable as never built.
 - **The rest of the planet** (Echo Base’s zone, three quests, eight places,
   the assault, the ion cannon, the shield generator) is in good order and

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { check, verdict } from './assets-check.mjs';
+import { changedSince, check, manifestAt, verdict } from './assets-check.mjs';
 
 const got = (http, headers) => ({ status: 'fetched', http, headers: new Headers(headers) });
 const e = { hash: 'abcdef123456', bytes: 500 };
@@ -27,18 +27,35 @@ describe('the bucket held to its manifest', () => {
     expect(verdict(e, { status: 'failed', error: 'timed out' })).toBe('timed out');
   });
 
-  it('asks each entry’s published URL for one byte, and names the ones that are wrong', async () => {
+  it('asks each entry’s published URL for one byte, the body unread, and names the ones that are wrong', async () => {
     const asked = [];
     const pool = {
       run: async (job) => {
-        asked.push([job.url, job.headers.range]);
-        return job.url.includes('bad') ? { status: 'missing', http: 404 } : got(206, { 'content-range': 'bytes 0-0/500', 'cache-control': 'max-age=31536000' });
+        asked.push([job.url, job.headers.range, job.peek]);
+        if (job.url.includes('bad')) return { status: 'missing', http: 404 };
+        if (job.url.includes('whole')) return got(200, { 'content-length': '500', 'cache-control': 'max-age=31536000' });
+        return got(206, { 'content-range': 'bytes 0-0/500', 'cache-control': 'max-age=31536000' });
       },
     };
     const said = [];
-    const bad = await check({ base: 'https://b/site-assets/', entries: { 'models/ok.glb': e, 'models/bad.glb': e }, pool, log: (s) => said.push(s) });
+    const tally = {};
+    const bad = await check({ base: 'https://b/site-assets/', entries: { 'models/ok.glb': e, 'models/bad.glb': e, 'models/whole.glb': e }, pool, log: (s) => said.push(s), tally });
     expect(bad).toEqual(['models/bad.glb']);
-    expect(asked).toContainEqual(['https://b/site-assets/abcdef123456/models/ok.glb', 'bytes=0-0']);
+    expect(asked).toContainEqual(['https://b/site-assets/abcdef123456/models/ok.glb', 'bytes=0-0', true]);
     expect(said.join('\n')).toMatch(/models\/bad\.glb: not in the bucket/);
+    // (a CDN that gave the whole file to the one-byte range is counted, so the deploy's log says so)
+    expect(tally.whole).toBe(1);
+  });
+
+  it('with --since, asks only what the manifests gained or changed since that commit', () => {
+    const old = { 'a.glb': { hash: 'aaaaaaaaaaaa', bytes: 1 }, 'b.glb': { hash: 'bbbbbbbbbbbb', bytes: 2 }, 'c.glb': { hash: 'cccccccccccc', bytes: 3 }, 'gone.glb': { hash: 'dddddddddddd', bytes: 4 } };
+    const now = { 'a.glb': { hash: 'aaaaaaaaaaaa', bytes: 1 }, 'b.glb': { hash: 'b2b2b2b2b2b2', bytes: 2 }, 'c.glb': { hash: 'cccccccccccc', bytes: 30 }, 'new.glb': { hash: 'eeeeeeeeeeee', bytes: 5 } };
+    expect(Object.keys(changedSince(now, old))).toEqual(['b.glb', 'c.glb', 'new.glb']);
+    expect(Object.keys(changedSince(now, {}))).toEqual(Object.keys(now));
+    expect(Object.keys(changedSince(now, undefined))).toEqual(Object.keys(now));
+    // (the manifest as a commit had it, read from git; one that wasn't there is empty, so everything is asked)
+    expect(manifestAt('HEAD', `${process.cwd()}/package.json`, process.cwd())).toHaveProperty('name', 'tilakpatell.com');
+    expect(manifestAt('HEAD', `${process.cwd()}/src/data/no-such-manifest.json`, process.cwd())).toEqual({});
+    expect(manifestAt('no-such-ref', `${process.cwd()}/package.json`, process.cwd())).toEqual({});
   });
 });

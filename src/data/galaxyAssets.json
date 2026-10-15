@@ -188855,6 +188855,12 @@
     "from": "models/galaxy/bf2017/levels/hoth/nav.bin",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/navmesh.bin": {
+    "hash": "f89713c640cc",
+    "bytes": 1823700,
+    "from": "models/galaxy/bf2017/levels/hoth/navmesh.bin",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/outpost/cells/-1_-1.bin": {
     "hash": "2a51e3490882",
     "bytes": 11552,
@@ -199811,10 +199817,76 @@
     "from": "models/galaxy/bf2017/levels/hoth/terrain/far.png",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/terrain/masks.1408.ktx2": {
+    "hash": "c3fe5dbfdc9b",
+    "bytes": 1793657,
+    "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.1408.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/terrain/masks.352.ktx2": {
+    "hash": "e5197eed4dce",
+    "bytes": 181404,
+    "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.352.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/terrain/masks.704.ktx2": {
+    "hash": "d4b30fc8b025",
+    "bytes": 564677,
+    "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.704.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/terrain/near.png": {
     "hash": "1744d4a64556",
     "bytes": 2619228,
     "from": "models/galaxy/bf2017/levels/hoth/terrain/near.png",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.1024.ktx2": {
+    "hash": "7d7c5fe50d15",
+    "bytes": 1778638,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.2048.ktx2": {
+    "hash": "a1af1c050926",
+    "bytes": 5649706,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.512.ktx2": {
+    "hash": "1cf338ecda2d",
+    "bytes": 466418,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.1024.ktx2": {
+    "hash": "642ef592b32d",
+    "bytes": 4227726,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.512.ktx2": {
+    "hash": "7491044012a8",
+    "bytes": 1111628,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.1024.ktx2": {
+    "hash": "05f15d213d5f",
+    "bytes": 8872818,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.2048.ktx2": {
+    "hash": "533e8f03cb01",
+    "bytes": 34724689,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.512.ktx2": {
+    "hash": "71cac2e3f9fe",
+    "bytes": 2252745,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rock_large_01_c.1024.ktx2": {
@@ -462238,6 +462310,144 @@
     "bytes": 476056,
     "from": "objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh",
     "tier": "surface"
+  },
+  "models/galaxy/hulls/arc170.bin": {
+    "hash": "c9255097fb9e",
+    "bytes": 15624,
+    "from": "arc170",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/awing.bin": {
+    "hash": "94f18fdbdc23",
+    "bytes": 15512,
+    "from": "awing",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/corvette.bin": {
+    "hash": "330419a4cadd",
+    "bytes": 6156,
+    "from": "corvette",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/destroyer.bin": {
+    "hash": "a11220a46a08",
+    "bytes": 114904,
+    "from": "destroyer",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/falcon.bin": {
+    "hash": "ff371f165250",
+    "bytes": 37256,
+    "from": "falcon",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/hyena.bin": {
+    "hash": "3173d5fd69ed",
+    "bytes": 26668,
+    "from": "hyena",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/interceptor.bin": {
+    "hash": "81e303a95b28",
+    "bytes": 21484,
+    "from": "interceptor",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/moncal.bin": {
+    "hash": "5ea3f351de67",
+    "bytes": 107320,
+    "from": "moncal",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/n1.bin": {
+    "hash": "f9fbcb7c7804",
+    "bytes": 17240,
+    "from": "n1",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/nebulon.bin": {
+    "hash": "c1703853eedb",
+    "bytes": 5104,
+    "from": "nebulon",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/providence.bin": {
+    "hash": "90c67d9b9fc9",
+    "bytes": 4852,
+    "from": "providence",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/slave1.bin": {
+    "hash": "7ef536af9f6d",
+    "bytes": 21012,
+    "from": "slave1",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/tie.bin": {
+    "hash": "a27ddfe5288d",
+    "bytes": 16604,
+    "from": "tie",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/tieadvanced.bin": {
+    "hash": "ec8e7803f316",
+    "bytes": 18148,
+    "from": "tieadvanced",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/tiebomber.bin": {
+    "hash": "ec02326f4b39",
+    "bytes": 43900,
+    "from": "tiebomber",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/trifighter.bin": {
+    "hash": "fb5e26e2c368",
+    "bytes": 27388,
+    "from": "trifighter",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/uwing.bin": {
+    "hash": "12efbbc35124",
+    "bytes": 68024,
+    "from": "uwing",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/venator.bin": {
+    "hash": "4681da17645f",
+    "bytes": 117172,
+    "from": "venator",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/vulture.bin": {
+    "hash": "df68e8b55cb5",
+    "bytes": 30748,
+    "from": "vulture",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/vwing.bin": {
+    "hash": "176d06073606",
+    "bytes": 14272,
+    "from": "vwing",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/xwing.bin": {
+    "hash": "081ffe2926e7",
+    "bytes": 9024,
+    "from": "xwing",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/xwing65.bin": {
+    "hash": "7e8c568e012c",
+    "bytes": 9024,
+    "from": "xwing65",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/ywing.bin": {
+    "hash": "0d2239053d3e",
+    "bytes": 20116,
+    "from": "ywing",
+    "tier": "hull"
   },
   "models/galaxy/kits/frontendstage.glb": {
     "hash": "41ddc7ffbc14",
