@@ -1,6 +1,6 @@
 # The game’s colours, correct, on every Star Wars world. The design
 
-Date: 2026-10-10 (night). Status: **design and the first slice, in one PR** (`claude/bf2017-colours-everywhere`), written by a session that could not reach the bucket (no `SUPABASE_URL` or `SUPA_KEY` in its environment) and so built everything that needs no network, measured the files already on `main`, and wrote the bucket-bound steps as commands for the next session. The plan: `docs/superpowers/plans/2026-10-10-bf2017-colours-everywhere.md`. The evidence: `docs/superpowers/evidence/bf2017-colour/`. The hand-off: `HANDOFF-bf2017.md`, “The colours, everywhere”. It sits on the pipeline design (#802), the surfaces design (#844, lanes Q1 to Q6), the accuracy design’s colour lane (#877, `-accuracy-lane-colour.md`) and lane W’s roles (#823), and repeats none of them.
+Date: 2026-10-10 (night). Status: **design and the first slice, in one PR** (`claude/bf2017-colours-everywhere`), written by a session that could not reach the bucket (no `SUPABASE_URL` or `SUPA_KEY` in its environment) and so built everything that needs no network, measured the files already on `main`, and wrote the bucket-bound steps as commands for the next session. The plan: `docs/superpowers/plans/2026-10-10-bf2017-colours-everywhere.md`. The evidence: `docs/superpowers/evidence/bf2017-colour/`. The hand-off: `HANDOFF-battlefront.md`, “The colours, everywhere”. It sits on the pipeline design (#802), the surfaces design (#844, lanes Q1 to Q6), the accuracy design’s colour lane (#877, `-accuracy-lane-colour.md`) and lane W’s roles (#823), and repeats none of them.
 
 ## What the owner asked
 
@@ -9,7 +9,7 @@ Date: 2026-10-10 (night). Status: **design and the first slice, in one PR** (`cl
 **What I understood** (the owner corrects any of it):
 
 - *All the colours*: every colour map the drop holds reaches the site through one pipeline, in the colour space the game stored it in, with the game’s own tints (the variation chain) on top; nothing is re-encoded, nothing is guessed.
-- *Correct*: measurable. A map is correct when the file says what it is (sRGB for colour, linear for data), every loader reads it that way, and the material multiplies the game’s tints in linear light as Frostbite does. The audit is the gate.
+- *Correct*: measurable. A map is correct when the file says what it is (sRGB for colour, linear for data), every loader reads it that way, and the material multiplies the game’s tints in linear light. The audit is the gate.
 - *Apply them to all the Star Wars galaxy and worlds*: every one of the seventeen landable worlds wears the game’s maps, not only the three on level packs: the people and vehicles already do (`--native`), the props’ trims and the grounds’ grain do once the world’s look says `scanned: 'bf2017'` (lane W made the 29 roles in #823; no world had turned them on).
 
 ## The colour chain, end to end

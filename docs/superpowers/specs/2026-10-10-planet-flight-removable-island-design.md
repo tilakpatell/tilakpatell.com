@@ -1,6 +1,6 @@
 # The planet flight beside the Battlefront pipeline: kept for now, gone in one move. The design
 
-Date: 2026-10-10. Status: design, written by the architecting session that ran the flight lanes, after reading the Battlefront sessions and the code on `main`. The plan is `docs/superpowers/plans/2026-10-10-flight-island.md` (lane J of `docs/superpowers/HANDOFF-planet-flight.md`).
+Date: 2026-10-10. Status: design, written by the architecting session that ran the flight lanes, after reading the Battlefront sessions and the code on `main`. The plan is `docs/superpowers/plans/2026-10-10-flight-island.md` (lane J of `docs/superpowers/HANDOFF-galaxy.md`).
 
 ## What the owner asked
 
@@ -8,7 +8,7 @@ Date: 2026-10-10. Status: design, written by the architecting session that ran t
 
 ## What the other sessions are doing
 
-The Battlefront II (2017) pipeline (`docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-design.md`, its hand-off `HANDOFF-bf2017.md`) replaces the galaxy’s models with the game’s own, one phase a lane, under one rule: *the game first*. Read from its spec, its plans on `origin/claude/nice-mayer-jqow5k`, and the five sessions running it:
+The Battlefront II (2017) pipeline (`docs/superpowers/specs/2026-10-10-battlefront-2017-asset-pipeline-design.md`, its hand-off `HANDOFF-battlefront.md`) replaces the galaxy’s models with the game’s own, one phase a lane, under one rule: *the game first*. Read from its spec, its plans on `origin/claude/nice-mayer-jqow5k`, and the five sessions running it:
 
 - **Phase 0 (merged, #805)**: the fetch and the import over the private bucket’s manifest; a new catalogue group `catalog/bf2017.js`, last in `GROUPS`, so a kind it names wins over the same kind anywhere else.
 - **Phase 1 (running)**: the heroes on the game’s 254-joint rig with their hilts; one shared clip library; `crew.js` learns a `rig: 'walrus'` row.

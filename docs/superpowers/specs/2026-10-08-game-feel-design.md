@@ -119,7 +119,7 @@ Read on the evening of 8 October (`git branch -r --no-merged origin/main`, the o
 ## Rollout
 
 1. **Lane 1F, the kit** (`claude/feel-kit`, from `main`): `press.js`, `spring.js`, `ease.js`, `feel.js`’s defaults and groups, `sfx.js`’s gain, the cherry-picked `vehicleFeel.js` and `vehicleBody.js`, the ratchet test with its lists filled from the audit. One pull request, small, first.
-2. **Lanes 2A to 2F** (`claude/feel-<group>`, from `main` once 1F and Phase 1 are in): the roster, tier by tier, a pull request a tier (Tier 3 a pull request a world). Each lane fills its row in `docs/superpowers/HANDOFF-one-feel.md`.
+2. **Lanes 2A to 2F** (`claude/feel-<group>`, from `main` once 1F and Phase 1 are in): the roster, tier by tier, a pull request a tier (Tier 3 a pull request a world). Each lane fills its row in `docs/superpowers/HANDOFF-universe.md`.
 
 ## Decisions
 

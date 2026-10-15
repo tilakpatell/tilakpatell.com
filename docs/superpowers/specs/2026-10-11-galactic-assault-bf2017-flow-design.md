@@ -1,6 +1,6 @@
 # Galactic Assault deploys like the game: the four classes, Battle Points, the heroes earned. The design
 
-Date: 2026-10-11. Status: **design and implementation in one session (Opus 5.5 lanes under a Fable 5.1 orchestrator)**, on the flow design (`2026-10-10-battlefront-flow-and-mods-design.md`, decisions 1 to 3) and the game design (`2026-10-10-battlefront-game-design.md`, catalogue 4: Battle Points). It changes none of their decisions. Hand-off: `docs/superpowers/HANDOFF-galactic-assault.md`, “The game’s deploy flow”.
+Date: 2026-10-11. Status: **design and implementation in one session (Opus 5.5 lanes under a Fable 5.1 orchestrator)**, on the flow design (`2026-10-10-battlefront-flow-and-mods-design.md`, decisions 1 to 3) and the game design (`2026-10-10-battlefront-game-design.md`, catalogue 4: Battle Points). It changes none of their decisions. Hand-off: `docs/superpowers/HANDOFF-battlefront.md`, “The game’s deploy flow”.
 
 ## What the owner asked
 
@@ -44,4 +44,4 @@ Date: 2026-10-11. Status: **design and implementation in one session (Opus 5.5 l
 
 - The other seven worlds on the game’s own level (decision 2’s data: a teams row, the stages’ objectives, the lighting rulebook, the weather and picture per level), one level a lane, from the export on the desktop; Endor first (its pack, picture and stages exist; its objectives and lighting do not).
 - The owner’s own frame on WebGPU is not reproduced in the cloud (no WebGPU device there); decision 6’s cause was found by reading three’s loader and holds on every renderer. The settings’ stats and the console now say which map failed and why; `?gpu=webgl` and `?post=off` in the address tell the renderer and the chain apart.
-- Aerials, infiltrators and vehicles are not offered on the galaxy’s engine; the galaxy has no bodies for the first two and no vehicle to board on foot yet (`HANDOFF-galactic-assault.md`, “Left”).
+- Aerials, infiltrators and vehicles are not offered on the galaxy’s engine; the galaxy has no bodies for the first two and no vehicle to board on foot yet (`HANDOFF-battlefront.md`, “Left”).

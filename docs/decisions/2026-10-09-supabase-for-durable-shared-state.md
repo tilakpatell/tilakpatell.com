@@ -1,6 +1,6 @@
 # Supabase holds the shared world's durable state; the site stays static
 
-Date: 2026-10-09. The long version: `docs/superpowers/specs/2026-10-09-planet-flight-and-shared-world-design.md` (Pillar 2); where it is left: `docs/superpowers/HANDOFF-planet-flight.md`.
+Date: 2026-10-09. The long version: `docs/superpowers/specs/2026-10-09-planet-flight-and-shared-world-design.md` (Pillar 2); where it is left: `docs/superpowers/HANDOFF-galaxy.md`.
 
 ## Context
 
