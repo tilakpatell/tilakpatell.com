@@ -87,6 +87,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   events.current = onEvent;
   const reduced = useReducedMotion();
   const { host, on, meant, rt, progress } = useWorld(universeModule, {
+    near: '0px', // (made once its box is in view, as useScene had it)
     props: {
       universe, // (the Expanse's seed: a pocket universe's, or the shared one; read once, the map is keyed on it)
       reduced,

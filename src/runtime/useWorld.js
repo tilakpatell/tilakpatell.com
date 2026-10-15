@@ -1,8 +1,12 @@
 // A page puts a world module on the runtime: useWorld(module, { props,
-// enabled, onEvent, attempt, rebuild }) → { host, status, on, meant, world, rt }
+// enabled, onEvent, attempt, rebuild, near }) → { host, status, on, meant, world, rt }
 // (`attempt` bumped mounts it again after a failure; `rebuild` is what the
 // world is made for, and a change of it makes the world again: a mission
-// the page changes to, say). `host` is
+// the page changes to, say; `near`, a margin round the viewport ('0px',
+// '100% 0px'), holds the world back until its box first comes within it,
+// as lib/three/useScene's scenes were held, and it stays made after: a
+// page whose world is below the fold downloads and builds nothing for it
+// until it's scrolled to). `host` is
 // the ref for the box (WorldHost renders it); the module is mounted while
 // `enabled` and 3D is on (lib/gpu, which a phone's download gate holds);
 // its size and whether it's on screen follow the box; `props` reach the
@@ -19,6 +23,23 @@
 // (rt.unmount) a tick after the last page holding its module lets go, so
 // a handover's page can leave first and React's second run of an effect
 // in development keeps what the first one had.
+//
+// Two pictures on one page (the engine floor's design, §4.3). Where the
+// second canvas was a copy of the first (Rick and Morty's portal swirl
+// beside its backdrop), it's one module drawing one canvas. Where it's a
+// picture of its own (the shipyard's showroom, a ship on a turntable over
+// the universe map or the galaxy held still behind it; the Collection's
+// hero stage beside Battlefront's front end), it's a second module in a
+// second host, mounted by the same page through a second useWorld and
+// drawn by the runtime's one renderer, as a handover's two worlds share
+// it: on WebGPU into its own host's canvas (the node renderer's
+// CanvasTarget), on WebGL 2, which draws one canvas a context, into a
+// target copied to its host. The runtime holds one world today; the
+// second (`beside`) is the runtime's to add, and until it has, the
+// showroom keeps its own renderer, drawn only while the yard is open and
+// counted among the measure's `renderers` (decided by lane FL2's universe
+// map, 2026-10-15: a copy is not what the showroom draws, so it is never
+// folded into the map's module).
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { use3D } from '../lib/gpu';
@@ -33,6 +54,24 @@ export const madeFor = new WeakMap();
 // (`mine`: the world lost was this page's module, so a page opened while
 // another's is lost does not mount twice: the review's minor 4)
 export const recoverNow = ({ status, recoverable, tried, mine }) => status === 'lost' && Boolean(recoverable) && !tried && Boolean(mine);
+// Told once when `el` comes within `margin` of the viewport (or at once:
+// no margin, or no IntersectionObserver to ask); → stop()
+export function watchNear(el, margin, onNear, { IO = typeof IntersectionObserver !== 'undefined' ? IntersectionObserver : undefined } = {}) {
+  if (margin == null || !IO) {
+    onNear();
+    return () => {};
+  }
+  const io = new IO(
+    ([e]) => {
+      if (!e?.isIntersecting) return;
+      io.disconnect();
+      onNear();
+    },
+    { rootMargin: margin },
+  );
+  io.observe(el);
+  return () => io.disconnect();
+}
 export const adoptable = (current, module, rebuild) => Boolean(current && current.module === module && (!madeFor.has(current.world) || madeFor.get(current.world) === rebuild));
 
 // How far a module's prepare has got (the runtime's 'prepare' events), for a
@@ -54,7 +93,7 @@ export function usePrepareProgress(module) {
   return progress;
 }
 
-export function useWorld(module, { props, enabled = true, onEvent = null, attempt = 0, rebuild = null } = {}) {
+export function useWorld(module, { props, enabled = true, onEvent = null, attempt = 0, rebuild = null, near = null } = {}) {
   const host = useRef(null);
   const world = useRef(null);
   const three = use3D();
@@ -64,7 +103,15 @@ export function useWorld(module, { props, enabled = true, onEvent = null, attemp
   propsRef.current = props;
   const eventRef = useRef(onEvent);
   eventRef.current = onEvent;
-  const on = enabled && three.on;
+  // (near the viewport yet: at once with no margin; useScene's way with one)
+  const [close, setClose] = useState(near == null);
+  useEffect(() => {
+    const el = host.current;
+    if (close || !el) return undefined;
+    return watchNear(el, near, () => setClose(true));
+  }, [close, near]);
+  const wanted = enabled && three.on;
+  const on = wanted && close;
   // (bumped once after a loss the runtime can come back from: the mount below runs again)
   const [again, setAgain] = useState(0);
   const tried = useRef(false);
@@ -153,13 +200,14 @@ export function useWorld(module, { props, enabled = true, onEvent = null, attemp
 
   // 3D first: while the world is meant to show, the box says so, so the
   // page can hide its fallback from the start
-  const meant = on && status !== 'failed' && status !== 'slow' && status !== 'lost';
+  // (and while it waits to come near: the page's fallback stays hidden, as useScene's did)
+  const meant = wanted && status !== 'failed' && status !== 'slow' && status !== 'lost';
   useEffect(() => {
     const el = host.current;
     if (!el) return;
-    if (meant) el.dataset.gl = status === 'on' ? 'on' : 'loading';
+    if (meant) el.dataset.gl = status === 'on' && close ? 'on' : 'loading';
     else delete el.dataset.gl;
-  }, [meant, status]);
+  }, [meant, status, close]);
 
   return { host, status, progress, on: status === 'on', meant, world, rt: typeof window !== 'undefined' ? runtime() : null };
 }
