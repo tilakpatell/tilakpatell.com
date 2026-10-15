@@ -131,7 +131,7 @@ export const SNIPER = { near: 15, reach: 2.2, sights: 0.97, lead: 1, spread: 0.2
 export const MISSILE = { speed: 22 * PACE, life: 4.5 / PACE, seek: 3, sees: 0.26, damage: 24, burst: 0.5, range: 26, sights: 0.75, every: [4.5, 7.5] }; // sees: the cosine it still sees you inside (about 75°)
 export const ION = { damage: 5, slow: 2.5 };
 export const RAM = { damage: 28, reach: 0.6 };
-export const MEDIC = { every: 2.5, reach: 20 };
+const MEDIC = { every: 2.5, reach: 20 };
 export const FLICKER = 2;
 export const LOSE = { far: 48, after: 5 }; // they give up once you're this far away for this long
 export const SHIP_R = 0.2; // how close a laser must pass you to hit
@@ -223,7 +223,7 @@ export const HUNTER_SENSES = createSenses({ sight: { range: 400, cone: -1, far: 
 // Its nerve: a pack of at least NERVE.pack that's lost most of itself (the
 // ratio of what's left of it to what it's lost and what you're worth:
 // lib/ai/squad's confidence, binned) breaks off together
-export const NERVE = { pack: 3, you: 0.4, every: 1 };
+const NERVE = { pack: 3, you: 0.4, every: 1 };
 // The roles a hunter waiting for a run may take (its station): holding
 // off to one side ahead of you, swinging round behind you to come in from
 // your blind side, or sitting out across the way you're going

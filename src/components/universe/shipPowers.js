@@ -321,7 +321,7 @@ const insideAny = (p, solids, gap) => solids.some((o) => Math.hypot(p.x - o.at[0
 // How far along `dir` (a unit vector) from `p` the first solid is, `gap` off
 // its surface: Infinity for none. One whose trench `p` is down in doesn't
 // count (flying the trench is the pilot's: ship.js keeps it to its floor)
-export function solidAhead(p, dir, solids, gap = 0) {
+function solidAhead(p, dir, solids, gap = 0) {
   let best = Infinity;
   for (const o of solids) {
     if (o.band && inTrench(o, p.x, p.y, p.z)) continue;
