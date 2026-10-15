@@ -32,7 +32,7 @@
 // coneLight(cone, lights) → the nearest spot within CONE_REACH of the apex, or null   (pure)
 // apexOf(volume) → [x, y, z]   (pure)
 // upsample(tsl, low, depth, projInv, scale) → node   (the joint bilateral upsampling, shared with fog.js)
-// createVolumetrics(scene, renderer, { tier, source, lights, scale })
+// createVolumetrics(scene, renderer, { tier, source, lights, scale, shadows })
 //   → Promise<{ set(list), update(camera), pass(colorNode, { depth, camera }), setScale(k), lit, slots, dispose }>
 
 import { CELL, cellsNear, screenArea } from './placed.js';
@@ -147,7 +147,7 @@ export function upsample(tsl, low, depthNode, projInv, scale) {
 
 const flatSpots = (json) => Object.values(json?.cells ?? {}).flat().filter((l) => l.kind === 'spot');
 
-export async function createVolumetrics(scene, renderer, { tier = 'high', source = null, lights = null, scale = 1, cell = CELL } = {}) {
+export async function createVolumetrics(scene, renderer, { tier = 'high', source = null, lights = null, scale = 1, cell = CELL, shadows = true } = {}) {
   const n = CONES_LIT[tier] ?? 0;
   const inert = { set: () => 0, update: () => 0, pass: (colorNode) => colorNode, setScale() {}, lit: 0, slots: [], dispose() {} };
   if (!n) return inert;
@@ -213,7 +213,9 @@ export async function createVolumetrics(scene, renderer, { tier = 'high', source
     const spot = new THREE.SpotLight(0xffffff, 0, 1, Math.PI / 4, 0.5, 2);
     spot.name = `volume-spot-${s}`;
     spot.layers.set(VOLUME_LAYER);
-    spot.castShadow = true;
+    // (a shadow map a slot is a sampler in every lit material the scene draws, the slots' layer or not:
+    // on a device held to WebGPU's 16 samplers a stage the scene's own materials overflow, so none there)
+    spot.castShadow = shadows;
     spot.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
     spot.shadow.camera.layers.mask = shadowMask;
     spot.shadow.autoUpdate = false;

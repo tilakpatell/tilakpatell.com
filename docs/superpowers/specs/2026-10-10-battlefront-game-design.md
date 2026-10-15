@@ -177,34 +177,6 @@ Every mechanic of the 2017 game this design builds, its rule, where its numbers 
 - **Vehicle bots** (`ai/vehicleBrain.js`): the AT-AT walks its waypoints and fires at what its gunner sees (`Vehicle_Ground_AT-AT_MP_AI`); `AT-ST_Combat` for walkers that hunt; speeders strafe; stationary turrets track.
 - **The living world** (`FantasyBattle_LivingWorld`, `Characters/LivingWorld/*`: creature locomotion settings and bindings): ambient creatures on the map, later.
 
-### 8. Frostbite engine mechanics, translated
-
-| Frostbite | what it is | here |
-| --- | --- | --- |
-| `*Blueprint` with components (`SoldierEntityData`, `WSSoldierHealthComponentData`, `BoneCollisionComponentData` …) | an entity's parts | `sim.js` entities as component bags; the extractor flattens each blueprint's components into the rulebook row |
-| Affectors (`MaxHealthAffectorAsset`, `DamageAffectorAsset`, `RemoveAffectorAsset`, `BasicAffectorAsset`) | stackable property modifiers with ranks | `affectors.js`: a stack per entity, resolved each step |
-| Abilities and channels (`BasicPlayerAbilityAsset`, `BlockingChannels`, `CharacterStatePlayerAbilityAsset`) | timed actions that block one another | `abilities.js` |
-| Schematics (`PropertyConnections`, `EventConnections`, `LinkConnections`) | the logic graphs of prefabs and levels | constants read by the extractor; the shape hand-authored in `stages.json`; never interpreted at run time |
-| `Synced*EntityData` | networked state | sim events; the online lane later |
-| `WeaponFiringData`, `GunSwayData`, `OverheatConfig` | the gun model | `weapons.js` |
-| `ProjectileBlueprint`, `ExplosionEntityData`, `WSMissileEntityData` | bolts, missiles, blasts | `bolts.js` on `lib/combat/bolt.js` |
-| `BoneCollision*` | hit zones | `soldier.js` capsules per part |
-| `WSEACharacterPhysicsComponentData` | ragdoll bodies | the world's ragdoll on `lib/three/ragdollPhysics` with the game's 15 bodies |
-| Havok `*_Physics_Win32` | collision | Rapier trimeshes and hulls from `physics/`, built once per level |
-| `TerrainStreamingTree` | the heightfield quadtree | the 16-bit PNG, decoded with a 16-bit reader, one heightfield collider and a mesh by distance |
-| `LayerData`, `SubWorldData`, `StaticModelGroup` | placement | the map manifest and bin (already built by the export) |
-| `VisualEnvironmentBlueprint` (outdoor light, sky, fog, tonemap, colour correction, HBAO, shadows, sun flare, wind, Enlighten) | lighting, sky and post presets per weather | `lighting.json` per level and weather; `look.js` applies it: sun and hemisphere from the colours, Rayleigh sky, the fog curve, exposure from `EV`, bloom from `BloomScale` and the Gaussian colours, the grading LUT, HBAO, CSM shadows, the sun flare, wind on cloth and foliage |
-| `PbrSphereLightEntityData`, `PbrSpotLightEntityData`, `SimpleVolumetricsEntityData`, `LightProbeVolumeData`, the lighting prefabs | placed lights, volumetric cones, probe volumes | `lighting.json`'s `lights[]`, `volumetrics[]`, `probes[]` with transforms; three.js point and spot lights with the records' cull and fade, cones as additive meshes, probe volumes as local environment maps |
-| `GradingLutAsset` | a colour LUT per weather | a `Data3DTexture` in the post |
-| `SoldierThirdPersonCameraData`, `SoldierCameraComponentData`, `WeaponZoomLevelData`, `*CameraTransformerEntityData`, `CameraEntityData` | the cameras | `cameras.json`; `camera.js` (pure poses), `cameraRig.js` |
-| `UIWidgetBlueprint`, `SvgImage`, the fonts, the strings, `_TextureMappings` | the HUD and screens | `ui.json`; `hud/*` on the runtime kit, the SVGs inline, the fonts local |
-| `AntStateAsset` and the banks | animation state machines | `locomotion.js`: our state machine over the game's clip names (`C_HM_*` cycles, `A_*` actions, `T_*` transitions, `Cover_Left/Right/Pose_*`, `Death_*`, `AI_<Role>_<Faction>_*`); root motion from `AITrajectory` |
-| `PathfindingBlobAsset` | navmesh | built navgrid (decision 7) |
-| `MeshVariationDatabase`, `ObjectVariation` | skins and team colours | a later variations lane; the default variation now |
-| `EmitterGraph`, `EffectBlueprint` | VFX | our own by name map (muzzle, impact, explosion, saber) |
-| `SoundPatchAsset`, `VoiceLineAsset`, `SW02_VO_*` | audio and VO schematics | reserved names; audio is not exported yet |
-| `GameDifficultySettings` `FloatCurve`s | bot skill | `ai.json` curves, evaluated by `lib/ai/utility`'s curves |
-
 ## Architecture
 
 ```

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["index.html", "src/main.jsx", "src/App.jsx", "scripts/*.mjs", "scripts/**/*.mjs", "vite.config.js", "vitest.*.config.js", "src/**/*.worker.js", "src/**/worker.js", "src/**/look.js", "src/**/voicelines.js", "src/**/module.js"],
+  "project": ["src/**/*.{js,jsx}", "scripts/**/*.mjs"],
+  "ignore": ["src/data/**", "docs/**", "public/**", "lab/**", ".claude/**", "wasm/**", "**/*.json", "**/fixtures/**", "**/__fixtures__/**"],
+  "ignoreDependencies": ["@fontsource/*", "@fontsource-variable/*"],
+  "vite": true,
+  "vitest": true
+}

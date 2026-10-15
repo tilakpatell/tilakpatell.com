@@ -18,8 +18,8 @@
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
-// 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
-// 'nav' (the battle's navgrid, for a check), 'doors' (the mode part's doors and gates: each one's open fraction, and what its scene draws), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2),
+// 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), its yaw, health, whether it interacts and the enemies it believes in (`+` seen), and for a round's bot the enemy whose line it watches and whether that line is clear),
+// 'nav' (the battle's navgrid, for a check), 'doors' (the mode part's doors and gates: each one's open fraction, and what its scene draws), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2), 'captured' (each capture point of the stage at a full meter: a check's way into stage 3), 'objectives' (the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
 // create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
@@ -50,7 +50,7 @@ import { createLook } from '../../runtime/look.js';
 import { overviewPose, soldierPose } from './camera.js';
 import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
-import { appearanceOf, characterOfOffer, readStore } from '../../lib/bf2017/collection.js';
+import { appearanceOf, characterOfOffer, picksOf, readStore } from '../../lib/bf2017/collection.js';
 import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
@@ -66,7 +66,8 @@ import { sideOf } from '../../lib/battlefront/modes/galacticAssault.js';
 import { holesOf } from '../../lib/land/holes.js';
 import SOLDIER_BODY from '../../data/bf2017/physics/soldier.json';
 import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
-import { entryFor, lightsJsonOf } from './weather.js';
+import { entryFor } from './weather.js';
+import { levelLightOf } from './baseLight.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
 import { createSoundPlayer } from './sound/player.js';
@@ -174,7 +175,7 @@ export default {
     const kitFx = createKitFx(scene);
     const booms = []; // the steps' explosions since the last frame drawn
     // (a press read on a frame with no step of the sim's, two frames in three at 60 Hz, waits for the next that has one)
-    const pressed = { ability: 0, roll: false, vent: false };
+    const pressed = { ability: 0, jump: false, roll: false, vent: false };
     const rig = createCameraRig(camera);
     const input = createInput({ maxPitch: (cams.soldier.maxPitch * Math.PI) / 180 });
     input.attach();
@@ -280,6 +281,16 @@ export default {
       }
       return appearanceOf(store, c.id, { faction: c.faction });
     };
+    // the Collection's star cards for a hero a deploy is: their ids, in the store's order (the sim wears three of its own)
+    const pickedCards = (id) => {
+      const c = id ? characterOfOffer({ id }) : null;
+      if (!c) return [];
+      try {
+        return picksOf(readStore(window.localStorage), c.id, { faction: c.faction }).cards;
+      } catch {
+        return [];
+      }
+    };
     // (a choice: an offer { kind, id } from the deploy screen, { classId }, a class id, or nothing for the side's first class)
     const choiceOf = (c) => (typeof c === 'string' ? { classId: c } : c?.kind ? { kind: c.kind, id: c.id } : c?.classId ? { classId: c.classId } : {});
     const doDeploy = (choice = picked, appearance = null) => {
@@ -287,6 +298,8 @@ export default {
       // (the skin the Collection keeps for what is deployed, where the screen sent none)
       const look = appearance ?? pickedLook(base.id ?? base.classId ?? null);
       if (look) base.appearance = look;
+      // (a hero's star cards, as the Collection keeps them)
+      if (base.kind === 'hero') base.cards = pickedCards(base.id);
       let r = deploy(sim, me, mate ? { ...base, spawn: 'squad', mate } : base);
       // (a mate who cannot be spawned on by now: the HQ, as the game falls back, SpawnOnSpawnEntityIfSpawnOnPlayerFails)
       if (!r.ok && mate && squadsOf(rb).fallbackToPoint) r = deploy(sim, me, base);
@@ -320,7 +333,7 @@ export default {
     const first = lit(weather);
     // (cadence: lane N3's far cascades drawn every fourth frame, the near
     // ones every frame; the whole level was drawn into all four each frame)
-    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, lights: lightsJsonOf(lighting.lights), picture: first.picture, cadence: true, onChain: (passes) => swapPost(passes) });
+    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, ...(await levelLightOf({ lighting, pictures, level, tier, off: flags?.get('light'), volumes: flags?.get('volumes') === 'on' })) /* (the lamps, the interiors' VEs, the base's probes: baseLight.js; ?light=lamps,inside,probes leaves those out, ?volumes=on marches the volumetrics, for a check) */, picture: first.picture, cadence: true, onChain: (passes) => swapPost(passes) });
     // (?post=off in the address: the scene drawn with no chain, for a check)
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
     // The pace's level on the chain (runtime/quality's headroomAt): first
@@ -390,7 +403,7 @@ export default {
       lastAt = null;
       pose = null;
       acc = 0;
-      Object.assign(pressed, { ability: 0, roll: false, vent: false });
+      Object.assign(pressed, { ability: 0, jump: false, roll: false, vent: false });
       booms.length = 0;
       parked = true;
       arrival = null;
@@ -433,7 +446,7 @@ export default {
         squad: v.squad,
         points: v.points,
         // (evade: the game's two rolls, HealthEvade's charges; the sim's rolls are not counted, so the two stand)
-        player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, hitAt: p.hitAt, killAt: p.killAt, evade: p.evade, abilities: p.abilities?.length ? p.abilities : [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })), shield: p.shield, over: p.over, flashed: p.flashed, flash: p.flash, ability: p.ability },
+        player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, hitAt: p.hitAt, killAt: p.killAt, evade: p.evade, abilities: p.abilities?.length ? p.abilities : [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })), shield: p.shield, over: p.over, flashed: p.flashed, flash: p.flash, ability: p.ability, unit: p.unit ?? null, cards: p.cards ?? [] },
         mode: v.mode && { stageName: v.mode.stageName, objectives: v.mode.objectives.map((o) => ({ id: o.id, name: o.name, meter: o.meter, at: o.at })), tickets: v.mode.tickets, result: v.mode.result, gates: v.mode.gates },
         // (the radar's soldiers: who, where, which side, up or down, firing)
         entities: v.entities.map((e) => ({ id: e.id, team: e.team, kind: e.kind, at: e.at, alive: e.alive, firing: e.firing })),
@@ -472,6 +485,7 @@ export default {
         if (deploying) doDeploy();
         acc = Math.min(acc + dt, STEP * MAX_STEPS);
         pressed.ability = v.deploy.open ? 0 : read.ability || pressed.ability;
+        pressed.jump = !v.deploy.open && (read.jump || pressed.jump);
         pressed.roll = !v.deploy.open && (read.roll || pressed.roll);
         pressed.vent = !v.deploy.open && (read.vent || pressed.vent);
         let first = true;
@@ -484,10 +498,10 @@ export default {
           // (the player walks the level's shapes where the engine is: map/walk.js)
           if (walker && body() && body().mover !== walker.mover) body().mover = walker.mover;
           const once = first ? { ...read, ...pressed } : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
-          if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false });
+          if (first) Object.assign(pressed, { ability: 0, jump: false, roll: false, vent: false });
           first = false;
           // (every event to the sound director; the explosions to the kit drawing too)
-          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld, interact: once.interact, interactHeld: once.interactHeld }]);
+          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, jump: once.jump, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld, interact: once.interact, interactHeld: once.interactHeld }]);
           heard.push(...events);
           for (const e of events) if (e.type === 'explosion') booms.push(e);
         }
@@ -645,7 +659,7 @@ export default {
             return beginRound(arg ?? {});
           case 'bots':
             // (the bots as the sim has them, for a check: each one's side, what it is doing, whom it is after, whether it is firing)
-            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null, way: e.brain?.path ? { n: e.brain.path.length, wp: e.brain.wp, goal: e.brain.intent?.goal?.map((n) => Math.round(n)) ?? null, stuck: Math.round((e.brain.stuck ?? 0) * 10) / 10 } : null }));
+            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null, yaw: Math.round((e.yaw ?? 0) * 100) / 100, hp: Math.round(e.hp ?? 0), interact: !!e.interact, believes: Object.values(e.brain?.me?.beliefs ?? {}).filter((b) => b.hostile).map((b) => `${b.id}${b.visible ? '+' : ''}`), way: e.brain?.path ? { n: e.brain.path.length, wp: e.brain.wp, goal: e.brain.intent?.goal?.map((n) => Math.round(n)) ?? null, stuck: Math.round((e.brain.stuck ?? 0) * 10) / 10 } : null }));
           case 'nav':
             // (the battle's navgrid itself, for a check of a way over it; its navmesh by name only)
             return { ...sim.nav, mesh: sim.nav.mesh ? { name: sim.nav.mesh.name, polys: sim.nav.mesh.polyCount, links: sim.nav.mesh.links.length } : null };
@@ -662,6 +676,20 @@ export default {
             const homed = ga.objectives.filter((o) => o.type === 'escort' && o.walker?.alive);
             for (const o of homed) o.walker.dist = o.walker.length;
             return { ok: true, walkers: homed.length };
+          }
+          case 'captured': {
+            // (a check's way into the next stage: each capture point of the stage the attackers' at a full meter)
+            const ga = sim.sim.ga;
+            if (!ga?.objectives) return { ok: false, why: 'no Galactic Assault' };
+            const points = ga.objectives.filter((o) => o.type === 'capture');
+            for (const o of points) o.meter = 1;
+            return { ok: true, points: points.length, stage: ga.stage };
+          }
+          case 'objectives': {
+            // (a check's read of the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder)
+            const ga = sim.sim.ga;
+            if (!ga?.objectives) return { ok: false, why: 'no Galactic Assault' };
+            return { ok: true, stage: ga.stage, phase: ga.phase, result: ga.result, objectives: ga.objectives.map((o) => ({ type: o.type, name: o.name, id: o.def?.prefab ?? null, at: o.at, keypad: o.charge?.keypad?.at ?? null, done: o.done, armed: o.armed ?? null, wait: o.wait ?? null, progress: o.progress ?? null, defuse: o.defuse ?? null, fuse: o.fuse ?? null, paused: o.paused ?? null, holder: o.holder ?? null, by: o.by ?? null, meter: o.meter ?? null, inside: o.inside ?? null })) };
           }
           case 'where': {
             // (a check's read of the player: the place, and whether the body on the level's shapes moves it)

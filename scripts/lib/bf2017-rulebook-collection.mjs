@@ -38,6 +38,7 @@ import { follow, loadAsset, rootOf, shortName } from './bf2017-ebx.mjs';
 import { isSequel } from './bf2017-manifest.mjs';
 import { englishOf, hashKey, isEra } from './bf2017-rulebook-ui.mjs';
 import { indexOf } from './bf2017-rulebook.mjs';
+import { cardEffect } from './bf2017-rulebook-cards.mjs';
 
 export const META = {
   heroSkins: 'UI/Metadata/KitAppearanceUIMetaData',
@@ -211,6 +212,7 @@ export function collectionRulebook(root, { books = {}, strings = null, credits =
   const named = (asset, r) => ({ name: keyOf(asset, r.NameLocalizedStringId, keys), ...(r.DescriptionLocalizedStringId ? { description: keyOf(asset, r.DescriptionLocalizedStringId, keys) } : {}) });
 
   // ── the heroes ──
+  const records = new Map();
   const heroSkinRows = metaRows(root, META.heroSkins);
   const used = new Set();
   const heroKits = [...index.keys()].filter((n) => /^Gameplay\/Kits\/Hero\/[^/]+\/(Kits?\/)?Kit_Hero_[^/]+$/.test(n) && index.get(n).type === 'WSSoldierCustomizationKitAsset');
@@ -260,6 +262,8 @@ export function collectionRulebook(root, { books = {}, strings = null, credits =
     const abilities = gp ? gameplayAbilities(gp) : [];
     row.cards = abilities.filter((a) => /\/StarCards\/StarCard_/.test(a)).sort((a, b) => cardNumber(a) - cardNumber(b)).map(shortName);
     row.poses = abilities.filter((a) => /\/VictoryPoses\//.test(a)).map(shortName).sort();
+    // (the hero's records by name, for what its cards change: its cards' own, and every ability a card may hold a time of)
+    records.set(id, { cards: abilities.filter((a) => /\/StarCards\/StarCard_/.test(a)), abilities: [...new Set([...abilities, ...(gp ? defaultAbilities(gp) : [])])].filter((a) => !/\/(StarCards|VictoryPoses|Emotes|VoiceLines)\//.test(a)) });
     out.characters[id] = row;
   }
   // (a hero's row no appearance took; the troopers' default rows here are
@@ -339,6 +343,14 @@ export function collectionRulebook(root, { books = {}, strings = null, credits =
     ch.abilities = kept.abilities.sort((a, b) => SLOT_ORDER.indexOf(out.abilities[a].slot) - SLOT_ORDER.indexOf(out.abilities[b].slot));
     for (const c of ch.cards) if (!kept.cards.includes(`${owner}.${cardNumber(c)}`)) missing.push(`card row: ${c}`);
     ch.cards = kept.cards.sort((a, b) => out.cards[a].n - out.cards[b].n);
+  }
+
+  // ── what each card changes, where its records or the design's table say (bf2017-rulebook-cards.mjs) ──
+  for (const [id, card] of Object.entries(out.cards)) {
+    const rec = records.get(card.of);
+    const name = rec?.cards.find((n) => shortName(n) === card.ability) ?? null;
+    const effect = name ? cardEffect(root, id, card, { name, abilities: rec.abilities }) : null;
+    if (effect) card.effect = effect;
   }
 
   // ── the trooper classes, by faction ──
@@ -463,6 +475,11 @@ function gameplayAbilities(gp) {
   const custom = at(r.Abilities);
   const all = at(custom?.AllAbilities);
   return [...(all?.Abilities ?? []), ...(custom?.AdditionalAbilities ?? [])].map((a) => a?.$asset).filter(Boolean);
+}
+// the abilities a kit starts with: its three, its primary, its dodge
+function defaultAbilities(gp) {
+  const at = (v) => (v && typeof v.$ref === 'number' ? gp.objects[v.$ref] : v);
+  return (at(rootOf(gp).Abilities)?.DefaultAbilities ?? []).map((a) => a?.$asset).filter(Boolean);
 }
 const cardNumber = (name) => Number(/StarCard_[^_/]+_(\d+)/.exec(name)?.[1] ?? 0);
 

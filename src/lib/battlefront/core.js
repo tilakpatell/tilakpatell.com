@@ -25,7 +25,8 @@ export function muzzleOf(s) {
 export function shoot(sim, s, aim) {
   if (!s.alive || !s.gun || !aim) return false;
   // (the rifle is lowered behind the shield; a stunned soldier fires nothing; an ability's weapon is still coming up: kit.js)
-  if (s.shield || (s.stunnedUntil ?? -Infinity) > sim.time || (s.deployUntil ?? -Infinity) > sim.time + 1e-9) return false;
+  // (a mind-tricked soldier holds its fire: heroAbilities.js)
+  if (s.shield || (s.stunnedUntil ?? -Infinity) > sim.time || (s.noFireUntil ?? -Infinity) > sim.time || (s.deployUntil ?? -Infinity) > sim.time + 1e-9) return false;
   const shots = fireGun(s.gun, sim.time, { stance: s.stance, moving: s.moving });
   if (!shots) return false;
   // firing ends spawn protection
