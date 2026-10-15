@@ -2,11 +2,13 @@
 // A still of a route that comes out the same every time it is shot, so a
 // before and an after can be compared pixel for pixel: autopilot-check's
 // shots are a live page after eight seconds of wall time, through a lossy
-// WebP, and two of them of the same build never match. Here the page's
-// clock is Playwright's (Date, performance.now, timers and animation frames
-// all advanced by the script, a frame of 16 ms at a time), Math.random is
-// seeded, and each frame waits for the network to be quiet before the next,
-// so an asset lands on the same frame each run. The picture is the PNG.
+// WebP, and two of them of the same build never match. Here time stands
+// still while the page loads (performance.now, Date and the frames'
+// timestamps held; the timers on real time so the loading ends), then the
+// script steps the frames itself, 16 ms each, the same number every run,
+// with Math.random seeded. The picture is the PNG. (Playwright's own clock
+// was tried first: how many of its frames the loading took varied from run
+// to run, and so did the picture.)
 //
 //   node still.mjs --dist dist --routes /c-137,/c-137/citadel --out dir
 //     [--frames 480] [--phone] [--quality high|mid|low] [--tag before]
@@ -54,7 +56,8 @@ for (let t = 0; ; t++) {
 const exe = (await readdir('/opt/pw-browsers')).filter((n) => /^chromium-\d+$/.test(n)).map((n) => `/opt/pw-browsers/${n}/chrome-linux/chrome`).find(existsSync);
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--js-flags=--max-old-space-size=4096'] });
 const viewport = phone ? { width: 390, height: 844 } : { width: 1440, height: 900 };
-const quiet = () => new Promise((r) => setTimeout(r, 25));
+const idle = Number(args.idle) || 150; // ms of real time a frame waits, for the work off the page (workers, decoders, shaders)
+const quiet = (ms = 25) => new Promise((r) => setTimeout(r, ms));
 try {
   for (const route of routes) {
     const ctx = await browser.newContext({ viewport, hasTouch: phone, deviceScaleFactor: 1, reducedMotion: 'no-preference' });
@@ -62,8 +65,11 @@ try {
       window.localStorage.setItem('tp-intro', '1');
       window.localStorage.setItem('tp-start', '"universe"');
       window.localStorage.setItem('tp-quality', q);
-      // (mulberry32: the same sequence each run)
-      let a = 0x9e3779b9;
+      // (mulberry32: the same sequence each run; reseeded when the counted
+      // frames start, so what loading drew doesn't move it)
+      let a = 0;
+      const seed = (n) => (a = n);
+      seed(0x9e3779b9);
       Math.random = () => {
         a |= 0;
         a = (a + 0x6d2b79f5) | 0;
@@ -71,9 +77,58 @@ try {
         t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
       };
+      // Time stands still while the page loads (performance.now, Date and
+      // the frames' timestamps held at one moment, the timers running on
+      // real time so the loading finishes), so however long it takes, the
+      // worlds see none of it pass; then the script steps the frames itself,
+      // 16 ms each, the same number every run.
+      let vt = 1000;
+      const EPOCH = Date.UTC(2026, 9, 15, 12);
+      const RealDate = Date;
+      performance.now = () => vt;
+      Date = class extends RealDate {
+        constructor(...x) {
+          if (x.length) super(...x);
+          else super(EPOCH + vt);
+        }
+        static now() {
+          return EPOCH + vt;
+        }
+      };
+      const realRaf = window.requestAnimationFrame.bind(window);
+      const realCancel = window.cancelAnimationFrame.bind(window);
+      let stepping = false;
+      let queue = new Map();
+      let id = 1e6;
+      window.requestAnimationFrame = (fn) => {
+        if (!stepping) return realRaf(() => fn(vt));
+        const n = ++id;
+        queue.set(n, fn);
+        return n;
+      };
+      window.cancelAnimationFrame = (n) => (n > 1e6 ? queue.delete(n) : realCancel(n));
+      // (and no CSS animation or transition, before or after: theirs run on
+      // the compositor's clock)
+      const still = document.createElement('style');
+      still.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }';
+      // (no document yet when this runs: added as soon as there is one)
+      const add = () => (document.head ?? document.documentElement).appendChild(still);
+      if (document.documentElement) add();
+      else new MutationObserver((_, o) => document.documentElement && (o.disconnect(), add())).observe(document, { childList: true });
+      window.__still = {
+        start() {
+          stepping = true;
+          seed(0x2545f491);
+        },
+        frame() {
+          vt += 16;
+          const run = queue;
+          queue = new Map();
+          for (const fn of run.values()) fn(vt);
+        },
+      };
     }, quality);
     const page = await ctx.newPage();
-    await page.clock.install({ time: new Date('2026-10-15T12:00:00Z') });
     let pending = 0;
     page.on('request', () => pending++);
     page.on('requestfinished', () => pending--);
@@ -82,30 +137,24 @@ try {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(`${base}/#${route}`, { waitUntil: 'load', timeout: 120000 });
     await page.evaluate(() => document.fonts?.ready).catch(() => {});
-    // (a frame: the network quiet before the next, so an asset lands on the
-    // same one each run)
-    const frame = async () => {
-      await page.clock.runFor(16);
-      for (let w = 0; w < 400 && pending > 0; w++) await quiet();
-      await quiet();
-    };
-    // Until every loading veil on the page is done (or a minute of frames),
-    // then the same number of frames each run: how long the loading takes
-    // varies with the machine's work (the decoders' workers, the shaders),
-    // and a world's own time starts when it's shown, so the frames are
-    // counted from there
+    // until every loading veil on the page is done, in real time (two minutes at most)
     let loading = 0;
-    for (; loading < 3750; loading++) {
-      await frame();
-      if (loading > 5 && (await page.evaluate(() => !document.querySelector('.loading-veil:not(.is-done)')))) break;
+    for (; loading < 1200; loading++) {
+      await quiet(100);
+      if (loading > 10 && pending === 0 && (await page.evaluate(() => !document.querySelector('.loading-veil:not(.is-done)')))) break;
     }
+    await quiet(idle * 10);
+    if (scroll) await page.evaluate((y) => window.scrollTo(0, y), scroll);
+    await page.evaluate(() => window.__still.start());
+    await quiet(idle);
     for (let f = 0; f < frames; f++) {
-      await frame();
-      if (scroll && f === 10) await page.evaluate((y) => window.scrollTo(0, y), scroll);
+      await page.evaluate(() => window.__still.frame());
+      await quiet(idle);
+      for (let w = 0; w < 400 && pending > 0; w++) await quiet();
     }
     const name = `${route.replace(/^\//, '').replace(/[/:]/g, '_') || 'root'}${phone ? '-phone' : ''}-${tag}.png`;
     await writeFile(join(out, name), await page.screenshot({ type: 'png', timeout: 120000 }));
-    console.log(`${route} → ${name} (ready after ${loading} frames)${errors.length ? ` (errors: ${errors.join(' | ').slice(0, 300)})` : ''}`);
+    console.log(`${route} → ${name} (ready after ${loading / 10} s)${errors.length ? ` (errors: ${errors.join(' | ').slice(0, 300)})` : ''}`);
     await ctx.close();
   }
 } finally {

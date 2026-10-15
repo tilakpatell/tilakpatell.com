@@ -9,12 +9,13 @@
 // less often, out of view not at all; the crowd's nearest few are live
 // figures of the people's cast (./crowd.js's live).
 //
-// createCitadelWorld(canvas, { onLost }) → Promise<{ render(state, ms),
+// createCitadelWorld(rt, { looks }) → Promise<{ render(state, ms),
 // fx(type, at?), screenOf(kind, id), resize, dispose, info, lost,
-// suggestYaw }>
+// suggestYaw, stage }>, drawn on the runtime's renderer (../stage.js;
+// ./module.js mounts it)
 
 import * as THREE from 'three';
-import { createStage } from '../../../lib/stage3d';
+import { createStage } from '../stage';
 import { createModels } from '../../../lib/models';
 import { device } from '../../../lib/device';
 import { allOrUndo } from '../../../lib/settle';
@@ -95,10 +96,10 @@ function clearance(from, to, inside = insideAt) {
 }
 
 // looks: the wardrobe's ({ rick, morty }): Rick's is the one you walk about as
-export async function createCitadelWorld(canvas, { onLost, looks = null } = {}) {
+export async function createCitadelWorld(rt, { looks = null } = {}) {
   const tier = device().tier;
   const soft = tier === 'low';
-  const stage = createStage(canvas, { soft, shadows: false, fov: 52, near: 0.1, far: 520, bloom: LOOK.bloom, onLost });
+  const stage = createStage(rt, { soft, shadows: false, fov: 52, near: 0.1, far: 520, bloom: LOOK.bloom });
   // the shake (lib/three/feel: trauma², none under reduced motion) at the
   // Citadel's own numbers: a decay of 0.8 a second, 0.5 off at full, no roll
   const feel = createFeel({ baseFov: 52, offset: 0.5 });
@@ -520,7 +521,7 @@ export async function createCitadelWorld(canvas, { onLost, looks = null } = {}) 
     scene: import.meta.env.DEV ? scene : null, // for the QA scripts
     people: import.meta.env.DEV ? people : null, // (and their figures: people.cast.get(id).react('greet'), …)
     render,
-    prepare: stage.prepare, // (everything sent to the graphics chip before it's seen: lib/stage3d)
+    prepare: stage.prepare, // (everything sent to the graphics chip before it's seen: ../stage)
     fx: fxEvent,
     // Mortytown: built (once) before the lift takes Rick down; resolves true
     // when it's ready, false if it couldn't be
@@ -543,6 +544,9 @@ export async function createCitadelWorld(canvas, { onLost, looks = null } = {}) 
     get lost() {
       return stage.lost;
     },
+    // (the module's: the renderer held the stage's way round a frame, the
+    // governor's level, the canvas's ratio)
+    stage,
     // a yaw with more room behind Rick, when the camera's boxed in
     get suggestYaw() {
       return A.suggest ?? null;

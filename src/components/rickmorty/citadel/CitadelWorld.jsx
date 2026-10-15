@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../Achievements';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery, usePageVisible } from '../../../lib/hooks';
+import { local, useInView, useMediaQuery, usePageVisible } from '../../../lib/hooks';
+import { WorldHost, useWorld } from '../../../runtime';
 import { readPad, typing } from '../../games/pad';
 import { Bubble, Convo, QuestList, Stick } from '../../middleearth/towns/TownHud';
 import { keyDown, keyUp, moveOf } from '../../middleearth/towns/keys';
@@ -29,7 +30,7 @@ import './citadel.css';
 import GuideCue from '../../guide/GuideCue';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
 import LoadingVeil from '../../worlds/LoadingVeil';
-import { throttled } from '../../worlds/loadingSteps';
+import citadelModule from './module';
 
 // The Citadel of Ricks, the world: walk in through the portal as Rick
 // C-137 and play the five scenes there (Morty Day Care, Simple Rick's,
@@ -126,11 +127,9 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137' }) 
 const ROOM = { bound: 160, motion: true };
 
 function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
-  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const trav = useTravellers('citadel', gl === 'on', ROOM);
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
-  const canvas = useRef(null);
   const map = useRef(null);
   const api = useRef(null);
   const sim = useRef(null);
@@ -190,68 +189,50 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // the world: made once
+  // the world: the runtime's (./module.js), made once; the page's frame
+  // (below) is handed in as `frame`, set while the Citadel is live
+  const frame = useRef(null);
+  const view = useWorld(citadelModule, { props: { looks: looksRef.current, frame } });
+  const status = view.status;
+  const hostBox = view.host; // (the world's box, where the canvas was)
+  const made = view.world.current;
   useEffect(() => {
-    let dead = false;
-    const fit = () => {
-      const c = canvas.current;
-      if (!c || !api.current) return;
-      const r = c.getBoundingClientRect();
-      api.current.resize(Math.round(r.width), Math.round(r.height));
-    };
-    import('./scene')
-      .then(({ createCitadelWorld }) => {
-        if (dead || !canvas.current) return null;
-        return createCitadelWorld(canvas.current, { onLost: () => !dead && setGl('lost'), looks: looksRef.current });
-      })
-      .then(async (a) => {
-        if (!a) return;
-        if (dead) {
-          a.dispose();
-          return;
-        }
-        api.current = a;
-        a.tune?.(); // (behind ?debug: the shake's numbers)
-        a.setLooks?.(looksRef.current); // (a look picked while it loaded)
-        // (cue: something for the people to react to, as the world would say it: { type: 'seen', id } …)
-        if (import.meta.env.DEV) window.__CITADEL__ = { api: a, sim: sim.current, complete, down: () => liftRef.current?.down(true), up: () => liftRef.current?.up(), cue: (c) => sim.current?.cues.push(c), emote: (id) => sim.current && (sim.current.emote = { id, at: sim.current.t }) }; // for the QA scripts
-        fit();
-        // everything on the graphics chip before it's shown, behind the loading screen
-        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
-        if (dead) return;
-        setGl('on');
-        // left in Mortytown last time: back down the lift
-        if (sim.current.autoDown) {
-          sim.current.autoDown = false;
-          liftRef.current?.down(true);
-        }
-        // a first visit: through the portal
-        if (sim.current.fresh) {
-          sim.current.fresh = false;
-          a.fx('portal');
-          sounds().then((x) => x.portal());
-          clip('portalGun');
-        }
-      })
-      .catch((e) => {
-        if (import.meta.env.DEV) console.error(e);
-        if (!dead) setGl('failed');
-      });
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
-    if (canvas.current) ro?.observe(canvas.current);
+    if (status === 'failed' || status === 'slow') setGl('failed');
+    else if (status === 'lost') setGl('lost');
+  }, [status, setGl]);
+  useEffect(() => {
+    const a = made?.api;
+    if (!a || status !== 'on' || api.current === a) return;
+    api.current = a;
+    a.tune?.(); // (behind ?debug: the shake's numbers)
+    a.setLooks?.(looksRef.current); // (a look picked while it loaded)
+    // (cue: something for the people to react to, as the world would say it: { type: 'seen', id } …)
+    if (import.meta.env.DEV) window.__CITADEL__ = { api: a, sim: sim.current, complete, down: () => liftRef.current?.down(true), up: () => liftRef.current?.up(), cue: (c) => sim.current?.cues.push(c), emote: (id) => sim.current && (sim.current.emote = { id, at: sim.current.t }) }; // for the QA scripts
+    setGl('on');
+    // left in Mortytown last time: back down the lift
+    if (sim.current.autoDown) {
+      sim.current.autoDown = false;
+      liftRef.current?.down(true);
+    }
+    // a first visit: through the portal
+    if (sim.current.fresh) {
+      sim.current.fresh = false;
+      a.fx('portal');
+      sounds().then((x) => x.portal());
+      clip('portalGun');
+    }
+  }, [made, status, setGl, complete]);
+  useEffect(() => {
     const s = sim.current;
     return () => {
-      dead = true;
-      ro?.disconnect();
       // out of a room (or the hangar) on to the concourse
       const at = s.mode === 'inside' ? (s.room === 'factory' ? FACTORY_DOOR : COUNCIL_DOOR) : s.mode === 'lift' ? LIFT_AT : s.h;
       local.set(AT, { x: at.x, z: at.z, face: at.face, where: s.mode === 'lift' ? 'concourse' : s.where });
       s.air?.stop();
       s.siren?.stop();
-      api.current?.dispose();
       api.current = null;
     };
-  }, [setGl, complete]);
+  }, []);
 
   // live: on, on screen, and not in a hidden tab (the hum and siren stop too)
   const showing = usePageVisible();
@@ -601,7 +582,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
     };
     // pointing at a slice: from the middle of the view, where the wheel is
     const aim = (e) => {
-      const r = s.wheel.open ? canvas.current?.getBoundingClientRect() : null;
+      const r = s.wheel.open ? hostBox.current?.getBoundingClientRect() : null;
       if (r) s.wheel.aim((e.clientX - (r.left + r.width / 2)) / WHEEL_R, (e.clientY - (r.top + r.height / 2)) / WHEEL_R);
     };
     window.addEventListener('keydown', down);
@@ -613,7 +594,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
       window.removeEventListener('pointermove', aim);
       s.wheel.cancel();
     };
-  }, [live, pickEmote]);
+  }, [live, pickEmote, hostBox]);
   // the HUD's emote button: a tap strikes the last again; held, the wheel opens and stays for a pick
   const emoteDown = (e) => {
     e.preventDefault();
@@ -677,8 +658,8 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
     return () => window.removeEventListener('keydown', down);
   }, [live, near, enter, talkOnward, drop, leaveRoom, leaveHearing]);
 
-  // ── every frame ──
-  useFrameLoop((ms) => {
+  // ── every frame (the runtime's: the module's draw runs it while live) ──
+  const tick = (ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -958,9 +939,8 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
       s.cues = [];
     } catch (err) {
       if (import.meta.env.DEV) console.error(err);
-      a.dispose();
       api.current = null;
-      setGl('failed');
+      setGl('failed'); // (the world goes with the page's World: useWorld lets it go)
       return;
     }
 
@@ -980,7 +960,18 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
     }
     if (++s.frame % 4 === 0) drawMap(map.current, s.where === 'mortytown' ? { scale: TOWN_MAP, h: s.h, markers, base: drawTown } : { scale: MAP_SCALE, h: s.h, markers, night: red, base: drawConcourse(p) });
     if (s.frame % 120 === 0 && s.mode === 'walk') local.set(AT, { x: s.h.x, z: s.h.z, face: s.h.face, where: s.where });
-  }, live);
+  };
+  const tickRef = useRef(tick);
+  tickRef.current = tick;
+  // (live: the frame handed to the world, and the runtime's loop woken for it)
+  useEffect(() => {
+    if (!live) return undefined;
+    frame.current = (ms, now) => tickRef.current(ms, now);
+    view.rt?.invalidate();
+    return () => {
+      frame.current = null;
+    };
+  }, [live, view.rt]);
 
   // the world's own pointer: drag to look round
   const drag = useRef(null);
@@ -1037,8 +1028,8 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
   const objective = inTown ? townObjective : red && hud.chased ? 'Run! Get out of his sight: round the core, behind a kiosk or a planter.' : herding ? 'Herd the Mortys back through the gate, into the pen: come at them from the far side.' : prog.objective;
   return (
     <div ref={box} className="shire-stage citadel-stage" data-touch={touch || undefined} data-mode={mode} data-mood={prog.mood} data-room={inside ? hud.room : undefined}>
-      <canvas ref={canvas} className="shire-canvas" data-on={gl === 'on' || undefined} aria-label="The Citadel of Ricks in 3D: a terrace over a city of pale green towers under a great dome, a column of green portal fluid at its middle, crowded with Ricks and Mortys, and Rick C-137 walking through it" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
-      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Opening a portal to the Citadel" />
+      <WorldHost world={view} className="shire-canvas citadel-canvas" data-on={gl === 'on' || undefined} onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} />
+      <LoadingVeil shown={gl === 'loading'} progress={view.progress.value} step={view.progress.step} title="Opening a portal to the Citadel" />
       {townLoading && <p className="shire-loading">Taking the lift down to Mortytown…</p>}
 
       {walking && (

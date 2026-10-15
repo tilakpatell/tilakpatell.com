@@ -50,3 +50,6 @@
 .citadel-wheel-slice { position: absolute; left: 0; top: 0; min-width: 5.4rem; padding: 0.5rem 0.7rem; border: 1px solid var(--shire-line); border-radius: 999px; background: var(--shire-glass); color: var(--shire-ink); font: 700 0.85rem/1.1 'Orbitron', var(--font-sans); letter-spacing: 0.02em; white-space: nowrap; pointer-events: auto; cursor: pointer; transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease; }
 .citadel-wheel-slice[data-hover], .citadel-wheel-slice:hover, .citadel-wheel-slice:focus-visible { background: var(--shire-glass-hi); border-color: var(--shire-gold); box-shadow: 0 0 0 3px rgba(111, 243, 255, 0.25), 0 0 18px rgba(111, 243, 255, 0.35); }
 @media (prefers-reduced-motion: reduce) { .citadel-wheel-slice { transition: none; } }
+
+/* the runtime's box where the canvas was: laid out as the canvas was (.shire-canvas), over the runtime's own .world-host */
+.citadel-stage > .citadel-canvas { position: absolute; inset: 0; }
