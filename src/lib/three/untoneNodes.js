@@ -47,5 +47,8 @@ const unNeutral = Fn(([toned, exposure]) => {
 });
 
 // (the renderer's tone mapping read as the material is built: a world sets
-// it before its first frame, as houseOn does)
-export const untoned = (colour) => Fn((builder) => (builder.renderer?.toneMapping === NeutralToneMapping ? unNeutral(colour, toneMappingExposure) : colour))();
+// it before its first frame, as houseOn does, and a later change is not
+// heard; and only drawn to the screen, where the renderer tone-maps: into
+// a render target of a world's own, nothing tone-maps it after)
+const toScreen = (r) => r?.toneMapping === NeutralToneMapping && !r.getRenderTarget?.();
+export const untoned = (colour) => Fn((builder) => (toScreen(builder.renderer) ? unNeutral(colour, toneMappingExposure) : colour))();

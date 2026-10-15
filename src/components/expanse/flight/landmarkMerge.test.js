@@ -103,4 +103,33 @@ describe('a landmark’s still meshes merged a material at a time', () => {
     merge.tick();
     expect(meshes(group)).toHaveLength(3);
   });
+
+  // (the placer wraps a full model in a THREE.LOD; the renderer shows one
+  // level at a time by the levels' `visible`: taken out, every level would
+  // draw at every distance. A hidden subtree (the placer's rooms) stays
+  // hidden, and a mesh whose showing changes while watched (a beacon) stays)
+  it('leaves a LOD’s levels, a hidden subtree and a blinking mesh where they are', () => {
+    const group = new THREE.Group();
+    const m = new THREE.MeshLambertMaterial();
+    const lod = new THREE.LOD();
+    const near = new THREE.Mesh(box(), m);
+    const far = new THREE.Mesh(box(), m);
+    lod.addLevel(near, 0);
+    lod.addLevel(far, 100);
+    const rooms = new THREE.Group();
+    rooms.visible = false;
+    const inside = [new THREE.Mesh(box(), m), new THREE.Mesh(box(), m)];
+    rooms.add(...inside);
+    const beacon = at(new THREE.Mesh(box(), m), 0, 9, 0);
+    const still = [at(new THREE.Mesh(box(), m), 5, 0, 0), at(new THREE.Mesh(box(), m), 8, 0, 0)];
+    group.add(lod, rooms, beacon, ...still);
+    const merge = createMerge(group, { frames: 2 });
+    merge.tick();
+    beacon.visible = false;
+    merge.tick();
+    const left = [];
+    group.traverse((o) => o.isMesh && left.push(o));
+    for (const k of [near, far, ...inside, beacon]) expect(left).toContain(k);
+    for (const k of still) expect(left).not.toContain(k);
+  });
 });

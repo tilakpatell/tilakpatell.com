@@ -1,15 +1,19 @@
 // The ground's leaves as one object: a BatchedMesh, a slot a leaf (its own
 // stretch of the batch's buffers and an instance standing it at its corner),
-// so the node renderer walks, checks and binds one thing for the whole
+// so the node renderer walks, checks and binds one object for the whole
 // ground where it walked a mesh a leaf (lane FL3's counts: 58 of the 216
 // draws at Hoth's start, each paying the node renderer's per-object cost).
+// On WebGL 2 the leaves go out as one multi-draw; on WebGPU three still
+// issues a draw a leaf from the one object, so there it is the main
+// thread's walk that shrinks, not the chip's draws.
 // The batch culls its leaves by their own bounds and does not sort them:
 // the ground is opaque and depth-tested, so the order changes no pixel.
 //
 // A freed slot is hidden and kept for the next leaf that fits it (three's
 // addGeometry only ever appends, so a ground that streamed would run out of
 // room); a leaf too big for any free slot gets one of its own, and the batch
-// doubles when it is full.
+// doubles when it is full. The buffers only grow (to the most leaves of
+// the largest size a flight has held at once) and are freed with the ground.
 //
 //   createLeafBatch(material, { slots, parent }) → { mesh (the BatchedMesh,
 //     made at the first leaf and put under `parent`), add(leaf, answer) →
