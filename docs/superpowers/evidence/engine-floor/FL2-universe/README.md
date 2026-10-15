@@ -11,26 +11,32 @@ Lane FL2 of the engine floor (`docs/superpowers/plans/2026-10-15-engine-floor-la
 
 ## The pictures: a repair changes no pixel
 
-`scripts/autopilot-check.mjs`’s shots (a wall-clock settle, lossy WebP) and `scripts/gpu-parity.mjs` (which waits for `window.__RUNTIME__`, which main’s map never has) cannot say “the same pixels”: two runs of main itself differ in about 40 % of their pixels. `tools/shoot-same.mjs` shoots both floors the same way: a page clock pinned at 2026-10-08T12:00:00Z and stopped, `Math.random` seeded and reseeded before the frames that are shot, the page’s time moved to one moment, the same 120 frames, a frame asked for on both (`tp:uncover`), the GPU timer hidden so main’s own calibration lands on the sharpest step as the runtime’s `?calibrate=off` does, reduced motion on (the map’s time held at 0: with it moving, its clock starts when it is made, which the two floors reach at different moments), a lossless PNG, every differing pixel counted.
+`scripts/autopilot-check.mjs`’s shots (a wall-clock settle, lossy WebP) and `scripts/gpu-parity.mjs` (which waits for `window.__RUNTIME__`, which main’s map never has) cannot say “the same pixels”: two runs of main itself, shot that way, differ in 39 % of their pixels. `../tools/shoot-same.mjs` shoots both floors the same way: a page clock pinned at 2026-10-08T12:00:00Z and stopped, `Math.random` seeded and reseeded before the frames that are shot, the page’s time moved to one moment, the same 120 frames, a frame asked for on both (`tp:uncover`), the GPU timer hidden so main’s own calibration lands on the sharpest step as the runtime’s `?calibrate=off` does, reduced motion on (the map’s time held at 0: moving, its clock starts when it is made, which the two floors reach at different moments), after a pose (and with `--settle-frames`, before a route) frames till what loads a slice a frame is in, a lossless PNG, every differing pixel counted.
 
-Main against itself, the same way: 0 pixels differ.
+Main at `f97079c7` against the branch at `b0fb8b53`, 1280 × 800 (phone: 390 × 844, touch), each shot from a fresh page:
 
-| shot (1280 × 800; phone 390 × 844, touch) | main `f97079c7` against the branch | differing pixels |
-| --- | --- | --- |
-| `/` | `front.png` | 0 |
-| `/universe/marvel` | `universe-marvel.png` | 0 |
-| `/universe/rickmorty` | `universe-rickmorty.png` | 0 |
-| `/universe/starwars` | `universe-starwars.png` | PENDING |
-| `/` phone | `front-phone.png` | 0 |
-| `/universe/marvel` phone | | 0 |
-| `/universe/rickmorty` phone | | 0 |
-| `/universe/starwars` phone | | 0 |
+| shot | differing pixels |
+| --- | --- |
+| `/` | 0 |
+| `/universe/marvel` | 0 |
+| `/universe/rickmorty` | 0 |
+| `/universe/starwars` (`--settle-frames`; main against main 0, the branch against itself 0) | 0 |
+| `/` phone | 0 |
+| `/universe/marvel` phone | 0 |
+| `/universe/rickmorty` phone | 0 |
+| `/universe/starwars` phone | 0 |
+| `/universe` with the Falcon flying | 0 |
+| poses (`poses.js`, in this order on one page): `overview`, `falcon-sun`, `middleearth-limb`, `rickmorty`, `belt`, `maw`, `station`, `far-rim` | 0 each |
+
+`before/` and `after/` hold them, 640 wide (390 on a phone) as WebP to look at; the counts are the PNGs’.
 
 What the method found on the way, each run down to its cause:
 
-- 159 pixels at `/`: the floating phone’s lock screen read 12:00 on main and 12:01 on the branch. The map at rest draws only when asked; the runtime asked for one more frame after the page’s time was moved on (useWorld’s effect invalidates after each render), and that frame redrew the clock. With a frame asked for on both, 0.
-- The sun’s flare gone on some runs of main: main’s map calibrated itself on every visit by the chip’s clock, which wanders in software, and one run softened it a step (the flare goes at the pace’s step 2). With the timer hidden, 0.
-- The runtime’s canvas is multisampled (`budget.antialias`) where the map’s own had none: no pixel of it shows (the map draws through its post target and puts one full-screen pass on the canvas), but it is a cost; see the probe below and the open questions.
+- **A runtime bug, fixed here** (`src/runtime/runtime.js`, one line and a test; asked on #993, whose files they are): a world at rest woken by `invalidate()` drew two frames, not one (`kicked`, set before the frame, was read at its end as a request made during it). The map eases its orbit rings a step a drawn frame, so at the `overview` and `falcon-sun` poses the branch’s rings had faded one step further for each wake: 8,940 and 6,626 pixels off by 1 to 7 levels. With `kicked` cleared as a frame begins, 0.
+- 159 pixels at `/`: the floating phone’s lock screen read 12:00 on main and 12:01 on the branch, the extra frame above having redrawn its clock after the page’s time was moved on.
+- The sun’s flare gone on some runs of main: main’s map calibrated itself on every visit by the chip’s clock, which wanders in software, and one run softened it a step (the flare goes at the pace’s step 2). Main against itself differed so; with the timer hidden, 0.
+- A thin streak at `/universe/starwars` (92 pixels main against main, 142 the branch against itself) and a planet’s near maps in one run and not the other: things that come in a slice a frame, as fast as they load in real time, against a stopped clock. With frames run till they are in, 0 against itself and 0 against each other.
+- The runtime’s canvas is multisampled (`budget.antialias`) where the map’s own had none: shot with it forced off, the same pixels (the map draws through its post’s target and puts one full-screen pass on the canvas). It costs; see the probe, and the open questions.
 
 ## The review (cavecrew), and what was done
 
