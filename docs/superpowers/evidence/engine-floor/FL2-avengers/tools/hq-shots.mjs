@@ -4,7 +4,8 @@
 // on Vite’s dev server (the dev hooks are how its frames are counted) with
 // the page’s clock installed and stopped and Math.random seeded, so time in
 // the page moves only in the 16 ms frames let run here. Frames are let run
-// one at a time; the target’s own drawing call (its engine’s `render`, the
+// one at a time, the frame guard off (its shaders link in real time); the
+// target’s own drawing call (its engine’s `render`, the
 // one its page’s frame loop makes each frame) is wrapped as soon as the
 // target is there and counted, and the page is shot after exactly
 // `--frames` of them: however long the loading took in real time, the game
@@ -140,7 +141,12 @@ async function shoot(browser, base, t) {
   await page.clock.install({ time: CLOCK });
   await page.clock.pauseAt(new Date(CLOCK.getTime() + 1000));
   await page.goto(`${base}/?quality=${quality}#${t.route}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  // The frame guard (lib/three/frameGuard) is off: it holds a material back
+  // until its shader has linked on the chip, in the chip's real time, so
+  // which frame a material first shows in differed run to run on main
+  // itself. Off, each frame is drawn whole, as three alone draws it.
   const step = async (wait = 25) => {
+    await page.evaluate(() => window.__tpGuardOff?.());
     await page.clock.runFor(16);
     await page.waitForTimeout(wait);
   };
