@@ -14,6 +14,10 @@ import hudKit from './health/hud-kit.mjs';
 import kbdStyles, { capRules } from './health/kbd-styles.mjs';
 import stackPages from './health/stack-pages.mjs';
 import glslSites, { EXEMPT, NAMES, sites } from './health/glsl-sites.mjs';
+import renderers, { EXEMPT as RENDERER_EXEMPT } from './health/renderers.mjs';
+import loops, { EXEMPT as LOOP_EXEMPT } from './health/loops.mjs';
+import clientJson, { FLOOR } from './health/client-json-kb.mjs';
+import { countBinaries, LIMIT } from './health/doc-binaries.mjs';
 import { check, describe as words, ratchet } from './health/ratchet.mjs';
 
 const TREE = fileURLToPath(new URL('./health/fixtures/tree/', import.meta.url));
@@ -80,6 +84,39 @@ describe('the GLSL sites, on a fixture tree', () => {
     expect(NAMES).toContain('RawShaderMaterial');
     expect(sites('new RawShaderMaterial(); new ShaderMaterial(); myShaderMaterialish; x.RenderPass')).toBe(3);
     expect(EXEMPT).toEqual(['src/lib/three/frameGuard.js', 'src/lib/three/renderer.js', 'src/lib/three/gpuWork.js', 'src/runtime/']);
+  });
+});
+
+describe('the engine floor’s measure, on fixture trees', () => {
+  const fixture = (name) => fileURLToPath(new URL(`./health/fixtures/${name}/`, import.meta.url));
+
+  it('renderers counts the constructors in code outside the runtime, comments, strings and tests left out', async () => {
+    const m = await renderers(await makeContext(fixture('renderers')));
+    expect(m.value).toBe(1);
+    expect(m.detail).toEqual([{ file: 'src/a/stage.js', n: 1 }]);
+    expect(RENDERER_EXEMPT).toEqual(['src/runtime/']);
+  });
+
+  it('loops counts a file that asks for frames once, however often it asks; a cancel alone, the allowed loops and tests are none', async () => {
+    const m = await loops(await makeContext(fixture('loops')));
+    expect(m.value).toBe(1);
+    expect(m.detail).toEqual([{ file: 'src/a/spin.js', n: 1 }]);
+    expect(LOOP_EXEMPT).toEqual(['src/runtime/', 'src/lib/three/loop.js', 'src/lib/shownLoop.js']);
+  });
+
+  it('client-json-kb sums each record over the floor once, read by the client; a ?url, a script and a test are none', async () => {
+    const m = await clientJson(await makeContext(fixture('client-json')));
+    expect(FLOOR).toBe(65536);
+    expect(m.value).toBe(69);
+    expect(m.detail).toEqual([{ file: 'src/data/big.json', n: 69, note: 'src/a/reads.js' }]);
+  });
+
+  it('doc-binaries counts the files over a megabyte', async () => {
+    const sizes = { 'docs/a.png': 2 * 1024 * 1024, 'docs/b.md': 10 * 1024 };
+    const m = await countBinaries(Object.keys(sizes), { stat: async (f) => ({ size: sizes[f] }) });
+    expect(LIMIT).toBe(1_048_576);
+    expect(m.value).toBe(1);
+    expect(m.detail).toEqual([{ file: 'docs/a.png', n: 2048 }]);
   });
 });
 
