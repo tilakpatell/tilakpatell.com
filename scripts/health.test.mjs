@@ -17,7 +17,7 @@ import glslSites, { EXEMPT, NAMES, sites } from './health/glsl-sites.mjs';
 import renderers, { EXEMPT as RENDERER_EXEMPT } from './health/renderers.mjs';
 import loops, { EXEMPT as LOOP_EXEMPT } from './health/loops.mjs';
 import clientJson, { FLOOR } from './health/client-json-kb.mjs';
-import { countBinaries, LIMIT } from './health/doc-binaries.mjs';
+import docBinaries, { countBinaries, LIMIT } from './health/doc-binaries.mjs';
 import { check, describe as words, ratchet } from './health/ratchet.mjs';
 
 const TREE = fileURLToPath(new URL('./health/fixtures/tree/', import.meta.url));
@@ -111,12 +111,20 @@ describe('the engine floor’s measure, on fixture trees', () => {
     expect(m.detail).toEqual([{ file: 'src/data/big.json', n: 69, note: 'src/a/reads.js' }]);
   });
 
-  it('doc-binaries counts the files over a megabyte', async () => {
-    const sizes = { 'docs/a.png': 2 * 1024 * 1024, 'docs/b.md': 10 * 1024 };
-    const m = await countBinaries(Object.keys(sizes), { stat: async (f) => ({ size: sizes[f] }) });
+  it('doc-binaries counts the files over a megabyte', () => {
+    const m = countBinaries([{ file: 'docs/a.png', size: 2 * 1024 * 1024 }, { file: 'docs/b.md', size: 10 * 1024 }]);
     expect(LIMIT).toBe(1_048_576);
     expect(m.value).toBe(1);
     expect(m.detail).toEqual([{ file: 'docs/a.png', n: 2048 }]);
+  });
+
+  it('doc-binaries reads git’s tree at HEAD: committed paths under docs/, each over the limit', async () => {
+    const m = await docBinaries({ root: fileURLToPath(new URL('..', import.meta.url)) });
+    expect(m.id).toBe('doc-binaries');
+    for (const d of m.detail) {
+      expect(d.file.startsWith('docs/')).toBe(true);
+      expect(d.n * 1024).toBeGreaterThan(LIMIT);
+    }
   });
 });
 

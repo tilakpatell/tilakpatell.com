@@ -7,7 +7,7 @@ The design’s §4.6, on 2026-10-15, pull request #1007. Four new counts in `scr
 | `renderers` | `new WebGLRenderer(` and `new WebGPURenderer(` in code outside `src/runtime/`, comments, quoted strings and tests left out | 16 | 16 |
 | `loops` | files calling `requestAnimationFrame(` outside `src/runtime/`, `src/lib/three/loop.js` and `src/lib/shownLoop.js`, tests left out | 58 | 58 |
 | `client-json-kb` | kilobytes of each `.json` over 64 KB a file under `src/` imports statically (no `?url`, no script, no test), once a record | 3,941 | 3,945 (the ratchet’s 5 kB step) |
-| `doc-binaries` | files git tracks under `docs/` over 1 MB | 4 | 4 |
+| `doc-binaries` | files committed under `docs/` over 1 MB, sizes from git’s tree at `HEAD` | 4 | 4 |
 | `glsl-sites` | as it was | 619 | 619 |
 | `boundary-breaks` | as it was | 479 | 479 |
 | `cycles` | as it was | 5 | 5 |

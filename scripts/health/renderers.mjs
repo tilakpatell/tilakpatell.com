@@ -13,7 +13,9 @@ export const RE = /\bnew\s+(?:THREE\.)?(?:WebGLRenderer|WebGPURenderer)\s*\(/g;
 
 // a string that spells a constructor (a log line, a test’s expectation) makes
 // no renderer: blank quoted text after the comments, as uncomment blanks those.
-// A template is left whole, since its ${} holds code
+// A template is left whole, since its ${} holds code. The pass pairs quotes
+// on a line without knowing regex literals or JSX text, so a lone apostrophe
+// there could hide a constructor on the same line: none in src/ today
 const QUOTED = /'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"/g;
 export const unquote = (code) => code.replace(QUOTED, (s) => `${s[0]}${s[0]}`);
 

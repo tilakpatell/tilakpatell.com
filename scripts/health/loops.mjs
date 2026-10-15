@@ -5,12 +5,14 @@
 // Design: docs/superpowers/specs/2026-10-15-engine-floor-design.md, §4.6.
 import { metric } from './context.mjs';
 import { isTest, uncomment } from './graph.mjs';
+import { unquote } from './renderers.mjs';
 
 // the runtime, the classic pages’ shared loop and the loop a shown element
 // runs while on screen: the three allowed clocks. A path ending in / is a folder
 export const EXEMPT = ['src/runtime/', 'src/lib/three/loop.js', 'src/lib/shownLoop.js'];
 
-// a cancelAnimationFrame alone stops a loop and starts none
+// a cancelAnimationFrame alone stops a loop and starts none; a quoted name
+// starts none either
 const RE = /\brequestAnimationFrame\s*\(/;
 
 const exempt = (rel) => EXEMPT.some((e) => (e.endsWith('/') ? rel.startsWith(e) : rel === e));
@@ -20,7 +22,7 @@ export default async function loops(ctx) {
   for (const p of ctx.src) {
     const rel = ctx.rel(p);
     if (isTest(p) || exempt(rel)) continue;
-    if (RE.test(uncomment(await ctx.read(p)))) detail.push({ file: rel, n: 1 });
+    if (RE.test(unquote(uncomment(await ctx.read(p))))) detail.push({ file: rel, n: 1 });
   }
   return metric({ id: 'loops', label: 'frame loops outside the runtime', unit: 'files', detail });
 }

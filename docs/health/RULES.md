@@ -47,7 +47,7 @@ A record a world reads is a slice. A `.json` imported statically becomes an obje
 
 ## Evidence is pictures on the bucket
 
-A binary over 1 MB under `docs/` goes to the bucket by hash through `scripts/assets-publish.mjs` and is linked from the lane’s evidence README, never committed: every clone carries a committed one forever. `doc-binaries` counts the tracked files over 1 MB under `docs/` (`git ls-files`, so an untracked screenshot in a checkout never fails CI); it is budgeted at the count on the day it landed and may only fall.
+A binary over 1 MB under `docs/` goes to the bucket by hash through `scripts/assets-publish.mjs` and is linked from the lane’s evidence README, never committed: every clone carries a committed one forever. `doc-binaries` counts the committed files over 1 MB under `docs/` (git’s tree at `HEAD`, so an untracked or edited file in a checkout never moves it); it is budgeted at the count on the day it landed and may only fall.
 
 ## A repair changes no pixel
 
