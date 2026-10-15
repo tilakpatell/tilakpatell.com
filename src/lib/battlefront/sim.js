@@ -496,9 +496,8 @@ function applyInput(sim, inp) {
   if (inp.ability && !heroPress(sim, s, inp.ability)) press(s.abilities, inp.ability, sim.time); // (a hero's active ability may take the press for itself, its next detonator: heroKit.js)
   if (inp.vent && s.gun) vent(s.gun, sim.time);
   if (inp.cool && s.gun) coolPress(s.gun, sim.time);
-  // (a hero's saber, block, beam and jump: heroKit.js; its rush carries it on its own)
+  // (a hero's saber, block, beam and jump: heroKit.js, its rush carrying it on its own; a soldier with a body of its own, the player on the level's shapes, moves by it: map/walk.js)
   if (s.hero) heroInput(sim, s, { fire: inp.fire, aiming: inp.aiming, jump: inp.jump }, sim.time);
-  // (a soldier with a body of its own, the player on the level's shapes: map/walk.js, moves by it)
   if (s.state !== 'roll' && !s.hero?.rush) (s.mover ?? move)(s, inp.move ?? [0, 0], STEP, sim.nav);
   if (inp.fire && !s.hero?.saber && !s.hero?.lightning) shoot(sim, s, inp.aim ?? chestAhead(s));
   // (an interaction is held, the key down: a gate's panel or a bomb a second and more)
@@ -572,8 +571,7 @@ function resolveBolts(sim) {
       const grace = mayHurt(sim.buckets, { shooter, target, shotAt: e.bolt.born, now: sim.time });
       let damage = grace ? damageAt(e.bolt.weapon, e.dist, { bot: !!shooter?.bot }) * scale : 0;
       // (a bolt a saber's block turns or a Squad Shield takes is gone; any other that bursts does so by its bolt's own factor: heroKit.js)
-      if (heroTakes(sim, target, e, damage)) continue;
-      burstAt(sim, e, { shooter, scale, grace });
+      if (heroTakes(sim, target, e, damage, { shooter, scale, grace })) continue;
       if (target.kind === 'turret') {
         const r = hurtTurret(sim, target, damage);
         emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: 'body', damage: Math.round(damage * 100) / 100 });
@@ -609,8 +607,7 @@ export function step(sim, inputs = []) {
       if (e.type === 'ability' && s.hero) for (const r of onHeroAbility(sim, s, e)) applyKit(sim, r);
     }
   }
-  // (the heroes: their sabers, beams, jumps, rushes, throws and shoves, heroKit.js)
-  for (const r of stepHeroes(sim)) applyKit(sim, r);
+  for (const r of stepHeroes(sim)) applyKit(sim, r); // (the heroes: their sabers, beams, jumps, rushes, throws and shoves, heroKit.js)
   // (the kit: the grenades fly, the turrets fire, the fields burn; its damage applied here)
   for (const r of stepKit(sim)) applyKit(sim, r);
   release(sim);
@@ -810,7 +807,6 @@ export function view(sim, { player = null } = {}) {
     e.unit = s.unit ?? null;
     e.unitId = s.unitId ?? null; // (the rulebook's hero or reinforcement: the body the figure wears)
     e.appearance = s.appearance ?? null; // (a skin picked in the Collection: its crew kind)
-    e.body = s.body ?? null; // (how tall it stands and crouches, its aim's height and its eye: soldier.js's bodyOf)
     e.name = s.name ?? null;
     e.cls = s.cls?.cls ?? null;
     e.points = sim.bp ? balance(sim.bp, s.id) : 0;
@@ -823,8 +819,7 @@ export function view(sim, { player = null } = {}) {
     e.hidden = !!s.hidden;
     e.ability = s.kitActive?.id ?? null;
     e.weapon = s.gun?.row?.id ?? null;
-    // (a hero's strike, block, ability, jump and throw for its figure, a choked body's lift, one the smoke hides: heroKit.js)
-    viewHero(e, s, sim.time);
+    viewHero(e, s, sim.time); // (its body; a hero's strike, block, ability, jump and throw for its figure, a choked body's lift, one the smoke hides: heroKit.js)
     e.oob = s.oobSince != null ? Math.max(0, OOB_SECONDS - (sim.time - s.oobSince)) : null;
   }
   v.entities.length = i;

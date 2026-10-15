@@ -17,9 +17,10 @@
 //   onHeroAbility(sim, s, e) → requests            (an ability event from the soldier's tick)
 //   stepHeroes(sim) → requests                     (every hero's saber, beam, jump and effects; every shove)
 //   deflect(sim, target, hit) → bool               (a bolt turned on the block: no damage, the round sent back)
-//   heroTakes(sim, target, hit, damage) → bool     (a bolt a block turned or a Squad Shield took: gone, burst and all)
+//   heroTakes(sim, target, hit, damage, burst) → bool   (a bolt a block turned or a Squad Shield took: gone, burst and all;
+//                                                    any other bursts where it lands, burstAt's options)
 //   burstAt(sim, hit, { shooter, scale, grace })   (a round that bursts where it lands, under the rules its bolt obeyed)
-//   viewHero(e, s, now)                            (the view's entity: its act, when it was struck, its lift, whether smoke hides it)
+//   viewHero(e, s, now)                            (the view's entity: its body, its act, when it was struck, its lift, whether smoke hides it)
 //   actOf(s, now) → { strike, strikeT, blocking, ability, abilityT, slot, air, thrown, lift } | null   (the view's, for the figures)
 
 import KIT from '../../data/bf2017/heroKit.json';
@@ -315,8 +316,13 @@ export function actOf(s, now) {
   };
 }
 
-// a bolt a saber hero's block turned, or a Squad Shield took from outside it: that bolt is gone
-export const heroTakes = (sim, target, hit, damage) => Boolean((target.hero && deflect(sim, target, hit)) || domed(sim, target, hit.bolt, damage));
+// a bolt a saber hero's block turned, or a Squad Shield took from outside it: that bolt is gone; any other that
+// bursts does so where it landed (`burst`: burstAt's options)
+export function heroTakes(sim, target, hit, damage, burst = null) {
+  if ((target.hero && deflect(sim, target, hit)) || domed(sim, target, hit.bolt, damage)) return true;
+  if (burst) burstAt(sim, hit, burst);
+  return false;
+}
 
 // A round that bursts where it lands (the bowcaster's bolt, a micro-grenade, the pulse cannon's): its blast is the
 // kit's to apply, by the factor its bolt had: a bot's half (the AI's bolt), the difficulty's scale on a human, and
@@ -329,6 +335,7 @@ export function burstAt(sim, hit, { shooter = null, scale = 1, grace = true } = 
 }
 
 export function viewHero(e, s, now) {
+  e.body = s.body ?? null; // (how tall it stands and crouches, its aim's height and its eye: soldier.js's bodyOf)
   e.act = s.hero ? actOf(s, now) : null;
   e.struckAt = s.hitReactAt ?? null;
   e.lift = s.lift ?? 0;
