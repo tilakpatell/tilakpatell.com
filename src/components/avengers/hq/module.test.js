@@ -186,24 +186,21 @@ describe('an HQ game as a world module', () => {
   });
 });
 
-// every HQ game's module: the compound, its games, Titan, Invincible's three
-const MODULES = import.meta.glob(['../*/module.js', '../../invincible/*/module.js'], { eager: true });
+// every HQ game's module here: the compound, its games and Titan
+// (Invincible's three are held by its own test, invincible/modules.test.js)
+const MODULES = import.meta.glob('../*/module.js', { eager: true });
 describe('the HQ games’ modules', () => {
   const mods = Object.entries(MODULES)
     .filter(([, m]) => m.default)
     .map(([path, m]) => [path, m.default]);
-  it('are all thirteen, one a game, each its own id', () => {
-    expect(mods.length).toBe(13);
-    expect(new Set(mods.map(([, m]) => m.id)).size).toBe(13);
+  it('are all ten, one a game, each its own id', () => {
+    expect(mods.length).toBe(10);
+    expect(new Set(mods.map(([, m]) => m.id)).size).toBe(10);
   });
   for (const [path, mod] of mods) {
     it(`${path} is a classic module with its route’s download`, () => {
-      const route = path.includes('invincible') ? '/invincible' : '/avengers';
-      expect(validateModule(mod)).toMatchObject({ shading: 'glsl', mb: WORLD_MB[route], calibrate: false });
+      expect(validateModule(mod)).toMatchObject({ shading: 'glsl', mb: WORLD_MB['/avengers'], calibrate: false });
       expect(typeof mod.warm).toBe('function');
     });
   }
-  it('keep the two worlds made once, and no game', () => {
-    expect(mods.filter(([, m]) => m.id.endsWith('-compound') || m.id === 'invincible-world').length).toBe(2);
-  });
 });
