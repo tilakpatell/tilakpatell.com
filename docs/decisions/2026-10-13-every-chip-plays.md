@@ -14,7 +14,7 @@ Auto is graded by the chip: under 50 on lib/gpuGrade's score Low, and Low for a 
 
 - A loss holds a weak chip only (the owner’s ruling the same evening): a chip at T1 or T2, or one whose name grades 50 or more before a tier is decided, gets its world back once on WebGL 2 and keeps everything else; nothing is kept against it (`lib/gpuProbe`'s `lossHolds`).
 - The 740M, Iris Xe and the UHD chips start on Low; every chip scoring 50 or more keeps its Auto as before (the 780M and the entry cards Ultra, under the probe and the pace), the 5090 included. A hand-picked level is never held.
-- This replaces two rules of the 2026-10-11 GPU-first lanes: T0's pinned 30 fps cadence and 33.3 ms budget (it now aims at 60), and lib/device's “a chip that grades mid is held at High”.
+- This replaces two rules of the 2026-10-11 lanes: T0's pinned 30 fps cadence and 33.3 ms budget (it now aims at 60), and lib/device's “a chip that grades mid is held at High”.
 - It replaces the 2026-10-12 waiting-screen rule that Deploy takes only once nothing has built for 0.6 s: after five seconds with the level in, the guard's held objects appear as they build. The field's first seconds can show them arriving.
 - Measured in the container (software GL, the film blocked): the manifest's evaluation 554–610 ms → 305–352 ms, and the classic home page no longer preloads it. The laptop's own numbers are its line in the console (`[battlefront] in at …`).
 - Not measured: the 740M's frame rate at Low. There is no real chip in the container.

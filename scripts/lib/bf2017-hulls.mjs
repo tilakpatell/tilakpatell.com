@@ -243,12 +243,15 @@ export function hunterCuts(HUNTER_GLB, galaxy) {
 }
 
 // The cuts a kind is drawn in (galaxy/models.js's modelsAt at each detail:
-// the plain cut, the light cut on low and mid, the ultra cut on ultra), each
-// { url, nose, plain }, the plain one first: the frame is its. An HQ row
-// (the close-up Nebulon-B) has a hull of its own, `hq/<kind>`, so isn't one.
+// the plain cut, the light cut on low and mid, the game's plain surface cut
+// and the kits' ultra cuts on high and ultra), each { url, nose, plain }, the
+// plain one first: the frame is its. An HQ row (the close-up Nebulon-B) has a
+// hull of its own, `hq/<kind>`, so isn't one.
 export const DETAILS = ['high', 'ultra', 'mid', 'low'];
-export function cutsOf({ modelsAt, LIGHT_CUTS, ULTRA, HD_MAPS = {} }, kind) {
-  const lighter = new Set([...Object.values(LIGHT_CUTS), ...Object.values(ULTRA), ...Object.values(HD_MAPS)]);
+export function cutsOf({ modelsAt, LIGHT_CUTS, ULTRA, HD_MAPS = {}, HIGH_CUTS = {} }, kind) {
+  // (this kind's own lighter cuts: another kind's plain file can be this one's
+  // high cut, the T-65's the X-wing's, and is still that kind's plain cut)
+  const lighter = new Set([LIGHT_CUTS[kind], ULTRA[kind], HD_MAPS[kind], HIGH_CUTS[kind]?.url].filter(Boolean));
   const cuts = new Map();
   for (const detail of DETAILS) {
     const row = modelsAt(detail)[kind];

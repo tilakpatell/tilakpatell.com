@@ -1,6 +1,6 @@
 # Kit worlds: the Quaternius packs as one site-wide kit, Bruno Simon's living layer on it, planets as data, crowds baked. The design
 
-Date: 2026-10-08. Status: design, written from the owner's brief by an architecting session, for an implementation session (phases in order, one pull request each). The plan is `docs/superpowers/plans/2026-10-08-kit-worlds.md`; the hand-off is `docs/superpowers/HANDOFF-kit-worlds.md`; the reading behind it is `docs/research/2026-10-08-folio-2025-assets-foliage-and-quaternius-packs.md` (his assets, his GPU foliage, the packs, every number) and `docs/research/2026-10-08-site-planets-generation-rigging-today.md` (where the site is).
+Date: 2026-10-08. Status: design, written from the owner's brief by an architecting session, for an implementation session (phases in order, one pull request each). The plan is `docs/superpowers/plans/2026-10-08-kit-worlds.md`; the hand-off is `docs/superpowers/HANDOFF-worlds.md`; the reading behind it is `docs/research/2026-10-08-folio-2025-assets-foliage-and-quaternius-packs.md` (his assets, his GPU foliage, the packs, every number) and `docs/research/2026-10-08-site-planets-generation-rigging-today.md` (where the site is).
 
 ## What the owner asked
 
