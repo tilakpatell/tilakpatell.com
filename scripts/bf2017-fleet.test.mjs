@@ -6,9 +6,10 @@ import { FLEET, writtenTurn } from './bf2017-fleet.mjs';
 import { qmul } from './lib/rig-clips.mjs';
 
 // the space layer's rows the fleet is written for, as galaxy/models.js has
-// them on a desktop (MODELS is this device's: a test runs at ultra, where
-// the kits' rows are their ultra cuts)
-const MODELS = modelsAt('high');
+// them on a laptop (MODELS is this device's: a test runs at ultra, and on a
+// desktop the kits' rows are their ultra cuts and the fighters' the game's
+// plain surface cuts, the space fidelity design's)
+const MODELS = modelsAt('mid');
 const rowOf = (file) => (file.startsWith('hq/') ? HQ[file.slice(3)] : MODELS[file]);
 const at = (path) => new URL(`../public${path}`, import.meta.url);
 // a file's bytes: on disk, or as published to the bucket (src/data/galaxyAssets.json)
@@ -28,7 +29,7 @@ describe('the fleets on the game’s ships', () => {
     expect(FLEET.find((r) => r[0] === 'falcon')[3].drop.test('Legs_Shader')).toBe(true);
     // (the Meshy remakes are gone: the interceptor is lane V's native file, galaxy/models.js)
     expect(FLEET.map((r) => r[0])).not.toContain('interceptor');
-    expect(MODELS.interceptor.url).toBe('/models/galaxy/surface/tieinterceptor.glb');
+    expect(modelsAt('high').interceptor.url).toBe('/models/galaxy/surface/tieinterceptor.glb');
   });
 
   // (lane S1: every capital the game has, from the space levels' kits; the

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { basisOf, bobOf, capitalPose, fighterPose, runnerPose, hunterPose, playerPose } from './pose.js';
+import { basisOf, bobOf, capitalPose, fighterPose, runnerPose, hunterPose, pieceCapitalPose, playerPose, yxzBasis } from './pose.js';
 
 // the battle scene's old orient, kept here as the reference it must equal
 const oldOrient = (fwd, up, bank = 0) => {
@@ -93,5 +93,28 @@ describe('poses', () => {
     expect(p.at1).toEqual([5, 6, 7]);
     expect(p.scale).toBe(1);
     expect(playerPose(s, [4, 6, 7]).at0).toEqual([4, 6, 7]);
+  });
+});
+
+describe('yxzBasis and pieceCapitalPose', () => {
+  it('yxzBasis is three’s YXZ Euler for random angles', () => {
+    const r = rnd(3);
+    for (let i = 0; i < 12; i++) {
+      const [p, y, z] = [r() * 3, r() * 3, r() * 3];
+      const m = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(p, y, z, 'YXZ')).elements;
+      close(Array.from(yxzBasis(p, y, z)), [0, 1, 2, 4, 5, 6, 8, 9, 10].map((k) => m[k]));
+    }
+  });
+  it('pieceCapitalPose turns the unit model by (pitch, heading + π, roll) at its length, nose along forward(heading)', () => {
+    const c = { at: [10, 2, -4], heading: 0.7, pitch: 0.1, roll: -0.2, len: 16 };
+    const p = pieceCapitalPose(c);
+    const m = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0.1, 0.7 + Math.PI, -0.2, 'YXZ')).elements;
+    close(Array.from(p.basis), [0, 1, 2, 4, 5, 6, 8, 9, 10].map((k) => m[k]));
+    expect(p.at0).toEqual([10, 2, -4]);
+    expect(p.at1).toEqual([10, 2, -4]);
+    expect(p.scale).toBe(16);
+    // level, the nose (+z of the model) points along forward(heading): (−sin h, 0, −cos h)
+    const level = pieceCapitalPose({ at: [0, 0, 0], heading: 0.7, len: 1 });
+    close([level.basis[6], level.basis[7], level.basis[8]], [-Math.sin(0.7), 0, -Math.cos(0.7)]);
   });
 });
