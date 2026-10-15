@@ -97,7 +97,7 @@ export const COLLIDERS = [
 // The pen's fence, low (you see over it), with the gate's gap in the east
 // side. [x0, z0, x1, z1, thick, low]
 const P = { x0: PEN.x - PEN.w / 2, x1: PEN.x + PEN.w / 2, z0: PEN.z - PEN.d / 2, z1: PEN.z + PEN.d / 2 };
-export const FENCE = [
+const FENCE = [
   [P.x0, P.z0, P.x1, P.z0, 0.15, true],
   [P.x0, P.z1, P.x1, P.z1, 0.15, true],
   [P.x0, P.z0, P.x0, P.z1, 0.15, true],
