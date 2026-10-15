@@ -102,6 +102,7 @@ const report = { sha, ref: args.ref ?? 'HEAD', clock: CLOCK.toISOString(), viewp
 try {
   for (const route of routes) {
     const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, ...(reduced ? { reducedMotion: 'reduce' } : {}), ...(phone ? { isMobile: true, hasTouch: true } : {}) });
+    if (typeof args.poses === 'string') await ctx.addInitScript(() => (window.__shootShip = true));
     await ctx.addInitScript(() => {
       const set = (k, v) => window.localStorage.setItem(k, v);
       set('tp-intro', '1');
@@ -109,6 +110,8 @@ try {
       set('tp-sound', 'off');
       set('tp-worlds', JSON.stringify('load'));
       set('tp-tour', 'skipped');
+      // (a ship flying, which the poses want: universe-check's Falcon)
+      if (window.__shootShip) set('tp-universe-ship', '"falcon"');
       window.sessionStorage.setItem('tp-galaxy-intro', '1');
       window.__tpKeepFrames = true;
       // (no GPU timer: main's map calibrated itself on every visit, by the
@@ -201,6 +204,12 @@ try {
     // the map's fixed poses (poses.js, through scene.js's DEV hook), each
     // from the last, each at its own moment of the page's time
     const poses = typeof args.poses === 'string' ? args.poses.split(',') : [];
+    // (the ship and its model in first, a frame at a time, as universe-check waits)
+    for (let n = 0; poses.length && n < 3000; n++) {
+      if (await page.evaluate(() => Boolean(window.__universe?.().ship && window.__universeDebug?.state?.model))) break;
+      await page.clock.runFor(16);
+      await page.waitForTimeout(25);
+    }
     for (let i = 0; i < poses.length; i++) {
       await page.evaluate((n) => window.__universe().pose(n), poses[i]);
       await page.waitForTimeout(settle);
